@@ -122,6 +122,15 @@
         (current-output-port)))
 
 ;; ----------------------------------------
+;; Make sure a generated name is not ambiguous relative to
+;; a directly imported or defined name:
+
+(module stxparam-generated-name-no-conflict racket/base
+  (require racket/stxparam (for-syntax racket/base))
+  (define-syntax-parameter add (make-rename-transformer #'+))
+  add)
+
+;; ----------------------------------------
 
 (report-errs)
 

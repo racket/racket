@@ -1664,7 +1664,7 @@ static Scheme_Object *find_local_binder(Scheme_Object *sym, Scheme_Comp_Env *env
   return NULL;
 }
 
-Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env)
+Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env, int only_generated)
 {
   Scheme_Comp_Env *start_env;
   Scheme_Object *binder, *orig_sym;
@@ -1679,6 +1679,8 @@ Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env)
 
   if (binder)
     sym = scheme_stx_binding_union(binder, sym, scheme_env_phase(env->genv));
+  else if (only_generated)
+    sym = scheme_stx_introduce_to_module_context(sym, env->genv->stx_context);
   else if (env->genv->module && env->genv->module->ii_src)
     sym = scheme_stx_binding_union(sym, env->genv->module->ii_src, scheme_env_phase(env->genv));
   else if (env->genv->stx_context)

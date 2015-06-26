@@ -778,7 +778,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("internal-definition-context-seal", intdef_context_seal, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("internal-definition-context?", intdef_context_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("identifier-remove-from-definition-context", id_intdef_remove, 2, 2, env);
-  GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-introduce", local_introduce, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("make-syntax-introducer", make_introducer, 0, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-identifier-as-binding", local_binding_id, 1, 1, env);
@@ -2492,6 +2492,7 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env;
   Scheme_Object *sym;
+  int only_generated = 0;
 
   env = scheme_current_thread->current_local_env;
   if (!env)
@@ -2501,7 +2502,10 @@ local_get_shadower(int argc, Scheme_Object *argv[])
   if (!(SCHEME_STXP(sym) && SCHEME_SYMBOLP(SCHEME_STX_VAL(sym))))
     scheme_wrong_contract("syntax-local-get-shadower", "identifier?", 0, argc, argv);
 
-  return scheme_get_shadower(sym, env);
+  if ((argc > 1) && SCHEME_TRUEP(argv[1]))
+    only_generated = 1;
+
+  return scheme_get_shadower(sym, env, only_generated);
 }
 
 int scheme_get_introducer_mode(const char *who, int which, int argc, Scheme_Object **argv)

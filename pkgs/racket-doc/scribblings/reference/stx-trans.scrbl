@@ -695,20 +695,26 @@ expansion context.
 @transform-time[]}
 
 
-@defproc[(syntax-local-get-shadower [id-stx identifier?]) identifier?]{
+@defproc[(syntax-local-get-shadower [id-stx identifier?]
+                                    [only-generated? any/c #f])
+         identifier?]{
 
-Adds @tech{scopes} to @racket[id-stx] so that it refers to any binding
+Adds @tech{scopes} to @racket[id-stx] so that it refers to bindings
 in the current expansion context or could bind any identifier obtained
-via @racket[(syntax-local-get-shadower id-stx)] in more nested context.
+via @racket[(syntax-local-get-shadower id-stx)] in more nested contexts.
+If @racket[only-generated?] is true, the phase-spanning @tech{scope}
+of the enclosing module or namespace is omitted from the added scopes,
+however, which limits the bindings that can be referenced (and
+therefore avoids certain ambiguous references).
 
-This function is intended for use by @racket[syntax-parameterize],
-which uses it indirectly to obtain to look up a binding in the current
-expansion context.
+This function is intended for the implementation of
+@racket[syntax-parameterize] and @racket[local-require].
 
 @transform-time[]
 
 @history[#:changed "6.3" @elem{Simplified to the minimal functionality
-                               needed for @racket[syntax-parameterize].}]}
+                               needed for @racket[syntax-parameterize]
+                               and @racket[local-require].}]}
 
 
 @defproc[(syntax-local-make-delta-introducer [id-stx identifier?]) procedure?]{

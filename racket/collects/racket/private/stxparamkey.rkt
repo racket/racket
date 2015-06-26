@@ -13,7 +13,7 @@
     (syntax-parameter-ref sp 1))
 
   (define (target-value target)
-    (syntax-local-value (syntax-local-get-shadower target)
+    (syntax-local-value (syntax-local-get-shadower target #t)
                         (lambda ()
                           (syntax-local-value 
                            target
