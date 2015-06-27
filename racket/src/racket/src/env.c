@@ -100,6 +100,7 @@ static Scheme_Object *local_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_phase_level(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_make_intdef_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[]);
+static Scheme_Object *intdef_context_intro(int argc, Scheme_Object *argv[]);
 static Scheme_Object *intdef_context_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *id_intdef_remove(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_introduce(int argc, Scheme_Object *argv[]);
@@ -776,6 +777,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-phase-level", local_phase_level, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-make-definition-context", local_make_intdef_context, 0, 2, env);
   GLOBAL_PRIM_W_ARITY("internal-definition-context-seal", intdef_context_seal, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("internal-definition-context-introduce", intdef_context_intro, 2, 3, env);
   GLOBAL_PRIM_W_ARITY("internal-definition-context?", intdef_context_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("identifier-remove-from-definition-context", id_intdef_remove, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 2, env);
@@ -2425,6 +2427,32 @@ static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 
+static Scheme_Object *intdef_context_intro(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *res, *phase, *scope;
+  int mode = SCHEME_STX_FLIP;
+  
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_intdef_context_type))
+    scheme_wrong_contract("internal-definition-context-introduce",
+                          "internal-definition-context?", 0, argc, argv);
+
+  res = argv[1];
+  if (!SCHEME_STXP(res))
+    scheme_wrong_contract("internal-definition-context-introduce",
+                          "syntax?", 1, argc, argv);
+
+  if (argc > 2)
+    mode = scheme_get_introducer_mode("internal-definition-context-introduce", 2, argc, argv);
+
+  phase = scheme_env_phase((Scheme_Env *)((Scheme_Object **)SCHEME_PTR1_VAL(argv[0]))[0]);
+
+  scope = SCHEME_PTR2_VAL(argv[0]);
+  if (SCHEME_BOXP(scope)) scope = SCHEME_BOX_VAL(scope);
+  res = scheme_stx_adjust_scope(res, scope, phase, mode);
+
+  return res;
+}
+
 static Scheme_Object *
 id_intdef_remove(int argc, Scheme_Object *argv[])
 {
@@ -2510,17 +2538,16 @@ local_get_shadower(int argc, Scheme_Object *argv[])
 
 int scheme_get_introducer_mode(const char *who, int which, int argc, Scheme_Object **argv)
 {
-  // REMOVEME: FIXME: document API change for 2 functions that use this
   int mode = SCHEME_STX_FLIP;
 
-  if (SAME_OBJ(argv[1], flip_symbol))
+  if (SAME_OBJ(argv[which], flip_symbol))
     mode = SCHEME_STX_FLIP;
-  else if (SAME_OBJ(argv[1], add_symbol))
+  else if (SAME_OBJ(argv[which], add_symbol))
     mode = SCHEME_STX_ADD;
-  else if (SAME_OBJ(argv[1], remove_symbol))
+  else if (SAME_OBJ(argv[which], remove_symbol))
     mode = SCHEME_STX_REMOVE;
   else
-    scheme_wrong_contract(who, "(or/c 'flip 'add 'remove)", 1, argc, argv);
+    scheme_wrong_contract(who, "(or/c 'flip 'add 'remove)", which, argc, argv);
   
   return mode;
 }

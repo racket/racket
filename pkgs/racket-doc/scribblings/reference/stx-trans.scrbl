@@ -420,6 +420,18 @@ match the number of identifiers, otherwise the
 @transform-time[]}
 
 
+@defproc[(internal-definition-context-introduce [intdef-ctx internal-definition-context?]
+                                                [stx syntax?]
+                                                [mode (or/c 'flip 'add 'remove) 'flip])
+         syntax?]{
+
+Flips, adds, or removes (depending on @racket[mode]) the @tech{scope}
+for @racket[intdef-ctx] for all parts of @racket[stx].
+
+@history[#:added "6.3"]}
+
+
+
 @defproc[(internal-definition-context-seal [intdef-ctx internal-definition-context?])
          void?]{
 
@@ -431,8 +443,12 @@ For backward compatibility only; has no effect.}
                                                                       (listof internal-definition-context?))])
          identifier?]{
 
-Removes all of the @tech{scopes} of @racket[intdef-ctx] (or from each
-@racket[intdef-ctx], if it is a list) from @racket[id-stx].
+Removes all of the @tech{scopes} of @racket[intdef-ctx] (or of each
+element in a list @racket[intdef-ctx]) from @racket[id-stx].
+
+The @racket[identifier-remove-from-definition-context] function is
+provided for backward compatibility; the more general
+@racket[internal-definition-context-introduce] function is preferred.
 
 @history[#:changed "6.3" @elem{Simplified the operation to @tech{scope} removal.}]}
 
