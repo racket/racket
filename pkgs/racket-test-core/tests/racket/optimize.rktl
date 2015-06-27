@@ -1689,6 +1689,8 @@
 
 (test-comp '(lambda (x) (not (if x #f 2)))
            '(lambda (x) (not (if x #f #t))))
+(test-comp '(lambda (x) (let ([z 2]) (not (if x #f z))))
+           '(lambda (x) (let ([z 2]) (not (if x #f #t)))))
 
 (test-comp '(lambda (x) (if x x #f))
            '(lambda (x) x))

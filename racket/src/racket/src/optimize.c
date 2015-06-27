@@ -7372,7 +7372,8 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
           if (val)
             return val;
         } else {
-          if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type)) {
+          if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type)
+              || (SCHEME_TYPE(val) > _scheme_compiled_values_types_)) {
             info->size -= 1;
             return scheme_optimize_expr(val, info, context);
           }
