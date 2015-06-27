@@ -22,7 +22,37 @@
          splicing-syntax-parameterize)
 
 (define-syntax (splicing-local stx)
-  (do-local stx #'splicing-letrec-syntaxes+values))
+  (do-local stx (lambda (def-ctx expand-context sbindings vbindings bodys)
+                  (if (eq? 'expression (syntax-local-context))
+                      (quasisyntax/loc stx
+                        (letrec-syntaxes+values
+                         #,sbindings
+                         #,vbindings
+                         #,@bodys))
+                      ;; Since we alerady have bindings for the current scopes,
+                      ;; add an extra scope for re-binding:
+                      (let ([i (make-syntax-introducer)])
+                        (with-syntax ([([s-ids s-rhs] ...) (i sbindings)]
+                                      [([(v-id ...) v-rhs] ...) (i vbindings)]
+                                      [(body ...) (i bodys)]
+                                      [(marked-id markless-id)
+                                       (let ([id #'id])
+                                         ;; The marked identifier should have both the extra
+                                         ;; scope and the intdef scope, to be removed from
+                                         ;; definitions expanded from `body`:
+                                         (list (i (internal-definition-context-introduce def-ctx id))
+                                               id))])
+                          (with-syntax ([(top-decl ...)
+                                         (if (equal? 'top-level (syntax-local-context))
+                                             #'((define-syntaxes (v-id ... ...) (values)))
+                                             null)])
+                            (quasisyntax/loc stx
+                              (begin
+                                top-decl ...
+                                (define-syntaxes s-ids s-rhs) ...
+                                (define-values (v-id ...) v-rhs) ...
+                                (splicing-let-start/body marked-id markless-id body)
+                                ...)))))))))
 
 (define-syntax (splicing-let-syntax stx)
   (do-let-syntax stx #f #f #'let-syntax #'define-syntaxes #f))

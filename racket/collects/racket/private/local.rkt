@@ -3,15 +3,16 @@
          (for-syntax syntax/kerncase))
 (provide (for-syntax do-local))
 
-(define-for-syntax (do-local stx letrec-syntaxes+values-id)
+(define-for-syntax (do-local stx combine)
   (syntax-case stx ()
     [(_ (defn ...) body1 body ...)
      (let* ([def-ctx (syntax-local-make-definition-context)]
-            [defs (let ([expand-context (cons (gensym 'intdef)
-                                              (let ([orig-ctx (syntax-local-context)])
-                                                (if (pair? orig-ctx)
-                                                    orig-ctx
-                                                    null)))])
+            [expand-context (cons (gensym 'intdef)
+                                  (let ([orig-ctx (syntax-local-context)])
+                                    (if (pair? orig-ctx)
+                                        orig-ctx
+                                        null)))]
+            [defs (let ()
                     (let loop ([defns (syntax->list (syntax (defn ...)))])
                       (apply
                        append
@@ -89,19 +90,17 @@
              (raise-syntax-error #f "duplicate identifier" stx dup)))
          (with-syntax ([sbindings sbindings]
                        [vbindings vbindings]
-                       [LSV letrec-syntaxes+values-id]
                        [(body ...)
                         (map (lambda (stx)
-                               ;; add def-ctx:
-                               (let ([q (local-expand #`(quote #,stx)
-                                                      'expression
-                                                      (list #'quote)
-                                                      def-ctx)])
-                                 (syntax-case q ()
-                                   [(_ stx) #'stx])))
+                               (internal-definition-context-introduce
+                                def-ctx
+                                stx
+                                'add))
                              (syntax->list #'(body1 body ...)))])
-           (syntax/loc stx
-             (LSV sbindings vbindings
-               body ...)))))]
+           (combine def-ctx
+                    expand-context
+                    #'sbindings
+                    #'vbindings
+                    #'(body ...)))))]
     [(_ x body1 body ...)
      (raise-syntax-error #f "not a definition sequence" stx (syntax x))]))

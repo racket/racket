@@ -1603,6 +1603,13 @@
             (define (a) (m)))
           (m))))
 
+(test 105 'splicing-local
+      (let ()
+        (splicing-local
+         [(define x 105)]
+         (define-syntax outer-x (make-rename-transformer #'x)))
+        outer-x))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check keyword & optionals for define-syntax 
 ;; and define-syntax-for-values:
