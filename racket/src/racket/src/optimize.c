@@ -109,6 +109,8 @@ static int closure_argument_flags(Scheme_Closure_Data *data, int i);
 
 static int wants_local_type_arguments(Scheme_Object *rator, int argpos);
 
+static void add_types_for_f_branch(Scheme_Object *t, Optimize_Info *info, int fuel);
+
 static int optimize_info_is_ready(Optimize_Info *info, int pos);
 
 static void optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *value, int single_use);
@@ -2472,9 +2474,6 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
   Scheme_Object *rator = NULL;
   int argc = 0;
 
-  /* Any returned predicate must match only non-#f values, since
-     that's assumed by optimize_branch(). */
-
   if (fuel <= 0)
     return NULL;
 
@@ -2579,6 +2578,9 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
       return scheme_void_p_proc;
     if (SCHEME_EOFP(expr))
       return scheme_eof_object_p_proc;
+
+    if (SCHEME_FALSEP(expr))
+      return scheme_not_prim;
   }
 
   if (rator)
@@ -2872,8 +2874,10 @@ static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme
   check_known_rator(info, rator, 0);
 
   if ((context & OPT_CONTEXT_BOOLEAN) && !info->escapes)
-    if (rator_implies_predicate(rator, argc))
-      return make_discarding_sequence(app, scheme_true, info, 0);
+    if (rator_implies_predicate(rator, argc)){
+      Scheme_Object *val = SAME_OBJ(rator, scheme_not_prim) ? scheme_false : scheme_true;
+      return make_discarding_sequence(app, val, info, 0);
+    }
 
   if (SAME_OBJ(rator, scheme_void_proc))
     return make_discarding_sequence(app, scheme_void, info, 0);
@@ -4022,8 +4026,9 @@ Scheme_Hash_Tree *intersect_and_merge_types(Scheme_Hash_Tree *t_types, Scheme_Ha
 static int relevant_predicate(Scheme_Object *pred)
 {
   /* Relevant predicates need to be disjoint for try_reduce_predicate(),
-     and they need to recognize non-#f values for optimize_branch().
-     list? is recognized in try_reduce_predicate as a special case*/
+     finish_optimize_application3() and add_types_for_t_branch().
+     As 'not' is included, all the other need to recognize non-#f values.
+     list? is recognized in try_reduce_predicate as a special case */
 
   return (SAME_OBJ(pred, scheme_pair_p_proc)
           || SAME_OBJ(pred, scheme_null_p_proc)
@@ -4037,10 +4042,11 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_extflonum_p_proc)
           || SAME_OBJ(pred, scheme_void_p_proc)
           || SAME_OBJ(pred, scheme_eof_object_p_proc)
+          || SAME_OBJ(pred, scheme_not_prim)
           );
 }
 
-static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
+static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fuel)
 {
   if (fuel < 0)
     return;
@@ -4084,8 +4090,33 @@ static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
   } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)) {
     Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)t;
     if (SCHEME_FALSEP(b->fbranch)) {
-      add_types(b->test, info, fuel-1);
-      add_types(b->tbranch, info, fuel-1);
+      add_types_for_t_branch(b->test, info, fuel-1);
+      add_types_for_t_branch(b->tbranch, info, fuel-1);
+    }
+    if (SCHEME_FALSEP(b->tbranch)) {
+      add_types_for_f_branch(b->test, info, fuel-1);
+      add_types_for_t_branch(b->fbranch, info, fuel-1);
+    }
+  }
+}
+
+static void add_types_for_f_branch(Scheme_Object *t, Optimize_Info *info, int fuel)
+{
+  if (fuel < 0)
+    return;
+
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_local_type)) {
+    add_type(info, SCHEME_LOCAL_POS(t), scheme_not_prim);
+
+  } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)) {
+    Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)t;
+    if (SAME_OBJ(b->fbranch, scheme_true)) {
+      add_types_for_t_branch(b->test, info, fuel-1);
+      add_types_for_f_branch(b->tbranch, info, fuel-1);
+    }
+    if (SAME_OBJ(b->tbranch, scheme_true)) {
+      add_types_for_f_branch(b->test, info, fuel-1);
+      add_types_for_f_branch(b->fbranch, info, fuel-1);
     }
   }
 }
@@ -4111,6 +4142,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   int then_escapes, then_preserves_marks, then_single_result;
   int then_vclock, then_kclock, then_sclock;
   Optimize_Info_Sequence info_seq;
+  Scheme_Object *pred;
 
   b = (Scheme_Branch_Rec *)o;
 
@@ -4172,19 +4204,21 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
         break;
     }
 
-    if (expr_implies_predicate(t2, info, id_offset, 5)) {
-      /* (if (let () (cons x y)) a b) => (if (begin (let () (begin x y #<void>)) #t) a b) */
-      /* all predicates recognize non-#f things */
+    pred = expr_implies_predicate(t2, info, id_offset, 5); 
+    if (pred) {
+      /* (if (let () (cons x y)) a b) => (if (begin (let () (begin x y #<void>)) #t/#f) a b) */
+      Scheme_Object *test_val = SAME_OBJ(pred, scheme_not_prim) ? scheme_false : scheme_true;
+
       t2 = optimize_ignored(t2, info, id_offset, 1, 0, 5);
       t = replace_tail_inside(t2, inside, t);
       
-      t2 = scheme_true;
+      t2 = test_val;
       id_offset = 0;
       if (scheme_omittable_expr(t, 1, 5, 0, info, NULL, 0, 0, ID_OMIT)) {
-        t = scheme_true;
+        t = test_val;
         inside = NULL;
       } else {       
-        t = make_sequence_2(t, scheme_true);
+        t = make_sequence_2(t, test_val);
         inside = t;
       }
     }
@@ -4223,7 +4257,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   init_sclock = info->sclock;
   init_types = info->types;
 
-  add_types(t, info, 5);
+  add_types_for_t_branch(t, info, 5);
 
   tb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
 
@@ -4241,6 +4275,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   info->sclock = init_sclock;
 
   optimize_info_seq_step(info, &info_seq);
+
+  add_types_for_f_branch(t, info, 5);
 
   fb = scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
 
@@ -7461,8 +7497,11 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
         pred = optimize_get_predicate(pos + delta, info);
         if (pred) {
+          if (SAME_OBJ(pred, scheme_not_prim))
+            return scheme_false;
+
           if (context & OPT_CONTEXT_BOOLEAN) {
-            /* all predicates recognize non-#f things */
+            /* all other predicates recognize non-#f things */
             return scheme_true;
           }
 

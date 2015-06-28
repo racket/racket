@@ -1763,7 +1763,8 @@
                     `(lambda (x) (if (,pred? x) x 0))))])
   (test-pred-implies-val 'null? 'null)
   (test-pred-implies-val 'void? '(void))
-  (test-pred-implies-val 'eof-object? 'eof))
+  (test-pred-implies-val 'eof-object? 'eof)
+  (test-pred-implies-val 'not '#f))
 (test-comp '(lambda (x) (if (null? x) 1 0) null)
            '(lambda (x) (if (null? x) 1 0) x)
            #f)
@@ -1773,6 +1774,8 @@
            '(lambda (x) (if (eq? x (list 0)) (pair? x) 0)))
 (test-comp '(lambda (x y) (car y) (if (eq? x y) #t 0))
            '(lambda (x y) (car y) (if (eq? x y) (pair? x) 0)))
+(test-comp '(lambda (x) (if x 1 (list #f)))
+           '(lambda (x) (if x 1 (list x))))
 
 
 (test-comp '(lambda (x) (let ([r (something)])
