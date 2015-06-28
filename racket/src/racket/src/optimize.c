@@ -3553,6 +3553,21 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     }
   }
 
+  if (SAME_OBJ(app->rator, scheme_eq_prim)) {
+    Scheme_Object *pred1, *pred2;
+    pred1 = expr_implies_predicate(app->rand1, info, 0, 5);
+    if (pred1) {
+      pred2 = expr_implies_predicate(app->rand2, info, 0, 5);
+      if (pred2) {
+        if (!SAME_OBJ(pred1, pred2)) {
+          info->preserves_marks = 1;
+          info->single_result = 1;
+          return scheme_false;
+        }
+      }
+    }
+  }
+
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);
   if (rator_flags & CLOS_RESULT_TENTATIVE) {
@@ -4041,6 +4056,31 @@ static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
          operations to unsafe operations. */
       add_type(info, SCHEME_LOCAL_POS(app->rand), app->rator);
     }
+
+  } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_application3_type)) {
+    Scheme_App3_Rec *app = (Scheme_App3_Rec *)t;
+    Scheme_Object *pred1, *pred2;
+    if (SAME_OBJ(app->rator, scheme_eq_prim)) {
+      if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_local_type)
+          && !optimize_is_mutated(info, SCHEME_LOCAL_POS(app->rand1))) {
+        pred1 = optimize_get_predicate(SCHEME_LOCAL_POS(app->rand1), info);
+        if (!pred1) {
+          pred2 = expr_implies_predicate(app->rand2, info, 0, 5);
+          if (pred2)
+            add_type(info, SCHEME_LOCAL_POS(app->rand1), pred2);
+        }
+      }
+      if (SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_local_type)
+          && !optimize_is_mutated(info, SCHEME_LOCAL_POS(app->rand2))) {
+        pred2 = optimize_get_predicate(SCHEME_LOCAL_POS(app->rand2), info);
+        if (!pred2) {
+          pred1 = expr_implies_predicate(app->rand1, info, 0, 5);
+          if (pred1)
+            add_type(info, SCHEME_LOCAL_POS(app->rand2), pred1);
+        }
+      }
+    }
+
   } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)) {
     Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)t;
     if (SCHEME_FALSEP(b->fbranch)) {

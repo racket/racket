@@ -1485,6 +1485,11 @@
               (let ([y (random)])
                 (begin0 y (set! y 5)))))
 
+(test-comp '(lambda (x y) (car x) (unbox y) #f)
+           '(lambda (x y) (car x) (unbox y) (eq? x y)))
+(test-comp '(lambda (x) (car x) #f)
+           '(lambda (x) (car x) (eq? x (box 0))))
+
 (test-comp '(lambda (w) (car w) (mcar w))
            '(lambda (w) (car w) (mcar w) (random)))
 (test-comp '(lambda (w) (car w w))
@@ -1762,6 +1767,13 @@
 (test-comp '(lambda (x) (if (null? x) 1 0) null)
            '(lambda (x) (if (null? x) 1 0) x)
            #f)
+(test-comp '(lambda (x) (if (eq? x '(0)) #t 0))
+           '(lambda (x) (if (eq? x '(0)) (pair? x) 0)))
+(test-comp '(lambda (x) (if (eq? x (list 0)) #t 0))
+           '(lambda (x) (if (eq? x (list 0)) (pair? x) 0)))
+(test-comp '(lambda (x y) (car y) (if (eq? x y) #t 0))
+           '(lambda (x y) (car y) (if (eq? x y) (pair? x) 0)))
+
 
 (test-comp '(lambda (x) (let ([r (something)])
                           (r)))
