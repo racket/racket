@@ -439,6 +439,7 @@ extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
+extern Scheme_Object *scheme_void_p_proc;
 extern Scheme_Object *scheme_syntax_p_proc;
 extern Scheme_Object *scheme_check_not_undefined_proc;
 extern Scheme_Object *scheme_check_assign_not_undefined_proc;
@@ -2445,6 +2446,7 @@ Scheme_Object *scheme_default_prompt_read_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_read_input_port_handler(int argc, Scheme_Object *[]);
 Scheme_Object *scheme_default_read_handler(int argc, Scheme_Object *[]);
 
+extern Scheme_Object *scheme_eof_object_p_proc;
 extern Scheme_Object *scheme_default_global_print_handler;
 
 /* Type readers & writers for compiled code data */

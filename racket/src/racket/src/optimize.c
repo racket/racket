@@ -2453,6 +2453,8 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
     else if (SAME_OBJ(rator, scheme_box_proc)
              || SAME_OBJ(rator, scheme_box_immutable_proc))
       return scheme_box_p_proc;
+    else if (SAME_OBJ(rator, scheme_void_proc))
+      return scheme_void_p_proc;
     
     {
       Scheme_Object *p;
@@ -2566,6 +2568,17 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
     if (SCHEME_INTP(expr)
         && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(expr)))
       return scheme_fixnum_p_proc;
+
+    if (SCHEME_NULLP(expr))
+      return scheme_null_p_proc;
+    if (SCHEME_PAIRP(expr))
+      return scheme_pair_p_proc;
+    if (SCHEME_MPAIRP(expr))
+      return scheme_mpair_p_proc;
+    if (SCHEME_VOIDP(expr))
+      return scheme_void_p_proc;
+    if (SCHEME_EOFP(expr))
+      return scheme_eof_object_p_proc;
   }
 
   if (rator)
@@ -2806,7 +2819,7 @@ static void check_known(Optimize_Info *info, Scheme_Object *app,
 /* Replace the rator with an unsafe version if we know that it's ok. Alternatively,
    the rator implies a check, so add type information for subsequent expressions. 
    If the rand has alredy a different type, mark that this will generate an error.
-   If unsafe is NULL then rator has no unsafe vesion, so only check the type. */
+   If unsafe is NULL then rator has no unsafe version, so only check the type. */
 {
   if (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, who)) {
     Scheme_Object *pred;
@@ -4007,6 +4020,8 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_fixnum_p_proc)
           || SAME_OBJ(pred, scheme_flonum_p_proc)
           || SAME_OBJ(pred, scheme_extflonum_p_proc)
+          || SAME_OBJ(pred, scheme_void_p_proc)
+          || SAME_OBJ(pred, scheme_eof_object_p_proc)
           );
 }
 
@@ -7401,18 +7416,27 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
       delta = optimize_info_get_shift(info, pos);
 
-      if ((context & OPT_CONTEXT_BOOLEAN)
-          && !optimize_is_mutated(info, pos + delta)) {
+      if (!optimize_is_mutated(info, pos + delta)) {
         Scheme_Object *pred;
+
         pred = optimize_get_predicate(pos + delta, info);
         if (pred) {
-          /* all predicates recognize non-#f things */
-          return scheme_true;
+          if (context & OPT_CONTEXT_BOOLEAN) {
+            /* all predicates recognize non-#f things */
+            return scheme_true;
+          }
+
+          if (SAME_OBJ(pred, scheme_null_p_proc))
+            return scheme_null;
+          if (SAME_OBJ(pred, scheme_void_p_proc))
+            return scheme_void;
+          if (SAME_OBJ(pred, scheme_eof_object_p_proc))
+            return scheme_eof;
         }
       }
 
       if (delta)
-	expr = scheme_make_local(scheme_local_type, pos + delta, 0);
+        expr = scheme_make_local(scheme_local_type, pos + delta, 0);
 
       return expr;
     }

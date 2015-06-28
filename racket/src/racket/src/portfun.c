@@ -158,6 +158,7 @@ READ_ONLY static Scheme_Object *default_display_handler;
 READ_ONLY static Scheme_Object *default_write_handler;
 READ_ONLY static Scheme_Object *default_print_handler;
 
+READ_ONLY Scheme_Object *scheme_eof_object_p_proc;
 READ_ONLY Scheme_Object *scheme_default_global_print_handler;
 
 READ_ONLY Scheme_Object *scheme_write_proc;
@@ -335,10 +336,11 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("port-count-lines!",              port_count_lines,               1, 1, env);
   GLOBAL_NONCM_PRIM("port-counts-lines?",             port_counts_lines_p,            1, 1, env);
           
-  p = scheme_make_folding_prim(eof_object_p, "eof-object?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("eof-object?", p, env);
+  REGISTER_SO(scheme_eof_object_p_proc);
+  scheme_eof_object_p_proc = scheme_make_folding_prim(eof_object_p, "eof-object?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(scheme_eof_object_p_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                                                   | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("eof-object?", scheme_eof_object_p_proc, env);
 
   scheme_add_global_constant("write",   scheme_write_proc,    env);
   scheme_add_global_constant("display", scheme_display_proc,  env);

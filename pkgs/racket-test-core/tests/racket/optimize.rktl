@@ -1752,6 +1752,17 @@
                           (if r #t (something-else))))
            '(lambda (x) (if (something) #t (something-else))))
 
+(let ([test-pred-implies-val
+       (lambda (pred? val)
+         (test-comp `(lambda (x) (if (,pred? x) ,val 0))
+                    `(lambda (x) (if (,pred? x) x 0))))])
+  (test-pred-implies-val 'null? 'null)
+  (test-pred-implies-val 'void? '(void))
+  (test-pred-implies-val 'eof-object? 'eof))
+(test-comp '(lambda (x) (if (null? x) 1 0) null)
+           '(lambda (x) (if (null? x) 1 0) x)
+           #f)
+
 (test-comp '(lambda (x) (let ([r (something)])
                           (r)))
            '(lambda (x) ((something))))
