@@ -3,10 +3,16 @@
 
 #lang racket/base
 
-(require racket/system racket/file racket/promise racket/port)
+(require racket/system racket/file racket/promise racket/port
+         racket/contract)
 
-(provide send-url send-url/file send-url/contents send-url/mac
-         unix-browser-list browser-preference? external-browser)
+(provide send-url send-url/file send-url/contents
+         unix-browser-list browser-preference? external-browser
+         (contract-out
+          [send-url/mac
+           (->* (string?) (#:browser string?)
+                #:pre (equal? (system-type) 'macosx)
+                void?)]))
 
 (define separate-by-default?
   ;; internal configuration, 'browser-default lets some browsers decide

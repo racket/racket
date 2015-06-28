@@ -77,6 +77,18 @@ the @racket[#:delete-at] argument is @racket[#f], no eager deletion
 happens, but old temporary files are still deleted as described
 above.}
 
+@defproc[(send-url/mac [url string?]
+                       [#:browser browser (or/c string? #f) #f])
+         void?]{
+ Like @racket[send-url], but only for use on a Mac OS X machine.
+
+ The optional @racket[browser] argument, if present, should be the name
+ of a browser installed on the system. For example,
+ @racketblock[(send-url/mac "http://www.google.com/" #:browser "Firefox")]
+ would open the url in Firefox, even if that's not the default browser.
+ Passing @racket[#f] means to use the default browser.
+}
+
 @defparam[external-browser cmd browser-preference?]{
 
 A parameter that can hold a procedure to override how a browser is
