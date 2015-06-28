@@ -5,7 +5,7 @@
 
 (require racket/system racket/file racket/promise racket/port)
 
-(provide send-url send-url/file send-url/contents
+(provide send-url send-url/file send-url/contents send-url/mac
          unix-browser-list browser-preference? external-browser)
 
 (define separate-by-default?
@@ -156,8 +156,12 @@
     (send-url/file temp)))
 
 (define osascript (delay/sync (find-executable-path "osascript" #f)))
-(define (send-url/mac url)
-  (browser-run (force osascript) "-e" (format "open location \"~a\"" url)))
+(define (send-url/mac url #:browser [browser #f])
+  (browser-run (force osascript) "-e"
+               (if browser
+                   (format "tell application \"~a\" to open location \"~a\""
+                           browser url)
+                   (format "open location \"~a\"" url))))
 
 (define (send-url/unix url separate-window?)
   ;; in cases where a browser was uninstalled, we might get a preference that
