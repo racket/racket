@@ -130,17 +130,18 @@
          string-append 
          "packages from a Git repository " would " not share a local clone"
          convert "\n"
-         (~a "  repository: " repo "\n")
+         (~a "  repository: " repo)
          (append
           (for/list ([(clone names) (in-hash clones)])
-            (~a "  local clone: " clone "\n"
+            (~a "\n"
+                "  local clone: " clone "\n"
                 "  packages for local clone:"
-                (format-list names)
-                "\n"))
+                (format-list names)))
           (list
            (if (null? non-clones)
                ""
-               (~a "  non-clone packages:"
+               (~a "\n"
+                   "  non-clone packages:"
                    (format-list non-clones)))))))
       
       ;; Determine a direction of conversion; we consider converting from
