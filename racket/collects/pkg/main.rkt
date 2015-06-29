@@ -128,7 +128,7 @@
                 "  package: ~a\n"
                 "  given path: ~a\n")
             pkg
-            name)
+            clone)
     (list pkg)]
    [else
     ((pkg-error cmd)
