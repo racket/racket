@@ -9413,7 +9413,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	scheme_init_expand_recs(erec, derec, &erec1, 1);
 	erec1.value_name = scheme_false;
 	e = scheme_expand_expr(e, nenv, &erec1, 0);
-        expanded_l = scheme_make_pair(e, expanded_l);        
+        expanded_l = scheme_make_pair(e, expanded_l);
       }
 
       if (rec[drec].comp) {

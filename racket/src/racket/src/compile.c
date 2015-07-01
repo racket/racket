@@ -1319,7 +1319,8 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
 
   while (1) {
     /* Make sure it's mutable, and check for redirects: */
-    var = scheme_compile_lookup(find_name, env, SCHEME_SETTING, 
+    var = scheme_compile_lookup(find_name, env,
+                                SCHEME_SETTING + SCHEME_STOP_AT_FREE_EQ,
 				env->in_modidx, 
 				&menv, NULL,
                                 &binding_id, NULL,
@@ -1455,6 +1456,9 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
                                      : 0)
                                   + (rec[drec].resolve_module_ids
                                      ? SCHEME_RESOLVE_MODIDS
+                                     : 0)
+                                  + (!rec[drec].comp
+                                     ? SCHEME_STOP_AT_FREE_EQ
                                      : 0),
                                   env->in_modidx, 
                                   &menv, NULL,
@@ -4421,6 +4425,9 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
                                      : 0)
                                   + ((rec[drec].comp && rec[drec].resolve_module_ids)
                                      ? SCHEME_RESOLVE_MODIDS
+                                     : 0)
+                                  + (!rec[drec].comp
+                                     ? SCHEME_STOP_AT_FREE_EQ
                                      : 0),
                                   env->in_modidx,
                                   &menv, NULL,
@@ -4613,6 +4620,9 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				       : 0)
                                     + ((!rec[drec].comp && (rec[drec].depth == -2))
                                        ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
+                                       : 0)
+                                    + (!rec[drec].comp
+                                       ? SCHEME_STOP_AT_FREE_EQ
                                        : 0),
 				    env->in_modidx, 
 				    &menv, &protected,
@@ -4734,6 +4744,9 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				       : 0)
                                     + ((!rec[drec].comp && (rec[drec].depth == -2))
                                        ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
+                                       : 0)
+                                    + (!rec[drec].comp
+                                       ? SCHEME_STOP_AT_FREE_EQ
                                        : 0),
 				    env->in_modidx, 
 				    &menv, NULL,
@@ -4824,6 +4837,9 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 				  + SCHEME_DONT_MARK_USE
                                   + ((!rec[drec].comp && (rec[drec].depth == -2))
                                      ? (SCHEME_OUT_OF_CONTEXT_OK | SCHEME_OUT_OF_CONTEXT_LOCAL)
+                                     : 0)
+                                  + (!rec[drec].comp
+                                     ? SCHEME_STOP_AT_FREE_EQ
                                      : 0),
 				  env->in_modidx, 
 				  &menv, NULL,

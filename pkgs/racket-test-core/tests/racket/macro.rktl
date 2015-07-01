@@ -1151,5 +1151,26 @@
               z)))))
 
 ;; ----------------------------------------
+;; Check that expansion works right for a rename transformer
+;; that redirects to an imported binding
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (void
+   (expand
+    '(module m racket/base
+      (#%plain-module-begin
+       (require (for-syntax racket/base
+                            syntax/parse))
+       
+       (define-syntax (mylam stx)
+         (syntax-parse stx
+           [(_ (xx) body)
+            #'(#%plain-lambda (xx) (letrec-syntaxes+values ([(xx) (make-rename-transformer #'+)])
+                                                           ()
+                                                           body))]))
+       
+       ((mylam (x) (x 1 2)) 'any))))))
+
+;; ----------------------------------------
 
 (report-errs)
