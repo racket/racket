@@ -2377,7 +2377,7 @@ void do_ptr_finalizer(void *p, void *finalizer)
 
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *ffi_lock_ht);
 
-#ifdef MZ_PRECISE_GC
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
 static Scheme_Object *make_vector_in_master(int count, Scheme_Object *val) {
   Scheme_Object *vec;
   void *original_gc;
