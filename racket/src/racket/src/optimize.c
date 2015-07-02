@@ -4019,6 +4019,7 @@ static void add_types(Scheme_Object *t, Optimize_Info *info, int fuel)
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)t;
     if (SCHEME_PRIMP(app->rator)
         && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_local_type)
+        && !optimize_is_mutated(info, SCHEME_LOCAL_POS(app->rand))
         && relevant_predicate(app->rator)) {
       /* Looks like a predicate on a local variable. Record that the
          predicate succeeded, which may allow conversion of safe
@@ -7400,7 +7401,8 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
       delta = optimize_info_get_shift(info, pos);
 
-      if (context & OPT_CONTEXT_BOOLEAN) {
+      if ((context & OPT_CONTEXT_BOOLEAN)
+          && !optimize_is_mutated(info, pos + delta)) {
         Scheme_Object *pred;
         pred = optimize_get_predicate(pos + delta, info);
         if (pred) {

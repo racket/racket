@@ -1702,6 +1702,11 @@
            '(lambda (x) (not (if x #f #t))))
 (test-comp '(lambda (x) (let ([z 2]) (not (if x #f z))))
            '(lambda (x) (let ([z 2]) (not (if x #f #t)))))
+(test-comp '(lambda (z) (when (pair? z) #f))
+           '(lambda (z) (when (pair? z) (not z))))
+(test-comp '(lambda (z) (when (pair? z) (set! z #f) #f))
+           '(lambda (z) (when (pair? z) (set! z #f) (not z)))
+           #f)
 
 (test-comp '(lambda (x) (if x x #f))
            '(lambda (x) x))
