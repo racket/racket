@@ -390,3 +390,17 @@ case SIG__v:
      
      break;
   }
+case SIG_iS_v:
+  {
+     prim_iS_v f = (prim_iS_v)future->prim_func;
+     
+     JIT_TS_LOCALIZE(int, arg_i0); JIT_TS_LOCALIZE(Scheme_Object**, arg_S1);
+     
+     future->arg_S1 = NULL;
+     ADJUST_RS_ARG(future, arg_S1);
+     
+     f(arg_i0, arg_S1);
+     
+     
+     break;
+  }

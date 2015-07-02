@@ -547,6 +547,18 @@ extern Scheme_Object *scheme_reduced_procedure_struct;
 #define scheme_constant_key scheme_stack_dump_key
 #define scheme_fixed_key    scheme_default_prompt_tag
 
+extern Scheme_Object *scheme_double_ctype;
+extern Scheme_Object *scheme_float_ctype;
+extern Scheme_Object *scheme_pointer_ctype;
+extern Scheme_Object *scheme_int8_ctype;
+extern Scheme_Object *scheme_uint8_ctype;
+extern Scheme_Object *scheme_int16_ctype;
+extern Scheme_Object *scheme_uint16_ctype;
+extern Scheme_Object *scheme_int32_ctype;
+extern Scheme_Object *scheme_uint32_ctype;
+extern Scheme_Object *scheme_int64_ctype;
+extern Scheme_Object *scheme_uint64_ctype;
+
 /*========================================================================*/
 /*                    hash functions                                      */
 /*========================================================================*/
@@ -645,6 +657,9 @@ extern void scheme_check_foreign_work(void);
 #ifndef DONT_USE_FOREIGN
 XFORM_NONGCING extern void *scheme_extract_pointer(Scheme_Object *v);
 #endif
+
+Scheme_Object *scheme_foreign_ptr_ref(int argc, Scheme_Object **argv);
+void scheme_foreign_ptr_set(int argc, Scheme_Object **argv);
 
 void scheme_kickoff_green_thread_time_slice_timer(intptr_t usec);
 

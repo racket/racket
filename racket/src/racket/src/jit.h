@@ -369,6 +369,7 @@ struct scheme_jit_common_record {
   void *make_rest_list_code, *make_rest_list_clear_code;
   void *call_check_not_defined_code, *call_check_assign_not_defined_code;
   void *force_value_same_mark_code;
+  void *slow_ptr_set_code, *slow_ptr_ref_code;
 
   Continuation_Apply_Indirect continuation_apply_indirect_code;
 #ifdef MZ_USE_LWC
@@ -1160,7 +1161,9 @@ static void emit_indentation(mz_jit_state *jitter)
 #define jit_movi_d_fppush(rd,immd)    jit_movi_d(rd,immd)
 #define jit_ldi_d_fppush(rd, is)      jit_ldi_d(rd, is)
 #define jit_ldr_d_fppush(rd, rs)      jit_ldr_d(rd, rs)
+#define jit_ldr_f_fppush(rd, rs)      jit_ldr_f(rd, rs)
 #define jit_ldxi_d_fppush(rd, rs, is) jit_ldxi_d(rd, rs, is)
+#define jit_ldxi_f_fppush(rd, rs, is) jit_ldxi_f(rd, rs, is)
 #define jit_ldxr_d_fppush(rd, rs, is) jit_ldxr_d(rd, rs, is)
 #define jit_addr_d_fppop(rd,s1,s2)    jit_addr_d(rd,s1,s2)
 #define jit_subr_d_fppop(rd,s1,s2)    jit_subr_d(rd,s1,s2)
@@ -1173,6 +1176,7 @@ static void emit_indentation(mz_jit_state *jitter)
 #define jit_sqrt_d_fppop(rd,rs)       jit_sqrt_d(rd,rs)
 #define jit_sti_d_fppop(id, rs)       jit_sti_d(id, rs)
 #define jit_str_d_fppop(id, rd)       jit_str_d(id, rd)
+#define jit_str_f_fppop(id, rd)       jit_str_f(id, rd)
 #define jit_stxi_d_fppop(id, rd, rs)  jit_stxi_d(id, rd, rs)
 #define jit_stxr_d_fppop(id, rd, rs)  jit_stxr_d(id, rd, rs)
 #define jit_bger_d_fppop(d, s1, s2)   jit_bger_d(d, s1, s2)

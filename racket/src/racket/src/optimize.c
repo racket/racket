@@ -3890,7 +3890,8 @@ int scheme_compiled_duplicate_ok(Scheme_Object *fb, int cross_module)
               && (!cross_module || (SCHEME_BYTE_STRLEN_VAL(fb) < STR_INLINE_LIMIT)))
           || SAME_TYPE(SCHEME_TYPE(fb), scheme_regexp_type)
           || (SCHEME_NUMBERP(fb)
-              && (!cross_module || small_inline_number(fb))));
+              && (!cross_module || small_inline_number(fb)))
+          || SAME_TYPE(SCHEME_TYPE(fb), scheme_ctype_type));
 }
 
 static int equivalent_exprs(Scheme_Object *a, Scheme_Object *b)

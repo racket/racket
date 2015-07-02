@@ -2394,6 +2394,18 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 {
   Scheme_Object *rator = app->rator;
 
+  if (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "ptr-ref")) {
+    Scheme_App_Rec *app2;
+    if (need_sync) mz_rs_sync();
+    app2 = scheme_malloc_application(3);
+    app2->args[0] = app->rator;
+    app2->args[1] = app->rand1;
+    app2->args[2] = app->rand2;
+    return scheme_generate_inlined_nary(jitter, app2, is_tail, multi_ok,
+                                        for_branch, branch_short, result_ignored,
+                                        dest);
+  }
+
   if (!for_branch) {
     int k;
     k = inlineable_struct_prim(rator, jitter, 2, 2);
@@ -4310,6 +4322,297 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       mz_rs_inc(5);
       mz_runstack_popped(jitter, 5);
+
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "ptr-ref")
+               || IS_NAMED_PRIM(rator, "ptr-set!")) {
+      int n = app->num_args, is_ref, step_shift = 0, want_int_min = 0, want_int_max = 0;
+      int abs_offset;
+      Scheme_Type want_type;
+      Scheme_Object *ctype;
+      GC_CAN_IGNORE jit_insn *refslow, *reffast = NULL;
+
+      is_ref = IS_NAMED_PRIM(rator, "ptr-ref");
+      abs_offset = (n == (is_ref ? 4 : 5));
+           
+      scheme_generate_app(app, NULL, n, jitter, 0, 0, 0, 2);  /* sync'd below */
+      CHECK_LIMIT();
+      mz_rs_sync();
+
+      ctype = app->args[2];
+
+      if (abs_offset
+          && (!SCHEME_SYMBOLP(app->args[3])
+              || SCHEME_SYM_WEIRDP(app->args[3])
+              || strcmp("abs", SCHEME_SYM_VAL(app->args[3])))) {
+        want_type = 0;
+      } else if (ctype == scheme_pointer_ctype) {
+        if (is_ref) {
+          want_type = 0;
+        } else {
+          want_type = scheme_cpointer_type;
+          step_shift = JIT_LOG_WORD_SIZE;
+        }
+      } else if (ctype == scheme_double_ctype) {
+        want_type = scheme_double_type;
+        step_shift = 3;
+#ifndef CAN_INLINE_ALLOC
+        if (is_ref) want_type = 0;
+#endif
+      } else if (ctype == scheme_float_ctype) {
+        want_type = scheme_double_type;
+        step_shift = 2;
+#ifndef CAN_INLINE_ALLOC
+        if (is_ref) want_type = 0;
+#endif
+      } else if ((ctype == scheme_int8_ctype)
+                 || (ctype == scheme_uint8_ctype)) {
+        want_type = scheme_integer_type;
+        step_shift = 0;
+        if (app->args[2] == scheme_int8_ctype) {
+          want_int_min = -128;
+          want_int_max = 127;
+        } else {
+          want_int_max = 255;
+        }
+      } else if ((ctype == scheme_int16_ctype)
+                 || (ctype == scheme_uint16_ctype)) {
+        want_type = scheme_integer_type;
+        step_shift = 1;
+        if (app->args[2] == scheme_int16_ctype) {
+          want_int_min = -32768;
+          want_int_max = 32767;
+        } else {
+          want_int_max = 65535;
+        }
+      } else if ((ctype == scheme_int32_ctype)
+                 || (ctype == scheme_uint32_ctype)) {
+        want_type = scheme_integer_type;
+        step_shift = 2;
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+      } else if ((ctype == scheme_int64_ctype)
+                 || (ctype == scheme_uint64_ctype)) {
+        want_type = scheme_integer_type;
+        step_shift = 3;
+#endif
+      } else
+        want_type = 0;
+
+      __START_SHORT_JUMPS__(1);
+              
+      if (want_type) {
+        mz_rs_ldr(JIT_R0);
+        reffast = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      }
+
+      refslow = jit_get_ip();
+      jit_movi_i(JIT_R0, n);
+      if (is_ref) {
+        (void)jit_calli(sjc.slow_ptr_ref_code);
+        jit_movr_p(dest, JIT_R0);
+      } else
+        (void)jit_calli(sjc.slow_ptr_set_code);
+      CHECK_LIMIT();
+      
+      if (want_type) {
+        GC_CAN_IGNORE jit_insn *refdone, *refok;
+        refdone = jit_jmpi(jit_forward());
+        mz_patch_branch(reffast);
+
+        /* JIT_V1 will contain an offset
+           JIT_R0 will contain the pointer
+           In set mode, JIT_R1 will contain the new value */
+
+        if ((n == (is_ref ? 3 : 4)) || (n == (is_ref ? 4 : 5))) {
+          mz_rs_ldxi(JIT_V1, n - (is_ref ? 1 : 2));
+          (void)jit_bmci_ul(refslow, JIT_V1, 0x1);
+          jit_rshi_l(JIT_V1, JIT_V1, 1);
+          if (!abs_offset) {
+            jit_lshi_l(JIT_V1, JIT_V1, step_shift);
+          }
+        } else {
+          jit_movi_ul(JIT_V1, 0);
+        }
+        
+        (void)mz_bnei_t(refslow, JIT_R0, scheme_cpointer_type, JIT_R2);
+        jit_ldxi_s(JIT_R2, JIT_R0, (intptr_t)&SCHEME_CPTR_FLAGS((Scheme_Chaperone *)0x0));
+        refok = jit_bmci_ul(jit_forward(), JIT_R2, 0x2);
+        jit_ldxi_l(JIT_R2, JIT_R0, (intptr_t)&((Scheme_Offset_Cptr *)0x0)->offset);
+        jit_addr_l(JIT_V1, JIT_V1, JIT_R2);
+        mz_patch_branch(refok);
+        jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&((Scheme_Cptr *)0x0)->val);
+        jit_addr_p(JIT_R0, JIT_R0, JIT_V1);
+        CHECK_LIMIT();
+
+        /* At this point, JIT_V1 is folded into JIT_R0 */
+
+        if (!is_ref) {
+          mz_rs_ldxi(JIT_R1, n-1);
+          if (want_type == scheme_integer_type) {
+            (void)jit_bmci_ul(refslow, JIT_R1, 0x1);
+            jit_rshi_l(JIT_R1, JIT_R1, 1);
+            if (want_int_max) {
+              (void)jit_blti_l(refslow, JIT_R1, want_int_min);
+              (void)jit_bgti_l(refslow, JIT_R1, want_int_max);
+            } else {
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+              if (((ctype == scheme_int32_ctype)
+                   || (ctype == scheme_uint32_ctype))) {
+                jit_rshi_ul(JIT_R2, JIT_R1, 32);
+                jit_extr_i_l(JIT_R2, JIT_R2);
+                (void)jit_bgti_l(refslow, JIT_R2, 0);
+                (void)jit_blti_l(refslow, JIT_R2, -1);
+              } else if (ctype == scheme_uint64_ctype) {
+                (void)jit_blti_l(refslow, JIT_R1, 0);
+              }
+#endif
+            }
+          } else {
+            (void)jit_bmsi_ul(refslow, JIT_R1, 0x1);
+            (void)mz_bnei_t(refslow, JIT_R1, want_type, JIT_R2);
+          }
+        }
+        
+        if (ctype == scheme_pointer_ctype) {
+          if (is_ref) {
+            scheme_signal_error("internal error: _pointer reference not implemented");
+          } else {
+            jit_movi_l(JIT_V1, 0);
+            jit_ldxi_s(JIT_R2, JIT_R1, (intptr_t)&SCHEME_CPTR_FLAGS((Scheme_Chaperone *)0x0));
+            refok = jit_bmci_ul(jit_forward(), JIT_R2, 0x2);
+            jit_ldxi_l(JIT_V1, JIT_R1, (intptr_t)&((Scheme_Offset_Cptr *)0x0)->offset);
+            mz_patch_branch(refok);
+            jit_ldxi_p(JIT_R1, JIT_R1, (intptr_t)&((Scheme_Cptr *)0x0)->val);
+            jit_addr_p(JIT_R1, JIT_R1, JIT_V1);
+            jit_str_p(JIT_R0, JIT_R1);
+          }
+        } else if (ctype == scheme_double_ctype) {
+          if (is_ref) {
+            jit_ldr_d_fppush(JIT_FPR0, JIT_R0);
+            CHECK_LIMIT();
+            __END_SHORT_JUMPS__(1);
+            scheme_generate_alloc_double(jitter, 0, dest);
+            __START_SHORT_JUMPS__(1);
+            CHECK_LIMIT();
+          } else {
+            jit_ldxi_d_fppush(JIT_FPR0, JIT_R1, &((Scheme_Double *)0x0)->double_val);
+            jit_str_d_fppop(JIT_R0, JIT_FPR0);
+          }
+        } else if (ctype == scheme_float_ctype) {
+          if (is_ref) {
+            jit_ldr_f_fppush(JIT_FPR0, JIT_R0);
+            jit_extr_f_d(JIT_FPR0, JIT_FPR0);
+            CHECK_LIMIT();
+            __END_SHORT_JUMPS__(1);
+            scheme_generate_alloc_double(jitter, 0, dest);
+            __START_SHORT_JUMPS__(1);
+            CHECK_LIMIT();
+          } else {
+            jit_ldxi_d_fppush(JIT_FPR0, JIT_R1, &((Scheme_Double *)0x0)->double_val);
+            jit_extr_d_f(JIT_FPR0, JIT_FPR0);
+            jit_str_f_fppop(JIT_R0, JIT_FPR0);
+          }
+        } else if (ctype == scheme_int8_ctype) {
+          if (is_ref) {
+            jit_ldr_c(JIT_R1, JIT_R0);
+            jit_extr_c_l(JIT_R1, JIT_R1);
+            jit_fixnum_l(dest, JIT_R1);
+          } else {
+            jit_str_c(JIT_R0, JIT_R1);
+          }
+        } else if (ctype == scheme_uint8_ctype) {
+          if (is_ref) {
+            jit_ldr_uc(JIT_R1, JIT_R0);
+            jit_extr_uc_l(JIT_R1, JIT_R1);
+            jit_fixnum_l(dest, JIT_R1);
+          } else {
+            jit_str_uc(JIT_R0, JIT_R1);
+          }
+        } else if (ctype == scheme_int16_ctype) {
+          if (is_ref) {
+            jit_ldr_s(JIT_R1, JIT_R0);
+            jit_extr_s_l(JIT_R1, JIT_R1);
+            jit_fixnum_l(dest, JIT_R1);
+          } else {
+            jit_str_s(JIT_R0, JIT_R1);
+          }
+        } else if (ctype == scheme_uint16_ctype) {
+          if (is_ref) {
+            jit_ldr_us(JIT_R1, JIT_R0);
+            jit_extr_us_l(JIT_R1, JIT_R1);
+            jit_fixnum_l(dest, JIT_R1);
+          } else {
+            jit_str_us(JIT_R0, JIT_R1);
+          }
+        } else if (ctype == scheme_int32_ctype) {
+          if (is_ref) {
+            jit_ldr_i(JIT_R1, JIT_R0);
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+            jit_extr_i_l(JIT_R1, JIT_R1);
+            jit_fixnum_l(dest, JIT_R1);
+#else
+            jit_fixnum_l(JIT_R0, JIT_R1);
+            jit_lshi_l(JIT_R2, JIT_R0, 1);
+            (void)jit_bner_l(refslow, JIT_R1, JIT_R2);
+            jit_movr_p(dest, JIT_R0);
+#endif
+          } else {
+            jit_str_i(JIT_R0, JIT_R1);
+          }
+        } else if (ctype == scheme_uint32_ctype) {
+          if (is_ref) {
+            jit_ldr_i(JIT_R1, JIT_R0);
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+            jit_extr_ui_l(JIT_R1, JIT_R1);
+            jit_fixnum_l(dest, JIT_R1);
+#else
+            (void)jit_blti_l(refslow, JIT_R1, 0);
+            jit_fixnum_l(JIT_R0, JIT_R1);
+            jit_lshi_l(JIT_R2, JIT_R0, 1);
+            (void)jit_bner_l(refslow, JIT_R1, JIT_R2);
+            jit_movr_p(dest, JIT_R0);
+#endif
+          } else {
+            jit_str_ui(JIT_R0, JIT_R1);
+          }
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+        } else if (ctype == scheme_int64_ctype) {
+          if (is_ref) {
+            jit_ldr_l(JIT_R1, JIT_R0);
+            jit_fixnum_l(JIT_R0, JIT_R1);
+            jit_lshi_l(JIT_R2, JIT_R0, 1);
+            (void)jit_bner_l(refslow, JIT_R1, JIT_R2);
+            jit_movr_p(dest, JIT_R0);
+          } else {
+            jit_str_l(JIT_R0, JIT_R1);
+          }
+        } else if (ctype == scheme_uint64_ctype) {
+          if (is_ref) {
+            jit_ldr_l(JIT_R1, JIT_R0);
+            (void)jit_blti_l(refslow, JIT_R1, 0);
+            jit_fixnum_l(JIT_R0, JIT_R1);
+            jit_lshi_l(JIT_R2, JIT_R0, 1);
+            (void)jit_bner_l(refslow, JIT_R1, JIT_R2);
+            jit_movr_p(dest, JIT_R0);
+          } else {
+            jit_str_ul(JIT_R0, JIT_R1);
+          }
+#endif
+        } else {
+          scheme_signal_error("internal error: unhandled ctype");
+        }
+
+        CHECK_LIMIT();
+        mz_patch_ucbranch(refdone);
+      }
+      
+      __END_SHORT_JUMPS__(1);
+
+      mz_rs_inc(n); /* no sync */
+      mz_runstack_popped(jitter, n);
+
+      if (!is_ref && !result_ignored)
+        (void)jit_movi_p(dest, scheme_void);
 
       return 1;
     }

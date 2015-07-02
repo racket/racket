@@ -3279,6 +3279,33 @@ static int common12(mz_jit_state *jitter, void *_data)
 
 static int common13(mz_jit_state *jitter, void *_data)
 {
+  GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
+
+  /* *** slow_ptr_ref_code *** */
+  sjc.slow_ptr_ref_code = jit_get_ip();
+  mz_prolog(JIT_R2);
+  JIT_UPDATE_THREAD_RSPTR();
+  mz_prepare(2);
+  jit_pusharg_p(JIT_RUNSTACK);
+  jit_pusharg_i(JIT_R0);
+  mz_finish_prim_lwe(ts_scheme_foreign_ptr_ref, refr);
+  jit_retval(JIT_R0);
+  mz_epilog(JIT_R2);
+  scheme_jit_register_sub_func(jitter, sjc.slow_ptr_ref_code, scheme_false);
+  CHECK_LIMIT();
+
+  /* *** slow_ptr_set_code *** */
+  sjc.slow_ptr_set_code = jit_get_ip();
+  mz_prolog(JIT_R2);
+  JIT_UPDATE_THREAD_RSPTR();
+  mz_prepare(2);
+  jit_pusharg_p(JIT_RUNSTACK);
+  jit_pusharg_i(JIT_R0);
+  mz_finish_prim_lwe(ts_scheme_foreign_ptr_set, refr);
+  mz_epilog(JIT_R2);
+  scheme_jit_register_sub_func(jitter, sjc.slow_ptr_set_code, scheme_false);
+  CHECK_LIMIT();
+    
   /* *** force_value_same_mark_code *** */
   /* Helper for futures: a synthetic functon that just forces values,
      which will bounce back to the runtime thread (but with lightweight
@@ -3293,8 +3320,10 @@ static int common13(mz_jit_state *jitter, void *_data)
   mz_pop_threadlocal();
   mz_pop_locals();
   jit_ret();
+
   return 1;
 }
+
 
 int scheme_do_generate_common(mz_jit_state *jitter, void *_data)
 {

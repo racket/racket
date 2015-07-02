@@ -195,6 +195,7 @@ union jit_fpu_double_imm {
    : (FPX(), FLDLm(0, (rs), 0, 0), FSTPr ((rd) + 1)))
 
 #define jit_fpu_ldr_d_fppush(rd, rs) (FPX(), FLDLm(0, (rs), 0, 0))
+#define jit_fpu_ldr_f_fppush(rd, rs) (FPX(), FLDSm(0, (rs), 0, 0))
 
 #define jit_fpu_ldr_ld(rd, rs)                          \
   ((rd) == 0 ? (FSTPr (0), FPX(), FLDTm(0, (rs), 0, 0)) \
@@ -288,10 +289,14 @@ union jit_fpu_double_imm {
 #define jit_fpu_stxi_d_fppop(id, rd, rs) (FPX(), FSTPLm((id), (rd), 0, 0))
 #define jit_fpu_str_d_fppop(rd, rs)      (FPX(), FSTPLm(0,    (rd), 0, 0))
 #define jit_fpu_stxr_d_fppop(d1, d2, rs) (FPX(), FSTPLm(0,    (d1), (d2), 1))
+#define jit_fpu_str_f_fppop(rd, rs)      (FPX(), FSTPSm(0,    (rd), 0, 0))
 
 #define jit_fpu_stxi_ld_fppop(id, rd, rs) (FPX(), FSTPTm((id), (rd), 0, 0))
 #define jit_fpu_str_ld_fppop(rd, rs)      (FPX(), FSTPTm(0,    (rd), 0, 0))
 #define jit_fpu_stxr_ld_fppop(d1, d2, rs) (FPX(), FSTPTm(0,    (d1), (d2), 1))
+
+#define jit_fpu_extr_d_f(r1, r2) jit_fpu_movr_d(r1, r2)
+#define jit_fpu_extr_f_d(r1, r2) jit_fpu_movr_d(r1, r2)
 
 /* Assume round to near mode */
 #define jit_fpu_floorr_d_i(rd, rs)                              \
