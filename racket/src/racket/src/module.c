@@ -229,8 +229,12 @@ THREAD_LOCAL_DECL(Scheme_Object *scheme_begin_for_syntax_stx);
 
 THREAD_LOCAL_DECL(Scheme_Object *more_constant_stxes[NUM_MORE_CONSTANT_STXES]);
 
-/* XOA is XFORM_OK_ASSIGN from "schthread.h" */
-#define CONSTANT_STX(pos) XOA (more_constant_stxes[pos])
+#ifdef MZ_XFORM
+# define cnstXOA XFORM_OK_ASSIGN
+#else
+# define cnstXOA /* empty */
+#endif
+#define CONSTANT_STX(pos) cnstXOA (more_constant_stxes[pos])
 
 #define require_stx CONSTANT_STX(0)
 #define provide_stx CONSTANT_STX(1)
