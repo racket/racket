@@ -920,7 +920,7 @@
       accum2
       (for/fold ([accum accum2]) ([i (in-range (TYPEATTR-cVars type-attr))])
         (define var-desc (GetVarDesc type-info i))
-        (let-values ([(name count) (GetNames type-info (FUNCDESC-memid var-desc))])
+        (let-values ([(name count) (GetNames type-info (VARDESC-memid var-desc))])
           (begin0
            (cons name accum)
            (ReleaseVarDesc type-info var-desc))))))
