@@ -113,7 +113,7 @@ Racket tools all work automatically with relative paths. For example,
 
 @commandline{racket sort.rkt}
 
-on the comamnd line runs the @filepath{sort.rkt} program and
+on the command line runs the @filepath{sort.rkt} program and
 automatically loads and compiles required modules. With a large enough
 program, compilation from source can take too long, so use
 
