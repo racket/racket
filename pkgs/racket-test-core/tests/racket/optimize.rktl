@@ -1563,6 +1563,17 @@
 (test-comp '(lambda (w) (if (void (list w)) 1 2))
            '(lambda (w) 1))
 
+; Diferent number of argumets use different codepaths
+(test-comp '(lambda (f x) (void))
+           '(lambda (f x) (void (list))))
+(test-comp '(lambda (f x) (begin (values (f x)) (void)))
+           '(lambda (f x) (void (list (f x)))))
+(test-comp '(lambda (f x) (begin (values (f x)) (values (f x)) (void)))
+           '(lambda (f x) (void (list (f x) (f x)))))
+(test-comp '(lambda (f x) (begin (values (f x)) (values (f x)) (values (f x)) (void)))
+           '(lambda (f x) (void (list (f x) (f x) (f x)))))
+
+
 (test null
       call-with-values (lambda () (with-continuation-mark 'a 'b (values))) list)
 

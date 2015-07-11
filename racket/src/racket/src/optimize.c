@@ -1212,10 +1212,11 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k)
 }
 
 static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
-/* Not necessarily omittable or copyable, but single-valued expresions that are not sensitive
+/* Not necessarily omittable or copyable, but single-valued expressions that are not sensitive
    to being in tail position. */
 {
   Scheme_Object *rator = NULL;
+  int num_args = 0;
 
  switch (SCHEME_TYPE(expr)) {
  case scheme_local_type:
@@ -1224,29 +1225,27 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
    return 1;
  case scheme_application_type:
    rator = ((Scheme_App_Rec *)expr)->args[0];
+   num_args = ((Scheme_App_Rec *)expr)->num_args;
    break;
  case scheme_application2_type:
    rator = ((Scheme_App2_Rec *)expr)->rator;
+   num_args = 1; 
    break;
  case scheme_application3_type:
    rator = ((Scheme_App2_Rec *)expr)->rator;
-   break;
- case scheme_compiled_let_void_type:
-   {
-     Scheme_Let_Header *lh = (Scheme_Let_Header *)expr;
-     Scheme_Compiled_Let_Value *clv;
-     if ((lh->count == 1) && (lh->num_clauses == 1) && (fuel > 0)) {
-       clv = (Scheme_Compiled_Let_Value *)lh->body;
-       return single_valued_noncm_expression(clv->body, fuel - 1);
-     }
-   }
+   num_args = 2;
    break;
  case scheme_branch_type:
    if (fuel > 0) {
      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
-     return (single_valued_noncm_expression(b->test, fuel - 1)
-             && single_valued_noncm_expression(b->tbranch, fuel - 1)
+     return (single_valued_noncm_expression(b->tbranch, fuel - 1)
              && single_valued_noncm_expression(b->fbranch, fuel - 1));
+   }
+   break;
+ case scheme_begin0_sequence_type:
+   if (fuel > 0) {
+      Scheme_Sequence *seq = (Scheme_Sequence *)expr;
+      return single_valued_noncm_expression(seq->array[0], fuel - 1);
    }
    break;
  case scheme_compiled_unclosed_procedure_type:
@@ -1256,6 +1255,17 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
  default:
    if (SCHEME_TYPE(expr) > _scheme_compiled_values_types_)
      return 1;
+
+   /* for scheme_compiled_let_void_type
+      and scheme_begin_sequence_type */
+    if (fuel > 0) {
+      int offset = 0;
+      Scheme_Object *tail = expr, *inside = NULL;
+      extract_tail_inside(&tail, &inside, &offset);
+      if (inside)
+        return single_valued_noncm_expression(tail, fuel - 1);
+    }
+
    break;
  }
 
@@ -1263,6 +1273,10 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel)
    int opt;
    opt = ((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_OPT_MASK;
    if (opt >= SCHEME_PRIM_OPT_NONCM)
+     return 1;
+
+   /* special case: (values <expr>) */
+   if (SAME_OBJ(rator, scheme_values_func) && (num_args == 1))
      return 1;
  }
 
