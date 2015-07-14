@@ -1023,13 +1023,11 @@ Racket vectors instead of lists.}
            (_bytes o len-expr)]]{
 
 A @tech{custom function type} that can be used by itself as a simple
-type for a byte string as a C pointer.  Alternatively, the second form
-is for a pointer return value, where the size should be explicitly
-specified.
-
-There is no need for other modes analogous to those of @racket[_ptr]:
-input or input/output would be just like @racket[_bytes], since the
-string carries its size information.}
+type for a byte string as a C pointer. Coercion of a C pointer to
+simply @racket[_bytes] (without a specified length) requires that the pointer
+refers to a nul-terminated byte string. When the length-specifying form is used
+for a function argument, a byte string is allocated with the given
+length, including an extra byte for the nul terminator.}
 
 
 @; ------------------------------------------------------------
