@@ -50,7 +50,9 @@
          argmin
          argmax
          group-by
-         cartesian-product)
+         cartesian-product
+         remf
+         remf*)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -747,3 +749,27 @@
   (define (cp-2 as bs)
     (for*/list ([i (in-list as)] [j (in-list bs)]) (cons i j)))
   (foldr cp-2 (list (list)) ls))
+
+(define (remf f ls)
+  (unless (list? ls)
+    (raise-argument-error 'remf "list?" ls))
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-argument-error 'remf "(-> any/c any/c)" f))
+  (cond [(null? ls) '()]
+        [(f (car ls)) (cdr ls)]
+        [else
+         (cons (car ls)
+               (remf f (cdr ls)))]))
+
+(define (remf* f ls)
+  (unless (list? ls)
+    (raise-argument-error 'remf* "list?" ls))
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-argument-error 'remf* "(-> any/c any/c)" f))
+  (cond [(null? ls) '()]
+        [(f (car ls)) (remf* f (cdr ls))]
+        [else
+         (cons (car ls)
+               (remf* f (cdr ls)))]))

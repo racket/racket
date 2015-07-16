@@ -616,4 +616,15 @@
 (test '((1 2) (3 4) (4 3)) split*-list '(1 2 3 4) '(1 2 4 3) =)
 (err/rt-test (split*-list '() '() #f))
 
+;; ---------- remf / remf* ----------
+
+(test '() remf positive? '())
+(test '(-2 3 4 -5) remf positive? '(1 -2 3 4 -5))
+(test '(1 3 4 -5) remf even? '(1 -2 3 4 -5))
+(test '(1 -2 3 4 -5) remf (λ (x) #f) '(1 -2 3 4 -5))
+(test '() remf* positive? '())
+(test '(-2 -5) remf* positive? '(1 -2 3 4 -5))
+(test '(1 3 -5) remf* even? '(1 -2 3 4 -5))
+(test '(1 -2 3 4 -5) remf* (λ (x) #f) '(1 -2 3 4 -5))
+
 (report-errs)

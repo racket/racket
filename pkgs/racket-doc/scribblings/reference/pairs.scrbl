@@ -1312,6 +1312,32 @@ Computes the n-ary cartesian product of the given lists.
 ]
 }
 
+@defproc[(remf [pred procedure?]
+               [lst list?])
+         list?]{
+Returns a list that is like @racket[lst], omitting the first element of @racket[lst]
+for which @racket[pred] produces a true value.
+
+@defexamples[
+#:eval list-eval
+(remf negative? '(1 -2 3 4 -5))
+]
+
+}
+
+@defproc[(remf* [pred procedure?]
+                [lst list?])
+         list?]{
+Like @racket[remf], but removes all the elements for which @racket[pred]
+produces a true value.
+
+@defexamples[
+#:eval list-eval
+(remf* negative? '(1 -2 3 4 -5))
+]
+
+}
+
 
 @close-eval[list-eval]
 
