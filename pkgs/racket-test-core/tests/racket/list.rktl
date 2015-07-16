@@ -336,6 +336,9 @@
 (test 'a check-duplicate '(a a b))
 (test '(a 3) check-duplicate '((a 1) (b 2) (a 3)) #:key car)
 (test 4 check-duplicate '(1 2 3 4 5 6) (lambda (x y) (equal? (modulo x 3) (modulo y 3))))
+(err/rt-test (check-duplicate 'a))
+(err/rt-test (check-duplicate '(1) #f))
+(err/rt-test (check-duplicate '(1) #:key #f))
 
 ;; ---------- remove-duplicates ----------
 (let ()
