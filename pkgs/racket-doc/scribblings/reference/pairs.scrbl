@@ -1011,6 +1011,50 @@ Like @racket[takef], @racket[dropf], and @racket[splitf-at], but
 combined with the from-right functionality of @racket[take-right],
 @racket[drop-right], and @racket[split-at-right].}
 
+@defproc[(list-prefix? [l list?]
+                       [r list?]
+                       [same? (any/c any/c . -> . any/c) equal?])
+         boolean?]{
+ True if @racket[l] is a prefix of @racket[r].
+@examples[#:eval list-eval
+(list-prefix? '(1 2) '(1 2 3 4 5))
+]
+}
+
+@defproc[(take-common-prefix [l list?] [r list?]
+                             [same? (any/c any/c . -> . any/c) equal?])
+         list?]{
+
+  Returns the longest common prefix of @racket[l] and @racket[r].
+
+@examples[#:eval list-eval
+(take-common-prefix '(a b c d) '(a b x y z))
+]
+}
+
+@defproc[(drop-common-prefix [l list?] [r list?]
+                             [same? (any/c any/c . -> . any/c) equal?])
+         (values list? list?)]{
+
+  Returns the tails of @racket[l] and @racket[r] with the common
+  prefix removed.
+
+@examples[#:eval list-eval
+(drop-common-prefix '(a b c d) '(a b x y z))
+]
+}
+
+@defproc[(split-common-prefix [l list?] [r list?]
+                              [same? (any/c any/c . -> . any/c) equal?])
+         (values list? list? list?)]{
+
+  Returns the longest common prefix together with the tails of
+  @racket[l] and @racket[r] with the common prefix removed.
+
+@examples[#:eval list-eval
+(split-common-prefix '(a b c d) '(a b x y z))
+]
+}
 
 
 @defproc[(add-between [lst list?] [v any/c]

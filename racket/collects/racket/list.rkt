@@ -26,6 +26,11 @@
          dropf-right
          splitf-at-right
 
+         list-prefix?
+         split-common-prefix
+         take-common-prefix
+         drop-common-prefix
+
          append*
          flatten
          add-between
@@ -256,6 +261,51 @@
   (take list (count-from-right 'dropf-right list pred)))
 (define (splitf-at-right list pred)
   (split-at list (count-from-right 'splitf-at-right list pred)))
+
+; list-prefix? : list? list? -> boolean?
+; Is l a prefix or r?
+(define (list-prefix? ls rs [same? equal?])
+  (unless (list? ls)
+    (raise-argument-error 'list-prefix? "list?" ls))
+  (unless (list? rs)
+    (raise-argument-error 'list-prefix? "list?" rs))
+  (unless (and (procedure? same?)
+               (procedure-arity-includes? same? 2))
+    (raise-argument-error 'list-prefix? "(any/c any/c . -> . any/c)" same?))
+  (or (null? ls)
+      (and (pair? rs)
+           (same? (car ls) (car rs))
+           (list-prefix? (cdr ls) (cdr rs)))))
+
+;; Eli: How about a version that removes the equal prefix from two lists
+;; and returns the tails -- this way you can tell if they're equal, or
+;; one is a prefix of the other, or if there was any equal prefix at
+;; all.  (Which can be useful for things like making a path relative to
+;; another path.)  A nice generalization is to make it get two or more
+;; lists, and return a matching number of values.
+
+(define (internal-split-common-prefix as bs same? keep-prefix? name)
+  (unless (and (procedure? same?)
+               (procedure-arity-includes? same? 2))
+    (raise-argument-error name "(any/c any/c . -> . any/c)" same?))
+  (let loop ([as as] [bs bs])
+    (if (and (pair? as) (pair? bs) (same? (car as) (car bs)))
+        (let-values ([(prefix atail btail) (loop (cdr as) (cdr bs))])
+          (values (and keep-prefix? (cons (car as) prefix)) atail btail))
+        (values null as bs))))
+
+(define (split-common-prefix as bs [same? equal?])
+  (internal-split-common-prefix as bs same? #t 'split-common-prefix))
+
+(define (take-common-prefix as bs [same? equal?])
+  (let-values ([(prefix atail btail)
+                (internal-split-common-prefix as bs same? #t 'take-common-prefix)])
+    prefix))
+
+(define (drop-common-prefix as bs [same? equal?])
+  (let-values ([(prefix atail btail)
+                (internal-split-common-prefix as bs same? #f 'drop-common-prefix)])
+    (values atail btail)))
 
 (define append*
   (case-lambda [(ls) (apply append ls)] ; optimize common case
