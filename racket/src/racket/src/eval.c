@@ -4013,10 +4013,9 @@ static void *compile_k(void)
   else
     frame_scopes = NULL;
 
-  if (for_eval) {
+  if (for_eval && rename) {
     /* For the top-level environment, we "push_introduce" instead of "introduce"
-       to avoid ambiguous binding, especially since push_prefix
-       "push"es. */
+       to avoid ambiguous bindings. */
     form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
   }
 
@@ -4049,7 +4048,7 @@ static void *compile_k(void)
 					    &gval,
                                             1);
 	if (SAME_OBJ(gval, scheme_begin_syntax)) {
-	  if (scheme_stx_proper_list_length(form) > 1){
+	  if (scheme_stx_proper_list_length(form) > 1) {
             form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
 	    form = SCHEME_STX_CDR(form);
 	    tl_queue = scheme_append(scheme_flatten_syntax_list(form, NULL),
@@ -4072,7 +4071,7 @@ static void *compile_k(void)
 	    tl_queue = scheme_append(rl, tl_queue);
 	    form = SCHEME_CAR(tl_queue);
 	    tl_queue = SCHEME_CDR(tl_queue);
-	  } else
+	  } else if (rename)
             form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
 	  break;
 	}

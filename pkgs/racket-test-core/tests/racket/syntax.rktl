@@ -1885,5 +1885,18 @@
                               (x #:flag? #t)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the default eval handler doesn't add to much context:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(define thing 5))
+  (test #f
+        hash-ref
+        (syntax-debug-info
+         ((current-eval) (datum->syntax (namespace-syntax-introduce #'top)
+                                        (cons 'quote-syntax (datum->syntax #f '(thing))))))
+        'bindings
+        #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
