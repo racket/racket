@@ -4910,6 +4910,18 @@
              #f))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the compiler doesn't try to inline forever,
+;; due to bad single-use tracking:
+
+(module check-inline-single-use-tracking racket/base
+  (define dup (lambda (f) (f f)))
+  (lambda ()
+    ;; Initially, `rep` is used only once, but inlining
+    ;; followed by other optimizations changes that:
+    (let ([rep (lambda (f) (f f))])
+      (dup rep))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)
