@@ -355,6 +355,11 @@
 (define (check-duplicate items
                          [same? equal?]
                          #:key [key values])
+  (unless (list? items)
+    (raise-argument-error 'check-duplicate "list?" items))
+  (unless (and (procedure? key)
+               (procedure-arity-includes? key 1))
+    (raise-argument-error 'check-duplicate "(-> any/c any/c)" key))
   (cond [(eq? same? equal?)
          (check-duplicate/t items key (make-hash))]
         [(eq? same? eq?)
@@ -362,6 +367,11 @@
         [(eq? same? eqv?)
          (check-duplicate/t items key (make-hasheqv))]
         [else
+         (unless (and (procedure? same?)
+                      (procedure-arity-includes? same? 2))
+           (raise-argument-error 'check-duplicate
+                                 "(any/c any/c . -> . any/c)"
+                                 same?))
          (check-duplicate/list items key same?)]))
 (define (check-duplicate/t items key table)
   (let loop ([items items])
