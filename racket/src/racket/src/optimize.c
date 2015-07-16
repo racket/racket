@@ -131,6 +131,7 @@ static int optimize_is_mutated(Optimize_Info *info, int pos);
 static int optimize_escapes_after_k_tick(Optimize_Info *info, int pos);
 static int optimize_is_local_type_arg(Optimize_Info *info, int pos, int depth);
 static int optimize_is_local_type_valued(Optimize_Info *info, int pos);
+static void optimize_set_not_single_use(Optimize_Info *info, int pos);
 static int env_uses_toplevel(Optimize_Info *frame);
 static void env_make_closure_map(Optimize_Info *frame, mzshort *size, mzshort **map);
 
@@ -7172,13 +7173,13 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   case scheme_local_type:
     {
       Scheme_Object *val;
-      int pos, delta, is_mutated = 0;
+      int pos, delta, is_mutated = 0, single_use;
 
       info->size += 1;
 
       pos = SCHEME_LOCAL_POS(expr);
 
-      val = optimize_info_lookup(info, pos, NULL, NULL,
+      val = optimize_info_lookup(info, pos, NULL, &single_use,
                                  (context & OPT_CONTEXT_NO_SINGLE) ? 0 : 1,
                                  context, NULL, &is_mutated);
 
@@ -7220,6 +7221,12 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
           if (val)
             return val;
         } else {
+          if (!single_use && SAME_TYPE(SCHEME_TYPE(val), scheme_local_type)) {
+            /* Since the replaced local was not single use, make sure the
+               replacement is also not marked as single use anymore */
+            optimize_set_not_single_use(info, SCHEME_LOCAL_POS(val));
+          }
+          
           if (SAME_TYPE(SCHEME_TYPE(val), scheme_compiled_toplevel_type)) {
             info->size -= 1;
             return scheme_optimize_expr(val, info, context);
@@ -8158,6 +8165,31 @@ static int optimize_is_local_type_valued(Optimize_Info *info, int pos)
 /* pos is in new-frame counts */
 {
   return check_use(info, pos, SCHEME_MAX_LOCAL_TYPE_MASK, OPT_LOCAL_TYPE_VAL_SHIFT);
+}
+
+static void optimize_set_not_single_use(Optimize_Info *info, int pos)
+/* pos is in new-frame counts */
+{
+  Scheme_Object *p, *n;
+  
+  while (info) {
+    if (pos < info->new_frame)
+      break;
+    pos -= info->new_frame;
+    info = info->next;
+  }
+    
+  p = info->consts;
+  while (p) {
+    n = SCHEME_VEC_ELS(p)[1];
+    if (SCHEME_INT_VAL(n) == pos) {
+      if (SCHEME_TRUEP(SCHEME_VEC_ELS(p)[3]))
+        SCHEME_VEC_ELS(p)[3] = scheme_false;
+      
+      break;
+    }
+    p = SCHEME_VEC_ELS(p)[0];
+  }
 }
 
 static int optimize_any_uses(Optimize_Info *info, int start_pos, int end_pos)
