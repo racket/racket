@@ -10,6 +10,9 @@
 
          make-list
 
+         list-update
+         list-set
+
          drop
          take
          split-at
@@ -101,6 +104,25 @@
     (raise-argument-error 'make-list "exact-nonnegative-integer?" n))
   (let loop ([n n] [r '()])
     (if (zero? n) r (loop (sub1 n) (cons x r)))))
+
+(define (list-update l i f)
+  (unless (list? l)
+    (raise-argument-error 'list-update "list?" l))
+  (unless (exact-nonnegative-integer? i)
+    (raise-argument-error 'list-update "exact-nonnegative-integer?" i))
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-argument-error 'list-update "(-> any/c any/c)" f))
+  (cond
+   [(zero? i) (cons (f (car l)) (cdr l))]
+   [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
+
+(define (list-set l k v)
+  (unless (list? l)
+    (raise-argument-error 'list-update "list?" l))
+  (unless (exact-nonnegative-integer? k)
+    (raise-argument-error 'list-update "exact-nonnegative-integer?" k))
+  (list-update l k (lambda (_) v)))
 
 ;; internal use below
 (define (drop* list n) ; no error checking, returns #f if index is too large

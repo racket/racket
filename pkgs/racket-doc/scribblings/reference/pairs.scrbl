@@ -866,6 +866,27 @@ Returns a newly constructed list of length @racket[k], holding
 @mz-examples[#:eval list-eval
   (make-list 7 'foo)]}
 
+@defproc[(list-update [lst list?]
+                      [pos (and/c (>=/c 0) (</c (length lst)))]
+                      [updater (-> any/c any/c)])
+         list?]{
+
+Returns a list that is the same as @racket[lst] except at the specified index.
+The element at the specified index is @racket[(updater (list-ref lst pos))].
+
+@examples[#:eval list-eval
+(list-update '(zero one two) 1 symbol->string)]}
+
+@defproc[(list-set [lst list?]
+                   [pos (and/c (>=/c 0) (</c (length lst)))]
+                   [value any/c])
+         list?]{
+
+Returns a list that is the same as @racket[lst] except at the specified index.
+The element at the specified index is @racket[value].
+
+@examples[#:eval list-eval
+(list-set '(zero one two) 2 "two")]}
 
 @defproc[(take [lst any/c] [pos exact-nonnegative-integer?])
          list?]{
