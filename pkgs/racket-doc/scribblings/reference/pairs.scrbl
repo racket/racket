@@ -1221,6 +1221,33 @@ result of @racket[proc].  Signals an error on an empty list.
   (argmax car '((3 pears) (3 oranges)))]}
 
 
+@defproc[(group-by [key (-> any/c any/c)]
+                   [lst list?]
+                   [same? (any/c any/c . -> . any/c) equal?])
+         (listof list?)]{
+
+Groups the given list into equivalence classes, with equivalence being
+determined by @racket[same?]. Within each equivalence class, @racket[group-by]
+preserves the ordering of the original list. Equivalence classes themselves are
+in order of first appearance in the input.
+
+@examples[#:eval list-eval
+(group-by (lambda (x) (modulo x 3)) '(1 2 1 2 54 2 5 43 7 2 643 1 2 0))
+]
+}
+
+@defproc[(cartesian-product [lst list?] ...)
+         (listof list?)]{
+
+Computes the n-ary cartesian product of the given lists.
+
+@examples[#:eval list-eval
+(cartesian-product '(1 2 3) '(a b c))
+(cartesian-product '(4 5 6) '(d e f) '(#t #f))
+]
+}
+
+
 @close-eval[list-eval]
 
 

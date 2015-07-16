@@ -40,7 +40,9 @@
          permutations
          in-permutations
          argmin
-         argmax)
+         argmax
+         group-by
+         cartesian-product)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -611,3 +613,65 @@
               (loop min min-var (cdr xs))]))]))))
 (define (argmin f xs) (mk-min < 'argmin f xs))
 (define (argmax f xs) (mk-min > 'argmax f xs))
+
+;; (x -> y) (listof x) [(y y -> bool)] -> (listof (listof x))
+;; groups together elements that are considered equal
+;; =? should be reflexive, transitive and commutative
+(define (group-by key l [=? equal?])
+
+  (unless (and (procedure? key)
+               (procedure-arity-includes? key 1))
+    (raise-argument-error 'group-by "(-> any/c any/c)" key))
+  (unless (and (procedure? =?)
+               (procedure-arity-includes? =? 2))
+    (raise-argument-error 'group-by "(any/c any/c . -> . any/c)" =?))
+  (unless (list? l)
+    (raise-argument-error 'group-by "list?" l))
+
+  ;; like hash-update, but for alists
+  (define (alist-update al k up fail)
+    (let loop ([al al])
+      (cond [(null? al)
+             ;; did not find equivalence class, create one
+             (list (cons k (up '())))]
+            [(=? (car (car al)) k)
+             ;; found the right equivalence class
+             (cons
+              (cons k (up (cdr (car al)))) ; updater takes elements, w/o key
+              (cdr al))]
+            [else ; keep going
+             (cons (car al) (loop (cdr al)))])))
+
+  ;; In cases where `=?` is a built-in equality, can use hash tables instead
+  ;; of lists to compute equivalence classes.
+  (define-values (base update)
+    (cond [(equal? =? eq?)    (values (hasheq)  hash-update)]
+          [(equal? =? eqv?)   (values (hasheqv) hash-update)]
+          [(equal? =? equal?) (values (hash)    hash-update)]
+          [else               (values '()       alist-update)]))
+
+  (define classes
+    (for/fold ([res base])
+        ([elt (in-list l)]
+         [idx (in-naturals)]) ; to keep ordering stable
+      (define k (key elt))
+      (define v (cons idx elt))
+      (update res k (lambda (o) (cons v o)) '())))
+  (define sorted-classes
+    (if (list? classes)
+        (for/list ([p (in-list classes)])
+          (sort (cdr p) < #:key car))
+        (for/list ([(_ c) (in-hash classes)])
+          (sort c < #:key car))))
+  ;; sort classes by order of first appearance, then remove indices
+  (for/list ([c (in-list (sort sorted-classes < #:key caar))])
+    (map cdr c)))
+
+;; (listof x) ... -> (listof (listof x))
+(define (cartesian-product . ls)
+  (for ([l (in-list ls)])
+    (unless (list? l)
+      (raise-argument-error 'cartesian-product "list?" l)))
+  (define (cp-2 as bs)
+    (for*/list ([i (in-list as)] [j (in-list bs)]) (cons i j)))
+  (foldr cp-2 (list (list)) ls))
