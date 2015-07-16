@@ -738,7 +738,8 @@ thread_val {
   gcMARK2(pr->returned_marks, gc);
   
   gcMARK2(pr->current_local_env, gc);
-  gcMARK2(pr->current_local_mark, gc);
+  gcMARK2(pr->current_local_scope, gc);
+  gcMARK2(pr->current_local_use_scope, gc);
   gcMARK2(pr->current_local_name, gc);
   gcMARK2(pr->current_local_modidx, gc);
   gcMARK2(pr->current_local_menv, gc);
@@ -920,9 +921,7 @@ namespace_val {
   gcMARK2(e->guard_insp, gc);
   gcMARK2(e->access_insp, gc);
 
-  gcMARK2(e->rename_set, gc);
-  gcMARK2(e->temp_marked_names, gc);
-  gcMARK2(e->post_ex_rename_set, gc);
+  gcMARK2(e->stx_context, gc);
 
   gcMARK2(e->syntax, gc);
   gcMARK2(e->exp_env, gc);
@@ -951,6 +950,8 @@ namespace_val {
   gcMARK2(e->modvars, gc);
 
   gcMARK2(e->weak_self_link, gc);
+
+  gcMARK2(e->binding_names, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -1000,6 +1001,7 @@ resolve_prefix_val {
   gcMARK2(rp->toplevels, gc);
   gcMARK2(rp->stxes, gc);
   gcMARK2(rp->delay_info_rpair, gc);
+  gcMARK2(rp->src_insp_desc, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -1032,11 +1034,11 @@ stx_val {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
-  gcMARK2(stx->wraps, gc);
+  gcMARK2(stx->scopes, gc);
+  gcMARK2(stx->u.to_propagate, gc);
+  gcMARK2(stx->shifts, gc);
   gcMARK2(stx->taints, gc);
   gcMARK2(stx->props, gc);
-  if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
-    gcMARK2(stx->u.modinfo_cache, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }
@@ -1073,6 +1075,10 @@ module_val {
   gcMARK2(m->exp_infos, gc);
 
   gcMARK2(m->self_modidx, gc);
+
+  gcMARK2(m->binding_names, gc);
+  gcMARK2(m->et_binding_names, gc);
+  gcMARK2(m->other_binding_names, gc);
 
   gcMARK2(m->insp, gc);
 
@@ -1244,30 +1250,27 @@ START compenv;
 
 mark_comp_env {
  mark:
-  Scheme_Full_Comp_Env *e = (Scheme_Full_Comp_Env *)p;
+  Scheme_Comp_Env *e = (Scheme_Comp_Env *)p;
 
-  gcMARK2(e->base.genv, gc);
-  gcMARK2(e->base.insp, gc);
-  gcMARK2(e->base.prefix, gc);
-  gcMARK2(e->base.next, gc);
-  gcMARK2(e->base.values, gc);
-  gcMARK2(e->base.renames, gc);
-  gcMARK2(e->base.uid, gc);
-  gcMARK2(e->base.uids, gc);
-  gcMARK2(e->base.dup_check, gc);
-  gcMARK2(e->base.intdef_name, gc);
-  gcMARK2(e->base.in_modidx, gc);
-  gcMARK2(e->base.skip_table, gc);
+  gcMARK2(e->genv, gc);
+  gcMARK2(e->insp, gc);
+  gcMARK2(e->prefix, gc);
+  gcMARK2(e->next, gc);
+  gcMARK2(e->scopes, gc);
+  gcMARK2(e->binders, gc);
+  gcMARK2(e->bindings, gc);
+  gcMARK2(e->vals, gc);
+  gcMARK2(e->shadower_deltas, gc);
+  gcMARK2(e->dup_check, gc);
+  gcMARK2(e->intdef_name, gc);
+  gcMARK2(e->in_modidx, gc);
+  gcMARK2(e->skip_table, gc);
   
-  gcMARK2(e->data.const_names, gc);
-  gcMARK2(e->data.const_vals, gc);
-  gcMARK2(e->data.const_uids, gc);
-  gcMARK2(e->data.sealed, gc);
-  gcMARK2(e->data.use, gc);
-  gcMARK2(e->data.lifts, gc);
+  gcMARK2(e->use, gc);
+  gcMARK2(e->lifts, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Full_Comp_Env));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Comp_Env));
 }
 
 END compenv;
@@ -1517,31 +1520,16 @@ END fun;
 START hash;
 
 hash_tree_val {
- mark:
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)p;
-
-  gcMARK2(ht->root, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Hash_Tree));
-}
-
-mark_avl_node {
+  int popcount = hamt_popcount(ht->bitmap);
  mark:
-  AVLNode *avl = (AVLNode *)p;
-
-  /* Short-circuit on NULL pointers, which are especially likely */
-  if (avl->left) {
-    gcMARK2(avl->left, gc);
+  int i;
+  for (i = ((SCHEME_HASHTR_FLAGS(ht) & HASHTR_HAS_VAL) ? 2 : 1) * popcount; i--; ) {
+    gcMARK2(ht->els[i], gc);
   }
-  if (avl->right) {
-    gcMARK2(avl->right, gc);
-  }
-  gcMARK2(avl->key, gc);
-  gcMARK2(avl->val, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(AVLNode));
+  gcBYTES_TO_WORDS(HASH_TREE_RECORD_SIZE(SCHEME_HASHTR_KIND(ht), popcount));
 }
 
 END hash;
@@ -1808,13 +1796,13 @@ mark_marshal_tables {
  mark:
   Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p;
   gcMARK2(mt->symtab, gc);
-  gcMARK2(mt->rns, gc);
-  gcMARK2(mt->rn_refs, gc);
   gcMARK2(mt->st_refs, gc);
   gcMARK2(mt->st_ref_stack, gc);
-  gcMARK2(mt->reverse_map, gc);
-  gcMARK2(mt->same_map, gc);
-  gcMARK2(mt->shift_map, gc);
+  gcMARK2(mt->reachable_scopes, gc);
+  gcMARK2(mt->reachable_scope_stack, gc);
+  gcMARK2(mt->pending_reachable_ids, gc);
+  gcMARK2(mt->intern_map, gc);
+  gcMARK2(mt->identity_map, gc);
   gcMARK2(mt->top_map, gc);
   gcMARK2(mt->key_map, gc);
   gcMARK2(mt->delay_map, gc);
@@ -2281,6 +2269,7 @@ mark_cport {
   gcMARK2(cp->magic_val, gc);
   gcMARK2(cp->shared_offsets, gc);
   gcMARK2(cp->delay_info, gc);
+  gcMARK2(cp->symtab_refs, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(CPort));
 }
@@ -2396,36 +2385,6 @@ END string;
 
 START syntax;
 
-mark_rename_table {
- mark:
-  Module_Renames *rn = (Module_Renames *)p;
-  gcMARK2(rn->phase, gc);
-  gcMARK2(rn->ht, gc);
-  gcMARK2(rn->nomarshal_ht, gc);
-  gcMARK2(rn->unmarshal_info, gc);
-  gcMARK2(rn->shared_pes, gc);
-  gcMARK2(rn->set_identity, gc);
-  gcMARK2(rn->marked_names, gc);
-  gcMARK2(rn->free_id_renames, gc);
-  gcMARK2(rn->insp, gc);
- size:
-  gcBYTES_TO_WORDS(sizeof(Module_Renames));
-}
-
-mark_rename_table_set {
- mark:
-  Module_Renames_Set *rns = (Module_Renames_Set *)p;
-  gcMARK2(rns->et, gc);
-  gcMARK2(rns->rt, gc);
-  gcMARK2(rns->other_phases, gc);
-  gcMARK2(rns->share_marked_names, gc);
-  gcMARK2(rns->set_identity, gc);
-  gcMARK2(rns->prior_contexts, gc);
-  gcMARK2(rns->insp, gc);
- size:
-  gcBYTES_TO_WORDS(sizeof(Module_Renames_Set));
-}
-
 mark_srcloc {
  mark:
   Scheme_Stx_Srcloc *s = (Scheme_Stx_Srcloc *)p;
@@ -2434,27 +2393,38 @@ mark_srcloc {
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx_Srcloc));
 }
 
-mark_wrapchunk {
-  Wrap_Chunk *wc = (Wrap_Chunk *)p;
+mark_scope {
+  Scheme_Scope *m = (Scheme_Scope *)p;
+  int for_multi = SCHEME_SCOPE_HAS_OWNER(m);
  mark:
-  int i;
-  for (i = wc->len; i--; ) {
-    gcMARK2(wc->a[i], gc);
+  gcMARK2(m->bindings, gc);
+  if (for_multi) {
+    gcMARK2(((Scheme_Scope_With_Owner *)m)->owner_multi_scope, gc);
+    gcMARK2(((Scheme_Scope_With_Owner *)m)->phase, gc);
   }
  size:
-  gcBYTES_TO_WORDS(sizeof(Wrap_Chunk) + ((wc->len - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+ (for_multi
+  ? gcBYTES_TO_WORDS(sizeof(Scheme_Scope_With_Owner))
+  : gcBYTES_TO_WORDS(sizeof(Scheme_Scope)));
 }
 
-lex_rib {
+mark_scope_table {
  mark:
-  Scheme_Lexical_Rib *rib = (Scheme_Lexical_Rib *)p;
-  gcMARK2(rib->rename, gc);
-  gcMARK2(rib->timestamp, gc);
-  gcMARK2(rib->sealed, gc);
-  gcMARK2(rib->mapped_names, gc);
-  gcMARK2(rib->next, gc);
+  Scheme_Scope_Table *m = (Scheme_Scope_Table *)p;
+  gcMARK2(m->simple_scopes, gc);
+  gcMARK2(m->multi_scopes, gc);
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Lexical_Rib));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Scope_Table));
+}
+
+mark_propagate_table {
+ mark:
+  Scheme_Propagate_Table *m = (Scheme_Propagate_Table *)p;
+  mark_scope_table_MARK(&m->st, gc);
+  gcMARK2(m->prev, gc);
+  gcMARK2(m->phase_shift, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Propagate_Table));
 }
 
 END syntax;

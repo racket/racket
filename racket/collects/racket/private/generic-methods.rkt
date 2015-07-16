@@ -10,11 +10,14 @@
              generic-method-table
              (for-syntax generic-info?
                          make-generic-info
+                         generic-info-name
                          generic-info-property
                          generic-info-predicate
                          generic-info-accessor
+                         generic-info-method-names
                          generic-info-methods
-                         find-generic-method-index))
+                         find-generic-method-index
+                         make-method-delta))
 
   (begin-for-syntax
 
@@ -23,16 +26,20 @@
                     generic-info?
                     generic-info-get
                     generic-info-set!)
-      (make-struct-type 'generic-info #f 4 0))
+      (make-struct-type 'generic-info #f 6 0))
 
-    (define-values (generic-info-property
+    (define-values (generic-info-name
+                    generic-info-property
                     generic-info-predicate
                     generic-info-accessor
+                    generic-info-method-names
                     generic-info-methods)
-      (values (make-struct-field-accessor generic-info-get 0 'property)
-              (make-struct-field-accessor generic-info-get 1 'predicate)
-              (make-struct-field-accessor generic-info-get 2 'accessor)
-              (make-struct-field-accessor generic-info-get 3 'methods)))
+      (values (make-struct-field-accessor generic-info-get 0 'name)
+              (make-struct-field-accessor generic-info-get 1 'property)
+              (make-struct-field-accessor generic-info-get 2 'predicate)
+              (make-struct-field-accessor generic-info-get 3 'accessor)
+              (make-struct-field-accessor generic-info-get 4 'method-names)
+              (make-struct-field-accessor generic-info-get 5 'methods)))
 
     (define (check-identifier! name ctx stx)
       (unless (identifier? stx)
@@ -87,6 +94,7 @@
 
       (define-values (originals indices)
         (let loop ([original-ids (generic-info-methods gen-info)]
+                   [impl-ids (generic-info-method-names gen-info)]
                    [index 0]
                    [rev-originals '()]
                    [rev-indices '()])
@@ -95,16 +103,17 @@
              (values (reverse rev-originals)
                      (reverse rev-indices))]
             [else
-             (define original-id (car original-ids))
-             (define context-id (syntax-local-get-shadower (delta original-id)))
+             (define context-id (delta (car impl-ids)))
              (cond
                [(free-identifier=? context-id method-id)
                 (loop (cdr original-ids)
+                      (cdr impl-ids)
                       (add1 index)
-                      (cons original-id rev-originals)
+                      (cons (car original-ids) rev-originals)
                       (cons index rev-indices))]
                [else
                 (loop (cdr original-ids)
+                      (cdr impl-ids)
                       (add1 index)
                       rev-originals
                       rev-indices)])])))
@@ -136,9 +145,18 @@
     (define (find-generic-method-original ctx gen-id delta gen-info method-id)
       (find-generic-method 'find-generic-method-index
                            ctx gen-id delta gen-info method-id
-                           (lambda (index original) original))))
+                           (lambda (index original) original)))
 
-  (define-syntax-parameter generic-method-context #f)
+    (define (make-method-delta ref-id orig-id)
+      (lambda (id)
+        ((make-syntax-delta-introducer id orig-id)
+         (datum->syntax ref-id
+                        (syntax-e id)
+                        id
+                        id)))))
+
+  (define-syntax-parameter generic-method-outer-context #f)
+  (define-syntax-parameter generic-method-inner-context #f)
 
   (define-syntax (implementation stx)
     (syntax-case stx ()
@@ -158,16 +176,18 @@
       [(_ gen def ...)
        (let ()
          (define info (get-info 'generic-methods stx #'gen))
-         (define delta (syntax-local-make-delta-introducer #'gen))
-         (define methods (map delta (generic-info-methods info)))
+         (define orig-id (generic-info-name info))
+         (define methods (map (make-method-delta #'gen orig-id)
+                              (generic-info-method-names info)))
          (with-syntax ([(method ...) methods])
            (syntax/loc stx
-             (syntax-parameterize ([generic-method-context #'gen])
+             (syntax-parameterize ([generic-method-outer-context #'gen])
                (letrec-syntaxes+values
-                   ([(method) (make-unimplemented 'method)] ...)
-                   ()
-                 def ...
-                 (values (implementation method) ...))))))]))
+                ([(method) (make-unimplemented 'method)] ...)
+                ()
+                (syntax-parameterize ([generic-method-inner-context #'gen])
+                  def ...
+                  (values (implementation method) ...)))))))]))
 
   (define-syntax (generic-method-table stx)
     (syntax-case stx ()
@@ -175,12 +195,13 @@
        #'(call-with-values (lambda () (generic-methods gen def ...)) vector)]))
 
   (define-syntax (define/generic stx)
-    (define gen-id (syntax-parameter-value #'generic-method-context))
+    (define gen-id (syntax-parameter-value #'generic-method-outer-context))
     (define gen-val
       (and (identifier? gen-id)
            (syntax-local-value gen-id (lambda () #f))))
     (unless (generic-info? gen-val)
       (raise-syntax-error 'define/generic "only allowed inside methods" stx))
+    (define gen-inner-id (syntax-parameter-value #'generic-method-inner-context))
     (syntax-case stx ()
       [(_ bind ref)
        (let ()
@@ -188,8 +209,8 @@
            (raise-syntax-error 'define/generic "expected an identifier" #'bind))
          (unless (identifier? #'ref)
            (raise-syntax-error 'define/generic "expected an identifier" #'ref))
-         (define delta (syntax-local-make-delta-introducer gen-id))
-         (define methods (generic-info-methods gen-val))
+         (define delta
+           (make-method-delta gen-inner-id (generic-info-name gen-val)))
          (define method-id
            (find-generic-method-original stx gen-id delta gen-val #'ref))
          (with-syntax ([method method-id])

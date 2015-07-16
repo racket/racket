@@ -524,7 +524,7 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 
 #define SCHEME_BUCKTP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_bucket_table_type)
 #define SCHEME_HASHTP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_hash_table_type)
-#define SCHEME_HASHTRP(obj) SAME_TYPE(SCHEME_TYPE(obj),scheme_hash_tree_type)
+#define SCHEME_HASHTRP(obj) ((SCHEME_TYPE(obj) >= scheme_hash_tree_type) && (SCHEME_TYPE(obj) <= scheme_hash_tree_indirection_type))
 
 #define SCHEME_VECTORP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_vector_type)
 #define SCHEME_MUTABLE_VECTORP(obj)  (SCHEME_VECTORP(obj) && SCHEME_MUTABLEP(obj))
@@ -906,7 +906,7 @@ typedef struct {
 
 typedef struct Scheme_Hash_Table
 {
-  Scheme_Inclhash_Object iso; /* 0x1 flag => marshal as #t (hack for stxobj bytecode) */
+  Scheme_Inclhash_Object iso; /* 0x1 flag => print as opaque (e.g., exports table); 0x2 => misc (e.g., top-level multi_scopes) */
   intptr_t size; /* power of 2 */
   intptr_t count;
   Scheme_Object **keys;
@@ -943,7 +943,6 @@ typedef struct Scheme_Bucket_Table
 enum {
   SCHEME_hash_string,
   SCHEME_hash_ptr,
-  SCHEME_hash_bound_id,
   SCHEME_hash_weak_ptr,
   SCHEME_hash_late_weak_ptr
 };
@@ -1169,7 +1168,8 @@ typedef struct Scheme_Thread {
   struct Scheme_Overflow *overflow;
 
   struct Scheme_Comp_Env *current_local_env;
-  Scheme_Object *current_local_mark;
+  Scheme_Object *current_local_scope;
+  Scheme_Object *current_local_use_scope;
   Scheme_Object *current_local_name;
   Scheme_Object *current_local_modidx;
   Scheme_Env *current_local_menv;

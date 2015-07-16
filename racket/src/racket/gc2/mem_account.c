@@ -387,11 +387,10 @@ static void btc_overmem_abort(NewGC *gc)
 static void propagate_accounting_marks(NewGC *gc)
 {
   void *p;
-  Mark2_Proc *mark_table = gc->mark_table;
 
   while(pop_ptr(gc, &p) && !gc->kill_propagation_loop) {
     /* GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p)); */
-    propagate_marks_worker(gc, mark_table, p); 
+    propagate_marks_worker(gc, p);
   }
   if(gc->kill_propagation_loop)
     reset_pointer_stack(gc);

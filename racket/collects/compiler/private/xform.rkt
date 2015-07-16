@@ -876,7 +876,7 @@
                return if for while else switch case XFORM_OK_ASSIGN
                asm __asm __asm__ __volatile __volatile__ volatile __extension__
                __typeof sizeof __builtin_object_size
-
+            
                ;; These don't act like functions:
                setjmp longjmp _longjmp scheme_longjmp_setjmp scheme_mz_longjmp scheme_jit_longjmp
                scheme_jit_setjmp_prepare
@@ -895,6 +895,7 @@
 	       _isnan __isfinited __isnanl __isnan
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf
                __inline_isnanl __inline_isnan
+               __builtin_popcount
                _Generic
                __inline_isinff __inline_isinfl __inline_isinfd __inline_isnanf __inline_isnand __inline_isinf
                floor floorl ceil ceill round roundl fmod fmodl modf modfl fabs fabsl __maskrune _errno __errno

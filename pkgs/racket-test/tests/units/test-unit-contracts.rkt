@@ -1,8 +1,8 @@
 #lang racket/load
 
 (require "test-harness.rkt"
-         scheme/unit
-         scheme/contract)
+         racket/unit
+         racket/contract)
 
 (define temp-unit-blame-re "\\(unit temp[0-9]*\\)")
 (define top-level "top-level")
@@ -102,7 +102,7 @@
   (define-signature x ((contracted [(-> number? number?) x]))))
 
 (test-syntax-error "identifier h? not bound anywhere"
-  (module h?-test scheme
+  (module h?-test racket
     (define-signature s^
       ((define-values (f?) (values number?))
        (define-syntaxes (g?) (make-rename-transformer #'number?))
@@ -593,7 +593,7 @@
   (test-contract-error "(unit unit55-1)" "f" "not a number"
     (invoke-unit unit55-2)))
 
-(module m1 scheme
+(module m1 racket
   (define-signature foo^ (x))
   (define-signature bar^ (y))
   (provide foo^ bar^)
@@ -608,7 +608,7 @@
   (provide/contract [U@ (unit/c (import (foo^ [x (-> number? boolean?)]))
                                 (export (bar^ [y (-> symbol? string?)])))]))
 
-(module m2 scheme
+(module m2 racket
   (require 'm1)
   
   (define x zero?)
@@ -664,7 +664,7 @@
 ;; Adding a test to make sure that contracts can refer
 ;; to other parts of the signature.
 
-(module m3 scheme
+(module m3 racket
   (define-signature toy-factory^
     ((contracted
       [build-toys (-> integer? (listof toy?))]
@@ -687,7 +687,7 @@
 
   (provide toy-factory^ simple-factory@))
 
-(module m4 scheme
+(module m4 racket
   (define-signature foo^ (x? (contracted [f (-> x? boolean?)])))
 
   (define-unit U@
@@ -712,7 +712,7 @@
     (define-values/invoke-unit/infer m3:simple-factory@)
     (build-toys #f)))
 
-(module m5 scheme
+(module m5 racket
   (define-signature foo^ (f (contracted [x? (-> any/c boolean?)])))
   
   (define-unit U@
@@ -860,11 +860,11 @@
   (define-unit student@
     (import)
     (export student^)
-    (define-struct student (name id)))
+    (struct student (name id)))
   (define-values/invoke-unit/infer student@)
-  (make-student "foo" 3)
-  (test-contract-error top-level "make-student" "not a string"
-    (make-student 4 3))
+  (student "foo" 3)
+  (test-contract-error top-level "student" "not a string"
+    (student 4 3))
   (test-contract-error top-level "student-id" "not a student"
     (student-id 'a)))
 

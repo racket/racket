@@ -1169,7 +1169,8 @@ static Scheme_Prompt *allocate_prompt(Scheme_Prompt **cached_prompt) {
 
 static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *state) {
     state->current_local_env = thread->current_local_env;
-    state->mark              = thread->current_local_mark;
+    state->scope             = thread->current_local_scope;
+    state->use_scope         = thread->current_local_use_scope;
     state->name              = thread->current_local_name;
     state->modidx            = thread->current_local_modidx;
     state->menv              = thread->current_local_menv;
@@ -1177,19 +1178,22 @@ static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *stat
 
 static void restore_dynamic_state(Scheme_Dynamic_State *state, Scheme_Thread *thread) {
     thread->current_local_env     = state->current_local_env;
-    thread->current_local_mark    = state->mark;
+    thread->current_local_scope   = state->scope;
+    thread->current_local_use_scope = state->use_scope;
     thread->current_local_name    = state->name;
     thread->current_local_modidx  = state->modidx;
     thread->current_local_menv    = state->menv;
 }
 
-void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env, Scheme_Object *mark, 
+void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env,
+                              Scheme_Object *scope, Scheme_Object *use_scope,
                               Scheme_Object *name, 
                               Scheme_Env *menv,
                               Scheme_Object *modidx)
 {
   state->current_local_env = env;
-  state->mark              = mark;
+  state->scope             = scope;
+  state->use_scope         = use_scope;
   state->name              = name;
   state->modidx            = modidx;
   state->menv              = menv;
@@ -1826,16 +1830,16 @@ cert_with_specials(Scheme_Object *code,
         name = scheme_stx_taint_disarm(code, NULL);
         name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  if (scheme_stx_module_eq_x(scheme_begin_stx, name, phase)
-              || scheme_stx_module_eq_x(scheme_module_begin_stx, name, phase)) {
+	  if (scheme_stx_free_eq_x(scheme_begin_stx, name, phase)
+              || scheme_stx_free_eq_x(scheme_module_begin_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
-	  } else if (scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, name, phase)) {
+	  } else if (scheme_stx_free_eq_x(scheme_begin_for_syntax_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
             phase_delta = 1;
-	  } else if (scheme_stx_module_eq_x(scheme_define_values_stx, name, phase)
-		     || scheme_stx_module_eq_x(scheme_define_syntaxes_stx, name, phase)) {
+	  } else if (scheme_stx_free_eq_x(scheme_define_values_stx, name, phase)
+		     || scheme_stx_free_eq_x(scheme_define_syntaxes_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 1;
 	  }
@@ -1891,19 +1895,20 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 		   Scheme_Object *rator, Scheme_Object *code,
 		   Scheme_Comp_Env *env, Scheme_Object *boundname,
                    Scheme_Compile_Expand_Info *rec, int drec,
-		   int for_set)
+		   int for_set,
+                   int scope_macro_use)
 {
   Scheme_Object *orig_code = code;
 
   if (scheme_is_rename_transformer(rator)) {
-    Scheme_Object *mark;
+    Scheme_Object *scope;
    
     rator = scheme_rename_transformer_id(rator);
     /* rator is now an identifier */
 
     /* and it's introduced by this expression: */
-    mark = scheme_new_mark();
-    rator = scheme_add_remove_mark(rator, mark);
+    scope = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
+    rator = scheme_stx_flip_scope(rator, scope, scheme_true);
 
     if (for_set) {
       Scheme_Object *tail, *setkw;
@@ -1928,7 +1933,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     return code;
   } else {
-    Scheme_Object *mark, *rands_vec[1], *track_code, *pre_code;
+    Scheme_Object *scope, *use_scope, *rands_vec[1], *track_code, *pre_code;
 
     if (scheme_is_set_transformer(rator))
       rator = scheme_set_transformer_proc(rator);
@@ -1946,9 +1951,16 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
     }
     track_code = code;  /* after mode properties are removed */
 
-    mark = scheme_new_mark();
-    code = scheme_add_remove_mark(code, mark);
+    scope = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
+    code = scheme_stx_flip_scope(code, scope, scheme_true);
 
+    if (scope_macro_use) {
+      use_scope = scheme_new_scope(SCHEME_STX_USE_SITE_SCOPE);
+      scheme_add_compilation_frame_use_site_scope(env, use_scope);
+      code = scheme_stx_add_scope(code, use_scope, scheme_true);
+    } else
+      use_scope = NULL;
+    
     code = scheme_stx_taint_disarm(code, NULL);
 
     pre_code = code;
@@ -1966,7 +1978,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 
-      scheme_set_dynamic_state(&dyn_state, env, mark, boundname, 
+      scheme_set_dynamic_state(&dyn_state, env, scope, use_scope, boundname, 
                                menv, menv ? menv->link_midx : env->genv->link_midx);
 
       rands_vec[0] = code;
@@ -1985,7 +1997,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
                        code);
     }
 
-    code = scheme_add_remove_mark(code, mark);
+    code = scheme_stx_flip_scope(code, scope, scheme_true);
 
     code = scheme_stx_track(code, track_code, name);
     

@@ -52,13 +52,12 @@
   (quasisyntax/loc src-stx (begin '(declare-field-initialization #,id) #,stx)))
 
 (define (make-this-map orig-id the-finder the-obj)
-  (let ([set!-stx (datum->syntax the-finder 'set!)])
+  (let ()
     (mk-set!-trans
      orig-id
      (lambda (stx)
-       (syntax-case stx ()
+       (syntax-case stx (set!)
          [(set! id expr)
-          (free-identifier=? (syntax set!) set!-stx)
           (raise-syntax-error 'class "cannot mutate object identifier" stx)]
          [(id . args)
           (add-declare-this-escapes
@@ -70,12 +69,11 @@
          [id (add-declare-this-escapes stx (find the-finder the-obj stx))])))))
 
 (define (make-this%-map replace-stx the-finder)
-  (let ([set!-stx (datum->syntax the-finder 'set!)])
+  (let ()
     (make-set!-transformer
      (λ (stx)
-       (syntax-case stx ()
+       (syntax-case stx (set!)
          [(set! id expr)
-          (free-identifier=? #'set! set!-stx)
           (raise-syntax-error 'class "cannot mutate this% identifier" stx)]
          [id
           (identifier? #'id)
@@ -85,16 +83,15 @@
 
 (define (make-field-map inherited? the-finder the-obj the-binder the-binder-localized
                         field-accessor field-mutator)
-  (let ([set!-stx (datum->syntax the-finder 'set!)])
+  (let ()
     (define (choose-src a b) (if (syntax-source a) a b))
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
         (with-syntax ([obj-expr (find the-finder the-obj stx)])
-          (syntax-case stx (field-initialization-value)
+          (syntax-case stx (field-initialization-value set!)
             [(set! id (field-initialization-value expr))
-             (free-identifier=? (syntax set!) set!-stx)
              (add-declare-field-initialization
               #'id
               #'id
@@ -107,7 +104,6 @@
                                          ((unsyntax field-mutator) obj id))))])
                 (syntax/loc (choose-src stx #'id) (let* bindings set))))]
             [(set! id expr)
-             (free-identifier=? (syntax set!) set!-stx)
              (add-declare-field-assignment
               #'id
               inherited?
@@ -136,14 +132,13 @@
                 (syntax/loc (choose-src stx #'id) (let* bindings get))))])))))))
 
 (define (make-method-map the-finder the-obj the-binder the-binder-localized method-accessor)
-  (let ([set!-stx (datum->syntax the-finder 'set!)])
+  (let ()
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
-        (syntax-case stx ()
+        (syntax-case stx (set!)
           [(set! id expr)
-           (free-identifier=? (syntax set!) set!-stx)
            (raise-syntax-error 'class "cannot mutate method" stx)]
           [(id . args)
            (add-declare-this-escapes
@@ -151,7 +146,7 @@
             (binding
              the-binder (syntax id)
              (datum->syntax 
-              the-finder
+              (quote-syntax here)
               (make-method-apply
                (list method-accessor (find the-finder the-obj stx))
                (find the-finder the-obj stx)
@@ -166,14 +161,13 @@
 ;; For methods that are dirrectly available via their names
 ;;  (e.g., private methods)
 (define (make-direct-method-map the-finder the-obj the-binder the-binder-localized new-name)
-  (let ([set!-stx (datum->syntax the-finder 'set!)])
+  (let ()
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
-        (syntax-case stx ()
+        (syntax-case stx (set!)
           [(set! id expr)
-           (free-identifier=? (syntax set!) set!-stx)
            (raise-syntax-error 'class "cannot mutate method" stx)]
           [(id . args)
            (add-declare-this-escapes
@@ -181,7 +175,7 @@
             (binding
              the-binder (syntax id)
              (datum->syntax 
-              the-finder
+              (quote-syntax here)
               (make-method-apply (find the-finder new-name stx) (find the-finder the-obj stx) (syntax args))
               stx)))]
           [_else
@@ -191,14 +185,13 @@
             stx)]))))))
 
 (define (make-rename-super-map the-finder the-obj the-binder the-binder-localized rename-temp)
-  (let ([set!-stx (datum->syntax the-finder 'set!)])
+  (let ()
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
-        (syntax-case stx ()
+        (syntax-case stx (set!)
           [(set! id expr)
-           (free-identifier=? (syntax set!) set!-stx)
            (raise-syntax-error 'class "cannot mutate super method" stx)]
           [(id . args)
            (add-declare-this-escapes
@@ -206,7 +199,7 @@
             (binding
              the-binder (syntax id)
              (datum->syntax 
-              the-finder
+              (quote-syntax here)
               (make-method-apply (find the-finder rename-temp stx) (find the-finder the-obj stx) (syntax args))
               stx)))]
           [_else
@@ -216,36 +209,31 @@
             stx)]))))))
 
 (define (make-rename-inner-map the-finder the-obj the-binder the-binder-localized rename-temp)
-  (let ([set!-stx (datum->syntax the-finder 'set!)]
-        [lambda-stx (datum->syntax the-finder 'lambda)])
+  (let ()
     (mk-set!-trans
      the-binder-localized
      (lambda (stx)
        (class-syntax-protect
-        (syntax-case stx ()
+        (syntax-case stx (set! lambda)
           [(set! id expr)
-           (free-identifier=? (syntax set!) set!-stx)
            (raise-syntax-error 'class "cannot mutate inner method" stx)]
           [(id (lambda () default) . args)
-           (free-identifier=? (syntax lambda) lambda-stx)
            (let ([target (find the-finder the-obj stx)])
              (add-declare-this-escapes
               stx
               (binding
                the-binder (syntax id)
                (datum->syntax 
-                the-finder
+                (quote-syntax here)
                 (make-method-apply (list (find the-finder rename-temp stx) target #'default)
                                    target (syntax args))
                 stx))))]
           [(id (lambda largs default) . args)
-           (free-identifier=? (syntax lambda) lambda-stx)
            (raise-syntax-error 
             'class 
             "misuse of inner method (lambda for default does not take zero arguments)" 
             stx)]
           [(id (lambda . rest) . args)
-           (free-identifier=? (syntax lambda) lambda-stx)
            (raise-syntax-error 
             'class 
             "misuse of inner method (ill-formed lambda for default)" 
@@ -266,7 +254,7 @@
    stx
    (class-syntax-protect
     (datum->syntax 
-     the-finder
+     (quote-syntax here)
      (make-method-apply (find the-finder rename-temp stx) 
                         (find the-finder the-obj stx) 
                         args)
@@ -277,10 +265,10 @@
    stx
    (class-syntax-protect
     (datum->syntax 
-     the-finder
+     (quote-syntax here)
      (let ([target (find the-finder the-obj stx)])
        (datum->syntax 
-        the-finder
+        (quote-syntax here)
         `(let ([i (,(find the-finder rename-temp stx) ,target)])
            (if i
                ,(make-method-apply 'i target args)
@@ -297,14 +285,13 @@
       "cannot use non-field init variable in a method"
       stx))))
 
-(define (make-init-redirect set!-stx #%app-stx local-id localized-id)
+(define (make-init-redirect local-id localized-id)
   (mk-set!-trans
    localized-id
    (lambda (stx)
      (class-syntax-protect
-      (syntax-case stx ()
+      (syntax-case stx (set!)
         [(set! id expr)
-         (free-identifier=? (syntax set!) set!-stx)
          (with-syntax ([local-id local-id])
            (syntax/loc stx (set! local-id expr)))]
         [(id . args)
@@ -312,11 +299,10 @@
                                   local-id
                                   (syntax-e local-id)
                                   #'id
-                                  #'id)]
-                       [#%app #%app-stx])
-           (syntax/loc stx (#%app (#%app check-not-unsafe-undefined local-id 'id) . args)))]
+                                  #'id)])
+           (syntax/loc stx (#%plain-app (#%plain-app check-not-unsafe-undefined local-id 'id) . args)))]
         [id (quasisyntax/loc stx
-              (#,#%app-stx
+              (#%plain-app
                check-not-unsafe-undefined
                #,(datum->syntax
                   local-id

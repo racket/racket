@@ -168,6 +168,7 @@
       (define stream-empty? empty?)])))
 
 (check-good-syntax
+ (begin
   (module gen racket
     (require racket/generic)
     (provide gen:foo (rename-out [*bar bar]))
@@ -177,4 +178,17 @@
     (require racket/generic (submod ".." gen))
     (struct thing []
       #:methods gen:foo
-      [(define/generic gbar bar)])))
+      [(define/generic gbar bar)]))))
+
+(check-bad-syntax
+ (begin
+   (module gen racket
+     (require racket/generic)
+     (provide gen:foo (rename-out [*bar bar]))
+     (define-generics foo (*bar foo))
+     (define bar *bar))
+   (module impl racket
+     (require racket/generic (submod ".." gen))
+     (struct thing []
+       #:methods gen:foo
+       [(define/generic gbar bar)]))))

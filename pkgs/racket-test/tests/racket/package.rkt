@@ -48,8 +48,18 @@
   (or (fail? e) e))
 
 (define (test-pack-seq* forms expr q-expr result)
+  (test-pack-seq** forms expr q-expr result)
+  (test-pack-seq** (map syntax->datum forms) (syntax->datum expr) q-expr result))
+
+(define (test-pack-seq** forms expr q-expr result)
+  (printf "As ~a: ~s\n"
+          (if (syntax? (car forms))
+              "syntax"
+              "datum")
+          forms)
   (let ([orig (current-namespace)])
     ;; top level
+    (printf "top\n")
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
         (namespace-attach-module orig 'racket/package)
@@ -60,6 +70,7 @@
             (err/rt-test (eval (fail-expr expr)) result)
             (test result q-expr (eval expr)))))
     ;; let
+    (printf "let\n")
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
         (namespace-attach-module orig 'racket/package)
@@ -70,6 +81,7 @@
               (err/rt-test (eval e) result)
               (test result `(let ... ,q-expr) (eval e))))))
     ;; nested let
+    (printf "nested let\n")
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
         (namespace-attach-module orig 'racket/package)
@@ -84,6 +96,7 @@
               (err/rt-test (eval e) result)
               (test result `(let ... ,q-expr) (eval e))))))
     ;; module
+    (printf "module\n")
     (let ([ns (make-base-namespace)])
       (parameterize ([current-namespace ns])
         (namespace-attach-module orig 'racket/package)
@@ -93,6 +106,56 @@
                     (begin . ,forms)
                     (define result ,(fail-expr expr))
                     (provide result))])
+          (if (fail? expr)
+              (err/rt-test (eval m) exn:fail:syntax?)
+              (begin
+                (eval m)
+                (test result `(module ... ,q-expr) (dynamic-require ''m 'result)))))))
+    ;; multiple modules
+    (printf "2 modules\n")
+    (let ([ns (make-base-namespace)])
+      (parameterize ([current-namespace ns])
+        (namespace-attach-module orig 'racket/package)
+        (let ([m `(begin
+                   (module m0 racket/base
+                     (require (for-syntax racket/base)
+                              racket/package)
+                     (begin . ,forms)
+                     (provide ,#'(all-defined-out)))
+                   (module m racket/base
+                     (require (for-syntax racket/base)
+                              racket/package
+                              'm0)
+                     (define result ,(fail-expr expr))
+                     (provide result)))])
+          (if (fail? expr)
+              (err/rt-test (eval m) exn:fail:syntax?)
+              (begin
+                (eval m)
+                (test result `(module ... ,q-expr) (dynamic-require ''m 'result)))))))
+    ;; more modules
+    (printf "3 modules\n")
+    (let ([ns (make-base-namespace)])
+      (parameterize ([current-namespace ns])
+        (namespace-attach-module orig 'racket/package)
+        (let ([m `(begin
+                   (module m0 racket/base
+                     (require (for-syntax racket/base)
+                              racket/package)
+                     ,(car forms)
+                     (provide ,#'(all-defined-out)))
+                   (module m1 racket/base
+                     (require (for-syntax racket/base)
+                              racket/package
+                              'm0)
+                     (begin . ,(cdr forms))
+                     (provide ,#'(all-defined-out)))
+                   (module m racket/base
+                     (require (for-syntax racket/base)
+                              racket/package
+                              'm0 'm1)
+                     (define result ,(fail-expr expr))
+                     (provide result)))])
           (if (fail? expr)
               (err/rt-test (eval m) exn:fail:syntax?)
               (begin

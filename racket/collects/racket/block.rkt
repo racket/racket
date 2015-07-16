@@ -41,12 +41,16 @@
                      (syntax-local-bind-syntaxes
                       (syntax->list #'(id ...))
                       #'rhs def-ctx)
-                     (loop todo (cons #'(define-syntaxes (id ...) rhs) r)))]
+                     (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                                                  (syntax->list #'(id ...)))])
+                       (loop todo (cons #'(define-syntaxes (id ...) rhs) r))))]
                   [(define-values (id ...) rhs)
                    (andmap identifier? (syntax->list #'(id ...)))
                    (let ([ids (syntax->list #'(id ...))])
                      (syntax-local-bind-syntaxes ids #f def-ctx)
-                     (loop todo (cons expr r)))]
+                     (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                                                    (syntax->list #'(id ...)))])
+                       (loop todo (cons #'(define-values (id ...) rhs) r))))]
                   [else (loop todo (cons expr r))]))))])
     (internal-definition-context-seal def-ctx)
     (let loop ([exprs exprs]

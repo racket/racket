@@ -30,50 +30,53 @@
 (provide provide-public-names
          ;; needed for Typed Racket
          (protect-out do-make-object find-method/who))
-(define-syntax-rule (provide-public-names)
-  (provide class class* class/derived
-           define-serializable-class define-serializable-class*
-           class? 
-           mixin
-           interface interface* interface?
-           object% object? externalizable<%> printable<%> writable<%> equal<%>
-           object=? object-or-false=?
-           new make-object instantiate
-           send send/apply send/keyword-apply send* send+ dynamic-send
-           class-field-accessor class-field-mutator with-method
-           get-field set-field! field-bound? field-names
-           dynamic-get-field dynamic-set-field!
-           private* public*  pubment*
-           override* overment*
-           augride* augment*
-           public-final* override-final* augment-final*
-           define/private define/public define/pubment
-           define/override define/overment
-           define/augride define/augment
-           define/public-final define/override-final define/augment-final
-           define-local-member-name define-member-name 
-           member-name-key generate-member-key 
-           member-name-key? member-name-key=? member-name-key-hash-code
-           generic make-generic send-generic
-           is-a? subclass? implementation? interface-extension?
-           object-interface object-info object->vector
-           object-method-arity-includes?
-           method-in-interface? interface->method-names class->interface class-info
-           (struct-out exn:fail:object)
-           make-primitive-class
-           class/c ->m ->*m ->dm case->m object/c instanceof/c
-           dynamic-object/c
-           class-seal class-unseal
+(define-syntax (provide-public-names stx)
+  (datum->syntax
+   stx
+   '(provide class class* class/derived
+            define-serializable-class define-serializable-class*
+            class? 
+            mixin
+            interface interface* interface?
+            object% object? externalizable<%> printable<%> writable<%> equal<%>
+            object=? object-or-false=?
+            new make-object instantiate
+            send send/apply send/keyword-apply send* send+ dynamic-send
+            class-field-accessor class-field-mutator with-method
+            get-field set-field! field-bound? field-names
+            dynamic-get-field dynamic-set-field!
+            private* public*  pubment*
+            override* overment*
+            augride* augment*
+            public-final* override-final* augment-final*
+            define/private define/public define/pubment
+            define/override define/overment
+            define/augride define/augment
+            define/public-final define/override-final define/augment-final
+            define-local-member-name define-member-name 
+            member-name-key generate-member-key 
+            member-name-key? member-name-key=? member-name-key-hash-code
+            generic make-generic send-generic
+            is-a? subclass? implementation? interface-extension?
+            object-interface object-info object->vector
+            object-method-arity-includes?
+            method-in-interface? interface->method-names class->interface class-info
+            (struct-out exn:fail:object)
+            make-primitive-class
+            class/c ->m ->*m ->dm case->m object/c instanceof/c
+            dynamic-object/c
+            class-seal class-unseal
            
            ;; "keywords":
-           private public override augment
-           pubment overment augride
-           public-final override-final augment-final
-           field init init-field init-rest
-           rename-super rename-inner inherit inherit/super inherit/inner inherit-field
-           this this% super inner
-           super-make-object super-instantiate super-new
-           inspect absent abstract))
+            private public override augment
+            pubment overment augride
+            public-final override-final augment-final
+            field init init-field init-rest
+            rename-super rename-inner inherit inherit/super inherit/inner inherit-field
+            this this% super inner
+            super-make-object super-instantiate super-new
+            inspect absent abstract)
+   stx))
 
 ;;--------------------------------------------------------------------
 ;;  keyword setup
@@ -378,12 +381,16 @@
                                          'expression
                                          null)])
                        (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
-                       (cons #'(define-syntaxes (id ...) rhs) (loop (cdr l)))))]
+                       (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                                                    (syntax->list #'(id ...)))])
+                         (cons (syntax/loc e (define-syntaxes (id ...) rhs))
+                               (loop (cdr l))))))]
                   [(define-values (id ...) rhs)
                    (andmap identifier? (syntax->list #'(id ...)))
-                   (begin
-                     (map bind-local-id (syntax->list #'(id ...)))
-                     (cons e (loop (cdr l))))]
+                   (let ([ids (map bind-local-id (syntax->list #'(id ...)))])
+                     (with-syntax ([(id ...) ids])
+                       (cons (datum->syntax e (list #'define-values #'(id ...) #'rhs) e e)
+                             (loop (cdr l)))))]
                   [_else 
                    (cons e (loop (cdr l)))]))))))
     
@@ -419,9 +426,9 @@
                       (if alone
                           (map (lambda (i)
                                  (if (identifier? i)
-                                     (alone i)
-                                     (cons (stx-car i)
-                                           (stx-car (stx-cdr i)))))
+                                     (alone (syntax-local-identifier-as-binding i))
+                                     (cons (syntax-local-identifier-as-binding (stx-car i))
+                                           (syntax-local-identifier-as-binding (stx-car (stx-cdr i))))))
                                l)
                           l)))
                   l)))
@@ -438,8 +445,8 @@
                     (cons (list a a) (stx-cdr i))
                     i))]))
     
-    (define (norm-init/field-iid norm) (stx-car (stx-car norm)))
-    (define (norm-init/field-eid norm) (stx-car (stx-cdr (stx-car norm))))
+    (define (norm-init/field-iid norm) (syntax-local-identifier-as-binding (stx-car (stx-car norm))))
+    (define (norm-init/field-eid norm) (syntax-local-identifier-as-binding (stx-car (stx-cdr (stx-car norm)))))
     
     ;; expands an expression enough that we can check whether it has
     ;; the right form for a method; must use local syntax definitions
@@ -672,7 +679,7 @@
     (define (main stx super-expr deserialize-id-expr name-id interface-exprs defn-and-exprs)
       (let-values ([(this-id) #'this-id]
                    [(the-obj) (datum->syntax (quote-syntax here) (gensym 'self))]
-                   [(the-finder) (datum->syntax (quote-syntax here) (gensym 'find-self))])
+                   [(the-finder) (datum->syntax #f (gensym 'find-self))])
         
         (let* ([def-ctx (syntax-local-make-definition-context)]
                [localized-map (make-bound-identifier-mapping)]
@@ -682,13 +689,15 @@
                                       (unless (eq? id id2)
                                         (set! any-localized? #t))
                                       id2))]
-               [bind-local-id (lambda (id)
-                                (let ([l (localize/set-flag id)])
+               [bind-local-id (lambda (orig-id)
+                                (let ([l (localize/set-flag orig-id)]
+                                      [id (syntax-local-identifier-as-binding orig-id)])
                                   (syntax-local-bind-syntaxes (list id) #f def-ctx)
                                   (bound-identifier-mapping-put!
                                    localized-map
                                    id
-                                   l)))]
+                                   l)
+                                  id))]
                [lookup-localize (lambda (id)
                                   (bound-identifier-mapping-get
                                    localized-map
@@ -708,7 +717,7 @@
                                   (if (syntax? s)
                                       (syntax-e s)
                                       s)))])
-            
+
             ;; ------ Basic syntax checks -----
             (for-each (lambda (stx)
                         (syntax-case stx (-init -init-rest -field -init-field -inherit-field
@@ -1300,8 +1309,7 @@
                                                      (generate-temporaries (map car inherit/inners)))]
                           [all-inherits (append inherits inherit/supers inherit/inners)]
                           [definify (lambda (l)
-                                      (map bind-local-id l)
-                                      l)])
+                                      (map bind-local-id l))])
 
                       ;; ---- set up field and method mappings ----
                       (with-syntax ([(rename-super-orig ...) (definify (map car rename-supers))]
@@ -1692,8 +1700,6 @@
                                                                              (cdr (syntax-e stx))))))))])
                                                       (letrec-syntaxes+values
                                                           ([(plain-init-name) (make-init-redirect 
-                                                                               (quote-syntax set!)
-                                                                               (quote-syntax #%plain-app)
                                                                                (quote-syntax local-plain-init-name)
                                                                                (quote-syntax plain-init-name-localized))] ...)
                                                         ([(local-plain-init-name) unsafe-undefined] ...)

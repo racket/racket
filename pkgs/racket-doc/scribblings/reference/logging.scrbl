@@ -178,7 +178,6 @@ that any event information it receives will never become accessible).
 
 @history[#:changed "6.1.1.3" @elem{Added the @racket[topic] argument.}]}
 
-
 @defproc[(log-max-level [logger logger?]
                         [topic (or/c symbol? #f) #f])
          (or/c #f 'fatal 'error 'warning 'info 'debug)]{

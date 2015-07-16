@@ -129,6 +129,7 @@ scheme_init_type ()
   set_name(scheme_begin0_sequence_type, "<begin0-code>");
   set_name(scheme_splice_sequence_type, "<splicing-begin-code>");
   set_name(scheme_module_type, "<module-code>");
+  set_name(scheme_inline_variant_type, "<inline-variant-code>");
   set_name(scheme_set_bang_type, "<set!-code>");
   set_name(scheme_boxenv_type, "<boxenv-code>");
   set_name(scheme_require_form_type, "<require-code>");
@@ -197,6 +198,11 @@ scheme_init_type ()
   set_name(scheme_channel_put_type, "<channel-put>");
   set_name(scheme_hash_table_type, "<hash>");
   set_name(scheme_hash_tree_type, "<hash>");
+  set_name(scheme_eq_hash_tree_type, "<hash>");
+  set_name(scheme_eqv_hash_tree_type, "<hash>");
+  set_name(scheme_hash_tree_indirection_type, "<hash>");
+  set_name(scheme_hash_tree_subtree_type, "<hash-node>");
+  set_name(scheme_hash_tree_collision_type, "<hash-node>");
   set_name(scheme_bucket_table_type, "<hash>");
   set_name(scheme_module_registry_type, "<module-registry>");
   set_name(scheme_case_closure_type, "<procedure>");
@@ -215,7 +221,9 @@ scheme_init_type ()
   set_name(scheme_will_executor_type, "<will-executor>");
   set_name(scheme_random_state_type, "<pseudo-random-generator>");
   set_name(scheme_regexp_type, "<regexp>");
-  set_name(scheme_rename_table_type, "<rename-table>");
+  set_name(scheme_scope_table_type, "<scope-table>");
+  set_name(scheme_propagate_table_type, "<propagate-table>");
+  set_name(scheme_scope_type, "<scope>");
   set_name(scheme_bucket_type, "<hash-table-bucket>");
   set_name(scheme_prefix_type, "<runtime-prefix>");
   set_name(scheme_resolve_prefix_type, "<resolve-prefix>");
@@ -711,6 +719,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_global_ref_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_delay_syntax_type, small_object);
+  GC_REG_TRAV(scheme_marshal_share_type, small_object);
 
   GC_REG_TRAV(scheme_resolved_module_path_type, small_object);
 
@@ -718,8 +727,6 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_log_reader_type, mark_log_reader);
 
   GC_REG_TRAV(scheme_rt_runstack, runstack_val);
-
-  GC_REG_TRAV(scheme_free_id_info_type, vector_obj);
 
   GC_REG_TRAV(scheme_rib_delimiter_type, small_object);
   GC_REG_TRAV(scheme_noninline_proc_type, small_object);

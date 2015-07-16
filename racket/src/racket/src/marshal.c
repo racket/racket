@@ -768,56 +768,61 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
   
   if (!ds) {
     mt = scheme_current_thread->current_mt;
-    if (!mt->pass) {
-      int key;
-
-      pos = mt->cdata_counter;
-      if ((!mt->cdata_map || (pos >= 32))
-          && !(pos & (pos - 1))) {
-        /* Need to grow the array */
-        Scheme_Object **a;
-        a = MALLOC_N(Scheme_Object *, (pos ? 2 * pos : 32));
-        memcpy(a, mt->cdata_map, pos * sizeof(Scheme_Object *));
-        mt->cdata_map = a;
-      }
-      mt->cdata_counter++;
-
-      key = pos & 255;
-      MZ_OPT_HASH_KEY(&data->iso) = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0x00FF) | (key << 8);
+    if (mt->pass < 0) {
+      /* nothing to do, yet */
+      ds = scheme_false;
     } else {
-      pos = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0xFF00) >> 8;
+      if (!mt->pass) {
+        int key;
 
-      while (pos < mt->cdata_counter) {
-        ds = mt->cdata_map[pos];
-        if (ds) {
-          ds = SCHEME_PTR_VAL(ds);
-          if (SAME_OBJ(data->code, ds))
-            break;
-          if (SAME_TYPE(scheme_quote_compilation_type, SCHEME_TYPE(ds)))
-            if (SAME_OBJ(data->code, SCHEME_PTR_VAL(ds)))
-              break;
+        pos = mt->cdata_counter;
+        if ((!mt->cdata_map || (pos >= 32))
+            && !(pos & (pos - 1))) {
+          /* Need to grow the array */
+          Scheme_Object **a;
+          a = MALLOC_N(Scheme_Object *, (pos ? 2 * pos : 32));
+          memcpy(a, mt->cdata_map, pos * sizeof(Scheme_Object *));
+          mt->cdata_map = a;
         }
-        pos += 256;
+        mt->cdata_counter++;
+
+        key = pos & 255;
+        MZ_OPT_HASH_KEY(&data->iso) = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0x00FF) | (key << 8);
+      } else {
+        pos = ((int)MZ_OPT_HASH_KEY(&data->iso) & 0xFF00) >> 8;
+
+        while (pos < mt->cdata_counter) {
+          ds = mt->cdata_map[pos];
+          if (ds) {
+            ds = SCHEME_PTR_VAL(ds);
+            if (SAME_OBJ(data->code, ds))
+              break;
+            if (SAME_TYPE(scheme_quote_compilation_type, SCHEME_TYPE(ds)))
+              if (SAME_OBJ(data->code, SCHEME_PTR_VAL(ds)))
+                break;
+          }
+          pos += 256;
+        }
+        if (pos >= mt->cdata_counter) {
+          scheme_signal_error("didn't find delay record");
+        }
       }
-      if (pos >= mt->cdata_counter) {
-        scheme_signal_error("didn't find delay record");
+
+      ds = mt->cdata_map[pos];
+      if (!ds) {
+        if (mt->pass)
+          scheme_signal_error("broken closure-data table\n");
+    
+        code = scheme_protect_quote(data->code);
+    
+        ds = scheme_alloc_small_object();
+        ds->type = scheme_delay_syntax_type;
+        SCHEME_PTR_VAL(ds) = code;
+
+        MZ_OPT_HASH_KEY(&((Scheme_Small_Object *)ds)->iso) |= 1; /* => hash on ds, not contained data */
+
+        mt->cdata_map[pos] = ds;
       }
-    }
-
-    ds = mt->cdata_map[pos];
-    if (!ds) {
-      if (mt->pass)
-        scheme_signal_error("broken closure-data table\n");
-    
-      code = scheme_protect_quote(data->code);
-    
-      ds = scheme_alloc_small_object();
-      ds->type = scheme_delay_syntax_type;
-      SCHEME_PTR_VAL(ds) = code;
-
-      MZ_OPT_HASH_KEY(&((Scheme_Small_Object *)ds)->iso) |= 1; /* => hash on ds, not contained data */
-
-      mt->cdata_map[pos] = ds;
     }
   }
 
@@ -1075,6 +1080,22 @@ static Scheme_Object *read_local_unbox(Scheme_Object *obj)
   return do_read_local(scheme_local_unbox_type, obj);
 }
 
+static Scheme_Object *make_delayed_syntax(Scheme_Object *stx)
+{
+  Scheme_Object *ds;
+  Scheme_Marshal_Tables *mt;
+  
+  mt = scheme_current_thread->current_mt;
+  if (mt->pass < 0)
+    return stx;
+
+  ds = scheme_alloc_small_object();
+  ds->type = scheme_delay_syntax_type;
+  SCHEME_PTR_VAL(ds) = stx;
+
+  return ds;
+}
+
 static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp = (Resolve_Prefix *)obj;
@@ -1092,15 +1113,13 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   while (i--) {
     if (rp->stxes[i]) {
       if (SCHEME_INTP(rp->stxes[i])) {
-        /* Need to foce this object, so we can write it.
+        /* Need to force this object, so we can write it.
            This should only happen if we're writing back 
            code loaded from bytecode. */
         scheme_load_delayed_syntax(rp, i);
       }
 
-      ds = scheme_alloc_small_object();
-      ds->type = scheme_delay_syntax_type;
-      SCHEME_PTR_VAL(ds) = rp->stxes[i];
+      ds = make_delayed_syntax(rp->stxes[i]);
     } else
       ds = scheme_false;
     SCHEME_VEC_ELS(sv)[i] = ds;
@@ -1109,17 +1128,25 @@ static Scheme_Object *write_resolve_prefix(Scheme_Object *obj)
   tv = scheme_make_pair(scheme_make_integer(rp->num_lifts), 
                         scheme_make_pair(tv, sv));
 
+  tv = scheme_make_pair(rp->src_insp_desc, tv);
+  
   return tv;
 }
 
 static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
 {
   Resolve_Prefix *rp;
-  Scheme_Object *tv, *sv, **a, *stx, *tl;
+  Scheme_Object *tv, *sv, **a, *stx, *tl, *insp_desc;
   intptr_t i;
 
   if (!SCHEME_PAIRP(obj)) return NULL;
+  insp_desc = SCHEME_CAR(obj);
+  if (!SCHEME_SYMBOLP(insp_desc))
+    return NULL;
+  obj = SCHEME_CDR(obj);
 
+  if (!SCHEME_PAIRP(obj)) return NULL;
+  
   if (!SCHEME_INTP(SCHEME_CAR(obj))) {
     obj = SCHEME_CDR(obj);
   }
@@ -1181,7 +1208,68 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   }
   rp->stxes = a;
 
+  rp->src_insp_desc = insp_desc;
+
   return (Scheme_Object *)rp;
+}
+
+static Scheme_Object *ht_to_vector(Scheme_Object *ht)
+/* recurs for values in hash table; we assume that such nesting is shallow */
+{
+  intptr_t i, j, c;
+  Scheme_Object *k, *val, *vec;
+  
+  if (!ht)
+    return scheme_false;
+  if (SCHEME_VECTORP(ht)) {
+    /* may need to force delayed syntax: */
+    c = SCHEME_VEC_SIZE(ht);
+    for (i = 0; i < c; i += 2) {
+      val = SCHEME_VEC_ELS(ht)[i+1];
+      if (!SAME_OBJ(scheme_true, val)) {
+        k = scheme_stx_force_delayed(val);
+        if (!SAME_OBJ(k, val))
+          SCHEME_VEC_ELS(ht)[i+1] = k;
+      }
+    }
+    return ht;
+  }
+
+  if (SCHEME_HASHTRP(ht))
+    c = ((Scheme_Hash_Tree *)ht)->count;
+  else
+    c = ((Scheme_Hash_Table *)ht)->count;
+
+  vec = scheme_make_vector(2 * c, NULL);
+  j = 0;
+  
+  if (SCHEME_HASHTRP(ht)) {
+    Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)ht;
+    for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
+      scheme_hash_tree_index(t, i, &k, &val);
+      if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
+        val = ht_to_vector(val);
+      else if (!SAME_OBJ(val, scheme_true))
+        val = make_delayed_syntax(val);
+      SCHEME_VEC_ELS(vec)[j++] = k;
+      SCHEME_VEC_ELS(vec)[j++] = val;
+    }
+  } else {
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)ht;
+    for (i = t->size; i--; ) {
+      if (t->vals[i]) {
+        val = t->vals[i];
+        if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
+          val = ht_to_vector(val);
+        else if (!SAME_OBJ(val, scheme_true))
+          val = make_delayed_syntax(val);
+        SCHEME_VEC_ELS(vec)[j++] = t->keys[i];
+        SCHEME_VEC_ELS(vec)[j++] = val;
+      }
+    }
+  }
+
+  return vec;
 }
 
 static Scheme_Object *write_module(Scheme_Object *obj)
@@ -1332,8 +1420,12 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   v = m->rn_stx;
   if (!v)
     v = scheme_false;
-  else if (SCHEME_PAIRP(v))
-    v = scheme_list_to_vector(v);
+  else if (!SAME_OBJ(v, scheme_true)) {
+    v = scheme_stx_force_delayed(v);
+    if (!SAME_OBJ(v, m->rn_stx))
+      m->rn_stx = v;
+    v = make_delayed_syntax(v);
+  }
   l = cons(v, l);
 
   /* previously recorded "functional?" info: */
@@ -1361,7 +1453,11 @@ static Scheme_Object *write_module(Scheme_Object *obj)
 
   l = cons((m->phaseless ? scheme_true : scheme_false), l);
 
+  l = cons(ht_to_vector(m->other_binding_names), l);
+  l = cons(ht_to_vector(m->et_binding_names), l);
+  l = cons(ht_to_vector(m->binding_names), l);
   l = cons(m->me->src_modidx, l);
+  
   l = cons(scheme_resolved_module_path_value(m->modsrc), l);
   l = cons(scheme_resolved_module_path_value(m->modname), l);
 
@@ -1394,7 +1490,7 @@ static int check_requires_ok(Scheme_Object *l)
 static Scheme_Object *read_module(Scheme_Object *obj)
 {
   Scheme_Module *m;
-  Scheme_Object *ie, *nie, **bodies;
+  Scheme_Object *ie, *nie, **bodies, *bns;
   Scheme_Object *esp, *esn, *esph, *es, *esnom, *e, *nve, *ne, **v;
   Scheme_Module_Exports *me;
   Scheme_Module_Phase_Exports *pt;
@@ -1438,6 +1534,30 @@ static Scheme_Object *read_module(Scheme_Object *obj)
     return_NULL();
   ((Scheme_Modidx *)me->src_modidx)->resolved = m->modname;
   m->self_modidx = me->src_modidx;
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  bns = SCHEME_CAR(obj);
+  if (!SCHEME_FALSEP(bns)) {
+    if (!SCHEME_VECTORP(bns)) return_NULL();
+    m->binding_names = bns;
+  }
+  obj = SCHEME_CDR(obj);
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  bns = SCHEME_CAR(obj);
+  if (!SCHEME_FALSEP(bns)) {
+    if (!SCHEME_VECTORP(bns)) return_NULL();
+    m->et_binding_names = bns;
+  }
+  obj = SCHEME_CDR(obj);
+
+  if (!SCHEME_PAIRP(obj)) return_NULL();
+  bns = SCHEME_CAR(obj);
+  if (!SCHEME_FALSEP(bns)) {
+    if (!SCHEME_VECTORP(bns)) return_NULL();
+    m->other_binding_names = bns;
+  }
+  obj = SCHEME_CDR(obj);
 
   if (!SCHEME_PAIRP(obj)) return_NULL();
   m->phaseless = (SCHEME_TRUEP(SCHEME_CAR(obj)) ? scheme_true : NULL);

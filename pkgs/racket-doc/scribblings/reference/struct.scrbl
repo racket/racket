@@ -418,7 +418,7 @@ determined by the corresponding @racket[expr]. If @racket[#:parent]
 is specified, the @racket[parent-id] must be bound to a parent
 structure type of @racket[id].
 
-The @racket[id] must have a @tech{transformer binding} that
+The @racket[id] must have a @tech{transformer} binding that
 encapsulates information about a structure type (i.e., like the
 initial identifier bound by @racket[struct]), and the binding
 must supply a constructor, a predicate, and all field accessors.
@@ -610,7 +610,7 @@ See @racket[make-prefab-struct] for a description of valid key shapes.}
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}
 
 The @racket[struct] form binds the name of a structure type as
-a @tech{transformer binding} that records the other identifiers bound
+a @tech{transformer} binding that records the other identifiers bound
 to the structure type, the constructor procedure, the predicate
 procedure, and the field accessor and mutator procedures. This
 information can be used during the expansion of other expressions via

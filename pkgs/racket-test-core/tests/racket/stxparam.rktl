@@ -19,6 +19,11 @@
 (test 'sub values (splicing-syntax-parameterize ([tHIs (lambda (stx) #'(quote sub))])
                     (inDIRECt)))
 
+(define-syntax-parameter tHaT #f)
+;; Make sure `syntax-parameterize` works at the top level:
+(syntax-parameterize ([tHaT (lambda (stx) #'(quote sub))])
+  (tHaT))
+
 (module check-splicing-stxparam-1 racket/base
   (require (for-syntax racket/base)
            racket/stxparam
@@ -87,6 +92,43 @@
   (provide q))
 
 (test 11 dynamic-require ''check-splicing-stxparam-et 'q)
+
+;; ----------------------------------------
+;; Check interaction with internal definition contexts,
+;; both at expression and module levels:
+
+(module stxparam-interaction-with-block racket/base
+  (require racket/stxparam
+           racket/block
+           (for-syntax racket/base))
+
+  (define-syntax-parameter x (lambda (stx) #'10))
+
+  (let ()
+    (block
+     (syntax-parameterize ([x (lambda (stx) #'11)])
+       (let ()
+         x))))
+
+  (block
+   (syntax-parameterize ([x (lambda (stx) #'12)])
+     (let ()
+       x))))
+
+(test "11\n12\n"
+      get-output-string
+      (parameterize ([current-output-port (open-output-string)])
+        (dynamic-require ''stxparam-interaction-with-block #f)
+        (current-output-port)))
+
+;; ----------------------------------------
+;; Make sure a generated name is not ambiguous relative to
+;; a directly imported or defined name:
+
+(module stxparam-generated-name-no-conflict racket/base
+  (require racket/stxparam (for-syntax racket/base))
+  (define-syntax-parameter add (make-rename-transformer #'+))
+  add)
 
 ;; ----------------------------------------
 

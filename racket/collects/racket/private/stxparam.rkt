@@ -30,8 +30,9 @@
 				    "not bound as a syntax parameter"
 				    stx
 				    id))
-				 (syntax-local-get-shadower 
-				  (syntax-local-introduce (syntax-parameter-target sp)))))
+				 (syntax-local-get-shadower
+				  (syntax-local-introduce (syntax-parameter-target sp))
+                                  #t)))
 			     ids)])
 	   (let ([dup (check-duplicate-identifier ids)])
 	     (when dup

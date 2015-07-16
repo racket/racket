@@ -149,7 +149,7 @@
              stx)
             (raise-syntax-error #f "bad syntax" stx)))))
 
-  (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
+  (#%provide (all-from-except "more-scheme.rkt" fluid-let)
              (all-from-except "misc.rkt" collection-path collection-file-path)
              (all-from "define.rkt")
              (all-from-except "letstx-scheme.rkt" -define -define-syntax -define-struct old-cond)

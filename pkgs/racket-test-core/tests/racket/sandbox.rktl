@@ -65,18 +65,22 @@
         (let ([m (exn-message (cadr x))])
           (or (regexp-match? re m) (list 'bad-exception-message: m)))
         x)))
-  (define-syntax thunk (syntax-rules () [(thunk b ...) (lambda () b ...)]))
+  (define-syntax thunk (lambda (stx)
+                         (syntax-case stx ()
+                           [(_ loc b ...)
+                            (syntax/loc #'loc
+                              (lambda () b ...))])))
   (define-syntax t
     (syntax-rules (--eval-- --top-- => <= =err> <err=)
       [(t -?-) (void)]
       [(t -?- --eval-- more ...) (t --eval-- more ...)]
       [(t -?- --top--  more ...) (t --top--  more ...)]
-      [(t --eval-- E)         (test #t            run* (thunk (ev `E)))]
-      [(t --top--  E)         (test #t            run* (thunk E))]
-      [(t --eval-- E => R)    (test `(vals: ,R)   run  (thunk (ev `E)))]
-      [(t --top--  E => R)    (test `(vals: ,R)   run  (thunk E))]
-      [(t --eval-- E =err> R) (test #t e-match? R run  (thunk (ev `E)))]
-      [(t --top--  E =err> R) (test #t e-match? R run  (thunk E))]
+      [(t --eval-- E)         (test #t            run* (thunk E (ev `E)))]
+      [(t --top--  E)         (test #t            run* (thunk E E))]
+      [(t --eval-- E => R)    (test `(vals: ,R)   run  (thunk E (ev `E)))]
+      [(t --top--  E => R)    (test `(vals: ,R)   run  (thunk E E))]
+      [(t --eval-- E =err> R) (test #t e-match? R run  (thunk E (ev `E)))]
+      [(t --top--  E =err> R) (test #t e-match? R run  (thunk E E))]
       [(t -?- E => R more ...)    (begin (t -?- E => R) (t -?- more ...))]
       [(t -?- E =err> R more ...) (begin (t -?- E =err> R) (t -?- more ...))]
       [(t -?- R <= E more ...)    (t -?- E => R more ...)]
@@ -459,6 +463,7 @@
         (load/use-compiled ,test-lib) => (void)
         ;; but the module declaration can't execute due to the inspector:
         (require 'list) =err> "access disallowed by code inspector"
+        #t =err> "access disallowed by code inspector" ; flushes delayed compile-time failure
         (delete-file ,test-zo) => (void)
         (delete-file ,test-lib) =err> "`delete' access denied"
         --top--
@@ -477,6 +482,7 @@
         ;; bytecode from test-lib is bad, even when we can read/write to it
         (load/use-compiled ,test-zo)
         (require 'list) =err> "access disallowed by code inspector"
+        #t =err> "access disallowed by code inspector" ; flushes delayed compile-time failure
         ;; bytecode from test2-lib is explicitly allowed
         (load/use-compiled ,test2-lib)
         (require 'list) => (void))

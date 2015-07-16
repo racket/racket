@@ -7,6 +7,7 @@
              "member.rkt"
              (for-syntax '#%kernel "stx.rkt" "small-scheme.rkt" "stxcase-scheme.rkt" "qqstx.rkt"))
 
+  ;; For `old-case`:
   (define-syntax case-test
     (lambda (x)
       (syntax-case x ()
@@ -53,7 +54,7 @@
         #f
         "bad syntax (illegal use of `.')"
         x))))
-
+  
   ;; From Dybvig:
   (define-syntax do
     (lambda (orig-x)

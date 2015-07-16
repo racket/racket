@@ -31,7 +31,7 @@ the @racket[prop:set!-transformer] property, @racket[#f] otherwise.}
 
 Creates an @tech{assignment transformer} that cooperates with
 @racket[set!]. If the result of @racket[make-set!-transformer] is
-bound to @racket[_id] as a @tech{transformer binding}, then
+bound to @racket[_id] as a @tech{transformer} binding, then
 @racket[proc] is applied as a transformer when @racket[_id] is
 used in an expression position, or when it is used as the target of a
 @racket[set!] assignment as @racket[(set! _id _expr)]. When the
@@ -111,13 +111,11 @@ otherwise.
 ]}
 
 
-@defproc[(make-rename-transformer [id-stx syntax?]
-                                  [delta-introduce (identifier? . -> . identifier?)
-                                                   (lambda (id) id)])
+@defproc[(make-rename-transformer [id-stx syntax?])
          rename-transformer?]{
 
 Creates a @tech{rename transformer} that, when used as a
-@tech{transformer binding}, acts as a transformer that inserts the
+@tech{transformer} binding, acts as a transformer that inserts the
 identifier @racket[id-stx] in place of whatever identifier binds the
 transformer, including in non-application positions, in @racket[set!]
 expressions.
@@ -151,8 +149,7 @@ rename transformer:
        property}, then @racket[_id] (or its target) is not exported by
        @racket[all-defined-out].}
 
- @item{The @racket[syntax-local-value] and
-       @racket[syntax-local-make-delta-introducer] functions recognize
+ @item{The @racket[syntax-local-value] function recognizes
        rename-transformer bindings and consult their targets.}
 
 ]
@@ -161,7 +158,9 @@ rename transformer:
   (define-syntax my-or (make-rename-transformer #'or))
   (my-or #f #t)
   (free-identifier=? #'my-or #'or)
-]}
+]
+
+@history[#:changed "6.3" @elem{Removed an optional second argument.}]}
 
 
 @defproc[(rename-transformer-target [transformer rename-transformer?])
@@ -308,8 +307,8 @@ latter can be used in place of the former (perhaps in a larger
 expression produced by a macro transformer), and when the macro
 expander encounters the opaque object, it substitutes the fully
 expanded expression without re-expanding it; the
-@exnraise[exn:fail:syntax] if the expansion context includes bindings
-or marks that were not present for the original expansion, in which
+@exnraise[exn:fail:syntax] if the expansion context includes
+@tech{scopes} that were not present for the original expansion, in which
 case re-expansion might produce different results. Consistent use of
 @racket[syntax-local-expand-expression] and the opaque object thus
 avoids quadratic expansion times when local expansions are nested.
@@ -370,7 +369,8 @@ context}, @racket[#f] otherwise.}
 
 
 @defproc[(syntax-local-make-definition-context
-          [intdef-ctx (or/c internal-definition-context? #f) #f])
+          [intdef-ctx (or/c internal-definition-context? #f) #f]
+          [add-scope? any/c #f])
          internal-definition-context?]{
 
 Creates an opaque @tech{internal-definition context} value to be used
@@ -380,17 +380,25 @@ expanded, and use it when expanding any form whose lexical context
 should include the definitions. After discovering an internal
 @racket[define-values] or @racket[define-syntaxes] form, use
 @racket[syntax-local-bind-syntaxes] to add bindings to the context.
-Finally, the transformer must call
-@racket[internal-definition-context-seal] after all bindings have been
-added; if an unsealed @tech{internal-definition context} is detected
-in a fully expanded expression, the @exnraise[exn:fail:contract].
+
+An @tech{internal-definition context} internally creates a
+@tech{scope} to represent the context. Unless @racket[add-scope?] is
+@racket[#f], the @tech{scope} is added to any form that is expanded
+within the context or that appears as the result of a (partial)
+expansion within the context.
 
 If @racket[intdef-ctx] is not @racket[#f], then the new
-internal-definition context extends the given one. That is, expanding
-in the new internal-definition context can use bindings previously
-introduced into @racket[intdef-ctx].
+internal-definition context extends the given one. An extending
+definition context adds all @tech{scopes} that are added by
+@racket[intdef-ctx], and expanding in the new internal-definition context
+can use bindings previously introduced into @racket[intdef-ctx].
 
-@transform-time[]}
+@transform-time[]
+
+@history[#:changed "6.3" @elem{Added the @racket[add-scope?] argument,
+                               and made calling
+                               @racket[internal-definition-context-seal]
+                               no longer necessary.}]}
 
 
 @defproc[(syntax-local-bind-syntaxes [id-list (listof identifier?)]
@@ -412,12 +420,22 @@ match the number of identifiers, otherwise the
 @transform-time[]}
 
 
+@defproc[(internal-definition-context-introduce [intdef-ctx internal-definition-context?]
+                                                [stx syntax?]
+                                                [mode (or/c 'flip 'add 'remove) 'flip])
+         syntax?]{
+
+Flips, adds, or removes (depending on @racket[mode]) the @tech{scope}
+for @racket[intdef-ctx] for all parts of @racket[stx].
+
+@history[#:added "6.3"]}
+
+
+
 @defproc[(internal-definition-context-seal [intdef-ctx internal-definition-context?])
          void?]{
 
-Indicates that no further bindings will be added to
-@racket[intdef-ctx], which must not be sealed already. See also
-@racket[syntax-local-make-definition-context].}
+For backward compatibility only; has no effect.}
 
 
 @defproc[(identifier-remove-from-definition-context [id-stx identifier?]
@@ -425,19 +443,14 @@ Indicates that no further bindings will be added to
                                                                       (listof internal-definition-context?))])
          identifier?]{
 
-Removes @racket[intdef-ctx] (or each identifier in the list) from the
-@tech{lexical information} of @racket[id-stx]. This operation is
-useful for correlating an identifier that is bound in an
-internal-definition context with its binding before the
-internal-definition context was created.
+Removes all of the @tech{scopes} of @racket[intdef-ctx] (or of each
+element in a list @racket[intdef-ctx]) from @racket[id-stx].
 
-If simply removing the contexts produces a different binding than
-completely ignoring the contexts (due to nested internal definition
-contexts, for example), then the resulting identifier is given a
-@tech{syntax mark} to simulate a non-existent lexical context. The
-@racket[intdef-ctx] argument can be a list because removing
-internal-definition contexts one at a time can produce a different
-intermediate binding than removing them all at once.}
+The @racket[identifier-remove-from-definition-context] function is
+provided for backward compatibility; the more general
+@racket[internal-definition-context-introduce] function is preferred.
+
+@history[#:changed "6.3" @elem{Simplified the operation to @tech{scope} removal.}]}
 
 
 @defproc[(syntax-local-value [id-stx syntax?]
@@ -448,7 +461,7 @@ intermediate binding than removing them all at once.}
                                          #f])
          any]{
 
-Returns the @tech{transformer binding} value of @racket[id-stx] in
+Returns the @tech{transformer} binding value of @racket[id-stx] in
 either the context associated with @racket[intdef-ctx] (if not
 @racket[#f]) or the context of the expression being expanded (if
 @racket[intdef-ctx] is @racket[#f]).  If @racket[intdef-ctx] is
@@ -460,7 +473,7 @@ with @racket[make-rename-transformer], @racket[syntax-local-value]
 effectively calls itself with the target of the rename and returns
 that result, instead of the @tech{rename transformer}.
 
-If @racket[id-stx] has no @tech{transformer binding} (via
+If @racket[id-stx] has no @tech{transformer} binding (via
 @racket[define-syntax], @racket[let-syntax], etc.) in that
 environment, the result is obtained by applying @racket[failure-thunk]
 if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
@@ -591,7 +604,7 @@ to the top-level or to the top of the module currently being expanded
  or to an enclosing @racket[begin-for-syntax]..
 
 The resulting syntax object is the same as @racket[stx], except that a
-fresh @tech{syntax mark} is added. The same @tech{syntax mark} is
+fresh @tech{scope} is added. The same @tech{scope} is
 added to the lifted @racket[#%require] form, so that the
 @racket[#%require] form can bind uses of imported identifiers in the
 resulting syntax object (assuming that the lexical information of
@@ -698,34 +711,34 @@ expansion context.
 @transform-time[]}
 
 
-@defproc[(syntax-local-get-shadower [id-stx identifier?]) identifier?]{
+@defproc[(syntax-local-get-shadower [id-stx identifier?]
+                                    [only-generated? any/c #f])
+         identifier?]{
 
-Returns @racket[id-stx] if no binding in the current expansion context
-shadows @racket[id-stx] (ignoring unsealed @tech{internal-definition
-contexts} and identifiers that had the @indexed-racket['unshadowable]
-@tech{syntax property}), if @racket[id-stx] has no module bindings in
-its lexical information, and if the current expansion context is not a
-@tech{module context}.
+Adds @tech{scopes} to @racket[id-stx] so that it refers to bindings
+in the current expansion context or could bind any identifier obtained
+via @racket[(syntax-local-get-shadower id-stx)] in more nested contexts.
+If @racket[only-generated?] is true, the phase-spanning @tech{scope}
+of the enclosing module or namespace is omitted from the added scopes,
+however, which limits the bindings that can be referenced (and
+therefore avoids certain ambiguous references).
 
-If a binding of @racket[inner-identifier] shadows @racket[id-stx], the
-result is the same as @racket[(syntax-local-get-shadower
-inner-identifier)], except that it has the location and properties of
-@racket[id-stx]. When searching for a shadowing binding, bindings from
-unsealed @tech{internal-definition contexts} are ignored.
+This function is intended for the implementation of
+@racket[syntax-parameterize] and @racket[local-require].
 
-Otherwise, the result is the same as @racket[id-stx] with its module
-bindings (if any) removed from its lexical information, and the
-lexical information of the current @tech{module context} (if any)
-added.
+@transform-time[]
 
-Thus, the result is an identifier corresponding to the innermost
-shadowing of @racket[id-stx] in the current context if it is shadowed,
-and a module-contextless version of @racket[id-stx] otherwise.
+@history[#:changed "6.3" @elem{Simplified to the minimal functionality
+                               needed for @racket[syntax-parameterize]
+                               and @racket[local-require].}]}
 
-If @racket[id-stx] is @tech{tainted} or @tech{armed}, then the
-resulting identifier is @tech{tainted}.
 
-@transform-time[]}
+@defproc[(syntax-local-make-delta-introducer [id-stx identifier?]) procedure?]{
+
+For (limited) backward compatibility only; raises @racket[exn:fail:supported].
+
+@history[#:changed "6.3" @elem{changed to raise @racket[exn:fail:supported].}]}
+
 
 
 @defproc[(syntax-local-certifier [active? boolean? #f])
@@ -749,75 +762,69 @@ transformer} application by the expander for an expression
 within a @racket[module] form, @racket[#f] otherwise.}
 
 
+@defproc[(syntax-local-identifier-as-binding [id-stx identifier?]) identifier?]{
+
+Returns an identifier like @racket[id-stx], but without @tech{use-site
+scopes} that were previously added to the identifier as part of a
+macro expansion in the current definition context.
+
+In a @tech{syntax transformer} that runs in a non-expression context
+and forces the expansion of subforms with @racket[local-expand], use
+@racket[syntax-local-identifier-as-binding] on an identifier from the
+expansion before moving it into a binding position or comparing with
+with @racket[bound-identifier=?]. Otherwise, the results can be
+inconsistent with the way that @racket[define] works in the same
+definition context.
+
+@transform-time[]
+
+@history[#:added "6.3"]}
+
 @defproc[(syntax-local-introduce [stx syntax?]) syntax?]{
 
-Produces a syntax object that is like @racket[stx], except that a
-@tech{syntax mark} for the current expansion is added (possibly
-canceling an existing mark in parts of @racket[stx]). See
-@secref["transformer-model"] for information on @tech{syntax
-marks}.
+Produces a syntax object that is like @racket[stx], except that the
+presence of @tech{scopes} for the current expansion---both the. See
+@secref["transformer-model"] for information on @tech{scopes}.
 
 @transform-time[]}
 
 
-@defproc[(make-syntax-introducer) (syntax? . -> . syntax?)]{
+@defproc[(make-syntax-introducer) ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
 
-Produces a procedure that behaves like
-@racket[syntax-local-introduce], but using a fresh @tech{syntax
-mark}. Multiple applications of the same
-@racket[make-syntax-introducer] result procedure use the same mark,
-and different result procedures use distinct marks.}
+Produces a procedure that behaves similar to
+@racket[syntax-local-introduce], but using a fresh @tech{scope},
+and where the action of the scope can be @racket['flip] (the default),
+@racket['add] to add the scope regardless of whether it is present already,
+or @racket['remove] to remove the scope when it is currently present.
+
+Multiple applications of the same
+@racket[make-syntax-introducer] result procedure use the same scope,
+and different result procedures use distinct scopes.
+
+@history[#:changed "6.3" @elem{Added the optional operation argument
+                               in the result procedure.}]}
+
 
 @defproc[(make-syntax-delta-introducer [ext-stx syntax?] 
                                        [base-stx (or/c syntax? #f)]
                                        [phase-level (or/c #f exact-integer?)
                                                     (syntax-local-phase-level)])
-         (syntax? . -> . syntax?)]{
+         ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
 
-Produces a procedure that behaves like
-@racket[syntax-local-introduce], but using the @tech{syntax marks} of
-@racket[ext-stx] that are not shared with @racket[base-stx].  If
-@racket[ext-stx] does not extend the set of marks in @racket[base-stx]
-or if @racket[base-stx] is @racket[#f], and if @racket[ext-stx] has a
-module binding in the @tech{phase level} indicated by
-@racket[phase-level], then any marks of @racket[ext-stx] that would be
-needed to preserve its binding are not transferred in an introduction.
+Produces a procedure that behaves like the result of
+@racket[make-syntax-introducer], but using the @tech{scopes} of
+@racket[ext-stx] that are not shared with @racket[base-stx].
 
 This procedure is potentially useful when @racket[_m-id] has a
 transformer binding that records some @racket[_orig-id], and a use of
 @racket[_m-id] introduces a binding of @racket[_orig-id]. In that
-case, the @tech{syntax marks} in the use of @racket[_m-id] since the
+case, the @tech{scopes} one the use of @racket[_m-id] added since the
 binding of @racket[_m-id] should be transferred to the binding
 instance of @racket[_orig-id], so that it captures uses with the same
 lexical context as the use of @racket[_m-id].
 
-More typically, however, @racket[syntax-local-make-delta-introducer]
-should be used, since it cooperates with @tech{rename transformers}.
-
 If @racket[ext-stx] is @tech{tainted} or @tech{armed}, then an
 identifier result from the created procedure is @tech{tainted}.}
-
-
-@defproc[(syntax-local-make-delta-introducer [id identifier?])
-         (identifier? . -> . identifier?)]{
-
-Determines the binding of @racket[id]. If the binding is not a
-@tech{rename transformer}, the result is an introducer as created by
-@racket[make-syntax-delta-introducer] using @racket[id] and the
-binding of @racket[id] in the environment of expansion. If the binding
-is a @tech{rename transformer}, then the introducer is one composed
-with the target of the @tech{rename transformer} and its
-binding. Furthermore, the @racket[_delta-introduce] functions
-associated with the @tech{rename transformers} (supplied as the second
-argument to @racket[make-rename-transformer]) are composed (in
-first-to-last order) before the introducers created with
-@racket[make-syntax-delta-introducer] (which are composed
-last-to-first).
-
-The @exnraise[exn:fail:contract] if @racket[id] or any identifier in
-its rename-transformer chain has no binding.
-
-@transform-time[]}
 
 
 @defproc[(syntax-local-transforming-module-provides?) boolean?]{
@@ -896,7 +903,7 @@ The @racket[liberal-define-context?] predicate returns @racket[#t] if
 
 @note-lib-only[racket/require-transform]
 
-A @tech{transformer binding} whose value is a structure with the
+A @tech{transformer} binding whose value is a structure with the
 @racket[prop:require-transformer] property implements a derived
 @racket[_require-spec] for @racket[require] as a @deftech{require
 transformer}.
@@ -1059,14 +1066,14 @@ first argument.}
 
 @note-lib-only[racket/provide-transform]
 
-A @tech{transformer binding} whose value is a structure with the
+A @tech{transformer} binding whose value is a structure with the
 @racket[prop:provide-transformer] property implements a derived
 @racket[_provide-spec] for @racket[provide] as a @deftech{provide transformer}.
 A @tech{provide transformer} is applied as part of the last phase of
 a module's expansion, after all other declarations and expressions within
 the module are expanded.
 
-A @tech{transformer binding} whose value is a structure with the
+A @tech{transformer} binding whose value is a structure with the
 @racket[prop:provide-pre-transformer] property implements a derived
 @racket[_provide-spec] for @racket[provide] as a @deftech{provide
 pre-transformer}.  A @tech{provide pre-transformer} is applied as part
@@ -1075,7 +1082,7 @@ first phase, a @tech{provide pre-transformer} can use functions such
 as @racket[syntax-local-lift-expression] to introduce expressions and
 definitions in the enclosing module.
 
-An identifier can have a @tech{transformer binding} to a value that
+An identifier can have a @tech{transformer} binding to a value that
 acts both as a @tech{provide transformer} and @tech{provide
 pre-transformer}. The result of a @tech{provide
 pre-transformer} is @emph{not} automatically re-expanded, so a

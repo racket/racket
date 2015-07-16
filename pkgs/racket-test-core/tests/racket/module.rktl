@@ -148,7 +148,6 @@
 (test 6 dynamic-require ''defines-car-that-overrides-import/stx 'car)
 ;; Can't redefine multiple times or import after definition:
 (syntax-test #'(module m racket/base (#%require racket/base) (define car 5) (define car 5)))
-(syntax-test #'(module m racket/base (define car 5) (#%require racket/base)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -232,17 +231,22 @@
 	     (require 'e 'b)))
     (test '(d b d b c) values l)
     (eval `(require 'f))
-    (let ([finished '(f b e  a d b  d b d b c)])
+    (let ([finished '(f b e  a  d b d b c)])
       (test finished values l)
-      (namespace-attach-module n ''f)
-      (test finished values l)
-      (parameterize ([current-namespace (make-empty-namespace)])
-	(namespace-attach-module n ''f)
-	(test finished values l)
-        (namespace-require 'racket/base)
-	(eval `(require 'a))
-	(eval `(require 'f))
-	(test (list* 'd 'b finished) values l)))))
+      (eval '10) ; triggers `d` and `b`
+      (let ([finished (append '(d b) finished)])
+        (test finished values l)
+        (namespace-attach-module n ''f)
+        (test finished values l)
+        (parameterize ([current-namespace (make-empty-namespace)])
+          (namespace-attach-module n ''f)
+          (test finished values l)
+          (namespace-require 'racket/base)
+          (eval `(require 'a))
+          (eval `(require 'f))
+          (test finished values l)
+          (eval '10)
+          (test (list* 'd 'b finished) values l))))))
 
 (let* ([n (make-base-namespace)]
        [l null]
@@ -357,7 +361,6 @@
 	 (module m 'mod_beg2
            3)))
 
-
 (test (void) eval
       '(begin
 	 (module mod_beg2 racket/base
@@ -389,6 +392,60 @@
            3)))
 
 (define expand-test-use-toplevel? #f)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check line between macro definition and use:
+
+(module local-binding-produces-identity racket/base
+  (provide proc)
+  
+  (define proc
+    (let ()
+      (define-syntax identity
+        (syntax-rules ()
+          [(_ misc-id)
+           (lambda (x)
+             (let ([misc-id 'other])
+               x))]))
+      
+      (identity x))))
+
+(test 77 (dynamic-require ''local-binding-produces-identity 'proc) 77)
+
+(module module-binding-produces-identity racket/base
+  (define-syntax identity
+    (syntax-rules ()
+      [(_ misc-id)
+       (lambda (x)
+         (let ([misc-id 'other])
+           x))]))
+  (identity x))
+
+(test 79
+      (let ([proc #f])
+        (parameterize ([current-print (lambda (v) (set! proc v))])
+          (dynamic-require ''module-binding-produces-identity #f))
+        proc)
+      79)
+
+(module macro-introduced-binding-produces-identity racket/base
+  (define-syntax-rule (gen)
+    (begin
+      (define-syntax identity
+        (syntax-rules ()
+          [(_ misc-id)
+           (lambda (x)
+             (let ([misc-id 'other])
+               x))]))
+      (identity x)))
+  (gen))
+
+(test 78
+      (let ([proc #f])
+        (parameterize ([current-print (lambda (v) (set! proc v))])
+          (dynamic-require ''macro-introduced-binding-produces-identity #f))
+        proc)
+      78)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -622,7 +679,7 @@
       (test 5 eval 'five ns)
       (eval p-code ns)
       (eval '(require 'p) ns)
-      (test #f eval 'same? ns)
+      ; (test #f eval 'same? ns)
       (let ([n-ns (eval '(module->namespace ''n) ns)])
         (test 5 eval '(lambda (x) x) n-ns)))))
 
@@ -981,7 +1038,8 @@
         (require (for-syntax racket/base))
         (begin-for-syntax
          (require 'm))))
-    (eval '(require 'n)))
+    (eval '(require 'n))
+    (eval '10))
   (test #"1\n1\n" get-output-bytes o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1012,7 +1070,7 @@
 
 (module avail-y racket/base
   (require 'avail-z)
-  (eval #'(foo 10)))
+  (eval-syntax #'(foo 10)))
 
 (err/rt-test (dynamic-require ''avail-y #f)
              (lambda (exn) (and (exn? exn)
@@ -1171,6 +1229,12 @@
 ;; the enclosing module work, even though the identifier is missing
 ;; a module context.
 
+#|
+
+I think this was a bad idea. It's trying to make generated identifiers
+"just work", but the hack to provide this behavior only covered the
+case of module-leve bindings; it doesn't cover local bindings.
+
 (let ()
   (define (mk mode wrap?)
     `(module m racket
@@ -1204,6 +1268,8 @@
          [wrap? '(#t #f)])
     (parameterize ([current-namespace (make-base-namespace)])
       (eval (mk m wrap?)))))
+
+|#
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that module caching doesn't cause submodules

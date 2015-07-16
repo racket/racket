@@ -382,6 +382,7 @@ GC2_EXTERN int GC_is_partial(struct NewGC *gc);
 /* 
    Reports whether the current GC is a non-full collection. */
 
+GC2_EXTERN void GC_mark_no_recur(struct NewGC *gc, int enable);
 GC2_EXTERN void GC_retract_only_mark_stack_entry(void *pf, struct NewGC *gc);
 /*
    Used for very special collaboration with GC. */

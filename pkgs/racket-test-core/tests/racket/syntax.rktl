@@ -1290,7 +1290,7 @@
 (syntax-test #'#%top)
 (syntax-test #'(#%top 1))
 (syntax-test #'(let ([#%top 5])
-		 x))
+		 an-identifier-that-is-never-defined))
 (err/rt-test (#%top . lambda) exn:fail:contract:variable?)
 (define x 5)
 (test 5 '#%top (#%top . x))
@@ -1528,6 +1528,10 @@
                   x)))
              exn:fail:contract:variable?)
 
+(test 1
+      values
+      (letrec-syntaxes+values () ([(b) 0]) (define x 1) x))
+
 (test 82 'splicing-letrec-syntaxes+values
       (let ()
         (define q 77)
@@ -1598,6 +1602,13 @@
                (define (q) 82)]
             (define (a) (m)))
           (m))))
+
+(test 105 'splicing-local
+      (let ()
+        (splicing-local
+         [(define x 105)]
+         (define-syntax outer-x (make-rename-transformer #'x)))
+        outer-x))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check keyword & optionals for define-syntax 

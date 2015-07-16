@@ -352,6 +352,17 @@ uintptr_t scheme_get_max_symbol_length() {
   return scheme_max_symbol_length;
 }
 
+void scheme_ensure_max_symbol_length(uintptr_t len)
+{
+#ifdef MZ_USE_PLACES
+  mzrt_ensure_max_cas(&scheme_max_symbol_length, len);
+#else
+  if (len > scheme_max_symbol_length) {
+    scheme_max_symbol_length = len;
+  }
+#endif
+}
+
 
 static Scheme_Object *
 make_a_symbol(const char *name, uintptr_t len, int kind)
@@ -366,15 +377,9 @@ make_a_symbol(const char *name, uintptr_t len, int kind)
   memcpy(sym->s, name, len);
   sym->s[len] = 0;
 
-#ifdef MZ_USE_PLACES
-  mzrt_ensure_max_cas(&scheme_max_symbol_length, len);
-#else
-  if ( len > scheme_max_symbol_length ) {
-    scheme_max_symbol_length = len;
-  }
-#endif
+  scheme_ensure_max_symbol_length(len);
 
-  return (Scheme_Object *) sym;
+  return (Scheme_Object *)sym;
 }
 
 Scheme_Object *
@@ -928,6 +933,7 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
 {
   char buffer[100], *str;
   Scheme_Object *r;
+  Scheme_Thread *p;
 
   if (argc)
     r = argv[0];
@@ -937,6 +943,18 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
   if (r && !SCHEME_SYMBOLP(r) && !SCHEME_CHAR_STRINGP(r))
     scheme_wrong_contract("gensym", "(or/c symbol? string?)", 0, argc, argv);
 
+  if (!r) {
+    /* Generate a name using an enclosing module name during compilation, if available */
+    p = scheme_current_thread;
+    if (p->current_local_env && p->current_local_env->genv->module) {
+      r = SCHEME_PTR_VAL(p->current_local_env->genv->module->modname);
+      if (SCHEME_PAIRP(r))
+        r = SCHEME_CAR(r);
+      if (!SCHEME_SYMBOLP(r))
+        r = NULL;
+    }
+  }
+  
   if (r) {
     char buf[64];
     if (SCHEME_CHAR_STRINGP(r)) {
@@ -953,6 +971,13 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
   r = scheme_make_symbol(buffer);
 
   return r;
+}
+
+Scheme_Object *scheme_gensym(Scheme_Object *base)
+{
+  Scheme_Object *a[1];
+  a[0] = base;
+  return gensym(1, a);
 }
 
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2)

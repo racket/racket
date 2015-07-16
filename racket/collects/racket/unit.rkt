@@ -52,7 +52,15 @@
        (check-id #'arg)
        #'(define-syntax name
            (make-set!-transformer
-            (make-signature-form (λ (arg) . val))))))
+            (make-signature-form (λ (arg ignored) . val))))))
+    ((_ (name arg intro-arg) . val)
+     (begin
+       (check-id #'name)
+       (check-id #'arg)
+       (check-id #'intro-arg)
+       #'(define-syntax name
+           (make-set!-transformer
+            (make-signature-form (λ (arg intro-arg) . val))))))
     ((_ . l)
      (let ((l (checked-syntax->list stx)))
        (unless (>= 3 (length l))
@@ -561,21 +569,23 @@
   (do-struct~/ctc stx #f))
 
 ;; build-val+macro-defs : sig -> (list syntax-object^3)
-(define-for-syntax (build-val+macro-defs sig)
+(define-for-syntax ((build-val+macro-defs intro) sig)
   (if (and (null? (cadr sig))
            (null? (caddr sig)))
       ;; No renames needed; this shortcut avoids
       ;; an explosion of renamings, especially with chains
       ;; of `open':
       (list #'(() (values)) #'() #'())
-      ;; Renames and macros needes:
+      ;; Renames and macros needed:
       (with-syntax ([(((int-ivar . ext-ivar) ...)
                       ((((int-vid . ext-vid) ...) . vbody) ...)
                       ((((int-sid . ext-sid) ...) . sbody) ...)
                       _
                       _)
                      (map-sig (lambda (x) x)
-                              (make-syntax-introducer)
+                              (let ([i (make-syntax-introducer)])
+                                (lambda (x)
+                                  (intro (i x))))
                               sig)])
         (list
          #'((ext-ivar ... ext-vid ... ... ext-sid ... ...)
@@ -617,7 +627,7 @@
           make-rename-transformer
           (syntax->list ids))))
 
-(define-signature-form (open stx)
+(define-signature-form (open stx enclosing-intro)
   (define (build-sig-elems sig)
     (map (λ (p c)
            (if c #`(contracted [#,(car p) #,c]) (car p)))
@@ -632,7 +642,7 @@
                        ((renames
                          (((mac-name ...) mac-body) ...) 
                          (((val-name ...) val-body) ...))
-                        (build-val+macro-defs sig))
+                        ((build-val+macro-defs enclosing-intro) sig))
                        ((((e-post-id ...) . _) ...) (list-ref sig 4))
                        ((post-renames (e-post-rhs ...))
                         (build-post-val-defs sig)))
@@ -669,6 +679,13 @@
                     (map syntax-local-introduce
                          (siginfo-rtime-ids super-siginfo))))
           (values '() '() '())))
+    ;; For historical reasons, signature forms are backwards:
+    ;; they're non-hygenic by default, and they accept an optional
+    ;; introducer to mark introduced pieces --- but the end result
+    ;; is flipped around, because we apply `intro` to the whole
+    ;; signature, for the same reason as described below at
+    ;; "INTRODUCED FORMS AND MACROS".
+    (define intro (make-syntax-introducer))
     (let loop ((sig-exprs (if super-sigid
                               (cons #`(open #,super-sigid) ses)
                               ses))
@@ -702,7 +719,8 @@
                  (define signature-tag (gensym))
                  (define-syntax #,sigid
                    (make-set!-transformer
-                    (make-signature
+                    #,(intro
+                     #`(make-signature
                      (make-siginfo (list #'#,sigid #'super-name ...)
                                    (list (quote-syntax signature-tag)
                                          #'super-rtime
@@ -722,7 +740,7 @@
                                          #`(quote-syntax #,c)
                                          #'#f))
                                    all-ctcs))
-                     (quote-syntax #,sigid))))
+                     (quote-syntax #,sigid)))))
                  (define-values ()
                    (begin
                      (λ (var ...)
@@ -793,7 +811,7 @@
                        (raise-stx-err "unknown signature form" #'x))))))
               (unless (signature-form? trans)
                 (raise-stx-err "not a signature form" #'x))
-              (let ((results ((signature-form-f trans) (car sig-exprs))))
+              (let ((results ((signature-form-f trans) (car sig-exprs) intro)))
                 (unless (list? results)
                   (raise-stx-err
                    (format "expected list of results from signature form, got ~e" results)
@@ -915,6 +933,16 @@
        (check-duplicate-subs export-tagged-infos esig)
        
        (check-unit-ie-sigs import-sigs export-sigs)
+
+       ;; INTRODUCED FORMS AND MACROS:
+       ;; We need to distinguish the original body from any
+       ;; forms that are introduced from signatures 
+       ;; (via `define-values`, etc., in a signature body).
+       ;; The `intro` mark should be added to everything except
+       ;; the introduced parts, which we implement by adding the
+       ;; mark to the introduced parts and then flipping it
+       ;; evenrywehere.
+       (define intro (make-syntax-introducer))
        
        (with-syntax ((((dept . depr) ...)
                       (map
@@ -923,7 +951,7 @@
                                (syntax-local-introduce (car (siginfo-rtime-ids (cdr tinfo))))))
                        dep-tagged-siginfos))
                      [((renames (mac ...) (val ...)) ...)
-                      (map build-val+macro-defs import-sigs)]
+                      (map (build-val+macro-defs intro) import-sigs)]
                      [(((int-ivar . ext-ivar) ...) ...) (map car import-sigs)]
                      [(((int-evar . ext-evar) ...) ...) (map car export-sigs)]
                      [((((e-post-id ...) . _) ...) ...) (map (lambda (s) (list-ref s 4)) export-sigs)]
@@ -954,7 +982,8 @@
                                     (lambda (import) (length (car import)))
                                     import-sigs)])
          (values 
-          (quasisyntax/loc (error-syntax)
+          (intro
+           (quasisyntax/loc (error-syntax)
             (make-unit
              'name
              (vector-immutable (cons 'import-name
@@ -1005,7 +1034,7 @@
                     (unit-export ((export-key ...)
                                   (vector-immutable (λ () (check-not-unsafe-undefined (unbox eloc) 'int-evar))
                                                     ...))
-                                 ...)))))))
+                                 ...))))))))
           import-tagged-sigids
           export-tagged-sigids
           dep-tagged-sigids))))))
@@ -1034,7 +1063,7 @@
                            (free-identifier=? id (quote-syntax define-syntaxes)))))]
               [expanded-body
                (let expand-all ((defns&exprs (syntax->list #'(body ...))))
-                 ;; Also lifted from Matthew, to expand the body enough
+                 ;; Expand the body enough
                  (apply
                   append
                   (map
@@ -1059,12 +1088,16 @@
                                               'expression
                                               null)])
                             (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #'rhs def-ctx)
-                            (list #'(define-syntaxes (id ...) rhs)))]
+                            (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                                                    (syntax->list #'(id ...)))])
+                              (list #'(define-syntaxes (id ...) rhs))))]
                          [(define-values (id ...) rhs)
                           (andmap identifier? (syntax->list #'(id ...)))
                           (begin
                             (syntax-local-bind-syntaxes (syntax->list #'(id ...)) #f def-ctx)
-                            (list defn-or-expr))]
+                            (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                                                         (syntax->list #'(id ...)))])
+                              (list #'(define-values (id ...) rhs))))]
                          [else (list defn-or-expr)])))
                    defns&exprs)))]
               ;; Get all the defined names, sorting out variable definitions
@@ -1102,7 +1135,7 @@
          (for-each
           (lambda (name loc ctc)
             (let ([v (bound-identifier-mapping-get defined-names-table
-                                                   name
+                                                   (syntax-local-identifier-as-binding name)
                                                    (lambda () #f))])
               (unless v
                 (raise-stx-err (format "undefined export ~a" (syntax-e name))))
@@ -1682,7 +1715,7 @@
                         (((mac-name ...) mac-body) ...) 
                         (((val-name ...) val-body) ...))
                        ...)
-                      (map build-val+macro-defs out-sigs))
+                      (map (build-val+macro-defs values) out-sigs))
                      ((out-names ...)
                       (map (lambda (info) (car (siginfo-names (cdr info))))
                            out-tags))
@@ -2024,9 +2057,7 @@
             [units (map lookup-def-unit us)]
             [import-sigs (map process-signature 
                               (syntax->list #'(import ...)))]
-            [sig-introducers (map (lambda (unit u)
-                                    (make-syntax-delta-introducer u (unit-info-orig-binder unit)))
-                                  units us)]
+            [sig-introducers (map (lambda (unit u) values) units us)]
             [sub-outs
              (map
               (lambda (outs unit sig-introducer)
@@ -2176,7 +2207,7 @@
                          sub-ins))
                        ((unit-id ...) (map 
                                        (lambda (u stx)
-                                         (quasisyntax/loc stx #,(unit-info-unit-id u)))
+                                         (quasisyntax/loc stx #,(syntax-local-introduce (unit-info-unit-id u))))
                                        units (syntax->list #'(u ...)))))
            (build-compound-unit #`((import ...)
                                    #,exports
@@ -2218,9 +2249,8 @@
 (define-for-syntax (build-invoke-unit/infer units define? exports)
   (define (imps/exps-from-unit u)      
     (let* ([ui (lookup-def-unit u)]
-           [unprocess (let ([i (make-syntax-delta-introducer u (unit-info-orig-binder ui))])
-                        (lambda (p)
-                          (unprocess-tagged-id (cons (car p) (i (cdr p))))))]
+           [unprocess (lambda (p)
+                        #`(bind-at #,u #,(unprocess-tagged-id (cons (car p) (cdr p)))))]
            [isigs (map unprocess (unit-info-import-sig-ids ui))]
            [esigs (map unprocess (unit-info-export-sig-ids ui))])
       (values isigs esigs)))
@@ -2308,7 +2338,8 @@
                                              (check-compound/infer-syntax
                                               #'((import isig ...)
                                                  (export esig ...)
-                                                 (link unit ...))))]) u)])
+                                                 (link unit ...))))])
+                                u)])
                (if define?
                    (syntax/loc (error-syntax)
                      (define-values/invoke-unit u

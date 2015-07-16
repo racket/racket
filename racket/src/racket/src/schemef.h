@@ -511,6 +511,7 @@ MZ_EXTERN Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht);
 MZ_EXTERN void scheme_clear_hash_table(Scheme_Hash_Table *ht);
 
 MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree(int kind);
+MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree_set(int kind);
 MZ_EXTERN Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
 MZ_EXTERN Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
 XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
@@ -1140,8 +1141,8 @@ MZ_EXTERN intptr_t scheme_equal_hash_key(Scheme_Object *o);
 MZ_EXTERN intptr_t scheme_equal_hash_key2(Scheme_Object *o);
 MZ_EXTERN intptr_t scheme_recur_equal_hash_key(Scheme_Object *o, void *cycle_data);
 MZ_EXTERN intptr_t scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data);
-MZ_EXTERN intptr_t scheme_eqv_hash_key(Scheme_Object *o);
-MZ_EXTERN intptr_t scheme_eqv_hash_key2(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_eqv_hash_key(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_eqv_hash_key2(Scheme_Object *o);
 
 MZ_EXTERN void scheme_set_type_equality(Scheme_Type type, 
                                         Scheme_Equal_Proc f,

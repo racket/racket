@@ -11,7 +11,8 @@
          "lib.rkt"
          "commands.rkt"
          (prefix-in setup: setup/setup)
-         (for-syntax racket/base))
+         (for-syntax racket/base
+                     syntax/strip-context))
 
 (define (setup what no-setup? fail-fast? setup-collects jobs)
   (unless (or (eq? setup-collects 'skip)
@@ -136,7 +137,6 @@
          "  given path: ~a")
      clone)]))
 
-(splicing-let ()
   (define-syntax (make-commands stx)
     (syntax-case stx ()
       [(_ #:scope-flags (scope-flags ...)
@@ -144,7 +144,7 @@
           #:trash-flags (trash-flags ...)
           #:catalog-flags (catalog-flags ...)
           #:install-type-flags (install-type-flags ...)
-          #:install-dep-flags (install-dep-flags ...)
+          #:install-dep-flags ((install-dep-flags ... (dep-desc ...)))
           #:install-dep-desc (install-dep-desc ...)
           #:install-force-flags (install-force-flags ...)
           #:install-clone-flags (install-clone-flags ...)
@@ -152,30 +152,8 @@
           #:install-copy-flags (install-copy-flags ...)
           #:install-copy-defns (install-copy-defns ...)
           #:install-copy-checks (install-copy-checks ...))
-       (with-syntax ([([scope-flags ...]
-                       [job-flags ...]
-                       [trash-flags ...]
-                       [catalog-flags ...]
-                       [install-type-flags ...]
-                       [(install-dep-flags ... (dep-desc ...))]
-                       [install-force-flags ...]
-                       [install-clone-flags ...]
-                       [update-deps-flags ...]
-                       [install-copy-flags ...]
-                       [install-copy-defns ...]
-                       [install-copy-checks ...])
-                      (syntax-local-introduce #'([scope-flags ...]
-                                                 [job-flags ...]
-                                                 [trash-flags ...]
-                                                 [catalog-flags ...]
-                                                 [install-type-flags ...]
-                                                 [install-dep-flags ...]
-                                                 [install-force-flags ...]
-                                                 [install-clone-flags ...]
-                                                 [update-deps-flags ...]
-                                                 [install-copy-flags ...]
-                                                 [install-copy-defns ...]
-                                                 [install-copy-checks ...]))])
+       (replace-context
+        stx
          #`(commands
             "This tool is used for managing installed packages."
             "pkg-~a-command"
@@ -644,6 +622,7 @@
               (lambda ()
                 (pkg-empty-trash #:list? list
                                  #:quiet? #f)))]))]))
+
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()
@@ -725,4 +704,4 @@
                                    (cond
                                     [link "link"]
                                     [static-link "static-link"]
-                                    [clone "clone"]))))]))
+                                    [clone "clone"]))))])

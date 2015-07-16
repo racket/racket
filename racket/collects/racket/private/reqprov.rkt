@@ -322,7 +322,9 @@
                                 in)))]
                        ;; General case:
                        [_ (let-values ([(imports sources) (expand-import in)])
-                            ;; TODO: collapse back to simple cases when possible
+                            ;; Note: in case `in` could be expressed as a simple import form,
+                            ;; the core `#%require` form will collapse back to simple form
+                            ;; in many cases.
                             (cons/syntax-track/form
                              #'(just-meta 0)
                              in
@@ -406,8 +408,13 @@
                                        (current-load-relative-directory))
                                (list prefetches (current-load-relative-directory))
                                #f))
-                (syntax/loc stx
-                  (begin (require in) ...)))])))]
+                (with-syntax ([(req-in ...)
+                               (map (lambda (in)
+                                      (with-syntax ([in in])
+                                        (syntax/loc stx (require in))))
+                                    (syntax->list #'(in ...)))])
+                  (syntax/loc stx
+                    (begin req-in ...))))])))]
       [else
        (raise-syntax-error #f
                            "not at module level or top level"

@@ -11,11 +11,16 @@
 (test #t mutable-bound-id-table? (make-bound-id-table))
 (test #t immutable-bound-id-table? (make-immutable-bound-id-table))
 
+(module module-that-supplies-a-b racket/base
+  (provide b)
+  (define b #'b))
+
 (let ()
-  (define a #'a)
-  (define b #'b)
-  (define b2 (let ([b 0]) #'b))
-  (define b3 ((make-syntax-introducer) #'b)) ;; free=? to b
+  (define i (make-syntax-introducer))
+  (define a (i #'a))
+  (define b (i #'b))
+  (define b2 (dynamic-require ''module-that-supplies-a-b 'b))
+  (define b3 ((make-syntax-introducer) b)) ;; free=? to b
   (define alist (list (cons a 1) (cons b 2) (cons b2 3) (cons b3 4)))
   (test 4 bound-id-table-count (make-bound-id-table alist))
   (test 4 bound-id-table-count (make-immutable-bound-id-table alist))
@@ -329,11 +334,10 @@
 
     ))
 
-(let ()
-  (define-syntax name 'dummy)
-  (define-syntax alias (make-rename-transformer #'name))
-  (define table (make-free-id-table))
-  (free-id-table-set! table #'alias 0)
-  (test 0 free-id-table-ref table #'name))
+(define-syntax name-for-boundmap-test 'dummy)
+(define-syntax alias-for-boundmap-test (make-rename-transformer #'name-for-boundmap-test))
+(define table (make-free-id-table))
+(free-id-table-set! table #'alias-for-boundmap-test 0)
+(test 0 free-id-table-ref table #'name-for-boundmap-test)
 
 (report-errs)

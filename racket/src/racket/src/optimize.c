@@ -6357,6 +6357,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     /* We can simplify letrec to let* */
     SCHEME_LET_FLAGS(head) -= SCHEME_LET_RECURSIVE;
     SCHEME_LET_FLAGS(head) |= SCHEME_LET_STAR;
+    is_rec = 0;
   }
 
   {

@@ -299,6 +299,7 @@
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;
   scheme_extension_table->scheme_clear_hash_table = scheme_clear_hash_table;
   scheme_extension_table->scheme_make_hash_tree = scheme_make_hash_tree;
+  scheme_extension_table->scheme_make_hash_tree_set = scheme_make_hash_tree_set;
   scheme_extension_table->scheme_hash_tree_set = scheme_hash_tree_set;
   scheme_extension_table->scheme_hash_tree_get = scheme_hash_tree_get;
   scheme_extension_table->scheme_eq_hash_tree_get = scheme_eq_hash_tree_get;

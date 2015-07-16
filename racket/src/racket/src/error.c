@@ -2230,12 +2230,10 @@ static void do_wrong_syntax(const char *where,
   intptr_t len, vlen, dvlen, blen, plen;
   char *buffer;
   char *v, *dv, *p;
-  Scheme_Object *mod, *nomwho, *who;
+  Scheme_Object *who;
   int show_src;
 
   who = NULL;
-  nomwho = NULL;
-  mod = scheme_false;
 
   if (!s) {
     s = "bad syntax";
@@ -2249,14 +2247,10 @@ static void do_wrong_syntax(const char *where,
     where = NULL;
   } else if (where == scheme_application_stx_string) {
     who = scheme_intern_symbol("#%app");
-    nomwho = who;
-    mod = scheme_intern_symbol("racket");
   } else if ((where == scheme_set_stx_string)
 	     || (where == scheme_var_ref_string)
 	     || (where == scheme_begin_stx_string)) {
     who = scheme_intern_symbol(where);
-    nomwho = who;
-    mod = scheme_intern_symbol("racket");
     if (where == scheme_begin_stx_string)
       where = "begin (possibly implicit)";
   }
@@ -2275,23 +2269,14 @@ static void do_wrong_syntax(const char *where,
       pform = scheme_syntax_to_datum(form, 0, NULL);
 
       /* Try to extract syntax name from syntax */
-      if (!nomwho && (SCHEME_SYMBOLP(SCHEME_STX_VAL(form)) || SCHEME_STX_PAIRP(form))) {
+      if (!who && (SCHEME_SYMBOLP(SCHEME_STX_VAL(form)) || SCHEME_STX_PAIRP(form))) {
 	Scheme_Object *first;
 	if (SCHEME_STX_PAIRP(form))
 	  first = SCHEME_STX_CAR(form);
 	else
 	  first = form;
-	if (SCHEME_SYMBOLP(SCHEME_STX_VAL(first))) {
-	  /* Get module and name at source: */
-	  int phase;
+	if (SCHEME_SYMBOLP(SCHEME_STX_VAL(first)))
 	  who = SCHEME_STX_VAL(first); /* printed name is local name */
-	  /* name in exception is nominal source: */
- 	  if (scheme_current_thread->current_local_env)
-	    phase = scheme_current_thread->current_local_env->genv->phase;
-	  else phase = 0;
-	  scheme_stx_module_name(0, &first, scheme_make_integer(phase), &mod, &nomwho, 
-                                 NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-	}
       }
     } else {
       pform = form;
@@ -2346,8 +2331,6 @@ static void do_wrong_syntax(const char *where,
     else
       who = scheme_false;
   }
-  if (!nomwho)
-    nomwho = who;
 
   if (!where) {
     if (SCHEME_FALSEP(who))
@@ -2381,8 +2364,6 @@ static void do_wrong_syntax(const char *where,
     blen = scheme_sprintf(buffer, blen, "%s: %t", 
                           where,
                           s, slen);
-
-  /* We don't actually use nomwho and mod, anymore. */
 
   if (SCHEME_FALSEP(form))
     form = extra_sources;

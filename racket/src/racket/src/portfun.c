@@ -4730,8 +4730,8 @@ static Scheme_Object *do_load_handler(void *data)
 
     /* ... end special support for module loading ... */
 
-    if (!as_module && genv->rename_set)
-      obj = scheme_add_rename(obj, genv->rename_set);
+    if (!as_module && genv->stx_context)
+      obj = scheme_top_introduce(obj, genv);
 
     last_val = _scheme_apply_multi_with_prompt(scheme_get_param(config, MZCONFIG_EVAL_HANDLER),
                                                1, &obj);

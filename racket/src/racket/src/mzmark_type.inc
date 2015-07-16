@@ -1831,7 +1831,8 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->returned_marks, gc);
   
   gcMARK2(pr->current_local_env, gc);
-  gcMARK2(pr->current_local_mark, gc);
+  gcMARK2(pr->current_local_scope, gc);
+  gcMARK2(pr->current_local_use_scope, gc);
   gcMARK2(pr->current_local_name, gc);
   gcMARK2(pr->current_local_modidx, gc);
   gcMARK2(pr->current_local_menv, gc);
@@ -1948,7 +1949,8 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->returned_marks, gc);
   
   gcFIXUP2(pr->current_local_env, gc);
-  gcFIXUP2(pr->current_local_mark, gc);
+  gcFIXUP2(pr->current_local_scope, gc);
+  gcFIXUP2(pr->current_local_use_scope, gc);
   gcFIXUP2(pr->current_local_name, gc);
   gcFIXUP2(pr->current_local_modidx, gc);
   gcFIXUP2(pr->current_local_menv, gc);
@@ -2288,9 +2290,7 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->guard_insp, gc);
   gcMARK2(e->access_insp, gc);
 
-  gcMARK2(e->rename_set, gc);
-  gcMARK2(e->temp_marked_names, gc);
-  gcMARK2(e->post_ex_rename_set, gc);
+  gcMARK2(e->stx_context, gc);
 
   gcMARK2(e->syntax, gc);
   gcMARK2(e->exp_env, gc);
@@ -2320,6 +2320,8 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(e->weak_self_link, gc);
 
+  gcMARK2(e->binding_names, gc);
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
 }
@@ -2333,9 +2335,7 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->guard_insp, gc);
   gcFIXUP2(e->access_insp, gc);
 
-  gcFIXUP2(e->rename_set, gc);
-  gcFIXUP2(e->temp_marked_names, gc);
-  gcFIXUP2(e->post_ex_rename_set, gc);
+  gcFIXUP2(e->stx_context, gc);
 
   gcFIXUP2(e->syntax, gc);
   gcFIXUP2(e->exp_env, gc);
@@ -2364,6 +2364,8 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->modvars, gc);
 
   gcFIXUP2(e->weak_self_link, gc);
+
+  gcFIXUP2(e->binding_names, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Env));
@@ -2491,6 +2493,7 @@ static int resolve_prefix_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(rp->toplevels, gc);
   gcMARK2(rp->stxes, gc);
   gcMARK2(rp->delay_info_rpair, gc);
+  gcMARK2(rp->src_insp_desc, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2501,6 +2504,7 @@ static int resolve_prefix_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(rp->toplevels, gc);
   gcFIXUP2(rp->stxes, gc);
   gcFIXUP2(rp->delay_info_rpair, gc);
+  gcFIXUP2(rp->src_insp_desc, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Resolve_Prefix));
@@ -2577,11 +2581,11 @@ static int stx_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcMARK2(stx->val, gc);
   gcMARK2(stx->srcloc, gc);
-  gcMARK2(stx->wraps, gc);
+  gcMARK2(stx->scopes, gc);
+  gcMARK2(stx->u.to_propagate, gc);
+  gcMARK2(stx->shifts, gc);
   gcMARK2(stx->taints, gc);
   gcMARK2(stx->props, gc);
-  if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
-    gcMARK2(stx->u.modinfo_cache, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }
@@ -2590,11 +2594,11 @@ static int stx_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Stx *stx = (Scheme_Stx *)p;
   gcFIXUP2(stx->val, gc);
   gcFIXUP2(stx->srcloc, gc);
-  gcFIXUP2(stx->wraps, gc);
+  gcFIXUP2(stx->scopes, gc);
+  gcFIXUP2(stx->u.to_propagate, gc);
+  gcFIXUP2(stx->shifts, gc);
   gcFIXUP2(stx->taints, gc);
   gcFIXUP2(stx->props, gc);
-  if (!(MZ_OPT_HASH_KEY(&(stx)->iso) & STX_SUBSTX_FLAG))
-    gcFIXUP2(stx->u.modinfo_cache, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Stx));
 }
@@ -2655,6 +2659,10 @@ static int module_val_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(m->self_modidx, gc);
 
+  gcMARK2(m->binding_names, gc);
+  gcMARK2(m->et_binding_names, gc);
+  gcMARK2(m->other_binding_names, gc);
+
   gcMARK2(m->insp, gc);
 
   gcMARK2(m->lang_info, gc);
@@ -2704,6 +2712,10 @@ static int module_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->exp_infos, gc);
 
   gcFIXUP2(m->self_modidx, gc);
+
+  gcFIXUP2(m->binding_names, gc);
+  gcFIXUP2(m->et_binding_names, gc);
+  gcFIXUP2(m->other_binding_names, gc);
 
   gcFIXUP2(m->insp, gc);
 

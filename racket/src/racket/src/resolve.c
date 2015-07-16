@@ -753,7 +753,7 @@ static Scheme_Object *do_define_syntaxes_resolve(Scheme_Object *data, Resolve_In
   names = SCHEME_VEC_ELS(data)[2];
   val = SCHEME_VEC_ELS(data)[3];
 
-  rp = scheme_resolve_prefix(1, cp, 1);
+  rp = scheme_resolve_prefix(1, cp, info->prefix->src_insp_desc);
 
   dummy = scheme_resolve_expr(dummy, info);
 
@@ -800,7 +800,7 @@ static Scheme_Object *begin_for_syntax_resolve(Scheme_Object *data, Resolve_Info
   dummy = SCHEME_VEC_ELS(data)[1];
   l = SCHEME_VEC_ELS(data)[2];
 
-  rp = scheme_resolve_prefix(1, cp, 1);
+  rp = scheme_resolve_prefix(1, cp, info->prefix->src_insp_desc);
 
   dummy = scheme_resolve_expr(dummy, info);
 
@@ -2257,6 +2257,27 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
 /*                                module                                 */
 /*========================================================================*/
 
+static int has_syntax_constants(Scheme_Module *m)
+{
+  int i, j;
+  Scheme_Object *e;
+  Resolve_Prefix *rp;
+  
+  if (m->prefix->num_stxes)
+    return 1;
+
+  for (j = m->num_phases; j-- > 1; ) {
+    for (i = SCHEME_VEC_SIZE(m->bodies[j]); i--; ) {
+      e = SCHEME_VEC_ELS(m->bodies[j])[i];
+      rp = (Resolve_Prefix *)SCHEME_VEC_ELS(e)[3];
+      if (rp->num_stxes)
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
 static Scheme_Object *
 module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
 {
@@ -2271,7 +2292,7 @@ module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
     return (Scheme_Object *)m;
   }
 
-  rp = scheme_resolve_prefix(0, m->comp_prefix, 1);
+  rp = scheme_resolve_prefix(0, m->comp_prefix, m->insp);
   m->comp_prefix = NULL;
 
   b = scheme_resolve_expr(m->dummy, old_rslv);
@@ -2312,6 +2333,49 @@ module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
   m->prefix = rp;
 
   /* Exp-time body was resolved during compilation */
+
+  /* If there are no syntax objects in the module, then there are no
+     macros that can reach bindings in the bindings table whose marks
+     are not a subset of the module context. */
+  if (m->rn_stx && SCHEME_STXP(m->rn_stx) && !has_syntax_constants(m)) {
+    if (m->binding_names) {
+      b = scheme_prune_bindings_table(m->binding_names, m->rn_stx, scheme_make_integer(0));
+      m->binding_names = b;
+    }
+    if (m->et_binding_names) {
+      b = scheme_prune_bindings_table(m->et_binding_names, m->rn_stx, scheme_make_integer(1));
+      m->et_binding_names = b;
+    }
+    if (m->other_binding_names) {
+      intptr_t i;
+      Scheme_Object *k, *val;
+      Scheme_Hash_Tree *ht;
+
+      ht = scheme_make_hash_tree(1);
+
+      if (SCHEME_HASHTRP(m->other_binding_names)) {
+        Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)m->other_binding_names;
+        for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
+          scheme_hash_tree_index(t, i, &k, &val);
+          val = scheme_prune_bindings_table(val, m->rn_stx, k);
+          ht = scheme_hash_tree_set(ht, k, val);
+        }
+      } else {
+        Scheme_Hash_Table *t = (Scheme_Hash_Table *)m->other_binding_names;
+        for (i = t->size; i--; ) {
+          if (t->vals[i]) {
+            k = t->keys[i];
+            val = t->vals[i];
+            val = scheme_prune_bindings_table(val, m->rn_stx, k);
+            ht = scheme_hash_tree_set(ht, k, val);
+          }
+        }
+      }
+
+      m->other_binding_names = (Scheme_Object *)ht;
+    }
+  }
+
 
   {
     /* resolve submodules */
@@ -2494,10 +2558,10 @@ Scheme_Object *scheme_resolve_list(Scheme_Object *expr, Resolve_Info *info)
 /*                    compile-time env for resolve                        */
 /*========================================================================*/
 
-Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
+Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, Scheme_Object *insp_desc)
 {
   Resolve_Prefix *rp;
-  Scheme_Object **tls, **stxes, *simplify_cache, *m;
+  Scheme_Object **tls, **stxes, *m;
   Scheme_Hash_Table *ht;
   int i;
 
@@ -2535,20 +2599,16 @@ Resolve_Prefix *scheme_resolve_prefix(int phase, Comp_Prefix *cp, int simplify)
     }
   }
 
-  if (simplify)
-    simplify_cache = scheme_new_stx_simplify_cache();
-  else
-    simplify_cache = NULL;  
-
   ht = cp->stxes;
   if (ht) {
     for (i = 0; i < ht->size; i++) {
       if (ht->vals[i]) {
-	scheme_simplify_stx(ht->keys[i], simplify_cache);
 	stxes[SCHEME_LOCAL_POS(ht->vals[i])] = ht->keys[i];
       }
     }
   }
+
+  rp->src_insp_desc = insp_desc;
 
   return rp;
 }
