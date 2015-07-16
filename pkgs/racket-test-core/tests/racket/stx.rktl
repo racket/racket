@@ -2074,8 +2074,8 @@
   (define (evalx e)
     (parameterize ([current-namespace ns])
       (eval-syntax (expand (datum->syntax #f e)))))
-  (evalx '(module m mzscheme (provide e) (define e #'1)))
-  (evalx '(module n mzscheme (require-for-syntax 'm) (provide s) (define-syntax (s stx) e)))
+  (evalx '(module m racket/base (provide e) (define e #'1)))
+  (evalx '(module n racket/base (require (for-syntax 'm)) (provide s) (define-syntax (s stx) e)))
   (evalx '(require 'n))
   (err/rt-test (evalx 's) #rx"literal data is not allowed"))
 
