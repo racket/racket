@@ -567,4 +567,21 @@
       cartesian-product '(4 5 6) '(d e f) '(#t #f))
 (err/rt-test (cartesian-product 3))
 
+;; ---------- list-update ----------
+
+(test '("zero" one two) list-update '(zero one two) 0 symbol->string)
+(test '(zero "one" two) list-update '(zero one two) 1 symbol->string)
+(err/rt-test (list-update '(zero one two) 3 symbol->string))
+(err/rt-test (list-update '(zero one two) -1 symbol->string))
+(err/rt-test (list-update '(zero one two) #f symbol->string))
+(err/rt-test (list-update #f 0 symbol->string))
+(err/rt-test (list-update '(zero one two) 0 #f))
+
+;; ---------- list-set ----------
+
+(test '(zero one "two") list-set '(zero one two) 2 "two")
+(err/rt-test (list-set '(zero one two) 3 "two"))
+(err/rt-test (list-set '(zero one two) -1 "two"))
+(err/rt-test (list-set '(zero one two) #f "two"))
+
 (report-errs)
