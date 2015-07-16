@@ -441,6 +441,7 @@ extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;
 extern Scheme_Object *scheme_void_proc;
+extern Scheme_Object *scheme_void_p_proc;
 extern Scheme_Object *scheme_syntax_p_proc;
 extern Scheme_Object *scheme_check_not_undefined_proc;
 extern Scheme_Object *scheme_check_assign_not_undefined_proc;
@@ -549,6 +550,18 @@ extern Scheme_Object *scheme_reduced_procedure_struct;
 #define scheme_constant_key scheme_stack_dump_key
 #define scheme_fixed_key    scheme_default_prompt_tag
 
+extern Scheme_Object *scheme_double_ctype;
+extern Scheme_Object *scheme_float_ctype;
+extern Scheme_Object *scheme_pointer_ctype;
+extern Scheme_Object *scheme_int8_ctype;
+extern Scheme_Object *scheme_uint8_ctype;
+extern Scheme_Object *scheme_int16_ctype;
+extern Scheme_Object *scheme_uint16_ctype;
+extern Scheme_Object *scheme_int32_ctype;
+extern Scheme_Object *scheme_uint32_ctype;
+extern Scheme_Object *scheme_int64_ctype;
+extern Scheme_Object *scheme_uint64_ctype;
+
 /*========================================================================*/
 /*                    hash functions                                      */
 /*========================================================================*/
@@ -647,6 +660,9 @@ extern void scheme_check_foreign_work(void);
 #ifndef DONT_USE_FOREIGN
 XFORM_NONGCING extern void *scheme_extract_pointer(Scheme_Object *v);
 #endif
+
+Scheme_Object *scheme_foreign_ptr_ref(int argc, Scheme_Object **argv);
+void scheme_foreign_ptr_set(int argc, Scheme_Object **argv);
 
 void scheme_kickoff_green_thread_time_slice_timer(intptr_t usec);
 
@@ -2479,6 +2495,7 @@ Scheme_Object *scheme_default_prompt_read_handler(int, Scheme_Object *[]);
 Scheme_Object *scheme_default_read_input_port_handler(int argc, Scheme_Object *[]);
 Scheme_Object *scheme_default_read_handler(int argc, Scheme_Object *[]);
 
+extern Scheme_Object *scheme_eof_object_p_proc;
 extern Scheme_Object *scheme_default_global_print_handler;
 
 /* Type readers & writers for compiled code data */

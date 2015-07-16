@@ -585,7 +585,7 @@ GC2_EXTERN void GC_set_backpointer_object(void *p);
 #endif
 
 /* Macros (implementation-specific): */
-#if defined(__x86_64__) || defined(_WIN64)
+#ifdef SIXTY_FOUR_BIT_INTEGERS
 # define gcLOG_WORD_SIZE 3
 #else
 # define gcLOG_WORD_SIZE 2

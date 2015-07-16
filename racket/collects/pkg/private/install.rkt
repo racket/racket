@@ -83,17 +83,21 @@
                  pkg-path
                  pkg-name)))
   ;; Check installed packages:
-  (for ([f (in-directory simple-pkg-path)])
-    (define found-pkg (path->pkg f #:cache path-pkg-cache))
-    (when (and found-pkg
-               (not (equal? found-pkg pkg-name)))
-      (pkg-error (~a "cannot link a directory that overlaps with existing packages\n"
-                     "  existing package: ~a\n"
-                     "  overlapping path: ~a\n"
-                     "  attempted package: ~a")
-                 found-pkg
-                 f
-                 pkg-name)))
+  (when (directory-exists? simple-pkg-path) ; might not exist for a clone shifting to a subdir
+    (for ([f (in-directory simple-pkg-path)])
+      (define found-pkg (path->pkg f #:cache path-pkg-cache))
+      (when (and found-pkg
+                 (not (equal? found-pkg pkg-name))
+                 ;; In case a new clone dir would overlap with an old one that is being
+                 ;; relocated (and if simultaneous installs really overlap, it's caught below):
+                 (not (hash-ref simultaneous-installs found-pkg #f)))
+        (pkg-error (~a "cannot link a directory that overlaps with existing packages\n"
+                       "  existing package: ~a\n"
+                       "  overlapping path: ~a\n"
+                       "  attempted package: ~a")
+                   found-pkg
+                   f
+                   pkg-name))))
   ;; Check simultaneous installs:
   (for ([(other-pkg other-dir) (in-hash simultaneous-installs)])
     (unless (equal? other-pkg pkg-name)
@@ -993,7 +997,7 @@
                                            (pkg-desc-type pkg-name)
                                            #:link-dirs? link-dirs?
                                            #:must-infer-name? (not (pkg-desc-name pkg-name))
-                                           #:complain (complain-about-source  (pkg-desc-name pkg-name))))
+                                           #:complain (complain-about-source (pkg-desc-name pkg-name))))
       (define name (or (pkg-desc-name pkg-name)
                        inferred-name))
       ;; Check that the package is installed, and get current checksum:
@@ -1296,14 +1300,25 @@
 
 (define (early-check-for-installed in-pkgs db #:wanted? wanted?)
   (for ([d (in-list in-pkgs)])
-    (define name
+    (define-values (name ignored-type)
       (if (pkg-desc? d)
-          (or (pkg-desc-name d)
-              (package-source->name (pkg-desc-source d)
-                                    (if (eq? 'clone (pkg-desc-type d))
-                                        'name
-                                        (pkg-desc-type d))))
-          (package-source->name d)))
+          ;; For install of update:
+          (cond
+           [(pkg-desc-name d)
+            (values (pkg-desc-name d) #f)]
+           [(and (eq? (pkg-desc-type d) 'clone)
+                 ;; If syntax of the source is a package name, then it's a package name:
+                 (let-values ([(name type) (package-source->name+type (pkg-desc-source d) 'name)])
+                   name))
+            => (lambda (name)
+                 (values name #f))]
+           [else
+            (package-source->name+type (pkg-desc-source d)
+                                       (pkg-desc-type d)
+                                       #:must-infer-name? #t
+                                       #:complain (complain-about-source #f))])
+          ;; Must be a string package name for update:
+          (values d #f)))
     (define info (package-info name wanted? #:db db))
     (when (and info
                (not wanted?)

@@ -219,9 +219,10 @@ static void initialize_signal_handler(GCTYPE *gc)
 # ifdef NEED_SIGSTACK
   {
     stack_t ss;
+    uintptr_t sz = 10*SIGSTKSZ;
     
-    ss.ss_sp = malloc(SIGSTKSZ);
-    ss.ss_size = SIGSTKSZ;
+    ss.ss_sp = malloc(sz);
+    ss.ss_size = sz;
     ss.ss_flags = 0;
     
     sigaltstack(&ss, NULL);

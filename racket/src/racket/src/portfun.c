@@ -158,6 +158,7 @@ READ_ONLY static Scheme_Object *default_display_handler;
 READ_ONLY static Scheme_Object *default_write_handler;
 READ_ONLY static Scheme_Object *default_print_handler;
 
+READ_ONLY Scheme_Object *scheme_eof_object_p_proc;
 READ_ONLY Scheme_Object *scheme_default_global_print_handler;
 
 READ_ONLY Scheme_Object *scheme_write_proc;
@@ -242,20 +243,20 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("string-port?",           string_port_p,              1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("terminal-port?",         scheme_terminal_port_p,     1, 1, 1, env);
 
-  GLOBAL_PRIM_W_ARITY("port-closed?",           port_closed_p,          1, 1, env); 
-  GLOBAL_PRIM_W_ARITY("open-input-file",        open_input_file,        1, 3, env);
-  GLOBAL_PRIM_W_ARITY("open-input-bytes",       open_input_byte_string, 1, 2, env);
-  GLOBAL_PRIM_W_ARITY("open-input-string",      open_input_char_string, 1, 2, env);
-  GLOBAL_PRIM_W_ARITY("open-output-file",       open_output_file,       1, 3, env);
-  GLOBAL_PRIM_W_ARITY("open-output-bytes",      open_output_string,     0, 1, env);
-  GLOBAL_PRIM_W_ARITY("open-output-string",     open_output_string,     0, 1, env);
-  GLOBAL_PRIM_W_ARITY("get-output-bytes",       get_output_byte_string, 1, 4, env);
-  GLOBAL_PRIM_W_ARITY("get-output-string",      get_output_char_string, 1, 1, env);
-  GLOBAL_PRIM_W_ARITY("open-input-output-file", open_input_output_file, 1, 3, env);
-  GLOBAL_PRIM_W_ARITY("close-input-port",       close_input_port,       1, 1, env);
-  GLOBAL_PRIM_W_ARITY("close-output-port",      close_output_port,      1, 1, env);
-  GLOBAL_PRIM_W_ARITY("make-input-port",        make_input_port,        4, 10, env);
-  GLOBAL_PRIM_W_ARITY("make-output-port",       make_output_port,       4, 11, env);
+  GLOBAL_NONCM_PRIM("port-closed?",             port_closed_p,          1, 1, env); 
+  GLOBAL_NONCM_PRIM("open-input-file",          open_input_file,        1, 3, env);
+  GLOBAL_NONCM_PRIM("open-input-bytes",         open_input_byte_string, 1, 2, env);
+  GLOBAL_NONCM_PRIM("open-input-string",        open_input_char_string, 1, 2, env);
+  GLOBAL_NONCM_PRIM("open-output-file",         open_output_file,       1, 3, env);
+  GLOBAL_NONCM_PRIM("open-output-bytes",        open_output_string,     0, 1, env);
+  GLOBAL_NONCM_PRIM("open-output-string",       open_output_string,     0, 1, env);
+  GLOBAL_NONCM_PRIM("get-output-bytes",         get_output_byte_string, 1, 4, env);
+  GLOBAL_NONCM_PRIM("get-output-string",        get_output_char_string, 1, 1, env);
+  GLOBAL_NONCM_PRIM("open-input-output-file",   open_input_output_file, 1, 3, env);
+  GLOBAL_NONCM_PRIM("close-input-port",         close_input_port,       1, 1, env);
+  GLOBAL_NONCM_PRIM("close-output-port",        close_output_port,      1, 1, env);
+  GLOBAL_NONCM_PRIM("make-input-port",          make_input_port,        4, 10, env);
+  GLOBAL_NONCM_PRIM("make-output-port",         make_output_port,       4, 11, env);
   
   GLOBAL_PRIM_W_ARITY2("call-with-output-file", call_with_output_file,  2, 4, 0, -1, env);
   GLOBAL_PRIM_W_ARITY2("call-with-input-file",  call_with_input_file,   2, 3, 0, -1, env);
@@ -264,7 +265,7 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY2("load",                  load,                   1, 1, 0, -1, env);
   GLOBAL_PRIM_W_ARITY2("make-pipe",             sch_pipe,               0, 3, 2,  2, env);
   GLOBAL_PRIM_W_ARITY2("port-next-location",    port_next_location,     1, 1, 3,  3, env);
-  GLOBAL_PRIM_W_ARITY("set-port-next-location!",  set_port_next_location, 4, 4, env);
+  GLOBAL_NONCM_PRIM("set-port-next-location!",  set_port_next_location, 4, 4, env);
 
   GLOBAL_PRIM_W_ARITY("filesystem-change-evt",  filesystem_change_evt,   1, 2, env);
   GLOBAL_NONCM_PRIM("filesystem-change-evt?",   filesystem_change_evt_p, 1, 1, env);
@@ -335,10 +336,11 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("port-count-lines!",              port_count_lines,               1, 1, env);
   GLOBAL_NONCM_PRIM("port-counts-lines?",             port_counts_lines_p,            1, 1, env);
           
-  p = scheme_make_folding_prim(eof_object_p, "eof-object?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("eof-object?", p, env);
+  REGISTER_SO(scheme_eof_object_p_proc);
+  scheme_eof_object_p_proc = scheme_make_folding_prim(eof_object_p, "eof-object?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(scheme_eof_object_p_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                                                   | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("eof-object?", scheme_eof_object_p_proc, env);
 
   scheme_add_global_constant("write",   scheme_write_proc,    env);
   scheme_add_global_constant("display", scheme_display_proc,  env);

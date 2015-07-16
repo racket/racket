@@ -155,8 +155,6 @@
   
 (define (recursive-contract-stronger this that) (equal? this that))
 
-(define trail (make-parameter #f))
-
 (define ((recursive-contract-first-order ctc) val)
   (contract-first-order-passes? (force-recursive-contract ctc)
                                 val))

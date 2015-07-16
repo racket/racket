@@ -161,7 +161,7 @@ the package is should be treated as installed automatically for a
 dependency.
 
 The optional @racket[path] argument is intended for use when
-@racket[type] is @racket['clone], in which case it specifies< a
+@racket[type] is @racket['clone], in which case it specifies a
 directory containing the repository clone (where the repository itself
 is a directory within @racket[path]).
 

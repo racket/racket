@@ -1485,6 +1485,11 @@
               (let ([y (random)])
                 (begin0 y (set! y 5)))))
 
+(test-comp '(lambda (x y) (car x) (unbox y) #f)
+           '(lambda (x y) (car x) (unbox y) (eq? x y)))
+(test-comp '(lambda (x) (car x) #f)
+           '(lambda (x) (car x) (eq? x (box 0))))
+
 (test-comp '(lambda (w) (car w) (mcar w))
            '(lambda (w) (car w) (mcar w) (random)))
 (test-comp '(lambda (w) (car w w))
@@ -1562,6 +1567,17 @@
 
 (test-comp '(lambda (w) (if (void (list w)) 1 2))
            '(lambda (w) 1))
+
+; Diferent number of argumets use different codepaths
+(test-comp '(lambda (f x) (void))
+           '(lambda (f x) (void (list))))
+(test-comp '(lambda (f x) (begin (values (f x)) (void)))
+           '(lambda (f x) (void (list (f x)))))
+(test-comp '(lambda (f x) (begin (values (f x)) (values (f x)) (void)))
+           '(lambda (f x) (void (list (f x) (f x)))))
+(test-comp '(lambda (f x) (begin (values (f x)) (values (f x)) (values (f x)) (void)))
+           '(lambda (f x) (void (list (f x) (f x) (f x)))))
+
 
 (test null
       call-with-values (lambda () (with-continuation-mark 'a 'b (values))) list)
@@ -1689,6 +1705,13 @@
 
 (test-comp '(lambda (x) (not (if x #f 2)))
            '(lambda (x) (not (if x #f #t))))
+(test-comp '(lambda (x) (let ([z 2]) (not (if x #f z))))
+           '(lambda (x) (let ([z 2]) (not (if x #f #t)))))
+(test-comp '(lambda (z) (when (pair? z) #f))
+           '(lambda (z) (when (pair? z) (not z))))
+(test-comp '(lambda (z) (when (pair? z) (set! z #f) #f))
+           '(lambda (z) (when (pair? z) (set! z #f) (not z)))
+           #f)
 
 (test-comp '(lambda (x) (if x x #f))
            '(lambda (x) x))
@@ -1733,6 +1756,27 @@
 (test-comp '(lambda (x) (let ([r (something)])
                           (if r #t (something-else))))
            '(lambda (x) (if (something) #t (something-else))))
+
+(let ([test-pred-implies-val
+       (lambda (pred? val)
+         (test-comp `(lambda (x) (if (,pred? x) ,val 0))
+                    `(lambda (x) (if (,pred? x) x 0))))])
+  (test-pred-implies-val 'null? 'null)
+  (test-pred-implies-val 'void? '(void))
+  (test-pred-implies-val 'eof-object? 'eof)
+  (test-pred-implies-val 'not '#f))
+(test-comp '(lambda (x) (if (null? x) 1 0) null)
+           '(lambda (x) (if (null? x) 1 0) x)
+           #f)
+(test-comp '(lambda (x) (if (eq? x '(0)) #t 0))
+           '(lambda (x) (if (eq? x '(0)) (pair? x) 0)))
+(test-comp '(lambda (x) (if (eq? x (list 0)) #t 0))
+           '(lambda (x) (if (eq? x (list 0)) (pair? x) 0)))
+(test-comp '(lambda (x y) (car y) (if (eq? x y) #t 0))
+           '(lambda (x y) (car y) (if (eq? x y) (pair? x) 0)))
+(test-comp '(lambda (x) (if x 1 (list #f)))
+           '(lambda (x) (if x 1 (list x))))
+
 
 (test-comp '(lambda (x) (let ([r (something)])
                           (r)))
@@ -4864,6 +4908,18 @@
                     (displayln (list 'yes f-two ,n))
                     222222)))
              #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the compiler doesn't try to inline forever,
+;; due to bad single-use tracking:
+
+(module check-inline-single-use-tracking racket/base
+  (define dup (lambda (f) (f f)))
+  (lambda ()
+    ;; Initially, `rep` is used only once, but inlining
+    ;; followed by other optimizations changes that:
+    (let ([rep (lambda (f) (f f))])
+      (dup rep))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

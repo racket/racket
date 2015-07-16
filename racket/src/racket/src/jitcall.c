@@ -545,7 +545,7 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
 int scheme_generate_force_value_same_mark(mz_jit_state *jitter)
 {
   GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
-  jit_movi_p(JIT_R0, SCHEME_TAIL_CALL_WAITING);
+  (void)jit_movi_p(JIT_R0, SCHEME_TAIL_CALL_WAITING);
   mz_prepare(1);
   jit_pusharg_p(JIT_R0);
   (void)mz_finish_lwe(ts_scheme_force_value_same_mark, refr);

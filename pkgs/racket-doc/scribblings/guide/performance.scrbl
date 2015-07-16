@@ -2,7 +2,8 @@
 @(require scribble/manual "guide-utils.rkt"
           (for-label racket/flonum
                      racket/unsafe/ops
-                     racket/performance-hint))
+                     racket/performance-hint
+                     ffi/unsafe))
 
 @title[#:tag "performance"]{Performance}
 
@@ -355,6 +356,31 @@ functions and different contexts.
 Beware that, as ``unsafe'' in the library and function names suggest,
 misusing the exports of @racketmodname[racket/unsafe/ops] can lead to
 crashes or memory corruption.
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "ffi-pointer-access"]{Foreign Pointers}
+
+The @racketmodname[ffi/unsafe] library provides functions for unsafely
+reading and writing arbitrary pointer values. The JIT recognizes uses
+of @racket[ptr-ref] and @racket[ptr-set!] where the second argument is
+a direct reference to one of the following built-in C types:
+@racket[_int8], @racket[_int16], @racket[_int32], @racket[_int64],
+@racket[_double], @racket[_float], and @racket[_pointer]. Then, if the
+first argument to @racket[ptr-ref] or @racket[ptr-set!] is a C pointer
+(not a byte string), then the pointer read or write is performed
+inline in the generated code.
+
+The bytecode compiler will optimize references to integer
+abbreviations like @racket[_int] to C types like
+@racket[_int32]---where the representation sizes are constant across
+platforms---so the JIT can specialize access with those C types. C
+types such as @racket[_long] or @racket[_intptr] are not constant
+across platforms, so their uses are currently not specialized by the
+JIT.
+
+Pointer reads and writes using @racket[_float] or @racket[_double] are
+not currently subject to unboxing optimizations.
 
 @; ----------------------------------------------------------------------
 

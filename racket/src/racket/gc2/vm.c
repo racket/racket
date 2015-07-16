@@ -17,7 +17,7 @@ enum {
 };
 
 #if defined(_WIN32) || defined(__CYGWIN32__)
-/* No block cache or alloc cache */
+/* No block cache or alloc cache; relies on APAGE_SIZE matching allocator's alignment */
 #elif defined(OSKIT)
 # define OS_ALLOCATOR_NEEDS_ALIGNMENT
 #elif defined(MZ_USE_PLACES) || defined(PREFER_MMAP_LARGE_BLOCKS)
@@ -32,6 +32,10 @@ enum {
 #else
 # define QUEUED_MPROTECT_IS_PROMISCUOUS 0
 #endif
+
+/* Either USE_ALLOC_CACHE or OS_ALLOCATOR_NEEDS_ALIGNMENT must be
+   enabled, unless the lower-level allocator's alignment matches
+   APAGE_SIZE. */
 
 struct AllocCacheBlock;
 struct BlockCache;
@@ -81,7 +85,7 @@ static inline size_t mmu_round_up_to_os_page_size(MMU *mmu, size_t len) {
 
 static inline void mmu_assert_os_page_aligned(MMU *mmu, size_t p) {
   if (p & (mmu->os_pagesize - 1)) {
-    printf("address or size is not OS PAGE ALIGNED!!!!");
+    GCPRINT(GCOUTF, "address or size is not page-aligned\n");
     abort();
   }
 }

@@ -2218,7 +2218,7 @@ static Scheme_Object *do_memop(const char *who, int mode,
 /* if n is given, an 'abs flag can precede it to make n be a byte offset */
 /* rather than some multiple of sizeof(type). */
 /* WARNING: there are *NO* checks at all, this is raw C level code. */
-@cdefine[ptr-ref 2 4]{
+@cdefine[ptr-ref 2 4 #:kind inline_noncm]{
   intptr_t size=0; void *ptr; Scheme_Object *base;
   intptr_t delta; int gcsrc=1;
   Scheme_Object *cp, *already_ptr = NULL;
@@ -2274,12 +2274,17 @@ static Scheme_Object *do_memop(const char *who, int mode,
   return C2SCHEME(already_ptr, argv[1], ptr, delta, 0, gcsrc);
 }
 
+Scheme_Object *scheme_foreign_ptr_ref(int argc, Scheme_Object **argv)
+{
+  return foreign_ptr_ref(argc, argv);
+}
+
 /* (ptr-set! cpointer type [['abs] n] value) -> void */
 /* n defaults to 0 which is the only value that should be used with ffi_objs */
 /* if n is given, an 'abs flag can precede it to make n be a byte offset */
 /* rather than some multiple of sizeof(type). */
 /* WARNING: there are *NO* checks at all, this is raw C level code. */
-@cdefine[ptr-set! 3 5]{
+@cdefine[ptr-set! 3 5 #:kind inline_noncm]{
   intptr_t size=0; void *ptr;
   intptr_t delta;
   Scheme_Object *val = argv[argc-1], *base;
@@ -2317,6 +2322,11 @@ static Scheme_Object *do_memop(const char *who, int mode,
   }
   SCHEME2C(MYNAME, argv[1], ptr, delta, val, NULL, NULL, 0);
   return scheme_void;
+}
+
+void scheme_foreign_ptr_set(int argc, Scheme_Object **argv)
+{
+  (void)foreign_ptr_set_bang(argc, argv);
 }
 
 /* (ptr-equal? cpointer cpointer) -> boolean */
@@ -2377,7 +2387,7 @@ void do_ptr_finalizer(void *p, void *finalizer)
 
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *ffi_lock_ht);
 
-#ifdef MZ_PRECISE_GC
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
 static Scheme_Object *make_vector_in_master(int count, Scheme_Object *val) {
   Scheme_Object *vec;
   void *original_gc;
@@ -3492,6 +3502,39 @@ void scheme_init_foreign_places() {
 #endif
 }
 
+static Scheme_Object *scheme_make_inline_noncm_prim(Scheme_Prim *prim,
+						    const char *name,
+						    mzshort mina, mzshort maxa)
+{
+  Scheme_Object *p;
+  int flags = 0;
+
+  p = scheme_make_noncm_prim(prim, name, mina, maxa);
+
+  if ((mina <= 1) && (maxa >= 1))
+   flags |= SCHEME_PRIM_IS_UNARY_INLINED;
+  if ((mina <= 2) && (maxa >= 2))
+   flags |= SCHEME_PRIM_IS_BINARY_INLINED;
+  if ((mina <= 0) || (maxa > 2))
+   flags |= SCHEME_PRIM_IS_NARY_INLINED;
+
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
+
+  return p;
+}
+
+@(define exported-types '("pointer"
+                          "float" "double"
+                          "int8" "uint8"
+                          "int16" "uint16"
+                          "int32" "uint32"
+                          "int64" "uint64"))
+
+@(maplines
+  (lambda (exported)
+   @list{Scheme_Object *scheme_@|exported|_ctype})
+ exported-types)
+
 void scheme_init_foreign(Scheme_Env *env)
 {
   Scheme_Env *menv;
@@ -3513,6 +3556,12 @@ void scheme_init_foreign(Scheme_Env *env)
            @cmake["t" ctype "s"
                   @list{(Scheme_Object*)(void*)(&ffi_type_@ftype)}
                   @list{(Scheme_Object*)FOREIGN_@cname}]
+           @(if (member stype exported-types)
+                (append
+                  @list{REGISTER_SO(scheme_@|stype|_ctype);
+                        scheme_@|stype|_ctype = (Scheme_Object *)t;}
+                  '("\n"))
+                null)@;
            scheme_add_global_constant("_@stype", (Scheme_Object*)t, menv)})
   scheme_add_global_constant("prop:cpointer", scheme_cpointer_property, menv);
   scheme_finish_primitive_module(menv);

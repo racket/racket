@@ -3100,6 +3100,11 @@ static Scheme_Object *foreign_ptr_ref(int argc, Scheme_Object *argv[])
 }
 #undef MYNAME
 
+Scheme_Object *scheme_foreign_ptr_ref(int argc, Scheme_Object **argv)
+{
+  return foreign_ptr_ref(argc, argv);
+}
+
 /* (ptr-set! cpointer type [['abs] n] value) -> void */
 /* n defaults to 0 which is the only value that should be used with ffi_objs */
 /* if n is given, an 'abs flag can precede it to make n be a byte offset */
@@ -3147,6 +3152,11 @@ static Scheme_Object *foreign_ptr_set_bang(int argc, Scheme_Object *argv[])
   return scheme_void;
 }
 #undef MYNAME
+
+void scheme_foreign_ptr_set(int argc, Scheme_Object **argv)
+{
+  (void)foreign_ptr_set_bang(argc, argv);
+}
 
 /* (ptr-equal? cpointer cpointer) -> boolean */
 #define MYNAME "ptr-equal?"
@@ -3212,7 +3222,7 @@ void do_ptr_finalizer(void *p, void *finalizer)
 
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *ffi_lock_ht);
 
-#ifdef MZ_PRECISE_GC
+#if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
 static Scheme_Object *make_vector_in_master(int count, Scheme_Object *val) {
   Scheme_Object *vec;
   void *original_gc;
@@ -4363,6 +4373,39 @@ void scheme_init_foreign_places() {
 #endif
 }
 
+static Scheme_Object *scheme_make_inline_noncm_prim(Scheme_Prim *prim,
+                                                    const char *name,
+                                                    mzshort mina, mzshort maxa)
+{
+  Scheme_Object *p;
+  int flags = 0;
+
+  p = scheme_make_noncm_prim(prim, name, mina, maxa);
+
+  if ((mina <= 1) && (maxa >= 1))
+   flags |= SCHEME_PRIM_IS_UNARY_INLINED;
+  if ((mina <= 2) && (maxa >= 2))
+   flags |= SCHEME_PRIM_IS_BINARY_INLINED;
+  if ((mina <= 0) || (maxa > 2))
+   flags |= SCHEME_PRIM_IS_NARY_INLINED;
+
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(flags);
+
+  return p;
+}
+
+Scheme_Object *scheme_pointer_ctype;
+Scheme_Object *scheme_float_ctype;
+Scheme_Object *scheme_double_ctype;
+Scheme_Object *scheme_int8_ctype;
+Scheme_Object *scheme_uint8_ctype;
+Scheme_Object *scheme_int16_ctype;
+Scheme_Object *scheme_uint16_ctype;
+Scheme_Object *scheme_int32_ctype;
+Scheme_Object *scheme_uint32_ctype;
+Scheme_Object *scheme_int64_ctype;
+Scheme_Object *scheme_uint64_ctype;
+
 void scheme_init_foreign(Scheme_Env *env)
 {
   Scheme_Env *menv;
@@ -4449,9 +4492,9 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("memcpy",
     scheme_make_noncm_prim(foreign_memcpy, "memcpy", 3, 6), menv);
   scheme_add_global_constant("ptr-ref",
-    scheme_make_noncm_prim(foreign_ptr_ref, "ptr-ref", 2, 4), menv);
+    scheme_make_inline_noncm_prim(foreign_ptr_ref, "ptr-ref", 2, 4), menv);
   scheme_add_global_constant("ptr-set!",
-    scheme_make_noncm_prim(foreign_ptr_set_bang, "ptr-set!", 3, 5), menv);
+    scheme_make_inline_noncm_prim(foreign_ptr_set_bang, "ptr-set!", 3, 5), menv);
   scheme_add_global_constant("ptr-equal?",
     scheme_make_noncm_prim(foreign_ptr_equal_p, "ptr-equal?", 2, 2), menv);
   scheme_add_global_constant("make-sized-byte-string",
@@ -4483,6 +4526,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_sint8));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_int8);
+  REGISTER_SO(scheme_int8_ctype);
+  scheme_int8_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_int8", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("uint8");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4490,6 +4535,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_uint8));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_uint8);
+  REGISTER_SO(scheme_uint8_ctype);
+  scheme_uint8_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_uint8", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("int16");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4497,6 +4544,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_sint16));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_int16);
+  REGISTER_SO(scheme_int16_ctype);
+  scheme_int16_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_int16", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("uint16");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4504,6 +4553,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_uint16));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_uint16);
+  REGISTER_SO(scheme_uint16_ctype);
+  scheme_uint16_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_uint16", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("int32");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4511,6 +4562,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_sint32));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_int32);
+  REGISTER_SO(scheme_int32_ctype);
+  scheme_int32_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_int32", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("uint32");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4518,6 +4571,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_uint32));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_uint32);
+  REGISTER_SO(scheme_uint32_ctype);
+  scheme_uint32_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_uint32", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("int64");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4525,6 +4580,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_sint64));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_int64);
+  REGISTER_SO(scheme_int64_ctype);
+  scheme_int64_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_int64", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("uint64");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4532,6 +4589,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_uint64));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_uint64);
+  REGISTER_SO(scheme_uint64_ctype);
+  scheme_uint64_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_uint64", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("fixint");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4567,6 +4626,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_float));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_float);
+  REGISTER_SO(scheme_float_ctype);
+  scheme_float_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_float", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("double");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4574,6 +4635,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_double));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_double);
+  REGISTER_SO(scheme_double_ctype);
+  scheme_double_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_double", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("longdouble");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4644,6 +4707,8 @@ void scheme_init_foreign(Scheme_Env *env)
   t->basetype = (s);
   t->scheme_to_c = ((Scheme_Object*)(void*)(&ffi_type_pointer));
   t->c_to_scheme = ((Scheme_Object*)FOREIGN_pointer);
+  REGISTER_SO(scheme_pointer_ctype);
+  scheme_pointer_ctype = (Scheme_Object *)t;
   scheme_add_global_constant("_pointer", (Scheme_Object*)t, menv);
   s = scheme_intern_symbol("gcpointer");
   t = (ctype_struct*)scheme_malloc_tagged(sizeof(ctype_struct));
@@ -4798,9 +4863,9 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("memcpy",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "memcpy", 3, 6), menv);
   scheme_add_global_constant("ptr-ref",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-ref", 2, 4), menv);
+   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "ptr-ref", 2, 4), menv);
   scheme_add_global_constant("ptr-set!",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-set!", 3, 5), menv);
+   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "ptr-set!", 3, 5), menv);
   scheme_add_global_constant("ptr-equal?",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ptr-equal?", 2, 2), menv);
   scheme_add_global_constant("make-sized-byte-string",
