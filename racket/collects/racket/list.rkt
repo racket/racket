@@ -27,6 +27,7 @@
          flatten
          add-between
          remove-duplicates
+         check-duplicate
          filter-map
          count
          partition
@@ -346,6 +347,49 @@
                                 (begin (hash-set! h k #t)
                                        (cons x (loop l)))))))])])
          (if key (loop key) (loop no-key)))])))
+
+;; check-duplicate : (listof X)
+;;                   [(K K -> bool)]
+;;                   #:key (X -> K)
+;;                -> X or #f
+(define (check-duplicate items
+                         [same? equal?]
+                         #:key [key values])
+  (cond [(eq? same? equal?)
+         (check-duplicate/t items key (make-hash))]
+        [(eq? same? eq?)
+         (check-duplicate/t items key (make-hasheq))]
+        [(eq? same? eqv?)
+         (check-duplicate/t items key (make-hasheqv))]
+        [else
+         (check-duplicate/list items key same?)]))
+(define (check-duplicate/t items key table)
+  (let loop ([items items])
+    (and (pair? items)
+         (let ([key-item (key (car items))])
+           (if (hash-ref table key-item #f)
+               (car items)
+               (begin (hash-set! table key-item #t)
+                      (loop (cdr items))))))))
+(define (check-duplicate/list items key same?)
+  (let loop ([items items] [sofar null])
+    (and (pair? items)
+         (let ([key-item (key (car items))])
+           (if (for/or ([prev (in-list sofar)])
+                 (same? key-item prev))
+               (car items)
+               (loop (cdr items) (cons key-item sofar)))))))
+
+;; Eli: Just to have a record of this: my complaint about having this
+;; code separately from `remove-duplicates' still stands.  Specifically,
+;; that function decides when to use a hash table to make things faster,
+;; and this code would benefit from the same.  It would be much better
+;; to extend that function so it can be used for both tasks rather than
+;; a new piece of code that does it (only do it in a worse way, re
+;; performance).  Doing this can also benefit `remove-duplicates' -- for
+;; example, make it accept a container so that users can choose how
+;; when/if to use a hash table.
+
 
 (define (check-filter-arguments who f l ls)
   (unless (procedure? f)

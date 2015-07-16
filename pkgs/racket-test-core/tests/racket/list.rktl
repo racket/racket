@@ -328,6 +328,15 @@
         (test `(,@fst ,@r2 ,@lst) add-between l x
               #:splice? #t #:before-first fst #:after-last lst #:before-last y)))))
 
+;; ---------- check-duplicate ----------
+
+(test #f check-duplicate '())
+(test 'a check-duplicate '(a a))
+(test 'a check-duplicate '(a b a))
+(test 'a check-duplicate '(a a b))
+(test '(a 3) check-duplicate '((a 1) (b 2) (a 3)) #:key car)
+(test 4 check-duplicate '(1 2 3 4 5 6) (lambda (x y) (equal? (modulo x 3) (modulo y 3))))
+
 ;; ---------- remove-duplicates ----------
 (let ()
   (define rd remove-duplicates)
