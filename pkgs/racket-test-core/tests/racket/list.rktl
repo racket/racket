@@ -540,4 +540,31 @@
   (test '(20 19 18 17 16 15 14 13 12 11) range 20 10 -1)
   (test '(10 11.5 13.0 14.5) range 10 15 1.5))
 
+;; ---------- group-by ----------
+
+(test '((1) (4) (2 2) (56) (3)) group-by values '(1 4 2 56 2 3))
+(test '((1 1 1) (2 2 2 2 2) (54) (5) (43) (7) (643) (0))
+      group-by values '(1 2 1 2 54 2 5 43 7 2 643 1 2 0))
+(test '((1 3) (4 2 56 2))
+      group-by values '(1 4 2 56 2 3) (lambda (x y) (or (and (even? x) (even? y))
+                                                        (and (odd?  x) (odd?  y)))))
+(test '(((1 a)) ((4 b)) ((2 c) (2 e)) ((56 d)) ((3 f)))
+      group-by car '((1 a) (4 b) (2 c) (56 d) (2 e) (3 f)))
+(test '((1 3 5) (2 4 6)) group-by even? '(1 2 3 4 5 6))
+(err/rt-test (group-by #f))
+(err/rt-test (group-by '() #f))
+(err/rt-test (group-by '() values #f))
+
+;; ---------- cartesian-product ----------
+
+(test '((1 a) (1 b) (1 c)
+        (2 a) (2 b) (2 c)
+        (3 a) (3 b) (3 c))
+      cartesian-product '(1 2 3) '(a b c))
+(test '((4 d #t) (4 d #f) (4 e #t) (4 e #f) (4 f #t) (4 f #f)
+        (5 d #t) (5 d #f) (5 e #t) (5 e #f) (5 f #t) (5 f #f)
+        (6 d #t) (6 d #f) (6 e #t) (6 e #f) (6 f #t) (6 f #f))
+      cartesian-product '(4 5 6) '(d e f) '(#t #f))
+(err/rt-test (cartesian-product 3))
+
 (report-errs)
