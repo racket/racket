@@ -1114,9 +1114,9 @@ traversal.
   (flatten 'a)]}
 
 
-@defproc[(check-duplicate [lst list?]
-                          [same? (any/c any/c . -> . any/c) equal?]
-                          [#:key extract-key (-> any/c any/c) (lambda (x) x)])
+@defproc[(check-duplicates [lst list?]
+                           [same? (any/c any/c . -> . any/c) equal?]
+                           [#:key extract-key (-> any/c any/c) (lambda (x) x)])
          (or/c any/c #f)]{
 
 Returns the first duplicate item in @racket[lst]. More precisely, it
@@ -1129,11 +1129,11 @@ The procedures @racket[equal?], @racket[eqv?], and @racket[eq?] automatically
 use a dictionary for speed.
 
 @examples[#:eval list-eval
-(check-duplicate '(1 2 3 4))
-(check-duplicate '(1 2 3 2 1))
-(check-duplicate '((a 1) (b 2) (a 3)) #:key car)
-(check-duplicate '(1 2 3 4 5 6)
-                 (lambda (x y) (equal? (modulo x 3) (modulo y 3))))
+(check-duplicates '(1 2 3 4))
+(check-duplicates '(1 2 3 2 1))
+(check-duplicates '((a 1) (b 2) (a 3)) #:key car)
+(check-duplicates '(1 2 3 4 5 6)
+                  (lambda (x y) (equal? (modulo x 3) (modulo y 3))))
 ]
 }
 
