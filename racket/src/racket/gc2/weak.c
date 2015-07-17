@@ -313,6 +313,8 @@ static int mark_ready_ephemerons(GCTYPE *gc)
   GC_Ephemeron *waiting = NULL, *next, *eph;
   int did_one = 0;
 
+  GC_mark_no_recur(gc, 1);
+
   for (eph = gc->ephemerons; eph; eph = next) {
     next = eph->next;
     if (is_marked(gc, eph->key)) {
@@ -325,6 +327,8 @@ static int mark_ready_ephemerons(GCTYPE *gc)
     }
   }
   gc->ephemerons = waiting;
+
+  GC_mark_no_recur(gc, 0);
 
   return did_one;
 }
