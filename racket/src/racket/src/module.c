@@ -1422,7 +1422,7 @@ static Scheme_Object *dynamic_require_for_syntax(int argc, Scheme_Object *argv[]
 static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Object *argv[], 
                                            int copy, int etonly)
 {
-  Scheme_Object *form, *insp;
+  Scheme_Object *form;
 
   if (!env)
     env = scheme_get_env(NULL);
@@ -1436,8 +1436,6 @@ static Scheme_Object *do_namespace_require(Scheme_Env *env, int argc, Scheme_Obj
                                   scheme_false, scheme_false, 1, 0);
     form = scheme_stx_add_module_context(form, env->stx_context);
   }
-
-  insp = scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR);
 
   parse_requires(form, env->phase, scheme_false, env, NULL,
                  env->stx_context,
@@ -7562,19 +7560,14 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
                                Scheme_Object *phase, Scheme_Object *src_phase_index,
                                Scheme_Object *nominal_export_phase)
 {
-  Scheme_Bucket_Table *toplevel, *syntax;
   Scheme_Hash_Table *required;
   Scheme_Object *vec, *nml, *tvec, *binding;
 
   tvec = scheme_hash_get((Scheme_Hash_Table *)tables, phase);
   if (!tvec) {
     required = get_required_from_tables(tables, phase);
-    toplevel = NULL;
-    syntax = NULL;
   } else {
-    toplevel = (Scheme_Bucket_Table *)(SCHEME_VEC_ELS(tvec)[0]);
     required = (Scheme_Hash_Table *)(SCHEME_VEC_ELS(tvec)[1]);
-    syntax = (Scheme_Bucket_Table *)(SCHEME_VEC_ELS(tvec)[2]);
   }
 
   if (!scheme_hash_get(required, SCHEME_STX_VAL(id))) {
@@ -7779,7 +7772,7 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
   Scheme_Object *phase, *super_key, *name, *super_vec, *vec;
   Scheme_Object *l, *v, *super_defs, *key, *val, *binding;
   int i, j;
-  Scheme_Env *super_def_genv, *def_genv;
+  Scheme_Env *super_def_genv;
 
   ht = super_bxs->tables;
   for (i = ht->size; i--; ) {
@@ -7847,7 +7840,6 @@ static void propagate_imports(Module_Begin_Expand_State *bxs,
       super_defs = val;
 
       super_def_genv = find_env(super_genv, SCHEME_INT_VAL(phase));
-      def_genv = find_env(genv, SCHEME_INT_VAL(phase));
       
       required = (Scheme_Hash_Table *)get_required_from_tables(bxs->tables, 
                                                                scheme_bin_plus(phase, phase_shift));
@@ -9945,7 +9937,7 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
   int i, k, z;
   Scheme_Object *rx, *provided_list, *phase, *req_phase;
   Scheme_Object *all_x_defs, *all_x_defs_out;
-  Scheme_Env *genv, *name_env;
+  Scheme_Env *genv;
 
   if (all_phases) {
     /* synthesize all_reprovided for the loop below: */
@@ -10010,8 +10002,6 @@ int compute_reprovides(Scheme_Hash_Table *all_provided,
         if (!requires)
           requires = scheme_null;
 
-        name_env = scheme_find_env_at_phase(_genv, phase);
-        
         for (rx = reprovided; !SCHEME_NULLP(rx); rx = SCHEME_CDR(rx)) {
           Scheme_Object *midx = SCHEME_CAR(SCHEME_CAR(rx)), *l, *exns;
 	

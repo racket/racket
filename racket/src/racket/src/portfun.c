@@ -180,8 +180,6 @@ THREAD_LOCAL_DECL(static Scheme_Object *dummy_output_port);
 void
 scheme_init_port_fun(Scheme_Env *env)
 {
-  Scheme_Object *p;
-
 #ifdef MZ_PRECISE_GC
   register_traversers();
 #endif
