@@ -142,7 +142,7 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
         }
       }
       pos1++;
-      HAMT_USE_FUEL();
+      HAMT_USE_FUEL(1);
       i >>= 1;
       index++;
     } else if (i & 0xFF) {
