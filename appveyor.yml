@@ -8,11 +8,27 @@ cache:
 build_script:
 - '"c:\Program Files (x86)\Microsoft Visual Studio 10.0\vc\vcvarsall.bat" x86'
 - echo %cd%
-- nmake win32-in-place PKGS="racket-test-core"
+- nmake win32-in-place PKGS="racket-test db-test unstable-flonum-lib net-test"
 
 test_script:
 - echo %cd%
+- racket\raco.exe pkg show -l
 - racket\racket.exe -l tests/racket/test
+- racket\racket.exe -l tests/racket/contract/all
+- racket\raco.exe test -l tests/json/json
+- racket\raco.exe test -l tests/file/main
+- racket\raco.exe test -l tests/net/head
+- racket\raco.exe test -l tests/net/uri-codec
+- racket\raco.exe test -l tests/net/url
+- racket\raco.exe test -l tests/net/url-port
+- racket\raco.exe test -l tests/net/encoders
+- racket\raco.exe test -l tests/openssl/basic
+- racket\raco.exe test -l tests/openssl/https
+- racket\raco.exe test -l tests/match/plt-match-tests
+- racket\raco.exe test -l tests/zo-path
+- racket\raco.exe test -l tests/xml/test
+- racket\raco.exe test -l tests/db/all-tests
+
 
 notifications:
  - provider: Email
@@ -20,3 +36,8 @@ notifications:
     - samth@racket-lang.org
    on_build_success: true
    on_build_failure: true
+
+ - provider: Slack
+   auth_token:
+     secure: iAA99R3A75Vo1oqXVSaGqtz1PAzGyaNVHh/ZTt76wgKZ0R8WM+4umHRcyC0c+SQc
+   channel: notifications
