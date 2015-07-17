@@ -1340,7 +1340,10 @@ inline static void gen0_sync_page_size_from_globals(NewGC *gc) {
 }
 
 inline static void gen0_allocate_and_setup_new_page(NewGC *gc) {
-  mpage *new_mpage = gen0_create_new_nursery_mpage(gc, GEN0_PAGE_SIZE);
+  /* Note that gc->gen0.page_alloc_size is not necessarily
+     GEN0_PAGE_SIZE. In the case of a place-message allocator, a
+     smaller size is used. */
+  mpage *new_mpage = gen0_create_new_nursery_mpage(gc, gc->gen0.page_alloc_size);
 
   /* push page */
   new_mpage->prev = gc->gen0.curr_alloc_page;
