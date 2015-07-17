@@ -6372,7 +6372,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           && (((Scheme_Local *)clv->body)->position == 0)) {
         if (worth_lifting(clv->value)) {
           value = clv->value;
-          extract_depth = 1;
+          extract_depth = 1 + split_shift;
         }
       }
     }
@@ -7500,7 +7500,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
       delta = optimize_info_get_shift(info, pos);
 
-      if (!optimize_is_mutated(info, pos + delta)) {
+      if (!is_mutated) {
         Scheme_Object *pred;
 
         pred = optimize_get_predicate(pos + delta, info);
@@ -8664,7 +8664,7 @@ Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
     pos -= info->new_frame;
     if (pos < 0)
       return NULL;
-      info = info->next;
+    info = info->next;
   }
 
   return NULL;
