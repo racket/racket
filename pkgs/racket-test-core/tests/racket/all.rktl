@@ -8,6 +8,7 @@
 (load-in-sandbox "list.rktl")
 (load-in-sandbox "math.rktl")
 (load-in-sandbox "vector.rktl")
+(load-in-sandbox "hash.rktl")
 (load-in-sandbox "function.rktl")
 (load-in-sandbox "dict.rktl")
 (load-in-sandbox "fixnum.rktl")
