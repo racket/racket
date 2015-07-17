@@ -2927,7 +2927,7 @@ static int hamt_equal_entries(int stype, void *eql_data,
 #define HAMT_ELEMENT_OF_COLLISION hamt_element_of_collision
 #define HAMT_EQUAL_ENTRIES hamt_equal_entries
 #define HAMT_IF_VAL(v, n) v
-#define HAMT_USE_FUEL() SCHEME_USE_FUEL()
+#define HAMT_USE_FUEL(n) SCHEME_USE_FUEL(n)
 #include "hamt_subset.inc"
 
 /* fast variant for eq-based sets (i.e., no separate values in table) */
@@ -2937,7 +2937,7 @@ static int hamt_equal_entries(int stype, void *eql_data,
 #define HAMT_ELEMENT_OF_COLLISION hamt_eq_element_of_collision
 #define HAMT_EQUAL_ENTRIES(stype, eql_data, k1, v1, k2, v2) SAME_OBJ(k1, k2)
 #define HAMT_IF_VAL(v, n) n
-#define HAMT_USE_FUEL() /* empty */
+#define HAMT_USE_FUEL(n) /* empty */
 #include "hamt_subset.inc"
 
 static uintptr_t hamt_combine_key_hashes(Scheme_Hash_Tree *ht)
@@ -2949,7 +2949,7 @@ static uintptr_t hamt_combine_key_hashes(Scheme_Hash_Tree *ht)
   
   for (i = 0; i < popcount; i++) {
     if (HASHTR_SUBTREEP(ht->els[i])) {
-      SCHEME_USE_FUEL();
+      SCHEME_USE_FUEL(1);
       code = hamt_combine_key_hashes((Scheme_Hash_Tree *)ht->els[i]);
     } else if (HASHTR_COLLISIONP(ht->els[i])) {
       int count = ((Scheme_Hash_Tree *)ht->els[i])->count, j;
