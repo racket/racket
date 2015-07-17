@@ -142,6 +142,11 @@ flags:
    set of deleted files can be controlled by @filepath{info.rkt}; see
    @elemref["clean"]{@racket[clean]} for more information.}
 
+ @item{@DFlag{fast-clean} or @Flag{c} --- like @DFlag{clean}, but
+   without forcing a bootstrap of @exec{raco setup} from source (which
+   means that @DFlag{fast-clean} cannot clean corruption that affects
+   @exec{raco setup} itself).}
+
  @item{@DFlag{no-zo} or @Flag{n} --- refrain from compiling source
    files to @filepath{.zo} files.}
 
