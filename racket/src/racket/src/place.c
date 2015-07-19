@@ -2199,8 +2199,10 @@ DEEP_SST2_L:
         RETURN;
       }
       break;
-    case scheme_hash_table_type:  
-    case scheme_hash_tree_type:  
+    case scheme_hash_table_type:
+    case scheme_hash_tree_type:
+    case scheme_eq_hash_tree_type:
+    case scheme_eqv_hash_tree_type:
       if (set_mode) {
         if (scheme_true == scheme_hash_eq_p(1, &so)) {
           nht = scheme_make_immutable_hasheq(0, NULL);
