@@ -1496,5 +1496,13 @@ case of module-leve bindings; it doesn't cover local bindings.
     (local-require (only-in racket [+ ++]))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try trivial nested `begin-for-syntax`,
+;; avoiding anything else that might prepare phase 2 in advance
+
+(module starts-phase-2-without-any-content racket
+  (begin-for-syntax
+    (begin-for-syntax)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

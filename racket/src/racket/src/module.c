@@ -8968,10 +8968,11 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
           SCHEME_EXPAND_OBSERVE_PREPARE_ENV(observer);
 
-          frame_scopes = scheme_module_context_use_site_frame_scopes(env->genv->exp_env->stx_context);
-          
 	  scheme_prepare_exp_env(env->genv);
 	  scheme_prepare_compile_env(env->genv->exp_env);
+
+          frame_scopes = scheme_module_context_use_site_frame_scopes(env->genv->exp_env->stx_context);
+
 	  eenv = scheme_new_comp_env(env->genv->exp_env, env->insp,
                                      frame_scopes,
                                      0);
