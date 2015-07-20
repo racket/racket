@@ -89,6 +89,11 @@ Racket adds properties to expanded syntax (often using
 
 ]
 
+See also @secref["Syntax_Properties_that_Check_Syntax_Looks_For"
+                 #:doc '(lib "scribblings/tools/tools.scrbl")]
+for one client of the @racket['disappeared-use] and @racket['disappeared-binding]
+properties.
+
 See @secref["modinfo"] for information about properties generated
 by the expansion of a module declaration. See @racket[lambda] and
 @secref["infernames"] for information about properties recognized
