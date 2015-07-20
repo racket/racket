@@ -3972,7 +3972,7 @@ static void *compile_k(void)
   Resolve_Prefix *rp;
   Resolve_Info *ri;
   Optimize_Info *oi;
-  Scheme_Object *gval, *insp;
+  Scheme_Object *gval, *insp, *rib;
   Scheme_Comp_Env *cenv;
 
   form = (Scheme_Object *)p->ku.k.p1;
@@ -3992,7 +3992,9 @@ static void *compile_k(void)
   /* Renamings for requires: */
   if (rename) {
     form = scheme_top_introduce(form, genv);
-  }
+    rib = genv->stx_context;
+  } else
+    rib = NULL;
 
   tl_queue = scheme_null;
 
@@ -4035,6 +4037,11 @@ static void *compile_k(void)
     cenv = scheme_new_comp_env(genv, insp, frame_scopes,
                                SCHEME_TOPLEVEL_FRAME
                                | SCHEME_KEEP_SCOPES_FRAME);
+
+    if (rib) {
+      cenv->expand_result_adjust = scheme_stx_push_introduce_module_context;
+      cenv->expand_result_adjust_arg = rib;
+    }
 
     if (for_eval) {
       /* Need to look for top-level `begin', and if we
@@ -4833,9 +4840,9 @@ scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_ids, Scheme_O
   return scheme_datum_to_syntax(l, scheme_false, scheme_false, 0, 0);
 }
 
-static Scheme_Object *add_intdef_renamings(Scheme_Object *l, Scheme_Object *renaming, Scheme_Object *phase)
+static Scheme_Object *add_intdef_renamings(Scheme_Object *l, Scheme_Object *renaming)
 {
-  Scheme_Object *rl = renaming;
+  Scheme_Object *rl = renaming, *phase = scheme_make_integer(0);
 
   if (SCHEME_PAIRP(renaming)) {
     while (!SCHEME_NULLP(rl)) {
@@ -4877,7 +4884,7 @@ static void update_intdef_chain(Scheme_Object *intdef)
 static Scheme_Object *
 do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, int argc, Scheme_Object **argv)
 {
-  Scheme_Comp_Env *env, *orig_env, **ip;
+  Scheme_Comp_Env *env, *orig_env, *adjust_env = NULL, **ip;
   Scheme_Object *l, *local_scope, *renaming = NULL, *orig_l, *exp_expr = NULL;
   int cnt, pos, kind, is_modstar;
   int bad_sub_env = 0, bad_intdef = 0, keep_ref_ids = 0;
@@ -4900,9 +4907,10 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 
   if (for_expr)
     kind = 0; /* expression */
-  else if (!for_stx && SAME_OBJ(argv[1], module_symbol))
+  else if (!for_stx && SAME_OBJ(argv[1], module_symbol)) {
     kind = SCHEME_MODULE_FRAME | SCHEME_USE_SCOPES_TO_NEXT; /* module body */
-  else if (!for_stx && SAME_OBJ(argv[1], module_begin_symbol))
+    adjust_env = orig_env;
+  } else if (!for_stx && SAME_OBJ(argv[1], module_begin_symbol))
     kind = SCHEME_MODULE_BEGIN_FRAME; /* just inside module for expanding to `#%module-begin` */
   else if (SAME_OBJ(argv[1], top_level_symbol)) {
     kind = SCHEME_TOPLEVEL_FRAME;
@@ -4988,6 +4996,12 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
 					 | kind),
 				     NULL,
                                      env);
+
+  if (adjust_env && adjust_env->expand_result_adjust) {
+    env->expand_result_adjust = adjust_env->expand_result_adjust;
+    env->expand_result_adjust_arg = adjust_env->expand_result_adjust_arg;
+  }
+  
   if (catch_lifts < 0) {
     /* Note: extra frames can get inserted after env by pair_lifted */
     ip = MALLOC_N(Scheme_Comp_Env *, 1);
@@ -5090,8 +5104,11 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     l = scheme_stx_flip_scope(l, local_scope, scheme_env_phase(env->genv));
   }
 
-  if (renaming)
-    l = add_intdef_renamings(l, renaming, scheme_env_phase(env->genv));
+  if (renaming) {
+    l = add_intdef_renamings(l, renaming);
+    env->expand_result_adjust = add_intdef_renamings;
+    env->expand_result_adjust_arg = renaming;
+  }
 
   SCHEME_EXPAND_OBSERVE_LOCAL_PRE(observer, l);
 
@@ -5148,7 +5165,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   SCHEME_EXPAND_OBSERVE_LOCAL_POST(observer, l);
 
   if (renaming)
-    l = add_intdef_renamings(l, renaming, scheme_env_phase(env->genv));
+    l = add_intdef_renamings(l, renaming);
 
   if (for_expr) {
     /* Package up expanded expr with the environment. */

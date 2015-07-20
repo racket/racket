@@ -1812,6 +1812,26 @@
         x))
 
 ;; ----------------------------------------
+;; May sure unit body expansion doesn't mangle context:
+
+(test 5
+      (invoke-unit
+       (let ([x 5])
+         (define-syntax-rule (m) x)
+         (unit (import) (export)
+           (define x 6)
+           (m)))))
+
+(test 5
+      (invoke-unit
+       (let-syntax ([x (syntax-rules ()
+                         [(_) 5])])
+         (define-syntax-rule (m) (x))
+         (unit (import) (export)
+           (define (x) 6)
+           (m)))))
+
+;; ----------------------------------------
 
 ;; Make sure that right-hand side of a `define-values`
 ;; has the right scope, including in the case of

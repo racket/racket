@@ -1269,6 +1269,8 @@ mark_comp_env {
   gcMARK2(e->use, gc);
   gcMARK2(e->lifts, gc);
 
+  gcMARK2(e->expand_result_adjust_arg, gc);
+
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Comp_Env));
 }

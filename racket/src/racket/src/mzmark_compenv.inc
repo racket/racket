@@ -25,6 +25,8 @@ static int mark_comp_env_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->use, gc);
   gcMARK2(e->lifts, gc);
 
+  gcMARK2(e->expand_result_adjust_arg, gc);
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Comp_Env));
 }
@@ -48,6 +50,8 @@ static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(e->use, gc);
   gcFIXUP2(e->lifts, gc);
+
+  gcFIXUP2(e->expand_result_adjust_arg, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Comp_Env));

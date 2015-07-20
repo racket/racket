@@ -1172,5 +1172,92 @@
        ((mylam (x) (x 1 2)) 'any))))))
 
 ;; ----------------------------------------
+;; Make sure an internal-definition context expansion
+;; propagates the context's scope while expanding an expression:
+;; (Test from Spencer Florence)
+
+(module check-intfdef-expansion-scope racket/base
+  (require (for-syntax syntax/parse
+                       racket/base))
+
+  ;; a standard context for identifiers
+  (define-for-syntax ctx #'ctx)
+
+  ;; create an ID with the context `ctx`, and the current
+  ;; expander mark (so that the mark is canceled later),
+  ;; and the location loc
+  (define-for-syntax (make-id loc)
+    (syntax-local-introduce
+     (datum->syntax ctx 'id loc)))
+
+  ;; This introduces a binding
+  (define-syntax (def stx)
+    (syntax-parse stx
+      [(def)
+       (with-syntax ([id (make-id #'here)])
+         #'(define id 5))]))
+
+  ;; this attempts to use the binding introduced by `def`
+  (define-syntax (use stx)
+    (syntax-parse stx
+      [(use)
+       (with-syntax ([id (make-id #'here)])
+         #'id)]))
+
+  (let ()
+    (def)
+    (use)))
+
+;; ----------------------------------------
+;; Similar to preceding, but at module level using an initialy
+;; empty scope set:
+
+(module check-module-recur-expansion-scope racket/kernel
+  (#%require racket/base)
+  (require (for-syntax racket/base
+                       syntax/parse))
+  ;; empty context:
+  (define-for-syntax ctx (datum->syntax #f 'ctx))
+  (define-for-syntax (make-id loc)
+    (syntax-local-introduce
+     (datum->syntax ctx 'id loc)))
+  (define-syntax (def stx)
+    (syntax-parse stx
+      [(def)
+       (with-syntax ([id (make-id #'here)])
+         #'(define-syntax-rule (id) (define x 1)))]))
+  (define-syntax (use stx)
+    (syntax-parse stx
+      [(use)
+       (with-syntax ([id (make-id #'here)])
+         #'(id))]))
+  (begin
+    (def)
+    (use)))
+
+;; Module body is expanded with `local-expand`:
+(module check-module-local-expand-recur-expansion-scope racket/base
+  (require (for-syntax racket/base
+                       syntax/parse))
+  ;; empty context:
+  (define-for-syntax ctx (datum->syntax #f 'ctx))
+  (define-for-syntax (make-id loc)
+    (syntax-local-introduce
+     (datum->syntax ctx 'id loc)))
+  (define-syntax (def stx)
+    (syntax-parse stx
+      [(def)
+       (with-syntax ([id (make-id #'here)])
+         #'(define-syntax-rule (id) (define x 1)))]))
+  (define-syntax (use stx)
+    (syntax-parse stx
+      [(use)
+       (with-syntax ([id (make-id #'here)])
+         #'(id))]))
+  (begin
+    (def)
+    (use)))
+
+;; ----------------------------------------
 
 (report-errs)

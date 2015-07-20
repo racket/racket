@@ -4964,6 +4964,12 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
   form = compile_expand_macro_app(name, menv, var, form, env, rec, drec, need_macro_scope);
   SCHEME_EXPAND_OBSERVE_EXIT_MACRO(rec[drec].observer, form);
 
+  if (env->expand_result_adjust) {
+    Scheme_Expand_Result_Adjust_Proc adjust;
+    adjust = env->expand_result_adjust;
+    form = adjust(form, env->expand_result_adjust_arg);
+  }
+
   if (rec[drec].comp)
     goto top;
   else {
@@ -5640,6 +5646,11 @@ static Scheme_Object *beginify(Scheme_Comp_Env *env, Scheme_Object *lst)
                                 0, 0);
 }
 
+static Scheme_Object *add_scope_at_arbitrary_phase(Scheme_Object *stx, Scheme_Object *rib)
+{
+  return scheme_stx_add_scope(stx, rib, scheme_make_integer(0));
+}
+
 static Scheme_Object *
 compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env, 
                      Scheme_Compile_Expand_Info *rec, int drec,
@@ -5685,10 +5696,13 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
                                      env);
   env->intdef_name = ectx;
 
+  env->expand_result_adjust = add_scope_at_arbitrary_phase;
+  env->expand_result_adjust_arg = rib;
+
   forms = scheme_datum_to_syntax(forms, scheme_false, scheme_false, 0, 0);
 
   old = forms;
-  forms = scheme_stx_add_scope(forms, rib, scheme_env_phase(env->genv));
+  forms = add_scope_at_arbitrary_phase(forms, rib);
   SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(rec[drec].observer, forms, old);
 
  try_again:
@@ -5709,16 +5723,10 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     is_last = SCHEME_STX_NULLP(SCHEME_STX_CDR(forms));
 
     result = forms;
-    old = first;
 
     /* Check for macro expansion, which could mask the real
        define-values, define-syntax, etc.: */
     first = scheme_check_immediate_macro(first, env, rec, drec, &gval, is_last);
-
-    if (!SAME_OBJ(first, old)) {
-      old = first;
-      first = scheme_stx_add_scope(first, rib, scheme_env_phase(env->genv));
-    }
     
     if (SAME_OBJ(gval, scheme_begin_syntax)) {
       /* Inline content */
@@ -5925,6 +5933,8 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  /* Remember extended environment */
           env = scheme_new_compilation_frame(0, SCHEME_INTDEF_FRAME, frame_scopes, new_env);
           env->intdef_name = ectx;
+          env->expand_result_adjust = add_scope_at_arbitrary_phase;
+          env->expand_result_adjust_arg = rib;
 	}
 
       define_try_again:

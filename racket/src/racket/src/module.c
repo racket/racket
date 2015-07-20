@@ -8682,6 +8682,9 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
   rn_set = env->genv->stx_context;
 
+  xenv->expand_result_adjust = introduce_to_module_context;
+  xenv->expand_result_adjust_arg = rn_set;
+    
   vec = get_table(bxs->tables, scheme_make_integer(phase));
   if (SCHEME_FALSEP(SCHEME_VEC_ELS(vec)[0]))
     SCHEME_VEC_ELS(vec)[0] = (Scheme_Object *)env->genv->toplevel;

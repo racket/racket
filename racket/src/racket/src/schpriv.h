@@ -2547,6 +2547,8 @@ typedef struct Comp_Prefix
   Scheme_Hash_Table *stxes;     /* syntax objects */
 } Comp_Prefix;
 
+typedef Scheme_Object *(*Scheme_Expand_Result_Adjust_Proc)(Scheme_Object *stx, Scheme_Object *arg);
+
 typedef struct Scheme_Comp_Env
 {
   MZTAG_IF_REQUIRED
@@ -2578,6 +2580,9 @@ typedef struct Scheme_Comp_Env
 
   Scheme_Hash_Tree *skip_table; /* for jumping ahead in the chain */
   int skip_depth;                /* depth in simple frames, used to trigger skip_table creation */
+
+  Scheme_Expand_Result_Adjust_Proc expand_result_adjust;
+  Scheme_Object *expand_result_adjust_arg;
 
   struct Scheme_Comp_Env *next;
 } Scheme_Comp_Env;
