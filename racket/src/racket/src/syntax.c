@@ -4424,7 +4424,7 @@ void scheme_extend_module_context_with_shared(Scheme_Object *mc, /* (vector <sco
   SCHEME_VEC_ELS(pes)[1] = (Scheme_Object *)pt;
   SCHEME_VEC_ELS(pes)[2] = src_phase;
   SCHEME_VEC_ELS(pes)[3] = unmarshal_info;
-  SCHEME_VEC_ELS(pes)[4] = insp_desc;
+  SCHEME_VEC_ELS(pes)[4] = (insp_desc ? insp_desc : scheme_false);
 
   if (replace_at) {
     SCHEME_BINDING_VAL(SCHEME_CAR(replace_at)) = pes;
