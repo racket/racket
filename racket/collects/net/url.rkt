@@ -373,7 +373,6 @@
                              (-> input-port? any)
                              (listof string?)
                              any)))
- (url-exception? (any/c . -> . boolean?))
  (current-proxy-servers
   (parameter/c (or/c false/c (listof (list/c string? string? number?))))))
 
