@@ -441,7 +441,7 @@
 
 #endif
 
-  /************** FreeBSD with gcc ****************/
+  /************** FreeBSD with clang/gcc ****************/
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 
