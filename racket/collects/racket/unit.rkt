@@ -1252,7 +1252,8 @@
                                 [ctc (bound-identifier-mapping-get ctc-table var)]
                                 [rename-bindings (get-member-bindings def-table
                                                                       (bound-identifier-mapping-get sig-table var)
-                                                                      #'(current-contract-region))])
+                                                                      #'(current-contract-region)
+                                                                      #t)])
                            (with-syntax ([ctc-stx (if ctc (syntax-property
                                                            #`(letrec-syntax #,rename-bindings #,ctc)
                                                            'inferred-name var)
@@ -1732,7 +1733,7 @@
                      (((wrap-code ...) ...)
                       (map (λ (os ov tbs)
                              (define rename-bindings 
-                               (get-member-bindings def-table os #'(quote-module-name)))
+                               (get-member-bindings def-table os #'(quote-module-name) #t))
                              (map (λ (tb i v c)
                                     (if c
                                         (with-syntax ([ctc-stx

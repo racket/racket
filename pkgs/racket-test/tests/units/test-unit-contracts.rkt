@@ -705,6 +705,24 @@
 (test-contract-error "m4" "f" "not an x"
   (m4:f 3))
 
+(module m4:f racket
+  (define-signature foo^ (x? (contracted [f (-> x? boolean?)])))
+
+  (define-unit U@
+    (import)
+    (export foo^)
+    (define (x? x) #f)
+    (define (f x) (x? x)))
+
+  (define-values/invoke-unit U@ (import) (export [prefix f: foo^]))
+  
+  (provide f:f f:x?))
+
+(require (prefix-in m4: 'm4:f))
+
+(test-contract-error "m4:f" "f:f" "not an f:x"
+  (m4:f:f 3))
+
 (require (prefix-in m3: 'm3))
 
 (test-contract-error top-level "build-toys" "not a integer"

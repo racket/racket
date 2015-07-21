@@ -28,8 +28,9 @@
 (define-syntax-rule (equal-hash-table [k v] ...)
   (make-immutable-hash (list (cons k v) ...)))
 
-(define-for-syntax (get-member-bindings member-table sig pos)
+(define-for-syntax (get-member-bindings member-table sig pos bind?)
   (for/list ([i (in-list (map car (car sig)))]
+             [ix (in-list (map cdr (car sig)))]
              [c (in-list (cadddr sig))])
     (let ([add-ctc
              (λ (v stx)
@@ -39,7 +40,7 @@
                            (contract c-stx (car v/c) (cdr v/c) #,pos
                                      (quote #,v) (quote-syntax #,v))))
                      #`(#,stx)))])
-      #`[#,i
+      #`[#,(if bind? ix i)
          (make-set!-transformer
           (λ (stx)
             (syntax-case stx (set!)

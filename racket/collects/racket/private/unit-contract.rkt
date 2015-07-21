@@ -54,7 +54,7 @@
                                                #`(vector-ref #,v #,index)))))
     (with-syntax ((((eloc ...) ...)
                    (for/list ([target-sig import-sigs])
-                     (let ([rename-bindings (get-member-bindings def-table target-sig #`(blame-positive #,blame-id))])
+                     (let ([rename-bindings (get-member-bindings def-table target-sig #`(blame-positive #,blame-id) #f)])
                        (for/list ([target-int/ext-name (in-list (car target-sig))]
                                   [sig-ctc (in-list (cadddr target-sig))])
                          (let* ([var (car target-int/ext-name)]
