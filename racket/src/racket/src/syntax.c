@@ -5166,11 +5166,29 @@ static void add_reachable_scopes(Scheme_Scope_Set *scopes, Scheme_Marshal_Tables
   }
 }
 
+static void add_reachable_multi_scope(Scheme_Object *ms, Scheme_Marshal_Tables *mt)
+{
+  Scheme_Hash_Table *ht = (Scheme_Hash_Table *)ms;
+  Scheme_Object *scope;
+  int j;
+  
+  for (j = ht->size; j--; ) {
+    scope = ht->vals[j];
+    if (scope) {
+      if (!SCHEME_VOIDP(ht->keys[j])) {
+        if (!scheme_eq_hash_get(mt->reachable_scopes, scope)) {
+          scheme_hash_set(mt->reachable_scopes, scope, scheme_true);
+          scope = scheme_make_pair(scope, mt->reachable_scope_stack);
+          mt->reachable_scope_stack = scope;
+        }
+      }
+    }
+  }
+}
+
 static void add_reachable_multi_scopes(Scheme_Object *multi_scopes, Scheme_Marshal_Tables *mt)
 {
-  Scheme_Hash_Table *ht;
-  Scheme_Object *scope, *l;
-  int j;
+  Scheme_Object *l;
 
   while (1) {
     l = multi_scopes;
@@ -5178,19 +5196,7 @@ static void add_reachable_multi_scopes(Scheme_Object *multi_scopes, Scheme_Marsh
       l = SCHEME_FALLBACK_FIRST(l);
     
     for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-      ht = (Scheme_Hash_Table *)SCHEME_CAR(SCHEME_CAR(l));
-      for (j = ht->size; j--; ) {
-        scope = ht->vals[j];
-        if (scope) {
-          if (!SCHEME_VOIDP(ht->keys[j])) {
-            if (!scheme_eq_hash_get(mt->reachable_scopes, scope)) {
-              scheme_hash_set(mt->reachable_scopes, scope, scheme_true);
-              scope = scheme_make_pair(scope, mt->reachable_scope_stack);
-              mt->reachable_scope_stack = scope;
-            }
-          }
-        }
-      }
+      add_reachable_multi_scope(SCHEME_CAR(SCHEME_CAR(l)), mt);
     }
     
     if (SCHEME_FALLBACKP(multi_scopes))
@@ -5293,6 +5299,9 @@ void scheme_iterate_reachable_scopes(Scheme_Marshal_Tables *mt)
         }
       }
     }
+
+    if (SCHEME_SCOPE_HAS_OWNER(scope))
+      add_reachable_multi_scope(((Scheme_Scope_With_Owner *)scope)->owner_multi_scope, mt);
 
     /* Check for any free-id mappings whose reachbility depended on `scope`: */
     if (mt->pending_reachable_ids) {
@@ -5663,7 +5672,7 @@ static Scheme_Object *marshal_bindings(Scheme_Object *l, Scheme_Marshal_Tables *
 Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Tree *ht;
-  Scheme_Object *v, *l, *r, *l2, *tab, *scopes, *key, *val;
+  Scheme_Object *v, *l, *r, *l2, *tab, *scopes, *key, *val, *ms;
   intptr_t i, j;
 
   if (!mt->identity_map)
@@ -5672,6 +5681,11 @@ Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tab
   v = scheme_hash_get(mt->identity_map, m);
   if (v)
     return v;
+
+  if (SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)m))
+    ms = multi_scope_to_vector(((Scheme_Scope_With_Owner *)m)->owner_multi_scope, mt);
+  else
+    ms = NULL;
 
   v = ((Scheme_Scope *)m)->bindings;
   if (v) {
@@ -5761,9 +5775,15 @@ Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tab
       }
     }
 
+    if (ms)
+      r = scheme_make_pair(ms, r);
+
     v = scheme_make_pair(scheme_make_integer(SCHEME_SCOPE_KIND(m)), r);
-  } else
+  } else {
     v = scheme_make_integer(SCHEME_SCOPE_KIND(m));
+    if (ms)
+      v = scheme_make_pair(v, scheme_make_pair(ms, scheme_false));
+  }
 
   scheme_hash_set(mt->identity_map, m, v);
 
@@ -6120,7 +6140,8 @@ static Scheme_Hash_Table *vector_to_multi_scope(Scheme_Object *mht, Scheme_Unmar
   multi_scope = (Scheme_Hash_Table *)new_multi_scope(SCHEME_VEC_ELS(mht)[len-1]);
   len -= 1;
 
-  /* A multi-scope might refer back to itself via free-id=? info: */
+  /* A multi-scope can refer back to itself via one of its
+     scopes or free-id=? info: */
   scheme_hash_set(ut->rns, mht, (Scheme_Object *)multi_scope);
 
   for (i = 0; i < len; i += 2) {
@@ -6131,10 +6152,12 @@ static Scheme_Hash_Table *vector_to_multi_scope(Scheme_Object *mht, Scheme_Unmar
     if (!scope) return_NULL;
     if (!SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)scope))
       return_NULL;
-    if (((Scheme_Scope_With_Owner *)scope)->owner_multi_scope)
+    if (!((Scheme_Scope_With_Owner *)scope)->owner_multi_scope)
+      ((Scheme_Scope_With_Owner *)scope)->owner_multi_scope = (Scheme_Object *)multi_scope;
+    else if (!SAME_OBJ(((Scheme_Scope_With_Owner *)scope)->owner_multi_scope,
+                       (Scheme_Object *)multi_scope))
       return_NULL;
     scheme_hash_set(multi_scope, SCHEME_VEC_ELS(mht)[i], scope);
-    ((Scheme_Scope_With_Owner *)scope)->owner_multi_scope = (Scheme_Object *)multi_scope;
     ((Scheme_Scope_With_Owner *)scope)->phase = SCHEME_VEC_ELS(mht)[i];
   }
       
@@ -6334,6 +6357,19 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
   scheme_hash_set(ut->rns, box, m);
   /* Since we've created the scope before unmarshaling its content,
      cycles among scopes are ok. */
+
+  if (SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)m)) {
+    if (!SCHEME_PAIRP(c)) return_NULL;
+    r = (Scheme_Object *)vector_to_multi_scope(SCHEME_CAR(c), ut);
+    if (!r) return_NULL;
+    if (!((Scheme_Scope_With_Owner *)m)->owner_multi_scope)
+      ((Scheme_Scope_With_Owner *)m)->owner_multi_scope = r;
+    else if (!SAME_OBJ(r, ((Scheme_Scope_With_Owner *)m)->owner_multi_scope))
+      return_NULL;
+    c = SCHEME_CDR(c);
+    if (SCHEME_FALSEP(c))
+      c = NULL;
+  }
 
   if (!c) return m;
 
