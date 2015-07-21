@@ -89,8 +89,9 @@ Racket adds properties to expanded syntax (often using
 
 ]
 
-See also @secref["Syntax_Properties_that_Check_Syntax_Looks_For"
-                 #:doc '(lib "scribblings/tools/tools.scrbl")]
+See also @seclink["Syntax_Properties_that_Check_Syntax_Looks_For"
+                  #:doc '(lib "scribblings/tools/tools.scrbl")
+                  #:indirect? #t]{Check Syntax}
 for one client of the @racket['disappeared-use] and @racket['disappeared-binding]
 properties.
 
