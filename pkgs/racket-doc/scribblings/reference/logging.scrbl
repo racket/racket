@@ -301,7 +301,7 @@ event's topic matches @racket[topic].
 
 A @tech{log receiver} is a @tech{synchronizable event}. It becomes
 @tech{ready for synchronization} when a logging event is
-received, so use @racket[sync] to receive an logged event. The
+received, so use @racket[sync] to receive a logged event. The
 @tech{log receiver}'s @tech{synchronization result} is an immutable vector containing
 four values: the level of the event as a symbol, an immutable string
 for the event message, an arbitrary value that was supplied as the
