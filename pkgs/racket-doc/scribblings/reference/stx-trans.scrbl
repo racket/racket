@@ -783,8 +783,10 @@ definition context.
 @defproc[(syntax-local-introduce [stx syntax?]) syntax?]{
 
 Produces a syntax object that is like @racket[stx], except that the
-presence of @tech{scopes} for the current expansion---both the. See
-@secref["transformer-model"] for information on @tech{scopes}.
+presence of @tech{scopes} for the current expansion---both the
+macro-introduction scope and the use-site scope, if any---is flipped
+on all parts of the syntax object. See @secref["transformer-model"] for information
+on macro-introduction and use-site @tech{scopes}.
 
 @transform-time[]}
 
