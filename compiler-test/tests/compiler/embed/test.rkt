@@ -267,7 +267,6 @@
 (define (try-basic)
   (mz-tests #f)
   (mz-tests #t)
-
   (begin
     (prepare mr-dest "embed-me5.rkt")
     (make-embedding-executable 
@@ -288,11 +287,15 @@
                                                     "raco.exe"
                                                     "raco")))
 
+(define (system+ . args)
+  (printf "> ~a\n" (car (reverse args)))
+  (apply system* args))
+
 (define (short-mzc-tests mred?)
   (parameterize ([current-directory (find-system-path 'temp-dir)])
 
     ;; raco exe
-    (system* raco
+    (system+ raco
              "exe"
 	     "-o" (path->string (mk-dest mred?))
 	     (if mred? "--gui" "--")
@@ -300,7 +303,7 @@
     (try-exe (mk-dest mred?) "This is 1\n" mred?)
 
     ;; raco exe on a module with a `main' submodule
-    (system* raco
+    (system+ raco
              "exe"
 	     "-o" (path->string (mk-dest mred?))
 	     (if mred? "--gui" "--")
@@ -312,7 +315,7 @@
   (parameterize ([current-directory (find-system-path 'temp-dir)])
 
     ;; raco exe
-    (system* raco
+    (system+ raco
              "exe"
 	     "-o" (path->string (mk-dest mred?))
 	     (if mred? "--gui" "--")
@@ -320,7 +323,7 @@
     (try-exe (mk-dest mred?) "This is 1\n" mred?)
 
     ;; raco exe on a module with a `main' submodule
-    (system* raco
+    (system+ raco
              "exe"
 	     "-o" (path->string (mk-dest mred?))
 	     (if mred? "--gui" "--")
@@ -328,7 +331,7 @@
     (try-exe (mk-dest mred?) "This is 16.\n" mred?)
 
     ;; raco exe on a module with a `main' submodule+
-    (system* raco
+    (system+ raco
              "exe"
 	     "-o" (path->string (mk-dest mred?))
 	     (if mred? "--gui" "--")
@@ -336,7 +339,7 @@
     (try-exe (mk-dest mred?) "This is 20.\n" mred?)
 
     ;; raco exe on a module with a `configure-runtime' submodule
-    (system* raco
+    (system+ raco
              "exe"
 	     "-o" (path->string (mk-dest mred?))
 	     (if mred? "--gui" "--")
@@ -344,7 +347,7 @@
     (try-exe (mk-dest mred?) "Configure!\nThis is 22.\n" mred?)
 
     ;; raco exe on a module with serialization
-    (system* raco
+    (system+ raco
              "exe"
 	     "-o" (path->string (mk-dest mred?))
 	     (if mred? "--gui" "--")
@@ -352,7 +355,7 @@
     (try-exe (mk-dest mred?) "1\n2\n" mred?)
 
     ;; raco exe --launcher
-    (system* raco
+    (system+ raco
              "exe"
              "--launcher"
 	     "-o" (path->string (mk-dest mred?))
@@ -362,7 +365,7 @@
 
     ;; the rest use mzc...
 
-    (system* mzc 
+    (system+ mzc 
 	     (if mred? "--gui-exe" "--exe")
 	     (path->string (mk-dest mred?))
 	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me1.rkt")))
@@ -371,7 +374,7 @@
     (define (check-collection-path prog lib in-main?)
       ;; Check that etc.rkt isn't found if it's not included:
       (printf ">>not included\n")
-      (system* mzc 
+      (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
                (path->string (build-path (collection-path "tests" "compiler" "embed") prog)))
@@ -379,7 +382,7 @@
 
       ;; And it is found if it is included:
       (printf ">>included\n")
-      (system* mzc 
+      (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
                "++lib" lib
@@ -388,7 +391,7 @@
 
       ;; Or, it's found if we set the collection path:
       (printf ">>set coll path\n")
-      (system* mzc 
+      (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
                "--collects-path"
@@ -400,7 +403,7 @@
       ;; Or, it's found if we set the collection path and the config path (where the latter
       ;; finds links for packages):
       (printf ">>set coll path plus config\n")
-      (system* mzc 
+      (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
                "--collects-path"
@@ -413,7 +416,7 @@
 
       ;; Try --collects-dest mode
       (printf ">>--collects-dest\n")
-      (system* mzc 
+      (system+ mzc 
                (if mred? "--gui-exe" "--exe")
                (path->string (mk-dest mred?))
                "++lib" lib
@@ -423,7 +426,7 @@
       (try-exe (mk-dest mred?) "This is 6\n#t\n" mred? void "cts") ; <- cts copied to distribution
       (delete-directory/files "cts")
       (parameterize ([current-error-port (open-output-nowhere)])
-        (test #f system* (mk-dest mred?))))
+        (test #f system+ (mk-dest mred?))))
     (check-collection-path "embed-me6b.rkt" "racket/fixnum.rkt" #t)
     (check-collection-path "embed-me6.rkt" "mzlib/etc.rkt"
                            ;; "mzlib" is found via the "collects" path
@@ -464,11 +467,11 @@
 
     (make-directory* ext-dir)
     
-    (system* mzc 
+    (system+ mzc 
              "--cc"
              "-d" (path->string (path-only obj-file))
              (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me8.c")))
-    (system* mzc 
+    (system+ mzc 
              "--ld"
              (path->string ext-file)
              (path->string obj-file))
@@ -478,7 +481,7 @@
     (copy-file (build-path (collection-path "tests" "compiler" "embed") "embed-me9.rkt")
                ss-file)
 
-    (system* mzc 
+    (system+ mzc 
              (if mred? "--gui-exe" "--exe")
              (path->string (mk-dest mred?))
              (path->string ss-file))
@@ -489,7 +492,7 @@
                                                        (delete-directory/files ext-base-dir)))
 
     ;; openssl, which needs extra binaries under Windows
-    (system* mzc 
+    (system+ mzc 
              (if mred? "--gui-exe" "--exe")
              (path->string (mk-dest mred?))
              (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me10.rkt")))
@@ -502,7 +505,7 @@
 (define (try-gracket)
   ;; A GRacket-specific test with mzc:
   (parameterize ([current-directory (find-system-path 'temp-dir)])
-    (system* mzc 
+    (system+ mzc 
              "--gui-exe"
              (path->string (mk-dest #t))
              (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me5.rkt")))
@@ -557,14 +560,46 @@
 
 ;; ----------------------------------------
 
+(define (try-source)
+  (define (try-one file submod start result)
+    (define mred? #f)
+    (define dest (mk-dest mred?))
+    
+    (printf "> ~a ~s from source\n" file submod)
+    (create-embedding-executable
+     dest
+     #:modules `((#%mzc: ,(collection-file-path file "tests/compiler/embed") ,submod))
+     #:configure-via-first-module? #t
+     #:literal-expression
+     (parameterize ([current-namespace (make-base-namespace)])
+       (compile
+        `(begin
+          (namespace-require ',start))))
+     #:src-filter (lambda (p) (or (equal? p (collection-file-path "embed-me25.rkt" "tests/compiler/embed"))
+                             (equal? p (collection-file-path "embed-me26.rkt" "tests/compiler/embed"))
+                             (equal? p (collection-file-path "embed-me27.rkt" "tests/compiler/embed"))))
+     #:get-extra-imports (lambda (src mod)
+                           (list 'racket/base/lang/reader)))
+    
+    (try-exe dest result mred?))
+  
+  (try-one "embed-me25.rkt" null ''|#%mzc:embed-me25| "10\n")
+  (try-one "embed-me25.rkt" '(main) '(submod '|#%mzc:embed-me25| main) "10\n12\n")
+  (try-one "embed-me25.rkt" '(submod) '(submod '|#%mzc:embed-me25| submod) "11\n")
+  (try-one "embed-me26.rkt" null ''|#%mzc:embed-me26| "'y\n10\n")
+  (try-one "embed-me26.rkt" '(submod) '(submod '|#%mzc:embed-me26| submod) "11\n")
+  (try-one "embed-me26.rkt" '(main) '(submod '|#%mzc:embed-me26| main) "'y\n10\n12\n"))
+
+;; ----------------------------------------
+
 (define planet (build-path (find-console-bin-dir) (if (eq? 'windows (system-type))
                                                       "planet.exe"
                                                       "planet")))
 
 (define (try-planet)
-  (system* raco "planet" "link" "racket-tester" "p1.plt" "1" "0"
+  (system+ raco "planet" "link" "racket-tester" "p1.plt" "1" "0"
            (path->string (collection-path "tests" "compiler" "embed" "embed-planet-1")))
-  (system* raco "planet" "link" "racket-tester" "p2.plt" "2" "2"
+  (system+ raco "planet" "link" "racket-tester" "p2.plt" "2" "2"
            (path->string (collection-path "tests" "compiler" "embed" "embed-planet-2")))
 
   (let ([go (lambda (path expected)
@@ -575,7 +610,7 @@
                   #:exists 'truncate
                   (lambda ()
                     (printf "#lang racket/base (require ~s)\n" path)))
-                (system* mzc "--exe" (path->string dest) (path->string tmp))
+                (system+ mzc "--exe" (path->string dest) (path->string tmp))
                 (try-exe dest expected #f)
 
                 (delete-directory/files dest)
@@ -597,8 +632,8 @@
 
     (void))
   
-  (system* raco "planet" "unlink" "racket-tester" "p1.plt" "1" "0")
-  (system* raco "planet" "unlink" "racket-tester" "p2.plt" "2" "2"))
+  (system+ raco "planet" "unlink" "racket-tester" "p1.plt" "1" "0")
+  (system+ raco "planet" "unlink" "racket-tester" "p2.plt" "2" "2"))
 
 ;; ----------------------------------------
 
@@ -606,7 +641,7 @@
   (define (try-one src)
     (printf "Trying ~a...\n" src)
     (define exe (path->string (mk-dest #f)))
-    (system* raco
+    (system+ raco
              "exe"
              "-o" exe
              "--"
@@ -621,6 +656,7 @@
   
 ;; ----------------------------------------
 
+#| REMOVEME
 (try-basic)
 (try-mzc)
 (try-extension)
@@ -628,6 +664,8 @@
 (try-reader)
 (try-planet)
 (try-*sl)
+|#
+(try-source)
 
 ;; ----------------------------------------
 ;; Make sure that embedding does not break future module declarations
