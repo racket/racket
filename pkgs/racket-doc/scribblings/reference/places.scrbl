@@ -262,6 +262,14 @@ The @racket[place] binding is protected in the same way as
 The @racket[place*] binding is protected in the same way as
  @racket[dynamic-place].}
 
+@defform[(open-place id body ...+)]{
+  Like @racket[place], but @racket[body ...] may have free lexical
+  variables, which are automatically sent to the newly-created place.
+  Note that these variables must have values accepted by
+  @racket[place-message-allowed?], otherwise an @racket[exn:fail:contract]
+  exception is raised.
+}
+
 
 @defproc[(place-wait [p place?]) exact-integer?]{
   Returns the @tech{completion value} of the place indicated by @racket[p],
