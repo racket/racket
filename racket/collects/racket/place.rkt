@@ -13,7 +13,9 @@
 
 
          (for-syntax racket/base
-                     racket/syntax))
+                     racket/syntax
+                     syntax/parse
+                     syntax/free-vars))
 
 (provide (protect-out dynamic-place
                       dynamic-place*)
@@ -31,6 +33,7 @@
          processor-count
          (protect-out place
                       place*)
+         open-place
          (rename-out [pl-place-enabled? place-enabled?])
          place-dead-evt
          place-location?
@@ -228,3 +231,25 @@
              (not (module-predefined? `(quote ,name))))
      (error who "the enclosing module's resolved name is not a path or predefined"))
   (start-place-func who (if (symbol? name) `(quote ,name) name) func-name in out err))
+
+(define-syntax (open-place stx)
+  (syntax-parse stx
+    [(_ ch:id body:expr ...)
+     (define b #'(let () body ...))
+     (define/with-syntax b* (local-expand b 'expression null))
+     (define/with-syntax (fvs ...) (free-vars #'b*))
+     (define/with-syntax (i ...) (for/list ([(v i) (in-indexed (syntax->list #'(fvs ...)))]) i))
+     (define/with-syntax (v p) (generate-temporaries '(v p)))
+     #'(let ()
+         (define p (place ch (let* ([v (place-channel-get ch)]
+                                    [fvs (vector-ref v i)] ...)
+                               b*)))
+         (define vec (vector fvs ...))
+         (for ([e (in-vector vec)]
+               [n (in-list (syntax->list (quote-syntax (fvs ...))))])
+           (unless (place-message-allowed? e)
+             (raise-arguments-error 'open-place
+                                    "free variable values must be allowable as place messages"
+                                    (symbol->string (syntax-e n)) e)))
+         (place-channel-put p vec)
+         p)]))
