@@ -322,5 +322,52 @@
   (test 2 eval 'extra ns))
 
 ;; ----------------------------------------
+;; Check that compilation in one namespace can
+;; be transferred to another namespace
+
+(let ()
+  ;; transfer a `require`
+  (define c
+    (parameterize ([current-namespace (make-base-namespace)])
+      (compile '(require racket/base))))
+  (parameterize ([current-namespace (make-base-empty-namespace)])
+    (test (void) 'eval (eval c))
+    (test add1 eval 'add1)))
+
+(let ()
+  ;; transfer a definition, reference is visible, original
+  ;; namespace is unchanged
+  (define-values (c get)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (define c (compile '(define one 1)))
+      (values
+       c
+       (eval '(lambda () one)))))
+  (parameterize ([current-namespace (make-base-empty-namespace)])
+    (test (void) 'eval (eval c))
+    (test 1 eval 'one)
+    (err/rt-test (get) exn:fail:contract:variable?)))
+
+(let ()
+  ;; transfer a definition of a macro-introduced variable, and
+  ;; check access via a syntax object that is compiled at the same time:
+  (define-values (c get)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval '(define-syntax-rule (m id)
+              (begin
+                (define one 1)
+                (define id (quote-syntax one))
+                one)))
+      (define c (compile '(m id)))
+      (values
+       c
+       (eval '(lambda () one)))))
+  (parameterize ([current-namespace (make-base-empty-namespace)])
+    (test 1 'eval (eval c))
+    (err/rt-test (eval 'one) exn:fail:syntax?)
+    (test 1 eval (eval 'id))
+    (err/rt-test (get) exn:fail:contract:variable?)))
+
+;; ----------------------------------------
 
 (report-errs)

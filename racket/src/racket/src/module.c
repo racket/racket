@@ -12472,12 +12472,12 @@ do_require_execute(Scheme_Env *env, Scheme_Object *form)
 {
   Scheme_Object *modidx;
 
+  /* Use the current top-level context: */
+  form = scheme_stx_add_module_context(form, env->stx_context);
+
   /* Check for collisions again, in case there's a difference between
      compile and run times: */
   modidx = check_require_form(env, form);
-
-  /* Use the current top-level context: */
-  form = scheme_stx_push_module_context(form, env->stx_context);
 
   parse_requires(form, env->phase, modidx, env, NULL,
                  env->stx_context,
@@ -12518,8 +12518,9 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
   (void)check_require_form(env->genv, form);
 
   if (rec && rec[drec].comp) {
-    form = scheme_revert_use_site_scopes(form, env);
-    
+    /* Remove all context specific to the compile-time environment: */
+    form = scheme_stx_remove_module_context(form, env->genv->stx_context);
+
     /* Dummy lets us access a top-level environment: */
     dummy = scheme_make_environment_dummy(env);
     

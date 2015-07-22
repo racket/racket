@@ -4320,6 +4320,11 @@ Scheme_Object *scheme_stx_add_module_context(Scheme_Object *stx, Scheme_Object *
   return adjust_module_context_except(stx, mc, NULL, SCHEME_STX_ADD);
 }
 
+Scheme_Object *scheme_stx_remove_module_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  return adjust_module_context_except(stx, mc, NULL, SCHEME_STX_REMOVE);
+}
+
 Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object *mc)
 {
   Scheme_Object *intro_multi_scope = SCHEME_VEC_ELS(mc)[4];

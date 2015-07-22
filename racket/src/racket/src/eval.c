@@ -1004,8 +1004,10 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
 
     home = scheme_get_bucket_home(b);
     
-    if (!env || !home || !home->module)
+    if (!env || !home)
       return (Scheme_Object *)b;
+    else if (!home->module)
+      return (Scheme_Object *)scheme_global_bucket((Scheme_Object *)b->key, env);
     else
       return link_module_variable(home->module->modname,
 				  (Scheme_Object *)b->key,

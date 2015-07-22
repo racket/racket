@@ -1575,8 +1575,12 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as
   } else
     id = NULL;
 
-  if (!id)
-    return;
+  if (!id) {
+    if (env->module)
+      return;
+    id = scheme_datum_to_syntax(n, scheme_false, scheme_false, 0, 0);
+    id = scheme_stx_add_module_context(id, env->stx_context);
+  }
 
   if (env->binding_names_need_shift) {
     id = scheme_stx_shift(id, scheme_make_integer(env->phase - env->mod_phase),
