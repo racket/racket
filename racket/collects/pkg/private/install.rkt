@@ -270,7 +270,7 @@
                      (file-exists? (get-compilation-bytecode-file f))
                      (file-exists? (get-compilation-bytecode-file (path-replace-suffix f #".ss"))))
                  (or (not updating?)
-                     (not (hash-ref simultaneous-installs (path->pkg f #:cache path-pkg-cache)))))
+                     (not (hash-ref simultaneous-installs (path->pkg f #:cache path-pkg-cache) #f))))
             ;; This module is already installed
             (cons (path->pkg f #:cache path-pkg-cache) mp)]
            [else
