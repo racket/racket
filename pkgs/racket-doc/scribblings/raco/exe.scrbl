@@ -110,7 +110,9 @@ The @exec{raco exe} command accepts the following command-line flags:
    included with the executable into @nonterm{path}
    (relative to the current directory), instead of embedded within the
    executable. The @DFlag{collects-dest} flag normally makes sense
-   only in combination with @DFlag{collects-path}.}
+   only in combination with @DFlag{collects-path}. This mode currently
+   does not prune unreferenced submodules (and it pulls along any
+   dependencies of submodules).}
 
  @item{@DFlag{ico} @nonterm{.ico-path} --- on Windows, set the icons
    for the generated executable to ones extracted from

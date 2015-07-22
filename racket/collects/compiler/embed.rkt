@@ -316,11 +316,13 @@
 (define (make-mod normal-file-path normal-module-path 
                   code name prefix full-name relative-mappings-box 
                   runtime-paths runtime-module-syms
-                  actual-file-path)
+                  actual-file-path
+                  use-source?)
   (list normal-file-path normal-module-path code
         name prefix full-name relative-mappings-box
         runtime-paths runtime-module-syms 
-        actual-file-path))
+        actual-file-path
+        use-source?))
 
 (define (mod-file m) (car m))
 (define (mod-mod-path m) (cadr m))
@@ -332,6 +334,7 @@
 (define (mod-runtime-paths m) (list-ref m 7))
 (define (mod-runtime-module-syms m) (list-ref m 8))
 (define (mod-actual-file m) (list-ref m 9))
+(define (mod-use-source? m) (list-ref m 10))
 
 (define (generate-prefix)
   (format "#%embedded:~a:" (gensym)))
@@ -348,13 +351,17 @@
               (build-path (normal-case-path base) name)
               f)))))
 
+(define (strip-submod a)
+  (if (and (pair? a)
+           (eq? 'submod (car a)))
+      (cadr a)
+      a))
+
 (define (is-lib-path? a)
-  (or (and (pair? a)
-           (eq? 'lib (car a)))
-      (symbol? a)
-      (and (pair? a)
-           (eq? 'submod (car a))
-           (is-lib-path? (cadr a)))))
+  (let ([a (strip-submod a)])
+    (or (and (pair? a)
+             (eq? 'lib (car a)))
+        (symbol? a))))
 
 (define (symbol-to-lib-form l)
   (if (symbol? l)
@@ -373,9 +380,24 @@
         (values (reverse dirs) (car l))
         (loop (cdr l) (cons (car l) dirs)))))
 
+(define (adjust-ss/rkt-suffix path)
+  (cond
+   [(file-exists? path) path]
+   [(regexp-match? #rx"[.]ss$" path)
+    (define rkt-path (path-replace-suffix path #".rkt"))
+    (if (file-exists? rkt-path)
+        rkt-path
+        path)]
+   [(regexp-match? #rx"[.]rkt$" path)
+    (define ss-path (path-replace-suffix path #".ss"))
+    (if (file-exists? ss-path)
+        ss-path
+        path)]
+   [else path]))
+
 (define (lib-module-filename collects-dest module-path)
   (let-values ([(dir file) 
-                (let ([s (lib-path->string module-path)])
+                (let ([s (lib-path->string (strip-submod module-path))])
                   (extract-last (unix-style-split s)))])
     (let ([p (build-path collects-dest
                          (apply build-path dir)
@@ -393,9 +415,28 @@
 
 ;; Loads module code, using .zo if there, compiling from .scm if not
 (define (get-code filename module-path ready-code use-submods codes prefixes verbose? collects-dest on-extension 
-                  compiler expand-namespace get-extra-imports working)
+                  compiler expand-namespace src-filter get-extra-imports working)
   ;; filename can have the form `(submod ,filename ,sym ...)
-  (let ([a (assoc filename (unbox codes))])
+  (let* ([a (assoc filename (unbox codes))]
+         ;; If we didn't fine `filename` as-is, check now for
+         ;; using source, because in that case we'll only register the
+         ;; main module even if a submodule is include in `filename`.
+         [use-source?
+          (and (not a)
+               (src-filter (adjust-ss/rkt-suffix (strip-submod filename))))]
+         ;; When using source or writing to collects, keep full modules:
+         [keep-full? (or use-source? collects-dest)]
+         ;; When keeping a full module, strip away submodule paths:
+         [filename (or (and (not a)
+                            keep-full?
+                            (pair? filename)
+                            (cadr filename))
+                       filename)]
+         ;; Maybe search again after deciding whether to strip submodules:
+         [a (or a 
+                (and keep-full?
+                     ;; Try again:
+                     (assoc filename (unbox codes))))])
     (cond
      [a
       ;; Already have this module. Make sure that library-referenced
@@ -421,13 +462,8 @@
       (let* ([submod-path (if (pair? filename)
                               (cddr filename)
                               null)]
-             [just-filename (if (pair? filename)
-                                (cadr filename)
-                                filename)]
-             [root-module-path (if (and (pair? module-path)
-                                        (eq? 'submod (car module-path)))
-                                   (cadr module-path)
-                                   module-path)]
+             [just-filename (strip-submod filename)]
+             [root-module-path (strip-submod module-path)]
              [actual-filename just-filename] ; `set!'ed below to adjust file suffix
              [name (let-values ([(base name dir?) (split-path just-filename)])
                      (path->string (path-replace-suffix name #"")))]
@@ -474,17 +510,21 @@
                       (cons (make-mod filename module-path code 
                                       name prefix full-name
                                       (box null) null null
-                                      actual-filename)
+                                      actual-filename
+                                      #f)
                             (unbox codes)))]
            [code
             (let ([importss (module-compiled-imports code)])
-              (let ([all-file-imports (filter (lambda (x) 
-                                                (let-values ([(x base) (module-path-index-split x)])
-                                                  (not (and (pair? x)
-                                                            (eq? 'quote (car x))))))
+              (let ([all-file-imports (filter (keep-import-dependency? keep-full? actual-filename)
                                               (apply append (map cdr importss)))]
                     [extra-paths 
-                     (map symbol-to-lib-form (get-extra-imports actual-filename code))])
+                     (map symbol-to-lib-form (append (if keep-full?
+                                                         (extract-full-imports module-path actual-filename code)
+                                                         null)
+                                                     (if use-source?
+                                                         (list 'compiler/private/read-bstr)
+                                                         null)
+                                                     (get-extra-imports actual-filename code)))])
                 (let* ([runtime-paths
                         (if (module-compiled-cross-phase-persistent? code)
                             ;; avoid potentially trying to redeclare cross-phase persistent modules,
@@ -526,19 +566,22 @@
                                          code
                                          (module-compiled-name code (last (module-compiled-name code))))]
                        [extract-submods (lambda (l)
-                                          (if (null? use-submods)
+                                          (if (or (null? use-submods)
+                                                  use-source?)
                                               null
                                               (for/list ([m l]
-                                                         #:when (member (cadr (module-compiled-name m)) use-submods)) 
+                                                         #:when (member (cadr (module-compiled-name m)) use-submods))
                                                 m)))]
                        [pre-submods (extract-submods (module-compiled-submodules renamed-code #t))]
                        [post-submods (extract-submods (module-compiled-submodules renamed-code #f))]
-                       [code (module-compiled-submodules (module-compiled-submodules
-                                                          renamed-code
-                                                          #f
-                                                          null)
-                                                         #t
-                                                         null)])
+                       [code (if keep-full?
+                                 code
+                                 (module-compiled-submodules (module-compiled-submodules
+                                                              renamed-code
+                                                              #f
+                                                              null)
+                                                             #t
+                                                             null))])
                   (let ([sub-files (map (lambda (i) 
                                           ;; use `just-filename', because i has submod name embedded
                                           (normalize (resolve-module-path-index i just-filename)))
@@ -563,7 +606,7 @@
                                 on-extension
                                 compiler
                                 expand-namespace
-                                get-extra-imports
+                                src-filter get-extra-imports
                                 working))
                     (define (get-one-submodule-code m)
                       (define name (cadr (module-compiled-name m)))
@@ -601,7 +644,8 @@
                                     (cons (make-mod filename module-path #f
                                                     #f #f #f
                                                     (box null) null null
-                                                    actual-filename)
+                                                    actual-filename
+                                                    use-source?)
                                           (unbox codes))))
                         ;; Build up relative module resolutions, relative to this one,
                         ;; that will be requested at run-time.
@@ -610,7 +654,12 @@
                                                      (if m
                                                          (mod-full-name m)
                                                          ;; must have been a cycle...
-                                                         (hash-ref working sub-filename))))]
+                                                         (hash-ref working sub-filename
+                                                                   (lambda ()
+                                                                     ;; If `sub-filename` was included from source,
+                                                                     ;; then we'll need to use a submodule path:
+                                                                     `(,(hash-ref working (strip-submod sub-filename))
+                                                                       ,@(cddr sub-filename)))))))]
                                [get-submod-mapping
                                 (lambda (m)
                                   (define name (cadr (module-compiled-name m)))
@@ -657,7 +706,8 @@
                                                               (loop (cdr runtime-paths) (cdr extra-files)))]
                                                        [else
                                                         (cons #f (loop (cdr runtime-paths) extra-files))]))
-                                                    actual-filename)
+                                                    actual-filename
+                                                    use-source?)
                                           (unbox codes)))
                           ;; Add code for post submodules:
                           (for-each get-one-submodule-code post-submods)
@@ -670,8 +720,39 @@
                       (cons (make-mod filename module-path code 
                                       name #f #f
                                       null null null
-                                      actual-filename)
+                                      actual-filename
+                                      use-source?)
                             (unbox codes)))])))])))
+
+(define ((keep-import-dependency? keep-full? path) orig-x)
+  (define-values (x base) (module-path-index-split orig-x))
+  (not (or (and (pair? x)
+                (eq? 'quote (car x)))
+           (and keep-full?
+                ;; Don't try to include submodules specifically if the enclosing
+                ;; module is kept fully. Any needed dependencies will be
+                ;; extracted via `extract-full-imports`.
+                (pair? x)
+                (eq? (car x) 'submod)
+                (or (equal? (cadr x) ".")
+                    (equal? path
+                            (normalize (resolve-module-path-index (module-path-index-join (cadr x) #f)
+                                                                  path))))))))
+
+(define (extract-full-imports module-path path code)
+  ;; When embedding a module from source or otherwise keeping a full
+  ;; module, we need to collect all dependencies from submodules
+  ;; (recursively), because they'll be needed to start again from
+  ;; source.
+  (let accum-from-mod ([mod code])
+    (append
+     (map (lambda (i) (collapse-module-path-index i module-path))
+          (filter (keep-import-dependency? #t path)
+                  (apply append (map cdr (module-compiled-imports mod)))))
+     (apply append
+            (map accum-from-mod (module-compiled-submodules mod #t)))
+     (apply append
+            (map accum-from-mod (module-compiled-submodules mod #f))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -765,7 +846,15 @@
                                                    [(library-table) (vector-ref table-vec 1)])
                                         ;; Have a relative mapping?
                                         (let-values ([(a) (if rel-to
-                                                              (assq (resolved-module-path-name rel-to) mapping-table)
+                                                              (let-values ([(v) (assq (resolved-module-path-name rel-to) mapping-table)])
+                                                                (if v
+                                                                    v
+                                                                    ;; It we're loading a module from source, then `rel-to` might not be
+                                                                    ;; our eventual name, but `(current-module-declare-name)` provides
+                                                                    ;; one, so try using that to resolve the module:
+                                                                    (if (current-module-declare-name)
+                                                                        (assq (resolved-module-path-name (current-module-declare-name)) mapping-table)
+                                                                        #f)))
                                                               #f)]
                                                      [(ss->rkt)
                                                       (lambda (s)
@@ -1035,7 +1124,7 @@
          [get-code-at (lambda (f mp submods)
                         (get-code f mp #f submods codes prefix-mapping verbose? collects-dest
                                   on-extension compiler expand-namespace
-                                  get-extra-imports
+                                  src-filter get-extra-imports
                                   (make-hash)))]
          [__
           ;; Load all code:
@@ -1190,10 +1279,13 @@
                      (make-resolved-module-path
                       ',(mod-full-name nc))))
                   outp)
-           (if (src-filter (mod-actual-file nc))
+           (if (mod-use-source? nc)
                (call-with-input-file* (mod-actual-file nc)
                  (lambda (inp)
-                   (copy-port inp outp)))
+                   (define bstr (port->bytes inp))
+                   ;; The indirection through `compiler/private/read-bstr` ensures
+                   ;; that the source module is delimited by an EOF:
+                   (fprintf outp "#reader compiler/private/read-bstr ~s" bstr)))
                (write (mod-code nc) outp))))
        l))
     (write (compile-using-kernel '(current-module-declare-name #f)) outp)
