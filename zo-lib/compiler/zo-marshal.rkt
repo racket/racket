@@ -152,12 +152,12 @@
   ; (obj -> (or pos #f)) output-port -> number
   ; writes top to outp using shared-obj-pos to determine symref
   ; returns the file position at the end of the compilation top
-  (define (out-compilation-top shared-obj-pos shared-obj-unsee outp)
+  (define (out-compilation-top shared-obj-pos shared-obj-unsee counting? outp)
     (define ct
       (match top
         [(compilation-top max-let-depth prefix form)
          (list* max-let-depth prefix (protect-quote form))]))
-    (out-anything ct (make-out outp shared-obj-pos shared-obj-unsee
+    (out-anything ct (make-out outp shared-obj-pos shared-obj-unsee counting?
                                stx-objs wraps hash-consed))
     (file-position outp))
   
@@ -205,6 +205,7 @@
           (encounter! v)]))
      (λ (v)
        (unencounter! v))
+     #t
      (open-output-nowhere))
     
     (define symbol-table (make-vector (hash-count shared) (not-ready)))
@@ -232,14 +233,14 @@
                 [i (in-naturals)])
        (begin0
          (file-position outp)
-         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) void
+         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) void #f
                                    stx-objs wraps hash-consed))))
      (file-position outp)))
   
   ; Calculate file positions
   (define counting-port (open-output-nowhere))
   (define-values (offsets post-shared) (out-symbol-table symbol-table counting-port))
-  (define all-forms-length (out-compilation-top shared-obj-pos void counting-port))
+  (define all-forms-length (out-compilation-top shared-obj-pos void #f counting-port))
   
   ; Write the compiled form header
   (write-bytes #"#~" outp)
@@ -267,7 +268,7 @@
   (write-bytes (int->bytes all-forms-length) outp)
   ; Actually write the zo
   (out-symbol-table symbol-table outp)
-  (out-compilation-top shared-obj-pos void outp)
+  (out-compilation-top shared-obj-pos void #f outp)
   (void))
 
 ;; ----------------------------------------
@@ -435,7 +436,7 @@
          [(tainted) (vector p)]
          [(armed) (vector p #f)]))]))
 
-(define-struct out (s shared-index shared-unsee stx-objs wraps hash-consed))
+(define-struct out (s shared-index shared-unsee counting? stx-objs wraps hash-consed))
 (define (out-shared v out k)
   (if (shareable? v)
       (let ([v ((out-shared-index out) v)])
@@ -802,28 +803,23 @@
         (out-byte CPT_BOX out)
         (out-anything (unbox v) out)]
        [(? pair?)
-        ; This code will not turn two different lists that share a common tail
-        ;  e.g. (list* 1 l) and (list* 2 l)
-        ; into a form that puts l into the symbol table
-        ; (when that is possible)
-        
-        ; In contrast, if we always use CPT_PAIR, then it would
-        
-        ; Unfortunately, detecting this situation during the traversal
-        ; phase, without introducing false sharing, is difficult.
-        ; We had an implementation (see the history), but it was buggy.
         (define (list-length-before-cycle/improper-end l)
-          (let loop ([len 0] [l l] [seen (set)])
+          (let loop ([len 0] [l l])
             (cond 
-              [(set-member? seen l)
-               (values len #f)]
               [(null? l)
                (values len #t)]
               [(pair? l)
-               (loop (add1 len) (cdr l) (set-add seen l))]
+               (if ((out-shared-index out) l)
+                   (values len #f)
+                   (loop (add1 len) (cdr l)))]
               [else
                (values len #f)])))
-        (define-values (len proper?) (list-length-before-cycle/improper-end v))
+
+        (define-values (len-1 proper?)
+          (if (out-counting? out)
+              (values 0 #f)
+              (list-length-before-cycle/improper-end (cdr v))))
+        (define len (add1 len-1))
         
         (define (print-contents-as-proper)
           (for ([e (in-list v)])
@@ -884,11 +880,6 @@
             (out-anything (module-path-index-submodule v) out)))]
        [(stx content)
         (out-byte CPT_STX out)
-        ;; The core Racket printer currently records more sharing
-        ;; by ensureing that list tails are shared, while the printer
-        ;; here detects sharing only at the start of a list. That
-        ;; doesn't seem to matter much. Meanwhile, we ensure that
-        ;; as much sharing as possible is present before printing.
         (out-anything content out)]
        [(encoded-scope content)
         (out-byte CPT_SCOPE out)
@@ -898,7 +889,7 @@
           (out-number pos out))
         (out-anything (share-everywhere content out) out)]
        [(? stx-obj?)
-        (out-anything (lookup-encoded-stx-obj v out) out)]
+        (out-anything (share-everywhere (lookup-encoded-stx-obj v out) out) out)]
        [(? prefab-struct-key)
         (define pre-v (struct->vector v))
         (vector-set! pre-v 0 (prefab-struct-key v))
