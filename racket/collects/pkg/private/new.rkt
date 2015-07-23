@@ -99,11 +99,7 @@ language: c
 
 # Based from: https://github.com/greghendershott/travis-racket
 
-# Optional: To use Travis CI's newer container infrastucture,
-# un-comment the following line. (Also be sure RACKET_DIR is set to
-# somewhere like ~/racket that doesn't require sudo.)
-#
-# sudo: false
+sudo: false
 
 env:
   global:
