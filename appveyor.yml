@@ -8,25 +8,11 @@ cache:
 build_script:
 - '"c:\Program Files (x86)\Microsoft Visual Studio 10.0\vc\vcvarsall.bat" x86'
 - echo %cd%
-- nmake win32-in-place PKGS="racket-test unstable-flonum-lib net-test"
+- nmake win32-in-place PKGS=""
 
 test_script:
 - echo %cd%
-- racket\raco.exe pkg show -l
-- racket\racket.exe -l tests/racket/test
-- racket\racket.exe -l tests/racket/contract/all
-- racket\raco.exe test -l tests/json/json
-- racket\raco.exe test -l tests/file/main
-- racket\raco.exe test -l tests/net/head
-- racket\raco.exe test -l tests/net/uri-codec
-- racket\raco.exe test -l tests/net/url
-- racket\raco.exe test -l tests/net/url-port
-- racket\raco.exe test -l tests/net/encoders
-- racket\raco.exe test -l tests/openssl/basic
-- racket\raco.exe test -l tests/openssl/https
-- racket\raco.exe test -l tests/match/plt-match-tests
-- racket\raco.exe test -l tests/zo-path
-- racket\raco.exe test -l tests/xml/test
+- nmake win32-client PKGS=""
 
 
 notifications:
