@@ -723,6 +723,20 @@ static Scheme_Object *new_multi_scope(Scheme_Object *debug_name)
   return (Scheme_Object *)multi_scope;
 }
 
+static void repair_scope_owner(Scheme_Object *m)
+{
+  Scheme_Object *multi_scope;
+  
+  /* The owner scope might be missing due to broken bytecode. For
+     non-broken bytecode, there shouldn't be a way to reach a
+     scope withough going through its owner. Work around the
+     broken scope object by creating a new owner. */
+
+  multi_scope = new_multi_scope(scheme_false);
+  scheme_hash_set((Scheme_Hash_Table *)multi_scope, scheme_make_integer(0), m);
+  ((Scheme_Scope_With_Owner *)m)->owner_multi_scope = multi_scope;
+}
+
 Scheme_Object *scheme_scope_printed_form(Scheme_Object *m)
 {
   int kind = ((Scheme_Scope *)m)->id & SCHEME_STX_SCOPE_KIND_MASK;
@@ -757,15 +771,20 @@ Scheme_Object *scheme_scope_printed_form(Scheme_Object *m)
 
   if (SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)m)) {
     Scheme_Object *multi_scope = ((Scheme_Scope_With_Owner *)m)->owner_multi_scope;
-    name = scheme_eq_hash_get((Scheme_Hash_Table *)multi_scope, scheme_void);
-    if (!name) name = scheme_false;
-
-    if (SCHEME_TL_MULTI_SCOPEP(multi_scope))
-      kind_sym = top_symbol;
-    
-    vec = scheme_make_vector(4, NULL);
-    SCHEME_VEC_ELS(vec)[2] = name;
-    SCHEME_VEC_ELS(vec)[3] = ((Scheme_Scope_With_Owner *)m)->phase;
+    if (multi_scope) {
+      name = scheme_eq_hash_get((Scheme_Hash_Table *)multi_scope, scheme_void);
+      if (!name) name = scheme_false;
+      
+      if (SCHEME_TL_MULTI_SCOPEP(multi_scope))
+        kind_sym = top_symbol;
+      
+      vec = scheme_make_vector(4, NULL);
+      SCHEME_VEC_ELS(vec)[2] = name;
+      SCHEME_VEC_ELS(vec)[3] = ((Scheme_Scope_With_Owner *)m)->phase;
+    } else {
+      /* owner is either missing (bad bytecode) or hasn't been loaded on demand */
+      vec = scheme_make_vector(2, NULL);
+    }
   } else {
     vec = scheme_make_vector(2, NULL);
   }
@@ -1136,6 +1155,8 @@ static Scheme_Scope_Table *do_scope_at_phase(Scheme_Scope_Table *st, Scheme_Obje
   if (SCHEME_SCOPEP(m) && SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)m)) {
     if (!SCHEME_FALSEP(phase))
       phase = scheme_bin_minus(phase, ((Scheme_Scope_With_Owner *)m)->phase);
+    if (!((Scheme_Scope_With_Owner *)m)->owner_multi_scope)
+      repair_scope_owner(m);
     m = ((Scheme_Scope_With_Owner *)m)->owner_multi_scope;
   }
 
@@ -5305,9 +5326,6 @@ void scheme_iterate_reachable_scopes(Scheme_Marshal_Tables *mt)
       }
     }
 
-    if (SCHEME_SCOPE_HAS_OWNER(scope))
-      add_reachable_multi_scope(((Scheme_Scope_With_Owner *)scope)->owner_multi_scope, mt);
-
     /* Check for any free-id mappings whose reachbility depended on `scope`: */
     if (mt->pending_reachable_ids) {
       l = scheme_eq_hash_get(mt->pending_reachable_ids, (Scheme_Object *)scope);
@@ -5677,7 +5695,7 @@ static Scheme_Object *marshal_bindings(Scheme_Object *l, Scheme_Marshal_Tables *
 Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Tree *ht;
-  Scheme_Object *v, *l, *r, *l2, *tab, *scopes, *key, *val, *ms;
+  Scheme_Object *v, *l, *r, *l2, *tab, *scopes, *key, *val;
   intptr_t i, j;
 
   if (!mt->identity_map)
@@ -5686,11 +5704,6 @@ Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tab
   v = scheme_hash_get(mt->identity_map, m);
   if (v)
     return v;
-
-  if (SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)m))
-    ms = multi_scope_to_vector(((Scheme_Scope_With_Owner *)m)->owner_multi_scope, mt);
-  else
-    ms = NULL;
 
   v = ((Scheme_Scope *)m)->bindings;
   if (v) {
@@ -5780,15 +5793,9 @@ Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tab
       }
     }
 
-    if (ms)
-      r = scheme_make_pair(ms, r);
-
     v = scheme_make_pair(scheme_make_integer(SCHEME_SCOPE_KIND(m)), r);
-  } else {
+  } else
     v = scheme_make_integer(SCHEME_SCOPE_KIND(m));
-    if (ms)
-      v = scheme_make_pair(v, scheme_make_pair(ms, scheme_false));
-  }
 
   scheme_hash_set(mt->identity_map, m, v);
 
@@ -6092,7 +6099,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_scopes,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-#define return_NULL return NULL
+#define return_NULL assert(0) // return NULL
 
 Scheme_Scope_Set *list_to_scope_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
@@ -6145,8 +6152,7 @@ static Scheme_Hash_Table *vector_to_multi_scope(Scheme_Object *mht, Scheme_Unmar
   multi_scope = (Scheme_Hash_Table *)new_multi_scope(SCHEME_VEC_ELS(mht)[len-1]);
   len -= 1;
 
-  /* A multi-scope can refer back to itself via one of its
-     scopes or free-id=? info: */
+  /* A multi-scope can refer back to itself via free-id=? info: */
   scheme_hash_set(ut->rns, mht, (Scheme_Object *)multi_scope);
 
   for (i = 0; i < len; i += 2) {
@@ -6157,12 +6163,10 @@ static Scheme_Hash_Table *vector_to_multi_scope(Scheme_Object *mht, Scheme_Unmar
     if (!scope) return_NULL;
     if (!SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)scope))
       return_NULL;
-    if (!((Scheme_Scope_With_Owner *)scope)->owner_multi_scope)
-      ((Scheme_Scope_With_Owner *)scope)->owner_multi_scope = (Scheme_Object *)multi_scope;
-    else if (!SAME_OBJ(((Scheme_Scope_With_Owner *)scope)->owner_multi_scope,
-                       (Scheme_Object *)multi_scope))
+    if (((Scheme_Scope_With_Owner *)scope)->owner_multi_scope)
       return_NULL;
     scheme_hash_set(multi_scope, SCHEME_VEC_ELS(mht)[i], scope);
+    ((Scheme_Scope_With_Owner *)scope)->owner_multi_scope = (Scheme_Object *)multi_scope;
     ((Scheme_Scope_With_Owner *)scope)->phase = SCHEME_VEC_ELS(mht)[i];
   }
       
@@ -6362,19 +6366,6 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
   scheme_hash_set(ut->rns, box, m);
   /* Since we've created the scope before unmarshaling its content,
      cycles among scopes are ok. */
-
-  if (SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)m)) {
-    if (!SCHEME_PAIRP(c)) return_NULL;
-    r = (Scheme_Object *)vector_to_multi_scope(SCHEME_CAR(c), ut);
-    if (!r) return_NULL;
-    if (!((Scheme_Scope_With_Owner *)m)->owner_multi_scope)
-      ((Scheme_Scope_With_Owner *)m)->owner_multi_scope = r;
-    else if (!SAME_OBJ(r, ((Scheme_Scope_With_Owner *)m)->owner_multi_scope))
-      return_NULL;
-    c = SCHEME_CDR(c);
-    if (SCHEME_FALSEP(c))
-      c = NULL;
-  }
 
   if (!c) return m;
 
