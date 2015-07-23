@@ -136,12 +136,12 @@ multiple times, attaches a property value to the structure type; see
 @examples[#:eval posn-eval
   (struct point (x y) #:inspector #f)
   (point 3 5)
-  (struct celcius (temp)
+  (struct celsius (temp)
     #:guard (λ (temp name)
               (unless (and (real? temp) (>= temp -273.15))
                 (error "not a valid temperature"))
               temp))
-  (celcius -275)
+  (celsius -275)
 ]
 
 @margin-note{Use the @racket[prop:procedure] property to implement an
