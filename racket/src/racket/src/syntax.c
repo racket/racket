@@ -5247,13 +5247,20 @@ static Scheme_Object *any_unreachable_scope(Scheme_Scope_Set *scopes, Scheme_Mar
   return NULL;
 }
 
-static void possiblly_reachable_free_id(Scheme_Object *val,
+static void possiblly_reachable_free_id(Scheme_Object *val, /* mpair or stx */
                                         Scheme_Scope_Set *scopes,
                                         Scheme_Marshal_Tables *mt)
 {
   Scheme_Stx *free_id = (Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val));
   Scheme_Object *unreachable_scope, *l;
   Scheme_Hash_Table *ht;
+
+  if (SCHEME_MPAIRP(val))
+    free_id = (Scheme_Stx *)SCHEME_CAR(SCHEME_CDR(val));
+  else
+    free_id = (Scheme_Stx *)val;
+
+  STX_ASSERT(SCHEME_STXP((Scheme_Object *)free_id));
 
   unreachable_scope = any_unreachable_scope(scopes, mt);
 
