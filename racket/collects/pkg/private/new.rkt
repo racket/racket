@@ -126,6 +126,7 @@ env:
     - RACKET_VERSION=6.0
     - RACKET_VERSION=6.1
     - RACKET_VERSION=6.1.1
+    - RACKET_VERSION=6.2
     - RACKET_VERSION=HEAD
 
 before_install:
