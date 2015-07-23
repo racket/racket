@@ -2,7 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '(["base" #:version "6.2.900.5"]))
+(define deps '("base"))
 
 (define pkg-desc "Libraries for handling zo files")
 

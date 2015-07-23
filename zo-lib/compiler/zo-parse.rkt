@@ -1265,19 +1265,9 @@
                                 null
                                 #f))
               (hash-set! ht s sc)
-              (define bindings-l
-                (if (= kind 1) ; has multi owner
-                    (match v
-                      [(cons (? number?) (cons multi bindings-l))
-                       (set-scope-multi-owner! sc (decode-multi-scope multi ht))
-                       bindings-l])
-                    (match v
-                      [(? number?) #f]
-                      [(cons (? number?) bindings-l)
-                       bindings-l])))
-              (when bindings-l
+              (unless (number? v)
                 (define-values (bulk-bindings end)
-                  (let loop ([l bindings-l] [bulk-bindings null])
+                  (let loop ([l (cdr v)] [bulk-bindings null])
                     (cond
                      [(pair? l)
                       (loop (cdr l) (cons (list (decode-scope-set (caar l) ht)
@@ -1420,8 +1410,7 @@
                    [(= (add1 i) (vector-length ms)) null]
                    [else
                     (define s (decode-scope (vector-ref ms (add1 i)) ht))
-                    (when (and (scope-multi-owner s)
-                               (not (eq? (scope-multi-owner s) multi)))
+                    (when (scope-multi-owner s)
                       (error 'decode-wrap "bad scope owner: ~e while reading ~e"
                              (scope-multi-owner s)
                              multi))
