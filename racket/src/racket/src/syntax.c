@@ -6106,7 +6106,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_scopes,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-#define return_NULL assert(0) // return NULL
+#define return_NULL return NULL
 
 Scheme_Scope_Set *list_to_scope_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
