@@ -502,6 +502,8 @@ for use in double hashing.}
 
 @note-lib-only[racket/hash]
 
+@(require (for-label racket/hash))
+
 @(define the-eval (make-base-eval))
 @(the-eval '(require racket/hash))
 

@@ -84,7 +84,7 @@ otherwise.}
 
 @defproc[(make-logger [topic (or/c symbol? #f) #f]
                       [parent (or/c logger? #f) #f]
-                      [propagate-level (or/c 'none 'fatal 'error 'warning 'info 'debug) 'debug]
+                      [propagate-level log-level/c 'debug]
                       [propagate-topic (or/c #f symbol?) #f]
                       ... ...)
          logger?]{
@@ -134,7 +134,7 @@ created when @racket[define-logger] is evaluated.}
 @section{Logging Events}
 
 @defproc[(log-message [logger logger?]
-                      [level (or/c 'fatal 'error 'warning 'info 'debug)]
+                      [level log-level/c]
                       [topic (or/c symbol? #f) (logger-name logger)]
                       [message string?]
                       [data any/c]
@@ -155,7 +155,7 @@ by @racket[": "] before it is sent to receivers.
 
 
 @defproc[(log-level? [logger logger?]
-                     [level (or/c 'fatal 'error 'warning 'info 'debug)]
+                     [level log-level/c]
                      [topic (or/c symbol? #f) #f])
          boolean?]{
 
@@ -180,7 +180,7 @@ that any event information it receives will never become accessible).
 
 @defproc[(log-max-level [logger logger?]
                         [topic (or/c symbol? #f) #f])
-         (or/c #f 'fatal 'error 'warning 'info 'debug)]{
+         (or/c log-level/c #f)]{
 
 Similar to @racket[log-level?], but reports the maximum-detail level of logging for
 which @racket[log-level?] on @racket[logger] and @racket[topic] returns @racket[#t]. The
@@ -191,7 +191,7 @@ currently returns @racket[#f] for all levels.
 
 
 @defproc[(log-all-levels [logger logger?])
-         (list/c (or/c #f 'fatal 'error 'warning 'info 'debug)
+         (list/c (or/c #f log-level/c)
                  (or/c #f symbol?)
                  ... ...)]{
 
@@ -289,7 +289,7 @@ Returns @racket[#t] if @racket[v] is a @tech{log receiver}, @racket[#f]
 otherwise.}
 
 @defproc[(make-log-receiver [logger logger?]
-                            [level (or/c 'none 'fatal 'error 'warning 'info 'debug)]
+                            [level log-level/c]
                             [topic (or/c #f symbol?) #f]
                             ... ...)
          log-receiver?]{
@@ -301,7 +301,7 @@ event's topic matches @racket[topic].
 
 A @tech{log receiver} is a @tech{synchronizable event}. It becomes
 @tech{ready for synchronization} when a logging event is
-received, so use @racket[sync] to receive an logged event. The
+received, so use @racket[sync] to receive a logged event. The
 @tech{log receiver}'s @tech{synchronization result} is an immutable vector containing
 four values: the level of the event as a symbol, an immutable string
 for the event message, an arbitrary value that was supplied as the
@@ -316,3 +316,75 @@ the last given @racket[level]). A @racket[level] for a @racket[#f]
 provided @racket[topic]. If the same @racket[topic] is provided multiple
 times, the @racket[level] provided with the last instance in the
 argument list takes precedence.}
+
+
+@; ----------------------------------------
+@section{Additional Logging Functions}
+
+@note-lib[racket/logging]
+@(require (for-label racket/logging))
+@(define log-eval (make-base-eval))
+@(interaction-eval #:eval log-eval
+                   (require racket/logging))
+
+@defproc[(log-level/c [v any/c])
+         boolean?]{
+Returns @racket[#t] if @racket[v] is a valid logging level (@racket['none],
+@racket['fatal], @racket['error], @racket['warning], @racket['info], or
+@racket['debug]), @racket[#f] otherwise.
+
+@history[#:added "6.2.900.5"]{}
+}
+
+@defproc[(with-intercepted-logging
+           [interceptor (-> (vector/c
+                              log-level/c
+                              string?
+                              any/c
+                              (or/c symbol? #f))
+                             any)]
+           [proc (-> any)]
+           [log-spec (or/c log-level/c #f)] ...)
+         any]{
+
+Runs @racket[proc], calling @racket[interceptor] on any log event that would
+be received by @racket[(make-log-receiver (current-logger) log-spec ...)].
+Returns whatever @racket[proc] returns.
+
+@defexamples[
+#:eval log-eval
+(let ([warning-counter 0])
+  (with-intercepted-logging
+    (lambda (l)
+      (when (eq? (vector-ref l 0) ; actual level
+                 'warning)
+        (set! warning-counter (add1 warning-counter))))
+    (lambda ()
+      (log-warning "Warning!")
+      (log-warning "Warning again!")
+      (+ 2 2))
+    'warning)
+  warning-counter)]
+
+@history[#:added "6.2.900.5"]{}}
+
+@defproc[(with-logging-to-port
+           [port output-port?] [proc (-> any)]
+           [log-spec (or/c 'fatal 'error 'warning 'info 'debug symbol? #f)] ...)
+         any]{
+
+Runs @racket[proc], outputting any logging that would be received by
+@racket[(make-log-receiver (current-logger) log-spec ...)] to @racket[port].
+Returns whatever @racket[proc] returns.
+
+@defexamples[
+#:eval log-eval
+(let ([my-log (open-output-string)])
+  (with-logging-to-port my-log
+    (lambda ()
+      (log-warning "Warning World!")
+      (+ 2 2))
+    'warning)
+  (get-output-string my-log))]
+
+@history[#:added "6.2.900.5"]{}}
