@@ -175,8 +175,8 @@ Produces information about the mappings in @racket[readtable] for
  @item{either a character (mapping to the same behavior as the
  character in the default readtable), @racket['terminating-macro], or
  @racket['non-terminating-macro]; this result reports the main (i.e.,
- non-@racket['dispatch-macro]) mapping for @racket[key]. When the result
- is a character, then @racket[key] is mapped to the same behavior as the
+ non-@racket['dispatch-macro]) mapping for @racket[char]. When the result
+ is a character, then @racket[char] is mapped to the same behavior as the
  returned character in the default readtable.}
 
  @item{either @racket[#f] or a reader-macro procedure; the result is a
