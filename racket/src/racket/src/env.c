@@ -2578,8 +2578,14 @@ make_introducer(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *scope, **info;
   Scheme_Env *genv;
+  int kind;
 
-  scope = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
+  if ((argc > 0) && SCHEME_TRUEP(argv[0]))
+    kind = SCHEME_STX_USE_SITE_SCOPE;
+  else
+    kind = SCHEME_STX_MACRO_SCOPE;
+
+  scope = scheme_new_scope(kind);
   info = MALLOC_N(Scheme_Object*, 2);
 
   info[0] = scope;

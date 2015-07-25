@@ -791,21 +791,30 @@ on macro-introduction and use-site @tech{scopes}.
 @transform-time[]}
 
 
-@defproc[(make-syntax-introducer) ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
+@defproc[(make-syntax-introducer [as-use-site? any/c #f])
+         ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
 
-Produces a procedure that behaves similar to
-@racket[syntax-local-introduce], but using a fresh @tech{scope},
-and where the action of the scope can be @racket['flip] (the default),
-@racket['add] to add the scope regardless of whether it is present already,
-or @racket['remove] to remove the scope when it is currently present.
+Produces a procedure that encapsulates a fresh @tech{scope} and flips,
+adds, or removes it in a given syntax object. By default, the fresh
+scope is a macro-introduction scope, but providing a true value for
+@racket[as-use-site?] creates a scope that is like a use-site scope;
+the difference is in how the scopes are treated by
+@racket[syntax-original?].
+
+The action of the generated procedure can be @racket['flip] (the
+default) to flip the presence of a scope in each part of a given
+syntax object, @racket['add] to add the scope to each regardless of
+whether it is present already, or @racket['remove] to remove the scope
+when it is currently present in any part.
 
 Multiple applications of the same
 @racket[make-syntax-introducer] result procedure use the same scope,
 and different result procedures use distinct scopes.
 
-@history[#:changed "6.3" @elem{Added the optional operation argument
+@history[#:changed "6.3" @elem{Added the optional
+                               @racket[as-use-site?] argument, and
+                               added the optional operation argument
                                in the result procedure.}]}
-
 
 @defproc[(make-syntax-delta-introducer [ext-stx syntax?] 
                                        [base-stx (or/c syntax? #f)]

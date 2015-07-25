@@ -142,6 +142,12 @@
       (syntax-case #'#&(1 2 3) ()
                    [#&(x ...) #'(0 x ... 4)]))
 
+;; ----------------------------------------
+
+(test #t syntax-original? #'here)
+(test #f syntax-original? ((make-syntax-introducer) #'here))
+(test #t syntax-original? ((make-syntax-introducer #t) #'here))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test basic expansion and property propagation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -89,10 +89,11 @@ marshaling compiled @tech{syntax object}s.}
 Returns @racket[#t] if @racket[stx] has the property that
 @racket[read-syntax] attaches to the
 @tech{syntax object}s that they generate (see @secref["stxprops"]), and if
-@racket[stx]'s @tech{lexical information} does not indicate that the
-object was introduced by a syntax transformer (see
-@secref["stxobj-model"]). The result is @racket[#f] otherwise. This
-predicate can be used to distinguish @tech{syntax object}s in an expanded
+@racket[stx]'s @tech{lexical information} does not include any macro-introduction scopes (which indicate that the
+object was introduced by a syntax transformer; see
+@secref["stxobj-model"]). The result is @racket[#f] otherwise.
+
+This predicate can be used to distinguish @tech{syntax object}s in an expanded
 expression that were directly present in the original expression, as
 opposed to @tech{syntax object}s inserted by macros.}
 
