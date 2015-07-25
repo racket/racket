@@ -147,9 +147,14 @@
                                                                       (bytes->path (regexp-replace #"[.]zo$" (path->bytes path) #".dep"))
                                                                     read)])
                                                         (for-each (lambda (dep)
-                                                                    (unless (and (pair? dep)
-                                                                                 (eq? (car dep) 'ext))
-                                                                      (dynamic-require (main-collects-relative->path dep) #f)))
+                                                                    (let ([dep
+                                                                           (if (and (pair? dep)
+                                                                                    (eq? (car dep) 'indirect))
+                                                                               (cdr dep)
+                                                                               dep)])
+                                                                      (unless (and (pair? dep)
+                                                                                   (eq? (car dep) 'ext))
+                                                                        (dynamic-require (main-collects-relative->path dep) #f))))
                                                                   (cddr deps))))
 						     ;; Not a .zo! Don't use .zo files at all...
 						     (escape (lambda ()
