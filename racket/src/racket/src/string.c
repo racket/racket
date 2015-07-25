@@ -496,7 +496,8 @@ scheme_init_string (Scheme_Env *env)
 			     env);
   
   p = scheme_make_folding_prim(string_length, "string-length", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            |SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("string-length", p,
 			     env);
 
@@ -774,7 +775,8 @@ scheme_init_string (Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("shared-bytes", shared_byte_string, 0, -1, env);
 
   p = scheme_make_folding_prim(byte_string_length, "bytes-length", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_PRODUCES_FIXNUM);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            |SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("bytes-length", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_byte_string_ref, "bytes-ref", 2, 2);

@@ -1454,8 +1454,22 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       jit_fixnum_l(dest, JIT_R0);
             
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-string-length")
+    } else if (IS_NAMED_PRIM(rator, "string-length")
+               || IS_NAMED_PRIM(rator, "bytes-length")
+               || IS_NAMED_PRIM(rator, "unsafe-string-length")
                || IS_NAMED_PRIM(rator, "unsafe-bytes-length")) {
+      GC_CAN_IGNORE jit_insn *reffail, *ref;
+      int unsafe = 0, for_string = 0;
+
+      if (IS_NAMED_PRIM(rator, "unsafe-string-length")
+          || IS_NAMED_PRIM(rator, "unsafe-bytes-length")) {
+        unsafe = 1;
+      }
+      if (IS_NAMED_PRIM(rator, "string-length")
+          || IS_NAMED_PRIM(rator, "unsafe-string-length")) {
+        for_string = 1;
+      }
+      
       LOG_IT(("inlined string-length\n"));
 
       mz_runstack_skipped(jitter, 1);
@@ -1465,7 +1479,30 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       mz_runstack_unskipped(jitter, 1);
 
-      if (IS_NAMED_PRIM(rator, "unsafe-string-length"))
+      if (!unsafe) {
+        mz_rs_sync_fail_branch();
+
+        __START_TINY_JUMPS__(1);
+        ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+        __END_TINY_JUMPS__(1);
+
+        reffail = jit_get_ip();
+        if (for_string)
+          (void)jit_calli(sjc.bad_string_length_code);
+        else
+          (void)jit_calli(sjc.bad_bytes_length_code);
+
+        __START_TINY_JUMPS__(1);
+         mz_patch_branch(ref);
+        if (for_string)
+          (void)mz_bnei_t(reffail, JIT_R0, scheme_char_string_type, JIT_R1);
+        else
+          (void)mz_bnei_t(reffail, JIT_R0, scheme_byte_string_type, JIT_R1);
+        __END_TINY_JUMPS__(1);
+      }
+      CHECK_LIMIT();
+
+      if (for_string)
         (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_CHAR_STRLEN_VAL(0x0));
       else
         (void)jit_ldxi_l(JIT_R0, JIT_R0, &SCHEME_BYTE_STRLEN_VAL(0x0));

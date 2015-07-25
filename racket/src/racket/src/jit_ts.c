@@ -89,6 +89,8 @@ define_ts_s_s(scheme_flvector_length, FSRC_MARKS)
 define_ts_s_s(scheme_extflvector_length, FSRC_MARKS)
 #endif
 define_ts_s_s(scheme_fxvector_length, FSRC_MARKS)
+define_ts_s_s(scheme_string_length, FSRC_MARKS)
+define_ts_s_s(scheme_byte_string_length, FSRC_MARKS)
 define_ts_s_s(scheme_unbox, FSRC_MARKS)
 define_ts_si_s(scheme_struct_ref, FSRC_MARKS)
 define_ts_sis_v(scheme_struct_set, FSRC_MARKS)
@@ -207,6 +209,8 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_extflvector_length scheme_extflvector_length
 #endif
 # define ts_scheme_fxvector_length scheme_fxvector_length
+# define ts_scheme_string_length scheme_string_length
+# define ts_scheme_byte_string_length scheme_byte_string_length
 # define ts_scheme_struct_ref scheme_struct_ref
 # define ts_scheme_struct_set scheme_struct_set
 # define ts_scheme_equal scheme_equal
