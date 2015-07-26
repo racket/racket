@@ -542,7 +542,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
      and the ts_ version because we may be in a future */
   sjc.box_cas_fail_code = jit_get_ip();
   mz_prolog(JIT_R2);
-  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+  JIT_UPDATE_THREAD_RSPTR();
   jit_movi_l(JIT_R0, 3);
   mz_prepare(2);
   jit_pusharg_p(JIT_RUNSTACK);
@@ -555,6 +555,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
   /* R0 is argument */
   sjc.bad_vector_length_code = jit_get_ip();
   mz_prolog(JIT_R1);
+  JIT_UPDATE_THREAD_RSPTR();
 
   /* Check for chaperone: */
   ref2 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
@@ -575,6 +576,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
   /* R0 is argument */
   sjc.bad_flvector_length_code = jit_get_ip();
   mz_prolog(JIT_R1);
+  JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(1);
   jit_pusharg_p(JIT_R0);
   (void)mz_finish_lwe(ts_scheme_flvector_length, ref);
@@ -586,6 +588,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
   /* R0 is argument */
   sjc.bad_extflvector_length_code = jit_get_ip();
   mz_prolog(JIT_R1);
+  JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(1);
   jit_pusharg_p(JIT_R0);
   (void)mz_finish_lwe(ts_scheme_extflvector_length, ref);
@@ -597,6 +600,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
   /* R0 is argument */
   sjc.bad_fxvector_length_code = jit_get_ip();
   mz_prolog(JIT_R1);
+  JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(1);
   jit_pusharg_p(JIT_R0);
   (void)mz_finish_lwe(ts_scheme_fxvector_length, ref);
@@ -607,7 +611,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
   /* R0 is argument */
   sjc.bad_string_length_code = jit_get_ip();
   mz_prolog(JIT_R1);
-  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+  JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(1);
   jit_pusharg_p(JIT_R0);
   (void)mz_finish_lwe(ts_scheme_string_length, ref);
@@ -618,7 +622,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
   /* R0 is argument */
   sjc.bad_bytes_length_code = jit_get_ip();
   mz_prolog(JIT_R1);
-  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+  JIT_UPDATE_THREAD_RSPTR();
   jit_prepare(1);
   jit_pusharg_p(JIT_R0);
   (void)mz_finish_lwe(ts_scheme_byte_string_length, ref);
