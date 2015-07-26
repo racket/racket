@@ -441,7 +441,7 @@
 
 #endif
 
-  /************** FreeBSD with gcc ****************/
+  /************** FreeBSD with clang ****************/
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 
@@ -466,6 +466,8 @@
 # elif defined(__sparc64__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "sparc64-freebsd"
 #  define FLUSH_SPARC_REGISTER_WINDOWS
+# elif defined(__arm__)
+#  define SCHEME_PLATFORM_LIBRARY_SUBPATH "arm-freebsd"
 # else
 #  error Unported platform.
 # endif
