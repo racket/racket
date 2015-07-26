@@ -1329,7 +1329,7 @@ case of module-leve bindings; it doesn't cover local bindings.
   (delete-file zo-path))
 
 ;; Check that module-code caching works
-(let ()
+(let ([saved-namespace #f])
   (define dir (find-system-path 'temp-dir))
   (define tmx (build-path dir "tmx2.rkt"))
   (define e (compile '(module tmx2 racket/kernel
@@ -1366,7 +1366,10 @@ case of module-leve bindings; it doesn't cover local bindings.
   (test 2 add1
         (parameterize ([current-namespace (make-base-namespace)])
           (dynamic-require tmx 'x)))
-  (delete-file zo-path))
+  (delete-file zo-path)
+
+  ;; Need to retain the namespace until here
+  (set! saved-namespace first-namespace))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `provide` doesn't run enclosed expanders until within a
