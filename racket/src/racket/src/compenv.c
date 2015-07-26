@@ -38,7 +38,6 @@ READ_ONLY static Scheme_Object *toplevels[MAX_CONST_TOPLEVEL_DEPTH][MAX_CONST_TO
 /* If locked, these are probably sharable: */
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *toplevels_ht);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *locals_ht[2]);
-THREAD_LOCAL_DECL(static int env_uid_counter);
 
 #define ARBITRARY_USE     0x1
 #define CONSTRAINED_USE   0x2
