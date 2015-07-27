@@ -2939,10 +2939,10 @@ not substitute pattern variables bound by @racket[with-syntax],
 (quote-syntax (1 2 3))
 (with-syntax ([a #'5])
   (quote-syntax (a b c)))
-(free-identifier? (let ([x 1]) (quote-syntax x))
-                  (quote-syntax x))
-(free-identifier? (let ([x 1]) (quote-syntax x #:local))
-                  (quote-syntax x))
+(free-identifier=? (let ([x 1]) (quote-syntax x))
+                   (quote-syntax x))
+(free-identifier=? (let ([x 1]) (quote-syntax x #:local))
+                   (quote-syntax x))
 ]
 
 @history[#:changed "6.3" @elem{Added @tech{scope} pruning and support
