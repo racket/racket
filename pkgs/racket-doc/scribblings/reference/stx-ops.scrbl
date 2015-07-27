@@ -384,7 +384,7 @@ For backward compatibility only; returns @racket[new-stx].}
 
 
 @defproc[(syntax-debug-info [stx syntax?]
-                            [phase (or/c exact-integer? #f)]
+                            [phase (or/c exact-integer? #f) (syntax-local-phase-level)]
                             [all-bindings? any/c #f])
          hash?]{
 
