@@ -561,8 +561,11 @@ TO DO:
        (error 'encrypt->method "internal error, unknown encrypt: ~e" e)]))
   (unless f
     (raise (exn:fail:unsupported
-            (format "~a: requested protocol not supported\n  requested: ~e"
+            (format "~a: requested protocol not supported~a\n  requested: ~e"
                     who
+                    (if ssl-available?
+                        ""
+                        ";\n SSL not available; check `ssl-load-fail-reason'")
                     e)
             (current-continuation-marks))))
   (f))
