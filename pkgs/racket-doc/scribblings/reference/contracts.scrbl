@@ -557,7 +557,7 @@ a field id for a struct that is a parent of @racket[struct-id], indicated
 by the @racket[#:parent] keyword.
 
 If the @racket[#:lazy] keyword appears, then the contract
-on the field is check lazily (only when a selector is applied);
+on the field is checked lazily (only when a selector is applied);
 @racket[#:lazy] contracts cannot be put on mutable fields.
 
 If a dependent contract depends on some mutable state, then use the
@@ -1014,7 +1014,7 @@ does not match the function
 @racketblock[(λ (x . rest) x)]
 because the contract insists that the function accept zero arguments
 (because there are no mandatory arguments listed in the contract). The
-@racket[->i] contract does not know that the contract on the rest argument is
+@racket[->*] contract does not know that the contract on the rest argument is
 going to end up disallowing empty argument lists.
 
 The @racket[pre-cond-expr] and @racket[post-cond-expr]
@@ -1556,7 +1556,7 @@ the export.
              (require 'public)
              (recip +nan.0)]
    
-   Replacing the use of @racket[contract-out] with just
+   Replacing the use of @racket[recontract-out] with just
    @racket[recip] would result in a contract violation blaming
    the private module.                              
 }
@@ -2659,7 +2659,7 @@ flat contracts.}
 Produces the name used to describe the contract in error messages.
 }
 
-@defproc[(value-contract [v has-contract?]) contract?]{
+@defproc[(value-contract [v has-contract?]) (or/c contract? #f)]{
   Returns the contract attached to @racket[v], if recorded.
   Otherwise it returns @racket[#f].
 
