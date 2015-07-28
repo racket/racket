@@ -202,6 +202,26 @@
            [(list-no-order 1 2 3 rest ...) rest]
            [_ 'no]))
 
+   (comp '(x y z)
+         (match '(1 x 2 y 3 z)
+           [(list-no-order 1 2 3 rest ..1) rest]
+           [_ 'no]))
+
+   (comp '(x y z)
+         (match '(1 x 2 y 3 z)
+           [(list-no-order 1 2 3 rest ..2) rest]
+           [_ 'no]))
+
+   (comp '(x y z)
+         (match '(1 x 2 y 3 z)
+           [(list-no-order 1 2 3 rest ..3) rest]
+           [_ 'no]))
+
+   (comp 'no
+         (match '(1 x 2 y 3 z)
+           [(list-no-order 1 2 3 rest ..4) rest]
+           [_ 'no]))
+
    (comp
     'yes
     (match '(a (c d))

@@ -101,12 +101,11 @@
      (ddk? #'dd)
      (let* ([count (ddk? #'dd)]
             [min (if (number? count) count #f)]
-            [max (if (number? count) count #f)]
             [ps (syntax->list #'(p ...))])
        (GSeq (cons (list (rearm+parse #'lp))
                         (for/list ([p ps]) (list (parse p))))
                   (cons min (map (lambda _ 1) ps))
-                  (cons max (map (lambda _ 1) ps))
+                  (cons #f (map (lambda _ 1) ps))
                   ;; vars in lp are lists, vars elsewhere are not
                   (cons #f (map (lambda _ #t) ps))
                   (Null (Dummy (syntax/loc stx _)))
