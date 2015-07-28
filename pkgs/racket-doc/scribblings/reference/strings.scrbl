@@ -397,13 +397,6 @@ one between @racket[list] and @racket[list*].
 ]}
 
 
-@defproc[(string-endswith? [str string?]
-                           [suffix string?])
-         boolean?]{
-
-Returns @racket[#t] if the second argument is a suffix of the first.}
-
-
 @defproc[(string-join [strs (listof string?)] [sep string? " "]
                       [#:before-first before-first string? ""]
                       [#:before-last  before-last  string? sep]
@@ -448,6 +441,13 @@ The result of @racket[(string-normalize-spaces str sep space)] is the same
 as @racket[(string-join (string-split str sep ....) space)].}
 
 
+@defproc[(string-prefix? [str string?]
+                         [prefix string?])
+         boolean?]{
+
+Returns @racket[#t] if the second argument is a prefix of the first.}
+
+
 @defproc[(string-replace [str  string?]
                          [from (or/c string? regexp?)]
                          [to   string?]
@@ -464,13 +464,6 @@ replaced if @racket[all?] is @racket[#f].
 @mz-examples[#:eval string-eval
   (string-replace "foo bar baz" "bar" "blah")
 ]}
-
-
-@defproc[(string-startswith? [str string?]
-                             [prefix string?])
-         boolean?]{
-
-Returns @racket[#t] if the second argument is a prefix of the first.}
 
 
 @defproc[(string-split [str string?]
@@ -495,6 +488,13 @@ and @racket[repeat?]  controls matching repeated sequences.
   (string-split "  ")
   (string-split "  " #:trim? #f)
 ]}
+
+
+@defproc[(string-suffix? [str string?]
+                         [suffix string?])
+         boolean?]{
+
+Returns @racket[#t] if the second argument is a suffix of the first.}
 
 
 @defproc[(string-trim [str string?]
