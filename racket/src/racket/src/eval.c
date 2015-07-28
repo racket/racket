@@ -3992,10 +3992,12 @@ static void *compile_k(void)
   }
 
   /* Renamings for requires: */
-  if (rename) {
+  if (rename)
     form = scheme_top_introduce(form, genv);
+
+  if (for_eval)
     rib = genv->stx_context;
-  } else
+  else
     rib = NULL;
 
   tl_queue = scheme_null;
@@ -4017,7 +4019,7 @@ static void *compile_k(void)
   else
     frame_scopes = NULL;
 
-  if (for_eval && rename) {
+  if (for_eval) {
     /* For the top-level environment, we "push_introduce" instead of "introduce"
        to avoid ambiguous bindings. */
     form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
@@ -4080,7 +4082,7 @@ static void *compile_k(void)
 	    tl_queue = scheme_append(rl, tl_queue);
 	    form = SCHEME_CAR(tl_queue);
 	    tl_queue = SCHEME_CDR(tl_queue);
-	  } else if (rename)
+	  } else
             form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
 	  break;
 	}
@@ -4911,12 +4913,15 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     kind = 0; /* expression */
   else if (!for_stx && SAME_OBJ(argv[1], module_symbol)) {
     kind = SCHEME_MODULE_FRAME | SCHEME_USE_SCOPES_TO_NEXT; /* module body */
-    adjust_env = orig_env;
+    if (orig_env->flags & SCHEME_MODULE_FRAME)
+      adjust_env = orig_env;
   } else if (!for_stx && SAME_OBJ(argv[1], module_begin_symbol))
     kind = SCHEME_MODULE_BEGIN_FRAME; /* just inside module for expanding to `#%module-begin` */
   else if (SAME_OBJ(argv[1], top_level_symbol)) {
     kind = SCHEME_TOPLEVEL_FRAME;
     if (catch_lifts < 0) catch_lifts = 0;
+    if (orig_env->flags & SCHEME_TOPLEVEL_FRAME)
+      adjust_env = orig_env;
   } else if (SAME_OBJ(argv[1], expression_symbol))
     kind = 0;
   else if (scheme_proper_list_length(argv[1]) > 0)

@@ -1885,17 +1885,39 @@
                               (x #:flag? #t)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check that the default eval handler doesn't add to much context:
+;; Check that the default eval handler doesn't add too much context:
 
 (parameterize ([current-namespace (make-base-namespace)])
   (eval '(define thing 5))
   (test #f
-        hash-ref
+        (lambda (info)
+          (ormap
+           (lambda (b)
+             (subset? (hash-ref b 'context null)
+                      (hash-ref info 'context)))
+           (hash-ref info 'bindings null)))
         (syntax-debug-info
          ((current-eval) (datum->syntax (namespace-syntax-introduce #'top)
-                                        (cons 'quote-syntax (datum->syntax #f '(thing))))))
-        'bindings
-        #f))
+                                        (cons 'quote-syntax (datum->syntax #f '(thing))))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `eval-syntax` cooperates with `local-expand` on 
+;; a top-level inner-edge scope
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (namespace-require '(for-syntax racket/base))
+  (eval-syntax (datum->syntax #f `(,#'define x ,#'1)))
+  (eval '(define-syntax-rule (same x) x))
+  (eval '(define-syntax (m stx)
+          (syntax-case stx ()
+            [(_ same-e) (let ([id (local-expand #'same-e 'top-level null)])
+                          (unless (identifier-binding id)
+                            (error "not bound")))])))
+  (eval-syntax (datum->syntax #f
+                              (list
+                               (namespace-syntax-introduce
+                                (datum->syntax #f 'same))
+                               'x))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
