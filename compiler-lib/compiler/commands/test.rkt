@@ -558,9 +558,10 @@
               #:sema continue-sema)))]
        [(and (or (not check-suffix?)
                  (regexp-match rx:default-suffixes p)
-                 (get-cmdline p #f #:check-info? #t))
+                 (get-cmdline p #f #:check-info? #t)
+                 (include-path? p #:check-info? #t))
              (or (not check-suffix?)
-                 (not (omit-path? p  #:check-info? #t))))
+                 (not (omit-path? p #:check-info? #t))))
         (unless check-suffix?
           ;; make sure "info.rkt" information is loaded:
           (check-info p))
@@ -740,6 +741,7 @@
 ;; Reading "info.rkt" files
 
 (define omit-paths (make-hash))
+(define include-paths (make-hash))
 (define command-line-arguments (make-hash))
 (define timeouts (make-hash))
 (define lock-names (make-hash))
@@ -773,14 +775,22 @@
           (hash-set! table dir #t)]
          [(list? v)
           (for ([i (in-list v)])
-            (unless (path-string? i) (bad what v))
-            (define p (normalize-info-path (path->complete-path i dir)))
-            (define dp (if (directory-exists? p)
-                           (path->directory-path p)
-                           p))
-            (hash-set! table dp #t))]
+            (cond
+              [(path-string? i)
+               (define p (normalize-info-path (path->complete-path i dir)))
+               (define dp (if (directory-exists? p)
+                              (path->directory-path p)
+                              p))
+               (hash-set! table dp #t)]
+              [(regexp? i)
+               (for ([f (in-directory dir)]
+                     #:when (regexp-match i (path->string f)))
+                 (hash-set! table f #t))]
+              [else
+               (bad what v)]))]
          [else (bad what v)]))
       (get-members omit-paths 'test-omit-paths #t)
+      (get-members include-paths 'test-include-paths #t)
       (get-members randoms 'test-randoms #t)
       
       (define (get-keyed table what check? #:ok-all? [ok-all? #f])
@@ -845,13 +855,18 @@
 (define (normalize-info-path p)
   (simplify-path (path->complete-path p) #f))
 
-(define (omit-path? p #:check-info? [check-info? #f])
-  (when check-info? (check-info p))
-  (let ([p (normalize-info-path p)])
-    (or (hash-ref omit-paths p #f)
-        (let-values ([(base name dir?) (split-path p)])
-          (and (path? base)
-               (omit-path? base))))))
+(define (make-omit-path? omit-paths)
+  (define (omit-path? p #:check-info? [check-info? #f])
+    (when check-info? (check-info p))
+    (let ([p (normalize-info-path p)])
+      (or (hash-ref omit-paths p #f)
+          (let-values ([(base name dir?) (split-path p)])
+            (and (path? base)
+                 (omit-path? base))))))
+  omit-path?)
+
+(define omit-path? (make-omit-path? omit-paths))
+(define include-path? (make-omit-path? include-paths))
 
 (define (get-cmdline p [default null] #:check-info? [check-info? #f])
   (when check-info? (check-info p))
