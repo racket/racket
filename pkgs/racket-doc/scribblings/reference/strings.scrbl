@@ -397,6 +397,13 @@ one between @racket[list] and @racket[list*].
 ]}
 
 
+@defproc[(string-endswith? [str string?]
+                           [suffix string?])
+         boolean?]{
+
+Returns @racket[#t] if the second argument is a suffix of the first.}
+
+
 @defproc[(string-join [strs (listof string?)] [sep string? " "]
                       [#:before-first before-first string? ""]
                       [#:before-last  before-last  string? sep]
@@ -457,6 +464,13 @@ replaced if @racket[all?] is @racket[#f].
 @mz-examples[#:eval string-eval
   (string-replace "foo bar baz" "bar" "blah")
 ]}
+
+
+@defproc[(string-startswith? [str string?]
+                             [prefix string?])
+         boolean?]{
+
+Returns @racket[#t] if the second argument is a prefix of the first.}
 
 
 @defproc[(string-split [str string?]
