@@ -7,8 +7,8 @@
          string-split
          string-replace
          non-empty-string?
-         string-startswith?
-         string-endswith?)
+         string-prefix?
+         string-suffix?)
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common cases
@@ -141,15 +141,14 @@
 (define (non-empty-string? x)
   (and (string? x) (not (zero? (string-length x)))))
 
-(define (string-startswith? str prefix)
+(define (string-prefix? str prefix)
   (and
     (<= (string-length prefix) (string-length str))
     (for/and ([c1 (in-string str)]
               [c2 (in-string prefix)])
       (char=? c1 c2))))
 
-(define (string-endswith? str suffix)
-  ;; Skip all but the last `suffix` characters of `str`
+(define (string-suffix? str suffix)
   (define offset (- (string-length str) (string-length suffix)))
   (and
     (not (negative? offset))
