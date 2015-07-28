@@ -344,11 +344,13 @@ Returns @racket[#t] if @racket[v] is a valid logging level (@racket['none],
                               (or/c symbol? #f))
                              any)]
            [proc (-> any)]
-           [log-spec (or/c log-level/c #f)] ...)
+           [level log-level/c]
+           [topic (or/c #f symbol?) #f]
+           ... ...)
          any]{
 
 Runs @racket[proc], calling @racket[interceptor] on any log event that would
-be received by @racket[(make-log-receiver (current-logger) log-spec ...)].
+be received by @racket[(make-log-receiver (current-logger) level topic ... ...)].
 Returns whatever @racket[proc] returns.
 
 @defexamples[
@@ -370,11 +372,13 @@ Returns whatever @racket[proc] returns.
 
 @defproc[(with-logging-to-port
            [port output-port?] [proc (-> any)]
-           [log-spec (or/c 'fatal 'error 'warning 'info 'debug symbol? #f)] ...)
+           [level log-level/c]
+           [topic (or/c #f symbol?) #f]
+           ... ...)
          any]{
 
 Runs @racket[proc], outputting any logging that would be received by
-@racket[(make-log-receiver (current-logger) log-spec ...)] to @racket[port].
+@racket[(make-log-receiver (current-logger) level topic ... ...)] to @racket[port].
 Returns whatever @racket[proc] returns.
 
 @defexamples[
