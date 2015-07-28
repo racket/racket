@@ -225,16 +225,16 @@ The following @filepath{info.rkt} fields are recognized:
 @itemlist[
 
  @item{@racket[test-omit-paths] --- a list of path strings (relative
-       to the enclosing directory) or @racket['all] to omit all files
-       within the enclosing directory or a regexp value to omit all
-       files within the enclosing directory matching the expression.
+       to the enclosing directory) and regexp values (to omit all
+       files within the enclosing directory matching the expression),
+       or @racket['all] to omit all files within the enclosing directory.
        When a path string refers to a directory, all files within the
        directory are omitted.}
 
  @item{@racket[test-include-paths] --- a list of path strings (relative
-       to the enclosing directory) or @racket['all] to include all files
-       within the enclosing directory or a regexp value to include all
-       files within the enclosing directory matching the expression.
+       to the enclosing directory) and regexp values (to include all
+       files within the enclosing directory matching the expression),
+       or @racket['all] to include all files within the enclosing directory.
        When a path string refers to a directory, all files within the
        directory are included.}
       
