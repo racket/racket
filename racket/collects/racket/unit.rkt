@@ -942,7 +942,7 @@
        ;; the introduced parts, which we implement by adding the
        ;; mark to the introduced parts and then flipping it
        ;; evenrywehere.
-       (define intro (make-syntax-introducer))
+       (define intro (make-syntax-introducer #t))
        
        (with-syntax ((((dept . depr) ...)
                       (map
