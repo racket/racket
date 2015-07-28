@@ -690,7 +690,7 @@ that name).}
                                               [import-phase (or/c #f exact-integer?)]
                                               [inspector-desc (or/c #f symbol?)])]{
 
-ARepresents a binding to a module or top-level definition---like
+Represents a binding to a module or top-level definition---like
 @racket[module-binding], but in normalized form:
 
 @itemlist[
