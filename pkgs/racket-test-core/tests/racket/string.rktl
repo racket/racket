@@ -483,4 +483,23 @@
   (test "foo\\1bar" string-replace "foo===bar" #rx"(=+)" "\\1")
   (test "foo\\1bar" string-replace "foo===bar" #px"={3}" "\\1"))
 
+;; ---------- string-starts/endswith ----------
+(let ()
+  (test #t string-startswith? "racket" "")
+  (test #t string-startswith? "racket" "r")
+  (test #t string-startswith? "racket" "rack")
+  (test #t string-startswith? "racket" "racket")
+  (test #t string-endswith?   "racket" "")
+  (test #t string-endswith?   "racket" "t")
+  (test #t string-endswith?   "racket" "cket")
+  (test #t string-endswith?   "racket" "racket")
+  (test #f string-startswith? ""       "racket")
+  (test #f string-startswith? "racket" "R")
+  (test #f string-startswith? "racket" "rak")
+  (test #f string-startswith? "racket" "racket2")
+  (test #f string-endswith?   ""       "racket")
+  (test #f string-endswith?   "racket" "T")
+  (test #f string-endswith?   "racket" "r")
+  (test #f string-endswith?   "racket" "kat"))
+
 (report-errs)
