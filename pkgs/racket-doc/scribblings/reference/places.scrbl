@@ -262,7 +262,7 @@ The @racket[place] binding is protected in the same way as
 The @racket[place*] binding is protected in the same way as
  @racket[dynamic-place].}
 
-@defform[(open-place id body ...+)]{
+@defform[(place/context id body ...+)]{
   Like @racket[place], but @racket[body ...] may have free lexical
   variables, which are automatically sent to the newly-created place.
   Note that these variables must have values accepted by

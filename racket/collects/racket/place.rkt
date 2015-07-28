@@ -33,7 +33,7 @@
          processor-count
          (protect-out place
                       place*)
-         open-place
+         place/context
          (rename-out [pl-place-enabled? place-enabled?])
          place-dead-evt
          place-location?
@@ -232,7 +232,7 @@
      (error who "the enclosing module's resolved name is not a path or predefined"))
   (start-place-func who (if (symbol? name) `(quote ,name) name) func-name in out err))
 
-(define-syntax (open-place stx)
+(define-syntax (place/context stx)
   (syntax-parse stx
     [(_ ch:id body:expr ...)
      (define b #'(let () body ...))
@@ -248,7 +248,7 @@
          (for ([e (in-vector vec)]
                [n (in-list (syntax->list (quote-syntax (fvs ...))))])
            (unless (place-message-allowed? e)
-             (raise-arguments-error 'open-place
+             (raise-arguments-error 'place/context
                                     "free variable values must be allowable as place messages"
                                     (symbol->string (syntax-e n)) e)))
          (place-channel-put p vec)
