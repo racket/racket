@@ -21,10 +21,11 @@ When an argument path refers to a directory, @exec{raco test}
 recursively discovers and runs all files within the directory that end
 in @filepath{.rkt}, end in @filepath{.scrbl}, or have a (possibly
 empty) list of command-line arguments provided by
-@racket[test-command-line-arguments] in an @filepath{info.rkt} file.
-At the same time, @exec{raco test} omits files and directories within
-a directory as directed by @racket[test-omit-paths] in an
-@filepath{info.rkt} file.
+@racket[test-command-line-arguments] in an @filepath{info.rkt} file,
+or as directed by @racket[test-include-paths] in an
+@filepath{info.rkt} file.  At the same time, @exec{raco test} omits
+files and directories within a directory as directed by
+@racket[test-omit-paths] in an @filepath{info.rkt} file.
 
 A test is counted as failing if it logs a failing test code via
 @racket[test-log!], causes Racket to exit with a non-zero exit code, or
@@ -54,9 +55,10 @@ The @exec{raco test} command accepts several flags:
        directory, which means ignoring a file argument that does not
        have the extension @filepath{.rkt}, does not have the extension
        @filepath{.scrbl}, or is not enabled explicitly via
-       @racket[test-command-line-arguments] in an @filepath{info.rkt}
-       file; meanwhile, paths that are otherwise enabled can be disabled
-       via @racket[test-omit-paths] in an @filepath{info.rkt} file.}
+       @racket[test-command-line-arguments] or @racket[test-include-paths]
+       in an @filepath{info.rkt} file; meanwhile, paths that are otherwise
+       enabled can be disabled via @racket[test-omit-paths] in an
+       @filepath{info.rkt} file.}
 
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
@@ -212,11 +214,11 @@ impossible (e.g., because the file will not always compile). Thus,
 @exec{raco test} also consults any @filepath{info.rkt} file in the
 candidate test file's directory. In the case of a file within a
 collection, @filepath{info.rkt} files from any enclosing collection
-directories are also consulted for @racket[test-omit-paths]. Finally,
-for a file within a package, the package's @filepath{info.rkt} is
-consulted for @racket[pkg-authors] to set the default responsible
-parties (see @secref["test-responsible"]) for all files in the
-package.
+directories are also consulted for @racket[test-omit-paths] and
+@racket[test-include-paths]. Finally, for a file within a package, the
+package's @filepath{info.rkt} is consulted for @racket[pkg-authors] to
+set the default responsible parties (see @secref["test-responsible"])
+for all files in the package.
 
 The following @filepath{info.rkt} fields are recognized:
 
@@ -224,9 +226,18 @@ The following @filepath{info.rkt} fields are recognized:
 
  @item{@racket[test-omit-paths] --- a list of path strings (relative
        to the enclosing directory) or @racket['all] to omit all files
-       within the enclosing directory.  When a path string refers to a
-       directory, all files within the directory are omitted.}
+       within the enclosing directory or a regexp value to omit all
+       files within the enclosing directory matching the expression.
+       When a path string refers to a directory, all files within the
+       directory are omitted.}
 
+ @item{@racket[test-include-paths] --- a list of path strings (relative
+       to the enclosing directory) or @racket['all] to include all files
+       within the enclosing directory or a regexp value to include all
+       files within the enclosing directory matching the expression.
+       When a path string refers to a directory, all files within the
+       directory are included.}
+      
  @item{@racket[test-command-line-arguments] --- a list of
        @racket[(list _module-path-string (list _argument-path-string
        ...))], where @racket[current-command-line-arguments] is set to
