@@ -14,7 +14,10 @@
   (let ([src (ormap values (exn:fail:syntax-exprs exn))])
     (if src
         (make-exn:fail:syntax
-         (format "~a at: ~s" (exn-message exn) (syntax->datum src))
+         (let* ([msg (exn-message exn)]
+                [oneline? (not (regexp-match? #rx"\n" msg))])
+           (format "~a~a at: ~s"
+                   msg (if oneline? "" "\n ") (syntax->datum src)))
          (exn-continuation-marks exn)
          (exn:fail:syntax-exprs exn))
         exn)))
