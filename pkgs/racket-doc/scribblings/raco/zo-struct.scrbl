@@ -51,7 +51,7 @@ structures that are produced by @racket[zo-parse] and consumed by
              [toplevels (listof (or/c #f symbol? global-bucket?
                                       module-variable?))]
              [stxs (listof (or stx? #f))]
-             [inspector-desc symbol?])]{
+             [src-inspector-desc symbol?])]{
   Represents a ``prefix'' that is pushed onto the stack to initiate
   evaluation.  The prefix is an array, where buckets holding the
   values for @racket[toplevels] are first, then the buckets for the
@@ -79,7 +79,7 @@ structures that are produced by @racket[zo-parse] and consumed by
   syntax object that was optimized away at the last minute. The slot
   must not be referenced vt a @racket[topsyntax] form.
 
-  The @racket[inspector-desc] field provides an inspector name that
+  The @racket[src-inspector-desc] field provides an inspector name that
   is used within syntax-object bindings. At run time, the prefix gets
   an inspector, and bindings that reference the same inspector name are
   granted access capabilities through that inspector.}
