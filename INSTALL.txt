@@ -31,7 +31,7 @@ If you stick with this repository, then you have several options:
    Instructions: In-place Build" below.
 
  * Unix-style install --- installs to a given destination directory
-   (Unix and Mac OS X, only), leaving no reference to the source
+   (Unix only), leaving no reference to the source
    directory. This is the most natural mode for installing once from
    the source repository. See "Quick Instructions: Unix-style Install"
    below.
