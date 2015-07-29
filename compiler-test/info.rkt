@@ -14,5 +14,6 @@
                      "compatibility-lib"
                      "gui-lib"
                      "htdp-lib"
-                     "plai-lib"))
+                     "plai-lib"
+                     "rackunit-lib"))
 (define update-implies '("compiler-lib"))
