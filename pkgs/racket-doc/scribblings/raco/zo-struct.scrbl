@@ -285,7 +285,7 @@ binding, constructor, etc.}
   submodules, while the @racket[post-submodules] field records
   @racket[module*]-declared submodules.}
 
-@defstruct+[provided
+@defstruct+[(provided zo)
             ([name symbol?]
              [src (or/c module-path-index? #f)]
              [src-name symbol?]
