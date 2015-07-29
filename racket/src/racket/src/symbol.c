@@ -340,7 +340,12 @@ scheme_init_symbol (Scheme_Env *env)
   GLOBAL_IMMED_PRIM("string->uninterned-symbol",  string_to_uninterned_symbol_prim, 1, 1, env);
   GLOBAL_IMMED_PRIM("string->unreadable-symbol",  string_to_unreadable_symbol_prim, 1, 1, env);
   GLOBAL_IMMED_PRIM("symbol->string",             symbol_to_string_prim,            1, 1, env);
-  GLOBAL_FOLDING_PRIM("keyword?",                 keyword_p_prim,                   1, 1, 1, env);
+
+  p = scheme_make_folding_prim(keyword_p_prim, "keyword?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("keyword?", p, env);
+
   GLOBAL_FOLDING_PRIM("keyword<?",                keyword_lt,                       2, -1, 1, env);
   GLOBAL_IMMED_PRIM("string->keyword",            string_to_keyword_prim,           1, 1, env);
   GLOBAL_IMMED_PRIM("keyword->string",            keyword_to_string_prim,           1, 1, env);

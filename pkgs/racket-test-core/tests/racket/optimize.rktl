@@ -34,7 +34,7 @@
 				(unless (memq name '(eq? eqv? equal? 
                                                          not null? pair? list?
 							 real? number? boolean?
-							 procedure? symbol?
+							 procedure? symbol? keyword?
 							 string? bytes?
 							 vector? box?
 							 eof-object?
@@ -205,6 +205,8 @@
     (un #t 'procedure? (lambda (x) 10))
     (un #t 'symbol? 'ok)
     (un #f 'symbol? #f)
+    (un #t 'keyword? '#:ok)
+    (un #f 'keyword? #f)
     (un #t 'vector? (vector 1 2 3))
     (un #f 'vector? #f)
     (un #t 'box? (box 10))
@@ -2590,6 +2592,7 @@
   (test-pred 'null?)
   (test-pred 'void?)
   (test-pred 'symbol?)
+  (test-pred 'keyword?)
   (test-pred 'string?)
   (test-pred 'bytes?)
   (test-pred 'path?)
