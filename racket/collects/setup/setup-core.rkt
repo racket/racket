@@ -899,9 +899,11 @@
                        [compile-notify-handler doing-path])
           (thunk)))))
 
-  (define (clean-cc cc dir info)
+  (define (clean-cc cc)
     ;; Clean up bad .zos:
     (unless (assume-virtual-sources? cc)
+      (define dir (cc-path cc))
+      (define info (cc-info cc))
       (define roots
         ;; If there's more than one relative root, then there will
         ;; be multiple ways to get to a ".zo" file, and our strategy
@@ -994,7 +996,6 @@
          (lambda ()
            (define dir  (cc-path cc))
            (define info (cc-info cc))
-           (clean-cc cc dir info)
            (compile-directory-zos dir info
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo caching-managed-compile-zo
@@ -1039,16 +1040,14 @@
                        (move-to 'end (list #rx"<pkgs>/drracket")
                                 (sort-collections-tree
                                  (collection-tree-map top-level-plt-collects)))))
-            (iterate-cct (lambda (cc)
-                           (define dir (cc-path cc))
-                           (define info (cc-info cc))
-                           (clean-cc cc dir info))
-                         cct)
+            (iterate-cct clean-cc cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct)
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
               (compile-cc cc gcs)))))
       (with-specified-mode
         (lambda ()
+          (for ([cc ccs-to-compile])
+            (clean-cc cc))
           (for/fold ([gcs 0]) ([cc ccs-to-compile])
             (compile-cc cc gcs))))))
 
