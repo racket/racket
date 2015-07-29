@@ -40,10 +40,7 @@ one
 
 When a splicing binding form occurs in a @tech{top-level context} or
 @tech{module context}, its local bindings are treated similarly to
-definitions. In particular, if a reference to one of the splicing
-form's bound variables is evaluated before the variable is
-initialized, an unbound variable error is raised, instead of the
-variable evaluating to the undefined value.  Also, syntax bindings are
+definitions. In particular, syntax bindings are
 evaluated every time the module is @tech{visit}ed, instead of only
 once during compilation as in @racket[let-syntax], etc.
 
@@ -52,7 +49,15 @@ once during compilation as in @racket[let-syntax], etc.
 (splicing-letrec ([x bad]
                   [bad 1])
   x)]
-}
+
+If a definition within a splicing form is intended to be local to the
+splicing body, then the identifier should have a true value for the
+@racket['definition-intended-as-local] @tech{syntax property}. For
+example, @racket[splicing-let] itself adds the property to
+locally-bound identifiers as it expands to a sequence of definitions,
+so that nesting @racket[splicing-let] within a splicing form works as
+expected (without any ambiguous bindings).}
+
 
 @defidform[splicing-syntax-parameterize]{
 

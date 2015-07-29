@@ -90,7 +90,10 @@
                (LET ([ids expr] ...)
                  (#%expression body)
                  ...)))
-           (with-syntax ([((id ...) ...) all-ids]
+           (with-syntax ([((id ...) ...)
+                          (for/list ([ids (in-list all-ids)])
+                            (for/list ([id (in-list ids)])
+                              (syntax-property id 'definition-intended-as-local #t)))]
                          [DEF def-id]
                          [rec? rec?]
                          [(marked-id markless-id)
@@ -128,6 +131,11 @@
      (let ([i (make-syntax-delta-introducer #'marked-id #'markless-id)])
        #`(splicing-let-body marked-id markless-id #,(i #'body)))]))
 
+(define-for-syntax ((maybe unintro) form)
+  (if (syntax-property form 'definition-intended-as-local)
+      form
+      (unintro form)))
+
 (define-syntax (splicing-let-body stx)
   (syntax-case stx ()
     [(_ marked-id markless-id body)
@@ -148,10 +156,10 @@
             (begin (splicing-let-body marked-id markless-id form) ...))]
          [(define-values ids rhs)
           (quasisyntax/loc body
-            (define-values #,(unintro #'ids) rhs))]
+            (define-values #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
          [(define-syntaxes ids rhs)
           (quasisyntax/loc body
-            (define-syntaxes #,(unintro #'ids) rhs))]
+            (define-syntaxes #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
          [(begin-for-syntax e ...)
           (syntax/loc body
             (begin-for-syntax (splicing-let-body/et marked-id markless-id e) ...))]
@@ -166,9 +174,9 @@
   (define-syntax (splicing-let-body/et stx)
     (syntax-case stx ()
       [(_ marked-id markless-id body)
-       (let ([unintro (lambda (form)
-                      ((make-syntax-delta-introducer #'marked-id #'markless-id) form 'remove))]
-             [body (local-expand #'body (syntax-local-context) #f)])
+       (let* ([unintro (lambda (form)
+                         ((make-syntax-delta-introducer #'marked-id #'markless-id) form 'remove))]
+              [body (local-expand #'body (syntax-local-context) #f)])
          (syntax-case body (begin
                              define-values
                              define-syntaxes
@@ -183,10 +191,10 @@
               (begin (splicing-let-body/et marked-id markless-id form) ...))]
            [(define-values ids rhs)
             (quasisyntax/loc body
-              (define-values #,(unintro #'ids) rhs))]
+              (define-values #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
            [(define-syntaxes ids rhs)
             (quasisyntax/loc body
-              (define-syntaxes #,(unintro #'ids) rhs))]
+              (define-syntaxes #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
            [(begin-for-syntax . es)
             ;; Give up on splicing definitions at phase level 2 and deeper:
             body]

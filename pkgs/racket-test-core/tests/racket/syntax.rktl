@@ -1482,6 +1482,30 @@
                                                           (define x 10))
                                   (abcdefg)))
 
+(test '(1 2)
+      'nested-splicing-expr
+      (splicing-let ([a 1])
+                    (list a
+                          (splicing-let ([a 2])
+                                        a))))
+
+(test '(1 2)
+      'nested-splicing-def
+      (let ()
+        (splicing-let ([a 1])
+                      (define x a)
+                      (splicing-let ([a 2])
+                                    (define y a)))
+        (list x y)))
+
+(test '(1 2)
+      'nested-splicing-syntax
+      (let ()
+        (splicing-let-syntax ([a (syntax-rules () [(_) 1])])
+                             (define x (a))
+                             (splicing-let-syntax ([a (syntax-rules () [(_) 2])])
+                                                  (define y (a))))
+        (list x y)))
 
 ;; ----------------------------------------
 
