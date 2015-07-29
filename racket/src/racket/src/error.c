@@ -2360,7 +2360,16 @@ static void do_wrong_syntax(const char *where,
 			    where,
                             s, slen,
 			    v, vlen);
-  } else
+  } else if (dv)
+      blen = scheme_sprintf(buffer, blen, 
+                            "%t%s%s: %t\n"
+                            "  at: %t",
+                            p, plen,
+                            p ? ": " : "",
+			    where,
+                            s, slen,
+			    dv, dvlen);
+  else
     blen = scheme_sprintf(buffer, blen, "%s: %t", 
                           where,
                           s, slen);

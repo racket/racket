@@ -2083,7 +2083,27 @@
   (evalx '(module m racket/base (provide e) (define e #'1)))
   (evalx '(module n racket/base (require (for-syntax 'm)) (provide s) (define-syntax (s stx) e)))
   (evalx '(require 'n))
-  (err/rt-test (evalx 's) #rx"literal data is not allowed"))
+  (err/rt-test (evalx 's) (lambda (exn) (regexp-match? #rx"literal data is not allowed" (exn-message exn)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check source-location reporting by `raise-syntax-error`
+
+(let ()
+  (define (check a0 a1 . args)
+    (err/rt-test (apply raise-syntax-error #f "oops" a0 a1 args)
+                 (lambda (exn)
+                   (and (exn:fail:syntax? exn)
+                        (regexp-match? (format "^[^:\n]*:~a:~a:" 
+                                               (or (syntax-line a1)
+                                                   (syntax-line a0))
+                                               (or (syntax-column a1)
+                                                   (syntax-column a0)))
+                                       (exn-message exn))))))
+  (define stx #'(a b))
+  (define a-stx (car (syntax-e stx)))
+  (check stx a-stx)
+  (check stx #f)
+  (check #f a-stx))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
