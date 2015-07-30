@@ -293,8 +293,13 @@ collection is disabled by setting @envvar{PLTDISABLEGC}). Some
 effectively unreachable data may remain uncollected, because the
 collector cannot prove that it is unreachable.
 
-If @racket[minor?] is not false, then a minor collection is
-run. Otherwise, a major collection is run.
+If @racket[minor?] is false, then a major collection is
+run. Otherwise, a minor collection is run or no collection is run. (No
+collection occurs when @racket[(system-type 'gc)] returns
+@racket['cgc] or when a normally scheduled minor collection would
+cause a major collection.) Minor collections run by
+@racket[collect-garbage] do not cause major collections to run any
+sooner than they would have otherwise.
 
 The @racket[collect-garbage] procedure provides some control over the
 timing of collections, but garbage will obviously be collected even if

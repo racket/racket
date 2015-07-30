@@ -319,8 +319,8 @@ void GC_set_post_propagate_hook(GC_Post_Propagate_Hook_Proc func) {
 /*****************************************************************************/
 /* OS-Level Memory Management Routines                                       */
 /*****************************************************************************/
-static void garbage_collect(NewGC*, int, int, Log_Master_Info*);
-static void collect_now(NewGC*, int);
+static void garbage_collect(NewGC*, int, int, int, Log_Master_Info*);
+static void collect_now(NewGC*, int, int);
 
 static void out_of_memory()
 {
@@ -369,9 +369,9 @@ inline static void check_used_against_max(NewGC *gc, size_t len)
       gc->unsafe_allocation_abort(gc);
   } else if (!gc->avoid_collection) {
     if (gc->used_pages > gc->max_pages_for_use) {
-      collect_now(gc, 0); /* hopefully this will free enough space */
+      collect_now(gc, 0, 0); /* hopefully this will free enough space */
       if (gc->used_pages > gc->max_pages_for_use) {
-        collect_now(gc, 1); /* hopefully *this* will free enough space */
+        collect_now(gc, 1, 0); /* hopefully *this* will free enough space */
         if (gc->used_pages > gc->max_pages_for_use) {
           /* too much memory allocated.
            * Inform the thunk and then die semi-gracefully */
@@ -463,7 +463,7 @@ static void *malloc_pages_maybe_fail(NewGC *gc, size_t len, size_t alignment, in
     /* Try to handle allocation failure. */
     if (!tried_gc) {
       if (!gc->avoid_collection) {
-        collect_now(gc, 1);
+        collect_now(gc, 1, 0);
         gc->gen0.current_size += account_size;
       }
       tried_gc = 1;
@@ -973,7 +973,7 @@ static int master_wants_to_collect() {
 static void wait_until_master_in_progress(NewGC *gc);
 #endif
 
-static void collect_now(NewGC *gc, int major)
+static void collect_now(NewGC *gc, int major, int nomajor)
 {
 #ifdef MZ_USE_PLACES 
   if (postmaster_and_master_gc(gc))
@@ -984,10 +984,10 @@ static void collect_now(NewGC *gc, int major)
       if (!gc->dont_master_gc_until_child_registers && master_wants_to_collect()) {
         wait_until_master_in_progress(gc);
         gc->major_places_gc = 1;
-        garbage_collect(gc, 1, 0, NULL); /* waits until all are done */
+        garbage_collect(gc, 1, 0, 0, NULL); /* waits until all are done */
         gc->major_places_gc = 0;
       } else {
-        garbage_collect(gc, major, 0, NULL);
+        garbage_collect(gc, major, nomajor, 0, NULL);
       }
       if (gc->dont_master_gc_until_child_registers)
         again = 0;
@@ -996,7 +996,7 @@ static void collect_now(NewGC *gc, int major)
     } while (again);
   }
 #else
-  garbage_collect(gc, major, 0, NULL);
+  garbage_collect(gc, major, nomajor, 0, NULL);
 #endif
 }
 
@@ -1005,7 +1005,7 @@ static inline void gc_if_needed_account_alloc_size(NewGC *gc, size_t allocate_si
 {
   if((gc->gen0.current_size + allocate_size) >= gc->gen0.max_size) {
     if (!gc->avoid_collection)
-      collect_now(gc, 0);
+      collect_now(gc, 0, 0);
   }
   gc->gen0.current_size += allocate_size;
 }
@@ -1270,7 +1270,7 @@ uintptr_t GC_make_jit_nursery_page(int count, uintptr_t *sz) {
 
   if((gc->gen0.current_size + size) >= gc->gen0.max_size) {
     if (!gc->avoid_collection)
-      collect_now(gc, 0);
+      collect_now(gc, 0, 0);
   }
   gc->gen0.current_size += size;
 
@@ -1380,7 +1380,7 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
       LOG_PRIM_START(((void*)garbage_collect));
 #endif
       
-      collect_now(gc, 0);
+      collect_now(gc, 0, 0);
 
 #ifdef INSTRUMENT_PRIMITIVES 
       LOG_PRIM_END(((void*)garbage_collect));
@@ -1419,7 +1419,7 @@ inline static void *allocate(const size_t request_size, const int type)
     NewGC *gc = GC_get_GC();
     if (!gc->avoid_collection) {
       stress_counter = 0;
-      collect_now(gc, 0);
+      collect_now(gc, 0, 0);
     }
   }
 #endif
@@ -2869,7 +2869,7 @@ static void collect_master(Log_Master_Info *lmi) {
     GCVERBOSEprintf(gc, "START MASTER COLLECTION\n");
 #endif
     MASTERGC->major_places_gc = 0;
-    garbage_collect(MASTERGC, 1, 0, lmi);
+    garbage_collect(MASTERGC, 1, 0, 0, lmi);
 #if defined(GC_DEBUG_PAGES)
     printf("END MASTER COLLECTION\n");
     GCVERBOSEprintf(gc, "END MASTER COLLECTION\n");
@@ -3150,7 +3150,7 @@ void GC_destruct_child_gc() {
     mzrt_rwlock_unlock(MASTERGCINFO->cangc);
 
     if (waiting) {
-      collect_now(gc, 1);
+      collect_now(gc, 1, 0);
       waiting = 1;
     }
   } while (waiting == 1);
@@ -3180,7 +3180,7 @@ void GC_switch_out_master_gc() {
     initialized = 1;
 
     if (!gc->avoid_collection)
-      garbage_collect(gc, 1, 1, NULL);
+      garbage_collect(gc, 1, 0, 1, NULL);
 
 #ifdef MZ_USE_PLACES
     GC_gen0_alloc_page_ptr = 2;
@@ -3243,7 +3243,7 @@ void GC_gcollect(void)
 
   if (gc->avoid_collection) return;
 
-  collect_now(gc, 1);
+  collect_now(gc, 1, 0);
 }
 
 void GC_gcollect_minor(void)
@@ -3256,7 +3256,7 @@ void GC_gcollect_minor(void)
   if (postmaster_and_master_gc(gc)) return;
 #endif
 
-  collect_now(gc, 0);
+  collect_now(gc, 0, 1);
 }
 
 void GC_enable_collection(int on)
@@ -4936,7 +4936,7 @@ extern double scheme_get_inexact_milliseconds(void);
    really clean up. The full_needed_for_finalization flag triggers 
    the second full GC. */
 
-static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log_Master_Info *lmi)
+static void garbage_collect(NewGC *gc, int force_full, int no_full, int switching_master, Log_Master_Info *lmi)
 {
   uintptr_t old_mem_use;
   uintptr_t old_gen0;
@@ -4961,6 +4961,10 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
       (gc->since_last_full > FORCE_MAJOR_AFTER_COUNT), (gc->memory_in_use > (2 * gc->last_full_mem_use)),
       gc->last_full_mem_use);
 #endif
+
+  if (gc->gc_full && no_full) {
+    return;
+  }
 
   next_gc_full = gc->gc_full;
 
@@ -5138,14 +5142,16 @@ static void garbage_collect(NewGC *gc, int force_full, int switching_master, Log
   if(gc->peak_memory_use < (old_mem_use + old_gen0))
     gc->peak_pre_memory_use = (old_mem_use + old_gen0);
   if(gc->peak_memory_use < gc->memory_in_use) gc->peak_memory_use = gc->memory_in_use;
-  if(gc->gc_full)
+  if(gc->gc_full) {
     gc->since_last_full = 0;
-  else if((float)(gc->memory_in_use - old_mem_use) < (0.1 * (float)old_mem_use))
-    gc->since_last_full += 1;
-  else if((float)(gc->memory_in_use - old_mem_use) < (0.4 * (float)old_mem_use))
-    gc->since_last_full += 5;
-  else 
-    gc->since_last_full += 10;
+  } else if (!no_full) {
+    if((float)(gc->memory_in_use - old_mem_use) < (0.1 * (float)old_mem_use))
+      gc->since_last_full += 1;
+    else if((float)(gc->memory_in_use - old_mem_use) < (0.4 * (float)old_mem_use))
+      gc->since_last_full += 5;
+    else 
+      gc->since_last_full += 10;
+  }
   if(gc->gc_full)
     gc->last_full_mem_use = gc->memory_in_use;
 
