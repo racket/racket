@@ -700,7 +700,7 @@ For @tech{callbacks} to Racket functions with the generated type:
 
 ]
 
-@history[#:changed "6.2.0.5" @elem{Added the @racket[#:lock-name] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[#:lock-name] argument.}]}
 
 @defform/subs[#:literals (->> :: :)
               (_fun fun-option ... maybe-args type-spec ... ->> type-spec
@@ -831,7 +831,7 @@ specifications:
 ]
 
 @history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}
-         #:changed "6.2.0.5" @elem{Added the @racket[#:lock-name] option.}]}
+         #:changed "6.3" @elem{Added the @racket[#:lock-name] option.}]}
 
 @defproc[(function-ptr [ptr-or-proc (or cpointer? procedure?)]
                        [fun-type ctype?])

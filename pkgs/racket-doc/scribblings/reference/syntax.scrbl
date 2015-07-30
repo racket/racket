@@ -292,10 +292,10 @@ See also @secref["module-eval-model"] and @secref["mod-parse"].
       (quack (sub1 n)))))
 ]
 
-@history[#:changed "6.2.0.4" @elem{Changed @racket[define-syntaxes]
-                                   and @racket[define-values] to
-                                   shadow any preceding import.}
-         #:changed "6.3" @elem{Dropped the use of @racket['submodule]
+@history[#:changed "6.3" @elem{Changed @racket[define-syntaxes]
+                               and @racket[define-values] to
+                               shadow any preceding import, and
+                               dropped the use of @racket['submodule]
                                @tech{syntax property} values on nested
                                @racket[module] or @racket[module*]
                                forms.}]}
