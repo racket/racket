@@ -12,6 +12,7 @@
                     setup/getinfo
                     setup/main-collects
                     setup/collection-name
+                    setup/collection-search
                     setup/matching-platform
                     setup/path-to-relative
                     setup/xref scribble/xref
@@ -1714,6 +1715,50 @@ is not the ASCII value of a letter, digit, @litchar{-}, @litchar{+},
 or @litchar{_}.}
 
 
+@; ------------------------------------------------------------------------
+
+@section[#:tag "collection-search"]{API for Collection Searches}
+
+@defmodule[setup/collection-search]
+
+@history[#:added "6.2.900.6"]
+
+@defproc[(collection-search [mod-path normalized-lib-module-path?]
+                            [#:init result any/c #f]
+                            [#:combine combine (any/c (and/c path? complete-path?) . -> . any/c) (lambda (r v) v)]
+                            [#:break? break? (any/c . -> . any/c) (lambda (r) #f)]
+                            [#:all-possible-roots? all-possible-roots? any/c #f])
+         any/c]{
+
+Generalizes @racket[collection-file-path] to support folding over all
+possible locations of a collection-based file in the current
+configuration. Unlike @racket[collection-file-path],
+@racket[collection-search] takes the file to location in module-path
+form, but always as a @racket['lib] path.
+
+Each possible path for the file (not counting a @filepath{.ss} to/from
+@filepath{.rkt} conversion) is provided as a second argument to the
+@racket[combine] function, where the first argument is the current
+result, and the value produced by @racket[combine] becomes the new
+result. The @racket[#:init] argument provides the initial result.
+
+The @racket[break?] function short-circuits a search based on the
+current value. For example, it could be used to short-circuit a search
+after a suitable path is found.
+
+If @racket[all-possible-roots?] is @racket[#f], then @racket[combine]
+is called only on paths within @filepath{collects}-like directories
+(for the current configuration) where at least a matching collection
+directory exists.}
+
+
+@defproc[(normalized-lib-module-path? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a module path (in the sense of
+@racket[module-path?]) of the form @racket['(lib _str)] where
+@racket[_str] contains at least one slash. The
+@racket[collapse-module-path] function produces such module paths for
+collection-based module references.}
 
 @; ------------------------------------------------------------------------
 
