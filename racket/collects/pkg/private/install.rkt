@@ -8,7 +8,6 @@
          racket/set
          racket/function
          openssl/sha1
-         compiler/compilation-path
          version/utils
          setup/link
          "../path.rkt"
@@ -31,7 +30,8 @@
          "clone-path.rkt"
          "orig-pkg.rkt"
          "info-to-desc.rkt"
-         "git.rkt")
+         "git.rkt"
+         "check-will-exist.rkt")
 
 (provide pkg-install
          pkg-update)
@@ -262,17 +262,18 @@
           (when f
             (unless (path? f)
               (pkg-error "expected a filesystem path for a resolved module path: ~a" mp)))
-          ;; Check for source or compiled:
+          (define found-f
+            (and f
+                 ;; Check for source or compiled; may need to use a slower process to
+                 ;; find the relevant one:
+                 (check-found-module-will-exist f mp metadata-ns)))
           (cond
-           [(and f
-                 (or (file-exists? f)
-                     (file-exists? (path-replace-suffix f #".ss"))
-                     (file-exists? (get-compilation-bytecode-file f))
-                     (file-exists? (get-compilation-bytecode-file (path-replace-suffix f #".ss"))))
-                 (or (not updating?)
-                     (not (hash-ref simultaneous-installs (path->pkg f #:cache path-pkg-cache) #f))))
+           [(and found-f
+                 ;; If it's from a simultaneous install, we'll want to check the updated
+                 ;; version of the package, instead:
+                 (not (hash-ref simultaneous-installs (path->pkg found-f #:cache path-pkg-cache) #f)))
             ;; This module is already installed
-            (cons (path->pkg f #:cache path-pkg-cache) mp)]
+            (cons (path->pkg found-f #:cache path-pkg-cache) mp)]
            [else
             ;; Compare with simultaneous installs
             (for/or ([other-pkg-info (in-list infos)]
