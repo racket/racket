@@ -92,4 +92,4 @@ the shape that is recognized by other tools, such as @exec{git}, and
 so a preserved temporary directory is useful mainly for debugging.
 
 @history[#:added "6.1.1.1"
-         #:changed "6.2.0.3" @elem{Added the @racket[initial-error] argument.}]}
+         #:changed "6.3" @elem{Added the @racket[initial-error] argument.}]}
