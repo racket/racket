@@ -262,6 +262,7 @@
 #define scheme_dont_gc_ptr (scheme_extension_table->scheme_dont_gc_ptr)
 #define scheme_gc_ptr_ok (scheme_extension_table->scheme_gc_ptr_ok)
 #define scheme_collect_garbage (scheme_extension_table->scheme_collect_garbage)
+#define scheme_collect_garbage_minor (scheme_extension_table->scheme_collect_garbage_minor)
 #define scheme_enable_garbage_collection (scheme_extension_table->scheme_enable_garbage_collection)
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL

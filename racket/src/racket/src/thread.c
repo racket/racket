@@ -599,7 +599,7 @@ void scheme_init_thread(Scheme_Env *env)
   scheme_add_evt_through_sema(scheme_will_executor_type, will_executor_sema, NULL);
 
 
-  GLOBAL_PRIM_W_ARITY("collect-garbage"                       , collect_garbage      , 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("collect-garbage"                       , collect_garbage      , 0, 1, env);
   GLOBAL_PRIM_W_ARITY("current-memory-use"                    , current_memory_use   , 0, 1, env);
 
   GLOBAL_PRIM_W_ARITY("custodian-require-memory"              , custodian_require_mem, 3, 3, env);
@@ -710,9 +710,13 @@ void scheme_init_paramz(Scheme_Env *env)
   scheme_protect_primitive_provide(newenv, NULL);
 }
 
-static Scheme_Object *collect_garbage(int c, Scheme_Object *p[])
+static Scheme_Object *collect_garbage(int argc, Scheme_Object *argv[])
 {
-  scheme_collect_garbage();
+  if (argc == 1 && !SCHEME_FALSEP(argv[0])) {
+    scheme_collect_garbage_minor();
+  } else {
+    scheme_collect_garbage();
+  }
 
   return scheme_void;
 }

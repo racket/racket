@@ -286,12 +286,15 @@ collection mode, the text has the format
 ]}
 
 
-@defproc[(collect-garbage) void?]{
+@defproc[(collect-garbage [minor? any/c #f]) void?]{
 
 Forces an immediate @tech{garbage collection} (unless garbage
 collection is disabled by setting @envvar{PLTDISABLEGC}). Some
 effectively unreachable data may remain uncollected, because the
 collector cannot prove that it is unreachable.
+
+If @racket[minor?] is not false, then a minor collection is
+run. Otherwise, a major collection is run.
 
 The @racket[collect-garbage] procedure provides some control over the
 timing of collections, but garbage will obviously be collected even if

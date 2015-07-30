@@ -1633,6 +1633,14 @@ void scheme_collect_garbage(void)
   GC_gcollect();
 }
 
+void scheme_collect_garbage_minor(void)
+{
+#ifdef MZ_PRECISE_GC
+  GC_gcollect_minor();
+#else
+#endif
+}
+
 void scheme_enable_garbage_collection(int on)
 {
 #ifdef MZ_PRECISE_GC
