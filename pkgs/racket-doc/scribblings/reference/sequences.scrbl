@@ -832,7 +832,8 @@ stream, but plain lists can be used as streams, and functions such as
   A shorthand for nested @racket[stream-cons]es, but the final @racket[expr]
   must be a stream, and it is used as the rest of the stream instead of
   @racket[empty-stream]. Similar to @racket[list*] but for streams.
-}
+
+@history[#:added "6.3"]}
 
 @defproc[(in-stream [s stream?]) sequence?]{
   Returns a sequence that is equivalent to @racket[s].
