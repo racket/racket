@@ -3,14 +3,11 @@
 (require racket/syntax
          (for-syntax racket/base)
          (for-template racket/base)
-         syntax/transformer) ; for re-export
+         syntax/transformer ; for re-export
+         syntax/location) ; for re-export
 
 (provide ;; by endobson
          syntax-length
-
-         ;; by cce:
-         syntax-source-file-name
-         syntax-source-directory
 
          ;; by stamourv:
          format-unique-id
@@ -21,33 +18,9 @@
          phase-of-enclosing-module
 
          ;; re-export, for backwards compatibility
-         make-variable-like-transformer)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  By Carl Eastlund, below
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Syntax Locations
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define (syntax-source-directory stx)
-  (let* ([source (syntax-source stx)])
-    (and (path-string? source)
-         (let-values ([(base file dir?) (split-path source)])
-           (and (path? base)
-                (path->complete-path base
-                                     (or (current-load-relative-directory)
-                                         (current-directory))))))))
-
-(define (syntax-source-file-name stx)
-  (let* ([f (syntax-source stx)])
-    (and (path-string? f)
-         (let-values ([(base file dir?) (split-path f)]) file))))
+         make-variable-like-transformer
+         syntax-source-file-name
+         syntax-source-directory)
 
 ;; by stamourv:
 
