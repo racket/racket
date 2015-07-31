@@ -20,8 +20,8 @@ extern "C" {
 
 SGC_EXTERN void GC_add_roots(void *start, void *end);
 
-SGC_EXTERN void (*GC_start_collect_callback)(void);
-SGC_EXTERN void (*GC_end_collect_callback)(void);
+SGC_EXTERN void (*GC_collect_start_callback)(void);
+SGC_EXTERN void (*GC_collect_end_callback)(void);
 SGC_EXTERN void (*GC_custom_finalize)(void);
 SGC_EXTERN void (*GC_out_of_memory)(void);
 

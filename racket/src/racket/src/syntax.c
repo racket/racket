@@ -3911,6 +3911,7 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
   int cache_pos;
 
   STX_ASSERT(SCHEME_STXP(o));
+  STX_ASSERT(nominal_name || (!src_phase && !nominal_src_phase));
 
   orig_name = SCHEME_STX_VAL(o);
 
