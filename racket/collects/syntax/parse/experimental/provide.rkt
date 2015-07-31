@@ -8,7 +8,7 @@
                      syntax/parse/pre
                      syntax/parse/private/residual-ct ;; keep abs. path
                      "../private/kws.rkt"
-                     unstable/wrapc))
+                     syntax/contract))
 (provide provide-syntax-class/contract
          syntax-class/c
          splicing-syntax-class/c)
