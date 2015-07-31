@@ -1057,6 +1057,10 @@ The grammar of @tech{syntax patterns} is extensible through the use of
 @deftech{pattern expanders}, which allow the definition of new pattern
 forms by rewriting them into existing pattern forms.
 
+@margin-note{A @tech{pattern expander}'s name must begin with a @code{~}
+             character. Otherwise, @racket[syntax-parse] and other
+             @racketmodname[syntax/parse] forms will not recognize it.}
+
 @defproc[(pattern-expander [proc (-> syntax? syntax?)]) pattern-expander?]{
 
 Returns a @tech{pattern expander} that uses @racket[proc] to transform the pattern.
