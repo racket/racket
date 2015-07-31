@@ -31,4 +31,6 @@
 
 @include-section["docprovide.scrbl"]
 
+@include-section["contract.scrbl"]
+
 @index-section[]
