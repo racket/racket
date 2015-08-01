@@ -28,5 +28,10 @@ many other installed libraries. Run @exec{raco docs} to find
 documentation for libraries that are installed on your system and
 specific to your user account.
 
-@link["http://planet.plt-racket.org/"]{@|PLaneT|} offers even more
-downloadable packages contributed by Racketeers.
+@link["http://pkgs.racket-lang.org/"]{The Racket package repository}
+offer even more downloadable packages that are contributed by
+Racketeers.
+
+The legacy @link["http://planet.racket-lang.org/"]{@|PLaneT|} site
+offers additional packages, although maintained packages have
+generally migrated to the newer package repository.
