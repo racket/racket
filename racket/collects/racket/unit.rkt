@@ -494,7 +494,7 @@
                                                   (car opt-cname)
                                                   opt-cname)]
                                    [extra-make? #f]
-                                   [else (car (generate-temporaries #'(name)))])]
+                                   [else  ((make-syntax-introducer) #'name)])]
                      [(cname) (cond
                                [opt-cname (if (pair? opt-cname)
                                               (cons def-cname #'name)
