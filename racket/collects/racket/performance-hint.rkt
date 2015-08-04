@@ -112,7 +112,7 @@
                                       string<?
                                       #:key (lambda (kw)
                                               (keyword->string
-                                               (syntax-e kw))))])
+                                               (syntax-e (car kw)))))])
                           (keyword-apply
                            function-aux
                            (map (lambda (x) (syntax-e (car x)))

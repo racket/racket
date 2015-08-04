@@ -4430,6 +4430,14 @@
   (define-inline (odd? x)  (if (zero? x) #f (even? (sub1 x))))
   (test/output (odd? 2)
                #f "")
+
+  ;; multiple keyword arguments that have to be sorted:
+  (define-inline (sub #:a a #:b b)
+    (- a b))
+  (test/output (sub #:a 2 #:b 1)
+               1 "")
+  (test/output (sub #:b 1 #:a 2)
+               1 "")
   )
 
 
