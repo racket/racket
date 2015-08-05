@@ -355,13 +355,15 @@ procedure and mutability of @racket[hash].}
 
 
 @defproc[(hash-map [hash hash?]
-                   [proc (any/c any/c . -> . any/c)])
+                   [proc (any/c any/c . -> . any/c)]
+                   [try-order? any/c #f])
          (listof any/c)]{
 
 Applies the procedure @racket[proc] to each element in
 @racket[hash] in an unspecified order, accumulating the results
 into a list. The procedure @racket[proc] is called each time with a
-key and its value.
+key and its value, and the procedure's individual results appear in
+order in the result list.
 
 If a hash table is extended with new keys (either through
 @racket[proc] or by another thread) while a @racket[hash-map] or
@@ -372,7 +374,14 @@ change does not affect a traversal if the key has been seen already,
 otherwise the traversal skips a deleted key or uses the remapped key's
 new value.
 
-@see-also-concurrency-caveat[]}
+If @racket[try-order?] is true, then the order of keys and values
+passed to @racket[proc] is normalized under certain circumstances,
+such as when the keys are all symbols and @racket[hash] is not an
+@tech{impersonator}.
+
+@see-also-concurrency-caveat[]
+
+@history[#:changed "6.2.900.8" @elem{Added the @racket[try-order?] argument.}]}
 
 @defproc[(hash-keys [hash hash?])
          (listof any/c)]{
@@ -396,15 +405,19 @@ See @racket[hash-map] for information about modifying @racket[hash]
 during @racket[hash->list]. @see-also-concurrency-caveat[]}
 
 @defproc[(hash-for-each [hash hash?]
-                        [proc (any/c any/c . -> . any)])
+                        [proc (any/c any/c . -> . any)]
+                        [try-order? any/c #f])
          void?]{
 
 Applies @racket[proc] to each element in @racket[hash] (for the
 side-effects of @racket[proc]) in an unspecified order. The procedure
 @racket[proc] is called each time with a key and its value.
 
-See @racket[hash-map] for information about modifying @racket[hash]
-within @racket[proc]. @see-also-concurrency-caveat[]}
+See @racket[hash-map] for information about @racket[try-order?] and
+about modifying @racket[hash] within @racket[proc].
+@see-also-concurrency-caveat[]
+
+@history[#:changed "6.2.900.8" @elem{Added the @racket[try-order?] argument.}]}
 
 
 @defproc[(hash-count [hash hash?])

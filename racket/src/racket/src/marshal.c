@@ -792,7 +792,6 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
   case scheme_toplevel_type:
   case scheme_local_type:
   case scheme_local_unbox_type:
-  case scheme_integer_type:
   case scheme_true_type:
   case scheme_false_type:
   case scheme_void_type:
@@ -800,7 +799,10 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
     ds = code;
     break;
   default:
-    ds = NULL;
+    if (SCHEME_NUMBERP(code))
+      ds = code;
+    else
+      ds = NULL;
     break;
   }
   
@@ -850,9 +852,9 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
       if (!ds) {
         if (mt->pass)
           scheme_signal_error("broken closure-data table\n");
-    
+
         code = scheme_protect_quote(data->code);
-    
+
         ds = scheme_alloc_small_object();
         ds->type = scheme_delay_syntax_type;
         SCHEME_PTR_VAL(ds) = code;
@@ -1122,7 +1124,7 @@ static Scheme_Object *make_delayed_syntax(Scheme_Object *stx)
 {
   Scheme_Object *ds;
   Scheme_Marshal_Tables *mt;
-  
+
   mt = scheme_current_thread->current_mt;
   if (mt->pass < 0)
     return stx;
@@ -1255,6 +1257,7 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
 /* recurs for values in hash table; we assume that such nesting is shallow */
 {
   intptr_t i, j, c;
+  Scheme_Object **sorted_keys;
   Scheme_Object *k, *val, *vec;
   
   if (!ht)
@@ -1280,11 +1283,14 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
 
   vec = scheme_make_vector(2 * c, NULL);
   j = 0;
-  
+
+  sorted_keys = scheme_extract_sorted_keys(ht);
+
   if (SCHEME_HASHTRP(ht)) {
     Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)ht;
-    for (i = scheme_hash_tree_next(t, -1); i != -1; i = scheme_hash_tree_next(t, i)) {
-      scheme_hash_tree_index(t, i, &k, &val);
+    for (i = 0; i < c; i++) {
+      k = sorted_keys[i];
+      val = scheme_hash_tree_get(t, k);
       if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
         val = ht_to_vector(val);
       else if (!SAME_OBJ(val, scheme_true))
@@ -1294,16 +1300,15 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
     }
   } else {
     Scheme_Hash_Table *t = (Scheme_Hash_Table *)ht;
-    for (i = t->size; i--; ) {
-      if (t->vals[i]) {
-        val = t->vals[i];
-        if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
-          val = ht_to_vector(val);
-        else if (!SAME_OBJ(val, scheme_true))
-          val = make_delayed_syntax(val);
-        SCHEME_VEC_ELS(vec)[j++] = t->keys[i];
-        SCHEME_VEC_ELS(vec)[j++] = val;
-      }
+    for (i = 0; i < c; i++) {
+      k = sorted_keys[i];
+      val = scheme_hash_get(t, k);
+      if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
+        val = ht_to_vector(val);
+      else if (!SAME_OBJ(val, scheme_true))
+        val = make_delayed_syntax(val);
+      SCHEME_VEC_ELS(vec)[j++] = k;
+      SCHEME_VEC_ELS(vec)[j++] = val;
     }
   }
 
@@ -1316,17 +1321,18 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   Scheme_Module_Phase_Exports *pt;
   Scheme_Object *l, *v, *phase;
   int i, j, k, count, cnt;
+  Scheme_Object **sorted_keys;
 
   l = scheme_null;
   cnt = 0;
   if (m->other_requires) {
-    for (i = 0; i < m->other_requires->size; i++) {
-      if (m->other_requires->vals[i]) {
-        cnt++;
-        l = scheme_make_pair(m->other_requires->keys[i],
-                             scheme_make_pair(m->other_requires->vals[i],
-                                              l));
-      }
+    sorted_keys = scheme_extract_sorted_keys((Scheme_Object *)m->other_requires);
+    cnt = m->other_requires->count;
+    for (i = 0; i < cnt; i++) {
+      l = scheme_make_pair(sorted_keys[i],
+                           scheme_make_pair(scheme_hash_get(m->other_requires,
+                                                            sorted_keys[i]),
+                                            l));
     }
   }
   l = cons(scheme_make_integer(cnt), l);
@@ -1341,7 +1347,11 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   }
 
   cnt = 0;
-  for (k = -3; k < (m->me->other_phases ? m->me->other_phases->size : 0); k++) {
+  if (m->me->other_phases)
+    sorted_keys = scheme_extract_sorted_keys((Scheme_Object *)m->me->other_phases);
+  else
+    sorted_keys = NULL;
+  for (k = -3; k < (m->me->other_phases ? m->me->other_phases->count : 0); k++) {
     switch (k) {
     case -3:
       phase = scheme_make_integer(-1);
@@ -1356,8 +1366,8 @@ static Scheme_Object *write_module(Scheme_Object *obj)
       pt = m->me->rt;
       break;
     default:
-      phase = m->me->other_phases->keys[k];
-      pt = (Scheme_Module_Phase_Exports *)m->me->other_phases->vals[k];
+      phase = sorted_keys[k];
+      pt = (Scheme_Module_Phase_Exports *)scheme_hash_get(m->me->other_phases, phase);
     }
     
     if (pt) {

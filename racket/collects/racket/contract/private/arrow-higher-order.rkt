@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
-                     "arr-util.rkt")
+                     "arr-util.rkt"
+                     "helpers.rkt")
          "arity-checking.rkt"
          "kwd-info-struct.rkt"
          "blame.rkt"
@@ -151,7 +152,7 @@
                     [(rng-x ...) (if rngs (generate-temporaries rngs) '())])
         (with-syntax ([(rng-checker-name ...)
                        (if rngs
-                           (list (gensym 'rng-checker))
+                           (list (gen-id 'rng-checker))
                            null)]
                       [(rng-checker ...)
                        (if rngs
@@ -274,7 +275,7 @@
                                          (arrow:check-tail-contract #'(rng-ctc ...) 
                                                                     #'(rng-checker-name ...)
                                                                     outer-stx-gen))))])
-                (with-syntax ([basic-lambda-name (gensym 'basic-lambda)]
+                (with-syntax ([basic-lambda-name (gen-id 'basic-lambda)]
                               [basic-lambda #'(λ basic-params
                                                 ;; Arrow contract domain checking is instrumented
                                                 ;; both here, and in `arity-checking-wrapper'.
@@ -290,7 +291,7 @@
                                                  (cons blame neg-party)
                                                  (let ()
                                                    pre ... basic-return)))]
-                              [kwd-lambda-name (gensym 'kwd-lambda)]
+                              [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-continuation-mark
                                                contract-continuation-mark-key

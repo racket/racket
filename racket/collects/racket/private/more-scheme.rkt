@@ -303,7 +303,7 @@
     (lambda (stx)
       (syntax-case stx ()
 	[(_ var body1 body ...)
-	 (syntax/loc stx (call/cc (lambda (var) body1 body ...)))])))
+	 (syntax/loc stx (call-with-current-continuation (lambda (var) body1 body ...)))])))
 
   (define-syntax fluid-let
     (lambda (stx)

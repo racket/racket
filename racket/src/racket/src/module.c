@@ -10617,6 +10617,9 @@ void compute_provide_arrays(Scheme_Hash_Table *all_provided, Scheme_Hash_Table *
          having a consistent provide arrays. */
       qsort_provides(exs, exsns, exss, exps, exets, exsnoms, 0, exvcount, 1);
 
+      /* Sort syntax, too, for deterministic output */
+      qsort_provides(exs, exsns, exss, exps, exets, exsnoms, exvcount, excount-exvcount, 0);
+
       pt->num_provides = excount;
       pt->num_var_provides = exvcount;
       pt->provides = exs;
@@ -11888,7 +11891,8 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
                                         Scheme_Object *bind_phase, Scheme_Object *pt_phase, Scheme_Object *src_phase,
                                         Scheme_Object *prefix, /* a sybmol; not included in `excepts` keys */
                                         Scheme_Hash_Tree *excepts, /* NULL => empty */
-                                        Scheme_Hash_Table *export_registry, Scheme_Object *insp_desc,
+                                        Scheme_Hash_Table *export_registry,
+                                        Scheme_Object *insp_desc, Scheme_Object *req_insp_desc,
                                         Scheme_Object *replace_at)
 {
   Scheme_Object *name;
@@ -11935,7 +11939,7 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
   if (pt) {
     if (!pt->src_modidx && me->src_modidx)
       pt->src_modidx = me->src_modidx;
-    scheme_extend_module_context_with_shared(scheme_make_pair(bind_phase, insp_desc),
+    scheme_extend_module_context_with_shared(scheme_make_pair(bind_phase, req_insp_desc),
                                              req_modidx, pt,
                                              prefix, excepts,
                                              src_phase, context,

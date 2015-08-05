@@ -944,7 +944,7 @@ Scheme_Object *scheme_hash_module_variable(Scheme_Env *env, Scheme_Object *modid
   Scheme_Hash_Table *ht;
 
   if (!env->modvars) {
-    ht = scheme_make_hash_table(SCHEME_hash_ptr);
+    ht = scheme_make_hash_table_equal_modix_eq();
     env->modvars = ht;
   }
 

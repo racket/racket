@@ -2297,6 +2297,7 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->template_env, gc);
   gcMARK2(e->label_env, gc);
   gcMARK2(e->instance_env, gc);
+  gcMARK2(e->reader_env, gc);
 
   gcMARK2(e->shadowed_syntax, gc);
 
@@ -2342,6 +2343,7 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->template_env, gc);
   gcFIXUP2(e->label_env, gc);
   gcFIXUP2(e->instance_env, gc);
+  gcFIXUP2(e->reader_env, gc);
 
   gcFIXUP2(e->shadowed_syntax, gc);
 

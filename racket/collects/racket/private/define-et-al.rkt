@@ -81,7 +81,7 @@
 		  [exprs (stx-cdr (stx-cdr code))])
 	      (datum->syntax
 	       (quote-syntax here)
-	       `(call/ec (lambda (,var) ,@(stx->list exprs)))
+	       `(call-with-escape-continuation (lambda (,var) ,@(stx->list exprs)))
 	       code))
 	    (raise-syntax-error
 	     #f

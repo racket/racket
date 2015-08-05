@@ -1,4 +1,4 @@
-/*
+ /*
   Racket
   Copyright (c) 2004-2014 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
@@ -4366,6 +4366,7 @@ typedef struct Scheme_Load_Delay {
   struct Scheme_Load_Delay *clear_bytes_prev;
   struct Scheme_Load_Delay *clear_bytes_next;
   int unsafe_ok;
+  mzlonglong bytecode_hash;
 } Scheme_Load_Delay;
 
 #define ZO_CHECK(x) if (!(x)) scheme_ill_formed_code(port);
@@ -4389,6 +4390,7 @@ typedef struct CPort {
   Scheme_Object *relto;
   intptr_t *shared_offsets;
   Scheme_Load_Delay *delay_info;
+  mzlonglong bytecode_hash;
 } CPort;
 #define CP_GETC(cp) ((int)(cp->start[cp->pos++]))
 #define CP_TELL(port) (port->pos + port->base)
@@ -4436,6 +4438,8 @@ static void make_ut(CPort *port)
   memset(decoded, 0, port->symtab_size);
   ut->decoded = decoded;
 
+  ut->bytecode_hash = port->bytecode_hash;
+  
   rht = scheme_make_hash_table(SCHEME_hash_ptr);
   port->ut->rns = rht;
 }
@@ -5238,8 +5242,11 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
           RANGE_POS_CHECK(l, < port->symtab_size);
           port->symtab[l] = v;
         }
+
+        l = read_compact_number(port);
         
         v2 = read_compact(port, 0);
+        v2 = scheme_make_pair(scheme_make_integer(l), v2);
         SCHEME_BOX_VAL(v) = v2;
 
         return v;
@@ -5378,6 +5385,25 @@ static intptr_t read_simple_number_from_port(Scheme_Object *port)
           + (b << 8)
           + (c << 16)
           + (d << 24));
+}
+
+static void install_byecode_hash_code(CPort *rp, char *hash_code)
+{
+  mzlonglong l = 0;
+  int i;
+
+  for (i = 0; i < 20; i++) {
+    l ^= ((mzlonglong)(hash_code[i]) << ((i % 8) * 8));
+  }
+
+  /* Make sure the hash code leaves lots of room for
+     run-time generated indices: */
+# define LARGE_SPAN ((mzlonglong)1 << 40)
+
+  if (!l) l = LARGE_SPAN;
+  if (l > 0) l = -l;
+  if (l > (-LARGE_SPAN)) l -= LARGE_SPAN;
+  rp->bytecode_hash = l;
 }
 
 char *scheme_submodule_path_to_string(Scheme_Object *p, intptr_t *_len)
@@ -5661,6 +5687,8 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       rp->magic_sym = params->magic_sym;
       rp->magic_val = params->magic_val;
 
+      install_byecode_hash_code(rp, hash_code);
+
       rp->shared_offsets = so;
       rp->delay_info = delay_info;
 
@@ -5693,6 +5721,7 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
         delay_info->shared_offsets = rp->shared_offsets;
         delay_info->relto = rp->relto;
         delay_info->unsafe_ok = rp->unsafe_ok;
+        delay_info->bytecode_hash = rp->bytecode_hash;
 
         if (SAME_OBJ(delay_info->path, scheme_true))
           perma_cache = 1;
@@ -5934,6 +5963,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   rp->size = size;
   rp->ut = delay_info->ut;
   rp->unsafe_ok = delay_info->unsafe_ok;
+  rp->bytecode_hash = delay_info->bytecode_hash;
   if (delay_info->ut)
     delay_info->ut->rp = rp;
 
@@ -6494,6 +6524,10 @@ static Scheme_Object *do_reader(Scheme_Object *try_modpath,
 {
   Scheme_Object *modpath, *name, *a[3], *proc, *v, *no_val;
   int num_a;
+  Scheme_Env *env;
+  Scheme_Cont_Frame_Data cframe;
+  Scheme_Config *config;
+  int pop_frame;
 
   if (stxsrc)
     modpath = scheme_syntax_to_datum(modpath_stx, 0, NULL);
@@ -6534,38 +6568,59 @@ static Scheme_Object *do_reader(Scheme_Object *try_modpath,
     num_a = 2;
   }
 
+  if (get_info)
+    pop_frame = 0;
+  else {
+    config = scheme_current_config();
+    env = scheme_get_env(config);
+    
+    if (env->reader_env) {
+      config = scheme_extend_config(config,
+                                    MZCONFIG_ENV,
+                                    (Scheme_Object *)env->reader_env);
+      scheme_push_continuation_frame(&cframe);
+      scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+      pop_frame = 1;
+    } else
+      pop_frame = 0;
+  }
+  
   proc = scheme_dynamic_require(num_a, a);
   if (get_info) {
     proc = scheme_force_value(proc);
   }
 
-  if (get_info && SAME_OBJ(proc, no_val))
-    return scheme_false;
-
-  a[0] = proc;
-  if (scheme_check_proc_arity(NULL, stxsrc ? 6 : 5, 0, 1, a)) {
-    /* provide modpath_stx to reader */
-  } else if (!get_info && scheme_check_proc_arity(NULL, stxsrc ? 2 : 1, 0, 1, a)) {
-    /* don't provide modpath_stx to reader */
-    modpath_stx = NULL;
+  if (get_info && SAME_OBJ(proc, no_val)) {
+    v = scheme_false;
   } else {
-    scheme_wrong_contract("#reader",
-                          (stxsrc ? "(or/c (any/c any/c . -> . any) (procedure-arity-includes/c 6))"
-                           : (get_info
-                              ? "(procedure-arity-includes/c 5)"
-                              : "(or/c (any/c . -> . any) (procedure-arity-includes/c 5))")),
-                          -1, -1, a);
-    return NULL;
+    a[0] = proc;
+    if (scheme_check_proc_arity(NULL, stxsrc ? 6 : 5, 0, 1, a)) {
+      /* provide modpath_stx to reader */
+    } else if (!get_info && scheme_check_proc_arity(NULL, stxsrc ? 2 : 1, 0, 1, a)) {
+      /* don't provide modpath_stx to reader */
+      modpath_stx = NULL;
+    } else {
+      scheme_wrong_contract("#reader",
+                            (stxsrc ? "(or/c (any/c any/c . -> . any) (procedure-arity-includes/c 6))"
+                             : (get_info
+                                ? "(procedure-arity-includes/c 5)"
+                                : "(or/c (any/c . -> . any) (procedure-arity-includes/c 5))")),
+                            -1, -1, a);
+      return NULL;
+    }
+    
+    v = readtable_call(0, 0, proc, params,
+                       port, stxsrc, line, col, pos,
+                       get_info, ht, modpath_stx);
+    
+    if (!get_info && scheme_special_comment_value(v))
+      v = NULL;
   }
 
-  v = readtable_call(0, 0, proc, params,
-		     port, stxsrc, line, col, pos,
-		     get_info, ht, modpath_stx);
+  if (pop_frame)
+    scheme_pop_continuation_frame(&cframe);
 
-  if (!get_info && scheme_special_comment_value(v))
-    return NULL;
-  else
-    return v;
+  return v;
 }
 
 /* "#reader" has been read */

@@ -44,6 +44,7 @@ static int mark_marshal_tables_MARK(void *p, struct NewGC *gc) {
   gcMARK2(mt->reachable_scopes, gc);
   gcMARK2(mt->reachable_scope_stack, gc);
   gcMARK2(mt->pending_reachable_ids, gc);
+  gcMARK2(mt->conditionally_reachable_scopes, gc);
   gcMARK2(mt->intern_map, gc);
   gcMARK2(mt->identity_map, gc);
   gcMARK2(mt->top_map, gc);
@@ -65,6 +66,7 @@ static int mark_marshal_tables_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(mt->reachable_scopes, gc);
   gcFIXUP2(mt->reachable_scope_stack, gc);
   gcFIXUP2(mt->pending_reachable_ids, gc);
+  gcFIXUP2(mt->conditionally_reachable_scopes, gc);
   gcFIXUP2(mt->intern_map, gc);
   gcFIXUP2(mt->identity_map, gc);
   gcFIXUP2(mt->top_map, gc);

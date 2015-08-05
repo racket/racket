@@ -121,7 +121,9 @@ See @secref["readtables"] for an extended example that uses
          (or/c (any/c any/c . -> . any) #f)]{
 
 Reads from @racket[in] in the same way as @racket[read], but stopping as
-soon as a @tech{reader language} (or its absence) is determined.
+soon as a @tech{reader language} (or its absence) is determined, and
+using the @tech{current namespace} to load a reader module instead
+of its @tech{root namespace} (if those are different).
 
 A @deftech{reader language} is specified by @litchar{#lang} or
 @litchar{#!} (see @secref["parse-reader"]) at the beginning of the

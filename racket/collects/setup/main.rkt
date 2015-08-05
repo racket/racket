@@ -120,7 +120,7 @@
 		    (let loop ([skip-zo? (null? (use-compiled-file-paths))])
 		      (when skip-zo?
 			(print-bootstrapping))
-		      ((call/ec 
+		      ((call-with-escape-continuation
                         (lambda (escape)
 			 ;; Create a new namespace, and also install load handlers
 			 ;;  to check file dates, if necessary.

@@ -866,7 +866,8 @@ and passes it to the procedure that is the value of the
 module path. The module path is passed to @racket[dynamic-require]
 with either @racket['read] or @racket['read-syntax] (depending on
 whether the reader is in @racket[read] or @racket[read-syntax]
-mode).
+mode). The module is loaded in a @tech{root namespace} of the
+@tech{current namespace}.
 
 The arity of the resulting procedure determines whether it accepts
 extra source-location information: a @racketidfont{read} procedure

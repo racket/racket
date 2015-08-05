@@ -629,7 +629,8 @@
     (lambda (links-path)
       ;; Use/save information in `links-cache', relying on filesystem-change events
       ;; or a copy of the file to detect when the cache is stale.
-      (call/ec (lambda (esc)
+      (call-with-escape-continuation
+                (lambda (esc)
                  (define-values (make-handler)
                    (lambda (ts)
                      (lambda (exn)

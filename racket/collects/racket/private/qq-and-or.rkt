@@ -421,7 +421,7 @@
                                                                    (list (quote-syntax quote)
                                                                          rest)
                                                                    rest)))))))))
-                                            (let-values (((l0) (hash-map (syntax-e x) cons)))
+                                            (let-values (((l0) (hash-map (syntax-e x) cons #t)))
                                               (let-values
                                                   (((l) (qq-hash-assocs l0 level)))
                                                 (if (eq? l0 l)

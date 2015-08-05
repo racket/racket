@@ -331,7 +331,6 @@ scheme_init_fun (Scheme_Env *env)
 				1, 1,
 				0, -1);
   scheme_add_global_constant("call-with-escape-continuation", o, env);
-  scheme_add_global_constant("call/ec", o, env);
 
   REGISTER_SO(internal_call_cc_prim);
   internal_call_cc_prim = scheme_make_prim_w_arity2(internal_call_cc,
@@ -351,7 +350,6 @@ scheme_init_fun (Scheme_Env *env)
 				0, -1);
 
   scheme_add_global_constant("call-with-current-continuation", o, env);
-  scheme_add_global_constant("call/cc", o, env);
 
   scheme_add_global_constant("continuation?",
                              scheme_make_folding_prim(continuation_p,

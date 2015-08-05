@@ -928,6 +928,7 @@ namespace_val {
   gcMARK2(e->template_env, gc);
   gcMARK2(e->label_env, gc);
   gcMARK2(e->instance_env, gc);
+  gcMARK2(e->reader_env, gc);
 
   gcMARK2(e->shadowed_syntax, gc);
 
@@ -1803,6 +1804,7 @@ mark_marshal_tables {
   gcMARK2(mt->reachable_scopes, gc);
   gcMARK2(mt->reachable_scope_stack, gc);
   gcMARK2(mt->pending_reachable_ids, gc);
+  gcMARK2(mt->conditionally_reachable_scopes, gc);
   gcMARK2(mt->intern_map, gc);
   gcMARK2(mt->identity_map, gc);
   gcMARK2(mt->top_map, gc);

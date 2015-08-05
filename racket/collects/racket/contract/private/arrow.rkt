@@ -229,7 +229,7 @@
                     [(rng-x ...) (if rngs (generate-temporaries rngs) '())])
         (with-syntax ([(rng-checker-name ...)
                        (if rngs
-                           (list (gensym 'rng-checker))
+                           (list (gen-id 'rng-checker))
                            null)]
                       [(rng-checker ...)
                        (if rngs
@@ -322,7 +322,7 @@
                                    #,(if no-rng-checking?
                                          (outer-stx-gen #'())
                                          (check-tail-contract #'(rng-ctc ...) #'(rng-checker-name ...) outer-stx-gen))))])
-                (with-syntax ([basic-lambda-name (gensym 'basic-lambda)]
+                (with-syntax ([basic-lambda-name (gen-id 'basic-lambda)]
                               [basic-lambda #'(λ basic-params
                                                 ;; Arrow contract domain checking is instrumented
                                                 ;; both here, and in `arity-checking-wrapper'.
@@ -337,7 +337,7 @@
                                                  contract-continuation-mark-key blame
                                                  (let ()
                                                    pre ... basic-return)))]
-                              [kwd-lambda-name (gensym 'kwd-lambda)]
+                              [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-continuation-mark
                                                contract-continuation-mark-key blame

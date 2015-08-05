@@ -58,7 +58,7 @@ typedef struct Scheme_Scope {
   Scheme_Inclhash_Object iso; /* 0x1 => Scheme_Scope_With_Owner */
   mzlonglong id; /* low SCHEME_STX_SCOPE_KIND_SHIFT bits indicate kind */
   Scheme_Object *bindings; /* NULL, vector for one binding, hash table for multiple bindings,
-                              or (rcons hash-table (rcons pes-info ... NULL));
+                              or (rcons hash-table (rcons (cons scope-set pes-info) ... NULL));
                               each hash table maps symbols to (cons scope-set binding)
                               or (mlist (cons scope-set binding) ...) */
 } Scheme_Scope;
@@ -165,6 +165,10 @@ static Scheme_Object *scope_unmarshal_content(Scheme_Object *c, struct Scheme_Un
 static Scheme_Object *scopes_to_sorted_list(Scheme_Scope_Set *scopes);
 static void sort_vector_symbols(Scheme_Object *vec);
 
+static void sort_scope_array(Scheme_Object **a, intptr_t count);
+static void sort_symbol_array(Scheme_Object **a, intptr_t count);
+static void sort_number_array(Scheme_Object **a, intptr_t count);
+
 XFORM_NONGCING static void extract_module_binding_parts(Scheme_Object *l,
                                                         Scheme_Object *phase,
                                                         Scheme_Object **_insp_desc,
@@ -202,6 +206,10 @@ XFORM_NONGCING static void clear_binding_cache_stx(Scheme_Stx *stx);
 #define SCHEME_SCOPEP(x) (SAME_TYPE(SCHEME_TYPE(x), scheme_scope_type))
 
 #define SCHEME_TL_MULTI_SCOPEP(o) (MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)o)->iso)) & 0x2)
+
+/* A hash tabel for a multi scope has meta information mapped from void: */
+#define MULTI_SCOPE_METAP(v) SCHEME_VOIDP(v)
+#define MULTI_SCOPE_META_HASHEDP(v) SCHEME_MPAIRP(v)
 
 /* Represent fallback as vectors, either of size 2 (for normal scope
    sets) or size 4 (for sets of propagation instructions, because adding
@@ -774,6 +782,7 @@ Scheme_Object *scheme_scope_printed_form(Scheme_Object *m)
     if (multi_scope) {
       name = scheme_eq_hash_get((Scheme_Hash_Table *)multi_scope, scheme_void);
       if (!name) name = scheme_false;
+      if (MULTI_SCOPE_META_HASHEDP(name)) name = SCHEME_CAR(name);
       
       if (SCHEME_TL_MULTI_SCOPEP(multi_scope))
         kind_sym = top_symbol;
@@ -866,6 +875,14 @@ Scheme_Object *extract_simple_scope(Scheme_Object *multi_scope, Scheme_Object *p
     ((Scheme_Scope_With_Owner *)m)->owner_multi_scope = (Scheme_Object *)ht;
     ((Scheme_Scope_With_Owner *)m)->phase = phase;
     scheme_hash_set(ht, phase, m);
+
+    if (SCHEME_MPAIRP(scheme_hash_get(ht, scheme_void))) {
+      /* pair indicates loading from bytecode;
+         zero out id, so that ordering is based on the owner plus the phase;
+         this approach helps ensure determinstic ordering independent of
+         the time at which simple scopes are generated */
+      ((Scheme_Scope *)m)->id &= SCHEME_STX_SCOPE_KIND_MASK;
+    }
   }
 
   return m;
@@ -4645,18 +4662,21 @@ static Scheme_Object *unmarshal_key_adjust(Scheme_Object *sym, Scheme_Object *pe
 
 static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *vec, Scheme_Scope_Set *scopes, Scheme_Object *replace_at)
 {
-  Scheme_Object *req_modidx, *modidx, *unmarshal_info, *context, *src_phase, *pt_phase, *bind_phase, *insp;
+  Scheme_Object *req_modidx, *modidx, *unmarshal_info, *context, *src_phase, *pt_phase, *bind_phase;
+  Scheme_Object *insp, *req_insp;
   Scheme_Hash_Table *export_registry;
 
   req_modidx = SCHEME_VEC_ELS(vec)[0];
   insp = SCHEME_VEC_ELS(vec)[3];
-  
+  req_insp = insp;
+
   if (stx) {
     modidx = apply_modidx_shifts(stx->shifts, req_modidx, &insp, &export_registry);
   } else {
     modidx = req_modidx;
     export_registry = NULL;
     insp = scheme_false;
+    req_insp = scheme_false;
   }
 
   src_phase = SCHEME_VEC_ELS(vec)[1];
@@ -4679,7 +4699,7 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *v
                                      bind_phase, pt_phase, src_phase,
                                      extract_unmarshal_prefix(unmarshal_info),
                                      extract_unmarshal_excepts(unmarshal_info),
-                                     export_registry, insp,
+                                     export_registry, insp, req_insp,
                                      replace_at);
 }
 
@@ -5177,40 +5197,104 @@ Scheme_Object *scheme_flatten_syntax_list(Scheme_Object *lst, int *islist)
 /*                            wraps->datum                                */
 /*========================================================================*/
 
+static void sort_added_scopes(Scheme_Object *scopes, int added)
+{
+  Scheme_Object **a, *l;
+  int i;
+
+  if (!added)
+    return;
+
+  a = MALLOC_N(Scheme_Object *, added);
+  for (i = 0, l = scopes; i < added; i++, l = SCHEME_CDR(l)) {
+    a[i] = SCHEME_CAR(l);
+  }
+
+  sort_scope_array(a, added);
+
+  for (i = 0, l = scopes; i < added; i++, l = SCHEME_CDR(l)) {
+    SCHEME_CAR(l) = a[i];
+  }
+}
+
 static void add_reachable_scopes(Scheme_Scope_Set *scopes, Scheme_Marshal_Tables *mt)
 {
-  intptr_t i;
+  intptr_t i, added = 0;
   Scheme_Object *key, *val;
 
   i = -1;
   while ((i = scope_set_next(scopes, i)) != -1) {
     scope_set_index(scopes, i, &key, &val);
     if (!scheme_eq_hash_get(mt->reachable_scopes, key)) {
+      scheme_hash_set(mt->conditionally_reachable_scopes, key, NULL);
       scheme_hash_set(mt->reachable_scopes, key, scheme_true);
       val = scheme_make_pair(key, mt->reachable_scope_stack);
       mt->reachable_scope_stack = val;
+      added++;
     }
   }
+
+  sort_added_scopes(mt->reachable_scope_stack, added);
+}
+
+static void add_conditional_as_reachable(Scheme_Scope_Set *scopes, Scheme_Marshal_Tables *mt)
+{
+  int added = 0;
+  intptr_t i;
+  Scheme_Object *key, *val;
+
+  STX_ASSERT(SCHEME_SCOPE_SETP(scopes));
+  
+  i = -1;
+  while ((i = scope_set_next(scopes, i)) != -1) {
+    scope_set_index(scopes, i, &key, &val);
+    if (SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)key)
+        && scheme_eq_hash_get(mt->conditionally_reachable_scopes, key)
+        && !scheme_eq_hash_get(mt->reachable_scopes, key)) {
+      scheme_hash_set(mt->conditionally_reachable_scopes, key, NULL);
+      scheme_hash_set(mt->reachable_scopes, key, scheme_true);
+      val = scheme_make_pair(key, mt->reachable_scope_stack);
+      mt->reachable_scope_stack = val;
+      added++;
+    }
+  }
+
+  sort_added_scopes(mt->reachable_scope_stack, added);
 }
 
 static void add_reachable_multi_scope(Scheme_Object *ms, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Table *ht = (Scheme_Hash_Table *)ms;
+  Scheme_Scope_Set *binding_scopes = empty_scope_set;
   Scheme_Object *scope;
   int j;
   
   for (j = ht->size; j--; ) {
     scope = ht->vals[j];
     if (scope) {
-      if (!SCHEME_VOIDP(ht->keys[j])) {
-        if (!scheme_eq_hash_get(mt->reachable_scopes, scope)) {
-          scheme_hash_set(mt->reachable_scopes, scope, scheme_true);
-          scope = scheme_make_pair(scope, mt->reachable_scope_stack);
-          mt->reachable_scope_stack = scope;
+      if (!MULTI_SCOPE_METAP(ht->keys[j])) {
+        if (!scheme_eq_hash_get(mt->reachable_scopes, scope)
+            && !scheme_eq_hash_get(mt->conditionally_reachable_scopes, scope)) {
+          /* This scope is reachable via its multi-scope, but it only
+             matters if it's reachable through a binding (otherwise it
+             can be re-generated later). We don't want to keep a scope
+             that can be re-generated, because pruning it makes
+             compilation more deterministic relative to other
+             compilations that involve a shared module. If the scope
+             itself has any bindings, then we count it as reachable
+             through a binding (which is an approxmation, because other scopes
+             in the binding may be unreachable, but it seems good enough for
+             determinism). */
+          scheme_hash_set(mt->conditionally_reachable_scopes, scope, scheme_true);
+          if (((Scheme_Scope *)scope)->bindings)
+            binding_scopes = scope_set_set(binding_scopes, scope, scheme_true);
         }
       }
     }
   }
+
+  if (!SAME_OBJ(binding_scopes, empty_scope_set))
+    add_conditional_as_reachable(binding_scopes, mt);
 }
 
 static void add_reachable_multi_scopes(Scheme_Object *multi_scopes, Scheme_Marshal_Tables *mt)
@@ -5233,16 +5317,27 @@ static void add_reachable_multi_scopes(Scheme_Object *multi_scopes, Scheme_Marsh
   }
 }
 
-static Scheme_Object *any_unreachable_scope(Scheme_Scope_Set *scopes, Scheme_Marshal_Tables *mt)
+static Scheme_Object *any_unreachable_scope(Scheme_Scope_Set *scopes, Scheme_Marshal_Tables *mt,
+                                            int check_conditionals)
 {
   intptr_t i;
+  int saw_conditional = 0;
   Scheme_Object *key, *val;
 
   i = -1;
   while ((i = scope_set_next(scopes, i)) != -1) {
     scope_set_index(scopes, i, &key, &val);
-    if (!scheme_eq_hash_get(mt->reachable_scopes, key))
-      return key;
+    if (!scheme_eq_hash_get(mt->reachable_scopes, key)) {
+      if (check_conditionals && scheme_eq_hash_get(mt->conditionally_reachable_scopes, key))
+        saw_conditional = 1;
+      else
+        return key;
+    }
+  }
+
+  if (saw_conditional) {
+    /* since this binding is reachable, move any conditional to reachable */
+    add_conditional_as_reachable(scopes, mt);
   }
 
   return NULL;
@@ -5263,7 +5358,7 @@ static void possiblly_reachable_free_id(Scheme_Object *val, /* mpair or stx */
 
   STX_ASSERT(SCHEME_STXP((Scheme_Object *)free_id));
 
-  unreachable_scope = any_unreachable_scope(scopes, mt);
+  unreachable_scope = any_unreachable_scope(scopes, mt, 1);
 
   if (!unreachable_scope) {
     /* causes the free-id mapping's scopes to be reachable: */
@@ -5283,13 +5378,85 @@ static void possiblly_reachable_free_id(Scheme_Object *val, /* mpair or stx */
   }
 }
 
+static int all_symbols(Scheme_Object **a, int c)
+{
+  while (c--) {
+    if (!SCHEME_SYMBOLP(a[c]))
+      return 0;
+  }
+  return 1;
+}
+
+static int all_reals(Scheme_Object **a, int c)
+{
+  while (c--) {
+    if (!SCHEME_REALP(a[c]))
+      return 0;
+  }
+  return 1;
+}
+
+Scheme_Object **scheme_extract_sorted_keys(Scheme_Object *tree)
+{
+  intptr_t j, i, count;
+  Scheme_Object **a, *key;
+
+  if (SCHEME_HASHTRP(tree)) {
+    Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)tree;
+
+    count = ht->count;
+    if (!count)
+      return NULL;
+    
+    a = MALLOC_N(Scheme_Object *, count);
+    
+    j = -1;
+    i = 0;
+    while ((j = scheme_hash_tree_next(ht, j)) != -1) {
+      scheme_hash_tree_index(ht, j, &key, NULL);
+      a[i++] = key;
+    }
+
+    STX_ASSERT(i == count);
+  } else {
+    Scheme_Hash_Table *t = (Scheme_Hash_Table *)tree;
+
+    count = t->count;
+    
+    if (!count)
+      return NULL;
+
+    a = MALLOC_N(Scheme_Object *, count);
+    j = 0;
+    
+    for (i = t->size; i--; ) {
+      if (t->vals[i]) {
+        a[j++] = t->keys[i];
+      }
+    }
+
+    STX_ASSERT(j == count);
+  }
+
+  if (SCHEME_SYMBOLP(a[0]) && all_symbols(a, count))
+    sort_symbol_array(a, count);
+  else if (SCHEME_SCOPEP(a[0]))
+    sort_scope_array(a, count);
+  else if (all_reals(a, count))
+    sort_number_array(a, count);
+  else
+    return NULL;
+
+  return a;
+}
+
 void scheme_iterate_reachable_scopes(Scheme_Marshal_Tables *mt)
 {
   Scheme_Scope *scope;
-  Scheme_Object *l, *val, *key;
+  Scheme_Object *l, *val, *key, **sorted_keys, *pesl;
   Scheme_Hash_Tree *ht;
-  int j;
-  
+  intptr_t j, count;
+
   /* For each scope, recur on `free-identifier=?` mappings */
   while (!SCHEME_NULLP(mt->reachable_scope_stack)) {
     scope = (Scheme_Scope *)SCHEME_CAR(mt->reachable_scope_stack);
@@ -5298,23 +5465,29 @@ void scheme_iterate_reachable_scopes(Scheme_Marshal_Tables *mt)
     if (scope->bindings) {
       val = scope->bindings;
       if (SCHEME_VECTORP(val)) {
+        add_conditional_as_reachable(SCHEME_VEC_BINDING_SCOPES(val), mt);
         l = SCHEME_VEC_BINDING_VAL(val);
         if (SCHEME_MPAIRP(l)) {
           /* It's a free-id mapping: */
           possiblly_reachable_free_id(l, SCHEME_VEC_BINDING_SCOPES(val), mt);
         }
       } else {
-        if (SCHEME_RPAIRP(val))
+        if (SCHEME_RPAIRP(val)) {
           ht = (Scheme_Hash_Tree *)SCHEME_CAR(val);
-        else {
+          pesl = SCHEME_CDR(val);
+        } else {
           STX_ASSERT(SCHEME_HASHTRP(val));
           ht = (Scheme_Hash_Tree *)val;
+          pesl = NULL;
         }
-        j = -1;
-        while ((j = scheme_hash_tree_next(ht, j)) != -1) {
-          scheme_hash_tree_index(ht, j, &key, &val);
+        sorted_keys = scheme_extract_sorted_keys((Scheme_Object *)ht);
+        count = ht->count;
+        for (j = 0; j < count; j++) {
+          key = sorted_keys[j];
+          val = scheme_hash_tree_get(ht, key);
           l = val;
           if (SCHEME_PAIRP(l)) {
+            add_conditional_as_reachable(SCHEME_BINDING_SCOPES(l), mt);
             val = SCHEME_BINDING_VAL(l);
             if (SCHEME_MPAIRP(val)) {
               /* It's a free-id mapping: */
@@ -5323,6 +5496,7 @@ void scheme_iterate_reachable_scopes(Scheme_Marshal_Tables *mt)
           } else {
             STX_ASSERT(SCHEME_MPAIRP(l));
             for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+              add_conditional_as_reachable(SCHEME_BINDING_SCOPES(SCHEME_CAR(l)), mt);
               val = SCHEME_BINDING_VAL(SCHEME_CAR(l));
               if (SCHEME_MPAIRP(val)) {
                 /* It's a free-id mapping: */
@@ -5330,6 +5504,13 @@ void scheme_iterate_reachable_scopes(Scheme_Marshal_Tables *mt)
               }
             }
           }
+        }
+        while (pesl) {
+          STX_ASSERT(SCHEME_RPAIRP(pesl));
+          val = SCHEME_CAR(pesl);
+          STX_ASSERT(SCHEME_PAIRP(val));
+          add_conditional_as_reachable((Scheme_Scope_Set *)SCHEME_CAR(val), mt);
+          pesl = SCHEME_CDR(pesl);
         }
       }
     }
@@ -5345,6 +5526,16 @@ void scheme_iterate_reachable_scopes(Scheme_Marshal_Tables *mt)
           l = SCHEME_CDR(l);
         }
       }
+    }
+  }
+
+  /* Adjust mapping so that each scope maps to its relative position: */
+  {
+    int i;
+    sorted_keys = scheme_extract_sorted_keys((Scheme_Object *)mt->reachable_scopes);
+    for (j = mt->reachable_scopes->count, i = 0; j--; i++) {
+      STX_ASSERT(SCHEME_SCOPEP(sorted_keys[j]));
+      scheme_hash_set(mt->reachable_scopes, sorted_keys[j], scheme_make_integer(i));
     }
   }
 }
@@ -5424,16 +5615,74 @@ START_XFORM_SKIP;
 END_XFORM_SKIP;
 #endif
 
-typedef int (*compar_t)(const void *, const void *);
-
-static int compare_scopes(const void *a, const void *b)
+static int compare_scopes_from_multi(Scheme_Scope *a, Scheme_Scope *b)
 {
-  if (*(void **)a == *(void **)b)
-    return 0;
-  else if ((*(Scheme_Scope **)a)->id > (*(Scheme_Scope **)b)->id)
+  Scheme_Scope_With_Owner *ao, *bo;
+  
+  ao = (Scheme_Scope_With_Owner *)a;
+  bo = (Scheme_Scope_With_Owner *)b;
+    
+  if (SAME_OBJ(ao->owner_multi_scope, bo->owner_multi_scope)) {
+    if (SCHEME_FALSEP(ao->phase))
+      return 1;
+    else if (SCHEME_FALSEP(bo->phase))
+      return 1;
+    else if (scheme_bin_lt(ao->phase, bo->phase))
+      return 1;
+    else
+      return -1;
+  } else {
+    Scheme_Object *na, *nb;
+    na = scheme_hash_get((Scheme_Hash_Table *)ao->owner_multi_scope, scheme_void);
+    nb = scheme_hash_get((Scheme_Hash_Table *)bo->owner_multi_scope, scheme_void);
+    STX_ASSERT(MULTI_SCOPE_META_HASHEDP(na));
+    STX_ASSERT(MULTI_SCOPE_META_HASHEDP(nb));
+    na = SCHEME_CDR(na);
+    nb = SCHEME_CDR(nb);
+    STX_ASSERT(SCHEME_REALP(na));
+    STX_ASSERT(SCHEME_REALP(nb));
+    if (scheme_bin_lt(na, nb))
+      return 1;
+    else if (scheme_bin_lt(nb, na))
+      return -1;
+    else
+      return 0;
+  }
+}
+
+static int compare_scopes(const void *_a, const void *_b)
+{
+  Scheme_Scope *a = *(Scheme_Scope **)_a;
+  Scheme_Scope *b = *(Scheme_Scope **)_b;
+
+  STX_ASSERT(SCHEME_SCOPEP(a));
+  STX_ASSERT(SCHEME_SCOPEP(b));
+
+  /* Scopes for multi-scopes that were generated late are
+     ordered before everything else: */
+  if (!(a->id >> SCHEME_STX_SCOPE_KIND_SHIFT)) {
+    STX_ASSERT(SCHEME_SCOPE_HAS_OWNER(a));
+    if (b->id >> SCHEME_STX_SCOPE_KIND_SHIFT)
+      return 1;
+    STX_ASSERT(SCHEME_SCOPE_HAS_OWNER(b));
+
+    return compare_scopes_from_multi(a, b);
+  } else if (!(b->id >> SCHEME_STX_SCOPE_KIND_SHIFT)) {
+    STX_ASSERT(SCHEME_SCOPE_HAS_OWNER(b));
     return -1;
-  else
+  }
+  
+  if (a->id > b->id)
+    return -1;
+  else if (a->id < b->id)
     return 1;
+  else
+    return 0;
+}
+
+static void sort_scope_array(Scheme_Object **a, intptr_t count)
+{
+  my_qsort(a, count, sizeof(Scheme_Object *), compare_scopes);
 }
 
 static Scheme_Object *scopes_to_sorted_list(Scheme_Scope_Set *scopes)
@@ -5450,8 +5699,8 @@ static Scheme_Object *scopes_to_sorted_list(Scheme_Scope_Set *scopes)
     a[j++] = key;
     i = scope_set_next(scopes, i);
   }
-  
-  my_qsort(a, j, sizeof(Scheme_Object *), compare_scopes);
+
+  sort_scope_array(a, j);
 
   r = scheme_null;
   for (i = j; i--; ) {
@@ -5463,9 +5712,12 @@ static Scheme_Object *scopes_to_sorted_list(Scheme_Scope_Set *scopes)
 
 static int compare_syms(const void *_a, const void *_b)
 {
-  Scheme_Object *a = (Scheme_Object *)_a;
-  Scheme_Object *b = (Scheme_Object *)_b;
+  Scheme_Object *a = *(Scheme_Object **)_a;
+  Scheme_Object *b = *(Scheme_Object **)_b;
   intptr_t l = SCHEME_SYM_LEN(a), i;
+
+  STX_ASSERT(SCHEME_SYMBOLP(a));
+  STX_ASSERT(SCHEME_SYMBOLP(b));
 
   if (SCHEME_SYM_LEN(b) < l)
     l = SCHEME_SYM_LEN(b);
@@ -5481,6 +5733,38 @@ static int compare_syms(const void *_a, const void *_b)
 static void sort_vector_symbols(Scheme_Object *vec)
 {
   my_qsort(SCHEME_VEC_ELS(vec), SCHEME_VEC_SIZE(vec), sizeof(Scheme_Object *), compare_syms);
+}
+
+static void sort_symbol_array(Scheme_Object **a, intptr_t count)
+{
+  my_qsort(a, count, sizeof(Scheme_Object *), compare_syms);
+}
+
+static int compare_nums(const void *_a, const void *_b)
+/* also allow #fs */
+{
+  Scheme_Object *a = *(Scheme_Object **)_a;
+  Scheme_Object *b = *(Scheme_Object **)_b;
+
+  if (SCHEME_FALSEP(a))
+    return -1;
+  else if (SCHEME_FALSEP(b))
+    return 1;
+
+  STX_ASSERT(SCHEME_REALP(a));
+  STX_ASSERT(SCHEME_REALP(b));
+
+  if (scheme_bin_lt(a, b))
+    return -1;
+  else if (scheme_bin_lt(b, a))
+    return 1;
+  else
+    return 0;
+}
+
+static void sort_number_array(Scheme_Object **a, intptr_t count)
+{
+  my_qsort(a, count, sizeof(Scheme_Object *), compare_nums);
 }
 
 static Scheme_Object *drop_export_registries(Scheme_Object *shifts)
@@ -5528,11 +5812,30 @@ static void init_identity_map(Scheme_Marshal_Tables *mt)
   mt->identity_map = id_map;
 }
 
+static int compare_phased_scopes(const void *_a, const void *_b)
+{
+  Scheme_Object *a = *(Scheme_Object **)_a;
+  Scheme_Object *b = *(Scheme_Object **)_b;
+
+  if (SCHEME_FALSEP(a))
+    return -1;
+  else if (SCHEME_FALSEP(b))
+    return 1;
+  else {
+    STX_ASSERT(SCHEME_REALP(a));
+    STX_ASSERT(SCHEME_REALP(b));
+    if (scheme_bin_lt(a, b))
+      return -1;
+    else
+      return 1;
+  }
+}
+
 static Scheme_Object *multi_scope_to_vector(Scheme_Object *multi_scope, Scheme_Marshal_Tables *mt)
 {
   Scheme_Object *vec;
   Scheme_Hash_Table *scopes = (Scheme_Hash_Table *)multi_scope;
-  intptr_t i, j;
+  intptr_t i, j, count;
 
   if (!mt->identity_map)
     init_identity_map(mt);
@@ -5541,19 +5844,37 @@ static Scheme_Object *multi_scope_to_vector(Scheme_Object *multi_scope, Scheme_M
   if (vec)
     return vec;
 
-  vec = scheme_make_vector((2 * scopes->count) - 1, scheme_void);
+  /* only keep reachable scopes: */
+  count = 0;
+  for (i = scopes->size; i--; ) {
+    if (scopes->vals[i]) {
+      if (!MULTI_SCOPE_METAP(scopes->keys[i])) {
+        if (scheme_hash_get(mt->reachable_scopes, scopes->vals[i]))
+          count++;
+      }
+    }
+  }
+    
+  vec = scheme_make_vector((2 * count) + 1, scheme_void);
   j = 0;
   for (i = scopes->size; i--; ) {
     if (scopes->vals[i]) {
-      if (!SCHEME_VOIDP(scopes->keys[i])) {
-        SCHEME_VEC_ELS(vec)[j++] = scopes->keys[i]; /* a phase */
-        SCHEME_VEC_ELS(vec)[j++] = scopes->vals[i]; /* a scope */
+      if (!MULTI_SCOPE_METAP(scopes->keys[i])) {
+        if (scheme_hash_get(mt->reachable_scopes, scopes->vals[i])) {
+          SCHEME_VEC_ELS(vec)[j++] = scopes->keys[i]; /* a phase */
+          SCHEME_VEC_ELS(vec)[j++] = scopes->vals[i]; /* a scope */
+        }
       } else {
-        SCHEME_VEC_ELS(vec)[SCHEME_VEC_SIZE(vec)-1] = scopes->vals[i]; /* debug name */
+        /* debug name */
+        SCHEME_VEC_ELS(vec)[2 * count] = (MULTI_SCOPE_META_HASHEDP(scopes->vals[i])
+                                          ? SCHEME_CAR(scopes->vals[i])
+                                          : scopes->vals[i]);
       }
     }
   }
 
+  my_qsort(SCHEME_VEC_ELS(vec), count, 2 * sizeof(Scheme_Object *), compare_phased_scopes);
+  
   vec = scheme_make_marshal_shared(vec);
 
   scheme_hash_set(mt->identity_map, multi_scope, vec);
@@ -5622,12 +5943,6 @@ static Scheme_Object *wraps_to_datum(Scheme_Stx *stx, Scheme_Marshal_Tables *mt)
   }
 
   ht = mt->intern_map;
-  if (!ht) {
-    /* We need to compare a modidx using `eq?`, because shifting
-       is based on `eq`ness. */
-    ht = scheme_make_hash_table_equal_modix_eq();
-    mt->intern_map = ht;
-  }
 
   shifts = intern_tails(drop_export_registries(stx->shifts), ht);
   simples = intern_tails(scopes_to_sorted_list(stx->scopes->simple_scopes), ht);
@@ -5670,7 +5985,7 @@ static Scheme_Object *marshal_bindings(Scheme_Object *l, Scheme_Marshal_Tables *
       scopes = (Scheme_Object *)SCHEME_BINDING_SCOPES(SCHEME_CAR(l));
     }
 
-    if (!any_unreachable_scope((Scheme_Scope_Set *)scopes, mt)) {
+    if (!any_unreachable_scope((Scheme_Scope_Set *)scopes, mt, 0)) {
       if (SCHEME_PAIRP(l))
         v = SCHEME_BINDING_VAL(l);
       else
@@ -5703,7 +6018,7 @@ static Scheme_Object *marshal_bindings(Scheme_Object *l, Scheme_Marshal_Tables *
 Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tables *mt)
 {
   Scheme_Hash_Tree *ht;
-  Scheme_Object *v, *l, *r, *l2, *tab, *scopes, *key, *val;
+  Scheme_Object *v, *l, *r, *l2, *tab, *scopes, *val, **sorted_keys;
   intptr_t i, j;
 
   if (!mt->identity_map)
@@ -5749,16 +6064,17 @@ Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tab
         SCHEME_VEC_ELS(tab)[j++] = r;
       }
     } else {
-      i = -1;
-      while ((i = scheme_hash_tree_next(ht, i)) != -1) {
-        scheme_hash_tree_index(ht, i, &key, &val);
+      intptr_t count = ht->count;
+      sorted_keys = scheme_extract_sorted_keys((Scheme_Object *)ht);
+      for (i = 0; i < count; i++) {
+        val = scheme_hash_tree_get(ht, sorted_keys[i]);
         r = marshal_bindings(val, mt);
 
         if (SCHEME_NULLP(r)) {
           /* no reachable bindings */
         } else {
           STX_ASSERT(j < (2 * count));
-          SCHEME_VEC_ELS(tab)[j++] = key;
+          SCHEME_VEC_ELS(tab)[j++] = sorted_keys[i];
           SCHEME_VEC_ELS(tab)[j++] = r;
         }
       }
@@ -5775,7 +6091,10 @@ Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tab
     for (l = l2; l; l = SCHEME_CDR(l)) {
       STX_ASSERT(SCHEME_RPAIRP(l));
       v = SCHEME_CDR(SCHEME_CAR(l));
-      if (PES_BINDINGP(v)) {
+      if (any_unreachable_scope((Scheme_Scope_Set *)SCHEME_CAR(SCHEME_CAR(l)), mt, 0)) {
+        /* drop unreachable bindings */
+        v = NULL;
+      } else if (PES_BINDINGP(v)) {
         l2 = scheme_make_vector(4, NULL);
         SCHEME_VEC_ELS(l2)[0] = SCHEME_VEC_ELS(v)[0];
         SCHEME_VEC_ELS(l2)[1] = SCHEME_VEC_ELS(v)[2];
@@ -6156,8 +6475,16 @@ static Scheme_Hash_Table *vector_to_multi_scope(Scheme_Object *mht, Scheme_Unmar
 
   len = SCHEME_VEC_SIZE(mht);
   if (!(len & 1)) return_NULL;
+
+  STX_ASSERT(ut->bytecode_hash);
   
   multi_scope = (Scheme_Hash_Table *)new_multi_scope(SCHEME_VEC_ELS(mht)[len-1]);
+  scheme_hash_set(multi_scope,
+                  scheme_void,
+                  /* record bytecode hash for making fresh scopes for other phases: */
+                  scheme_make_mutable_pair(scheme_hash_get(multi_scope, scheme_void),
+                                           scheme_make_integer_value_from_long_long(ut->bytecode_hash
+                                                                                    >> SCHEME_STX_SCOPE_KIND_SHIFT)));
   len -= 1;
 
   /* A multi-scope can refer back to itself via free-id=? info: */
@@ -6201,6 +6528,7 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
         multi_scope = vector_to_multi_scope(SCHEME_CAR(SCHEME_CAR(l)), ut);
         if (!multi_scope) return_NULL;
         SCHEME_CAR(SCHEME_CAR(l)) = (Scheme_Object *)multi_scope;
+        if (!SCHEME_PHASE_SHIFTP(SCHEME_CDR(SCHEME_CAR(l)))) return_NULL;
       } else {
         /* rest of list must be converted already, too */
         break;
@@ -6351,7 +6679,7 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
   Scheme_Object *l = NULL, *l2, *r, *b, *m, *c, *free_id;
   Scheme_Hash_Tree *ht;
   Scheme_Scope_Set *scopes;
-  intptr_t i, len;
+  intptr_t i, len, relative_id;
 
   if (SAME_OBJ(box, root_scope))
     return root_scope;
@@ -6362,6 +6690,11 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
 
   if (!SCHEME_BOXP(box)) return_NULL;
   c = SCHEME_BOX_VAL(box);
+
+  if (!SCHEME_PAIRP(c)) return_NULL;
+
+  relative_id = SCHEME_INT_VAL(SCHEME_CAR(c));
+  c = SCHEME_CDR(c);
 
   if (SCHEME_INTP(c)) {
     m = scheme_new_scope(SCHEME_INT_VAL(c));
@@ -6374,6 +6707,19 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
   scheme_hash_set(ut->rns, box, m);
   /* Since we've created the scope before unmarshaling its content,
      cycles among scopes are ok. */
+
+  /* Reset the scope's id to a hash from the bytecode plus a relative
+     offset. The only use of a scope's id is for debugging and
+     ordering, and using the bytecode's hash as part of the number is
+     intended to make ordering deterministic even across modules,
+     independent of the order that modules are loaded or delay-loaded.
+     Hashes are not gauarnteed to be distinct or far enough apart, but
+     they're likely to be. */
+  STX_ASSERT(ut->bytecode_hash);
+  ((Scheme_Scope *)m)->id = ((SCHEME_STX_SCOPE_KIND_MASK & ((Scheme_Scope*)m)->id)
+                             | ((umzlonglong)((relative_id << SCHEME_STX_SCOPE_KIND_SHIFT)
+                                              + ut->bytecode_hash)
+                                & (~(umzlonglong)SCHEME_STX_SCOPE_KIND_MASK)));
 
   if (!c) return m;
 

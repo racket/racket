@@ -999,6 +999,7 @@ scheme_new_module_env(Scheme_Env *env, Scheme_Module *m,
 
   menv->module = m;
   menv->instance_env = env;
+  menv->reader_env = (env->reader_env ? env->reader_env : env);
 
   if (new_exp_module_tree) {
     /* It would be nice to share the label env with `env`, but we need
@@ -1065,6 +1066,7 @@ void scheme_prepare_exp_env(Scheme_Env *env)
     eenv->template_env = env;
     eenv->label_env = env->label_env;
     eenv->instance_env = env->instance_env;
+    eenv->reader_env = (env->reader_env ? env->reader_env : env);
 
     scheme_prepare_env_stx_context(env);
     mc = scheme_module_context_at_phase(env->stx_context, scheme_env_phase(eenv));
@@ -1113,6 +1115,7 @@ void scheme_prepare_template_env(Scheme_Env *env)
     eenv->exp_env = env;       
     eenv->label_env = env->label_env;
     eenv->instance_env = env->instance_env;
+    eenv->reader_env = (env->reader_env ? env->reader_env : env);
 
     if (env->disallow_unbound)
       eenv->disallow_unbound = env->disallow_unbound;
@@ -1149,6 +1152,7 @@ void scheme_prepare_label_env(Scheme_Env *env)
     lenv->label_env = lenv;
     lenv->template_env = lenv;
     lenv->instance_env = env->instance_env;
+    lenv->reader_env = (env->reader_env ? env->reader_env : env);
   }
 }
 
@@ -1276,6 +1280,7 @@ Scheme_Env *scheme_copy_module_env(Scheme_Env *menv, Scheme_Env *ns, Scheme_Obje
    
   scheme_prepare_label_env(ns);
   menv2->label_env = ns->label_env;
+  menv2->reader_env = (ns->reader_env ? ns->reader_env : ns);
 
   return menv2;
 }

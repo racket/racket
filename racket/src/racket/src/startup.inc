@@ -527,7 +527,7 @@
 "(not(car a)))))"
 "(define-values(get-linked-collections)"
 "(lambda(links-path)"
-"(call/ec(lambda(esc)"
+"(call-with-escape-continuation (lambda(esc)"
 "(define-values(make-handler)"
 "(lambda(ts)"
 "(lambda(exn)"

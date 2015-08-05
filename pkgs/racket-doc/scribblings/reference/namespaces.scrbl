@@ -21,16 +21,22 @@ otherwise.}
 
 @defproc[(make-empty-namespace) namespace?]{
 
-Creates a new namespace that is empty, and whose @tech{module
+Creates a new @tech{namespace} that is empty, and whose @tech{module
 registry} contains no mappings. The namespace's @tech{base phase} is
 the same as the @tech{base phase} of the @tech{current
 namespace}. Attach modules from an existing namespace to the new one
-with @racket[namespace-attach-module].}
+with @racket[namespace-attach-module].
+
+The new namespace is associated with a new @deftech{root namespace},
+which has the same @tech{module registry} as the returned namespace
+and has a @tech{base phase} of 0. The new @tech{root namespace} is
+the same as the returned namespace if both have @tech{base phase} 0.}
 
 
 @defproc[(make-base-empty-namespace) namespace?]{
 
-Creates a new empty namespace, but with @racketmodname[racket/base]
+Creates a new empty @tech{namespace} like @racket[make-empty-namespace],
+but with @racketmodname[racket/base]
 attached. The namespace's @tech{base phase} is the same as the
 @tech{phase} in which the @racket[make-base-empty-namespace]
 function was created.}
@@ -38,7 +44,8 @@ function was created.}
 
 @defproc[(make-base-namespace) namespace?]{
 
-Creates a new namespace with @racketmodname[racket/base] attached and
+Creates a new @tech{namespace} like @racket[make-empty-namespace], but
+with @racketmodname[racket/base] attached and
 @racket[require]d into the top-level environment. The namespace's
 @tech{base phase} is the same as the @tech{phase} in which the
 @racket[make-base-namespace] function was created.}
@@ -62,7 +69,8 @@ Returns @racket[#t] if @racket[v] is a namespace-anchor value,
 
 @defproc[(namespace-anchor->empty-namespace [a namespace-anchor?]) namespace?]{
 
-Returns an empty namespace that shares a @tech{module registry} with
+Returns an empty namespace that shares a @tech{module registry}
+and @tech{root namespace} with
 the source of the anchor, and whose @tech{base phase} is the
 @tech{phase} in which the anchor was created.
 

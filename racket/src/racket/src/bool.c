@@ -858,19 +858,19 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       }
     case scheme_module_index_type:
       {
-        if (!eql->eq_for_modidx) {
-          Scheme_Modidx *midx1, *midx2;
+        Scheme_Modidx *midx1, *midx2;
 #   include "mzeqchk.inc"
-          midx1 = (Scheme_Modidx *)obj1;
-          midx2 = (Scheme_Modidx *)obj2;
-          if (is_equal(midx1->path, midx2->path, eql)) {
-            obj1 = midx1->base;
-            obj2 = midx2->base;
-            goto top;
-          } else
-            return 0;
-        } else
+        midx1 = (Scheme_Modidx *)obj1;
+        midx2 = (Scheme_Modidx *)obj2;
+        if (eql->eq_for_modidx
+            && (SCHEME_FALSEP(midx1->path)
+                || SCHEME_FALSEP(midx2->path)))
           return 0;
+        else if (is_equal(midx1->path, midx2->path, eql)) {
+          obj1 = midx1->base;
+          obj2 = midx2->base;
+          goto top;
+        }
       }
     case scheme_scope_table_type:
       {

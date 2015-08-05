@@ -148,6 +148,9 @@
                         (cdr l)))
              stx)
             (raise-syntax-error #f "bad syntax" stx)))))
+  
+  (define-values (call/cc) call-with-current-continuation)
+  (define-values (call/ec) call-with-escape-continuation)
 
   (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
              (all-from-except "misc.rkt" collection-path collection-file-path)
@@ -207,4 +210,5 @@
              define-struct/derived
              struct-field-index
              struct-copy
-             double-flonum?))
+             double-flonum?
+             call/cc call/ec))

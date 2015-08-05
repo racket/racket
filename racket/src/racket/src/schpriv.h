@@ -1235,7 +1235,8 @@ void scheme_do_module_context_unmarshal(Scheme_Object *modidx, Scheme_Object *re
                                         Scheme_Object *bind_phase, Scheme_Object *pt_phase, Scheme_Object *src_phase,
                                         Scheme_Object *prefix,
                                         Scheme_Hash_Tree *excepts,
-                                        Scheme_Hash_Table *export_registry, Scheme_Object *insp,
+                                        Scheme_Hash_Table *export_registry,
+                                        Scheme_Object *insp, Scheme_Object *req_insp,
                                         Scheme_Object *replace_at);
 
 int scheme_stx_equal_module_context(Scheme_Object *stx, Scheme_Object *mc_as_stx);
@@ -3327,6 +3328,7 @@ typedef struct Scheme_Marshal_Tables {
   Scheme_Hash_Table *reachable_scopes; /* filled on -1 pass */
   Scheme_Object *reachable_scope_stack; /* used on -1 pass */
   Scheme_Hash_Table *pending_reachable_ids; /* use on -1 pass */
+  Scheme_Hash_Table *conditionally_reachable_scopes; /* filled/used on -1 pass */
   Scheme_Hash_Table *intern_map;  /* filled on first pass */
   Scheme_Hash_Table *identity_map; /* filled on first pass */
   Scheme_Hash_Table *top_map;     /* used on every pass */
@@ -3352,6 +3354,7 @@ typedef struct Scheme_Unmarshal_Tables {
   Scheme_Hash_Table *rns;
   struct CPort *rp;
   char *decoded;
+  mzlonglong bytecode_hash;
 } Scheme_Unmarshal_Tables;
 
 Scheme_Object *scheme_unmarshal_wrap_get(Scheme_Unmarshal_Tables *ut, 
@@ -3407,6 +3410,7 @@ struct Scheme_Env {
   struct Scheme_Env *template_env;
   struct Scheme_Env *label_env;
   struct Scheme_Env *instance_env; /* shortcut to env where module is instantiated */
+  struct Scheme_Env *reader_env; /* namespace to use for #reader or #lang */
 
   Scheme_Hash_Table *shadowed_syntax; /* top level only */
 
@@ -4369,6 +4373,8 @@ void scheme_check_place_port_ok();
 void scheme_place_set_memory_use(intptr_t amt);
 void scheme_place_check_memory_use();
 void scheme_clear_place_ifs_stack();
+
+Scheme_Object **scheme_extract_sorted_keys(Scheme_Object *ht);
 
 #ifdef MZ_USE_PLACES
 Scheme_Object *scheme_place_make_async_channel();

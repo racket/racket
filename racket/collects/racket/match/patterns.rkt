@@ -146,10 +146,13 @@
 (define (merge l)
   (cond [(null? l) null]
         [(null? (cdr l)) (car l)]
-        [else (let ([m (make-module-identifier-mapping)])
+        [else (let ([m (make-module-identifier-mapping)]
+                    [in-order null])
                 (for* ([ids l] [id ids])
-                  (module-identifier-mapping-put! m id #t))
-                (module-identifier-mapping-map m (lambda (k v) k)))]))
+                  (unless (module-identifier-mapping-get m id (lambda () #f))
+                    (set! in-order (cons id in-order))
+                    (module-identifier-mapping-put! m id #t)))
+                (reverse in-order))]))
 ;; bound-vars : Pat -> listof identifiers
 (define (bound-vars p)
   (cond
