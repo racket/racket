@@ -221,9 +221,11 @@ If any @racket[prop] is @racket[impersonator-prop:application-mark] and if the
 associated @racket[prop-val] is a pair, then the call to @racket[proc]
 is wrapped with @racket[with-continuation-mark] using @racket[(car
 prop-val)] as the mark key and @racket[(cdr prop-val)] as the mark
-value. In addition, if @racket[continuation-mark-set-first] with
-@racket[(car prop-val)] produces a value for the immediate
-continuation frame of the call to the impersonated procedure, the value is
+value. In addition, if the immediate
+continuation frame of the call to the impersonated procedure
+includes a value for @racket[(car prop-val)]---that is, if
+@racket[call-with-immediate-continuation-mark] would produce a value
+for @racket[(car prop-val)] in the call's continuation---then the value is
 also installed as an immediate value for @racket[(car prop-val)] as a
 mark during the call to @racket[wrapper-proc] (which allows tail-calls
 of impersonators with respect to wrapping impersonators to be detected within

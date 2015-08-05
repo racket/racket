@@ -3691,7 +3691,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     app_mark = NULL;
 
   if (app_mark) {
-    v = scheme_extract_one_cc_mark(NULL, SCHEME_CAR(app_mark));
+    v = scheme_chaperone_get_immediate_cc_mark(SCHEME_CAR(app_mark), NULL);
     if (v) {
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(SCHEME_CAR(app_mark), v);

@@ -1883,6 +1883,27 @@
         (f 42))
   (test '(#f #f) values msgs))
 
+;; Make sure that `impersonator-prop:application-mark'
+;; doesn't propagate for non-tail values:
+(let ()
+  (define msgs '())
+  (define (wrap f)
+    (chaperone-procedure
+     f
+     (λ (x)
+        (call-with-immediate-continuation-mark
+         'key
+         (λ (m)
+            (set! msgs (cons m msgs))
+            (values x))))
+     impersonator-prop:application-mark
+     (cons 'key 'skip-this-check)))
+  
+  (test 42
+        values
+        ((wrap (lambda (x) (+ ((wrap (lambda (x) x)) x) 0))) 42))
+  (test '(#f #f) values msgs))
+
 ;; ----------------------------------------
 
 ;; Check that supplying a procedure `to make-keyword-procedure' that 
