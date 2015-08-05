@@ -200,7 +200,7 @@ END_XFORM_SKIP;
 /*****************************************************************************/
 /* Library objects */
 
-@cdefstruct[ffi-lib
+@cdefstruct[ffi-lib []
   [handle    "NON_GCBALE_PTR(void)"]
   [name      "Scheme_Object*"]
   [objects   "Scheme_Hash_Table*"]
@@ -271,7 +271,7 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
 /*****************************************************************************/
 /* Pull pointers (mostly functions) out of ffi-lib objects */
 
-@cdefstruct[ffi-obj
+@cdefstruct[ffi-obj []
   [obj  "NON_GCBALE_PTR(void)"]
   [name "char*"]
   [lib  "NON_GCBALE_PTR(ffi_lib_struct)"]]
@@ -973,7 +973,7 @@ XFORM_NONGCING static int is_gcable_pointer(Scheme_Object *o) {
  * integer is not really needed, since it is possible to identify the
  * type by the basetype field.)
  */
-@cdefstruct[ctype
+@cdefstruct[ctype [#:tag "scheme_ctype_type"]
   [basetype    "Scheme_Object*"]
   [scheme_to_c "Scheme_Object*"]
   [c_to_scheme "Scheme_Object*"]]
@@ -1354,7 +1354,7 @@ static void wrong_intptr(const char *who, int which, int argc, Scheme_Object **a
 /*****************************************************************************/
 /* Callback type */
 
-@cdefstruct[ffi-callback
+@cdefstruct[ffi-callback []
   [callback "NON_GCBALE_PTR(void)"]
   [proc     "Scheme_Object*"]
   [itypes   "Scheme_Object*"]
@@ -1461,7 +1461,7 @@ int scheme_is_cpointer(Scheme_Object *cp) {
           : scheme_false);
 }
 
-@cdefine[cpointer-tag 1]{
+@cdefine[cpointer-tag 1 #:kind inline_noncm]{
   Scheme_Object *tag = NULL;
   Scheme_Object *cp;
   cp = unwrap_cpointer_property(argv[0]);
@@ -1471,13 +1471,28 @@ int scheme_is_cpointer(Scheme_Object *cp) {
   return (tag == NULL) ? scheme_false : tag;
 }
 
-@cdefine[set-cpointer-tag! 2]{
+Scheme_Object *scheme_cpointer_tag(Scheme_Object *ptr)
+{
+  Scheme_Object *a[1];
+  a[0] = ptr;
+  return foreign_cpointer_tag(1, a);
+}
+
+@cdefine[set-cpointer-tag! 2 #:kind inline_noncm]{
   Scheme_Object *cp;
   cp = unwrap_cpointer_property(argv[0]);
   if (!SCHEME_CPTRP(cp))
     scheme_wrong_contract(MYNAME, "proper-cpointer?", 0, argc, argv);
   SCHEME_CPTR_TYPE(cp) = argv[1];
   return scheme_void;
+}
+
+void scheme_set_cpointer_tag(Scheme_Object *ptr, Scheme_Object *val)
+{
+  Scheme_Object *a[2];
+  a[0] = ptr;
+  a[1] = val;
+  (void)foreign_set_cpointer_tag_bang(2, a);
 }
 
 @cdefine[cpointer-gcable? 1]{
@@ -1555,13 +1570,14 @@ static Scheme_Object *C2SCHEME(Scheme_Object *already_ptr, Scheme_Object *type, 
 }
 #undef REF_CTYPE
 
-static void wrong_value(const char *who, const char *type, Scheme_Object *val)
+static void *wrong_value(const char *who, const char *type, Scheme_Object *val)
 {
   scheme_contract_error(who, 
                         "given value does not fit primitive C type", 
                         "C type", 0, type,
                         "given value", 1, val,
                         NULL);
+  return NULL;
 }
 
 /* On big endian machines we need to know whether we're pulling a value from an
@@ -1577,14 +1593,20 @@ static void wrong_value(const char *who, const char *type, Scheme_Object *val)
  * then a struct or array value will be *copied* into dst. */
 static void* SCHEME2C(const char *who,
                       Scheme_Object *type, void *dst, intptr_t delta,
-                      Scheme_Object *val, intptr_t *basetype_p, intptr_t *_offset,
+                      Scheme_Object *val, GC_CAN_IGNORE intptr_t *basetype_p, GC_CAN_IGNORE intptr_t *_offset,
                       int ret_loc)
 {
-  if (!SCHEME_CTYPEP(type))
-    scheme_wrong_contract(who, "ctype?", 0, 1, &type);
+  /* redundant check:
+     if (!SCHEME_CTYPEP(type))
+       scheme_wrong_contract(who, "ctype?", 0, 1, &type); */
   while (CTYPE_USERP(type)) {
-    if (!SCHEME_FALSEP(CTYPE_USER_S2C(type)))
-      val = _scheme_apply(CTYPE_USER_S2C(type), 1, (Scheme_Object**)(&val));
+    GC_CAN_IGNORE Scheme_Object *f = CTYPE_USER_S2C(type);
+    if (!SCHEME_FALSEP(f)) {
+      if (SAME_TYPE(SCHEME_TYPE(f), scheme_native_closure_type))
+        val = _scheme_apply_native(f, 1, (Scheme_Object**)(&val));
+      else
+        val = _scheme_apply(f, 1, (Scheme_Object**)(&val));
+    }
     type = CTYPE_BASETYPE(type);
   }
   if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
@@ -1599,11 +1621,11 @@ static void* SCHEME2C(const char *who,
     else if (SCHEME_FALSEP(val))
       ((void**)W_OFFSET(dst,delta))[0] = NULL;
     else /* ((void**)W_OFFSET(dst,delta))[0] = val; */
-      wrong_value(who, "_fpointer", val);
+      return wrong_value(who, "_fpointer", val);
   } else switch (CTYPE_PRIMLABEL(type)) {
     @(map-types #:semicolons? #f
        (define (wrong-type obj type)
-        @list{wrong_value(who, "_@type", val);})
+        @list{return wrong_value(who, "_@type", val);})
        @list{
          case FOREIGN_@|cname|:
            @(let* ([x (and ctype @list{(((@|ctype|*)W_OFFSET(dst,delta))[0])})]
@@ -1684,14 +1706,14 @@ static void* SCHEME2C(const char *who,
       if (!SCHEME_FFIANYPTRP(val)) {
         switch (CTYPE_PRIMLABEL(type)) {
         case FOREIGN_struct:
-          wrong_value(who, "(_struct ....)", val);
+          return wrong_value(who, "(_struct ....)", val);
           break;
         case FOREIGN_array:
-          wrong_value(who, "(_array ....)", val);
+          return wrong_value(who, "(_array ....)", val);
           break;
         default:
         case FOREIGN_union:
-          wrong_value(who, "(_union ....)", val);
+          return wrong_value(who, "(_union ....)", val);
           break;
         }
       }
@@ -3472,7 +3494,7 @@ void scheme_init_foreign_globals()
 {
   @(maplines (lambda (x)
               (if (equal? (cadr x) "ctype")
-                  @list{ctype_tag = scheme_ctype_type}
+                  @list{}
                   @list{@(cadr x)_tag = scheme_make_type("<@(car x)>")}))
              (reverse (cstructs)))
   @@IFDEF{MZ_PRECISE_GC}{

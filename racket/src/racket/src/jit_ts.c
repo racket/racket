@@ -112,6 +112,8 @@ define_ts_iS_s(scheme_check_not_undefined, FSRC_MARKS)
 define_ts_iS_s(scheme_check_assign_not_undefined, FSRC_MARKS)
 define_ts_iS_s(scheme_foreign_ptr_ref, FSRC_MARKS)
 define_ts_iS_v(scheme_foreign_ptr_set, FSRC_MARKS)
+define_ts_s_s(scheme_cpointer_tag, FSRC_MARKS)
+define_ts_ss_v(scheme_set_cpointer_tag, FSRC_MARKS)
 #endif
 
 #ifdef JITCALL_TS_PROCS
@@ -250,4 +252,6 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_check_assign_not_undefined scheme_check_assign_not_undefined
 # define ts_scheme_foreign_ptr_ref scheme_foreign_ptr_ref
 # define ts_scheme_foreign_ptr_set scheme_foreign_ptr_set
+# define ts_scheme_cpointer_tag scheme_cpointer_tag
+# define ts_scheme_set_cpointer_tag scheme_set_cpointer_tag
 #endif

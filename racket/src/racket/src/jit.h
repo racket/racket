@@ -341,6 +341,7 @@ struct scheme_jit_common_record {
   void *bad_app_vals_target;
   void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
   void *bad_char_to_integer_code, *slow_integer_to_char_code;
+  void *slow_cpointer_tag_code, *slow_set_cpointer_tag_code;
   void *values_code;
   void *list_p_code, *list_p_branch_code;
   void *list_length_code;

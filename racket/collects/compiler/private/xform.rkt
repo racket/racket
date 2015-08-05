@@ -956,6 +956,7 @@
           '(exit
             scheme_wrong_type scheme_wrong_number scheme_wrong_syntax
             scheme_wrong_count scheme_wrong_count_m scheme_wrong_rator scheme_read_err
+            scheme_wrong_contract scheme_contract_error
             scheme_raise_exn scheme_signal_error
             scheme_raise_out_of_memory
             ))

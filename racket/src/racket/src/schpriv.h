@@ -664,6 +664,9 @@ XFORM_NONGCING extern void *scheme_extract_pointer(Scheme_Object *v);
 Scheme_Object *scheme_foreign_ptr_ref(int argc, Scheme_Object **argv);
 void scheme_foreign_ptr_set(int argc, Scheme_Object **argv);
 
+Scheme_Object *scheme_cpointer_tag(Scheme_Object *ptr);
+void scheme_set_cpointer_tag(Scheme_Object *ptr, Scheme_Object *val);
+
 void scheme_kickoff_green_thread_time_slice_timer(intptr_t usec);
 
 #ifdef UNIX_PROCESSES

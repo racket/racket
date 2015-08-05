@@ -1075,7 +1075,7 @@ XFORM_NONGCING static int is_gcable_pointer(Scheme_Object *o) {
  * type by the basetype field.)
  */
 /* ctype structure definition */
-static Scheme_Type ctype_tag;
+#define ctype_tag scheme_ctype_type
 typedef struct ctype_struct {
   Scheme_Object so;
   Scheme_Object* basetype;
@@ -1705,6 +1705,13 @@ static Scheme_Object *foreign_cpointer_tag(int argc, Scheme_Object *argv[])
 }
 #undef MYNAME
 
+Scheme_Object *scheme_cpointer_tag(Scheme_Object *ptr)
+{
+  Scheme_Object *a[1];
+  a[0] = ptr;
+  return foreign_cpointer_tag(1, a);
+}
+
 #define MYNAME "set-cpointer-tag!"
 static Scheme_Object *foreign_set_cpointer_tag_bang(int argc, Scheme_Object *argv[])
 {
@@ -1716,6 +1723,14 @@ static Scheme_Object *foreign_set_cpointer_tag_bang(int argc, Scheme_Object *arg
   return scheme_void;
 }
 #undef MYNAME
+
+void scheme_set_cpointer_tag(Scheme_Object *ptr, Scheme_Object *val)
+{
+  Scheme_Object *a[2];
+  a[0] = ptr;
+  a[1] = val;
+  (void)foreign_set_cpointer_tag_bang(2, a);
+}
 
 #define MYNAME "cpointer-gcable?"
 static Scheme_Object *foreign_cpointer_gcable_p(int argc, Scheme_Object *argv[])
@@ -1817,13 +1832,14 @@ static Scheme_Object *C2SCHEME(Scheme_Object *already_ptr, Scheme_Object *type, 
 }
 #undef REF_CTYPE
 
-static void wrong_value(const char *who, const char *type, Scheme_Object *val)
+static void *wrong_value(const char *who, const char *type, Scheme_Object *val)
 {
   scheme_contract_error(who,
                         "given value does not fit primitive C type",
                         "C type", 0, type,
                         "given value", 1, val,
                         NULL);
+  return NULL;
 }
 
 /* On big endian machines we need to know whether we're pulling a value from an
@@ -1839,14 +1855,20 @@ static void wrong_value(const char *who, const char *type, Scheme_Object *val)
  * then a struct or array value will be *copied* into dst. */
 static void* SCHEME2C(const char *who,
                       Scheme_Object *type, void *dst, intptr_t delta,
-                      Scheme_Object *val, intptr_t *basetype_p, intptr_t *_offset,
+                      Scheme_Object *val, GC_CAN_IGNORE intptr_t *basetype_p, GC_CAN_IGNORE intptr_t *_offset,
                       int ret_loc)
 {
-  if (!SCHEME_CTYPEP(type))
-    scheme_wrong_contract(who, "ctype?", 0, 1, &type);
+  /* redundant check:
+     if (!SCHEME_CTYPEP(type))
+       scheme_wrong_contract(who, "ctype?", 0, 1, &type); */
   while (CTYPE_USERP(type)) {
-    if (!SCHEME_FALSEP(CTYPE_USER_S2C(type)))
-      val = _scheme_apply(CTYPE_USER_S2C(type), 1, (Scheme_Object**)(&val));
+    GC_CAN_IGNORE Scheme_Object *f = CTYPE_USER_S2C(type);
+    if (!SCHEME_FALSEP(f)) {
+      if (SAME_TYPE(SCHEME_TYPE(f), scheme_native_closure_type))
+        val = _scheme_apply_native(f, 1, (Scheme_Object**)(&val));
+      else
+        val = _scheme_apply(f, 1, (Scheme_Object**)(&val));
+    }
     type = CTYPE_BASETYPE(type);
   }
   if (CTYPE_PRIMLABEL(type) == FOREIGN_fpointer) {
@@ -1861,10 +1883,10 @@ static void* SCHEME2C(const char *who,
     else if (SCHEME_FALSEP(val))
       ((void**)W_OFFSET(dst,delta))[0] = NULL;
     else /* ((void**)W_OFFSET(dst,delta))[0] = val; */
-      wrong_value(who, "_fpointer", val);
+      return wrong_value(who, "_fpointer", val);
   } else switch (CTYPE_PRIMLABEL(type)) {
     case FOREIGN_void:
-      if (!ret_loc) wrong_value(who, "_void", val);;
+      if (!ret_loc) return wrong_value(who, "_void", val);;
       break;
     case FOREIGN_int8:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1878,7 +1900,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(get_byte_val(val,&(((Tsint8*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int8", val);;
+      if (!(get_byte_val(val,&(((Tsint8*)W_OFFSET(dst,delta))[0])))) return wrong_value(who, "_int8", val);;
       return NULL;
     case FOREIGN_uint8:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1892,7 +1914,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(get_ubyte_val(val,&(((Tuint8*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint8", val);;
+      if (!(get_ubyte_val(val,&(((Tuint8*)W_OFFSET(dst,delta))[0])))) return wrong_value(who, "_uint8", val);;
       return NULL;
     case FOREIGN_int16:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1906,7 +1928,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(get_short_val(val,&(((Tsint16*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int16", val);;
+      if (!(get_short_val(val,&(((Tsint16*)W_OFFSET(dst,delta))[0])))) return wrong_value(who, "_int16", val);;
       return NULL;
     case FOREIGN_uint16:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1920,7 +1942,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(get_ushort_val(val,&(((Tuint16*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint16", val);;
+      if (!(get_ushort_val(val,&(((Tuint16*)W_OFFSET(dst,delta))[0])))) return wrong_value(who, "_uint16", val);;
       return NULL;
     case FOREIGN_int32:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1934,7 +1956,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(scheme_get_realint_val(val,&(((Tsint32*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int32", val);;
+      if (!(scheme_get_realint_val(val,&(((Tsint32*)W_OFFSET(dst,delta))[0])))) return wrong_value(who, "_int32", val);;
       return NULL;
     case FOREIGN_uint32:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1948,7 +1970,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(scheme_get_unsigned_realint_val(val,&(((Tuint32*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint32", val);;
+      if (!(scheme_get_unsigned_realint_val(val,&(((Tuint32*)W_OFFSET(dst,delta))[0])))) return wrong_value(who, "_uint32", val);;
       return NULL;
     case FOREIGN_int64:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1962,7 +1984,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(scheme_get_long_long_val(val,&(((Tsint64*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_int64", val);;
+      if (!(scheme_get_long_long_val(val,&(((Tsint64*)W_OFFSET(dst,delta))[0])))) return wrong_value(who, "_int64", val);;
       return NULL;
     case FOREIGN_uint64:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1976,7 +1998,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(scheme_get_unsigned_long_long_val(val,&(((Tuint64*)W_OFFSET(dst,delta))[0])))) wrong_value(who, "_uint64", val);;
+      if (!(scheme_get_unsigned_long_long_val(val,&(((Tuint64*)W_OFFSET(dst,delta))[0])))) return wrong_value(who, "_uint64", val);;
       return NULL;
     case FOREIGN_fixint:
 #     ifdef SCHEME_BIG_ENDIAN
@@ -1996,7 +2018,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(Tsint32, SCHEME_INT_VAL(val));
         (((Tsint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_fixint", val);;
+        return wrong_value(who, "_fixint", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_ufixint:
@@ -2017,7 +2039,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(Tuint32, SCHEME_UINT_VAL(val));
         (((Tuint32*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_ufixint", val);;
+        return wrong_value(who, "_ufixint", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_fixnum:
@@ -2038,7 +2060,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(intptr_t, SCHEME_INT_VAL(val));
         (((intptr_t*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_fixnum", val);;
+        return wrong_value(who, "_fixnum", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_ufixnum:
@@ -2059,7 +2081,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(uintptr_t, SCHEME_UINT_VAL(val));
         (((uintptr_t*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_ufixnum", val);;
+        return wrong_value(who, "_ufixnum", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_float:
@@ -2080,7 +2102,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(float, SCHEME_FLOAT_VAL(val));
         (((float*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_float", val);;
+        return wrong_value(who, "_float", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_double:
@@ -2101,7 +2123,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(double, SCHEME_FLOAT_VAL(val));
         (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_double", val);;
+        return wrong_value(who, "_double", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_longdouble:
@@ -2122,7 +2144,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_NO_TYPE_CAST(mz_long_double, SCHEME_MAYBE_LONG_DBL_VAL(val));
         (((mz_long_double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_longdouble", val);;
+        return wrong_value(who, "_longdouble", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_doubleS:
@@ -2143,7 +2165,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(double, scheme_real_to_double(val));
         (((double*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_double*", val);;
+        return wrong_value(who, "_double*", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_bool:
@@ -2164,7 +2186,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(int, SCHEME_TRUEP(val));
         (((int*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_bool", val);;
+        return wrong_value(who, "_bool", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_stdbool:
@@ -2185,7 +2207,7 @@ static void* SCHEME2C(const char *who,
         tmp = MZ_TYPE_CAST(stdbool, SCHEME_TRUEP(val));
         (((stdbool*)W_OFFSET(dst,delta))[0]) = tmp; return NULL;
       } else {
-        wrong_value(who, "_stdbool", val);;
+        return wrong_value(who, "_stdbool", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_string_ucs_4:
@@ -2212,7 +2234,7 @@ static void* SCHEME2C(const char *who,
           return tmp;
         }
       } else {
-        wrong_value(who, "_string/ucs-4", val);;
+        return wrong_value(who, "_string/ucs-4", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_string_utf_16:
@@ -2239,7 +2261,7 @@ static void* SCHEME2C(const char *who,
           return tmp;
         }
       } else {
-        wrong_value(who, "_string/utf-16", val);;
+        return wrong_value(who, "_string/utf-16", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_bytes:
@@ -2266,7 +2288,7 @@ static void* SCHEME2C(const char *who,
           return tmp;
         }
       } else {
-        wrong_value(who, "_bytes", val);;
+        return wrong_value(who, "_bytes", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_path:
@@ -2293,7 +2315,7 @@ static void* SCHEME2C(const char *who,
           return tmp;
         }
       } else {
-        wrong_value(who, "_path", val);;
+        return wrong_value(who, "_path", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_symbol:
@@ -2320,7 +2342,7 @@ static void* SCHEME2C(const char *who,
           return tmp;
         }
       } else {
-        wrong_value(who, "_symbol", val);;
+        return wrong_value(who, "_symbol", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_pointer:
@@ -2351,7 +2373,7 @@ static void* SCHEME2C(const char *who,
           return _offset ? tmp : (void*)W_OFFSET(tmp, toff);
         }
       } else {
-        wrong_value(who, "_pointer", val);;
+        return wrong_value(who, "_pointer", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_gcpointer:
@@ -2382,7 +2404,7 @@ static void* SCHEME2C(const char *who,
           return _offset ? tmp : (void*)W_OFFSET(tmp, toff);
         }
       } else {
-        wrong_value(who, "_gcpointer", val);;
+        return wrong_value(who, "_gcpointer", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_scheme:
@@ -2409,7 +2431,7 @@ static void* SCHEME2C(const char *who,
           return tmp;
         }
       } else {
-        wrong_value(who, "_scheme", val);;
+        return wrong_value(who, "_scheme", val);;
         return NULL; /* hush the compiler */
       }
     case FOREIGN_fpointer:
@@ -2424,7 +2446,7 @@ static void* SCHEME2C(const char *who,
         ((int*)W_OFFSET(dst,delta))[0] = 0;
       }
 #     endif /* FFI_CALLBACK_NEED_INT_CLEAR */
-      if (!(ret_loc)) wrong_value(who, "_fpointer", val);;
+      if (!(ret_loc)) return wrong_value(who, "_fpointer", val);;
       break;
     case FOREIGN_struct:
     case FOREIGN_array:
@@ -2433,14 +2455,14 @@ static void* SCHEME2C(const char *who,
       if (!SCHEME_FFIANYPTRP(val)) {
         switch (CTYPE_PRIMLABEL(type)) {
         case FOREIGN_struct:
-          wrong_value(who, "(_struct ....)", val);
+          return wrong_value(who, "(_struct ....)", val);
           break;
         case FOREIGN_array:
-          wrong_value(who, "(_array ....)", val);
+          return wrong_value(who, "(_array ....)", val);
           break;
         default:
         case FOREIGN_union:
-          wrong_value(who, "(_union ....)", val);
+          return wrong_value(who, "(_union ....)", val);
           break;
         }
       }
@@ -4322,7 +4344,7 @@ void scheme_init_foreign_globals()
 {
   ffi_lib_tag = scheme_make_type("<ffi-lib>");
   ffi_obj_tag = scheme_make_type("<ffi-obj>");
-  ctype_tag = scheme_ctype_type;
+  ;
   ffi_callback_tag = scheme_make_type("<ffi-callback>");
 # ifdef MZ_PRECISE_GC
   GC_register_traversers(ffi_lib_tag, ffi_lib_SIZE, ffi_lib_MARK, ffi_lib_FIXUP, 1, 0);
@@ -4448,9 +4470,9 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("cpointer?",
     scheme_make_immed_prim(foreign_cpointer_p, "cpointer?", 1, 1), menv);
   scheme_add_global_constant("cpointer-tag",
-    scheme_make_noncm_prim(foreign_cpointer_tag, "cpointer-tag", 1, 1), menv);
+    scheme_make_inline_noncm_prim(foreign_cpointer_tag, "cpointer-tag", 1, 1), menv);
   scheme_add_global_constant("set-cpointer-tag!",
-    scheme_make_noncm_prim(foreign_set_cpointer_tag_bang, "set-cpointer-tag!", 2, 2), menv);
+    scheme_make_inline_noncm_prim(foreign_set_cpointer_tag_bang, "set-cpointer-tag!", 2, 2), menv);
   scheme_add_global_constant("cpointer-gcable?",
     scheme_make_noncm_prim(foreign_cpointer_gcable_p, "cpointer-gcable?", 1, 1), menv);
   scheme_add_global_constant("ctype-sizeof",
@@ -4819,9 +4841,9 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("cpointer?",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "cpointer?", 1, 1), menv);
   scheme_add_global_constant("cpointer-tag",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "cpointer-tag", 1, 1), menv);
+   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "cpointer-tag", 1, 1), menv);
   scheme_add_global_constant("set-cpointer-tag!",
-   scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "set-cpointer-tag!", 2, 2), menv);
+   scheme_make_inline_noncm_prim((Scheme_Prim *)unimplemented, "set-cpointer-tag!", 2, 2), menv);
   scheme_add_global_constant("cpointer-gcable?",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "cpointer-gcable?", 1, 1), menv);
   scheme_add_global_constant("ctype-sizeof",

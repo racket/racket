@@ -3332,6 +3332,30 @@ static int common13(mz_jit_state *jitter, void *_data)
   scheme_jit_register_sub_func(jitter, sjc.slow_ptr_set_code, scheme_false);
   CHECK_LIMIT();
     
+  /* *** slow_cpointer_tag_code *** */
+  sjc.slow_cpointer_tag_code = jit_get_ip();
+  mz_prolog(JIT_R2);
+  JIT_UPDATE_THREAD_RSPTR();
+  mz_prepare(1);
+  jit_pusharg_p(JIT_R0);
+  mz_finish_prim_lwe(ts_scheme_cpointer_tag, refr);
+  jit_retval(JIT_R0);
+  mz_epilog(JIT_R2);
+  scheme_jit_register_sub_func(jitter, sjc.slow_cpointer_tag_code, scheme_false);
+  CHECK_LIMIT();
+    
+  /* *** slow_cpointer_tag_code *** */
+  sjc.slow_set_cpointer_tag_code = jit_get_ip();
+  mz_prolog(JIT_R2);
+  JIT_UPDATE_THREAD_RSPTR();
+  mz_prepare(2);
+  jit_pusharg_p(JIT_R1);
+  jit_pusharg_p(JIT_R0);
+  mz_finish_prim_lwe(ts_scheme_set_cpointer_tag, refr);
+  mz_epilog(JIT_R2);
+  scheme_jit_register_sub_func(jitter, sjc.slow_set_cpointer_tag_code, scheme_false);
+  CHECK_LIMIT();
+    
   /* *** force_value_same_mark_code *** */
   /* Helper for futures: a synthetic functon that just forces values,
      which will bounce back to the runtime thread (but with lightweight

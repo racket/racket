@@ -1976,6 +1976,39 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
       
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "cpointer-tag")) {
+      GC_CAN_IGNORE jit_insn *ref, *refslow, *refdone;
+
+      mz_runstack_skipped(jitter, 1);
+      scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+      mz_runstack_unskipped(jitter, 1);
+
+      mz_rs_sync();
+
+      __START_TINY_JUMPS__(1);
+
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      refslow = jit_get_ip();
+      __END_TINY_JUMPS__(1);
+      (void)jit_calli(sjc.slow_cpointer_tag_code);
+      __START_TINY_JUMPS__(1);
+      jit_movr_p(dest, JIT_R0);
+      refdone = jit_jmpi(jit_forward());
+      mz_patch_branch(ref);
+      (void)mz_bnei_t(refslow, JIT_R0, scheme_cpointer_type, JIT_R1);
+      CHECK_LIMIT();
+
+      jit_ldxi_p(dest, JIT_R0, (intptr_t)&SCHEME_CPTR_TYPE((Scheme_Object *)0x0));
+      ref = jit_bnei_p(jit_forward(), dest, NULL);
+      (void)jit_movi_p(dest, scheme_false);
+      mz_patch_branch(ref);
+      CHECK_LIMIT();
+
+      mz_patch_ucbranch(refdone);
+      __END_TINY_JUMPS__(1);
+      
+      return 1;
     } else if (IS_NAMED_PRIM(rator, "future?")) { 
       generate_inlined_type_test(jitter, app, scheme_future_type, scheme_future_type, 1, for_branch, branch_short, need_sync, dest);
       return 1;
@@ -3664,6 +3697,35 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       jit_retval(dest);
       CHECK_LIMIT();
 
+      return 1;
+    } else if (IS_NAMED_PRIM(rator, "set-cpointer-tag!")) {
+      GC_CAN_IGNORE jit_insn *ref, *refslow, *refdone;
+      
+      LOG_IT(("inlined set-cpointer-tag!\n"));
+
+      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      CHECK_LIMIT();
+
+      __START_TINY_JUMPS__(1);
+
+      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
+      refslow = jit_get_ip();
+      __END_TINY_JUMPS__(1);
+      (void)jit_calli(sjc.slow_set_cpointer_tag_code);
+      __START_TINY_JUMPS__(1);
+      refdone = jit_jmpi(jit_forward());
+      mz_patch_branch(ref);
+      (void)mz_bnei_t(refslow, JIT_R0, scheme_cpointer_type, JIT_R1);
+      CHECK_LIMIT();
+
+      jit_stxi_p((intptr_t)&SCHEME_CPTR_TYPE((Scheme_Object *)0x0), JIT_R0, JIT_R1);
+
+      mz_patch_ucbranch(refdone);
+      __END_TINY_JUMPS__(1);
+
+      if (!result_ignored)
+        (void)jit_movi_p(dest, scheme_void);
+      
       return 1;
     }
   }
