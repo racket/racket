@@ -567,6 +567,22 @@ binding, constructor, etc.}
   which is handled specially by the run-time system.}
 
 
+@defstruct+[(with-immed-mark expr)
+            ([key (or/c expr? seq? any/c)]
+             [val (or/c expr? seq? any/c)]
+             [body (or/c expr? seq? any/c)])]{
+
+  Represents a @racket[(call-with-immediate-continuation-mark key
+  (lambda (_arg) _body) val)] expression that is handled specially by
+  the run-time system to avoid a closure allocation. One initialized
+  slot is pushed onto the stack after @racket[expr] and @racket[val]
+  are evaluated and before @racket[body] is evaluated.
+
+  After each of @racket[key] and @racket[val] is evaluated, the stack is
+  restored to its depth from before evaluating @racket[key] or
+  @racket[val].}
+
+
 @defstruct+[(primval expr)
             ([id exact-nonnegative-integer?])]{
   Represents a direct reference to a variable imported from the run-time
