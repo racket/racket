@@ -135,6 +135,7 @@ scheme_init_type ()
   set_name(scheme_require_form_type, "<require-code>");
   set_name(scheme_varref_form_type, "<varref-code>");
   set_name(scheme_apply_values_type, "<apply-values-code>");
+  set_name(scheme_with_immed_mark_type, "<with-immediate-mark-code>");
   set_name(scheme_case_lambda_sequence_type, "<case-lambda-code>");
 
   set_name(scheme_let_value_type, "<let-value-code>");
@@ -574,6 +575,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_begin_for_syntax_type, vector_obj);
   GC_REG_TRAV(scheme_varref_form_type, twoptr_obj);
   GC_REG_TRAV(scheme_apply_values_type, twoptr_obj);
+  GC_REG_TRAV(scheme_with_immed_mark_type, with_cont_mark);
   GC_REG_TRAV(scheme_boxenv_type, twoptr_obj);
   GC_REG_TRAV(scheme_case_lambda_sequence_type, case_closure);
   GC_REG_TRAV(scheme_begin0_sequence_type, seq_rec);

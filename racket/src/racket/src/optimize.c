@@ -2686,6 +2686,31 @@ static Scheme_Object *direct_apply(Scheme_Object *expr, Scheme_Object *rator, Sc
   return NULL;
 }
 
+static Scheme_Object *call_with_immed_mark(Scheme_Object *rator,
+                                           Scheme_Object *rand1,
+                                           Scheme_Object *rand2,
+                                           Scheme_Object *rand3,
+                                           Optimize_Info *info)
+{
+  if (SAME_OBJ(rator, scheme_call_with_immed_mark_proc)
+      && SAME_TYPE(SCHEME_TYPE(rand2), scheme_compiled_unclosed_procedure_type)
+      && (((Scheme_Closure_Data *)rand2)->num_params == 1)
+      && !(SCHEME_CLOSURE_DATA_FLAGS(((Scheme_Closure_Data *)rand2)) & CLOS_HAS_REST)) {
+    Scheme_With_Continuation_Mark *wcm;
+    
+    wcm = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
+    wcm->so.type = scheme_with_immed_mark_type;
+
+    wcm->key = rand1;
+    wcm->val = (rand3 ? rand3 : scheme_false);
+    wcm->body = ((Scheme_Closure_Data *)rand2)->code;
+
+    return (Scheme_Object *)wcm;
+  }
+
+  return NULL;
+}
+
 static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Object *le;
@@ -2699,6 +2724,12 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
   le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args], info);
   if (le)
     return scheme_optimize_expr(le, info, context);
+
+  if (app->num_args == 3) {
+    le = call_with_immed_mark(app->args[0], app->args[1], app->args[2], app->args[3], info);
+    if (le)
+      return scheme_optimize_expr(le, info, context);
+  }
 
   le = check_app_let_rator(o, app->args[0], info, app->num_args, context);
   if (le)
@@ -3367,6 +3398,10 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   /* Check for (apply ... (list ...)) early: */
   le = direct_apply((Scheme_Object *)app, app->rator, app->rand2, info);
+  if (le)
+    return scheme_optimize_expr(le, info, context);
+
+  le = call_with_immed_mark(app->rator, app->rand1, app->rand2, NULL, info);
   if (le)
     return scheme_optimize_expr(le, info, context);
 
@@ -4688,6 +4723,88 @@ apply_values_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int del
   SCHEME_PTR2_VAL(data) = e;
 
   return data;
+}
+
+static Scheme_Object *
+with_immed_mark_optimize(Scheme_Object *data, Optimize_Info *info, int context)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)data;
+  Scheme_Object *key, *val, *body;
+  Optimize_Info_Sequence info_seq;
+  Optimize_Info *body_info;
+
+  optimize_info_seq_init(info, &info_seq);
+
+  key = scheme_optimize_expr(wcm->key, info, OPT_CONTEXT_SINGLED);
+  optimize_info_seq_step(info, &info_seq);
+  if (info->escapes) {
+    optimize_info_seq_done(info, &info_seq);
+    return key;
+  }
+
+  val = scheme_optimize_expr(wcm->val, info, OPT_CONTEXT_SINGLED);
+  optimize_info_seq_step(info, &info_seq);
+  if (info->escapes) {
+    optimize_info_seq_done(info, &info_seq);
+    return make_discarding_first_sequence(key, val, info, 0);
+  }
+
+  optimize_info_seq_done(info, &info_seq);
+  
+  body_info = optimize_info_add_frame(info, 1, 1, 0);  
+  
+  body = scheme_optimize_expr(wcm->body, body_info, 0);
+  
+  optimize_info_done(body_info, NULL);
+
+  wcm->key = key;
+  wcm->val = val;
+  wcm->body = body;
+
+  return data;
+}
+
+static Scheme_Object *
+with_immed_mark_shift(Scheme_Object *data, int delta, int after_depth)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)data;
+  Scheme_Object *e;
+
+  e = optimize_shift(wcm->key, delta, after_depth);
+  wcm->key = e;
+
+  e = optimize_shift(wcm->val, delta, after_depth);
+  wcm->val = e;
+
+  e = optimize_shift(wcm->body, delta, after_depth+1);
+  wcm->body = e;
+
+  return data;
+}
+
+static Scheme_Object *
+with_immed_mark_clone(int dup_ok, Scheme_Object *data, Optimize_Info *info, int delta, int closure_depth)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)data;
+  Scheme_With_Continuation_Mark *wcm2;
+  Scheme_Object *e;
+  
+  wcm2 = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
+  wcm2->so.type = scheme_with_immed_mark_type;
+
+  e = optimize_clone(dup_ok, wcm->key, info, delta, closure_depth);
+  if (!e) return NULL;
+  wcm2->key = e;
+
+  e = optimize_clone(dup_ok, wcm->val, info, delta, closure_depth);
+  if (!e) return NULL;
+  wcm2->val = e;
+
+  e = optimize_clone(dup_ok, wcm->body, info, delta, closure_depth+1);
+  if (!e) return NULL;
+  wcm2->body = e;
+
+  return (Scheme_Object *)wcm2;
 }
 
 static Scheme_Object *
@@ -7624,6 +7741,8 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
     return begin0_optimize(expr, info, context);
   case scheme_apply_values_type:
     return apply_values_optimize(expr, info, context);
+  case scheme_with_immed_mark_type:
+    return with_immed_mark_optimize(expr, info, context);
   case scheme_require_form_type:
     return top_level_require_optimize(expr, info, context);
   case scheme_module_type:
@@ -7856,6 +7975,8 @@ Scheme_Object *optimize_clone(int dup_ok, Scheme_Object *expr, Optimize_Info *in
     return set_clone(dup_ok, expr, info, delta, closure_depth);
   case scheme_apply_values_type:
     return apply_values_clone(dup_ok, expr, info, delta, closure_depth);
+  case scheme_with_immed_mark_type:
+    return with_immed_mark_clone(dup_ok, expr, info, delta, closure_depth);
   case scheme_case_lambda_sequence_type:
     return case_lambda_clone(dup_ok, expr, info, delta, closure_depth);
   case scheme_module_type:
@@ -8011,6 +8132,8 @@ Scheme_Object *optimize_shift(Scheme_Object *expr, int delta, int after_depth)
     return ref_shift(expr, delta, after_depth);
   case scheme_apply_values_type:
     return apply_values_shift(expr, delta, after_depth);
+  case scheme_with_immed_mark_type:
+    return with_immed_mark_shift(expr, delta, after_depth);
   case scheme_case_lambda_sequence_type:
     return case_lambda_shift(expr, delta, after_depth);
   case scheme_boxenv_type:

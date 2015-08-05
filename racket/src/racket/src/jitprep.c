@@ -379,6 +379,29 @@ static Scheme_Object *apply_values_jit(Scheme_Object *data)
   }
 }
 
+static Scheme_Object *with_immed_mark_jit(Scheme_Object *o)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
+  Scheme_Object *k, *v, *b;
+
+  k = scheme_jit_expr(wcm->key);
+  v = scheme_jit_expr(wcm->val);
+  b = scheme_jit_expr(wcm->body);
+  if (SAME_OBJ(wcm->key, k)
+      && SAME_OBJ(wcm->val, v)
+      && SAME_OBJ(wcm->body, b))
+    return o;
+
+  wcm = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
+  memcpy(wcm, o, sizeof(Scheme_With_Continuation_Mark));
+
+  wcm->key = k;
+  wcm->val = v;
+  wcm->body = b;
+
+  return (Scheme_Object *)wcm;
+}
+
 Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
 {
 #ifdef MZ_USE_JIT
@@ -625,6 +648,8 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
     return ref_jit(expr);
   case scheme_apply_values_type:
     return apply_values_jit(expr);
+  case scheme_with_immed_mark_type:
+    return with_immed_mark_jit(expr);
   case scheme_case_lambda_sequence_type:
     return scheme_case_lambda_jit(expr);
   case scheme_module_type:

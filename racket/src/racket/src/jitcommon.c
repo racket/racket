@@ -2711,6 +2711,23 @@ static int common6(mz_jit_state *jitter, void *_data)
     scheme_jit_register_sub_func(jitter, sjc.wcm_chaperone, scheme_false);
   }
 
+  /* with_immed_mark_code */
+  {
+    GC_CAN_IGNORE jit_insn *ref2 USED_ONLY_FOR_FUTURES;
+    sjc.with_immed_mark_code = jit_get_ip();
+
+    mz_prolog(JIT_R2);
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_prepare(2);
+    jit_pusharg_p(JIT_R1);
+    jit_pusharg_p(JIT_R0);
+    (void)mz_finish_lwe(ts_scheme_chaperone_get_immediate_cc_mark, ref2);
+    jit_retval(JIT_R0);
+    mz_epilog(JIT_R2);
+
+    scheme_jit_register_sub_func(jitter, sjc.with_immed_mark_code, scheme_false);
+  }
+
   return 1;
 }
 

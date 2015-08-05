@@ -2445,6 +2445,36 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       return 1;
     }
     break;
+  case scheme_with_immed_mark_type:
+    {
+      Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)obj;
+      START_JIT_DATA();
+
+      LOG_IT(("with-immediate-continuation-mark...\n"));
+
+      scheme_generate_two_args(wcm->key, wcm->val, jitter, 1, 0);
+      CHECK_LIMIT();
+      
+      /* key is in JIT_R0, default value is in JIT_R1 */
+      mz_rs_sync();
+
+      (void)jit_calli(sjc.with_immed_mark_code);
+
+      mz_rs_dec(1);
+      CHECK_RUNSTACK_OVERFLOW();
+      mz_runstack_pushed(jitter, 1);
+      mz_rs_str(JIT_R0);
+      
+      CHECK_LIMIT();
+
+      END_JIT_DATA(22);
+
+      LOG_IT(("...in\n"));
+
+      return scheme_generate(wcm->body, jitter, is_tail, wcm_may_replace, 
+                             multi_ok, orig_target, for_branch);
+    }
+    break;
   case scheme_boxenv_type:
     {
       Scheme_Object *p, *v;

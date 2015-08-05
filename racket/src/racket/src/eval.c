@@ -3827,6 +3827,35 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
           v = apply_values_execute(obj);
           break;
         }
+      case scheme_with_immed_mark_type:
+        {
+# define wcm ((Scheme_With_Continuation_Mark *)obj)
+          Scheme_Object *mark_key;
+          GC_CAN_IGNORE Scheme_Object *mark_val;
+
+          mark_key = wcm->key;
+          if (SCHEME_TYPE(mark_key) < _scheme_values_types_) {
+            UPDATE_THREAD_RSPTR();
+            mark_key = _scheme_eval_linked_expr_wp(mark_key, p);
+          }
+
+          mark_val = wcm->val;
+          if (SCHEME_TYPE(mark_val) < _scheme_values_types_) {
+            UPDATE_THREAD_RSPTR();
+            mark_val = _scheme_eval_linked_expr_wp(mark_val, p);
+          }
+
+          UPDATE_THREAD_RSPTR();
+          mark_val = scheme_chaperone_get_immediate_cc_mark(mark_key, mark_val);
+          
+          PUSH_RUNSTACK(p, RUNSTACK, 1);
+	  RUNSTACK_CHANGED();
+          RUNSTACK[0] = mark_val;
+
+          obj = wcm->body;
+          goto eval_top;
+#undef wcm
+        }
       case scheme_case_lambda_sequence_type:
         {
           UPDATE_THREAD_RSPTR();

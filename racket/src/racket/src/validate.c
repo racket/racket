@@ -1995,6 +1995,36 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                           result_ignored, vc, tailpos, procs);
     result = validate_join(0, result);
     break;
+  case scheme_with_immed_mark_type:
+    {
+      Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr;
+      int r;
+
+      no_typed(need_local_type, port);
+      
+      r = validate_expr(port, wcm->key, stack, tls, depth, letlimit, delta, 
+                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        tl_state, tl_timestamp,
+                        NULL, 0, 0, vc, 0, 0, procs,
+                        1, _st_ht);
+      result = validate_join_seq(r, result);
+      
+      r = validate_expr(port, wcm->val, stack, tls, depth, letlimit, delta, 
+                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        tl_state, tl_timestamp,
+                        NULL, 0, 0, vc, 0, 0, procs,
+                        1, _st_ht);
+      result = validate_join_seq(r, result);
+
+      --delta;
+      if (delta < 0)
+	scheme_ill_formed_code(port);
+      stack[delta] = VALID_VAL;
+
+      expr = wcm->body;
+      goto top;
+    }
+    break;
   case scheme_case_lambda_sequence_type:
     no_typed(need_local_type, port);
     case_lambda_validate(expr, port, stack, tls, depth, letlimit, delta, 

@@ -472,6 +472,7 @@ extern Scheme_Object *scheme_box_p_proc;
 extern Scheme_Object *scheme_box_proc;
 extern Scheme_Object *scheme_box_immutable_proc;
 extern Scheme_Object *scheme_call_with_values_proc;
+extern Scheme_Object *scheme_call_with_immed_mark_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
 extern Scheme_Object *scheme_make_struct_field_accessor_proc;
 extern Scheme_Object *scheme_make_struct_field_mutator_proc;
@@ -1905,6 +1906,9 @@ Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Sc
                                            Scheme_Object **old_runstack, int can_ec);
 
 Scheme_Object *scheme_chaperone_do_continuation_mark(const char *name, int is_get, Scheme_Object *key, Scheme_Object *val);
+
+XFORM_NONGCING Scheme_Object *scheme_get_immediate_cc_mark(Scheme_Object *key, Scheme_Object *def_val);
+Scheme_Object *scheme_chaperone_get_immediate_cc_mark(Scheme_Object *key, Scheme_Object *def_val);
 
 /*========================================================================*/
 /*                         semaphores and locks                           */

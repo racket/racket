@@ -1917,6 +1917,20 @@ static Scheme_Object *shift_compiled_expression(Scheme_Object *v, int delta, int
 
       return v;
     }
+  case scheme_with_immed_mark_type:
+    {
+      Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)v;
+      Scheme_Object *v2;
+
+      v2 = shift_compiled_expression(wcm->key, delta, skip);
+      wcm->key = v2;
+      v2 = shift_compiled_expression(wcm->val, delta, skip);
+      wcm->val = v2;
+      v2 = shift_compiled_expression(wcm->body, delta, skip+1);
+      wcm->body = v2;
+
+      return v;
+    }
   case scheme_set_bang_type:
     {
       Scheme_Set_Bang *sb = (Scheme_Set_Bang *)v;
@@ -5153,7 +5167,7 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
 
     orig_rest_form = SCHEME_STX_CDR(form);
 
-    /* Look for (call-with-values (lambda () M) (lambda (id ...) N)) */ 
+    /* Look for (call-with-values (lambda () M) (lambda (id ...) N)) */
     if (SCHEME_STX_SYMBOLP(name)) {
       Scheme_Object *at_first, *at_second, *the_end;
       at_first = SCHEME_STX_CDR(form);

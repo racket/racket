@@ -905,6 +905,61 @@ apply_values_sfs(Scheme_Object *data, SFS_Info *info)
   return data;
 }
 
+static Scheme_Object *with_immed_mark_sfs(Scheme_Object *o, SFS_Info *info)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
+  Scheme_Object *k, *v, *b, *vec;
+  int pos, save_mnt, ip;
+  
+  scheme_sfs_start_sequence(info, 3, 1);
+
+  k = scheme_sfs_expr(wcm->key, info, -1);
+  v = scheme_sfs_expr(wcm->val, info, -1);
+
+  scheme_sfs_push(info, 1, 1);
+
+  ip = info->ip;
+  pos = info->stackpos;
+  save_mnt = info->max_nontail;
+
+  if (!info->pass) {
+    vec = scheme_make_vector(3, NULL);
+    scheme_sfs_save(info, vec);
+  } else {
+    vec = scheme_sfs_next_saved(info);
+    if (SCHEME_VEC_SIZE(vec) != 3)
+      scheme_signal_error("internal error: bad vector length");
+    info->max_used[pos] = SCHEME_INT_VAL(SCHEME_VEC_ELS(vec)[0]);
+    info->max_calls[pos] = SCHEME_INT_VAL(SCHEME_VEC_ELS(vec)[1]);
+    info->max_nontail = SCHEME_INT_VAL(SCHEME_VEC_ELS(vec)[2]);
+  }
+  
+  b = scheme_sfs_expr(wcm->body, info, -1);
+  
+  wcm->key = k;
+  wcm->val = v;
+  wcm->body = b;
+
+# if MAX_SFS_CLEARING
+  if (!info->pass)
+    info->max_nontail = info->ip;
+# endif
+
+  if (!info->pass) {
+    int n;
+    info->max_calls[pos] = info->max_nontail;
+    n = info->max_used[pos];
+    SCHEME_VEC_ELS(vec)[0] = scheme_make_integer(n);
+    n = info->max_calls[pos];
+    SCHEME_VEC_ELS(vec)[1] = scheme_make_integer(n);
+    SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(info->max_nontail);
+  } else {
+    info->max_nontail = save_mnt;
+  }
+
+  return o;
+}
+
 static Scheme_Object *
 case_lambda_sfs(Scheme_Object *expr, SFS_Info *info)
 {
@@ -1335,6 +1390,9 @@ Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_
     break;
   case scheme_apply_values_type:
     expr = apply_values_sfs(expr, info);
+    break;
+  case scheme_with_immed_mark_type:
+    expr = with_immed_mark_sfs(expr, info);
     break;
   case scheme_case_lambda_sequence_type:
     expr = case_lambda_sfs(expr, info);

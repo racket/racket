@@ -103,6 +103,7 @@ define_ts_iSs_s(scheme_struct_getter, FSRC_MARKS)
 define_ts_iSs_s(scheme_struct_setter, FSRC_MARKS)
 define_ts_iS_s(scheme_box_cas, FSRC_MARKS)
 define_ts__v(chaperone_set_mark, FSRC_MARKS)
+define_ts_ss_s(scheme_chaperone_get_immediate_cc_mark, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_char_to_integer, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_integer_to_char, FSRC_MARKS)
 # ifndef CAN_INLINE_ALLOC
@@ -205,6 +206,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_set_box scheme_set_box
 # define ts_scheme_box_cas scheme_box_cas
 # define ts_chaperone_set_mark chaperone_set_mark
+# define ts_scheme_chaperone_get_immediate_cc_mark scheme_chaperone_get_immediate_cc_mark
 # define ts_scheme_vector_length scheme_vector_length
 # define ts_scheme_flvector_length scheme_flvector_length
 #ifdef MZ_LONG_DOUBLE

@@ -356,6 +356,7 @@ struct scheme_jit_common_record {
   void *box_extflonum_from_stack_code, *box_extflonum_from_reg_code;
 #endif
   void *wcm_code, *wcm_nontail_code, *wcm_chaperone;
+  void *with_immed_mark_code;
   void *apply_to_list_tail_code, *apply_to_list_code, *apply_to_list_multi_ok_code;
   void *eqv_code, *eqv_branch_code;
   void *proc_arity_includes_code;

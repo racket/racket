@@ -55,6 +55,8 @@ static Scheme_Object *read_varref(Scheme_Object *obj);
 static Scheme_Object *write_varref(Scheme_Object *obj);
 static Scheme_Object *read_apply_values(Scheme_Object *obj);
 static Scheme_Object *write_apply_values(Scheme_Object *obj);
+static Scheme_Object *read_with_immed_mark(Scheme_Object *obj);
+static Scheme_Object *write_with_immed_mark(Scheme_Object *obj);
 static Scheme_Object *read_inline_variant(Scheme_Object *obj);
 static Scheme_Object *write_inline_variant(Scheme_Object *obj);
 
@@ -137,6 +139,8 @@ void scheme_init_marshal(Scheme_Env *env)
   scheme_install_type_reader(scheme_varref_form_type, read_varref);
   scheme_install_type_writer(scheme_apply_values_type, write_apply_values);
   scheme_install_type_reader(scheme_apply_values_type, read_apply_values);
+  scheme_install_type_writer(scheme_with_immed_mark_type, write_with_immed_mark);
+  scheme_install_type_reader(scheme_with_immed_mark_type, read_with_immed_mark);
   scheme_install_type_writer(scheme_inline_variant_type, write_inline_variant);
   scheme_install_type_reader(scheme_inline_variant_type, read_inline_variant);
 
@@ -510,6 +514,40 @@ Scheme_Object *read_apply_values(Scheme_Object *o)
   SCHEME_PTR2_VAL(data) = SCHEME_CDR(o);
   
   return data;
+}
+
+Scheme_Object *write_with_immed_mark(Scheme_Object *o)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
+  Scheme_Object *vec, *v;
+
+  vec = scheme_make_vector(3, NULL);
+
+  v = scheme_protect_quote(wcm->key);
+  SCHEME_VEC_ELS(vec)[0] = v;
+  v = scheme_protect_quote(wcm->val);
+  SCHEME_VEC_ELS(vec)[1] = v;
+  v = scheme_protect_quote(wcm->body);
+  SCHEME_VEC_ELS(vec)[2] = v;
+  
+  return vec;
+}
+
+Scheme_Object *read_with_immed_mark(Scheme_Object *o)
+{
+  Scheme_With_Continuation_Mark *wcm;
+
+  if (!SCHEME_VECTORP(o)) return NULL;
+  if (SCHEME_VEC_SIZE(o) != 3) return NULL;
+
+  wcm = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
+  wcm->so.type = scheme_with_immed_mark_type;
+  
+  wcm->key = SCHEME_VEC_ELS(o)[0];
+  wcm->val = SCHEME_VEC_ELS(o)[1];
+  wcm->body = SCHEME_VEC_ELS(o)[2];
+
+  return (Scheme_Object *)wcm;
 }
 
 Scheme_Object *write_boxenv(Scheme_Object *o)

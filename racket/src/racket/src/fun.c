@@ -93,6 +93,7 @@ READ_ONLY Scheme_Object *scheme_check_not_undefined_proc;
 READ_ONLY Scheme_Object *scheme_check_assign_not_undefined_proc;
 READ_ONLY Scheme_Object *scheme_apply_proc;
 READ_ONLY Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
+READ_ONLY Scheme_Object *scheme_call_with_immed_mark_proc;
 READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
 READ_ONLY Scheme_Object *scheme_tail_call_waiting;
 READ_ONLY Scheme_Object *scheme_default_prompt_tag;
@@ -483,11 +484,13 @@ scheme_init_fun (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant("continuation-mark-set-first", o, env);
 
+  REGISTER_SO(scheme_call_with_immed_mark_proc);
+  scheme_call_with_immed_mark_proc = scheme_make_prim_w_arity2(call_with_immediate_cc_mark,
+                                                               "call-with-immediate-continuation-mark",
+                                                               2, 3,
+                                                               0, -1);
   scheme_add_global_constant("call-with-immediate-continuation-mark",
-			     scheme_make_prim_w_arity2(call_with_immediate_cc_mark,
-                                                       "call-with-immediate-continuation-mark",
-                                                       2, 3,
-                                                       0, -1),
+			     scheme_call_with_immed_mark_proc,
 			     env);
   scheme_add_global_constant("continuation-mark-set?",
 			     scheme_make_prim_w_arity(cc_marks_p,
@@ -4351,24 +4354,10 @@ static Scheme_Object *impersonate_continuation_mark_key(int argc, Scheme_Object 
   return do_chaperone_continuation_mark_key("impersonate-continuation-mark-key", 1, argc, argv);
 }
 
-
-static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_get_immediate_cc_mark(Scheme_Object *key, Scheme_Object *def_val)
 {
   Scheme_Thread *p = scheme_current_thread;
   intptr_t findpos, bottom;
-  Scheme_Object *a[1], *key;
-
-  scheme_check_proc_arity("call-with-immediate-continuation-mark", 1, 1, argc, argv);
-
-  key = argv[0];
-  if (SCHEME_NP_CHAPERONEP(key)
-      && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key)))
-    key = SCHEME_CHAPERONE_VAL(key);
-
-  if (argc > 2)
-    a[0] = argv[2];
-  else
-    a[0] = scheme_false;
 
   if (p->cont_mark_stack_segments) {
     findpos = (intptr_t)MZ_CONT_MARK_STACK;
@@ -4381,22 +4370,39 @@ static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv
       if ((intptr_t)find->pos < (intptr_t)MZ_CONT_MARK_POS) {
         break;
       } else {
-        if (find->key == key) {
-          /*
-           * If not equal, it was a chaperone since we unwrapped the key
-           */
-          if (argv[0] != key) {
-            Scheme_Object *val;
-            val = scheme_chaperone_do_continuation_mark("call-with-immediate-continuation-mark",
-                                                        1, argv[0], find->val);
-            a[0] = val;
-          } else
-            a[0] = find->val;
-          break;
-        }
+        if (find->key == key)
+          return find->val;
       }
     }
   }
+
+  return def_val;
+}
+
+Scheme_Object *scheme_chaperone_get_immediate_cc_mark(Scheme_Object *key, Scheme_Object *def_val)
+{
+  Scheme_Object *val;
+
+  if (SCHEME_NP_CHAPERONEP(key)
+      && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key))) {
+    val = scheme_get_immediate_cc_mark(SCHEME_CHAPERONE_VAL(key), NULL);
+    if (val)
+      return scheme_chaperone_do_continuation_mark("call-with-immediate-continuation-mark",
+                                                   1, key, val);
+    else
+      return def_val;
+  } else
+    return scheme_get_immediate_cc_mark(key, def_val);
+}
+
+static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a[1], *val;
+
+  scheme_check_proc_arity("call-with-immediate-continuation-mark", 1, 1, argc, argv);
+
+  val = scheme_chaperone_get_immediate_cc_mark(argv[0], ((argc > 2) ? argv[2] : scheme_false));
+  a[0] = val;
 
   return scheme_tail_apply(argv[1], 1, a);
 }

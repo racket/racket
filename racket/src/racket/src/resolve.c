@@ -718,6 +718,33 @@ apply_values_resolve(Scheme_Object *data, Resolve_Info *rslv)
 }
 
 static Scheme_Object *
+with_immed_mark_resolve(Scheme_Object *data, Resolve_Info *orig_rslv)
+{
+  Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)data;
+  Scheme_Object *e;
+  Resolve_Info *rslv = orig_rslv;
+
+  e = scheme_resolve_expr(wcm->key, rslv);
+  wcm->key = e;
+
+  e = scheme_resolve_expr(wcm->val, rslv);
+  wcm->val = e;
+
+  rslv = resolve_info_extend(rslv, 1, 1, 1);
+  resolve_info_add_mapping(rslv, 0, 0, 0, NULL);
+  
+  e = scheme_resolve_expr(wcm->body, rslv);
+  wcm->body = e;
+
+  rslv->max_let_depth += 1;
+  if (orig_rslv->max_let_depth < rslv->max_let_depth)
+    orig_rslv->max_let_depth = rslv->max_let_depth;
+  merge_resolve_tl_map(orig_rslv, rslv);
+  
+  return data;
+}
+
+static Scheme_Object *
 case_lambda_resolve(Scheme_Object *expr, Resolve_Info *rslv)
 {
   int i, all_closed = 1;
@@ -2521,6 +2548,8 @@ Scheme_Object *scheme_resolve_expr(Scheme_Object *expr, Resolve_Info *info)
     return ref_resolve(expr, info);
   case scheme_apply_values_type:
     return apply_values_resolve(expr, info);
+  case scheme_with_immed_mark_type:
+    return with_immed_mark_resolve(expr, info);
   case scheme_case_lambda_sequence_type:
     return case_lambda_resolve(expr, info);
   case scheme_module_type:

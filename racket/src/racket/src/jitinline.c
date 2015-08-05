@@ -2130,24 +2130,36 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 
       mz_rs_dec(1);
       CHECK_RUNSTACK_OVERFLOW();
-      mz_runstack_pushed(jitter, 1);
-      mz_rs_str(JIT_R0);
-      mz_runstack_skipped(jitter, skipped-1);
+      if (skipped) {
+        mz_runstack_pushed(jitter, 1);
+        mz_rs_str(JIT_R0);
+        mz_runstack_skipped(jitter, skipped-1);
+      } else {
+        mz_pushr_p(JIT_R0);
+      }
 
       scheme_generate_non_tail(rand2, jitter, 0, 1, 0); /* no sync... */
       CHECK_LIMIT();
 
       if (order_matters) {
         jit_movr_p(JIT_R1, JIT_R0);
-        mz_rs_ldr(JIT_R0);
+        if (!skipped)
+          mz_popr_p(JIT_R0);
+        else
+          mz_rs_ldr(JIT_R0);
       } else {
-        mz_rs_ldr(JIT_R1);
+        if (!skipped)
+          mz_popr_p(JIT_R1);
+        else
+          mz_rs_ldr(JIT_R1);
         direction = -1;
       }
 
-      mz_runstack_unskipped(jitter, skipped-1);
-      mz_rs_inc(1);
-      mz_runstack_popped(jitter, 1);
+      if (skipped) {
+        mz_runstack_unskipped(jitter, skipped-1);
+        mz_rs_inc(1);
+        mz_runstack_popped(jitter, 1);
+      }
     }
   } else {
     mz_runstack_skipped(jitter, skipped);
