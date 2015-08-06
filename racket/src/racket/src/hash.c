@@ -1204,6 +1204,9 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
     }
 #ifdef MZ_USE_SINGLE_FLOATS
   case scheme_float_type:
+    {
+      return k + dbl_hash_val(SCHEME_FLT_VAL(o));
+    }
 #endif
   case scheme_double_type:
     {
@@ -1727,10 +1730,13 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key2(Scheme_Object *o, int *_don
     return t - SCHEME_INT_VAL(o);
 #ifdef MZ_USE_SINGLE_FLOATS
   case scheme_float_type:
+    {
+      return dbl_hash2_val(SCHEME_FLT_VAL(o));
+    }
 #endif
   case scheme_double_type:
     {
-      return dbl_hash2_val(SCHEME_FLOAT_VAL(o));
+      return dbl_hash2_val(SCHEME_DBL_VAL(o));
     }
 #ifdef MZ_LONG_DOUBLE
   case scheme_long_double_type:
