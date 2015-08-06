@@ -170,6 +170,9 @@
 (define-form-struct (varref expr) ([toplevel (or/c toplevel? #t)] [dummy (or/c toplevel? #f)])) ; `#%variable-reference'
 (define-form-struct (assign expr) ([id toplevel?] [rhs (or/c expr? seq? any/c)] [undef-ok? boolean?])) ; top-level or module-level set!
 (define-form-struct (apply-values expr) ([proc (or/c expr? seq? any/c)] [args-expr (or/c expr? seq? any/c)])) ; `(call-with-values (lambda () ,args-expr) ,proc)
+(define-form-struct (with-immed-mark expr) ([key (or/c expr? seq? any/c)] 
+                                            [def-val (or/c expr? seq? any/c)] 
+                                            [body (or/c expr? seq? any/c)]))
 (define-form-struct (primval expr) ([id exact-nonnegative-integer?])) ; direct preference to a kernel primitive
 
 ;; Top-level `require'
@@ -186,7 +189,7 @@
 
 (define-form-struct wrap ([shifts (listof module-shift?)]
                           [simple-scopes (listof scope?)]
-                          [multi-scopes (listof (list/c multi-scope? (or/c #f exact-integer?)))]))
+                          [multi-scopes (listof (list/c multi-scope? (or/c #f exact-integer? (box/c exact-integer?))))]))
 
 (define-form-struct module-shift ([from (or/c #f module-path-index?)]
                                   [to (or/c #f module-path-index?)]

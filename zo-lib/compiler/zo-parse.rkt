@@ -192,6 +192,8 @@
   (make-varref (car v) (cdr v)))
 (define (read-apply-values v)
   (make-apply-values (car v) (cdr v)))
+(define (read-with-immed-mark v)
+  (make-with-immed-mark (vector-ref v 0) (vector-ref v 1) (vector-ref v 2)))
 (define (read-splice v)
   (make-splice v))
 
@@ -372,12 +374,13 @@
     [(22) 'require-form-type]
     [(23) 'varref-form-type]
     [(24) 'apply-values-type]
-    [(25) 'case-lambda-sequence-type]
-    [(26) 'module-type]
-    [(27) 'inline-variant-type]
-    [(35) 'variable-type]
-    [(36) 'module-variable-type]
-    [(120) 'resolve-prefix-type]
+    [(25) 'with-immed-mark-type]
+    [(26) 'case-lambda-sequence-type]
+    [(27) 'module-type]
+    [(28) 'inline-variant-type]
+    [(36) 'variable-type]
+    [(37) 'module-variable-type]
+    [(121) 'resolve-prefix-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers
@@ -407,6 +410,7 @@
     (cons 'require-form-type read-require)
     (cons 'varref-form-type read-#%variable-ref)
     (cons 'apply-values-type read-apply-values)
+    (cons 'with-immed-mark-type read-with-immed-mark)
     (cons 'splice-sequence-type read-splice))))
 
 (define (get-reader type)
@@ -592,7 +596,7 @@
   (with-memo* mt arg (λ () body ...)))
 
 ;; placeholder for a `scope` decoded in a second pass:
-(struct encoded-scope (content) #:prefab)
+(struct encoded-scope (relative-id content) #:prefab)
 
 (define (decode-wrapped cp v)
   (let loop ([v v])
@@ -942,10 +946,13 @@
         [(small-svector)
          (read-compact-svector cp (- ch cpt-start))]
         [(scope)
-         (let ([pos (read-compact-number cp)])
+         (let ([pos (read-compact-number cp)]
+               [relative-id (read-compact-number cp)])
            (if (zero? pos)
-               (encoded-scope (read-compact cp))
-               (read-cyclic cp pos 'scope encoded-scope)))]
+               (encoded-scope relative-id (read-compact cp))
+               (read-cyclic cp pos 'scope (lambda (v)
+                                            (encoded-scope relative-id 
+                                                           v)))))]
         [(root-scope)
          root-scope]
         [(shared)
@@ -1254,7 +1261,7 @@
                   [(cons (? number?) _)
                    (car v)]
                   [else (error 'decode-wrap "bad scope")]))
-              (define sc (scope (hash-count ht)
+              (define sc (scope (encoded-scope-relative-id s)
                                 (case kind
                                   [(0 1) 'module]
                                   [(2) 'macro]

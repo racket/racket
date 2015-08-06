@@ -20,7 +20,7 @@
 
 (struct not-ready ())
 
-(struct encoded-scope ([content #:mutable]) #:prefab)
+(struct encoded-scope (relative-id [content #:mutable]) #:prefab)
 
 (define (zo-marshal top)
   (define bs (open-output-bytes))
@@ -291,11 +291,12 @@
 (define require-form-type-num 22)
 (define varref-form-type-num 23)
 (define apply-values-type-num 24)
-(define case-lambda-sequence-type-num 25)
-(define module-type-num 26)
-(define inline-variants-type-num 27)
-(define variable-type-num 35)
-(define prefix-type-num 120)
+(define with-immed-mark-type-num 25)
+(define case-lambda-sequence-type-num 26)
+(define module-type-num 27)
+(define inline-variants-type-num 28)
+(define variable-type-num 36)
+(define prefix-type-num 121)
 
 (define-syntax define-enum
   (syntax-rules ()
@@ -753,6 +754,13 @@
                        (cons (protect-quote proc)
                              (protect-quote args-expr))
                        out)]
+       [(struct with-immed-mark (key val body))
+        (out-marshaled with-immed-mark-type-num
+                       (vector
+                        (protect-quote key)
+                        (protect-quote val)
+                        (protect-quote body))
+                       out)]
        [(struct with-cont-mark (key val body))
         (out-marshaled wcm-type-num
                        (list*
@@ -881,12 +889,13 @@
        [(stx content)
         (out-byte CPT_STX out)
         (out-anything content out)]
-       [(encoded-scope content)
+       [(encoded-scope relative-id content)
         (out-byte CPT_SCOPE out)
         ;; The `out-shared` wrapper already called `((out-shared-index out) v)` 
         ;; once, so `pos` will defintely be a number:
         (let ([pos ((out-shared-index out) v)])
           (out-number pos out))
+        (out-number relative-id out)
         (out-anything (share-everywhere content out) out)]
        [(? stx-obj?)
         (out-anything (share-everywhere (lookup-encoded-stx-obj v out) out) out)]
@@ -1229,7 +1238,7 @@
       s
       (hash-ref ht s
                 (lambda ()
-                  (define es (encoded-scope #f))
+                  (define es (encoded-scope (scope-name s) #f))
                   (hash-set! ht s es)
                   (define kind
                     (case (scope-kind s)

@@ -184,8 +184,9 @@
                 (length toplevels)
                 (length stxs)
                 num-lifts)
-               (cons
+               (list*
                 `(quote inspector ,src-insp-desc)
+                ;; `(quote tls ,toplevels)
                 (map (lambda (stx id)
                        `(define ,id ,(if stx
                                          `(#%decode-syntax 
@@ -487,6 +488,12 @@
     [(struct apply-values (proc args-expr))
      `(#%apply-values ,(decompile-expr proc globs stack closed) 
                       ,(decompile-expr args-expr globs stack closed))]
+    [(struct with-immed-mark (key-expr val-expr body-expr))
+     (let ([id (gensym 'cmval)])
+       `(#%call-with-immediate-continuation-mark
+         ,(decompile-expr key-expr globs stack closed)
+         (lambda (,id) ,(decompile-expr body-expr globs (cons id stack) closed))
+         ,(decompile-expr val-expr globs stack closed)))]
     [(struct seq (exprs))
      `(begin ,@(for/list ([expr (in-list exprs)])
                  (decompile-expr expr globs stack closed)))]
@@ -540,7 +547,7 @@
                              ,@(if (not tl-map)
                                    '()
                                    (list
-                                    (for/list ([pos (in-set tl-map)])
+                                    (for/list ([pos (in-list (sort (set->list tl-map) <))])
                                       (define tl-pos
                                         (cond
                                          [(or (pos . < . (glob-desc-num-tls globs))
