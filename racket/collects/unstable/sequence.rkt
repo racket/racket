@@ -62,22 +62,18 @@
 ;; Added by stamourv (from David Vanderson (david.vanderson at gmail.com)):
 
 (provide/contract
- [in-slice (exact-positive-integer? any/c . -> . any)])
+ [in-slice (exact-positive-integer? sequence? . -> . any)])
 
 (define (in-slice k seq)
-  ;; ELI: what's the point of using `any/c' above and then checking it here?
-  (unless (sequence? seq) (raise-type-error 'in-slice "sequence" seq))
   (make-do-sequence
    (λ ()
      (define-values (more? get) (sequence-generate seq))
      (values
       (λ (_)
-        ;; ELI: Add an `in-range'
-        (for/list ([i k] #:when (more?))
+        (for/list ([i (in-range k)] #:when (more?))
           (get)))
       values
       #f
       #f
-      ;; ELI: Use `pair?'
-      (λ (val) (0 . < . (length val)))
+      (λ (val) (pair? val))
       #f))))
