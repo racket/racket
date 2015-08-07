@@ -38,7 +38,10 @@
     [(_ expr bits0)
      ;; Choose at compile time what word length is
      (let* ([bits (syntax-e #'bits0)]
-            [bits (or bits (if (fixnum? (expt 2 61)) 62 30))]
+            [bits (or bits 
+                      ;; for portable bytecode, use a fixnum size tha
+                      ;; always works:
+                      30)]
             [lut
              (cond [(<= bits 8) lut8]
                    [(<= bits 30) lut30]
