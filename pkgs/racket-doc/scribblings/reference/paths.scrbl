@@ -449,7 +449,7 @@ information on simplifying paths.}
 @defproc[(normal-case-path [path (or/c path-string? path-for-some-system?)])
          path-for-some-system?]{
 
-Returns @racket[path] with ``normalized'' case letters. For @|AllUnix|
+Returns @racket[path] with ``normalized'' case characters. For @|AllUnix|
 paths, this procedure always returns the input path, because
 filesystems for these platforms can be case-sensitive. For Windows
 paths, if @racket[path] does not start with @litchar{\\?\}, the
