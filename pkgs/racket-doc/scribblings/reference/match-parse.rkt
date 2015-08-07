@@ -58,6 +58,10 @@
     (list->vector (map fixup-sexp (vector->list s)))]
    [(box? s)
     (box (fixup-sexp (unbox s)))]
+   [(struct? s)
+    (apply make-prefab-struct
+           (prefab-struct-key s)
+           (cdr (map fixup-sexp (vector->list (struct->vector s)))))]
    [(symbol? s)
     (case s
       [(lvp pat qp literal ooo datum struct-id
