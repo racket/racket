@@ -780,6 +780,32 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 
 }
 
+@subsubsection{Additional Sequence Constructors}
+
+@defproc[(in-syntax [stx syntax?]) sequence?]{
+Produces a sequence equivalent to @racket[(syntax->list lst)].
+@speed[in-syntax "syntax"]
+
+@examples[#:eval sequence-evaluator
+(for/list ([x (in-syntax #'(1 2 3))])
+  x)]}
+
+@defproc[(in-pairs [seq sequence?]) sequence?]{
+  Produces a sequence equivalent to
+  @racket[(in-parallel (sequence-lift car seq) (sequence-lift cdr seq))].
+}
+
+@defproc[(in-slice [length exact-positive-integer?] [seq sequence?])
+         sequence?]{
+  Returns a sequence where each element is a list with @racket[length]
+  elements from the given sequence.
+
+  @examples[#:eval sequence-evaluator
+  (for/list ([e (in-slice 3 (in-range 8))]) e)
+  ]
+}
+
+
 @; ======================================================================
 @section[#:tag "streams"]{Streams}
 
