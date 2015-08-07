@@ -572,7 +572,7 @@ above).
 ]
 }
 
-@specsubform[(@#,def[~describe s] maybe-opaque expr S-pattern)
+@specsubform[(@#,def[~describe s] maybe-role maybe-opaque expr S-pattern)
              #:grammar
              ([maybe-opaque (code:line)
                             (code:line #:opaque)]
