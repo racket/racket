@@ -3,7 +3,9 @@
 (require "stream.rkt"
          "private/sequence.rkt"
          racket/contract/combinator
-         racket/contract/base)
+         racket/contract/base
+         (for-syntax racket/base)
+         syntax/stx)
 
 (provide empty-sequence
          sequence->list
@@ -19,7 +21,10 @@
          sequence-filter
          sequence-add-between
          sequence-count
-         sequence/c)
+         sequence/c
+         in-syntax
+         in-pairs
+         (contract-out [in-slice (exact-positive-integer? sequence? . -> . any)]))
 
 (define empty-sequence
   (make-do-sequence
@@ -239,3 +244,42 @@
          [(list? seq) (sequence->list result-seq)]
          [(stream? seq) (sequence->stream result-seq)]
          [else result-seq])))))
+
+
+;; additional sequence constructors
+
+(define-sequence-syntax in-syntax
+  (λ () #'in-syntax/proc)
+  (λ (stx)
+    (syntax-case stx ()
+      [[(id) (_ arg)]
+       #'[(id) (in-list (in-syntax/proc arg))]])))
+
+(define (in-syntax/proc stx)
+  (or (stx->list stx)
+      (raise-type-error 'in-syntax "stx-list" stx)))
+
+(define (in-pairs seq)
+  (make-do-sequence
+   (λ ()
+     (let-values ([(more? gen) (sequence-generate seq)])
+       (values (λ (e) (let ([e (gen)]) (values (car e) (cdr e))))
+               (λ (_) #t)
+               #t
+               (λ (_) (more?))
+               (λ _ #t)
+               (λ _ #t))))))
+
+(define (in-slice k seq)
+  (make-do-sequence
+   (λ ()
+     (define-values (more? get) (sequence-generate seq))
+     (values
+      (λ (_)
+        (for/list ([i (in-range k)] #:when (more?))
+          (get)))
+      values
+      #f
+      #f
+      (λ (val) (pair? val))
+      #f))))
