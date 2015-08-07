@@ -268,6 +268,12 @@
 ;; ----------------------------------------
 ;; Additional sequence constructors
 
+(test #t sequence? (in-pairs '()))
+(test #t sequence? (in-pairs '((1 . 2) (3 . 4))))
+(test '()
+      values
+      (for/list ([(x y) (in-pairs '())])
+        x))
 (test '(2 4 6)
       values
       (for/list ([(x y) (in-pairs '((1 . 1) (2 . 2) (3 . 3)))])
