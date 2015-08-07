@@ -614,7 +614,7 @@ each element in the sequence.
   values in the sequence), the @exnraise[exn:fail:contract].}
 
 @; ----------------------------------------------------------------------
-@subsection[#:tag "more-sequences"]{Sequence Combinations & Contract}
+@subsection[#:tag "more-sequences"]{Additional Sequence Operations}
 
 @note-lib[racket/sequence]
 
