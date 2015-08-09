@@ -614,7 +614,7 @@ each element in the sequence.
   values in the sequence), the @exnraise[exn:fail:contract].}
 
 @; ----------------------------------------------------------------------
-@subsection[#:tag "more-sequences"]{Sequence Combinations & Contract}
+@subsection[#:tag "more-sequences"]{Additional Sequence Operations}
 
 @note-lib[racket/sequence]
 
@@ -779,6 +779,40 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 ]
 
 }
+
+@subsubsection{Additional Sequence Constructors}
+
+@defproc[(in-syntax [stx syntax?]) sequence?]{
+  Produces a sequence whose elements are the successive subparts of
+  @racket[stx].
+  Equivalent to @racket[(syntax->list lst)].
+  @speed[in-syntax "syntax"]
+
+@examples[#:eval sequence-evaluator
+(for/list ([x (in-syntax #'(1 2 3))])
+  x)]}
+
+@defproc[(in-pairs [seq sequence?]) sequence?]{
+  Produces a 2-valued sequence whose pairs of elements are the successive
+  @racket[car]s and @racket[cdr]s of the elements of @racket[seq].
+  Equivalent to
+  @racket[(in-parallel (sequence-lift car seq) (sequence-lift cdr seq))].
+
+  @examples[#:eval sequence-evaluator
+  (for/list ([(a b) (in-pairs '((1 . a) (2 . b) (3 . c)))]) b)
+  ]
+}
+
+@defproc[(in-slice [length exact-positive-integer?] [seq sequence?])
+         sequence?]{
+  Returns a sequence whose elements are lists with the first @racket[length]
+  elements of @racket[seq], then the next @racket[length] and so on.
+
+  @examples[#:eval sequence-evaluator
+  (for/list ([e (in-slice 3 (in-range 8))]) e)
+  ]
+}
+
 
 @; ======================================================================
 @section[#:tag "streams"]{Streams}
