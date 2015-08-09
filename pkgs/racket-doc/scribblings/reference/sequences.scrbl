@@ -790,7 +790,9 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 
 @examples[#:eval sequence-evaluator
 (for/list ([x (in-syntax #'(1 2 3))])
-  x)]}
+  x)]
+
+@history[#:added "6.2.900.6"]}
 
 @defproc[(in-pairs [seq sequence?]) sequence?]{
   Produces a 2-valued sequence whose pairs of elements are the successive
@@ -801,6 +803,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
   @examples[#:eval sequence-evaluator
   (for/list ([(a b) (in-pairs '((1 . a) (2 . b) (3 . c)))]) b)
   ]
+  @history[#:added "6.2.900.6"]
 }
 
 @defproc[(in-slice [length exact-positive-integer?] [seq sequence?])
@@ -811,6 +814,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
   @examples[#:eval sequence-evaluator
   (for/list ([e (in-slice 3 (in-range 8))]) e)
   ]
+  @history[#:added "6.2.900.6"]
 }
 
 
