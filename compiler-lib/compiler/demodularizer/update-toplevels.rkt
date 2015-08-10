@@ -71,6 +71,11 @@
         (update key)
         (update val)
         (update body))]
+      [(struct with-immed-mark (key val body))
+       (make-with-immed-mark 
+        (update key)
+        (update val)
+        (update body))]
       [(struct beg0 (seq))
        (make-beg0 (map update seq))]
       [(struct varref (tl dummy))

@@ -20,7 +20,7 @@
        (map (compose ->module-path-index stx-obj-datum stx-content req-reqs) reqs))
      (make-compilation-top 
       0
-      (make-prefix 0 (list #f) empty)
+      (make-prefix 0 (list #f) empty (prefix-src-inspector-desc prefix))
       (make-mod name srcname
                 self-modidx
                 prefix
@@ -33,6 +33,7 @@
                 (make-toplevel 0 0 #f #f) ; dummy
                 lang-info
                 #t
+                (hash) ; no names visible via `module->namespace`
                 empty
                 empty
                 empty))]))

@@ -124,6 +124,9 @@
       [(struct with-cont-mark (key val body))
        (for-each (lambda (f) (build-graph! lhs f))
                  (list key val body))]
+      [(struct with-immed-mark (key val body))
+       (for-each (lambda (f) (build-graph! lhs f))
+                 (list key val body))]
       [(struct beg0 (seq))
        (for-each (lambda (f) (build-graph! lhs f))
                  seq)]
