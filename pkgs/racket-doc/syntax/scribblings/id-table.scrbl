@@ -1,5 +1,10 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label syntax/id-table racket/dict))
+@(require "common.rkt"
+          scribble/eval
+          (for-label syntax/id-table racket/dict))
+
+@(define id-table-eval (make-base-eval))
+@(id-table-eval '(require (for-syntax racket/base syntax/id-table)))
 
 @title[#:tag "idtable"]{Dictionaries with Identifier Keys}
 
@@ -18,6 +23,41 @@ A free-identifier table is a dictionary whose keys are compared using
 dictionary interface of @racketmodname[racket/dict], so all of the
 appropriate generic functions (@racket[dict-ref], @racket[dict-map],
 etc) can be used on free-identifier tables.
+
+A caveat for using these tables is that a lookup can fail with
+unexpected results if the binding of an identifier changes between
+key-value insertion and the lookup.
+
+For example, consider the following use:
+
+@interaction[#:eval id-table-eval
+(define-syntax-rule (m)
+  (begin
+    (begin-for-syntax
+      (define table (make-free-id-table))
+      (code:comment "set table entry to #t")
+      (free-id-table-set! table #'x #t)
+      (code:comment "sanity check, it's set to #t")
+      (displayln (free-id-table-ref table #'x #f)))
+
+    (define x 'defined-now)
+
+    (begin-for-syntax
+      (code:comment "might expect to get #t, but prints #f")
+      (displayln (free-id-table-ref table #'x #f)))))
+
+(m)]
+
+The macro @racket[m] expands to code that initializes an identifier table
+at compile-time and inserts a key-value pair for @racket[#'x] and
+@racket[#t]. The @racket[#'x] identifier has no binding, however, until
+the definition @racket[(define x 'defined-now)] is evaluated.
+
+As a result, the lookup at the end of @racket[m] will return @racket[#f]
+instead of @racket[#t] because the binding symbol for @racket[#'x] changes
+after the initial key-value pair is put into the table. If the definition
+is evaluated @emph{before} the initial insertion, both expressions will
+print @racket[#t].
 
 @deftogether[[
 @defproc[(make-free-id-table 
@@ -234,3 +274,5 @@ Like the procedures for free-identifier tables
 for bound-identifier tables, which use @racket[bound-identifier=?] to
 compare keys.
 }
+
+@close-eval[id-table-eval]
