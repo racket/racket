@@ -23,7 +23,6 @@
          sequence-count
          sequence/c
          in-syntax
-         in-pairs
          (contract-out [in-slice (exact-positive-integer? sequence? . -> . any)]))
 
 (define empty-sequence
@@ -258,17 +257,6 @@
 (define (in-syntax/proc stx)
   (or (stx->list stx)
       (raise-type-error 'in-syntax "stx-list" stx)))
-
-(define (in-pairs seq)
-  (make-do-sequence
-   (λ ()
-     (let-values ([(more? gen) (sequence-generate seq)])
-       (values (λ (e) (let ([e (gen)]) (values (car e) (cdr e))))
-               (λ (_) #t)
-               #t
-               (λ (_) (more?))
-               (λ _ #t)
-               (λ _ #t))))))
 
 (define (in-slice k seq)
   (make-do-sequence

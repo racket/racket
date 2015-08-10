@@ -268,16 +268,6 @@
 ;; ----------------------------------------
 ;; Additional sequence constructors
 
-(test #t sequence? (in-pairs '()))
-(test #t sequence? (in-pairs '((1 . 2) (3 . 4))))
-(test '()
-      values
-      (for/list ([(x y) (in-pairs '())])
-        x))
-(test '(2 4 6)
-      values
-      (for/list ([(x y) (in-pairs '((1 . 1) (2 . 2) (3 . 3)))])
-        (+ x y)))
 (test #t sequence? (in-slice 1 '()))
 (test '() values (for/list ([v (in-slice 1 '())]) v))
 (test '((0 1)) values (for/list ([v (in-slice 3 (in-range 2))]) v))

@@ -794,18 +794,6 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 
 @history[#:added "6.2.900.6"]}
 
-@defproc[(in-pairs [seq sequence?]) sequence?]{
-  Produces a 2-valued sequence whose pairs of elements are the successive
-  @racket[car]s and @racket[cdr]s of the elements of @racket[seq].
-  Equivalent to
-  @racket[(in-parallel (sequence-lift car seq) (sequence-lift cdr seq))].
-
-  @examples[#:eval sequence-evaluator
-  (for/list ([(a b) (in-pairs '((1 . a) (2 . b) (3 . c)))]) b)
-  ]
-  @history[#:added "6.2.900.6"]
-}
-
 @defproc[(in-slice [length exact-positive-integer?] [seq sequence?])
          sequence?]{
   Returns a sequence whose elements are lists with the first @racket[length]
