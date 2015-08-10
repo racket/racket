@@ -3670,7 +3670,8 @@ static Scheme_Object *unresolve_let_void(Scheme_Object *e, Unresolve_Info *ui) {
     }
     case scheme_sequence_type: {
       Scheme_Sequence *seq = (Scheme_Sequence *)o;
-      for (int i = 0; i < seq->count - 1; i++) {
+	  int i;
+      for (i = 0; i < seq->count - 1; i++) {
         if (!SAME_TYPE(SCHEME_TYPE(seq->array[i]), scheme_local_type)) {
           scheme_signal_error("internal error: unexpected form in sequence: %d", SCHEME_TYPE(o));
         }
@@ -3795,7 +3796,8 @@ void locate_cyclic_closures(Scheme_Object *e, Unresolve_Info *ui) {
     case scheme_splice_sequence_type:
       {
         Scheme_Sequence *seq = (Scheme_Sequence *)e;
-        for (int i = 0; i < seq->count; i++) {
+		int i;
+        for (i = 0; i < seq->count; i++) {
           locate_cyclic_closures(seq->array[i], ui);
         }
       }
@@ -3803,7 +3805,8 @@ void locate_cyclic_closures(Scheme_Object *e, Unresolve_Info *ui) {
     case scheme_application_type:
       {
         Scheme_App_Rec *app = (Scheme_App_Rec *)e;
-        for (int i = 0; i < app->num_args + 1; i++) {
+		int i;
+        for (i = 0; i < app->num_args + 1; i++) {
           locate_cyclic_closures(app->args[i], ui);
         }
       }
@@ -3849,7 +3852,8 @@ void locate_cyclic_closures(Scheme_Object *e, Unresolve_Info *ui) {
     case scheme_letrec_type:
       {
         Scheme_Letrec *lr = (Scheme_Letrec *)e;
-        for (int i = 0; i < lr->count; i++) {
+		int i;
+        for (i = 0; i < lr->count; i++) {
           locate_cyclic_closures(lr->procs[i], ui);
         }
         locate_cyclic_closures(lr->body, ui);
@@ -3927,7 +3931,8 @@ void locate_cyclic_closures(Scheme_Object *e, Unresolve_Info *ui) {
     case scheme_case_lambda_sequence_type:
       {
         Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)e;
-        for (int i = 0; i < cl->count; i++) {
+		int i;
+        for (i = 0; i < cl->count; i++) {
           locate_cyclic_closures(cl->array[i], ui);
         }
       }
