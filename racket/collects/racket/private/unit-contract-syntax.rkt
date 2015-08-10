@@ -12,7 +12,7 @@
 (define-syntax-class sig-spec #:literals (prefix rename only except)
   #:attributes ((name 0))
   #:transparent
-  (pattern name)
+  (pattern name:identifier)
   (pattern (prefix i:identifier s:sig-spec)
            #:with name #'s.name)
   (pattern (rename s:sig-spec [int:identifier ext:identifier] ...)

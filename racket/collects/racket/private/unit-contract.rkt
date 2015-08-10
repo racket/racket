@@ -265,11 +265,15 @@
                       (format " with tag ~a" tag)
                       ""))))))
           (loop (sub1 i)))))
+    ;; check that the dependencies of the given unit are consistent with the
+    ;; dependencies specified by the contract. Ensures that the given dependencies
+    ;; are a subset of the expected dependencies otherwise raises a contract error.
     (define (check-dependencies expected given imports)
       (define (lookup dep lst)
         (member dep lst (lambda (p1 p2)
                           (and (eq? (car p1) (car p2))
                                (eq? (cdr p1) (cdr p2))))))
+      ;; Normalize dependencies to be symbols or pairs of tags and symbols
       (define (normalize-deps deps)
         (map (lambda (dep) (if (car dep) dep (cdr dep))) deps))
       (define t (for*/hash ([i (in-vector imports)]

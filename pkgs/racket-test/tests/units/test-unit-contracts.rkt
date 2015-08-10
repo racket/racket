@@ -16,9 +16,6 @@
   (or (regexp-match? (format "~a: contract violation" re) msg)
       (regexp-match? (format "~a: broke its own contract" re) msg)))
 
-(define (match-err re msg)
-  (regexp-match? re msg))
-
 (define (get-ctc-err msg)
   (cond
     [(regexp-match  #rx"contract violation\n *([^\n]*)\n" msg)
@@ -43,31 +40,8 @@
                        (let ([msg (exn-message exn)])
                          (and (match-blame blame msg)
                               (match-obj obj msg)
-                              (match-err err msg)))))
-                (λ () expr))
-     #;(with-handlers ((exn:fail:contract?
-                      (lambda (exn)
-                        (let ([msg (exn-message exn)])
-                          (cond
-                            [(not (match-blame blame msg))
-                             (error 'test-contract-error
-                                    "blame \"~a\" not found in:\n\"~a\""
-                                     blame msg)]
-                            [(not (match-obj obj msg))
-                             (error 'test-contract-error
-                                    "object \"~a\" not found in:\n\"~a\""
-                                    obj msg)]
-                            [(not (match-err err msg))
-                             (error 'test-contract-error
-                                    "error \"~a\" not found in:\n\"~a\""
-                                    err msg)]
-                            [else 
-                             (printf "got expected contract error \"~a\" on ~a blaming ~a: ok\n\t\"~a\"\n\n" 
-                                     err obj blame (get-ctc-err msg))])))))
-       expr
-       (error 'test-contract-error 
-              "expected contract error \"~a\" on ~a, got none"
-              err 'expr)))))
+                              (regexp-match? err msg)))))
+                (λ () expr)))))
 
 (define-signature sig1
   ((contracted [x number?])))
