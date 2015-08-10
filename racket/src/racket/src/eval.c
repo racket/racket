@@ -96,7 +96,9 @@
 
    The third pass, called "optimize", performs constant propagation,
    constant folding, and function inlining; this pass mutates records
-   produced by the "letrec_check" pass. See "optimize.c".
+   produced by the "letrec_check" pass. See "optimize.c". This pass
+   isn't optional; for example, it calculates closure information that
+   the third pass uses.
 
    The fourth pass, called "resolve", finishes compilation by computing
    variable offsets and indirections (often mutating the records
@@ -191,7 +193,8 @@
 SHARED_OK int scheme_startup_use_jit = INIT_JIT_ON;
 void scheme_set_startup_use_jit(int v) { scheme_startup_use_jit =  v; }
 
-SHARED_OK static int valdiate_compile_result = 0;
+SHARED_OK static int validate_compile_result = 0;
+SHARED_OK static int recompile_every_compile = 0;
 
 /* THREAD LOCAL SHARED */
 THREAD_LOCAL_DECL(volatile int scheme_fuel_counter);
@@ -234,6 +237,7 @@ READ_ONLY static Scheme_Object *zero_rands_ptr; /* &zero_rands_ptr is dummy rand
 static Scheme_Object *eval(int argc, Scheme_Object *argv[]);
 static Scheme_Object *compile(int argc, Scheme_Object *argv[]);
 static Scheme_Object *compiled_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *recompile(int argc, Scheme_Object *argv[]);
 static Scheme_Object *expand(int argc, Scheme_Object **argv);
 static Scheme_Object *local_expand(int argc, Scheme_Object **argv);
 static Scheme_Object *local_expand_expr(int argc, Scheme_Object **argv);
@@ -258,6 +262,8 @@ static Scheme_Object *allow_set_undefined(int argc, Scheme_Object **argv);
 static Scheme_Object *compile_module_constants(int argc, Scheme_Object **argv);
 static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv);
+
+static Scheme_Object *recompile_top(Scheme_Object *top);
 
 static Scheme_Object *_eval_compiled_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env);
 
@@ -351,6 +357,7 @@ scheme_init_eval (Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY2("eval-syntax", eval_stx, 1, 2, 0, -1, env);
 
   GLOBAL_PRIM_W_ARITY("compile",                                 compile,                               1, 1, env);
+  GLOBAL_PRIM_W_ARITY("compiled-expression-recompile",           recompile,                             1, 1, env);
   GLOBAL_PRIM_W_ARITY("compile-syntax",                          compile_stx,                           1, 1, env);
   GLOBAL_PRIM_W_ARITY("compiled-expression?",                    compiled_p,                            1, 1, env);
   GLOBAL_PRIM_W_ARITY("expand",                                  expand,                                1, 1, env);
@@ -379,7 +386,24 @@ scheme_init_eval (Scheme_Env *env)
     /* Enables validation of bytecode as it is generated,
        to double-check that the compiler is producing
        valid bytecode as it should. */
-    valdiate_compile_result = 1;
+    validate_compile_result = 1;
+  }
+
+  {
+    /* Enables re-running the optimizer N times on every compilation. */
+    const char *s;
+    s = getenv("PLT_RECOMPILE_COMPILE");
+    if (s) {
+      int i = 0;
+      while ((s[i] >= '0') && (s[i] <= '9')) {
+        recompile_every_compile = (recompile_every_compile * 10) + (s[i]-'0');
+        i++;
+      }
+      if (recompile_every_compile <= 0)
+        recompile_every_compile = 1;
+      else if (recompile_every_compile > 32)
+        recompile_every_compile = 32;
+    }
   }
 }
 
@@ -3531,7 +3555,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  c = lv->count;
 
 	  i = lv->position;
-	  ab = SCHEME_LET_AUTOBOX(lv);
+	  ab = SCHEME_LET_VALUE_AUTOBOX(lv);
 	  value = lv->value;
 	  obj = lv->body;
 
@@ -3593,7 +3617,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  PUSH_RUNSTACK(p, RUNSTACK, c);
 	  RUNSTACK_CHANGED();
 
-	  if (SCHEME_LET_AUTOBOX(lv)) {
+	  if (SCHEME_LET_VOID_AUTOBOX(lv)) {
 	    GC_MAYBE_IGNORE_INTERIOR Scheme_Object **stack = RUNSTACK;
 
 	    UPDATE_THREAD_RSPTR_FOR_GC();
@@ -3991,6 +4015,48 @@ static int get_comp_flags(Scheme_Config *config)
   return comp_flags;
 }
 
+static Scheme_Object *optimize_resolve_expr(Scheme_Object* o, Comp_Prefix *cp, Scheme_Object *src_insp_desc)
+{
+  Optimize_Info *oi;
+  Resolve_Prefix *rp;
+  Resolve_Info *ri;
+  Scheme_Compilation_Top *top;
+  /* TODO: see if this can be moved here completely */
+  int comp_flags, enforce_consts, max_let_depth;
+  Scheme_Config *config;
+
+  config = scheme_current_config();
+  enforce_consts = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_COMPILE_MODULE_CONSTS));
+  comp_flags = get_comp_flags(config);
+  if (enforce_consts)
+    comp_flags |= COMP_ENFORCE_CONSTS;
+  oi = scheme_optimize_info_create(cp, 1);
+  scheme_optimize_info_enforce_const(oi, enforce_consts);
+  if (!(comp_flags & COMP_CAN_INLINE))
+    scheme_optimize_info_never_inline(oi);
+  o = scheme_optimize_expr(o, oi, 0);
+
+  rp = scheme_resolve_prefix(0, cp, src_insp_desc);
+  ri = scheme_resolve_info_create(rp);
+  scheme_resolve_info_enforce_const(ri, enforce_consts);
+  scheme_enable_expression_resolve_lifts(ri);
+
+  o = scheme_resolve_expr(o, ri);
+  max_let_depth = scheme_resolve_info_max_let_depth(ri);
+  o = scheme_sfs(o, NULL, max_let_depth);
+
+  o = scheme_merge_expression_resolve_lifts(o, rp, ri);
+
+  rp = scheme_remap_prefix(rp, ri);
+
+  top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
+  top->iso.so.type = scheme_compilation_top_type;
+  top->max_let_depth = max_let_depth;
+  top->code = o;
+  top->prefix = rp;
+  return (Scheme_Object *)top;
+}
+
 static void *compile_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -4189,7 +4255,14 @@ static void *compile_k(void)
       top->code = o;
       top->prefix = rp;
 
-      if (valdiate_compile_result) {
+      if (recompile_every_compile) {
+        int i;
+        for (i = recompile_every_compile; i--; ) {
+          top = (Scheme_Compilation_Top *)recompile_top((Scheme_Object *)top);
+        }
+      }
+
+      if (validate_compile_result) {
         scheme_validate_code(NULL, top->code,
                              top->max_let_depth,
                              top->prefix->num_toplevels,
@@ -4808,6 +4881,39 @@ compiled_p(int argc, Scheme_Object *argv[])
   return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_compilation_top_type)
 	  ? scheme_true
 	  : scheme_false);
+}
+
+static Scheme_Object *recompile_top(Scheme_Object *top)
+{
+  Comp_Prefix *cp;
+  Scheme_Object *code;
+
+#if 0
+  printf("Resolved Code:\n%s\n\n", scheme_print_to_string(((Scheme_Compilation_Top *)top)->code, NULL));
+#endif
+
+  code = scheme_unresolve_top(top, &cp);
+
+#if 0
+  printf("Unresolved Prefix:\n");
+  printf("%s\n\n", scheme_print_to_string(cp, NULL));
+  printf("Unresolved Code:\n");
+  printf("%s\n\n", scheme_print_to_string(code, NULL));
+#endif
+
+  top = optimize_resolve_expr(code, cp, ((Scheme_Compilation_Top*)top)->prefix->src_insp_desc);
+
+  return top;
+}
+
+static Scheme_Object *
+recompile(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_compilation_top_type)) {
+    scheme_wrong_contract("compiled-expression-recompile", "compiled-expression?", 0, argc, argv);
+  }
+
+  return recompile_top(argv[0]);
 }
 
 static Scheme_Object *expand(int argc, Scheme_Object **argv)

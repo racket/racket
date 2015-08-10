@@ -1798,16 +1798,16 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       for (i = 0; i < c; i++, p++) {
 	if ((q < 0) 
             || (p < 0)
-	    || (SCHEME_LET_AUTOBOX(lv) && ((p >= depth)
+	    || (SCHEME_LET_VALUE_AUTOBOX(lv) && ((p >= depth)
 					   || ((stack[p] != VALID_BOX)
                                                && (stack[p] != VALID_BOX_NOCLEAR))))
-	    || (!SCHEME_LET_AUTOBOX(lv) && ((p >= letlimit)
+	    || (!SCHEME_LET_VALUE_AUTOBOX(lv) && ((p >= letlimit)
 					    || !(WHEN_CAN_RESET_STACK_SLOT(stack[p] == VALID_VAL) 
                                                  || WHEN_CAN_RESET_STACK_SLOT(stack[p] == VALID_VAL_NOCLEAR) 
                                                  || (stack[p] == VALID_UNINIT)))))
 	  scheme_ill_formed_code(port);
 
-	if (!SCHEME_LET_AUTOBOX(lv)) {
+	if (!SCHEME_LET_VALUE_AUTOBOX(lv)) {
           if (stack[p] != VALID_VAL_NOCLEAR)
             stack[p] = VALID_VAL;
 	}
@@ -1827,7 +1827,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       if ((c < 0) || (c > delta))
 	scheme_ill_formed_code(port);
 
-      if (SCHEME_LET_AUTOBOX(lv)) {
+      if (SCHEME_LET_VOID_AUTOBOX(lv)) {
 	for (i = 0; i < c; i++) {
 	  stack[--delta] = VALID_BOX;
 	}

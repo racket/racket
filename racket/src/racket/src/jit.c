@@ -719,7 +719,7 @@ int scheme_is_non_gc(Scheme_Object *obj, int depth)
   case scheme_let_value_type:
     if (depth) {
       Scheme_Let_Value *lv = (Scheme_Let_Value *)obj;
-      if (SCHEME_LET_AUTOBOX(lv))
+      if (SCHEME_LET_VALUE_AUTOBOX(lv))
         return 0;
       return scheme_is_non_gc(lv->body, depth - 1);
     }
@@ -733,7 +733,7 @@ int scheme_is_non_gc(Scheme_Object *obj, int depth)
   case scheme_let_void_type:
     if (depth) {
       Scheme_Let_Void *lv = (Scheme_Let_Void *)obj;
-      if (SCHEME_LET_AUTOBOX(lv))
+      if (SCHEME_LET_VOID_AUTOBOX(lv))
         return 0;
       return scheme_is_non_gc(lv->body, depth - 1);
     }
@@ -2721,7 +2721,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   case scheme_let_value_type:
     {
       Scheme_Let_Value *lv = (Scheme_Let_Value *)obj;
-      int ab = SCHEME_LET_AUTOBOX(lv), i, pos;
+      int ab = SCHEME_LET_VALUE_AUTOBOX(lv), i, pos;
       mz_jit_unbox_state ubs;
       START_JIT_DATA();
 
@@ -2829,7 +2829,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       scheme_stack_safety(jitter, c, 0);
       mz_runstack_pushed(jitter, c);
 
-      if (SCHEME_LET_AUTOBOX(lv)) {
+      if (SCHEME_LET_VOID_AUTOBOX(lv)) {
 	int i;
         mz_rs_sync();
 	JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();

@@ -730,22 +730,11 @@ Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *_tl, int flags
   return scheme_make_toplevel(tl->depth, tl->position, 0, flags);
 }
 
-Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env, 
-					     Scheme_Compile_Info *rec, int drec)
+Scheme_Object *scheme_register_stx_in_comp_prefix(Scheme_Object *var, Comp_Prefix *cp) 
 {
-  Comp_Prefix *cp = env->prefix;
   Scheme_Local *l;
   Scheme_Object *o;
   int pos;
-
-  if (rec && rec[drec].dont_mark_local_use) {
-    /* Make up anything; it's going to be ignored. */
-    l = (Scheme_Local *)scheme_malloc_atomic_tagged(sizeof(Scheme_Local));
-    l->iso.so.type = scheme_compiled_quote_syntax_type;
-    l->position = 0;
-
-    return (Scheme_Object *)l;
-  }
 
   if (!cp->stxes) {
     Scheme_Hash_Table *ht;
@@ -765,6 +754,24 @@ Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env
   scheme_hash_set(cp->stxes, var, o);
 
   return o;
+}
+
+Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env *env, 
+					     Scheme_Compile_Info *rec, int drec)
+{
+  Scheme_Local *l;
+  Comp_Prefix *cp = env->prefix;
+
+  if (rec && rec[drec].dont_mark_local_use) {
+    /* Make up anything; it's going to be ignored. */
+    l = (Scheme_Local *)scheme_malloc_atomic_tagged(sizeof(Scheme_Local));
+    l->iso.so.type = scheme_compiled_quote_syntax_type;
+    l->position = 0;
+
+    return (Scheme_Object *)l;
+  }
+
+  return scheme_register_stx_in_comp_prefix(var, cp);
 }
 
 /*========================================================================*/

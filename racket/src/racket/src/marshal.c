@@ -180,7 +180,7 @@ static Scheme_Object *write_let_value(Scheme_Object *obj)
 
   return cons(scheme_make_integer(lv->count),
 	      cons(scheme_make_integer(lv->position),
-		   cons(SCHEME_LET_AUTOBOX(lv) ? scheme_true : scheme_false,
+		   cons(SCHEME_LET_VALUE_AUTOBOX(lv) ? scheme_true : scheme_false,
 			cons(scheme_protect_quote(lv->value), 
 			     scheme_protect_quote(lv->body)))));
 }
@@ -199,7 +199,7 @@ static Scheme_Object *read_let_value(Scheme_Object *obj)
   lv->position = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
   if (!SCHEME_PAIRP(obj)) return NULL;
-  SCHEME_LET_AUTOBOX(lv) = SCHEME_TRUEP(SCHEME_CAR(obj));
+  SCHEME_LET_VALUE_AUTOBOX(lv) = SCHEME_TRUEP(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
   if (!SCHEME_PAIRP(obj)) return NULL;
   lv->value = SCHEME_CAR(obj);
@@ -215,7 +215,7 @@ static Scheme_Object *write_let_void(Scheme_Object *obj)
   lv = (Scheme_Let_Void *)obj;
 
   return cons(scheme_make_integer(lv->count), 
-	      cons(SCHEME_LET_AUTOBOX(lv) ? scheme_true : scheme_false,
+	      cons(SCHEME_LET_VOID_AUTOBOX(lv) ? scheme_true : scheme_false,
 		   scheme_protect_quote(lv->body)));
 }
 
@@ -230,7 +230,7 @@ static Scheme_Object *read_let_void(Scheme_Object *obj)
   lv->count = SCHEME_INT_VAL(SCHEME_CAR(obj));
   obj = SCHEME_CDR(obj);
   if (!SCHEME_PAIRP(obj)) return NULL;
-  SCHEME_LET_AUTOBOX(lv) = SCHEME_TRUEP(SCHEME_CAR(obj));
+  SCHEME_LET_VOID_AUTOBOX(lv) = SCHEME_TRUEP(SCHEME_CAR(obj));
   lv->body = SCHEME_CDR(obj);
 
   return (Scheme_Object *)lv;
