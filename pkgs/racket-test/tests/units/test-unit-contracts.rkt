@@ -911,4 +911,104 @@
   (define-values/invoke-unit c@ (import) (export s^))
   (new-make-t))
 
+
+(let ()
+  (define-signature s^ ((contracted [n number?])))
+  (define-unit s0@
+    (import)
+    (export s^)
+    (define n 0))
+
+  (define-unit s1@
+    (import)
+    (export s^)
+    (define n 1))
+
+  (define-unit/contract a0@
+    (import)
+    (export)
+    #:invoke/contract (-> integer? integer?)
+    (lambda (n) (add1 n)))
+
+  (define-unit/contract a1@
+    (import)
+    (export)
+    (init-depend)
+    #:invoke/contract (-> integer? integer?)
+    (lambda (n) "bad"))
+
+  ((invoke-unit a0@) 1)
+  (test-contract-error "(unit a1@)" "a1@" "not an integer" ((invoke-unit a1@) 1))
+
+  (define-unit t@
+    (import s^)
+    (export)
+    (if (zero? n) "zero" n))
+
+  (define c@/c (unit/c (import) (export) number?))
+  (define/contract c0@ c@/c
+    (compound-unit (import) (export) (link [((S : s^)) s0@] [() t@ S])))
+  (define/contract c1@ c@/c
+    (compound-unit (import) (export) (link [((S : s^)) s1@] [() t@ S])))
+  (test-contract-error "(definition c0@)" "c0@" "not a number" (invoke-unit c0@))
+  (invoke-unit c1@))
+
+;; tests for init-depends in unit contracts
+(let ()
+  (define-signature a^ ())
+  (define-signature b^ ())
+  (define-signature c^ ())
+
+  (define/contract u@
+    (unit/c (import a^ b^) (export) (init-depend a^ b^))
+    (unit (import a^ b^) (export) (init-depend a^ b^)))
+
+  (define/contract v@
+    (unit/c (import a^ b^) (export) (init-depend a^ b^))
+    (unit (import a^) (export) (init-depend a^)))
+
+  (test-contract-error
+   "(definition w@)" "w@" "missing init-depend"
+   (let ()
+     (define/contract w@
+       (unit/c (import a^) (export))
+       (unit (import a^) (export) (init-depend a^)))
+     w@))
+
+  ;; make sure that extended dependencies are checked correctly
+  (define-signature a-sub^ extends a^ ())
+  (define/contract x@
+    (unit/c (import a-sub^) (export) (init-depend a-sub^))
+    (unit (import a^) (export) (init-depend a^)))
+
+  ;; make sure tags are checked correctly for init-depends
+  (test-contract-error
+   "(definition y@)" "y@" "untagged init-depend"
+   (let ()
+     (define/contract y@
+       (unit/c (import (tag A a^) a^) (export) (init-depend a^))
+       (unit (import (tag A a^) a^) (export) (init-depend (tag A a^))))
+     y@))
+
+  (test-syntax-error
+   "unit/c: initialization dependency on unknown import in: a-sub^"
+   (unit/c (import a^) (export) (init-depend a-sub^)))
+  (test-syntax-error
+   "unit/c: unknown import"
+   (unit/c (import) (export) (init-depend a^)))
+
+  (test-syntax-error
+   "unit/c: unknown signature"
+   (unit/c (import x^) (export) (init-depend)))
+
+  (test-syntax-error
+   "unit/c: unknown signature"
+   (unit/c (import) (export) (init-depend x^)))
+
+  (test-syntax-error
+   "unit/c: unknown signature"
+   (unit/c (import) (export x^) (init-depend)))
+
+  (void))
+
 (displayln "tests passed")

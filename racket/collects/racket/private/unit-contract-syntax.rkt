@@ -3,22 +3,15 @@
 (require syntax/parse
          "unit-compiletime.rkt"
          "unit-keywords.rkt"
-         (for-template "unit-keywords.rkt"))
+         (for-template "unit-keywords.rkt" racket/base racket/contract))
 
-(provide import-clause/contract export-clause/contract dep-clause
-         import-clause/c export-clause/c)
-
-(define-syntax-class sig-id
-  #:attributes ()
-  (pattern x
-           #:declare x (static (λ (x)
-                                 (signature? (set!-trans-extract x)))
-                               'signature)))
+(provide import-clause/contract export-clause/contract body-clause/contract dep-clause
+         import-clause/c export-clause/c body-clause/c)
 
 (define-syntax-class sig-spec #:literals (prefix rename only except)
   #:attributes ((name 0))
   #:transparent
-  (pattern name:sig-id)
+  (pattern name)
   (pattern (prefix i:identifier s:sig-spec)
            #:with name #'s.name)
   (pattern (rename s:sig-spec [int:identifier ext:identifier] ...)
@@ -38,8 +31,8 @@
 (define-syntax-class tagged-sig-id #:literals (tag)
   #:attributes ()
   #:transparent
-  (pattern s:sig-id)
-  (pattern (tag i:identifier s:sig-id)))
+  (pattern s)
+  (pattern (tag i:identifier s)))
 
 (define-syntax-class unit/c-clause
   #:auto-nested-attributes
@@ -56,6 +49,42 @@
   #:auto-nested-attributes
   #:transparent
   (pattern (export e:unit/c-clause ...)))
+(define-splicing-syntax-class body-clause/c
+  #:literals (values)
+  #:auto-nested-attributes
+  #:transparent
+  (pattern (~seq)
+           #:attr name #'()
+           #:attr apply-invoke-ctcs
+           (lambda (id blame) id))
+  (pattern (values ctc:expr ...)
+           #:attr name #'('(values ctc ...))
+           #:attr apply-invoke-ctcs
+           ;; blame here is really syntax representing a blame object
+           (lambda (id blame)
+             (define len (length (syntax->list #'(ctc ...))))
+             #`(call-with-values (lambda () #,id)
+                 (lambda args
+                   (unless (= #,len (length args))
+                     (raise-blame-error (blame-add-context #,blame "the body of")
+                                        (blame-value #,blame)
+                                        (format "expected ~a values, returned ~a"
+                                                #,len (length args))))
+                   (apply values
+                          (map
+                           (lambda (c arg)
+                             (((contract-projection c)
+                                (blame-add-context #,blame "the body of"))
+                              arg))
+                           (list ctc ...)
+                           args))))))
+  (pattern b:expr
+           #:attr name #'('b)
+           #:attr apply-invoke-ctcs
+           (lambda (id blame)
+             #`(((contract-projection b)
+                  (blame-add-context #,blame "the body of"))
+                #,id))))
 
 (define-syntax-class unit/contract-clause
   #:auto-nested-attributes
@@ -76,3 +105,7 @@
   #:auto-nested-attributes
   #:transparent
   (pattern (init-depend s:tagged-sig-id ...)))
+(define-splicing-syntax-class body-clause/contract
+  #:auto-nested-attributes
+  #:transparent
+  (pattern (~seq #:invoke/contract b:expr)))
