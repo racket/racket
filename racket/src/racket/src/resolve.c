@@ -3285,6 +3285,7 @@ static int unresolve_stack_push(Unresolve_Info *ui, int n, int r_only, int rev)
     ui->stack_size = (2 * ui->stack_size) + n;
   }
   memset(ui->flags + pos, 0, sizeof(int) * n);
+  memset(ui->ref_args + pos, 0, sizeof(int) * n);
   if (!r_only) {
     if (!rev) {
       for (i = 0; i < n; i++) {
