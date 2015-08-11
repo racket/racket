@@ -6,7 +6,6 @@
 ;; check-unit
 (test-runtime-error exn:fail:contract?
                     "result of unit expression was not a unit"
-                    "check-unit: not a unit"
   (check-unit 1 'check-unit))
 
 (test (void)
@@ -31,7 +30,6 @@
 
 (test-runtime-error exn:fail:contract?
                     "expects a unit with an export for tag t with signature c, which the given unit does not supply"
-                    "check-helper: missing signature"
   (check-helper sub-vector
                 #((c . #((t . r4) (t . r1) (t . r2) (t . r3))))
                 'check-helper
@@ -50,7 +48,6 @@
 
 (test-runtime-error exn:fail:contract?
                     "expects a unit with an export for tag t with signature c, which the given unit supplies multiple times"
-                    "check-helper: ambiguous signature"
       (check-helper sub-vector2 
                     #((c . #((t . r2) (t . r3))))
                     'check-helper #f))

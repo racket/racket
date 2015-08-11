@@ -83,25 +83,26 @@
 
   (define-values (c d) (values "foo" 3)))
 
-(test-syntax-error "misuse of contracted" "misuse of define-signature keyword"                   
-  contracted)
-(test-syntax-error "invalid forms after contracted in signature"
-                   "expected a list of [id contract]"
+(test-syntax-error
+ "misuse of define-signature keyword"
+ contracted)
+(test-syntax-error
+ "expected a list of [id contract]"
   (define-signature x ((contracted x y))))
-(test-syntax-error "identifier not first part of pair after contracted in signature"
-                   "expected a list of [id contract]"
+(test-syntax-error
+ "expected a list of [id contract]"
   (define-signature x ((contracted [(-> number? number?) x]))))
 
-(test-syntax-error "identifier h? not bound anywhere"
-                   "unbound identifier"
+(test-syntax-error
+ "unbound identifier"
   (module h?-test racket
     (define-signature s^
       ((define-values (f?) (values number?))
        (define-syntaxes (g?) (make-rename-transformer #'number?))
        (contracted [f (-> f? (and/c g? h?))])))))
 
-(test-syntax-error "f not defined in unit exporting sig3"
-                   "undefined export"
+(test-syntax-error
+ "undefined export"
   (unit (import) (export sig3 sig4)
         (define a #t)
         (define g zero?)
@@ -624,16 +625,16 @@
 (test-contract-error "m2" "U@" "symbol?" (m2:w))
 (test-contract-error "m1" "U@" "string?" (m2:v))
 
-(test-syntax-error "no y in sig1"
-                   "identifier not member of signature"
+(test-syntax-error
+ "identifier not member of signature"
   (unit/c (import (sig1 [y number?]))
           (export)))
-(test-syntax-error "two xs for sig1"
-                   "duplicate identifier found"
+(test-syntax-error
+ "duplicate identifier found"
   (unit/c (import)
           (export (sig1 [x string?] [x number?]))))
-(test-syntax-error "no sig called faux^, so import description matching fails"
-                   "unit/c: unknown signature"
+(test-syntax-error
+ "unit/c: unknown signature"
   (unit/c (import faux^) (export)))
 
 (test-contract-error "(definition bad-export@)" "bad-export@" "unit must export signature sig1"

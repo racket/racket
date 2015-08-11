@@ -310,7 +310,8 @@
 (test-syntax-error 
  "unit: x is exported by multiple signatures"
  (unit (import) (export x-sig x-sig2) (define x 12)))
-(test-syntax-error 
+(test-syntax-error
+ "unit: duplicate import signature"
  (unit (import x-sig (prefix a x-sig)) (export)))
 (test-syntax-error 
  "unit: the signature of x-sig extends this signature"
@@ -568,43 +569,43 @@
   (test 1 x))
 
 ;; simple runtime errors (no subtyping, no deps)
-(test-runtime-error exn:fail:contract? "compound-unit: result of unit expression was not a unit: 1" "compound-unit: not a unit"
+(test-runtime-error exn:fail:contract? "compound-unit: result of unit expression was not a unit: 1"
                     (compound-unit (import) (export) (link (() 1))))
-(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "compound-unit: missing import"
+(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply"
                     (compound-unit (import) (export)
                                    (link (() (unit (import x-sig) (export))))))
-(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "compound-unit: missing import"
+(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply"
                     (compound-unit (import (X : x-sig)) (export)
                                    (link (() (unit (import x-sig) (export))
                                           (tag u X)))))
-(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an import for tag u with signature x-sig, which this usage context does not supply" "compound-unit: missing import"
+(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an import for tag u with signature x-sig, which this usage context does not supply"
                     (compound-unit (import (X : x-sig)) (export)
                                    (link (() (unit (import (tag u x-sig)) (export))
                                           X))))
-(test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply" "compound-unit: missing export"
+(test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply"
                     (compound-unit (import) (export)
                                    (link (((X : x-sig)) (unit (import) (export))))))
-(test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an export for tag u with signature x-sig, which the given unit does not supply" "compound-unit: missing export"
+(test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an export for tag u with signature x-sig, which the given unit does not supply"
                     (compound-unit (import) (export)
                                    (link (((X : (tag u x-sig))) (unit (import) (export x-sig) (define x 1))))))
-(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an import for tag u with signature x-sig, which this usage context does not supply" "compound-unit: missing export"
+(test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an import for tag u with signature x-sig, which this usage context does not supply"
                     (compound-unit (import) (export)
                                    (link (((X : x-sig)) (unit (import (tag u x-sig)) (export))))))
 
-(test-runtime-error exn:fail:contract? "invoke-unit: result of unit expression was not a unit: 1" "invoke-unit: not a unit"
+(test-runtime-error exn:fail:contract? "invoke-unit: result of unit expression was not a unit: 1"
                     (invoke-unit 1))
-(test-runtime-error exn:fail:contract? "invoke-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "invoke-unit: unit has imports"
+(test-runtime-error exn:fail:contract? "invoke-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply"
                     (invoke-unit (unit (import x-sig) (export) x)))
 
-(test-runtime-error exn:fail:contract? "define-values/invoke-unit: result of unit expression was not a unit: 1" "define-values/invoke-unit: not a unit"
+(test-runtime-error exn:fail:contract? "define-values/invoke-unit: result of unit expression was not a unit: 1"
                     (define-values/invoke-unit 1 (import) (export)))
 (test-runtime-error 
  exn:fail:contract?
- "define-values/invoke-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "define-values/invoke-unit: has imports"
+ "define-values/invoke-unit: unit argument expects an untagged import with signature x-sig, which this usage context does not supply"
  (define-values/invoke-unit (unit (import x-sig) (export) x) (import) (export)))
 (test-runtime-error 
  exn:fail:contract?
- "define-values/invoke-unit: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply" "define-values/invoke-unit: signature mismatch"
+ "define-values/invoke-unit: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply"
  (define-values/invoke-unit (unit (import) (export)) (import) (export x-sig)))
 
 ;; unit creation w/o signatures (including macros and prefixes/renames).
@@ -1076,16 +1077,16 @@
   (define u1 (unit (import) (export x-sig) (define x 1)))
   (define u2 (unit (import x-sub) (export)))
   
-  (test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply" "compound-unit: not a subtype"
+  (test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply"
                       (compound-unit (import) (export)
                                      (link (((S : x-sub)) u1))))
   
-  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sub, which this usage context does not supply" "compound-unit: not a subtype"
+  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sub, which this usage context does not supply"
                       (compound-unit (import) (export)
                                      (link (((S : x-sig)) u1)
                                            (() u2 S))))
   
-  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sub, which this usage context does not supply" "compound-unit: not a subtype"
+  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sub, which this usage context does not supply"
                       (compound-unit (import (S : x-sig)) (export)
                                      (link (() u2 S)))))
 
@@ -1093,13 +1094,13 @@
   (define u1 (unit (import) (export x-sub y-sub) (define x 1) (define xx 2) (define y 3) (define yy 4)))
   (define-values/invoke-unit u1 (import) (export x-sig))
   (test 1 x)
-  (test-runtime-error exn? "xx: undefined;\n cannot reference undefined identifier" "unbound identifier" xx)
-  (test-runtime-error exn? "y: undefined;\n cannot reference undefined identifier" "unbound identifier" y)
-  (test-runtime-error exn? "yy: undefined;\n cannot reference undefined identifier" "unbound identifier" yy))
+  (test-runtime-error exn? "xx: undefined;\n cannot reference undefined identifier" xx)
+  (test-runtime-error exn? "y: undefined;\n cannot reference undefined identifier" y)
+  (test-runtime-error exn? "yy: undefined;\n cannot reference undefined identifier" yy))
 
 (let ()
   (define u1 (unit (import) (export x-sig) (define x 1)))
-  (test-runtime-error exn:fail:contract? "define-values/invoke-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply" "define-values/invoke-unit: not a subtype"
+  (test-runtime-error exn:fail:contract? "define-values/invoke-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply"
                       (define-values/invoke-unit u1 (import) (export x-sub))))
 
 ;; export-subtyping
@@ -1150,10 +1151,9 @@
                               (() u3 S3 S2)))))
   (test-runtime-error exn:fail:contract?
                       "compound-unit: this usage context expects a unit with an untagged export with signature x-sig, which the given unit supplies multiple times"
-                      "ambiguous export"
                       (compound-unit (import) (export)
                                      (link (((S1 : x-sig)) u))))
-  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context supplies multiple times" "ambiguous import"
+  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature x-sig, which this usage context supplies multiple times"
                       (compound-unit (import (S1 : x-sub) (S2 : x-sub2)) (export)
                                      (link (() u2 S1 S2))))
 
@@ -1189,7 +1189,7 @@
                         (link (((S2a : s3)) u2)
                               (((S2b : s2)) u3)
                               (() u1 S2a (tag t S2b))))))
-  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature s3, which this usage context does not supply" "compound-unit: signature mismatch"
+  (test-runtime-error exn:fail:contract? "compound-unit: unit argument expects an untagged import with signature s3, which this usage context does not supply"
                       (invoke-unit
                        (compound-unit (import) (export)
                                       (link (((S1 : s1)) u2)
@@ -1212,7 +1212,7 @@
          (compound-unit (import) (export)
                         (link (((S1 : (tag t x-sig)) (S2 : x-sig)) u1)
                               (() u2 S1)))))
-  (test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply" "compound-unit: signature mismatch"
+  (test-runtime-error exn:fail:contract? "compound-unit: this usage context expects a unit with an untagged export with signature x-sub, which the given unit does not supply"
                       (invoke-unit
                        (compound-unit (import) (export)
                                       (link (((S1 : (tag t x-sub)) (S2 : x-sub)) u1)
@@ -1407,19 +1407,19 @@
                                      (link (((S1 : s1)) u2)
                                            (() u1 S1)))))
 
-(test-runtime-error exn:fail:contract? "compound-unit: untagged initialization dependent signature s1 is supplied from a later unit with link S1" "Dependency violation"
+(test-runtime-error exn:fail:contract? "compound-unit: untagged initialization dependent signature s1 is supplied from a later unit with link S1"
                     (compound-unit (import) (export)
                                    (link (() u1 S1)
                                          (((S1 : s1)) u2))))
 
-(test-runtime-error exn:fail:contract? "compound-unit: initialization dependent signature s1 with tag t is supplied from a later unit with link S1" "Dependency violation"
+(test-runtime-error exn:fail:contract? "compound-unit: initialization dependent signature s1 with tag t is supplied from a later unit with link S1"
                     (compound-unit (import) (export)
                                    (link (() u3 (tag t S1))
                                          (((S1 : s1)) u2))))
 
 
 
-(test-runtime-error exn:fail:contract? "compound-unit: untagged initialization dependent signature s1 is supplied from a later unit with link S2" "Dependency violation"
+(test-runtime-error exn:fail:contract? "compound-unit: untagged initialization dependent signature s1 is supplied from a later unit with link S2"
                     (compound-unit (import) (export)
                                    (link (() u4 S2)
                                          (((S2 : s2)) u5))))
@@ -1437,9 +1437,9 @@
                         (link (((A : x-sig) (B : y-sig)) v)
                               (() u A B))))))
 
-(test-runtime-error exn:fail:contract? "define-unit-binding: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply" "not subunit"
+(test-runtime-error exn:fail:contract? "define-unit-binding: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply"
                     (let () (define-unit-binding u2 u (import x-sig) (export x-sig)) 1))
-(test-runtime-error exn:fail:contract? "define-unit-binding: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "not subunit"
+(test-runtime-error exn:fail:contract? "define-unit-binding: unit argument expects an untagged import with signature x-sig, which this usage context does not supply"
                     (let () (define-unit-binding u2 u (import) (export)) 1))
 (test-runtime-error exn:fail:contract? "not a unit"
                     (let () (define-unit-binding u2 1 (import) (export)) 1))
@@ -1477,12 +1477,12 @@
 (test-syntax-error 
  "define-unit: import clause must start with keyword \"import\""
  (define-unit x (unit (import) (export))))
-(test-runtime-error exn:fail:contract? "set!: unit argument expects an untagged import with signature s, which this usage context does not supply" "define-unit: bad set!"
+(test-runtime-error exn:fail:contract? "set!: unit argument expects an untagged import with signature s, which this usage context does not supply"
                     (let ()
                       (define-signature s ())
                       (define-unit x (import) (export) 1)
                       (set! x (unit (import s) (export) 1))))
-(test-runtime-error exn:fail:contract? "set!: this usage context expects a unit with an untagged export with signature s, which the given unit does not supply" "define-unit: bad set!"
+(test-runtime-error exn:fail:contract? "set!: this usage context expects a unit with an untagged export with signature s, which the given unit does not supply"
                     (let ()
                       (define-signature s ())
                       (define-unit x (import) (export s) 1)
@@ -1587,7 +1587,6 @@
  (define-values/invoke-unit/infer (export y-sig) (link u v)))
 
 (test-runtime-error exn? "x: undefined"
-                    "define-values/invoke-unit/infer: unbound variable: x"
                     (let ()
                       (define-values/invoke-unit/infer (export) (link u v))
                       x))
@@ -1596,7 +1595,6 @@
  (define-values/invoke-unit/infer (export y-sig) v))
 (test-runtime-error exn?
                     "x: undefined"
-                    "define-values/invoke-unit/infer: unbound variable: x"
                     (let ()
                       (define-values/invoke-unit/infer (export) v)
                       x))
@@ -1700,7 +1698,8 @@
 (test-syntax-error 
  "compound-unit/infer: unknown unit definition"
  (compound-unit/infer (import) (export) (link (((A : b)) c))))
-(test-syntax-error 
+(test-syntax-error
+"compound-unit/infer: unknown signature"
  (compound-unit/infer (import ??) (export) (link)))
 (test-syntax-error "compound-unit/infer: unknown sig"
                    (compound-unit/infer (import) (export ??) (link)))
@@ -1863,16 +1862,16 @@
 
   ;; unit/new-import-export
 
-  (test-runtime-error exn:fail:contract? "unit/new-import-export: result of unit expression was not a unit: 1" "unit/new-import-export: not a unit"
+  (test-runtime-error exn:fail:contract? "unit/new-import-export: result of unit expression was not a unit: 1"
                       (unit/new-import-export (import) (export)
                                               (() 1)))
 
-  (test-runtime-error exn:fail:contract? "unit/new-import-export: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply" "unit/new-import-export: not a subtype"
+  (test-runtime-error exn:fail:contract? "unit/new-import-export: this usage context expects a unit with an untagged export with signature x-sig, which the given unit does not supply"
                       (unit/new-import-export (import) (export)
                                               ((x-sig) (unit (import) (export)))))
 
 
-  (test-runtime-error exn:fail:contract? "unit/new-import-export: unit argument expects an untagged import with signature x-sig, which this usage context does not supply" "unit/new-import-export: not a subtype"
+  (test-runtime-error exn:fail:contract? "unit/new-import-export: unit argument expects an untagged import with signature x-sig, which this usage context does not supply"
                       (unit/new-import-export (import) (export)
                                               (() (unit (import x-sig) (export)))))
 
@@ -2063,9 +2062,9 @@
 
   (test 'zero (use-unit))
   (test 'zero (use-unit2))
-  (test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference undefined identifier" "context mismatch; no u-a"
+  (test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference undefined identifier"
                       (use-unit-badly1 u-a))
-  (test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference undefined identifier" "context mismatch; no u-a"
+  (test-runtime-error exn:fail:contract:variable? "u-a: undefined;\n cannot reference undefined identifier"
                       (use-unit-badly2 sig^))
 
   (test 12

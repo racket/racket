@@ -34,18 +34,15 @@
 
   (define-syntax test-syntax-error
     (syntax-rules ()
-      ((_ err expr) (test-syntax-error "" err expr))
-      ((_ note err expr)
+      ((_ err expr)
        (check-exn
         (lambda (e) (and (exn:fail:syntax? e)
                          (regexp-match? (regexp-quote err)
                                         (exn-message e))))
-        (lambda () (expand #'expr))
-        note))))
+        (lambda () (expand #'expr))))))
   
   (define-syntax test-runtime-error
     (syntax-rules ()
-      ((_ err-pred err note expr) (test-runtime-error err-pred err expr))
       ((_ err-pred err expr)
        (check-exn
         (λ (exn) (and (err-pred exn)
@@ -56,8 +53,6 @@
   (define-syntax test
     (syntax-rules ()
       ((_ expected-value expr)
-       (test equal? expected-value expr))
+       (check-equal? expected-value expr))
       ((_ cmp expected-value expr)
-       (let ((v expr))
-         (unless (cmp expected-value v)
-           (error 'test "expected ~a to evaluate to ~a, got ~a" 'expr 'expected-value v)))))))
+       (check cmp expected-value expr)))))
