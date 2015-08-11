@@ -3401,9 +3401,9 @@ static Scheme_Object *unresolve_closure_data_2(Scheme_Closure_Data *rdata, Unres
   
   if (SCHEME_CLOSURE_DATA_FLAGS(rdata) & CLOS_HAS_TYPED_ARGS) {
     for (i = 0; i < data->num_params; i++) {
-      LOG_UNRESOLVE(printf("ref_args[%d] = %d\n", ui->stack_pos - i,
+      LOG_UNRESOLVE(printf("ref_args[%d] = %d\n", ui->stack_pos - i - 1,
                            scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size)));
-      ui->ref_args[ui->stack_pos - i] = 
+      ui->ref_args[ui->stack_pos - i - 1] = 
         scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size);
     }
   }
@@ -4065,7 +4065,7 @@ static Scheme_Sequence *unresolve_let_value(Scheme_Let_Value *lv, Unresolve_Info
   Scheme_Sequence *seq;
   
   LOG_UNRESOLVE(printf("set! position: %d (stack pos %d)\n", lv->position, ui->stack_pos));
-  if (ui->ref_args[ui->stack_pos - lv->position]) {
+  if (ui->ref_args[ui->stack_pos - lv->position - 1]) {
     Scheme_App2_Rec *app2;
     var = scheme_make_local(scheme_local_type,
                             unresolve_set_flag(ui,
@@ -4123,7 +4123,7 @@ Scheme_App_Rec *maybe_unresolve_app_refs(Scheme_App_Rec *app, Unresolve_Info *ui
       LOG_UNRESOLVE(printf("ui->stack_pos = %d, argpos = %d, i = %d\n", ui->stack_pos, SCHEME_LOCAL_POS(app->args[i + 1]), i));
       if ((scheme_boxmap_get(data->closure_map, i, data->closure_size) & CLOS_TYPE_BOXED) &&
           SAME_TYPE(SCHEME_TYPE(app->args[i + 1]), scheme_local_type) &&
-          !ui->ref_args[ui->stack_pos - SCHEME_LOCAL_POS(app->args[i + 1])]) {
+          !ui->ref_args[ui->stack_pos - SCHEME_LOCAL_POS(app->args[i + 1]) - 1]) {
         Scheme_Case_Lambda *cl;
         Scheme_Closure_Data *d0, *d1;
         Scheme_Set_Bang *sb;
@@ -4233,7 +4233,7 @@ static Scheme_Object *unresolve_expr_2(Scheme_Object *e, Unresolve_Info *ui, int
                              0);
   case scheme_local_unbox_type:
     {
-      if (ui->ref_args[ui->stack_pos - SCHEME_LOCAL_POS(e)]) {
+      if (ui->ref_args[ui->stack_pos - SCHEME_LOCAL_POS(e) - 1]) {
         Scheme_App_Rec *app;
         Scheme_Object *rator;
         LOG_UNRESOLVE(printf("local unbox: %d (stack pos %d)\n", SCHEME_LOCAL_POS(e), ui->stack_pos));
