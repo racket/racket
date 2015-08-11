@@ -124,7 +124,7 @@ typedef enum {
 # define JIT_ARM_THUMB 1
 # define JIT_ARM_VERSION 5
 # define JIT_ARM_EXTENDED 1
-#elif defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6K__)
+#elif defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6ZK__)
 # define JIT_ARM_VERSION 6
 #elif defined(__ARM_ARCH_6T__) || defined(__ARM_ARCH_6T2__)
 # define JIT_ARM_THUMB 2
