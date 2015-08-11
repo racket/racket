@@ -3727,7 +3727,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       __START_TINY_JUMPS__(1);
       refdone = jit_jmpi(jit_forward());
       mz_patch_branch(ref);
-      (void)mz_bnei_t(refslow, JIT_R0, scheme_cpointer_type, JIT_R1);
+      (void)mz_bnei_t(refslow, JIT_R0, scheme_cpointer_type, JIT_R2);
       CHECK_LIMIT();
 
       jit_stxi_p((intptr_t)&SCHEME_CPTR_TYPE((Scheme_Object *)0x0), JIT_R0, JIT_R1);

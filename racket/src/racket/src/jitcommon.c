@@ -3361,7 +3361,7 @@ static int common13(mz_jit_state *jitter, void *_data)
   scheme_jit_register_sub_func(jitter, sjc.slow_cpointer_tag_code, scheme_false);
   CHECK_LIMIT();
     
-  /* *** slow_cpointer_tag_code *** */
+  /* *** slow_set_cpointer_tag_code *** */
   sjc.slow_set_cpointer_tag_code = jit_get_ip();
   mz_prolog(JIT_R2);
   JIT_UPDATE_THREAD_RSPTR();
