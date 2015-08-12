@@ -315,7 +315,7 @@ the submodule. In that case, @racket[begin-for-syntax] forms that wrap
 the @racket[module*] form shift the @tech{phase level} of the
 enclosing module's bindings relative to the submodule. The macro
 expander handles such nesting by shifting the @tech{phase level} of
-the @racket[module*] form so that it's body starts at @tech{phase
+the @racket[module*] form so that its body starts at @tech{phase
 level} 0, expanding, and then reverting the @tech{phase level} shift;
 beware that this process can leave @tech{syntax objects} as
 @racket['origin] @tech{syntax property} values out-of-sync with the

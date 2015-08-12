@@ -5,7 +5,7 @@
 @title{Preserving Source Locations}
 
 @defmodule[syntax/quote]{The @racketmodname[syntax/quote] module
-provides support for quoting syntax so that it's source locations
+provides support for quoting syntax so that its source locations
 are preserved in marshaled bytecode form.}
 
 @defform*[[(quote-syntax/keep-srcloc datum)

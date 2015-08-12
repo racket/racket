@@ -74,7 +74,7 @@ corresponds to the @racket[let] form.
 
 When a @tech{form} parses as the binding of a particular identifier,
 parsing updates a global table that maps a combination of an
-identifier's @tech{symbol} and @tech{scope set} to it's meaning: a
+identifier's @tech{symbol} and @tech{scope set} to its meaning: a
 @tech{variable}, a @tech{syntactic form}, or a @tech{transformer}. An
 identifier refers to a particular binding when the reference's symbol
 and the identifier's symbol are the same, and when the reference's
