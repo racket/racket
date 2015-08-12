@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/private/set
+         racket/private/custom-write
          racket/stream
          racket/serialize
          racket/pretty
@@ -354,79 +355,32 @@
     [(hash-eq? x) (hash-eq? y)]))
 
 (define (write-custom-set s port mode)
+  (cond [(custom-set-spec s)
+         (define table (custom-set-table s))
+         (define key-str
+           (cond [(immutable? table) ""]
+                 [(hash-weak? table) "weak-"]
+                 [else "mutable-"]))
+         (fprintf port "#<~acustom-set>" key-str)]
+        [else (write-hash-set s port mode)]))
 
-  (define table (custom-set-table s))
-  (define key-str
-    (cond
-      [(immutable? table) ""]
-      [(hash-weak? table) "weak-"]
-      [else "mutable-"]))
-
-  (cond
-    [(custom-set-spec s) (fprintf port "#<~acustom-set>" key-str)]
-    [else
-
-     (define show
-       (case mode
-         [(#t) write]
-         [(#f) display]
-         [else (lambda (p port) (print p port mode))]))
-
-     (define-values (left-str mid-str right-str)
-       (case mode
-         [(0) (values "(" "" ")")]
-         [else (values "#<" ":" ">")]))
-     (define cmp-str
-       (cond
-         [(hash-equal? table) "set"]
-         [(hash-eqv? table) "seteqv"]
-         [(hash-eq? table) "seteq"]))
-
-     (define (show-prefix port)
-       (write-string left-str port)
-       (write-string key-str port)
-       (write-string cmp-str port)
-       (write-string mid-str port))
-
-     (define (show-suffix port)
-       (write-string right-str port))
-
-     (define (show-one-line port)
-       (show-prefix port)
-       (for ([k (in-hash-keys table)])
-         (write-string " " port)
-         (show k port))
-       (show-suffix port))
-
-     (define (show-multi-line port)
-       (define-values (line col pos) (port-next-location port))
-       (show-prefix port)
-       (for ([k (in-hash-keys table)])
-         (pretty-print-newline port (pretty-print-columns))
-         (for ([i (in-range (add1 col))])
-           (write-char #\space port))
-         (show k port))
-       (show-suffix port))
-
-     (cond
-       [(and (pretty-printing)
-             (integer? (pretty-print-columns)))
-        (define proc
-          (let/ec return
-            (define pretty-port
-              (make-tentative-pretty-print-output-port
-               port
-               (- (pretty-print-columns) 1)
-               (lambda ()
-                 (return
-                  (lambda ()
-                    (tentative-pretty-print-port-cancel pretty-port)
-                    (show-multi-line port))))))
-            (show-one-line port)
-            (tentative-pretty-print-port-transfer pretty-port port)
-            void))
-        (proc)]
-       [else (show-one-line port)])]))
+(define write-hash-set
+  (make-constructor-style-printer
+   (lambda (s)
+     (define table (custom-set-table s))
+     (define key-str
+       (cond [(immutable? table) ""]
+             [(hash-weak? table) "weak-"]
+             [else "mutable-"]))
+     (cond [(custom-set-spec s)
+            (string-append key-str "custom-set")]
+           [else
+            (define cmp-str
+              (cond [(hash-equal? table) "set"]
+                    [(hash-eqv? table) "seteqv"]
+                    [(hash-eq? table) "seteq"]))
+            (string-append key-str cmp-str)]))
+   (lambda (s) (hash-keys (custom-set-table s)))))
 
 (define (custom-in-set s)
   (define keys (in-hash-keys (custom-set-table s)))
