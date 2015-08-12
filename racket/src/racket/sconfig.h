@@ -378,6 +378,7 @@
 #  define MZ_USE_JIT_PPC
 # elif defined(__sparc64__)
 #  define FLUSH_SPARC_REGISTER_WINDOWS
+#  define FMOD_CAN_RETURN_POS_ZERO
 # elif defined(__arm__)
 #  define MZ_USE_JIT_ARM
 #  define FFI_CALLBACK_NEED_INT_CLEAR
