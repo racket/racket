@@ -224,7 +224,8 @@ with additional fields:
 
  @item{The @racket[pre-amount] field reports place-local memory use
       (i.e., not counting the memory use of child places) in bytes at
-      the time that the @tech{garbage collection} started.}
+      the time that the @tech{garbage collection} started. Additional
+      bytes registered via @racket[make-phantom-bytes] are included.}
 
  @item{The @racket[pre-admin-amount] is a larger number that includes
        memory use for the garbage collector's overhead, such as space

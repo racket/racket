@@ -4006,6 +4006,7 @@ void GC_dump_with_traces(int flags,
     GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",
             gc->used_pages * APAGE_SIZE,
             mmu_memory_allocated(gc->mmu) - (gc->used_pages * APAGE_SIZE)));
+    GCWARN((GCOUTF,"Phantom bytes: %" PRIdPTR "\n", gc->phantom_count));
     GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "\n", gc->num_major_collects));
     GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "\n", gc->num_minor_collects));
     GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
@@ -4946,7 +4947,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   old_mem_use = gc->memory_in_use;
   old_gen0    = gc->gen0.current_size;
-  old_mem_allocated = mmu_memory_allocated(gc->mmu);
+  old_mem_allocated = mmu_memory_allocated(gc->mmu) + gc->phantom_count;
 
   TIME_DECLS();
 
@@ -5166,7 +5167,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     park_for_inform_callback(gc);
     gc->GC_collect_inform_callback(is_master, gc->gc_full, 
                                    old_mem_use + old_gen0, gc->memory_in_use, 
-                                   old_mem_allocated, mmu_memory_allocated(gc->mmu),
+                                   old_mem_allocated, mmu_memory_allocated(gc->mmu)+gc->phantom_count,
                                    gc->child_gc_total);
     unpark_for_inform_callback(gc);
   }
@@ -5176,7 +5177,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     lmi->full = gc->gc_full,
     lmi->pre_used = old_mem_use + old_gen0;
     lmi->post_used = gc->memory_in_use;
-    lmi->pre_admin = old_mem_allocated;
+    lmi->pre_admin = old_mem_allocated+gc->phantom_count;
     lmi->post_admin = mmu_memory_allocated(gc->mmu);
   }
   GC_propagate_hierarchy_memory_use();
