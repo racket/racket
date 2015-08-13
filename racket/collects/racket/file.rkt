@@ -64,15 +64,21 @@
 (define (raise-not-a-file-or-directory who path)
   (raise
    (make-exn:fail:filesystem
-    (format "~a: encountered ~a, neither a file nor a directory"
+    (format "~a: encountered path that is neither file nor directory\n  path: ~a"
             who
             path)
     (current-continuation-marks))))
 
-(define (copy-directory/files src dest 
-                              #:keep-modify-seconds? [keep-modify-seconds? #f])
+(define (copy-directory/files src dest
+                              #:keep-modify-seconds? [keep-modify-seconds? #f]
+                              #:preserve-links? [preserve-links? #f])
   (let loop ([src src] [dest dest])
-    (cond [(file-exists? src)
+    (cond [(and preserve-links?
+                (link-exists? src))
+           (make-file-or-directory-link
+            (resolve-path src)
+            dest)]
+          [(file-exists? src)
            (copy-file src dest)
            (when keep-modify-seconds?
              (file-or-directory-modify-seconds

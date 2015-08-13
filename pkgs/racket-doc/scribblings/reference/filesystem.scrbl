@@ -936,20 +936,24 @@ Displays each element of @racket[lst] to @racket[path], adding
 @racket[open-output-file].}
 
 @defproc[(copy-directory/files [src path-string?] [dest path-string?]
-                               [#:keep-modify-seconds? keep-modify-seconds? #f])
+                               [#:keep-modify-seconds? keep-modify-seconds? #f]
+                               [#:preserve-links? preserve-links? #f])
          void?]{
 
 Copies the file or directory @racket[src] to @racket[dest], raising
 @racket[exn:fail:filesystem] if the file or directory cannot be
 copied, possibly because @racket[dest] exists already. If @racket[src]
 is a directory, the copy applies recursively to the directory's
-content. If a source is a link, the target of the link is copied
-rather than the link itself.
+content. If a source is a link and @racket[preserve-links?] is @racket[#f],
+the target of the link is copied rather than the link itself; if
+@racket[preserve-links?] is @racket[#t], the link is copied.
 
 If @racket[keep-modify-seconds?] is @racket[#f], then file copies
-keep only the properties kept by @racket[copy-file], If
+keep only the properties kept by @racket[copy-file]. If
 @racket[keep-modify-seconds?] is true, then each file copy also keeps
-the modification date of the original.}
+the modification date of the original.
+
+@history[#:changed "6.2.900.9" @elem{Added the @racket[#:preserve-links?] argument.}]}
 
 
 @defproc[(delete-directory/files [path path-string?]
