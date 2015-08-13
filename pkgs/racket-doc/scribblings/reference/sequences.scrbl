@@ -792,7 +792,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 (for/list ([x (in-syntax #'(1 2 3))])
   x)]
 
-@history[#:added "6.2.900.6"]}
+@history[#:added "6.2.900.9"]}
 
 @defproc[(in-slice [length exact-positive-integer?] [seq sequence?])
          sequence?]{
@@ -802,7 +802,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
   @examples[#:eval sequence-evaluator
   (for/list ([e (in-slice 3 (in-range 8))]) e)
   ]
-  @history[#:added "6.2.900.6"]
+  @history[#:added "6.2.900.9"]
 }
 
 
