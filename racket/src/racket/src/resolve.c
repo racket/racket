@@ -4035,7 +4035,7 @@ Scheme_Object *unresolve_module(Scheme_Object *e, Unresolve_Info *ui)
   nm->exp_infos = m->exp_infos;
 
   nm->self_modidx = m->self_modidx;
-  nm->insp = m->insp;
+  nm->insp = m->prefix->src_insp_desc;
 
   nm->lang_info = m->lang_info;
 
