@@ -176,3 +176,5 @@ The @exec{raco exe} command accepts the following command-line flags:
 
 @include-section["exe-api.scrbl"]
 @include-section["launcher.scrbl"]
+@include-section["exe-dylib-path.scrbl"]
+
