@@ -3612,7 +3612,6 @@ static Scheme_Object *unresolve_let_void(Scheme_Object *e, Unresolve_Info *ui) {
   int i, pos, count, *flags;
   Scheme_Let_Header *lh;
   Scheme_Object *o;
-  Scheme_Compiled_Let_Value **clvmap;
   Unresolve_Let_Void_State *state;
 
   state = scheme_malloc(sizeof(Unresolve_Let_Void_State));
@@ -3620,7 +3619,6 @@ static Scheme_Object *unresolve_let_void(Scheme_Object *e, Unresolve_Info *ui) {
   count = lv->count;
   pos = unresolve_stack_push(ui, count, 0, 0);
   lh = make_let_header(count);
-  clvmap = MALLOC_N(Scheme_Compiled_Let_Value*, count);
   
   o = lv->body;
   attach_lv(lh, NULL, NULL, NULL, state);
@@ -3734,16 +3732,12 @@ static Scheme_Object *unresolve_prefix_symbol(Scheme_Object *s, Unresolve_Info *
 static Scheme_Object *unresolve_closure(Scheme_Object *e, Unresolve_Info *ui) {
   
       Scheme_Object *r, *c;
-      int stack_pos, depth;
 
       c = scheme_hash_get(ui->closures, e);
 
       if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_compiled_toplevel_type)) {
         return c;
       }
-
-      stack_pos = ui->stack_pos;
-      depth = ui->depth;
 
       r = unresolve_closure_data_2(SCHEME_COMPILED_CLOS_CODE(e), ui);
       return r;
@@ -4395,7 +4389,7 @@ static Scheme_Object *unresolve_expr_2(Scheme_Object *e, Unresolve_Info *ui, int
     {
       Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)e, *wcm2;
       Scheme_Object *k, *v, *b;
-      int *flags, pos;
+      int pos;
 
       k = unresolve_expr_2(wcm->key, ui, 0);
       if (!k) return_NULL;
@@ -4405,7 +4399,6 @@ static Scheme_Object *unresolve_expr_2(Scheme_Object *e, Unresolve_Info *ui, int
       pos = unresolve_stack_push(ui, 1, 0, 0);
       b = unresolve_expr_2(wcm->body, ui, 0);
       if (!b) return_NULL;
-      flags = unresolve_stack_pop(ui, pos, 1);
 
       wcm2 = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
       wcm2->so.type = scheme_with_immed_mark_type;

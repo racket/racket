@@ -909,7 +909,7 @@ static Scheme_Object *with_immed_mark_sfs(Scheme_Object *o, SFS_Info *info)
 {
   Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)o;
   Scheme_Object *k, *v, *b, *vec;
-  int pos, save_mnt, ip;
+  int pos, save_mnt;
   
   scheme_sfs_start_sequence(info, 3, 1);
 
@@ -918,7 +918,6 @@ static Scheme_Object *with_immed_mark_sfs(Scheme_Object *o, SFS_Info *info)
 
   scheme_sfs_push(info, 1, 1);
 
-  ip = info->ip;
   pos = info->stackpos;
   save_mnt = info->max_nontail;
 
