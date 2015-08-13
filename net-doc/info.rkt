@@ -11,8 +11,6 @@
                      "net-lib"
                      "racket-doc"
                      "scribble-lib"
-                     "unstable-contract-lib"
-                     "unstable-doc"
                      "web-server-doc"
                      "web-server-lib"))
 (define update-implies '("net-lib"))
