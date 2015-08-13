@@ -66,3 +66,7 @@
   #; (check-one collects-dir "syntax" "free-vars.rkt")
   (check (simplify-path collects-dir))
   (void))
+
+(module+ test
+  (module config info
+    (define timeout 300)))
