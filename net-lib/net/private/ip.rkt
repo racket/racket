@@ -8,7 +8,7 @@
          racket/list
          racket/match
          racket/string
-         unstable/sequence)
+         racket/sequence)
 
 (provide
   (contract-out
