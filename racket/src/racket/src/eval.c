@@ -382,7 +382,7 @@ scheme_init_eval (Scheme_Env *env)
   GLOBAL_PARAMETER("eval-jit-enabled",                  use_jit,                  MZCONFIG_USE_JIT,               env);
   GLOBAL_PARAMETER("compile-context-preservation-enabled", disallow_inline,       MZCONFIG_DISALLOW_INLINE,       env);
 
-  if (getenv("PLT_VALIDATE_COMPILE")) {
+  if (scheme_getenv("PLT_VALIDATE_COMPILE")) {
     /* Enables validation of bytecode as it is generated,
        to double-check that the compiler is producing
        valid bytecode as it should. */
@@ -392,7 +392,7 @@ scheme_init_eval (Scheme_Env *env)
   {
     /* Enables re-running the optimizer N times on every compilation. */
     const char *s;
-    s = getenv("PLT_RECOMPILE_COMPILE");
+    s = scheme_getenv("PLT_RECOMPILE_COMPILE");
     if (s) {
       int i = 0;
       while ((s[i] >= '0') && (s[i] <= '9')) {
