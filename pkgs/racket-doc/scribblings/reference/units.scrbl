@@ -876,6 +876,10 @@ values:
 
 ]
 
+Each of the result identifiers is given a lexical context that is
+based on @racket[sig-identifier], so the names are suitable for
+reference or binding in the context of @racket[sign-identifier].
+
 If @racket[sig-identifier] is not bound to a signature, then the
 @exnraise[exn:fail:syntax]. In that case, the given
 @racket[err-syntax] argument is used as the source of the error, where
