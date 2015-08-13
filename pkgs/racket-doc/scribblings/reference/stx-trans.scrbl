@@ -197,7 +197,7 @@ field value is not an identifier, then an identifier @racketidfont{?}
 with an empty context is used, instead.}
 
 
-@defproc[(local-expand [stx syntax?]
+@defproc[(local-expand [stx any/c]
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
                        [stop-ids (or/c (listof identifier?) #f)]
                        [intdef-ctx (or/c internal-definition-context? 
@@ -211,7 +211,9 @@ Expands @racket[stx] in the lexical context of the expression
 currently being expanded. The @racket[context-v] argument is used as
 the result of @racket[syntax-local-context] for immediate expansions;
 a list indicates an @tech{internal-definition context}, and more
-information on the form of the list is below.
+information on the form of the list is below. If @racket[stx] is not
+already a @tech{syntax object}, it is coerced with
+@racket[(datum->syntax #f stx)] before expansion.
 
 When an identifier in @racket[stop-ids] is encountered by the expander
 in a sub-expression, expansions stops for the sub-expression. If
@@ -297,7 +299,7 @@ generated value onto that list.
                                    an explicit wrapper.}]}
 
 
-@defproc[(syntax-local-expand-expression [stx syntax?])
+@defproc[(syntax-local-expand-expression [stx any/c])
          (values syntax? syntax?)]{
 
 Like @racket[local-expand] given @racket['expression] and an empty
@@ -316,7 +318,7 @@ avoids quadratic expansion times when local expansions are nested.
 @transform-time[]}
 
 
-@defproc[(local-transformer-expand [stx syntax?]
+@defproc[(local-transformer-expand [stx any/c]
                        [context-v (or/c 'expression 'top-level list?)]
                        [stop-ids (or/c (listof identifier?) #f)]
                        [intdef-ctx (or/c internal-definition-context? #f) #f])
@@ -331,7 +333,7 @@ lifted expressions---from calls to
 result.}
 
 
-@defproc[(local-expand/capture-lifts [stx syntax?]
+@defproc[(local-expand/capture-lifts [stx any/c]
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]
                        [stop-ids (or/c (listof identifier?) #f)]
                        [intdef-ctx (or/c internal-definition-context? #f) #f]
@@ -349,7 +351,7 @@ expressions are not expanded, but instead left as provided in the
 @racket[begin] form.}
 
 
-@defproc[(local-transformer-expand/capture-lifts [stx syntax?]
+@defproc[(local-transformer-expand/capture-lifts [stx any/c]
                        [context-v (or/c 'expression 'top-level list?)]
                        [stop-ids (or/c (listof identifier?) #f)]
                        [intdef-ctx (or/c internal-definition-context? #f) #f]

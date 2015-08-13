@@ -1259,5 +1259,22 @@
     (use)))
 
 ;; ----------------------------------------
+;; Check `local-expand` argument checking
+
+(let-syntax ([m
+              (lambda (stx)
+                (define (le . args)
+                  (with-handlers ([exn:fail:contract? void])
+                    (apply local-expand args)
+                    (error "fail")))
+                (le #'1 'xpression null)
+                (le #'1 'expression 1)
+                (le #'1 'expression #'1)
+                (le #'1 'expression #'(x))
+                (le #'1 'expression (list 'x))
+                #'#t)])
+  (void (m)))
+
+;; ----------------------------------------
 
 (report-errs)

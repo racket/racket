@@ -5160,9 +5160,11 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
   if (for_expr) {
   } else if (SCHEME_TRUEP(argv[2])) {
 #   define NUM_CORE_EXPR_STOP_FORMS 15
-    cnt = scheme_stx_proper_list_length(argv[2]);
+    cnt = scheme_proper_list_length(argv[2]);
 
-    if (cnt == 1)
+    if ((cnt == 1)
+        && SCHEME_STXP(SCHEME_CAR(argv[2]))
+        && SCHEME_SYMBOLP(SCHEME_STX_VAL(SCHEME_CAR(argv[2]))))
       is_modstar = scheme_stx_free_eq_x(scheme_modulestar_stx, SCHEME_CAR(argv[2]), env->genv->phase);
     else
       is_modstar = 0;
