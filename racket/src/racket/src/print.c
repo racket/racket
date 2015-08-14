@@ -159,7 +159,9 @@ static Scheme_Object *writable_struct_subs(Scheme_Object *s, int for_write, Prin
 #define print_compact(pp, v) print_this_string(pp, &compacts[v], 0, 1)
 
 #define PRINTABLE_STRUCT(obj, pp) (scheme_inspector_sees_part(obj, pp->inspector, -1))
-#define SCHEME_PREFABP(obj) (((Scheme_Structure *)(obj))->stype->prefab_key)
+#define SCHEME_PREFABP(obj) (SCHEME_CHAPERONEP(obj)                     \
+                             ? ((Scheme_Structure *)SCHEME_CHAPERONE_VAL(obj))->stype->prefab_key \
+                             : ((Scheme_Structure *)(obj))->stype->prefab_key)
 
 #define SCHEME_HASHTPx(obj) ((SCHEME_HASHTP(obj) && !(MZ_OPT_HASH_KEY(&(((Scheme_Hash_Table *)obj)->iso)) & 0x1)))
 #define SCHEME_CHAPERONE_HASHTPx(obj) (SCHEME_HASHTPx(obj) \
@@ -2508,8 +2510,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
     }
   else if (SCHEME_CHAPERONE_STRUCTP(obj))
     {
-      if (compact && (SCHEME_PREFABP(obj) || (SCHEME_CHAPERONEP(obj)
-                                              && SCHEME_PREFABP(SCHEME_CHAPERONE_VAL(obj))))) {
+      if (compact && SCHEME_PREFABP(obj)) {
         Scheme_Object *vec, *prefab;
         print_compact(pp, CPT_PREFAB);
         prefab = scheme_prefab_struct_key(obj);
