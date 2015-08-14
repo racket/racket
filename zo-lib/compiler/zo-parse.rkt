@@ -973,7 +973,6 @@
   (vector-ref (cport-symtab cp) i))
 
 (define (read-cyclic cp i who [wrap values])
-  (define v (symtab-lookup cp i))
   (define ph (make-placeholder (not-ready)))
   (symtab-write! cp i ph)
   (define r (wrap (read-compact cp)))

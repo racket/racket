@@ -148,17 +148,18 @@
   (define stx-objs (make-hasheq))
   (define wraps (make-hasheq))
   (define hash-consed (make-hash))
+  (define hash-consed-results (make-hasheq))
   
   ; (obj -> (or pos #f)) output-port -> number
   ; writes top to outp using shared-obj-pos to determine symref
   ; returns the file position at the end of the compilation top
-  (define (out-compilation-top shared-obj-pos shared-obj-unsee counting? outp)
+  (define (out-compilation-top shared-obj-pos shared-obj-pos-any counting? outp)
     (define ct
       (match top
         [(compilation-top max-let-depth prefix form)
          (list* max-let-depth prefix (protect-quote form))]))
-    (out-anything ct (make-out outp shared-obj-pos shared-obj-unsee counting?
-                               stx-objs wraps hash-consed))
+    (out-anything ct (make-out outp shared-obj-pos shared-obj-pos-any counting?
+                               stx-objs wraps hash-consed hash-consed-results))
     (file-position outp))
   
   ; -> vector
@@ -172,16 +173,12 @@
     (define (encounter! v)
       (hash-update! encountered v add1 0) 
       #f)
-    (define (unencounter! v)
-      (define how-many-encounters (hash-ref encountered v))
-      (when (= how-many-encounters 1)
-        (hash-set! encountered v 0)))
     (define (shared-obj-pos v #:error? [error? #f])
       (hash-ref shared v 
                 (if error?
                     (λ () (error 'symref "~e not in symbol table" v))
                     #f)))
-    (define (share! v) ; XXX this doesn't always set something, probably should be refactored
+    (define (share! v)
       (or (shared-obj-pos v)
           (let ([pos (add1 (hash-count shared))])
             (hash-set! shared v pos) 
@@ -203,8 +200,7 @@
           (share! v)]
          [else
           (encounter! v)]))
-     (λ (v)
-       (unencounter! v))
+     (lambda (v) #f)
      #t
      (open-output-nowhere))
     
@@ -233,14 +229,14 @@
                 [i (in-naturals)])
        (begin0
          (file-position outp)
-         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) void #f
-                                   stx-objs wraps hash-consed))))
+         (out-anything v (make-out outp (shared-obj-pos/modulo-v v) shared-obj-pos #f
+                                   stx-objs wraps hash-consed hash-consed-results))))
      (file-position outp)))
   
   ; Calculate file positions
   (define counting-port (open-output-nowhere))
   (define-values (offsets post-shared) (out-symbol-table symbol-table counting-port))
-  (define all-forms-length (out-compilation-top shared-obj-pos void #f counting-port))
+  (define all-forms-length (out-compilation-top shared-obj-pos shared-obj-pos #f counting-port))
   
   ; Write the compiled form header
   (write-bytes #"#~" outp)
@@ -268,7 +264,7 @@
   (write-bytes (int->bytes all-forms-length) outp)
   ; Actually write the zo
   (out-symbol-table symbol-table outp)
-  (out-compilation-top shared-obj-pos void #f outp)
+  (out-compilation-top shared-obj-pos shared-obj-pos #f outp)
   (void))
 
 ;; ----------------------------------------
@@ -341,7 +337,7 @@
   CPT_MODULE_VAR
   CPT_PATH
   CPT_CLOSURE
-  CPT_DELAY_REF ; XXX unused, but appears to be same as CPT_SYMREF
+  CPT_DELAY_REF ; XXX should be used to delay loading of syntax objects and lambda bodies
   CPT_PREFAB
   CPT_LET_ONE_UNUSED
   CPT_SCOPE
@@ -393,22 +389,21 @@
 
 (define-struct protected-symref (val))
 
-(define (encode-stx-obj w wraps-ht)
+(define (encode-stx-obj w out)
   (match w
     [(struct stx-obj (datum wraps tamper-status))
      (let* ([enc-datum
              (match datum
                [(cons a b) 
-                (let ([p (cons (encode-stx-obj a wraps-ht)
+                (let ([p (cons (encode-stx-obj a out)
                                (let bloop ([b b])
                                  (match b
                                    ['() null]
                                    [(cons b1 b2)
-                                    (cons (encode-stx-obj b1 wraps-ht)
+                                    (cons (encode-stx-obj b1 out)
                                           (bloop b2))]
                                    [else
-                                    (encode-stx-obj b wraps-ht)])))]
-                      ; XXX Cylic list error possible
+                                    (encode-stx-obj b out)])))]
                       [len (let loop ([datum datum][len 0])
                              (cond
                                [(null? datum) #f]
@@ -420,32 +415,69 @@
                       (cons len p) 
                       p))]
                [(box x)
-                (box (encode-stx-obj x wraps-ht))]
+                (box (encode-stx-obj x out))]
                [(? vector? v)
-                (vector-map (lambda (e) (encode-stx-obj e wraps-ht)) v)]
+                (vector-map (lambda (e) (encode-stx-obj e out)) v)]
                [(? prefab-struct-key)
                 (define l (vector->list (struct->vector datum)))
                 (apply
                  make-prefab-struct
                  (car l)
-                 (map (lambda (e) (encode-stx-obj e wraps-ht)) (cdr l)))]
+                 (map (lambda (e) (encode-stx-obj e out)) (cdr l)))]
                [_ datum])]
             [p (cons enc-datum
-                     (encode-wrap wraps wraps-ht))])
+                     (share-everywhere (encode-wrap wraps (out-wraps out)) out))])
        (case tamper-status
          [(clean) p]
          [(tainted) (vector p)]
          [(armed) (vector p #f)]))]))
 
-(define-struct out (s shared-index shared-unsee counting? stx-objs wraps hash-consed))
+(define-struct out (s
+                    ;; The output port for writing bytecode.
+                    shared-index
+                    ;; Takes a value and reports/record sharing.
+                    ;; On the first pass, the number of times this function is
+                    ;; called for a value determines whether sharing is needed
+                    ;; for the value. That sharing is reported on later passes
+                    ;; by returning a number (a slot in "symbol" table) instead
+                    ;; of #f. On the symbol-table filling pass, the first call
+                    ;; produces #f so that a value is written into the table.
+                    shared-index-any
+                    ;; Like `shared-index`, but doesn't record any sharing or
+                    ;; produce #f for the immediate value of a symbol table.
+                    counting?
+                    ;; Set to #t for the first (sharing-finding pass), #f
+                    ;; otherwise.
+                    stx-objs
+                    ;; Hash table from syntax objects to encoded forms; set on
+                    ;; first pass and encoding are retrieved on following passes.
+                    wraps
+                    ;; Hash table from syntax-object wraps to encodings; also
+                    ;; set on first pass and used on later passes.
+                    hash-consed
+                    ;; Table of hash-consed parts of wrap encodings. This table
+                    ;; is `equal?`-based, but with a wrapper to compare self
+                    ;; modidxs with `eq?`.
+                    hash-consed-results
+                    ;; An `eq?`-based table of hash-cons results. Any of these
+                    ;; values that are shared need to be written with CPT_SHARED
+                    ;; so graph structure can be managed.
+                    ))
+
 (define (out-shared v out k)
   (if (shareable? v)
-      (let ([v ((out-shared-index out) v)])
-        (if v
+      (let ([n ((out-shared-index out) v)])
+        (if n
             (begin
               (out-byte CPT_SYMREF out)
-              (out-number v out))
-            (k)))
+              (out-number n out))
+            (let ([sharepoint? (hash-ref (out-hash-consed-results out) v #f)])
+              (when sharepoint?
+                (let ([n2 ((out-shared-index-any out) v)])
+                  (when n2
+                    (out-byte CPT_SHARED out)
+                    (out-number n2 out))))
+              (k))))
       (k)))
 
 (define (out-byte v out)
@@ -534,7 +566,7 @@
        [(? char?)
         (out-byte CPT_CHAR out)
         (out-number (char->integer v) out)]
-       [(? maybe-same-as-fixnum?) ;XXX not sure if it's okay to use fixnum? instead of exact range check
+       [(? maybe-same-as-fixnum?)
         (if (and (v . >= . 0)
                  (v . < . (- CPT_SMALL_NUMBER_END CPT_SMALL_NUMBER_START)))
             (out-byte (+ CPT_SMALL_NUMBER_START v) out)
@@ -880,6 +912,7 @@
           (for ([n (in-range (sub1 len) -1 -1)])
             (out-number (vector-ref vec n) out)))]
        [(? module-path-index?)
+        ;; XXX should add interning of module path indices
         (out-byte CPT_MODULE_INDEX out)
         (let-values ([(name base) (module-path-index-split v)])
           (out-anything name out)
@@ -898,7 +931,7 @@
         (out-number relative-id out)
         (out-anything (share-everywhere content out) out)]
        [(? stx-obj?)
-        (out-anything (share-everywhere (lookup-encoded-stx-obj v out) out) out)]
+        (out-anything (lookup-encoded-stx-obj v out) out)]
        [(? prefab-struct-key)
         (define pre-v (struct->vector v))
         (vector-set! pre-v 0 (prefab-struct-key v))
@@ -1052,7 +1085,7 @@
 (define (lookup-encoded-stx-obj w out)
   (hash-ref! (out-stx-objs out) w
              (λ ()
-               (encode-stx-obj w (out-wraps out)))))
+               (encode-stx-obj w out))))
 
 (define (pack-binding-names binding-names)
   (define (ht-to-vector ht)
@@ -1187,21 +1220,35 @@
    [(box? a)
     (and (box? b)
          (simple-equal? (unbox a) (unbox b)))]
+   [(module-path-index? a)
+    (and (module-path-index? b)
+         (let-values ([(a-name a-base) (module-path-index-split a)]
+                      [(b-name b-base) (module-path-index-split b)])
+           (and a-name
+                a-base
+                (simple-equal? a-name b-name)
+                (simple-equal? a-base b-base))))]
    [else #f]))
 
 (define (share-everywhere v out)
+  (define (register r)
+    (hash-set! (out-hash-consed-results out) r #t)
+    r)
   (hash-ref! (out-hash-consed out)
              (modidx-must-be-eq v)
              (lambda ()
                (cond
                 [(pair? v)
-                 (cons (share-everywhere (car v) out)
-                       (share-everywhere (cdr v) out))]
+                 (register
+                  (cons (share-everywhere (car v) out)
+                        (share-everywhere (cdr v) out)))]
                 [(vector? v)
-                 (for/vector #:length (vector-length v) ([e (in-vector v)])
-                             (share-everywhere e out))]
+                 (register
+                  (for/vector #:length (vector-length v) ([e (in-vector v)])
+                              (share-everywhere e out)))]
                 [(box? v)
-                 (box (share-everywhere (unbox v) out))]
+                 (register
+                  (box (share-everywhere (unbox v) out)))]
                 [else v]))))
 
 ;; ----------------------------------------
