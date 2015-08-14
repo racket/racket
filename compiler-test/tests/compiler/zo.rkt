@@ -76,7 +76,9 @@
                              (let ([o (open-output-bytes)])
                                (print p o)
                                (get-output-string o)))])
-            (unless (equal? (to-string p) (to-string p2))
-              (error 'zo "failed on example: ~e" ex-mod))))))))
+            (define s1 (to-string p))
+            (define s2 (to-string p2))
+            (unless (equal? s1 s2)
+              (error 'zo "failed on example: ~e\n~s\n~s" ex-mod s1 s2))))))))
 
 (for-each check (list ex-mod1 ex-mod2 ex-mod3 ex-mod4 ex-mod5))
