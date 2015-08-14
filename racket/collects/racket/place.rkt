@@ -179,6 +179,8 @@
         [(symbol? name) (symbol->string name)]
         [(path? name) (path->string name)])]))
 
+(define-for-syntax place-body-counter 0)
+
 (define-for-syntax (place-form _in _out _err _start-place-func stx orig-stx)
   (syntax-case stx ()
     [(who ch body1 body ...)
@@ -191,20 +193,21 @@
              (raise-syntax-error #f "can only be used in a module" stx))
            (unless (identifier? #'ch)
              (raise-syntax-error #f "expected an identifier" stx #'ch))
-           (define func-name-stx
+           (set! place-body-counter (add1 place-body-counter))
+           (define module-name-stx
              (datum->syntax stx
                (string->symbol
-                 (string-append "place/anon"
-                                (modpath->string (current-module-declare-name))))))
+                (format "place-body-~a" place-body-counter))))
            (with-syntax ([internal-def-name
-                          (syntax-local-lift-expression #'(lambda (ch) body1 body ...))]
-                         [func-name (generate-temporary func-name-stx)]
+                          (syntax-local-lift-module #`(module* #,module-name-stx #f
+                                                        (provide main)
+                                                        (define (main ch)
+                                                          body1 body ...)))]
                          [in _in]
                          [out _out]
                          [err _err]
                          [start-place-func _start-place-func])
-             (syntax-local-lift-provide #'(rename internal-def-name func-name))
-             #'(place/proc (#%variable-reference) 'func-name 'who start-place-func in out err))))]
+             #`(place/proc (#%variable-reference) '#,module-name-stx 'who start-place-func in out err))))]
      [(_ ch)
       (raise-syntax-error #f "expected at least one body expression" orig-stx)]))
 
@@ -222,7 +225,7 @@
     [(pf #:err err ch body ...)                   (place-form #'#f #'#f  #'err  #'start-place* #'(pf ch body ...) stx)]
     [(pf ch body ...)                             (place-form #'#f #'#f  #'#f   #'start-place* #'(pf ch body ...) stx)]))
 
-(define (place/proc vr func-name who start-place-func in out err)
+(define (place/proc vr submod-name who start-place-func in out err)
   (define name
     (resolved-module-path-name
      (variable-reference->resolved-module-path
@@ -230,7 +233,7 @@
   (when (and (symbol? name)
              (not (module-predefined? `(quote ,name))))
      (error who "the enclosing module's resolved name is not a path or predefined"))
-  (start-place-func who (if (symbol? name) `(quote ,name) name) func-name in out err))
+  (start-place-func who `(submod ,(if (symbol? name) `(quote ,name) name) ,submod-name) 'main in out err))
 
 (define-syntax (place/context stx)
   (syntax-parse stx
