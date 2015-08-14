@@ -298,6 +298,9 @@
 	    stx
 	    (let-values ([(temp ...) expr])
 	      (set! id temp) ...)))])))
+  
+  (define-values (call/cc) call-with-current-continuation)
+  (define-values (call/ec) call-with-escape-continuation)
 
   (define-syntax let/cc
     (lambda (stx)
@@ -386,6 +389,6 @@
              (rename break-paramz? break-parameterization?)
              with-handlers with-handlers* call-with-exception-handler
              set!-values
-             let/cc fluid-let time
+             let/cc call/cc call/ec fluid-let time
              log-fatal log-error log-warning log-info log-debug define-logger
              hash-ref! hash-has-key? hash-update hash-update!))
