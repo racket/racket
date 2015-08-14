@@ -28,7 +28,7 @@
           (list 'racket
                 'racket/base
                 'compiler/compilation-path
-                'tests/compiler/collection-search))
+                'tests/setup/collection-search))
 
 ;; Try to find a module in every installed collection:
 (define cache (make-hash))
