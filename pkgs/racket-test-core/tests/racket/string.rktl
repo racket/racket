@@ -483,4 +483,11 @@
   (test "foo\\1bar" string-replace "foo===bar" #rx"(=+)" "\\1")
   (test "foo\\1bar" string-replace "foo===bar" #px"={3}" "\\1"))
 
+;test that mutable string are not cached incorrectly
+(let ([str (string-copy "_1_")])
+  (test "!!! _2_" string-replace "_1_ _2_" str "!!!") ;add str to the internal cache
+  (string-set! str 1 #\2)
+  (test "_1_ !!!" string-replace "_1_ _2_" str "!!!") ;verify that the new str is used
+)
+
 (report-errs)
