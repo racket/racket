@@ -4399,6 +4399,7 @@ static Scheme_Object *unresolve_expr_2(Scheme_Object *e, Unresolve_Info *ui, int
       pos = unresolve_stack_push(ui, 1, 0, 0);
       b = unresolve_expr_2(wcm->body, ui, 0);
       if (!b) return_NULL;
+      (void)unresolve_stack_pop(ui, pos, 1);
 
       wcm2 = MALLOC_ONE_TAGGED(Scheme_With_Continuation_Mark);
       wcm2->so.type = scheme_with_immed_mark_type;
