@@ -1430,6 +1430,54 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (test #t syntax? (expand-syntax (expand lifted-require-of-submodule)))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check module lifting
+
+(module module-lift-example-1 racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (m stx)
+    (syntax-local-lift-module
+     #'(module m racket/base
+         (provide x)
+         (define x 10)))
+    #'(begin
+        (require 'm)
+        (define out x)
+        (provide out)))
+  (m))
+
+(test 10 dynamic-require ''module-lift-example-1 'out)
+
+(module module-lift-example-2 racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (m stx)
+    (syntax-local-lift-module #'(module* sub #f
+                                  (provide s)
+                                  (define s (add1 a))))
+    #'(void))
+  (m)
+  (define a 1))
+
+(test 2 dynamic-require '(submod 'module-lift-example-2 sub) 's)
+
+
+(module module-lift-example-3 racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (m stx)
+    (syntax-local-lift-module #'(module m racket/base
+                                  (provide x)
+                                  (define x 11)))
+    (syntax-local-lift-module-end-declaration
+     #'(let ()
+         (local-require (submod "." m))
+         (set! out x)))
+    #'(void))
+  (define out -10)
+  (m)
+  (provide out))
+
+(test 11 dynamic-require ''module-lift-example-3 'out)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check addition of 'disappeared-use by `provide`
 

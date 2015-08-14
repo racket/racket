@@ -4148,7 +4148,9 @@ static void *compile_k(void)
 	 before the rest. */
       while (1) {
 	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
-                                    scheme_false, scheme_top_level_lifts_key(cenv), scheme_null, scheme_false);
+                                    scheme_false, scheme_top_level_lifts_key(cenv), scheme_null, scheme_false,
+                                    /* lifted modules like definitions: */
+                                    scheme_true);
 	form = scheme_check_immediate_macro(form,
 					    cenv, &rec, 0,
 					    &gval,
@@ -4195,7 +4197,9 @@ static void *compile_k(void)
 
       while (1) {
 	scheme_frame_captures_lifts(cenv, scheme_make_lifted_defn, scheme_sys_wraps(cenv), 
-                                    scheme_false, scheme_top_level_lifts_key(cenv), scheme_null, scheme_false);
+                                    scheme_false, scheme_top_level_lifts_key(cenv), scheme_null, scheme_false,
+                                    /* lifted modules like definitions: */
+                                    scheme_true);
 
 	scheme_init_compile_recs(&rec, 0, &rec2, 1);
 
@@ -4650,7 +4654,13 @@ static void *expand_k(void)
                                   data, 
                                   scheme_false, catch_lifts_key, 
                                   (!as_local && catch_lifts_key) ? scheme_null : NULL,
-                                  scheme_false);
+                                  scheme_false,
+                                  /* lifted modules like definitions: */
+                                  ((env->flags & SCHEME_TOPLEVEL_FRAME)
+                                   ? scheme_true /* lifted `module` like definition */
+                                   : ((env->flags & SCHEME_MODULE_FRAME)
+                                      ? scheme_void /* lifted `module[*]` like definition */
+                                      : scheme_false)));
     }
 
     if (just_to_top) {
@@ -5268,7 +5278,12 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
                                   data,
                                   scheme_top_level_lifts_key(env),
                                   catch_lifts_key, NULL,
-                                  scheme_false);
+                                  scheme_false,
+                                  ((kind & SCHEME_TOPLEVEL_FRAME)
+                                   ? scheme_true /* lifted `module` like definition */
+                                   : ((kind & SCHEME_MODULE_FRAME)
+                                      ? scheme_void /* lifted `module[*]` like definition */
+                                      : scheme_false))); /* no lifted modules */
     }
 
     memset(drec, 0, sizeof(drec));

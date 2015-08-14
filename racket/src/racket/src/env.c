@@ -114,6 +114,7 @@ static Scheme_Object *local_lift_expr(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_exprs(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_context(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_end_statement(int argc, Scheme_Object *argv[]);
+static Scheme_Object *local_lift_module(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_lift_provide(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_introducer(int argc, Scheme_Object *argv[]);
@@ -804,6 +805,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-values-expression", local_lift_exprs, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-context", local_lift_context, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-module-end-declaration", local_lift_end_statement, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("syntax-local-lift-module", local_lift_module, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-require", local_lift_require, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-lift-provide", local_lift_provide, 1, 1, env);
 
@@ -2770,6 +2772,25 @@ local_lift_end_statement(int argc, Scheme_Object *argv[])
     not_currently_transforming("syntax-local-lift-module-end-declaration");
 
   return scheme_local_lift_end_statement(expr, local_scope, env);
+}
+
+static Scheme_Object *
+local_lift_module(int argc, Scheme_Object *argv[])
+{
+  Scheme_Comp_Env *env;
+  Scheme_Object *local_scope, *expr;
+
+  expr = argv[0];
+  if (!SCHEME_STXP(expr))
+    scheme_wrong_contract("syntax-local-lift-module", "syntax?", 0, argc, argv);
+
+  env = scheme_current_thread->current_local_env;
+  local_scope = scheme_current_thread->current_local_scope;
+
+  if (!env)
+    not_currently_transforming("syntax-local-lift-module");
+
+  return scheme_local_lift_module(expr, local_scope, env);
 }
 
 static Scheme_Object *local_lift_require(int argc, Scheme_Object *argv[])

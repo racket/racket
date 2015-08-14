@@ -3508,7 +3508,8 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
 
   while (1) {
     scheme_frame_captures_lifts(env, scheme_make_lifted_defn, scheme_sys_wraps(env),
-                                scheme_false, scheme_top_level_lifts_key(env), scheme_null, scheme_false);
+                                scheme_false, scheme_top_level_lifts_key(env), scheme_null,
+                                scheme_false, scheme_true);
 
     if (rec[drec].comp) {
       scheme_init_compile_recs(rec, drec, recs, 1);
@@ -5589,7 +5590,7 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
   context_key = scheme_generate_lifts_key();
   
   scheme_frame_captures_lifts(inserted, scheme_pair_lifted, (Scheme_Object *)ip, scheme_false, 
-                              context_key, NULL, scheme_false);
+                              context_key, NULL, scheme_false, scheme_false);
 
   if (rec[drec].comp) {
     scheme_init_compile_recs(rec, drec, recs, 2);

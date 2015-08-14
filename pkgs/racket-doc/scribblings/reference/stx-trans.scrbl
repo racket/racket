@@ -348,7 +348,12 @@ forms, and the expansion of @racket[stx] is the last expression in the
 @racket[begin]. The @racket[lift-ctx] value is reported by
 @racket[syntax-local-lift-context] during local expansion. The lifted
 expressions are not expanded, but instead left as provided in the
-@racket[begin] form.}
+@racket[begin] form.
+
+If @racket[context-v] is @racket['top-level] or @racket['module], then
+@racket[module] forms can appear in the result as added via
+@racket[syntax-local-lift-module]. If @racket[context-v] is
+@racket['module], then @racket[module*] forms can appear, too.}
 
 
 @defproc[(local-transformer-expand/capture-lifts [stx any/c]
@@ -576,6 +581,28 @@ transformer are moved to the same place. Thus, the result is useful
 for caching lift information to avoid redundant lifts.
 
 @transform-time[]}
+
+
+@defproc[(syntax-local-lift-module [stx syntax?])
+         void?]{
+
+Cooperates with the @racket[module] form or top-level expansion to add
+@racket[stx] as a module declaration in the enclosing module or top-level.
+The @racket[stx] form must start with @racket[module] or @racket[module*],
+where the latter is only allowed within the expansion of a module.
+
+The module is not immediately declared when
+@racket[syntax-local-lift-module] returns. Instead, the module
+declaration is recorded for processing when expansion returns to the
+enclosing module body or top-level sequence.
+
+@transform-time[] If the current expression being transformed is not
+within a @racket[module] form or within a top-level expansion, then
+the @exnraise[exn:fail:contract]. If @racket[stx] form does start with
+@racket[module] or @racket[module*], or if it starts with @racket[module*]
+in a top-level context, the @exnraise[exn:fail:contract].
+
+@history[#:added "6.2.900.10"]}
 
 
 @defproc[(syntax-local-lift-module-end-declaration [stx syntax?])

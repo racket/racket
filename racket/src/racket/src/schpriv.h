@@ -2835,6 +2835,8 @@ Scheme_Object *scheme_do_local_lift_expr(const char *who, int stx_pos,
 Scheme_Object *scheme_local_lift_context(Scheme_Comp_Env *env);
 Scheme_Object *scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_scope, 
                                                Scheme_Comp_Env *env);
+Scheme_Object *scheme_local_lift_module(Scheme_Object *expr, Scheme_Object *local_scope, 
+                                        Scheme_Comp_Env *env);
 Scheme_Object *scheme_local_lift_require(Scheme_Object *form, Scheme_Object *orig_form,
                                          intptr_t phase, Scheme_Object *local_scope, 
                                          Scheme_Comp_Env *env);
@@ -2890,10 +2892,12 @@ Scheme_Object *scheme_extract_foreign(Scheme_Object *o);
 typedef Scheme_Object *(*Scheme_Lift_Capture_Proc)(Scheme_Object *, Scheme_Object **, Scheme_Object *, Scheme_Comp_Env *);
 void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc cp, Scheme_Object *data, 
                                  Scheme_Object *end_stmts, Scheme_Object *context_key, 
-                                 Scheme_Object *require_lifts, Scheme_Object *provide_lifts);
+                                 Scheme_Object *require_lifts, Scheme_Object *provide_lifts,
+                                 Scheme_Object *module_lifts);
 void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_end_statement_lifts(Scheme_Comp_Env *env);
+Scheme_Object *scheme_frame_get_end_modules(Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_require_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_provide_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_generate_lifts_key(void);

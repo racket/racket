@@ -1019,6 +1019,66 @@
     (eval `(require 'm)))
   (test "2\n" get-output-string o))
 
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval `(module m racket/base
+           (require (for-syntax racket/base))
+           (define x 10)
+           (let-syntax ([x (syntax-local-lift-module #'(module m racket/base 
+                                                         (provide x)
+                                                         (define x 10)))])
+             (void))))
+  (test 10 eval `(dynamic-require '(submod 'm m) 'x)))
+
+;; ----------------------------------------
+;; Check module lifting in a top-level context
+
+(define-syntax (do-lift-example-1 stx)
+  (syntax-local-lift-module
+   #'(module lift-example-1 racket/base
+       (provide x)
+       (define x 10)))
+  #'(void))
+(do-lift-example-1)
+(test 10 dynamic-require ''lift-example-1 'x)
+
+(test '(begin
+        (module lift-example-1 racket/base
+          (provide x)
+          (define x 10))
+        (#%app void))
+      'local-expand/capture-lifts
+      (let-syntax ([quote-local-expand
+                    (lambda (stx)
+                      (syntax-case stx ()
+                        [(_ e)
+                         #`(quote #,(local-expand/capture-lifts #'e 'top-level null))]))])
+        (quote-local-expand (do-lift-example-1))))
+
+(define-syntax (do-lift-example-1* stx)
+  (syntax-local-lift-module
+   #'(module* lift-example-1* racket/base
+       (provide x)
+       (define x 10)))
+  #'(void))
+
+(err/rt-test (expand '(do-lift-example-1*))
+             (lambda (exn)
+               (and (exn:fail:contract? exn)
+                    (regexp-match #rx"cannot lift.*module[*]" (exn-message exn)))))
+
+(test '(begin
+        (module* lift-example-1* racket/base
+          (provide x)
+          (define x 10))
+        (#%app void))
+      'local-expand/capture-lifts
+      (let-syntax ([quote-local-expand
+                    (lambda (stx)
+                      (syntax-case stx ()
+                        [(_ e)
+                         #`(quote #,(local-expand/capture-lifts #'e 'module null))]))])
+        (quote-local-expand (do-lift-example-1*))))
+
 ;; ----------------------------------------
 ;; Lifting should not introduce `#%top` around
 ;; the reference to the lifted identifier:

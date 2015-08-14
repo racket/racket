@@ -398,7 +398,8 @@ scheme_add_compilation_binding(int index, Scheme_Object *val, Scheme_Comp_Env *f
 
 void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc cp, Scheme_Object *data, 
                                  Scheme_Object *end_stmts, Scheme_Object *context_key, 
-                                 Scheme_Object *requires, Scheme_Object *provides)
+                                 Scheme_Object *requires, Scheme_Object *provides,
+                                 Scheme_Object *module_lifts)
 {
   Scheme_Lift_Capture_Proc *pp;
   Scheme_Object *vec;
@@ -406,7 +407,7 @@ void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc 
   pp = (Scheme_Lift_Capture_Proc *)scheme_malloc_atomic(sizeof(Scheme_Lift_Capture_Proc));
   *pp = cp;
 
-  vec = scheme_make_vector(8, NULL);
+  vec = scheme_make_vector(9, NULL);
   SCHEME_VEC_ELS(vec)[0] = scheme_null;
   SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)pp;
   SCHEME_VEC_ELS(vec)[2] = data;
@@ -415,6 +416,7 @@ void scheme_frame_captures_lifts(Scheme_Comp_Env *env, Scheme_Lift_Capture_Proc 
   SCHEME_VEC_ELS(vec)[5] = (requires ? requires : scheme_false);
   SCHEME_VEC_ELS(vec)[6] = scheme_null; /* accumulated requires */
   SCHEME_VEC_ELS(vec)[7] = provides;
+  SCHEME_VEC_ELS(vec)[8] = module_lifts; /* #f => disallowed; #t or (void) => add to slot 0; (void) => `module*` allowed */
 
   env->lifts = vec;
 }
@@ -433,7 +435,7 @@ void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Com
 
     p = scheme_make_raw_pair(NULL, (Scheme_Object *)orig_env);
 
-    vec = scheme_make_vector(8, NULL);
+    vec = scheme_make_vector(9, NULL);
     SCHEME_VEC_ELS(vec)[0] = scheme_false;
     SCHEME_VEC_ELS(vec)[1] = scheme_void;
     SCHEME_VEC_ELS(vec)[2] = scheme_void;
@@ -442,6 +444,7 @@ void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Com
     SCHEME_VEC_ELS(vec)[5] = p; /* (rcons NULL env) => continue with env */
     SCHEME_VEC_ELS(vec)[6] = scheme_null;
     SCHEME_VEC_ELS(vec)[7] = scheme_false;
+    SCHEME_VEC_ELS(vec)[8] = scheme_false;
 
     env->lifts = vec;
   }
@@ -455,6 +458,11 @@ Scheme_Object *scheme_frame_get_lifts(Scheme_Comp_Env *env)
 Scheme_Object *scheme_frame_get_end_statement_lifts(Scheme_Comp_Env *env)
 {
   return SCHEME_VEC_ELS(env->lifts)[3];
+}
+
+Scheme_Object *scheme_frame_get_modules(Scheme_Comp_Env *env)
+{
+  return SCHEME_VEC_ELS(env->lifts)[8];
 }
 
 Scheme_Object *scheme_frame_get_require_lifts(Scheme_Comp_Env *env)
@@ -2087,6 +2095,18 @@ Scheme_Comp_Env *scheme_get_module_lift_env(Scheme_Comp_Env *env)
   return env;
 }
 
+static Scheme_Comp_Env *get_lift_env_for_module(Scheme_Comp_Env *env)
+{
+  while (env) {
+    if ((env->lifts)
+        && SCHEME_TRUEP(SCHEME_VEC_ELS(env->lifts)[8]))
+      break;
+    env = env->next;
+  }
+
+  return env;
+}
+
 Scheme_Object *
 scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_scope, Scheme_Comp_Env *env)
 {
@@ -2107,6 +2127,63 @@ scheme_local_lift_end_statement(Scheme_Object *expr, Scheme_Object *local_scope,
 
   pr = scheme_make_pair(expr, SCHEME_VEC_ELS(env->lifts)[3]);
   SCHEME_VEC_ELS(env->lifts)[3] = pr;
+
+  SCHEME_EXPAND_OBSERVE_LIFT_STATEMENT(scheme_get_expand_observe(), orig_expr);
+  
+  return scheme_void;
+}
+
+Scheme_Object *
+scheme_local_lift_module(Scheme_Object *expr, Scheme_Object *local_scope, Scheme_Comp_Env *env)
+{
+  Scheme_Object *pr;
+  Scheme_Object *orig_expr;
+  int star_ok, slot;
+
+  env = get_lift_env_for_module(env);
+
+  if (!env)
+    scheme_contract_error("syntax-local-lift-module",
+                          "not currently transforming within a module declaration or top level",
+                          NULL);
+  
+  if (local_scope)
+    expr = scheme_stx_flip_scope(expr, local_scope, scheme_env_phase(env->genv));
+  orig_expr = expr;
+
+  star_ok = !SAME_OBJ(scheme_true, SCHEME_VEC_ELS(env->lifts)[8]);
+    
+  if (SCHEME_STX_PAIRP(expr)) {
+    pr = SCHEME_STX_CAR(expr);
+    if (scheme_stx_free_eq3(pr, scheme_module_stx, scheme_env_phase(env->genv), scheme_make_integer(0))) {
+      /* ok */
+    } else if (scheme_stx_free_eq3(pr, scheme_modulestar_stx, scheme_env_phase(env->genv), scheme_make_integer(0))) {
+      if (!star_ok)
+        scheme_contract_error("syntax-local-lift-module",
+                              "cannot lift `module*' to a top-level context",
+                              "syntax", 1, expr,
+                              NULL);
+      /* otherwise, ok */
+    } else
+      pr = NULL;
+  } else
+    pr = NULL;
+
+  if (!pr)
+    scheme_contract_error("syntax-local-lift-module",
+                          "not a module declaration",
+                          "syntax", 1, expr,
+                          NULL);
+
+  /* Add to separate list or mingle with definitions? */
+  if (SCHEME_NULLP(SCHEME_VEC_ELS(env->lifts)[8])
+      || SCHEME_PAIRP(SCHEME_VEC_ELS(env->lifts)[8]))
+    slot = 8;
+  else
+    slot = 0;
+  
+  pr = scheme_make_pair(expr, SCHEME_VEC_ELS(env->lifts)[slot]);
+  SCHEME_VEC_ELS(env->lifts)[slot] = pr;
 
   SCHEME_EXPAND_OBSERVE_LIFT_STATEMENT(scheme_get_expand_observe(), orig_expr);
   

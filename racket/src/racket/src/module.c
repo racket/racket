@@ -8563,6 +8563,79 @@ static Scheme_Object *revert_use_site_scopes_via_context(Scheme_Object *o, Schem
                                                    SCHEME_STX_REMOVE);
 }
 
+static Scheme_Object *handle_submodule_form(const char *who,
+                                            Scheme_Object *e,
+                                            Scheme_Comp_Env *env, int phase,
+                                            Scheme_Object *rn_set, Scheme_Object *observer,
+                                            Module_Begin_Expand_State *bxs,
+                                            Scheme_Compile_Expand_Info *rec, int drec,
+                                            Scheme_Compile_Expand_Info *erec, int derec,
+                                            int *_kind)
+{
+  Scheme_Object *name = NULL, *fst, *p;
+  int is_star;
+
+  fst = SCHEME_STX_CAR(e);
+
+  is_star = scheme_stx_free_eq_x(scheme_modulestar_stx, fst, phase);
+
+  e = revert_use_site_scopes_via_context(e, rn_set, phase);
+
+  SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
+  if (is_star) {
+    SCHEME_EXPAND_OBSERVE_PRIM_SUBMODULE_STAR(observer);
+  } else {
+    SCHEME_EXPAND_OBSERVE_PRIM_SUBMODULE(observer);
+  }
+
+  if (SCHEME_STX_PAIRP(e)) {
+    p = SCHEME_STX_CDR(e);
+    if (SCHEME_STX_PAIRP(p)) {
+      name = SCHEME_STX_CAR(p);
+      p = SCHEME_STX_CDR(p);
+      if (!SCHEME_STX_SYMBOLP(name)
+          || !SCHEME_STX_PAIRP(p)) {
+        name = NULL;
+      }
+    }
+  }
+  if (!name) {
+    scheme_wrong_syntax(who, NULL, e, NULL);
+  }
+
+  if (!bxs->submodule_names) {
+    Scheme_Hash_Table *smn;
+    smn = scheme_make_hash_table(SCHEME_hash_ptr);
+    bxs->submodule_names = smn;
+  }
+  if (scheme_hash_get(bxs->submodule_names, SCHEME_STX_VAL(name))) {
+    scheme_wrong_syntax(who, name, fst, "duplicate submodule definition");
+  }
+  scheme_hash_set(bxs->submodule_names,
+                  SCHEME_STX_VAL(name),
+                  is_star ? scheme_void : scheme_true);
+
+  if (!is_star) {
+    p = expand_submodules(erec ? erec : rec, erec ? derec :drec, env, 
+                          scheme_make_pair(scheme_make_pair(e, scheme_make_integer(phase)), scheme_null), 0, 
+                          bxs, !!erec);
+    if (erec)
+      e = SCHEME_CAR(p);
+    else
+      e = NULL;
+    *_kind = DONE_MODFORM_KIND;
+  } else {
+    p = scheme_make_pair(scheme_make_pair(e, scheme_make_integer(phase)), 
+                         bxs->saved_submodules);
+    bxs->saved_submodules = p;
+    *_kind = MODULE_MODFORM_KIND;
+  }
+
+  SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer,e);
+
+  return e;
+}
+
 static Scheme_Object *do_module_begin_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -8784,7 +8857,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                 ? scheme_frame_get_provide_lifts(xenv)
                 : scheme_null);
       scheme_frame_captures_lifts(xenv, scheme_make_lifted_defn, scheme_sys_wraps(xenv), 
-                                  p, lift_ctx, req_data, prev_p);
+                                  p, lift_ctx, req_data, prev_p, scheme_void);
       maybe_has_lifts = 1;
 
       {
@@ -8981,7 +9054,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                                      0);
           if (!for_stx)
             scheme_frame_captures_lifts(eenv, NULL, NULL, scheme_false, scheme_false, 
-                                        req_data, scheme_false);
+                                        req_data, scheme_false, scheme_false);
 
 	  oenv = env;
 	  
@@ -9220,63 +9293,14 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
                    || scheme_stx_free_eq_x(scheme_modulestar_stx, fst, phase)) {
 	  /************ module[*] *************/
           /* check outer syntax & name, then expand pre-module or remember for post-module pass */
-          Scheme_Object *name = NULL;
-          int is_star;
-
-          is_star = scheme_stx_free_eq_x(scheme_modulestar_stx, fst, phase);
-
-          e = revert_use_site_scopes_via_context(e, rn_set, phase);
-
-          SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
-          if (is_star) {
-            SCHEME_EXPAND_OBSERVE_PRIM_SUBMODULE_STAR(observer);
-          } else {
-            SCHEME_EXPAND_OBSERVE_PRIM_SUBMODULE(observer);
-          }
-
-          if (SCHEME_STX_PAIRP(e)) {
-            p = SCHEME_STX_CDR(e);
-            if (SCHEME_STX_PAIRP(p)) {
-              name = SCHEME_STX_CAR(p);
-              p = SCHEME_STX_CDR(p);
-              if (!SCHEME_STX_SYMBOLP(name)
-                  || !SCHEME_STX_PAIRP(p)) {
-                name = NULL;
-              }
-            }
-          }
-          if (!name) {
-            scheme_wrong_syntax(who, NULL, e, NULL);
-          }
-
-          if (!bxs->submodule_names) {
-            Scheme_Hash_Table *smn;
-            smn = scheme_make_hash_table(SCHEME_hash_ptr);
-            bxs->submodule_names = smn;
-          }
-          if (scheme_hash_get(bxs->submodule_names, SCHEME_STX_VAL(name))) {
-            scheme_wrong_syntax(who, name, fst, "duplicate submodule definition");
-          }
-          scheme_hash_set(bxs->submodule_names, 
-                          SCHEME_STX_VAL(name), 
-                          is_star ? scheme_void : scheme_true);
-
-          if (!is_star) {
-            p = expand_submodules(erec ? erec : rec, erec ? derec :drec, env, 
-                                  scheme_make_pair(scheme_make_pair(e, scheme_make_integer(phase)), scheme_null), 0, 
-                                  bxs, !!erec);
-            if (erec)
-              e = SCHEME_CAR(p);
-            else
-              e = NULL;
-            kind = DONE_MODFORM_KIND;
-          } else {
-            p = scheme_make_pair(scheme_make_pair(e, scheme_make_integer(phase)), 
-                                 bxs->saved_submodules);
-            bxs->saved_submodules = p;
-            kind = MODULE_MODFORM_KIND;
-          }
-          SCHEME_EXPAND_OBSERVE_EXIT_PRIM(observer,e);
+          int k;
+          e = handle_submodule_form(who,
+                                    e, env, phase,
+                                    rn_set, observer,
+                                    bxs,
+                                    rec, drec, erec, derec,
+                                    &k);
+          kind = k;
 	} else {
 	  kind = EXPR_MODFORM_KIND;
           non_phaseless |= NON_PHASELESS_FORM;
@@ -9400,7 +9424,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
       ll = (maybe_has_lifts 
             ? scheme_frame_get_provide_lifts(cenv) 
             : scheme_null);
-      scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data, l, lift_ctx, req_data, ll);
+      scheme_frame_captures_lifts(cenv, add_lifted_defn, lift_data, l, lift_ctx, req_data, ll, scheme_void);
       maybe_has_lifts = 1;
 
       if (kind == DEFN_MODFORM_KIND)
@@ -9436,6 +9460,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	p = SCHEME_CDR(p);
       } else {
 	/* Lifts - insert them and try again */
+        Scheme_Object *fst;
         *bxs->all_simple_bindings = 0;
         SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(observer, scheme_copy_list(l));
         if (erec) {
@@ -9447,7 +9472,29 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
           e = scheme_make_pair(e, scheme_make_integer(DONE_MODFORM_KIND)); /* don't re-compile/-expand */
 	SCHEME_CAR(p) = e;
 	for (ll = l; SCHEME_PAIRP(ll); ll = SCHEME_CDR(ll)) {
-	  e = scheme_make_pair(SCHEME_CAR(ll), scheme_make_integer(DEFN_MODFORM_KIND));
+          e = SCHEME_CAR(ll);
+          if (SCHEME_STX_PAIRP(SCHEME_CAR(e)))
+            fst = SCHEME_STX_CAR(SCHEME_CAR(e));
+          else
+            fst = NULL;
+          if (fst
+              && (scheme_stx_free_eq3(fst, scheme_module_stx, scheme_make_integer(phase), scheme_make_integer(0))
+                  || scheme_stx_free_eq3(fst, scheme_modulestar_stx, scheme_make_integer(phase), scheme_make_integer(0)))) {
+            /* a `module` or `module*` form; handle as in first pass */
+            int k;
+            e = handle_submodule_form(who,
+                                      e, env, phase,
+                                      rn_set, observer,
+                                      bxs,
+                                      rec, drec, erec, derec,
+                                      &k);
+            if (e)
+              e = scheme_make_pair(e, scheme_make_integer(k));
+            else
+              e = scheme_make_pair(scheme_void, DONE_MODFORM_KIND);
+          } else {
+            e = scheme_make_pair(e, scheme_make_integer(DEFN_MODFORM_KIND));
+          }
 	  SCHEME_CAR(ll) = e;
 	}
 	p = scheme_append(l, p);
