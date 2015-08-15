@@ -131,7 +131,7 @@
          (write-string/escape (cadr att) escape-attribute-table out)
          (write-string "\"" out))
        (when insert-newlines?
-         (newline))
+         (newline out))
        ; Write end of opening tag
        (if (and (null? content)
                 (case short
