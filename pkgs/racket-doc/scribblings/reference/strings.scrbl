@@ -441,6 +441,13 @@ The result of @racket[(string-normalize-spaces str sep space)] is the same
 as @racket[(string-join (string-split str sep ....) space)].}
 
 
+@defproc[(string-prefix? [str string?]
+                         [prefix string?])
+         boolean?]{
+
+Returns @racket[#t] if the second argument is a prefix of the first.}
+
+
 @defproc[(string-replace [str  string?]
                          [from (or/c string? regexp?)]
                          [to   string?]
@@ -481,6 +488,13 @@ and @racket[repeat?]  controls matching repeated sequences.
   (string-split "  ")
   (string-split "  " #:trim? #f)
 ]}
+
+
+@defproc[(string-suffix? [str string?]
+                         [suffix string?])
+         boolean?]{
+
+Returns @racket[#t] if the second argument is a suffix of the first.}
 
 
 @defproc[(string-trim [str string?]
