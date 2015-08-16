@@ -142,16 +142,20 @@
   (and (string? x) (not (zero? (string-length x)))))
 
 (define (string-prefix? str prefix)
-  (and
-    (<= (string-length prefix) (string-length str))
-    (for/and ([c1 (in-string str)]
-              [c2 (in-string prefix)])
-      (char=? c1 c2))))
+  (define l1 (string-length str))
+  (define l2 (string-length prefix))
+  (let loop ([i 0])
+    (cond
+     [(= l2 i)  #t] ;; Finished reading all chars in prefix
+     [(= l1 i)  #f] ;; Prefix is longer than string
+     [else      (and (char=? (string-ref str i) (string-ref prefix i))
+                     (loop (add1 i)))])))
 
 (define (string-suffix? str suffix)
-  (define offset (- (string-length str) (string-length suffix)))
-  (and
-    (not (negative? offset))
-    (for/and ([c1 (in-string str offset)]
-              [c2 (in-string suffix)])
-      (char=? c1 c2))))
+  (define l2 (string-length suffix))
+  (define offset (- (string-length str) l2))
+  (and (not (negative? offset)) ;; Suffix isn't longer than string
+       (let loop ([i+o offset] [i 0])
+         (or (= i l2)
+             (and (char=? (string-ref str i+o) (string-ref suffix i))
+                  (loop (add1 i+o) (add1 i)))))))
