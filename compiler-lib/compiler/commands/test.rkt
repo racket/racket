@@ -643,7 +643,7 @@
                   (links #:file file #:user? user? #:version-regexp version-re
                          #:root? #t))]
                 #:when (directory-exists? cp)
-                [collection (directory-list cp)]
+                [collection (in-list (directory-list cp))]
                 #:when (directory-exists? (build-path cp collection)))
        (col (path->string collection)
             (build-path cp collection)))))
@@ -655,7 +655,7 @@
      (append*
       (for/list ([cp (current-library-collection-paths)]
                  #:when (directory-exists? cp)
-                 [collection (directory-list cp)]
+                 [collection (in-list (directory-list cp))]
                  #:when (directory-exists? (build-path cp collection)))
         (col (path->string collection)
              (build-path cp collection)))
