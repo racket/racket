@@ -3405,7 +3405,7 @@ static Scheme_Object *unresolve_closure_data_2(Scheme_Closure_Data *rdata, Unres
       LOG_UNRESOLVE(printf("ref_args[%d] = %d\n", ui->stack_pos - i - 1,
                            scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size)));
       ui->ref_args[ui->stack_pos - i - 1] = 
-        scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size);
+        scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size) == CLOS_TYPE_BOXED;
     }
   }
 
@@ -4108,7 +4108,6 @@ Scheme_App_Rec *maybe_unresolve_app_refs(Scheme_App_Rec *app, Unresolve_Info *ui
   Scheme_Object *rator;
   rator = app->args[0];
 
-  /* TODO: check if in ui->closures */
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_closure_type) && 
       (SCHEME_CLOSURE_DATA_FLAGS((SCHEME_COMPILED_CLOS_CODE(rator))) & CLOS_HAS_TYPED_ARGS)) {
     Scheme_Closure_Data *data = SCHEME_COMPILED_CLOS_CODE(rator);
@@ -4122,7 +4121,7 @@ Scheme_App_Rec *maybe_unresolve_app_refs(Scheme_App_Rec *app, Unresolve_Info *ui
     for(i = 0; i < data->num_params; i++) {
       LOG_UNRESOLVE(printf("%d: %d\n", i, scheme_boxmap_get(data->closure_map, i, data->closure_size)));
       LOG_UNRESOLVE(printf("ui->stack_pos = %d, argpos = %d, i = %d\n", ui->stack_pos, SCHEME_LOCAL_POS(app->args[i + 1]), i));
-      if ((scheme_boxmap_get(data->closure_map, i, data->closure_size) & CLOS_TYPE_BOXED) &&
+      if ((scheme_boxmap_get(data->closure_map, i, data->closure_size) == CLOS_TYPE_BOXED) &&
           SAME_TYPE(SCHEME_TYPE(app->args[i + 1]), scheme_local_type) &&
           !ui->ref_args[ui->stack_pos - SCHEME_LOCAL_POS(app->args[i + 1]) - 1]) {
         Scheme_Case_Lambda *cl;
