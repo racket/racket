@@ -3997,8 +3997,6 @@
                       ;; Not a decl
                       (values (reverse decls) el))))))
         
-        (define braces-then-semi '(typedef struct union enum __extension__))
-        
         (define (get-one e comma-sep?)
           (let loop ([e e][result null][first #f][second #f])
             (cond
@@ -4018,7 +4016,7 @@
               [(and (eq? '|,| (tok-n (car e))) comma-sep?)
                (values (reverse (cons (car e) result)) (cdr e))]
               [(and (braces? (car e))
-                    (not (memq first '(typedef enum __extension__)))
+                    (not (memq first '(typedef enum)))
                     (or (not (memq first '(static extern const struct union)))
                         (equal? second "C") ; => extern "C" ...
                         (equal? second "C++") ; => extern "C++" ...
@@ -4030,7 +4028,10 @@
                      (values (reverse (cons (car e) result)) rest)
                      (values (reverse (list* (car rest) (car e) result)) (cdr rest))))]
               [else (loop (cdr e) (cons (car e) result)
-                          (or first (tok-n (car e)))
+                          (or first (let ([s (tok-n (car e))])
+                                      (if (memq s '(__extension__))
+                                          #f ; skip over annotation when deciding shape
+                                          s)))
                           (or second (and first (tok-n (car e)))))])))
         
         (define (foldl-statement e comma-sep? f a-init)

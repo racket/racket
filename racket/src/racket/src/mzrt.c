@@ -178,9 +178,9 @@ void *mzrt_thread_stub(void *data){
 }
 
 #ifdef WIN32
-DWORD WINAPI mzrt_win_thread_stub(void *data)
+uintptr_t WINAPI mzrt_win_thread_stub(void *data)
 {
-  return (DWORD)mzrt_thread_stub(data);
+  return (uintptr_t)mzrt_thread_stub(data);
 }
 #endif
 

@@ -2411,9 +2411,9 @@ Scheme_Object *combine_link_path(char *copy, int len, char *clink, int clen,
 # define MZ_UNC_WRITE 0x2
 # define MZ_UNC_EXEC 0x4
 
-static int UNC_stat(char *dirname, int len, int *flags, int *isdir, int *islink, 
+static int UNC_stat(const char *dirname, int len, int *flags, int *isdir, int *islink, 
 		    Scheme_Object **date, mzlonglong *filesize,
-		    char **resolved_path, int set_flags)
+		    const char **resolved_path, int set_flags)
   /* dirname must be absolute */
 {
   /* Note: stat() doesn't work with UNC "drive" names or \\?\ paths.
@@ -4179,7 +4179,7 @@ static char *filename_for_error(Scheme_Object *p)
 }
 
 #ifdef DOS_FILE_SYSTEM
-static int enable_write_permission(char *fn)
+static int enable_write_permission(const char *fn)
 {
   int len;
   int flags;
@@ -5407,10 +5407,10 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
     err_val = GetLastError();
     if ((err_val == ERROR_DIRECTORY) && CreateSymbolicLinkProc) {
       /* check for symbolic link */
-      char *resolved;
+      const char *resolved;
       if (UNC_stat(filename, strlen(filename), NULL, NULL, NULL, NULL, NULL, &resolved, -1)) {
 	if (resolved) {
-	  filename = resolved;
+	  filename = (char *)resolved;
 	  goto retry;
 	}
       }

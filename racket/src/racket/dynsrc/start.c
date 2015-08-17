@@ -320,7 +320,7 @@ int wmain(int argc_in, wchar_t **argv_in)
   if (_wstat(go, &st)) {
 #ifdef USE_WINMAIN
     wchar_t errbuff[MAXCOMMANDLEN * 2];
-    swprintf(errbuff,L"Can't find %s",go);
+    swprintf(errbuff,sizeof(errbuff),L"Can't find %s",go);
     MessageBoxW(NULL,errbuff,L"Error",MB_OK);
 #else
     char errbuff[MAXCOMMANDLEN * 2];
@@ -367,7 +367,7 @@ int wmain(int argc_in, wchar_t **argv_in)
   if (cl_len > MAXCOMMANDLEN) {
 #ifdef MRSTART
     wchar_t errbuff[MAXCOMMANDLEN * 2];
-    swprintf(errbuff,L"Command line of %d characters exceeds %d characters: %.1024s",
+    swprintf(errbuff,sizeof(errbuff),L"Command line of %d characters exceeds %d characters: %.1024s",
 	     cl_len, MAXCOMMANDLEN,command_line);
     MessageBoxW(NULL,errbuff,L"Error",MB_OK);
 #else
