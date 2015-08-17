@@ -80,7 +80,7 @@ static BlockCache* block_cache_create(MMU *mmu) {
 static ssize_t block_cache_free(BlockCache* bc) {
   ssize_t acf = alloc_cache_free(bc->bigBlockCache);
   page_range_free(bc->page_range);
-  free(bc);
+  ofm_free(bc, sizeof(BlockCache));
   return acf;
 }
 
@@ -220,7 +220,7 @@ static ssize_t bc_free_std_block(block_desc *b) {
   gclist_del(&b->gclist);
   os_free_pages(b->block, b->size);
   size_diff -= b->size;
-  free(b);
+  ofm_free(b, sizeof(block_desc));
   return size_diff;
 }
   

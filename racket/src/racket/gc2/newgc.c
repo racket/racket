@@ -322,6 +322,11 @@ void GC_set_post_propagate_hook(GC_Post_Propagate_Hook_Proc func) {
 static void garbage_collect(NewGC*, int, int, int, Log_Master_Info*);
 static void collect_now(NewGC*, int, int);
 
+#define TRACK_OFM_SIZE 0
+#if TRACK_OFM_SIZE
+static int total_ofm_size;
+#endif
+
 static void out_of_memory()
 {
   if (GC_report_out_of_memory)
@@ -337,6 +342,9 @@ inline static void out_of_memory_gc(NewGC* gc) {
 static void *ofm_malloc(size_t size) {
   void *ptr = malloc(size);
   if (!ptr) out_of_memory();
+#if TRACK_OFM_SIZE
+  total_ofm_size += size;
+#endif
   return ptr;
 }
 
@@ -345,6 +353,13 @@ static void *ofm_malloc_zero(size_t size) {
   ptr = ofm_malloc(size);
   memset(ptr, 0, size);
   return ptr;
+}
+
+static void ofm_free(void *p, size_t size) {
+#if TRACK_OFM_SIZE
+  total_ofm_size -= size;
+#endif
+  free(p);
 }
 
 inline static size_t size_to_apage_count(size_t len) {
@@ -565,15 +580,15 @@ inline static void free_page_maps(PageMap page_maps1) {
       for (j=0; j<PAGEMAP64_LEVEL2_SIZE; j++) {
         page_maps3 = page_maps2[j];
         if (page_maps3) {
-          free(page_maps3);
+          ofm_free(page_maps3, PAGEMAP64_LEVEL3_SIZE * sizeof(mpage *));
         }
       }
-      free(page_maps2);
+      ofm_free(page_maps2, PAGEMAP64_LEVEL2_SIZE * sizeof(mpage *));
     }
   }
-  free(page_maps1);
+  ofm_free(page_maps1, PAGEMAP64_LEVEL1_SIZE * sizeof (mpage***));
 #else
-  free(page_maps1);
+  ofm_free(page_maps1, PAGEMAP32_SIZE * sizeof (mpage***));
 #endif
 }
 
@@ -588,13 +603,13 @@ inline static void pagemap_set(PageMap page_maps1, void *p, mpage *value) {
   pos = PAGEMAP64_LEVEL1_BITS(p);
   page_maps2 = page_maps1[pos];
   if (!page_maps2) {
-    page_maps2 = (mpage ***)calloc(PAGEMAP64_LEVEL2_SIZE, sizeof(mpage **));
+    page_maps2 = (mpage ***)ofm_malloc_zero(PAGEMAP64_LEVEL2_SIZE * sizeof(mpage **));
     page_maps1[pos] = page_maps2;
   }
   pos = PAGEMAP64_LEVEL2_BITS(p);
   page_maps3 = page_maps2[pos];
   if (!page_maps3) {
-    page_maps3 = (mpage **)calloc(PAGEMAP64_LEVEL3_SIZE, sizeof(mpage *));
+    page_maps3 = (mpage **)ofm_malloc_zero(PAGEMAP64_LEVEL3_SIZE * sizeof(mpage *));
     page_maps2[pos] = page_maps3;
   }
   page_maps3[PAGEMAP64_LEVEL3_BITS(p)] = value;
@@ -872,7 +887,7 @@ static mpage *malloc_mpage()
 
 static void free_mpage(mpage *page)
 {
-  free(page);
+  ofm_free(page, sizeof(mpage));
 }
 
 #ifdef NEWGC_BTC_ACCOUNT
@@ -1745,7 +1760,7 @@ void *GC_finish_message_allocator() {
   GC_gen0_alloc_page_ptr   = a->saved_alloc_page_ptr      ;
   GC_gen0_alloc_page_end   = a->saved_alloc_page_end      ;
   
-  free(a);
+  ofm_free(a, sizeof(Allocator));
   gc->saved_allocator = NULL;
 
   gc->in_unsafe_allocation_mode = 0;
@@ -1797,7 +1812,7 @@ void GC_adopt_message_allocator(void *param) {
       msgm->pages->prev = gen0end;
     }
   }
-  free(msgm);
+  ofm_free(msgm, sizeof(MsgMemory));
 
   /* Adopted enough to trigger a GC? */
   gc_if_needed_account_alloc_size(gc, 0);
@@ -1836,7 +1851,7 @@ void GC_dispose_short_message_allocator(void *param) {
     free_orphaned_page(gc, msgm->pages);
   }
 
-  free(msgm);
+  ofm_free(msgm, sizeof(MsgMemory));
 }
 
 void GC_destroy_orphan_msg_memory(void *param) {
@@ -1869,7 +1884,7 @@ void GC_destroy_orphan_msg_memory(void *param) {
     }
 
   }
-  free(msgm);
+  ofm_free(msgm, sizeof(MsgMemory));
 }
 
 
@@ -2614,7 +2629,7 @@ inline static void clear_stack_pages(NewGC *gc)
         if (!keep)
           gc->mark_stack->next = NULL;
       } else 
-        free(gc->mark_stack);
+        ofm_free(gc->mark_stack, STACK_PART_SIZE);
     }
     gc->mark_stack = base;
     gc->mark_stack->top = MARK_STACK_START(gc->mark_stack);
@@ -2631,7 +2646,7 @@ inline static void free_all_stack_pages(NewGC *gc)
     /* then go through and clear them out */
     for(; gc->mark_stack; gc->mark_stack = temp) {
       temp = gc->mark_stack->next;
-      free(gc->mark_stack);
+      ofm_free(gc->mark_stack, STACK_PART_SIZE);
     }
   }
 }
@@ -2797,7 +2812,7 @@ static void NewGCMasterInfo_initialize() {
   MASTERGCINFO->size = 32;
   MASTERGCINFO->alive = 0;
   MASTERGCINFO->ready = 0;
-  MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
+  MASTERGCINFO->signal_fds = (void **)ofm_malloc(sizeof(void*) * MASTERGCINFO->size);
   for (i=0; i < 32; i++ ) {
     MASTERGCINFO->signal_fds[i] = (void *)REAPED_SLOT_AVAILABLE;
   }
@@ -2810,8 +2825,8 @@ static void NewGCMasterInfo_initialize() {
 /* Not yet used: */
 static void NewGCMasterInfo_cleanup() {
   mzrt_rwlock_destroy(MASTERGCINFO->cangc);
-  free(MASTERGCINFO->signal_fds);
-  free(MASTERGCINFO);
+  ofm_free(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
+  ofm_free(MASTERGCINFO, sizeof(NewGCMasterInfo));
   MASTERGCINFO = NULL;
 }
 #endif
@@ -2960,23 +2975,33 @@ static void wait_while_master_in_progress(NewGC *gc, Log_Master_Info *lmi) {
 
 /* MUST CALL WITH cangc lock */
 static intptr_t NewGCMasterInfo_find_free_id() {
+  int i, size;
+  
   GC_ASSERT(MASTERGCINFO->alive <= MASTERGCINFO->size);
   if ((MASTERGCINFO->alive + 1) == MASTERGCINFO->size) {
-    MASTERGCINFO->size++;
+    void **new_signal_fds;
+
+    size = MASTERGCINFO->size * 2;
     MASTERGCINFO->alive++;
-    MASTERGCINFO->signal_fds = realloc(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
-    return MASTERGCINFO->size - 1;
+    new_signal_fds = ofm_malloc(sizeof(void*) * size);
+    memcpy(new_signal_fds, MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
+
+    for (i = MASTERGCINFO->size; i < size; i++ ) {
+      new_signal_fds[i] = (void *)REAPED_SLOT_AVAILABLE;
+    }
+
+    MASTERGCINFO->signal_fds = new_signal_fds;
+    MASTERGCINFO->size = size;
   }
-  else {
-    int i;
-    int size = MASTERGCINFO->size;
-    for (i = 0; i < size; i++) {
-      if (MASTERGCINFO->signal_fds[i] == (void*) REAPED_SLOT_AVAILABLE) {
-        MASTERGCINFO->alive++;
-        return i;
-      }
+
+  size = MASTERGCINFO->size;
+  for (i = 0; i < size; i++) {
+    if (MASTERGCINFO->signal_fds[i] == (void*) REAPED_SLOT_AVAILABLE) {
+      MASTERGCINFO->alive++;
+      return i;
     }
   }
+
   printf("Error in MASTERGCINFO table\n");
   abort();
   return 0;
@@ -5357,7 +5382,7 @@ static void free_child_gc(void)
 
   mmu_flush_freed_pages(gc->mmu);
   mmu_free(gc->mmu);
-  free(gc);
+  ofm_free(gc, sizeof(NewGC));
 }
 #endif
 
@@ -5388,12 +5413,12 @@ void GC_free_all(void)
     }
   }
 
-  free(gc->mark_table);
-  free(gc->fixup_table);
+  ofm_free(gc->mark_table, NUMBER_OF_TAGS * sizeof (Mark2_Proc));
+  ofm_free(gc->fixup_table, NUMBER_OF_TAGS * sizeof (Fixup2_Proc));
   free_page_maps(gc->page_maps);
   free_all_stack_pages(gc);
 
   mmu_flush_freed_pages(gc->mmu);
   mmu_free(gc->mmu);
-  free(gc);
+  ofm_free(gc, sizeof(NewGC));
 }

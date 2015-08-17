@@ -36,7 +36,7 @@ static intptr_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree);
 static intptr_t alloc_cache_free(AllocCacheBlock *ac) {
   if (ac) {
     intptr_t s = alloc_cache_free_all_pages(ac);
-    free(ac);
+    ofm_free(ac, sizeof(AllocCacheBlock) * BLOCKFREE_CACHE_SIZE);
     return s;
   }
   return 0;

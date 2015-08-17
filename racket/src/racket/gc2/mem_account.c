@@ -97,7 +97,7 @@ inline static void clean_up_thread_list(NewGC *gc)
 
       if(prev) prev->next = next;
       if(!prev) gc->thread_infos = next;
-      free(work);
+      ofm_free(work, sizeof(GC_Thread_Info));
       work = next;
     }
   }
@@ -175,7 +175,7 @@ void BTC_register_root_custodian(void *_c)
 
   if (gc->owner_table) {
     /* Reset */
-    free(gc->owner_table);
+    ofm_free(gc->owner_table, sizeof(OTEntry*) * gc->owner_table_size);
     gc->owner_table = NULL;
     gc->owner_table_size = 0;
   }
@@ -214,7 +214,7 @@ inline static void free_owner_set(NewGC *gc, int set)
 {
   OTEntry **owner_table = gc->owner_table;
   if(owner_table[set]) {
-    free(owner_table[set]);
+    ofm_free(owner_table[set], sizeof(OTEntry));
   }
   owner_table[set] = NULL;
 }
@@ -558,7 +558,7 @@ inline static void clean_up_account_hooks(NewGC *gc)
 
       if(prev) prev->next = next;
       if(!prev) gc->hooks = next;
-      free(work);
+      ofm_free(work, sizeof(AccountHook));
       work = next;
     }
   }
@@ -615,7 +615,7 @@ inline static void BTC_run_account_hooks(NewGC *gc)
       if(prev) prev->next = next;
       if(!prev) gc->hooks = next;
       scheme_schedule_custodian_close(work->c2);
-      free(work);
+      ofm_free(work, sizeof(AccountHook));
       work = next;
     } else {
       prev = work; 
