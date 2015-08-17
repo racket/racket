@@ -302,9 +302,10 @@ static int do_evalLoop(Scheme_Env *env, int argc, char **_args)
   return 0;
 }
 
-static void record_at_exit(Scheme_At_Exit_Callback_Proc p) XFORM_SKIP_PROC
+static int record_at_exit(Scheme_At_Exit_Callback_Proc p) XFORM_SKIP_PROC
 {
   at_exit_callback = p;
+  return 0;
 }
 
 static __declspec(thread) void *tls_space;
