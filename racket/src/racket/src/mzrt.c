@@ -468,12 +468,15 @@ int mzrt_rwlock_unlock(mzrt_rwlock *lock) {
 }
 
 int mzrt_rwlock_destroy(mzrt_rwlock *lock) {
-  pthread_mutex_destroy(&lock->m);
-  pthread_cond_destroy(&lock->cr);
-  pthread_cond_destroy(&lock->cw);
-  free(lock);
+  int r = 0;
 
-  return 0;
+  r |= pthread_mutex_destroy(&lock->m);
+  r |= pthread_cond_destroy(&lock->cr);
+  r |= pthread_cond_destroy(&lock->cw);
+
+  if (!r) free(lock);
+
+  return r;
 }
 
 # endif
@@ -500,7 +503,10 @@ int mzrt_mutex_unlock(mzrt_mutex *mutex) {
 }
 
 int mzrt_mutex_destroy(mzrt_mutex *mutex) {
-  return pthread_mutex_destroy(&mutex->mutex);
+  int r;
+  r = pthread_mutex_destroy(&mutex->mutex);
+  if (!r) free(mutex);
+  return r;
 }
 
 struct mzrt_cond {
@@ -532,7 +538,10 @@ int mzrt_cond_broadcast(mzrt_cond *cond) {
 }
 
 int mzrt_cond_destroy(mzrt_cond *cond) {
-  return pthread_cond_destroy(&cond->cond);
+  int r;
+  r = pthread_cond_destroy(&cond->cond);
+  if (!r) free(cond);
+  return r;
 }
 
 struct mzrt_sema {
@@ -588,11 +597,14 @@ int mzrt_sema_post(mzrt_sema *s)
 
 int mzrt_sema_destroy(mzrt_sema *s)
 {
-  pthread_mutex_destroy(&s->m);
-  pthread_cond_destroy(&s->c);
-  free(s);
+  int r = 0;
 
-  return 0;
+  r |= pthread_mutex_destroy(&s->m);
+  r |= pthread_cond_destroy(&s->c);
+
+  if (!r) free(s);
+
+  return r;
 }
 
 #endif
@@ -697,7 +709,8 @@ int mzrt_rwlock_destroy(mzrt_rwlock *lock) {
   int rc = 1;
   rc &= CloseHandle(lock->readEvent);
   rc &= CloseHandle(lock->writeMutex);
-  return rc; 
+  if (rc) free(lock);
+  return !rc;
 }
 
 struct mzrt_mutex {
@@ -729,6 +742,7 @@ int mzrt_mutex_unlock(mzrt_mutex *mutex) {
 
 int mzrt_mutex_destroy(mzrt_mutex *mutex) {
   DeleteCriticalSection(&mutex->critical_section);
+  free(mutex);
   return 0;
 }
 
@@ -791,10 +805,12 @@ int mzrt_sema_post(mzrt_sema *s)
 
 int mzrt_sema_destroy(mzrt_sema *s)
 {
-  CloseHandle(s->ws);
-  free(s);
+  int r;
 
-  return 0;
+  r = CloseHandle(s->ws);
+  if (r) free(s);
+
+  return !r;
 }
 
 #endif
