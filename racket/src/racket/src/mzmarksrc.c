@@ -1315,6 +1315,7 @@ mark_unresolve_info {
   gcMARK2(i->toplevels, gc);
   gcMARK2(i->definitions, gc);
   gcMARK2(i->ref_args, gc);
+  gcMARK2(i->ref_lifts, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Unresolve_Info));

@@ -3229,6 +3229,8 @@ typedef struct Unresolve_Info {
   Scheme_Hash_Table *toplevels;
   Scheme_Object *definitions;
   mzshort *ref_args;
+  int lift_offset;
+  Scheme_Hash_Table *ref_lifts;
 } Unresolve_Info;
 
 static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui, int as_rator);
@@ -3257,6 +3259,8 @@ static Unresolve_Info *new_unresolve_info(Scheme_Prefix *prefix)
   ht = scheme_make_hash_table(SCHEME_hash_ptr);
   ui->toplevels = ht;
   ui->definitions = scheme_null;
+  ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  ui->ref_lifts = ht;
 
   return ui;
 }
@@ -3405,7 +3409,7 @@ static Scheme_Object *unresolve_closure_data_2(Scheme_Closure_Data *rdata, Unres
       LOG_UNRESOLVE(printf("ref_args[%d] = %d\n", ui->stack_pos - i - 1,
                            scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size)));
       ui->ref_args[ui->stack_pos - i - 1] = 
-        scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size);
+        scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size) == CLOS_TYPE_BOXED;
     }
   }
 
@@ -3539,6 +3543,17 @@ static Scheme_Object *unresolve_define_values(Scheme_Object *e, Unresolve_Info *
   Scheme_Object *vars = scheme_null;
   Scheme_Object *vec, *val, *tl;
   int i;
+
+  if (SCHEME_VEC_SIZE(e) == 2) {
+    int pos = SCHEME_TOPLEVEL_POS(SCHEME_VEC_ELS(e)[1]);
+    if (pos >= ui->lift_offset) {
+      Scheme_Closure_Data *data = (Scheme_Closure_Data *)SCHEME_VEC_ELS(e)[0];
+      if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+        scheme_hash_set(ui->ref_lifts, scheme_make_integer(pos), (Scheme_Object *)data); 
+      }
+    }
+  }
+    
   
   LOG_UNRESOLVE(printf("define-values-size!!!: %d\n", (int)SCHEME_VEC_SIZE(e)));
   for (i = SCHEME_VEC_SIZE(e); --i;) {
@@ -3753,6 +3768,7 @@ static Comp_Prefix *unresolve_prefix(Resolve_Prefix *rp, Unresolve_Info *ui) {
 #endif
   cp->num_toplevels = 0;
   cp->toplevels = NULL;
+  ui->lift_offset = rp->num_toplevels;
   for (i = 0; i < rp->num_toplevels; i++) {
     if (SCHEME_SYMBOLP(rp->toplevels[i])) {
       Scheme_Object *mv;
@@ -4100,12 +4116,19 @@ static Scheme_Sequence *unresolve_let_value(Scheme_Let_Value *lv, Unresolve_Info
 
 Scheme_App_Rec *maybe_unresolve_app_refs(Scheme_App_Rec *app, Unresolve_Info *ui) {
   Scheme_Object *rator;
+  Scheme_Closure_Data *data = NULL;
   rator = app->args[0];
 
-  /* TODO: check if in ui->closures */
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_closure_type) && 
       (SCHEME_CLOSURE_DATA_FLAGS((SCHEME_COMPILED_CLOS_CODE(rator))) & CLOS_HAS_TYPED_ARGS)) {
-    Scheme_Closure_Data *data = SCHEME_COMPILED_CLOS_CODE(rator);
+    data = SCHEME_COMPILED_CLOS_CODE(rator);
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_toplevel_type)) {
+    data = (Scheme_Closure_Data *)scheme_hash_get(ui->ref_lifts, scheme_make_integer(SCHEME_TOPLEVEL_POS(rator)));
+  }
+
+  if (data) {
     Scheme_App_Rec *new_app;
     Scheme_Object *new_rator;
     int i;
@@ -4116,7 +4139,7 @@ Scheme_App_Rec *maybe_unresolve_app_refs(Scheme_App_Rec *app, Unresolve_Info *ui
     for(i = 0; i < data->num_params; i++) {
       LOG_UNRESOLVE(printf("%d: %d\n", i, scheme_boxmap_get(data->closure_map, i, data->closure_size)));
       LOG_UNRESOLVE(printf("ui->stack_pos = %d, argpos = %d, i = %d\n", ui->stack_pos, SCHEME_LOCAL_POS(app->args[i + 1]), i));
-      if ((scheme_boxmap_get(data->closure_map, i, data->closure_size) & CLOS_TYPE_BOXED) &&
+      if ((scheme_boxmap_get(data->closure_map, i, data->closure_size) == CLOS_TYPE_BOXED) &&
           SAME_TYPE(SCHEME_TYPE(app->args[i + 1]), scheme_local_type) &&
           !ui->ref_args[ui->stack_pos - SCHEME_LOCAL_POS(app->args[i + 1]) - 1]) {
         Scheme_Case_Lambda *cl;
