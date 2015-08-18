@@ -606,6 +606,44 @@ key, @racket[#f] otherwise.
 
 See @racket[make-prefab-struct] for a description of valid key shapes.}
 
+@subsection{Additional Structure Utilities}
+
+@note-lib-only[racket/struct]
+
+@defproc[(make-constructor-style-printer
+            [get-constructor (-> any/c (or/c symbol? string?))]
+            [get-contents    (-> any/c sequence?)])
+         (-> any/c output-port? (or/c #t #f 0 1) void?)]{
+
+Produces a function suitable as a value for @racket[prop:custom-write]. The
+function prints values in ``constructor style.'' When the value is
+@racket[print]ed as an expression, it is shown as an application of the
+constructor (as returned by @racket[get-constructor]) to the contents (as
+returned by @racket[get-contents]). When given to @racket[write], it is shown as
+an unreadable value with the constructor separated from the contents by a colon.
+
+@(struct-eval '(require racket/struct racket/pretty))
+
+@examples[#:eval struct-eval
+(struct point (x y)
+  #:property prop:custom-write
+  (make-constructor-style-printer
+   (lambda (obj) 'point)
+   (lambda (obj) (list (point-x obj) (point-y obj)))))
+(print (point 1 2))
+(write (point 1 2))
+]
+
+The function also cooperates with @racket[pretty-print]:
+
+@examples[#:eval struct-eval
+(parameterize ((pretty-print-columns 10))
+  (pretty-print (point #e3e6 #e4e6)))
+(parameterize ((pretty-print-columns 10))
+  (pretty-write (point #e3e6 #e4e6)))
+]
+}
+
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}
 
