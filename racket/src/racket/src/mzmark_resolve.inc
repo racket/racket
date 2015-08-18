@@ -63,6 +63,7 @@ static int mark_unresolve_info_MARK(void *p, struct NewGC *gc) {
   gcMARK2(i->toplevels, gc);
   gcMARK2(i->definitions, gc);
   gcMARK2(i->ref_args, gc);
+  gcMARK2(i->ref_lifts, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Unresolve_Info));
@@ -81,6 +82,7 @@ static int mark_unresolve_info_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(i->toplevels, gc);
   gcFIXUP2(i->definitions, gc);
   gcFIXUP2(i->ref_args, gc);
+  gcFIXUP2(i->ref_lifts, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Unresolve_Info));
