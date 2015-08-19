@@ -1875,7 +1875,6 @@ Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
   if (SCHEME_CHAPERONE_STRUCTP(o)) {
     Scheme_Object *v;
     v = scheme_struct_type_property_ref(rename_transformer_property, o);
-    if (SCHEME_BOXP(v)) v = SCHEME_BOX_VAL(v);
     if (SCHEME_INTP(v)) {
       v = scheme_struct_ref(o, SCHEME_INT_VAL(v));
       if (!is_stx_id(v)) {
@@ -1891,7 +1890,7 @@ static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Schem
 {
   return check_indirect_property_value_ok("guard-for-prop:rename-transformer", 
                                           is_stx_id, 0,
-                                          "(or/c exact-nonnegative-integer? (boxof exact-nonnegative-integer?))",
+                                          "(or/c exact-nonnegative-integer? identifier?)",
                                           argc, argv);
 }
 
