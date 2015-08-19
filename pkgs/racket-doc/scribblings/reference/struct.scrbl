@@ -644,6 +644,34 @@ The function also cooperates with @racket[pretty-print]:
 ]
 }
 
+@defproc[(struct->list [v any/c]
+                       [#:on-opaque on-opaque (or/c 'error 'return-false 'skip) 'error])
+         (or/c list? #f)]{
+
+Returns a list containing the struct instance @racket[v]'s
+fields. Unlike @racket[struct->vector], the struct name itself is not
+included.
+
+If any fields of @racket[v] are inaccessible via the current inspector
+the behavior of @racket[struct->list] is determined by
+@racket[on-opaque]. If @racket[on-opaque] is @racket['error] (the
+default), an error is raised. If it is @racket['return-false],
+@racket[struct->list] returns @racket[#f]. If it is @racket['skip],
+the inaccessible fields are omitted from the list.
+
+@examples[#:eval struct-eval
+(define-struct open (u v) #:transparent)
+(struct->list (make-open 'a 'b))
+(struct->list #s(pre 1 2 3))
+(define-struct (secret open) (x y))
+(struct->list (make-secret 0 1 17 22))
+(struct->list (make-secret 0 1 17 22) #:on-opaque 'return-false)
+(struct->list (make-secret 0 1 17 22) #:on-opaque 'skip)
+(struct->list 'not-a-struct #:on-opaque 'return-false)
+(struct->list 'not-a-struct #:on-opaque 'skip)
+]
+}
+
 @;------------------------------------------------------------------------
 @section[#:tag "structinfo"]{Structure Type Transformer Binding}
 
