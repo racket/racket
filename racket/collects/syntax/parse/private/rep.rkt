@@ -6,12 +6,13 @@
                        syntax/parse/private/runtime)
          racket/list
          racket/contract/base
+         "make.rkt"
          "minimatch.rkt"
          syntax/private/id-table
          syntax/stx
          syntax/keyword
          racket/syntax
-         unstable/struct
+         racket/struct
          "txlift.rkt"
          "rep-attrs.rkt"
          "rep-data.rkt"

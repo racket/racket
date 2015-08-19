@@ -3,7 +3,7 @@
          racket/contract/base
          syntax/private/id-table
          racket/syntax
-         unstable/struct)
+         "make.rkt")
 
 #|
 An IAttr is (make-attr identifier number boolean)

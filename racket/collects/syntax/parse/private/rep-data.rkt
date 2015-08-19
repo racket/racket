@@ -5,7 +5,7 @@
          syntax/private/id-table
          racket/syntax
          syntax/parse/private/residual-ct ;; keep abs. path
-         unstable/struct
+         "make.rkt"
          "minimatch.rkt"
          "kws.rkt"
          "rep-attrs.rkt"

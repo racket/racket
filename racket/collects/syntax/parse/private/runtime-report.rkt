@@ -2,7 +2,7 @@
 (require racket/list
          racket/format
          syntax/stx
-         unstable/struct
+         racket/struct
          unstable/error
          syntax/srcloc
          "minimatch.rkt"

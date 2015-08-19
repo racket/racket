@@ -2,7 +2,7 @@
 (require syntax/parse/private/residual-ct ;; keep abs. path
          "rep-attrs.rkt"
          "kws.rkt"
-         unstable/struct
+         "make.rkt"
          (for-syntax racket/base
                      syntax/stx
                      racket/syntax))

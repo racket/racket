@@ -16,7 +16,7 @@
          racket/syntax
          racket/stxparam
          syntax/stx
-         unstable/struct
+         racket/struct
          syntax/parse/private/residual ;; keep abs. path
          syntax/parse/private/runtime  ;; keep abs.path 
          syntax/parse/private/runtime-reflect) ;; keep abs. path
