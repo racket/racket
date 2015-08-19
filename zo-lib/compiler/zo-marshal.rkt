@@ -1,6 +1,5 @@
 #lang racket/base
 (require compiler/zo-structs
-         unstable/struct
          racket/port
          racket/vector
          racket/match

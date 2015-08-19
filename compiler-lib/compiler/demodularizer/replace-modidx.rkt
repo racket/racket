@@ -2,7 +2,7 @@
 
 (require racket/match
          racket/vector
-         unstable/struct
+         racket/struct
          "util.rkt")
 
 (provide replace-modidx)

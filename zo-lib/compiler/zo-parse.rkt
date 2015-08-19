@@ -2,7 +2,7 @@
 (require racket/function
          racket/match
          racket/list
-         unstable/struct
+         racket/struct
          compiler/zo-structs
          racket/dict
          racket/set)
