@@ -194,7 +194,7 @@
                     [(the-call ...) #'(f ((regb arg-x) neg-party) ... kwd-arg-exps ...)]
                     [(pre-check ...)
                      (if pre 
-                         (list #`(check-pre-cond  #,pre blame neg-party f))
+                         (list #`(check-pre-cond #,pre blame neg-party f))
                          (list))]
                     [(post-check ...)
                      (if post
@@ -268,70 +268,91 @@
                 #`(case-lambda #,@case-lambda-clauses)])]
             [else
              #`(make-checking-proc f blame
+                                   #,(if pre pre #'#f)
                                    '(#,@mandatory-kwds) (list kb ...)
                                    '(#,@optional-kwds) (list okb ...) 
                                    #,(length regular-args) (list regb ... optb ...) 
-                                   #,(if rest #'restb #'#f))]))
+                                   #,(if rest #'restb #'#f)
+                                   #,(if post post #'#f)
+                                   #,(if rngs #'(list rb ...) #'#f))]))
         #`(λ (blame f regb ... optb ... kb ... okb ... rb ... #,@(if rest (list #'restb) '()))
             #,body-proc)))))
 
-(define (make-checking-proc f blame  
+(define (make-checking-proc f blame pre
                             original-mandatory-kwds kbs
                             original-optional-kwds okbs
-                            minimum-arg-count rbs rest-ctc)
+                            minimum-arg-count rbs rest-ctc
+                            post rngs)
   (make-keyword-procedure
    (λ (actual-kwds actual-kwd-args neg-party . regular-args)
      (check-arg-count minimum-arg-count (length rbs) regular-args f blame neg-party rest-ctc)
      (check-keywords original-mandatory-kwds original-optional-kwds actual-kwds f blame neg-party)
-     (keyword-apply
-      f
-      actual-kwds
-      (let loop ([kwds actual-kwds]
-                 [kwd-args actual-kwd-args]
-                 [mandatory-kwds original-mandatory-kwds]
-                 [optional-kwds original-optional-kwds]
-                 [kbs kbs]
-                 [okbs okbs])
-        (cond
-          [(null? kwd-args) '()]
-          [else
-           (define kwd (car kwds))
-           (define kwd-arg (car kwd-args))
-           (cond
-             [(and (pair? mandatory-kwds)
-                   (equal? (car mandatory-kwds) kwd))
-              (cons (((car kbs) kwd-arg) neg-party)
-                    (loop (cdr kwds) 
-                          (cdr kwd-args)
-                          (cdr mandatory-kwds)
-                          optional-kwds
-                          (cdr kbs)
-                          okbs))]
-             [(and (pair? optional-kwds)
-                   (equal? (car optional-kwds) kwd))
-              (cons (((car okbs) kwd-arg) neg-party)
-                    (loop (cdr kwds) 
-                          (cdr kwd-args)
-                          mandatory-kwds
-                          (cdr optional-kwds)
-                          kbs
-                          (cdr okbs)))]
-             [(pair? optional-kwds)
-              (loop kwds kwd-args mandatory-kwds (cdr optional-kwds) kbs (cdr okbs))]
-             [else
-              (error 'arrow-val-first.rkt
-                     (string-append
-                      "internal error:\n  f ~s\n  actual-kwds ~s"
-                      "\n  mandatory-kwds ~s\n  optional-kwds ~s\n  neg-party ~s")
-                     f actual-kwds original-mandatory-kwds original-optional-kwds neg-party)])]))
-      (let loop ([regular-args regular-args]
-                 [rbs rbs])
-        (cond
-          [(null? regular-args) '()]
-          [(null? rbs) ((rest-ctc regular-args) neg-party)]
-          [else
-           (cons (((car rbs) (car regular-args)) neg-party)
-                 (loop (cdr regular-args) (cdr rbs)))]))))))
+     (define (mk-call)
+       (keyword-apply
+        f
+        actual-kwds
+        (let loop ([kwds actual-kwds]
+                   [kwd-args actual-kwd-args]
+                   [mandatory-kwds original-mandatory-kwds]
+                   [optional-kwds original-optional-kwds]
+                   [kbs kbs]
+                   [okbs okbs])
+          (cond
+            [(null? kwd-args) '()]
+            [else
+             (define kwd (car kwds))
+             (define kwd-arg (car kwd-args))
+             (cond
+               [(and (pair? mandatory-kwds)
+                     (equal? (car mandatory-kwds) kwd))
+                (cons (((car kbs) kwd-arg) neg-party)
+                      (loop (cdr kwds) 
+                            (cdr kwd-args)
+                            (cdr mandatory-kwds)
+                            optional-kwds
+                            (cdr kbs)
+                            okbs))]
+               [(and (pair? optional-kwds)
+                     (equal? (car optional-kwds) kwd))
+                (cons (((car okbs) kwd-arg) neg-party)
+                      (loop (cdr kwds) 
+                            (cdr kwd-args)
+                            mandatory-kwds
+                            (cdr optional-kwds)
+                            kbs
+                            (cdr okbs)))]
+               [(pair? optional-kwds)
+                (loop kwds kwd-args mandatory-kwds (cdr optional-kwds) kbs (cdr okbs))]
+               [else
+                (error 'arrow-val-first.rkt
+                       (string-append
+                        "internal error:\n  f ~s\n  actual-kwds ~s"
+                        "\n  mandatory-kwds ~s\n  optional-kwds ~s\n  neg-party ~s")
+                       f actual-kwds original-mandatory-kwds original-optional-kwds neg-party)])]))
+        (let loop ([regular-args regular-args]
+                   [rbs rbs])
+          (cond
+            [(null? regular-args) '()]
+            [(null? rbs) ((rest-ctc regular-args) neg-party)]
+            [else
+             (cons (((car rbs) (car regular-args)) neg-party)
+                   (loop (cdr regular-args) (cdr rbs)))]))))
+     (define complete-blame (blame-add-missing-party blame neg-party))
+     (when pre (check-pre-cond pre blame neg-party f))
+     (cond
+       [rngs
+        (define results (call-with-values mk-call list))
+        (define rng-len (length rngs))
+        (unless (= (length results) rng-len)
+          (arrow:bad-number-of-results complete-blame f rng-len results))
+        (when post (check-post-cond post blame neg-party f))
+        (apply
+         values
+         (for/list ([result (in-list results)]
+                    [rng (in-list rngs)])
+           ((rng result) neg-party)))]
+       [else
+        (mk-call)]))))
 
 (build-populars popular-chaperone-key-table)
 (define (lookup-popular-chaperone-key regular-arg-count
