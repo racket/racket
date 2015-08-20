@@ -196,6 +196,52 @@ the target identifier is extracted from the structure instance; if the
 field value is not an identifier, then an identifier @racketidfont{?}
 with an empty context is used, instead.}
 
+@defthing[prop:syntax-local-value struct-type-property?]{
+
+A @tech{structure type property} to identify structure types that cooperate
+with @racket[syntax-local-value].
+
+The property value must be an exact integer or procedure of one argument.
+In the former case, the integer designates a field within
+the structure that should contain an identifier; the integer must be
+between @racket[0] (inclusive) and the number of non-automatic fields
+in the structure type (exclusive, not counting supertype fields), and
+the designated field must also be specified as immutable.
+
+If the property value is a procedure of one argument, then the procedure
+is called during a @racket[syntax-local-value] operation with the structure
+instance as an argument. The result of the procedure must be an identifier.
+
+The @racket[syntax-local-value] operation is redirected to the identifier
+stored in the structure field or to the identifier returned by the procedure
+in the property.
+
+When both @racket[prop:rename-transformer] and @racket[prop:syntax-local-value]
+are provided for a structure type, the former takes precedence for
+@racket[syntax-local-value] lookups.
+
+@examples[#:eval stx-eval #:escape UNSYNTAX
+  (define-syntax slv-1 'first-transformer-binding)
+  (define-syntax slv-2 'second-transformer-binding)
+  (begin-for-syntax
+    (struct slv-cooperator (redirect-to-first?)
+      #:property prop:syntax-local-value
+      (λ (inst)
+        (if (slv-cooperator-redirect-to-first? inst)
+            #'slv-1
+            #'slv-2))))
+  (define-syntax (slv-lookup stx)
+    (syntax-case stx ()
+      [(_ id)
+       #`(quote #,(syntax-local-value #'id))]))
+  (define-syntax slv-inst-1 (slv-cooperator #t))
+  (define-syntax slv-inst-2 (slv-cooperator #f))
+  (slv-lookup slv-inst-1)
+  (slv-lookup slv-inst-2)
+]
+
+@history[#:added "6.3"]}
+
 
 @defproc[(local-expand [stx any/c]
                        [context-v (or/c 'expression 'top-level 'module 'module-begin list?)]

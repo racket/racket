@@ -58,6 +58,7 @@ READ_ONLY static Scheme_Object *proc_property;
 READ_ONLY static Scheme_Object *method_property;
 READ_ONLY static Scheme_Object *rename_transformer_property;
 READ_ONLY static Scheme_Object *set_transformer_property;
+READ_ONLY static Scheme_Object *syntax_local_value_property;
 READ_ONLY static Scheme_Object *not_free_id_symbol;
 READ_ONLY static Scheme_Object *scheme_checked_proc_property;
 READ_ONLY static Scheme_Object *struct_info_proc;
@@ -117,6 +118,7 @@ static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Objec
 static Scheme_Object *check_cpointer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_syntax_local_value_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self);
@@ -489,6 +491,17 @@ scheme_init_struct (Scheme_Env *env)
     scheme_add_global_constant("prop:set!-transformer", set_transformer_property, env);
   }
 
+  {
+    REGISTER_SO(syntax_local_value_property);
+
+    guard = scheme_make_prim_w_arity(check_syntax_local_value_property_value_ok,
+				     "guard-for-prop:syntax-local-value",
+				     2, 2);
+    syntax_local_value_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("syntax-local-value"),
+                                                                           guard);
+
+    scheme_add_global_constant("prop:syntax-local-value", syntax_local_value_property, env);
+  }
 
   {
     guard = scheme_make_prim_w_arity(check_checked_proc_property_value_ok,
@@ -1948,6 +1961,57 @@ static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_O
   return check_indirect_property_value_ok("guard-for-prop:set!-transformer", 
                                           is_proc_1_or_2, 0,
                                           "(or/c  (any/c . -> . any) (any/c any/c . -> . any) exact-nonnegative-integer?)",
+                                          argc, argv);
+}
+
+/* Checks if the struct implements prop:syntax-local-value */
+int scheme_is_syntax_local_value_struct(Scheme_Object *o)
+{
+  if (SCHEME_CHAPERONE_STRUCTP(o)
+      && scheme_struct_type_property_ref(syntax_local_value_property, o))
+    return 1;
+  return 0;
+}
+
+/*
+ * Extracts an identifier from a struct instance with the
+ * prop:syntax-local-value property by calling the store function or
+ * via the struct field.
+ */
+Scheme_Object *scheme_syntax_local_value_id(Scheme_Object *o)
+{
+  Scheme_Object *v, *a[1];
+
+  if (SCHEME_CHAPERONE_STRUCTP(o)) {
+    v = scheme_struct_type_property_ref(syntax_local_value_property, o);
+
+    if (SCHEME_PROCP(v)) {
+      a[0] = o;
+      /* apply a continuation barrier here to prevent a capture in
+       * the syntax-local-value call */
+      v = scheme_apply(v, 1, a);
+    } else {
+      v = scheme_struct_ref(o, SCHEME_INT_VAL(v));
+    }
+
+    if (!is_stx_id(v)) {
+      scheme_contract_error("prop:syntax-local-value",
+                            "contract violation for given value",
+                            "expected", 0, "identifier?",
+                            "given", 1, v,
+                            NULL);
+    }
+    return v;
+  }
+  /* should never happen */
+  return NULL;
+}
+
+static Scheme_Object *check_syntax_local_value_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  return check_indirect_property_value_ok("guard-for-prop:syntax-local-value",
+                                          is_proc_1, 0,
+                                          "(or/c exact-nonnegative-integer? (-> any/c identifier?))",
                                           argc, argv);
 }
 

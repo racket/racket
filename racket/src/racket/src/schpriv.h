@@ -3377,6 +3377,8 @@ int scheme_is_binding_rename_transformer(Scheme_Object *o);
 Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o);
 int scheme_is_set_transformer(Scheme_Object *o);
 Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o);
+int scheme_is_syntax_local_value_struct(Scheme_Object *o);
+Scheme_Object *scheme_syntax_local_value_id(Scheme_Object *o);
 
 Scheme_Object *scheme_top_level_require_execute(Scheme_Object *data);
 Scheme_Object *scheme_case_lambda_execute(Scheme_Object *expr);
