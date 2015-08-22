@@ -16,9 +16,10 @@
          pkg/lib
          pkg/path
          setup/collects
-         setup/getinfo)
+         setup/getinfo
+         compiler/module-suffix)
 
-(define rx:default-suffixes #rx#"\\.(?:rkt|scrbl)$")
+(define rx:default-suffixes (get-module-suffix-regexp))
 ;; For any other file suffix, a `test-command-line-arguments`
 ;; entry is required in "info.rkt".
 
@@ -557,7 +558,7 @@
               (directory-list p)
               #:sema continue-sema)))]
        [(and (or (not check-suffix?)
-                 (regexp-match rx:default-suffixes p)
+                 (regexp-match? rx:default-suffixes p)
                  (get-cmdline p #f #:check-info? #t)
                  (include-path? p #:check-info? #t))
              (or (not check-suffix?)

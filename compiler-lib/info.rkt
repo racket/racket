@@ -2,7 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '(["base" #:version "6.1.1.8"]
+(define deps '(["base" #:version "6.2.900.10"]
                "scheme-lib"
                "rackunit-lib"
                "zo-lib"))
@@ -13,4 +13,4 @@
 
 (define pkg-authors '(mflatt))
 
-(define version "1.3")
+(define version "1.4")
