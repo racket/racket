@@ -5,7 +5,8 @@
           (for-label racket/runtime-path
                      racket/base
                      launcher/launcher
-                     rackunit/log))
+                     rackunit/log
+                     compiler/module-suffix))
 
 @title[#:tag "test"]{@exec{raco test}: Run tests}
 
@@ -19,8 +20,9 @@ the file.
 
 When an argument path refers to a directory, @exec{raco test}
 recursively discovers and runs all files within the directory that end
-in @filepath{.rkt}, end in @filepath{.scrbl}, or have a (possibly
-empty) list of command-line arguments provided by
+in a module suffix (see @racket[get-module-suffixes], but the suffixes
+always include @filepath{.rkt}, @filepath{.scrbl}, @filepath{.ss}, and
+@filepath{.scm}) or have a (possibly empty) list of command-line arguments provided by
 @racket[test-command-line-arguments] in an @filepath{info.rkt} file,
 or as directed by @racket[test-include-paths] in an
 @filepath{info.rkt} file.  At the same time, @exec{raco test} omits
@@ -53,8 +55,7 @@ The @exec{raco test} command accepts several flags:
        --- Not only interprets the arguments as paths (which is the
        default mode), but treats them the same as paths found in a
        directory, which means ignoring a file argument that does not
-       have the extension @filepath{.rkt}, does not have the extension
-       @filepath{.scrbl}, or is not enabled explicitly via
+       have a module extension or is not enabled explicitly via
        @racket[test-command-line-arguments] or @racket[test-include-paths]
        in an @filepath{info.rkt} file; meanwhile, paths that are otherwise
        enabled can be disabled via @racket[test-omit-paths] in an
@@ -153,7 +154,9 @@ The @exec{raco test} command accepts several flags:
 
 ]
 
-@history[#:changed "1.1" @elem{Added @DFlag{heartbeat}.}]
+@history[#:changed "1.1" @elem{Added @DFlag{heartbeat}.}
+         #:changed "1.4" @elem{Changed recognition of module suffixes to use @racket[get-module-suffixes],
+                               which implies recognizing @filepath{.ss} and @filepath{.rkt}.}]
 
 @section[#:tag "test-config"]{Test Configuration by Submodule}
 
@@ -264,6 +267,9 @@ The following @filepath{info.rkt} fields are recognized:
  @item{@racket[test-randoms] --- a list of path strings (relative to
        the enclosing directory) for modules whose output varies.
        See @secref["test-responsible"].}
+
+ @item{@racket[module-suffixes] and @racket[doc-module-suffixes] ---
+       Used indirectly via @racket[get-module-suffixes].}
 
 ]
 
