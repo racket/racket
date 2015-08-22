@@ -43,7 +43,7 @@
                   (date-day d) (date-month d) (date-year d)
                   (date-week-day d) (date-year-day d) (date-dst? d)
                   (date-time-zone-offset d)
-                  62500
+                  62500000
                   "MDT")]) 
   (define (test-string fmt time? result)
     (test (parameterize ([date-display-format fmt])
@@ -112,5 +112,9 @@
 (test #t date*?
   (struct-copy date* (seconds->date (current-seconds))
                [hour #:parent date 5]))
+
+(let ([d ;; 2015-08-22T12:34:56.789000000Z
+       (date* 56 34 12 22 08 2015 6 233 #f 0 789000000 "UTC")])
+  (test 789/1000 - (date*->seconds d) (date->seconds d)))
 
 (report-errs)

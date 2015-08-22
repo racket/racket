@@ -242,7 +242,7 @@
 (define (date*->seconds date [local-time? #t])
   (define s (date->seconds date local-time?))
   (if (date*? date)
-      (+ s (/ (date*-nanosecond date) 1000000))
+      (+ s (/ (date*-nanosecond date) #e1e9))
       s))
 
 (define (find-seconds sec min hour day month year [local-time? #t])
