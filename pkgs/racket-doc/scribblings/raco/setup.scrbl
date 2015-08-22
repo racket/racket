@@ -22,6 +22,7 @@
                     setup/unpack
                     setup/link
                     compiler/compiler
+                    compiler/module-suffix
                     launcher/launcher
                     compiler/sig
                     launcher/launcher-sig
@@ -758,6 +759,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    modules are deleted based on the used module's @filepath{.dep}
    file, etc. Supplying a specific list of collections to @exec{raco
    setup} disables this dependency-based deletion of compiled files.}
+
+ @item{@racket[compile-omit-paths], @racket[compile-omit-files], and
+   @racket[compile-include-files] --- Used indirectly via
+   @racket[compile-collection-zos].}
+
+@item{@racket[module-suffixes] and @racket[doc-module-suffixes] ---
+   Used indirectly via @racket[get-module-suffixes].}
 
 ]
 

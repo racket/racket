@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require racket/match 
-         racket/contract 
+         racket/contract/base 
          planet/cachepath 
          syntax/modread
          "dirs.rkt"

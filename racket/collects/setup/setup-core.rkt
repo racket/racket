@@ -20,7 +20,7 @@
          compiler/compiler
          (prefix-in compiler:option: compiler/option)
          launcher/launcher
-         dynext/file
+         compiler/module-suffix
 
          "unpack.rkt"
          "getinfo.rkt"
@@ -508,7 +508,7 @@
             (let loop ([l collections-to-compile])
               (append-map (lambda (cc) (cons cc (loop (get-subs cc)))) l))))
 
-  (define (collection-tree-map collections-to-compile)
+  (define (collection-tree-map collections-to-compile has-module-suffix?)
     (define (build-collection-tree cc)
       (define (make-child-cc parent-cc name)
         (collection-cc! (append (cc-collection parent-cc) (list name))
@@ -540,7 +540,7 @@
              (filter-map (lambda (x) (make-child-cc cc x)) dirs)))
       (define srcs
         (append
-         (filter extract-base-filename/ss files)
+         (filter has-module-suffix? files)
          (if make-docs?
            (filter (lambda (p) (not (member p omit)))
                    (map (lambda (s) (if (string? s) (string->path s) s))
@@ -984,7 +984,7 @@
   ;; and it makes a do-nothing setup complete much faster.
   (define caching-managed-compile-zo (make-caching-managed-compile-zo))
 
-  (define (compile-cc cc gcs)
+  (define (compile-cc cc gcs has-module-suffix?)
     (parameterize ([current-namespace (make-base-empty-namespace)])
       (begin-record-error cc "making"
         (setup-printf "making" "~a" (cc-name cc))
@@ -999,6 +999,7 @@
            (define dir  (cc-path cc))
            (define info (cc-info cc))
            (compile-directory-zos dir info
+                                  #:has-module-suffix? has-module-suffix?
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo caching-managed-compile-zo
                                   #:skip-path (and (avoid-main-installation) main-collects-dir)
@@ -1025,6 +1026,14 @@
         (case where
           [(beginning) (append same diff)]
           [(end) (append diff same)])))
+    (define has-module-suffix?
+      (let ([rx (get-module-suffix-regexp
+                 #:mode (cond
+                         [(make-user) 'preferred]
+                         [else 'no-user])
+                 #:group 'libs
+                 #:namespace info-ns)])
+        (lambda (p) (regexp-match? rx p))))
     (setup-printf #f "--- compiling collections ---")
     (if ((parallel-workers) . > . 1)
       (begin
@@ -1034,24 +1043,25 @@
             (when (and (cc-main? cc)
                        (member (cc-info-root cc)
                                (current-library-collection-paths)))
-              (compile-cc cc 0))))
+              (compile-cc cc 0 has-module-suffix?))))
         (with-specified-mode
           (lambda ()
             (define cct
               (move-to 'beginning (list #rx"/compiler$" #rx"/raco$" #rx"/racket$" #rx"<pkgs>/images/")
                        (move-to 'end (list #rx"<pkgs>/drracket")
                                 (sort-collections-tree
-                                 (collection-tree-map top-level-plt-collects)))))
+                                 (collection-tree-map top-level-plt-collects
+                                                      has-module-suffix?)))))
             (iterate-cct clean-cc cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct)
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
-              (compile-cc cc gcs)))))
+              (compile-cc cc gcs has-module-suffix?)))))
       (with-specified-mode
         (lambda ()
           (for ([cc ccs-to-compile])
             (clean-cc cc))
           (for/fold ([gcs 0]) ([cc ccs-to-compile])
-            (compile-cc cc gcs))))))
+            (compile-cc cc gcs has-module-suffix?))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Info-Domain Cache               ;;
