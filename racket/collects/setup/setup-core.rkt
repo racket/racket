@@ -546,7 +546,9 @@
                    (map (lambda (s) (if (string? s) (string->path s) s))
                         (map car (call-info info 'scribblings
                                             (lambda () null) (lambda (x) #f)))))
-           null)))
+           null)
+         (map (lambda (s) (if (string? s) (string->path s) s))
+              (call-info info 'compile-include-files (lambda () null) void))))
       (list cc srcs children-ccs))
     (map build-collection-tree collections-to-compile))
 

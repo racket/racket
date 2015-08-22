@@ -70,6 +70,7 @@ file is reported through the current output port.}
 
 @defproc[(compile-collection-zos [collection string?] ...+
                                  [#:skip-path skip-path (or/c path-string? #f) #f]
+                                 [#:skip-paths skip-paths (listof path-string?) null]
                                  [#:skip-doc-sources? skip-docs? any/c #f]
                                  [#:managed-compile-zo managed-compile-zo 
                                                        (path-string? . -> . void?)
@@ -84,7 +85,7 @@ The @filepath{.zo} files are placed into the collection's
 By default, all files with the
 extension @filepath{.rkt}, @filepath{.ss}, or @filepath{.scm} in a collection are
 compiled, as are all such files within subdirectories, execept that
-any file or directory whose path starts with @racket[skip-path] is
+any file or directory whose path starts with @racket[skip-path] or an element of @racket[skip-paths] is
 skipped. (``Starts with'' means that the simplified path @racket[_p]'s
 byte-string form after @racket[(simplify-path _p #f)]starts with the
 byte-string form of @racket[(simplify-path skip-path #f)].)
@@ -113,7 +114,7 @@ collection.  The following fields are used:
        field's value is @racket['all].}
 
  @item{@indexed-racket[compile-omit-files] : A list of filenames (without
-       directory paths); that are not compiled, in addition to the
+       directory paths) that are not compiled, in addition to the
        contents of @racket[compile-omit-paths].  Do not use this
        field; it is for backward compatibility.}
 
@@ -124,13 +125,21 @@ collection.  The following fields are used:
        unless the provided @racket[skip-docs?] argument is a true
        value.}
 
-]}
+ @item{@indexed-racket[compile-include-files] : A list of filenames (without
+       directory paths) to be compiled, in addition to files that
+       are compiled based on the file's extension, being in @racket[scribblings],
+       or being @racket[require]d by other compiled files.}
+
+]
+
+@history[#:changed "6.2.900.10" @elem{Added support for @racket[compile-include-files].}]}
 
 
 @defproc[(compile-directory-zos [path path-string?]
                                 [info ()]
                                 [#:verbose verbose? any/c #f]
                                 [#:skip-path skip-path (or/c path-string? #f) #f]
+                                [#:skip-paths skip-paths (listof path-string?) null]
                                 [#:skip-doc-sources? skip-docs? any/c #f]
                                 [#:managed-compile-zo managed-compile-zo 
                                                       (path-string? . -> . void?)

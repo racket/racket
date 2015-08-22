@@ -133,7 +133,10 @@
                                   (if skip-docs?
                                       null
                                       (map (lambda (s) (if (string? s) (string->path s) s))
-                                           (map car (info* 'scribblings (lambda () null))))))]
+                                           (map car (info* 'scribblings (lambda () null)))))
+                                  ;; Add specified additional sources:
+                                  (map (lambda (s) (if (string? s) (string->path s) s))
+                                       (info* 'compile-include-files (lambda () null))))]
                            [sses (remove* omit-paths sses)])
                       (worker null sses)))])
 
