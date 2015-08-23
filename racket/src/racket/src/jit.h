@@ -462,6 +462,12 @@ typedef struct {
   Branch_Info_Addr *addrs;
 } Branch_Info;
 
+typedef struct {
+  int position;
+  int count;
+  char delivered;
+} Expected_Values_Info;
+
 #define mz_CURRENT_REG_STATUS_VALID() (jitter->status_at_ptr == _jit.x.pc)
 #define mz_SET_REG_STATUS_VALID(v) (jitter->status_at_ptr = (v ? _jit.x.pc : 0))
 
@@ -1528,8 +1534,10 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
 int scheme_generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored);
 int scheme_generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored,  
                                          Branch_Info *for_branch);
+int scheme_generate_non_tail_for_values(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored,  
+                                        Expected_Values_Info *for_values);
 int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int wcm_may_replace, int multi_ok, int target,
-                    Branch_Info *for_branch);
+                    Branch_Info *for_branch, Expected_Values_Info *for_values);
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
 
 void scheme_generate_function_prolog(mz_jit_state *jitter);

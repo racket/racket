@@ -2138,7 +2138,7 @@ static int extract_nary_arg(int reg, int n, mz_jit_state *jitter, Scheme_App_Rec
       scheme_generate_unboxing(jitter, JIT_R0);
   } else if (scheme_is_constant_and_avoids_r1(app->args[n+1])) {
     __END_SHORT_JUMPS__(old_short_jumps);
-    scheme_generate(app->args[n+1], jitter, 0, 0, 0, reg, NULL);
+    scheme_generate(app->args[n+1], jitter, 0, 0, 0, reg, NULL, NULL);
     CHECK_LIMIT();
     __START_SHORT_JUMPS__(old_short_jumps);
   } else {

@@ -2101,7 +2101,7 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 
       jit_movr_p(JIT_R1, JIT_R0);
 
-      scheme_generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
+      scheme_generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL, NULL); /* no sync... */
       CHECK_LIMIT();
 
       if (order_matters) {
@@ -2165,12 +2165,12 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
     mz_runstack_skipped(jitter, skipped);
 
     if (simple2 && !order_matters && already_in_register(rand1, jitter)) {
-      scheme_generate(rand1, jitter, 0, 0, 0, JIT_R1, NULL); /* no sync... */
-      scheme_generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
+      scheme_generate(rand1, jitter, 0, 0, 0, JIT_R1, NULL, NULL); /* no sync... */
+      scheme_generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL, NULL); /* no sync... */
       direction = -1;
     } else {
       if (simple2) {
-        scheme_generate(rand2, jitter, 0, 0, 0, JIT_R1, NULL); /* no sync... */
+        scheme_generate(rand2, jitter, 0, 0, 0, JIT_R1, NULL, NULL); /* no sync... */
         CHECK_LIMIT();
       } else {
         scheme_generate_non_tail(rand2, jitter, 0, 1, 0); /* no sync... */
@@ -2178,7 +2178,7 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
         jit_movr_p(JIT_R1, JIT_R0);
       }
 
-      scheme_generate(rand1, jitter, 0, 0, 0, JIT_R0, NULL); /* no sync... */
+      scheme_generate(rand1, jitter, 0, 0, 0, JIT_R0, NULL, NULL); /* no sync... */
     }
     CHECK_LIMIT();
 
@@ -4065,7 +4065,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         MZ_FPUSEL_STMT_ONLY(extfl, --jitter->unbox_extflonum);
       } else {
         if (constval)
-          scheme_generate(app->args[3], jitter, 0, 0, 0, JIT_R2, NULL); /* sync'd below */
+          scheme_generate(app->args[3], jitter, 0, 0, 0, JIT_R2, NULL, NULL); /* sync'd below */
         else {
           scheme_generate_non_tail(app->args[3], jitter, 0, 1, 0); /* sync'd below */
           jit_movr_p(JIT_R2, JIT_R0);
@@ -4078,7 +4078,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
          Need to get vec into R0, non-simple index into R1, value into R2. */
 
       if (can_delay_vec) {
-        scheme_generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL); /* sync'd below */
+        scheme_generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL, NULL); /* sync'd below */
         CHECK_LIMIT();
       } else if (can_delay_index && constval) {
         jit_movr_p(JIT_R0, JIT_V1);
@@ -4088,7 +4088,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       if (!simple) {
         if (can_delay_index) {
-          scheme_generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL); /* sync'd below */
+          scheme_generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL, NULL); /* sync'd below */
           CHECK_LIMIT();
         } else if (!constval) {
           if (can_delay_vec)
@@ -4282,9 +4282,9 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
       CHECK_LIMIT();
       
       if (!got_two) {
-        scheme_generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL);
+        scheme_generate(app->args[2], jitter, 0, 0, 0, JIT_R1, NULL, NULL);
         CHECK_LIMIT();
-        scheme_generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL);
+        scheme_generate(app->args[1], jitter, 0, 0, 0, JIT_R0, NULL, NULL);
         mz_runstack_unskipped(jitter, 3);
       } else {
         mz_rs_ldr(JIT_R0);
