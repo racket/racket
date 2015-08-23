@@ -335,7 +335,7 @@ binding, constructor, etc.}
   values; also, this information is redundant, since it can be inferred
   by the bindings referenced though @racket[closure-map].
 
-  Which a closure captures top-level or module-level variables or
+  When a closure captures top-level or module-level variables or
   refers to a syntax-object constant, the variables and constants are
   represented in the closure by capturing a prefix (in the sense
   of @racket[prefix]).  The @racket[toplevel-map] field indicates
