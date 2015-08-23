@@ -300,13 +300,12 @@
 	      (set! id temp) ...)))])))
   
   (define-values (call/cc) call-with-current-continuation)
-  (define-values (call/ec) call-with-escape-continuation)
 
   (define-syntax let/cc
     (lambda (stx)
       (syntax-case stx ()
 	[(_ var body1 body ...)
-	 (syntax/loc stx (call-with-current-continuation (lambda (var) body1 body ...)))])))
+	 (syntax/loc stx (call/cc (lambda (var) body1 body ...)))])))
 
   (define-syntax fluid-let
     (lambda (stx)
@@ -389,6 +388,6 @@
              (rename break-paramz? break-parameterization?)
              with-handlers with-handlers* call-with-exception-handler
              set!-values
-             let/cc call/cc call/ec fluid-let time
+             let/cc call/cc fluid-let time
              log-fatal log-error log-warning log-info log-debug define-logger
              hash-ref! hash-has-key? hash-update hash-update!))
