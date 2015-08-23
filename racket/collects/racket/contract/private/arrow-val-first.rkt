@@ -179,19 +179,30 @@
                 [(arg-x ...) (generate-temporaries regular-args)]
                 [(res-x ...) (generate-temporaries (or rngs '()))]
                 [(kwd-arg-x ...) (generate-temporaries mandatory-kwds)])
-    
+
+    (define base-arg-expressions (reverse (syntax->list #'(((regb arg-x) neg-party) ...))))
+    (define normal-arg-vars (generate-temporaries #'(arg-x ...)))
+    (define base-arg-vars normal-arg-vars)
+
     (with-syntax ([(formal-kwd-args ...)
                    (apply append (map list mandatory-kwds (syntax->list #'(kwd-arg-x ...))))]
                   [(kwd-arg-exps ...)
-                   (apply append (map (λ (kwd kwd-arg-x kb) 
-                                        (list kwd #`((#,kb #,kwd-arg-x) neg-party)))
-                                      mandatory-kwds
-                                      (syntax->list #'(kwd-arg-x ...))
-                                      (syntax->list #'(kb ...))))]
+                   (apply
+                    append
+                    (map (λ (kwd kwd-arg-x kb)
+                           (set! base-arg-expressions
+                                 (cons #`((#,kb #,kwd-arg-x) neg-party)
+                                       base-arg-expressions))
+                           (set! base-arg-vars (cons (car (generate-temporaries (list kwd-arg-x)))
+                                                     base-arg-vars))
+                           (list kwd (car base-arg-vars)))
+                         mandatory-kwds
+                         (syntax->list #'(kwd-arg-x ...))
+                         (syntax->list #'(kb ...))))]
                   [(letrec-bound-id) (generate-temporaries '(f))])
       
       (with-syntax ([(wrapper-args ...) #'(neg-party arg-x ... formal-kwd-args ...)]
-                    [(the-call ...) #'(f ((regb arg-x) neg-party) ... kwd-arg-exps ...)]
+                    [(the-call ...) #`(f #,@(reverse normal-arg-vars) kwd-arg-exps ...)]
                     [(pre-check ...)
                      (if pre 
                          (list #`(check-pre-cond #,pre blame neg-party f))
@@ -211,46 +222,70 @@
                (let loop ([optional-args (reverse optional-args)]
                           [ob (reverse (syntax->list #'(optb ...)))]
                           [first? #t])
+                 (define args-expressions base-arg-expressions)
+                 (define args-vars base-arg-vars)
                  (define no-rest-call
-                   #`(the-call ... #,@(for/list ([ob (in-list (reverse ob))]
-                                                 [optional-arg (in-list (reverse optional-args))])
-                                        #`((#,ob #,optional-arg) neg-party))))
+                   #`(the-call ...
+                      #,@(for/list ([ob (in-list (reverse ob))]
+                                    [optional-arg (in-list (reverse optional-args))])
+                           (set! args-expressions
+                                 (cons #`((#,ob #,optional-arg) neg-party)
+                                       args-expressions))
+                           (set! args-vars
+                                 (cons (car (generate-temporaries (list optional-arg)))
+                                       args-vars))
+                           (car args-vars))))
                  (define full-call
-                   (if (and first? rest)
-                       #`(apply #,@no-rest-call ((restb rest-arg) neg-party))
-                       no-rest-call))
+                   (cond
+                     [(and first? rest)
+                      (set! args-expressions (cons #'((restb rest-arg) neg-party) args-expressions))
+                      (set! args-vars (cons (car (generate-temporaries '(rest-args-arrow-contract)))
+                                            args-vars))
+                      #`(apply #,@no-rest-call #,(car args-vars))]
+                     [else
+                      no-rest-call]))
                  (define the-args #`(wrapper-args ... 
                                      #,@(reverse optional-args)
                                      #,@(if (and first? rest)
                                             #'rest-arg
                                             '())))
+                 (define let-values-clause
+                   #`[#,(reverse args-vars)
+                      (with-continuation-mark contract-continuation-mark-key
+                        (cons blame neg-party)
+                        (values #,@(reverse args-expressions)))])
+                 
                  (define the-clause
                    (if rngs
                        #`[#,the-args
                           pre-check ...
                           (define-values (failed res-x ...)
                             (call-with-values
-                             (λ () #,full-call)
+                             (λ () (let-values (#,let-values-clause)
+                                     #,full-call))
                              (case-lambda
                                [(res-x ...)
                                 (values #f res-x ...)]
                                [args
                                 (values args #,@(map (λ (x) #'#f) 
                                                      (syntax->list #'(res-x ...))))])))
-                          (cond
-                            [failed
-                             (wrong-number-of-results-blame 
-                              blame neg-party f
-                              failed
-                              #,(length 
-                                 (syntax->list
-                                  #'(res-x ...))))]
-                            [else
-                             post-check ...
-                             (values ((rb res-x) neg-party) ...)])]
+                          (with-continuation-mark contract-continuation-mark-key
+                            (cons blame neg-party)
+                            (cond
+                              [failed
+                               (wrong-number-of-results-blame
+                                blame neg-party f
+                                failed
+                                #,(length
+                                   (syntax->list
+                                    #'(res-x ...))))]
+                              [else
+                               post-check ...
+                               (values ((rb res-x) neg-party) ...)]))]
                        #`[#,the-args
                           pre-check ...
-                          #,full-call]))
+                          (let-values (#,let-values-clause)
+                            #,full-call)]))
                  (cons the-clause
                        (cond
                          [(null? optional-args) '()]

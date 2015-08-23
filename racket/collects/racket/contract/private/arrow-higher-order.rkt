@@ -59,16 +59,20 @@
 
 
 (define (check-pre-cond pre blame neg-party val)
-  (unless (pre)
-    (raise-blame-error (blame-swap blame)
-                       #:missing-party neg-party
-                       val "#:pre condition")))
+  (with-continuation-mark contract-continuation-mark-key
+    (cons blame neg-party)
+    (unless (pre)
+      (raise-blame-error (blame-swap blame)
+                         #:missing-party neg-party
+                         val "#:pre condition"))))
 
 (define (check-post-cond post blame neg-party val)
-  (unless (post)
-    (raise-blame-error blame
-                       #:missing-party neg-party
-                       val "#:post condition")))
+  (with-continuation-mark contract-continuation-mark-key
+    (cons blame neg-party)
+    (unless (post)
+      (raise-blame-error blame
+                         #:missing-party neg-party
+                         val "#:post condition"))))
 
 (define (check-pre-cond/desc post blame neg-party val)
   (handle-pre-post/desc-string #t post blame neg-party val))

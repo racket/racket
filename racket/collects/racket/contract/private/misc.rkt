@@ -1493,8 +1493,13 @@
              [out-proc (contract-projection (parameter/c-out ctc))])
         (λ (blame)
           (define blame/c (blame-add-context blame "the parameter of"))
-          (define partial-neg-contract (in-proc (blame-swap blame/c)))
-          (define partial-pos-contract (out-proc blame/c))
+          (define (add-profiling f)
+            (λ (x)
+              (with-continuation-mark contract-continuation-mark-key
+                (cons blame #f)
+                (f x))))
+          (define partial-neg-contract (add-profiling (in-proc (blame-swap blame/c))))
+          (define partial-pos-contract (add-profiling (out-proc blame/c)))
           (λ (val)
             (cond
               [(parameter? val)
@@ -1515,11 +1520,16 @@
          (cond
            [(parameter? val)
             (λ (neg-party)
+              (define (add-profiling f)
+                (λ (x)
+                  (with-continuation-mark contract-continuation-mark-key
+                    (cons blame neg-party)
+                    (f x))))
               (make-derived-parameter
                val
                ;; unfortunately expensive
-               (in-proc (blame-add-missing-party swapped neg-party))
-               (out-proc (blame-add-missing-party blame/c neg-party))))]
+               (add-profiling (in-proc (blame-add-missing-party swapped neg-party)))
+               (add-profiling (out-proc (blame-add-missing-party blame/c neg-party)))))]
            [else
             (λ (neg-party)
               (raise-blame-error blame #:missing-party neg-party
