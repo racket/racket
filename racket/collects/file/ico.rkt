@@ -1,11 +1,13 @@
 #lang racket/base
-(require racket/contract)
+(require racket/contract
+         compiler/private/pe-rsrc)
 
 (provide ico?
          (contract-out
-          [ico-width (ico? . -> . (integer-in 1 256))]
-          [ico-height (ico? . -> . (integer-in 1 256))]
-          [ico-depth (ico? . -> . (one-of/c 1 2 4 8 16 24 32))]
+          [ico-width (ico? . -> . exact-positive-integer?)]
+          [ico-height (ico? . -> . exact-positive-integer?)]
+          [ico-depth (ico? . -> . (or/c 1 2 4 8 16 24 32))]
+          [ico-format (ico? . -> . (or/c 'bmp 'png))]
           
           [read-icos ((or/c path-string? input-port?) . -> . (listof ico?))]
           [read-icos-from-exe ((or/c path-string? input-port?) . -> . (listof ico?))]
@@ -16,14 +18,19 @@
                                        'must-truncate 'truncate/replace)]
                        . ->* .
                        void?)]
-          [replace-icos ((listof ico?) (or/c path-string? output-port?)
-                         . -> . void?)]
+          [replace-icos ((listof ico?) path-string? . -> . void?)]
+          [replace-all-icos ((listof ico?) path-string? . -> . void?)]
           
           [ico->argb (ico? . -> . bytes?)]
+          [ico->png-bytes (ico? . -> . bytes?)]
           [argb->ico ([(integer-in 1 256) (integer-in 1 256) bytes? ]
                       [#:depth (one-of/c 1 2 4 8 24 32)]
                       . ->* . 
-                      ico?)]))
+                      ico?)]
+          [png-bytes->ico ([bytes?]
+                           []
+                           . ->* . 
+                           ico?)]))
 
 ;; parse-ico build-ico
 
@@ -46,107 +53,21 @@
 (define (integer->3/2word i p)
   (display (subbytes (integer->integer-bytes i 4 #f #f) 0 3) p))
 
-(define (flag v)
-  (positive? (bitwise-and #x80000000 v)))
-(define (value v)
-  (bitwise-and #x7FFFFFFF v))
-
-(define (skip-to-image-headers-after-signature p)
-  ;; p is expected to be a file port
-  (file-position p 60)
-  (let ([pos (word->integer p)])
-    ;; pos points to IMAGE_NT_HEADERS
-    (file-position p pos)
-    (unless (= #x4550 (dword->integer p))
-      (error "bad signature"))
-    pos))
-
-(define (get-image-base p)
-  (let ([pos (skip-to-image-headers-after-signature p)])
-    (file-position p (+ 4
-                        20
-                        28))
-    (dword->integer p)))
-
-(define (find-section p find-name)
-  (let ([pos (skip-to-image-headers-after-signature p)])
-    (word->integer p) ; skip machine
-    (let ([num-sections (word->integer p)]
-          [_ (begin (dword->integer p)
-                    (dword->integer p)
-                    (dword->integer p))]
-          [size (word->integer p)])
-      (let ([pos (+ pos
-                    4       ; Signature : DWORD
-                    20      ; FileHeader: IMAGE_FILE_HEADER
-                    size)]) ; "optional" header
-        (let sloop ([section 0][section-pos pos])
-          (if (= section num-sections)
-              (error 'find-section "can't find section: ~e" find-name)
-              (begin
-                (file-position p section-pos)
-                ;; p points to an IMAGE_SECTION_HEADER
-                (let ([name (read-bytes 8 p)])
-                  (if (bytes=? find-name name)
-                      (let ([_ (dword->integer p)]) ; skip
-                        (values (dword->integer p)  ; virtual address
-                                (dword->integer p)  ; length
-                                (dword->integer p))); file pos
-                      (sloop (add1 section) (+ section-pos 40)))))))))))
-
-(define (find-rsrc-start p re:rsrc)
-  (let-values ([(rsrc-virtual-addr rsrc-len rsrc-pos)
-                (find-section p #".rsrc\0\0\0")])
-    (let loop ([dir-pos 0][path ""])
-      (file-position p (+ rsrc-pos dir-pos 12))
-      (let ([num-named (word->integer p)]
-            [num-ided (word->integer p)])
-        (let iloop ([i 0])
-          (if (= i (+ num-ided num-named))
-              #f
-              (let ([name-delta (dword->integer p)]
-                    [data-delta (dword->integer p)]
-                    [next (file-position p)])
-                (or (let ([name (if (flag name-delta)
-                                    (begin
-                                      (file-position p (+ rsrc-pos (value name-delta)))
-                                      (let* ([len (word->integer p)])
-                                        ;; len is in unicode chars...
-                                        (let ([unistr (read-bytes (* 2 len) p)])
-                                          ;; Assume it fits into ASCII...
-                                          (regexp-replace* "\0" 
-                                                           (bytes->string/latin-1 unistr)
-                                                           ""))))
-                                    (value name-delta))])
-                      ;;(printf "Name: ~a~a = ~a\n" path name (+ rsrc-pos (value data-delta)))
-                      (let ([full-name (format "~a~a" path name)])
-                        (if (flag data-delta)
-                            (loop (value data-delta) (string-append full-name "."))
-                            ;; Found the icon?
-                            (and (regexp-match re:rsrc full-name)
-                                 ;; Yes, so read IMAGE_RESOURCE_DATA_ENTRY
-                                 (begin
-                                   (file-position p (+ rsrc-pos (value data-delta)))
-                                   (cons
-                                    (+ (dword->integer p)           ; offset (an RVA)
-                                       (- rsrc-pos
-                                          rsrc-virtual-addr))
-                                    (dword->integer p)))))))        ; size
-                    (begin
-                      (file-position p next)
-                      (iloop (add1 i)))))))))))
-
 (define-struct ico (desc data) #:mutable)
 ;; desc is (list width height colors 0 planes bitcount)
 ;; data is (cons pos bytes)
 
 (define (ico-width i) (let ([v (car (ico-desc i))])
                         (if (= v 0)
-                            256
+                            (if (eq? (ico-format i) 'bmp)
+                                256
+                                (ico-png-width i))
                             v)))
 (define (ico-height i) (let ([v (cadr (ico-desc i))])
                          (if (= v 0)
-                             256
+                             (if (eq? (ico-format i) 'bmp)
+                                 256
+                                (ico-png-height i))
                              v)))
 (define (ico-depth i) 
   (let ([cols (caddr (ico-desc i))])
@@ -154,6 +75,26 @@
         (list-ref (ico-desc i) 5)
         (integer-length (sub1 cols)))))
 (define (ico-colors i) (num-colors (ico-desc i)))
+
+(define (ico-format i)
+  (define bstr (cdr (ico-data i)))
+  (define tag (subbytes bstr 0 2))
+  (cond
+   [(and ((bytes-length bstr) . > . 4)
+         (equal? (subbytes bstr 0 4) #"\211PNG"))
+    'png]
+   [else
+    ;; Asume BMP
+    'bmp]))
+
+(define (ico-png-width i)
+  (png-width (cdr (ico-data i))))
+(define (png-width bstr)
+  (integer-bytes->integer (subbytes bstr 16 20) #f #t))
+(define (ico-png-height i)
+  (png-height (cdr (ico-data i))))
+(define (png-height bstr)
+  (integer-bytes->integer (subbytes bstr 20 24) #f #t))
 
 (define (num-colors l)
   (let ([n (caddr l)])
@@ -173,8 +114,8 @@
                             (ormap (lambda (ico-ico)
                                      (let ([le (ico-desc exe-ico)]
                                            [li (ico-desc ico-ico)])
-                                       (and (= (car li) (car le))
-                                            (= (cadr li) (cadr le))
+                                       (and (= (ico-width exe-ico) (ico-width ico-ico))
+                                            (= (ico-height exe-ico) (ico-height ico-ico))
                                             (= (num-colors li) (num-colors le))
                                             (= (bytes-length (cdr (ico-data exe-ico)))
                                                (bytes-length (cdr (ico-data ico-ico))))
@@ -185,8 +126,8 @@
                                           ;; need a 16x16, 32x32, or 48x48
                                           ;; ico
                                           (and
-                                           (= (car (ico-desc exe-ico))
-                                              (cadr (ico-desc exe-ico)))
+                                           (= (ico-width exe-ico)
+                                              (ico-height exe-ico))
                                            (memq (car (ico-desc exe-ico))
                                                  '(16 32 48))
                                            (let ([biggest-colorest #f])
@@ -249,16 +190,88 @@
                                                                    #t)))))))))])
                          (unless ico-ico (log-error "no icon conversion available to ~a" (ico-desc exe-ico)))
                          (when ico-ico
-                           (file-position p (car (ico-data exe-ico)))
+                           (file-position p (let ([d (car (ico-data exe-ico))])
+                                              (if (vector? d)
+                                                  (vector-ref d 0)
+                                                  d)))
                            (display (cdr (ico-data ico-ico)) p)))))
                    exe-icos))
        (lambda () (close-output-port p))))))
+
+(define (replace-all-icos ico-list exe-file)
+  (define-values (pe rsrcs)
+    (call-with-input-file*
+     exe-file
+     read-pe+resources))
+  (define-values (type name language icos file-pos)
+    (resource-ref/path rsrcs 14 #f #f))
+  (define old-icos
+    (if icos
+        (get-icos (open-input-bytes icos) rsrcs)
+        null))
+  (define (ico-res-type i) (vector-ref (car (ico-data i)) 1))
+  (define (ico-res-name i) (vector-ref (car (ico-data i)) 2))
+  (define (ico-res-language i) (vector-ref (car (ico-data i)) 3))
+  (define cleaned-rsrcs
+    (for/fold ([rsrcs rsrcs]) ([old-i (in-list old-icos)])
+      (resource-remove rsrcs
+                       (ico-res-type old-i)
+                       (ico-res-name old-i)
+                       (ico-res-language old-i))))
+  ;; Replace individual icons where size and depth match
+  (define-values (new-rsrcs named-icos)
+    (for/fold ([rsrcs cleaned-rsrcs] [named-icos null]) ([i (in-list ico-list)])
+      (define old-i (for/or ([old-i (in-list old-icos)])
+                      (and (= (ico-width i) (ico-width old-i))
+                           (= (ico-height i) (ico-height old-i))
+                           (= (ico-depth i) (ico-depth old-i))
+                           old-i)))
+      (define name
+        (cond
+         [old-i (ico-res-name old-i)]
+         [else
+          ;; Generate next unused id:
+          (let loop ([id 1])
+            (if (resource-ref rsrcs 3 id 1033)
+                (loop (add1 id))
+                id))]))
+      (values (resource-set rsrcs
+                            3
+                            name
+                            1033
+                            (cdr (ico-data i)))
+              (cons (ico (ico-desc i)
+                         (cons (vector #f 4 name 1033)
+                               (cdr (ico-data i))))
+                    named-icos))))
+  ;; Update ico:
+  (define ready-rsrcs
+    (resource-set new-rsrcs type name language (make-icos-header named-icos)))
+  ;; Write new resources:
+  (update-resources exe-file pe ready-rsrcs))
+
+(define (make-icos-header icos)
+  (define o (open-output-bytes))
+  (integer->word 0 o)
+  (integer->word 1 o)
+  (integer->word (length icos) o)
+  (for ([i (in-list icos)])
+    (define desc (ico-desc i))
+    (write-byte (list-ref desc 0) o)
+    (write-byte (list-ref desc 1) o)
+    (write-byte (list-ref desc 2) o)
+    (write-byte (list-ref desc 3) o)
+    (integer->word (list-ref desc 4) o)
+    (integer->word (list-ref desc 5) o)
+    (integer->dword (bytes-length (cdr (ico-data i))) o)
+    (integer->word (vector-ref (car (ico-data i)) 2) o))
+  (get-output-bytes o))
 
 ;; ------------------------------
 ;;  Image parsing
 ;; ------------------------------
 
-(define (get-icos file res?)
+(define (get-icos file rsrcs)
   (let ([p (if (input-port? file)
                file
                (open-input-file file))])
@@ -282,7 +295,7 @@
                                    (word->integer p)   ; planes
                                    (word->integer p))  ; bitcount
                              (list (dword->integer p)  ; bytes
-                                   ((if res?           ; where or icon id
+                                   ((if rsrcs          ; where or icon id
                                         word->integer 
                                         dword->integer)
                                     p)))
@@ -293,14 +306,16 @@
                         ico
                         (let ([size (car (ico-data ico))]
                               [where (cadr (ico-data ico))])
-                          (let ([ico-pos (if res?
-                                             ;; last number is icon id:
-                                             (car (find-rsrc-start p (regexp (format "^3[.]~a[.]" where))))
-                                             ;; last number is file position:
-                                             where)])
-                            (file-position p ico-pos)
-                            (cons ico-pos
-                                  (read-bytes size p)))))
+                          (cond
+                           [rsrcs
+                            (define-values (type name lang bstr file-pos)
+                              (resource-ref/path rsrcs 3 where #f))
+                            (cons (vector file-pos type name lang)
+                                  bstr)]
+                           [else
+                            (file-position p where)
+                            (cons where
+                                  (read-bytes size p))])))
                        ;; If colors, planes, and bitcount are all 0,
                        ;;  get the info from the DIB data
                        (let ([desc (ico-desc ico)])
@@ -595,6 +610,8 @@
           (cadr image)))) ; list of mask pixels
 
 (define (ico->argb ico)
+  (unless (eq? 'bmp (ico-format ico))
+    (error 'ico->argb "icon not in BMP format"))
   (let* ([image (parse-ico ico)]
          [pixels (list-ref image 3)]
          [len (length pixels)]
@@ -616,6 +633,11 @@
         (bytes-set! bstr (+ 3 (* i 4)) (bitwise-and #xff p))))
     bstr))
 
+(define (ico->png-bytes ico)
+  (unless (eq? 'png (ico-format ico))
+    (error 'ico->argb "icon not in PNG format"))
+  (cdr (ico-data ico)))
+
 (define (build-ico base-ico image mask check?)
   (make-ico (ico-desc base-ico)
             (cons (car (ico-data base-ico))
@@ -625,14 +647,12 @@
   (get-icos ico-file #f))
 
 (define (read-icos-from-exe exe-file)
-  (let ([p (open-input-file exe-file)])
-    (dynamic-wind
-     void
-     (lambda ()
-       (let ([pos+size (find-rsrc-start p #rx"^14[.]")])
-         (file-position p (car pos+size))
-         (get-icos p #t)))
-     (lambda () (close-input-port p)))))
+  (define-values (pe rsrcs)
+    (call-with-input-file*
+     exe-file
+     read-pe+resources))
+  (define icos (resource-ref rsrcs 14 #f #f))
+  (get-icos (open-input-bytes icos) rsrcs))
 
 (define (write-header w h depth o)
   (integer->dword 40 o) ; size
@@ -646,6 +666,11 @@
   (integer->dword 0 o)  ; y pixels per meter
   (integer->dword 0 o)  ; used
   (integer->dword 0 o))  ; important
+
+(define (png-bytes->ico bstr)
+  (define (256+->0 v) (if (v . >= . 256) 0 v))
+  (ico (list (256+->0 (png-width bstr)) (256+->0 (png-height bstr)) 0 0 1 32)
+       (cons #f bstr)))
 
 (define (argb->ico w h argb #:depth [depth 32])
   (let ([o (open-output-bytes)])
