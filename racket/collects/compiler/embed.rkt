@@ -1743,7 +1743,7 @@
                      (let ([m (and (eq? 'windows (system-type))
                                    (assq 'ico aux))])
                        (when m
-                         (replace-icos (read-icos (cdr m)) dest-exe)))
+                         (replace-all-icos (read-icos (cdr m)) dest-exe)))
                      (let ([m (and (eq? 'windows (system-type))
                                    (assq 'subsystem aux))])
                        (when m
