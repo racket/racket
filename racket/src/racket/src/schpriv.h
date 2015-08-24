@@ -1687,6 +1687,7 @@ typedef struct Scheme_Cont_Mark {
   Scheme_Object *cache; /* chain and/or shortcut */
   MZ_MARK_POS_TYPE pos; /* Odd numbers - so they look like non-pointers */
 } Scheme_Cont_Mark;
+#define LOG_CONT_MARK_WORD_COUNT 2
 
 void scheme_new_mark_segment(Scheme_Thread *p);
 

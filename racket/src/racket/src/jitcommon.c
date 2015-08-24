@@ -2591,8 +2591,7 @@ static int common6(mz_jit_state *jitter, void *_data)
     CHECK_LIMIT();
     
     jit_andi_l(JIT_V1, JIT_R2, SCHEME_MARK_SEGMENT_MASK);
-    jit_movi_l(JIT_R1, sizeof(Scheme_Cont_Mark));
-    jit_mulr_l(JIT_V1, JIT_V1, JIT_R1);
+    jit_lshi_l(JIT_V1, JIT_V1, LOG_CONT_MARK_WORD_COUNT+JIT_LOG_WORD_SIZE);
     jit_addr_l(JIT_R0, JIT_R0, JIT_V1);
     CHECK_LIMIT();
     /* R0 now points to the right record */
@@ -2649,8 +2648,7 @@ static int common6(mz_jit_state *jitter, void *_data)
     /* R0 now points to the right array */
     
     jit_andi_l(JIT_V1, JIT_R2, SCHEME_MARK_SEGMENT_MASK);
-    jit_movi_l(JIT_R1, sizeof(Scheme_Cont_Mark));
-    jit_mulr_l(JIT_V1, JIT_V1, JIT_R1);
+    jit_lshi_l(JIT_V1, JIT_V1, LOG_CONT_MARK_WORD_COUNT+JIT_LOG_WORD_SIZE);
     jit_addr_l(JIT_R0, JIT_R0, JIT_V1);
     CHECK_LIMIT();
     /* R0 now points to the right record */
