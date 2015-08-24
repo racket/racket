@@ -252,40 +252,42 @@
                  (define let-values-clause
                    #`[#,(reverse args-vars)
                       (with-continuation-mark contract-continuation-mark-key
-                        (cons blame neg-party)
+                        blame+neg-party
                         (values #,@(reverse args-expressions)))])
                  
                  (define the-clause
                    (if rngs
                        #`[#,the-args
-                          pre-check ...
-                          (define-values (failed res-x ...)
-                            (call-with-values
-                             (λ () (let-values (#,let-values-clause)
-                                     #,full-call))
-                             (case-lambda
-                               [(res-x ...)
-                                (values #f res-x ...)]
-                               [args
-                                (values args #,@(map (λ (x) #'#f) 
-                                                     (syntax->list #'(res-x ...))))])))
-                          (with-continuation-mark contract-continuation-mark-key
-                            (cons blame neg-party)
-                            (cond
-                              [failed
-                               (wrong-number-of-results-blame
-                                blame neg-party f
-                                failed
-                                #,(length
-                                   (syntax->list
-                                    #'(res-x ...))))]
-                              [else
-                               post-check ...
-                               (values ((rb res-x) neg-party) ...)]))]
+                          (let ([blame+neg-party (cons blame neg-party)])
+                            pre-check ...
+                            (define-values (failed res-x ...)
+                              (call-with-values
+                               (λ () (let-values (#,let-values-clause)
+                                       #,full-call))
+                               (case-lambda
+                                 [(res-x ...)
+                                  (values #f res-x ...)]
+                                 [args
+                                  (values args #,@(map (λ (x) #'#f) 
+                                                       (syntax->list #'(res-x ...))))])))
+                            (with-continuation-mark contract-continuation-mark-key
+                              blame+neg-party
+                              (cond
+                                [failed
+                                 (wrong-number-of-results-blame
+                                  blame neg-party f
+                                  failed
+                                  #,(length
+                                     (syntax->list
+                                      #'(res-x ...))))]
+                                [else
+                                 post-check ...
+                                 (values ((rb res-x) neg-party) ...)])))]
                        #`[#,the-args
                           pre-check ...
-                          (let-values (#,let-values-clause)
-                            #,full-call)]))
+                          (let ([blame+neg-party (cons blame neg-party)])
+                            (let-values (#,let-values-clause)
+                              #,full-call))]))
                  (cons the-clause
                        (cond
                          [(null? optional-args) '()]
