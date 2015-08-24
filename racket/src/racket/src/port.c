@@ -5593,6 +5593,7 @@ Scheme_Object *scheme_file_truncate(int argc, Scheme_Object *argv[])
 
   errid = -1;
 #ifdef WINDOWS_FILE_HANDLES
+  flush_fd(scheme_output_port_record(argv[0]), NULL, 0, 0, 0, 0);
   if (win_seekable(fd)) {
     DWORD r;
     LONG lo_w, hi_w, old_lo_w, old_hi_w;
