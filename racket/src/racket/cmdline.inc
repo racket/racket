@@ -136,6 +136,126 @@ static long get_segment_offset()
 }
 #endif
 
+#ifdef DOS_FILE_SYSTEM
+wchar_t *get_self_executable_path()
+{
+  wchar_t *path;
+  DWORD r, sz = 1024;
+
+  while (1) {
+    path = (wchar_t *)malloc(sz * sizeof(wchar_t));
+    r = GetModuleFileNameW(NULL, path, sz);
+    if ((r == sz)
+        && (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) {
+      free(path);
+      sz = 2 * sz;
+    } else
+      break;
+  }
+
+  return path;
+}
+
+static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id)
+{
+  DWORD got, val;
+  WORD name_count, id_count, i;
+  
+  SetFilePointer(fd, pos + 12, 0, FILE_BEGIN);
+  ReadFile(fd, &name_count, 2, &got, NULL);
+  ReadFile(fd, &id_count, 2, &got, NULL);
+
+  pos += 16 + (name_count * 8);
+  while (id_count--) {
+    ReadFile(fd, &val, 4, &got, NULL);
+    if (val == id) {
+      ReadFile(fd, &val, 4, &got, NULL);
+      return rsrcs + (val & 0x7FFFFFF);
+    } else {
+      ReadFile(fd, &val, 4, &got, NULL);
+    }
+  }
+
+  return 0;
+}
+
+static long get_segment_offset()
+{
+  /* Find the resource of type 257 */
+  wchar_t *path;
+  HANDLE fd;
+
+  path = get_self_executable_path();
+  fd = CreateFileW(path, GENERIC_READ,
+                   FILE_SHARE_READ | FILE_SHARE_WRITE,
+                   NULL,
+                   OPEN_EXISTING,
+                   0,
+                   NULL);
+  free(path);
+
+  if (fd == INVALID_HANDLE_VALUE)
+    return 0;
+  else {
+    DWORD val, got, sec_pos, virtual_addr, rsrcs, pos;
+    WORD num_sections, head_size;
+    char name[8];
+    
+    SetFilePointer(fd, 60, 0, FILE_BEGIN);
+    ReadFile(fd, &val, 4, &got, NULL);
+    SetFilePointer(fd, val+4+2, 0, FILE_BEGIN); /* Skip "PE\0\0" tag and machine */
+    ReadFile(fd, &num_sections, 2, &got, NULL);
+    SetFilePointer(fd, 12, 0, FILE_CURRENT); /* time stamp + symbol table */
+    ReadFile(fd, &head_size, 2, &got, NULL);
+
+    sec_pos = val+4+20+head_size;
+    while (num_sections--) {
+      SetFilePointer(fd, sec_pos, 0, FILE_BEGIN);
+      ReadFile(fd, &name, 8, &got, NULL);
+      if ((name[0] == '.')
+          && (name[1] == 'r')
+          && (name[2] == 's')
+          && (name[3] == 'r')
+          && (name[4] == 'c')
+          && (name[5] == 0)) {
+        SetFilePointer(fd, 4, 0, FILE_CURRENT); /* skip virtual size */
+        ReadFile(fd, &virtual_addr, 4, &got, NULL);
+        SetFilePointer(fd, 4, 0, FILE_CURRENT); /* skip file size */
+        ReadFile(fd, &rsrcs, 4, &got, NULL);
+        SetFilePointer(fd, rsrcs, 0, FILE_BEGIN);
+        
+        /* We're at the resource table; step through 3 layers */
+        pos = find_by_id(fd, rsrcs, rsrcs, 257);
+	if (pos) {
+	  pos = find_by_id(fd, rsrcs, pos, 1);
+	  if (pos) {
+	    pos = find_by_id(fd, rsrcs, pos, 1033);
+
+	    if (pos) {
+	      /* pos is the reource data entry */
+	      SetFilePointer(fd, pos, 0, FILE_BEGIN);
+	      ReadFile(fd, &val, 4, &got, NULL);
+	      pos = val - virtual_addr + rsrcs;
+
+	      CloseHandle(fd);
+
+	      return pos;
+	    }
+	  }
+	}
+
+	break;
+      }
+      sec_pos += 40;
+    }
+
+    /* something went wrong */
+    CloseHandle(fd);
+    return 0;
+  }
+}
+#endif
+
 #ifndef DONT_PARSE_COMMAND_LINE
 static int is_number_arg(const char *s)
 {
@@ -159,7 +279,7 @@ static int is_number_arg(const char *s)
   return 1;
 }
 
-#ifdef OS_X
+#if defined(OS_X) || defined(DOS_FILE_SYSTEM)
 char *add_to_str(const char *addr, long amt)
 {
   long addr_v;
@@ -175,7 +295,7 @@ static char *make_embedded_load(const char *start, const char *end)
   char *s;
   int slen, elen;
 
-#ifdef OS_X
+#if defined(OS_X) || defined(DOS_FILE_SYSTEM)
   {
     long fileoff;
     fileoff = get_segment_offset();
@@ -844,17 +964,16 @@ static int run_from_cmd_line(int argc, char *_argv[],
 #ifdef DOS_FILE_SYSTEM
     if ((scheme_cmdline_exe_hack[0] == '?')
 	|| (scheme_cmdline_exe_hack[0] == '*')) {
-      /* This is how we make launchers in Windows.
-	 The cmdline is appended to the end of the binary.
-	 The long integer at scheme_cmdline_exe_hack[4] says
-	 where the old end was, and scheme_cmdline_exe_hack[8]
-	 says how long the cmdline string is. It might
-	 be relative to the executable. */
-      wchar_t *path;
+      /* This is how we make launchers in Windows. The cmdline is
+	 added as a resource of type 257. The long integer at
+	 scheme_cmdline_exe_hack[4] says where the command line starts
+	 with the source, and scheme_cmdline_exe_hack[8] says how long
+	 the cmdline string is. It might be relative to the
+	 executable. */
       HANDLE fd;
+      wchar_t *path;
 
-      path = (wchar_t *)malloc(1024 * sizeof(wchar_t));
-      GetModuleFileNameW(NULL, path, 1024);
+      path = get_self_executable_path();
       fd = CreateFileW(path, GENERIC_READ,
 		       FILE_SHARE_READ | FILE_SHARE_WRITE,
 		       NULL,
@@ -868,6 +987,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	DWORD got;
 	start = *(long *)&scheme_cmdline_exe_hack[4];
 	len = *(long *)&scheme_cmdline_exe_hack[8];
+	start += get_segment_offset();
 	p = (unsigned char *)malloc(len);
 	SetFilePointer(fd, start, 0, FILE_BEGIN);
 	ReadFile(fd, p, len, &got, NULL);
@@ -916,9 +1036,10 @@ static int run_from_cmd_line(int argc, char *_argv[],
 		+ 4);
 	}
       }
+      free(path);
     }
 #endif
-#ifdef OS_X
+#if defined(OS_X)
     if (scheme_cmdline_exe_hack[0] == '?') {
       long fileoff, cmdoff, cmdlen;
       int fd;

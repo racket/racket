@@ -177,7 +177,8 @@ flags:
         embedded in the executable from file position @nonterm{n} to
         @nonterm{m} and from @nonterm{m} to @nonterm{p}. (On Mac OS X,
         @nonterm{n}, @nonterm{m}, and @nonterm{p} are relative to a
-        @tt{__PLTSCHEME} segment in the executable.) The first range
+        @tt{__PLTSCHEME} segment in the executable. On Windows,
+        they are relative to a resource of type 257 and ID 1.) The first range
         is loaded in every new @tech{place}, and any modules declared
         in that range are considered predefined in the sense of
         @racket[module-predefined?]. This option is normally embedded

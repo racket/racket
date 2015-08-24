@@ -17,6 +17,7 @@
          "private/mach-o.rkt"
          "private/elf.rkt"
          "private/windlldir.rkt"
+         "private/pe-rsrc.rkt"
          "private/collects-path.rkt"
          "private/configdir.rkt"
          "find-exe.rkt")
@@ -1582,54 +1583,76 @@
                   full-cmdline)
                  (display "\0\0\0\0" out))])
           (let-values ([(start decl-end end cmdline-end)
-                        (if (and (eq? (system-type) 'macosx)
-                                 (not unix-starter?))
-                            ;; For Mach-O, we know how to add a proper segment
-                            (let ([s (open-output-bytes)])
-                              (define decl-len (write-module s))
-                              (let* ([s (get-output-bytes s)]
-                                     [cl (let ([o (open-output-bytes)])
-                                           ;; position is relative to __PLTSCHEME:
-                                           (write-cmdline (make-full-cmdline 0 decl-len (bytes-length s)) o)
-                                           (get-output-bytes o))])
-                                (let ([start (add-plt-segment 
-                                              dest-exe 
-                                              (bytes-append
-                                               s
-                                               cl))])
-                                  (let ([start 0]) ; i.e., relative to __PLTSCHEME
-                                    (values start
-                                            (+ start decl-len)
-                                            (+ start (bytes-length s))
-                                            (+ start (bytes-length s) (bytes-length cl)))))))
-                            ;; Unix starter: Maybe ELF, in which case we 
-                            ;; can add a proper section
-                            (let-values ([(s e dl p)
-                                          (if unix-starter?
-                                              (add-racket-section 
-                                               orig-exe 
-                                               dest-exe
-                                               (if launcher? #".rackcmdl" #".rackprog")
-                                               (lambda (start)
-                                                 (let ([s (open-output-bytes)])
-                                                   (define decl-len (write-module s))
-                                                   (let ([p (file-position s)])
-                                                     (display (make-starter-cmdline
-                                                               (make-full-cmdline start 
-                                                                                  (+ start decl-len)
-                                                                                  (+ start p)))
-                                                              s)
-                                                     (values (get-output-bytes s) decl-len p)))))
-                                              (values #f #f #f #f))])
-                              (if (and s e)
-                                  ;; ELF succeeded:
-                                  (values s (+ s dl) (+ s p) e)
-                                  ;; Otherwise, just add to the end of the file:
-                                  (let ([start (file-size dest-exe)])
-                                    (define decl-end
-                                      (call-with-output-file* dest-exe write-module 
-                                                              #:exists 'append))
-                                    (values start decl-end (file-size dest-exe) #f)))))])
+                        (cond
+                         [(eq? (system-type) 'windows)
+                          ;; Add as a resource
+                          (define o (open-output-bytes))
+                          (define decl-len (write-module o))
+                          (define init-len (bytes-length (get-output-bytes o)))
+                          (write-cmdline (make-full-cmdline 0 decl-len init-len) o)
+                          (define bstr (get-output-bytes o))
+                          (define cmdline-len (- (bytes-length bstr) init-len))
+                          (define-values (pe rsrcs) (call-with-input-file*
+                                                     dest-exe
+                                                     read-pe+resources))
+                          (define new-rsrcs (resource-set rsrcs
+                                                          ;; Racket's "user-defined" type for excutable 
+                                                          ;; plus command line:
+                                                          257
+                                                          1
+                                                          1033 ; U.S. English
+                                                          bstr))
+                          (update-resources dest-exe pe new-rsrcs)
+                          (values 0 decl-len init-len (+ init-len cmdline-len))]
+                         [(and (eq? (system-type) 'macosx)
+                               (not unix-starter?))
+                          ;; For Mach-O, we know how to add a proper segment
+                          (define s (open-output-bytes))
+                          (define decl-len (write-module s))
+                          (let* ([s (get-output-bytes s)]
+                                 [cl (let ([o (open-output-bytes)])
+                                       ;; position is relative to __PLTSCHEME:
+                                       (write-cmdline (make-full-cmdline 0 decl-len (bytes-length s)) o)
+                                       (get-output-bytes o))])
+                            (let ([start (add-plt-segment 
+                                          dest-exe 
+                                          (bytes-append
+                                           s
+                                           cl))])
+                              (let ([start 0]) ; i.e., relative to __PLTSCHEME
+                                (values start
+                                        (+ start decl-len)
+                                        (+ start (bytes-length s))
+                                        (+ start (bytes-length s) (bytes-length cl))))))]
+                         [else
+                          ;; Unix starter: Maybe ELF, in which case we 
+                          ;; can add a proper section
+                          (define-values (s e dl p)
+                            (if unix-starter?
+                                (add-racket-section 
+                                 orig-exe 
+                                 dest-exe
+                                 (if launcher? #".rackcmdl" #".rackprog")
+                                 (lambda (start)
+                                   (let ([s (open-output-bytes)])
+                                     (define decl-len (write-module s))
+                                     (let ([p (file-position s)])
+                                       (display (make-starter-cmdline
+                                                 (make-full-cmdline start 
+                                                                    (+ start decl-len)
+                                                                    (+ start p)))
+                                                s)
+                                       (values (get-output-bytes s) decl-len p)))))
+                                (values #f #f #f #f)))
+                          (if (and s e)
+                             ;; ELF succeeded:
+                             (values s (+ s dl) (+ s p) e)
+                             ;; Otherwise, just add to the end of the file:
+                             (let ([start (file-size dest-exe)])
+                               (define decl-end
+                                 (call-with-output-file* dest-exe write-module 
+                                                         #:exists 'append))
+                               (values start decl-end (file-size dest-exe) #f)))])])
             (when unix-starter?
               (adjust-config-dir))
             (when verbose?
@@ -1729,7 +1752,7 @@
                         (unless cmdline-done?
                           (write-cmdline full-cmdline out))
                         (when long-cmdline?
-                          ;; cmdline written at the end;
+                          ;; cmdline written at the end, in a resource, etc.;
                           ;; now put forwarding information at the normal cmdline pos
                           (let ([new-end (or cmdline-end
                                              (file-position out))])
