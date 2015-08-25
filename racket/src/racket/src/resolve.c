@@ -3261,6 +3261,8 @@ static Unresolve_Info *new_unresolve_info(Scheme_Prefix *prefix)
   ui->definitions = scheme_null;
   ht = scheme_make_hash_table(SCHEME_hash_ptr);
   ui->ref_lifts = ht;
+  ht = scheme_make_hash_table(SCHEME_hash_ptr);
+  ui->closures = ht; 
 
   return ui;
 }
@@ -3976,8 +3978,6 @@ Scheme_Object *unresolve_module(Scheme_Object *e, Unresolve_Info *ui)
   cnt = SCHEME_VEC_SIZE(m->bodies[0]);
   bs = scheme_make_vector(cnt, NULL);
 
-  ht = scheme_make_hash_table(SCHEME_hash_ptr);
-  ui->closures = ht; 
   for (i = 0; i < cnt; i++) {
     locate_cyclic_closures(SCHEME_VEC_ELS(m->bodies[0])[i], ui);
   }
