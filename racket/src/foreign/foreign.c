@@ -3877,7 +3877,7 @@ typedef struct Queued_Callback {
 typedef struct FFI_Sync_Queue {
   Queued_Callback *callbacks; /* malloc()ed list */
   mzrt_mutex *lock;
-  mzrt_thread_id orig_thread;
+  mzrt_os_thread_id orig_thread;
   void *sig_hand;
 } FFI_Sync_Queue;
 
@@ -3987,7 +3987,7 @@ static void ffi_queue_callback(ffi_cif* cif, void* resultp, void** args, void *u
   queue = (FFI_Sync_Queue *)(data)[1];
   userdata = (data)[0];
 
-  if (queue->orig_thread != mz_proc_thread_self()) {
+  if (queue->orig_thread != mz_proc_os_thread_self()) {
     if (data[2]) {
       /* constant result */
       memcpy(resultp, data[2], (intptr_t)data[3]);
@@ -4141,11 +4141,11 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
   if (((argc > 5) && SCHEME_TRUEP(argv[5]))) {
 #   ifdef MZ_USE_MZRT
     if (!ffi_sync_queue) {
-      mzrt_thread_id tid;
+      mzrt_os_thread_id tid;
       void *sig_hand;
 
       ffi_sync_queue = (FFI_Sync_Queue *)malloc(sizeof(FFI_Sync_Queue));
-      tid = mz_proc_thread_self();
+      tid = mz_proc_os_thread_self();
       ffi_sync_queue->orig_thread = tid;
       mzrt_mutex_create(&ffi_sync_queue->lock);
       sig_hand = scheme_get_signal_handle();

@@ -740,7 +740,7 @@ void set_long_double(long_double a, long_double b) { _imp_set_long_double(a, b);
 long_double long_double_from_int(int a) { return _imp_long_double_from_int(a); }
 long_double long_double_from_float(float a) { return _imp_long_double_from_float(a); }
 long_double long_double_from_double(double a) { return _imp_long_double_from_double(a); }
-long_double long_double_from_intptr(uintptr_t a) { return _imp_long_double_from_intptr(a); }
+long_double long_double_from_intptr(intptr_t a) { return _imp_long_double_from_intptr(a); }
 long_double long_double_from_uintptr(uintptr_t a) { return _imp_long_double_from_uintptr(a); }
 
 double double_from_long_double(long_double a) { return _imp_double_from_long_double(a); }

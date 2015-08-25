@@ -84,7 +84,7 @@
 #endif
 
 #ifdef MZ_LONG_DOUBLE
-# if defined(_MSC_VER)
+# ifdef MZ_LONG_DOUBLE_API_IS_EXTERNAL
 #  define BYTES_RESERVED_FOR_LONG_DOUBLE 16
 typedef struct {
   char bytes[BYTES_RESERVED_FOR_LONG_DOUBLE];

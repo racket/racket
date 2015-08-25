@@ -153,6 +153,9 @@ typedef struct mzrt_thread_stub_data {
   mz_proc_thread_start start_proc;
   void *data;
   mz_proc_thread *thread;
+#ifdef WIN32
+  void *res;
+#endif
 } mzrt_thread_stub_data;
 
 void *mzrt_thread_stub(void *data){
@@ -169,6 +172,10 @@ void *mzrt_thread_stub(void *data){
 
   res = start_proc(start_proc_data);
 
+#ifdef WIN32
+  proc_thread_self->res = res;
+#endif
+
   if (!--proc_thread_self->refcount)
     free(proc_thread_self);
 
@@ -178,15 +185,18 @@ void *mzrt_thread_stub(void *data){
 }
 
 #ifdef WIN32
-DWORD WINAPI mzrt_win_thread_stub(void *data)
+unsigned int WINAPI mzrt_win_thread_stub(void *data)
 {
-  return (DWORD)mzrt_thread_stub(data);
+  (void)mzrt_thread_stub(data);
+  return 0;
 }
 #endif
 
 
-mzrt_thread_id mz_proc_thread_self() {
+mzrt_os_thread_id mz_proc_os_thread_self() {
 #ifdef WIN32
+  /* For Windows, this result is not compatible with mz_proc_thread_id(),
+     so don't mix them up! */
   return GetCurrentThreadId();
 #else
   return pthread_self();
@@ -201,7 +211,14 @@ mzrt_thread_id mz_proc_thread_id(mz_proc_thread* thread) {
 mz_proc_thread* mzrt_proc_first_thread_init() {
   /* initialize mz_proc_thread struct for first thread that wasn't created with mz_proc_thread_create */
   mz_proc_thread *thread = (mz_proc_thread*)malloc(sizeof(mz_proc_thread));
+#ifdef WIN32
+  /* This pseudo-handle is not valid as a reference from any other thread,
+     but it will be distinct from all other IDs: */
+  thread->threadid  = GetCurrentThread();
+#else
   thread->threadid  = mz_proc_thread_self();
+#endif
+  
   proc_thread_self  = thread;
   thread->refcount = 1;
   return thread;
@@ -234,7 +251,7 @@ mz_proc_thread* mz_proc_thread_create_w_stacksize(mz_proc_thread_start start_pro
   stub_data->thread     = thread;
 #   ifdef WIN32
   thread->threadid = (HANDLE)_beginthreadex(NULL, stacksize, mzrt_win_thread_stub, stub_data, 0, NULL);
-  ok = (thread->threadid != -1L);
+  ok = (thread->threadid != (HANDLE)-1L);
 #   else
 #    ifdef NEED_GC_THREAD_OPS
   ok = !GC_pthread_create(&thread->threadid, attr, mzrt_thread_stub, stub_data);
@@ -277,10 +294,8 @@ mz_proc_thread* mz_proc_thread_create(mz_proc_thread_start start_proc, void* dat
 void * mz_proc_thread_wait(mz_proc_thread *thread) {
   void *rc;
 #ifdef WIN32
-  DWORD rcw;
   WaitForSingleObject(thread->threadid,INFINITE);
-  GetExitCodeThread(thread->threadid, &rcw);
-  rc = (void *)rcw;
+  rc = proc_thread_self->res;
   CloseHandle(thread->threadid);
 #else
 #   ifdef NEED_GC_THREAD_OPS
@@ -613,7 +628,7 @@ int mzrt_sema_destroy(mzrt_sema *s)
 
 #ifdef WIN32
 
-typedef struct mzrt_rwlock {
+struct mzrt_rwlock {
   HANDLE readEvent;
   HANDLE writeMutex;
   LONG readers;

@@ -36,13 +36,6 @@ result is a Unix-style build, not a Windows-style build (e.g.,
 Racket's `system-type' procedure returns 'unix, not 'windows, and
 `racket/gui' uses Gtk instead of Win32).
 
-Beware that MinGW/Cygwin builds different from the MSVC build when
-SSE-based floating-point math is enabled in the C compiler. In that
-case, Racket includes sets the floating-point mode to extended
-precision to support extflonums, and changing precision may affect
-other libraries. To avoid the floating-point mode change, disable
-extflonum support with `--disable-extflonum'.
-
 ========================================================================
  Compiling for Mac OS X
 ========================================================================

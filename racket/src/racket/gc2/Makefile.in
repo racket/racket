@@ -181,7 +181,11 @@ xsrc:
 
 xobjects: $(OBJS) main.@LTO@
 
-XFORMDEP_NOPRE = $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt
+# These headers have only preprocessor definitions, so they're not
+# picked up in ".sdep":
+QUIET_DEPS = $(srcdir)/../src/schvers.h $(srcdir)/../sconfig.h ../mzconfig.h
+
+XFORMDEP_NOPRE = $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt $(QUIET_DEPS)
 XFORMDEP = $(XFORMDEP_NOPRE) $(XSRCDIR)/precomp.h
 
 MZRTDEP = $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
@@ -193,7 +197,7 @@ MZRTDEP = $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
 check-sdep :
 	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/check-sdep.rkt
 
-$(XSRCDIR)/precomp.h : $(XFORMDEP_NOPRE)  $(srcdir)/../src/schvers.h
+$(XSRCDIR)/precomp.h : $(XFORMDEP_NOPRE)
 	env XFORM_PRECOMP=yes $(XFORM_NOPRECOMP) $(XSRCDIR)/precomp.h $(srcdir)/precomp.c
 
 $(XSRCDIR)/salloc.c: $(XFORMDEP)

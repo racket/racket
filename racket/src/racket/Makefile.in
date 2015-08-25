@@ -401,11 +401,16 @@ mingw-install:
 	cd ..; rm -f "$(DESTDIR)@MZINSTALLBINDIR@/racket@MMM_INSTALLED@"
 	cd ..; cp racket/starter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MzStart@EXE_SUFFIX@"
 	cd ..; cp racket/mrstarter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/MzStart@EXE_SUFFIX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
 
 mingw-install-cgc:
 	cd ..; $(ICP) racket/lib/libmzgcxxxxxxx.dll "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
 	cd ..; $(ICP) racket/lib/libracketxxxxxxx.dll "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
 	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
 	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 mingw-install-cgc-final:
@@ -414,6 +419,8 @@ mingw-install-cgc-final:
 mingw-install-3m:
 	cd ..; $(ICP) racket/racket@MMM@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
 	cd ..; $(ICP) racket/lib/libracket3mxxxxxxx.dll "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
 	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 mingw-install-3m-final:

@@ -159,7 +159,7 @@ wchar_t *get_self_executable_path()
 static DWORD find_by_id(HANDLE fd, DWORD rsrcs, DWORD pos, int id)
 {
   DWORD got, val;
-  WORD name_count, id_count, i;
+  WORD name_count, id_count;
   
   SetFilePointer(fd, pos + 12, 0, FILE_BEGIN);
   ReadFile(fd, &name_count, 2, &got, NULL);

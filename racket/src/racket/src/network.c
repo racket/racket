@@ -597,6 +597,14 @@ static intptr_t getaddrinfo_in_thread(void *_data)
   return 1;
 }
 
+#ifdef USE_WINSOCK_TCP
+static unsigned int WINAPI win_getaddrinfo_in_thread(void *_data)
+  XFORM_SKIP_PROC
+{
+  return (unsigned int)getaddrinfo_in_thread(_data);
+}
+#endif
+
 static void release_ghbn_lock(GHBN_Rec *rec)
 {
   ghbn_thread_data->ghbn_lock = 0;
@@ -701,13 +709,13 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
 # ifdef USE_WINSOCK_TCP
   {
     HANDLE ready_sema;
-    DWORD id;
+    unsigned int id;
     intptr_t th;
     
     ready_sema = CreateSemaphore(NULL, 0, 1, NULL);
     ghbn_thread_data->ready_sema = ready_sema;
     th = _beginthreadex(NULL, 5000, 
-			(MZ_LPTHREAD_START_ROUTINE)getaddrinfo_in_thread,
+			win_getaddrinfo_in_thread,
 			ghbn_thread_data, 0, &id);
     WaitForSingleObject(ghbn_thread_data->ready_sema, INFINITE);
     CloseHandle(ghbn_thread_data->ready_sema);

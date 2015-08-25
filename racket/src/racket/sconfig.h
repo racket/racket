@@ -660,7 +660,7 @@
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
 
-# if !defined(_WIN64) || (_MSC_VER >= 1600)
+# if !defined(_WIN64) || (_MSC_VER >= 1600) || defined(__MINGW32__)
 #  define USE_MZ_SETJMP
 # endif
 
@@ -729,14 +729,18 @@
 # define IGNORE_BY_BORLAND_CONTROL_87
 #endif
 
-#if defined(_MSC_VER)
+#if defined(__MINGW32__) && defined(USE_DIRECT_LONG_DOUBLE)
+/* Beware: different from the MSVC build when SSE-based floating-point
+   math is enabled in the C compiler. Sets the floating-point mode to
+   extended precision to support extflonums, and changing precision
+   may affect other libraries. */
+# define MZ_TRY_EXTFLONUMS
+# define ASM_DBLPREC_CONTROL_87
+#else
 # define MZ_LONG_DOUBLE
 # define IGNORE_BY_MS_CONTROL_87
 # define MZ_NEED_SET_EXTFL_MODE
-#endif
-#if defined(__MINGW32__)
-# define MZ_TRY_EXTFLONUMS
-# define ASM_DBLPREC_CONTROL_87
+# define MZ_LONG_DOUBLE_API_IS_EXTERNAL
 #endif
 
 # define REGISTER_POOR_MACHINE
