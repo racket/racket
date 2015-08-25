@@ -1645,29 +1645,34 @@
                            (syntax->list #'((((sub-in-key sub-in-code) ...) ...) ...))))
                          )
              (values
-              (quasisyntax/loc (error-syntax)
-                (let ([deps '()]
-                      [sub-tmp sub-exp] ...)
-                  check-sub-exp ...
-                  (make-unit
-                   'name
-                   (vector-immutable
-                    (cons 'import-name
-                          (vector-immutable import-key ...))
-                    ...)
-                   (vector-immutable
-                    (cons 'export-name
-                          (vector-immutable export-key ...))
-                    ...)
-                   deps
-                   (lambda ()
-                     (let-values ([(sub-tmp sub-export-table-tmp) ((unit-go sub-tmp))]
+              (syntax-property
+               (quasisyntax/loc (error-syntax)
+                 (let ([deps '()]
+                       [sub-tmp sub-exp] ...)
+                   check-sub-exp ...
+                   (make-unit
+                    'name
+                    (vector-immutable
+                     (cons 'import-name
+                           (vector-immutable import-key ...))
+                     ...)
+                    (vector-immutable
+                     (cons 'export-name
+                           (vector-immutable export-key ...))
+                     ...)
+                    deps
+                    (lambda ()
+                      (let-values ([(sub-tmp sub-export-table-tmp) ((unit-go sub-tmp))]
+                                   ...)
+                        (values (lambda (import-table-id)
+                                  (void)
+                                  (sub-tmp (equal-hash-table sub-in-key-code-workaround ...))
                                   ...)
-                       (values (lambda (import-table-id)
-                                 (void)
-                                 (sub-tmp (equal-hash-table sub-in-key-code-workaround ...))
-                                 ...)
-                               (unit-export ((export-key ...) export-code) ...)))))))
+                                (unit-export ((export-key ...) export-code) ...)))))))
+               'tr:inferred-init-depend-property
+               (build-init-depend-property
+                static-dep-info
+                (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))))
               (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))
               (map syntax-e (syntax->list #'((export-tag . export-sigid) ...)))
               static-dep-info))))))

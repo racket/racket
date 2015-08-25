@@ -22,7 +22,8 @@
          map-sig split-requires split-requires* apply-mac complete-exports complete-imports check-duplicate-subs
          process-spec
          make-relative-introducer
-         bind-at)
+         bind-at
+         build-init-depend-property)
 
 (define-syntax (apply-mac stx)
   (syntax-case stx ()
@@ -594,3 +595,17 @@
          sstx
          (cons unbox-stx #'x)
          sstx)]))))
+
+;; This utility function returns a list of natural numbers for use as a syntax
+;; property needed to support units in Typed Racket
+(define (build-init-depend-property init-depends imports)
+  ;; Typed Racket does not support tagged imports or exports
+  ;; so drop the tags from init-depends and imports
+  (let ([id-sigs (map cdr init-depends)]
+        [import-sigs (map cdr imports)])
+    (let loop ([i 0] [imports import-sigs])
+      (cond
+        [(null? imports) '()]
+        [else (if (member (car imports) id-sigs free-identifier=?)
+                  (cons i (loop (add1 i) (cdr imports)))
+                  (loop (add1 i) (cdr imports)))]))))
