@@ -2281,13 +2281,6 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
         a[1] = sym;
         return scheme_values(2, a);
       }
-    } else if (scheme_is_syntax_local_value_struct(v)) {
-      v = scheme_syntax_local_value_id(v);
-      sym = scheme_transfer_srcloc(v, sym);
-      SCHEME_USE_FUEL(1);
-      /* in the immediate case, keep recurring for the syntax-local-value
-       * property because we need to get the closest rename transformer or
-       * the actual target value. */
     } else if (!recur) {
       SCHEME_EXPAND_OBSERVE_LOCAL_VALUE_RESULT(observer, scheme_true);
       a[0] = v;
