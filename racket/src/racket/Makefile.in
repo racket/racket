@@ -89,13 +89,15 @@ cgc:
 	$(MAKE) common
 	$(MAKE) dynlib
 	$(MAKE) mzlibrary
-	$(MAKE) racket@CGC@ 
+	$(MAKE) racket@CGC@
+	$(MAKE) mzcom@CGC@
 
 3m:
 	$(MAKE) @CGC_IF_NEEDED_FOR_MMM@
 	cd gc2; $(MAKE) all
 	cd dynsrc; $(MAKE) dynlib3m
 	cd gc2; $(MAKE) ../racket@MMM@
+	cd gc2; $(MAKE) ../mzcom@MMM@
 
 both:
 	$(MAKE) cgc
@@ -173,6 +175,9 @@ sproc.@LTO@: @GCDIR@/sproc.@LTO@
 racket@CGC@@NOT_OSX@@NOT_MINGW@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
 	@MZLINKER@ -o racket@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
 
+mzcom@CGC@@NOT_MINGW@:
+	$(NOOP)
+
 # Mac OS ----------------------------------------
 
 MZFW = Racket.framework/Versions/$(FWVERSION)/Racket
@@ -209,14 +214,22 @@ libmzgc.dll.a: lib/libmzgcxxxxxxx.dll
 rres.o : $(srcdir)/../worksp/racket/racket.rc
 	@WINDRES@ -i $(srcdir)/../worksp/racket/racket.rc -o rres.o
 
-racket@CGC@@MINGW@: libracket.dll.a libmzgc.dll.a main.@LTO@ $(SPECIALIZINGOBJECTS) rres.o
-	@MZLINKER@ -o racket@CGC@ main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) libracket.dll.a libmzgc.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
+MW_RACKET_LIBS = libracket.dll.a libmzgc.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
 
-mingw-other@MINGW@: mzsj86g.o rres.o
+racket@CGC@@MINGW@: libracket.dll.a libmzgc.dll.a main.@LTO@ $(SPECIALIZINGOBJECTS) rres.o
+	@MZLINKER@ -o racket@CGC@ main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) $(MW_RACKET_LIBS)
+
+mingw-other@MINGW@: mzsj86g.o rres.o comres.o com_glue.@LTO@
 	$(NOOP)
 
 mingw-other@NOT_MINGW@:
 	$(NOOP)
+
+mzcom@CGC@@MINGW@: libracket.dll.a libmzgc.dll.a mzcom.@LTO@ mzobj.@LTO@ com_glue.@LTO@ $(SPECIALIZINGOBJECTS) comres.o
+	@MZLINKER@ -o mzcom@CGC@ mzcom.@LTO@ mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
+
+comres.o : $(srcdir)/../worksp/mzcom/mzcom.rc $(srcdir)/../mzcom/prebuilt/MzCOM.tlb
+	@WINDRES@ -I $(srcdir)/../mzcom -I $(srcdir)/../mzcom/prebuilt -i $(srcdir)/../worksp/mzcom/mzcom.rc -o comres.o
 
 # OSKit ----------------------------------------
 
@@ -238,7 +251,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
 MAIN_HEADER_DEPS = $(srcdir)/include/scheme.h $(srcdir)/include/schthread.h $(srcdir)/sconfig.h \
                    $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/parse_cmdl.inc \
-	           $(srcdir)/oskglue.inc
+	           $(srcdir)/oskglue.inc $(srcdir)/delayed.inc $(srcdir)/parse_cmdl.inc
 
 main.@LTO@: $(srcdir)/main.c $(MAIN_HEADER_DEPS)
 	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/main.c -o main.@LTO@
@@ -256,6 +269,17 @@ mzstart.exe: $(srcdir)/dynsrc/start.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o mzstart.exe $(srcdir)/dynsrc/start.c
 
 starter: mzstart.exe
+
+MZCOM_DEPS = $(MAIN_HEADER_DEPS) $(srcdir)/../mzcom/com_glue.h $(srcdir)/../mzcom/resource.h
+
+mzcom.@LTO@: $(srcdir)/../mzcom/mzcom.cxx $(MZCOM_DEPS)
+	$(CC) -fno-exceptions -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/../mzcom/mzcom.cxx -o mzcom.@LTO@
+
+mzobj.@LTO@: $(srcdir)/../mzcom/mzobj.cxx $(MZCOM_DEPS)
+	$(CC) -fno-exceptions -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/mzobj.cxx -o mzobj.@LTO@
+
+com_glue.@LTO@: $(srcdir)/../mzcom/com_glue.c $(MZCOM_DEPS)
+	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ -c $(srcdir)/../mzcom/com_glue.c -o com_glue.@LTO@
 
 exn:
 	$(MAKE) $(srcdir)/src/schexn.h
@@ -403,14 +427,18 @@ mingw-install:
 	cd ..; cp racket/mrstarter@EXE_SUFFIX@ "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/MzStart@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libpltdir)/MrStart@EXE_SUFFIX@"
+	cp "$(srcdir)/../mzcom/prebuilt/MzCOM.tlb" MzCOM.tlb
+	cd ..; cp racket/MzCOM.tlb "$(DESTDIR)$(libpltdir)/MzCOM.tlb"
 
 mingw-install-cgc:
 	cd ..; $(ICP) racket/lib/libmzgcxxxxxxx.dll "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
 	cd ..; $(ICP) racket/lib/libracketxxxxxxx.dll "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
 	cd ..; $(ICP) racket/racket@CGC@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(ICP) racket/mzcom@CGC@ "$(DESTDIR)$(libdir)/MzCOM@CGC_INSTALLED@@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libmzgcxxxxxxx.dll"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracketxxxxxxx.dll"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/MzCOM@CGC_INSTALLED@@EXE_SUFFIX@"
 	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 mingw-install-cgc-final:
@@ -418,9 +446,11 @@ mingw-install-cgc-final:
 
 mingw-install-3m:
 	cd ..; $(ICP) racket/racket@MMM@ "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(ICP) racket/mzcom@MMM@ "$(DESTDIR)$(libdir)/MzCOM@MMM_INSTALLED@@EXE_SUFFIX@"
 	cd ..; $(ICP) racket/lib/libracket3mxxxxxxx.dll "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
-	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
 	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracket3mxxxxxxx.dll"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/MzCOM@MMM_INSTALLED@@EXE_SUFFIX@"
 	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)@MZINSTALLBINDIR@/Racket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 mingw-install-3m-final:

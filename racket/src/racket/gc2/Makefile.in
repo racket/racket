@@ -313,6 +313,9 @@ $(XSRCDIR)/foreign.c: $(XFORMDEP)
 $(XSRCDIR)/main.c: $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_C_DIRS) $(srcdir)/../main.c
 
+$(XSRCDIR)/mzobj.cxx: $(XFORMDEP)
+	$(XFORM_NOPRECOMP) $(XSRCDIR)/mzobj.cxx $(DEF_C_DIRS) $(srcdir)/../../mzcom/mzobj.cxx
+
 salloc.@LTO@: $(XSRCDIR)/salloc.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/salloc.c -o salloc.@LTO@
 bignum.@LTO@: $(XSRCDIR)/bignum.c
@@ -428,6 +431,11 @@ foreign.@LTO@: $(XSRCDIR)/foreign.c
 main.@LTO@: $(XSRCDIR)/main.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
 
+mzcom.@LTO@: $(srcdir)/../../mzcom/mzcom.cxx
+	$(CC) -DMZCOM_3M $(ALL_CFLAGS) -fno-exceptions -c $(srcdir)/../../mzcom/mzcom.cxx -o mzcom.@LTO@
+mzobj.@LTO@: $(XSRCDIR)/mzobj.cxx
+	$(CC) $(ALL_CFLAGS) -fno-exceptions -c $(XSRCDIR)/mzobj.cxx -o mzobj.@LTO@
+
 gc2.@LTO@: \
 		$(srcdir)/alloc_cache.c \
 		$(srcdir)/block_cache.c \
@@ -523,9 +531,16 @@ $(MZFWMMM): ../libracket3m.@LIBSFX@
 libracket3m.dll.a: ../lib/libracket3mxxxxxxx.dll
 	@DLLTOOL@ --def libracket3m.def -D libracket3mxxxxxxx.dll --output-delaylib libracket3m.dll.a
 
-../racket@MMM@@MINGW@: libracket3m.dll.a main.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
-	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
+MW_RACKET_LIBS = gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
 
+../racket@MMM@@MINGW@: libracket3m.dll.a main.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
+	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) $(MW_RACKET_LIBS)
+
+../mzcom@MMM@@NOT_MINGW@:
+	$(NOOP)
+
+../mzcom@MMM@@MINGW@: libracket3m.dll.a mzcom.@LTO@ mzobj.@LTO@ ../com_glue.@LTO@ $(SPECIALIZINGOBJECTS) ../comres.o
+	cd ..; @MZLINKER@ -o mzcom@MMM@ gc2/mzcom.@LTO@ gc2/mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
 
 clean:
 	/bin/rm -f ../racket@MMM@ *.@LTO@ $(XSRCDIR)/*

@@ -470,8 +470,9 @@ static STDMETHODIMP Advise(IConnectionPoint *com_obj, IUnknown *obj, DWORD *cook
 
   // We need to return (to the app) some value that will clue our Unadvise() function
   // below how to locate this app IMzObjEvents. The simpliest thing is to just use the
-  // app's IMzObjEvents pointer as that returned value
-  *cookie = (DWORD)iExample->evts;
+  // app's IMzObjEvents pointer as that returned value. We may lose some bits here,
+  // but that's ok:
+  *cookie = (DWORD)(intptr_t)iExample->evts;
 
   return(hr);
 }
@@ -496,10 +497,10 @@ static STDMETHODIMP Unadvise(IConnectionPoint *com_obj, DWORD cookie)
   // IMzObjEvents right now.
   //		
   // Let's just make sure the cookie he passed is really the pointer we expect
-  if (cookie && (IMzObjEvents *)cookie == iExample->evts)
+  if (cookie && cookie == (DWORD)(intptr_t)iExample->evts)
     {
       // Release the app's IMzObjEvents
-      ((IMzObjEvents *)cookie)->lpVtbl->Release((IMzObjEvents *)cookie);
+      iExample->evts->lpVtbl->Release(iExample->evts);
 
       // We no longer have the app's IMzObjEvents, so clear the IMzObj
       // feedback member
@@ -672,7 +673,7 @@ HRESULT com_register()
   // Initialize my IClassFactory with the pointer to its vtable
   MyIClassFactoryObj.lpVtbl = (IClassFactoryVtbl *)&IClassFactory_Vtbl;
 
-  return CoRegisterClassObject(&CLSID_IMzObj, &MyIClassFactoryObj,
+  return CoRegisterClassObject(&CLSID_IMzObj, (IUnknown*)&MyIClassFactoryObj,
                                CLSCTX_LOCAL_SERVER, REGCLS_SINGLEUSE, &reg_cookie);
 }
 

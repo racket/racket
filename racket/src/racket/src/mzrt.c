@@ -328,7 +328,8 @@ int mz_proc_thread_detach(mz_proc_thread *thread) {
 
 void mz_proc_thread_exit(void *rc) {
 #ifdef WIN32
-  _endthreadex((unsigned)rc);
+  proc_thread_self->res = rc;
+  _endthreadex(0);
 #else
 #   ifndef MZ_PRECISE_GC
   pthread_exit(rc);

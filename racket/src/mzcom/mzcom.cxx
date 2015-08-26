@@ -65,12 +65,12 @@ static bool StartMonitor() { return TRUE; }
 
 #endif
 
-static int set_reg_string(HKEY sub, char *name, char *s)
+static int set_reg_string(HKEY sub, const char *name, const char *s)
 {
   return RegSetValueExA(sub, name, 0, REG_SZ, (const BYTE *)s, strlen(s));
 }
 
-static int set_reg_sub_string(HKEY sub, char *name, char *s)
+static int set_reg_sub_string(HKEY sub, const char *name, const char *s)
 {
   HKEY sub2;
   int nRet;
@@ -86,10 +86,10 @@ static int set_reg_sub_string(HKEY sub, char *name, char *s)
 
 LPCTSTR FindOneOf(LPCTSTR p1, LPCTSTR p2)
 {
-  while (p1 != NULL && *p1 != NULL)
+  while (p1 != NULL && *p1 != 0)
     {
       LPCTSTR p = p2;
-      while (p != NULL && *p != NULL)
+      while (p != NULL && *p != 0)
         {
           if (*p1 == *p)
             return CharNext(p1);
