@@ -202,11 +202,14 @@ install-no-lib-cgc-wx_xt:
 install-lib-cgc-wx_xt:
 	$(NOOP)
 
+GRACKET_NAME@NOT_MINGW@ = gracket
+GRACKET_NAME@MINGW@ = GRacket
+
 install-wx_xt-cgc:
 	$(MAKE) @MRLIBINSTALL@-cgc-wx_xt
-	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)$(libpltdir)/gracket@CGC_INSTALLED@@EXE_SUFFIX@"
-	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/gracket@CGC_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/gracket@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@ @CONFIG_PATH@
+	cd ..; $(ICP) gracket/gracket@CGC@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
+	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"
+	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@CGC_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@ @CONFIG_PATH@
 
 install-wx_xt-cgc-final:
 	$(NOOP)
@@ -219,9 +222,9 @@ install-lib-3m-wx_xt:
 
 install-wx_xt-3m:
 	$(MAKE) @MRLIBINSTALL@-3m-wx_xt
-	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)$(libpltdir)/gracket@MMM_INSTALLED@@EXE_SUFFIX@"
-	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/gracket@MMM_INSTALLED@@EXE_SUFFIX@"
-	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/gracket@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@ @CONFIG_PATH@
+	cd ..; $(ICP) gracket/gracket@MMM@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
+	cd ..; @STRIP_DEBUG@ "$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"
+	@RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cu "$(srcdir)/../racket/collects-path.rkt" @DIRCVTPRE@"$(DESTDIR)$(libpltdir)/$(GRACKET_NAME)@MMM_INSTALLED@@EXE_SUFFIX@"@DIRCVTPOST@ @COLLECTS_PATH@ @CONFIG_PATH@
 
 install-wx_xt-3m-final:
 	$(NOOP)
