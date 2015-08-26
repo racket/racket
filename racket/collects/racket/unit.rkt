@@ -2181,8 +2181,8 @@
                  (for/or ([lr (in-list sub-in)])
                    (and (eq? (link-record-tag lr)
                              (car dep))
-                        (free-identifier=? (link-record-sigid lr)
-                                           (cdr dep))
+                        (siginfo-subtype (signature-siginfo (lookup-signature (link-record-sigid lr)))
+                                         (signature-siginfo (lookup-signature (cdr dep))))
                         lr)))
                ;; If `lr` refers to an import, then propoagate the dependency.
                ;; If it refers to a linked unit, make sure that unit is earlier.
