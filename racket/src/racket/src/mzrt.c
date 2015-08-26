@@ -153,9 +153,6 @@ typedef struct mzrt_thread_stub_data {
   mz_proc_thread_start start_proc;
   void *data;
   mz_proc_thread *thread;
-#ifdef WIN32
-  void *res;
-#endif
 } mzrt_thread_stub_data;
 
 void *mzrt_thread_stub(void *data){
@@ -216,7 +213,7 @@ mz_proc_thread* mzrt_proc_first_thread_init() {
      but it will be distinct from all other IDs: */
   thread->threadid  = GetCurrentThread();
 #else
-  thread->threadid  = mz_proc_thread_self();
+  thread->threadid  = mz_proc_os_thread_self();
 #endif
   
   proc_thread_self  = thread;
