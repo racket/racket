@@ -68,7 +68,6 @@
 (generate-popular-key-ids popular-key-ids)
 
 (define-for-syntax (build-plus-one-arity-function+chaperone-constructor
-                    stx
                     regular-args
                     optional-args
                     mandatory-kwds
@@ -294,7 +293,6 @@
                          [else (loop (cdr optional-args)
                                      (cdr ob)
                                      #f)]))))
-             
              (cond
                [(null? (cdr case-lambda-clauses))
                 ;; need to specialize this case because
@@ -546,7 +544,7 @@
            [rng (add-pos-obligations (list #'rng))]))
        (define-values (plus-one-arity-function chaperone-constructor)
          (build-plus-one-arity-function+chaperone-constructor 
-          stx regular-args '() kwds '() #f #f #f rngs #f #f))
+          regular-args '() kwds '() #f #f #f rngs #f #f))
        (syntax-property
         #`(let #,let-bindings
             #,(quasisyntax/loc stx
@@ -671,7 +669,6 @@
                                                  (list))])
          (define-values (plus-one-arity-function chaperone-constructor)
            (build-plus-one-arity-function+chaperone-constructor
-            stx
             (syntax->list #'(mandatory-dom ...))
             (syntax->list #'(optional-dom ...))
             (syntax->list #'(mandatory-dom-kwd ...))
@@ -767,19 +764,35 @@
     (and raw-rngs
          (for/list ([rng (in-list raw-rngs)])
            (coerce-contract who rng))))
-  (if (and (andmap chaperone-contract? regular-doms)
-           (andmap (λ (x) (chaperone-contract? (kwd-info-ctc x))) kwd-infos)
-           (andmap chaperone-contract? (or rngs '())))
-      (make--> (length raw-regular-doms) 
-               regular-doms kwd-infos rest-ctc pre-cond
-               rngs post-cond 
-               plus-one-arity-function
-               chaperone-constructor)
-      (make-impersonator-> (length raw-regular-doms)
-                           regular-doms kwd-infos rest-ctc pre-cond
-                           rngs post-cond 
-                           plus-one-arity-function
-                           chaperone-constructor)))
+  (cond
+    ;; uncomment this to specialize (-> void) contract to a
+    ;; more efficient wrapper (but there are no test cases for
+    ;; that code, so add them before pushing this)
+    #;
+    [(and (null? regular-doms)
+          (null? kwd-infos)
+          (not rest-ctc)
+          (not pre-cond)
+          (not post-cond)
+          (pair? rngs)
+          (null? (cdr rngs))
+          (flat-contract? (car rngs))
+          (eq? void? (flat-contract-predicate (car rngs))))
+     ->void-contract]
+    [(and (andmap chaperone-contract? regular-doms)
+          (andmap (λ (x) (chaperone-contract? (kwd-info-ctc x))) kwd-infos)
+          (andmap chaperone-contract? (or rngs '())))
+     (make--> (length raw-regular-doms)
+              regular-doms kwd-infos rest-ctc pre-cond
+              rngs post-cond
+              plus-one-arity-function
+              chaperone-constructor)]
+    [else
+     (make-impersonator-> (length raw-regular-doms)
+                          regular-doms kwd-infos rest-ctc pre-cond
+                          rngs post-cond
+                          plus-one-arity-function
+                          chaperone-constructor)]))
 
 (define (dynamic->* #:mandatory-domain-contracts [mandatory-domain-contracts '()]
                     #:optional-domain-contracts [optional-domain-contracts '()]
@@ -1178,3 +1191,27 @@
   #:property
   prop:contract
   (make-property build-contract-property impersonate-procedure))
+
+(define ->void-contract
+  (let-syntax ([get-chaperone-constructor
+                (λ (_)
+                  ;; relies on the popular key (0 0 () () #f 1) appearing first
+                  (define ids (list-ref popular-key-ids 0))
+                  (list-ref ids 1))])
+    (make--> 0 '() '() #f #f
+             (list (coerce-contract 'whatever void?))
+             #f
+             (λ (blame f _ignored-rng-contract)
+               (λ (neg-party)
+                 (call-with-values
+                  (λ () (f))
+                  (case-lambda
+                    [(rng)
+                     (unless (void? rng)
+                       (raise-blame-error blame #:missing-party neg-party rng
+                                          '(expected: "void?" given: "~e")
+                                          rng))
+                     rng]
+                    [args
+                     (wrong-number-of-results-blame blame neg-party f args 1)]))))
+             (get-chaperone-constructor))))
