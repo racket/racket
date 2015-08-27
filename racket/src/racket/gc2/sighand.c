@@ -84,7 +84,7 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
       /* running w/ places in GDB */
       printf("SIGSEGV SI_USER SI_ERRNO %i fault on addr %p\n", si->si_errno, p);
 #ifdef MZ_USE_PLACES
-      printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_thread_self());
+      printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_os_thread_self());
 #else
       printf("pid %i uid %i\n", si->si_pid, si->si_uid);
 #endif      
