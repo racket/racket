@@ -280,5 +280,5 @@
   [pkg-directory->additional-installs (->* (path-string? string?)
                                            (#:namespace namespace?
                                                         #:system-type (or/c #f symbol?)
-                                                        #:system-library-subpath (or/c #f path?))
+                                                        #:system-library-subpath (or/c #f path-for-some-system?))
                                            (listof (cons/c symbol? string?)))]))

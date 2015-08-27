@@ -86,6 +86,10 @@ common:
 	$(MAKE) @FOREIGNTARGET@
 
 cgc:
+	$(MAKE) cgc-core
+	$(MAKE) sysinfer@CGC@
+
+cgc-core:
 	$(MAKE) common
 	$(MAKE) dynlib
 	$(MAKE) mzlibrary
@@ -98,9 +102,10 @@ cgc:
 	cd dynsrc; $(MAKE) dynlib3m
 	cd gc2; $(MAKE) ../racket@MMM@
 	cd gc2; $(MAKE) ../mzcom@MMM@
+	$(MAKE) sysinfer@MMM@
 
 both:
-	$(MAKE) cgc
+	$(MAKE) cgc-core
 	$(MAKE) 3m
 
 oskit: 
@@ -156,6 +161,16 @@ no-cgc-needed:
 	$(MAKE) main.@LTO@
 	$(MAKE) mingw-other
 	cd dynsrc; $(MAKE) ../starter@EXE_SUFFIX@
+
+ALL_CPPFLAGS = -I$(builddir) -I$(srcdir)/include -I$(srcdir)/src $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
+MKSYSTEM_ARGS = -cqu $(srcdir)/mksystem.rkt system.rktd "$(CPP) $(ALL_CPPFLAGS) $(srcdir)/src/systype.c" "@MMM_INSTALLED@"
+
+sysinfer@CGC@:
+	@RUN_RACKET_CGC@ $(MKSYSTEM_ARGS) "@RUN_RACKET_CGC@" "$(RUN_THIS_RACKET_CGC)"
+
+sysinfer@MMM@:
+	@RUN_RACKET_MMM@ $(MKSYSTEM_ARGS) "@RUN_RACKET_MMM@" "$(RUN_THIS_RACKET_MMM)"
+
 
 FOREIGN_USED_LIB = $(FOREIGN_OBJ) $(FOREIGN_LIB)
 FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
@@ -305,6 +320,7 @@ total_startup:
 
 headers:
 	@RUN_RACKET_CGC@ -cqu $(srcdir)/mkincludes.rkt @DIRCVTPRE@"$(DESTDIR)$(includepltdir)"@DIRCVTPOST@ "$(srcdir)" .
+	cd ..; cp racket/system.rktd "$(DESTDIR)$(libpltdir)/system.rktd"
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
 	$(RACKET) -um $(srcdir)/src/makeexn > $(srcdir)/src/schexn.h

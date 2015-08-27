@@ -15,6 +15,7 @@
          planet/planet-archives
          planet/private/planet-shared
          (only-in planet/resolver resolve-planet-path)
+         setup/cross-system
 
          "option.rkt"
          compiler/compiler
@@ -880,7 +881,7 @@
                                (string? v)
                                (symbol? v))
                      (error "entry is not regexp, string, or symbol:" v)))))
-    (matching-platform? sys))
+    (matching-platform? sys #:cross? #t))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make zo                      ;;
@@ -1407,7 +1408,7 @@
                     [(console) (path->relative-string/console-bin p)]
                     [else (error 'make-launcher "internal error (~s)" kind)])
                   (let ([v (current-launcher-variant)])
-                    (if (eq? v (system-type 'gc)) "" (format " [~a]" v))))
+                    (if (eq? v (cross-system-type 'gc)) "" (format " [~a]" v))))
                  (make-launcher
                   (or mzlf
                       (if (cc-collection cc)
@@ -1563,7 +1564,7 @@
                         (setup-printf "deleting" "launcher ~a" rel-exe-path)
                         (delete-directory/files exe-path)])
                       ;; Clean up any associated .desktop file and icon file:
-                      (when (eq? 'unix (system-type))
+                      (when (eq? 'unix (cross-system-type))
                         (let ([desktop (installed-executable-path->desktop-path
                                         exe-path
                                         user?)])
@@ -1780,11 +1781,11 @@
                              (error "entry is not a list of relative path strings:" l)))
                          build-path
                          this-platform?
-                         (case (system-type)
+                         (case (cross-system-type)
                            [(macosx)
                             adjust-dylib-path/install]
                            [else void])
-                         (case (system-type)
+                         (case (cross-system-type)
                            [(unix)
                             copy-file/install-elf-rpath]
                            [else copy-file])))
@@ -1905,7 +1906,8 @@
   ;; setup Body                     ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
+  (setup-printf "version" "~a" (version))
+  (setup-printf "platform" "~a [~a]" (cross-system-library-subpath #f) (cross-system-type 'gc))
   (setup-printf "installation name" "~a" (get-installation-name))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))
   (setup-printf "main collects" "~a" main-collects-dir)
@@ -1943,7 +1945,7 @@
 
   (when (make-launchers) (make-launchers-step))
   (when (make-launchers) 
-    (unless (eq? 'windows (system-type))
+    (unless (eq? 'windows (cross-system-type))
       (make-mans-step)))
 
   (when make-docs?

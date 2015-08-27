@@ -9,6 +9,7 @@
          racket/list
          racket/set
          racket/format
+         setup/cross-system
          setup/private/dylib
          setup/private/elf)
 
@@ -425,11 +426,11 @@
             (fixup uncopied)))))
 
     (unmove-tag 'move-foreign-libs find-user-lib-dir
-                (case (system-type)
+                (case (cross-system-type)
                   [(macosx)
                    adjust-dylib-path/uninstall]
                   [else void])
-                (case (system-type)
+                (case (cross-system-type)
                   [(unix)
                    copy-file/uninstall-elf-rpath]
                   [else

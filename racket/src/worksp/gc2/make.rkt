@@ -413,3 +413,6 @@
 
 (copy-file/diff "mzdyn3m.exp" "../../../lib/msvc/mzdyn3m.exp")
 (copy-file/diff "mzdyn3m.obj" "../../../lib/msvc/mzdyn3m.obj")
+
+(parameterize ([current-command-line-arguments (vector "../../../lib/system.rktd")])
+  (dynamic-require "../../racket/mksystem.rkt" #f))

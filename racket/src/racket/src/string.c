@@ -2723,23 +2723,13 @@ void *scheme_environment_variables_to_block(Scheme_Object *ev, int *_need_free)
 
 static void machine_details(char *s);
 
+#include "systype.inc"
+
 static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 {
   if (argc) {
     if (SAME_OBJ(argv[0], link_symbol)) {
-#if defined(OS_X) && !defined(XONX)
-      return scheme_intern_symbol("framework");
-#else
-# ifdef DOS_FILE_SYSTEM
-      return scheme_intern_symbol("dll");
-# else
-#  ifdef MZ_USES_SHARED_LIB
-      return scheme_intern_symbol("shared");
-#  else
-      return scheme_intern_symbol("static");
-#  endif
-# endif
-#endif
+      return scheme_intern_symbol(MZ_SYSTEM_TYPE_LINK);
     }
 
     if (SAME_OBJ(argv[0], machine_symbol)) {
@@ -2759,27 +2749,11 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
     }
 
     if (SAME_OBJ(argv[0], so_suffix_symbol)) {
-#ifdef DOS_FILE_SYSTEM
-      return scheme_make_byte_string(".dll");
-#else
-# ifdef OS_X
-      return scheme_make_byte_string(".dylib");
-# else
-#  ifdef USE_CYGWIN_SO_SUFFIX
-      return scheme_make_byte_string(".dll");
-#  else
-      return scheme_make_byte_string(".so");
-#  endif
-# endif
-#endif
+      return scheme_make_byte_string(MZ_SYSTEM_TYPE_SO_SUFFIX);
     }
 
     if (SAME_OBJ(argv[0], so_mode_symbol)) {
-#ifdef USE_DLOPEN_GLOBAL_BY_DEFAULT
-      return scheme_intern_symbol("global");
-#else
-      return scheme_intern_symbol("local");
-#endif
+      return scheme_intern_symbol(MZ_SYSTEM_TYPE_SO_MODE);
     }
 
 

@@ -292,7 +292,7 @@ $(XSRCDIR)/setjmpup.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/setjmpup.c $(SRCDIR)/setjmpup.c
 $(XSRCDIR)/sfs.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/sfs.c $(SRCDIR)/sfs.c
-$(XSRCDIR)/string.c: $(XFORMDEP)
+$(XSRCDIR)/string.c: $(XFORMDEP)  $(SRCDIR)/systype.inc
 	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
 $(XSRCDIR)/struct.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c

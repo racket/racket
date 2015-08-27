@@ -678,7 +678,7 @@ represented by @racket[dir] and named @racket[pkg-name].}
                                              [pkg-name string]
                                              [#:namespace namespace namespace? (make-base-namespace)]
                                              [#:system-type sys-type (or/c #f symbol?) (system-type)]
-                                             [#:system-library-subpath sys-lib-subpath (or/c #f path?)
+                                             [#:system-library-subpath sys-lib-subpath (or/c #f path-for-some-system?)
                                                                        (system-library-subpath #f)])
          (listof (cons/c symbol? string?))]{
 

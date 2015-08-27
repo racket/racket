@@ -4,6 +4,7 @@
            setup/dirs
            racket/list
            setup/variant
+           setup/cross-system
            pkg/path
            setup/main-collects
            dynext/filename-version
@@ -22,7 +23,7 @@
 	   [_ (unless (directory-exists? dest-dir)
 		(make-directory dest-dir))]
 	   [sub-dirs (map (lambda (b type)
-			   (case (system-type)
+			   (case (cross-system-type)
 			     [(windows) #f]
 			     [(unix) "bin"]
 			     [(macosx) (if (memq type '(gracketcgc gracket3m))
@@ -41,7 +42,7 @@
 		     (let-values ([(base name dir?) (split-path b)])
 		       (let ([dest (build-path dest-dir name)])
 			 (if (and (memq type '(gracketcgc gracket3m))
-				  (eq? 'macosx (system-type)))
+				  (eq? 'macosx (cross-system-type)))
 			     (begin
 			       (copy-app b dest)
 			       (app-to-file dest))
@@ -51,7 +52,7 @@
 		 orig-binaries
 		 sub-dirs
 		 types)]
-	   [single-mac-app? (and (eq? 'macosx (system-type))
+	   [single-mac-app? (and (eq? 'macosx (cross-system-type))
 				 (= 1 (length types))
 				 (memq (car types) '(gracketcgc gracket3m)))])
       ;; Create directories for libs, collects, and extensions:
@@ -111,7 +112,7 @@
                  (cond
                   [sub-dir
                    (build-path 'up relative-dir)]
-                  [(and (eq? 'macosx (system-type))
+                  [(and (eq? 'macosx (cross-system-type))
                         (memq type '(gracketcgc gracket3m))
                         (not single-mac-app?))
                    (build-path 'up 'up 'up relative-dir)]
@@ -139,7 +140,7 @@
             (void))))))
 
   (define (install-libs lib-dir types)
-    (case (system-type)
+    (case (cross-system-type)
       [(windows)
        (let ([copy-dll (lambda (name)
 			 (copy-file* (search-dll (find-dll-dir) name)
@@ -275,7 +276,7 @@
 		  (build-path lib-dir (car files)))))
 
   (define (patch-binaries binaries types)
-    (case (system-type)
+    (case (cross-system-type)
       [(windows)
        (for-each (lambda (b)
 		   (update-dll-dir b "lib"))
@@ -565,7 +566,7 @@
   ;; Utilities
 
   (define (shared-libraries?)
-    (eq? 'shared (system-type 'link)))
+    (eq? 'shared (cross-system-type 'link)))
 
   (define (to-path s)
     (if (string? s)
@@ -580,7 +581,7 @@
 	(let ([m (regexp-match #rx#"bINARy tYPe:(e?)(.)(.)(.)" (current-input-port))])
 	  (if m
 	      (begin
-		(when (eq? 'unix (system-type))
+		(when (eq? 'unix (cross-system-type))
 		  (unless (equal? (cadr m) #"e")
 		    (error 'assemble-distribution
 			   "file is an original PLT executable, not a stub binary: ~e"
@@ -635,7 +636,7 @@
     (copy-directory/files src dest))
   
   (define (app-to-file b)
-    (if (and (eq? 'macosx (system-type))
+    (if (and (eq? 'macosx (cross-system-type))
 	     (regexp-match #rx#"[.][aA][pP][pP]$" 
 			   (path->bytes (if (string? b)
 					    (string->path b)
