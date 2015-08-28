@@ -1890,6 +1890,16 @@ static int thread_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(pr->mbox_first, gc);
   gcMARK2(pr->mbox_last, gc);
   gcMARK2(pr->mbox_sema, gc);
+
+  /* Follow msg_chain for an in-flight message like in place_async_channel_val */
+  {
+    Scheme_Object *cpr = pr->place_channel_msg_chain_in_flight;
+    while (cpr) {
+      gcMARK2(SCHEME_CAR(cpr), gc);
+      cpr = SCHEME_CDR(cpr);
+    }
+  }
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }
@@ -2008,6 +2018,16 @@ static int thread_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(pr->mbox_first, gc);
   gcFIXUP2(pr->mbox_last, gc);
   gcFIXUP2(pr->mbox_sema, gc);
+
+  /* Follow msg_chain for an in-flight message like in place_async_channel_val */
+  {
+    Scheme_Object *cpr = pr->place_channel_msg_chain_in_flight;
+    while (cpr) {
+      gcFIXUP2(SCHEME_CAR(cpr), gc);
+      cpr = SCHEME_CDR(cpr);
+    }
+  }
+
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }

@@ -797,6 +797,16 @@ thread_val {
   gcMARK2(pr->mbox_first, gc);
   gcMARK2(pr->mbox_last, gc);
   gcMARK2(pr->mbox_sema, gc);
+
+  /* Follow msg_chain for an in-flight message like in place_async_channel_val */
+  {
+    Scheme_Object *cpr = pr->place_channel_msg_chain_in_flight;
+    while (cpr) {
+      gcMARK2(SCHEME_CAR(cpr), gc);
+      cpr = SCHEME_CDR(cpr);
+    }
+  }
+
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Thread));
 }
