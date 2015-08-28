@@ -323,7 +323,7 @@ static void release_master_btc_mark(NewGC *gc)
 
 #else
 
-static void check_master_btc_mark(NewGC *gc) { }
+static void check_master_btc_mark(NewGC *gc, mpage *page) { }
 static void release_master_btc_mark(NewGC *gc) { }
 
 #endif
