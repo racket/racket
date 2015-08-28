@@ -6,7 +6,6 @@
    pch
 
    ;; Trigger memory accounting in every place:
-   #;
    (custodian-limit-memory
     (current-custodian)
     (* 1024 1024 1024))

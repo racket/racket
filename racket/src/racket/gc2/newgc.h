@@ -184,6 +184,7 @@ typedef struct NewGC {
   OTEntry **owner_table;
   unsigned int owner_table_size;
   AccountHook *hooks;
+  int master_page_btc_mark_checked;
 
   uintptr_t number_of_gc_runs;
   unsigned int since_last_full;

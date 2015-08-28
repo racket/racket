@@ -178,6 +178,20 @@ struct Log_Master_Info {
 # define PLACES_AND(v) 0
 #endif
 
+#ifdef MZ_USE_PLACES
+static void adjust_page_lock(int is_a_master_page, mpage *page, intptr_t prev, intptr_t next)
+{
+  if (is_a_master_page) {
+    while (!mzrt_cas(&page->page_lock, prev, next)) { /* spin! */ }
+  }
+}
+# define TAKE_PAGE_LOCK(is_a_master_page, page) adjust_page_lock(is_a_master_page, page, 0, 1);
+# define RELEASE_PAGE_LOCK(is_a_master_page, page) adjust_page_lock(is_a_master_page, page, 1, 0);
+#else
+# define TAKE_PAGE_LOCK(is_a_master_page, page) /* empty */
+# define RELEASE_PAGE_LOCK(is_a_master_page, page) /* empty */
+#endif
+
 inline static size_t real_page_size(mpage* page);
 inline static int page_mmu_type(mpage *page);
 inline static int page_mmu_protectable(mpage *page);
@@ -3137,6 +3151,9 @@ void GC_init_type_tags(int count, int pair, int mutable_pair, int weakbox, int e
     initialized = 1;
     init_type_tags_worker(NULL, NULL, count, pair, mutable_pair, weakbox, ephemeron, weakarray, 
                           custbox, phantom);
+#if defined(MZ_USE_PLACES) && defined(NEWGC_BTC_ACCOUNT)
+    init_master_btc_locks();
+#endif
   } else {
     GCPRINT(GCOUTF, "GC_init_type_tags should only be called once!\n");
     abort();
@@ -3405,20 +3422,6 @@ static void mark_recur_or_push_ptr(struct NewGC *gc, void *p, int is_a_master_pa
 
   push_ptr(gc, p);
 }
-
-#ifdef MZ_USE_PLACES
-static void adjust_page_lock(int is_a_master_page, mpage *page, intptr_t prev, intptr_t next)
-{
-  if (is_a_master_page) {
-    while (!mzrt_cas(&page->page_lock, prev, next)) { /* spin! */ }
-  }
-}
-# define TAKE_PAGE_LOCK(is_a_master_page, page) adjust_page_lock(is_a_master_page, page, 0, 1);
-# define RELEASE_PAGE_LOCK(is_a_master_page, page) adjust_page_lock(is_a_master_page, page, 1, 0);
-#else
-# define TAKE_PAGE_LOCK(is_a_master_page, page) /* empty */
-# define RELEASE_PAGE_LOCK(is_a_master_page, page) /* empty */
-#endif
 
 /* This is the first mark routine. It's a bit complicated. */
 void GC_mark2(const void *const_p, struct NewGC *gc)
