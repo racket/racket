@@ -359,6 +359,8 @@ struct scheme_jit_common_record {
   void *with_immed_mark_code;
   void *apply_to_list_tail_code, *apply_to_list_code, *apply_to_list_multi_ok_code;
   void *eqv_code, *eqv_branch_code;
+  void *bad_string_eq_2_code;
+  void *bad_bytes_eq_2_code;
   void *proc_arity_includes_code;
 
 #ifdef CAN_INLINE_ALLOC

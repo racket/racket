@@ -629,6 +629,30 @@ static int common1b(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
   scheme_jit_register_sub_func(jitter, sjc.bad_bytes_length_code, scheme_false);
 
+  /* *** bad_string_eq_2_code *** */
+  /* R0 and R1 are arguments */
+  sjc.bad_string_eq_2_code = jit_get_ip();
+  mz_prolog(JIT_R2);
+  JIT_UPDATE_THREAD_RSPTR();
+  jit_prepare(2);
+  jit_pusharg_p(JIT_R1);
+  jit_pusharg_p(JIT_R0);
+  (void)mz_finish_lwe(ts_scheme_string_eq_2, ref);
+  CHECK_LIMIT();
+  scheme_jit_register_sub_func(jitter, sjc.bad_string_eq_2_code, scheme_false);
+
+  /* *** bad_bytes_eq_2_code *** */
+  /* R0 and R1 are arguments */
+  sjc.bad_bytes_eq_2_code = jit_get_ip();
+  mz_prolog(JIT_R2);
+  JIT_UPDATE_THREAD_RSPTR();
+  jit_prepare(2);
+  jit_pusharg_p(JIT_R1);
+  jit_pusharg_p(JIT_R0);
+  (void)mz_finish_lwe(ts_scheme_byte_string_eq_2, ref);
+  CHECK_LIMIT();
+  scheme_jit_register_sub_func(jitter, sjc.bad_bytes_eq_2_code, scheme_false);
+
   return 1;
 }
 

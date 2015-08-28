@@ -2718,6 +2718,187 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     __END_SHORT_JUMPS__(branch_short);
 
     return 1;
+  } else if (IS_NAMED_PRIM(rator, "string=?")
+             || IS_NAMED_PRIM(rator, "bytes=?")) {
+    GC_CAN_IGNORE jit_insn *ref_fx1, *ref_fx2, *ref_fail1, *ref_fail2, *ref_ucnofail;
+    GC_CAN_IGNORE jit_insn *ref_false1, *ref_false2 = NULL;
+    GC_CAN_IGNORE jit_insn *ref_true1, *ref_true2, *ref_ucfinish;
+    GC_CAN_IGNORE jit_insn *ref_loop;
+    int is_str1, is_str2, len = 0;
+    int string, string_type;
+    void * sjc_bad_code;
+    intptr_t string_len_val, string_val;
+
+    if ((IS_NAMED_PRIM(rator, "string=?"))) {
+      string = 1;
+      string_type = scheme_char_string_type;
+      sjc_bad_code = sjc.bad_string_eq_2_code;
+      string_len_val = (intptr_t)&SCHEME_CHAR_STRLEN_VAL(0x0);
+      string_val = (intptr_t)&SCHEME_CHAR_STR_VAL(0x0);
+    } else if (IS_NAMED_PRIM(rator, "bytes=?")) {
+      string = 0;
+      string_type = scheme_byte_string_type;
+      sjc_bad_code = sjc.bad_bytes_eq_2_code;
+      string_len_val = (intptr_t)&SCHEME_BYTE_STRLEN_VAL(0x0);
+      string_val = (intptr_t)&SCHEME_BYTE_STR_VAL(0x0);
+    }
+
+    is_str1 = (SAME_TYPE(SCHEME_TYPE(app->rand1), string_type));
+    is_str2 = (SAME_TYPE(SCHEME_TYPE(app->rand2), string_type));
+    if (string) {
+      if (is_str1) {
+        len = SCHEME_CHAR_STRLEN_VAL(app->rand1);
+      } else if (is_str2) {
+        len = SCHEME_CHAR_STRLEN_VAL(app->rand2);
+      }
+    } else {
+      if (is_str1) {
+        len = SCHEME_BYTE_STRLEN_VAL(app->rand1);
+      } else if (is_str2) {
+        len = SCHEME_BYTE_STRLEN_VAL(app->rand2);
+      }
+    }
+
+    scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+    CHECK_LIMIT();
+
+    if (need_sync) mz_rs_sync();
+
+    if (for_branch) {
+      __START_SHORT_JUMPS__(branch_short);
+      scheme_prepare_branch_jump(jitter, for_branch);
+      CHECK_LIMIT();
+      __END_SHORT_JUMPS__(branch_short);
+    }
+
+    __START_TINY_JUMPS__(1);
+    /* fail if either is not a string */
+    if (!is_str1) {
+      ref_fx1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
+      jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+      ref_fail1 = jit_bnei_i(jit_forward(), JIT_R2, string_type);
+    }
+    if (!is_str2) {
+      ref_fx2 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
+      jit_ldxi_s(JIT_V1, JIT_R1, &((Scheme_Object *)0x0)->type);
+      ref_fail2 = jit_bnei_i(jit_forward(), JIT_V1, string_type);
+    }
+    ref_ucnofail = jit_jmpi(jit_forward());
+    CHECK_LIMIT();
+
+    /* fail */  
+    if (!is_str1) {
+      mz_patch_branch(ref_fx1);
+      mz_patch_branch(ref_fail1);
+    }
+    if (!is_str2) {
+      mz_patch_branch(ref_fx2);
+      mz_patch_branch(ref_fail2);
+    }
+    __END_TINY_JUMPS__(1);
+
+    (void)jit_calli(sjc_bad_code);
+    CHECK_LIMIT();
+
+    /* main */
+    __START_TINY_JUMPS__(1);
+    mz_patch_ucbranch(ref_ucnofail);
+    __END_TINY_JUMPS__(1);
+
+    if (result_ignored)
+      return 1;
+
+    /* false if they have different length */
+    __START_TINY_OR_SHORT_JUMPS__(!for_branch, branch_short);
+    if (is_str1) {
+      jit_ldxi_l(JIT_R2, JIT_R1, string_len_val);
+      ref_false1 = jit_bnei_l(jit_forward(), JIT_R2, len);
+    } else if (is_str2) {
+      jit_ldxi_l(JIT_R2, JIT_R0, string_len_val);
+      ref_false1 = jit_bnei_l(jit_forward(), JIT_R2, len);
+    } else {
+      jit_ldxi_l(JIT_R2, JIT_R0, string_len_val);
+      jit_ldxi_l(JIT_V1, JIT_R1, string_len_val);
+      ref_false1 = jit_bner_l(jit_forward(), JIT_R2, JIT_V1);
+    }
+    __END_TINY_OR_SHORT_JUMPS__(!for_branch, branch_short);
+
+    if ((!is_str1 && !is_str2) || len) {
+      __START_TINY_JUMPS__(1);
+      /* true if both have length zero or are eq?*/
+      ref_true1 = jit_beqi_l(jit_forward(), JIT_R2, 0);
+      ref_true2 = jit_beqr_p(jit_forward(), JIT_R0, JIT_R1);
+
+      /* initialize loop*/
+      jit_ldxi_p(JIT_R0, JIT_R0, string_val);
+      jit_ldxi_p(JIT_R1, JIT_R1, string_val);
+      CHECK_LIMIT();
+
+      /* main loop*/
+      if (string) {
+        ref_loop = jit_get_ip();
+        mz_set_local_p(JIT_R0, JIT_LOCAL3);
+        jit_ldr_i(JIT_R0, JIT_R0);
+        jit_ldr_i(JIT_V1, JIT_R1);
+        __END_TINY_JUMPS__(1);
+        __START_TINY_OR_SHORT_JUMPS__(!for_branch, branch_short);
+        ref_false2 = jit_bner_i(jit_forward(), JIT_R0, JIT_V1);
+        __END_TINY_OR_SHORT_JUMPS__(!for_branch, branch_short);
+        __START_TINY_JUMPS__(1);
+        mz_get_local_p(JIT_R0, JIT_LOCAL3);
+        jit_addi_p(JIT_R0, JIT_R0, 1 << LOG_MZCHAR_SIZE);
+        jit_addi_p(JIT_R1, JIT_R1, 1 << LOG_MZCHAR_SIZE);
+        jit_subi_l(JIT_R2, JIT_R2, 1);
+        (void)jit_bnei_l(ref_loop, JIT_R2, 0);
+      } else {
+        ref_loop = jit_get_ip();
+        mz_set_local_p(JIT_R0, JIT_LOCAL3);
+        jit_ldr_c(JIT_R0, JIT_R0);
+        jit_ldr_c(JIT_V1, JIT_R1);
+        __END_TINY_JUMPS__(1);
+        __START_TINY_OR_SHORT_JUMPS__(!for_branch, branch_short);
+        jit_extr_c_i(JIT_R0, JIT_R0);
+        jit_extr_c_i(JIT_V1, JIT_V1);
+        ref_false2 = jit_bner_i(jit_forward(), JIT_R0, JIT_V1);
+        __END_TINY_OR_SHORT_JUMPS__(!for_branch, branch_short);
+        __START_TINY_JUMPS__(1);
+        mz_get_local_p(JIT_R0, JIT_LOCAL3);
+        jit_addi_p(JIT_R0, JIT_R0, 1);
+        jit_addi_p(JIT_R1, JIT_R1, 1);
+        jit_subi_l(JIT_R2, JIT_R2, 1);
+        (void)jit_bnei_l(ref_loop, JIT_R2, 0);
+      }
+      CHECK_LIMIT();
+
+      /* true */
+      mz_patch_branch(ref_true1);
+      mz_patch_branch(ref_true2);
+      __END_TINY_JUMPS__(1);
+    }
+
+    if (for_branch) {
+      __START_SHORT_JUMPS__(branch_short);
+      scheme_add_branch_false(for_branch, ref_false1);
+      if (ref_false2)
+        scheme_add_branch_false(for_branch, ref_false2);
+      scheme_branch_for_true(jitter, for_branch);
+      __END_SHORT_JUMPS__(branch_short);
+    } else {
+      __START_TINY_JUMPS__(1);
+      jit_movi_p(dest, scheme_true);
+      ref_ucfinish = jit_jmpi(jit_forward());
+      /* false */
+      mz_patch_branch(ref_false1);
+      if (ref_false2)
+        mz_patch_branch(ref_false2);
+      jit_movi_p(dest, scheme_false);
+      /* finish */
+      mz_patch_ucbranch(ref_ucfinish);
+      __END_TINY_JUMPS__(1);
+    }
+    CHECK_LIMIT();
+
+    return 1;
   } else if (IS_NAMED_PRIM(rator, "=")) {
     scheme_generate_arith(jitter, rator, app->rand1, app->rand2, 2, 0, CMP_EQUAL, 0, for_branch, branch_short, 0, 0, NULL, dest);
     return 1;
@@ -3147,7 +3328,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	} else {
           if (unsafe) {
             jit_rshi_ul(JIT_R1, JIT_R1, 1);
-            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_BYTE_STR_VAL((Scheme_Object *)0x0));
             jit_ldxr_c(JIT_R0, JIT_R0, JIT_R1);
             jit_extr_uc_ul(JIT_R0, JIT_R0);
             jit_fixnum_l(dest, JIT_R0);
@@ -3207,7 +3388,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
           }
 	} else {
           if (unsafe) {
-            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_BYTE_STR_VAL((Scheme_Object *)0x0));
             jit_ldxr_c(JIT_R0, JIT_R0, JIT_V1);
             jit_extr_uc_ul(JIT_R0, JIT_R0);
             jit_fixnum_l(dest, JIT_R0);
@@ -4221,7 +4402,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
           }
 	} else {
           if (unsafe) {
-            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_CHAR_STR_VAL((Scheme_Object *)0x0));
+            jit_ldxi_p(JIT_R0, JIT_R0, &SCHEME_BYTE_STR_VAL((Scheme_Object *)0x0));
             jit_rshi_ul(JIT_R2, JIT_R2, 1);
             jit_stxr_c(JIT_V1, JIT_R0, JIT_R2);
             if (!result_ignored)

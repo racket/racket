@@ -91,6 +91,8 @@ define_ts_s_s(scheme_extflvector_length, FSRC_MARKS)
 define_ts_s_s(scheme_fxvector_length, FSRC_MARKS)
 define_ts_s_s(scheme_string_length, FSRC_MARKS)
 define_ts_s_s(scheme_byte_string_length, FSRC_MARKS)
+define_ts_ss_s(scheme_string_eq_2, FSRC_MARKS)
+define_ts_ss_s(scheme_byte_string_eq_2, FSRC_MARKS)
 define_ts_s_s(scheme_unbox, FSRC_MARKS)
 define_ts_si_s(scheme_struct_ref, FSRC_MARKS)
 define_ts_sis_v(scheme_struct_set, FSRC_MARKS)
@@ -218,6 +220,8 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_struct_ref scheme_struct_ref
 # define ts_scheme_struct_set scheme_struct_set
 # define ts_scheme_equal scheme_equal
+# define ts_scheme_string_eq_2 scheme_string_eq_2
+# define ts_scheme_byte_string_eq_2 scheme_byte_string_eq_2
 # define ts_extract_one_cc_mark_to_tag extract_one_cc_mark_to_tag
 # define ts_tail_call_with_values_from_multiple_result tail_call_with_values_from_multiple_result
 # define ts_raise_bad_call_with_values raise_bad_call_with_values

@@ -510,11 +510,10 @@ scheme_init_string (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("string-set!", p, env);
 
-  scheme_add_global_constant("string=?",
-			     scheme_make_immed_prim(string_eq,
-						    "string=?",
-						    2, -1),
-			     env);
+  p = scheme_make_immed_prim(string_eq, "string=?", 2, -1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_add_global_constant("string=?", p, env);
+
   scheme_add_global_constant("string-locale=?",
 			     scheme_make_immed_prim(string_locale_eq,
 						    "string-locale=?",
@@ -788,11 +787,10 @@ scheme_init_string (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("bytes-set!", p, env);
 
-  scheme_add_global_constant("bytes=?",
-			     scheme_make_immed_prim(byte_string_eq,
-						    "bytes=?",
-						    2, -1),
-			     env);
+  p = scheme_make_immed_prim(byte_string_eq, "bytes=?", 2, -1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  scheme_add_global_constant("bytes=?", p, env);
+
   scheme_add_global_constant("bytes<?",
 			     scheme_make_immed_prim(byte_string_lt,
 						    "bytes<?",
@@ -1202,6 +1200,14 @@ GEN_STRING_COMP(string_locale_ci_eq, "string-locale-ci=?", mz_char_strcmp_ci, ==
 GEN_STRING_COMP(string_locale_ci_lt, "string-locale-ci<?", mz_char_strcmp_ci, <, 1, 0)
 GEN_STRING_COMP(string_locale_ci_gt, "string-locale-ci>?", mz_char_strcmp_ci, >, 1, 0)
 
+Scheme_Object *scheme_string_eq_2(Scheme_Object *str1, Scheme_Object *str2)
+{
+  Scheme_Object *a[2];
+  a[0] = str1;
+  a[1] = str2;       
+  return string_eq(2, a);
+}
+
 /**********************************************************************/
 /*                         byte strings                               */
 /**********************************************************************/
@@ -1267,6 +1273,14 @@ GEN_BYTE_STRING_COMP(byte_string_lt, "bytes<?", mz_strcmp, <)
 GEN_BYTE_STRING_COMP(byte_string_gt, "bytes>?", mz_strcmp, >)
 
 GEN_BYTE_STRING_PATH_COMP(path_lt, "path<?", mz_strcmp, <, SCHEME_PATHP, "path?")
+
+Scheme_Object *scheme_byte_string_eq_2(Scheme_Object *str1, Scheme_Object *str2)
+{
+  Scheme_Object *a[2];
+  a[0] = str1;
+  a[1] = str2;       
+  return byte_string_eq(2, a);
+}
 
 /**********************************************************************/
 /*                   byte string <-> char string                      */
