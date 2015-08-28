@@ -2952,7 +2952,7 @@ static void sync_master_progress(NewGC *gc, int done, Log_Master_Info *lmi) {
     } else {
       int i = 0;
       int alive = MASTERGCINFO->alive;
-      /* wake everyone back up, except MASTERGC and ourself */  
+      /* wake everyone back up, except MASTERGC and ourself */
       for (i = 2; i < alive; i++) {
         mzrt_sema_post(MASTERGCINFO->wait_go_sema);
       }
@@ -3369,11 +3369,11 @@ static void promote_marked_gen0_big_page(NewGC *gc, mpage *page) {
 #endif
 }
 
-static void mark_recur_or_push_ptr(struct NewGC *gc, void *p)
+static void mark_recur_or_push_ptr(struct NewGC *gc, void *p, int is_a_master_page)
 {
   objhead *ohead = OBJPTR_TO_OBJHEAD(p);
 
-  if (gc->mark_depth < MAX_RECUR_MARK_DEPTH) {
+  if ((gc->mark_depth < MAX_RECUR_MARK_DEPTH) && !is_a_master_page) {
     switch (ohead->type) {
     case PAGE_TAGGED:
       {
@@ -3406,6 +3406,20 @@ static void mark_recur_or_push_ptr(struct NewGC *gc, void *p)
   push_ptr(gc, p);
 }
 
+#ifdef MZ_USE_PLACES
+static void adjust_page_lock(int is_a_master_page, mpage *page, intptr_t prev, intptr_t next)
+{
+  if (is_a_master_page) {
+    while (!mzrt_cas(&page->page_lock, prev, next)) { /* spin! */ }
+  }
+}
+# define TAKE_PAGE_LOCK(is_a_master_page, page) adjust_page_lock(is_a_master_page, page, 0, 1);
+# define RELEASE_PAGE_LOCK(is_a_master_page, page) adjust_page_lock(is_a_master_page, page, 1, 0);
+#else
+# define TAKE_PAGE_LOCK(is_a_master_page, page) /* empty */
+# define RELEASE_PAGE_LOCK(is_a_master_page, page) /* empty */
+#endif
+
 /* This is the first mark routine. It's a bit complicated. */
 void GC_mark2(const void *const_p, struct NewGC *gc)
 {
@@ -3433,10 +3447,13 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       }
   }
 
+  TAKE_PAGE_LOCK(is_a_master_page, page);
+
 #ifdef NEWGC_BTC_ACCOUNT
   /* toss this over to the BTC mark routine if we're doing accounting */
   if(gc->doing_memory_accounting) { 
     BTC_memory_account_mark(gc, page, p, is_a_master_page); 
+    RELEASE_PAGE_LOCK(is_a_master_page, page);
     return;
   }
 #endif
@@ -3449,6 +3466,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
          previously */
       if (page->size_class != 2) {
         GCDEBUG((DEBUGOUTF, "Not marking %p on big %p (already marked)\n", p, page));
+        RELEASE_PAGE_LOCK(is_a_master_page, page);
         return;
       }
       /* in this case, it has not. So we want to mark it, first off. */
@@ -3469,6 +3487,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       objhead *info = MED_OBJHEAD(p, page->size);
       if (info->mark) {
         GCDEBUG((DEBUGOUTF,"Not marking %p (already marked)\n", p));
+        RELEASE_PAGE_LOCK(is_a_master_page, page);
         return;
       }
       info->mark = 1;
@@ -3476,7 +3495,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       p = OBJHEAD_TO_OBJPTR(info);
       backtrace_new_page_if_needed(gc, page);
       record_backtrace(gc, page, p);
-      mark_recur_or_push_ptr(gc, p);
+      mark_recur_or_push_ptr(gc, p, is_a_master_page);
     }
   } 
   /* SMALL_PAGE from gen0 or gen1 */
@@ -3485,6 +3504,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
 
     if(ohead->mark) {
       GCDEBUG((DEBUGOUTF,"Not marking %p (already marked)\n", p));
+      RELEASE_PAGE_LOCK(is_a_master_page, page);
       return;
     }
 
@@ -3503,7 +3523,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         page->previous_size = PREFIX_SIZE;
         page->live_size += ohead->size;
         record_backtrace(gc, page, p);
-        mark_recur_or_push_ptr(gc, p);
+        mark_recur_or_push_ptr(gc, p, is_a_master_page);
       } else {
         GCDEBUG((DEBUGOUTF, "Not marking %p (it's old; %p / %i)\n", p, page, page->previous_size));
       }
@@ -3608,10 +3628,12 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         /* set forwarding pointer */
         GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", p, newp, work));
         *(void**)p = newp;
-        mark_recur_or_push_ptr(gc, newp);
+        mark_recur_or_push_ptr(gc, newp, is_a_master_page);
       }
     }
   }
+
+  RELEASE_PAGE_LOCK(is_a_master_page, page);
 }
 
 void GC_mark(const void *const_p)

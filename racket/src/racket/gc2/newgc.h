@@ -29,6 +29,9 @@ typedef struct mpage {
   void *backtrace_page_src;
 #endif
   void *mmu_src_block;
+#ifdef MZ_USE_PLACES
+  uintptr_t page_lock; /* for master GC pages during marking */
+#endif
 } mpage;
 
 typedef struct Gen0 {
