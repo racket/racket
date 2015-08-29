@@ -434,68 +434,6 @@ static int is_short(Scheme_Object *obj, int fuel)
 }
 #endif
 
-static int no_sync_change(Scheme_Object *obj, int fuel)
-{
-  Scheme_Type t;
-
-  if (fuel <= 0)
-    return fuel;
-
-  t = SCHEME_TYPE(obj);
-
-  switch (t) {
-  case scheme_application2_type:
-    {
-      Scheme_App2_Rec *app = (Scheme_App2_Rec *)obj;
-      if (SCHEME_PRIMP(app->rator)
-          && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_UNARY_INLINED)
-          && (IS_NAMED_PRIM(app->rator, "car")
-              || IS_NAMED_PRIM(app->rator, "cdr")
-              || IS_NAMED_PRIM(app->rator, "cadr")
-              || IS_NAMED_PRIM(app->rator, "cdar")
-              || IS_NAMED_PRIM(app->rator, "caar")
-              || IS_NAMED_PRIM(app->rator, "cddr"))) {
-        return no_sync_change(app->rand, fuel - 1);
-      }
-      return 0;
-    }
-    break;
-  case scheme_sequence_type:
-    {
-      Scheme_Sequence *seq = (Scheme_Sequence *)obj;
-      int i;
-
-      fuel -= seq->count;
-      for (i = seq->count; i--; ) {
-	fuel = no_sync_change(seq->array[i], fuel);
-      }
-      return fuel;
-    }
-    break;
-  case scheme_branch_type:
-    {
-      Scheme_Branch_Rec *branch = (Scheme_Branch_Rec *)obj;
-      fuel -= 3;
-      fuel = no_sync_change(branch->test, fuel);
-      fuel = no_sync_change(branch->tbranch, fuel);
-      return no_sync_change(branch->fbranch, fuel);
-    }
-  case scheme_local_type:
-    if (JIT_TYPE_NEEDS_BOXING(SCHEME_GET_LOCAL_TYPE(obj)))
-      return 0;
-    else
-      return fuel - 1;
-  case scheme_toplevel_type:
-  case scheme_local_unbox_type:
-      return fuel - 1;
-  default:
-    if (t > _scheme_values_types_)
-      return fuel - 1;
-    else
-      return 0;
-  }
-}
-
 Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc, int local_only)
 {
   /* GLOBAL ASSUMPTION: we assume that globals are the last thing
@@ -1677,7 +1615,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   mz_jit_unbox_state ubs;
   int ubd, save_ubd;
   int pushed_marks;
-  int nsrs, nsrs1, g1, g2, amt, need_sync, flostack, flostack_pos;
+  int nsrs, nsrs1, g1, g2, amt, flostack, flostack_pos;
   int else_is_empty = 0, i, can_chain_branch, chain_true, chain_false, old_self_pos;
 #ifdef NEED_LONG_BRANCHES
   int then_short_ok, else_short_ok;
@@ -1728,14 +1666,6 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   
   LOG_IT(("if...\n"));
 
-  /* Avoid rs_sync if neither branch changes the sync state?
-     Currently, we force a sync, anyway. */
-  if ((no_sync_change(branch->tbranch, 32) > 0)
-      && (no_sync_change(branch->fbranch, 32) > 0))
-    need_sync = 0;
-  else
-    need_sync = 1;
-
   if (result_ignored 
       && (SCHEME_TYPE(branch->fbranch) > _scheme_compiled_values_types_))
     else_is_empty = 1;
@@ -1746,7 +1676,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
 
   scheme_mz_unbox_save(jitter, &ubs);
 
-  if (!scheme_generate_inlined_test(jitter, branch->test, then_short_ok, &for_this_branch, need_sync)) {
+  if (!scheme_generate_inlined_test(jitter, branch->test, then_short_ok, &for_this_branch)) {
     CHECK_LIMIT();
     generate_non_tail_with_branch_and_values(branch->test, jitter, 0, 1, 0, &for_this_branch, NULL);
     CHECK_LIMIT();
@@ -1802,7 +1732,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
     if (!is_tail) {
       if (amt)
         mz_rs_inc(amt);
-      if (need_sync) mz_rs_sync();
+      mz_rs_sync();
     }
     __START_SHORT_JUMPS__(else_short_ok);
     if (else_is_empty)
@@ -1821,7 +1751,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   }
   jitter->need_set_rs = nsrs;
   jitter->pushed_marks = pushed_marks;
-  if (need_sync) mz_rs_sync_0();
+  mz_rs_sync_0();
 
   if (old_self_pos != jitter->self_pos)
     scheme_signal_error("internal error: self position moved across branch");
@@ -1871,7 +1801,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
     if (!is_tail) {
       if (amt)
         mz_rs_inc(amt);
-      if (need_sync) mz_rs_sync();
+      mz_rs_sync();
     }
   } else if (g2 == 2) {
     jitter->need_set_rs = 0;
@@ -1999,7 +1929,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
   if (for_branch) {
     mz_rs_sync();
-    if (scheme_generate_inlined_test(jitter, obj, for_branch->branch_short, for_branch, 1))
+    if (scheme_generate_inlined_test(jitter, obj, for_branch->branch_short, for_branch))
       return 1;
     CHECK_LIMIT();
   }
@@ -2654,7 +2584,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       Scheme_Object *args[2];
       int r;
 
-      r = scheme_generate_inlined_unary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored, target);
+      r = scheme_generate_inlined_unary(jitter, app, is_tail, multi_ok, NULL, 0, result_ignored, target);
       CHECK_LIMIT();
       if (r) {
         if (for_branch) finish_branch(jitter, target, for_branch);
@@ -2704,7 +2634,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         return 1;
       }
 
-      r = scheme_generate_inlined_binary(jitter, app, is_tail, multi_ok, NULL, 1, 0, result_ignored, target);
+      r = scheme_generate_inlined_binary(jitter, app, is_tail, multi_ok, NULL, 0, result_ignored, target);
       CHECK_LIMIT();
       if (r) {
         if (for_branch) finish_branch(jitter, target, for_branch);

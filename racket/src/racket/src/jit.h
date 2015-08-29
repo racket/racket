@@ -1404,16 +1404,16 @@ int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_stat
 int scheme_inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, int is_tail, int multi_ok, 
-				  Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored,
+				  Branch_Info *for_branch, int branch_short, int result_ignored,
                                   int dest);
 int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, int is_tail, int multi_ok, 
-				   Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored,
+				   Branch_Info *for_branch, int branch_short, int result_ignored,
                                    int dest);
 int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int is_tail, int multi_ok, 
                                  Branch_Info *for_branch, int branch_short, int result_ignored,
                                  int dest);
 int scheme_generate_inlined_test(mz_jit_state *jitter, Scheme_Object *obj, int branch_short, 
-                                 Branch_Info *for_branch, int need_sync);
+                                 Branch_Info *for_branch);
 int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int known_list, int dest);
 int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
                                  int inline_slow, int pop_and_jump,
