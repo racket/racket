@@ -1336,5 +1336,25 @@
   (void (m)))
 
 ;; ----------------------------------------
+;; Check that `expand-syntax` attaches the namespace's 
+
+(test 573
+      'expand
+      (parameterize ([current-namespace (make-base-namespace)])
+        (eval '(require (for-syntax racket/base)))
+        (eval '(define-syntax (m stx)
+                (with-syntax ([id (datum->syntax #f 'gen-id)])
+                  #`(begin
+                      (define id 573)
+                      id))))
+        (define stx (namespace-syntax-introduce (datum->syntax #f '(m))))
+        (syntax-case (expand-syntax-to-top-form stx) (begin)
+          [(begin a b)
+           (begin
+             (eval-syntax #'a)
+             (eval-syntax (expand-syntax #'b)))])))
+
+
+;; ----------------------------------------
 
 (report-errs)

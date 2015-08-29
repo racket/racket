@@ -4620,6 +4620,12 @@ static void *expand_k(void)
     obj = scheme_top_introduce(obj, env->genv);
   }
 
+  if (rename && env->genv->stx_context) {
+    obj = scheme_stx_push_introduce_module_context(obj, env->genv->stx_context);
+    env->expand_result_adjust = scheme_stx_push_introduce_module_context;
+    env->expand_result_adjust_arg = env->genv->stx_context;
+  }
+  
   observer = scheme_get_expand_observe();
   SCHEME_EXPAND_OBSERVE_START_EXPAND(observer);
 
@@ -4692,10 +4698,6 @@ static void *expand_k(void)
       }
     } else
       break;
-  }
-
-  if (rename && !just_to_top) {
-    /* scheme_simplify_stx(obj, scheme_new_stx_simplify_cache()); */ /* too expensive */
   }
 
   return obj;
