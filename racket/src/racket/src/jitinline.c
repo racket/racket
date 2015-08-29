@@ -2735,7 +2735,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       sjc_bad_code = sjc.bad_string_eq_2_code;
       string_len_val = (intptr_t)&SCHEME_CHAR_STRLEN_VAL(0x0);
       string_val = (intptr_t)&SCHEME_CHAR_STR_VAL(0x0);
-    } else if (IS_NAMED_PRIM(rator, "bytes=?")) {
+    } else { /* IS_NAMED_PRIM(rator, "bytes=?") */
       string = 0;
       string_type = scheme_byte_string_type;
       sjc_bad_code = sjc.bad_bytes_eq_2_code;
