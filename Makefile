@@ -29,13 +29,14 @@ PKGS = main-distribution main-distribution-test
 PLAIN_RACKET = racket/bin/racket
 WIN32_PLAIN_RACKET = racket\racket
 
-PLAIN_RACO = racket/bin/racket -N raco -l- raco
-WIN32_PLAIN_RACO = racket\racket -N raco -l- raco
+# In case of cross-installation, point explicitly to local content:
+RUN_RACKET = $(PLAIN_RACKET) -G racket/etc -X racket/collects
+WIN32_RUN_RACKET = $(WIN32_PLAIN_RACKET) -G racket/etc -X racket/collects
+
+RUN_RACO = $(RUN_RACKET) -N raco -l- raco
+WIN32_RUN_RACO = $(WIN32_RUN_RACKET) -N raco -l- raco
 
 DEFAULT_SRC_CATALOG = http://pkgs.racket-lang.org
-
-MACOSX_CHECK_ARGS = -I racket/base -e '(case (system-type) [(macosx) (exit 0)] [else (exit 1)])'
-MACOSX_CHECK = $(PLAIN_RACKET) -G build/config $(MACOSX_CHECK_ARGS)
 
 CPUS = 
 
@@ -61,18 +62,18 @@ ALL_PLT_SETUP_OPTIONS = $(JOB_OPTIONS) $(PLT_SETUP_OPTIONS)
 plain-in-place:
 	$(MAKE) base
 	$(MAKE) pkgs-catalog
-	$(PLAIN_RACO) pkg update $(UPDATE_PKGS_ARGS)
-	$(PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
-	$(PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
-	$(PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+	$(RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
+	$(RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
+	$(RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 win32-in-place:
 	$(MAKE) win32-base
 	$(MAKE) win32-pkgs-catalog
-	$(WIN32_PLAIN_RACO) pkg update $(UPDATE_PKGS_ARGS)
-	$(WIN32_PLAIN_RACO) pkg install $(INSTALL_PKGS_ARGS)
-	$(WIN32_PLAIN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
-	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+	$(WIN32_RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
+	$(WIN32_RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
+	$(WIN32_RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
+	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 # Rebuild without consulting catalogs or package sources:
 
@@ -86,11 +87,11 @@ cpus-as-is:
 
 plain-as-is:
 	$(MAKE) base
-	$(PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+	$(RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 win32-as-is:
 	$(MAKE) win32-base
-	$(WIN32_PLAIN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
+	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 # ------------------------------------------------------------
 # Unix-style build (Unix and Mac OS X, only)
@@ -299,11 +300,11 @@ SVR_PRT = $(SERVER):$(SERVER_PORT)
 SVR_CAT = http://$(SVR_PRT)/$(SERVER_CATALOG_PATH)
 
 # Helper macros:
-USER_CONFIG = -G build/user/config -A build/user
-RACKET = racket/bin/racket $(USER_CONFIG)
-RACO = racket/bin/racket $(USER_CONFIG) -N raco -l- raco
-WIN32_RACKET = racket\racket $(USER_CONFIG)
-WIN32_RACO = racket\racket $(USER_CONFIG) -N raco -l- raco
+USER_CONFIG = -G build/user/config -X racket/collects -A build/user
+RACKET = $(PLAIN_RACKET) $(USER_CONFIG)
+RACO = $(PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
+WIN32_RACKET = $(WIN32_PLAIN_RACKET) $(USER_CONFIG)
+WIN32_RACO = $(WIN32_PLAIN_RACKET) $(USER_CONFIG) -N raco -l- raco
 X_AUTO_OPTIONS = --skip-installed --deps search-auto --pkgs $(JOB_OPTIONS)
 USER_AUTO_OPTIONS = --scope user $(X_AUTO_OPTIONS)
 LOCAL_USER_AUTO = --catalog build/local/catalog $(USER_AUTO_OPTIONS)
@@ -312,9 +313,9 @@ REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
-BUNDLE_RACO_FLAGS = -A bundle/user -l raco
-BUNDLE_RACO = bundle/racket/bin/racket $(BUNDLE_RACO_FLAGS)
-WIN32_BUNDLE_RACO = bundle\racket\racket $(BUNDLE_RACO_FLAGS)
+BUNDLE_RACO_FLAGS = -G bundle/racket/config -X bundle/racket/collects -A bundle/user -l raco
+BUNDLE_RACO = $(PLAIN_RACKET) $(BUNDLE_RACO_FLAGS)
+WIN32_BUNDLE_RACO = $(WIN32_PLAIN_RACKET) $(BUNDLE_RACO_FLAGS)
 
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
@@ -323,9 +324,9 @@ PKGS_CATALOG = -U -G build/config -l- pkg/dirs-catalog --link --check-metadata
 PKGS_CONFIG = -U -G build/config racket/src/pkgs-config.rkt
 
 pkgs-catalog:
-	$(PLAIN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs
-	$(PLAIN_RACKET) $(PKGS_CONFIG) "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
-	$(PLAIN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
+	$(RUN_RACKET) $(PKGS_CATALOG) racket/share/pkgs-catalog pkgs
+	$(RUN_RACKET) $(PKGS_CONFIG) "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
+	$(RUN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 
 win32-pkgs-catalog:
 	$(MAKE) pkgs-catalog PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
@@ -428,7 +429,7 @@ binary-catalog-server:
 # client is the same as the server.
 
 PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_HOSTS)" \
-            PKGS="$(PKGS)" BUILD_STAMP="$(BUILD_STAMP)" \
+            PKGS="$(PKGS)" PLAIN_RACKET="$(PLAIN_RACKET)" BUILD_STAMP="$(BUILD_STAMP)" \
 	    RELEASE_MODE=$(RELEASE_MODE) SOURCE_MODE=$(SOURCE_MODE) \
             VERSIONLESS_MODE=$(VERSIONLESS_MODE) MAC_PKG_MODE=$(MAC_PKG_MODE) \
             PKG_SOURCE_MODE="$(PKG_SOURCE_MODE)" INSTALL_NAME="$(INSTALL_NAME)"\
