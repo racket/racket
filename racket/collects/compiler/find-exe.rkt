@@ -1,9 +1,14 @@
 #lang racket/base
 (require setup/dirs
-         setup/variant)
+         setup/variant
+         setup/cross-system)
 (provide find-exe)
 
-(define (find-exe [mred? #f] [variant (system-type 'gc)])
+(define (find-exe #:cross? [cross? #f]
+                  [mred? #f]
+                  [variant (if cross?
+                               (cross-system-type 'gc)
+                               (system-type 'gc))])
   (let* ([base (if mred?
                    (find-lib-dir)
                    (find-console-bin-dir))]
@@ -15,7 +20,9 @@
                    variant))])
     (let ([exe (build-path
                 base
-                (case (system-type)
+                (case (if cross?
+                          (cross-system-type)
+                          (system-type))
                   [(macosx)
                    (cond
                      [(not mred?)

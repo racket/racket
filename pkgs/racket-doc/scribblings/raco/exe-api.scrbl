@@ -473,9 +473,17 @@ A unit that imports nothing and exports @racket[compiler:embed^].}
 
 @defmodule[compiler/find-exe]
 
-@defproc[(find-exe [gracket? any/c #f]
-                   [variant (or/c 'cgc '3m) (system-type 'gc)])
+@defproc[(find-exe [#:cross? cross? any/c #f]
+                   [gracket? any/c #f]
+                   [variant (or/c 'cgc '3m) (if cross?
+                                                (cross-system-type 'gc)
+                                                (system-type 'gc))])
          path?]{
 
   Finds the path to the @exec{racket} or @exec{gracket} (when
-  @racket[gracket?] is true) executable.}
+  @racket[gracket?] is true) executable.
+
+  If @racket[cross?] is true, the executable is found for the target
+  platform in @seclink["cross-system"]{cross-installation mode}.
+
+  @history[#:changed "6.2.900.11" @elem{Added the @racket[#:cross?] argument.}]}
