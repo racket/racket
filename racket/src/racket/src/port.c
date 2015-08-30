@@ -6105,12 +6105,12 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
     char *try_filename = filename;
     
     while (1) {
-      h = FindFirstChangeNotification(try_filename, FALSE, 
-                                      (FILE_NOTIFY_CHANGE_FILE_NAME
-                                       | FILE_NOTIFY_CHANGE_DIR_NAME
-                                       | FILE_NOTIFY_CHANGE_SIZE
-                                       | FILE_NOTIFY_CHANGE_LAST_WRITE
-                                       | FILE_NOTIFY_CHANGE_ATTRIBUTES));
+      h = FindFirstChangeNotificationW(WIDE_PATH(try_filename), FALSE,
+                                       (FILE_NOTIFY_CHANGE_FILE_NAME
+                                        | FILE_NOTIFY_CHANGE_DIR_NAME
+                                        | FILE_NOTIFY_CHANGE_SIZE
+                                        | FILE_NOTIFY_CHANGE_LAST_WRITE
+                                        | FILE_NOTIFY_CHANGE_ATTRIBUTES));
       if (h == INVALID_HANDLE_VALUE) {
         /* If `filename' refers to a file, then monitor its enclosing directory. */
         errid = GetLastError();
