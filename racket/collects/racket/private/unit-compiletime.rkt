@@ -599,13 +599,10 @@
 ;; This utility function returns a list of natural numbers for use as a syntax
 ;; property needed to support units in Typed Racket
 (define (build-init-depend-property init-depends imports)
-  ;; Typed Racket does not support tagged imports or exports
-  ;; so drop the tags from init-depends and imports
-  (let ([id-sigs (map cdr init-depends)]
-        [import-sigs (map cdr imports)])
-    (let loop ([i 0] [imports import-sigs])
-      (cond
-        [(null? imports) '()]
-        [else (if (member (car imports) id-sigs free-identifier=?)
-                  (cons i (loop (add1 i) (cdr imports)))
-                  (loop (add1 i) (cdr imports)))]))))
+  (define (sig=? s1 s2)
+    (and (eq? (syntax-e (car s1)) (car s2))
+         (free-identifier=? (cdr s1) (cdr s2))))
+  (for/list ([import (in-list imports)]
+             [index (in-naturals)]
+             #:when (member import init-depends sig=?))
+    index))
