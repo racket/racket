@@ -280,11 +280,6 @@ ee-main:
 ee-app: $(RACKET) main_ee.@LTO@
 	if [ "$(EEAPP)" = '' ] ; then echo "ERROR: You must specify EEAPP" ; else $(CC) $(MAIN_CFLAGS_NODBG) -o $(EEAPP) main_ee.@LTO@ $(EEOBJECTS) $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@ ; fi
 
-mzstart.exe: $(srcdir)/dynsrc/start.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -o mzstart.exe $(srcdir)/dynsrc/start.c
-
-starter: mzstart.exe
-
 MZCOM_DEPS = $(MAIN_HEADER_DEPS) $(srcdir)/../mzcom/com_glue.h $(srcdir)/../mzcom/resource.h
 
 mzcom.@LTO@: $(srcdir)/../mzcom/mzcom.cxx $(MZCOM_DEPS)
