@@ -637,7 +637,9 @@ CGC
 MMM_CAP_INSTALLED
 MMM_INSTALLED
 MMM
+GUI_CONFIG_PATH
 CONFIG_PATH
+GUI_COLLECTS_PATH
 COLLECTS_PATH
 includepltdir
 etcpltdir
@@ -2970,6 +2972,9 @@ else
   INSTALL_ORIG_TREE=no
 fi
 
+GUI_COLLECTS_PATH="${COLLECTS_PATH}"
+GUI_CONFIG_PATH="${CONFIG_PATH}"
+
 ###### Make sure GRacket is really there ######
 
 if test "${enable_gracket}" = "yes" ; then
@@ -4635,7 +4640,9 @@ case "$host_os" in
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
+    GUI_COLLECTS_PATH="../collects"
     CONFIG_PATH="etc"
+    GUI_CONFIG_PATH="../etc"
     skip_iconv_check=yes
     check_for_mprotect=no
 
@@ -6723,6 +6730,8 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
+
 
 
 

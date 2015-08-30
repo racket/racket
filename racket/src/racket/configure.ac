@@ -248,6 +248,9 @@ else
   INSTALL_ORIG_TREE=no
 fi
 
+GUI_COLLECTS_PATH="${COLLECTS_PATH}"
+GUI_CONFIG_PATH="${CONFIG_PATH}"
+
 ###### Make sure GRacket is really there ######
 
 if test "${enable_gracket}" = "yes" ; then
@@ -766,7 +769,9 @@ case "$host_os" in
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
+    GUI_COLLECTS_PATH="../collects"
     CONFIG_PATH="etc"
+    GUI_CONFIG_PATH="../etc"
     skip_iconv_check=yes
     check_for_mprotect=no
     AC_DEFINE(HAVE_STDINT_H,1,[Have stdint.h])
@@ -1741,7 +1746,9 @@ AC_SUBST(etcpltdir)
 AC_SUBST(includepltdir)
 AC_SUBST(docdir)
 AC_SUBST(COLLECTS_PATH)
+AC_SUBST(GUI_COLLECTS_PATH)
 AC_SUBST(CONFIG_PATH)
+AC_SUBST(GUI_CONFIG_PATH)
 
 AC_SUBST(MMM)
 AC_SUBST(MMM_INSTALLED)
