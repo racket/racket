@@ -172,6 +172,17 @@ win32-remove-setup-dlls:
 racket/src/build/Makefile: racket/src/configure racket/src/Makefile.in
 	cd racket/src/build; ../configure $(CONFIGURE_ARGS_qq)
 
+
+# For cross-compilation, build a native executable with no configure options:
+native-for-cross:
+	mkdir -p racket/src/build/cross
+	$(MAKE) racket/src/build/cross/Makefile
+	cd racket/src/build/cross; $(MAKE) reconfigure
+	cd racket/src/build/cross/racket; $(MAKE)
+
+racket/src/build/cross/Makefile: racket/src/configure racket/src/Makefile.in
+	cd racket/src/build/cross; ../../configure
+
 # ------------------------------------------------------------
 # Configuration options for building installers
 
