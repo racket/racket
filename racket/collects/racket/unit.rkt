@@ -271,27 +271,31 @@
                                [extra-make? #f]
                                [else (cons def-cname #'name)])]
                      [(self-ctr?) (and cname (bound-identifier=? #'name (cdr cname)))])
-         (cons
-          #`(define-syntaxes (name)
-              #,(let ([e (build-struct-expand-info
-                          #'name (syntax->list #'(field ...))
-                          #f (not mutable?)
-                          #f '(#f) '(#f)
-                          #:omit-constructor? no-ctr?
-                          #:constructor-name def-cname)])
-                  (if self-ctr?
-                      #`(make-self-name-struct-info 
-                         (lambda () #,e)
-                         (lambda () (quote-syntax #,def-cname)))
-                      e)))
-          (let ([names (build-struct-names #'name (syntax->list #'(field ...))
+         (let* ([names (build-struct-names #'name (syntax->list #'(field ...))
                                            #f (not mutable?)
-                                           #:constructor-name def-cname)])
-            (cond
-             [no-ctr? (cons (car names) (cddr names))]
-             [self-ctr? (cons #`(define-values-for-export (#,def-cname) name) 
-                              names)]
-             [else names]))))))
+                                           #:constructor-name def-cname)]
+                [names
+                 (cond
+                   [no-ctr? (cons (car names) (cddr names))]
+                   [self-ctr? (cons #`(define-values-for-export (#,def-cname) name)
+                                    names)]
+                   [else names])])
+           (if no-ctr?
+               names
+               (cons
+                #`(define-syntaxes (name)
+                    #,(let ([e (build-struct-expand-info
+                                #'name (syntax->list #'(field ...))
+                                #f (not mutable?)
+                                #f '(#f) '(#f)
+                                #:omit-constructor? no-ctr?
+                                #:constructor-name def-cname)])
+                        (if self-ctr?
+                            #`(make-self-name-struct-info
+                               (lambda () #,e)
+                               (lambda () (quote-syntax #,def-cname)))
+                            e)))
+                names))))))
     ((_ name fields opt ...)
      (raise-syntax-error #f
                          "bad syntax; expected a parenthesized sequence of fields"
