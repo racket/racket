@@ -3777,7 +3777,7 @@ static Comp_Prefix *unresolve_prefix(Resolve_Prefix *rp, Unresolve_Info *ui) {
       mv = unresolve_prefix_symbol(rp->toplevels[i], ui);
       o = scheme_register_toplevel_in_comp_prefix(mv, cp, 0, NULL);
     } else {
-      o = scheme_register_toplevel_in_comp_prefix(rp->toplevels[i], cp, 0, NULL); 
+      o = scheme_register_toplevel_in_comp_prefix(rp->toplevels[i], cp, 1, NULL); 
     }
     scheme_hash_set(ui->toplevels, scheme_make_integer(SCHEME_TOPLEVEL_POS(o)), o);
   }
