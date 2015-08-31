@@ -270,7 +270,9 @@
                                               (cons opt-cname opt-cname))]
                                [extra-make? #f]
                                [else (cons def-cname #'name)])]
-                     [(self-ctr?) (and cname (bound-identifier=? #'name (cdr cname)))])
+                     [(self-ctr?) (and cname
+                                       (bound-identifier=? #'name (cdr cname))
+                                       (not no-ctr?))])
          (cons
           #`(define-syntaxes (name)
               #,(let ([e (build-struct-expand-info

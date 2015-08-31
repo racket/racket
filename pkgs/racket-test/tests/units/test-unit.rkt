@@ -2185,3 +2185,17 @@
   (test '(0 0) (dynamic-require ''check-define-values-invoke-unit-spec 'results))
 
   ;; ----------------------------------------
+
+  (let ((s 1))
+    (define-signature sig (an-s (struct s (x y) #:omit-constructor)))
+    (test '(1 2)
+          (invoke-unit
+           (compound-unit (import) (export)
+                          (link (((S : sig)) (unit (import) (export sig)
+                                               (define-struct s (x y))
+                                               (define an-s (s 1 2))))
+                                (() (unit (import sig) (export)
+                                      (match an-s
+                                        [(s x y) (list x y)]))
+                                 S))))))
+  
