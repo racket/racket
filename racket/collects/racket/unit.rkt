@@ -1648,7 +1648,9 @@
               ;; Attach a syntax-property containing indices of init-depends signatures
               ;; for this compound unit. Although this property is attached to all
               ;; compound-units, it is only meaningful when the compound unit was
-              ;; created via compound-unit/infer
+              ;; created via compound-unit/infer. Only the `inferred` dependencies
+              ;; will appear in this syntax property, when no inference occurs the property
+              ;; will contain an empty list.
               (syntax-property
                (quasisyntax/loc (error-syntax)
                  (let ([deps '()]
