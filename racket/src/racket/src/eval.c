@@ -62,7 +62,7 @@
 
    When collecting the arguments for an application, scheme_do_eval()
    avoids recursive C calls to evaluate arguments by recognizing
-   easily-evaluated expressions, such as constrants and variable
+   easily-evaluated expressions, such as constants and variable
    lookups. This can be viewed as a kind of half-way A-normalization.
 
    Bytecodes are not linear. They're actually trees of expression
@@ -81,7 +81,7 @@
 
    Bytecode compilation:
 
-   Compilation works in four passes.
+   Compilation works in five passes.
 
    The first pass, called "compile", performs most of the work and
    tracks variable usage (including whether a variable is mutated or
@@ -98,7 +98,7 @@
    constant folding, and function inlining; this pass mutates records
    produced by the "letrec_check" pass. See "optimize.c". This pass
    isn't optional; for example, it calculates closure information that
-   the third pass uses.
+   the fourth pass uses.
 
    The fourth pass, called "resolve", finishes compilation by computing
    variable offsets and indirections (often mutating the records
@@ -135,7 +135,7 @@
    variants.  The code is not actually JITted until it is called; this
    preparation step merely sets up a JIT hook for each function. The
    preparation pass is a shallow, function (i.e., it doesn't mutate
-   the original bytecode) pass; the body of a fuction is preparred for
+   the original bytecode) pass; the body of a function is prepared for
    JITting lazily. See "jitprep.c".
 
 */
