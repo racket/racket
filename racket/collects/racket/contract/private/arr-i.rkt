@@ -195,6 +195,12 @@
                 (λ (neg-party)
                   ((blame-accepting-proj (blame-add-missing-party blame neg-party)) val))
                 (->i-mk-val-first-wrapper ctc)))))
+         #:late-neg-projection
+         (λ (ctc)
+           (define blame-accepting-proj (arr->i-proj ctc))
+           (λ (blame)
+             (λ (val neg-party)
+               ((blame-accepting-proj (blame-add-missing-party blame neg-party)) val))))
          #:projection arr->i-proj
          #:name (λ (ctc) 
                   (define (arg/ress->spec infos ctcs dep-ctcs skip?)

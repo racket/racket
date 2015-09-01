@@ -111,18 +111,19 @@
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger
-   #:val-first-projection
+   #:late-neg-projection
    (λ (ctc)
-     (define content-ctc (get/build-val-first-projection (base-box/c-content ctc)))
+     (define content-ctc (get/build-late-neg-projection (base-box/c-content ctc)))
      (λ (blame)
        (define box-blame (add-box-context blame))
-       (define val-first-proj (content-ctc box-blame))
-       (λ (val)
-         (define fail-proc (check-box/c-np ctc val blame))
-         (or fail-proc
-             (λ (neg-party) 
-               ((val-first-proj (unbox val)) neg-party)
-               val)))))
+       (define late-neg-proj (content-ctc box-blame))
+       (λ (val neg-party)
+         (define fail-proc (check-box/c-np ctc val box-blame))
+         (cond
+           [fail-proc (fail-proc neg-party)]
+           [else
+            (late-neg-proj (unbox val) neg-party)
+            val]))))
    #:projection
    (λ (ctc)
      (λ (blame)
@@ -148,26 +149,29 @@
                              impersonator-prop:contracted ctc
                              impersonator-prop:blame blame))))))))
 
-(define (ho-val-first-projection chaperone/impersonate-box)
+(define (ho-late-neg-projection chaperone/impersonate-box)
   (λ (ctc)
     (define elem-ctc (base-box/c-content ctc))
     (define immutable (base-box/c-immutable ctc))
-    (define vfp (get/build-val-first-projection elem-ctc))
+    (define vfp (get/build-late-neg-projection elem-ctc))
     (λ (blame)
       (define box-blame (add-box-context blame))
       (define pos-elem-proj (vfp box-blame))
       (define neg-elem-proj (vfp (blame-swap box-blame)))
-      (λ (val)
-        (or (check-box/c-np ctc val blame)
-            (if (and (immutable? val) (not (chaperone? val)))
-                (λ (neg-party) (box-immutable ((pos-elem-proj (unbox val)) neg-party)))
-                (λ (neg-party)
-                  (chaperone/impersonate-box 
-                   val
-                   (λ (b v) ((pos-elem-proj v) neg-party))
-                   (λ (b v) ((neg-elem-proj v) neg-party))
-                   impersonator-prop:contracted ctc
-                   impersonator-prop:blame (blame-add-missing-party blame neg-party)))))))))
+      (λ (val neg-party)
+        (cond
+          [(check-box/c-np ctc val blame)
+           =>
+           (λ (f) (f neg-party))]
+          [else
+           (if (and (immutable? val) (not (chaperone? val)))
+               (box-immutable (pos-elem-proj (unbox val) neg-party))
+               (chaperone/impersonate-box 
+                val
+                (λ (b v) (pos-elem-proj v neg-party))
+                (λ (b v) (neg-elem-proj v neg-party))
+                impersonator-prop:contracted ctc
+                impersonator-prop:blame (blame-add-missing-party blame neg-party)))])))))
 
 (define-struct (chaperone-box/c base-box/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -176,7 +180,7 @@
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger
-   #:val-first-projection (ho-val-first-projection chaperone-box)
+   #:late-neg-projection (ho-late-neg-projection chaperone-box)
    #:projection (ho-projection chaperone-box)))
 
 (define-struct (impersonator-box/c base-box/c) ()
@@ -186,7 +190,7 @@
    #:name box/c-name
    #:first-order box/c-first-order
    #:stronger box/c-stronger
-   #:val-first-projection (ho-val-first-projection impersonate-box)
+   #:late-neg-projection (ho-late-neg-projection impersonate-box)
    #:projection (ho-projection impersonate-box)))
 
 (define-syntax (wrap-box/c stx)

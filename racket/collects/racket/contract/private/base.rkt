@@ -51,7 +51,7 @@
 (define (apply-contract c v pos neg name loc)
   (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
-    (define cvfp (contract-val-first-projection c))
+    (define clnp (contract-late-neg-projection c))
     (define blame
       (make-blame (build-source-location loc)
                   name
@@ -65,10 +65,10 @@
                   ;; instead of changing the library around.
                   (or pos "false")
                   
-                  (if cvfp #f neg)
+                  (if clnp #f neg)
                   #t))
     (cond
-      [cvfp (((cvfp blame) v) neg)]
+      [clnp ((clnp blame) v neg)]
       [else (((contract-projection c) blame) v)])))
 
 (define-syntax (invariant-assertion stx)

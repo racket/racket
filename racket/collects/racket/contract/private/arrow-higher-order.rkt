@@ -163,7 +163,7 @@
                            (list
                             (with-syntax ([rng-len (length rngs)])
                               (with-syntax ([rng-results
-                                             #'(values ((rng-ctc rng-x) neg-party)
+                                             #'(values (rng-ctc rng-x neg-party)
                                                        ...)])
                                 #'(case-lambda
                                     [(rng-x ...)
@@ -185,7 +185,7 @@
                  [opt-keywords (map (λ (p) (syntax-e (car p))) opt-kwds)]
                  [need-apply-values? (or dom-rest (not (null? opt-doms)))]
                  [no-rng-checking? (not rngs)])
-            (with-syntax ([(dom-projd-args ...) #'(((dom-ctc dom-x) neg-party) ...)]
+            (with-syntax ([(dom-projd-args ...) #'((dom-ctc dom-x neg-party) ...)]
                           [basic-params
                            (cond
                              [dom-rest
@@ -197,10 +197,10 @@
                              [else
                               #'(this-param ... dom-x ... [opt-dom-x arrow:unspecified-dom] ...)])]
                           [opt+rest-uses
-                           (for/fold ([i (if dom-rest #'((rest-ctc rest-x) neg-party) #'null)])
+                           (for/fold ([i (if dom-rest #'(rest-ctc rest-x neg-party) #'null)])
                              ([o (in-list (reverse
                                            (syntax->list
-                                            #'(((opt-dom-ctc opt-dom-x) neg-party) ...))))]
+                                            #'((opt-dom-ctc opt-dom-x neg-party) ...))))]
                               [opt-dom-x (in-list (reverse (syntax->list #'(opt-dom-x ...))))])
                              #`(let ([r #,i])
                                  (if (eq? arrow:unspecified-dom #,opt-dom-x) r (cons #,o r))))]
@@ -214,7 +214,7 @@
                           [kwd-stx
                            (let* ([req-stxs
                                    (map (λ (s) (λ (r) #`(cons #,s #,r)))
-                                        (syntax->list #'(((req-kwd-ctc req-kwd-x) neg-party) ...)))]
+                                        (syntax->list #'((req-kwd-ctc req-kwd-x neg-party) ...)))]
                                   [opt-stxs 
                                    (map (λ (x c) (λ (r) #`(maybe-cons-kwd #,c #,x #,r neg-party)))
                                         (syntax->list #'(opt-kwd-x ...))
@@ -348,40 +348,42 @@
 (define (maybe-cons-kwd c x r neg-party)
   (if (eq? arrow:unspecified-dom x)
       r
-      (cons ((c x) neg-party) r)))
+      (cons (c x neg-party) r)))
 
 (define (->-proj chaperone-or-impersonate-procedure ctc
                  ;; fields of the 'ctc' struct
                  min-arity doms kwd-infos rest pre? rngs post?
-                 plus-one-arity-function chaperone-constructor)
-  (define doms-proj (map get/build-val-first-projection doms))
-  (define rest-proj (and rest (get/build-val-first-projection rest)))
-  (define rngs-proj (if rngs (map get/build-val-first-projection rngs) '()))
-  (define kwds-proj
-    (for/list ([kwd-info (in-list kwd-infos)])
-      (get/build-val-first-projection (kwd-info-ctc kwd-info))))
+                 plus-one-arity-function chaperone-constructor
+                 late-neg?)
   (define optionals-length (- (length doms) min-arity))
   (define mtd? #f) ;; not yet supported for the new contracts
   (λ (orig-blame)
     (define rng-blame (arrow:blame-add-range-context orig-blame))
     (define swapped-domain (blame-add-context orig-blame "the domain of" #:swap? #t))
-    (define partial-doms 
-      (for/list ([dom (in-list doms-proj)]
+
+    (define partial-doms
+      (for/list ([dom (in-list doms)]
                  [n (in-naturals 1)])
-        (dom (blame-add-context orig-blame 
-                                (format "the ~a argument of" (n->th n))
-                                #:swap? #t))))
-    (define partial-rest (and rest-proj
-                              (rest-proj
+        ((get/build-late-neg-projection dom)
+         (blame-add-context orig-blame 
+                            (format "the ~a argument of" (n->th n))
+                            #:swap? #t))))
+    (define partial-rest (and rest
+                              ((get/build-late-neg-projection rest)
                                (blame-add-context orig-blame "the rest argument of"
                                                   #:swap? #t))))
-    (define partial-ranges (map (λ (rng) (rng rng-blame)) rngs-proj))
+    (define partial-ranges
+      (if rngs
+          (for/list ([rng (in-list rngs)])
+            ((get/build-late-neg-projection rng) rng-blame))
+          '()))
     (define partial-kwds 
-      (for/list ([kwd-proj (in-list kwds-proj)]
+      (for/list ([kwd-info (in-list kwd-infos)]
                  [kwd (in-list kwd-infos)])
-        (kwd-proj (blame-add-context orig-blame
-                                     (format "the ~a argument of" (kwd-info-kwd kwd))
-                                     #:swap? #t))))
+        ((get/build-late-neg-projection (kwd-info-ctc kwd-info))
+         (blame-add-context orig-blame
+                            (format "the ~a argument of" (kwd-info-kwd kwd))
+                            #:swap? #t))))
     (define man-then-opt-partial-kwds
       (append (for/list ([partial-kwd (in-list partial-kwds)]
                          [kwd-info (in-list kwd-infos)]
@@ -401,27 +403,42 @@
               man-then-opt-partial-kwds
               partial-ranges
               (if partial-rest (list partial-rest) '())))
-    (λ (val)
-      (wrapped-extra-arg-arrow 
-       (cond
-         [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
-          =>
-          values]
-         [else
-          (λ (neg-party)
-            (define chap/imp-func (apply chaperone-constructor orig-blame val neg-party the-args))
-            (if post?
-                (chaperone-or-impersonate-procedure
-                 val
-                 chap/imp-func
-                 impersonator-prop:contracted ctc
-                 impersonator-prop:blame (blame-add-missing-party orig-blame neg-party))
-                (chaperone-or-impersonate-procedure
-                 val
-                 chap/imp-func
-                 impersonator-prop:contracted ctc
-                 impersonator-prop:blame (blame-add-missing-party orig-blame neg-party)
-                 impersonator-prop:application-mark (cons arrow:contract-key 
-                                                          ;; is this right?
-                                                          partial-ranges))))])
-       (apply plus-one-arity-function orig-blame val plus-one-constructor-args)))))
+
+    (define (successfully-got-the-right-kind-of-function val neg-party)
+      (define chap/imp-func (apply chaperone-constructor orig-blame val neg-party the-args))
+      (if post?
+          (chaperone-or-impersonate-procedure
+           val
+           chap/imp-func
+           impersonator-prop:contracted ctc
+           impersonator-prop:blame (blame-add-missing-party orig-blame neg-party))
+          (chaperone-or-impersonate-procedure
+           val
+           chap/imp-func
+           impersonator-prop:contracted ctc
+           impersonator-prop:blame (blame-add-missing-party orig-blame neg-party)
+           impersonator-prop:application-mark (cons arrow:contract-key 
+                                                    ;; is this right?
+                                                    partial-ranges))))
+    
+    (cond
+      [late-neg?
+       (λ (val neg-party)
+         (cond
+           [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
+            =>
+            (λ (f)
+              (f neg-party))]
+           [else
+            (successfully-got-the-right-kind-of-function val neg-party)]))]
+      [else
+       (λ (val)
+         (wrapped-extra-arg-arrow 
+          (cond
+            [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
+             =>
+             values]
+            [else
+             (λ (neg-party)
+               (successfully-got-the-right-kind-of-function val neg-party))])
+          (apply plus-one-arity-function orig-blame val plus-one-constructor-args)))])))

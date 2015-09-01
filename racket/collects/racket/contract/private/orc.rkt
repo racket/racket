@@ -68,15 +68,15 @@
           [(pred val) val]
           [else (partial-contract val)])))))
 
-(define (single-or/c-val-first-projection ctc)
-  (define c-proj (get/build-val-first-projection (single-or/c-ho-ctc ctc)))
+(define (single-or/c-late-neg-projection ctc)
+  (define c-proj (get/build-late-neg-projection (single-or/c-ho-ctc ctc)))
   (define pred (single-or/c-pred ctc))
   (λ (blame)
     (define p-app (c-proj (blame-add-or-context blame)))
-    (λ (val)
+    (λ (val neg-party)
       (if (pred val)
-          (λ (neg-party) val)
-          (p-app val)))))
+          val
+          (p-app val neg-party)))))
 
 (define (blame-add-or-context blame)
   (blame-add-context blame "a part of the or/c of"))
@@ -200,7 +200,7 @@
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
      #:projection single-or/c-projection
-     #:val-first-projection single-or/c-val-first-projection
+     #:late-neg-projection single-or/c-late-neg-projection
      #:name single-or/c-name
      #:first-order single-or/c-first-order
      #:stronger single-or/c-stronger?
@@ -215,7 +215,7 @@
   #:property prop:contract
   (build-contract-property
    #:projection single-or/c-projection
-   #:val-first-projection single-or/c-val-first-projection
+   #:late-neg-projection single-or/c-late-neg-projection
    #:name single-or/c-name
    #:first-order single-or/c-first-order
    #:stronger single-or/c-stronger?
@@ -273,21 +273,22 @@
                       candidate-proc
                       candidate-contract)]))])))))
 
-(define (multi-or/c-val-first-proj ctc)  
+(define (multi-or/c-late-neg-proj ctc)  
   (define ho-contracts (multi-or/c-ho-ctcs ctc))
-  (define c-projs (map get/build-val-first-projection ho-contracts))
+  (define c-projs (map get/build-late-neg-projection ho-contracts))
   (define first-order-checks (map (λ (x) (contract-first-order x)) ho-contracts))
   (define predicates (map flat-contract-predicate (multi-or/c-flat-ctcs ctc)))
   (λ (blame)
     (define blame-w-context (blame-add-or-context blame))
-    (λ (val)
+    (define c-projs+blame (map (λ (c-proj) (c-proj blame-w-context)) c-projs))
+    (λ (val neg-party)
       (cond
         [(for/or ([pred (in-list predicates)])
            (pred val))
-         (λ (neg-party) val)]
+         val]
         [else
          (let loop ([checks first-order-checks]
-                    [c-projs c-projs]
+                    [c-projs c-projs+blame]
                     [contracts ho-contracts]
                     [candidate-c-proj #f]
                     [candidate-contract #f])
@@ -295,22 +296,20 @@
              [(null? checks)
               (cond
                 [candidate-c-proj
-                 ((candidate-c-proj blame-w-context) val)]
+                 (candidate-c-proj val neg-party)]
                 [else
-                 (λ (neg-party)
-                   (raise-blame-error blame val #:missing-party neg-party
-                                      '("none of the branches of the or/c matched" given: "~e")
-                                      val))])]
+                 (raise-blame-error blame val #:missing-party neg-party
+                                    '("none of the branches of the or/c matched" given: "~e")
+                                    val)])]
              [((car checks) val)
               (if candidate-c-proj
-                  (λ (neg-party)
-                    (raise-blame-error blame val #:missing-party neg-party
-                                       '("two of the clauses in the or/c might both match: ~s and ~s"
-                                         given:
-                                         "~e")
-                                       (contract-name candidate-contract)
-                                       (contract-name (car contracts))
-                                       val))
+                  (raise-blame-error blame val #:missing-party neg-party
+                                     '("two of the clauses in the or/c might both match: ~s and ~s"
+                                       given:
+                                       "~e")
+                                     (contract-name candidate-contract)
+                                     (contract-name (car contracts))
+                                     val)
                   (loop (cdr checks)
                         (cdr c-projs)
                         (cdr contracts)
@@ -359,7 +358,7 @@
   (parameterize ([skip-projection-wrapper? #t])
     (build-chaperone-contract-property
      #:projection multi-or/c-proj
-     #:val-first-projection multi-or/c-val-first-proj
+     #:late-neg-projection multi-or/c-late-neg-proj
      #:name multi-or/c-name
      #:first-order multi-or/c-first-order
      #:stronger multi-or/c-stronger?
@@ -374,7 +373,7 @@
   #:property prop:contract
   (build-contract-property
    #:projection multi-or/c-proj
-   #:val-first-projection multi-or/c-val-first-proj
+   #:late-neg-projection multi-or/c-late-neg-proj
    #:name multi-or/c-name
    #:first-order multi-or/c-first-order
    #:stronger multi-or/c-stronger?

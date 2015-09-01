@@ -544,22 +544,18 @@
                                           (predicate-contract-pred that))))
    #:name (λ (ctc) (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))
-   #:val-first-projection
+   #:late-neg-projection
    (λ (ctc)
      (define p? (predicate-contract-pred ctc))
      (define name (predicate-contract-name ctc))
      (λ (blame)
-       (let ([predicate-contract-proj
-              (λ (v)
-                (if (p? v)
-                    (λ (neg-party)
-                      v)
-                    (λ (neg-party)
-                      (raise-blame-error blame v #:missing-party neg-party
-                                         '(expected: "~s" given: "~e")
-                                         name 
-                                         v))))])
-         predicate-contract-proj)))
+       (λ (v neg-party)
+         (if (p? v)
+             v
+             (raise-blame-error blame v #:missing-party neg-party
+                                '(expected: "~s" given: "~e")
+                                name 
+                                v)))))
    #:generate (λ (ctc)
                  (let ([generate (predicate-contract-generate ctc)])
                    (cond

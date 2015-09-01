@@ -68,9 +68,9 @@
             (fail val '(expected: "~s for element ~s" given: "~e") (contract-name elem-ctc) n e))))
       #t)))
 
-(define (check-val-first-vectorof c) 
+(define (check-late-neg-vectorof c)
   (define immutable (base-vectorof-immutable c))
-  (λ (val blame)
+  (λ (val blame neg-party)
     (cond
       [(vector? val) 
        (cond
@@ -78,23 +78,20 @@
           (cond
             [(immutable? val) #f]
             [else
-             (λ (neg-party)
-               (raise-blame-error blame #:missing-party neg-party
-                                  val '(expected "an immutable vector" given: "~e") val))])]
+             (raise-blame-error blame #:missing-party neg-party
+                                val '(expected "an immutable vector" given: "~e") val)])]
          [(eq? immutable #f)
           (cond
             [(immutable? val) 
-             (λ (neg-party)
-               (raise-blame-error blame #:missing-party neg-party
-                                  val '(expected "an mutable vector" given: "~e" val)))]
+             (raise-blame-error blame #:missing-party neg-party
+                                val '(expected "an mutable vector" given: "~e" val))]
             [else #f])]
          [else #f])]
       [else
-       (λ (neg-party)
-         (raise-blame-error blame #:missing-party neg-party
-                            val
-                            '(expected "a vector," given: "~e") 
-                            val))])))
+       (raise-blame-error blame #:missing-party neg-party
+                          val
+                          '(expected "a vector," given: "~e") 
+                          val)])))
 
 (define (vectorof-first-order ctc)
   (let ([check (check-vectorof ctc)])
@@ -126,29 +123,28 @@
   (build-flat-contract-property
    #:name vectorof-name
    #:first-order vectorof-first-order
-   #:val-first-projection (λ (ctc) 
-                            (define check (check-val-first-vectorof ctc))
-                            (define vfp (get/build-val-first-projection (base-vectorof-elem ctc)))
-                            (λ (blame)
-                              (define ele-blame (blame-add-element-of-context blame))
-                              (define vfp+blame (vfp ele-blame))
-                              (λ (val) 
-                                (or (check val blame)
-                                    (λ (neg-party)
-                                      (for ([x (in-vector val)])
-                                        ((vfp+blame x) neg-party))
-                                      val)))))
+   #:late-neg-projection (λ (ctc) 
+                           (define check (check-late-neg-vectorof ctc))
+                           (define vfp (get/build-late-neg-projection (base-vectorof-elem ctc)))
+                           (λ (blame)
+                             (define ele-blame (blame-add-element-of-context blame))
+                             (define vfp+blame (vfp ele-blame))
+                             (λ (val neg-party)
+                               (check val blame neg-party)
+                               (for ([x (in-vector val)])
+                                 (vfp+blame x neg-party))
+                               val)))
    #:stronger vectorof-stronger
    #:projection 
    (λ (ctc) 
      (define check (check-vectorof ctc))
      (λ (blame) 
-       (define raise-blame (λ (val . args) 
-                              (apply raise-blame-error blame val args)))
+       (define raise-blame (λ (val . args) (apply raise-blame-error blame val args)))
+       (define ele-blame (blame-add-element-of-context blame))
        (λ (val)
          (check val raise-blame #f)
          (let* ([elem-ctc (base-vectorof-elem ctc)]
-                [p ((contract-projection elem-ctc) blame)])
+                [p ((contract-projection elem-ctc) ele-blame)])
            (for ([e (in-vector val)])
              (p e)))
          val)))))
@@ -156,7 +152,7 @@
 (define (blame-add-element-of-context blame #:swap? [swap? #f])
   (blame-add-context blame "an element of" #:swap? swap?))
 
-(define (vectorof-val-first-ho-projection chaperone-or-impersonate-vector)
+(define (vectorof-late-neg-ho-projection chaperone-or-impersonate-vector)
   (λ (ctc)
     (define elem-ctc (base-vectorof-elem ctc))
     (define immutable (base-vectorof-immutable ctc))
@@ -164,40 +160,34 @@
     (λ (blame)
       (define pos-blame (blame-add-element-of-context blame))
       (define neg-blame (blame-add-element-of-context blame #:swap? #t))
-      (define vfp (get/build-val-first-projection elem-ctc))
+      (define vfp (get/build-late-neg-projection elem-ctc))
       (define elem-pos-proj (vfp pos-blame))
       (define elem-neg-proj (vfp neg-blame))
       (define checked-ref (λ (neg-party)
                             (λ (vec i val)
-                              (with-continuation-mark
-                               contract-continuation-mark-key
-                               (cons pos-blame neg-party)
-                               ((elem-pos-proj val) neg-party)))))
+                              (with-continuation-mark contract-continuation-mark-key
+                                (cons pos-blame neg-party)
+                                (elem-pos-proj val neg-party)))))
       (define checked-set (λ (neg-party)
                             (λ (vec i val)
-                              (with-continuation-mark
-                               contract-continuation-mark-key
-                               (cons neg-blame neg-party)
-                               ((elem-neg-proj val) neg-party)))))
+                              (with-continuation-mark contract-continuation-mark-key
+                                (cons neg-blame neg-party)
+                                (elem-neg-proj val neg-party)))))
       
-      (λ (val)
-        (let/ec k
-          (define (raise-blame val . args) 
-            (k
-             (λ (neg-party)
-               (apply raise-blame-error blame #:missing-party neg-party val args))))
-          (check val raise-blame #f)
-          (λ (neg-party)
-            (if (and (immutable? val) (not (chaperone? val)))
-                 (apply vector-immutable
-                        (for/list ([e (in-vector val)])
-                          ((elem-pos-proj e) neg-party)))
-                 (chaperone-or-impersonate-vector
-                  val
-                  (checked-ref neg-party)
-                  (checked-set neg-party)
-                  impersonator-prop:contracted ctc
-                  impersonator-prop:blame (blame-add-missing-party blame neg-party)))))))))
+      (λ (val neg-party)
+        (define (raise-blame val . args) 
+          (apply raise-blame-error blame #:missing-party neg-party val args))
+        (check val raise-blame #f)
+        (if (and (immutable? val) (not (chaperone? val)))
+            (apply vector-immutable
+                   (for/list ([e (in-vector val)])
+                     (elem-pos-proj e neg-party)))
+            (chaperone-or-impersonate-vector
+             val
+             (checked-ref neg-party)
+             (checked-set neg-party)
+             impersonator-prop:contracted ctc
+             impersonator-prop:blame (blame-add-missing-party blame neg-party)))))))
 
 (define-values (prop:neg-blame-party prop:neg-blame-party? prop:neg-blame-party-get)
   (make-impersonator-property 'prop:neg-blame-party))
@@ -242,7 +232,7 @@
    #:name vectorof-name
    #:first-order vectorof-first-order
    #:stronger vectorof-stronger
-   #:val-first-projection (vectorof-val-first-ho-projection chaperone-vector)
+   #:late-neg-projection (vectorof-late-neg-ho-projection chaperone-vector)
    #:projection (vectorof-ho-projection chaperone-vector)))
 
 (define-struct (impersonator-vectorof base-vectorof) ()
@@ -252,7 +242,7 @@
    #:name vectorof-name
    #:first-order vectorof-first-order
    #:stronger vectorof-stronger
-   #:val-first-projection (vectorof-val-first-ho-projection chaperone-vector)
+   #:late-neg-projection (vectorof-late-neg-ho-projection chaperone-vector)
    #:projection (vectorof-ho-projection impersonate-vector)))
 
 (define-syntax (wrap-vectorof stx)

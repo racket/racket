@@ -10,6 +10,7 @@
          contract-struct-first-order
          contract-struct-projection
          contract-struct-val-first-projection
+         contract-struct-late-neg-projection
          contract-struct-stronger?
          contract-struct-generate
          contract-struct-exercise
@@ -66,6 +67,7 @@
                                    generate
                                    exercise
                                    val-first-projection
+                                   late-neg-projection
                                    list-contract? ]
   #:omit-define-syntaxes)
 
@@ -103,6 +105,12 @@
 (define (contract-struct-val-first-projection c)
   (define prop (contract-struct-property c))
   (define get-projection (contract-property-val-first-projection prop))
+  (and get-projection 
+       (get-projection c)))
+
+(define (contract-struct-late-neg-projection c)
+  (define prop (contract-struct-property c))
+  (define get-projection (contract-property-late-neg-projection prop))
   (and get-projection 
        (get-projection c)))
 
@@ -255,6 +263,7 @@
          #:first-order [get-first-order #f]
          #:projection [get-projection #f]
          #:val-first-projection [get-val-first-projection #f]
+         #:late-neg-projection [get-late-neg-projection #f]
          #:stronger [stronger #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
@@ -289,7 +298,8 @@
     (mk get-name get-first-order
         get-projection stronger 
         generate exercise 
-        get-val-first-projection 
+        get-val-first-projection
+        get-late-neg-projection
         list-contract?)))
 
 (define build-contract-property
@@ -372,7 +382,8 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-struct make-contract [ name first-order projection val-first-projection 
+(define-struct make-contract [ name first-order projection
+                                    val-first-projection late-neg-projection 
                                     stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
@@ -386,12 +397,14 @@
    #:first-order (lambda (c) (make-contract-first-order c))
    #:projection (lambda (c) (make-contract-projection c))
    #:val-first-projection (lambda (c) (make-contract-val-first-projection c))
+   #:late-neg-projection (lambda (c) (make-contract-late-neg-projection c))
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
    #:generate (lambda (c) (make-contract-generate c))
    #:exercise (lambda (c) (make-contract-exercise c))
    #:list-contract? (λ (c) (make-contract-list-contract? c))))
 
-(define-struct make-chaperone-contract [ name first-order projection val-first-projection
+(define-struct make-chaperone-contract [ name first-order projection
+                                              val-first-projection late-neg-projection
                                               stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
@@ -405,12 +418,14 @@
    #:first-order (lambda (c) (make-chaperone-contract-first-order c))
    #:projection (lambda (c) (make-chaperone-contract-projection c))
    #:val-first-projection (lambda (c) (make-chaperone-contract-val-first-projection c))
+   #:late-neg-projection (lambda (c) (make-chaperone-contract-late-neg-projection c))
    #:stronger (lambda (a b) ((make-chaperone-contract-stronger a) a b))
    #:generate (lambda (c) (make-chaperone-contract-generate c))
    #:exercise (lambda (c) (make-chaperone-contract-exercise c))
    #:list-contract? (λ (c) (make-chaperone-contract-list-contract? c))))
 
-(define-struct make-flat-contract [ name first-order projection val-first-projection
+(define-struct make-flat-contract [ name first-order projection
+                                         val-first-projection late-neg-projection
                                          stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
@@ -423,6 +438,7 @@
    #:name (lambda (c) (make-flat-contract-name c))
    #:first-order (lambda (c) (make-flat-contract-first-order c))
    #:val-first-projection (λ (c) (make-flat-contract-val-first-projection c))
+   #:late-neg-projection (λ (c) (make-flat-contract-late-neg-projection c))
    #:projection (lambda (c) (make-flat-contract-projection c))
    #:stronger (lambda (a b) ((make-flat-contract-stronger a) a b))
    #:generate (lambda (c) (make-flat-contract-generate c))
@@ -434,6 +450,7 @@
          #:first-order [first-order #f]
          #:projection [projection #f]
          #:val-first-projection [val-first-projection #f]
+         #:late-neg-projection [late-neg-projection #f]
          #:stronger [stronger #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
@@ -448,7 +465,7 @@
          [stronger (or stronger as-strong?)])
 
     (mk name first-order 
-        projection val-first-projection
+        projection val-first-projection late-neg-projection
         stronger 
         generate exercise
         list-contract?)))

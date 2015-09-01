@@ -1831,7 +1831,11 @@ accepted by the third argument to @racket[datum->syntax].
 @defproc[(make-contract
           [#:name name any/c 'anonymous-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
-          [#:val-first-projection 
+          [#:late-neg-projection
+           late-neg-proj
+           (or/c #f (-> blame? (-> any/c any/c any/c)))
+           #f]
+          [#:val-first-projection
            val-first-proj
            (or/c #f (-> blame? (-> any/c (-> any/c any/c))))
            #f]
@@ -1852,6 +1856,10 @@ accepted by the third argument to @racket[datum->syntax].
 @defproc[(make-chaperone-contract
           [#:name name any/c 'anonymous-chaperone-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:late-neg-projection
+           late-neg-proj
+           (or/c #f (-> blame? (-> any/c any/c any/c)))
+           #f]
           [#:val-first-projection 
            val-first-proj
            (or/c #f (-> blame? (-> any/c (-> any/c any/c))))
@@ -1873,6 +1881,10 @@ accepted by the third argument to @racket[datum->syntax].
 @defproc[(make-flat-contract
           [#:name name any/c 'anonymous-flat-contract]
           [#:first-order test (-> any/c any/c) (λ (x) #t)]
+          [#:late-neg-projection
+           late-neg-proj
+           (or/c #f (-> blame? (-> any/c any/c any/c)))
+           #f]
           [#:val-first-projection 
            val-first-proj
            (or/c #f (-> blame? (-> any/c (-> any/c any/c))))
@@ -1893,12 +1905,6 @@ accepted by the third argument to @racket[datum->syntax].
          flat-contract?]
 )]{
 
-   @italic{The precise details of the 
-           @racket[val-first-projection] argument
-           are subject to change. (Probably
-           also the default values of the @racket[project] 
-           arguments will change.}
-   
 These functions build simple higher-order contracts, chaperone contracts, and flat contracts,
 respectively.  They both take the same set of three optional arguments: a name,
 a first-order predicate, and a blame-tracking projection.
@@ -1916,13 +1922,25 @@ by @racket[contract-first-order-passes?], and indirectly by @racket[or/c] to
 determine which of multiple higher-order contracts to wrap a value with.  The
 default test accepts any value.
 
-The projection @racket[proj] defines the behavior of applying the contract.  It
+The @racket[late-neg-proj] defines the behavior of applying the contract. If it is
+supplied, it accepts a blame object that does not have a value for
+ the @racket[blame-negative] field. Then it must return a function that accepts
+ both the value that is getting the contract and the name of the blame party, in
+ that order. The result must either be the value (perhaps suitably wrapped
+ with a @tech{chaperone} or @tech{impersonator} to enforce the contract), or
+ signal a contract violation using @racket[raise-blame-error]. The default is
+ @racket[#f].
+ 
+The projection @racket[proj] and @racket[val-first-proj] are older mechanisms for
+ defining the behavior of applying the contract.  The @racket[proj] argument
 is a curried function of two arguments: the first application accepts a blame
 object, and the second accepts a value to protect with the contract.  The
 projection must either produce the value, suitably wrapped to enforce any
 higher-order aspects of the contract, or signal a contract violation using
 @racket[raise-blame-error].  The default projection produces an error when the
 first-order test fails, and produces the value unchanged otherwise.
+The @racket[val-first-proj] is like @racket[late-neg-proj], except with
+an extra layer of currying.
 
 Projections for chaperone contracts must produce a value that passes
 @racket[chaperone-of?] when compared with the original, uncontracted value.
@@ -2274,6 +2292,10 @@ is expected to be the blame record for the contract on the value).
            get-first-order
            (-> contract? (-> any/c boolean?))
            (λ (c) (λ (x) #t))]
+          [#:late-neg-projection
+           late-neg-proj
+           (or/c #f (-> contract? (-> blame? (-> any/c any/c any/c))))
+           #f]
           [#:val-first-projection 
            val-first-proj
            (or/c #f (-> contract? blame? (-> any/c (-> any/c any/c))))
@@ -2323,6 +2345,10 @@ is expected to be the blame record for the contract on the value).
            get-first-order
            (-> contract? (-> any/c boolean?))
            (λ (c) (λ (x) #t))]
+          [#:late-neg-projection
+           late-neg-proj
+           (or/c #f (-> contract? blame? (-> any/c any/c any/c)))
+           #f]
           [#:val-first-projection 
            val-first-proj
            (or/c #f (-> contract? blame? (-> any/c (-> any/c any/c))))
@@ -2372,6 +2398,10 @@ is expected to be the blame record for the contract on the value).
            get-first-order
            (-> contract? (-> any/c boolean?))
            (λ (c) (λ (x) #t))]
+          [#:late-neg-projection
+           late-neg-proj
+           (or/c #f (-> contract? blame? (-> any/c any/c any/c)))
+           #f]
           [#:val-first-projection 
            val-first-proj
            (or/c #f (-> contract? blame? (-> any/c (-> any/c any/c))))

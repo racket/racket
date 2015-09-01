@@ -179,7 +179,7 @@
                 [(res-x ...) (generate-temporaries (or rngs '()))]
                 [(kwd-arg-x ...) (generate-temporaries mandatory-kwds)])
 
-    (define base-arg-expressions (reverse (syntax->list #'(((regb arg-x) neg-party) ...))))
+    (define base-arg-expressions (reverse (syntax->list #'((regb arg-x neg-party) ...))))
     (define normal-arg-vars (generate-temporaries #'(arg-x ...)))
     (define base-arg-vars normal-arg-vars)
 
@@ -190,7 +190,7 @@
                     append
                     (map (λ (kwd kwd-arg-x kb)
                            (set! base-arg-expressions
-                                 (cons #`((#,kb #,kwd-arg-x) neg-party)
+                                 (cons #`(#,kb #,kwd-arg-x neg-party)
                                        base-arg-expressions))
                            (set! base-arg-vars (cons (car (generate-temporaries (list kwd-arg-x)))
                                                      base-arg-vars))
@@ -228,7 +228,7 @@
                       #,@(for/list ([ob (in-list (reverse ob))]
                                     [optional-arg (in-list (reverse optional-args))])
                            (set! args-expressions
-                                 (cons #`((#,ob #,optional-arg) neg-party)
+                                 (cons #`(#,ob #,optional-arg neg-party)
                                        args-expressions))
                            (set! args-vars
                                  (cons (car (generate-temporaries (list optional-arg)))
@@ -237,7 +237,7 @@
                  (define full-call
                    (cond
                      [(and first? rest)
-                      (set! args-expressions (cons #'((restb rest-arg) neg-party) args-expressions))
+                      (set! args-expressions (cons #'(restb rest-arg neg-party) args-expressions))
                       (set! args-vars (cons (car (generate-temporaries '(rest-args-arrow-contract)))
                                             args-vars))
                       #`(apply #,@no-rest-call #,(car args-vars))]
@@ -281,7 +281,9 @@
                                       #'(res-x ...))))]
                                 [else
                                  post-check ...
-                                 (values ((rb res-x) neg-party) ...)])))]
+                                 (values
+                                  (rb res-x neg-party)
+                                  ...)])))]
                        #`[#,the-args
                           pre-check ...
                           (let ([blame+neg-party (cons blame neg-party)])
@@ -340,7 +342,7 @@
              (cond
                [(and (pair? mandatory-kwds)
                      (equal? (car mandatory-kwds) kwd))
-                (cons (((car kbs) kwd-arg) neg-party)
+                (cons ((car kbs) kwd-arg neg-party)
                       (loop (cdr kwds) 
                             (cdr kwd-args)
                             (cdr mandatory-kwds)
@@ -349,7 +351,7 @@
                             okbs))]
                [(and (pair? optional-kwds)
                      (equal? (car optional-kwds) kwd))
-                (cons (((car okbs) kwd-arg) neg-party)
+                (cons ((car okbs) kwd-arg neg-party)
                       (loop (cdr kwds) 
                             (cdr kwd-args)
                             mandatory-kwds
@@ -368,9 +370,9 @@
                    [rbs rbs])
           (cond
             [(null? regular-args) '()]
-            [(null? rbs) ((rest-ctc regular-args) neg-party)]
+            [(null? rbs) (rest-ctc regular-args neg-party)]
             [else
-             (cons (((car rbs) (car regular-args)) neg-party)
+             (cons ((car rbs) (car regular-args) neg-party)
                    (loop (cdr regular-args) (cdr rbs)))]))))
      (define complete-blame (blame-add-missing-party blame neg-party))
      (when pre (check-pre-cond pre blame neg-party f))
@@ -385,7 +387,7 @@
          values
          (for/list ([result (in-list results)]
                     [rng (in-list rngs)])
-           ((rng result) neg-party)))]
+           (rng result neg-party)))]
        [else
         (mk-call)]))))
 
@@ -908,16 +910,16 @@
                (define kwd-results
                  (for/list ([kwd (in-list kwds)]
                             [kwd-arg (in-list kwd-args)])
-                   (((hash-ref kwd-table kwd) kwd-arg) neg-party)))
+                   ((hash-ref kwd-table kwd) kwd-arg neg-party)))
                (define regular-arg-results
                  (let loop ([args args]
                             [projs mandatory+optional-dom-projs])
                    (cond
                      [(and (null? projs) (null? args)) '()]
                      [(null? projs)
-                      ((rest-proj args) neg-party)]
+                      (rest-proj args neg-party)]
                      [(null? args) (error 'cant-happen::dynamic->*)]
-                     [else (cons (((car projs) (car args)) neg-party)
+                     [else (cons ((car projs) (car args) neg-party)
                                  (loop (cdr args) (cdr projs)))])))
                (define (result-checker . results)
                  (unless (= rng-len (length results))
@@ -926,7 +928,7 @@
                   values
                   (for/list ([res (in-list results)]
                              [neg-party-proj (in-list rng-projs)])
-                    ((neg-party-proj res) neg-party))))
+                    (neg-party-proj res neg-party))))
                (define args-dealt-with
                  (if (null? kwds)
                      regular-arg-results
@@ -1132,7 +1134,7 @@
        #t))
 
 (define (make-property build-X-property chaperone-or-impersonate-procedure)
-  (define proj 
+  (define val-first-proj
     (λ (->stct)
       (->-proj chaperone-or-impersonate-procedure ->stct
                (base->-min-arity ->stct)
@@ -1143,14 +1145,28 @@
                (base->-rngs ->stct)
                (base->-post? ->stct)
                (base->-plus-one-arity-function ->stct)
-               (base->-chaperone-constructor ->stct))))
+               (base->-chaperone-constructor ->stct)
+               #f)))
+  (define late-neg-proj
+    (λ (->stct)
+      (->-proj chaperone-or-impersonate-procedure ->stct
+               (base->-min-arity ->stct)
+               (base->-doms ->stct)
+               (base->-kwd-infos ->stct)
+               (base->-rest ->stct)
+               (base->-pre? ->stct)
+               (base->-rngs ->stct)
+               (base->-post? ->stct)
+               (base->-plus-one-arity-function ->stct)
+               (base->-chaperone-constructor ->stct)
+               #t)))
   (parameterize ([skip-projection-wrapper? #t])
     (build-X-property
      #:name base->-name 
      #:first-order ->-first-order
      #:projection
      (λ (this)
-       (define cthis (proj this))
+       (define cthis (val-first-proj this))
        (λ (blame)
          (define cblame (cthis blame))
          (λ (val)
@@ -1180,7 +1196,8 @@
             (not (base->-post? that))))
      #:generate ->-generate
      #:exercise ->-exercise
-     #:val-first-projection proj)))
+     #:val-first-projection val-first-proj
+     #:late-neg-projection late-neg-proj)))
 
 (define-struct (-> base->) ()
   #:property
@@ -1207,11 +1224,11 @@
                   (λ () (f))
                   (case-lambda
                     [(rng)
-                     (unless (void? rng)
-                       (raise-blame-error blame #:missing-party neg-party rng
-                                          '(expected: "void?" given: "~e")
-                                          rng))
-                     rng]
+                     (if (void? rng)
+                         rng
+                         (raise-blame-error blame #:missing-party neg-party rng
+                                            '(expected: "void?" given: "~e")
+                                            rng))]
                     [args
                      (wrong-number-of-results-blame blame neg-party f args 1)]))))
              (get-chaperone-constructor))))
