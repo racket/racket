@@ -194,7 +194,35 @@ target for renaming, just like the first argument to
 @racket[make-rename-transformer]. If the property value is an integer,
 the target identifier is extracted from the structure instance; if the
 field value is not an identifier, then an identifier @racketidfont{?}
-with an empty context is used, instead.}
+with an empty context is used, instead.
+
+If the property value is a procedure of one argument, then the procedure
+is called to obtain the identifier that the rename transformer will use
+as a target identifier. If the procedure returns any value that is not
+an identifier, the @racket[exn:fail:contract] exception is raised.
+
+@examples[#:eval stx-eval #:escape UNSYNTAX
+  (code:comment "Example of a procedure argument for prop:rename-transformer")
+  (define-syntax slv-1 'first-transformer-binding)
+  (define-syntax slv-2 'second-transformer-binding)
+  (begin-for-syntax
+    (struct slv-cooperator (redirect-to-first?)
+      #:property prop:rename-transformer
+      (λ (inst)
+        (if (slv-cooperator-redirect-to-first? inst)
+            #'slv-1
+            #'slv-2))))
+  (define-syntax (slv-lookup stx)
+    (syntax-case stx ()
+      [(_ id)
+       #`(quote #,(syntax-local-value #'id))]))
+  (define-syntax slv-inst-1 (slv-cooperator #t))
+  (define-syntax slv-inst-2 (slv-cooperator #f))
+  (slv-lookup slv-inst-1)
+  (slv-lookup slv-inst-2)
+]
+
+@history[#:changed "6.3" "The property now accepts a procedure of one argument."]}
 
 
 @defproc[(local-expand [stx any/c]
