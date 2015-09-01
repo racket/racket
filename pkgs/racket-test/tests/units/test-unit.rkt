@@ -2199,3 +2199,16 @@
                                         [(s x y) (list x y)]))
                                  S))))))
   
+;; Make sure init-dependencies are calculated correctly in the presence of subtyping
+(let ()
+  (define-signature a1^ (a1))
+  (define-signature a2^ extends a1^ (a2))
+  (define-unit u (import a1^) (export) (init-depend a1^) a1)
+  (define v
+    (compound-unit/infer
+     (import [A2 : a2^])
+     (export)
+     (link (() u A2))))
+  (define a1 1)
+  (define a2 2)
+  (test 1 (invoke-unit v (import a2^))))
