@@ -2603,7 +2603,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	/* Needed for srclocs in procedure names */
 	Scheme_Object *idx;
 	int l;
-	
+
+        idx = scheme_hash_get(mt->intern_map, obj);
+        if (!idx)
+          scheme_hash_set(mt->intern_map, obj, obj);
+        else
+          obj = idx;
+        
         idx = get_symtab_idx(mt, obj);
 	if (idx) {
           print_symtab_ref(pp, idx);
