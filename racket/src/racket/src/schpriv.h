@@ -311,6 +311,7 @@ void scheme_init_fun(Scheme_Env *env);
 void scheme_init_unsafe_fun(Scheme_Env *env);
 void scheme_init_compile(Scheme_Env *env);
 void scheme_init_symbol(Scheme_Env *env);
+void scheme_init_char_constants(void);
 void scheme_init_char(Scheme_Env *env);
 void scheme_init_bool(Scheme_Env *env);
 void scheme_init_syntax(Scheme_Env *env);
@@ -525,6 +526,9 @@ THREAD_LOCAL_DECL(extern Scheme_Object *scheme_top_stx);
 extern Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write_special_symbol;
 
 extern Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
+
+extern Scheme_Object *scheme_paren_shape_symbol;
+extern Scheme_Hash_Tree *scheme_source_stx_props;
 
 extern Scheme_Object *scheme_stack_dump_key;
 
@@ -1103,7 +1107,7 @@ typedef struct Scheme_Stx {
   } u;
   Scheme_Object *shifts; /* <all-shifts> or (vector <all-shifts> <shifts-to-propagate> <base-shifts>) */
   Scheme_Object *taints; /* taint or taint-arming */
-  Scheme_Object *props;
+  Scheme_Hash_Tree *props;
 } Scheme_Stx;
 
 typedef struct Scheme_Stx_Offset {
@@ -1117,11 +1121,11 @@ struct Scheme_Unmarshal_Tables;
 
 Scheme_Object *scheme_make_stx(Scheme_Object *val,
 			       Scheme_Stx_Srcloc *srcloc,
-			       Scheme_Object *props);
+			       Scheme_Hash_Tree *props);
 Scheme_Object *scheme_make_stx_w_offset(Scheme_Object *val,
 					intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
 					Scheme_Object *src,
-					Scheme_Object *props);
+					Scheme_Hash_Tree *props);
 
 Scheme_Object *scheme_datum_to_syntax(Scheme_Object *o, Scheme_Object *stx_src,
 				      Scheme_Object *stx_wraps,
@@ -1313,7 +1317,7 @@ Scheme_Object *scheme_resolve_placeholders(Scheme_Object *obj);
 
 Scheme_Object *scheme_source_to_name(Scheme_Object *code);
 
-#define STX_SRCTAG scheme_false
+#define STX_SRCTAG scheme_source_stx_props
 
 Scheme_Object *scheme_stx_taint(Scheme_Object *o);
 Scheme_Object *scheme_stx_taint_arm(Scheme_Object *o, Scheme_Object *insp);

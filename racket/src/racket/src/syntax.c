@@ -52,6 +52,12 @@ READ_ONLY Scheme_Scope_Table *empty_scope_table;
 READ_ONLY Scheme_Scope_Table *empty_propagate_table;
 READ_ONLY Scheme_Scope_Set *empty_scope_set;
 
+ROSYM Scheme_Object *scheme_paren_shape_symbol;
+
+READ_ONLY Scheme_Hash_Tree *scheme_source_stx_props;
+READ_ONLY static Scheme_Hash_Tree *square_stx_props;
+READ_ONLY static Scheme_Hash_Tree *curly_stx_props;
+
 READ_ONLY static Scheme_Stx_Srcloc *empty_srcloc;
 
 typedef struct Scheme_Scope {
@@ -414,6 +420,16 @@ void scheme_init_stx(Scheme_Env *env)
 
   REGISTER_SO(root_scope);
   root_scope = scheme_new_scope(SCHEME_STX_MODULE_SCOPE);
+
+  REGISTER_SO(scheme_paren_shape_symbol);
+  scheme_paren_shape_symbol = scheme_intern_symbol("paren-shape");
+
+  REGISTER_SO(scheme_source_stx_props);
+  REGISTER_SO(square_stx_props);
+  REGISTER_SO(curly_stx_props);
+  scheme_source_stx_props = scheme_hash_tree_set(empty_hash_tree, source_symbol, scheme_true);
+  square_stx_props = scheme_hash_tree_set(empty_hash_tree, scheme_paren_shape_symbol, scheme_make_char('['));
+  curly_stx_props = scheme_hash_tree_set(empty_hash_tree, scheme_paren_shape_symbol, scheme_make_char('{'));
 }
 
 void scheme_init_stx_places(int initial_main_os_thread) {
@@ -429,7 +445,7 @@ void scheme_init_stx_places(int initial_main_os_thread) {
 
 Scheme_Object *scheme_make_stx(Scheme_Object *val, 
 			       Scheme_Stx_Srcloc *srcloc,
-			       Scheme_Object *props)
+			       Scheme_Hash_Tree *props)
 {
   Scheme_Stx *stx;
 
@@ -492,7 +508,7 @@ Scheme_Object *clone_stx(Scheme_Object *to, GC_CAN_IGNORE int *mutate)
 Scheme_Object *scheme_make_stx_w_offset(Scheme_Object *val, 
 					intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
 					Scheme_Object *src,
-					Scheme_Object *props)
+					Scheme_Hash_Tree *props)
 {
   Scheme_Stx_Srcloc *srcloc;
 
@@ -516,145 +532,64 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 {
   Scheme_Stx *nstx = (Scheme_Stx *)naya;
   Scheme_Stx *ostx = (Scheme_Stx *)old;
-  Scheme_Object *ne, *oe, *e1, *e2;
+  Scheme_Hash_Tree *ne, *oe;
+  Scheme_Object *e1, *key, *val;
+  mzlonglong i;
 
-  if (nstx->props) {
-    if (SAME_OBJ(nstx->props, STX_SRCTAG)) {
-      /* Retain 'source tag. */
-      ne = ICONS(ICONS(source_symbol, scheme_true), scheme_null);
-    } else
-      ne = nstx->props;
-  } else
-    ne = scheme_null;
+  if (nstx->props)
+    ne = nstx->props;
+  else
+    ne = empty_hash_tree;
   
   if (ostx->props) {
     if (SAME_OBJ(ostx->props, STX_SRCTAG)) {
-      /* Drop 'source, add 'origin. */
-      oe = NULL;
+      /* Drop 'source; will add 'origin. */
+      oe = empty_hash_tree;
     } else {
-      Scheme_Object *p, *a;
-      int mod = 0, add = 1;
-
       oe = ostx->props;
 
-      /* Drop 'source and 'share, add 'origin if not there */
-      for (p = oe; SCHEME_PAIRP(p); p = SCHEME_CDR(p)) {
-	a = SCHEME_CAR(SCHEME_CAR(p));
-	if (SAME_OBJ(a, source_symbol) || SAME_OBJ(a, share_symbol))
-	  mod = 1;
-	else if (SAME_OBJ(a, origin_symbol))
-	  mod = 1;
-      }
-
-      if (mod) {
-	Scheme_Object *first = scheme_null, *last = NULL;
-
-	for (; SCHEME_PAIRP(oe); oe = SCHEME_CDR(oe)) {
-	  a = SCHEME_CAR(SCHEME_CAR(oe));
-	  if (!SAME_OBJ(a, source_symbol) && !SAME_OBJ(a, share_symbol)) {
-	    if (!origin || !SAME_OBJ(a, origin_symbol)) {
-	      p = ICONS(SCHEME_CAR(oe), scheme_null);
-	    } else {
-	      p = ICONS(ICONS(a, ICONS(origin, 
-				       SCHEME_CDR(SCHEME_CAR(oe)))),
-			scheme_null);
-	      add = 0;
-	    }
-
-	    if (last)
-	      SCHEME_CDR(last) = p;
-	    else
-	      first = p;
-	    last = p;
-	  }
-	}
-
-	oe = first;
-      } 
-      if (add && origin) {
-	oe = ICONS(ICONS(origin_symbol, 
-			 ICONS(origin, scheme_null)),
-		  oe);
-      }
+      /* Drop 'source and 'share; will add 'origin */
+      oe = scheme_hash_tree_set(oe, source_symbol, NULL);
+      oe = scheme_hash_tree_set(oe, share_symbol, NULL);
     }
   } else {
-    /* Add 'origin. */
-    oe = NULL;
+    /* Will add 'origin */
+    oe = empty_hash_tree;
   }
 
-  if (!oe) {
-    if (origin)
-      oe = ICONS(ICONS(origin_symbol, 
-                       ICONS(origin, scheme_null)),
-                 scheme_null);
-    else
-      oe = scheme_null;
-  }
+  e1 = scheme_hash_tree_get(oe, origin_symbol);
+  if (e1 && origin)
+    oe = scheme_hash_tree_set(oe, origin_symbol, ICONS(origin, e1));
+  else if (origin)
+    oe = scheme_hash_tree_set(oe, origin_symbol, ICONS(origin, scheme_null));
+    
+  /* Merge ne and oe */
 
-  /* Merge ne and oe (ne takes precedence). */
-  
-  /* First, check for overlap: */
-  for (e1 = ne; SCHEME_PAIRP(e1); e1 = SCHEME_CDR(e1)) {
-    Scheme_Object *a;
-    a = SCHEME_CAR(SCHEME_CAR(e1));
-    for (e2 = oe; SCHEME_PAIRP(e2); e2 = SCHEME_CDR(e2)) {
-      if (SAME_OBJ(SCHEME_CAR(SCHEME_CAR(e2)), a)) {
-	break;
-      }
-    }
-    if (!SCHEME_NULLP(e1))
-      break;
-  }
-
-  if (SCHEME_NULLP(e1)) {
-    /* Can just append props info (probably the common case). */
-    if (!SCHEME_NULLP(oe))
-      ne = scheme_append(ne, oe);
-  } else {
-    /* Have to perform an actual merge: */
-    Scheme_Object *first = scheme_null, *last = NULL, *p;
-
-    for (e1 = ne; SCHEME_PAIRP(e1); e1 = SCHEME_CDR(e1)) {
-      Scheme_Object *a, *v;
-      a = SCHEME_CAR(SCHEME_CAR(e1));
-      v = SCHEME_CDR(SCHEME_CAR(e1));
-      for (e2 = oe; SCHEME_PAIRP(e2); e2 = SCHEME_CDR(e2)) {
-	if (SAME_OBJ(SCHEME_CAR(SCHEME_CAR(e2)), a)) {
-	  v = ICONS(v, SCHEME_CDR(SCHEME_CAR(e2)));
-	  break;
-	}
-      }
-
-      p = ICONS(ICONS(a, v), scheme_null);
-      if (last)
-	SCHEME_CDR(last) = p;
+  if (SAME_OBJ(ne, empty_hash_tree))
+    ne = oe;
+  else if (ne->count < oe->count) {
+    i = scheme_hash_tree_next(ne, -1);
+    while (i != -1) {
+      scheme_hash_tree_index(ne, i, &key, &val);
+      e1 = scheme_hash_tree_get(oe, key);
+      if (e1)
+        oe = scheme_hash_tree_set(oe, key, ICONS(val, e1));
       else
-	first = p;
-      last = p;
+        oe = scheme_hash_tree_set(oe, key, val);
+      i = scheme_hash_tree_next(ne, i);
     }
-
-    for (e1 = oe; SCHEME_PAIRP(e1); e1 = SCHEME_CDR(e1)) {
-      Scheme_Object *a, *v;
-      a = SCHEME_CAR(SCHEME_CAR(e1));
-      v = SCHEME_CDR(SCHEME_CAR(e1));
-      for (e2 = ne; SCHEME_PAIRP(e2); e2 = SCHEME_CDR(e2)) {
-	if (SAME_OBJ(SCHEME_CAR(SCHEME_CAR(e2)), a)) {
-	  v = NULL;
-	  break;
-	}
-      }
-
-      if (v) {
-	p = ICONS(ICONS(a, v), scheme_null);
-	if (last)
-	  SCHEME_CDR(last) = p;
-	else
-	  first = p;
-	last = p;
-      }
+    ne = oe;
+  } else {
+    i = scheme_hash_tree_next(oe, -1);
+    while (i != -1) {
+      scheme_hash_tree_index(oe, i, &key, &val);
+      e1 = scheme_hash_tree_get(ne, key);
+      if (e1)
+        ne = scheme_hash_tree_set(ne, key, ICONS(e1, val));
+      else
+        ne = scheme_hash_tree_set(ne, key, val);
+      i = scheme_hash_tree_next(oe, i);
     }
-
-    ne = first;
   }
 
   /* Clone nstx, keeping wraps, changing props to ne */
@@ -6138,61 +6073,153 @@ Scheme_Object *scheme_scope_marshal_content(Scheme_Object *m, Scheme_Marshal_Tab
 
       <converted> = <simple converted pair> | ...
 
-      <simple converted pair> = (cons (cons <int> (cons <converted> ... <converted>)) <wrap>)
-                              | (cons (cons <converted> ... null) <wrap>)
-                              | (cons (cons #t <s-exp>) <wrap>)
+      <simple converted pair> = (MK (cons <int> (cons <converted> ... <converted>)) <wrap> <srcloc> <taint/arm>)
+                              | (MK (cons <converted> ... null) <wrap> <srcloc> <taint/arm>)
+                              | (MK (cons #t <s-exp>) <wrap> <srcloc> <taint/arm>)
                                  ; where <s-exp> has no boxes or vectors, and
-                                 ;  <wrap> is shared in all <s-exp> elements
-      <simple converted box> = (cons (box <converted>) <wrap>)
-      <simple converted vector> = (cons (vector <converted> ...) <wrap>)
-      <simple converted other> = (cons <s-exp> <wrap>)
+                                 ;  <wrap>, <srcloc>, and <taint/arm> are shared in all <s-exp> elements
+      <simple converted box> = (MK (box <converted>) <wrap> <srcloc> <taint/arm>)
+      <simple converted vector> = (MK (vector <converted> ...) <wrap> <srcloc> <taint/arm>)
+      <simple converted other> = (MK <s-exp> <wrap> <srcloc> <taint/arm>)
                                  ; where <s-exp> is not a pair, vector, or box
+
+    where
+
+      (MK <content> <wraps> #f 0)               = (cons <content> <wraps>)
+      (MK <content> <wraps> <vector> 0)         = (vector <content> <wraps> <vector>)
+      (MK <content> <wraps> #f <positive-int>)  = (vector <content> <wraps> <positive-int>)
+      (MK <content> <wraps> <vector> <pos-int>) = (vector <content> <wraps> <vector> <pos-int>)
+
 */
 
-static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_scope, int pair_ok)
+#define COMMON_EXTRACT_DATUM  0
+#define COMMON_EXTRACT_WRAPS  1
+#define COMMON_EXTRACT_SRCLOC 2
+#define COMMON_EXTRACT_TAINT  3
+
+static Scheme_Object *extract_for_common_wrap(Scheme_Object *a, int get_part, int pair_ok)
 {
   /* We only share wraps for things constucted with pairs and
      atomic (w.r.t. syntax) values. */
-  Scheme_Object *v;
+  Scheme_Object *v, *wraps, *srcloc, *taint;
 
   if (SCHEME_PAIRP(a)) {
     v = SCHEME_CAR(a);
+    wraps = SCHEME_CDR(a);
+    srcloc = scheme_false;
+    taint = scheme_make_integer(0);
+  } else if (SCHEME_VECTORP(a)) {
+    v = SCHEME_VEC_ELS(a)[0];
+    wraps = SCHEME_VEC_ELS(a)[1];
+    srcloc = SCHEME_VEC_ELS(a)[2];
+    if (SCHEME_INTP(srcloc)) { /* an integer is a taint or arm value */
+      taint = srcloc;
+      srcloc = scheme_false;
+    } else if (SCHEME_VEC_SIZE(a) > 3)
+      taint = SCHEME_VEC_ELS(a)[3];
+    else
+      taint = scheme_make_integer(0);
+  } else
+    return NULL;
 
-    if (SCHEME_PAIRP(v)) {
-      if (pair_ok && SAME_OBJ(SCHEME_CAR(v), scheme_true)) {
-        /* A pair with shared wraps for its elements */
-        if (get_scope)
-          return SCHEME_CDR(a);
-        else
-          return SCHEME_CDR(v);
-      }
-    } else if (!SCHEME_NULLP(v) && !SCHEME_BOXP(v) && !SCHEME_VECTORP(v) && !SCHEME_HASHTRP(v) && !prefab_p(v)) {
-      /* It's atomic. */
-      if (get_scope)
-        return SCHEME_CDR(a);
+  if (SCHEME_PAIRP(v)) {
+    if (pair_ok && SAME_OBJ(SCHEME_CAR(v), scheme_true)) {
+      /* A pair with shared wraps for its elements */
+      if (get_part == COMMON_EXTRACT_WRAPS)
+        return wraps;
+      else if (get_part == COMMON_EXTRACT_SRCLOC)
+        return srcloc;
+      else if (get_part == COMMON_EXTRACT_TAINT)
+        return taint;
       else
-        return v;
+        return SCHEME_CDR(v);
     }
+  } else if (!SCHEME_NULLP(v) && !SCHEME_BOXP(v) && !SCHEME_VECTORP(v) && !SCHEME_HASHTRP(v) && !prefab_p(v)) {
+    /* It's atomic. */
+    if (get_part == COMMON_EXTRACT_WRAPS)
+      return wraps;
+    else if (get_part == COMMON_EXTRACT_SRCLOC)
+      return srcloc;
+    else if (get_part == COMMON_EXTRACT_TAINT)
+      return taint;
+    else
+      return v;
   }
 
   return NULL;
 }
 
-static void lift_common_wraps(Scheme_Object *l, Scheme_Object *common_wraps, int cnt, int tail)
+static void lift_common_wraps(Scheme_Object *l, int cnt, int tail)
 {
   Scheme_Object *a;
 
   while (cnt--) {
     a = SCHEME_CAR(l);
-    a = extract_for_common_wrap(a, 0, 1);
+    a = extract_for_common_wrap(a, COMMON_EXTRACT_DATUM, 1);
     SCHEME_CAR(l) = a;
     if (cnt)
       l = SCHEME_CDR(l);
   }
   if (tail) {
     a = SCHEME_CDR(l);
-    a = extract_for_common_wrap(a, 0, 0);
+    a = extract_for_common_wrap(a, COMMON_EXTRACT_DATUM, 0);
     SCHEME_CDR(l) = a;
+  }
+}
+
+static Scheme_Object *convert_srcloc(Scheme_Stx_Srcloc *srcloc, Scheme_Hash_Tree *props, Scheme_Marshal_Tables *mt)
+{
+  Scheme_Object *vec, *paren;
+
+  if (!srcloc)
+    return scheme_false;
+
+  if (props) {
+    paren = scheme_hash_tree_get(props, scheme_paren_shape_symbol);
+    if (paren && !SCHEME_CHARP(paren))
+      paren = NULL;
+  } else
+    paren = NULL;
+
+  vec = scheme_make_vector((paren ? 6 : 5), NULL);
+  SCHEME_VEC_ELS(vec)[0] = srcloc->src;
+  SCHEME_VEC_ELS(vec)[1] = scheme_make_integer(srcloc->line);
+  SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(srcloc->col);
+  SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(srcloc->pos);
+  SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(srcloc->span);
+  if (paren)
+    SCHEME_VEC_ELS(vec)[5] = paren;
+
+  return intern_one(vec, mt->intern_map);
+}
+
+static void unconvert_srcloc(Scheme_Object *srcloc_vec, Scheme_Stx *dest)
+{
+  Scheme_Stx_Srcloc *srcloc;
+  
+  if (!SCHEME_VECTORP(srcloc_vec)
+      || ((SCHEME_VEC_SIZE(srcloc_vec) != 5)
+          && (SCHEME_VEC_SIZE(srcloc_vec) != 6)))
+    return;
+
+  srcloc = MALLOC_ONE_RT(Scheme_Stx_Srcloc);
+#ifdef MZTAG_REQUIRED
+  srcloc->type = scheme_rt_srcloc;
+#endif
+  srcloc->src = SCHEME_VEC_ELS(srcloc_vec)[0];
+  srcloc->line = SCHEME_INT_VAL(SCHEME_VEC_ELS(srcloc_vec)[1]);
+  srcloc->col = SCHEME_INT_VAL(SCHEME_VEC_ELS(srcloc_vec)[2]);
+  srcloc->pos = SCHEME_INT_VAL(SCHEME_VEC_ELS(srcloc_vec)[3]);
+  srcloc->span = SCHEME_INT_VAL(SCHEME_VEC_ELS(srcloc_vec)[4]);
+  
+  dest->srcloc = srcloc;
+
+  if ((SCHEME_VEC_SIZE(srcloc_vec) > 5)
+      && SCHEME_CHARP((SCHEME_VEC_ELS(srcloc_vec)[5]))) {
+    if (SCHEME_CHAR_VAL(SCHEME_VEC_ELS(srcloc_vec)[5]) == '[')
+      dest->props = square_stx_props;
+    else if (SCHEME_CHAR_VAL(SCHEME_VEC_ELS(srcloc_vec)[5]) == '{')
+      dest->props = curly_stx_props;
   }
 }
 
@@ -6215,7 +6242,7 @@ static Scheme_Object *syntax_to_datum_k(void)
 #endif
 
 static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
-					    int with_scopes, /* abs > 1 => marshal; negative => implicitly tainted */
+					    int with_scopes, /* non-zero => marshal; negative => implicitly tainted */
 					    Scheme_Marshal_Tables *mt)
 {
   Scheme_Stx *stx = (Scheme_Stx *)o;
@@ -6252,12 +6279,12 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   v = stx->val;
   
   if (SCHEME_PAIRP(v)) {
-    Scheme_Object *first = NULL, *last = NULL, *p, *common_wraps = NULL;
+    Scheme_Object *first = NULL, *last = NULL, *p;
+    Scheme_Object *common_wraps = NULL, *common_srcloc = NULL, *common_taint = NULL;
+    Scheme_Object *a, *sa, *ta;
     int cnt = 0;
     
     while (SCHEME_PAIRP(v)) {
-      Scheme_Object *a;
-
       cnt++;
 
       a = syntax_to_datum_inner(SCHEME_CAR(v), with_scopes, mt);
@@ -6272,13 +6299,20 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       v = SCHEME_CDR(v);
 
       if (with_scopes) {
-        a = extract_for_common_wrap(a, 1, 1);
+        sa = extract_for_common_wrap(a, COMMON_EXTRACT_SRCLOC, 1);
+        ta = extract_for_common_wrap(a, COMMON_EXTRACT_TAINT, 1);
+        a = extract_for_common_wrap(a, COMMON_EXTRACT_WRAPS, 1);
         if (!common_wraps) {
-          if (a)
+          if (a) {
             common_wraps = a;
-          else
+            common_srcloc = sa;
+            common_taint = ta;
+          } else
             common_wraps = scheme_false;
-        } else if (!a || !SAME_OBJ(common_wraps, a))
+        } else if (!a
+                   || !SAME_OBJ(common_wraps, a)
+                   || !SAME_OBJ(common_srcloc, sa)
+                   || !SAME_OBJ(common_taint, ta))
           common_wraps = scheme_false;
       }
     }
@@ -6287,18 +6321,26 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       SCHEME_CDR(last) = v;
 
       if (with_scopes) {
-        v = extract_for_common_wrap(v, 1, 0);
-        if (v && SAME_OBJ(common_wraps, v)) {
+        sa = extract_for_common_wrap(v, COMMON_EXTRACT_SRCLOC, 0);
+        ta = extract_for_common_wrap(v, COMMON_EXTRACT_TAINT, 0);
+        v = extract_for_common_wrap(v, COMMON_EXTRACT_WRAPS, 0);
+        if (v
+            && SAME_OBJ(common_wraps, v)
+            && SAME_OBJ(common_srcloc, sa)
+            && SAME_OBJ(common_taint, ta)) {
           converted_wraps = wraps_to_datum(stx, mt);
-          if (SAME_OBJ(common_wraps, converted_wraps))
-            lift_common_wraps(first, common_wraps, cnt, 1);
+          sa = convert_srcloc(stx->srcloc, stx->props, mt);
+          if (SAME_OBJ(common_wraps, converted_wraps)
+              && SAME_OBJ(common_srcloc, sa)
+              && SAME_OBJ(common_taint, scheme_make_integer(add_taint)))
+            lift_common_wraps(first, cnt, 1);
           else
             common_wraps = scheme_false;
         } else
           common_wraps = scheme_false;
       }
 
-      if (((with_scopes > 1) || (with_scopes < -1)) && SCHEME_FALSEP(common_wraps)) {
+      if (with_scopes && SCHEME_FALSEP(common_wraps)) {
 	/* v is likely a pair, and v's car might be a pair,
 	   which means that the datum->syntax part
 	   won't be able to detect that v is a "non-pair"
@@ -6308,8 +6350,11 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
       }
     } else if (with_scopes && SCHEME_TRUEP(common_wraps)) {
       converted_wraps = wraps_to_datum(stx, mt);
-      if (SAME_OBJ(common_wraps, converted_wraps))
-        lift_common_wraps(first, common_wraps, cnt, 0);
+      sa = convert_srcloc(stx->srcloc, stx->props, mt);
+      if (SAME_OBJ(common_wraps, converted_wraps)
+          && SAME_OBJ(common_srcloc, sa)
+          && SAME_OBJ(common_taint, scheme_make_integer(add_taint)))
+        lift_common_wraps(first, cnt, 0);
       else
         common_wraps = scheme_false;
     }
@@ -6367,16 +6412,22 @@ static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o,
   } else
     result = v;
 
-  if ((with_scopes > 1) || (with_scopes < -1)) {
+  if (with_scopes) {
     if (!converted_wraps)
       converted_wraps = wraps_to_datum(stx, mt);
-    result = CONS(result, converted_wraps);
-    if (add_taint == 1)
-      result = scheme_make_vector(1, result); /* vector of size 1 => tainted */
-    else if (add_taint == 2) {
-      result = scheme_make_vector(2, result); /* vector of size 2 => armed */
-      SCHEME_VEC_ELS(result)[1] = scheme_false;
-    }
+    v = convert_srcloc(stx->srcloc, stx->props, mt);
+    if (SCHEME_TRUEP(v)) {
+      result = scheme_make_vector((add_taint ? 4 : 3), result);
+      SCHEME_VEC_ELS(result)[1] = converted_wraps;
+      SCHEME_VEC_ELS(result)[2] = v;
+      if (add_taint)
+        SCHEME_VEC_ELS(result)[3] = scheme_make_integer(add_taint); /* 1 => tainted, 2 => armed */
+    } else if (add_taint) {
+      result = scheme_make_vector(3, result);
+      SCHEME_VEC_ELS(result)[1] = converted_wraps;
+      SCHEME_VEC_ELS(result)[2] = scheme_make_integer(add_taint); /* 1 => tainted, 2 => armed */
+    } else
+      result = CONS(result, converted_wraps);
   }
 
   return result;
@@ -6543,7 +6594,6 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
 
   return multi_scopes;
 }
-
 
 static Scheme_Object *datum_to_wraps(Scheme_Object *w,
                                      Scheme_Unmarshal_Tables *ut)
@@ -6819,12 +6869,12 @@ static Scheme_Object *datum_to_syntax_k(void)
 static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o, 
                                             Scheme_Unmarshal_Tables *ut,
 					    Scheme_Stx *stx_src,
-					    Scheme_Stx *stx_wraps, /* or rename table, or boxed precomputed wrap */
+					    Scheme_Stx *stx_wraps, /* or rename table, or vectored wrap+srcloc+taint */
 					    Scheme_Hash_Table *ht,
                                             int tainted)
 {
-  Scheme_Object *result, *wraps, *hashed;
-  int do_not_unpack_wraps = 0, armed = 0;
+  Scheme_Object *result, *wraps, *hashed, *srcloc_vec;
+  int do_not_unpack_wraps = 0, taintval = 0;
 
   if (SCHEME_STXP(o))
     return o;
@@ -6861,29 +6911,41 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
   } else
     hashed = NULL;
 
-  if (ut && !SCHEME_BOXP(stx_wraps)) {
+  srcloc_vec = scheme_false;
+  
+  if (ut && !SCHEME_VECTORP(stx_wraps)) {
     if (SCHEME_VECTORP(o)) {
-      if (SCHEME_VEC_SIZE(o) == 1) {
-        /* tainted --- forced on all enclosed syntax objects, too */
-	o = SCHEME_VEC_ELS(o)[0];
-        tainted = 1;
-      } else if (SCHEME_VEC_SIZE(o) == 2) {
-        /* armed */
-        o = SCHEME_VEC_ELS(o)[0];
-        armed = 1;
+      if (SCHEME_VEC_SIZE(o) == 4) {
+        srcloc_vec = SCHEME_VEC_ELS(o)[2];
+        taintval = SCHEME_INT_VAL(SCHEME_VEC_ELS(o)[3]);
+      } else if (SCHEME_VEC_SIZE(o) == 3) {
+        if (SCHEME_INTP(SCHEME_VEC_ELS(o)[2]))
+          taintval = SCHEME_INT_VAL(SCHEME_VEC_ELS(o)[2]);
+        else {
+          srcloc_vec = SCHEME_VEC_ELS(o)[2];
+          taintval = 0;
+        }
       } else
-	return_NULL;
+        return_NULL;
+      wraps = SCHEME_VEC_ELS(o)[1];
+      o = SCHEME_VEC_ELS(o)[0];
+    } else {
+      if (!SCHEME_PAIRP(o)) 
+        return_NULL;
+      wraps = SCHEME_CDR(o);
+      o = SCHEME_CAR(o);
     }
-    if (!SCHEME_PAIRP(o)) 
-      return_NULL;
-    wraps = SCHEME_CDR(o);
-    o = SCHEME_CAR(o);
-  } else if (SCHEME_BOXP(stx_wraps)) {
+  } else if (SCHEME_VECTORP(stx_wraps)) {
     /* Shared wraps, to be used directly everywhere: */
-    wraps = SCHEME_BOX_VAL(stx_wraps);
+    wraps = SCHEME_VEC_ELS(stx_wraps)[0];
+    srcloc_vec = SCHEME_VEC_ELS(stx_wraps)[1];
+    taintval = SCHEME_INT_VAL(SCHEME_VEC_ELS(stx_wraps)[2]);
     do_not_unpack_wraps = 1;
   } else
     wraps = NULL;
+
+  if (taintval == 1)
+    tainted = 1;
 
   if (SCHEME_PAIRP(o)) {
     Scheme_Object *first = NULL, *last = NULL, *p;
@@ -6902,16 +6964,18 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       int cnt = -1;
       Scheme_Stx *sub_stx_wraps = stx_wraps;
 
-      if (wraps && !SCHEME_BOXP(stx_wraps) && SAME_OBJ(SCHEME_CAR(o), scheme_true)) {
+      if (wraps && !SCHEME_VECTORP(stx_wraps) && SAME_OBJ(SCHEME_CAR(o), scheme_true)) {
         /* Resolve wraps now, and then share it with
            all nested objects (as indicated by a box
            for stx_wraps). */
         wraps = datum_to_wraps(wraps, ut);
         if (!wraps) return_NULL;
         do_not_unpack_wraps = 1;
-        sub_stx_wraps = (Scheme_Stx *)scheme_box(wraps);
+        sub_stx_wraps = (Scheme_Stx *)scheme_make_vector(3, wraps);
+        SCHEME_VEC_ELS((Scheme_Object *)sub_stx_wraps)[1] = srcloc_vec;
+        SCHEME_VEC_ELS((Scheme_Object *)sub_stx_wraps)[2] = scheme_make_integer(taintval);
         o = SCHEME_CDR(o);
-      } else if (wraps && !SCHEME_BOXP(stx_wraps) && SCHEME_INTP(SCHEME_CAR(o))) {
+      } else if (wraps && !SCHEME_VECTORP(stx_wraps) && SCHEME_INTP(SCHEME_CAR(o))) {
 	/* First element is the number of items
 	   before a non-null terminal: */
 	cnt = SCHEME_INT_VAL(SCHEME_CAR(o));
@@ -7037,8 +7101,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
   if (tainted) {
     int mutate = MUTATE_STX_OBJ;
     (void)add_taint_to_stx(result, &mutate);
-  }
-  else if (armed) {
+  } else if (taintval == 2) {
     /* Arm with #f as the inspector; #f is replaced by a
        specific inspector when the encloding code is instanted */
     Scheme_Object *l; 
@@ -7046,6 +7109,9 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
     l = taint_intern(scheme_make_pair(scheme_false, l));
     ((Scheme_Stx *)result)->taints = l;
   }
+
+  if (SCHEME_TRUEP(srcloc_vec))
+    unconvert_srcloc(srcloc_vec, (Scheme_Stx *)result);
 
   if (wraps) {
     if (!do_not_unpack_wraps) {
@@ -7207,7 +7273,8 @@ static int pos_exact_or_false_p(Scheme_Object *o)
 
 static Scheme_Object *datum_to_syntax(int argc, Scheme_Object **argv)
 {
-  Scheme_Object *src = scheme_false, *properties = NULL;
+  Scheme_Object *src = scheme_false;
+  Scheme_Hash_Tree *properties = NULL;
   
   if (!SCHEME_FALSEP(argv[0]) && !SCHEME_STXP(argv[0]))
     scheme_wrong_contract("datum->syntax", "(or/c syntax? #f)", 0, argc, argv);
@@ -7438,20 +7505,8 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
   stx = (Scheme_Stx *)argv[0];
 
   if (stx->props) {
-    if (SAME_OBJ(stx->props, STX_SRCTAG)) {
-      /* Check for scopes... */
-    } else {
-      Scheme_Object *e;
-
-      for (e = stx->props; SCHEME_PAIRP(e); e = SCHEME_CDR(e)) {
-	if (SAME_OBJ(source_symbol, SCHEME_CAR(SCHEME_CAR(e)))) {
-	  break;
-	}
-      }
-
-      if (SCHEME_NULLP(e))
-	return scheme_false;
-    }
+    if (!scheme_hash_tree_get(stx->props, source_symbol))
+      return scheme_false;
   } else
     return scheme_false;
 
@@ -7474,67 +7529,26 @@ Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 				   Scheme_Object *val)
 {
   Scheme_Stx *stx;
-  Scheme_Object *l;
+  Scheme_Hash_Tree *props;
 
   stx = (Scheme_Stx *)_stx;
 
-  if (stx->props) {
-    if (SAME_OBJ(stx->props, STX_SRCTAG)) {
-      if (val)
-	l = CONS(CONS(source_symbol, scheme_true),
-		 scheme_null);
-      else
-	l = NULL;
-    } else {
-      Scheme_Object *e;
-
-      for (e = stx->props; SCHEME_PAIRP(e); e = SCHEME_CDR(e)) {
-	if (SAME_OBJ(key, SCHEME_CAR(SCHEME_CAR(e)))) {
-	  if (val)
-	    break;
-	  else
-	    return SCHEME_CDR(SCHEME_CAR(e));
-	}
-      }
-
-      if (SCHEME_NULLP(e))
-	l = stx->props;
-      else {
-	/* Remove existing binding: */
-	Scheme_Object *first = scheme_null, *last = NULL, *p;
-
-	for (e = stx->props; SCHEME_PAIRP(e); e = SCHEME_CDR(e)) {
-	  if (SAME_OBJ(key, SCHEME_CAR(SCHEME_CAR(e)))) {
-	    p = SCHEME_CDR(e);
-	    e = NULL;
-	  } else {
-	    p = CONS(SCHEME_CAR(e), scheme_null);
-	  }
-
-	  if (last)
-	    SCHEME_CDR(last) = p;
-	  else
-	    first = p;
-	  last = p;
-
-	  if (!e)
-	    break;
-	}
-	
-	l = first;
-      }
-    }
-  } else
-    l = scheme_null;
+  props = stx->props;
+  if (!props)
+    props = empty_hash_tree;
 
   if (val) {
-    l = CONS(CONS(key, val), l);
+    props = scheme_hash_tree_set(props, key, val);
     stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, NULL);
-    stx->props = l;
-
+    stx->props = props;
     return (Scheme_Object *)stx;
-  } else
-    return scheme_false;
+  } else {
+    val = scheme_hash_tree_get(props, key);
+    if (!val)
+      return scheme_false;
+    else
+      return val;
+  }
 }
 
 static Scheme_Object *syntax_property(int argc, Scheme_Object **argv)
@@ -7557,16 +7571,18 @@ static Scheme_Object *syntax_property_keys(int argc, Scheme_Object **argv)
   stx = (Scheme_Stx *)argv[0];
 
   if (stx->props) {
-    if (!SAME_OBJ(stx->props, STX_SRCTAG)) {
-      Scheme_Object *e, *k, *l = scheme_null;
-
-      for (e = stx->props; SCHEME_PAIRP(e); e = SCHEME_CDR(e)) {
-	k = SCHEME_CAR(SCHEME_CAR(e));
-	if (SCHEME_SYMBOLP(k) && !SCHEME_SYM_WEIRDP(k))
-	  l = scheme_make_pair(k, l);
-      }
-      return l;
+    mzlonglong i;
+    Scheme_Object *key, *l = scheme_null;
+    
+    i = scheme_hash_tree_next(stx->props, -1);
+    while (i != -1) {
+      scheme_hash_tree_index(stx->props, i, &key, NULL);
+      if (SCHEME_SYMBOLP(key) && !SCHEME_SYM_WEIRDP(key))
+        l = scheme_make_pair(key, l);
+      i = scheme_hash_tree_next(stx->props, i);
     }
+
+    return l;
   }
    
   return scheme_null;

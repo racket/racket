@@ -707,6 +707,7 @@ static void make_kernel_env(void)
   MZTIMEIT(numcomp, scheme_init_numcomp(env));
   MZTIMEIT(numstr, scheme_init_numstr(env));
   MZTIMEIT(bignum, scheme_init_bignum());
+  MZTIMEIT(char-const, scheme_init_char_constants());
   MZTIMEIT(stx, scheme_init_stx(env));
   MZTIMEIT(module, scheme_init_module(env));
   MZTIMEIT(port, scheme_init_port(env));

@@ -82,7 +82,6 @@ ROSYM static Scheme_Object *syntax_symbol;
 ROSYM static Scheme_Object *unsyntax_symbol;
 ROSYM static Scheme_Object *unsyntax_splicing_symbol;
 ROSYM static Scheme_Object *quasisyntax_symbol;
-ROSYM static Scheme_Object *paren_shape_symbol;
 ROSYM static Scheme_Object *terminating_macro_symbol;
 ROSYM static Scheme_Object *non_terminating_macro_symbol;
 ROSYM static Scheme_Object *dispatch_macro_symbol;
@@ -416,7 +415,6 @@ void scheme_init_read(Scheme_Env *env)
   REGISTER_SO(unsyntax_symbol);
   REGISTER_SO(unsyntax_splicing_symbol);
   REGISTER_SO(quasisyntax_symbol);
-  REGISTER_SO(paren_shape_symbol);
 
   REGISTER_SO(unresolved_uninterned_symbol);
   REGISTER_SO(tainted_uninterned_symbol);
@@ -433,7 +431,6 @@ void scheme_init_read(Scheme_Env *env)
   unsyntax_symbol               = scheme_intern_symbol("unsyntax");
   unsyntax_splicing_symbol      = scheme_intern_symbol("unsyntax-splicing");
   quasisyntax_symbol            = scheme_intern_symbol("quasisyntax");
-  paren_shape_symbol            = scheme_intern_symbol("paren-shape");
 
   unresolved_uninterned_symbol = scheme_make_symbol("unresolved");
   tainted_uninterned_symbol    = scheme_make_symbol("tainted");
@@ -2969,7 +2966,7 @@ static Scheme_Object *attach_shape_property(Scheme_Object *list,
     opener = ((closer == '}') 
 	      ? scheme_make_ascii_character('{')
 	      : scheme_make_ascii_character('['));
-    return scheme_stx_property(list, paren_shape_symbol, opener);
+    return scheme_stx_property(list, scheme_paren_shape_symbol, opener);
   }
   return list;
 }
