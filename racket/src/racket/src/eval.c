@@ -226,10 +226,10 @@ ROSYM static Scheme_Object *quote_symbol;
 ROSYM static Scheme_Object *letrec_syntaxes_symbol;
 ROSYM static Scheme_Object *begin_symbol;
 ROSYM static Scheme_Object *let_values_symbol;
-ROSYM static Scheme_Object *internal_define_symbol;
 ROSYM static Scheme_Object *module_symbol;
 ROSYM static Scheme_Object *module_begin_symbol;
 ROSYM static Scheme_Object *expression_symbol;
+ROSYM static Scheme_Object *definition_context_symbol;
 ROSYM Scheme_Object *scheme_stack_dump_key;
 READ_ONLY static Scheme_Object *zero_rands_ptr; /* &zero_rands_ptr is dummy rands pointer */
 
@@ -332,15 +332,15 @@ scheme_init_eval (Scheme_Env *env)
   
   REGISTER_SO(module_symbol);
   REGISTER_SO(module_begin_symbol);
-  REGISTER_SO(internal_define_symbol);
   REGISTER_SO(expression_symbol);
   REGISTER_SO(top_level_symbol);
+  REGISTER_SO(definition_context_symbol);
 
   module_symbol           = scheme_intern_symbol("module");
   module_begin_symbol     = scheme_intern_symbol("module-begin");
-  internal_define_symbol  = scheme_intern_symbol("internal-define");
   expression_symbol       = scheme_intern_symbol("expression");
   top_level_symbol        = scheme_intern_symbol("top-level");
+  definition_context_symbol = scheme_intern_symbol("definition-context");
 
   REGISTER_SO(app_symbol);
   REGISTER_SO(datum_symbol);
@@ -4953,6 +4953,29 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_SCOPES_FRAME),
 		  -1, -1, 0, scheme_false, 0, 0);
+}
+
+int scheme_is_expansion_context_symbol(Scheme_Object *v)
+{
+  return (SAME_OBJ(v, module_symbol)
+          || SAME_OBJ(v, module_begin_symbol)
+          || SAME_OBJ(v, expression_symbol)
+          || SAME_OBJ(v, top_level_symbol)
+          || SAME_OBJ(v, definition_context_symbol));
+}
+
+Scheme_Object *scheme_frame_to_expansion_context_symbol(int flags)
+{
+  if (flags & SCHEME_TOPLEVEL_FRAME)
+    return top_level_symbol;
+  else if (flags & SCHEME_MODULE_FRAME)
+    return module_symbol;
+  else if (flags & SCHEME_MODULE_BEGIN_FRAME)
+    return module_begin_symbol;
+  else if (flags & SCHEME_INTDEF_FRAME)
+    return definition_context_symbol;
+  else
+    return expression_symbol;
 }
 
 Scheme_Object *scheme_generate_lifts_key(void)

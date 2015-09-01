@@ -58,6 +58,7 @@ READ_ONLY static Scheme_Object *proc_property;
 READ_ONLY static Scheme_Object *method_property;
 READ_ONLY static Scheme_Object *rename_transformer_property;
 READ_ONLY static Scheme_Object *set_transformer_property;
+READ_ONLY static Scheme_Object *expansion_contexts_property;
 READ_ONLY static Scheme_Object *not_free_id_symbol;
 READ_ONLY static Scheme_Object *scheme_checked_proc_property;
 READ_ONLY static Scheme_Object *struct_info_proc;
@@ -117,6 +118,7 @@ static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Objec
 static Scheme_Object *check_cpointer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_expansion_contexts_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self);
@@ -487,6 +489,18 @@ scheme_init_struct (Scheme_Env *env)
                                                                         guard);
     
     scheme_add_global_constant("prop:set!-transformer", set_transformer_property, env);
+  }
+
+  {
+    REGISTER_SO(expansion_contexts_property);
+
+    guard = scheme_make_prim_w_arity(check_expansion_contexts_property_value_ok,
+				     "guard-for-prop:expansion-contexts",
+				     2, 2);
+    expansion_contexts_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("expansion-contexts"),
+                                                                           guard);
+    
+    scheme_add_global_constant("prop:expansion-contexts", expansion_contexts_property, env);
   }
 
 
@@ -1949,6 +1963,51 @@ static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_O
                                           is_proc_1_or_2, 0,
                                           "(or/c  (any/c . -> . any) (any/c any/c . -> . any) exact-nonnegative-integer?)",
                                           argc, argv);
+}
+
+/*========================================================================*/
+/*                        expansion-contexts property                     */
+/*========================================================================*/
+
+static Scheme_Object *check_expansion_contexts_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+  
+  v = argv[0];
+
+  while (SCHEME_PAIRP(v)) {
+    if (!scheme_is_expansion_context_symbol(SCHEME_CAR(v)))
+      break;
+    v = SCHEME_CDR(v);
+  }
+
+  if (SCHEME_NULLP(v))
+    return argv[0];
+
+  wrong_property_contract("guard-for-prop:expression-contexts",
+                          "(lisrof (or/c 'expression 'top-level 'module 'module-begin 'definition-context)",
+                          v);
+
+  return NULL;
+}
+
+int scheme_expansion_contexts_include(Scheme_Object *o, Scheme_Object *ctx)
+{
+  Scheme_Object *v;
+
+  if (SCHEME_CHAPERONE_STRUCTP(o)) {
+    v = scheme_chaperone_struct_type_property_ref(expansion_contexts_property, o);
+    if (v) {
+      while (!SCHEME_NULLP(v)) {
+        if (SAME_OBJ(SCHEME_CAR(v), ctx))
+          return 1;
+        v = SCHEME_CDR(v);
+      }
+      return 0;
+    }
+  }
+  
+  return 1;
 }
 
 /*========================================================================*/

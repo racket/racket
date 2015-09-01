@@ -460,6 +460,48 @@ provided for backward compatibility; the more general
 @history[#:changed "6.3" @elem{Simplified the operation to @tech{scope} removal.}]}
 
 
+@defthing[prop:expansion-contexts struct-type-property?]{
+
+A @tech{structure type property} to constrain the use of macro
+@tech{transformers} and @tech{rename transformers}. The property's
+value must be a list of symbols, where the allowed symbols are
+@racket['expression], @racket['top-level], @racket['module],
+@racket['module-begin], and @racket['definition-context]. Each symbol
+corresponds to an expansion context in the same way as for
+@racket[local-expand] or as reported by @racket[syntax-local-context],
+except that @racket['definition-context] is used (instead of a list)
+to represent an @tech{internal-definition context}.
+
+If an identifier is bound to a transformer whose list does not include
+a symbol for a particular use of the identifier, then the use is
+adjusted as follows:
+@;
+@itemlist[
+
+ @item{In a @racket['module-begin] context, then the use is wrapped in
+       a @racket[begin] form.}
+
+ @item{In a @racket['module], @racket['top-level],
+       @racket['internal-definition] or context, if
+       @racket['expression] is present in the list, then the use is
+       wrapped in an @racket[#%expression] form.}
+
+ @item{Otherwise, a syntax error is reported.}
+
+]
+
+The @racket[prop:expansion-contexts] property is most useful in
+combination with @racket[prop:rename-transformer], since a general
+@tech{transformer} procedure can use @racket[syntax-local-context].
+Furthermore, a @racket[prop:expansion-contexts] property makes the
+most sense when a @tech{rename transformer}'s identifier has the
+@racket['not-free-identifier=?] property, otherwise a definition of
+the binding creates a binding alias that effectively routes around the
+@racket[prop:expansion-contexts] property.
+
+@history[#:added "6.2.900.12"]}
+
+
 @defproc[(syntax-local-value [id-stx syntax?]
                              [failure-thunk (or/c (-> any) #f)
                                             #f]

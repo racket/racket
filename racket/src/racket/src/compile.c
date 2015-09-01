@@ -56,6 +56,7 @@ ROSYM static Scheme_Object *begin_symbol;
 ROSYM static Scheme_Object *disappeared_binding_symbol;
 ROSYM static Scheme_Object *compiler_inline_hint_symbol;
 ROSYM static Scheme_Object *app_symbol;
+ROSYM static Scheme_Object *expression_symbol;
 ROSYM static Scheme_Object *datum_symbol;
 ROSYM static Scheme_Object *top_symbol;
 ROSYM static Scheme_Object *protected_symbol;
@@ -301,6 +302,7 @@ void scheme_init_compile (Scheme_Env *env)
 			    env);
   
   REGISTER_SO(app_symbol);
+  REGISTER_SO(expression_symbol);
   REGISTER_SO(datum_symbol);
   REGISTER_SO(top_symbol);
   REGISTER_SO(protected_symbol);
@@ -310,6 +312,7 @@ void scheme_init_compile (Scheme_Env *env)
   REGISTER_SO(call_with_values_symbol);
 
   app_symbol    = scheme_intern_symbol("#%app");
+  expression_symbol = scheme_intern_symbol("#%expression");
   datum_symbol  = scheme_intern_symbol("#%datum");
   top_symbol    = scheme_intern_symbol("#%top");
   protected_symbol = scheme_intern_symbol("protected");
@@ -4403,13 +4406,58 @@ Scheme_Object *compile_list(Scheme_Object *form, Scheme_Comp_Env *env,
   return inner_compile_list(form, env, rec, drec, 0);
 }
 
+static Scheme_Object *adjust_for_other_context(Scheme_Object *form, Scheme_Object *var, Scheme_Comp_Env *env)
+{
+  /* Macro doesn't expand in this context. In a module-begin context,
+     just don't expand. If it's not an expression
+     context and expression context is ok, then wrap as an
+     expression. Otherwise, we just have to complain. */
+  if (env->flags & SCHEME_MODULE_BEGIN_FRAME) {
+    /* wrap in `begin` to trigger `#%module-begin` wrapper */
+    var = scheme_datum_to_syntax(begin_symbol, scheme_false, scheme_sys_wraps(env), 0, 0);
+    var = scheme_make_pair(var, scheme_make_pair(form, scheme_null));
+    form = scheme_datum_to_syntax(var, form, scheme_false, 0, 0);
+  } else if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(var),
+                                               scheme_frame_to_expansion_context_symbol(0))) {
+    /* expression is ok, so we must not be in an expression context */
+    var = scheme_datum_to_syntax(expression_symbol, scheme_false, scheme_sys_wraps(env), 0, 0);
+    var = scheme_make_pair(var, scheme_make_pair(form, scheme_null));
+    form = scheme_datum_to_syntax(var, form, scheme_false, 0, 0);
+  } else {
+    Scheme_Object *csym;
+    csym = scheme_frame_to_expansion_context_symbol(env->flags);
+    scheme_wrong_syntax(NULL, NULL, form,
+                        "not allowed in context\n  expansion context: %S",
+                        csym);
+    return NULL;
+  }
+
+  return form;
+}
+
+static Scheme_Object *install_alt_from_rename(Scheme_Object *first, Scheme_Object *alt_first)
+{
+  if (alt_first) {
+    if (SCHEME_STX_PAIRP(first)) {
+      Scheme_Object *tail;
+      tail = scheme_stx_taint_disarm(first, NULL);
+      tail = SCHEME_STX_CDR(tail);
+      alt_first = scheme_datum_to_syntax(scheme_make_pair(alt_first, tail),
+                                         first, first, 0, 1);
+      return scheme_stx_track(alt_first, first, first);
+    } else
+      return alt_first;
+  } else
+    return first;
+}
+
 Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first, 
 					    Scheme_Comp_Env *env, 
 					    Scheme_Compile_Expand_Info *rec, int drec,
 					    Scheme_Object **current_val,
                                             int keep_name)
 {
-  Scheme_Object *name, *val;
+  Scheme_Object *name, *val, *alt_first = NULL;
   Scheme_Expand_Info erec1;
   Scheme_Env *menv = NULL;
 
@@ -4453,23 +4501,38 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
         *current_val = val;
 
       if (!val) {
+        first = install_alt_from_rename(first, alt_first);
         SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
         return first;
       } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
-        if (scheme_is_rename_transformer(SCHEME_PTR_VAL(val))) {
-          /* It's a rename. Look up the target name and try again. */
-          name = scheme_transfer_srcloc(scheme_rename_transformer_id(SCHEME_PTR_VAL(val)),
-                                        name);
-          menv = NULL;
-          SCHEME_USE_FUEL(1);
+        if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(val),
+                                              scheme_frame_to_expansion_context_symbol(env->flags))) {
+          if (scheme_is_rename_transformer(SCHEME_PTR_VAL(val))) {
+            /* It's a rename. Look up the target name and try again. */
+            Scheme_Object *new_name;
+            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(val));
+            if (!rec[drec].comp)
+              new_name = scheme_stx_track(new_name, name, name);
+            name = scheme_transfer_srcloc(new_name, name);
+            alt_first = name;
+            menv = NULL;
+            SCHEME_USE_FUEL(1);
+          } else {
+            alt_first = NULL;
+            scheme_init_expand_recs(rec, drec, &erec1, 1);
+            erec1.depth = 1;
+            erec1.value_name = (keep_name ? rec[drec].value_name : scheme_false);
+            first = scheme_expand_expr(first, env, &erec1, 0);
+            break; /* break to outer loop */
+          }
         } else {
-          scheme_init_expand_recs(rec, drec, &erec1, 1);
-          erec1.depth = 1;
-          erec1.value_name = (keep_name ? rec[drec].value_name : scheme_false);
-          first = scheme_expand_expr(first, env, &erec1, 0);
+          first = install_alt_from_rename(first, alt_first);
+          alt_first = NULL;
+          first = adjust_for_other_context(first, val, env);
           break; /* break to outer loop */
         }
       } else {
+        first = install_alt_from_rename(first, alt_first);
         SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
         return first;
       }
@@ -4648,16 +4711,20 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
 	    && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
-	  /* It's a rename. Look up the target name and try again. */
-	  Scheme_Object *new_name;
-	  new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
-	  if (!rec[drec].comp) {
-	    new_name = scheme_stx_track(new_name, find_name, find_name);
-	  }
-	  find_name = scheme_transfer_srcloc(new_name, find_name);
-	  SCHEME_USE_FUEL(1);
-	  menv = NULL;
-	  protected = 0;
+          if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(var),
+                                                scheme_frame_to_expansion_context_symbol(env->flags))) {
+            /* It's a rename. Look up the target name and try again. */
+            Scheme_Object *new_name;
+            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
+            if (!rec[drec].comp) {
+              new_name = scheme_stx_track(new_name, find_name, find_name);
+            }
+            find_name = scheme_transfer_srcloc(new_name, find_name);
+            SCHEME_USE_FUEL(1);
+            menv = NULL;
+            protected = 0;
+          } else
+            break;
 	} else
 	  break;
       }
@@ -4771,15 +4838,19 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
         SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
 	    && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
-	  /* It's a rename. Look up the target name and try again. */
-	  Scheme_Object *new_name;
-	  new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
-	  if (!rec[drec].comp) {
-	    new_name = scheme_stx_track(new_name, find_name, find_name);
-	  }
-          find_name = scheme_transfer_srcloc(new_name, find_name);
-	  SCHEME_USE_FUEL(1);
-	  menv = NULL;
+          if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(var),
+                                                scheme_frame_to_expansion_context_symbol(env->flags))) {
+            /* It's a rename. Look up the target name and try again. */
+            Scheme_Object *new_name;
+            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
+            if (!rec[drec].comp) {
+              new_name = scheme_stx_track(new_name, find_name, find_name);
+            }
+            find_name = scheme_transfer_srcloc(new_name, find_name);
+            SCHEME_USE_FUEL(1);
+            menv = NULL;
+          } else
+            break;
 	} else
 	  break;
       }
@@ -4866,14 +4937,18 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
 	  && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
 	/* It's a rename. Look up the target name and try again. */
-	Scheme_Object *new_name;
-	new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
-	if (!rec[drec].comp) {
-	  new_name = scheme_stx_track(new_name, find_name, find_name);
-	}
-        find_name = scheme_transfer_srcloc(new_name, find_name);
-	SCHEME_USE_FUEL(1);
-	menv = NULL;
+        if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(var),
+                                              scheme_frame_to_expansion_context_symbol(env->flags))) {
+          Scheme_Object *new_name;
+          new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
+          if (!rec[drec].comp) {
+            new_name = scheme_stx_track(new_name, find_name, find_name);
+          }
+          find_name = scheme_transfer_srcloc(new_name, find_name);
+          SCHEME_USE_FUEL(1);
+          menv = NULL;
+        } else
+          break;
       } else
 	break;
     }
@@ -4976,14 +5051,18 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   SCHEME_EXPAND_OBSERVE_ENTER_MACRO(rec[drec].observer, form);
-  form = compile_expand_macro_app(name, menv, var, form, env, rec, drec, need_macro_scope);
-  SCHEME_EXPAND_OBSERVE_EXIT_MACRO(rec[drec].observer, form);
+  if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(var),
+                                        scheme_frame_to_expansion_context_symbol(env->flags))) {
+    form = compile_expand_macro_app(name, menv, var, form, env, rec, drec, need_macro_scope);
 
-  if (env->expand_result_adjust) {
-    Scheme_Expand_Result_Adjust_Proc adjust;
-    adjust = env->expand_result_adjust;
-    form = adjust(form, env->expand_result_adjust_arg);
-  }
+    if (env->expand_result_adjust) {
+      Scheme_Expand_Result_Adjust_Proc adjust;
+      adjust = env->expand_result_adjust;
+      form = adjust(form, env->expand_result_adjust_arg);
+    }
+  } else
+    form = adjust_for_other_context(form, var, env);
+  SCHEME_EXPAND_OBSERVE_EXIT_MACRO(rec[drec].observer, form);
 
   if (rec[drec].comp)
     goto top;

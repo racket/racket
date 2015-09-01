@@ -597,6 +597,97 @@
 ;; ----------------------------------------
 
 (let ()
+  (define (go contexts
+              wrap
+              prop:macro
+              #:sub? [sub? #f]
+              #:trim-error [error-rx #f])
+    (define o (open-output-bytes))
+    (define e (open-output-bytes))
+    (parameterize ([current-output-port o]
+                   [current-error-port e]
+                   [current-namespace (make-base-namespace)])
+      (call-with-continuation-prompt
+       (lambda ()
+         (eval
+          `(module m racket/base
+            (require (for-syntax racket/base))
+            
+            (define v 0)
+            
+            (begin-for-syntax
+              (struct e (p)
+                      #:property ,prop:macro ,(if (eq? prop:macro 'prop:procedure)
+                                                  0
+                                                  (list #'quote-syntax
+                                                        (syntax-property #'v
+                                                                         'not-free-identifier=?
+                                                                         #t)))
+                      #:property prop:expansion-contexts ',contexts))
+            
+            (define-syntax m (e (lambda (stx)
+                                  (displayln (syntax-local-context))
+                                  #'10)))
+            
+            ,(wrap 'm)))
+         (dynamic-require (if sub? '(submod 'm sub) ''m) #f))))
+    (list (get-output-string o)
+          (if error-rx
+              (let ([m (regexp-match error-rx (get-output-string e))])
+                (or (and m (car m))
+                    (get-output-string e)))
+              (get-output-string e))))
+  
+  (test '("module\n10\n" "") go '(module expression) list 'prop:procedure)
+  (test '("module\n10\n" "") go '(module expression) values 'prop:procedure)
+  (test '("expression\n10\n" "") go '(expression) list 'prop:procedure)
+  (test '("expression\n10\n" "") go '(expression) values 'prop:procedure)
+  (test '("" "m: not allowed in context\n  expansion context: module") go '() values 'prop:procedure
+        #:trim-error #rx"^[^\n]*\n[^\n]*")
+  (test '("0\n" "") go '(module expression) values 'prop:rename-transformer)
+  (test '("" "application: not a procedure") go '(module expression) list 'prop:rename-transformer
+        #:trim-error #rx"^[^;]*")
+  (test '("0\n" "") go '(expression) values 'prop:rename-transformer)
+  (test '("" "application: not a procedure") go '(expression) list 'prop:rename-transformer
+        #:trim-error #rx"^[^;]*")  
+  (test '("" "m: not allowed in context\n  expansion context: module") go '() values 'prop:rename-transformer
+        #:trim-error #rx"^[^\n]*\n[^\n]*")
+  
+  (define (in-submodule s) `(module* sub #f ,s))
+  (test '("module-begin\n10\n" "") go '(module-begin expression) in-submodule 'prop:procedure #:sub? #t)
+  (test '("module-begin\n10\n" "") go '(module-begin) in-submodule 'prop:procedure #:sub? #t)
+  (test '("module\n10\n" "") go '(module expression) in-submodule 'prop:procedure #:sub? #t)
+  (test '("module\n10\n" "") go '(module) in-submodule 'prop:procedure #:sub? #t)
+  (test '("expression\n10\n" "") go '(expression) in-submodule 'prop:procedure #:sub? #t)
+  (test '("" "m: not allowed in context\n  expansion context: module") go '() in-submodule 'prop:procedure
+        #:trim-error #rx"^[^\n]*\n[^\n]*")
+  (test '("0\n" "") go '(module-begin expression) in-submodule 'prop:rename-transformer #:sub? #t)
+  (test '("0\n" "") go '(module-begin) in-submodule 'prop:rename-transformer #:sub? #t)
+  (test '("0\n" "") go '(module expression) in-submodule 'prop:rename-transformer #:sub? #t)
+  (test '("0\n" "") go '(module) in-submodule 'prop:rename-transformer #:sub? #t)
+  (test '("0\n" "") go '(expression) in-submodule 'prop:rename-transformer #:sub? #t)
+  (test '("" "m: not allowed in context\n  expansion context: module") go '() in-submodule 'prop:rename-transformer
+        #:trim-error #rx"^[^\n]*\n[^\n]*")
+  
+  (define (in-defctx s) `(let () ,s))
+  (test '("(#(struct:liberal-define-context))\n10\n" "") go '(definition-context expression) in-defctx 'prop:procedure)
+  (test '("(#(struct:liberal-define-context))\n10\n" "") go '(definition-context) in-defctx 'prop:procedure)
+  (test '("expression\n10\n" "") go '(expression) in-defctx 'prop:procedure)
+  (test '("" "m: not allowed in context\n  expansion context: definition-context") go '() in-defctx 'prop:procedure
+        #:trim-error #rx"^[^\n]*\n[^\n]*")
+  (test '("0\n" "") go '(definition-context expression) in-defctx 'prop:rename-transformer)
+  (test '("0\n" "") go '(definition-context) in-defctx 'prop:rename-transformer)
+  (test '("0\n" "") go '(expression) in-defctx 'prop:rename-transformer)
+  (test '("" "m: not allowed in context\n  expansion context: definition-context") go '() in-defctx 'prop:rename-transformer
+        #:trim-error #rx"^[^\n]*\n[^\n]*")
+  
+  (void))
+  
+  
+
+;; ----------------------------------------
+
+(let ()
   (define-syntax (foo stx)
     (define context (syntax-local-make-definition-context))
     (with-handlers ([exn:fail:contract? (lambda (x) #''ok)])
@@ -1353,7 +1444,6 @@
            (begin
              (eval-syntax #'a)
              (eval-syntax (expand-syntax #'b)))])))
-
 
 ;; ----------------------------------------
 
