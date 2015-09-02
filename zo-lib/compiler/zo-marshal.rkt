@@ -390,10 +390,10 @@
 
 (define (encode-stx-obj w out)
   (match w
-    [(struct stx-obj (datum wraps tamper-status))
+    [(struct stx-obj (datum wraps srcloc props tamper-status))
      (let* ([enc-datum
              (match datum
-               [(cons a b) 
+               [(cons a b)
                 (let ([p (cons (encode-stx-obj a out)
                                (let bloop ([b b])
                                  (match b
@@ -424,12 +424,39 @@
                  (car l)
                  (map (lambda (e) (encode-stx-obj e out)) (cdr l)))]
                [_ datum])]
-            [p (cons enc-datum
-                     (share-everywhere (encode-wrap wraps (out-wraps out)) out))])
-       (case tamper-status
-         [(clean) p]
-         [(tainted) (vector p)]
-         [(armed) (vector p #f)]))]))
+            [e-wraps (share-everywhere (encode-wrap wraps (out-wraps out)) out)]
+            [esrcloc (let ()
+                       (define (avail? n) (n . >= . 0))
+                       (define (xvector a b c d e)
+                         (case (hash-ref props 'paren-shape #f)
+                           [(#\[) (vector a b c d e #\[)]
+                           [(#\{) (vector a b c d e #\{)]
+                           [else (if (or a (avail? b) (avail? c) (avail? d))
+                                     (vector a b c d e)
+                                     #f)]))
+                       (define (norm v) (or v -1))
+                       (share-everywhere
+                        (if srcloc
+                            (xvector (srcloc-source srcloc)
+                                     (norm (srcloc-line srcloc))
+                                     (norm (srcloc-column srcloc))
+                                     (norm (srcloc-position srcloc))
+                                     (norm (srcloc-span srcloc)))
+                            (xvector #f -1 -1 -1 -1))
+                        out))])
+       (cond
+        [esrcloc
+         (case tamper-status
+           [(tainted) (vector enc-datum e-wraps esrcloc 1)]
+           [(armed) (vector enc-datum e-wraps esrcloc 2)]
+           [else (vector enc-datum e-wraps esrcloc)])]
+        [(not (eq? tamper-status 'clean))
+         (vector enc-datum e-wraps 
+                 (case tamper-status
+                   [(tainted) 1]
+                   [(armed) 2]))]
+        [else
+         (cons enc-datum e-wraps)]))]))
 
 (define-struct out (s
                     ;; The output port for writing bytecode.
@@ -940,8 +967,41 @@
         (out-byte CPT_QUOTE out)
         (parameterize ([quoting? #t])
           (out-anything qv out))]
-       [(or (? path?) ; XXX Why not use CPT_PATH?
-            (? regexp?)
+       [(? path?)
+        (out-byte CPT_PATH out)
+        (define (within? p)
+          (and (relative-path? p)
+               (let loop ([p p])
+                 (define-values (base name dir?) (split-path p))
+                 (and (not (eq? name 'up))
+                      (not (eq? name 'same))
+                      (or (not (path? base))
+                          (loop base))))))
+        (define maybe-rel
+          (and (current-write-relative-directory)
+               (let ([dir (current-write-relative-directory)])
+                 (and (or (not dir)
+                          (within? (find-relative-path v
+                                                       (if (pair? dir)
+                                                           (cdr dir)
+                                                           dir))))
+                      (find-relative-path v
+                                          (if (pair? dir)
+                                              (car dir)
+                                              dir))))))
+        (cond
+         [(not maybe-rel)
+          (define bstr (path->bytes v))
+          (out-number (bytes-length bstr) out)
+          (out-bytes bstr out)]
+         [else
+          (out-number 0 out)
+          (out-anything (for/list ([e (in-list (explode-path maybe-rel))])
+                          (if (path? e)
+                              (path-element->bytes e)
+                              e))
+                        out)])]
+       [(or (? regexp?)
             (? byte-regexp?)
             (? number?)
             (? extflonum?))

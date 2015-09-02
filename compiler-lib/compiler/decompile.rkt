@@ -200,7 +200,7 @@
       (let ([p (mcons #f #f)])
         (hash-set! stx-ht stx p)
         (match stx
-          [(stx-obj datum wrap tamper-status)
+          [(stx-obj datum wrap srcloc props tamper-status)
            (set-mcar! p (case tamper-status
                           [(clean) 'wrap]
                           [(tainted) 'wrap-tainted]
@@ -223,7 +223,14 @@
                           [(box? datum)
                            (box (decompile-stx (unbox datum) stx-ht))]
                           [else datum])
-                         wrap))
+                         (let* ([l (mcons wrap null)]
+                                [l (if (hash-count props)
+                                       (mcons props l)
+                                       l)]
+                                [l (if srcloc
+                                       (mcons srcloc l)
+                                       l)])
+                           l)))
            p]))))
 
 (define (mpi->string modidx)

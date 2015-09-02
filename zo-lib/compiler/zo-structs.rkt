@@ -184,7 +184,9 @@
 (define-form-struct stx ([content stx-obj?]))
 
 (define-form-struct stx-obj ([datum any/c] ; S-expression with `wrapped` components
-                             [wrap any/c] ; shuold be `wrap?`, but encoded form appears initially
+                             [wrap any/c] ; should be `wrap?`, but encoded form appears initially
+                             [srcloc any/c] ; should be `(or/c #f srcloc?)`, but encoded form appears initially
+                             [props (hash/c symbol? any/c)]
                              [tamper-status (or/c 'clean 'armed 'tainted)]))
 
 (define-form-struct wrap ([shifts (listof module-shift?)]

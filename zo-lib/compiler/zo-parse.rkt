@@ -600,14 +600,17 @@
 
 (define (decode-wrapped cp v)
   (let loop ([v v])
-    (let-values ([(tamper-status v encoded-wraps)
+    (let-values ([(tamper-status v encoded-wraps esrcloc)
                   (match v
-                    [`#((,datum . ,wraps)) (values 'tainted datum wraps)]
-                    [`#((,datum . ,wraps) #f) (values 'armed datum wraps)]
-                    [`(,datum . ,wraps) (values 'clean datum wraps)]
+                    [`#(,datum ,wraps 1) (values 'tainted datum wraps #f)]
+                    [`#(,datum ,wraps 2) (values 'armed datum wraps #f)]
+                    [`#(,datum ,wraps ,esrcloc 1) (values 'tainted datum wraps esrcloc)]
+                    [`#(,datum ,wraps ,esrcloc 2) (values 'armed datum wraps esrcloc)]
+                    [`#(,datum ,wraps ,esrcloc) (values 'clean datum wraps esrcloc)]
+                    [`(,datum . ,wraps) (values 'clean datum wraps #f)]
                     [else (error 'decode-wraps "bad datum+wrap: ~.s" v)])])
       (let* ([wrapped-memo (make-memo)]
-             [add-wrap (lambda (v) (with-memo wrapped-memo v (make-stx-obj v encoded-wraps tamper-status)))])
+             [add-wrap (lambda (v) (with-memo wrapped-memo v (make-stx-obj v encoded-wraps esrcloc #hasheq() tamper-status)))])
         (cond
          [(pair? v)
           (if (eq? #t (car v))
@@ -800,11 +803,15 @@
                 [flags (if (< p* 0) (read-compact-number cp) 0)])
            (make-local #t p flags))]
         [(path)
-         (let* ([p (bytes->path (read-compact-bytes cp (read-compact-number cp)))])
-           (if (relative-path? p)
-             (path->complete-path p (or (current-load-relative-directory)
-                                        (current-directory)))
-             p))]
+         (let ([len (read-compact-number cp)])
+           (if (zero? len)
+               ;; Read a list of byte strings as relative path elements:
+               (let ([p (or (current-load-relative-directory)
+                            (current-directory))])
+                 (for/fold ([p p]) ([e (in-list (read-compact cp))])
+                   (build-path p (if (bytes? e) (bytes->path-element e) e))))
+               ;; Read a path:
+               (bytes->path (read-compact-bytes cp len))))]
         [(small-number)
          (let ([l (- ch cpt-start)])
            l)]
@@ -1145,6 +1152,7 @@
   ;; We do this after building a graph from the input, and `decode-wrap`
   ;; preserves graph structure.
   (define decode-ht (make-hasheq))
+  (define srcloc-ht (make-hasheq))
   (let walk ([p v])
     (match p
       [(compilation-top _ pfx c)
@@ -1182,10 +1190,13 @@
       [(seq-for-syntax _ pfx _ _)
        (struct-copy seq-for-syntax p
                     [prefix (walk pfx)])]
-      [(stx-obj d w _)
+      [(stx-obj d w esrcloc _ _)
+       (define-values (srcloc props) (decode-srcloc+props esrcloc srcloc-ht))
        (struct-copy stx-obj p
                     [datum (walk d)]
-                    [wrap (decode-wrap w decode-ht)])]
+                    [wrap (decode-wrap w decode-ht)]
+                    [srcloc srcloc]
+                    [props props])]
       [(? zo?) p]
       ;; Generic constructors happen inside the `datum` of `stx-obj`,
       ;; for example (with no cycles):
@@ -1214,6 +1225,32 @@
          (for/hash ([(k v) (in-hash p)])
            (values k (walk v)))])]
       [_ p])))
+
+;; ----------------------------------------
+
+(define (decode-srcloc+props esrcloc ht)
+  (define (norm v) (if (v . < . 0) #f v))
+  (define p
+    (hash-ref! ht
+               esrcloc
+               (lambda ()
+                 (cons (and esrcloc
+                            ;; We could reduce this srcloc to #f if
+                            ;; there's no source, line, column, or position
+                            ;; information, but we want to expose the actual
+                            ;; content of a bytecode stream:
+                            (srcloc (vector-ref esrcloc 0)
+                                    (norm (vector-ref esrcloc 1))
+                                    (norm (vector-ref esrcloc 2))
+                                    (norm (vector-ref esrcloc 3))
+                                    (norm (vector-ref esrcloc 4))))
+                       (if (and esrcloc ((vector-length esrcloc) . > . 5))
+                           (case (vector-ref esrcloc 5)
+                             [(#\[) #hasheq((paren-shape . #\[))]
+                             [(#\{) #hasheq((paren-shape . #\{))]
+                             [else #hasheq()])
+                           #hasheq())))))
+  (values (car p) (cdr p)))
 
 ;; ----------------------------------------
 
@@ -1307,7 +1344,7 @@
                  [(box (cons base-b (cons (cons sym wraps) phase)))
                   (free-id=?-binding
                    (decode-binding base-b ht)
-                   (stx-obj sym (decode-wrap wraps ht) 'clean)
+                   (stx-obj sym (decode-wrap wraps ht) #f #hasheq() 'clean)
                    phase)]
                  [(? symbol?)
                   (local-binding b)]

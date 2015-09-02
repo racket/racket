@@ -197,13 +197,13 @@
          empty
          (begin
            (hash-set! REQUIRED ct #t)
-           (list (make-req (make-stx (make-stx-obj ct (wrap empty empty empty) 'clean)) (make-toplevel 0 0 #f #f)))))]
+           (list (make-req (make-stx (make-stx-obj ct (wrap empty empty empty) #f #hasheq() 'clean)) (make-toplevel 0 0 #f #f)))))]
     [(module-path-index? ct)
      (if (hash-has-key? REQUIRED ct)
          empty
          (begin
            (hash-set! REQUIRED ct #t)
-           (list (make-req (make-stx (make-stx-obj ct (wrap empty empty empty) 'clean)) (make-toplevel 0 0 #f #f)))))]
+           (list (make-req (make-stx (make-stx-obj ct (wrap empty empty empty) #f #hasheq() 'clean)) (make-toplevel 0 0 #f #f)))))]
     [(not ct)
      empty]
     [(@phase? ct)
