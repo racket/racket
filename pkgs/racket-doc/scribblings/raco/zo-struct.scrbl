@@ -594,9 +594,13 @@ binding, constructor, etc.}
 @defstruct+[(stx-obj zo)
             ([datum any/c]
              [wrap wrap?]
+             [srcloc (or/c #f srcloc?)]
+             [props (hash/c symbol? any/c)]
              [tamper-status (or/c 'clean 'armed 'tainted)])]{
   Represents a syntax object, where @racket[wrap] contains lexical
-  information and @racket[tamper-status] is taint information. When the
+  information, @racket[srcloc] is the source location,
+  @racket[props] contains preserved properties,
+  and @racket[tamper-status] is taint information. When the
   @racket[datum] part is itself compound, its pieces are wrapped
   as @racket[stx-obj]s, too.
 

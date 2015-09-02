@@ -38,9 +38,7 @@ Returns @racket[#t] if @racket[v] is a @tech{syntax object} and
 Returns the source for the @tech{syntax object} @racket[stx], or @racket[#f]
 if none is known. The source is represented by an arbitrary value
 (e.g., one passed to @racket[read-syntax]), but it is typically a file
-path string. Source-location information is dropped for a syntax
-object that is marshaled as part of compiled code; see also
-@racket[current-compile].}
+path string.}
 
 
 @defproc[(syntax-line [stx syntax?]) 
@@ -50,8 +48,7 @@ Returns the line number (positive exact integer) for the start of the
 @tech{syntax object} in its source, or @racket[#f] if the line number or
 source is unknown. The result is @racket[#f] if and only if
 @racket[(syntax-column stx)] produces @racket[#f]. See also
-@secref["linecol"], and see @racket[syntax-source] for information
-about marshaling compiled @tech{syntax object}s.}
+@secref["linecol"].}
 
 
 @defproc[(syntax-column [stx syntax?])
@@ -61,8 +58,7 @@ Returns the column number (non-negative exact integer) for the start
 of the @tech{syntax object} in its source, or @racket[#f] if the source
 column is unknown. The result is @racket[#f] if and only if
 @racket[(syntax-line stx)] produces @racket[#f]. See also
-@secref["linecol"], and see @racket[syntax-source] for information
-about marshaling compiled @tech{syntax object}s.}
+@secref["linecol"].}
 
 
 @defproc[(syntax-position [stx syntax?])
@@ -70,9 +66,7 @@ about marshaling compiled @tech{syntax object}s.}
 
 Returns the character position (positive exact integer) for the start
 of the @tech{syntax object} in its source, or @racket[#f] if the source
-position is unknown. See also @secref["linecol"], and see
-@racket[syntax-source] for information about marshaling compiled
-@tech{syntax object}s.}
+position is unknown. See also @secref["linecol"].}
 
 
 @defproc[(syntax-span [stx syntax?])
@@ -80,8 +74,7 @@ position is unknown. See also @secref["linecol"], and see
 
 Returns the span (non-negative exact integer) in characters of the
 @tech{syntax object} in its source, or @racket[#f] if the span is
-unknown. See also @racket[syntax-source] for information about
-marshaling compiled @tech{syntax object}s.}
+unknown.}
 
 
 @defproc[(syntax-original? [stx syntax?]) boolean?]{
@@ -95,14 +88,19 @@ object was introduced by a syntax transformer; see
 
 This predicate can be used to distinguish @tech{syntax object}s in an expanded
 expression that were directly present in the original expression, as
-opposed to @tech{syntax object}s inserted by macros.}
+opposed to @tech{syntax object}s inserted by macros.
+
+The (hidden) property to represent original syntax is dropped for a
+syntax object that is marshaled as part of compiled code; see also
+@racket[current-compile].}
 
 
 @defproc[(syntax-source-module [stx syntax?] [source? any/c #f])
          (or/c module-path-index? symbol? path? resolved-module-path? #f)]{
 
 Returns an indication of the module whose source contains
-@racket[stx], or @racket[#f] if @racket[stx] has no source module.  If
+@racket[stx], or @racket[#f] if no source module for @racket[stx]
+can be inferred from its lexical context.  If
 @racket[source?] is @racket[#f], then result is a module path index or
 symbol (see @secref["modpathidx"]) or a @tech{resolved module path}; if @racket[source?] is true, the
 result is a path or symbol corresponding to the loaded module's

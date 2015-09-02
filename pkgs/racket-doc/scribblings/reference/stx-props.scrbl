@@ -6,8 +6,9 @@
 Every syntax object has an associated @deftech{syntax property} list,
 which can be queried or extended with
 @racket[syntax-property]. Properties are not preserved for a
-@racket[syntax-quoted] syntax object in a compiled form that is
-marshaled to a byte string.
+syntax object in a compiled form that is
+marshaled to a byte string or @filepath{.zo} file, except for a @racket['paren-shape]
+property value of @racket[#\[] or @racket[#\{].
 
 In @racket[read-syntax], the reader attaches a @racket['paren-shape]
 property to any pair or vector syntax object generated from parsing a
