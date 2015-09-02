@@ -1404,5 +1404,37 @@
   (test t sync t))
 
 ;; ----------------------------------------
+;; result from a break during `sync`
+
+(let ()
+  (define (try wrap val)
+    (for ([tsync (list sync sync/enable-break)])
+      (define ch (make-channel))
+      (define got #f)
+      (define t (thread (lambda ()
+                          (define nack #f)
+                          (call-with-exception-handler
+                           (lambda (exn)
+                             (test #f sync/timeout 0 nack)
+                             (if (exn:break? exn)
+                                 ((exn:break-continuation exn))
+                                 exn))
+                           (lambda ()
+                             (set! got (tsync (nack-guard-evt
+                                               (lambda (n)
+                                                 (set! nack n)
+                                                 (wrap ch))))))))))
+      (sync (system-idle-evt))
+      (break-thread t)
+      (sync (system-idle-evt))
+      (channel-put ch val)
+      (sync t)
+      (test val values got)))
+
+  (try values 'ok-channel)
+  (try (lambda (c) (choice-evt c (alarm-evt (+ 10000 (current-milliseconds)))))
+       'ok-channel+alarm))
+
+;; ----------------------------------------
 
 (report-errs)

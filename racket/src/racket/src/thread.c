@@ -436,6 +436,7 @@ static void suspend_thread(Scheme_Thread *p);
 static int check_sleep(int need_activity, int sleep_now);
 
 static int syncing_ready(Syncing *syncing, Scheme_Schedule_Info *sinfo);
+static void get_outof_or_into_lines(Syncing *syncing, int get_out);
 
 static void remove_thread(Scheme_Thread *r);
 static void exit_or_escape(Scheme_Thread *p);
@@ -4606,8 +4607,10 @@ static void raise_break(Scheme_Thread *p)
   p->external_break = 0;
 
   if (p->blocker && (p->block_check == (Scheme_Ready_Fun)syncing_ready)) {
-    /* Get out of lines for channels, etc., before calling a break exn handler. */
-    scheme_post_syncing_nacks((Syncing *)p->blocker);
+    /* Get out of lines for channels, etc., before calling a break exn handler.
+       This is only strictly necessary for `sync/enable-break`, which wants
+       to provide a sync-or-break guarantee, but we do it always for consistency. */
+    get_outof_or_into_lines((Syncing *)p->blocker, 1);
   }
 
   save_thread_schedule_state(p, &ssr, 0);
@@ -4626,6 +4629,11 @@ static void raise_break(Scheme_Thread *p)
 
   /* Continue from break... */
   restore_thread_schedule_state(p, &ssr, 0);
+
+  if (p->blocker && (p->block_check == (Scheme_Ready_Fun)syncing_ready)) {
+    /* Get back into lines for channels, etc. */
+    get_outof_or_into_lines((Syncing *)p->blocker, 0);
+  }
 }
 
 static void escape_to_kill(Scheme_Thread *p)
@@ -6996,6 +7004,46 @@ static void post_syncing_nacks(Syncing *syncing, int as_escape)
       } else
         as_escape = 0;
 
+      syncing = (Syncing *)SCHEME_CAR(syncs);
+      syncs = SCHEME_CDR(syncs);
+    }
+  } while (syncing);
+}
+
+static void get_outof_or_into_lines(Syncing *syncing, int get_out)
+{
+  int i, c;
+  Scheme_Object *syncs = NULL;
+  Syncing *next;
+
+  if (syncing->result) {
+    /* already done, so no need to adjust lines */
+    return;
+  }
+
+  do {
+    if (syncing->set) {
+      c = syncing->set->argc;
+    
+      for (i = 0; i < c; i++) {
+        if (SAME_TYPE(SCHEME_TYPE(syncing->set->argv[i]), scheme_channel_syncer_type)) {
+          if (get_out)
+            scheme_get_outof_line((Scheme_Channel_Syncer *)syncing->set->argv[i]);
+          else
+            scheme_get_back_into_line((Scheme_Channel_Syncer *)syncing->set->argv[i]);
+        }
+        else if (SAME_TYPE(SCHEME_TYPE(syncing->set->argv[i]), scheme_active_replace_evt_type)) {
+         /* Handle active_replace_evt specially to avoid stack overflow: */
+          next = scheme_replace_evt_get(syncing->set->argv[i]);
+          if (next)
+            syncs = scheme_make_raw_pair((Scheme_Object *)next, syncs);
+        }
+      }
+    }
+
+    if (!syncs)
+      syncing = NULL;
+    else {
       syncing = (Syncing *)SCHEME_CAR(syncs);
       syncs = SCHEME_CDR(syncs);
     }

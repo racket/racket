@@ -787,6 +787,7 @@ void scheme_syncing_needs_wakeup(struct Syncing *s, void *fds);
 void scheme_escape_during_sync(struct Syncing *syncing);
 Scheme_Object *scheme_syncing_result(struct Syncing *syncing, int tailok);
 
+struct Syncing *scheme_replace_evt_get(Scheme_Object *active_replace);
 struct Syncing *scheme_replace_evt_nack(Scheme_Object *active_replace);
 struct Syncing *scheme_replace_evt_needs_wakeup(Scheme_Object *o);
 
@@ -1992,6 +1993,7 @@ Scheme_Object *scheme_do_chaperone_evt(const char*, int, int, Scheme_Object *arg
 extern Scheme_Object *scheme_always_ready_evt;
 
 void scheme_get_outof_line(Scheme_Channel_Syncer *ch_w);
+void scheme_get_back_into_line(Scheme_Channel_Syncer *ch_w);
 void scheme_post_syncing_nacks(Syncing *syncing);
 
 int scheme_try_channel_get(Scheme_Object *ch);

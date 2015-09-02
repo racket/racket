@@ -4191,6 +4191,13 @@ Syncing *scheme_replace_evt_nack(Scheme_Object *o)
   return s;
 }
 
+Syncing *scheme_replace_evt_get(Scheme_Object *o)
+{
+  Active_Replace_Evt *a = (Active_Replace_Evt *)o;
+
+  return a->syncing;
+}
+
 /*========================================================================*/
 /*                          struct op maker                               */
 /*========================================================================*/

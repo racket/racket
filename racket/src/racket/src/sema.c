@@ -544,6 +544,11 @@ void scheme_get_outof_line(Scheme_Channel_Syncer *ch_w)
   get_outof_line((Scheme_Sema *)ch_w->obj, ch_w);
 }
 
+void scheme_get_back_into_line(Scheme_Channel_Syncer *ch_w)
+{
+  get_into_line((Scheme_Sema *)ch_w->obj, ch_w);
+}
+
 static int try_channel(Scheme_Sema *sema, Syncing *syncing, int pos, Scheme_Object **result)
 {
   if (SCHEME_CHANNELP(sema)) {
