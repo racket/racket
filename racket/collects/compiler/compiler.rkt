@@ -150,6 +150,7 @@
               (let ([p* (build-path dir p)])
                 (if (and (directory-exists? p*) (not (member p omit-paths)))
                     (compile-directory-visitor p* (c-get-info/full p*) worker omit-root
+                                               #:has-module-suffix? has-module-suffix?
                                                #:verbose verbose?
                                                #:skip-path orig-skip-path
                                                #:skip-paths orig-skip-paths
