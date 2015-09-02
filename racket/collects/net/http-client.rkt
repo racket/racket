@@ -261,7 +261,9 @@
   (define decoded-response-port
     (cond
       [head? raw-response-port]
-      [(and (memq 'gzip decodes) (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers))
+      [(and (memq 'gzip decodes)
+            (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
+            (not (eof-object? (peek-byte raw-response-port))))
        (define-values (in out) (make-pipe PIPE-SIZE))
        (define gunzip-t
          (thread
