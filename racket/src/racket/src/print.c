@@ -2619,13 +2619,17 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	  dir = scheme_get_param(scheme_current_config(),
 				 MZCONFIG_WRITE_DIRECTORY);
 	  if (SCHEME_TRUEP(dir))
-	    obj = scheme_extract_relative_to(obj, dir);
+	    obj = scheme_extract_relative_to(obj, dir, mt->path_cache);
           
 	  print_compact(pp, CPT_PATH);
-
-	  l = SCHEME_PATH_LEN(obj);
-	  print_compact_number(pp, l);
-	  print_this_string(pp, SCHEME_PATH_VAL(obj), 0, l);
+          if (SCHEME_PATHP(obj)) {
+            l = SCHEME_PATH_LEN(obj);
+            print_compact_number(pp, l);
+            print_this_string(pp, SCHEME_PATH_VAL(obj), 0, l);
+          } else {
+            print_compact_number(pp, 0);
+            print(obj, notdisplay, compact, ht, mt, pp);
+          }
 
           symtab_set(pp, mt, orig_obj);
 	}
@@ -2638,7 +2642,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         dir = scheme_get_param(scheme_current_config(),
                                MZCONFIG_WRITE_DIRECTORY);
         if (SCHEME_TRUEP(dir))
-          obj = scheme_extract_relative_to(obj, dir);
+          obj = scheme_extract_relative_to(obj, dir, mt->path_cache);
 
         print_utf8_string(pp, "#^", 0, 2);
         obj = scheme_make_sized_byte_string(SCHEME_PATH_VAL(obj),
@@ -3467,7 +3471,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       if (compact)
 	closed = print(v, notdisplay, 1, NULL, mt, pp);
       else {
-        Scheme_Hash_Table *st_refs, *symtab, *reachable_scopes, *intern_map;
+        Scheme_Hash_Table *st_refs, *symtab, *reachable_scopes, *intern_map, *path_cache;
         intptr_t *shared_offsets;
         intptr_t st_len, j, shared_offset, start_offset;
 
@@ -3490,6 +3494,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         mt->reachable_scope_stack = scheme_null;
         symtab = make_hash_table_symtab();
         mt->symtab = symtab;
+        path_cache = scheme_make_hash_table_equal();
+        mt->path_cache = path_cache;
 	print_substring(v, notdisplay, 1, NULL, mt, pp, NULL, &slen, 0, NULL);
         scheme_iterate_reachable_scopes(mt);
 
@@ -3500,6 +3506,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
         scheme_current_thread->current_mt = mt;
         mt->reachable_scopes = reachable_scopes;
         mt->intern_map = intern_map;
+        mt->path_cache = path_cache;
 
         /* Track which shared values are referenced: */
         st_refs = make_hash_table_symtab();

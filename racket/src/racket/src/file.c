@@ -5612,9 +5612,26 @@ static Scheme_Object *do_explode_path(Scheme_Object *p)
   return explode_path(1, &p);
 }
 
-Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir)
+static Scheme_Object *to_bytes(Scheme_Object *p)
 {
-  Scheme_Object *de, *be, *oe;
+  if (SCHEME_PATHP(p))
+    return scheme_make_sized_byte_string(SCHEME_PATH_VAL(p),
+                                         SCHEME_PATH_LEN(p),
+                                         1);
+  else
+    return p;
+}
+
+Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir, Scheme_Hash_Table *cache)
+/* When cache is non-NULL, generate a path or a list of byte strings (suitable for bytecode) */
+{
+  Scheme_Object *de, *be, *oe, *orig_obj = obj;
+
+  if (cache) {
+    de = scheme_hash_get(cache, obj);
+    if (de)
+      return de;
+  }
 
   if (SCHEME_PAIRP(dir)) {
     be = do_explode_path(SCHEME_CAR(dir));
@@ -5644,30 +5661,76 @@ Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir
       be = SCHEME_CDR(be);
     }
 
+    /* If cache is non-NULL, generate a list of byte strings */
+
     if (SCHEME_NULLP(oe)) {
-      a[0] = same_symbol;
-      obj = scheme_build_path(1, a);
+      if (cache) {
+        obj = scheme_null;
+      } else {
+        a[0] = same_symbol;
+        obj = scheme_build_path(1, a);
+      }
     } else {
       obj = SCHEME_CAR(oe);
+      if (cache)
+        obj = scheme_make_pair(to_bytes(obj), scheme_null);
       oe = SCHEME_CDR(oe);
     }
 
     while (SCHEME_PAIRP(oe)) {
-      a[0] = obj;
-      a[1] = SCHEME_CAR(oe);
-      obj = scheme_build_path(2, a);
+      if (cache) {
+        obj = scheme_make_pair(to_bytes(SCHEME_CAR(oe)), scheme_null);
+      } else {
+        a[0] = obj;
+        a[1] = SCHEME_CAR(oe);
+        obj = scheme_build_path(2, a);
+      }
       oe = SCHEME_CDR(oe);
     }
 
+    if (cache)
+      obj = scheme_reverse(obj);
+
     while (!SCHEME_NULLP(be)) {
-      a[0] = up_symbol;
-      a[1] = obj;
-      obj = scheme_build_path(2, a);
+      if (cache) {
+        obj = scheme_make_pair(up_symbol, scheme_null);
+      } else {
+        a[0] = up_symbol;
+        a[1] = obj;
+        obj = scheme_build_path(2, a);
+      }
       be = SCHEME_CDR(be);
     }
   }
 
+  if (cache)
+    scheme_hash_set(cache, orig_obj, obj);
+
   return obj;
+}
+
+Scheme_Object *scheme_maybe_build_path(Scheme_Object *base, Scheme_Object *elem)
+{
+  Scheme_Object *a[2];
+  
+  if (!base)
+    base = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
+
+  if (SAME_OBJ(elem, same_symbol)
+      || SAME_OBJ(elem, up_symbol)) {
+    /* ok */
+  } else if (SCHEME_BYTE_STRINGP(elem)) {
+    a[0] = elem;
+    elem = bytes_to_path_element(1, a);
+  } else
+    elem = NULL;
+
+  if (elem) {
+    a[0] = base;
+    a[1] = elem;
+    return scheme_build_path(2, a);
+  } else
+    return base;
 }
 
 static Scheme_Object *filesystem_root_list(int argc, Scheme_Object *argv[])

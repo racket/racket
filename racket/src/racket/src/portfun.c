@@ -4991,7 +4991,7 @@ static Scheme_Object *wr_abs_directory_p(int argc, Scheme_Object **argv)
     Scheme_Object *a, *d, *r;
     a = abs_directory_p("current-write-relative-directory", SCHEME_CAR(argv[0]));
     d = abs_directory_p("current-write-relative-directory", SCHEME_CDR(argv[0]));
-    r = scheme_extract_relative_to(a, d);
+    r = scheme_extract_relative_to(a, d, NULL);
     if (SAME_OBJ(a, r)) {
       scheme_contract_error("current-write-relative-directory",
                             "first path does not extend second path",

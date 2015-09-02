@@ -53,6 +53,7 @@ static int mark_marshal_tables_MARK(void *p, struct NewGC *gc) {
   gcMARK2(mt->cdata_map, gc);
   gcMARK2(mt->rn_saved, gc);
   gcMARK2(mt->shared_offsets, gc);
+  gcMARK2(mt->path_cache, gc);
   gcMARK2(mt->sorted_keys, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));
@@ -75,6 +76,7 @@ static int mark_marshal_tables_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(mt->cdata_map, gc);
   gcFIXUP2(mt->rn_saved, gc);
   gcFIXUP2(mt->shared_offsets, gc);
+  gcFIXUP2(mt->path_cache, gc);
   gcFIXUP2(mt->sorted_keys, gc);
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));

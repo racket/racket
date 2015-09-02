@@ -1830,6 +1830,7 @@ mark_marshal_tables {
   gcMARK2(mt->cdata_map, gc);
   gcMARK2(mt->rn_saved, gc);
   gcMARK2(mt->shared_offsets, gc);
+  gcMARK2(mt->path_cache, gc);
   gcMARK2(mt->sorted_keys, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Marshal_Tables));

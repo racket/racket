@@ -1044,6 +1044,14 @@ scheme_make_locale_string(const char *chars)
   return scheme_byte_string_to_char_string_locale(scheme_make_byte_string((char *)chars));
 }
 
+Scheme_Object *scheme_append_strings(Scheme_Object *s1, Scheme_Object *s2)
+{
+  Scheme_Object *a[2];
+  a[0] = s1;
+  a[1] = s2;
+  return string_append(2, a);
+}
+
 /**********************************************************************/
 /*                         index helpers                              */
 /**********************************************************************/

@@ -3348,6 +3348,7 @@ typedef struct Scheme_Marshal_Tables {
   Scheme_Object **cdata_map;      /* for delay-load wrappers */
   int cdata_counter;              /* used with cdata_map */
   intptr_t *shared_offsets;      /* set in second pass */
+  Scheme_Hash_Table *path_cache; /* cache for path-to-relative resolution */
   intptr_t sorted_keys_count;
   intptr_t inspector_counter;    /* for deterministic symbol allocation */
   Scheme_Object **sorted_keys;
@@ -3920,7 +3921,7 @@ Scheme_Object *scheme_get_run_cmd(void);
 
 Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *path, int noerr);
 
-Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir);
+Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir, Scheme_Hash_Table *cache);
 
 Scheme_Object *scheme_find_links_path(int argc, Scheme_Object *argv[]);
 
@@ -4200,6 +4201,8 @@ Scheme_Object *scheme_intern_exact_parallel_symbol(const char *name, uintptr_t l
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2);
 Scheme_Object *scheme_copy_list(Scheme_Object *l);
 
+Scheme_Object *scheme_append_strings(Scheme_Object *s1, Scheme_Object *s2);
+
 void scheme_reset_hash_table(Scheme_Hash_Table *ht, int *history);
 
 XFORM_NONGCING Scheme_Object *scheme_regexp_source(Scheme_Object *re);
@@ -4213,6 +4216,9 @@ int scheme_regexp_match_p(Scheme_Object *regexp, Scheme_Object *target);
 
 Scheme_Object *scheme_gensym(Scheme_Object *base);
 Scheme_Object *scheme_symbol_to_string(Scheme_Object *sym);
+
+
+Scheme_Object *scheme_maybe_build_path(Scheme_Object *base, Scheme_Object *elem);
 
 #ifdef SCHEME_BIG_ENDIAN
 # define MZ_UCS4_NAME "UCS-4BE"

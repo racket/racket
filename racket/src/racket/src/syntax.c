@@ -6167,12 +6167,30 @@ static void lift_common_wraps(Scheme_Object *l, int cnt, int tail)
   }
 }
 
+static Scheme_Object *srcloc_path_to_string(Scheme_Object *p)
+{
+  Scheme_Object *base, *name, *dir_name;
+  int isdir;
+  
+  name = scheme_split_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
+  if (SCHEME_PATHP(name) && SCHEME_PATHP(base)) {
+    dir_name = scheme_split_path(SCHEME_PATH_VAL(base), SCHEME_PATH_LEN(base), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
+    if (SCHEME_PATHP(dir_name))
+      name = scheme_append_strings(scheme_path_to_char_string(dir_name),
+                                   scheme_append_strings(scheme_make_utf8_string("/"),
+                                                         scheme_path_to_char_string(name)));
+    else
+      name = scheme_path_to_char_string(name);
+    return scheme_append_strings(scheme_make_utf8_string(".../"), name);
+  } else if (SCHEME_PATHP(name))
+    return scheme_path_to_char_string(name);
+  else
+    return scheme_false;
+}
+
 static Scheme_Object *convert_srcloc(Scheme_Stx_Srcloc *srcloc, Scheme_Hash_Tree *props, Scheme_Marshal_Tables *mt)
 {
-  Scheme_Object *vec, *paren;
-
-  if (!srcloc)
-    return scheme_false;
+  Scheme_Object *vec, *paren, *src, *dir;
 
   if (props) {
     paren = scheme_hash_tree_get(props, scheme_paren_shape_symbol);
@@ -6181,8 +6199,40 @@ static Scheme_Object *convert_srcloc(Scheme_Stx_Srcloc *srcloc, Scheme_Hash_Tree
   } else
     paren = NULL;
 
+  if ((!srcloc || (SCHEME_FALSEP(srcloc->src)
+                   && (srcloc->line < 0)
+                   && (srcloc->col < 0)
+                   && (srcloc->pos < 0)))
+      && !paren)
+    return scheme_false;
+
+  if (!srcloc)
+    srcloc = empty_srcloc;
+
+  src = srcloc->src;
+  if (SCHEME_PATHP(src)) {
+    /* To make paths portable and to avoid full paths, check whether the
+       path can be made relative (in which case it is turned into a list
+       of byte strings). If not, convert to a string using only the
+       last couple of path elements. */
+    dir = scheme_get_param(scheme_current_config(),
+                           MZCONFIG_WRITE_DIRECTORY);
+    if (SCHEME_TRUEP(dir))
+      src = scheme_extract_relative_to(src, dir, mt->path_cache);
+    if (SCHEME_PATHP(src)) {
+      src = scheme_hash_get(mt->path_cache, scheme_box(srcloc->src));
+      if (!src) {
+        src = srcloc_path_to_string(srcloc->src);
+        scheme_hash_set(mt->path_cache, scheme_box(srcloc->src), src);
+      }
+    } else {
+      /* use the path directly and let the printer make it relative */
+      src = srcloc->src;
+    }
+  }
+
   vec = scheme_make_vector((paren ? 6 : 5), NULL);
-  SCHEME_VEC_ELS(vec)[0] = srcloc->src;
+  SCHEME_VEC_ELS(vec)[0] = src;
   SCHEME_VEC_ELS(vec)[1] = scheme_make_integer(srcloc->line);
   SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(srcloc->col);
   SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(srcloc->pos);

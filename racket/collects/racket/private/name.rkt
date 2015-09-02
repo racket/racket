@@ -19,7 +19,10 @@
                          (let ([s (let ([s (format
                                             "~a"
                                             (cond
-                                             [(path? s) (path->string s)]
+                                             [(path? s)
+                                              ;; Make the result consistent across platforms by
+                                              ;; converting backslashes to forward slashes:
+                                              (regexp-replace* #rx"\\\\" (path->string s) "/")]
                                              [else s]))])
                                     (if ((string-length s) . > . 20)
                                         (string-append "..." (substring s (- (string-length s) 20)))

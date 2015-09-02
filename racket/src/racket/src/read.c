@@ -5025,18 +5025,22 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
       {
 	l = read_compact_number(port);
 	RANGE_CHECK_GETS(l);
-	s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
-	v = scheme_make_sized_path(s, l, l < BLK_BUF_SIZE);
-
-	if (scheme_is_relative_path(SCHEME_PATH_VAL(v), SCHEME_PATH_LEN(v), SCHEME_PLATFORM_PATH_KIND)) {
-	  /* Resolve relative path using the current load-relative directory: */
-	  if (SCHEME_PATHP(port->relto)) {
-	    Scheme_Object *a[2];
-	    a[0] = port->relto;
-	    a[1] = v;
-	    v = scheme_build_path(2, a);
-	  }
-	}
+        if (l) {
+          s = read_compact_chars(port, buffer, BLK_BUF_SIZE, l);
+          v = scheme_make_sized_path(s, l, l < BLK_BUF_SIZE);
+        } else {
+          Scheme_Object *elems;
+          elems = read_compact(port, 0);
+          if (SCHEME_PATHP(port->relto)) {
+            /* Resolve relative path using the current load-relative directory: */
+            v = port->relto;
+          } else
+            v = scheme_maybe_build_path(NULL, scheme_false);
+          while (SCHEME_PAIRP(elems)) {
+            v = scheme_maybe_build_path(v, SCHEME_CAR(elems));
+            elems = SCHEME_CDR(elems);
+          }
+        }
       }
       break;
     case CPT_CLOSURE:

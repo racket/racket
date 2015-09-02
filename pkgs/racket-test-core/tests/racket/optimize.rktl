@@ -885,7 +885,6 @@
 	  [t2 (get-output-bytes s2)])
       (or (bytes=? t1 t2)
 	  (begin
-            #;
 	    (printf "~s\n~s\n" 
                      (zo-parse (open-input-bytes t1))
                      (zo-parse (open-input-bytes t2)))
@@ -896,7 +895,11 @@
   (case-lambda
    [(expr1 expr2) (test-comp expr1 expr2 #t)]
    [(expr1 expr2 same?)
-    (test same? `(compile ,same? ,expr2) (comp=? (compile expr1) (compile expr2)))]))
+    (define (->stx s)
+      ;; Give `s` a minimal location, so that other macro locations
+      ;; don't bleed through:
+      (datum->syntax #f s (vector 'here #f #f #f #f)))
+    (test same? `(compile ,same? ,expr2) (comp=? (compile (->stx expr1)) (compile (->stx expr2))))]))
 
 (let ([x (compile '(lambda (x) x))])
   (test #t 'fixpt (eq? x (compile x))))
@@ -1669,7 +1672,9 @@
 	   '(letrec ([x (cons 1 1)][y x]) (cons x x)))
 
 (test-comp '(let ([f (lambda (x) x)]) f)
-	   (syntax-property (datum->syntax #f '(lambda (x) x)) 'inferred-name 'f))
+	   (syntax-property (datum->syntax #f '(lambda (x) x) (vector 'here #f #f #f #f))
+                            'inferred-name
+                            'f))
 
 (test-comp '(letrec ([f (lambda (x) x)])
 	      (f 10)

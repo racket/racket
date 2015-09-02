@@ -717,15 +717,15 @@ static Scheme_Object *read_quote_syntax(Scheme_Object *obj)
 
 #define BOOL(x) (x ? scheme_true : scheme_false)
 
-static int not_relative_path(Scheme_Object *p)
+static int not_relative_path(Scheme_Object *p, Scheme_Hash_Table *cache)
 {
   Scheme_Object *dir, *rel_p;
   
   dir = scheme_get_param(scheme_current_config(),
                          MZCONFIG_WRITE_DIRECTORY);
   if (SCHEME_TRUEP(dir)) {
-    rel_p = scheme_extract_relative_to(p, dir);
-    if (SAME_OBJ(rel_p, p))
+    rel_p = scheme_extract_relative_to(p, dir, cache);
+    if (SCHEME_PATHP(rel_p))
       return 1;
   }
   
@@ -752,7 +752,7 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
            /* If MZCONFIG_WRITE_DIRECTORY, drop any non-relative path
               (which might happen due to function inlining, for example)
               to avoid embedding absolute paths in bytecode files: */
-           || not_relative_path(src))
+           || not_relative_path(src, scheme_current_thread->current_mt->path_cache))
 	  && !SCHEME_CHAR_STRINGP(src)
 	  && !SCHEME_SYMBOLP(src)) {
 	/* Just keep the name */

@@ -457,21 +457,42 @@ static void lambda_check_args(Scheme_Object *args, Scheme_Object *form, Scheme_C
 }
 
 Scheme_Object *scheme_source_to_name(Scheme_Object *code)
-     /* Makes up a procedure name when there's not a good one in the source: */
+/* Makes up a procedure name when there's not a good one in the source */
 {
   Scheme_Stx *cstx = (Scheme_Stx *)code;
   if ((cstx->srcloc->col >= 0) || (cstx->srcloc->pos >= 0)) {
     char buf[50], src[20];
-    Scheme_Object *name;
+    Scheme_Object *name, *bstr;
+    int convert_backslash = 0;
 
-    if (cstx->srcloc->src && SCHEME_PATHP(cstx->srcloc->src)) {
-      if (SCHEME_BYTE_STRLEN_VAL(cstx->srcloc->src) < 20)
-	memcpy(src, SCHEME_BYTE_STR_VAL(cstx->srcloc->src), SCHEME_BYTE_STRLEN_VAL(cstx->srcloc->src) + 1);
+    if (cstx->srcloc->src) {
+      if (SCHEME_PATHP(cstx->srcloc->src)) {
+        bstr = cstx->srcloc->src;
+        /* for generating consistent names on machines with different platform
+           conventions, convert "\" to "/" */
+        convert_backslash = 1;
+      } else if (SCHEME_CHAR_STRINGP(cstx->srcloc->src))
+        bstr = scheme_char_string_to_byte_string(cstx->srcloc->src);
+      else
+        bstr = NULL;
+    } else
+      bstr = NULL;
+
+    if (bstr) {
+      if (SCHEME_BYTE_STRLEN_VAL(bstr) < 20)
+	memcpy(src, SCHEME_BYTE_STR_VAL(bstr), SCHEME_BYTE_STRLEN_VAL(bstr) + 1);
       else {
-	memcpy(src, SCHEME_BYTE_STR_VAL(cstx->srcloc->src) + SCHEME_BYTE_STRLEN_VAL(cstx->srcloc->src) - 19, 20);
+	memcpy(src, SCHEME_BYTE_STR_VAL(bstr) + SCHEME_BYTE_STRLEN_VAL(bstr) - 19, 20);
 	src[0] = '.';
 	src[1] = '.';
 	src[2] = '.';
+      }
+      if (convert_backslash) {
+        int i;
+        for (i = 0; src[i]; i++) {
+          if (src[i] == '\\')
+            src[i] = '/';
+        }
       }
     } else {
       return NULL;
