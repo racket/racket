@@ -4,7 +4,8 @@
          racket/file
          racket/date
          file/gunzip
-         "private/strip-prefix.rkt")
+         "private/strip-prefix.rkt"
+         "private/check-path.rkt")
 
 (provide
  (struct-out exn:fail:unzip:no-such-entry)
@@ -359,7 +360,9 @@
 (define make-filesystem-entry-reader
   (lambda (#:dest [dest-dir #f] #:strip-count [strip-count 0] #:exists [flag 'error])
     (lambda (name dir? in [timestamp #f])
-      (let* ([base-path (strip-prefix (bytes->path name) strip-count)]
+      (define path (bytes->path name))
+      (check-unpack-path 'unzip path)
+      (let* ([base-path (strip-prefix path strip-count)]
              [path (and base-path
                         (if dest-dir
                             (build-path dest-dir base-path)

@@ -2,7 +2,8 @@
 (require racket/file
          racket/contract/base
          racket/port
-         "private/strip-prefix.rkt")
+         "private/strip-prefix.rkt"
+         "private/check-path.rkt")
 
 (provide
  (contract-out
@@ -78,8 +79,7 @@
                                      name
                                      (bytes-append prefix #"/" name)))
                                name))))
-  (when (absolute-path? base-filename)
-    (error 'untar "won't extract a file with an absolute path: ~e" base-filename))
+  (check-unpack-path 'untar base-filename)
   (define stripped-filename (strip-prefix base-filename strip-count))
   (define filename (and stripped-filename
                         (if dest
