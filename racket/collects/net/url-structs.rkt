@@ -3,7 +3,8 @@
 
 (define-serializable-struct url
   (scheme user host port path-absolute? path query fragment)
-  #:mutable)
+  #:mutable
+  #:transparent)
 (define-serializable-struct path/param (path param))
 
 (provide/contract
