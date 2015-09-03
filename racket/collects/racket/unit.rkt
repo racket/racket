@@ -1645,29 +1645,40 @@
                            (syntax->list #'((((sub-in-key sub-in-code) ...) ...) ...))))
                          )
              (values
-              (quasisyntax/loc (error-syntax)
-                (let ([deps '()]
-                      [sub-tmp sub-exp] ...)
-                  check-sub-exp ...
-                  (make-unit
-                   'name
-                   (vector-immutable
-                    (cons 'import-name
-                          (vector-immutable import-key ...))
-                    ...)
-                   (vector-immutable
-                    (cons 'export-name
-                          (vector-immutable export-key ...))
-                    ...)
-                   deps
-                   (lambda ()
-                     (let-values ([(sub-tmp sub-export-table-tmp) ((unit-go sub-tmp))]
+              ;; Attach a syntax-property containing indices of init-depends signatures
+              ;; for this compound unit. Although this property is attached to all
+              ;; compound-units, it is only meaningful when the compound unit was
+              ;; created via compound-unit/infer. Only the `inferred` dependencies
+              ;; will appear in this syntax property, when no inference occurs the property
+              ;; will contain an empty list.
+              (syntax-property
+               (quasisyntax/loc (error-syntax)
+                 (let ([deps '()]
+                       [sub-tmp sub-exp] ...)
+                   check-sub-exp ...
+                   (make-unit
+                    'name
+                    (vector-immutable
+                     (cons 'import-name
+                           (vector-immutable import-key ...))
+                     ...)
+                    (vector-immutable
+                     (cons 'export-name
+                           (vector-immutable export-key ...))
+                     ...)
+                    deps
+                    (lambda ()
+                      (let-values ([(sub-tmp sub-export-table-tmp) ((unit-go sub-tmp))]
+                                   ...)
+                        (values (lambda (import-table-id)
+                                  (void)
+                                  (sub-tmp (equal-hash-table sub-in-key-code-workaround ...))
                                   ...)
-                       (values (lambda (import-table-id)
-                                 (void)
-                                 (sub-tmp (equal-hash-table sub-in-key-code-workaround ...))
-                                 ...)
-                               (unit-export ((export-key ...) export-code) ...)))))))
+                                (unit-export ((export-key ...) export-code) ...)))))))
+               'inferred-init-depends
+               (build-init-depend-property
+                static-dep-info
+                (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))))
               (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))
               (map syntax-e (syntax->list #'((export-tag . export-sigid) ...)))
               static-dep-info))))))

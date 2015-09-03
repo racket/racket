@@ -22,7 +22,8 @@
          map-sig split-requires split-requires* apply-mac complete-exports complete-imports check-duplicate-subs
          process-spec
          make-relative-introducer
-         bind-at)
+         bind-at
+         build-init-depend-property)
 
 (define-syntax (apply-mac stx)
   (syntax-case stx ()
@@ -594,3 +595,16 @@
          sstx
          (cons unbox-stx #'x)
          sstx)]))))
+
+;; This utility function returns a list of natural numbers for use as a syntax
+;; property needed to support units in Typed Racket
+;; Each number in the list is an index into a unit's list of imports signifying
+;; that the import at that index is also an init-dependency of the unit
+(define (build-init-depend-property init-depends imports)
+  (define (sig=? s1 s2)
+    (and (eq? (syntax-e (car s1)) (car s2))
+         (free-identifier=? (cdr s1) (cdr s2))))
+  (for/list ([import (in-list imports)]
+             [index (in-naturals)]
+             #:when (member import init-depends sig=?))
+    index))
