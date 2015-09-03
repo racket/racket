@@ -1675,7 +1675,7 @@
                                   (sub-tmp (equal-hash-table sub-in-key-code-workaround ...))
                                   ...)
                                 (unit-export ((export-key ...) export-code) ...)))))))
-               'inferred-init-depends
+               'unit:inferred-init-depends
                (build-init-depend-property
                 static-dep-info
                 (map syntax-e (syntax->list #'((import-tag . import-sigid) ...)))))
