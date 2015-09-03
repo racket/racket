@@ -656,7 +656,6 @@
   
 ;; ----------------------------------------
 
-#| REMOVEME
 (try-basic)
 (try-mzc)
 (try-extension)
@@ -664,7 +663,6 @@
 (try-reader)
 (try-planet)
 (try-*sl)
-|#
 (try-source)
 
 ;; ----------------------------------------
