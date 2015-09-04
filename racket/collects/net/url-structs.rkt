@@ -5,7 +5,8 @@
   (scheme user host port path-absolute? path query fragment)
   #:mutable
   #:transparent)
-(define-serializable-struct path/param (path param))
+(define-serializable-struct path/param (path param)
+  #:transparent)
 
 (provide/contract
  (struct url ([scheme (or/c false/c string?)]
