@@ -287,6 +287,10 @@
 ;; lists, and return a matching number of values.
 
 (define (internal-split-common-prefix as bs same? keep-prefix? name)
+  (unless (list? as)
+    (raise-argument-error name "list?" as))
+  (unless (list? bs)
+    (raise-argument-error name "list?" bs))
   (unless (and (procedure? same?)
                (procedure-arity-includes? same? 2))
     (raise-argument-error name "(any/c any/c . -> . any/c)" same?))
