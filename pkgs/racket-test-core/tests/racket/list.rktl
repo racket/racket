@@ -615,6 +615,7 @@
 (test '((a b c d) () ()) split*-list '(a b c d) '(a b c d))
 (test '((1 2) (3 4) (4 3)) split*-list '(1 2 3 4) '(1 2 4 3) =)
 (err/rt-test (split*-list '() '() #f))
+(err/rt-test (take-common-prefix 1 1))
 
 ;; ---------- remf / remf* ----------
 
