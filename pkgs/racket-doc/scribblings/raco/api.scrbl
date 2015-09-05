@@ -216,7 +216,8 @@ suffixes:
          byte-regexp?]{
 
 Returns a @tech[#:doc reference-doc]{regexp value} that matches paths ending
-with a suffix as reported by @racket[get-module-path-suffixes].}
+with a suffix as reported by @racket[get-module-suffixes]. The pattern
+includes a subpatterns for the suffix without its leading @litchar{.}}
 
 
 @; ----------------------------------------------------------------------
