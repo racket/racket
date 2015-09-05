@@ -1706,7 +1706,7 @@ Scheme_Object *scheme_get_shadower(Scheme_Object *sym, Scheme_Comp_Env *env, int
   return sym;
 }
 
-static Scheme_Hash_Table *get_binding_names_table(Scheme_Env *env)
+Scheme_Hash_Table *scheme_get_binding_names_table(Scheme_Env *env)
 {
   Scheme_Hash_Table *binding_names;
 
@@ -1753,22 +1753,23 @@ static int binding_name_available(Scheme_Hash_Table *binding_names, Scheme_Objec
   return 0;
 }
 
-static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, Scheme_Object *id)
+static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env,
+                                          Scheme_Object *id, Scheme_Object *orig_id)
 {
   int i;
   char onstack[50], *buf;
   intptr_t len;
   Scheme_Hash_Table *binding_names;
 
-  binding_names = get_binding_names_table(env);
+  binding_names = scheme_get_binding_names_table(env);
 
   /* Use a plain symbol only if the binding has no extra scopes: */
   if (SCHEME_SYM_WEIRDP(sym)
-      || scheme_stx_equal_module_context(id, ((env->module && env->module->ii_src)
-                                              ? env->module->ii_src
-                                              : env->stx_context))) {
-    if (binding_name_available(binding_names, sym, id, scheme_env_phase(env))) {
-      scheme_hash_set(binding_names, sym, id);
+      || scheme_stx_equal_module_context(orig_id, ((env->module && env->module->ii_src)
+                                                   ? env->module->ii_src
+                                                   : env->stx_context))) {
+    if (binding_name_available(binding_names, sym, orig_id, scheme_env_phase(env))) {
+      scheme_hash_set(binding_names, sym, orig_id);
       return sym;
     }
   }
@@ -1786,7 +1787,7 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, S
     sym = scheme_intern_exact_parallel_symbol(buf, strlen(buf));
 
     if (binding_name_available(binding_names, sym, id, scheme_env_phase(env))) {
-      scheme_hash_set(binding_names, sym, id);
+      scheme_hash_set(binding_names, sym, orig_id);
       return sym;
     }
 
@@ -1794,26 +1795,42 @@ static Scheme_Object *select_binding_name(Scheme_Object *sym, Scheme_Env *env, S
   }
 }
 
-Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
+static int binding_matches_env(Scheme_Object *binding, Scheme_Env *env, Scheme_Object *phase)
 {
-  Scheme_Object *sym, *binding, *phase;
+  return (SCHEME_VECTORP(binding)
+          && SAME_OBJ(SCHEME_VEC_ELS(binding)[0], 
+                      (env->module
+                       ? env->module->self_modidx
+                       : scheme_false))
+          && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase));
+}
+
+Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env, int for_top_level)
+{
+  Scheme_Object *sym, *binding, *phase, *orig_id = id;
   int exact_match;
 
   phase = scheme_env_phase(env);
+
+  if (for_top_level) {
+    /* While compiling, we want to avoid binding in the top-level namespace.
+       Adding an extra scope avoids that while still letting us have some binding
+       to generate names for top-level definitions. */
+    if (!env->tmp_bind_scope) {
+      sym = scheme_new_scope(SCHEME_STX_MODULE_SCOPE);
+      env->tmp_bind_scope = sym;
+    }
+    id = scheme_stx_add_scope(id, env->tmp_bind_scope, phase);
+  }
 
   binding = scheme_stx_lookup_stop_at_free_eq(id, phase, &exact_match);
 
   if (!SCHEME_FALSEP(binding)) {
     if (exact_match) {
-      if (SCHEME_VECTORP(binding)
-          && SAME_OBJ(SCHEME_VEC_ELS(binding)[0], 
-                      (env->module
-                       ? env->module->self_modidx
-                       : scheme_false))
-          && SAME_OBJ(SCHEME_VEC_ELS(binding)[2], phase)) {
+      if (binding_matches_env(binding, env, phase)) {
         sym = SCHEME_VEC_ELS(binding)[1];
         /* Make sure name is in binding_names and with a specific `id`: */
-        scheme_hash_set(get_binding_names_table(env), sym, id);
+        scheme_hash_set(scheme_get_binding_names_table(env), sym, orig_id);
         return sym;
       }
       /* Since the binding didn't match, we'll "shadow" the binding
@@ -1821,7 +1838,7 @@ Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env)
     }
   }
 
-  sym = select_binding_name(SCHEME_STX_VAL(id), env, id);
+  sym = select_binding_name(SCHEME_STX_VAL(id), env, id, orig_id);
 
   scheme_add_module_binding(id, phase,
                             (env->module ? env->module->self_modidx : scheme_false),
@@ -1840,8 +1857,24 @@ Scheme_Object *scheme_future_global_binding(Scheme_Object *id, Scheme_Env *env)
 /* The identifier id is being referenced before it has a binding. We
    want to allow it, anyway, perhaps because it's outside of a module
    context or because it's phase-1 code. So, we assume that it's going to
-   have no extra scopes and get the base name. */
+   have no extra scopes and get the base name.
+
+   Then again, if `id` has a binding after adding the environment's temporary
+   binding scope, then map the identifier to that temporary binding's name.
+   That special case allows compiling a `define` to create a binding that
+   can be referenced in the same compilation. */
 {
+  if (env->tmp_bind_scope) {
+    Scheme_Object *binding, *phase;
+
+    phase = scheme_env_phase(env);    
+    id = scheme_stx_add_scope(id, env->tmp_bind_scope, phase);
+    binding = scheme_stx_lookup_stop_at_free_eq(id, phase, NULL);
+    
+    if (binding_matches_env(binding, env, phase))
+      return SCHEME_VEC_ELS(binding)[1];
+  }
+  
   return SCHEME_STX_VAL(id);
 }
 

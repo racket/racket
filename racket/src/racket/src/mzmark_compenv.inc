@@ -24,6 +24,9 @@ static int mark_comp_env_MARK(void *p, struct NewGC *gc) {
   
   gcMARK2(e->use, gc);
   gcMARK2(e->lifts, gc);
+  gcMARK2(e->bindings, gc);
+
+  gcMARK2(e->binding_namess, gc);
 
   gcMARK2(e->expand_result_adjust_arg, gc);
 
@@ -50,6 +53,9 @@ static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(e->use, gc);
   gcFIXUP2(e->lifts, gc);
+  gcFIXUP2(e->bindings, gc);
+
+  gcFIXUP2(e->binding_namess, gc);
 
   gcFIXUP2(e->expand_result_adjust_arg, gc);
 

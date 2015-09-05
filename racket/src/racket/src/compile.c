@@ -803,7 +803,7 @@ void scheme_define_parse(Scheme_Object *form,
 
   vars = scheme_revert_use_site_scopes(vars, env);
 
-  *var = vars;
+   *var = vars;
 
   scheme_begin_dup_symbol_check(&r, env);
 
@@ -822,6 +822,25 @@ void scheme_define_parse(Scheme_Object *form,
     scheme_wrong_syntax(NULL, *var, form, "bad variable list");
 }
 
+static Scheme_Object *global_binding(Scheme_Object *id, Scheme_Comp_Env *env)
+{
+  Scheme_Object *sym;
+
+  sym = scheme_global_binding(id, env->genv, env->flags & SCHEME_TMP_TL_BIND_FRAME);
+
+  if (env->binding_namess && !SAME_OBJ(sym, SCHEME_STX_VAL(id))) {
+    /* Record the new binding */
+    Scheme_Hash_Tree *binds;
+    binds = (Scheme_Hash_Tree *)scheme_hash_get(env->binding_namess, scheme_env_phase(env->genv));
+    if (!binds)
+      binds = scheme_make_hash_tree(0);
+    binds = scheme_hash_tree_set(binds, sym, id);
+    scheme_hash_set(env->binding_namess, scheme_env_phase(env->genv), (Scheme_Object *)binds);
+  }
+
+  return sym;
+}
+
 static Scheme_Object *
 defn_targets_syntax (Scheme_Object *var, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
@@ -831,7 +850,7 @@ defn_targets_syntax (Scheme_Object *var, Scheme_Comp_Env *env, Scheme_Compile_In
     Scheme_Object *name, *pr, *bucket;
 
     name = SCHEME_STX_CAR(var);
-    name = scheme_global_binding(name, env->genv);
+    name = global_binding(name, env);
 
     if (rec[drec].resolve_module_ids || !env->genv->module) {
       bucket = (Scheme_Object *)scheme_global_bucket(name, env->genv);
@@ -3410,9 +3429,7 @@ static void prep_exp_env_compile_rec(Scheme_Compile_Info *rec, int drec)
 
 static Scheme_Object *stx_val(Scheme_Object *name, Scheme_Object *_env)
 {
-  Scheme_Env *env = (Scheme_Env *)_env;
-
-  return scheme_global_binding(name, env);
+  return global_binding(name, (Scheme_Comp_Env *)_env);
 }
 
 static Scheme_Object *
@@ -3434,7 +3451,7 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   scheme_prepare_exp_env(env->genv);
   scheme_prepare_compile_env(env->genv->exp_env);
 
-  names = scheme_named_map_1(NULL, stx_val, names, (Scheme_Object *)env->genv);
+  names = scheme_named_map_1(NULL, stx_val, names, (Scheme_Object *)env);
 
   exp_env = scheme_new_comp_env(env->genv->exp_env, env->insp, NULL, 0);
 
@@ -3517,9 +3534,11 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
   scheme_prepare_exp_env(in_env->genv);
   scheme_prepare_compile_env(in_env->genv->exp_env);
 
-  if (rec[drec].comp)
-    env = scheme_new_comp_env(in_env->genv->exp_env, in_env->insp, NULL, 0);
-  else
+  if (rec[drec].comp) {
+    env = scheme_new_comp_env(in_env->genv->exp_env, in_env->insp, NULL,
+                              (in_env->flags & SCHEME_TMP_TL_BIND_FRAME));
+    env->bindings = in_env->bindings;
+  } else
     env = scheme_new_expand_env(in_env->genv->exp_env, in_env->insp, NULL, 0);
 
   if (rec[drec].comp)

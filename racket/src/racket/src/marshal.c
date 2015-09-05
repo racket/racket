@@ -93,6 +93,8 @@ static Scheme_Object *read_module(Scheme_Object *obj);
 static Scheme_Object *read_top_level_require(Scheme_Object *obj);
 static Scheme_Object *write_top_level_require(Scheme_Object *obj);
 
+static Scheme_Object *ht_to_vector(Scheme_Object *ht, int delay);
+
 void scheme_init_marshal(Scheme_Env *env) 
 {
   scheme_install_type_writer(scheme_application_type, write_application);
@@ -296,6 +298,22 @@ static Scheme_Object *read_letrec(Scheme_Object *obj)
   return (Scheme_Object *)lr;
 }
 
+static Scheme_Object *binding_namess_to_vectors(Scheme_Object *l)
+{
+  Scheme_Object *r = scheme_null;
+
+  if (!l) return scheme_null;
+
+  while (!SCHEME_NULLP(l)) {
+    r = cons(cons(SCHEME_CAR(SCHEME_CAR(l)),
+                  ht_to_vector(SCHEME_CDR(SCHEME_CAR(l)), 0)),
+             r);
+    l = SCHEME_CDR(l);
+  }
+  
+  return r;
+}
+
 static Scheme_Object *write_top(Scheme_Object *obj)
 {
   Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)obj;
@@ -307,8 +325,9 @@ static Scheme_Object *write_top(Scheme_Object *obj)
                           NULL);
 
   return cons(scheme_make_integer(top->max_let_depth),
-	      cons((Scheme_Object *)top->prefix,
-		   scheme_protect_quote(top->code)));
+              cons(binding_namess_to_vectors(top->binding_namess),
+                   cons((Scheme_Object *)top->prefix,
+                        scheme_protect_quote(top->code))));
 }
 
 static Scheme_Object *read_top(Scheme_Object *obj)
@@ -319,6 +338,9 @@ static Scheme_Object *read_top(Scheme_Object *obj)
   top->iso.so.type = scheme_compilation_top_type;
   if (!SCHEME_PAIRP(obj)) return NULL;
   top->max_let_depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
+  obj = SCHEME_CDR(obj);
+  if (!SCHEME_PAIRP(obj)) return NULL;
+  top->binding_namess = SCHEME_CAR(obj); /* checking is in scheme_install_binding_names() */
   obj = SCHEME_CDR(obj);
   if (!SCHEME_PAIRP(obj)) return NULL;
   top->prefix = (Resolve_Prefix *)SCHEME_CAR(obj);
@@ -1253,7 +1275,7 @@ static Scheme_Object *read_resolve_prefix(Scheme_Object *obj)
   return (Scheme_Object *)rp;
 }
 
-static Scheme_Object *ht_to_vector(Scheme_Object *ht)
+static Scheme_Object *ht_to_vector(Scheme_Object *ht, int delay)
 /* recurs for values in hash table; we assume that such nesting is shallow */
 {
   intptr_t i, j, c;
@@ -1292,8 +1314,8 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
       k = sorted_keys[i];
       val = scheme_hash_tree_get(t, k);
       if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
-        val = ht_to_vector(val);
-      else if (!SAME_OBJ(val, scheme_true))
+        val = ht_to_vector(val, delay);
+      else if (delay && !SAME_OBJ(val, scheme_true))
         val = make_delayed_syntax(val);
       SCHEME_VEC_ELS(vec)[j++] = k;
       SCHEME_VEC_ELS(vec)[j++] = val;
@@ -1304,8 +1326,8 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht)
       k = sorted_keys[i];
       val = scheme_hash_get(t, k);
       if (SCHEME_HASHTRP(val) || SCHEME_HASHTP(val))
-        val = ht_to_vector(val);
-      else if (!SAME_OBJ(val, scheme_true))
+        val = ht_to_vector(val, delay);
+      else if (delay && !SAME_OBJ(val, scheme_true))
         val = make_delayed_syntax(val);
       SCHEME_VEC_ELS(vec)[j++] = k;
       SCHEME_VEC_ELS(vec)[j++] = val;
@@ -1501,9 +1523,9 @@ static Scheme_Object *write_module(Scheme_Object *obj)
 
   l = cons((m->phaseless ? scheme_true : scheme_false), l);
 
-  l = cons(ht_to_vector(m->other_binding_names), l);
-  l = cons(ht_to_vector(m->et_binding_names), l);
-  l = cons(ht_to_vector(m->binding_names), l);
+  l = cons(ht_to_vector(m->other_binding_names, 1), l);
+  l = cons(ht_to_vector(m->et_binding_names, 1), l);
+  l = cons(ht_to_vector(m->binding_names, 1), l);
   l = cons(m->me->src_modidx, l);
   
   l = cons(scheme_resolved_module_path_value(m->modsrc), l);

@@ -1413,6 +1413,8 @@ typedef struct {
   mzshort max_let_depth;
   Scheme_Object *code;
   struct Resolve_Prefix *prefix; /* NULL => a wrapper for a JITted module in `code' */
+  Scheme_Object *binding_namess; /* list of <phase> to hash of <symbol> to <id>;
+                                    additions to the top-level bindings table */
 } Scheme_Compilation_Top;
 
 /* A `let', `let*', or `letrec' form is compiled to the intermediate
@@ -2582,6 +2584,9 @@ typedef struct Scheme_Comp_Env
   
   Scheme_Object *lifts;
 
+  Scheme_Hash_Table *binding_namess; /* <phase> -> (<symbol> -> <id>); additions to the environment's
+                                        bindings table made during a particular compilation */
+
   mzshort rename_var_count;      /* number of non-NULL `values' when `renames' was computed */
   mzshort rename_rstart;         /* leftover rstart from previous round; see env.c */
   Scheme_Hash_Table *dup_check;  /* table for finding colliding symbols in `values' */
@@ -3168,6 +3173,7 @@ void scheme_mark_all_use(Scheme_Comp_Env *frame);
 #define SCHEME_POST_BIND_FRAME     (1 << 11)
 #define SCHEME_NESTED_MODULE_FRAME (1 << 12)
 #define SCHEME_KEEP_SCOPES_FRAME   (1 << 13)
+#define SCHEME_TMP_TL_BIND_FRAME   (1 << 14)
 
 #define SCHEME_REC_BINDING_FRAME (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_BEGIN_FRAME \
                                   | SCHEME_INTDEF_FRAME | SCHEME_FOR_INTDEF)
@@ -3285,6 +3291,8 @@ void scheme_define_parse(Scheme_Object *form,
 
 void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as_var);
 void scheme_binding_names_from_module(Scheme_Env *menv);
+void scheme_install_binding_names(Scheme_Object *binding_namess, Scheme_Env *env);
+Scheme_Hash_Table *scheme_get_binding_names_table(Scheme_Env *env);
 
 int scheme_prefix_depth(Resolve_Prefix *rp);
 Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
@@ -3421,6 +3429,7 @@ struct Scheme_Env {
   Scheme_Object *access_insp; /* for gaining protected access */
 
   Scheme_Object *stx_context; /* encapsulates scopes, shifts, etc. */
+  Scheme_Object *tmp_bind_scope; /* for compiling top-level definitions */
 
   Scheme_Bucket_Table *syntax;
   struct Scheme_Env *exp_env;
@@ -3633,7 +3642,7 @@ void scheme_add_global_constant_symbol(Scheme_Object *name, Scheme_Object *v, Sc
 } while(0)
 
 
-Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env);
+Scheme_Object *scheme_global_binding(Scheme_Object *id, Scheme_Env *env, int for_top_level);
 Scheme_Object *scheme_future_global_binding(Scheme_Object *id, Scheme_Env *env);
 
 Scheme_Object *scheme_sys_wraps(Scheme_Comp_Env *env);

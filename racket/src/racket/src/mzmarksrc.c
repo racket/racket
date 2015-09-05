@@ -932,6 +932,7 @@ namespace_val {
   gcMARK2(e->access_insp, gc);
 
   gcMARK2(e->stx_context, gc);
+  gcMARK2(e->tmp_bind_scope, gc);
 
   gcMARK2(e->syntax, gc);
   gcMARK2(e->exp_env, gc);
@@ -988,6 +989,7 @@ compilation_top_val {
   Scheme_Compilation_Top *t = (Scheme_Compilation_Top *)p;
   gcMARK2(t->code, gc);
   gcMARK2(t->prefix, gc);
+  gcMARK2(t->binding_namess, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
@@ -1279,6 +1281,9 @@ mark_comp_env {
   
   gcMARK2(e->use, gc);
   gcMARK2(e->lifts, gc);
+  gcMARK2(e->bindings, gc);
+
+  gcMARK2(e->binding_namess, gc);
 
   gcMARK2(e->expand_result_adjust_arg, gc);
 

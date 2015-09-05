@@ -2311,6 +2311,7 @@ static int namespace_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->access_insp, gc);
 
   gcMARK2(e->stx_context, gc);
+  gcMARK2(e->tmp_bind_scope, gc);
 
   gcMARK2(e->syntax, gc);
   gcMARK2(e->exp_env, gc);
@@ -2357,6 +2358,7 @@ static int namespace_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->access_insp, gc);
 
   gcFIXUP2(e->stx_context, gc);
+  gcFIXUP2(e->tmp_bind_scope, gc);
 
   gcFIXUP2(e->syntax, gc);
   gcFIXUP2(e->exp_env, gc);
@@ -2450,6 +2452,7 @@ static int compilation_top_val_MARK(void *p, struct NewGC *gc) {
   Scheme_Compilation_Top *t = (Scheme_Compilation_Top *)p;
   gcMARK2(t->code, gc);
   gcMARK2(t->prefix, gc);
+  gcMARK2(t->binding_namess, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));
@@ -2459,6 +2462,7 @@ static int compilation_top_val_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Compilation_Top *t = (Scheme_Compilation_Top *)p;
   gcFIXUP2(t->code, gc);
   gcFIXUP2(t->prefix, gc);
+  gcFIXUP2(t->binding_namess, gc);
 
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Compilation_Top));

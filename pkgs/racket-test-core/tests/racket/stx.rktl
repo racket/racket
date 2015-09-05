@@ -1282,7 +1282,7 @@
       (let-syntax ([z (lambda (stx) #`#,(@@foo 3))])
         z))
 
-(test (void) eval (expand #'(begin-for-syntax (define @@zoo (@@foo 2)))))
+(test (void) eval-syntax (expand #'(begin-for-syntax (define @@zoo (@@foo 2)))))
 (define-syntax (@@x stx) #`#, @@zoo)
 (test 2 '@@x/@@zoo @@x)
 (begin-for-syntax (define @@zoo2 (@@foo 2)))
@@ -1290,7 +1290,7 @@
 (test 2 '@@x/@@zoo @@x)
 
 (begin-for-syntax (@@foo 1))
-(test (void) eval (expand #'(begin-for-syntax (@@foo 1))))
+(test (void) eval-syntax (expand #'(begin-for-syntax (@@foo 1))))
 
 (module @@p racket/base
   (require (for-syntax racket/base

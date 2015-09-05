@@ -36,15 +36,28 @@ structures that are produced by @racket[zo-parse] and consumed by
 
 @defstruct+[(compilation-top zo)
             ([max-let-depth exact-nonnegative-integer?]
+             [binding-namess (hash/c exact-nonnegative-integer?
+                                     (hash/c symbol? identifier?))]
              [prefix prefix?]
              [code (or/c form? any/c)])]{
-  Wraps compiled code.  The @racket[max-let-depth] field indicates the
+  Wraps compiled code.
+
+  The @racket[max-let-depth] field indicates the
   maximum stack depth that @racket[code] creates (not counting the
-  @racket[prefix] array).  The @racket[prefix] field describes top-level
-  variables, module-level variables, and quoted syntax-objects accessed
-  by @racket[code].  The @racket[code] field contains executable code;
-  it is normally a @racket[form], but a literal value is represented as
-  itself.}
+  @racket[prefix] array).
+
+  The @racket[binding-namess] field provides a per-phase mapping from
+  symbols that appear in @racket[prefix] for top-level
+  @racket[def-values] forms and in top-level @racket[def-syntaxes]
+  forms. Each symbol is mapped to an identifier that will be bound
+  (after introduction into the namespace) by the definition.
+
+  The @racket[prefix] field describes top-level variables,
+  module-level variables, and quoted syntax-objects accessed by
+  @racket[code].
+
+  The @racket[code] field contains executable code; it is normally a
+  @racket[form], but a literal value is represented as itself.}
 
 @defstruct+[(prefix zo)
             ([num-lifts exact-nonnegative-integer?]

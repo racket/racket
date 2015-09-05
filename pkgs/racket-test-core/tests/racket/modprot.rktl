@@ -220,6 +220,7 @@
          (zo-marshal
           (compilation-top
            10
+           #hash()
            (prefix 0
                    (list 'dummy)
                    null

@@ -2093,11 +2093,16 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
     g = 1;
 
   /* Special handling of 0 values for define-syntaxes:
-     do nothing. This makes (define-values (a b c) (values))
+     just create binding. This makes (define-values (a b c) (values))
      a kind of declaration form, which is useful is
      a, b, or c is introduced by a macro. */
-  if (dm_env && !g)
+  if (dm_env && !g) {
+    for (i = SCHEME_VEC_SIZE(vec) - delta; i--; ) {
+      b = scheme_global_keyword_bucket(SCHEME_VEC_ELS(vec)[i+delta], dm_env);
+      scheme_shadow(dm_env, (Scheme_Object *)b->key, scheme_false, 1);
+    }
     return scheme_void;
+  }
   
   i = SCHEME_VEC_SIZE(vec) - delta;
 
@@ -4015,7 +4020,36 @@ static int get_comp_flags(Scheme_Config *config)
   return comp_flags;
 }
 
-static Scheme_Object *optimize_resolve_expr(Scheme_Object* o, Comp_Prefix *cp, Scheme_Object *src_insp_desc)
+static void create_binding_namess(Scheme_Comp_Env *cenv)
+{
+  Scheme_Hash_Table *binding_namess;
+  binding_namess= scheme_make_hash_table(SCHEME_hash_ptr);
+  cenv->binding_namess = binding_namess;
+}
+
+
+static Scheme_Object *binding_namess_as_list(Scheme_Hash_Table *binding_namess)
+{
+  int i;
+  Scheme_Object *l = scheme_null, **sorted_keys;
+
+  if (!binding_namess->count)
+    return scheme_null;
+
+  sorted_keys = scheme_extract_sorted_keys((Scheme_Object *)binding_namess);
+    
+  for (i = binding_namess->count; i--; ) {
+    l = scheme_make_pair(scheme_make_pair(sorted_keys[i],
+                                          scheme_hash_get(binding_namess, sorted_keys[i])),
+                         l);
+  }
+
+  return l;
+}
+
+static Scheme_Object *optimize_resolve_expr(Scheme_Object* o, Comp_Prefix *cp,
+                                            Scheme_Object *src_insp_desc,
+                                            Scheme_Object *binding_namess)
 {
   Optimize_Info *oi;
   Resolve_Prefix *rp;
@@ -4054,6 +4088,7 @@ static Scheme_Object *optimize_resolve_expr(Scheme_Object* o, Comp_Prefix *cp, S
   top->max_let_depth = max_let_depth;
   top->code = o;
   top->prefix = rp;
+  top->binding_namess = binding_namess;
   return (Scheme_Object *)top;
 }
 
@@ -4135,7 +4170,9 @@ static void *compile_k(void)
 
     cenv = scheme_new_comp_env(genv, insp, frame_scopes,
                                SCHEME_TOPLEVEL_FRAME
-                               | SCHEME_KEEP_SCOPES_FRAME);
+                               | SCHEME_KEEP_SCOPES_FRAME
+                               | SCHEME_TMP_TL_BIND_FRAME);
+    create_binding_namess(cenv);
 
     if (rib) {
       cenv->expand_result_adjust = scheme_stx_push_introduce_module_context;
@@ -4192,7 +4229,7 @@ static void *compile_k(void)
     } else {
       /* We want to simply compile `form', but we have to loop in case
 	 an expression is lifted in the process of compiling: */
-      Scheme_Object *l, *prev_o = NULL;
+      Scheme_Object *l, *prev_o = NULL, *binding_namess;
       int max_let_depth;
 
       while (1) {
@@ -4253,11 +4290,14 @@ static void *compile_k(void)
 
       rp = scheme_remap_prefix(rp, ri);
 
+      binding_namess = binding_namess_as_list(cenv->binding_namess);
+
       top = MALLOC_ONE_TAGGED(Scheme_Compilation_Top);
       top->iso.so.type = scheme_compilation_top_type;
       top->max_let_depth = max_let_depth;
       top->code = o;
       top->prefix = rp;
+      top->binding_namess = binding_namess;
 
       if (recompile_every_compile) {
         int i;
@@ -4417,6 +4457,8 @@ static void *eval_k(void)
       else
         v = scheme_eval_clone(v);
       rp = scheme_prefix_eval_clone(top->prefix);
+
+      scheme_install_binding_names(top->binding_namess, env);
 
       save_runstack = scheme_push_prefix(env, rp, NULL, NULL, 0, env->phase, NULL, scheme_false);
 
@@ -4913,7 +4955,8 @@ static Scheme_Object *recompile_top(Scheme_Object *top)
   printf("%s\n\n", scheme_print_to_string(code, NULL));
 #endif
 
-  top = optimize_resolve_expr(code, cp, ((Scheme_Compilation_Top*)top)->prefix->src_insp_desc);
+  top = optimize_resolve_expr(code, cp, ((Scheme_Compilation_Top*)top)->prefix->src_insp_desc,
+                              ((Scheme_Compilation_Top*)top)->binding_namess);
 
   return top;
 }
@@ -5003,7 +5046,7 @@ scheme_make_lifted_defn(Scheme_Object *sys_wraps, Scheme_Object **_ids, Scheme_O
   /* Registers scoped ids: */
   for (ids = *_ids; !SCHEME_NULLP(ids); ids = SCHEME_CDR(ids)) {
     id = SCHEME_CAR(ids);
-    (void)scheme_global_binding(id, env->genv);
+    (void)scheme_global_binding(id, env->genv, 0);
   }
 
   l = icons(scheme_datum_to_syntax(define_values_symbol, scheme_false, sys_wraps, 0, 0), 

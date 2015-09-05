@@ -7939,7 +7939,7 @@ static Scheme_Object *add_lifted_defn(Scheme_Object *data, Scheme_Object **_ids,
   
     id = introduce_to_module_context(id, rn);
 
-    name = scheme_global_binding(id, env->genv);
+    name = scheme_global_binding(id, env->genv, 0);
 
     /* Create the bucket, indicating that the name will be defined: */
     scheme_add_global_symbol(name, scheme_undefined, env->genv);
@@ -8979,7 +8979,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
             }
 
             /* Generate symbol for this binding: */
-            name = scheme_global_binding(name, env->genv);
+            name = scheme_global_binding(name, env->genv, 0);
 
 	    /* Create the bucket, indicating that the name will be defined: */
 	    scheme_add_global_symbol(name, scheme_undefined, env->genv);
@@ -9086,7 +9086,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
               }
 
               /* Generate symbol for this binding: */
-              name = scheme_global_binding(name, env->genv);
+              name = scheme_global_binding(name, env->genv, 0);
 
               if (!SAME_OBJ(SCHEME_STX_VAL(orig_name), name)
                   || !scheme_stx_equal_module_context(orig_name, env->genv->module->rn_stx))
@@ -11864,7 +11864,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
             modname = scheme_module_resolve(modidx, 1);
             menv = scheme_module_access(modname, orig_env, 0);
             val = scheme_lookup_in_table(menv->toplevel, (char *)exsns[j]);
-            b = scheme_global_bucket(scheme_global_binding(iname, orig_env), orig_env);
+            b = scheme_global_bucket(scheme_global_binding(iname, orig_env, 0), orig_env);
             scheme_set_global_bucket(((copy_vars == 2)
                                       ? "namespace-require/constant"
                                       : "namespace-require/copy"),

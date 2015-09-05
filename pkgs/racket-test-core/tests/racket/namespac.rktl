@@ -326,47 +326,82 @@
 ;; be transferred to another namespace
 
 (let ()
-  ;; transfer a `require`
-  (define c
-    (parameterize ([current-namespace (make-base-namespace)])
-      (compile '(require racket/base))))
-  (parameterize ([current-namespace (make-base-empty-namespace)])
-    (test (void) 'eval (eval c))
-    (test add1 eval 'add1)))
+  (define (check-namespace-transfer compile-wrap)
+    (let ()
+      ;; transfer a `require`
+      (define c
+        (parameterize ([current-namespace (make-base-namespace)])
+          (compile-wrap (compile '(require racket/base)))))
+      (parameterize ([current-namespace (make-base-empty-namespace)])
+        (test (void) 'eval (eval c))
+        (test add1 eval 'add1)))
 
-(let ()
-  ;; transfer a definition, reference is visible, original
-  ;; namespace is unchanged
-  (define-values (c get)
-    (parameterize ([current-namespace (make-base-namespace)])
-      (define c (compile '(define one 1)))
-      (values
-       c
-       (eval '(lambda () one)))))
-  (parameterize ([current-namespace (make-base-empty-namespace)])
-    (test (void) 'eval (eval c))
-    (test 1 eval 'one)
-    (err/rt-test (get) exn:fail:contract:variable?)))
+    (let ()
+      ;; transfer a definition, reference is visible, original
+      ;; namespace is unchanged
+      (define-values (c get)
+        (parameterize ([current-namespace (make-base-namespace)])
+          (define c (compile-wrap (compile '(define one 1))))
+          (values
+           c
+           (eval '(lambda () one)))))
+      (parameterize ([current-namespace (make-base-empty-namespace)])
+        (test (void) 'eval (eval c))
+        (test 1 eval 'one)
+        (err/rt-test (get) exn:fail:contract:variable?)))
 
-(let ()
-  ;; transfer a definition of a macro-introduced variable, and
-  ;; check access via a syntax object that is compiled at the same time:
-  (define-values (c get)
-    (parameterize ([current-namespace (make-base-namespace)])
-      (eval '(define-syntax-rule (m id)
-              (begin
-                (define one 1)
-                (define id (quote-syntax one))
-                one)))
-      (define c (compile '(m id)))
-      (values
-       c
-       (eval '(lambda () one)))))
-  (parameterize ([current-namespace (make-base-empty-namespace)])
-    (test 1 'eval (eval c))
-    (err/rt-test (eval 'one) exn:fail:syntax?)
-    (test 1 eval (eval 'id))
-    (err/rt-test (get) exn:fail:contract:variable?)))
+    (let ()
+      ;; transfer a definition of a macro-introduced variable, and
+      ;; check access via a syntax object that is compiled at the same time:
+      (define-values (c get)
+        (parameterize ([current-namespace (make-base-namespace)])
+          (eval '(define-syntax-rule (m id)
+                  (begin
+                    (define one 1)
+                    (define id (quote-syntax one))
+                    one)))
+          (define c (compile-wrap (compile '(m id))))
+          (values
+           c
+           (eval '(lambda () one)))))
+      (parameterize ([current-namespace (make-base-empty-namespace)])
+        (test 1 'eval (eval c))
+        (err/rt-test (eval 'one) exn:fail:syntax?)
+        (test #t identifier? (eval 'id))
+        (test 1 eval (eval 'id))
+        (err/rt-test (get) exn:fail:contract:variable?))))
+  (check-namespace-transfer values)
+  (check-namespace-transfer (lambda (c)
+                              (define o (open-output-bytes))
+                              (write c o)
+                              (parameterize ([read-accept-compiled #t])
+                                (read (open-input-bytes (get-output-bytes o)))))))
+
+;; ----------------------------------------
+;; Make sure compilation doesn't bind in the current namespace
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(define-syntax-rule (m2 c-id r-id)
+          (begin
+            (require (rename-in racket/base [+ plus]))
+            (define (c-id) (compile #'(define plus 1)))
+            (define (r-id) (eval #'plus)))))
+  (eval '(m2 def ref))
+  (test + eval '(ref))
+  (eval '(def))
+  (test + eval '(ref))
+  (eval (eval '(def)))
+  (test 1 eval '(ref)))
+
+#|
+(define-syntax-rule (m3 c-id)
+  (begin
+    (define-syntax plus #f)
+    (define (c-id) (compile #'(define plus plus)))))
+
+(m3 cdef)
+(cdef)
+|#
 
 ;; ----------------------------------------
 

@@ -4234,8 +4234,8 @@
    (write-bytes
     (zo-marshal
      (match m
-       [(compilation-top max-let-depth prefix code)
-        (compilation-top max-let-depth prefix 
+       [(compilation-top max-let-depth binding-namess prefix code)
+        (compilation-top max-let-depth binding-namess prefix 
                          (let ([body (mod-body code)])
                            (struct-copy mod code [body
                                                   (match body 
