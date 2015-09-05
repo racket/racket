@@ -5679,7 +5679,7 @@ Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir
 
     while (SCHEME_PAIRP(oe)) {
       if (cache) {
-        obj = scheme_make_pair(to_bytes(SCHEME_CAR(oe)), scheme_null);
+        obj = scheme_make_pair(to_bytes(SCHEME_CAR(oe)), obj);
       } else {
         a[0] = obj;
         a[1] = SCHEME_CAR(oe);
