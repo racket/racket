@@ -80,9 +80,9 @@
 (define (extract-base-filename/o s [program #f])
   (extract 'extract-base-filename/o
            s program
-           (case (system-type)
-             [(unix beos macos macosx) #"o"]
-             [(windows) #"obj"])
+           (extract-rx (case (system-type)
+                         [(unix beos macos macosx) #"o"]
+                         [(windows) #"obj"]))
            "compiled object"
            (extract-suffix append-object-suffix)))
   
@@ -90,6 +90,6 @@
   (extract 'extract-base-filename/ext
            s
            program
-           (regexp-quote (subbytes (system-type 'so-suffix) 1) #f)
+           (extract-rx (regexp-quote (subbytes (system-type 'so-suffix) 1) #f))
            "Racket extension"
            (extract-suffix append-extension-suffix)))
