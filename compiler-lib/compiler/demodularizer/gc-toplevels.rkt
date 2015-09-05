@@ -10,7 +10,7 @@
 ; XXX Use efficient set structure
 (define (gc-toplevels top)
   (match top
-    [(struct compilation-top (max-let-depth top-prefix form))
+    [(struct compilation-top (max-let-depth binding-namess top-prefix form))
      (define lift-start
        (prefix-lift-start top-prefix))
      (define max-depgraph-index 
@@ -54,6 +54,7 @@
      (log-debug (format "Used stxs: ~S" ordered-stxs))
      (make-compilation-top
       max-let-depth
+      #hash()
       new-prefix
       new-form)]))
 

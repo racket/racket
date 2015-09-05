@@ -13,13 +13,14 @@
 
 (define (wrap-in-kernel-module name srcname lang-info self-modidx top)
   (match top
-    [(struct compilation-top (max-let-depth prefix form))
+    [(struct compilation-top (max-let-depth binding-namess prefix form))
      (define-values (reqs new-forms)
        (partition req? (splice-forms form)))
      (define requires
        (map (compose ->module-path-index stx-obj-datum stx-content req-reqs) reqs))
      (make-compilation-top 
       0
+      #hash()
       (make-prefix 0 (list #f) empty (prefix-src-inspector-desc prefix))
       (make-mod name srcname
                 self-modidx

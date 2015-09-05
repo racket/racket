@@ -43,10 +43,21 @@
 
 (define (read-compilation-top v)
   (match v
-    [`(,ld ,prefix . ,code)
+    [`(,ld ,binding-namess ,prefix . ,code)
      (unless (prefix? prefix)
        (error 'bad "not prefix ~a" prefix))
-     (make-compilation-top ld prefix code)]))
+     (make-compilation-top ld
+                           (binding-namess-list->hash binding-namess)
+                           prefix
+                           code)]))
+
+(define (binding-namess-list->hash binding-namess)
+  (for/hash ([e (in-list binding-namess)])
+    (values (car e)
+            (let ([vec (cdr e)])
+              (for/hash ([i (in-range 0 (vector-length vec) 2)])
+                (values (vector-ref vec i)
+                        (vector-ref vec (add1 i))))))))
 
 (define (read-resolve-prefix v)
   (match v
@@ -1155,8 +1166,9 @@
   (define srcloc-ht (make-hasheq))
   (let walk ([p v])
     (match p
-      [(compilation-top _ pfx c)
+      [(compilation-top _ binding-namess pfx c)
        (struct-copy compilation-top p
+                    [binding-namess (walk binding-namess)]
                     [prefix (walk pfx)]
                     [code (walk c)])]
       [(prefix _ _ s _)

@@ -33,7 +33,7 @@
                       (with-output-to-bytes
                           (λ () (write (cdr b)))))))])
         (let ([n (match v
-                   [(struct compilation-top (_ prefix (struct primval (n)))) n]
+                   [(struct compilation-top (_ _ prefix (struct primval (n)))) n]
                    [else #f])])
           (hash-set! table n (car b)))))
     table))
@@ -53,7 +53,7 @@
 (define (decompile top)
   (let ([stx-ht (make-hasheq)])
     (match top
-      [(struct compilation-top (max-let-depth prefix form))
+      [(struct compilation-top (max-let-depth binding-namess prefix form))
        (let-values ([(globs defns) (decompile-prefix prefix stx-ht)])
          (expose-module-path-indexes
           `(begin

@@ -107,9 +107,9 @@
 
 (define (nodep top phase)
   (match top
-    [(struct compilation-top (max-let-depth prefix form))
+    [(struct compilation-top (max-let-depth binding-namess prefix form))
      (define-values (modvar-rewrite lang-info new-form) (nodep-form form phase))
-     (values modvar-rewrite lang-info (make-compilation-top max-let-depth prefix new-form))]
+     (values modvar-rewrite lang-info (make-compilation-top max-let-depth #hash() prefix new-form))]
     [else (error 'nodep "unrecognized: ~e" top)]))
 
 (define (nodep-form form phase)

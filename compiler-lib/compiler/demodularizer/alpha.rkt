@@ -4,8 +4,8 @@
 
 (define (alpha-vary-ctop top)
   (match top
-    [(struct compilation-top (max-let-depth prefix form))
-     (make-compilation-top max-let-depth (alpha-vary-prefix prefix) form)]))
+    [(struct compilation-top (max-let-depth binding-namess prefix form))
+     (make-compilation-top max-let-depth binding-namess (alpha-vary-prefix prefix) form)]))
 (define (alpha-vary-prefix p)
   (struct-copy prefix p
                [toplevels

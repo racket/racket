@@ -66,7 +66,11 @@
 (define-form-struct form ())
 (define-form-struct (expr form) ())
 
-(define-form-struct compilation-top ([max-let-depth exact-nonnegative-integer?] [prefix prefix?] [code (or/c form? any/c)])) ; compiled code always wrapped with this
+(define-form-struct compilation-top ([max-let-depth exact-nonnegative-integer?]
+                                     [binding-namess (hash/c exact-nonnegative-integer?
+                                                             (hash/c symbol? identifier?))]
+                                     [prefix prefix?]
+                                     [code (or/c form? any/c)])) ; compiled code always wrapped with this
 
 ;; A provided identifier
 (define-form-struct provided ([name symbol?] 

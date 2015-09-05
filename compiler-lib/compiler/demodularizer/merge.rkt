@@ -15,7 +15,7 @@
 (define (merge-compilation-top get-modvar-rewrite top)
   (parameterize ([current-get-modvar-rewrite get-modvar-rewrite])
     (match top
-      [(struct compilation-top (max-let-depth prefix form))
+      [(struct compilation-top (max-let-depth binding-namess prefix form))
        (define-values (new-max-let-depth new-prefix gen-new-forms)
          (merge-form max-let-depth prefix form))
        (define total-tls (length (prefix-toplevels new-prefix)))
@@ -29,7 +29,7 @@
              [p (in-list (prefix-toplevels new-prefix))])
          (log-debug (format "new-prefix tls\t~v ~v" i p)))
        (make-compilation-top
-        new-max-let-depth new-prefix
+        new-max-let-depth #hash() new-prefix
         (make-splice (gen-new-forms new-prefix)))]
       [else (error 'merge "unrecognized: ~e" top)])))
 

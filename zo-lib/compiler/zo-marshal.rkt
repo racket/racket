@@ -155,8 +155,11 @@
   (define (out-compilation-top shared-obj-pos shared-obj-pos-any counting? outp)
     (define ct
       (match top
-        [(compilation-top max-let-depth prefix form)
-         (list* max-let-depth prefix (protect-quote form))]))
+        [(compilation-top max-let-depth binding-namess prefix form)
+         (list* max-let-depth
+                (binding-namess-hash->list binding-namess)
+                prefix
+                (protect-quote form))]))
     (out-anything ct (make-out outp shared-obj-pos shared-obj-pos-any counting?
                                stx-objs wraps hash-consed hash-consed-results))
     (file-position outp))
@@ -1246,6 +1249,13 @@
     (if r
         (find-relative-path r v)
         v)))
+
+(define (binding-namess-hash->list binding-namess)
+  (for/list ([(phase t) (in-hash binding-namess)])
+    (cons phase
+          (list->vector
+           (apply append (for/list ([(id sym) (in-hash t)])
+                           (list id sym)))))))
 
 ;; ----------------------------------------
 
