@@ -728,7 +728,7 @@
         (out-number id out)]
        [(struct assign (id rhs undef-ok?))
         (out-marshaled set-bang-type-num
-                       (cons undef-ok? (cons id rhs))
+                       (cons undef-ok? (cons id (protect-quote rhs)))
                        out)]
        [(struct localref (unbox? offset clear? other-clears? type))
         (if (and (not clear?) (not other-clears?) (not flonum?)
