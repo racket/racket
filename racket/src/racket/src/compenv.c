@@ -1443,9 +1443,17 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     *_menv = genv;
 
   if (SCHEME_STXP(find_id)) {
-    if (flags & SCHEME_NULL_FOR_UNBOUND)
-      return NULL;
     find_global_id = scheme_future_global_binding(find_id, env->genv);
+    if (!SAME_OBJ(find_global_id, SCHEME_STX_VAL(find_id))
+        && SCHEME_FALSEP(binding)) {
+      /* Since we got a symbol back, there's at least a "temporary"
+         top-level binding for the identifier in the current namespace */
+      binding = scheme_make_vector(3, NULL);
+      SCHEME_VEC_ELS(binding)[0] = find_global_id;
+      SCHEME_VEC_ELS(binding)[1] = (env->genv->module ? env->genv->module->modname : scheme_false);
+      SCHEME_VEC_ELS(binding)[2] = scheme_env_phase(env->genv);
+    } else if (flags & SCHEME_NULL_FOR_UNBOUND)
+      return NULL;
   } else
     find_global_id = find_id;
 

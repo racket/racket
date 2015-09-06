@@ -393,15 +393,30 @@
   (eval (eval '(def)))
   (test 1 eval '(ref)))
 
-#|
-(define-syntax-rule (m3 c-id)
-  (begin
-    (define-syntax plus #f)
-    (define (c-id) (compile #'(define plus plus)))))
+;; When a binding is present, it takes precedence over
+;; a "temporary" binding:
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval '(define-syntax-rule (m3 c-id)
+          (begin
+            (define-syntax plus #f)
+            (define (c-id) (compile #'(define plus plus))))))
+  (eval '(m3 cdef))
+  (err/rt-test (eval '(cdef)) exn:fail:syntax?))
 
-(m3 cdef)
-(cdef)
-|#
+;; A "temporary" binding should work on an identifier with
+;; no `#%top` in its context:
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval '(define-syntax (m3 stx)
+          (with-syntax ([(gen) (generate-temporaries '(gen))])
+            (syntax-case stx ()
+              [(_ id)
+               #'(begin
+                   (define (gen) gen)
+                   (define id gen))]))))
+  (eval '(m3 self))
+  (test #t eval '(eq? self (self))))
 
 ;; ----------------------------------------
 
