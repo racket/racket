@@ -2343,6 +2343,7 @@ mark_unmarshal_tables {
  mark:
   Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
   gcMARK2(ut->rns, gc);
+  gcMARK2(ut->multi_scope_pairs, gc);
   gcMARK2(ut->rp, gc);
   gcMARK2(ut->decoded, gc);
  size:

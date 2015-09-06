@@ -4439,6 +4439,9 @@ static void make_ut(CPort *port)
   
   rht = scheme_make_hash_table(SCHEME_hash_ptr);
   port->ut->rns = rht;
+
+  rht = scheme_make_hash_table(SCHEME_hash_ptr);
+  port->ut->multi_scope_pairs = rht;
 }
 
 /* Since read_compact_number is called often, we want it to be

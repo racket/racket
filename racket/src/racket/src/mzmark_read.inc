@@ -167,6 +167,7 @@ static int mark_unmarshal_tables_SIZE(void *p, struct NewGC *gc) {
 static int mark_unmarshal_tables_MARK(void *p, struct NewGC *gc) {
   Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
   gcMARK2(ut->rns, gc);
+  gcMARK2(ut->multi_scope_pairs, gc);
   gcMARK2(ut->rp, gc);
   gcMARK2(ut->decoded, gc);
   return
@@ -176,6 +177,7 @@ static int mark_unmarshal_tables_MARK(void *p, struct NewGC *gc) {
 static int mark_unmarshal_tables_FIXUP(void *p, struct NewGC *gc) {
   Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
   gcFIXUP2(ut->rns, gc);
+  gcFIXUP2(ut->multi_scope_pairs, gc);
   gcFIXUP2(ut->rp, gc);
   gcFIXUP2(ut->decoded, gc);
   return

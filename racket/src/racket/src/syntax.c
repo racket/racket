@@ -6613,7 +6613,8 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
                                      Scheme_Unmarshal_Tables *ut)
 {
   Scheme_Hash_Table *multi_scope;
-  Scheme_Object *l, *mm_l;
+  Scheme_Object *l, *mm_l, *first = NULL, *last = NULL;
+  Scheme_Object *l_first, *l_last, *p;
 
   mm_l = multi_scopes;
 
@@ -6622,27 +6623,66 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
     if (SCHEME_FALLBACKP(l))
       l = SCHEME_FALLBACK_FIRST(l);
 
+    l_first = scheme_null;
+    l_last = NULL;
     for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+      int stop;
+
       if (!SCHEME_PAIRP(l)) return_NULL;
       if (!SCHEME_PAIRP(SCHEME_CAR(l))) return_NULL;
-      if (SCHEME_VECTORP(SCHEME_CAR(SCHEME_CAR(l)))) {
-        multi_scope = vector_to_multi_scope(SCHEME_CAR(SCHEME_CAR(l)), ut);
-        if (!multi_scope) return_NULL;
-        SCHEME_CAR(SCHEME_CAR(l)) = (Scheme_Object *)multi_scope;
-        if (!SCHEME_PHASE_SHIFTP(SCHEME_CDR(SCHEME_CAR(l)))) return_NULL;
-      } else {
-        /* rest of list must be converted already, too */
+
+      p = scheme_hash_get(ut->multi_scope_pairs, l);
+      if (!p) {
+        p = scheme_hash_get(ut->multi_scope_pairs, SCHEME_CAR(l));
+        if (p) {
+          p = scheme_make_pair(p, scheme_null);
+        } else {
+          if (SCHEME_VECTORP(SCHEME_CAR(SCHEME_CAR(l)))) {
+            multi_scope = vector_to_multi_scope(SCHEME_CAR(SCHEME_CAR(l)), ut);
+            if (!multi_scope) return_NULL;
+            if (!SCHEME_PHASE_SHIFTP(SCHEME_CDR(SCHEME_CAR(l)))) return_NULL;
+            p = scheme_make_pair((Scheme_Object *)multi_scope,
+                                 SCHEME_CDR(SCHEME_CAR(l)));
+            scheme_hash_set(ut->multi_scope_pairs, SCHEME_CAR(l), p);
+          } else
+            return_NULL;
+        }
+        scheme_hash_set(ut->multi_scope_pairs, SCHEME_CAR(l), p);
+        p = scheme_make_pair(p, scheme_null);
+        stop = 0;
+      } else
+        stop = 1;
+
+      if (l_last)
+        SCHEME_CDR(l_last) = p;
+      else
+        l_first = p;
+      l_last = p;
+
+      if (stop)
         break;
-      }
+      else
+        scheme_hash_set(ut->multi_scope_pairs, l, p);
     }
 
-    if (SCHEME_FALLBACKP(mm_l))
+    if (SCHEME_FALLBACKP(mm_l)) {
+      p = make_fallback_pair(l_first, scheme_null);
+      if (last)
+        SCHEME_FALLBACK_REST(last) = p;
+      else
+        first = p;
+      last = p;
       mm_l = SCHEME_FALLBACK_REST(mm_l);
-    else
+    } else {
+      if (last)
+        SCHEME_FALLBACK_REST(last) = l_first;
+      else
+        first = l_first;
       break;
+    }
   }
 
-  return multi_scopes;
+  return first;
 }
 
 static Scheme_Object *datum_to_wraps(Scheme_Object *w,

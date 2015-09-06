@@ -3371,8 +3371,9 @@ void scheme_marshal_push_refs(Scheme_Marshal_Tables *mt);
 void scheme_marshal_pop_refs(Scheme_Marshal_Tables *mt, int keep);
 
 typedef struct Scheme_Unmarshal_Tables {
-  MZTAG_IF_REQUIRED  
+  MZTAG_IF_REQUIRED
   Scheme_Hash_Table *rns;
+  Scheme_Hash_Table *multi_scope_pairs; /* records conversions */
   struct CPort *rp;
   char *decoded;
   mzlonglong bytecode_hash;
