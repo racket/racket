@@ -113,6 +113,9 @@
 ;; Fix a problem with glyph extents and clipped rendering:
 (define-runtime-path cairo-coretext-patch "patches/cairo-coretext.patch")
 
+;; Avoid CGFontGetGlyphPath:
+(define-runtime-path cairo-cgfontgetglpyh-patch "patches/cgfontgetglyph.patch")
+
 ;; Hack to workaround broken Courier New in Mac OS X 10.{7.8}:
 (define-runtime-path courier-new-patch "patches/courier-new.patch")
 
@@ -412,6 +415,7 @@
 				       '("--enable-xlib=no")
 				       null)
                        #:patches (list cairo-coretext-patch
+                                       cairo-cgfontgetglpyh-patch
                                        courier-new-patch
                                        win32cairofallback-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
