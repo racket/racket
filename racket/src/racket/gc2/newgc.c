@@ -1667,11 +1667,11 @@ int GC_allocate_phantom_bytes(intptr_t request_size_bytes)
 #endif
 
   if ((request_size_bytes > 0)
-      && ((gc->phantom_count + request_size_bytes) < gc->phantom_count))
+      && ((gc->gen0_phantom_count + request_size_bytes) < gc->gen0_phantom_count))
     /* overflow */
     return 1;
 
-  gc->phantom_count += request_size_bytes;
+  gc->gen0_phantom_count += request_size_bytes;
   /* adjust `gc->memory_in_use', but protect against {over,under}flow: */
   if (request_size_bytes < 0) {
     request_size_bytes = -request_size_bytes;
@@ -1679,6 +1679,10 @@ int GC_allocate_phantom_bytes(intptr_t request_size_bytes)
       gc->memory_in_use -= request_size_bytes;
   } else
     gc->memory_in_use = add_no_overflow(gc->memory_in_use, request_size_bytes);
+
+  /* If we've allocated enough phantom bytes, then force a GC */
+  if (gc->gen0_phantom_count > GEN0_MAX_SIZE)
+    collect_now(gc, 0, 0);
 
   return 1;
 }
@@ -4056,7 +4060,7 @@ void GC_dump_with_traces(int flags,
     GCWARN((GCOUTF,"Allocated (+reserved) page sizes: %" PRIdPTR " (+%" PRIdPTR ")\n",
             gc->used_pages * APAGE_SIZE,
             mmu_memory_allocated(gc->mmu) - (gc->used_pages * APAGE_SIZE)));
-    GCWARN((GCOUTF,"Phantom bytes: %" PRIdPTR "\n", gc->phantom_count));
+    GCWARN((GCOUTF,"Phantom bytes: %" PRIdPTR "\n", (gc->phantom_count + gc->gen0_phantom_count)));
     GCWARN((GCOUTF,"# of major collections: %" PRIdPTR "\n", gc->num_major_collects));
     GCWARN((GCOUTF,"# of minor collections: %" PRIdPTR "\n", gc->num_minor_collects));
     GCWARN((GCOUTF,"# of installed finalizers: %i\n", gc->num_fnls));
@@ -4997,7 +5001,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   old_mem_use = gc->memory_in_use;
   old_gen0    = gc->gen0.current_size;
-  old_mem_allocated = mmu_memory_allocated(gc->mmu) + gc->phantom_count;
+  old_mem_allocated = mmu_memory_allocated(gc->mmu) + gc->phantom_count + gc->gen0_phantom_count;
 
   TIME_DECLS();
 
@@ -5038,6 +5042,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   if (gc->gc_full)
     gc->phantom_count = 0;
+  gc->gen0_phantom_count = 0;
 
   TIME_INIT();
 

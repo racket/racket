@@ -239,6 +239,7 @@ typedef struct NewGC {
   unsigned short phantom_tag;
 
   uintptr_t phantom_count;
+  uintptr_t gen0_phantom_count;
 
   Roots roots;
   GC_Weak_Array *weak_arrays;
