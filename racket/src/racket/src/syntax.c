@@ -536,6 +536,8 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
   Scheme_Object *e1, *key, *val;
   mzlonglong i;
 
+  STX_ASSERT(!origin || SCHEME_STX_SYMBOLP(origin));
+
   if (nstx->props)
     ne = nstx->props;
   else

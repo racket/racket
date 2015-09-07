@@ -4482,9 +4482,8 @@ static Scheme_Object *install_alt_from_rename(Scheme_Object *first, Scheme_Objec
       Scheme_Object *tail;
       tail = scheme_stx_taint_disarm(first, NULL);
       tail = SCHEME_STX_CDR(tail);
-      alt_first = scheme_datum_to_syntax(scheme_make_pair(alt_first, tail),
-                                         first, first, 0, 1);
-      return scheme_stx_track(alt_first, first, first);
+      return scheme_datum_to_syntax(scheme_make_pair(alt_first, tail),
+                                    first, first, 0, 1);
     } else
       return alt_first;
   } else
@@ -4698,7 +4697,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     if (scheme_stx_has_empty_wraps(form, scheme_env_phase(env->genv))
         && same_effective_env(SCHEME_PTR2_VAL(var), env)) {
       /* FIXME [Ryan?]: this needs EXPAND_OBSERVE callbacks. */
-      form = scheme_stx_track(SCHEME_PTR1_VAL(var), form, form);
+      form = scheme_stx_track(SCHEME_PTR1_VAL(var), form, NULL);
       if (!rec[drec].comp) {
         /* Already fully expanded. */
         return form;
