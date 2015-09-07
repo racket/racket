@@ -1622,17 +1622,19 @@
 			 ;; Print as a fraction.
 			 (number->string x)))))))]))
   
-  (define pretty-format
-    (case-lambda
-      [(t) (pretty-format t (pretty-print-columns))]
-      [(t w)
-       (parameterize ([pretty-print-columns w])
-         (let ([op (open-output-string)])
-           (pretty-print t op)
-           (let ([s (get-output-string op)])
-             (if (eq? w 'infinity)
-                 s
-                 (substring s 0 (- (string-length s) 1))))))]))
+  (define (pretty-format t [w (pretty-print-columns)] #:mode [mode 'print])
+    (parameterize ([pretty-print-columns w])
+      (let ([op (open-output-string)])
+        ((case mode
+           [(print)   pretty-print]
+           [(write)   pretty-write]
+           [(display) pretty-display]
+           [else (raise-argument-error 'pretty-format "(or/c 'print 'write display)" mode)])
+         t op)
+        (let ([s (get-output-string op)])
+          (if (eq? w 'infinity)
+              s
+              (substring s 0 (- (string-length s) 1)))))))
 
   
   )
