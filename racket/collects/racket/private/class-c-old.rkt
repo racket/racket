@@ -213,6 +213,7 @@
                             supers
                             (class-self-interface cls)
                             void ;; No inspecting
+                            (class-obj-inspector cls) ; inherit object inspector
                             
                             method-width
                             method-ht
@@ -273,7 +274,8 @@
                                         0 ;; No new fields in this class replacement
                                         undefined
                                         ;; Map object property to class:
-                                        (list (cons prop:object c)))])
+                                        (list (cons prop:object c))
+                                        (class-obj-inspector cls))])
           (set-class-struct:object! c struct:object)
           (set-class-object?! c object?)
           (set-class-make-object! c object-make)
@@ -480,6 +482,7 @@
                             supers
                             (class-self-interface cls)
                             void ;; No inspecting
+                            (class-obj-inspector cls)
                             
                             method-width
                             method-ht
@@ -542,7 +545,8 @@
                                         0 ;; No new fields in this class replacement
                                         undefined
                                         ;; Map object property to class:
-                                        (list (cons prop:object c)))])
+                                        (list (cons prop:object c))
+                                        (class-obj-inspector cls))])
           (set-class-struct:object! c struct:object)
           (set-class-object?! c object?)
           (set-class-make-object! c object-make)
@@ -1544,6 +1548,7 @@
                         (list->vector (vector->list (class-supers cls)))
                         (class-self-interface cls)
                         void ;; No inspecting
+                        (class-obj-inspector cls)
                         
                         method-width
                         method-ht
@@ -1603,7 +1608,8 @@
                                     0 ;; No new fields in this class replacement
                                     undefined
                                     ;; Map object property to class:
-                                    (list (cons prop:object c)))])
+                                    (list (cons prop:object c))
+                                    (class-obj-inspector cls))])
       (set-class-struct:object! c struct:object)
       (set-class-object?! c object?)
       (set-class-make-object! c object-make)

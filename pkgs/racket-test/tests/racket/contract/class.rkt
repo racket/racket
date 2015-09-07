@@ -2566,4 +2566,53 @@
        (class object%
          (super-new)
          (define/public (callback f) (f 1))))
-     promised-produced?)))
+     promised-produced?))
+
+  ;; Tests for reflection and class contracts
+  (test/spec-passed/result
+   'reflection-1
+   '(format "~a"
+     (new (contract (class/c)
+                    (let ([x%
+                           (class object%
+                             (super-new)
+                             (inspect #f)
+                             (init-field [x 0]))])
+                      x%)
+                    'pos 'neg)))
+   "#(struct:object:x% 0)")
+
+  (test/spec-passed/result
+   'reflection-2
+   '(format "~a"
+     (new (contract (class/c)
+                    (let ([x%
+                           (class object%
+                             (super-new)
+                             (init-field [x 0]))])
+                      x%)
+                    'pos 'neg)))
+   "#(struct:object:x% ...)")
+
+  (test/spec-passed/result
+   'equality-1
+   '(let ([c%
+          (contract (class/c)
+                    (class object%
+                      (super-new)
+                      (inspect #f)
+                      (init-field [x 0]))
+                    'pos 'neg)])
+      (equal? (new c%) (new c%)))
+   #t)
+
+  (test/spec-passed/result
+   'equality-2
+   '(let ([c%
+          (contract (class/c)
+                    (class object%
+                      (super-new)
+                      (init-field [x 0]))
+                    'pos 'neg)])
+      (equal? (new c%) (new c%)))
+   #f))
