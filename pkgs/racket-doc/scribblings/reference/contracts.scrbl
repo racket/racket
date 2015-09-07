@@ -1979,7 +1979,7 @@ to determine if this is a contract that accepts only @racket[list?] values.
            (λ (x) (range (f (domain x))))
            (raise-blame-error
             b f
-            '(expected "a function of one argument" 'given: "~e")
+            '(expected "a function of one argument" given: "~e")
             f)))))))
 (contract int->int/c "not fun" 'positive 'negative)
 (define halve
