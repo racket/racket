@@ -24,6 +24,7 @@
 ;; entry is required in "info.rkt".
 
 (define submodules '()) ; '() means "default"
+(define configure-runtime 'default)
 (define first-avail? #f)
 (define run-anyways? #t)
 (define quiet? #f)
@@ -61,8 +62,9 @@
   (define argv (current-command-line-arguments))
   (define result-file (vector-ref argv 0))
   (define test-module (read (open-input-string (vector-ref argv 1))))
-  (define d (read (open-input-string (vector-ref argv 2))))
-  (define args (list-tail (vector->list argv) 3))
+  (define rt-module (read (open-input-string (vector-ref argv 2))))
+  (define d (read (open-input-string (vector-ref argv 3))))
+  (define args (list-tail (vector->list argv) 4))
 
   ;; In case PLTUSERHOME is set, make sure relevant
   ;; directories exist:
@@ -71,6 +73,7 @@
   (ready-dir (find-system-path 'doc-dir))
 
   (parameterize ([current-command-line-arguments (list->vector args)])
+    (when rt-module (dynamic-require rt-module d))
     (dynamic-require test-module d)
     ((executable-yield-handler) 0))
 
@@ -90,9 +93,10 @@
     (define l (place-channel-get pch))
     ;; Run the test:
     (parameterize ([current-command-line-arguments (list->vector
-                                                    (cadddr l))]
-                   [current-directory (caddr l)])
-      (dynamic-require (car l) (cadr l))
+                                                    (cadddr (cdr l)))]
+                   [current-directory (cadddr l)])
+      (when (cadr l) (dynamic-require (cadr l) (caddr l)))
+      (dynamic-require (car l) (caddr l))
       ((executable-yield-handler) 0))
     ;; If the tests use `rackunit`, collect result stats:
     (define test-results 
@@ -110,7 +114,7 @@
 
 ;; Run each test in its own place or process, and collect both test
 ;; results and whether any output went to stderr.
-(define (dynamic-require-elsewhere p d args
+(define (dynamic-require-elsewhere p rt-p d args
                                    #:id id
                                    #:mode [mode (or default-mode
                                                     (if single-file?
@@ -155,7 +159,8 @@
         (when lock-name
           (fprintf stdout "raco test:~a @(lock-name ~s)\n"
                    id
-                   lock-name)))
+                   lock-name))
+        (flush-output stdout))
       
       (define-values (result-code test-results)
         (case mode
@@ -169,6 +174,7 @@
                             [current-command-line-arguments (list->vector args)])
                (thread
                 (lambda ()
+                  (when rt-p (dynamic-require rt-p d))
                   (dynamic-require p d)
                   ((executable-yield-handler) 0)
                   (set! done? #t)))))
@@ -192,7 +198,7 @@
                                #:err stderr)))
            
            ;; Send the module path to test:
-           (place-channel-put pl (list p d (current-directory) args))
+           (place-channel-put pl (list p rt-p d (current-directory) args))
 
            ;; Wait for the place to finish:
            (unless (sync/timeout timeout (place-dead-evt pl))
@@ -234,6 +240,7 @@
                       "(dynamic-require '(submod compiler/commands/test process) #f)"
                       tmp-file
                       (format "~s" (normalize-module-path p))
+                      (format "~s" (normalize-module-path rt-p))
                       (format "~s" d)
                       args)))
            (define proc (list-ref ps 4))
@@ -319,7 +326,7 @@
       (append mod '(config))
       (error test-exe-name "cannot add test-config submodule to path: ~s" mod)))
 
-(define (dynamic-require* p d
+(define (dynamic-require* p rt-p d
                           #:id id
                           #:try-config? try-config?
                           #:args args
@@ -335,7 +342,7 @@
          [else #f])
         (lambda (what get-default) (get-default))))
   (dynamic-require-elsewhere
-   p d args
+   p rt-p d args
    #:id id
    #:responsible (lookup 'responsible
                          (lambda () responsible))
@@ -461,7 +468,7 @@
 
 ;; Perform test of one module (in parallel, as allowed by
 ;; `task-sema`):
-(define (test-module p mod
+(define (test-module p mod rt-mod
                      #:sema continue-sema
                      #:try-config? try-config?
                      #:args [args '()]
@@ -513,7 +520,7 @@
                                            m)))))
                           (loop)))))))
      (begin0
-      (dynamic-require* mod 0
+      (dynamic-require* mod rt-mod 0
                         #:id (if (jobs . <= . 1)
                                  ""
                                  (format " ~a" id))
@@ -577,8 +584,8 @@
                                                 base
                                                 (current-directory)))])
           (define file-name (file-name-from-path p))
-          (define (test-this-module mod try-config?)
-            (test-module p mod
+          (define (test-this-module mod rt-mod try-config?)
+            (test-module p mod rt-mod
                          #:try-config? try-config?
                          #:sema continue-sema
                          #:args args
@@ -589,7 +596,12 @@
           (with-summary
            `(file ,p)
            (let ([something-wasnt-declared? #f]
-                 [did-one? #f])
+                 [did-one? #f]
+                 [rt-mod
+                  (and configure-runtime
+                       (let ([mod `(submod ,file-name configure-runtime)])
+                         (and (module-declared? mod #t)
+                              mod)))])
              (filter
               values
               (append
@@ -612,13 +624,13 @@
                           'ok))
                    => (lambda (mode)
                         (set! did-one? #t)
-                        (test-this-module mod (eq? mode 'ok)))]
+                        (test-this-module mod rt-mod (eq? mode 'ok)))]
                   [else
                    (set! something-wasnt-declared? #t)
                    #f]))
                (list
                 (and (and run-anyways? something-wasnt-declared?)
-                     (test-this-module file-name #f))))))))]
+                     (test-this-module file-name rt-mod #f))))))))]
        [else (summary 0 0 #f null 0)])]))
 
 (module paths racket/base
@@ -974,6 +986,9 @@
  [("--first-avail")
   "Run only the first available submodule"
   (set! first-avail? #f)]
+ [("--configure-runtime")
+  "Run the `configure-runtime' submodule"
+  (set! configure-runtime #t)]
  #:once-any
  [("--direct")
   "Run tests directly (default for a single file)"
@@ -1021,6 +1036,11 @@
  #:args file-or-directory
  (begin (unless (= 1 (length file-or-directory))
           (set! single-file? #f))
+        (when (and (eq? configure-runtime 'default)
+                   (or (and (not single-file?)
+                            (not (memq default-mode '(process place))))
+                       (not (null? submodules))))
+          (set! configure-runtime #f))
         (define sum
           ;; The #:sema argument everywhre makes tests start
           ;; in a deterministic order:
