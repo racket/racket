@@ -124,7 +124,7 @@ in @racket[stx]. @tech{Uninterned} symbols (see @secref["symbols"])
 are not included in the result list.}
 
 
-@defproc[(syntax-track-origin [new-stx syntax?] [orig-stx syntax?] [id-stx syntax?])
+@defproc[(syntax-track-origin [new-stx syntax?] [orig-stx syntax?] [id-stx identifier?])
          any]{
 
 Adds properties to @racket[new-stx] in the same way that macro
