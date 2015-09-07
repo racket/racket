@@ -1996,6 +1996,7 @@
                       pos supers     ; pos is subclass depth, supers is vector
                       self-interface ; self interface
                       insp-mk        ; dummy struct maker to control inspection access
+                      obj-inspector  ; the inspector used for instances of this class
                       
                       method-width   ; total number of methods
                       method-ht      ; maps public names to vector positions
@@ -2371,6 +2372,7 @@ last few projections.
                                 i
                                 (let-values ([(struct: make- ? -ref -set) (make-struct-type 'insp #f 0 0 #f null inspector)])
                                   make-)
+                                inspector
                                 method-width method-ht method-names remaining-abstract-names
                                 (interfaces->contracted-methods (list i))
                                 #f
@@ -3261,6 +3263,7 @@ An example
                  0 (vector #f) 
                  object<%>
                  void ; never inspectable
+                 #f   ; this is for the inspector on the object
                  
                  0 (make-hasheq) null null null
                  #f
@@ -3411,6 +3414,7 @@ An example
                                (list->vector (vector->list (class-supers cls)))
                                (class-self-interface cls)
                                void ;; No inspecting
+                               (class-obj-inspector cls)
 
                                method-width
                                method-ht
@@ -3462,7 +3466,8 @@ An example
                                            0 ;; No new fields in this class replacement
                                            unsafe-undefined
                                            ;; Map object property to class:
-                                           (list (cons prop:object c)))])
+                                           (list (cons prop:object c))
+                                           (class-obj-inspector cls))])
              (set-class-struct:object! c struct:object)
              (set-class-object?! c object?)
              (set-class-make-object! c object-make)
