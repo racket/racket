@@ -13,6 +13,7 @@ build_script:
 test_script:
 - echo %cd%
 - racket\raco.exe pkg show -l
+- racket\racket.exe -f pkgs/racket-test-core/tests/racket/sync.rktl
 - racket\racket.exe -l tests/racket/test
 - racket\racket.exe -l tests/racket/contract/all
 - racket\raco.exe test -l tests/json/json
