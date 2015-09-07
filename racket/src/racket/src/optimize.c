@@ -3062,6 +3062,46 @@ static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *
   return make_discarding_sequence(rand, (matches ? scheme_true : scheme_false), info, id_offset);
 }
 
+static Scheme_Object *check_ignored_call_cc(Scheme_Object *rator, Scheme_Object *rand,
+                                            Optimize_Info *info, int context)
+/* Convert (call/cc (lambda (ignored) body ...)) to (begin body ...) */
+{
+  if (SCHEME_PRIMP(rator)
+      && (IS_NAMED_PRIM(rator, "call-with-current-continuation")
+          || IS_NAMED_PRIM(rator, "call-with-composable-continuation")
+          || IS_NAMED_PRIM(rator, "call-with-escape-continuation"))) {
+      int rand_flags;
+      Scheme_Object *proc;
+      proc = lookup_constant_proc(info, rand, 0);
+      if (!proc)
+        proc = optimize_for_inline(info, rand, 1, NULL, NULL, NULL, &rand_flags, context, 0, 0);
+
+      if (proc && SAME_TYPE(SCHEME_TYPE(proc), scheme_compiled_unclosed_procedure_type)) {
+          Scheme_Closure_Data *data = (Scheme_Closure_Data *)proc;
+          if (data->num_params == 1) {
+              Closure_Info *cl = (Closure_Info *)data->closure_map;
+              if (((cl->local_flags[0] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT) == 0) {
+                Scheme_Object *expr;
+                info->vclock++;
+                expr = make_application_2(rand, scheme_void, info);
+                if (IS_NAMED_PRIM(rator, "call-with-escape-continuation")) {
+                  Scheme_Sequence *seq;
+
+                  seq = scheme_malloc_sequence(1);
+                  seq->so.type = scheme_begin0_sequence_type;
+                  seq->count = 1;
+                  seq->array[0] = expr;
+                  
+                  expr = (Scheme_Object *)seq;
+                }                
+                return scheme_optimize_expr(expr, info, context);
+              }
+          }
+      }
+  }
+  return NULL;
+}
+
 static Scheme_Object *make_optimize_prim_application2(Scheme_Object *prim, Scheme_Object *rand,
                                                       Optimize_Info *info, int context)
 /* make (prim rand) and optimize it. rand must be already optimized */
@@ -3088,6 +3128,10 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   app = (Scheme_App2_Rec *)o;
 
   le = check_app_let_rator(o, app->rator, info, 1, context);
+  if (le)
+    return le;
+
+  le = check_ignored_call_cc(app->rator, app->rand, info, context);
   if (le)
     return le;
 

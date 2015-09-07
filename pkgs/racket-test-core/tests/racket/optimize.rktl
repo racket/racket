@@ -3540,6 +3540,16 @@
            #f)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the unused continuations are removed
+
+(test-comp '(call-with-current-continuation (lambda (ignored) 5))
+           5)
+(test-comp '(call-with-composable-continuation (lambda (ignored) 5))
+           5)
+(test-comp '(call-with-escape-continuation (lambda (ignored) 5))
+           5)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check splitting of definitions
 (test-comp `(module m racket/base
               (define-values (x y) (values 1 2)))
