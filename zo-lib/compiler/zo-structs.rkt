@@ -68,7 +68,7 @@
 
 (define-form-struct compilation-top ([max-let-depth exact-nonnegative-integer?]
                                      [binding-namess (hash/c exact-nonnegative-integer?
-                                                             (hash/c symbol? identifier?))]
+                                                             (hash/c symbol? stx?))]
                                      [prefix prefix?]
                                      [code (or/c form? any/c)])) ; compiled code always wrapped with this
 
