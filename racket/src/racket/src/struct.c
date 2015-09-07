@@ -224,10 +224,10 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 
 #define BUILTIN_STRUCT_FLAGS (SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_MAKE_PREFIX)
 
-#define TYPE_NAME(base, blen) make_name("struct:", base, blen, "", NULL, 0, "", 1)
-#define CSTR_NAME(base, blen) make_name("", base, blen, "", NULL, 0, "", 1)
-#define CSTR_MAKE_NAME(base, blen) make_name("make-", base, blen, "", NULL, 0, "", 1)
-#define PRED_NAME(base, blen) make_name("", base, blen, "?", NULL, 0, "", 1)
+#define TYPE_NAME(base, blen, sym) make_name("struct:", base, blen, "", NULL, 0, "", sym)
+#define CSTR_NAME(base, blen, sym) make_name("", base, blen, "", NULL, 0, "", sym)
+#define CSTR_MAKE_NAME(base, blen, sym) make_name("make-", base, blen, "", NULL, 0, "", sym)
+#define PRED_NAME(base, blen, sym) make_name("", base, blen, "?", NULL, 0, "", sym)
 #define GET_NAME(base, blen, field, flen, sym) make_name("", base, blen, "-", field, flen, "", sym)
 #define SET_NAME(base, blen, field, flen, sym) make_name("set-", base, blen, "-", field, flen, "!", sym)
 #define GENGET_NAME(base, blen, sym) make_name("", base, blen, "-ref", NULL, 0, "", sym)
@@ -240,7 +240,7 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 
 static char *pred_name_string(Scheme_Object *sym)
 {
-  return scheme_symbol_val(PRED_NAME(scheme_symbol_val(sym), SCHEME_SYM_LEN(sym)));
+  return (char *)PRED_NAME(scheme_symbol_val(sym), SCHEME_SYM_LEN(sym), 0);
 }
 
 void
@@ -3128,6 +3128,7 @@ static Scheme_Object *struct_type_info(int argc, Scheme_Object *argv[])
 static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[])
 {
   Scheme_Struct_Type *stype;
+  char *name;
 
   check_type_and_inspector("struct-type-make-predicate", 0, argc, argv);
   if (SCHEME_NP_CHAPERONEP(argv[0]))
@@ -3135,11 +3136,11 @@ static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[])
   else
     stype = (Scheme_Struct_Type *)argv[0];
 
-  return make_struct_proc(stype, 
-			  scheme_symbol_val(PRED_NAME(scheme_symbol_val(stype->name),
-						      SCHEME_SYM_LEN(stype->name))),
-			  SCHEME_PRED,
-			  stype->num_slots);
+  name = (char *)PRED_NAME(scheme_symbol_val(stype->name),
+                           SCHEME_SYM_LEN(stype->name),
+                           0);
+
+  return make_struct_proc(stype, name, SCHEME_PRED, stype->num_slots);
 }
 
 static Scheme_Object *type_constr_chaperone(Scheme_Object *o, Scheme_Object *v)
@@ -3174,7 +3175,7 @@ static Scheme_Object *struct_type_constr(int argc, Scheme_Object *argv[])
     stype = (Scheme_Struct_Type *)argv[0];
 
   if ((argc < 2) || SCHEME_FALSEP(argv[1]))
-    v = CSTR_MAKE_NAME(scheme_symbol_val(stype->name), SCHEME_SYM_LEN(stype->name));
+    v = CSTR_MAKE_NAME(scheme_symbol_val(stype->name), SCHEME_SYM_LEN(stype->name), 1);
   else if (SCHEME_SYMBOLP(argv[1]))
     v = argv[1];
   else {
@@ -3236,7 +3237,7 @@ Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown
   i = stype->num_slots;
   last_is_unknown = 0;
  
-  name = TYPE_NAME((char *)SCHEME_STRUCT_NAME_SYM(s), -1);
+  name = TYPE_NAME((char *)SCHEME_STRUCT_NAME_SYM(s), -1, 1);
 
   /* Precise GC >>> BEWARE <<<, array is not GC_aligned,
      and is therefore marked with GC_CAN_IGNORE. */
@@ -4212,6 +4213,8 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
 {
   Scheme_Struct_Type *struct_type;
   Scheme_Object **values;
+  Scheme_Object *vi;
+  char *nm;
   int slot_num, pos;
 
   struct_type = (Scheme_Struct_Type *)type;
@@ -4232,18 +4235,22 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
   if (!(flags & SCHEME_STRUCT_NO_TYPE))
     values[pos++] = (Scheme_Object *)struct_type;
   if (!(flags & SCHEME_STRUCT_NO_CONSTR)) {
-    Scheme_Object *vi;
+    nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+          ? (char *)names[pos]
+          : scheme_symbol_val(names[pos]));
     vi = make_struct_proc(struct_type,
-			  scheme_symbol_val(names[pos]),
+                          nm,
 			  SCHEME_CONSTR, 
 			  struct_type->num_slots);
     values[pos] = vi;
     pos++;
   }
   if (!(flags & SCHEME_STRUCT_NO_PRED)) {
-    Scheme_Object *vi;
+    nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+          ? (char *)names[pos]
+          : scheme_symbol_val(names[pos]));
     vi = make_struct_proc(struct_type,
-			  scheme_symbol_val(names[pos]),
+                          nm,
 			  SCHEME_PRED,
 			  0);
     values[pos] = vi;
@@ -4260,9 +4267,11 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
 	      : 0);
   while (pos < count) {
     if (!(flags & SCHEME_STRUCT_NO_GET)) {
-      Scheme_Object *vi;
+      nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+            ? (char *)names[pos]
+            : scheme_symbol_val(names[pos]));
       vi = make_struct_proc(struct_type,
-			    scheme_symbol_val(names[pos]),
+                            nm,
 			    SCHEME_GETTER,
 			    slot_num);
       values[pos] = vi;
@@ -4270,9 +4279,11 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
     }
     
     if (!(flags & SCHEME_STRUCT_NO_SET)) {
-      Scheme_Object *vi;
+      nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+            ? (char *)names[pos]
+            : scheme_symbol_val(names[pos]));
       vi = make_struct_proc(struct_type,
-			    scheme_symbol_val(names[pos]),
+                            nm,
 			    SCHEME_SETTER,
 			    slot_num);
       values[pos] = vi;
@@ -4283,18 +4294,22 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
   }
 
   if (flags & SCHEME_STRUCT_GEN_GET) {
-    Scheme_Object *vi;
+    nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+          ? (char *)names[pos]
+          : scheme_symbol_val(names[pos]));
     vi = make_struct_proc(struct_type,
-			  scheme_symbol_val(names[pos]),
+                          nm,
 			  SCHEME_GEN_GETTER,
 			  slot_num);
     values[pos] = vi;
     pos++;
   }
   if (flags & SCHEME_STRUCT_GEN_SET) {
-    Scheme_Object *vi;
+    nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+          ? (char *) names[pos]
+          : scheme_symbol_val(names[pos]));
     vi = make_struct_proc(struct_type,
-			  scheme_symbol_val(names[pos]),
+                          nm,
 			  SCHEME_GEN_SETTER,
 			  slot_num);
     values[pos] = vi;
@@ -4313,7 +4328,7 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
   Scheme_Object **names;
   const char *field_name;
   int count, fnlen;
-  int slot_num, pos;
+  int slot_num, pos, as_sym;
 
   count = 0;
 
@@ -4350,22 +4365,24 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
 
   pos = 0;
 
+  as_sym = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS) ? 0 : 1);
+
   if (!(flags & SCHEME_STRUCT_NO_TYPE)) {
     Scheme_Object *nm;
-    nm = TYPE_NAME(base, blen);
+    nm = TYPE_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
   if (!(flags & SCHEME_STRUCT_NO_CONSTR)) {
     Scheme_Object *nm;
     if (flags & SCHEME_STRUCT_NO_MAKE_PREFIX)
-      nm = CSTR_NAME(base, blen);
+      nm = CSTR_NAME(base, blen, as_sym);
     else
-      nm = CSTR_MAKE_NAME(base, blen);
+      nm = CSTR_MAKE_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
   if (!(flags & SCHEME_STRUCT_NO_PRED)) {
     Scheme_Object *nm;
-    nm = PRED_NAME(base, blen);
+    nm = PRED_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
 
@@ -4384,12 +4401,12 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
 
       if (!(flags & SCHEME_STRUCT_NO_GET)) {
 	Scheme_Object *nm;
-	nm = GET_NAME(base, blen, field_name, fnlen, 1);
+	nm = GET_NAME(base, blen, field_name, fnlen, as_sym);
 	names[pos++] = nm;
       }
       if (!(flags & SCHEME_STRUCT_NO_SET)) {
 	Scheme_Object *nm;
-	nm = SET_NAME(base, blen, field_name, fnlen, 1);
+	nm = SET_NAME(base, blen, field_name, fnlen, as_sym);
 	names[pos++] = nm;
       }
     }
@@ -4397,18 +4414,18 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
 
   if (flags & SCHEME_STRUCT_GEN_GET) {
     Scheme_Object *nm;
-    nm = GENGET_NAME(base, blen, 1);
+    nm = GENGET_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
   if (flags & SCHEME_STRUCT_GEN_SET) {
     Scheme_Object *nm;
-    nm = GENSET_NAME(base, blen, 1);
+    nm = GENSET_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
 
   if (flags & SCHEME_STRUCT_EXPTIME) {
     Scheme_Object *nm;
-    nm = EXPTIME_NAME(base, blen, 1);
+    nm = EXPTIME_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
 
@@ -5385,12 +5402,16 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 
     names = scheme_make_struct_names(argv[0],
                                      NULL,
-                                     SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET, 
+                                     (SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET
+                                      | SCHEME_STRUCT_NAMES_ARE_STRINGS), 
                                      &i);
-    if (cstr_name)
-      names[1] = cstr_name;
+    if (cstr_name) {
+      a = (Scheme_Object *)scheme_symbol_val(cstr_name);
+      names[1] = a;
+    }
     r = scheme_make_struct_values((Scheme_Object *)type, names, i, 
-                                  SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET);
+                                  (SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET
+                                   | SCHEME_STRUCT_NAMES_ARE_STRINGS));
 
     return scheme_values(i, r);
   }
