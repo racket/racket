@@ -89,6 +89,14 @@ The @exec{raco test} command accepts several flags:
        --- When multiple submodule names are provided with @Flag{s} or
        @DFlag{submodule}, runs only the first available submodule.}
 
+@item{@DFlag{configure-runtime}
+       --- Run a @racketidfont{configure-runtime} submodule (if any) of
+       each specified module before the module or a
+       submodule is run. This mode is the default when only a single
+       module is provided or when @DFlag{process} or @DFlag{place}
+       mode is specified, unless a submodule name is provided
+       via @Flag{s} or @DFlag{submodule}.}
+
  @item{@DFlag{direct}
       --- Runs each test in a thread. This mode is the default if
       a single file is specified. Multiple tests can interfere with
