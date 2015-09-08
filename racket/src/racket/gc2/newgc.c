@@ -4180,7 +4180,6 @@ static void mark_backpointers(NewGC *gc)
             mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
           }
           work->marked_from = 1;
-          work->previous_size = PREFIX_SIZE;
           if (work->size_class) {
             /* must be a big page */
             work->size_class = 3;
@@ -4207,9 +4206,6 @@ static void mark_backpointers(NewGC *gc)
           work->previous_size = PREFIX_SIZE;
           traversed++;
         } else {
-          GCDEBUG((DEBUGOUTF,"Setting previous_size on %p to %i\n", work,
-                   work->size));
-          work->previous_size = work->size;
           skipped++;
         }
       }
@@ -4760,6 +4756,7 @@ static void clean_up_heap(NewGC *gc)
           GCVERBOSEPAGE(gc, "clean_up_heap BIG PAGE ALIVE", work);
           work->marked_on = 0;
           work->marked_from = 0;
+          work->previous_size = work->size;
           memory_in_use += work->size;
           prev = work; 
         }
@@ -4770,6 +4767,7 @@ static void clean_up_heap(NewGC *gc)
       for (work = gc->gen1_pages[i]; work; work = work->next) {
         work->marked_on = 0;
         work->marked_from = 0;
+        work->previous_size = work->size;
         memory_in_use += work->size;
       }
     }
