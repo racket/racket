@@ -1922,7 +1922,8 @@
   (setup-printf "links files" "")
   (for ([p (get-links-search-files)])
     (setup-printf #f "  ~a" p))
-  (setup-printf #f "  ~a" (find-user-links-file))
+  (when (use-user-specific-search-paths)
+    (setup-printf #f "  ~a" (find-user-links-file)))
   (setup-printf "main docs" "~a" (find-doc-dir))
 
   (when (and (not (null? (archives))) no-specific-collections?)

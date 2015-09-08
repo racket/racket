@@ -1132,6 +1132,8 @@ static int run_from_cmd_line(int argc, char *_argv[],
       argv[0] = "-c";
     else if (!strcmp("--no-lib", argv[0]))
       argv[0] = "-n";
+    else if (!strcmp("--no-user-path", argv[0]))
+      argv[0] = "-U";
     else if (!strcmp("--version", argv[0]))
       argv[0] = "-v";
     else if (!strcmp("--no-init-file", argv[0]))
