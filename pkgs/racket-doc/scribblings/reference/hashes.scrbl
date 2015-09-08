@@ -235,8 +235,9 @@ later mappings overwrite earlier mappings.
 
 @defproc[(hash-ref [hash hash?]
                    [key any/c]
-                   [failure-result any/c (lambda () 
-                                           (raise (make-exn:fail:contract ....)))])
+                   [failure-result (failure-result/c any/c)
+                                   (lambda ()
+                                     (raise (make-exn:fail:contract ....)))])
          any]{
 
 Returns the value for @racket[key] in @racket[hash]. If no value
@@ -277,8 +278,9 @@ Returns @racket[#t] if @racket[hash] contains a value for the given
 @defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]
                        [key any/c]
                        [updater (any/c . -> . any/c)]
-                       [failure-result any/c (lambda () 
-                                               (raise (make-exn:fail:contract ....)))])
+                       [failure-result (failure-result/c any/c)
+                                       (lambda ()
+                                         (raise (make-exn:fail:contract ....)))])
          void?]{
 
 Composes @racket[hash-ref] and @racket[hash-set!] to update an
@@ -293,8 +295,9 @@ concurrent updates.
 @defproc[(hash-update [hash (and/c hash? immutable?)]
                       [key any/c]
                       [updater (any/c . -> . any/c)]
-                      [failure-result any/c (lambda () 
-                                              (raise (make-exn:fail:contract ....)))])
+                      [failure-result (failure-result/c any/c)
+                                      (lambda ()
+                                        (raise (make-exn:fail:contract ....)))])
           (and/c hash? immutable?)]{
 
 Composes @racket[hash-ref] and @racket[hash-set] to functionally

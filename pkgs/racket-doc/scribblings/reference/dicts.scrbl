@@ -180,7 +180,8 @@ only supported for dictionary types that directly implement them.
 
 @defproc[(dict-ref [dict dict?]
                    [key any/c]
-                   [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+                   [failure-result (failure-result/c any/c)
+                                   (lambda () (raise (make-exn:fail ....)))])
          any]{
 
 Returns the value for @racket[key] in @racket[dict]. If no value
@@ -471,7 +472,8 @@ Supported for any @racket[dict] that implements @racket[dict-ref] and
 @defproc[(dict-update! [dict (and/c dict? (not/c immutable?))]
                        [key any/c]
                        [updater (any/c . -> . any/c)]
-                       [failure-result any/c (lambda () (raise (make-exn:fail ....)))]) void?]{
+                       [failure-result (failure-result/c any/c)
+                                       (lambda () (raise (make-exn:fail ....)))]) void?]{
 
 Composes @racket[dict-ref] and @racket[dict-set!] to update an
 existing mapping in @racket[dict], where the optional @racket[failure-result]
@@ -496,7 +498,8 @@ v
 @defproc[(dict-update [dict dict?]
                       [key any/c]
                       [updater (any/c . -> . any/c)]
-                      [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+                      [failure-result (failure-result/c any/c)
+                                      (lambda () (raise (make-exn:fail ....)))])
           (and/c dict? immutable?)]{
 
 Composes @racket[dict-ref] and @racket[dict-set] to functionally
