@@ -1656,9 +1656,10 @@ uintptr_t add_no_overflow(uintptr_t a, uintptr_t b)
   return c;
 }
 
-int GC_allocate_phantom_bytes(intptr_t request_size_bytes)
+int GC_allocate_phantom_bytes(void *pb, intptr_t request_size_bytes)
 {
   NewGC *gc = GC_get_GC();
+  mpage *page;
 
 #ifdef NEWGC_BTC_ACCOUNT
   if (request_size_bytes > 0) {
@@ -1674,14 +1675,22 @@ int GC_allocate_phantom_bytes(intptr_t request_size_bytes)
     /* overflow */
     return 1;
 
-  gc->gen0_phantom_count += request_size_bytes;
+  page = pagemap_find_page(gc->page_maps, pb);
+
   /* adjust `gc->memory_in_use', but protect against {over,under}flow: */
   if (request_size_bytes < 0) {
     request_size_bytes = -request_size_bytes;
     if (gc->memory_in_use > request_size_bytes)
       gc->memory_in_use -= request_size_bytes;
-  } else
+    if (!page || (page->generation != AGE_GEN_1)) {
+      if (gc->gen0_phantom_count > request_size_bytes)
+        gc->gen0_phantom_count -= request_size_bytes;
+    }
+  } else {
+    if (!page || (page->generation != AGE_GEN_1))
+      gc->gen0_phantom_count = add_no_overflow(gc->gen0_phantom_count, request_size_bytes);
     gc->memory_in_use = add_no_overflow(gc->memory_in_use, request_size_bytes);
+  }
 
   /* If we've allocated enough phantom bytes, then force a GC */
   if (gc->gen0_phantom_count > GEN0_MAX_SIZE)

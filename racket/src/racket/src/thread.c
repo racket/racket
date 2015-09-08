@@ -8309,7 +8309,7 @@ static Scheme_Object *make_phantom_bytes(int argc, Scheme_Object *argv[])
   pb->size = SCHEME_INT_VAL(argv[0]);
 
 # ifdef MZ_PRECISE_GC
-  if (!GC_allocate_phantom_bytes(pb->size))
+  if (!GC_allocate_phantom_bytes(pb, pb->size))
     scheme_raise_out_of_memory("make-phantom-bytes", NULL);
 # endif
 
@@ -8330,7 +8330,7 @@ static Scheme_Object *set_phantom_bytes(int argc, Scheme_Object *argv[])
   amt = SCHEME_INT_VAL(argv[1]);
 
 # ifdef MZ_PRECISE_GC
-  if (!GC_allocate_phantom_bytes(amt - pb->size))
+  if (!GC_allocate_phantom_bytes(pb, amt - pb->size))
     scheme_raise_out_of_memory("make-phantom-bytes", NULL);
 # endif
 

@@ -277,10 +277,10 @@ GC2_EXTERN int GC_is_on_allocated_page(void *p);
    the GC allocates objects (although p may or may not
    be a valid pointer to the start of an alloctaed object). */
 
-GC2_EXTERN int GC_allocate_phantom_bytes(intptr_t);
+GC2_EXTERN int GC_allocate_phantom_bytes(void *pb, intptr_t);
 /* 
    Returns 0 if allocation should fail due to a memory limit, 
-   1 otherwise. */
+   1 otherwise. The representative `pb` determines who is charged. */
 
 /***************************************************************************/
 /* Memory tracing                                                          */
