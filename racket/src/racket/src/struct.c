@@ -1882,14 +1882,30 @@ int scheme_is_binding_rename_transformer(Scheme_Object *o)
 
 static int is_stx_id(Scheme_Object *o) { return (SCHEME_STXP(o) && SCHEME_SYMBOLP(SCHEME_STX_VAL(o))); }
 
+static int is_stx_id_or_proc_1(Scheme_Object *o) { return (is_stx_id(o) || is_proc_1(o)); }
+
 Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
 {
+  Scheme_Object *a[1];
+
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_id_macro_type))
     return SCHEME_PTR1_VAL(o);
   if (SCHEME_CHAPERONE_STRUCTP(o)) {
     Scheme_Object *v;
     v = scheme_struct_type_property_ref(rename_transformer_property, o);
-    if (SCHEME_INTP(v)) {
+    if (SCHEME_PROCP(v)) {
+      a[0] = o;
+      /* apply a continuation barrier here to prevent a capture in
+       * the property access */
+      v = scheme_apply(v, 1, a);
+      if (!is_stx_id(v)) {
+        scheme_contract_error("prop:rename-transformer",
+                              "contract violation for given value",
+                              "expected", 0, "identifier?",
+                              "given", 1, v,
+                              NULL);
+      }
+    } else if (SCHEME_INTP(v)) {
       v = scheme_struct_ref(o, SCHEME_INT_VAL(v));
       if (!is_stx_id(v)) {
         v = scheme_datum_to_syntax(scheme_intern_symbol("?"), scheme_false, scheme_false, 0, 0);
@@ -1903,8 +1919,8 @@ Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[])
 {
   return check_indirect_property_value_ok("guard-for-prop:rename-transformer", 
-                                          is_stx_id, 0,
-                                          "(or/c exact-nonnegative-integer? identifier?)",
+                                          is_stx_id_or_proc_1, 0,
+                                          "(or/c exact-nonnegative-integer? identifier? (-> any/c identifier?))",
                                           argc, argv);
 }
 

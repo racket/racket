@@ -2106,5 +2106,87 @@
   (check #f a-stx))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test prop:rename-transformer with procedure content
+
+(begin-for-syntax
+  (struct slv-struct-1 (id)
+    #:property prop:rename-transformer
+    (λ (o) (slv-struct-1-id o)))
+
+  (struct slv-struct-2 (t1? t1 t2)
+    #:property prop:rename-transformer
+    (λ (o)
+      (if (slv-struct-2-t1? o)
+          (slv-struct-2-t1 o)
+          (slv-struct-2-t2 o))))
+
+  (struct slv-struct-bad ()
+    #:property prop:rename-transformer
+    (λ (o) 'not-an-identifier)))
+
+(let ()
+  (define-syntax target-1 't1)
+  (define-syntax target-2 't2)
+
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ id)
+       #`(quote #,(syntax-local-value #'id) )]))
+
+  (define-syntax (m2 stx)
+    (syntax-case stx ()
+      [(_ id)
+       (let-values ([(x y) (syntax-local-value/immediate #'id)])
+         #`(list (quote #,(if (rename-transformer? x) 'rename-transformer x))
+                 (quote #,(and y (syntax-e y)))))]))
+
+  (define-syntax s1 (slv-struct-1 #'target-1))
+  (define-syntax s2 (slv-struct-1 #'target-2))
+  (define-syntax s3 (make-rename-transformer #'target-2))
+  (define-syntax s4 (slv-struct-1 #'s3))
+  (define-syntax s5 (slv-struct-2 #t #'target-1 #'target-2))
+  (define-syntax s6 (slv-struct-2 #f #'target-1 #'target-2))
+  (define-syntax s7 (slv-struct-2 #t #'s3 #'target-2))
+  (define-syntax s8 (slv-struct-2 #f #'s3 #'target-2))
+  (define-syntax s9 (make-rename-transformer #'s8))
+
+  (test 't1 values (m s1))
+  (test '(rename-transformer target-1) values (m2 s1))
+  (test 't2 values (m s2))
+  (test '(rename-transformer target-2) values (m2 s2))
+  (test 't2 values (m s4))
+  (test '(rename-transformer s3) values (m2 s4))
+  (test 't1 values (m s5))
+  (test '(rename-transformer target-1) values (m2 s5))
+  (test 't2 values (m s6))
+  (test '(rename-transformer target-2) values (m2 s6))
+  (test 't2 values (m s7))
+  (test '(rename-transformer s3) values (m2 s7))
+  (test 't2 values (m s8))
+  (test '(rename-transformer target-2) values (m2 s8))
+  (test 't2 values (m s9))
+  (test '(rename-transformer s8) values (m2 s9))
+
+  (define target-3 't3)
+  (define target-4 't4)
+  (define-syntax r1 (slv-struct-1 #'target-3))
+  (define-syntax r2 (slv-struct-1 #'target-4))
+  (define-syntax r3 (slv-struct-2 #t #'target-3 #'target-4))
+  (define-syntax r4 (slv-struct-2 #f #'target-3 #'target-4))
+  (test 't3 values r1)
+  (test 't4 values r2)
+  (test 't3 values r3)
+  (test 't4 values r4)
+
+  (err/rt-test
+   (let ()
+     (struct foo () #:property prop:rename-transformer (λ (x y) 3))
+     (void))
+   exn:fail:contract?)
+  (err/rt-test
+   (eval #'(let () (define-syntax s-bad (slv-struct-bad)) (m s-bad)))
+   exn:fail:contract?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
