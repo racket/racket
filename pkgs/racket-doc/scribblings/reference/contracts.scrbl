@@ -2819,6 +2819,53 @@ currently being checked.
   @history[#:added "6.1.1.5"]
 }
 
+@defproc[(rename-contract [contract contract?]
+                          [name any/c])
+         contract?]{
+  Produces a contract that acts like @racket[contract] but with the name
+  @racket[name].
+
+  The resulting contract is a flat contract if @racket[contract] is a
+  flat contract.
+
+  @history[#:added "6.2.900.15"]
+}
+
+@defproc[(if/c [predicate (-> any/c any/c)]
+               [then-contract contract?]
+               [else-contract contract?])
+         contract?]{
+  Produces a contract that, when applied to a value, first tests the
+  value with @racket[predicate]; if @racket[predicate] returns true, the
+  @racket[then-contract] is applied; otherwise, the
+  @racket[else-contract] is applied. The resulting contract is a flat
+  contract if both @racket[then-contract] and @racket[else-contract] are
+  flat contracts.
+
+  For example, the following contract enforces that if a value is a
+  procedure, it is a thunk; otherwise it can be any (non-procedure)
+  value:
+    @racketblock[(if/c procedure? (-> any) any/c)]
+  Note that the following contract is @bold{not} equivalent:
+    @racketblock[(or/c (-> any) any/c) (code:comment "wrong!")]
+  The last contract is the same as @racket[any/c] because
+  @racket[or/c] tries flat contracts before higher-order contracts.
+
+  @history[#:added "6.2.900.15"]
+}
+
+@defthing[failure-result/c contract?]{
+  A contract that describes the failure result arguments of procedures
+  such as @racket[hash-ref].
+
+  Equivalent to @racket[(if/c procedure? (-> any) any/c)].
+
+  @history[#:added "6.2.900.15"]
+}
+
+
+
+
 @section{@racketmodname[racket/contract/base]}
 
 @defmodule[racket/contract/base]

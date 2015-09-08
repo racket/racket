@@ -64,7 +64,10 @@
          blame-add-cdr-context
          raise-not-cons-blame-error
          
-         random-any/c)
+         random-any/c
+
+         rename-contract
+         if/c)
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()
@@ -2155,3 +2158,62 @@
  (listof any/c)
  (cons/c any/c any/c)
  (list/c))
+
+;; rename-contract : contract any/c -> contract
+;; If the argument is a flat contract, so is the result.
+(define (rename-contract ctc name)
+  (unless (contract? ctc)
+    (raise-type-error 'rename-contract "contract?" ctc))
+  (let ([ctc (coerce-contract 'rename-contract ctc)])
+    (if (flat-contract? ctc)
+        (flat-named-contract name (flat-contract-predicate ctc))
+        (let* ([make-contract (if (chaperone-contract? ctc) make-chaperone-contract make-contract)])
+          (define (stronger? this other)
+            (contract-stronger? ctc other))
+          (make-contract #:name name
+                         #:projection (contract-projection ctc)
+                         #:first-order (contract-first-order ctc)
+                         #:stronger stronger?
+                         #:list-contract? (list-contract? ctc))))))
+
+;; (if/c predicate then/c else/c) applies then/c to satisfying
+;;   predicate, else/c to those that don't.
+(define (if/c predicate then/c else/c)
+  #|
+  Naive version:
+    (or/c (and/c predicate then/c)
+          (and/c (not/c predicate) else/c))
+  But that applies predicate twice.
+  |#
+  (unless (procedure? predicate)
+    (raise-type-error 'if/c "procedure?" predicate))
+  (unless (contract? then/c)
+    (raise-type-error 'if/c "contract?" then/c))
+  (unless (contract? else/c)
+    (raise-type-error 'if/c "contract?" else/c))
+  (let ([then-ctc (coerce-contract 'if/c then/c)]
+        [else-ctc (coerce-contract 'if/c else/c)])
+    (define name (build-compound-type-name 'if/c predicate then-ctc else-ctc))
+    ;; Special case: if both flat contracts, make a flat contract.
+    (if (and (flat-contract? then-ctc)
+             (flat-contract? else-ctc))
+        ;; flat contract
+        (let ([then-pred (flat-contract-predicate then-ctc)]
+              [else-pred (flat-contract-predicate else-ctc)])
+          (define (pred x)
+            (if (predicate x) (then-pred x) (else-pred x)))
+          (flat-named-contract name pred))
+        ;; ho contract
+        (let ([then-proj (contract-projection then-ctc)]
+              [then-fo (contract-first-order then-ctc)]
+              [else-proj (contract-projection else-ctc)]
+              [else-fo (contract-first-order else-ctc)])
+          (define ((proj blame) x)
+            (if (predicate x)
+                ((then-proj blame) x)
+                ((else-proj blame) x)))
+          (make-contract
+           #:name name
+           #:projection proj
+           #:first-order
+           (lambda (x) (if (predicate x) (then-fo x) (else-fo x))))))))

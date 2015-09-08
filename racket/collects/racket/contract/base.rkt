@@ -68,4 +68,14 @@
  list-contract?
  
  ;; from private/case-arrow.rkt
- case->)
+ case->
+
+ ;; from here (needs `->`, so can't be deeper)
+ failure-result/c)
+
+;; failure-result/c : contract
+;; Describes the optional failure argument passed to hash-ref, for example.
+;; If the argument is a procedure, it must be a thunk, and it is applied. Otherwise
+;; the argument is simply the value to return.
+(define failure-result/c
+  (if/c procedure? (-> any) any/c))
