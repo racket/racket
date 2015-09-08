@@ -5,7 +5,8 @@
          string-trim
          string-normalize-spaces
          string-split
-         string-replace)
+         string-replace
+         non-empty-string?)
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common cases
@@ -134,3 +135,6 @@
   (if all?
     (regexp-replace* from* str to*)
     (regexp-replace  from* str to*)))
+
+(define (non-empty-string? x)
+  (and (string? x) (not (zero? (string-length x)))))
