@@ -5375,10 +5375,8 @@ void GC_dump_variable_stack(void **var_stack,
 /*                              GC free all                                   */
 /******************************************************************************/
 
-#ifdef MZ_USE_PLACES
-static void free_child_gc(void)
+static void free_gc(NewGC *gc)
 {
-  NewGC *gc = GC_get_GC();
   int i, ty;
   mpage *work;
   mpage *next;
@@ -5434,6 +5432,13 @@ static void free_child_gc(void)
 
   mmu_flush_freed_pages(gc->mmu);
   mmu_free(gc->mmu);
+}
+
+#ifdef MZ_USE_PLACES
+static void free_child_gc(void)
+{
+  NewGC *gc = GC_get_GC();
+  free_gc(gc);
   ofm_free(gc, sizeof(NewGC));
 }
 #endif
@@ -5441,47 +5446,13 @@ static void free_child_gc(void)
 void GC_free_all(void)
 {
   NewGC *gc = GC_get_GC();
-  int i, ty;
-  mpage *work;
-  mpage *next;
-  PageMap pagemap = gc->page_maps;
 
   remove_signal_handler(gc);
 
-  gen0_free_big_pages(gc);
-  gen0_free_entire_nursery(gc);
-  gen_half_free_entire_nursery(gc);
-
-  for (i = 0; i < PAGE_TYPES; i++) {
-    for (work = gc->gen1_pages[i]; work; work = next) {
-      next = work->next;
-      if (work->mprotected)
-        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
-      GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
-      gen1_free_mpage(pagemap, work);
-      --gc->num_gen1_pages;
-    }
-  }
-
-  for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
-    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-      for (work = gc->med_pages[ty][i]; work; work = next) {
-        next = work->next;
-        if (work->mprotected)
-          mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
-        GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
-        gen1_free_mpage(pagemap, work);
-        --gc->num_gen1_pages;
-      }
-    }
-  }
+  free_gc(gc);
 
   ofm_free(gc->mark_table, NUMBER_OF_TAGS * sizeof (Mark2_Proc));
   ofm_free(gc->fixup_table, NUMBER_OF_TAGS * sizeof (Fixup2_Proc));
-  free_page_maps(gc->page_maps);
-  free_all_stack_pages(gc);
 
-  mmu_flush_freed_pages(gc->mmu);
-  mmu_free(gc->mmu);
   ofm_free(gc, sizeof(NewGC));
 }
