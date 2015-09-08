@@ -23,7 +23,7 @@ See also @racket[tcp-redirect] and @racket[make-ssl-tcp@].
 @defsignature[tcp^ ()]{
 
 @defproc[(tcp-listen [port-no (and/c exact-nonnegative-integer?
-                                     (integer-in 1 65535))]
+                                     (integer-in 0 65535))]
                      [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
                      [hostname (or/c string? false/c) #f])
