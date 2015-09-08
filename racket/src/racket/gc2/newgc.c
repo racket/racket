@@ -1086,7 +1086,7 @@ static void *allocate_big(const size_t request_size_bytes, int type)
 
   bpage->addr = addr;
   bpage->size = allocate_size;
-  bpage->size_class = 2;
+  bpage->size_class = SIZE_CLASS_BIG_PAGE;
   bpage->page_type = type;
   bpage->mmu_src_block = src_block;
   GCVERBOSEPAGE(gc, "NEW BIG PAGE", bpage);
@@ -1095,6 +1095,7 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   bpage->next = gc->gen0.big_pages;
   if(bpage->next) bpage->next->prev = bpage;
   gc->gen0.big_pages = bpage;
+  gc->num_gen1_pages++;
 
   if (gc->saved_allocator) {
     /* MESSAGE ALLOCATION: orphan this page from the current GC; this
@@ -1129,7 +1130,7 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
   page->addr = addr;
   page->mmu_src_block = src_block;
   page->size = sz;
-  page->size_class = 1;
+  page->size_class = SIZE_CLASS_MED_PAGE;
   page->page_type = PAGE_BIG;
   MED_NEXT_SEARCH_SLOT(page) = PREFIX_SIZE;
   page->live_size = sz;
@@ -1147,6 +1148,8 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
     page->next->prev = page;
   gc->med_pages[ty][pos] = page;
   gc->med_freelist_pages[ty][pos] = page;
+
+  gc->num_gen1_pages++;
 
   if (gc->saved_allocator) { /* see MESSAGE ALLOCATION above */
     orphan_page_accounting(gc, APAGE_SIZE);
@@ -1266,7 +1269,7 @@ inline static mpage *gen0_create_new_nursery_mpage(NewGC *gc, const size_t page_
   page = malloc_mpage();
   page->addr = addr;
   page->mmu_src_block = src_block;
-  page->size_class = 0;
+  page->size_class = SIZE_CLASS_SMALL_PAGE;
   page->size = PREFIX_SIZE;
   GEN0_ALLOC_SIZE(page) = page_size;
 
@@ -2776,6 +2779,13 @@ inline static int page_mmu_protectable(mpage *page) {
   return (page->page_type == PAGE_ATOMIC) ? MMU_NON_PROTECTABLE : MMU_PROTECTABLE;
 }
 
+static void set_has_back_pointers(NewGC *gc, mpage *page)
+{
+  page->back_pointers = 1;
+  page->backpointer_next = gc->backpointer_next;
+  gc->backpointer_next = page;
+}
+
 static int designate_modified_gc(NewGC *gc, void *p)
 {
   mpage *page = pagemap_find_page(gc->page_maps, p);
@@ -2789,7 +2799,8 @@ static int designate_modified_gc(NewGC *gc, void *p)
     page->mprotected = 0;
     mmu_write_unprotect_page(gc->mmu, page->addr, real_page_size(page));
     GC_MP_CNT_INC(mp_write_barrier_cnt);
-    page->back_pointers = 1;
+    if (!page->back_pointers)
+      set_has_back_pointers(gc, page);
     gc->modified_unprotects++;
     return 1;
   } else {
@@ -3477,7 +3488,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         return;
       }
       /* in this case, it has not. So we want to mark it, first off. */
-      page->size_class = 3;
+      page->size_class = SIZE_CLASS_BIG_PAGE_MARKED;
 
       /* if this is in the nursery, we want to move it out of the nursery */
       if((page->generation == AGE_GEN_0) && !is_a_master_page)
@@ -3599,6 +3610,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
             work->next->prev = work;
           pagemap_add(gc->page_maps, work);
           gc->gen1_pages[type] = work;
+          gc->num_gen1_pages++;
           newplace = PAGE_TO_OBJHEAD(work);
           GCVERBOSEPAGE(gc, "NEW SMALL GEN1 PAGE", work);
         }
@@ -4165,89 +4177,72 @@ static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
 
 static void mark_backpointers(NewGC *gc)
 {
+  /* if this is not a full collection, then we need to mark any pointers
+     that point backwards into generation 0, since they're roots. */
   if (!gc->gc_full) {
     mpage *work;
-    int i, ty, traversed = 0, skipped = 0;
+    int traversed = 0;
 
-    /* if this is not a full collection, then we need to mark any pointers
-       that point backwards into generation 0, since they're roots. */
-    for (i = 0; i < PAGE_TYPES; i++) {
-      for (work = gc->gen1_pages[i]; work; work = work->next) {
-        if (work->back_pointers) {
-          if (work->mprotected) {
-            /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
-            work->mprotected = 0;
-            mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
-          }
-          work->marked_from = 1;
-          if (work->size_class) {
-            /* must be a big page */
-            work->size_class = 3;
-            push_ptr(gc, TAG_AS_BIG_PAGE_PTR(BIG_PAGE_TO_OBJECT(work)));
-          } else {
-            if (work->page_type != PAGE_ATOMIC) {
-              void **start = PAGE_START_VSS(work);
-              void **end = PAGE_END_VSS(work);
+    for (work = gc->backpointer_next; work; work = work->backpointer_next) {
+      GC_ASSERT(work->back_pointers);
 
-              while(start < end) {
-                objhead *info = (objhead *)start;
-                if (!info->dead) {
-                  info->mark = 1;
-                  /* This must be a push_ptr, and not a direct call to
-                     internal_mark. This is because we need every object
-                     in the older heap to be marked out of and noted as
-                     marked before we do anything else */
-                  push_ptr(gc, OBJHEAD_TO_OBJPTR(start));
-                }
-                start += info->size;
-              }
-            }
+      if (work->mprotected) {
+        /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
+        work->mprotected = 0;
+        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
+      }
+      work->marked_from = 1;
+
+      if (work->size_class == SIZE_CLASS_BIG_PAGE) {
+        /* must be a big page */
+        work->size_class = SIZE_CLASS_BIG_PAGE_MARKED;
+        push_ptr(gc, TAG_AS_BIG_PAGE_PTR(BIG_PAGE_TO_OBJECT(work)));
+      } else if (work->size_class == SIZE_CLASS_SMALL_PAGE) {
+        /* small page */
+        void **start = PAGE_START_VSS(work);
+        void **end = PAGE_END_VSS(work);
+
+        GC_ASSERT(work->page_type != PAGE_ATOMIC);
+
+        while (start < end) {
+          objhead *info = (objhead *)start;
+          if (!info->dead) {
+            info->mark = 1;
+            /* This must be a push_ptr, and not a direct call to
+               internal_mark. This is because we need every object
+               in the older heap to be marked out of and noted as
+               marked before we do anything else */
+            push_ptr(gc, OBJHEAD_TO_OBJPTR(start));
           }
-          work->previous_size = PREFIX_SIZE;
-          traversed++;
-        } else {
-          skipped++;
+          start += info->size;
+        }
+        work->previous_size = PREFIX_SIZE;
+      } else {
+        /* medium page */
+        void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
+        void **end = PPTR(NUM(work->addr) + APAGE_SIZE - work->size);
+
+        GC_ASSERT(work->size_class == SIZE_CLASS_MED_PAGE);
+
+        while (start <= end) {
+          objhead *info = (objhead *)start;
+          if (!info->dead) {
+            info->mark = 1;
+            /* This must be a push_ptr (see above) */
+            push_ptr(gc, OBJHEAD_TO_OBJPTR(info));
+          }
+          start += info->size;
         }
       }
-    }
 
-    for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
-      for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-        for (work = gc->med_pages[ty][i]; work; work = work->next) {
-          if (work->back_pointers) {
-            void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
-            void **end = PPTR(NUM(work->addr) + APAGE_SIZE - work->size);
-
-            if (work->mprotected) {
-              /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
-              work->mprotected = 0;
-              mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
-            }
-
-            work->marked_from = 1;
-
-            if (ty == MED_PAGE_NONATOMIC) {
-              while (start <= end) {
-                objhead *info = (objhead *)start;
-                if (!info->dead) {
-                  info->mark = 1;
-                  /* This must be a push_ptr (see above) */
-                  push_ptr(gc, OBJHEAD_TO_OBJPTR(info));
-                }
-                start += info->size;
-              }
-            }
-            traversed++;
-          } else {
-            skipped++;
-          }
-        }
-      }
+      traversed++;
     }
 
     gc->minor_old_traversed += traversed;
-    gc->minor_old_skipped += skipped;
+    gc->minor_old_skipped += (gc->num_gen1_pages - traversed);
   }
+
+  gc->backpointer_next = NULL;
 }
 
 mpage *allocate_compact_target(NewGC *gc, mpage *work)
@@ -4258,11 +4253,12 @@ mpage *allocate_compact_target(NewGC *gc, mpage *work)
                              &npage->mmu_src_block, 1);
   npage->previous_size = npage->size = PREFIX_SIZE;
   npage->generation = AGE_GEN_1;
-  npage->size_class = 0;
+  npage->size_class = SIZE_CLASS_SMALL_PAGE;
   npage->page_type = work->page_type;
   npage->marked_on = 1;
   backtrace_new_page(gc, npage);
   pagemap_add(gc->page_maps, npage);
+  gc->num_gen1_pages++;
   GCVERBOSEPAGE(gc, "NEW COMPACT PAGE", npage);
   /* Link in this new replacement page */
   npage->prev = work;
@@ -4434,7 +4430,7 @@ static void killing_debug(NewGC *gc, mpage *page, objhead *info) {
 }
 #endif
 
-static void repair_mixed_page(NewGC *gc, mpage *page, void **end)
+static void repair_mixed_page(NewGC *gc, mpage *page, void **end, int track_back_pointers)
 {
   void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
   Fixup2_Proc *fixup_table = gc->fixup_table;
@@ -4501,7 +4497,12 @@ static void repair_mixed_page(NewGC *gc, mpage *page, void **end)
     }
   }
 
-  page->back_pointers = gc->back_pointers;
+  if (track_back_pointers) {
+    if (gc->back_pointers)
+      set_has_back_pointers(gc, page);
+    else
+      page->back_pointers = 0;
+  }
 }
 
 static void repair_heap(NewGC *gc)
@@ -4523,7 +4524,7 @@ static void repair_heap(NewGC *gc)
 
           GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
                    page, start));
-          page->size_class = 2; /* remove the mark */
+          page->size_class = SIZE_CLASS_BIG_PAGE; /* remove the mark */
           switch(page->page_type) {
           case PAGE_TAGGED: 
             fixup_table[*(unsigned short*)start](start, gc); 
@@ -4649,7 +4650,10 @@ static void repair_heap(NewGC *gc)
           }
         }
 
-        page->back_pointers = gc->back_pointers;
+        if (gc->back_pointers)
+          set_has_back_pointers(gc, page);
+        else
+          page->back_pointers = 0;
       } else GCDEBUG((DEBUGOUTF,"Not Cleaning page %p\n", page));
     }
   }
@@ -4658,14 +4662,14 @@ static void repair_heap(NewGC *gc)
     for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
       for (page = gc->med_pages[ty][i]; page; page = page->next) {
         if (page->marked_on || page->marked_from)
-          repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->size));
+          repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->size), 1);
       }
     }
   }
 
   for (page = gc->gen_half.pages; page; page = page->next) {
     GC_ASSERT(page->generation == AGE_GEN_HALF);
-    repair_mixed_page(gc, page, PPTR(NUM(page->addr) + page->size - 1));
+    repair_mixed_page(gc, page, PPTR(NUM(page->addr) + page->size - 1), 0);
   }
 }
 
@@ -4685,6 +4689,7 @@ static inline void cleanup_vacated_pages(NewGC *gc) {
     mpage *next = pages->next;
     GCVERBOSEPAGE(gc, "Cleaning up vacated", pages);
     gen1_free_mpage(pagemap, pages);
+    --gc->num_gen1_pages;
     pages = next;
   }
   gc->release_pages = NULL;
@@ -4752,6 +4757,7 @@ static void clean_up_heap(NewGC *gc)
           if(next) work->next->prev = prev;
           GCVERBOSEPAGE(gc, "Cleaning up BIGPAGE", work);
           gen1_free_mpage(pagemap, work);
+          --gc->num_gen1_pages;
         } else {
           GCVERBOSEPAGE(gc, "clean_up_heap BIG PAGE ALIVE", work);
           work->marked_on = 0;
@@ -4810,6 +4816,7 @@ static void clean_up_heap(NewGC *gc)
           if(next) work->next->prev = prev;
           GCVERBOSEPAGE(gc, "Cleaning up MED NO MARKEDON", work);
           gen1_free_mpage(pagemap, work);
+          --gc->num_gen1_pages;
         } else {
           /* not marked during minor gc */
           memory_in_use += work->live_size;
@@ -5372,7 +5379,7 @@ void GC_dump_variable_stack(void **var_stack,
 static void free_child_gc(void)
 {
   NewGC *gc = GC_get_GC();
-  int i;
+  int i, ty;
   mpage *work;
   mpage *next;
   PageMap pagemap = gc->page_maps;
@@ -5384,10 +5391,9 @@ static void free_child_gc(void)
   /* First, unprotect all pages. It's important to "queue" up all this work
      as a batch to minimize commuincation with the OS and avoid fragmenting
      the OS's table (in the case of Linux) that tracks page permissions. */
-  for(i = 0; i < PAGE_TYPES; i++) {
-    if(i != PAGE_ATOMIC) {
-      for (work = gc->gen1_pages[i]; work; work = next) {
-        next = work->next;
+  for (i = 0; i < PAGE_TYPES; i++) {
+    if (i != PAGE_ATOMIC) {
+      for (work = gc->gen1_pages[i]; work; work = work->next) {
         if (work->mprotected) {
           work->mprotected = 0;
           mmu_queue_write_unprotect_range(gc->mmu, work->addr, real_page_size(work), page_mmu_type(work), &work->mmu_src_block);
@@ -5395,13 +5401,31 @@ static void free_child_gc(void)
       }
     }
   }
+  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+    for (work = gc->med_pages[MED_PAGE_NONATOMIC][i]; work; work = work->next) {
+      if (work->mprotected)
+        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
+    }
+  }
+
   mmu_flush_write_unprotect_ranges(gc->mmu);
 
-  for(i = 0; i < PAGE_TYPES; i++) {
+  for (i = 0; i < PAGE_TYPES; i++) {
     for (work = gc->gen1_pages[i]; work; work = next) {
       next = work->next;
       GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
       gen1_free_mpage(pagemap, work);
+      --gc->num_gen1_pages;
+    }
+  }
+  for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
+    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+      for (work = gc->med_pages[ty][i]; work; work = next) {
+        next = work->next;
+        GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
+        gen1_free_mpage(pagemap, work);
+        --gc->num_gen1_pages;
+      }
     }
   }
 
@@ -5417,7 +5441,7 @@ static void free_child_gc(void)
 void GC_free_all(void)
 {
   NewGC *gc = GC_get_GC();
-  int i;
+  int i, ty;
   mpage *work;
   mpage *next;
   PageMap pagemap = gc->page_maps;
@@ -5428,16 +5452,27 @@ void GC_free_all(void)
   gen0_free_entire_nursery(gc);
   gen_half_free_entire_nursery(gc);
 
-  for(i = 0; i < PAGE_TYPES; i++) {
+  for (i = 0; i < PAGE_TYPES; i++) {
     for (work = gc->gen1_pages[i]; work; work = next) {
       next = work->next;
-
       if (work->mprotected)
-      {
         mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
-      }
       GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
       gen1_free_mpage(pagemap, work);
+      --gc->num_gen1_pages;
+    }
+  }
+
+  for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
+    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+      for (work = gc->med_pages[ty][i]; work; work = next) {
+        next = work->next;
+        if (work->mprotected)
+          mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
+        GCVERBOSEPAGE(gc, "Cleaning up GC DYING", work);
+        gen1_free_mpage(pagemap, work);
+        --gc->num_gen1_pages;
+      }
     }
   }
 

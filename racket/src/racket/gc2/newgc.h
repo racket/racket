@@ -13,8 +13,18 @@ typedef struct mpage {
   struct mpage *next;
   struct mpage *prev;
   void *addr;
+  void *mmu_src_block;
+#ifdef MZ_GC_BACKTRACE
+  void **backtrace;
+  void *backtrace_page_src;
+#endif
+#ifdef MZ_USE_PLACES
+  uintptr_t page_lock; /* for master GC pages during marking */
+#endif
   uintptr_t previous_size; /* for med page, place to search for available block; for jit nursery, allocated size */
   uintptr_t size; /* big page size, med page element size, or nursery starting point */
+  struct mpage *backpointer_next;
+  unsigned short live_size;
   unsigned char generation    :2;
   unsigned char back_pointers :1;
   unsigned char size_class    :2;  /* 0 => small; 1 => med; 2 => big; 3 => big marked */
@@ -23,15 +33,6 @@ typedef struct mpage {
   unsigned char marked_from   :1;
   unsigned char has_new       :1;
   unsigned char mprotected    :1;
-  unsigned short live_size;
-#ifdef MZ_GC_BACKTRACE
-  void **backtrace;
-  void *backtrace_page_src;
-#endif
-  void *mmu_src_block;
-#ifdef MZ_USE_PLACES
-  uintptr_t page_lock; /* for master GC pages during marking */
-#endif
 } mpage;
 
 typedef struct Gen0 {
@@ -137,6 +138,12 @@ typedef struct NewGC {
 
   struct mpage *med_pages[MED_PAGE_TYPES][NUM_MED_PAGE_SIZES];
   struct mpage *med_freelist_pages[MED_PAGE_TYPES][NUM_MED_PAGE_SIZES];
+
+  intptr_t num_gen1_pages;
+
+  /* linked list of pages with back pointers to be traversed in a
+     minor collection: */
+  struct mpage *backpointer_next;
 
   MarkSegment *mark_stack;
 
