@@ -24,3 +24,6 @@
     (define p (go))
     (place-channel-get p)
     (place-kill p)))
+
+(module+ test
+  (require (submod ".." main)))

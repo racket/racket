@@ -22,5 +22,5 @@
   (unless (andmap zero? r)
     (error "some place failed")))
 
-
-
+(module+ test
+  (require (submod ".." main)))

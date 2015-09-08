@@ -15,3 +15,6 @@
   (define p (go))
   (printf "waiting\n")
   (place-wait p))
+
+(module+ test
+  (require (submod ".." main)))
