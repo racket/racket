@@ -5,7 +5,8 @@
           "mz.rkt"
           (for-label racket/contract
                      racket/math
-                     racket/format))
+                     racket/format
+                     racket/string))
 
 @(begin
   (define the-eval (make-base-eval))
