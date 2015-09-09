@@ -6,7 +6,7 @@ cache:
   - C:\Users\appveyor\AppData\Roaming\Racket
 
 build_script:
-- '"c:\Program Files (x86)\Microsoft Visual Studio 15.0\vc\vcvarsall.bat" x86'
+- '"c:\Program Files (x86)\Microsoft Visual Studio 12.0\vc\vcvarsall.bat" x86'
 - echo %cd%
 - nmake win32-in-place PKGS="racket-test unstable-flonum-lib net-test"
 
