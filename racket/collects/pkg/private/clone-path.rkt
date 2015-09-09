@@ -372,9 +372,9 @@
            [else #f])]
          [(git github clone)
           (define pkg-url (string->url (pkg-desc-source d)))
-          (define-values (host port repo branch path)
-            (split-git-or-hub-url pkg-url))
-          (real-git-url pkg-url host port repo)]
+          (define-values (transport host port repo branch path)
+            (split-git-or-hub-url #:type type pkg-url))
+          (real-git-url pkg-url #:type type host port repo)]
          [else #f])))
 
 (define (pkg-info->clone-desc name info

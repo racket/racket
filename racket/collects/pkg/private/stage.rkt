@@ -40,6 +40,12 @@
 
 (struct install-info (name orig-pkg directory git-directory clean? checksum module-paths additional-installs))
 
+(define (communication-type type)
+  (if (and (eq? type 'github)
+           use-git-for-github?)
+      'git
+      type))
+
 (define (remote-package-checksum pkg download-printf pkg-name
                                  #:type [type #f]
                                  #:catalog-lookup-cache [catalog-lookup-cache #f]
@@ -123,7 +129,7 @@
                         #:force-strip? force-strip?)]
    [(eq? type 'clone)
     (define pkg-url (string->url pkg))
-    (define-values (host port repo branch path)
+    (define-values (transport host port repo branch path)
       (split-git-or-hub-url pkg-url))
     (define pkg-no-query (real-git-url pkg-url host port repo))
     (define clone-dir (or given-at-dir
@@ -245,14 +251,15 @@
       (check-checksum given-checksum found-checksum "unexpected" pkg #f))
     (define checksum (or found-checksum given-checksum))
     (define downloaded-info
-       (match type
+       (match (communication-type type)
          ['git
           (when (equal? checksum "")
             (pkg-error 
              (~a "cannot use empty checksum for Git repostory package source\n"
                  "  source: ~a")
              pkg))
-          (define-values (host port repo branch path) (split-git-url pkg-url))
+          (define-values (transport host port repo branch path)
+            (split-git-or-hub-url pkg-url #:type type))
           (define tmp-dir
             (make-temporary-file
              (string-append
@@ -264,7 +271,7 @@
           (dynamic-wind
            void
            (λ ()
-             (download-repo! pkg-url host port repo tmp-dir checksum 
+             (download-repo! pkg-url transport host port repo tmp-dir checksum 
                              #:use-cache? use-cache?
                              #:download-printf download-printf)
              (lift-git-directory-content tmp-dir path)
@@ -696,10 +703,10 @@
                    (or given-type
                        (let-values ([(name type) (package-source->name+type pkg-url-str given-type)])
                          type))))
-  (case type
+  (case (communication-type type)
     [(git)
-     (define-values (host port repo branch path)
-       (split-git-url pkg-url))
+     (define-values (transport host port repo branch path)
+       (split-git-or-hub-url pkg-url #:type type))
      (download-printf "Querying Git references for ~a at ~a\n" pkg-name pkg-url-str)
      ;; Supplying `#:dest-dir #f` means that we just resolve `branch`
      ;; to an ID:
@@ -715,7 +722,7 @@
                                                     " the given URL might not refer to a Git repository\n"
                                                     "  given URL: ~a")
                                                 pkg-url-str))
-                   #:transport (string->symbol (url-scheme pkg-url)))]
+                   #:transport transport)]
     [(github)
      (match-define (list* user repo branch path)
                    (split-github-url pkg-url))

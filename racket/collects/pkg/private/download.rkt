@@ -98,7 +98,7 @@
                     #:log-debug-string (lambda (s) (log-pkg-debug s))))))
 
 
-(define (download-repo! url host port repo dest-dir checksum
+(define (download-repo! url transport host port repo dest-dir checksum
                         #:download-printf [download-printf #f]
                         #:use-cache? [use-cache? #t])
   (log-pkg-debug "\t\tDownloading ~a to ~a" (url->string url) dest-dir)
@@ -107,11 +107,16 @@
   (define unpacked? #f)
   
   (define (download!)
+    (when download-printf
+      (download-printf "Downloading repository ~a\n" (url->string url)))
     (git-checkout host #:port port repo
                   #:dest-dir dest-dir
                   #:ref checksum
-                  #:status-printf (or download-printf void)
-                  #:transport (string->symbol (url-scheme url)))
+                  #:status-printf (lambda (fmt . args)
+                                    (define (strip-ending-newline s)
+                                      (regexp-replace #rx"\n$" s ""))
+                                    (log-pkg-debug (strip-ending-newline (apply format fmt args))))
+                  #:transport transport)
     (set! unpacked? #t)
     ;; package directory as ".tgz" so it can be cached:
     (parameterize ([current-directory dest-dir])

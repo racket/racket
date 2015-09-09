@@ -285,8 +285,8 @@ is a GitHub package source.
 @margin-note{A Github repository source that starts with
 @litchar{git://} obtains the same content that would be accessed if
 @litchar{github.com} were not treated specially. The special treatment
-is preserved for historical reasons and because GitHub provides an
-interface that is always efficient.}
+is preserved for historical reasons, especially in combination
+with @envvar{PLT_USE_GITHUB_API}.}
 
 For backward compatibility, an older format is also supported:
 
@@ -304,7 +304,15 @@ with @litchar{git://github.com/} or @litchar{github://}; a package
 source that is otherwise specified as a GitHub reference is
 automatically prefixed with @litchar{git://github.com/}. The inferred
 package name is the last element of @nonterm{path} if it is non-empty,
-otherwise the inferred name is @nonterm{repo}.}
+otherwise the inferred name is @nonterm{repo}.
+
+If the @indexed-envvar{PLT_USE_GITHUB_API} environment variable is
+set, GitHub packages are obtained using the GitHub API protocol
+instead of using the Git protocol.
+
+@history[#:changed "6.2.900.16" @elem{Changed handling of
+                                      GitHub sources to use the Git
+                                      protocol by default.}]}
 
 @; ----------------------------------------
 @item{a @tech{package name} --- A @tech{package catalog} is
