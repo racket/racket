@@ -13,21 +13,12 @@ build_script:
 test_script:
 - echo %cd%
 - racket\raco.exe pkg show -l
-- racket\racket.exe -l tests/racket/test
-- racket\racket.exe -l tests/racket/contract/all
-- racket\raco.exe test -l tests/json/json
-- racket\raco.exe test -l tests/file/main
-- racket\raco.exe test -l tests/net/head
-- racket\raco.exe test -l tests/net/uri-codec
-- racket\raco.exe test -l tests/net/url
-- racket\raco.exe test -l tests/net/url-port
-- racket\raco.exe test -l tests/net/encoders
-- racket\raco.exe test -l tests/openssl/basic
-- racket\raco.exe test -l tests/openssl/https
-- racket\raco.exe test -l tests/match/plt-match-tests
-- racket\raco.exe test -l tests/zo-path
-- racket\raco.exe test -l tests/xml/test
 
+init:
+- ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+
+on_finish:
+- ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 notifications:
  - provider: Email
