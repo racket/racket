@@ -487,7 +487,12 @@
        (let ([s (exn:fail:sql-sqlstate v)])
          (or (eq? s 'busy)
              (eq? s 'ioerr-blocked)
-             (eq? s 'ioerr-lock)))))
+             (eq? s 'ioerr-lock)
+             ;; The `SQLITE_READONLY_ROLLBACK` result is supposed
+             ;; to mean that a hot journal exists due to a crash,
+             ;; but it seems to happen even without crashes, so
+             ;; treat it is a reason to retry:
+             (eq? s 'readonly-rollback)))))
 
 (define (call-with-lock-handler handler thunk)
   (with-handlers* ([exn:fail:retry?
