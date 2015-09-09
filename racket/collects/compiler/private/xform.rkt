@@ -907,6 +907,7 @@
                __error __errno_location __toupper __tolower ___errno
                __attribute__ __mode__ ; not really functions in gcc
                __iob_func ; VC 8
+               __acrt_iob_func ; VC 14.0 (2015)
                |GetStdHandle| |__CFStringMakeConstantString|
                _vswprintf_c
                
