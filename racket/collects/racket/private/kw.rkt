@@ -1040,7 +1040,7 @@
                                   (if s
                                       (if l
                                           (format "~a:~a:~a: " s l c)
-                                          (format "~a:::~a: " s l p))
+                                          (format "~a:::~a: " s p))
                                       ""))
                                 msg
                                 (syntax-e #'self))
