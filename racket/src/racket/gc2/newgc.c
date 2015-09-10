@@ -220,10 +220,6 @@ static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 static void GCVERBOSEPAGE(NewGC *gc, const char *msg, mpage* page) {
   GCVERBOSEprintf(gc, "%s %p: %p %p %p\n", msg, gc, page, page->addr, (void*)((intptr_t)page->addr + real_page_size(page)));
 }
-# ifdef KILLING_DEBUG
-static void killing_debug(NewGC *gc, mpage *page, objhead *info);
-static void fprintf_debug(NewGC *gc, mpage *page, const char *msg, objhead *info, FILE* file, int check);
-# endif
 #else
 # define GCVERBOSEPAGE(gc, msg, page) /* EMPTY */
 MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
@@ -2791,8 +2787,8 @@ inline static int page_mmu_protectable(mpage *page) {
 static void set_has_back_pointers(NewGC *gc, mpage *page)
 {
   page->back_pointers = 1;
-  page->backpointer_next = gc->backpointer_next;
-  gc->backpointer_next = page;
+  page->modified_next = gc->modified_next;
+  gc->modified_next = page;
 }
 
 static int designate_modified_gc(NewGC *gc, void *p)
@@ -3485,13 +3481,15 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
   }
 #endif
 
+  GC_ASSERT(!page->marked_from);
+
   /* MED OR BIG PAGE */
   if (page->size_class) {
     /* BIG PAGE */
-    if (page->size_class > 1) {
+    if (page->size_class > SIZE_CLASS_MED_PAGE) {
       /* This is a bigpage. The first thing we do is see if its been marked
          previously */
-      if (page->size_class != 2) {
+      if (page->size_class != SIZE_CLASS_BIG_PAGE) {
         GCDEBUG((DEBUGOUTF, "Not marking %p on big %p (already marked)\n", p, page));
         RELEASE_PAGE_LOCK(is_a_master_page, page);
         return;
@@ -3503,7 +3501,13 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       if((page->generation == AGE_GEN_0) && !is_a_master_page)
         promote_marked_gen0_big_page(gc, page);
 
+      GC_ASSERT(!page->marked_on);
       page->marked_on = 1;
+      if (!is_a_master_page) {
+        page->modified_next = gc->modified_next;
+        gc->modified_next = page;
+      }
+
       record_backtrace(gc, page, BIG_PAGE_TO_OBJECT(page));
       GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
       /* Finally, we want to add this to our mark queue, so we can 
@@ -3518,7 +3522,13 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         return;
       }
       info->mark = 1;
-      page->marked_on = 1;
+      if (!page->marked_on) {
+        page->marked_on = 1;
+        if (!is_a_master_page) {
+          page->modified_next = gc->modified_next;
+          gc->modified_next = page;
+        }
+      }
       p = OBJHEAD_TO_OBJPTR(info);
       backtrace_new_page_if_needed(gc, page);
       record_backtrace(gc, page, p);
@@ -3546,7 +3556,13 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
       if((NUM(page->addr) + page->previous_size) <= NUM(p)) {
         GCDEBUG((DEBUGOUTF, "Marking %p (leaving alone)\n", p));
         ohead->mark = 1;
-        page->marked_on = 1;
+        if (!page->marked_on) {
+          page->marked_on = 1;
+          if (!is_a_master_page) {
+            page->modified_next = gc->modified_next;
+            gc->modified_next = page;
+          }
+        }
         page->previous_size = PREFIX_SIZE;
         page->live_size += ohead->size;
         record_backtrace(gc, page, p);
@@ -3595,7 +3611,13 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         /* now either fetch where we're going to put this object or make
            a new page if we couldn't find a page with space to spare */
         if (work) {
-          work->marked_on = 1;
+          if (!work->marked_on) {
+            work->marked_on = 1;
+            if (!work->marked_from) {
+              work->modified_next = gc->modified_next;
+              gc->modified_next = work;
+            }
+          }
           if (work->mprotected) {
             work->mprotected = 0;
             mmu_write_unprotect_page(gc->mmu, work->addr, APAGE_SIZE);
@@ -3612,6 +3634,8 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
           work->page_type = type;
           work->size = work->previous_size = PREFIX_SIZE;
           work->marked_on = 1;
+          work->modified_next = gc->modified_next;
+          gc->modified_next = work;
           backtrace_new_page(gc, work);
           work->next = gc->gen1_pages[type];
           work->prev = NULL;
@@ -4186,13 +4210,17 @@ static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
 
 static void mark_backpointers(NewGC *gc)
 {
+  /* after this pass, the content of the `modified_next` chain is
+     pages that have `marked_from` set; additional pages are added
+     as they acquire `marked_on`, except master-GC pages */
+
   /* if this is not a full collection, then we need to mark any pointers
      that point backwards into generation 0, since they're roots. */
   if (!gc->gc_full) {
     mpage *work;
     int traversed = 0;
 
-    for (work = gc->backpointer_next; work; work = work->backpointer_next) {
+    for (work = gc->modified_next; work; work = work->modified_next) {
       GC_ASSERT(work->back_pointers);
 
       if (work->mprotected) {
@@ -4249,9 +4277,10 @@ static void mark_backpointers(NewGC *gc)
 
     gc->minor_old_traversed += traversed;
     gc->minor_old_skipped += (gc->num_gen1_pages - traversed);
+  } else {
+    /* reset modified chain, since we assume no kept pages up front */
+    gc->modified_next = NULL;
   }
-
-  gc->backpointer_next = NULL;
 }
 
 mpage *allocate_compact_target(NewGC *gc, mpage *work)
@@ -4389,63 +4418,11 @@ inline static void do_heap_compact(NewGC *gc)
   }
 }
 
-#ifdef KILLING_DEBUG
-#include <ctype.h>
-static void fprintf_buffer(FILE* file, char* buf, int l) {
-  int i;
-  for (i=0; i < l; i++ ) { fprintf(file, "%02hhx",buf[i]); }
-  fprintf(file, "\n"); 
-  for (i=0; i < l; i++ ) {
-    unsigned char c = buf[i];
-    if(isprint(c)) { fprintf(file, "%c ", c); }
-    else           { fprintf(file, "  "); }
-  }
-  fprintf(file, "\n"); 
-}
-
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define INFO_SIZE_BYTES(info) ((info->size * WORD_SIZE) - sizeof(objhead))
-static void fprintf_debug(NewGC *gc, mpage *page, const char *msg, objhead *info, FILE* file, int check) {
-  Scheme_Object *obj = OBJHEAD_TO_OBJPTR(info);
-  fprintf(file, "%s obj %p ot %i it %i im %i is %i is >> 3 %i page %p pmo %i\n", msg, obj, obj->type, info->type, info->mark, info->size, info->size >> 3, page, page->marked_on);
-  switch (obj->type) {
-    case scheme_unix_path_type:
-      if (pagemap_find_page(gc->page_maps, MIN(SCHEME_PATH_VAL(obj), INFO_SIZE_BYTES(info)))) {
-        fprintf_buffer(file, SCHEME_PATH_VAL(obj), SCHEME_PATH_LEN(obj));
-      }
-      else {
-        fprintf(file, "%p already freed and out of bounds\n", SCHEME_PATH_VAL(obj));
-      }
-      break;
-    case scheme_symbol_type:
-      fprintf_buffer(file, SCHEME_SYM_VAL(obj), MIN(SCHEME_SYM_LEN(obj), INFO_SIZE_BYTES(info)));
-      break;
-    case scheme_resolved_module_path_type:
-      if (pagemap_find_page(gc->page_maps, SCHEME_PTR_VAL(obj))) {
-        /*
-          fprintf_debug(gc, page, "RMP ", OBJPTR_TO_OBJHEAD(SCHEME_PTR_VAL(obj)), file, check);
-        */
-      }
-      else {
-        fprintf(file, "RMP %p already freed and out of bounds\n", SCHEME_PATH_VAL(obj));
-      }
-    default:
-      fprintf_buffer(file, ((char *)obj), (info->size * WORD_SIZE) - sizeof(objhead));
-      break;
-  }
-}
-static void killing_debug(NewGC *gc, mpage *page, objhead *info) {
-  fprintf_debug(gc, page, "killing", info, gcdebugOUT(gc), 1);
-}
-#endif
-
-static void repair_mixed_page(NewGC *gc, mpage *page, void **end, int track_back_pointers)
+static void repair_mixed_page(NewGC *gc, mpage *page, void **end)
 {
   void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
   Fixup2_Proc *fixup_table = gc->fixup_table;
 
-  gc->back_pointers = 0;
-        
   while (start <= end) {
     objhead *info = (objhead *)start;
     if (info->mark) {
@@ -4494,191 +4471,190 @@ static void repair_mixed_page(NewGC *gc, mpage *page, void **end, int track_back
         abort();
       }
       info->mark = 0;
-#ifdef MZ_USE_PLACES
-      page->marked_from = 1;
-#endif
     } else {
-#ifdef KILLING_DEBUG
-      killing_debug(gc, page, info);
-#endif
       info->dead = 1;
       start += info->size;
     }
   }
-
-  if (track_back_pointers) {
-    if (gc->back_pointers)
-      set_has_back_pointers(gc, page);
-    else
-      page->back_pointers = 0;
-  }
 }
 
-static void repair_heap(NewGC *gc)
+static void chain_marked_on(NewGC *gc)
+/* add any page that is marked on to the `modified_next` chain */
 {
   mpage *page;
   int i, ty;
-  Fixup2_Proc *fixup_table = gc->fixup_table;
+
+  gc->modified_next = NULL;
 
   for (i = 0; i < PAGE_TYPES; i++) {
     for (page = gc->gen1_pages[i]; page; page = page->next) {
-      if (page->marked_on || page->marked_from) {
-        page->has_new = 0;
-        gc->back_pointers = 0;
-        /* these are guaranteed not to be protected */
-        if (page->size_class)  {
-          /* since we get here via gen1_pages, it's a big page */
-          void **start = PPTR(BIG_PAGE_TO_OBJECT(page));
-          void **end = PAGE_END_VSS(page);
-
-          GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
-                   page, start));
-          page->size_class = SIZE_CLASS_BIG_PAGE; /* remove the mark */
-          switch(page->page_type) {
-          case PAGE_TAGGED: 
-            fixup_table[*(unsigned short*)start](start, gc); 
-            break;
-          case PAGE_ATOMIC: break;
-          case PAGE_ARRAY: 
-            while(start < end) gcFIXUP2(*(start++), gc); 
-            break;
-          case PAGE_PAIR: 
-            {
-              Scheme_Object *p = (Scheme_Object *)start;
-              gcFIXUP2(SCHEME_CAR(p), gc);
-              gcFIXUP2(SCHEME_CDR(p), gc);
-            }
-            break;
-          case PAGE_TARRAY:
-            {
-              unsigned short tag = *(unsigned short *)start;
-              ASSERT_TAG(tag);
-              end -= INSET_WORDS;
-              while(start < end) start += fixup_table[tag](start, gc);
-              break;
-            }
-          }
-        } else {
-          void **start = PPTR(NUM(page->addr) + page->previous_size);
-          void **end = PAGE_END_VSS(page);
-
-          GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
-                page, start));
-          switch(page->page_type) {
-            case PAGE_TAGGED: 
-              while(start < end) {
-                objhead *info = (objhead *)start;
-
-                if(info->mark) {
-                  void *obj_start = OBJHEAD_TO_OBJPTR(start);
-                  unsigned short tag = *(unsigned short *)obj_start;
-                  ASSERT_TAG(tag);
-                  info->mark = 0;
-                  fixup_table[tag](obj_start, gc);
-                } else {
-                  info->dead = 1;
-#ifdef KILLING_DEBUG
-                  killing_debug(gc, page, info);
-#endif
-                }
-                start += info->size;
-              }
-              break;
-            case PAGE_ATOMIC:
-              while(start < end) {
-                objhead *info = (objhead *)start;
-                if(info->mark) {
-                  info->mark = 0;
-                } else {
-                  info->dead = 1;
-#ifdef KILLING_DEBUG
-                  killing_debug(gc, page, info);
-#endif
-                }
-                start += info->size;
-              }
-              break;
-            case PAGE_ARRAY: 
-              while(start < end) {
-                objhead *info = (objhead *)start;
-                size_t size = info->size;
-                if(info->mark) {
-                  void **tempend = PPTR(info) + info->size;
-                  start = OBJHEAD_TO_OBJPTR(start);
-                  while(start < tempend) gcFIXUP2(*start++, gc);
-                  info->mark = 0;
-                } else { 
-                  info->dead = 1;
-#ifdef KILLING_DEBUG
-                  killing_debug(gc, page, info);
-#endif
-                  start += size;
-                }
-              }
-              break;
-            case PAGE_TARRAY:
-              while(start < end) {
-                objhead *info = (objhead *)start;
-                size_t size = info->size;
-                if(info->mark) {
-                  void **tempend = PPTR(info) + (info->size - INSET_WORDS);
-                  unsigned short tag;
-                  start = OBJHEAD_TO_OBJPTR(start);
-                  tag = *(unsigned short*)start;
-                  ASSERT_TAG(tag);
-                  while(start < tempend)
-                    start += fixup_table[tag](start, gc);
-                  info->mark = 0;
-                  start = PPTR(info) + size;
-                } else {
-                  info->dead = 1;
-#ifdef KILLING_DEBUG
-                  killing_debug(gc, page, info);
-#endif
-                  start += size;
-                }
-              }
-              break;
-            case PAGE_PAIR:
-              while(start < end) {
-                objhead *info = (objhead *)start;
-                if(info->mark) {
-                  Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
-                  gcFIXUP2(SCHEME_CAR(p), gc);
-                  gcFIXUP2(SCHEME_CDR(p), gc);
-                  info->mark = 0;
-                } else {
-                  info->dead = 1;
-#ifdef KILLING_DEBUG
-                  killing_debug(gc, page, info);
-#endif
-                }
-                start += PAIR_SIZE_IN_BYTES >> LOG_WORD_SIZE;
-              }
-              break;
-          }
-        }
-
-        if (gc->back_pointers)
-          set_has_back_pointers(gc, page);
-        else
-          page->back_pointers = 0;
-      } else GCDEBUG((DEBUGOUTF,"Not Cleaning page %p\n", page));
+      if (page->marked_on) {
+        page->modified_next = gc->modified_next;
+        gc->modified_next = page;
+      }
     }
   }
 
   for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
     for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
       for (page = gc->med_pages[ty][i]; page; page = page->next) {
-        if (page->marked_on || page->marked_from)
-          repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->size), 1);
+        if (page->marked_on) {
+          page->modified_next = gc->modified_next;
+          gc->modified_next = page;
+        }
       }
     }
   }
+}
 
+static void repair_heap(NewGC *gc)
+{
+  mpage *page, *next;
+  Fixup2_Proc *fixup_table = gc->fixup_table;
+
+  /* These pages are guaranteed not to be protected, because
+     they've been marked on or marked from.
+     In the process of repairing, we may mark pages as
+     containing backpointers, in which case the page is
+     re-added to the `modified_next` chain for a future GC. */
+
+  page = gc->modified_next;
+  gc->modified_next = NULL;
+  
+  for (; page; page = next) {
+    GC_ASSERT(page->marked_on || page->marked_from);
+    next = page->modified_next;
+    page->has_new = 0;
+    gc->back_pointers = 0;
+    if (page->size_class >= SIZE_CLASS_BIG_PAGE) {
+      void **start = PPTR(BIG_PAGE_TO_OBJECT(page));
+      void **end = PAGE_END_VSS(page);
+
+      GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
+               page, start));
+      page->size_class = SIZE_CLASS_BIG_PAGE; /* remove the mark */
+      switch(page->page_type) {
+      case PAGE_TAGGED: 
+        fixup_table[*(unsigned short*)start](start, gc); 
+        break;
+      case PAGE_ATOMIC: break;
+      case PAGE_ARRAY: 
+        while(start < end) gcFIXUP2(*(start++), gc); 
+        break;
+      case PAGE_PAIR: 
+        {
+          Scheme_Object *p = (Scheme_Object *)start;
+          gcFIXUP2(SCHEME_CAR(p), gc);
+          gcFIXUP2(SCHEME_CDR(p), gc);
+        }
+        break;
+      case PAGE_TARRAY:
+        {
+          unsigned short tag = *(unsigned short *)start;
+          ASSERT_TAG(tag);
+          end -= INSET_WORDS;
+          while(start < end) start += fixup_table[tag](start, gc);
+          break;
+        }
+      }
+    } else if (page->size_class == SIZE_CLASS_SMALL_PAGE) {
+      void **start = PPTR(NUM(page->addr) + page->previous_size);
+      void **end = PAGE_END_VSS(page);
+      
+      GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
+               page, start));
+      switch(page->page_type) {
+      case PAGE_TAGGED: 
+        while(start < end) {
+          objhead *info = (objhead *)start;
+
+          if(info->mark) {
+            void *obj_start = OBJHEAD_TO_OBJPTR(start);
+            unsigned short tag = *(unsigned short *)obj_start;
+            ASSERT_TAG(tag);
+            info->mark = 0;
+            fixup_table[tag](obj_start, gc);
+          } else
+            info->dead = 1;
+          start += info->size;
+        }
+        break;
+      case PAGE_ATOMIC:
+        while(start < end) {
+          objhead *info = (objhead *)start;
+          if(info->mark)
+            info->mark = 0;
+          else
+            info->dead = 1;
+          start += info->size;
+        }
+        break;
+      case PAGE_ARRAY: 
+        while(start < end) {
+          objhead *info = (objhead *)start;
+          size_t size = info->size;
+          if(info->mark) {
+            void **tempend = PPTR(info) + info->size;
+            start = OBJHEAD_TO_OBJPTR(start);
+            while(start < tempend) gcFIXUP2(*start++, gc);
+            info->mark = 0;
+          } else { 
+            info->dead = 1;
+            start += size;
+          }
+        }
+        break;
+      case PAGE_TARRAY:
+        while(start < end) {
+          objhead *info = (objhead *)start;
+          size_t size = info->size;
+          if(info->mark) {
+            void **tempend = PPTR(info) + (info->size - INSET_WORDS);
+            unsigned short tag;
+            start = OBJHEAD_TO_OBJPTR(start);
+            tag = *(unsigned short*)start;
+            ASSERT_TAG(tag);
+            while(start < tempend)
+              start += fixup_table[tag](start, gc);
+            info->mark = 0;
+            start = PPTR(info) + size;
+          } else {
+            info->dead = 1;
+            start += size;
+          }
+        }
+        break;
+      case PAGE_PAIR:
+        while(start < end) {
+          objhead *info = (objhead *)start;
+          if(info->mark) {
+            Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
+            gcFIXUP2(SCHEME_CAR(p), gc);
+            gcFIXUP2(SCHEME_CDR(p), gc);
+            info->mark = 0;
+          } else
+            info->dead = 1;
+          start += PAIR_SIZE_IN_BYTES >> LOG_WORD_SIZE;
+        }
+        break;
+      }
+    } else {
+      GC_ASSERT(page->size_class == SIZE_CLASS_MED_PAGE);
+      repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->size));
+    }
+
+    /* If there was a reference to a generation 1/2 object, that's a
+       backpointer for the next GC: */
+    if (gc->back_pointers)
+      set_has_back_pointers(gc, page);
+    else
+      page->back_pointers = 0;
+  }
+
+  /* All gen-half pages count as modified: */
   for (page = gc->gen_half.pages; page; page = page->next) {
     GC_ASSERT(page->generation == AGE_GEN_HALF);
-    repair_mixed_page(gc, page, PPTR(NUM(page->addr) + page->size - 1), 0);
+    repair_mixed_page(gc, page, PPTR(NUM(page->addr) + page->size - 1));
   }
 }
 
@@ -5163,6 +5139,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   if (premaster_or_place_gc(gc))
     GC_fixup_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
   TIME_STEP("reparied roots");
+  if (gc->gc_full && postmaster_and_place_gc(gc))
+    chain_marked_on(gc);
   repair_heap(gc);
   TIME_STEP("repaired");
   clean_up_heap(gc);
