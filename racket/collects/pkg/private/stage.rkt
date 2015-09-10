@@ -57,11 +57,10 @@
     (define checksum
       (match pkg
         [`(catalog ,pkg-name . ,_)
-         ;; If we're in a prefetch thread, we expect no other prefetchs in
-         ;; progress for `pkg-name`:
-         (hash-ref (package-catalog-lookup pkg-name #f catalog-lookup-cache
-                                           download-printf)
-                   'checksum)]
+         (define info (package-catalog-lookup pkg-name #f catalog-lookup-cache
+                                              download-printf
+                                              #:prefetch-group prefetch-group))
+         (hash-ref info 'checksum)]
         [`(url ,pkg-url-str)
          (package-url->checksum pkg-url-str
                                 #:type type
@@ -92,18 +91,11 @@
                (prefetch-touch checksum prefetch-group download-printf)
                checksum))]
      [prefetch?
-      (define s (make-semaphore))
-      (define f (make-prefetch-future
-                 prefetch-group
-                 download-printf
-                 (lambda (download-printf)
-                   ;; Don't start until hash table has future:
-                   (semaphore-wait s)
-                   ;; Adjusts cache when it has a result:
-                   (lookup-normally download-printf))))
-      (hash-set! remote-checksum-cache pkg f)
-      (semaphore-post s)
-      f]
+      (make-prefetch-future/hash remote-checksum-cache
+                                 pkg
+                                 lookup-normally
+                                 prefetch-group
+                                 download-printf)]
      [else
       (lookup-normally download-printf)])))
 

@@ -884,19 +884,20 @@
               force)
     (early-check-for-installed filtered-descs db #:wanted? #f))
 
-  (define-values (new-descs done-descs done-infos clone-behavior repo-descs
-                            extra-updating)
-    (adjust-to-normalize-repos filtered-descs old-descs old-infos
-                               old-clone-behavior old-repo-descs
-                               updating?
-                               catalog-lookup-cache
-                               download-printf
-                               from-command-line?
-                               convert-to-non-clone?))
-
   (call-with-prefetch-cleanup
    prefetch-group
    (lambda ()
+     (define-values (new-descs done-descs done-infos clone-behavior repo-descs
+                               extra-updating)
+       (adjust-to-normalize-repos filtered-descs old-descs old-infos
+                                  old-clone-behavior old-repo-descs
+                                  updating?
+                                  catalog-lookup-cache
+                                  download-printf
+                                  from-command-line?
+                                  convert-to-non-clone?
+                                  prefetch-group))
+
     (with-handlers* ([vector?
                       (match-lambda
                        [(vector updating? new-infos dep-pkg deps more-pre-succeed conv clone-info)

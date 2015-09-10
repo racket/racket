@@ -5,6 +5,7 @@
          prefetch-group-in-progress
          call-with-prefetch-cleanup
          make-prefetch-future
+         make-prefetch-future/hash
          prefetch-future?
          prefetch-touch)
 
@@ -69,6 +70,23 @@
       (set-prefetch-group-pending-rev! group (cons f (prefetch-group-pending-rev group)))
       (maybe-start-future group download-printf)))
   (pump-output group download-printf)
+  f)
+
+;; Like `make-prefetch-future`, but ensures a single prefetch for a
+;; given key with respect to the given table, and install the new future
+;; in that table.
+(define (make-prefetch-future/hash table key proc group download-printf)
+  (define s (make-semaphore))
+  (define f (make-prefetch-future
+             group
+             download-printf
+             (lambda (download-printf)
+               ;; Don't start until hash table has future:
+               (semaphore-wait s)
+               ;; Adjusts cache when it has a result:
+               (proc download-printf))))
+  (hash-set! table key f)
+  (semaphore-post s)
   f)
 
 ;; Wait for a future to be ready
