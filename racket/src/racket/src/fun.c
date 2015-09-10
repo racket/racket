@@ -35,41 +35,33 @@
 
 /* The implementations of the time primitives, such as
    `current-seconds', vary a lot from platform to platform. */
-#ifdef TIME_SYNTAX
-# ifdef USE_WIN32_TIME
-#  include <Windows.h>
-# else
-#  ifndef USE_PALMTIME
-#   if defined(OSKIT) && !defined(OSKIT_TEST)
-    /* Get FreeBSD version, not oskit/time.h version */
-#    include <freebsd/time.h>
-#   endif
-#   include <time.h>
-#   ifdef USE_FTIME
-#    include <sys/timeb.h>
-#   else
-#    include <sys/time.h>
-#   endif /* USE_FTIME */
-#   ifdef USE_GETRUSAGE
-#    include <sys/types.h>
-#    include <sys/time.h>
-#    include <sys/resource.h>
-#    include <errno.h>
-#   endif /* USE_GETRUSAGE */
-#   ifdef USE_SYSCALL_GETRUSAGE
-#    include <sys/syscall.h>
-#    define getrusage(a, b)  syscall(SYS_GETRUSAGE, a, b)
-#    define USE_GETRUSAGE
-#   endif /* USE_SYSCALL_GETRUSAGE */
-#   ifdef WINDOWS_GET_PROCESS_TIMES
-#    include <Windows.h>
-#   endif
-#   if !defined(USE_GETRUSAGE) && !defined(WINDOWS_GET_PROCESS_TIMES) && !defined(USER_TIME_IS_CLOCK)
-#    include <sys/times.h>
-#   endif
-#  endif /* USE_PALMTIME */
-# endif /* USE_MACTIME */
-#endif /* TIME_SYNTAX */
+#ifdef USE_WIN32_TIME
+# include <Windows.h>
+#else
+#  if defined(OSKIT) && !defined(OSKIT_TEST)
+   /* Get FreeBSD version, not oskit/time.h version */
+#   include <freebsd/time.h>
+#  endif
+#  include <time.h>
+#  include <sys/time.h>
+#  ifdef USE_GETRUSAGE
+#   include <sys/types.h>
+#   include <sys/time.h>
+#   include <sys/resource.h>
+#   include <errno.h>
+#  endif /* USE_GETRUSAGE */
+#  ifdef USE_SYSCALL_GETRUSAGE
+#   include <sys/syscall.h>
+#   define getrusage(a, b)  syscall(SYS_GETRUSAGE, a, b)
+#   define USE_GETRUSAGE
+#  endif /* USE_SYSCALL_GETRUSAGE */
+#  ifdef WINDOWS_GET_PROCESS_TIMES
+#   include <Windows.h>
+#  endif
+#  if !defined(USE_GETRUSAGE) && !defined(WINDOWS_GET_PROCESS_TIMES) && !defined(USER_TIME_IS_CLOCK)
+#   include <sys/times.h>
+#  endif
+#endif /* USE_WIN32_TIME */
 
 static void ASSERT_SUSPEND_BREAK_ZERO() {
 #if 0
@@ -172,7 +164,6 @@ static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv
 static Scheme_Object *void_func (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *dynamic_wind (int argc, Scheme_Object *argv[]);
-#ifdef TIME_SYNTAX
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **argv);
@@ -180,7 +171,6 @@ static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **arg
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_seconds(int argc, Scheme_Object **argv);
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
-#endif
 static Scheme_Object *object_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[]);
@@ -515,7 +505,6 @@ scheme_init_fun (Scheme_Env *env)
                                                                              | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("void?", scheme_void_p_proc, env);
 
-#ifdef TIME_SYNTAX
   scheme_add_global_constant("time-apply",
 			     scheme_make_prim_w_arity2(time_apply,
 						       "time-apply",
@@ -552,7 +541,6 @@ scheme_init_fun (Scheme_Env *env)
                                                     "seconds->date",
                                                     1, 2),
 			     env);
-#endif
 
   scheme_add_global_constant("dynamic-wind",
 			     scheme_make_prim_w_arity(dynamic_wind,
@@ -9417,8 +9405,6 @@ static Scheme_Object *jump_to_alt_continuation()
 /*                                  time                                  */
 /*========================================================================*/
 
-#ifdef TIME_SYNTAX
-
 #ifndef CLOCKS_PER_SEC
 #define CLOCKS_PER_SEC 1000000
 #endif
@@ -9442,22 +9428,12 @@ intptr_t scheme_get_milliseconds(void)
   XFORM_SKIP_PROC
 /* this function can be called from any OS thread */
 {
-#ifdef USE_MACTIME
-  return scheme_get_process_milliseconds();
-#else
-# ifdef USE_FTIME
-  struct MSC_IZE(timeb) now;
-  MSC_IZE(ftime)(&now);
-  return (intptr_t)(now.time * 1000 + now.millitm);
-# else
-#  ifdef USE_WIN32_TIME
+#ifdef USE_WIN32_TIME
   return (intptr_t)(get_hectonanoseconds_as_longlong() / (mzlonglong)10000);
-#  else
+#else
   struct timeval now;
   gettimeofday(&now, NULL);
   return now.tv_sec * 1000 + now.tv_usec / 1000;
-#  endif
-# endif
 #endif
 }
 
@@ -9465,32 +9441,15 @@ double scheme_get_inexact_milliseconds(void)
   XFORM_SKIP_PROC
 /* this function can be called from any OS thread */
 {
-#ifdef USE_MACTIME
-  {
-    /* This is wrong, since it's not since January 1, 1970 */
-    UnsignedWide time;
-    Microseconds(&time);
-    return (((double)(time.lo >> 10)
-	    + ((double)(time.hi >> 10) * 4294967296.0))
-	    * 1.024);
-  }
-#else
-# ifdef USE_FTIME
-  struct MSC_IZE(timeb) now;
-  MSC_IZE(ftime)(&now);
-  return (double)now.time * 1000.0 + (double)now.millitm;
-# else
-#  ifdef USE_WIN32_TIME
+#ifdef USE_WIN32_TIME
   FILETIME ft;
   mzlonglong v;
   v = get_hectonanoseconds_as_longlong();
   return (double)(v / 10000) + (((double)(v % 10000)) / 10000.0);
-#  else
+#else
   struct timeval now;
   gettimeofday(&now, NULL);
   return (double)now.tv_sec * 1000.0 + (double)now.tv_usec / 1000;
-#  endif
-# endif
 #endif
 }
 
@@ -9514,14 +9473,7 @@ intptr_t scheme_get_process_milliseconds(void)
 
   return s * 1000 + u / 1000;
 # else
-#  ifdef USE_MACTIME
-  {
-    UnsignedWide time;
-    Microseconds(&time);
-    return ((uintptr_t)time.lo) / 1000;
-  }
-#  else
-#   ifdef WINDOWS_GET_PROCESS_TIMES
+#  ifdef WINDOWS_GET_PROCESS_TIMES
   {
     FILETIME cr, ex, kr, us;
     if (GetProcessTimes(GetCurrentProcess(), &cr, &ex, &kr, &us)) {
@@ -9532,9 +9484,8 @@ intptr_t scheme_get_process_milliseconds(void)
     } else
       return 0; /* anything better to do? */
   }
-#   else
+#  else
   return clock()  * 1000 / CLOCKS_PER_SEC;
-#   endif
 
 #  endif
 # endif
@@ -9591,14 +9542,6 @@ intptr_t scheme_get_seconds(void)
 #ifdef USE_WIN32_TIME
   return (intptr_t)(get_hectonanoseconds_as_longlong() / (mzlonglong)10000000);
 #else
-# ifdef USE_PALMTIME
-  return TimGetSeconds();
-# else
-#  ifdef USE_FTIME
-  struct MSC_IZE(timeb) now;
-  MSC_IZE(ftime)(&now);
-  return (intptr_t)now.time;
-#  else
 #   ifdef USE_PLAIN_TIME
   time_t now;
   now = time(NULL);
@@ -9607,8 +9550,6 @@ intptr_t scheme_get_seconds(void)
   struct timeval now;
   gettimeofday(&now, NULL);
   return now.tv_sec;
-#   endif
-#  endif
 # endif
 #endif
 }
@@ -9737,13 +9678,8 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 # define CHECK_TIME_T uintptr_t
   SYSTEMTIME localTime;
 #else
-# ifdef USE_PALMTIME
-#  define CHECK_TIME_T UInt32
-  DateTimeType localTime;
-# else
-#  define CHECK_TIME_T time_t
+# define CHECK_TIME_T time_t
   struct tm *localTime;
-# endif
 #endif
   CHECK_TIME_T now;
   char *tzn;
@@ -9799,15 +9735,11 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
       }
     }
 #else
-# ifdef USE_PALMTIME
-    TimSecondsToDateTime(lnow, &localTime) ;
-# else
     if (get_gmt)
       localTime = gmtime(&now);
     else
       localTime = localtime(&now);
     success = !!localTime;
-# endif
 #endif
 
     if (success) {
@@ -10045,8 +9977,6 @@ static Scheme_Object *current_seconds(int argc, Scheme_Object **argv)
   secs = scheme_get_seconds();
   return scheme_make_integer_value_from_time(secs);
 }
-
-#endif
 
 
 /*========================================================================*/

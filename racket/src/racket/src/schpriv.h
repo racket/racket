@@ -508,9 +508,7 @@ extern Scheme_Object *scheme_write_proc, *scheme_display_proc, *scheme_print_pro
 
 extern Scheme_Object *scheme_raise_arity_error_proc;
 
-#ifdef TIME_SYNTAX
 extern Scheme_Object *scheme_date;
-#endif
 
 extern Scheme_Object *scheme_liberal_def_ctx_type;
 
