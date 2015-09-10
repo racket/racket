@@ -37,7 +37,6 @@
 # define UNIX_FILE_SYSTEM
 # define NO_UNIX_USERS
 
-# define TIME_SYNTAX
 # define DIR_FUNCTION
 # define DIRENT_NO_NAMLEN
 # define GETENV_FUNCTION
@@ -648,7 +647,6 @@
 #  define MKDIR_NO_MODE_FLAG
 # endif
 
-# define TIME_SYNTAX
 # define USE_WIN32_TIME
 # define WINDOWS_GET_PROCESS_TIMES
 # define GETENV_FUNCTION
@@ -1043,18 +1041,12 @@
  /* Language Features */
 /*********************/
 
- /* TIME_SYNTAX adds the (time ...) syntax; this may need to be
-     turned off for compilation on some systems.
-    CLOCKS_PER_SEC relates the values returned by clock() to
+ /* CLOCKS_PER_SEC relates the values returned by clock() to
      real seconds. (The difference between two clock() calls is
      divided by this number.) Usually, this is defined in <time.h>;
      it defaults to 1000000 */
 
- /* USE_FTIME uses ftime instead of gettimeofday; only for TIME_SYNTAX */
-
- /* USE_PLAIN_TIME uses time; only for TIME_SYNTAX */
-
- /* USE_MACTIME uses the Mac toolbox to implement time functions. */
+ /* USE_PLAIN_TIME uses time. */
 
  /* USE_WIN32_TIME uses the Win32 API to implement time functions. */
 

@@ -249,11 +249,9 @@ scheme_init_struct (Scheme_Env *env)
   Scheme_Object **as_names;
   Scheme_Object **as_values;
   int as_count;
-#ifdef TIME_SYNTAX
   Scheme_Object **ts_names;
   Scheme_Object **ts_values;
   int ts_count;
-#endif
   Scheme_Object **loc_names;
   Scheme_Object **loc_values;
   int loc_count;
@@ -261,12 +259,10 @@ scheme_init_struct (Scheme_Env *env)
   Scheme_Object *guard;
 
   READ_ONLY static const char *arity_fields[1] = { "value" };
-#ifdef TIME_SYNTAX
   READ_ONLY static const char *date_fields[10] = { "second", "minute", "hour",
                                                    "day", "month", "year",
                                                    "week-day", "year-day", "dst?", "time-zone-offset" };
   READ_ONLY static const char *date_star_fields[2] = { "nanosecond", "time-zone-name" };
-#endif
   READ_ONLY static const char *location_fields[10] = { "source", "line", "column", "position", "span" };
   
 #ifdef MZ_PRECISE_GC
@@ -290,7 +286,6 @@ scheme_init_struct (Scheme_Env *env)
 			       env);
   }
 
-#ifdef TIME_SYNTAX
   /* Add date structure: */
   REGISTER_SO(scheme_date);
   scheme_date = scheme_make_struct_type_from_string("date", NULL, 10, NULL,
@@ -322,8 +317,6 @@ scheme_init_struct (Scheme_Env *env)
 			       env);
   }
   
-
-#endif
 
   /* Add location structure: */
   REGISTER_SO(location_struct);
