@@ -1432,7 +1432,7 @@
       (test val values got)))
 
   (try values 'ok-channel)
-  (try (lambda (c) (choice-evt c (alarm-evt (+ 10000 (current-milliseconds)))))
+  (try (lambda (c) (choice-evt c (alarm-evt (+ 10000 (current-inexact-milliseconds)))))
        'ok-channel+alarm))
 
 ;; ----------------------------------------
