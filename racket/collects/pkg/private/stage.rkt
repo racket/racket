@@ -28,7 +28,8 @@
          "addl-installs.rkt"
          "repo-path.rkt"
          "orig-pkg.rkt"
-         "git.rkt")
+         "git.rkt"
+         "prefetch.rkt")
 
 (provide (struct-out install-info)
          remote-package-checksum
@@ -48,16 +49,16 @@
 
 (define (remote-package-checksum pkg download-printf pkg-name
                                  #:type [type #f]
+                                 #:prefetch? [prefetch? #f]
+                                 #:prefetch-group [prefetch-group #f]
                                  #:catalog-lookup-cache [catalog-lookup-cache #f]
                                  #:remote-checksum-cache [remote-checksum-cache #f])
-  (cond
-   [(and remote-checksum-cache
-         (hash-ref remote-checksum-cache pkg #f))
-    => (lambda (checksum) checksum)]
-   [else
+  (define (lookup-normally download-printf)
     (define checksum
       (match pkg
         [`(catalog ,pkg-name . ,_)
+         ;; If we're in a prefetch thread, we expect no other prefetchs in
+         ;; progress for `pkg-name`:
          (hash-ref (package-catalog-lookup pkg-name #f catalog-lookup-cache
                                            download-printf)
                    'checksum)]
@@ -73,7 +74,38 @@
                                 #:pkg-name pkg-name)]))
     (when remote-checksum-cache
       (hash-set! remote-checksum-cache pkg checksum))
-    checksum]))
+    checksum)
+
+  (when (and prefetch? (not (and catalog-lookup-cache
+                                 remote-checksum-cache
+                                 prefetch-group)))
+    (error "internal error: insufficient caches or group for prefetch of package checksum"))
+
+  ;; Loop to combine cache lookup and prefetch dispatch:
+  (let loop ([prefetch? prefetch?] [download-printf download-printf])
+    (cond
+     [(and remote-checksum-cache
+           (hash-ref remote-checksum-cache pkg #f))
+      => (lambda (checksum)
+           (if (and (prefetch-future? checksum)
+                    (not prefetch?))
+               (prefetch-touch checksum prefetch-group download-printf)
+               checksum))]
+     [prefetch?
+      (define s (make-semaphore))
+      (define f (make-prefetch-future
+                 prefetch-group
+                 download-printf
+                 (lambda (download-printf)
+                   ;; Don't start until hash table has future:
+                   (semaphore-wait s)
+                   ;; Adjusts cache when it has a result:
+                   (lookup-normally download-printf))))
+      (hash-set! remote-checksum-cache pkg f)
+      (semaphore-post s)
+      f]
+     [else
+      (lookup-normally download-printf)])))
 
 ;; Downloads a package (if needed) and unpacks it (if needed) into a  
 ;; temporary directory.
