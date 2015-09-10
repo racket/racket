@@ -125,7 +125,7 @@
   <ItemGroup>
     <CustomBuild Include="win32.asm">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cl.exe /EP /I . /I ../../foreign/libffi/src/x86 win32.asm &gt; Release/win32_plain.asm
-ml.exe /c /Cx /coff /Fo Release/win32.obj Release/win32_plain.asm
+ml.exe /c /Cx /coff /safeseh /Fo Release/win32.obj Release/win32_plain.asm
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Release/win32.obj;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cl.exe /EP /I . /I ../../foreign/libffi/src/x86 win32.asm &gt; x64/Release/win32_plain.asm
@@ -133,7 +133,7 @@ ml64.exe /c /Cx /Fo x64/Release/win32.obj x64/Release/win32_plain.asm
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">x64/Release/win32.obj;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cl.exe /EP /I . /I ../../foreign/libffi/src/x86 win32.asm &gt; Release/win32_plain.asm
-ml.exe /c /Cx /coff /Fo Release/win32.obj Release/win32_plain.asm
+ml.exe /c /Cx /coff /safeseh /Fo Release/win32.obj Release/win32_plain.asm
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release/win32.obj;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cl.exe /EP /I . /I ../../foreign/libffi/src/x86 win32.asm &gt; x64/Release/win32_plain.asm
