@@ -2003,6 +2003,7 @@ inline static void reset_nursery(NewGC *gc)
 inline static void move_gen_half_pages_to_old(NewGC *gc)
 {
   GC_ASSERT(!gc->gen_half.curr_alloc_page);
+  gc->memory_in_use -= gen_half_size_in_use(gc);
   gc->gen_half.old_pages = gc->gen_half.pages;
   gc->gen_half.pages = NULL;
 }
@@ -3614,6 +3615,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
           if (!work->marked_on) {
             work->marked_on = 1;
             if (!work->marked_from) {
+              gc->memory_in_use -= work->size;
               work->modified_next = gc->modified_next;
               gc->modified_next = work;
             }
@@ -4210,12 +4212,18 @@ static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
 
 static void mark_backpointers(NewGC *gc)
 {
-  /* after this pass, the content of the `modified_next` chain is
-     pages that have `marked_from` set; additional pages are added
-     as they acquire `marked_on`, except master-GC pages */
+  /* For a minor collection, we need to mark any pointers that point
+     backwards into generation 0, since they're roots.
 
-  /* if this is not a full collection, then we need to mark any pointers
-     that point backwards into generation 0, since they're roots. */
+     After this pass, for a minor collection, the content of the
+     `modified_next` chain is pages that have `marked_from` set.
+     Additional pages are added as they acquire `marked_on`, except
+     master-GC pages.
+
+     When a generation-1 page is added to the `modified_next` chain,
+     it's old size is deducted from `memory_is_use`, and its size will
+     be added back during the repair pahse. */
+
   if (!gc->gc_full) {
     mpage *work;
     int traversed = 0;
@@ -4234,6 +4242,7 @@ static void mark_backpointers(NewGC *gc)
         /* must be a big page */
         work->size_class = SIZE_CLASS_BIG_PAGE_MARKED;
         push_ptr(gc, TAG_AS_BIG_PAGE_PTR(BIG_PAGE_TO_OBJECT(work)));
+        gc->memory_in_use -= work->size;
       } else if (work->size_class == SIZE_CLASS_SMALL_PAGE) {
         /* small page */
         void **start = PAGE_START_VSS(work);
@@ -4245,15 +4254,12 @@ static void mark_backpointers(NewGC *gc)
           objhead *info = (objhead *)start;
           if (!info->dead) {
             info->mark = 1;
-            /* This must be a push_ptr, and not a direct call to
-               internal_mark. This is because we need every object
-               in the older heap to be marked out of and noted as
-               marked before we do anything else */
             push_ptr(gc, OBJHEAD_TO_OBJPTR(start));
           }
           start += info->size;
         }
         work->previous_size = PREFIX_SIZE;
+        gc->memory_in_use -= work->size;
       } else {
         /* medium page */
         void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
@@ -4265,11 +4271,12 @@ static void mark_backpointers(NewGC *gc)
           objhead *info = (objhead *)start;
           if (!info->dead) {
             info->mark = 1;
-            /* This must be a push_ptr (see above) */
             push_ptr(gc, OBJHEAD_TO_OBJPTR(info));
           }
           start += info->size;
         }
+
+        gc->memory_in_use -= work->live_size;
       }
 
       traversed++;
@@ -4418,10 +4425,11 @@ inline static void do_heap_compact(NewGC *gc)
   }
 }
 
-static void repair_mixed_page(NewGC *gc, mpage *page, void **end)
+static int repair_mixed_page(NewGC *gc, mpage *page, void **end)
 {
   void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
   Fixup2_Proc *fixup_table = gc->fixup_table;
+  int non_dead = 0;
 
   while (start <= end) {
     objhead *info = (objhead *)start;
@@ -4471,11 +4479,14 @@ static void repair_mixed_page(NewGC *gc, mpage *page, void **end)
         abort();
       }
       info->mark = 0;
+      non_dead++;
     } else {
       info->dead = 1;
       start += info->size;
     }
   }
+
+  return non_dead;
 }
 
 static void chain_marked_on(NewGC *gc)
@@ -4509,6 +4520,7 @@ static void chain_marked_on(NewGC *gc)
 
 static void repair_heap(NewGC *gc)
 {
+  uintptr_t memory_in_use;
   mpage *page, *next;
   Fixup2_Proc *fixup_table = gc->fixup_table;
 
@@ -4520,11 +4532,18 @@ static void repair_heap(NewGC *gc)
 
   page = gc->modified_next;
   gc->modified_next = NULL;
+
+  memory_in_use = gc->memory_in_use;
   
   for (; page; page = next) {
     GC_ASSERT(page->marked_on || page->marked_from);
     next = page->modified_next;
     page->has_new = 0;
+    if (gc->gc_full)
+      page->marked_on = 1;
+    else
+      page->marked_on = 0;
+    page->marked_from = 0;
     gc->back_pointers = 0;
     if (page->size_class >= SIZE_CLASS_BIG_PAGE) {
       void **start = PPTR(BIG_PAGE_TO_OBJECT(page));
@@ -4557,6 +4576,8 @@ static void repair_heap(NewGC *gc)
           break;
         }
       }
+
+      memory_in_use += page->size;
     } else if (page->size_class == SIZE_CLASS_SMALL_PAGE) {
       void **start = PPTR(NUM(page->addr) + page->previous_size);
       void **end = PAGE_END_VSS(page);
@@ -4638,9 +4659,21 @@ static void repair_heap(NewGC *gc)
         }
         break;
       }
+
+      page->previous_size = page->size;
+      memory_in_use += page->size;
     } else {
+      int non_dead;
       GC_ASSERT(page->size_class == SIZE_CLASS_MED_PAGE);
-      repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->size));
+      non_dead = repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->size));
+      page->live_size = (page->size * non_dead);
+      memory_in_use += page->live_size;
+      page->previous_size = PREFIX_SIZE; /* start next block search at the beginning */
+      if (page->generation == AGE_GEN_0) {
+        /* Tell the clean-up phase to keep this one (even for a minor GC): */
+        page->marked_on = 1;
+        GC_ASSERT(non_dead); /* otherwise, wouldn't have marked_on */
+      }
     }
 
     /* If there was a reference to a generation 1/2 object, that's a
@@ -4654,8 +4687,12 @@ static void repair_heap(NewGC *gc)
   /* All gen-half pages count as modified: */
   for (page = gc->gen_half.pages; page; page = page->next) {
     GC_ASSERT(page->generation == AGE_GEN_HALF);
-    repair_mixed_page(gc, page, PPTR(NUM(page->addr) + page->size - 1));
+    (void)repair_mixed_page(gc, page, PPTR(NUM(page->addr) + page->size - 1));
   }
+
+  memory_in_use += gen_half_size_in_use(gc);
+  memory_in_use = add_no_overflow(memory_in_use, gc->phantom_count);
+  gc->memory_in_use = memory_in_use;
 }
 
 static inline void gen1_free_mpage(PageMap pagemap, mpage *page) {
@@ -4730,8 +4767,8 @@ static void clean_up_heap(NewGC *gc)
 
   gen0_free_big_pages(gc);
 
-  for(i = 0; i < PAGE_TYPES; i++) {
-    if (gc->gc_full) {
+  if (gc->gc_full) {
+    for (i = 0; i < PAGE_TYPES; i++) {
       mpage *work = gc->gen1_pages[i];
       mpage *prev = NULL;
       while(work) {
@@ -4746,80 +4783,54 @@ static void clean_up_heap(NewGC *gc)
         } else {
           GCVERBOSEPAGE(gc, "clean_up_heap BIG PAGE ALIVE", work);
           work->marked_on = 0;
-          work->marked_from = 0;
-          work->previous_size = work->size;
           memory_in_use += work->size;
           prev = work; 
         }
         work = next;
       }
-    } else {
-      mpage *work;
-      for (work = gc->gen1_pages[i]; work; work = work->next) {
-        work->marked_on = 0;
-        work->marked_from = 0;
-        work->previous_size = work->size;
-        memory_in_use += work->size;
-      }
     }
   }
 
+  /* For medium pages, generation-0 pages will appear first in each
+     list, so for a mnior GC, we can stop whenever we find a
+     generation-1 page */
   for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
     for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
       mpage *work;
       mpage *prev = NULL, *next;
 
       for (work = gc->med_pages[ty][i]; work; work = next) {
+        next = work->next;
         if (work->marked_on) {
-          void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
-          void **end = PPTR(NUM(work->addr) + APAGE_SIZE - work->size);
-          int non_dead = 0;
-
-          while(start <= end) {
-            objhead *info = (objhead *)start;
-            if (!info->dead) {
-              non_dead++;
-            }
-            start += info->size;
-          }
-
-          GC_ASSERT(non_dead); /* otherwise, wouldn't have marked_on */
-
-          next = work->next;
-          work->live_size = (work->size * non_dead);
-          memory_in_use += work->live_size;
-          work->previous_size = PREFIX_SIZE;
           work->marked_on = 0;
-          work->marked_from = 0;
+          memory_in_use += work->live_size;
           work->generation = AGE_GEN_1;
           prev = work;
         } else if (gc->gc_full || (work->generation == AGE_GEN_0)) {
           /* Page wasn't touched in full GC, or gen-0 not touched,
              so we can free it. */
-          next = work->next;
           if(prev) prev->next = next; else gc->med_pages[ty][i] = next;
           if(next) work->next->prev = prev;
           GCVERBOSEPAGE(gc, "Cleaning up MED NO MARKEDON", work);
           gen1_free_mpage(pagemap, work);
           --gc->num_gen1_pages;
         } else {
-          /* not marked during minor gc */
-          memory_in_use += work->live_size;
-          work->previous_size = PREFIX_SIZE;
-          work->marked_from = 0;
-          next = work->next;
-          prev = work;
+          /* no more marked during minor gc */
+          next = NULL;
         }
       }
       gc->med_freelist_pages[ty][i] = prev;
     }
   }
 
-  memory_in_use += gen_half_size_in_use(gc);
+  if (gc->gc_full) {
+    memory_in_use += gen_half_size_in_use(gc);
 
-  memory_in_use = add_no_overflow(memory_in_use, gc->phantom_count);
+    memory_in_use = add_no_overflow(memory_in_use, gc->phantom_count);
 
-  gc->memory_in_use = memory_in_use;
+    gc->memory_in_use = memory_in_use;
+  }
+
   cleanup_vacated_pages(gc);
 }
 
@@ -5032,6 +5043,10 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   if (gc->gc_full)
     gc->phantom_count = 0;
+  else if (gc->memory_in_use > gc->phantom_count) {
+    /* added back in repair_heap(), after any adjustments from gen0 phantom bytes */
+    gc->memory_in_use -= gc->phantom_count;
+  }
   gc->gen0_phantom_count = 0;
 
   TIME_INIT();
