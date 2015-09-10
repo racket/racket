@@ -11,6 +11,7 @@
          net/url
          file/untgz
          file/unzip
+         file/private/check-path
          openssl/sha1
          json
          net/git-checkout
@@ -411,6 +412,7 @@
                   pkg-name)
                  'directory))
               (define (path-like f)
+                (check-unpack-path 'MANIFEST f)
                 (build-path package-path f))
               (define (url-like f)
                 (if (and (pair? (url-path pkg-url))
