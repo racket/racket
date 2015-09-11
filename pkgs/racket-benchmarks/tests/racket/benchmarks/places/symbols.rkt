@@ -10,7 +10,7 @@
   (module pct1 racket/base
     (require racket/place
              racket/match
-             "place-utils.rkt")
+             tests/racket/place-utils)
     (provide place-main)
 
     (define (place-main ch)
@@ -48,7 +48,7 @@ END
   #<<END
   (module pct1 racket/base
     (require racket/place
-             "place-utils.rkt")
+             tests/racket/place-utils)
     (provide place-main)
     (require algol60/parse
              (for-syntax racket/base
