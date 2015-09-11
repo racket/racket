@@ -25,6 +25,8 @@
                                      (or/c #f path-string?)
                                      #:strip-count
                                      exact-nonnegative-integer?
+                                     #:permissive?
+                                     any/c
                                      #:exists
                                      (or/c 'skip
                                            'error 'replace 'truncate 'truncate/replace 'append 'update
@@ -358,10 +360,10 @@
 
 ;; make-filesystem-entry-reader : [output-flag] -> (bytes boolean input-port -> any)
 (define make-filesystem-entry-reader
-  (lambda (#:dest [dest-dir #f] #:strip-count [strip-count 0] #:exists [flag 'error])
+  (lambda (#:dest [dest-dir #f] #:strip-count [strip-count 0] #:permissive? [permissive? #f] #:exists [flag 'error])
     (lambda (name dir? in [timestamp #f])
       (define path (bytes->path name))
-      (check-unpack-path 'unzip path)
+      (check-unpack-path 'unzip path #:allow-up? permissive?)
       (let* ([base-path (strip-prefix path strip-count)]
              [path (and base-path
                         (if dest-dir

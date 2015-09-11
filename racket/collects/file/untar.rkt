@@ -11,6 +11,7 @@
               (#:dest 
                (or/c #f path-string?)
                #:strip-count exact-nonnegative-integer?
+               #:permissive? any/c
                #:filter (path? (or/c path? #f)
                                symbol? exact-integer? (or/c path? #f)
                                exact-nonnegative-integer? exact-nonnegative-integer?
@@ -22,6 +23,7 @@
 (define (untar in 
                #:dest [dest #f]
                #:strip-count [strip-count 0]
+               #:permissive? [permissive? #f]
                #:filter [filter void])
   ((if (input-port? in)
        (lambda (in f) (f in))
@@ -34,7 +36,8 @@
            (for ([delay (in-list (reverse delays))])
              (delay))
            (loop (untar-one-from-port in delays
-                                      dest strip-count filter)))))))
+                                      dest strip-count filter
+                                      permissive?)))))))
 
 (define (read-bytes* n in)
   (define s (read-bytes n in))
@@ -44,7 +47,8 @@
   s)
 
 (define (untar-one-from-port in delays
-                             dest strip-count filter)
+                             dest strip-count filter
+                             permissive?)
   (define name-bytes (read-bytes* 100 in))
   (define mode (tar-bytes->number (read-bytes* 8 in) in))
   (define owner (tar-bytes->number (read-bytes* 8 in) in))
@@ -79,7 +83,7 @@
                                      name
                                      (bytes-append prefix #"/" name)))
                                name))))
-  (check-unpack-path 'untar base-filename)
+  (check-unpack-path 'untar base-filename #:allow-up? permissive?)
   (define stripped-filename (strip-prefix base-filename strip-count))
   (define filename (and stripped-filename
                         (if dest
@@ -87,6 +91,8 @@
                             stripped-filename)))
   (define link-target (and (eq? type 'link)
                            (bytes->path (nul-terminated link-target-bytes))))
+  (when (and link-target (not permissive?))
+    (check-unpack-path 'untar link-target))
   (read-bytes* 12 in) ; padding
   (define create?
     (filter base-filename filename type size link-target mod-time mode))

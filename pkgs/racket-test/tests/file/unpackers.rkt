@@ -98,7 +98,6 @@
   (delete-directory/files "sub")
   (file-or-directory-permissions* more-dir "rwx")
   
-  
   ;; make sure top-level file extraction works
   (untgz (open-input-bytes
           ;; bytes gotten from 'tar' and 'gzip' command-line tools
@@ -112,7 +111,28 @@
   (test (file-exists? "L1c"))
   (test (file-exists? "helper.rkt"))
   (delete-file "L1c")
-  (delete-file "helper.rkt"))
+  (delete-file "helper.rkt")
+
+  ;; check on [non-]permissive unpacking
+  (unless (eq? (system-type) 'windows)
+    (for ([target (in-list '("../x" "/tmp/abs" "ok"))])
+      (define ok? (equal? target "ok"))
+      (make-directory* "ex2")
+      (make-file-or-directory-link target (build-path "ex2" "link"))
+      (tar "ex2" a.tar)
+      (make-directory "sub")
+      (test (with-handlers ([exn:fail? (lambda (exn)
+                                         (regexp-match? #rx"up-directory|absolute" (exn-message exn)))])
+              (untar "a.tar" #:dest "sub")
+              ok?))
+      (test (equal? ok? (link-exists? (build-path "sub" "ex2" "link"))))
+      (delete-directory/files "sub")
+
+      (make-directory "sub")
+      (untar "a.tar" #:dest "sub" #:permissive? #t)
+      (test (link-exists? (build-path "sub" "ex2" "link")))
+      (delete-directory/files "sub")
+      (delete-directory/files "ex2"))))
 
 (define ((make-unzip-tests* preserve-timestamps?))
   (make-directory* "ex1")
