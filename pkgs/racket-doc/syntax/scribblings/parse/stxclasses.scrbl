@@ -5,6 +5,8 @@
           scribble/eval
           "parse-common.rkt")
 
+@(define the-eval (make-sp-eval))
+
 @title[#:tag "stxparse-specifying"]{Specifying Syntax with Syntax Classes}
 
 @declare-exporting[syntax/parse]
@@ -204,7 +206,7 @@ If a @racket[#:with] directive appears between the main pattern (e.g., in a
 @racket[#:declare], then only pattern variables from the @racket[#:with] 
 pattern may be declared.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'P
   [x
    #:declare x id
@@ -322,7 +324,7 @@ subterm. A non-syntax-valued attribute should be bound using the
 and @racket[~parse] will convert the right-hand side to a (possibly
 3D) syntax object.
 
-@myexamples[
+@examples[#:eval the-eval
 (define-syntax-class table
   (pattern ((key value) ...)
            #:attr hashtable
@@ -347,7 +349,7 @@ used in a syntax template.
 
 Syntax-valued attributes can be used in syntax templates:
 
-@myinteraction[
+@interaction[#:eval the-eval
 (syntax-parse #'((a 3) (b 2) (c 1))
   [t:table
    #'(t.key ...)])
@@ -357,7 +359,7 @@ Syntax-valued attributes can be used in syntax templates:
 
 But non-syntax-valued attributes cannot:
 
-@myinteraction[
+@interaction[#:eval the-eval
 (syntax-parse #'((a 3) (b 2) (c 1))
   [t:table
    #'t.hashtable])
@@ -366,7 +368,7 @@ But non-syntax-valued attributes cannot:
 Use the @racket[attribute] form to get the value of an attribute
 (syntax-valued or not).
 
-@myinteraction[
+@interaction[#:eval the-eval
 (syntax-parse #'((a 1) (b 2) (c 3))
   [t:table
    (attribute t.hashtable)])
@@ -409,7 +411,7 @@ it is syntax-valued. In particular, @racket[~or] and
 expected levels of list nesting, and @racket[#:attr] and
 @racket[~bind] can be used to bind attributes to arbitrary values.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(a b 3)
   [(~or (x:id ...) _)
    (attribute x)])
@@ -421,3 +423,5 @@ Returns the value associated with the @tech{attribute} named
 @racket[attr-id]. If @racket[attr-id] is not bound as an attribute, an
 error is raised.
 }
+
+@(close-eval the-eval)

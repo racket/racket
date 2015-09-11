@@ -6,6 +6,8 @@
           "parse-common.rkt"
           (for-label syntax/parse/define))
 
+@(define the-eval (make-sp-eval))
+
 @title{Defining Simple Macros}
 
 @defmodule[syntax/parse/define]
@@ -22,7 +24,7 @@ Defines a macro named @racket[macro-id]; equivalent to the following:
 ]
 
 @(the-eval '(require syntax/parse/define))
-@myexamples[
+@examples[#:eval the-eval
 (define-simple-macro (fn x:id rhs:expr) (lambda (x) rhs))
 ((fn x x) 17)
 (fn 1 2)
@@ -47,7 +49,7 @@ Defines a macro named @racket[macro-id]; equivalent to:
   (syntax-parser parse-option ... clause ...))
 ]
 
-@myexamples[
+@examples[#:eval the-eval
 (define-syntax-parser fn3
   [(fn3 x:id rhs:expr)
    #'(lambda (x) rhs)]
@@ -59,3 +61,4 @@ Defines a macro named @racket[macro-id]; equivalent to:
 (fn3 a #:b 'c)
 ]}
 
+@(close-eval the-eval)

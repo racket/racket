@@ -6,6 +6,8 @@
           "parse-common.rkt"
           (for-label racket/syntax))
 
+@(define the-eval (make-sp-eval))
+
 @title{Parsing Syntax}
 
 This section describes @racket[syntax-parse], the
@@ -79,15 +81,16 @@ is inferred as with @racket[raise-syntax-error].
 The @racket[current-syntax-context] parameter is also set to the
 syntax object @racket[_context-stx].
 
-@(myexamples
-  (syntax-parse #'(a b 3)
-    [(x:id ...) 'ok])
-  (syntax-parse #'(a b 3)
-    #:context #'(lambda (a b 3) (+ a b))
-    [(x:id ...) 'ok])
-  (syntax-parse #'(a b 3)
-    #:context 'check-id-list
-    [(x:id ...) 'ok]))
+@examples[#:eval the-eval
+(syntax-parse #'(a b 3)
+  [(x:id ...) 'ok])
+(syntax-parse #'(a b 3)
+  #:context #'(lambda (a b 3) (+ a b))
+  [(x:id ...) 'ok])
+(syntax-parse #'(a b 3)
+  #:context 'check-id-list
+  [(x:id ...) 'ok])
+]
 }
 
 @specsubform[(code:line #:literals (literal ...))
@@ -172,7 +175,7 @@ bindings. See the section on @tech{conventions} for examples.
 
 Suppresses the ``colon notation'' for annotated pattern variables.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(a b c)
   [(x:y ...) 'ok])
 (syntax-parse #'(a b c) #:disable-colon-notation
@@ -195,7 +198,7 @@ syntax object result of @racket[stx-expr] against
 @racket[syntax-pattern] and creates pattern variable definitions for
 the attributes of @racket[syntax-pattern].
 
-@myexamples[
+@examples[#:eval the-eval
 (define/syntax-parse ((~seq kw:keyword arg:expr) ...)
   #'(#:a 1 #:b 2 #:c 3))
 #'(kw ...)
@@ -204,3 +207,5 @@ the attributes of @racket[syntax-pattern].
 Compare with @racket[define/with-syntax], a similar definition form
 that uses the simpler @racket[syntax-case] patterns.
 }
+
+@(close-eval the-eval)

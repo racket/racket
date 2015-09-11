@@ -6,6 +6,8 @@
           "parse-common.rkt"
           (for-label racket/class))
 
+@(define the-eval (make-sp-eval))
+
 @title{More Keyword Arguments}
 
 This section shows how to express the syntax of @racket[struct]'s
@@ -15,7 +17,7 @@ The part of @racket[struct]'s syntax that is difficult to specify is
 the sequence of struct options. Let's get the easy part out of the way
 first.
 
-@myinteraction[
+@interaction[#:eval the-eval
 (define-splicing-syntax-class maybe-super
   (pattern (~seq super:id))
   (pattern (~seq)))
@@ -135,3 +137,5 @@ both @racket[#:guard] and @racket[#:property]. Repetition constraints
 cannot express arbitrary incompatibility relations. The best way to
 handle such constraints is with a side condition using
 @racket[#:fail-when].
+
+@(close-eval the-eval)

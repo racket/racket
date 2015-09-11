@@ -6,6 +6,8 @@
           "parse-common.rkt"
           (for-label (only-in syntax/parse ...+)))
 
+@(define the-eval (make-sp-eval #f))
+
 @(define-syntax-rule (defdummy id)
    (defidentifier (quote-syntax id)
                   #:form? #t #:index? #f #:show-libs? #f))
@@ -36,7 +38,7 @@ the second case later in the introduction.
 The macro can be implemented very simply using
 @racket[define-syntax-rule]:
 
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax-rule (mylet ([var rhs] ...) body ...)
   ((lambda (var ...) body ...) rhs ...))
 ]
@@ -47,7 +49,7 @@ uninformative error message; in others, it blithely accepts illegal
 syntax and passes it along to @racket[lambda], with strange
 consequences:
 
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet ([a 1] [b 2]) (+ a b))
 (mylet (b 2) (sub1 b))
 (mylet ([1 a]) (add1 a))
@@ -70,13 +72,15 @@ We can improve the error behavior of the macro by using
 "scribblings/reference/reference.scrbl")]{transformer environment},
 since we will use it to implement a macro transformer.
 
-@myinteraction[(require (for-syntax syntax/parse))]
+@interaction[#:eval the-eval
+(require (for-syntax syntax/parse))
+]
 
 The following is the syntax specification above transliterated into a
 @racket[syntax-parse] macro definition. It behaves no better than the
 version using @racket[define-syntax-rule] above.
 
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (mylet stx)
   (syntax-parse stx
     [(_ ([var-id rhs-expr] ...) body ...+)
@@ -98,7 +102,7 @@ pattern variable name, a colon character, and the syntax class
 name.@margin-note*{For an alternative to the ``colon'' syntax, see the
 @racket[~var] pattern form.}
 
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (mylet stx)
   (syntax-parse stx
     [(_ ((var:id rhs:expr) ...) body ...+)
@@ -108,24 +112,24 @@ Note that the syntax class annotations do not appear in the template
 (i.e., @racket[var], not @racket[var:id]).
 
 The syntax class annotations are checked when we use the macro.
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet ([a 1] [b 2]) (+ a b))
 (mylet (["a" 1]) (add1 a))
 ]
 The @racket[expr] syntax class does not actually check that the term
 it matches is a valid expression---that would require calling that
 macro expander. Instead, @racket[expr] just means not a keyword.
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet ([a #:whoops]) 1)
 ]
 Also, @racket[syntax-parse] knows how to report a few kinds of errors
 without any help:
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet ([a 1 2]) (* a a))
 ]
 There are other kinds of errors, however, that this macro does not
 handle gracefully:
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet (a 1) (+ a 2))
 ]
 It's too much to ask for the macro to respond, ``This expression is
@@ -140,7 +144,7 @@ syntactic categories. One way of doing that is by defining new syntax
 classes:@margin-note*{Another way is the @racket[~describe] pattern
 form.}
 
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (mylet stx)
 
   (define-syntax-class binding
@@ -158,11 +162,11 @@ Note that we write @racket[b.var] and @racket[b.rhs] now. They are the
 syntax class @racket[binding].
 
 Now the error messages can talk about ``binding pairs.''
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet (a 1) (+ a 2))
 ]
 Errors are still reported in more specific terms when possible:
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet (["a" 1]) (+ a 2))
 ]
 
@@ -170,13 +174,13 @@ There is one other constraint on the legal syntax of
 @racket[mylet]. The variables bound by the different binding pairs
 must be distinct. Otherwise the macro creates an illegal
 @racket[lambda] form:
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet ([a 1] [a 2]) (+ a a))
 ]
 
 Constraints such as the distinctness requirement are expressed as side
 conditions, thus:
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (mylet stx)
 
   (define-syntax-class binding
@@ -190,7 +194,7 @@ conditions, thus:
                  "duplicate variable name"
      #'((lambda (b.var ...) body ...) b.rhs ...)]))
 ]
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet ([a 1] [a 2]) (+ a a))
 ]
 The @racket[#:fail-when] keyword is followed by two expressions: the
@@ -202,7 +206,7 @@ pinpoint the cause of the failure.
 Syntax classes can have side conditions, too. Here is the macro
 rewritten to include another syntax class representing a ``sequence of
 distinct binding pairs.''
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (mylet stx)
 
   (define-syntax-class binding
@@ -238,7 +242,7 @@ offered by Racket's @racket[let]. We must add the
 ``named-@racket[let]'' form.  That turns out to be as simple as adding
 a new clause:
 
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (mylet stx)
 
   (define-syntax-class binding
@@ -267,7 +271,7 @@ lines.
 
 But does adding this new case affect @racket[syntax-parse]'s ability
 to pinpoint and report errors?
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet ([a 1] [b 2]) (+ a b))
 (mylet (["a" 1]) (add1 a))
 (mylet ([a #:whoops]) 1)
@@ -278,7 +282,7 @@ to pinpoint and report errors?
 The error reporting for the original syntax seems intact. We should
 verify that the named-@racket[let] syntax is working, that
 @racket[syntax-parse] is not simply ignoring that clause.
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet loop ([a 1] [b 2]) (+ a b))
 (mylet loop (["a" 1]) (add1 a))
 (mylet loop ([a #:whoops]) 1)
@@ -300,7 +304,7 @@ potential errors (including ones like @racket[loop] not matching
 each error. Only the error with the most progress is reported.
 
 For example, in this bad use of the macro,
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet loop (["a" 1]) (add1 a))
 ]
 there are two potential errors: expected @racket[distinct-bindings] at
@@ -309,7 +313,7 @@ second error occurs further in the term than the first, so it is
 reported. 
 
 For another example, consider this term:
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet (["a" 1]) (add1 a))
 ]
 Again, there are two potential errors: expected @racket[identifier] at
@@ -319,7 +323,7 @@ if you prefer), but the second error occurs deeper in the
 term. Progress is based on a left-to-right traversal of the syntax.
 
 A final example: consider the following:
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet ([a 1] [a 2]) (+ a a))
 ]
 There are two errors again: duplicate variable name at @racket[([a 1]
@@ -339,7 +343,7 @@ the term.
 
 It is, however, possible for multiple potential errors to occur with
 the same progress. Here's one example:
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet "not-even-close")
 ]
 In this case @racket[syntax-parse] reports both errors.
@@ -347,7 +351,7 @@ In this case @racket[syntax-parse] reports both errors.
 Even with all of the annotations we have added to our macro, there are
 still some misuses that defy @racket[syntax-parse]'s error reporting
 capabilities, such as this example:
-@myinteraction[
+@interaction[#:eval the-eval
 (mylet)
 ]
 The philosophy behind @racket[syntax-parse] is that in these
@@ -363,3 +367,5 @@ conditions, and progress-ordered error reporting. But
 @secref{stxparse-examples} section for samples of other features in
 working code, or skip to the subsequent sections for the complete
 reference documentation.
+
+@(close-eval the-eval)

@@ -6,6 +6,8 @@
           "parse-common.rkt"
           (for-label racket/class))
 
+@(define the-eval (make-sp-eval))
+
 @title{Optional Keyword Arguments}
 
 This section explains how to write a macro that accepts (simple)
@@ -22,7 +24,7 @@ head-pattern forms are @racket[~seq], @racket[~or], and
 
 Here's one way to do it:
 
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (mycond stx)
   (syntax-parse stx
     [(mycond (~or (~seq #:error-on-fallthrough who:expr) (~seq))
@@ -47,7 +49,7 @@ argument is omitted. Instead we must write @racket[(attribute who)],
 which produces @racket[#f] if matching did not assign a value to the
 attribute.
 
-@myinteraction[
+@interaction[#:eval the-eval
 (mycond [(even? 13) 'blue]
         [(odd? 4) 'red])
 (mycond #:error-on-fallthrough 'myfun
@@ -62,7 +64,7 @@ There's a simpler way of writing the @racket[~or] pattern above:
 
 Yet another way is to introduce a @tech{splicing syntax class}, which
 is like an ordinary syntax class but for head patterns.
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (mycond stx)
 
   (define-splicing-syntax-class maybe-fallthrough-option
@@ -84,3 +86,5 @@ syntax class's variants. (This is possible to do in the inline pattern
 version too, using @racket[~and] and @racket[~parse], just less
 convenient.) Splicing syntax classes also closely parallel the style
 of grammars in macro documentation.
+
+@(close-eval the-eval)
