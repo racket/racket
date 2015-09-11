@@ -940,9 +940,12 @@ for @nonterm{key}.
         updated that its implementation is kept in the trash folder. Package implementations are
         removed from a trash folder only when another package is potentially added
         to the trash folder or @command-ref{empty-trash} is used.}
+  @item{@exec{network-retries} --- The number of times to retry a network communication that
+        fails due to a connection error.}
  ]
 
-@history[#:changed "6.1.1.6" @elem{Added @exec{trash-max-packages} and @exec{trash-max-seconds}.}]}
+@history[#:changed "6.1.1.6" @elem{Added @exec{trash-max-packages} and @exec{trash-max-seconds}.}
+         #:changed "6.2.900.17" @elem{Added @exec{network-retries}.}]}
 
 
 @subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...

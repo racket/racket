@@ -32,3 +32,5 @@
 (define current-pkg-trash-max-seconds
   (make-parameter #f))
 
+(define current-pkg-network-retries
+  (make-parameter #f))

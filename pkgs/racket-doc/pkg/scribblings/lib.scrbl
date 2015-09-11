@@ -103,6 +103,18 @@ used.
 @history[#:added "6.1.1.6"]}
 
 
+@deftogether[(
+@defparam[current-pkg-network-retries max-retries (or/c #f real?)]
+)]{
+
+A parameter that determines the number of times to retry a network communication
+that fails due to a connection error.  If
+a parameter's value is @racket[#f], then the user's configuration is
+used.
+
+@history[#:added "6.2.900.17"]}
+
+
 @defproc[(pkg-directory [name string?]
                         [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (or/c path-string? #f)]{

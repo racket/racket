@@ -1,11 +1,11 @@
 #lang racket/base
 (require net/url
-         "print.rkt")
+         "print.rkt"
+         "config.rkt")
 
 (provide call-with-network-retries
          call/input-url+200)
 
-(define NETWORK-RETRY-COUNT 5)
 (define NETWORK-INITIAL-PAUSE 0.1)
 
 ;; Retry `thunk` on any `exn:fail:network` exception. A fresh
@@ -13,17 +13,18 @@
 ;; are reliably cleaned up (and cannt be allocated and returned
 ;; by `thunk`, except by using a different custodian).
 (define (call-with-network-retries thunk)
-  (let loop ([retries NETWORK-RETRY-COUNT] [pause-time NETWORK-INITIAL-PAUSE])
-    (with-handlers ([exn:fail:network? (lambda (exn)
-                                         (cond
-                                          [(zero? retries)
-                                           (raise exn)]
-                                          [else
-                                           ;; Pause, then try again
-                                           (log-pkg-info "Network error; retrying after ~as"
-                                                         pause-time)
-                                           (sleep pause-time)
-                                           (loop (sub1 retries) (* 2 pause-time))]))])
+  (define retry-count (get-network-retries))
+  (let loop ([retries 0] [pause-time NETWORK-INITIAL-PAUSE])
+    (with-handlers* ([exn:fail:network? (lambda (exn)
+                                          (cond
+                                           [(retries . >= . retry-count)
+                                            (raise exn)]
+                                           [else
+                                            ;; Pause, then try again
+                                            (log-pkg-info "Network error; retrying after ~as"
+                                                          pause-time)
+                                            (sleep pause-time)
+                                            (loop (add1 retries) (* 2 pause-time))]))])
       (define c (make-custodian))
       (parameterize ([current-custodian c])
         (dynamic-wind

@@ -33,6 +33,10 @@
   (or (current-pkg-trash-max-seconds)
       (read-pkg-cfg/def 'trash-max-seconds)))
 
+(define (get-network-retries)
+  (or (current-pkg-network-retries)
+      (read-pkg-cfg/def 'network-retries)))
+
 (define (read-pkg-cfg/def k)
   ;; Lock is held for the current scope, but if
   ;; the key is not found in the current scope,
@@ -51,6 +55,7 @@
       ['download-cache-max-bytes (* 64 1024 1024)]
       ['trash-max-packages 512]
       ['trash-max-seconds (* 60 60 24 2)] ; 2 days
+      ['network-retries 5]
       [_ #f]))
   (define c (read-pkg-file-hash (pkg-config-file)))
   (define v (hash-ref c k 'none))
@@ -122,7 +127,8 @@
                        "download-cache-dir"
                        "doc-open-url"
                        "trash-max-packages"
-                       "trash-max-seconds")))
+                       "trash-max-seconds"
+                       "network-retries")))
         (pkg-error (~a "missing value for config key\n"
                        "  config key: ~a")
                    key)]
@@ -134,7 +140,8 @@
                         "download-cache-dir"
                         "doc-open-url"
                         "trash-max-packages"
-                        "trash-max-seconds"))
+                        "trash-max-seconds"
+                        "network-retries"))
                val
                another-val
                more-vals)
@@ -173,7 +180,8 @@
        [(list (and key (or "download-cache-max-files"
                            "download-cache-max-bytes"
                            "trash-max-packages"
-                           "trash-max-seconds"))
+                           "trash-max-seconds"
+                           "network-retries"))
               val)
         (unless (real? (string->number val))
           (pkg-error (~a "invalid value for config key\n"
@@ -207,7 +215,8 @@
                  "download-cache-max-files"
                  "download-cache-max-bytes"
                  "trash-max-packages"
-                 "trash-max-seconds")
+                 "trash-max-seconds"
+                 "network-retries")
              (printf "~a~a\n" indent (read-pkg-cfg/def (string->symbol key)))]
             ["doc-open-url"
              (printf "~a~a\n" indent (or (read-pkg-cfg/def 'doc-open-url) ""))]
@@ -229,7 +238,8 @@
                               "download-cache-max-files"
                               "download-cache-max-bytes"
                               "trash-max-packages"
-                              "trash-max-seconds"))])
+                              "trash-max-seconds"
+                              "network-retries"))])
           (printf "~a:\n" key)
           (show (list key) "  "))]
        [_ (show key+vals "")])]))
