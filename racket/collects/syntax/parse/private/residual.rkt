@@ -99,7 +99,7 @@
              (raise-syntax-error #f "not bound as an attribute" stx #'name))
            (syntax-property (attribute-mapping-var attr)
                             'disappeared-use
-                            #'name))))]))
+                            (list (syntax-local-introduce #'name))))))]))
 
 ;; (attribute-binding id)
 ;; mostly for debugging/testing
