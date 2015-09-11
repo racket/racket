@@ -162,10 +162,11 @@
     ;; traditional:
     (define skip-tail
       (- len
-         (for/or ([i (in-range len 0 -1)])
-           (case (integer->char (bytes-ref bstr (sub1 i)))
-             [(#\space #\nul) #f]
-             [else i]))))
+         (or (for/or ([i (in-range len 0 -1)])
+               (case (integer->char (bytes-ref bstr (sub1 i)))
+                 [(#\space #\nul) #f]
+                 [else i]))
+             (error 'untar "bad number ~e at ~a" bstr (file-position in)))))
     (for/fold ([v 0]) ([i (in-range (- len skip-tail))])
       (define b (bytes-ref bstr i))
       (if (<= (char->integer #\0) b (char->integer #\7))
