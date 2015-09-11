@@ -38,6 +38,7 @@ TODO
  [raise-syntax-error*
   (->* [string? (or/c syntax? #f) (or/c syntax? #f)]
        [#:continued (or/c string? (listof string))
+        #:who (or/c symbol? #f)
         #:within (or/c #f syntax?)]
        #:rest details-list/c
        any)]

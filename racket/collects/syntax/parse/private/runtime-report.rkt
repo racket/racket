@@ -6,16 +6,13 @@
          unstable/error
          syntax/srcloc
          "minimatch.rkt"
-         (except-in syntax/parse/private/residual
-                    syntax-patterns-fail)
+         syntax/parse/private/residual
          "kws.rkt")
-(provide syntax-patterns-fail
+(provide call-current-failure-handler
          current-failure-handler
          maximal-failures
-
          invert-ps
-         ps->stx+index
-         )
+         ps->stx+index)
 
 #|
 TODO: given (expect:thing _ D _ R) and (expect:thing _ D _ #f),
@@ -28,8 +25,8 @@ Note: there is a cyclic dependence between residual.rkt and this module,
 broken by a lazy-require of this module into residual.rkt
 |#
 
-(define ((syntax-patterns-fail stx0) fs)
-  (call-with-values (lambda () ((current-failure-handler) stx0 fs))
+(define (call-current-failure-handler ctx fs)
+  (call-with-values (lambda () ((current-failure-handler) ctx fs))
     (lambda vals
       (error 'current-failure-handler
              "current-failure-handler: did not escape, produced ~e"
@@ -37,8 +34,8 @@ broken by a lazy-require of this module into residual.rkt
                ((1) (car vals))
                (else (cons 'values vals)))))))
 
-(define (default-failure-handler stx0 fs)
-  (report-failureset stx0 fs))
+(define (default-failure-handler ctx fs)
+  (report-failureset ctx fs))
 
 (define current-failure-handler
   (make-parameter default-failure-handler))
@@ -57,11 +54,11 @@ special handling of failures like "unexpected term" make things more
 complicated.
 |#
 
-;; report-failureset : stx FailureSet -> escapes
-(define (report-failureset stx0 fs)
+;; report-failureset : (list Symbol/#f Syntax) FailureSet -> escapes
+(define (report-failureset ctx fs)
   (let* ([classes (maximal-failures fs)]
          [reports (apply append (map report/class classes))])
-    (raise-syntax-error/reports stx0 reports)))
+    (raise-syntax-error/reports ctx reports)))
 
 ;; A Report is
 ;;   - (report string (listof string) stx stx)
@@ -175,12 +172,15 @@ complicated.
 
 ;; == Do Report ==
 
-(define (raise-syntax-error/reports stx0 reports)
+(define (raise-syntax-error/reports ctx reports)
   (let* ([report (car reports)]
          [more? (pair? (cdr reports))]
          [message0 (report-message report)]
-         [context (report-context report)])
+         [context (report-context report)]
+         [who (car ctx)]
+         [stx0 (cadr ctx)])
     (raise-syntax-error* message0 stx0 (report-stx report)
+                         #:who who
                          #:within (report-within-stx report)
                          '("parsing context" multi maybe) context
                          '("note" maybe) (and more? "additional errors omitted"))))

@@ -268,14 +268,29 @@
 
 ;; == syntax-parse: other feature tests
 
-(test-case "syntax-parse: #:context"
-           (check-exn
-            (lambda (exn)
-              (regexp-match #rx"me: expected exact-nonnegative-integer" (exn-message exn)))
-            (lambda ()
-              (syntax-parse #'(m x) #:context #'me
-                [(_ n:nat) 'ok])))
-           (void))
+(test-case "syntax-parse: #:context w/ syntax"
+  (check-exn
+   #rx"me: expected exact-nonnegative-integer"
+   (lambda ()
+     (syntax-parse #'(m x)
+       #:context #'me
+       [(_ n:nat) 'ok]))))
+
+(test-case "syntax-parse: #:context w/ symbol"
+  (check-exn
+   #rx"me: expected identifier"
+   (lambda ()
+     (syntax-parse #'(m 1)
+       #:context 'me
+       [(_ x:id) 'ok]))))
+
+(test-case "syntax-parse: #:context w/ symbol+stx"
+  (check-exn
+   #rx"me: expected identifier.*in: \\(bigterm\\)"
+   (lambda ()
+     (syntax-parse #'(m 1)
+       #:context (list 'me #'(bigterm))
+       [(_ x:id) 'ok]))))
 
 (test-case "syntax-parse: #:literals"
            (syntax-parse #'(0 + 1 * 2)
