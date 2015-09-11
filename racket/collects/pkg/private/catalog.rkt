@@ -8,7 +8,8 @@
          "params.rkt"
          "config.rkt"
          "print.rkt"
-         "prefetch.rkt")
+         "prefetch.rkt"
+         "network.rkt")
 
 (provide select-info-version
          source->relative-source
@@ -236,19 +237,14 @@
 
 ;; uses a custodian to avoid leaks:
 (define (call-with-url url handler)
-  (define c (make-custodian))
-  (dynamic-wind
-      void
-      (lambda ()
-        (define-values (p hs)
-          (parameterize ([current-custodian c])
-            (get-pure-port/headers url #:redirections 25 #:status? #t)))
-        (begin0
-          (and (string=? "200" (substring hs 9 12))
-               (handler p))
-          (close-input-port p)))
-      (lambda ()
-        (custodian-shutdown-all c))))
+  (call-with-network-retries
+   (lambda ()
+     (define-values (p hs)
+       (get-pure-port/headers url #:redirections 25 #:status? #t))
+     (begin0
+      (and (string=? "200" (substring hs 9 12))
+           (handler p))
+      (close-input-port p)))))
 
 (define (db-pkg-info pkg details?)
   (if details?
