@@ -581,15 +581,37 @@
              [(#:str state-database #f) state () "Read/write <state-database> as state of <dest-dir>"]
              [(#:str vers #f) version ("-v") "Copy information suitable for Racket <vers>"]
              [#:bool relative () "Make source paths relative when possible"]
+             [(#:sym mode [fail ignore continue] 'fail) pkg-fail () 
+              ("Select handling of package-download failure;"
+               "<mode>s: fail (the default), skip, continue (but with exit status of 5)")]
              #:args (dest-dir . src-catalog)
              (parameterize ([current-pkg-error (pkg-error 'catalog-archive)]
                             [current-pkg-lookup-version (or version
                                                             (current-pkg-lookup-version))])
+                 (define fail-at-end? #f)
                  (pkg-catalog-archive dest-dir
                                       src-catalog
                                       #:from-config? from-config
                                       #:state-catalog state
-                                      #:relative-sources? relative))]
+                                      #:relative-sources? relative
+                                      #:package-exn-handler (case pkg-fail
+                                                              [(fail) (lambda (name exn) (raise exn))]
+                                                              [(skip continue)
+                                                               (lambda (name exn)
+                                                                 (log-error (~a "archiving failed for package; ~a\n"
+                                                                                "  package name: ~a\n"
+                                                                                "  original error:\n~a")
+                                                                            (if (eq? pkg-fail 'continue)
+                                                                                "continuing"
+                                                                                "skipping")
+                                                                            name
+                                                                            (regexp-replace* #rx"(?m:^)"
+                                                                                             (exn-message exn)
+                                                                                             "   "))
+                                                                 (when (eq? pkg-fail 'continue)
+                                                                   (set! fail-at-end? #t)))]))
+                 (when fail-at-end?
+                   (exit 5)))]
             ;; ----------------------------------------
             [archive
              "Create catalog from installed packages"

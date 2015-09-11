@@ -1026,6 +1026,15 @@ for @nonterm{key}.
  @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copies catalog
        results specific to @nonterm{version}
        (for catalogs that make a distinction), instead of the installation's Racket version.}
+  @item{@DFlag{pkg-fail} @nonterm{mode} --- Determines handling of failure for an individual
+       package, such as when a @nonterm{src-catalog} contains a bad package source. The
+       following @nonterm{mode}s are available:
+       @itemlist[
+         @item{@exec{fail} (the default) --- archiving stops and fails;}
+         @item{@exec{skip} --- the package is skipped and omitted from the archive catalog; or}
+         @item{@exec{continue} --- like @exec{skip}, but @exec{raco pkg catalog-archive}
+               exits with a status code of @exec{5} if any package was skipped.}
+       ]}
  ]
 
  @history[#:added "6.0.17"]
