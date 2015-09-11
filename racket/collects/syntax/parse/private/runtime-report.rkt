@@ -58,7 +58,7 @@ complicated.
 (define (report-failureset ctx fs)
   (let* ([classes (maximal-failures fs)]
          [reports (apply append (map report/class classes))])
-    (raise-syntax-error/reports ctx reports)))
+    (error/reports ctx reports)))
 
 ;; A Report is
 ;;   - (report string (listof string) stx stx)
@@ -172,18 +172,45 @@ complicated.
 
 ;; == Do Report ==
 
-(define (raise-syntax-error/reports ctx reports)
-  (let* ([report (car reports)]
-         [more? (pair? (cdr reports))]
-         [message0 (report-message report)]
+(define (error/reports ctx reports)
+  (error/report ctx (car reports) (pair? (cdr reports))))
+
+(define (error/report ctx report more?)
+  (let* ([message (report-message report)]
          [context (report-context report)]
-         [who (car ctx)]
-         [stx0 (cadr ctx)])
-    (raise-syntax-error* message0 stx0 (report-stx report)
-                         #:who who
-                         #:within (report-within-stx report)
-                         '("parsing context" multi maybe) context
-                         '("note" maybe) (and more? "additional errors omitted"))))
+         [stx (cadr ctx)]
+         [who (or (car ctx) (infer-who stx))]
+         [sub-stx (report-stx report)]
+         [within-stx (report-within-stx report)]
+         [message
+          (compose-error-message
+           who message
+           '("at" maybe) (stx-if-loc sub-stx)
+           '("within" maybe) (stx-if-loc within-stx)
+           '("in" maybe) (stx-if-loc stx)
+           '("parsing context" multi maybe) context
+           '("note" maybe) (and more? "additional errors omitted"))]
+         [message
+          (if (error-print-source-location)
+              (let ([source-stx (or stx sub-stx within-stx)])
+                (string-append (source-location->prefix source-stx) message))
+              message)])
+    (raise
+     (exn:fail:syntax message (current-continuation-marks)
+                      (map syntax-taint
+                           (cond [within-stx (list within-stx)]
+                                 [sub-stx (list sub-stx)]
+                                 [stx (list stx)]
+                                 [else null]))))))
+
+(define (stx-if-loc stx)
+  (and (syntax? stx)
+       (error-print-source-location)
+       (format "~.s" (syntax->datum stx))))
+
+(define (infer-who stx)
+  (let* ([maybe-id (if (stx-pair? stx) (stx-car stx) stx)])
+    (if (identifier? maybe-id) (syntax-e maybe-id) '?)))
 
 ;; ====
 
