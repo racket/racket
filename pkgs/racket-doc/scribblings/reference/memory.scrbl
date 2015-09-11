@@ -287,24 +287,28 @@ collection mode, the text has the format
 ]}
 
 
-@defproc[(collect-garbage [minor? any/c #f]) void?]{
+@defproc[(collect-garbage [request (or/c 'major 'minor) 'major]) void?]{
 
 Forces an immediate @tech{garbage collection} (unless garbage
 collection is disabled by setting @envvar{PLTDISABLEGC}). Some
 effectively unreachable data may remain uncollected, because the
 collector cannot prove that it is unreachable.
 
-If @racket[minor?] is false, then a major collection is
-run. Otherwise, a minor collection is run or no collection is run. (No
+The @racket[collect-garbage] procedure provides some control over the
+timing of collections, but garbage will obviously be collected even if
+this procedure is never called (unless garbage collection is disabled).
+
+If @racket[request] is @racket['major], then a major collection is
+run. If @racket[request] is @racket['minor], then either a minor
+collection is run or no collection is run (and no
 collection occurs when @racket[(system-type 'gc)] returns
 @racket['cgc] or when a normally scheduled minor collection would
-cause a major collection.) Minor collections run by
+cause a major collection); minor collections triggered by
 @racket[collect-garbage] do not cause major collections to run any
 sooner than they would have otherwise.
 
-The @racket[collect-garbage] procedure provides some control over the
-timing of collections, but garbage will obviously be collected even if
-this procedure is never called (unless garbage collection is disabled).}
+@history[#:changed "6.2.900.17" @elem{Added the @racket[request] argument.}]}
+
 
 @defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{
 

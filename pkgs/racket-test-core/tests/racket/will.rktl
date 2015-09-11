@@ -3,6 +3,10 @@
 
 (Section 'wills)
 
+(collect-garbage 'major)
+(collect-garbage 'minor)
+(err/rt-test (collect-garbage 'other))
+
 (test #t exact-nonnegative-integer? (current-memory-use))
 (test #t exact-nonnegative-integer? (current-memory-use #f))
 (test #t exact-nonnegative-integer? (current-memory-use (current-custodian)))
