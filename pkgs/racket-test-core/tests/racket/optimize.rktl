@@ -4271,6 +4271,35 @@
                exn:fail:read?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; make sure sfs pass doesn't add a nested begin0
+;; to clear the variables used in the first expression
+
+(let ()
+  (define c
+    '(module c racket/base
+       (define z (let ([result (random)])
+                   (begin0 (lambda () result) (newline))))))
+
+  (define o (open-output-bytes))
+
+  (parameterize ([current-namespace (make-base-namespace)])
+    (write (compile c) o))
+
+  (define m (zo-parse (open-input-bytes (get-output-bytes o))))
+
+  ; extract the content of the begin0 expression
+  (define (analyze-beg0 m)
+    (define def-z (car (mod-body (compilation-top-code m))))
+    (define body-z (let-one-body (def-values-rhs def-z)))
+    (define expr-z (car (beg0-seq body-z)))
+    (cond
+      [(lam? expr-z) 'ok]
+      [(beg0? expr-z) 'not-reduced-beg0-in-sfs]
+      [else 'unexpected]))
+
+  (test 'ok (lambda () (analyze-beg0 m))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; make sure `begin0' propertly propagates "multiple results" flags
 
 (test '(1 2 3) (lambda ()

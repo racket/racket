@@ -1023,6 +1023,44 @@ static Scheme_Object *bangboxenv_sfs(Scheme_Object *data, SFS_Info *info)
   }
 }
 
+static Scheme_Object *flatten_begin0(Scheme_Object *o)
+{
+  /* At this point, we sometimes have (begin0 (begin0 (begin0  ...) ...)).
+     Flatten those out. */
+  Scheme_Sequence *s = (Scheme_Sequence *)o, *s2;
+  int i, extra = 0;
+
+  o = s->array[0];
+
+  while (SAME_TYPE(SCHEME_TYPE(o), scheme_begin0_sequence_type)) {
+    s2 = (Scheme_Sequence *)o;
+    extra += s2->count - 1;
+    o = s2->array[0];
+  }
+
+  if (extra) {
+    s2 = scheme_malloc_sequence(s->count + extra);
+    s2->so.type = scheme_begin0_sequence_type;
+    s2->count = s->count + extra;
+
+    extra = s2->count -1;
+    o = (Scheme_Object *)s;
+    while (SAME_TYPE(SCHEME_TYPE(o), scheme_begin0_sequence_type)) {
+      s = (Scheme_Sequence *)o;
+      for (i = s->count - 1; i ; i--) {
+        s2->array[extra--] = s->array[i];
+      }
+      o = s->array[i];
+    }
+    s2->array[extra--] = o;
+
+    if (extra != -1) scheme_signal_error("internal error: flatten begin0 failed");
+
+    return (Scheme_Object *)s2;
+  } else
+    return (Scheme_Object *)s;
+}
+
 static Scheme_Object *
 begin0_sfs(Scheme_Object *obj, SFS_Info *info)
 {
@@ -1037,6 +1075,9 @@ begin0_sfs(Scheme_Object *obj, SFS_Info *info)
     le = scheme_sfs_expr(((Scheme_Sequence *)obj)->array[i], info, -1);
     ((Scheme_Sequence *)obj)->array[i] = le;
   }
+
+  if (info->pass)
+    obj = flatten_begin0(obj);
 
   return obj;
 }
