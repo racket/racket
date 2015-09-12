@@ -1944,5 +1944,14 @@
                                'x))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check error formatting from the keyword-argument lambda layer.
+
+(let ()
+  (define l (make-log-receiver (current-logger) 'warning))
+  (test #t
+        procedure?
+        (eval (datum->syntax #'here '(lambda () (sort '(1))) (list 'a #f #f #f #f)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
