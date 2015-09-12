@@ -4096,7 +4096,7 @@ static void *compile_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *form, *frame_scopes;
-  int writeable, for_eval, rename, enforce_consts, comp_flags;
+  int writeable, for_eval, top_intro, enforce_consts, comp_flags;
   Scheme_Env *genv;
   Scheme_Compile_Info rec, rec2;
   Scheme_Object *o, *rl, *tl_queue;
@@ -4104,31 +4104,25 @@ static void *compile_k(void)
   Resolve_Prefix *rp;
   Resolve_Info *ri;
   Optimize_Info *oi;
-  Scheme_Object *gval, *insp, *rib;
+  Scheme_Object *gval, *insp;
   Scheme_Comp_Env *cenv;
 
   form = (Scheme_Object *)p->ku.k.p1;
   genv = (Scheme_Env *)p->ku.k.p2;
   writeable = p->ku.k.i1;
   for_eval = p->ku.k.i2;
-  rename = p->ku.k.i3;
+  top_intro = p->ku.k.i3;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
 
   if (!SCHEME_STXP(form)) {
     form = scheme_datum_to_syntax(form, scheme_false, scheme_false, 1, 0);
-    rename = 1;
+    top_intro = 1;
   }
 
-  /* Renamings for requires: */
-  if (rename)
+  if (top_intro)
     form = scheme_top_introduce(form, genv);
-
-  if (for_eval)
-    rib = genv->stx_context;
-  else
-    rib = NULL;
 
   tl_queue = scheme_null;
 
@@ -4149,12 +4143,6 @@ static void *compile_k(void)
   else
     frame_scopes = NULL;
 
-  if (for_eval) {
-    /* For the top-level environment, we "push_introduce" instead of "introduce"
-       to avoid ambiguous bindings. */
-    form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
-  }
-
   while (1) {
     scheme_prepare_compile_env(genv);
 
@@ -4174,10 +4162,8 @@ static void *compile_k(void)
                                | SCHEME_TMP_TL_BIND_FRAME);
     create_binding_namess(cenv);
 
-    if (rib) {
-      cenv->expand_result_adjust = scheme_stx_push_introduce_module_context;
-      cenv->expand_result_adjust_arg = rib;
-    }
+    cenv->expand_result_adjust = scheme_stx_push_introduce_module_context;
+    cenv->expand_result_adjust_arg = genv->stx_context;
 
     if (for_eval) {
       /* Need to look for top-level `begin', and if we
@@ -4194,7 +4180,6 @@ static void *compile_k(void)
                                             1);
 	if (SAME_OBJ(gval, scheme_begin_syntax)) {
 	  if (scheme_stx_proper_list_length(form) > 1) {
-            form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
 	    form = SCHEME_STX_CDR(form);
 	    tl_queue = scheme_append(scheme_flatten_syntax_list(form, NULL),
 				     tl_queue);
@@ -4216,8 +4201,7 @@ static void *compile_k(void)
 	    tl_queue = scheme_append(rl, tl_queue);
 	    form = SCHEME_CAR(tl_queue);
 	    tl_queue = SCHEME_CDR(tl_queue);
-	  } else
-            form = scheme_stx_push_introduce_module_context(form, genv->stx_context);
+	  }
 	  break;
 	}
       }
@@ -4332,7 +4316,7 @@ static void *compile_k(void)
   return (void *)top;
 }
 
-static Scheme_Object *_compile(Scheme_Object *form, Scheme_Env *env, int writeable, int for_eval, int eb, int rename)
+static Scheme_Object *_compile(Scheme_Object *form, Scheme_Env *env, int writeable, int for_eval, int eb, int top_intro)
 {
   Scheme_Thread *p = scheme_current_thread;
 
@@ -4348,7 +4332,7 @@ static Scheme_Object *_compile(Scheme_Object *form, Scheme_Env *env, int writeab
   p->ku.k.p2 = env;
   p->ku.k.i1 = writeable;
   p->ku.k.i2 = for_eval;
-  p->ku.k.i3 = rename;
+  p->ku.k.i3 = top_intro;
 
   return (Scheme_Object *)scheme_top_level_do(compile_k, eb);
 }
@@ -4636,12 +4620,12 @@ static void *expand_k(void)
   Scheme_Object *obj, *observer, *catch_lifts_key;
   Scheme_Comp_Env *env, **ip;
   Scheme_Expand_Info erec1;
-  int depth, rename, just_to_top, as_local, comp_flags;
+  int depth, top_intro, just_to_top, as_local, comp_flags;
 
   obj = (Scheme_Object *)p->ku.k.p1;
   env = (Scheme_Comp_Env *)p->ku.k.p2;
   depth = p->ku.k.i1;
-  rename = p->ku.k.i2;
+  top_intro = p->ku.k.i2;
   just_to_top = p->ku.k.i3;
   catch_lifts_key = p->ku.k.p4;
   as_local = p->ku.k.i4; /* < 0 => catch lifts to let */
@@ -4657,13 +4641,10 @@ static void *expand_k(void)
   if (!SCHEME_STXP(obj))
     obj = scheme_datum_to_syntax(obj, scheme_false, scheme_false, 1, 0);
 
-  if (rename > 0) {
-    /* Renamings for requires: */
+  if (top_intro)
     obj = scheme_top_introduce(obj, env->genv);
-  }
 
-  if (rename && env->genv->stx_context) {
-    obj = scheme_stx_push_introduce_module_context(obj, env->genv->stx_context);
+  if (!as_local) {
     env->expand_result_adjust = scheme_stx_push_introduce_module_context;
     env->expand_result_adjust_arg = env->genv->stx_context;
   }
@@ -4746,7 +4727,7 @@ static void *expand_k(void)
 }
 
 static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env, 
-			       int depth, int rename, int just_to_top, 
+			       int depth, int top_intro, int just_to_top,
 			       Scheme_Object *catch_lifts_key, int eb,
 			       int as_local)
   /* as_local < 0 => catch lifts to let;
@@ -4757,7 +4738,7 @@ static Scheme_Object *r_expand(Scheme_Object *obj, Scheme_Comp_Env *env,
   p->ku.k.p1 = obj;
   p->ku.k.p2 = env;
   p->ku.k.i1 = depth;
-  p->ku.k.i2 = rename;
+  p->ku.k.i2 = top_intro;
   p->ku.k.i3 = just_to_top;
   p->ku.k.p4 = catch_lifts_key;
   p->ku.k.i4 = as_local;
@@ -4995,7 +4976,7 @@ static Scheme_Object *expand_stx(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_SCOPES_FRAME),
-		  -1, -1, 0, scheme_false, 0, 0);
+		  -1, 0, 0, scheme_false, 0, 0);
 }
 
 int scheme_is_expansion_context_symbol(Scheme_Object *v)
@@ -5489,7 +5470,7 @@ expand_stx_once(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_SCOPES_FRAME),
-		  1, -1, 0, scheme_false, 0, 0);
+		  1, 0, 0, scheme_false, 0, 0);
 }
 
 static Scheme_Object *
@@ -5518,7 +5499,7 @@ expand_stx_to_top_form(int argc, Scheme_Object **argv)
   return r_expand(argv[0], scheme_new_expand_env(env, NULL, scheme_true,
                                                  SCHEME_TOPLEVEL_FRAME
                                                  | SCHEME_KEEP_SCOPES_FRAME),
-		  1, -1, 1, scheme_false, 0, 0);
+		  1, 0, 1, scheme_false, 0, 0);
 }
 
 static Scheme_Object *do_eval_string_all(Scheme_Object *port, const char *str, Scheme_Env *env, 

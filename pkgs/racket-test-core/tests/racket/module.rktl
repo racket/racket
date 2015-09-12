@@ -1555,5 +1555,24 @@ case of module-leve bindings; it doesn't cover local bindings.
     (begin-for-syntax)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `eval-syntax` doesn't create a fallback context
+
+(module exports-cons-with-context racket/base
+  (provide cons-id)
+  (define cons-id #'cons))
+(require 'exports-cons-with-context racket/base)
+
+(let ([mod (datum->syntax #f `(,#'module m racket/base
+                               ;; If a fallback is installed, then
+                               ;; the module context of `cons` applies:
+                               ,cons-id))])
+  (err/rt-test (eval-syntax mod)
+               (lambda (exn) (regexp-match #rx"ambiguous" (exn-message exn)))))
+
+;; `eval` should install a fallback for a non`-module` form:
+(test (void) eval (datum->syntax #f `(begin (,#'module m racket/base
+                                              ,cons-id))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
