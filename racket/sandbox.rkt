@@ -623,9 +623,15 @@
 ;; transitive requires.
 (define (build-program language requires input-program)
   (define-values [prog-stxs source] (input->code input-program 'program 1 #f))
+  (define (intro stx)
+    ;; HACK: Using `namespace-syntax-introduce` injects a fallback layer
+    ;; to avoid "ambiguous binding" errors when a host module includes
+    ;; a `#%require` binding:
+    (parameterize ([current-namespace (make-base-empty-namespace)])
+      (namespace-syntax-introduce stx)))
   (define body (append (if (and (pair? requires) (eq? 'begin (car requires)))
                          (cdr requires)
-                         (map (lambda (r) (list #'#%require r)) requires))
+                         (map (lambda (r) (list (intro #'#%require) r)) requires))
                        prog-stxs))
   (define (use-lang lang) `(module program ,lang . ,body))
   (values (cond [(decode-language language) => use-lang]
