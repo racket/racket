@@ -47,7 +47,8 @@ function for further evaluation.
 
 The returned evaluator operates in an isolated and limited
 environment. In particular, filesystem access is restricted, which may
-interfere with using modules from the filesystem.  See below for
+interfere with using modules from the filesystem that are not
+in a @tech{collection}.  See below for
 information on the @racket[allow-for-require],
 @racket[allow-for-load], and @racket[allow-read] arguments.  When
 @racket[language] is a module path or when @racket[requires] is
@@ -210,15 +211,17 @@ create the sandbox is higher than the limit, then
 
 The @racket[allow-for-require] and @racket[allow-for-load] arguments
 adjust filesystem permissions to extend the set of files that
-are usable by the evaluator. The @racket[allow-for-require] argument lists
-modules that can be @racket[require]d along with their imports
-(transitively). The @racket[allow-for-load] argument lists files that can
+are usable by the evaluator. Modules that are in a collection
+are automatically accessible, but the @racket[allow-for-require] argument lists
+additional modules that can be @racket[require]d along with their imports
+(transitively) through a filesystem path. The @racket[allow-for-load] argument
+similarly lists files that can
 be @racket[load]ed. (The precise permissions needed for
 @racket[require] versus @racket[load] can differ.)  The
 @racket[allow-read] argument is for backward compatibility, only; each
 @racket[module-path?] element of @racket[allow-read] is effectively
 moved to @racket[allow-for-require], while other elements are moved to
-@racket[all-for-load].
+@racket[allow-for-load].
 
 The sandboxed environment is well isolated, and the evaluator function
 essentially sends it an expression and waits for a result.  This form
