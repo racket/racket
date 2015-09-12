@@ -28,6 +28,7 @@ matrix:
 script:
 - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
 - raco test -l tests/racket/test
+- raco test -l tests/pkg/test
 - racket -l tests/racket/contract/all
 - raco test -l tests/json/json
 - raco test -l tests/file/main
