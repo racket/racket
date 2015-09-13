@@ -2004,19 +2004,52 @@
     (test '((1) (2)) f (lambda (n) (set! v n) n))
     (test 2 values v)))
 
+;; Make sure `values` splitting doesn't use wrong clock values
+;; leading to reordering:
+(test-comp '(lambda (p)
+             (define-values (x y) (values (car p) (cdr p)))
+             (values y x))
+           '(lambda (p)
+             (values (#%unsafe-cdr p) (car p)))
+           #f)
+(test-comp '(lambda (p)
+             (define-values (x y) (values (car p) (cdr p)))
+             (values y x))
+           '(lambda (p)
+             (let ([x (car p)])
+               (values (unsafe-cdr p) x))))
+
 (test-comp '(lambda (z)
-             ;; Moving `(list z)` before `(list (z 2))`
-             ;; would reorder, which is not allowed, so check
-             ;; that the optimizer can keep track:
+             ;; Moving `(list z)` after `(list (z 2))` is not allowed
+             ;; in case `(z 2)` captures a continuation:
              (let-values ([(a b) (values (list z) (list (z 2)))])
-               (list a b)))
+               (list b a)))
            '(lambda (z)
-              (list (list z) (list (z 2)))))
+              (list (list (z 2)) (list z)))
+           #f)
+(test-comp '(lambda (z)
+              (let-values ([(a b) (values (list (z 2)) (list z))])
+                (list a a b)))
+           '(lambda (z)
+             (let ([a (list (z 2))])
+               (list a a (list z)))))
+
+;; It would be nice if the optimizer could do these two, but because it
+;; involves temporarily reordering `(list z)` and `(list (z 2))`
+;; (which is not allowed in case `(z 2)` captures a continuation),
+;; the optimizer currently cannot manage it:
+#;
 (test-comp '(lambda (z)
               (let-values ([(a b) (values (list (z 2)) (list z))])
                 (list a b)))
            '(lambda (z)
              (list (list (z 2)) (list z))))
+#;
+(test-comp '(lambda (z)
+              (let-values ([(a b) (values (list z) (list (z 2)))])
+                (list a b)))
+           '(lambda (z)
+             (list (list z) (list (z 2)))))
 
 (test-comp '(module m racket/base
              ;; Reference to a ready module-level variable shouldn't

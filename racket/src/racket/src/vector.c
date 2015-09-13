@@ -91,7 +91,7 @@ scheme_init_vector (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant("vector", p, env);
 
   REGISTER_SO(scheme_vector_immutable_proc);
@@ -100,7 +100,7 @@ scheme_init_vector (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant("vector-immutable", p, env);
   
   p = scheme_make_folding_prim(vector_length, "vector-length", 1, 1, 1);

@@ -209,7 +209,7 @@ scheme_init_list (Scheme_Env *env)
   p = scheme_make_immed_prim(cons_prim, "cons", 2, 2);
   scheme_cons_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant ("cons", p, env);
 
   p = scheme_make_folding_prim(scheme_checked_car, "car", 1, 1, 1);
@@ -224,7 +224,7 @@ scheme_init_list (Scheme_Env *env)
   p = scheme_make_immed_prim(mcons_prim, "mcons", 2, 2);
   scheme_mcons_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant ("mcons", p, env);
 
   p = scheme_make_immed_prim(scheme_checked_mcar, "mcar", 1, 1);
@@ -263,7 +263,7 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant ("list", p, env);
 
   REGISTER_SO(scheme_list_star_proc);
@@ -272,7 +272,7 @@ scheme_init_list (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_NARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant ("list*", p, env);
 
   p = scheme_make_folding_prim(immutablep, "immutable?", 1, 1, 1);
@@ -434,13 +434,13 @@ scheme_init_list (Scheme_Env *env)
   p = scheme_make_immed_prim(box, BOX, 1, 1);
   scheme_box_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant(BOX, p, env);
 
   REGISTER_SO(scheme_box_immutable_proc);
   p = scheme_make_immed_prim(immutable_box, "box-immutable", 1, 1);
   scheme_box_immutable_proc = p;
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant("box-immutable", p, env);
   
   REGISTER_SO(scheme_box_p_proc);
@@ -765,7 +765,7 @@ scheme_init_unsafe_list (Scheme_Env *env)
   REGISTER_SO(scheme_unsafe_cons_list_proc);
   p = scheme_make_immed_prim(unsafe_cons_list, "unsafe-cons-list", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
+                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant ("unsafe-cons-list", p, env);
   scheme_unsafe_cons_list_proc = p;
 

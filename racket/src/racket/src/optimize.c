@@ -57,17 +57,25 @@ struct Optimize_Info
 
   /* Propagated up and down the chain: */
   int size;
-  int vclock; /* virtual clock that ticks for a side effect or branch;
+  int vclock; /* virtual clock that ticks for a side effect, a branch,
+                 or a dependency on an earlier side-effect (such as a
+                 previous guard on an unsafe operation's argument);
                  the clock is only compared between binding sites and
                  uses, so we can rewind the clock at a join after an
                  increment that models a branch (if the branch is not
                  taken or doesn't increment the clock) */
-  int kclock; /* virtual clock that ticks for a potential continuation capture */
+  int aclock; /* virtual clock that ticks for allocation without side effects,
+                 for constraining the reordering of operations that might
+                 capture a continuation */
+  int kclock; /* virtual clock that ticks for a potential continuation capture,
+                 for constraining the movement of allocation operations */
   int sclock; /* virtual clock that ticks when space consumption is potentially observed */
   int psize;
   short inline_fuel, shift_fuel;
   char letrec_not_twice, enforce_const, use_psize, has_nonleaf;
   Scheme_Hash_Table *top_level_consts;
+
+  int maybe_values_argument; /* triggers an approximation for clock increments */
 
   /* Set by expression optimization: */
   int single_result, preserves_marks; /* negative means "tentative", due to fixpoint in progress */
@@ -174,8 +182,10 @@ typedef struct Scheme_Once_Used {
   Scheme_Object *expr;
   int pos;
   int vclock;
+  int aclock;
   int kclock;
   int sclock;
+  int spans_k; /* potentially captures a continuation */
 
   int used;
   int delta;
@@ -186,7 +196,7 @@ typedef struct Scheme_Once_Used {
 } Scheme_Once_Used;
 
 static Scheme_Once_Used *make_once_used(Scheme_Object *val, int pos,
-                                        int vclock, int kclock, int sclock,
+                                        int vclock, int aclock, int kclock, int sclock, int spans_k,
                                         Scheme_Once_Used *prev);
 
 #ifdef MZ_PRECISE_GC
@@ -208,7 +218,7 @@ int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args
 /* return 2 => results are a constant when arguments are constants */
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE_ANY | SCHEME_PRIM_IS_UNSAFE_NONMUTATING))
       && (num_args >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (num_args <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)
       && ((expected_vals < 0)
@@ -2236,12 +2246,23 @@ static Scheme_Object *check_app_let_rator(Scheme_Object *app, Scheme_Object *rat
   return scheme_optimize_expr(orig_rator, info, context);
 }
 
-static int is_nonmutating_primitive(Scheme_Object *rator, int n)
+static int is_nonmutating_nondependant_primitive(Scheme_Object *rator, int n)
+/* Does not include SCHEME_PRIM_IS_UNSAFE_OMITABLE, because those can
+   depend on earlier tests (explicit or implicit) for whether the
+   unsafe operation is defined */
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE))
+      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_OMITABLE_ALLOCATION))
       && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
+    return 1;
+
+  return 0;
+}
+
+static int is_primitive_allocating(Scheme_Object *rator, int n)
+{
+  if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE_ALLOCATION))
     return 1;
 
   return 0;
@@ -2781,6 +2802,9 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
       le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 1, 0);
       if (le)
         return le;
+      if (SAME_TYPE(app->args[0], scheme_values_func)
+          || SAME_TYPE(app->args[0], scheme_apply_proc))
+        info->maybe_values_argument = 1;
       rator_apply_escapes = info->escapes;
     }
   }
@@ -2921,6 +2945,44 @@ static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme
   return app;
 }
 
+static void increment_clock_counts_for_application(GC_CAN_IGNORE int *_vclock,
+                                                   GC_CAN_IGNORE int *_aclock,
+                                                   GC_CAN_IGNORE int *_kclock,
+                                                   GC_CAN_IGNORE int *_sclock,
+                                                   Scheme_Object *rator,
+                                                   int argc)
+{
+  if (!is_nonmutating_nondependant_primitive(rator, argc))
+    *_vclock += 1;
+  else if (is_primitive_allocating(rator, argc))
+    *_aclock += 1;
+
+  if (!is_noncapturing_primitive(rator, argc))
+    *_kclock += 1;
+
+  if (!is_nonsaving_primitive(rator, argc))
+    *_sclock += 1;
+}
+
+static void increment_clocks_for_application(Optimize_Info *info,
+                                             Scheme_Object *rator,
+                                             int argc)
+{
+  int v, a, k, s;
+
+  v = info->vclock;
+  a = info->aclock;
+  k = info->kclock;
+  s = info->sclock;
+
+  increment_clock_counts_for_application(&v, &a, &k, &s, rator, argc);
+
+  info->vclock = v;
+  info->aclock = a;
+  info->kclock = k;
+  info->sclock = s;
+}
+
 static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context, int rator_flags)
 {
   Scheme_Object *le;
@@ -2932,13 +2994,8 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
   }
 
   info->size += 1;
-  if (!is_nonmutating_primitive(app->args[0], app->num_args))
-    info->vclock += 1;
-  if (!is_noncapturing_primitive(app->args[0], app->num_args))
-    info->kclock += 1;
-  if (!is_nonsaving_primitive(app->args[0], app->num_args))
-    info->sclock += 1;
-
+  increment_clocks_for_application(info, app->args[0], app->num_args);
+  
   if (all_vals) {
     le = try_optimize_fold(app->args[0], NULL, (Scheme_Object *)app, info);
     if (le)
@@ -3214,12 +3271,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       return replace_tail_inside(le, inside, app->rand);
   }
 
-  if (!is_nonmutating_primitive(rator, 1))
-    info->vclock += 1;
-  if (!is_noncapturing_primitive(rator, 1))
-    info->kclock += 1;
-  if (!is_nonsaving_primitive(rator, 1))
-    info->sclock += 1;
+  increment_clocks_for_application(info, rator, 1);
 
   info->preserves_marks = !!(rator_flags & CLOS_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & CLOS_SINGLE_RESULT);
@@ -3476,6 +3528,10 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
     rator_apply_escapes = info->escapes;
   }
 
+  if (SAME_TYPE(app->rator, scheme_values_func)
+      || SAME_TYPE(app->rator, scheme_apply_proc))
+    info->maybe_values_argument = 1;
+
   /* 1st arg */
 
   ty = wants_local_type_arguments(app->rator, 0);
@@ -3548,12 +3604,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       return le;
   }
 
-  if (!is_nonmutating_primitive(app->rator, 2))
-    info->vclock += 1;
-  if (!is_noncapturing_primitive(app->rator, 2))
-    info->kclock += 1;
-  if (!is_nonsaving_primitive(app->rator, 2))
-    info->sclock += 1;
+  increment_clocks_for_application(info, app->rator, 2);
 
   /* Check for (call-with-values (lambda () M) N): */
   if (SAME_OBJ(app->rator, scheme_call_with_values_proc)) {
@@ -4218,9 +4269,9 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   Scheme_Branch_Rec *b;
   Scheme_Object *t, *tb, *fb;
   Scheme_Hash_Tree *init_types, *then_types;
-  int init_vclock, init_kclock, init_sclock;
+  int init_vclock, init_aclock, init_kclock, init_sclock;
   int then_escapes, then_preserves_marks, then_single_result;
-  int then_vclock, then_kclock, then_sclock;
+  int then_vclock, then_aclock, then_kclock, then_sclock;
   Optimize_Info_Sequence info_seq;
   Scheme_Object *pred;
 
@@ -4333,6 +4384,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   info->vclock += 1; /* model branch as clock increment */
 
   init_vclock = info->vclock;
+  init_aclock = info->aclock;
   init_kclock = info->kclock;
   init_sclock = info->sclock;
   init_types = info->types;
@@ -4346,11 +4398,13 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   then_single_result = info->single_result;
   then_escapes = info->escapes;
   then_vclock = info->vclock;
+  then_aclock = info->aclock;
   then_kclock = info->kclock;
   then_sclock = info->sclock;
 
   info->types = init_types;
   info->vclock = init_vclock;
+  info->aclock = init_aclock;
   info->kclock = init_kclock;
   info->sclock = init_sclock;
 
@@ -4390,6 +4444,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
   if (then_sclock > info->sclock)
     info->sclock = then_sclock;
+  if (then_aclock > info->aclock)
+    info->aclock = then_aclock;
 
   if ((init_vclock == then_vclock) && (init_vclock == info->vclock)) {
     /* we can rewind the vclock to just after the test, because the
@@ -5644,6 +5700,74 @@ int scheme_might_invoke_call_cc(Scheme_Object *value)
   return !scheme_is_liftable(value, -1, 10, 0, 1);
 }
 
+#define ADVANCE_CLOCKS_INIT_FUEL 3
+
+void advance_clocks_for_optimized(Scheme_Object *o,
+                                  GC_CAN_IGNORE int *_vclock,
+                                  GC_CAN_IGNORE int *_aclock,
+                                  GC_CAN_IGNORE int *_kclock,
+                                  GC_CAN_IGNORE int *_sclock,
+                                  Optimize_Info *info,
+                                  int fuel)
+/* It's ok for this function to advance clocks *less* than
+   acurrately, but not more than acurrately */
+{
+  Scheme_Object *rator = NULL;
+  int argc = 0;
+
+  if (!fuel) return;
+
+  switch (SCHEME_TYPE(o)) {
+  case scheme_application_type:
+    {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)o;
+      int i;
+      for (i = 0; i < app->num_args; i++) {
+        advance_clocks_for_optimized(app->args[i+1],
+                                     _vclock, _aclock, _kclock, _sclock,
+                                     info, fuel - 1);
+      }
+      rator = app->args[0];
+      argc = app->num_args;
+    }
+    break;
+  case scheme_application2_type:
+    {
+      Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
+      advance_clocks_for_optimized(app->rand,
+                                   _vclock, _aclock, _kclock, _sclock,
+                                   info, fuel - 1);
+      rator = app->rator;
+      argc = 1;
+      break;
+    }
+  case scheme_application3_type:
+    {
+      Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
+      advance_clocks_for_optimized(app->rand1,
+                                   _vclock, _aclock, _kclock, _sclock,
+                                   info, fuel - 1);
+      advance_clocks_for_optimized(app->rand2,
+                                   _vclock, _aclock, _kclock, _sclock,
+                                   info, fuel - 1);
+      rator = app->rator;
+      argc = 2;
+    }
+    break;
+  default:
+    break;
+  }
+
+  if (rator)
+    increment_clock_counts_for_application(_vclock, _aclock, _kclock, _sclock, rator, argc);
+
+  if ((*_vclock > info->vclock)
+      || (*_aclock > info->aclock)
+      || (*_kclock > info->kclock)
+      || (*_sclock > info->sclock))
+    scheme_signal_error("internal error: optimizer clock tracking has gone wrong");
+}
+
 static int worth_lifting(Scheme_Object *v)
 {
   Scheme_Type lhs;
@@ -5671,6 +5795,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   int did_set_value, checked_once, skip_depth, unused_clauses, found_escapes;
   int remove_last_one = 0, inline_fuel, rev_bind_order;
   int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
+  int pre_vclock, pre_aclock, pre_kclock, pre_sclock, increments_kclock;
+  int once_vclock, once_aclock, once_kclock, once_sclock, once_increments_kclock;
 
 # define pos_EARLIER(a, b) (rev_bind_order ? ((a) > (b)) : ((a) < (b)))
 
@@ -5958,6 +6084,10 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     }
 
     if (!skip_opts) {
+      pre_vclock = rhs_info->vclock;
+      pre_aclock = rhs_info->aclock;
+      pre_kclock = rhs_info->kclock;
+      pre_sclock = rhs_info->sclock;
       if (!found_escapes) {
         optimize_info_seq_step(rhs_info, &info_seq);
         value = scheme_optimize_expr(pre_body->value, rhs_info,
@@ -5976,9 +6106,41 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         body_info->escapes = 1;
         body_info->size++;
       }
+      once_vclock = rhs_info->vclock;
+      once_aclock = rhs_info->aclock;
+      once_kclock = rhs_info->kclock;
+      once_sclock = rhs_info->sclock;
+      increments_kclock = (once_kclock > pre_kclock);
+      once_increments_kclock = increments_kclock;
     } else {
       value = pre_body->value;
       --skip_opts;
+      if (skip_opts) {
+        /* when a `values` group is split, we've lost track of the
+           clock values for points between the `values` arguments;
+           we can conservatively assume the clock before the whole group
+           for the purpose of registering once-used variables,
+           but we can also conservatively advance the clock: */
+        advance_clocks_for_optimized(value,
+                                     &pre_vclock, &pre_aclock, &pre_kclock, &pre_sclock,
+                                     rhs_info,
+                                     ADVANCE_CLOCKS_INIT_FUEL);
+        once_vclock = pre_vclock;
+        once_aclock = pre_aclock;
+        once_kclock = pre_kclock;
+        once_sclock = pre_sclock;       
+      } else {
+        /* end of split group, so rhs_info clock is right */
+        once_vclock = rhs_info->vclock;
+        once_aclock = rhs_info->aclock;
+        once_kclock = rhs_info->kclock;
+        once_sclock = rhs_info->sclock;
+      }
+      if (increments_kclock) {
+        /* note that we conservatively assume that a member of a split
+           advance the kclock, unless we can easily show otherwise */
+        once_increments_kclock = 1;
+      } 
     }
 
     if (undiscourage) {
@@ -6030,7 +6192,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         int *new_flags;
         int cnt;
 
-        /* This conversion may reorder the expressions. */
+        /* This conversion reorders the expressions if rev_bind_order. */
         if (pre_body->count) {
           if (rev_bind_order)
             cnt = 0;
@@ -6089,6 +6251,18 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           body = (Scheme_Object *)naya;
           value = pre_body->value;
           pos = pre_body->position;
+
+          if (skip_opts) {
+            /* Use "pre" clocks: */
+            advance_clocks_for_optimized(value,
+                                         &pre_vclock, &pre_aclock, &pre_kclock, &pre_sclock,
+                                         rhs_info,
+                                         ADVANCE_CLOCKS_INIT_FUEL);
+            once_vclock = pre_vclock;
+            once_aclock = pre_aclock;
+            once_kclock = pre_kclock;
+            once_sclock = pre_sclock;
+          }
         } else {
           /* We've dropped this clause entirely. */
           i++;
@@ -6193,7 +6367,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             /* used only once; we may be able to shift the expression to the use
                site, instead of binding to a temporary */
             once_used = make_once_used(value, pos,
-                                       rhs_info->vclock, rhs_info->kclock, rhs_info->sclock,
+                                       once_vclock, once_aclock, once_kclock, once_sclock,
+                                       once_increments_kclock,
                                        NULL);
             if (!last_once_used)
               first_once_used = once_used;
@@ -6215,7 +6390,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           if (cnt == 1) {
             /* Need to register as once-used, in case of copy propagation */
             once_used = make_once_used(NULL, pos+i,
-                                       rhs_info->vclock, rhs_info->kclock, rhs_info->sclock,
+                                       once_vclock, once_aclock, once_kclock, once_sclock,
+                                       once_increments_kclock,
                                        NULL);
             if (!last_once_used)
               first_once_used = once_used;
@@ -6424,6 +6600,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   info->single_result = body_info->single_result;
   info->preserves_marks = body_info->preserves_marks;
   info->vclock = body_info->vclock;
+  info->aclock = body_info->aclock;
   info->kclock = body_info->kclock;
   info->sclock = body_info->sclock;
 
@@ -6593,7 +6770,7 @@ optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int cont
   Scheme_Object *code, *ctx;
   Closure_Info *cl;
   mzshort dcs, *dcm;
-  int i, cnt, init_vclock, init_kclock, init_sclock;
+  int i, cnt, init_vclock, init_aclock, init_kclock, init_sclock;
   Scheme_Once_Used *first_once_used = NULL, *last_once_used = NULL;
 
   data = (Scheme_Closure_Data *)_data;
@@ -6605,6 +6782,7 @@ optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int cont
                                  SCHEME_LAMBDA_FRAME);
 
   init_vclock = info->vclock;
+  init_aclock = info->aclock;
   init_kclock = info->kclock;
   init_sclock = info->sclock;
 
@@ -6630,7 +6808,7 @@ optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int cont
     cnt = ((cl->local_flags[i] & SCHEME_USE_COUNT_MASK) >> SCHEME_USE_COUNT_SHIFT);
     if (cnt == 1) {
       last_once_used = make_once_used(NULL, i,
-                                      info->vclock, info->kclock, info->sclock,
+                                      info->vclock, info->aclock, info->kclock, info->sclock, 0,
                                       last_once_used);
       if (!first_once_used) first_once_used = last_once_used;
       optimize_propagate(info, i, (Scheme_Object *)last_once_used, 1);
@@ -6684,6 +6862,7 @@ optimize_closure_compilation(Scheme_Object *_data, Optimize_Info *info, int cont
 
   /* closure itself is not an effect */
   info->vclock = init_vclock;
+  info->aclock = init_aclock;
   info->kclock = init_kclock;
   info->sclock = init_sclock;
   info->escapes = 0;
@@ -7608,6 +7787,8 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
         if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;
           if (((o->vclock == info->vclock)
+               && ((o->aclock == info->aclock)
+                   || !o->spans_k)
                && ((context & OPT_CONTEXT_SINGLED)
                    || single_valued_noncm_expression(o->expr, 5)))
               || movable_expression(o->expr, info, o->delta, o->cross_lambda,
@@ -7617,20 +7798,32 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
             val = optimize_clone(1, o->expr, info, o->delta, 0);
             if (val) {
               int save_fuel = info->inline_fuel, save_no_types = info->no_types;
-              int save_vclock, save_kclock, save_sclock;
+              int save_vclock, save_aclock, save_kclock, save_sclock;
               info->size -= 1;
               o->used = 1;
               info->inline_fuel = 0; /* no more inlining; o->expr was already optimized */
               info->no_types = 1; /* cannot used inferred types, in case `val' inferred them */
               save_vclock = info->vclock; /* allowed to move => no change to clocks */
+              save_aclock = info->aclock;
               save_kclock = info->kclock;
               save_sclock = info->sclock;
 
               val = scheme_optimize_expr(val, info, context);
 
+              if (info->maybe_values_argument) {
+                /* Although `val` could be counted as taking 0 time, we advance
+                   the clock conservatively to be consistent with `values`
+                   splitting. */
+                advance_clocks_for_optimized(val,
+                                             &save_vclock, &save_aclock, &save_kclock, &save_sclock,
+                                             info,
+                                             ADVANCE_CLOCKS_INIT_FUEL);
+              }
+
               info->inline_fuel = save_fuel;
               info->no_types = save_no_types;
               info->vclock = save_vclock;
+              info->aclock = save_aclock;
               info->kclock = save_kclock;
               info->sclock = save_sclock;
               return val;
@@ -8468,7 +8661,7 @@ static void optimize_propagate(Optimize_Info *info, int pos, Scheme_Object *valu
 }
 
 static Scheme_Once_Used *make_once_used(Scheme_Object *val, int pos,
-                                        int vclock, int kclock, int sclock,
+                                        int vclock, int aclock, int kclock, int sclock, int spans_k,
                                         Scheme_Once_Used *prev)
 {
   Scheme_Once_Used *o;
@@ -8479,8 +8672,10 @@ static Scheme_Once_Used *make_once_used(Scheme_Object *val, int pos,
   o->expr = val;
   o->pos = pos;
   o->vclock = vclock;
+  o->aclock = aclock;
   o->kclock = kclock;
   o->sclock = sclock;
+  o->spans_k = spans_k;
 
   if (prev)
     prev->next = o;
@@ -8853,10 +9048,12 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->top_level_consts = info->top_level_consts;
   naya->context = info->context;
   naya->vclock = info->vclock;
+  naya->aclock = info->aclock;
   naya->kclock = info->kclock;
   naya->sclock = info->sclock;
   naya->escapes = info->escapes;
   naya->init_kclock = info->kclock;
+  naya->maybe_values_argument = info->maybe_values_argument;
   naya->use_psize = info->use_psize;
   naya->logger = info->logger;
   naya->no_types = info->no_types;
@@ -8888,6 +9085,7 @@ static void optimize_info_done(Optimize_Info *info, Optimize_Info *parent)
 
   parent->size += info->size;
   parent->vclock = info->vclock;
+  parent->aclock = info->aclock;
   parent->kclock = info->kclock;
   parent->sclock = info->sclock;
   parent->escapes = info->escapes;
