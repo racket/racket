@@ -3,7 +3,6 @@
          ffi/unsafe
          ffi/unsafe/atomic
          ffi/unsafe/custodian
-         unstable/error
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/prepared.rkt"
