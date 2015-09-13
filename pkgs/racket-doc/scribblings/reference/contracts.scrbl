@@ -1356,7 +1356,7 @@ if they do not, a contract violation is signaled.
   Then, when the function returns, it is checked to determine whether the result is wrapped, since
   the second @racket[a] appears in a positive position.
 
-  The @racket[new-∀/c] construct constructor is dual to @racket[new-∃/c].
+  The @racket[new-∀/c] contract constructor is dual to @racket[new-∃/c].
 }
 
 @defproc[(new-∃/c [name (or/c symbol? #f) #f]) contract?]{
