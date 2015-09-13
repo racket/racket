@@ -3,7 +3,6 @@
          racket/format
          syntax/stx
          racket/struct
-         unstable/error
          syntax/srcloc
          "minimatch.rkt"
          syntax/parse/private/residual
@@ -175,6 +174,11 @@ complicated.
 (define (error/reports ctx reports)
   (error/report ctx (car reports) (pair? (cdr reports))))
 
+(define (format-if prefix val)
+  (if val
+      (format "\n  ~a: ~a" prefix val)
+      ""))
+
 (define (error/report ctx report more?)
   (let* ([message (report-message report)]
          [context (report-context report)]
@@ -183,13 +187,18 @@ complicated.
          [sub-stx (report-stx report)]
          [within-stx (report-within-stx report)]
          [message
-          (compose-error-message
-           who message
-           '("at" maybe) (stx-if-loc sub-stx)
-           '("within" maybe) (stx-if-loc within-stx)
-           '("in" maybe) (stx-if-loc stx)
-           '("parsing context" multi maybe) context
-           '("note" maybe) (and more? "additional errors omitted"))]
+          (format "~a: ~a~a~a~a~a~a"
+                  who message
+                  (format-if "at" (stx-if-loc sub-stx))
+                  (format-if "within" (stx-if-loc within-stx))
+                  (format-if "in" (stx-if-loc stx))
+                  (if (null? context)
+                      ""
+                      (apply string-append
+                             "\n  parsing context: "
+                             (for/list ([c (in-list context)])
+                               (format "\n   ~a" c))))
+                  (format-if "note" (and more? "additional errors omitted")))]
          [message
           (if (error-print-source-location)
               (let ([source-stx (or stx sub-stx within-stx)])
