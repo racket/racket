@@ -4150,8 +4150,6 @@ static void *compile_k(void)
     rec.dont_mark_local_use = 0;
     rec.resolve_module_ids = !writeable && !genv->module;
     rec.substitute_bindings = 1;
-    rec.value_name = scheme_false;
-    rec.observer = NULL;
     rec.pre_unwrapped = 0;
     rec.env_already = 0;
     rec.comp_flags = comp_flags;
@@ -4652,6 +4650,8 @@ static void *expand_k(void)
   observer = scheme_get_expand_observe();
   SCHEME_EXPAND_OBSERVE_START_EXPAND(observer);
 
+  env->observer = observer;
+
   comp_flags = get_comp_flags(NULL);
 
   if (as_local < 0) {
@@ -4668,8 +4668,6 @@ static void *expand_k(void)
   while (1) {
     erec1.comp = 0;
     erec1.depth = ((depth == -3) ? -2 : depth);
-    erec1.value_name = scheme_false;
-    erec1.observer = observer;
     erec1.pre_unwrapped = 0;
     erec1.env_already = 0;
     erec1.comp_flags = comp_flags;
@@ -4709,13 +4707,13 @@ static void *expand_k(void)
           obj = scheme_add_lifts_as_let(obj, l, env, scheme_false, 0);
         else
           obj = add_lifts_as_begin(obj, l, env);
-        SCHEME_EXPAND_OBSERVE_LIFT_LOOP(erec1.observer,obj);
+        SCHEME_EXPAND_OBSERVE_LIFT_LOOP(env->observer, obj);
 	if ((depth >= 0) || as_local)
 	  break;
       } else {
         if (as_local > 0) {
           obj = add_lifts_as_begin(obj, scheme_null, env);
-          SCHEME_EXPAND_OBSERVE_LIFT_LOOP(erec1.observer,obj);
+          SCHEME_EXPAND_OBSERVE_LIFT_LOOP(env->observer,obj);
         }
 	break;
       }
@@ -5301,6 +5299,8 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     }
   }
 
+  env->observer = observer;
+
   if (local_scope) {
     /* Since we have an expression from local context,
        we need to remove the temporary scope... */
@@ -5336,14 +5336,15 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     }
 
     memset(drec, 0, sizeof(drec));
-    drec[0].value_name = scheme_false; /* or scheme_current_thread->current_local_name ? */
     drec[0].depth = -2;
-    drec[0].observer = observer;
     {
       int comp_flags;
       comp_flags = get_comp_flags(NULL);
       drec[0].comp_flags = comp_flags;
     }
+
+    if (!(env->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME)))
+      env->value_name = scheme_current_thread->current_local_name;
 
     xl = scheme_check_immediate_macro(l, env, drec, 0, &gval, 1);
 
@@ -5830,6 +5831,7 @@ local_eval(int argc, Scheme_Object **argv)
 
   stx_env = scheme_new_compilation_frame(0, SCHEME_FOR_INTDEF | SCHEME_USE_SCOPES_TO_NEXT, rib, stx_env);
   scheme_add_local_syntax(cnt, stx_env);
+  env->observer = observer;
 
   /* Scope names */
   if (scheme_current_thread->current_local_scope)
@@ -5852,8 +5854,6 @@ local_eval(int argc, Scheme_Object **argv)
     Scheme_Compile_Expand_Info rec;
     rec.comp = 0;
     rec.depth = -1;
-    rec.value_name = scheme_false;
-    rec.observer = observer;
     rec.pre_unwrapped = 0;
     rec.env_already = 0;
     rec.substitute_bindings = 1;
@@ -5872,7 +5872,8 @@ local_eval(int argc, Scheme_Object **argv)
                                   scheme_make_pair(rib, scheme_env_phase(stx_env->genv)));
     rn_names = scheme_named_map_1(NULL, revert_expr_scopes, rn_names, (Scheme_Object *)init_env);
     scheme_bind_syntaxes("local syntax definition", rn_names, expr,
-			 stx_env->genv->exp_env, stx_env->insp, &rec, 0,
+			 stx_env->genv->exp_env, stx_env->insp,
+                         &rec, 0, stx_env->observer,
 			 stx_env, stx_env,
 			 &pos, rib, 1);
   }
@@ -6097,7 +6098,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
         GC_set_backpointer_object(pf->backpointer);
 #endif
         GC_mark_no_recur(gc, 1);
-        gcMARK(pf);
+        gcMARK2(pf, gc);
         pf = (Scheme_Prefix *)GC_resolve2(pf, gc);
         GC_retract_only_mark_stack_entry(pf, gc);
         GC_mark_no_recur(gc, 0);
@@ -6132,7 +6133,6 @@ START_XFORM_SKIP;
 
 static void register_traversers(void)
 {
-  GC_REG_TRAV(scheme_rt_compile_info, mark_comp_info);
   GC_REG_TRAV(scheme_rt_saved_stack, mark_saved_stack);
 }
 

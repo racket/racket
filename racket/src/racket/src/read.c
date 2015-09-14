@@ -183,8 +183,6 @@ typedef struct ReadParams {
 } ReadParams;
 
 #define THREAD_FOR_LOCALS scheme_current_thread
-#define local_list_stack (THREAD_FOR_LOCALS->list_stack)
-#define local_list_stack_pos (THREAD_FOR_LOCALS->list_stack_pos)
 
 static Scheme_Object *read_list(Scheme_Object *port, Scheme_Object *stxsrc,
 				intptr_t line, intptr_t col, intptr_t pos,
@@ -559,51 +557,6 @@ void scheme_init_variable_references_constants()
   variable_references = scheme_make_builtin_references_table(&unsafe_variable_references_start);
 }
 
-
-static Scheme_Simple_Object *malloc_list_stack()
-{
-#ifdef MZ_PRECISE_GC
-  intptr_t sz = sizeof(Scheme_Simple_Object) * NUM_CELLS_PER_STACK;
-  Scheme_Simple_Object *r;
-
-  if (sz < GC_malloc_stays_put_threshold()) {
-    sz = GC_malloc_stays_put_threshold();
-    while (sz % sizeof(Scheme_Simple_Object)) {
-      sz++;
-    }
-  }
-
-  r = (Scheme_Simple_Object *)GC_malloc_array_tagged(sz);
-
-  /* Must set the tag on the first element: */
-  r[0].iso.so.type = scheme_pair_type;
-  return r;
-#else
-  return MALLOC_N_RT(Scheme_Simple_Object, NUM_CELLS_PER_STACK);
-#endif
-}
-
-void scheme_alloc_list_stack(Scheme_Thread *p)
-{
-  Scheme_Simple_Object *sa;
-  p->list_stack_pos = 0;
-  sa = malloc_list_stack();
-  p->list_stack = sa;
-}
-
-void scheme_clean_list_stack(Scheme_Thread *p)
-{
-  if (p->list_stack) {
-    memset(p->list_stack + p->list_stack_pos, 0,
-	   (NUM_CELLS_PER_STACK - p->list_stack_pos) * sizeof(Scheme_Simple_Object));
-#ifdef MZ_PRECISE_GC
-    if (!p->list_stack_pos) {
-      /* Must set the tag on the first element: */
-      p->list_stack[0].iso.so.type = scheme_pair_type;
-    }
-#endif
-  }
-}
 
 static void track_indentation(Scheme_Object *indentation, int line, int col)
 {

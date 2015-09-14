@@ -546,7 +546,7 @@ Scheme_Object *combine_name_with_srcloc(Scheme_Object *name, Scheme_Object *code
   return name;
 }
 
-Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Info *rec, int drec)
+Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Comp_Env *env)
 {
   Scheme_Object *name;
 
@@ -558,7 +558,7 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Inf
     if (name)
       name = combine_name_with_srcloc(name, code, 1);
   } else {
-    name = rec[drec].value_name;
+    name = env->value_name;
     if (!name || SCHEME_FALSEP(name)) {
       name = scheme_source_to_name(code);
       if (name)
@@ -627,7 +627,7 @@ make_closure_compilation(Scheme_Comp_Env *env, Scheme_Object *code,
   forms = scheme_datum_to_syntax(forms, code, code, 0, 0);
   forms = scheme_stx_add_scope(forms, scope, scheme_env_phase(env->genv));
 
-  name = scheme_build_closure_name(code, rec, drec);
+  name = scheme_build_closure_name(code, env);
   data->name = name;
 
   scheme_compile_rec_done_local(rec, drec);
@@ -678,7 +678,7 @@ lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
   Scheme_Comp_Env *newenv;
   Scheme_Expand_Info erec1;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_LAMBDA(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_LAMBDA(env->observer);
 
   form = lambda_check(orig_form);
   
@@ -698,12 +698,11 @@ lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
   body = scheme_stx_add_scope(body, scope, scheme_env_phase(env->genv));
   args = scheme_stx_add_scope(args, scope, scheme_env_phase(env->genv)); /* for re-expansion */
 
-  SCHEME_EXPAND_OBSERVE_LAMBDA_RENAMES(erec[drec].observer, args, body);
+  SCHEME_EXPAND_OBSERVE_LAMBDA_RENAMES(env->observer, args, body);
 
   fn = SCHEME_STX_CAR(form);
 
   scheme_init_expand_recs(erec, drec, &erec1, 1);
-  erec1.value_name = scheme_false;
 
   return scheme_datum_to_syntax(cons(fn,
 				      cons(args,
@@ -880,7 +879,7 @@ defn_targets_syntax (Scheme_Object *var, Scheme_Comp_Env *env, Scheme_Compile_In
 static Scheme_Object *
 define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
-  Scheme_Object *var, *val, *targets, *variables, *vec;
+  Scheme_Object *var, *val, *targets, *variables, *vec, *value_name;
   
   scheme_define_parse(form, &var, &val, 0, env, 0);
   variables = var;
@@ -890,8 +889,9 @@ define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
   scheme_compile_rec_done_local(rec, drec);
   if (SCHEME_STX_PAIRP(targets) && SCHEME_STX_NULLP(SCHEME_STX_CDR(targets))) {
     var = SCHEME_STX_CAR(variables);
-    rec[drec].value_name = SCHEME_STX_SYM(var);
-  }
+    value_name = SCHEME_STX_SYM(var);
+  } else
+    value_name = NULL;
 
 #if 0
   if (env->scopes)
@@ -902,8 +902,11 @@ define_values_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
 #endif
 
   env = scheme_no_defines(env);
+  env->value_name = value_name;
 
   val = scheme_compile_expr(val, env, rec, drec);
+
+  env->value_name = NULL;
 
   vec = scheme_make_vector(2, NULL);
   SCHEME_VEC_ELS(vec)[0] = targets;
@@ -923,7 +926,7 @@ define_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_In
 {
   Scheme_Object *var, *val, *fn, *boundname;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(env->observer);
 
   scheme_define_parse(form, &var, &val, 0, env, 0);
 
@@ -933,16 +936,20 @@ define_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_In
     boundname = SCHEME_STX_CAR(var);
   else
     boundname = scheme_false;
-  erec[drec].value_name = boundname;
+  env->value_name = boundname;
 
   fn = SCHEME_STX_CAR(form);
-  return scheme_datum_to_syntax(cons(fn,
-				      cons(var,
-					    cons(scheme_expand_expr(val, env, erec, drec), 
-						  scheme_null))),
+  form = scheme_datum_to_syntax(cons(fn,
+                                     cons(var,
+                                          cons(scheme_expand_expr(val, env, erec, drec), 
+                                               scheme_null))),
 				form,
 				form,
 				0, 2);
+
+  env->value_name = NULL;
+
+  return form;
 }
 
 /**********************************************************************/
@@ -974,7 +981,7 @@ quote_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec
 {
   Scheme_Object *rest;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_QUOTE(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_QUOTE(env->observer);
 
   rest = SCHEME_STX_CDR(form);
 
@@ -1035,7 +1042,8 @@ if_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
   len = check_form(form, form);
   check_if_len(form, len);
 
-  name = rec[drec].value_name;
+  name = env->value_name;
+  env->value_name = NULL;
   scheme_compile_rec_done_local(rec, drec);
 
   name = scheme_check_name_property(form, name);
@@ -1051,8 +1059,6 @@ if_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
     elsep = scheme_compiled_void();
 
   scheme_init_compile_recs(rec, drec, recs, 3);
-  recs[1].value_name = name;
-  recs[2].value_name = name;
 
   env = scheme_no_defines(env);
 
@@ -1064,26 +1070,33 @@ if_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
     if (SCHEME_FALSEP(test)) {
       /* compile other branch only to get syntax checking: */
       recs[2].dont_mark_local_use = 1;
+      env->value_name = name;
       scheme_compile_expr(thenp, env, recs, 2);
-
-      if (len == 4)
+  
+      if (len == 4) {
+        env->value_name = name;
 	test = scheme_compile_expr(elsep, env, recs, 1);
-      else
+      } else
 	test = elsep;
     } else {
       if (len == 4) {
 	/* compile other branch only to get syntax checking: */
 	recs[2].dont_mark_local_use = 1;
+        env->value_name = name;
 	scheme_compile_expr(elsep, env, recs, 2);
       }
-      
+
+      env->value_name = name;
       test = scheme_compile_expr(thenp, env, recs, 1);
     }
   } else {
     opt = 0;
+    env->value_name = name;
     thenp = scheme_compile_expr(thenp, env, recs, 1);
-    if (len == 4)
+    if (len == 4) {
+      env->value_name = name;
       elsep = scheme_compile_expr(elsep, env, recs, 2);
+    }
   }
 
   scheme_merge_compile_recs(rec, drec, recs, (opt || (len == 3)) ? 2 : 3);
@@ -1101,7 +1114,7 @@ if_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
   int len;
   Scheme_Expand_Info recs[3];
 
-  SCHEME_EXPAND_OBSERVE_PRIM_IF(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_IF(env->observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
@@ -1110,31 +1123,31 @@ if_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
   check_if_len(form, len);
 
   if (len == 3) {
-    SCHEME_EXPAND_OBSERVE_NEXT_GROUP(erec[drec].observer);
+    SCHEME_EXPAND_OBSERVE_NEXT_GROUP(env->observer);
   }
 
-  env = scheme_no_defines(env);
+  boundname = scheme_check_name_property(form, env->value_name);
 
-  boundname = scheme_check_name_property(form, erec[drec].value_name);
+  env = scheme_no_defines(env);
+  env->value_name = NULL;
 
   scheme_init_expand_recs(erec, drec, recs, 3);
-  recs[0].value_name = scheme_false;
-  recs[1].value_name = boundname;
-  recs[2].value_name = boundname;
 
   rest = SCHEME_STX_CDR(form);
   test = SCHEME_STX_CAR(rest);
   test = scheme_expand_expr(test, env, recs, 0);
 
-  SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
   rest = SCHEME_STX_CDR(rest);
   thenp = SCHEME_STX_CAR(rest);
+  env->value_name = boundname;
   thenp = scheme_expand_expr(thenp, env, recs, 1);
 
   rest = SCHEME_STX_CDR(rest);
   if (!SCHEME_STX_NULLP(rest)) {
-    SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+    SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
     elsep = SCHEME_STX_CAR(rest);
+    env->value_name = boundname;
     elsep = scheme_expand_expr(elsep, env, recs, 2);
     rest = cons(elsep, scheme_null);
   } else {
@@ -1156,7 +1169,7 @@ if_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 static Scheme_Object *
 with_cont_mark_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
-  Scheme_Object *key, *val, *expr, *name, *orig_form = form;
+  Scheme_Object *key, *val, *expr, *name, *orig_form = form, *value_name;
   Scheme_Compile_Info recs[3];
   Scheme_With_Continuation_Mark *wcm;
   int len;
@@ -1168,7 +1181,9 @@ with_cont_mark_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
   if (len != 4)
     bad_form(form, len);
 
+  value_name = env->value_name;
   env = scheme_no_defines(env);
+  env->value_name = NULL;
 
   form = SCHEME_STX_CDR(form);
   key = SCHEME_STX_CAR(form);
@@ -1177,16 +1192,16 @@ with_cont_mark_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
   form = SCHEME_STX_CDR(form);
   expr = SCHEME_STX_CAR(form);
 
-  name = rec[drec].value_name;
   scheme_compile_rec_done_local(rec, drec);
 
-  name = scheme_check_name_property(orig_form, name);
+  name = scheme_check_name_property(orig_form, value_name);
 
   scheme_init_compile_recs(rec, drec, recs, 3);
-  recs[2].value_name = name;
 
   key = scheme_compile_expr(key, env, recs, 0);
   val = scheme_compile_expr(val, env, recs, 1);
+
+  env->value_name = value_name;
   expr = scheme_compile_expr(expr, env, recs, 2);
 
   scheme_merge_compile_recs(rec, drec, recs, 3);
@@ -1207,7 +1222,7 @@ with_cont_mark_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Exp
   int len;
   Scheme_Expand_Info recs[3];
 
-  SCHEME_EXPAND_OBSERVE_PRIM_WCM(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_WCM(env->observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
@@ -1217,14 +1232,12 @@ with_cont_mark_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Exp
 
   fn = SCHEME_STX_CAR(form);
 
-  env = scheme_no_defines(env);
+  boundname = scheme_check_name_property(form, env->value_name);
 
-  boundname = scheme_check_name_property(form, erec[drec].value_name);
+  env = scheme_no_defines(env);
+  env->value_name = NULL;
 
   scheme_init_expand_recs(erec, drec, recs, 3);
-  recs[0].value_name = scheme_false;
-  recs[1].value_name = scheme_false;
-  recs[2].value_name = boundname;
 
   form = SCHEME_STX_CDR(form);
   key = SCHEME_STX_CAR(form);
@@ -1234,9 +1247,10 @@ with_cont_mark_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Exp
   expr = SCHEME_STX_CAR(form);
 
   key = scheme_expand_expr(key, env, recs, 0);
-  SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
   val = scheme_expand_expr(val, env, recs, 1);
-  SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
+  env->value_name = boundname;
   expr = scheme_expand_expr(expr, env, recs, 2);
 
   return scheme_datum_to_syntax(cons(fn,
@@ -1321,9 +1335,13 @@ set_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
   }
 
   scheme_compile_rec_done_local(rec, drec);
-  rec[drec].value_name = SCHEME_STX_SYM(name);
 
-  val = scheme_compile_expr(body, scheme_no_defines(env), rec, drec);
+  env = scheme_no_defines(env);
+  env->value_name = SCHEME_STX_SYM(name);
+
+  val = scheme_compile_expr(body, env, rec, drec);
+
+  env->value_name = NULL;
   
   set_undef = (rec[drec].comp_flags & COMP_ALLOW_SET_UNDEFINED);
  
@@ -1343,7 +1361,7 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
   Scheme_Object *name, *var, *fn, *rhs, *find_name, *form, *binding_id;
   int l;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_SET(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_SET(env->observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
@@ -1369,22 +1387,22 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
                                 &binding_id, NULL,
                                 NULL);
 
-    SCHEME_EXPAND_OBSERVE_RESOLVE(erec[drec].observer, find_name);
+    SCHEME_EXPAND_OBSERVE_RESOLVE(env->observer, find_name);
 
     if ((erec[drec].depth != 0) && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)) {
       /* Redirect to a macro? */
       if (scheme_is_set_transformer(SCHEME_PTR_VAL(var))) {
 
-	SCHEME_EXPAND_OBSERVE_ENTER_MACRO(erec[drec].observer, form);
+	SCHEME_EXPAND_OBSERVE_ENTER_MACRO(env->observer, form);
 
 	form = scheme_apply_macro(name, menv, SCHEME_PTR_VAL(var), form, env, scheme_false, erec, drec, 1, 0);
 
-	SCHEME_EXPAND_OBSERVE_EXIT_MACRO(erec[drec].observer, form);
+	SCHEME_EXPAND_OBSERVE_EXIT_MACRO(env->observer, form);
 
 	if (erec[drec].depth > 0)
 	  erec[drec].depth--;
 
-	erec[drec].value_name = name;
+	env->value_name = name;
 
 	return scheme_expand_expr(form, env, erec, drec);
       } else if (scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
@@ -1407,7 +1425,7 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
     scheme_wrong_syntax(NULL, name, form, "cannot mutate syntax identifier");
   }
 
-  SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
 
 
   fn = SCHEME_STX_CAR(form);
@@ -1415,16 +1433,20 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
   rhs = SCHEME_STX_CDR(rhs);
   rhs = SCHEME_STX_CAR(rhs);
 
-  erec[drec].value_name = name;
+  env->value_name = name;
 
   rhs = scheme_expand_expr(rhs, env, erec, drec);
 
-  return scheme_datum_to_syntax(cons(fn,
-				      cons(find_name,
-					    cons(rhs, scheme_null))),
+  form = scheme_datum_to_syntax(cons(fn,
+                                     cons(find_name,
+                                          cons(rhs, scheme_null))),
 				orig_form,
 				orig_form, 
 				0, 2);
+
+  env->value_name = NULL;
+
+  return form;
 }
 
 /**********************************************************************/
@@ -1486,6 +1508,7 @@ ref_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec,
 
     if (SCHEME_STX_PAIRP(name)) {
       /* FIXME: when using #%top, need to set mutated flag */
+      env->value_name = NULL;
       if (rec[drec].comp)
         var = scheme_compile_expr(name, env, rec, drec);
       else
@@ -1550,7 +1573,7 @@ ref_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, 
 {
   Scheme_Object *naya;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_VARREF(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_VARREF(env->observer);
 
   /* Error checking, and lexical variable update: */
   naya = ref_syntax(form, env, erec, drec);
@@ -1640,7 +1663,7 @@ case_lambda_syntax (Scheme_Object *form, Scheme_Comp_Env *env,
   
   form = SCHEME_STX_CDR(form);
 
-  name = scheme_build_closure_name(orig_form, rec, drec);
+  name = scheme_build_closure_name(orig_form, env);
   
   if (SCHEME_STX_NULLP(form)) {
     /* Case where there are no cases... */
@@ -1715,8 +1738,10 @@ case_lambda_syntax (Scheme_Object *form, Scheme_Comp_Env *env,
   cl->name = SCHEME_TRUEP(name) ? name : NULL;
 
   scheme_compile_rec_done_local(rec, drec);
-  recs = MALLOC_N_RT(Scheme_Compile_Info, count);
+  recs = MALLOC_N_ATOMIC(Scheme_Compile_Info, count);
   scheme_init_compile_recs(rec, drec, recs, count);
+
+  env->value_name = NULL;
 
   for (i = 0; i < count; i++) {
     Scheme_Object *ce;
@@ -1750,7 +1775,7 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
 {
   Scheme_Object *first, *last, *args, *body, *c, *new_line, *form;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_CASE_LAMBDA(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_CASE_LAMBDA(env->observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
@@ -1763,7 +1788,7 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
     Scheme_Object *line_form, *scope;
     Scheme_Comp_Env *newenv;
     
-    SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+    SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
 
     line_form = SCHEME_STX_CAR(form);
 
@@ -1781,12 +1806,11 @@ case_lambda_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand
     body = scheme_stx_add_scope(body, scope, scheme_env_phase(env->genv));
     args = scheme_stx_add_scope(args, scope, scheme_env_phase(env->genv));
 
-    SCHEME_EXPAND_OBSERVE_CASE_LAMBDA_RENAMES(erec[drec].observer, args, body);
+    SCHEME_EXPAND_OBSERVE_CASE_LAMBDA_RENAMES(env->observer, args, body);
 
     {
       Scheme_Expand_Info erec1;
       scheme_init_expand_recs(erec, drec, &erec1, 1);
-      erec1.value_name = scheme_false;
       new_line = cons(args, expand_block(body, newenv, &erec1, 0));
     }
     new_line = scheme_datum_to_syntax(new_line, line_form, line_form, 0, 1);
@@ -2251,8 +2275,8 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
     env = scheme_new_compilation_frame(0, 0, scope, origenv);
     forms = scheme_stx_add_scope(forms, scope, scheme_env_phase(env->genv));
 
-    name = scheme_check_name_property(form, rec[drec].value_name);
-    rec[drec].value_name = name;
+    name = scheme_check_name_property(form, origenv->value_name);
+    env->value_name = name;
 
     return compile_sequence(forms, env, rec, drec, body_block);
   }
@@ -2316,9 +2340,9 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   else
     rhs_env = env;
 
-  recs = MALLOC_N_RT(Scheme_Compile_Info, (num_clauses + 1));
+  recs = MALLOC_N_ATOMIC(Scheme_Compile_Info, (num_clauses + 1));
 
-  defname = rec[drec].value_name;
+  defname = origenv->value_name;
   scheme_compile_rec_done_local(rec, drec);
   scheme_init_compile_recs(rec, drec, recs, num_clauses + 1);
 
@@ -2418,7 +2442,7 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
     }
 
     if (lv->count == 1)
-      recs[i].value_name = SCHEME_STX_SYM(names[pre_k]);
+      rhs_env->value_name = SCHEME_STX_SYM(names[pre_k]);
 
     if (!recursive) {
       Scheme_Object *ce, *rhs;
@@ -2432,6 +2456,8 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       rhs = SCHEME_STX_CAR(rhs);
       lv->value = rhs;
     }
+
+    rhs_env->value_name = NULL;
     
     if (recursive) {
       for (m = pre_k; m < k; m++) {
@@ -2465,7 +2491,12 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       rhs = lv->value;
       if (scope)
         rhs = scheme_stx_add_scope(rhs, scope, scheme_env_phase(env->genv));
+      if (lv->count == 1)
+        env->value_name = lv->names[0];
+      else
+        env->value_name = NULL;
       ce = scheme_compile_expr(rhs, env, recs, i);
+      env->value_name = NULL;
       lv->value = ce;
       
       /* Record the fact that this binding doesn't use any or later
@@ -2528,13 +2559,15 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   else
     already_compiled_body = 0;
 
-  recs[num_clauses].value_name = defname ? SCHEME_STX_SYM(defname) : NULL;
+
+  env->value_name = defname ? SCHEME_STX_SYM(defname) : NULL;
   {
     Scheme_Object *cs;
     if (scope) forms = scheme_stx_add_scope(forms, scope, scheme_env_phase(env->genv));
     cs = compile_sequence(forms, env, recs, num_clauses, body_block);
     last->body = cs;
   }
+  env->value_name = NULL;
 
   /* Save flags: */
   lv = (Scheme_Compiled_Let_Value *)first;
@@ -2649,8 +2682,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
 					   ? "empty body not allowed"
 					   : NULL));
 
-  boundname = scheme_check_name_property(form, erec[drec].value_name);
-  erec[drec].value_name = boundname;
+  boundname = scheme_check_name_property(form, origenv->value_name);
   
   if (!env_already && !rec_env_already)
     scheme_begin_dup_symbol_check(&r, origenv);
@@ -2755,7 +2787,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
 
   body = scheme_datum_to_syntax(body, form, form, 0, 0);
   if (scope) body = scheme_stx_add_scope(body, scope, scheme_env_phase(env->genv));
-  SCHEME_EXPAND_OBSERVE_LET_RENAMES(erec[drec].observer, vars, body);
+  SCHEME_EXPAND_OBSERVE_LET_RENAMES(env->observer, vars, body);
 
   /* Pass 2: Expand */
 
@@ -2764,7 +2796,7 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
   while (SCHEME_STX_PAIRP(vars)) {
     Scheme_Object *rhs, *rhs_name;
 
-    SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+    SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
 
     v = SCHEME_STX_CAR(vars);
 
@@ -2779,8 +2811,9 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
     }
 
     scheme_init_expand_recs(erec, drec, &erec1, 1);
-    erec1.value_name = rhs_name;
+    use_env->value_name = rhs_name;
     rhs = scheme_expand_expr(rhs, use_env, &erec1, 0);
+    use_env->value_name = NULL;
 
     v = scheme_datum_to_syntax(cons(name, cons(rhs, scheme_null)), v, v, 0, 1);
     v = cons(v, scheme_null);
@@ -2827,14 +2860,15 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
     first = scheme_datum_to_syntax(first, vs, vs, 0, 1);
   }
 
-  SCHEME_EXPAND_OBSERVE_NEXT_GROUP(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_NEXT_GROUP(env->observer);
   scheme_init_expand_recs(erec, drec, &erec1, 1);
-  erec1.value_name = erec[drec].value_name;
+  env->value_name = boundname;
   if (!body_block)
     body = expand_list(body, env, &erec1, 0);
   else
     body = expand_block(body, env, &erec1, 0);
-  
+  env->value_name = NULL;
+
   if (SCHEME_PAIRP(pre_set)) {
     if (first)
       pre_set = cons(cons(letrec_values_symbol, first), pre_set);
@@ -2860,14 +2894,14 @@ do_let_expand(Scheme_Object *orig_form, Scheme_Comp_Env *origenv, Scheme_Expand_
 static Scheme_Object *
 let_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_LET_VALUES(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_LET_VALUES(env->observer);
   return do_let_expand(form, env, erec, drec, "let-values", 0, 1, NULL);
 }
 
 static Scheme_Object *
 letrec_values_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_LETREC_VALUES(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_LETREC_VALUES(env->observer);
   return do_let_expand(form, env, erec, drec, "letrec-values", 1, 1, NULL);
 }
 
@@ -2919,7 +2953,7 @@ do_begin_syntax(char *name,
 		Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec, 
 		int zero)
 {
-  Scheme_Object *forms, *body;
+  Scheme_Object *forms, *body, *vname;
 
   form = scheme_stx_taint_disarm(form, NULL);
 
@@ -2934,8 +2968,11 @@ do_begin_syntax(char *name,
 
   check_form(form, form);
 
-  if (zero)
+  if (zero) {
+    vname = env->value_name;
     env = scheme_no_defines(env);
+    env->value_name = vname;
+  }
 
   /* if the begin has only one expression inside, drop the begin 
      TODO: is this right */
@@ -2951,16 +2988,17 @@ do_begin_syntax(char *name,
       Scheme_Compile_Info recs[2];
       Scheme_Object *first, *rest, *vname;
 
-      vname = rec[drec].value_name;
+      vname = env->value_name;
       scheme_compile_rec_done_local(rec, drec);
 
       vname = scheme_check_name_property(form, vname);
 
       scheme_init_compile_recs(rec, drec, recs, 2);
-      recs[0].value_name = vname;
 
       first = SCHEME_STX_CAR(forms);
+      env->value_name = vname;
       first = scheme_compile_expr(first, env, recs, 0);
+      env->value_name = NULL;
       rest = SCHEME_STX_CDR(forms);
       rest = compile_list(rest, env, recs, 1);
       
@@ -2969,10 +3007,12 @@ do_begin_syntax(char *name,
       body = cons(first, rest);
     } else {
       Scheme_Object *v;
-      v = scheme_check_name_property(form, rec[drec].value_name);
-      rec[drec].value_name = v;
+      v = scheme_check_name_property(form, env->value_name);
+      env->value_name = v;
 
       body = compile_list(forms, env, rec, drec);
+
+      env->value_name = NULL;
     }
   } else {
     /* Top level */
@@ -3140,8 +3180,8 @@ do_begin_expand(char *name,
 
   if (SCHEME_STX_NULLP(rest)) {
     if (!zero && scheme_is_toplevel(env)) {
-      SCHEME_EXPAND_OBSERVE_ENTER_LIST(erec[drec].observer, form);
-      SCHEME_EXPAND_OBSERVE_EXIT_LIST(erec[drec].observer, form);
+      SCHEME_EXPAND_OBSERVE_ENTER_LIST(env->observer, form);
+      SCHEME_EXPAND_OBSERVE_EXIT_LIST(env->observer, form);
       return orig_form;
     }
     scheme_wrong_syntax(NULL, NULL, form, "empty form not allowed");
@@ -3157,23 +3197,23 @@ do_begin_expand(char *name,
       Scheme_Object *fst, *boundname;
       Scheme_Expand_Info erec1;
       scheme_init_expand_recs(erec, drec, &erec1, 1);
-      boundname = scheme_check_name_property(form, erec[drec].value_name);
-      erec1.value_name = boundname;
-      erec[drec].value_name = scheme_false;
+      boundname = scheme_check_name_property(form, env->value_name);
       fst = SCHEME_STX_CAR(rest);
       rest = SCHEME_STX_CDR(rest);
 
-      SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+      SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
+      env->value_name = boundname;
       fst = scheme_expand_expr(fst, env, &erec1, 0);
+      env->value_name = NULL;
       rest = scheme_datum_to_syntax(rest, form, form, 0, 0);
-      SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+      SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
       rest = expand_list(rest, env, erec, drec);
 
       form = cons(fst, rest);
     } else {
       Scheme_Object *boundname;
-      boundname = scheme_check_name_property(form, erec[drec].value_name);
-      erec[drec].value_name = boundname;
+      boundname = scheme_check_name_property(form, env->value_name);
+      env->value_name = boundname;
       
       form = expand_list(scheme_datum_to_syntax(rest, form, form, 0, 0),
                          env, erec, drec);
@@ -3196,14 +3236,14 @@ do_begin_expand(char *name,
 static Scheme_Object *
 begin_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_BEGIN(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_BEGIN(env->observer);
   return do_begin_expand("begin", form, env, erec, drec, 0);
 }
 
 static Scheme_Object *
 begin0_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_BEGIN0(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_BEGIN0(env->observer);
   return do_begin_expand("begin0", form, env, erec, drec, 1);
 }
 
@@ -3212,7 +3252,7 @@ stratified_body_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Ex
 {
   Scheme_Object *body, *form;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_STRATIFIED(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_STRATIFIED(env->observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
@@ -3276,7 +3316,7 @@ single_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info
 
   if (simplify && (erec[drec].depth == -1)) {
     expr = scheme_stx_track(expr, form, form_name);
-    SCHEME_EXPAND_OBSERVE_TAG(erec[drec].observer,expr);
+    SCHEME_EXPAND_OBSERVE_TAG(env->observer,expr);
     return expr;
   }
 
@@ -3292,7 +3332,7 @@ static Scheme_Object *expression_syntax(Scheme_Object *form, Scheme_Comp_Env *en
 
 static Scheme_Object *expression_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_EXPRESSION(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_EXPRESSION(env->observer);
   return single_expand(form, scheme_no_defines(env), erec, drec, 0,
                        !(env->flags & SCHEME_TOPLEVEL_FRAME));
 }
@@ -3404,7 +3444,7 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
 static Scheme_Object *
 quote_syntax_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_QUOTE_SYNTAX(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_QUOTE_SYNTAX(env->observer);
   return quote_syntax_syntax(form, env, erec, drec);
 }
 
@@ -3419,8 +3459,6 @@ static void prep_exp_env_compile_rec(Scheme_Compile_Info *rec, int drec)
   rec[0].dont_mark_local_use = 0;
   rec[0].resolve_module_ids = 0;
   rec[0].substitute_bindings = 1;
-  rec[0].value_name = NULL;
-  rec[0].observer = NULL;
   rec[0].pre_unwrapped = 0;
   rec[0].testing_constantness = 0;
   rec[0].env_already = 0;
@@ -3454,11 +3492,15 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
   names = scheme_named_map_1(NULL, stx_val, names, (Scheme_Object *)env);
 
   exp_env = scheme_new_comp_env(env->genv->exp_env, env->insp, NULL, 0);
+  exp_env->observer = env->observer;
 
   dummy = scheme_make_environment_dummy(env);
 
   prep_exp_env_compile_rec(&rec1, 0);
 
+  if (SCHEME_PAIRP(names) && SCHEME_NULLP(SCHEME_CDR(names)))
+    exp_env->value_name = SCHEME_STX_VAL(SCHEME_CAR(names));
+  
   val = scheme_compile_expr_lift_to_let(code, exp_env, &rec1, 0);
 
   vec = scheme_make_vector(4, NULL);
@@ -3484,9 +3526,9 @@ define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
 static Scheme_Object *
 define_syntaxes_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  Scheme_Object *names, *code, *fpart, *fn, *form;
+  Scheme_Object *names, *code, *fpart, *fn, *form, *observer;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(env->observer);
 
   form = orig_form;
 
@@ -3494,14 +3536,16 @@ define_syntaxes_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Ex
 
   code = scheme_revert_use_site_scopes(code, env);
 
-  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(env->observer);
 
   scheme_prepare_exp_env(env->genv);
   scheme_prepare_compile_env(env->genv->exp_env);
+  observer = env->observer;
   
   env = scheme_new_expand_env(env->genv->exp_env, env->insp, NULL, 0);
+  env->observer = observer;
 
-  erec[drec].value_name = names;
+  env->value_name = names;
   fpart = scheme_expand_expr_lift_to_let(code, env, erec, drec);
   
   code = cons(fpart, scheme_null);
@@ -3520,7 +3564,7 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
   Scheme_Object *form, *l, *fn, *vec, *dummy;
   Scheme_Comp_Env *env;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_BEGIN_FOR_SYNTAX(rec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_BEGIN_FOR_SYNTAX(in_env->observer);
 
   form = orig_form;
 
@@ -3529,7 +3573,7 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
 
   (void)check_form(form, form);
 
-  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(rec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(in_env->observer);
 
   scheme_prepare_exp_env(in_env->genv);
   scheme_prepare_compile_env(in_env->genv->exp_env);
@@ -3540,6 +3584,8 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
     env->bindings = in_env->bindings;
   } else
     env = scheme_new_expand_env(in_env->genv->exp_env, in_env->insp, NULL, 0);
+
+  env->observer = in_env->observer;
 
   if (rec[drec].comp)
     dummy = scheme_make_environment_dummy(in_env);
@@ -3576,7 +3622,7 @@ begin_for_syntax_expand(Scheme_Object *orig_form, Scheme_Comp_Env *in_env, Schem
       break;
     } else {
       /* We have lifts: */
-      SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(rec[drec].observer, l);
+      SCHEME_EXPAND_OBSERVE_MODULE_LIFT_LOOP(env->observer, l);
     }
   }
 
@@ -3699,7 +3745,7 @@ static void *eval_letmacro_rhs_k(void)
 
 void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
                           Scheme_Env *exp_env, Scheme_Object *insp, 
-                          Scheme_Compile_Expand_Info *rec, int drec,
+                          Scheme_Compile_Expand_Info *rec, int drec, Scheme_Object *observer,
                           Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
                           int *_pos, Scheme_Object *rename_rib,
                           int replace_value)
@@ -3713,11 +3759,12 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   Scheme_Compile_Expand_Info mrec;
 
   eenv = scheme_new_comp_env(exp_env, insp, NULL, 0);
+  eenv->observer = observer;
 
   /* First expand for expansion-observation */
   if (!rec[drec].comp) {
     scheme_init_expand_recs(rec, drec, &mrec, 1);
-    SCHEME_EXPAND_OBSERVE_ENTER_BIND(rec[drec].observer);
+    SCHEME_EXPAND_OBSERVE_ENTER_BIND(eenv->observer);
     a = scheme_expand_expr_lift_to_let(a, eenv, &mrec, 0);
   }
 
@@ -3726,12 +3773,18 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   mrec.dont_mark_local_use = 0;
   mrec.resolve_module_ids = 1;
   mrec.substitute_bindings = 1;
-  mrec.value_name = NULL;
-  mrec.observer = NULL;
   mrec.pre_unwrapped = 0;
   mrec.testing_constantness = 0;
   mrec.env_already = 0;
   mrec.comp_flags = rec[drec].comp_flags;
+
+  if (SCHEME_STX_PAIRP(names)) {
+    l = SCHEME_STX_CDR(names);
+    if (SCHEME_STX_NULLP(l)) {
+      l = SCHEME_STX_CAR(names);
+      eenv->value_name = SCHEME_STX_VAL(l);
+    }
+  }
 
   a = scheme_compile_expr_lift_to_let(a, eenv, &mrec, 0);
 
@@ -3758,7 +3811,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
      but it's not likely that a let-syntax-bound macro is going
      to run lots of times, so JITting is probably not worth it. */
 
-  SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_NEXT(eenv->observer);
 
   a_expr = a;
   a = eval_letmacro_rhs(a_expr, rhs_env, 
@@ -3825,7 +3878,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
 
   scheme_merge_undefineds(eenv, rhs_env);
 
-  SCHEME_EXPAND_OBSERVE_EXIT_BIND(rec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_EXIT_BIND(observer);
 }
 
 static Scheme_Object *
@@ -3834,7 +3887,7 @@ do_letrec_syntaxes(const char *where,
 		   Scheme_Compile_Info *rec, int drec)
 {
   Scheme_Object *forms, *form, *bindings, *var_bindings, *body, *v, *scope;
-  Scheme_Object *names_to_disappear;
+  Scheme_Object *names_to_disappear, *orig_vname;
   Scheme_Comp_Env *stx_env, *var_env, *rhs_env;
   int cnt, stx_cnt, var_cnt, i, j, depth, saw_var, env_already, restore;
   DupCheckRecord r;
@@ -3856,6 +3909,8 @@ do_letrec_syntaxes(const char *where,
     scheme_wrong_syntax(NULL, NULL, forms, NULL);
   body = scheme_datum_to_syntax(form, forms, forms, 0, 0);
 
+  orig_vname = origenv->value_name;
+  
   if (env_already) {
     stx_env = origenv;
     scope = NULL;
@@ -4006,9 +4061,9 @@ do_letrec_syntaxes(const char *where,
     }
   }
 
-  SCHEME_EXPAND_OBSERVE_LETREC_SYNTAXES_RENAMES(rec[drec].observer, bindings, var_bindings, body);
+  SCHEME_EXPAND_OBSERVE_LETREC_SYNTAXES_RENAMES(stx_env->observer, bindings, var_bindings, body);
 
-  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(rec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PREPARE_ENV(stx_env->observer);
   scheme_prepare_exp_env(stx_env->genv);
   scheme_prepare_compile_env(stx_env->genv->exp_env);
 
@@ -4018,7 +4073,7 @@ do_letrec_syntaxes(const char *where,
     for (v = bindings; SCHEME_STX_PAIRP(v); v = SCHEME_STX_CDR(v)) {
       Scheme_Object *a, *names;
 
-      SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
+      SCHEME_EXPAND_OBSERVE_NEXT(stx_env->observer);
 
       a = SCHEME_STX_CAR(v);
       names = SCHEME_STX_CAR(a);
@@ -4028,13 +4083,13 @@ do_letrec_syntaxes(const char *where,
       scheme_bind_syntaxes(where, names, a,
                            stx_env->genv->exp_env,
                            stx_env->insp,
-                           rec, drec,
+                           rec, drec, stx_env->observer,
                            stx_env, rhs_env, 
                            &i, NULL, 1);
     }
   }
 
-  SCHEME_EXPAND_OBSERVE_NEXT_GROUP(rec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_NEXT_GROUP(stx_env->observer);
 
   if (!env_already && names_to_disappear) {
     /* Need to add renaming for disappeared bindings. If they
@@ -4069,9 +4124,9 @@ do_letrec_syntaxes(const char *where,
 
   if (!var_env) {
     var_env = stx_env;
+    v = scheme_check_name_property(forms, orig_vname);
+    var_env->value_name = v;
     if (rec[drec].comp) {
-      v = scheme_check_name_property(forms, rec[drec].value_name);
-      rec[drec].value_name = v;
       if (env_already)
         v = compile_list(body, var_env, rec, drec);
       else
@@ -4097,9 +4152,10 @@ do_letrec_syntaxes(const char *where,
         v = scheme_stx_taint_rearm(v, orig_forms);
 
       if (!restore) {
-        SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer,v);
+        SCHEME_EXPAND_OBSERVE_TAG(stx_env->observer,v);
       }
     }
+    var_env->value_name = NULL;
   } else {
     /* Construct letrec-values expression: */
     v = cons(letrec_values_symbol, cons(var_bindings, body));
@@ -4120,7 +4176,7 @@ do_letrec_syntaxes(const char *where,
         rec[drec].env_already = 1;
       }
 
-      SCHEME_EXPAND_OBSERVE_PRIM_LETREC_VALUES(rec[drec].observer);
+      SCHEME_EXPAND_OBSERVE_PRIM_LETREC_VALUES(stx_env->observer);
       v = do_let_expand(v, stx_env, rec, drec, "letrec-values", 1, 1, var_env);
       
       if (restore) {
@@ -4132,7 +4188,7 @@ do_letrec_syntaxes(const char *where,
 	v = cons(formname, cons(bindings, v));
 	v = scheme_datum_to_syntax(v, orig_forms, scheme_sys_wraps(origenv), 0, 2);
       } else {
-        SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer,v);
+        SCHEME_EXPAND_OBSERVE_TAG(stx_env->observer,v);
       }
     }
   }
@@ -4154,7 +4210,7 @@ letrec_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
 static Scheme_Object *
 letrec_syntaxes_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_LETREC_SYNTAXES_VALUES(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_LETREC_SYNTAXES_VALUES(env->observer);
 
   return do_letrec_syntaxes("letrec-syntaxes+values", form, env, erec, drec);
 }
@@ -4378,15 +4434,14 @@ inner_compile_list(Scheme_Object *form, Scheme_Comp_Env *env,
     int i;
     Scheme_Object *c, *p, *comp_first, *comp_last, *name, *first, *rest;
 
-    name = rec[drec].value_name;
+    name = env->value_name;
     scheme_compile_rec_done_local(rec, drec);
 
     if (len <= 5)
       recs = quick;
     else
-      recs = MALLOC_N_RT(Scheme_Compile_Info, len);
+      recs = MALLOC_N_ATOMIC(Scheme_Compile_Info, len);
     scheme_init_compile_recs(rec, drec, recs, len);
-    recs[len - 1].value_name = name;
 
     comp_first = comp_last = NULL;
 
@@ -4394,8 +4449,12 @@ inner_compile_list(Scheme_Object *form, Scheme_Comp_Env *env,
       first = SCHEME_STX_CAR(rest);
       rest = SCHEME_STX_CDR(rest);
 
+      if (SCHEME_STX_NULLP(rest))
+        env->value_name = name;
+      
       c = compile_expand_expr(first, env, recs, i,
                               !i && start_app_position);
+      env->value_name = NULL;
 
       p = scheme_make_pair(c, scheme_null);
       if (comp_last)
@@ -4431,7 +4490,9 @@ static Scheme_Object *compile_application(Scheme_Object *form, Scheme_Comp_Env *
 
   if (len < 0)
     scheme_wrong_syntax(scheme_application_stx_string, NULL, form, NULL);
-  
+
+  env->value_name = NULL;
+
   scheme_compile_rec_done_local(rec, drec);
   form = inner_compile_list(form, scheme_no_defines(env), rec, drec, 1);
 
@@ -4500,7 +4561,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
   Scheme_Expand_Info erec1;
   Scheme_Env *menv = NULL;
 
-  SCHEME_EXPAND_OBSERVE_ENTER_CHECK(rec[drec].observer, first);
+  SCHEME_EXPAND_OBSERVE_ENTER_CHECK(env->observer, first);
 
   while (1) {
     *current_val = NULL;
@@ -4513,7 +4574,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
     }
 
     if (!SCHEME_STX_SYMBOLP(name)) {
-      SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
+      SCHEME_EXPAND_OBSERVE_EXIT_CHECK(env->observer, first);
       return first;
     }
 
@@ -4541,7 +4602,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
 
       if (!val) {
         first = install_alt_from_rename(first, alt_first);
-        SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
+        SCHEME_EXPAND_OBSERVE_EXIT_CHECK(env->observer, first);
         return first;
       } else if (SAME_TYPE(SCHEME_TYPE(val), scheme_macro_type)) {
         if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(val),
@@ -4560,8 +4621,11 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
             alt_first = NULL;
             scheme_init_expand_recs(rec, drec, &erec1, 1);
             erec1.depth = 1;
-            erec1.value_name = (keep_name ? rec[drec].value_name : scheme_false);
+            name = env->value_name;
+            if (!keep_name)
+              env->value_name = name;
             first = scheme_expand_expr(first, env, &erec1, 0);
+            env->value_name = name;
             break; /* break to outer loop */
           }
         } else {
@@ -4572,7 +4636,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
         }
       } else {
         first = install_alt_from_rename(first, alt_first);
-        SCHEME_EXPAND_OBSERVE_EXIT_CHECK(rec[drec].observer, first);
+        SCHEME_EXPAND_OBSERVE_EXIT_CHECK(env->observer, first);
         return first;
       }
     }
@@ -4598,7 +4662,7 @@ compile_expand_macro_app(Scheme_Object *name, Scheme_Env *menv, Scheme_Object *m
     }
   }
 
-  boundname = rec[drec].value_name;
+  boundname = env->value_name;
   if (!boundname)
     boundname = scheme_false;
 
@@ -4659,11 +4723,8 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       Scheme_Thread *p = scheme_current_thread;
       Scheme_Compile_Expand_Info *recx;
 
-      recx = MALLOC_ONE_RT(Scheme_Compile_Expand_Info);
+      recx = MALLOC_ONE_ATOMIC(Scheme_Compile_Expand_Info);
       memcpy(recx, rec + drec, sizeof(Scheme_Compile_Expand_Info));
-#ifdef MZTAG_REQUIRED
-      recx->type = scheme_rt_compile_info;
-#endif
 
       p->ku.k.p1 = (void *)form;
       p->ku.k.p2 = (void *)env;
@@ -4689,7 +4750,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
   if (rec[drec].comp) {
     scheme_default_compile_rec(rec, drec);
   } else {
-    SCHEME_EXPAND_OBSERVE_VISIT(rec[drec].observer,form);
+    SCHEME_EXPAND_OBSERVE_VISIT(env->observer,form);
   }
 
   if (SAME_TYPE(SCHEME_TYPE(SCHEME_STX_VAL(form)), scheme_expanded_syntax_type)) {
@@ -4746,7 +4807,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                     &bind_id, &need_macro_scope,
                                     &inline_variant);
 
-        SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer,find_name);
+        SCHEME_EXPAND_OBSERVE_RESOLVE(env->observer,find_name);
 
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
 	    && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
@@ -4781,10 +4842,10 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       } else {
 	if (SAME_TYPE(SCHEME_TYPE(var), scheme_syntax_compiler_type)) {
 	  if (var == stop_expander) {
-            SCHEME_EXPAND_OBSERVE_ENTER_PRIM(rec[drec].observer,form);
-            SCHEME_EXPAND_OBSERVE_PRIM_STOP(rec[drec].observer);
-            SCHEME_EXPAND_OBSERVE_EXIT_PRIM(rec[drec].observer,form);
-            SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer,form);
+            SCHEME_EXPAND_OBSERVE_ENTER_PRIM(env->observer,form);
+            SCHEME_EXPAND_OBSERVE_PRIM_STOP(env->observer);
+            SCHEME_EXPAND_OBSERVE_EXIT_PRIM(env->observer,form);
+            SCHEME_EXPAND_OBSERVE_RETURN(env->observer,form);
 	    return form;
           } else {
 	    scheme_wrong_syntax(NULL, NULL, form, "bad syntax");
@@ -4818,14 +4879,14 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	  else
 	    return var;
 	} else {
-          SCHEME_EXPAND_OBSERVE_VARIABLE(rec[drec].observer, form, find_name);
+          SCHEME_EXPAND_OBSERVE_VARIABLE(env->observer, form, find_name);
           if (bind_id && rec[drec].substitute_bindings)
             find_name = bind_id;
 	  if (protected) {
 	    /* Add a property to indicate that the name is protected */
 	    find_name = scheme_stx_property(find_name, protected_symbol, scheme_true);
 	  }
-          SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer, find_name);
+          SCHEME_EXPAND_OBSERVE_RETURN(env->observer, find_name);
 	  return find_name; /* which is usually == form */
 	}
       }
@@ -4874,7 +4935,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                     NULL, &need_macro_scope,
                                     NULL);
 
-        SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
+        SCHEME_EXPAND_OBSERVE_RESOLVE(env->observer, find_name);
 	if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
 	    && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
           if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(var),
@@ -4912,10 +4973,10 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	  } else {
 	    Scheme_Syntax_Expander *f;
 	    f = (Scheme_Syntax_Expander *)SCHEME_SYNTAX_EXP(var);
-	    SCHEME_EXPAND_OBSERVE_ENTER_PRIM(rec[drec].observer, form);
+	    SCHEME_EXPAND_OBSERVE_ENTER_PRIM(env->observer, form);
 	    form = f(form, env, rec, drec);
-	    SCHEME_EXPAND_OBSERVE_EXIT_PRIM(rec[drec].observer, form);
-	    SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer, form);
+	    SCHEME_EXPAND_OBSERVE_EXIT_PRIM(env->observer, form);
+	    SCHEME_EXPAND_OBSERVE_RETURN(env->observer, form);
 	    return form;
 	  }
 	}
@@ -4971,7 +5032,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                   NULL, &need_macro_scope,
                                   NULL);
 
-      SCHEME_EXPAND_OBSERVE_RESOLVE(rec[drec].observer, find_name);
+      SCHEME_EXPAND_OBSERVE_RESOLVE(env->observer, find_name);
 
       if (var && SAME_TYPE(SCHEME_TYPE(var), scheme_macro_type)
 	  && scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
@@ -5002,12 +5063,12 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	      || SAME_TYPE(SCHEME_TYPE(var), scheme_syntax_compiler_type))) {
     if (SAME_OBJ(var, stop_expander)) {
       /* Return original: */
-      SCHEME_EXPAND_OBSERVE_ENTER_PRIM(rec[drec].observer, form);
-      SCHEME_EXPAND_OBSERVE_PRIM_STOP(rec[drec].observer);
-      SCHEME_EXPAND_OBSERVE_EXIT_PRIM(rec[drec].observer, form);
-      SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer, form);
+      SCHEME_EXPAND_OBSERVE_ENTER_PRIM(env->observer, form);
+      SCHEME_EXPAND_OBSERVE_PRIM_STOP(env->observer);
+      SCHEME_EXPAND_OBSERVE_EXIT_PRIM(env->observer, form);
+      SCHEME_EXPAND_OBSERVE_RETURN(env->observer, form);
       return form;
-    } else if (rec[drec].comp && SAME_OBJ(var, normal) && !rec[drec].observer) {
+    } else if (rec[drec].comp && SAME_OBJ(var, normal) && !env->observer) {
       /* Skip creation of intermediate form */
       Scheme_Syntax *f;
       rec[drec].pre_unwrapped = 1;
@@ -5026,7 +5087,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       } else {
         name = scheme_stx_taint_disarm(form, NULL);
         form = scheme_datum_to_syntax(scheme_make_pair(stx, name), form, form, 0, 2);
-        SCHEME_EXPAND_OBSERVE_TAG(rec[drec].observer, form);
+        SCHEME_EXPAND_OBSERVE_TAG(env->observer, form);
       }
 
       if (SAME_TYPE(SCHEME_TYPE(var), scheme_syntax_compiler_type)) {
@@ -5037,10 +5098,10 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 	} else {
 	  Scheme_Syntax_Expander *f;
 	  f = (Scheme_Syntax_Expander *)SCHEME_SYNTAX_EXP(var);
-	  SCHEME_EXPAND_OBSERVE_ENTER_PRIM(rec[drec].observer, form);
+	  SCHEME_EXPAND_OBSERVE_ENTER_PRIM(env->observer, form);
 	  form = f(form, env, rec, drec);
-	  SCHEME_EXPAND_OBSERVE_EXIT_PRIM(rec[drec].observer, form);
-	  SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer, form);
+	  SCHEME_EXPAND_OBSERVE_EXIT_PRIM(env->observer, form);
+	  SCHEME_EXPAND_OBSERVE_RETURN(env->observer, form);
 	  return form;
 	}
       } else {
@@ -5085,11 +5146,11 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 
  macro:
   if (!rec[drec].comp && !rec[drec].depth) {
-    SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer, form);
+    SCHEME_EXPAND_OBSERVE_RETURN(env->observer, form);
     return form; /* We've gone as deep as requested */
   }
 
-  SCHEME_EXPAND_OBSERVE_ENTER_MACRO(rec[drec].observer, form);
+  SCHEME_EXPAND_OBSERVE_ENTER_MACRO(env->observer, form);
   if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(var),
                                         scheme_frame_to_expansion_context_symbol(env->flags))) {
     form = compile_expand_macro_app(name, menv, var, form, env, rec, drec, need_macro_scope);
@@ -5101,7 +5162,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     }
   } else
     form = adjust_for_other_context(form, var, env);
-  SCHEME_EXPAND_OBSERVE_EXIT_MACRO(rec[drec].observer, form);
+  SCHEME_EXPAND_OBSERVE_EXIT_MACRO(env->observer, form);
 
   if (rec[drec].comp)
     goto top;
@@ -5111,7 +5172,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
     if (rec[drec].depth)
       goto top;
     else {
-      SCHEME_EXPAND_OBSERVE_RETURN(rec[drec].observer, form);
+      SCHEME_EXPAND_OBSERVE_RETURN(env->observer, form);
       return form;
     }
   }
@@ -5155,7 +5216,7 @@ static Scheme_Object *
 compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env, 
 		   Scheme_Compile_Expand_Info *rec, int drec)
 {
-  Scheme_Object *form, *naya, *forms;
+  Scheme_Object *form, *naya, *forms, *orig_vname = env->value_name;
   int tsc;
 
   forms = scheme_stx_taint_disarm(orig_form, NULL);
@@ -5185,7 +5246,7 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
     if (rec[drec].comp)
       return compile_application(form, env, rec, drec);
     else {
-      rec[drec].value_name = scheme_false;
+      env->value_name = NULL;
       naya = expand_list(form, scheme_no_defines(env), rec, drec);
       /* naya will be prefixed and returned... */
     }
@@ -5193,8 +5254,13 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
     Scheme_Object *name, *origname, *gval, *orig_rest_form, *rest_form;
     name = SCHEME_STX_CAR(form);
     origname = name;
+
+    gval = env->value_name;
+    env->value_name = NULL;
     
     name = scheme_check_immediate_macro(name, env, rec, drec, &gval, 0);
+
+    env->value_name = gval;
 
     /* look for ((lambda (x ...) ....) ....) or ((lambda x ....) ....) */
     if (SAME_OBJ(gval, scheme_lambda_syntax)) {
@@ -5271,6 +5337,8 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
 
               body = scheme_syntax_taint_rearm(body, orig_form);
 
+              env->value_name = orig_vname;
+
               return compile_expand_expr(body, env, rec, drec, 0);
             } else {
 #if 0
@@ -5336,6 +5404,7 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
                                            scheme_null),
                                      icons(second, scheme_null)));
                   form = scheme_datum_to_syntax(name, forms, scheme_sys_wraps(env), 0, 2);
+                  env->value_name = orig_vname;
                   return compile_expand_expr(form, env, rec, drec, 0);
                 }
                 if (!SAME_OBJ(second, orig_second)) {
@@ -5359,10 +5428,10 @@ compile_expand_app(Scheme_Object *orig_form, Scheme_Comp_Env *env,
         || NOT_SAME_OBJ(rest_form, orig_rest_form)) {
       form = scheme_datum_to_syntax(scheme_make_pair(name, rest_form), forms, forms, 0, 2);
     }
-    
+
     return compile_application(form, env, rec, drec);
   } else {
-    rec[drec].value_name = scheme_false;
+    env->value_name = NULL;
     naya = expand_list(form, scheme_no_defines(env), rec, drec);
     /* naya will be prefixed returned... */
   }
@@ -5388,7 +5457,7 @@ app_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, 
 static Scheme_Object *
 app_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_APP(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_APP(env->observer);
   return compile_expand_app(form, env, erec, drec);
 }
 
@@ -5420,7 +5489,7 @@ datum_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info 
 {
   Scheme_Object *rest, *v, *form;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_DATUM(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_DATUM(env->observer);
 
   form = scheme_stx_taint_disarm(orig_form, NULL);
 
@@ -5563,7 +5632,7 @@ top_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, 
   Scheme_Object *c;
   int need_bound_check = 0;
 
-  SCHEME_EXPAND_OBSERVE_PRIM_TOP(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_TOP(env->observer);
   c = check_top(form, env, erec, drec, &need_bound_check);
 
   if (env->genv->module)
@@ -5682,11 +5751,8 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
       Scheme_Thread *p = scheme_current_thread;
       Scheme_Compile_Expand_Info *recx;
 
-      recx = MALLOC_ONE_RT(Scheme_Compile_Expand_Info);
+      recx = MALLOC_ONE_ATOMIC(Scheme_Compile_Expand_Info);
       memcpy(recx, rec + drec, sizeof(Scheme_Compile_Expand_Info));
-#ifdef MZTAG_REQUIRED
-      recx->type = scheme_rt_compile_info;
-#endif
 
       p->ku.k.p1 = (void *)form;
       p->ku.k.p2 = (void *)env;
@@ -5735,7 +5801,7 @@ compile_expand_expr_lift_to_let(Scheme_Object *form, Scheme_Comp_Env *env,
     } else
       o = form;
     form = scheme_add_lifts_as_let(o, l, env, orig_form, rec[drec].comp);
-    SCHEME_EXPAND_OBSERVE_LETLIFT_LOOP(rec[drec].observer, form);
+    SCHEME_EXPAND_OBSERVE_LETLIFT_LOOP(env->observer, form);
     form = compile_expand_expr_lift_to_let(form, env, recs, 1);
     if (rec[drec].comp)
       scheme_merge_compile_recs(rec, drec, recs, 2);
@@ -5793,7 +5859,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
    It is espcailly ugly because we have to expand macros
    before deciding what we have. */
 {
-  Scheme_Object *first, *orig = forms, *pre_exprs = scheme_null, *old;
+  Scheme_Object *first, *orig = forms, *pre_exprs = scheme_null, *old, *orig_vname = env->value_name;
   Scheme_Object *rib, *ectx, *frame_scopes;
   Scheme_Compile_Info recs[2];
   DupCheckRecord r;
@@ -5801,7 +5867,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
   if (rec[drec].comp) {
     scheme_default_compile_rec(rec, drec);
   } else {
-    SCHEME_EXPAND_OBSERVE_ENTER_BLOCK(rec[drec].observer, forms);
+    SCHEME_EXPAND_OBSERVE_ENTER_BLOCK(env->observer, forms);
   }
 
   if (SCHEME_STX_NULLP(forms)) {
@@ -5809,9 +5875,9 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       scheme_compile_rec_done_local(rec, drec);
       return scheme_null;
     } else {
-      SCHEME_EXPAND_OBSERVE_BLOCK_TO_LIST(rec[drec].observer, forms);
-      SCHEME_EXPAND_OBSERVE_ENTER_LIST(rec[drec].observer, forms);
-      SCHEME_EXPAND_OBSERVE_EXIT_LIST(rec[drec].observer, forms);
+      SCHEME_EXPAND_OBSERVE_BLOCK_TO_LIST(env->observer, forms);
+      SCHEME_EXPAND_OBSERVE_ENTER_LIST(env->observer, forms);
+      SCHEME_EXPAND_OBSERVE_EXIT_LIST(env->observer, forms);
       return forms;
     }
   }
@@ -5836,11 +5902,11 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
   old = forms;
   forms = add_scope_at_arbitrary_phase(forms, rib);
-  SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(rec[drec].observer, forms, old);
+  SCHEME_EXPAND_OBSERVE_BLOCK_RENAMES(env->observer, forms, old);
 
  try_again:
 
-  SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
 
   if (!SCHEME_STX_PAIRP(forms)) {
     scheme_wrong_syntax(scheme_begin_stx_string, NULL, beginify(env, forms), "bad syntax");
@@ -5865,7 +5931,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       /* Inline content */
       Scheme_Object *orig_forms = forms;
 
-      SCHEME_EXPAND_OBSERVE_PRIM_BEGIN(rec[drec].observer);
+      SCHEME_EXPAND_OBSERVE_PRIM_BEGIN(env->observer);
 
       /* FIXME: Redundant with check done by scheme_flatten_begin below? */
       if (scheme_stx_proper_list_length(first) < 0)
@@ -5879,13 +5945,13 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	   attached to this begin should apply to the ultimate last
 	   thing in the block. */
 	Scheme_Object *v;
-	v = scheme_check_name_property(first, rec[drec].value_name);
-	rec[drec].value_name = v;
+	v = scheme_check_name_property(first, env->value_name);
+	env->value_name = v;
       }
 
       forms = scheme_flatten_begin(first, forms);
 
-      SCHEME_EXPAND_OBSERVE_SPLICE(rec[drec].observer, forms);
+      SCHEME_EXPAND_OBSERVE_SPLICE(env->observer, forms);
 
       if (SCHEME_STX_NULLP(forms)) {
         if (!SCHEME_PAIRP(pre_exprs)) {
@@ -5952,9 +6018,9 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	v = SCHEME_STX_CDR(first);
 
         if (is_val) {
-          SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(rec[drec].observer);
+          SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_VALUES(env->observer);
         } else {
-          SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(rec[drec].observer);
+          SCHEME_EXPAND_OBSERVE_PRIM_DEFINE_SYNTAXES(env->observer);
         }
 	
 	if (!SCHEME_STX_PAIRP(v))
@@ -5984,7 +6050,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	var = SCHEME_STX_CAR(first);
 	v = scheme_stx_track(v, first, var);
 
-        SCHEME_EXPAND_OBSERVE_RENAME_ONE(rec[drec].observer,v);
+        SCHEME_EXPAND_OBSERVE_RENAME_ONE(env->observer,v);
 
 	link = scheme_make_pair(v, scheme_null);
 	if (is_val) {
@@ -6052,13 +6118,14 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 
 	  if (!is_val) {
 	    /* Evaluate and bind syntaxes */
-            SCHEME_EXPAND_OBSERVE_PREPARE_ENV(rec[drec].observer);
+            SCHEME_EXPAND_OBSERVE_PREPARE_ENV(env->observer);
 	    scheme_prepare_exp_env(new_env->genv);
             scheme_prepare_compile_env(new_env->genv->exp_env);
 	    pos = 0;
 	    scheme_bind_syntaxes("local syntax definition", 
 				 names, expr,
-				 new_env->genv->exp_env, new_env->insp, rec, drec,
+				 new_env->genv->exp_env, new_env->insp,
+                                 rec, drec, new_env->observer,
 				 new_env, new_env,
 				 &pos, rib, 1);
 	  }
@@ -6074,7 +6141,7 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	if (!SCHEME_STX_NULLP(result)) {
 	  first = SCHEME_STX_CAR(result);
 	  first = scheme_datum_to_syntax(first, forms, forms, 0, 0);
-          SCHEME_EXPAND_OBSERVE_NEXT(rec[drec].observer);
+          SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
           is_last = SCHEME_STX_NULLP(SCHEME_STX_CDR(result));
 	  first = scheme_check_immediate_macro(first, env, rec, drec, &gval, is_last);
 	  more = 1;
@@ -6083,9 +6150,9 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	    if (SAME_OBJ(gval, scheme_begin_syntax)) {
 	      /* Inline content */
 	      result = SCHEME_STX_CDR(result);
-              SCHEME_EXPAND_OBSERVE_PRIM_BEGIN(rec[drec].observer);
+              SCHEME_EXPAND_OBSERVE_PRIM_BEGIN(env->observer);
 	      result = scheme_flatten_begin(first, result);
-	      SCHEME_EXPAND_OBSERVE_SPLICE(rec[drec].observer,result);
+	      SCHEME_EXPAND_OBSERVE_SPLICE(env->observer,result);
               goto define_try_again;
 	    } else if (mixed) {
               /* accumulate expr for either sequence after definitions
@@ -6152,7 +6219,9 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       rec[drec].env_already = (mixed ? 2 : 1);
 
       if (rec[drec].comp) {
-	result = scheme_compile_expr(result, scheme_no_defines(env), rec, drec);
+        env = scheme_no_defines(env);
+        env->value_name = orig_vname;
+	result = scheme_compile_expr(result, env, rec, drec);
         return scheme_make_pair(result, scheme_null);
       } else {
         if (!mixed && ((rec[drec].depth == -2) || (rec[drec].depth > 0))) {
@@ -6162,9 +6231,11 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
         if (rec[drec].depth > 0)
           --rec[drec].depth;
 	if (rec[drec].depth) {
-          SCHEME_EXPAND_OBSERVE_BLOCK_TO_LETREC(rec[drec].observer,
+          SCHEME_EXPAND_OBSERVE_BLOCK_TO_LETREC(env->observer,
                                                 scheme_make_pair(result, scheme_null));
-          result = scheme_expand_expr(result, scheme_no_defines(env), rec, drec);
+          env = scheme_no_defines(env);
+          env->value_name = orig_vname;
+          result = scheme_expand_expr(result, env, rec, drec);
         }
         result = scheme_make_pair(result, scheme_null);
         return scheme_datum_to_syntax(result, forms, forms, 0, 0);
@@ -6178,9 +6249,8 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
   env = scheme_no_defines(env);
 
   if (rec[drec].comp) {
-    Scheme_Object *vname, *rest;
+    Scheme_Object *rest;
 
-    vname = rec[drec].value_name;
     scheme_compile_rec_done_local(rec, drec);
     scheme_init_compile_recs(rec, drec, recs, 2);
 
@@ -6191,27 +6261,28 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
       rest = SCHEME_CDR(pre_exprs);
     }
 
-    if (SCHEME_STX_NULLP(rest))
-      recs[0].value_name = vname;
-    else
-      recs[1].value_name = vname;
-
     rest = scheme_datum_to_syntax(rest, orig, orig, 0, 0);
 
+    if (SCHEME_STX_NULLP(rest))
+      env->value_name = orig_vname;
+    else
+      env->value_name = NULL;
+    
     first = scheme_compile_expr(first, env, recs, 0);
 
+    if (!SCHEME_STX_NULLP(rest))
+      env->value_name = orig_vname;
+    else
+      env->value_name = NULL;
+    
     forms = compile_list(rest, env, recs, 1);
     
     scheme_merge_compile_recs(rec, drec, recs, 2);
     return scheme_make_pair(first, forms);
   } else {
-    Scheme_Object *newforms, *vname;
+    Scheme_Object *newforms;
 
-    vname = rec[drec].value_name;
-    rec[drec].value_name = scheme_false;
     scheme_init_expand_recs(rec, drec, recs, 2);
-
-    recs[0].value_name = vname;
 
     if (SCHEME_PAIRP(pre_exprs))
       newforms = pre_exprs;
@@ -6225,7 +6296,9 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     if (scheme_stx_proper_list_length(forms) < 0)
       scheme_wrong_syntax(scheme_begin_stx_string, NULL, beginify(env, forms), "bad syntax");
 
-    SCHEME_EXPAND_OBSERVE_BLOCK_TO_LIST(rec[drec].observer, forms);
+    env->value_name = orig_vname;
+    
+    SCHEME_EXPAND_OBSERVE_BLOCK_TO_LIST(env->observer, forms);
     forms = expand_list(forms, env, recs, 0);
     return forms;
   }
@@ -6260,12 +6333,12 @@ expand_stratified_block(Scheme_Object *forms, Scheme_Comp_Env *env, Scheme_Expan
 static Scheme_Object *expand_list(Scheme_Object *form, Scheme_Comp_Env *env,
                                   Scheme_Expand_Info *erec, int drec)
 {
-  Scheme_Object *first = NULL, *last = NULL, *fm;
+  Scheme_Object *first = NULL, *last = NULL, *fm, *vname;
 
-  SCHEME_EXPAND_OBSERVE_ENTER_LIST(erec[drec].observer, form);
+  SCHEME_EXPAND_OBSERVE_ENTER_LIST(env->observer, form);
 
   if (SCHEME_STX_NULLP(form)) {
-    SCHEME_EXPAND_OBSERVE_EXIT_LIST(erec[drec].observer, form);
+    SCHEME_EXPAND_OBSERVE_EXIT_LIST(env->observer, form);
     return scheme_null;
   }
 
@@ -6276,16 +6349,17 @@ static Scheme_Object *expand_list(Scheme_Object *form, Scheme_Comp_Env *env,
   }
 
   fm = form;
+  vname = env->value_name;
   while (SCHEME_STX_PAIRP(fm)) {
     Scheme_Object *r, *p;
     Scheme_Expand_Info erec1;
 
-    SCHEME_EXPAND_OBSERVE_NEXT(erec[drec].observer);
+    SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
 
     p = SCHEME_STX_CDR(fm);
     
     scheme_init_expand_recs(erec, drec, &erec1, 1);
-    erec1.value_name = (SCHEME_STX_NULLP(p) ? erec[drec].value_name : scheme_false);
+    env->value_name = (SCHEME_STX_NULLP(p) ? vname : NULL);
 
     r = SCHEME_STX_CAR(fm);
     r = scheme_expand_expr(r, env, &erec1, 0);
@@ -6296,11 +6370,13 @@ static Scheme_Object *expand_list(Scheme_Object *form, Scheme_Comp_Env *env,
       first = p;
     last = p;
 
+    env->value_name = NULL;
+
     fm = SCHEME_STX_CDR(fm);
   }
 
   form = scheme_datum_to_syntax(first, form, form, 0, 0);
-  SCHEME_EXPAND_OBSERVE_EXIT_LIST(erec[drec].observer, form);
+  SCHEME_EXPAND_OBSERVE_EXIT_LIST(env->observer, form);
   return form;
 }
 
@@ -6340,7 +6416,7 @@ static Scheme_Object *stop_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
 
 static Scheme_Object *stop_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  SCHEME_EXPAND_OBSERVE_PRIM_STOP(erec[drec].observer);
+  SCHEME_EXPAND_OBSERVE_PRIM_STOP(env->observer);
   return form;
 }
 

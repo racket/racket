@@ -95,14 +95,6 @@ Racket allocates the following kinds of memory objects:
  * Array - The allocated object is an array of pointers to other
    allocated objects.
 
- * Tagged Array - The allocated object is an array of tagged
-   objects. Every tagged object in the array is the same size and has
-   the same effective tag. After allocating the memory, Racket sets
-   the tag on the initial array element, but might not set the tag of
-   other elements until later. (Even if tags are not set for all
-   objects, the mark and fixup operations might be applied to all of
-   them.)
-
  * Pair - specialization of Tagged to pairs.
 
  * Interior Array - Like array objects, but pointers to the object can

@@ -112,7 +112,6 @@ extern XFORM_NONGCING int scheme_intern_prim_opt_flags(int);
 #ifdef MZTAG_REQUIRED
 # define scheme_malloc_rt(x) scheme_malloc_tagged(x)
 # define MALLOC_ONE_RT(x) MALLOC_ONE_TAGGED(x)
-# define MALLOC_N_RT(x,c) MALLOC_N_TAGGED(x,c)
 # define MALLOC_ONE_WEAK(x) _MALLOC_N(x, 1, scheme_malloc)
 # define MALLOC_N_WEAK(x,c) _MALLOC_N(x, c, scheme_malloc)
 # define MALLOC_ONE_TAGGED_WEAK(x) _MALLOC_N(x, 1, scheme_malloc_tagged)
@@ -120,7 +119,6 @@ extern XFORM_NONGCING int scheme_intern_prim_opt_flags(int);
 #else
 # define scheme_malloc_rt(x) scheme_malloc(x)
 # define MALLOC_ONE_RT(x) MALLOC_ONE(x)
-# define MALLOC_N_RT(x,c) MALLOC_N(x,c)
 # define MALLOC_ONE_WEAK(x) MALLOC_ONE_ATOMIC(x)
 # define MALLOC_N_WEAK(x,c) MALLOC_N_ATOMIC(x,c)
 # define MALLOC_ONE_WEAK_RT(x) MALLOC_ONE_WEAK(x)
@@ -2574,6 +2572,9 @@ typedef struct Scheme_Comp_Env
 
   Scheme_Object *scopes; /* can be NULL, a scope, a scope set, or (cons scope-set nobind-scope) */
 
+  Scheme_Object *value_name; /* propagated down */
+  Scheme_Object *observer; /* parameter's value (to avoid looking up every time) */
+
   /* local bindings; */
   mzshort num_bindings; /* number of `values' slots */
   Scheme_Object **binders; /* identifiers */
@@ -2618,11 +2619,9 @@ typedef struct Scheme_Comp_Env
 
 typedef struct Scheme_Compile_Expand_Info
 {
-  MZTAG_IF_REQUIRED
+  /* allocated as atomic */
   short comp;
   short comp_flags;
-  Scheme_Object *value_name;
-  Scheme_Object *observer;
   char dont_mark_local_use;
   char resolve_module_ids;
   char pre_unwrapped;
@@ -2970,7 +2969,7 @@ void scheme_merge_undefineds(Scheme_Comp_Env *exp_env, Scheme_Comp_Env *env);
 
 void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
                           Scheme_Env *exp_env, Scheme_Object *insp, 
-                          Scheme_Compile_Expand_Info *rec, int drec,
+                          Scheme_Compile_Expand_Info *rec, int drec, Scheme_Object *observer,
                           Scheme_Comp_Env *stx_env, Scheme_Comp_Env *rhs_env,
                           int *_pos, Scheme_Object *rename_rib, int replace_value);
 int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
@@ -3130,7 +3129,7 @@ void *scheme_module_run_finish(Scheme_Env *menv, Scheme_Env *env);
 void *scheme_module_exprun_finish(Scheme_Env *menv, int set_ns);
 void *scheme_module_start_finish(struct Start_Module_Args *a);
 
-Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Compile_Info *rec, int drec);
+Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Comp_Env *env);
 
 #define SCHEME_SYNTAX(obj)     SCHEME_PTR1_VAL(obj)
 #define SCHEME_SYNTAX_EXP(obj) SCHEME_PTR2_VAL(obj)

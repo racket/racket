@@ -223,7 +223,6 @@
   scheme_extension_table->GC_malloc_one_tagged = GC_malloc_one_tagged;
   scheme_extension_table->GC_malloc_atomic_uncollectable = GC_malloc_atomic_uncollectable;
   scheme_extension_table->scheme_malloc_uncollectable = scheme_malloc_uncollectable;
-  scheme_extension_table->GC_malloc_array_tagged = GC_malloc_array_tagged;
   scheme_extension_table->GC_malloc_allow_interior = GC_malloc_allow_interior;
   scheme_extension_table->GC_malloc_atomic_allow_interior = GC_malloc_atomic_allow_interior;
   scheme_extension_table->GC_malloc_tagged_allow_interior = GC_malloc_tagged_allow_interior;

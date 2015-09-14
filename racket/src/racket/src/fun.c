@@ -1953,7 +1953,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
     code = scheme_stx_taint_disarm(code, NULL);
 
     pre_code = code;
-    SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(rec[drec].observer, code);
+    SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(env->observer, code);
 
     {
       Scheme_Dynamic_State dyn_state;
@@ -1976,7 +1976,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
       scheme_pop_continuation_frame(&cframe);
     }
 
-    SCHEME_EXPAND_OBSERVE_MACRO_POST_X(rec[drec].observer, code, pre_code);
+    SCHEME_EXPAND_OBSERVE_MACRO_POST_X(env->observer, code, pre_code);
 
     if (!SCHEME_STXP(code)) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,

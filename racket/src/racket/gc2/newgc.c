@@ -80,11 +80,10 @@ enum {
   PAGE_TAGGED   = 0,
   PAGE_ATOMIC   = 1,
   PAGE_ARRAY    = 2,
-  PAGE_TARRAY   = 3,
-  PAGE_PAIR     = 4,
-  PAGE_BIG      = 5,
+  PAGE_PAIR     = 3,
+  PAGE_BIG      = 4,
   /* the number of page types: */
-  PAGE_TYPES    = 6
+  PAGE_TYPES    = 5
 };
 
 enum {
@@ -128,7 +127,6 @@ static const char *type_name[PAGE_TYPES] = {
   "tagged",
   "atomic",
   "array",
-  "tagged array",
   "pair",
   "big"
 };
@@ -698,9 +696,6 @@ static void dump_page_map(NewGC *gc, const char *when)
           break;
         case PAGE_ARRAY:
           kind = 'r';
-          break;
-        case PAGE_TARRAY:
-          kind = 'y';
           break;
         case PAGE_PAIR:
           kind = 'p';
@@ -1590,7 +1585,6 @@ void *GC_malloc_pair(void *car, void *cdr)
 /* the allocation mechanism we present to the outside world */
 void *GC_malloc(size_t s)                         { return allocate(s, PAGE_ARRAY); }
 void *GC_malloc_one_tagged(size_t s)              { return allocate(s, PAGE_TAGGED); }
-void *GC_malloc_array_tagged(size_t s)            { return allocate(s, PAGE_TARRAY); }
 void *GC_malloc_atomic(size_t s)                  { return allocate(s, PAGE_ATOMIC); }
 void *GC_malloc_atomic_uncollectable(size_t s)    { return ofm_malloc_zero(s); }
 void *GC_malloc_allow_interior(size_t s)          { return allocate_medium(s, PAGE_ARRAY); }
@@ -3748,17 +3742,6 @@ static inline void propagate_marks_worker(NewGC *gc, void *pp)
       {
         while(start < end) gcMARK2(*start++, gc); break;
       }
-    case PAGE_TARRAY: 
-      {
-        const unsigned short tag = *(unsigned short *)start;
-        ASSERT_TAG(tag);
-        end -= INSET_WORDS;
-        while(start < end) {
-          GC_ASSERT(gc->mark_table[tag]);
-          start += gc->mark_table[tag](start, gc);
-        }
-        break;
-      }
     case PAGE_PAIR: 
       {
         Scheme_Object *p = (Scheme_Object *)start;
@@ -3897,7 +3880,6 @@ static void *trace_pointer_start(mpage *page, void *p) {
 }
 # define TRACE_PAGE_TAGGED PAGE_TAGGED
 # define TRACE_PAGE_ARRAY PAGE_ARRAY
-# define TRACE_PAGE_TAGGED_ARRAY PAGE_TARRAY
 # define TRACE_PAGE_ATOMIC PAGE_ATOMIC
 # define TRACE_PAGE_PAIR PAGE_PAIR
 # define TRACE_PAGE_MALLOCFREE PAGE_TYPES
@@ -3910,7 +3892,6 @@ const char *trace_source_kind(int kind)
   case PAGE_TAGGED: return "_TAGGED";
   case PAGE_ATOMIC: return "_ATOMIC";
   case PAGE_ARRAY: return "_ARRAY";
-  case PAGE_TARRAY: return "_TARRAY";
   case PAGE_PAIR: return "_PAIR";
   case PAGE_BIG: return "_BIG";
   case BT_STACK: return "STACK";
@@ -4460,18 +4441,6 @@ static int repair_mixed_page(NewGC *gc, mpage *page, void **end)
       case PAGE_ATOMIC:
         start += info->size;
         break;
-      case PAGE_TARRAY:
-        {
-          void **tempstart, **tempend = PPTR(info) + (info->size - INSET_WORDS);
-          unsigned short tag;
-          tempstart = OBJHEAD_TO_OBJPTR(start);
-          tag = *(unsigned short*)tempstart;
-          ASSERT_TAG(tag);
-          while (tempstart < tempend)
-            tempstart += fixup_table[tag](tempstart, gc);
-          start += info->size;
-        }
-        break;
       case PAGE_PAIR: 
         {
           Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
@@ -4625,14 +4594,6 @@ static void repair_heap(NewGC *gc)
             gcFIXUP2(SCHEME_CDR(p), gc);
           }
           break;
-        case PAGE_TARRAY:
-          {
-            unsigned short tag = *(unsigned short *)start;
-            ASSERT_TAG(tag);
-            end -= INSET_WORDS;
-            while(start < end) start += fixup_table[tag](start, gc);
-            break;
-          }
         }
 
         memory_in_use += page->size;
@@ -4678,26 +4639,6 @@ static void repair_heap(NewGC *gc)
               while(start < tempend) gcFIXUP2(*start++, gc);
               info->mark = 0;
             } else { 
-              info->dead = 1;
-              start += size;
-            }
-          }
-          break;
-        case PAGE_TARRAY:
-          while(start < end) {
-            objhead *info = (objhead *)start;
-            size_t size = info->size;
-            if(info->mark) {
-              void **tempend = PPTR(info) + (info->size - INSET_WORDS);
-              unsigned short tag;
-              start = OBJHEAD_TO_OBJPTR(start);
-              tag = *(unsigned short*)start;
-              ASSERT_TAG(tag);
-              while(start < tempend)
-                start += fixup_table[tag](start, gc);
-              info->mark = 0;
-              start = PPTR(info) + size;
-            } else {
               info->dead = 1;
               start += size;
             }

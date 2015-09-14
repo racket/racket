@@ -223,7 +223,6 @@
 #define GC_malloc_one_tagged (scheme_extension_table->GC_malloc_one_tagged)
 #define GC_malloc_atomic_uncollectable (scheme_extension_table->GC_malloc_atomic_uncollectable)
 #define scheme_malloc_uncollectable (scheme_extension_table->scheme_malloc_uncollectable)
-#define GC_malloc_array_tagged (scheme_extension_table->GC_malloc_array_tagged)
 #define GC_malloc_allow_interior (scheme_extension_table->GC_malloc_allow_interior)
 #define GC_malloc_atomic_allow_interior (scheme_extension_table->GC_malloc_atomic_allow_interior)
 #define GC_malloc_tagged_allow_interior (scheme_extension_table->GC_malloc_tagged_allow_interior)

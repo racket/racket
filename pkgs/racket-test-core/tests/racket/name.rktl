@@ -65,6 +65,9 @@
 (test 'w object-name (let ([w (let ([x 5]) (lambda () x))]) w))
 (test 'z object-name (let ([z (let ([x 5]) (cons 1 2) (lambda () x))]) z))
 
+(test 'w object-name (let ([w (let () (lambda () 'x))]) w))
+(test 'z object-name (let ([z (let () (cons 1 2) (lambda () 'x))]) z))
+
 (set! f (lambda () 10))
 (test 'f object-name f)
 

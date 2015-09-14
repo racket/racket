@@ -2413,8 +2413,6 @@ static Scheme_Thread *make_thread(Scheme_Config *config,
 
   process->ran_some = 1;
 
-  process->list_stack = NULL;
-
   scheme_gmp_tls_init(process->gmp_tls);
   
   if (prefix) {
@@ -2946,8 +2944,6 @@ static void thread_is_dead(Scheme_Thread *r)
   r->suspended_box = NULL;
   r->resumed_box = NULL;
   
-  r->list_stack = NULL;
-
   r->t_set_parent = NULL;
   r->dw = NULL;
   r->init_config = NULL;
@@ -3048,11 +3044,6 @@ static void remove_thread(Scheme_Thread *r)
   r->tail_buffer = NULL;
   r->ku.multiple.array = NULL;
   r->values_buffer = NULL;
-
-#ifndef SENORA_GC_NO_FREE
-  if (r->list_stack)
-    GC_free(r->list_stack);
-#endif
 
   thread_is_dead(r);
 
@@ -3529,9 +3520,6 @@ Scheme_Object *scheme_call_as_nested_thread(int argc, Scheme_Object *argv[], voi
     np->tail_buffer = tb;
   }
   np->tail_buffer_size = p->tail_buffer_size;
-
-  np->list_stack = p->list_stack;
-  np->list_stack_pos = p->list_stack_pos;
 
   scheme_gmp_tls_init(np->gmp_tls);
 
@@ -9018,9 +9006,6 @@ static void prepare_thread_for_GC(Scheme_Object *t)
   }
 
   p->spare_runstack = NULL;
-
-  /* zero ununsed part of list stack */
-  scheme_clean_list_stack(p);
 }
 
 void scheme_prepare_this_thread_for_GC(Scheme_Thread *p)

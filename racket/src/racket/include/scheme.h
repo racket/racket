@@ -1221,9 +1221,6 @@ typedef struct Scheme_Thread {
   short suspend_break;
   short external_break;
 
-  Scheme_Simple_Object *list_stack;
-  int list_stack_pos;
-
   /* Racket client can use: */
   void (*on_kill)(struct Scheme_Thread *p);
   void *kill_data;

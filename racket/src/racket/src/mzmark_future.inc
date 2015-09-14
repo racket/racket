@@ -3,11 +3,15 @@
 #ifdef MZ_USE_FUTURES
 
 static int future_SIZE(void *p, struct NewGC *gc) {
-  return
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(future_t));
+#else
+  return 0;
+#endif
 }
 
 static int future_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
   future_t *f = (future_t *)p;
   gcMARK2(f->orig_lambda, gc);
   gcMARK2(f->cust, gc);
@@ -37,11 +41,17 @@ static int future_MARK(void *p, struct NewGC *gc) {
   gcMARK2(f->prev_in_fsema_queue, gc);
   gcMARK2(f->next_in_fsema_queue, gc);
   gcMARK2(f->touching, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
+# endif
+#endif
 }
 
 static int future_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   future_t *f = (future_t *)p;
   gcFIXUP2(f->orig_lambda, gc);
   gcFIXUP2(f->cust, gc);
@@ -71,8 +81,13 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(f->prev_in_fsema_queue, gc);
   gcFIXUP2(f->next_in_fsema_queue, gc);
   gcFIXUP2(f->touching, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
+# endif
+#endif
 }
 
 #define future_IS_ATOMIC 0
@@ -80,24 +95,39 @@ static int future_FIXUP(void *p, struct NewGC *gc) {
 
 
 static int fsemaphore_SIZE(void *p, struct NewGC *gc) {
-  return
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+#else
+  return 0;
+#endif
 }
 
 static int fsemaphore_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
     fsemaphore_t *s = (fsemaphore_t*)p;
     gcMARK2(s->queue_front, gc);
     gcMARK2(s->queue_end, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+# endif
+#endif
 }
 
 static int fsemaphore_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
     fsemaphore_t *s = (fsemaphore_t*)p;
     gcFIXUP2(s->queue_front, gc);
     gcFIXUP2(s->queue_end, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+# endif
+#endif
 }
 
 #define fsemaphore_IS_ATOMIC 0
@@ -107,28 +137,43 @@ static int fsemaphore_FIXUP(void *p, struct NewGC *gc) {
 #else
 
 static int sequential_future_SIZE(void *p, struct NewGC *gc) {
-  return
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(future_t));
+#else
+  return 0;
+#endif
 }
 
 static int sequential_future_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
   future_t *f = (future_t *)p;
   gcMARK2(f->orig_lambda, gc);
   gcMARK2(f->running_sema, gc);
   gcMARK2(f->retval, gc);
   gcMARK2(f->multiple_array, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
+# endif
+#endif
 }
 
 static int sequential_future_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   future_t *f = (future_t *)p;
   gcFIXUP2(f->orig_lambda, gc);
   gcFIXUP2(f->running_sema, gc);
   gcFIXUP2(f->retval, gc);
   gcFIXUP2(f->multiple_array, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(future_t));
+# endif
+#endif
 }
 
 #define sequential_future_IS_ATOMIC 0
@@ -136,22 +181,37 @@ static int sequential_future_FIXUP(void *p, struct NewGC *gc) {
 
 
 static int sequential_fsemaphore_SIZE(void *p, struct NewGC *gc) {
-  return
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+#else
+  return 0;
+#endif
 }
 
 static int sequential_fsemaphore_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
     fsemaphore_t *s = (fsemaphore_t*)p;
     gcMARK2(s->sema, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+# endif
+#endif
 }
 
 static int sequential_fsemaphore_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
     fsemaphore_t *s = (fsemaphore_t*)p;
     gcFIXUP2(s->sema, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
     gcBYTES_TO_WORDS(sizeof(fsemaphore_t));
+# endif
+#endif
 }
 
 #define sequential_fsemaphore_IS_ATOMIC 0

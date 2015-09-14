@@ -204,12 +204,6 @@ GC2_EXTERN void *GC_malloc_pair(void *car, void *cdr);
    The main potential advantage is that `car' and `cdr' don't
    have to be retained by the callee in the case of a GC. */
 
-GC2_EXTERN void *GC_malloc_array_tagged(size_t);
-/* 
-   Alloc an array of tagged items. Racket sets the tag in the first
-   item before a collection, by maybe not all items. When traversing,
-   use the first one for size. */
-
 GC2_EXTERN void *GC_malloc_atomic(size_t size_in_bytes);
 /*
    Alloc pointerless memory (not necessarily zeroed). */
@@ -604,6 +598,8 @@ GC2_EXTERN void GC_set_backpointer_object(void *p);
 #define gcFIXUP2(x, gc) gcFIXUP2_TYPED(void*, x, gc)
 #define gcBYTES_TO_WORDS(x) ((x + (1 << gcLOG_WORD_SIZE) - 1) >> gcLOG_WORD_SIZE)
 #define gcWORDS_TO_BYTES(x) (x << gcLOG_WORD_SIZE)
+
+#define GC_NO_SIZE_NEEDED_FROM_PROCS 1
 
 #define GC_INTERIORABLES_NEVER_MOVE 1
 

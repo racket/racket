@@ -98,15 +98,9 @@ void scheme_init_compile_recs(Scheme_Compile_Info *src, int drec,
   int i;
 
   for (i = 0; i < n; i++) {
-#ifdef MZTAG_REQUIRED
-    dest[i].type = scheme_rt_compile_info;
-#endif
     dest[i].comp = 1;
     dest[i].dont_mark_local_use = src[drec].dont_mark_local_use;
     dest[i].resolve_module_ids = src[drec].resolve_module_ids;
-    dest[i].value_name = scheme_false;
-    /* should be always NULL */
-    dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
     dest[i].testing_constantness = 0;
     dest[i].env_already = 0;
@@ -120,13 +114,8 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
   int i;
 
   for (i = 0; i < n; i++) {
-#ifdef MZTAG_REQUIRED
-    dest[i].type = scheme_rt_compile_info;
-#endif
     dest[i].comp = 0;
     dest[i].depth = src[drec].depth;
-    dest[i].value_name = scheme_false;
-    dest[i].observer = src[drec].observer;
     dest[i].pre_unwrapped = 0;
     dest[i].substitute_bindings = src[drec].substitute_bindings;
     dest[i].testing_constantness = 0;
@@ -144,15 +133,10 @@ void scheme_merge_compile_recs(Scheme_Compile_Info *src, int drec,
 void scheme_init_lambda_rec(Scheme_Compile_Info *src, int drec,
 			    Scheme_Compile_Info *lam, int dlrec)
 {
-#ifdef MZTAG_REQUIRED
-  lam[dlrec].type = scheme_rt_compile_info;
-#endif
   lam[dlrec].comp = 1;
   lam[dlrec].dont_mark_local_use = src[drec].dont_mark_local_use;
   lam[dlrec].resolve_module_ids = src[drec].resolve_module_ids;
   lam[dlrec].substitute_bindings = src[dlrec].substitute_bindings;
-  lam[dlrec].value_name = scheme_false;
-  lam[dlrec].observer = src[drec].observer;
   lam[dlrec].pre_unwrapped = 0;
   lam[dlrec].testing_constantness = 0;
   lam[dlrec].env_already = 0;
@@ -166,7 +150,6 @@ void scheme_merge_lambda_rec(Scheme_Compile_Info *src, int drec,
 
 void scheme_compile_rec_done_local(Scheme_Compile_Info *rec, int drec)
 {
-  rec[drec].value_name = scheme_false;
 }
 
 /**********************************************************************/
@@ -285,6 +268,7 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
   frame->insp = base->insp;
   frame->prefix = base->prefix;
   frame->in_modidx = base->in_modidx;
+  frame->observer = base->observer;
 
   if (base->next)
     frame->skip_depth = base->skip_depth + 1;
