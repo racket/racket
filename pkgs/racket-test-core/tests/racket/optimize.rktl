@@ -2010,7 +2010,7 @@
              (define-values (x y) (values (car p) (cdr p)))
              (values y x))
            '(lambda (p)
-             (values (#%unsafe-cdr p) (car p)))
+             (values (unsafe-cdr p) (car p)))
            #f)
 (test-comp '(lambda (p)
              (define-values (x y) (values (car p) (cdr p)))
