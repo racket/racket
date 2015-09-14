@@ -676,6 +676,7 @@
             #"100755" #"755")
            (copy-object tmp
                         (this-object-location)
+                        mode
                         (build-path dest-dir fn))]
           [(#"40000" #"040000")
            (extract-tree id obj-ids tmp (build-path dest-dir fn))]
@@ -938,8 +939,8 @@
    [else
     (call-with-input-file* (build-path (tmp-info-dir tmp) location) proc)]))
 
-;; copy-object : tmp-info location path -> void
-(define (copy-object tmp location dest-file)
+;; copy-object : tmp-info location bytes path -> void
+(define (copy-object tmp location mode dest-file)
   (cond
    [(pair? location)
     (define bstr (object->bytes tmp location))
@@ -950,7 +951,12 @@
    [else
     (copy-file (build-path (tmp-info-dir tmp) location)
                dest-file
-               #t)]))
+               #t)])
+  (define perms
+    (case mode
+      [(#"755" #"100755") #o755]
+      [(#"644" #"100644") #o644]))
+  (file-or-directory-permissions dest-file perms))
 
 ;; object->bytes : tmp-info location -> bytes
 (define (object->bytes tmp location)
