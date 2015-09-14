@@ -2804,7 +2804,7 @@ static int designate_modified_gc(NewGC *gc, void *p)
 
   if (page) {
     page->mprotected = 0;
-    mmu_write_unprotect_page(gc->mmu, page->addr, real_page_size(page));
+    mmu_write_unprotect_page(gc->mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
     GC_MP_CNT_INC(mp_write_barrier_cnt);
     if (!page->back_pointers)
       set_has_back_pointers(gc, page);
@@ -3623,7 +3623,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
           }
           if (work->mprotected) {
             work->mprotected = 0;
-            mmu_write_unprotect_page(gc->mmu, work->addr, APAGE_SIZE);
+            mmu_write_unprotect_page(gc->mmu, work->addr, APAGE_SIZE, page_mmu_type(work), &work->mmu_src_block);
             GC_MP_CNT_INC(mp_mark_cnt);
           }
           newplace = PTR(NUM(work->addr) + work->size);
@@ -4235,7 +4235,7 @@ static void mark_backpointers(NewGC *gc)
       if (work->mprotected) {
         /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
         work->mprotected = 0;
-        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
+        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work), page_mmu_type(work), &work->mmu_src_block);
       }
       work->marked_from = 1;
 
@@ -5465,7 +5465,7 @@ static void free_gc(NewGC *gc)
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
     for (work = gc->med_pages[MED_PAGE_NONATOMIC][i]; work; work = work->next) {
       if (work->mprotected)
-        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work));
+        mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work), page_mmu_type(work), &work->mmu_src_block);
     }
   }
 
