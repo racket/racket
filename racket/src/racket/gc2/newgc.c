@@ -2355,7 +2355,7 @@ void GC_fixup_variable_stack(void **var_stack,
 
 #include "roots.c"
 
-#define traverse_roots(gcMUCK, set_bt_src) {    \
+#define traverse_roots(gcMUCK2, gc, set_bt_src) {        \
     uintptr_t j;                            \
     Roots *roots = &gc->roots;                  \
     if(roots->roots) {                          \
@@ -2365,7 +2365,7 @@ void GC_fixup_variable_stack(void **var_stack,
         void **end = (void**)roots->roots[j+1]; \
         while(start < end) {                    \
           set_bt_src(gc, start, BT_ROOT);       \
-          gcMUCK(*start++);                     \
+          gcMUCK2(*start++, gc);                \
         }                                       \
       }                                         \
     }                                           \
@@ -2373,12 +2373,12 @@ void GC_fixup_variable_stack(void **var_stack,
 
 inline static void mark_roots(NewGC *gc) 
 {
-  traverse_roots(gcMARK, set_backtrace_source);
+  traverse_roots(gcMARK2, gc, set_backtrace_source);
 }
 
 inline static void repair_roots(NewGC *gc)
 {
-  traverse_roots(gcFIXUP, three_arg_no_op);
+  traverse_roots(gcFIXUP2, gc, three_arg_no_op);
 }
 
 #include "immobile_boxes.c"
@@ -2398,20 +2398,23 @@ inline static void mark_finalizer_structs(NewGC *gc)
 {
   Fnl *fnl;
 
+  set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
+  gcMARK2(gc->finalizers, gc);
   for(fnl = gc->finalizers; fnl; fnl = fnl->next) { 
-    set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
-    gcMARK2(fnl, gc);
-    fnl = GC_resolve2(fnl, gc);
     set_backtrace_source(gc, fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc);
+    set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
+    gcMARK2(fnl->next, gc);
   }
-  for(fnl = GC_resolve2(gc->run_queue, gc); fnl; fnl = fnl->next) {
-    set_backtrace_source(gc, &gc->run_queue, BT_ROOT);
-    gcMARK2(fnl, gc);
-    fnl = GC_resolve2(fnl, gc);
+  
+  set_backtrace_source(gc, &gc->run_queue, BT_ROOT);
+  gcMARK2(gc->run_queue, gc);
+  for(fnl = gc->run_queue; fnl; fnl = fnl->next) {
     set_backtrace_source(gc, fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc);
     gcMARK2(fnl->p, gc);
+    set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
+    gcMARK2(fnl->next, gc);
   }
 }  
 
@@ -2468,10 +2471,14 @@ inline static void check_finalizers(NewGC *gc, int level)
       --gc->num_fnls;
 
       work = next;
-    } else { 
+    } else {
+      void *p;
       GCDEBUG((DEBUGOUTF, "CFNL: Not finalizing %p (level %i on %p): %p / %i\n",
                work, work->eager_level, work->p, pagemap_find_page(gc->page_maps, work->p),
                marked(work->p)));
+      p = GC_resolve2(work->p, gc);
+      if (p != work->p)
+        work->p = p;
       prev = work; 
       work = GC_resolve2(work->next, gc); 
     }
@@ -3426,8 +3433,8 @@ static void mark_recur_or_push_ptr(struct NewGC *gc, void *p, int is_a_master_pa
       {
         Scheme_Object *pr = (Scheme_Object *)p;
         gc->mark_depth++;
-        GC_mark2(SCHEME_CDR(pr), gc);
-        GC_mark2(SCHEME_CAR(pr), gc);
+        gcMARK2(SCHEME_CDR(pr), gc);
+        gcMARK2(SCHEME_CAR(pr), gc);
         --gc->mark_depth;
       }
       return;
@@ -3440,11 +3447,11 @@ static void mark_recur_or_push_ptr(struct NewGC *gc, void *p, int is_a_master_pa
 }
 
 /* This is the first mark routine. It's a bit complicated. */
-void GC_mark2(const void *const_p, struct NewGC *gc)
+void GC_mark2(void *pp, struct NewGC *gc)
 {
   int is_a_master_page = 0;
   mpage *page;
-  void *p = (void*)const_p;
+  void *p = *(void **)pp;
 
   if(!p || (NUM(p) & 0x1)) {
     GCDEBUG((DEBUGOUTF, "Not marking %p (bad ptr)\n", p));
@@ -3538,6 +3545,8 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
     if(ohead->mark) {
       GCDEBUG((DEBUGOUTF,"Not marking %p (already marked)\n", p));
       RELEASE_PAGE_LOCK(is_a_master_page, page);
+      if (ohead->moved)
+        *(void **)pp = *(void **)p;
       return;
     }
 
@@ -3592,6 +3601,9 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
           gen_half_allocate_and_setup_new_page(gc);
           work = gc->gen_half.curr_alloc_page;
           backtrace_new_gen_half_page(gc, work);
+           /* since we're using a gen-1/2 half, we'll need a fixup pass
+              to record backpointers */
+          gc->need_fixup = 1;
         }
         newplace = PTR(NUM(work->addr) + work->size);
         work->size += size;
@@ -3677,6 +3689,7 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
         /* set forwarding pointer */
         GCDEBUG((DEBUGOUTF,"Marking %p (moved to %p on page %p)\n", p, newp, work));
         *(void**)p = newp;
+        *(void **)pp = newp;
         mark_recur_or_push_ptr(gc, newp, is_a_master_page);
       }
     }
@@ -3685,9 +3698,9 @@ void GC_mark2(const void *const_p, struct NewGC *gc)
   RELEASE_PAGE_LOCK(is_a_master_page, page);
 }
 
-void GC_mark(const void *const_p)
+void GC_mark(void *pp)
 {
-  GC_mark2(const_p, GC_get_GC());
+  GC_mark2(pp, GC_get_GC());
 }
 
 /* this is the second mark routine. It's not quite as complicated. */
@@ -3745,8 +3758,8 @@ static inline void propagate_marks_worker(NewGC *gc, void *pp)
     case PAGE_PAIR: 
       {
         Scheme_Object *p = (Scheme_Object *)start;
-        GC_mark2(SCHEME_CDR(p), gc);
-        GC_mark2(SCHEME_CAR(p), gc);
+        gcMARK2(SCHEME_CDR(p), gc);
+        gcMARK2(SCHEME_CAR(p), gc);
       }
       break;
   }
@@ -3830,13 +3843,11 @@ void GC_fixup2(void *pp, struct NewGC *gc)
     /*         !gc->gc_full => info->moved */
     if (info->moved) {
       *(void**)pp = *(void**)p;
-      if (info->type)
-        gc->back_pointers = 1;
     } else {
       GCDEBUG((DEBUGOUTF, "Not repairing %p from %p (not moved)\n",p,pp));
-      if (page->generation < AGE_GEN_1)
-        gc->back_pointers = 1;
     }
+    if (page->generation < AGE_GEN_1)
+      gc->back_pointers = 1;
   } else {
 #ifdef POINTER_OWNERSHIP_CHECK
     check_page_owner(gc, p);
@@ -4342,6 +4353,8 @@ inline static void do_heap_compact(NewGC *gc)
           GCDEBUG((DEBUGOUTF, "Compacting page %p: new version at %p\n", 
                    work, npage));
 
+          gc->need_fixup = 1;
+
           if (npage == work) {
             /* Need to insert a page: */
             npage = allocate_compact_target(gc, work);
@@ -4412,7 +4425,7 @@ inline static void do_heap_compact(NewGC *gc)
   }
 }
 
-static int repair_mixed_page(NewGC *gc, mpage *page, void **end)
+static int repair_mixed_page(NewGC *gc, mpage *page, void **end, int need_fixup)
 {
   void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
   Fixup2_Proc *fixup_table = gc->fixup_table;
@@ -4421,38 +4434,38 @@ static int repair_mixed_page(NewGC *gc, mpage *page, void **end)
   while (start <= end) {
     objhead *info = (objhead *)start;
     if (info->mark) {
-      switch(info->type) {
-      case PAGE_ARRAY:
-        {
-          void **tempend = PPTR(info) + info->size;
-          start = OBJHEAD_TO_OBJPTR(start);
-          while (start < tempend) gcFIXUP2(*start++, gc);
+      if (need_fixup) {
+        switch(info->type) {
+        case PAGE_ARRAY:
+          {
+            void **tempend = PPTR(info) + info->size, **tmpstart;
+            tmpstart = OBJHEAD_TO_OBJPTR(start);
+            while (tmpstart < tempend) gcFIXUP2(*tmpstart++, gc);
+          }
+          break;
+        case PAGE_TAGGED:
+          {
+            void *obj_start = OBJHEAD_TO_OBJPTR(start);
+            unsigned short tag = *(unsigned short *)obj_start;
+            ASSERT_TAG(tag);
+            fixup_table[tag](obj_start, gc);
+          }
+          break;
+        case PAGE_ATOMIC:
+          break;
+        case PAGE_PAIR: 
+          {
+            Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
+            gcFIXUP2(SCHEME_CAR(p), gc);
+            gcFIXUP2(SCHEME_CDR(p), gc);
+          }
+          break;
+        default:
+          printf("Unhandled info->type %i\n", info->type);
+          abort();
         }
-        break;
-      case PAGE_TAGGED:
-        {
-          void *obj_start = OBJHEAD_TO_OBJPTR(start);
-          unsigned short tag = *(unsigned short *)obj_start;
-          ASSERT_TAG(tag);
-          fixup_table[tag](obj_start, gc);
-          start += info->size;
-        }
-        break;
-      case PAGE_ATOMIC:
-        start += info->size;
-        break;
-      case PAGE_PAIR: 
-        {
-          Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
-          gcFIXUP2(SCHEME_CAR(p), gc);
-          gcFIXUP2(SCHEME_CDR(p), gc);
-          start += info->size;
-        }
-        break;
-      default:
-        printf("Unhandled info->type %i\n", info->type);
-        abort();
       }
+      start += info->size;
       info->mark = 0;
       non_dead++;
     } else {
@@ -4498,7 +4511,6 @@ static void chain_marked_on(NewGC *gc)
 }
 
 #if 0
-# define CHECK_MARKED_ON_IN_MODIFIED_CHAIN
 static void chain_marked_on_check(NewGC *gc)
 {
   mpage *page, *xpage;
@@ -4547,6 +4559,7 @@ static void repair_heap(NewGC *gc)
   uintptr_t memory_in_use;
   mpage *page, *next;
   Fixup2_Proc *fixup_table = gc->fixup_table;
+  int need_fixup;
 
   /* These pages are guaranteed not to be protected, because
      they've been marked on or marked from.
@@ -4558,6 +4571,8 @@ static void repair_heap(NewGC *gc)
   gc->modified_next = NULL;
 
   memory_in_use = gc->memory_in_use;
+
+  need_fixup = gc->need_fixup;
   
   for (; page; page = next) {
     GC_ASSERT(page->marked_on || page->marked_from);
@@ -4579,28 +4594,30 @@ static void repair_heap(NewGC *gc)
         GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
                  page, start));
         page->size_class = SIZE_CLASS_BIG_PAGE; /* remove the mark */
-        switch(page->page_type) {
-        case PAGE_TAGGED: 
-          fixup_table[*(unsigned short*)start](start, gc); 
-          break;
-        case PAGE_ATOMIC: break;
-        case PAGE_ARRAY: 
-          while(start < end) gcFIXUP2(*(start++), gc); 
-          break;
-        case PAGE_PAIR: 
-          {
-            Scheme_Object *p = (Scheme_Object *)start;
-            gcFIXUP2(SCHEME_CAR(p), gc);
-            gcFIXUP2(SCHEME_CDR(p), gc);
+        if (need_fixup) {
+          switch(page->page_type) {
+          case PAGE_TAGGED: 
+            fixup_table[*(unsigned short*)start](start, gc); 
+            break;
+          case PAGE_ATOMIC: break;
+          case PAGE_ARRAY: 
+            while(start < end) gcFIXUP2(*(start++), gc); 
+            break;
+          case PAGE_PAIR: 
+            {
+              Scheme_Object *p = (Scheme_Object *)start;
+              gcFIXUP2(SCHEME_CAR(p), gc);
+              gcFIXUP2(SCHEME_CDR(p), gc);
+            }
+            break;
           }
-          break;
         }
 
         memory_in_use += page->size;
       } else if (page->size_class == SIZE_CLASS_SMALL_PAGE) {
         void **start = PPTR(NUM(page->addr) + page->previous_size);
         void **end = PAGE_END_VSS(page);
-      
+
         GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
                  page, start));
         switch(page->page_type) {
@@ -4613,7 +4630,8 @@ static void repair_heap(NewGC *gc)
               unsigned short tag = *(unsigned short *)obj_start;
               ASSERT_TAG(tag);
               info->mark = 0;
-              fixup_table[tag](obj_start, gc);
+              if (need_fixup)
+                fixup_table[tag](obj_start, gc);
             } else
               info->dead = 1;
             start += info->size;
@@ -4635,8 +4653,11 @@ static void repair_heap(NewGC *gc)
             size_t size = info->size;
             if(info->mark) {
               void **tempend = PPTR(info) + info->size;
-              start = OBJHEAD_TO_OBJPTR(start);
-              while(start < tempend) gcFIXUP2(*start++, gc);
+              if (need_fixup) {
+                start = OBJHEAD_TO_OBJPTR(start);
+                while(start < tempend) gcFIXUP2(*start++, gc);
+              } else
+                start = tempend;
               info->mark = 0;
             } else { 
               info->dead = 1;
@@ -4648,9 +4669,11 @@ static void repair_heap(NewGC *gc)
           while(start < end) {
             objhead *info = (objhead *)start;
             if(info->mark) {
-              Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
-              gcFIXUP2(SCHEME_CAR(p), gc);
-              gcFIXUP2(SCHEME_CDR(p), gc);
+              if (need_fixup) {
+                Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
+                gcFIXUP2(SCHEME_CAR(p), gc);
+                gcFIXUP2(SCHEME_CDR(p), gc);
+              }
               info->mark = 0;
             } else
               info->dead = 1;
@@ -4664,7 +4687,7 @@ static void repair_heap(NewGC *gc)
       } else {
         int non_dead;
         GC_ASSERT(page->size_class == SIZE_CLASS_MED_PAGE);
-        non_dead = repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->size));
+        non_dead = repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->size), need_fixup);
         page->live_size = (page->size * non_dead);
         memory_in_use += page->live_size;
         page->previous_size = PREFIX_SIZE; /* start next block search at the beginning */
@@ -4687,7 +4710,7 @@ static void repair_heap(NewGC *gc)
   /* All gen-half pages count as modified: */
   for (page = gc->gen_half.pages; page; page = page->next) {
     GC_ASSERT(page->generation == AGE_GEN_HALF);
-    (void)repair_mixed_page(gc, page, PPTR(NUM(page->addr) + page->size - 1));
+    (void)repair_mixed_page(gc, page, PPTR(NUM(page->addr) + page->size - 1), need_fixup);
   }
 
   memory_in_use += gen_half_size_in_use(gc);
@@ -5049,6 +5072,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   }
   gc->gen0_phantom_count = 0;
 
+  gc->need_fixup = 0;
+
   TIME_INIT();
 
   /* inform the system (if it wants us to) that we're starting collection */
@@ -5136,7 +5161,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 #if MZ_GC_BACKTRACE
   if (0) 
 #endif
-    if(gc->gc_full)
+    if (gc->gc_full)
       if (premaster_or_place_gc(gc) || switching_master)
         do_heap_compact(gc);
   TIME_STEP("compacted");
@@ -5148,12 +5173,14 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   BTC_clean_up(gc);
 #endif
   TIME_STEP("cleaned");
-  repair_finalizer_structs(gc);
-  repair_roots(gc);
-  repair_immobiles(gc);
-  if (premaster_or_place_gc(gc))
-    GC_fixup_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
-  TIME_STEP("reparied roots");
+  if (gc->need_fixup) {
+    repair_finalizer_structs(gc);
+    repair_roots(gc);
+    repair_immobiles(gc);
+    if (premaster_or_place_gc(gc))
+      GC_fixup_variable_stack(GC_variable_stack, 0, get_stack_base(gc), NULL);
+    TIME_STEP("reparied roots");
+  }
   if (gc->gc_full && postmaster_and_master_gc(gc))
     chain_marked_on(gc);
   else if (gc->gc_full)

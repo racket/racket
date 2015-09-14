@@ -178,6 +178,7 @@ typedef struct NewGC {
   unsigned char gc_full                      :1; /* a flag saying if this is a full/major collection */
   unsigned char running_finalizers           :1;
   unsigned char back_pointers                :1;
+  unsigned char need_fixup                   :1;
 
   /* blame the child */
   unsigned int doing_memory_accounting        :1;

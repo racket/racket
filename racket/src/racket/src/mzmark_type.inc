@@ -1775,7 +1775,7 @@ static int bignum_obj_MARK(void *p, struct NewGC *gc) {
   if (!SCHEME_BIGINLINE(b)) {
     gcMARK2(b->digits, gc);
   } else {
-    
+    b->digits = ((Small_Bignum *)GC_fixup_self(b))->v;
   }
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
@@ -2852,6 +2852,22 @@ static int runstack_val_MARK(void *p, struct NewGC *gc) {
     gcMARK2(*a, gc);
     a++;
   }
+
+  /* Zero out the part that we didn't mark, in case it becomes
+     live later. */
+  a = (void **)s + 5;
+  b = (void **)s + 5 + s[2];
+  while (a < b) {
+    *a = RUNSTACK_ZERO_VAL;
+    a++;
+  }
+  a = (void **)s + 5 + s[3];
+  b = (void **)s + 5 + (s[1] - 5);
+  while (a < b) {
+    *a = RUNSTACK_ZERO_VAL;
+    a++;
+  }
+
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -2872,20 +2888,7 @@ static int runstack_val_FIXUP(void *p, struct NewGC *gc) {
     a++;
   }
 
-  /* Zero out the part that we didn't mark, in case it becomes
-     live later. */
-  a = (void **)s + 5;
-  b = (void **)s + 5 + s[2];
-  while (a < b) {
-    *a = RUNSTACK_ZERO_VAL;
-    a++;
-  }
-  a = (void **)s + 5 + s[3];
-  b = (void **)s + 5 + (s[1] - 5);
-  while (a < b) {
-    *a = RUNSTACK_ZERO_VAL;
-    a++;
-  }
+
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else

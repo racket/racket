@@ -358,9 +358,9 @@ GC2_EXTERN void *GC_fixup_self(void *p);
    be moved after fixup. */
 
 /* INTERNAL for the current implemenation (used by macros): */
-GC2_EXTERN void GC_mark(const void *p);
+GC2_EXTERN void GC_mark(void *p);
 GC2_EXTERN void GC_fixup(void *p);
-GC2_EXTERN void GC_mark2(const void *p, struct NewGC *gc);
+GC2_EXTERN void GC_mark2(void *p, struct NewGC *gc);
 GC2_EXTERN void GC_fixup2(void *p, struct NewGC *gc);
 /*
    Used in the expansion of gcMARK and gcFIXUP. 
@@ -584,12 +584,12 @@ GC2_EXTERN void GC_set_backpointer_object(void *p);
 #else
 # define gcLOG_WORD_SIZE 2
 #endif
-#define gcMARK(x) GC_mark(x)
-#define gcMARK2(x, gc) GC_mark2(x, gc)
-#define gcMARK_TYPED(t, x) gcMARK(x)
-#define gcMARK2_TYPED(t, x, gc) gcMARK2(x, gc)
-#define gcMARK_TYPED_NOW(t, x) gcMARK(x)
-#define gcMARK2_TYPED_NOW(t, x, gc) gcMARK(x, gc)
+#define gcMARK(x) GC_mark(&(x))
+#define gcMARK2(x, gc) GC_mark2(&(x), gc)
+#define gcMARK_TYPED(t, x) gcMARK(&(x))
+#define gcMARK2_TYPED(t, x, gc) gcMARK2(&(x), gc)
+#define gcMARK_TYPED_NOW(t, x) gcMARK(&(x))
+#define gcMARK2_TYPED_NOW(t, x, gc) gcMARK(&(x), gc)
 #define gcFIXUP_TYPED_NOW(t, x) GC_fixup(&(x))
 #define gcFIXUP2_TYPED_NOW(t, x, gc) GC_fixup2(&(x), gc)
 #define gcFIXUP_TYPED(t, x) gcFIXUP_TYPED_NOW(void*, x)

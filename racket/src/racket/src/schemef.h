@@ -472,7 +472,7 @@ MZ_EXTERN void **GC_variable_stack;
 MZ_EXTERN void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				      int is_constant_size, int is_atomic);
 MZ_EXTERN void *GC_resolve(void *p);
-MZ_EXTERN void GC_mark(const void *p);
+MZ_EXTERN void GC_mark(void *p);
 MZ_EXTERN void GC_fixup(void *p);
 MZ_EXTERN void *GC_fixup_self(void *p);
 #endif

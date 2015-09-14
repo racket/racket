@@ -483,7 +483,7 @@ bignum_obj {
   if (!SCHEME_BIGINLINE(b)) {
     gcMARK2(b->digits, gc);
   } else {
-    FIXUP_ONLY(b->digits = ((Small_Bignum *)GC_fixup_self(b))->v;)
+    b->digits = ((Small_Bignum *)GC_fixup_self(b))->v;
   }
 
  size:
@@ -811,8 +811,8 @@ runstack_val {
     gcMARK2(*a, gc);
     a++;
   }
- more:
- fixup:
+
+  START_MARK_ONLY;
   /* Zero out the part that we didn't mark, in case it becomes
      live later. */
   a = (void **)s + 5;
@@ -827,6 +827,8 @@ runstack_val {
     *a = RUNSTACK_ZERO_VAL;
     a++;
   }
+  END_MARK_ONLY;
+
  size:
   s[1];
 }

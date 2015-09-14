@@ -29,6 +29,11 @@
       }
       mark_stxes = 0;
 
+      /* Add this closure to the chain to be repaired when the
+         prefix is marked (and potentially moved): */
+      c->vals[closure_size - 1] = pf->fixup_chain;
+      pf->fixup_chain = (Scheme_Object *)c;
+
       /* Mark just the elements of the prefix that are (newly) used: */
       if ((uintptr_t)data->tl_map & 0x1) {
         map = ((uintptr_t)data->tl_map) >> 1;

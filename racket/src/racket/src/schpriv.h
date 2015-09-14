@@ -2455,7 +2455,10 @@ typedef struct Scheme_Prefix
 {
   Scheme_Object so; /* scheme_prefix_type */
   int num_slots, num_toplevels, num_stxes;
+#ifdef MZ_PRECISE_GC
   struct Scheme_Prefix *next_final; /* for special GC handling */
+  struct Scheme_Object *fixup_chain; /* for special GC handling */
+#endif
 #ifdef MZ_GC_BACKTRACE
   Scheme_Object *backpointer;
 #endif
@@ -2709,7 +2712,7 @@ XFORM_NONGCING int scheme_boxmap_get(mzshort *boxmap, int j, int delta);
 
 int scheme_has_method_property(Scheme_Object *code);
 
-typedef struct {
+typedef struct Scheme_Closure {
   Scheme_Object so;
   Scheme_Closure_Data *code;
   Scheme_Object *vals[mzFLEX_ARRAY_DECL];

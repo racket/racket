@@ -6059,6 +6059,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
 {
   if (scheme_prefix_finalize != (Scheme_Prefix *)0x1) {
     Scheme_Prefix *pf = scheme_prefix_finalize, *next;
+    Scheme_Object *clo;
     int i, *use_bits, maxpos;
     
     scheme_prefix_finalize = (Scheme_Prefix *)0x1;
@@ -6110,6 +6111,27 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
       maxpos = (pf->num_slots - pf->num_stxes);
       for (i = (maxpos + 31) / 32; i--; )
         use_bits[i] = 0;
+
+      /* Fix up closures that reference this prefix: */
+      clo = (Scheme_Object *)GC_resolve2(pf->fixup_chain, gc);
+      pf->fixup_chain = NULL;
+      while (clo) {
+        Scheme_Object *next;
+        if (SCHEME_TYPE(clo) == scheme_closure_type) {
+          Scheme_Closure *cl = (Scheme_Closure *)clo;
+          int closure_size = ((Scheme_Closure_Data *)GC_resolve2(cl->code, gc))->closure_size;
+          next = cl->vals[closure_size - 1];
+          cl->vals[closure_size-1] = (Scheme_Object *)pf;
+        } else if (SCHEME_TYPE(clo) == scheme_native_closure_type) {
+          Scheme_Native_Closure *cl = (Scheme_Native_Closure *)clo;
+          int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(cl->code, gc))->closure_size;
+          next = cl->vals[closure_size - 1];
+          cl->vals[closure_size-1] = (Scheme_Object *)pf;
+        } else {
+          abort();
+        }
+        clo = (Scheme_Object *)GC_resolve2(next, gc);
+      }
 
       /* Next */
       next = pf->next_final;
