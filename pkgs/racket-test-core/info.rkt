@@ -5,8 +5,6 @@
 ;; Tests that need dependencies belong in the "racket-test" or the
 ;;   "racket-test-extra" packages.
 (define deps '("base"
-               ;; the tests use -min.0 etc
-               "unstable-flonum-lib"
                ;; the tests use zo-structs
                "zo-lib"
                ;; the tests use the scribble reader
