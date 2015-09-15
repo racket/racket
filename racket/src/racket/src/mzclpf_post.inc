@@ -10,12 +10,15 @@
   if (data) {
     /* GLOBAL ASSUMPTION: prefix is at the end of a closure */
     Scheme_Prefix *pf = (Scheme_Prefix *)c->vals[closure_size - 1];
-    
+
     if (pf) {
-      /* Since pf hasn't been marked, we don't need a GC_resolve(): */
-      int *use_bits = PREFIX_TO_USE_BITS(pf);
+      int *use_bits;
       uintptr_t map;
       int mark_stxes;
+
+      /* pf might have been marked via fields: */
+      pf = (Scheme_Prefix *)GC_resolve2(pf, gc);
+      use_bits = PREFIX_TO_USE_BITS(pf);
 
       if (!pf->next_final) {
         /* We're the first to look at this prefix... */
