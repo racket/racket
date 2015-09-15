@@ -41,7 +41,7 @@ typedef struct block_desc {
   intptr_t totalcnt;
   intptr_t freecnt;
   struct block_group *group;
-  int in_queue;
+  char in_queue, want_compact;
 } block_desc;
 
 #define BD_BLOCK_PTR_TO_POS(p, bd) (((char *)(p) - (char *)((bd)->block)) >> LOG_APAGE_SIZE)
@@ -92,7 +92,7 @@ static ssize_t block_cache_free(BlockCache* bc) {
   return acf;
 }
 
-static block_desc *bc_alloc_std_block(block_group *bg) {
+static block_desc *bc_alloc_std_block(block_group *bg, int expect_mprotect) {
   int this_block_size = bg->block_size;
   void *r = os_alloc_pages(this_block_size);
   block_desc *bd;
@@ -105,6 +105,7 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
     bg->block_size <<= 1;
   }
 
+  /* printf("BLOCK ALLOC %d %d\n", expect_mprotect, this_block_size); */
   bd = (block_desc*) ofm_malloc_zero(sizeof(block_desc));
   if (!bd) {
     os_free_pages(r, this_block_size);
@@ -115,8 +116,6 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
   bd->size = this_block_size;
   bd->used = 0;
   bd->group = bg;
-  bd->protect_map = (unsigned char *)ofm_malloc_zero(this_block_size >> (LOG_APAGE_SIZE + 3));
-  bd->alloc_map = (unsigned char *)ofm_malloc_zero(this_block_size >> (LOG_APAGE_SIZE + 3));
   gclist_init(&bd->gclist);
 
   /* printf("ALLOC BLOCK %p-%p size %li %li %li %p\n", bd->block, bd->block + bd->size, bd->size, APAGE_SIZE, bd->size / APAGE_SIZE, bd->free); */
@@ -133,6 +132,8 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
     }
   }
 
+  bd->protect_map = (unsigned char *)ofm_malloc_zero(1 + (bd->size >> (LOG_APAGE_SIZE + 3)));
+  bd->alloc_map = (unsigned char *)ofm_malloc_zero(1 + (bd->size >> (LOG_APAGE_SIZE + 3)));
 
   /* setup free list of APAGE_SIZE sized pages inside block */
   { 
@@ -147,10 +148,10 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
       p = n;
       i++;
     }
+    if (p > pe) { p = (pfree_list *)((char *)p - (2 * APAGE_SIZE)); i--; }
+    else        { p = (pfree_list *)((char *)p - APAGE_SIZE); }
     bd->totalcnt = i;
     bd->freecnt  = i;
-    if (p > pe) { p = (p - (2 * APAGE_SIZE)); }
-    else        { p = (p - APAGE_SIZE); }
     p->next = NULL;
     /* printf("ENDUP %p %p %p %i\n", n, p, p->next, i); */
   }
@@ -168,6 +169,7 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
   tryagain:
   if (!gclist_is_empty(free_head)) {
     if (!gclist_first_item(free_head, block_desc*, gclist)->free) {
+      GC_ASSERT(!gclist_first_item(free_head, block_desc*, gclist)->freecnt);
       gclist_move(free_head->next, &bg->full);
       goto tryagain;
     }
@@ -177,7 +179,7 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
 #if BC_ASSERTS
     newbl = 1;
 #endif
-    bd = bc_alloc_std_block(bg);
+    bd = bc_alloc_std_block(bg, expect_mprotect);
     if (!bd) return NULL;
     gclist_add(free_head, &(bd->gclist));
     (*size_diff) += bd->size;
@@ -254,13 +256,14 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
   }
 }
 
-static ssize_t bc_free_std_block(block_desc *b) {
+static ssize_t bc_free_std_block(block_desc *b, int expect_mprotect) {
   ssize_t size_diff = 0;
+  /* printf("BLOCK FREE %d %ld\n", expect_mprotect, b->size); */
   gclist_del(&b->gclist);
   os_free_pages(b->block, b->size);
   size_diff -= b->size;
-  ofm_free(b->protect_map, b->size >> (LOG_APAGE_SIZE + 3));
-  ofm_free(b->alloc_map, b->size >> (LOG_APAGE_SIZE + 3));
+  ofm_free(b->protect_map, 1 + (b->size >> (LOG_APAGE_SIZE + 3)));
+  ofm_free(b->alloc_map, 1 + (b->size >> (LOG_APAGE_SIZE + 3)));
   ofm_free(b, sizeof(block_desc));
   return size_diff;
 }
@@ -339,6 +342,27 @@ static ssize_t block_cache_free_page(BlockCache* bc, void *p, size_t len, int ty
   }
 }
 
+static void compute_compacts(block_group *bg)
+{
+  block_desc *b;
+  intptr_t avail, wanted;
+
+  wanted = 0;
+  gclist_each_item(b, &bg->free, block_desc*, gclist) {
+    wanted += (b->totalcnt - b->freecnt);
+  }
+  
+  avail = 0;
+  gclist_each_item(b, &bg->free, block_desc*, gclist) {
+    if (avail > wanted)
+      b->want_compact = 1;
+    else {
+      b->want_compact = 0;
+      avail += b->totalcnt;
+    }
+  }
+}
+
 static int sort_full_to_empty(void *priv, GCList *a, GCList *b) {
   block_desc *ba = gclist_item(a, block_desc*, gclist);
   block_desc *bb = gclist_item(b, block_desc*, gclist);
@@ -352,24 +376,28 @@ static int sort_full_to_empty(void *priv, GCList *a, GCList *b) {
 static void block_cache_prep_for_compaction(BlockCache* bc) {
   gclist_sort(NULL, &bc->atomic.free, sort_full_to_empty);
   gclist_sort(NULL, &bc->non_atomic.free, sort_full_to_empty);
+
+  compute_compacts(&bc->atomic);
+  compute_compacts(&bc->non_atomic);
+    
 #if 0
   {
     block_desc *b;
+    gclist_each_item(b, &bc->atomic.full, block_desc*, gclist) {
+      printf(" X    ATOMIC _ %05li %03li %p\n", b->freecnt, b->totalcnt, b); }
     gclist_each_item(b, &bc->atomic.free, block_desc*, gclist) {
-      printf("   ATOMIC %05li %03li %p\n", b->freecnt, b->totalcnt, b); }
+      printf("      ATOMIC %d %05li %03li %p\n", b->want_compact, b->freecnt, b->totalcnt, b); }
+    gclist_each_item(b, &bc->non_atomic.full, block_desc*, gclist) {
+      printf(" X NONATOMIC _ %05li %03li %p\n", b->freecnt, b->totalcnt, b); }
     gclist_each_item(b, &bc->non_atomic.free, block_desc*, gclist) {
-      printf("NONATOMIC %03li %03li %p\n", b->freecnt, b->totalcnt, b);
-    }
+      printf("   NONATOMIC %d %05li %03li %p\n", b->want_compact, b->freecnt, b->totalcnt, b); }
   }
 #endif
 }
 
 static int block_cache_compact(void **src_block) {
   block_desc *b = *src_block;
-  if (b->freecnt > (b->totalcnt/2)) {
-    return 1;
-  }
-  return 0;
+  return b->want_compact;
 }
 
 static ssize_t block_cache_flush_freed_pages(BlockCache* bc) {
@@ -379,10 +407,10 @@ static ssize_t block_cache_flush_freed_pages(BlockCache* bc) {
   ssize_t alloc_cache_size_diff = 0;
   
   gclist_each_item_safe(b, bn, &bc->atomic.free, block_desc*, gclist) {
-    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b); }
+    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b, 0); }
   }
   gclist_each_item_safe(b, bn, &bc->non_atomic.free, block_desc*, gclist) {
-    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b); }
+    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b, 1); }
   }
   alloc_cache_size_diff = alloc_cache_flush_freed_pages(bc->bigBlockCache);
 
@@ -427,7 +455,7 @@ static void block_cache_queue_protect_range(BlockCache* bc, void *p, size_t len,
       {
         block_desc *b = (block_desc *)*src_block;
         b->in_queue = 1;
-        memset(b->protect_map, writeable ? 0 : 255, (b->size >> (LOG_APAGE_SIZE + 3)));
+        memset(b->protect_map, writeable ? 0 : 255, 1+(b->size >> (LOG_APAGE_SIZE + 3)));
       }
       return;
       break;
