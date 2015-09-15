@@ -10288,7 +10288,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	scheme_contract_error(name,
                               "non-#f port argument not allowed on this platform",
                               "port", 1, args[i],
-                              NULL));
+                              NULL);
     }
 
     if (c > 4) {
