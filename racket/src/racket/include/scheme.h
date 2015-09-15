@@ -762,16 +762,11 @@ typedef struct Scheme_Offset_Cptr
 #define SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER   (32 | 128)
 #define SCHEME_PRIM_TYPE_PARAMETER               64
 #define SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER      (64 | 128)
-#define SCHEME_PRIM_SOMETIMES_INLINED            (64 | 256)
 #define SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED (64 | 128 | 256)
 #define SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER   32
 #define SCHEME_PRIM_STRUCT_TYPE_PRED             (32 | 64)
 
 #define SCHEME_PRIM_PROC_FLAGS(x) (((Scheme_Prim_Proc_Header *)x)->flags)
-
-#define SCHEME_PRIM_IS_SOMETIMES_INLINED(rator) \
-  (((SCHEME_PRIM_PROC_FLAGS(rator) & SCHEME_PRIM_OTHER_TYPE_MASK) == SCHEME_PRIM_SOMETIMES_INLINED) \
-   || (SCHEME_PRIM_PROC_FLAGS(rator) & (SCHEME_PRIM_IS_UNARY_INLINED | SCHEME_PRIM_IS_BINARY_INLINED)))
 
 typedef struct Scheme_Object *(Scheme_Prim)(int argc, Scheme_Object *argv[]);
 
