@@ -220,8 +220,8 @@ XFORM_NONGCING static MZ_INLINE int mz_long_double_eqv(long_double a, long_doubl
     if (MZ_IS_LONG_NAN(b))
       return 0;
     else {
-      if (long_double_eqv(a, get_long_double_zero()) {
-        if (long_double_eqv(b, get_long_double_zero()) {
+      if (long_double_eqv(a, get_long_double_zero())) {
+        if (long_double_eqv(b, get_long_double_zero())) {
           return scheme_long_minus_zero_p(a) == scheme_long_minus_zero_p(b);
         }
       }
