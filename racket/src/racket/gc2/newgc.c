@@ -4225,7 +4225,7 @@ static void mark_backpointers(NewGC *gc)
       GC_ASSERT(work->back_pointers);
 
       if (work->mprotected) {
-        /* expected only if QUEUED_MPROTECT_IS_PROMISCUOUS && AGE_GEN_0_TO_GEN_HALF(gc) */
+        /* expected only if QUEUED_MPROTECT_INFECTS_XXX && AGE_GEN_0_TO_GEN_HALF(gc) */
         work->mprotected = 0;
         mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work), page_mmu_type(work), &work->mmu_src_block);
       }
@@ -4909,7 +4909,7 @@ static void protect_old_pages(NewGC *gc)
           if (!page->mprotected && !page->back_pointers) {
             page->mprotected = 1;
             mmu_queue_write_protect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
-          } else if (QUEUED_MPROTECT_IS_PROMISCUOUS)
+          } else if (QUEUED_MPROTECT_INFECTS_SMALL)
             page->mprotected = 1;
         }
       }
@@ -4921,7 +4921,7 @@ static void protect_old_pages(NewGC *gc)
       if (!page->mprotected && !page->back_pointers) {
         page->mprotected = 1;
         mmu_queue_write_protect_range(mmu, page->addr, APAGE_SIZE, page_mmu_type(page), &page->mmu_src_block);
-      } else if (QUEUED_MPROTECT_IS_PROMISCUOUS)
+      } else if (QUEUED_MPROTECT_INFECTS_MED)
         page->mprotected = 1;
     }
   }

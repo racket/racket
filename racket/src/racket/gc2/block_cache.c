@@ -434,14 +434,19 @@ static void block_cache_protect_one_page(BlockCache* bc, void *p, size_t len, in
         GC_ASSERT(pos >= 0);
         GC_ASSERT(pos < (b->size >> LOG_APAGE_SIZE));
         GC_ASSERT(BD_MAP_GET_BIT(b->alloc_map, pos));
+        /* Since a queued mprotect affects more pages than the client can be sure of,
+           we have to accomodate redundant requests. */
         if (writeable) {
-          GC_ASSERT(BD_MAP_GET_BIT(b->protect_map, pos));
-          BD_MAP_UNSET_BIT(b->protect_map, pos);
+          if (BD_MAP_GET_BIT(b->protect_map, pos)) {
+            BD_MAP_UNSET_BIT(b->protect_map, pos);
+            os_protect_pages(p, len, writeable);
+          }
         } else {
-          GC_ASSERT(!BD_MAP_GET_BIT(b->protect_map, pos));
-          BD_MAP_SET_BIT(b->protect_map, pos);
+          if (!BD_MAP_GET_BIT(b->protect_map, pos)) {
+            BD_MAP_SET_BIT(b->protect_map, pos);
+            os_protect_pages(p, len, writeable);
+          }
         }
-        os_protect_pages(p, len, writeable);
       }
       break;
   default:

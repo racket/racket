@@ -28,10 +28,11 @@ enum {
 
 #ifdef USE_BLOCK_CACHE
 # define USE_ALLOC_CACHE
-# define QUEUED_MPROTECT_IS_PROMISCUOUS 1
+# define QUEUED_MPROTECT_INFECTS_SMALL 1
 #else
-# define QUEUED_MPROTECT_IS_PROMISCUOUS 0
+# define QUEUED_MPROTECT_INFECTS_SMALL 0
 #endif
+#define QUEUED_MPROTECT_INFECTS_MED 0
 
 /* Either USE_ALLOC_CACHE or OS_ALLOCATOR_NEEDS_ALIGNMENT must be
    enabled, unless the lower-level allocator's alignment matches
