@@ -200,8 +200,9 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
 
     *src_block = bd;
 
+    GC_ASSERT(!BD_MAP_GET_BIT(bd->alloc_map, pos));
     BD_MAP_SET_BIT(bd->alloc_map, pos);
-    
+
     if (expect_mprotect) {
       if (BD_MAP_GET_BIT(bd->protect_map, pos)) {
         /* Unprotect a contiguous range of unallocated pages,
@@ -209,11 +210,13 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
            the range costs much less than multiple unprotect
            calls. */
         int start_pos = pos, end_pos = pos + 1;
+
+        BD_MAP_UNSET_BIT(bd->protect_map, pos);
         while (start_pos
-               && !BD_MAP_GET_BIT(bd->alloc_map, start_pos)
-               && BD_MAP_GET_BIT(bd->protect_map, start_pos)) {
-          BD_MAP_UNSET_BIT(bd->protect_map, start_pos);
+               && !BD_MAP_GET_BIT(bd->alloc_map, (start_pos-1))
+               && BD_MAP_GET_BIT(bd->protect_map, (start_pos-1))) {
           --start_pos;
+          BD_MAP_UNSET_BIT(bd->protect_map, start_pos);
         }
         while ((end_pos < (bd->size >> LOG_APAGE_SIZE))
                && !BD_MAP_GET_BIT(bd->alloc_map, end_pos)
@@ -221,7 +224,6 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
           BD_MAP_UNSET_BIT(bd->protect_map, end_pos);
           end_pos++;
         }
-      
         GC_MP_CNT_INC(mp_alloc_med_big_cnt);
         os_protect_pages((char *)p - ((pos - start_pos) * APAGE_SIZE),
                          (end_pos - start_pos) * APAGE_SIZE,
@@ -309,7 +311,7 @@ static ssize_t block_cache_free_page(BlockCache* bc, void *p, size_t len, int ty
         fl->dirty = 1;
         b->free = fl;
         GC_ASSERT(BD_MAP_GET_BIT(b->alloc_map, pos));
-        BD_MAP_SET_BIT(b->alloc_map, pos);
+        BD_MAP_UNSET_BIT(b->alloc_map, pos);
         gclist_move(&b->gclist, free_head);
         b->freecnt++;
 #if BC_ASSERTS
@@ -431,10 +433,15 @@ static void block_cache_protect_one_page(BlockCache* bc, void *p, size_t len, in
         int pos = BD_BLOCK_PTR_TO_POS(p, b);
         GC_ASSERT(pos >= 0);
         GC_ASSERT(pos < (b->size >> LOG_APAGE_SIZE));
-        if (BD_MAP_GET_BIT(b->protect_map, pos)) {
+        GC_ASSERT(BD_MAP_GET_BIT(b->alloc_map, pos));
+        if (writeable) {
+          GC_ASSERT(BD_MAP_GET_BIT(b->protect_map, pos));
           BD_MAP_UNSET_BIT(b->protect_map, pos);
-          os_protect_pages(p, len, writeable);
+        } else {
+          GC_ASSERT(!BD_MAP_GET_BIT(b->protect_map, pos));
+          BD_MAP_SET_BIT(b->protect_map, pos);
         }
+        os_protect_pages(p, len, writeable);
       }
       break;
   default:
@@ -455,7 +462,6 @@ static void block_cache_queue_protect_range(BlockCache* bc, void *p, size_t len,
       {
         block_desc *b = (block_desc *)*src_block;
         b->in_queue = 1;
-        memset(b->protect_map, writeable ? 0 : 255, 1+(b->size >> (LOG_APAGE_SIZE + 3)));
       }
       return;
       break;
@@ -474,12 +480,14 @@ static void block_cache_flush_protect_ranges(BlockCache* bc, int writeable) {
     if (b->in_queue) {
       b->in_queue = 0;
       page_range_add(bc->page_range, b->block, b->size, writeable);
+      memset(b->protect_map, writeable ? 0 : 255, 1+(b->size >> (LOG_APAGE_SIZE + 3)));
     }
   }
   gclist_each_item(b, &bg->free, block_desc*, gclist) {
     if (b->in_queue) {
       b->in_queue = 0;
       page_range_add(bc->page_range, b->block, b->size, writeable);
+      memset(b->protect_map, writeable ? 0 : 255, 1+(b->size >> (LOG_APAGE_SIZE + 3)));
     }
   }
 
