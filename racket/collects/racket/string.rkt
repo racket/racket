@@ -143,6 +143,10 @@
   (and (string? x) (not (zero? (string-length x)))))
 
 (define (string-prefix? str prefix)
+  (unless (string? str)
+    (raise-argument-error 'string-prefix? "string?" str))
+  (unless (string? prefix)
+    (raise-argument-error 'string-prefix? "string?" prefix))
   (define l1 (string-length str))
   (define l2 (string-length prefix))
   (let loop ([i 0])
@@ -153,6 +157,10 @@
                      (loop (add1 i)))])))
 
 (define (string-suffix? str suffix)
+  (unless (string? str)
+    (raise-argument-error 'string-suffix? "string?" str))
+  (unless (string? suffix)
+    (raise-argument-error 'string-suffix? "string?" suffix))
   (define l2 (string-length suffix))
   (define offset (- (string-length str) l2))
   (and (not (negative? offset)) ;; Suffix isn't longer than string
@@ -162,6 +170,10 @@
                   (loop (add1 i+o) (add1 i)))))))
 
 (define (string-contains? str sub)
+  (unless (string? str)
+    (raise-argument-error 'string-contains? "string?" str))
+  (unless (string? sub)
+    (raise-argument-error 'string-prefix? "string?" sub))
   (define L1 (string-length str))
   (define L2 (string-length sub))
   (define d (- L1 L2))
