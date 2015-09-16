@@ -6,7 +6,6 @@
          (only-in racket/list split-at)
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match)
-         (only-in srfi/13 string-contains)
          rackunit)
 
 (define-syntax (comp stx)
