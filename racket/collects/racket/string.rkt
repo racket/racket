@@ -8,7 +8,8 @@
          string-replace
          non-empty-string?
          string-prefix?
-         string-suffix?)
+         string-suffix?
+         string-contains?)
 
 (define string-append*
   (case-lambda [(strs) (apply string-append strs)] ; optimize common cases
@@ -159,3 +160,17 @@
          (or (= i l2)
              (and (char=? (string-ref str i+o) (string-ref suffix i))
                   (loop (add1 i+o) (add1 i)))))))
+
+(define (string-contains? str sub)
+  (define L1 (string-length str))
+  (define L2 (string-length sub))
+  (define d (- L1 L2))
+  (or (zero? L2)
+      (let loop ([start 0])
+        (and (<= start d)
+             (or (let loop2 ([offset 0])
+                   (or (= offset L2)
+                       (and (char=? (string-ref str (+ start offset))
+                                    (string-ref sub offset))
+                            (loop2 (add1 offset)))))
+                 (loop (add1 start)))))))

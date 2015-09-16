@@ -510,4 +510,17 @@
   (test #f string-suffix? "racket" "r")
   (test #f string-suffix? "racket" "kat"))
 
+;; ---------- string-contains? ----------
+
+(let ()
+  (test #t string-contains? "racket" "racket")
+  (test #t string-contains? "racket" "cket")
+  (test #t string-contains? "racket" "acke")
+  (test #t string-contains? "racket" "t")
+  (test #t string-contains? "racket" "")
+  (test #f string-contains? "racket" "b")
+  (test #f string-contains? "racket" "R")
+  (test #f string-contains? "racket" "kc")
+  (test #f string-contains? "racket" "racketr"))
+
 (report-errs)
