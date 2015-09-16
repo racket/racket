@@ -441,13 +441,6 @@ The result of @racket[(string-normalize-spaces str sep space)] is the same
 as @racket[(string-join (string-split str sep ....) space)].}
 
 
-@defproc[(string-prefix? [str string?]
-                         [prefix string?])
-         boolean?]{
-
-Returns @racket[#t] if the second argument is a prefix of the first.}
-
-
 @defproc[(string-replace [str  string?]
                          [from (or/c string? regexp?)]
                          [to   string?]
@@ -490,13 +483,6 @@ and @racket[repeat?]  controls matching repeated sequences.
 ]}
 
 
-@defproc[(string-suffix? [str string?]
-                         [suffix string?])
-         boolean?]{
-
-Returns @racket[#t] if the second argument is a suffix of the first.}
-
-
 @defproc[(string-trim [str string?]
                       [sep (or/c string? regexp?) #px"\\s+"]
                       [#:left? left? any/c #t]
@@ -525,6 +511,23 @@ trimmed (which is an alternative to using a @tech{regular expression}
 Returns @racket[#t] if @racket[x] is a string and is not empty;
 returns @racket[#f] otherwise.
 @history[#:added "6.2.900.15"]{}
+}
+
+@deftogether[(
+@defproc[(string-contains? [s string?] [contained string?]) boolean?]
+@defproc[(string-prefix? [s string?] [prefix string?]) boolean?]
+@defproc[(string-suffix? [s string?] [suffix string?]) boolean?])]{
+Checks whether @racket[s] includes at any location, start with, or ends with
+the second argument, respectively.
+
+@mz-examples[#:eval string-eval
+  (string-prefix? "Racket" "R")
+  (string-prefix? "Jacket" "R")
+  (string-suffix? "Racket" "et")
+  (string-contains? "Racket" "ack")
+]
+
+@history[#:added "6.2.900.17"]{}
 }
 
 
