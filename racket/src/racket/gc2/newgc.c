@@ -1024,7 +1024,7 @@ static void collect_now(NewGC *gc, int major, int nomajor)
 
 static inline void gc_if_needed_account_alloc_size(NewGC *gc, size_t allocate_size)
 {
-  if((gc->gen0.current_size + allocate_size) >= gc->gen0.max_size) {
+  if((gc->gen0.current_size + gc->gen0_phantom_count + allocate_size) >= gc->gen0.max_size) {
     if (!gc->avoid_collection)
       collect_now(gc, 0, 0);
   }
@@ -1292,7 +1292,7 @@ uintptr_t GC_make_jit_nursery_page(int count, uintptr_t *sz) {
   mpage *new_mpage;
   intptr_t size = count * THREAD_LOCAL_PAGE_SIZE;
 
-  if((gc->gen0.current_size + size) >= gc->gen0.max_size) {
+  if((gc->gen0.current_size + gc->gen0_phantom_count + size) >= gc->gen0.max_size) {
     if (!gc->avoid_collection)
       collect_now(gc, 0, 0);
   }
@@ -1668,19 +1668,20 @@ int GC_allocate_phantom_bytes(void *pb, intptr_t request_size_bytes)
 
   page = pagemap_find_page(gc->page_maps, pb);
 
-  /* adjust `gc->memory_in_use', but protect against {over,under}flow: */
   if (request_size_bytes < 0) {
     request_size_bytes = -request_size_bytes;
-    if (gc->memory_in_use > request_size_bytes)
-      gc->memory_in_use -= request_size_bytes;
     if (!page || (page->generation < AGE_GEN_1)) {
       if (gc->gen0_phantom_count > request_size_bytes)
         gc->gen0_phantom_count -= request_size_bytes;
+    } else {
+      if (gc->memory_in_use > request_size_bytes)
+        gc->memory_in_use -= request_size_bytes;
     }
   } else {
     if (!page || (page->generation < AGE_GEN_1))
       gc->gen0_phantom_count = add_no_overflow(gc->gen0_phantom_count, request_size_bytes);
-    gc->memory_in_use = add_no_overflow(gc->memory_in_use, request_size_bytes);
+    else
+      gc->memory_in_use = add_no_overflow(gc->memory_in_use, request_size_bytes);
   }
 
   /* If we've allocated enough phantom bytes, then force a GC */
