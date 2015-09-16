@@ -27,7 +27,6 @@
 
 (define build-deps '("racket-index"
                      "scheme-lib"
-                     "srfi-lite-lib"
                      "base"
                      "data-lib"))
 
