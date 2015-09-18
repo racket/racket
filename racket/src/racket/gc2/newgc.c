@@ -5027,8 +5027,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   int next_gc_full;
 
-  old_mem_use = gc->memory_in_use;
-  old_gen0    = gc->gen0.current_size;
+  old_mem_use = gc->memory_in_use; /* includes gc->phantom_count */
+  old_gen0    = gc->gen0.current_size + gc->gen0_phantom_count;
   old_mem_allocated = mmu_memory_allocated(gc->mmu) + gc->phantom_count + gc->gen0_phantom_count;
 
   TIME_DECLS();
@@ -5272,8 +5272,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     lmi->full = gc->gc_full,
     lmi->pre_used = old_mem_use + old_gen0;
     lmi->post_used = gc->memory_in_use;
-    lmi->pre_admin = old_mem_allocated+gc->phantom_count;
-    lmi->post_admin = mmu_memory_allocated(gc->mmu);
+    lmi->pre_admin = old_mem_allocated;
+    lmi->post_admin = mmu_memory_allocated(gc->mmu)+gc->phantom_count;
   }
   GC_propagate_hierarchy_memory_use();
 #endif
