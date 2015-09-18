@@ -1117,7 +1117,7 @@ XFORM_NONGCING static uintptr_t dbl_hash_val(double d)
     d = frexp(d, &e);
   }
 
-  return ((uintptr_t)(d * (1 << 30))) + e;
+  return ((uintptr_t)(intptr_t)(d * (1 << 30))) + (uintptr_t)e;
 }
 
 XFORM_NONGCING static uintptr_t dbl_hash2_val(double d)  
