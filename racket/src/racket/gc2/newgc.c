@@ -11,27 +11,6 @@
    generation eventually compacts.
 */
 
-/* #define GC_MP_CNT */
-/* GC MProtect Counters */
-#ifdef GC_MP_CNT
-int mp_write_barrier_cnt;
-int mp_mark_cnt;
-int mp_alloc_med_big_cnt;
-int mp_pr_add_cnt;
-int mp_pr_call_cnt;
-int mp_pr_ff_cnt;
-int mp_gc_unprotect_cnt;
-int mp_gc_protect_cnt;
-int mp_gcs_cnt;
-intptr_t mp_prev_compact_cnt;
-intptr_t mp_compact_cnt;
-intptr_t mp_bc_freed;
-intptr_t mp_ac_freed;
-# define GC_MP_CNT_INC(x) ((x)++)
-#else
-# define GC_MP_CNT_INC(x) /* empty */
-#endif
-
 #if 0
 # define POINTER_OWNERSHIP_CHECK
 #endif
@@ -2807,7 +2786,6 @@ static int designate_modified_gc(NewGC *gc, void *p)
   if (page) {
     page->mprotected = 0;
     mmu_write_unprotect_page(gc->mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
-    GC_MP_CNT_INC(mp_write_barrier_cnt);
     if (!page->back_pointers)
       set_has_back_pointers(gc, page);
     gc->modified_unprotects++;
@@ -3631,7 +3609,6 @@ void GC_mark2(void *pp, struct NewGC *gc)
           if (work->mprotected) {
             work->mprotected = 0;
             mmu_write_unprotect_page(gc->mmu, work->addr, APAGE_SIZE, page_mmu_type(work), &work->mmu_src_block);
-            GC_MP_CNT_INC(mp_mark_cnt);
           }
           newplace = PTR(NUM(work->addr) + work->size);
         } else {
@@ -4172,9 +4149,6 @@ static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
 {
   mpage *work;
   int i;
-#ifdef GC_MP_CNT 
-  mp_gc_unprotect_cnt = mp_pr_add_cnt;
-#endif
 
   GCDEBUG((DEBUGOUTF, "MAJOR COLLECTION - PREPPING PAGES - reset live_size, reset previous_size, unprotect.\n"));
   /* we need to make sure that previous_size for every page is reset, so
@@ -4199,9 +4173,6 @@ static void reset_gen1_pages_live_and_previous_sizes(NewGC *gc)
   }
 
   mmu_flush_write_unprotect_ranges(gc->mmu);
-#ifdef GC_MP_CNT 
-  mp_gc_unprotect_cnt = mp_pr_add_cnt - mp_gc_unprotect_cnt;
-#endif
 }
 
 static void mark_backpointers(NewGC *gc)
@@ -4334,9 +4305,6 @@ inline static void do_heap_compact(NewGC *gc)
   int tic_tock = gc->num_major_collects % 2;
   
   mmu_prep_for_compaction(gc->mmu);
-#ifdef GC_MP_CNT 
-  mp_prev_compact_cnt = mp_compact_cnt;
-#endif
 
   for(i = 0; i < PAGE_BIG; i++) {
     mpage *work = gc->gen1_pages[i], *prev, *npage;
@@ -4392,9 +4360,6 @@ inline static void do_heap_compact(NewGC *gc)
                 fprintf(gcdebugOUT(gc), "Compacting from %p to %p \n",  start+1, newplace+1); 
                 fprintf_debug(gc, work, "Compacting", info, gcdebugOUT(gc), 0);
               }
-#endif
-#ifdef GC_MP_CNT 
-              mp_compact_cnt += gcWORDS_TO_BYTES(info->size);
 #endif
               GCDEBUG((DEBUGOUTF,"Moving size %i object from %p to %p\n",
                        gcWORDS_TO_BYTES(info->size), start+1, newplace+1));
@@ -4899,9 +4864,6 @@ static void protect_old_pages(NewGC *gc)
   MMU *mmu = gc->mmu;
   mpage *page;
   int i;
-#ifdef GC_MP_CNT 
-  mp_gc_protect_cnt = mp_pr_add_cnt;
-#endif
 
   for (i = 0; i < PAGE_TYPES; i++) {
     if (i != PAGE_ATOMIC) {
@@ -4928,54 +4890,7 @@ static void protect_old_pages(NewGC *gc)
   }
 
   mmu_flush_write_protect_ranges(mmu);
-
-#ifdef GC_MP_CNT 
-  mp_gc_protect_cnt = mp_pr_add_cnt - mp_gc_protect_cnt;
-#endif
 }
-
-#ifdef GC_MP_CNT 
-void print_debug_stats(NewGC *gc) {
-  char* color;
-  if (!(mp_gcs_cnt % 30)) {
-    printf("GCINSTANC WRITE_BA GC_MARK2 DURINGGC PR_ADD__ PR_PROT_ PR_FFLUS UNPROTEC REPROTEC MMUALLOCATED COMPACTED_ COMPACTLOC BC_FREED AC_FREED\n");
-  }
-  mp_gc_protect_cnt = mp_pr_add_cnt - mp_gc_protect_cnt;
-  mp_gcs_cnt ++;
-
-  if (gc->gc_full) {
-    if (gc == MASTERGC) {
-      if (gc->num_major_collects % 2) color = "\033[0;32m";
-      else color = "\033[1;32m";
-    }
-    else {
-      if (gc->num_major_collects % 2) color = "\033[0;31m";
-      else color = "\033[1;31m";
-    }
-  }
-  else
-    color = "\033\[0;37m";
-  printf("%s%p %08i %08i %08i %08i %08i %08i %08i %08i %012li %010li %010li %08li %08li%s\n", 
-    color,
-    gc,
-    mp_write_barrier_cnt, 
-    mp_mark_cnt,
-    mp_alloc_med_big_cnt,
-    mp_pr_add_cnt, 
-    mp_pr_call_cnt,
-    mp_pr_ff_cnt,
-    mp_gc_unprotect_cnt, 
-    mp_gc_protect_cnt, 
-    mmu_memory_allocated(gc->mmu),
-    mp_compact_cnt,
-    mp_compact_cnt - mp_prev_compact_cnt,
-    mp_bc_freed,
-    mp_ac_freed,
-    "\033\[0;37m");
-    mp_bc_freed = 0;
-    mp_ac_freed = 0;
-}
-#endif
 
 static void park_for_inform_callback(NewGC *gc)
 {
@@ -5219,10 +5134,6 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   if (gc->gc_full)
     mmu_flush_freed_pages(gc->mmu);
   reset_finalizer_tree(gc);
-
-#ifdef GC_MP_CNT 
-  print_debug_stats(gc);
-#endif
 
   TIME_STEP("reset");
 

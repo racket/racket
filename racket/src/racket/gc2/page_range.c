@@ -45,9 +45,7 @@ static void page_range_free(Page_Range *pr)
 
 static void page_range_add(Page_Range *pr, void *_start, uintptr_t len, int writeable)
 {
-  GC_MP_CNT_INC(mp_pr_add_cnt);
   if (!page_range_add_worker(pr, _start, len)) {
-    GC_MP_CNT_INC(mp_pr_ff_cnt);
     page_range_flush(pr, writeable);
     page_range_add_worker(pr, _start, len);
   }
@@ -62,7 +60,6 @@ static void page_range_flush(Page_Range *pr, int writeable)
 
   for (work = pr->range_start; work; work = work->next) {
     os_protect_pages((void *)work->start, work->len, writeable);
-    GC_MP_CNT_INC(mp_pr_call_cnt);
   }
 
   page_range_reset(pr);

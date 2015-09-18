@@ -224,7 +224,6 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
           BD_MAP_UNSET_BIT(bd->protect_map, end_pos);
           end_pos++;
         }
-        GC_MP_CNT_INC(mp_alloc_med_big_cnt);
         os_protect_pages((char *)p - ((pos - start_pos) * APAGE_SIZE),
                          (end_pos - start_pos) * APAGE_SIZE,
                          1);
@@ -416,11 +415,6 @@ static ssize_t block_cache_flush_freed_pages(BlockCache* bc) {
   }
   alloc_cache_size_diff = alloc_cache_flush_freed_pages(bc->bigBlockCache);
 
-#ifdef GC_MP_CNT 
-  mp_bc_freed = -size_diff;
-  mp_ac_freed = -alloc_cache_size_diff;
-#endif
-  
   return size_diff + alloc_cache_size_diff;
 }
 

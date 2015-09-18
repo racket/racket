@@ -218,7 +218,6 @@ static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero)
         if (page->mprotected) {
           page->mprotected = 0;
           mmu_write_unprotect_page(gc->mmu, page->addr, APAGE_SIZE, page_mmu_type(page), &page->mmu_src_block);
-          GC_MP_CNT_INC(mp_mark_cnt);
         }
 
         p = (void **)GC_resolve2(wb->secondary_erase, gc);
