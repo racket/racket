@@ -4079,7 +4079,7 @@ static int check_fd_semaphores()
               hit = 1;
               SCHEME_VEC_ELS(v)[0] = scheme_false;
             }
-            pfd[i].revents -= (pfd[i].revents & POLLIN);
+            pfd[i].events -= (pfd[i].events & POLLIN);
           }
           if (pfd[i].revents & (POLLOUT | POLLHUP | POLLERR)) {
             s = SCHEME_VEC_ELS(v)[1];
@@ -4088,7 +4088,7 @@ static int check_fd_semaphores()
               hit = 1;
               SCHEME_VEC_ELS(v)[1] = scheme_false;
             }
-            pfd[i].revents -= (pfd[i].revents & POLLOUT);
+            pfd[i].events -= (pfd[i].events & POLLOUT);
           }
           if (SCHEME_FALSEP(SCHEME_VEC_ELS(v)[0])
               && SCHEME_FALSEP(SCHEME_VEC_ELS(v)[1]))
