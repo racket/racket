@@ -130,6 +130,12 @@ previously installed packages remain installed and are updated, while
 new packages are added. To uninstall previously selected package, use
 `raco pkg remove'.
 
+To build anything other than the latest sources in the repository
+(e.g., when building from the "v6.2.1" tag), you need a catalog
+that's compatible with those sources. Note that a release distribution
+is configured to use a catalog specific to that release, so you can
+extract the catalog's URL from there.
+
 Using `make' (or `make in-place') sets the installation's name to
 "development", unless the installation has been previously configured
 (i.e., unless the "racket/etc/config.rktd" file exists). The
