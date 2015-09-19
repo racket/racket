@@ -1169,7 +1169,7 @@ if_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 static Scheme_Object *
 with_cont_mark_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
-  Scheme_Object *key, *val, *expr, *name, *orig_form = form, *value_name;
+  Scheme_Object *key, *val, *expr, *value_name;
   Scheme_Compile_Info recs[3];
   Scheme_With_Continuation_Mark *wcm;
   int len;
@@ -1193,8 +1193,6 @@ with_cont_mark_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_
   expr = SCHEME_STX_CAR(form);
 
   scheme_compile_rec_done_local(rec, drec);
-
-  name = scheme_check_name_property(orig_form, value_name);
 
   scheme_init_compile_recs(rec, drec, recs, 3);
 
