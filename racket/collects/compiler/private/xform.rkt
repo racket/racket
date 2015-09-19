@@ -233,6 +233,9 @@
         (define IS "(?:u|U|l|L)*")
         
         (define symbol-complex (trans (seqs L (arbno (alt L D)))))
+
+        ;; Accomodate things like 10_1 in `availability` attributes:
+        (define pseudo-symbol-complex (trans (seqs (arbno D) "_" (arbno D))))
         
         (define number-complex
           (trans (alt*
@@ -372,6 +375,11 @@
                            [(not simple)
                             (cond
                               [(regexp-match-positions symbol-complex s p)
+                               => (lambda (m)
+                                    (loop (cdar m)
+                                          (cons (symbol (subbytes s (caar m) (cdar m)))
+                                                result)))]
+                              [(regexp-match-positions pseudo-symbol-complex s p)
                                => (lambda (m)
                                     (loop (cdar m)
                                           (cons (symbol (subbytes s (caar m) (cdar m)))
