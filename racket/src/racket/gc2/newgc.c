@@ -2367,18 +2367,30 @@ static int is_finalizable_page(NewGC *gc, void *p)
   return !!pagemap_find_page(gc->page_maps, p);
 }
 
+static int is_in_gen_half(void *p, NewGC *gc)
+{
+  mpage *page;
+  
+  if (gc->gc_full)
+    return 0;
+
+  page = pagemap_find_page(gc->page_maps, p);
+
+  return (page && (page->generation == AGE_GEN_HALF));
+}
+
 #include "fnls.c"
 
 inline static void mark_finalizer_structs(NewGC *gc)
 {
   Fnl *fnl;
 
-  set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
-  gcMARK2(gc->finalizers, gc);
-  for(fnl = gc->finalizers; fnl; fnl = fnl->next) { 
+  set_backtrace_source(gc, &gc->gen0_finalizers, BT_ROOT);
+  gcMARK2(gc->gen0_finalizers, gc);
+  for(fnl = gc->gen0_finalizers; fnl; fnl = fnl->next) { 
     set_backtrace_source(gc, fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc);
-    set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
+    set_backtrace_source(gc, &gc->gen0_finalizers, BT_ROOT);
     gcMARK2(fnl->next, gc);
   }
   
@@ -2388,7 +2400,7 @@ inline static void mark_finalizer_structs(NewGC *gc)
     set_backtrace_source(gc, fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc);
     gcMARK2(fnl->p, gc);
-    set_backtrace_source(gc, &gc->finalizers, BT_ROOT);
+    set_backtrace_source(gc, &gc->gen0_finalizers, BT_ROOT);
     gcMARK2(fnl->next, gc);
   }
 }  
@@ -2398,10 +2410,10 @@ inline static void repair_finalizer_structs(NewGC *gc)
   Fnl *fnl;
 
   /* repair the base parts of the list */
-  gcFIXUP2(gc->finalizers, gc);
+  gcFIXUP2(gc->gen0_finalizers, gc);
   gcFIXUP2(gc->run_queue, gc);
   /* then repair the stuff inside them */
-  for(fnl = gc->finalizers; fnl; fnl = fnl->next) {
+  for(fnl = gc->gen0_finalizers; fnl; fnl = fnl->next) {
     gcFIXUP2(fnl->data, gc);
     gcFIXUP2(fnl->p, gc);
     gcFIXUP2(fnl->next, gc);
@@ -2416,7 +2428,7 @@ inline static void repair_finalizer_structs(NewGC *gc)
 
 inline static void check_finalizers(NewGC *gc, int level)
 {
-  Fnl *work = GC_resolve2(gc->finalizers, gc);
+  Fnl *work = GC_resolve2(gc->gen0_finalizers, gc);
   Fnl *prev = NULL;
 
   GCDEBUG((DEBUGOUTF, "CFNL: Checking level %i finalizers\n", level));
@@ -2432,7 +2444,7 @@ inline static void check_finalizers(NewGC *gc, int level)
       if (prev)
         prev->next = next;
       else
-        gc->finalizers = next;
+        gc->gen0_finalizers = next;
       if (next)
         next->prev = work->prev;
       work->prev = NULL; /* queue is singly-linked */
@@ -5033,6 +5045,9 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   if (gc->gc_full)
     reset_gen1_pages_live_and_scan_boundaries(gc);
+
+  if (gc->gc_full)
+    merge_finalizer_trees(gc);
 
   move_gen_half_pages_to_old(gc);
 

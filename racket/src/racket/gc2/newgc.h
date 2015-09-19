@@ -248,9 +248,10 @@ typedef struct NewGC {
 
   GC_Immobile_Box *immobile_boxes;
 
-  /* Common with CompactGC */
   Fnl *finalizers;
   Fnl *splayed_finalizers;
+  Fnl *gen0_finalizers;
+  Fnl *splayed_gen0_finalizers;
   int num_fnls;
 
   void *park[2];
