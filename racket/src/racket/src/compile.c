@@ -383,11 +383,24 @@ static void bad_form(Scheme_Object *form, int l)
 		      l - 1, (l != 2) ? "s" : "");
 }
 
+Scheme_Object *simplify_inferred_name(Scheme_Object *name, int fuel)
+{
+  if (fuel && SCHEME_PAIRP(name)) {
+    Scheme_Object *name_car = SCHEME_CAR(name), * name_cdr = SCHEME_CDR(name);
+    name_car = simplify_inferred_name(name_car, fuel-1);
+    name_cdr = simplify_inferred_name(name_cdr, fuel-1);
+    if (name_car && name_cdr && SAME_OBJ(name_car, name_cdr))
+      return name_car;
+  }
+  return name;  
+}
+
 Scheme_Object *scheme_check_name_property(Scheme_Object *code, Scheme_Object *current_val)
 {
   Scheme_Object *name;
 
   name = scheme_stx_property(code, inferred_name_symbol, NULL);
+  name = simplify_inferred_name(name, 5);
   if (name && SCHEME_SYMBOLP(name))
     return name;
   else
@@ -551,6 +564,7 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Comp_Env *e
   Scheme_Object *name;
 
   name = scheme_stx_property(code, inferred_name_symbol, NULL);
+  name = simplify_inferred_name(name, 5);
   if (name && SCHEME_SYMBOLP(name)) {
     name = combine_name_with_srcloc(name, code, 0);
   } else if (name && SCHEME_VOIDP(name)) {

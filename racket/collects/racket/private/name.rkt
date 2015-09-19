@@ -2,13 +2,21 @@
 (module name '#%kernel
   (#%require "define.rkt" "small-scheme.rkt")
   (#%provide syntax-local-infer-name)
+
+  (define (simplify-inferred-name name fuel)
+    (if (and (fuel . > . 0) (pair? name))
+        (let ([name-car (simplify-inferred-name (car name) (sub1 fuel))]
+              [name-cdr (simplify-inferred-name (cdr name) (sub1 fuel))])
+          (if (eq? name-car name-cdr)
+              name-car
+              name))
+        name))
   
   (define syntax-local-infer-name
     (case-lambda
      [(stx use-local?)
-      (let-values ([(prop) (syntax-property stx 'inferred-name)])
-        (or (and prop
-                 (not (void? prop))
+      (let-values ([(prop) (simplify-inferred-name (syntax-property stx 'inferred-name) 5)])
+        (or (and (symbol? prop)
                  prop)
             (let ([n (and use-local?
                           (not (void? prop))
