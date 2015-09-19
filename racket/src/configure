@@ -624,6 +624,7 @@ enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 subdirs
+MAKE_LOCAL_RACKET
 CGC_IF_NEEDED_FOR_MMM
 RUN_RACKET_MAIN_VARIANT
 RUN_RACKET_MMM
@@ -1441,7 +1442,7 @@ Optional Features:
   --enable-float          support single-precision floats (enabled by default)
   --enable-floatinstead   use single-precision by default (NOT RECOMMENDED)
   --enable-extflonum      support extflonums (enabled by default, if available)
-  --enable-racket=<path>  use <path> as Racket executable to build Racket
+  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create
   --enable-origtree       install with original directory structure
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
@@ -3096,7 +3097,11 @@ if test "${enable_sysroot}" != "" ; then
 fi
 
 if test "${enable_racket}" != "" ; then
-   echo "=== Using Racket executable ${enable_racket}"
+  if test "${enable_racket}" == "auto" ; then
+     echo "=== Creating and using local Racket executable"
+  else
+     echo "=== Using Racket executable ${enable_racket}"
+  fi
 fi
 
 INSTALL_PKGSCOPE=user
@@ -3179,6 +3184,8 @@ use_flag_pthread=yes
 use_flag_posix_pthread=no
 skip_iconv_check=no
 check_page_size=yes
+
+MAKE_LOCAL_RACKET=no-local-racket
 
 ###### OSKit stuff #######
 
@@ -6646,6 +6653,11 @@ fi
 
 ############## Racket for Racket ################
 
+if test "${enable_racket}" = "auto" ; then
+  enable_racket="`pwd`/local/racket/racket3m"
+  MAKE_LOCAL_RACKET="local/racket/racket3m"
+fi
+
 if test "${enable_racket}" = "" ; then
   RUN_RACKET_CGC='$(RUN_THIS_RACKET_CGC)'
   RUN_RACKET_MMM='$(RUN_THIS_RACKET_MMM)'
@@ -6736,6 +6748,8 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
+
 
 
 

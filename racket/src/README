@@ -271,11 +271,16 @@ Cross-compilation requires at least two flags to `configure':
    such as `OS-gcc' and `OS-strip'.
 
  * `--enable-racket=RACKET', where RACKET is a path to a Racket
-   executable for the version being compiled that runs on the build
-   platform.
+   executable that runs on the build platform; the executable must be
+   the same version of Racket as being built for the target platform.
 
    This flag is needed because building and installing Racket requires
-   running (an intermediate version of) Racket.
+   running (an existing build of) Racket.
+
+   Use "auto" for RACKET to indicates that one should be built
+   automatically for the current platform. In that case, `make`
+   will run `configure` again (with no arguments) in a "local"
+   subdirectory to create a build for the current platform.
 
 Some less commonly needed `configure' flags:
 
@@ -292,7 +297,7 @@ the NDK, use (all on one line)
 
   configure --host=arm-linux-androideabi 
             --enable-sysroot="[ndk]/platforms/android-[N]/arch-arm"
-            --enable-racket=racket
+            --enable-racket=auto
 
 where [ndk] is the path to the installed NDK, [N] is a target version
 of Android (such as 14), and

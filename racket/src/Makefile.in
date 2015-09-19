@@ -54,6 +54,7 @@ TAGS:
 	etags `find "@srcdir@/racket" -type f`
 
 3m:
+	$(MAKE) @MAKE_LOCAL_RACKET@
 	cd racket; $(MAKE) 3m
 	$(MAKE) @MAKE_GRACKET@-3m
 
@@ -64,6 +65,7 @@ no-3m:
 	$(NOOP)
 
 cgc:
+	$(MAKE) @MAKE_LOCAL_RACKET@
 	cd racket; $(MAKE) cgc
 	$(MAKE) @MAKE_GRACKET@-cgc
 
@@ -76,6 +78,19 @@ no-cgc:
 both:
 	$(MAKE) cgc
 	$(MAKE) 3m
+
+# Cross-compilation helper:
+
+no-local-racket:
+	$(NOOP)
+
+local/racket/racket3m:
+	mkdir -p local
+	$(MAKE) local/Makefile
+	cd local ; $(MAKE)
+
+local/Makefile:
+	cd local ; `cd ..; cd $(srcdir); pwd`/configure --disable-gracket
 
 # Install (common) ----------------------------------------
 

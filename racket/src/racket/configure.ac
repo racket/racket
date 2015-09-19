@@ -41,7 +41,7 @@ AC_ARG_ENABLE(float,   [  --enable-float          support single-precision float
 AC_ARG_ENABLE(floatinstead, [  --enable-floatinstead   use single-precision by default (NOT RECOMMENDED)])
 AC_ARG_ENABLE(extflonum,    [  --enable-extflonum      support extflonums (enabled by default, if available)], , enable_extflonum=default)
 
-AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket executable to build Racket])
+AC_ARG_ENABLE(racket,  [  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create])
 
 AC_ARG_ENABLE(origtree,[  --enable-origtree       install with original directory structure])
 AC_ARG_ENABLE(pkgscope,[  --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared])
@@ -368,7 +368,11 @@ if test "${enable_sysroot}" != "" ; then
 fi
 
 if test "${enable_racket}" != "" ; then
-   echo "=== Using Racket executable ${enable_racket}"
+  if test "${enable_racket}" == "auto" ; then
+     echo "=== Creating and using local Racket executable"
+  else
+     echo "=== Using Racket executable ${enable_racket}"
+  fi 
 fi
 
 INSTALL_PKGSCOPE=user
@@ -451,6 +455,8 @@ use_flag_pthread=yes
 use_flag_posix_pthread=no
 skip_iconv_check=no
 check_page_size=yes
+
+MAKE_LOCAL_RACKET=no-local-racket
 
 ###### OSKit stuff #######
 
@@ -1561,6 +1567,11 @@ fi
 
 ############## Racket for Racket ################
 
+if test "${enable_racket}" = "auto" ; then
+  enable_racket="`pwd`/local/racket/racket3m"
+  MAKE_LOCAL_RACKET="local/racket/racket3m"
+fi
+
 if test "${enable_racket}" = "" ; then
   RUN_RACKET_CGC='$(RUN_THIS_RACKET_CGC)'
   RUN_RACKET_MMM='$(RUN_THIS_RACKET_MMM)'
@@ -1769,6 +1780,8 @@ AC_SUBST(RUN_RACKET_CGC)
 AC_SUBST(RUN_RACKET_MMM)
 AC_SUBST(RUN_RACKET_MAIN_VARIANT)
 AC_SUBST(CGC_IF_NEEDED_FOR_MMM)
+
+AC_SUBST(MAKE_LOCAL_RACKET)
 
 mk_needed_dir()
 {
