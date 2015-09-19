@@ -64,6 +64,13 @@ Sets the path to be returned by @racket[(find-system-path
 'addon-dir)].}
 
 
+@function[(void scheme_set_exec_cmd
+                [const-char* path])]{
+
+Sets the path to be returned by @racket[(find-system-path
+'exec-file)].}
+
+
 @function[(void scheme_init_collection_paths_post
            [Scheme_Env* env]
            [Scheme_Object* pre_extra_paths]

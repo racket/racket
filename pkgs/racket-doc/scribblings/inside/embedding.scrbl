@@ -200,6 +200,16 @@ int main(int argc, char *argv[])
 }
 }
 
+If modules embedded in the executable need to access runtime files
+(via @racketmodname[racket/runtime-path] forms), supply the
+@DFlag{runtime} flag to @exec{raco ctool}, specifying a directory
+where the runtime files are to be gathered. The modules in the
+generated @filepath{.c} file will then refer to the files in that
+directory; the directory is normally specified relative to the
+executable, but the embedding application must call
+@cppi{scheme_set_exec_cmd} to set the executable path (typically
+@cpp{argv[0]}) before declaring modules.
+
 On Mac OS X, or on Windows when Racket is compiled to a DLL
 using Cygwin, the garbage collector cannot find static variables
 automatically. In that case, @cppi{scheme_main_setup} must be called with a

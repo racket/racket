@@ -17,42 +17,50 @@
 
   (define (assemble-distribution dest-dir 
                                  orig-binaries
+                                 #:executables? [executables? #t]
+                                 #:relative-base [relative-base #f]
                                  #:collects-path [collects-path #f] ; relative to dest-dir
                                  #:copy-collects [copy-collects null])
-    (let* ([types (map get-binary-type orig-binaries)]
+    (let* ([types (if executables?
+                      (map get-binary-type orig-binaries)
+                      (map (lambda (v) #f) orig-binaries))]
 	   [_ (unless (directory-exists? dest-dir)
 		(make-directory dest-dir))]
 	   [sub-dirs (map (lambda (b type)
-			   (case (cross-system-type)
-			     [(windows) #f]
-			     [(unix) "bin"]
-			     [(macosx) (if (memq type '(gracketcgc gracket3m))
-					   #f
-					   "bin")]))
-			  orig-binaries
+                            (and type
+                                 (case (cross-system-type)
+                                   [(windows) #f]
+                                   [(unix) "bin"]
+                                   [(macosx) (if (memq type '(gracketcgc gracket3m))
+                                                 #f
+                                                 "bin")])))
+                          orig-binaries
 			  types)]
 	   ;; Copy binaries into place:
 	   [binaries
 	    (map (lambda (b sub-dir type)
-		   (let ([dest-dir (if sub-dir
-				       (build-path dest-dir sub-dir)
-				       dest-dir)])
-		     (unless (directory-exists? dest-dir)
-		       (make-directory dest-dir))
-		     (let-values ([(base name dir?) (split-path b)])
-		       (let ([dest (build-path dest-dir name)])
-			 (if (and (memq type '(gracketcgc gracket3m))
-				  (eq? 'macosx (cross-system-type)))
-			     (begin
-			       (copy-app b dest)
-			       (app-to-file dest))
-			     (begin
-			      (copy-file* b dest)
-			      dest))))))
+                   (if type
+                       (let ([dest-dir (if sub-dir
+                                           (build-path dest-dir sub-dir)
+                                           dest-dir)])
+                         (unless (directory-exists? dest-dir)
+                           (make-directory dest-dir))
+                         (let-values ([(base name dir?) (split-path b)])
+                           (let ([dest (build-path dest-dir name)])
+                             (if (and (memq type '(gracketcgc gracket3m))
+                                      (eq? 'macosx (cross-system-type)))
+                                 (begin
+                                   (copy-app b dest)
+                                   (app-to-file dest))
+                                 (begin
+                                   (copy-file* b dest)
+                                   dest)))))
+                       b))
 		 orig-binaries
 		 sub-dirs
 		 types)]
-	   [single-mac-app? (and (eq? 'macosx (cross-system-type))
+	   [single-mac-app? (and executables?
+                                 (eq? 'macosx (cross-system-type))
 				 (= 1 (length types))
 				 (memq (car types) '(gracketcgc gracket3m)))])
       ;; Create directories for libs, collects, and extensions:
@@ -78,7 +86,8 @@
 			(let* ([specific-lib-dir
                                 (build-path "lib"
                                             "plt"
-                                            (if (null? binaries)
+                                            (if (or (not executables?)
+                                                    (null? binaries))
                                                 "generic"
                                                 (let-values ([(base name dir?) 
                                                               (split-path (car binaries))])
@@ -96,7 +105,8 @@
 	(make-directory* collects-dir)
 	(make-directory* exts-dir)
 	;; Copy libs into place
-	(install-libs lib-dir types)
+        (when executables?
+          (install-libs lib-dir types))
 	;; Copy collections into place
 	(for-each (lambda (dir)
 		    (for-each (lambda (f)
@@ -106,10 +116,14 @@
 			      (directory-list dir)))
 		  copy-collects)
 	;; Patch binaries to find libs
-	(patch-binaries binaries types)
+        (when executables?
+          (patch-binaries binaries types))
         (let ([relative->binary-relative
                (lambda (sub-dir type relative-dir)
                  (cond
+                  [relative-base relative-base]
+                  [(not executables?)
+                   (build-path dest-dir relative-dir)]
                   [sub-dir
                    (build-path 'up relative-dir)]
                   [(and (eq? 'macosx (cross-system-type))
@@ -120,10 +134,11 @@
                    relative-dir]))])
           ;; Patch binaries to find collects
           (for-each (lambda (b type sub-dir)
-                      (set-collects-path 
-                       b 
-                       (collects-path->bytes 
-                        (relative->binary-relative sub-dir type relative-collects-dir))))
+                      (when type
+                        (set-collects-path 
+                         b 
+                         (collects-path->bytes 
+                          (relative->binary-relative sub-dir type relative-collects-dir)))))
                     binaries types sub-dirs)
           (unless (null? binaries)
             ;; Copy over extensions and adjust embedded paths:
