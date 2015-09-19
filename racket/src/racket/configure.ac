@@ -53,7 +53,7 @@ AC_ARG_ENABLE(natipkg, [  --enable-natipkg        add "-natipkg" to library subp
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
-AC_ARG_ENABLE(dynlib,  [  --enable-libs           install Racket static libraries, if any])
+AC_ARG_ENABLE(libs,    [  --enable-libs           install static libraries, if any (enabled by default)], , enable_libs=yes)
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
@@ -69,7 +69,7 @@ AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS
 AC_ARG_ENABLE(mac64,   [  --enable-mac64          allow 64-bit Mac OS X build (enabled by default)], , enable_mac64=yes)
 
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
-AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of the Boehm GC (enabled by default)], , enable_sgc=yes)
+AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)], , enable_sgc=yes)
 AC_ARG_ENABLE(sgcdebug,[  --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)])
 AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)])
 
@@ -325,7 +325,7 @@ show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode
 show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 
-show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
+show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
 

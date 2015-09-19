@@ -803,6 +803,7 @@ enable_natipkg
 enable_shared
 enable_dynlib
 enable_lt
+enable_libs
 enable_libffi
 enable_sdk
 enable_xonx
@@ -1449,7 +1450,7 @@ Optional Features:
   --enable-shared         create shared libraries (ok, but not recommended)
   --enable-dynlib         same as --enable-shared
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
-  --enable-libs           install Racket static libraries, if any
+  --enable-libs           install static libraries, if any (enabled by default)
   --enable-libffi         use installed libffi (enabled by default for Unix)
   --enable-sdk=<path>     use Mac OS X 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS X 10.5 SDK directory
@@ -1462,7 +1463,7 @@ Optional Features:
   --enable-macprefix      allow --prefix with a Mac OS X install
   --enable-mac64          allow 64-bit Mac OS X build (enabled by default)
   --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
-  --enable-sgc            use Senora GC instead of the Boehm GC (enabled by default)
+  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)
   --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
@@ -2680,9 +2681,11 @@ else
   enable_lt=default
 fi
 
-# Check whether --enable-dynlib was given.
-if test "${enable_dynlib+set}" = set; then :
-  enableval=$enable_dynlib;
+# Check whether --enable-libs was given.
+if test "${enable_libs+set}" = set; then :
+  enableval=$enable_libs;
+else
+  enable_libs=yes
 fi
 
 
@@ -3050,7 +3053,7 @@ show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode
 show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 
-show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
+show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
 

@@ -406,6 +406,8 @@ unix-install-cgc:
 unix-install-libs-cgc:
 	cd ..; $(ICP) racket/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(ICP) racket/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 
 unix-no-install-libs-cgc:
 	$(NOOP)
@@ -422,6 +424,7 @@ unix-install-3m:
 
 unix-install-libs-3m:
 	cd ..; $(ICP) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
+	cd ..; $(STRIP_DEBUG) "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 
 unix-no-install-libs-3m:
 	$(NOOP)
