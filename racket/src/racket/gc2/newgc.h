@@ -21,13 +21,26 @@ typedef struct mpage {
 #ifdef MZ_USE_PLACES
   uintptr_t page_lock; /* for master GC pages during marking */
 #endif
-  uintptr_t previous_size; /* for med page, place to search for available block; for jit nursery, allocated size */
-  uintptr_t size; /* big page size, med page element size, or nursery starting point */
+  /* The `size` field is overleaded for related meanings:
+       - big page => the size of the allocated object
+       - small page, nursery, gen-1/2 => offset for next allocate = allocated bytes + PREFIX_SIZE
+     For a medium page, the `obj_size` field is used instead. */
+  union {
+    uintptr_t size; /* size and/or allocation offset (see above) */
+    uintptr_t obj_size; /* size of each object on a medium page */
+  };
+  union {
+    uintptr_t alloc_size; /* for a nursery: total size of the nursery */
+    uintptr_t med_search_start; /* medium page: offset for searching for a free slot */
+    uintptr_t scan_boundary; /* small gen1 page: during GC, boundary between objects that can be
+                                left alone and that that will be scanned & fixed up; objects before
+                                have cleared "mark" bits, while objects after (may) have "mark" bits sets */
+  };
   struct mpage *modified_next; /* next in chain of pages for backpointers, marks, etc. */
-  unsigned short live_size;
+  unsigned short live_size; /* except for big pages, total size of live objects on the page */
   unsigned char generation    :2;
   unsigned char back_pointers :1;
-  unsigned char size_class    :2;  /* 0 => small; 1 => med; 2 => big; 3 => big marked */
+  unsigned char size_class    :2;
   unsigned char page_type     :3; 
   unsigned char marked_on     :1;
   unsigned char marked_from   :1;
