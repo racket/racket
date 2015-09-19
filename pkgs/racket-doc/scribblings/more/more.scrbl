@@ -552,9 +552,9 @@ We can register a handler for the @racket["hello"] path like this:
 
 @whole-prog["5"]
 
-After adding these lines and evaluating @racket[(enter! "serve.rkt")],
-opening @tt{http://localhost:8081/hello} should produce the old
-greeting.
+After adding these lines, evaluating @racket[(enter! "serve.rkt")] and
+@racket[(define stop (serve 8081))], opening
+@tt{http://localhost:8081/hello} should produce the old greeting.
 
 @; ----------------------------------------------------------------------
 @section{Servlets and Sessions}
