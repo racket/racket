@@ -14,6 +14,8 @@ typedef struct mpage {
   struct mpage *prev;
   void *addr;
   void *mmu_src_block;
+  struct mpage *modified_next; /* next in chain of pages for backpointers, marks, etc. */
+  struct mpage *reprotect_next; /* next in a chain of pages that need to be re-protected */
 #ifdef MZ_GC_BACKTRACE
   void **backtrace;
   void *backtrace_page_src;
@@ -36,7 +38,6 @@ typedef struct mpage {
                                 left alone and that that will be scanned & fixed up; objects before
                                 have cleared "mark" bits, while objects after (may) have "mark" bits sets */
   };
-  struct mpage *modified_next; /* next in chain of pages for backpointers, marks, etc. */
   unsigned short live_size; /* except for big pages, total size of live objects on the page */
   unsigned char generation    :2;
   unsigned char back_pointers :1;
@@ -157,6 +158,9 @@ typedef struct NewGC {
   /* linked list of pages with back pointers to be traversed in a
      minor collection, etc.: */
   struct mpage *modified_next;
+  /* linked list of pages that need to be given write protection at
+     the end of the GC cycle: */
+  struct mpage *reprotect_next;
 
   MarkSegment *mark_stack;
 

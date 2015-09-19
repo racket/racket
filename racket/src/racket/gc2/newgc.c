@@ -61,14 +61,17 @@ enum {
   PAGE_ARRAY    = 2,
   PAGE_PAIR     = 3,
   PAGE_BIG      = 4,
-  /* the number of page types: */
-  PAGE_TYPES    = 5
+  /* the number of page types in then gen1 array: */
+  PAGE_TYPES    = 5,
+  /* medium page types: */
+  PAGE_MED_ATOMIC = 6,
+  PAGE_MED_NONATOMIC = 7
 };
 
 enum {
-  MED_PAGE_NONATOMIC   = 0,
-  MED_PAGE_ATOMIC      = 1,
-  /* the number of medium-page types: */
+  MED_PAGE_NONATOMIC_INDEX   = 0,
+  MED_PAGE_ATOMIC_INDEX      = 1,
+  /* the number of medium-page types in the array: */
   MED_PAGE_TYPES       = 2
 };
 
@@ -1083,10 +1086,10 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
   int n, ty;
   void *src_block, *addr;
 
-  ty = ((type == PAGE_ATOMIC) ? MED_PAGE_ATOMIC : MED_PAGE_NONATOMIC);
+  ty = ((type == PAGE_ATOMIC) ? MED_PAGE_ATOMIC_INDEX : MED_PAGE_NONATOMIC_INDEX);
 
   addr = malloc_pages_maybe_fail(gc, APAGE_SIZE, APAGE_SIZE, MMU_ZEROED, MMU_BIG_MED,
-                                 (type == MED_PAGE_NONATOMIC) ? MMU_PROTECTABLE : MMU_NON_PROTECTABLE,
+                                 (ty == MED_PAGE_NONATOMIC_INDEX) ? MMU_PROTECTABLE : MMU_NON_PROTECTABLE,
                                  &src_block, sz);
 
   page = malloc_mpage();
@@ -1094,7 +1097,7 @@ inline static mpage *create_new_medium_page(NewGC *gc, const int sz, const int p
   page->mmu_src_block = src_block;
   page->obj_size = sz;
   page->size_class = SIZE_CLASS_MED_PAGE;
-  page->page_type = PAGE_BIG;
+  page->page_type = ((type == PAGE_ATOMIC) ? PAGE_MED_ATOMIC : PAGE_MED_NONATOMIC);
   page->med_search_start = PREFIX_SIZE;
   page->live_size = sz;
   GCVERBOSEPAGE(gc, "NEW MED PAGE", page);
@@ -1129,7 +1132,7 @@ inline static void *medium_page_realloc_dead_slot(NewGC *gc, const int sz, const
   int n, ty;
   mpage *page;
 
-  ty = ((type == PAGE_ATOMIC) ? MED_PAGE_ATOMIC : MED_PAGE_NONATOMIC);
+  ty = ((type == PAGE_ATOMIC) ? MED_PAGE_ATOMIC_INDEX : MED_PAGE_NONATOMIC_INDEX);
 
   for (page = gc->med_freelist_pages[ty][pos]; page; page = gc->med_freelist_pages[ty][pos] = page->prev) {
     for (n = page->med_search_start; ((n + sz) <= APAGE_SIZE); n += sz) {
@@ -2756,7 +2759,9 @@ inline static int page_mmu_type(mpage *page) {
 }
 
 inline static int page_mmu_protectable(mpage *page) {
-  return (page->page_type == PAGE_ATOMIC) ? MMU_NON_PROTECTABLE : MMU_PROTECTABLE;
+  return (((page->page_type == PAGE_ATOMIC) || (page->page_type == PAGE_MED_ATOMIC))
+          ? MMU_NON_PROTECTABLE
+          : MMU_PROTECTABLE);
 }
 
 static void set_has_back_pointers(NewGC *gc, mpage *page)
@@ -4037,7 +4042,7 @@ void GC_dump_with_traces(int flags,
     }
 
     for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
-      GCWARN((GCOUTF, "Generation 1 [medium%s]:", (ty == MED_PAGE_ATOMIC) ? " atomic" : ""));
+      GCWARN((GCOUTF, "Generation 1 [medium%s]:", (ty == MED_PAGE_ATOMIC_INDEX) ? " atomic" : ""));
       for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
         if (gc->med_pages[ty][i]) {
           intptr_t count = 0, page_count = 0;
@@ -4150,7 +4155,7 @@ static void reset_gen1_pages_live_and_scan_boundaries(NewGC *gc)
   }
 
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (work = gc->med_pages[MED_PAGE_NONATOMIC][i]; work; work = work->next) {
+    for (work = gc->med_pages[MED_PAGE_NONATOMIC_INDEX][i]; work; work = work->next) {
       if (work->generation > AGE_GEN_0) {
         if (work->mprotected) {
           work->mprotected = 0;
@@ -4189,6 +4194,7 @@ static void mark_backpointers(NewGC *gc)
         work->mprotected = 0;
         mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work), page_mmu_type(work), &work->mmu_src_block);
       }
+
       work->marked_from = 1;
 
       if (work->size_class == SIZE_CLASS_BIG_PAGE) {
@@ -4534,6 +4540,8 @@ static void repair_heap(NewGC *gc)
   page = gc->modified_next;
   gc->modified_next = NULL;
 
+  gc->reprotect_next = NULL;
+  
   memory_in_use = gc->memory_in_use;
 
   need_fixup = gc->need_fixup;
@@ -4656,7 +4664,7 @@ static void repair_heap(NewGC *gc)
         memory_in_use += page->live_size;
         page->med_search_start = PREFIX_SIZE; /* start next block search at the beginning */
         if (page->generation == AGE_GEN_0) {
-          /* Tell the clean-up phase to keep this one (even for a minor GC): */
+          /* Tell the clean-up phase to keep this one (needed even for a minor GC): */
           page->marked_on = 1;
           GC_ASSERT(non_dead); /* otherwise, wouldn't have marked_on */
         }
@@ -4668,6 +4676,11 @@ static void repair_heap(NewGC *gc)
         set_has_back_pointers(gc, page);
       else
         page->back_pointers = 0;
+
+      if ((page->page_type != PAGE_ATOMIC) && (page->page_type != PAGE_MED_ATOMIC)) {
+        page->reprotect_next = gc->reprotect_next;
+        gc->reprotect_next = page;
+      }
     }
   }
 
@@ -4835,7 +4848,7 @@ static void unprotect_old_pages(NewGC *gc)
   }
 
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (page = gc->med_pages[MED_PAGE_NONATOMIC][i]; page; page = page->next) {
+    for (page = gc->med_pages[MED_PAGE_NONATOMIC_INDEX][i]; page; page = page->next) {
       if (page->mprotected) {
         page->mprotected = 0;
         mmu_queue_write_unprotect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
@@ -4851,29 +4864,56 @@ static void protect_old_pages(NewGC *gc)
 {
   MMU *mmu = gc->mmu;
   mpage *page;
-  int i;
 
-  for (i = 0; i < PAGE_TYPES; i++) {
-    if (i != PAGE_ATOMIC) {
-      for (page = gc->gen1_pages[i]; page; page = page->next) {
-        if (page->page_type != PAGE_ATOMIC) {
-          if (!page->mprotected && !page->back_pointers) {
-            page->mprotected = 1;
-            mmu_queue_write_protect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
-          } else if (QUEUED_MPROTECT_INFECTS_SMALL)
-            page->mprotected = 1;
+#if 0
+  /* Check that `reprotect_next` chain is correct: */
+  {
+    int i;
+    int count = 0;
+
+    for (i = 0; i < PAGE_TYPES; i++) {
+      if (i != PAGE_ATOMIC) {
+        for (page = gc->gen1_pages[i]; page; page = page->next) {
+          GC_ASSERT(page->generation != AGE_VACATED);
+          if (page->page_type != PAGE_ATOMIC) {
+            if (!page->mprotected)
+              count++;
+          }
         }
       }
     }
-  }
 
-  for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (page = gc->med_pages[MED_PAGE_NONATOMIC][i]; page; page = page->next) {
-      if (!page->mprotected && !page->back_pointers) {
-        page->mprotected = 1;
-        mmu_queue_write_protect_range(mmu, page->addr, APAGE_SIZE, page_mmu_type(page), &page->mmu_src_block);
-      } else if (QUEUED_MPROTECT_INFECTS_MED)
-        page->mprotected = 1;
+    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+      for (page = gc->med_pages[MED_PAGE_NONATOMIC_INDEX][i]; page; page = page->next) {
+        if (!page->mprotected)
+          count++;
+      }
+    }
+
+    for (page = gc->reprotect_next; page; page = page->reprotect_next) {
+      count--;
+    }
+
+    GC_ASSERT(!count);
+  }
+#endif
+
+  for (page = gc->reprotect_next; page; page = page->reprotect_next) {
+    GC_ASSERT(!page->mprotected);
+    GC_ASSERT(page->page_type != PAGE_ATOMIC);
+    GC_ASSERT(page->page_type != PAGE_MED_ATOMIC);
+    GC_ASSERT(page->generation != AGE_VACATED);
+    if (!page->back_pointers) {
+      page->mprotected = 1;
+      mmu_queue_write_protect_range(mmu, page->addr, real_page_size(page), page_mmu_type(page), &page->mmu_src_block);
+    } else {
+      if (page->size_class == SIZE_CLASS_SMALL_PAGE) {
+        if (QUEUED_MPROTECT_INFECTS_SMALL)
+          page->mprotected = 1;
+      } else if (page->size_class == SIZE_CLASS_MED_PAGE) {
+        if (QUEUED_MPROTECT_INFECTS_MED)
+          page->mprotected = 1;
+      }
     }
   }
 
@@ -5334,7 +5374,7 @@ static void free_gc(NewGC *gc)
     }
   }
   for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
-    for (work = gc->med_pages[MED_PAGE_NONATOMIC][i]; work; work = work->next) {
+    for (work = gc->med_pages[MED_PAGE_NONATOMIC_INDEX][i]; work; work = work->next) {
       if (work->mprotected)
         mmu_write_unprotect_page(gc->mmu, work->addr, real_page_size(work), page_mmu_type(work), &work->mmu_src_block);
     }
