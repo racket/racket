@@ -53,7 +53,7 @@ AC_ARG_ENABLE(natipkg, [  --enable-natipkg        add "-natipkg" to library subp
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
 AC_ARG_ENABLE(dynlib,  [  --enable-dynlib         same as --enable-shared])
 AC_ARG_ENABLE(lt,      [  --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled], LIBTOOLPROG="$enableval", enable_lt=default)
-AC_ARG_ENABLE(libs,    [  --enable-libs           install static libraries, if any (enabled by default)], , enable_libs=yes)
+AC_ARG_ENABLE(libs,    [  --enable-libs           install static libraries (enabled by default for Unix)])
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
@@ -325,6 +325,7 @@ show_explicitly_enabled "${enable_noopt}" "No-optimization" "Note that this mode
 show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 
+show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
@@ -449,6 +450,7 @@ INSTALL_SETUP_RACKET_FLAGS=
 INSTALL_LIBS_ENABLE=no-install
 
 STRIP_DEBUG=":"
+strip_debug_flags=""
 enable_strip_by_default=yes
 
 use_flag_pthread=yes
@@ -652,7 +654,8 @@ if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
 fi
 
-if test "${enable_libs}" = "yes" ; then
+if test "${enable_libs}" != "no" ; then
+  # Canceled for some platforms below:
   INSTALL_LIBS_ENABLE=install
 fi
 
@@ -781,6 +784,10 @@ case "$host_os" in
     GUI_CONFIG_PATH="../etc"
     skip_iconv_check=yes
     check_for_mprotect=no
+    # ".a" is typically not useful, since we always build a DLL:
+    if test "${enable_libs}" == "" ; then
+      INSTALL_LIBS_ENABLE=no-install
+    fi
     AC_DEFINE(HAVE_STDINT_H,1,[Have stdint.h])
     if `which ${host}-windres > /dev/null` ; then
       WINDRES="${host}-windres"
@@ -859,6 +866,14 @@ case "$host_os" in
 
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
     try_kqueue_syscall=yes
+
+    # Needed when stripping ".a"s:
+    strip_debug_flags=" -S"
+
+    # ".a" is typically not useful, since we always build a ".dylib":
+    if test "${enable_libs}" == "" ; then
+      INSTALL_LIBS_ENABLE=no-install
+    fi
 
     SO_SUFFIX=.dylib
 
@@ -967,7 +982,7 @@ fi
 if test "${enable_strip}" = "yes" ; then
   AC_CHECK_TOOL([STRIP], [strip])
   # Used to add -S flag, but not all `strip' variants support it:
-  STRIP_DEBUG="$STRIP"
+  STRIP_DEBUG="${STRIP}${strip_debug_flags}"
 fi
 
 ############## C flags ################
