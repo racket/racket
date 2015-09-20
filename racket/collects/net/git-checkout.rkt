@@ -671,16 +671,12 @@
        (when id
          (define (this-object-location)
            (object-location (hash-ref obj-ids id)))
-         (define (copy-this-object perms)
+         (case (datum-intern-literal mode)
+          [(#"100644" #"644"
+            #"100755" #"755")
            (copy-object tmp
                         (this-object-location)
-                        perms
-                        (build-path dest-dir fn)))
-         (case (datum-intern-literal mode)
-          [(#"100755") #"755"
-           (copy-this-object #o755)]
-          [(#"100644" #"644")
-           (copy-this-object #o644)]
+                        (build-path dest-dir fn))]
           [(#"40000" #"040000")
            (extract-tree id obj-ids tmp (build-path dest-dir fn))]
           [(#"120000")
@@ -942,8 +938,8 @@
    [else
     (call-with-input-file* (build-path (tmp-info-dir tmp) location) proc)]))
 
-;; copy-object : tmp-info location integer path -> void
-(define (copy-object tmp location perms dest-file)
+;; copy-object : tmp-info location path -> void
+(define (copy-object tmp location dest-file)
   (cond
    [(pair? location)
     (define bstr (object->bytes tmp location))
@@ -954,8 +950,7 @@
    [else
     (copy-file (build-path (tmp-info-dir tmp) location)
                dest-file
-               #t)])
-  (file-or-directory-permissions dest-file perms))
+               #t)]))
 
 ;; object->bytes : tmp-info location -> bytes
 (define (object->bytes tmp location)
