@@ -658,9 +658,7 @@
 # define DO_STACK_CHECK
 # define WINDOWS_FIND_STACK_BOUNDS
 
-# if !defined(_WIN64) || (_MSC_VER >= 1600) || defined(__MINGW32__)
-#  define USE_MZ_SETJMP
-# endif
+# define USE_MZ_SETJMP
 
 # define WINDOWS_DYNAMIC_LOAD
 
