@@ -134,4 +134,14 @@
                    5))
              #rx"^(?!.*unmentionable)")
 
+
+(test 'norm values
+      (let-syntax ([m (lambda (stx)
+                        #`'#,(syntax-local-name))])
+        (define norm
+          (let ()
+            (define x 8)
+            (m)))
+        norm))
+
 (report-errs)

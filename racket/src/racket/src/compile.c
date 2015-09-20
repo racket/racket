@@ -5918,12 +5918,17 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
     int more = 1, is_last;
 
     is_last = SCHEME_STX_NULLP(SCHEME_STX_CDR(forms));
+    if (is_last)
+      env->value_name = orig_vname;
 
     result = forms;
 
     /* Check for macro expansion, which could mask the real
        define-values, define-syntax, etc.: */
     first = scheme_check_immediate_macro(first, env, rec, drec, &gval, is_last);
+
+    if (is_last)
+      env->value_name = NULL;
     
     if (SAME_OBJ(gval, scheme_begin_syntax)) {
       /* Inline content */
@@ -6141,7 +6146,11 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 	  first = scheme_datum_to_syntax(first, forms, forms, 0, 0);
           SCHEME_EXPAND_OBSERVE_NEXT(env->observer);
           is_last = SCHEME_STX_NULLP(SCHEME_STX_CDR(result));
+          if (is_last)
+            env->value_name = orig_vname;
 	  first = scheme_check_immediate_macro(first, env, rec, drec, &gval, is_last);
+          if (is_last)
+            env->value_name = NULL;
 	  more = 1;
 	  if (NOT_SAME_OBJ(gval, scheme_define_values_syntax)
 	      && NOT_SAME_OBJ(gval, scheme_define_syntaxes_syntax)) {
