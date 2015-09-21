@@ -712,6 +712,7 @@ PLAIN_CC
 MZLINKER
 REZ
 CC_FOR_BUILD
+STRIP_LIB_DEBUG
 STRIP_DEBUG
 ARFLAGS
 STATIC_AR
@@ -3177,6 +3178,7 @@ INSTALL_SETUP_RACKET_FLAGS=
 INSTALL_LIBS_ENABLE=no-install
 
 STRIP_DEBUG=":"
+STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
 
@@ -4743,9 +4745,6 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
     try_kqueue_syscall=yes
 
-    # Needed when stripping ".a"s:
-    strip_debug_flags=" -S"
-
     # ".a" is typically not useful, since we always build a ".dylib":
     if test "${enable_libs}" == "" ; then
       INSTALL_LIBS_ENABLE=no-install
@@ -4855,6 +4854,11 @@ if test "${enable_strip}" = "" ; then
   fi
 fi
 
+try_archive_conftest()
+{
+   $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
+}
+
 if test "${enable_strip}" = "yes" ; then
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}strip", so it can be a program name with args.
@@ -4949,7 +4953,32 @@ else
 fi
 
   # Used to add -S flag, but not all `strip' variants support it:
-  STRIP_DEBUG="${STRIP}${strip_debug_flags}"
+  STRIP_DEBUG="${STRIP}"
+  if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
+    # Can only support library stripping if something like "-S" is available:
+     msg="for strip -S"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+    set_strip_lib=no
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int f() { return 0; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  try_archive_conftest
+else
+  set_strip_lib=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    if test conftest.a ; then
+      if "${STRIP_DEBUG}" -S conftest.a > /dev/null 2>&1 ; then
+        STRIP_LIB_DEBUG="${STRIP_DEBUG} -S"
+        set_strip_lib=yes
+      fi
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $set_strip_lib" >&5
+$as_echo "$set_strip_lib" >&6; }
+  fi
 fi
 
 ############## C flags ################
@@ -6761,6 +6790,7 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
 
 
 

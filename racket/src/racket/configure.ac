@@ -450,6 +450,7 @@ INSTALL_SETUP_RACKET_FLAGS=
 INSTALL_LIBS_ENABLE=no-install
 
 STRIP_DEBUG=":"
+STRIP_LIB_DEBUG=":"
 strip_debug_flags=""
 enable_strip_by_default=yes
 
@@ -867,9 +868,6 @@ case "$host_os" in
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
     try_kqueue_syscall=yes
 
-    # Needed when stripping ".a"s:
-    strip_debug_flags=" -S"
-
     # ".a" is typically not useful, since we always build a ".dylib":
     if test "${enable_libs}" == "" ; then
       INSTALL_LIBS_ENABLE=no-install
@@ -979,10 +977,29 @@ if test "${enable_strip}" = "" ; then
   fi
 fi
 
+try_archive_conftest()
+{
+   $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
+}
+
 if test "${enable_strip}" = "yes" ; then
   AC_CHECK_TOOL([STRIP], [strip])
   # Used to add -S flag, but not all `strip' variants support it:
-  STRIP_DEBUG="${STRIP}${strip_debug_flags}"
+  STRIP_DEBUG="${STRIP}"
+  if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
+    # Can only support library stripping if something like "-S" is available:
+    [ msg="for strip -S" ]
+    AC_MSG_CHECKING($msg)
+    set_strip_lib=no
+    AC_COMPILE_IFELSE([AC_LANG_SOURCE([int f() { return 0; }])], try_archive_conftest, set_strip_lib=no )
+    if test conftest.a ; then
+      if "${STRIP_DEBUG}" -S conftest.a > /dev/null 2>&1 ; then
+        STRIP_LIB_DEBUG="${STRIP_DEBUG} -S"
+        set_strip_lib=yes
+      fi
+    fi
+    AC_MSG_RESULT($set_strip_lib)
+  fi
 fi
 
 ############## C flags ################
@@ -1692,6 +1709,7 @@ AC_SUBST(AR)
 AC_SUBST(STATIC_AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(STRIP_DEBUG)
+AC_SUBST(STRIP_LIB_DEBUG)
 AC_SUBST(CC_FOR_BUILD)
 AC_SUBST(REZ)
 AC_SUBST(MZLINKER)
