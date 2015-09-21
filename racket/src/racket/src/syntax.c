@@ -6805,6 +6805,7 @@ static Scheme_Object *unmarshal_free_id_info(Scheme_Object *p, Scheme_Unmarshal_
 
   phase = SCHEME_CDR(p);
   p = SCHEME_CAR(p);
+  if (!SCHEME_PAIRP(p)) return_NULL;
   o = scheme_make_stx(SCHEME_CAR(p), NULL, NULL);
   p = datum_to_wraps(SCHEME_CDR(p), ut);
   if (!p) return_NULL;
