@@ -5795,8 +5795,8 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
   int did_set_value, checked_once, skip_depth, unused_clauses, found_escapes;
   int remove_last_one = 0, inline_fuel, rev_bind_order;
   int post_bind = !(SCHEME_LET_FLAGS(head) & (SCHEME_LET_RECURSIVE | SCHEME_LET_STAR));
-  int pre_vclock, pre_aclock, pre_kclock, pre_sclock, increments_kclock;
-  int once_vclock, once_aclock, once_kclock, once_sclock, once_increments_kclock;
+  int pre_vclock, pre_aclock, pre_kclock, pre_sclock, increments_kclock = 0;
+  int once_vclock, once_aclock, once_kclock, once_sclock, once_increments_kclock = 0;
 
 # define pos_EARLIER(a, b) (rev_bind_order ? ((a) > (b)) : ((a) < (b)))
 

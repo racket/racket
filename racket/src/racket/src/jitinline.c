@@ -2777,11 +2777,17 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       ref_fx1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
       ref_fail1 = jit_bnei_i(jit_forward(), JIT_R2, string_type);
+    } else {
+      ref_fx1 = NULL;
+      ref_fail1 = NULL;
     }
     if (!is_str2) {
       ref_fx2 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
       jit_ldxi_s(JIT_V1, JIT_R1, &((Scheme_Object *)0x0)->type);
       ref_fail2 = jit_bnei_i(jit_forward(), JIT_V1, string_type);
+    } else {
+      ref_fx2 = NULL;
+      ref_fail2 = NULL;
     }
     ref_ucnofail = jit_jmpi(jit_forward());
     CHECK_LIMIT();
