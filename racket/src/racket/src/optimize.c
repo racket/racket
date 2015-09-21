@@ -2802,8 +2802,8 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
       le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 1, 0);
       if (le)
         return le;
-      if (SAME_TYPE(app->args[0], scheme_values_func)
-          || SAME_TYPE(app->args[0], scheme_apply_proc))
+      if (SAME_OBJ(app->args[0], scheme_values_func)
+          || SAME_OBJ(app->args[0], scheme_apply_proc))
         info->maybe_values_argument = 1;
       rator_apply_escapes = info->escapes;
     }
@@ -3528,8 +3528,8 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
     rator_apply_escapes = info->escapes;
   }
 
-  if (SAME_TYPE(app->rator, scheme_values_func)
-      || SAME_TYPE(app->rator, scheme_apply_proc))
+  if (SAME_OBJ(app->rator, scheme_values_func)
+      || SAME_OBJ(app->rator, scheme_apply_proc))
     info->maybe_values_argument = 1;
 
   /* 1st arg */
