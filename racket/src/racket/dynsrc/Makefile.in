@@ -23,12 +23,20 @@ CFLAGS = @CFLAGS@ @COMPFLAGS@
 CPPFLAGS = @PREFLAGS@
 ALL_CFLAGS = $(CFLAGS) $(CPPFLAGS) -I$(builddir)/.. -I$(srcdir)/../include -I$(srcdir)/../src @MZOPTIONS@
 
-dynlib:
+dynlib@NOT_MINGW@:
 	$(MAKE) ../mzdyn.o
 	$(MAKE) ../starter@EXE_SUFFIX@
 
-dynlib3m:
+dynlib@MINGW@:
+	$(MAKE) dynlib@NOT_MINGW@
+	$(MAKE) ../mzdyn.exp
+
+dynlib3m@NOT_MINGW@:
 	$(MAKE) ../mzdyn3m.o
+
+dynlib3m@MINGW@:
+	$(MAKE) dynlib3m@NOT_MINGW@
+	$(MAKE) ../mzdyn3m.exp
 
 dynexample:
 	$(MAKE) ../dynexmpl.so
@@ -64,6 +72,11 @@ sres.o:
 	@WINDRES@ -DMZSTART -i $(srcdir)/../../worksp/starters/start.rc -o sres.o
 smrres.o:
 	@WINDRES@ -DMRSTART -i $(srcdir)/../../worksp/starters/start.rc -o smrres.o
+
+../mzdyn.exp: ../mzdyn.o
+	@DLLTOOL@ --output-exp ../mzdyn.exp ../mzdyn.o
+../mzdyn3m.exp: ../mzdyn3m.o
+	@DLLTOOL@ --output-exp ../mzdyn3m.exp ../mzdyn3m.o
 
 # Cygwin ########################################
 
