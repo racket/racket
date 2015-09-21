@@ -28,8 +28,12 @@ extern "C" {
 #if defined(MZ_USE_PLACES) || defined(MZ_USE_FUTURES)
 # define USE_THREAD_LOCAL
 # ifdef _WIN32
-#  if defined(_WIN64) && !defined(__MINGW32__)
-#   define THREAD_LOCAL __declspec(thread)
+#  if defined(_WIN64)
+#   if defined(__MINGW32__)
+#     define THREAD_LOCAL __thread
+#   else
+#     define THREAD_LOCAL __declspec(thread)
+#   endif
 #   define MZ_THREAD_EXTERN extern
 #   define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
 #  else
