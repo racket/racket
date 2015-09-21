@@ -6803,6 +6803,7 @@ static Scheme_Object *unmarshal_free_id_info(Scheme_Object *p, Scheme_Unmarshal_
 {
   Scheme_Object *o, *phase;
 
+  if (!SCHEME_PAIRP(p)) return_NULL;
   phase = SCHEME_CDR(p);
   p = SCHEME_CAR(p);
   if (!SCHEME_PAIRP(p)) return_NULL;
@@ -6897,6 +6898,7 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
       if (SCHEME_BOXP(b)) {
         /* has `free-id=?` info */
         b = SCHEME_BOX_VAL(b);
+        if (!SCHEME_PAIRP(b)) return_NULL;
         free_id = unmarshal_free_id_info(SCHEME_CDR(b), ut);
         if (!free_id) return_NULL;
         b = SCHEME_CAR(b);
@@ -7212,6 +7214,8 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
       if (!wraps)
         return_NULL;
     }
+
+    if (!SCHEME_PAIRP(wraps)) return_NULL;
     ((Scheme_Stx *)result)->scopes = (Scheme_Scope_Table *)SCHEME_CAR(wraps);
     STX_ASSERT(SAME_TYPE(SCHEME_TYPE(((Scheme_Stx *)result)->scopes), scheme_scope_table_type));
     ((Scheme_Stx *)result)->shifts = SCHEME_CDR(wraps);
