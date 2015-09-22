@@ -4218,19 +4218,21 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
   }
 }
 
-Scheme_Hash_Tree *intersect_and_merge_types(Scheme_Hash_Tree *t_types, Scheme_Hash_Tree *f_types,
-                                            Scheme_Hash_Tree *base_types)
+static void intersect_and_merge_types(Optimize_Info *t_info, Optimize_Info *f_info,
+                                      Optimize_Info *base_info)
 /* return (union (intersetion t_type f_types) base_types) 
    in case a key is already in base_type, the value is not modified*/
 {
+  Scheme_Hash_Tree *t_types = t_info->types, *f_types = f_info->types,
+                   *base_types = base_info->types;
   Scheme_Object *pos, *t_pred, *f_pred, *base_pred;
   intptr_t i;
 
   if (!t_types || !f_types)
-    return base_types;
+    return;
 
-  if (base_types  && (SAME_OBJ(f_types, base_types) || SAME_OBJ(t_types, base_types)))
-    return base_types;
+  if (base_types && (SAME_OBJ(f_types, base_types) || SAME_OBJ(t_types, base_types)))
+    return;
 
   if (f_types->count > t_types->count) {
     Scheme_Hash_Tree *swap = f_types;
@@ -4256,7 +4258,7 @@ Scheme_Hash_Tree *intersect_and_merge_types(Scheme_Hash_Tree *t_types, Scheme_Ha
     }
     i = scheme_hash_tree_next(f_types, i);
   }
-  return base_types;
+  base_info->types = base_types;
 }
 
 static int relevant_predicate(Scheme_Object *pred)
@@ -4373,10 +4375,8 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 {
   Scheme_Branch_Rec *b;
   Scheme_Object *t, *tb, *fb;
-  Scheme_Hash_Tree *init_types, *then_types;
   int init_vclock, init_aclock, init_kclock, init_sclock;
-  int then_escapes, then_preserves_marks, then_single_result;
-  int then_vclock, then_aclock, then_kclock, then_sclock;
+  Optimize_Info *then_info, *else_info;
   Optimize_Info_Sequence info_seq;
   Scheme_Object *pred;
 
@@ -4492,22 +4492,13 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   init_aclock = info->aclock;
   init_kclock = info->kclock;
   init_sclock = info->sclock;
-  init_types = info->types;
 
-  add_types_for_t_branch(t, info, 5);
+  then_info = optimize_info_add_frame(info, 0, 0, 0);
+  add_types_for_t_branch(t, then_info, 5);
+  tb = scheme_optimize_expr(tb, then_info, scheme_optimize_tail_context(context));
+  optimize_info_done(then_info, NULL);
 
-  tb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
-
-  then_types = info->types;
-  then_preserves_marks = info->preserves_marks;
-  then_single_result = info->single_result;
-  then_escapes = info->escapes;
-  then_vclock = info->vclock;
-  then_aclock = info->aclock;
-  then_kclock = info->kclock;
-  then_sclock = info->sclock;
-
-  info->types = init_types;
+  info->escapes = 0;
   info->vclock = init_vclock;
   info->aclock = init_aclock;
   info->kclock = init_kclock;
@@ -4515,44 +4506,48 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
   optimize_info_seq_step(info, &info_seq);
 
-  add_types_for_f_branch(t, info, 5);
+  else_info = optimize_info_add_frame(info, 0, 0, 0);
+  add_types_for_f_branch(t, else_info, 5);
+  fb = scheme_optimize_expr(fb, else_info, scheme_optimize_tail_context(context));
+  optimize_info_done(else_info, NULL);
 
-  fb = scheme_optimize_expr(fb, info, scheme_optimize_tail_context(context));
-
-  if (info->escapes && then_escapes) {
+  if (then_info->escapes && else_info->escapes) {
     /* both branches escaped */
     info->preserves_marks = 1;
     info->single_result = 1;
     info->kclock = init_kclock;
-    info->types = init_types; /* not sure if this is necesary */
 
   } else if (info->escapes) {
-    info->preserves_marks = then_preserves_marks;
-    info->single_result = then_single_result;
-    info->kclock = then_kclock;
-    info->types = then_types;
+    info->preserves_marks = then_info->preserves_marks;
+    info->single_result = then_info->single_result;
+    info->kclock = then_info->kclock;
+    merge_types(then_info, info, 0);
     info->escapes = 0;
 
-  } else if (then_escapes) {
-    info->escapes = 0;
+  } else if (then_info->escapes) {
+      info->preserves_marks = else_info->preserves_marks;
+      info->single_result = else_info->single_result;
+      merge_types(else_info, info, 0);
+      info->escapes = 0;
 
   } else {
-    then_preserves_marks = or_tentative(then_preserves_marks, info->preserves_marks);
-    info->preserves_marks = then_preserves_marks;
-    then_single_result = or_tentative(then_single_result, info->single_result);
-    info->single_result = then_single_result;
-    if (then_kclock > info->kclock)
-      info->kclock = then_kclock;
-    init_types = intersect_and_merge_types(then_types, info->types, init_types);
-    info->types = init_types;
+    int new_preserves_marks, new_single_result;
+
+    new_preserves_marks = or_tentative(then_info->preserves_marks, else_info->preserves_marks);
+    info->preserves_marks = new_preserves_marks;
+    new_single_result = or_tentative(then_info->single_result, else_info->single_result);
+    info->single_result = new_single_result;
+    if (then_info->kclock > info->kclock)
+      info->kclock = then_info->kclock;
+    intersect_and_merge_types(then_info, else_info, info);
   }
 
-  if (then_sclock > info->sclock)
-    info->sclock = then_sclock;
-  if (then_aclock > info->aclock)
-    info->aclock = then_aclock;
+  if (then_info->sclock > info->sclock)
+    info->sclock = then_info->sclock;
+  if (then_info->aclock > info->aclock)
+    info->aclock = then_info->aclock;
 
-  if ((init_vclock == then_vclock) && (init_vclock == info->vclock)) {
+  if ((init_vclock == then_info->vclock) && (init_vclock == info->vclock)) {
     /* we can rewind the vclock to just after the test, because the
        `if` as a whole has no effect */
     info->vclock--;
