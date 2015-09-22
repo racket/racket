@@ -438,13 +438,17 @@ int BTC_bi_chan_mark(void *p, struct NewGC *gc)
 {
   if (gc->doing_memory_accounting) {
     Scheme_Place_Bi_Channel *bc = (Scheme_Place_Bi_Channel *)p;
-    /* Race conditions here on `mem_size', and likely double counting
-       when the same async channels are accessible from paired bi
-       channels --- but those approximations are ok for accounting. */
-    if (bc->link->sendch)
-      account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(bc->link->sendch->mem_size), 0);
-    if (bc->link->recvch)
-      account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(bc->link->recvch->mem_size), 0);
+    /* The `link` field can be NULL if the channel is still being
+       set up: */
+    if (bc->link) {
+      /* Race conditions here on `mem_size', and likely double counting
+         when the same async channels are accessible from paired bi
+         channels --- but those approximations are ok for accounting. */
+      if (bc->link->sendch)
+        account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(bc->link->sendch->mem_size), 0);
+      if (bc->link->recvch)
+        account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(bc->link->recvch->mem_size), 0);
+    }
   }
   return gc->mark_table[btc_redirect_bi_chan](p, gc);
 }
