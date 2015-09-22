@@ -86,14 +86,6 @@
            1)
    1)
   
-  (contract-error-test
-   'contract-error-test4
-   #'(contract (or/c (-> integer? integer?) (-> boolean? boolean?))
-               (λ (x) x)
-               'pos
-               'neg)
-   exn:fail?)
-  
   (test/spec-passed/result
    'or/c-ordering
    '(let ([x '()])
@@ -231,11 +223,21 @@
                'pos 'neg)
      (lambda (x y z) 1)))
   
-  (test/neg-blame
+  (test/spec-passed/result
    'ho-or/c-val-first2
+   '((contract (or/c (-> integer? integer?) (-> boolean? boolean?))
+               (λ (x) x)
+               'pos
+               'neg)
+     1)
+   1)
+  
+  (test/spec-passed/result
+   'ho-or/c-val-first3
    '((contract (-> (or/c (-> number? number?)
                          (-> number? number?))
                    number?)
                (λ (x) 1)
                'pos 'neg)
-     (lambda (x) 1))))
+     (lambda (x) 1))
+   1))
