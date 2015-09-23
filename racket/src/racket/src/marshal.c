@@ -399,6 +399,10 @@ static Scheme_Object *read_case_lambda(Scheme_Object *obj)
         return NULL;
       all_closed = 0;
     }
+    else {
+      if (!SAME_TYPE(SCHEME_TYPE(a), scheme_closure_type))
+        return NULL;
+    }
   }
 
   if (all_closed) {
