@@ -18,7 +18,7 @@
           (eval (parameterize ([read-accept-compiled #t])
                   (with-input-from-bytes bs read)))))))))
 
-(define (run fname seed0)
+(define (run fname seed0 #:write? [out-fname? #f])
   (define seed (or seed0 (+ 1 (random (expt 2 30)))))
   (printf "seed: ~s\nname: ~a\n" seed fname)
   (flush-output)
@@ -26,9 +26,16 @@
   (define bs  (file->bytes fname))
   (define len (* 8 (bytes-length bs)))
   (for ([i (in-range (quotient len 10000))]) (flip-bit bs (random len)))
-  (with-handlers ([void void]) (run-file bs)))
+  (with-handlers ([void void]) 
+    (if out-fname?
+        (begin
+          (displayln (build-path (current-directory) out-fname?))
+          (call-with-output-file (build-path (current-directory) out-fname?)
+            (lambda (o)
+              (write-bytes bs o))))
+        (run-file bs))))
 
-(let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f])
+(let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f] [write? #f])
   (command-line
    #:once-each
    ["--oo" "forever" (set! forever? #t)]
@@ -39,13 +46,17 @@
    ["-f" file* "filename to run"     (set! file file*)]
    ["-d" dir* "dir to run"          (set! dir dir*)]
    ["-c" "run over all collections" (set! dir (find-collects-dir))]
+   #:once-any
+   ["--write" filename "write mutated file" (begin (unless file
+                                                     (error "--write requires -f"))
+                                                   (set! write? filename))]
    #:args () (void))
   (unless global-seed
     (set! global-seed (+ 1 (random (expt 2 30)))))
   (printf "Global seed: ~a\n" global-seed)
   (random-seed global-seed)
   (let loop ()
-    (cond [file (run file seed0)]
+    (cond [file (run file seed0 #:write? write?)]
           [dir 
 	   (define files (sort (for/list ([f (in-directory dir)]
 					  #:when (regexp-match #rx"\\.zo" f))
