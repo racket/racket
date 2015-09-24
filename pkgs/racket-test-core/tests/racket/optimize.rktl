@@ -1762,6 +1762,12 @@
 (test-comp '(lambda (x) (if (values 1 2) 78 78))
            '(lambda (x) (values 1 2) 78)
            #f)
+(test-comp '(lambda (x) (if (null? x) x x))
+           '(lambda (x) x))
+(test-comp '(lambda (x) (if (null? x) null x))
+           '(lambda (x) x))
+(test-comp '(lambda (x) (not (if (null? x) #t x)))
+           '(lambda (x) (not x)))
 
 (test-comp '(lambda (x) (if (let ([r (something)])
                               (if r r (something-else)))

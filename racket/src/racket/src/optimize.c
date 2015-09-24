@@ -23,7 +23,7 @@
   All rights reserved.
 */
 
-/* This file implements bytecode optimzation.
+/* This file implements bytecode optimization.
 
    See "eval.c" for an overview of compilation passes. */
 
@@ -79,8 +79,8 @@ struct Optimize_Info
 
   /* Set by expression optimization: */
   int single_result, preserves_marks; /* negative means "tentative", due to fixpoint in progress */
-  int escapes; /* flag to signal that the expression allways escapes. When escapes is 1, it's assumed
-                  that single_result and preserves_marks are also 1, and that it's not necesary to
+  int escapes; /* flag to signal that the expression always escapes. When escapes is 1, it's assumed
+                  that single_result and preserves_marks are also 1, and that it's not necessary to
                   use optimize_ignored before including the expression. */
 
   char **stat_dists; /* (pos, depth) => used? */
@@ -4176,16 +4176,63 @@ int scheme_compiled_duplicate_ok(Scheme_Object *fb, int cross_module)
           || SAME_TYPE(SCHEME_TYPE(fb), scheme_ctype_type));
 }
 
-static int equivalent_exprs(Scheme_Object *a, Scheme_Object *b)
+static Scheme_Object *collapse_local(int pos, Optimize_Info *info, int context)
+/* pos is in new-frame counts */
+{
+  if (!optimize_is_mutated(info, pos)) {
+    Scheme_Object *pred;
+
+    pred = optimize_get_predicate(pos, info);
+    if (pred) {
+      if (SAME_OBJ(pred, scheme_not_prim))
+        return scheme_false;
+
+      if (context & OPT_CONTEXT_BOOLEAN) {
+        /* all other predicates recognize non-#f things */
+        return scheme_true;
+      }
+
+      if (SAME_OBJ(pred, scheme_null_p_proc))
+        return scheme_null;
+      if (SAME_OBJ(pred, scheme_void_p_proc))
+        return scheme_void;
+      if (SAME_OBJ(pred, scheme_eof_object_p_proc))
+        return scheme_eof;
+    }
+  }
+  return NULL;
+}
+
+static Scheme_Object *equivalent_exprs(Scheme_Object *a, Scheme_Object *b,
+                                       Optimize_Info *a_info, Optimize_Info *b_info, int context)
 {
   if (SAME_OBJ(a, b))
-    return 1;
+    return a;
+
   if (SAME_TYPE(SCHEME_TYPE(a), scheme_local_type)
       && SAME_TYPE(SCHEME_TYPE(b), scheme_local_type)
       && (SCHEME_LOCAL_POS(a) == SCHEME_LOCAL_POS(b)))
-    return 1;
+    return a;
 
-  return 0;
+  if (b_info 
+      && SAME_TYPE(SCHEME_TYPE(a), scheme_local_type)
+      && (SCHEME_TYPE(b) > _scheme_compiled_values_types_)) {
+    Scheme_Object *n;
+    n = collapse_local(SCHEME_LOCAL_POS(a), b_info, context);
+    if (n && SAME_OBJ(n, b))
+      return a;
+  }
+
+  if (a_info 
+      && SAME_TYPE(SCHEME_TYPE(b), scheme_local_type)
+      && (SCHEME_TYPE(a) > _scheme_compiled_values_types_)) {
+    Scheme_Object *n;
+    n = collapse_local(SCHEME_LOCAL_POS(b), a_info, context);
+    if (n && SAME_OBJ(n, a))
+      return b;
+  }
+
+  return NULL;
 }
 
 static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred)
@@ -4220,8 +4267,9 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
 
 static void intersect_and_merge_types(Optimize_Info *t_info, Optimize_Info *f_info,
                                       Optimize_Info *base_info)
-/* return (union (intersetion t_type f_types) base_types) 
-   in case a key is already in base_type, the value is not modified*/
+/* Save in base_info->types the result of
+   (union (intersection t_info->type f_info->types) base_info->types) 
+   in case a key is already in base_info->types, the value is not modified */
 {
   Scheme_Hash_Tree *t_types = t_info->types, *f_types = f_info->types,
                    *base_types = base_info->types;
@@ -4377,6 +4425,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   Scheme_Object *t, *tb, *fb;
   int init_vclock, init_aclock, init_kclock, init_sclock;
   Optimize_Info *then_info, *else_info;
+  Optimize_Info *then_info_init, *else_info_init;
   Optimize_Info_Sequence info_seq;
   Scheme_Object *pred;
 
@@ -4495,6 +4544,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
   then_info = optimize_info_add_frame(info, 0, 0, 0);
   add_types_for_t_branch(t, then_info, 5);
+  then_info_init = optimize_info_add_frame(then_info, 0, 0, 0);
   tb = scheme_optimize_expr(tb, then_info, scheme_optimize_tail_context(context));
   optimize_info_done(then_info, NULL);
 
@@ -4508,6 +4558,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
   else_info = optimize_info_add_frame(info, 0, 0, 0);
   add_types_for_f_branch(t, else_info, 5);
+  else_info_init = optimize_info_add_frame(else_info, 0, 0, 0);
   fb = scheme_optimize_expr(fb, else_info, scheme_optimize_tail_context(context));
   optimize_info_done(else_info, NULL);
 
@@ -4555,15 +4606,6 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
   optimize_info_seq_done(info, &info_seq);
 
-  /* Try optimize: (if x x #f) => x */
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_local_type)
-      && SAME_TYPE(SCHEME_TYPE(tb), scheme_local_type)
-      && (SCHEME_LOCAL_POS(t) == SCHEME_LOCAL_POS(tb))
-      && SCHEME_FALSEP(fb)) {
-    info->size -= 2;
-    return t;
-  }
-
   /* Try optimize: (if x #f #t) => (not x) */
   if (SCHEME_FALSEP(tb)
       && SAME_OBJ(fb, scheme_true)) {
@@ -4572,9 +4614,25 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   }
 
   /* Try optimize: (if <omitable-expr> v v) => v */
-  if (equivalent_exprs(tb, fb)) {
-    info->size -= 1; /* could be more precise */
-    return make_discarding_first_sequence(t, tb, info, 0);
+  {
+    Scheme_Object *nb;
+
+    nb = equivalent_exprs(tb, fb, then_info_init, else_info_init, context);
+    if (nb) {
+      info->size -= 1; /* could be more precise */
+      return make_discarding_first_sequence(t, nb, info, 0);
+    }
+  }
+
+  /* Try optimize: (if x x #f) => x 
+     This pattern is included in the previous reduction,
+     but this is still useful if x is mutable */
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_local_type)
+      && SAME_TYPE(SCHEME_TYPE(tb), scheme_local_type)
+      && (SCHEME_LOCAL_POS(t) == SCHEME_LOCAL_POS(tb))
+      && SCHEME_FALSEP(fb)) {
+    info->size -= 2;
+    return t;
   }
 
   /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)
@@ -5600,7 +5658,10 @@ static void update_rhs_value(Scheme_Compiled_Let_Value *naya, Scheme_Object *e,
                              Optimize_Info *info, Scheme_Object *tst)
 {
   if (tst) {
-    if (!equivalent_exprs(naya->value, e)) {
+    Scheme_Object *n;
+    
+    n = equivalent_exprs(naya->value, e, info, info, 0);
+    if (!n) {
       Scheme_Branch_Rec *b;
 
       /* In case `tst` was formerly a single-use variable, mark it as multi-use: */
@@ -5613,7 +5674,8 @@ static void update_rhs_value(Scheme_Compiled_Let_Value *naya, Scheme_Object *e,
       b->fbranch = e;
 
       naya->value = (Scheme_Object *)b;
-    }
+    } else
+      naya->value = n;
   } else
     naya->value = e;
 }
@@ -7955,27 +8017,9 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
       delta = optimize_info_get_shift(info, pos);
 
-      if (!is_mutated) {
-        Scheme_Object *pred;
-
-        pred = optimize_get_predicate(pos + delta, info);
-        if (pred) {
-          if (SAME_OBJ(pred, scheme_not_prim))
-            return scheme_false;
-
-          if (context & OPT_CONTEXT_BOOLEAN) {
-            /* all other predicates recognize non-#f things */
-            return scheme_true;
-          }
-
-          if (SAME_OBJ(pred, scheme_null_p_proc))
-            return scheme_null;
-          if (SAME_OBJ(pred, scheme_void_p_proc))
-            return scheme_void;
-          if (SAME_OBJ(pred, scheme_eof_object_p_proc))
-            return scheme_eof;
-        }
-      }
+      val = collapse_local(pos + delta, info, context);
+      if (val)
+        return val;
 
       if (delta)
         expr = scheme_make_local(scheme_local_type, pos + delta, 0);
