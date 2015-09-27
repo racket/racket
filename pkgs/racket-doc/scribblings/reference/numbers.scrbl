@@ -1,10 +1,11 @@
 #lang scribble/doc
-@(require "mz.rkt" racket/math scribble/extract
+@(require "mz.rkt" racket/math scribble/extract 
           (for-label racket/math
                      racket/flonum
                      racket/fixnum
                      racket/unsafe/ops
-                     racket/require))
+                     racket/require
+                     racket/random))
 
 @(define math-eval (make-base-eval))
 @(interaction-eval #:eval math-eval (require racket/math))
@@ -835,6 +836,8 @@ both in binary and as integers.
 @; ------------------------------------------------------------------------
 @subsection{Random Numbers}
 
+@margin-note{If security is a concern, use @racket[crypto-random-bytes]}
+
 @defproc*[([(random [k (integer-in 1 4294967087)]
                     [rand-gen pseudo-random-generator?
                                (current-pseudo-random-generator)])
@@ -854,7 +857,6 @@ generator (which defaults to the current one, as produced by
 internal state for generating numbers. The random number generator
 uses a 54-bit version of L'Ecuyer's MRG32k3a algorithm
 @cite["L'Ecuyer02"].}
-
 
 @defproc[(random-seed [k (integer-in 1 (sub1 (expt 2 31)))])
           void?]{
@@ -922,6 +924,18 @@ where the first three integers are in the range @racket[0] to
 range @racket[0] to @racket[4294944442], inclusive; at least one of
 the first three integers is non-zero; and at least one of the last
 three integers is non-zero. Otherwise, the result is @racket[#f].}
+
+@subsection{System-provided Randomness}
+
+The @racketmodname[racket/random] module provides an interface to randomness from the underlying operating system.
+Use this over @racket[random] wherever security is a concern.
+
+@defproc[(crypto-random-bytes [n exact-positive-integer?])
+         bytes?]{
+Returns n bytes. On Unix systems, the bytes are obtained from @filepath{/dev/urandom}, while Windows uses RtlGenRand.}
+
+@examples[#:eval(make-base-eval #:lang 'racket '(define (crypto-random-bytes n) #"\0\1\1\2\3\5\b\r\25\"7Y\220\351"))
+ (crypto-random-bytes 14)]
 
 @; ------------------------------------------------------------------------
 @subsection{Number--String Conversions}
