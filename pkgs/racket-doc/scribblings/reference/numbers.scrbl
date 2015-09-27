@@ -4,7 +4,8 @@
                      racket/flonum
                      racket/fixnum
                      racket/unsafe/ops
-                     racket/require))
+                     racket/require
+                     racket/random))
 
 @(define math-eval (make-base-eval))
 @(interaction-eval #:eval math-eval (require racket/math))
@@ -835,6 +836,8 @@ both in binary and as integers.
 @; ------------------------------------------------------------------------
 @subsection{Random Numbers}
 
+@margin-note{When security is a concern, use @racket[crypto-random-bytes] instead of @racket[random].}
+
 @defproc*[([(random [k (integer-in 1 4294967087)]
                     [rand-gen pseudo-random-generator?
                                (current-pseudo-random-generator)])
@@ -854,7 +857,6 @@ generator (which defaults to the current one, as produced by
 internal state for generating numbers. The random number generator
 uses a 54-bit version of L'Ecuyer's MRG32k3a algorithm
 @cite["L'Ecuyer02"].}
-
 
 @defproc[(random-seed [k (integer-in 1 (sub1 (expt 2 31)))])
           void?]{
@@ -922,6 +924,28 @@ where the first three integers are in the range @racket[0] to
 range @racket[0] to @racket[4294944442], inclusive; at least one of
 the first three integers is non-zero; and at least one of the last
 three integers is non-zero. Otherwise, the result is @racket[#f].}
+
+@; ------------------------------------------------------------------------
+
+@subsection{System-Provided Randomness}
+
+@defmodule[racket/random]{The @racketmodname[racket/random] module
+provides an interface to randomness from the underlying operating
+system. Use @racket[crypto-random-bytes]
+instead of @racket[random] wherever security is a concern.}
+
+@defproc[(crypto-random-bytes [n exact-positive-integer?])
+         bytes?]{
+
+Returns @racket[n] random bytes. On Unix systems, the bytes are
+obtained from @filepath{/dev/urandom}, while Windows uses
+the @tt{RtlGenRand} system function.
+
+@examples[
+ (eval:alts (crypto-random-bytes 14) #"\0\1\1\2\3\5\b\r\25\"7Y\220\351")
+]
+
+@history[#:added "6.2.900.17"]}
 
 @; ------------------------------------------------------------------------
 @subsection{Number--String Conversions}
