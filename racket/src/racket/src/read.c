@@ -4397,6 +4397,34 @@ static void make_ut(CPort *port)
   port->ut->multi_scope_pairs = rht;
 }
 
+static void prepare_current_unmarshal(Scheme_Unmarshal_Tables *ut)
+{
+  /* in case a previous unmarshal was interrupted: */
+  ut->current_rns = NULL;
+  ut->current_multi_scope_pairs = NULL;
+}
+
+static void merge_ht(Scheme_Hash_Table *f, Scheme_Hash_Table *t)
+{
+  int i;
+  for (i = f->size; i--; ) {
+    if (f->vals[i])
+      scheme_hash_set(t, f->keys[i], f->vals[i]);
+  }
+}
+
+static void complete_current_unmarshal(Scheme_Unmarshal_Tables *ut)
+{
+  if (ut->current_rns) {
+    merge_ht(ut->current_rns, ut->rns);
+    ut->current_rns = NULL;
+  }
+  if (ut->current_multi_scope_pairs) {
+    merge_ht(ut->current_multi_scope_pairs, ut->multi_scope_pairs);
+    ut->current_multi_scope_pairs = NULL;
+  }
+}
+
 /* Since read_compact_number is called often, we want it to be
    a cheap call in 3m, so avoid anything that allocated --- even
    error reporting, since we can make up a valid number. */
@@ -4563,20 +4591,33 @@ static Scheme_Object *resolve_symtab_refs(Scheme_Object *v, CPort *port)
   if (SCHEME_NULLP(port->symtab_refs))
     return v;
 
-  v = scheme_make_pair(v, port->symtab_refs);
+  if (v) {
+    v = scheme_make_pair(v, port->symtab_refs);
+    
+    v = resolve_references(v, port->orig_port, NULL,
+                           scheme_make_hash_table(SCHEME_hash_ptr), 
+                           scheme_make_hash_table(SCHEME_hash_ptr), 
+                           0, 0);
+    
+    l = SCHEME_CDR(v);
+  } else
+    l = port->symtab_refs;
 
-  v = resolve_references(v, port->orig_port, NULL,
-                         scheme_make_hash_table(SCHEME_hash_ptr), 
-                         scheme_make_hash_table(SCHEME_hash_ptr), 
-                         0, 0);  
-
-  for (l = SCHEME_CDR(v); !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    port->symtab[SCHEME_INT_VAL(SCHEME_CAR(SCHEME_CAR(l)))] = SCHEME_CDR(SCHEME_CAR(l));
+  for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    if (v)
+      port->symtab[SCHEME_INT_VAL(SCHEME_CAR(SCHEME_CAR(l)))] = SCHEME_CDR(SCHEME_CAR(l));
+    else {
+      /* interrupted; discard partial constructions */
+      port->symtab[SCHEME_INT_VAL(SCHEME_CAR(SCHEME_CAR(l)))] = NULL;
+    }
   }
   
   port->symtab_refs = scheme_null;
-  
-  return SCHEME_CAR(v);
+
+  if (v)
+    return SCHEME_CAR(v);
+  else
+    return NULL;
 }
 
 static Scheme_Object *read_compact(CPort *port, int use_stack);
@@ -4804,6 +4845,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
         save_ht = *port->ht;
         *port->ht = NULL;
 
+        prepare_current_unmarshal(port->ut);
 	v = read_compact(port, 1);
 
         if (!SCHEME_NULLP(port->symtab_refs))
@@ -4822,6 +4864,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
 	scheme_num_read_syntax_objects++;
 	if (!v)
 	  scheme_ill_formed_code(port);
+        complete_current_unmarshal(port->ut);
       }
       break;
     case CPT_MARSHALLED:
@@ -5936,6 +5979,9 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
 
   rp->pos = delay_info->shared_offsets[which - 1];
 
+  if (delay_info->ut)
+    prepare_current_unmarshal(delay_info->ut);
+
   /* Perform the read, catching escapes so we can clean up: */
   savebuf = scheme_current_thread->error_buf;
   scheme_current_thread->error_buf = &newbuf;
@@ -5954,8 +6000,10 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   v = resolve_symtab_refs(v, rp);
 
   delay_info->current_rp = old_rp;
-  if (delay_info->ut)
+  if (delay_info->ut) {
     delay_info->ut->rp = old_rp;
+    complete_current_unmarshal(delay_info->ut);
+  }
 
   if (!old_rp && !delay_info->perma_cache) {
     /* No one using the cache, to register it to be cleaned up */

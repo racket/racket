@@ -35,6 +35,17 @@
 #define HOOK_SHARED_OK /* EMPTY */
 #endif
 
+#ifdef OS_X
+# define MZ_CHECK_ASSERTS
+#endif
+
+#ifdef MZ_CHECK_ASSERTS
+# include <assert.h>
+# define MZ_ASSERT(x) assert(x)
+#else
+# define MZ_ASSERT(x) /* empty */
+#endif
+
 /*========================================================================*/
 /*                        optimization flags                              */
 /*========================================================================*/
@@ -3377,7 +3388,9 @@ void scheme_marshal_pop_refs(Scheme_Marshal_Tables *mt, int keep);
 typedef struct Scheme_Unmarshal_Tables {
   MZTAG_IF_REQUIRED
   Scheme_Hash_Table *rns;
+  Scheme_Hash_Table *current_rns; /* in-progress unmarshal, commit to `rns` at end */
   Scheme_Hash_Table *multi_scope_pairs; /* records conversions */
+  Scheme_Hash_Table *current_multi_scope_pairs; /* commit to `multi_scope_pairs` at end */
   struct CPort *rp;
   char *decoded;
   mzlonglong bytecode_hash;

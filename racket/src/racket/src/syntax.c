@@ -263,16 +263,7 @@ int stx_alloc_prop_table, stx_skip_alloc_prop_table;
     - <insp> => clean, but inspector needs to be proagated to children
     - (list <insp/#f> <insp> ...+) [interned] => armed; first inspector is to propagate */
 
-#ifdef OS_X
-# define CHECK_STX_ASSERTS
-#endif
-
-#ifdef CHECK_STX_ASSERTS
-# include <assert.h>
-# define STX_ASSERT(x) assert(x)
-#else
-# define STX_ASSERT(x) /* empty */
-#endif
+#define STX_ASSERT(x) MZ_ASSERT(x)
 
 static Scheme_Object *make_vector3(Scheme_Object *a, Scheme_Object *b, Scheme_Object *c)
 {
@@ -6531,6 +6522,37 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_scopes,
 
 #define return_NULL return NULL
 
+Scheme_Object *scheme_hash_get_either(Scheme_Hash_Table *ht, Scheme_Hash_Table *ht2,
+                                      Scheme_Object *key)
+{
+  Scheme_Object *val;
+  val = scheme_hash_get(ht, key);
+  if (val)
+    return val;
+  else if (ht2)
+    return scheme_hash_get(ht2, key);
+  else
+    return NULL;
+}
+
+static void ensure_current_rns(Scheme_Unmarshal_Tables *ut)
+{
+  Scheme_Hash_Table *rht;
+  if (!ut->current_rns) {
+    rht = scheme_make_hash_table(SCHEME_hash_ptr);
+    ut->current_rns = rht;
+  }
+}
+
+static void ensure_current_multi_scope_pairs(Scheme_Unmarshal_Tables *ut)
+{
+  Scheme_Hash_Table *rht;
+  if (!ut->current_multi_scope_pairs) {
+    rht = scheme_make_hash_table(SCHEME_hash_ptr);
+    ut->current_multi_scope_pairs = rht;
+  }
+}
+
 Scheme_Scope_Set *list_to_scope_set(Scheme_Object *l, Scheme_Unmarshal_Tables *ut)
 {
   Scheme_Scope_Set *scopes = NULL;
@@ -6538,7 +6560,7 @@ Scheme_Scope_Set *list_to_scope_set(Scheme_Object *l, Scheme_Unmarshal_Tables *u
 
   while (!SCHEME_NULLP(l)) {
     if (!SCHEME_PAIRP(l)) return_NULL;
-    scopes = (Scheme_Scope_Set *)scheme_hash_get(ut->rns, l);
+    scopes = (Scheme_Scope_Set *)scheme_hash_get_either(ut->rns, ut->current_rns, l);
     if (scopes)
       break;
     r = scheme_make_pair(l, r);
@@ -6554,7 +6576,8 @@ Scheme_Scope_Set *list_to_scope_set(Scheme_Object *l, Scheme_Unmarshal_Tables *u
     if (!scope) return_NULL;
 
     scopes = scope_set_set(scopes, scope, scheme_true);
-    scheme_hash_set(ut->rns, l, (Scheme_Object *)scopes);
+    ensure_current_rns(ut);
+    scheme_hash_set(ut->current_rns, l, (Scheme_Object *)scopes);
     
     r = SCHEME_CDR(r);
   }
@@ -6571,7 +6594,7 @@ static Scheme_Hash_Table *vector_to_multi_scope(Scheme_Object *mht, Scheme_Unmar
 
   if (!SCHEME_VECTORP(mht)) return_NULL;
 
-  multi_scope = (Scheme_Hash_Table *)scheme_hash_get(ut->rns, mht);
+  multi_scope = (Scheme_Hash_Table *)scheme_hash_get_either(ut->rns, ut->current_rns, mht);
   if (multi_scope) return multi_scope;
 
   multi_scope = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -6591,7 +6614,8 @@ static Scheme_Hash_Table *vector_to_multi_scope(Scheme_Object *mht, Scheme_Unmar
   len -= 1;
 
   /* A multi-scope can refer back to itself via free-id=? info: */
-  scheme_hash_set(ut->rns, mht, (Scheme_Object *)multi_scope);
+  ensure_current_rns(ut);
+  scheme_hash_set(ut->current_rns, mht, (Scheme_Object *)multi_scope);
 
   for (i = 0; i < len; i += 2) {
     if (!SCHEME_PHASEP(SCHEME_VEC_ELS(mht)[i]))
@@ -6633,9 +6657,9 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
       if (!SCHEME_PAIRP(l)) return_NULL;
       if (!SCHEME_PAIRP(SCHEME_CAR(l))) return_NULL;
 
-      p = scheme_hash_get(ut->multi_scope_pairs, l);
+      p = scheme_hash_get_either(ut->multi_scope_pairs, ut->current_multi_scope_pairs, l);
       if (!p) {
-        p = scheme_hash_get(ut->multi_scope_pairs, SCHEME_CAR(l));
+        p = scheme_hash_get_either(ut->multi_scope_pairs, ut->current_multi_scope_pairs, SCHEME_CAR(l));
         if (p) {
           p = scheme_make_pair(p, scheme_null);
         } else {
@@ -6645,11 +6669,13 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
             if (!SCHEME_PHASE_SHIFTP(SCHEME_CDR(SCHEME_CAR(l)))) return_NULL;
             p = scheme_make_pair((Scheme_Object *)multi_scope,
                                  SCHEME_CDR(SCHEME_CAR(l)));
-            scheme_hash_set(ut->multi_scope_pairs, SCHEME_CAR(l), p);
+            ensure_current_multi_scope_pairs(ut);
+            scheme_hash_set(ut->current_multi_scope_pairs, SCHEME_CAR(l), p);
           } else
             return_NULL;
         }
-        scheme_hash_set(ut->multi_scope_pairs, SCHEME_CAR(l), p);
+        ensure_current_multi_scope_pairs(ut);
+        scheme_hash_set(ut->current_multi_scope_pairs, SCHEME_CAR(l), p);
         p = scheme_make_pair(p, scheme_null);
         stop = 0;
       } else
@@ -6663,8 +6689,10 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
 
       if (stop)
         break;
-      else
-        scheme_hash_set(ut->multi_scope_pairs, l, p);
+      else {
+        ensure_current_multi_scope_pairs(ut);
+        scheme_hash_set(ut->current_multi_scope_pairs, l, p);
+      }
     }
 
     if (SCHEME_FALLBACKP(mm_l)) {
@@ -6694,7 +6722,7 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
   Scheme_Scope_Set *scopes;
   Scheme_Object *l;
 
-  l = scheme_hash_get(ut->rns, w);
+  l = scheme_hash_get_either(ut->rns, ut->current_rns, w);
   if (l) {
     if (!SCHEME_PAIRP(l)
         || !SAME_TYPE(SCHEME_TYPE(SCHEME_CAR(l)), scheme_scope_table_type))
@@ -6719,7 +6747,8 @@ static Scheme_Object *datum_to_wraps(Scheme_Object *w,
   st->multi_scopes = l;
 
   l = scheme_make_pair((Scheme_Object *)st, SCHEME_VEC_ELS(w)[0]);
-  scheme_hash_set(ut->rns, w, l);
+  ensure_current_rns(ut);
+  scheme_hash_set(ut->current_rns, w, l);
 
   return l;
 }
@@ -6828,7 +6857,7 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
   if (SAME_OBJ(box, root_scope))
     return root_scope;
 
-  r = scheme_hash_get(ut->rns, box);
+  r = scheme_hash_get_either(ut->rns, ut->current_rns, box);
   if (r)
     return r;
 
@@ -6848,7 +6877,9 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
     c = SCHEME_CDR(c);
   } else
     m = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
-  scheme_hash_set(ut->rns, box, m);
+
+  ensure_current_rns(ut);
+  scheme_hash_set(ut->current_rns, box, m);
   /* Since we've created the scope before unmarshaling its content,
      cycles among scopes are ok. */
 

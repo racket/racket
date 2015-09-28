@@ -246,7 +246,9 @@ static int mark_unmarshal_tables_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
   gcMARK2(ut->rns, gc);
+  gcMARK2(ut->current_rns, gc);
   gcMARK2(ut->multi_scope_pairs, gc);
+  gcMARK2(ut->current_multi_scope_pairs, gc);
   gcMARK2(ut->rp, gc);
   gcMARK2(ut->decoded, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
@@ -262,7 +264,9 @@ static int mark_unmarshal_tables_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p;
   gcFIXUP2(ut->rns, gc);
+  gcFIXUP2(ut->current_rns, gc);
   gcFIXUP2(ut->multi_scope_pairs, gc);
+  gcFIXUP2(ut->current_multi_scope_pairs, gc);
   gcFIXUP2(ut->rp, gc);
   gcFIXUP2(ut->decoded, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
