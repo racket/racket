@@ -63,7 +63,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
-      <OutputFile>..\..\..\lib\mzstart.exe</OutputFile>
+      <OutputFile>..\..\..\lib\MzStart.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>..\..\..\lib\mzstart.pdb</ProgramDatabaseFile>
@@ -92,7 +92,7 @@
       <AdditionalIncludeDirectories>..\starters</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <OutputFile>..\..\..\lib\mzstart.exe</OutputFile>
+      <OutputFile>..\..\..\lib\MzStart.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>..\..\..\lib\mzstart.pdb</ProgramDatabaseFile>
