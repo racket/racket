@@ -71,7 +71,7 @@
     <Link>
       <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\..\lib\mrstart.exe</OutputFile>
+      <OutputFile>..\..\..\lib\MrStart.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>..\..\..\lib\mrstart.pdb</ProgramDatabaseFile>
@@ -108,7 +108,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>user32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\..\..\lib\mrstart.exe</OutputFile>
+      <OutputFile>..\..\..\lib\MrStart.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>..\..\..\lib\mrstart.pdb</ProgramDatabaseFile>
