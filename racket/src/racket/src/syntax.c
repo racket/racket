@@ -1199,6 +1199,9 @@ static Scheme_Object *stx_adjust_scopes(Scheme_Object *o, Scheme_Scope_Set *scop
   Scheme_Object *key, *val;
   intptr_t i;
 
+  STX_ASSERT(SCHEME_STXP(o));
+  STX_ASSERT(SCHEME_SCOPE_SETP(scopes));
+
   i = scope_set_next(scopes, -1);
   while (i != -1) {
     scope_set_index(scopes, i, &key, &val);
@@ -4333,6 +4336,108 @@ Scheme_Object *scheme_stx_adjust_module_use_site_context(Scheme_Object *stx, Sch
   Scheme_Scope_Set *scopes = (Scheme_Scope_Set *)SCHEME_BOX_VAL(SCHEME_VEC_ELS(mc)[5]);
 
   return scheme_stx_adjust_scopes(stx, scopes, SCHEME_VEC_ELS(mc)[1], mode);
+}
+
+#ifdef DO_STACK_CHECK
+static Scheme_Object *replace_scopes(Scheme_Object *stx, Scheme_Object *remove_scopes,
+                                     Scheme_Object *add_scopes, Scheme_Object *phase);
+
+static Scheme_Object *replace_scopes_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *stx = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Object *remove_scopes = (Scheme_Object *)p->ku.k.p2;
+  Scheme_Object *add_scopes = (Scheme_Object *)p->ku.k.p3;
+  Scheme_Object *phase = (Scheme_Object *)p->ku.k.p4;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
+
+  return replace_scopes(stx, remove_scopes, add_scopes, phase);
+}
+#endif
+
+static Scheme_Object *replace_scopes(Scheme_Object *stx, Scheme_Object *remove_scopes,
+                                     Scheme_Object *add_scopes, Scheme_Object *phase)
+{
+  Scheme_Object *sym, *sym2, *content;
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+
+      p->ku.k.p1 = (void *)stx;
+      p->ku.k.p2 = (void *)remove_scopes;
+      p->ku.k.p3 = (void *)add_scopes;
+      p->ku.k.p4 = (void *)phase;
+
+      return scheme_handle_stack_overflow(replace_scopes_k);
+    }
+  }
+#endif
+
+  if (SCHEME_STXP(stx)) {
+    int mutate = 0;
+
+    scheme_stx_content(stx);
+    if (HAS_SUBSTX(SCHEME_STX_VAL(stx))) {
+      content = replace_scopes(SCHEME_STX_VAL(stx), remove_scopes, add_scopes, phase);
+      sym = scheme_datum_to_syntax(scheme_false, scheme_false, stx, 0, 0);
+    } else {
+      sym = stx;
+      content = SCHEME_STX_VAL(stx);
+    }
+
+    if (SCHEME_SCOPEP(remove_scopes) || SCHEME_MULTI_SCOPEP(remove_scopes))
+      sym2 = stx_adjust_scope(sym, remove_scopes, phase, SCHEME_STX_REMOVE, &mutate);
+    else
+      sym2 = stx_adjust_scopes(sym, (Scheme_Scope_Set *)remove_scopes, phase, SCHEME_STX_REMOVE, &mutate);
+
+    if (!SAME_OBJ(sym, sym2) || !SAME_OBJ(content, SCHEME_STX_VAL(stx))) {
+      if (SCHEME_SCOPEP(add_scopes) || SCHEME_MULTI_SCOPEP(add_scopes))
+        sym2 = stx_adjust_scope(sym2, add_scopes, phase, SCHEME_STX_ADD, &mutate);
+      else
+        sym2 = stx_adjust_scopes(sym2, (Scheme_Scope_Set *)add_scopes, phase, SCHEME_STX_ADD, &mutate);
+      return scheme_datum_to_syntax(content, stx, sym2, 0, 2);
+    } else
+      return stx;
+  } else if (SCHEME_NULLP(stx)) {
+    return stx;
+  } else if (SCHEME_PAIRP(stx)) {
+    sym = replace_scopes(SCHEME_CAR(stx), remove_scopes, add_scopes, phase);
+    sym2 = replace_scopes(SCHEME_CDR(stx), remove_scopes, add_scopes, phase);
+    if (SAME_OBJ(sym, SCHEME_CAR(stx)) && SAME_OBJ(sym2, SCHEME_CDR(stx)))
+      return stx;
+    else
+      return scheme_make_pair(sym, sym2);
+  } else {
+    scheme_signal_error("internal error: unsupported form for replace_scopes()");
+    return NULL;
+  }
+}
+
+Scheme_Object *scheme_stx_from_module_context_to_generic(Scheme_Object *stx, Scheme_Object *mc)
+{
+  /* remove the introduction scope, which should be everywhere, and
+     map the other scopes to the root scope */
+  Scheme_Object *scopes;
+  stx = scheme_stx_remove_scope(stx, SCHEME_VEC_ELS(mc)[4], SCHEME_VEC_ELS(mc)[1]);
+  scopes = (Scheme_Object *)scheme_module_context_scopes(mc);
+  return replace_scopes(stx, scopes, root_scope, SCHEME_VEC_ELS(mc)[1]);
+}
+
+Scheme_Object *scheme_stx_from_generic_to_module_context(Scheme_Object *stx, Scheme_Object *mc)
+{
+  /* map the root scope to the body scope, and add the introduction
+     scope everywhere */
+  Scheme_Object *scopes;
+  scopes = (Scheme_Object *)scheme_module_context_scopes(mc);
+  stx = replace_scopes(stx, root_scope, scopes, SCHEME_VEC_ELS(mc)[1]);
+  return scheme_stx_introduce_to_module_context(stx, mc);
 }
 
 void scheme_extend_module_context(Scheme_Object *mc,          /* (vector <scope-set> <phase> <inspector> ...) */

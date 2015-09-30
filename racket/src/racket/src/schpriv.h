@@ -1223,6 +1223,9 @@ Scheme_Object *scheme_stx_unintroduce_from_module_context(Scheme_Object *stx, Sc
 Scheme_Object *scheme_stx_push_module_context(Scheme_Object *stx, Scheme_Object *mc);
 Scheme_Object *scheme_stx_push_introduce_module_context(Scheme_Object *stx, Scheme_Object *mc);
 
+Scheme_Object *scheme_stx_from_module_context_to_generic(Scheme_Object *stx, Scheme_Object *mc);
+Scheme_Object *scheme_stx_from_generic_to_module_context(Scheme_Object *stx, Scheme_Object *mc);
+
 Scheme_Object *scheme_module_context_to_stx(Scheme_Object *mc, Scheme_Object *orig_src);
 Scheme_Object *scheme_stx_to_module_context(Scheme_Object *stx);
 

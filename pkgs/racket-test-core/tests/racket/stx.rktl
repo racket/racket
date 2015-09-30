@@ -2057,6 +2057,7 @@
   ;; In `ns1`, `cons` refers to `add1`
   ;; In `ns2`, `cons` refers to `cons`
   (define cons-id/ns1 (eval '(quote-syntax cons) ns1))
+  (test add1 eval cons-id/ns1 ns1)
   (test add1 eval cons-id/ns1 ns2)
   (eval `(define ,cons-id/ns1 1) ns2)
   (test 1 eval cons-id/ns1 ns2)
@@ -2187,6 +2188,21 @@
   (err/rt-test
    (eval #'(let () (define-syntax s-bad (slv-struct-bad)) (m s-bad)))
    exn:fail:contract?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval
+   '(define-syntax (m stx)
+     (define x (car (generate-temporaries '(1))))
+     (syntax-case stx ()
+       [(_ lib name)
+        #`(begin (require (only-in lib [name #,x]))
+                 (define-syntax name
+                   (make-rename-transformer (quote-syntax #,x)))
+                 name)])))
+  (eval '(m racket/base values)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
