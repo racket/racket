@@ -9009,8 +9009,6 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  int for_stx;
           int max_let_depth;
 
-          e = revert_use_site_scopes_via_context(e, rn_set, phase);
-
 	  for_stx = scheme_stx_free_eq_x(scheme_begin_for_syntax_stx, fst, phase);
 
           SCHEME_EXPAND_OBSERVE_ENTER_PRIM(observer, e);
@@ -9039,7 +9037,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 
 	  eenv = scheme_new_comp_env(env->genv->exp_env, env->insp,
                                      frame_scopes,
-                                     0);
+                                     SCHEME_KEEP_SCOPES_FRAME);
           if (!for_stx)
             scheme_frame_captures_lifts(eenv, NULL, NULL, scheme_false, scheme_false, 
                                         req_data, scheme_false, scheme_false);
@@ -9207,7 +9205,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
               m = SCHEME_STX_CDR(e);
               m = SCHEME_STX_CAR(m);
               m = scheme_make_pair(fst,
-                                   scheme_make_pair(m, scheme_make_pair(code, scheme_null)));
+                                   scheme_make_pair(orig_names, scheme_make_pair(code, scheme_null)));
             }
 	    e = scheme_datum_to_syntax(m, e, e, 0, 2);
 	  } else

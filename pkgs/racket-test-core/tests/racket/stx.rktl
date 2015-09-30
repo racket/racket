@@ -1408,6 +1408,7 @@
            (eval '(require 'mm))
            (eval '(current-namespace (module->namespace ''mm)))
 
+           (test '(1 2) eval '(list a b))
            (eval '(define$ c 7))
            (test '(1 2 7) eval '(list a b c))
            (eval '(define$ d 8))

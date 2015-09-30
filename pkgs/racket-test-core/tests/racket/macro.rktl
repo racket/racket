@@ -1446,5 +1446,113 @@
              (eval-syntax (expand-syntax #'b)))])))
 
 ;; ----------------------------------------
+;; Check that use-site scopes are not pruned too eagerly
+;;  (based on examples from Brian Mastenbrook)
+
+(module should-be-inner-1 racket/base
+  (define x 'outer)
+  
+  (define-syntax-rule (def-m m given-x)
+    (define-syntax-rule (m d)
+      (begin
+        (define given-x 'inner)
+        (define d x))))
+  
+  (def-m m x)
+  (m d)
+  (provide d))
+
+(test 'inner dynamic-require ''should-be-inner-1 'd)
+
+(module should-be-inner-2 racket/base
+  (define x 'outer)
+  
+  (define d
+    (let ()
+      (define-syntax-rule (def-m m given-x)
+        (define-syntax-rule (m)
+          (begin
+            (define given-x 'inner)
+            x)))
+      
+      (def-m m x)
+      (m)))
+  
+  (provide d))
+
+(test 'inner dynamic-require ''should-be-inner-2 'd)
+
+(module should-be-outer-1 racket/base
+  (define x 'outer)
+  
+  (define-syntax-rule (def-m m given-x)
+    (define-syntax-rule (m d)
+      (define d
+        (let ()
+          (define given-x 'inner)
+          x))))
+  
+  (def-m m x)
+  (m d)
+  (provide d))
+
+(test 'outer dynamic-require ''should-be-outer-1 'd)
+
+(module should-be-outer-2 racket/base
+  (define x 'outer)
+  
+  (define-syntax-rule (def-m m given-x)
+    (define-syntax-rule (m)
+      (begin
+        (define given-x 'inner)
+        x)))
+  
+  (define d
+    (let ()
+      (def-m m x)
+      (m)))
+  
+  (provide d))
+
+(test 'outer dynamic-require ''should-be-outer-2 'd)
+
+(module should-be-outer-3 racket/base
+  (define x 'outer)
+  
+  (define-syntax-rule (def-m m given-x)
+    (define-syntax-rule (m)
+      (begin
+        (define given-x 'inner)
+        x)))
+  
+  (def-m m x)
+  (define d
+    (let ()
+      (m)))
+  
+  (provide d))
+
+(test 'outer dynamic-require ''should-be-outer-3 'd)
+
+(module should-be-outer-4 racket/base
+  (define x 'outer)
+  
+  (define d
+    (let ()
+      (define-syntax-rule (def-m m given-x)
+        (define-syntax-rule (m)
+          (begin
+            (define given-x 'inner)
+            x)))
+      
+      (def-m m x)
+      (let ()
+        (m))))
+  
+  (provide d))
+
+(test 'outer dynamic-require ''should-be-outer-4 'd)
+
+;; ----------------------------------------
 
 (report-errs)

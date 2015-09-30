@@ -4118,7 +4118,7 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
                                           Scheme_Object *shift_or_shifts,
                                           Scheme_Object *debug_name)
 {
-  Scheme_Object *vec;
+  Scheme_Object *vec, *bx;
   Scheme_Object *body_scopes;
   Scheme_Object *intro_multi_scope;
 
@@ -4161,7 +4161,8 @@ Scheme_Object *scheme_make_module_context(Scheme_Object *insp,
   SCHEME_VEC_ELS(vec)[2] = insp;
   SCHEME_VEC_ELS(vec)[3] = shift_or_shifts;
   SCHEME_VEC_ELS(vec)[4] = intro_multi_scope;
-  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_scope_set;
+  bx = scheme_box((Scheme_Object *)empty_scope_set);
+  SCHEME_VEC_ELS(vec)[5] = bx;
 
   return vec;
 }
@@ -4202,20 +4203,20 @@ Scheme_Object *scheme_module_context_frame_scopes(Scheme_Object *mc, Scheme_Obje
 
 void scheme_module_context_add_use_site_scope(Scheme_Object *mc, Scheme_Object *use_site_scope)
 {
-  Scheme_Scope_Set *use_site_scopes = (Scheme_Scope_Set *)SCHEME_VEC_ELS(mc)[5];
+  Scheme_Scope_Set *use_site_scopes = (Scheme_Scope_Set *)SCHEME_BOX_VAL(SCHEME_VEC_ELS(mc)[5]);
 
   STX_ASSERT(SCHEME_SCOPEP(use_site_scope));
 
   use_site_scopes = scope_set_set(use_site_scopes, use_site_scope, scheme_true);
   
-  SCHEME_VEC_ELS(mc)[5] = (Scheme_Object *)use_site_scopes;
+  SCHEME_BOX_VAL(SCHEME_VEC_ELS(mc)[5]) = (Scheme_Object *)use_site_scopes;
 }
 
 Scheme_Object *scheme_module_context_use_site_frame_scopes(Scheme_Object *mc)
 {
   Scheme_Scope_Set *use_site_scopes;
   
-  use_site_scopes = (Scheme_Scope_Set *)SCHEME_VEC_ELS(mc)[5];
+  use_site_scopes = (Scheme_Scope_Set *)SCHEME_BOX_VAL(SCHEME_VEC_ELS(mc)[5]);
   if (SAME_OBJ(use_site_scopes, empty_scope_set))
     return NULL;
   else
@@ -4247,10 +4248,7 @@ Scheme_Object *scheme_module_context_at_phase(Scheme_Object *mc, Scheme_Object *
   SCHEME_VEC_ELS(vec)[2] = SCHEME_VEC_ELS(mc)[2];
   SCHEME_VEC_ELS(vec)[3] = SCHEME_VEC_ELS(mc)[3];
   SCHEME_VEC_ELS(vec)[4] = SCHEME_VEC_ELS(mc)[4];
-  /* Any use-site scope from the from another phase don't apply here. This
-     set only matters for module contexts that are attached to environments,
-     anyway: */
-  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_scope_set;
+  SCHEME_VEC_ELS(vec)[5] = SCHEME_VEC_ELS(mc)[5];
 
   return vec;
 }
@@ -4332,7 +4330,7 @@ Scheme_Object *scheme_stx_unintroduce_from_module_context(Scheme_Object *stx, Sc
 
 Scheme_Object *scheme_stx_adjust_module_use_site_context(Scheme_Object *stx, Scheme_Object *mc, int mode)
 {
-  Scheme_Scope_Set *scopes = (Scheme_Scope_Set *)SCHEME_VEC_ELS(mc)[5];
+  Scheme_Scope_Set *scopes = (Scheme_Scope_Set *)SCHEME_BOX_VAL(SCHEME_VEC_ELS(mc)[5]);
 
   return scheme_stx_adjust_scopes(stx, scopes, SCHEME_VEC_ELS(mc)[1], mode);
 }
@@ -4706,7 +4704,8 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   SCHEME_VEC_ELS(vec)[2] = scheme_false; /* not sure this is right */
   SCHEME_VEC_ELS(vec)[3] = shifts;
   SCHEME_VEC_ELS(vec)[4] = intro_multi_scope;
-  SCHEME_VEC_ELS(vec)[5] = (Scheme_Object *)empty_scope_set;
+  a = scheme_box((Scheme_Object *)empty_scope_set);
+  SCHEME_VEC_ELS(vec)[5] = a;
 
   return vec;
 }

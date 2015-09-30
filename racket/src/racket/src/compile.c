@@ -3407,17 +3407,9 @@ quote_syntax_syntax(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Compi
 
     /* Remove scopes for all enclosing local binding contexts. */
     for (frame = env; frame; frame = frame->next) {
-      if (frame->flags & (SCHEME_TOPLEVEL_FRAME | SCHEME_MODULE_FRAME | SCHEME_MODULE_BEGIN_FRAME))
-        stx = scheme_stx_adjust_module_use_site_context(stx,
-                                                        env->genv->stx_context,
-                                                        SCHEME_STX_REMOVE);
-      else if (frame->scopes) {
-        if (frame->flags & SCHEME_KEEP_SCOPES_FRAME)
-          stx = scheme_stx_adjust_frame_use_site_scopes(stx, frame->scopes,
-                                                        scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
-        else
-          stx = scheme_stx_adjust_frame_scopes(stx, frame->scopes,
-                                               scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
+      if ((frame->scopes) && !(frame->flags & SCHEME_KEEP_SCOPES_FRAME)) {
+        stx = scheme_stx_adjust_frame_scopes(stx, frame->scopes,
+                                             scheme_env_phase(frame->genv), SCHEME_STX_REMOVE);
       }
     }
 
@@ -3482,8 +3474,6 @@ do_define_syntaxes_syntax(Scheme_Object *form, Scheme_Comp_Env *env,
       
   scheme_define_parse(form, &names, &code, 1, env, 0);
 
-  code = scheme_revert_use_site_scopes(code, env);
-
   scheme_prepare_exp_env(env->genv);
   scheme_prepare_compile_env(env->genv->exp_env);
 
@@ -3531,8 +3521,6 @@ define_syntaxes_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Ex
   form = orig_form;
 
   scheme_define_parse(form, &names, &code, 1, env, 0);
-
-  code = scheme_revert_use_site_scopes(code, env);
 
   SCHEME_EXPAND_OBSERVE_PREPARE_ENV(env->observer);
 
@@ -6099,8 +6087,6 @@ compile_expand_block(Scheme_Object *forms, Scheme_Comp_Env *env,
 				"extra data after expression");
 	  }
 	  expr = SCHEME_STX_CAR(expr);
-          if (!is_val)
-            expr = scheme_revert_use_site_scopes(expr, env);
 	  
 	  scheme_add_local_syntax(cnt, new_env);
 
