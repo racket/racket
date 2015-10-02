@@ -93,6 +93,8 @@ ROSYM static Scheme_Object *tainted_uninterned_symbol;
 static Scheme_Object *read_case_sensitive(int, Scheme_Object *[]);
 static Scheme_Object *read_bracket_as_paren(int, Scheme_Object *[]);
 static Scheme_Object *read_brace_as_paren(int, Scheme_Object *[]);
+static Scheme_Object *read_bracket_with_tag(int, Scheme_Object *[]);
+static Scheme_Object *read_brace_with_tag(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_graph(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_compiled(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_box(int, Scheme_Object *[]);
@@ -171,6 +173,8 @@ typedef struct ReadParams {
   char case_sensitive;
   char square_brackets_are_parens;
   char curly_braces_are_parens;
+  char square_brackets_are_tagged;
+  char curly_braces_are_tagged;
   char read_decimal_inexact;
   char can_read_dot;
   char can_read_infix_dot;
@@ -516,6 +520,8 @@ void scheme_init_read(Scheme_Env *env)
   GLOBAL_PARAMETER("read-case-sensitive",           read_case_sensitive,    MZCONFIG_CASE_SENS,                   env);
   GLOBAL_PARAMETER("read-square-bracket-as-paren",  read_bracket_as_paren,  MZCONFIG_SQUARE_BRACKETS_ARE_PARENS,  env);
   GLOBAL_PARAMETER("read-curly-brace-as-paren",     read_brace_as_paren,    MZCONFIG_CURLY_BRACES_ARE_PARENS,     env);
+  GLOBAL_PARAMETER("read-square-bracket-with-tag",  read_bracket_with_tag,  MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED,  env);
+  GLOBAL_PARAMETER("read-curly-brace-with-tag",     read_brace_with_tag,    MZCONFIG_CURLY_BRACES_ARE_TAGGED,     env);
   GLOBAL_PARAMETER("read-accept-graph",             read_accept_graph,      MZCONFIG_CAN_READ_GRAPH,              env);
   GLOBAL_PARAMETER("read-accept-compiled",          read_accept_compiled,   MZCONFIG_CAN_READ_COMPILED,           env);
   GLOBAL_PARAMETER("read-accept-box",               read_accept_box,        MZCONFIG_CAN_READ_BOX,                env);
@@ -605,6 +611,18 @@ static Scheme_Object *
 read_brace_as_paren(int argc, Scheme_Object *argv[])
 {
   DO_CHAR_PARAM("read-curly-brace-as-paren", MZCONFIG_CURLY_BRACES_ARE_PARENS);
+}
+
+static Scheme_Object *
+read_bracket_with_tag(int argc, Scheme_Object *argv[])
+{
+  DO_CHAR_PARAM("read-square-bracket-with-tag", MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED);
+}
+
+static Scheme_Object *
+read_brace_with_tag(int argc, Scheme_Object *argv[])
+{
+  DO_CHAR_PARAM("read-curly-brace-with-tag", MZCONFIG_CURLY_BRACES_ARE_TAGGED);
 }
 
 static Scheme_Object *
@@ -1070,13 +1088,13 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
     case '(':
       return read_list(port, stxsrc, line, col, pos, ch, ')', mz_shape_cons, 0, ht, indentation, params, table);
     case '[':
-      if (!params->square_brackets_are_parens) {
+      if (!params->square_brackets_are_parens && !params->square_brackets_are_tagged) {
 	scheme_read_err(port, stxsrc, line, col, pos, 1, 0, indentation, "read: illegal use of open square bracket");
 	return NULL;
       } else
 	return read_list(port, stxsrc, line, col, pos, ch, ']', mz_shape_cons, 0, ht, indentation, params, table);
     case '{':
-      if (!params->curly_braces_are_parens) {
+      if (!params->curly_braces_are_parens && !params->curly_braces_are_tagged) {
 	scheme_read_err(port, stxsrc, line, col, pos, 1, 0, indentation, "read: illegal use of open curly brace");
 	return NULL;
       } else
@@ -2325,6 +2343,10 @@ _internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cant_fai
   params.square_brackets_are_parens = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CURLY_BRACES_ARE_PARENS);
   params.curly_braces_are_parens = SCHEME_TRUEP(v);
+  v = scheme_get_param(config, MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED);
+  params.square_brackets_are_tagged = SCHEME_TRUEP(v);
+  v = scheme_get_param(config, MZCONFIG_CURLY_BRACES_ARE_TAGGED);
+  params.curly_braces_are_tagged = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_READ_DECIMAL_INEXACT);
   params.read_decimal_inexact = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CAN_READ_QUASI);
@@ -2496,6 +2518,11 @@ static Scheme_Object *attach_shape_property(Scheme_Object *list,
 					    ReadParams *params, 
 					    int closer);
 
+static Scheme_Object *attach_shape_tag(Scheme_Object *list, 
+					    Scheme_Object *stxsrc, 
+					    ReadParams *params, 
+					    int closer);
+
 static int next_is_delim(Scheme_Object *port,
 			 ReadParams *params,
 			 int brackets,
@@ -2642,8 +2669,8 @@ read_list(Scheme_Object *port,
 {
   Scheme_Object *list = NULL, *last = NULL, *car, *cdr, *pair, *infixed = NULL, *prefetched = NULL;
   int ch = 0, got_ch_already = 0, effective_ch;
-  int brackets = params->square_brackets_are_parens;
-  int braces = params->curly_braces_are_parens;
+  int brackets = params->square_brackets_are_parens || params->square_brackets_are_tagged;
+  int braces = params->curly_braces_are_parens || params->curly_braces_are_tagged;
   intptr_t start, startcol, startline, dotpos, dotcol, dotline, dot2pos, dot2line, dot2col, init_span;
 
   scheme_tell_all(port, &startline, &startcol, &start);
@@ -2713,6 +2740,7 @@ read_list(Scheme_Object *port,
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
       list = attach_shape_property(list, stxsrc, params, closer);
+      list = attach_shape_tag(list, stxsrc, params, closer);
       return list;
     }
 
@@ -2809,6 +2837,7 @@ read_list(Scheme_Object *port,
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
       list = attach_shape_property(list, stxsrc, params, closer);
+      list = attach_shape_tag(list, stxsrc, params, closer);
       return list;
     } else if (params->can_read_dot
 	       && (effective_ch == '.')
@@ -2890,6 +2919,7 @@ read_list(Scheme_Object *port,
 		? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 		: list);
 	list = attach_shape_property(list, stxsrc, params, closer);
+	list = attach_shape_tag(list, stxsrc, params, closer);
 	return list;
       }
     } else {
@@ -2946,6 +2976,26 @@ static Scheme_Object *attach_shape_property(Scheme_Object *list,
     return scheme_stx_property(list, scheme_paren_shape_symbol, opener);
   }
   return list;
+}
+
+static Scheme_Object *attach_shape_tag(Scheme_Object *list, 
+					    Scheme_Object *stxsrc, 
+					    ReadParams *params, 
+					    int closer)
+{
+  Scheme_Object *tag_symbol;
+  
+  if (params->square_brackets_are_tagged && closer == ']') {
+    tag_symbol = scheme_intern_symbol("#%brackets");
+    list = scheme_make_pair(tag_symbol, list);
+    return list;
+  } else if (params->curly_braces_are_tagged && closer == '}') {
+    tag_symbol = scheme_intern_symbol("#%braces");
+    list = scheme_make_pair(tag_symbol, list);
+    return list;
+  } else {
+    return list;
+  }
 }
 
 static Scheme_Object *read_flonum(Scheme_Object *port, 
