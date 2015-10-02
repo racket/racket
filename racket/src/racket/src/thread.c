@@ -8719,17 +8719,6 @@ void scheme_remove_gc_callback(Scheme_Object *key)
 # define mzOSAPI /* empty */
 #endif
 
-#ifdef SIXTY_FOUR_BIT_INTEGERS
-typedef double mzCGFloat;
-#else
-typedef float mzCGFloat;
-#endif
-
-typedef struct {
-  struct { mzCGFloat x, y; } origin;
-  struct { mzCGFloat w, h; } size;
-} mzNSRect;
-
 typedef void (*gccb_Int_to_Void)(int);
 typedef void (*gccb_Ptr_Ptr_Ptr_Int_to_Void)(void*, void*, void*, int);
 typedef void (*gccb_Ptr_Ptr_Ptr_to_Void)(void*, void*, void*);
@@ -8738,7 +8727,6 @@ typedef void (*gccb_Ptr_Ptr_to_Void)(void*, void*);
 typedef void (*gccb_Ptr_Ptr_Float_to_Void)(void*, void*, float);
 typedef void (*gccb_Ptr_Ptr_Double_to_Void)(void*, void*, double);
 typedef void (*gccb_Float_Float_Float_Float_to_Void)(float, float, float, float);
-typedef void (*gccb_Ptr_Ptr_NSRect_to_Void)(void*, void*, mzNSRect);
 typedef void (*gccb_Ptr_Ptr_Ptr_Nine_Ints)(void*,void*,void*,int,int,int,int,int,int,int,int,int);
 typedef void (mzOSAPI *gccb_OSapi_Ptr_Int_to_Void)(void*, int);
 typedef void (mzOSAPI *gccb_OSapi_Ptr_Ptr_to_Void)(void*, void*);
@@ -8858,17 +8846,6 @@ static void run_gc_callbacks(int pre)
           d4 = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[5]);
 
           proc(d1, d2, d3, d4);
-        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_NSRect->void")) {
-          gccb_Ptr_Ptr_NSRect_to_Void proc;
-          void *a, *b;
-          mzNSRect r;
-
-          proc = (gccb_Ptr_Ptr_NSRect_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
-          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
-          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
-          r = *(mzNSRect *)SCHEME_PTR_VAL(SCHEME_VEC_ELS(act)[4]);
-
-          proc(a, b, r);
         } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void")) {
           gccb_Ptr_Ptr_Ptr_Nine_Ints proc;
           void *a, *b, *c;
