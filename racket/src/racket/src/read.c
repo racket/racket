@@ -82,6 +82,8 @@ ROSYM static Scheme_Object *syntax_symbol;
 ROSYM static Scheme_Object *unsyntax_symbol;
 ROSYM static Scheme_Object *unsyntax_splicing_symbol;
 ROSYM static Scheme_Object *quasisyntax_symbol;
+ROSYM static Scheme_Object *brackets_symbol;
+ROSYM static Scheme_Object *braces_symbol;
 ROSYM static Scheme_Object *terminating_macro_symbol;
 ROSYM static Scheme_Object *non_terminating_macro_symbol;
 ROSYM static Scheme_Object *dispatch_macro_symbol;
@@ -419,6 +421,9 @@ void scheme_init_read(Scheme_Env *env)
   REGISTER_SO(unsyntax_splicing_symbol);
   REGISTER_SO(quasisyntax_symbol);
 
+  REGISTER_SO(brackets_symbol);
+  REGISTER_SO(braces_symbol);
+
   REGISTER_SO(unresolved_uninterned_symbol);
   REGISTER_SO(tainted_uninterned_symbol);
   REGISTER_SO(terminating_macro_symbol);
@@ -434,6 +439,9 @@ void scheme_init_read(Scheme_Env *env)
   unsyntax_symbol               = scheme_intern_symbol("unsyntax");
   unsyntax_splicing_symbol      = scheme_intern_symbol("unsyntax-splicing");
   quasisyntax_symbol            = scheme_intern_symbol("quasisyntax");
+
+  brackets_symbol               = scheme_intern_symbol("#%brackets");
+  braces_symbol                 = scheme_intern_symbol("#%braces");
 
   unresolved_uninterned_symbol = scheme_make_symbol("unresolved");
   tainted_uninterned_symbol    = scheme_make_symbol("tainted");
@@ -2518,7 +2526,8 @@ static Scheme_Object *attach_shape_property(Scheme_Object *list,
 					    ReadParams *params, 
 					    int closer);
 
-static Scheme_Object *attach_shape_tag(Scheme_Object *list, 
+static Scheme_Object *attach_shape_tag(Scheme_Object *list,
+                        intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
 					    Scheme_Object *stxsrc, 
 					    ReadParams *params, 
 					    int closer);
@@ -2736,11 +2745,11 @@ read_list(Scheme_Object *port,
       }
       if (!list) list = scheme_null;
       pop_indentation(indentation);
+      list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer);
       list = (stxsrc
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
       list = attach_shape_property(list, stxsrc, params, closer);
-      list = attach_shape_tag(list, stxsrc, params, closer);
       return list;
     }
 
@@ -2833,11 +2842,11 @@ read_list(Scheme_Object *port,
       }
 
       pop_indentation(indentation);
+      list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer);
       list = (stxsrc
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
       list = attach_shape_property(list, stxsrc, params, closer);
-      list = attach_shape_tag(list, stxsrc, params, closer);
       return list;
     } else if (params->can_read_dot
 	       && (effective_ch == '.')
@@ -2915,11 +2924,11 @@ read_list(Scheme_Object *port,
 	/* Assert: infixed is NULL (otherwise we raised an exception above) */
 
 	pop_indentation(indentation);
+      list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer);
         list = (stxsrc
 		? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 		: list);
 	list = attach_shape_property(list, stxsrc, params, closer);
-	list = attach_shape_tag(list, stxsrc, params, closer);
 	return list;
       }
     } else {
@@ -2978,24 +2987,29 @@ static Scheme_Object *attach_shape_property(Scheme_Object *list,
   return list;
 }
 
-static Scheme_Object *attach_shape_tag(Scheme_Object *list, 
+static Scheme_Object *attach_shape_tag(Scheme_Object *list,
+                        intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
 					    Scheme_Object *stxsrc, 
 					    ReadParams *params, 
 					    int closer)
 {
-  Scheme_Object *tag_symbol;
+  Scheme_Object *tag;
+  tag = NULL;
   
   if (params->square_brackets_are_tagged && closer == ']') {
-    tag_symbol = scheme_intern_symbol("#%brackets");
-    list = scheme_make_pair(tag_symbol, list);
-    return list;
+    tag = brackets_symbol;
   } else if (params->curly_braces_are_tagged && closer == '}') {
-    tag_symbol = scheme_intern_symbol("#%braces");
-    list = scheme_make_pair(tag_symbol, list);
-    return list;
-  } else {
-    return list;
+    tag = braces_symbol;
   }
+  
+  if (tag) {
+    if (stxsrc) {
+      tag = scheme_make_stx_w_offset(tag, line, col, pos, span, stxsrc, STX_SRCTAG);
+    }
+    list = scheme_make_pair(tag, list);
+  }
+  
+  return list;
 }
 
 static Scheme_Object *read_flonum(Scheme_Object *port, 
