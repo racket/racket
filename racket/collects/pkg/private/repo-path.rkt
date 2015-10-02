@@ -49,7 +49,7 @@
           (eq? type 'github))
       (match (split-github-url pkg-url)
         [(list* user repo branch path)
-         (values 'git "github.com" #f (~a user "/" repo) branch path)])
+         (values 'https "github.com" #f (~a user "/" repo) branch path)])
       (split-git-url pkg-url)))
 
 (define (enclosing-path-for-repo url-str in-repo-dir)
