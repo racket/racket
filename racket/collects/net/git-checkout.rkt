@@ -5,6 +5,7 @@
          racket/port
          racket/string
          file/gunzip
+         file/private/check-path
          openssl/sha1
          openssl
          net/url
@@ -34,7 +35,8 @@
                       #:tmp-dir [given-tmp-dir #f]
                       #:clean-tmp-dir? [clean-tmp-dir? (not given-tmp-dir)]
                       #:verify-server? [verify? #t]
-                      #:port [given-port #f])
+                      #:port [given-port #f]
+                      #:strict-links? [strict-links? #f])
   (let retry-loop ([given-depth given-depth])
     (define tmp-dir (or given-tmp-dir
                         (make-temporary-file "git~a" 'directory)))
@@ -171,7 +173,8 @@
              ;; Extract the tree from the packfile objects:
              (status "Extracting tree to ~a" dest-dir)
              (extract-commit-tree (hex-string->bytes commit)
-                                  obj-ids tmp dest-dir)
+                                  obj-ids tmp dest-dir
+                                  strict-links?)
              
              ;; Done; return checkout id
              (lambda () commit))
@@ -603,7 +606,7 @@
 
 ;; extract-commit-tree : bytes (hash/c bytes object) tmp-info path -> void
 ;;  Extract the designated commit to `dest-dir`, using objects from `tmp`
-(define (extract-commit-tree obj-id obj-ids tmp dest-dir)
+(define (extract-commit-tree obj-id obj-ids tmp dest-dir strict-links?)
   (define obj (hash-ref obj-ids obj-id))
   (case (object-type obj)
     [(commit)
@@ -614,7 +617,7 @@
         (lambda (i)
           (extract-commit-info i obj-id))))
      (define tree-id (hex-string->bytes tree-id-str))
-     (extract-tree tree-id obj-ids tmp dest-dir)]
+     (extract-tree tree-id obj-ids tmp dest-dir strict-links?)]
     [(tag)
      (define commit-id-bstr
        (call-with-input-object
@@ -627,9 +630,9 @@
                    (bytes->hex-string obj-id)))
           (cadr m))))
      (define commit-id (hex-string->bytes (bytes->string/utf-8 commit-id-bstr)))
-     (extract-commit-tree commit-id obj-ids tmp dest-dir)]
+     (extract-commit-tree commit-id obj-ids tmp dest-dir strict-links?)]
     [(tree)
-     (extract-tree obj-id obj-ids tmp dest-dir)]
+     (extract-tree obj-id obj-ids tmp dest-dir strict-links?)]
     [else
      (error 'git-checkout "cannot extract tree from ~a: ~s"
             (object-type obj)
@@ -657,9 +660,9 @@
                (loop))
          null))))
 
-;; extract-commit-tree : bytes (hash/c bytes object) tmp-info path -> void
+;; extract-tree : bytes (hash/c bytes object) tmp-info path -> void
 ;;  Extract the designated tree to `dest-dir`, using objects from `tmp`
-(define (extract-tree tree-id obj-ids tmp dest-dir)
+(define (extract-tree tree-id obj-ids tmp dest-dir strict-links?)
   (make-directory* dest-dir)
   (define tree-obj (hash-ref obj-ids tree-id))
   (call-with-input-object
@@ -682,10 +685,12 @@
           [(#"100644" #"644")
            (copy-this-object #o644)]
           [(#"40000" #"040000")
-           (extract-tree id obj-ids tmp (build-path dest-dir fn))]
+           (extract-tree id obj-ids tmp (build-path dest-dir fn) strict-links?)]
           [(#"120000")
-           (make-file-or-directory-link (bytes->path (object->bytes tmp (this-object-location)))
-                                        (build-path dest-dir fn))]
+           (define target (bytes->path (object->bytes tmp (this-object-location))))
+           (when strict-links?
+             (check-unpack-path 'git-checkout target))
+           (make-file-or-directory-link target (build-path dest-dir fn))]
           [(#"160000")
            ;; submodule; just make a directory placeholder
            (make-directory* (build-path dest-dir fn))]

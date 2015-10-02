@@ -109,7 +109,8 @@
                                        (define (strip-ending-newline s)
                                          (regexp-replace #rx"\n$" s ""))
                                        (log-pkg-debug (strip-ending-newline (apply format fmt args))))
-                     #:transport transport)))
+                     #:transport transport
+                     #:strict-links? #t)))
     (set! unpacked? #t)
     ;; package directory as ".tgz" so it can be cached:
     (parameterize ([current-directory dest-dir])
