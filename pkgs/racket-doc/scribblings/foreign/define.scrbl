@@ -23,8 +23,8 @@ the library produced by @racket[ffi-lib-expr]. The syntax of
                              (code:line #:fail fail-expr)])]
 
 A @racket[define-id] form binds @racket[id] by extracting a binding
-with the name @racket[c-id] from the library produced by
-@racket[ffi-lib-expr], where @racket[c-id] defaults to @racket[id].
+with the name @racket[_c-id] from the library produced by
+@racket[ffi-lib-expr], where @racket[_c-id] defaults to @racket[_id].
 The other options support further wrapping and configuration:
 
 @itemize[
