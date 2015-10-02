@@ -2828,10 +2828,13 @@ static Scheme_Object *places_serialize(Scheme_Object *so, void **msg_memory, Sch
 #endif
 }
 
-Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory) 
+static Scheme_Object *places_deserialize(Scheme_Object *so, void *msg_memory, Scheme_Thread *from_p)
 /* The caller must immediately drop any reference to `so' and
    `msg_memory' after this function returns; otherwise, since the
-   `msg_memory' page may be deallocated, a GC could crash. */
+   `msg_memory' page may be deallocated, a GC could crash.
+   Also, we have to clear out the in-flight references in `from_p`
+   before the pages are discarded or adopted (where the latter
+   can trigger a GC, which creates the main problem) */
 {
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   Scheme_Object *new_so = so;
@@ -2842,13 +2845,18 @@ Scheme_Object *scheme_places_deserialize(Scheme_Object *so, void *msg_memory)
   /* small messages are deemed to be < 1k, this could be tuned in either direction */
   if (GC_message_small_objects_size(msg_memory, 1024)) {
     new_so = do_places_deep_copy(so, mzPDC_UNCOPY, 1, NULL, NULL);
+    from_p->place_channel_msg_in_flight = NULL;
+    from_p->place_channel_msg_chain_in_flight = NULL;
     GC_dispose_short_message_allocator(msg_memory);
     /* from this point, we must return immediately, so that any
        reference to `so' can be dropped before GC. */
     msg_memory = NULL;
   }
   else {
+    from_p->place_channel_msg_in_flight = NULL;
+    from_p->place_channel_msg_chain_in_flight = NULL;
     GC_adopt_message_allocator(msg_memory);
+    scheme_collect_garbage(); // REMOVEME
     msg_memory = NULL;
 #if !defined(SHARED_TABLES)
     new_so = do_places_deep_copy(so, mzPDC_DESER, 1, NULL, NULL);
@@ -3549,9 +3557,9 @@ static Scheme_Object *place_async_try_receive_raw(Scheme_Place_Async_Channel *ch
 static void cleanup_msg_memmory(void *thread) {
   Scheme_Thread *p = thread;
   if (p->place_channel_msg_in_flight) {
+    p->place_channel_msg_chain_in_flight = NULL;
     GC_destroy_orphan_msg_memory(p->place_channel_msg_in_flight);
     p->place_channel_msg_in_flight = NULL;
-    p->place_channel_msg_chain_in_flight = NULL;
   }
 }
 
@@ -3575,9 +3583,7 @@ static Scheme_Object *place_async_try_receive(Scheme_Place_Async_Channel *ch, in
     p->place_channel_msg_in_flight = msg_memory;
     p->place_channel_msg_chain_in_flight = msg_chain;
     log_received_msg(msg, msg_memory);
-    msg = scheme_places_deserialize(msg, msg_memory);
-    p->place_channel_msg_in_flight = NULL;
-    p->place_channel_msg_chain_in_flight = NULL;
+    msg = places_deserialize(msg, msg_memory, p);
   }
   END_ESCAPEABLE();
   return msg;
@@ -3602,9 +3608,7 @@ static Scheme_Object *place_channel_finish_ready(void *d, int argc, struct Schem
   msg = *(Scheme_Object **)d;
 
   BEGIN_ESCAPEABLE(cleanup_msg_memmory, p);
-  msg = scheme_places_deserialize(msg, p->place_channel_msg_in_flight);
-  p->place_channel_msg_in_flight = NULL;
-  p->place_channel_msg_chain_in_flight = NULL;
+  msg = places_deserialize(msg, p->place_channel_msg_in_flight, p);
   END_ESCAPEABLE();
 
   return msg;
