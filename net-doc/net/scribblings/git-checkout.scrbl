@@ -35,7 +35,8 @@ for information on command-line arguments and flags.
                        [#:port port (or/c #f (integer-in 1 65535)) (case transport
                                                                      [(git) 9418]
                                                                      [(http) 80]
-                                                                     [(https) 443])])
+                                                                     [(https) 443])]
+                       [#:strict-links? strict-links? any/c #f])
          string?]{
 
 Contacts the server at @racket[hostname] and @racket[port]
@@ -91,5 +92,10 @@ temporary clone of the repository, and the files are preserved unless
 the shape that is recognized by other tools, such as @exec{git}, and
 so a preserved temporary directory is useful mainly for debugging.
 
+If @racket[strict-links?] is true, then the checkout fails with an
+error if it would produce a symbolic link that refers to an absolute path
+or to a relative path that contains up-directory elements.
+
 @history[#:added "6.1.1.1"
-         #:changed "6.3" @elem{Added the @racket[initial-error] argument.}]}
+         #:changed "6.3" @elem{Added the @racket[initial-error] argument.}
+         #:changed "6.2.900.17" @elem{Added the @racket[strict-links?] argument.}]}

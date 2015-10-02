@@ -60,47 +60,72 @@
     (error 'compare "no such file: ~s" a)]))
 
 (when git
-  (define dir (make-temporary-file "~a-git-test" 'directory))
-  (define http-custodian (make-custodian))
-  (dynamic-wind
-   void
-   (lambda () 
-     (parameterize ([current-custodian http-custodian])
-     (thread
-      (lambda ()
-        (serve/servlet
-         void
-         #:command-line? #t
-         #:extra-files-paths (list dir)
-         #:servlet-regexp #rx"$." ; no servlets
-         #:port 8950))))
-     
-     (parameterize ([current-directory dir])
-       (make-directory "repo")
-       (parameterize ([current-directory "repo"])
-         (make-file "x" #"hello")
-         (make-file "y" #"goodbye")
-         (unless (eq? (system-type) 'windows)
-           (file-or-directory-permissions "y" #o755))
-         (make-file "z" #"whatever")
-         (unless (eq? (system-type) 'windows)
-           (file-or-directory-permissions "z" #o644))
-         (unless (eq? (system-type) 'windows)
-           (make-file-or-directory-link "x" "also-x"))
-         (git "init")
-         (git "add" ".")
-         (git "commit" "-m" "initial commit")
-         (git "update-server-info"))
+  (for ([link-mode '(rel up abs)])
+    (define dir (make-temporary-file "~a-git-test" 'directory))
+    (define http-custodian (make-custodian))
+    (dynamic-wind
+     void
+     (lambda () 
+       (parameterize ([current-custodian http-custodian])
+         (thread
+          (lambda ()
+            (serve/servlet
+             void
+             #:command-line? #t
+             #:extra-files-paths (list dir)
+             #:servlet-regexp #rx"$." ; no servlets
+             #:port 8950))))
        
-       (git-checkout "localhost" #:port 8950 #:transport 'http
-                     "repo/.git"
-                     #:dest-dir "also-repo")
-       
-       (compare "repo" "also-repo")
-       
-       (void)))
-   (lambda ()
-     (custodian-shutdown-all http-custodian)
-     (delete-directory/files dir))))
+       (parameterize ([current-directory dir])
+         (make-directory "repo")
+         (parameterize ([current-directory "repo"])
+           (make-file "x" #"hello")
+           (make-file "y" #"goodbye")
+           (unless (eq? (system-type) 'windows)
+             (file-or-directory-permissions "y" #o755))
+           (make-file "z" #"whatever")
+           (unless (eq? (system-type) 'windows)
+             (file-or-directory-permissions "z" #o644))
+           (make-directory "nested")
+           (make-file "nested/x" #"stuff")
+           (unless (eq? (system-type) 'windows)
+             (case link-mode
+               [(abs)
+                (make-file-or-directory-link "/tmp/x" "abs-x")]
+               [(up)
+                (make-file-or-directory-link "../x" "abs-x")]
+               [else
+                (make-file-or-directory-link "x" "also-x")]))
+           (git "init")
+           (git "add" ".")
+           (git "commit" "-m" "initial commit")
+           (git "update-server-info"))
+         
+         (git-checkout "localhost" #:port 8950 #:transport 'http
+                       "repo/.git"
+                       #:dest-dir "also-repo")
+         (compare "repo" "also-repo")
 
-  
+         (with-handlers ([exn:fail?
+                          (lambda (exn)
+                            (case link-mode
+                              [(abs up)
+                               (if (regexp-match? #rx"won't extract" (exn-message exn))
+                                   (printf "correct failure\n")
+                                   (raise exn))]
+                              [else (raise exn)]))])
+           (git-checkout "localhost" #:port 8950 #:transport 'http
+                         "repo/.git"
+                         #:dest-dir "safe-repo"
+                         #:strict-links? #t)
+           (case link-mode
+             [(abs up) (unless (eq? 'windows (system-type))
+                         (error "should not have worked"))])
+           (compare "repo" "safe-repo"))
+         
+         (void)))
+     (lambda ()
+       (custodian-shutdown-all http-custodian)
+       (delete-directory/files dir)))))
+
+
