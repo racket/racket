@@ -2856,7 +2856,6 @@ static Scheme_Object *places_deserialize(Scheme_Object *so, void *msg_memory, Sc
     from_p->place_channel_msg_in_flight = NULL;
     from_p->place_channel_msg_chain_in_flight = NULL;
     GC_adopt_message_allocator(msg_memory);
-    scheme_collect_garbage(); // REMOVEME
     msg_memory = NULL;
 #if !defined(SHARED_TABLES)
     new_so = do_places_deep_copy(so, mzPDC_DESER, 1, NULL, NULL);
