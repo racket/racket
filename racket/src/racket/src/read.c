@@ -84,6 +84,7 @@ ROSYM static Scheme_Object *unsyntax_splicing_symbol;
 ROSYM static Scheme_Object *quasisyntax_symbol;
 ROSYM static Scheme_Object *brackets_symbol;
 ROSYM static Scheme_Object *braces_symbol;
+ROSYM static Scheme_Object *dot_symbol;
 ROSYM static Scheme_Object *terminating_macro_symbol;
 ROSYM static Scheme_Object *non_terminating_macro_symbol;
 ROSYM static Scheme_Object *dispatch_macro_symbol;
@@ -97,6 +98,7 @@ static Scheme_Object *read_bracket_as_paren(int, Scheme_Object *[]);
 static Scheme_Object *read_brace_as_paren(int, Scheme_Object *[]);
 static Scheme_Object *read_bracket_with_tag(int, Scheme_Object *[]);
 static Scheme_Object *read_brace_with_tag(int, Scheme_Object *[]);
+static Scheme_Object *read_cdot(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_graph(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_compiled(int, Scheme_Object *[]);
 static Scheme_Object *read_accept_box(int, Scheme_Object *[]);
@@ -177,6 +179,7 @@ typedef struct ReadParams {
   char curly_braces_are_parens;
   char square_brackets_are_tagged;
   char curly_braces_are_tagged;
+  char read_cdot;
   char read_decimal_inexact;
   char can_read_dot;
   char can_read_infix_dot;
@@ -423,6 +426,7 @@ void scheme_init_read(Scheme_Env *env)
 
   REGISTER_SO(brackets_symbol);
   REGISTER_SO(braces_symbol);
+  REGISTER_SO(dot_symbol);
 
   REGISTER_SO(unresolved_uninterned_symbol);
   REGISTER_SO(tainted_uninterned_symbol);
@@ -442,6 +446,7 @@ void scheme_init_read(Scheme_Env *env)
 
   brackets_symbol               = scheme_intern_symbol("#%brackets");
   braces_symbol                 = scheme_intern_symbol("#%braces");
+  dot_symbol                    = scheme_intern_symbol("#%dot");
 
   unresolved_uninterned_symbol = scheme_make_symbol("unresolved");
   tainted_uninterned_symbol    = scheme_make_symbol("tainted");
@@ -530,6 +535,7 @@ void scheme_init_read(Scheme_Env *env)
   GLOBAL_PARAMETER("read-curly-brace-as-paren",     read_brace_as_paren,    MZCONFIG_CURLY_BRACES_ARE_PARENS,     env);
   GLOBAL_PARAMETER("read-square-bracket-with-tag",  read_bracket_with_tag,  MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED,  env);
   GLOBAL_PARAMETER("read-curly-brace-with-tag",     read_brace_with_tag,    MZCONFIG_CURLY_BRACES_ARE_TAGGED,     env);
+  GLOBAL_PARAMETER("read-cdot",                     read_cdot,              MZCONFIG_READ_CDOT,                   env);
   GLOBAL_PARAMETER("read-accept-graph",             read_accept_graph,      MZCONFIG_CAN_READ_GRAPH,              env);
   GLOBAL_PARAMETER("read-accept-compiled",          read_accept_compiled,   MZCONFIG_CAN_READ_COMPILED,           env);
   GLOBAL_PARAMETER("read-accept-box",               read_accept_box,        MZCONFIG_CAN_READ_BOX,                env);
@@ -631,6 +637,12 @@ static Scheme_Object *
 read_brace_with_tag(int argc, Scheme_Object *argv[])
 {
   DO_CHAR_PARAM("read-curly-brace-with-tag", MZCONFIG_CURLY_BRACES_ARE_TAGGED);
+}
+
+static Scheme_Object *
+read_cdot(int argc, Scheme_Object *argv[])
+{
+  DO_CHAR_PARAM("read-cdot", MZCONFIG_READ_CDOT);
 }
 
 static Scheme_Object *
@@ -818,6 +830,15 @@ read_delay_load(int argc, Scheme_Object *argv[])
 
 #ifdef DO_STACK_CHECK
 
+static Scheme_Object *read_inner_inner_inner(Scheme_Object *port,
+				       Scheme_Object *stxsrc,
+				       Scheme_Hash_Table **ht,
+				       Scheme_Object *indentation,
+				       ReadParams *params,
+				       int comment_mode,
+				       int pre_char,
+				       Readtable *init_readtable,
+                                       int get_info);
 static Scheme_Object *read_inner_inner(Scheme_Object *port,
 				       Scheme_Object *stxsrc,
 				       Scheme_Hash_Table **ht,
@@ -845,7 +866,7 @@ static void set_need_copy(Scheme_Hash_Table **ht)
   scheme_hash_set(*ht, tainted_uninterned_symbol, scheme_true);
 }
 
-static Scheme_Object *read_inner_inner_k(void)
+static Scheme_Object *read_inner_inner_inner_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *o = (Scheme_Object *)p->ku.k.p1;
@@ -861,7 +882,7 @@ static Scheme_Object *read_inner_inner_k(void)
   p->ku.k.p4 = NULL;
   p->ku.k.p5 = NULL;
 
-  return read_inner_inner(o, stxsrc, ht, indentation, params, p->ku.k.i1, p->ku.k.i2,
+  return read_inner_inner_inner(o, stxsrc, ht, indentation, params, p->ku.k.i1, p->ku.k.i2,
                           table, p->ku.k.i3);
 }
 #endif
@@ -958,7 +979,7 @@ read_plus_minus_period_leading_number(Scheme_Object *port, Scheme_Object *stxsrc
 
 
 static Scheme_Object *
-read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table **ht,
+read_inner_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table **ht,
 		 Scheme_Object *indentation, ReadParams *params,
 		 int comment_mode, int pre_char, Readtable *table,
                  int get_info)
@@ -994,7 +1015,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
       p->ku.k.i1 = comment_mode;
       p->ku.k.i2 = pre_char;
       p->ku.k.i3 = get_info;
-      return scheme_handle_stack_overflow(read_inner_inner_k);
+      return scheme_handle_stack_overflow(read_inner_inner_inner_k);
     }
   }
 #endif
@@ -1997,6 +2018,50 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 }
 
 static Scheme_Object *
+read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table **ht,
+		 Scheme_Object *indentation, ReadParams *params,
+		 int comment_mode, int pre_char, Readtable *table,
+         int get_info)
+{
+  intptr_t rline = 0, rcol = 0, rpos = 0;
+  intptr_t dline = 0, dcol = 0, dpos = 0;
+  Scheme_Object *ret;
+  int read_cdot, next, found_dot;
+
+  read_cdot = params->read_cdot;
+  
+  scheme_tell_all(port, &rline, &rcol, &rpos);
+  ret = read_inner_inner_inner(port, stxsrc, ht, indentation, params, comment_mode, pre_char, table, get_info);
+
+  if (!read_cdot) { return ret; }
+
+  found_dot = 0;
+  while ( 1 ) {    
+    next = scheme_peekc_special_ok(port);
+    if ( next == EOF ) { break; }
+    if ( scheme_isspace(next) ) { scheme_getc_special_ok(port); continue; }
+    if ( next == '.' ) { scheme_getc_special_ok(port); found_dot = 1; break; }
+    break;
+  }
+
+  if ( found_dot ) {
+    Scheme_Object *dot, *next;
+    scheme_tell_all(port, &dline, &dcol, &dpos);
+    dot = dot_symbol;
+    if (stxsrc) {
+      dot = scheme_make_stx_w_offset(dot, dline, dcol, dpos, SPAN(port,dpos), stxsrc, STX_SRCTAG);
+    }
+    next = read_inner_inner(port, stxsrc, ht, indentation, params, comment_mode, pre_char, table, get_info);
+    ret = scheme_make_pair( dot, scheme_make_pair( ret, scheme_make_pair( next, scheme_null ) ) );
+    if (stxsrc) {
+      ret = scheme_make_stx_w_offset(ret, rline, rcol, rpos, SPAN(port,rpos), stxsrc, STX_SRCTAG);
+    }
+  }
+  
+  return ret;
+}
+
+static Scheme_Object *
 read_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table **ht,
 	   Scheme_Object *indentation, ReadParams *params,
 	   int comment_mode)
@@ -2355,6 +2420,8 @@ _internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cant_fai
   params.square_brackets_are_tagged = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CURLY_BRACES_ARE_TAGGED);
   params.curly_braces_are_tagged = SCHEME_TRUEP(v);
+  v = scheme_get_param(config, MZCONFIG_READ_CDOT);
+  params.read_cdot = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_READ_DECIMAL_INEXACT);
   params.read_decimal_inexact = SCHEME_TRUEP(v);
   v = scheme_get_param(config, MZCONFIG_CAN_READ_QUASI);
@@ -3580,6 +3647,7 @@ read_number_or_symbol(int init_ch, int skip_rt, Scheme_Object *port,
   intptr_t rq_pos = 0, rq_col = 0, rq_line = 0;
   int case_sens = params->case_sensitive;
   int decimal_inexact = params->read_decimal_inexact;
+  int read_cdot = params->read_cdot;
   Scheme_Object *o;
   int delim_ok;
   int ungetc_ok;
@@ -3628,7 +3696,8 @@ read_number_or_symbol(int init_ch, int skip_rt, Scheme_Object *port,
 	     || (!table 
 		 && !scheme_isspace(ch) 
 		 && (((ch < 128) && (delim[ch] & delim_ok))
-		     || ((ch >= 128) && far_char_ok)))
+		     || ((ch >= 128) && far_char_ok))
+         && !(!is_float && !is_not_float && !radix_set && read_cdot && ch == '.'))
 	     || table)) {
     if (table) {
       int v;
