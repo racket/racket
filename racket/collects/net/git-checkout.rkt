@@ -684,8 +684,8 @@
           [(#"40000" #"040000")
            (extract-tree id obj-ids tmp (build-path dest-dir fn))]
           [(#"120000")
-           (make-file-or-directory-link (build-path dest-dir fn)
-                                        (object->bytes tmp (this-object-location)))]
+           (make-file-or-directory-link (bytes->path (object->bytes tmp (this-object-location)))
+                                        (build-path dest-dir fn))]
           [(#"160000")
            ;; submodule; just make a directory placeholder
            (make-directory* (build-path dest-dir fn))]
