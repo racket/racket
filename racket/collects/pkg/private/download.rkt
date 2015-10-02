@@ -27,12 +27,12 @@
       rest]
      [_ rp])))
 
-(define (do-cache-file file url checksum use-cache? download-printf download!)
+(define (do-cache-file file url key checksum use-cache? download-printf download!)
   (cond
    [(and use-cache? checksum)
     (cache-file file
                 #:exists-ok? #t
-                (list (url->string url) checksum)
+                (list key checksum)
                 (get-download-cache-dir)
                 download!
                 #:log-error-string (lambda (s) (log-pkg-error s))
@@ -76,7 +76,8 @@
                               "  server response: ~a")
                           (url->string url)
                           (read-line (open-input-string reply-s))))))))))
-    (do-cache-file file url checksum use-cache? download-printf download!)))
+    (do-cache-file file url (url->string url) checksum 
+                   use-cache? download-printf download!)))
 
 (define (clean-cache pkg-url checksum)
   (when pkg-url
@@ -116,7 +117,8 @@
              #:exists-ok? #t
              (directory-list))))
   
-  (do-cache-file tmp.tgz url checksum use-cache? download-printf download!)
+  (do-cache-file tmp.tgz url (vector transport host port repo) checksum 
+                 use-cache? download-printf download!)
 
   (unless unpacked?
     (untgz tmp.tgz #:dest dest-dir))
