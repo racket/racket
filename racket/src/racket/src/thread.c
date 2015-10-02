@@ -8719,10 +8719,26 @@ void scheme_remove_gc_callback(Scheme_Object *key)
 # define mzOSAPI /* empty */
 #endif
 
+#ifdef SIXTY_FOUR_BIT_INTEGERS
+typedef double mzCGFloat;
+#else
+typedef float mzCGFloat;
+#endif
+
+typedef struct {
+  struct { mzCGFloat x, y; } origin;
+  struct { mzCGFloat w, h; } size;
+} mzNSRect;
+
+typedef void (*gccb_Int_to_Void)(int);
 typedef void (*gccb_Ptr_Ptr_Ptr_Int_to_Void)(void*, void*, void*, int);
 typedef void (*gccb_Ptr_Ptr_Ptr_to_Void)(void*, void*, void*);
+typedef void* (*gccb_Ptr_Ptr_to_Ptr)(void*, void*);
+typedef void (*gccb_Ptr_Ptr_to_Void)(void*, void*);
 typedef void (*gccb_Ptr_Ptr_Float_to_Void)(void*, void*, float);
 typedef void (*gccb_Ptr_Ptr_Double_to_Void)(void*, void*, double);
+typedef void (*gccb_Float_Float_Float_Float_to_Void)(float, float, float, float);
+typedef void (*gccb_Ptr_Ptr_NSRect_to_Void)(void*, void*, mzNSRect);
 typedef void (*gccb_Ptr_Ptr_Ptr_Nine_Ints)(void*,void*,void*,int,int,int,int,int,int,int,int,int);
 typedef void (mzOSAPI *gccb_OSapi_Ptr_Int_to_Void)(void*, int);
 typedef void (mzOSAPI *gccb_OSapi_Ptr_Ptr_to_Void)(void*, void*);
@@ -8738,6 +8754,7 @@ static void run_gc_callbacks(int pre)
 {
   Scheme_GC_Pre_Post_Callback_Desc *prev = NULL, *desc;
   Scheme_Object *acts, *act, *protocol;
+  void *save = NULL;
   int j;
 
   desc = gc_prepost_callback_descs; 
@@ -8759,7 +8776,15 @@ static void run_gc_callbacks(int pre)
         protocol = SCHEME_VEC_ELS(act)[0];
         /* The set of suported protocols is arbitary, based on what we've needed
            so far. */
-        if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr_int->void")) {
+        if (!strcmp(SCHEME_SYM_VAL(protocol), "int->void")) {
+          gccb_Int_to_Void proc;
+          int i;
+
+          proc = (gccb_Int_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          i = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[2]);
+
+          proc(i);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr_int->void")) {
           gccb_Ptr_Ptr_Ptr_Int_to_Void proc;
           void *a, *b, *c;
           int i;
@@ -8771,6 +8796,25 @@ static void run_gc_callbacks(int pre)
           i = SCHEME_INT_VAL(SCHEME_VEC_ELS(act)[5]);
 
           proc(a, b, c, i);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr->save")) {
+          gccb_Ptr_Ptr_to_Ptr proc;
+          void *a, *b;
+
+          proc = (gccb_Ptr_Ptr_to_Ptr)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+
+          save = proc(a, b);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "save!_ptr->void")) {
+          if (save) {
+            gccb_Ptr_Ptr_to_Void proc;
+            void *b;
+
+            proc = (gccb_Ptr_Ptr_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+            b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+
+            proc(save, b);
+          }
         } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr->void")) {
           gccb_Ptr_Ptr_Ptr_to_Void proc;
           void *a, *b, *c;
@@ -8803,6 +8847,28 @@ static void run_gc_callbacks(int pre)
           d = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[4]);
 
           proc(a, b, d);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "float_float_float_float->void")) {
+          gccb_Float_Float_Float_Float_to_Void proc;
+          double d1, d2, d3, d4;
+
+          proc = (gccb_Float_Float_Float_Float_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          d1 = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[2]);
+          d2 = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[3]);
+          d3 = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[4]);
+          d4 = SCHEME_DBL_VAL(SCHEME_VEC_ELS(act)[5]);
+
+          proc(d1, d2, d3, d4);
+        } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_NSRect->void")) {
+          gccb_Ptr_Ptr_NSRect_to_Void proc;
+          void *a, *b;
+          mzNSRect r;
+
+          proc = (gccb_Ptr_Ptr_NSRect_to_Void)scheme_extract_pointer(SCHEME_VEC_ELS(act)[1]);
+          a = scheme_extract_pointer(SCHEME_VEC_ELS(act)[2]);
+          b = scheme_extract_pointer(SCHEME_VEC_ELS(act)[3]);
+          r = *(mzNSRect *)SCHEME_PTR_VAL(SCHEME_VEC_ELS(act)[4]);
+
+          proc(a, b, r);
         } else if (!strcmp(SCHEME_SYM_VAL(protocol), "ptr_ptr_ptr_int_int_int_int_int_int_int_int_int->void")) {
           gccb_Ptr_Ptr_Ptr_Nine_Ints proc;
           void *a, *b, *c;
