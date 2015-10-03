@@ -217,6 +217,23 @@ A @tech{parameter} that controls whether @litchar["{"] and @litchar["}"]
 are treated as parentheses. See @secref["parse-pair"] for more
 information.}
 
+@defboolparam[read-square-bracket-with-tag on?]{
+
+A @tech{parameter} that controls whether @litchar{[} and @litchar{]}
+are treated as parentheses, but the resulting list tagged with
+@racket[#%brackets]. See @secref["parse-pair"] for more information.
+
+@history[#:added "6.2.900.18"]}
+
+@defboolparam[read-curly-brace-with-tag on?]{
+
+A @tech{parameter} that controls whether @litchar["{"] and
+@litchar["}"] are treated as parentheses, but the resulting list
+tagged with @racket[#%braces]. See @secref["parse-pair"] for more
+information.
+
+@history[#:added "6.2.900.18"]}
+
 @defboolparam[read-accept-box on?]{
 
 A @tech{parameter} that controls parsing @litchar{#&} input. See
@@ -255,6 +272,14 @@ information.}
 
 A @tech{parameter} that controls parsing input with two dots to trigger infix
  conversion. See @secref["parse-pair"] for more information.}
+
+@defboolparam[read-cdot on?]{
+
+A @tech{parameter} that controls parsing input with a dot, in a C
+structure accessor style. See @secref["parse-cdot"] for more
+information.
+
+@history[#:added "6.2.900.18"]}
 
 @defboolparam[read-accept-quasiquote on?]{
 
