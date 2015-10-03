@@ -3702,7 +3702,8 @@ read_number_or_symbol(int init_ch, int skip_rt, Scheme_Object *port,
 		 && (((ch < 128) && (delim[ch] & delim_ok))
 		     || ((ch >= 128) && far_char_ok))
          && !(!is_float && !is_not_float && !radix_set && read_cdot && ch == '.'))
-	     || table)) {
+	     || (table
+         && !(!is_float && !is_not_float && !radix_set && read_cdot && readtable_effective_char(table, ch) == '.')))) {
     if (table) {
       int v;
       v = readtable_kind(table, ch, params);
