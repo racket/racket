@@ -447,4 +447,4 @@ In general, each contract error message consists of six sections:
           @item{the complete contract plus a path into it showing which aspect was violated, @lines[3 2]}
           @item{the module where the contract was put (or, more generally, the boundary that the contract mediates), @lines[5 1]}
           @item{who was blamed, @lines[6 1]}
-          @item{and the source location where the contract appears. @lines[7 1]}]
+          @item{and the source location where the contract appears. @lines[8 1]}]
