@@ -2039,7 +2039,9 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
   while ( 1 ) {    
     next = scheme_peekc_special_ok(port);
     if ( next == EOF ) { break; }
-    if ( scheme_isspace(next) ) { scheme_getc_special_ok(port); continue; }
+    if ( (table && readtable_kind(table, next, params) & READTABLE_WHITESPACE)
+         || (!table && scheme_isspace(next)) ) {
+      scheme_getc_special_ok(port); continue; }
     if ( next == '.' ) { scheme_getc_special_ok(port); found_dot = 1; break; }
     break;
   }
