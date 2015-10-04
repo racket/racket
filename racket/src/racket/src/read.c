@@ -4730,6 +4730,9 @@ static Scheme_Object *read_escape_from_string(char *s, intptr_t len,
   params.case_sensitive = scheme_case_sensitive;
   params.square_brackets_are_parens = 1;
   params.curly_braces_are_parens = 1;
+  params.square_brackets_are_tagged = 0;
+  params.curly_braces_are_tagged = 0;
+  params.read_cdot = 0;
   params.read_decimal_inexact = 1;
   params.can_read_dot = 1;
   params.can_read_infix_dot = 1;
