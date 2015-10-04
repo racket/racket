@@ -4844,6 +4844,9 @@ static Scheme_Object *default_load(int argc, Scheme_Object *argv[])
     config = scheme_extend_config(config, MZCONFIG_CAN_READ_LANG, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_READ_DECIMAL_INEXACT, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_READTABLE, scheme_false);
+    config = scheme_extend_config(config, MZCONFIG_READ_CDOT, scheme_false);
+    config = scheme_extend_config(config, MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED, scheme_false);
+    config = scheme_extend_config(config, MZCONFIG_CURLY_BRACES_ARE_TAGGED, scheme_false);
   } else {
     config = scheme_extend_config(config, MZCONFIG_CAN_READ_COMPILED, scheme_true);
     config = scheme_extend_config(config, MZCONFIG_CAN_READ_READER, scheme_true);

@@ -7977,6 +7977,10 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_CURLY_BRACES_ARE_PARENS, (scheme_curly_braces_are_parens
 							      ? scheme_true : scheme_false));
 
+  init_param(cells, paramz, MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED, scheme_false);
+  init_param(cells, paramz, MZCONFIG_CURLY_BRACES_ARE_TAGGED, scheme_false);
+  init_param(cells, paramz, MZCONFIG_READ_CDOT, scheme_false);
+  
   init_param(cells, paramz, MZCONFIG_ERROR_PRINT_WIDTH, scheme_make_integer(256));
   init_param(cells, paramz, MZCONFIG_ERROR_PRINT_CONTEXT_LENGTH, scheme_make_integer(16));
   init_param(cells, paramz, MZCONFIG_ERROR_PRINT_SRCLOC, scheme_true);
