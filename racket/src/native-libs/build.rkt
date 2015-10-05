@@ -122,6 +122,9 @@
 ;; Enable kerning and set DPI to 72:
 (define-runtime-path coretext-patch "patches/coretext.patch")
 
+;; Support registration of extra font families:
+(define-runtime-path coretext-fontreg-patch "patches/coretext-fontreg.patch")
+
 ;; Enable "symbol" fonts, and fix off-by-one:
 (define-runtime-path win32text-patch "patches/win32text.patch")
 
@@ -433,6 +436,7 @@
 				    '("--with-included-modules=yes"
 				      "--with-dynamic-modules=no"))
                        #:patches (list coretext-patch
+                                       coretext-fontreg-patch
                                        win32text-patch))]
     [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
                      #:configure (append

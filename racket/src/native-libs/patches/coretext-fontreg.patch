@@ -1,0 +1,57 @@
+diff -u -r old/pango-1.36.6/pango/pangocoretext-fontmap.c new/pango-1.36.6/pango/pangocoretext-fontmap.c
+--- old/pango-1.36.6/pango/pangocoretext-fontmap.c	2015-10-04 20:27:08.000000000 -0600
++++ new/pango-1.36.6/pango/pangocoretext-fontmap.c	2015-10-04 20:25:23.000000000 -0600
+@@ -548,6 +548,53 @@
+   pfclass->is_synthesized = pango_core_text_face_is_synthesized;
+ }
+ 
++void pango_core_text_add_family_for_font_descriptors(PangoCoreTextFontMap *ctfontmap,
++                                                     char *name,
++                                                     int count,
++                                                     CTFontDescriptorRef *descs)
++{
++  PangoCoreTextFamily *family;
++  PangoCoreTextFace *face;
++  int i;
++  char *fold_name;
++
++  fold_name = g_utf8_casefold (name, -1);
++  
++  if (g_hash_table_lookup (ctfontmap->families, fold_name)) {
++    g_free(fold_name);
++    return;
++  }
++
++  family = g_object_new (PANGO_TYPE_CORE_TEXT_FAMILY, NULL);
++  family->family_name = g_strdup(name);
++  {
++    CFDictionaryRef dict;
++    CFNumberRef number;
++    SInt64 font_traits;
++    
++    dict = CTFontDescriptorCopyAttribute (descs[0], kCTFontTraitsAttribute);
++    number = (CFNumberRef)CFDictionaryGetValue (dict,
++                                                kCTFontSymbolicTrait);
++    
++    if (CFNumberGetValue (number, kCFNumberSInt64Type, &font_traits))
++      {
++        if ((font_traits & kCTFontMonoSpaceTrait) == kCTFontMonoSpaceTrait)
++          family->is_monospace = TRUE;
++      }
++  }
++  g_hash_table_insert (ctfontmap->families, fold_name, family);
++  
++  family->n_faces = count;
++  family->faces = g_new (PangoFontFace *, family->n_faces);
++
++  for (i = 0; i < count; i++) {
++    face = pango_core_text_face_from_ct_font_descriptor (descs[i]);
++    face->family = family;
++    
++    family->faces[i] = (PangoFontFace *)face;
++  }
++}
++
+ /*
+  * PangoCoreTextFamily
+  */
