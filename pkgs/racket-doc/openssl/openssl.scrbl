@@ -4,7 +4,10 @@
           (for-label openssl
                      racket
                      openssl/sha1
-                     openssl/md5))
+                     openssl/md5
+                     openssl/libcrypto
+                     openssl/libssl
+                     (only-in ffi/unsafe ffi-lib ffi-lib?)))
 
 @title{OpenSSL: Secure Communication}
 
@@ -820,3 +823,58 @@ The @racket[md5] function composes @racket[bytes->hex-string] with
 Returns a 16-byte byte string that represents the MD5 hash of the
 content from @racket[in], consuming all of the input from @racket[in]
 until an end-of-file.}
+
+@; ----------------------------------------------------------------------
+
+@(define foreign-doc '(lib "scribblings/foreign/foreign.scrbl"))
+
+@section[#:tag "libcrypto"]{The @filepath{libcrypto} Shared Library}
+
+@defmodule[openssl/libcrypto]{The @racketmodname[openssl/libcrypto]
+library provides a @tech[#:doc foreign-doc]{foreign-library value} for
+the @filepath{libcrypto} shared library.}
+
+
+@defthing[libcrypto (or/c #f ffi-lib?)]{
+
+Returns a @tech[#:doc foreign-doc]{foreign-library value} for
+@filepath{libcrypto}, or @racket[#f] if the library could not be found
+or loaded. The load attempt uses the versions specified by
+@racket[openssl-lib-versions].}
+
+@defthing[libcrypto-load-fail-reason (or/c #f string?)]{
+
+Either @racket[#f] when @racket[libcrypto] is non-@racket[#f], or a
+string when @racket[libcrypto] is @racket[#f]. In the latter case, the
+string provides an error message for the attempt to load
+@filepath{libcrypto}.}
+
+
+@defthing[openssl-lib-versions (listof string?)]{
+
+A list of versions that are tried for loading @filepath{libcrypto}.
+The list of version strings is suitable as a second argument to
+@racket[ffi-lib].}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "libssl"]{The @filepath{libssl} Shared Library}
+
+@defmodule[openssl/libssl]{The @racketmodname[openssl/libssl]
+library provides a @tech[#:doc foreign-doc]{foreign-library value} for
+the @filepath{libssl} shared library.}
+
+
+@defthing[libssl (or/c #f ffi-lib?)]{
+
+Returns a @tech[#:doc foreign-doc]{foreign-library value} for
+@filepath{libssl}, or @racket[#f] if the library could not be found
+or loaded. The load attempt uses the versions specified by
+@racket[openssl-lib-versions].}
+
+@defthing[libssl-load-fail-reason (or/c #f string?)]{
+
+Either @racket[#f] when @racket[libssl] is non-@racket[#f], or a
+string when @racket[libssl] is @racket[#f]. In the latter case, the
+string provides an error message for the attempt to load
+@filepath{libssl}.}
