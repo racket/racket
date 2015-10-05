@@ -4,7 +4,8 @@
           (for-label openssl
                      racket
                      openssl/sha1
-                     openssl/md5))
+                     openssl/md5
+                     openssl/sha256))
 
 @title{OpenSSL: Secure Communication}
 
@@ -793,6 +794,29 @@ representation in the resulting string.}
 @defproc[(hex-string->bytes [str string?]) bytes?]{
 
 The inverse of @racket[bytes->hex-string].}
+
+@; ----------------------------------------------------------------------
+
+@section{SHA-256 Hashing}
+
+@defmodule[openssl/sha256]{The @racketmodname[openssl/sha256] library
+provides a Racket wrapper for the OpenSSL library's SHA-256 hashing
+function. OpenSSL is required to use this module, as there currently is no fallback implementation.
+}
+@defproc[(sha256 [in input-port?]) string?]{
+
+Returns a 64-character string that represents the SHA-256 hash (in
+hexadecimal notation) of the content from @racket[in], consuming all
+of the input from @racket[in] until an end-of-file.
+
+The @racket[sha256] function composes @racket[bytes->hex-string] with
+@racket[sha256-bytes].}
+
+@defproc[(sha256-bytes [in input-port?]) bytes?]{
+
+Returns a 32-byte byte string that represents the SHA-256 hash of the
+content from @racket[in], consuming all of the input from @racket[in]
+until an end-of-file.}
 
 @; ----------------------------------------------------------------------
 
