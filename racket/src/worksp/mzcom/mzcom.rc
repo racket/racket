@@ -58,7 +58,7 @@ BEGIN
             VALUE "FileDescription", "MzCOM Module"
             VALUE "FileVersion", MZSCHEME_VERSION "\0"
             VALUE "InternalName", "MzCOM"
-            VALUE "LegalCopyright", "Copyright 2000-2014 PLT Design Inc."
+            VALUE "LegalCopyright", "Copyright 2000-2015 PLT Design Inc."
             VALUE "OriginalFilename", "MzCOM.EXE"
             VALUE "ProductName", "MzCOM Module"
             VALUE "ProductVersion", MZSCHEME_VERSION "\0"

@@ -5,7 +5,7 @@ License
 -------
 
 Racket
-Copyright (c) 2010-2014 PLT Design Inc.
+Copyright (c) 2010-2015 PLT Design Inc.
 
 Racket is distributed under the GNU Lesser General Public License
 (LGPL).  This implies that you may link Racket into proprietary

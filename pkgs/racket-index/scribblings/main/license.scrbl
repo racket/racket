@@ -26,7 +26,7 @@ directory for more information.
 
 @copyright{
   Racket
-  Copyright (c) 2010-2014 PLT Design Inc.
+  Copyright (c) 2010-2015 PLT Design Inc.
 }
 
 Racket software includes or extends the following copyrighted material:
