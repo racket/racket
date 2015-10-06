@@ -603,7 +603,7 @@ As a form for modularity, @racket[unit] complements @racket[module]:
 ]
 
 The @racket[lambda] and @racket[class] forms, among others, also allow
-paremetrization of code with respect to values that are chosen
+parameterization of code with respect to values that are chosen
 later. In principle, any of those could be implemented in terms of any
 of the others. In practice, each form offers certain
 conveniences---such as allowing overriding of methods or especially
