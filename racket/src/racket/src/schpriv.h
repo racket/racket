@@ -667,6 +667,9 @@ void scheme_suspend_remembered_threads(void);
 void scheme_resume_remembered_threads(void);
 #endif
 
+void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk);
+void scheme_do_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk);
+
 int scheme_wait_until_suspend_ok(void);
 
 #ifdef MZ_USE_MZRT

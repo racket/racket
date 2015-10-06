@@ -689,6 +689,7 @@ void scheme_jit_now(Scheme_Object *f)
 typedef void *(*Module_Run_Proc)(Scheme_Env *menv, Scheme_Env *env, Scheme_Object **name);
 typedef void *(*Module_Exprun_Proc)(Scheme_Env *menv, int set_ns, Scheme_Object **name);
 typedef void *(*Module_Start_Proc)(struct Start_Module_Args *a, Scheme_Object **name);
+typedef void (*Thread_Start_Child_Proc)(Scheme_Thread *child, Scheme_Object *child_thunk);
 
 void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name)
 {
@@ -717,8 +718,23 @@ void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name
     return scheme_module_start_finish(a);
 }
 
+void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk)
+{
+  Thread_Start_Child_Proc proc = (Thread_Start_Child_Proc)sjc.thread_start_child_code;
+  if (proc)
+    proc(child, child_thunk);
+  else
+    scheme_do_thread_start_child(child, child_thunk);
+}
+
+
 #else
 
 void* scheme_jit_find_code_end(void *p) { return NULL; }
+
+void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk)
+{
+  return scheme_do_thread_start_child(child, child_thunk);
+}
 
 #endif

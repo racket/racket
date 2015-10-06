@@ -3639,6 +3639,33 @@ static int more_common0(mz_jit_state *jitter, void *_data)
     scheme_jit_register_sub_func(jitter, sjc.module_start_start_code, scheme_eof);
   }
 
+  /* *** thread_start_child_code *** */
+  /* A simple indirection to generate code that libunwind can't follow,
+     particularly as used by exceptions in the Objective-C runtime */
+  {
+    int in;
+    
+    sjc.thread_start_child_code = jit_get_ip();
+    jit_prolog(2);
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R0, in); /* child */
+    in = jit_arg_p();
+    jit_getarg_p(JIT_R1, in); /* child_thunk */
+    CHECK_LIMIT();
+    mz_push_locals();
+
+    jit_prepare(2);
+    jit_pusharg_p(JIT_R1);
+    jit_pusharg_p(JIT_R0);
+    (void)mz_finish(scheme_do_thread_start_child);
+    CHECK_LIMIT();
+    mz_pop_locals();
+    jit_ret();
+    CHECK_LIMIT();
+
+    scheme_jit_register_sub_func(jitter, sjc.thread_start_child_code, scheme_eof);
+  }
+
   return 1;
 }
 

@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2015 PLT Design Inc.
+  Copyright (c) 2004-2014 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -3167,6 +3167,11 @@ static void start_child(Scheme_Thread * volatile child,
   }
 }
 
+void scheme_do_thread_start_child(Scheme_Thread *child, Scheme_Object *child_eval)
+{
+  return start_child(child, child_eval);
+}
+
 static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
 				      void *child_start, 
 				      Scheme_Config *config,
@@ -3223,7 +3228,7 @@ static Scheme_Object *make_subprocess(Scheme_Object *child_thunk,
   child->stack_start = child_start;
 
   /* Sets the child's jmpbuf for swapping in later: */
-  start_child(child, child_thunk);
+  scheme_thread_start_child(child, child_thunk);
 
   if (scheme_notify_multithread && turn_on_multi) {
     scheme_notify_multithread(1);
