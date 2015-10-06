@@ -69,7 +69,8 @@
              url
              (λ (ip) (copy-port ip op))
              #:auto-retry? #f
-             #:failure
+             #:who 'download
+             #:not-found-handler
              (lambda (reply-s)
                (pkg-error (~a "error downloading package\n"
                               "  URL: ~a\n"

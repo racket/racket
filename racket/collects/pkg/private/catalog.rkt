@@ -224,7 +224,7 @@
                                         "  response: ~v")
                                     (url->string url)
                                     s))])
-  (define bytes (call-with-url url port->bytes))
+  (define bytes (call/input-url+200 url port->bytes #:who who))
   ((if bytes
      (with-handlers ([exn:fail:read? (lambda (exn)
                                        (lambda () (failure bytes)))])
@@ -234,17 +234,6 @@
            v
            (failure bytes))))
      (lambda () (failure #f)))))
-
-;; uses a custodian to avoid leaks:
-(define (call-with-url url handler)
-  (call-with-network-retries
-   (lambda ()
-     (define-values (p hs)
-       (get-pure-port/headers url #:redirections 25 #:status? #t))
-     (begin0
-      (and (string=? "200" (substring hs 9 12))
-           (handler p))
-      (close-input-port p)))))
 
 (define (db-pkg-info pkg details?)
   (if details?
@@ -281,7 +270,7 @@
                      (add-version-query
                       (combine-url/relative i "pkgs"))
                      (lambda (l) (and (list? l) 
-                                      (andmap string? l)))))
+                                 (andmap string? l)))))
                   ;; Local database:
                   (lambda ()
                     (map db:pkg-name (db:get-pkgs)))

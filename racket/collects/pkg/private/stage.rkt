@@ -434,6 +434,7 @@
                          (make-directory* package-path)
                          (define manifest
                            (call/input-url+200
+                            #:who 'download-manifest
                             (url-like "MANIFEST")
                             port->lines))
                          (unless manifest
@@ -773,6 +774,7 @@
         (define api-bs
           (call/input-url+200
            api-u port->bytes
+           #:who 'query-github
            #:headers (list (format "User-Agent: raco-pkg/~a" (version)))))
         (unless api-bs
           (error 'package-url->checksum
@@ -801,7 +803,8 @@
      (download-printf "Downloading checksum for ~a\n" pkg-name)
      (log-pkg-debug "Downloading checksum as ~a" u)
      (call/input-url+200 (string->url u)
-                         port->string)]))
+                         port->string
+                         #:who 'download-checksum)]))
 
 (define (check-checksum given-checksum checksum what pkg-src cached-url)
   (when (and given-checksum
