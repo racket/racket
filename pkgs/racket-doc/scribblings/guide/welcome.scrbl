@@ -204,7 +204,7 @@ To package the program as an executable, you have a few options:
 @; ----------------------------------------------------------------------
 @section[#:tag "use-module"]{A Note to Readers with Lisp/Scheme Experience}
 
-If you already know something about Racket or Lisp, you might be
+If you already know something about Scheme or Lisp, you might be
 tempted to put just
 
 @racketblock[
