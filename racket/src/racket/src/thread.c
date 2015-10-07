@@ -3168,6 +3168,7 @@ static void start_child(Scheme_Thread * volatile child,
 }
 
 void scheme_do_thread_start_child(Scheme_Thread *child, Scheme_Object *child_eval)
+  XFORM_SKIP_PROC
 {
   return start_child(child, child_eval);
 }

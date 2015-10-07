@@ -3663,7 +3663,8 @@ static int more_common0(mz_jit_state *jitter, void *_data)
     jit_ret();
     CHECK_LIMIT();
 
-    scheme_jit_register_sub_func(jitter, sjc.thread_start_child_code, scheme_eof);
+    /* No scheme_jit_register_sub_func, because we don't want to try to
+       traverse past this frame for a native stack trace. */
   }
 
   return 1;

@@ -719,6 +719,7 @@ void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name
 }
 
 void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk)
+  XFORM_SKIP_PROC
 {
   Thread_Start_Child_Proc proc = (Thread_Start_Child_Proc)sjc.thread_start_child_code;
   if (proc)
