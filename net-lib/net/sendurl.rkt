@@ -4,7 +4,7 @@
 #lang racket/base
 
 (require racket/system racket/file racket/promise racket/port
-         racket/contract)
+         racket/contract racket/promise)
 
 (provide send-url send-url/file send-url/contents
          unix-browser-list browser-preference? external-browser
@@ -16,9 +16,9 @@
 
 (define separate-by-default?
   ;; internal configuration, 'browser-default lets some browsers decide
-  (get-preference 'new-browser-for-urls 
-                  (lambda () 'browser-default)
-                  #:timeout-lock-there (lambda (path) 'browser-default)))
+  (delay (get-preference 'new-browser-for-urls
+                         (lambda () 'browser-default)
+                         #:timeout-lock-there (lambda (path) 'browser-default))))
 
 ;; all possible unix browsers, filtered later to just existing executables
 ;; order matters: the default will be the first of these that is found
@@ -107,7 +107,7 @@
       (case stype
         [(macosx)  (send-url/mac url-str)]
         [(windows) (send-url/win url-str)]
-        [(unix)    (send-url/unix url-str separate-window?)]
+        [(unix)    (send-url/unix url-str (force separate-window?))]
         [else (error 'send-url
                      "don't know how to open URL on platform: ~s" stype)])))
   (void))
@@ -131,9 +131,10 @@
          [path (if query (string-append path "?" (escape-url query)) path)]
          [path (if fragment (string-append path "#" (escape-url fragment))
                    path)])
-    (send-url path separate-window? #:escape? #f)))
+    (send-url path (force separate-window?) #:escape? #f)))
 
 ;; See the documentation for the `delete-at' argument
+;; separate-window? is never used
 (define (send-url/contents contents [separate-window? separate-by-default?]
                            #:fragment [fragment #f] #:query [query #f]
                            #:delete-at [delete-at #f])
