@@ -15,7 +15,7 @@ test_script:
 - set PATH=%PATH%;%cd%\racket
 - racket\raco.exe pkg show -l
 - racket\racket.exe -l tests/racket/test
-- racket\racket.exe -l tests/pkg/test -- -q
+- racket\racket.exe -l tests/pkg/test
 - racket\racket.exe -l tests/racket/contract/all
 - racket\raco.exe test -l tests/json/json
 - racket\raco.exe test -l tests/file/main
