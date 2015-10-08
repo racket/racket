@@ -12,6 +12,7 @@ build_script:
 
 test_script:
 - echo %cd%
+- set PATH=%PATH%;%cd%\racket
 - racket\raco.exe pkg show -l
 - racket\racket.exe -l tests/racket/test
 - racket\racket.exe -l tests/pkg/test -- -q
