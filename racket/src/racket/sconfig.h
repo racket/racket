@@ -85,7 +85,7 @@
 # include <errno.h>
 # ifdef ECHRNG
 /* Solaris */
-#  if  defined(i386)
+#  if  defined(__i386__)
 #   define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-solaris"
 #  elif defined(__x86_64)
 #   define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-solaris"
@@ -121,7 +121,7 @@
 #  define SUBPROCESS_USE_FORK1
 # endif
 
-# ifdef i386
+# ifdef __i386__
 #  define MZ_USE_JIT_I386
 #  define MZ_JIT_USE_MPROTECT
 # elif defined(__x86_64)
@@ -159,7 +159,7 @@
 
   /************** Linux with gcc ****************/
 
-#if defined(linux)
+#if defined(__linux__)
 
 # ifdef __ANDROID__
 #  define SPLS_LINUX "android"
@@ -167,13 +167,13 @@
 #  define SPLS_LINUX "linux"
 # endif
 
-# if defined(i386)
+# if defined(__i386__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-"SPLS_LINUX
 #  define REGISTER_POOR_MACHINE
 #  define MZ_TRY_EXTFLONUMS
 #  define ASM_DBLPREC_CONTROL_87
 # endif
-# if defined(powerpc)
+# if defined(__powerpc__)
 #  define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-"SPLS_LINUX
 # endif
 # if defined(__mc68000__)
@@ -237,7 +237,7 @@
 
 # define FLAGS_ALREADY_SET
 
-#if defined(i386)
+#if defined(__i386__)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
 # define MZ_USE_DWARF_LIBUNWIND
@@ -247,7 +247,7 @@
 # define MZ_JIT_USE_MPROTECT
 # define MZ_USE_DWARF_LIBUNWIND
 #endif
-#if defined(powerpc)
+#if defined(__powerpc__)
 # define MZ_USE_JIT_PPC
 #endif
 # if defined(__arm__)
@@ -263,9 +263,9 @@
 
 #if defined(__NetBSD__)
 
-#if defined(i386)
+#if defined(__i386__)
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-netbsd"
-#elif defined(powerpc)
+#elif defined(__powerpc__)
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "ppc-netbsd"
 #elif defined(__x86_64__)
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "x86_64-netbsd"
@@ -295,11 +295,11 @@
 # define USE_DIVIDE_MAKE_INFINITY
 #endif
 
-#if defined(i386)
+#if defined(__i386__)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
 #endif
-#if defined(powerpc)
+#if defined(__powerpc__)
 # define MZ_USE_JIT_PPC
 #endif
 #if defined(__x86_64__)
@@ -507,7 +507,7 @@
   /************** SGI/IRIX with SGI cc ****************/
 
 #if  (defined(mips) || defined(__mips)) \
-     && !(defined(ultrix) || defined(__ultrix) || defined(linux) || defined(__OpenBSD__))
+     && !(defined(ultrix) || defined(__ultrix) || defined(__linux__) || defined(__OpenBSD__))
 
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "mips-irix"
 
@@ -552,7 +552,7 @@
   /************** ALPHA/OSF1 with gcc ****************/
 
 # if (defined(__alpha) || defined(__alpha__)) \
-    && !defined(linux) && !defined(__NetBSD__) && !defined(__OpenBSD__)
+    && !defined(__linux__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
 
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "alpha-osf1"
 
@@ -925,7 +925,7 @@
 
 #if defined(__QNX__)
 
-#if defined(i386)
+#if defined(__i386__)
 # define SCHEME_PLATFORM_LIBRARY_SUBPATH "i386-qnx"
 #endif
 # define ASSUME_FIXED_STACK_SIZE
@@ -944,7 +944,7 @@
 
 # define BROKEN_READLINK_NUL_TERMINATOR
 
-#if defined(i386)
+#if defined(__i386__)
 # define MZ_USE_JIT_I386
 # define MZ_JIT_USE_MPROTECT
 #endif

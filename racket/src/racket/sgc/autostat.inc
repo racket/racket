@@ -14,7 +14,7 @@
 # define USE_DATASTARTEND 1
 #endif
 
-#if defined(linux) && defined(i386) && defined(__ELF__)
+#if defined(__linux) && defined(__i386__) && defined(__ELF__)
 # include <linux/version.h>
 # include <features.h>
 # if LINUX_VERSION_CODE >= 0x20000 && defined(__GLIBC__) && __GLIBC__ >= 2

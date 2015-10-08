@@ -163,7 +163,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 /*                            OS process name                             */
 /*========================================================================*/
 
-#if defined(linux)
+#if defined(__linux__)
 # include <sys/prctl.h>
 # ifdef PR_SET_NAME
 #  define CAN_SET_OS_PROCESS_NAME 1
