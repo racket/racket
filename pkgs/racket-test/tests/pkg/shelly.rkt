@@ -6,8 +6,13 @@
          (for-syntax racket/base
                      syntax/parse))
 
+
 ;; {{ Shelly
 ;; This macro is intended to make Eli proud.
+
+;; Do we print a lot of output?
+(define verbose? (make-parameter #t))
+(provide verbose?)
 
 ;; Wow, RackUnit really sucks that test-begin/case don't work inside
 ;; each other like this already. We Want's RackUnit's detailed printing
@@ -57,7 +62,8 @@
                   cmd
                   (define output-port (open-output-string))
                   (define error-port (open-output-string))
-                  (printf "$ ~a\n" cmd)
+                  (when (verbose?)
+                    (printf "$ ~a\n" cmd))
                   (match-define
                    (list stdout stdin pid stderr to-proc)
                    (process/ports #f
@@ -67,23 +73,26 @@
                                   cmd))
                   (define stdout-t
                     (thread 
-                     (λ () 
-                       (with-handlers ([exn:input-port-closed? void])
-                         (copy-port stdout output-port
-                                    (current-output-port))))))
+                     (λ ()
+                         (with-handlers ([exn:input-port-closed? void])
+                           (if (verbose?)
+                               (copy-port stdout output-port
+                                          (current-output-port))
+                               (copy-port stdout output-port))))))
                   (define stderr-t
                     (thread
                      (λ ()
-                       (with-handlers ([exn:input-port-closed? void])
-                         (define cop (current-output-port))
-                         (let loop ()
-                           (define l (read-bytes-line stderr))
-                           (unless (eof-object? l)
-                             (displayln l error-port)
-                             (displayln (format "STDERR: ~a" l) cop)
-                             (flush-output error-port)
-                             (flush-output cop)
-                             (loop)))))))
+                         (with-handlers ([exn:input-port-closed? void])
+                           (define cop (current-output-port))
+                           (let loop ()
+                             (define l (read-bytes-line stderr))
+                             (unless (eof-object? l)
+                               (displayln l error-port)
+                               (when (verbose?)
+                                 (displayln (format "STDERR: ~a" l) cop)
+                                 (flush-output cop))
+                               (flush-output error-port)
+                               (loop)))))))
                   (to-proc 'wait)
                   (define cmd-status (to-proc 'exit-code))
                   (when stdin (close-output-port stdin))
@@ -119,9 +128,9 @@
        (let ()
          (define mv m)
          (check-case mv
-                     (printf "# Starting... ~a\n" mv)
+                     (when (verbose?) (printf "# Starting... ~a\n" mv))
                      case.code ...
-                     (printf "# Ending... ~a\n" mv))))]))
+                     (when (verbose?) (printf "# Ending... ~a\n" mv)))))]))
 (define-syntax (shelly-wind stx)
   (syntax-parse
       stx

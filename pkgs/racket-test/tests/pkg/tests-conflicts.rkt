@@ -226,7 +226,8 @@
 
        (for* ([m1 '(src both zo-stays zo-goes)]
               [m2 '(src both zo-stays zo-goes)])
-         (printf "trying ~s ~s\n" m1 m2)
+         (when (verbose?)
+           (printf "trying ~s ~s\n" m1 m2))
          (set-conflict-mode t1-nc1-dir m1)
          (set-conflict-mode t1-nc2-dir m2)
          (if (and (eq? m1 'zo-goes) (eq? m2 'zo-goes))
