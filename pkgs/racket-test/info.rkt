@@ -21,6 +21,9 @@
 
                ;; for `json` tests
                "at-exp-lib"
+               
+               ;; used by the planet packages tested by the pkg tests
+               "srfi-lib"
 
                ;; used to test setup, module readers, pkg system
                "scribble-lib"))
