@@ -1063,9 +1063,27 @@ forms by rewriting them into existing pattern forms.
              character. Otherwise, @racket[syntax-parse] and other
              @racketmodname[syntax/parse] forms will not recognize it.}
 
+@defform*[[(define-pattern-expander name-id proc)
+           (define-pattern-expander (name-id . args) template)]
+          #:contracts ([proc (-> syntax? syntax?)]
+                       [name-id (and/c identifier? #rx"^~")])]{
+
+Defines @racket[name-id] as a @tech{pattern expander}. Use this form
+to define pattern expanders since it checks that the name is valid.
+
+@myexamples[
+(define-pattern-expander (~maybe pat ...)
+  (~optional (~seq pat ...)))
+(define-pattern-expander ~another-maybe
+   (syntax-parser
+     [(_ pat ...)
+      #'(~optional (~seq pat ...))]))
+]}
+
 @defproc[(pattern-expander [proc (-> syntax? syntax?)]) pattern-expander?]{
 
-Returns a @tech{pattern expander} that uses @racket[proc] to transform the pattern.
+This is the @tech{pattern expander} constructor function.
+Uses @racket[proc] to transform the pattern.
 
 @examples[#:eval the-eval
 (define-syntax ~maybe

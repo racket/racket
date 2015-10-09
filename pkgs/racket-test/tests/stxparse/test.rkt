@@ -2,7 +2,7 @@
 (require rackunit
          syntax/parse
          syntax/parse/debug
-         syntax/parse/define
+         (except-in syntax/parse/define define-pattern-expander)
          "setup.rkt"
          (for-syntax syntax/parse))
 
@@ -562,9 +562,9 @@
 ;; from http://lists.racket-lang.org/users/archive/2014-June/063095.html
 (test-case "pattern-expanders"
   (let ()
-      (define-splicing-syntax-class binding #:literals (=)
-        [pattern (~seq name:id = expr:expr)])
-      
+    (define-splicing-syntax-class binding #:literals (=)
+      [pattern (~seq name:id = expr:expr)])
+    (let ()
       (define-syntax ~separated
         (pattern-expander
          (lambda (stx)
@@ -590,7 +590,58 @@
                    (parse-my-let #'(my-let (x = 1 / y = 2 / z = 3)
                                      (+ x y z))))
                   (syntax->datum #'(let ([x 1] [y 2] [z 3])
+                                     (+ x y z)))))
+    (let () ; define-pattern-expander1
+      (define-pattern-expander ~separated
+        (lambda (stx)
+          (syntax-case stx ()
+            [(separated sep pat)
+             (with-syntax ([ooo '...])
+               #'((~seq pat (~or (~peek-not _)
+                                 (~seq sep (~peek _))))
+                  ooo))])))
+      
+      (define-splicing-syntax-class bindings
+        [pattern (~separated (~datum /) b:binding)
+                 #:with (name ...) #'(b.name ...)
+                 #:with (expr ...) #'(b.expr ...)])
+    
+    (define (parse-my-let stx)
+      (syntax-parse stx
+        [(_ bs:bindings body)
+         #'(let ([bs.name bs.expr] ...)
+             body)]))
+    
+    (check-equal? (syntax->datum
+                   (parse-my-let #'(my-let (x = 1 / y = 2 / z = 3)
                                      (+ x y z))))
+                  (syntax->datum #'(let ([x 1] [y 2] [z 3])
+                                     (+ x y z)))))
+    (let () ; define-pattern-expander2
+      (define-pattern-expander (~binding name exp)
+        (~seq (~var name id) (~literal =) (~var exp expr)))
+      
+    (define (parse-my-let stx)
+      (syntax-parse stx
+        [(_ ((~binding name e)) body)
+         #'(let ([name e]) body)]))
+    
+    (check-equal? (syntax->datum
+                   (parse-my-let #'(my-let (x = 1)
+                                     (+ x x x))))
+                  (syntax->datum #'(let ([x 1])
+                                     (+ x x x)))))
+    ; define-pattern-expander errors
+    (check-exn
+            (lambda (exn)
+              (regexp-match #rx"pattern expander name must begin with ~" (exn-message exn)))
+            (lambda ()
+              (expand #'(define-pattern-expander (s x) (~seq x)))))
+    (check-exn
+            (lambda (exn)
+              (regexp-match #rx"pattern expander name must begin with ~" (exn-message exn)))
+            (lambda ()
+              (expand #'(define-pattern-expander s (syntax-parser [x #'x])))))
     ))
 
 (test-case "this-syntax"
