@@ -1669,6 +1669,7 @@ if test "${enable_shared}" = "yes" ; then
   LIBSFX=la
   WXLIBS=WXLIBSDYN
   ICP="${LIBTOOLPROG} --mode=install cp"
+  ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
   MRLIBINSTALL="install-lib"
   LIBFINISH="${LIBTOOLPROG} --mode=finish"
   LTO="lo"
@@ -1676,10 +1677,12 @@ if test "${enable_shared}" = "yes" ; then
   FOREIGN_CONVENIENCE="_convenience"
   FOREIGN_OBJSLIB="\$(FOREIGN_LIB)"
   MZOPTIONS="$MZOPTIONS -DMZ_USES_SHARED_LIB"
+  STRIP_LIB_DEBUG=":"
 else
   LIBSFX=a
   WXLIBS=WXLIBSNORM
   ICP=cp
+  ICP_LIB=cp
   MRLIBINSTALL="install-no-lib"
   LIBFINISH=echo
   LTO="o"
@@ -1753,6 +1756,7 @@ AC_SUBST(LIBSFX)
 AC_SUBST(WXLIBS)
 AC_SUBST(WXVARIANT)
 AC_SUBST(ICP)
+AC_SUBST(ICP_LIB)
 AC_SUBST(MRLIBINSTALL)
 AC_SUBST(LIBFINISH)
 

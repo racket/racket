@@ -354,6 +354,7 @@ clean@OSX@:
 
 BUILDINFO=$(DESTDIR)$(libpltdir)/buildinfo
 ICP=@ICP@
+ICP_LIB=@ICP_LIB@
 
 install:
 	$(MAKE) install-@MAIN_VARIANT@
@@ -405,8 +406,8 @@ unix-install-cgc:
 	@RUN_RACKET_CGC@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@CGC_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install-libs-cgc:
-	cd ..; $(ICP) racket/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
-	cd ..; $(ICP) racket/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
+	cd ..; $(ICP_LIB) racket/libmzgc.@LIBSFX@ "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
+	cd ..; $(ICP_LIB) racket/libracket.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libmzgc.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket.@LIBSFX@"
 
@@ -424,7 +425,7 @@ unix-install-3m:
 	@RUN_RACKET_MMM@ -cu "$(srcdir)/collects-path.rkt" "$(DESTDIR)$(bindir)/racket@MMM_INSTALLED@@EXE_SUFFIX@" $(DESTDIR)@COLLECTS_PATH@ $(DESTDIR)@CONFIG_PATH@
 
 unix-install-libs-3m:
-	cd ..; $(ICP) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
+	cd ..; $(ICP_LIB) racket/libracket3m.@LIBSFX@ "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 	cd ..; $(STRIP_LIB_DEBUG) "$(DESTDIR)$(libdir)/libracket3m.@LIBSFX@"
 
 unix-no-install-libs-3m:
