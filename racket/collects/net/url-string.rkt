@@ -198,29 +198,16 @@
      (when (and scheme (not (regexp-match? #rx"^[a-zA-Z][a-zA-Z0-9+.-]*$"
                                            scheme)))
        (url-error "Invalid URL string; bad scheme ~e: ~e" scheme str))
-     ;; Windows => "file://xxx:/...." specifies a "xxx:/..." path
-     (let ([win-file? (and (or (equal? "" port) (not port))
-                           (equal? "file" scheme)
-                           (eq? 'windows (file-url-path-convention-type))
-                           (not (equal? host "")))])
-       (when win-file?
-         (set! path (cond [(equal? "" port) (string-append host ":" path)]
-                          [(and path host) (string-append host "/" path)]
-                          [else (or path host)]))
-         (set! port #f)
-         (set! host ""))
-       (let* ([scheme   (and scheme (string-downcase scheme))]
-              [host     (and host (string-downcase host))]
-              [user     (uri-decode/maybe user)]
-              [port     (and port (string->number port))]
-              [abs?     (or (equal? "file" scheme)
-                            (regexp-match? #rx"^/" path))]
-              [path     (if win-file?
-                          (separate-windows-path-strings path)
-                          (separate-path-strings path))]
-              [query    (if query (form-urlencoded->alist query) '())]
-              [fragment (uri-decode/maybe fragment)])
-         (make-url scheme user host port abs? path query fragment))))
+     (let* ([scheme   (and scheme (string-downcase scheme))]
+            [host     (and host (string-downcase host))]
+            [user     (uri-decode/maybe user)]
+            [port     (and port (string->number port))]
+            [abs?     (or (equal? "file" scheme)
+                          (regexp-match? #rx"^/" path))]
+            [path     (separate-path-strings path)]
+            [query    (if query (form-urlencoded->alist query) '())]
+            [fragment (uri-decode/maybe fragment)])
+       (make-url scheme user host port abs? path query fragment)))
    (cdr (regexp-match url-regexp str))))
 
 (define (uri-decode/maybe f) (friendly-decode/maybe f uri-decode))
@@ -235,9 +222,6 @@
 (define (separate-path-strings str)
   (let ([strs (regexp-split #rx"/" str)])
     (map separate-params (if (string=? "" (car strs)) (cdr strs) strs))))
-
-(define (separate-windows-path-strings str)
-  (url-path (path->url (bytes->path (string->bytes/utf-8 str) 'windows))))
 
 (define (separate-params s)
   (let ([lst (map path-segment-decode (regexp-split #rx";" s))])
