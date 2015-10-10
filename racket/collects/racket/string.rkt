@@ -173,7 +173,7 @@
   (unless (string? str)
     (raise-argument-error 'string-contains? "string?" str))
   (unless (string? sub)
-    (raise-argument-error 'string-prefix? "string?" sub))
+    (raise-argument-error 'string-contains? "string?" sub))
   (define L1 (string-length str))
   (define L2 (string-length sub))
   (define d (- L1 L2))
