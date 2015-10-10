@@ -515,15 +515,15 @@ returns @racket[#f] otherwise.
 
 @deftogether[(
 @defproc[(string-contains? [s string?] [contained string?]) boolean?]
-@defproc[(string-prefix? [s string?] [prefix string?]) boolean?]
-@defproc[(string-suffix? [s string?] [suffix string?]) boolean?])]{
+@defproc[(string-prefix? [prefix string?] [s string?]) boolean?]
+@defproc[(string-suffix? [suffix string?] [s string?]) boolean?])]{
 Checks whether @racket[s] includes at any location, start with, or ends with
 the second argument, respectively.
 
 @mz-examples[#:eval string-eval
-  (string-prefix? "Racket" "R")
-  (string-prefix? "Jacket" "R")
-  (string-suffix? "Racket" "et")
+  (string-prefix? "R"  "Racket")
+  (string-prefix? "R"  "Jacket")
+  (string-suffix? "et" "Racket")
   (string-contains? "Racket" "ack")
 ]
 

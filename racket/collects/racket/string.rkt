@@ -142,7 +142,7 @@
 (define (non-empty-string? x)
   (and (string? x) (not (zero? (string-length x)))))
 
-(define (string-prefix? str prefix)
+(define (string-prefix? prefix str)
   (unless (string? str)
     (raise-argument-error 'string-prefix? "string?" str))
   (unless (string? prefix)
@@ -156,7 +156,7 @@
      [else      (and (char=? (string-ref str i) (string-ref prefix i))
                      (loop (add1 i)))])))
 
-(define (string-suffix? str suffix)
+(define (string-suffix? suffix str)
   (unless (string? str)
     (raise-argument-error 'string-suffix? "string?" str))
   (unless (string? suffix)
