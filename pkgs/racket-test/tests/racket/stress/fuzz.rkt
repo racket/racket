@@ -51,8 +51,9 @@
                                                      (error "--write requires -f"))
                                                    (set! write? filename))]
    #:args () (void))
-  (unless global-seed
-    (set! global-seed (+ 1 (random (expt 2 30)))))
+  (cond [global-seed]
+        [(getenv "RACKET_FUZZ_GLOBAL_SEED") => (lambda (v) (set! global-seed (string->number v)))]
+        [else (set! global-seed (+ 1 (random (expt 2 30))))])
   (printf "Global seed: ~a\n" global-seed)
   (random-seed global-seed)
   (let loop ()
