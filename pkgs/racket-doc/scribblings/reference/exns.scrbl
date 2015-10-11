@@ -966,6 +966,8 @@ Returns the @tech{module path}-getting procedure associated with @racket[v].}
 
 @note-lib-only[racket/exn]
 
+@history[#:added "6.3"]
+
 @defproc[(exn->string [exn (or/c exn? any/c)]) string?]{
 
 Formats @racket[exn] as a string. If @racket[exn] is an @racket[exn?],
