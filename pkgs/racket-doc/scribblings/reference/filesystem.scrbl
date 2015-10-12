@@ -953,7 +953,7 @@ keep only the properties kept by @racket[copy-file]. If
 @racket[keep-modify-seconds?] is true, then each file copy also keeps
 the modification date of the original.
 
-@history[#:changed "6.2.900.9" @elem{Added the @racket[#:preserve-links?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[#:preserve-links?] argument.}]}
 
 
 @defproc[(delete-directory/files [path path-string?]

@@ -189,7 +189,7 @@ currently supported keys are as follows:
   @item{@racket['ico] (Windows) : An icon file path (suffix
         @filepath{.ico}) to use for the executable's desktop icon.
 
-        @history[#:changed "6.2.900.10" @elem{All icons in the
+        @history[#:changed "6.3" @elem{All icons in the
         executable are replaced with icons from the file,
         instead of setting only certain sizes and depths.}]}
 
@@ -486,4 +486,4 @@ A unit that imports nothing and exports @racket[compiler:embed^].}
   If @racket[cross?] is true, the executable is found for the target
   platform in @seclink["cross-system"]{cross-installation mode}.
 
-  @history[#:changed "6.2.900.11" @elem{Added the @racket[#:cross?] argument.}]}
+  @history[#:changed "6.3" @elem{Added the @racket[#:cross?] argument.}]}

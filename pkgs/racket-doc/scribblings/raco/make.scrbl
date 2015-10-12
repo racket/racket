@@ -508,7 +508,7 @@ submodules within the region. The existing representation should have
 zero bytes in place of each hash string, which is what @racket[write]
 produces for a compiled form.
 
-@history[#:added "6.2.900.8"]}
+@history[#:added "6.3"]}
 
 @; ----------------------------------------------------------------------
 

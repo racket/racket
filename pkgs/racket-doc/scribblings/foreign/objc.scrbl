@@ -274,7 +274,7 @@ Check whether @racket[subcls] is @racket[cls] or a subclass.
 
 Extract the class of @racket[obj].
 
-@history[#:added "6.2.900.14"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(objc-set-class! [obj _id] [cls _Class]) void?]{
@@ -282,14 +282,14 @@ Extract the class of @racket[obj].
 Changes the class of @racket[obj] to @racket[cls]. The object's
 existing representation must be compatible with the new class.
 
-@history[#:added "6.2.900.14"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(objc-get-superclass [cls _Class]) _Class]{
 
 Returns the superclass of @racket[cls].
 
-@history[#:added "6.2.900.14"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(objc-dispose-class [cls _Class]) void?]{
@@ -297,7 +297,7 @@ Returns the superclass of @racket[cls].
 Destroys @racket[cls], which must have no existing instances or
 subclasses.
 
-@history[#:added "6.2.900.14"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(objc-block [function-type? ctype]
@@ -316,7 +316,7 @@ the list in @racket[keep], which might also be included in
 @racket[_fun]. The pointers registered in @racket[keep] must be
 retained as long as the block remains in use.
 
-@history[#:added "6.2.900.14"]}
+@history[#:added "6.3"]}
 
 
 @; ----------------------------------------------------------------------

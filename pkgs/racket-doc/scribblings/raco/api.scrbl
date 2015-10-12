@@ -138,7 +138,7 @@ collection.  The following fields are used:
 
 ]
 
-@history[#:changed "6.2.900.10" @elem{Added support for @racket[compile-include-files].}]}
+@history[#:changed "6.3" @elem{Added support for @racket[compile-include-files].}]}
 
 
 @defproc[(compile-directory-zos [path path-string?]
@@ -169,7 +169,7 @@ a directory, and so on. The set of suffixes always includes
 @filepath{.rkt}, @filepath{.ss}, and @filepath{.scm}, but it can be
 extended globally by @filepath{info.rkt} configuration in collections.}
 
-@history[#:added "6.2.900.10"]
+@history[#:added "6.3"]
 
 @defproc[(get-module-suffixes [#:group group (or/c 'all 'libs 'docs) 'all]
                               [#:mode mode (or/c 'preferred 'all-available 'no-planet 'no-user) 'preferred]

@@ -24,4 +24,4 @@ a function to extract items from a possible @exec{gzip}ped TAR/USTAR archive.}
 The same as @racket[untar], but if @racket[in] is in @exec{gzip} form,
 it is @racket[gunzip]ped as it is unpacked.
 
-@history[#:changed "6.2.900.17" @elem{Added the @racket[#:permissive?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[#:permissive?] argument.}]}

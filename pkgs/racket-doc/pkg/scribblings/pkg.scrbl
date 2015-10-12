@@ -310,7 +310,7 @@ If the @indexed-envvar{PLT_USE_GITHUB_API} environment variable is
 set, GitHub packages are obtained using the GitHub API protocol
 instead of using the Git protocol.
 
-@history[#:changed "6.2.900.16" @elem{Changed handling of
+@history[#:changed "6.3" @elem{Changed handling of
                                       GitHub sources to use the Git
                                       protocol by default.}]}
 
@@ -945,7 +945,7 @@ for @nonterm{key}.
  ]
 
 @history[#:changed "6.1.1.6" @elem{Added @exec{trash-max-packages} and @exec{trash-max-seconds}.}
-         #:changed "6.2.900.17" @elem{Added @exec{network-retries}.}]}
+         #:changed "6.3" @elem{Added @exec{network-retries}.}]}
 
 
 @subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...

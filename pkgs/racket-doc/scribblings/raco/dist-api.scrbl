@@ -46,5 +46,5 @@ The content of each directory in the @racket[#:copy-collects] argument
 is copied into the main @filepath{collects} directory for the packaged
 executables.
 
-@history[#:changed "6.2.900.17" @elem{Added the @racket[#:executables?]
+@history[#:changed "6.3" @elem{Added the @racket[#:executables?]
                                       and @racket[#:relative-base] arguments.}]}
