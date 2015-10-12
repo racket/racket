@@ -257,10 +257,14 @@ port returned by @racket[tcp-accept], @racket[tcp-connect],
 
 @defthing[port-number? contract?]{
 Equivalent to @racket[(between/c 1 65535)].
+
+@history[#:added "6.3"]{}
 }
 
 @defthing[listen-port-number? contract?]{
 Equivalent to @racket[(between/c 0 65535)].
+
+@history[#:added "6.3"]{}
 }
 
 @;------------------------------------------------------------------------

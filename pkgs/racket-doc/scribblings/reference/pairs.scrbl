@@ -875,7 +875,9 @@ Returns a list that is the same as @racket[lst] except at the specified index.
 The element at the specified index is @racket[(updater (list-ref lst pos))].
 
 @examples[#:eval list-eval
-(list-update '(zero one two) 1 symbol->string)]}
+(list-update '(zero one two) 1 symbol->string)]
+@history[#:added "6.3"]{}
+}
 
 @defproc[(list-set [lst list?]
                    [pos (and/c (>=/c 0) (</c (length lst)))]
@@ -886,7 +888,9 @@ Returns a list that is the same as @racket[lst] except at the specified index.
 The element at the specified index is @racket[value].
 
 @examples[#:eval list-eval
-(list-set '(zero one two) 2 "two")]}
+(list-set '(zero one two) 2 "two")]
+@history[#:added "6.3"]{}
+}
 
 @defproc[(take [lst any/c] [pos exact-nonnegative-integer?])
          list?]{
@@ -1019,6 +1023,7 @@ combined with the from-right functionality of @racket[take-right],
 @examples[#:eval list-eval
 (list-prefix? '(1 2) '(1 2 3 4 5))
 ]
+@history[#:added "6.3"]{}
 }
 
 @defproc[(take-common-prefix [l list?] [r list?]
@@ -1030,6 +1035,7 @@ combined with the from-right functionality of @racket[take-right],
 @examples[#:eval list-eval
 (take-common-prefix '(a b c d) '(a b x y z))
 ]
+@history[#:added "6.3"]{}
 }
 
 @defproc[(drop-common-prefix [l list?] [r list?]
@@ -1042,6 +1048,7 @@ combined with the from-right functionality of @racket[take-right],
 @examples[#:eval list-eval
 (drop-common-prefix '(a b c d) '(a b x y z))
 ]
+@history[#:added "6.3"]{}
 }
 
 @defproc[(split-common-prefix [l list?] [r list?]
@@ -1054,6 +1061,7 @@ combined with the from-right functionality of @racket[take-right],
 @examples[#:eval list-eval
 (split-common-prefix '(a b c d) '(a b x y z))
 ]
+@history[#:added "6.3"]{}
 }
 
 
@@ -1135,6 +1143,7 @@ use a dictionary for speed.
 (check-duplicates '(1 2 3 4 5 6)
                   (lambda (x y) (equal? (modulo x 3) (modulo y 3))))
 ]
+@history[#:added "6.3"]{}
 }
 
 @defproc[(remove-duplicates [lst list?]
@@ -1299,6 +1308,7 @@ in order of first appearance in the input.
 @examples[#:eval list-eval
 (group-by (lambda (x) (modulo x 3)) '(1 2 1 2 54 2 5 43 7 2 643 1 2 0))
 ]
+@history[#:added "6.3"]{}
 }
 
 @defproc[(cartesian-product [lst list?] ...)
@@ -1310,6 +1320,7 @@ Computes the n-ary cartesian product of the given lists.
 (cartesian-product '(1 2 3) '(a b c))
 (cartesian-product '(4 5 6) '(d e f) '(#t #f))
 ]
+@history[#:added "6.3"]{}
 }
 
 @defproc[(remf [pred procedure?]
@@ -1322,7 +1333,7 @@ for which @racket[pred] produces a true value.
 #:eval list-eval
 (remf negative? '(1 -2 3 4 -5))
 ]
-
+@history[#:added "6.3"]{}
 }
 
 @defproc[(remf* [pred procedure?]
@@ -1335,7 +1346,7 @@ produces a true value.
 #:eval list-eval
 (remf* negative? '(1 -2 3 4 -5))
 ]
-
+@history[#:added "6.3"]{}
 }
 
 
