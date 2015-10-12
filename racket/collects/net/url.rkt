@@ -23,8 +23,18 @@
 ;;   "impure" = they have text waiting
 ;;   "pure" = the MIME headers have been read
 
+(define (env->c-p-s-entries envar)
+  (match (getenv envar)
+    [(or #f "") null]
+    [(app string->url
+          (url (and scheme "http") #f host port _ (list) (list) #f))
+     (list (list scheme host port))]
+    [inv (log-net/url-info "~s contained invalid proxy URL format: ~s"
+                           envar inv)
+         null]))
+
 (define current-proxy-servers
-  (make-parameter null
+  (make-parameter (env->c-p-s-entries "PLT_HTTP_PROXY")
                   (lambda (v)
                     (unless (and (list? v)
                                  (andmap (lambda (v)
@@ -44,6 +54,35 @@
                                  (string->immutable-string (cadr v))
                                  (caddr v)))
                          v))))
+
+(define (env->n-p-s-entries envar)
+  (match (getenv envar)
+    [(or #f "") null]
+    [hostnames (string-split hostnames ",")]))
+
+(define current-no-proxy-servers
+  (make-parameter (env->n-p-s-entries "PLT_NO_PROXY")
+                  (lambda (v)
+                    (unless (and (list? v)
+                                 (andmap (lambda (v)
+                                           (or (string? v)
+                                               (regexp? v)))
+                                         v))
+                      (raise-type-error 'current-no-proxy-servers
+                                        "list of string or regexp"
+                                        v))
+                    (map (match-lambda
+                           [(? regexp? re) re]
+                           [(regexp "^(\\..*)$" (list _ m))
+                            (regexp (string-append ".*" (regexp-quote m)))]
+                           [(? string? s) (regexp (string-append "^"(regexp-quote s)"$"))])
+                         v))))
+
+(define (proxy-server-for url-schm (dest-host-name #f))
+  (let ((rv (assoc url-schm (current-proxy-servers))))
+    (cond [(not dest-host-name) rv]
+          [(memf (lambda (np) (regexp-match np dest-host-name)) (current-no-proxy-servers)) #f]
+          [else rv])))
 
 (define (url-error fmt . args)
   (raise (make-url-exception
@@ -76,7 +115,7 @@
 ;;                               -> hc
 (define (http://getpost-impure-port get? url post-data strings
                                     make-ports 1.1?)
-  (define proxy (assoc (url-scheme url) (current-proxy-servers)))
+  (define proxy (proxy-server-for (url-scheme url) (url-host url)))
   (define hc (make-ports url proxy))
   (define access-string
     (url->string
@@ -321,7 +360,7 @@
                    [(get) "GET"] [(post) "POST"] [(head) "HEAD"]
                    [(put) "PUT"] [(delete) "DELETE"] [(options) "OPTIONS"] 
                    [else (url-error "unsupported method: ~a" method)])]
-         [proxy (assoc (url-scheme url) (current-proxy-servers))]
+         [proxy (proxy-server-for (url-scheme url) (url-host url))]
          [hc (make-ports url proxy)]
          [access-string (url->string
                          (if proxy
@@ -374,7 +413,10 @@
                              (listof string?)
                              any)))
  (current-proxy-servers
-  (parameter/c (or/c false/c (listof (list/c string? string? number?))))))
+  (parameter/c (or/c false/c (listof (list/c string? string? number?)))))
+ (current-no-proxy-servers
+  (parameter/c (or/c false/c (listof (or/c string? regexp?)))))
+ (proxy-server-for (->* (string?) (string?) (or/c false/c (list/c string? string? number?)))))
 
 (define (http-sendrecv/url u
                            #:method [method-bss #"GET"]
