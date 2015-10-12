@@ -4,10 +4,13 @@
          racket/contract/base
          racket/list
          racket/match
+         racket/promise
+         racket/splicing
          (prefix-in hc: "http-client.rkt")
          (only-in "url-connect.rkt" current-https-protocol)
          "uri-codec.rkt"
          "url-string.rkt"
+         "url-proxy.rkt"
          (only-in "url-exception.rkt" make-url-exception))
 
 ;; To do:
@@ -22,28 +25,6 @@
 ;; Input ports have two statuses:
 ;;   "impure" = they have text waiting
 ;;   "pure" = the MIME headers have been read
-
-(define current-proxy-servers
-  (make-parameter null
-                  (lambda (v)
-                    (unless (and (list? v)
-                                 (andmap (lambda (v)
-                                           (and (list? v)
-                                                (= 3 (length v))
-                                                (equal? (car v) "http")
-                                                (string? (car v))
-                                                (exact-integer? (caddr v))
-                                                (<= 1 (caddr v) 65535)))
-                                         v))
-                      (raise-type-error
-                       'current-proxy-servers
-                       "list of list of scheme, string, and exact integer in [1,65535]"
-                       v))
-                    (map (lambda (v)
-                           (list (string->immutable-string (car v))
-                                 (string->immutable-string (cadr v))
-                                 (caddr v)))
-                         v))))
 
 (define (url-error fmt . args)
   (raise (make-url-exception
@@ -76,7 +57,7 @@
 ;;                               -> hc
 (define (http://getpost-impure-port get? url post-data strings
                                     make-ports 1.1?)
-  (define proxy (assoc (url-scheme url) (current-proxy-servers)))
+  (define proxy (proxy-server-for (url-scheme url) (url-host url)))
   (define hc (make-ports url proxy))
   (define access-string
     (url->string
@@ -321,7 +302,7 @@
                    [(get) "GET"] [(post) "POST"] [(head) "HEAD"]
                    [(put) "PUT"] [(delete) "DELETE"] [(options) "OPTIONS"] 
                    [else (url-error "unsupported method: ~a" method)])]
-         [proxy (assoc (url-scheme url) (current-proxy-servers))]
+         [proxy (proxy-server-for (url-scheme url) (url-host url))]
          [hc (make-ports url proxy)]
          [access-string (url->string
                          (if proxy
@@ -338,7 +319,8 @@
                         #:data data)
     (http-conn-impure-port hc)))
 
-(provide (all-from-out "url-string.rkt"))
+(provide (all-from-out "url-string.rkt")
+         (all-from-out "url-proxy.rkt"))
 
 (provide/contract
  (get-pure-port (->* (url?) ((listof string?) #:redirections exact-nonnegative-integer?) input-port?))
@@ -372,9 +354,7 @@
                              (-> url? (listof string?) input-port?)
                              (-> input-port? any)
                              (listof string?)
-                             any)))
- (current-proxy-servers
-  (parameter/c (or/c false/c (listof (list/c string? string? number?))))))
+                             any))))
 
 (define (http-sendrecv/url u
                            #:method [method-bss #"GET"]
