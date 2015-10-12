@@ -581,7 +581,7 @@
              [(#:str state-database #f) state () "Read/write <state-database> as state of <dest-dir>"]
              [(#:str vers #f) version ("-v") "Copy information suitable for Racket <vers>"]
              [#:bool relative () "Make source paths relative when possible"]
-             [(#:sym mode [fail ignore continue] 'fail) pkg-fail () 
+             [(#:sym mode [fail skip continue] 'fail) pkg-fail ()
               ("Select handling of package-download failure;"
                "<mode>s: fail (the default), skip, continue (but with exit status of 5)")]
              #:args (dest-dir . src-catalog)
