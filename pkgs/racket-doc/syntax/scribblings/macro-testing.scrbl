@@ -69,7 +69,7 @@ exactly.
            (lambda () (convert-syntax-error (lambda))))
 ]
 
-@history[#:added "6.2.900.6"]{}
+@history[#:added "6.3"]{}
 }
 
 @(close-eval the-eval)

@@ -945,7 +945,7 @@ the @tt{RtlGenRand} system function.
  (eval:alts (crypto-random-bytes 14) #"\0\1\1\2\3\5\b\r\25\"7Y\220\351")
 ]
 
-@history[#:added "6.2.900.17"]}
+@history[#:added "6.3"]}
 
 @; ------------------------------------------------------------------------
 @subsection{Number--String Conversions}

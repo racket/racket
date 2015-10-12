@@ -528,7 +528,7 @@ most sense when a @tech{rename transformer}'s identifier has the
 the binding creates a binding alias that effectively routes around the
 @racket[prop:expansion-contexts] property.
 
-@history[#:added "6.2.900.12"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(syntax-local-value [id-stx syntax?]
@@ -673,7 +673,7 @@ the @exnraise[exn:fail:contract]. If @racket[stx] form does start with
 @racket[module] or @racket[module*], or if it starts with @racket[module*]
 in a top-level context, the @exnraise[exn:fail:contract].
 
-@history[#:added "6.2.900.10"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(syntax-local-lift-module-end-declaration [stx syntax?])

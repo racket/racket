@@ -510,7 +510,7 @@ trimmed (which is an alternative to using a @tech{regular expression}
 @defproc[(non-empty-string? [x any/c]) boolean?]{
 Returns @racket[#t] if @racket[x] is a string and is not empty;
 returns @racket[#f] otherwise.
-@history[#:added "6.2.900.15"]{}
+@history[#:added "6.3"]{}
 }
 
 @deftogether[(
@@ -527,7 +527,7 @@ the second argument, respectively.
   (string-contains? "Racket" "ack")
 ]
 
-@history[#:added "6.2.900.17"]{}
+@history[#:added "6.3"]{}
 }
 
 

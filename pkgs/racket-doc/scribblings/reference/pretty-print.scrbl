@@ -68,7 +68,7 @@ The keyword argument @racket[mode] controls whether printing is done like
 either @racket[pretty-print] (the default), @racket[pretty-write] or
 @racket[pretty-display].
 
-@history[#:changed "6.2.900.15" @elem{Added a @racket[mode] argument.}]}
+@history[#:changed "6.3" @elem{Added a @racket[mode] argument.}]}
 
 
 @defproc[(pretty-print-handler [v any/c]) void?]{

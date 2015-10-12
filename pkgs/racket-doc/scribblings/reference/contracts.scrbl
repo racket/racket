@@ -198,7 +198,7 @@ second.
 If all of its arguments are @racket[list-contract?]s, then @racket[or/c]
 returns a @racket[list-contract?].
 
-@history[#:changed "6.2.900.17" @list{Adjusted @racket[or/c] so that it
+@history[#:changed "6.3" @list{Adjusted @racket[or/c] so that it
   takes the first higher-order contract instead of insisting that
   there be exactly one higher-order contract for a given value.}]
 }
@@ -2832,7 +2832,7 @@ currently being checked.
   The resulting contract is a flat contract if @racket[contract] is a
   flat contract.
 
-  @history[#:added "6.2.900.15"]
+  @history[#:added "6.3"]
 }
 
 @defproc[(if/c [predicate (-> any/c any/c)]
@@ -2855,7 +2855,7 @@ currently being checked.
   The last contract is the same as @racket[any/c] because
   @racket[or/c] tries flat contracts before higher-order contracts.
 
-  @history[#:added "6.2.900.15"]
+  @history[#:added "6.3"]
 }
 
 @defthing[failure-result/c contract?]{
@@ -2864,7 +2864,7 @@ currently being checked.
 
   Equivalent to @racket[(if/c procedure? (-> any) any/c)].
 
-  @history[#:added "6.2.900.15"]
+  @history[#:added "6.3"]
 }
 
 

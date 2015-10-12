@@ -364,7 +364,7 @@ For such cases, however, the alternative reader constructor
 @racket[make-meta-reader] implements a might tightly controlled
 reading of the module language.
 
-@history[#:changed "6.2.900.6" @elem{Added the @racket[#:module-reader] option.}]}
+@history[#:changed "6.3" @elem{Added the @racket[#:module-reader] option.}]}
 
 
 @defproc[(make-meta-reader [self-sym symbol?]

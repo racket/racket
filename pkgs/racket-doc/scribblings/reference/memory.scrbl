@@ -307,7 +307,7 @@ cause a major collection); minor collections triggered by
 @racket[collect-garbage] do not cause major collections to run any
 sooner than they would have otherwise.
 
-@history[#:changed "6.2.900.17" @elem{Added the @racket[request] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[request] argument.}]}
 
 
 @defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{

@@ -112,7 +112,7 @@ that fails due to a connection error.  If
 a parameter's value is @racket[#f], then the user's configuration is
 used.
 
-@history[#:added "6.2.900.17"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(pkg-directory [name string?]

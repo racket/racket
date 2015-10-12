@@ -7,7 +7,7 @@
 @defmodule[racket/os]{The @racketmodname[racket/os] library
   additional functions for querying the operating system.}
 
-@history[#:added "6.2.900.17"]
+@history[#:added "6.3"]
 
 @defproc[(gethostname) string?]{
   Returns a string for the current machine's hostname (including its domain).

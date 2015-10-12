@@ -384,7 +384,7 @@ such as when the keys are all symbols and @racket[hash] is not an
 
 @see-also-concurrency-caveat[]
 
-@history[#:changed "6.2.900.8" @elem{Added the @racket[try-order?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}]}
 
 @defproc[(hash-keys [hash hash?])
          (listof any/c)]{
@@ -420,7 +420,7 @@ See @racket[hash-map] for information about @racket[try-order?] and
 about modifying @racket[hash] within @racket[proc].
 @see-also-concurrency-caveat[]
 
-@history[#:changed "6.2.900.8" @elem{Added the @racket[try-order?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}]}
 
 
 @defproc[(hash-count [hash hash?])
