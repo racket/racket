@@ -33,6 +33,8 @@ converted to a run-time exception.
 (phase1-eval (extract-struct-info (syntax-local-value #'point))
              #:quote quote-syntax)
 ]
+
+@history[#:added "6.3"]{}
 }
 
 @defform[(convert-compile-time-error expr)]{
@@ -54,6 +56,8 @@ compile-time error checking like syntax errors:
 
 Without the use of @racket[convert-compile-time-error], the checks
 above would not be executed because the test program would not compile.
+
+@history[#:added "6.3"]{}
 }
 
 @defform[(convert-syntax-error expr)]{

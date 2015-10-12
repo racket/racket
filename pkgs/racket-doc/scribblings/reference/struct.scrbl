@@ -643,6 +643,8 @@ The function also cooperates with @racket[pretty-print]:
 (parameterize ((pretty-print-columns 10))
   (pretty-write (point #e3e6 #e4e6)))
 ]
+
+@history[#:added "6.3"]{}
 }
 
 @defproc[(struct->list [v any/c]
@@ -671,6 +673,8 @@ the inaccessible fields are omitted from the list.
 (struct->list 'not-a-struct #:on-opaque 'return-false)
 (struct->list 'not-a-struct #:on-opaque 'skip)
 ]
+
+@history[#:added "6.3"]{}
 }
 
 @;------------------------------------------------------------------------
