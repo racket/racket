@@ -166,11 +166,36 @@
           => #("file" #f "foo" #f #t (#("abc") #("def.html")) () #f)))
   (parameterize ([file-url-path-convention-type 'windows])
     (test (string->url/vec "file://foo:/abc/def.html")
-          => #("file" #f "" #f #t (#("foo:") #("abc") #("def.html")) () #f)
+          => #("file" #f "foo" #f #t (#("abc") #("def.html")) () #f)
+          (string->url/vec "file://foo/abc/def.html")
+          => #("file" #f "foo" #f #t (#("abc") #("def.html")) () #f)
+          (string->url/vec "file:///foo/abc/def.html")
+          => #("file" #f "" #f #t (#("foo") #("abc") #("def.html")) () #f)
           (string->url/vec "file://c:/abc/def.html")
           => #("file" #f "" #f #t (#("c:") #("abc") #("def.html")) () #f)
+          (string->url/vec "fILe://C:/abc/def.html")
+          => #("file" #f "" #f #t (#("C:") #("abc") #("def.html")) () #f)
+          (string->url/vec "file:c:/abc/def.html")
+          => #("file" #f #f #f #t (#("c:") #("abc") #("def.html")) () #f)
+          (string->url/vec "file:/c:/abc/def.html")
+          => #("file" #f #f #f #t (#("c:") #("abc") #("def.html")) () #f)
           (string->url/vec "file:\\\\d\\c\\abc\\def.html")
-          => #("file" #f "" #f #t (#("") #("d") #("c") #("abc") #("def.html")) () #f)))
+          => #("file" #f "d" #f #t (#("c") #("abc") #("def.html")) () #f)
+          ;; Despite parsing as an "absolute" URL, will convert to a relative
+          ;; Windows path:
+          (string->url/vec "file:///x/y")
+          => #("file" #f "" #f #t (#("x") #("y")) () #f)
+          ;; No path-element decoding when special parsing is triggered:
+          (string->url/vec "file://c:/a%20b")
+          => #("file" #f "" #f #t (#("c:") #("a%20b")) () #f)
+          (string->url/vec "file:\\\\\\\\d\\c\\a%20b")
+          => #("file" #f "" #f #t (#("") #("d") #("c") #("a%20b")) () #f)
+          ;; Path-element decoding applies for proper URL encodings:
+          (string->url/vec "file:///c:/a%20b")
+          => #("file" #f "" #f #t (#("c:") #("a b")) () #f)
+          (string->url/vec "file://d/c/a%20b")
+          => #("file" #f "d" #f #t (#("c") #("a b")) () #f)))
+          
 
   (parameterize ([file-url-path-convention-type 'unix])
     ;; but no effect on http://foo:/...
@@ -221,7 +246,18 @@
    (path->bytes (url->path (path->url (bytes->path #"\\\\?\\c:\\a/x\\b" 'windows)) 'windows))
    => #"\\\\?\\c:\\a/x\\b"
    (path->bytes (url->path (path->url (bytes->path #"\\\\?\\UNC\\d\\\\c\\a/x\\b" 'windows)) 'windows))
-   => #"\\\\?\\UNC\\d\\c\\a/x\\b")
+   => #"\\\\?\\UNC\\d\\c\\a/x\\b" 
+   ;; Supoprt proper encoding of UNC paths:
+   (path->bytes (url->path (vec->url #("file" #f "m" #f #t (#("d")) () #f)) 'windows))
+   => #"\\\\m\\d\\"
+   (path->bytes (url->path (vec->url #("file" #f "m" #f #t (#("d") #("x")) () #f)) 'windows))
+   => #"\\\\m\\d\\x"
+   ;; Supoprt old encoding of UNC paths:
+   (path->bytes (url->path (vec->url #("file" #f "" #f #t (#("") #("m") #("d")) () #f)) 'windows))
+   => #"\\\\m\\d\\"
+   (path->bytes (url->path (vec->url #("file" #f "" #f #t (#("") #("m") #("d") #("x")) () #f)) 'windows))
+   => #"\\\\m\\d\\x")
+   
 
   ;; see PR8809 (value-less keys in the query part)
   (test-s->u #("http" #f "foo.bar" #f #t (#("baz")) ((ugh . #f)) #f)

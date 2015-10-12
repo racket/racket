@@ -113,24 +113,33 @@ The contract on @racket[str] insists that, if the url has a scheme,
 then the scheme begins with a letter and consists only of letters,
 numbers, @litchar{+}, @litchar{-}, and @litchar{.} characters.
 
-If @racket[str] starts with @racket["file:"], then the path is always
-parsed as an absolute path, and the parsing details depend on
-@racket[file-url-path-convention-type]:
+If @racket[str] starts with @litchar{file:} (case-insensitively) and
+the value of the @racket[file-url-path-convention-type] parameter is
+@racket['windows], then special parsing rules apply to accommodate
+ill-formed but widely-recognized path encodings:
 
 @itemize[
 
- @item{@racket['unix] : If @racket["file:"] is followed by
-       @litchar{//} and a non-@litchar{/}, then the first element
-       after the @litchar{//} is parsed as a host (and maybe port);
-       otherwise, the first element starts the path, and the host is
-       @racket[""].}
+ @item{If @litchar{file:} is followed by @litchar{//}, a letter, and
+       @litchar{:}, then the @litchar{//} is stripped and the
+       remainder parsed as a Windows path.}
 
- @item{@racket['windows] : If @racket["file:"] is followed by
-       @litchar{//}, then the @litchar{//} is stripped; the remainder
-       parsed as a Windows path. The host is always @racket[""] and
-       the port is always @racket[#f].}
+ @item{If @litchar{file:} is followed by @litchar{\\}, then the
+       @litchar{\\} is stripped and the remainder parsed as a Windows
+       path.}
 
-]}
+]
+
+In both of these cases, the host is @racket[""], the port is
+@racket[#f], and path-element decoding (which extract parameters or
+replaces @litchar{%20} with a space, for example) is not applied to
+the path.
+
+@history[#:changed "6.3.0.1" @elem{Changed handling of @litchar{file:}
+                                   URLs when the value of
+                                   @racket[file-url-path-convention-type]
+                                   is @racket['windows].}]}
+
 
 @defproc[(combine-url/relative [base url?] [relative string?]) url?]{
 
@@ -152,22 +161,8 @@ scheme @racket["http"].}
 @defproc[(url->string [URL url?]) string?]{
 
 Generates a string corresponding to the contents of a @racket[url]
-struct.  For a @racket["file:"] URL, the URL must not be relative, the
-result always starts @litchar{file://}, and the interpretation of the
-path depends on the value of @racket[file-url-path-convention-type]:
-
-@itemize[
-
- @item{@racket['unix] : Elements in @racket[URL] are treated as path
-       elements. Empty strings in the path list are treated like
-       @racket['same].}
-
- @item{@racket['windows] : If the first element is @racket[""] then
-       the next two elements define the UNC root, and the rest of the
-       elements are treated as path elements. Empty strings in the
-       path list are treated like @racket['same].}
-
-]
+struct.  For a @racket["file:"] URL, the URL must not be relative, and
+the result always starts @litchar{file://}.
 
 The @racket[url->string] procedure uses
 @racket[alist->form-urlencoded] when formatting the query, so it is
@@ -182,7 +177,18 @@ The encoding of path segments and fragment is sensitive to the
 @defproc[(path->url [path (or/c path-string? path-for-some-system?)])
          url?]{
 
-Converts a path to a @racket[url].}
+Converts a path to a @racket[url].
+
+With the @racket['unix] path convention, the host in the resulting URL
+is always @racket[""], and the path is absolute from the root.
+
+With the @racket['windows] path convention and a UNC path, the machine
+part of the UNC root is used as the URL's host, and the drive part of
+the root is the first element of the URL's path.
+
+@history[#:changed "6.3.0.1" @elem{Changed @racket['windows] encoding
+                                   of UNC paths.}]}
+
 
 
 @defproc[(url->path [URL url?]
@@ -190,7 +196,36 @@ Converts a path to a @racket[url].}
          path-for-some-system?]{
 
 Converts @racket[URL], which is assumed to be a @racket["file"] URL,
-to a path.}
+to a path.
+
+For the @racket['unix] path convention, the URL's host is ignored, and
+the URL's path is formed relative to the root.
+
+For the @racket['windows] path convention:
+
+@itemlist[
+
+ @item{A non-@racket[""] value for the URL's host field creates a UNC
+       path, where the host is the UNC root's machine name, the URL's
+       path must be non-empty, and the first element of the URL's path
+       is used as the drive part of the UNC root.}
+
+ @item{For legacy reasons, if the URL's host is @racket[""], the URL's
+       path contains at least three elements, and and the first
+       element of the URL's path is also @racket[""], then a UNC path
+       is created by using the second and third elements of the path
+       as the UNC root's machine and drive, respectively.}
+
+ @item{Otherwise, the URL's path is converted to a Windows path. The
+       result is an absolute path if the URL's first path element
+       corresponds to a drive, otherwise the result is a relative path
+       (even though URLs are not intended to represent relative paths).}
+
+]
+
+@history[#:changed "6.3.0.1" @elem{Changed @racket['windows] treatment
+                                   of a non-@racket[""] host.}]}
+
 
 
 @defproc[(relative-path->relative-url-string [path (and/c (or/c path-string? path-for-some-system?)
@@ -206,8 +241,8 @@ URL ends with @litchar{/}.}
 
 @defparam[file-url-path-convention-type kind (or/c 'unix 'windows)]{
 
-Determines the default conversion to and from strings for
-@racket["file"] URLs. See @racket[string->url] and @racket[url->string].}
+Determines the default conversion from strings for
+@racket["file"] URLs; see @racket[string->url].}
 
 
 @defparam[current-url-encode-mode mode (or/c 'recommended 'unreserved)]{
