@@ -562,23 +562,23 @@
 ;; from http://lists.racket-lang.org/users/archive/2014-June/063095.html
 (test-case "pattern-expanders"
   (let ()
-      (define-splicing-syntax-class binding #:literals (=)
-        [pattern (~seq name:id = expr:expr)])
-      
-      (define-syntax ~separated
-        (pattern-expander
-         (lambda (stx)
-           (syntax-case stx ()
-             [(separated sep pat)
-              (with-syntax ([ooo '...])
-                #'((~seq pat (~or (~peek-not _)
-                                  (~seq sep (~peek _))))
-                   ooo))]))))
-      
-      (define-splicing-syntax-class bindings
-        [pattern (~separated (~datum /) b:binding)
-                 #:with (name ...) #'(b.name ...)
-                 #:with (expr ...) #'(b.expr ...)])
+    (define-splicing-syntax-class binding #:literals (=)
+      [pattern (~seq name:id = expr:expr)])
+    
+    (define-syntax ~separated
+      (pattern-expander
+       (lambda (stx)
+         (syntax-case stx ()
+           [(separated sep pat)
+            (with-syntax ([ooo '...])
+              #'((~seq pat (~or (~peek-not _)
+                                (~seq sep (~peek _))))
+                 ooo))]))))
+    
+    (define-splicing-syntax-class bindings
+      [pattern (~separated (~datum /) b:binding)
+               #:with (name ...) #'(b.name ...)
+               #:with (expr ...) #'(b.expr ...)])
     
     (define (parse-my-let stx)
       (syntax-parse stx
@@ -589,6 +589,33 @@
     (check-equal? (syntax->datum
                    (parse-my-let #'(my-let (x = 1 / y = 2 / z = 3)
                                      (+ x y z))))
+                  (syntax->datum #'(let ([x 1] [y 2] [z 3])
+                                     (+ x y z))))
+
+    (define-syntax sep-comma ; test pattern expanders that don't begin with tilde
+      (pattern-expander
+       (lambda (stx)
+         (syntax-case stx ()
+           [(sep-comma pat)
+            (with-syntax ([ooo '...])
+              #'((~seq (~or (~and pat (~not ((~datum unquote) _))) ((~datum unquote) pat))
+                       (~or (~peek-not _) (~peek ((~datum unquote) _))))
+                 ooo))]))))
+
+    (define-splicing-syntax-class bindings2
+      [pattern (sep-comma [b:binding])
+               #:with (name ...) #'(b.name ...)
+               #:with (expr ...) #'(b.expr ...)])
+
+    (define (parse-my-let2 stx)
+      (syntax-parse stx
+        [(_ bs:bindings2 body)
+         #'(let ([bs.name bs.expr] ...)
+             body)]))
+
+    (check-equal? (syntax->datum
+                   (parse-my-let2 #'(my-let ([x = 1], [y = 2], [z = 3])
+                                      (+ x y z))))
                   (syntax->datum #'(let ([x 1] [y 2] [z 3])
                                      (+ x y z))))
     ))
