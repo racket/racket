@@ -338,6 +338,7 @@ static Scheme_Object *read_top(Scheme_Object *obj)
   top->iso.so.type = scheme_compilation_top_type;
   if (!SCHEME_PAIRP(obj)) return NULL;
   top->max_let_depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
+  if (top->max_let_depth < 0) return NULL; /* Should this check for a max as well? */
   obj = SCHEME_CDR(obj);
   if (!SCHEME_PAIRP(obj)) return NULL;
   top->binding_namess = SCHEME_CAR(obj); /* checking is in scheme_install_binding_names() */
