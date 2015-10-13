@@ -35,8 +35,8 @@ typedef struct mpage {
     uintptr_t alloc_size; /* for a nursery: total size of the nursery */
     uintptr_t med_search_start; /* medium page: offset for searching for a free slot */
     uintptr_t scan_boundary; /* small gen1 page: during GC, boundary between objects that can be
-                                left alone and that that will be scanned & fixed up; objects before
-                                have cleared "mark" bits, while objects after (may) have "mark" bits sets */
+                                should be treated as previously gen1 and objects that should be
+                                treated as just moved from gen0 */
   };
   unsigned short live_size; /* except for big pages, total size of live objects on the page */
   unsigned char generation    :2;

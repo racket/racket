@@ -4211,7 +4211,6 @@ static void mark_backpointers(NewGC *gc)
 
       if (work->size_class == SIZE_CLASS_BIG_PAGE) {
         /* must be a big page */
-        work->size_class = SIZE_CLASS_BIG_PAGE_MARKED;
         push_ptr(gc, TAG_AS_BIG_PAGE_PTR(BIG_PAGE_TO_OBJECT(work)));
         gc->memory_in_use -= work->size;
       } else if (work->size_class == SIZE_CLASS_SMALL_PAGE) {
@@ -4223,13 +4222,10 @@ static void mark_backpointers(NewGC *gc)
 
         while (start < end) {
           objhead *info = (objhead *)start;
-          if (!info->dead) {
-            info->mark = 1;
+          if (!info->dead)
             push_ptr(gc, OBJHEAD_TO_OBJPTR(start));
-          }
           start += info->size;
         }
-        work->scan_boundary = PREFIX_SIZE;
         gc->memory_in_use -= work->size;
       } else {
         /* medium page */
@@ -4240,10 +4236,8 @@ static void mark_backpointers(NewGC *gc)
 
         while (start <= end) {
           objhead *info = (objhead *)start;
-          if (!info->dead) {
-            info->mark = 1;
+          if (!info->dead)
             push_ptr(gc, OBJHEAD_TO_OBJPTR(info));
-          }
           start += info->size;
         }
 
@@ -4407,58 +4401,6 @@ inline static void do_heap_compact(NewGC *gc)
   }
 }
 
-static int repair_mixed_page(NewGC *gc, mpage *page, void **end, int need_fixup)
-{
-  void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
-  Fixup2_Proc *fixup_table = gc->fixup_table;
-  int non_dead = 0;
-
-  while (start <= end) {
-    objhead *info = (objhead *)start;
-    if (info->mark) {
-      if (need_fixup) {
-        switch(info->type) {
-        case PAGE_ARRAY:
-          {
-            void **tempend = PPTR(info) + info->size, **tmpstart;
-            tmpstart = OBJHEAD_TO_OBJPTR(start);
-            while (tmpstart < tempend) gcFIXUP2(*tmpstart++, gc);
-          }
-          break;
-        case PAGE_TAGGED:
-          {
-            void *obj_start = OBJHEAD_TO_OBJPTR(start);
-            unsigned short tag = *(unsigned short *)obj_start;
-            ASSERT_TAG(tag);
-            fixup_table[tag](obj_start, gc);
-          }
-          break;
-        case PAGE_ATOMIC:
-          break;
-        case PAGE_PAIR: 
-          {
-            Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
-            gcFIXUP2(SCHEME_CAR(p), gc);
-            gcFIXUP2(SCHEME_CDR(p), gc);
-          }
-          break;
-        default:
-          printf("Unhandled info->type %i\n", info->type);
-          abort();
-        }
-      }
-      start += info->size;
-      info->mark = 0;
-      non_dead++;
-    } else {
-      info->dead = 1;
-      start += info->size;
-    }
-  }
-
-  return non_dead;
-}
-
 static void chain_marked_on(NewGC *gc)
 /* add any page that is marked on to the `modified_next` chain; this
    is needed for a master GC, because the place GCs do not register
@@ -4536,7 +4478,111 @@ static void chain_marked_on_check(NewGC *gc)
 static void chain_marked_on_check(NewGC *gc) { }
 #endif
 
+static void unmark_range(void **start, void **end)
+{
+  while(start < end) {
+    objhead *info = (objhead *)start;
+    
+    if (info->mark)
+      info->mark = 0;
+    else
+      info->dead = 1;
+
+    start += info->size;
+  }
+}
+
+static void unmark_heap(NewGC *gc)
+/* Set `dead` bit if not `mark`, otherwise clean `mark`. After this
+   pass, objects are live if `dead` is not set. */
+{
+  mpage *page;
+
+  /* See start of repair_heap() for more information on the current
+     page state. */
+
+  for (page = gc->modified_next; page; page = page->modified_next) {
+    GC_ASSERT(page->marked_on || page->marked_from);
+    if (page->generation == AGE_VACATED) {
+      /* this page will be released later */
+    } else {
+      if (page->size_class >= SIZE_CLASS_BIG_PAGE) {
+        page->size_class = SIZE_CLASS_BIG_PAGE; /* remove the mark, if any */
+      } else if (page->size_class == SIZE_CLASS_SMALL_PAGE) {
+        GCDEBUG((DEBUGOUTF, "Unmarking objs on page %p, starting with %p\n",
+                 page, start));
+        unmark_range(PPTR(NUM(page->addr) + page->scan_boundary),
+                     PAGE_END_VSS(page));
+
+        /* repair phase should walk the full page: */
+        page->scan_boundary = PREFIX_SIZE;
+      } else {
+        GC_ASSERT(page->size_class == SIZE_CLASS_MED_PAGE);
+        if ((page->generation == AGE_GEN_0) || gc->gc_full)
+          unmark_range(PPTR(NUM(page->addr) + PREFIX_SIZE),
+                       PPTR(NUM(page->addr) + APAGE_SIZE - page->obj_size));
+      }
+    }
+  }
+
+  /* All gen-half pages count as modified: */
+  for (page = gc->gen_half.pages; page; page = page->next) {
+    GC_ASSERT(page->generation == AGE_GEN_HALF);
+    unmark_range(PPTR(NUM(page->addr) + PREFIX_SIZE),
+                 PPTR(NUM(page->addr) + page->size - 1));
+  }
+}
+
+static int repair_mixed_page(NewGC *gc, mpage *page, void **end, int need_fixup)
+{
+  void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
+  Fixup2_Proc *fixup_table = gc->fixup_table;
+  int non_dead = 0;
+
+  while (start <= end) {
+    objhead *info = (objhead *)start;
+    if (!info->dead) {
+      non_dead++;
+      if (need_fixup) {
+        switch(info->type) {
+        case PAGE_ARRAY:
+          {
+            void **tempend = PPTR(info) + info->size, **tmpstart;
+            tmpstart = OBJHEAD_TO_OBJPTR(start);
+            while (tmpstart < tempend) gcFIXUP2(*tmpstart++, gc);
+          }
+          break;
+        case PAGE_TAGGED:
+          {
+            void *obj_start = OBJHEAD_TO_OBJPTR(start);
+            unsigned short tag = *(unsigned short *)obj_start;
+            ASSERT_TAG(tag);
+            fixup_table[tag](obj_start, gc);
+          }
+          break;
+        case PAGE_ATOMIC:
+          break;
+        case PAGE_PAIR: 
+          {
+            Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
+            gcFIXUP2(SCHEME_CAR(p), gc);
+            gcFIXUP2(SCHEME_CDR(p), gc);
+          }
+          break;
+        default:
+          printf("Unhandled info->type %i\n", info->type);
+          abort();
+        }
+      }
+    }
+    start += info->size;
+  }
+
+  return non_dead;
+}
+
 static void repair_heap(NewGC *gc)
+/* not dead => fixup pointers */
 {
   uintptr_t memory_in_use;
   mpage *page, *next;
@@ -4577,7 +4623,6 @@ static void repair_heap(NewGC *gc)
 
         GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
                  page, start));
-        page->size_class = SIZE_CLASS_BIG_PAGE; /* remove the mark */
         if (need_fixup) {
           switch(page->page_type) {
           case PAGE_TAGGED: 
@@ -4599,71 +4644,52 @@ static void repair_heap(NewGC *gc)
 
         memory_in_use += page->size;
       } else if (page->size_class == SIZE_CLASS_SMALL_PAGE) {
-        void **start = PPTR(NUM(page->addr) + page->scan_boundary);
-        void **end = PAGE_END_VSS(page);
+        if (need_fixup) {
+          void **start = PPTR(NUM(page->addr) + page->scan_boundary);
+          void **end = PAGE_END_VSS(page);
+          GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
+                   page, start));
+          switch(page->page_type) {
+          case PAGE_TAGGED: 
+            while(start < end) {
+              objhead *info = (objhead *)start;
 
-        GCDEBUG((DEBUGOUTF, "Cleaning objs on page %p, starting with %p\n",
-                 page, start));
-        switch(page->page_type) {
-        case PAGE_TAGGED: 
-          while(start < end) {
-            objhead *info = (objhead *)start;
-
-            if(info->mark) {
-              void *obj_start = OBJHEAD_TO_OBJPTR(start);
-              unsigned short tag = *(unsigned short *)obj_start;
-              ASSERT_TAG(tag);
-              info->mark = 0;
-              if (need_fixup)
+              if(!info->dead) {
+                void *obj_start = OBJHEAD_TO_OBJPTR(start);
+                unsigned short tag = *(unsigned short *)obj_start;
+                ASSERT_TAG(tag);
                 fixup_table[tag](obj_start, gc);
-            } else
-              info->dead = 1;
-            start += info->size;
-          }
-          break;
-        case PAGE_ATOMIC:
-          while(start < end) {
-            objhead *info = (objhead *)start;
-            if(info->mark)
-              info->mark = 0;
-            else
-              info->dead = 1;
-            start += info->size;
-          }
-          break;
-        case PAGE_ARRAY: 
-          while(start < end) {
-            objhead *info = (objhead *)start;
-            size_t size = info->size;
-            if(info->mark) {
-              void **tempend = PPTR(info) + info->size;
-              if (need_fixup) {
+              }
+              start += info->size;
+            }
+            break;
+          case PAGE_ATOMIC:
+            break;
+          case PAGE_ARRAY: 
+            while(start < end) {
+              objhead *info = (objhead *)start;
+              size_t size = info->size;
+              if(!info->dead) {
+                void **tempend = PPTR(info) + info->size;
                 start = OBJHEAD_TO_OBJPTR(start);
                 while(start < tempend) gcFIXUP2(*start++, gc);
-              } else
-                start = tempend;
-              info->mark = 0;
-            } else { 
-              info->dead = 1;
-              start += size;
+              } else { 
+                start += size;
+              }
             }
-          }
-          break;
-        case PAGE_PAIR:
-          while(start < end) {
-            objhead *info = (objhead *)start;
-            if(info->mark) {
-              if (need_fixup) {
+            break;
+          case PAGE_PAIR:
+            while(start < end) {
+              objhead *info = (objhead *)start;
+              if(!info->dead) {
                 Scheme_Object *p = (Scheme_Object *)OBJHEAD_TO_OBJPTR(start);
                 gcFIXUP2(SCHEME_CAR(p), gc);
                 gcFIXUP2(SCHEME_CDR(p), gc);
               }
-              info->mark = 0;
-            } else
-              info->dead = 1;
-            start += PAIR_SIZE_IN_BYTES >> LOG_WORD_SIZE;
+              start += PAIR_SIZE_IN_BYTES >> LOG_WORD_SIZE;
+            }
+            break;
           }
-          break;
         }
 
         page->scan_boundary = page->size;
@@ -5149,6 +5175,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     chain_marked_on(gc);
   else if (gc->gc_full)
     chain_marked_on_check(gc);
+  unmark_heap(gc);
   repair_heap(gc);
   TIME_STEP("repaired");
   clean_up_heap(gc);
