@@ -43,7 +43,8 @@
                "private/struct-dc.rkt"
                "private/struct-prop.rkt")
  (except-out (all-from-out "private/base.rkt")
-             current-contract-region)
+             current-contract-region
+             (for-syntax lifted-key add-lifted-property))
  (except-out (all-from-out "private/misc.rkt")
              check-between/c
              check-unary-between/c
