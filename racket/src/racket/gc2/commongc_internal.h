@@ -20,6 +20,7 @@ typedef struct GC_Weak_Array {
   void *replace_val;
   struct GC_Weak_Array *next;
   void *data[1]; /* must be the 5th longword! */
+  /* inc_next is after the array */
 } GC_Weak_Array;
 
 /* The GC_Weak_Box struct is not externally visible, but
@@ -32,6 +33,7 @@ typedef struct GC_Weak_Box {
   void **secondary_erase;
   int soffset, is_late;
   struct GC_Weak_Box *next;
+  struct GC_Weak_Box *inc_next;
 } GC_Weak_Box;
 
 /* The GC_Ephemeron struct is not externally visible, but
@@ -43,6 +45,7 @@ typedef struct GC_Ephemeron {
   void *val;
   /* The rest is up to us: */
   struct GC_Ephemeron *next;
+  struct GC_Ephemeron *inc_next;
 } GC_Ephemeron;
 
 typedef struct GC_Immobile_Box {

@@ -168,6 +168,10 @@ GC2_EXTERN void GC_enable_collection(int on);
 /*
    Performs an immediate (full) collection. */
 
+GC2_EXTERN void GC_request_incremental_mode(void);
+/*
+   Requests incremental mode; lasts until the next major collection. */
+  
 GC2_EXTERN void GC_free_all(void);
 /*
    Releases all memory, removes all signal handlers, etc.
@@ -372,9 +376,33 @@ GC2_EXTERN int GC_is_marked2(const void *p, struct NewGC *gc);
 /*
    Reports whether p has been marked. */
 
+GC2_EXTERN int GC_current_mode(struct NewGC *gc);
+# define GC_CURRENT_MODE_MINOR               0
+# define GC_CURRENT_MODE_MAJOR               1
+# define GC_CURRENT_MODE_INCREMENTAL         2
+# define GC_CURRENT_MODE_BACKPOINTER_REMARK  3
+# define GC_CURRENT_MODE_ACCOUNTING          4
+/*
+   The mode during a mark or fixup function callback.
+   The GC_CURRENT_MODE_BACKPOINTER_REMARK mode corresponds
+   to re-traversing an old-generation object that was
+   formerly marked but has been mutated. */
+
 GC2_EXTERN int GC_is_partial(struct NewGC *gc);
 /* 
-   Reports whether the current GC is a non-full collection. */
+   Reports whether the current GC is a non-full collection
+   or accounting pass. GC_current_mode() is better. */
+
+GC2_EXTERN int GC_started_incremental(struct NewGC *gc);
+/* 
+   Reports whether the current GC uses incremental collection. */
+
+GC2_EXTERN void *GC_malloc_for_incremental(size_t amt);
+/*
+   Use only when GC_started_incremental(); allocates
+   atomic memory that will be released at the end of the
+   next full collection, which ends the current
+   incremental pass. */
 
 GC2_EXTERN void GC_mark_no_recur(struct NewGC *gc, int enable);
 GC2_EXTERN void GC_retract_only_mark_stack_entry(void *pf, struct NewGC *gc);

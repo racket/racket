@@ -2473,7 +2473,7 @@ long_double scheme_long_double_expt(long_double x, long_double y);
    by any closure, when the prefix is accessed only by closures. */
 typedef struct Scheme_Prefix
 {
-  Scheme_Object so; /* scheme_prefix_type */
+  Scheme_Inclhash_Object iso; /* scheme_prefix_type; 0x1 => incremental-mode fixup chain */
   int num_slots, num_toplevels, num_stxes;
 #ifdef MZ_PRECISE_GC
   struct Scheme_Prefix *next_final; /* for special GC handling */
@@ -2485,6 +2485,8 @@ typedef struct Scheme_Prefix
   Scheme_Object *a[mzFLEX_ARRAY_DECL]; /* array of objects */
   /* followed by an array of `int's for tl_map uses */
 } Scheme_Prefix;
+
+#define SCHEME_PREFIX_FLAGS(obj) MZ_OPT_HASH_KEY(&(obj)->iso)
 
 #define PREFIX_TO_USE_BITS(pf) \
   (int *)((char *)pf + sizeof(Scheme_Prefix) + ((pf->num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *)))

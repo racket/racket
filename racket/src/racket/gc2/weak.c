@@ -17,6 +17,7 @@
       weak_box_tag
       ephemeron_tag
       is_marked(p)
+      is_in_generation_half(p)
       Type_Tag
 */
 
@@ -30,7 +31,7 @@ static int size_weak_array(void *p, struct NewGC *gc)
   GC_Weak_Array *a = (GC_Weak_Array *)p;
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Array) 
-			  + ((a->count - 1) * sizeof(void *)));
+			  + ((a->count - 1 + 1) * sizeof(void *)));
 }
 
 static int mark_weak_array(void *p, struct NewGC *gc)
@@ -39,8 +40,24 @@ static int mark_weak_array(void *p, struct NewGC *gc)
 
   gcMARK2(a->replace_val, gc);
 
-  a->next = gc->weak_arrays;
-  gc->weak_arrays = a;
+  if (gc->doing_memory_accounting) {
+    /* skip */
+  } else if (gc->inc_gen1) {
+    /* inc_next field is at the end of the `data` array: */
+    a->data[a->count] = gc->inc_weak_arrays;
+    gc->inc_weak_arrays = a;
+  } else if (gc->during_backpointer) {
+    if (!gc->gc_full) {
+      /* Keep backpointered weak arrays separate, because we
+         should not merge them to the incremental list
+         in incremental mode. */
+      a->next = gc->bp_weak_arrays;
+      gc->bp_weak_arrays = a;
+    }
+  } else {
+    a->next = gc->weak_arrays;
+    gc->weak_arrays = a;
+  }
 
 #if CHECKS
   /* For now, weak arrays only used for symbols, keywords, and falses: */
@@ -60,7 +77,7 @@ static int mark_weak_array(void *p, struct NewGC *gc)
 #endif
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Array) 
-			  + ((a->count - 1) * sizeof(void *)));
+			  + ((a->count - 1 + 1) * sizeof(void *)));
 }
 
 static int fixup_weak_array(void *p, struct NewGC *gc)
@@ -93,7 +110,8 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
 
   w = (GC_Weak_Array *)GC_malloc_one_tagged(size_in_bytes 
 					    + sizeof(GC_Weak_Array) 
-					    - sizeof(void *));
+					    - sizeof(void *)
+					    + sizeof(GC_Weak_Array *));
 
   replace_val = gc->park[0];
   gc->park[0] = NULL;
@@ -105,16 +123,52 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
   return w;
 }
 
+static void rechain_inc_weak_arrays(GC_Weak_Array *w)
+{
+  for (; w; w = (GC_Weak_Array *)w->data[w->count]) {
+    w->next = (GC_Weak_Array *)w->data[w->count];
+  }
+}
+
 static void init_weak_arrays(GCTYPE *gc) {
-  gc->weak_arrays = NULL;
+  if (gc->gc_full) {
+    rechain_inc_weak_arrays(gc->inc_weak_arrays);
+    gc->weak_arrays = gc->inc_weak_arrays;
+    gc->inc_weak_arrays = NULL;
+  } else
+    gc->weak_arrays = NULL;
+  gc->bp_weak_arrays = NULL;
+}
+
+static GC_Weak_Array *append_weak_arrays(GC_Weak_Array *wa, GC_Weak_Array *bp_wa, int *_num_gen0)
+{
+  *_num_gen0 = 0;
+
+  if (wa) {
+    GC_Weak_Array *last_wa = wa;
+    while (last_wa->next) {
+      (*_num_gen0)++;
+      last_wa = last_wa->next;
+    }
+    (*_num_gen0)++;
+    last_wa->next = bp_wa;
+    return wa;
+  } else
+    return bp_wa;
 }
 
 static void zero_weak_arrays(GCTYPE *gc, int force_zero)
 {
   GC_Weak_Array *wa;
-  int i;
+  int i, num_gen0;
 
-  wa = gc->weak_arrays;
+  GC_ASSERT(!gc->bp_weak_arrays || !gc->gc_full);
+
+  wa = append_weak_arrays(gc->weak_arrays, gc->bp_weak_arrays, &num_gen0);
+
+  if (gc->gc_full || !gc->started_incremental)
+    num_gen0 = 0;
+
   while (wa) {
     void **data;
 
@@ -127,15 +181,46 @@ static void zero_weak_arrays(GCTYPE *gc, int force_zero)
         data[i] = GC_resolve2(p, gc);
     }
 
+    if (num_gen0 > 0) {
+      if (!is_in_generation_half(gc, wa)) {
+        /* For incremental mode, preserve this weak box
+           in the incremental list for re-checking later. */
+        wa->data[wa->count] = gc->inc_weak_arrays;
+        gc->inc_weak_arrays = wa;
+      }
+    }
+
     wa = wa->next;
+    num_gen0--;
   }
 
   gc->weak_arrays = NULL;
+  gc->bp_weak_arrays = NULL;
 }
 
 /******************************************************************************/
 /*                                weak boxes                                  */
 /******************************************************************************/
+
+#if 0
+static void check_weak_box_not_already_in_inc_chain(GC_Weak_Box *wb, GC_Weak_Box *wbc)
+{
+  while (wbc) {
+    GC_ASSERT(wb != wbc);
+    wbc = wbc->inc_next;
+  }
+}
+static void check_weak_box_not_already_in_chain(GC_Weak_Box *wb, GC_Weak_Box *wbc)
+{
+  while (wbc) {
+    GC_ASSERT(wb != wbc);
+    wbc = wbc->next;
+  }
+}
+#else
+static void check_weak_box_not_already_in_inc_chain(GC_Weak_Box *wb, GC_Weak_Box *wbc) { }
+static void check_weak_box_not_already_in_chain(GC_Weak_Box *wb, GC_Weak_Box *wbc) { }
+#endif
 
 static int size_weak_box(void *p, struct NewGC *gc)
 {
@@ -145,10 +230,28 @@ static int size_weak_box(void *p, struct NewGC *gc)
 static int mark_weak_box(void *p, struct NewGC *gc)
 {
   GC_Weak_Box *wb = (GC_Weak_Box *)p;
-    
+
   gcMARK2(wb->secondary_erase, gc);
 
-  if (wb->val) {
+  if (gc->doing_memory_accounting) {
+    /* skip */
+  } else if (gc->inc_gen1) {
+    check_weak_box_not_already_in_inc_chain(wb, gc->inc_weak_boxes[wb->is_late]);
+    wb->inc_next = gc->inc_weak_boxes[wb->is_late];
+    gc->inc_weak_boxes[wb->is_late] = wb;
+  } else if (gc->during_backpointer) {
+    if (!gc->gc_full && (wb->val || gc->started_incremental)) {
+      /* Keep backpointered weak arrays separate, because we
+         should not merge them to the incremental list
+         in incremental mode. */
+      check_weak_box_not_already_in_chain(wb, gc->bp_weak_boxes[wb->is_late]);
+      check_weak_box_not_already_in_chain(wb, gc->weak_boxes[wb->is_late]);
+      wb->next = gc->bp_weak_boxes[wb->is_late];
+      gc->bp_weak_boxes[wb->is_late] = wb;
+    }
+  } else if (wb->val || gc->started_incremental) {
+    check_weak_box_not_already_in_chain(wb, gc->weak_boxes[wb->is_late]);
+    check_weak_box_not_already_in_chain(wb, gc->bp_weak_boxes[wb->is_late]);
     wb->next = gc->weak_boxes[wb->is_late];
     gc->weak_boxes[wb->is_late] = wb;
   }
@@ -195,18 +298,64 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late)
   return w;
 }
 
+static void rechain_inc_weak_boxes(GC_Weak_Box *wb)
+{
+  for (; wb; wb = wb->inc_next) {
+    wb->next = wb->inc_next;
+  }
+}
+
 static void init_weak_boxes(GCTYPE *gc) {
-  gc->weak_boxes[0] = NULL;
-  gc->weak_boxes[1] = NULL;
+  if (gc->gc_full) {
+    rechain_inc_weak_boxes(gc->inc_weak_boxes[0]);
+    rechain_inc_weak_boxes(gc->inc_weak_boxes[1]);
+    gc->weak_boxes[0] = gc->inc_weak_boxes[0];
+    gc->weak_boxes[1] = gc->inc_weak_boxes[1];
+    gc->inc_weak_boxes[0] = NULL;
+    gc->inc_weak_boxes[1] = NULL;
+  } else {
+    gc->weak_boxes[0] = NULL;
+    gc->weak_boxes[1] = NULL;
+  }
+  gc->bp_weak_boxes[0] = NULL;
+  gc->bp_weak_boxes[1] = NULL;
+}
+
+static GC_Weak_Box *append_weak_boxes(GC_Weak_Box *wb, GC_Weak_Box *bp_wb, int *_num_gen0)
+{
+  *_num_gen0 = 0;
+
+  if (wb) {
+    GC_Weak_Box *last_wb = wb;
+    while (last_wb->next) {
+      (*_num_gen0)++;
+      last_wb = last_wb->next;
+    }
+    (*_num_gen0)++;
+    last_wb->next = bp_wb;
+    return wb;
+  } else
+    return bp_wb;
 }
 
 static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero)
 {
   GC_Weak_Box *wb;
+  int num_gen0;
 
-  wb = gc->weak_boxes[is_late];
+  GC_ASSERT(!gc->bp_weak_boxes[is_late] || !gc->gc_full);
+
+  wb = append_weak_boxes(gc->weak_boxes[is_late],
+                         gc->bp_weak_boxes[is_late],
+                         &num_gen0);
+  if (gc->gc_full || !gc->started_incremental)
+    num_gen0 = 0;
+
   while (wb) {
-    if (force_zero || !is_marked(gc, wb->val)) {
+    GC_ASSERT(is_marked(gc, wb));
+    if (!wb->val) {
+      /* nothing to do */
+    } else if (force_zero || !is_marked(gc, wb->val)) {
       wb->val = NULL;
       if (wb->secondary_erase) {
         void **p;
@@ -219,18 +368,28 @@ static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero)
           page->mprotected = 0;
           mmu_write_unprotect_page(gc->mmu, page->addr, APAGE_SIZE, page_mmu_type(page), &page->mmu_src_block);
         }
-
         p = (void **)GC_resolve2(wb->secondary_erase, gc);
         *(p + wb->soffset) = NULL;
         wb->secondary_erase = NULL;
       }
-    } else
+    } else {
       wb->val = GC_resolve2(wb->val, gc);
+    }
+    if (num_gen0 > 0) {
+      if (!is_in_generation_half(gc, wb)) {
+        /* For incremental mode, preserve this weak box
+           in the incremental list for re-checking later. */
+        wb->inc_next = gc->inc_weak_boxes[is_late];
+        gc->inc_weak_boxes[is_late] = wb;
+      }
+    }
     wb = wb->next;
+    num_gen0--;
   }
 
   /* reset, in case we have a second round */
   gc->weak_boxes[is_late] = NULL;
+  gc->bp_weak_boxes[is_late] = NULL;
 }
 
 /******************************************************************************/
@@ -247,8 +406,19 @@ static int mark_ephemeron(void *p, struct NewGC *gc)
   GC_Ephemeron *eph = (GC_Ephemeron *)p;
 
   if (eph->val) {
-    eph->next = gc->ephemerons;
-    gc->ephemerons = eph;
+    GC_ASSERT(!gc->doing_memory_accounting);
+    if (gc->inc_gen1) {
+      eph->inc_next = gc->inc_ephemerons;
+      gc->inc_ephemerons = eph;
+    } else if (gc->during_backpointer) {
+      if (!gc->gc_full) {
+        eph->next = gc->bp_ephemerons;
+        gc->bp_ephemerons = eph;
+      }
+    } else {
+      eph->next = gc->ephemerons;
+      gc->ephemerons = eph;
+    }
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Ephemeron));
@@ -305,31 +475,79 @@ void *GC_malloc_ephemeron(void *k, void *v)
   return eph;
 }
 
+static void rechain_inc_ephemerons(GC_Ephemeron *e)
+{
+  for (; e; e = e->inc_next) {
+    e->next = e->inc_next;
+  }
+}
+
 void init_ephemerons(GCTYPE *gc) {
-  gc->ephemerons = NULL;
+  if (gc->gc_full) {
+    rechain_inc_ephemerons(gc->inc_ephemerons);
+    gc->ephemerons = gc->inc_ephemerons;
+    gc->inc_ephemerons = NULL;
+  } else
+    gc->ephemerons = NULL;
+  gc->bp_ephemerons = NULL;
   gc->num_last_seen_ephemerons = 0;
 }
 
-static int mark_ready_ephemerons(GCTYPE *gc)
+static int mark_ready_ephemerons(GCTYPE *gc, int inc_gen1)
 {
-  GC_Ephemeron *waiting = NULL, *next, *eph;
-  int did_one = 0;
+  GC_Ephemeron *waiting, *next, *eph;
+  int did_one = 0, j;
 
   GC_mark_no_recur(gc, 1);
 
-  for (eph = gc->ephemerons; eph; eph = next) {
-    next = eph->next;
-    if (is_marked(gc, eph->key)) {
-      eph->key = GC_resolve2(eph->key, gc);
-      gcMARK2(eph->val, gc);
-      gc->num_last_seen_ephemerons++;
-      did_one = 1;
-    } else {
-      eph->next = waiting;
-      waiting = eph;
+  for (j = 0; j < (inc_gen1 ? 1 : 2); j++) {
+    if (inc_gen1)
+      eph = gc->inc_ephemerons;
+    else if (j == 0)
+      eph = gc->ephemerons;
+    else
+      eph = gc->bp_ephemerons;
+
+    waiting = NULL;
+    
+    for (; eph; eph = next) {
+      if (inc_gen1)
+        next = eph->inc_next;
+      else
+        next = eph->next;
+      if (is_marked(gc, eph->key)) {
+        if (!inc_gen1)
+          eph->key = GC_resolve2(eph->key, gc);
+        gcMARK2(eph->val, gc);
+        gc->num_last_seen_ephemerons++;
+        did_one = 1;
+        if (!inc_gen1 && (j == 0) && !gc->gc_full && gc->started_incremental) {
+          /* Need to preserve the ephemeron in the incremental list,
+             unless it's kept in generation 1/2 nistead of promoted to
+             generation 1. */
+          if (!is_in_generation_half(gc, eph)) {
+            eph->inc_next = gc->inc_ephemerons;
+            gc->inc_ephemerons = eph;
+          }
+        }
+      } else {
+        if (inc_gen1) {
+          /* Ensure that we can write to the page containing the emphemeron: */
+          check_incremental_unprotect(gc, pagemap_find_page(gc->page_maps, eph));
+          eph->inc_next = waiting;
+        } else
+          eph->next = waiting;
+        waiting = eph;
+      }
     }
+
+    if (inc_gen1)
+      gc->inc_ephemerons = waiting;
+    else if (j == 0)
+      gc->ephemerons = waiting;
+    else
+      gc->bp_ephemerons = waiting;
   }
-  gc->ephemerons = waiting;
 
   GC_mark_no_recur(gc, 0);
 

@@ -119,7 +119,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
   data = gc->park[1];
   gc->park[0] = NULL;
   gc->park[1] = NULL;
-
+  
   fnl->p = p;
   fnl->f = f;
   fnl->data = data;
@@ -174,9 +174,14 @@ static void reset_finalizer_tree(GCTYPE *gc)
 
   for (; fnl; fnl = next) {
     next = fnl->next;
-    if (is_in_gen_half(fnl, gc)
-        || is_in_gen_half(fnl->f, gc)
-        || is_in_gen_half(fnl->data, gc))
+    /* Checking both `fnl` and `fnl->p` is redundant, since
+       `fnl` is always allocated after `fnl->p`, but check
+       both just in case the order of allocation somehow
+       changes in the future. */
+    if (is_in_generation_half(gc, fnl)
+        || is_in_generation_half(gc, fnl->f)
+        || is_in_generation_half(gc, fnl->p)
+        || is_in_generation_half(gc, fnl->data))
       add_finalizer(fnl, 1, gc);
     else
       add_finalizer(fnl, 0, gc);
