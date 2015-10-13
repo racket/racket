@@ -630,7 +630,7 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int resolved, i
   tl->iso.so.type = (resolved ? scheme_toplevel_type : scheme_compiled_toplevel_type);
   tl->depth = depth;
   tl->position = position;
-  SCHEME_TOPLEVEL_FLAGS(tl) = flags;
+  SCHEME_TOPLEVEL_FLAGS(tl) = flags | HIGH_BIT_TO_DISABLE_HASHING;
 
   if (resolved) {
     if (toplevels_ht->count > TABLE_CACHE_MAX_SIZE) {
@@ -801,7 +801,7 @@ static void init_scheme_local()
 #endif
         v->type = k + scheme_local_type;
         SCHEME_LOCAL_POS(v) = i;
-        SCHEME_LOCAL_FLAGS(v) = cor;
+        SCHEME_LOCAL_FLAGS(v) = cor | HIGH_BIT_TO_DISABLE_HASHING;
 
         scheme_local[i][k][cor] = v;
       }
@@ -841,7 +841,7 @@ static void init_toplevels()
         v->iso.so.type = scheme_toplevel_type;
         v->depth = i;
         v->position = k;
-        SCHEME_TOPLEVEL_FLAGS(v) = cnst;
+        SCHEME_TOPLEVEL_FLAGS(v) = cnst | HIGH_BIT_TO_DISABLE_HASHING;
 
         toplevels[i][k][cnst] = (Scheme_Object *)v;
       }
@@ -888,7 +888,7 @@ Scheme_Object *scheme_make_local(Scheme_Type type, int pos, int flags)
     return v;
 
   v = alloc_local(type, pos);
-  SCHEME_LOCAL_FLAGS(v) = flags;
+  SCHEME_LOCAL_FLAGS(v) = flags | HIGH_BIT_TO_DISABLE_HASHING;
 
   if (locals_ht[k]->count > TABLE_CACHE_MAX_SIZE) {
     Scheme_Hash_Table *ht;

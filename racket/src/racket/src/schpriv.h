@@ -1495,6 +1495,8 @@ typedef struct {
   Scheme_Object *body;
 } Scheme_With_Continuation_Mark;
 
+#define HIGH_BIT_TO_DISABLE_HASHING 0x2000
+
 typedef struct Scheme_Local {
   Scheme_Inclhash_Object iso; /* keyex used for flags and type info (and can't be hashed) */
   mzshort position;
@@ -1513,8 +1515,8 @@ typedef struct Scheme_Local {
 #define SCHEME_LOCAL_OTHER_CLEARS  2
 #define SCHEME_LOCAL_TYPE_OFFSET   2
 
-#define SCHEME_GET_LOCAL_FLAGS(obj)  SCHEME_LOCAL_FLAGS(obj)
-#define SCHEME_GET_LOCAL_TYPE(obj)  ((SCHEME_LOCAL_FLAGS(obj) > 2) ? (SCHEME_LOCAL_FLAGS(obj) - 2) : 0)
+#define SCHEME_GET_LOCAL_FLAGS(obj)  (SCHEME_LOCAL_FLAGS(obj) & ~HIGH_BIT_TO_DISABLE_HASHING)
+#define SCHEME_GET_LOCAL_TYPE(obj)  ((SCHEME_GET_LOCAL_FLAGS(obj) > 2) ? (SCHEME_GET_LOCAL_FLAGS(obj) - 2) : 0)
 
 typedef struct Scheme_Toplevel {
   Scheme_Inclhash_Object iso; /* keyex used for flags (and can't be hashed) */
