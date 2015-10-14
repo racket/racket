@@ -37,7 +37,6 @@
 
 (define (go)
   (let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f] [write? #f])
-    (printf ">>> ~s\n" (current-command-line-arguments))
     (command-line
      #:once-each
      ["--oo" "forever" (set! forever? #t)]
@@ -75,7 +74,6 @@
 
 (module+ main
   (let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f] [write? #f])
-    (printf ">>> ~s\n" (current-command-line-arguments))
     (command-line
      #:once-each
      ["--oo" "forever" (set! forever? #t)]
