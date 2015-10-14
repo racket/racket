@@ -5447,7 +5447,7 @@ Scheme_Object *scheme_string_to_submodule_path(char *_s, intptr_t len)
 {
   unsigned char *s = (unsigned char *)_s;
   char *e, buffer[32];
-  intptr_t pos = 0, l;
+  uintptr_t pos = 0, l;
   Scheme_Object *first = NULL, *last = NULL, *pr;
 
   while (pos < len) {
