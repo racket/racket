@@ -26,7 +26,7 @@
                      #:command-line? #t
                      #:servlet-regexp #rx""
                      #:port 9967)
-      (sleep 1)))
+      (sleep 2)))
 
    ;; Step 2: Assign it as our server
    $ "raco pkg config --set catalogs http://localhost:9967"
@@ -36,7 +36,7 @@
     (λ ()
       (shelly-begin
        $ "raco pkg install pkg-test1")))
-   (sleep 1)
+   (sleep 2)
 
    ;; Step 4: Start the installation request that will fail
    $ "raco pkg install pkg-test1" =exit> 1
