@@ -27,10 +27,16 @@
   (match (getenv envar)
     [(or #f "") null]
     [(app string->url
-          (url (and scheme "http") #f host port _ (list) (list) #f))
+          (url (and scheme "http") #f (? string? host) (? integer? port)
+           _ (list) (list) #f))
      (list (list scheme host port))]
-    [inv (log-net/url-info "~s contained invalid proxy URL format: ~s"
-                           envar inv)
+    [(app string->url
+          (url (and scheme "http") _ (? string? host) (? integer? port)
+           _ _ _ _))
+     (log-net/url-error "~s contains somewhat invalid proxy URL format" envar)
+     (list (list scheme host port))]
+    [inv (log-net/url-error "~s contained invalid proxy URL format: ~s"
+                            envar inv)
          null]))
 
 (define current-proxy-servers
