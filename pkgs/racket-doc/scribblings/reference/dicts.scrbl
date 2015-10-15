@@ -625,7 +625,7 @@ Supported for any @racket[dict] that supports @racket[dict-remove],
 
 }
 
-@defproc[(dict-clear! [dict dict?]) dict?]{
+@defproc[(dict-clear! [dict dict?]) void?]{
 
 Removes all of the key/value associations in @racket[dict].
 
