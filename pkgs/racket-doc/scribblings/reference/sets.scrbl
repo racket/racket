@@ -449,7 +449,7 @@ Supported for any @racket[st] that @impl{implements}  @racket[set-add] and @supp
 (set-union (set 1 2) (seteq 2 3)) (code:comment "Sets of different types cannot be unioned.")
 ]}
 
-@defproc[(set-union! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
+@defproc[(set-union! [st0 generic-set?] [st generic-set?] ...) void?]{
 
 Adds the elements from all of the @racket[st]s to @racket[st0].
 
@@ -483,7 +483,7 @@ both @racket[set-clear] and @racket[set-add], and @supp{supports} @racket[set->s
 
 }
 
-@defproc[(set-intersect! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
+@defproc[(set-intersect! [st0 generic-set?] [st generic-set?] ...) void?]{
 
 Removes every element from @racket[st0] that is not contained by all of the
 @racket[st]s.
