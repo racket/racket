@@ -3580,7 +3580,7 @@ void GC_mark2(void *pp, struct NewGC *gc)
 
       size = gcWORDS_TO_BYTES(ohead->size);
 
-      if (AGE_GEN_0_TO_GEN_HALF(gc) && (page->generation == AGE_GEN_0) && !gc->gc_full) {
+      if (gc->use_gen_half && (page->generation == AGE_GEN_0)) {
         /* move to generation 1/2 */
         work = gc->gen_half.curr_alloc_page;
         if (!work || (work->size + size > GEN0_PAGE_SIZE)) {
@@ -5022,6 +5022,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
      half the available memory */
   gc->in_unsafe_allocation_mode = 1;
   gc->unsafe_allocation_abort = out_of_memory_gc;
+
+  gc->use_gen_half = !gc->gc_full && AGE_GEN_0_TO_GEN_HALF(gc);
 
   if (gc->gc_full)
     gc->phantom_count = 0;
