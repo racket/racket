@@ -193,6 +193,7 @@ typedef struct NewGC {
   unsigned char full_needed_for_finalization :1;
   unsigned char no_further_modifications     :1;
   unsigned char gc_full                      :1; /* a flag saying if this is a full/major collection */
+  unsigned char use_gen_half                 :1;
   unsigned char running_finalizers           :1;
   unsigned char back_pointers                :1;
   unsigned char need_fixup                   :1;
