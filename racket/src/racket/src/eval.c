@@ -6150,6 +6150,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
           cl->vals[closure_size-1] = (Scheme_Object *)pf;
         } else {
           MZ_ASSERT(0);
+          next = NULL;
         }
         clo = (Scheme_Object *)GC_resolve2(next, gc);
       }

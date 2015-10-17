@@ -183,6 +183,7 @@ THREAD_LOCAL_DECL(extern intptr_t scheme_total_gc_time);
 THREAD_LOCAL_DECL(extern int scheme_cont_capture_count);
 THREAD_LOCAL_DECL(extern int scheme_continuation_application_count);
 THREAD_LOCAL_DECL(extern struct Scheme_Prefix *scheme_prefix_finalize);
+THREAD_LOCAL_DECL(extern struct Scheme_Prefix *scheme_inc_prefix_finalize);
 
 int scheme_num_types(void);
 
