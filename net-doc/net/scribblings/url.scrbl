@@ -469,14 +469,18 @@ particular, it is closed if @racket[handle] raises an exception, or if
 the connection process is interruped by an asynchronous break
 exception.}
 
-@defparam[current-proxy-servers mapping (listof (list/c string? string? (integer-in 0 65535)))]{
+@deftogether[(
+@defparam[current-proxy-servers mapping (listof (list/c string? string? (integer-in 0 65535)))]
+@defthing[proxiable-url-schemes (listof string?) #:value '("http")]
+ )]{
 
-A parameter that determines a mapping of proxy servers used for
+The @racket[current-proxy-servers] parameter determines a mapping of proxy servers used for
 connections. Each mapping is a list of three elements:
 
 @itemize[
 
- @item{the URL scheme, such as @racket["http"];}
+ @item{the URL scheme, such as @racket["http"]; @racket[proxiable-url-schemes] lists the URL schemes
+  that can be proxied. Currently, the only proxiable scheme is @racket["http"].}
 
  @item{the proxy server address; and}
 
@@ -484,16 +488,17 @@ connections. Each mapping is a list of three elements:
 
 ]
 
-Currently, the only proxiable scheme is @racket["http"].
+@racket[current-proxy-servers] can be configured from the environment. If
+it has no entry for a particular URL scheme, then the environment
+variables @litchar["plt_http_proxy"] and @litchar["http_proxy"] are used. This is done via a promise
+that is forced by @racket[proxy-server-for].
 
-The environment variable @litchar["PLT_HTTP_PROXY"] can by used to set
-an initial value for @racket[current-proxy-servers]. It contains a
-single URL of the form: @litchar{http://hostname:portno}. If any other
-components of the URL are provided, an error will be logged to the
-@racket[net/url] logger.
+The environment variables contain a single URL of the form:
+@litchar{http://hostname:portno}. If any other components of the URL are provided,
+an error will be logged to the @racket[net/url] logger.
 
-The default mapping (or the mapping if @litchar["PLT_HTTP_PROXY"] is
-not a valid URL) is the empty list (i.e., no proxies).}
+The default mapping is the empty list (i.e., no proxies).
+}
 
 @defparam[current-no-proxy-servers dest-hosts-list (listof (or/c string? regexp?))]{
 
@@ -501,43 +506,61 @@ A parameter that determines which servers will be accessed directly
 i.e. without resort to @racket[current-proxy-servers]. It is a list of:
 
 @itemize[
+         
   @item{strings that match host names exactly}
+   
   @item{regexps that match host by pattern}
+  
 ]
 
 If a proxy server is defined for a URL scheme, then the destination
-host name is checked against @[current-no-proxy-servers]. The proxy
+host name is checked against @racket[current-no-proxy-servers]. The proxy
 is used if and only if the host name does not match (by the definition
 above) any in the list.
 
-The environment variable @litchar["PLT_NO_PROXY"] can by used to set
-an initial value for @racket[current-no-proxy-servers]. It is a
-comma-separated list of ``patterns''. A pattern from the environment
-variable is one of:
+@racket[current-no-proxy-servers] can be configured from the environment.
+The environment variables @litchar["plt_no_proxy"] and @litchar["no_proxy"]
+are used. This is done via a promise that is forced by @racket[proxy-server-for].
+
+These environment variables are comma-separated list of ``patterns''.
+A pattern from an environment variable is one of:
 
 @itemize[
-  @item{a string beginning with a @litchar{.} . This is converted to a
+         
+  @item{a string beginning with a @litchar{.} (period). This is converted to a
     regexp which performs a suffix match on a destination host name,
-    e.g. @litchar[.racket-lang.org] will match destinations of
-    @litchar[doc.racket-lang.org], @litchar[pkgs.racket-lang.org], but
-    neither @litchar[doc.bracket-lang.org] nor
-    @litchar[pkgs.racket-lang.org.uk].
-    @margin-note{This is consistent with the @litchar["NO_PROXY"] environment
-      variable used by other programs, albeit not consistent with the regexps
+    e.g. @litchar[".racket-lang.org"] will match destinations of
+    @litchar["doc.racket-lang.org"], @litchar["pkgs.racket-lang.org"], but
+    neither @litchar["doc.bracket-lang.org"] nor
+    @litchar["pkgs.racket-lang.org.uk"].
+    @margin-note{This is consistent with the @litchar["no_proxy"] environment
+      variable used by other software, albeit not consistent with the regexps
         stored in @racket[current-no-proxy-servers]}
   }
-  @item{any other string -- is kept as a string to be matched exactly}
-]
-
-}
+   
+  @item{any other string -- is converted to a regexp which matches the string exactly}
+  
+]}
 
 @defproc[(proxy-server-for
           [url-schm string?]
           [dest-host-name (or/c false/c string?) #f])
           (list/c string? string? (integer-in 0 65535))]{
-Returns the proxy server entry for the combination of @racket[url-schm] and @racket[host], or
-  @racket[#f] if no proxy is to be used.
-}
+Returns the proxy server entry for the combination of @racket[url-schm]
+and @racket[host], or @racket[#f] if no proxy is to be used.
+
+The process that loads environment variables into @racket[current-proxy-servers]
+and @racket[current-no-proxy-servers] is held on a promise that is forced by
+@racket[proxy-server-for]. This means that:
+
+ @itemize[
+         
+  @item{calling @racket[proxy-server-for] might change the list of
+   @racket[current-proxy-servers] and @racket[current-no-proxy-servers]}
+
+  @item{to resolve proxy/no-proxy values from the environment, call @racket[(proxy-server-for #f)]}
+  
+]}
 
 @defproc[(url-exception? [x any/c])
          boolean?]{
