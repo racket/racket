@@ -1916,7 +1916,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     return 1;
   } else if ((target == JIT_R1)
              && IS_SKIP_TYPE(SCHEME_TYPE(obj))) {
-    scheme_generate(obj, jitter, is_tail, wcm_may_replace, multi_ok, JIT_R0, for_branch);
+    scheme_generate(obj, jitter, is_tail, wcm_may_replace, multi_ok, JIT_R0, for_branch, NULL);
     CHECK_LIMIT();
     jit_movr_p(JIT_R1, JIT_R0);
     return 1;
