@@ -6143,7 +6143,11 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
       } while ((ok == -1) && (errno == EINTR));
       write = !ok;
       
-      if (ok && (errno != EACCES))
+      /* Don't fail at the exec step if errno is EPERM; under Mac OS
+         X, at least, such a failure seems to mean that the file is
+         not writable. (We assume it's not a directory-access issue,
+         since the read test succeeded.) */
+      if (ok && (errno != EACCES) && (errno != EPERM))
 	l = NULL;
       else {
 	do {
