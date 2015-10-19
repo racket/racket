@@ -81,7 +81,7 @@ reports whether an object at its old address has been marked; it works
 only on old addresses.
 
 Normally, the mark function for an object is called only when the
-object is first marked in a given GC pass. When generational
+object is first marked in a given GC pass. With generational
 collection, the mark function can be called for an old-generation
 object if it potentially changed since a previous collection; still,
 the mark function will be called only once during that collection, so
