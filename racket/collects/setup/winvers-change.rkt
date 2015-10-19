@@ -9,6 +9,7 @@
 ;; of the binary and restarting that copy for the actual change.
 
 #lang racket/base
+(require setup/cross-system)
 
 (define verbose? #t)
 (define binary-extensions '("exe" "dll" "lib" "so" "def" "exp" #|"obj" "o"|#))
@@ -69,12 +70,13 @@
     (close-input-port i)
     (close-output-port o)))
 
-(let loop ([paths (if (zero? (vector-length (current-command-line-arguments)))
-                    '(".")
-                    (vector->list (current-command-line-arguments)))])
-  (for ([path (in-list paths)])
-    (cond [(file-exists? path)
-           (when (binary-file? path) (do-file path))]
-          [(directory-exists? path)
-           (parameterize ([current-directory path])
-             (loop (map path->string (directory-list))))])))
+(when (eq? 'windows (cross-system-type))
+  (let loop ([paths (if (zero? (vector-length (current-command-line-arguments)))
+                        '(".")
+                        (vector->list (current-command-line-arguments)))])
+    (for ([path (in-list paths)])
+      (cond [(file-exists? path)
+             (when (binary-file? path) (do-file path))]
+            [(directory-exists? path)
+             (parameterize ([current-directory path])
+               (loop (map path->string (directory-list))))]))))
