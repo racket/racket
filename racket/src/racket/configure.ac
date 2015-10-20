@@ -796,6 +796,11 @@ case "$host_os" in
     if `which ${host}-dlltool > /dev/null` ; then
       DLLTOOL="${host}-dlltool"
     fi
+
+    AC_CHECK_LIB(winpthread, pthread_create, has_winpthread=yes, has_winpthread=no)
+    if test "${has_winpthread}" == "yes" ; then
+      LIBS="${LIBS} -Wl,-Bstatic -lwinpthread"
+    fi
     case "$build_os" in
       *cygwin*)
         PWD="cygpath -m \\\`pwd\\\`"
