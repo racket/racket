@@ -314,8 +314,11 @@ total_startup:
 	mv src/schminc.newh src/schminc.h
 	$(MAKE) cgc
 
+MZCONFIGDIR@NOT_MINGW@ = .
+MZCONFIGDIR@MINGW@ = "$(srcdir)/../worksp"
+
 headers:
-	@RUN_RACKET_CGC@ -cqu $(srcdir)/mkincludes.rkt @DIRCVTPRE@"$(DESTDIR)$(includepltdir)"@DIRCVTPOST@ "$(srcdir)" .
+	@RUN_RACKET_CGC@ -cqu $(srcdir)/mkincludes.rkt @DIRCVTPRE@"$(DESTDIR)$(includepltdir)"@DIRCVTPOST@ "$(srcdir)" $(MZCONFIGDIR)
 	cd ..; cp racket/system.rktd "$(DESTDIR)$(libpltdir)/system.rktd"
 
 $(srcdir)/src/schexn.h: $(srcdir)/src/makeexn
