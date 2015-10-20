@@ -1,4 +1,5 @@
 #lang racket/base
+(require racket/promise)
 
 (provide send-mail-message/port send-mail-message)
 
@@ -8,18 +9,19 @@
   '("/usr/sbin" "/sbin" "/usr/local/sbin" "/usr/lib"))
 
 (define sendmail-program-file
-  (let ([exe (case (system-type)
-               [(windows) "sendmail.exe"]
-               [else "sendmail"])])
-    (or (for/or ([path (in-list sendmail-search-path)])
-          (define p (build-path path exe))
-          (and (file-exists? p)
-               (memq 'execute (file-or-directory-permissions p))
-               p))
-        (raise (make-exn:fail:unsupported
-                (format "unable to find a sendmail executable in ~s"
-                        sendmail-search-path)
-                (current-continuation-marks))))))
+  (delay
+    (let ([exe (case (system-type)
+                 [(windows) "sendmail.exe"]
+                 [else "sendmail"])])
+      (or (for/or ([path (in-list sendmail-search-path)])
+            (define p (build-path path exe))
+            (and (file-exists? p)
+                 (memq 'execute (file-or-directory-permissions p))
+                 p))
+          (raise (make-exn:fail:unsupported
+                  (format "unable to find a sendmail executable in ~s"
+                          sendmail-search-path)
+                  (current-continuation-marks)))))))
 
 ;; Main implementation, returns a port
 (define (send-mail-core who sender subject TOs CCs BCCs headers)
@@ -31,7 +33,7 @@
     (error who "no mail recipients were specified"))
   (define-values [p pout pin perr]
     ;; use -i, so "." lines are not a problem
-    (apply subprocess #f #f #f sendmail-program-file "-i" all-recipients))
+    (apply subprocess #f #f #f (force sendmail-program-file) "-i" all-recipients))
   (close-input-port pout)
   (close-input-port perr)
   (port-count-lines! pin)
