@@ -25,6 +25,7 @@
          #"~a_NULL_THUNK_DATA\0"
          #"__IMPORT_DESCRIPTOR_~a\0"
          #"__head_~a_lib\0"
+         #"_head_~a_lib\0"
          #"__~a_lib_iname\0")))
 
 (require dynext/filename-version)
