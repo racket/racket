@@ -16,7 +16,7 @@
 (define xxxs #"xxxxxxx")
 (define xxxs-re
   (bytes-append #"(?:lib(?:g?racket|mzgc)(?:|3m))(" xxxs #")"))
-(define renaming (regexp (format "^~a[.](?:dll|lib|exp)$" xxxs-re)))
+(define renaming (regexp (format "^~a[.](?:dll|lib|exp|def)$" xxxs-re)))
 (define substitutions
   (map (lambda (s) (byte-regexp (regexp-replace #rx#"~a" s xxxs-re)))
        ;; pdb not needed, but this way we can expect no
