@@ -30,12 +30,13 @@ extern "C" {
 # ifdef _WIN32
 #  if defined(_WIN64)
 #   if defined(__MINGW32__)
-#     define THREAD_LOCAL __thread
+#     define THREAD_LOCAL /* empty */
+#     define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 #   else
 #     define THREAD_LOCAL __declspec(thread)
+#     define MZ_THREAD_EXTERN extern
+#     define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
 #   endif
-#   define MZ_THREAD_EXTERN extern
-#   define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
 #  else
 #   define THREAD_LOCAL /* empty */
 #   define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
