@@ -976,7 +976,7 @@ identifiers.  Each list of identifiers includes all bindings imported
 (into the module being expanded) using the module path
 @racket[mod-path], or all modules if @racket[mod-path] is
 @racket[#f]. The association list includes all identifiers imported
-with a @racket[phase-level] shift, of all shifts if
+with a @racket[phase-level] shift, or all shifts if
 @racket[phase-level] is @racket[#t].
 
 When an identifier is renamed on import, the result association list
