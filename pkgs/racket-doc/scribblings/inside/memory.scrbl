@@ -899,7 +899,7 @@ overflow.}
            [void* ptr]
            [int   tls_index])]{
 
-Only available on 32-bit Windows; registers @var{ptr} as the address of a
+For Windows, registers @var{ptr} as the address of a
  thread-local pointer variable that is declared in the main
  executable. The variable's storage will be used to implement
  thread-local storage within the Racket run-time. See
@@ -908,7 +908,10 @@ Only available on 32-bit Windows; registers @var{ptr} as the address of a
 The @var{tls_index} argument must be @cpp{0}. It is currently
  ignored, but a future version may use the argument to allow
  declaration of the thread-local variable in a dynamically linked
- DLL.}
+ DLL.
+
+@history[#:changed "6.3" @elem{Changed from available only on 32-bit Windows
+                               to available on all Windows variants.}]}
 
 @function[(void scheme_register_static
            [void* ptr]
