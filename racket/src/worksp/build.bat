@@ -63,3 +63,6 @@ if errorlevel 1 exit /B 1
 
 ..\..\racket -G %BUILD_CONFIG% -N "raco" %SELF_RACKET_FLAGS% -l- setup %PLT_SETUP_OPTIONS%
 if errorlevel 1 exit /B 1
+
+..\..\racket -G ..\%BUILD_CONFIG% -u gendef.rkt
+if errorlevel 1 exit /B 1
