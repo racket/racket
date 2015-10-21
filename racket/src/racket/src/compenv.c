@@ -1257,9 +1257,9 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
         for (i = frame->num_bindings; i--; ) {
           if (frame->bindings[i] && SAME_OBJ(binding, frame->bindings[i])) {
             /* Found a lambda-, let-, etc. bound variable: */
+            check_taint(find_id);
             if (_binder)
               set_binder(_binder, find_id, frame->binders[i]);
-            check_taint(find_id);
 
             if (!frame->vals) {
               if (flags & SCHEME_DONT_MARK_USE)
