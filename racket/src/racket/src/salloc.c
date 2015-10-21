@@ -223,6 +223,11 @@ Thread_Local_Variables *scheme_external_get_thread_local_variables() XFORM_SKIP_
 {
   return scheme_get_thread_local_variables();
 }
+#else
+void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC
+{
+  /* Nothing to do; provided for compatibility. */
+}
 #endif
 
 #ifdef IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
