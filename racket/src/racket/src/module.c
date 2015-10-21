@@ -7573,8 +7573,8 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
 
   if (!scheme_hash_get(required, SCHEME_STX_VAL(id))) {
     /* no mapping so far means that we haven't imported anything
-       with this name so far, and we'll be able to use a symbol a
-       sumbol as a key; see require_binding_to_key() */
+       with this name so far, and we'll be able to use a symbol
+       as a key; see require_binding_to_key() */
     binding = SCHEME_STX_VAL(id);
   } else {
     /* Look for import collisions by checking whether `id` has a binding;
@@ -7602,7 +7602,7 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
       } else {
         binding = require_binding_to_key(required, binding, SCHEME_STX_VAL(id));
         if (scheme_hash_get(required, binding)) {
-          /* use error report below */
+          /* use error report or override below */
         } else {
           /* identifier has a binding in some context, but not within the current module */
           binding = NULL;
@@ -7659,7 +7659,9 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
     if (SCHEME_TRUEP(SCHEME_VEC_ELS(vec)[7])
         && prep_required_id(vec)
         && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[6], id, phase)) {
-      /* can override; construct overriding `binding` */
+      /* can override; first, remove old binding mapping: */
+      scheme_hash_set(required, binding, NULL);
+      /* construct overriding `binding`: */
       binding = scheme_make_vector(4, NULL);
       vec = scheme_module_resolve(modidx, 0);
       SCHEME_VEC_ELS(binding)[0] = vec;

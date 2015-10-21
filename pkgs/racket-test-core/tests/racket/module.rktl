@@ -1575,4 +1575,32 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module shadows-a-racket-base-binding-and-exports racket/base
+  (provide (all-defined-out)) ; exports `path?`
+  (struct path ()))
+
+(module import-shadows-a-racket-base-binding racket/base
+  (require 'shadows-a-racket-base-binding-and-exports)
+  (provide (all-from-out racket/base)))
+
+;; Fails because imported module doesn't provide `path?`:
+(syntax-test #'(module m racket/base
+                 (require (rename-in 'import-shadows-a-racket-base-binding
+                                     [path? other-path?]))))
+
+(module import-shadows-a-racket-base-binding-and-doesnt-confuse-struct-out racket/base
+  (require 'shadows-a-racket-base-binding-and-exports)
+  (provide (struct-out path)))
+
+(module shadows-a-racket-base-binding-and-exports-all racket/base
+  (provide (all-from-out racket/base)) ; does not export `path?`
+  (struct path ()))
+
+(syntax-test #'(module m racket/base
+                 (require (rename-in 'shadows-a-racket-base-binding-and-exports-all
+                                     [path? other-path?]))))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
