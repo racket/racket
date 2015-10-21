@@ -1554,5 +1554,16 @@
 (test 'outer dynamic-require ''should-be-outer-4 'd)
 
 ;; ----------------------------------------
+;; Check that taint check precedes bound-with-binding substitution:
+
+(err/rt-test (expand '(let ([x 1])
+                       (let-syntax ([m (lambda (stx)
+                                         #`(list #,(syntax-taint #'x)))])
+                         (m))))
+             (lambda (exn)
+               (regexp-match? #rx"cannot use identifier tainted by macro transformation"
+                              (exn-message exn))))
+
+;; ----------------------------------------
 
 (report-errs)
