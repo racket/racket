@@ -242,7 +242,7 @@ mingw-other@NOT_MINGW@:
 	$(NOOP)
 
 mzcom@CGC@@MINGW@: libracket.dll.a libmzgc.dll.a mzcom.@LTO@ mzobj.@LTO@ com_glue.@LTO@ $(SPECIALIZINGOBJECTS) comres.o
-	@MZLINKER@ -o mzcom@CGC@ mzcom.@LTO@ mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
+	@MZLINKER@ -mwindows -o mzcom@CGC@ mzcom.@LTO@ mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
 
 comres.o : $(srcdir)/../worksp/mzcom/mzcom.rc $(srcdir)/../mzcom/prebuilt/MzCOM.tlb
 	@WINDRES@ -I $(srcdir)/../mzcom -I $(srcdir)/../mzcom/prebuilt -i $(srcdir)/../worksp/mzcom/mzcom.rc -o comres.o
