@@ -540,7 +540,7 @@ MW_RACKET_LIBS = gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgc
 	$(NOOP)
 
 ../mzcom@MMM@@MINGW@: libracket3m.dll.a mzcom.@LTO@ mzobj.@LTO@ ../com_glue.@LTO@ $(SPECIALIZINGOBJECTS) ../comres.o
-	cd ..; @MZLINKER@ -o mzcom@MMM@ gc2/mzcom.@LTO@ gc2/mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
+	cd ..; @MZLINKER@ -mwindows -o mzcom@MMM@ gc2/mzcom.@LTO@ gc2/mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
 
 clean:
 	/bin/rm -f ../racket@MMM@ *.@LTO@ $(XSRCDIR)/*
