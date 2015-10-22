@@ -39,6 +39,7 @@
                  (or (regexp-match? #rx#"[.](?i:pdb|ilk|manifest)$" b)
                      (regexp-match? #rx#"(?i:CGC[.](?:dll|exe))$" b)
                      (and (regexp-match? #rx#"(?i:[.](?:dll|exp|obj|lib|def))$" b)
+                          (regexp-match? #rx#"(?i:racket|mzgc)$" b)
                           (not (regexp-match? #rx#"3m" b))))))
       (delete-file* f)))
   
