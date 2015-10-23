@@ -363,14 +363,16 @@ Returns the same contract as @racket[(vector/c c ... #:immutable #t)]. This form
 reasons of backwards compatibility.}
 
 
-@defproc[(box/c [c contract?]
+@defproc[(box/c [in-c contract?]
+                [c contract? in-c]
                 [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
                 [#:flat? flat? boolean? #f])
          contract?]{
-Returns a contract that recognizes boxes. The content of the box must match @racket[c].
+Returns a contract that recognizes boxes. The content of the box must match @racket[c],
+and mutations on mutable boxes must match @racket[in-c].
 
 If the @racket[flat?] argument is @racket[#t], then the resulting contract is
-a flat contract, and the @racket[c] argument must also be a flat contract.  Such
+a flat contract, and the @racket[out] argument must also be a flat contract.  Such
 flat contracts will be unsound if applied to mutable boxes, as they will not check
 future operations on the box.
 
