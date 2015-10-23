@@ -96,6 +96,9 @@ MZ_EXTERN void scheme_init_os_thread(void);
 #define STACK_CACHE_SIZE 32
 #define NUM_MORE_CONSTANT_STXES 24
 
+  /* The number of cached scope sets should be a power of 2: */
+#define NUM_RECENT_SCOPE_SETS 8
+
 /* This structure must be 4 words: */
 typedef struct {
   void *orig_return_address;
@@ -243,6 +246,8 @@ typedef struct Thread_Local_Variables {
   struct Binding_Cache_Entry *binding_cache_table_;
   intptr_t binding_cache_pos_;
   intptr_t binding_cache_len_;
+  struct Scheme_Scope_Set *recent_scope_sets_[2][NUM_RECENT_SCOPE_SETS];
+  int recent_scope_sets_pos_[2];
   struct Scheme_Thread *scheme_current_thread_;
   struct Scheme_Thread *scheme_main_thread_;
   struct Scheme_Thread *scheme_first_thread_;
@@ -636,6 +641,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define binding_cache_table XOA (scheme_get_thread_local_variables()->binding_cache_table_)
 #define binding_cache_pos XOA (scheme_get_thread_local_variables()->binding_cache_pos_)
 #define binding_cache_len XOA (scheme_get_thread_local_variables()->binding_cache_len_)
+#define recent_scope_sets XOA (scheme_get_thread_local_variables()->recent_scope_sets_)
+#define recent_scope_sets_pos XOA (scheme_get_thread_local_variables()->recent_scope_sets_pos_)
 #define scheme_current_thread XOA (scheme_get_thread_local_variables()->scheme_current_thread_)
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)
 #define scheme_first_thread XOA (scheme_get_thread_local_variables()->scheme_first_thread_)

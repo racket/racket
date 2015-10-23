@@ -101,6 +101,8 @@ THREAD_LOCAL_DECL(static Scheme_Bucket_Table *taint_intern_table);
 THREAD_LOCAL_DECL(static struct Binding_Cache_Entry *binding_cache_table);
 THREAD_LOCAL_DECL(static intptr_t binding_cache_pos);
 THREAD_LOCAL_DECL(static intptr_t binding_cache_len);
+THREAD_LOCAL_DECL(static Scheme_Scope_Set *recent_scope_sets[2][NUM_RECENT_SCOPE_SETS]);
+THREAD_LOCAL_DECL(static int recent_scope_sets_pos[2]);
 
 static Scheme_Object *syntax_p(int argc, Scheme_Object **argv);
 
@@ -1677,6 +1679,13 @@ Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
 
 void scheme_clear_shift_cache(void)
 {
+  int i;
+
+  for (i = 0; i < NUM_RECENT_SCOPE_SETS; i++) {
+    recent_scope_sets[0][i] = NULL;
+    recent_scope_sets[1][i] = NULL;
+  }
+
   last_phase_shift = NULL;
   nominal_ipair_cache = NULL;
   clear_binding_cache();
@@ -1782,6 +1791,35 @@ int stx_shorts, stx_meds, stx_longs, stx_couldas;
 # define COUNT_PROPAGATES(x) /* empty */
 #endif
 
+static void intern_scope_set(Scheme_Scope_Table *t, int prop_table)
+/* We don't realy intern, but approximate interning by checking
+   against a small set of recently allocated scope sets. That's good
+   enough to find sharing for a deeply nested sequence of `let`s from
+   a many-argument `or`, for example, where the interleaving of
+   original an macro-introduced syntax prevents the usual
+   child-is-same-as-parent sharing detecting from working well
+   enough. */
+{
+  int i;
+
+  if (!t->simple_scopes || !scope_set_count(t->simple_scopes))
+    return;
+
+  for (i = 0; i < NUM_RECENT_SCOPE_SETS; i++) {
+    if (recent_scope_sets[prop_table][i]) {
+      if (recent_scope_sets[prop_table][i] == t->simple_scopes)
+        return;
+      if (scopes_equal(recent_scope_sets[prop_table][i], t->simple_scopes)) {
+        t->simple_scopes = recent_scope_sets[prop_table][i];
+      }
+    }
+  }
+
+  recent_scope_sets[prop_table][recent_scope_sets_pos[prop_table]] = t->simple_scopes;
+
+  recent_scope_sets_pos[prop_table] = ((recent_scope_sets_pos[prop_table] + 1) & (NUM_RECENT_SCOPE_SETS - 1));
+}
+
 static Scheme_Object *propagate_scope_set(Scheme_Scope_Set *props, Scheme_Object *o,
                                           Scheme_Object *phase, int flag,
                                           GC_CAN_IGNORE int *mutate)
@@ -1790,15 +1828,22 @@ static Scheme_Object *propagate_scope_set(Scheme_Scope_Set *props, Scheme_Object
   Scheme_Object *key, *val;
 
   i = scope_set_next(props, -1);
-  while (i != -1) {
-    scope_set_index(props, i, &key, &val);
+  if (i != -1) {
+    do {
+      scope_set_index(props, i, &key, &val);
 
-    STX_ASSERT(!SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)key));
+      STX_ASSERT(!SCHEME_SCOPE_HAS_OWNER((Scheme_Scope *)key));
 
-    o = stx_adjust_scope(o, key, phase, SCHEME_INT_VAL(val) | flag, mutate);
-    
-    i = scope_set_next(props, i);
-  }  
+      o = stx_adjust_scope(o, key, phase, SCHEME_INT_VAL(val) | flag, mutate);
+
+      i = scope_set_next(props, i);
+    } while (i != -1);
+
+    intern_scope_set(((Scheme_Stx *)o)->scopes, 0);
+    if (STX_KEY(((Scheme_Stx *)o)) & STX_SUBSTX_FLAG
+        && ((Scheme_Stx *)o)->u.to_propagate)
+      intern_scope_set(((Scheme_Stx *)o)->u.to_propagate, 1);
+  }
 
   return o;
 }
