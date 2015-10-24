@@ -132,23 +132,5 @@
      (quasisyntax/loc stx
        (combine-in #,@(multi #'(elem0 elem ...))))]))
 
-
-;; Tests for multi.
-;; We don't want to run them every time the file is required, so they are
-;; commented out. A proper test suite for racket/require should be written.
-#;(begin-for-syntax
-  (require tests/eli-tester)
-  (test (map syntax-e (multi #'("a" "b" "c")))         => '("a/b/c")
-        (map syntax-e (multi #'("a" ("b" "c") "d")))   => '("a/b/d" "a/c/d")
-        (map syntax-e (multi #'("a" "b" ("c" "d"))))   => '("a/b/c" "a/b/d")
-        (map syntax-e (multi #'(("a" "b") "c" "d")))   => '("a/c/d" "b/c/d")
-        (map syntax-e (multi #'(("a" "b") ("c" "d")))) => '("a/c" "a/d" "b/c" "b/d")
-        (map syntax-e (multi #'(("a" "b" "c" "d"))))   => '("a" "b" "c" "d")
-        (map syntax-e (multi #'(("a" "b" ("c" "d"))))) =error> ""
-        (map syntax-e (multi #'(a b c)))       => '(a/b/c)
-        (map syntax-e (multi #'(a (b c) d)))   => '(a/b/d a/c/d)
-        (map syntax-e (multi #'(a b (c d))))   => '(a/b/c a/b/d)
-        (map syntax-e (multi #'((a b) c d)))   => '(a/c/d b/c/d)
-        (map syntax-e (multi #'((a b) (c d)))) => '(a/c a/d b/c b/d)
-        (map syntax-e (multi #'((a b c d))))   => '(a b c d)
-        (map syntax-e (multi #'((a b (c d))))) =error> ""))
+(module+ for-testing
+  (provide (for-syntax multi)))
