@@ -679,7 +679,7 @@
                        [(free-vars free-ctcs)
                         (values (syntax->list #'(fv.var ...))
                                 (syntax->list #'(fv.ctc ...)))])
-           (define add-context (make-syntax-introducer))
+           (define add-context (make-syntax-introducer #t))
            (with-syntax ([blame-stx #''(region blame)]
                          [blame-id (generate-temporary)]
                          [(res ...) (generate-temporaries #'(rc.ctc ...))]
@@ -733,7 +733,7 @@
                    [(protected protections)
                     (values (syntax->list #'(ec.var ...))
                             (syntax->list #'(ec.ctc ...)))])
-       (define add-context (make-syntax-introducer))
+       (define add-context (make-syntax-introducer #t))
        (with-syntax ([blame-stx #''(region blame)]
                      [blame-id (generate-temporary)]
                      [(free-var ...) free-vars]
