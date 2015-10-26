@@ -1408,7 +1408,8 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
           scheme_unbound_syntax(((flags & SCHEME_SETTING)
                                  ? scheme_set_stx_string
                                  : scheme_var_ref_string),
-                                NULL, src_find_id, "unbound identifier in module");
+                                NULL, src_find_id, "unbound identifier in module",
+                                scheme_stx_describe_context(src_find_id, scheme_env_phase(genv), 0));
           return NULL;
         }
         if (flags & SCHEME_NULL_FOR_UNBOUND)
@@ -1494,7 +1495,8 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       scheme_unbound_syntax(((flags & SCHEME_SETTING) 
 			     ? scheme_set_stx_string
 			     : scheme_var_ref_string), 
-                            NULL, src_find_id, "unbound identifier in module");
+                            NULL, src_find_id, "unbound identifier in module",
+                            scheme_stx_describe_context(src_find_id, scheme_env_phase(genv), 0));
       return NULL;
     }
   }
