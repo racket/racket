@@ -234,7 +234,8 @@
                                                         #f
                                                         seen))
                                             qs)
-                                       #'esc*)])
+                                       #'esc*
+                                       #f)])
                ;; then compile the rest of the row
                (if success?
                    #,(compile* xs
@@ -242,7 +243,8 @@
                                                (Row-rhs row)
                                                (Row-unmatch row)
                                                (append (map cons vars vars) seen)))
-                               esc)
+                               esc
+                               #f)
                    (#,esc))))))]
     ;; the App rule
     [(App? first)
@@ -271,7 +273,6 @@
      (define pats (Row-pats row))
      ;; all the patterns
      (define qs (And-ps (car pats)))
-     (printf ">>> calling compile ~a\n " (append qs (cdr pats)))
      (compile* (append (map (lambda _ x) qs) xs)
                (list (make-Row (append qs (cdr pats))
                                (Row-rhs row)
@@ -473,7 +474,10 @@
     ;; and compile each block with a reference to its continuation
    [else
     (let*-values
-        ([(rows vars) (if reorder?
+        ([(rows vars) (if (and (>= 1 (length vars))
+                               reorder?
+                               ;; moving Or patterns early breaks Typed Racket
+                               (not (ormap Or? (apply append (map Row-pats rows)))))
                           (reorder-columns rows vars)
                           (values rows vars))]
          [(fns)
