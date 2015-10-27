@@ -916,7 +916,7 @@ and different result procedures use distinct scopes.
                                added the optional operation argument
                                in the result procedure.}]}
 
-@defproc[(make-syntax-delta-introducer [ext-stx syntax?] 
+@defproc[(make-syntax-delta-introducer [ext-stx identifier?] 
                                        [base-stx (or/c syntax? #f)]
                                        [phase-level (or/c #f exact-integer?)
                                                     (syntax-local-phase-level)])
@@ -926,7 +926,7 @@ Produces a procedure that behaves like the result of
 @racket[make-syntax-introducer], but using the @tech{scopes} of
 @racket[ext-stx] that are not shared with @racket[base-stx].
 
-This procedure is potentially useful when @racket[_m-id] has a
+This procedure is potentially useful when some @racket[_m-id] has a
 transformer binding that records some @racket[_orig-id], and a use of
 @racket[_m-id] introduces a binding of @racket[_orig-id]. In that
 case, the @tech{scopes} one the use of @racket[_m-id] added since the
