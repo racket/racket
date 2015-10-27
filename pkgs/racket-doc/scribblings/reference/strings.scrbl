@@ -91,7 +91,7 @@ Returns an immutable string with the same content as
  characters long, and that contains the same characters as
  @racket[str] from @racket[start] inclusive to @racket[end] exclusive.
  The first position in a string corresponds to @racket[0], so
- the @racket[start] and @racket[end] arguments so they must be less than or
+ the @racket[start] and @racket[end] arguments must be less than or
  equal to the length of @racket[str], and @racket[end] must be greater
  than or equal to @racket[start], otherwise the
  @exnraise[exn:fail:contract].
