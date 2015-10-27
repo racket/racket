@@ -11,6 +11,9 @@
 
 (provide compile*)
 
+;; should we reorder stuff?
+(define can-reorder? (make-parameter #t))
+
 ;; for non-linear patterns
 (define vars-seen (make-parameter null))
 
@@ -268,6 +271,7 @@
      (define pats (Row-pats row))
      ;; all the patterns
      (define qs (And-ps (car pats)))
+     (printf ">>> calling compile ~a\n " (append qs (cdr pats)))
      (compile* (append (map (lambda _ x) qs) xs)
                (list (make-Row (append qs (cdr pats))
                                (Row-rhs row)
@@ -426,7 +430,7 @@
                              #'failkv))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
-(define (compile* vars rows esc [reorder? #t])
+(define (compile* vars rows esc [reorder? (can-reorder?)])
   (define (let/wrap clauses body)
     (if (stx-null? clauses)
       body
@@ -481,7 +485,9 @@
                               [(f) (generate-temporaries #'(f))]
                               ;; compile the block, with jumps to the previous
                               ;; esc
-                              [c (compile-one vars (car blocks) esc)])
+                              [c 
+                               (parameterize ([can-reorder? reorder?])
+                                 (compile-one vars (car blocks) esc))])
                   ;; then compile the rest, with our name as the esc
                   (loop (cdr blocks)
                         #'f
