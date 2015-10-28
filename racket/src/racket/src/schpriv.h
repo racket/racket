@@ -2709,9 +2709,14 @@ typedef struct Scheme_Closure_Data
   Scheme_Inclhash_Object iso; /* keyex used for flags */
   mzshort num_params; /* includes collecting arg if has_rest */
   mzshort max_let_depth;
-  mzshort closure_size;
-  mzshort *closure_map; /* actually a Closure_Info* until resolved; if CLOS_HAS_TYPED_ARGS, 
-                           followed by bit array with CLOS_TYPE_BITS_PER_ARG bits per args then per closed-over */
+  mzshort closure_size; /* the number of closed-over variables */
+  mzshort *closure_map; /* actually a Closure_Info* until resolved;
+                           contains closure_size elements mapping closed-over var to stack positions.
+
+                           If CLOS_HAS_TYPED_ARGS, that array is followed by bit array with
+                           CLOS_TYPE_BITS_PER_ARG bits per args then per closed-over
+
+                           total size = closure_size + (closure_size + num_params) * CLOS_TYPE_BITS_PER_ARG */
   Scheme_Object *code;
   Scheme_Object *name; /* name or (vector name src line col pos span generated?) */
   void *tl_map; /* fixnum or bit array (as array of `int's) indicating which globals+lifts in prefix are used */
@@ -2732,6 +2737,7 @@ typedef struct Scheme_Closure_Data
 
 XFORM_NONGCING void scheme_boxmap_set(mzshort *boxmap, int j, int bit, int delta);
 XFORM_NONGCING int scheme_boxmap_get(mzshort *boxmap, int j, int delta);
+XFORM_NONGCING int boxmap_size(int n);
 
 int scheme_has_method_property(Scheme_Object *code);
 

@@ -792,7 +792,7 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 
   svec_size = data->closure_size;
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
-    svec_size += ((CLOS_TYPE_BITS_PER_ARG * (data->num_params + data->closure_size)) + BITS_PER_MZSHORT - 1) / BITS_PER_MZSHORT;
+    svec_size += boxmap_size(data->num_params + data->closure_size);
     {
       int k, mv;
       for (k = data->num_params + data->closure_size; --k; ) {
@@ -1014,6 +1014,11 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
 
   if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS))
     data->closure_size = SCHEME_SVEC_LEN(v);
+
+  if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS))
+    if (data->closure_size + boxmap_size(data->closure_size + data->num_params) != SCHEME_SVEC_LEN(v))
+      return NULL;
+
   data->closure_map = SCHEME_SVEC_VEC(v);
 
   /* If the closure is empty, create the closure now */

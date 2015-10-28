@@ -1683,7 +1683,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 /*                             closures                                   */
 /*========================================================================*/
 
-XFORM_NONGCING static int boxmap_size(int n)
+XFORM_NONGCING int boxmap_size(int n)
 {
   return ((CLOS_TYPE_BITS_PER_ARG * n) + (BITS_PER_MZSHORT - 1)) / BITS_PER_MZSHORT;
 }
