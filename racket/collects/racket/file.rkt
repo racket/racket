@@ -1,6 +1,7 @@
 #lang racket/base
 (require "path.rkt"
          setup/dirs
+         setup/cross-system
          (for-syntax racket/base
                      setup/path-to-relative))
 
@@ -278,7 +279,7 @@
 (define (make-pathless-lock-file-name name)
   (bytes->path-element
    (bytes-append
-    (if (eq? 'windows (system-type))
+    (if (eq? 'windows (cross-system-type))
         #"_"
         #".")
     #"LOCK"
