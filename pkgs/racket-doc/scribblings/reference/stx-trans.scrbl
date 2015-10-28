@@ -701,7 +701,7 @@ then the @exnraise[exn:fail:contract].}
 Lifts a @racket[#%require] form corresponding to
 @racket[raw-require-spec] (either as a @tech{syntax object} or datum)
 to the top-level or to the top of the module currently being expanded
- or to an enclosing @racket[begin-for-syntax]..
+ or to an enclosing @racket[begin-for-syntax].
 
 The resulting syntax object is the same as @racket[stx], except that a
 fresh @tech{scope} is added. The same @tech{scope} is
