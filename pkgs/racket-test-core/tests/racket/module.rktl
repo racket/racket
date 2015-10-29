@@ -1600,6 +1600,29 @@ case of module-leve bindings; it doesn't cover local bindings.
                  (require (rename-in 'shadows-a-racket-base-binding-and-exports-all
                                      [path? other-path?]))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `syntax-local-lift-require` on an
+;; spec that doesn't have the target environment's
+;; context:
+
+(module has-a-submodule-that-exports-x racket
+  (module b racket/base
+    (define x 1)
+    (provide x))
+
+  (define-syntax (lifted-require-of-x stx)
+    (syntax-case stx ()
+      [(_ mod)
+       (let ([x (car (generate-temporaries '(x)))])
+         (syntax-local-lift-require
+          #`(rename mod #,x x)
+          x))]))
+
+  (provide lifted-require-of-x))
+
+(require 'has-a-submodule-that-exports-x)
+
+(test 1 values (lifted-require-of-x (submod 'has-a-submodule-that-exports-x b)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

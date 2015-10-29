@@ -12581,12 +12581,14 @@ static Scheme_Object *check_require_form(Scheme_Env *env, Scheme_Object *form)
 }
 
 static Scheme_Object *
-do_require_execute(Scheme_Env *env, Scheme_Object *form)
+do_require_execute(Scheme_Env *env, Scheme_Object *form, int to_context)
 {
   Scheme_Object *modidx;
 
-  /* Use the current top-level context: */
-  form = scheme_stx_from_generic_to_module_context(form, env->stx_context);
+  if (to_context) {
+    /* Use the current top-level context: */
+    form = scheme_stx_from_generic_to_module_context(form, env->stx_context);
+  }
 
   /* Check for collisions again, in case there's a difference between
      compile and run times: */
@@ -12608,7 +12610,8 @@ Scheme_Object *
 scheme_top_level_require_execute(Scheme_Object *data)
 {
   do_require_execute(scheme_environment_from_dummy(SCHEME_PTR1_VAL(data)),
-                     SCHEME_PTR2_VAL(data));
+                     SCHEME_PTR2_VAL(data),
+                     1);
   return scheme_void;
 }
 
@@ -12674,7 +12677,7 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 
   form = scheme_revert_use_site_scopes(form, cenv);
 
-  do_require_execute(cenv->genv, form);
+  do_require_execute(cenv->genv, form, 0);
 
   return form;
 }
