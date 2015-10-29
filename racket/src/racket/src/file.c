@@ -5693,7 +5693,7 @@ Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir
 
     while (!SCHEME_NULLP(be)) {
       if (cache) {
-        obj = scheme_make_pair(up_symbol, scheme_null);
+        obj = scheme_make_pair(up_symbol, obj);
       } else {
         a[0] = up_symbol;
         a[1] = obj;

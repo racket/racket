@@ -747,7 +747,7 @@ static Scheme_Object *read_quote_syntax(Scheme_Object *obj)
 static int not_relative_path(Scheme_Object *p, Scheme_Hash_Table *cache)
 {
   Scheme_Object *dir, *rel_p;
-  
+
   dir = scheme_get_param(scheme_current_config(),
                          MZCONFIG_WRITE_DIRECTORY);
   if (SCHEME_TRUEP(dir)) {

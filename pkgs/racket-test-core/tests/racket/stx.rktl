@@ -2205,5 +2205,28 @@
   (eval '(m racket/base values)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check marshaling and unmarshaling with relative paths
+
+(let ()
+  (define dir (find-system-path 'temp-dir))
+
+  (define x (parameterize ([current-namespace (make-base-namespace)])
+              (compile (datum->syntax #f '#'x (vector (build-path dir "sub" "x.rkt")
+                                                      1
+                                                      1
+                                                      1
+                                                      1)))))
+  (define-values (i o) (make-pipe))
+  (parameterize ([current-write-relative-directory
+                  (cons (build-path dir "nested")
+                        dir)])
+    (write x o))
+  (test (build-path dir "inner" 'up "sub" "x.rkt")
+        syntax-source
+        (eval (parameterize ([read-accept-compiled #t]
+                             [current-load-relative-directory (build-path dir "inner")])
+                (read i)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
