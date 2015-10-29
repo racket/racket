@@ -47,6 +47,8 @@
              (->* (integer? boolean?) () (values char? any/c)))
   (test-name '(-> integer? boolean? any) (->* (integer? boolean?) () any))
   (test-name '(-> integer? boolean? #:x string? any) (-> integer? #:x string? boolean? any))
+  (test-name '(-> any/c boolean?) (-> any/c boolean?))
+  (test-name 'predicate/c predicate/c)
 
   (test-name '(->* (integer?) (string?) #:rest any/c (values char? any/c))
               (->* (integer?) (string?) #:rest any/c (values char? any/c)))

@@ -406,20 +406,23 @@
 
     (define (successfully-got-the-right-kind-of-function val neg-party)
       (define chap/imp-func (apply chaperone-constructor orig-blame val neg-party the-args))
-      (if post?
-          (chaperone-or-impersonate-procedure
-           val
-           chap/imp-func
-           impersonator-prop:contracted ctc
-           impersonator-prop:blame (blame-add-missing-party orig-blame neg-party))
-          (chaperone-or-impersonate-procedure
-           val
-           chap/imp-func
-           impersonator-prop:contracted ctc
-           impersonator-prop:blame (blame-add-missing-party orig-blame neg-party)
-           impersonator-prop:application-mark (cons arrow:contract-key 
-                                                    ;; is this right?
-                                                    partial-ranges))))
+      (cond
+        [chap/imp-func
+         (if post?
+             (chaperone-or-impersonate-procedure
+              val
+              chap/imp-func
+              impersonator-prop:contracted ctc
+              impersonator-prop:blame (blame-add-missing-party orig-blame neg-party))
+             (chaperone-or-impersonate-procedure
+              val
+              chap/imp-func
+              impersonator-prop:contracted ctc
+              impersonator-prop:blame (blame-add-missing-party orig-blame neg-party)
+              impersonator-prop:application-mark (cons arrow:contract-key 
+                                                       ;; is this right?
+                                                       partial-ranges)))]
+        [else val]))
     
     (cond
       [late-neg?

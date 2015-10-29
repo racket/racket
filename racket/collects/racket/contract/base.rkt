@@ -35,6 +35,7 @@
              -> ->*)
  (rename-out [->2 ->] [->*2 ->*])
  dynamic->*
+ predicate/c
  
  (all-from-out "private/arr-i.rkt"
                "private/box.rkt"

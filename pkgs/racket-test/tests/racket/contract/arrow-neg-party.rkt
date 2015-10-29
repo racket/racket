@@ -270,4 +270,19 @@
       (->* (any/c) (#:kw any/c) any)
       (λ (x #:kw [kw 0]) x))
      'neg 42)
-   42))
+   42)
+
+  (test/pos-blame
+   '->neg-party23
+   '((neg-party-fn
+      (-> any/c boolean?)
+      (λ (x) 1))
+     'neg 1))
+
+  (test/spec-passed/result
+   '->neg-party24
+   '((neg-party-fn
+      (-> any/c boolean?)
+      (λ (x) #t))
+     'neg 1)
+   #t))

@@ -434,7 +434,7 @@
     [(_ content) (opt/listof-ctc #'content #t opt/i opt/info)]))
 
 
-(define-for-syntax (predicate/c-optres opt/info)
+(define-for-syntax (predicate/c-optres opt/info has-name-predicate/c?)
   (build-optres
    #:exp
    (with-syntax ((val (opt/info-val opt/info))
@@ -472,7 +472,9 @@
    #:opt #f
    #:stronger-ribs null
    #:chaperone #t
-   #:name #''predicate/c))
+   #:name (if has-name-predicate/c?
+              #''predicate/c
+              #''(-> any/c boolean?))))
 
 ;;
 ;; arrow opter
@@ -698,7 +700,7 @@
         #:chaperone #t
         #:name #`'(-> #,@(build-list (syntax-e #'n) (λ (x) 'any/c)) any)))]
     [(_ any/c boolean?)
-     (predicate/c-optres opt/info)]
+     (predicate/c-optres opt/info #f)]
     [(_ dom ... (values rng ...))
      (if (ormap (λ (x) (keyword? (syntax-e x))) (syntax->list #'(dom ...)))
          (opt/unknown opt/i opt/info stx) ;; give up if there is a mandatory keyword 
@@ -737,7 +739,7 @@
 
 (define opt->/c-cm-key (gensym 'opt->/c-cm-key))
 
-(define/opter (predicate/c opt/i opt/info stx) (predicate/c-optres opt/info))
+(define/opter (predicate/c opt/i opt/info stx) (predicate/c-optres opt/info #t))
 
 (define (handle-non-exact-procedure val dom-len blame exact-proc)
   (check-procedure val #f dom-len 0 '() '() blame)
