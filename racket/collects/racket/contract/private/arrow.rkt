@@ -449,7 +449,7 @@
          basic-checker-name)]))
 
 (define (raise-wrong-number-of-args-error
-         blame val
+         blame #:missing-party [missing-party #f] val
          args-len max-arity min-method-arity max-method-arity)
   (define arity-string 
     (if max-arity
@@ -462,11 +462,13 @@
            (format "~a to ~a non-keyword arguments" min-method-arity max-method-arity)])
         (format "at least ~a non-keyword argument~a" min-method-arity (if (= min-method-arity 1) "" "s"))))
   (raise-blame-error (blame-swap blame) val
+                     #:missing-party missing-party
                      '(received: "~a argument~a" expected: "~a")
                      args-len (if (= args-len 1) "" "s") arity-string))
 
-(define (raise-no-keywords-arg blame val given-kwds)
+(define (raise-no-keywords-arg blame #:missing-party [missing-party #f] val given-kwds)
   (raise-blame-error (blame-swap blame) val
+                     #:missing-party missing-party
                      (list 'expected:
                            "no keywords"
                            'given:

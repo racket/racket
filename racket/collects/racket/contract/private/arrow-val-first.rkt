@@ -1290,17 +1290,21 @@
                     f))
                  (cond
                    [(struct-predicate-procedure? f) #f]
-                   [(equal? (procedure-arity f) 1)
+                   [(and (equal? (procedure-arity f) 1)
+                         (let-values ([(required mandatory) (procedure-keywords f)])
+                           (and (null? required)
+                                (null? mandatory))))
                     (λ (arg)
                       (values (rng-checker f blame neg-party) arg))]
                    [(procedure-arity-includes? f 1)
                     (make-keyword-procedure
                      (λ (kwds kwd-args . other)
                        (unless (null? kwds)
-                         (arrow:raise-no-keywords-arg blame f kwds))
+                         (arrow:raise-no-keywords-arg blame #:missing-party neg-party f kwds))
                        (unless (= 1 (length other))
-                         (arrow:raise-wrong-number-of-args-error blame f (length other) 1 1 1))
-                       (values (rng-checker f blame neg-party) '() (car other))))]))))
+                         (arrow:raise-wrong-number-of-args-error #:missing-party neg-party
+                                                                 blame f (length other) 1 1 1))
+                       (values (rng-checker f blame neg-party) (car other))))]))))
 
 (define -predicate/c (mk-any/c->boolean-contract predicate/c))
 (define any/c->boolean-contract (mk-any/c->boolean-contract make-->))

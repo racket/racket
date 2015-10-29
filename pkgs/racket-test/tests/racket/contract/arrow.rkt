@@ -377,6 +377,15 @@
   (test/spec-passed
    'predicate/c10
    '((contract (-> any/c boolean?) (λ (x) #t) 'pos 'neg) 12))
+  (test/spec-passed
+   'predicate/c11
+   '((contract (-> any/c boolean?) (λ x #t) 'pos 'neg) 12))
+  (test/neg-blame
+   'predicate/c12
+   '((contract (-> any/c boolean?) (λ (x #:y [y 1]) #t) 'pos 'neg) 12 #:y 1))
+  (test/pos-blame
+   'predicate/c13
+   '(contract (-> any/c boolean?) (λ (x #:y y) #t) 'pos 'neg))
   
   ;; this test ensures that no contract wrappers
   ;; are created for struct predicates
