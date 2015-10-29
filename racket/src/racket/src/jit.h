@@ -716,15 +716,16 @@ static void *top4;
 #define mz_popr_p(x) scheme_mz_popr_p_it(jitter, x, 0)
 #define mz_popr_x() scheme_mz_popr_p_it(jitter, JIT_R1, 1)
 
-#if 0
+#define CHECK_RUNSTACK_REGISTER_UPDATE 0
+
+#if CHECK_RUNSTACK_REGISTER_UPDATE
 /* Debugging: at each _finish(), double-check that the runstack register has been
    copied into scheme_current_runstack. This code assumes that mz_finishr() is not
    used with JIT_R0.  Failure is "reported" by going into an immediate loop, but
    check_location is set to the source line number to help indicate where the
    problem originated. */
 static void *top;
-int check_location;
-# define CONFIRM_RUNSTACK() (jit_movi_l(JIT_R0, __LINE__), jit_sti_l(&check_location, JIT_R0), \
+# define CONFIRM_RUNSTACK() (jit_movi_l(JIT_R0, __LINE__), \
                              mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK), top = (_jit.x.pc), jit_bner_p(top, JIT_RUNSTACK, JIT_R0))
 #else
 # define CONFIRM_RUNSTACK() 0
@@ -733,6 +734,7 @@ int check_location;
 #define mz_prepare(x) jit_prepare(x)
 #define mz_finish(x) ((void)CONFIRM_RUNSTACK(), jit_finish(x))
 #define mz_finishr(x) ((void)CONFIRM_RUNSTACK(), jit_finishr(x))
+#define mz_finish_unsynced_runstack(x) jit_finish(x)
 
 #define mz_nonrs_finish(x) jit_finish(x)
 

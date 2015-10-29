@@ -694,7 +694,7 @@ typedef void (*Thread_Start_Child_Proc)(Scheme_Thread *child, Scheme_Object *chi
 void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name)
 {
   Module_Run_Proc proc = (Module_Run_Proc)sjc.module_run_start_code;
-  if (proc)
+  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
     return proc(menv, env, &name);
   else
     return scheme_module_run_finish(menv, env);
@@ -703,7 +703,7 @@ void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *
 void *scheme_module_exprun_start(Scheme_Env *menv, int set_ns, Scheme_Object *name)
 {
   Module_Exprun_Proc proc = (Module_Exprun_Proc)sjc.module_exprun_start_code;
-  if (proc)
+  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
     return proc(menv, set_ns, &name);
   else
     return scheme_module_exprun_finish(menv, set_ns);
@@ -712,7 +712,7 @@ void *scheme_module_exprun_start(Scheme_Env *menv, int set_ns, Scheme_Object *na
 void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name)
 {
   Module_Start_Proc proc = (Module_Start_Proc)sjc.module_start_start_code;
-  if (proc)
+  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
     return proc(a, &name);
   else
     return scheme_module_start_finish(a);
@@ -722,7 +722,7 @@ void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk)
   XFORM_SKIP_PROC
 {
   Thread_Start_Child_Proc proc = (Thread_Start_Child_Proc)sjc.thread_start_child_code;
-  if (proc)
+  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
     proc(child, child_thunk);
   else
     scheme_do_thread_start_child(child, child_thunk);

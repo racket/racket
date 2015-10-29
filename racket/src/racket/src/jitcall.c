@@ -93,7 +93,7 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   jit_movi_i(JIT_R0, num_rands);
   jit_pusharg_i(JIT_R0); /* argc */
   jit_pusharg_p(JIT_R1); /* closure */
-  (void)mz_finish(scheme_native_arity_check);
+  (void)mz_finish_unsynced_runstack(scheme_native_arity_check);
   CHECK_LIMIT();
   jit_retval(JIT_R0);
   refz5 = jit_beqi_i(jit_forward(), JIT_R0, 0);
