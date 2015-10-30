@@ -7975,17 +7975,17 @@ static Scheme_Object *shift_require_phase(Scheme_Object *e, Scheme_Object *phase
   Scheme_Object *l, *a;
 
   l = e;
-  if (SCHEME_STXP(l)) l = SCHEME_STX_VAL(l);
+  if (SCHEME_STXP(l)) l = scheme_stx_content(l);
   if (SCHEME_PAIRP(l)) {
     a = SCHEME_CAR(l);
-    if (SCHEME_STXP(a)) a = SCHEME_STX_VAL(a);
+    if (SCHEME_STXP(a)) a = scheme_stx_content(a);
 
     if (can_just_meta && SAME_OBJ(a, just_meta_symbol)) {
       /* Shift any `for-meta` within `just-meta`: */
       l = SCHEME_CDR(l);
       if (scheme_proper_list_length(l) >= 1) {
         a = SCHEME_CAR(l);
-        if (SCHEME_STXP(a)) a = SCHEME_STX_VAL(a);
+        if (SCHEME_STXP(a)) a = scheme_stx_content(a);
         if (SCHEME_FALSEP(a) || SCHEME_INTP(a) || SCHEME_BIGNUMP(a)) {
           e = scheme_null;
           for (l = SCHEME_CDR(l); SCHEME_PAIRP(l); l = SCHEME_CDR(l)) {
@@ -8003,7 +8003,7 @@ static Scheme_Object *shift_require_phase(Scheme_Object *e, Scheme_Object *phase
       l = SCHEME_CDR(l);
       if (SCHEME_PAIRP(l)) {
         a = SCHEME_CAR(l);
-        if (SCHEME_STXP(a)) a = SCHEME_STX_VAL(a);
+        if (SCHEME_STXP(a)) a = scheme_stx_content(a);
         if (SCHEME_FALSEP(a)) {
           return e;
         } else if (SCHEME_INTP(a) || SCHEME_BIGNUMP(a)) {
@@ -8749,7 +8749,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     return fm;
   }
 #endif
-  
+
   if (*bxs->_num_phases < phase + 1)
     *bxs->_num_phases = phase + 1;
 
@@ -9339,6 +9339,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
 	  /************ module[*] *************/
           /* check outer syntax & name, then expand pre-module or remember for post-module pass */
           int k;
+
           e = handle_submodule_form(who,
                                     e, env, phase,
                                     rn_set, observer,
