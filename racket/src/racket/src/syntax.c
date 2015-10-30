@@ -4679,6 +4679,9 @@ static Scheme_Object *unmarshal_lookup_adjust(Scheme_Object *sym, Scheme_Object 
   Scheme_Hash_Tree *excepts;
   Scheme_Object *prefix;
 
+  if (!SCHEME_SYMBOLP(sym))
+    return scheme_false;
+
   excepts = extract_unmarshal_excepts(SCHEME_VEC_ELS(pes)[3]);
   prefix = extract_unmarshal_prefix(SCHEME_VEC_ELS(pes)[3]);
  
