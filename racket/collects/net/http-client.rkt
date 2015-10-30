@@ -184,27 +184,34 @@
 
 (define (http-conn-response-port/chunked! hc #:close? [close? #f])
   (define (http-pipe-chunk ip op)
+    (define (done)
+      (flush-output op)
+      (close-output-port op))
     (define crlf-bytes (make-bytes 2))
     (let loop ([last-bytes #f])
-      (define size-str (string-trim (read-line ip eol-type)))
-      (define chunk-size (string->number size-str 16))
-      (unless chunk-size
-        (error 'http-conn-response/chunked 
-               "Could not parse ~S as hexadecimal number"
-               size-str))
-      (define use-last-bytes?
-        (and last-bytes (<= chunk-size (bytes-length last-bytes))))
-      (if (zero? chunk-size)
-        (begin (flush-output op)
-               (close-output-port op))
-        (let* ([bs (if use-last-bytes?
-                     (begin
-                       (read-bytes! last-bytes ip 0 chunk-size)
-                       last-bytes)
-                     (read-bytes chunk-size ip))]
-               [crlf (read-bytes! crlf-bytes ip 0 2)])
-          (write-bytes bs op 0 chunk-size)
-          (loop bs)))))
+      (define in-v (read-line ip eol-type))
+      (cond
+        [(eof-object? in-v)
+         (done)]
+        [else
+         (define size-str (string-trim in-v))
+         (define chunk-size (string->number size-str 16))
+         (unless chunk-size
+           (error 'http-conn-response/chunked 
+                  "Could not parse ~S as hexadecimal number"
+                  size-str))
+         (define use-last-bytes?
+           (and last-bytes (<= chunk-size (bytes-length last-bytes))))
+         (if (zero? chunk-size)
+             (done)
+             (let* ([bs (if use-last-bytes?
+                            (begin
+                              (read-bytes! last-bytes ip 0 chunk-size)
+                              last-bytes)
+                            (read-bytes chunk-size ip))]
+                    [crlf (read-bytes! crlf-bytes ip 0 2)])
+               (write-bytes bs op 0 chunk-size)
+               (loop bs)))])))
 
   (define-values (in out) (make-pipe PIPE-SIZE))
   (define chunk-t
