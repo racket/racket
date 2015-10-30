@@ -1815,6 +1815,18 @@
                                          [(b . _) (datum->syntax #'b 'begin)]))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; syntax-debug-info
+
+(let ([check (lambda (syntax-debug-info)
+               (test 'x hash-ref (syntax-debug-info #'x) 'name)
+               (test 'nope hash-ref (syntax-debug-info #'1) 'name 'nope)
+               (test 'nope hash-ref (syntax-debug-info #'(x y)) 'name 'nope))])
+  (check syntax-debug-info)
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(require (prefix-in foo: racket/base)))
+    (check (lambda (stx) (syntax-debug-info (namespace-syntax-introduce stx))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that attacks are thwarted via `syntax-local-get-shadower'
 ;; or `make-syntax-delta-introducer':
 
