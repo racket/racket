@@ -125,6 +125,7 @@ typedef struct Module_Begin_Expand_State {
   Scheme_Hash_Table *modidx_cache;
   Scheme_Object *redef_modname;
   Scheme_Object *end_statementss; /* list of lists */
+  Scheme_Object *modsrc; /* source for top-level module */
 } Module_Begin_Expand_State;
 
 static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -7096,7 +7097,10 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   rmp = SCHEME_STX_VAL(nm);
   rmp = scheme_intern_resolved_module_path(rmp);
   m->modname = rmp;
-  m->modsrc = rmp;
+  if (super_bxs)
+    m->modsrc = super_bxs->modsrc;
+  else
+    m->modsrc = rmp;
 
   if (!SCHEME_NULLP(submodule_ancestry))
     submodule_path = scheme_append(submodule_path, scheme_make_pair(SCHEME_STX_VAL(nm), scheme_null));
@@ -8220,6 +8224,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   bxs->modidx_cache = modidx_cache;
   bxs->redef_modname = redef_modname;
   bxs->end_statementss = scheme_null;
+  bxs->modsrc = env->genv->module->modsrc;
 
   if (env->genv->module->super_bxs_info) {
     /* initialize imports that are available for export from the enclosing module's
