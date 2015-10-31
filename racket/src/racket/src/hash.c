@@ -2956,7 +2956,7 @@ static int hamt_equal_entries(int stype, void *eql_data,
 #define HAMT_ELEMENT_OF hamt_eq_element_match_of
 #define HAMT_ELEMENT_OF_COLLISION hamt_eq_element_match_of_collision
 #define HAMT_EQUAL_ENTRIES(stype, eql_data, k1, v1, k2, v2) (SAME_OBJ(k1, k2) && SAME_OBJ(v1, v2))
-#define HAMT_IF_VAL(v, n) n
+#define HAMT_IF_VAL(v, n) v
 #define HAMT_USE_FUEL(n) /* empty */
 #include "hamt_subset.inc"
 
