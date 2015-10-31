@@ -772,6 +772,13 @@ static int scopes_equal(Scheme_Scope_Set *a, Scheme_Scope_Set *b)
   return (scope_set_count(a) == scope_set_count(b)) && scope_subset(a, b);
 }
 
+static int scope_props_equal(Scheme_Scope_Set *a, Scheme_Scope_Set *b)
+{
+  return scheme_hash_tree_equal_rec((Scheme_Hash_Tree *)a, (Scheme_Object *)a,
+                                    (Scheme_Hash_Tree *)b, (Scheme_Object *)b,
+                                    NULL);
+}
+
 static Scheme_Object *make_fallback_pair(Scheme_Object *a, Scheme_Object *b)
 {
   a = scheme_make_vector(2, a);
@@ -1809,8 +1816,10 @@ static void intern_scope_set(Scheme_Scope_Table *t, int prop_table)
     if (recent_scope_sets[prop_table][i]) {
       if (recent_scope_sets[prop_table][i] == t->simple_scopes)
         return;
-      if (scopes_equal(recent_scope_sets[prop_table][i], t->simple_scopes)) {
+      if (scopes_equal(recent_scope_sets[prop_table][i], t->simple_scopes)
+          && (!prop_table || scope_props_equal(recent_scope_sets[prop_table][i], t->simple_scopes))) {
         t->simple_scopes = recent_scope_sets[prop_table][i];
+        return;
       }
     }
   }

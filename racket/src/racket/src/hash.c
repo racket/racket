@@ -2915,8 +2915,12 @@ static int hamt_equal_entries(int stype, void *eql_data,
                               Scheme_Object *k2, Scheme_Object *v2)
 {
   if (stype == scheme_eq_hash_tree_type) {
-    if (SAME_OBJ(k1, k2))
-      return scheme_recur_equal(v1, v2, eql_data);
+    if (SAME_OBJ(k1, k2)) {
+      if (eql_data)
+        return scheme_recur_equal(v1, v2, eql_data);
+      else
+        return SAME_OBJ(v1, v2);
+    }
   } else if (stype == scheme_hash_tree_type) {
     if (scheme_recur_equal(k1, k2, eql_data))
       return scheme_recur_equal(v1, v2, eql_data);

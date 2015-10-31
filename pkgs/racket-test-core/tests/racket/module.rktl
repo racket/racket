@@ -1625,5 +1625,23 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test 1 values (lifted-require-of-x (submod 'has-a-submodule-that-exports-x b)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; This test happens to trigger a combination
+;; of lazy adds and reoves that exposed a bug
+;; in caching lazy scope propagations
+
+(eval
+ (expand
+  #'(module x racket/kernel
+      (module ma racket/base
+        (#%module-begin
+         (#%require (for-syntax racket/kernel))
+         (define-values (x) 1)
+         (define-syntaxes (foo) (lambda (stx) (quote-syntax x)))
+         (#%provide foo)))
+      (module mb racket/kernel
+        (#%require (submod ".." ma))
+        (foo)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
