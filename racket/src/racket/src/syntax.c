@@ -1808,17 +1808,19 @@ static void intern_scope_set(Scheme_Scope_Table *t, int prop_table)
    enough. */
 {
   int i;
+  Scheme_Scope_Set *s;
 
   if (!t->simple_scopes || !scope_set_count(t->simple_scopes))
     return;
 
   for (i = 0; i < NUM_RECENT_SCOPE_SETS; i++) {
-    if (recent_scope_sets[prop_table][i]) {
-      if (recent_scope_sets[prop_table][i] == t->simple_scopes)
+    s = recent_scope_sets[prop_table][i];
+    if (s) {
+      if (s == t->simple_scopes)
         return;
-      if (scopes_equal(recent_scope_sets[prop_table][i], t->simple_scopes)
-          && (!prop_table || scope_props_equal(recent_scope_sets[prop_table][i], t->simple_scopes))) {
-        t->simple_scopes = recent_scope_sets[prop_table][i];
+      if (scopes_equal(s, t->simple_scopes)
+          && (!prop_table || scope_props_equal(s, t->simple_scopes))) {
+        t->simple_scopes = s;
         return;
       }
     }
