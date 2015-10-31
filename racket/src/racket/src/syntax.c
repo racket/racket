@@ -772,11 +772,11 @@ static int scopes_equal(Scheme_Scope_Set *a, Scheme_Scope_Set *b)
   return (scope_set_count(a) == scope_set_count(b)) && scope_subset(a, b);
 }
 
-static int scope_props_equal(Scheme_Scope_Set *a, Scheme_Scope_Set *b)
+XFORM_NONGCING static int scope_props_equal(Scheme_Scope_Set *a, Scheme_Scope_Set *b)
 {
-  return scheme_hash_tree_equal_rec((Scheme_Hash_Tree *)a, (Scheme_Object *)a,
-                                    (Scheme_Hash_Tree *)b, (Scheme_Object *)b,
-                                    NULL);
+  return ((scope_set_count(a) == scope_set_count(b))
+          && scheme_eq_hash_tree_subset_match_of((Scheme_Hash_Tree *)a,
+                                                 (Scheme_Hash_Tree *)b));
 }
 
 static Scheme_Object *make_fallback_pair(Scheme_Object *a, Scheme_Object *b)
@@ -1798,7 +1798,7 @@ int stx_shorts, stx_meds, stx_longs, stx_couldas;
 # define COUNT_PROPAGATES(x) /* empty */
 #endif
 
-static void intern_scope_set(Scheme_Scope_Table *t, int prop_table)
+XFORM_NONGCING static void intern_scope_set(Scheme_Scope_Table *t, int prop_table)
 /* We don't realy intern, but approximate interning by checking
    against a small set of recently allocated scope sets. That's good
    enough to find sharing for a deeply nested sequence of `let`s from
@@ -1818,8 +1818,8 @@ static void intern_scope_set(Scheme_Scope_Table *t, int prop_table)
     if (s) {
       if (s == t->simple_scopes)
         return;
-      if (scopes_equal(s, t->simple_scopes)
-          && (!prop_table || scope_props_equal(s, t->simple_scopes))) {
+      if ((!prop_table && scopes_equal(s, t->simple_scopes))
+          || (prop_table && scope_props_equal(s, t->simple_scopes))) {
         t->simple_scopes = s;
         return;
       }
