@@ -2950,6 +2950,16 @@ static int hamt_equal_entries(int stype, void *eql_data,
 #define HAMT_USE_FUEL(n) /* empty */
 #include "hamt_subset.inc"
 
+/* fast variant for eq-based dictionaries, where values are compared with `eq?` */
+#define HAMT_NONGCING XFORM_NONGCING
+#define HAMT_SUBSET_OF hamt_eq_subset_match_of
+#define HAMT_ELEMENT_OF hamt_eq_element_match_of
+#define HAMT_ELEMENT_OF_COLLISION hamt_eq_element_match_of_collision
+#define HAMT_EQUAL_ENTRIES(stype, eql_data, k1, v1, k2, v2) (SAME_OBJ(k1, k2) && SAME_OBJ(v1, v2))
+#define HAMT_IF_VAL(v, n) n
+#define HAMT_USE_FUEL(n) /* empty */
+#include "hamt_subset.inc"
+
 static uintptr_t hamt_combine_key_hashes(Scheme_Hash_Tree *ht)
 {
   int popcount, i;
@@ -3028,6 +3038,18 @@ int scheme_eq_hash_tree_subset_of(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2)
     return 0;
   
   return hamt_eq_subset_of(t1, t2, 0, scheme_eq_hash_tree_type, NULL);
+}
+
+int scheme_eq_hash_tree_subset_match_of(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2)
+/* assumes that `t1` and `t2` are sets, as opposed to maps */
+{
+  t1 = resolve_placeholder(t1);
+  t2 = resolve_placeholder(t2);
+
+  if (t1->count > t2->count)
+    return 0;
+
+  return hamt_eq_subset_match_of(t1, t2, 0, scheme_eq_hash_tree_type, NULL);
 }
 
 intptr_t scheme_hash_tree_key_hash(Scheme_Hash_Tree *ht)
