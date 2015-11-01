@@ -214,6 +214,35 @@ Notes (FIXME?):
 
 ;; ========
 
+(define (id-table-keys who d)
+  (let do-keys ([pos (id-table-iterate-first d)])
+    (if (not pos)
+        null
+        (cons (id-table-iterate-key who d pos)
+              (do-keys (id-table-iterate-next who d pos))))))
+
+(define (id-table-values who d identifier->symbol identifier=?)
+  (let do-values ([pos (id-table-iterate-first d)])
+    (if (not pos)
+        null
+        (cons (id-table-iterate-value who d pos identifier->symbol identifier=?)
+              (do-values (id-table-iterate-next who d pos))))))
+
+(define (in-id-table who d identifier->symbol identifier=?)
+  (make-do-sequence
+   (λ ()
+     (values
+      (λ (pos)
+        (values
+         (id-table-iterate-key who d pos)
+         (id-table-iterate-value who d pos identifier->symbol identifier=?)))
+      (λ (pos) (id-table-iterate-next who d pos))
+      (id-table-iterate-first d)
+      values
+      #f #f))))
+
+;; ========
+
 (define (alist-set identifier=? phase l0 id v)
   ;; To minimize allocation
   ;;   - add new pairs to front
@@ -286,6 +315,7 @@ Notes (FIXME?):
           idtbl-count
           idtbl-iterate-first idtbl-iterate-next
           idtbl-iterate-key idtbl-iterate-value
+          idtbl-keys idtbl-values in-idtbl
           idtbl-map idtbl-for-each
           idtbl-mutable-methods idtbl-immutable-methods))
        #'(begin
@@ -331,6 +361,12 @@ Notes (FIXME?):
              (id-table-iterate-key 'idtbl-iterate-key d pos))
            (define (idtbl-iterate-value d pos)
              (id-table-iterate-value 'idtbl-iterate-value d pos identifier->symbol identifier=?))
+           (define (idtbl-keys d)
+             (id-table-keys 'idtbl-keys d))
+           (define (idtbl-values d)
+             (id-table-values 'idtbl-values d identifier->symbol identifier=?))
+           (define (in-idtbl d)
+             (in-id-table 'in-idtbl d identifier->symbol identifier=?))
 
            (define idtbl-mutable-methods
              (vector-immutable idtbl-ref
@@ -388,6 +424,9 @@ Notes (FIXME?):
                     idtbl-iterate-value
                     idtbl-map
                     idtbl-for-each
+                    idtbl-keys
+                    idtbl-values
+                    in-idtbl
 
                     ;; just for use/extension by syntax/id-table
                     idtbl-set/constructor

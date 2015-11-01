@@ -200,6 +200,7 @@
           idtbl-count
           idtbl-iterate-first idtbl-iterate-next
           idtbl-iterate-key idtbl-iterate-value
+          idtbl-keys idtbl-values in-idtbl
           idtbl-map idtbl-for-each
           idtbl-mutable-methods idtbl-immutable-methods
           idtbl/c))
@@ -288,6 +289,12 @@
              (-> idtbl? id-table-iter? identifier?)]
             [idtbl-iterate-value
              (-> idtbl? id-table-iter? any)]
+            [idtbl-keys
+             (-> idtbl? (listof identifier?))]
+            [idtbl-values
+             (-> idtbl? list?)]
+            [in-idtbl
+             (-> idtbl? sequence?)]
             [idtbl-map
              (-> idtbl? (-> identifier? any/c any) list?)]
             [idtbl-for-each

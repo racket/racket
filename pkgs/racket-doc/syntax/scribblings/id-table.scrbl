@@ -155,6 +155,30 @@ Like @racket[hash-remove].
 Like @racket[hash-map].
 }
 
+@defproc[(free-id-table-keys [table free-id-table?])
+         (listof identifier?)]{
+
+Like @racket[hash-keys].
+
+@history[#:added "6.3.0.3"]
+}
+
+@defproc[(free-id-table-values [table free-id-table?])
+         (listof any/c)]{
+
+Like @racket[hash-values].
+
+@history[#:added "6.3.0.3"]
+}
+
+@defproc[(in-free-id-table [table free-id-table?])
+         sequence?]{
+
+Like @racket[in-hash].
+
+@history[#:added "6.3.0.3"]
+}
+
 @defproc[(free-id-table-for-each [table free-id-table?]
                                  [proc (-> identifier? any/c any)])
          void?]{
@@ -247,6 +271,12 @@ etc) can be used on bound-identifier tables.
 @defproc[(bound-id-table-map [table bound-id-table?]
                              [proc (-> identifier? any/c any)])
          list?]
+@defproc[(bound-id-table-keys [table bound-id-table?])
+         (listof identifier?)]
+@defproc[(bound-id-table-values [table bound-id-table?])
+         (listof any/c)]
+@defproc[(in-bound-id-table [table bound-id-table?])
+         sequence?]
 @defproc[(bound-id-table-for-each [table bound-id-table?]
                                   [proc (-> identifier? any/c any)])
          void?]
@@ -273,6 +303,8 @@ Like the procedures for free-identifier tables
 (@racket[make-free-id-table], @racket[free-id-table-ref], etc), but
 for bound-identifier tables, which use @racket[bound-identifier=?] to
 compare keys.
+
+@history[#:changed "6.3.0.3" "Added bound-id-table-keys, bound-id-table-values, in-bound-id-table."]
 }
 
 @close-eval[id-table-eval]
