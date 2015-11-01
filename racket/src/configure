@@ -6583,6 +6583,11 @@ $as_echo "#define MZ_NO_EXTFLONUMS 1" >>confdefs.h
   fi
 fi
 
+if test "${enable_extflonum}" = "yes" ; then
+  $as_echo "#define MZ_INSIST_EXTFLONUMS 1" >>confdefs.h
+
+fi
+
 ############## libffi ################
 
 # Depends on pthread on some platforms

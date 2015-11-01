@@ -93,6 +93,9 @@ typedef struct {
 typedef long double mz_long_double;
 # endif
 #else
+# ifdef MZ_INSIST_EXTFLONUMS
+#  error "cannot support extflonums; you may need to adjust compiler options"
+# endif
 typedef double mz_long_double;
 #endif
 

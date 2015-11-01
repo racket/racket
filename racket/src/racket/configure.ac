@@ -1475,6 +1475,10 @@ if test "${enable_extflonum}" = "default" ; then
   fi
 fi
 
+if test "${enable_extflonum}" = "yes" ; then
+  AC_DEFINE(MZ_INSIST_EXTFLONUMS)
+fi
+
 ############## libffi ################
 
 # Depends on pthread on some platforms
