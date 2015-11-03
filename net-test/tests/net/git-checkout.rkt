@@ -59,7 +59,12 @@
    [else
     (error 'compare "no such file: ~s" a)]))
 
-(when git
+(define (** f . args)
+  (printf "dir: ~a\n" (current-directory))
+  (printf "~a ~a\n" f args)
+  (apply f args))
+
+(when git-exe
   (for ([link-mode '(rel up abs)])
     (define dir (make-temporary-file "~a-git-test" 'directory))
     (define http-custodian (make-custodian))
@@ -96,15 +101,15 @@
                 (make-file-or-directory-link "../x" "abs-x")]
                [else
                 (make-file-or-directory-link "x" "also-x")]))
-           (git "init")
-           (git "add" ".")
-           (git "commit" "-m" "initial commit")
-           (git "update-server-info"))
+           (** git "init")
+           (** git "add" ".")
+           (** git "commit" "-m" "initial commit")
+           (** git "update-server-info"))
          
-         (git-checkout "localhost" #:port 8950 #:transport 'http
+         (** git-checkout "localhost" #:port 8950 #:transport 'http
                        "repo/.git"
                        #:dest-dir "also-repo")
-         (compare "repo" "also-repo")
+         (** compare "repo" "also-repo")
 
          (with-handlers ([exn:fail?
                           (lambda (exn)
@@ -114,14 +119,14 @@
                                    (printf "correct failure\n")
                                    (raise exn))]
                               [else (raise exn)]))])
-           (git-checkout "localhost" #:port 8950 #:transport 'http
+           (** git-checkout "localhost" #:port 8950 #:transport 'http
                          "repo/.git"
                          #:dest-dir "safe-repo"
                          #:strict-links? #t)
            (case link-mode
              [(abs up) (unless (eq? 'windows (system-type))
                          (error "should not have worked"))])
-           (compare "repo" "safe-repo"))
+           (** compare "repo" "safe-repo"))
          
          (void)))
      (lambda ()
