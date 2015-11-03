@@ -59,10 +59,11 @@
    [else
     (error 'compare "no such file: ~s" a)]))
 
-(define (** f . args)
-  (printf "dir: ~a\n" (current-directory))
-  (printf "~a ~a\n" f args)
-  (apply f args))
+(define-syntax-rule (** f args ...)
+  (begin
+    (printf "dir: ~a\n" (current-directory))
+    (printf "~a ~a\n" f (list 'args ...))
+    (f args ...)))
 
 (when git-exe
   (for ([link-mode '(rel up abs)])
