@@ -384,7 +384,31 @@ each element in the sequence.
   content of a directory, use the result of @racket[directory-list] as
   a sequence.
 
-@history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}]}
+@history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}]
+
+Examples:
+
+    @racketblock[
+    (code:comment @#,t{Given a directory tree:})
+    (code:comment @#,t{})
+    (code:comment @#,t{ /example})
+    (code:comment @#,t{ ├── a})
+    (code:comment @#,t{ │   ├── alpha})
+    (code:comment @#,t{ │   └── apple})
+    (code:comment @#,t{ ├── b})
+    (code:comment @#,t{ │   └── beta})
+    (code:comment @#,t{ └── c})
+    (code:comment @#,t{})
+    (code:comment @#,t{Output:})
+    (code:comment @#,t{})
+    (code:comment @#,t{/example/c})
+    (code:comment @#,t{/example/b})
+    (code:comment @#,t{/example/b/beta})
+    (code:comment @#,t{/example/a})
+    (code:comment @#,t{})
+    (let ([f (lambda (path) (regexp-match? #rx"/example/b.*" (path->string path)))])
+      (for ([p (in-directory "/example" f)])
+      (printf "~a\n" p)))]}
 
 
 @defproc*[([(in-producer [producer procedure?])
