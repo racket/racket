@@ -59,16 +59,13 @@
    [else
     (error 'compare "no such file: ~s" a)]))
 
-(require racket/pretty)
-(define-syntax-rule (** f args ...)
-  (begin
-    (printf "dir: ~a\n" (current-directory))
-    (pretty-print (directory-list (current-directory)))
-    (printf "~a ~a\n" f (list 'args ...))
-    (flush-output)
-    (begin0 (f args ...)
-      (printf "completed ~a ~a\n" f (list 'args ...))
-      (flush-output))))
+;; produces a copy of env that omits name
+(define (remove-env-var env name)
+  (define new (make-environment-variables))
+  (for ([n (environment-variables-names env)]
+        #:unless (equal? n name))
+    (environment-variables-set! new n (environment-variables-ref env n)))
+  new)
 
 (when git-exe
   (for ([link-mode '(rel up abs)])
@@ -87,7 +84,9 @@
              #:servlet-regexp #rx"$." ; no servlets
              #:port 8950))))
        
-       (parameterize ([current-directory dir])
+       (define vars (remove-env-var (current-environment-variables) #"GIT_DIR"))
+       (parameterize ([current-directory dir]
+                      [current-environment-variables vars])
          (make-directory "repo")
          (parameterize ([current-directory (build-path dir "repo")])
            (make-file "x" #"hello")
@@ -107,15 +106,15 @@
                 (make-file-or-directory-link "../x" "abs-x")]
                [else
                 (make-file-or-directory-link "x" "also-x")]))
-           (** git "init")
-           (** git "add" ".")
-           (** git "commit" "-m" "initial commit")
-           (** git "update-server-info"))
+           (git "init")
+           (git "add" ".")
+           (git "commit" "-m" "initial commit")
+           (git "update-server-info"))
          
-         (** git-checkout "localhost" #:port 8950 #:transport 'http
+         (git-checkout "localhost" #:port 8950 #:transport 'http
                        "repo/.git"
                        #:dest-dir "also-repo")
-         (** compare "repo" "also-repo")
+         (compare "repo" "also-repo")
 
          (with-handlers ([exn:fail?
                           (lambda (exn)
@@ -125,14 +124,14 @@
                                    (printf "correct failure\n")
                                    (raise exn))]
                               [else (raise exn)]))])
-           (** git-checkout "localhost" #:port 8950 #:transport 'http
+           (git-checkout "localhost" #:port 8950 #:transport 'http
                          "repo/.git"
                          #:dest-dir "safe-repo"
                          #:strict-links? #t)
            (case link-mode
              [(abs up) (unless (eq? 'windows (system-type))
                          (error "should not have worked"))])
-           (** compare "repo" "safe-repo"))
+           (compare "repo" "safe-repo"))
          
          (void)))
      (lambda ()
