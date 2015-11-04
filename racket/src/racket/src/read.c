@@ -3143,10 +3143,11 @@ read_string(int is_byte, Scheme_Object *port,
       case 'U':
 	if (!is_byte) {
 	  int maxc = ((ch == 'u') ? 4 : 8);
-          char initial[8];
+          char initial[9];
 	  ch = scheme_getc_special_ok(port);
 	  if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
 	    int count = 1;
+            initial[0] = ch;
 	    n = ch<='9' ? ch-'0' : (scheme_toupper(ch)-'A'+10);
 	    while (count < maxc) {
 	      ch = scheme_peekc_special_ok(port);
@@ -3158,6 +3159,7 @@ read_string(int is_byte, Scheme_Object *port,
 	      } else
 		break;
 	    }
+            initial[count] = 0;
             if ((maxc == 4) && ((n >= 0xD800) && (n <= 0xDBFF))) {
               /* Allow a surrogate-pair-like encoding, as long as
                  the next part is "\uD..." */
@@ -3202,7 +3204,6 @@ read_string(int is_byte, Scheme_Object *port,
                 else if (NOT_EOF_OR_SPECIAL(ch))
                   snd[sndp++] = ch;
                 snd[sndp] = 0;
-                initial[4] = 0;
                 if (err_ok)
                   scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), ch, indentation,
                                   "read: bad or incomplete surrogate-style encoding at `\\u%s%5'",
