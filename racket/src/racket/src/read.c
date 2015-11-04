@@ -311,7 +311,8 @@ static int next_is_delim(Scheme_Object *port,
 static int skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
 				    Scheme_Hash_Table **ht,
 				    Scheme_Object *indentation,
-				    ReadParams *params, Readtable *table);
+				    ReadParams *params, Readtable *table,
+                                    Scheme_Object **prefetched);
 
 static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, ReadParams *params,
 				     Scheme_Object *port, Scheme_Object *src, intptr_t line, intptr_t col, intptr_t pos,
@@ -448,6 +449,7 @@ void scheme_init_read(Scheme_Env *env)
     }
     builtin_fast[';']  = READTABLE_TERMINATING;
     builtin_fast['\''] = READTABLE_TERMINATING;
+    builtin_fast['`']  = READTABLE_TERMINATING;
     builtin_fast[',']  = READTABLE_TERMINATING;
     builtin_fast['"']  = READTABLE_TERMINATING;
     builtin_fast['|']  = READTABLE_MULTIPLE_ESCAPE;
@@ -874,14 +876,17 @@ static int read_vector_length(Scheme_Object *port, Readtable *table, int *ch, mz
     }
 
     if (!(*overflow)) {
-      intptr_t old_len;
+      uintptr_t old_len;
+      uintptr_t new_len;
 
       if (*vector_length < 0)
         *vector_length = 0;
 
       old_len = *vector_length;
-      *vector_length = ((*vector_length) * 10) + ((*ch) - 48);
-      if ((*vector_length < 0)|| ((*vector_length / 10) != old_len)) {
+      new_len = *vector_length;
+      new_len = ((new_len) * 10) + ((*ch) - 48);
+      *vector_length = new_len;
+      if ((*vector_length < 0) || ((new_len / 10) != old_len)) {
         *overflow = 1;
       }
     }
@@ -893,6 +898,11 @@ static int read_vector_length(Scheme_Object *port, Readtable *table, int *ch, mz
     *vector_length = -2;
   vecbuf[j] = 0;
   tagbuf[i] = 0;
+
+  if (!j) {
+    vecbuf[j] = '0';
+    vecbuf[0] = 0;
+  }
 
   return readtable_effective_char(table, (*ch));
 }
@@ -1847,7 +1857,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
 	      if (!ph) {
 		scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-				"read: no #%ld= preceding #%ld#",
+				"read: no #%d= preceding #%d#",
 				vector_length, vector_length);
 		return scheme_void;
 	      }
@@ -1874,7 +1884,7 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 	      if (*ht) {
 		if (scheme_hash_get(*ht, scheme_make_integer(vector_length))) {
 		  scheme_read_err(port, stxsrc, line, col, pos, SPAN(port, pos), 0, indentation,
-				  "read: multiple #%ld= tags",
+				  "read: multiple #%d= tags",
 				  vector_length);
 		  return NULL;
 		}
@@ -2662,7 +2672,7 @@ read_list(Scheme_Object *port,
     else if (got_ch_already)
       got_ch_already = 0;
     else
-      ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params, table);
+      ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params, table, NULL);
 
     if ((ch == EOF) && (closer != EOF)) {
       char *suggestion = "";
@@ -2754,9 +2764,11 @@ read_list(Scheme_Object *port,
         switch (shape) {
           case mz_shape_fl_vec:
             car = read_flonum(port, NULL, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
+            MZ_ASSERT(SCHEME_DBLP(car));
             break;
           case mz_shape_fx_vec:
             car = read_fixnum(port, NULL, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
+            MZ_ASSERT(SCHEME_INTP(car));
             break;
           default:
 	    car = read_inner(port, stxsrc, ht, indentation, params, RETURN_FOR_SPECIAL_COMMENT);
@@ -2770,7 +2782,7 @@ read_list(Scheme_Object *port,
 
   retry_before_dot:
 
-    ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params, table);
+    ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params, table, NULL);
     effective_ch = readtable_effective_char(table, ch);
     if (effective_ch == closer) {
       if (shape == mz_shape_hash_elem) {
@@ -2819,7 +2831,7 @@ read_list(Scheme_Object *port,
 
       /* can't be eof, due to check above: */
       cdr = read_inner(port, stxsrc, ht, indentation, params, 0);
-      ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params, table);
+      ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params, table, &prefetched);
       effective_ch = readtable_effective_char(table, ch);
       if ((effective_ch != closer) || (shape == mz_shape_vec_plus_infix)) {
 	if (params->can_read_infix_dot 
@@ -2848,14 +2860,15 @@ read_list(Scheme_Object *port,
 	  last = pair;
 
 	  /* Make sure there's not a closing paren immediately after the dot: */
-	  ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params, table);
+	  ch = skip_whitespace_comments(port, stxsrc, ht, indentation, params, table, &prefetched);
           effective_ch = readtable_effective_char(table, ch);
 	  if ((effective_ch == closer) || (ch == EOF)) {
 	    scheme_read_err(port, stxsrc, dotline, dotcol, dotpos, 1, (ch == EOF) ? EOF : 0, indentation,
 			    "read: illegal use of `%c'", ch);
 	    return NULL;
 	  }
-	  got_ch_already = 1;
+          if (!prefetched)
+            got_ch_already = 1;
 	} else {
 	  scheme_read_err(port, stxsrc, dotline, dotcol, dotpos, 1, (ch == EOF) ? EOF : 0, indentation,
 			  "read: illegal use of `%c'",
@@ -2880,14 +2893,25 @@ read_list(Scheme_Object *port,
 	return list;
       }
     } else {
-      if ((ch == SCHEME_SPECIAL) 
-          || (table && (ch != EOF) && (shape != mz_shape_hash_list))) {
+      if ((ch == SCHEME_SPECIAL)
+          || (table
+              && (ch != EOF)
+              && (shape != mz_shape_hash_list)
+              && (shape != mz_shape_fl_vec)
+              && (shape != mz_shape_fx_vec))) {
 	/* We have to try the read, because it might be a comment. */
 	scheme_ungetc(ch, port);
 	prefetched = read_inner(port, stxsrc, ht, indentation, params, 
                                 RETURN_FOR_SPECIAL_COMMENT);
 	if (!prefetched)
 	  goto retry_before_dot;
+        if ((shape == mz_shape_fl_vec) && !SCHEME_DBLP(prefetched)) {
+          scheme_read_err(port, stxsrc, startline, startcol, start, SPAN(port, start), ch, indentation,
+                          "read: stream produced a non-flonum for flvector");
+        } else if ((shape == mz_shape_fx_vec) && !SCHEME_INTP(prefetched)) {
+          scheme_read_err(port, stxsrc, startline, startcol, start, SPAN(port, start), ch, indentation,
+                          "read: stream produced a non-fixnum for fxvector");
+        }
       } else {
 	got_ch_already = 1;
       }
@@ -4111,9 +4135,12 @@ Scheme_Object *scheme_read_intern(Scheme_Object *o)
 static int
 skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
 			 Scheme_Hash_Table **ht, Scheme_Object *indentation,
-                         ReadParams *params, Readtable *table)
+                         ReadParams *params, Readtable *table,
+                         Scheme_Object **_prefetched)
+/* If `_prefetched` is non_NULL, then a SCHEME_SPECIAL result means that
+   the special value has already been read, and it wasn't a comment. */
 {
-  int ch;
+  int ch, effective_ch;
   int blockc_1, blockc_2;
 
   blockc_1 = '#';
@@ -4126,21 +4153,23 @@ skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
       if (!(readtable_kind(table, ch, params) & READTABLE_WHITESPACE))
 	break;
     }
-    return ch;
   } else {
     while ((ch = scheme_getc_special_ok(port), NOT_EOF_OR_SPECIAL(ch) && scheme_isspace(ch))) {}
   }
 
-  if (ch == ';') {
+  effective_ch = readtable_effective_char(table, ch);
+  if (effective_ch == ';') {
     do {
       ch = scheme_getc_special_ok(port);
-      if (ch == SCHEME_SPECIAL)
+      effective_ch = readtable_effective_char(table, ch);
+      if (effective_ch == SCHEME_SPECIAL)
 	scheme_get_ready_read_special(port, stxsrc, ht);
-    } while (!is_line_comment_end(ch) && ch != EOF);
+    } while (!is_line_comment_end(effective_ch) && (effective_ch != EOF));
     goto start_over;
   }
 
-  if (ch == blockc_1 && (scheme_peekc_special_ok(port) == blockc_2)) {
+  if ((effective_ch == blockc_1)
+      && (readtable_effective_char(table, scheme_peekc_special_ok(port)) == blockc_2)) {
     int depth = 0;
     int ch2 = 0;
     intptr_t col, pos, line;
@@ -4150,27 +4179,29 @@ skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
     (void)scheme_getc(port); /* re-read '|' */
     do {
       ch = scheme_getc_special_ok(port);
-
-      if (ch == EOF)
+      effective_ch = readtable_effective_char(table, ch);
+ 
+      if (effective_ch == EOF)
 	scheme_read_err(port, stxsrc, line, col, pos, MINSPAN(port, pos, 2), EOF, indentation,
 			"read: end of file in #| comment");
-      else if (ch == SCHEME_SPECIAL)
+      else if (effective_ch == SCHEME_SPECIAL)
 	scheme_get_ready_read_special(port, stxsrc, ht);
 
-      if ((ch2 == blockc_2) && (ch == blockc_1)) {
+      if ((ch2 == blockc_2) && (effective_ch == blockc_1)) {
 	if (!(depth--))
 	  goto start_over;
-	ch = 0; /* So we don't count '#' toward an opening "#|" */
+	effective_ch = 0; /* So we don't count '#' toward an opening "#|" */
       } else if ((ch2 == blockc_1) && (ch == blockc_2)) {
 	depth++;
-	ch = 0; /* So we don't count '|' toward a closing "|#" */
+	effective_ch = 0; /* So we don't count '|' toward a closing "|#" */
       }
-      ch2 = ch;
+      ch2 = effective_ch;
     } while (1);
 
     goto start_over;
   }
-  if (ch == '#' && (scheme_peekc_special_ok(port) == ';')) {
+  if ((effective_ch == '#')
+      && (readtable_effective_char(table, scheme_peekc_special_ok(port)) == ';')) {
     Scheme_Object *skipped;
     intptr_t col, pos, line;
 
@@ -4193,6 +4224,20 @@ skip_whitespace_comments(Scheme_Object *port, Scheme_Object *stxsrc,
 	v = scheme_null;
       v = scheme_make_pair(skipped, v);
       scheme_hash_set(*ht, unresolved_uninterned_symbol, v);
+    }
+
+    goto start_over;
+  }
+
+  if ((ch == SCHEME_SPECIAL) && _prefetched) {
+    Scheme_Object *v;
+    intptr_t col, pos, line;
+
+    scheme_tell_all(port, &line, &col, &pos);
+    v = scheme_get_special(port, stxsrc, line, col, pos, 0, ht);
+    if (!scheme_special_comment_value(v)) {
+      *_prefetched = v;
+      return SCHEME_SPECIAL;
     }
 
     goto start_over;
@@ -6303,7 +6348,7 @@ static void check_proc_either_arity(const char *who, int a1, int a2, int which, 
 {
   if (!scheme_check_proc_arity(NULL, a1, which, argc, argv)
       && !scheme_check_proc_arity(NULL, a2, which, argc, argv)) {
-    char buffer[60];
+    char buffer[256];
     sprintf(buffer, "(or (procedure-arity-includes/c %d) (procedure-arity-includes/c %d))", a1, a2);
     scheme_wrong_contract(who, buffer, which, argc, argv);
   }

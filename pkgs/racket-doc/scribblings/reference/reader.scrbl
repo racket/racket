@@ -631,7 +631,7 @@ The elements of the vector are recursively read until a matching
 lists (see @secref["parse-pair"]). A delimited @litchar{.} is not
 allowed among the vector elements. In the case of @tech{flvectors},
 the recursive read for element is implicitly prefixed with @litchar{#i}
-and must produce a @tech{flonum}. In the case of @tech{flvectors},
+and must produce a @tech{flonum}. In the case of @tech{fxvectors},
 the recursive read for element is implicitly prefixed with @litchar{#e}
 and must produce a @tech{fixnum}.
 

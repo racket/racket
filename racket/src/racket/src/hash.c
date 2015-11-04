@@ -1331,7 +1331,12 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
   
   t = SCHEME_TYPE(o);
   if (t == scheme_hash_tree_indirection_type) {
-    o = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)o);
+    if (SAME_OBJ(o, orig_obj)) {
+      o = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)o);
+      orig_obj = o;
+    } else {
+      o = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)o);
+    }
     t = SCHEME_TYPE(o);
   }
   
@@ -2064,10 +2069,16 @@ static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi)
       
       return k;
     }
-  case scheme_hash_tree_type:
+  case scheme_hash_tree_indirection_type:
+    if (!SAME_OBJ(o, orig_obj)) {
+      o = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)o);
+    } else {
+      o = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)o);
+      orig_obj = o;
+    }
+  case scheme_hash_tree_type: /* ^^^ fallthrough ^^^ */
   case scheme_eq_hash_tree_type:
   case scheme_eqv_hash_tree_type:
-  case scheme_hash_tree_indirection_type:
     {
       Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)o;
       Scheme_Object *iv, *ik;

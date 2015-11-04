@@ -104,6 +104,10 @@ Two @tech{fxvectors} are @racket[equal?] if they have the same length,
 and if the values in corresponding slots of the @tech{fxvectors} are
 @racket[equal?].
 
+A printed @tech{fxvector} starts with @litchar{#fx(}, optionally with
+a number between the @litchar{#fx} and
+@litchar{(}. @see-read-print["vector" #:print "vectors"]{fxvectors}
+
 @defproc[(fxvector? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{fxvector}, @racket[#f] otherwise.}
