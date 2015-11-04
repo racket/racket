@@ -59,11 +59,16 @@
    [else
     (error 'compare "no such file: ~s" a)]))
 
+(require racket/pretty)
 (define-syntax-rule (** f args ...)
   (begin
     (printf "dir: ~a\n" (current-directory))
+    (pretty-print (directory-list (current-directory)))
     (printf "~a ~a\n" f (list 'args ...))
-    (f args ...)))
+    (flush-output)
+    (begin0 (f args ...)
+      (printf "completed ~a ~a\n" f (list 'args ...))
+      (flush-output))))
 
 (when git-exe
   (for ([link-mode '(rel up abs)])
@@ -84,7 +89,7 @@
        
        (parameterize ([current-directory dir])
          (make-directory "repo")
-         (parameterize ([current-directory "repo"])
+         (parameterize ([current-directory (build-path dir "repo")])
            (make-file "x" #"hello")
            (make-file "y" #"goodbye")
            (unless (eq? (system-type) 'windows)
