@@ -30,6 +30,8 @@
                 normal)
             (list "different with readtable" s c-normal rt)))))
 
+(require racket/extflonum)
+
 (define (adjust-result-to-compare v)
   ;; Make results from two readstrs comparable
   (cond
@@ -41,6 +43,7 @@
                      (hash-set vht hv #t))
                    (hash)))]
    [(exn? v) (exn-message v)]
+   [(extflonum? v) (format "~s" v)]
    [else v]))
 
 (define readerrtype
