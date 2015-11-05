@@ -2175,7 +2175,7 @@ void scheme_read_err(Scheme_Object *port,
 
     if (port) {
       Scheme_Object *pn;
-      pn = SCHEME_IPORT_NAME(port);
+      pn = scheme_input_port_record(port)->name;
       if (SCHEME_PATHP(pn)) {
 	pn = scheme_remove_current_directory_prefix(pn);
 	fn = SCHEME_PATH_VAL(pn);

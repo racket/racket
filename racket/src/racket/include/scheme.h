@@ -1545,10 +1545,6 @@ struct Scheme_Output_Port
   struct Scheme_Input_Port *input_half;
 };
 
-#define SCHEME_INPORT_VAL(obj) (((Scheme_Input_Port *)(obj))->port_data)
-#define SCHEME_OUTPORT_VAL(obj) (((Scheme_Output_Port *)(obj))->port_data)
-#define SCHEME_IPORT_NAME(obj) (((Scheme_Input_Port *)obj)->name)
-
 #define SCHEME_SPECIAL (-2)
 #define SCHEME_UNLESS_READY (-3)
 

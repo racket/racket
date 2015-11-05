@@ -889,5 +889,23 @@
   (delete-file path))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check reader error-message formatting for a struct port
+
+(let ()
+  (define-struct wrapper (other port)
+    #:property prop:input-port 1)
+  (err/rt-test
+   (read (wrapper #f
+                  (make-input-port "wrapped"
+                                   (lambda (bstr)
+                                     (bytes-set! bstr 0 (char->integer #\)))
+                                     1)
+                                   (lambda (bstr d evt)
+                                     (bytes-set! bstr 0 (char->integer #\)))
+                                     1)
+                                   void)))
+   exn:fail:read?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
