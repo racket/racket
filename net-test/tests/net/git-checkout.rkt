@@ -59,14 +59,6 @@
    [else
     (error 'compare "no such file: ~s" a)]))
 
-;; produces a copy of env that omits name
-(define (remove-env-var env name)
-  (define new (make-environment-variables))
-  (for ([n (environment-variables-names env)]
-        #:unless (equal? n name))
-    (environment-variables-set! new n (environment-variables-ref env n)))
-  new)
-
 (when git-exe
   (for ([link-mode '(rel up abs)])
     (define dir (make-temporary-file "~a-git-test" 'directory))
@@ -84,9 +76,10 @@
              #:servlet-regexp #rx"$." ; no servlets
              #:port 8950))))
        
-       (define vars (remove-env-var (current-environment-variables) #"GIT_DIR"))
        (parameterize ([current-directory dir]
-                      [current-environment-variables vars])
+                      [current-environment-variables
+                       (environment-variables-copy (current-environment-variables))])
+         (environment-variables-set! (current-environment-variables) #"GIT_DIR" #f)
          (make-directory "repo")
          (parameterize ([current-directory (build-path dir "repo")])
            (make-file "x" #"hello")
