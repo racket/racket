@@ -2737,7 +2737,7 @@ typedef struct Scheme_Closure_Data
 
 XFORM_NONGCING void scheme_boxmap_set(mzshort *boxmap, int j, int bit, int delta);
 XFORM_NONGCING int scheme_boxmap_get(mzshort *boxmap, int j, int delta);
-XFORM_NONGCING int boxmap_size(int n);
+XFORM_NONGCING int scheme_boxmap_size(int n);
 
 int scheme_has_method_property(Scheme_Object *code);
 
