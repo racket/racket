@@ -121,7 +121,7 @@ supply them in binary form.
 The DLLs are distributed in packages, but they are also available
 from
  
-    https://github.com/plt/libs
+    https://github.com/racket/libs
 
 and they must be installed into
 
