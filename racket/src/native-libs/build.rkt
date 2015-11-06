@@ -116,6 +116,9 @@
 ;; Avoid CGFontGetGlyphPath:
 (define-runtime-path cairo-cgfontgetglpyh-patch "patches/cgfontgetglyph.patch")
 
+;; Patch to avoid writing to a global constant:
+(define-runtime-path cairo-allclipmodifybug-patch "patches/allclipmodifybug.patch")
+
 ;; Hack to workaround broken Courier New in Mac OS X 10.{7.8}:
 (define-runtime-path courier-new-patch "patches/courier-new.patch")
 
@@ -419,6 +422,7 @@
 				       null)
                        #:patches (list cairo-coretext-patch
                                        cairo-cgfontgetglpyh-patch
+                                       cairo-allclipmodifybug-patch
                                        courier-new-patch
                                        win32cairofallback-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
