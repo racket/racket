@@ -22,7 +22,7 @@
                   [flat-contracts '()]
                   [args args])
          (cond
-           [(null? args) (values (reverse ho-contracts) (reverse flat-contracts))]
+           [(null? args) (values ho-contracts (reverse flat-contracts))]
            [else 
             (let ([arg (car args)])
               (cond
@@ -242,18 +242,36 @@
           [else
            (let loop ([checks first-order-checks]
                       [procs partial-contracts]
-                      [contracts ho-contracts])
+                      [contracts ho-contracts]
+                      [candidate-proc #f]
+                      [candidate-contract #f])
              (cond
                [(null? checks)
-                (raise-blame-error blame val 
-                                   '("none of the branches of the or/c matched" given: "~e")
-                                   val)]
+                (if candidate-proc
+                    (candidate-proc val)
+                    (raise-blame-error blame val 
+                                       '("none of the branches of the or/c matched" given: "~e")
+                                       val))]
                [((car checks) val)
-                ((car procs) val)]
+                (if candidate-proc
+                    (raise-blame-error blame val
+                                       '("two of the clauses in the or/c might both match: ~s and ~s"
+                                         given:
+                                         "~e")
+                                       (contract-name candidate-contract)
+                                       (contract-name (car contracts))
+                                       val)
+                    (loop (cdr checks)
+                          (cdr procs)
+                          (cdr contracts)
+                          (car procs)
+                          (car contracts)))]
                [else
                 (loop (cdr checks)
                       (cdr procs)
-                      (cdr contracts))]))])))))
+                      (cdr contracts)
+                      candidate-proc
+                      candidate-contract)]))])))))
 
 (define (multi-or/c-late-neg-proj ctc)  
   (define ho-contracts (multi-or/c-ho-ctcs ctc))
@@ -271,18 +289,38 @@
         [else
          (let loop ([checks first-order-checks]
                     [c-projs c-projs+blame]
-                    [contracts ho-contracts])
+                    [contracts ho-contracts]
+                    [candidate-c-proj #f]
+                    [candidate-contract #f])
            (cond
              [(null? checks)
-              (raise-blame-error blame val #:missing-party neg-party
-                                 '("none of the branches of the or/c matched" given: "~e")
-                                 val)]
+              (cond
+                [candidate-c-proj
+                 (candidate-c-proj val neg-party)]
+                [else
+                 (raise-blame-error blame val #:missing-party neg-party
+                                    '("none of the branches of the or/c matched" given: "~e")
+                                    val)])]
              [((car checks) val)
-              ((car c-projs) val neg-party)]
+              (if candidate-c-proj
+                  (raise-blame-error blame val #:missing-party neg-party
+                                     '("two of the clauses in the or/c might both match: ~s and ~s"
+                                       given:
+                                       "~e")
+                                     (contract-name candidate-contract)
+                                     (contract-name (car contracts))
+                                     val)
+                  (loop (cdr checks)
+                        (cdr c-projs)
+                        (cdr contracts)
+                        (car c-projs)
+                        (car contracts)))]
              [else
               (loop (cdr checks)
                     (cdr c-projs)
-                    (cdr contracts))]))]))))
+                    (cdr contracts)
+                    candidate-c-proj
+                    candidate-contract)]))]))))
 
 (define (multi-or/c-first-order ctc)
   (let ([flats (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))]
