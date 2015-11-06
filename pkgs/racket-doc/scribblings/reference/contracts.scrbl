@@ -182,25 +182,21 @@ If there are multiple higher-order contracts, @racket[or/c] uses
 them. More precisely, when an @racket[or/c] is checked, it first
 checks all of the @tech{flat contracts}. If none of them pass, it
 calls @racket[contract-first-order-passes?] with each of the
-higher-order contracts, taking the first one that returns
-true as the contract for the value.
-
+higher-order contracts. If only one returns true, @racket[or/c] uses
+that contract. If none of them return true, it signals a contract
+violation. If more than one returns true, it also signals a contract
+violation.
 For example, this contract
 @racketblock[
 (or/c (-> number? number?)
       (-> string? string? string?))
 ]
-accepts a function like this one: @racket[(lambda args ...)],
-using the @racket[(-> number? number?)] contract on it, ignoring
-the @racket[(-> string? string? string?)] contract since it came
-second.
+does not accept a function like this one: @racket[(lambda args ...)]
+since it cannot tell which of the two arrow contracts should be used
+with the function.
 
 If all of its arguments are @racket[list-contract?]s, then @racket[or/c]
 returns a @racket[list-contract?].
-
-@history[#:changed "6.3" @list{Adjusted @racket[or/c] so that it
-  takes the first higher-order contract instead of insisting that
-  there be exactly one higher-order contract for a given value.}]
 }
 
 @defproc[(and/c [contract contract?] ...) contract?]{
