@@ -6721,6 +6721,8 @@ Scheme_Scope_Set *list_to_scope_set(Scheme_Object *l, Scheme_Unmarshal_Tables *u
   Scheme_Scope_Set *scopes = NULL;
   Scheme_Object *r = scheme_null, *scope;
 
+  if (scheme_proper_list_length(l) < 0) return_NULL;
+
   while (!SCHEME_NULLP(l)) {
     if (!SCHEME_PAIRP(l)) return_NULL;
     scopes = (Scheme_Scope_Set *)scheme_hash_get_either(ut->rns, ut->current_rns, l);
@@ -6811,6 +6813,8 @@ Scheme_Object *unmarshal_multi_scopes(Scheme_Object *multi_scopes,
     l = mm_l;
     if (SCHEME_FALLBACKP(l))
       l = SCHEME_FALLBACK_FIRST(l);
+
+    if (scheme_proper_list_length(l) < 0) return_NULL;
 
     l_first = scheme_null;
     l_last = NULL;
