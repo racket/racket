@@ -1129,8 +1129,6 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 
   base_phase = env->phase;
 
-  scheme_prepare_compile_env(env);
-
   m = module_load(modname, env, errname);
   srcm = m;
 
