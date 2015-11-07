@@ -384,11 +384,7 @@ each element in the sequence.
   content of a directory, use the result of @racket[directory-list] as
   a sequence.
 
-@history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}]
-
-Examples:
-
-    @racketblock[
+@examples[
     (code:comment @#,t{Given a directory tree:})
     (code:comment @#,t{})
     (code:comment @#,t{ /example})
@@ -399,16 +395,38 @@ Examples:
     (code:comment @#,t{ │   └── beta})
     (code:comment @#,t{ └── c})
     (code:comment @#,t{})
-    (code:comment @#,t{Output:})
-    (code:comment @#,t{})
-    (code:comment @#,t{/example/c})
-    (code:comment @#,t{/example/b})
-    (code:comment @#,t{/example/b/beta})
-    (code:comment @#,t{/example/a})
-    (code:comment @#,t{})
-    (let ([f (lambda (path) (regexp-match? #rx"/example/b.*" (path->string path)))])
-      (for ([p (in-directory "/example" f)])
-      (printf "~a\n" p)))]}
+    (eval:alts
+      (parameterize ([current-directory "/example"])
+        (for ([p (in-directory)])
+          (printf "~a\n" p)))
+      (for ([p (in-list '("a"
+                          "a/alpha"
+                          "a/apple"
+                          "b"
+                          "b/beta"
+                          "c"))])
+        (printf "~a\n" p)))
+    (eval:alts
+      (for ([p (in-directory "/example")])
+        (printf "~a\n" p))
+      (for ([p (in-list '("/example/a"
+                          "/example/a/alpha"
+                          "/example/a/apple"
+                          "/example/b"
+                          "/example/b/beta"
+                          "/example/c"))])
+        (printf "~a\n" p)))
+    (eval:alts
+      (let ([f (lambda (path) (regexp-match? #rx"/example/b.*" path))])
+        (for ([p (in-directory "/example" f)])
+          (printf "~a\n" p)))
+      (for ([p (in-list '("/example/a"
+                          "/example/b"
+                          "/example/b/beta"
+                          "/example/c"))])
+        (printf "~a\n" p)))]
+
+@history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}]}
 
 
 @defproc*[([(in-producer [producer procedure?])
