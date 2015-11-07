@@ -1,0 +1,21 @@
+diff -r -u old/pango-1.36.6/pango/pangocoretext-fontmap.c new/pango-1.36.6/pango/pangocoretext-fontmap.c
+--- old/pango-1.36.6/pango/pangocoretext-fontmap.c	2015-11-07 08:15:41.000000000 -0700
++++ new/pango-1.36.6/pango/pangocoretext-fontmap.c	2015-11-07 08:16:56.000000000 -0700
+@@ -649,7 +649,7 @@
+ 
+       italic_faces = g_hash_table_new (g_direct_hash, g_direct_equal);
+ 
+-      count = CFArrayGetCount (ctfaces);
++      count = (ctfaces ? CFArrayGetCount (ctfaces) : 0);
+       for (i = 0; i < count; i++)
+         {
+           PangoCoreTextFace *face;
+@@ -669,7 +669,7 @@
+ 
+       CFRelease (font_descriptors);
+       CFRelease (attributes);
+-      CFRelease (ctfaces);
++      if (ctfaces) CFRelease (ctfaces);
+ 
+       /* For all fonts for which a non-synthetic italic variant does
+        * not exist on the system, we create synthesized versions here.

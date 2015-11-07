@@ -128,6 +128,9 @@
 ;; Support registration of extra font families:
 (define-runtime-path coretext-fontreg-patch "patches/coretext-fontreg.patch")
 
+;; Avoid crash when CTFontCollectionCreateMatchingFontDescriptors fails:
+(define-runtime-path coretext-nullarray "patches/coretext-nullarray.patch")
+
 ;; Enable "symbol" fonts, and fix off-by-one:
 (define-runtime-path win32text-patch "patches/win32text.patch")
 
@@ -441,6 +444,7 @@
 				      "--with-dynamic-modules=no"))
                        #:patches (list coretext-patch
                                        coretext-fontreg-patch
+                                       coretext-nullarray
                                        win32text-patch))]
     [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
                      #:configure (append
