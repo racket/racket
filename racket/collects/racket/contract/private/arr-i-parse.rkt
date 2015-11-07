@@ -142,6 +142,7 @@ code does the parsing and validation of the syntax.
     ;; no dups in the rest var
     (when (istx-rst istx)
       (when (arg/res-vars (istx-rst istx))
+        (ensure-bound (arg/res-vars (istx-rst istx)))
         (not-range-bound (arg/res-vars (istx-rst istx)) #t))
       (no-var-dups (arg/res-var (istx-rst istx))))
     
