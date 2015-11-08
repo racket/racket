@@ -93,7 +93,7 @@
       (cond 
        [(pred val) val]
        [(c-first-order val) (p-app val neg-party)]
-       [else (raise-none-or-matched blame val #f)]))))
+       [else (raise-none-or-matched blame val neg-party)]))))
 
 (define (blame-add-or-context blame)
   (blame-add-context blame "a part of the or/c of"))
