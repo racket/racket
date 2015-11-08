@@ -424,13 +424,14 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
             SFS_LOG(printf(" |%d %d %d\n", i + t_min_t, n, info->max_nontail));
             info->max_used[i + t_min_t] = n;
             info->max_calls[i + t_min_t] = info->max_nontail;
-          }
+          } else
+            SCHEME_VEC_ELS(t_vec)[i] = scheme_false;
         }
       }
     }
     /* If the other branch has last use for something not used in this
        branch, and if there's a non-tail call in this branch
-       of later, then we'll have to start with explicit clears. 
+       or later, then we'll have to start with explicit clears.
        Note that it doesn't matter whether the other branch actually
        clears them (i.e., the relevant non-tail call might be only
        in this branch). */
@@ -456,7 +457,7 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
             n = SCHEME_INT_VAL(o);
             pos = i + t_min_t;
             at_ip = info->max_used[pos];
-            SFS_LOG(printf(" ?%d %d %d\n", pos, n, at_ip));
+            SFS_LOG(printf(" ?%d[%d] %d %d\n", pos, i, n, at_ip));
             /* is last use in other branch? */
             if (((!delta && (at_ip == ip))
                  || (delta && (at_ip == n)))) {
@@ -526,6 +527,25 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
   return tbranch;
 }
 
+static void sfs_restore_one_branch(SFS_Info *info, int ip,
+                                   Scheme_Object *vec, int delta)
+{
+  int t_min_t, t_cnt, i;
+  Scheme_Object *t_vec;
+
+  t_vec = SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 1];
+
+  if (SCHEME_FALSEP(t_vec)) return;
+
+  t_min_t = SCHEME_INT_VAL(SCHEME_VEC_ELS(vec)[delta * SFS_BRANCH_W]);
+  t_cnt = SCHEME_VEC_SIZE(t_vec);
+
+  for (i = 0; i < t_cnt; i++) {
+    if (SCHEME_TRUEP(SCHEME_VEC_ELS(t_vec)[i]))
+      info->max_used[i + t_min_t] = ip;
+  }
+}
+
 static Scheme_Object *sfs_branch(Scheme_Object *o, SFS_Info *info)
 {
   Scheme_Branch_Rec *b;
@@ -577,6 +597,14 @@ static Scheme_Object *sfs_branch(Scheme_Object *o, SFS_Info *info)
       max_t = info->max_touch;
     if (info->max_nontail > ip + 1)
       info->max_nontail = ip + 1;
+  }
+
+  if (info->pass) {
+    /* Restore "outside" view for both branches, so that
+       the numbers after `if` for the second pass match
+       the numbers after the first pass: */
+    sfs_restore_one_branch(info, ip, vec, 0);
+    sfs_restore_one_branch(info, ip, vec, 1);
   }
 
   SFS_LOG(printf(" done if: %d %d\n", min_t, max_t));
