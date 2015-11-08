@@ -1960,11 +1960,12 @@ contracts is @racketresult[anonymous-chaperone-contract], and for flat
 contracts is @racketresult[anonymous-flat-contract].
 
 The first-order predicate @racket[test] can be used to determine which values
-the contract applies to; usually, this is the set of values for which the
+the contract applies to; this must be the set of values for which the
 contract fails immediately without any higher-order wrapping.  This test is used
-by @racket[contract-first-order-passes?], and indirectly by @racket[or/c] to
-determine which of multiple higher-order contracts to wrap a value with.  The
-default test accepts any value.
+by @racket[contract-first-order-passes?], and indirectly by @racket[or/c]
+ and @racket[from-or/c] to determine which higher-order contract to wrap a
+ value with when there are multiple higher-order contracts to choose from.
+ The default test accepts any value.
 
 The @racket[late-neg-proj] defines the behavior of applying the contract. If it is
 supplied, it accepts a blame object that does not have a value for
@@ -1985,6 +1986,11 @@ higher-order aspects of the contract, or signal a contract violation using
 first-order test fails, and produces the value unchanged otherwise.
 The @racket[val-first-proj] is like @racket[late-neg-proj], except with
 an extra layer of currying.
+
+The projection arguments (@racket[late-neg-proj], @racket[proj], and
+ @racket[val-first-proj]) must be in sync with the @racket[test] argument.
+ In particular, if the test argument returns @racket[#f] for some value,
+ then the projections must raise a blame error for that value.
 
 Projections for chaperone contracts must produce a value that passes
 @racket[chaperone-of?] when compared with the original, uncontracted value.
