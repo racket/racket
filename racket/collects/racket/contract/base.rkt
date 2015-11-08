@@ -50,7 +50,7 @@
              check-between/c
              check-unary-between/c
              random-any/c)
- symbols or/c one-of/c
+ symbols or/c first-or/c one-of/c
  flat-rec-contract
  provide/contract
  ;(for-syntax make-provide/contract-transformer) ;; not documented!

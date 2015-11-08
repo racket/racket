@@ -58,6 +58,7 @@
 (check-not-exn (λ () (test-contract-generation (=/c 0))))
 (check-not-exn (λ () (test-contract-generation (=/c 0.0))))
 (check-not-exn (λ () (test-contract-generation (or/c boolean? boolean?))))
+(check-not-exn (λ () (test-contract-generation (first-or/c boolean? boolean?))))
 (check-not-exn (λ () (test-contract-generation (cons/c integer? boolean?))))
 (check-not-exn (λ () (test-contract-generation (cons/dc [hd integer?] [tl (hd) (<=/c hd)]))))
 (check-not-exn (λ () (test-contract-generation (cons/dc [hd (tl) (<=/c tl)] [tl integer?]))))
@@ -69,6 +70,7 @@
 (check-not-exn (λ () (test-contract-generation (and/c procedure? (-> integer? integer?)))))
 (check-not-exn (λ () (test-contract-generation (and/c integer? even?))))
 (check-not-exn (λ () (test-contract-generation (or/c (and/c real? positive? (</c 0)) boolean?))))
+(check-not-exn (λ () (test-contract-generation (first-or/c (and/c real? positive? (</c 0)) boolean?))))
 
 (check-not-exn (λ () (test-contract-generation (listof boolean?))))
 (check-not-exn (λ () (test-contract-generation (listof some-crazy-predicate?))))
@@ -88,12 +90,25 @@
 (check-not-exn
  (λ ()
    (test-contract-generation
+    (flat-rec-contract
+     even-length-list/c
+     (first-or/c (cons/c any/c (cons/c any/c even-length-list/c))
+            '())))))
+
+(check-not-exn
+ (λ ()
+   (test-contract-generation
     null?)))
 
 (check-not-exn
  (λ ()
    (test-contract-generation
     (letrec ([c (or/c null? (cons/c real? (recursive-contract c)))])
+      c))))
+(check-not-exn
+ (λ ()
+   (test-contract-generation
+    (letrec ([c (first-or/c null? (cons/c real? (recursive-contract c)))])
       c))))
 
 (check-not-exn
@@ -119,6 +134,17 @@
                       [l tree/c]
                       [r tree/c])
            #f)))))
+(check-not-exn
+ (λ ()
+   (struct node (v l r) #:transparent)
+   (test-contract-generation
+    (flat-rec-contract
+     tree/c
+     (first-or/c (struct/dc node
+                       [v integer?]
+                       [l tree/c]
+                       [r tree/c])
+            #f)))))
 
 (check-exn exn:fail? (λ () ((test-contract-generation (-> char? integer?)) 0)))
 (check-not-exn (λ () ((test-contract-generation (-> integer? integer?)) 1)))
@@ -149,6 +175,7 @@
 
 
 (check-not-exn (lambda () (test-contract-generation (or/c #f number?))))
+(check-not-exn (lambda () (test-contract-generation (first-or/c #f number?))))
 (check-not-exn (lambda () (test-contract-generation (or/c some-crazy-predicate?
                                                           some-crazy-predicate?
                                                           some-crazy-predicate?
@@ -160,14 +187,34 @@
                                                           some-crazy-predicate?
                                                           some-crazy-predicate?
                                                           #f))))
+(check-not-exn (lambda () (test-contract-generation (first-or/c some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           some-crazy-predicate?
+                                                           #f))))
 (check-exn cannot-generate-exn? (λ () (test-contract-generation 
                                        (or/c some-crazy-predicate?
                                              some-crazy-predicate?))))
+(check-exn cannot-generate-exn? (λ () (test-contract-generation 
+                                       (first-or/c some-crazy-predicate?
+                                              some-crazy-predicate?))))
 
 ;; testing a bunch of impossible and/c's inside some or/c doesn't crash
 (check-not-exn (λ () (test-contract-generation 
                       (or/c (or/c (and/c integer? boolean?)
                                   (and/c (listof integer?) string?))
+                            (and/c (-> number? number?)
+                                   any/c
+                                   number?)))))
+(check-not-exn (λ () (test-contract-generation 
+                      (first-or/c (first-or/c (and/c integer? boolean?)
+                                    (and/c (listof integer?) string?))
                             (and/c (-> number? number?)
                                    any/c
                                    number?)))))
@@ -285,11 +332,25 @@
            (λ (x) (if x 'fail 11))
            'pos
            'neg))
+(check-exercise
+ 10000
+ pos-exn?
+ (contract (-> (first-or/c #f some-crazy-predicate?) some-crazy-predicate?)
+           (λ (x) (if x 'fail 11))
+           'pos
+           'neg))
 
 (check-exercise
  10000
  pos-exn?
  (contract (-> (or/c #f some-crazy-predicate?) (or/c #f some-crazy-predicate?))
+           (λ (x) (if x 'fail 11))
+           'pos
+           'neg))
+(check-exercise
+ 10000
+ pos-exn?
+ (contract (-> (first-or/c #f some-crazy-predicate?) (first-or/c #f some-crazy-predicate?))
            (λ (x) (if x 'fail 11))
            'pos
            'neg))

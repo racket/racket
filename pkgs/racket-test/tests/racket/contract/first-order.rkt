@@ -130,6 +130,27 @@
               (-> integer? integer?))
         1)
 
+  (ctest #t contract-first-order-passes? (first-or/c (-> (>=/c 5) (>=/c 5)) boolean?) #t)
+  (ctest #t contract-first-order-passes? (first-or/c (-> (>=/c 5) (>=/c 5)) boolean?) (λ (x) x))
+  (ctest #f contract-first-order-passes? (first-or/c (-> (>=/c 5) (>=/c 5)) boolean?) 'x)
+
+  (ctest #t contract-first-order-passes?
+         (first-or/c (-> integer? integer? integer?)
+                (-> integer? integer?))
+         (λ (x) x))
+  (ctest #t contract-first-order-passes?
+         (first-or/c (-> integer? integer? integer?)
+                (-> integer? integer?))
+         (λ (x y) x))
+  (ctest #f contract-first-order-passes?
+         (first-or/c (-> integer? integer? integer?)
+                (-> integer? integer?))
+         (λ () x))
+  (ctest #f contract-first-order-passes?
+         (first-or/c (-> integer? integer? integer?)
+                (-> integer? integer?))
+         1)
+
   (ctest #t contract-first-order-passes? (hash/c any/c any/c) (make-hash))
   (ctest #f contract-first-order-passes? (hash/c any/c any/c) #f)
   (ctest #f contract-first-order-passes? (hash/c symbol? boolean?) (let ([ht (make-hash)])
@@ -174,6 +195,12 @@
   (ctest #t contract-first-order-passes? (or/c 'x "x" #rx"x.") "xy")
   (ctest #f contract-first-order-passes? (or/c 'x "x" #rx"x.") "yx")
   (ctest #f contract-first-order-passes? (or/c 'x "x" #rx"x.") 'y)
+  
+  (ctest #t contract-first-order-passes? (first-or/c 'x "x" #rx"x") 'x)
+  (ctest #t contract-first-order-passes? (first-or/c 'x "x" #rx"x") "x")
+  (ctest #t contract-first-order-passes? (first-or/c 'x "x" #rx"x.") "xy")
+  (ctest #f contract-first-order-passes? (first-or/c 'x "x" #rx"x.") "yx")
+  (ctest #f contract-first-order-passes? (first-or/c 'x "x" #rx"x.") 'y)
   
   (ctest #f contract-first-order-passes? (->m integer? integer?) (λ (x) 1))
   (ctest #t contract-first-order-passes? (->m integer? integer?) (λ (this x) 1))

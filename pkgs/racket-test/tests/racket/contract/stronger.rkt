@@ -108,6 +108,38 @@
   (ctest #t contract-stronger? (-> (or/c #f number?) any/c) (-> number? any/c))
   (ctest #f contract-stronger? (-> (or/c #f number?)) (-> number?))
   (ctest #f contract-stronger? (-> number? any/c) (-> (or/c #f number?) any/c))
+
+  (ctest #t contract-stronger? (first-or/c null? any/c) (first-or/c null? any/c))
+  (ctest #f contract-stronger? (first-or/c null? any/c) (first-or/c boolean? any/c))
+  (ctest #t contract-stronger? (first-or/c null? boolean?) (first-or/c null? boolean?))
+  (ctest #t contract-stronger? (first-or/c null? boolean?) (first-or/c boolean? null?))
+  (ctest #t contract-stronger? 
+         (first-or/c null? (-> integer? integer?))
+         (first-or/c null? (-> integer? integer?)))
+  (ctest #f contract-stronger?
+         (first-or/c null? (-> boolean? boolean?))
+         (first-or/c null? (-> integer? integer?)))
+  (ctest #f contract-stronger? (first-or/c number? #f) number?)
+  (ctest #t contract-stronger? number? (first-or/c number? #f))
+  (ctest #f contract-stronger? (first-or/c (-> number? number?) #f) (-> number? number?))
+  (ctest #t contract-stronger? (-> number? number?) (first-or/c (-> number? number?) #f))
+  (ctest #f contract-stronger? (first-or/c (-> number? number?) (-> number? number? number?) #f) #f)
+  (ctest #t contract-stronger? #f (first-or/c (-> number? number?) (-> number? number? number?) #f))
+  (ctest #t contract-stronger? (first-or/c real?) (first-or/c integer? real?))
+  (ctest #t contract-stronger? (-> number?) (-> (first-or/c #f number?)))
+  (ctest #t contract-stronger? (-> (first-or/c #f number?) any/c) (-> number? any/c))
+  (ctest #f contract-stronger? (-> (first-or/c #f number?)) (-> number?))
+  (ctest #f contract-stronger? (-> number? any/c) (-> (first-or/c #f number?) any/c))
+
+  (ctest #t contract-stronger? (first-or/c null? any/c) (or/c null? any/c))
+  (ctest #f contract-stronger? (first-or/c null? any/c) (or/c boolean? any/c))
+  (ctest #t contract-stronger? (first-or/c null? boolean?) (or/c null? boolean?))
+  (ctest #t contract-stronger? (first-or/c null? boolean?) (or/c boolean? null?))
+
+  (ctest #t contract-stronger? (or/c null? any/c) (first-or/c null? any/c))
+  (ctest #f contract-stronger? (or/c null? any/c) (first-or/c boolean? any/c))
+  (ctest #t contract-stronger? (or/c null? boolean?) (first-or/c null? boolean?))
+  (ctest #t contract-stronger? (or/c null? boolean?) (first-or/c boolean? null?))
   
   (ctest #t contract-stronger? number? number?)
   (ctest #f contract-stronger? boolean? number?)
@@ -226,6 +258,10 @@
    `(let ()
       (define x (flat-rec-contract x (or/c (cons/c x '()) '())))
       (,test #t contract-stronger? x (or/c (cons/c x '()) '()))))
+  (contract-eval
+   `(let ()
+      (define x (flat-rec-contract x (first-or/c (cons/c x '()) '())))
+      (,test #t contract-stronger? x (first-or/c (cons/c x '()) '()))))
   
   (ctest #t contract-stronger? "x" string?)
   (ctest #f contract-stronger? string? "x")
@@ -263,10 +299,13 @@
   (ctest #f contract-stronger? (syntax/c (<=/c 4)) (syntax/c (<=/c 3)))
   
   (ctest #t contract-stronger? (parametric->/c (x) (-> x x)) (parametric->/c (x) (-> x (or/c x #f))))
+  (ctest #t contract-stronger? (parametric->/c (x) (-> x x)) (parametric->/c (x) (-> x (first-or/c x #f))))
   (ctest #f contract-stronger? (parametric->/c (x y) (-> x y)) (parametric->/c (x y) (-> x x y)))
   (contract-eval `(define α (new-∀/c)))
   (ctest #t contract-stronger? (-> α α) (-> α (or/c #f α)))
   (ctest #f contract-stronger? (-> α (or/c #f α)) (-> α α))
+  (ctest #t contract-stronger? (-> α α) (-> α (first-or/c #f α)))
+  (ctest #f contract-stronger? (-> α (first-or/c #f α)) (-> α α))
   
   (ctest #t contract-stronger?
          (class/c (m (-> any/c (<=/c 3))))
@@ -429,6 +468,64 @@
 
       (define (sorted-list/less-than n)
         (or/c null?
+              (couple/dc
+               [hd (<=/c n)]
+               [tl (hd) (sorted-list/less-than hd)])))
+
+      ;; for some reason, the `n' makes it harder to optimize. 
+      ;; without it, this test isn't as good a test
+      (define (closure-comparison-test n)
+        (couple/dc
+         [hd any/c]
+         [tl (hd) any/c]))
+
+      (,test #t contract-stronger? (couple/c any/c any/c) (couple/c any/c any/c))
+      (,test #f contract-stronger? (couple/c (>=/c 2) (>=/c 3)) (couple/c (>=/c 4) (>=/c 5)))
+      (,test #t contract-stronger? (couple/c (>=/c 4) (>=/c 5)) (couple/c (>=/c 2) (>=/c 3)))
+      (,test #f contract-stronger? (couple/c (>=/c 1) (>=/c 5)) (couple/c (>=/c 5) (>=/c 1)))
+      (let ([ctc (couple/dc [hd any/c] [tl (hd) any/c])])
+        (,test #t contract-stronger? ctc ctc))
+      (let ([ctc (couple/dc [hd any/c] [tl (hd) (<=/c hd)])])
+        (,test #t contract-stronger? ctc ctc))
+      (,test #t contract-stronger? list-of-numbers list-of-numbers)
+      (,test #t contract-stronger? (short-list/less-than 4) (short-list/less-than 5))
+      (,test #f contract-stronger? (short-list/less-than 5) (short-list/less-than 4))
+      (,test #t contract-stronger? (short-sorted-list/less-than 4) (short-sorted-list/less-than 5))
+      (,test #f contract-stronger? (short-sorted-list/less-than 5) (short-sorted-list/less-than 4))
+      (,test #t contract-stronger? (sorted-list/less-than 4) (sorted-list/less-than 5))
+      (,test #f contract-stronger? (sorted-list/less-than 5) (sorted-list/less-than 4))
+      (,test #t contract-stronger? (closure-comparison-test 4) (closure-comparison-test 5))
+
+      (letrec ([mk-c
+                (λ (x)
+                  (triple/dc [a (<=/c x)]
+                             [b any/c]
+                             [c (a b) (or/c #f (mk-c a))]))])
+        (,test #t contract-stronger? (mk-c 1) (mk-c 2)))))
+
+  (contract-eval
+   `(let ()
+      (define (non-zero? x) (not (zero? x)))
+      (define list-of-numbers
+        (first-or/c null?
+               (couple/c number?
+                         (recursive-contract list-of-numbers))))
+      (define (short-list/less-than n)
+        (first-or/c null?
+              (couple/c (<=/c n)
+                        (first-or/c null?
+                              (couple/c (<=/c n)
+                                        any/c)))))
+      (define (short-sorted-list/less-than n)
+        (first-or/c null?
+              (couple/dc
+               [hd (<=/c n)]
+               [tl (hd) (first-or/c null?
+                              (couple/c (<=/c hd)
+                                        any/c))])))
+
+      (define (sorted-list/less-than n)
+        (first-or/c null?
               (couple/dc
                [hd (<=/c n)]
                [tl (hd) (sorted-list/less-than hd)])))

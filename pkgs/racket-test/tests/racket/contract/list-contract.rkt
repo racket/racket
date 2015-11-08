@@ -115,5 +115,45 @@
               'pos 'neg)
    (λ (x)
      (and (exn:fail? x)
-          (regexp-match #rx"list-contract[?]" (exn-message x))))))
+          (regexp-match #rx"list-contract[?]" (exn-message x)))))
+  
+  (test/spec-passed/result
+   'list-contract-20
+   '(list-contract? (first-or/c (cons/c 1 empty?) empty?))
+   #t)
+  
+  (test/spec-passed/result
+   'list-contract-21
+   '(list-contract? (first-or/c (cons/c (-> integer? integer?) empty?)
+                           empty?))
+   #t)
+  
+  (test/spec-passed/result
+   'list-contract-22
+   '(list-contract? (first-or/c (cons/c (-> integer? integer?) empty?)
+                           (cons/c (-> integer? integer? integer?) empty?)
+                           empty?))
+   #t)
+  
+  (test/spec-passed/result
+   'list-contract-23
+   '(list-contract? 
+     (letrec ([c (recursive-contract (first-or/c (cons/c 1 c) empty?))])
+       c))
+   #f)
+  
+  (test/spec-passed/result
+   'list-contract-24
+   '(list-contract? 
+     (letrec ([c (recursive-contract (first-or/c (cons/c 1 c) empty?) #:list-contract?)])
+       c))
+   #t)
+  
+  (test/pos-blame
+   'test-contract-25
+   '(contract (letrec ([c (recursive-contract (first-or/c (cons/c any/c c) empty?) 
+                                              #:list-contract?)])
+                c)
+              (read (open-input-string "#1=(1 . #1#)"))
+              'pos 'neg)))
 

@@ -30,4 +30,11 @@
    '(let ([ac (contract (or/c (async-channel/c integer?) (integer? . -> . integer?))
                (make-async-channel) 'pos 'neg)])
       (async-channel-put ac 1)
+      (async-channel-get ac)))
+
+  (test/spec-passed
+   'async-channel/c-with-higher-order2
+   '(let ([ac (contract (first-or/c (async-channel/c integer?) (integer? . -> . integer?))
+               (make-async-channel) 'pos 'neg)])
+      (async-channel-put ac 1)
       (async-channel-get ac))))

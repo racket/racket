@@ -7,8 +7,9 @@
          "misc.rkt"
          (for-syntax racket/base))
 
-(provide symbols or/c one-of/c
+(provide symbols or/c first-or/c one-of/c
          blame-add-or-context
+         blame-add-ior-context
          (rename-out [_flat-rec-contract flat-rec-contract]))
 
 (define/subexpression-pos-prop or/c
@@ -22,7 +23,7 @@
                   [flat-contracts '()]
                   [args args])
          (cond
-           [(null? args) (values ho-contracts (reverse flat-contracts))]
+           [(null? args) (values (reverse ho-contracts) (reverse flat-contracts))]
            [else 
             (let ([arg (car args)])
               (cond
@@ -30,19 +31,7 @@
                  (loop ho-contracts (cons arg flat-contracts) (cdr args))]
                 [else
                  (loop (cons arg ho-contracts) flat-contracts (cdr args))]))])))
-     (define pred 
-       (cond
-         [(null? flat-contracts) not]
-         [else
-          (let loop ([fst (car flat-contracts)]
-                     [rst (cdr flat-contracts)])
-            (let ([fst-pred (flat-contract-predicate fst)])
-              (cond
-                [(null? rst) fst-pred]
-                [else 
-                 (let ([r (loop (car rst) (cdr rst))])
-                   (λ (x) (or (fst-pred x) (r x))))])))]))
-     
+     (define pred (make-flat-predicate flat-contracts))
      (cond
        [(null? ho-contracts)
         (make-flat-or/c pred flat-contracts)]
@@ -57,6 +46,32 @@
             (make-chaperone-multi-or/c name flat-contracts ho-contracts)
             (make-impersonator-multi-or/c name flat-contracts ho-contracts))])]))
 
+(define/subexpression-pos-prop first-or/c
+  (case-lambda 
+    [() (make-none/c '(first-or/c))]
+    [(x) (coerce-contract 'first-or/c x)]
+    [raw-args
+     (define args (coerce-contracts 'first-or/c raw-args))
+     (cond
+       [(andmap flat-contract? args)
+        (make-flat-first-or/c (make-flat-predicate args) args)]
+       [(andmap chaperone-contract? args)
+        (make-chaperone-first-or/c args)]
+       [else (make-impersonator-first-or/c args)])]))
+
+(define (make-flat-predicate flat-contracts)
+  (cond
+    [(null? flat-contracts) not]
+    [else
+     (let loop ([fst (car flat-contracts)]
+                [rst (cdr flat-contracts)])
+       (let ([fst-pred (flat-contract-predicate fst)])
+         (cond
+           [(null? rst) fst-pred]
+           [else 
+            (let ([r (loop (car rst) (cdr rst))])
+              (λ (x) (or (fst-pred x) (r x))))])))]))
+
 (define (single-or/c-projection ctc)
   (let ([c-proc (contract-projection (single-or/c-ho-ctc ctc))]
         [pred (single-or/c-pred ctc)])
@@ -70,16 +85,20 @@
 
 (define (single-or/c-late-neg-projection ctc)
   (define c-proj (get/build-late-neg-projection (single-or/c-ho-ctc ctc)))
+  (define c-first-order (contract-first-order (single-or/c-ho-ctc ctc)))
   (define pred (single-or/c-pred ctc))
   (λ (blame)
     (define p-app (c-proj (blame-add-or-context blame)))
     (λ (val neg-party)
-      (if (pred val)
-          val
-          (p-app val neg-party)))))
+      (cond 
+       [(pred val) val]
+       [(c-first-order val) (p-app val neg-party)]
+       [else (raise-none-or-matched blame val #f)]))))
 
 (define (blame-add-or-context blame)
   (blame-add-context blame "a part of the or/c of"))
+(define (blame-add-ior-context blame)
+  (blame-add-context blame "a part of the first-or/c of"))
 
 (define (single-or/c-first-order ctc)
   (let ([pred (single-or/c-pred ctc)]
@@ -117,6 +136,7 @@
              (multi-or/c-ho-ctcs ctc))]
     [(flat-or/c? ctc)
      (flat-or/c-flat-ctcs ctc)]
+    [(base-first-or/c? ctc) (base-first-or/c-ctcs ctc)]
     [else #f]))
 
 (define (or/c-exercise ho-contracts)
@@ -231,7 +251,7 @@
          [first-order-checks (map (λ (x) (contract-first-order x)) ho-contracts)]
          [predicates (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))])
     (λ (blame)
-      (define disj-blame (blame-add-context blame "a part of the or/c of"))
+      (define disj-blame (blame-add-or-context blame))
       (define partial-contracts
         (for/list ([c-proc (in-list c-procs)])
           (c-proc disj-blame)))
@@ -249,9 +269,7 @@
                [(null? checks)
                 (if candidate-proc
                     (candidate-proc val)
-                    (raise-blame-error blame val 
-                                       '("none of the branches of the or/c matched" given: "~e")
-                                       val))]
+                    (raise-none-or-matched blame val #f))]
                [((car checks) val)
                 (if candidate-proc
                     (raise-blame-error blame val
@@ -298,9 +316,7 @@
                 [candidate-c-proj
                  (candidate-c-proj val neg-party)]
                 [else
-                 (raise-blame-error blame val #:missing-party neg-party
-                                    '("none of the branches of the or/c matched" given: "~e")
-                                    val)])]
+                 (raise-none-or-matched blame val neg-party)])]
              [((car checks) val)
               (if candidate-c-proj
                   (raise-blame-error blame val #:missing-party neg-party
@@ -321,6 +337,11 @@
                     (cdr contracts)
                     candidate-c-proj
                     candidate-contract)]))]))))
+
+(define (raise-none-or-matched blame val neg-party)
+  (raise-blame-error blame val #:missing-party neg-party
+                              '("none of the branches of the or/c matched" given: "~e")
+                              val))
 
 (define (multi-or/c-first-order ctc)
   (let ([flats (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))]
@@ -392,7 +413,7 @@
    #:name
    (λ (ctc)
       (apply build-compound-type-name 
-             'or/c 
+             (if (flat-first-or/c? ctc) 'first-or/c 'or/c)
              (flat-or/c-flat-ctcs ctc)))
    #:stronger
    (λ (this that)
@@ -432,6 +453,73 @@
      (for/and ([c (in-list (flat-or/c-flat-ctcs ctc))])
        (list-contract? c)))))
 
+(define-struct (flat-first-or/c flat-or/c) ())
+
+(define (first-or/c-proj ctc)
+  (define contracts (base-first-or/c-ctcs ctc))
+  (define c-procs (map (λ (x) (contract-projection x)) contracts))
+  (define first-order-checks (map (λ (x) (contract-first-order x)) contracts))
+  (λ (blame)
+    (define disj-blame (blame-add-ior-context blame))
+    (define partial-contracts
+      (for/list ([c-proc (in-list c-procs)])
+        (c-proc disj-blame)))
+    (λ (val)
+      (let loop ([checks first-order-checks]
+                 [procs partial-contracts]
+                 [contracts contracts])
+        (cond
+          [(null? checks)
+           (raise-none-ior-matched blame val #f)]
+          [else
+           (cond
+             [((car checks) val)
+              ((car procs) val)]
+             [else
+              (loop (cdr checks)
+                    (cdr procs)
+                    (cdr contracts))])])))))
+
+(define (first-or/c-late-neg-proj ctc)  
+  (define ho-contracts (base-first-or/c-ctcs ctc))
+  (define c-projs (map get/build-late-neg-projection ho-contracts))
+  (define first-order-checks (map (λ (x) (contract-first-order x)) ho-contracts))
+  (λ (blame)
+    (define blame-w-context (blame-add-ior-context blame))
+    (define c-projs+blame (map (λ (c-proj) (c-proj blame-w-context)) c-projs))
+    (λ (val neg-party)
+      (let loop ([checks first-order-checks]
+                 [c-projs c-projs+blame]
+                 [contracts ho-contracts])
+        (cond
+          [(null? checks)
+           (raise-none-ior-matched blame val neg-party)]
+          [else
+           (cond
+             [((car checks) val)
+              ((car c-projs) val neg-party)]
+             [else
+              (loop (cdr checks)
+                    (cdr c-projs)
+                    (cdr contracts))])])))))
+
+(define (raise-none-ior-matched blame val neg-party)
+  (raise-blame-error blame val #:missing-party neg-party
+                              '("none of the branches of the first-or/c matched" given: "~e")
+                              val))
+
+(define (first-or/c-name ctc)
+  (apply build-compound-type-name 
+         'first-or/c
+         (base-first-or/c-ctcs ctc)))
+
+(define (first-or/c-first-order ctc)
+  (define preds (map contract-first-order (base-first-or/c-ctcs ctc)))
+  (λ (x) (ormap (lambda (p?) (p? x)) preds)))
+
+(define (first-or/c-list-contract? c)
+  (for/and ([c (in-list (base-first-or/c-ctcs c))])
+    (list-contract? c)))
 
 (define/final-prop (symbols s1 . s2s)
   (define ss (cons s1 s2s))
@@ -444,7 +532,34 @@
                             ss)))
   (apply or/c ss))
 
+(define-struct base-first-or/c (ctcs)
+  #:property prop:custom-write custom-write-property-proc
+  #:property prop:orc-contract
+  (λ (this) (base-first-or/c-ctcs this)))
 
+(define-struct (chaperone-first-or/c base-first-or/c) ()
+  #:property prop:chaperone-contract
+  (parameterize ([skip-projection-wrapper? #t])
+    (build-chaperone-contract-property
+     #:projection first-or/c-proj
+     #:late-neg-projection first-or/c-late-neg-proj
+     #:name first-or/c-name
+     #:first-order first-or/c-first-order
+     #:stronger multi-or/c-stronger?
+     #:generate (λ (ctc) (or/c-generate ctc (base-first-or/c-ctcs ctc)))
+     #:exercise (λ (ctc) (or/c-exercise (base-first-or/c-ctcs ctc)))
+     #:list-contract? first-or/c-list-contract?)))
+(define-struct (impersonator-first-or/c base-first-or/c) ()
+  #:property prop:contract
+  (build-contract-property
+   #:projection first-or/c-proj
+   #:late-neg-projection first-or/c-late-neg-proj
+   #:name first-or/c-name
+   #:first-order first-or/c-first-order
+   #:stronger generic-or/c-stronger?
+   #:generate (λ (ctc) (or/c-generate ctc (base-first-or/c-ctcs ctc)))
+   #:exercise (λ (ctc) (or/c-exercise (base-first-or/c-ctcs ctc)))
+   #:list-contract? first-or/c-list-contract?))
 
 (define/final-prop (one-of/c . elems)
   (for ([arg (in-list elems)]

@@ -543,6 +543,23 @@
       'pos 'neg)
      #:database "db" #:password "password" #:user "user")
    (list "user" "db" "password" #f))
+
+  (test/spec-passed/result
+   'contract-arrow-star-optional25b
+   '((contract 
+      (->* (#:user string?)
+           (#:database (first-or/c string? #f)
+                       #:password (first-or/c string? (list/c 'hash string?) #f)
+                       #:port (first-or/c exact-positive-integer? #f))
+           any/c)
+      (λ (#:user user
+                 #:database [db #f]
+                 #:password [password #f]
+                 #:port [port #f])
+        (list user db password port))
+      'pos 'neg)
+     #:database "db" #:password "password" #:user "user")
+   (list "user" "db" "password" #f))
   
   (test/spec-passed
    'contract-arrow-star-keyword-ordering

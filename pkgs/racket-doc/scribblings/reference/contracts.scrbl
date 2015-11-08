@@ -199,6 +199,48 @@ If all of its arguments are @racket[list-contract?]s, then @racket[or/c]
 returns a @racket[list-contract?].
 }
 
+@defproc[(first-or/c [contract contract?] ...)
+         contract?]{
+
+ Takes any number of contracts and returns a contract that
+ accepts any value that any one of the contracts accepts
+ individually.
+
+ The @racket[first-or/c] result tests any value by applying the
+ contracts in order from left to right. Thus, a contract
+ such as @racket[(first-or/c (not/c real?) positive?)]
+ is guaranteed to only invoke the 
+ @racket[positive?] predicate on real numbers.
+
+ If all of the arguments are procedures or @tech{flat
+  contracts}, the result is a @tech{flat contract} and
+ similarly if all of the arguments are @tech{chaperone
+  contracts} the result is too. Otherwise, the result is an
+ @tech{impersonator contract}.
+
+ If there are multiple higher-order contracts, 
+ @racket[first-or/c] uses @racket[contract-first-order-passes?]
+ to distinguish between them. More precisely, when an 
+ @racket[first-or/c] is checked, it checks the first order passes
+ of the first contract against the value. If it succeeds,
+ then it uses only that contract. If it fails, then it moves
+ to the second contract, continuing until it finds one of
+ the contracts where the first order check succeeds. If none
+ of them do, a contract violation is signaled.
+
+ For example, this contract
+ @racketblock[
+ (first-or/c (-> number? number?)
+        (-> string? string? string?))]
+ accepts the function @racket[(λ args 0)],
+ applying the @racket[(->number? number?)] contract to the function
+ because it comes first, even though
+ @racket[(-> string? string? string?)] also applies.
+
+ If all of its arguments are @racket[list-contract?]s, then @racket[first-or/c]
+ returns a @racket[list-contract?].
+}
+
 @defproc[(and/c [contract contract?] ...) contract?]{
 
 Takes any number of contracts and returns a contract that

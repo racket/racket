@@ -55,6 +55,27 @@
            [c%/c (class/c [m (->m number? number?)])]
            [d%/c (class/c [n (->m number? number?)])])
       (contract (instanceof/c (or/c c%/c d%/c)) (new e%) 'pos 'neg)))
+
+  (test/spec-passed
+   'instanceof/c-first-order-9
+   '(let* ([c% (class object% (super-new) (define/public (m x) x))]
+           [c%/c (class/c [m (->m number? number?)])]
+           [d%/c (class/c [n (->m number? number?)])])
+      (contract (instanceof/c (first-or/c c%/c d%/c)) (new c%) 'pos 'neg)))
+  
+  (test/spec-passed
+   'instanceof/c-first-order-10
+   '(let* ([d% (class object% (super-new) (define/public (n x) x))]
+           [c%/c (class/c [m (->m number? number?)])]
+           [d%/c (class/c [n (->m number? number?)])])
+      (contract (instanceof/c (first-or/c c%/c d%/c)) (new d%) 'pos 'neg)))
+  
+  (test/pos-blame
+   'instanceof/c-first-order-11
+   '(let* ([e% (class object% (super-new) (define/public (p x) x))]
+           [c%/c (class/c [m (->m number? number?)])]
+           [d%/c (class/c [n (->m number? number?)])])
+      (contract (instanceof/c (first-or/c c%/c d%/c)) (new e%) 'pos 'neg)))
   
   (test/spec-passed/result
    'instanceof/c-higher-order-1
@@ -87,7 +108,7 @@
       (send o m 3)))
   
   (test/pos-blame
-   'instanceof/c-higher-order-4
+   'instanceof/c-higher-order-5
    '(let* ([c% (class object% (super-new) (define/public (m x) #t))]
            [c%/c (class/c [m (->m number? number?)])]
            [d%/c (class/c [n (->m number? number?)])]
@@ -95,9 +116,33 @@
       (send o m 3)))
   
   (test/neg-blame
-   'instanceof/c-higher-order-4
+   'instanceof/c-higher-order-6
    '(let* ([c% (class object% (super-new) (define/public (m x) x))]
            [c%/c (class/c [m (->m number? number?)])]
            [d%/c (class/c [n (->m number? number?)])]
            [o (contract (instanceof/c (or/c c%/c d%/c)) (new c%) 'pos 'neg)])
+      (send o m #t)))
+
+  (test/spec-passed
+   'instanceof/c-higher-order-7
+   '(let* ([c% (class object% (super-new) (define/public (m x) x))]
+           [c%/c (class/c [m (->m number? number?)])]
+           [d%/c (class/c [n (->m number? number?)])]
+           [o (contract (instanceof/c (first-or/c c%/c d%/c)) (new c%) 'pos 'neg)])
+      (send o m 3)))
+  
+  (test/pos-blame
+   'instanceof/c-higher-order-8
+   '(let* ([c% (class object% (super-new) (define/public (m x) #t))]
+           [c%/c (class/c [m (->m number? number?)])]
+           [d%/c (class/c [n (->m number? number?)])]
+           [o (contract (instanceof/c (first-or/c c%/c d%/c)) (new c%) 'pos 'neg)])
+      (send o m 3)))
+  
+  (test/neg-blame
+   'instanceof/c-higher-order-9
+   '(let* ([c% (class object% (super-new) (define/public (m x) x))]
+           [c%/c (class/c [m (->m number? number?)])]
+           [d%/c (class/c [n (->m number? number?)])]
+           [o (contract (instanceof/c (first-or/c c%/c d%/c)) (new c%) 'pos 'neg)])
       (send o m #t))))

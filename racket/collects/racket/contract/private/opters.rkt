@@ -64,7 +64,8 @@
            (define ps-optres (opt/i (opt/info-add-blame-context
                                      opt/info
                                      (λ (blame-stx)
-                                       #`(blame-add-or-context #,blame-stx)))
+                                       #`(blame-add-or-context #,blame-stx)
+                                       blame-stx))
                                     (car ps)))
            (if (optres-flat ps-optres)
                (loop (cdr ps)

@@ -93,7 +93,7 @@
                'pos
                'neg)
    exn:fail?)
-  
+
   (test/spec-passed/result
    'or/c-ordering
    '(let ([x '()])
@@ -238,4 +238,147 @@
                    number?)
                (λ (x) 1)
                'pos 'neg)
-     (lambda (x) 1))))
+     (lambda (x) 1)))
+
+  (test/pos-blame
+   'first-or/c1
+   '(contract (first-or/c false/c) #t 'pos 'neg))
+  
+  (test/spec-passed
+   'first-or/c2
+   '(contract (first-or/c false/c) #f 'pos 'neg))
+  
+  (test/spec-passed
+   'first-or/c3
+   '((contract (first-or/c (-> integer? integer?)) (lambda (x) x) 'pos 'neg) 1))
+  
+  (test/neg-blame
+   'first-or/c4
+   '((contract (first-or/c (-> integer? integer?)) (lambda (x) x) 'pos 'neg) #f))
+  
+  (test/pos-blame
+   'first-or/c5
+   '((contract (first-or/c (-> integer? integer?)) (lambda (x) #f) 'pos 'neg) 1))
+  
+  (test/spec-passed
+   'first-or/c6
+   '(contract (first-or/c false/c (-> integer? integer?)) #f 'pos 'neg))
+  
+  (test/spec-passed
+   'first-or/c7
+   '((contract (first-or/c false/c (-> integer? integer?)) (lambda (x) x) 'pos 'neg) 1))
+  
+  (test/spec-passed/result
+   'first-or/c8
+   '((contract ((first-or/c false/c (-> string?))  . -> . any)
+               (λ (y) y)
+               'pos
+               'neg)
+     #f)
+   #f)
+  
+  (test/spec-passed/result
+   'first-or/c9
+   '((contract (first-or/c (-> string?) (-> integer? integer?))
+               (λ () "x")
+               'pos
+               'neg))
+   "x")
+  
+  (test/spec-passed/result
+   'first-or/c10
+   '((contract (first-or/c (-> string?) (-> integer? integer?))
+               (λ (x) x)
+               'pos
+               'neg)
+     1)
+   1)
+  
+  (test/pos-blame
+   'first-or/c11
+   '(contract (first-or/c (-> string?) (-> integer? integer?))
+              1
+              'pos
+              'neg))
+  
+  (test/pos-blame
+   'first-or/c12
+   '((contract (first-or/c (-> string?) (-> integer? integer?))
+               1
+               'pos
+               'neg)
+     'x))
+  
+  (test/pos-blame
+   'first-or/c13
+   '(contract (first-or/c not) #t 'pos 'neg))
+  
+  (test/spec-passed
+   'first-or/c14
+   '(contract (first-or/c not) #f 'pos 'neg))
+  
+  (test/spec-passed/result
+   'first-or/c-not-error-early
+   '(begin (first-or/c (-> integer? integer?) (-> boolean? boolean?))
+           1)
+   1)
+  
+  (test/spec-passed/result
+   'contract-not-an-error-test4-ior
+   '((contract (first-or/c (-> integer? integer?) (-> boolean? boolean?))
+               (λ (x) x)
+               'pos
+               'neg) 1)
+   1)
+  
+  (test/spec-passed/result
+   'first-or/c-ordering
+   '(let ([x '()])
+      (contract (first-or/c (lambda (y) (set! x (cons 2 x)) #f) (lambda (y) (set! x (cons 1 x)) #t))
+                'anything
+                'pos
+                'neg)
+      x)
+   '(1 2))
+  
+  (test/spec-passed/result
+   'first-or/c-ordering2
+   '(let ([x '()])
+      (contract (first-or/c (lambda (y) (set! x (cons 2 x)) #t) (lambda (y) (set! x (cons 1 x)) #t))
+                'anything
+                'pos
+                'neg)
+      x)
+   '(2))
+  
+  (test/spec-passed
+   'first-or/c-hmm
+   '(let ([funny/c (first-or/c (and/c procedure? (-> any)) (listof (-> number?)))])
+      (contract (-> funny/c any) void 'pos 'neg)))
+  
+  
+  (test/spec-passed
+   'first-or/c-opt-unknown-flat
+   '(let ()
+      (define arr (-> number? number?))
+      ((contract (opt/c (first-or/c not arr)) (λ (x) x) 'pos 'neg) 1)))
+  
+ 
+  (test/neg-blame
+   'ho-first-or/c-val-first1
+   '((contract (-> (first-or/c (-> number?)
+                         (-> number? number?))
+                   number?)
+               (λ (x) 1)
+               'pos 'neg)
+     (lambda (x y z) 1)))
+  
+  (test/spec-passed/result
+   'ho-first-or/c-val-first2
+   '((contract (-> (first-or/c (-> number? number?)
+                          (-> number? number?))
+                   number?)
+               (λ (x) (x 1))
+               'pos 'neg)
+     (lambda (x) (+ x 1)))
+   2))

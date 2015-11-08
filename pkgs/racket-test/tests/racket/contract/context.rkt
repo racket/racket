@@ -94,14 +94,27 @@
                                     'neg))
                   1))
   
-  (context-test '("a part of the or/c of")
-                '(contract (or/c 1 (-> number? number?))
+  (context-test '()
+                '(contract (or/c 1 2)
                            3
                            'pos
                            'neg))
   
   (context-test '("the range of" "a part of the or/c of")
                 '((contract (or/c 1 (-> number? number?) (-> number? boolean? number?))
+                            (λ (x) #f)
+                            'pos
+                            'neg)
+                  1))
+
+  (context-test '()
+                '(contract (first-or/c 1 (-> number? number?))
+                           3
+                           'pos
+                           'neg))
+
+  (context-test '("the range of" "a part of the first-or/c of")
+                '((contract (first-or/c 1 (-> number? number?) (-> number? boolean? number?))
                             (λ (x) #f)
                             'pos
                             'neg)
