@@ -136,6 +136,47 @@ The {key,value}-{in-out} functions should all return a chaperone of their argume
          (hash-remove (id-table-hash d) sym))
      phase)))
 
+(define (id-table-set*! who d identifier->symbol identifier=? . rst)
+  (let loop ([rst rst])
+    (cond [(null? rst) (void)]
+          [else
+           (id-table-set!
+            who d
+            (car rst) (cadr rst)
+            identifier->symbol identifier=?)
+           (loop (cddr rst))])))
+
+(define (id-table-set*/constructor who d constructor identifier->symbol identifier=? . rst)
+  (let loop ([d d] [rst rst])
+    (if (null? rst)
+        d
+        (loop (id-table-set/constructor
+               who d
+               (car rst) (cadr rst)
+               constructor identifier->symbol identifier=?)
+              (cddr rst)))))
+
+(define missing (gensym 'missing))
+(define (id-table-ref! who d id default identifier->symbol identifier=?)
+  (define entry (id-table-ref who d id missing identifier->symbol identifier=?))
+  (cond [(eq? entry missing)
+         (id-table-set! who d id default identifier->symbol identifier=?)
+         default]
+        [else entry]))
+
+(define (id-table-update/constructor who d id updater default constructor identifier->symbol identifier=?)
+  (define entry
+    (id-table-ref who d id default identifier->symbol identifier=?))
+  (id-table-set/constructor
+   who d id
+   (updater entry)
+   constructor identifier->symbol identifier=?))
+
+(define (id-table-update! who d id updater default identifier->symbol identifier=?)
+  (define entry
+    (id-table-ref who d id default identifier->symbol identifier=?))
+  (id-table-set! who d id (updater entry) identifier->symbol identifier=?))
+
 (define (id-table-count d)
   (for/sum ([(k v) (in-hash (id-table-hash d))])
      (length v)))
@@ -312,6 +353,8 @@ Notes (FIXME?):
           idtbl-set! idtbl-set
           idtbl-remove! idtbl-remove
           idtbl-set/constructor idtbl-remove/constructor
+          idtbl-set* idtbl-set*/constructor idtbl-set*! idtbl-ref!
+          idtbl-update idtbl-update/constructor idtbl-update!
           idtbl-count
           idtbl-iterate-first idtbl-iterate-next
           idtbl-iterate-key idtbl-iterate-value
@@ -347,6 +390,16 @@ Notes (FIXME?):
              (id-table-remove/constructor 'idtbl-remove d id constructor identifier->symbol identifier=?))
            (define (idtbl-remove d id)
              (idtbl-remove/constructor d id immutable-idtbl))
+           (define (idtbl-set*/constructor d constructor . rst)
+             (apply id-table-set*/constructor 'idtbl-set* d constructor identifier->symbol identifier=? rst))
+           (define (idtbl-set*! d . rst)
+             (apply id-table-set*! 'idtbl-set*! d identifier->symbol identifier=? rst))
+           (define (idtbl-ref! d id default)
+             (id-table-ref! 'idtbl-ref! d id default identifier->symbol identifier=?))
+           (define (idtbl-update/constructor d id updater constructor [default not-given])
+             (id-table-update/constructor 'idtbl-update d id updater default constructor identifier->symbol identifier=?))
+           (define (idtbl-update! d id updater [default not-given])
+             (id-table-update! 'idtbl-update! d id updater default identifier->symbol identifier=?))
            (define (idtbl-count d)
              (id-table-count d))
            (define (idtbl-for-each d p)
@@ -417,6 +470,9 @@ Notes (FIXME?):
                     idtbl-set
                     idtbl-remove!
                     idtbl-remove
+                    idtbl-set*!
+                    idtbl-ref!
+                    idtbl-update!
                     idtbl-count
                     idtbl-iterate-first
                     idtbl-iterate-next
@@ -430,7 +486,9 @@ Notes (FIXME?):
 
                     ;; just for use/extension by syntax/id-table
                     idtbl-set/constructor
+                    idtbl-set*/constructor
                     idtbl-remove/constructor
+                    idtbl-update/constructor
                     idtbl-mutable-methods
                     mutable-idtbl
                     immutable-idtbl)))]))

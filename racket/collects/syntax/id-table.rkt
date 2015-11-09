@@ -197,6 +197,8 @@
           idtbl-set! idtbl-set
           idtbl-remove! idtbl-remove
           idtbl-set/constructor idtbl-remove/constructor
+          idtbl-set* idtbl-set*/constructor idtbl-set*! idtbl-ref!
+          idtbl-update idtbl-update/constructor idtbl-update!
           idtbl-count
           idtbl-iterate-first idtbl-iterate-next
           idtbl-iterate-key idtbl-iterate-value
@@ -232,6 +234,13 @@
              (idtbl-set/constructor d id v immutable-idtbl))
            (define (idtbl-remove d id)
              (idtbl-remove/constructor d id immutable-idtbl))
+           (define (idtbl-set* d . rst)
+             (apply idtbl-set*/constructor d immutable-idtbl rst))
+           (define not-given (gensym 'not-given))
+           (define (idtbl-update d id updater [default not-given])
+             (if (eq? default not-given)
+                 (idtbl-update/constructor d id updater immutable-idtbl)
+                 (idtbl-update/constructor d id updater immutable-idtbl default)))
            (define idtbl-immutable-methods
              (vector-immutable idtbl-ref
                                #f
@@ -279,6 +288,28 @@
              (-> mutable-idtbl? identifier? void?)]
             [idtbl-remove
              (-> immutable-idtbl? identifier? immutable-idtbl?)]
+            [idtbl-set*
+             (->* [immutable-idtbl?]
+                  #:rest (flat-rec-contract key-value-pairs
+                           (or/c null
+                                 (cons/c identifier? (cons/c any/c key-value-pairs))))
+                  immutable-idtbl?)]
+            [idtbl-set*!
+             (->* [mutable-idtbl?]
+                  #:rest (flat-rec-contract key-value-pairs
+                           (or/c null
+                                 (cons/c identifier? (cons/c any/c key-value-pairs))))
+                  void?)]
+            [idtbl-ref!
+             (-> mutable-idtbl? identifier? any/c any)]
+            [idtbl-update
+             (->* [immutable-idtbl? identifier? (-> any/c any/c)]
+                  [any/c]
+                  immutable-idtbl?)]
+            [idtbl-update!
+             (->* [mutable-idtbl? identifier? (-> any/c any/c)]
+                  [any/c]
+                  void?)]
             [idtbl-count
              (-> idtbl? exact-nonnegative-integer?)]
             [idtbl-iterate-first

@@ -118,6 +118,16 @@ the @racket[failure] argument is applied if it is a procedure, or
 simply returned otherwise.
 }
 
+@defproc[(free-id-table-ref! [table mutable-free-id-table?]
+                             [id identifier?]
+                             [failure any/c])
+         any]{
+
+Like @racket[hash-ref!].
+
+@history[#:added "6.3.0.6"]
+}
+
 @defproc[(free-id-table-set! [table mutable-free-id-table?]
                              [id identifier?]
                              [v any/c])
@@ -134,6 +144,26 @@ Like @racket[hash-set!].
 Like @racket[hash-set].
 }
 
+@defproc[(free-id-table-set*! [table mutable-free-id-table?]
+                              [id identifier?]
+                              [v any/c] ...)
+         void?]{
+
+Like @racket[hash-set*!].
+
+@history[#:added "6.3.0.6"]
+}
+
+@defproc[(free-id-table-set* [table immutable-free-id-table?]
+                             [id identifier?]
+                             [v any/c] ...)
+         immutable-free-id-table?]{
+
+Like @racket[hash-set*].
+
+@history[#:added "6.3.0.6"]
+}
+
 @defproc[(free-id-table-remove! [table mutable-free-id-table?]
                                 [id identifier?])
          void?]{
@@ -146,6 +176,30 @@ Like @racket[hash-remove!].
          immutable-free-id-table?]{
 
 Like @racket[hash-remove].
+}
+
+@defproc[(free-id-table-update! [table mutable-free-id-table?]
+                                [id identifier?]
+                                [updater (any/c . -> . any/c)]
+                                [failure any/c
+                                 (lambda () (raise (make-exn:fail .....)))])
+         void?]{
+
+Like @racket[hash-update!].
+
+@history[#:added "6.3.0.6"]
+}
+
+@defproc[(free-id-table-update [table immutable-free-id-table?]
+                               [id identifier?]
+                               [updater (any/c . -> . any/c)]
+                               [failure any/c
+                                (lambda () (raise (make-exn:fail .....)))])
+         immutable-free-id-table?]{
+
+Like @racket[hash-update].
+
+@history[#:added "6.3.0.6"]
 }
 
 @defproc[(free-id-table-map [table free-id-table?]
@@ -254,6 +308,10 @@ etc) can be used on bound-identifier tables.
                              [failure any/c
                               (lambda () (raise (make-exn:fail .....)))])
          any]
+@defproc[(bound-id-table-ref! [table mutable-bound-id-table?]
+                              [id identifier?]
+                              [failure any/c])
+         any]
 @defproc[(bound-id-table-set! [table mutable-bound-id-table?]
                               [id identifier?]
                               [v any/c])
@@ -262,11 +320,31 @@ etc) can be used on bound-identifier tables.
                              [id identifier?]
                              [v any/c])
          immutable-bound-id-table?]
+@defproc[(bound-id-table-set*! [table mutable-bound-id-table?]
+                               [id identifier?]
+                               [v any/c] ...)
+         void?]
+@defproc[(bound-id-table-set* [table immutable-bound-id-table?]
+                              [id identifier?]
+                              [v any/c] ...)
+         immutable-bound-id-table?]
 @defproc[(bound-id-table-remove! [table mutable-bound-id-table?]
                                  [id identifier?])
          void?]
 @defproc[(bound-id-table-remove [table immutable-bound-id-table?]
                                 [id identifier?])
+         immutable-bound-id-table?]
+@defproc[(bound-id-table-update! [table mutable-bound-id-table?]
+                                 [id identifier?]
+                                 [updater (any/c . -> . any/c)]
+                                 [failure any/c
+                                  (lambda () (raise (make-exn:fail .....)))])
+         void?]
+@defproc[(bound-id-table-update [table immutable-bound-id-table?]
+                                [id identifier?]
+                                [updater (any/c . -> . any/c)]
+                                [failure any/c
+                                 (lambda () (raise (make-exn:fail .....)))])
          immutable-bound-id-table?]
 @defproc[(bound-id-table-map [table bound-id-table?]
                              [proc (-> identifier? any/c any)])
@@ -304,7 +382,10 @@ Like the procedures for free-identifier tables
 for bound-identifier tables, which use @racket[bound-identifier=?] to
 compare keys.
 
-@history[#:changed "6.3.0.3" "Added bound-id-table-keys, bound-id-table-values, in-bound-id-table."]
+@history[#:changed "6.3.0.3" "Added bound-id-table-keys, bound-id-table-values, in-bound-id-table."
+         #:changed "6.3.0.6"
+         @string-append{Added bound-id-table-ref!, bound-id-table-set*,
+                        bound-id-table-set*!, bound-id-table-update!, and bound-id-table-update}]
 }
 
 @close-eval[id-table-eval]
