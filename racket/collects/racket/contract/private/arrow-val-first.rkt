@@ -1289,7 +1289,9 @@
                                 given: "~e")
                     f))
                  (cond
-                   [(struct-predicate-procedure? f) #f]
+                   [(and (struct-predicate-procedure? f)
+                         (not (impersonator? f)))
+                    #f]
                    [(and (equal? (procedure-arity f) 1)
                          (let-values ([(required mandatory) (procedure-keywords f)])
                            (and (null? required)

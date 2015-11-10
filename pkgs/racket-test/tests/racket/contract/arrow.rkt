@@ -386,6 +386,13 @@
   (test/pos-blame
    'predicate/c13
    '(contract (-> any/c boolean?) (λ (x #:y y) #t) 'pos 'neg))
+  (test/pos-blame
+   'predicate/c14
+   '(contract (-> any/c boolean?)
+              (let ()
+                (struct s ())
+                ((impersonate-procedure s? (λ (x) (values (λ (r) "") x))) 11))
+              'pos 'neg))
   
   ;; this test ensures that no contract wrappers
   ;; are created for struct predicates
