@@ -11,12 +11,13 @@ directories, files, and symbolic links, and owner
 information is not preserved; the owner that is stored in the archive
 is always ``root.''
 
-Symbolic links (on Unix and Mac OS X) are not followed, and the path
+Symbolic links (on Unix and Mac OS X) are not followed by default, and the path
 in a link must be less than 100 bytes.}
 
 
 @defproc[(tar [tar-file path-string?]
               [path path-string?] ...
+              [#:follow-links? follow-links? any/c #f]
               [#:exists-ok? exists-ok? any/c #f]
               [#:path-prefix path-prefix (or/c #f path-string?) #f]
               [#:get-timestamp get-timestamp
@@ -32,7 +33,8 @@ relative paths for existing directories and files (i.e., relative
 to the current directory).  If a nested path is provided as a
 @racket[path], its ancestor directories are also added to the
 resulting tar file, up to the current directory (using
-@racket[pathlist-closure]).
+@racket[pathlist-closure]). If @racket[follow-links?] is false, then
+symbolic links are included in the resulting tar file as links.
 
 If @racket[exists-ok?] is @racket[#f], then an exception is raised if
 @racket[tar-file] exists already. If @racket[exists-ok?] is true, then
@@ -45,11 +47,13 @@ The @racket[get-timestamp] function is used to obtain the modification
 date to record in the archive for each file or directory.
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
-         #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}]}
+         #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}
+         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}]}
 
 
 @defproc[(tar->output [paths (listof path?)]
                       [out output-port? (current-output-port)]
+                      [#:follow-links? follow-links? any/c #f]
                       [#:path-prefix path-prefix (or/c #f path-string?) #f]
                       [#:get-timestamp get-timestamp
                                        (path? . -> . exact-integer?)
@@ -64,11 +68,13 @@ archive that is written directly to the @racket[out].  The specified
 content is not automatically added, and nested directories are added
 without parent directories.
 
-@history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}]}
+@history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
+         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}]}
 
 
 @defproc[(tar-gzip [tar-file path-string?]
                    [paths path-string?] ...
+                   [#:follow-links? follow-links? any/c #f]
                    [#:exists-ok? exists-ok? any/c #f]
                    [#:path-prefix path-prefix (or/c #f path-string?) #f]
                    [#:get-timestamp get-timestamp
@@ -81,4 +87,5 @@ without parent directories.
 Like @racket[tar], but compresses the resulting file with @racket[gzip].
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
-         #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}]}
+         #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}
+         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}]}
