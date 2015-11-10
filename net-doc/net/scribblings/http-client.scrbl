@@ -113,7 +113,8 @@ Parses an HTTP response from @racket[hc] for the method
 @racket[decodes].
 
 Returns the status line, a list of headers, and an port which contains
-the contents of the response.
+the contents of the response. The port's content must be consumed
+before the connection is used further.
 
 If @racket[close?] is @racket[#t], then the connection will be closed
 following the response parsing. If @racket[close?] is @racket[#f],

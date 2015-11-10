@@ -15,16 +15,22 @@
       [(_ ([from to] . more) s)
        (regexp-replace* from (regexp-replace** more s) to)]))
 
-  (define (port->bytes* in)
+  (define (read-request in)
+    ;; Simulate HTTP request reading enough to get the right number
+    ;; of bytes.
     (define ob (open-output-bytes))
-    (let loop ()
-      (sleep)
-      (when (byte-ready? in)
-        (define b (read-byte in))
-        (unless (eof-object? b)
-          (write-byte b ob)
-          (loop))))
-    (get-output-bytes ob))
+    (regexp-match #rx"\r\n\r\n" in 0 #f ob)
+    (write-bytes #"\r\n\r\n" ob)
+    (define bstr (get-output-bytes ob))
+    (cond
+     [(regexp-match #rx"Content-Length: ([0-9]+)" bstr)
+      => (lambda (m)
+           (bytes-append bstr (read-bytes
+                               (string->number (bytes->string/utf-8 (cadr m)))
+                               in)))]
+     [(regexp-match? #rx"^PUT" bstr)
+      (bytes-append bstr (read-request in))]
+     [else bstr]))
 
   (define-syntax (tests stx)
     (syntax-case stx ()
@@ -39,40 +45,39 @@
 
   (define-syntax (test-e stx)
     (syntax-case stx ()
-      [(_ the-port e raw ereq estatus eheaders econtent)
+      [(_ the-port repeats init-e proc-e raw ereq estatus eheaders econtent)
        (quasisyntax/loc stx
-         (let ()
-           (define l (tcp-listen 0 40 #t "127.0.0.1"))
-           (define-values (_1 the-port _2 _3)
-             (tcp-addresses l #t))
-           (define req #f)
-           (define lt
-             (thread
-              (λ ()
-                (define-values (in out) (tcp-accept l))
-                (tcp-close l)
-                (display raw out)
-                (flush-output out)
-                (tcp-abandon-port out)
-                (close-output-port out)
-                (set! req (port->bytes* in))
-                (tcp-abandon-port in)
-                (close-input-port in))))
-           (define-values (status headers content-port)
-             e)
-           (thread-wait lt)
-           #,(syntax/loc stx
-               (check-equal?
-                (regexp-replace** ([(number->string the-port) "REDACTED"]
-                                   [(regexp-quote (version)) "REDACTED"])
-                                  req)
-                ereq))
-           #,(syntax/loc stx
-               (check-equal? status estatus))
-           #,(syntax/loc stx
-               (check-equal? headers eheaders))
-           #,(syntax/loc stx
-               (check-equal? (port->bytes content-port) econtent))))]))
+         (let ([v init-e])
+           (for ([i repeats])
+             (define l (tcp-listen 0 40 #t "127.0.0.1"))
+             (define-values (_1 the-port _2 _3)
+               (tcp-addresses l #t))
+             (define req #f)
+             (define lt
+               (thread
+                (λ ()
+                  (define-values (in out) (tcp-accept l))
+                  (tcp-close l)
+                  (set! req (read-request in))
+                  (display raw out)
+                  (flush-output out)
+                  (close-output-port out)
+                  (close-input-port in))))
+             (define-values (status headers content-port)
+               (proc-e v))
+             #,(syntax/loc stx
+                 (check-equal? status estatus))
+             #,(syntax/loc stx
+                 (check-equal? headers eheaders))
+             #,(syntax/loc stx
+                 (check-equal? (port->bytes content-port) econtent))
+             (thread-wait lt)
+             #,(syntax/loc stx
+                 (check-equal?
+                  (regexp-replace** ([(number->string the-port) "REDACTED"]
+                                     [(regexp-quote (version)) "REDACTED"])
+                                    req)
+                  ereq)))))]))
 
   (define-syntax (test stx)
     (syntax-case stx ()
@@ -81,18 +86,43 @@
          (begin
            #,(syntax/loc stx
                (test-e the-port
-                       (hc:http-sendrecv "localhost" "/"
-                                         #:ssl? #f
-                                         #:port the-port
-                                         #:method method
-                                         #:headers empty
-                                         #:data body)
+                       1 #f
+                       (lambda (ignored)
+                         (hc:http-sendrecv "localhost" "/"
+                                           #:ssl? #f
+                                           #:port the-port
+                                           #:method method
+                                           #:headers empty
+                                           #:data body))
                        raw ereq estatus eheaders econtent))
            #,(syntax/loc stx
                (test-e the-port
-                       (let ([c (hc:http-conn-open "localhost"
-                                                   #:port the-port
-                                                   #:ssl? #f)])
+                       1 #f
+                       (lambda (ignored)
+                         (let ([c (hc:http-conn-open "localhost"
+                                                     #:port the-port
+                                                     #:ssl? #f)])
+                           (check-equal? #t (hc:http-conn-live? c))
+                           (hc:http-conn-send! c
+                                               "/"
+                                               #:method method
+                                               #:headers empty
+                                               #:close? #t
+                                               #:data body)
+                           (begin0
+                            (hc:http-conn-recv! c
+                                                #:method method
+                                                #:close? #t)
+                            (check-equal? #f (hc:http-conn-live? c)))))
+                       raw ereq estatus eheaders econtent))
+           #,(syntax/loc stx
+               (test-e the-port
+                       3 (hc:http-conn)
+                       (lambda (c)
+                         (check-equal? #f (hc:http-conn-live? c))
+                         (hc:http-conn-open! c "localhost"
+                                             #:port the-port
+                                             #:ssl? #f)
                          (check-equal? #t (hc:http-conn-live? c))
                          (hc:http-conn-send! c
                                              "/"
@@ -108,12 +138,14 @@
                        raw ereq estatus eheaders econtent))
            #,(syntax/loc stx
                (test-e the-port
-                       (u:http-sendrecv/url
-                        (u:make-url "http" #f "localhost" the-port #t
-                                    (list (u:path/param "" empty)) empty #f)
-                        #:method method
-                        #:headers empty
-                        #:data body)
+                       1 #f
+                       (lambda (ignored)
+                         (u:http-sendrecv/url
+                          (u:make-url "http" #f "localhost" the-port #t
+                                      (list (u:path/param "" empty)) empty #f)
+                          #:method method
+                          #:headers empty
+                          #:data body))
                        raw ereq estatus eheaders econtent))))]))
 
   (tests
