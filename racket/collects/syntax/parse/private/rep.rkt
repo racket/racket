@@ -475,7 +475,7 @@
             [mstx (introducer (syntax-local-introduce stx))]
             [mresult (parameterize ([current-syntax-parse-pattern-introducer introducer])
                        (proc mstx))]
-            [result (syntax-local-introduce (introducer mresult))])
+            [result (syntax-local-introduce (introducer (syntax-disarm mresult #f)))])
        (disappeared! #'id)
        (recur result))]
     [(id . rst)
@@ -487,7 +487,7 @@
             [mstx (introducer (syntax-local-introduce stx))]
             [mresult (parameterize ([current-syntax-parse-pattern-introducer introducer])
                        (proc mstx))]
-            [result (syntax-local-introduce (introducer mresult))])
+            [result (syntax-local-introduce (introducer (syntax-disarm mresult #f)))])
        (disappeared! #'id)
        (recur result))]
     [wildcard
