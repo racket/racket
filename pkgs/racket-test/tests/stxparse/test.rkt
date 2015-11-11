@@ -618,6 +618,17 @@
                                       (+ x y z))))
                   (syntax->datum #'(let ([x 1] [y 2] [z 3])
                                      (+ x y z))))
+
+    (define-syntax ~maybe
+      (pattern-expander
+       (syntax-rules ()
+        [(~maybe pat ...)
+         (~optional (~seq pat ...))])))
+
+    (check-equal? (syntax-parse #'(1 2 3 4 5 6)
+                    [((~maybe a b) ...)
+                     (syntax->datum #'(a ...))])
+                  '(1 3 5))
     ))
 
 (test-case "this-syntax"
