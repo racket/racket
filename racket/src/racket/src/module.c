@@ -7670,7 +7670,10 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
         && prep_required_id(vec)
         && scheme_stx_bound_eq(SCHEME_VEC_ELS(vec)[6], id, phase)) {
       /* can override; first, remove old binding mapping: */
-      scheme_hash_set(required, binding, NULL);
+      if (SCHEME_SYMBOLP(binding))
+        scheme_hash_set(required, binding, scheme_false);
+      else
+        scheme_hash_set(required, binding, NULL);
       /* construct overriding `binding`: */
       binding = scheme_make_vector(4, NULL);
       vec = scheme_module_resolve(modidx, 0);
