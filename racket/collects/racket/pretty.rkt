@@ -414,10 +414,10 @@
 (define-struct unquoted (val))
 (define struct-ellipses (string->uninterned-symbol "..."))
 
-   (define (generic-write obj display? width pport
-			  print-graph? print-struct? print-hash-table? print-vec-length? 
-                          print-box? print-as-qq? qq-depth
-			  depth size-hook)
+(define (generic-write obj display? width pport
+                       print-graph? print-struct? print-hash-table? print-vec-length? 
+                       print-box? print-as-qq? qq-depth
+                       depth size-hook)
 
      (define pair-open (if (print-pair-curly-braces) "{" "("))
      (define pair-close (if (print-pair-curly-braces) "}" ")"))
@@ -1527,114 +1527,114 @@
      (let-values ([(l col p) (port-next-location pport)])
        ((printing-port-print-line pport) #f col width)))
   
-  (define (look-in-style-table raw-head)
-    (let ([head (do-remap raw-head)])
-      (or (hash-ref (pretty-print-style-table-hash
-                     (pretty-print-current-style-table))
-                    head
-                    #f)
-          head)))
+(define (look-in-style-table raw-head)
+  (let ([head (do-remap raw-head)])
+    (or (hash-ref (pretty-print-style-table-hash
+                   (pretty-print-current-style-table))
+                  head
+          #f)
+        head)))
   
-  (define (do-remap raw-head)
-    (cond
-      [((pretty-print-remap-stylable) raw-head)
-       => 
-       values]
-      [else raw-head]))
+(define (do-remap raw-head)
+  (cond
+    [((pretty-print-remap-stylable) raw-head)
+     => 
+     values]
+    [else raw-head]))
    
-  (define (read-macro? l pair? car cdr qd)
-     (define (length1? l) (and (pair? l) (null? (cdr l))))
-     (and (pretty-print-abbreviate-read-macros)
-          (let ((head (do-remap (car l))) (tail (cdr l)))
-            (case head
-              ((quote quasiquote syntax
-                quasisyntax unsyntax unsyntax-splicing
-                unquote unquote-splicing)
-               (length1? tail))
-              (else #f)))))
+(define (read-macro? l pair? car cdr qd)
+  (define (length1? l) (and (pair? l) (null? (cdr l))))
+  (and (pretty-print-abbreviate-read-macros)
+       (let ([head (do-remap (car l))] [tail (cdr l)])
+         (case head
+           [(quote quasiquote syntax
+                   quasisyntax unsyntax unsyntax-splicing
+                   unquote unquote-splicing)
+            (length1? tail)]
+           [else #f]))))
             
-   (define (read-macro-body l car cdr)
-     (car (cdr l)))
+(define (read-macro-body l car cdr)
+  (car (cdr l)))
   
-   (define (read-macro-prefix l car)
-     (let ((head (do-remap (car l))))
-       (case head
-	 ((quote)             "'")
-	 ((quasiquote)        "`")
-	 ((unquote)           ",")
-	 ((unquote-splicing)  ",@")
-	 ((syntax)            "#'")
-         ((quasisyntax)       "#`")
-	 ((unsyntax)          "#,")
-	 ((unsyntax-splicing) "#,@"))))
+(define (read-macro-prefix l car)
+  (let ([head (do-remap (car l))])
+    (case head
+      [(quote)             "'"]
+      [(quasiquote)        "`"]
+      [(unquote)           ","]
+      [(unquote-splicing)  ",@"]
+      [(syntax)            "#'"]
+      [(quasisyntax)       "#`"]
+      [(unsyntax)          "#,"]
+      [(unsyntax-splicing) "#,@"])))
   
-   (define pretty-print-handler
-     (lambda (v)
-       (unless (void? v)
-	       (pretty-print v))))
+(define pretty-print-handler
+  (lambda (v)
+    (unless (void? v)
+      (pretty-print v))))
 
-   (define (number->decimal-string x)
-     (cond
-      [(or (inexact? x)
-	   (integer? x))
-       (number->string x)]
-      [(not (real? x))
-       (let ([r (real-part x)]
-	     [i (imag-part x)])
-	 (format "~a~a~ai"
-		 (number->decimal-string r)
-		 (if (negative? i)
-		     ""
-		     "+")
-		 (number->decimal-string i)))]
-      [else
-       (let ([n (numerator x)]
-	     [d (denominator x)])
-	 ;; Count powers of 2 in denomintor
-	 (let loop ([v d][2-power 0])
-	   (if (and (positive? v)
-		    (even? v))
-	       (loop (arithmetic-shift v -1) (add1 2-power))
-	       ;; Count powers of 5 in denominator
-	       (let loop ([v v][5-power 0])
-		 (if (zero? (remainder v 5))
-		     (loop (quotient v 5) (add1 5-power))
-		     ;; No more 2s or 5s. Anything left?
-		     (if (= v 1)
-			 ;; Denominator = (* (expt 2 2-power) (expt 5 5-power)).
-			 ;; Print number as decimal.
-			 (let* ([10-power (max 2-power 5-power)]
-				[scale (* (expt 2 (- 10-power 2-power))
-					  (expt 5 (- 10-power 5-power)))]
-				[s (number->string (* (abs n) scale))]
-				[orig-len (string-length s)]
-				[len (max (add1 10-power) orig-len)]
-				[padded-s (if (< orig-len len)
-					      (string-append
-					       (make-string (- len orig-len) #\0)
-					       s)
-					      s)])
-			   (format "~a~a.~a"
-				   (if (negative? n) "-" "")
-				   (substring padded-s 0 (- len 10-power))
-				   (substring padded-s (- len 10-power) len)))
-			 ;; d has factor(s) other than 2 and 5.
-			 ;; Print as a fraction.
-			 (number->string x)))))))]))
+(define (number->decimal-string x)
+  (cond
+    [(or (inexact? x)
+         (integer? x))
+     (number->string x)]
+    [(not (real? x))
+     (let ([r (real-part x)]
+           [i (imag-part x)])
+       (format "~a~a~ai"
+               (number->decimal-string r)
+               (if (negative? i)
+                   ""
+                   "+")
+               (number->decimal-string i)))]
+    [else
+     (let ([n (numerator x)]
+           [d (denominator x)])
+       ;; Count powers of 2 in denomintor
+       (let loop ([v d][2-power 0])
+         (if (and (positive? v)
+                  (even? v))
+             (loop (arithmetic-shift v -1) (add1 2-power))
+             ;; Count powers of 5 in denominator
+             (let loop ([v v][5-power 0])
+               (if (zero? (remainder v 5))
+                   (loop (quotient v 5) (add1 5-power))
+                   ;; No more 2s or 5s. Anything left?
+                   (if (= v 1)
+                       ;; Denominator = (* (expt 2 2-power) (expt 5 5-power)).
+                       ;; Print number as decimal.
+                       (let* ([10-power (max 2-power 5-power)]
+                              [scale (* (expt 2 (- 10-power 2-power))
+                                        (expt 5 (- 10-power 5-power)))]
+                              [s (number->string (* (abs n) scale))]
+                              [orig-len (string-length s)]
+                              [len (max (add1 10-power) orig-len)]
+                              [padded-s (if (< orig-len len)
+                                            (string-append
+                                             (make-string (- len orig-len) #\0)
+                                             s)
+                                            s)])
+                         (format "~a~a.~a"
+                                 (if (negative? n) "-" "")
+                                 (substring padded-s 0 (- len 10-power))
+                                 (substring padded-s (- len 10-power) len)))
+                       ;; d has factor(s) other than 2 and 5.
+                       ;; Print as a fraction.
+                       (number->string x)))))))]))
   
-  (define (pretty-format t [w (pretty-print-columns)] #:mode [mode 'print])
-    (parameterize ([pretty-print-columns w])
-      (let ([op (open-output-string)])
-        ((case mode
-           [(print)   pretty-print]
-           [(write)   pretty-write]
-           [(display) pretty-display]
-           [else (raise-argument-error 'pretty-format "(or/c 'print 'write display)" mode)])
-         t op)
-        (let ([s (get-output-string op)])
-          (if (eq? w 'infinity)
-              s
-              (substring s 0 (- (string-length s) 1)))))))
+(define (pretty-format t [w (pretty-print-columns)] #:mode [mode 'print])
+  (parameterize ([pretty-print-columns w])
+    (let ([op (open-output-string)])
+      ((case mode
+         [(print)   pretty-print]
+         [(write)   pretty-write]
+         [(display) pretty-display]
+         [else (raise-argument-error 'pretty-format "(or/c 'print 'write display)" mode)])
+       t op)
+      (let ([s (get-output-string op)])
+        (if (eq? w 'infinity)
+            s
+            (substring s 0 (- (string-length s) 1)))))))
 
   
 
