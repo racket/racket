@@ -1307,54 +1307,54 @@
 		(pr l (+ extra 1) pp-item (dsub1 depth) qd)
 		(out closer)])))))
 
-       (define (pp-general expr extra named? pp-1 pp-2 pp-3 depth
-                           apair? acar acdr open close
-                           qd)
+    (define (pp-general expr extra named? pp-1 pp-2 pp-3 depth
+                        apair? acar acdr open close
+                        qd)
+      
+      (define (tail1 rest col1 col3)
+        (if (and pp-1 (apair? rest))
+            (let* ((val1 (acar rest))
+                   (rest (acdr rest))
+                   (extra (if (null? rest) (+ extra 1) 0)))
+              (indent col3)
+              (pr val1 extra pp-1 depth qd)
+              (tail2 rest col1 col3))
+            (tail2 rest col1 col3)))
+      
+      (define (tail2 rest col1 col3)
+        (if (and pp-2 (apair? rest))
+            (let* ((val1 (acar rest))
+                   (rest (acdr rest))
+                   (extra (if (null? rest) (+ extra 1) 0)))
+              (indent col3)
+              (pr val1 extra pp-2 depth qd)
+              (tail3 rest col1))
+            (tail3 rest col1)))
+      
+      (define (tail3 rest col1)
+        (pp-down close rest col1 col1 extra pp-3 #f #t depth
+                 apair? acar acdr open close
+                 qd))
+      
+      (let* ([head (acar expr)]
+             [rest (acdr expr)]
+             [col (ccol)])
+        (out open)
+        (wr head (dsub1 depth) qd)
+        (if (and named? (apair? rest))
+            (let* ((name (acar rest))
+                   (rest (acdr rest)))
+              (out " ")
+              (wr name (dsub1 depth) qd)
+              (tail1 rest (+ col indent-general) (+ (ccol) 1)))
+            (tail1 rest (+ col indent-general) (+ (ccol) 1)))))
 
-	 (define (tail1 rest col1 col3)
-	   (if (and pp-1 (apair? rest))
-	       (let* ((val1 (acar rest))
-		      (rest (acdr rest))
-		      (extra (if (null? rest) (+ extra 1) 0)))
-		 (indent col3)
-		 (pr val1 extra pp-1 depth qd)
-		 (tail2 rest col1 col3))
-	       (tail2 rest col1 col3)))
-
-	 (define (tail2 rest col1 col3)
-	   (if (and pp-2 (apair? rest))
-	       (let* ((val1 (acar rest))
-		      (rest (acdr rest))
-		      (extra (if (null? rest) (+ extra 1) 0)))
-		 (indent col3)
-		 (pr val1 extra pp-2 depth qd)
-		 (tail3 rest col1))
-	       (tail3 rest col1)))
-
-	 (define (tail3 rest col1)
-	   (pp-down close rest col1 col1 extra pp-3 #f #t depth
-                    apair? acar acdr open close
-                    qd))
-
-	 (let* ([head (acar expr)]
-		[rest (acdr expr)]
-		[col (ccol)])
-	   (out open)
-	   (wr head (dsub1 depth) qd)
-	   (if (and named? (apair? rest))
-	       (let* ((name (acar rest))
-		      (rest (acdr rest)))
-		 (out " ")
-		 (wr name (dsub1 depth) qd)
-		 (tail1 rest (+ col indent-general) (+ (ccol) 1)))
-	       (tail1 rest (+ col indent-general) (+ (ccol) 1)))))
-
-       (define (pp-expr-list l extra depth
-                             apair? acar acdr open close
-                             qd)
-	 (pp-list l extra pp-expr #t depth
-                  apair? acar acdr open close
-                  qd))
+    (define (pp-expr-list l extra depth
+                          apair? acar acdr open close
+                          qd)
+      (pp-list l extra pp-expr #t depth
+               apair? acar acdr open close
+               qd))
 
        (define (pp-lambda expr extra depth
                           apair? acar acdr open close
