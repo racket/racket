@@ -2107,7 +2107,7 @@
     (err/rt-test (apply raise-syntax-error #f "oops" a0 a1 args)
                  (lambda (exn)
                    (and (exn:fail:syntax? exn)
-                        (regexp-match? (format "^[^:\n]*:~a:~a:" 
+                        (regexp-match? (format "^([a-zA-Z]:)?[^:\n]*:~a:~a:"
                                                (or (syntax-line a1)
                                                    (syntax-line a0))
                                                (or (syntax-column a1)
