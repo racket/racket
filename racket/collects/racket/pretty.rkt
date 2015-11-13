@@ -1370,33 +1370,33 @@
                   apair? acar acdr open close
                   qd))
 
-       (define (pp-cond expr extra depth
-                        apair? acar acdr open close
-                        qd)
-	 (pp-list expr extra pp-expr-list #t depth
-                  apair? acar acdr open close
-                  qd))
+    (define (pp-cond expr extra depth
+                     apair? acar acdr open close
+                     qd)
+      (pp-list expr extra pp-expr-list #t depth
+               apair? acar acdr open close
+               qd))
 
-       (define (pp-syntax-case expr extra depth
-                               apair? acar acdr open close
-                               qd)
-	 (pp-two-up expr extra pp-expr-list depth
-                    apair? acar acdr open close
-                    qd))
+    (define (pp-syntax-case expr extra depth
+                            apair? acar acdr open close
+                            qd)
+      (pp-two-up expr extra pp-expr-list depth
+                 apair? acar acdr open close
+                 qd))
 
-       (define (pp-module expr extra depth
-                          apair? acar acdr open close
-                          qd)
-         (pp-two-up expr extra pp-expr depth
-                    apair? acar acdr open close
-                    qd))
+    (define (pp-module expr extra depth
+                       apair? acar acdr open close
+                       qd)
+      (pp-two-up expr extra pp-expr depth
+                 apair? acar acdr open close
+                 qd))
 
-       (define (pp-make-object expr extra depth
-                               apair? acar acdr open close
-                               qd)
-	 (pp-one-up expr extra pp-expr-list depth
-                    apair? acar acdr open close
-                    qd))
+    (define (pp-make-object expr extra depth
+                            apair? acar acdr open close
+                            qd)
+      (pp-one-up expr extra pp-expr-list depth
+                 apair? acar acdr open close
+                 qd))
 
        (define (pp-case expr extra depth
                         apair? acar acdr open close
