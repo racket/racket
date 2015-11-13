@@ -745,25 +745,25 @@
                 (apply append l))
           l)))
      
-     ;; ------------------------------------------------------------
-     ;; wr: write on a single line
-     (define (wr* pport obj depth display? qd)
+  ;; ------------------------------------------------------------
+  ;; wr: write on a single line
+  (define (wr* pport obj depth display? qd)
 
-       (define (out str)
-	 (write-string str pport))
+    (define (out str)
+      (write-string str pport))
        
-       (define (wr obj depth qd)
-	 (wr* pport obj depth display? qd))
+    (define (wr obj depth qd)
+      (wr* pport obj depth display? qd))
 
-       (define (wr-expr expr depth pair? car cdr open close qd)
-	 (if (and (read-macro? expr pair? car cdr qd)
-                  (equal? open "("))
-	     (begin
-	       (out (read-macro-prefix expr car))
-	       (wr (read-macro-body expr car cdr) depth qd))
-	     (wr-lst expr #t depth pair? car cdr open close qd)))
+    (define (wr-expr expr depth pair? car cdr open close qd)
+      (if (and (read-macro? expr pair? car cdr qd)
+               (equal? open "("))
+          (begin
+            (out (read-macro-prefix expr car))
+            (wr (read-macro-body expr car cdr) depth qd))
+          (wr-lst expr #t depth pair? car cdr open close qd)))
 
-       (define (wr-lst l check? depth pair? car cdr open close qd)
+    (define (wr-lst l check? depth pair? car cdr open close qd)
 	 (if (pair? l)
 	     (if (and depth (zero? depth))
                  (begin
@@ -809,11 +809,11 @@
                (out open)
                (out close))))
 
-       (unless (hide? obj)
-         (pre-print pport obj))
-       (if (and depth 
-                (negative? depth)
-                (not (hide? obj)))
+    (unless (hide? obj)
+      (pre-print pport obj))
+    (if (and depth 
+             (negative? depth)
+             (not (hide? obj)))
 	   (out "...")
 	   
 	   (cond 
@@ -985,60 +985,60 @@
              (orig-write obj pport)]
 	    [else
 	     ((if display? orig-display orig-write) obj pport)]))
-       (unless (hide? obj)
-         (post-print pport obj)))
+    (unless (hide? obj)
+      (post-print pport obj)))
 
-     ;; ------------------------------------------------------------
-     ;; pp: write on (potentially) multiple lines
-     (define (pp* pport obj depth display? qd)
+  ;; ------------------------------------------------------------
+  ;; pp: write on (potentially) multiple lines
+  (define (pp* pport obj depth display? qd)
 
-       (define (pp obj depth)
-	 (pp* pport obj depth display? qd))
+    (define (pp obj depth)
+      (pp* pport obj depth display? qd))
 
-       (define (out str)
-	 (write-string str pport))
+    (define (out str)
+      (write-string str pport))
        
-       (define (spaces n)
-	 (add-spaces n pport))
+    (define (spaces n)
+      (add-spaces n pport))
 
-       (define (ccol)
-	 (let-values ([(l col p) (port-next-location pport)])
-	   col))
+    (define (ccol)
+      (let-values ([(l col p) (port-next-location pport)])
+        col))
 
-       (define (indent to)
-	 (let ([col (ccol)])
-	   (if (< to col)
-	       (begin
-		 (let ([col ((printing-port-print-line pport) #t col width)])
-		   (spaces (- to col))))
-	       (spaces (max 0 (- to col))))))
+    (define (indent to)
+      (let ([col (ccol)])
+        (if (< to col)
+            (begin
+              (let ([col ((printing-port-print-line pport) #t col width)])
+                (spaces (- to col))))
+            (spaces (max 0 (- to col))))))
 
-       (define (pr obj extra pp-pair depth qd)
+    (define (pr obj extra pp-pair depth qd)
 	 ;; may have to split on multiple lines
-	 (let* ([obj (if (hide? obj) (hide-val obj) obj)]
-                [can-multi (and width
-                                (not (size-hook obj display?))
-				(or (pair? obj)
-                                    (mpair? obj)
-                                    (vector? obj) 
-                                    (flvector? obj) 
-                                    (fxvector? obj) 
-				    (and (box? obj) print-box?)
-				    (and (custom-write? obj)
-					 (not (struct-type? obj)))
-				    (and (struct? obj) print-struct?)
-				    (and (hash? obj) print-hash-table?)))]
-		[graph-ref (if can-multi
-			       (and found (hash-ref found obj #f))
-			       #f)]
-		[old-counter cycle-counter])
-	   (if (and can-multi
-		    (or (not graph-ref) 
-			(not (unbox (mark-def graph-ref)))))
-	       ;; It might be possible to split obj across lines.
-	       ;; Try writing the obj, but accumulate the info that goes out
-	       ;;  into a-pport
-	       (let ([a-pport
+   (let* ([obj (if (hide? obj) (hide-val obj) obj)]
+          [can-multi (and width
+                          (not (size-hook obj display?))
+                          (or (pair? obj)
+                              (mpair? obj)
+                              (vector? obj) 
+                              (flvector? obj) 
+                              (fxvector? obj) 
+                              (and (box? obj) print-box?)
+                              (and (custom-write? obj)
+                                   (not (struct-type? obj)))
+                              (and (struct? obj) print-struct?)
+                              (and (hash? obj) print-hash-table?)))]
+          [graph-ref (if can-multi
+                         (and found (hash-ref found obj #f))
+                         #f)]
+          [old-counter cycle-counter])
+     (if (and can-multi
+              (or (not graph-ref) 
+                  (not (unbox (mark-def graph-ref)))))
+         ;; It might be possible to split obj across lines.
+         ;; Try writing the obj, but accumulate the info that goes out
+         ;;  into a-pport
+         (let ([a-pport
 		      (let/ec esc
 			(letrec ([a-pport (make-tentative-output-port
 					   pport 
@@ -1169,8 +1169,8 @@
                                    (out "#&") 
                                    (pr (unbox obj) extra pp-pair depth qd))))])
 			 (post-print pport obj)))))
-	       ;; Not possible to split obj across lines; so just write directly
-	       (wr* pport obj depth display? qd))))
+         ;; Not possible to split obj across lines; so just write directly
+         (wr* pport obj depth display? qd))))
 
        (define (pp-expr expr extra depth
                         apair? acar acdr open close
