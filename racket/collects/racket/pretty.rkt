@@ -419,57 +419,57 @@
                        print-box? print-as-qq? qq-depth
                        depth size-hook)
 
-     (define pair-open (if (print-pair-curly-braces) "{" "("))
-     (define pair-close (if (print-pair-curly-braces) "}" ")"))
-     (define mpair-open (if (print-mpair-curly-braces) "{" "("))
-     (define mpair-close (if (print-mpair-curly-braces) "}" ")"))
-     
-     (define table (make-hasheq)) ; Hash table for looking for loops
+  (define pair-open (if (print-pair-curly-braces) "{" "("))
+  (define pair-close (if (print-pair-curly-braces) "}" ")"))
+  (define mpair-open (if (print-mpair-curly-braces) "{" "("))
+  (define mpair-close (if (print-mpair-curly-braces) "}" ")"))
 
-     (define show-inexactness? (pretty-print-show-inexactness))
-     (define exact-as-decimal? (pretty-print-exact-as-decimal))
+  (define table (make-hasheq)) ; Hash table for looking for loops
 
-     (define long-bools? (print-boolean-long-form))
-     
-     (define-syntax-rule (mkvector->repeatless-list name v-length v-ref equal-op? ->list)
-       (define name
-         (if print-vec-length?
-             (lambda (v)
-               (let ([len (v-length v)])
-                 (if (zero? len)
-                     null
-                     (let ([last (v-ref v (sub1 len))])
-                       (let loop ([i (- len 2)])
-                         (if (i . < . 0)
-                             (list last)
-                             (let ([e (v-ref v i)])
-                               (if (equal-op? e last)
-                                   (loop (sub1 i))
-                                   (let loop ([i (sub1 i)][r (list e last)])
-                                     (if (i . < . 0)
-                                         r
-                                         (loop (sub1 i) (cons (v-ref v i) r))))))))))))
-             ->list)))
+  (define show-inexactness? (pretty-print-show-inexactness))
+  (define exact-as-decimal? (pretty-print-exact-as-decimal))
 
-     (mkvector->repeatless-list vector->repeatless-list vector-length vector-ref eq? vector->list)
-     (mkvector->repeatless-list flvector->repeatless-list flvector-length flvector-ref equal?
-                                (lambda (v) (for/list ([x (in-flvector v)]) x)))
-     (mkvector->repeatless-list fxvector->repeatless-list fxvector-length fxvector-ref eq?
-                                (lambda (v) (for/list ([x (in-fxvector v)]) x)))
+  (define long-bools? (print-boolean-long-form))
 
-     (define (extract-sub-objects obj pport)
-       (let ([p (open-output-nowhere 'null (port-writes-special? pport))]
-	     [l null])
-	 (let ([record (lambda (o p) (set! l (cons o l)))])
-	   (port-write-handler p record)
-	   (port-display-handler p record)
-	   (port-print-handler p record))
-	 (parameterize ([pretty-printing #f])
-	   ((custom-write-accessor obj) obj p #f))
-	 l))
+  (define-syntax-rule (mkvector->repeatless-list name v-length v-ref equal-op? ->list)
+    (define name
+      (if print-vec-length?
+          (lambda (v)
+            (let ([len (v-length v)])
+              (if (zero? len)
+                  null
+                  (let ([last (v-ref v (sub1 len))])
+                    (let loop ([i (- len 2)])
+                      (if (i . < . 0)
+                          (list last)
+                          (let ([e (v-ref v i)])
+                            (if (equal-op? e last)
+                                (loop (sub1 i))
+                                (let loop ([i (sub1 i)][r (list e last)])
+                                  (if (i . < . 0)
+                                      r
+                                      (loop (sub1 i) (cons (v-ref v i) r))))))))))))
+          ->list)))
 
-     (define found-cycle
-       (or print-graph?
+  (mkvector->repeatless-list vector->repeatless-list vector-length vector-ref eq? vector->list)
+  (mkvector->repeatless-list flvector->repeatless-list flvector-length flvector-ref equal?
+                             (lambda (v) (for/list ([x (in-flvector v)]) x)))
+  (mkvector->repeatless-list fxvector->repeatless-list fxvector-length fxvector-ref eq?
+                             (lambda (v) (for/list ([x (in-fxvector v)]) x)))
+  
+  (define (extract-sub-objects obj pport)
+    (let ([p (open-output-nowhere 'null (port-writes-special? pport))]
+          [l null])
+      (let ([record (lambda (o p) (set! l (cons o l)))])
+        (port-write-handler p record)
+        (port-display-handler p record)
+        (port-print-handler p record))
+      (parameterize ([pretty-printing #f])
+        ((custom-write-accessor obj) obj p #f))
+      l))
+
+  (define found-cycle
+    (or print-graph?
 	   (let loop ([obj obj])
 	     (and (or (vector? obj)
 		      (pair? obj)
@@ -511,54 +511,54 @@
 			  (hash-remove! table obj)
 			  cycle)))))))
 
-     (define __dummy__
-       (when found-cycle
-	 (let loop ([obj obj])
-	   (if (or (vector? obj)
-		   (pair? obj)
-		   (mpair? obj)
-		   (and (box? obj)
+
+  (when found-cycle
+   (let loop ([obj obj])
+     (if (or (vector? obj)
+	           (pair? obj)
+	           (mpair? obj)
+	           (and (box? obj)
                         print-box?)
-		   (and (custom-write? obj)
-			(not (struct-type? obj)))
+             (and (custom-write? obj)
+                  (not (struct-type? obj)))
 		   (and (struct? obj) print-struct?)
 		   (and (hash? obj) print-hash-table?))
-	       ;; A little confusing: use #t for not-found
-	       (let ([p (hash-ref table obj #t)])
-		 (when (not (mark? p))
-		   (if p
-		       (begin
-			 (hash-set! table obj #f)
-			 (cond
-			  [(vector? obj)
-			   (let ([len (vector-length obj)])
-			     (let vloop ([i 0])
-			       (unless (= i len)
-				 (loop (vector-ref obj i))
-				 (vloop (add1 i)))))]
-			  [(pair? obj)
-			   (loop (car obj))
-			   (loop (cdr obj))]
-			  [(mpair? obj)
-			   (loop (mcar obj))
-			   (loop (mcdr obj))]
-			  [(and (box? obj) print-box?) (loop (unbox obj))]
-			  [(and (custom-write? obj)
-				(not (struct-type? obj)))
-			   (loop (extract-sub-objects obj pport))]
-			  [(struct? obj)
-			   (for-each loop 
-				     (vector->list (struct->vector obj)))]
-			  [(hash? obj)
-			   (hash-for-each
-			    obj
-			    (lambda (k v)
-			      (loop k)
-			      (loop v)))]))
-		       (begin
-			 (hash-set! table obj 
+         ;; A little confusing: use #t for not-found
+         (let ([p (hash-ref table obj #t)])
+           (when (not (mark? p))
+             (if p
+                 (begin
+                   (hash-set! table obj #f)
+                   (cond
+                    [(vector? obj)
+                     (let ([len (vector-length obj)])
+                       (let vloop ([i 0])
+                         (unless (= i len)
+                           (loop (vector-ref obj i))
+                           (vloop (add1 i)))))]
+                    [(pair? obj)
+                     (loop (car obj))
+                     (loop (cdr obj))]
+                    [(mpair? obj)
+                     (loop (mcar obj))
+                     (loop (mcdr obj))]
+                    [(and (box? obj) print-box?) (loop (unbox obj))]
+                    [(and (custom-write? obj)
+                          (not (struct-type? obj)))
+                     (loop (extract-sub-objects obj pport))]
+                    [(struct? obj)
+                     (for-each loop
+                               (vector->list (struct->vector obj)))]
+                    [(hash? obj)
+                     (hash-for-each
+                      obj
+                      (lambda (k v)
+                        (loop k)
+                        (loop v)))]))
+                 (begin
+                   (hash-set! table obj 
                                     (make-mark #f (box #f)))))))
-               (void)))))
+         (void))))
 
      (define escapes-table
        (let* ([table (make-hasheq)]
