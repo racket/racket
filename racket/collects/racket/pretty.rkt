@@ -1356,19 +1356,19 @@
                apair? acar acdr open close
                qd))
 
-       (define (pp-lambda expr extra depth
-                          apair? acar acdr open close
-                          qd)
-	 (pp-general expr extra #f pp-expr-list #f pp-expr depth
-                     apair? acar acdr open close
-                     qd))
+    (define (pp-lambda expr extra depth
+                       apair? acar acdr open close
+                       qd)
+      (pp-general expr extra #f pp-expr-list #f pp-expr depth
+                  apair? acar acdr open close
+                  qd))
 
-       (define (pp-if expr extra depth
-                      apair? acar acdr open close
-                      qd)
-	 (pp-general expr extra #f pp-expr #f pp-expr depth
-                     apair? acar acdr open close
-                     qd))
+    (define (pp-if expr extra depth
+                   apair? acar acdr open close
+                   qd)
+      (pp-general expr extra #f pp-expr #f pp-expr depth
+                  apair? acar acdr open close
+                  qd))
 
        (define (pp-cond expr extra depth
                         apair? acar acdr open close
