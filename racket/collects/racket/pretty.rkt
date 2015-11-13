@@ -1232,45 +1232,45 @@
                  apair? acar acdr open close
                  qd)))
 
-       ;; (head item1 item2
-       ;;   item3
-       ;;   item4)
-       (define (pp-two-up expr extra pp-item depth
-                          apair? acar acdr open close
-                          qd)
-	 (out open)
-	 (let ([col (ccol)])
-	   (wr (acar expr) (dsub1 depth) qd)
-	   (out " ")
-	   (wr (acar (acdr expr)) (dsub1 depth) qd)
-	   (pp-down close (acdr (acdr expr)) (+ (ccol) 1) (+ col 1) extra pp-item #t #t depth
-                    apair? acar acdr open close 
-                    qd)))
+    ;; (head item1 item2
+    ;;   item3
+    ;;   item4)
+    (define (pp-two-up expr extra pp-item depth
+                       apair? acar acdr open close
+                       qd)
+      (out open)
+      (let ([col (ccol)])
+        (wr (acar expr) (dsub1 depth) qd)
+        (out " ")
+        (wr (acar (acdr expr)) (dsub1 depth) qd)
+        (pp-down close (acdr (acdr expr)) (+ (ccol) 1) (+ col 1) extra pp-item #t #t depth
+                 apair? acar acdr open close 
+                 qd)))
 
-       ;; (head item1
-       ;;   item2
-       ;;   item3)
-       (define (pp-one-up expr extra pp-item depth
-                          apair? acar acdr open close
-                          qd)
-	 (out open)
-	 (let ([col (ccol)])
-	   (wr (acar expr) (dsub1 depth) qd)
-	   (pp-down close (acdr expr) (+ (ccol) 1) (+ col 1) extra pp-item #t #t depth
-                    apair? acar acdr open close 
-                    qd)))
+    ;; (head item1
+    ;;   item2
+    ;;   item3)
+    (define (pp-one-up expr extra pp-item depth
+                       apair? acar acdr open close
+                       qd)
+      (out open)
+      (let ([col (ccol)])
+        (wr (acar expr) (dsub1 depth) qd)
+        (pp-down close (acdr expr) (+ (ccol) 1) (+ col 1) extra pp-item #t #t depth
+                 apair? acar acdr open close 
+                 qd)))
 
-       ;; (item1
-       ;;  item2
-       ;;  item3)
-       (define (pp-list l extra pp-item check? depth
-                        apair? acar acdr open close
-                        qd)
-	 (out open)
-	 (let ([col (ccol)])
-	   (pp-down close l col col extra pp-item #f check? depth
-                    apair? acar acdr open close
-                    qd)))
+    ;; (item1
+    ;;  item2
+    ;;  item3)
+    (define (pp-list l extra pp-item check? depth
+                     apair? acar acdr open close
+                     qd)
+      (out open)
+      (let ([col (ccol)])
+        (pp-down close l col col extra pp-item #f check? depth
+                 apair? acar acdr open close
+                 qd)))
 
        (define (pp-down closer l col1 col2 extra pp-item check-first? check-rest? depth
                         apair? acar acdr open close 
