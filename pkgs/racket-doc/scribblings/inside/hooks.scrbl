@@ -91,6 +91,15 @@ Like @cpp{scheme_init_collection_paths_post}, but with @racket[null]
 as the last argument.}
 
 
+@function[(void scheme_set_dll_path
+            [wchar_t* path])]{
+
+On Windows only, sets the path used to find optional DLLs that are used
+by the runtime system: @filepath{longdouble.dll} and one of @filepath{iconv.dll},
+@filepath{libiconv.dll}, or @filepath{libiconv-2.dll}. The given @var{path}
+should be an absolute path.}
+
+
 @function[(void scheme_seal_parameters)]{
 
 Takes a snapshot of the current values of built-in parameters. These

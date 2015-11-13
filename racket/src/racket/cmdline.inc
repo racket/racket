@@ -106,8 +106,6 @@ static void (*console_printf)(char *str, ...);
 # define PRINTF console_printf
 #endif
 
-MZ_EXTERN void scheme_set_dll_path(wchar_t *s);
-
 static void record_dll_path(void)
 {
   if (_dlldir[_dlldir_offset] != '<') {
