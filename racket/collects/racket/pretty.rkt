@@ -814,177 +814,177 @@
     (if (and depth 
              (negative? depth)
              (not (hide? obj)))
-	   (out "...")
-	   
-	   (cond 
-	    [(size-hook obj display?)
-	     => (lambda (len)
-		  (output-hooked pport obj len display?))]
-	    
-	    [(pair? obj)
-             (check-expr-found
-              obj pport #t
-              #f #f
-              (lambda ()
-                (let* ([qd (to-quoted out qd obj)]
-                       [pair (if (and qd (zero? qd))
-                                 (convert-pair obj)
-                                 obj)])
-                  (wr-expr pair depth pair? car cdr pair-open pair-close qd))))]
-	    [(mpair? obj) 
-             (check-expr-found
-              obj pport #t
-              #f #f
-              (lambda ()
+        (out "...")
+        
+        (cond 
+          [(size-hook obj display?)
+           => (lambda (len)
+                (output-hooked pport obj len display?))]
+          
+          [(pair? obj)
+           (check-expr-found
+            obj pport #t
+            #f #f
+            (lambda ()
+              (let* ([qd (to-quoted out qd obj)]
+                     [pair (if (and qd (zero? qd))
+                               (convert-pair obj)
+                               obj)])
+                (wr-expr pair depth pair? car cdr pair-open pair-close qd))))]
+          [(mpair? obj) 
+           (check-expr-found
+            obj pport #t
+            #f #f
+            (lambda ()
+              (if (and qd (zero? qd))
+                  (wr-expr (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
+                           depth pair? car cdr pair-open pair-close qd)
+                  (wr-expr obj depth mpair? mcar mcdr mpair-open mpair-close qd))))]
+          [(null? obj)
+           (let ([qd (to-quoted out qd obj)])
+             (wr-lst obj #f depth pair? car cdr "(" ")" qd))]
+          [(vector? obj)   
+           (check-expr-found
+            obj pport #t
+            #f #f
+            (lambda ()
+              (let ([qd (to-quoted out qd obj)]
+                    [vecl (vector->repeatless-list obj)])
                 (if (and qd (zero? qd))
-                    (wr-expr (list (make-unquoted 'mcons) (mcar obj) (mcdr obj))
-                             depth pair? car cdr pair-open pair-close qd)
-                    (wr-expr obj depth mpair? mcar mcdr mpair-open mpair-close qd))))]
-	    [(null? obj)
-             (let ([qd (to-quoted out qd obj)])
-               (wr-lst obj #f depth pair? car cdr "(" ")" qd))]
-	    [(vector? obj)   
-             (check-expr-found
-              obj pport #t
-              #f #f
-              (lambda ()
-                (let ([qd (to-quoted out qd obj)]
-                      [vecl (vector->repeatless-list obj)])
-                  (if (and qd (zero? qd))
-                      (wr-lst (cons (make-unquoted 'vector) vecl)
-                              #f depth pair? car cdr "(" ")" qd)
-                      (begin
+                    (wr-lst (cons (make-unquoted 'vector) vecl)
+                            #f depth pair? car cdr "(" ")" qd)
+                    (begin
+                      (out "#")
+                      (when print-vec-length?
+                        (out (number->string (vector-length obj))))
+                      (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
+          [(flvector? obj)   
+           (check-expr-found
+            obj pport #t
+            #f #f
+            (lambda ()
+              (let ([vecl (flvector->repeatless-list obj)])
+                (if (and qd (zero? qd))
+                    (wr-lst (cons (make-unquoted 'flvector) vecl)
+                            #f depth pair? car cdr "(" ")" qd)
+                    (begin
+                      (out "#fl")
+                      (when print-vec-length?
+                        (out (number->string (flvector-length obj))))
+                      (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
+          [(fxvector? obj)   
+           (check-expr-found
+            obj pport #t
+            #f #f
+            (lambda ()
+              (let ([vecl (fxvector->repeatless-list obj)])
+                (if (and qd (zero? qd))
+                    (wr-lst (cons (make-unquoted 'fxvector) vecl)
+                            #f depth pair? car cdr "(" ")" qd)
+                    (begin
+                      (out "#fx")
+                      (when print-vec-length?
+                        (out (number->string (fxvector-length obj))))
+                      (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
+          [(and (box? obj)
+                print-box?)
+           (check-expr-found
+            obj pport #t
+            #f #f
+            (lambda ()
+              (let ([qd (to-quoted out qd obj)])
+                (if (and qd (zero? qd))
+                    (wr-lst (list (make-unquoted 'box) (unbox obj))
+                            #f depth pair? car cdr "(" ")" qd)
+                    (begin
+                      (out "#&") 
+                      (wr (unbox obj) (dsub1 depth) qd))))))]
+          [(and (custom-write? obj) 
+                (not (struct-type? obj)))
+           (check-expr-found
+            obj pport #t
+            #f #f
+            (lambda ()
+              (parameterize ([pretty-print-columns 'infinity])
+                (let ([qd (let ([kind (if (custom-print-quotable? obj)
+                                          (custom-print-quotable-accessor obj)
+                                          'self)])
+                            (if (memq kind '(self never))
+                                qd
+                                (to-quoted out qd obj)))])
+                  (write-custom wr* obj pport depth display? width qd #f)))))]
+          [(hide? obj)
+           (wr* pport (hide-val obj) depth display? qd)]
+          [(unquoted? obj)
+           (orig-write (unquoted-val obj) pport)]
+          [(struct? obj)
+           (if (and print-struct?
+                    (not (and depth
+                              (zero? depth))))
+               (check-expr-found
+                obj pport #t
+                #f #f
+                (lambda ()
+                  (let* ([v (struct->vector obj struct-ellipses)]
+                         [pf? (prefab?! obj v)])
+                    (let ([qd (if pf?
+                                  (to-quoted out qd obj)
+                                  qd)])
+                      (when (or (not qd) (positive? qd))
                         (out "#")
-                        (when print-vec-length?
-                          (out (number->string (vector-length obj))))
-                        (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
-	    [(flvector? obj)   
-             (check-expr-found
-              obj pport #t
-              #f #f
-              (lambda ()
-                (let ([vecl (flvector->repeatless-list obj)])
-                  (if (and qd (zero? qd))
-                      (wr-lst (cons (make-unquoted 'flvector) vecl)
-                              #f depth pair? car cdr "(" ")" qd)
-                      (begin
-                        (out "#fl")
-                        (when print-vec-length?
-                          (out (number->string (flvector-length obj))))
-                        (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
-	    [(fxvector? obj)   
-             (check-expr-found
-              obj pport #t
-              #f #f
-              (lambda ()
-                (let ([vecl (fxvector->repeatless-list obj)])
-                  (if (and qd (zero? qd))
-                      (wr-lst (cons (make-unquoted 'fxvector) vecl)
-                              #f depth pair? car cdr "(" ")" qd)
-                      (begin
-                        (out "#fx")
-                        (when print-vec-length?
-                          (out (number->string (fxvector-length obj))))
-                        (wr-lst vecl #f depth pair? car cdr "(" ")" qd))))))]
-	    [(and (box? obj)
-                  print-box?)
-             (check-expr-found
-              obj pport #t
-              #f #f
-              (lambda ()
-                (let ([qd (to-quoted out qd obj)])
-                  (if (and qd (zero? qd))
-                      (wr-lst (list (make-unquoted 'box) (unbox obj))
-                              #f depth pair? car cdr "(" ")" qd)
-                      (begin
-                        (out "#&") 
-                        (wr (unbox obj) (dsub1 depth) qd))))))]
-	    [(and (custom-write? obj) 
-		  (not (struct-type? obj)))
-	     (check-expr-found
-	      obj pport #t
-	      #f #f
-	      (lambda ()
-		(parameterize ([pretty-print-columns 'infinity])
-                  (let ([qd (let ([kind (if (custom-print-quotable? obj)
-                                            (custom-print-quotable-accessor obj)
-                                            'self)])
-                              (if (memq kind '(self never))
-                                  qd
-                                  (to-quoted out qd obj)))])
-                    (write-custom wr* obj pport depth display? width qd #f)))))]
-	    [(hide? obj)
-             (wr* pport (hide-val obj) depth display? qd)]
-	    [(unquoted? obj)
-             (orig-write (unquoted-val obj) pport)]
-            [(struct? obj)
-	     (if (and print-struct?
-		      (not (and depth
-				(zero? depth))))
-		 (check-expr-found
-		  obj pport #t
-		  #f #f
-		  (lambda ()
-                    (let* ([v (struct->vector obj struct-ellipses)]
-                           [pf? (prefab?! obj v)])
-                      (let ([qd (if pf?
-                                    (to-quoted out qd obj)
-                                    qd)])
-                        (when (or (not qd) (positive? qd))
-                          (out "#")
-                          (when pf? (out "s")))
-                        (wr-lst (let ([l (vector->list v)])
-                                  (if (and qd (zero? qd))
-                                      (cons (make-unquoted (object-name obj))
-                                            (cdr l))
-                                      l))
-                                #f (dsub1 depth) pair? car cdr "(" ")" 
-                                qd)))))
-                 (parameterize ([print-struct #f])
-		   ((if display? orig-display orig-write) obj pport)))]
-	    [(hash? obj)  
-	     (if (and print-hash-table?
-		      (not (and depth
-				(zero? depth))))
-		 (check-expr-found
-		  obj pport #t
-		  #f #f
-		  (lambda ()
-                    (let* ([qd (to-quoted out qd obj)]
-                           [expr? (and qd (zero? qd))])
-                      (unless expr?
-                        (out (if (hash-eq? obj)
-                                 "#hasheq"
-                                 (if (hash-eqv? obj)
-                                     "#hasheqv"
-                                     "#hash"))))
-                      (wr-lst (convert-hash obj expr?)
-                              #f depth
-                              pair? car cdr "(" ")" qd))))
-		 (parameterize ([print-hash-table #f])
-		   ((if display? orig-display orig-write) obj pport)))]
-	    [(boolean? obj)
-	     (out (if long-bools?
-                      (if obj "#true" "#false")
-                      (if obj "#t" "#f")))]
-	    [(number? obj)
-	     (when (and show-inexactness?
-			(inexact? obj))
-	       (out "#i"))
-	     (out ((if exact-as-decimal?
-		       number->decimal-string
-		       number->string)
-		   obj))]
-            [(and (pretty-print-.-symbol-without-bars)
-		  (eq? obj '|.|))
-	     (out ".")]
-            [(and qd (or (symbol? obj)
-                         (keyword? obj)))
-             (unless (eq? obj struct-ellipses)
-               (to-quoted out qd obj))
-             (orig-write obj pport)]
-	    [else
-	     ((if display? orig-display orig-write) obj pport)]))
+                        (when pf? (out "s")))
+                      (wr-lst (let ([l (vector->list v)])
+                                (if (and qd (zero? qd))
+                                    (cons (make-unquoted (object-name obj))
+                                          (cdr l))
+                                    l))
+                              #f (dsub1 depth) pair? car cdr "(" ")" 
+                              qd)))))
+               (parameterize ([print-struct #f])
+                 ((if display? orig-display orig-write) obj pport)))]
+          [(hash? obj)  
+           (if (and print-hash-table?
+                    (not (and depth
+                              (zero? depth))))
+               (check-expr-found
+                obj pport #t
+                #f #f
+                (lambda ()
+                  (let* ([qd (to-quoted out qd obj)]
+                         [expr? (and qd (zero? qd))])
+                    (unless expr?
+                      (out (if (hash-eq? obj)
+                               "#hasheq"
+                               (if (hash-eqv? obj)
+                                   "#hasheqv"
+                                   "#hash"))))
+                    (wr-lst (convert-hash obj expr?)
+                            #f depth
+                            pair? car cdr "(" ")" qd))))
+               (parameterize ([print-hash-table #f])
+                 ((if display? orig-display orig-write) obj pport)))]
+          [(boolean? obj)
+           (out (if long-bools?
+                    (if obj "#true" "#false")
+                    (if obj "#t" "#f")))]
+          [(number? obj)
+           (when (and show-inexactness?
+                      (inexact? obj))
+             (out "#i"))
+           (out ((if exact-as-decimal?
+                     number->decimal-string
+                     number->string)
+                 obj))]
+          [(and (pretty-print-.-symbol-without-bars)
+                (eq? obj '|.|))
+           (out ".")]
+          [(and qd (or (symbol? obj)
+                       (keyword? obj)))
+           (unless (eq? obj struct-ellipses)
+             (to-quoted out qd obj))
+           (orig-write obj pport)]
+          [else
+           ((if display? orig-display orig-write) obj pport)]))
     (unless (hide? obj)
       (post-print pport obj)))
 
