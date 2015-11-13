@@ -764,50 +764,50 @@
           (wr-lst expr #t depth pair? car cdr open close qd)))
 
     (define (wr-lst l check? depth pair? car cdr open close qd)
-	 (if (pair? l)
-	     (if (and depth (zero? depth))
-                 (begin
-                   (out open)
-                   (out "...")
-                   (out close))
-                 (begin
-                   (out open)
-                   (wr (car l) (dsub1 depth) qd)
-                   (let loop ([l (cdr l)])
-                     (check-expr-found
-                      l pport (and check? (pair? l))
-                      (lambda (s) (out " . ") (out s) (out close))
+      (if (pair? l)
+          (if (and depth (zero? depth))
+              (begin
+                (out open)
+                (out "...")
+                (out close))
+              (begin
+                (out open)
+                (wr (car l) (dsub1 depth) qd)
+                (let loop ([l (cdr l)])
+                  (check-expr-found
+                   l pport (and check? (pair? l))
+                   (lambda (s) (out " . ") (out s) (out close))
+                   (lambda ()
+                     (out " . ")
+                     (check-expr-found ;; will find it!
+                      l pport #t
+                      #f #f
                       (lambda ()
+                        (wr-lst l check? (dsub1 depth) pair? car cdr open close qd)))
+                     (out close))
+                   (lambda ()
+                     (cond 
+                       [(pair? l) 
+                        (if (and (eq? (do-remap (car l)) 'unquote)
+                                 (not (equal? qd 1))
+                                 (pair? (cdr l))
+                                 (null? (cdr (cdr l))))
+                            (begin
+                              (out " . ,")
+                              (wr (car (cdr l)) (dsub1 depth) qd)
+                              (out close))
+                            (begin
+                              (out " ")
+                              (wr (car l) (dsub1 depth) qd)
+                              (loop (cdr l))))]
+                       [(null? l) (out close)]
+                       [else
                         (out " . ")
-                        (check-expr-found ;; will find it!
-                         l pport #t
-                         #f #f
-                         (lambda ()
-                           (wr-lst l check? (dsub1 depth) pair? car cdr open close qd)))
-                        (out close))
-                      (lambda ()
-                        (cond 
-                         [(pair? l) 
-                          (if (and (eq? (do-remap (car l)) 'unquote)
-                                   (not (equal? qd 1))
-                                   (pair? (cdr l))
-                                   (null? (cdr (cdr l))))
-                              (begin
-                                (out " . ,")
-                                (wr (car (cdr l)) (dsub1 depth) qd)
-                                (out close))
-                              (begin
-                                (out " ")
-                                (wr (car l) (dsub1 depth) qd)
-                                (loop (cdr l))))]
-                         [(null? l) (out close)]
-                         [else
-                          (out " . ")
-                          (wr l (dsub1 depth) qd)
-                          (out close)]))))))
-             (begin
-               (out open)
-               (out close))))
+                        (wr l (dsub1 depth) qd)
+                        (out close)]))))))
+          (begin
+            (out open)
+            (out close))))
 
     (unless (hide? obj)
       (pre-print pport obj))
