@@ -470,46 +470,46 @@
 
   (define found-cycle
     (or print-graph?
-	   (let loop ([obj obj])
-	     (and (or (vector? obj)
-		      (pair? obj)
-		      (mpair? obj)
-		      (and (box? obj)
-                           print-box?)
-		      (and (custom-write? obj)
-			   (not (struct-type? obj)))
-		      (and (struct? obj) print-struct?)
-		      (and (hash? obj) print-hash-table?))
-		  (or (hash-ref table obj #f)
-		      (begin
-			(hash-set! table obj #t)
-			(let ([cycle
-			       (cond
-				[(vector? obj)
-				 (let ([len (vector-length obj)])
-				   (let vloop ([i 0])
-				     (if (= i len)
-					 #f
-					 (or (loop (vector-ref obj i))
-					     (vloop (add1 i))))))]
-				[(pair? obj)
-				 (or (loop (car obj))
-				     (loop (cdr obj)))]
-				[(mpair? obj)
-				 (or (loop (mcar obj))
-				     (loop (mcdr obj)))]
-				[(and (box? obj) print-box?) (loop (unbox obj))]
-				[(and (custom-write? obj)
-				      (not (struct-type? obj)))
-				 (loop (extract-sub-objects obj pport))]
-				[(struct? obj)
-				 (ormap loop 
-					(vector->list (struct->vector obj)))]
-				[(hash? obj)
-                                 (for/or ([(k v) (in-hash obj)])
-                                   (or (loop v) (loop k)))])])
-			  (hash-remove! table obj)
-			  cycle)))))))
+        (let loop ([obj obj])
+          (and (or (vector? obj)
+                   (pair? obj)
+                   (mpair? obj)
+                   (and (box? obj)
+                        print-box?)
+                   (and (custom-write? obj)
+                        (not (struct-type? obj)))
+                   (and (struct? obj) print-struct?)
+                   (and (hash? obj) print-hash-table?))
+               (or (hash-ref table obj #f)
+                   (begin
+                     (hash-set! table obj #t)
+                     (let ([cycle
+                            (cond
+                              [(vector? obj)
+                               (let ([len (vector-length obj)])
+                                 (let vloop ([i 0])
+                                   (if (= i len)
+                                       #f
+                                       (or (loop (vector-ref obj i))
+                                           (vloop (add1 i))))))]
+                              [(pair? obj)
+                               (or (loop (car obj))
+                                   (loop (cdr obj)))]
+                              [(mpair? obj)
+                               (or (loop (mcar obj))
+                                   (loop (mcdr obj)))]
+                              [(and (box? obj) print-box?) (loop (unbox obj))]
+                              [(and (custom-write? obj)
+                                    (not (struct-type? obj)))
+                               (loop (extract-sub-objects obj pport))]
+                              [(struct? obj)
+                               (ormap loop 
+                                      (vector->list (struct->vector obj)))]
+                              [(hash? obj)
+                               (for/or ([(k v) (in-hash obj)])
+                                 (or (loop v) (loop k)))])])
+                       (hash-remove! table obj)
+                       cycle)))))))
 
 
   (when found-cycle
