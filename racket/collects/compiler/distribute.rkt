@@ -105,8 +105,7 @@
 	(make-directory* collects-dir)
 	(make-directory* exts-dir)
 	;; Copy libs into place
-        (when executables?
-          (install-libs lib-dir types))
+        (install-libs lib-dir types (not executables?))
 	;; Copy collections into place
 	(for-each (lambda (dir)
 		    (for-each (lambda (f)
@@ -154,7 +153,7 @@
             ;; Done!
             (void))))))
 
-  (define (install-libs lib-dir types)
+  (define (install-libs lib-dir types extras-only?)
     (case (cross-system-type)
       [(windows)
        (let ([copy-dll (lambda (name)
@@ -169,52 +168,55 @@
 	 (map copy-dll (list
                         "libiconv-2.dll"
                         "longdouble.dll"))
-	 (when (or (memq 'racketcgc types)
-		   (memq 'gracketcgc types))
-	   (map copy-dll
-		(list
-		 (versionize "libracket~a.dll")
-		 (versionize "libmzgc~a.dll"))))
-	 (when (or (memq 'racket3m types)
-		   (memq 'gracket3m types))
-	   (map copy-dll
-		(list
-		 (versionize "libracket3m~a.dll")))))]
+         (unless extras-only?
+           (when (or (memq 'racketcgc types)
+                     (memq 'gracketcgc types))
+             (map copy-dll
+                  (list
+                   (versionize "libracket~a.dll")
+                   (versionize "libmzgc~a.dll"))))
+           (when (or (memq 'racket3m types)
+                     (memq 'gracket3m types))
+             (map copy-dll
+                  (list
+                   (versionize "libracket3m~a.dll"))))))]
       [(macosx)
-       (when (or (memq 'racketcgc types)
-                 (memq 'gracketcgc types))
-	 (copy-framework "Racket" #f lib-dir))
-       (when (or (memq 'racket3m types)
-                 (memq 'gracket3m types))
-	 (copy-framework "Racket" #t lib-dir))]
+       (unless extras-only?
+         (when (or (memq 'racketcgc types)
+                   (memq 'gracketcgc types))
+           (copy-framework "Racket" #f lib-dir))
+         (when (or (memq 'racket3m types)
+                   (memq 'gracket3m types))
+           (copy-framework "Racket" #t lib-dir)))]
       [(unix)
-       (let ([lib-plt-dir (build-path lib-dir "plt")])
-	 (unless (directory-exists? lib-plt-dir)
-	   (make-directory lib-plt-dir))
-	 (let ([copy-bin
-		(lambda (name variant gr?)
-		  (copy-file* (build-path (if gr?
-                                              (find-lib-dir)
-                                              (find-console-bin-dir))
-                                          (format "~a~a" name (variant-suffix variant #f)))
-			      (build-path lib-plt-dir 
-					  (format "~a~a-~a" name variant (version)))))])
-	   (when (memq 'racketcgc types)
-	     (copy-bin "racket" 'cgc #f))
-	   (when (memq 'racket3m types)
-	     (copy-bin "racket" '3m #f))
-	   (when (memq 'gracketcgc types)
-	     (copy-bin "gracket" 'cgc #t))
-	   (when (memq 'gracket3m types)
-	     (copy-bin "gracket" '3m #t)))
-	 (when (shared-libraries?)
-	   (when (or (memq 'racketcgc types)
-		     (memq 'gracketcgc types))
-	     (copy-shared-lib "racket" lib-dir)
-	     (copy-shared-lib "mzgc" lib-dir))
-	   (when (or (memq 'racket3m types)
-		     (memq 'gracket3m types))
-	     (copy-shared-lib "racket3m" lib-dir))))]))
+       (unless extras-only?
+         (let ([lib-plt-dir (build-path lib-dir "plt")])
+           (unless (directory-exists? lib-plt-dir)
+             (make-directory lib-plt-dir))
+           (let ([copy-bin
+                  (lambda (name variant gr?)
+                    (copy-file* (build-path (if gr?
+                                                (find-lib-dir)
+                                                (find-console-bin-dir))
+                                            (format "~a~a" name (variant-suffix variant #f)))
+                                (build-path lib-plt-dir 
+                                            (format "~a~a-~a" name variant (version)))))])
+             (when (memq 'racketcgc types)
+               (copy-bin "racket" 'cgc #f))
+             (when (memq 'racket3m types)
+               (copy-bin "racket" '3m #f))
+             (when (memq 'gracketcgc types)
+               (copy-bin "gracket" 'cgc #t))
+             (when (memq 'gracket3m types)
+               (copy-bin "gracket" '3m #t)))
+           (when (shared-libraries?)
+             (when (or (memq 'racketcgc types)
+                       (memq 'gracketcgc types))
+               (copy-shared-lib "racket" lib-dir)
+               (copy-shared-lib "mzgc" lib-dir))
+             (when (or (memq 'racket3m types)
+                       (memq 'gracket3m types))
+               (copy-shared-lib "racket3m" lib-dir)))))]))
 
   (define (search-dll dll-dir dll)
     (if dll-dir
