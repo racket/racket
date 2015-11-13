@@ -560,19 +560,19 @@
                                     (make-mark #f (box #f)))))))
          (void))))
 
-     (define escapes-table
-       (let* ([table (make-hasheq)]
-              [local-compound (and print-as-qq?
-                                   (make-hasheq))]
-              [is-compound! (lambda (obj)
-                              (hash-set! local-compound obj #t))]
-              [escapes! (lambda (obj)
-                          (hash-set! table obj #t)
-                          #t)]
-              [orf (lambda (a b) (or a b))])
-         (when print-as-qq?
-           (let loop ([obj obj])
-             (cond
+  (define escapes-table
+    (let* ([table (make-hasheq)]
+           [local-compound (and print-as-qq?
+                                (make-hasheq))]
+           [is-compound! (lambda (obj)
+                           (hash-set! local-compound obj #t))]
+           [escapes! (lambda (obj)
+                       (hash-set! table obj #t)
+                       #t)]
+           [orf (lambda (a b) (or a b))])
+        (when print-as-qq?
+          (let loop ([obj obj])
+            (cond
               [(hash-ref table obj #f)
                ;; already decided that it escapes
                #t]
@@ -640,110 +640,110 @@
                 [else #f])])))
          table))
 
-     (define cycle-counter 0)
+  (define cycle-counter 0)
 
-     (define found (if found-cycle
-		       table 
-		       #f))
+  (define found (if found-cycle
+                    table 
+                    #f))
 
-     (define dsub1 (lambda (d)
-		     (if d
-			 (sub1 d)
-			 #f)))
+  (define dsub1 (lambda (d)
+                  (if d
+                      (sub1 d)
+                      #f)))
 
-     (define (pre-print pport obj)
-       ((printing-port-pre-print pport) obj))
-     (define (post-print pport obj)
-       ((printing-port-post-print pport)
-	obj))
-     (define (output-hooked pport obj len display?)
-       ((printing-port-output-hooked pport)
-	obj len display?))
+  (define (pre-print pport obj)
+    ((printing-port-pre-print pport) obj))
+  (define (post-print pport obj)
+    ((printing-port-post-print pport)
+     obj))
+  (define (output-hooked pport obj len display?)
+    ((printing-port-output-hooked pport)
+     obj len display?))
 
-     (define expr-found
-       (lambda (pport ref)
-	 (let ([n cycle-counter])
-	   (set! cycle-counter (add1 cycle-counter))
-	   (set-mark-str! ref 
-			  (string-append "#"
-					 (number->string n)
-					 "#"))
-	   (set-mark-def! ref (printing-port-def-box pport))
-	   (display (string-append "#"
-				   (number->string n)
-				   "=")
-		    pport))))
+  (define expr-found
+    (lambda (pport ref)
+      (let ([n cycle-counter])
+        (set! cycle-counter (add1 cycle-counter))
+        (set-mark-str! ref 
+                       (string-append "#"
+                                      (number->string n)
+                                      "#"))
+        (set-mark-def! ref (printing-port-def-box pport))
+        (display (string-append "#"
+                                (number->string n)
+                                "=")
+                 pport))))
      
-     (define check-expr-found
-       (lambda (obj pport check? c-k d-k n-k)
-	 (let ([ref (and check? 
-			 found
-			 (hash-ref found obj #f))])
-	   (if (and ref (unbox (mark-def ref)))
-	       (if c-k
-		   (c-k (mark-str ref))
-		   (display (mark-str ref) pport))
-	       (if (and ref d-k)
-		   (d-k)
-		   (begin
-		     (when ref
-		       (expr-found pport ref))
-		     (n-k)))))))
+  (define check-expr-found
+    (lambda (obj pport check? c-k d-k n-k)
+      (let ([ref (and check? 
+                      found
+                      (hash-ref found obj #f))])
+        (if (and ref (unbox (mark-def ref)))
+            (if c-k
+                (c-k (mark-str ref))
+                (display (mark-str ref) pport))
+            (if (and ref d-k)
+                (d-k)
+                (begin
+                  (when ref
+                    (expr-found pport ref))
+                  (n-k)))))))
 
-     (define (write-custom recur obj pport depth display? width qd multi-line?)
-       (let-values ([(l c p) (port-next-location pport)])
-	 (let ([p (relocate-output-port pport l c p)])
-	   (port-count-lines! p)
-	   (let ([writer (lambda (v port)
-			   (recur port v (dsub1 depth) #f #f))]
-		 [displayer (lambda (v port)
-			      (recur port v (dsub1 depth) #t #f))]
-                 [printer (case-lambda 
-                           [(v port) (recur port v (dsub1 depth) #f qd)]
-                           [(v port qd) (recur port v (dsub1 depth) #f qd)])])
-	     (port-write-handler p writer)
-	     (port-display-handler p displayer)
-	     (port-print-handler p printer))
-	   (let ([p (register-printing-port-like p pport)])
-             (parameterize ([pretty-printing multi-line?]
-                            [pretty-print-columns (or width 'infinity)])
-               ((custom-write-accessor obj) obj p (or qd (not display?))))))))
+  (define (write-custom recur obj pport depth display? width qd multi-line?)
+    (let-values ([(l c p) (port-next-location pport)])
+      (let ([p (relocate-output-port pport l c p)])
+        (port-count-lines! p)
+        (let ([writer (lambda (v port)
+                        (recur port v (dsub1 depth) #f #f))]
+              [displayer (lambda (v port)
+                           (recur port v (dsub1 depth) #t #f))]
+              [printer (case-lambda 
+                         [(v port) (recur port v (dsub1 depth) #f qd)]
+                         [(v port qd) (recur port v (dsub1 depth) #f qd)])])
+          (port-write-handler p writer)
+          (port-display-handler p displayer)
+          (port-print-handler p printer))
+        (let ([p (register-printing-port-like p pport)])
+          (parameterize ([pretty-printing multi-line?]
+                         [pretty-print-columns (or width 'infinity)])
+            ((custom-write-accessor obj) obj p (or qd (not display?))))))))
 
-     ;; ------------------------------------------------------------
+  ;; ------------------------------------------------------------
      
-     (define (convert-pair obj)
-       (cond
-        [(list? obj) (cons (make-unquoted 'list) 
-                           ;; reconstruct first pair in case it
-                           ;; starts a cycle:
-                           (cons (car obj) (cdr obj)))]
-        [(and (pair? (cdr obj)) 
-              (not (and found
-                        (hash-ref found (cdr obj) #f))))
-         (cons (make-unquoted 'list*)
-               (cons
-                (car obj)
-                (let loop ([obj (cdr obj)])
-                  (cond
-                   [(and found (hash-ref found obj #f)) (list obj)]
-                   [(pair? obj) (cons (car obj) (loop (cdr obj)))]
-                   [else (list obj)]))))]
-        [else (list (make-unquoted 'cons) (car obj) (cdr obj))]))
+  (define (convert-pair obj)
+    (cond
+      [(list? obj) (cons (make-unquoted 'list) 
+                         ;; reconstruct first pair in case it
+                         ;; starts a cycle:
+                         (cons (car obj) (cdr obj)))]
+      [(and (pair? (cdr obj)) 
+            (not (and found
+                      (hash-ref found (cdr obj) #f))))
+       (cons (make-unquoted 'list*)
+             (cons
+              (car obj)
+              (let loop ([obj (cdr obj)])
+                (cond
+                  [(and found (hash-ref found obj #f)) (list obj)]
+                  [(pair? obj) (cons (car obj) (loop (cdr obj)))]
+                  [else (list obj)]))))]
+      [else (list (make-unquoted 'cons) (car obj) (cdr obj))]))
 
-     (define (convert-hash obj expr?)
-       (let ([l (hash-map obj (lambda (k v)
-                                (if expr?
-                                    (list k v)
-                                    (cons k (make-hide v)))))])
-         (if expr?
-             (cons (make-unquoted
-                    (if (hash-eq? obj)
-                        'hasheq
-                        (if (hash-eqv? obj)
-                            'hasheqv
-                            'hash)))
-                   (apply append l))
-             l)))
+  (define (convert-hash obj expr?)
+    (let ([l (hash-map obj (lambda (k v)
+                             (if expr?
+                                 (list k v)
+                                 (cons k (make-hide v)))))])
+      (if expr?
+          (cons (make-unquoted
+                 (if (hash-eq? obj)
+                     'hasheq
+                     (if (hash-eqv? obj)
+                         'hasheqv
+                         'hash)))
+                (apply append l))
+          l)))
      
      ;; ------------------------------------------------------------
      ;; wr: write on a single line
