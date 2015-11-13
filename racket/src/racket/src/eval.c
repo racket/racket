@@ -518,7 +518,7 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
 }
 
 #ifdef LINUX_FIND_STACK_BASE
-static uintptr_t adjust_stack_base(uintptr_t bnd) {
+static uintptr_t adjust_stack_base(uintptr_t bnd, uintptr_t lim) {
   if (bnd == scheme_get_primordial_thread_stack_base()) {
     /* The address `base' might be far from the actual stack base
        if Exec Shield is enabled (in some versions)? Use 
@@ -553,7 +553,11 @@ static uintptr_t adjust_stack_base(uintptr_t bnd) {
 	      break;
 	  }
 	  /* printf("%p vs. %p: %d\n", (void*)bnd, (void*)p, p - bnd); */
-	  bnd = p;
+	  if ((p > bnd) && ((p - lim) < bnd)) {
+	    bnd = p;
+	  } else {
+	    /* bnd is too far from the expected range; on another thread? */
+	  }
           break;
 	}
       }
@@ -717,14 +721,14 @@ void scheme_init_stack_check()
 
       getrlimit(RLIMIT_STACK, &rl);
 
-#  ifdef LINUX_FIND_STACK_BASE
-      bnd = adjust_stack_base(bnd);
-#  endif
-
       lim = (uintptr_t)rl.rlim_cur;
 #  ifdef UNIX_STACK_MAXIMUM
       if (lim > UNIX_STACK_MAXIMUM)
         lim = UNIX_STACK_MAXIMUM;
+#  endif
+
+#  ifdef LINUX_FIND_STACK_BASE
+      bnd = adjust_stack_base(bnd, lim);
 #  endif
 
       if (stack_grows_up)
