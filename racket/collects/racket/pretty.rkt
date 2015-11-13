@@ -1398,134 +1398,134 @@
                  apair? acar acdr open close
                  qd))
 
-       (define (pp-case expr extra depth
-                        apair? acar acdr open close
-                        qd)
-	 (pp-general expr extra #f pp-expr #f pp-expr-list depth
+    (define (pp-case expr extra depth
                      apair? acar acdr open close
-                     qd))
-
-       (define (pp-and expr extra depth
-                       apair? acar acdr open close
-                       qd)
-	 (pp-call expr extra pp-expr depth
+                     qd)
+      (pp-general expr extra #f pp-expr #f pp-expr-list depth
                   apair? acar acdr open close
                   qd))
 
-       (define (pp-let expr extra depth
-                       apair? acar acdr open close
-                       qd)
-	 (let* ((rest (acdr expr))
-		(named? (and (apair? rest) (symbol? (do-remap (acar rest))))))
-	   (pp-general expr extra named? pp-expr-list #f pp-expr depth
-                       apair? acar acdr open close
-                       qd)))
-
-       (define (pp-begin expr extra depth
-                         apair? acar acdr open close
-                         qd)
-	 (pp-general expr extra #f #f #f pp-expr depth
-                     apair? acar acdr open close
-                     qd))
-
-       (define (pp-do expr extra depth
+    (define (pp-and expr extra depth
+                    apair? acar acdr open close
+                    qd)
+      (pp-call expr extra pp-expr depth
+               apair? acar acdr open close
+               qd))
+    
+    (define (pp-let expr extra depth
+                    apair? acar acdr open close
+                    qd)
+      (let* ((rest (acdr expr))
+             (named? (and (apair? rest) (symbol? (do-remap (acar rest))))))
+        (pp-general expr extra named? pp-expr-list #f pp-expr depth
+                    apair? acar acdr open close
+                    qd)))
+    
+    (define (pp-begin expr extra depth
                       apair? acar acdr open close
                       qd)
-	 (pp-general expr extra #f pp-expr-list pp-expr-list pp-expr depth
-                     apair? acar acdr open close
-                     qd))
+      (pp-general expr extra #f #f #f pp-expr depth
+                  apair? acar acdr open close
+                  qd))
+    
+    (define (pp-do expr extra depth
+                   apair? acar acdr open close
+                   qd)
+      (pp-general expr extra #f pp-expr-list pp-expr-list pp-expr depth
+                  apair? acar acdr open close
+                  qd))
+    
+    ;; define formatting style (change these to suit your style)
+    
+    (define indent-general 2)
+    
+    (define max-call-head-width 5)
+    
+    (define (no-sharing? expr count apair? acdr)
+      (if (apair? expr)
+          (if (and found 
+                   (hash-ref found (acdr expr) #f))
+              #f
+              (or (zero? count)
+                  (no-sharing? (acdr expr) (sub1 count) apair? acdr)))
+          #f))
 
-       ;; define formatting style (change these to suit your style)
+    (define (style head expr apair? acar acdr)
+      (case (look-in-style-table head)
+        [(lambda λ define define-macro define-syntax
+           syntax-rules
+           shared
+           unless when)
+         (and (no-sharing? expr 1 apair? acdr)
+              pp-lambda)]
+        [(if set! set!-values)
+         (and (no-sharing? expr 1 apair? acdr)
+              pp-if)]
+        [(cond case-lambda)
+         (and (no-sharing? expr 0 apair? acdr)
+              pp-cond)]
+        [(case class) 
+         (and (no-sharing? expr 1 apair? acdr)
+              pp-case)]
+        [(and or import export 
+              require require-for-syntax require-for-template 
+              provide link
+              public private override rename inherit field init)
+         (and (no-sharing? expr 0 apair? acdr)
+              pp-and)]
+        [(let letrec let*
+           let-values letrec-values let*-values
+           let-syntax letrec-syntax
+           let-syntaxes letrec-syntaxes)
+         (and (no-sharing? expr
+                           (if (and (apair? (acdr expr))
+                                    (symbol? (acar (acdr expr))))
+                               2
+                               1)
+                           apair?
+                           acdr)
+              pp-let)]
+        [(begin begin0)
+         (and (no-sharing? expr 0 apair? acdr)
+              pp-begin)]
+        [(do letrec-syntaxes+values)
+         (and (no-sharing? expr 2 apair? acdr)
+              pp-do)]
+        [(module)
+         (and (no-sharing? expr 2 apair? acdr)
+              pp-module)]
+        [(send syntax-case instantiate)
+         (and (no-sharing? expr 2 apair? acdr)
+              pp-syntax-case)]
+        [(make-object)
+         (and (no-sharing? expr 1 apair? acdr)
+              pp-make-object)]
+        
+        [else #f]))
 
-       (define indent-general 2)
+    (pr obj 0 pp-expr depth qd))
 
-       (define max-call-head-width 5)
+  (define (to-quoted out qd obj)
+    (and qd
+         (if (zero? qd)
+             (if (hash-ref escapes-table obj #f)
+                 qd
+                 (begin
+                   (out "'")
+                   (add1 qd)))
+             qd)))
 
-       (define (no-sharing? expr count apair? acdr)
-         (if (apair? expr)
-             (if (and found 
-                      (hash-ref found (acdr expr) #f))
-                 #f
-                 (or (zero? count)
-                     (no-sharing? (acdr expr) (sub1 count) apair? acdr)))
-             #f))
+  ;; ------------------------------------------------------------
+  ;; This is where generic-write's body expressions start
 
-       (define (style head expr apair? acar acdr)
-         (case (look-in-style-table head)
-	   ((lambda λ define define-macro define-syntax
-		    syntax-rules
-		    shared
-		    unless when)
-            (and (no-sharing? expr 1 apair? acdr)
-                 pp-lambda))
-	   ((if set! set!-values)
-            (and (no-sharing? expr 1 apair? acdr)
-                 pp-if))
-	   ((cond case-lambda)
-            (and (no-sharing? expr 0 apair? acdr)
-                 pp-cond))
-	   ((case class) 
-            (and (no-sharing? expr 1 apair? acdr)
-                 pp-case))
-	   ((and or import export 
-		 require require-for-syntax require-for-template 
-		 provide link
-		 public private override rename inherit field init)
-            (and (no-sharing? expr 0 apair? acdr)
-                 pp-and))
-	   ((let letrec let*
-	      let-values letrec-values let*-values
-	      let-syntax letrec-syntax
-	      let-syntaxes letrec-syntaxes)
-            (and (no-sharing? expr
-                              (if (and (apair? (acdr expr))
-                                       (symbol? (acar (acdr expr))))
-                                  2
-                                  1)
-                              apair?
-                              acdr)
-                 pp-let))
-	   ((begin begin0)
-            (and (no-sharing? expr 0 apair? acdr)
-                 pp-begin))
-	   ((do letrec-syntaxes+values)
-            (and (no-sharing? expr 2 apair? acdr)
-                 pp-do))
-           ((module)
-            (and (no-sharing? expr 2 apair? acdr)
-                 pp-module))
-	   ((send syntax-case instantiate)
-            (and (no-sharing? expr 2 apair? acdr)
-                 pp-syntax-case))
-	   ((make-object)
-            (and (no-sharing? expr 1 apair? acdr)
-                 pp-make-object))
-
-	   (else #f)))
-
-       (pr obj 0 pp-expr depth qd))
-
-     (define (to-quoted out qd obj)
-       (and qd
-            (if (zero? qd)
-                (if (hash-ref escapes-table obj #f)
-                    qd
-                    (begin
-                      (out "'")
-                      (add1 qd)))
-                qd)))
-
-     ;; ------------------------------------------------------------
-     ;; This is where generic-write's body expressions start
-
-     ((printing-port-print-line pport) #t 0 width)
-     (let ([qd (if print-as-qq? qq-depth #f)])
-       (let-values ([(l col p) (port-next-location pport)])
-         (if (and width (not (eq? width 'infinity)))
-             (pp* pport obj depth display? qd)
-             (wr* pport obj depth display? qd))))
-     (let-values ([(l col p) (port-next-location pport)])
-       ((printing-port-print-line pport) #f col width)))
+  ((printing-port-print-line pport) #t 0 width)
+  (let ([qd (if print-as-qq? qq-depth #f)])
+    (let-values ([(l col p) (port-next-location pport)])
+      (if (and width (not (eq? width 'infinity)))
+          (pp* pport obj depth display? qd)
+          (wr* pport obj depth display? qd))))
+  (let-values ([(l col p) (port-next-location pport)])
+    ((printing-port-print-line pport) #f col width)))
   
 (define (look-in-style-table raw-head)
   (let ([head (do-remap raw-head)])
