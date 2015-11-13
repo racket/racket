@@ -2851,7 +2851,7 @@ typedef struct {
   Scheme_Hash_Table *base_closure;
   Scheme_IR_Local **vars;
   char *local_type_map; /* determined by callers; NULL when has_tymap set => no local types */
-  char has_tl, has_tymap, has_nonleaf;
+  char has_tl, has_tymap, has_nonleaf, is_dup;
   int body_size, body_psize;
 } Scheme_IR_Lambda_Info;
 

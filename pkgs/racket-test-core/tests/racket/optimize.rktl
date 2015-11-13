@@ -5214,6 +5214,20 @@
   (test 'x syntax-e ((f))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the compiler doesn't try to inline forever a curried
+;; version of an infinite loop:
+
+(module curried-module-level-function-calls-itself racket/base
+  (define ((proc))
+    ((proc))))
+
+(module curried-local-function-calls-itself racket/base
+  (let ()
+    (define ((proc))
+      ((proc)))
+    (void proc proc)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)
