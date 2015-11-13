@@ -504,7 +504,7 @@
                                ;; construct-dest:
                                (lambda (src)
                                  (when src
-                                   (set! paths (cons src paths)))
+                                   (set! paths (cons (normal-case-path src) paths)))
                                  "dummy")
                                ;; transform-entry
                                (lambda (new-path ext) ext)
