@@ -513,52 +513,52 @@
 
 
   (when found-cycle
-   (let loop ([obj obj])
-     (if (or (vector? obj)
-	           (pair? obj)
-	           (mpair? obj)
-	           (and (box? obj)
-                        print-box?)
-             (and (custom-write? obj)
-                  (not (struct-type? obj)))
-		   (and (struct? obj) print-struct?)
-		   (and (hash? obj) print-hash-table?))
-         ;; A little confusing: use #t for not-found
-         (let ([p (hash-ref table obj #t)])
-           (when (not (mark? p))
-             (if p
-                 (begin
-                   (hash-set! table obj #f)
-                   (cond
-                    [(vector? obj)
-                     (let ([len (vector-length obj)])
-                       (let vloop ([i 0])
-                         (unless (= i len)
-                           (loop (vector-ref obj i))
-                           (vloop (add1 i)))))]
-                    [(pair? obj)
-                     (loop (car obj))
-                     (loop (cdr obj))]
-                    [(mpair? obj)
-                     (loop (mcar obj))
-                     (loop (mcdr obj))]
-                    [(and (box? obj) print-box?) (loop (unbox obj))]
-                    [(and (custom-write? obj)
-                          (not (struct-type? obj)))
-                     (loop (extract-sub-objects obj pport))]
-                    [(struct? obj)
-                     (for-each loop
-                               (vector->list (struct->vector obj)))]
-                    [(hash? obj)
-                     (hash-for-each
-                      obj
-                      (lambda (k v)
-                        (loop k)
-                        (loop v)))]))
-                 (begin
-                   (hash-set! table obj 
-                                    (make-mark #f (box #f)))))))
-         (void))))
+    (let loop ([obj obj])
+      (if (or (vector? obj)
+              (pair? obj)
+              (mpair? obj)
+              (and (box? obj)
+                   print-box?)
+              (and (custom-write? obj)
+                   (not (struct-type? obj)))
+              (and (struct? obj) print-struct?)
+              (and (hash? obj) print-hash-table?))
+          ;; A little confusing: use #t for not-found
+          (let ([p (hash-ref table obj #t)])
+            (when (not (mark? p))
+              (if p
+                  (begin
+                    (hash-set! table obj #f)
+                    (cond
+                      [(vector? obj)
+                       (let ([len (vector-length obj)])
+                         (let vloop ([i 0])
+                           (unless (= i len)
+                             (loop (vector-ref obj i))
+                             (vloop (add1 i)))))]
+                      [(pair? obj)
+                       (loop (car obj))
+                       (loop (cdr obj))]
+                      [(mpair? obj)
+                       (loop (mcar obj))
+                       (loop (mcdr obj))]
+                      [(and (box? obj) print-box?) (loop (unbox obj))]
+                      [(and (custom-write? obj)
+                            (not (struct-type? obj)))
+                       (loop (extract-sub-objects obj pport))]
+                      [(struct? obj)
+                       (for-each loop
+                                 (vector->list (struct->vector obj)))]
+                      [(hash? obj)
+                       (hash-for-each
+                        obj
+                        (lambda (k v)
+                          (loop k)
+                          (loop v)))]))
+                  (begin
+                    (hash-set! table obj 
+                               (make-mark #f (box #f)))))))
+          (void))))
 
   (define escapes-table
     (let* ([table (make-hasheq)]
@@ -570,75 +570,75 @@
                        (hash-set! table obj #t)
                        #t)]
            [orf (lambda (a b) (or a b))])
-        (when print-as-qq?
-          (let loop ([obj obj])
-            (cond
-              [(hash-ref table obj #f)
-               ;; already decided that it escapes
-               #t]
-              [(and local-compound 
-                    (hash-ref local-compound obj #f))
-               ;; either still deciding (so assume #f) or
-               ;; already decided that no escape is needed
-               #f]
-              [else
-               (cond
-                [(vector? obj)
-                 (is-compound! obj)
-                 (let ([len (vector-length obj)])
-                   (let vloop ([esc? #f][i 0])
-                     (if (= i len)
-                         (and esc? 
-                              (escapes! obj))
-                         (vloop (or (loop (vector-ref obj i)) esc?) 
-                                (add1 i)))))]
-                [(flvector? obj)
-                 (is-compound! obj)
-                 ;; always unquoted:
-                 #t]
-                [(fxvector? obj)
-                 (is-compound! obj)
-                 ;; always unquoted:
-                 #t]
-                [(pair? obj)
-                 (is-compound! obj)
-                 (and (orf (loop (car obj))
-                           (loop (cdr obj)))
-                      (escapes! obj))]
-                [(mpair? obj)
-                 (is-compound! obj)
-                 (loop (mcar obj))
-                 (loop (mcdr obj))
-                 ;; always unquoted:
-                 #t]
-                [(and (box? obj) print-box?) 
-                 (is-compound! obj)
-                 (and (loop (unbox obj))
-                      (escapes! obj))]
-                [(and (custom-write? obj)
-                      (not (struct-type? obj)))
-                 (is-compound! obj)
-                 (let ([kind (if (custom-print-quotable? obj)
-                                 (custom-print-quotable-accessor obj)
-                                 'self)])
-                   (and (or (and (loop (extract-sub-objects obj pport))
-                                 (not (memq kind '(self always))))
-                            (memq kind '(never)))
-                        (escapes! obj)))]
-                [(struct? obj)
-                 (is-compound! obj)
-                 (and (or (loop (struct->vector obj))
-                          (not (prefab-struct-key obj)))
-                      (escapes! obj))]
-                [(hash? obj)
-                 (is-compound! obj)
-                 (and (for/fold ([esc? #f]) ([(k v) (in-hash obj)])
-                        (or (orf (loop v) 
-                                 (loop k))
-                            esc?))
-                      (escapes! obj))]
-                [else #f])])))
-         table))
+      (when print-as-qq?
+        (let loop ([obj obj])
+          (cond
+            [(hash-ref table obj #f)
+             ;; already decided that it escapes
+             #t]
+            [(and local-compound 
+                  (hash-ref local-compound obj #f))
+             ;; either still deciding (so assume #f) or
+             ;; already decided that no escape is needed
+             #f]
+            [else
+             (cond
+               [(vector? obj)
+                (is-compound! obj)
+                (let ([len (vector-length obj)])
+                  (let vloop ([esc? #f][i 0])
+                    (if (= i len)
+                        (and esc? 
+                             (escapes! obj))
+                        (vloop (or (loop (vector-ref obj i)) esc?) 
+                               (add1 i)))))]
+               [(flvector? obj)
+                (is-compound! obj)
+                ;; always unquoted:
+                #t]
+               [(fxvector? obj)
+                (is-compound! obj)
+                ;; always unquoted:
+                #t]
+               [(pair? obj)
+                (is-compound! obj)
+                (and (orf (loop (car obj))
+                          (loop (cdr obj)))
+                     (escapes! obj))]
+               [(mpair? obj)
+                (is-compound! obj)
+                (loop (mcar obj))
+                (loop (mcdr obj))
+                ;; always unquoted:
+                #t]
+               [(and (box? obj) print-box?) 
+                (is-compound! obj)
+                (and (loop (unbox obj))
+                     (escapes! obj))]
+               [(and (custom-write? obj)
+                     (not (struct-type? obj)))
+                (is-compound! obj)
+                (let ([kind (if (custom-print-quotable? obj)
+                                (custom-print-quotable-accessor obj)
+                                'self)])
+                  (and (or (and (loop (extract-sub-objects obj pport))
+                                (not (memq kind '(self always))))
+                           (memq kind '(never)))
+                       (escapes! obj)))]
+               [(struct? obj)
+                (is-compound! obj)
+                (and (or (loop (struct->vector obj))
+                         (not (prefab-struct-key obj)))
+                     (escapes! obj))]
+               [(hash? obj)
+                (is-compound! obj)
+                (and (for/fold ([esc? #f]) ([(k v) (in-hash obj)])
+                       (or (orf (loop v) 
+                                (loop k))
+                           esc?))
+                     (escapes! obj))]
+               [else #f])])))
+      table))
 
   (define cycle-counter 0)
 
