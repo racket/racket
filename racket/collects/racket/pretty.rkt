@@ -1172,9 +1172,9 @@
          ;; Not possible to split obj across lines; so just write directly
          (wr* pport obj depth display? qd))))
 
-       (define (pp-expr expr extra depth
-                        apair? acar acdr open close
-                        qd)
+    (define (pp-expr expr extra depth
+                     apair? acar acdr open close
+                     qd)
 	 (if (and (read-macro? expr apair? acar acdr qd)
                   (equal? open "(")
                   (not (and found (hash-ref found (acdr expr) #f))))
@@ -1216,21 +1216,21 @@
                             apair? acar acdr open close
                             qd)))))
 
-       (define (wr obj depth qd)
-	 (wr* pport obj depth display? qd))
+    (define (wr obj depth qd)
+      (wr* pport obj depth display? qd))
 
-       ;; (head item1
-       ;;       item2
-       ;;       item3)
-       (define (pp-call expr extra pp-item depth
-                        apair? acar acdr open close
-                        qd)
-         (out open)
-         (wr (acar expr) (dsub1 depth) qd)
-         (let ([col (+ (ccol) 1)])
-           (pp-down close (acdr expr) col col extra pp-item #t #t depth
-                    apair? acar acdr open close
-                    qd)))
+    ;; (head item1
+    ;;       item2
+    ;;       item3)
+    (define (pp-call expr extra pp-item depth
+                     apair? acar acdr open close
+                     qd)
+      (out open)
+      (wr (acar expr) (dsub1 depth) qd)
+      (let ([col (+ (ccol) 1)])
+        (pp-down close (acdr expr) col col extra pp-item #t #t depth
+                 apair? acar acdr open close
+                 qd)))
 
        ;; (head item1 item2
        ;;   item3
