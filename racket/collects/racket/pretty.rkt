@@ -9,410 +9,410 @@
 ;; require this module and evaluate:
 ;;      (current-print pretty-print-handler)
 
-(module pretty racket/base
-   (require racket/private/port
-            racket/flonum
-            racket/fixnum)
+#lang racket/base
+(require racket/private/port
+         racket/flonum
+         racket/fixnum)
 
-   (provide pretty-print
-            pretty-write
-	    pretty-display
-	    pretty-print-columns
-	    pretty-print-depth
-	    pretty-print-handler
-	    pretty-print-size-hook
-	    pretty-print-print-hook
-	    pretty-print-pre-print-hook
-	    pretty-print-post-print-hook
-	    pretty-print-print-line
-	    pretty-print-show-inexactness
-	    pretty-print-exact-as-decimal
-	    pretty-print-.-symbol-without-bars
-            pretty-print-abbreviate-read-macros
-            
-	    pretty-print-style-table?
-	    pretty-print-current-style-table
-	    pretty-print-extend-style-table
-            pretty-print-remap-stylable
-            
-            pretty-format
-	    pretty-printing
-	    pretty-print-newline
-	    make-tentative-pretty-print-output-port
-	    tentative-pretty-print-port-transfer
-	    tentative-pretty-print-port-cancel)
+(provide pretty-print
+         pretty-write
+         pretty-display
+         pretty-print-columns
+         pretty-print-depth
+         pretty-print-handler
+         pretty-print-size-hook
+         pretty-print-print-hook
+         pretty-print-pre-print-hook
+         pretty-print-post-print-hook
+         pretty-print-print-line
+         pretty-print-show-inexactness
+         pretty-print-exact-as-decimal
+         pretty-print-.-symbol-without-bars
+         pretty-print-abbreviate-read-macros
+         
+         pretty-print-style-table?
+         pretty-print-current-style-table
+         pretty-print-extend-style-table
+         pretty-print-remap-stylable
+         
+         pretty-format
+         pretty-printing
+         pretty-print-newline
+         make-tentative-pretty-print-output-port
+         tentative-pretty-print-port-transfer
+         tentative-pretty-print-port-cancel)
 
-   (define-struct pretty-print-style-table (hash))
+(define-struct pretty-print-style-table (hash))
 
-   (define pretty-print-extend-style-table
-     (lambda (table symbols like-symbols)
-       (let ([terr (lambda (kind which)
-                     (raise-argument-error
-                      'pretty-print-extend-style-table
-                      kind
-                      which
-                      table symbols like-symbols))])
-         (unless (or (not table) (pretty-print-style-table? table))
-           (terr "(or/c pretty-print-style-table? #f)" 0))
-         (unless (and (list? symbols)
-                      (andmap symbol? symbols))
-           (terr "(listof symbol?)" 1))
-         (unless (and (list? like-symbols)
-                      (andmap symbol? like-symbols))
-           (terr "(listof symbol?)" 1))
-         (unless (= (length symbols) (length like-symbols))
-           (raise-arguments-error
-            'pretty-print-extend-style-table
-            "length of first list doesn't match the length of the second list"
-            "first list length" (length symbols) 
-            "second list length" (length like-symbols)
-            "first list" symbols
-            "second list" like-symbols)))
-       (let ([ht (if table (pretty-print-style-table-hash table) (make-hasheq))]
-             [new-ht (make-hasheq)])
-         (hash-for-each
-          ht
-          (lambda (key val)
-            (hash-set! new-ht key val)))
-         (for-each
-          (lambda (symbol like-symbol)
-            (let ((s (hash-ref ht
-                               like-symbol
-                               (lambda () #f))))
-              (hash-set! new-ht symbol (or s like-symbol))))
-          symbols like-symbols)
-         (make-pretty-print-style-table new-ht))))
+(define pretty-print-extend-style-table
+  (lambda (table symbols like-symbols)
+    (let ([terr (lambda (kind which)
+                  (raise-argument-error
+                   'pretty-print-extend-style-table
+                   kind
+                   which
+                   table symbols like-symbols))])
+      (unless (or (not table) (pretty-print-style-table? table))
+        (terr "(or/c pretty-print-style-table? #f)" 0))
+      (unless (and (list? symbols)
+                   (andmap symbol? symbols))
+        (terr "(listof symbol?)" 1))
+      (unless (and (list? like-symbols)
+                   (andmap symbol? like-symbols))
+        (terr "(listof symbol?)" 1))
+      (unless (= (length symbols) (length like-symbols))
+        (raise-arguments-error
+         'pretty-print-extend-style-table
+         "length of first list doesn't match the length of the second list"
+         "first list length" (length symbols) 
+         "second list length" (length like-symbols)
+         "first list" symbols
+         "second list" like-symbols)))
+    (let ([ht (if table (pretty-print-style-table-hash table) (make-hasheq))]
+          [new-ht (make-hasheq)])
+      (hash-for-each
+       ht
+       (lambda (key val)
+         (hash-set! new-ht key val)))
+      (for-each
+       (lambda (symbol like-symbol)
+         (let ((s (hash-ref ht
+                            like-symbol
+                            (lambda () #f))))
+           (hash-set! new-ht symbol (or s like-symbol))))
+       symbols like-symbols)
+      (make-pretty-print-style-table new-ht))))
 
-  (define pretty-print-abbreviate-read-macros (make-parameter #t))
+(define pretty-print-abbreviate-read-macros (make-parameter #t))
   
-   (define pretty-print-current-style-table 
-     (make-parameter 
-      (pretty-print-extend-style-table #f null null)
-      (lambda (s)
-	(unless (pretty-print-style-table? s)
-	  (raise-argument-error
-	   'pretty-print-current-style-table 
-	   "pretty-print-style-table?"
-	   s))
-	s)))
+(define pretty-print-current-style-table 
+  (make-parameter 
+   (pretty-print-extend-style-table #f null null)
+   (lambda (s)
+     (unless (pretty-print-style-table? s)
+       (raise-argument-error
+        'pretty-print-current-style-table 
+        "pretty-print-style-table?"
+        s))
+     s)))
 
-   (define pretty-print-.-symbol-without-bars
-     (make-parameter #f (lambda (x) (and x #t))))
+(define pretty-print-.-symbol-without-bars
+  (make-parameter #f (lambda (x) (and x #t))))
 
-   (define pretty-print-show-inexactness 
-     (make-parameter #f
-		     (lambda (x) (and x #t))))
+(define pretty-print-show-inexactness 
+  (make-parameter #f
+                  (lambda (x) (and x #t))))
 
-   (define pretty-print-exact-as-decimal
-     (make-parameter #f
-		     (lambda (x) (and x #t))))
+(define pretty-print-exact-as-decimal
+  (make-parameter #f
+                  (lambda (x) (and x #t))))
 
-   (define pretty-print-columns 
-     (make-parameter 79
-		     (lambda (x)
-		       (unless (or (eq? x 'infinity)
-				   (integer? x))
-			       (raise-argument-error 
-				'pretty-print-columns
-				"(or/c integer? 'infinity)"
-				x))
-		       x)))
+(define pretty-print-columns 
+  (make-parameter 79
+                  (lambda (x)
+                    (unless (or (eq? x 'infinity)
+                                (integer? x))
+                      (raise-argument-error 
+                       'pretty-print-columns
+                       "(or/c integer? 'infinity)"
+                       x))
+                    x)))
 
-   (define pretty-print-depth
-     (make-parameter #f
-		     (lambda (x)
-		       (unless (or (not x) (number? x))
-			       (raise-argument-error 
-				'pretty-print-depth
-				"(or/c number? #f)"
-				x))
-		       x)))
+(define pretty-print-depth
+  (make-parameter #f
+                  (lambda (x)
+                    (unless (or (not x) (number? x))
+                      (raise-argument-error 
+                       'pretty-print-depth
+                       "(or/c number? #f)"
+                       x))
+                    x)))
 
-   (define can-accept-n?
-     (lambda (n x)
-       (procedure-arity-includes? x n)))
+(define can-accept-n?
+  (lambda (n x)
+    (procedure-arity-includes? x n)))
    
-   (define pretty-print-size-hook
-     (make-parameter (lambda (x display? port) #f)
-		     (lambda (x)
-		       (unless (can-accept-n? 3 x)
-			       (raise-argument-error 
-				'pretty-print-size-hook
-				"(any/c any/c any/c . -> . any/c)"
-				x))
-		       x)))
+(define pretty-print-size-hook
+  (make-parameter (lambda (x display? port) #f)
+                  (lambda (x)
+                    (unless (can-accept-n? 3 x)
+                      (raise-argument-error 
+                       'pretty-print-size-hook
+                       "(any/c any/c any/c . -> . any/c)"
+                       x))
+                    x)))
 
-   (define pretty-print-print-hook
-     (make-parameter void
-		     (lambda (x)
-		       (unless (can-accept-n? 3 x)
-			       (raise-argument-error 
-				'pretty-print-print-hook
-                                "(any/c any/c any/c . -> . any/c)"
-				x))
-		       x)))
+(define pretty-print-print-hook
+  (make-parameter void
+                  (lambda (x)
+                    (unless (can-accept-n? 3 x)
+                      (raise-argument-error 
+                       'pretty-print-print-hook
+                       "(any/c any/c any/c . -> . any/c)"
+                       x))
+                    x)))
 
-   (define pretty-print-print-line
-     (make-parameter (lambda (line port offset width)
-		       (when (and (number? width)
-				  (not (eq? 0 line)))
-                         (newline port))
-		       0)
-		     (lambda (x)
-		       (unless (can-accept-n? 4 x)
-			       (raise-argument-error 
-				'pretty-print-print-line
-                                "(procedure-arity-includes/c 4)"
-				x))
-		       x)))
+(define pretty-print-print-line
+  (make-parameter (lambda (line port offset width)
+                    (when (and (number? width)
+                               (not (eq? 0 line)))
+                      (newline port))
+                    0)
+                  (lambda (x)
+                    (unless (can-accept-n? 4 x)
+                      (raise-argument-error 
+                       'pretty-print-print-line
+                       "(procedure-arity-includes/c 4)"
+                       x))
+                    x)))
 
-   (define pretty-print-pre-print-hook
-     (make-parameter void
-		     (lambda (x)
-		       (unless (can-accept-n? 2 x)
-			       (raise-argument-error 
-				'pretty-print-pre-print-hook
-                                "(any/c any/c . -> . any/c)"
-				x))
-		       x)))
+(define pretty-print-pre-print-hook
+  (make-parameter void
+                  (lambda (x)
+                    (unless (can-accept-n? 2 x)
+                      (raise-argument-error 
+                       'pretty-print-pre-print-hook
+                       "(any/c any/c . -> . any/c)"
+                       x))
+                    x)))
 
-   (define pretty-print-post-print-hook
-     (make-parameter void
-		     (lambda (x)
-		       (unless (can-accept-n? 2 x)
-			       (raise-argument-error 
-				'pretty-print-post-print-hook
-                                "(any/c any/c . -> . any/c)"
-				x))
-		       x)))
+(define pretty-print-post-print-hook
+  (make-parameter void
+                  (lambda (x)
+                    (unless (can-accept-n? 2 x)
+                      (raise-argument-error 
+                       'pretty-print-post-print-hook
+                       "(any/c any/c . -> . any/c)"
+                       x))
+                    x)))
 
-   (define pretty-printing
-     (make-parameter #f (lambda (x) (and x #t))))
+(define pretty-printing
+  (make-parameter #f (lambda (x) (and x #t))))
   
-  (define pretty-print-remap-stylable
-    (make-parameter (λ (x) #f) 
-                    (λ (f) 
-                      (unless (can-accept-n? 1 f)
-                        (raise-argument-error
-                         'pretty-print-remap-stylable
-                         "(symbol? . -> . (or/c symbol? #f))"
-                         f))
-                      (λ (x)
-                        (let ([res (f x)])
-                          (unless (or (not res) (symbol? res))
-                            (raise-result-error
-                             'pretty-print-remap-stylable
-                             "(or/c symbol? #f)"
-                             res))
-                          res)))))
+(define pretty-print-remap-stylable
+  (make-parameter (λ (x) #f) 
+                  (λ (f) 
+                    (unless (can-accept-n? 1 f)
+                      (raise-argument-error
+                       'pretty-print-remap-stylable
+                       "(symbol? . -> . (or/c symbol? #f))"
+                       f))
+                    (λ (x)
+                      (let ([res (f x)])
+                        (unless (or (not res) (symbol? res))
+                          (raise-result-error
+                           'pretty-print-remap-stylable
+                           "(or/c symbol? #f)"
+                           res))
+                        res)))))
 
-   (define make-pretty-print
-     (lambda (name display? as-qq?)
-       (letrec ([pretty-print
-		 (case-lambda 
-		  [(obj port qq-depth)
-                   (unless (output-port? port)
-                     (raise-argument-error name "output-port?" port))
-                   (unless (or (equal? qq-depth 0)
-                               (equal? qq-depth 1))
-                     (raise-argument-error name "(or/c 0 1)" qq-depth))
-		   (let ([width (pretty-print-columns)]
-			 [size-hook (pretty-print-size-hook)]
-			 [print-hook (pretty-print-print-hook)]
-			 [pre-hook (pretty-print-pre-print-hook)]
-			 [post-hook (pretty-print-post-print-hook)])
-		     (generic-write obj display?
-				    width
-                                    (make-printing-port port 
-                                                        pre-hook
-                                                        post-hook
-                                                        print-hook
-                                                        (pretty-print-print-line))
-				    (print-graph) (print-struct) (print-hash-table)
-				    (and (not display?) (print-vector-length)) (print-box) 
-                                    (and (not display?) as-qq? (print-as-expression)) qq-depth
-				    (pretty-print-depth)
-				    (lambda (o display?)
-				      (size-hook o display? port)))
-		     (void))]
-                  [(obj port) (pretty-print obj port 0)]
-		  [(obj) (pretty-print obj (current-output-port))])])
-	 pretty-print)))
+(define make-pretty-print
+  (lambda (name display? as-qq?)
+    (define pretty-print
+      (case-lambda 
+        [(obj port qq-depth)
+         (unless (output-port? port)
+           (raise-argument-error name "output-port?" port))
+         (unless (or (equal? qq-depth 0)
+                     (equal? qq-depth 1))
+           (raise-argument-error name "(or/c 0 1)" qq-depth))
+         (let ([width (pretty-print-columns)]
+               [size-hook (pretty-print-size-hook)]
+               [print-hook (pretty-print-print-hook)]
+               [pre-hook (pretty-print-pre-print-hook)]
+               [post-hook (pretty-print-post-print-hook)])
+           (generic-write obj display?
+                          width
+                          (make-printing-port port 
+                                              pre-hook
+                                              post-hook
+                                              print-hook
+                                              (pretty-print-print-line))
+                          (print-graph) (print-struct) (print-hash-table)
+                          (and (not display?) (print-vector-length)) (print-box)
+                          (and (not display?) as-qq? (print-as-expression)) qq-depth
+                          (pretty-print-depth)
+                          (lambda (o display?)
+                            (size-hook o display? port)))
+           (void))]
+        [(obj port) (pretty-print obj port 0)]
+        [(obj) (pretty-print obj (current-output-port))]))
+    pretty-print))
 
-   (define pretty-print (make-pretty-print 'pretty-print #f #t))
-   (define pretty-display (let ([pp (make-pretty-print 'pretty-display #t #f)])
-                            (case-lambda
-                             [(v) (pp v)]
-                             [(v o) (pp v o)])))
-   (define pretty-write (let ([pp (make-pretty-print 'pretty-write #f #f)])
-                          (case-lambda
+(define pretty-print (make-pretty-print 'pretty-print #f #t))
+(define pretty-display (let ([pp (make-pretty-print 'pretty-display #t #f)])
+                         (case-lambda
+                           [(v) (pp v)]
+                           [(v o) (pp v o)])))
+(define pretty-write   (let ([pp (make-pretty-print 'pretty-write #f #f)])
+                         (case-lambda
                            [(v) (pp v)]
                            [(v o) (pp v o)])))
 
-   (define-struct mark (str def) #:mutable)
-   (define-struct hide (val))
+(define-struct mark (str def) #:mutable)
+(define-struct hide (val))
 
-   (define (make-tentative-output-port pport width esc)
-     (let* ([content null]
-	    [special-ok? (port-writes-special? pport)]
-            ;; The null device counts for us:
-            [/dev/null
-             (let-values ([(line col pos) (port-next-location pport)])
-               (relocate-output-port 
-                (let ([p (open-output-nowhere special-ok?)])
-                  (port-count-lines! p)
-                  p)
-                (or line 1) (or col 0) (or pos 1)))]
-            [first-line? #t]
-            [check-esc (lambda ()
-                         (let-values ([(l c p) (port-next-location /dev/null)])
-                           (when (or (c . > . width)
-                                     (not first-line?))
-                             (esc))))]
-            [p (make-output-port
-                'tentative
-                always-evt
-                (lambda (s start end block? break?)
-                  (write-bytes s /dev/null start end)
-                  (check-esc)
-                  (set! content (cons (subbytes s start end) content))
-                  (- end start))
-                void
-                (and special-ok?
-                     (lambda (special block break?)
-                       (write-special special /dev/null)
-                       (check-esc)
-                       (set! content (cons (cons 'special special) content))
-                       #t))
-                #f #f
-                (lambda ()
-                  (port-next-location /dev/null)))])
-       (port-count-lines! /dev/null)
-       (port-count-lines! p)
-       (register-printing-port p 
-                               (make-print-port-info
-                                (lambda () (reverse content))
-                                (box #t)
-                                (lambda (v)
-                                  (set! content (cons (cons 'pre v) content)))
-                                (lambda (v)
-                                  (set! content (cons (cons 'post v) content)))
-                                (lambda (v len display?)
-                                  (display (make-string len #\.) /dev/null)
-                                  (set! content (cons (list* 'hooked v len display?)
-                                                      content)))
-                                (lambda (use-line? offset width)
-                                  (when (and (number? width)
-                                             (not first-line?))
-                                    (newline p))
-                                  (set! first-line? #f)
-                                  0)
-                                esc))))
+(define (make-tentative-output-port pport width esc)
+  (let* ([content null]
+         [special-ok? (port-writes-special? pport)]
+         ;; The null device counts for us:
+         [/dev/null
+          (let-values ([(line col pos) (port-next-location pport)])
+            (relocate-output-port 
+             (let ([p (open-output-nowhere special-ok?)])
+               (port-count-lines! p)
+               p)
+             (or line 1) (or col 0) (or pos 1)))]
+         [first-line? #t]
+         [check-esc (lambda ()
+                      (let-values ([(l c p) (port-next-location /dev/null)])
+                        (when (or (c . > . width)
+                                  (not first-line?))
+                          (esc))))]
+         [p (make-output-port
+             'tentative
+             always-evt
+             (lambda (s start end block? break?)
+               (write-bytes s /dev/null start end)
+               (check-esc)
+               (set! content (cons (subbytes s start end) content))
+               (- end start))
+             void
+             (and special-ok?
+                  (lambda (special block break?)
+                    (write-special special /dev/null)
+                    (check-esc)
+                    (set! content (cons (cons 'special special) content))
+                    #t))
+             #f #f
+             (lambda ()
+               (port-next-location /dev/null)))])
+    (port-count-lines! /dev/null)
+    (port-count-lines! p)
+    (register-printing-port p 
+                            (make-print-port-info
+                             (lambda () (reverse content))
+                             (box #t)
+                             (lambda (v)
+                               (set! content (cons (cons 'pre v) content)))
+                             (lambda (v)
+                               (set! content (cons (cons 'post v) content)))
+                             (lambda (v len display?)
+                               (display (make-string len #\.) /dev/null)
+                               (set! content (cons (list* 'hooked v len display?)
+                                                   content)))
+                             (lambda (use-line? offset width)
+                               (when (and (number? width)
+                                          (not first-line?))
+                                 (newline p))
+                               (set! first-line? #f)
+                               0)
+                             esc))))
 
-   (define (make-tentative-pretty-print-output-port pport width esc)
-     (let ([p (make-tentative-output-port pport width esc)])
-       (port-write-handler p (port-write-handler pport))
-       (port-display-handler p (port-display-handler pport))
-       (port-print-handler p (port-print-handler pport))
-       p))
+(define (make-tentative-pretty-print-output-port pport width esc)
+  (let ([p (make-tentative-output-port pport width esc)])
+    (port-write-handler p (port-write-handler pport))
+    (port-display-handler p (port-display-handler pport))
+    (port-print-handler p (port-print-handler pport))
+    p))
+
+(define (make-printing-port port pre-print post-print output-hooked print-line)
+  (let-values ([(line col pos) (port-next-location port)])
+    (let* ([orig-counts? (and line col pos)]
+           [p (if orig-counts?
+                  (relocate-output-port port line col pos #f)
+                  (transplant-output-port port #f 1 #f))]
+           [line -1])
+      (port-count-lines! p)
+      (register-printing-port p 
+                              (make-print-port-info 
+                               (lambda () null)
+                               (box #t)
+                               (lambda (v)
+                                 (pre-print v port))
+                               (lambda (v)
+                                 (post-print v port))
+                               (lambda (v len display?)
+                                 (output-hooked v display? p))
+                               (lambda (use-line? offset width)
+                                 (set! line (add1 line))
+                                 (print-line (and use-line? line) p offset width))
+                               void)))))
+
+(struct printing-port (port info)
+  #:property prop:output-port 0)
+
+(define-struct print-port-info (get-content
+                                def-box
+                                pre-print
+                                post-print
+                                output-hooked
+                                print-line
+                                esc))
+
+(define (register-printing-port p info)
+  (printing-port p info))
+
+(define (register-printing-port-like p pport)
+  (printing-port p (printing-port-info pport)))
+
+(define (get pport selector)
+  (selector (printing-port-info pport)))
+
+(define (printing-port-pre-print pport)
+  (get pport print-port-info-pre-print))
+(define (printing-port-post-print pport)
+  (get pport print-port-info-post-print))
+(define (printing-port-def-box pport)
+  (get pport print-port-info-def-box))
+(define (printing-port-output-hooked pport)
+  (get pport print-port-info-output-hooked))
+(define (printing-port-print-line pport)
+  (get pport print-port-info-print-line))
+(define (printing-port-esc pport)
+  (get pport print-port-info-esc))
+
+(define orig-display (port-display-handler (open-output-string)))
+(define orig-write (port-write-handler (open-output-string)))
+
+(define (pretty-print-newline pport width)
+  (let-values ([(l col p) (port-next-location pport)])
+    ((printing-port-print-line pport) #t (or col 0) width)))
+
+(define (tentative-pretty-print-port-transfer a-pport pport)
+  (let ([content ((get a-pport print-port-info-get-content))])
+    (for-each (lambda (elem)
+                (if (bytes? elem)
+                    (write-bytes elem pport)
+                    (case (car elem)
+                      [(special) (write-special (cdr elem) pport)]
+                      [(pre) ((printing-port-pre-print pport) (cdr elem))]
+                      [(post) ((printing-port-post-print pport) (cdr elem))]
+                      [(hooked) ((printing-port-output-hooked pport) 
+                                 (cadr elem) (caddr elem) (cdddr elem))])))
+              content)))
    
-   (define (make-printing-port port pre-print post-print output-hooked print-line)
-     (let-values ([(line col pos) (port-next-location port)])
-       (let* ([orig-counts? (and line col pos)]
-	      [p (if orig-counts?
-		     (relocate-output-port port line col pos #f)
-		     (transplant-output-port port #f 1 #f))]
-	      [line -1])
-	 (port-count-lines! p)
-	 (register-printing-port p 
-				 (make-print-port-info 
-				  (lambda () null)
-				  (box #t)
-				  (lambda (v)
-				    (pre-print v port))
-				  (lambda (v)
-				    (post-print v port))
-				  (lambda (v len display?)
-				    (output-hooked v display? p))
-				  (lambda (use-line? offset width)
-				    (set! line (add1 line))
-				    (print-line (and use-line? line) p offset width))
-				  void)))))
+(define (tentative-pretty-print-port-cancel pport)
+  (set-box! (get pport print-port-info-def-box) #f))
 
-   (struct printing-port (port info)
-     #:property prop:output-port 0)
+(define (add-spaces n port)
+  (if (> n 0)
+      (if (> n 7)
+          (begin
+            (write-string "        " port)
+            (add-spaces (- n 8) port))
+          (write-string "        " port 0 n))
+      (void)))
 
-   (define-struct print-port-info (get-content
-				   def-box
-				   pre-print
-				   post-print
-				   output-hooked
-				   print-line
-				   esc))
+(define (prefab?! obj v)
+  (let ([d (prefab-struct-key obj)])
+    (and d
+         (begin
+           (vector-set! v 0 d)
+           #t))))
 
-   (define (register-printing-port p info)
-     (printing-port p info))
-
-   (define (register-printing-port-like p pport)
-     (printing-port p (printing-port-info pport)))
-
-   (define (get pport selector)
-     (selector (printing-port-info pport)))
-
-   (define (printing-port-pre-print pport)
-     (get pport print-port-info-pre-print))
-   (define (printing-port-post-print pport)
-     (get pport print-port-info-post-print))
-   (define (printing-port-def-box pport)
-     (get pport print-port-info-def-box))
-   (define (printing-port-output-hooked pport)
-     (get pport print-port-info-output-hooked))
-   (define (printing-port-print-line pport)
-     (get pport print-port-info-print-line))
-   (define (printing-port-esc pport)
-     (get pport print-port-info-esc))
-
-   (define orig-display (port-display-handler (open-output-string)))
-   (define orig-write (port-write-handler (open-output-string)))
-   
-   (define (pretty-print-newline pport width)
-     (let-values ([(l col p) (port-next-location pport)])
-       ((printing-port-print-line pport) #t (or col 0) width)))
-
-   (define (tentative-pretty-print-port-transfer a-pport pport)
-     (let ([content ((get a-pport print-port-info-get-content))])
-       (for-each (lambda (elem)
-		   (if (bytes? elem)
-		       (write-bytes elem pport)
-		       (case (car elem)
-			 [(special) (write-special (cdr elem) pport)]
-			 [(pre) ((printing-port-pre-print pport) (cdr elem))]
-			 [(post) ((printing-port-post-print pport) (cdr elem))]
-			 [(hooked) ((printing-port-output-hooked pport) 
-				    (cadr elem) (caddr elem) (cdddr elem))])))
-		 content)))
-   
-   (define (tentative-pretty-print-port-cancel pport)
-     (set-box! (get pport print-port-info-def-box) #f))
-
-   (define (add-spaces n port)
-     (if (> n 0)
-	 (if (> n 7)
-	     (begin
-	       (write-string "        " port)
-	       (add-spaces (- n 8) port))
-	     (write-string "        " port 0 n))
-         (void)))
-
-   (define (prefab?! obj v)
-     (let ([d (prefab-struct-key obj)])
-       (and d
-            (begin
-              (vector-set! v 0 d)
-              #t))))
-
-   (define-struct unquoted (val))
-   (define struct-ellipses (string->uninterned-symbol "..."))
+(define-struct unquoted (val))
+(define struct-ellipses (string->uninterned-symbol "..."))
 
    (define (generic-write obj display? width pport
 			  print-graph? print-struct? print-hash-table? print-vec-length? 
@@ -1637,5 +1637,5 @@
               (substring s 0 (- (string-length s) 1)))))))
 
   
-  )
+
 
