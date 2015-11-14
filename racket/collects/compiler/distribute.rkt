@@ -513,7 +513,10 @@
                                exts-dir relative-exts-dir
                                relative->binary-relative)
       (unless (null? paths)
-        ;; Determine the shared path prefix among paths within a package:
+        ;; Determine the shared path prefix among paths within a package,
+        ;; "collects" directory, or other root. That way, relative path references
+        ;; can work, but we don't keep excessive path information from the
+        ;; build machine.
         (let* ([root-table (make-hash)]
                [root->path-element (lambda (root)
                                      (hash-ref root-table
@@ -522,42 +525,73 @@
                                                  (let ([v (format "r~a" (hash-count root-table))])
                                                    (hash-set! root-table root v)
                                                    v))))]
+               [alt-paths (map explode-path
+                               (map normal-case-path
+                                    (list* (find-system-path 'addon-dir)
+                                           (find-share-dir)
+                                           (append (get-lib-search-dirs)
+                                                   (get-include-search-dirs)))))]
                [explode (lambda (src)
+                          ;; Sort the path into a root, and keep the root plus
+                          ;; the part of the path relative to that root:
                           (define-values (pkg subpath)
                             (path->pkg+subpath src #:cache pkg-path-cache))
                           (define main
                             (and (not pkg)
                                  (path->main-collects-relative src)))
+                          (define other (and (not pkg)
+                                             (not (pair? main))
+                                             (let ([e (explode-path src)])
+                                               (for/or ([d (in-list alt-paths)]
+                                                        [i (in-naturals)])
+                                                 (define len (length d))
+                                                 (and ((length e) . > . len)
+                                                      (equal? d (take e len))
+                                                      (cons i len))))))
                           (reverse
                            (let loop ([src (cond
                                             [pkg subpath]
                                             [(pair? main)
                                              (apply build-path
                                                     (map bytes->path-element (cdr main)))]
+                                            [other (apply build-path
+                                                          (list-tail (explode-path src) (cdr other)))]
                                             [else src])])
                              (let-values ([(base name dir?) (split-path src)])
                                (cond
                                 [(path? base)
                                  (cons name (loop base))]
+                                [(or pkg
+                                     (and (pair? main)
+                                          'collects)
+                                     (and other (car other)))
+                                 => (lambda (r)
+                                      (list name (root->path-element r)))]
                                 [else
-                                 (list (root->path-element (or pkg
-                                                               (and (pair? main)
-                                                                    'collects)
-                                                               name)))])))))]
+                                 (list (root->path-element name))])))))]
                ;; In reverse order, so we can pick off the paths
                ;;  in the second pass:
-               [exploded (reverse (map explode paths))]
-               [max-len (apply max 0 (map length exploded))]
-               [common-len (let loop ([cnt 0])
-                             (cond
-                               [((add1 cnt) . = . max-len) cnt]
-                               [(andmap (let ([i (list-ref (car exploded) cnt)])
-                                          (lambda (e)
-                                            (equal? (list-ref e cnt) i)))
-                                        exploded)
-                                (loop (add1 cnt))]
-                               [else cnt]))])
-
+               [exploded (reverse (let ([exploded (map explode paths)])
+                                    ;; For paths that share the same root,
+                                    ;; drop any common "prefix" after the root.
+                                    (define roots-common
+                                      (for/fold ([ht (hash)]) ([e (in-list exploded)])
+                                        (define l (hash-ref ht (car e) #f))
+                                        (hash-set ht (car e) 
+                                                  (if (not l)
+                                                      (cdr e)
+                                                      (let loop ([l l] [l2 (cdr e)])
+                                                        (cond
+                                                         [(or (null? l) (null? l2)) null]
+                                                         [(or (null? l) (null? l2)) null]
+                                                         [(equal? (car l) (car l2))
+                                                          (cons (car l) (loop (cdr l) (cdr l2)))]
+                                                         [else null]))))))
+                                    ;; Drop common parts out, but deefinitely keep the last
+                                    ;; element:
+                                    (for/list ([e (in-list exploded)])
+                                      (define l (hash-ref roots-common (car e) null))
+                                      (cons (car e) (list-tail (cdr e) (max 0 (sub1 (length l))))))))])
                
           ;; Pass 2: change all the paths
           (copy-and-patch-binaries #t #rx#"rUnTiMe-paths[)]"
@@ -569,7 +603,7 @@
                                    (lambda (src)
                                      (and src
                                           (begin0
-                                           (apply build-path (list-tail (car exploded) common-len))
+                                           (apply build-path (car exploded))
                                            (set! exploded (cdr exploded)))))
                                    ;; transform-entry
                                    (lambda (new-path ext)
