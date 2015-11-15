@@ -5894,6 +5894,26 @@ local_eval(int argc, Scheme_Object **argv)
   return scheme_void;
 }
 
+Scheme_Object *scheme_intdef_bind_identifiers(Scheme_Object *intdef)
+{
+  Scheme_Comp_Env *stx_env, *init_env;
+  Scheme_Object *l = scheme_null;
+  int i;
+  
+  update_intdef_chain(intdef);
+  stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(intdef))[0];
+  init_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(intdef))[3];
+
+  while (stx_env != init_env) {
+    for (i = stx_env->num_bindings; i--; ) {
+      l = scheme_make_pair(stx_env->binders[i], l);
+    }
+    stx_env = stx_env->next;
+  }
+
+  return l;
+}
+
 /*========================================================================*/
 /*                       cloning prefix information                       */
 /*========================================================================*/

@@ -102,6 +102,7 @@ static Scheme_Object *local_make_intdef_context(int argc, Scheme_Object *argv[])
 static Scheme_Object *intdef_context_seal(int argc, Scheme_Object *argv[]);
 static Scheme_Object *intdef_context_intro(int argc, Scheme_Object *argv[]);
 static Scheme_Object *intdef_context_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *intdef_context_ids(int argc, Scheme_Object *argv[]);
 static Scheme_Object *id_intdef_remove(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_introduce(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_get_shadower(int argc, Scheme_Object *argv[]);
@@ -781,6 +782,7 @@ static void make_kernel_env(void)
   GLOBAL_PRIM_W_ARITY("internal-definition-context-seal", intdef_context_seal, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("internal-definition-context-introduce", intdef_context_intro, 2, 3, env);
   GLOBAL_PRIM_W_ARITY("internal-definition-context?", intdef_context_p, 1, 1, env);
+  GLOBAL_PRIM_W_ARITY("internal-definition-context-binding-identifiers", intdef_context_ids, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("identifier-remove-from-definition-context", id_intdef_remove, 2, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-get-shadower", local_get_shadower, 1, 2, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-introduce", local_introduce, 1, 1, env);
@@ -2562,6 +2564,16 @@ id_intdef_remove(int argc, Scheme_Object *argv[])
   }
   
   return res;
+}
+
+static Scheme_Object *intdef_context_ids(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_intdef_context_type))
+    scheme_wrong_contract("internal-definition-context-binding-identifiers",
+                          "internal-definition-context?", 
+                          0, argc, argv);
+  
+  return scheme_intdef_bind_identifiers(argv[0]);
 }
 
 static Scheme_Object *

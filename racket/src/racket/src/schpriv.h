@@ -2979,6 +2979,8 @@ Scheme_Native_Closure_Data *scheme_generate_case_lambda(Scheme_Case_Lambda *cl);
 
 void scheme_delay_load_closure(Scheme_Closure_Data *data);
 
+Scheme_Object *scheme_intdef_bind_identifiers(Scheme_Object *intdef);
+  
 #define scheme_add_good_binding(i,v,f) (f->values[i] = v)
 
 Scheme_Object *scheme_compiled_void(void);

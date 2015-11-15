@@ -12,6 +12,7 @@
                      racket/struct-info
                      syntax/stx
                      syntax/location
+                     syntax/intdef
                      "private/unit-contract-syntax.rkt"
                      "private/unit-compiletime.rkt"
                      "private/unit-syntax.rkt"))
@@ -1203,7 +1204,9 @@
                                                    (apply append (map do-one ids tmps))))]
                                           [else (list defn-or-expr)]))
                                       expanded-body))])
-             #'(block defn-or-expr ...))))))))
+             (internal-definition-context-track
+              def-ctx
+              #'(block defn-or-expr ...)))))))))
 
 (define-for-syntax (redirect-imports/exports import?)
   (lambda (table-stx

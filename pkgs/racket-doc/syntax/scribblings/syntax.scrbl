@@ -35,4 +35,6 @@
 
 @include-section["macro-testing.scrbl"]
 
+@include-section["intdef.scrbl"]
+
 @index-section[]

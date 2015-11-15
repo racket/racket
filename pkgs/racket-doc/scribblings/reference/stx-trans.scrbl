@@ -5,7 +5,8 @@
                      racket/require-syntax
                      racket/provide-transform
                      racket/provide-syntax
-                     racket/keyword-transform))
+                     racket/keyword-transform
+                     syntax/intdef))
 
 @(define stx-eval (make-base-eval))
 @(interaction-eval #:eval stx-eval (require (for-syntax racket/base)))
@@ -298,6 +299,13 @@ context is meant to splice into an immediately enclosing context, then
 when @racket[syntax-local-context] produces a list, @racket[cons] the
 generated value onto that list.
 
+When expressions are expanded via @racket[local-expand] with an
+internal-definition context @racket[intdef-ctx], and when the expanded
+expressions are incorporated into an overall form @racket[_new-stx],
+then typically @racket[internal-definition-context-track] should be
+applied to @racket[intdef-ctx] and @racket[_new-stx] to provide
+expansion history to external tools.
+
 @transform-time[]
 
 @examples[#:eval stx-eval
@@ -456,6 +464,18 @@ match the number of identifiers, otherwise the
 @transform-time[]}
 
 
+@defproc[(internal-definition-context-binding-identifiers
+          [intdef-ctx internal-definition-context?])
+         (listof identifier?)]{
+
+Returns a list of all binding identifiers registered for
+@racket[intdef-ctx] through @racket[syntax-local-bind-syntaxes]. Each
+identifier in the returned list includes the @tech{internal-definition
+context}'s @tech{scope}.
+
+@history[#:added "6.3.0.4"]}
+
+
 @defproc[(internal-definition-context-introduce [intdef-ctx internal-definition-context?]
                                                 [stx syntax?]
                                                 [mode (or/c 'flip 'add 'remove) 'flip])
@@ -487,6 +507,8 @@ provided for backward compatibility; the more general
 @racket[internal-definition-context-introduce] function is preferred.
 
 @history[#:changed "6.3" @elem{Simplified the operation to @tech{scope} removal.}]}
+
+
 
 
 @defthing[prop:expansion-contexts struct-type-property?]{
