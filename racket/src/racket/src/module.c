@@ -4932,9 +4932,11 @@ static void lock_registry(Scheme_Env *env)
 static void unlock_registry(Scheme_Env *env)
 {
   Scheme_Object *lock;
-  lock = scheme_hash_get(env->module_registry->loaded, scheme_false);
-  scheme_post_sema(SCHEME_CAR(lock));
-  scheme_hash_set(env->module_registry->loaded, scheme_false, NULL);
+  if (env) {
+    lock = scheme_hash_get(env->module_registry->loaded, scheme_false);
+    scheme_post_sema(SCHEME_CAR(lock));
+    scheme_hash_set(env->module_registry->loaded, scheme_false, NULL);
+  }
 }
 
 XFORM_NONGCING static intptr_t make_key(int base_phase, int eval_exp, int eval_run)
@@ -5742,7 +5744,7 @@ static void start_module(Scheme_Module *m, Scheme_Env *env, int restart,
 static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
 {
   Scheme_Object *v, *prev;
-  Scheme_Env *menv;
+  Scheme_Env *menv, *uenv;
   int need_lock;
 
   need_lock = wait_registry(env);
@@ -5763,14 +5765,17 @@ static void do_prepare_compile_env(Scheme_Env *env, int base_phase, int pos)
     }
     v = prev;
 
-    if (need_lock)
+    if (need_lock) {
       lock_registry(env);
+      uenv = env;
+    } else
+      uenv = NULL;
 
     while (SCHEME_NAMESPACEP(v)) {
       menv = (Scheme_Env *)v;
       v = menv->available_next[pos];
       menv->available_next[pos] = NULL;
-      BEGIN_ESCAPEABLE(unlock_registry, env);
+      BEGIN_ESCAPEABLE(unlock_registry, uenv);
       start_module(menv->module, menv->instance_env, 0,
                    NULL, 1, 0, base_phase,
                    scheme_null, 1);

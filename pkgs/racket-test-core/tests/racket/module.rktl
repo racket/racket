@@ -1643,5 +1643,33 @@ case of module-leve bindings; it doesn't cover local bindings.
         (foo)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that shutting down a custodian
+;; releases a lock as it should
+
+(parameterize ([current-custodian (make-custodian)])
+  (thread-wait
+   (thread
+    (lambda ()
+      (parameterize ([current-namespace (make-base-namespace)])
+        (eval '(module m racket/base
+                (require (for-syntax racket/base))
+                (begin-for-syntax
+                  #;(log-error "nested")
+                  ;; Using an environment variable to communicate across phases:
+                  (when (getenv "PLT_ready_to_end")
+                    #;(log-error "adios")
+                    (custodian-shutdown-all (current-custodian))))))
+        (eval '(module n racket/base
+                (require (for-syntax racket/base))
+                (begin-for-syntax
+                  #;(log-error "outer")
+                  (dynamic-require ''m 0)
+                  (eval #f))))
+        (putenv "PLT_ready_to_end" "yes")
+        (dynamic-require ''n 0)
+        #;(log-error "go")
+        (eval #f))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
