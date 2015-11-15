@@ -4819,6 +4819,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
       form = scheme_stx_track(SCHEME_PTR1_VAL(var), form, NULL);
       if (!rec[drec].comp) {
         /* Already fully expanded. */
+        SCHEME_EXPAND_OBSERVE_OPAQUE_EXPR(env->observer, form);
         return form;
       }
     } else {
