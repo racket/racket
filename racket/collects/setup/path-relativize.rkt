@@ -44,7 +44,8 @@
             ;; `path1', but that messes up the xform compilation somehow, by
             ;; having #<path...> vaules written into dep files.
             [(null? path) path0]
-            [(equal? (car path) (car root)) (loop (cdr path) (cdr root))]
+            [(equal? (normal-case-path (car path)) (normal-case-path (car root)))
+	     (loop (cdr path) (cdr root))]
             [else path0])))
 
   (define root-or-orig

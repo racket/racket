@@ -10,3 +10,5 @@
               (path->relative-string/library (path-only (collection-file-path "base.rkt" "racket"))))
 (check-equal? "<collects>/racket/base.rkt"
               (path->relative-string/library (collection-file-path "base.rkt" "racket")))
+(check-equal? "<collects>/racket/base.rkt"
+              (path->relative-string/library (normal-case-path (collection-file-path "base.rkt" "racket"))))
