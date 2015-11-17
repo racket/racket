@@ -630,7 +630,7 @@
   (raise-blame-error blame #:missing-party neg-party val
                      '(expected: "~s" given: "~e")
                      (if empty-ok?
-                         "list?"
+                         'list?
                          (format "~s" `(and/c list? pair?)))
                      val))
 
