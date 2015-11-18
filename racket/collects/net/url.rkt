@@ -9,6 +9,7 @@
          (only-in "url-connect.rkt" current-https-protocol)
          "uri-codec.rkt"
          "url-string.rkt"
+         "url-proxy.rkt"
          (only-in "url-exception.rkt" make-url-exception))
 
 ;; To do:
@@ -30,7 +31,6 @@
   (if (null? envars)
       null
       (match (getenv (car envars))
-        (x (printf "envars: ~s~%" x) (failure-cont))
         [#f (env->c-p-s-entries (cdr envars))]
         ["" null]
         [(app string->url
@@ -422,7 +422,8 @@
       "/"
       s))
 
-(provide (all-from-out "url-string.rkt"))
+(provide (all-from-out "url-string.rkt")
+         (all-from-out "url-proxy.rkt"))
 
 (provide/contract
  (get-pure-port (->* (url?) ((listof string?) #:redirections exact-nonnegative-integer?) input-port?))
