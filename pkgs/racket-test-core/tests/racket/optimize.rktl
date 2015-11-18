@@ -1528,6 +1528,32 @@
 (test-comp '(lambda () (begin (random 1) (random 2)))
            '(lambda () (cdr (cons (random 1) (random 2)))))
 
+(test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin (car (cons (random 1) (random 2))) (random 3) (random 4)))) ;
+(test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin (cdr (cons (random 1) (random 2))) (random 3) (random 4))))
+(test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin (random 1) (car (cons (random 2) (random 3))) (random 4)))) ;
+(test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin (random 1) (cdr (cons (random 2) (random 3))) (random 4))))
+(test-comp '(lambda () (begin (random 1) (random 2) (begin0 (random 3) (random 4))))
+           '(lambda () (begin (random 1) (random 2) (car (cons (random 3) (random 4))))))
+(test-comp '(lambda () (begin (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin (random 1) (random 2) (cdr (cons (random 3) (random 4))))))
+
+(test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin0 (car (cons (random 1) (random 2))) (random 3) (random 4))))
+(test-comp '(lambda () (begin0 (begin (random 1) (random 2)) (random 3) (random 4)))
+           '(lambda () (begin0 (cdr (cons (random 1) (random 2))) (random 3) (random 4))))
+(test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin0 (random 1) (car (cons (random 2) (random 3))) (random 4)))) ;
+(test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin0 (random 1) (cdr (cons (random 2) (random 3))) (random 4))))
+(test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin0 (random 1) (random 2) (car (cons (random 3) (random 4)))))) ;
+(test-comp '(lambda () (begin0 (random 1) (random 2) (random 3) (random 4)))
+           '(lambda () (begin0 (random 1) (random 2) (cdr (cons (random 3) (random 4))))))
+
 (test-comp '(lambda (w)
               (begin (random) w))
            '(lambda (w)

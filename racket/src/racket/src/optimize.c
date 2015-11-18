@@ -71,7 +71,7 @@ struct Optimize_Info
                  for constraining the movement of allocation operations */
   int sclock; /* virtual clock that ticks when space consumption is potentially observed */
   int psize;
-  short inline_fuel, shift_fuel;
+  short inline_fuel, shift_fuel, flatten_fuel;
   char letrec_not_twice, enforce_const, use_psize, has_nonleaf;
   Scheme_Hash_Table *top_level_consts;
 
@@ -100,6 +100,7 @@ struct Optimize_Info
 
 typedef struct Optimize_Info_Sequence {
   int init_shift_fuel, min_shift_fuel;
+  int init_flatten_fuel, min_flatten_fuel;
 } Optimize_Info_Sequence;
 
 #define OPT_IS_MUTATED           0x1
@@ -3949,6 +3950,62 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
   }
 }
 
+static Scheme_Object *flatten_sequence(Scheme_Object *o, Optimize_Info *info)
+{
+  Scheme_Sequence *s = (Scheme_Sequence *)o, *s2, *s3;
+  Scheme_Object *o3;
+  int i, j, k, count, extra = 0, split = 0, b0;
+
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_splice_sequence_type))
+    return o;
+  
+  if (!info->flatten_fuel)
+    return o;
+
+  b0 = SAME_TYPE(SCHEME_TYPE(o), scheme_begin0_sequence_type);
+  count = s->count;
+  
+  /* exceptions: (begin ... (begin0 ...)) and (begin0 (begin ...) ...) */
+  for (i = 0; i < count; i++) {
+    o3 = s->array[i];
+    if ((SAME_TYPE(SCHEME_TYPE(o3), scheme_sequence_type) && !(!i && b0))
+        || (SAME_TYPE(SCHEME_TYPE(o3), scheme_begin0_sequence_type) && !(i == count - 1 && !b0))) {
+      s3 = (Scheme_Sequence *)o3;
+      extra += s3->count;
+      split++;
+    }
+  }
+
+  if (!split) 
+    return o;
+
+  info->flatten_fuel--;
+  info->size -= split;
+
+  s2 = scheme_malloc_sequence(s->count + extra - split);
+  s2->so.type = s->so.type;
+  s2->count = s->count + extra - split;
+  k = 0;
+  
+  /* exceptions: (begin ... (begin0 ...)) and (begin0 (begin ...) ...) */
+  for (i = 0; i < count; i++) {
+    o3 = s->array[i];
+    if ((SAME_TYPE(SCHEME_TYPE(o3), scheme_sequence_type) && !(!i && b0))
+        || (SAME_TYPE(SCHEME_TYPE(o3), scheme_begin0_sequence_type) && !(i == count - 1 && !b0))) {
+      s3 = (Scheme_Sequence *)o3;
+      for (j = 0; j < s3->count; j++) {
+        s2->array[k++] = s3->array[j];
+      }
+    } else {
+      s2->array[k++] = o3;
+    }
+  }
+
+  if (k != s2->count) scheme_signal_error("internal error: flatten failed");
+
+  return (Scheme_Object *)s2;
+}
+
 static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_Sequence *s = (Scheme_Sequence *)o;
@@ -3989,7 +4046,7 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
         
         single_result = info->single_result;
         preserves_marks = info->preserves_marks;
-        /* Move to last position in case the begin form is droped */
+        /* Move to last position in case the begin form is dropped */
         s->array[count - 1] = le;
         for (j = i; j < count - 1; j++) {
           drop++;
@@ -4005,9 +4062,10 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
   info->preserves_marks = preserves_marks;
   info->single_result = single_result;
 
-  if (drop + 1 == s->count) {
+  if (drop + 1 == s->count)
     return s->array[drop];
-  } else if (drop) {
+
+  if (drop) {
     Scheme_Sequence *s2;
     int j = 0;
 
@@ -4017,14 +4075,14 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
 
     for (i = 0; i < s->count; i++) {
       if (s->array[i]) {
-	s2->array[j++] = s->array[i];
+        s2->array[j++] = s->array[i];
       }
     }
 
     s = s2;
   }
 
-  return (Scheme_Object *)s;
+  return flatten_sequence((Scheme_Object *)s, info);
 }
 
 XFORM_NONGCING static int small_inline_number(Scheme_Object *o)
@@ -5001,8 +5059,7 @@ case_lambda_shift(Scheme_Object *data, int delta, int after_depth)
   return data;
 }
 
-static Scheme_Object *
-begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
+static Scheme_Object *begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
 {
   int i, count, drop = 0, prev_size, single_result = 0, preserves_marks = 0, kclock = 0, sclock = 0;
   Scheme_Sequence *s = (Scheme_Sequence *)obj;
@@ -5066,7 +5123,7 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
     info->preserves_marks = 1;
 
     if (i != 0) {
-      /* We will ignore the first expresion too */
+      /* We will ignore the first expression too */
       le = optimize_ignored(s->array[0], info, 0, -1, 1, 5);
       if (!le) {
         drop++;
@@ -5091,7 +5148,7 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
         s2->array[j++] = s->array[i];
       }
     }
-    return (Scheme_Object *)s2;
+    return flatten_sequence((Scheme_Object *)s2, info);
   }
 
   info->preserves_marks = 1;
@@ -5133,8 +5190,7 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
           s2->array[j++] = s->array[i];
         }
       }
-      if (!info->escapes)
-        s2->array[j++] = expr;
+      s2->array[j++] = expr;
 
       expr = (Scheme_Object *)s2;
     }
@@ -5162,7 +5218,7 @@ begin0_optimize(Scheme_Object *obj, Optimize_Info *info, int context)
   }
 
   info->size += 1;
-
+  expr = flatten_sequence(expr, info);
   return replace_tail_inside(expr, inside, orig_first);
 }
 
@@ -8402,6 +8458,7 @@ Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger)
 #endif
   info->inline_fuel = 32;
   info->shift_fuel = 16;
+  info->flatten_fuel = 16;
   info->cp = cp;
 
   if (get_logger) {
@@ -8418,6 +8475,8 @@ static void optimize_info_seq_init(Optimize_Info *info, Optimize_Info_Sequence *
 {
   info_seq->init_shift_fuel = info->shift_fuel;
   info_seq->min_shift_fuel = info->shift_fuel;
+  info_seq->init_flatten_fuel = info->flatten_fuel;
+  info_seq->min_flatten_fuel = info->flatten_fuel;
 }
 
 static void optimize_info_seq_step(Optimize_Info *info, Optimize_Info_Sequence *info_seq)
@@ -8425,12 +8484,17 @@ static void optimize_info_seq_step(Optimize_Info *info, Optimize_Info_Sequence *
   if (info->shift_fuel < info_seq->min_shift_fuel)
     info_seq->min_shift_fuel = info->shift_fuel;
   info->shift_fuel = info_seq->init_shift_fuel;
+  if (info->flatten_fuel < info_seq->min_flatten_fuel)
+    info_seq->min_flatten_fuel = info->flatten_fuel;
+  info->flatten_fuel = info_seq->init_flatten_fuel;
 }
 
 static void optimize_info_seq_done(Optimize_Info *info, Optimize_Info_Sequence *info_seq)
 {
   if (info->shift_fuel > info_seq->min_shift_fuel)
     info->shift_fuel = info_seq->min_shift_fuel;
+  if (info->flatten_fuel > info_seq->min_flatten_fuel)
+    info->flatten_fuel = info_seq->min_flatten_fuel;
 }
 
 void scheme_optimize_info_enforce_const(Optimize_Info *oi, int enforce_const)
@@ -9043,6 +9107,7 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->new_frame = current;
   naya->inline_fuel = info->inline_fuel;
   naya->shift_fuel = info->shift_fuel;
+  naya->flatten_fuel = info->flatten_fuel;
   naya->letrec_not_twice = info->letrec_not_twice;
   naya->enforce_const = info->enforce_const;
   naya->top_level_consts = info->top_level_consts;
@@ -9091,6 +9156,7 @@ static void optimize_info_done(Optimize_Info *info, Optimize_Info *parent)
   parent->escapes = info->escapes;
   parent->psize += info->psize;
   parent->shift_fuel = info->shift_fuel;
+  parent->flatten_fuel = info->flatten_fuel;
   if (info->has_nonleaf)
     parent->has_nonleaf = 1;
 }
