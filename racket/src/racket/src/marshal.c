@@ -338,6 +338,7 @@ static Scheme_Object *read_top(Scheme_Object *obj)
   top->iso.so.type = scheme_compilation_top_type;
   if (!SCHEME_PAIRP(obj)) return NULL;
   top->max_let_depth = SCHEME_INT_VAL(SCHEME_CAR(obj));
+  if (top->max_let_depth < 0) return NULL; /* Should this check for a max as well? */
   obj = SCHEME_CDR(obj);
   if (!SCHEME_PAIRP(obj)) return NULL;
   top->binding_namess = SCHEME_CAR(obj); /* checking is in scheme_install_binding_names() */
@@ -746,7 +747,7 @@ static Scheme_Object *read_quote_syntax(Scheme_Object *obj)
 static int not_relative_path(Scheme_Object *p, Scheme_Hash_Table *cache)
 {
   Scheme_Object *dir, *rel_p;
-  
+
   dir = scheme_get_param(scheme_current_config(),
                          MZCONFIG_WRITE_DIRECTORY);
   if (SCHEME_TRUEP(dir)) {
@@ -791,7 +792,7 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 
   svec_size = data->closure_size;
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
-    svec_size += ((CLOS_TYPE_BITS_PER_ARG * (data->num_params + data->closure_size)) + BITS_PER_MZSHORT - 1) / BITS_PER_MZSHORT;
+    svec_size += scheme_boxmap_size(data->num_params + data->closure_size);
     {
       int k, mv;
       for (k = data->num_params + data->closure_size; --k; ) {
@@ -1013,6 +1014,11 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
 
   if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS))
     data->closure_size = SCHEME_SVEC_LEN(v);
+
+  if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS))
+    if (data->closure_size + scheme_boxmap_size(data->closure_size + data->num_params) != SCHEME_SVEC_LEN(v))
+      return NULL;
+
   data->closure_map = SCHEME_SVEC_VEC(v);
 
   /* If the closure is empty, create the closure now */

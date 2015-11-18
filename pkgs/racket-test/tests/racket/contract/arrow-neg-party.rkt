@@ -243,6 +243,22 @@
      'neg #:database "db" #:password "password" #:user "user")
    (list "user" "db" "password" #f))
 
+  (test/spec-passed/result
+   '->*neg-party18b
+   '((neg-party-fn 
+      (->* (#:user string?)
+           (#:database (or/c string? #f)
+                       #:password (first-or/c string? (list/c 'hash string?) #f)
+                       #:port (first-or/c exact-positive-integer? #f))
+           any/c)
+      (λ (#:user user
+                 #:database [db #f]
+                 #:password [password #f]
+                 #:port [port #f])
+        (list user db password port)))
+     'neg #:database "db" #:password "password" #:user "user")
+   (list "user" "db" "password" #f))
+
   (test/pos-blame
    '->*neg-party19
    '((neg-party-fn 
@@ -270,4 +286,19 @@
       (->* (any/c) (#:kw any/c) any)
       (λ (x #:kw [kw 0]) x))
      'neg 42)
-   42))
+   42)
+
+  (test/pos-blame
+   '->neg-party23
+   '((neg-party-fn
+      (-> any/c boolean?)
+      (λ (x) 1))
+     'neg 1))
+
+  (test/spec-passed/result
+   '->neg-party24
+   '((neg-party-fn
+      (-> any/c boolean?)
+      (λ (x) #t))
+     'neg 1)
+   #t))

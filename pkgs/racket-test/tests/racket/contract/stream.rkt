@@ -31,4 +31,14 @@
   (test/pos-blame
    'stream/c7
    '(stream-first (stream-rest (contract (stream/c (and/c integer? (or/c 0 positive?)))
+                                         (stream 0 -1) 'pos 'neg))))
+
+  (test/spec-passed
+   'stream/c8
+   '(stream-first (stream-rest (contract (stream/c (and/c integer? (first-or/c 0 positive?)))
+                                         (in-naturals) 'pos 'neg))))
+  
+  (test/pos-blame
+   'stream/c9
+   '(stream-first (stream-rest (contract (stream/c (and/c integer? (first-or/c 0 positive?)))
                                          (stream 0 -1) 'pos 'neg)))))

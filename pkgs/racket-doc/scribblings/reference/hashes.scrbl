@@ -170,7 +170,14 @@ See also @racket[make-custom-hash].}
 
 Like @racket[make-hash], @racket[make-hasheq], and
 @racket[make-hasheqv], but creates a mutable hash table that holds
-keys weakly.}
+keys weakly.
+
+Beware that values in the table are retained normally. If a value in
+the table refers back to its key, then the table will retain the value
+and therefore the key; the mapping will never be removed from the
+table even if the key becomes otherwise inaccessible. To avoid that
+problem, instead of mapping the key to the value, map the key to an
+@tech{ephemeron} that pairs the key and value.}
 
 @deftogether[(
 @defproc[(make-immutable-hash [assocs (listof pair?) null])
@@ -384,7 +391,7 @@ such as when the keys are all symbols and @racket[hash] is not an
 
 @see-also-concurrency-caveat[]
 
-@history[#:changed "6.2.900.8" @elem{Added the @racket[try-order?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}]}
 
 @defproc[(hash-keys [hash hash?])
          (listof any/c)]{
@@ -420,7 +427,7 @@ See @racket[hash-map] for information about @racket[try-order?] and
 about modifying @racket[hash] within @racket[proc].
 @see-also-concurrency-caveat[]
 
-@history[#:changed "6.2.900.8" @elem{Added the @racket[try-order?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}]}
 
 
 @defproc[(hash-count [hash hash?])

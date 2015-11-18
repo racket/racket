@@ -287,27 +287,45 @@ collection mode, the text has the format
 ]}
 
 
-@defproc[(collect-garbage [request (or/c 'major 'minor) 'major]) void?]{
+@defproc[(collect-garbage [request (or/c 'major 'minor 'incremental) 'major]) void?]{
 
-Forces an immediate @tech{garbage collection} (unless garbage
-collection is disabled by setting @envvar{PLTDISABLEGC}). Some
-effectively unreachable data may remain uncollected, because the
-collector cannot prove that it is unreachable.
+Requests an immediate @tech{garbage collection} or requests a
+garbage-collection mode, depending on @racket[request]:
 
-The @racket[collect-garbage] procedure provides some control over the
-timing of collections, but garbage will obviously be collected even if
-this procedure is never called (unless garbage collection is disabled).
+@itemlist[
 
-If @racket[request] is @racket['major], then a major collection is
-run. If @racket[request] is @racket['minor], then either a minor
-collection is run or no collection is run (and no
-collection occurs when @racket[(system-type 'gc)] returns
-@racket['cgc] or when a normally scheduled minor collection would
-cause a major collection); minor collections triggered by
-@racket[collect-garbage] do not cause major collections to run any
-sooner than they would have otherwise.
+ @item{@racket['major] --- Forces a ``major'' collection, which
+       inspects all memory. Some effectively unreachable data may
+       remain uncollected, because the collector cannot prove that it
+       is unreachable.
 
-@history[#:changed "6.2.900.17" @elem{Added the @racket[request] argument.}]}
+       This mode of @racket[collect-garbage] procedure provides some
+       control over the timing of collections, but garbage will
+       obviously be collected even if this procedure is never
+       called---unless garbage collection is disabled by setting
+       @envvar{PLTDISABLEGC}.}
+
+ @item{@racket['minor] --- Requests a ``minor'' collection, which
+       mostly inspects only recent allocations. If minor collection is
+       not supported (e.g., when @racket[(system-type 'gc)] returns
+       @racket['cgc]) or if the next collection must be a major
+       collection, no collection is performed. More generally, minor collections
+       triggered by @racket[(collect-garbage 'minor)] do not cause
+       major collections any sooner than they would occur otherwise.}
+
+ @item{@racket['incremental] --- Requests that each minor
+       collection performs incremental work toward a major collection.
+       This incremental-mode request expires at the next major
+       collection.
+
+       The intent of incremental mode is to significantly reduce pause
+       times due to major collections, but incremental mode typically
+       implies longer minor-collection times and higher memory use.}
+
+]
+
+@history[#:changed "6.3" @elem{Added the @racket[request] argument.}
+         #:changed "6.3.0.2" @elem{Added @racket['incremental] mode.}]}
 
 
 @defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{

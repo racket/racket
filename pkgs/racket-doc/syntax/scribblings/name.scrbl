@@ -8,8 +8,8 @@
 @defproc[(syntax-local-infer-name [stx syntax?] [use-local? any/c #t]) any/c]{
 
 Similar to @racket[syntax-local-name], except that @racket[stx] is
-checked for an @racket['inferred-name] property that is a symbol
-(which overrides any inferred name) or @|void-const|.
+checked for an @racket['inferred-name] property
+(which overrides any inferred name).
 If neither @racket[syntax-local-name] nor
 @racket['inferred-name] produce a name, or if the
 @racket['inferred-name] property value is @|void-const|, then a name

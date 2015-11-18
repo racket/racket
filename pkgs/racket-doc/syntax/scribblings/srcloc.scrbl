@@ -244,6 +244,8 @@ with a path.
 (syntax-source-directory stx2)
 (syntax-source-directory stx2)
 ]
+
+@history[#:added "6.3"]{}
 }
 
 @subsection{Quoting}

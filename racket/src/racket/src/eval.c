@@ -206,6 +206,7 @@ THREAD_LOCAL_DECL(int scheme_continuation_application_count);
 THREAD_LOCAL_DECL(static int generate_lifts_count);
 THREAD_LOCAL_DECL(int scheme_overflow_count);
 THREAD_LOCAL_DECL(Scheme_Prefix *scheme_prefix_finalize);
+THREAD_LOCAL_DECL(Scheme_Prefix *scheme_inc_prefix_finalize);
 int scheme_get_overflow_count() { return scheme_overflow_count; }
 
 /* read-only globals */
@@ -411,6 +412,7 @@ void scheme_init_eval_places()
 {
 #ifdef MZ_PRECISE_GC
   scheme_prefix_finalize = (Scheme_Prefix *)0x1; /* 0x1 acts as a sentenel */
+  scheme_inc_prefix_finalize = (Scheme_Prefix *)0x1;
   GC_set_post_propagate_hook(mark_pruned_prefixes);
 #endif
 #ifdef DEBUG_CHECK_STACK_FRAME_SIZE
@@ -516,7 +518,7 @@ scheme_handle_stack_overflow(Scheme_Object *(*k)(void))
 }
 
 #ifdef LINUX_FIND_STACK_BASE
-static uintptr_t adjust_stack_base(uintptr_t bnd) {
+static uintptr_t adjust_stack_base(uintptr_t bnd, uintptr_t lim) {
   if (bnd == scheme_get_primordial_thread_stack_base()) {
     /* The address `base' might be far from the actual stack base
        if Exec Shield is enabled (in some versions)? Use 
@@ -551,7 +553,11 @@ static uintptr_t adjust_stack_base(uintptr_t bnd) {
 	      break;
 	  }
 	  /* printf("%p vs. %p: %d\n", (void*)bnd, (void*)p, p - bnd); */
-	  bnd = p;
+	  if ((p > bnd) && ((p - lim) < bnd)) {
+	    bnd = p;
+	  } else {
+	    /* bnd is too far from the expected range; on another thread? */
+	  }
           break;
 	}
       }
@@ -715,14 +721,14 @@ void scheme_init_stack_check()
 
       getrlimit(RLIMIT_STACK, &rl);
 
-#  ifdef LINUX_FIND_STACK_BASE
-      bnd = adjust_stack_base(bnd);
-#  endif
-
       lim = (uintptr_t)rl.rlim_cur;
 #  ifdef UNIX_STACK_MAXIMUM
       if (lim > UNIX_STACK_MAXIMUM)
         lim = UNIX_STACK_MAXIMUM;
+#  endif
+
+#  ifdef LINUX_FIND_STACK_BASE
+      bnd = adjust_stack_base(bnd, lim);
 #  endif
 
       if (stack_grows_up)
@@ -5888,6 +5894,26 @@ local_eval(int argc, Scheme_Object **argv)
   return scheme_void;
 }
 
+Scheme_Object *scheme_intdef_bind_identifiers(Scheme_Object *intdef)
+{
+  Scheme_Comp_Env *stx_env, *init_env;
+  Scheme_Object *l = scheme_null;
+  int i;
+  
+  update_intdef_chain(intdef);
+  stx_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(intdef))[0];
+  init_env = (Scheme_Comp_Env *)((void **)SCHEME_PTR1_VAL(intdef))[3];
+
+  while (stx_env != init_env) {
+    for (i = stx_env->num_bindings; i--; ) {
+      l = scheme_make_pair(stx_env->binders[i], l);
+    }
+    stx_env = stx_env->next;
+  }
+
+  return l;
+}
+
 /*========================================================================*/
 /*                       cloning prefix information                       */
 /*========================================================================*/
@@ -5965,7 +5991,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
     pf = scheme_malloc_tagged(sizeof(Scheme_Prefix) 
                               + ((i-mzFLEX_DELTA) * sizeof(Scheme_Object *))
                               + (tl_map_len * sizeof(int)));
-    pf->so.type = scheme_prefix_type;
+    pf->iso.so.type = scheme_prefix_type;
     pf->num_slots = i;
     pf->num_toplevels = rp->num_toplevels;
     pf->num_stxes = rp->num_stxes;
@@ -6057,10 +6083,22 @@ Scheme_Object **scheme_resume_prefix(Scheme_Object *v)
 #ifdef MZ_PRECISE_GC
 static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
 {
+  if (!GC_is_partial(gc)) {
+    if (scheme_inc_prefix_finalize != (Scheme_Prefix *)0x1) {
+      Scheme_Prefix *pf = scheme_inc_prefix_finalize;
+      while (pf->next_final != (Scheme_Prefix *)0x1) {
+        pf = pf->next_final;
+      }
+      pf->next_final = scheme_prefix_finalize;
+      scheme_prefix_finalize = scheme_inc_prefix_finalize;
+      scheme_inc_prefix_finalize = (Scheme_Prefix *)0x1;
+    }
+  }
+  
   if (scheme_prefix_finalize != (Scheme_Prefix *)0x1) {
     Scheme_Prefix *pf = scheme_prefix_finalize, *next;
     Scheme_Object *clo;
-    int i, *use_bits, maxpos;
+    int i, *use_bits, maxpos, inc_fixup_mode;
     
     scheme_prefix_finalize = (Scheme_Prefix *)0x1;
     while (pf != (Scheme_Prefix *)0x1) {
@@ -6115,23 +6153,33 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
       /* Fix up closures that reference this prefix: */
       clo = (Scheme_Object *)GC_resolve2(pf->fixup_chain, gc);
       pf->fixup_chain = NULL;
+      inc_fixup_mode = SCHEME_PREFIX_FLAGS(pf) & 0x1;
       while (clo) {
         Scheme_Object *next;
+        if (inc_fixup_mode) {
+          next = ((Scheme_Object **)clo)[1];
+          clo = ((Scheme_Object **)clo)[0];
+        }
         if (SCHEME_TYPE(clo) == scheme_closure_type) {
           Scheme_Closure *cl = (Scheme_Closure *)clo;
           int closure_size = ((Scheme_Closure_Data *)GC_resolve2(cl->code, gc))->closure_size;
-          next = cl->vals[closure_size - 1];
+          if (!inc_fixup_mode)
+            next = cl->vals[closure_size - 1];
           cl->vals[closure_size-1] = (Scheme_Object *)pf;
         } else if (SCHEME_TYPE(clo) == scheme_native_closure_type) {
           Scheme_Native_Closure *cl = (Scheme_Native_Closure *)clo;
           int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(cl->code, gc))->closure_size;
-          next = cl->vals[closure_size - 1];
+          if (!inc_fixup_mode)
+            next = cl->vals[closure_size - 1];
           cl->vals[closure_size-1] = (Scheme_Object *)pf;
         } else {
-          abort();
+          MZ_ASSERT(0);
+          next = NULL;
         }
         clo = (Scheme_Object *)GC_resolve2(next, gc);
       }
+      if (inc_fixup_mode)
+        SCHEME_PREFIX_FLAGS(pf) -= 0x1;
 
       /* Next */
       next = pf->next_final;

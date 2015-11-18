@@ -182,25 +182,63 @@ If there are multiple higher-order contracts, @racket[or/c] uses
 them. More precisely, when an @racket[or/c] is checked, it first
 checks all of the @tech{flat contracts}. If none of them pass, it
 calls @racket[contract-first-order-passes?] with each of the
-higher-order contracts, taking the first one that returns
-true as the contract for the value.
-
+higher-order contracts. If only one returns true, @racket[or/c] uses
+that contract. If none of them return true, it signals a contract
+violation. If more than one returns true, it also signals a contract
+violation.
 For example, this contract
 @racketblock[
 (or/c (-> number? number?)
       (-> string? string? string?))
 ]
-accepts a function like this one: @racket[(lambda args ...)],
-using the @racket[(-> number? number?)] contract on it, ignoring
-the @racket[(-> string? string? string?)] contract since it came
-second.
+does not accept a function like this one: @racket[(lambda args ...)]
+since it cannot tell which of the two arrow contracts should be used
+with the function.
 
 If all of its arguments are @racket[list-contract?]s, then @racket[or/c]
 returns a @racket[list-contract?].
+}
 
-@history[#:changed "6.2.900.17" @list{Adjusted @racket[or/c] so that it
-  takes the first higher-order contract instead of insisting that
-  there be exactly one higher-order contract for a given value.}]
+@defproc[(first-or/c [contract contract?] ...)
+         contract?]{
+
+ Takes any number of contracts and returns a contract that
+ accepts any value that any one of the contracts accepts
+ individually.
+
+ The @racket[first-or/c] result tests any value by applying the
+ contracts in order from left to right. Thus, a contract
+ such as @racket[(first-or/c (not/c real?) positive?)]
+ is guaranteed to only invoke the 
+ @racket[positive?] predicate on real numbers.
+
+ If all of the arguments are procedures or @tech{flat
+  contracts}, the result is a @tech{flat contract} and
+ similarly if all of the arguments are @tech{chaperone
+  contracts} the result is too. Otherwise, the result is an
+ @tech{impersonator contract}.
+
+ If there are multiple higher-order contracts, 
+ @racket[first-or/c] uses @racket[contract-first-order-passes?]
+ to distinguish between them. More precisely, when an 
+ @racket[first-or/c] is checked, it checks the first order passes
+ of the first contract against the value. If it succeeds,
+ then it uses only that contract. If it fails, then it moves
+ to the second contract, continuing until it finds one of
+ the contracts where the first order check succeeds. If none
+ of them do, a contract violation is signaled.
+
+ For example, this contract
+ @racketblock[
+ (first-or/c (-> number? number?)
+        (-> string? string? string?))]
+ accepts the function @racket[(λ args 0)],
+ applying the @racket[(->number? number?)] contract to the function
+ because it comes first, even though
+ @racket[(-> string? string? string?)] also applies.
+
+ If all of its arguments are @racket[list-contract?]s, then @racket[first-or/c]
+ returns a @racket[list-contract?].
 }
 
 @defproc[(and/c [contract contract?] ...) contract?]{
@@ -363,14 +401,16 @@ Returns the same contract as @racket[(vector/c c ... #:immutable #t)]. This form
 reasons of backwards compatibility.}
 
 
-@defproc[(box/c [c contract?]
+@defproc[(box/c [in-c contract?]
+                [c contract? in-c]
                 [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
                 [#:flat? flat? boolean? #f])
          contract?]{
-Returns a contract that recognizes boxes. The content of the box must match @racket[c].
+Returns a contract that recognizes boxes. The content of the box must match @racket[c],
+and mutations on mutable boxes must match @racket[in-c].
 
 If the @racket[flat?] argument is @racket[#t], then the resulting contract is
-a flat contract, and the @racket[c] argument must also be a flat contract.  Such
+a flat contract, and the @racket[out] argument must also be a flat contract.  Such
 flat contracts will be unsound if applied to mutable boxes, as they will not check
 future operations on the box.
 
@@ -1920,11 +1960,12 @@ contracts is @racketresult[anonymous-chaperone-contract], and for flat
 contracts is @racketresult[anonymous-flat-contract].
 
 The first-order predicate @racket[test] can be used to determine which values
-the contract applies to; usually, this is the set of values for which the
+the contract applies to; this must be the set of values for which the
 contract fails immediately without any higher-order wrapping.  This test is used
-by @racket[contract-first-order-passes?], and indirectly by @racket[or/c] to
-determine which of multiple higher-order contracts to wrap a value with.  The
-default test accepts any value.
+by @racket[contract-first-order-passes?], and indirectly by @racket[or/c]
+ and @racket[from-or/c] to determine which higher-order contract to wrap a
+ value with when there are multiple higher-order contracts to choose from.
+ The default test accepts any value.
 
 The @racket[late-neg-proj] defines the behavior of applying the contract. If it is
 supplied, it accepts a blame object that does not have a value for
@@ -1945,6 +1986,11 @@ higher-order aspects of the contract, or signal a contract violation using
 first-order test fails, and produces the value unchanged otherwise.
 The @racket[val-first-proj] is like @racket[late-neg-proj], except with
 an extra layer of currying.
+
+The projection arguments (@racket[late-neg-proj], @racket[proj], and
+ @racket[val-first-proj]) must be in sync with the @racket[test] argument.
+ In particular, if the test argument returns @racket[#f] for some value,
+ then the projections must raise a blame error for that value.
 
 Projections for chaperone contracts must produce a value that passes
 @racket[chaperone-of?] when compared with the original, uncontracted value.
@@ -2832,7 +2878,7 @@ currently being checked.
   The resulting contract is a flat contract if @racket[contract] is a
   flat contract.
 
-  @history[#:added "6.2.900.15"]
+  @history[#:added "6.3"]
 }
 
 @defproc[(if/c [predicate (-> any/c any/c)]
@@ -2855,7 +2901,7 @@ currently being checked.
   The last contract is the same as @racket[any/c] because
   @racket[or/c] tries flat contracts before higher-order contracts.
 
-  @history[#:added "6.2.900.15"]
+  @history[#:added "6.3"]
 }
 
 @defthing[failure-result/c contract?]{
@@ -2864,7 +2910,7 @@ currently being checked.
 
   Equivalent to @racket[(if/c procedure? (-> any) any/c)].
 
-  @history[#:added "6.2.900.15"]
+  @history[#:added "6.3"]
 }
 
 

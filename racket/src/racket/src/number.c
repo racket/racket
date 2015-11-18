@@ -3804,6 +3804,21 @@ static Scheme_Object *magnitude(int argc, Scheme_Object *argv[])
       a[0] = i;
       return scheme_exact_to_inexact(1, a);
     }
+#ifdef MZ_USE_SINGLE_FLOATS
+    if (SCHEME_FLTP(i)) {
+      float f;
+      f = SCHEME_FLT_VAL(i);
+      if (MZ_IS_POS_INFINITY((double) f)) {
+        if (SCHEME_FLTP(r)) { /* `r` is either a single-precision float or exact 0 */
+          f = SCHEME_FLT_VAL(r);
+          if (MZ_IS_NAN((double) f)) {
+            return scheme_single_nan_object;
+          }
+          return scheme_single_inf_object;
+        }
+      }
+    }
+#endif
     if (SCHEME_FLOATP(i)) {
       double d;
       d = SCHEME_FLOAT_VAL(i);

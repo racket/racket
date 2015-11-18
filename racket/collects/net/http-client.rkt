@@ -184,27 +184,32 @@
 
 (define (http-conn-response-port/chunked! hc #:close? [close? #f])
   (define (http-pipe-chunk ip op)
+    (define (done) (void))
     (define crlf-bytes (make-bytes 2))
     (let loop ([last-bytes #f])
-      (define size-str (string-trim (read-line ip eol-type)))
-      (define chunk-size (string->number size-str 16))
-      (unless chunk-size
-        (error 'http-conn-response/chunked 
-               "Could not parse ~S as hexadecimal number"
-               size-str))
-      (define use-last-bytes?
-        (and last-bytes (<= chunk-size (bytes-length last-bytes))))
-      (if (zero? chunk-size)
-        (begin (flush-output op)
-               (close-output-port op))
-        (let* ([bs (if use-last-bytes?
-                     (begin
-                       (read-bytes! last-bytes ip 0 chunk-size)
-                       last-bytes)
-                     (read-bytes chunk-size ip))]
-               [crlf (read-bytes! crlf-bytes ip 0 2)])
-          (write-bytes bs op 0 chunk-size)
-          (loop bs)))))
+      (define in-v (read-line ip eol-type))
+      (cond
+        [(eof-object? in-v)
+         (done)]
+        [else
+         (define size-str (string-trim in-v))
+         (define chunk-size (string->number size-str 16))
+         (unless chunk-size
+           (error 'http-conn-response/chunked 
+                  "Could not parse ~S as hexadecimal number"
+                  size-str))
+         (define use-last-bytes?
+           (and last-bytes (<= chunk-size (bytes-length last-bytes))))
+         (if (zero? chunk-size)
+             (done)
+             (let* ([bs (if use-last-bytes?
+                            (begin
+                              (read-bytes! last-bytes ip 0 chunk-size)
+                              last-bytes)
+                            (read-bytes chunk-size ip))]
+                    [crlf (read-bytes! crlf-bytes ip 0 2)])
+               (write-bytes bs op 0 chunk-size)
+               (loop bs)))])))
 
   (define-values (in out) (make-pipe PIPE-SIZE))
   (define chunk-t
@@ -241,11 +246,12 @@
     (or (equal? method-bss #"HEAD")
         (equal? method-bss "HEAD")
         (equal? method-bss 'HEAD)))
-  (define raw-response-port
+  (define-values (raw-response-port wait-for-close?)
     (cond
-      [head? (open-input-bytes #"")]
+      [head? (values (open-input-bytes #"") #f)]
       [(regexp-member #rx#"^(?i:Transfer-Encoding: +chunked)$" headers)
-       (http-conn-response-port/chunked! hc #:close? #t)]
+       (values (http-conn-response-port/chunked! hc #:close? #t)
+               #t)]
       [(ormap (λ (h)
                 (match (regexp-match #rx#"^(?i:Content-Length:) +(.+)$" h)
                   [#f #f]
@@ -255,9 +261,10 @@
               headers)
        =>
        (λ (count)
-         (http-conn-response-port/length! hc count #:close? close?))]
+         (values (http-conn-response-port/length! hc count #:close? close?)
+                 close?))]
       [else
-       (http-conn-response-port/rest! hc)]))
+       (values (http-conn-response-port/rest! hc) #t)]))
   (define decoded-response-port
     (cond
       [head? raw-response-port]
@@ -269,9 +276,13 @@
          (thread
           (λ ()
             (gunzip-through-ports raw-response-port out))))
-       (thread 
+       (thread
         (λ ()
           (thread-wait gunzip-t)
+          (when wait-for-close?
+            ;; Wait for an EOF from the raw port before we
+            ;; send an output on the decoding pipe:
+            (copy-port raw-response-port (open-output-nowhere)))
           (close-output-port out)))
        in]
       [else 

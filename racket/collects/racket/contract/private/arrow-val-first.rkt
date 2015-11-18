@@ -18,10 +18,11 @@
          (for-syntax ->2-handled?
                      ->*2-handled?
                      ->-valid-app-shapes
-                     ->*-valid-app-shapes))
+                     ->*-valid-app-shapes)
+         (rename-out [-predicate/c predicate/c]))
 
 (define-for-syntax (->2-handled? stx)
-  (syntax-case stx (any values any/c)
+  (syntax-case stx (any values any/c boolean?)
     [(_ args ...)
      (syntax-parameter-value #'arrow:making-a-method)
      #f]
@@ -781,6 +782,18 @@
           (flat-contract? (car rngs))
           (eq? void? (flat-contract-predicate (car rngs))))
      ->void-contract]
+    [(and (pair? regular-doms)
+          (null? (cdr regular-doms))
+          (any/c? (car regular-doms))
+          (null? kwd-infos)
+          (not rest-ctc)
+          (not pre-cond)
+          (not post-cond)
+          (pair? rngs)
+          (null? (cdr rngs))
+          (flat-contract? (car rngs))
+          (eq? boolean? (flat-contract-predicate (car rngs))))
+     any/c->boolean-contract]
     [(and (andmap chaperone-contract? regular-doms)
           (andmap (λ (x) (chaperone-contract? (kwd-info-ctc x))) kwd-infos)
           (andmap chaperone-contract? (or rngs '())))
@@ -1061,62 +1074,65 @@
      (λ (fuel) (values void '()))]))
 
 (define (base->-name ctc)
-  (define rngs (base->-rngs ctc))
-  (define rng-sexp
-    (cond
-      [(not rngs) 'any]
-      [(= 1 (length rngs))
-       (contract-name (car rngs))]
-      [else
-       `(values ,@(map contract-name rngs))]))
   (cond
-    [(and (andmap kwd-info-mandatory? (base->-kwd-infos ctc))
-          (= (base->-min-arity ctc)
-             (length (base->-doms ctc)))
-          (not (base->-rest ctc))
-          (not (base->-pre? ctc))
-          (not (base->-post? ctc)))
-     `(-> ,@(map contract-name (base->-doms ctc))
-          ,@(apply
-             append
-             (for/list ([kwd-info (base->-kwd-infos ctc)])
-               (list (kwd-info-kwd kwd-info) 
-                     (contract-name (kwd-info-ctc kwd-info)))))
-          ,rng-sexp)]
+    [(predicate/c? ctc) 'predicate/c]
     [else
-     (define (take l n) (reverse (list-tail (reverse l) (- (length l) n))))
-     (define mandatory-args
-       `(,@(map contract-name (take (base->-doms ctc) (base->-min-arity ctc)))
-         ,@(apply
-            append
-            (for/list ([kwd-info (base->-kwd-infos ctc)]
-                       #:when (kwd-info-mandatory? kwd-info))
-              (list (kwd-info-kwd kwd-info) 
-                    (contract-name (kwd-info-ctc kwd-info)))))))
-     
-     (define optional-args
-       `(,@(map contract-name (list-tail (base->-doms ctc) (base->-min-arity ctc)))
-         ,@(apply
-            append
-            (for/list ([kwd-info (base->-kwd-infos ctc)]
-                       #:when (not (kwd-info-mandatory? kwd-info)))
-              (list (kwd-info-kwd kwd-info) 
-                    (contract-name (kwd-info-ctc kwd-info)))))))
-     
-     `(->* ,mandatory-args 
-           ,@(if (null? optional-args)
-                 '()
-                 (list optional-args))
-           ,@(if (base->-rest ctc)
-                 (list '#:rest (contract-name (base->-rest ctc)))
-                 (list))
-           ,@(if (base->-pre? ctc)
-                 (list '#:pre '...)
-                 (list))
-           ,rng-sexp
-           ,@(if (base->-post? ctc)
-                 (list '#:post '...)
-                 (list)))]))
+     (define rngs (base->-rngs ctc))
+     (define rng-sexp
+       (cond
+         [(not rngs) 'any]
+         [(= 1 (length rngs))
+          (contract-name (car rngs))]
+         [else
+          `(values ,@(map contract-name rngs))]))
+     (cond
+       [(and (andmap kwd-info-mandatory? (base->-kwd-infos ctc))
+             (= (base->-min-arity ctc)
+                (length (base->-doms ctc)))
+             (not (base->-rest ctc))
+             (not (base->-pre? ctc))
+             (not (base->-post? ctc)))
+        `(-> ,@(map contract-name (base->-doms ctc))
+             ,@(apply
+                append
+                (for/list ([kwd-info (base->-kwd-infos ctc)])
+                  (list (kwd-info-kwd kwd-info)
+                        (contract-name (kwd-info-ctc kwd-info)))))
+             ,rng-sexp)]
+       [else
+        (define (take l n) (reverse (list-tail (reverse l) (- (length l) n))))
+        (define mandatory-args
+          `(,@(map contract-name (take (base->-doms ctc) (base->-min-arity ctc)))
+            ,@(apply
+               append
+               (for/list ([kwd-info (base->-kwd-infos ctc)]
+                          #:when (kwd-info-mandatory? kwd-info))
+                 (list (kwd-info-kwd kwd-info) 
+                       (contract-name (kwd-info-ctc kwd-info)))))))
+        
+        (define optional-args
+          `(,@(map contract-name (list-tail (base->-doms ctc) (base->-min-arity ctc)))
+            ,@(apply
+               append
+               (for/list ([kwd-info (base->-kwd-infos ctc)]
+                          #:when (not (kwd-info-mandatory? kwd-info)))
+                 (list (kwd-info-kwd kwd-info) 
+                       (contract-name (kwd-info-ctc kwd-info)))))))
+        
+        `(->* ,mandatory-args
+              ,@(if (null? optional-args)
+                    '()
+                    (list optional-args))
+              ,@(if (base->-rest ctc)
+                    (list '#:rest (contract-name (base->-rest ctc)))
+                    (list))
+              ,@(if (base->-pre? ctc)
+                    (list '#:pre '...)
+                    (list))
+              ,rng-sexp
+              ,@(if (base->-post? ctc)
+                    (list '#:post '...)
+                    (list)))])]))
 
 (define ((->-first-order ctc) x)
   (define l (base->-min-arity ctc))
@@ -1204,6 +1220,11 @@
   prop:chaperone-contract
   (make-property build-chaperone-contract-property chaperone-procedure))
 
+(define-struct (predicate/c base->) ()
+  #:property
+  prop:chaperone-contract
+  (make-property build-chaperone-contract-property chaperone-procedure))
+
 (define-struct (impersonator-> base->) ()
   #:property
   prop:contract
@@ -1212,8 +1233,11 @@
 (define ->void-contract
   (let-syntax ([get-chaperone-constructor
                 (λ (_)
-                  ;; relies on the popular key (0 0 () () #f 1) appearing first
-                  (define ids (list-ref popular-key-ids 0))
+                  (define desired-key '(0 0 () () #f 1))
+                  (define expected-index 0)
+                  (unless (equal? desired-key (list-ref popular-keys expected-index))
+                    (error '->void-contract "expected the 0th key to be ~s" desired-key))
+                  (define ids (list-ref popular-key-ids expected-index))
                   (list-ref ids 1))])
     (make--> 0 '() '() #f #f
              (list (coerce-contract 'whatever void?))
@@ -1232,3 +1256,57 @@
                     [args
                      (wrong-number-of-results-blame blame neg-party f args 1)]))))
              (get-chaperone-constructor))))
+
+(define (mk-any/c->boolean-contract constructor)
+  (define (rng-checker f blame neg-party)
+    (case-lambda
+      [(rng)
+       (if (boolean? rng)
+           rng
+           (raise-blame-error blame #:missing-party neg-party rng
+                              '(expected: "boolean?" given: "~e")
+                              rng))]
+      [args
+       (wrong-number-of-results-blame blame neg-party f args 1)]))
+  (constructor 1 (list any/c) '() #f #f
+               (list (coerce-contract 'whatever boolean?))
+               #f
+               (λ (blame f _ignored-dom-contract _ignored-rng-contract)
+                 (λ (neg-party argument)
+                   (call-with-values
+                    (λ () (f argument))
+                    (rng-checker f blame neg-party))))
+               (λ (blame f neg-party _ignored-dom-contract _ignored-rng-contract)
+                 (unless (procedure? f)
+                   (raise-blame-error
+                    blame #:missing-party neg-party f
+                    '(expected: "a procedure" given: "~e")
+                    f))
+                 (unless (procedure-arity-includes? f 1)
+                   (raise-blame-error
+                    blame #:missing-party neg-party f
+                    '(expected: "a procedure that accepts 1 non-keyword argument"
+                                given: "~e")
+                    f))
+                 (cond
+                   [(and (struct-predicate-procedure? f)
+                         (not (impersonator? f)))
+                    #f]
+                   [(and (equal? (procedure-arity f) 1)
+                         (let-values ([(required mandatory) (procedure-keywords f)])
+                           (and (null? required)
+                                (null? mandatory))))
+                    (λ (arg)
+                      (values (rng-checker f blame neg-party) arg))]
+                   [(procedure-arity-includes? f 1)
+                    (make-keyword-procedure
+                     (λ (kwds kwd-args . other)
+                       (unless (null? kwds)
+                         (arrow:raise-no-keywords-arg blame #:missing-party neg-party f kwds))
+                       (unless (= 1 (length other))
+                         (arrow:raise-wrong-number-of-args-error #:missing-party neg-party
+                                                                 blame f (length other) 1 1 1))
+                       (values (rng-checker f blame neg-party) (car other))))]))))
+
+(define -predicate/c (mk-any/c->boolean-contract predicate/c))
+(define any/c->boolean-contract (mk-any/c->boolean-contract make-->))

@@ -1815,6 +1815,18 @@
                                          [(b . _) (datum->syntax #'b 'begin)]))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; syntax-debug-info
+
+(let ([check (lambda (syntax-debug-info)
+               (test 'x hash-ref (syntax-debug-info #'x) 'name)
+               (test 'nope hash-ref (syntax-debug-info #'1) 'name 'nope)
+               (test 'nope hash-ref (syntax-debug-info #'(x y)) 'name 'nope))])
+  (check syntax-debug-info)
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(require (prefix-in foo: racket/base)))
+    (check (lambda (stx) (syntax-debug-info (namespace-syntax-introduce stx))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that attacks are thwarted via `syntax-local-get-shadower'
 ;; or `make-syntax-delta-introducer':
 
@@ -2095,7 +2107,7 @@
     (err/rt-test (apply raise-syntax-error #f "oops" a0 a1 args)
                  (lambda (exn)
                    (and (exn:fail:syntax? exn)
-                        (regexp-match? (format "^[^:\n]*:~a:~a:" 
+                        (regexp-match? (format "^([a-zA-Z]:)?[^:\n]*:~a:~a:"
                                                (or (syntax-line a1)
                                                    (syntax-line a0))
                                                (or (syntax-column a1)
@@ -2203,6 +2215,29 @@
                    (make-rename-transformer (quote-syntax #,x)))
                  name)])))
   (eval '(m racket/base values)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check marshaling and unmarshaling with relative paths
+
+(let ()
+  (define dir (find-system-path 'temp-dir))
+
+  (define x (parameterize ([current-namespace (make-base-namespace)])
+              (compile (datum->syntax #f '#'x (vector (build-path dir "sub" "x.rkt")
+                                                      1
+                                                      1
+                                                      1
+                                                      1)))))
+  (define-values (i o) (make-pipe))
+  (parameterize ([current-write-relative-directory
+                  (cons (build-path dir "nested")
+                        dir)])
+    (write x o))
+  (test (build-path dir "inner" 'up "sub" "x.rkt")
+        syntax-source
+        (eval (parameterize ([read-accept-compiled #t]
+                             [current-load-relative-directory (build-path dir "inner")])
+                (read i)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

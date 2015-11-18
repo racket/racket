@@ -1607,6 +1607,9 @@
 (test +inf.0 magnitude 0.0+inf.0i)
 (test +nan.0 magnitude +nan.0+inf.0i)
 (test +nan.0 magnitude +inf.0+nan.0i)
+(test +inf.f magnitude 3.0f0-inf.fi)
+(test +nan.f magnitude 3.0f0+nan.fi)
+(test 3.0f0 magnitude 3.0f0+0.0f0i)
 
 (test 0 angle 1)
 (test 0 angle 1.0)

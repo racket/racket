@@ -35,6 +35,7 @@
              -> ->*)
  (rename-out [->2 ->] [->*2 ->*])
  dynamic->*
+ predicate/c
  
  (all-from-out "private/arr-i.rkt"
                "private/box.rkt"
@@ -43,12 +44,13 @@
                "private/struct-dc.rkt"
                "private/struct-prop.rkt")
  (except-out (all-from-out "private/base.rkt")
-             current-contract-region)
+             current-contract-region
+             (for-syntax lifted-key add-lifted-property))
  (except-out (all-from-out "private/misc.rkt")
              check-between/c
              check-unary-between/c
              random-any/c)
- symbols or/c one-of/c
+ symbols or/c first-or/c one-of/c
  flat-rec-contract
  provide/contract
  ;(for-syntax make-provide/contract-transformer) ;; not documented!

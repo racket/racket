@@ -333,7 +333,7 @@ Returns @racket[#t] if @racket[v] is a valid logging level (@racket['none],
 @racket['fatal], @racket['error], @racket['warning], @racket['info], or
 @racket['debug]), @racket[#f] otherwise.
 
-@history[#:added "6.2.900.5"]{}
+@history[#:added "6.3"]{}
 }
 
 @defproc[(with-intercepted-logging
@@ -368,7 +368,7 @@ Returns whatever @racket[proc] returns.
     'warning)
   warning-counter)]
 
-@history[#:added "6.2.900.5"]{}}
+@history[#:added "6.3"]{}}
 
 @defproc[(with-logging-to-port
            [port output-port?] [proc (-> any)]
@@ -391,4 +391,4 @@ Returns whatever @racket[proc] returns.
     'warning)
   (get-output-string my-log))]
 
-@history[#:added "6.2.900.5"]{}}
+@history[#:added "6.3"]{}}

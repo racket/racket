@@ -53,6 +53,14 @@
                'pos 'neg)
      1 "foo")
    1)
+
+  (test/spec-passed/result
+   'parametric->/c6b
+   '((contract (parametric->/c (A B) (-> A B (first-or/c A B)))
+               (λ (x y) x)
+               'pos 'neg)
+     1 "foo")
+   1)
   
   (test/pos-blame
    'parametric->/c7

@@ -493,7 +493,7 @@ performance characteristics.
 If @racket[ce] includes module forms, then only phase-0 code in the
 immediate module (not in submodules) is recompiled.
 
-@history[#:added "6.2.900.9"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(compiled-expression? [v any/c]) boolean?]{

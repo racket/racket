@@ -68,7 +68,7 @@ The other arguments have the same meaning as for @racket[expr/c].
 (app (lambda (x) 'pear) 5)
 ]
 
-@history[#:added "6.2.900.6"]{}
+@history[#:added "6.3"]{}
 }
 
 @close-eval[the-eval]

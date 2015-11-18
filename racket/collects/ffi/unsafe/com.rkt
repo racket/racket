@@ -54,7 +54,7 @@
          com-release
          com-object-type com-type? com-type=?
 
-         com-methods com-method-type com-invoke com-omit
+         com-methods com-method-type com-invoke com-omit com-omit?
          com-get-properties com-get-property-type com-get-property
          com-get-property*
          com-set-properties com-set-property-type com-set-property!
@@ -1407,10 +1407,10 @@
 
 (define-oleaut VariantInit (_wfun _VARIANT-pointer -> _void))
 
-(define com-omit 
+(define-values (com-omit com-omit?)
   (let ()
     (struct com-omit ())
-    (com-omit)))
+    (values (com-omit) com-omit?)))
 
 (define CY-factor 10000)
 
@@ -1732,13 +1732,14 @@
                 (let loop ([dims dims] [level 1] [index null])
                   (define lb (SafeArrayGetLBound sa level))
                   (for/vector ([i (in-range (car dims))])
-                    (if (null? (cdr dims))
-                        (let ([var (make-a-VARIANT)])
-                          (set-VARIANT-vt! var vt)
-                          (SafeArrayGetElement sa (reverse (cons i index)) 
-                                               (extract-variant-pointer var #t))
-                          (variant-to-scheme var #:mode mode))
-                        (loop (cdr dims) (add1 level) (cons i index))))))))
+                    (let ([i (+ i lb)])
+                      (if (null? (cdr dims))
+                          (let ([var (make-a-VARIANT)])
+                            (set-VARIANT-vt! var vt)
+                            (SafeArrayGetElement sa (reverse (cons i index)) 
+                                                 (extract-variant-pointer var #t))
+                            (variant-to-scheme var #:mode mode))
+                          (loop (cdr dims) (add1 level) (cons i index)))))))))
 
 (define (_IUnknown-pointer-or-com-object mode)
   (make-ctype 

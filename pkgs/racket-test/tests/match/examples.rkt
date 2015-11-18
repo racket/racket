@@ -801,5 +801,13 @@
      (check-equal? (match 42
                      [(foo) x])
                    42))
+
+   (test-case "ordering"
+     (define b (box #t))
+     (check-equal?
+      (match b
+        [(and x (? (λ _ (set-box! b #f))) (app unbox #f)) 'yes]
+        [_ 'no])
+      'yes))
    
 ))

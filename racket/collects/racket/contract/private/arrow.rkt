@@ -21,7 +21,6 @@
          base->-doms/c
          unconstrained-domain->
          the-unsupplied-arg
-         (rename-out [-predicate/c predicate/c])
          unsupplied-arg?
          making-a-method
          method-contract?
@@ -40,7 +39,9 @@
          arity-checking-wrapper
          unspecified-dom
          blame-add-range-context
-         blame-add-nth-arg-context)
+         blame-add-nth-arg-context
+         raise-no-keywords-arg
+         raise-wrong-number-of-args-error)
 
 (define-syntax-parameter making-a-method #f)
 (define-syntax-parameter method-contract? #f)
@@ -394,16 +395,6 @@
          basic-lambda
          kwd-lambda)]
     [else
-     (define arity-string 
-       (if max-arity
-           (cond
-             [(= min-method-arity max-method-arity)
-              (format "~a non-keyword argument~a" min-method-arity (if (= min-method-arity 1) "" "s"))]
-             [(= (+ min-method-arity 1) max-method-arity) 
-              (format "~a or ~a non-keyword arguments" min-method-arity max-method-arity)]
-             [else
-              (format "~a to ~a non-keyword arguments" min-method-arity max-method-arity)])
-           (format "at least ~a non-keyword argument~a" min-method-arity (if (= min-method-arity 1) "" "s"))))
      (define-values (vr va) (procedure-keywords val))
      (define all-kwds (append req-kwd opt-kwd))
      (define (valid-number-of-args? args)
@@ -413,31 +404,16 @@
      (define kwd-checker
        (if (and (null? req-kwd) (null? opt-kwd))
            (λ (kwds kwd-args . args)
-             (raise-blame-error (blame-swap blame) val
-                                (list 'expected:
-                                      "no keywords"
-                                      'given:
-                                      (apply
-                                       string-append
-                                       (let loop ([kwds kwds])
-                                         (cond
-                                           [(null? kwds) '()]
-                                           [(null? (cdr kwds))
-                                            (list "#:" (keyword->string (car kwds)))]
-                                           [else
-                                            (list* "#:"
-                                                   (keyword->string (car kwds))
-                                                   " "
-                                                   (loop (cdr kwds)))]))))))
+             (raise-no-keywords-arg blame val kwds))
            (λ (kwds kwd-args . args)
              (with-continuation-mark
               contract-continuation-mark-key blame
               (let ()
              (define args-len (length args))
              (unless (valid-number-of-args? args)
-               (raise-blame-error (blame-swap blame) val
-                                  '(received: "~a argument~a" expected: "~a")
-                                  args-len (if (= args-len 1) "" "s") arity-string))
+               (raise-wrong-number-of-args-error
+                blame val
+                args-len max-arity min-method-arity max-method-arity))
              
              ;; these two for loops are doing O(n^2) work that could be linear 
              ;; (since the keyword lists are sorted)
@@ -460,9 +436,9 @@
               (let ()
              (unless (valid-number-of-args? args)
                (define args-len (length args))
-               (raise-blame-error (blame-swap blame) val
-                                  '(received: "~a argument~a" expected: "~a")
-                                  args-len (if (= args-len 1) "" "s") arity-string))
+               (raise-wrong-number-of-args-error
+                blame val
+                args-len max-arity min-method-arity max-method-arity))
              (apply basic-lambda args))))
            (λ args
              (raise-blame-error (blame-swap blame) val
@@ -471,6 +447,43 @@
      (if (or (not va) (pair? vr) (pair? va))
          (make-keyword-procedure kwd-checker basic-checker-name)
          basic-checker-name)]))
+
+(define (raise-wrong-number-of-args-error
+         blame #:missing-party [missing-party #f] val
+         args-len max-arity min-method-arity max-method-arity)
+  (define arity-string 
+    (if max-arity
+        (cond
+          [(= min-method-arity max-method-arity)
+           (format "~a non-keyword argument~a" min-method-arity (if (= min-method-arity 1) "" "s"))]
+          [(= (+ min-method-arity 1) max-method-arity) 
+           (format "~a or ~a non-keyword arguments" min-method-arity max-method-arity)]
+          [else
+           (format "~a to ~a non-keyword arguments" min-method-arity max-method-arity)])
+        (format "at least ~a non-keyword argument~a" min-method-arity (if (= min-method-arity 1) "" "s"))))
+  (raise-blame-error (blame-swap blame) val
+                     #:missing-party missing-party
+                     '(received: "~a argument~a" expected: "~a")
+                     args-len (if (= args-len 1) "" "s") arity-string))
+
+(define (raise-no-keywords-arg blame #:missing-party [missing-party #f] val given-kwds)
+  (raise-blame-error (blame-swap blame) val
+                     #:missing-party missing-party
+                     (list 'expected:
+                           "no keywords"
+                           'given:
+                           (apply
+                            string-append
+                            (let loop ([kwds given-kwds])
+                              (cond
+                                [(null? kwds) '()]
+                                [(null? (cdr kwds))
+                                 (list "#:" (keyword->string (car kwds)))]
+                                [else
+                                 (list* "#:"
+                                        (keyword->string (car kwds))
+                                        " "
+                                        (loop (cdr kwds)))]))))))
 
 ;; pre : (or/c #f (-> any)) -- checks the pre-condition, if there is one.
 ;; post : (or/c #f (-> any)) -- checks the post-condition, if there is one.
@@ -1822,34 +1835,6 @@
      (λ (x) (send o m x)))))
 
 
-(define predicate/c-private->ctc
-  (let-syntax ([m (λ (stx)
-                    ;; we don't use -> directly here to avoid a circularity, since
-                    ;; (-> any/c boolean?) expands into the identifier -predicate/c
-                    (syntax-case stx ()
-                      [(_ arg)
-                       #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main #'arg))]))])
-    (let ([predicate/c (m (-> any/c boolean?))])
-      predicate/c)))
-
-(struct predicate/c ()
-  #:property prop:custom-write custom-write-property-proc
-  #:property prop:chaperone-contract
-  (build-chaperone-contract-property
-   #:projection (let ([pc (contract-struct-projection predicate/c-private->ctc)])
-                  (λ (ctc)
-                    (λ (blame)
-                      (let ([proj (pc blame)])
-                        (λ (val)
-                          (if (struct-predicate-procedure? val)
-                              val
-                              (proj val)))))))
-   #:name (lambda (ctc) 'predicate/c)
-   #:first-order (let ([f (contract-struct-first-order predicate/c-private->ctc)]) (λ (ctc) f))
-   #:stronger (λ (this that) (contract-struct-stronger? predicate/c-private->ctc that))))
-
-(define -predicate/c (predicate/c))
-
 (define-syntax (-> stx) 
   (syntax-case stx (any any/c boolean?)
     [(_ any/c ... any)
@@ -1860,10 +1845,6 @@
           '(-> #,@(build-list dom-len (λ (x) 'any/c)) any)
           (λ (x) 
             (procedure-arity-includes?/no-kwds x #,dom-len))))]
-    [(_ any/c boolean?)
-     ;; special case (-> any/c boolean?) to use predicate/c
-     (not (syntax-parameter-value #'making-a-method))
-     #'-predicate/c]
     [_
      #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx))]))
 

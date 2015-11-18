@@ -80,6 +80,17 @@ address GC_resolve returns the same address. A GC_is_marked operation
 reports whether an object at its old address has been marked; it works
 only on old addresses.
 
+Normally, the mark function for an object is called only when the
+object is first marked in a given GC pass. With generational
+collection, the mark function can be called for an old-generation
+object if it potentially changed since a previous collection; still,
+the mark function will be called only once during that collection, so
+it's as if the object were in the new generation. With incremental
+collection, however, a macro procedure can be called due to changes
+even if the object is already incrementally marked as an
+old-generaiton object. The GC_current_mode() function reports the
+current mode for a given call to the marking function.
+
 Memory Kinds
 ------------
 

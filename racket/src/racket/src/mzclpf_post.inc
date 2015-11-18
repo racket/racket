@@ -6,8 +6,11 @@
    mark_pruned_prefixes() in "eval.c" --- NULLs out unused
    fields before finally marking the prefix. If the prefix
    is ever marked through some other reference, then 
-   mark_pruned_prefixes() doesn't actually prune. */
-  if (data) {
+   mark_pruned_prefixes() doesn't actually prune.
+   To support incremental collection, we rely on the fact that
+   and old-generation closure cannot point to a new-generation
+   prefix; the prefix is always allocated before the closure. */
+  if (data && (gc_mode != GC_CURRENT_MODE_BACKPOINTER_REMARK)) {
     /* GLOBAL ASSUMPTION: prefix is at the end of a closure */
     Scheme_Prefix *pf = (Scheme_Prefix *)c->vals[closure_size - 1];
 
@@ -24,8 +27,13 @@
         /* We're the first to look at this prefix... */
         /* Add it to the chain of prefixes to finish after
            all other marking: */
-        pf->next_final = scheme_prefix_finalize;
-        scheme_prefix_finalize = pf;
+        if (gc_mode == GC_CURRENT_MODE_INCREMENTAL) {
+          pf->next_final = scheme_inc_prefix_finalize;
+          scheme_inc_prefix_finalize = pf;
+        } else {
+          pf->next_final = scheme_prefix_finalize;
+          scheme_prefix_finalize = pf;
+        }
 #ifdef MZ_GC_BACKTRACE
         pf->backpointer = (Scheme_Object *)c;
 #endif
@@ -34,8 +42,19 @@
 
       /* Add this closure to the chain to be repaired when the
          prefix is marked (and potentially moved): */
-      c->vals[closure_size - 1] = pf->fixup_chain;
-      pf->fixup_chain = (Scheme_Object *)c;
+      if ((gc_mode == GC_CURRENT_MODE_INCREMENTAL) || (SCHEME_PREFIX_FLAGS(pf) & 0x1)) {
+        /* Can't steal closure slot for this purpose, since the
+           slot is still in use until a full collection finishes */
+        Scheme_Object **pr;
+        pr = (Scheme_Object **)GC_malloc_for_incremental(2 * sizeof(Scheme_Object *));
+        pr[0] = (Scheme_Object *)c;
+        pr[1] = (Scheme_Object *)pf->fixup_chain;
+        pf->fixup_chain = (Scheme_Object *)pr;
+        SCHEME_PREFIX_FLAGS(pf) |= 0x1;
+      } else {
+        c->vals[closure_size - 1] = pf->fixup_chain;
+        pf->fixup_chain = (Scheme_Object *)c;
+      }
 
       /* Mark just the elements of the prefix that are (newly) used: */
       if ((uintptr_t)data->tl_map & 0x1) {

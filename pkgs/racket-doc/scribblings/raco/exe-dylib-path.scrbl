@@ -11,7 +11,7 @@
 reading and adjusting dynamic-library references in a Mac OS X
 executable.}
 
-@history[#:added "6.2.900.9"]
+@history[#:added "6.3"]
 
 @defproc[(find-matching-library-path [exe-path path-string?]
                                      [library-str string?])

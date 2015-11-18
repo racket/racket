@@ -1,0 +1,17 @@
+diff -u -r old/cairo-1.12.16/src/cairo-clip-boxes.c new/cairo-1.12.16/src/cairo-clip-boxes.c
+--- old/cairo-1.12.16/src/cairo-clip-boxes.c	2015-11-06 15:46:30.000000000 -0700
++++ new/cairo-1.12.16/src/cairo-clip-boxes.c	2015-11-06 15:47:36.000000000 -0700
+@@ -172,8 +172,11 @@
+ 	if (clip->path == NULL) {
+ 	    clip->extents = *r;
+ 	} else {
+-	    if (! _cairo_rectangle_intersect (&clip->extents, r))
++	    if (! _cairo_rectangle_intersect (&clip->extents, r)) {
+ 		clip = _cairo_clip_set_all_clipped (clip);
++		/* return so that there's no attempt to modify `clip`: */
++		return clip;
++	    }
+ 	}
+ 	if (clip->path == NULL)
+ 	    clip->is_region = _cairo_box_is_pixel_aligned (box);
+Only in new/cairo-1.12.16/src: cairo-clip-boxes.c~

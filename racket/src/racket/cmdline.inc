@@ -94,7 +94,7 @@ static int _configdir_offset = 17; /* Skip permanent tag */
 #endif
 
 #ifdef DOS_FILE_SYSTEM
-# include <Windows.h>
+# include <windows.h>
 
 #ifndef DLL_RELATIVE_PATH
 # define DLL_RELATIVE_PATH L"lib"
@@ -105,8 +105,6 @@ static int _configdir_offset = 17; /* Skip permanent tag */
 static void (*console_printf)(char *str, ...);
 # define PRINTF console_printf
 #endif
-
-MZ_EXTERN void scheme_set_dll_path(wchar_t *s);
 
 static void record_dll_path(void)
 {

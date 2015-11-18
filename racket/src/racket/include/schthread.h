@@ -30,12 +30,13 @@ extern "C" {
 # ifdef _WIN32
 #  if defined(_WIN64)
 #   if defined(__MINGW32__)
-#     define THREAD_LOCAL __thread
+#     define THREAD_LOCAL /* empty */
+#     define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 #   else
 #     define THREAD_LOCAL __declspec(thread)
+#     define MZ_THREAD_EXTERN extern
+#     define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
 #   endif
-#   define MZ_THREAD_EXTERN extern
-#   define IMPLEMENT_THREAD_LOCAL_EXTERNALLY_VIA_PROC
 #  else
 #   define THREAD_LOCAL /* empty */
 #   define IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
@@ -94,6 +95,9 @@ MZ_EXTERN void scheme_init_os_thread(void);
 #define BIGNUM_CACHE_SIZE 16
 #define STACK_CACHE_SIZE 32
 #define NUM_MORE_CONSTANT_STXES 24
+
+  /* The number of cached scope sets should be a power of 2: */
+#define NUM_RECENT_SCOPE_SETS 8
 
 /* This structure must be 4 words: */
 typedef struct {
@@ -242,6 +246,8 @@ typedef struct Thread_Local_Variables {
   struct Binding_Cache_Entry *binding_cache_table_;
   intptr_t binding_cache_pos_;
   intptr_t binding_cache_len_;
+  struct Scheme_Scope_Set *recent_scope_sets_[2][NUM_RECENT_SCOPE_SETS];
+  int recent_scope_sets_pos_[2];
   struct Scheme_Thread *scheme_current_thread_;
   struct Scheme_Thread *scheme_main_thread_;
   struct Scheme_Thread *scheme_first_thread_;
@@ -358,6 +364,7 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Bucket_Table *scheme_module_code_cache_;
   struct Scheme_Object *group_member_cache_;
   struct Scheme_Prefix *scheme_prefix_finalize_;
+  struct Scheme_Prefix *scheme_inc_prefix_finalize_;
   struct Scheme_Hash_Table *loaded_extensions_;
   struct Scheme_Hash_Table *fullpath_loaded_extensions_;
   Scheme_Sleep_Proc scheme_place_sleep_;
@@ -634,6 +641,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define binding_cache_table XOA (scheme_get_thread_local_variables()->binding_cache_table_)
 #define binding_cache_pos XOA (scheme_get_thread_local_variables()->binding_cache_pos_)
 #define binding_cache_len XOA (scheme_get_thread_local_variables()->binding_cache_len_)
+#define recent_scope_sets XOA (scheme_get_thread_local_variables()->recent_scope_sets_)
+#define recent_scope_sets_pos XOA (scheme_get_thread_local_variables()->recent_scope_sets_pos_)
 #define scheme_current_thread XOA (scheme_get_thread_local_variables()->scheme_current_thread_)
 #define scheme_main_thread XOA (scheme_get_thread_local_variables()->scheme_main_thread_)
 #define scheme_first_thread XOA (scheme_get_thread_local_variables()->scheme_first_thread_)
@@ -750,6 +759,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_module_code_cache XOA (scheme_get_thread_local_variables()->scheme_module_code_cache_)
 #define group_member_cache XOA (scheme_get_thread_local_variables()->group_member_cache_)
 #define scheme_prefix_finalize XOA (scheme_get_thread_local_variables()->scheme_prefix_finalize_)
+#define scheme_inc_prefix_finalize XOA (scheme_get_thread_local_variables()->scheme_inc_prefix_finalize_)
 #define loaded_extensions XOA (scheme_get_thread_local_variables()->loaded_extensions_)
 #define fullpath_loaded_extensions XOA (scheme_get_thread_local_variables()->fullpath_loaded_extensions_)
 #define scheme_place_sleep XOA (scheme_get_thread_local_variables()->scheme_place_sleep_)

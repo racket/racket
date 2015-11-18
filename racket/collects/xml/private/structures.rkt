@@ -51,8 +51,7 @@
          (raise-blame-error
           blame v "not in permissive mode"))))
    #:first-order
-   (lambda (v)
-     (permissive-xexprs))))
+   (lambda (v) #t)))
 
 ; content? : TST -> Bool
 (define content/c

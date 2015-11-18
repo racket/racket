@@ -10,8 +10,7 @@
 (provide (rename-out [module-begin #%module-begin]
                      [struct~s struct])
          (except-out (all-from-out racket/base)
-                     #%module-begin
-                     struct)
+                     #%module-begin)
          (all-from-out racket/unit)
          (all-from-out racket/contract)
          (for-syntax (all-from-out racket/base)))

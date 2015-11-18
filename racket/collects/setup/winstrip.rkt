@@ -1,5 +1,7 @@
 #lang racket/base
-(require racket/cmdline)
+(require racket/cmdline
+         setup/cross-system
+         racket/file)
 
 (module test racket/base)
 
@@ -20,23 +22,35 @@
   (printf "Deleting ~a\n" p)
   (delete-file p))
 
-(for ([a (directory-list dir)])
-  (define f (build-path dir a))
-  (define b (path-element->bytes a))
-  (when (and (file-exists? f)
-	     (or (regexp-match? #rx#"[.](?i:pdb|ilk)$" b)
-		 (regexp-match? #rx#"(?i:CGC[.]exe)$" b)))
-    (delete-file* f)))
+(when (eq? 'windows (cross-system-type))
+  (for ([a (directory-list dir)])
+    (define f (build-path dir a))
+    (define b (path-element->bytes a))
+    (when (and (file-exists? f)
+               (or (regexp-match? #rx#"[.](?i:pdb|ilk)$" b)
+                   (regexp-match? #rx#"(?i:CGC[.]exe)$" b)))
+      (delete-file* f)))
 
-(for ([f (in-directory (build-path dir "lib"))])
-  (when (and (file-exists? f)
-	     (let ([b (path-element->bytes
-		       (let-values ([(base name dir?) (split-path f)])
-			 name))])
-	       (or (regexp-match? #rx#"[.](?i:pdb|ilk|manifest)$" b)
-		   (regexp-match? #rx#"(?i:CGC[.](?:dll|exe))$" b)
-		   (and (regexp-match? #rx#"(?i:[.](?:dll|exp|obj|lib))$" b)
-			(not (regexp-match? #rx#"3m" b))))))
-    (delete-file* f)))
+  (for ([f (in-directory (build-path dir "lib"))])
+    (when (and (file-exists? f)
+               (let ([b (path-element->bytes
+                         (let-values ([(base name dir?) (split-path f)])
+                           name))])
+                 (or (regexp-match? #rx#"[.](?i:pdb|ilk|manifest)$" b)
+                     (regexp-match? #rx#"(?i:CGC[.](?:dll|exe))$" b)
+                     (and (regexp-match? #rx#"(?i:[.](?:dll|exp|obj|lib|def))$" b)
+                          (regexp-match? #rx#"(?i:racket|mzgc)$" b)
+                          (not (regexp-match? #rx#"3m" b))))))
+      (delete-file* f)))
+  
+  ;; Delete any subdirectory that contains ".lib" files.
+  ;; Those are compiler-specific directories, and so we
+  ;; don't want to include them in a distribution.
+  (for ([f (in-directory (build-path dir "lib"))])
+    (when (and (directory-exists? f)
+               (for/or ([f (in-directory f)])
+                 (regexp-match? #rx"[.]lib$" f)))
+      (delete-directory/files f))))
+
 
 

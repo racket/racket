@@ -163,6 +163,10 @@ Two @tech{flvectors} are @racket[equal?] if they have the same length,
 and if the values in corresponding slots of the @tech{flvectors} are
 @racket[equal?].
 
+A printed @tech{flvector} starts with @litchar{#fl(}, optionally with
+a number between the @litchar{#fl} and
+@litchar{(}. @see-read-print["vector" #:print "vectors"]{flvectors}
+
 @defproc[(flvector? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a @tech{flvector}, @racket[#f] otherwise.}

@@ -69,4 +69,4 @@ For each item in the archive, @racket[filter-proc] is applied to
 If the result of @racket[filter-proc] is @racket[#f], then the item is
 not unpacked.
 
-@history[#:changed "6.2.900.17" @elem{Added the @racket[#:permissive?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[#:permissive?] argument.}]}

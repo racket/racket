@@ -67,7 +67,7 @@ otherwise.
 
 }
 
-@defproc[(make-readtable [readtable readtable?]
+@defproc[(make-readtable [readtable (or/c readtable? #f)]
                          [key (or/c char? #f)]
                          [mode (or/c (or/c 'terminating-macro
                                            'non-terminating-macro

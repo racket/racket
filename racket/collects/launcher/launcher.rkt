@@ -602,7 +602,7 @@
                                    (find-collects-dir)))
     ;; Independent launcher (needed for Setup PLT):
     (begin
-      (install-template dest kind "mzstart.exe" "mrstart.exe")
+      (install-template dest kind "MzStart.exe" "MrStart.exe")
       (let ([bstr (bytes->utf-16-bytes
                    (string->bytes/utf-8 (str-list->dos-str
                                          (list* "-N"

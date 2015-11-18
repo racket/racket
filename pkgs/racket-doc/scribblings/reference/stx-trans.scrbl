@@ -5,7 +5,8 @@
                      racket/require-syntax
                      racket/provide-transform
                      racket/provide-syntax
-                     racket/keyword-transform))
+                     racket/keyword-transform
+                     syntax/intdef))
 
 @(define stx-eval (make-base-eval))
 @(interaction-eval #:eval stx-eval (require (for-syntax racket/base)))
@@ -298,6 +299,13 @@ context is meant to splice into an immediately enclosing context, then
 when @racket[syntax-local-context] produces a list, @racket[cons] the
 generated value onto that list.
 
+When expressions are expanded via @racket[local-expand] with an
+internal-definition context @racket[intdef-ctx], and when the expanded
+expressions are incorporated into an overall form @racket[_new-stx],
+then typically @racket[internal-definition-context-track] should be
+applied to @racket[intdef-ctx] and @racket[_new-stx] to provide
+expansion history to external tools.
+
 @transform-time[]
 
 @examples[#:eval stx-eval
@@ -456,6 +464,18 @@ match the number of identifiers, otherwise the
 @transform-time[]}
 
 
+@defproc[(internal-definition-context-binding-identifiers
+          [intdef-ctx internal-definition-context?])
+         (listof identifier?)]{
+
+Returns a list of all binding identifiers registered for
+@racket[intdef-ctx] through @racket[syntax-local-bind-syntaxes]. Each
+identifier in the returned list includes the @tech{internal-definition
+context}'s @tech{scope}.
+
+@history[#:added "6.3.0.4"]}
+
+
 @defproc[(internal-definition-context-introduce [intdef-ctx internal-definition-context?]
                                                 [stx syntax?]
                                                 [mode (or/c 'flip 'add 'remove) 'flip])
@@ -487,6 +507,8 @@ provided for backward compatibility; the more general
 @racket[internal-definition-context-introduce] function is preferred.
 
 @history[#:changed "6.3" @elem{Simplified the operation to @tech{scope} removal.}]}
+
+
 
 
 @defthing[prop:expansion-contexts struct-type-property?]{
@@ -528,7 +550,7 @@ most sense when a @tech{rename transformer}'s identifier has the
 the binding creates a binding alias that effectively routes around the
 @racket[prop:expansion-contexts] property.
 
-@history[#:added "6.2.900.12"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(syntax-local-value [id-stx syntax?]
@@ -673,7 +695,7 @@ the @exnraise[exn:fail:contract]. If @racket[stx] form does start with
 @racket[module] or @racket[module*], or if it starts with @racket[module*]
 in a top-level context, the @exnraise[exn:fail:contract].
 
-@history[#:added "6.2.900.10"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(syntax-local-lift-module-end-declaration [stx syntax?])
@@ -701,7 +723,7 @@ then the @exnraise[exn:fail:contract].}
 Lifts a @racket[#%require] form corresponding to
 @racket[raw-require-spec] (either as a @tech{syntax object} or datum)
 to the top-level or to the top of the module currently being expanded
- or to an enclosing @racket[begin-for-syntax]..
+ or to an enclosing @racket[begin-for-syntax].
 
 The resulting syntax object is the same as @racket[stx], except that a
 fresh @tech{scope} is added. The same @tech{scope} is
@@ -916,7 +938,7 @@ and different result procedures use distinct scopes.
                                added the optional operation argument
                                in the result procedure.}]}
 
-@defproc[(make-syntax-delta-introducer [ext-stx syntax?] 
+@defproc[(make-syntax-delta-introducer [ext-stx identifier?] 
                                        [base-stx (or/c syntax? #f)]
                                        [phase-level (or/c #f exact-integer?)
                                                     (syntax-local-phase-level)])
@@ -926,7 +948,7 @@ Produces a procedure that behaves like the result of
 @racket[make-syntax-introducer], but using the @tech{scopes} of
 @racket[ext-stx] that are not shared with @racket[base-stx].
 
-This procedure is potentially useful when @racket[_m-id] has a
+This procedure is potentially useful when some @racket[_m-id] has a
 transformer binding that records some @racket[_orig-id], and a use of
 @racket[_m-id] introduces a binding of @racket[_orig-id]. In that
 case, the @tech{scopes} one the use of @racket[_m-id] added since the
@@ -976,7 +998,7 @@ identifiers.  Each list of identifiers includes all bindings imported
 (into the module being expanded) using the module path
 @racket[mod-path], or all modules if @racket[mod-path] is
 @racket[#f]. The association list includes all identifiers imported
-with a @racket[phase-level] shift, of all shifts if
+with a @racket[phase-level] shift, or all shifts if
 @racket[phase-level] is @racket[#t].
 
 When an identifier is renamed on import, the result association list

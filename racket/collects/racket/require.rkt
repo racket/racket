@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require (for-syntax racket/base racket/require-transform racket/list
+(require (for-syntax racket/base racket/require-transform racket/list syntax/stx
                      (only-in racket/syntax syntax-local-eval))
          "require-syntax.rkt")
 
@@ -100,24 +100,26 @@
 
 (define-for-syntax (multi xs)
   (define (loop xs)
-    (if (null? xs)
+    (if (stx-null? xs)
       '(())
-      (let ([first (car xs)]
-            [rest (loop (cdr xs))])
-        (if (list? first)
-          (let ([bads (filter list? first)])
+      (let ([first (stx-car xs)]
+            [rest (loop (stx-cdr xs))])
+        (if (stx-list? first)
+          (let ([bads (filter stx-list? (syntax->list first))])
             (if (null? bads)
-              (append-map (λ (x) (map (λ (y) (cons x y)) rest)) first)
-              (error 'multi-in "not a simple element" (car bads))))
+              (append-map (λ (x) (map (λ (y) (cons x y)) rest)) (syntax->list first))
+              (error 'multi-in "not a simple element" (car (syntax->datum bads)))))
           (map (λ (x) (cons first x)) rest)))))
   (define options (loop xs))
   (define (try pred? ->str str->)
-    (and (andmap (λ (x) (andmap pred? x)) options)
+    (and (andmap (λ (x) (andmap pred? (map syntax-e x))) options)
          (map (λ (x)
-                (let ([r (apply string-append
-                                (add-between (if ->str (map ->str x) x)
-                                             "/"))])
-                  (if str-> (str-> r) r)))
+                (let* ([d (map syntax-e x)]
+                       [r (apply string-append
+                                 (add-between (if ->str (map ->str d) d)
+                                              "/"))]
+                       [ctxt (last x)])
+                  (datum->syntax ctxt (if str-> (str-> r) r) ctxt ctxt)))
               options)))
   (or (try string? #f #f)
       (try symbol? symbol->string string->symbol)
@@ -128,25 +130,7 @@
   (syntax-case stx ()
     [(_ elem0 elem ...)
      (quasisyntax/loc stx
-       (combine-in #,@(datum->syntax stx (multi (syntax->datum #'(elem0 elem ...)))
-                                     stx stx stx)))]))
+       (combine-in #,@(multi #'(elem0 elem ...))))]))
 
-
-;; Tests for multi.
-;; We don't want to run them every time the file is required, so they are
-;; commented out. A proper test suite for racket/require should be written.
-;; (require tests/eli-tester)
-;; (test (multi '("a" "b" "c"))       => '("a/b/c")
-;;       (multi '("a" ("b" "c") "d"))   => '("a/b/d" "a/c/d")
-;;       (multi '("a" "b" ("c" "d")))   => '("a/b/c" "a/b/d")
-;;       (multi '(("a" "b") "c" "d"))   => '("a/c/d" "b/c/d")
-;;       (multi '(("a" "b") ("c" "d"))) => '("a/c" "a/d" "b/c" "b/d")
-;;       (multi '(("a" "b" "c" "d")))   => '("a" "b" "c" "d")
-;;       (multi '(("a" "b" ("c" "d")))) =error> ""
-;;       (multi '(a b c))       => '(a/b/c)
-;;       (multi '(a (b c) d))   => '(a/b/d a/c/d)
-;;       (multi '(a b (c d)))   => '(a/b/c a/b/d)
-;;       (multi '((a b) c d))   => '(a/c/d b/c/d)
-;;       (multi '((a b) (c d))) => '(a/c a/d b/c b/d)
-;;       (multi '((a b c d)))   => '(a b c d)
-;;       (multi '((a b (c d)))) =error> "")
+(module+ for-testing
+  (provide (for-syntax multi)))

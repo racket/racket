@@ -116,6 +116,9 @@
 ;; Avoid CGFontGetGlyphPath:
 (define-runtime-path cairo-cgfontgetglpyh-patch "patches/cgfontgetglyph.patch")
 
+;; Patch to avoid writing to a global constant:
+(define-runtime-path cairo-allclipmodifybug-patch "patches/allclipmodifybug.patch")
+
 ;; Hack to workaround broken Courier New in Mac OS X 10.{7.8}:
 (define-runtime-path courier-new-patch "patches/courier-new.patch")
 
@@ -124,6 +127,9 @@
 
 ;; Support registration of extra font families:
 (define-runtime-path coretext-fontreg-patch "patches/coretext-fontreg.patch")
+
+;; Avoid crash when CTFontCollectionCreateMatchingFontDescriptors fails:
+(define-runtime-path coretext-nullarray "patches/coretext-nullarray.patch")
 
 ;; Enable "symbol" fonts, and fix off-by-one:
 (define-runtime-path win32text-patch "patches/win32text.patch")
@@ -419,6 +425,7 @@
 				       null)
                        #:patches (list cairo-coretext-patch
                                        cairo-cgfontgetglpyh-patch
+                                       cairo-allclipmodifybug-patch
                                        courier-new-patch
                                        win32cairofallback-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
@@ -437,6 +444,7 @@
 				      "--with-dynamic-modules=no"))
                        #:patches (list coretext-patch
                                        coretext-fontreg-patch
+                                       coretext-nullarray
                                        win32text-patch))]
     [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
                      #:configure (append

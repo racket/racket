@@ -36,7 +36,7 @@
 /* The implementations of the time primitives, such as
    `current-seconds', vary a lot from platform to platform. */
 #ifdef USE_WIN32_TIME
-# include <Windows.h>
+# include <windows.h>
 #else
 #  if defined(OSKIT) && !defined(OSKIT_TEST)
    /* Get FreeBSD version, not oskit/time.h version */
@@ -56,7 +56,7 @@
 #   define USE_GETRUSAGE
 #  endif /* USE_SYSCALL_GETRUSAGE */
 #  ifdef WINDOWS_GET_PROCESS_TIMES
-#   include <Windows.h>
+#   include <windows.h>
 #  endif
 #  if !defined(USE_GETRUSAGE) && !defined(WINDOWS_GET_PROCESS_TIMES) && !defined(USER_TIME_IS_CLOCK)
 #   include <sys/times.h>

@@ -123,7 +123,7 @@ Build Steps (assuming no version changes)
 
    where <native-pkgs-dir> contains the package "source" directories,
    such as "draw-win32-i386". The <native-pkgs-dir> is normally a
-   checkout of "https://github.com/plt/libs.git".
+   checkout of "https://github.com/racket/libs.git".
 
 Details
 -------

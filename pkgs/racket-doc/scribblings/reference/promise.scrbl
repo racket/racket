@@ -83,7 +83,7 @@ the sense of @racket[promise-running?] and @racket[promise-forced?].}
 @defproc[(promise/name? [promise any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[promise] is a promise created with @racket[delay/name].
-@history[#:added "6.2.900.5"]
+@history[#:added "6.3"]
 }
 
 @defform[(delay/strict body ...+)]{

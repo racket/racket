@@ -7,7 +7,8 @@
     (case-lambda
      [(stx use-local?)
       (let-values ([(prop) (simplify-inferred-name (syntax-property stx 'inferred-name))])
-        (or (and (symbol? prop)
+        (or (and prop
+                 (not (void? prop))
                  prop)
             (let ([n (and use-local?
                           (not (void? prop))

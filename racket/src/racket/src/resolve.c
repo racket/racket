@@ -1683,7 +1683,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 /*                             closures                                   */
 /*========================================================================*/
 
-XFORM_NONGCING static int boxmap_size(int n)
+XFORM_NONGCING int scheme_boxmap_size(int n)
 {
   return ((CLOS_TYPE_BITS_PER_ARG * n) + (BITS_PER_MZSHORT - 1)) / BITS_PER_MZSHORT;
 }
@@ -1693,7 +1693,7 @@ static mzshort *allocate_boxmap(int n)
   mzshort *boxmap;
   int size;
 
-  size = boxmap_size(n);
+  size = scheme_boxmap_size(n);
   boxmap = MALLOC_N_ATOMIC(mzshort, size);
   memset(boxmap, 0, size * sizeof(mzshort));
 
@@ -1807,7 +1807,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       }
     }
     if (at_least_one) {
-      closure_size += boxmap_size(data->num_params + closure_size);
+      closure_size += scheme_boxmap_size(data->num_params + closure_size);
       expanded_already = 1;
     } else
       cl->local_type_map = NULL;
@@ -1857,7 +1857,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         /* Currently, we only need local_type information as a closure type */
         if (flags & SCHEME_INFO_TYPED_VAL_MASK) {
           if (!expanded_already) {
-            closure_size += boxmap_size(data->num_params + closure_size);
+            closure_size += scheme_boxmap_size(data->num_params + closure_size);
             new_closure_map = (mzshort *)scheme_malloc_atomic(sizeof(mzshort) * closure_size);
             memset(new_closure_map, 0, sizeof(mzshort) * closure_size);
             memcpy(new_closure_map, closure_map, sizeof(mzshort) * data->closure_size);
@@ -1935,7 +1935,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     new_size = (captured->count + (has_tl ? 1 : 0));
     if (cl->local_type_map || expanded_already || convert_boxes || captured_typed) {
       need_flags = new_size;
-      new_size += boxmap_size(data->num_params + new_size);
+      new_size += scheme_boxmap_size(data->num_params + new_size);
       expanded_already = 1;
     } else
       need_flags = 0;
@@ -1978,13 +1978,13 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     if (has_tl || convert_boxes || cl->local_type_map) {
       int new_boxes_size;
       int sz;
-      new_boxes_size = boxmap_size(convert_size + data->num_params + (has_tl ? 1 : 0));
+      new_boxes_size = scheme_boxmap_size(convert_size + data->num_params + (has_tl ? 1 : 0));
       sz = ((has_tl ? sizeof(mzshort) : 0) + new_boxes_size * sizeof(mzshort));
       closure_map = (mzshort *)scheme_malloc_atomic(sz);
       memset(closure_map, 0, sz);
       if (convert_boxes) {
         int bsz;
-        bsz = boxmap_size(convert_size);
+        bsz = scheme_boxmap_size(convert_size);
         memcpy(closure_map XFORM_OK_PLUS (has_tl ? 1 : 0), 
                convert_boxes,
                bsz * sizeof(mzshort));
@@ -2014,7 +2014,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
       && expanded_already && !no_map_shift_needed) {
     /* shift boxmap down, since we're dropping closure elements */
     int bsz;
-    bsz = boxmap_size(data->num_params + offset);
+    bsz = scheme_boxmap_size(data->num_params + offset);
     memmove(closure_map + offset, closure_map + data->closure_size, sizeof(mzshort) * bsz);
   }
 

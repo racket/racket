@@ -1730,7 +1730,7 @@ or @litchar{_}.}
 
 @defmodule[setup/collection-search]
 
-@history[#:added "6.2.900.6"]
+@history[#:added "6.3"]
 
 @defproc[(collection-search [mod-path normalized-lib-module-path?]
                             [#:init result any/c #f]
@@ -1808,7 +1808,7 @@ If @racket[spec] is a regexp value, then the result is @racket[#t] if
 the regexp matches @racket[(path->string sys-lib-subpath)],
 @racket[#f] otherwise.
 
-@history[#:changed "6.2.900.11" @elem{Added @racket[#:cross?] argument and
+@history[#:changed "6.3" @elem{Added @racket[#:cross?] argument and
                                       changed the contract on @racket[sys-lib-subpath]
                                       to accept @racket[path-for-some-system?]
                                       instead of just @racket[path?].}]}
@@ -1841,7 +1841,7 @@ libraries need to run to perform the requested @exec{raco pkg} action
 (e.g., when installing built packages).
 
 
-@history[#:added "6.2.900.11"]
+@history[#:added "6.3"]
 
 @defproc[(cross-system-type [mode (or/c 'os 'word 'gc 'link 'machine
                                         'so-suffix 'so-mode 'fs-change)

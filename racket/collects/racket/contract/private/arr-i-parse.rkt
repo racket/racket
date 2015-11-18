@@ -5,7 +5,8 @@
                     ;; has these old, wrong names in it.
                     [make-module-identifier-mapping make-free-identifier-mapping]
                     [module-identifier-mapping-get free-identifier-mapping-get]
-                    [module-identifier-mapping-put! free-identifier-mapping-put!])
+                    [module-identifier-mapping-put! free-identifier-mapping-put!]
+                    [module-identifier-mapping-for-each free-identifier-mapping-for-each])
          "application-arity-checking.rkt"
          "arr-util.rkt"
          (for-template racket/base
@@ -100,8 +101,41 @@ code does the parsing and validation of the syntax.
     (define (ensure-bound vars)
       (for ([var (in-list vars)])
         (unless (free-identifier-mapping-get nm var (λ () #f))
-          (raise-syntax-error #f "dependent variable not bound"
-                              stx var))))
+          (define vars '())
+          (free-identifier-mapping-for-each
+           nm
+           (λ (id _)
+             (define sym (syntax-e id))
+             (unless (member sym vars)
+               (set! vars (cons sym vars)))))
+
+          (define (insert x l)
+            (cond
+              [(null? l) (list x)]
+              [else
+               (cond
+                 [(symbol<? x (car l))
+                  (cons x l)]
+                 [else
+                  (cons (car l) (insert x (cdr l)))])]))
+
+          (define sorted-vars
+            (let loop ([vars vars])
+              (cond
+                [(null? vars) '()]
+                [else (insert (car vars) (loop (cdr vars)))])))
+          
+          (raise-syntax-error
+           #f
+           (apply
+            string-append
+            "unknown dependent variable;"
+            "\n not the variable used in any of the components of the ->i expression"
+            "\n  variables:"
+            (for/list ([var (in-list sorted-vars)]
+                       [i (in-naturals)])
+              (format " ~a" var)))
+           stx var))))
     
     ;; not-range-bound : (listof identifier[used-by-an-arg]) -> void
     (define (not-range-bound arg-vars arg?)
@@ -142,6 +176,7 @@ code does the parsing and validation of the syntax.
     ;; no dups in the rest var
     (when (istx-rst istx)
       (when (arg/res-vars (istx-rst istx))
+        (ensure-bound (arg/res-vars (istx-rst istx)))
         (not-range-bound (arg/res-vars (istx-rst istx)) #t))
       (no-var-dups (arg/res-var (istx-rst istx))))
     

@@ -81,29 +81,35 @@
 
 (define (extract-field field header)
   (if (bytes? header)
-    (let ([m (regexp-match-positions (make-field-start-regexp/bytes field)
-                                     header)])
-      (and m
-           (let ([s (subbytes header
-                              (cdaddr m)
-                              (bytes-length header))])
-             (let ([m (regexp-match-positions #rx#"[\r][\n][^: \r\n\"]*:" s)])
-               (if m
-                 (subbytes s 0 (caar m))
-                 ;; Rest of header is this field, but strip trailing CRLFCRLF:
-                 (regexp-replace #rx#"\r\n\r\n$" s ""))))))
+      (cond
+        [(bytes? field)
+         (let ([m (regexp-match-positions (make-field-start-regexp/bytes field)
+                                          header)])
+           (and m
+                (let ([s (subbytes header
+                                   (cdaddr m)
+                                   (bytes-length header))])
+                  (let ([m (regexp-match-positions #rx#"[\r][\n][^: \r\n\"]*:" s)])
+                    (if m
+                        (subbytes s 0 (caar m))
+                        ;; Rest of header is this field, but strip trailing CRLFCRLF:
+                        (regexp-replace #rx#"\r\n\r\n$" s ""))))))]
+        [else (raise-argument-error 'extract-field "bytes field for bytes header" 0 field header)])
     ;; otherwise header & field should be strings:
-    (let ([m (regexp-match-positions (make-field-start-regexp field)
-                                     header)])
-      (and m
-           (let ([s (substring header
-                               (cdaddr m)
-                               (string-length header))])
-             (let ([m (regexp-match-positions #rx"[\r][\n][^: \r\n\"]*:" s)])
-               (if m
-                 (substring s 0 (caar m))
-                 ;; Rest of header is this field, but strip trailing CRLFCRLF:
-                 (regexp-replace #rx"\r\n\r\n$" s ""))))))))
+      (cond
+        [(string? field)
+         (let ([m (regexp-match-positions (make-field-start-regexp field)
+                                          header)])
+           (and m
+                (let ([s (substring header
+                                    (cdaddr m)
+                                    (string-length header))])
+                  (let ([m (regexp-match-positions #rx"[\r][\n][^: \r\n\"]*:" s)])
+                    (if m
+                        (substring s 0 (caar m))
+                        ;; Rest of header is this field, but strip trailing CRLFCRLF:
+                        (regexp-replace #rx"\r\n\r\n$" s ""))))))]
+        [else (raise-argument-error 'extract-field "string field for string header" 0 field header)])))
 
 (define (replace-field field data header)
   (if (bytes? header)

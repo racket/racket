@@ -1147,6 +1147,9 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
   if (m->phaseless && m->prefix->num_stxes)
     scheme_ill_formed_code(port);
 
+  if (m->max_let_depth < 0)
+    scheme_ill_formed_code(port);
+
   validate_toplevel(m->dummy, port, stack, tls, depth, delta, 
                     num_toplevels, num_stxes, num_lifts, tl_use_map,
                     tl_state, tl_timestamp,

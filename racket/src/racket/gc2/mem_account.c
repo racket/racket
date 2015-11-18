@@ -148,6 +148,8 @@ inline static int custodian_to_owner_set(NewGC *gc,Scheme_Custodian *cust)
 {
   int i;
 
+  GC_ASSERT(SAME_TYPE(SCHEME_TYPE(cust), scheme_custodian_type));
+
   if (cust->gc_owner_set)
     return cust->gc_owner_set;
 
@@ -356,7 +358,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr, in
       if(info->btc_mark == gc->old_btc_mark) {
         info->btc_mark = gc->new_btc_mark;
         account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(page->size), is_a_master_page);
-        push_ptr(gc, TAG_AS_BIG_PAGE_PTR(ptr));
+        push_ptr(gc, TAG_AS_BIG_PAGE_PTR(ptr), 0);
       }
     } else {
       /* medium page */
@@ -366,7 +368,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr, in
         info->btc_mark = gc->new_btc_mark;
         account_memory(gc, gc->current_mark_owner, info->size, is_a_master_page);
         ptr = OBJHEAD_TO_OBJPTR(info);
-        push_ptr(gc, ptr);
+        push_ptr(gc, ptr, 0);
       }
     }
   } else {
@@ -375,7 +377,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr, in
     if(info->btc_mark == gc->old_btc_mark) {
       info->btc_mark = gc->new_btc_mark;
       account_memory(gc, gc->current_mark_owner, info->size, 0);
-      push_ptr(gc, ptr);
+      push_ptr(gc, ptr, 0);
     }
   }
 }
@@ -464,9 +466,9 @@ static void propagate_accounting_marks(NewGC *gc)
 {
   void *p;
 
-  while(pop_ptr(gc, &p) && !gc->kill_propagation_loop) {
+  while(pop_ptr(gc, &p, 0) && !gc->kill_propagation_loop) {
     /* GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p)); */
-    propagate_marks_worker(gc, p);
+    propagate_marks_worker(gc, p, 0);
   }
   if(gc->kill_propagation_loop)
     reset_pointer_stack(gc);
@@ -499,6 +501,8 @@ static void BTC_do_accounting(NewGC *gc)
     Scheme_Custodian_Reference *box = cur->global_next;
     int i;
 
+    GC_ASSERT(SAME_TYPE(SCHEME_TYPE(cur), scheme_custodian_type));
+
     GCDEBUG((DEBUGOUTF, "\nBEGINNING MEMORY ACCOUNTING\n"));
     gc->doing_memory_accounting = 1;
     gc->in_unsafe_allocation_mode = 1;
@@ -518,6 +522,7 @@ static void BTC_do_accounting(NewGC *gc)
     /* start with root: */
     while (cur->parent && SCHEME_PTR1_VAL(cur->parent)) {
       cur = SCHEME_PTR1_VAL(cur->parent);
+      GC_ASSERT(SAME_TYPE(SCHEME_TYPE(cur), scheme_custodian_type));
     }
 
     /* walk forward for the order we want (blame parents instead of children) */
@@ -537,7 +542,8 @@ static void BTC_do_accounting(NewGC *gc)
       propagate_accounting_marks(gc);
 
       last = cur;
-      box = cur->global_next; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
+      box = cur->global_next;
+      cur = box ? SCHEME_PTR1_VAL(box) : NULL;
 
       owner_table = gc->owner_table;
       owner_table[owner]->memory_use = add_no_overflow(owner_table[owner]->memory_use, 

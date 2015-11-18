@@ -32,7 +32,7 @@
          parameter/c
          procedure-arity-includes/c
          
-         any/c
+         any/c  any/c?
          any
          none/c
          make-none/c
@@ -630,7 +630,7 @@
   (raise-blame-error blame #:missing-party neg-party val
                      '(expected: "~s" given: "~e")
                      (if empty-ok?
-                         "list?"
+                         'list?
                          (format "~s" `(and/c list? pair?)))
                      val))
 

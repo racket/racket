@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "utils.rkt")
+@(require "utils.rkt"
+          scribble/bnf)
 
 @(define cgc-v-3m "CGC versus 3m")
 
@@ -87,7 +88,7 @@ To embed Racket CGC in a program, follow these steps:
   @cpp{scheme_main_stack_setup} trampoline registers the C stack with
   the memory manager without creating a namespace.)
 
-  On 32-bit Windows, when support for parallelism is enabled in the Racket
+  On Windows, when support for parallelism is enabled in the Racket
   build (as is the default), then before calling
   @cpp{scheme_main_setup}, your embedding application must first call
   @cppi{scheme_register_tls_space}:
@@ -101,7 +102,12 @@ To embed Racket CGC in a program, follow these steps:
 
   @verbatim[#:indent 2]{
    static __declspec(thread) void *tls_space;
-  }}
+  }
+
+  @history[#:changed "6.3" @elem{Calling @cpp{scheme_register_tls_space} is
+                                 required on all Windows variants, although the call
+                                 may be a no-op, depending on how Racket is
+                                 built.}]}
 
  @item{Configure the namespace by adding module declarations. The
   initial namespace contains declarations only for a few primitive
@@ -109,16 +115,28 @@ To embed Racket CGC in a program, follow these steps:
   into the top-level environment.
 
   To embed a module like @racketmodname[racket/base] (along with all
-  its dependencies), use @exec{raco ctool --c-mods}, which generates a C file
+  its dependencies), use
+  @seclink["c-mods" #:doc raco-doc]{@exec{raco ctool --c-mods @nonterm{dest}}},
+  which generates a C file @nonterm{dest}
   that contains modules in bytecode form as encapsulated in a static
   array. The generated C file defines a @cppi{declare_modules}
   function that takes a @cpp{Scheme_Env*}, installs the modules into
   the environment, and adjusts the module name resolver to access the
-  embedded declarations.
+  embedded declarations. If embedded modules refer to runtime files
+  that need to be carried along, supply @DFlag{runtime} to
+  @exec{raco ctool --c-mods} to collect the runtime files into a
+  directory; see @secref[#:doc raco-doc "c-mods"] for more information.
 
-  Alternately, use @cpp{scheme_set_collects_path} and
+  Alternatively, use @cpp{scheme_set_collects_path} and
   @cpp{scheme_init_collection_paths} to configure and install a path
-  for finding modules at run time.}
+  for finding modules at run time.
+
+  On Windows, @exec{raco ctool --c-mods @nonterm{dest} --runtime
+  @nonterm{dest-dir}} includes in @nonterm{dest-dir} optional DLLs
+  that are referenced by the Racket library to support @tech[#:doc
+  reference-doc]{extflonums} and @racket[bytes-open-converter]. Call
+  @cpp{scheme_set_dll_path} to register @nonterm{dest-dir} so that
+  those DLLs can be found at run time.}
 
  @item{Access Racket through @cppi{scheme_dynamic_require},
   @cppi{scheme_load}, @cppi{scheme_eval}, and/or other functions

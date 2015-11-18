@@ -243,7 +243,7 @@ THREAD_LOCAL_DECL(struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_d
 
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
-ROSYM static Scheme_Object *major_symbol, *minor_symbol;
+ROSYM static Scheme_Object *major_symbol, *minor_symbol, *incremental_symbol;
 
 THREAD_LOCAL_DECL(static int do_atomic = 0);
 THREAD_LOCAL_DECL(static int missed_context_switch = 0);
@@ -524,8 +524,10 @@ void scheme_init_thread(Scheme_Env *env)
 
   REGISTER_SO(major_symbol);
   REGISTER_SO(minor_symbol);
+  REGISTER_SO(incremental_symbol);
   major_symbol = scheme_intern_symbol("major");
   minor_symbol = scheme_intern_symbol("minor");
+  incremental_symbol  = scheme_intern_symbol("incremental");
 
   GLOBAL_PRIM_W_ARITY("dump-memory-stats"            , scheme_dump_gc_stats, 0, -1, env);
   GLOBAL_PRIM_W_ARITY("vector-set-performance-stats!", current_stats       , 1, 2, env);
@@ -723,9 +725,13 @@ static Scheme_Object *collect_garbage(int argc, Scheme_Object *argv[])
     scheme_collect_garbage_minor();
   } else if ((argc < 1) || SAME_OBJ(major_symbol, argv[0])) {
     scheme_collect_garbage();
+  } else if ((argc < 1) || SAME_OBJ(incremental_symbol, argv[0])) {
+#ifdef MZ_PRECISE_GC
+    GC_request_incremental_mode();
+#endif
   } else {
     scheme_wrong_contract("collect-garbage", 
-                          "(or/c 'major 'minor)", 
+                          "(or/c 'major 'minor 'incremental)", 
                           0, argc, argv);
   }
 

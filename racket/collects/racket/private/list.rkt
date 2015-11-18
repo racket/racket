@@ -1,5 +1,5 @@
 (module list "pre-base.rkt"
-  (require "reverse.rkt")
+  (require (rename-in "reverse.rkt" [alt-reverse reverse]))
 
   (provide foldl
            foldr
@@ -27,7 +27,7 @@
            build-string
            build-list
 
-           (rename-out [alt-reverse reverse])
+           reverse
 
            compose
            compose1)

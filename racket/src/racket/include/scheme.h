@@ -93,6 +93,9 @@ typedef struct {
 typedef long double mz_long_double;
 # endif
 #else
+# ifdef MZ_INSIST_EXTFLONUMS
+#  error "cannot support extflonums; you may need to adjust compiler options"
+# endif
 typedef double mz_long_double;
 #endif
 
@@ -1542,10 +1545,6 @@ struct Scheme_Output_Port
   struct Scheme_Input_Port *input_half;
 };
 
-#define SCHEME_INPORT_VAL(obj) (((Scheme_Input_Port *)(obj))->port_data)
-#define SCHEME_OUTPORT_VAL(obj) (((Scheme_Output_Port *)(obj))->port_data)
-#define SCHEME_IPORT_NAME(obj) (((Scheme_Input_Port *)obj)->name)
-
 #define SCHEME_SPECIAL (-2)
 #define SCHEME_UNLESS_READY (-3)
 
@@ -1947,6 +1946,9 @@ MZ_EXTERN void scheme_set_addon_dir(Scheme_Object *p);
 MZ_EXTERN void scheme_set_command_line_arguments(Scheme_Object *vec);
 MZ_EXTERN void scheme_set_compiled_file_paths(Scheme_Object *list);
 MZ_EXTERN void scheme_set_compiled_file_roots(Scheme_Object *list);
+#ifdef DOS_FILE_SYSTEM
+MZ_EXTERN void scheme_set_dll_path(wchar_t *s);
+#endif
 
 MZ_EXTERN void scheme_init_collection_paths(Scheme_Env *global_env, Scheme_Object *extra_dirs);
 MZ_EXTERN void scheme_init_collection_paths_post(Scheme_Env *global_env, Scheme_Object *extra_dirs, Scheme_Object *extra_post_dirs);
@@ -1982,9 +1984,7 @@ MZ_EXTERN int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _m
 typedef int (*Scheme_Env_Main)(Scheme_Env *env, int argc, char **argv);
 MZ_EXTERN int scheme_main_setup(int no_auto_statics, Scheme_Env_Main _main, int argc, char **argv);
 
-#ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
 MZ_EXTERN void scheme_register_tls_space(void *tls_space, int _tls_index);
-#endif
 
 MZ_EXTERN void scheme_register_static(void *ptr, intptr_t size);
 #if defined(MUST_REGISTER_GLOBALS) || defined(GC_MIGHT_USE_REGISTERED_STATICS)

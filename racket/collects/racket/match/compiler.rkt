@@ -11,6 +11,9 @@
 
 (provide compile*)
 
+;; should we reorder stuff?
+(define can-reorder? (make-parameter #t))
+
 ;; for non-linear patterns
 (define vars-seen (make-parameter null))
 
@@ -231,7 +234,8 @@
                                                         #f
                                                         seen))
                                             qs)
-                                       #'esc*)])
+                                       #'esc*
+                                       #f)])
                ;; then compile the rest of the row
                (if success?
                    #,(compile* xs
@@ -239,7 +243,8 @@
                                                (Row-rhs row)
                                                (Row-unmatch row)
                                                (append (map cons vars vars) seen)))
-                               esc)
+                               esc
+                               #f)
                    (#,esc))))))]
     ;; the App rule
     [(App? first)
@@ -426,7 +431,7 @@
                              #'failkv))))))]
     [else (error 'compile "unsupported pattern: ~a\n" first)]))
 
-(define (compile* vars rows esc [reorder? #t])
+(define (compile* vars rows esc [reorder? (can-reorder?)])
   (define (let/wrap clauses body)
     (if (stx-null? clauses)
       body
@@ -469,7 +474,10 @@
     ;; and compile each block with a reference to its continuation
    [else
     (let*-values
-        ([(rows vars) (if reorder?
+        ([(rows vars) (if (and (>= 1 (length vars))
+                               reorder?
+                               ;; moving Or patterns early breaks Typed Racket
+                               (not (ormap Or? (apply append (map Row-pats rows)))))
                           (reorder-columns rows vars)
                           (values rows vars))]
          [(fns)
@@ -481,7 +489,9 @@
                               [(f) (generate-temporaries #'(f))]
                               ;; compile the block, with jumps to the previous
                               ;; esc
-                              [c (compile-one vars (car blocks) esc)])
+                              [c 
+                               (parameterize ([can-reorder? reorder?])
+                                 (compile-one vars (car blocks) esc))])
                   ;; then compile the rest, with our name as the esc
                   (loop (cdr blocks)
                         #'f

@@ -32,7 +32,7 @@ friendlier (though less precise and less complete) overview of the
 language.
 
 @margin-note{The source of this manual is available on
-@hyperlink["https://github.com/plt/racket/tree/master/pkgs/racket-doc/scribblings/reference"]{GitHub}.}
+@hyperlink["https://github.com/racket/racket/tree/master/pkgs/racket-doc/scribblings/reference"]{GitHub}.}
 
 @defmodulelang*[(racket/base racket)
                 ;; Use sources for overlap with `scheme' and `mzscheme':

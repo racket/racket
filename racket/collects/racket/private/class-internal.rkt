@@ -19,6 +19,7 @@
                      syntax/flatten-begin
                      syntax/private/boundmap
                      syntax/parse
+                     syntax/intdef
                      "classidmap.rkt"))
 
 (define insp (current-inspector)) ; for all opaque structures
@@ -958,23 +959,25 @@
               ;; of a class). It doesn't use syntax-track-origin because there is
               ;; no residual code that it would make sense to be the result of expanding
               ;; those away. So, instead we only look at a few properties (as below).
+              ;; Also, add 'disappeared-binding properties from `ctx`.
               (define (add-decl-props stx)
-                (for/fold ([stx stx])
-                          ([decl (in-list (append inspect-decls decls))])
-                  (define (copy-prop src dest stx)
-                    (syntax-property 
-                     stx
-                     dest
-                     (cons (syntax-property decl src)
-                           (syntax-property stx dest))))
-                  (copy-prop
-                   'origin 'disappeared-use
+                (internal-definition-context-track
+                 def-ctx
+                 (for/fold ([stx stx])
+                           ([decl (in-list (append inspect-decls decls))])
+                   (define (copy-prop src dest stx)
+                     (syntax-property 
+                      stx
+                      dest
+                      (cons (syntax-property decl src)
+                            (syntax-property stx dest))))
                    (copy-prop
-                    'disappeared-use 'disappeared-use
+                    'origin 'disappeared-use
                     (copy-prop
-                     'disappeared-binding 'disappeared-binding
-                     stx)))))
-              
+                     'disappeared-use 'disappeared-use
+                     (copy-prop
+                      'disappeared-binding 'disappeared-binding
+                      stx))))))
               ;; At most one inspect:
               (unless (or (null? inspect-decls)
                           (null? (cdr inspect-decls)))

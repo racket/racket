@@ -1575,4 +1575,101 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module shadows-a-racket-base-binding-and-exports racket/base
+  (provide (all-defined-out)) ; exports `path?`
+  (struct path ()))
+
+(module import-shadows-a-racket-base-binding racket/base
+  (require 'shadows-a-racket-base-binding-and-exports)
+  (provide (all-from-out racket/base)))
+
+;; Fails because imported module doesn't provide `path?`:
+(syntax-test #'(module m racket/base
+                 (require (rename-in 'import-shadows-a-racket-base-binding
+                                     [path? other-path?]))))
+
+(module import-shadows-a-racket-base-binding-and-doesnt-confuse-struct-out racket/base
+  (require 'shadows-a-racket-base-binding-and-exports)
+  (provide (struct-out path)))
+
+(module shadows-a-racket-base-binding-and-exports-all racket/base
+  (provide (all-from-out racket/base)) ; does not export `path?`
+  (struct path ()))
+
+(syntax-test #'(module m racket/base
+                 (require (rename-in 'shadows-a-racket-base-binding-and-exports-all
+                                     [path? other-path?]))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `syntax-local-lift-require` on an
+;; spec that doesn't have the target environment's
+;; context:
+
+(module has-a-submodule-that-exports-x racket
+  (module b racket/base
+    (define x 1)
+    (provide x))
+
+  (define-syntax (lifted-require-of-x stx)
+    (syntax-case stx ()
+      [(_ mod)
+       (let ([x (car (generate-temporaries '(x)))])
+         (syntax-local-lift-require
+          #`(rename mod #,x x)
+          x))]))
+
+  (provide lifted-require-of-x))
+
+(require 'has-a-submodule-that-exports-x)
+
+(test 1 values (lifted-require-of-x (submod 'has-a-submodule-that-exports-x b)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; This test happens to trigger a combination
+;; of lazy adds and reoves that exposed a bug
+;; in caching lazy scope propagations
+
+(eval
+ (expand
+  #'(module x racket/kernel
+      (module ma racket/base
+        (#%module-begin
+         (#%require (for-syntax racket/kernel))
+         (define-values (x) 1)
+         (define-syntaxes (foo) (lambda (stx) (quote-syntax x)))
+         (#%provide foo)))
+      (module mb racket/kernel
+        (#%require (submod ".." ma))
+        (foo)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that shutting down a custodian
+;; releases a lock as it should
+
+(parameterize ([current-custodian (make-custodian)])
+  (thread-wait
+   (thread
+    (lambda ()
+      (parameterize ([current-namespace (make-base-namespace)])
+        (eval '(module m racket/base
+                (require (for-syntax racket/base))
+                (begin-for-syntax
+                  #;(log-error "nested")
+                  ;; Using an environment variable to communicate across phases:
+                  (when (getenv "PLT_ready_to_end")
+                    #;(log-error "adios")
+                    (custodian-shutdown-all (current-custodian))))))
+        (eval '(module n racket/base
+                (require (for-syntax racket/base))
+                (begin-for-syntax
+                  #;(log-error "outer")
+                  (dynamic-require ''m 0)
+                  (eval #f))))
+        (putenv "PLT_ready_to_end" "yes")
+        (dynamic-require ''n 0)
+        #;(log-error "go")
+        (eval #f))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

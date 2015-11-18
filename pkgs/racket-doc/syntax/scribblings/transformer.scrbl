@@ -34,6 +34,7 @@ considered immutable and a syntax error is raised.
 op
 ]
 
+@history[#:added "6.3"]{}
 }
 
 @close-eval[the-eval]

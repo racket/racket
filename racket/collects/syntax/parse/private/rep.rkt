@@ -469,7 +469,6 @@
     [id
      (and (identifier? #'id)
           (not-shadowed? #'id)
-          (not (safe-name? #'id))
           (pattern-expander? (syntax-local-value #'id (λ () #f))))
      (let* ([proc (pattern-expander-proc (syntax-local-value #'id))]
             [introducer (make-syntax-introducer)]
@@ -482,7 +481,6 @@
     [(id . rst)
      (and (identifier? #'id)
           (not-shadowed? #'id)
-          (not (safe-name? #'id))
           (pattern-expander? (syntax-local-value #'id (λ () #f))))
      (let* ([proc (pattern-expander-proc (syntax-local-value #'id))]
             [introducer (make-syntax-introducer)]

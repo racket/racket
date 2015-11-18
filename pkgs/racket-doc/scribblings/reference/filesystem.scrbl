@@ -3,7 +3,8 @@
           (for-label framework/preferences
                      racket/runtime-path
                      launcher/launcher
-                     setup/dirs))
+                     setup/dirs
+                     setup/cross-system))
 
 @(define file-eval (make-base-eval))
 @(interaction-eval #:eval file-eval (begin (require racket/file) (define filename (make-temporary-file))))
@@ -953,7 +954,7 @@ keep only the properties kept by @racket[copy-file]. If
 @racket[keep-modify-seconds?] is true, then each file copy also keeps
 the modification date of the original.
 
-@history[#:changed "6.2.900.9" @elem{Added the @racket[#:preserve-links?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[#:preserve-links?] argument.}]}
 
 
 @defproc[(delete-directory/files [path path-string?]
@@ -1402,7 +1403,8 @@ in the sense of @racket[port-try-file-lock?].
                                  [name path-element?]) 
             path?])]{
 
-Creates a lock filename by prepending @racket["_LOCK"] on Windows or
+Creates a lock filename by prepending @racket["_LOCK"] on Windows
+(i.e., when @racket[cross-system-type] reports @racket['windows]) or
 @racket[".LOCK"] on other platforms to the file portion of the path.
 
 @examples[

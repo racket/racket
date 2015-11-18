@@ -3,7 +3,8 @@
 (provide contract
          (rename-out [-recursive-contract recursive-contract])
          current-contract-region
-         invariant-assertion)
+         invariant-assertion
+         (for-syntax lifted-key add-lifted-property))
 
 (require (for-syntax racket/base syntax/name syntax/srcloc)
          racket/stxparam
@@ -17,6 +18,13 @@
          "generate.rkt"
          )
 
+(begin-for-syntax
+ (define lifted-key (gensym 'contract:lifted))
+ ;; syntax? -> syntax?
+ ;; tells clients that the expression is a lifted application
+ (define (add-lifted-property stx)
+   (syntax-property stx lifted-key #t)))
+
 (define-for-syntax lifted-ccrs (make-hasheq))
 
 (define-syntax-parameter current-contract-region
@@ -26,7 +34,8 @@
                 [id (hash-ref lifted-ccrs ctxt #f)])
            (with-syntax ([id (or id
                                  (let ([id (syntax-local-lift-expression 
-                                            (syntax/loc stx (quote-module-name)))])
+                                            (add-lifted-property
+                                             (syntax/loc stx (quote-module-name))))])
                                    (hash-set! lifted-ccrs ctxt (syntax-local-introduce id))
                                    id))])
              #'id))

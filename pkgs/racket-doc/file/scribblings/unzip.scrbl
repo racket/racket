@@ -86,7 +86,7 @@ inflated content.
 
 @history[#:changed "6.0.0.3"
          @elem{Added support for the optional timestamp argument in the result function.}
-         #:changed "6.2.900.17"
+         #:changed "6.3"
          @elem{Added the @racket[#:permissive?] argument.}]}
 
 

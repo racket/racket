@@ -168,7 +168,14 @@
               e ...))
            (provide run-pkg-tests)
            (module+ main
-             (run-pkg-tests* run-pkg-tests)))))]))
+             (require racket/cmdline)
+             (define verb? #t)
+             (command-line
+              #:once-each
+              ["-q" "run quietly" (set! verb? #f)]
+              #:args () (void))
+             (parameterize ([verbose? verb?])
+               (run-pkg-tests* run-pkg-tests))))))]))
 
 (define (run-pkg-tests* t)
   (putenv "PLT_PKG_NOSETUP" "y")

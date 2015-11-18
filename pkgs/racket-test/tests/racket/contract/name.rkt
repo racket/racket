@@ -33,6 +33,16 @@
   (test-name '(or/c boolean? (-> (>=/c 5) (>=/c 5)))
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
   
+  (test-name '(first-or/c) (first-or/c))
+  (test-name '(first-or/c integer? gt0?) (first-or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
+  (test-name '(first-or/c integer? boolean?)
+             (first-or/c (flat-contract integer?)
+                    (flat-contract boolean?)))
+  (test-name '(first-or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+             (first-or/c (-> (>=/c 5) (>=/c 5)) boolean?))
+  (test-name '(first-or/c boolean? (-> (>=/c 5) (>=/c 5)))
+             (first-or/c boolean? (-> (>=/c 5) (>=/c 5))))
+  
   (test-name 'mumble (let ([frotz/c integer?]
                            [bazzle/c boolean?])
                        (flat-named-contract 'mumble
@@ -47,6 +57,8 @@
              (->* (integer? boolean?) () (values char? any/c)))
   (test-name '(-> integer? boolean? any) (->* (integer? boolean?) () any))
   (test-name '(-> integer? boolean? #:x string? any) (-> integer? #:x string? boolean? any))
+  (test-name '(-> any/c boolean?) (-> any/c boolean?))
+  (test-name 'predicate/c predicate/c)
 
   (test-name '(->* (integer?) (string?) #:rest any/c (values char? any/c))
               (->* (integer?) (string?) #:rest any/c (values char? any/c)))
@@ -164,6 +176,29 @@
              (or/c boolean?
                    (-> (>=/c 5) (>=/c 5))
                    (-> (<=/c 5) (<=/c 5) (<=/c 5))))
+
+  (test-name '(first-or/c) (first-or/c))
+  (test-name 'integer? (first-or/c integer?))
+  (test-name '(first-or/c integer? gt0?) (first-or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
+  (test-name '(first-or/c integer? boolean?)
+             (first-or/c (flat-contract integer?)
+                   (flat-contract boolean?)))
+  (test-name '(first-or/c integer? boolean?)
+             (first-or/c integer? boolean?))
+  (test-name '(first-or/c (-> (>=/c 5) (>=/c 5)) boolean?)
+             (first-or/c (-> (>=/c 5) (>=/c 5)) boolean?))
+  (test-name '(first-or/c boolean? (-> (>=/c 5) (>=/c 5)))
+             (first-or/c boolean? (-> (>=/c 5) (>=/c 5))))
+  (test-name '(first-or/c (-> (>=/c 5) (>=/c 5))
+                     (-> (<=/c 5) (<=/c 5) (<=/c 5)))
+             (first-or/c (-> (>=/c 5) (>=/c 5))
+                    (-> (<=/c 5) (<=/c 5) (<=/c 5))))
+  (test-name '(first-or/c boolean?
+                     (-> (>=/c 5) (>=/c 5))
+                     (-> (<=/c 5) (<=/c 5) (<=/c 5)))
+             (first-or/c boolean?
+                    (-> (>=/c 5) (>=/c 5))
+                    (-> (<=/c 5) (<=/c 5) (<=/c 5))))
 
   (test-name 'any/c (and/c))
   (test-name '(and/c any/c) (and/c any/c))

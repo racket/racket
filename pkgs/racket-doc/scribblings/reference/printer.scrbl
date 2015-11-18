@@ -288,7 +288,7 @@ all @tech{quotable}, then the vector @racket[print]s as
 and a closing @litchar{)}. A vector is @tech{quotable} when all of
 its elements are @tech{quotable}.
 
-In @racket[write] or @racket[display] mode, an @tech{flvector} prints
+In @racket[write] or @racket[display] mode, a @tech{flvector} prints
 like a @tech{vector}, but with a @litchar{#fl} prefix instead of
 @litchar{#}. A @tech{fxvector} similarly prints with a @litchar{#fx}
 prefix instead of @litchar{#}. The @racket[print-vector-length]

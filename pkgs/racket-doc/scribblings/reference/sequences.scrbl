@@ -384,6 +384,48 @@ each element in the sequence.
   content of a directory, use the result of @racket[directory-list] as
   a sequence.
 
+@examples[
+    (code:comment @#,t{Given a directory tree:})
+    (code:comment @#,t{})
+    (code:comment @#,t{ /example})
+    (code:comment @#,t{ ├── a})
+    (code:comment @#,t{ │   ├── alpha})
+    (code:comment @#,t{ │   └── apple})
+    (code:comment @#,t{ ├── b})
+    (code:comment @#,t{ │   └── beta})
+    (code:comment @#,t{ └── c})
+    (code:comment @#,t{})
+    (eval:alts
+      (parameterize ([current-directory "/example"])
+        (for ([p (in-directory)])
+          (printf "~a\n" p)))
+      (for ([p (in-list '("a"
+                          "a/alpha"
+                          "a/apple"
+                          "b"
+                          "b/beta"
+                          "c"))])
+        (printf "~a\n" p)))
+    (eval:alts
+      (for ([p (in-directory "/example")])
+        (printf "~a\n" p))
+      (for ([p (in-list '("/example/a"
+                          "/example/a/alpha"
+                          "/example/a/apple"
+                          "/example/b"
+                          "/example/b/beta"
+                          "/example/c"))])
+        (printf "~a\n" p)))
+    (eval:alts
+      (let ([f (lambda (path) (regexp-match? #rx"/example/b.*" path))])
+        (for ([p (in-directory "/example" f)])
+          (printf "~a\n" p)))
+      (for ([p (in-list '("/example/a"
+                          "/example/b"
+                          "/example/b/beta"
+                          "/example/c"))])
+        (printf "~a\n" p)))]
+
 @history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}]}
 
 
@@ -792,7 +834,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
 (for/list ([x (in-syntax #'(1 2 3))])
   x)]
 
-@history[#:added "6.2.900.9"]}
+@history[#:added "6.3"]}
 
 @defproc[(in-slice [length exact-positive-integer?] [seq sequence?])
          sequence?]{
@@ -802,7 +844,7 @@ If @racket[min-count] is a number, the stream is required to have at least that 
   @examples[#:eval sequence-evaluator
   (for/list ([e (in-slice 3 (in-range 8))]) e)
   ]
-  @history[#:added "6.2.900.9"]
+  @history[#:added "6.3"]
 }
 
 

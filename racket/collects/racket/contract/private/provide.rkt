@@ -66,18 +66,12 @@
 
   ;; keys for syntax property used below
   (define rename-id-key (gensym 'contract:rename-id))
-  (define lifted-key    (gensym 'contract:lifted))
   (define neg-party-key (gensym 'contract:neg-party))
 
   ;; identifier? identifier? -> identifier?
   ;; add a property that tells clients what the exported id was
   (define (add-rename-id rename-id partial-id)
     (syntax-property partial-id rename-id-key rename-id))
-
-  ;; syntax? -> syntax?
-  ;; tells clients that the expression is a lifted application
-  (define (add-lifted-property stx)
-    (syntax-property stx lifted-key #t))
 
   ;; identifier? -> identifier?
   ;; tells clients that the application of this id has an extra inserted argument
@@ -119,7 +113,8 @@
                           ;; No: lift the neg name creation
                           (syntax-local-introduce 
                            (syntax-local-lift-expression
-                            #'(quote-module-name))))])
+                            (add-lifted-property
+                             #'(quote-module-name)))))])
                 (when key (hash-set! global-saved-id-table key lifted-neg-party))
                 ;; Expand to a use of the lifted expression:
                 (define (adjust-location new-stx)

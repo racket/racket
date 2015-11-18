@@ -95,6 +95,9 @@ typedef unsigned long uintptr_t;
 /* To disable extflonums when they would otherwise work: */
 #undef MZ_NO_EXTFLONUMS
 
+/* Extflonums are specifically requested (so complain if not supported): */
+#undef MZ_INSIST_EXTFLONUMS
+
 /* Library subpath */
 #undef SPLS_SUFFIX
 

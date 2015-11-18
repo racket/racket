@@ -27,7 +27,7 @@ otherwise.}
 Returns the width or height of an icon in pixels, or the depth in bits per
 pixel.
 
-@history[#:changed "6.2.900.10" @elem{A PNG-format icon can have a
+@history[#:changed "6.3" @elem{A PNG-format icon can have a
                                       width or height greater than 256.}]}
 
 
@@ -37,7 +37,7 @@ pixel.
 
 Reports the format of the icon.
 
-@history[#:added "6.2.900.10"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(read-icos [src (or/c path-string? input-port?)])
@@ -103,7 +103,7 @@ green, and blue channels) for each pixel.}
 Returns the bytes of a PNG encoding for an icon in PNG format (see
 @racket[ico-format]).
 
-@history[#:added "6.2.900.10"]}
+@history[#:added "6.3"]}
 
 
 @defproc[(argb->ico [width (integer-in 1 256)]
@@ -125,4 +125,4 @@ and @racket[(* width depth)] must be a multiple of 8.}
 
 Wraps the given PNG encoding as a PNG-encoded icon.
 
-@history[#:added "6.2.900.10"]}
+@history[#:added "6.3"]}
