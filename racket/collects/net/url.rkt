@@ -4,6 +4,7 @@
          racket/contract/base
          racket/list
          racket/match
+         racket/promise
          (prefix-in hc: "http-client.rkt")
          (only-in "url-connect.rkt" current-https-protocol)
          "uri-codec.rkt"
@@ -23,66 +24,90 @@
 ;;   "impure" = they have text waiting
 ;;   "pure" = the MIME headers have been read
 
-(define (env->c-p-s-entries envar)
-  (match (getenv envar)
-    [(or #f "") null]
-    [(app string->url
-          (url (and scheme "http") #f (? string? host) (? integer? port)
-           _ (list) (list) #f))
-     (list (list scheme host port))]
-    [(app string->url
-          (url (and scheme "http") _ (? string? host) (? integer? port)
-           _ _ _ _))
-     (log-net/url-error "~s contains somewhat invalid proxy URL format" envar)
-     (list (list scheme host port))]
-    [inv (log-net/url-error "~s contained invalid proxy URL format: ~s"
-                            envar inv)
-         null]))
+(define proxiable-url-schemes '("http"))
+
+(define (env->c-p-s-entries envars)
+  (if (null? envars)
+      null
+      (match (getenv (car envars))
+        (x (printf "envars: ~s~%" x) (failure-cont))
+        [#f (env->c-p-s-entries (cdr envars))]
+        ["" null]
+        [(app string->url
+              (url (and scheme "http") #f (? string? host) (? integer? port)
+                   _ (list) (list) #f))
+         (list (list scheme host port))]
+        [(app string->url
+              (url (and scheme "http") _ (? string? host) (? integer? port)
+                   _ _ _ _))
+         (log-net/url-error "~s contains somewhat invalid proxy URL format" (car envars))
+         (list (list scheme host port))]
+        [inv (log-net/url-error "~s contained invalid proxy URL format: ~s"
+                                (car envars) inv)
+             null])))
+
+(define current-proxy-servers-promise
+  (make-parameter (delay (env->c-p-s-entries '("plt_http_proxy" "http_proxy")))))
+
+(define (proxy-servers-guard v)
+  (unless (and (list? v)
+               (andmap (lambda (v)
+                         (and (list? v)
+                              (= 3 (length v))
+                              (equal? (car v) "http")
+                              (string? (car v))
+                              (exact-integer? (caddr v))
+                              (<= 1 (caddr v) 65535)))
+                       v))
+    (raise-type-error
+     'current-proxy-servers
+     "list of list of scheme, string, and exact integer in [1,65535]"
+     v))
+  (map (lambda (v)
+         (list (string->immutable-string (car v))
+               (string->immutable-string (cadr v))
+               (caddr v)))
+       v))
 
 (define current-proxy-servers
-  (make-parameter (env->c-p-s-entries "PLT_HTTP_PROXY")
-                  (lambda (v)
-                    (unless (and (list? v)
-                                 (andmap (lambda (v)
-                                           (and (list? v)
-                                                (= 3 (length v))
-                                                (equal? (car v) "http")
-                                                (string? (car v))
-                                                (exact-integer? (caddr v))
-                                                (<= 1 (caddr v) 65535)))
-                                         v))
-                      (raise-type-error
-                       'current-proxy-servers
-                       "list of list of scheme, string, and exact integer in [1,65535]"
-                       v))
-                    (map (lambda (v)
-                           (list (string->immutable-string (car v))
-                                 (string->immutable-string (cadr v))
-                                 (caddr v)))
-                         v))))
+  (make-derived-parameter current-proxy-servers-promise
+                          (λ (v) (let ((guarded (proxy-servers-guard v)))
+                                   (delay guarded)))
+                          force))
 
-(define (env->n-p-s-entries envar)
-  (match (getenv envar)
-    [(or #f "") null]
-    [hostnames (string-split hostnames ",")]))
+(define (env->n-p-s-entries envars)
+  (if (null? envars)
+      null
+      (match (getenv (car envars))
+        [#f (env->n-p-s-entries (cdr envars))]
+        ["" null]
+        [hostnames (string-split hostnames ",")])))
+  
+(define current-no-proxy-servers-promise
+  (make-parameter (delay (env->n-p-s-entries '("plt_no_proxy" "no_proxy")))))
+
+(define (no-proxy-servers-guard v)
+  (unless (and (list? v)
+               (andmap (lambda (v)
+                         (or (string? v)
+                             (regexp? v)))
+                       v))
+    (raise-type-error 'current-no-proxy-servers
+                      "list of string or regexp"
+                      v))
+  (map (match-lambda
+         [(? regexp? re) re]
+         [(regexp "^(\\..*)$" (list _ m))
+          (regexp (string-append ".*" (regexp-quote m)))]
+         [(? string? s) (regexp (string-append "^"(regexp-quote s)"$"))])
+       v))
 
 (define current-no-proxy-servers
-  (make-parameter (env->n-p-s-entries "PLT_NO_PROXY")
-                  (lambda (v)
-                    (unless (and (list? v)
-                                 (andmap (lambda (v)
-                                           (or (string? v)
-                                               (regexp? v)))
-                                         v))
-                      (raise-type-error 'current-no-proxy-servers
-                                        "list of string or regexp"
-                                        v))
-                    (map (match-lambda
-                           [(? regexp? re) re]
-                           [(regexp "^(\\..*)$" (list _ m))
-                            (regexp (string-append ".*" (regexp-quote m)))]
-                           [(? string? s) (regexp (string-append "^"(regexp-quote s)"$"))])
-                         v))))
+  (make-derived-parameter current-no-proxy-servers-promise
+                          (λ (v)
+                            (let ((guarded (no-proxy-servers-guard v)))
+                              (delay guarded)))
+                          force))
 
 (define (proxy-server-for url-schm (dest-host-name #f))
   (let ((rv (assoc url-schm (current-proxy-servers))))
@@ -103,6 +128,7 @@
     (cond [(not scheme) 80]
           [(string=? scheme "http") 80]
           [(string=? scheme "https") 443]
+          [(string=? scheme "git") 9418]
           [else (url-error "URL scheme ~s not supported" scheme)])))
 
 ;; make-ports : url -> hc
@@ -435,7 +461,9 @@
   (parameter/c (or/c false/c (listof (list/c string? string? number?)))))
  (current-no-proxy-servers
   (parameter/c (or/c false/c (listof (or/c string? regexp?)))))
- (proxy-server-for (->* (string?) (string?) (or/c false/c (list/c string? string? number?)))))
+ (proxy-server-for (->* (string?) ((or/c false/c string?))
+                        (or/c false/c (list/c string? string? number?))))
+ (proxiable-url-schemes (listof string?)))
 
 (define (http-sendrecv/url u
                            #:method [method-bss #"GET"]
