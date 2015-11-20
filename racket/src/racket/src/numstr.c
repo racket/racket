@@ -386,7 +386,7 @@ END_XFORM_ARITH;
 static double STRTOD(const char *orig_c, char **f, int extfl)
 {
   int neg = 0;
-  int found_dot = 0, is_infinity = 0, is_zero = 0;
+  int found_dot = 0, is_infinity = 0, is_zero = 0, is_nonzero = 0;
   const char *c = orig_c;
 
   *f = (char *)c;
@@ -410,7 +410,8 @@ static double STRTOD(const char *orig_c, char **f, int extfl)
     int ch = *c;
 
     if (isdigit(ch)) {
-      /* ok */
+      if (ch != '0')
+	is_nonzero = 1;
     } else if ((ch == 'e') || (ch == 'E')) {
       int e = 0, neg_exp = 0;
 
@@ -431,7 +432,7 @@ static double STRTOD(const char *orig_c, char **f, int extfl)
 	else {
 	  e = (e * 10) + (ch - '0');
 	  if (e > CHECK_INF_EXP_THRESHOLD(extfl)) {
-	    if (neg_exp)
+	    if (neg_exp || !is_nonzero)
 	      is_zero  = 1;
 	    else
 	      is_infinity  = 1;
