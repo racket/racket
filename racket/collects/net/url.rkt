@@ -46,7 +46,7 @@
              null])))
 
 (define current-proxy-servers-promise
-  (make-parameter (delay (env->c-p-s-entries '("plt_http_proxy" "http_proxy")))))
+  (make-parameter (delay/sync (env->c-p-s-entries '("plt_http_proxy" "http_proxy")))))
 
 (define (proxy-servers-guard v)
   (unless (and (list? v)
@@ -70,8 +70,7 @@
 
 (define current-proxy-servers
   (make-derived-parameter current-proxy-servers-promise
-                          (λ (v) (let ((guarded (proxy-servers-guard v)))
-                                   (delay guarded)))
+                          proxy-servers-guard
                           force))
 
 (define (env->n-p-s-entries envars)
@@ -83,7 +82,7 @@
         [hostnames (string-split hostnames ",")])))
   
 (define current-no-proxy-servers-promise
-  (make-parameter (delay (no-proxy-servers-guard (env->n-p-s-entries '("plt_no_proxy" "no_proxy"))))))
+  (make-parameter (delay/sync (no-proxy-servers-guard (env->n-p-s-entries '("plt_no_proxy" "no_proxy"))))))
 
 (define (no-proxy-servers-guard v)
   (unless (and (list? v)
@@ -103,9 +102,7 @@
 
 (define current-no-proxy-servers
   (make-derived-parameter current-no-proxy-servers-promise
-                          (λ (v)
-                            (let ((guarded (no-proxy-servers-guard v)))
-                              (delay guarded)))
+                          no-proxy-servers-guard
                           force))
 
 (define (proxy-server-for url-schm (dest-host-name #f))
