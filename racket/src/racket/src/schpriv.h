@@ -831,6 +831,9 @@ extern Scheme_Object *scheme_parameterization_key;
 extern Scheme_Object *scheme_exn_handler_key;
 extern Scheme_Object *scheme_break_enabled_key;
 
+Scheme_Object *scheme_extend_parameterization(int argc, Scheme_Object *args[]);
+XFORM_NONGCING int scheme_is_parameter(Scheme_Object *o);
+
 extern void scheme_flatten_config(Scheme_Config *c);
 
 extern Scheme_Object *scheme_apply_thread_thunk(Scheme_Object *rator);

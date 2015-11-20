@@ -191,18 +191,31 @@ required keyword arguments of @racket[wrapper-proc] must be a subset
 of the required keywords of @racket[proc].
 
 For applications without keywords, the result of @racket[wrapper-proc]
-must be either the same number of values as supplied to it or one more
-than the number of supplied values, where an extra result is supplied
-before the others. The additional result, if any, must be a procedure
+must be at least the same number of values as supplied to it.
+Additional results can be supplied---before the values that correspond
+to the supplied values---in the following pattern:
+
+@itemlist[
+
+ @item{An optional procedure, @racket[_result-wrapper-proc], which
+       will be applied to the results of @racket[proc]; followed by}
+
+ @item{any number of repetitions of @racket['mark _key _val] (i.e.,
+       three values), where the call @racket[_proc] is wrapped to
+       install a @tech{continuation mark} @racket[_key] and @racket[_val].}
+
+]
+
+If @racket[_result-wrapper-proc] is produced, it must be a procedure
 that accepts as many results as produced by @racket[proc]; it must
-return the same number of results.  If @racket[wrapper-proc] returns
-the same number of values as it is given (i.e., it does not return a
-procedure to impersonator @racket[proc]'s result), then @racket[proc] is
-called in @tech{tail position} with respect to the call to the impersonator.
+return the same number of results. If @racket[_result-wrapper-proc] is
+not supplied, then @racket[proc] is called in @tech{tail position}
+with respect to the call to the impersonator.
 
 For applications that include keyword arguments, @racket[wrapper-proc]
-must return an additional value before any other values but after the
-result-impersonating procedure (if any). The additional value must be a
+must return an additional value before any other values but after
+@racket[_result-wrapper-proc] and @racket['mark _key _val]
+sequences (if any). The additional value must be a
 list of replacements for the keyword arguments that were supplied to the
 impersonator (i.e., not counting optional arguments that were
 not supplied). The arguments must be ordered according to the sorted
@@ -229,7 +242,11 @@ for @racket[(car prop-val)] in the call's continuation---then the value is
 also installed as an immediate value for @racket[(car prop-val)] as a
 mark during the call to @racket[wrapper-proc] (which allows tail-calls
 of impersonators with respect to wrapping impersonators to be detected within
-@racket[wrapper-proc]).}
+@racket[wrapper-proc]).
+
+@history[#:changed "6.3.0.5" @elem{Added support for @racket['mark
+                                   _key _val] results from
+                                   @racket[wrapper-proc].}]}
 
 @defproc[(impersonate-procedure* [proc procedure?]
                                  [wrapper-proc (or/c procedure? #f)]

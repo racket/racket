@@ -391,7 +391,6 @@ static Scheme_Object *parameter_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *parameter_procedure_eq(int argc, Scheme_Object *args[]);
 static Scheme_Object *make_parameter(int argc, Scheme_Object *args[]);
 static Scheme_Object *make_derived_parameter(int argc, Scheme_Object *args[]);
-static Scheme_Object *extend_parameterization(int argc, Scheme_Object *args[]);
 static Scheme_Object *parameterization_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *reparameterize(int argc, Scheme_Object **argv);
 
@@ -708,7 +707,7 @@ void scheme_init_paramz(Scheme_Env *env)
   scheme_add_global_constant("parameterization-key" , scheme_parameterization_key, newenv);
   scheme_add_global_constant("break-enabled-key"    , scheme_break_enabled_key   , newenv);
 
-  GLOBAL_PRIM_W_ARITY("extend-parameterization" , extend_parameterization , 1, -1, newenv);
+  GLOBAL_PRIM_W_ARITY("extend-parameterization" , scheme_extend_parameterization , 1, -1, newenv);
   GLOBAL_PRIM_W_ARITY("check-for-break"         , check_break_now         , 0,  0, newenv);
   GLOBAL_PRIM_W_ARITY("reparameterize"          , reparameterize          , 1,  1, newenv);
   GLOBAL_PRIM_W_ARITY("make-custodian-from-main", make_custodian_from_main, 0,  0, newenv);
@@ -7633,7 +7632,7 @@ static Scheme_Object *parameterization_p(int argc, Scheme_Object **argv)
                               && ((((Scheme_Primitive_Proc *)v)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK) \
                                   == SCHEME_PRIM_TYPE_PARAMETER))
 
-static Scheme_Object *extend_parameterization(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_extend_parameterization(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *key, *a[2], *param;
   Scheme_Config *c;
@@ -7719,13 +7718,16 @@ static Scheme_Object *reparameterize(int argc, Scheme_Object **argv)
   return (Scheme_Object *)naya;
 }
 
-static Scheme_Object *parameter_p(int argc, Scheme_Object **argv)
+int scheme_is_parameter(Scheme_Object *v)
 {
-  Scheme_Object *v = argv[0];
-
   if (SCHEME_CHAPERONEP(v)) v = SCHEME_CHAPERONE_VAL(v);
 
-  return (SCHEME_PARAMETERP(v)
+  return SCHEME_PARAMETERP(v);
+}
+
+static Scheme_Object *parameter_p(int argc, Scheme_Object **argv)
+{
+  return (scheme_is_parameter(argv[0])
 	  ? scheme_true
 	  : scheme_false);
 }

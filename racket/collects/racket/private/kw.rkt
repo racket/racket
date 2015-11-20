@@ -1611,16 +1611,15 @@
                                        (lambda results
                                          (let* ([len (length results)]
                                                 [alen (length rest)])
-                                           (unless (<= (+ alen 1) len (+ alen 2))
+                                           (when (< len (+ alen 1))
                                              (raise-arguments-error
                                               '|keyword procedure chaperone|
                                               "wrong number of results from wrapper procedure"
                                               "expected minimum number of results" (+ alen 1)
-                                              "expected maximum number of results" (+ alen 2)
                                               "received number of results" len
                                               "wrapper procedure" wrap-proc))
-                                           (let ([extra? (= len (+ alen 2))])
-                                             (let ([new-args ((if extra? cadr car) results)])
+                                           (let ([num-extra (- len (+ alen 1))])
+                                             (let ([new-args (list-ref results num-extra)])
                                                (unless (and (list? new-args)
                                                             (= (length new-args) (length args)))
                                                  (raise-arguments-error
@@ -1629,7 +1628,7 @@
                                                    "expected a list of keyword-argument values as first result~a from wrapper procedure"
                                                    (if (= len alen)
                                                        ""
-                                                       " (after the result-wrapper procedure)"))
+                                                       " (after the result-wrapper procedure or mark specifications)"))
                                                   "first result" new-args
                                                   "wrapper procedure" wrap-proc))
                                                (for-each
@@ -1646,9 +1645,13 @@
                                                 kws
                                                 new-args
                                                 args))
-                                             (if extra?
-                                                 (apply values (car results) kws (cdr results))
-                                                 (apply values kws results))))))]
+                                             (case num-extra
+                                               [(0) (apply values kws results)]
+                                               [(1) (apply values (car results) kws (cdr results))]
+                                               [else (apply values (let loop ([results results] [c num-extra])
+                                                                     (if (zero? c)
+                                                                         (cons kws results)
+                                                                         (cons (car results) (loop (cdr results) (sub1 c))))))])))))]
                                     ;; The following case exists only to make sure that the arity of
                                     ;; any procedure passed to `make-keyword-args' is covered
                                     ;; by this procedure's arity.

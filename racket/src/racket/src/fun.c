@@ -104,6 +104,7 @@ ROSYM static Scheme_Object *is_method_symbol;
 ROSYM static Scheme_Object *cont_key; /* uninterned */
 ROSYM static Scheme_Object *barrier_prompt_key; /* uninterned */
 ROSYM static Scheme_Object *prompt_cc_guard_key; /* uninterned */
+ROSYM static Scheme_Object *mark_symbol;
 READ_ONLY static Scheme_Prompt *original_default_prompt; /* for escapes, represents the implicit initial prompt */
 READ_ONLY static Scheme_Object *call_with_prompt_proc;
 READ_ONLY static Scheme_Object *abort_continuation_proc;
@@ -675,6 +676,9 @@ scheme_init_fun (Scheme_Env *env)
   cont_key = scheme_make_symbol("k"); /* uninterned */
   barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
   prompt_cc_guard_key = scheme_make_symbol("cc"); /* uninterned */
+
+  REGISTER_SO(mark_symbol);
+  mark_symbol = scheme_intern_symbol("mark");
 
   REGISTER_SO(scheme_default_prompt_tag);
   {
@@ -3591,6 +3595,104 @@ Scheme_Object *_scheme_apply_native(Scheme_Object *obj, int num_rands, Scheme_Ob
   return _apply_native(obj, num_rands, rands);
 }
 
+Scheme_Object *extract_impersonator_results(int c, int argc, Scheme_Object **argv2,
+                                            const char *what, Scheme_Object *o,
+                                            Scheme_Chaperone *px,
+                                            Scheme_Cont_Frame_Data *cframe, int *_need_pop)
+{
+  int extra = c - argc;
+  int i, fail_reason = 0;
+  Scheme_Object *post;
+  char nth[32];
+  Scheme_Config *config = NULL;
+ 
+  if (!extra)
+    return NULL;
+  
+  post = NULL;
+  for (i = 0; i < extra; ) {
+    if (!i && SCHEME_PROCP(argv2[0])) {
+      post = argv2[i];
+      i++;
+    } else if (SAME_OBJ(argv2[i], mark_symbol)) {
+      if (i + 3 > extra) {
+        fail_reason = 2;
+        break;
+      }
+      if (post && !*_need_pop) {
+        scheme_push_continuation_frame(cframe);
+        *_need_pop = 1;
+      }
+      scheme_set_cont_mark(argv2[i+1], argv2[i+2]);
+      i += 3;
+    } else {
+      fail_reason = 1;
+      break;
+    }
+  }
+
+  if (!fail_reason) {
+    if (config) {
+      if (post && !*_need_pop) {
+        scheme_push_continuation_frame(cframe);
+        *_need_pop = 1;
+      }
+      scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+    }
+    return post;
+  }
+
+  /* Failure at argument i */
+
+  switch (i % 10) {
+  case 1:
+    sprintf(nth, "%dst", i);
+    break;
+  case 2:
+    sprintf(nth, "%dnd", i);
+    break;
+  case 3:
+    sprintf(nth, "%drd", i);
+    break;
+  default:
+    sprintf(nth, "%dth", i);
+  }
+
+  if (fail_reason == 1) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "procedure %s: wrapper's %s result is not valid;\n"
+                     " %s extra result (before original argument count) should be\n"
+                     " 'mark%s'parameter%s\n"
+                     "  original: %V\n"
+                     "  wrapper: %V\n"
+                     "  received: %V",
+                     what,
+                     nth,
+                     nth,
+                     (i ? " or " : ", "),
+                     (i ? "" : ", or a wrapper for the original procedure's result"),
+                     o,
+                     SCHEME_VEC_ELS(px->redirects)[0],
+                     argv2[i]);
+  } else if (fail_reason == 2) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "procedure %s: wrapper's %s result needs addition extra results;\n"
+                     " %s extra result (before original argument count) needs an\n"
+                     " additional %s after %V\n"
+                     "  original: %V\n"
+                     "  wrapper: %V",
+                     what,
+                     nth,
+                     nth,
+                     ((i + 1 < extra) ? "result" : "two results"),
+                     argv2[i],
+                     o,
+                     SCHEME_VEC_ELS(px->redirects)[0]);
+  }
+
+  return NULL;
+}
+
 /* must be at least 3: */
 #define MAX_QUICK_CHAP_ARGV 5
 
@@ -3736,13 +3838,16 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     MZ_CONT_MARK_POS += 2;
     scheme_pop_continuation_frame(&cframe);
   }
-  
-  if ((c == argc) || (c == (argc + 1))) {
-    if (c > argc) {
-      post = argv2[0];
-      memmove(argv2, argv2 + 1, sizeof(Scheme_Object*)*argc);
-    } else
-      post = NULL;
+
+  if (c >= argc) {
+    int need_pop = 0;
+    post = extract_impersonator_results(c, argc, argv2,
+                                        what, o, px,
+                                        &cframe, &need_pop);
+    need_pop_mark = need_pop;
+    
+    if (c > argc)
+      memmove(argv2, argv2 + (c - argc), sizeof(Scheme_Object*)*argc);
     if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
       for (i = 0; i < argc; i++) {
         if (!SAME_OBJ(argv2[i], argv[i])
@@ -3764,12 +3869,12 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                      " procedure's arguments\n"
                      "  original: %V\n"
                      "  wrapper: %V\n"
-                     "  expected: %d or %d\n"
+                     "  expected: %d or more\n"
                      "  received: %d",
                      what,
                      o,
                      SCHEME_VEC_ELS(px->redirects)[0],
-                     argc, argc + 1,
+                     argc,
                      c);
     return NULL;
   }
@@ -3784,7 +3889,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   } else
     argv = NULL;
 
-  if (c == argc) {
+  if (!post) {
     /* No filter for the result, so tail call: */
     if (app_mark)
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
@@ -3794,7 +3899,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     }
     if (auto_val) {
       if (SCHEME_CHAPERONEP(px->prev))
-        return do_apply_chaperone(px->prev, c, argv2, auto_val, 0);
+        return do_apply_chaperone(px->prev, argc, argv2, auto_val, 0);
       else
         return argv2[0];
     } else {
@@ -3807,39 +3912,28 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         /* cannot return a tail call */
         MZ_CONT_MARK_POS -= 2;
         if (checks & 0x1) {
-          v = _scheme_apply(orig_obj, c, argv2);
+          v = _scheme_apply(orig_obj, argc, argv2);
         } else if (SAME_TYPE(SCHEME_TYPE(orig_obj), scheme_native_closure_type)) {
-          v = _apply_native(orig_obj, c, argv2);
+          v = _apply_native(orig_obj, argc, argv2);
         } else {
-          v = _scheme_apply_multi(orig_obj, c, argv2);
+          v = _scheme_apply_multi(orig_obj, argc, argv2);
         }
         MZ_CONT_MARK_POS += 2;
         return v;
       } else
-        return scheme_tail_apply(orig_obj, c, argv2);
+        return scheme_tail_apply(orig_obj, argc, argv2);
     }
   } else {
-    /* First element is a filter for the result(s) */
-    if (!SCHEME_PROCP(post))
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure %s: wrapper's first result is not a procedure;\n"
-                       " extra result compared to original argument count should be\n"
-                       " a wrapper for the original procedure's result\n"
-                       "  original: %V\n"
-                       "  wrapper: %V\n"
-                       "  received: %V",
-                       what,
-                       o,
-                       SCHEME_VEC_ELS(px->redirects)[0],
-                       post);
-
     if (app_mark) {
-      scheme_push_continuation_frame(&cframe);
+      if (!need_pop_mark)
+        scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
-      MZ_CONT_MARK_POS -= 2;
       need_pop_mark = 1;
     }else
       need_pop_mark = 0;
+
+    if (need_pop_mark)
+      MZ_CONT_MARK_POS -= 2;
 
     if (SCHEME_CHAPERONEP(px->prev)) {
       /* commuincate `self_proc` to the next layer: */
