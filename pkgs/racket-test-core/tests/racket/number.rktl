@@ -2727,6 +2727,8 @@
 (test (- (sub1 (expt 2 256))) string->number "-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" 16)
 (test #f string->number "144r" 10)
 (err/rt-test (string->number "10" 30))
+(test 0.0 string->number "0e401")
+(test 0.0 string->number "00000.00000e9999999999")
 
 (define (q-test quotient)
   (test 0 quotient 0 12345678909876532341)
