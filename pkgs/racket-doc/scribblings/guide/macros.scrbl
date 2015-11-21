@@ -15,6 +15,8 @@ make simple transformations easy to implement and reliable to
 use. Racket also supports arbitrary macro transformers that are
 implemented in Racket---or in a macro-extended variant of Racket.
 
+(For a bottom-up introduction of Racket macro, you may refer to: @(hyperlink "http://www.greghendershott.com/fear-of-macros/" "Fear of Macros"))
+
 @local-table-of-contents[]
 
 @;------------------------------------------------------------------------
