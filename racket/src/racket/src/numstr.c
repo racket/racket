@@ -1393,7 +1393,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     } else {
       /* Mantissa is not a fraction. */
       mzchar *digits;
-      int extra_power = 0, dcp = 0, num_ok;
+      int extra_power = 0, dcp = 0, non_zero = 0, num_ok;
 
       digits = (mzchar *)scheme_malloc_atomic((has_expt - delta + 1) * sizeof(mzchar));
 
@@ -1402,7 +1402,11 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 	digits[dcp++] = str[i++];
 
       for (; isAdigit(str[i]) || ((radix > 10) && isbaseNdigit(radix, str[i])); i++) {
+        if ((radix < 10) && ((str[i] - '0') >= radix))
+          break;
 	digits[dcp++] = str[i];
+        if (str[i] != '0')
+          non_zero = 1;
       }
 
       if (str[i] == '#') {
@@ -1412,13 +1416,17 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 	num_ok = 0;
       } else
 	num_ok = 1;
-	
+
       if (str[i] == '.') {
 	i++;
 	if (num_ok)
 	  for (; isAdigit(str[i]) || ((radix > 10) && isbaseNdigit(radix, str[i])); i++) {
+            if ((radix < 10) && ((str[i] - '0') >= radix))
+              break;
 	    digits[dcp++] = str[i];
 	    extra_power++;
+            if (str[i] != '0')
+              non_zero = 1;
 	  }
 
 	for (; str[i] == '#'; i++) {
@@ -1445,22 +1453,35 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
         return scheme_false;
       }
 
-      /* Reduce unnecessary mantissa-reading work for inexact results.
-         This is also necessary to make the range check on `exponent'
-         correct. */
-      if (result_is_float && (dcp > MAX_FLOATREAD_PRECISION_DIGITS(is_long_double))) {
-	extra_power -= (dcp - MAX_FLOATREAD_PRECISION_DIGITS(is_long_double));
-	dcp = MAX_FLOATREAD_PRECISION_DIGITS(is_long_double);
+      /* Zero mantissa => zero inexact result */
+      if (!non_zero && result_is_float) {
+        if (dcp && (digits[0] == '-'))
+          return CHECK_SINGLE(scheme_nzerod, sgl, is_long_double);
+        else
+          return CHECK_SINGLE(scheme_zerod, sgl, is_long_double);
+      }
+
+      /* Reduce unnecessary mantissa-reading work for inexact results. */
+      if (result_is_float) {
+        Scheme_Object *max_useful;
+
+        max_useful = scheme_bin_plus(scheme_make_integer(MAX_FLOATREAD_PRECISION_DIGITS(is_long_double)),
+                                     exponent);
+        if (scheme_bin_lt(max_useful, scheme_make_integer(0))) {
+          if (dcp > 2)
+            dcp = 2; /* leave room for a sign and a digit */
+        } else if (SCHEME_INTP(max_useful)) {
+          if (result_is_float && (dcp > SCHEME_INT_VAL(max_useful))) {
+            extra_power -= (dcp - SCHEME_INT_VAL(max_useful));
+            dcp = SCHEME_INT_VAL(max_useful);
+          }
+        }
       }
 
       digits[dcp] = 0;
       mantissa = scheme_read_bignum(digits, 0, radix);
       if (SCHEME_FALSEP(mantissa)) {
-	/* can get here with bad radix */
-	if (report)
-	  scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
-			   "read: bad number: %u", 
-			   str, len);
+        scheme_signal_error("internal error parsing mantissa: %s", digits);
 	return scheme_false;
       }
 
