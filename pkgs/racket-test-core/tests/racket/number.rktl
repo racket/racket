@@ -3,6 +3,8 @@
 
 (Section 'numbers)
 
+(require racket/extflonum)
+
 (test #f number? 'a)
 (test #f complex? 'a)
 (test #f real? 'a)
@@ -2404,6 +2406,9 @@
 (err/rt-test (string->number "1" "1"))
 (err/rt-test (string->number 1 1))
 
+(define (string->extfl-number s)
+  (read (open-input-string s)))
+  
 ;; Test inexacts with large exponents
 (test 0.0 string->number "0e401")
 (test 0.0 string->number "0e6001")
@@ -2415,8 +2420,10 @@
 (test -inf.0 string->number "-0.1e6001")
 (test 0.0 string->number (string-append "0." (make-string 400 #\0) "0e400"))
 (test 0.0 string->number (string-append "0." (make-string 8000 #\0) "0e8000"))
+(test #t extflonum? (string->extfl-number (string-append "0." (make-string 400 #\0) "0t9000")))
 (test -0.0 string->number (string-append "-0." (make-string 400 #\0) "0e400"))
 (test -0.0 string->number (string-append "-0." (make-string 8000 #\0) "0e8000"))
+(test #t extflonum? (string->extfl-number (string-append "-0." (make-string 400 #\0) "0t9000")))
 (test 0.1 string->number (string-append "0." (make-string 400 #\0) "1e400"))
 (test 0.1 string->number (string-append "0." (make-string 8000 #\0) "1e8000"))
 (test 1.0e-101 string->number (string-append "0." (make-string 8000 #\0) "1e7900"))
@@ -2424,6 +2431,8 @@
 (test -inf.0 string->number (string-append "-0." (make-string 400 #\0) "1e1000"))
 (test +inf.0 string->number (string-append "0." (make-string 8000 #\0) "1e8400"))
 (test -inf.0 string->number (string-append "-0." (make-string 8000 #\0) "1e8400"))
+(test #t extflonum? (string->extfl-number (string-append "0." (make-string 8000 #\0) "1t8400")))
+(test #t extflonum? (string->extfl-number (string-append "-0." (make-string 8000 #\0) "1t8400")))
 (test #f string->number (string-append "-0." (make-string 8000 #\0) "9e10000") 8)
 (test #f string->number (string-append "0." (make-string 8000 #\0) "e1008") 8)
 
@@ -3189,8 +3198,6 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; exact->inexact precision (thanks to Neil Toronto)
-
-(require racket/extflonum)
 
 (define (check start end exact-> ->exact >=?)
   (define delta (/ (- end start) 300))

@@ -495,13 +495,27 @@ START_XFORM_ARITH;
 # define STRTOD(x, y, extfl) strtod(x, y)
 #endif
 
-static Scheme_Object *CHECK_SINGLE(Scheme_Object *v, int s, int long_dbl)
+#ifdef MZ_LONG_DOUBLE
+# define CHECK_SINGLE(v, s, il, l, str, len, radix) do_CHECK_SINGLE(v, s, il, l, NULL, 0, 0)
+#else
+# define CHECK_SINGLE(v, s, il, l, str, len, radix) do_CHECK_SINGLE(v, s, il, NULL, str, len, radix)
+#endif
+
+static Scheme_Object *do_CHECK_SINGLE(Scheme_Object *v, int s, int long_dbl,
+                                      Scheme_Object *lv, const mzchar *str, intptr_t len, int radix)
 {
   if (SCHEME_DBLP(v)) {
 #ifdef MZ_USE_SINGLE_FLOATS
     if (s)
       return scheme_make_float((float)SCHEME_DBL_VAL(v));
 #endif
+    if (long_dbl) {
+#ifdef MZ_LONG_DOUBLE
+      return lv;
+#else
+      return wrap_as_long_double(scheme_utf8_encode_to_buffer(str, len, NULL, 0), radix);
+#endif
+    }
   }
 
   return v;
@@ -1456,9 +1470,9 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       /* Zero mantissa => zero inexact result */
       if (!non_zero && result_is_float) {
         if (dcp && (digits[0] == '-'))
-          return CHECK_SINGLE(scheme_nzerod, sgl, is_long_double);
+          return CHECK_SINGLE(scheme_nzerod, sgl, is_long_double, scheme_nzerol, str, len, radix);
         else
-          return CHECK_SINGLE(scheme_zerod, sgl, is_long_double);
+          return CHECK_SINGLE(scheme_zerod, sgl, is_long_double, scheme_zerol, str, len, radix);
       }
 
       /* Reduce unnecessary mantissa-reading work for inexact results. */
@@ -1492,14 +1506,14 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       if (result_is_float) {
 	if (scheme_bin_gt(exponent, scheme_make_integer(CHECK_INF_EXP_THRESHOLD(is_long_double)))) {
 	  if (scheme_is_negative(mantissa))
-	    return CHECK_SINGLE(scheme_minus_inf_object, sgl, is_long_double);
+	    return CHECK_SINGLE(scheme_minus_inf_object, sgl, is_long_double, scheme_long_minus_inf_object, str, len, radix);
 	  else
-	    return CHECK_SINGLE(scheme_inf_object, sgl, is_long_double);
+	    return CHECK_SINGLE(scheme_inf_object, sgl, is_long_double, scheme_long_inf_object, str, len, radix);
 	} else if (scheme_bin_lt(exponent, scheme_make_integer(-CHECK_INF_EXP_THRESHOLD(is_long_double)))) {
 	  if (scheme_is_negative(mantissa))
-	    return CHECK_SINGLE(scheme_nzerod, sgl, is_long_double);
+	    return CHECK_SINGLE(scheme_nzerod, sgl, is_long_double, scheme_nzerol, str, len, radix);
 	  else
-	    return CHECK_SINGLE(scheme_zerod, sgl, is_long_double);
+	    return CHECK_SINGLE(scheme_zerod, sgl, is_long_double, scheme_zerol, str, len, radix);
 	}
       }
     }
@@ -1528,7 +1542,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
         n = wrap_as_long_double(scheme_utf8_encode_to_buffer(str, len, NULL, 0), radix);
 #endif
       } else {
-        n = CHECK_SINGLE(TO_DOUBLE(n), sgl, 0);
+        n = CHECK_SINGLE(TO_DOUBLE(n), sgl, 0, NULL, NULL, 0, 0);
       }
     } else {
       if (is_long_double) {
@@ -1538,7 +1552,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
                           str, len);
         return scheme_false;
       }
-      n = CHECK_SINGLE(n, sgl, 0);
+      n = CHECK_SINGLE(n, sgl, 0, NULL, NULL, 0, 0);
     }
 
     if (SCHEME_FLOATP(n) && str[delta] == '-') {
@@ -1633,7 +1647,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     } else if (is_float)
       n1 = TO_DOUBLE(n1);
 
-    return CHECK_SINGLE(n1, sgl, 0);
+    return CHECK_SINGLE(n1, sgl, 0, NULL, NULL, 0, 0);
   }
 
   o = scheme_read_bignum(str, delta, radix);
@@ -1651,7 +1665,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       return scheme_nzerod;
     }
 
-    return CHECK_SINGLE(TO_DOUBLE(o), sgl, 0);
+    return CHECK_SINGLE(TO_DOUBLE(o), sgl, 0, NULL, NULL, 0, 0);
   }
 
   return o;
