@@ -1481,7 +1481,8 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 
         max_useful = scheme_bin_plus(scheme_make_integer(MAX_FLOATREAD_PRECISION_DIGITS(is_long_double)),
                                      exponent);
-        if (scheme_bin_lt(max_useful, scheme_make_integer(0))) {
+        if (scheme_bin_lt(max_useful, scheme_make_integer(2))) {
+          /* will definitely underflow */
           if (dcp > 2)
             dcp = 2; /* leave room for a sign and a digit */
         } else if (SCHEME_INTP(max_useful)) {
