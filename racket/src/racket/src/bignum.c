@@ -90,6 +90,7 @@ void scheme_bignum_use_fuel(intptr_t n);
 
 #if defined(SIXTY_FOUR_BIT_INTEGERS) || defined(USE_LONG_LONG_FOR_BIGDIG)
 # define BIG_RADIX 18446744073709551616.0 /* = 0x10000000000000000 */
+# define BIG_HALF_RADIX 4294967296.0
 # define WORD_SIZE 64
 #else
 # define BIG_RADIX 4294967296.0 /* = 0x100000000 */
@@ -1464,10 +1465,21 @@ XFORM_NONGCING static int any_nonzero_digits(bigdig *na, intptr_t nl, int delta)
   return 0;
 }
 
+#if defined(SIXTY_FOUR_BIT_INTEGERS) && defined(AVOID_INT_TO_FLOAT_TRUNCATION)
+XFORM_NONGCING static double double_from_bigdig(bigdig b)
+{
+  double d1, d2;
+
+  d1 = (double)(b >> (WORD_SIZE >> 1));
+  d2 = (double)(b & (((bigdig)1 << (WORD_SIZE >> 1))-1));
+  return (d1 * BIG_HALF_RADIX) + d2;
+}
+#endif
+
 #define USE_FLOAT_BITS 53
 #define FP_TYPE double
 
-#define FP_TYPE_FROM_DOUBLE(x) (FP_TYPE)x
+#define FP_TYPE_FROM_DOUBLE(x) ((FP_TYPE)(x))
 #define FP_TYPE_NEG(x) (-(x))
 #define FP_TYPE_LESS(x, y) ((x)<(y))
 #define FP_TYPE_MULT(x, y) ((x)*(y))
@@ -1475,9 +1487,13 @@ XFORM_NONGCING static int any_nonzero_digits(bigdig *na, intptr_t nl, int delta)
 #define FP_TYPE_DIV(x, y) ((x)/(y))
 #define FP_TYPE_POW(x, y) pow(x, y)
 #define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#if defined(SIXTY_FOUR_BIT_INTEGERS) && defined(AVOID_INT_TO_FLOAT_TRUNCATION)
+# define FP_TYPE_FROM_UINTPTR(x) double_from_bigdig(x)
+#else
+# define FP_TYPE_FROM_UINTPTR(x) ((FP_TYPE)(x))
+#endif
 #define FP_TYPE_GREATER_OR_EQV(x, y) ((x)>=(y))
 #define FP_TYPE_MINUS(x, y) ((x)-(y))
-#define FP_TYPE_FROM_UINTPTR
 
 #define IS_FLOAT_INF scheme__is_double_inf
 #define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_double_inf_info
@@ -1490,17 +1506,26 @@ XFORM_NONGCING static int any_nonzero_digits(bigdig *na, intptr_t nl, int delta)
 # define USE_FLOAT_BITS 24
 # define FP_TYPE float
 
-# define FP_TYPE_FROM_DOUBLE(x) (FP_TYPE)x
+#define FP_TYPE_FROM_DOUBLE(x) ((FP_TYPE)(x))
 #define FP_TYPE_NEG(x) (-(x))
 #define FP_TYPE_LESS(x, y) ((x)<(y))
 #define FP_TYPE_MULT(x, y) ((x)*(y))
 #define FP_TYPE_PLUS(x, y) ((x)+(y))
 #define FP_TYPE_DIV(x, y) ((x)/(y))
 #define FP_TYPE_POW(x, y) pow(x, y)
-#define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#if defined(AVOID_INT_TO_FLOAT_TRUNCATION)
+# if defined(SIXTY_FOUR_BIT_INTEGERS)
+#  define FP_TYPE_FROM_UINTPTR(x) ((FP_TYPE)double_from_bigdig(x))
+# else
+#  define FP_TYPE_FROM_UINTPTR(x) (FP_TYPE)((double)(x))
+# endif
+# define FP_TYPE_FROM_INT(x) (FP_TYPE)((double)(x))
+#else
+# define FP_TYPE_FROM_UINTPTR(x) ((FP_TYPE)(x))
+# define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#endif
 #define FP_TYPE_GREATER_OR_EQV(x, y) ((x)>=(y))
 #define FP_TYPE_MINUS(x, y) ((x)-(y))
-# define FP_TYPE_FROM_UINTPTR 
 
 # define IS_FLOAT_INF scheme__is_float_inf
 # define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_float_inf_info

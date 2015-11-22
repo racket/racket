@@ -679,6 +679,7 @@
          /* With VC 7, ATAN2_DOESNT... wasn't needed, and
             POW_HANDLES_INF_CORRECTLY worked, too. */
 # define SIN_COS_NEED_DEOPTIMIZE
+# define AVOID_INT_TO_FLOAT_TRUNCATION
 #endif
 #ifdef __BORLANDC__
 # define NAN_EQUALS_ANYTHING
@@ -1280,6 +1281,11 @@
 
  /* FLOATING_POINT_IS_NOT_IEEE disables inexact->exact conversion via
     parsing of IEEE-format bits. */
+
+ /* AVOID_INT_TO_FLOAT_TRUNCATION indicates that conversion from an
+    integer to a floating point type does not round-to-nearest when
+    precision is lost, even when the FP rounding mode is
+    round-to-nearest */
 
  /* USE_SINGLE_FLOATS turns on support for single-precision
     floating point numbers. Otherwise, floating point numbers
