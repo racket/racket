@@ -1422,6 +1422,48 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
     *_stk_o = bignum_copy(*_stk_o, carry);
 }
 
+XFORM_NONGCING static int mz_clz(uintptr_t n)
+{
+#ifdef MZ_HAS_BUILTIN_CLZ
+# if defined(SIXTY_FOUR_BIT_INTEGERS) || defined(USE_LONG_LONG_FOR_BIGDIG)
+  uintptr_t hi = (n >> (WORD_SIZE >> 1));
+  if (hi)
+    return __builtin_clz(hi);
+  else {
+    unsigned int low = n;
+    return (WORD_SIZE >> 1) + __builtin_clz(low);
+  }
+# else
+  return __builtin_clz(n);
+# endif
+#else
+  int c = 0, d = (WORD_SIZE >> 1);
+  while (d) {
+    if (n >> (c + d))
+      c += d;
+    d = d >> 1;
+  }
+  return WORD_SIZE - 1 - c;
+#endif
+}
+
+XFORM_NONGCING static int any_nonzero_digits(bigdig *na, intptr_t nl, int delta)
+/* if `delta`, then check only after that many bits in the most-significant
+   digit */
+{
+  if (delta) {
+    if (na[nl-1] & (((bigdig)1 << (WORD_SIZE - delta)) - 1))
+      return 1;
+    nl--;
+  }
+  
+  while (nl--) {
+    if (na[nl])
+      return 1;
+  }
+  return 0;
+}
+
 #define USE_FLOAT_BITS 53
 #define FP_TYPE double
 
@@ -1431,6 +1473,7 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 #define FP_TYPE_MULT(x, y) ((x)*(y))
 #define FP_TYPE_PLUS(x, y) ((x)+(y))
 #define FP_TYPE_DIV(x, y) ((x)/(y))
+#define FP_TYPE_POW(x, y) pow(x, y)
 #define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
 #define FP_TYPE_GREATER_OR_EQV(x, y) ((x)>=(y))
 #define FP_TYPE_MINUS(x, y) ((x)-(y))
@@ -1453,6 +1496,7 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 #define FP_TYPE_MULT(x, y) ((x)*(y))
 #define FP_TYPE_PLUS(x, y) ((x)+(y))
 #define FP_TYPE_DIV(x, y) ((x)/(y))
+#define FP_TYPE_POW(x, y) pow(x, y)
 #define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
 #define FP_TYPE_GREATER_OR_EQV(x, y) ((x)>=(y))
 #define FP_TYPE_MINUS(x, y) ((x)-(y))
@@ -1475,6 +1519,7 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 # define FP_TYPE_MULT(x, y) long_double_mult(x, y)
 # define FP_TYPE_DIV(x, y) long_double_div(x, y)
 # define FP_TYPE_PLUS(x, y) long_double_plus(x, y)
+# define FP_TYPE_POW(x, y) long_double_pow(x, y)
 # define FP_TYPE_FROM_INT(x) long_double_from_int(x)
 # define FP_TYPE_GREATER_OR_EQV(x, y) long_double_greater_or_eqv(x, y)
 # define FP_TYPE_MINUS(x, y) long_double_minus(x, y)

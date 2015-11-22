@@ -3197,6 +3197,96 @@
   (test #t list? (filter n-digit-has-nth-root? (build-list 5000 (lambda (x) (+ x 1))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; exact->inexact precision on bignums (round-trip and proper rounding)
+
+(define max-53-bit-number (sub1 (arithmetic-shift 1 53)))
+
+(define (check-conversion 53-bit-number)
+  ;; Any 53-bit integer fits in a 64-bit floating point:
+  (unless (= 53-bit-number (inexact->exact (exact->inexact 53-bit-number)))
+    (error 'random-exact->inexact "round-trip failed ~s" 53-bit-number))
+  
+  ;; The same holds if we shift by up to (- 1023 52):
+  (define (check-shift p)
+    (define n2 (arithmetic-shift 53-bit-number p))
+    (unless (= n2 (inexact->exact (exact->inexact n2)))
+      (error 'random-exact->inexact "round-trip of shifted failed ~s" n2)))
+  (check-shift (- 1023 52))
+  (for ([i 10])
+    (check-shift (random (- 1023 52))))
+  
+  ;; The same holds if we shift by up to (- -1022 52):
+  (define (check-div p)
+    (define n2 (/ 53-bit-number (arithmetic-shift 1 (- p))))
+    (unless (= n2 (inexact->exact (exact->inexact n2)))
+      (error 'random-exact->inexact "round-trip of shifted failed ~s" n2)))
+  (check-div (- (+ 1022 52)))
+  (for ([i 10])
+    (check-div (- (random (+ 1022 52)))))
+  
+  ;; Helper for checking rounding:
+  (define (check-random-pairs check-shift-pair)
+    (check-shift-pair 1 0)
+    (check-shift-pair (- 1023 52 1) 0)
+    (check-shift-pair 1 (- 1023 52 2))
+    (for ([i 10])
+      (define zeros (add1 (random (- 1023 52 3))))
+      (define extra (random (- 1023 52 1 zeros)))
+      (check-shift-pair zeros extra)))
+  
+  ;; If we add a zero bit and then a non-zero bit anywhere later,
+  ;; conversion to inexact should round down.
+  (define (check-shift-plus-bits-to-truncate num-zeros extra-p)
+    (define n2 (arithmetic-shift
+                (bitwise-ior (arithmetic-shift 53-bit-number (add1 num-zeros))
+                             1)
+                extra-p))
+    (define n3 (inexact->exact (exact->inexact n2)))
+    (unless (= n3 (arithmetic-shift 53-bit-number (+ num-zeros 1 extra-p)))
+      (error 'random-exact->inexact "truncating round failed ~s" n2)))
+  (check-random-pairs check-shift-plus-bits-to-truncate)
+  
+  ;; If we add a one bit and then a non-zero bit anywhere later,
+  ;; conversion to inexact should round up.
+  (unless (= 53-bit-number max-53-bit-number)
+    (define (check-shift-plus-bits-to-up num-one-then-zeros extra-p)
+      (define n2 (arithmetic-shift
+                  (bitwise-ior (arithmetic-shift 
+                                (bitwise-ior (arithmetic-shift 53-bit-number 1)
+                                             1)
+                                num-one-then-zeros)
+                               1)
+                  extra-p))
+      (define n3 (inexact->exact (exact->inexact n2)))
+      (unless (= n3 (arithmetic-shift (add1 53-bit-number) (+ num-one-then-zeros 1 extra-p)))
+        (error 'random-exact->inexact "round up failed ~s" n2)))
+    (check-random-pairs check-shift-plus-bits-to-up))
+
+  ;; If we add a one bit and then only zero bits,
+  ;; conversion to inexact should round to even.
+  (unless (= 53-bit-number max-53-bit-number)
+    (define (check-shift-plus-bits-to-even num-one-then-zeros extra-p)
+      (define n2 (arithmetic-shift 
+                  (bitwise-ior (arithmetic-shift 53-bit-number 1)
+                               1)
+                  (+ num-one-then-zeros extra-p)))
+      (define n3 (inexact->exact (exact->inexact n2)))
+      (unless (= n3 (arithmetic-shift (if (even? 53-bit-number)
+                                          53-bit-number
+                                          (add1 53-bit-number))
+                                      (+ num-one-then-zeros 1 extra-p)))
+        (error 'random-exact->inexact "round to even failed ~s" n2)))
+    (check-random-pairs check-shift-plus-bits-to-even)))
+  
+(check-conversion max-53-bit-number)
+(for ([i 100])
+  (check-conversion
+   ;; Random 53-bit number:
+   (+ (arithmetic-shift 1 52)
+      (arithmetic-shift (random (expt 2 24)) 24)
+      (random (expt 2 28)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; exact->inexact precision (thanks to Neil Toronto)
 
 (define (check start end exact-> ->exact >=?)

@@ -1276,6 +1276,18 @@ if test "${has_builtin_popcount}" = "yes" ; then
    AC_DEFINE(MZ_HAS_BUILTIN_POPCOUNT,1,[Has __builtin_popcount])
 fi
 
+[ msg="for __builtin_clz" ]
+AC_MSG_CHECKING($msg)
+AC_LINK_IFELSE([AC_LANG_SOURCE([
+    int main(int argc, char **argv) {
+      unsigned int i = argc;
+      return __builtin_clz(i);
+    }])], has_builtin_clz=yes, has_builtin_clz=no)
+AC_MSG_RESULT($has_builtin_clz)
+if test "${has_builtin_clz}" = "yes" ; then
+   AC_DEFINE(MZ_HAS_BUILTIN_CLZ,1,[Has __builtin_clz])
+fi
+
 if test "${enable_backtrace}" = "yes" ; then
   GC2OPTIONS="$GC2OPTIONS -DMZ_GC_BACKTRACE"
 fi

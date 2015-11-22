@@ -903,7 +903,7 @@
 	       _isnan __isfinited __isnanl __isnan
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf
                __inline_isnanl __inline_isnan
-               __builtin_popcount
+               __builtin_popcount __builtin_clz
                _Generic
                __inline_isinff __inline_isinfl __inline_isinfd __inline_isnanf __inline_isnand __inline_isinf
                floor floorl ceil ceill round roundl fmod fmodl modf modfl fabs fabsl __maskrune _errno __errno

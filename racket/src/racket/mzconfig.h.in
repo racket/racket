@@ -74,6 +74,9 @@ typedef unsigned long uintptr_t;
 /* When __builtin_popcount() is available: */
 #undef MZ_HAS_BUILTIN_POPCOUNT
 
+/* When __builtin_clz() is available: */
+#undef MZ_HAS_BUILTIN_CLZ
+
 /* Enable futures: */
 #undef MZ_USE_FUTURES
 
