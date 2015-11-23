@@ -3287,6 +3287,16 @@
       (random (expt 2 28)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check roun-to-even of rationale conversion (thanks to Robby)
+
+(let ()
+  (define l (floating-point-bytes->real #"\x1a\xd8\x9c\x17\x21\x2e\xfd\x25" #t))
+  (define r (floating-point-bytes->real #"\x1a\xd8\x9c\x17\x21\x2e\xfd\x26" #t))
+  (test r exact->inexact (/ (+ (inexact->exact l)
+                               (inexact->exact r))
+                            2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; exact->inexact precision (thanks to Neil Toronto)
 
 (define (check start end exact-> ->exact >=?)
