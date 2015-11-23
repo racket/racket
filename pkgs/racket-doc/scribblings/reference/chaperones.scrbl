@@ -246,7 +246,47 @@ of impersonators with respect to wrapping impersonators to be detected within
 
 @history[#:changed "6.3.0.5" @elem{Added support for @racket['mark
                                    _key _val] results from
-                                   @racket[wrapper-proc].}]}
+                                   @racket[wrapper-proc].}]
+
+ @examples[
+
+ (define (add15 x) (+ x 15))
+ (define add15+print
+   (impersonate-procedure add15
+                          (λ (x)
+                            (printf "called with ~s\n" x)
+                            (values (λ (res)
+                                      (printf "returned ~s\n" res)
+                                      res)
+                                    x))))
+ (add15 27)
+ (add15+print 27)
+           
+ (define-values (imp-prop:p1 imp-prop:p1? imp-prop:p1-get)
+   (make-impersonator-property 'imp-prop:p1))
+ (define-values (imp-prop:p2 imp-prop:p2? imp-prop:p2-get)
+   (make-impersonator-property 'imp-prop:p2))
+  
+ (define add15.2 (impersonate-procedure add15 #f imp-prop:p1 11))
+ (add15.2 2)
+ (imp-prop:p1? add15.2)
+ (imp-prop:p1-get add15.2)
+ (imp-prop:p2? add15.2)
+ 
+ (define add15.3 (impersonate-procedure add15.2 #f imp-prop:p2 13))
+ (add15.3 3)
+ (imp-prop:p1? add15.3)
+ (imp-prop:p1-get add15.3)
+ (imp-prop:p2? add15.3)
+ (imp-prop:p2-get add15.3)
+ 
+ (define add15.4 (impersonate-procedure add15.3 #f imp-prop:p1 101))
+ (add15.4 4)
+ (imp-prop:p1? add15.4)
+ (imp-prop:p1-get add15.4)
+ (imp-prop:p2? add15.4)
+ (imp-prop:p2-get add15.4)]
+}
 
 @defproc[(impersonate-procedure* [proc procedure?]
                                  [wrapper-proc (or/c procedure? #f)]
