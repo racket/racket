@@ -534,6 +534,10 @@ either order), then the elements preserve their relative order from
 @racket[sort] with a strict comparison functions (e.g., @racket[<] or
 @racket[string<?]; not @racket[<=] or @racket[string<=?]).
 
+@margin-note{Because of the peculiar fact that the IEEE-754 number system
+specifies that +nan.0 is neither greater nor less than nor equal to any other
+number, sorting lists containing this value may produce a surprising result.}
+
 The @racket[#:key] argument @racket[extract-key] is used to extract a
 key value for comparison from each list element.  That is, the full
 comparison procedure is essentially
