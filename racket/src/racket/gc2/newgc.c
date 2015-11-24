@@ -2984,11 +2984,11 @@ void GC_allow_master_gc_check() {
 static void NewGCMasterInfo_initialize() {
   int i;
   MASTERGCINFO = ofm_malloc_zero(sizeof(NewGCMasterInfo));
-  MASTERGCINFO->size = 32;
+  MASTERGCINFO->size = 4;
   MASTERGCINFO->alive = 0;
   MASTERGCINFO->ready = 0;
   MASTERGCINFO->signal_fds = (void **)ofm_malloc(sizeof(void*) * MASTERGCINFO->size);
-  for (i=0; i < 32; i++ ) {
+  for (i=0; i < MASTERGCINFO->size; i++ ) {
     MASTERGCINFO->signal_fds[i] = (void *)REAPED_SLOT_AVAILABLE;
   }
   mzrt_rwlock_create(&MASTERGCINFO->cangc);
@@ -3157,13 +3157,14 @@ static intptr_t NewGCMasterInfo_find_free_id() {
     void **new_signal_fds;
 
     size = MASTERGCINFO->size * 2;
-    MASTERGCINFO->alive++;
     new_signal_fds = ofm_malloc(sizeof(void*) * size);
     memcpy(new_signal_fds, MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
 
     for (i = MASTERGCINFO->size; i < size; i++ ) {
       new_signal_fds[i] = (void *)REAPED_SLOT_AVAILABLE;
     }
+
+    ofm_free(MASTERGCINFO->signal_fds, sizeof(void*) * MASTERGCINFO->size);
 
     MASTERGCINFO->signal_fds = new_signal_fds;
     MASTERGCINFO->size = size;
