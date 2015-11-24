@@ -281,10 +281,10 @@
                          ;; Assume anything after a space is the argument spec:
                          (let ([m (regexp-match #rx"Exec=([^ ]*)(.*)" l)])
                            (format "Exec=~a~a" 
-                                   (fixup-path bindir (cadr m))
+                                   (fixup-path (dir: 'bin) (cadr m))
                                    (caddr m)))]
                         [(regexp-match? #rx"^Icon=" l)
-                         (format "Icon=~a" (fixup-path sharerktdir (substring l 5)))]
+                         (format "Icon=~a" (fixup-path (dir: 'sharerkt) (substring l 5)))]
                         [else l])))
       (unless (equal? ls new-ls)
         (call-with-output-file (build-path appsdir d)
