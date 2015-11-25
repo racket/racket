@@ -568,6 +568,11 @@
 (test 0.0f0 expt -0.9999f0 (expt 2 5000))
 (test -0.0f0 expt -0.9999f0 (add1 (expt 2 5000)))
 
+(test +inf.0 expt -4.0 (expt 2 5000))
+(test -inf.0 expt -4.0 (add1 (expt 2 5000)))
+(test +inf.f expt -4.0f0 (expt 2 5000))
+(test -inf.f expt -4.0f0 (add1 (expt 2 5000)))
+
 (define (inf-non-real? x)
   (and (not (real? x))
        (= +inf.0 (abs (imag-part x)))
