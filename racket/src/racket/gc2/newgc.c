@@ -5666,15 +5666,6 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   zero_weak_arrays(gc, 0);
   zero_remaining_ephemerons(gc);
 
-#ifndef NEWGC_BTC_ACCOUNT
-  /* we need to clear out the stack pages. If we're doing memory accounting,
-     though, we might as well leave them up for now and let the accounting
-     system clear them later. Better then freeing them, at least. If we're
-     not doing accounting, though, there is no "later" where they'll get
-     removed */
-  clear_stack_pages(gc);  
-#endif
-
   TIME_STEP("zeroed");
 
   check_finalizers(gc, 2);
@@ -5758,6 +5749,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   if (gc->gc_full || !gc->started_incremental)
     check_marks_cleared(gc);
+
+  clear_stack_pages(gc);
 
   TIME_STEP("reset");
 

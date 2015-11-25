@@ -576,8 +576,6 @@ static void BTC_do_accounting(NewGC *gc)
     gc->old_btc_mark = gc->new_btc_mark;
     gc->new_btc_mark = !gc->new_btc_mark;
   }
-
-  clear_stack_pages(gc);
 }
 
 inline static void BTC_add_account_hook(int type,void *c1,void *c2,uintptr_t b)
