@@ -2015,11 +2015,6 @@ inline static mpage *pagemap_find_page_for_marking(NewGC *gc, const void *p, int
   return page;
 }
 
-/* This procedure fundamentally returns true if a pointer is marked, and
-   false if it isn't. This function assumes that you're talking, at this
-   point, purely about the mark field of the object. It ignores things like
-   the object not being one of our GC heap objects, being in a higher gen
-   than we're collecting, not being a pointer at all, etc. */
 inline static int marked(NewGC *gc, const void *p)
 {
   mpage *page;
@@ -2029,8 +2024,6 @@ inline static int marked(NewGC *gc, const void *p)
   if(!p) return 0;
   if(!(page = pagemap_find_page_for_marking(gc, p, gc->check_gen1))) return 1;
   switch(page->size_class) {
-    case SIZE_CLASS_BIG_PAGE_MARKED:
-      return 1;
     case SIZE_CLASS_SMALL_PAGE:
       if (page->generation >= AGE_GEN_1) {
         if((NUM(page->addr) + page->scan_boundary) > NUM(p)) 
@@ -2042,7 +2035,8 @@ inline static int marked(NewGC *gc, const void *p)
       break;
     case SIZE_CLASS_BIG_PAGE:
       return 0;
-      break;
+    case SIZE_CLASS_BIG_PAGE_MARKED:
+      return 1;
     default:
       fprintf(stderr, "ABORTING! INVALID SIZE_CLASS %i\n", page->size_class);
       abort();
@@ -2072,9 +2066,12 @@ int GC_current_mode(struct NewGC *gc)
     return GC_CURRENT_MODE_ACCOUNTING;
   else if (gc->gc_full)
     return GC_CURRENT_MODE_MAJOR;
-  else if (gc->inc_gen1)
-    return GC_CURRENT_MODE_INCREMENTAL;
-  else
+  else if (gc->inc_gen1) {
+    if (gc->fnl_gen1)
+      return GC_CURRENT_MODE_INCREMENTAL_FINAL;
+    else
+      return GC_CURRENT_MODE_INCREMENTAL;
+  } else
     return GC_CURRENT_MODE_MINOR;
 }
 
@@ -2458,9 +2455,11 @@ inline static void repair_finalizer_structs(NewGC *gc)
   }
 }
 
-inline static void check_finalizers(NewGC *gc, int level)
+inline static void check_finalizers(NewGC *gc, int level, int old_gen)
 {
-  Fnl *work = GC_resolve2(gc->gen0_finalizers, gc);
+  Fnl *work = (old_gen
+               ? GC_resolve2(gc->finalizers, gc)
+               : GC_resolve2(gc->gen0_finalizers, gc));
   Fnl *prev = NULL;
 
   GCDEBUG((DEBUGOUTF, "CFNL: Checking level %i finalizers\n", level));
@@ -2475,6 +2474,8 @@ inline static void check_finalizers(NewGC *gc, int level)
       gcMARK2(work->p, gc);
       if (prev)
         prev->next = next;
+      else if (old_gen)
+        gc->finalizers = next;
       else
         gc->gen0_finalizers = next;
       if (next)
@@ -2630,6 +2631,17 @@ static void push_ptr(NewGC *gc, void *ptr, int inc_gen1)
   GC_ASSERT(inc_gen1 || !gc->inc_gen1);
 
   push_ptr_at(ptr, inc_gen1 ? &gc->inc_mark_stack : &gc->mark_stack);
+}
+
+static int mark_stack_is_empty(MarkSegment *mark_stack)
+{
+  if (mark_stack->top == MARK_STACK_START(mark_stack)) {
+    if (mark_stack->prev)
+      return 0;
+    else
+      return 1;
+  } else
+    return 0;
 }
 
 inline static int pop_ptr_at(void **ptr, MarkSegment **_mark_stack)
@@ -3988,17 +4000,17 @@ static void propagate_marks_plus_ephemerons(NewGC *gc)
   } while (mark_ready_ephemerons(gc, 0));
 }
 
-static void propagate_incremental_marks(NewGC *gc, int fuel)
+static void propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
 {
   if (gc->inc_mark_stack) {
-    int save_inc, save_mark, save_check, init_fuel = fuel;
+    int save_inc, save_check, init_fuel = fuel;
 
+    GC_ASSERT(gc->mark_gen1);
+    
     save_inc = gc->inc_gen1;
-    save_mark = gc->mark_gen1;
     save_check = gc->check_gen1;
   
     gc->inc_gen1 = 1;
-    gc->mark_gen1 = 1;
     gc->check_gen1 = 1;
 
     do {
@@ -4008,12 +4020,11 @@ static void propagate_incremental_marks(NewGC *gc, int fuel)
         propagate_marks_worker(gc, p, 1);
         fuel--;
       }
-    } while (mark_ready_ephemerons(gc, 1) && fuel);
+    } while (do_emph && mark_ready_ephemerons(gc, 1) && fuel);
 
     gc->inc_prop_count += (init_fuel - fuel);
 
     gc->inc_gen1 = save_inc;
-    gc->mark_gen1 = save_mark;
     gc->check_gen1 = save_check;
   }
 }
@@ -4114,7 +4125,7 @@ int GC_is_on_allocated_page(void *p)
 
 int GC_is_partial(struct NewGC *gc)
 {
-  return !gc->gc_full || gc->doing_memory_accounting;
+  return (!gc->gc_full && !gc->fnl_gen1) || gc->doing_memory_accounting;
 }
 
 int GC_started_incremental(struct NewGC *gc)
@@ -5509,6 +5520,80 @@ extern double scheme_get_inexact_milliseconds(void);
 # define TIME_DONE() /**/
 #endif
 
+static void mark_and_finalize_all(NewGC *gc, int old_gen)
+{
+  if (!old_gen)
+    propagate_marks_plus_ephemerons(gc);
+
+  check_finalizers(gc, 1, old_gen);
+  if (!old_gen)
+    propagate_marks_plus_ephemerons(gc);
+  else
+    propagate_incremental_marks(gc, 1, -1);
+
+  TIME_STEP("marked");
+
+  if (old_gen) {
+    /* move gen1 into active positions: */
+    init_weak_boxes(gc, 1);
+    init_weak_arrays(gc, 1);
+    init_ephemerons(gc, 1);
+    GC_ASSERT(!gc->fnl_gen1);
+    gc->fnl_gen1 = 1;
+  }
+
+  zero_weak_boxes(gc, 0, 0);
+  zero_weak_arrays(gc, 0);
+  zero_remaining_ephemerons(gc);
+
+  TIME_STEP("zeroed");
+
+  check_finalizers(gc, 2, old_gen);
+  if (!old_gen)
+    propagate_marks(gc);
+  else
+    propagate_incremental_marks(gc, 0, -1);
+  zero_weak_boxes(gc, 1, 0);
+
+  check_finalizers(gc, 3, old_gen);
+  if (!old_gen)
+    propagate_marks(gc);
+  else
+    propagate_incremental_marks(gc, 0, -1);
+
+  if (gc->GC_post_propagate_hook)
+    gc->GC_post_propagate_hook(gc);
+
+  /* for any new ones that appeared: */
+  zero_weak_boxes(gc, 0, 1); 
+  zero_weak_boxes(gc, 1, 1);
+  zero_weak_arrays(gc, 1);
+  zero_remaining_ephemerons(gc);
+
+  if (old_gen)
+    gc->fnl_gen1 = 0;
+
+  TIME_STEP("finalized");
+}
+
+static void mark_and_finalize_all_incremental(NewGC *gc)
+{
+  int save_inc, save_check;
+
+  GC_ASSERT(gc->mark_gen1);
+
+  save_inc = gc->inc_gen1;
+  save_check = gc->check_gen1;
+
+  gc->inc_gen1 = 1;
+  gc->check_gen1 = 1;
+  
+  mark_and_finalize_all(gc, 1);
+
+  gc->inc_gen1 = save_inc;
+  gc->check_gen1 = save_check;
+}
+
 /* Full GCs trigger finalization. Finalization releases data
    in the old generation. So one more full GC is needed to
    really clean up. The full_needed_for_finalization flag triggers 
@@ -5626,9 +5711,9 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   move_gen_half_pages_to_old(gc);
 
-  init_weak_boxes(gc);
-  init_weak_arrays(gc);
-  init_ephemerons(gc);
+  init_weak_boxes(gc, gc->gc_full);
+  init_weak_arrays(gc, gc->gc_full);
+  init_ephemerons(gc, gc->gc_full);
 
   /* at this point, the page map should only include pages that contain
      collectable objects */
@@ -5649,45 +5734,23 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   if (postmaster_and_master_gc(gc))
     promote_marked_gen0_big_pages(gc);
 #endif
-
   TIME_STEP("stacked");
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
+  mark_and_finalize_all(gc, 0);
 
-  propagate_marks_plus_ephemerons(gc);
-
-  check_finalizers(gc, 1);
-  propagate_marks_plus_ephemerons(gc);
-
-  TIME_STEP("marked");
-
-  zero_weak_boxes(gc, 0, 0); 
-  zero_weak_arrays(gc, 0);
-  zero_remaining_ephemerons(gc);
-
-  TIME_STEP("zeroed");
-
-  check_finalizers(gc, 2);
-  propagate_marks(gc);
-  zero_weak_boxes(gc, 1, 0);
-
-  check_finalizers(gc, 3);
-  propagate_marks(gc);
-
-  if (gc->GC_post_propagate_hook)
-    gc->GC_post_propagate_hook(gc);
-
-  /* for any new ones that appeared: */
-  zero_weak_boxes(gc, 0, 1); 
-  zero_weak_boxes(gc, 1, 1);
-  zero_weak_arrays(gc, 1);
-  zero_remaining_ephemerons(gc);
-
-  if (do_incremental)
-    propagate_incremental_marks(gc, INCREMENTAL_COLLECT_FUEL);
-
-  TIME_STEP("finalized2");
+  if (do_incremental && !gc->finishing_incremental) {
+    propagate_incremental_marks(gc, 1, INCREMENTAL_COLLECT_FUEL);
+    if (mark_stack_is_empty(gc->inc_mark_stack)) {
+      /* If we run out of incremental marking work,
+         perform major-GC finalization in one go. */
+      mark_and_finalize_all_incremental(gc);
+      /* Plan is to switch to incrementally changing pages from `mark` bit mode
+         to `dead` bit mode before propagating marks again. */
+      /* gc->finishing_incremental = 1; */
+    }
+  }
 
 #if MZ_GC_BACKTRACE
   if (0) 

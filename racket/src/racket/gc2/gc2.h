@@ -380,8 +380,9 @@ GC2_EXTERN int GC_current_mode(struct NewGC *gc);
 # define GC_CURRENT_MODE_MINOR               0
 # define GC_CURRENT_MODE_MAJOR               1
 # define GC_CURRENT_MODE_INCREMENTAL         2
-# define GC_CURRENT_MODE_BACKPOINTER_REMARK  3
-# define GC_CURRENT_MODE_ACCOUNTING          4
+# define GC_CURRENT_MODE_INCREMENTAL_FINAL   3
+# define GC_CURRENT_MODE_BACKPOINTER_REMARK  4
+# define GC_CURRENT_MODE_ACCOUNTING          5
 /*
    The mode during a mark or fixup function callback.
    The GC_CURRENT_MODE_BACKPOINTER_REMARK mode corresponds

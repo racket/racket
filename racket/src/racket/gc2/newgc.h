@@ -200,6 +200,7 @@ typedef struct NewGC {
 
   unsigned char generations_available        :1;
   unsigned char started_incremental          :1; /* must stick with incremental until major GC */
+  unsigned char finishing_incremental        :1; /* finalized already */
   unsigned char in_unsafe_allocation_mode    :1;
   unsigned char full_needed_for_finalization :1;
   unsigned char no_further_modifications     :1;
@@ -208,9 +209,10 @@ typedef struct NewGC {
   unsigned char running_finalizers           :1;
   unsigned char back_pointers                :1;
   unsigned char need_fixup                   :1;
-  unsigned char check_gen1                   :1;
-  unsigned char mark_gen1                    :1;
-  unsigned char inc_gen1                     :1;
+  unsigned char check_gen1                   :1; /* check marks bit for old generation (insteda of claiming always marked) */
+  unsigned char mark_gen1                    :1; /* set mark bits for old generation */
+  unsigned char inc_gen1                     :1; /* during incremental marking of old generation */
+  unsigned char fnl_gen1                     :1; /* during incremental finalization of old generation */
   unsigned char during_backpointer           :1;
   unsigned char incremental_requested        :1;
 

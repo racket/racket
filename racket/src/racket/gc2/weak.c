@@ -42,7 +42,7 @@ static int mark_weak_array(void *p, struct NewGC *gc)
 
   if (gc->doing_memory_accounting) {
     /* skip */
-  } else if (gc->inc_gen1) {
+  } else if (gc->inc_gen1 && !gc->fnl_gen1) {
     /* inc_next field is at the end of the `data` array: */
     a->data[a->count] = gc->inc_weak_arrays;
     gc->inc_weak_arrays = a;
@@ -130,8 +130,8 @@ static void rechain_inc_weak_arrays(GC_Weak_Array *w)
   }
 }
 
-static void init_weak_arrays(GCTYPE *gc) {
-  if (gc->gc_full) {
+static void init_weak_arrays(GCTYPE *gc, int old_gen) {
+  if (old_gen) {
     rechain_inc_weak_arrays(gc->inc_weak_arrays);
     gc->weak_arrays = gc->inc_weak_arrays;
     gc->inc_weak_arrays = NULL;
@@ -235,7 +235,7 @@ static int mark_weak_box(void *p, struct NewGC *gc)
 
   if (gc->doing_memory_accounting) {
     /* skip */
-  } else if (gc->inc_gen1) {
+  } else if (gc->inc_gen1 && !gc->fnl_gen1) {
     check_weak_box_not_already_in_inc_chain(wb, gc->inc_weak_boxes[wb->is_late]);
     wb->inc_next = gc->inc_weak_boxes[wb->is_late];
     gc->inc_weak_boxes[wb->is_late] = wb;
@@ -305,8 +305,8 @@ static void rechain_inc_weak_boxes(GC_Weak_Box *wb)
   }
 }
 
-static void init_weak_boxes(GCTYPE *gc) {
-  if (gc->gc_full) {
+static void init_weak_boxes(GCTYPE *gc, int old_gen) {
+  if (old_gen) {
     rechain_inc_weak_boxes(gc->inc_weak_boxes[0]);
     rechain_inc_weak_boxes(gc->inc_weak_boxes[1]);
     gc->weak_boxes[0] = gc->inc_weak_boxes[0];
@@ -407,7 +407,7 @@ static int mark_ephemeron(void *p, struct NewGC *gc)
 
   if (eph->val) {
     GC_ASSERT(!gc->doing_memory_accounting);
-    if (gc->inc_gen1) {
+    if (gc->inc_gen1 && !gc->fnl_gen1) {
       eph->inc_next = gc->inc_ephemerons;
       gc->inc_ephemerons = eph;
     } else if (gc->during_backpointer) {
@@ -482,8 +482,8 @@ static void rechain_inc_ephemerons(GC_Ephemeron *e)
   }
 }
 
-void init_ephemerons(GCTYPE *gc) {
-  if (gc->gc_full) {
+void init_ephemerons(GCTYPE *gc, int old_gen) {
+  if (old_gen) {
     rechain_inc_ephemerons(gc->inc_ephemerons);
     gc->ephemerons = gc->inc_ephemerons;
     gc->inc_ephemerons = NULL;
