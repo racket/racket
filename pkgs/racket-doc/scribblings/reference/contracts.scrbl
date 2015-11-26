@@ -255,7 +255,7 @@ the contracts in order, from left to right.}
 
 @defproc[(not/c [flat-contract flat-contract?]) flat-contract?]{
 
-Accepts a flat contracts or a predicate and returns a flat contract
+Accepts a flat contract or a predicate and returns a flat contract
 that checks the inverse of the argument.}
 
 
