@@ -186,5 +186,18 @@ static void reset_finalizer_tree(GCTYPE *gc)
     else
       add_finalizer(fnl, 0, gc);
   }
+}
 
+static void reset_gen1_finalizer_tree(GCTYPE *gc)
+{
+  Fnl *fnl, *next;
+
+  fnl = gc->finalizers;
+  gc->finalizers = NULL;
+  gc->splayed_finalizers = NULL;
+
+  for (; fnl; fnl = next) {
+    next = fnl->next;
+    add_finalizer(fnl, 0, gc);
+  }
 }

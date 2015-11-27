@@ -272,6 +272,7 @@ void scheme_escape_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Obj
 
 #ifdef MZ_PRECISE_GC
 static void mark_pruned_prefixes(struct NewGC *gc);
+static int check_pruned_prefix(void *p);
 #endif
 
 #define cons(x,y) scheme_make_pair(x,y)
@@ -414,6 +415,7 @@ void scheme_init_eval_places()
   scheme_prefix_finalize = (Scheme_Prefix *)0x1; /* 0x1 acts as a sentenel */
   scheme_inc_prefix_finalize = (Scheme_Prefix *)0x1;
   GC_set_post_propagate_hook(mark_pruned_prefixes);
+  GC_set_treat_as_incremental_mark(scheme_prefix_type, check_pruned_prefix);
 #endif
 #ifdef DEBUG_CHECK_STACK_FRAME_SIZE
   (void)scheme_do_eval(SCHEME_TAIL_CALL_WAITING, 0, NULL, 0);
@@ -6188,6 +6190,12 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
       pf = next;
     }
   }
+}
+
+int check_pruned_prefix(void *p) XFORM_SKIP_PROC
+{
+  Scheme_Prefix *pf = (Scheme_Prefix *)p;
+  return SCHEME_PREFIX_FLAGS(pf) & 0x1;
 }
 #endif
 

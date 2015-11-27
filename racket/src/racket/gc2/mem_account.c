@@ -88,7 +88,7 @@ inline static void clean_up_thread_list(NewGC *gc)
   GC_Thread_Info *prev = NULL;
 
   while(work) {
-    if(!pagemap_find_page(gc->page_maps, work->thread) || marked(gc, work->thread)) {
+    if (marked(gc, work->thread)) {
       work->thread = GC_resolve2(work->thread, gc);
       prev = work;
       work = work->next;
@@ -531,6 +531,9 @@ static void BTC_do_accounting(NewGC *gc)
       int owner = custodian_to_owner_set(gc, cur);
       uintptr_t save_count = gc->phantom_count;
 
+      GC_ASSERT(owner >= 0);
+      GC_ASSERT(owner <= gc->owner_table_size);
+      
       gc->phantom_count = 0;
 
       gc->current_mark_owner = owner;

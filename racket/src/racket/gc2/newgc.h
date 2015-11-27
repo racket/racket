@@ -50,6 +50,7 @@ typedef struct mpage {
   unsigned char has_new       :1;
   unsigned char mprotected    :1;
   unsigned char reprotect     :1; /* in reprotect_next chain already */
+  unsigned char non_dead_as_mark :1; /* already repaired in incremental pass */
 } mpage;
 
 typedef struct Gen0 {
@@ -168,6 +169,8 @@ typedef struct NewGC {
   struct mpage *modified_next;
   /* pages marked incrementally: */
   struct mpage *inc_modified_next;
+  /* tail of inc_modified_next being repaired incrementally */
+  struct mpage *inc_repair_next;
   /* linked list of pages that need to be given write protection at
      the end of the GC cycle: */
   struct mpage *reprotect_next;
@@ -175,8 +178,8 @@ typedef struct NewGC {
   MarkSegment *mark_stack, *inc_mark_stack;
 
   /* Finalization */
-  Fnl *run_queue;
-  Fnl *last_in_queue;
+  Fnl *run_queue, *last_in_queue;
+  Fnl *inc_run_queue, *inc_last_in_queue;
 
   int mark_depth;
 
@@ -233,7 +236,6 @@ typedef struct NewGC {
   uintptr_t number_of_gc_runs;
   unsigned int since_last_full;
   uintptr_t last_full_mem_use;
-  uintptr_t inc_mem_use_threshold;
 
   uintptr_t prop_count;
   uintptr_t inc_prop_count;
@@ -269,6 +271,8 @@ typedef struct NewGC {
   GC_collect_inform_callback_Proc GC_collect_inform_callback;
   uintptr_t (*GC_get_thread_stack_base)(void);
   GC_Post_Propagate_Hook_Proc GC_post_propagate_hook;
+  GC_Treat_As_Incremental_Mark_Proc treat_as_incremental_mark_hook;
+  short treat_as_incremental_mark_tag;
 
   GC_Immobile_Box *immobile_boxes;
 

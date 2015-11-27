@@ -130,14 +130,15 @@ static void rechain_inc_weak_arrays(GC_Weak_Array *w)
   }
 }
 
-static void init_weak_arrays(GCTYPE *gc, int old_gen) {
+static void init_weak_arrays(GCTYPE *gc, int old_gen)
+{
+  GC_ASSERT(!gc->bp_weak_arrays);
   if (old_gen) {
     rechain_inc_weak_arrays(gc->inc_weak_arrays);
     gc->weak_arrays = gc->inc_weak_arrays;
     gc->inc_weak_arrays = NULL;
   } else
     gc->weak_arrays = NULL;
-  gc->bp_weak_arrays = NULL;
 }
 
 static GC_Weak_Array *append_weak_arrays(GC_Weak_Array *wa, GC_Weak_Array *bp_wa, int *_num_gen0)
@@ -305,7 +306,10 @@ static void rechain_inc_weak_boxes(GC_Weak_Box *wb)
   }
 }
 
-static void init_weak_boxes(GCTYPE *gc, int old_gen) {
+static void init_weak_boxes(GCTYPE *gc, int old_gen)
+{
+  GC_ASSERT(!gc->bp_weak_boxes[0]);
+  GC_ASSERT(!gc->bp_weak_boxes[1]);
   if (old_gen) {
     rechain_inc_weak_boxes(gc->inc_weak_boxes[0]);
     rechain_inc_weak_boxes(gc->inc_weak_boxes[1]);
@@ -317,8 +321,6 @@ static void init_weak_boxes(GCTYPE *gc, int old_gen) {
     gc->weak_boxes[0] = NULL;
     gc->weak_boxes[1] = NULL;
   }
-  gc->bp_weak_boxes[0] = NULL;
-  gc->bp_weak_boxes[1] = NULL;
 }
 
 static GC_Weak_Box *append_weak_boxes(GC_Weak_Box *wb, GC_Weak_Box *bp_wb, int *_num_gen0)
@@ -367,6 +369,9 @@ static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero)
         if (page->mprotected) {
           page->mprotected = 0;
           mmu_write_unprotect_page(gc->mmu, page->addr, APAGE_SIZE, page_mmu_type(page), &page->mmu_src_block);
+          page->reprotect_next = gc->reprotect_next;
+          gc->reprotect_next = page;
+          page->reprotect = 1;
         }
         p = (void **)GC_resolve2(wb->secondary_erase, gc);
         *(p + wb->soffset) = NULL;
