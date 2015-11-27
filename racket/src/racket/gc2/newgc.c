@@ -244,7 +244,7 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 
 /* Extra factor allowed before forcing a non-incremental full collection
    when incremental model is started: */
-#define INCREMENTAL_EXTRA_SIZE_RATIO 1.5
+#define INCREMENTAL_EXTRA_SIZE_RATIO 2
 
 /* Whether to use a little aging, moving gen-0 objects to a
    gen-1/2 space; by default, enabled when memory use is high
@@ -253,8 +253,8 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 
 /* Incremental mode */
 static int always_collect_incremental_on_minor = 0;
-#define INCREMENTAL_COLLECT_FUEL_PER_100M (24 * 1024)
-#define INCREMENTAL_REPAIR_FUEL_PER_100M  512
+#define INCREMENTAL_COLLECT_FUEL_PER_100M (32 * 1024)
+#define INCREMENTAL_REPAIR_FUEL_PER_100M  256
 
 /* Conservatively force a major GC after a certain number
    of minor GCs. It should be ok to set this value
