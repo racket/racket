@@ -199,7 +199,11 @@ execution. Otherwise, @racket[#f] is returned.}
 @section[#:tag "garbagecollection"]{Garbage Collection}
 
 Set the @as-index{@envvar{PLTDISABLEGC}} environment variable (to any
-value) before Racket starts to disable @tech{garbage collection}.
+value) before Racket starts to disable @tech{garbage collection}. Set
+the @as-index{@envvar{PLT_INCREMENTAL_GC}} environment variable to
+request incremental mode at all times, but calling
+@racket[(collect-garbage 'incremental)] in a program with a periodic
+task is generally a better mechanism for requesting incremental mode.
 
 In Racket 3m (the main variant of Racket), each garbage collection
 logs a message (see @secref["logging"]) at the @racket['debug] level with topic @racket['GC].
@@ -209,18 +213,28 @@ versions of Racket may use a @racket[gc-info] @tech{prefab} structure
 with additional fields:
 
 @racketblock[
-(struct gc-info (major? pre-amount pre-admin-amount code-amount
-                        post-amount post-admin-amount
-                        start-process-time end-process-time
-                        start-time end-time)
+(struct gc-info (mode pre-amount pre-admin-amount code-amount
+                      post-amount post-admin-amount
+                      start-process-time end-process-time
+                      start-time end-time)
   #:prefab)
 ]
 
 @itemlist[
 
- @item{The @racket[major?] field indicates whether the collection was
-       a ``major'' collection that inspects all memory or a ``minor''
-       collection that mostly inspects just recent allocations.}
+ @item{The @racket[mode] field is a symbol @racket['major],
+       @racket['minor], or @racket['incremental]; @racket['major]
+       indicates a collection that inspects all memory,
+       @racket['minor] indicates collection that mostly inspects just
+       recent allocations, and @racket['incremental] indicates a minor
+       collection that performs extra work toward the next major
+       collection.
+
+       @history[#:changed "6.3.0.7" @elem{Changed first field from a
+                                          boolean (@racket[#t] for
+                                          @racket['major], @racket[#f]
+                                          for @racket['minor]) to a
+                                          mode symbol.}]}
 
  @item{The @racket[pre-amount] field reports place-local memory use
       (i.e., not counting the memory use of child places) in bytes at
@@ -286,6 +300,7 @@ collection mode, the text has the format
               @elem{Processor time since startup of garbage collection's start}))
 ]}
 
+@history[#:changed "6.3.0.7" @elem{Added @envvar{PLT_INCREMENTAL_GC}.}]
 
 @defproc[(collect-garbage [request (or/c 'major 'minor 'incremental) 'major]) void?]{
 
@@ -314,7 +329,8 @@ garbage-collection mode, depending on @racket[request]:
        major collections any sooner than they would occur otherwise.}
 
  @item{@racket['incremental] --- Requests that each minor
-       collection performs incremental work toward a major collection.
+       collection performs incremental work toward a major collection
+       (but does not request an immediate minor collection).
        This incremental-mode request expires at the next major
        collection.
 

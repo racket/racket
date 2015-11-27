@@ -1542,6 +1542,9 @@ static int run_from_cmd_line(int argc, char *_argv[],
   if (getenv("PLTDISABLEGC")) {
     scheme_enable_garbage_collection(0);
   }
+  if (getenv("PLT_INCREMENTAL_GC")) {
+    scheme_incremental_garbage_collection(1);
+  }
 #endif
 
   scheme_set_logging_spec(syslog_level, stderr_level);

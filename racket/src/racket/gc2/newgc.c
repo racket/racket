@@ -252,7 +252,7 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 #define AGE_GEN_0_TO_GEN_HALF(gc) ((gc)->memory_in_use > (GEN0_MAX_SIZE * 8))
 
 /* Incremental mode */
-#define ALWAYS_COLLECT_INCREMENTAL_ON_MINOR 0
+static int always_collect_incremental_on_minor = 0;
 #define INCREMENTAL_COLLECT_FUEL_PER_100M (24 * 1024)
 #define INCREMENTAL_REPAIR_FUEL_PER_100M  512
 
@@ -3558,6 +3558,11 @@ void GC_request_incremental_mode(void)
   gc->incremental_requested = 1;
 }
 
+void GC_set_incremental_mode(int on)
+{
+  always_collect_incremental_on_minor = 1;
+}
+
 void GC_enable_collection(int on)
 {
   NewGC *gc = GC_get_GC();
@@ -5847,7 +5852,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   gc->need_fixup = 0;
 
   do_incremental = (!gc->gc_full && (gc->incremental_requested
-                                     || ALWAYS_COLLECT_INCREMENTAL_ON_MINOR));
+                                     || always_collect_incremental_on_minor));
   if (!postmaster_and_place_gc(gc))
     do_incremental = 0;
   
@@ -6053,7 +6058,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     is_master = (gc == MASTERGC);
 #endif
     park_for_inform_callback(gc);
-    gc->GC_collect_inform_callback(is_master, gc->gc_full, 
+    gc->GC_collect_inform_callback(is_master, gc->gc_full, do_incremental,
                                    old_mem_use + old_gen0, gc->memory_in_use, 
                                    old_mem_allocated, mmu_memory_allocated(gc->mmu)+gc->phantom_count,
                                    gc->child_gc_total);
@@ -6135,7 +6140,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
       if (sub_lmi.ran) {
         if (gc->GC_collect_inform_callback) {
           park_for_inform_callback(gc);
-          gc->GC_collect_inform_callback(1, sub_lmi.full,
+          gc->GC_collect_inform_callback(1, sub_lmi.full, 0,
                                          sub_lmi.pre_used, sub_lmi.post_used,
                                          sub_lmi.pre_admin, sub_lmi.post_admin,
                                          0);

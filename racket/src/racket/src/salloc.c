@@ -1658,6 +1658,13 @@ void scheme_enable_garbage_collection(int on)
 #endif
 }
 
+void scheme_incremental_garbage_collection(int on)
+{
+#ifdef MZ_PRECISE_GC
+  GC_set_incremental_mode(on);
+#endif
+}
+
 MZ_DO_NOT_INLINE(uintptr_t scheme_get_deeper_address(void));
 
 uintptr_t scheme_get_deeper_address(void)

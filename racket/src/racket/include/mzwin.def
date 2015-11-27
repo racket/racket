@@ -226,6 +226,7 @@ EXPORTS
  scheme_collect_garbage
  scheme_collect_garbage_minor
  scheme_enable_garbage_collection
+ scheme_incremental_garbage_collection
  scheme_malloc_immobile_box
  scheme_free_immobile_box
  scheme_add_gc_callback

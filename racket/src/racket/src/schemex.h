@@ -363,6 +363,7 @@ void (*scheme_gc_ptr_ok)(void *p);
 void (*scheme_collect_garbage)(void);
 void (*scheme_collect_garbage_minor)(void);
 void (*scheme_enable_garbage_collection)(int on);
+void (*scheme_incremental_garbage_collection)(int on);
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL
 void **GC_variable_stack;

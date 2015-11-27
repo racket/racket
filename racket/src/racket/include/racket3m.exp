@@ -241,6 +241,7 @@ scheme_gc_ptr_ok
 scheme_collect_garbage
 scheme_collect_garbage_minor
 scheme_enable_garbage_collection
+scheme_incremental_garbage_collection
 GC_variable_stack
 GC_register_traversers
 GC_resolve

@@ -263,6 +263,7 @@
   scheme_extension_table->scheme_collect_garbage = scheme_collect_garbage;
   scheme_extension_table->scheme_collect_garbage_minor = scheme_collect_garbage_minor;
   scheme_extension_table->scheme_enable_garbage_collection = scheme_enable_garbage_collection;
+  scheme_extension_table->scheme_incremental_garbage_collection = scheme_incremental_garbage_collection;
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL
   scheme_extension_table->GC_variable_stack = GC_variable_stack;

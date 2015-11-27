@@ -223,7 +223,7 @@ THREAD_LOCAL_DECL(static double end_this_gc_real_time);
 static void get_ready_for_GC(void);
 static void done_with_GC(void);
 #ifdef MZ_PRECISE_GC
-static void inform_GC(int master_gc, int major_gc, intptr_t pre_used, intptr_t post_used,
+static void inform_GC(int master_gc, int major_gc, int inc_gc, intptr_t pre_used, intptr_t post_used,
                       intptr_t pre_admin, intptr_t post_admin, intptr_t post_child_places_used);
 #endif
 
@@ -9252,7 +9252,7 @@ static char *gc_num(char *nums, intptr_t v)
 END_XFORM_SKIP;
 #endif
 
-static void inform_GC(int master_gc, int major_gc, 
+static void inform_GC(int master_gc, int major_gc, int inc_gc,
                       intptr_t pre_used, intptr_t post_used,
                       intptr_t pre_admin, intptr_t post_admin,
                       intptr_t post_child_places_used)
@@ -9282,7 +9282,9 @@ static void inform_GC(int master_gc, int major_gc,
     vec = scheme_false;
     if (!master_gc && gc_info_prefab) {
       vec = scheme_make_vector(11, scheme_false);
-      SCHEME_VEC_ELS(vec)[1] = (major_gc ? scheme_true : scheme_false);
+      SCHEME_VEC_ELS(vec)[1] = (major_gc
+                                ? major_symbol
+                                : (inc_gc ? incremental_symbol : minor_symbol));
       SCHEME_VEC_ELS(vec)[2] = scheme_make_integer(pre_used);
       SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(pre_admin);
       SCHEME_VEC_ELS(vec)[4] = scheme_make_integer(scheme_code_page_total);
@@ -9311,7 +9313,7 @@ static void inform_GC(int master_gc, int major_gc,
 #ifdef MZ_USE_PLACES
             scheme_current_place_id,
 #endif
-            (master_gc ? "MST" : (major_gc ? "MAJ" : "min")),
+            (master_gc ? "MST" : (major_gc ? "MAJ" : (inc_gc ? "mIn" : "min"))),
             gc_num(nums, pre_used), gc_num(nums, pre_admin - pre_used),
             gc_num(nums, scheme_code_page_total),
             gc_num(nums, delta), ((admin_delta < 0) ? "" : "+"),  gc_num(nums, admin_delta),

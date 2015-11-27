@@ -31,7 +31,7 @@ typedef int (*Fixup_Proc)(void *obj);
 typedef int (*Fixup2_Proc)(void *obj, struct NewGC *);
 typedef void (*GC_collect_start_callback_Proc)(void);
 typedef void (*GC_collect_end_callback_Proc)(void);
-typedef void (*GC_collect_inform_callback_Proc)(int master_gc, int major_gc, 
+typedef void (*GC_collect_inform_callback_Proc)(int master_gc, int major_gc, int inc_gc,
                                                 intptr_t pre_used, intptr_t post_used,
                                                 intptr_t pre_admin, intptr_t post_admin,
                                                 intptr_t post_child_places_used);
@@ -173,6 +173,10 @@ GC2_EXTERN void GC_enable_collection(int on);
 GC2_EXTERN void GC_request_incremental_mode(void);
 /*
    Requests incremental mode; lasts until the next major collection. */
+  
+GC2_EXTERN void GC_set_incremental_mode(int on);
+/*
+   Sets whether incremental mode is the default. */
   
 GC2_EXTERN void GC_free_all(void);
 /*
