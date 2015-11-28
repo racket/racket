@@ -5920,6 +5920,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
       if (!mark_stack_is_empty(gc->inc_mark_stack)) {
         int fuel = INCREMENTAL_COLLECT_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1);
         propagate_incremental_marks(gc, 1, fuel);
+        TIME_STEP("incremented");
       } else {
         /* We ran out of incremental marking work, so
            perform major-GC finalization in one go. */
