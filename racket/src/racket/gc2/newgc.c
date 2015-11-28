@@ -4672,7 +4672,7 @@ static void mark_backpointers(NewGC *gc)
         start += info->size;
       }
 
-      gc->memory_in_use -= work->live_size;
+      gc->memory_in_use -= gcWORDS_TO_BYTES(work->live_size);
     }
 
     traversed++;
@@ -5241,7 +5241,7 @@ static void repair_heap(NewGC *gc)
         if (need_fixup_now)
           repair_mixed_page(gc, page, PPTR(NUM(page->addr) + APAGE_SIZE - page->obj_size));
 
-        memory_in_use += page->live_size;
+        memory_in_use += gcWORDS_TO_BYTES(page->live_size);
         page->med_search_start = PREFIX_SIZE; /* start next block search at the beginning */
         if (page->generation == AGE_GEN_0) {
           /* Tell the clean-up phase to keep this one (needed even for a minor GC): */
@@ -5468,7 +5468,7 @@ static void clean_up_heap(NewGC *gc)
   }
 
   /* For medium pages, generation-0 pages will appear first in each
-     list, so for a mnior GC, we can stop whenever we find a
+     list, so for a minor GC, we can stop whenever we find a
      generation-1 page */
   for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
     for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
@@ -5479,7 +5479,7 @@ static void clean_up_heap(NewGC *gc)
         next = work->next;
         if (work->marked_on) {
           work->marked_on = 0;
-          memory_in_use += work->live_size;
+          memory_in_use += gcWORDS_TO_BYTES(work->live_size);
           work->generation = AGE_GEN_1;
           prev = work;
         } else if (gc->gc_full || (work->generation == AGE_GEN_0)) {
