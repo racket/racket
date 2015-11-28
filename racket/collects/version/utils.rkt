@@ -37,7 +37,7 @@
   (-version<? a b))
 
 (define/version-inputs (version<=? a b)
-  (or (equal? a b) (version<? a b)))
+  (or (equal? a b) (-version<? a b)))
 
 (define (-version<? a b)
   (let loop ([a (version->list a)] [b (version->list b)])
