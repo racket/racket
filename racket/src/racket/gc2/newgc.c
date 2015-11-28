@@ -5788,7 +5788,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   int do_incremental = 0, check_inc_repair;
 
   old_mem_use = gc->memory_in_use; /* includes gc->phantom_count */
-  old_gen0    = gc->gen0.current_size + gc->gen0_phantom_count;
+  old_gen0    = gen0_size_in_use(gc) + gc->gen0_phantom_count;
   old_mem_allocated = mmu_memory_allocated(gc->mmu) + gc->phantom_count + gc->gen0_phantom_count;
 
   TIME_DECLS();
