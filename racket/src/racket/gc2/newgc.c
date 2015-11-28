@@ -5811,6 +5811,9 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
                     incremental mode has been enabled: */
                  || ((gc->since_last_full > FORCE_MAJOR_AFTER_COUNT)
                      && !gc->started_incremental)
+                 || (gc->full_needed_for_finalization
+                     && !gc->incremental_requested
+                     && !gc->started_incremental)
                  /* In incremental mode, GC earlier if we've done everything
                     that we can do incrementally. */
                  || (gc->started_incremental
@@ -5823,12 +5826,13 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     return;
   }
 
-  next_gc_full = gc->gc_full && !gc->started_incremental;
+  next_gc_full = (gc->gc_full
+                  && !gc->started_incremental
+                  && !gc->full_needed_for_finalization);
 
-  if (gc->full_needed_for_finalization) {
+  if (gc->full_needed_for_finalization && gc->gc_full)
     gc->full_needed_for_finalization= 0;
-    gc->gc_full = 1;
-  }
+
 #ifdef GC_DEBUG_PAGES
   if (gc->gc_full == 1) {
     GCVERBOSEprintf(gc, "GC_FULL gc: %p MASTER: %p\n", gc, MASTERGC);

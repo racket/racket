@@ -613,7 +613,10 @@ immediate garbage collection, but instead requests that each minor
 collection perform incremental work up to the next major collection.
 The request expires with the next major collection. Make a call to
 @racket[(collect-garbage 'incremental)] in any periodic task within
-an application that needs to be responsive in real time.
+an application that needs to be responsive in real time. Force a
+full collection with @racket[(collect-garbage)] just before an initial
+@racket[(collect-garbage 'incremental)] to initiate incremental mode
+from an optimal state.
 
 To check whether incremental mode is use and how it affects pause
 times, enable @tt{debug}-level logging output for the
