@@ -294,6 +294,7 @@ typedef struct NewGC {
 
   uintptr_t phantom_count;
   uintptr_t gen0_phantom_count;
+  uintptr_t inc_phantom_count;
 
   Roots roots;  
   struct MMU     *mmu;

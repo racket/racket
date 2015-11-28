@@ -2593,7 +2593,12 @@ static int mark_phantom(void *p, struct NewGC *gc)
 {
   Phantom_Bytes *pb = (Phantom_Bytes *)p;
 
-  gc->phantom_count = add_no_overflow(gc->phantom_count, pb->count);
+  if (!gc->during_backpointer) {
+    if (gc->inc_gen1)
+      gc->inc_phantom_count = add_no_overflow(gc->inc_phantom_count, pb->count);
+    else
+      gc->phantom_count = add_no_overflow(gc->phantom_count, pb->count);
+  }
 
   return gcBYTES_TO_WORDS(sizeof(Phantom_Bytes));
 }
@@ -3612,6 +3617,7 @@ intptr_t GC_get_memory_use(void *o)
   }
 #endif
   amt = add_no_overflow(gen0_size_in_use(gc), gc->memory_in_use);
+  amt = add_no_overflow(amt, gc->gen0_phantom_count);
 #ifdef MZ_USE_PLACES
   mzrt_mutex_lock(gc->child_total_lock);
   amt = add_no_overflow(amt, gc->child_gc_total);
@@ -5839,9 +5845,10 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   gc->use_gen_half = !gc->gc_full && AGE_GEN_0_TO_GEN_HALF(gc);
 
-  if (gc->gc_full)
-    gc->phantom_count = 0;
-  else if (gc->memory_in_use > gc->phantom_count) {
+  if (gc->gc_full) {
+    gc->phantom_count = gc->inc_phantom_count;
+    gc->inc_phantom_count = 0;
+  } else if (gc->memory_in_use > gc->phantom_count) {
     /* added back in repair_heap(), after any adjustments from gen0 phantom bytes */
     gc->memory_in_use -= gc->phantom_count;
   }
