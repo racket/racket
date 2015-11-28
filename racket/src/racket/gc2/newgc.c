@@ -5918,11 +5918,12 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   if (do_incremental) {
     if (!gc->finishing_incremental) {
-      int fuel = INCREMENTAL_COLLECT_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1);
       mark_finalizer_structs(gc, 1);
-      propagate_incremental_marks(gc, 1, fuel);
-      if (mark_stack_is_empty(gc->inc_mark_stack)) {
-        /* If we run out of incremental marking work,
+      if (!mark_stack_is_empty(gc->inc_mark_stack)) {
+        int fuel = INCREMENTAL_COLLECT_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1);
+        propagate_incremental_marks(gc, 1, fuel);
+      } else {
+        /* We ran out of incremental marking work, so
            perform major-GC finalization in one go. */
         mark_and_finalize_all_incremental(gc TIME_ARGS);
         BTC_clean_up_gen1(gc);
