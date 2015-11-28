@@ -55,14 +55,28 @@
          
          set-some-basic-contracts!)
 
-(define (contract-custom-write-property-proc stct port display?)
-  (write-string "#<" port)
+(define (contract-custom-write-property-proc stct port mode)
+  (define (write-prefix)
+    (write-string "#<" port)
+    (cond
+      [(flat-contract-struct? stct) (write-string "flat-" port)]
+      [(chaperone-contract-struct? stct) (write-string "chaperone-" port)])
+    (write-string "contract: " port))
+  (define (write-suffix)
+    (write-string ">" port))
   (cond
-    [(flat-contract-struct? stct) (write-string "flat-" port)]
-    [(chaperone-contract-struct? stct) (write-string "chaperone-" port)])
-  (write-string "contract: " port)
-  (write-string (format "~.s" (contract-struct-name stct)) port)
-  (write-string ">" port))
+    [(boolean? mode)
+     (write-prefix)
+     (write-string (format "~.s" (contract-struct-name stct)) port)
+     (write-suffix)]
+    [else
+     (cond
+       [(zero? mode)
+        (print (contract-struct-name stct) port 1)]
+       [else
+        (write-prefix)
+        (print (contract-struct-name stct) port 1)
+        (write-suffix)])]))
 
 (define (has-contract? v)
   (or (has-prop:contracted? v)
