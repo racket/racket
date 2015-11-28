@@ -41,19 +41,15 @@
       mark_stxes = 0;
 
       /* Add this closure to the chain to be repaired when the
-         prefix is marked (and potentially moved): */
-      if ((gc_mode == GC_CURRENT_MODE_INCREMENTAL) || (SCHEME_PREFIX_FLAGS(pf) & 0x1)) {
-        /* Can't steal closure slot for this purpose, since the
-           slot is still in use until a full collection finishes */
-        Scheme_Object **pr;
-        pr = (Scheme_Object **)GC_malloc_for_incremental(2 * sizeof(Scheme_Object *));
-        pr[0] = (Scheme_Object *)c;
-        pr[1] = (Scheme_Object *)pf->fixup_chain;
-        pf->fixup_chain = (Scheme_Object *)pr;
-        SCHEME_PREFIX_FLAGS(pf) |= 0x1;
-      } else {
+         prefix is marked and potentially moved; if we're here
+         in incremental mode, though, the prefix won't be moved: */
+      if (gc_mode != GC_CURRENT_MODE_INCREMENTAL) {
         c->vals[closure_size - 1] = pf->fixup_chain;
         pf->fixup_chain = (Scheme_Object *)c;
+      } else {
+        /* Mark the prefix as reached in incremental mode, which
+           triggers special handling for bakpointers */
+        SCHEME_PREFIX_FLAGS(pf) |= 0x1;
       }
 
       /* Mark just the elements of the prefix that are (newly) used: */
