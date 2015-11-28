@@ -5804,7 +5804,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
                     fraction of the actual use by live data: */
                  || (gc->memory_in_use > (FULL_COLLECTION_SIZE_RATIO
                                           * gc->last_full_mem_use
-                                          * (gc->started_incremental
+                                          * ((gc->started_incremental && !no_full)
                                              ? INCREMENTAL_EXTRA_SIZE_RATIO
                                              : 1)))
                  /* Just in case, for a full GC every so often, unless
@@ -5816,7 +5816,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
                  || (gc->started_incremental
                      && mark_stack_is_empty(gc->inc_mark_stack)
                      && gc->finishing_incremental
-                     && !gc->inc_repair_next));
+                     && !gc->inc_repair_next
+                     && !no_full));
 
   if (gc->gc_full && no_full) {
     return;
@@ -5925,7 +5926,9 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     if (!gc->finishing_incremental) {
       mark_finalizer_structs(gc, 1);
       if (!mark_stack_is_empty(gc->inc_mark_stack)) {
-        int fuel = INCREMENTAL_COLLECT_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1);
+        int fuel = (no_full
+                    ? INCREMENTAL_COLLECT_FUEL_PER_100M / 8
+                    : INCREMENTAL_COLLECT_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1));
         propagate_incremental_marks(gc, 1, fuel);
         TIME_STEP("incremented");
       } else {
@@ -5980,7 +5983,9 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
       /* Didn't fire a full GC? Go back to incremental marking: */
       gc->finishing_incremental = 0;
     } else {
-      int fuel = INCREMENTAL_REPAIR_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1);
+      int fuel = (no_full
+                  ? INCREMENTAL_REPAIR_FUEL_PER_100M / 8
+                  : INCREMENTAL_REPAIR_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1));
       incremental_repair_pages(gc, fuel);
       TIME_STEP("inc-repaired");
     }
