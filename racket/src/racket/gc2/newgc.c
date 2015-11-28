@@ -3390,6 +3390,8 @@ static NewGC *init_type_tags_worker(NewGC *inheritgc, NewGC *parentgc,
   GC_add_roots(&gc->park_fsave, (char *)&gc->park_fsave + sizeof(gc->park_fsave) + 1);
   GC_add_roots(&gc->park_isave, (char *)&gc->park_isave + sizeof(gc->park_isave) + 1);
 
+  gc->weak_incremental_done = WEAK_INCREMENTAL_DONE_1;
+
   return gc;
 }
 
@@ -5710,17 +5712,13 @@ static void mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
   TIME_STEP("marked");
 
   if (old_gen) {
-    /* move gen1 into active positions: */
-    init_weak_boxes(gc, 1);
-    init_weak_arrays(gc, 1);
-    init_ephemerons(gc, 1);
     GC_ASSERT(!gc->fnl_gen1);
     gc->fnl_gen1 = 1;
   }
 
-  zero_weak_boxes(gc, 0, 0);
-  zero_weak_arrays(gc, 0);
-  zero_remaining_ephemerons(gc);
+  zero_weak_boxes(gc, 0, 0, old_gen);
+  zero_weak_arrays(gc, 0, old_gen);
+  zero_remaining_ephemerons(gc, old_gen);
 
   TIME_STEP("zeroed");
 
@@ -5729,7 +5727,7 @@ static void mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
     propagate_marks(gc);
   else
     propagate_incremental_marks(gc, 0, -1);
-  zero_weak_boxes(gc, 1, 0);
+  zero_weak_boxes(gc, 1, 0, old_gen);
 
   check_finalizers(gc, 3, old_gen);
   if (!old_gen)
@@ -5741,10 +5739,10 @@ static void mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
     gc->GC_post_propagate_hook(gc);
 
   /* for any new ones that appeared: */
-  zero_weak_boxes(gc, 0, 1); 
-  zero_weak_boxes(gc, 1, 1);
-  zero_weak_arrays(gc, 1);
-  zero_remaining_ephemerons(gc);
+  zero_weak_boxes(gc, 0, 1, old_gen);
+  zero_weak_boxes(gc, 1, 1, old_gen);
+  zero_weak_arrays(gc, 1, old_gen);
+  zero_remaining_ephemerons(gc, old_gen);
 
   if (old_gen)
     gc->fnl_gen1 = 0;
@@ -6024,8 +6022,17 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   gc->no_further_modifications = 0;
 
-  if (gc->gc_full)
+  if (gc->gc_full) {
     free_incremental_admin_pages(gc);
+    if (gc->started_incremental) {
+      /* Flip `weak_incremental_done`, so we can detect
+         whether a weak reference is handled on a given pass. */
+      if (gc->weak_incremental_done == WEAK_INCREMENTAL_DONE_1)
+        gc->weak_incremental_done = WEAK_INCREMENTAL_DONE_2;
+      else
+        gc->weak_incremental_done = WEAK_INCREMENTAL_DONE_1;
+    }
+  }
 
   check_excessive_free_pages(gc);
 

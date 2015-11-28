@@ -21,6 +21,8 @@
       Type_Tag
 */
 
+#define WEAK_INCREMENTAL_DONE_1 ((void *)0x1)
+#define WEAK_INCREMENTAL_DONE_2 ((void *)0x3)
 
 /******************************************************************************/
 /*                               weak arrays                                  */
@@ -42,12 +44,17 @@ static int mark_weak_array(void *p, struct NewGC *gc)
 
   if (gc->doing_memory_accounting) {
     /* skip */
-  } else if (gc->inc_gen1 && !gc->fnl_gen1) {
+  } else if (gc->inc_gen1) {
     /* inc_next field is at the end of the `data` array: */
     a->data[a->count] = gc->inc_weak_arrays;
     gc->inc_weak_arrays = a;
   } else if (gc->during_backpointer) {
-    if (!gc->gc_full) {
+    if (!gc->gc_full
+        || (gc->started_incremental
+            /* `a` must have been marked and must be in the old
+               generation, or we wouldn't get here; `a` may have been
+               fully processed in incremental mode, though */
+            && (a->data[a->count] == gc->weak_incremental_done))) {
       /* Keep backpointered weak arrays separate, because we
          should not merge them to the incremental list
          in incremental mode. */
@@ -57,6 +64,8 @@ static int mark_weak_array(void *p, struct NewGC *gc)
   } else {
     a->next = gc->weak_arrays;
     gc->weak_arrays = a;
+    if (gc->gc_full)
+      a->data[a->count] = NULL; /* ensure not a future weak_incremental_done */
   }
 
 #if CHECKS
@@ -158,14 +167,16 @@ static GC_Weak_Array *append_weak_arrays(GC_Weak_Array *wa, GC_Weak_Array *bp_wa
     return bp_wa;
 }
 
-static void zero_weak_arrays(GCTYPE *gc, int force_zero)
+static void zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc)
 {
   GC_Weak_Array *wa;
   int i, num_gen0;
 
-  GC_ASSERT(!gc->bp_weak_arrays || !gc->gc_full);
-
-  wa = append_weak_arrays(gc->weak_arrays, gc->bp_weak_arrays, &num_gen0);
+  if (from_inc) {
+    wa = gc->inc_weak_arrays;
+    num_gen0 = 0;
+  } else
+    wa = append_weak_arrays(gc->weak_arrays, gc->bp_weak_arrays, &num_gen0);
 
   if (gc->gc_full || !gc->started_incremental)
     num_gen0 = 0;
@@ -191,12 +202,21 @@ static void zero_weak_arrays(GCTYPE *gc, int force_zero)
       }
     }
 
-    wa = wa->next;
+    if (from_inc) {
+      GC_Weak_Array *next;
+      next = (GC_Weak_Array *)wa->data[wa->count];
+      wa->data[wa->count] = gc->weak_incremental_done;
+      wa = next;
+    } else
+      wa = wa->next;
     num_gen0--;
   }
-
-  gc->weak_arrays = NULL;
-  gc->bp_weak_arrays = NULL;
+  if (from_inc)
+    gc->inc_weak_arrays = NULL;
+  else {
+    gc->weak_arrays = NULL;
+    gc->bp_weak_arrays = NULL;
+  }
 }
 
 /******************************************************************************/
@@ -236,12 +256,17 @@ static int mark_weak_box(void *p, struct NewGC *gc)
 
   if (gc->doing_memory_accounting) {
     /* skip */
-  } else if (gc->inc_gen1 && !gc->fnl_gen1) {
+  } else if (gc->inc_gen1) {
     check_weak_box_not_already_in_inc_chain(wb, gc->inc_weak_boxes[wb->is_late]);
     wb->inc_next = gc->inc_weak_boxes[wb->is_late];
     gc->inc_weak_boxes[wb->is_late] = wb;
   } else if (gc->during_backpointer) {
-    if (!gc->gc_full && (wb->val || gc->started_incremental)) {
+    if ((!gc->gc_full
+         || (gc->started_incremental
+             /* see note with `gc->weak_incremental_done` for weak arrays */
+             && (wb->inc_next == gc->weak_incremental_done)
+             && wb->val))
+        && (wb->val || gc->started_incremental)) {
       /* Keep backpointered weak arrays separate, because we
          should not merge them to the incremental list
          in incremental mode. */
@@ -255,6 +280,8 @@ static int mark_weak_box(void *p, struct NewGC *gc)
     check_weak_box_not_already_in_chain(wb, gc->bp_weak_boxes[wb->is_late]);
     wb->next = gc->weak_boxes[wb->is_late];
     gc->weak_boxes[wb->is_late] = wb;
+    if (gc->gc_full)
+      wb->inc_next = NULL; /* ensure not a future weak_incremental_done */
   }
 
   return gcBYTES_TO_WORDS(sizeof(GC_Weak_Box));
@@ -340,18 +367,21 @@ static GC_Weak_Box *append_weak_boxes(GC_Weak_Box *wb, GC_Weak_Box *bp_wb, int *
     return bp_wb;
 }
 
-static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero)
+static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc)
 {
   GC_Weak_Box *wb;
   int num_gen0;
 
-  GC_ASSERT(!gc->bp_weak_boxes[is_late] || !gc->gc_full);
-
-  wb = append_weak_boxes(gc->weak_boxes[is_late],
-                         gc->bp_weak_boxes[is_late],
-                         &num_gen0);
-  if (gc->gc_full || !gc->started_incremental)
+  if (from_inc) {
+    wb = gc->inc_weak_boxes[is_late];
     num_gen0 = 0;
+  } else {
+    wb = append_weak_boxes(gc->weak_boxes[is_late],
+                           gc->bp_weak_boxes[is_late],
+                           &num_gen0);
+    if (gc->gc_full || !gc->started_incremental)
+      num_gen0 = 0;
+  }
 
   while (wb) {
     GC_ASSERT(is_marked(gc, wb));
@@ -384,17 +414,28 @@ static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero)
       if (!is_in_generation_half(gc, wb)) {
         /* For incremental mode, preserve this weak box
            in the incremental list for re-checking later. */
+        check_weak_box_not_already_in_inc_chain(wb, gc->inc_weak_boxes[wb->is_late]);
         wb->inc_next = gc->inc_weak_boxes[is_late];
         gc->inc_weak_boxes[is_late] = wb;
       }
     }
-    wb = wb->next;
+    if (from_inc) {
+      GC_Weak_Box *next;
+      next = wb->inc_next;
+      wb->inc_next = gc->weak_incremental_done;
+      wb = next;
+    } else
+      wb = wb->next;
     num_gen0--;
   }
 
   /* reset, in case we have a second round */
-  gc->weak_boxes[is_late] = NULL;
-  gc->bp_weak_boxes[is_late] = NULL;
+  if (from_inc) {
+    gc->inc_weak_boxes[is_late] = NULL;
+  } else {
+    gc->weak_boxes[is_late] = NULL;
+    gc->bp_weak_boxes[is_late] = NULL;
+  }
 }
 
 /******************************************************************************/
@@ -412,7 +453,7 @@ static int mark_ephemeron(void *p, struct NewGC *gc)
 
   if (eph->val) {
     GC_ASSERT(!gc->doing_memory_accounting);
-    if (gc->inc_gen1 && !gc->fnl_gen1) {
+    if (gc->inc_gen1) {
       eph->inc_next = gc->inc_ephemerons;
       gc->inc_ephemerons = eph;
     } else if (gc->during_backpointer) {
@@ -559,15 +600,23 @@ static int mark_ready_ephemerons(GCTYPE *gc, int inc_gen1)
   return did_one;
 }
 
-static void zero_remaining_ephemerons(GCTYPE *gc)
+static void zero_remaining_ephemerons(GCTYPE *gc, int from_inc)
 {
   GC_Ephemeron *eph;
 
   /* After level-1 finalization, any remaining ephemerons
      should be zeroed. */
-  for (eph = gc->ephemerons; eph; eph = eph->next) {
-    eph->key = NULL;
-    eph->val = NULL;
+  if (from_inc) {
+    for (eph = gc->inc_ephemerons; eph; eph = eph->inc_next) {
+      eph->key = NULL;
+      eph->val = NULL;
+    }
+    gc->inc_ephemerons = NULL;
+  } else {
+    for (eph = gc->ephemerons; eph; eph = eph->next) {
+      eph->key = NULL;
+      eph->val = NULL;
+    }
+    gc->ephemerons = NULL;
   }
-  gc->ephemerons = NULL;
 }

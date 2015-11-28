@@ -312,6 +312,8 @@ typedef struct NewGC {
   GC_Ephemeron  *ephemerons, *inc_ephemerons, *bp_ephemerons;
   int num_last_seen_ephemerons;
 
+  void *weak_incremental_done;
+
   Allocator *saved_allocator;
 
 #ifdef MZ_USE_PLACES
