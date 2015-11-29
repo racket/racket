@@ -3634,7 +3634,16 @@ scheme_expt(int argc, Scheme_Object *argv[])
          be converted to infinity, this would return a complex NaN.
          Instead, we want to return (positive of negative) infinity.
          See discussion in Github issue 1148. */
+#ifdef MZ_USE_SINGLE_FLOATS
+      if (sgl) {
+        /* Need to go through singles to get right overflow behavior. */
+        e_dbl = (double)(scheme_bignum_to_float(e));
+      } else {
+        e_dbl = scheme_bignum_to_double(e);
+      }
+#else
       e_dbl = scheme_bignum_to_double(e);
+#endif
       if ((d < 0.0) && MZ_IS_POS_INFINITY(e_dbl)) {
         if (SCHEME_TRUEP(scheme_odd_p(1, &e))) {
           return SELECT_EXPT_PRECISION(scheme_single_minus_inf_object,

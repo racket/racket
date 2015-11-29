@@ -572,6 +572,9 @@
 (test -inf.0 expt -4.0 (add1 (expt 2 5000)))
 (test +inf.f expt -4.0f0 (expt 2 5000))
 (test -inf.f expt -4.0f0 (add1 (expt 2 5000)))
+;; exponent large enough to overflow singles, but not doubles
+(test +inf.f expt -4.0f0 (lcm (exact-round -1.7976931348623151e+308)))
+(test -inf.f expt -4.0f0 (add1 (lcm (exact-round -1.7976931348623151e+308))))
 
 (define (inf-non-real? x)
   (and (not (real? x))
