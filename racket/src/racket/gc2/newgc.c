@@ -254,8 +254,9 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 
 /* Incremental mode */
 static int always_collect_incremental_on_minor = 0;
-#define INCREMENTAL_COLLECT_FUEL_PER_100M (32 * 1024)
-#define INCREMENTAL_REPAIR_FUEL_PER_100M  256
+#define INCREMENTAL_COLLECT_FUEL_PER_100M (16 * 1024)
+#define INCREMENTAL_REPAIR_FUEL_PER_100M  128
+#define INCREMENTAL_MINOR_REQUEST_DIVISOR 4
 
 /* Conservatively force a major GC after a certain number
    of minor GCs. It should be ok to set this value
@@ -4177,7 +4178,9 @@ static void propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
         propagate_marks_worker(gc, p, 1);
         fuel--;
       }
-    } while (do_emph && mark_ready_ephemerons(gc, 1) && fuel);
+    } while (do_emph
+             && (fuel || mark_stack_is_empty(gc->inc_mark_stack))
+             && mark_ready_ephemerons(gc, 1));
 
     gc->inc_prop_count += (init_fuel - fuel);
 
@@ -5873,12 +5876,10 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
                  || (gc->started_incremental
                      && mark_stack_is_empty(gc->inc_mark_stack)
                      && gc->finishing_incremental
-                     && !gc->inc_repair_next
-                     && !no_full));
+                     && !gc->inc_repair_next));
 
-  if (gc->gc_full && no_full) {
+  if (gc->gc_full && no_full)
     return;
-  }
 
   next_gc_full = (gc->gc_full
                   && !gc->started_incremental
@@ -5987,7 +5988,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
       mark_finalizer_structs(gc, 1);
       if (!mark_stack_is_empty(gc->inc_mark_stack)) {
         int fuel = (no_full
-                    ? INCREMENTAL_COLLECT_FUEL_PER_100M / 8
+                    ? INCREMENTAL_COLLECT_FUEL_PER_100M / INCREMENTAL_MINOR_REQUEST_DIVISOR
                     : INCREMENTAL_COLLECT_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1));
         propagate_incremental_marks(gc, 1, fuel);
         TIME_STEP("incremented");
@@ -6039,18 +6040,11 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   repair_heap(gc);
   TIME_STEP("repaired");
   if (check_inc_repair) {
-    if (!gc->inc_repair_next) {
-      /* Didn't fire a full GC? This shouldn't happend, but if it
-         does, go back to incremental marking: */
-      GC_ASSERT(gc->gc_full);
-      gc->finishing_incremental = 0;
-    } else {
-      int fuel = (no_full
-                  ? INCREMENTAL_REPAIR_FUEL_PER_100M / 8
-                  : INCREMENTAL_REPAIR_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1));
-      incremental_repair_pages(gc, fuel);
-      TIME_STEP("inc-repaired");
-    }
+    int fuel = (no_full
+                ? INCREMENTAL_REPAIR_FUEL_PER_100M / INCREMENTAL_MINOR_REQUEST_DIVISOR
+                : INCREMENTAL_REPAIR_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1));
+    incremental_repair_pages(gc, fuel);
+    TIME_STEP("inc-repaired");
   }
 
   clean_up_heap(gc);
