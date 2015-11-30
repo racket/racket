@@ -565,7 +565,7 @@
               (directory-list p)
               #:sema continue-sema)))]
        [(and (or (not check-suffix?)
-                 (regexp-match? rx:default-suffixes p)
+                 (regexp-match? rx:default-suffixes (file-name-from-path p))
                  (get-cmdline p #f #:check-info? #t)
                  (include-path? p #:check-info? #t))
              (or (not check-suffix?)
