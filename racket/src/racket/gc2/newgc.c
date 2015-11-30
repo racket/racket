@@ -2692,6 +2692,7 @@ static void push_ptr(NewGC *gc, void *ptr, int inc_gen1)
 #endif
 
   GC_ASSERT(inc_gen1 || !gc->inc_gen1);
+  GC_ASSERT(!inc_gen1 || !gc->finishing_incremental);
 
   push_ptr_at(ptr, inc_gen1 ? &gc->inc_mark_stack : &gc->mark_stack);
 }
@@ -5501,7 +5502,11 @@ static void clean_up_heap(NewGC *gc)
           next = NULL;
         }
       }
-      gc->med_freelist_pages[ty][i] = prev;
+      if (gc->finishing_incremental) {
+        /* no more allocation on old pages */
+        gc->med_freelist_pages[ty][i] = NULL;
+      } else
+        gc->med_freelist_pages[ty][i] = prev;
     }
   }
 
@@ -5832,6 +5837,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   if (gc->full_needed_for_finalization && gc->gc_full)
     gc->full_needed_for_finalization= 0;
+  if (gc->gc_full)
+    gc->finishing_incremental = 0;
 
 #ifdef GC_DEBUG_PAGES
   if (gc->gc_full == 1) {
@@ -5984,7 +5991,9 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   TIME_STEP("repaired");
   if (check_inc_repair) {
     if (!gc->inc_repair_next) {
-      /* Didn't fire a full GC? Go back to incremental marking: */
+      /* Didn't fire a full GC? This shouldn't happend, but if it
+         does, go back to incremental marking: */
+      GC_ASSERT(gc->gc_full);
       gc->finishing_incremental = 0;
     } else {
       int fuel = (no_full
