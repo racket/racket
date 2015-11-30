@@ -398,6 +398,12 @@ SHARED_OK static struct protoent *proto;
 
 /* mz_addrinfo is defined in scheme.h */
 
+#if defined(__MINGW32__) && !defined(HAVE_GETADDRINFO)
+/* Although `configure` didn't discover it, we do have getaddrinfo()
+   from Winsock */
+# define HAVE_GETADDRINFO
+#endif
+
 #ifdef HAVE_GETADDRINFO
 # define mzAI_PASSIVE AI_PASSIVE 
 # define mz_getaddrinfo getaddrinfo
@@ -410,24 +416,6 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
   XFORM_SKIP_PROC
 {
   struct hostent *h;
-
-#ifdef __MINGW32__
-  {
-    HMODULE hm;
-    hm = LoadLibrary("ws2_32.dll");
-    if (hm) {
-      gai_t gai;
-      gai = (gai_t)GetProcAddress(hm, "getaddrinfo");
-      if (gai) {
-	int v;
-	v = gai(nodename, servname, hints, res);
-	if (!v && !(*res)->ai_addr)
-	  (*res)->ai_addrlen = 0;
-	return v;
-      }
-    }
-  }
-#endif
 
   if (nodename)
     h = gethostbyname(nodename);
@@ -471,32 +459,13 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
 void mz_freeaddrinfo(struct mz_addrinfo *ai)
   XFORM_SKIP_PROC
 {
-#ifdef __MINGW32__
-  {
-    HMODULE hm;
-    hm = LoadLibrary("ws2_32.dll");
-    if (hm) {
-      fai_t fai;
-      fai = (fai_t)GetProcAddress(hm, "freeaddrinfo");
-      if (fai) {
-	fai(ai);
-	return;
-      }
-    }
-  }
-#endif
-
   free(ai->ai_addr);
   free(ai);
 }
 const char *mz_gai_strerror(int ecode)
   XFORM_SKIP_PROC
 {
-#ifdef __MINGW32__
-  return NULL; /* => use FormatMessageW(), instead */
-#else
   return hstrerror(ecode);
-#endif
 }
 #endif
 
