@@ -5408,6 +5408,8 @@ static void incremental_repair_pages(NewGC *gc, int fuel)
   while (fuel && gc->inc_repair_next) {
     page = gc->inc_repair_next;
     gc->inc_repair_next = page->inc_modified_next;
+    if (!gc->inc_repair_next)
+      gc->inc_repair_next = gc->inc_modified_next;
     GC_ASSERT(page->generation >= AGE_GEN_1);
     if (page->generation == AGE_VACATED) {
       /* skip */
