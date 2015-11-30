@@ -178,6 +178,7 @@ inline static int page_mmu_type(mpage *page);
 inline static int page_mmu_protectable(mpage *page);
 static void free_mpage(mpage *page);
 static void gen_half_free_mpage(NewGC *gc, mpage *work);
+static int inc_marked_gen1(NewGC *gc, void *p);
 
 #if defined(MZ_USE_PLACES) && defined(GC_DEBUG_PAGES)
 static FILE* gcdebugOUT(NewGC *gc) {
@@ -1647,10 +1648,19 @@ uintptr_t add_no_overflow(uintptr_t a, uintptr_t b)
   return c;
 }
 
+uintptr_t subtract_no_underflow(uintptr_t a, uintptr_t b)
+{
+  if (a >= b)
+    return a-b;
+  else
+    return 0;
+}
+
 int GC_allocate_phantom_bytes(void *pb, intptr_t request_size_bytes)
 {
   NewGC *gc = GC_get_GC();
   mpage *page;
+  int inc_count;
 
 #ifdef NEWGC_BTC_ACCOUNT
   if (request_size_bytes > 0) {
@@ -1668,20 +1678,30 @@ int GC_allocate_phantom_bytes(void *pb, intptr_t request_size_bytes)
 
   page = pagemap_find_page(gc->page_maps, pb);
 
+  if (page->generation >= AGE_GEN_1)
+    inc_count = inc_marked_gen1(gc, pb);
+  else
+    inc_count = 0;
+
   if (request_size_bytes < 0) {
     request_size_bytes = -request_size_bytes;
-    if (!page || (page->generation < AGE_GEN_1)) {
-      if (gc->gen0_phantom_count > request_size_bytes)
-        gc->gen0_phantom_count -= request_size_bytes;
-    } else {
-      if (gc->memory_in_use > request_size_bytes)
-        gc->memory_in_use -= request_size_bytes;
+    if (!page || (page->generation < AGE_GEN_1))
+      gc->gen0_phantom_count = subtract_no_underflow(gc->gen0_phantom_count, request_size_bytes);
+    else {
+      gc->memory_in_use = subtract_no_underflow(gc->memory_in_use, request_size_bytes);
+      gc->phantom_count = subtract_no_underflow(gc->phantom_count, request_size_bytes);
+      if (inc_count)
+        gc->inc_phantom_count = subtract_no_underflow(gc->inc_phantom_count, request_size_bytes);
     }
   } else {
     if (!page || (page->generation < AGE_GEN_1))
       gc->gen0_phantom_count = add_no_overflow(gc->gen0_phantom_count, request_size_bytes);
-    else
+    else {
       gc->memory_in_use = add_no_overflow(gc->memory_in_use, request_size_bytes);
+      gc->phantom_count = add_no_overflow(gc->phantom_count, request_size_bytes);
+      if (inc_count)
+        gc->inc_phantom_count = add_no_overflow(gc->inc_phantom_count, request_size_bytes);
+    }
   }
 
   /* If we've allocated enough phantom bytes, then force a GC */
@@ -2057,6 +2077,23 @@ inline static int marked(NewGC *gc, const void *p)
       fprintf(stderr, "ABORTING! INVALID SIZE_CLASS %i\n", page->size_class);
       abort();
   }
+}
+
+/* Used outside of GC when an incremental GC might be in progress */
+static int inc_marked_gen1(NewGC *gc, void *p)
+{
+  if (gc->started_incremental) {
+    int r;
+    GC_ASSERT(!gc->check_gen1);
+    GC_ASSERT(!gc->inc_gen1);
+    gc->check_gen1 = 1;
+    gc->inc_gen1 = 1;
+    r = marked(gc, p);
+    gc->check_gen1 = 0;
+    gc->inc_gen1 = 0;
+    return r;
+  } else
+    return 0;
 }
 
 static int is_in_generation_half(NewGC *gc, const void *p)
@@ -2594,10 +2631,22 @@ static int mark_phantom(void *p, struct NewGC *gc)
   Phantom_Bytes *pb = (Phantom_Bytes *)p;
 
   if (!gc->during_backpointer) {
-    if (gc->inc_gen1)
+    if (gc->doing_memory_accounting)
+      gc->acct_phantom_count = add_no_overflow(gc->acct_phantom_count, pb->count);
+    else if (gc->inc_gen1)
       gc->inc_phantom_count = add_no_overflow(gc->inc_phantom_count, pb->count);
-    else
-      gc->phantom_count = add_no_overflow(gc->phantom_count, pb->count);
+    else {
+      mpage *page = ((gc->use_gen_half && !gc->inc_gen1)
+                     ? pagemap_find_page(gc->page_maps, pb)
+                     : NULL);
+      if (page && (page->generation == AGE_GEN_HALF)) {
+        gc->gen0_phantom_count = add_no_overflow(gc->gen0_phantom_count, pb->count);
+      } else {
+        gc->phantom_count = add_no_overflow(gc->phantom_count, pb->count);
+        if (gc->started_incremental && !gc->gc_full)
+          gc->inc_phantom_count = add_no_overflow(gc->inc_phantom_count, pb->count);
+      }
+    }
   }
 
   return gcBYTES_TO_WORDS(sizeof(Phantom_Bytes));
@@ -5289,10 +5338,10 @@ static void repair_heap(NewGC *gc)
     }
   }
 
+  /* This calculation will be ignored for a full GC: */
   memory_in_use += gen_half_size_in_use(gc);
   memory_in_use = add_no_overflow(memory_in_use, gc->phantom_count);
   gc->memory_in_use = memory_in_use;
-  
 
 #if CHECK_NO_MISSED_FIXUPS
   /* Double-check that no fixups apply to live objects at this point */
@@ -6093,8 +6142,15 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 #endif
     park_for_inform_callback(gc);
     gc->GC_collect_inform_callback(is_master, gc->gc_full, do_incremental,
-                                   old_mem_use + old_gen0, gc->memory_in_use, 
-                                   old_mem_allocated, mmu_memory_allocated(gc->mmu)+gc->phantom_count,
+                                   /* original memory use: */
+                                   old_mem_use + old_gen0,
+                                   /* new memory use; gen0_phantom_count can be non-zero due to
+                                      phantom-bytes record in generation 1/2: */
+                                   gc->memory_in_use + gc->gen0_phantom_count,
+                                   /* original memory use, including adminstrative structures: */
+                                   old_mem_allocated,
+                                   /* new memory use with adminstrative structures: */
+                                   mmu_memory_allocated(gc->mmu)+gc->phantom_count+gc->gen0_phantom_count,
                                    gc->child_gc_total);
     unpark_for_inform_callback(gc);
   }

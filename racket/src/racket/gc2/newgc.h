@@ -292,9 +292,10 @@ typedef struct NewGC {
   unsigned short cust_box_tag;
   unsigned short phantom_tag;
 
-  uintptr_t phantom_count;
-  uintptr_t gen0_phantom_count;
-  uintptr_t inc_phantom_count;
+  uintptr_t phantom_count; /* old-generation count; included in `memory_in_use`, except during a minor collection */
+  uintptr_t gen0_phantom_count; /* count for generation 0 + 1/2 */
+  uintptr_t inc_phantom_count; /* accumulated count for an incremental collection */
+  uintptr_t acct_phantom_count; /* count that is set during memory accounting */
 
   Roots roots;  
   struct MMU     *mmu;

@@ -529,12 +529,11 @@ static void BTC_do_accounting(NewGC *gc)
     last = cur;
     while(cur) {
       int owner = custodian_to_owner_set(gc, cur);
-      uintptr_t save_count = gc->phantom_count;
 
       GC_ASSERT(owner >= 0);
       GC_ASSERT(owner <= gc->owner_table_size);
       
-      gc->phantom_count = 0;
+      gc->acct_phantom_count = 0;
 
       gc->current_mark_owner = owner;
       GCDEBUG((DEBUGOUTF,"MARKING THREADS OF OWNER %i (CUST %p)\n", owner, cur));
@@ -550,8 +549,7 @@ static void BTC_do_accounting(NewGC *gc)
 
       owner_table = gc->owner_table;
       owner_table[owner]->memory_use = add_no_overflow(owner_table[owner]->memory_use, 
-                                                       gcBYTES_TO_WORDS(gc->phantom_count));
-      gc->phantom_count = save_count;
+                                                       gcBYTES_TO_WORDS(gc->acct_phantom_count));
     }
 
     release_master_btc_mark(gc);
