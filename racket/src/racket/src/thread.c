@@ -8330,7 +8330,10 @@ static Scheme_Object *make_phantom_bytes(int argc, Scheme_Object *argv[])
 static Scheme_Object *set_phantom_bytes(int argc, Scheme_Object *argv[])
 {
   Scheme_Phantom_Bytes *pb;
-  intptr_t old_size, amt;
+  intptr_t amt;
+# ifdef MZ_PRECISE_GC
+  intptr_t old_size;
+# endif
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_phantom_bytes_type))
     scheme_wrong_contract("set-phantom-bytes!", "phantom-bytes?", 0, argc, argv);
@@ -8340,7 +8343,10 @@ static Scheme_Object *set_phantom_bytes(int argc, Scheme_Object *argv[])
   pb = (Scheme_Phantom_Bytes *)argv[0];
   amt = SCHEME_INT_VAL(argv[1]);
 
+# ifdef MZ_PRECISE_GC
   old_size = pb->size;
+#endif
+
   pb->size = amt;
 
 # ifdef MZ_PRECISE_GC
