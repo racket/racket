@@ -474,7 +474,14 @@ static int mark_ephemeron(void *p, struct NewGC *gc)
       eph->inc_next = gc->inc_ephemerons;
       gc->inc_ephemerons = eph;
     } else if (gc->during_backpointer) {
-      if (!gc->gc_full) {
+      if (!gc->gc_full
+          /* If this old-generation object is not yet marked
+             and we're finishing an incremental pass, then
+             it won't get marked (and it can only refer to
+             other old-generation objects), so ignore in that case */
+          && (gc->mark_gen1
+              || !gc->started_incremental
+              || !gc->finishing_incremental)) {
         eph->next = gc->bp_ephemerons;
         gc->bp_ephemerons = eph;
       }

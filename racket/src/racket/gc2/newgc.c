@@ -4163,33 +4163,29 @@ static void propagate_marks_plus_ephemerons(NewGC *gc)
 
 static int propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
 {
-  if (gc->inc_mark_stack) {
-    int save_inc, save_check, init_fuel = fuel;
+  int save_inc, save_check, init_fuel = fuel;
 
-    GC_ASSERT(gc->mark_gen1);
+  GC_ASSERT(gc->mark_gen1);
     
-    save_inc = gc->inc_gen1;
-    save_check = gc->check_gen1;
+  save_inc = gc->inc_gen1;
+  save_check = gc->check_gen1;
   
-    gc->inc_gen1 = 1;
-    gc->check_gen1 = 1;
+  gc->inc_gen1 = 1;
+  gc->check_gen1 = 1;
 
-    do {
-      void *p;
-      while (fuel && pop_ptr(gc, &p, 1)) {
-        GCDEBUG((DEBUGOUTF, "Popped incremental pointer %p\n", p));
-        propagate_marks_worker(gc, p, 1);
-        fuel--;
-      }
-    } while (do_emph
-             && (fuel || mark_stack_is_empty(gc->inc_mark_stack))
-             && mark_ready_ephemerons(gc, 1));
+  do {
+    void *p;
+    while (fuel && pop_ptr(gc, &p, 1)) {
+      GCDEBUG((DEBUGOUTF, "Popped incremental pointer %p\n", p));
+      propagate_marks_worker(gc, p, 1);
+      fuel--;
+    }
+  } while (do_emph && fuel && mark_ready_ephemerons(gc, 1));
 
-    gc->inc_prop_count += (init_fuel - fuel);
+  gc->inc_prop_count += (init_fuel - fuel);
 
-    gc->inc_gen1 = save_inc;
-    gc->check_gen1 = save_check;
-  }
+  gc->inc_gen1 = save_inc;
+  gc->check_gen1 = save_check;
 
   return fuel;
 }
@@ -5782,6 +5778,8 @@ static int mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
 
   if (!old_gen)
     propagate_marks_plus_ephemerons(gc);
+  else
+    (void)propagate_incremental_marks(gc, 1, -1);
 
   check_finalizers(gc, 1, old_gen);
   if (!old_gen)
