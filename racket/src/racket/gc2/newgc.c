@@ -4158,7 +4158,7 @@ static void propagate_marks_plus_ephemerons(NewGC *gc)
   } while (mark_ready_ephemerons(gc, 0));
 }
 
-static void propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
+static int propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
 {
   if (gc->inc_mark_stack) {
     int save_inc, save_check, init_fuel = fuel;
@@ -4187,6 +4187,8 @@ static void propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
     gc->inc_gen1 = save_inc;
     gc->check_gen1 = save_check;
   }
+
+  return fuel;
 }
 
 #ifdef MZ_USE_PLACES
@@ -5767,16 +5769,23 @@ extern double scheme_get_inexact_milliseconds(void);
 # define TIME_ARGS /**/
 #endif
 
-static void mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
+#define AS_100M(c) ((c / (1024 * 1024 * 100)) + 1)
+
+static int mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
 {
+  int fuel = (INCREMENTAL_COLLECT_FUEL_PER_100M * AS_100M(gc->memory_in_use)) / 2;
+
   if (!old_gen)
     propagate_marks_plus_ephemerons(gc);
 
   check_finalizers(gc, 1, old_gen);
   if (!old_gen)
     propagate_marks_plus_ephemerons(gc);
-  else
-    propagate_incremental_marks(gc, 1, -1);
+  else {
+    fuel = propagate_incremental_marks(gc, 1, fuel);
+    if (!fuel)
+      return 1;
+  }
 
   TIME_STEP("marked");
 
@@ -5785,8 +5794,16 @@ static void mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
     gc->fnl_gen1 = 1;
   }
 
-  zero_weak_boxes(gc, 0, 0, old_gen);
-  zero_weak_arrays(gc, 0, old_gen);
+  fuel = zero_weak_boxes(gc, 0, 0, old_gen, (old_gen ? fuel : -1));
+  if (old_gen && !fuel) {
+    gc->fnl_gen1 = 0;
+    return 1;
+  }
+  fuel = zero_weak_arrays(gc, 0, old_gen, (old_gen ? fuel : -1));
+  if (old_gen && !fuel) {
+    gc->fnl_gen1 = 0;
+    return 1;
+  }
   zero_remaining_ephemerons(gc, old_gen);
 
   TIME_STEP("zeroed");
@@ -5795,33 +5812,35 @@ static void mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
   if (!old_gen)
     propagate_marks(gc);
   else
-    propagate_incremental_marks(gc, 0, -1);
-  zero_weak_boxes(gc, 1, 0, old_gen);
+    (void)propagate_incremental_marks(gc, 0, -1);
+  (void)zero_weak_boxes(gc, 1, 0, old_gen, -1);
 
   check_finalizers(gc, 3, old_gen);
   if (!old_gen)
     propagate_marks(gc);
   else
-    propagate_incremental_marks(gc, 0, -1);
+    (void)propagate_incremental_marks(gc, 0, -1);
 
   if (gc->GC_post_propagate_hook)
     gc->GC_post_propagate_hook(gc);
 
   /* for any new ones that appeared: */
-  zero_weak_boxes(gc, 0, 1, old_gen);
-  zero_weak_boxes(gc, 1, 1, old_gen);
-  zero_weak_arrays(gc, 1, old_gen);
+  (void)zero_weak_boxes(gc, 0, 1, old_gen, -1);
+  (void)zero_weak_boxes(gc, 1, 1, old_gen, -1);
+  (void)zero_weak_arrays(gc, 1, old_gen, -1);
   zero_remaining_ephemerons(gc, old_gen);
 
   if (old_gen)
     gc->fnl_gen1 = 0;
 
   TIME_STEP("finalized");
+
+  return 0;
 }
 
-static void mark_and_finalize_all_incremental(NewGC *gc TIME_FORMAL_ARGS)
+static int mark_and_finalize_all_incremental(NewGC *gc TIME_FORMAL_ARGS)
 {
-  int save_inc, save_check;
+  int save_inc, save_check, more_to_do;
 
   GC_ASSERT(gc->mark_gen1);
 
@@ -5831,10 +5850,12 @@ static void mark_and_finalize_all_incremental(NewGC *gc TIME_FORMAL_ARGS)
   gc->inc_gen1 = 1;
   gc->check_gen1 = 1;
   
-  mark_and_finalize_all(gc, 1 TIME_ARGS);
+  more_to_do = mark_and_finalize_all(gc, 1 TIME_ARGS);
 
   gc->inc_gen1 = save_inc;
   gc->check_gen1 = save_check;
+
+  return more_to_do;
 }
 
 /* Full GCs trigger finalization. Finalization releases data
@@ -5987,7 +6008,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
-  mark_and_finalize_all(gc, 0 TIME_ARGS);
+  (void)mark_and_finalize_all(gc, 0 TIME_ARGS);
 
   if (do_incremental) {
     if (!gc->finishing_incremental) {
@@ -5995,19 +6016,22 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
       if (!mark_stack_is_empty(gc->inc_mark_stack)) {
         int fuel = (no_full
                     ? INCREMENTAL_COLLECT_FUEL_PER_100M / INCREMENTAL_MINOR_REQUEST_DIVISOR
-                    : INCREMENTAL_COLLECT_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1));
-        propagate_incremental_marks(gc, 1, fuel);
+                    : INCREMENTAL_COLLECT_FUEL_PER_100M * AS_100M(gc->memory_in_use));
+        (void)propagate_incremental_marks(gc, 1, fuel);
         TIME_STEP("incremented");
       } else {
         /* We ran out of incremental marking work, so
-           perform major-GC finalization in one go. */
-        mark_and_finalize_all_incremental(gc TIME_ARGS);
-        BTC_clean_up_gen1(gc);
-        reset_gen1_finalizer_tree(gc);
-        /* Switch to incrementally reparing pages before propagating
-           marks again. */
-        gc->finishing_incremental = 1;
-        gc->inc_repair_next = gc->inc_modified_next;
+           perform major-GC finalization */
+        if (mark_and_finalize_all_incremental(gc TIME_ARGS)) {
+          /* More finalizaton work to do */
+          reset_gen1_finalizer_tree(gc);
+        } else {
+          BTC_clean_up_gen1(gc);
+          reset_gen1_finalizer_tree(gc);
+          /* Switch to incrementally reparing pages */
+          gc->finishing_incremental = 1;
+          gc->inc_repair_next = gc->inc_modified_next;
+        }
       }
       check_inc_repair = 0;
     } else
@@ -6048,7 +6072,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   if (check_inc_repair) {
     int fuel = (no_full
                 ? INCREMENTAL_REPAIR_FUEL_PER_100M / INCREMENTAL_MINOR_REQUEST_DIVISOR
-                : INCREMENTAL_REPAIR_FUEL_PER_100M * ((gc->memory_in_use / (1024 * 1024 * 100)) + 1));
+                : INCREMENTAL_REPAIR_FUEL_PER_100M * AS_100M(gc->memory_in_use));
     incremental_repair_pages(gc, fuel);
     TIME_STEP("inc-repaired");
   }

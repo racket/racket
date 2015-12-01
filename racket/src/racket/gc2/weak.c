@@ -167,7 +167,7 @@ static GC_Weak_Array *append_weak_arrays(GC_Weak_Array *wa, GC_Weak_Array *bp_wa
     return bp_wa;
 }
 
-static void zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc)
+static int zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc, int fuel)
 {
   GC_Weak_Array *wa;
   int i, num_gen0;
@@ -192,6 +192,8 @@ static void zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc)
       else
         data[i] = GC_resolve2(p, gc);
     }
+    if (fuel > 0)
+      fuel = ((fuel > wa->count) ? (fuel - wa->count) : 0);
 
     if (num_gen0 > 0) {
       if (!is_in_generation_half(gc, wa)) {
@@ -217,6 +219,8 @@ static void zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc)
     gc->weak_arrays = NULL;
     gc->bp_weak_arrays = NULL;
   }
+
+  return fuel;
 }
 
 /******************************************************************************/
@@ -367,7 +371,7 @@ static GC_Weak_Box *append_weak_boxes(GC_Weak_Box *wb, GC_Weak_Box *bp_wb, int *
     return bp_wb;
 }
 
-static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc)
+static int zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc, int fuel)
 {
   GC_Weak_Box *wb;
   int num_gen0;
@@ -426,7 +430,18 @@ static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_in
       wb = next;
     } else
       wb = wb->next;
+
     num_gen0--;
+
+    if (fuel >= 0) {
+      if (fuel > 0)
+        fuel--;
+      else {
+        GC_ASSERT(from_inc);
+        gc->inc_weak_boxes[is_late] = wb;
+        return 0;
+      }
+    }
   }
 
   /* reset, in case we have a second round */
@@ -436,6 +451,8 @@ static void zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_in
     gc->weak_boxes[is_late] = NULL;
     gc->bp_weak_boxes[is_late] = NULL;
   }
+
+  return fuel;
 }
 
 /******************************************************************************/
