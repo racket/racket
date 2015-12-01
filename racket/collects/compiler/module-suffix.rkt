@@ -52,8 +52,7 @@
   (define suffixes
     (get-module-suffixes #:mode key #:group group #:namespace namespace))
   (byte-pregexp
-   (bytes-append #"^([^.].*)\\.(?i:"
+   (bytes-append #"^(.*)\\.(?i:"
                  (apply bytes-append
                         (add-between suffixes #"|"))
                  #")$")))
-
