@@ -267,7 +267,6 @@ typedef struct Thread_Local_Variables {
   intptr_t scheme_current_cont_mark_stack_;
   intptr_t scheme_current_cont_mark_pos_;
   struct Scheme_Custodian *main_custodian_;
-  struct Scheme_Custodian *last_custodian_;
   struct Scheme_Hash_Table *limited_custodians_;
   struct Scheme_Plumber *initial_plumber_;
   struct Scheme_Config *initial_config_;

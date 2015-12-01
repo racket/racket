@@ -191,7 +191,6 @@ THREAD_LOCAL_DECL(MZ_MARK_POS_TYPE scheme_current_cont_mark_pos);
 THREAD_LOCAL_DECL(int scheme_semaphore_fd_kqueue);
 
 THREAD_LOCAL_DECL(static Scheme_Custodian *main_custodian);
-THREAD_LOCAL_DECL(static Scheme_Custodian *last_custodian);
 THREAD_LOCAL_DECL(static Scheme_Hash_Table *limited_custodians = NULL);
 READ_ONLY static Scheme_Object *initial_inspector;
 
@@ -1084,8 +1083,6 @@ static void adjust_custodian_family(void *mgr, void *skip_move)
     /* Remove from global list: */
     if (CUSTODIAN_FAM(r->global_next))
       CUSTODIAN_FAM(CUSTODIAN_FAM(r->global_next)->global_prev) = CUSTODIAN_FAM(r->global_prev);
-    else
-      last_custodian = CUSTODIAN_FAM(r->global_prev);
     CUSTODIAN_FAM(CUSTODIAN_FAM(r->global_prev)->global_next) = CUSTODIAN_FAM(r->global_next);
     
     /* Add children to parent's list: */
@@ -1159,8 +1156,6 @@ void insert_custodian(Scheme_Custodian *m, Scheme_Custodian *parent)
     CUSTODIAN_FAM(parent->global_next) = m;
     if (next)
       CUSTODIAN_FAM(next->global_prev) = m;
-    else
-      last_custodian = m;
   } else {
     CUSTODIAN_FAM(m->global_next) = NULL;
     CUSTODIAN_FAM(m->global_prev) = NULL;
@@ -7988,13 +7983,11 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_ERROR_PRINT_SRCLOC, scheme_true);
 
   REGISTER_SO(main_custodian);
-  REGISTER_SO(last_custodian);
   REGISTER_SO(limited_custodians);
   main_custodian = scheme_make_custodian(NULL);
 #ifdef MZ_PRECISE_GC
   GC_register_root_custodian(main_custodian);
 #endif
-  last_custodian = main_custodian;
   init_param(cells, paramz, MZCONFIG_CUSTODIAN, (Scheme_Object *)main_custodian);
 
   REGISTER_SO(initial_plumber);

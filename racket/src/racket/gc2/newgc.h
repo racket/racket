@@ -222,6 +222,7 @@ typedef struct NewGC {
   /* blame the child */
   unsigned int doing_memory_accounting        :1;
   unsigned int really_doing_accounting        :1;
+  unsigned int next_really_doing_accounting   :1;
   unsigned int old_btc_mark                   :1;
   unsigned int new_btc_mark                   :1;
   unsigned int reset_limits                   :1;

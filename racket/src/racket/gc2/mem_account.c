@@ -225,21 +225,27 @@ inline static void clean_up_owner_table(NewGC *gc)
 {
   OTEntry **owner_table = gc->owner_table;
   const int table_size = gc->owner_table_size;
-  int i;
+  int i, really_doing_accounting = 0;
 
   for(i = 1; i < table_size; i++)
     if(owner_table[i]) {
       /* repair or delete the originator */
       if(!marked(gc, owner_table[i]->originator)) {
         owner_table[i]->originator = NULL;
-      } else 
+      } else {
         owner_table[i]->originator = GC_resolve2(owner_table[i]->originator, gc);
+        if (((Scheme_Custodian *)owner_table[i]->originator)->really_doing_accounting) {
+          really_doing_accounting = 1;
+        }
+      }
 
       /* potential delete */
       if(i != 1) 
         if((owner_table[i]->memory_use == 0) && !owner_table[i]->originator)
           free_owner_set(gc, i);
     }
+
+  gc->next_really_doing_accounting |= really_doing_accounting;
 }
 
 inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
@@ -248,11 +254,13 @@ inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
   uintptr_t retval = 0;
   int i;
 
+  ((Scheme_Custodian *)custodian)->really_doing_accounting = 1;
+
   if(!gc->really_doing_accounting) {
     if (!gc->avoid_collection) {
       CHECK_PARK_UNUSED(gc);
       gc->park[0] = custodian;
-      gc->really_doing_accounting = 1;
+      gc->next_really_doing_accounting = 1;
       garbage_collect(gc, 1, 0, 0, NULL);
       custodian = gc->park[0]; 
       gc->park[0] = NULL;
@@ -496,6 +504,9 @@ static void BTC_do_accounting(NewGC *gc)
   const int table_size = gc->owner_table_size;
   OTEntry **owner_table = gc->owner_table;
 
+  gc->really_doing_accounting = gc->next_really_doing_accounting;
+  gc->next_really_doing_accounting = 0;
+
   if(gc->really_doing_accounting) {
     Scheme_Custodian *cur = owner_table[current_owner(gc, NULL)]->originator, *last, *parent;
     Scheme_Custodian_Reference *box = cur->global_next;
@@ -584,12 +595,14 @@ inline static void BTC_add_account_hook(int type,void *c1,void *c2,uintptr_t b)
   NewGC *gc = GC_get_GC();
   AccountHook *work;
 
+  ((Scheme_Custodian *)c1)->really_doing_accounting = 1;
+
   if(!gc->really_doing_accounting) {
     if (!gc->avoid_collection) {
       CHECK_PARK_UNUSED(gc);
       gc->park[0] = c1; 
       gc->park[1] = c2;
-      gc->really_doing_accounting = 1;
+      gc->next_really_doing_accounting = 1;
       garbage_collect(gc, 1, 0, 0, NULL);
       c1 = gc->park[0]; gc->park[0] = NULL;
       c2 = gc->park[1]; gc->park[1] = NULL;

@@ -755,6 +755,7 @@ struct Scheme_Custodian {
   int gc_owner_set;
   Scheme_Object *cust_boxes;
   int num_cust_boxes, checked_cust_boxes;
+  int really_doing_accounting;
 #endif
 };
 
