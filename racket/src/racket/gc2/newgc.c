@@ -3701,6 +3701,9 @@ static void page_newly_marked_on(NewGC *gc, mpage *page, int is_a_master_page, i
 {
   if (inc_gen1) {
     GC_ASSERT(!page->inc_marked_on);
+    /* If this page isn't already marked as old, it must be a medium page whose
+       generation will be updated in the clean-up phase */
+    GC_ASSERT((page->generation >= AGE_GEN_1) || (page->size_class == SIZE_CLASS_MED_PAGE));
     page->inc_marked_on = 1;
     page->inc_modified_next = gc->inc_modified_next;
     gc->inc_modified_next = page;
@@ -5416,7 +5419,9 @@ static void incremental_repair_pages(NewGC *gc, int fuel)
     gc->inc_repair_next = page->inc_modified_next;
     if (!gc->inc_repair_next)
       gc->inc_repair_next = gc->inc_modified_next;
-    GC_ASSERT(page->generation >= AGE_GEN_1);
+    /* If this page isn't already marked as old, it must be a medium page whose
+       generation will be updated in the clean-up phase */
+    GC_ASSERT((page->generation >= AGE_GEN_1) || (page->size_class == SIZE_CLASS_MED_PAGE));
     if (page->generation == AGE_VACATED) {
       /* skip */
     } else if (page->size_class >= SIZE_CLASS_BIG_PAGE) {
