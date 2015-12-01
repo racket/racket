@@ -5276,12 +5276,16 @@ static void repair_heap(NewGC *gc)
                mark_backpointers. */
             void **start = PPTR(NUM(page->addr) + PREFIX_SIZE);
             void **end = PPTR(NUM(page->addr) + APAGE_SIZE - page->obj_size);
+            int live_count = 0;
             while(start < end) {
               objhead *info = (objhead *)start;
               if (!info->mark)
                 info->dead = 1;
+              else
+                live_count++;
               start += info->size;
             }
+            page->live_size = live_count * gcBYTES_TO_WORDS(page->obj_size);
           }
         } else {
           if ((page->generation == AGE_GEN_0) || gc->gc_full) {
