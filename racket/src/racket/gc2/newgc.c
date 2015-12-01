@@ -1353,7 +1353,9 @@ static int TAKE_SLOW_PATH()
 #endif
 
 inline static size_t gen0_size_in_use(NewGC *gc) {
-  return (gc->gen0.current_size + ((GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr)) - PREFIX_SIZE));
+  return (gc->gen0.current_size + (gc->gen0.curr_alloc_page
+                                   ? ((GC_gen0_alloc_page_ptr - NUM(gc->gen0.curr_alloc_page->addr)) - PREFIX_SIZE)
+                                   : 0));
 }
 
 #define BYTES_MULTIPLE_OF_WORD_TO_WORDS(sizeb) ((sizeb) >> gcLOG_WORD_SIZE)
@@ -1405,7 +1407,9 @@ inline static uintptr_t allocate_slowpath(NewGC *gc, size_t allocate_size, uintp
 #ifdef INSTRUMENT_PRIMITIVES 
       LOG_PRIM_START(((void*)garbage_collect));
 #endif
-      
+
+      gc->gen0.curr_alloc_page = NULL; /* so the memory use is not counted */
+
       collect_now(gc, 0, 0);
 
 #ifdef INSTRUMENT_PRIMITIVES 
