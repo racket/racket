@@ -583,13 +583,10 @@ garbage collected, and thus the red fish is not either.
 By default, Racket's @tech{generational garbage collector} creates
 brief pauses for frequent @deftech{minor collections}, which inspect
 only the most recently allocated objects, and long pauses for infrequent
-@deftech{major collections}, which re-inspect all memory. Weak
-references (as described in
-@secref["Reachability\x20and\x20Garbage\x20Collection"]) are cleared
-only by a major collection.
+@deftech{major collections}, which re-inspect all memory.
 
-For soft real-time applications, such as animations, games, and some
-network services, long pauses due to a major collection can interfere
+For some applications, such as animations and games,
+long pauses due to a major collection can interfere
 unacceptably with a program's operation. To reduce major-collection
 pauses, the Racket garbage collector supports @deftech{incremental
 garbage-collection} mode. In incremental mode, minor collections
@@ -598,7 +595,7 @@ work toward the next major collection. If all goes well, most of a
 major collection's work has been performed by minor collections the
 time that a major collection is needed, so the major collection's
 pause is as short as a minor collection's pause. Incremental mode
-tends to use more memory and run more slowly overall, but it can
+tends to run more slowly overall, but it can
 provide much more consistent real-time behavior.
 
 If the @envvar{PLT_INCREMENTAL_GC} environment variable is set when
@@ -612,7 +609,7 @@ Calling @racket[(collect-garbage 'incremental)] does not perform an
 immediate garbage collection, but instead requests that each minor
 collection perform incremental work up to the next major collection.
 The request expires with the next major collection. Make a call to
-@racket[(collect-garbage 'incremental)] in any periodic task within
+@racket[(collect-garbage 'incremental)] in any repeating task within
 an application that needs to be responsive in real time. Force a
 full collection with @racket[(collect-garbage)] just before an initial
 @racket[(collect-garbage 'incremental)] to initiate incremental mode
