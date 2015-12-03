@@ -213,7 +213,7 @@
       (delete-file path)))
   (let ([bp (current-break-parameterization)]
         [tmp-path (parameterize ([current-security-guard (or guard (current-security-guard))])
-                    (make-temporary-file "tmp~a" #f (path-only path)))]
+                    (make-temporary-file "tmp~a" #f (or (path-only path) (current-directory))))]
         [ok? #f])
     (dynamic-wind
      void

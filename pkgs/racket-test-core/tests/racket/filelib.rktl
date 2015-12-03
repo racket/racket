@@ -181,6 +181,44 @@
 (delete-file tempfile)
 (delete-file (make-lock-file-name tempfile))
 
+;;----------------------------------------------------------------------
+;; Atomic output
+
+(define (try-atomic-output fn)
+  (call-with-output-file*
+   fn
+   #:exists 'truncate
+   (lambda (o) (display "()" o)))
+  (define ts
+    (append
+     ;; Writers
+     (for/list ([i 10])
+       (thread (lambda ()
+                 (for ([j 100])
+                   (call-with-atomic-output-file
+                    fn
+                    (lambda (o tmp-path)
+                      (test (or (path-only fn) (current-directory))
+                            path-only tmp-path)
+                      (display "(" o)
+                      (flush-output o)
+                      (sync (system-idle-evt))
+                      (display ")" o)))))))
+     ;; Readers
+     (for/list ([i 10])
+       (thread (lambda ()
+                 (for ([j 100])
+                   (sync (system-idle-evt))
+                   (test '() call-with-input-file fn read)))))))
+  (for-each sync ts)
+  (delete-file fn))
+
+(try-atomic-output (make-temporary-file))
+;; The user's add-on directory should be writable and might be a
+;; different filesystem, so try that:
+(parameterize ([current-directory (find-system-path 'addon-dir)])
+  (try-atomic-output (format "atomic-output-~a" (current-inexact-milliseconds))))
+
 ;; ----------------------------------------
 
 (report-errs)

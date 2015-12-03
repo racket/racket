@@ -296,7 +296,7 @@ exists---to the path @racket[new]. If the file or directory is not
 renamed successfully, the @exnraise[exn:fail:filesystem].
 
 This procedure can be used to move a file/directory to a different
-directory (on the same disk) as well as rename a file/directory within
+directory (on the same filesystem) as well as rename a file/directory within
 a directory. Unless @racket[exists-ok?]  is provided as a true value,
 @racket[new] cannot refer to an existing file or directory. Even if
 @racket[exists-ok?] is true, @racket[new] cannot refer to an existing
