@@ -49,7 +49,9 @@
 (define (free-vars e [code-insp
                       (variable-reference->module-declaration-inspector
                        (#%variable-reference))])
-  ;; It would be nicers to have a functional mapping:
+  (define (submodule-error e)
+    (error 'free-vars "submodules not supported: ~a" e))
+  ;; It would be nicer to have a functional mapping:
   (define bindings (make-bound-identifier-mapping))
   (merge
    (let free-vars ([e e])
@@ -89,5 +91,9 @@
                (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%expression
                      #'#%variable-reference #'with-continuation-mark))
         (map free-vars (syntax->list #'(expr ...)))]
+       [(module . _)
+        (submodule-error e)]
+       [(module* . _)
+        (submodule-error e)]
        [(kw . _)
         (error 'free-vars "unknown core form: ~a" (syntax->datum #'kw))]))))
