@@ -94,7 +94,7 @@ EOS
 
       ;; .travis.yml
       (with-output-to-file ".travis.yml"
-        (lambda () (display #<<EOS
+        (lambda () (expand/display #<<EOS
 language: c
 
 # Based from: https://github.com/greghendershott/travis-racket
@@ -126,7 +126,14 @@ env:
     - RACKET_VERSION=6.0
     - RACKET_VERSION=6.1
     - RACKET_VERSION=6.1.1
+    - RACKET_VERSION=6.2
+    - RACKET_VERSION=6.3
     - RACKET_VERSION=HEAD
+
+matrix:
+  allow_failures:
+    env: RACKET_VERSION=HEAD
+    fast_finish: true
 
 before_install:
 - git clone https://github.com/greghendershott/travis-racket.git
@@ -142,16 +149,8 @@ before_script:
 # `raco pkg install --deps search-auto <<name>>` to install any required
 # packages without it getting stuck on a confirmation prompt.
 script:
- - /usr/racket/bin/raco make main.rkt
- - /usr/racket/bin/raco test -x .
-
-# NOTE: If your repo is a Racket package with an info.rkt that
-# includes some `deps`, the following is more elegant:
-#
-# script:
-# - cd ..   # Travis did a cd into the dir. Back up, for the next:
-# - /usr/racket/bin/raco pkg install --deps search-auto --link <<name>>
-# - /usr/racket/bin/raco test -x -p <<name>>
+ - raco pkg install --deps search-auto
+ - raco test -x -p <<name>>
 
 after_script:
 
