@@ -219,6 +219,7 @@ typedef struct NewGC {
   unsigned char during_backpointer           :1;
   unsigned char incremental_requested        :1;
   unsigned char high_fragmentation           :1;
+  unsigned char compact_even_incremental     :1;
 
   /* blame the child */
   unsigned int doing_memory_accounting        :1;

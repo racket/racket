@@ -2015,7 +2015,7 @@ inline static void master_set_max_size(NewGC *gc)
 inline static void reset_nursery(NewGC *gc)
 {
   uintptr_t new_gen0_size;
-  
+
   new_gen0_size = NUM((GEN0_SIZE_FACTOR * (float)gc->memory_in_use) + GEN0_SIZE_ADDITION);
   if ((new_gen0_size > GEN0_MAX_SIZE)
       || (gc->memory_in_use > GEN0_MAX_SIZE)) /* => overflow */
@@ -4833,7 +4833,7 @@ inline static void do_heap_compact(NewGC *gc)
   int tic_tock = gc->num_major_collects % 2;
 
   /* incremental mode disables old-generation compaction: */
-  if (gc->started_incremental)
+  if (gc->started_incremental && !gc->compact_even_incremental)
     return;
   
   mmu_prep_for_compaction(gc->mmu);
@@ -5975,8 +5975,10 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   if (gc->full_needed_for_finalization && gc->gc_full)
     gc->full_needed_for_finalization= 0;
-  if (gc->gc_full)
+  if (gc->gc_full) {
+    gc->compact_even_incremental = !gc->finishing_incremental;
     gc->finishing_incremental = 0;
+  }
 
 #ifdef GC_DEBUG_PAGES
   if (gc->gc_full == 1) {
