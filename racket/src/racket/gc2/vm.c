@@ -47,7 +47,8 @@ typedef struct MMU {
   struct AllocCacheBlock *alloc_caches[2];
   Page_Range *page_range;
 #endif
-  intptr_t memory_allocated;
+  intptr_t memory_allocated; /* allocated from OS */
+  intptr_t memory_used; /* subset of alloctaed from OS that's being used */
   size_t os_pagesize;
   NewGC *gc;
 } MMU;
@@ -139,6 +140,7 @@ static void mmu_free(MMU *mmu) {
 
 static void *mmu_alloc_page(MMU* mmu, size_t len, size_t alignment, int dirty, int type, int expect_mprotect, void **src_block) {
   mmu_assert_os_page_aligned(mmu, len);
+  mmu->memory_used += len;
 #ifdef USE_BLOCK_CACHE
   return block_cache_alloc_page(mmu->block_cache, len, alignment, dirty, type, expect_mprotect, src_block, &mmu->memory_allocated);
 #else
@@ -164,6 +166,7 @@ static void mmu_free_page(MMU* mmu, void *p, size_t len, int type, int expect_mp
                           int originated_here) {
   mmu_assert_os_page_aligned(mmu, (size_t)p);
   mmu_assert_os_page_aligned(mmu, len);
+  mmu->memory_used -= len;
 #ifdef USE_BLOCK_CACHE
   mmu->memory_allocated += block_cache_free_page(mmu->block_cache, p, len, type, expect_mprotect, src_block,
                                                  originated_here);
@@ -249,6 +252,10 @@ static void mmu_flush_write_unprotect_ranges(MMU *mmu) {
 
 static size_t mmu_memory_allocated(MMU *mmu) {
   return mmu->memory_allocated;
+}
+
+static size_t mmu_memory_allocated_and_used(MMU *mmu) {
+  return mmu->memory_used;
 }
 
 

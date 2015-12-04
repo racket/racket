@@ -247,6 +247,9 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
    when incremental model is started: */
 #define INCREMENTAL_EXTRA_SIZE_RATIO 2
 
+/* Avoid incremental GC if the heap seems to be getting too fragmented: */
+#define HIGH_FRAGMENTATION_RATIO 2
+
 /* Whether to use a little aging, moving gen-0 objects to a
    gen-1/2 space; by default, enabled when memory use is high
    enough:  */
@@ -3980,6 +3983,7 @@ void GC_mark2(void *pp, struct NewGC *gc)
         }
         newplace = PTR(NUM(work->addr) + work->size);
         work->size += size;
+        work->live_size += gcBYTES_TO_WORDS(size);
         new_type = 1; /* i.e., in gen 1/2 */
       } else {
         /* now set us up for the search for where to put this thing in gen 1 */
@@ -3996,7 +4000,7 @@ void GC_mark2(void *pp, struct NewGC *gc)
           if (!work->marked_on) {
             work->marked_on = 1;
             if (!work->marked_from) {
-              gc->memory_in_use -= work->size;
+              gc->memory_in_use -= gcWORDS_TO_BYTES(work->live_size);
               work->modified_next = gc->modified_next;
               gc->modified_next = work;
             }
@@ -4032,6 +4036,7 @@ void GC_mark2(void *pp, struct NewGC *gc)
 
         /* update the size */
         work->size += size;
+        work->live_size += gcBYTES_TO_WORDS(size);
         work->has_new = 1;
         new_type = 0; /* i.e., not in gen 1/2 */
       }
@@ -4717,7 +4722,7 @@ static void mark_backpointers(NewGC *gc)
         }
         start += info->size;
       }
-      gc->memory_in_use -= work->size;
+      gc->memory_in_use -= gcWORDS_TO_BYTES(work->live_size);
     } else {
       /* medium page */
       void **start = PPTR(NUM(work->addr) + PREFIX_SIZE);
@@ -5268,7 +5273,7 @@ static void repair_heap(NewGC *gc)
         /* everything on this page is now old-generation: */
         page->scan_boundary = page->size;
 
-        memory_in_use += page->size;
+        memory_in_use += gcWORDS_TO_BYTES(page->live_size);
       } else {
         /* ------ medium page ------ */
         int need_fixup_now = need_fixup;
@@ -5442,7 +5447,9 @@ static void incremental_repair_pages(NewGC *gc, int fuel)
           live_size = unmark_range(PPTR(NUM(page->addr) + PREFIX_SIZE),
                                    PPTR(NUM(page->addr) + APAGE_SIZE - page->obj_size));
         }
+        gc->memory_in_use -= gcWORDS_TO_BYTES(page->live_size);
         page->live_size = live_size;
+        gc->memory_in_use += gcWORDS_TO_BYTES(live_size);
         page->non_dead_as_mark = 1;
         --fuel;
       }
@@ -5531,7 +5538,10 @@ static void clean_up_heap(NewGC *gc)
         } else {
           GCVERBOSEPAGE(gc, "clean_up_heap BIG PAGE ALIVE", work);
           work->marked_on = 0;
-          memory_in_use += work->size;
+          if (work->size_class == SIZE_CLASS_SMALL_PAGE)
+            memory_in_use += gcWORDS_TO_BYTES(work->live_size);
+          else
+            memory_in_use += work->size;
           prev = work; 
         }
         work = next;
@@ -5732,6 +5742,48 @@ static void check_marks_cleared(NewGC *gc)
 static void check_marks_cleared(NewGC *gc) { }
 #endif
 
+#if 0
+static int get_live_size_range(void **start, void **end)
+{
+  int live_size = 0;
+  
+  while(start < end) {
+    objhead *info = (objhead *)start;
+
+    if (!info->dead)
+      live_size += info->size;
+
+    start += info->size;
+  }
+
+  return live_size;
+}
+
+static void check_live_sizes(NewGC *gc)
+{
+  mpage *page;
+  int i, ty;
+
+  for (i = 0; i < PAGE_BIG; i++) {
+    for (page = gc->gen1_pages[i]; page; page = page->next) {
+      GC_ASSERT(page->size == page->scan_boundary);
+      GC_ASSERT(page->live_size == get_live_size_range(PAGE_START_VSS(page), PAGE_END_VSS(page)));
+    }
+  }
+
+  for (ty = 0; ty < MED_PAGE_TYPES; ty++) {
+    for (i = 0; i < NUM_MED_PAGE_SIZES; i++) {
+      for (page = gc->med_pages[ty][i]; page; page = page->next) {
+        GC_ASSERT(page->live_size == get_live_size_range(PAGE_START_VSS(page),
+                                                         PPTR(NUM(page->addr) + APAGE_SIZE - page->obj_size)));
+      }
+    }
+  }
+}
+#else
+static void check_live_sizes(NewGC *gc) { }
+#endif
+
 static void park_for_inform_callback(NewGC *gc)
 {
   /* Avoid nested collections, which would need
@@ -5902,6 +5954,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
                     incremental mode has been enabled: */
                  || ((gc->since_last_full > FORCE_MAJOR_AFTER_COUNT)
                      && !gc->started_incremental)
+                 /* Finalization triggers an extra full in case it releases
+                    a lot of additional memory: */
                  || (gc->full_needed_for_finalization
                      && !gc->incremental_requested
                      && !gc->started_incremental)
@@ -5952,8 +6006,10 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   gc->need_fixup = 0;
 
-  do_incremental = (!gc->gc_full && (gc->incremental_requested
-                                     || always_collect_incremental_on_minor));
+  do_incremental = (!gc->gc_full
+                    && (gc->incremental_requested
+                        || always_collect_incremental_on_minor)
+                    && !gc->high_fragmentation);
   if (!postmaster_and_place_gc(gc))
     do_incremental = 0;
   
@@ -6112,12 +6168,18 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   }
   TIME_STEP("protect");
 
-  if (gc->gc_full)
+  if (gc->gc_full) {
     mmu_flush_freed_pages(gc->mmu);
+    gc->high_fragmentation = (mmu_memory_allocated_and_used(gc->mmu)
+                              > (HIGH_FRAGMENTATION_RATIO
+                                 * (gc->memory_in_use + gen_half_size_in_use(gc) + GEN0_MAX_SIZE)));
+  }
   reset_finalizer_tree(gc);
 
   if (gc->gc_full || !gc->started_incremental)
     check_marks_cleared(gc);
+  if (gc->gc_full)
+    check_live_sizes(gc);
 
   clear_stack_pages(gc);
 

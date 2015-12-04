@@ -218,6 +218,7 @@ typedef struct NewGC {
   unsigned char fnl_gen1                     :1; /* during incremental finalization of old generation */
   unsigned char during_backpointer           :1;
   unsigned char incremental_requested        :1;
+  unsigned char high_fragmentation           :1;
 
   /* blame the child */
   unsigned int doing_memory_accounting        :1;
