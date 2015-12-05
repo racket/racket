@@ -216,8 +216,10 @@
 (try-atomic-output (make-temporary-file))
 ;; The user's add-on directory should be writable and might be a
 ;; different filesystem, so try that:
-(parameterize ([current-directory (find-system-path 'addon-dir)])
-  (try-atomic-output (format "atomic-output-~a" (current-inexact-milliseconds))))
+(let ([addon-dir (find-system-path 'addon-dir)])
+  (make-directory* addon-dir)
+  (parameterize ([current-directory addon-dir])
+    (try-atomic-output (format "atomic-output-~a" (current-inexact-milliseconds)))))
 
 ;; ----------------------------------------
 
