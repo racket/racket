@@ -12,7 +12,7 @@
          blame-add-ior-context
          (rename-out [_flat-rec-contract flat-rec-contract]))
 
-(define/subexpression-pos-prop or/c
+(define/subexpression-pos-prop/name or/c-name or/c
   (case-lambda 
     [() (make-none/c '(or/c))]
     [(x) (coerce-contract 'or/c x)]

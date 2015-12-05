@@ -307,7 +307,7 @@
      (identifier? #'x)
      #'real-and/c]))
 
-(define/subexpression-pos-prop (real-and/c . raw-fs)
+(define/subexpression-pos-prop/name real-and/c-name (real-and/c . raw-fs)
   (let ([contracts (coerce-contracts 'and/c raw-fs)])
     (cond
       [(null? contracts) any/c]

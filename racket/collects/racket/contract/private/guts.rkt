@@ -38,6 +38,7 @@
          ;; helpers for adding properties that check syntax uses
          define/final-prop
          define/subexpression-pos-prop
+         define/subexpression-pos-prop/name
          
          make-predicate-contract
          
@@ -332,6 +333,42 @@
                              (list (car (syntax-e stx)))
                              '())))])))))]))
 
+(define-syntax (define/subexpression-pos-prop/name stx)
+  (syntax-case stx ()
+    [(_ ctc/proc header bodies ...)
+     (with-syntax ([ctc (if (identifier? #'header)
+                            #'header
+                            (car (syntax-e #'header)))])
+       #'(begin
+           (define ctc/proc
+             (let ()
+               (define header bodies ...)
+               ctc))
+           (define-syntax (ctc stx)
+             (syntax-case stx ()
+               [x
+                (identifier? #'x)
+                (syntax-property
+                 #'ctc/proc
+                 'racket/contract:contract
+                 (vector (gensym 'ctc)
+                         (list stx)
+                         '()))]
+               [(_ margs (... ...))
+                (let ([this-one (gensym 'ctc)])
+                  (with-syntax ([(margs (... ...))
+                                 (map (λ (x) (syntax-property x
+                                                              'racket/contract:positive-position
+                                                              this-one))
+                                      (syntax->list #'(margs (... ...))))]
+                                [app (datum->syntax stx '#%app)])
+                    (syntax-property
+                     #'(app ctc/proc margs (... ...))
+                     'racket/contract:contract
+                     (vector this-one
+                             (list (car (syntax-e stx)))
+                             '()))))]))))]))
+
 (define-syntax (define/subexpression-pos-prop stx)
   (syntax-case stx ()
     [(_ header bodies ...)
@@ -339,35 +376,7 @@
                             #'header
                             (car (syntax-e #'header)))])
        (with-syntax ([ctc/proc (string->symbol (format "~a/proc" (syntax-e #'ctc)))])
-         #'(begin
-             (define ctc/proc
-               (let ()
-                 (define header bodies ...)
-                 ctc))
-             (define-syntax (ctc stx)
-               (syntax-case stx ()
-                 [x
-                  (identifier? #'x)
-                  (syntax-property 
-                   #'ctc/proc
-                   'racket/contract:contract 
-                   (vector (gensym 'ctc) 
-                           (list stx)
-                           '()))]
-                 [(_ margs (... ...))
-                  (let ([this-one (gensym 'ctc)])
-                    (with-syntax ([(margs (... ...)) 
-                                   (map (λ (x) (syntax-property x
-                                                                'racket/contract:positive-position
-                                                                this-one))
-                                        (syntax->list #'(margs (... ...))))]
-                                  [app (datum->syntax stx '#%app)])
-                      (syntax-property 
-                       #'(app ctc/proc margs (... ...))
-                       'racket/contract:contract 
-                       (vector this-one 
-                               (list (car (syntax-e stx)))
-                               '()))))])))))]))
+         #'(define/subexpression-pos-prop/name ctc/proc header bodies ...)))]))
 
 ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
 (define (build-compound-type-name . fs)
