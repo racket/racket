@@ -179,9 +179,9 @@
           (apply raise-blame-error blame #:missing-party neg-party val args))
         (check val raise-blame #f)
         (if (and (immutable? val) (not (chaperone? val)))
-            (apply vector-immutable
-                   (for/list ([e (in-vector val)])
-                     (elem-pos-proj e neg-party)))
+            (vector->immutable-vector
+             (for/vector #:length (vector-length val) ([e (in-vector val)])
+               (elem-pos-proj e neg-party)))
             (chaperone-or-impersonate-vector
              val
              (checked-ref neg-party)
