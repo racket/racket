@@ -132,22 +132,10 @@ void *GC_malloc_weak_array(size_t size_in_bytes, void *replace_val)
   return w;
 }
 
-static void rechain_inc_weak_arrays(GC_Weak_Array *w)
-{
-  for (; w; w = (GC_Weak_Array *)w->data[w->count]) {
-    w->next = (GC_Weak_Array *)w->data[w->count];
-  }
-}
-
-static void init_weak_arrays(GCTYPE *gc, int old_gen)
+static void init_weak_arrays(GCTYPE *gc)
 {
   GC_ASSERT(!gc->bp_weak_arrays);
-  if (old_gen) {
-    rechain_inc_weak_arrays(gc->inc_weak_arrays);
-    gc->weak_arrays = gc->inc_weak_arrays;
-    gc->inc_weak_arrays = NULL;
-  } else
-    gc->weak_arrays = NULL;
+  gc->weak_arrays = NULL;
 }
 
 static GC_Weak_Array *append_weak_arrays(GC_Weak_Array *wa, GC_Weak_Array *bp_wa, int *_num_gen0)
@@ -197,10 +185,15 @@ static int zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc, int fuel)
 
     if (num_gen0 > 0) {
       if (!is_in_generation_half(gc, wa)) {
-        /* For incremental mode, preserve this weak box
-           in the incremental list for re-checking later. */
-        wa->data[wa->count] = gc->inc_weak_arrays;
-        gc->inc_weak_arrays = wa;
+        if (!gc->all_marked_incremental) {
+          /* For incremental mode, preserve this weak array
+             in the incremental list for re-checking later. */
+          wa->data[wa->count] = gc->inc_weak_arrays;
+          gc->inc_weak_arrays = wa;
+        } else {
+          /* Count as incremental-done: */
+          wa->data[wa->count] = gc->weak_incremental_done;
+        }
       }
     }
 
@@ -330,28 +323,12 @@ void *GC_malloc_weak_box(void *p, void **secondary, int soffset, int is_late)
   return w;
 }
 
-static void rechain_inc_weak_boxes(GC_Weak_Box *wb)
-{
-  for (; wb; wb = wb->inc_next) {
-    wb->next = wb->inc_next;
-  }
-}
-
-static void init_weak_boxes(GCTYPE *gc, int old_gen)
+static void init_weak_boxes(GCTYPE *gc)
 {
   GC_ASSERT(!gc->bp_weak_boxes[0]);
   GC_ASSERT(!gc->bp_weak_boxes[1]);
-  if (old_gen) {
-    rechain_inc_weak_boxes(gc->inc_weak_boxes[0]);
-    rechain_inc_weak_boxes(gc->inc_weak_boxes[1]);
-    gc->weak_boxes[0] = gc->inc_weak_boxes[0];
-    gc->weak_boxes[1] = gc->inc_weak_boxes[1];
-    gc->inc_weak_boxes[0] = NULL;
-    gc->inc_weak_boxes[1] = NULL;
-  } else {
-    gc->weak_boxes[0] = NULL;
-    gc->weak_boxes[1] = NULL;
-  }
+  gc->weak_boxes[0] = NULL;
+  gc->weak_boxes[1] = NULL;
 }
 
 static GC_Weak_Box *append_weak_boxes(GC_Weak_Box *wb, GC_Weak_Box *bp_wb, int *_num_gen0)
@@ -416,11 +393,16 @@ static int zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc
     }
     if (num_gen0 > 0) {
       if (!is_in_generation_half(gc, wb)) {
-        /* For incremental mode, preserve this weak box
-           in the incremental list for re-checking later. */
-        check_weak_box_not_already_in_inc_chain(wb, gc->inc_weak_boxes[wb->is_late]);
-        wb->inc_next = gc->inc_weak_boxes[is_late];
-        gc->inc_weak_boxes[is_late] = wb;
+        if (!gc->all_marked_incremental) {
+          /* For incremental mode, preserve this weak box
+             in the incremental list for re-checking later. */
+          check_weak_box_not_already_in_inc_chain(wb, gc->inc_weak_boxes[wb->is_late]);
+          wb->inc_next = gc->inc_weak_boxes[is_late];
+          gc->inc_weak_boxes[is_late] = wb;
+        } else {
+          /* Count as incremental-done: */
+          wb->inc_next = gc->weak_incremental_done;
+        }
       }
     }
     if (from_inc) {
@@ -481,7 +463,7 @@ static int mark_ephemeron(void *p, struct NewGC *gc)
              other old-generation objects), so ignore in that case */
           && (gc->mark_gen1
               || !gc->started_incremental
-              || !gc->finishing_incremental)) {
+              || !gc->all_marked_incremental)) {
         eph->next = gc->bp_ephemerons;
         gc->bp_ephemerons = eph;
       }
@@ -545,20 +527,9 @@ void *GC_malloc_ephemeron(void *k, void *v)
   return eph;
 }
 
-static void rechain_inc_ephemerons(GC_Ephemeron *e)
-{
-  for (; e; e = e->inc_next) {
-    e->next = e->inc_next;
-  }
-}
-
-void init_ephemerons(GCTYPE *gc, int old_gen) {
-  if (old_gen) {
-    rechain_inc_ephemerons(gc->inc_ephemerons);
-    gc->ephemerons = gc->inc_ephemerons;
-    gc->inc_ephemerons = NULL;
-  } else
-    gc->ephemerons = NULL;
+void init_ephemerons(GCTYPE *gc) {
+  GC_ASSERT(!gc->bp_ephemerons);
+  gc->ephemerons = NULL;
   gc->bp_ephemerons = NULL;
   gc->num_last_seen_ephemerons = 0;
 }
@@ -570,18 +541,23 @@ static int mark_ready_ephemerons(GCTYPE *gc, int inc_gen1)
 
   GC_mark_no_recur(gc, 1);
 
-  for (j = 0; j < (inc_gen1 ? 1 : 2); j++) {
+  for (j = 0; j < (inc_gen1 ? 1 : (gc->gc_full ? 3 : 2)); j++) {
+    waiting = NULL;
+
     if (inc_gen1)
       eph = gc->inc_ephemerons;
     else if (j == 0)
       eph = gc->ephemerons;
-    else
+    else if (j == 1)
       eph = gc->bp_ephemerons;
-
-    waiting = NULL;
+    else {
+      eph = gc->inc_ephemerons;
+      gc->inc_ephemerons = NULL;
+      waiting = gc->ephemerons;
+    }
     
     for (; eph; eph = next) {
-      if (inc_gen1)
+      if (inc_gen1 || (j == 2))
         next = eph->inc_next;
       else
         next = eph->next;
@@ -591,9 +567,10 @@ static int mark_ready_ephemerons(GCTYPE *gc, int inc_gen1)
         gcMARK2(eph->val, gc);
         gc->num_last_seen_ephemerons++;
         did_one = 1;
-        if (!inc_gen1 && (j == 0) && !gc->gc_full && gc->started_incremental) {
+        if (!inc_gen1 && (j == 0) && !gc->gc_full
+            && gc->started_incremental && !gc->all_marked_incremental) {
           /* Need to preserve the ephemeron in the incremental list,
-             unless it's kept in generation 1/2 nistead of promoted to
+             unless it's kept in generation 1/2 instead of promoted to
              generation 1. */
           if (!is_in_generation_half(gc, eph)) {
             eph->inc_next = gc->inc_ephemerons;
@@ -613,7 +590,7 @@ static int mark_ready_ephemerons(GCTYPE *gc, int inc_gen1)
 
     if (inc_gen1)
       gc->inc_ephemerons = waiting;
-    else if (j == 0)
+    else if ((j == 0)|| (j == 2))
       gc->ephemerons = waiting;
     else
       gc->bp_ephemerons = waiting;
@@ -627,6 +604,8 @@ static int mark_ready_ephemerons(GCTYPE *gc, int inc_gen1)
 static void zero_remaining_ephemerons(GCTYPE *gc, int from_inc)
 {
   GC_Ephemeron *eph;
+
+  GC_ASSERT(from_inc || !gc->gc_full || !gc->inc_ephemerons);
 
   /* After level-1 finalization, any remaining ephemerons
      should be zeroed. */
