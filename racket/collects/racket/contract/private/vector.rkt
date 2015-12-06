@@ -173,21 +173,39 @@
                               (with-continuation-mark contract-continuation-mark-key
                                 (cons neg-blame neg-party)
                                 (elem-neg-proj val neg-party)))))
-      
-      (λ (val neg-party)
-        (define (raise-blame val . args) 
-          (apply raise-blame-error blame #:missing-party neg-party val args))
-        (check val raise-blame #f)
-        (if (and (immutable? val) (not (chaperone? val)))
-            (vector->immutable-vector
-             (for/vector #:length (vector-length val) ([e (in-vector val)])
-               (elem-pos-proj e neg-party)))
-            (chaperone-or-impersonate-vector
-             val
-             (checked-ref neg-party)
-             (checked-set neg-party)
-             impersonator-prop:contracted ctc
-             impersonator-prop:blame (blame-add-missing-party blame neg-party)))))))
+      (cond
+        [(flat-contract? elem-ctc)
+         (define p? (flat-contract-predicate elem-ctc))
+         (λ (val neg-party)
+           (define (raise-blame val . args) 
+             (apply raise-blame-error blame #:missing-party neg-party val args))
+           (check val raise-blame #f)
+           (if (and (immutable? val) (not (chaperone? val)))
+               (begin (for ([e (in-vector val)])
+                        (unless (p? e)
+                          (elem-pos-proj e neg-party)))
+                      val)
+               (chaperone-or-impersonate-vector
+                val
+                (checked-ref neg-party)
+                (checked-set neg-party)
+                impersonator-prop:contracted ctc
+                impersonator-prop:blame (blame-add-missing-party blame neg-party))))]
+        [else
+         (λ (val neg-party)
+           (define (raise-blame val . args) 
+             (apply raise-blame-error blame #:missing-party neg-party val args))
+           (check val raise-blame #f)
+           (if (and (immutable? val) (not (chaperone? val)))
+               (vector->immutable-vector
+                (for/vector #:length (vector-length val) ([e (in-vector val)])
+                  (elem-pos-proj e neg-party)))
+               (chaperone-or-impersonate-vector
+                val
+                (checked-ref neg-party)
+                (checked-set neg-party)
+                impersonator-prop:contracted ctc
+                impersonator-prop:blame (blame-add-missing-party blame neg-party))))]))))
 
 (define-values (prop:neg-blame-party prop:neg-blame-party? prop:neg-blame-party-get)
   (make-impersonator-property 'prop:neg-blame-party))

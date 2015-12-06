@@ -366,7 +366,12 @@ is a chaperone contract, then the result will be a chaperone contract.
 
 When a higher-order @racket[vectorof] contract is applied to a vector, the result
 is not @racket[eq?] to the input.  The result will be a copy for immutable vectors
-and a @tech{chaperone} or @tech{impersonator} of the input for mutable vectors.}
+and a @tech{chaperone} or @tech{impersonator} of the input for mutable vectors,
+unless the @racket[c] argument is a flat contract and the vector is immutable,
+in which case the result is the original vector.
+
+@history[#:changed "6.3.0.5" @list{Changed flat vector contracts to not copy
+           immutable vectors.}]}
 
 
 @defproc[(vector-immutableof [c contract?]) contract?]{
