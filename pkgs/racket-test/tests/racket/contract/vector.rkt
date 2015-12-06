@@ -127,7 +127,14 @@
                    0 #f)))
   
   (test/pos-blame
-   'vector/c6
+   'vector/c7
    '(contract (vector/c integer? #:immutable #t)
               (vector-immutable #f)
-              'pos 'neg)))
+              'pos 'neg))
+
+  (test/spec-passed/result
+   'vector/immutable-flat
+   '(let ([x (vector-immutable 1 2 3)])
+      (eq? (contract (vectorof integer?) x 'pos 'neg)
+           x))
+   '#true))
