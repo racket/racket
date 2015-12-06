@@ -270,11 +270,11 @@
          #:list-contract? [list-contract? (λ (c) #f)])
   
   ;; this code is here to help me find the combinators that
-  ;; are still using only #:projection and not #:val-first-projection
+  ;; are still using only #:projection and not #:late-neg-projection
   #;
   (when (and get-projection
-             (not get-val-first-projection))
-    (printf "missing val-first-projection ~s\n" 
+             (not get-late-neg-projection))
+    (printf "missing late-neg-projection ~s\n"
             get-projection))
   
   (let* ([get-name (or get-name (lambda (c) default-name))]
@@ -283,6 +283,10 @@
           (or get-val-first-projection 
               (and (not get-projection)
                    (get-val-first-first-order-projection get-name get-first-order)))]
+         [get-late-neg-projection
+          (or get-late-neg-projection
+              (and (not get-projection)
+                   (get-late-neg-first-order-projection get-name get-first-order)))]
          [get-projection
           (cond
             [get-projection 
@@ -462,6 +466,9 @@
          [val-first-projection (or val-first-projection 
                                    (and (not projection)
                                         (val-first-first-order-projection name first-order)))]
+         [late-neg-projection (or late-neg-projection
+                                  (and (not projection)
+                                       (late-neg-first-order-projection name first-order)))]
          [stronger (or stronger as-strong?)])
 
     (mk name first-order 
@@ -472,6 +479,9 @@
 
 (define ((get-val-first-first-order-projection get-name get-first-order) c)
   (val-first-first-order-projection (get-name c) (get-first-order c)))
+
+(define ((get-late-neg-first-order-projection get-name get-first-order) c)
+  (late-neg-first-order-projection (get-name c) (get-first-order c)))
 
 (define (val-first-first-order-projection name p?)
   (λ (b) 
@@ -485,6 +495,18 @@
              '(expected: "~s" given: "~e")
              name 
              v))))))
+
+(define (late-neg-first-order-projection name p?)
+  (λ (b)
+    (λ (v neg-party)
+      (if (p? v)
+          v
+          (raise-blame-error
+           b #:missing-party neg-party
+           v
+           '(expected: "~s" given: "~e")
+           name
+           v)))))
 
 (define (as-strong? a b)
   (procedure-closure-contents-eq?
