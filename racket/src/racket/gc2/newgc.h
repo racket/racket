@@ -243,6 +243,8 @@ typedef struct NewGC {
 
   uintptr_t prop_count;
   uintptr_t inc_prop_count;
+  uintptr_t copy_count;     /* bytes */
+  uintptr_t traverse_count; /* words */
 
   /* These collect information about memory usage, for use in GC_dump. */
   uintptr_t peak_memory_use;

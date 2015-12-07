@@ -4062,6 +4062,8 @@ void GC_mark2(void *pp, struct NewGC *gc)
         new_type = 0; /* i.e., not in gen 1/2 */
       }
 
+      gc->copy_count += size;
+
       /* transfer the object */
       ohead->mark = 1; /* mark is copied to newplace, too */
       if (size == PAIR_SIZE_IN_BYTES) 
@@ -4167,6 +4169,8 @@ static inline void propagate_marks_worker(NewGC *gc, void *pp, int inc_gen1)
     end = PPTR(info) + info->size;
   }
 
+  gc->traverse_count += (end - start);
+
   mark_traverse_object(gc, start, end, alloc_type);
 }
 
@@ -4207,8 +4211,18 @@ static int propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
     void *p;
     while (fuel && pop_ptr(gc, &p, 1)) {
       GCDEBUG((DEBUGOUTF, "Popped incremental pointer %p\n", p));
+      gc->copy_count = 0;
+      gc->traverse_count = 0;
+
       propagate_marks_worker(gc, p, 1);
-      fuel--;
+
+      if (fuel > 0) {
+        fuel--;
+        fuel -= (gc->copy_count >> 2);
+        fuel -= (gc->traverse_count >> 2);
+        if (fuel < 0)
+          fuel = 0;
+      }
     }
   } while (do_emph && fuel && mark_ready_ephemerons(gc, 1));
 
