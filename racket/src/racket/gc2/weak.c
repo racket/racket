@@ -155,10 +155,12 @@ static GC_Weak_Array *append_weak_arrays(GC_Weak_Array *wa, GC_Weak_Array *bp_wa
     return bp_wa;
 }
 
-static int zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc, int fuel)
+static int zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc, int need_resolve, int fuel)
 {
   GC_Weak_Array *wa;
   int i, num_gen0;
+
+  if (!fuel) return 0;
 
   if (from_inc) {
     wa = gc->inc_weak_arrays;
@@ -177,11 +179,13 @@ static int zero_weak_arrays(GCTYPE *gc, int force_zero, int from_inc, int fuel)
       void *p = data[i];
       if (p && (force_zero || !is_marked(gc, p)))
         data[i] = wa->replace_val;
-      else
+      else if (need_resolve)
         data[i] = GC_resolve2(p, gc);
     }
-    if (fuel > 0)
-      fuel = ((fuel > wa->count) ? (fuel - wa->count) : 0);
+    if (fuel > 0) {
+      fuel -= (4 * wa->count);
+      if (fuel < 0) fuel = 0;
+    }
 
     if (num_gen0 > 0) {
       if (!is_in_generation_half(gc, wa)) {
@@ -348,10 +352,12 @@ static GC_Weak_Box *append_weak_boxes(GC_Weak_Box *wb, GC_Weak_Box *bp_wb, int *
     return bp_wb;
 }
 
-static int zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc, int fuel)
+static int zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc, int need_resolve, int fuel)
 {
   GC_Weak_Box *wb;
   int num_gen0;
+
+  if (!fuel) return 0;
 
   if (from_inc) {
     wb = gc->inc_weak_boxes[is_late];
@@ -388,9 +394,9 @@ static int zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc
         *(p + wb->soffset) = NULL;
         wb->secondary_erase = NULL;
       }
-    } else {
+    } else if (need_resolve)
       wb->val = GC_resolve2(wb->val, gc);
-    }
+
     if (num_gen0 > 0) {
       if (!is_in_generation_half(gc, wb)) {
         if (!gc->all_marked_incremental) {
@@ -405,6 +411,7 @@ static int zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc
         }
       }
     }
+
     if (from_inc) {
       GC_Weak_Box *next;
       next = wb->inc_next;
@@ -416,9 +423,14 @@ static int zero_weak_boxes(GCTYPE *gc, int is_late, int force_zero, int from_inc
     num_gen0--;
 
     if (fuel >= 0) {
-      if (fuel > 0)
-        fuel--;
-      else {
+      if (fuel > 0) {
+        if (gc->unprotected_page) {
+          fuel -= 100;
+          gc->unprotected_page = 0;
+        } else
+          fuel -= 4;
+        if (fuel < 0) fuel = 0;
+      } else {
         GC_ASSERT(from_inc);
         gc->inc_weak_boxes[is_late] = wb;
         return 0;

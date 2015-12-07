@@ -23,39 +23,28 @@
 #undef splay_insert
 #undef splay_delete
 
-static void remove_finalizer(Fnl *fnl, int gen0, GCTYPE *gc)
+static void remove_finalizer(Fnl *fnl, int lvl, GCTYPE *gc)
 {
   if (fnl->prev)
     fnl->prev->next = fnl->next;
-  else {
-    if (gen0)
-      gc->gen0_finalizers = fnl->next;
-    else
-      gc->finalizers = fnl->next;
-  }
+  else
+    gc->finalizers[lvl] = fnl->next;
   if (fnl->next)
     fnl->next->prev = fnl->prev;
   
-  if (gen0)
-    gc->splayed_gen0_finalizers = fnl_splay_delete((intptr_t)fnl->p, gc->splayed_gen0_finalizers);
-  else
-    gc->splayed_finalizers = fnl_splay_delete((intptr_t)fnl->p, gc->splayed_finalizers);
+  gc->splayed_finalizers[lvl] = fnl_splay_delete((intptr_t)fnl->p, gc->splayed_finalizers[lvl]);
 }
 
-static void add_finalizer(Fnl *fnl, int gen0, GCTYPE *gc)
+static void add_finalizer(Fnl *fnl, int lvl, GCTYPE *gc)
 {
-  fnl->next = (gen0 ? gc->gen0_finalizers : gc->finalizers);
+  fnl->next = gc->finalizers[lvl];
+
   fnl->prev = NULL;
   if (fnl->next)
     fnl->next->prev = fnl;
 
-  if (gen0) {
-    gc->gen0_finalizers = fnl;
-    gc->splayed_gen0_finalizers = fnl_splay_insert((intptr_t)fnl->p, fnl, gc->splayed_gen0_finalizers);
-  } else {
-    gc->finalizers = fnl;
-    gc->splayed_finalizers = fnl_splay_insert((intptr_t)fnl->p, fnl, gc->splayed_finalizers);
-  }
+  gc->finalizers[lvl] = fnl;
+  gc->splayed_finalizers[lvl] = fnl_splay_insert((intptr_t)fnl->p, fnl, gc->splayed_finalizers[lvl]);
 }
 
 void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *data), 
@@ -64,6 +53,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
 {
   GCTYPE *gc = GC_get_GC();
   Fnl *fnl;
+  int lvl;
 
   if (!is_finalizable_page(gc, p)) {
     /* Never collected. Don't finalize it. */
@@ -72,17 +62,18 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     return;
   }
 
-  gc->splayed_gen0_finalizers = fnl_splay((intptr_t)p, gc->splayed_gen0_finalizers);
-  fnl = gc->splayed_gen0_finalizers;
-  if (!fnl || (fnl->p != p)) {
-    gc->splayed_finalizers = fnl_splay((intptr_t)p, gc->splayed_finalizers);
-    fnl = gc->splayed_finalizers;
-    if (!fnl || (fnl->p != p))
+  for (lvl = 0; lvl < NUM_FNL_LEVELS; lvl++) {
+    gc->splayed_finalizers[lvl] = fnl_splay((intptr_t)p, gc->splayed_finalizers[lvl]);
+    fnl = gc->splayed_finalizers[lvl];
+    if (!fnl || (fnl->p != p)) {
       fnl = NULL;
-    else {
-      /* since we're mutating this finalizer, move it to the gen0 list and tree */
-      remove_finalizer(fnl, 0, gc);
-      add_finalizer(fnl, 1, gc);
+    } else {
+      if (lvl > FNL_LEVEL_GEN_0) {
+        /* since we're mutating this finalizer, move it to the gen0 set */
+        remove_finalizer(fnl, lvl, gc);
+        add_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
+      }
+      break;
     }
   }
   
@@ -95,7 +86,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
       fnl->eager_level = level;
     } else {
       /* remove finalizer */
-      remove_finalizer(fnl, 1, gc);
+      remove_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
       --gc->num_fnls;
     }
     return;
@@ -143,7 +134,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
   }
 #endif
 
-  add_finalizer(fnl, 1, gc);
+  add_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
   gc->num_fnls++;
 }
 
@@ -151,14 +142,16 @@ static void merge_finalizer_trees(GCTYPE *gc)
 /* For a full GC, move all finalizers to the gen0 list */
 {
   Fnl *fnl, *next;
+  int lvl;
 
-  for (fnl = gc->finalizers; fnl; fnl = next) {
-    next = fnl->next;
-    add_finalizer(fnl, 1, gc);
+  for (lvl = FNL_LEVEL_GEN_1; lvl < NUM_FNL_LEVELS; lvl++) {
+    for (fnl = gc->finalizers[lvl]; fnl; fnl = next) {
+      next = fnl->next;
+      add_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
+    }
+    gc->finalizers[lvl] = NULL;
+    gc->splayed_finalizers[lvl] = NULL;
   }
-
-  gc->finalizers = NULL;
-  gc->splayed_finalizers = NULL;
 }
 
 static void reset_finalizer_tree(GCTYPE *gc)
@@ -168,9 +161,30 @@ static void reset_finalizer_tree(GCTYPE *gc)
 {
   Fnl *fnl, *next;
 
-  fnl = gc->gen0_finalizers;
-  gc->gen0_finalizers = NULL;
-  gc->splayed_gen0_finalizers = NULL;
+  if (gc->gc_full) {
+    GC_ASSERT(!gc->finalizers[FNL_LEVEL_INC_1]);
+    GC_ASSERT(!gc->splayed_finalizers[FNL_LEVEL_INC_1]);
+    GC_ASSERT(!gc->finalizers[FNL_LEVEL_INC_2]);
+    GC_ASSERT(!gc->splayed_finalizers[FNL_LEVEL_INC_2]);
+    if (gc->finished_incremental) {
+      fnl = gc->finalizers[FNL_LEVEL_GEN_1];
+      for (; fnl; fnl = next) {
+        next = fnl->next;
+        add_finalizer(fnl, FNL_LEVEL_INC_3, gc);
+      }
+      gc->finalizers[FNL_LEVEL_GEN_1] = gc->finalizers[FNL_LEVEL_INC_3];
+      gc->splayed_finalizers[FNL_LEVEL_GEN_1] = gc->splayed_finalizers[FNL_LEVEL_INC_3];
+      gc->finalizers[FNL_LEVEL_INC_3] = NULL;
+      gc->splayed_finalizers[FNL_LEVEL_INC_3] = NULL;
+    } else {
+      GC_ASSERT(!gc->finalizers[FNL_LEVEL_INC_3]);
+      GC_ASSERT(!gc->splayed_finalizers[FNL_LEVEL_INC_3]);
+    }
+  }
+
+  fnl = gc->finalizers[FNL_LEVEL_GEN_0];
+  gc->finalizers[FNL_LEVEL_GEN_0] = NULL;
+  gc->splayed_finalizers[FNL_LEVEL_GEN_0] = NULL;
 
   for (; fnl; fnl = next) {
     next = fnl->next;
@@ -182,22 +196,8 @@ static void reset_finalizer_tree(GCTYPE *gc)
         || is_in_generation_half(gc, fnl->f)
         || is_in_generation_half(gc, fnl->p)
         || is_in_generation_half(gc, fnl->data))
-      add_finalizer(fnl, 1, gc);
+      add_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
     else
-      add_finalizer(fnl, 0, gc);
-  }
-}
-
-static void reset_gen1_finalizer_tree(GCTYPE *gc)
-{
-  Fnl *fnl, *next;
-
-  fnl = gc->finalizers;
-  gc->finalizers = NULL;
-  gc->splayed_finalizers = NULL;
-
-  for (; fnl; fnl = next) {
-    next = fnl->next;
-    add_finalizer(fnl, 0, gc);
+      add_finalizer(fnl, FNL_LEVEL_GEN_1, gc);
   }
 }

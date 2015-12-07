@@ -27,7 +27,8 @@
         /* We're the first to look at this prefix... */
         /* Add it to the chain of prefixes to finish after
            all other marking: */
-        if (gc_mode == GC_CURRENT_MODE_INCREMENTAL) {
+        if ((gc_mode == GC_CURRENT_MODE_INCREMENTAL)
+            || (gc_mode == GC_CURRENT_MODE_INCREMENTAL_FINAL)) {
           pf->next_final = scheme_inc_prefix_finalize;
           scheme_inc_prefix_finalize = pf;
         } else {

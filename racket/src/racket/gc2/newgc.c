@@ -102,7 +102,8 @@ enum {
   AGE_GEN_0    = 0,
   AGE_GEN_HALF = 1,
   AGE_GEN_1    = 2,
-  AGE_VACATED  = 3
+  AGE_VACATED  = 3, /* used for pages to be removed */
+  AGE_GEN_INC  = 4  /* used for naming a finalizer set */
 };
 
 static const char *type_name[PAGE_TYPES] = {
@@ -2472,23 +2473,20 @@ static int is_finalizable_page(NewGC *gc, void *p)
 
 #include "fnls.c"
 
-inline static void mark_finalizer_structs(NewGC *gc, int old_gen)
+inline static void mark_finalizer_structs(NewGC *gc, int lvl)
 {
   Fnl *fnl;
 
-  set_backtrace_source(gc, &gc->gen0_finalizers, BT_ROOT);
-  if (old_gen)
-    gcMARK2(gc->finalizers, gc);
-  else
-    gcMARK2(gc->gen0_finalizers, gc);
-  for(fnl = (old_gen ? gc->finalizers : gc->gen0_finalizers); fnl; fnl = fnl->next) { 
+  set_backtrace_source(gc, &gc->finalizers[lvl], BT_ROOT);
+  gcMARK2(gc->finalizers[lvl], gc);
+  for(fnl = gc->finalizers[lvl]; fnl; fnl = fnl->next) { 
     set_backtrace_source(gc, fnl, BT_FINALIZER);
     gcMARK2(fnl->data, gc);
-    set_backtrace_source(gc, &gc->gen0_finalizers, BT_ROOT);
+    set_backtrace_source(gc, &gc->finalizers[lvl], BT_ROOT);
     gcMARK2(fnl->next, gc);
   }
 
-  if (!old_gen) {
+  if (lvl == FNL_LEVEL_GEN_0) {
     set_backtrace_source(gc, &gc->run_queue, BT_ROOT);
     gcMARK2(gc->run_queue, gc);
     for(fnl = gc->run_queue; fnl; fnl = fnl->next) {
@@ -2509,20 +2507,20 @@ inline static void mark_finalizer_structs(NewGC *gc, int old_gen)
       gcMARK2(fnl->next, gc);
     }
   }
-}  
+}
 
 inline static void repair_finalizer_structs(NewGC *gc)
 {
   Fnl *fnl;
 
   /* repair the base parts of the list */
-  gcFIXUP2(gc->gen0_finalizers, gc);
+  gcFIXUP2(gc->finalizers[FNL_LEVEL_GEN_0], gc);
   gcFIXUP2(gc->run_queue, gc);
   gcFIXUP2(gc->last_in_queue, gc);
   gcFIXUP2(gc->inc_run_queue, gc);
   gcFIXUP2(gc->inc_last_in_queue, gc);
   /* then repair the stuff inside them */
-  for(fnl = gc->gen0_finalizers; fnl; fnl = fnl->next) {
+  for(fnl = gc->finalizers[FNL_LEVEL_GEN_0]; fnl; fnl = fnl->next) {
     gcFIXUP2(fnl->data, gc);
     gcFIXUP2(fnl->p, gc);
     gcFIXUP2(fnl->next, gc);
@@ -2552,45 +2550,61 @@ static void merge_run_queues(NewGC *gc)
   }
 }
 
-inline static void check_finalizers(NewGC *gc, int level, int old_gen)
+inline static int check_finalizers(NewGC *gc, int level, int old_gen, int fuel)
 {
-  Fnl *work = (old_gen
-               ? GC_resolve2(gc->finalizers, gc)
-               : GC_resolve2(gc->gen0_finalizers, gc));
+  int lvl = (old_gen
+             ? (FNL_LEVEL_GEN_1 + level - 1)
+             : FNL_LEVEL_GEN_0);
+  Fnl *work = GC_resolve2(gc->finalizers[lvl], gc);
   Fnl *prev = NULL;
+
+  if (!fuel) return 0;
 
   GCDEBUG((DEBUGOUTF, "CFNL: Checking level %i finalizers\n", level));
   while(work) {
+    if (!fuel) {
+      GC_ASSERT(old_gen);
+      return 0;
+    }
+    if (fuel > 0) {
+      fuel -= 4;
+      if (fuel < 0) fuel = 0;
+    }
+    
     if((work->eager_level == level) && !marked(gc, work->p)) {
-      struct finalizer *next = GC_resolve2(work->next, gc);
+      struct finalizer *next;
 
       GCDEBUG((DEBUGOUTF, 
                "CFNL: Level %i finalizer %p on %p queued for finalization.\n",
                work->eager_level, work, work->p));
       set_backtrace_source(gc, work, BT_FINALIZER);
       gcMARK2(work->p, gc);
-      if (prev)
-        prev->next = next;
-      else if (old_gen)
-        gc->finalizers = next;
-      else
-        gc->gen0_finalizers = next;
-      if (next)
-        next->prev = work->prev;
-      work->prev = NULL; /* queue is singly-linked */
-      work->left = NULL;
-      work->right = NULL;
       if (old_gen) {
+        remove_finalizer(work, lvl, gc);
+        next = gc->finalizers[lvl];
+
         if (gc->inc_last_in_queue)
           gc->inc_last_in_queue = gc->inc_last_in_queue->next = work;
         else
           gc->inc_run_queue = gc->inc_last_in_queue = work;
       } else {
+        next = GC_resolve2(work->next, gc);
+        if (prev)
+          prev->next = next;
+        else
+          gc->finalizers[lvl] = next;
+        if (next)
+          next->prev = work->prev;
+        work->prev = NULL; /* queue is singly-linked */
+        work->left = NULL;
+        work->right = NULL;
+
         if (gc->last_in_queue)
           gc->last_in_queue = gc->last_in_queue->next = work;
         else
           gc->run_queue = gc->last_in_queue = work;
       }
+
       work->next = NULL;
       --gc->num_fnls;
 
@@ -2600,13 +2614,23 @@ inline static void check_finalizers(NewGC *gc, int level, int old_gen)
       GCDEBUG((DEBUGOUTF, "CFNL: Not finalizing %p (level %i on %p): %p / %i\n",
                work, work->eager_level, work->p, pagemap_find_page(gc->page_maps, work->p),
                marked(work->p)));
-      p = GC_resolve2(work->p, gc);
-      if (p != work->p)
-        work->p = p;
-      prev = work; 
-      work = GC_resolve2(work->next, gc); 
+      if (old_gen) {
+        /* Move to next set of finalizers */
+        GC_ASSERT(lvl < FNL_LEVEL_INC_3);
+        remove_finalizer(work, lvl, gc);
+        add_finalizer(work, lvl+1, gc);
+        work = gc->finalizers[lvl];
+      } else {
+        p = GC_resolve2(work->p, gc);
+        if (p != work->p)
+          work->p = p;
+        prev = work; 
+        work = GC_resolve2(work->next, gc);
+      }
     }
   }
+
+  return fuel;
 }
 
 /*****************************************************************************/
@@ -3089,10 +3113,14 @@ static int designate_modified_gc(NewGC *gc, void *p)
         /* Some marking functions, like the one for weak boxes,
            update the record, so it's ok to make the page writable. */
         && (gc->inc_gen1
+            /* Finalization in incremental mode can touch otherwise
+               pages that are otherwise unmodified in the current pass: */
+            || gc->fnl_gen1
             /* Memory accounting can also modify otherwise unadjusted
                pages after incrementa mode: */
             || (gc->doing_memory_accounting && gc->finished_incremental))) {
       check_incremental_unprotect(gc, page);
+      gc->unprotected_page = 1; /* for using fuel */
       return 1;
     }
     GCPRINT(GCOUTF, "Seg fault (internal error during gc) at %p\n", p);
@@ -4199,6 +4227,8 @@ static int propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
 {
   int save_inc, save_check, init_fuel = fuel;
 
+  if (!fuel) return 0;
+
   GC_ASSERT(gc->mark_gen1);
     
   save_inc = gc->inc_gen1;
@@ -4220,6 +4250,10 @@ static int propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
         fuel--;
         fuel -= (gc->copy_count >> 2);
         fuel -= (gc->traverse_count >> 2);
+        if (gc->unprotected_page) {
+          gc->unprotected_page = 0;
+          fuel -= 100;
+        }
         if (fuel < 0)
           fuel = 0;
       }
@@ -5913,101 +5947,106 @@ extern double scheme_get_inexact_milliseconds(void);
 
 #define AS_100M(c) ((c / (1024 * 1024 * 100)) + 1)
 
-static int mark_and_finalize_all(NewGC *gc, int old_gen TIME_FORMAL_ARGS)
+static int mark_and_finalize_all(NewGC *gc, int old_gen, int no_full TIME_FORMAL_ARGS)
 {
-  int fuel = (INCREMENTAL_COLLECT_FUEL_PER_100M * AS_100M(gc->memory_in_use)) / 2;
+  int fuel = (old_gen
+              ? (no_full
+                 ? INCREMENTAL_COLLECT_FUEL_PER_100M / INCREMENTAL_MINOR_REQUEST_DIVISOR
+                 : (INCREMENTAL_COLLECT_FUEL_PER_100M * AS_100M(gc->memory_in_use)) / 2)
+              : -1);
+  int reset_gen1;
+
+  /* Propagate marks */
+  if (!old_gen)
+    propagate_marks_plus_ephemerons(gc);
+  else
+    fuel = propagate_incremental_marks(gc, 1, fuel);
+
+  /* check finalizers at level 1 */
+  fuel = check_finalizers(gc, 1, old_gen, fuel);
 
   if (!old_gen)
     propagate_marks_plus_ephemerons(gc);
   else
-    (void)propagate_incremental_marks(gc, 1, -1);
-
-  check_finalizers(gc, 1, old_gen);
-  if (!old_gen)
-    propagate_marks_plus_ephemerons(gc);
-  else {
     fuel = propagate_incremental_marks(gc, 1, fuel);
-    if (!fuel)
-      return 1;
-  }
 
   TIME_STEP("marked");
 
-  if (old_gen) {
+  if (old_gen || (gc->gc_full && gc->finished_incremental)) {
     GC_ASSERT(!gc->fnl_gen1);
     gc->fnl_gen1 = 1;
-  }
+    reset_gen1 = 1;
+  } else
+    reset_gen1 = 0;
 
   if (gc->gc_full)
-    (void)zero_weak_boxes(gc, 0, 0, 1, -1);
-  fuel = zero_weak_boxes(gc, 0, 0, old_gen, (old_gen ? fuel : -1));
-  if (old_gen && !fuel) {
-    gc->fnl_gen1 = 0;
-    return 1;
-  }
+    (void)zero_weak_boxes(gc, 0, 0, 1, 1, -1);
+  fuel = zero_weak_boxes(gc, 0, 0, old_gen, !old_gen, fuel);
 
   if (gc->gc_full)
-    (void)zero_weak_arrays(gc, 0, 1, -1);
-  fuel = zero_weak_arrays(gc, 0, old_gen, (old_gen ? fuel : -1));
-  if (old_gen && !fuel) {
-    gc->fnl_gen1 = 0;
-    return 1;
-  }
+    (void)zero_weak_arrays(gc, 0, 1, 1, -1);
+  fuel = zero_weak_arrays(gc, 0, old_gen, !old_gen, fuel);
 
   if (gc->gc_full)
     zero_remaining_ephemerons(gc, 1);
-  zero_remaining_ephemerons(gc, old_gen);
+  if (fuel)
+    zero_remaining_ephemerons(gc, old_gen);
 
   TIME_STEP("zeroed");
-
-  check_finalizers(gc, 2, old_gen);
+  
+  fuel = check_finalizers(gc, 2, old_gen, fuel);
+    
   if (!old_gen)
     propagate_marks(gc);
   else
-    (void)propagate_incremental_marks(gc, 0, -1);
+    fuel = propagate_incremental_marks(gc, 0, fuel);
+
   if (gc->gc_full)
-    (void)zero_weak_boxes(gc, 1, 0, 1, -1);
-  (void)zero_weak_boxes(gc, 1, 0, old_gen, -1);
+    (void)zero_weak_boxes(gc, 1, 0, 1, 1, -1);
+  fuel = zero_weak_boxes(gc, 1, 0, old_gen, !old_gen, fuel);
 
-  check_finalizers(gc, 3, old_gen);
+  fuel = check_finalizers(gc, 3, old_gen, fuel);
+
   if (!old_gen)
     propagate_marks(gc);
   else
-    (void)propagate_incremental_marks(gc, 0, -1);
+    fuel = propagate_incremental_marks(gc, 0, fuel);
 
-  if (gc->GC_post_propagate_hook)
+  if (fuel && gc->GC_post_propagate_hook)
     gc->GC_post_propagate_hook(gc);
+  
+  if (fuel) {
+    /* for any new ones that appeared: */
+    (void)zero_weak_boxes(gc, 0, 1, old_gen, 0, -1);
+    (void)zero_weak_boxes(gc, 1, 1, old_gen, 0, -1);
+    (void)zero_weak_arrays(gc, 1, old_gen, 0, -1);
+    zero_remaining_ephemerons(gc, old_gen);
 
-  /* for any new ones that appeared: */
-  (void)zero_weak_boxes(gc, 0, 1, old_gen, -1);
-  (void)zero_weak_boxes(gc, 1, 1, old_gen, -1);
-  (void)zero_weak_arrays(gc, 1, old_gen, -1);
-  zero_remaining_ephemerons(gc, old_gen);
-
-  GC_ASSERT(!gc->weak_arrays);
-  GC_ASSERT(!gc->bp_weak_arrays);
-  GC_ASSERT(!gc->weak_boxes[0]);
-  GC_ASSERT(!gc->weak_boxes[1]);
-  GC_ASSERT(!gc->bp_weak_boxes[0]);
-  GC_ASSERT(!gc->bp_weak_boxes[1]);
-  GC_ASSERT(!gc->ephemerons);
-  GC_ASSERT(!gc->bp_ephemerons);
-  if (gc->gc_full) {
-    GC_ASSERT(!gc->inc_weak_arrays);
-    GC_ASSERT(!gc->inc_weak_boxes[0]);
-    GC_ASSERT(!gc->inc_weak_boxes[1]);
-    GC_ASSERT(!gc->inc_ephemerons);
+    GC_ASSERT(!gc->weak_arrays);
+    GC_ASSERT(!gc->bp_weak_arrays);
+    GC_ASSERT(!gc->weak_boxes[0]);
+    GC_ASSERT(!gc->weak_boxes[1]);
+    GC_ASSERT(!gc->bp_weak_boxes[0]);
+    GC_ASSERT(!gc->bp_weak_boxes[1]);
+    GC_ASSERT(!gc->ephemerons);
+    GC_ASSERT(!gc->bp_ephemerons);
+    if (gc->gc_full) {
+      GC_ASSERT(!gc->inc_weak_arrays);
+      GC_ASSERT(!gc->inc_weak_boxes[0]);
+      GC_ASSERT(!gc->inc_weak_boxes[1]);
+      GC_ASSERT(!gc->inc_ephemerons);
+    }
   }
 
-  if (old_gen)
+  if (reset_gen1)
     gc->fnl_gen1 = 0;
 
   TIME_STEP("finalized");
 
-  return 0;
+  return !fuel;
 }
 
-static int mark_and_finalize_all_incremental(NewGC *gc TIME_FORMAL_ARGS)
+static int mark_and_finalize_all_incremental(NewGC *gc, int no_full TIME_FORMAL_ARGS)
 {
   int save_inc, save_check, more_to_do;
 
@@ -6019,7 +6058,7 @@ static int mark_and_finalize_all_incremental(NewGC *gc TIME_FORMAL_ARGS)
   gc->inc_gen1 = 1;
   gc->check_gen1 = 1;
   
-  more_to_do = mark_and_finalize_all(gc, 1 TIME_ARGS);
+  more_to_do = mark_and_finalize_all(gc, 1, no_full TIME_ARGS);
 
   gc->inc_gen1 = save_inc;
   gc->check_gen1 = save_check;
@@ -6168,7 +6207,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   /* mark and repair the roots for collection */
   mark_backpointers(gc);
   TIME_STEP("backpointered");
-  mark_finalizer_structs(gc, 0);
+  mark_finalizer_structs(gc, FNL_LEVEL_GEN_0);
   TIME_STEP("pre-rooted");
   mark_roots(gc);
   mark_immobiles(gc);
@@ -6183,11 +6222,11 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
 
   /* now propagate/repair the marks we got from these roots, and do the
      finalizer passes */
-  (void)mark_and_finalize_all(gc, 0 TIME_ARGS);
+  (void)mark_and_finalize_all(gc, 0, no_full TIME_ARGS);
 
   if (do_incremental) {
     if (!gc->all_marked_incremental) {
-      mark_finalizer_structs(gc, 1);
+      mark_finalizer_structs(gc, FNL_LEVEL_GEN_1);
       if (!mark_stack_is_empty(gc->inc_mark_stack)) {
         int fuel = (no_full
                     ? INCREMENTAL_COLLECT_FUEL_PER_100M / INCREMENTAL_MINOR_REQUEST_DIVISOR
@@ -6197,12 +6236,10 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
       } else {
         /* We ran out of incremental marking work, so
            perform major-GC finalization */
-        if (mark_and_finalize_all_incremental(gc TIME_ARGS)) {
+        if (mark_and_finalize_all_incremental(gc, no_full TIME_ARGS)) {
           /* More finalizaton work to do */
-          reset_gen1_finalizer_tree(gc);
         } else {
           BTC_clean_up_gen1(gc);
-          reset_gen1_finalizer_tree(gc);
           /* Switch to incrementally reparing pages */
           gc->all_marked_incremental = 1;
         }
@@ -6244,10 +6281,10 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   repair_heap(gc);
   TIME_STEP("repaired");
   if (check_inc_repair) {
-    GC_ASSERT(gc->all_marked_incremental);
     int fuel = (no_full
                 ? INCREMENTAL_REPAIR_FUEL_PER_100M / INCREMENTAL_MINOR_REQUEST_DIVISOR
                 : INCREMENTAL_REPAIR_FUEL_PER_100M * AS_100M(gc->memory_in_use));
+    GC_ASSERT(gc->all_marked_incremental);
     incremental_repair_pages(gc, fuel);
     TIME_STEP("inc-repaired");
     if (!gc->inc_repair_next)

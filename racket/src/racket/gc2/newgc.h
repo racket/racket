@@ -149,6 +149,15 @@ typedef mpage **PageMap;
 
 #define NUM_MED_PAGE_SIZES (((LOG_APAGE_SIZE - 1) - 3) + 1)
 
+enum {
+  FNL_LEVEL_GEN_0,
+  FNL_LEVEL_GEN_1,
+  FNL_LEVEL_INC_1,
+  FNL_LEVEL_INC_2,
+  FNL_LEVEL_INC_3,
+  NUM_FNL_LEVELS
+};
+
 typedef struct NewGC {
   Gen0 gen0;
   Gen_Half gen_half;
@@ -221,6 +230,7 @@ typedef struct NewGC {
   unsigned char during_backpointer           :1;
   unsigned char incremental_requested        :1;
   unsigned char high_fragmentation           :1;
+  unsigned char unprotected_page             :1;
 
   /* blame the child */
   unsigned int doing_memory_accounting        :1;
@@ -282,10 +292,8 @@ typedef struct NewGC {
 
   GC_Immobile_Box *immobile_boxes;
 
-  Fnl *finalizers;
-  Fnl *splayed_finalizers;
-  Fnl *gen0_finalizers;
-  Fnl *splayed_gen0_finalizers;
+  Fnl *finalizers[NUM_FNL_LEVELS];
+  Fnl *splayed_finalizers[NUM_FNL_LEVELS];
   int num_fnls;
 
   void *park[2];
