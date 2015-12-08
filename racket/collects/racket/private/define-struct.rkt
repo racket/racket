@@ -323,7 +323,7 @@
           (when (lookup config '#:constructor-name)
             (bad "multiple" "#:constructor-name or #:extra-constructor-name" "s" (car p)))
           (unless (identifier? (cadr p))
-            (bad "need an identifier after" (car p) (cadr p)))
+            (bad "need an identifier after" (car p) "" (cadr p)))
           (loop (cddr p)
                 (extend-config (extend-config config '#:constructor-name (cadr p))
                                '#:only-constructor?
