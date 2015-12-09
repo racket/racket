@@ -9,7 +9,8 @@
          fail
          matchable?
          match-prompt-tag
-         mlist? mlist->list)
+         mlist? mlist->list
+         syntax-srclocs)
 
 (define match-prompt-tag (make-continuation-prompt-tag 'match)) 
 
@@ -58,3 +59,10 @@
   (cond
    [(null? l) null]
    [else (cons (mcar l) (mlist->list (mcdr l)))]))
+
+(define (syntax-srclocs stx)
+  (list (srcloc (syntax-source stx)
+                (syntax-line stx)
+                (syntax-column stx)
+                (syntax-position stx)
+                (syntax-span stx))))

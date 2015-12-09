@@ -2,7 +2,7 @@
 
 (require "patterns.rkt" "compiler.rkt"
          syntax/stx syntax/parse racket/syntax
-         (for-template racket/base (only-in "runtime.rkt" match:error fail)))
+         (for-template racket/base (only-in "runtime.rkt" match:error fail syntax-srclocs)))
 
 (provide go go/one)
 
@@ -33,17 +33,13 @@
           (syntax-e #'fname)]
          [_ 'match]))
      (define len (length (syntax->list es)))
-     (define srcloc-list (list #`(quote #,(syntax-source stx))
-                               #`(quote #,(syntax-line stx))
-                               #`(quote #,(syntax-column stx))
-                               #`(quote #,(syntax-position stx))
-                               #`(quote #,(syntax-span stx))))
+     (define srcloc-stx (datum->syntax #f 'srcloc stx))
      (define/with-syntax (xs ...) (generate-temporaries es))
      (define/with-syntax (exprs ...) es)
      (define/with-syntax outer-fail (generate-temporary #'fail))
      (define/with-syntax orig-expr (if (= 1 len) (stx-car #'(xs ...)) #'(list xs ...)))
      (define/with-syntax raise-error
-       (quasisyntax/loc stx (match:error orig-expr (list (srcloc #,@srcloc-list)) 'form-name)))
+       (quasisyntax/loc stx (match:error orig-expr (syntax-srclocs (quote-syntax #,srcloc-stx)) 'form-name)))
      (define parsed-clauses
        (for/list ([clause (syntax->list clauses)]
                   [pats (syntax->list #'(pats ...))]
