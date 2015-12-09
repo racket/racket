@@ -26,6 +26,10 @@
             (void)
             (find-collects-dir))
 
+(fold-files (check-content #rx"[.](?:zo|dep)$")
+            (void)
+            (find-pkgs-dir))
+
 ;; Check rendered docs, too:
 (fold-files (check-content #rx"[.](?:html)$")
             (void)
