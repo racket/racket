@@ -94,6 +94,7 @@ static Scheme_Object *read_top_level_require(Scheme_Object *obj);
 static Scheme_Object *write_top_level_require(Scheme_Object *obj);
 
 static Scheme_Object *ht_to_vector(Scheme_Object *ht, int delay);
+static Scheme_Object *closure_marshal_name(Scheme_Object *name);
 
 void scheme_init_marshal(Scheme_Env *env) 
 {
@@ -365,7 +366,7 @@ static Scheme_Object *write_case_lambda(Scheme_Object *obj)
     l = cons(cl->array[i], l);
   }
   
-  return cons((cl->name ? cl->name : scheme_null),
+  return cons(closure_marshal_name(cl->name),
 	      l);
 }
 
@@ -759,17 +760,9 @@ static int not_relative_path(Scheme_Object *p, Scheme_Hash_Table *cache)
   return 0;
 }
 
-static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
+static Scheme_Object *closure_marshal_name(Scheme_Object *name)
 {
-  Scheme_Closure_Data *data;
-  Scheme_Object *name, *l, *code, *ds, *tl_map;
-  int svec_size, pos;
-  Scheme_Marshal_Tables *mt;
-
-  data = (Scheme_Closure_Data *)obj;
-
-  if (data->name) {
-    name = data->name;
+  if (name) {
     if (SCHEME_VECTORP(name)) {
       /* We can only save marshalable src names, which includes
 	 paths, symbols, and strings: */
@@ -786,9 +779,22 @@ static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
 	name = SCHEME_VEC_ELS(name)[0];
       }
     }
-  } else {
+  } else
     name = scheme_null;
-  }
+
+  return name;
+}
+
+static Scheme_Object *write_compiled_closure(Scheme_Object *obj)
+{
+  Scheme_Closure_Data *data;
+  Scheme_Object *name, *l, *code, *ds, *tl_map;
+  int svec_size, pos;
+  Scheme_Marshal_Tables *mt;
+
+  data = (Scheme_Closure_Data *)obj;
+
+  name = closure_marshal_name(data->name);
 
   svec_size = data->closure_size;
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
