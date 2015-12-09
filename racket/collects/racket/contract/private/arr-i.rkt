@@ -87,11 +87,11 @@
                                      (->i-mandatory-args ctc) 
                                      (->i-mandatory-kwds ctc)
                                      (->i-opt-kwds ctc)
-                                     blame)
+                                     blame #f)
                (check-procedure val mtd?
                                 (->i-mandatory-args ctc) (->i-opt-args ctc)
                                 (->i-mandatory-kwds ctc) (->i-opt-kwds ctc)
-                                blame)))
+                                blame #f)))
          ctc
          blame swapped-blame ;; used by the #:pre and #:post checking
          (append blames
@@ -313,8 +313,8 @@
                    [opt-kwds (->i-opt-kwds ctc)])
                (λ (val)
                  (if has-rest
-                     (check-procedure/more val mtd? mand-args mand-kwds opt-kwds #f)
-                     (check-procedure val mtd? mand-args opt-args mand-kwds opt-kwds #f)))))
+                     (check-procedure/more val mtd? mand-args mand-kwds opt-kwds #f #f)
+                     (check-procedure val mtd? mand-args opt-args mand-kwds opt-kwds #f #f)))))
          #:exercise exercise->i
          #:stronger (λ (this that) (eq? this that)))) ;; WRONG
 

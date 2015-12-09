@@ -308,7 +308,7 @@
                        #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda])
                              (arrow:arity-checking-wrapper val 
-                                                           (blame-add-missing-party blame neg-party)
+                                                           blame neg-party
                                                            basic-lambda-name
                                                            void
                                                            #,min-method-arity
@@ -321,7 +321,7 @@
                        #`(let-values ([(rng-checker-name ...) (values rng-checker ...)])
                            (let ([kwd-lambda-name kwd-lambda])
                              (arrow:arity-checking-wrapper val
-                                                           (blame-add-missing-party blame neg-party)
+                                                           blame neg-party
                                                            void
                                                            kwd-lambda-name
                                                            #,min-method-arity
@@ -335,7 +335,7 @@
                            (let ([basic-lambda-name basic-lambda]
                                  [kwd-lambda-name kwd-lambda])
                              (arrow:arity-checking-wrapper val 
-                                                           (blame-add-missing-party blame neg-party)
+                                                           blame neg-party
                                                            basic-lambda-name
                                                            kwd-lambda-name
                                                            #,min-method-arity

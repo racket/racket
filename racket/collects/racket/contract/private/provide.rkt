@@ -384,36 +384,25 @@
 
 ;; ... -> (or/c #f (-> blame val))
 (define (do-partial-app ctc val name pos-module-source source)
-  (define p (contract-struct-val-first-projection ctc))
+  (define p (parameterize ([warn-about-val-first? #f])
+              ;; when we're building the val-first projection
+              ;; here we might be needing the plus1 arity
+              ;; function (which will be on the val first's result)
+              ;; so this is a legtimate use. don't warn.
+              (get/build-val-first-projection ctc)))
   (define blme (make-blame (build-source-location source)
                            name
                            (λ () (contract-name ctc))
                            pos-module-source
                            #f #t))
+  (define neg-accepter ((p blme) val))
   
-  (cond
-    [p
-     (define neg-accepter ((p blme) val))
-     
-     ;; we don't have the negative blame here, but we
-     ;; expect only positive failures from this; do the
-     ;; check and then toss the results.
-     (neg-accepter 'incomplete-blame-from-provide.rkt)
-     
-     neg-accepter]
-    [else
-     (define proj (contract-struct-projection ctc))
-     
-     ;; we don't have the negative blame here, but we
-     ;; expect only positive failures from this; do the
-     ;; check and then toss the results.
-     ((proj blme) val)
-     
-     (procedure-rename
-      (λ (neg-party)
-        (define complete-blame (blame-add-missing-party blme neg-party))
-        ((proj complete-blame) val))
-      (string->symbol (format "provide.rkt:neg-party-fn:~s" (contract-name ctc))))]))
+  ;; we don't have the negative blame here, but we
+  ;; expect only positive failures from this; do the
+  ;; check and then toss the results.
+  (neg-accepter 'incomplete-blame-from-provide.rkt)
+  
+  neg-accepter)
 
 (define-for-syntax (true-provide/contract provide-stx just-check-errors? who)
   (syntax-case provide-stx ()

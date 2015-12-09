@@ -87,46 +87,46 @@
                    [(p-app-x ...) (generate-temporaries #'(rngs ...))]
                    [(res-x ...) (generate-temporaries #'(rngs ...))])
        #`(let ([rngs-x (coerce-contract 'unconstrained-domain-> rngs)] ...)
-           (let ([proj-x (contract-projection rngs-x)] ...)
+           (let ([proj-x (get/build-late-neg-projection rngs-x)] ...)
              (define (projection wrapper get-ctc)
                (λ (orig-blame)
                  (define ctc (get-ctc))
                  (let ([rng-blame (blame-add-range-context orig-blame)])
-                   (let* ([p-app-x (proj-x rng-blame)] ...
-                          [res-checker (λ (res-x ...) (values/drop (p-app-x res-x) ...))])
-                     (λ (val)
-                       (check-is-a-procedure orig-blame val)
+                   (let* ([p-app-x (proj-x rng-blame)] ...)
+                     (λ (val neg-party)
+                       (check-is-a-procedure orig-blame neg-party val)
+                       (define (res-checker res-x ...) (values/drop (p-app-x res-x neg-party) ...))
                        (wrapper
                         val
                         (make-keyword-procedure
                          (λ (kwds kwd-vals . args)
                            (with-continuation-mark
-                            contract-continuation-mark-key orig-blame
-                            #,(check-tail-contract
-                               #'(p-app-x ...)
-                               (list #'res-checker)
-                               (λ (s) #`(apply values #,@s kwd-vals args)))))
+                               contract-continuation-mark-key (cons orig-blame neg-party)
+                             #,(check-tail-contract
+                                #'(p-app-x ...)
+                                (list #'res-checker)
+                                (λ (s) #`(apply values #,@s kwd-vals args)))))
                          (λ args
                            (with-continuation-mark
-                            contract-continuation-mark-key orig-blame
-                            #,(check-tail-contract
-                               #'(p-app-x ...)
-                               (list #'res-checker)
-                               (λ (s) #`(apply values #,@s args))))))
+                               contract-continuation-mark-key (cons orig-blame neg-party)
+                             #,(check-tail-contract
+                                #'(p-app-x ...)
+                                (list #'res-checker)
+                                (λ (s) #`(apply values #,@s args))))))
                         impersonator-prop:contracted ctc
                         impersonator-prop:application-mark
                         (cons contract-key (list p-app-x ...))))))))
              (make-unconstrained-domain-> (list rngs-x ...) 
                                           projection))))]))
 
-(define (check-is-a-procedure orig-blame val)
+(define (check-is-a-procedure orig-blame neg-party val)
   (unless (procedure? val)
-    (raise-blame-error orig-blame
+    (raise-blame-error orig-blame #:missing-party neg-party
                        val
                        '(expected: "a procedure" given: "~v")
                        val)))
 
-(define (make-unconstrained-domain-> ctcs projection)
+(define (make-unconstrained-domain-> ctcs late-neg-projection)
   (define name
     (apply build-compound-type-name 'unconstrained-domain->
            (map contract-name ctcs)))
@@ -134,11 +134,11 @@
     (if (andmap chaperone-contract? ctcs)
         (make-chaperone-contract
          #:name name
-         #:projection (projection chaperone-procedure (λ () ctc))
+         #:late-neg-projection (late-neg-projection chaperone-procedure (λ () ctc))
          #:first-order procedure?)
         (make-contract
          #:name name
-         #:projection (projection impersonate-procedure (λ () ctc))
+         #:late-neg-projection (late-neg-projection impersonate-procedure (λ () ctc))
          #:first-order procedure?)))
   ctc)
 
@@ -201,18 +201,25 @@
            (loop (cdr accepted) req-kwds (cdr opt-kwds))]
           [else #f]))])))
 
-(define-for-syntax (create-chaperone blame val pre post this-args doms opt-doms dom-rest req-kwds opt-kwds rngs)
+(define-for-syntax (create-chaperone blame neg-party val pre post this-args
+                                     doms opt-doms dom-rest req-kwds opt-kwds
+                                     rngs)
   (with-syntax ([blame blame]
+                [neg-party neg-party]
                 [val val])
     (with-syntax ([(pre ...) 
                    (if pre
                        (list #`(unless #,pre
-                                 (raise-blame-error (blame-swap blame) val "#:pre condition")))
+                                 (raise-blame-error
+                                  (blame-swap blame) #:missing-party neg-party
+                                  val "#:pre condition")))
                        null)]
                   [(post ...)
                    (if post
                        (list #`(unless #,post
-                                 (raise-blame-error blame val "#:post condition")))
+                                 (raise-blame-error
+                                  blame #:missing-party neg-party
+                                  val "#:post condition")))
                        null)])
       (with-syntax ([(this-param ...) this-args]
                     [(dom-ctc ...) doms]
@@ -240,12 +247,12 @@
                                              (if (and (pair? rngs) (null? (cdr rngs)))
                                                  (with-syntax ([proj (car (syntax->list #'(rng-ctc ...)))]
                                                                [name (car (syntax->list #'(rng-x ...)))])
-                                                   #'(proj name))
-                                                 #'(values/drop (rng-ctc rng-x) ...))])
+                                                   #'(proj name neg-party))
+                                                 #'(values/drop (rng-ctc rng-x neg-party) ...))])
                                 #'(case-lambda
                                     [(rng-x ...)
                                      (with-continuation-mark
-                                      contract-continuation-mark-key blame
+                                      contract-continuation-mark-key (cons blame neg-party)
                                       (let ()
                                         post ...
                                         rng-results))]
@@ -267,13 +274,15 @@
                              [else
                               #'(this-param ... dom-x ... [opt-dom-x unspecified-dom] ...)])]
                           [opt+rest-uses
-                           (for/fold ([i (if dom-rest #'(rest-ctc rest-x) #'null)])
-                             ([o (in-list (reverse (syntax->list #'([opt-dom-ctc opt-dom-x] ...))))])
+                           (for/fold ([i (if dom-rest #'(rest-ctc rest-x neg-party) #'null)])
+                                     ([o (in-list (reverse
+                                                   (syntax->list
+                                                    #'((opt-dom-ctc opt-dom-x) ...))))])
                              (let* ([l (syntax->list o)]
                                     [c (car l)]
                                     [x (cadr l)])
                                #`(let ([r #,i])
-                                   (if (eq? unspecified-dom #,x) r (cons (#,c #,x) r)))))]
+                                   (if (eq? unspecified-dom #,x) r (cons (#,c #,x neg-party) r)))))]
                           [(kwd-param ...)
                            (apply append
                                   (map list
@@ -282,9 +291,12 @@
                           [kwd-stx
                            (let* ([req-stxs
                                    (map (λ (s) (λ (r) #`(cons #,s #,r)))
-                                        (syntax->list #'((req-kwd-ctc req-kwd-x) ...)))]
+                                        (syntax->list #'((req-kwd-ctc req-kwd-x neg-party) ...)))]
                                   [opt-stxs 
-                                   (map (λ (x c) (λ (r) #`(let ([r #,r]) (if (eq? unspecified-dom #,x) r (cons (#,c #,x) r)))))
+                                   (map (λ (x c) (λ (r) #`(let ([r #,r])
+                                                            (if (eq? unspecified-dom #,x)
+                                                                r
+                                                                (cons (#,c #,x neg-party) r)))))
                                         (syntax->list #'(opt-kwd-x ...))
                                         (syntax->list #'(opt-kwd-ctc ...)))]
                                   [reqs (map cons req-keywords req-stxs)]
@@ -301,16 +313,23 @@
                             [basic-return
                              (let ([inner-stx-gen
                                     (if need-apply-values?
-                                        (λ (s) #`(apply values #,@s this-param ... (dom-ctc dom-x) ... opt+rest-uses))
-                                        (λ (s) #`(values/drop #,@s this-param ... (dom-ctc dom-x) ...)))])
+                                        (λ (s) #`(apply values #,@s this-param ...
+                                                        (dom-ctc dom-x neg-party) ... opt+rest-uses))
+                                        (λ (s) #`(values/drop #,@s this-param ...
+                                                              (dom-ctc dom-x neg-party) ...)))])
                                (if no-rng-checking?
                                    (inner-stx-gen #'())
-                                   (check-tail-contract #'(rng-ctc ...) #'(rng-checker-name ...) inner-stx-gen)))]
+                                   (check-tail-contract #'(rng-ctc ...)
+                                                        #'(rng-checker-name ...)
+                                                        inner-stx-gen)))]
                             [kwd-return
                              (let* ([inner-stx-gen
                                      (if need-apply-values?
-                                         (λ (s k) #`(apply values #,@s #,@k this-param ... (dom-ctc dom-x) ... opt+rest-uses))
-                                         (λ (s k) #`(values/drop #,@s #,@k this-param ... (dom-ctc dom-x) ...)))]
+                                         (λ (s k) #`(apply values #,@s #,@k this-param ...
+                                                           (dom-ctc dom-x neg-party) ...
+                                                           opt+rest-uses))
+                                         (λ (s k) #`(values/drop #,@s #,@k this-param ...
+                                                                 (dom-ctc dom-x neg-party) ...)))]
                                     [outer-stx-gen
                                      (if (null? req-keywords)
                                          (λ (s)
@@ -335,13 +354,13 @@
                                                 ;; noticeable in my measurements so far.
                                                 ;;  - stamourv
                                                 (with-continuation-mark
-                                                 contract-continuation-mark-key blame
+                                                 contract-continuation-mark-key (cons blame neg-party)
                                                  (let ()
                                                    pre ... basic-return)))]
                               [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-continuation-mark
-                                               contract-continuation-mark-key blame
+                                               contract-continuation-mark-key (cons blame neg-party)
                                                (let ()
                                                  pre ... kwd-return)))])
                   (with-syntax ([(basic-checker-name) (generate-temporaries '(basic-checker))])
@@ -349,7 +368,7 @@
                       [(and (null? req-keywords) (null? opt-keywords))
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda])
-                             (arity-checking-wrapper val blame
+                             (arity-checking-wrapper val blame neg-party
                                                      basic-lambda-name
                                                      void
                                                      #,min-method-arity
@@ -361,7 +380,7 @@
                       [(pair? req-keywords)
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([kwd-lambda-name kwd-lambda])
-                             (arity-checking-wrapper val blame
+                             (arity-checking-wrapper val blame neg-party
                                                      void
                                                      kwd-lambda-name
                                                      #,min-method-arity
@@ -374,7 +393,7 @@
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda]
                                  [kwd-lambda-name kwd-lambda])
-                             (arity-checking-wrapper val blame
+                             (arity-checking-wrapper val blame neg-party
                                                      basic-lambda-name
                                                      kwd-lambda-name
                                                      #,min-method-arity
@@ -385,7 +404,7 @@
                                                      '(opt-kwd ...))))])))))))))))
 
 ;; should we pass both the basic-lambda and the kwd-lambda?
-(define (arity-checking-wrapper val blame basic-lambda kwd-lambda
+(define (arity-checking-wrapper val blame neg-party basic-lambda kwd-lambda
                                 min-method-arity max-method-arity min-arity max-arity 
                                 req-kwd opt-kwd)
   ;; should not build this unless we are in the 'else' case (and maybe not at all)
@@ -404,27 +423,28 @@
      (define kwd-checker
        (if (and (null? req-kwd) (null? opt-kwd))
            (λ (kwds kwd-args . args)
-             (raise-no-keywords-arg blame val kwds))
+             (raise-no-keywords-arg blame #:missing-party neg-party val kwds))
            (λ (kwds kwd-args . args)
              (with-continuation-mark
-              contract-continuation-mark-key blame
+              contract-continuation-mark-key (cons blame neg-party)
               (let ()
              (define args-len (length args))
              (unless (valid-number-of-args? args)
                (raise-wrong-number-of-args-error
-                blame val
+                blame #:missing-party neg-party val
                 args-len max-arity min-method-arity max-method-arity))
              
              ;; these two for loops are doing O(n^2) work that could be linear 
              ;; (since the keyword lists are sorted)
              (for ([req-kwd (in-list req-kwd)])
                (unless (memq req-kwd kwds)
-                 (raise-blame-error (blame-swap blame) val
+                 (raise-blame-error (blame-swap blame) #:missing-party neg-party
+                                    val
                                     '(expected "keyword argument ~a")
                                     req-kwd)))
              (for ([k (in-list kwds)])
                (unless (memq k all-kwds)
-                 (raise-blame-error (blame-swap blame) val
+                 (raise-blame-error (blame-swap blame) #:missing-party neg-party val
                                     '(received: "unexpected keyword argument ~a")
                                     k)))
              (keyword-apply kwd-lambda kwds kwd-args args))))))
@@ -432,16 +452,16 @@
        (if (null? req-kwd)
            (λ args
              (with-continuation-mark
-              contract-continuation-mark-key blame
+              contract-continuation-mark-key (cons blame neg-party)
               (let ()
              (unless (valid-number-of-args? args)
                (define args-len (length args))
                (raise-wrong-number-of-args-error
-                blame val
+                blame #:missing-party neg-party val
                 args-len max-arity min-method-arity max-method-arity))
              (apply basic-lambda args))))
            (λ args
-             (raise-blame-error (blame-swap blame) val
+             (raise-blame-error (blame-swap blame) #:missing-party neg-party val
                                 "expected required keyword ~a"
                                 (car req-kwd)))))
      (if (or (not va) (pair? vr) (pair? va))
@@ -509,15 +529,15 @@
                        mtd? mctc?
                        func))
 
-(define ((->-proj wrapper) ctc) 
-  (let* ([doms-proj (map contract-projection
+(define ((late-neg-->-proj wrapper) ctc)
+  (let* ([doms-proj (map get/build-late-neg-projection
                          (if (base->-dom-rest/c ctc)
                              (append (base->-doms/c ctc) (list (base->-dom-rest/c ctc)))
                              (base->-doms/c ctc)))]
-         [doms-optional-proj (map contract-projection (base->-optional-doms/c ctc))]
-         [rngs-proj (map contract-projection (base->-rngs/c ctc))]
-         [mandatory-kwds-proj (map contract-projection (base->-mandatory-kwds/c ctc))]
-         [optional-kwds-proj (map contract-projection (base->-optional-kwds/c ctc))]
+         [doms-optional-proj (map get/build-late-neg-projection (base->-optional-doms/c ctc))]
+         [rngs-proj (map get/build-late-neg-projection (base->-rngs/c ctc))]
+         [mandatory-kwds-proj (map get/build-late-neg-projection (base->-mandatory-kwds/c ctc))]
+         [optional-kwds-proj (map get/build-late-neg-projection (base->-optional-kwds/c ctc))]
          [mandatory-keywords (base->-mandatory-kwds ctc)]
          [optional-keywords (base->-optional-kwds ctc)]
          [func (base->-func ctc)]
@@ -529,11 +549,10 @@
          [mtd? (base->-mtd? ctc)])
     (λ (orig-blame)
       (define rng-blame (blame-add-range-context orig-blame))
-      (define swapped-domain (blame-add-context orig-blame "the domain of" #:swap? #t))
       (define partial-doms 
         (for/list ([dom (in-list doms-proj)]
                    [n (in-naturals 1)])
-          (dom (blame-add-context orig-blame 
+          (dom (blame-add-context orig-blame
                                   (if (and has-rest?
                                            (n . > . dom-length))
                                       "the rest argument of"
@@ -563,11 +582,13 @@
       (define the-args (append partial-doms partial-optional-doms 
                                partial-mandatory-kwds partial-optional-kwds
                                partial-ranges))
-      (λ (val)
+      (λ (val neg-party)
         (if has-rest?
-            (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords orig-blame)
-            (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords orig-blame))
-        (define chap/imp-func (apply func orig-blame val the-args))
+            (check-procedure/more val mtd? dom-length mandatory-keywords optional-keywords
+                                  orig-blame neg-party)
+            (check-procedure val mtd? dom-length optionals-length mandatory-keywords optional-keywords
+                             orig-blame neg-party))
+        (define chap/imp-func (apply func orig-blame neg-party val the-args))
         (if post
             (wrapper
              val
@@ -632,18 +653,17 @@
 (define-struct (chaperone-> base->) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:projection (->-proj chaperone-procedure)
-     #:name ->-name
-     #:first-order ->-first-order
-     #:stronger ->-stronger?)))
+  (build-chaperone-contract-property
+   #:late-neg-projection (late-neg-->-proj chaperone-procedure)
+   #:name ->-name
+   #:first-order ->-first-order
+   #:stronger ->-stronger?))
 
 (define-struct (impersonator-> base->) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
-   #:projection (->-proj impersonate-procedure)
+   #:late-neg-projection (late-neg-->-proj impersonate-procedure)
    #:name ->-name
    #:first-order ->-first-order
    #:stronger ->-stronger?))
@@ -796,9 +816,9 @@
       (with-syntax ([mtd? (and (syntax-parameter-value #'making-a-method) #t)]
                     [->m-ctc? (and (syntax-parameter-value #'method-contract?) #t)]
                     [outer-lambda
-                     #`(lambda (blame val dom-names ... kwd-names ... rng-names ...)
+                     #`(lambda (blame neg-party val dom-names ... kwd-names ... rng-names ...)
                          #,(create-chaperone 
-                            #'blame #'val #f #f
+                            #'blame #'neg-party #'val #f #f
                             (syntax->list #'(this-params ...))
                             (syntax->list #'(dom-names ...)) null #f
                             (map list (syntax->list #'(kwds ...))
@@ -977,7 +997,7 @@
                           #''())
                     #,(if rng-ctc #f #t)
                     mtd? ->m-ctc?
-                    (λ (blame f
+                    (λ (blame neg-party f
                         mandatory-dom-proj ...  
                         #,@(if rest-ctc
                                #'(rest-proj)
@@ -987,7 +1007,7 @@
                         optional-dom-kwd-proj ... 
                         rng-proj ...)
                       #,(create-chaperone 
-                         #'blame #'f pre post
+                         #'blame #'neg-party #'f pre post
                          (syntax->list #'(this-parameter ...))
                          (syntax->list #'(mandatory-dom-proj ...))
                          (syntax->list #'(optional-dom-proj ...))
@@ -1249,7 +1269,7 @@
                                       (syntax-local-infer-name stx)
                                       #`(λ args (apply f args)))))))))))))]))
 
-(define ((->d-proj wrap-procedure) ->d-stct)
+(define ((late-neg-->d-proj wrap-procedure) ->d-stct)
   (let* ([opt-count (length (base-->d-optional-dom-ctcs ->d-stct))]
          [mandatory-count (+ (length (base-->d-mandatory-dom-ctcs ->d-stct)) 
                              (if (base-->d-mtd? ->d-stct) 1 0))]
@@ -1266,28 +1286,32 @@
                  [else
                   (cons (+ mandatory-count i) (loop (+ i 1)))]))])])
     (λ (blame)
-        (λ (val)
-          (if (base-->d-rest-ctc ->d-stct)
-              (check-procedure/more val
-                                    (base-->d-mtd? ->d-stct)
-                                    (length (base-->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
-                                    (base-->d-mandatory-keywords ->d-stct)
-                                    (base-->d-optional-keywords ->d-stct)
-                                    blame)
-              (check-procedure val
-                               (base-->d-mtd? ->d-stct)
-                               (length (base-->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
-                               (length (base-->d-optional-dom-ctcs ->d-stct)) ; optionals-length
-                               (base-->d-mandatory-keywords ->d-stct)
-                               (base-->d-optional-keywords ->d-stct)
-                               blame))
-          (wrap-procedure
-           val
-           (make-keyword-procedure
-            (λ (kwd-args kwd-arg-vals . raw-orig-args)
-              (with-continuation-mark
-               contract-continuation-mark-key blame
-               (let* ([orig-args (if (base-->d-mtd? ->d-stct)
+      (define dom-blame (blame-add-context blame "the domain of" #:swap? #t))
+      (define rng-blame (blame-add-range-context blame))
+      (λ (val neg-party)
+        (if (base-->d-rest-ctc ->d-stct)
+            (check-procedure/more val
+                                  (base-->d-mtd? ->d-stct)
+                                  (length (base-->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
+                                  (base-->d-mandatory-keywords ->d-stct)
+                                  (base-->d-optional-keywords ->d-stct)
+                                  blame
+                                  neg-party)
+            (check-procedure val
+                             (base-->d-mtd? ->d-stct)
+                             (length (base-->d-mandatory-dom-ctcs ->d-stct)) ;dom-length
+                             (length (base-->d-optional-dom-ctcs ->d-stct)) ; optionals-length
+                             (base-->d-mandatory-keywords ->d-stct)
+                             (base-->d-optional-keywords ->d-stct)
+                             blame
+                             neg-party))
+        (wrap-procedure
+         val
+         (make-keyword-procedure
+          (λ (kwd-args kwd-arg-vals . raw-orig-args)
+            (with-continuation-mark
+                contract-continuation-mark-key (cons blame neg-party)
+              (let* ([orig-args (if (base-->d-mtd? ->d-stct)
                                     (cdr raw-orig-args)
                                     raw-orig-args)]
                      [this (and (base-->d-mtd? ->d-stct) (car raw-orig-args))]
@@ -1296,7 +1320,7 @@
                                           (base-->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
                 (when (base-->d-pre-cond ->d-stct)
                   (unless (apply (base-->d-pre-cond ->d-stct) dep-pre-args)
-                    (raise-blame-error (blame-swap blame)
+                    (raise-blame-error (blame-swap blame) #:missing-party neg-party
                                        val
                                        "#:pre violation~a"
                                        (build-values-string ", argument" dep-pre-args))))
@@ -1316,44 +1340,44 @@
                     (if rng
                         (list (λ orig-results
                                 (with-continuation-mark
-                                 contract-continuation-mark-key blame
-                                 (let* ([range-count (length rng)]
-                                       [post-args (append orig-results raw-orig-args)]
-                                       [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
-                                       [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count
-                                                                          post-args (base-->d-rest-ctc ->d-stct)
-                                                                          (base-->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
-                                  (when (base-->d-post-cond ->d-stct)
-                                    (unless (apply (base-->d-post-cond ->d-stct) dep-post-args)
-                                      (raise-blame-error blame
+                                    contract-continuation-mark-key (cons blame neg-party)
+                                  (let* ([range-count (length rng)]
+                                         [post-args (append orig-results raw-orig-args)]
+                                         [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
+                                         [dep-post-args (build-dep-ctc-args post-non-kwd-arg-count
+                                                                            post-args (base-->d-rest-ctc ->d-stct)
+                                                                            (base-->d-keywords ->d-stct) kwd-args kwd-arg-vals)])
+                                    (when (base-->d-post-cond ->d-stct)
+                                      (unless (apply (base-->d-post-cond ->d-stct) dep-post-args)
+                                        (raise-blame-error blame #:missing-party neg-party
+                                                           val
+                                                           "#:post violation~a~a"
+                                                           (build-values-string ", argument" dep-pre-args)
+                                                           (build-values-string (if (null? dep-pre-args)
+                                                                                    ", result"
+                                                                                    "\n result")
+                                                                                orig-results))))
+                                    
+                                    (unless (= range-count (length orig-results))
+                                      (raise-blame-error blame #:missing-party neg-party
                                                          val
-                                                         "#:post violation~a~a"
-                                                         (build-values-string ", argument" dep-pre-args)
-                                                         (build-values-string (if (null? dep-pre-args)
-                                                                                  ", result"
-                                                                                  "\n result")
-                                                                              orig-results))))
-                                  
-                                  (unless (= range-count (length orig-results))
-                                    (raise-blame-error blame
-                                                       val
-                                                       "expected ~a results, got ~a"
-                                                       range-count
-                                                       (length orig-results)))
-                                  (apply
-                                   values
-                                   (let loop ([results orig-results]
-                                              [result-contracts rng])
-                                     (cond
-                                       [(null? result-contracts) '()]
-                                       [else
-                                        (cons
-                                         (invoke-dep-ctc (car result-contracts)
-                                                         (if rng-underscore? #f dep-post-args)
-                                                         (car results)
-                                                         blame
-                                                         #f)
-                                         (loop (cdr results) (cdr result-contracts)))])))))))
+                                                         "expected ~a results, got ~a"
+                                                         range-count
+                                                         (length orig-results)))
+                                    (apply
+                                     values
+                                     (let loop ([results orig-results]
+                                                [result-contracts rng])
+                                       (cond
+                                         [(null? result-contracts) '()]
+                                         [else
+                                          (cons
+                                           (invoke-dep-ctc (car result-contracts)
+                                                           (if rng-underscore? #f dep-post-args)
+                                                           (car results)
+                                                           rng-blame
+                                                           neg-party)
+                                           (loop (cdr results) (cdr result-contracts)))])))))))
                         null))
                   
                   ;; contracted keyword arguments
@@ -1365,9 +1389,16 @@
                                      [(or (null? building-kwd-args) (null? all-kwds)) '()]
                                      [else (if (eq? (car all-kwds)
                                                     (car building-kwd-args))
-                                               (cons (invoke-dep-ctc (car kwd-ctcs) dep-pre-args (car building-kwd-arg-vals) blame #t)
-                                                     (loop (cdr all-kwds) (cdr kwd-ctcs) (cdr building-kwd-args) (cdr building-kwd-arg-vals)))
-                                               (loop (cdr all-kwds) (cdr kwd-ctcs) building-kwd-args building-kwd-arg-vals))]))])
+                                               (cons (invoke-dep-ctc (car kwd-ctcs)
+                                                                     dep-pre-args
+                                                                     (car building-kwd-arg-vals)
+                                                                     dom-blame
+                                                                     neg-party)
+                                                     (loop (cdr all-kwds) (cdr kwd-ctcs)
+                                                           (cdr building-kwd-args)
+                                                           (cdr building-kwd-arg-vals)))
+                                               (loop (cdr all-kwds) (cdr kwd-ctcs)
+                                                     building-kwd-args building-kwd-arg-vals))]))])
                     (if (null? kwd-res) null (list kwd-res)))
                   
                   
@@ -1383,20 +1414,24 @@
                     (cond
                       [(null? args) 
                        (if (base-->d-rest-ctc ->d-stct)
-                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args '() blame #t)
+                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args '()
+                                           dom-blame neg-party)
                            '())]
                       [(null? non-kwd-ctcs) 
                        (if (base-->d-rest-ctc ->d-stct)
-                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct) dep-pre-args args blame #t)
+                           (invoke-dep-ctc (base-->d-rest-ctc ->d-stct)
+                                           dep-pre-args args dom-blame neg-party)
                            
                            ;; ran out of arguments, but don't have a rest parameter.
                            ;; procedure-reduce-arity (or whatever the new thing is
                            ;; going to be called) should ensure this doesn't happen.
                            (error 'shouldnt\ happen))]
-                      [else (cons (invoke-dep-ctc (car non-kwd-ctcs) dep-pre-args (car args) blame #t)
+                      [else (cons (invoke-dep-ctc (car non-kwd-ctcs)
+                                                  dep-pre-args (car args)
+                                                  dom-blame neg-party)
                                   (loop (cdr args)
                                         (cdr non-kwd-ctcs)))]))))))))
-           impersonator-prop:contracted ->d-stct)))))
+         impersonator-prop:contracted ->d-stct)))))
 
 (define (build-values-string desc dep-pre-args)
   (cond
@@ -1413,15 +1448,14 @@
                       (loop (cdr lst)))])))]))
 
 ;; invoke-dep-ctc : (...? -> ctc) (or/c #f (listof tst)) val pos-blame neg-blame src-info orig-src -> tst
-(define (invoke-dep-ctc dep-ctc dep-args val blame dom?)
+(define (invoke-dep-ctc dep-ctc dep-args val blame neg-party)
   (let ([ctc (coerce-contract '->d (if dep-args
                                        (apply dep-ctc dep-args)
                                        dep-ctc))])
-    (((contract-projection ctc) 
-      (if dom?
-          (blame-add-context blame "the domain of" #:swap? #t)
-          (blame-add-range-context blame)))
-     val)))
+    (((get/build-late-neg-projection ctc)
+      blame)
+     val
+     neg-party)))
 
 ;; build-dep-ctc-args : number (listof any) boolean (listof keyword) (listof keyword) (listof any)
 (define (build-dep-ctc-args non-kwd-ctc-count args rest-arg? all-kwds supplied-kwds supplied-args)
@@ -1529,8 +1563,8 @@
          [optional-kwds (base-->d-optional-keywords ctc)])
     (λ (val)
       (if (base-->d-rest-ctc ctc)
-          (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds #f)
-          (check-procedure val mtd? dom-length optionals mandatory-kwds optional-kwds #f)))))
+          (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds #f #f)
+          (check-procedure val mtd? dom-length optionals mandatory-kwds optional-kwds #f #f)))))
 (define (->d-stronger? this that) (eq? this that))
 
 ;; in the struct type descriptions "d???" refers to the arguments (domain) of the function that
@@ -1564,7 +1598,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
-   #:projection (->d-proj impersonate-procedure)
+   #:late-neg-projection (late-neg-->d-proj impersonate-procedure)
    #:name ->d-name
    #:first-order ->d-first-order
    #:stronger ->d-stronger?))
@@ -1637,7 +1671,8 @@
 ;; check-procedure : ... (or/c #f blame) -> (or/c boolean? void?)
 ;; if blame is #f, then just return a boolean indicating that this matched 
 ;;   (for use in arity checking)
-(define (check-procedure val mtd? dom-length optionals mandatory-kwds optional-keywords blame)
+(define (check-procedure val mtd? dom-length optionals mandatory-kwds optional-keywords
+                         blame neg-party)
   (define passes?
     (and (procedure? val)
          (procedure-arity-includes?/optionals val (if mtd? (+ dom-length 1) dom-length) optionals)
@@ -1646,7 +1681,7 @@
     [blame
      (unless passes?
        (raise-blame-error
-        blame
+        blame #:missing-party neg-party
         val
         '(expected " a ~a that accepts ~a~a~a argument~a~a~a" given: "~e")
         (if mtd? "method" "procedure")
@@ -1712,7 +1747,7 @@
 ;; check-procedure/more : ... (or/c #f blame) -> (or/c boolean? void?)
 ;; if blame is #f, then just return a boolean indicating that this matched 
 ;;   (for use in arity checking)
-(define (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds blame)
+(define (check-procedure/more val mtd? dom-length mandatory-kwds optional-kwds blame neg-party)
   (define passes?
     (and (procedure? val)
          (procedure-accepts-and-more? val (if mtd? (+ dom-length 1) dom-length))

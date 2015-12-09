@@ -217,18 +217,17 @@
 (define-struct (chaperone-single-or/c single-or/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:projection single-or/c-projection
-     #:late-neg-projection single-or/c-late-neg-projection
-     #:name single-or/c-name
-     #:first-order single-or/c-first-order
-     #:stronger single-or/c-stronger?
-     #:generate (λ (ctc) (or/c-generate ctc
-                                        (cons (single-or/c-ho-ctc ctc)
-                                              (single-or/c-flat-ctcs ctc))))
-     #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))
-     #:list-contract? single-or/c-list-contract?)))
+  (build-chaperone-contract-property
+   #:projection single-or/c-projection
+   #:late-neg-projection single-or/c-late-neg-projection
+   #:name single-or/c-name
+   #:first-order single-or/c-first-order
+   #:stronger single-or/c-stronger?
+   #:generate (λ (ctc) (or/c-generate ctc
+                                      (cons (single-or/c-ho-ctc ctc)
+                                            (single-or/c-flat-ctcs ctc))))
+   #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))
+   #:list-contract? single-or/c-list-contract?))
 
 (define-struct (impersonator-single-or/c single-or/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -376,18 +375,17 @@
 (define-struct (chaperone-multi-or/c multi-or/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:projection multi-or/c-proj
-     #:late-neg-projection multi-or/c-late-neg-proj
-     #:name multi-or/c-name
-     #:first-order multi-or/c-first-order
-     #:stronger multi-or/c-stronger?
-     #:generate (λ (ctc) (or/c-generate ctc
-                                        (append (multi-or/c-ho-ctcs ctc)
-                                                (multi-or/c-flat-ctcs ctc))))
-     #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc)))
-     #:list-contract? mult-or/c-list-contract?)))
+  (build-chaperone-contract-property
+   #:projection multi-or/c-proj
+   #:late-neg-projection multi-or/c-late-neg-proj
+   #:name multi-or/c-name
+   #:first-order multi-or/c-first-order
+   #:stronger multi-or/c-stronger?
+   #:generate (λ (ctc) (or/c-generate ctc
+                                      (append (multi-or/c-ho-ctcs ctc)
+                                              (multi-or/c-flat-ctcs ctc))))
+   #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc)))
+   #:list-contract? mult-or/c-list-contract?))
 
 (define-struct (impersonator-multi-or/c multi-or/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -539,16 +537,15 @@
 
 (define-struct (chaperone-first-or/c base-first-or/c) ()
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:projection first-or/c-proj
-     #:late-neg-projection first-or/c-late-neg-proj
-     #:name first-or/c-name
-     #:first-order first-or/c-first-order
-     #:stronger multi-or/c-stronger?
-     #:generate (λ (ctc) (or/c-generate ctc (base-first-or/c-ctcs ctc)))
-     #:exercise (λ (ctc) (or/c-exercise (base-first-or/c-ctcs ctc)))
-     #:list-contract? first-or/c-list-contract?)))
+  (build-chaperone-contract-property
+   #:projection first-or/c-proj
+   #:late-neg-projection first-or/c-late-neg-proj
+   #:name first-or/c-name
+   #:first-order first-or/c-first-order
+   #:stronger multi-or/c-stronger?
+   #:generate (λ (ctc) (or/c-generate ctc (base-first-or/c-ctcs ctc)))
+   #:exercise (λ (ctc) (or/c-exercise (base-first-or/c-ctcs ctc)))
+   #:list-contract? first-or/c-list-contract?))
 (define-struct (impersonator-first-or/c base-first-or/c) ()
   #:property prop:contract
   (build-contract-property
@@ -596,7 +593,7 @@
    (λ (ctc) (flat-rec-contract-name ctc))
    #:stronger
    (let ([recur? (make-parameter #t)])
-     (λ (this that) 
+     (λ (this that)
        (cond
          [(equal? this that) #t]
          [(recur?) 

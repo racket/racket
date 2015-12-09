@@ -662,7 +662,7 @@
                      ((next-dom ...) next-doms)
                      (dom-len (length dom-vars)))
          (syntax (begin
-                   (check-procedure val #f dom-len 0 '() '() #|keywords|# blame)
+                   (check-procedure val #f dom-len 0 '() '() #|keywords|# blame #f)
                    (chaperone-procedure
                     val
                     (case-lambda
@@ -743,7 +743,7 @@
 (define/opter (predicate/c opt/i opt/info stx) (predicate/c-optres opt/info #t))
 
 (define (handle-non-exact-procedure val dom-len blame exact-proc)
-  (check-procedure val #f dom-len 0 '() '() blame)
+  (check-procedure val #f dom-len 0 '() '() blame #f)
   (chaperone-procedure
    val
    (make-keyword-procedure

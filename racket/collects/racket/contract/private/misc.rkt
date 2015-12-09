@@ -57,6 +57,7 @@
          contract-late-neg-projection   ;; might return #f (if none)
          get/build-val-first-projection ;; builds one if necc., using contract-projection
          get/build-late-neg-projection
+         warn-about-val-first?
          contract-name
          n->th
          
@@ -276,14 +277,13 @@
 (define-struct (chaperone-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:projection and-proj
-     #:late-neg-projection late-neg-and-proj
-     #:name and-name
-     #:first-order and-first-order
-     #:stronger and-stronger?
-     #:generate and/c-generate?)))
+  (build-chaperone-contract-property
+   #:projection and-proj
+   #:late-neg-projection late-neg-and-proj
+   #:name and-name
+   #:first-order and-first-order
+   #:stronger and-stronger?
+   #:generate and/c-generate?))
 (define-struct (impersonator-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -449,20 +449,21 @@
   (build-flat-contract-property
    #:name (λ (c) `(,name ,(</>-ctc-x c)))
    #:first-order (λ (ctc) (define x (</>-ctc-x ctc)) (λ (y) (and (real? y) (</> y x))))
-   #:projection (λ (ctc)
-                  (define x (</>-ctc-x ctc))
-                  (λ (blame)
-                    (λ (val)
-                      (if (and (real? val) (</> val x))
-                          val
-                          (raise-blame-error
-                           blame val
-                           '(expected:
-                             "a number strictly ~a than ~v"
-                             given: "~v")
-                           less/greater
-                           x
-                           val)))))
+   #:late-neg-projection
+   (λ (ctc)
+     (define x (</>-ctc-x ctc))
+     (λ (blame)
+       (λ (val neg-party)
+         (if (and (real? val) (</> val x))
+             val
+             (raise-blame-error
+              blame val #:missing-party neg-party
+              '(expected:
+                "a number strictly ~a than ~v"
+                given: "~v")
+              less/greater
+              x
+              val)))))
    #:generate
    (λ (ctc)
      (define x (</>-ctc-x ctc))
@@ -968,15 +969,14 @@
 (define-struct (chaperone-cons/c the-cons/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:late-neg-projection (cons/c-late-neg-ho-check (λ (v a d) (cons a d)))
-     #:projection (cons/c-ho-check (λ (v a d) (cons a d)))
-     #:name cons/c-name
-     #:first-order cons/c-first-order
-     #:stronger cons/c-stronger?
-     #:generate cons/c-generate
-     #:list-contract? cons/c-list-contract?)))
+  (build-chaperone-contract-property
+   #:late-neg-projection (cons/c-late-neg-ho-check (λ (v a d) (cons a d)))
+   #:projection (cons/c-ho-check (λ (v a d) (cons a d)))
+   #:name cons/c-name
+   #:first-order cons/c-first-order
+   #:stronger cons/c-stronger?
+   #:generate cons/c-generate
+   #:list-contract? cons/c-list-contract?))
 (define-struct (impersonator-cons/c the-cons/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -1355,16 +1355,15 @@
 (struct chaperone-list/c generic-list/c ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:name list/c-name-proc
-     #:first-order list/c-first-order
-     #:generate list/c-generate
-     #:exercise list/c-exercise
-     #:stronger list/c-stronger
-     #:projection list/c-chaperone/other-projection
-     #:late-neg-projection list/c-chaperone/other-late-neg-projection
-     #:list-contract? (λ (c) #t))))
+  (build-chaperone-contract-property
+   #:name list/c-name-proc
+   #:first-order list/c-first-order
+   #:generate list/c-generate
+   #:exercise list/c-exercise
+   #:stronger list/c-stronger
+   #:projection list/c-chaperone/other-projection
+   #:late-neg-projection list/c-chaperone/other-late-neg-projection
+   #:list-contract? (λ (c) #t)))
 
 (struct higher-order-list/c generic-list/c ()
   #:property prop:custom-write custom-write-property-proc
@@ -1913,10 +1912,10 @@
          ((proj blame) val))))
     (define (generator evt)
       (values evt (checker evt)))
-    (λ (val)
+    (λ (val neg-party)
       (unless (contract-first-order-passes? evt-ctc val)
         (raise-blame-error
-         blame val
+         blame val #:missing-party neg-party
          '(expected: "~s" given: "~e")
          (contract-name evt-ctc)
          val))
@@ -1944,7 +1943,7 @@
 (define-struct chaperone-evt/c (ctcs)
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection evt/c-proj
+   #:late-neg-projection evt/c-proj
    #:first-order evt/c-first-order
    #:stronger evt/c-stronger?
    #:name evt/c-name))
@@ -2063,33 +2062,95 @@
 
 (define (contract? x) (and (coerce-contract/f x) #t))
 (define (contract-projection ctc)
-  (contract-struct-projection
+  (get/build-projection
    (coerce-contract 'contract-projection ctc)))
 (define (contract-val-first-projection ctc)
-  (contract-struct-val-first-projection
+  (get/build-val-first-projection
    (coerce-contract 'contract-projection ctc)))
 (define (contract-late-neg-projection ctc)
-  (contract-struct-late-neg-projection
+  (get/build-late-neg-projection
    (coerce-contract 'contract-projection ctc)))
 
-(define (get/build-val-first-projection ctc)
-  (or (contract-struct-val-first-projection ctc)
-      (let ([p (contract-projection ctc)])
-        (λ (blme)
-          (procedure-rename
-           (λ (val)
-             (λ (neg-party)
-               ((p (blame-add-missing-party blme neg-party)) val)))
-           (string->symbol (format "val-first: ~s" (contract-name ctc))))))))
-
+(define-logger racket/contract)
 (define (get/build-late-neg-projection ctc)
-  (or (contract-struct-late-neg-projection ctc)
-      (let ([p (contract-projection ctc)])
-        (λ (blme)
-          (procedure-rename
-           (λ (val neg-party)
-             ((p (blame-add-missing-party blme neg-party)) val))
-           (string->symbol (format "late-neg: ~s" (contract-name ctc))))))))
+  (cond
+    [(contract-struct-late-neg-projection ctc) => values]
+    [else
+     (log-racket/contract-warning "no late-neg-projection for ~s" ctc)
+     (cond
+       [(contract-struct-projection ctc)
+        =>
+        (λ (projection)
+          (projection->late-neg-projection projection))]
+       [(contract-struct-val-first-projection ctc)
+        =>
+        (λ (val-first-projection)
+          (val-first-projection->late-neg-projection val-first-projection))]
+       [else
+        (first-order->late-neg-projection (contract-struct-first-order ctc)
+                                          (contract-struct-name ctc))])]))
+
+(define (projection->late-neg-projection proj)
+  (λ (b)
+    (λ (x neg-party)
+      ((proj (blame-add-missing-party b neg-party)) x))))
+(define (val-first-projection->late-neg-projection vf-proj)
+  (λ (b)
+    (define vf-val-accepter (vf-proj b))
+    (λ (x neg-party)
+      ((vf-val-accepter x) neg-party))))
+(define (first-order->late-neg-projection p? name)
+  (λ (b)
+    (λ (x neg-party)
+      (if (p? x)
+          x
+          (raise-blame-error
+           b x #:missing-party neg-party
+           '(expected: "~a" given: "~e")
+           name
+           x)))))
+
+(define warn-about-val-first? (make-parameter #t))
+(define (get/build-val-first-projection ctc)
+  (cond
+    [(contract-struct-val-first-projection ctc) => values]
+    [else
+     (when (warn-about-val-first?)
+       (log-racket/contract-warning
+        "building val-first-projection of contract ~s for~a"
+        ctc
+        (build-context)))
+     (late-neg-projection->val-first-projection
+      (get/build-late-neg-projection ctc))]))
+(define (late-neg-projection->val-first-projection lnp)
+  (λ (b)
+    (define val+neg-party-accepter (lnp b))
+    (λ (x)
+      (λ (neg-party)
+        (val+neg-party-accepter x neg-party)))))
+
+(define (get/build-projection ctc)
+  (cond
+    [(contract-struct-projection ctc) => values]
+    [else
+     (log-racket/contract-warning
+      "building projection of contract ~s for~a"
+      ctc
+      (build-context))
+     (late-neg-projection->projection
+      (get/build-late-neg-projection ctc))]))
+(define (late-neg-projection->projection lnp)
+  (λ (b)
+    (define val+np-acceptor (lnp b))
+    (λ (x)
+      (val+np-acceptor x #f))))
+
+(define (build-context)
+  (apply
+   string-append
+   (for/list ([i (in-list (continuation-mark-set->context
+                           (current-continuation-marks)))])
+     (format "\n  ~s" i))))
 
 (define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
 (define (flat-named-contract name pre-contract [generate #f])

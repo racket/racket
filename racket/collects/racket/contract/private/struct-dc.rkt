@@ -678,36 +678,33 @@
 
 (define-struct (struct/dc base-struct/dc) ()
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:name struct/dc-name
-     #:first-order struct/dc-first-order
-     #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?
-     #:generate struct/dc-generate
-     #:exercise struct/dc-exercise)))
+  (build-chaperone-contract-property
+   #:name struct/dc-name
+   #:first-order struct/dc-first-order
+   #:projection struct/dc-proj
+   #:stronger struct/dc-stronger?
+   #:generate struct/dc-generate
+   #:exercise struct/dc-exercise))
 
 (define-struct (flat-struct/dc base-struct/dc) ()
   #:property prop:flat-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-flat-contract-property
-     #:name struct/dc-name
-     #:first-order struct/dc-flat-first-order
-     #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?
-     #:generate struct/dc-generate
-     #:exercise struct/dc-exercise)))
+  (build-flat-contract-property
+   #:name struct/dc-name
+   #:first-order struct/dc-flat-first-order
+   #:projection struct/dc-proj
+   #:stronger struct/dc-stronger?
+   #:generate struct/dc-generate
+   #:exercise struct/dc-exercise))
 
 (define-struct (impersonator-struct/dc base-struct/dc) ()
   #:property prop:contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-contract-property
-     #:name struct/dc-name
-     #:first-order struct/dc-first-order
-     #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?
-     #:generate struct/dc-generate
-     #:exercise struct/dc-exercise)))
+  (build-contract-property
+   #:name struct/dc-name
+   #:first-order struct/dc-first-order
+   #:projection struct/dc-proj
+   #:stronger struct/dc-stronger?
+   #:generate struct/dc-generate
+   #:exercise struct/dc-exercise))
 
 (define (build-struct/dc subcontracts constructor pred struct-name here name-info struct/c?)
   (for ([subcontract (in-list subcontracts)])

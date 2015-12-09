@@ -911,7 +911,6 @@
              (for/list ([kwd (in-list (append mandatory-keywords optional-keywords))]
                         [kwd-proj (in-list (append mandatory-dom-kwd-projs optional-dom-kwd-projs))])
                (cons kwd kwd-proj))))
-          (define complete-blame (blame-add-missing-party blame neg-party))
           
           (define interposition-proc
             (make-keyword-procedure
@@ -936,7 +935,8 @@
                                  (loop (cdr args) (cdr projs)))])))
                (define (result-checker . results)
                  (unless (= rng-len (length results))
-                   (arrow:bad-number-of-results complete-blame f rng-len results))
+                   (arrow:bad-number-of-results (blame-add-missing-party blame neg-party)
+                                                f rng-len results))
                  (apply 
                   values
                   (for/list ([res (in-list results)]
@@ -952,7 +952,7 @@
                     (cons result-checker args-dealt-with)
                     args-dealt-with)))))
           
-          (arrow:arity-checking-wrapper f complete-blame 
+          (arrow:arity-checking-wrapper f blame neg-party
                                         interposition-proc interposition-proc
                                         min-arity max-arity
                                         min-arity max-arity 
@@ -1176,44 +1176,43 @@
                (base->-plus-one-arity-function ->stct)
                (base->-chaperone-constructor ->stct)
                #t)))
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-X-property
-     #:name base->-name 
-     #:first-order ->-first-order
-     #:projection
-     (λ (this)
-       (define cthis (val-first-proj this))
-       (λ (blame)
-         (define cblame (cthis blame))
-         (λ (val)
-           ((cblame val) #f))))
-     #:stronger
-     (λ (this that) 
-       (and (base->? that)
-            (= (length (base->-doms that))
-               (length (base->-doms this)))
-            (= (base->-min-arity this) (base->-min-arity that))
-            (andmap contract-stronger? (base->-doms that) (base->-doms this))
-            (= (length (base->-kwd-infos this))
-               (length (base->-kwd-infos that)))
-            (for/and ([this-kwd-info (base->-kwd-infos this)]
-                      [that-kwd-info (base->-kwd-infos that)])
-              (and (equal? (kwd-info-kwd this-kwd-info)
-                           (kwd-info-kwd that-kwd-info))
-                   (contract-stronger? (kwd-info-ctc that-kwd-info)
-                                       (kwd-info-ctc this-kwd-info))))
-            (if (base->-rngs this)
-                (and (base->-rngs that)
-                     (andmap contract-stronger? (base->-rngs this) (base->-rngs that)))
-                (not (base->-rngs that)))
-            (not (base->-pre? this))
-            (not (base->-pre? that))
-            (not (base->-post? this))
-            (not (base->-post? that))))
-     #:generate ->-generate
-     #:exercise ->-exercise
-     #:val-first-projection val-first-proj
-     #:late-neg-projection late-neg-proj)))
+  (build-X-property
+   #:name base->-name 
+   #:first-order ->-first-order
+   #:projection
+   (λ (this)
+     (define cthis (val-first-proj this))
+     (λ (blame)
+       (define cblame (cthis blame))
+       (λ (val)
+         ((cblame val) #f))))
+   #:stronger
+   (λ (this that) 
+     (and (base->? that)
+          (= (length (base->-doms that))
+             (length (base->-doms this)))
+          (= (base->-min-arity this) (base->-min-arity that))
+          (andmap contract-stronger? (base->-doms that) (base->-doms this))
+          (= (length (base->-kwd-infos this))
+             (length (base->-kwd-infos that)))
+          (for/and ([this-kwd-info (base->-kwd-infos this)]
+                    [that-kwd-info (base->-kwd-infos that)])
+            (and (equal? (kwd-info-kwd this-kwd-info)
+                         (kwd-info-kwd that-kwd-info))
+                 (contract-stronger? (kwd-info-ctc that-kwd-info)
+                                     (kwd-info-ctc this-kwd-info))))
+          (if (base->-rngs this)
+              (and (base->-rngs that)
+                   (andmap contract-stronger? (base->-rngs this) (base->-rngs that)))
+              (not (base->-rngs that)))
+          (not (base->-pre? this))
+          (not (base->-pre? that))
+          (not (base->-post? this))
+          (not (base->-post? that))))
+   #:generate ->-generate
+   #:exercise ->-exercise
+   #:val-first-projection val-first-proj
+   #:late-neg-projection late-neg-proj))
 
 (define-struct (-> base->) ()
   #:property

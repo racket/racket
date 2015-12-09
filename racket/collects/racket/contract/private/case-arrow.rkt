@@ -74,9 +74,9 @@
                [rng
                 (let ([rng-checkers 
                        (list #`(case-lambda
-                                 [(rng-id ...) (values/drop (rng-proj-x rng-id) ...)]
+                                 [(rng-id ...) (values/drop (rng-proj-x rng-id neg-party) ...)]
                                  [args 
-                                  (bad-number-of-results blame f 
+                                  (bad-number-of-results blame #:missing-party neg-party f 
                                                          #,(length (syntax->list #'(rng-id ...)))
                                                          args
                                                          #,n)]))]
@@ -85,19 +85,20 @@
                       (check-tail-contract #'(rng-proj-x ...) rng-checkers
                                            (λ (rng-checks)
                                              #`(apply values #,@rng-checks this-parameter ...
-                                                      (dom-proj-x dom-formals) ...
-                                                      (rst-proj-x rst-formal))))
-                      (check-tail-contract #'(rng-proj-x ...) rng-checkers
-                                           (λ (rng-checks)
-                                             #`(values/drop #,@rng-checks this-parameter ...
-                                                            (dom-proj-x dom-formals) ...)))))]
+                                                      (dom-proj-x dom-formals neg-party) ...
+                                                      (rst-proj-x rst-formal neg-party))))
+                      (check-tail-contract
+                       #'(rng-proj-x ...) rng-checkers
+                       (λ (rng-checks)
+                         #`(values/drop #,@rng-checks this-parameter ...
+                                        (dom-proj-x dom-formals neg-party) ...)))))]
                [rst
                 #`(apply values this-parameter ...
-                         (dom-proj-x dom-formals) ...
-                         (rst-proj-x rst-formal))]
+                         (dom-proj-x dom-formals neg-party) ...
+                         (rst-proj-x rst-formal neg-party))]
                [else
                 #`(values/drop this-parameter ...
-                               (dom-proj-x dom-formals) ...)]))))))
+                               (dom-proj-x dom-formals neg-party) ...)]))))))
 
 (define-syntax (case-> stx)
   (syntax-case stx ()
@@ -130,7 +131,7 @@
                  ctc
                  #,@(apply append (map syntax->list (syntax->list #'((dom-proj-x ...) ...))))
                  #,@(apply append (map syntax->list (syntax->list #'((rng-proj-x ...) ...)))))
-               (λ (f)
+               (λ (f neg-party)
                  (put-it-together 
                   #,(let ([case-lam (syntax/loc stx 
                                       (case-lambda [formals body] ...))])
@@ -138,14 +139,14 @@
                           #`(let ([#,name #,case-lam]) #,name)
                           case-lam))
                   (list (list rng-proj-x ...) ...)
-                  f blame wrapper ctc
+                  f blame neg-party wrapper ctc
                   chk #,(and (syntax-parameter-value #'making-a-method) #t))))))))]))
 
-(define (put-it-together the-case-lam range-projections f blame wrapper ctc chk mtd?)
+(define (put-it-together the-case-lam range-projections f blame neg-party wrapper ctc chk mtd?)
   (chk f mtd?)
   (define checker
     (make-keyword-procedure
-     (raise-no-keywords-error f blame)
+     (raise-no-keywords-error f blame neg-party)
      (λ args
        (with-continuation-mark contract-continuation-mark-key blame
          (apply the-case-lam args)))))
@@ -155,17 +156,18 @@
        f
        checker
        impersonator-prop:contracted ctc
-       impersonator-prop:blame blame
+       impersonator-prop:blame (blame-add-missing-party blame neg-party)
        impersonator-prop:application-mark (cons contract-key same-rngs))
       (wrapper
        f
        checker
        impersonator-prop:contracted ctc
-       impersonator-prop:blame blame)))
+       impersonator-prop:blame (blame-add-missing-party blame neg-party))))
 
-(define (raise-no-keywords-error f blame)
+(define (raise-no-keywords-error f blame neg-party)
   (λ (kwds kwd-args . args)
-    (raise-blame-error blame f "expected no keywords, got keyword ~a" (car kwds))))
+    (raise-blame-error blame f #:missing-party neg-party
+                       "expected no keywords, got keyword ~a" (car kwds))))
 
 ;; dom-ctcs : (listof (listof contract))
 ;; rst-ctcs : (listof contract)
@@ -180,8 +182,7 @@
 (define (case->-proj wrapper)
   (λ (ctc)
     (define dom-ctcs+case-nums (get-case->-dom-ctcs+case-nums ctc))
-    (define rng-ctcs (map contract-projection
-                          (get-case->-rng-ctcs ctc)))
+    (define rng-late-neg-ctcs (map contract-late-neg-projection (get-case->-rng-ctcs ctc)))
     (define rst-ctcs (base-case->-rst-ctcs ctc))
     (define specs (base-case->-specs ctc))
     (λ (blame)
@@ -210,7 +211,7 @@
                                                         (apply p args)))])
                                            (set! memo (cons (cons f new) memo))
                                            new))))
-                                 rng-ctcs)))
+                                 rng-late-neg-ctcs)))
       (define (chk val mtd?) 
         (cond
           [(null? specs)
@@ -220,8 +221,8 @@
            (for-each 
             (λ (dom-length has-rest?)
               (if has-rest?
-                  (check-procedure/more val mtd? dom-length '() '() blame)
-                  (check-procedure val mtd? dom-length 0 '() '() blame)))
+                  (check-procedure/more val mtd? dom-length '() '() blame #f)
+                  (check-procedure val mtd? dom-length 0 '() '() blame #f)))
             specs rst-ctcs)]))
       (apply (base-case->-wrapper ctc)
              chk
@@ -260,7 +261,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection (case->-proj chaperone-procedure)
+   #:late-neg-projection (case->-proj chaperone-procedure)
    #:name case->-name
    #:first-order case->-first-order
    #:stronger case->-stronger?))
@@ -269,7 +270,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
-   #:projection (case->-proj impersonate-procedure)
+   #:late-neg-projection (case->-proj impersonate-procedure)
    #:name case->-name
    #:first-order case->-first-order
    #:stronger case->-stronger?))
@@ -290,11 +291,11 @@
        [rst  (in-list (base-case->-rst-ctcs ctc))]
        [i (in-naturals)])
     (define dom+case-nums 
-      (map (λ (dom) (cons i (contract-projection dom))) doms))
+      (map (λ (dom) (cons i (contract-late-neg-projection dom))) doms))
     (append acc
             (if rst
                 (append dom+case-nums
-                        (list (cons i (contract-projection rst))))
+                        (list (cons i (contract-late-neg-projection rst))))
                 dom+case-nums))))
 
 (define (get-case->-rng-ctcs ctc)
