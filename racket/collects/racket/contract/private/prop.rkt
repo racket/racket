@@ -281,9 +281,11 @@
       get-val-first-projection
       (cond
         [first-order?
-         (or get-late-neg-projection
-             (λ (c)
-               (late-neg-first-order-projection (get-name c) (get-first-order c))))]
+         (cond
+           [get-late-neg-projection get-late-neg-projection]
+           [(and (not get-projection) (not get-val-first-projection))
+            (λ (c) (late-neg-first-order-projection (get-name c) (get-first-order c)))]
+           [else #f])]
         [else get-late-neg-projection])
       list-contract?))
 
