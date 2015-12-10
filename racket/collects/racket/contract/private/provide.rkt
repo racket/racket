@@ -244,7 +244,7 @@
           (if (and user-rename-id
                    (syntax-source user-rename-id))
               user-rename-id
-              #'ex-id)))
+              ex-id)))
     (with-syntax ([code
                    (syntax-property
                     (quasisyntax/loc stx
