@@ -2240,5 +2240,24 @@
                 (read i)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that shadowing doesn't create an ill-formed internal
+;; representation of binding:
+
+(let ()
+  ;; Make introducers before namespace, so they have older scopes, which
+  ;; means that bindings will be attached to the namespace's scope:
+  (define i1 (make-syntax-introducer))
+  (define i2 (make-syntax-introducer))
+  (define ns (make-base-namespace))
+  (eval `(define car 0) ns)
+  (eval `(define ,(i1 (datum->syntax #f 'car)) 1) ns)
+  (eval `(define ,(i2 (datum->syntax #f 'car)) 2) ns)
+  (eval `(require racket/base) ns) ; replaces plain `car` mapping
+  (write (compile-syntax
+          #`(quote-syntax #,(parameterize ([current-namespace ns])
+                              (namespace-syntax-introduce (datum->syntax #f 'car)))))
+         (open-output-bytes)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

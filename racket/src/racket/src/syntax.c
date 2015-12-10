@@ -2655,7 +2655,7 @@ static Scheme_Object *replace_matching_scopes(Scheme_Object *l, Scheme_Scope_Set
 
   p = SCHEME_CDR(p);
   while (c--) {
-    p = scheme_make_pair(SCHEME_CAR(l), p);
+    p = scheme_make_mutable_pair(SCHEME_CAR(l), p);
     l = SCHEME_CDR(l);
   }
 
