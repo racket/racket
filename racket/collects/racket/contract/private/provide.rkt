@@ -267,12 +267,7 @@
 ;; syntax -> syntax
 ;; returns an expression that evaluates to the source location of the argument
 (define-for-syntax (stx->srcloc-expr srcloc-stx)
-  #`(vector
-     '#,(syntax-source srcloc-stx)
-     #,(syntax-line srcloc-stx)
-     #,(syntax-column srcloc-stx)
-     #,(syntax-position srcloc-stx)
-     #,(syntax-span srcloc-stx)))
+  #`(quote-srcloc #,srcloc-stx))
 
 (define-for-syntax (internal-function-to-be-figured-out ctrct
                                                         id 
