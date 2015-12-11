@@ -2,7 +2,7 @@
 @(require "mz.rkt")
 
 @(define sp-eval (make-base-eval))
-@(interaction-eval #:eval sp-eval (require racket/list))
+@examples[#:hidden #:eval sp-eval (require racket/list)]
 
 @title[#:tag "stringport"]{String Ports}
 

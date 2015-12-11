@@ -643,7 +643,7 @@ normally identified by @racket[""]). See also
 @section{Additional Byte String Functions}
 @note-lib[racket/bytes]
 @(define string-eval (make-base-eval))
-@(interaction-eval #:eval string-eval (require racket/bytes racket/list))
+@@examples[#:hidden #:eval string-eval (require racket/bytes racket/list)]
 
 @defproc[(bytes-append* [str bytes?] ... [strs (listof bytes?)]) bytes?]{
 @; Note: this is exactly the same description as the one for append*

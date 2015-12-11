@@ -379,10 +379,11 @@ source for all syntax errors.
 
 @code:comment{If we misuse for/digits, we can get good error reporting}
 @code:comment{because the use of orig-datum allows for source correlation:}
-(for/digits
-    [a (in-list '(1 2 3))]
-    [b (in-list '(4 5 6))]
-  (+ a b))
+(eval:error
+ (for/digits
+     [a (in-list '(1 2 3))]
+     [b (in-list '(4 5 6))]
+   (+ a b)))
 
 (for/digits
     ([a (in-list '(1 2 3))]
@@ -426,10 +427,11 @@ Like @racket[for*/fold], but the extra @racket[orig-datum] is used as the source
                (values (+ n (* d k)) (* k 10)))])
            n))]))
 
-(for*/digits
-    [ds (in-list '((8 3) (1 1)))]
-    [d (in-list ds)]
-  d)
+(eval:error
+ (for*/digits
+     [ds (in-list '((8 3) (1 1)))]
+     [d (in-list ds)]
+   d))
 
 (for*/digits
     ([ds (in-list '((8 3) (1 1)))]

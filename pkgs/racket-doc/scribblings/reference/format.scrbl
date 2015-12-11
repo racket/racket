@@ -1,7 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual
           scribble/struct
-          scribble/eval
           "mz.rkt"
           (for-label racket/contract
                      racket/math
@@ -40,7 +39,7 @@ with @racket[separator] between consecutive items, and then pads or
 truncates the string to be at least @racket[min-width] characters and
 at most @racket[max-width] characters.
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~a "north")
 (~a 'south)
 (~a #"east")
@@ -70,7 +69,7 @@ truncated and the end of the string is replaced with
 @racket[limit-marker]. If @racket[limit-marker] is longer than
 @racket[max-width], an exception is raised.
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~a "abcde" #:max-width 5)
 (~a "abcde" #:max-width 4)
 (~a "abcde" #:max-width 4 #:limit-marker "*")
@@ -95,7 +94,7 @@ of @racket[right-pad-string] in its entirety. Thus left padding starts
 with the start of @racket[left-pad-string] and right padding ends with
 the end of @racket[right-pad-string].
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~a "apple" #:min-width 20 #:align 'left)
 (~a "pear" #:min-width 20 #:align 'left #:right-pad-string " .")
 (~a "plum" #:min-width 20 #:align 'right #:left-pad-string ". ")
@@ -107,7 +106,7 @@ Use @racket[width] to set both @racket[max-width] and @racket[min-width]
 simultaneously, ensuring that the resulting string is exactly
 @racket[width] characters long:
 
-@interaction[#:eval the-eval
+@examples[#:label #f #:eval the-eval
 (~a "terse" #:width 6)
 (~a "loquacious" #:width 6)
 ]
@@ -131,7 +130,7 @@ Like @racket[~a], but each value is converted like @racket[(format
 "~v" v)], the default separator is @racket[" "], and the default limit
 marker is @racket["..."].
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~v "north")
 (~v 'south)
 (~v #"east")
@@ -141,7 +140,7 @@ marker is @racket["..."].
 
 Use @racket[~v] to produce text that talks about Racket values.
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (let ([nums (for/list ([i 10]) i)])
   (~a "The even numbers in " (~v nums) 
       " are " (~v (filter even? nums)) "."))
@@ -165,7 +164,7 @@ Like @racket[~a], but each value is converted like @racket[(format
 "~s" v)], the default separator is @racket[" "], and the default limit
 marker is @racket["..."].
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~s "north")
 (~s 'south)
 (~s #"east")
@@ -192,7 +191,7 @@ Like @racket[~a], but each value is converted like @racket[(format
 "~e" v)], the default separator is @racket[" "], and the default limit
 marker is @racket["..."].
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~e "north")
 (~e 'south)
 (~e #"east")
@@ -241,7 +240,7 @@ The optional arguments control number formatting:
 in positional or exponential notation. If @racket[notation] is a
 function, it is applied to @racket[x] to get the notation to be used.
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~r 12345)
 (~r 12345 #:notation 'exponential)
 (let ([pick-notation
@@ -266,7 +265,7 @@ point are dropped the decimal point is also dropped. If @racket[precision] is
 @racket[(list '= _digits)], then exactly @racket[_digits] digits after the
 decimal point are used, and the decimal point is never dropped.
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~r pi)
 (~r pi #:precision 4)
 (~r pi #:precision 0)
@@ -282,7 +281,7 @@ with fewer than @racket[min-width] digits (including the decimal
 point but not including the sign indicator), the digits are left-padded
 using @racket[pad-string].
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~r 17)
 (~r 17 #:min-width 4)
 (~r -42 #:min-width 4)
@@ -298,7 +297,7 @@ number to at least @racket[min-width] characters (not including the
 sign indicator). The padding is placed between the sign and the normal
 digits of @racket[x].
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~r 17 #:min-width 4 #:pad-string "0")
 (~r -42 #:min-width 4 #:pad-string "0")
 ]}
@@ -311,7 +310,7 @@ indicated:
   generated if @racket[x] is either positive or zero, and a minus sign is
   prefixed if @racket[x] is negative.
 
-  @interaction[#:eval the-eval
+  @examples[#:eval the-eval
   (for/list ([x '(17 0 -42)]) (~r x))
   ]}
 
@@ -319,14 +318,14 @@ indicated:
   @racket[x] is zero, a plus sign is prefixed if @racket[x] is positive, and a
   minus sign is prefixed if @racket[x] is negative.
 
-  @interaction[#:eval the-eval
+  @examples[#:eval the-eval
   (for/list ([x '(17 0 -42)]) (~r x #:sign '+))
   ]}
 
   @item{If @racket[sign] is @racket['++], a plus sign is prefixed if @racket[x]
   is zero or positive, and a minus sign is prefixed if @racket[x] is negative.
 
-  @interaction[#:eval the-eval
+  @examples[#:eval the-eval
   (for/list ([x '(17 0 -42)]) (~r x #:sign '++))
   ]}
 
@@ -334,7 +333,7 @@ indicated:
   @racket[x] is zero or positive, and the number is enclosed in parentheses if
   @racket[x] is negative.
 
-  @interaction[#:eval the-eval
+  @examples[#:eval the-eval
   (for/list ([x '(17 0 -42)]) (~r x #:sign 'parens))
   ]}
 
@@ -344,7 +343,7 @@ indicated:
   either a string to be used as a prefix or a list containing two strings: a
   prefix and a suffix.
 
-  @interaction[#:eval the-eval
+  @examples[#:eval the-eval
   (let ([sign-table '(("" " up") "an even " ("" " down"))])
     (for/list ([x '(17 0 -42)]) (~r x #:sign sign-table)))
   ]
@@ -359,7 +358,7 @@ indicated:
 used. If @racket[base] is @racket[(list 'up _base*)] and @racket[_base*] is
 greater than @racket[10], then upper-case letters are used.
 
-@interaction[#:eval the-eval
+@examples[#:eval the-eval
 (~r 100 #:base 7)
 (~r 4.5 #:base 2)
 (~r 3735928559 #:base 16)
@@ -374,7 +373,7 @@ explicit sign (as with a @racket[sign] of @racket['++]) and at least two
 digits, separated from the significand by the ``exponent marker''
 @racket[format-exponent]:
 
-@interaction[#:eval the-eval
+@examples[#:label #f #:eval the-eval
 (~r 1234 #:notation 'exponential #:format-exponent "E")
 ]
 
@@ -382,7 +381,7 @@ If @racket[format-exponent] is @racket[#f], the ``exponent marker'' is
 @racket["e"] if @racket[base] is @racket[10] and a string involving
 @racket[base] otherwise:
 
-@interaction[#:eval the-eval
+@examples[#:label #f #:eval the-eval
 (~r 1234 #:notation 'exponential)
 (~r 1234 #:notation 'exponential #:base 8)
 ]
@@ -390,7 +389,7 @@ If @racket[format-exponent] is @racket[#f], the ``exponent marker'' is
 If @racket[format-exponent] is a procedure, it is applied to the exponent and
 the resulting string is appended to the significand:
 
-@interaction[#:eval the-eval
+@examples[#:label #f #:eval the-eval
 (~r 1234 #:notation 'exponential
          #:format-exponent (lambda (e) (format "E~a" e)))
 ]}

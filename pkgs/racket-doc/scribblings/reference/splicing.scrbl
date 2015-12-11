@@ -2,9 +2,9 @@
 @(require "mz.rkt" (for-label racket/splicing racket/stxparam racket/local))
 
 @(define splice-eval (make-base-eval))
-@interaction-eval[#:eval splice-eval (require racket/splicing 
-                                              racket/stxparam
-                                              (for-syntax racket/base))]
+@examples[#:hidden #:eval splice-eval (require racket/splicing 
+                                               racket/stxparam
+                                               (for-syntax racket/base))]
 
 @title[#:tag "splicing"]{Local Binding with Splicing Body}
 
@@ -35,7 +35,7 @@ definition context (in the same way as for @racket[begin]).
 (splicing-let-syntax ([one (lambda (stx) #'1)])
   (define o one))
 o
-one
+(eval:error one)
 ]
 
 When a splicing binding form occurs in a @tech{top-level context} or
@@ -46,9 +46,10 @@ once during compilation as in @racket[let-syntax], etc.
 
 @examples[
 #:eval splice-eval
-(splicing-letrec ([x bad]
-                  [bad 1])
-  x)]
+(eval:error
+ (splicing-letrec ([x bad]
+                   [bad 1])
+   x))]
 
 If a definition within a splicing form is intended to be local to the
 splicing body, then the identifier should have a true value for the

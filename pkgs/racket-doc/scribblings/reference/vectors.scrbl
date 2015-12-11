@@ -151,8 +151,8 @@ _i)] is the value produced by @racket[(proc _i)].
 
 @note-lib[racket/vector]
 @(define vec-eval (make-base-eval))
-@(interaction-eval #:eval vec-eval
-                   (require racket/vector))
+@examples[#:hidden #:eval vec-eval
+          (require racket/vector)]
 
 @defproc[(vector-set*! [vec (and/c vector? (not/c immutable?))]
                        [pos exact-nonnegative-integer?]

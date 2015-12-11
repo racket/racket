@@ -282,7 +282,7 @@ form. See also @racket[module-compiled-language-info],
 
 See also @secref["module-eval-model"] and @secref["mod-parse"].
 
-@defexamples[#:eval (syntax-eval)
+@examples[#:eval (syntax-eval) #:once
 (module duck racket/base
   (provide num-eggs quack)
   (define num-eggs 2)
@@ -510,13 +510,13 @@ bindings of each @racket[require-spec] are visible for expanding later
   is not in the set that @racket[require-spec] describes, a syntax
   error is reported.
 
-  @defexamples[#:eval (syntax-eval)
+  @examples[#:eval (syntax-eval) #:once
     (require (only-in racket/tcp
 	              tcp-listen
                       [tcp-accept my-accept]))
     tcp-listen
     my-accept
-    tcp-accept
+    (eval:error tcp-accept)
   ]}
 
  @defsubform[(except-in require-spec id ...)]{ Like
@@ -525,11 +525,11 @@ bindings of each @racket[require-spec] are visible for expanding later
   in the set that @racket[require-spec] describes, a syntax error is
   reported.
 
-  @defexamples[#:eval (syntax-eval)
+  @examples[#:eval (syntax-eval) #:once
     (require (except-in racket/tcp
 	                tcp-listen))
     tcp-accept
-    tcp-listen
+    (eval:error tcp-listen)
   ]}
 
  @defsubform[(prefix-in prefix-id require-spec)]{ Like
@@ -538,7 +538,7 @@ bindings of each @racket[require-spec] are visible for expanding later
   @racket[prefix-id] is ignored, and instead preserved from the
   identifiers before prefixing.
 
-  @defexamples[#:eval (syntax-eval)
+  @examples[#:eval (syntax-eval) #:once
     (require (prefix-in tcp: racket/tcp))
     tcp:tcp-accept
     tcp:tcp-listen
@@ -550,7 +550,7 @@ bindings of each @racket[require-spec] are visible for expanding later
   @racket[orig-id] is not in the set that @racket[require-spec]
   describes, a syntax error is reported.
   
-  @defexamples[#:eval (syntax-eval)
+  @examples[#:eval (syntax-eval) #:once
     (require (rename-in racket/tcp
                         (tcp-accept accept)
 			(tcp-listen listen)))
@@ -563,7 +563,7 @@ bindings of each @racket[require-spec] are visible for expanding later
   @racket[require-spec]s have the same identifier name but they do not refer to
   the same original binding, a syntax error is reported.
   
-  @defexamples[#:eval (syntax-eval)
+  @examples[#:eval (syntax-eval) #:once
     (require (combine-in (only-in racket/tcp tcp-accept)
                          (only-in racket/tcp tcp-listen)))
     tcp-accept
@@ -588,7 +588,7 @@ bindings of each @racket[require-spec] are visible for expanding later
   The following example imports bindings only at @tech{phase level} 1,
   the transform phase:
 
-  @interaction[#:eval meta-in-eval
+  @examples[#:label #f #:eval meta-in-eval
   (module nest racket
     (provide (for-syntax meta-eggs)
              (for-meta 1 meta-chicks)
@@ -604,13 +604,13 @@ bindings of each @racket[require-spec] are visible for expanding later
     #'(void))
 
    (desc)
-   num-eggs
+   (eval:error num-eggs)
   ]
 
   The following example imports only bindings at @tech{phase level} 0, the
   normal phase.
 
-  @interaction[#:eval meta-in-eval
+  @examples[#:label #f #:eval meta-in-eval
    (require (only-meta-in 0 'nest))
    num-eggs
   ]}
@@ -622,7 +622,7 @@ bindings of each @racket[require-spec] are visible for expanding later
   @tech{label phase level} corresponds to @racket[#f], and a shifting
   combination that involves @racket[#f] produces @racket[#f].
   
-  @defexamples[#:eval (syntax-eval)
+  @examples[#:eval (syntax-eval) #:once
   (module nest racket
     (provide num-eggs)
     (define num-eggs 2))
@@ -894,7 +894,7 @@ level} 0 are imported.
   (let ()
     (local-require racket/control)
     fcontrol)
-  fcontrol
+  (eval:error fcontrol)
 ]}
 
 
@@ -944,7 +944,7 @@ as follows.
  identifier must match (otherwise, the external name could be
  ambiguous).
 
- @defexamples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide num-eggs)
      (define num-eggs 2))
@@ -968,7 +968,7 @@ as follows.
  macro-introduced imports are not re-exported, unless the
  @racket[(all-defined-out)] form was introduced at the same time.
 
- @defexamples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide (all-defined-out))
      (define num-eggs 2))
@@ -987,7 +987,7 @@ as follows.
  macro-introduced imports are not re-exported, unless the
  @racket[module-path] was introduced at the same time.
 
- @defexamples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide num-eggs)
      (define num-eggs 2))
@@ -1003,13 +1003,13 @@ as follows.
  the relevant @tech{phase level}.  The symbolic name for each export is
  @racket[export-id] instead @racket[orig-d].
 
- @defexamples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide (rename-out [count num-eggs]))
      (define count 2))
    (require 'nest)
    num-eggs
-   count
+   (eval:error count)
  ]}
 
  @defsubform[(except-out provide-spec provide-spec ...)]{ Like the
@@ -1019,7 +1019,7 @@ as follows.
  reported. The symbolic export name information in the latter
  @racket[provide-spec]s is ignored; only the bindings are used.
 
- @defexamples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide (except-out (all-defined-out)
 			  num-chicks))
@@ -1027,14 +1027,14 @@ as follows.
      (define num-chicks 3))
    (require 'nest)
    num-eggs
-   num-chicks
+   (eval:error num-chicks)
  ]}
 
  @defsubform[(prefix-out prefix-id provide-spec)]{
  Like @racket[provide-spec], but with each symbolic export name from
  @racket[provide-spec] prefixed with @racket[prefix-id].
 
- @defexamples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide (prefix-out chicken: num-eggs))
      (define num-eggs 2))
@@ -1055,7 +1055,7 @@ as follows.
  accessor and mutator bindings of the super-type are @italic{not}
  included by @racket[struct-out] for export.
 
- @defexamples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide (struct-out egg))
      (struct egg (color wt)))
@@ -1066,7 +1066,7 @@ as follows.
  @defsubform[(combine-out provide-spec ...)]{ The union of the
  @racket[provide-spec]s.
 
- @defexamples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide (combine-out num-eggs num-chicks))
      (define num-eggs 2)
@@ -1084,7 +1084,7 @@ as follows.
  For more details, see @secref["modprotect"]. The @racket[provide-spec] must specify only
  bindings that are defined within the exporting module.
 
- @examples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (provide num-eggs (protect-out num-chicks))
      (define num-eggs 2)
@@ -1102,7 +1102,7 @@ as follows.
    (require 'nest)
    (list num-eggs num-chicks)
    (weak-eval 'num-eggs)
-   (weak-eval 'num-chicks)
+   (eval:error (weak-eval 'num-chicks))
  ]}
 
  @specsubform[#:literals (for-meta) 
@@ -1118,7 +1118,7 @@ as follows.
  @racket[all-from-out] exports bindings imported with a shift by
  @racket[phase-level].
 
- @examples[#:eval (syntax-eval)
+ @examples[#:eval (syntax-eval) #:once
    (module nest racket
      (begin-for-syntax
       (define eggs 2))
@@ -1132,11 +1132,12 @@ as follows.
    (test-eggs)
    chickens
 
-   (module broken-nest racket
-     (define eggs 2)
-     (define chickens 3)
-     (provide (for-syntax eggs)
-              chickens))
+   (eval:error
+    (module broken-nest racket
+      (define eggs 2)
+      (define chickens 3)
+      (provide (for-syntax eggs)
+               chickens)))
 
    (module nest2 racket
      (begin-for-syntax
@@ -1309,7 +1310,7 @@ Like @racket[require-spec], but including only imports whose names
  match @racket[regexp].  The @racket[regexp] must be a literal regular
  expression (see @secref["regexp"]).
 
-@defexamples[#:eval (syntax-eval)
+@examples[#:eval (syntax-eval) #:once
 (module zoo racket/base
   (provide tunafish swordfish blowfish
            monkey lizard ant)
@@ -1324,7 +1325,7 @@ Like @racket[require-spec], but including only imports whose names
 tunafish
 swordfish
 blowfish
-monkey
+(eval:error monkey)
 ]}
 
 @defform[(subtract-in require-spec subtracted-spec ...)]{
@@ -1332,7 +1333,7 @@ monkey
 Like @racket[require-spec], but omitting those imports that would be
   imported by one of the @racket[subtracted-spec]s.
 
-@defexamples[#:eval (syntax-eval)
+@examples[#:eval (syntax-eval) #:once
 (module earth racket
   (provide land sea air)
   (define land 1)
@@ -1350,7 +1351,7 @@ Like @racket[require-spec], but omitting those imports that would be
 
 (require racket/require)
 (require (subtract-in 'solar-system 'earth))
-land
+(eval:error land)
 aliens
 ]}
 
@@ -1517,7 +1518,7 @@ introduces @racketidfont{#%datum} identifiers.
 @mz-examples[
 (#%datum . 10)
 (#%datum . x)
-(#%datum . #:x)
+(eval:error (#%datum . #:x))
 ]
 }
 
@@ -1532,14 +1533,14 @@ expression.
 
 @mz-examples[
 (#%expression (+ 1 2))
-(#%expression (define x 10))
+(eval:error (#%expression (define x 10)))
 ]
 
 The @racket[#%expression] form is helpful in recursive definition contexts
 where expanding a subsequent definition can provide compile-time information
 for the current expression. For example, consider a @racket[define-sym-case]
 macro that simply records some symbols at compile-time in a given identifier.
-@interaction/no-prompt[#:eval meta-in-eval
+@examples[#:label #f #:no-prompt #:eval meta-in-eval
 (define-syntax (define-sym-case stx)
   (syntax-case stx ()
     [(_ id sym ...)
@@ -1548,7 +1549,7 @@ macro that simply records some symbols at compile-time in a given identifier.
          '(sym ...))]))]
 and then a variant of @racket[case] that checks to make sure the symbols
 used in the expression match those given in the earlier definition:
-@interaction/no-prompt[#:eval meta-in-eval
+@examples[#:label #f #:no-prompt #:eval meta-in-eval
 (define-syntax (sym-case stx)
   (syntax-case stx ()
     [(_ id val-expr [(sym) expr] ...)
@@ -1575,18 +1576,19 @@ If the definition follows the use like this, then
 the @racket[define-sym-case] macro does not have
 a chance to bind @racket[id] and the @racket[sym-case]
 macro signals an error:
-@interaction[#:eval meta-in-eval
-(let () 
-  (sym-case land-creatures 'bear
-            [(bear) 1]
-            [(fox) 2])
-  (define-sym-case land-creatures bear fox))
+@examples[#:label #f #:eval meta-in-eval
+(eval:error
+ (let () 
+   (sym-case land-creatures 'bear
+             [(bear) 1]
+             [(fox) 2])
+   (define-sym-case land-creatures bear fox)))
 ]
 But if the @racket[sym-case] is wrapped in an @racket[#%expression],
 then the expander does not need to expand it to know it is
 an expression and it moves on to the @racket[define-sym-case]
 expression.
-@interaction[#:eval meta-in-eval
+@examples[#:label #f #:eval meta-in-eval
 (let ()
   (#%expression (sym-case sea-creatures 'whale 
                           [(whale) 1]
@@ -1740,7 +1742,7 @@ expander introduces @racketidfont{#%app} identifiers.
 @mz-examples[
 (#%app + 1 2)
 (#%app (lambda (x #:arg y) (list y x)) #:arg 2 1)
-(#%app cons)
+(eval:error (#%app cons))
 ]}
 
 @defform*[[(#%plain-app proc-expr arg-expr ...)
@@ -2342,13 +2344,14 @@ in @math{O(log N)} time for @math{N} @racket[datum]s.
 (case (list 'quote 'x)
  [(x) "ex"]
  [('x) "quoted ex"])
-]
-@def+int[
-(define (classify c)
-  (case (char-general-category c)
-   [(ll lu lt ln lo) "letter"]
-   [(nd nl no) "number"]
-   [else "other"]))
+
+(eval:no-prompt
+ (define (classify c)
+   (case (char-general-category c)
+    [(ll lu lt ln lo) "letter"]
+    [(nd nl no) "number"]
+    [else "other"])))
+
 (classify #\A)
 (classify #\1)
 (classify #\!)
@@ -2394,19 +2397,20 @@ In a context that allows @tech{liberal expansion} of @racket[define],
 @racket[lambda] form with keyword arguments or @racket[args] include
 keyword arguments.
 
-@defexamples[
-(define x 10)
+@examples[
+(eval:no-prompt (define x 10))
 x
-]
-@def+int[
-(define (f x)
-  (+ x 1))
-(f 10)
-]
 
-@def+int[
-(define ((f x) [y 20])
-  (+ x y))
+(eval:no-prompt
+ (define (f x)
+   (+ x 1)))
+
+(f 10)
+
+(eval:no-prompt
+ (define ((f x) [y 20])
+   (+ x y)))
+
 ((f 10) 30)
 ((f 10))
 ]
@@ -2427,7 +2431,7 @@ and the top-level mapping of each @racket[id] (in the
 @techlink{namespace} linked with the compiled definition) is set to
 the binding at the same time.
 
-@defexamples[
+@examples[
 (define-values () (values))
 (define-values (x y z) (values 1 2 3))
 z
@@ -2459,7 +2463,7 @@ expands to a definition of the first form where the @racket[expr] is a
 In an @tech{internal-definition context} (see @secref["intdef-body"]), 
 a @racket[define-syntax] form introduces a local binding.
 
-@defexamples[#:eval (syntax-eval)
+@examples[#:eval (syntax-eval) #:once
 (define-syntax foo
   (syntax-rules ()
     ((_ a ...)
@@ -2490,7 +2494,7 @@ binding; see @secref["macro-introduced-bindings"].
 In an @tech{internal-definition context} (see @secref["intdef-body"]), 
 a @racket[define-syntaxes] form introduces local bindings.
 
-@defexamples[#:eval (syntax-eval)
+@examples[#:eval (syntax-eval) #:once
 (define-syntaxes (foo1 foo2 foo3)
   (let ([transformer1 (lambda (syntax-object)
 			(syntax-case syntax-object ()
@@ -2526,14 +2530,14 @@ form must be expanded before the use is expanded). In particular,
 mutually recursive functions bound by @racket[define-for-syntax] must
 be defined by the same @racket[define-for-syntax] form.
 
-@defexamples[#:eval (syntax-eval)
+@examples[#:eval (syntax-eval) #:once
 (define-for-syntax helper 2)
 (define-syntax (make-two syntax-object)
   (printf "helper is ~a\n" helper)
   #'2)
 (make-two)
 (code:comment @#,t{`helper' is not bound in the runtime phase})
-helper
+(eval:error helper)
 
 (define-for-syntax (filter-ids ids)
   (filter identifier? ids))
@@ -2552,7 +2556,7 @@ Like @racket[define-for-syntax], but @racket[expr] must produce as
 many values as supplied @racket[id]s, and all of the @racket[id]s are
 bound (at @tech{phase level} 1).}
 
-@defexamples[#:eval (syntax-eval)
+@examples[#:eval (syntax-eval) #:once
 (define-values-for-syntax (foo1 foo2) (values 1 2))
 (define-syntax (bar syntax-object)
   (printf "foo1 is ~a foo2 is ~a\n" foo1 foo2)
@@ -2768,14 +2772,14 @@ variable} that has not been defined, the @exnraise[exn:fail:contract].
 
 See also @racket[compile-allow-set!-undefined].
 
-@defexamples[
+@examples[
 (define x 12)
 (set! x (add1 x))
 x
 (let ([x 5])
   (set! x (add1 x))
   x)
-(set! i-am-not-defined 10)
+(eval:error (set! i-am-not-defined 10))
 ]}
 
 @defform[(set!-values (id ...) expr)]{
@@ -2859,7 +2863,7 @@ other way than as @racket[(#,unquote-id _expr)] or
 (eval:alts (#,(racket quasiquote) (0 1 2)) `(0 1 2))
 (eval:alts (#,(racket quasiquote) (0 (#,unquote-id (+ 1 2)) 4)) `(0 ,(+ 1 2) 4))
 (eval:alts (#,(racket quasiquote) (0 (#,unquote-splicing-id (list 1 2)) 4)) `(0 ,@(list 1 2) 4))
-(eval:alts (#,(racket quasiquote) (0 (#,unquote-splicing-id 1) 4)) `(0 ,@1 4))
+(eval:error (eval:alts (#,(racket quasiquote) (0 (#,unquote-splicing-id 1) 4)) `(0 ,@1 4)))
 (eval:alts (#,(racket quasiquote) (0 (#,unquote-splicing-id 1))) `(0 ,@1))
 ]
 

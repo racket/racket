@@ -2,7 +2,7 @@
 @(require "mz.rkt")
 
 @(define stx-eval (make-base-eval))
-@(interaction-eval #:eval stx-eval (require (for-syntax racket/base)))
+@examples[#:hidden #:eval stx-eval (require (for-syntax racket/base))]
 
 @title[#:tag "stxcmp"]{Syntax Object Bindings}
 

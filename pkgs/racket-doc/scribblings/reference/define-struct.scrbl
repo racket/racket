@@ -3,8 +3,8 @@
                                                        racket/generic))
 
 @(define posn-eval (make-base-eval))
-@(interaction-eval #:eval posn-eval
-  (require racket/match racket/stream (for-syntax racket/base)))
+@examples[#:hidden #:eval posn-eval
+  (require racket/match racket/stream (for-syntax racket/base))]
 
 @title[#:tag "define-struct"]{Defining Structure Types: @racket[struct]}
 
@@ -141,7 +141,7 @@ multiple times, attaches a property value to the structure type; see
               (unless (and (real? temp) (>= temp -273.15))
                 (error "not a valid temperature"))
               temp))
-  (celsius -275)
+  (eval:error (celsius -275))
 ]
 
 @margin-note{Use the @racket[prop:procedure] property to implement an
@@ -195,7 +195,7 @@ name, as do the various procedures that are bound by @racket[struct].
 @examples[#:eval posn-eval
   (struct circle (radius) #:reflection-name '<circle>)
   (circle 15)
-  (circle-radius "bad")
+  (eval:error (circle-radius "bad"))
 ]
 
 If @racket[#:methods gen:name method-defs] is provided, then
@@ -225,11 +225,12 @@ supplied, then the @racket[struct] form is equivalent to
 
 @examples[#:eval posn-eval
   (struct square (side) #:omit-define-syntaxes)
-  (match (square 5)
-    (code:comment "fails to match because syntax is omitted")
-    [(struct square x) x])
+  (eval:error
+   (match (square 5)
+     (code:comment "fails to match because syntax is omitted")
+     [(struct square x) x]))
   (struct ellipse (width height) #:omit-define-values)
-  ellipse-width
+  (eval:error ellipse-width)
 ]
 
 If @racket[#:auto] is supplied as a @racket[field-option], then the
@@ -247,20 +248,20 @@ error is reported. If any @racket[field-option] or
 @racket[struct-option] keyword is repeated, other than
 @racket[#:property], a syntax error is reported.
 
-@defexamples[
+@examples[
 #:eval posn-eval
-(struct posn (x y [z #:auto])
-  #:auto-value 0
-  #:transparent)
+(eval:no-prompt
+ (struct posn (x y [z #:auto #:mutable])
+   #:auto-value 0
+   #:transparent))
 (posn 1 2)
 (posn? (posn 1 2))
 (posn-y (posn 1 2))
-]
+(posn-z (posn 1 2))
 
-@defs+int[
-#:eval posn-eval
-[(struct color-posn posn (hue) #:mutable)
- (define cp (color-posn 1 2 "blue"))]
+(eval:no-prompt
+ (struct color-posn posn (hue) #:mutable)
+ (define cp (color-posn 1 2 "blue")))
 (color-posn-hue cp)
 cp
 (set-posn-z! cp 3)
@@ -280,11 +281,12 @@ expression is an exact, non-negative integer that corresponds to the
 position within the structure declaration of the field named by
 @racket[field-id].
 
-@defexamples[
+@examples[
 #:eval posn-eval
-(struct mood-procedure (base rating)
-  #:property prop:procedure (struct-field-index base))
-(define happy+ (mood-procedure add1 10))
+(eval:no-prompt
+ (struct mood-procedure (base rating)
+   #:property prop:procedure (struct-field-index base))
+ (define happy+ (mood-procedure add1 10)))
 (happy+ 2)
 (mood-procedure-rating happy+)
 ]}
@@ -305,11 +307,12 @@ provided.
 This form is provided for backwards compatibility; @racket[struct] is
 preferred.
 
-@defexamples[
+@examples[
 #:eval posn-eval
-(define-struct posn (x y [z #:auto])
-   #:auto-value 0
-   #:transparent)
+(eval:no-prompt
+ (define-struct posn (x y [z #:auto])
+    #:auto-value 0
+    #:transparent))
 (make-posn 1 2)
 (posn? (make-posn 1 2))
 (posn-y (make-posn 1 2))
@@ -326,20 +329,21 @@ the sub-form for error reporting is that it starts with @racket[id].
 The @racket[define-struct/derived] form is intended for use by macros
 that expand to @racket[define-struct].
 
-@defexamples[
+@examples[
 #:eval posn-eval
-(define-syntax (define-xy-struct stx)
-  (syntax-case stx ()
-   [(ds name . rest) 
-    (with-syntax ([orig stx])
-      #'(define-struct/derived orig name (x y) . rest))]))
+(eval:no-prompt
+ (define-syntax (define-xy-struct stx)
+   (syntax-case stx ()
+    [(ds name . rest) 
+     (with-syntax ([orig stx])
+       #'(define-struct/derived orig name (x y) . rest))])))
 
 (define-xy-struct posn)
 (posn-x (make-posn 1 2))
 (define-xy-struct posn #:mutable)
 (set-posn-x! (make-posn 1 2) 0)
 (code:comment "this next line will cause an error due to a bad keyword")
-(define-xy-struct posn #:bad-option)
+(eval:error (define-xy-struct posn #:bad-option))
 ]}
 
 @; ----------------------------------------

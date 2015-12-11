@@ -132,7 +132,7 @@ method} called @racket[name] that does not support the @techlink{generic
 instance} @racket[v].
 
 @examples[#:eval evaluator
-(raise-support-error 'some-method-name '("arbitrary" "instance" "value"))
+(eval:error (raise-support-error 'some-method-name '("arbitrary" "instance" "value")))
 ]
 
 }
@@ -233,7 +233,7 @@ syntax error.}
    make-num)
 
 (define z (make-num-contracted 10))
-(gen-print* z #:width "not a number" #:height 5)
+(eval:error (gen-print* z #:width "not a number" #:height 5))
 ]
 
 @defform[(generic-instance/c gen-id [method-id method-ctc] ...)

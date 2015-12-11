@@ -2,7 +2,7 @@
 @(require "mz.rkt" (for-label racket/future))
 
 @(define future-eval (make-base-eval))
-@(interaction-eval #:eval future-eval (require racket/future))
+@examples[#:hidden #:eval future-eval (require racket/future)]
 
 @(define time-id @racketidfont{time})
 
@@ -67,7 +67,7 @@ execute through a call to @racket[touch], however.
   future, the given @racket[thunk] may run speculatively in parallel to
   other computations, as described above.
 
-  @interaction[
+  @examples[
     #:eval future-eval
     (let ([f (future (lambda () (+ 1 2)))])
       (list (+ 3 4) (touch f)))

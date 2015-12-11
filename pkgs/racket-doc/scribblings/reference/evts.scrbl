@@ -1,6 +1,5 @@
 #lang scribble/doc
 @(require scribble/struct
-          scribble/eval
           "mz.rkt"
           (for-label racket/async-channel))
 

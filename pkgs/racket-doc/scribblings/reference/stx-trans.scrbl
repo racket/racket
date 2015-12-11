@@ -9,7 +9,7 @@
                      syntax/intdef))
 
 @(define stx-eval (make-base-eval))
-@(interaction-eval #:eval stx-eval (require (for-syntax racket/base)))
+@examples[#:hidden #:eval stx-eval (require (for-syntax racket/base))]
 
 @(define (transform-time) @t{This procedure must be called during the
 dynamic extent of a @tech{syntax transformer} application by the
@@ -592,7 +592,7 @@ if not @racket[#f]. If @racket[failure-thunk] is @racket[false], the
 @examples[#:eval stx-eval
   (define-syntax (transformer-2 stx)
     (syntax-local-value #'something-else (λ () (error "no binding"))))
-  (transformer-2)
+  (eval:error (transformer-2))
 ]
 @examples[#:eval stx-eval
   (define-syntax nachos #'(printf "nachos~n"))

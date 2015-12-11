@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/eval)
+@(require "mz.rkt")
 
 @(define stx-eval (make-base-eval))
 @(stx-eval '(require (for-syntax racket/base)))

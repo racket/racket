@@ -440,13 +440,14 @@ Returns a contract that recognizes a list whose every element matches
 the contract @racket[c]. Beware that when this contract is applied to
 a value, the result is not necessarily @racket[eq?] to the input.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
                  (define/contract some-numbers
                    (listof number?)
                    (list 1 2 3))
-                 (define/contract just-one-number
-                   (listof number?)
-                   11)]
+                 (eval:error
+                  (define/contract just-one-number
+                    (listof number?)
+                    11))]
 
 }
 
@@ -457,14 +458,15 @@ Returns a contract that recognizes non-empty lists whose elements match
 the contract @racket[c]. Beware that when this contract is applied to
 a value, the result is not necessarily @racket[eq?] to the input.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
                  (define/contract some-numbers
                    (non-empty-listof number?)
                    (list 1 2 3))
                                 
-                 (define/contract not-enough-numbers
-                   (non-empty-listof number?)
-                   (list))]
+                 (eval:error
+                  (define/contract not-enough-numbers
+                    (non-empty-listof number?)
+                    (list)))]
 }
 
 @defproc[(list*of [c contract?]) contract?]{
@@ -476,14 +478,15 @@ its @racket[cdr] position is expected to be @racket[(list*of c)]. Otherwise,
 it is expected to match @racket[c]. Beware that when this contract is applied to
 a value, the result is not necessarily @racket[eq?] to the input.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
                  (define/contract improper-numbers
                    (list*of number?)
                    (cons 1 (cons 2 3)))
                                 
-                 (define/contract not-improper-numbers
-                   (list*of number?)
-                   (list 1 2 3))]
+                 (eval:error
+                  (define/contract not-improper-numbers
+                    (list*of number?)
+                    (list 1 2 3)))]
 
 @history[#:added "6.1.1.1"]
 }
@@ -499,14 +502,15 @@ necessarily @racket[eq?] to the input.
 If the @racket[cdr-c] contract is a @racket[list-contract?], then
 @racket[cons/c] returns a @racket[list-contract?].
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
                  (define/contract a-pair-of-numbers
                    (cons/c number? number?)
                    (cons 1 2))
                                 
-                 (define/contract not-a-pair-of-numbers
-                   (cons/c number? number?)
-                   (cons #f #t))]
+                 (eval:error
+                  (define/contract not-a-pair-of-numbers
+                    (cons/c number? number?)
+                    (cons #f #t)))]
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[list-contract?] propagating behavior.}]
 }
@@ -525,14 +529,15 @@ In the first case, the contract on the @racket[cdr-id] portion of the contract
 may depend on the value in the @racket[car-id] portion of the pair and in
 the second case, the reverse is true.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
                  (define/contract an-ordered-pair-of-reals
                    (cons/dc [hd real?] [tl (hd) (>=/c hd)])
                    (cons 1 2))
                                 
-                 (define/contract not-an-ordered-pair-of-reals
-                   (cons/dc [hd real?] [tl (hd) (>=/c hd)])
-                   (cons 2 1))]
+                 (eval:error
+                  (define/contract not-an-ordered-pair-of-reals
+                    (cons/dc [hd real?] [tl (hd) (>=/c hd)])
+                    (cons 2 1)))]
 
 @history[#:added "6.1.1.6"]
 }
@@ -653,7 +658,7 @@ Produces a contract on parameters whose values must match
 @racket[_out]. When the value in the contracted parameter
 is set, it must match @racket[_in].
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
 (define/contract current-snack
   (parameter/c string?)
   (make-parameter "potato-chip"))
@@ -663,9 +668,10 @@ is set, it must match @racket[_in].
   (parameter/c string? baked/c)
   (make-parameter "turkey" (λ (s) (string-append "roasted " s))))
 
-(current-snack 'not-a-snack)
-(parameterize ([current-dinner "tofurkey"])
-  (current-dinner))
+(eval:error (current-snack 'not-a-snack))
+(eval:error
+ (parameterize ([current-dinner "tofurkey"])
+   (current-dinner)))
 ]}
 
 
@@ -683,18 +689,18 @@ Produces a contract for procedures that accept @racket[n] argument
 Produces a contract that recognizes @racket[hash] tables with keys and values
 as specified by the @racket[key] and @racket[val] arguments.
 
-@examples[#:eval 
-          (contract-eval)
+@examples[#:eval (contract-eval) #:once
           (define/contract good-hash
             (hash/c integer? boolean?)
             (hash 1 #t
                   2 #f
                   3 #t))
-          (define/contract bad-hash
-            (hash/c integer? boolean?)
-            (hash 1 "elephant"
-                  2 "monkey"
-                  3 "manatee"))]
+          (eval:error
+           (define/contract bad-hash
+             (hash/c integer? boolean?)
+             (hash 1 "elephant"
+                   2 "monkey"
+                   3 "manatee")))]
 
 There are a number of technicalities that control how @racket[hash/c] contracts
 behave.
@@ -703,17 +709,15 @@ behave.
  a flat contract, and the @racket[key] and @racket[val] arguments must also be flat
  contracts. 
 
-@examples[#:eval 
-          (contract-eval)
+@examples[#:eval (contract-eval) #:once
           (flat-contract? (hash/c integer? boolean?))
           (flat-contract? (hash/c integer? boolean? #:flat? #t))
-          (hash/c integer? (-> integer? integer?) #:flat? #t)]
+          (eval:error (hash/c integer? (-> integer? integer?) #:flat? #t))]
  
  Such flat contracts will be unsound if applied to mutable hash tables,
  as they will not check future mutations to the hash table.
 
-@examples[#:eval 
-          (contract-eval)
+@examples[#:eval (contract-eval) #:once
           (define original-h (make-hasheq))
           (define/contract ctc-h 
             (hash/c integer? boolean? #:flat? #t)
@@ -725,15 +729,13 @@ If the @racket[immutable] argument is @racket[#t] and the @racket[key] and
 @racket[val] arguments are @racket[flat-contract?]s, the result will be a 
 @racket[flat-contract?].
 
-@examples[#:eval 
-          (contract-eval)
+@examples[#:eval (contract-eval) #:once
           (flat-contract? (hash/c integer? boolean? #:immutable #t))]
           
 If either the domain or the range is a @racket[chaperone-contract?], then the result will
 be a @racket[chaperone-contract?].
 
-@examples[#:eval 
-          (contract-eval)
+@examples[#:eval (contract-eval) #:once
           (flat-contract? (hash/c (-> integer? integer?) boolean?
                                   #:immutable #t))
           (chaperone-contract? (hash/c (-> integer? integer?) boolean?
@@ -744,11 +746,11 @@ be a @racket[chaperone-contract?].
 If the @racket[key] argument is a @racket[chaperone-contract?] but not a
 @racket[flat-contract?], then the resulting contract
 can be applied only to @racket[equal?]-based hash tables.
-@examples[#:eval 
-          (contract-eval)
-          (define/contract h
-            (hash/c (-> integer? integer?) any/c)
-            (make-hasheq))]
+@examples[#:eval (contract-eval) #:once
+          (eval:error
+           (define/contract h
+             (hash/c (-> integer? integer?) any/c)
+             (make-hasheq)))]
 Also, when such a @racket[hash/c] contract is applied to a hash table, the result is not 
 @racket[eq?]
 to the input. The result of applying the contract will be a copy for immutable hash tables,
@@ -777,16 +779,16 @@ for mutable hash tables.
  and it may also be @racket['impersonator], in which case they may be any @racket[contract?]s.
  The default is @racket['chaperone].
  
- @examples[#:eval
-            (contract-eval)
+ @examples[#:eval (contract-eval) #:once
             (define/contract h
               (hash/dc [k real?] [v (k) (>=/c k)])
               (hash 1 3
                     2 4))
-            (define/contract h
-              (hash/dc [k real?] [v (k) (>=/c k)])
-              (hash 3 1
-                    4 2))]
+            (eval:error
+             (define/contract h
+               (hash/dc [k real?] [v (k) (>=/c k)])
+               (hash 3 1
+                     4 2)))]
  
  
 }
@@ -801,12 +803,12 @@ is a chaperone contract. Otherwise, the resulting contract is an impersonator
 contract. When a channel contract is applied to a channel, the resulting channel
 is not @racket[eq?] to the input.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
   (define/contract chan
     (channel/c string?)
     (make-channel))
   (thread (λ () (channel-get chan)))
-  (channel-put chan 'not-a-string)
+  (eval:error (channel-put chan 'not-a-string))
 ]}
 
 
@@ -832,19 +834,20 @@ If @racket[maybe-call/cc] is provided, then the provided contracts
 are used to check the return values from a continuation captured with
 @racket[call-with-current-continuation].
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
   (define/contract tag
     (prompt-tag/c (-> number? string?))
     (make-continuation-prompt-tag))
 
-  (call-with-continuation-prompt
-    (lambda ()
-      (number->string
-        (call-with-composable-continuation
-          (lambda (k)
-            (abort-current-continuation tag k)))))
-    tag
-    (lambda (k) (k "not a number")))
+  (eval:error
+   (call-with-continuation-prompt
+     (lambda ()
+       (number->string
+         (call-with-composable-continuation
+           (lambda (k)
+             (abort-current-continuation tag k)))))
+     tag
+     (lambda (k) (k "not a number"))))
 ]
 }
 
@@ -858,17 +861,18 @@ If the argument @racket[contract] is a chaperone contract, the resulting
 contract will also be a @tech{chaperone} contract. Otherwise, the contract is
 an @tech{impersonator} contract.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
   (define/contract mark-key
     (continuation-mark-key/c (-> symbol? (listof symbol?)))
     (make-continuation-mark-key))
 
-  (with-continuation-mark
-    mark-key
-    (lambda (s) (append s '(truffle fudge ganache)))
-    (let ([mark-value (continuation-mark-set-first
-                       (current-continuation-marks) mark-key)])
-      (mark-value "chocolate-bar")))
+  (eval:error
+   (with-continuation-mark
+     mark-key
+     (lambda (s) (append s '(truffle fudge ganache)))
+     (let ([mark-value (continuation-mark-set-first
+                        (current-continuation-marks) mark-key)])
+       (mark-value "chocolate-bar"))))
 ]
 }
 
@@ -880,7 +884,7 @@ Returns a contract that recognizes @tech{synchronizable event}s whose
 The resulting contract is always a @tech{chaperone} contract and its
 arguments must all be chaperone contracts.
 
-@defexamples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
   (define/contract my-evt
     (evt/c evt?)
     always-evt)
@@ -888,7 +892,7 @@ arguments must all be chaperone contracts.
     (evt/c number? number?)
     (alarm-evt (+ (current-inexact-milliseconds) 50)))
   (sync my-evt)
-  (sync failing-evt)
+  (eval:error (sync failing-evt))
 ]
 }
 
@@ -1372,14 +1376,14 @@ by some @racket[x] in positive position with respect to @racket[parametric->/c])
 are checked for the appropriate wrapper.  If they have it, they are unwrapped;
 if they do not, a contract violation is signaled.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
 (define/contract (check x y)
   (parametric->/c [X] (boolean? X . -> . X))
   (if (or (not x) (equal? y 'surprise))
       'invalid
       y))
 (check #t 'ok)
-(check #f 'ignored)
+(eval:error (check #f 'ignored))
 (check #t 'surprise)
 ]
 }
@@ -1589,8 +1593,7 @@ the export.
    should be reported in terms of the public module instead of the
    private one.
    
-   @examples[#:eval 
-             (contract-eval)
+   @examples[#:eval (contract-eval) #:once
              (module private-implementation racket/base
                (require racket/contract)
                (define (recip x) (/ 1 x))
@@ -1603,7 +1606,7 @@ the export.
                (provide (recontract-out recip)))
              
              (require 'public)
-             (recip +nan.0)]
+             (eval:error (recip +nan.0))]
    
    Replacing the use of @racket[recontract-out] with just
    @racket[recip] would result in a contract violation blaming
@@ -1671,7 +1674,7 @@ For the definition of @racket[free-var-list], see @racket[with-contract].
     (-> real? real?)
     (* 660 fr))
   (code:comment "a contract violation expected here:")
-  (furlongs->feet "not a furlong")
+  (eval:error (furlongs->feet "not a furlong"))
 ]
 
 The @racket[define/contract] form treats the individual definition as
@@ -1682,7 +1685,7 @@ positions of the contract. Since the contract boundary is
 between the definition and the surrounding context, references to
 @racket[id] inside the @racket[define/contract] form are not checked.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
   (code:comment "an unsual predicate that prints when called")
   (define (printing-int? x)
     (displayln "I was called")
@@ -1692,7 +1695,7 @@ between the definition and the surrounding context, references to
     (if (zero? n)
         1
         (* n (fact (sub1 n)))))
-  (fact 5) (code:comment "only prints twice, not for each recursive call")
+  (code:line (fact 5) (code:comment "only prints twice, not for each recursive call"))
 ]
 
 If a free-var-list is given, then any uses of the free variables
@@ -1700,7 +1703,7 @@ inside the @racket[body] will be protected with contracts that
 blame the context of the @racket[define/contract] form for the positive
 positions and the @racket[define/contract] form for the negative ones.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
   (define (integer->binary-string n)
     (number->string n 2))
   (define/contract (numbers->strings lst)
@@ -1708,7 +1711,7 @@ positions and the @racket[define/contract] form for the negative ones.
     #:freevar integer->binary-string (-> exact-integer? string?)
     (code:comment "mistake, lst might contain inexact numbers")
     (map integer->binary-string lst))
-  (numbers->strings '(4.0 3.3 5.8))
+  (eval:error (numbers->strings '(4.0 3.3 5.8)))
 ]}
 
 @defform*[[(define-struct/contract struct-id ([field contract-expr] ...)
@@ -1725,15 +1728,15 @@ The @racket[define-struct/contract] form only allows a subset of the
 @racket[#:auto-value], @racket[#:omit-define-syntaxes], @racket[#:property] and
 @racket[#:omit-define-values].
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
 (define-struct/contract fish ([color number?]))
 (make-fish 5)
-(make-fish #f)
+(eval:error (make-fish #f))
 
 (define-struct/contract (salmon fish) ([ocean symbol?]))
 (make-salmon 5 'atlantic)
-(make-salmon 5 #f)
-(make-salmon #f 'pacific)
+(eval:error (make-salmon 5 #f))
+(eval:error (make-salmon #f 'pacific))
 ]}
 
 @defform[(invariant-assertion invariant-expr expr)]{
@@ -1750,7 +1753,7 @@ The @racket[define-struct/contract] form only allows a subset of the
   recursive calls, when an invariant is used on the right-hand
   side of a definition:
                               
-  @examples[#:eval 
+  @examples[#:eval
             furlongs->feet-eval
             (define furlongss->feets
               (invariant-assertion
@@ -1766,7 +1769,7 @@ The @racket[define-struct/contract] form only allows a subset of the
             
             (furlongss->feets (list 1 2 3))
             
-            (furlongss->feets (list 1 327 3))]
+            (eval:error (furlongss->feets (list 1 327 3)))]
   
   @history[#:added "6.0.1.11"]
   
@@ -1810,8 +1813,7 @@ The @racket[define-struct/contract] form only allows a subset of the
   it can be any of the things that the third argument to @racket[datum->syntax]
   can be.
   
-  @examples[#:eval 
-            (contract-eval)
+  @examples[#:eval (contract-eval) #:once
             (module server racket/base
               (require racket/contract/base)
               (define (f x) #f)
@@ -1823,8 +1825,8 @@ The @racket[define-struct/contract] form only allows a subset of the
               (define (servers-fault) (g 1))
               (provide servers-fault clients-fault))
             (require 'client)
-            (clients-fault)
-            (servers-fault)]
+            (eval:error (clients-fault))
+            (eval:error (servers-fault))]
 
 }
 
@@ -1856,10 +1858,9 @@ produces @racket[#f], no name is printed.  Otherwise, it is also formatted as by
 @racket[display]. More precisely, the @racket[value-name-expr] ends up in the
 @racket[blame-name] field of the blame record, which is used as the first portion
 of the error message.
-@examples[#:eval 
-          (contract-eval)
-          (contract integer? #f 'pos 'neg 'timothy #f)
-          (contract integer? #f 'pos 'neg #f #f)]
+@examples[#:eval (contract-eval) #:once
+          (eval:error (contract integer? #f 'pos 'neg 'timothy #f))
+          (eval:error (contract integer? #f 'pos 'neg #f #f))]
 
 If specified, @racket[source-location-expr] indicates the source location
 reported by contract violations.  The expression must produce a @racket[srcloc]
@@ -2016,11 +2017,11 @@ was passed as the second argument to @racket[contract-stronger?].
 The @racket[is-list-contract?] argument is used by the @racket[list-contract?] predicate
 to determine if this is a contract that accepts only @racket[list?] values.
 
-@defexamples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
 (define int/c
   (make-flat-contract #:name 'int/c #:first-order integer?))
 (contract int/c 1 'positive 'negative)
-(contract int/c "not one" 'positive 'negative)
+(eval:error (contract int/c "not one" 'positive 'negative))
 (int/c 1)
 (int/c "not one")
 (define int->int/c
@@ -2039,12 +2040,12 @@ to determine if this is a contract that accepts only @racket[list?] values.
             b f
             '(expected "a function of one argument" given: "~e")
             f)))))))
-(contract int->int/c "not fun" 'positive 'negative)
+(eval:error (contract int->int/c "not fun" 'positive 'negative))
 (define halve
   (contract int->int/c (λ (x) (/ x 2)) 'positive 'negative))
 (halve 2)
-(halve 1/2)
-(halve 1)
+(eval:error (halve 1/2))
+(eval:error (halve 1))
 ]
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}]
@@ -2154,12 +2155,12 @@ contracts.  The error messages assume that the function named by
   or @racket["a conjunct of"] (in the case of an @racket[and/c] contract).
 
   For example, consider this contract violation:
-  @interaction[#:eval (contract-eval)
+  @examples[#:label #f #:eval (contract-eval) #:once
 (define/contract f
   (list/c (-> integer? integer?))
   (list (λ (x) x)))
 
-((car f) #f)
+(eval:error ((car f) #f))
 ]
 It shows that the portion of the contract being violated is the first
 occurrence of @racket[integer?], because the @racket[->] and
@@ -2293,7 +2294,7 @@ returns a string that is put into the contract error
 message. Note that the value is often already included in
 the message that indicates the violation.
 
-@defexamples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
 (define (show-blame-error blame value message)
   (string-append
    "Contract Violation!\n"
@@ -2309,8 +2310,8 @@ the message that indicates the violation.
   (-> integer? integer?)
   (/ x 2))
 (f 2)
-(f 1)
-(f 1/2)
+(eval:error (f 1))
+(eval:error (f 1/2))
 ]
 
 }
@@ -2697,7 +2698,7 @@ are below):
   This function is conservative, so it may return @racket[#f] when
   @racket[x] does, in fact, accept fewer values.
 
-@examples[#:eval (contract-eval)
+@examples[#:eval (contract-eval) #:once
                  (contract-stronger? integer? integer?)
                  (contract-stronger? (between/c 25 75) (between/c 0 100))
                  (contract-stronger? (between/c 0 100) (between/c 25 75))
@@ -2851,13 +2852,15 @@ expression, then @racket[opt/c] raises an error using
 @racket[id] as the name of the primitive, instead of using
 the name @racket[opt/c].
 
-@examples[#:eval (contract-eval)
-                 (define/contract (f x)
-                   (opt/c '(not-a-contract))
-                   x)
-                 (define/contract (f x)
-                   (opt/c '(not-a-contract) #:error-name define/contract)
-                   x)]
+@examples[#:eval (contract-eval) #:once
+                 (eval:error
+                  (define/contract (f x)
+                    (opt/c '(not-a-contract))
+                    x))
+                 (eval:error
+                  (define/contract (f x)
+                    (opt/c '(not-a-contract) #:error-name define/contract)
+                    x))]
 }
 
 

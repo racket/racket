@@ -71,11 +71,10 @@
 
 )
 
-@(interaction-eval #:eval class-eval (require racket/class racket/contract))
-@(interaction-eval
-  #:eval class-ctc-eval
-  (require racket/class racket/contract))
-
+@examples[#:hidden #:eval class-eval
+          (require racket/class racket/contract)]
+@examples[#:hidden #:eval class-ctc-eval
+          (require racket/class racket/contract)]
 
 @title[#:tag "mzlib:class" #:style 'toc]{Classes and Objects}
 
@@ -196,8 +195,9 @@ is the most specific requirement from its superinterfaces. If the
 superinterfaces specify inconsistent derivation requirements, the
 @exnraise[exn:fail:object].
 
-@defexamples[
+@examples[
 #:eval class-ctc-eval
+#:no-prompt
 (define file-interface<%>
   (interface () open close read-byte write-byte))
 (define directory-interface<%>
@@ -226,8 +226,9 @@ extended to produce the internal structure type for instances of the
 class (so that no information about fields is accessible to the
 structure type property's guard, if any).
 
-@defexamples[
+@examples[
 #:eval class-eval
+#:no-prompt
 (define i<%> (interface* () ([prop:custom-write
                               (lambda (obj port mode) (void))])
                method1 method2 method3))
@@ -387,8 +388,9 @@ calling subclass augmentations of methods (see
 
 Like @racket[class*], but omits the @racket[_interface-expr]s, for the case that none are needed.
 
-@defexamples[
+@examples[
 #:eval class-eval
+#:no-prompt
 (define book-class%
   (class object%
     (field (pages 5))
@@ -404,15 +406,16 @@ to the current object (i.e., the object being initialized or whose
 method was called). Use outside the body of a @racket[class*] form is
 a syntax error.
 
-@defexamples[
+@examples[
 #:eval class-eval
-(define (describe obj)
-  (printf "Hello ~a\n" obj))
-(define table%
-  (class object%
-    (define/public (describe-self)
-      (describe this))
-    (super-new)))
+(eval:no-prompt
+ (define (describe obj)
+   (printf "Hello ~a\n" obj))
+ (define table%
+   (class object%
+     (define/public (describe-self)
+       (describe this))
+     (super-new))))
 (send (new table%) describe-self)
 ]}
 
@@ -423,21 +426,22 @@ of the current object (i.e., the object being initialized or whose
 method was called).  Use outside the body of a @racket[class*] form is
 a syntax error.
 
-@defexamples[
+@examples[
 #:eval class-eval
-(define account%
-  (class object% 
-    (super-new)
-    (init-field balance)
-    (define/public (add n)
-      (new this% [balance (+ n balance)]))))
-(define savings%
-  (class account%
-    (super-new)
-    (inherit-field balance)
-    (define interest 0.04)
-    (define/public (add-interest)
-      (send this add (* interest balance)))))
+(eval:no-prompt
+ (define account%
+   (class object% 
+     (super-new)
+     (init-field balance)
+     (define/public (add n)
+       (new this% [balance (+ n balance)]))))
+ (define savings%
+   (class account%
+     (super-new)
+     (inherit-field balance)
+     (define interest 0.04)
+     (define/public (add-interest)
+       (send this add (* interest balance))))))
 (let* ([acct (new savings% [balance 500])]
        [acct (send acct add 500)]
        [acct (send acct add-interest)])
@@ -447,7 +451,7 @@ a syntax error.
 @defclassforms[
   [(inspect inspector-expr) ()]
   [(init init-decl ...) ("clinitvars")
-   @defexamples[#:eval class-eval
+   @examples[#:eval class-eval
      (class object%
        (super-new)
        (init turnip
@@ -455,7 +459,7 @@ a syntax error.
              [carrot 'good]
              [(internal-rutabaga rutabaga) 'okay]))]]
   [(init-field init-decl ...) ("clinitvars" "clfields")
-   @defexamples[#:eval class-eval
+   @examples[#:eval class-eval
      (class object%
        (super-new)
        (init-field turkey
@@ -463,181 +467,202 @@ a syntax error.
                    [chicken 7]
                    [(internal-emu emu) 13]))]]
   [(field field-decl ...) ("clfields")
-   @defexamples[#:eval class-eval
+   @examples[#:eval class-eval
      (class object%
        (super-new)
        (field [minestrone 'ready]
               [(internal-coq-au-vin coq-au-vin) 'stewing]))]]
   [(inherit-field maybe-renamed ...) ("clfields")
-   @defexamples[#:eval class-eval
-     (define cookbook%
-       (class object%
-         (super-new)
-         (field [recipes '(caldo-verde oyakodon eggs-benedict)]
-                [pages 389])))
+   @examples[#:eval class-eval
+     (eval:no-prompt
+      (define cookbook%
+        (class object%
+          (super-new)
+          (field [recipes '(caldo-verde oyakodon eggs-benedict)]
+                 [pages 389]))))
      (class cookbook%
        (super-new)
        (inherit-field recipes
                       [internal-pages pages]))]]
   [* ((init-rest id) (init-rest)) ("clinitvars")
-   @defexamples[#:eval class-eval
-     (define fruit-basket%
-       (class object%
-         (super-new)
-         (init-rest fruits)
-         (displayln fruits)))
-     (make-object fruit-basket% 'kiwi 'lychee 'melon)]]
-  [(public maybe-renamed ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define jumper%
+   @examples[#:eval class-eval
+     (eval:no-prompt
+      (define fruit-basket%
         (class object%
           (super-new)
-          (define (skip) 'skip)
-          (define (hop) 'hop)
-          (public skip [hop jump])))
+          (init-rest fruits)
+          (displayln fruits))))
+     (make-object fruit-basket% 'kiwi 'lychee 'melon)]]
+  [(public maybe-renamed ...) ("clmethoddefs")
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define jumper%
+         (class object%
+           (super-new)
+           (define (skip) 'skip)
+           (define (hop) 'hop)
+           (public skip [hop jump]))))
       (send (new jumper%) skip)
       (send (new jumper%) jump)]]
   [(pubment maybe-renamed ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define runner%
-        (class object%
-          (super-new)
-          (define (run) 'run)
-          (define (trot) 'trot)
-          (pubment run [trot jog])))
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define runner%
+         (class object%
+           (super-new)
+           (define (run) 'run)
+           (define (trot) 'trot)
+           (pubment run [trot jog]))))
       (send (new runner%) run)
       (send (new runner%) jog)]]
   [(public-final maybe-renamed ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define point%
-        (class object%
-          (super-new)
-          (init-field [x 0] [y 0])
-          (define (get-x) x)
-          (define (do-get-y) y)
-          (public-final get-x [do-get-y get-y])))
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define point%
+         (class object%
+           (super-new)
+           (init-field [x 0] [y 0])
+            (define (get-x) x)
+           (define (do-get-y) y)
+           (public-final get-x [do-get-y get-y]))))
       (send (new point% [x 1] [y 3]) get-y)
-      (class point%
-        (super-new)
-        (define (get-x) 3.14)
-        (override get-x))]]
+      (eval:error
+       (class point%
+         (super-new)
+         (define (get-x) 3.14)
+         (override get-x)))]]
   [(override maybe-renamed ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define sheep%
-        (class object%
-          (super-new)
-          (define/public (bleat)
-            (displayln "baaaaaaaaah"))))
-      (define confused-sheep%
-        (class sheep%
-          (super-new)
-          (define (bleat)
-            (super bleat)
-            (displayln "???"))
-          (override bleat)))
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define sheep%
+         (class object%
+           (super-new)
+           (define/public (bleat)
+             (displayln "baaaaaaaaah")))))
+      (eval:no-prompt
+       (define confused-sheep%
+         (class sheep%
+           (super-new)
+           (define (bleat)
+             (super bleat)
+             (displayln "???"))
+           (override bleat))))
       (send (new sheep%) bleat)
       (send (new confused-sheep%) bleat)]]
   [(overment maybe-renamed ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define turkey%
-        (class object%
-          (super-new)
-          (define/public (gobble)
-            (displayln "gobble gobble"))))
-      (define extra-turkey%
-        (class turkey%
-          (super-new)
-          (define (gobble)
-            (super gobble)
-            (displayln "gobble gobble gobble")
-            (inner (void) gobble))
-          (overment gobble)))
-      (define cyborg-turkey%
-        (class extra-turkey%
-          (super-new)
-          (define/augment (gobble)
-            (displayln "110011111011111100010110001011011001100101"))))
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define turkey%
+         (class object%
+           (super-new)
+           (define/public (gobble)
+             (displayln "gobble gobble")))))
+      (eval:no-prompt
+       (define extra-turkey%
+         (class turkey%
+           (super-new)
+           (define (gobble)
+             (super gobble)
+             (displayln "gobble gobble gobble")
+             (inner (void) gobble))
+           (overment gobble))))
+      (eval:no-prompt
+       (define cyborg-turkey%
+         (class extra-turkey%
+           (super-new)
+           (define/augment (gobble)
+             (displayln "110011111011111100010110001011011001100101")))))
       (send (new extra-turkey%) gobble)
       (send (new cyborg-turkey%) gobble)]]
   [(override-final maybe-renamed ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define meeper%
-        (class object%
-          (super-new)
-          (define/public (meep)
-            (displayln "meep"))))
-      (define final-meeper%
-        (class meeper%
-          (super-new)
-          (define (meep)
-            (super meep)
-            (displayln "This meeping ends with me"))
-          (override-final meep)))
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define meeper%
+         (class object%
+           (super-new)
+           (define/public (meep)
+             (displayln "meep")))))
+      (eval:no-prompt
+       (define final-meeper%
+         (class meeper%
+           (super-new)
+           (define (meep)
+             (super meep)
+             (displayln "This meeping ends with me"))
+           (override-final meep))))
       (send (new meeper%) meep)
       (send (new final-meeper%) meep)]]
   [(augment maybe-renamed ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define buzzer%
-        (class object%
-          (super-new)
-          (define/pubment (buzz)
-            (displayln "bzzzt")
-            (inner (void) buzz))))
-      (define loud-buzzer%
-        (class buzzer%
-          (super-new)
-          (define (buzz)
-            (displayln "BZZZZZZZZZT"))
-          (augment buzz)))
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define buzzer%
+         (class object%
+           (super-new)
+           (define/pubment (buzz)
+             (displayln "bzzzt")
+             (inner (void) buzz)))))
+      (eval:no-prompt
+       (define loud-buzzer%
+         (class buzzer%
+           (super-new)
+           (define (buzz)
+             (displayln "BZZZZZZZZZT"))
+           (augment buzz))))
       (send (new buzzer%) buzz)
       (send (new loud-buzzer%) buzz)]]
   [(augride maybe-renamed ...) ("clmethoddefs")]
   [(augment-final maybe-renamed ...) ("clmethoddefs")]
   [(private id ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define light%
-        (class object%
-          (super-new)
-          (define on? #t)
-          (define (toggle) (set! on? (not on?)))
-          (private toggle)
-          (define (flick) (toggle))
-          (public flick)))
-      (send (new light%) toggle)
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define light%
+         (class object%
+           (super-new)
+           (define on? #t)
+           (define (toggle) (set! on? (not on?)))
+           (private toggle)
+           (define (flick) (toggle))
+           (public flick))))
+      (eval:error (send (new light%) toggle))
       (send (new light%) flick)]]
   [(abstract id ...) ("clmethoddefs")
-    @defexamples[#:eval class-eval
-      (define train%
-        (class object%
-          (super-new)
-          (abstract get-speed)
-          (init-field [position 0])
-          (define/public (move)
-            (new this% [position (+ position (get-speed))]))))
-      (define acela%
-        (class train%
-          (super-new)
-          (define/override (get-speed) 241)))
-      (define talgo-350%
-        (class train%
-          (super-new)
-          (define/override (get-speed) 330)))
-      (new train%)
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define train%
+         (class object%
+           (super-new)
+           (abstract get-speed)
+           (init-field [position 0])
+           (define/public (move)
+             (new this% [position (+ position (get-speed))])))))
+      (eval:no-prompt
+       (define acela%
+         (class train%
+           (super-new)
+           (define/override (get-speed) 241))))
+      (eval:no-prompt
+       (define talgo-350%
+         (class train%
+           (super-new)
+           (define/override (get-speed) 330))))
+      (eval:error (new train%))
       (send (new acela%) move)]]
   [(inherit maybe-renamed ...) ("classinherit")
-    @defexamples[#:eval class-eval
-      (define alarm%
-        (class object%
-          (super-new)
-          (define/public (alarm)
-            (displayln "beeeeeeeep"))))
-      (define car-alarm%
-        (class alarm%
-          (super-new)
-          (init-field proximity)
-          (inherit alarm)
-          (when (< proximity 10)
-            (alarm))))
+    @examples[#:eval class-eval
+      (eval:no-prompt
+       (define alarm%
+         (class object%
+           (super-new)
+           (define/public (alarm)
+             (displayln "beeeeeeeep")))))
+      (eval:no-prompt
+       (define car-alarm%
+         (class alarm%
+           (super-new)
+           (init-field proximity)
+           (inherit alarm)
+           (when (< proximity 10)
+             (alarm)))))
       (new car-alarm% [proximity 5])]]
   [(inherit/super maybe-renamed ...)  ("classinherit")]
   [(inherit/inner maybe-renamed ...) ("classinherit")]
@@ -1067,21 +1092,22 @@ hidden name (except as a top-level definition). The
 @racket[interface->method-names] procedure does not expose hidden
 names.
 
-@defexamples[
+@examples[
 #:eval class-eval
-(define-values (r o)
-  (let ()
-    (define-local-member-name m)
-    (define c% (class object%
-                 (define/public (m) 10)
-                 (super-new)))
-    (define o (new c%))
+(eval:no-prompt
+ (define-values (r o)
+   (let ()
+     (define-local-member-name m)
+     (define c% (class object%
+                  (define/public (m) 10)
+                  (super-new)))
+     (define o (new c%))
     
-    (values (send o m)
-            o)))
+     (values (send o m)
+             o))))
 
 r
-(send o m)
+(eval:error (send o m))
 ]}
 
 
@@ -1121,28 +1147,27 @@ Produces an integer hash code consistent with
 @racket[member-name-key=?]  comparisons, analogous to
 @racket[equal-hash-code].}
 
-@defexamples[
+@examples[
 #:eval class-eval
-(define (make-c% key)
-  (define-member-name m key)
-  (class object% 
-    (define/public (m) 10)
-    (super-new)))
+(eval:no-prompt
+ (define (make-c% key)
+   (define-member-name m key)
+   (class object% 
+     (define/public (m) 10)
+     (super-new))))
 
 (send (new (make-c% (member-name-key m))) m)
-(send (new (make-c% (member-name-key p))) m)
+(eval:error (send (new (make-c% (member-name-key p))) m))
 (send (new (make-c% (member-name-key p))) p)
-]
 
-@defs+int[
-#:eval class-eval
-[(define (fresh-c%)
+(eval:no-prompt
+ (define (fresh-c%)
    (let ([key (generate-member-key)])
      (values (make-c% key) key)))
 
- (define-values (fc% key) (fresh-c%))]
+ (define-values (fc% key) (fresh-c%)))
 
-(send (new fc%) m)
+(eval:error (send (new fc%) m))
 (let ()
   (define-member-name p key)
   (send (new fc%) p))
@@ -1352,15 +1377,16 @@ the last method call, which is expected to be an object. Each
 
 This is the functional analogue of @racket[send*].
 
-@defexamples[#:eval class-eval
-(define point%
-  (class object%
-    (super-new)
-    (init-field [x 0] [y 0])
-    (define/public (move-x dx)
-      (new this% [x (+ x dx)]))
-    (define/public (move-y dy)
-      (new this% [y (+ y dy)]))))
+@examples[#:eval class-eval
+(eval:no-prompt
+ (define point%
+   (class object%
+     (super-new)
+     (init-field [x 0] [y 0])
+     (define/public (move-x dx)
+       (new this% [x (+ x dx)]))
+     (define/public (move-y dy)
+       (new this% [y (+ y dy)])))))
 
 (send+ (new point%)
        (move-x 5)
@@ -1802,21 +1828,21 @@ The external contracts are as follows:
    If only the field name is present, this is equivalent to insisting only
    that the method is present in the class.
    
-   @defexamples[#:eval 
-                class-eval
-                (define woody%
-                  (class object%
-                    (define/public (draw who)
-                      (format "reach for the sky, ~a" who))
-                    (super-new)))
+   @examples[#:eval class-eval
+                (eval:no-prompt
+                 (define woody%
+                   (class object%
+                     (define/public (draw who)
+                       (format "reach for the sky, ~a" who))
+                     (super-new)))
                 
-                (define/contract woody+c%
-                  (class/c [draw (->m symbol? string?)])
-                  woody%)
+                 (define/contract woody+c%
+                   (class/c [draw (->m symbol? string?)])
+                   woody%))
                 
                 (send (new woody%) draw #f)
                 (send (new woody+c%) draw 'zurg)
-                (send (new woody+c%) draw #f)]
+                (eval:error (send (new woody+c%) draw #f))]
    }
  @item{An external field contract, tagged with @racket[field], describes the
    behavior of the value contained in that field when accessed from outside
@@ -1827,28 +1853,29 @@ The external contracts are as follows:
    If only the field name is present, this is equivalent to using the 
    contract @racket[any/c] (but it is checked more efficiently).
    
-   @defexamples[#:eval
-                class-eval
-                (define woody/hat%
-                  (class woody%
-                    (field [hat-location 'uninitialized])
-                    (define/public (lose-hat) (set! hat-location 'lost))
-                    (define/public (find-hat) (set! hat-location 'on-head))
-                    (super-new)))
-                (define/contract woody/hat+c%
-                  (class/c [draw (->m symbol? string?)]
-                           [lose-hat (->m void?)]
-                           [find-hat (->m void?)]
-                           (field [hat-location (or/c 'on-head 'lost)]))
-                  woody/hat%)
+   @examples[#:eval class-eval
+                (eval:no-prompt
+                 (define woody/hat%
+                   (class woody%
+                     (field [hat-location 'uninitialized])
+                     (define/public (lose-hat) (set! hat-location 'lost))
+                     (define/public (find-hat) (set! hat-location 'on-head))
+                     (super-new)))
+                 (define/contract woody/hat+c%
+                   (class/c [draw (->m symbol? string?)]
+                            [lose-hat (->m void?)]
+                            [find-hat (->m void?)]
+                            (field [hat-location (or/c 'on-head 'lost)]))
+                   woody/hat%))
                 
                 (get-field hat-location (new woody/hat%))
                 (let ([woody (new woody/hat+c%)])
                   (send woody lose-hat)
                   (get-field hat-location woody))
-                (get-field hat-location (new woody/hat+c%))
-                (let ([woody (new woody/hat+c%)])
-                  (set-field! hat-location woody 'under-the-dresser))]
+                (eval:error (get-field hat-location (new woody/hat+c%)))
+                (eval:error
+                 (let ([woody (new woody/hat+c%)])
+                   (set-field! hat-location woody 'under-the-dresser)))]
    
    }
  @item{An initialization argument contract, tagged with @racket[init],
@@ -1861,28 +1888,29 @@ The external contracts are as follows:
    If only the initialization argument name is present, this is equivalent to using the 
    contract @racket[any/c] (but it is checked more efficiently).
    
-   @defexamples[#:eval
-                class-eval
-                (define woody/init-hat%
-                  (class woody%
-                    (init init-hat-location)
-                    (field [hat-location init-hat-location])
-                    (define/public (lose-hat) (set! hat-location 'lost))
-                    (define/public (find-hat) (set! hat-location 'on-head))
-                    (super-new)))
-                (define/contract woody/init-hat+c%
-                  (class/c [draw (->m symbol? string?)]
-                           [lose-hat (->m void?)]
-                           [find-hat (->m void?)]
-                           (init [init-hat-location (or/c 'on-head 'lost)])
-                           (field [hat-location (or/c 'on-head 'lost)]))
-                  woody/init-hat%)
+   @examples[#:eval class-eval
+                (eval:no-prompt
+                 (define woody/init-hat%
+                   (class woody%
+                     (init init-hat-location)
+                     (field [hat-location init-hat-location])
+                     (define/public (lose-hat) (set! hat-location 'lost))
+                     (define/public (find-hat) (set! hat-location 'on-head))
+                     (super-new)))
+                 (define/contract woody/init-hat+c%
+                   (class/c [draw (->m symbol? string?)]
+                            [lose-hat (->m void?)]
+                            [find-hat (->m void?)]
+                            (init [init-hat-location (or/c 'on-head 'lost)])
+                            (field [hat-location (or/c 'on-head 'lost)]))
+                   woody/init-hat%))
                 (get-field hat-location
                            (new woody/init-hat+c%
                                 [init-hat-location 'lost]))
-                (get-field hat-location
-                           (new woody/init-hat+c%
-                                [init-hat-location 'slinkys-mouth]))]
+                (eval:error
+                 (get-field hat-location
+                            (new woody/init-hat+c%
+                                 [init-hat-location 'slinkys-mouth])))]
    
    }
  @item{The contracts listed in an @racket[init-field] section are
@@ -1906,18 +1934,19 @@ As with the external contracts, when a method or field name is specified
    contracted class's method implementation is no longer the entry point
    for dynamic dispatch.
    
-   @defexamples[#:eval
-                class-eval
+   @examples[#:eval class-eval
                 (new (class woody+c%
                        (inherit draw)
                        (super-new)
                        (printf "woody sez: “~a”\n" (draw "evil dr porkchop"))))
-                (define/contract woody+c-inherit%
-                  (class/c (inherit [draw (->m symbol? string?)]))
-                  woody+c%)
-                (new (class woody+c-inherit%
-                       (inherit draw)
-                       (printf "woody sez: ~a\n" (draw "evil dr porkchop"))))]
+                (eval:no-prompt
+                 (define/contract woody+c-inherit%
+                   (class/c (inherit [draw (->m symbol? string?)]))
+                   woody+c%))
+                (eval:error
+                 (new (class woody+c-inherit%
+                        (inherit draw)
+                        (printf "woody sez: ~a\n" (draw "evil dr porkchop")))))]
    
    }
   @item{A method contract tagged with @racket[super] describes the behavior of
@@ -1932,18 +1961,18 @@ As with the external contracts, when a method or field name is specified
    contract the controls how the @racket[super] methods must
    be invoked.
    
-   @defexamples[#:eval
-                class-eval
-                (define/contract woody2+c%
-                  (class/c (super [draw (->m symbol? string?)]))
-                  (class woody%
-                    (define/override draw
-                      (case-lambda
-                        [(a) (super draw a)]
-                        [(a b) (string-append (super draw a)
-                                              " and "
-                                              (super draw b))]))
-                    (super-new)))
+   @examples[#:eval class-eval
+                (eval:no-prompt
+                 (define/contract woody2+c%
+                   (class/c (super [draw (->m symbol? string?)]))
+                   (class woody%
+                     (define/override draw
+                       (case-lambda
+                         [(a) (super draw a)]
+                         [(a b) (string-append (super draw a)
+                                               " and "
+                                               (super draw b))]))
+                     (super-new))))
                 (send (new woody2+c%) draw 'evil-dr-porkchop  'zurg)
                 (send (new woody2+c%) draw "evil dr porkchop" "zurg")]
    
@@ -1971,27 +2000,28 @@ As with the external contracts, when a method or field name is specified
    add a contract to make sure that overriding @racket[draw]
    doesn't break @racket[draw2].   
    
-   @defexamples[#:eval
-                class-eval
-                (define/contract woody2+override/c%
-                  (class/c (override [draw (->m symbol? string?)]))
-                  (class woody+c%
-                    (inherit draw)
-                    (define/public (draw2 a b)
-                      (string-append (draw a)
-                                     " and "
-                                     (draw b)))
-                    (super-new)))
+   @examples[#:eval class-eval
+                (eval:no-prompt
+                 (define/contract woody2+override/c%
+                   (class/c (override [draw (->m symbol? string?)]))
+                   (class woody+c%
+                     (inherit draw)
+                     (define/public (draw2 a b)
+                       (string-append (draw a)
+                                      " and "
+                                      (draw b)))
+                     (super-new)))
                 
-                (define woody2+broken-draw
-                  (class woody2+override/c%
-                    (define/override (draw x)
-                      'not-a-string)
-                    (super-new)))
-                
-                (send (new woody2+broken-draw) draw2 
-                      'evil-dr-porkchop
-                      'zurg)]
+                 (define woody2+broken-draw
+                   (class woody2+override/c%
+                     (define/override (draw x)
+                       'not-a-string)
+                     (super-new))))
+
+                (eval:error
+                 (send (new woody2+broken-draw) draw2 
+                       'evil-dr-porkchop
+                       'zurg))]
    
    
    }
@@ -2390,7 +2420,7 @@ A @racket[print] request is directed to @racket[custom-write].}
 
 Returns @racket[#t] if @racket[v] is an object, @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (object? (new object%))
   (object? object%)
   (object? "clam chowder")
@@ -2401,7 +2431,7 @@ Returns @racket[#t] if @racket[v] is an object, @racket[#f] otherwise.
 
 Returns @racket[#t] if @racket[v] is a class, @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (class? object%)
   (class? (class object% (super-new)))
   (class? (new object%))
@@ -2413,7 +2443,7 @@ Returns @racket[#t] if @racket[v] is a class, @racket[#f] otherwise.
 
 Returns @racket[#t] if @racket[v] is an interface, @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (interface? (interface () empty cons first rest))
   (interface? object%)
   (interface? "gazpacho")
@@ -2424,7 +2454,7 @@ Returns @racket[#t] if @racket[v] is an interface, @racket[#f] otherwise.
 
 Returns @racket[#t] if @racket[v] is a @tech{generic}, @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (define c%
     (class object%
       (super-new)
@@ -2448,7 +2478,7 @@ This procedure is similar in spirit to
 @racket[eq?] but also works properly with contracts
 (and has a stronger guarantee).
 
-@defexamples[#:eval class-ctc-eval
+@examples[#:eval class-ctc-eval
   (define obj-1 (new object%))
   (define obj-2 (new object%))
   (define/contract obj-3 (object/c) obj-1)
@@ -2468,7 +2498,7 @@ This procedure is similar in spirit to
 Like @racket[object=?], but accepts @racket[#f] for either argument and
 returns @racket[#t] if both arguments are @racket[#f].
 
-@defexamples[#:eval class-ctc-eval
+@examples[#:eval class-ctc-eval
    (object-or-false=? #f (new object%))
    (object-or-false=? (new object%) #f)
    (object-or-false=? #f #f)
@@ -2482,7 +2512,7 @@ returns @racket[#t] if both arguments are @racket[#f].
 Returns a vector representing @racket[object] that shows its
 inspectable fields, analogous to @racket[struct->vector].
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (object->vector (new object%))
   (object->vector (new (class object%
                          (super-new)
@@ -2494,7 +2524,7 @@ inspectable fields, analogous to @racket[struct->vector].
 
 Returns the interface implicitly defined by @racket[class].
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (class->interface object%)
 ]}
 
@@ -2504,7 +2534,7 @@ Returns the interface implicitly defined by @racket[class].
 Returns the interface implicitly defined by the class of
 @racket[object].
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (object-interface (new object%))
 ]}
 
@@ -2515,7 +2545,7 @@ Returns @racket[#t] if @racket[v] is an instance of a class
 @racket[type] or a class that implements an interface @racket[type],
 @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (define point<%> (interface () get-x get-y))
   (define 2d-point%
     (class* object% (point<%>)
@@ -2536,7 +2566,7 @@ Returns @racket[#t] if @racket[v] is an instance of a class
 Returns @racket[#t] if @racket[v] is a class derived from (or equal
 to) @racket[cls], @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (subclass? (class object% (super-new)) object%)
   (subclass? object% (class object% (super-new)))
   (subclass? object% object%)
@@ -2548,7 +2578,7 @@ to) @racket[cls], @racket[#f] otherwise.
 Returns @racket[#t] if @racket[v] is a class that implements
 @racket[intf], @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (define i<%> (interface () go))
   (define c%
     (class* object% (i<%>)
@@ -2565,7 +2595,7 @@ Returns @racket[#t] if @racket[v] is a class that implements
 Returns @racket[#t] if @racket[v] is an interface that extends
 @racket[intf], @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (define point<%> (interface () get-x get-y))
   (define colored-point<%> (interface (point<%>) color))
 
@@ -2581,7 +2611,7 @@ Returns @racket[#t] if @racket[intf] (or any of its ancestor
 interfaces) includes a member with the name @racket[sym], @racket[#f]
 otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (define i<%> (interface () get-x get-y))
   (method-in-interface? 'get-x i<%>)
   (method-in-interface? 'get-z i<%>)
@@ -2595,7 +2625,7 @@ including methods inherited from superinterfaces, but not including
 methods whose names are local (i.e., declared with
 @racket[define-local-member-name]).
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (define i<%> (interface () get-x get-y))
   (interface->method-names i<%>)
 ]}
@@ -2607,7 +2637,7 @@ methods whose names are local (i.e., declared with
 Returns @racket[#t] if @racket[object] has a method named @racket[sym]
 that accepts @racket[cnt] arguments, @racket[#f] otherwise.
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
 (define c%
   (class object%
     (super-new)
@@ -2628,7 +2658,7 @@ Returns a list of all of the names of the fields bound in
 not including fields whose names are local (i.e., declared with
 @racket[define-local-member-name]).
 
-@defexamples[#:eval class-eval
+@examples[#:eval class-eval
   (field-names (new object%))
   (field-names (new (class object% (super-new) (field [x 0] [y 0]))))
 ]}

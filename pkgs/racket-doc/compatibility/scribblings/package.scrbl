@@ -2,7 +2,7 @@
 @(require scribblings/reference/mz (for-label compatibility/package))
 
 @(define pack-eval (make-base-eval))
-@interaction-eval[#:eval pack-eval (require compatibility/package)]
+@examples[#:hidden #:eval pack-eval (require compatibility/package)]
 
 @title[#:tag "compatibility-package"]{Limiting Scope: @racket[define-package], @racket[open-package], ...}
 
@@ -61,11 +61,11 @@ is the exported one.
 (define-package presents (doll)
   (define doll "Molly Coddle")
   (define robot "Destructo"))
-doll
-robot
+(eval:error doll)
+(eval:error robot)
 (open-package presents)
 doll
-robot
+(eval:error robot)
 (define-package big-russian-doll (middle-russian-doll)
   (define-package middle-russian-doll (little-russian-doll)
     (define little-russian-doll "Anastasia")))
@@ -95,7 +95,7 @@ the defined bindings remain hidden outside the
 (package-begin
   (define secret "mimi")
   (list secret))
-secret
+(eval:error secret)
 ]}
 
 @deftogether[(

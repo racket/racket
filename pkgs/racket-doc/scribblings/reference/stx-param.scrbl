@@ -1,6 +1,5 @@
 #lang scribble/doc
 @(require "mz.rkt"
-          scribble/eval
           (for-label racket/stxparam racket/stxparam-exptime racket/splicing))
 
 @(define the-eval (make-base-eval))
@@ -30,7 +29,7 @@ used as a macro that expands to a use of the target identifier, but
 @racket[syntax-local-value] of @racket[id] does not produce
 the target's value.
 
-@defexamples[#:eval the-eval
+@examples[#:eval the-eval
   (define-syntax-parameter current-class #f)
   (define-syntax-parameter yield (make-rename-transformer #'abort))
   (define-syntax-parameter define/public
@@ -59,7 +58,7 @@ used as a macro that expands to a use of the target identifier, but
 @racket[syntax-local-value] of @racket[id] does not produce
 the target's value.
 
-@defexamples[#:eval the-eval
+@examples[#:eval the-eval
 (define-syntax-parameter abort (syntax-rules ()))
 
 (define-syntax forever

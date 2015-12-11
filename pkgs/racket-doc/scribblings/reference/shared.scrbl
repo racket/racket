@@ -3,7 +3,7 @@
 
 
 @(define shared-eval (make-base-eval))
-@(interaction-eval #:eval shared-eval (require racket/shared))
+@examples[#:hidden #:eval shared-eval (require racket/shared)]
 
 @(define maker
    (make-element #f (list
@@ -125,11 +125,11 @@ that can be created via mutation).
 (shared ([a (cons 1 b)]
          [b 7])
   a)
-(shared ([a a]) (code:comment @#,t{no indirection...})
-  a)
-(shared ([a (cons 1 b)] (code:comment @#,t{@racket[b] is early...})
-         [b a])
-  a)
+(eval:error (shared ([a a]) (code:comment @#,t{no indirection...})
+              a))
+(eval:error (shared ([a (cons 1 b)] (code:comment @#,t{@racket[b] is early...})
+                     [b a])
+              a))
 (shared ([a (mcons 1 b)] (code:comment @#,t{@racket[b] is patchable...})
          [b a])
   a)

@@ -123,9 +123,10 @@ not require any other keywords, and it must accept as many by-position
 arguments as supplied via the @racket[v]s and @racket[lst]; otherwise,
 the @exnraise[exn:fail:contract].
 
-@defexamples[
-(define (f x #:y y #:z [z 10])
-  (list x y z))
+@examples[
+(eval:no-prompt
+ (define (f x #:y y #:z [z 10])
+   (list x y z)))
 (keyword-apply f '(#:y) '(2) '(1))
 (keyword-apply f '(#:y #:z) '(2 3) '(1))
 (keyword-apply f #:z 7 '(#:y) '(2) '(1))
@@ -207,7 +208,7 @@ arity-reduced procedure) or @racket[arity] must be the empty list
 @examples[
 (define my+ (procedure-reduce-arity + 2))
 (my+ 1 2)
-(my+ 1 2 3)
+(eval:error (my+ 1 2 3))
 ]}
 
 @defproc[(procedure-keywords [proc procedure?])
@@ -256,19 +257,21 @@ The result of @racket[procedure-arity] and @racket[object-name] on the
 new procedure is the same as for @racket[plain-proc]. See also
 @racket[procedure-reduce-keyword-arity] and @racket[procedure-rename].
 
-@defexamples[
-(define show
-  (make-keyword-procedure (lambda (kws kw-args . rest)
-                            (list kws kw-args rest))))
+@examples[
+(eval:no-prompt
+ (define show
+   (make-keyword-procedure (lambda (kws kw-args . rest)
+                             (list kws kw-args rest)))))
 
 (show 1)
 (show #:init 0 1 2 3 #:extra 4)
 
-(define show2
-  (make-keyword-procedure (lambda (kws kw-args . rest)
-                            (list kws kw-args rest))
-                          (lambda args 
-                            (list->vector args))))
+(eval:no-prompt
+ (define show2
+   (make-keyword-procedure (lambda (kws kw-args . rest)
+                             (list kws kw-args rest))
+                           (lambda args 
+                             (list->vector args)))))
 (show2 1)
 (show2 #:init 0 1 2 3 #:extra 4)
 ]}
@@ -291,15 +294,16 @@ must require no more keywords than the ones listed in
 @racket[allowed-kws] (or it must allow all keywords if
 @racket[allowed-kws] is @racket[#f]).
 
-@defexamples[
-(define orig-show
-  (make-keyword-procedure (lambda (kws kw-args . rest)
-                            (list kws kw-args rest))))
-(define show (procedure-reduce-keyword-arity 
-              orig-show 3 '(#:init) '(#:extra #:init)))
+@examples[
+(eval:no-prompt
+ (define orig-show
+   (make-keyword-procedure (lambda (kws kw-args . rest)
+                             (list kws kw-args rest))))
+ (define show (procedure-reduce-keyword-arity 
+               orig-show 3 '(#:init) '(#:extra #:init))))
 (show #:init 0 1 2 3 #:extra 4)
-(show 1)
-(show #:init 0 1 2 3 #:extra 4 #:more 7)
+(eval:error (show 1))
+(eval:error (show #:init 0 1 2 3 #:extra 4 #:more 7))
 ]}
 
 @defstruct[arity-at-least ([value exact-nonnegative-integer?])]{
@@ -452,7 +456,7 @@ property is not associated with a procedure structure type.
            (apply pairs more))])))
 
 (pairs 1 2 3 4)
-(pairs 5)]}
+(eval:error (pairs 5))]}
 
 
 @defthing[prop:checked-procedure struct-type-property?]{
@@ -517,7 +521,7 @@ applied.}
 
 @note-lib[racket/function]
 @(define fun-eval (make-base-eval))
-@(interaction-eval #:eval fun-eval (require racket/function))
+@examples[#:hidden #:eval fun-eval (require racket/function)]
 
 @defproc[(identity [v any/c]) any/c]{
 Returns @racket[v].
@@ -540,13 +544,15 @@ The @racket[thunk] form creates a nullary function that evaluates the
 given body.  The @racket[thunk*] form is similar, except that the
 resulting function accepts any arguments (including keyword arguments).
 
-@defexamples[
+@examples[
 #:eval fun-eval
-(define th1 (thunk (define x 1) (printf "~a\n" x)))
+(eval:no-prompt
+ (define th1 (thunk (define x 1) (printf "~a\n" x))))
 (th1)
-(th1 'x)
-(th1 #:y 'z)
-(define th2 (thunk* (define x 1) (printf "~a\n" x)))
+(eval:error (th1 'x))
+(eval:error (th1 #:y 'z))
+(eval:no-prompt
+ (define th2 (thunk* (define x 1) (printf "~a\n" x))))
 (th2)
 (th2 'x)
 (th2 #:y 'z)
@@ -567,9 +573,10 @@ returns the @racket[not] of @racket[proc]'s result.
 Combines calls to each function with @racket[and].  Equivalent to
 @racket[(and (f x ...) ...)]
 
-@defexamples[
+@examples[
 #:eval fun-eval
-(define f (conjoin exact? integer?))
+(eval:no-prompt
+ (define f (conjoin exact? integer?)))
 (f 1)
 (f 1.0)
 (f 1/2)
@@ -583,9 +590,10 @@ Combines calls to each function with @racket[and].  Equivalent to
 Combines calls to each function with @racket[or].  Equivalent to
 @racket[(or (f x ...) ...)]
 
-@defexamples[
+@examples[
 #:eval fun-eval
-(define f (disjoin exact? integer?))
+(eval:no-prompt
+ (define f (disjoin exact? integer?)))
 (f 1)
 (f 1.0)
 (f 1/2)

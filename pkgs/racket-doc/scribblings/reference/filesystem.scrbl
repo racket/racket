@@ -7,7 +7,9 @@
                      setup/cross-system))
 
 @(define file-eval (make-base-eval))
-@(interaction-eval #:eval file-eval (begin (require racket/file) (define filename (make-temporary-file))))
+@examples[#:hidden #:eval file-eval
+          (require racket/file)
+          (define filename (make-temporary-file))]
 
 
 @title{Filesystem}
@@ -1428,7 +1430,7 @@ and bitwise operations such as @racket[bitwise-ior], and
 @racket[bitwise-and].}
 
 
-@(interaction-eval #:eval file-eval (begin
-                                     (delete-file filename)
-                                     (delete-file (make-lock-file-name filename))))
+@examples[#:hidden #:eval file-eval
+          (delete-file filename)
+          (delete-file (make-lock-file-name filename))]
 @(close-eval file-eval)

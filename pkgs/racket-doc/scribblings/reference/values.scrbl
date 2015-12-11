@@ -31,5 +31,5 @@ the @racket[call-with-values] call.
 
 @examples[
 (call-with-values (lambda () (values 1 2)) +)
-(call-with-values (lambda () 1) (lambda (x y) (+ x y)))
+(eval:error (call-with-values (lambda () 1) (lambda (x y) (+ x y))))
 ]}

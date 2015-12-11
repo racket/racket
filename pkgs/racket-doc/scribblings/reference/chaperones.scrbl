@@ -924,11 +924,12 @@ procedure.
      (lambda (n) (* n 2))
      (lambda (n) (+ n 1))))
 
-  (call-with-continuation-prompt
-    (lambda ()
-      (abort-current-continuation bad-chaperone 5))
-    bad-chaperone
-    (lambda (n) n))
+  (eval:error
+   (call-with-continuation-prompt
+     (lambda ()
+       (abort-current-continuation bad-chaperone 5))
+     bad-chaperone
+     (lambda (n) n)))
 
   (define good-chaperone
     (chaperone-prompt-tag
@@ -966,10 +967,11 @@ given.
      (lambda (l) (map char-upcase l))
      string->list))
 
-  (with-continuation-mark bad-chaperone "timballo"
-    (continuation-mark-set-first
-     (current-continuation-marks)
-     bad-chaperone))
+  (eval:error
+   (with-continuation-mark bad-chaperone "timballo"
+     (continuation-mark-set-first
+      (current-continuation-marks)
+      bad-chaperone)))
 
   (define (checker s)
     (if (> (string-length s) 5)

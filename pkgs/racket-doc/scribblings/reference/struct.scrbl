@@ -197,52 +197,52 @@ The result of @racket[make-struct-type] is five values:
 
 @examples[
 #:eval struct-eval
-(define-values (struct:a make-a a? a-ref a-set!)
-  (make-struct-type 'a #f 2 1 'uninitialized))
-(define an-a (make-a 'x 'y))
+
+(eval:no-prompt
+ (define-values (struct:a make-a a? a-ref a-set!)
+   (make-struct-type 'a #f 2 1 'uninitialized))
+ (define an-a (make-a 'x 'y)))
+
 (a-ref an-a 1)
 (a-ref an-a 2)
 (define a-first (make-struct-field-accessor a-ref 0))
 (a-first an-a)
-]
 
-@interaction[
-#:eval struct-eval
-(define-values (struct:b make-b b? b-ref b-set!)
-  (make-struct-type 'b struct:a 1 2 'b-uninitialized))
-(define a-b (make-b 'x 'y 'z))
+(eval:no-prompt
+ (define-values (struct:b make-b b? b-ref b-set!)
+   (make-struct-type 'b struct:a 1 2 'b-uninitialized))
+ (define a-b (make-b 'x 'y 'z)))
+
 (a-ref a-b 1)
 (a-ref a-b 2)
 (b-ref a-b 0)
 (b-ref a-b 1)
 (b-ref a-b 2)
-]
 
-@interaction[
-#:eval struct-eval
-(define-values (struct:c make-c c? c-ref c-set!)
-  (make-struct-type
-   'c struct:b 0 0 #f null (make-inspector) #f null
-   (code:comment #,(t "guard checks for a number, and makes it inexact"))
-   (lambda (a1 a2 b1 name)
-     (unless (number? a2)
-       (error (string->symbol (format "make-~a" name))
-              "second field must be a number"))
-     (values a1 (exact->inexact a2) b1))))
-(make-c 'x 'y 'z)
+(eval:no-prompt
+ (define-values (struct:c make-c c? c-ref c-set!)
+   (make-struct-type
+    'c struct:b 0 0 #f null (make-inspector) #f null
+    (code:comment #,(t "guard checks for a number, and makes it inexact"))
+    (lambda (a1 a2 b1 name)
+      (unless (number? a2)
+        (error (string->symbol (format "make-~a" name))
+               "second field must be a number"))
+      (values a1 (exact->inexact a2) b1)))))
+
+(eval:error (make-c 'x 'y 'z))
 (define a-c (make-c 'x 2 'z))
 (a-ref a-c 1)
-]}
 
-@interaction[
-#:eval struct-eval
-(define p1 #s(p a b c))
-(define-values (struct:p make-p p? p-ref p-set!)
-  (make-struct-type 'p #f 3 0 #f null 'prefab #f '(0 1 2)))
+(eval:no-prompt
+ (define p1 #s(p a b c))
+ (define-values (struct:p make-p p? p-ref p-set!)
+   (make-struct-type 'p #f 3 0 #f null 'prefab #f '(0 1 2))))
+
 (p? p1)
 (p-ref p1 0)
 (make-p 'x 'y 'z)
-]
+]}
 
 @defproc[(make-struct-field-accessor [accessor-proc struct-accessor-procedure?]
                                      [field-pos exact-nonnegative-integer?]
@@ -667,7 +667,7 @@ the inaccessible fields are omitted from the list.
 (struct->list (make-open 'a 'b))
 (struct->list #s(pre 1 2 3))
 (define-struct (secret open) (x y))
-(struct->list (make-secret 0 1 17 22))
+(eval:error (struct->list (make-secret 0 1 17 22)))
 (struct->list (make-secret 0 1 17 22) #:on-opaque 'return-false)
 (struct->list (make-secret 0 1 17 22) #:on-opaque 'skip)
 (struct->list 'not-a-struct #:on-opaque 'return-false)

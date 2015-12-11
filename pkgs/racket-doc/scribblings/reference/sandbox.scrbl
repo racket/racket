@@ -6,7 +6,7 @@
                      racket/gui/dynamic))
 
 @(define box-eval (make-base-eval))
-@(interaction-eval #:eval box-eval (require racket/sandbox))
+@examples[#:hidden #:eval box-eval (require racket/sandbox)]
 
 @title{Sandboxed Evaluation}
 
@@ -147,11 +147,12 @@ The following examples illustrate the difference between an evaluator
 that puts the program in a module and one that merely initializes a
 top-level namespace:
 
-@interaction[
+@examples[#:label #f
 #:eval box-eval
-(define base-module-eval 
-  (code:comment @#,t{a module cannot have free variables...})
-  (make-evaluator 'racket/base '(define (f) later)))
+(eval:error
+ (define base-module-eval 
+   (code:comment @#,t{a module cannot have free variables...})
+   (make-evaluator 'racket/base '(define (f) later))))
 (define base-module-eval 
   (make-evaluator 'racket/base '(define (f) later)
                                '(define later 5)))
@@ -229,9 +230,10 @@ of communication makes it impossible to have nested (or concurrent)
 calls to a single evaluator.  Usually this is not a problem, but in
 some cases you can get the evaluator function available inside the
 sandboxed code, for example:
-@interaction[#:eval box-eval
-(let ([e (make-evaluator 'racket/base)])
-  (e `(,e 1)))
+@examples[#:label #f #:eval box-eval
+(eval:error
+ (let ([e (make-evaluator 'racket/base)])
+   (e `(,e 1))))
 ]
 An error will be signaled in such cases.
 

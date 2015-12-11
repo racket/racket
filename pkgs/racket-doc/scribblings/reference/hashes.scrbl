@@ -546,7 +546,7 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 @racket[v0] already exists, it is replaced with a mapping from @racket[k] to
 @racket[(combine/key k v0 v)].
 
-@defexamples[
+@examples[
 #:eval the-eval
 (hash-union (make-immutable-hash '([1 . one]))
             (make-immutable-hash '([2 . two]))
@@ -574,7 +574,7 @@ key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
 @racket[v0] already exists, it is replaced with a mapping from @racket[k] to
 @racket[(combine/key k v0 v)].
 
-@defexamples[
+@examples[
 #:eval the-eval
 (define h (make-hash))
 h

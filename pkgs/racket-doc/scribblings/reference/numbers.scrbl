@@ -8,7 +8,7 @@
                      racket/random))
 
 @(define math-eval (make-base-eval))
-@(interaction-eval #:eval math-eval (require racket/math))
+@examples[#:hidden #:eval math-eval (require racket/math)]
 
 @title[#:tag "numbers" #:style '(toc)]{Numbers}
 
@@ -193,12 +193,12 @@ number, @racket[#f] otherwise.}
 @defproc[(even? [n integer?]) boolean?]{ Returns @racket[(zero? (modulo
  n 2))].
 
-@mz-examples[(even? 10.0) (even? 11) (even? +inf.0)]}
+@mz-examples[(even? 10.0) (even? 11) (eval:error (even? +inf.0))]}
 
 
 @defproc[(odd? [n integer?]) boolean?]{ Returns @racket[(not (even? n))].
 
-@mz-examples[(odd? 10.0) (odd? 11) (odd? +inf.0)]}
+@mz-examples[(odd? 10.0) (odd? 11) (eval:error (odd? +inf.0))]}
 
 
 @defproc[(exact? [z number?]) boolean?]{ Returns @racket[#t] if @racket[z]
@@ -289,7 +289,7 @@ If @racket[z] is exact @racket[0] and no @racket[w] is exact
 
 Returns @racket[(truncate (/ n m))].
 
-@mz-examples[(quotient 10 3) (quotient -10.0 3) (quotient +inf.0 3)]}
+@mz-examples[(quotient 10 3) (quotient -10.0 3) (eval:error (quotient +inf.0 3))]}
 
 
 @defproc[(remainder [n integer?] [m integer?]) integer?]{
@@ -307,7 +307,7 @@ Returns @racket[_q] with the same sign as @racket[n] such that
 If @racket[m] is exact @racket[0], the
  @exnraise[exn:fail:contract:divide-by-zero].
 
-@mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (remainder +inf.0 3)]}
+@mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (eval:error (remainder +inf.0 3))]}
 
 
 @defproc[(quotient/remainder [n integer?] [m integer?]) (values integer? integer?)]{
@@ -336,7 +336,7 @@ Returns @racket[_q] with the same sign as @racket[m] where
 If @racket[m] is exact @racket[0], the
  @exnraise[exn:fail:contract:divide-by-zero].
 
-@mz-examples[(modulo 10 3) (modulo -10.0 3)  (modulo 10.0 -3) (modulo -10 -3) (modulo +inf.0 3)]}
+@mz-examples[(modulo 10 3) (modulo -10.0 3)  (modulo 10.0 -3) (modulo -10 -3) (eval:error (modulo +inf.0 3))]}
 
 
 @defproc[(add1 [z number?]) number?]{ Returns @racket[(+ z 1)].}

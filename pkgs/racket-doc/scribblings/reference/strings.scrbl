@@ -378,7 +378,7 @@ allocated string).}
 
 @note-lib[racket/string]
 @(define string-eval (make-base-eval))
-@(interaction-eval #:eval string-eval (require racket/string racket/list))
+@examples[#:hidden #:eval string-eval (require racket/string racket/list)]
 
 @defproc[(string-append* [str string?] ... [strs (listof string?)]) string?]{
 @; Note: this is exactly the same description as the one for append*

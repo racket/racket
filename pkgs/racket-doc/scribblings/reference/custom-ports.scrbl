@@ -455,7 +455,7 @@ The arguments implement the port as follows:
 
 ;; The port doesn't supply procedures to implement progress events:
 (port-provides-progress-evts? infinite-ones)
-(port-progress-evt infinite-ones)
+(eval:error (port-progress-evt infinite-ones))
 
 ;; Non-byte port results:
 (define infinite-voids
@@ -464,7 +464,7 @@ The arguments implement the port as follows:
    (lambda (s) (lambda args 'void))
    (lambda (skip s evt) (lambda args 'void))
    void))
-(read-char infinite-voids)
+(eval:error (read-char infinite-voids))
 (read-char-or-special infinite-voids)
 
 ;; This port produces 0, 1, 2, 0, 1, 2, etc., but it is not

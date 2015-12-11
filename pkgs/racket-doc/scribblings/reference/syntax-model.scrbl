@@ -2,7 +2,7 @@
 @(require scribble/struct "mz.rkt" (for-syntax mzscheme))
 
 @(define racket-eval (make-base-eval))
-@(interaction-eval #:eval racket-eval (require (for-syntax racket/base)))
+@examples[#:hidden #:eval racket-eval (require (for-syntax racket/base))]
 
 @;------------------------------------------------------------------------
 @title[#:tag "syntax-model"]{Syntax Model}
@@ -893,7 +893,7 @@ bucket-2
        (define (odd x) (if (zero? x) #f (even (sub1 x))))
        (define (even x) (if (zero? x) #t (odd (sub1 x))))
        (odd 17))]))
-(defs-and-uses/fail)
+(eval:error (defs-and-uses/fail))
 
 (define-syntax defs-and-uses
   (syntax-rules ()

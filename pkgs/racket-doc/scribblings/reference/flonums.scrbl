@@ -2,7 +2,7 @@
 @(require "mz.rkt" (for-label racket/flonum))
 
 @(define fl-eval (make-base-eval))
-@(interaction-eval #:eval fl-eval (require racket/flonum))
+@examples[#:hidden #:eval fl-eval (require racket/flonum)]
 
 @title[#:tag "flonums"]{Flonums}
 

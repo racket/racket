@@ -7,7 +7,7 @@
                      racket/require))
 
 @(define flfx-eval (make-base-eval))
-@(interaction-eval #:eval flfx-eval (require racket/fixnum))
+@examples[#:hidden #:eval flfx-eval (require racket/fixnum)]
 
 
 @title[#:tag "fixnums"]{Fixnums}

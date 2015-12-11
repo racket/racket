@@ -47,25 +47,27 @@ angle brackets in @racket[write] and @racket[print] mode and no brackets in
 @racket[display] mode. Elements of the tuple are printed recursively,
 so that graph and cycle structure can be represented.
 
-@defexamples[
-(define (tuple-print tuple port mode)
-  (when mode (write-string "<" port))
-  (let ([l (tuple-ref tuple)]
-        [recur (case mode
-                 [(#t) write]
-                 [(#f) display]
-                 [else (lambda (p port) (print p port mode))])])
-    (unless (zero? (vector-length l))
-      (recur (vector-ref l 0) port)
-      (for-each (lambda (e)
-                  (write-string ", " port)
-                  (recur e port))
-                (cdr (vector->list l)))))
-  (when mode (write-string ">" port)))
+@examples[
+(eval:no-prompt
+ (define (tuple-print tuple port mode)
+   (when mode (write-string "<" port))
+   (let ([l (tuple-ref tuple)]
+         [recur (case mode
+                  [(#t) write]
+                  [(#f) display]
+                  [else (lambda (p port) (print p port mode))])])
+     (unless (zero? (vector-length l))
+       (recur (vector-ref l 0) port)
+       (for-each (lambda (e)
+                   (write-string ", " port)
+                   (recur e port))
+                 (cdr (vector->list l)))))
+   (when mode (write-string ">" port))))
 
-(struct tuple (ref)
-        #:methods gen:custom-write
-        [(define write-proc tuple-print)])
+(eval:no-prompt
+ (struct tuple (ref)
+         #:methods gen:custom-write
+         [(define write-proc tuple-print)]))
 
 (display (tuple #(1 2 "a")))
 

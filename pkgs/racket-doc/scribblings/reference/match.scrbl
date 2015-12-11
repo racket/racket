@@ -2,8 +2,8 @@
 @(require "mz.rkt" "match-grammar.rkt" racket/match)
 
 @(define match-eval (make-base-eval))
-@(interaction-eval #:eval match-eval (require racket/match racket/list))
-@(interaction-eval #:eval match-eval (require (for-syntax racket/base)))
+@examples[#:hidden #:eval match-eval (require racket/match racket/list)]
+@examples[#:hidden #:eval match-eval (require (for-syntax racket/base))]
 
 @title[#:tag "match"]{Pattern Matching}
 
@@ -239,9 +239,9 @@ In more detail, patterns match as follows:
        @racket[struct] declaration can provide the structure type
        information.
 
-       @defexamples[
+       @examples[
        #:eval match-eval
-       (define-struct tree (val left right))
+       (eval:no-prompt (define-struct tree (val left right)))
        (match (make-tree 0 (make-tree 1 #f #f) #f)
          [(tree a (tree b  _ _) _) (list a b)])
        ]}
@@ -430,27 +430,30 @@ many values to expect from @racket[expr].
   The arguments are ordered as they appear in the function header for
   matching purposes.
 
-  @defexamples[#:eval match-eval
-    (define/match (fact n)
-      [(0) 1]
-      [(n) (* n (fact (sub1 n)))])
+  @examples[#:eval match-eval
+    (eval:no-prompt
+     (define/match (fact n)
+       [(0) 1]
+       [(n) (* n (fact (sub1 n)))]))
     (fact 5)
   ]
 
   The function header may also contain optional or keyword arguments,
   may have curried arguments, and may also contain a rest argument.
 
-  @defexamples[#:eval match-eval
-    (define/match ((f x) #:y [y '(1 2 3)])
-      [((regexp #rx"p+") `(,a 2 3)) a]
-      [(_ _) #f])
+  @examples[#:eval match-eval
+    (eval:no-prompt
+     (define/match ((f x) #:y [y '(1 2 3)])
+       [((regexp #rx"p+") `(,a 2 3)) a]
+       [(_ _) #f]))
     ((f "ape") #:y '(5 2 3))
     ((f "dog"))
 
-    (define/match (g x y . rst)
-      [(0 0 '()) #t]
-      [(5 5 '(5 5)) #t]
-      [(_ _ _) #f])
+    (eval:no-prompt
+     (define/match (g x y . rst)
+       [(0 0 '()) #t]
+       [(5 5 '(5 5)) #t]
+       [(_ _ _) #f]))
     (g 0 0)
     (g 5 5 5 5)
     (g 1 2)
@@ -586,9 +589,10 @@ are used as binding identifiers (like any other identifier) when they appear
 anywhere except the first position in a sequence.
  
 For example, to extend the pattern matcher and destructure syntax lists,
-@defs+int[
+@examples[#:label #f
   #:eval match-eval
-  ((define (syntax-list? x)
+  (eval:no-prompt
+   (define (syntax-list? x)
      (and (syntax? x)
           (list? (syntax->list x))))
    (define-match-expander syntax-list 
@@ -602,8 +606,7 @@ For example, to extend the pattern matcher and destructure syntax lists,
        (and (identifier? stx)
             (free-identifier=? stx keyword))))
    (define or-keyword? (make-keyword-predicate #'or))
-   (define and-keyword? (make-keyword-predicate #'and))
-  )
+   (define and-keyword? (make-keyword-predicate #'and)))
 
   (match #'(or 3 4)
     [(syntax-list (? or-keyword?) b c)
@@ -622,9 +625,10 @@ And here is an example showing how
 @racket[define-match-expander]-bound identifiers are
 not treated specially unless they appear
 in the first position of pattern sequence.
-@defs+int[
+@examples[#:label #f
   #:eval match-eval
-  ((define-match-expander nil
+  (eval:no-prompt
+   (define-match-expander nil
      (λ (stx) #''())
      (λ (stx) #''()))
    (define (len l)
@@ -728,9 +732,10 @@ not provided, it defaults to @racket[equal?].
  Any field of @racket[struct-id] may be omitted, and such fields can
  occur in any order.
 
- @defexamples[
+ @examples[
   #:eval match-eval
-  (define-struct tree (val left right))
+  (eval:no-prompt
+   (define-struct tree (val left right)))
   (match (make-tree 0 (make-tree 1 #f #f) #f)
     [(struct* tree ([val a]
                     [left (struct* tree ([right #f] [val b]))]))

@@ -103,7 +103,7 @@ exception handler obtains control, and the handler itself is
   (+ 5 (raise (make-my-exception
                 "failed"
                 (current-continuation-marks)))))
-(raise 'failed #t)
+(eval:error (raise 'failed #t))
 ]}
 
 @defproc*[([(error [sym symbol?]) any]
@@ -145,9 +145,9 @@ In all cases, the constructed message string is passed to
 @racket[make-exn:fail], and the resulting exception is raised.
 
 @examples[
-(error 'failed)
-(error "failed" 23 'pizza (list 1 2 3))
-(error 'method-a "failed because ~a" "no argument supplied")
+(eval:error (error 'failed))
+(eval:error (error "failed" 23 'pizza (list 1 2 3)))
+(eval:error (error 'method-a "failed because ~a" "no argument supplied"))
 ]}
 
 
@@ -187,17 +187,17 @@ message names the bad argument and also lists the other arguments. If
   (if (not (integer? bits))
     (raise-argument-error 'feed-machine "integer?" bits)
     "fed the machine"))
-(feed-machine 'turkey)
+(eval:error (feed-machine 'turkey))
 (define (feed-cow animal)
   (if (not (eq? animal 'cow))
     (raise-argument-error 'feed-cow "'cow" animal)
     "fed the cow"))
-(feed-cow 'turkey)
+(eval:error (feed-cow 'turkey))
 (define (feed-animals cow sheep goose cat)
   (if (not (eq? goose 'goose))
     (raise-argument-error 'feed-animals "'goose" 2 cow sheep goose cat)
     "fed the animals"))
-(feed-animals 'cow 'sheep 'dog 'cat)
+(eval:error (feed-animals 'cow 'sheep 'dog 'cat))
 ]}
 
 
@@ -224,10 +224,11 @@ using the error value conversion handler (see
 @racket[error-value->string-handler]).
 
 @examples[
+ (eval:error
   (raise-arguments-error 'eat 
                          "fish is smaller than its given meal"
                          "fish" 12
-                         "meal" 13)
+                         "meal" 13))
 ]}
 
 
@@ -254,10 +255,10 @@ less than} the size of a collection---for example, @racket[(sub1
 (vector-length _vec))], @racket[(sub1 (length _lst))], and so on.
 
 @examples[
-(raise-range-error 'vector-ref "vector" "starting " 5 #(1 2 3 4) 0 3)
-(raise-range-error 'vector-ref "vector" "ending " 5 #(1 2 3 4) 0 3)
-(raise-range-error 'vector-ref "vector" "" 3 #() 0 -1)
-(raise-range-error 'vector-ref "vector" "ending " 1 #(1 2 3 4) 2 3 0)
+(eval:error (raise-range-error 'vector-ref "vector" "starting " 5 #(1 2 3 4) 0 3))
+(eval:error (raise-range-error 'vector-ref "vector" "ending " 5 #(1 2 3 4) 0 3))
+(eval:error (raise-range-error 'vector-ref "vector" "" 3 #() 0 -1))
+(eval:error (raise-range-error 'vector-ref "vector" "ending " 1 #(1 2 3 4) 2 3 0))
 ]}
 
 

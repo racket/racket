@@ -6,7 +6,7 @@
                "base"
                "net-lib"
                "sandbox-lib"
-               "scribble-lib"
+               ["scribble-lib" #:version "1.14"]
                "racket-index"))
 (define build-deps '("rackunit-doc"
                      "compatibility"

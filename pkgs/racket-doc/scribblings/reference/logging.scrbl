@@ -324,8 +324,8 @@ argument list takes precedence.}
 @note-lib[racket/logging]
 @(require (for-label racket/logging))
 @(define log-eval (make-base-eval))
-@(interaction-eval #:eval log-eval
-                   (require racket/logging))
+@examples[#:hidden #:eval log-eval
+          (require racket/logging)]
 
 @defproc[(log-level/c [v any/c])
          boolean?]{
@@ -353,7 +353,7 @@ Runs @racket[proc], calling @racket[interceptor] on any log event that would
 be received by @racket[(make-log-receiver (current-logger) level topic ... ...)].
 Returns whatever @racket[proc] returns.
 
-@defexamples[
+@examples[
 #:eval log-eval
 (let ([warning-counter 0])
   (with-intercepted-logging
@@ -381,7 +381,7 @@ Runs @racket[proc], outputting any logging that would be received by
 @racket[(make-log-receiver (current-logger) level topic ... ...)] to @racket[port].
 Returns whatever @racket[proc] returns.
 
-@defexamples[
+@examples[
 #:eval log-eval
 (let ([my-log (open-output-string)])
   (with-logging-to-port my-log

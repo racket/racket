@@ -9,7 +9,7 @@
 
 @section{Port String and List Conversions}
 @(define port-eval (make-base-eval))
-@(interaction-eval #:eval port-eval (require racket/port))
+@examples[#:hidden #:eval port-eval (require racket/port)]
 
 @defproc[(port->list [r (input-port? . -> . any/c) read] [in input-port? (current-input-port)])
          (listof any/c)]{

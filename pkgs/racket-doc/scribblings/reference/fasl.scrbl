@@ -2,7 +2,7 @@
 @(require "mz.rkt" (for-label racket/fasl))
 
 @(define fasl-eval (make-base-eval))
-@(interaction-eval #:eval fasl-eval (require racket/fasl))
+@examples[#:hidden #:eval fasl-eval (require racket/fasl)]
 
 @title[#:tag "fasl"]{Fast-Load Serialization}
 

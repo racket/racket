@@ -3,7 +3,7 @@
 
 @title[#:tag "sets"]{Sets}
 @(define set-eval (make-base-eval))
-@(interaction-eval #:eval set-eval (require racket/set))
+@examples[#:hidden #:eval set-eval (require racket/set)]
 
 A @deftech{set} represents a collection of distinct elements.  The following
 datatypes are all sets:
@@ -446,7 +446,7 @@ Supported for any @racket[st] that @impl{implements}  @racket[set-add] and @supp
 (set-union (seteq))
 (set-union (set 1 2) (set 2 3))
 (set-union (list 1 2) (list 2 3))
-(set-union (set 1 2) (seteq 2 3)) (code:comment "Sets of different types cannot be unioned.")
+(eval:error (set-union (set 1 2) (seteq 2 3))) (code:comment "Sets of different types cannot be unioned")
 ]}
 
 @defproc[(set-union! [st0 generic-set?] [st generic-set?] ...) void?]{
@@ -598,8 +598,7 @@ Supported for any @racket[st] and @racket[st2] that both @supp{support}
 (set=? (set 1 2 3) (set 1))
 (set=? (set 1 2 3) (set 1 2 3))
 (set=? (seteq 1 2) (mutable-seteq 2 1))
-(set=? (seteq 1 2) (seteqv 1 2)) (code:comment "Sets of different types cannot
-be compared.")
+(eval:error (set=? (seteq 1 2) (seteqv 1 2))) (code:comment "Sets of different types cannot be compared")
 ]
 
 }
