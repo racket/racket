@@ -2166,6 +2166,7 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 
     if (simple2 && !order_matters && already_in_register(rand1, jitter)) {
       scheme_generate(rand1, jitter, 0, 0, 0, JIT_R1, NULL, NULL); /* no sync... */
+      CHECK_LIMIT();
       scheme_generate(rand2, jitter, 0, 0, 0, JIT_R0, NULL, NULL); /* no sync... */
       direction = -1;
     } else {
@@ -3426,6 +3427,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       scheme_mz_unbox_save(jitter, &ubs); /* no unboxing of vector and index arguments */
       scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      CHECK_LIMIT();
       scheme_mz_unbox_restore(jitter, &ubs);
       CHECK_LIMIT();
 
@@ -3468,6 +3470,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       is_u = IS_NAMED_PRIM(rator, "unsafe-u16vector-ref");
       
       scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      CHECK_LIMIT();
 
       jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&(((Scheme_Structure *)0x0)->slots[0]));
       jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&SCHEME_CPTR_VAL(0x0));
@@ -3484,6 +3487,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "list-ref")
                || IS_NAMED_PRIM(rator, "list-tail")) {
       scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      CHECK_LIMIT();
 
       mz_rs_sync();
       if (IS_NAMED_PRIM(rator, "list-ref"))
@@ -3518,6 +3522,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       }
 
       scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+      CHECK_LIMIT();
 
       if (IS_NAMED_PRIM(rator, "unsafe-list-ref"))
         (void)jit_calli(sjc.list_ref_code);
@@ -4255,6 +4260,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
           scheme_generate(app->args[3], jitter, 0, 0, 0, JIT_R2, NULL, NULL); /* sync'd below */
         else {
           scheme_generate_non_tail(app->args[3], jitter, 0, 1, 0); /* sync'd below */
+          CHECK_LIMIT();
           jit_movr_p(JIT_R2, JIT_R0);
         }
       }
@@ -4451,6 +4457,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
         got_two = 1;
         mz_runstack_skipped(jitter, 1);
         scheme_generate_app(app, NULL, 2, jitter, 0, 0, 0, 2);
+        CHECK_LIMIT();
       }
 
       if (scheme_can_unbox_inline(app->args[3], 5, JIT_FPUSEL_FPR_NUM(extfl)-1, 1, extfl))
