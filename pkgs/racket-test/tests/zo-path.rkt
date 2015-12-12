@@ -28,9 +28,19 @@
     (check-one name)))
 
 (module+ main
-  (fold-files (check-content #rx"[.](?:zo|dep)$")
+  (require pkg/lib)
+
+  (define zo/dep-content (check-content #rx"[.](?:zo|dep)$"))
+  
+  (fold-files zo/dep-content
               (void)
-              (find-pkgs-dir))
+              (find-collects-dir))
+  
+  (define cache (make-hash))
+  (for ([pkg (in-list (installed-pkg-names #:scope 'installation))])
+    (fold-files zo/dep-content
+                (void)
+                (pkg-directory pkg #:cache cache)))
 
   ;; Check rendered docs, too:
   (fold-files (check-content #rx"[.](?:html)$")
