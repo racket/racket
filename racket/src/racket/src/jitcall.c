@@ -1709,6 +1709,7 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
 
   /* Reset V1 to rator for slow path: */
   scheme_generate(rator, jitter, 0, 0, 0, JIT_V1, NULL, NULL);
+  CHECK_LIMIT();
   mz_rs_sync();
   
   return 1;

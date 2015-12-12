@@ -1315,11 +1315,7 @@ static void emit_indentation(mz_jit_state *jitter)
 /*                             jitstate                               */
 /**********************************************************************/
 
-#if defined(SIXTY_FOUR_BIT_INTEGERS) || defined(MZ_USE_JIT_PPC)
-# define JIT_BUFFER_PAD_SIZE 200
-#else
-# define JIT_BUFFER_PAD_SIZE 100
-#endif
+#define JIT_BUFFER_PAD_SIZE 200
 
 #define PAST_LIMIT() ((uintptr_t)jit_get_raw_ip() > (uintptr_t)jitter->limit)
 #define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter, __FILE__, __LINE__);
