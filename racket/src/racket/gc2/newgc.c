@@ -254,13 +254,22 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 /* Whether to use a little aging, moving gen-0 objects to a
    gen-1/2 space; by default, enabled when memory use is high
    enough:  */
-#define AGE_GEN_0_TO_GEN_HALF(gc) ((gc)->memory_in_use > (GEN0_MAX_SIZE * 8))
+#define AGE_GEN_0_TO_GEN_HALF(gc) (((gc)->memory_in_use > (GEN0_MAX_SIZE * 8)) \
+                                   || (gc)->started_incremental)
 
 /* Incremental mode */
 static int always_collect_incremental_on_minor = 0;
-#define INCREMENTAL_COLLECT_FUEL_PER_100M (16 * 1024)
-#define INCREMENTAL_REPAIR_FUEL_PER_100M  128
-#define INCREMENTAL_MINOR_REQUEST_DIVISOR 4
+#define INCREMENTAL_COLLECT_FUEL_PER_100M (4 * 1024)
+#define INCREMENTAL_REPAIR_FUEL_PER_100M  32
+
+/* Shrink the nursery in incremental mode, so that we more frequently
+   work on a major collection. Tune this parameter in combination with
+   the fuel parameters above. */
+#define GEN0_INCREMENTAL_MAX_DIVISOR 4
+
+/* Factor to shrink incremental-mode fuel when a GC is triggered by
+   (collect-garbage 'minor): */
+#define INCREMENTAL_MINOR_REQUEST_DIVISOR 1
 
 /* Conservatively force a major GC after a certain number
    of minor GCs. It should be ok to set this value
@@ -2021,6 +2030,10 @@ inline static void reset_nursery(NewGC *gc)
   if ((new_gen0_size > GEN0_MAX_SIZE)
       || (gc->memory_in_use > GEN0_MAX_SIZE)) /* => overflow */
     new_gen0_size = GEN0_MAX_SIZE;
+
+  if (gc->started_incremental
+      && (new_gen0_size > (GEN0_MAX_SIZE / GEN0_INCREMENTAL_MAX_DIVISOR)))
+    new_gen0_size = GEN0_MAX_SIZE / GEN0_INCREMENTAL_MAX_DIVISOR;
 
   resize_gen0(gc, new_gen0_size);
 }
