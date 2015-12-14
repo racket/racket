@@ -3698,7 +3698,13 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         if (!SAME_OBJ(pred1, pred2)) {
           info->preserves_marks = 1;
           info->single_result = 1;
-          return scheme_false;
+          return do_make_discarding_sequence(app->rand1,
+                                             do_make_discarding_sequence(app->rand2,
+                                                                         scheme_false,
+                                                                         info, 0,
+                                                                         1, 0),
+                                             info, 0,
+                                             1, 0);
         }
       }
     }

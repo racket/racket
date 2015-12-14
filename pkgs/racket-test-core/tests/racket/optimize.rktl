@@ -1494,6 +1494,12 @@
            '(lambda (x y) (car x) (unbox y) (eq? x y)))
 (test-comp '(lambda (x) (car x) #f)
            '(lambda (x) (car x) (eq? x (box 0))))
+(test-comp '(lambda (x) (car x) #f)
+           '(lambda (x) (car x) (eq? (begin (newline) x) (box 0)))
+           #f)
+(test-comp '(lambda (x) (car x) #f)
+           '(lambda (x) (car x) (eq? x (begin (newline) (box 0))))
+           #f)
 
 (test-comp '(lambda (w) (car w) (mcar w))
            '(lambda (w) (car w) (mcar w) (random)))
