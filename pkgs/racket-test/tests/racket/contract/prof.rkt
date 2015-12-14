@@ -108,6 +108,92 @@
                  [f (-> #:x (λ _ (named-blame? 'prof3)) any/c)]))))
       (eval '(require 'prof3))
       (eval '(f #:x 11)))
-   11))
+   11)
 
-;; TODO add struct/dc tests
+  (test/spec-passed
+   'provide/contract11
+   '(let ()
+      (struct posn (x y))
+      ((contract (-> (struct/dc posn [x neg-blame?]) any/c) (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract12
+   '(let ()
+      (struct posn (x y))
+      ((contract (-> any/c (struct/dc posn [x pos-blame?])) (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract13
+   '(let ()
+      (struct posn (x y))
+      ((contract (-> any/c (struct/dc posn [x pos-blame?] #:inv (x) pos-blame?))
+                 (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract14
+   '(let ()
+      (struct posn (x y) #:mutable)
+      ((contract (-> any/c (struct/dc posn [x pos-blame?]))
+                 (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract15
+   '(let ()
+      (struct posn (x y))
+      ((contract (-> any/c (struct/dc posn [x #:lazy pos-blame?]))
+                 (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract16
+   '(let ()
+      (struct posn (x y))
+      ((contract (-> any/c (struct/dc posn
+                                      [x pos-blame?]
+                                      [y (x) pos-blame?]))
+                 (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract17
+   '(let ()
+      (struct posn (x y))
+      ((contract (-> any/c (struct/dc posn
+                                      [x pos-blame?]
+                                      [y (x) #:lazy pos-blame?]))
+                 (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract18
+   '(let ()
+      (struct posn (x y) #:mutable)
+      ((contract (-> any/c (struct/dc posn
+                                      [x pos-blame?]
+                                      [y (x) pos-blame?]))
+                 (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract19
+   '(let ()
+      (struct posn (x y))
+      ((contract (-> any/c (struct/dc posn
+                                      [x pos-blame?]
+                                      [y (x) #:depends-on-state pos-blame?]))
+                 (λ (x) x) 'pos 'neg)
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract20
+   '(let ()
+      (struct posn (x y) #:mutable)
+      ((contract (-> any/c (struct/dc posn
+                                      [x pos-blame?]
+                                      [y (x) #:depends-on-state pos-blame?]))
+                 (λ (x) x) 'pos 'neg)
+       (posn 1 2)))))
