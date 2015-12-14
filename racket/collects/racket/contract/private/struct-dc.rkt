@@ -343,7 +343,8 @@
               (define-values (new-chaperone-args new-impersonate-args)
                 (cond
                   [(invariant? subcontract)
-                   (unless (with-continuation-mark contract-continuation-mark-key blame
+                   (unless (with-continuation-mark contract-continuation-mark-key
+                                                   (cons blame neg-party)
                              (apply (invariant-dep-proc subcontract) dep-args))
                      (raise-invariant-blame-failure blame neg-party v
                                                     (reverse dep-args)
@@ -351,7 +352,8 @@
                    (values chaperone-args impersonate-args)]
                   [(immutable? subcontract)
                    (define (chk fld v) (with-continuation-mark
-                                           contract-continuation-mark-key blame
+                                           contract-continuation-mark-key
+                                           (cons blame neg-party)
                                          (proj v neg-party)))
                    (chk #f (sel v)) ;; check the field contract immediately
                    (values (if (flat-contract? (indep-ctc subcontract))
@@ -362,7 +364,8 @@
                    (values (list* sel
                                   (cache-λ (fld v)
                                            (with-continuation-mark
-                                            contract-continuation-mark-key blame
+                                            contract-continuation-mark-key
+                                            (cons blame neg-party)
                                             (proj v neg-party)))
                                   chaperone-args)
                            impersonate-args)]
@@ -372,23 +375,27 @@
                                (list* sel
                                       (λ (fld v)
                                         (with-continuation-mark
-                                         contract-continuation-mark-key blame
+                                         contract-continuation-mark-key
+                                         (cons blame neg-party)
                                          (proj v neg-party)))
                                       (mutable-set subcontract)
                                       (λ (fld v)
                                         (with-continuation-mark
-                                         contract-continuation-mark-key blame
+                                         contract-continuation-mark-key
+                                         (cons blame neg-party)
                                          (mut-proj v neg-party)))
                                       impersonate-args))
                        (values (list* sel
                                       (λ (fld v)
                                         (with-continuation-mark
-                                         contract-continuation-mark-key blame
+                                         contract-continuation-mark-key
+                                         (cons blame neg-party)
                                          (proj v neg-party)))
                                       (mutable-set subcontract)
                                       (λ (fld v)
                                         (with-continuation-mark
-                                         contract-continuation-mark-key blame
+                                         contract-continuation-mark-key
+                                         (cons blame neg-party)
                                          (mut-proj v neg-party)))
                                       chaperone-args)
                                impersonate-args))]
@@ -397,7 +404,8 @@
                    (cond
                      [(dep-immutable? subcontract)
                       (define (chk fld v) (with-continuation-mark
-                                              contract-continuation-mark-key blame
+                                              contract-continuation-mark-key
+                                              (cons blame neg-party)
                                             (proj v neg-party)))
                       (chk #f (sel v)) ;; check the field contract immediately
                       (values (if (flat-contract? dep-ctc)
@@ -408,7 +416,8 @@
                       (values (list* sel
                                      (cache-λ (fld v)
                                               (with-continuation-mark
-                                               contract-continuation-mark-key blame
+                                               contract-continuation-mark-key
+                                               (cons blame neg-party)
                                                (proj v neg-party)))
                                      chaperone-args)
                               impersonate-args)]
@@ -418,12 +427,14 @@
                           (values (list* sel
                                          (λ (fld v)
                                            (with-continuation-mark
-                                            contract-continuation-mark-key blame
+                                            contract-continuation-mark-key
+                                            (cons blame neg-party)
                                             (proj v neg-party)))
                                          (dep-mutable-set subcontract)
                                          (λ (fld v)
                                            (with-continuation-mark
-                                            contract-continuation-mark-key blame
+                                            contract-continuation-mark-key
+                                            (cons blame neg-party)
                                             (mut-proj v neg-party)))
                                          chaperone-args)
                                   impersonate-args)
@@ -431,12 +442,14 @@
                                   (list* sel
                                          (λ (fld v)
                                            (with-continuation-mark
-                                            contract-continuation-mark-key blame
+                                            contract-continuation-mark-key
+                                            (cons blame neg-party)
                                             (proj v neg-party)))
                                          (dep-mutable-set subcontract)
                                          (λ (fld v)
                                            (with-continuation-mark
-                                            contract-continuation-mark-key blame
+                                            contract-continuation-mark-key
+                                            (cons blame neg-party)
                                             (mut-proj v neg-party)))
                                          impersonate-args)))]
                      [(dep-on-state-immutable? subcontract)
@@ -444,7 +457,8 @@
                       (values (list* sel
                                      (λ (strct val)
                                        (with-continuation-mark
-                                        contract-continuation-mark-key blame
+                                        contract-continuation-mark-key
+                                        (cons blame neg-party)
                                         (build-dep-on-state-proj
                                          (base-struct/dc-subcontracts ctc) subcontract strct
                                          orig-indy-projs orig-indy-blames blame neg-party val)))
@@ -454,12 +468,14 @@
                       (proj (sel v) neg-party)
                       (define (get-chap-proc strct val)
                         (with-continuation-mark
-                         contract-continuation-mark-key blame
+                         contract-continuation-mark-key
+                         (cons blame neg-party)
                          (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
                                                   orig-indy-projs orig-indy-blames blame neg-party
                                                   val)))
                       (define (set-chap-proc strct val)
-                        (with-continuation-mark contract-continuation-mark-key blame
+                        (with-continuation-mark contract-continuation-mark-key
+                                                (cons blame neg-party)
                           (build-dep-on-state-proj
                            (base-struct/dc-subcontracts ctc) subcontract strct
                            orig-mut-indy-projs orig-mut-indy-blames mut-blame neg-party val)))
