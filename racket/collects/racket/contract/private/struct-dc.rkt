@@ -1432,24 +1432,28 @@
              #:exp
              ;; if this is #t, when we have to avoid putting the property on here.
              (if (null? s-chap-code) 
-                 #`(if (pred? #,(opt/info-val opt/info))
-                       (begin
-                         #,@s-fo-code
-                         #,(opt/info-val opt/info))
-                       (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name))
-                 #`(if (and (stronger-prop-pred? #,(opt/info-val opt/info))
-                            (let ([v (stronger-prop-get #,(opt/info-val opt/info))])
-                              (and (eq? (vector-ref v index) free-var) ...)))
-                       #,(opt/info-val opt/info)
-                       (if (pred? #,(opt/info-val opt/info))
-                           (begin
-                             #,@s-fo-code
-                             (chaperone-struct
-                              #,(opt/info-val opt/info)
-                              #,@(reverse s-chap-code) ;; built the last backwards, so reverse it here
-                              stronger-prop-desc
-                              (vector free-var ...)))
-                           (struct/dc-error #,(opt/info-blame opt/info) #,(opt/info-val opt/info) 'struct-name))))
+                 #`(with-continuation-mark
+                    contract-continuation-mark-key #,(opt/info-blame opt/info)
+                    (if (pred? #,(opt/info-val opt/info))
+                        (begin
+                          #,@s-fo-code
+                          #,(opt/info-val opt/info))
+                        (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name)))
+                 #`(with-continuation-mark
+                    contract-continuation-mark-key #,(opt/info-blame opt/info)
+                    (if (and (stronger-prop-pred? #,(opt/info-val opt/info))
+                             (let ([v (stronger-prop-get #,(opt/info-val opt/info))])
+                               (and (eq? (vector-ref v index) free-var) ...)))
+                        #,(opt/info-val opt/info)
+                        (if (pred? #,(opt/info-val opt/info))
+                            (begin
+                              #,@s-fo-code
+                              (chaperone-struct
+                               #,(opt/info-val opt/info)
+                               #,@(reverse s-chap-code) ;; built the last backwards, so reverse it here
+                               stronger-prop-desc
+                               (vector free-var ...)))
+                            (struct/dc-error #,(opt/info-blame opt/info) #,(opt/info-val opt/info) 'struct-name)))))
              #:lifts
              s-lifts
              #:superlifts
