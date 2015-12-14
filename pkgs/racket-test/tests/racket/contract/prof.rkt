@@ -12,18 +12,27 @@
                (only-in racket/contract/private/blame
                         blame-positive
                         blame-negative
-                        blame?))
+                        blame?)
+               (only-in racket/contract/combinator
+                        blame-missing-party?))
       (provide pos-blame? neg-blame? named-blame?)
       (define (named-blame? who)
         (define mark-info
           (continuation-mark-set-first
            (current-continuation-marks)
            contract-continuation-mark-key))
+        (define complete-blame
+          (or (not mark-info)
+              (pair? mark-info) ; missing party is provided
+              (not (blame-missing-party? mark-info)))) ; no missing party
         (define (get-party selector)
           (and mark-info
-               (or (selector (car mark-info))
-                   (cdr mark-info))))
+               (if (pair? mark-info)
+                   (or (selector (car mark-info))
+                       (cdr mark-info))
+                   (selector mark-info))))
         (and mark-info
+             complete-blame
              (let ([pos (get-party blame-positive)]
                    [neg (get-party blame-negative)])
                (or (equal? pos who)
@@ -100,3 +109,5 @@
       (eval '(require 'prof3))
       (eval '(f #:x 11)))
    11))
+
+;; TODO add struct/dc tests
