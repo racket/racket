@@ -18,6 +18,7 @@
          blame-context
          
          blame-add-missing-party
+         blame-missing-party?
          
          raise-blame-error
          current-blame-format

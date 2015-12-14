@@ -2140,6 +2140,39 @@ contracts.  The error messages assume that the function named by
  This predicate recognizes @|blame-objects|.
 }
 
+@defproc[(raise-blame-error [b blame?]
+                            [x any/c]
+                            [fmt (or/c string?
+                                       (listof (or/c string?
+                                                     'given 'given:
+                                                     'expected 'expected:)))]
+                            [v any/c] ...)
+         none/c]{
+
+Signals a contract violation.  The first argument, @racket[b], records the
+current blame information, including positive and negative parties, the name of
+the contract, the name of the value, and the source location of the contract
+application.  The second argument, @racket[x], is the value that failed to
+satisfy the contract.
+
+The remaining arguments are a format string,
+@racket[fmt], and its arguments, @racket[v ...], specifying an error message
+specific to the precise violation.
+
+If @racket[fmt] is a list, then the elements are concatenated together
+(with spaces added, unless there are already spaces at the ends of the strings),
+after first replacing symbols with either their string counterparts, or
+replacing @racket['given] with @racket["produced"] and
+@racket['expected] with @racket["promised"], depending on whether or not
+the @racket[b] argument has been swapped or not (see @racket[blame-swap]).
+
+If @racket[fmt] contains the symbols @racket['given:] or @racket['expected:],
+they are replaced like @racket['given:] and @racket['expected:] are, but
+the replacements are prefixed with the string @racket["\n  "] to conform
+to the error message guidelines in @secref["err-msg-conventions"].
+
+}
+
 @defproc[(blame-add-context [blame blame?]
                             [context (or/c string? #f)]
                             [#:important important (or/c string? #f) #f]
@@ -2240,38 +2273,17 @@ the other; both are provided for convenience and clarity.
              and negative parties of @racket[b] respectively.
 }
 
-@defproc[(raise-blame-error [b blame?]
-                            [x any/c]
-                            [fmt (or/c string?
-                                       (listof (or/c string?
-                                                     'given 'given:
-                                                     'expected 'expected:)))]
-                            [v any/c] ...)
-         none/c]{
-
-Signals a contract violation.  The first argument, @racket[b], records the
-current blame information, including positive and negative parties, the name of
-the contract, the name of the value, and the source location of the contract
-application.  The second argument, @racket[x], is the value that failed to
-satisfy the contract.
-
-The remaining arguments are a format string,
-@racket[fmt], and its arguments, @racket[v ...], specifying an error message
-specific to the precise violation.
-
-If @racket[fmt] is a list, then the elements are concatenated together
-(with spaces added, unless there are already spaces at the ends of the strings),
-after first replacing symbols with either their string counterparts, or
-replacing @racket['given] with @racket["produced"] and
-@racket['expected] with @racket["promised"], depending on whether or not
-the @racket[b] argument has been swapped or not (see @racket[blame-swap]).
-
-If @racket[fmt] contains the symbols @racket['given:] or @racket['expected:],
-they are replaced like @racket['given:] and @racket['expected:] are, but
-the replacements are prefixed with the string @racket["\n  "] to conform
-to the error message guidelines in @secref["err-msg-conventions"].
-
+@defproc[(blame-missing-party? [b blame?]) boolean?]{
+ Returns @racket[#t] when @racket[b] does not have both parties.
 }
+
+@defproc[(blame-add-missing-party? [b (and/c blame? blame-missing-party?)]
+                                   [missing-party any/c])
+         (and/c blame? (not/c blame-missing-party?))]{
+ Produces a new blame object like @racket[b], except that the missing
+ party is replaced with @racket[missing-party].
+}
+
 
 @defstruct[(exn:fail:contract:blame exn:fail:contract) ([object blame?])]{
   This exception is raised to signal a contract error. The @racket[object]
