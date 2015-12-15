@@ -196,4 +196,18 @@
                                       [x pos-blame?]
                                       [y (x) #:depends-on-state pos-blame?]))
                  (λ (x) x) 'pos 'neg)
-       (posn 1 2)))))
+       (posn 1 2))))
+
+  (test/spec-passed
+   'provide/contract21
+   '(let ()
+      ((contract (case-> (-> any/c any/c pos-blame?))
+                 (λ (x y) x) 'pos 'neg)
+       1 2)))
+
+  (test/spec-passed
+   'provide/contract22
+   '(let ()
+      ((contract (case-> (-> neg-blame? any/c))
+                 (λ (x) x) 'pos 'neg)
+       1))))

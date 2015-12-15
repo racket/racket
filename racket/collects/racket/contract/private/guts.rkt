@@ -607,6 +607,8 @@
 
 (define-syntax-rule (with-contract-continuation-mark payload code)
   (begin
+    ;; ;; When debugging a missing blame party error, turn this on, then run
+    ;; ;; the contract test suite. It should find the problematic combinator.
     ;; (unless (or (pair? payload) (not (blame-missing-party? payload)))
     ;;   (error "internal error: missing blame party" payload))
     (with-continuation-mark contract-continuation-mark-key payload code)))

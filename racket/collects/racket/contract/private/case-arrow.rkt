@@ -2,6 +2,7 @@
 
 (require (for-syntax racket/base
                      syntax/name)
+         (only-in racket/list last)
          racket/stxparam
          "guts.rkt"
          "blame.rkt"
@@ -148,7 +149,9 @@
     (make-keyword-procedure
      (raise-no-keywords-error f blame neg-party)
      (λ args
-       (with-contract-continuation-mark blame (apply the-case-lam args)))))
+       (with-contract-continuation-mark
+        (cons blame neg-party)
+        (apply the-case-lam args)))))
   (define same-rngs (same-range-projections range-projections))
   (if same-rngs
       (wrapper
@@ -206,7 +209,9 @@
                                          (let* ([p   (f rng-blame)]
                                                 [new (lambda args
                                                        (with-contract-continuation-mark
-                                                        blame (apply p args)))])
+                                                        ;; last arg is missing party
+                                                        (cons blame (last args))
+                                                        (apply p args)))])
                                            (set! memo (cons (cons f new) memo))
                                            new))))
                                  rng-late-neg-ctcs)))
