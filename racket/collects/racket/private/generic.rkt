@@ -231,8 +231,8 @@
           id))
       (unless (pair? matches)
         (wrong-syntax sig-stx
-                      "did not find ~a among ~a to ~s"
-                      "the generic name"
+                      "did not find ~a \"~a\" among ~a to ~s"
+                      "the generic name" (syntax-e self-id)
                       "the required, by-position arguments"
                       (syntax-e name-stx)))
       (when (pair? (cdr matches))
