@@ -86,4 +86,11 @@
       #'(time body ...)
 |#
 ]))
+
+(module place-test-submod racket/base
+  (require racket/place)
+  (provide p)
+  (define (p x)
+    (place-channel-get (place/context ch
+                                      (place-channel-put ch x)))))
           

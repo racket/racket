@@ -238,7 +238,7 @@
 (define-syntax (place/context stx)
   (syntax-parse stx
     [(_ ch:id body:expr ...)
-     (define b #'(let () body ...))
+     (define b #'(lambda (ch) body ...))
      (define/with-syntax b* (local-expand b 'expression null))
      (define/with-syntax (fvs ...) (free-vars #'b*))
      (define/with-syntax (i ...) (for/list ([(v i) (in-indexed (syntax->list #'(fvs ...)))]) i))
@@ -246,7 +246,7 @@
      #'(let ()
          (define p (place ch (let* ([v (place-channel-get ch)]
                                     [fvs (vector-ref v i)] ...)
-                               b*)))
+                               (b* ch))))
          (define vec (vector fvs ...))
          (for ([e (in-vector vec)]
                [n (in-list (syntax->list (quote-syntax (fvs ...))))])
