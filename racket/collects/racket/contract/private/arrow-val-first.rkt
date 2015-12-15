@@ -251,9 +251,9 @@
                                             '())))
                  (define let-values-clause
                    #`[#,(reverse args-vars)
-                      (with-continuation-mark contract-continuation-mark-key
-                        blame+neg-party
-                        (values #,@(reverse args-expressions)))])
+                      (with-contract-continuation-mark
+                       blame+neg-party
+                       (values #,@(reverse args-expressions)))])
                  
                  (define the-clause
                    (if rngs
@@ -270,7 +270,7 @@
                                  [args
                                   (values args #,@(map (λ (x) #'#f) 
                                                        (syntax->list #'(res-x ...))))])))
-                            (with-continuation-mark contract-continuation-mark-key
+                            (with-contract-continuation-mark
                               blame+neg-party
                               (cond
                                 [failed

@@ -59,20 +59,20 @@
 
 
 (define (check-pre-cond pre blame neg-party val)
-  (with-continuation-mark contract-continuation-mark-key
-    (cons blame neg-party)
-    (unless (pre)
-      (raise-blame-error (blame-swap blame)
-                         #:missing-party neg-party
-                         val "#:pre condition"))))
+  (with-contract-continuation-mark
+   (cons blame neg-party)
+   (unless (pre)
+     (raise-blame-error (blame-swap blame)
+                        #:missing-party neg-party
+                        val "#:pre condition"))))
 
 (define (check-post-cond post blame neg-party val)
-  (with-continuation-mark contract-continuation-mark-key
-    (cons blame neg-party)
-    (unless (post)
-      (raise-blame-error blame
-                         #:missing-party neg-party
-                         val "#:post condition"))))
+  (with-contract-continuation-mark
+   (cons blame neg-party)
+   (unless (post)
+     (raise-blame-error blame
+                        #:missing-party neg-party
+                        val "#:post condition"))))
 
 (define (check-pre-cond/desc post blame neg-party val)
   (handle-pre-post/desc-string #t post blame neg-party val))
@@ -167,8 +167,7 @@
                                                        ...)])
                                 #'(case-lambda
                                     [(rng-x ...)
-                                     (with-continuation-mark
-                                      contract-continuation-mark-key
+                                     (with-contract-continuation-mark
                                       (cons blame neg-party)
                                       (let ()
                                         post ...
@@ -290,15 +289,13 @@
                                                 ;; Overhead of double-wrapping has not been
                                                 ;; noticeable in my measurements so far.
                                                 ;;  - stamourv
-                                                (with-continuation-mark
-                                                 contract-continuation-mark-key
+                                                (with-contract-continuation-mark
                                                  (cons blame neg-party)
                                                  (let ()
                                                    pre ... basic-return)))]
                               [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
-                                              (with-continuation-mark
-                                               contract-continuation-mark-key
+                                              (with-contract-continuation-mark
                                                (cons blame neg-party)
                                                (let ()
                                                  pre ... kwd-return)))])

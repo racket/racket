@@ -165,12 +165,12 @@
       (define elem-neg-proj (vfp neg-blame))
       (define checked-ref (λ (neg-party)
                             (λ (vec i val)
-                              (with-continuation-mark contract-continuation-mark-key
+                              (with-contract-continuation-mark
                                 (cons pos-blame neg-party)
                                 (elem-pos-proj val neg-party)))))
       (define checked-set (λ (neg-party)
                             (λ (vec i val)
-                              (with-continuation-mark contract-continuation-mark-key
+                              (with-contract-continuation-mark
                                 (cons neg-blame neg-party)
                                 (elem-neg-proj val neg-party)))))
       (cond
@@ -221,13 +221,11 @@
                [elem-neg-proj ((contract-projection elem-ctc)
                                (blame-add-element-of-context blame #:swap? #t))])
            (define checked-ref (λ (vec i val)
-                                 (with-continuation-mark
-                                  contract-continuation-mark-key blame
-                                  (elem-pos-proj val))))
+                                 (with-contract-continuation-mark
+                                  blame (elem-pos-proj val))))
            (define checked-set (λ (vec i val)
-                                 (with-continuation-mark
-                                  contract-continuation-mark-key blame
-                                  (elem-neg-proj val))))
+                                 (with-contract-continuation-mark
+                                  blame (elem-neg-proj val))))
            (define raise-blame (λ (val . args)
                                   (apply raise-blame-error blame val args)))
            (λ (val)
@@ -403,8 +401,8 @@
      (λ (blame) 
        (define blame+ctxt (blame-add-element-of-context blame))
        (λ (val)
-         (with-continuation-mark
-          contract-continuation-mark-key blame
+         (with-contract-continuation-mark
+          blame
           (begin
             (check-vector/c ctc val blame)
             (for ([e (in-vector val)]
@@ -438,13 +436,11 @@
                  (vector-wrapper
                   val
                   (λ (vec i val)
-                    (with-continuation-mark
-                     contract-continuation-mark-key blame
-                     ((vector-ref elem-pos-projs i) val)))
+                    (with-contract-continuation-mark
+                     blame ((vector-ref elem-pos-projs i) val)))
                   (λ (vec i val)
-                    (with-continuation-mark
-                     contract-continuation-mark-key blame
-                     ((vector-ref elem-neg-projs i) val)))
+                    (with-contract-continuation-mark
+                     blame ((vector-ref elem-neg-projs i) val)))
                   impersonator-prop:contracted ctc
                   impersonator-prop:blame blame))))))))
 

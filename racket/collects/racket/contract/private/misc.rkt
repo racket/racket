@@ -1482,10 +1482,7 @@
         (λ (blame)
           (define blame/c (blame-add-context blame "the parameter of"))
           (define (add-profiling f)
-            (λ (x)
-              (with-continuation-mark contract-continuation-mark-key
-                (cons blame #f)
-                (f x))))
+            (λ (x) (with-contract-continuation-mark (cons blame #f) (f x))))
           (define partial-neg-contract (add-profiling (in-proc (blame-swap blame/c))))
           (define partial-pos-contract (add-profiling (out-proc blame/c)))
           (λ (val)
@@ -1510,9 +1507,9 @@
            [(parameter? val)
             (define (add-profiling f)
               (λ (x)
-                (with-continuation-mark contract-continuation-mark-key
-                  (cons blame/c neg-party)
-                  (f x neg-party))))
+                (with-contract-continuation-mark
+                 (cons blame/c neg-party)
+                 (f x neg-party))))
             (make-derived-parameter
              val
              (add-profiling in-proj)

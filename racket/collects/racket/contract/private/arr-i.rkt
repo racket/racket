@@ -784,8 +784,8 @@ evaluted left-to-right.)
      (list
       #`(case-lambda
           [#,(vector->list wrapper-ress)
-           (with-continuation-mark
-            contract-continuation-mark-key blame
+           (with-contract-continuation-mark
+            blame
             #,(add-wrapper-let 
                (add-post-cond an-istx indy-arg-vars ordered-args indy-res-vars ordered-ress
                               #`(values #,@(vector->list wrapper-ress)))
@@ -886,13 +886,11 @@ evaluted left-to-right.)
                      #,wrapper-body)])
               (make-keyword-procedure
                (λ (kwds kwd-args . args)
-                 (with-continuation-mark
-                     contract-continuation-mark-key blame
-                   (keyword-apply arg-checker kwds kwd-args args)))
+                 (with-contract-continuation-mark
+                  blame (keyword-apply arg-checker kwds kwd-args args)))
                (λ args
-                 (with-continuation-mark
-                     contract-continuation-mark-key blame
-                   (apply arg-checker args)))))
+                 (with-contract-continuation-mark
+                  blame (apply arg-checker args)))))
             impersonator-prop:contracted ctc
             impersonator-prop:blame blame))))))
 

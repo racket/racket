@@ -100,19 +100,19 @@
                         val
                         (make-keyword-procedure
                          (λ (kwds kwd-vals . args)
-                           (with-continuation-mark
-                               contract-continuation-mark-key (cons orig-blame neg-party)
-                             #,(check-tail-contract
-                                #'(p-app-x ...)
-                                (list #'res-checker)
-                                (λ (s) #`(apply values #,@s kwd-vals args)))))
+                           (with-contract-continuation-mark
+                            (cons orig-blame neg-party)
+                            #,(check-tail-contract
+                               #'(p-app-x ...)
+                               (list #'res-checker)
+                               (λ (s) #`(apply values #,@s kwd-vals args)))))
                          (λ args
-                           (with-continuation-mark
-                               contract-continuation-mark-key (cons orig-blame neg-party)
-                             #,(check-tail-contract
-                                #'(p-app-x ...)
-                                (list #'res-checker)
-                                (λ (s) #`(apply values #,@s args))))))
+                           (with-contract-continuation-mark
+                            (cons orig-blame neg-party)
+                            #,(check-tail-contract
+                               #'(p-app-x ...)
+                               (list #'res-checker)
+                               (λ (s) #`(apply values #,@s args))))))
                         impersonator-prop:contracted ctc
                         impersonator-prop:application-mark
                         (cons contract-key (list p-app-x ...))))))))
@@ -251,8 +251,8 @@
                                                  #'(values/drop (rng-ctc rng-x neg-party) ...))])
                                 #'(case-lambda
                                     [(rng-x ...)
-                                     (with-continuation-mark
-                                      contract-continuation-mark-key (cons blame neg-party)
+                                     (with-contract-continuation-mark
+                                      (cons blame neg-party)
                                       (let ()
                                         post ...
                                         rng-results))]
@@ -353,14 +353,14 @@
                                                 ;; Overhead of double-wrapping has not been
                                                 ;; noticeable in my measurements so far.
                                                 ;;  - stamourv
-                                                (with-continuation-mark
-                                                 contract-continuation-mark-key (cons blame neg-party)
+                                                (with-contract-continuation-mark
+                                                 (cons blame neg-party)
                                                  (let ()
                                                    pre ... basic-return)))]
                               [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
-                                              (with-continuation-mark
-                                               contract-continuation-mark-key (cons blame neg-party)
+                                              (with-contract-continuation-mark
+                                               (cons blame neg-party)
                                                (let ()
                                                  pre ... kwd-return)))])
                   (with-syntax ([(basic-checker-name) (generate-temporaries '(basic-checker))])
@@ -425,8 +425,8 @@
            (λ (kwds kwd-args . args)
              (raise-no-keywords-arg blame #:missing-party neg-party val kwds))
            (λ (kwds kwd-args . args)
-             (with-continuation-mark
-              contract-continuation-mark-key (cons blame neg-party)
+             (with-contract-continuation-mark
+              (cons blame neg-party)
               (let ()
              (define args-len (length args))
              (unless (valid-number-of-args? args)
@@ -451,8 +451,8 @@
      (define basic-checker-name 
        (if (null? req-kwd)
            (λ args
-             (with-continuation-mark
-              contract-continuation-mark-key (cons blame neg-party)
+             (with-contract-continuation-mark
+              (cons blame neg-party)
               (let ()
              (unless (valid-number-of-args? args)
                (define args-len (length args))
@@ -1309,8 +1309,8 @@
          val
          (make-keyword-procedure
           (λ (kwd-args kwd-arg-vals . raw-orig-args)
-            (with-continuation-mark
-                contract-continuation-mark-key (cons blame neg-party)
+            (with-contract-continuation-mark
+                (cons blame neg-party)
               (let* ([orig-args (if (base-->d-mtd? ->d-stct)
                                     (cdr raw-orig-args)
                                     raw-orig-args)]
@@ -1339,8 +1339,8 @@
                         [rng-underscore? (box? (base-->d-range ->d-stct))])
                     (if rng
                         (list (λ orig-results
-                                (with-continuation-mark
-                                    contract-continuation-mark-key (cons blame neg-party)
+                                (with-contract-continuation-mark
+                                  (cons blame neg-party)
                                   (let* ([range-count (length rng)]
                                          [post-args (append orig-results raw-orig-args)]
                                          [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]

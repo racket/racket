@@ -148,8 +148,7 @@
     (make-keyword-procedure
      (raise-no-keywords-error f blame neg-party)
      (λ args
-       (with-continuation-mark contract-continuation-mark-key blame
-         (apply the-case-lam args)))))
+       (with-contract-continuation-mark blame (apply the-case-lam args)))))
   (define same-rngs (same-range-projections range-projections))
   (if same-rngs
       (wrapper
@@ -206,9 +205,8 @@
                                          (cdr target)
                                          (let* ([p   (f rng-blame)]
                                                 [new (lambda args
-                                                       (with-continuation-mark
-                                                        contract-continuation-mark-key blame
-                                                        (apply p args)))])
+                                                       (with-contract-continuation-mark
+                                                        blame (apply p args)))])
                                            (set! memo (cons (cons f new) memo))
                                            new))))
                                  rng-late-neg-ctcs)))

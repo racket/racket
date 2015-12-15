@@ -49,6 +49,7 @@
          char-in/c
 
          contract-continuation-mark-key
+         with-contract-continuation-mark
          
          (struct-out wrapped-extra-arg-arrow)
          contract-custom-write-property-proc
@@ -603,3 +604,9 @@
 ;; That information is consumed by the contract profiler.
 (define contract-continuation-mark-key
   (make-continuation-mark-key 'contract))
+
+(define-syntax-rule (with-contract-continuation-mark payload code)
+  (begin
+    ;; (unless (or (pair? payload) (not (blame-missing-party? payload)))
+    ;;   (error "internal error: missing blame party" payload))
+    (with-continuation-mark contract-continuation-mark-key payload code)))
