@@ -2012,7 +2012,9 @@ flat contracts do not need to supply an explicit projection.
 
 The @racket[stronger] argument is used to implement @racket[contract-stronger?]. The
 first argument is always the contract itself and the second argument is whatever
-was passed as the second argument to @racket[contract-stronger?].
+was passed as the second argument to @racket[contract-stronger?]. If no
+@racket[stronger] argument is supplied, then a default that always returns
+@racket[#f] is used.
 
 The @racket[is-list-contract?] argument is used by the @racket[list-contract?] predicate
 to determine if this is a contract that accepts only @racket[list?] values.
@@ -2556,7 +2558,8 @@ which produces a description to @racket[write] as part of a contract violation;
 produces a blame-tracking projection defining the behavior of the contract;
 @racket[stronger], which is a predicate that determines whether this contract
 (passed in the first argument) is stronger than some other contract (passed
-in the second argument); @racket[generate], which returns a thunk
+in the second argument) and whose default always returns @racket[#f];
+ @racket[generate], which returns a thunk
 that generates random values matching the contract (using @racket[contract-random-generate-fail])
 to indicate failure) or @racket[#f] to indicate
 that random generation for this contract isn't supported; @racket[exercise],
