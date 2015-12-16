@@ -947,6 +947,8 @@ and different result procedures use distinct scopes.
 Produces a procedure that behaves like the result of
 @racket[make-syntax-introducer], but using the @tech{scopes} of
 @racket[ext-stx] that are not shared with @racket[base-stx].
+A @racket[#f] value for @racket[base-stx] is equivalent to a syntax
+object with no @tech{scopes}.
 
 This procedure is potentially useful when some @racket[_m-id] has a
 transformer binding that records some @racket[_orig-id], and a use of

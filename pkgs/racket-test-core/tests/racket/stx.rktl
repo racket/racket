@@ -148,6 +148,17 @@
 (test #f syntax-original? ((make-syntax-introducer) #'here))
 (test #t syntax-original? ((make-syntax-introducer #t) #'here))
 
+(let* ([a (datum->syntax #f 'a)]
+       [a1 ((make-syntax-introducer) a)]
+       [a2 ((make-syntax-introducer) a)])
+  (test #f bound-identifier=? a1 a2)
+  (test #t bound-identifier=? a1 ((make-syntax-delta-introducer a1 a2) a))
+  (test #t bound-identifier=? a2 ((make-syntax-delta-introducer a2 a1) a))
+  (test #t bound-identifier=? a2 ((make-syntax-delta-introducer a2 #f) a))
+  (test #t bound-identifier=?
+        ((make-syntax-delta-introducer a1 a2) a2)
+        ((make-syntax-delta-introducer a2 a1) a1)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test basic expansion and property propagation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

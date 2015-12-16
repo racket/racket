@@ -8006,12 +8006,10 @@ Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv)
   } else
     m2 = NULL;
 
-  if (!m2) {
+  if (!m2 && !SCHEME_FALSEP(src)) {
     src = scheme_stx_lookup_w_nominal(argv[1], phase, 1,
                                       NULL, NULL, &m2,
                                       NULL, NULL, NULL, NULL, NULL);
-    if (SCHEME_FALSEP(src))
-      m2 = NULL;
   }
 
   if (m2) {
