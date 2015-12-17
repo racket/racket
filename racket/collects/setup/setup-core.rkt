@@ -293,18 +293,16 @@
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
-    ;; this check is also done in compiler/compiler, in compile-directory
-    (and (not (eq? 'all (omitted-paths path getinfo omit-root)))
-         (make-cc collection path
-                  (if name
-                      (format "~a (~a)" path-name name)
-                      path-name)
-                  info
-                  parent
-                  omit-root
-                  info-root info-path info-path-mode
-                  shadowing-policy
-                  main?)))
+    (make-cc collection path
+             (if name
+                 (format "~a (~a)" path-name name)
+                 path-name)
+             info
+             parent
+             omit-root
+             info-root info-path info-path-mode
+             shadowing-policy
+             main?))
 
   (define ((warning-handler v) exn)
     (setup-printf "WARNING" "~a" (exn->string exn))
@@ -525,11 +523,14 @@
       ;; note: omit can be 'all, if this happens then this collection
       ;; should not have been included, but we might jump in if a
       ;; command-line argument specified a coll/subcoll
-      (define omit (append
-                    (if make-docs?
-                        null
-                        (list (string->path "scribblings")))
-                    (omitted-paths ccp getinfo (cc-omit-root cc))))
+      (define omit (let ([omit (omitted-paths ccp getinfo (cc-omit-root cc))])
+                     (if (eq? omit 'all)
+                         'all
+                         (append
+                          (if make-docs?
+                              null
+                              (list (string->path "scribblings")))
+                          omit))))
       (define-values [dirs files]
         (if (eq? 'all omit)
             (values null null)
@@ -542,12 +543,13 @@
       (define srcs
         (append
          (filter has-module-suffix? files)
-         (if make-docs?
-           (filter (lambda (p) (not (member p omit)))
-                   (map (lambda (s) (if (string? s) (string->path s) s))
-                        (map car (call-info info 'scribblings
-                                            (lambda () null) (lambda (x) #f)))))
-           null)
+         (if (and make-docs?
+                  (not (eq? omit 'all)))
+             (filter (lambda (p) (not (member p omit)))
+                     (map (lambda (s) (if (string? s) (string->path s) s))
+                          (map car (call-info info 'scribblings
+                                              (lambda () null) (lambda (x) #f)))))
+             null)
          (map (lambda (s) (if (string? s) (string->path s) s))
               (call-info info 'compile-include-files (lambda () null) void))))
       (list cc srcs children-ccs))
@@ -663,9 +665,9 @@
                ;; let `collection-path' complain about the name, if that's the problem:
                (with-handlers ([exn? (compose1 raise-user-error exn-message)])
                  (apply collection-path elems))
-               ;; otherwise, it's probably a collection with nothing to compile
+               ;; otherwise, it's probably a collection with nothing to compile;
                ;; spell the name
-               (setup-printf "WARNING"
+               (setup-printf "warning"
                              "nothing to compile in a given collection path: \"~a\""
                              (string-join sc "/")))
              ccs)
