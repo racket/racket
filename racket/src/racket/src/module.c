@@ -3716,7 +3716,7 @@ static Scheme_Object *module_path_index_join(int argc, Scheme_Object *argv[])
                               "second argument", 1, argv[1],
                               "third argument", 1, argv[2],
                               NULL);
-      return scheme_get_submodule_empty_self_modidx(argv[2]);
+      return scheme_get_submodule_empty_self_modidx(argv[2], 0);
     }
   }
 
@@ -4024,31 +4024,49 @@ static Scheme_Object *resolved_module_path_to_modidx(Scheme_Object *rmp)
   return scheme_make_modidx(path, scheme_false, rmp);
 }
 
-Scheme_Object *scheme_get_submodule_empty_self_modidx(Scheme_Object *submodule_path)
+Scheme_Object *scheme_get_submodule_empty_self_modidx(Scheme_Object *submodule_path, int can_cache)
 {
   Scheme_Bucket *b;
+  Scheme_Object *modidx;
 
-  if (SCHEME_NULLP(submodule_path))
-    return empty_self_modidx;
+  if (SCHEME_NULLP(submodule_path)) {
+    if (can_cache)
+      return empty_self_modidx;
+    return scheme_make_modidx(scheme_false, scheme_false, empty_self_modname);
+  }
 
   if (!submodule_empty_modidx_table) {
     REGISTER_SO(submodule_empty_modidx_table);
     submodule_empty_modidx_table = scheme_make_weak_equal_table();
   }
 
-  scheme_start_atomic();
-  b = scheme_bucket_from_table(submodule_empty_modidx_table, (const char *)submodule_path);
-  if (!b->val) {
-    submodule_path = make_resolved_module_path_obj(scheme_make_pair(scheme_resolved_module_path_value(empty_self_modname),
-                                                                    submodule_path));
-    submodule_path = scheme_make_modidx(scheme_false, 
-                                        scheme_false,
-                                        submodule_path);
-    b->val = submodule_path;
+  if (can_cache) {
+    scheme_start_atomic();
+    b = scheme_bucket_from_table(submodule_empty_modidx_table, (const char *)submodule_path);
+    if (b->val)
+      modidx = scheme_ephemeron_value(b->val);
+    else
+      modidx = NULL;
+  } else {
+    b = NULL;
+    modidx = NULL;
   }
-  scheme_end_atomic_no_swap();
 
-  return b->val;
+  if (!modidx) {
+    modidx = make_resolved_module_path_obj(scheme_make_pair(scheme_resolved_module_path_value(empty_self_modname),
+                                                            submodule_path));
+    modidx = scheme_make_modidx(scheme_false, scheme_false, modidx);
+    if (b) {
+      modidx = scheme_make_ephemeron(submodule_path, modidx);
+      b->val = modidx;
+      modidx = scheme_ephemeron_value(modidx);
+    }
+  }
+
+  if (can_cache)
+    scheme_end_atomic_no_swap();
+
+  return modidx;
 }
 
 static Scheme_Object *_module_resolve_k(void);
@@ -7325,7 +7343,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   fm = scheme_stx_property(fm, module_name_symbol, scheme_resolved_module_path_value(rmp));
 
-  this_empty_self_modidx = scheme_get_submodule_empty_self_modidx(submodule_path);
+  this_empty_self_modidx = scheme_get_submodule_empty_self_modidx(submodule_path, 1);
 
   /* phase shift to replace self_modidx of previous expansion: */
   fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL,

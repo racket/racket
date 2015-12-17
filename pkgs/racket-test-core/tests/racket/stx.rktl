@@ -2270,5 +2270,30 @@
          (open-output-bytes)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that reading a compiled module doesn't mutate the
+;; shared "self" modix for a submodule:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (define o (open-output-bytes))
+  (write (compile `(module name-1 racket/base (module+ inside))) o)
+  (define m
+    (parameterize ([read-accept-compiled #t])
+      (read (open-input-bytes (get-output-bytes o)))))
+  (define s (expand `(module name-2 racket/base (module+ inside (define check-me 1)))))
+  (test "(|expanded module| inside)"
+        format
+        "~s"
+        (resolved-module-path-name
+         (let loop ([s s])
+           (cond
+            [(identifier? s)
+             (and (equal? 'check-me (syntax-e s))
+                  (module-path-index-resolve (car (identifier-binding s))))]
+            [(syntax? s) (loop (syntax-e s))]
+            [(pair? s)
+             (or (loop (car s)) (loop (cdr s)))]
+            [else #f])))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

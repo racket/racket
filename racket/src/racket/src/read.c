@@ -5168,7 +5168,7 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
             if (SCHEME_FALSEP(path))
               return scheme_make_modidx(scheme_false, scheme_false, scheme_false);
             else
-              return scheme_get_submodule_empty_self_modidx(path);
+              return scheme_get_submodule_empty_self_modidx(path, 0);
           } else
             return scheme_make_modidx(path, base, scheme_false);
 	}

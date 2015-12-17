@@ -3719,7 +3719,7 @@ Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,
 				   Scheme_Object *shift_to_modidx);
 
 Scheme_Object *scheme_modidx_submodule(Scheme_Object *modidx);
-Scheme_Object *scheme_get_submodule_empty_self_modidx(Scheme_Object *submodule_path);
+Scheme_Object *scheme_get_submodule_empty_self_modidx(Scheme_Object *submodule_path, int can_cache);
 
 #define SCHEME_RMPP(o) (SAME_TYPE(SCHEME_TYPE((o)), scheme_resolved_module_path_type))
 #define SCHEME_MODNAMEP(obj)  (SAME_TYPE(SCHEME_TYPE(obj), scheme_resolved_module_path_type))
