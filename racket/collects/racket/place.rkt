@@ -10,6 +10,7 @@
          racket/place/private/th-place
          racket/place/private/prop
          racket/private/streams
+         racket/match
 
 
          (for-syntax racket/base
@@ -233,7 +234,12 @@
   (when (and (symbol? name)
              (not (module-predefined? `(quote ,name))))
      (error who "the enclosing module's resolved name is not a path or predefined"))
-  (start-place-func who `(submod ,(if (symbol? name) `(quote ,name) name) ,submod-name) 'main in out err))
+  (define submod-ref
+    (match name
+      [(? symbol?) `(quote 'name)]
+      [(? path?) `(submod ,name ,submod-name)]
+      [`(,p ,s ...) `(submod ,p ,@s ,submod-name)]))
+  (start-place-func who submod-ref 'main in out err))
 
 (define-syntax (place/context stx)
   (syntax-parse stx
