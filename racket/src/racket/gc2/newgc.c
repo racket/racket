@@ -6086,11 +6086,6 @@ static int mark_and_finalize_all_incremental(NewGC *gc, int no_full TIME_FORMAL_
   return more_to_do;
 }
 
-/* Full GCs trigger finalization. Finalization releases data
-   in the old generation. So one more full GC is needed to
-   really clean up. The full_needed_for_finalization flag triggers 
-   the second full GC. */
-
 static void garbage_collect(NewGC *gc, int force_full, int no_full, int switching_master, Log_Master_Info *lmi)
 {
   uintptr_t old_mem_use;
@@ -6130,7 +6125,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
                      && !gc->started_incremental)
                  /* Finalization triggers an extra full in case it releases
                     a lot of additional memory: */
-                 || (gc->full_needed_for_finalization
+                 || (gc->full_needed_again
                      && !gc->incremental_requested
                      && !gc->started_incremental)
                  /* In incremental mode, GC earlier if we've done everything
@@ -6140,13 +6135,16 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   if (gc->gc_full && no_full)
     return;
 
+  /* Switch from incremental to not, schedule another
+     full GC for next time: */
   next_gc_full = (gc->gc_full
+                  && gc->started_incremental
                   && !gc->incremental_requested
                   && !always_collect_incremental_on_minor
-                  && !gc->full_needed_for_finalization);
+                  && !gc->full_needed_again);
 
-  if (gc->full_needed_for_finalization && gc->gc_full)
-    gc->full_needed_for_finalization= 0;
+  if (gc->full_needed_again && gc->gc_full)
+    gc->full_needed_again = 0;
 
 #ifdef GC_DEBUG_PAGES
   if (gc->gc_full == 1) {
@@ -6454,17 +6452,6 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   if (gc->gc_full)
     merge_run_queues(gc);
 
-  if (!gc->run_queue) {
-    if (had_started_incremental) {
-      /* Keep next_gc_full, if it's set, because that means incremental
-         mode wasn't requested recently, even through we're wrapping up
-         an incremental GC; another major GC is likely to reclaim more
-         memory, reduce fragentation, and generally improve heap
-         health */
-    } else
-      next_gc_full = 0;
-  }
-
   /* Run any queued finalizers, EXCEPT in the case where this
      collection was triggered during the execution of a finalizer.
      Without the exception, finalization effectively becomes
@@ -6500,13 +6487,12 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     gc->park[1] = gc->park_fsave[1];
     gc->park_fsave[0] = NULL;
     gc->park_fsave[1] = NULL;
-  } else
-    next_gc_full = 0;
+  }
 
   DUMP_HEAP(); CLOSE_DEBUG_FILE();
 
   if (next_gc_full)
-    gc->full_needed_for_finalization = 1;
+    gc->full_needed_again = 1;
 
 #ifdef MZ_USE_PLACES
   if (postmaster_and_place_gc(gc)) {

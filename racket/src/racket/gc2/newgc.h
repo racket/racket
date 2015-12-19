@@ -216,7 +216,7 @@ typedef struct NewGC {
   unsigned char finished_incremental         :1; /* finished marking and reparing an incremental GC */
   unsigned char accounted_incremental        :1; /* memory accounting for an incremental GC */
   unsigned char in_unsafe_allocation_mode    :1;
-  unsigned char full_needed_for_finalization :1;
+  unsigned char full_needed_again            :1;
   unsigned char no_further_modifications     :1;
   unsigned char gc_full                      :1; /* a flag saying if this is a full/major collection */
   unsigned char had_finished_incremental     :1; /* when gc_full, indicates full GC after incremental finished */
