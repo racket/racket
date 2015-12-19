@@ -1152,6 +1152,7 @@
 (define (make-property build-X-property chaperone-or-impersonate-procedure)
   (define val-first-proj
     (λ (->stct)
+      (maybe-warn-about-val-first ->stct)
       (->-proj chaperone-or-impersonate-procedure ->stct
                (base->-min-arity ->stct)
                (base->-doms ->stct)

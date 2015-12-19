@@ -193,6 +193,7 @@
    #:val-first-projection
    (λ (ctc)
      (define blame-accepting-proj (arr->i-late-neg-proj ctc c-or-i-procedure))
+     (maybe-warn-about-val-first ctc)
      (λ (blame)
        (define val+neg-party-accepting-proj (blame-accepting-proj blame))
        (λ (val)

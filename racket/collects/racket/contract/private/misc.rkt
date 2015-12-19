@@ -68,7 +68,9 @@
          random-any/c
 
          rename-contract
-         if/c)
+         if/c
+
+         maybe-warn-about-val-first)
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()
@@ -2108,15 +2110,18 @@
            x)))))
 
 (define warn-about-val-first? (make-parameter #t))
+(define (maybe-warn-about-val-first ctc)
+  (when (warn-about-val-first?)
+    (log-racket/contract-warning
+     "building val-first-projection of contract ~s for~a"
+     ctc
+     (build-context))))
+
 (define (get/build-val-first-projection ctc)
   (cond
     [(contract-struct-val-first-projection ctc) => values]
     [else
-     (when (warn-about-val-first?)
-       (log-racket/contract-warning
-        "building val-first-projection of contract ~s for~a"
-        ctc
-        (build-context)))
+     (maybe-warn-about-val-first ctc)
      (late-neg-projection->val-first-projection
       (get/build-late-neg-projection ctc))]))
 (define (late-neg-projection->val-first-projection lnp)
