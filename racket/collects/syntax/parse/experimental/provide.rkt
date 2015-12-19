@@ -150,7 +150,7 @@
     (if (flat-contract? ctc)
         (flat-named-contract name (flat-contract-predicate ctc))
         (let* ([ctc-fo (contract-first-order ctc)]
-               [proj (contract-projection ctc)])
+               [late-neg-proj (contract-late-neg-projection ctc)])
           (make-contract #:name name
-                           #:projection proj
+                         #:late-neg-projection late-neg-proj
                            #:first-order ctc-fo)))))
