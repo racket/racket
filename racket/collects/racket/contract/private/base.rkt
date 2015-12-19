@@ -140,27 +140,27 @@
      forced-ctc]
     [else current]))
 
-(define (recursive-contract-projection ctc)
+(define (recursive-contract-late-neg-projection ctc)
   (cond
     [(recursive-contract-list-contract? ctc)
      (λ (blame)
        (define r-ctc (force-recursive-contract ctc))
-       (define f (contract-projection r-ctc))
+       (define f (contract-late-neg-projection r-ctc))
        (define blame-known (blame-add-context blame #f))
-       (λ (val)
+       (λ (val neg-party)
          (unless (list? val)
-           (raise-blame-error blame-known
+           (raise-blame-error blame-known #:missing-party neg-party
                               val
                               '(expected: "list?" given: "~e")
                               val))
-         ((f blame-known) val)))]
+         ((f blame-known) val neg-party)))]
     [else
      (λ (blame)
        (define r-ctc (force-recursive-contract ctc))
-       (define f (contract-projection r-ctc))
+       (define f (contract-late-neg-projection r-ctc))
        (define blame-known (blame-add-context blame #f))
-       (λ (val)
-         ((f blame-known) val)))]))
+       (λ (val neg-party)
+         ((f blame-known) val neg-party)))]))
   
 (define (recursive-contract-stronger this that) (equal? this that))
 
@@ -187,7 +187,7 @@
   (build-flat-contract-property
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
-   #:projection recursive-contract-projection
+   #:late-neg-projection recursive-contract-late-neg-projection
    #:stronger recursive-contract-stronger
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
@@ -197,7 +197,7 @@
   (build-chaperone-contract-property
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
-   #:projection recursive-contract-projection
+   #:late-neg-projection recursive-contract-late-neg-projection
    #:stronger recursive-contract-stronger
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
@@ -207,7 +207,7 @@
   (build-contract-property
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
-   #:projection recursive-contract-projection
+   #:late-neg-projection recursive-contract-late-neg-projection
    #:stronger recursive-contract-stronger
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
