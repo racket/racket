@@ -252,10 +252,8 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 #define HIGH_FRAGMENTATION_RATIO 2
 
 /* Whether to use a little aging, moving gen-0 objects to a
-   gen-1/2 space; by default, enabled when memory use is high
-   enough:  */
-#define AGE_GEN_0_TO_GEN_HALF(gc) (((gc)->memory_in_use > (GEN0_MAX_SIZE * 8)) \
-                                   || (gc)->started_incremental)
+   gen-1/2 space:  */
+#define AGE_GEN_0_TO_GEN_HALF(gc) ((gc)->started_incremental)
 
 /* Incremental mode */
 static int always_collect_incremental_on_minor = 0;
