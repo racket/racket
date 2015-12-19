@@ -1953,5 +1953,14 @@
         (eval (datum->syntax #'here '(lambda () (sort '(1))) (list 'a #f #f #f #f)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check marshaling of a top-level `begin-for-syntax`:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (write (compile '(begin-for-syntax
+                    (require racket/match)))
+         (open-output-bytes)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

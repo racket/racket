@@ -463,7 +463,7 @@ static Scheme_Object *read_begin_for_syntax(Scheme_Object *obj)
 
 static Scheme_Object *write_begin_for_syntax(Scheme_Object *obj)
 {
-  return write_define_values(obj);
+  return scheme_clone_vector(obj, 0, 0);
 }
 
 static Scheme_Object *read_set_bang(Scheme_Object *obj)
