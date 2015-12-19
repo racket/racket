@@ -11,19 +11,21 @@
                      [_new-∀/c new-∀/c])
          ∀∃?)
 
-(define (∀∃-proj ctc)
-  (let ([in (∀∃/c-in ctc)]
-        [out (∀∃/c-out ctc)]
-        [pred? (∀∃/c-pred? ctc)]
-        [neg? (∀∃/c-neg? ctc)])
-    (define name (∀∃/c-name ctc))
-    (λ (blame)
-      (if (equal? neg? (blame-swapped? blame))
-          (λ (val)
-            (if (pred? val)
-                (out val)
-                (raise-blame-error blame val "not ~a: ~e" name val)))
-          in))))
+(define (∀∃-late-neg-proj ctc)
+  (define in (∀∃/c-in ctc))
+  (define (inj v neg-party) (in v))
+  (define out (∀∃/c-out ctc))
+  (define pred? (∀∃/c-pred? ctc))
+  (define neg? (∀∃/c-neg? ctc))
+  (define name (∀∃/c-name ctc))
+  (λ (blame)
+    (if (equal? neg? (blame-swapped? blame))
+        (λ (val neg-party)
+          (if (pred? val)
+              (out val)
+              (raise-blame-error blame val #:missing-party neg-party
+                                 "not ~a: ~e" name val)))
+        inj)))
 
 (define-struct ∀∃/c (in out pred? name neg?)
   #:omit-define-syntaxes
@@ -32,7 +34,7 @@
   (build-contract-property
    #:name (λ (ctc) (∀∃/c-name ctc))
    #:first-order (λ (ctc) (λ (x) #t)) ;; ???
-   #:projection ∀∃-proj
+   #:late-neg-projection ∀∃-late-neg-proj
    #:stronger (λ (this that) (equal? this that))
    #:generate (λ (ctc)
                 (cond
