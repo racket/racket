@@ -176,7 +176,9 @@
        #:test-case-name ',name
        'no-exn-raised
        eval
-       '(with-handlers ([exn:fail? exn-message])
+       '(with-handlers ([exn:fail? (λ (x) (cons (exn-message x)
+                                                (continuation-mark-set->context
+                                                 (exn-continuation-marks x))))])
           ,expression
           'no-exn-raised)))
     (let ([new-expression (rewrite-out expression)])
