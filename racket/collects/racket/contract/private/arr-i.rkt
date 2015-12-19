@@ -28,11 +28,12 @@
 (provide (rename-out [->i/m ->i]))
 
 (define (build-??-args c-or-i-procedure ctc blame)
-  (define arg-ctc-projs (map (λ (x) (contract-projection (->i-arg-contract x))) (->i-arg-ctcs ctc)))
-  (define indy-arg-ctc-projs (map (λ (x) (contract-projection (cdr x)))
+  (define arg-ctc-projs (map (λ (x) (contract-late-neg-projection (->i-arg-contract x)))
+                             (->i-arg-ctcs ctc)))
+  (define indy-arg-ctc-projs (map (λ (x) (contract-late-neg-projection (cdr x)))
                                   (->i-indy-arg-ctcs ctc)))
-  (define rng-ctc-projs (map (λ (x) (contract-projection (cdr x))) (->i-rng-ctcs ctc)))
-  (define indy-rng-ctc-projs (map (λ (x) (contract-projection (cdr x))) 
+  (define rng-ctc-projs (map (λ (x) (contract-late-neg-projection (cdr x))) (->i-rng-ctcs ctc)))
+  (define indy-rng-ctc-projs (map (λ (x) (contract-late-neg-projection (cdr x))) 
                                   (->i-indy-rng-ctcs ctc)))
   (define has-rest (->i-rest ctc))
   (define here (->i-here ctc))
@@ -104,7 +105,7 @@
                  (->i-rng-dep-ctcs ctc)
                  partial-indy-rngs)))
 
-(define arr->i-proj
+(define arr->i-late-neg-proj
   (λ (ctc c-or-i-procedure)
     (define func (->i-mk-wrapper ctc))
     (λ (blame)
@@ -191,20 +192,16 @@
   ((if chaperone? build-chaperone-contract-property build-contract-property)
    #:val-first-projection
    (λ (ctc)
-     (define blame-accepting-proj (arr->i-proj ctc c-or-i-procedure))
+     (define blame-accepting-proj (arr->i-late-neg-proj ctc c-or-i-procedure))
      (λ (blame)
+       (define val+neg-party-accepting-proj (blame-accepting-proj blame))
        (λ (val)
          (wrapped-extra-arg-arrow
           (λ (neg-party)
-            ((blame-accepting-proj (blame-add-missing-party blame neg-party)) val))
+            (val+neg-party-accepting-proj val neg-party))
           (->i-mk-val-first-wrapper ctc)))))
    #:late-neg-projection
-   (λ (ctc)
-     (define blame-accepting-proj (arr->i-proj ctc c-or-i-procedure))
-     (λ (blame)
-       (λ (val neg-party)
-         ((blame-accepting-proj (blame-add-missing-party blame neg-party)) val))))
-   #:projection (λ (ctc) (arr->i-proj ctc c-or-i-procedure))
+   (λ (ctc) (arr->i-late-neg-proj ctc c-or-i-procedure))
    #:name (λ (ctc)
             (define (arg/ress->spec infos ctcs dep-ctcs skip?)
               (let loop ([infos infos]
@@ -576,7 +573,7 @@ evaluted left-to-right.)
 (define-for-syntax (maybe-generate-temporary x)
   (and x (car (generate-temporaries (list x)))))
 
-(define (signal-pre/post pre? val kind blame condition-result . var-infos)
+(define (signal-pre/post pre? val kind blame neg-party condition-result . var-infos)
   (define vars-str
     (apply
      string-append
@@ -599,7 +596,7 @@ evaluted left-to-right.)
         vars-str)]
       [else
        (pre-post/desc-result->string condition-result pre? '->i)]))
-  (raise-blame-error blame val "~a" msg))
+  (raise-blame-error blame #:missing-party neg-party val "~a" msg))
 
 (define-for-syntax (add-pre-cond an-istx indy-arg-vars ordered-args indy-res-vars ordered-ress
                                  call-stx)
@@ -620,6 +617,7 @@ evaluted left-to-right.)
                                        val
                                        '#,(pre/post-kind pre)
                                        swapped-blame
+                                       neg-party
                                        condition-result
                                        #,@(map (λ (x) #`(list '#,x 
                                                               #,(arg/res-to-indy-var indy-arg-vars 
@@ -650,6 +648,7 @@ evaluted left-to-right.)
                    val
                    '#,(pre/post-kind post)
                    blame
+                   neg-party
                    condition-result
                    #,@(map (λ (x) #`(list '#,x #,(arg/res-to-indy-var indy-arg-vars 
                                                                       ordered-args 
@@ -661,6 +660,7 @@ evaluted left-to-right.)
 
 ;; add-wrapper-let :
 ;;   syntax? -- placed into the body position of the generated let expression
+;;   boolean? -- indicates if this is a chaperone contract
 ;;   boolean? -- indicates if this is an arg or a res; affects only how blame-var-table is filled in
 ;;   (listof arg/res) -- sorted version of the arg/res structs, ordered by evaluation order
 ;;   (listof int) -- indices that give the mapping from the ordered-args to the original order
@@ -691,10 +691,10 @@ evaluted left-to-right.)
         stx))
     
   (for/fold ([body body])
-    ([indy-arg/res-var (in-list indy-arg/res-vars)]
-     [an-arg/res (in-list ordered-arg/reses)]
-     [index indicies]
-     [i (in-naturals)])
+            ([indy-arg/res-var (in-list indy-arg/res-vars)]
+             [an-arg/res (in-list ordered-arg/reses)]
+             [index indicies]
+             [i (in-naturals)])
     (let ([wrapper-arg (vector-ref wrapper-arg/ress index)]
           [arg/res-proj-var (vector-ref arg/res-proj-vars index)]
           [indy-arg/res-proj-var (vector-ref indy-arg/res-proj-vars index)])
@@ -716,9 +716,10 @@ evaluted left-to-right.)
                                                               ordered-ress
                                                               var))
                                        (arg/res-vars an-arg/res))
-                               #,wrapper-arg 
-                               #,(build-blame-identifier #t swapped-blame? (arg/res-var an-arg/res)))
-                            #`(#,indy-arg/res-proj-var #,wrapper-arg)))])
+                               #,wrapper-arg
+                               #,(build-blame-identifier #t swapped-blame? (arg/res-var an-arg/res))
+                               neg-party)
+                            #`(#,indy-arg/res-proj-var #,wrapper-arg neg-party)))])
                  (list))])
         #`(let (#,@indy-binding
                 [#,wrapper-arg 
@@ -732,7 +733,8 @@ evaluted left-to-right.)
                           #,wrapper-arg
                           #,(build-blame-identifier #f 
                                                     swapped-blame? 
-                                                    (arg/res-var an-arg/res)))]
+                                                    (arg/res-var an-arg/res))
+                          neg-party)]
                       [(arg/res-vars an-arg/res)
                        #`(#,arg/res-proj-var 
                           #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars 
@@ -741,10 +743,11 @@ evaluted left-to-right.)
                                                                 ordered-ress 
                                                                 var))
                                   (arg/res-vars an-arg/res))
-                          #,wrapper-arg 
-                          #,(build-blame-identifier #f swapped-blame? (arg/res-var an-arg/res)))]
+                          #,wrapper-arg
+                          #,(build-blame-identifier #f swapped-blame? (arg/res-var an-arg/res))
+                          neg-party)]
                       [else
-                       #`(#,arg/res-proj-var #,wrapper-arg)]))])
+                       #`(#,arg/res-proj-var #,wrapper-arg neg-party)]))])
             #,body)))))
 
 
@@ -901,7 +904,7 @@ evaluted left-to-right.)
    (map cdr blame-ids)
    (with-syntax ([arg-checker (or (syntax-local-infer-name stx) 'arg-checker)])
      #`(λ #,wrapper-proc-arglist
-         (λ (val)
+         (λ (val neg-party)
            (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
            (c-or-i-procedure
             val
@@ -1084,18 +1087,18 @@ evaluted left-to-right.)
       #`(f #,@argument-list)))
 
 (begin-encourage-inline
-  (define (un-dep/chaperone orig-ctc obj blame)
+  (define (un-dep/chaperone orig-ctc obj blame neg-party)
     (let ([ctc (coerce-contract '->i orig-ctc)])
       (unless (chaperone-contract? ctc)
         (raise-argument-error '->i
                               "chaperone-contract?"
                               orig-ctc))
-      (((contract-projection ctc) blame) obj))))
+      (((contract-late-neg-projection ctc) blame) obj neg-party))))
 
 (begin-encourage-inline
-  (define (un-dep orig-ctc obj blame)
+  (define (un-dep orig-ctc obj blame neg-party)
     (let ([ctc (coerce-contract '->i orig-ctc)])
-      (((contract-projection ctc) blame) obj))))
+      (((contract-late-neg-projection ctc) blame) obj neg-party))))
 
 (define-for-syntax (mk-used-indy-vars an-istx)
   (let ([vars (make-free-identifier-mapping)])
@@ -1218,12 +1221,12 @@ evaluted left-to-right.)
                              this->i)
                             'racket/contract:contract-on-boundary
                             (gensym '->i-indy-boundary)))
-                         #`(λ (#,@orig-vars val blame)
+                         #`(λ (#,@orig-vars val blame neg-party)
                              #,@(arg/res-vars arg)
                              ;; this used to use opt/direct, but 
                              ;; opt/direct duplicates code (bad!)
                              (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
-                              #,ctc-stx val blame))))
+                              #,ctc-stx val blame neg-party))))
               ;; then the non-dependent argument contracts that are themselves dependend on
               (list #,@(filter values
                                (map (λ (arg/res indy-id) 
@@ -1259,12 +1262,12 @@ evaluted left-to-right.)
                                      #`(λ #,orig-vars
                                          #,@(arg/res-vars arg)
                                          (opt/c #,arg-stx))
-                                     #`(λ (#,@orig-vars val blame)
+                                     #`(λ (#,@orig-vars val blame neg-party)
                                          ;; this used to use opt/direct, but 
                                          ;; opt/direct duplicates code (bad!)
                                          #,@(arg/res-vars arg)
                                          (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
-                                          #,arg-stx val blame)))))
+                                          #,arg-stx val blame neg-party)))))
                     #''())
               #,(if (istx-ress an-istx)
                     #`(list #,@(filter values
