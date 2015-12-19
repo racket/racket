@@ -452,9 +452,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
     ]
 
     The @racket[_category] list specifies how to show the document in
-    the root table of contents. The list must start with a symbol,
-    usually one of the following categories, which are ordered as
-    below in the root documentation page:
+    the root table of contents. The list must start with a category,
+    which determines where the manual appears in the root
+    documentation page. A category is either a string or a symbol. If
+    it is a string, then the string is the category label on the root
+    page. If it is a symbol, then it a default category label is
+    used. The available symbols and the order of categories on the
+    root documentation page is as below:
 
    @itemize[
 
@@ -483,6 +487,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
      @item{@racket['interop] : Documentation for interoperability
            tools and libraries.}
 
+     @item{All string categories as ordered by @racket[string<=?].}
+     
      @item{@racket['library] : Documentation for libraries; this
            category is the default and used for unrecognized category
            symbols.}
