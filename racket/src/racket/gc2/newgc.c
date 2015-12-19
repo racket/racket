@@ -4241,6 +4241,7 @@ static int propagate_incremental_marks(NewGC *gc, int do_emph, int fuel)
   int save_inc, save_check, init_fuel = fuel;
 
   if (!fuel) return 0;
+  if (!gc->inc_mark_stack) return fuel;
 
   GC_ASSERT(gc->mark_gen1);
     
@@ -6237,7 +6238,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
      finalizer passes */
   (void)mark_and_finalize_all(gc, 0, no_full TIME_ARGS);
 
-  if (do_incremental) {
+  if (gc->started_incremental) {
     if (!gc->all_marked_incremental) {
       mark_finalizer_structs(gc, FNL_LEVEL_GEN_1);
       if (!mark_stack_is_empty(gc->inc_mark_stack)) {
@@ -6400,7 +6401,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     is_master = (gc == MASTERGC);
 #endif
     park_for_inform_callback(gc);
-    gc->GC_collect_inform_callback(is_master, gc->gc_full, do_incremental,
+    gc->GC_collect_inform_callback(is_master, gc->gc_full, gc->started_incremental,
                                    /* original memory use: */
                                    old_mem_use + old_gen0,
                                    /* new memory use; gen0_phantom_count can be non-zero due to
