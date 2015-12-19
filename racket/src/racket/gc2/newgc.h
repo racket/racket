@@ -228,7 +228,7 @@ typedef struct NewGC {
   unsigned char inc_gen1                     :1; /* during incremental marking of old generation */
   unsigned char fnl_gen1                     :1; /* during incremental finalization of old generation */
   unsigned char during_backpointer           :1;
-  unsigned char incremental_requested        :1;
+  unsigned char incremental_requested        :4; /* counts down to track recentness of request */
   unsigned char high_fragmentation           :1;
   unsigned char unprotected_page             :1;
 

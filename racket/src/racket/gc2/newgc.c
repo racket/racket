@@ -3666,7 +3666,10 @@ void GC_request_incremental_mode(void)
 {
   NewGC *gc = GC_get_GC();
 
-  gc->incremental_requested = 1;
+  /* The request will expire gradually, so that an extra major GC will
+     be triggered if incremental mode hasn't been requested recently
+     enough: */
+  gc->incremental_requested = 8;
 }
 
 void GC_set_incremental_mode(int on)
@@ -6091,7 +6094,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   uintptr_t old_gen0;
   uintptr_t old_mem_allocated;
   int next_gc_full;
-  int do_incremental = 0, check_inc_repair;
+  int do_incremental = 0, had_started_incremental, check_inc_repair;
 
   old_mem_use = gc->memory_in_use; /* includes gc->phantom_count */
   old_gen0    = gen0_size_in_use(gc) + gc->gen0_phantom_count;
@@ -6114,7 +6117,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
                     fraction of the actual use by live data: */
                  || (gc->memory_in_use > (FULL_COLLECTION_SIZE_RATIO
                                           * gc->last_full_mem_use
-                                          * (gc->started_incremental
+                                          * (gc->incremental_requested
                                              ? INCREMENTAL_EXTRA_SIZE_RATIO
                                              : 1)))
                  /* Just in case, for a full GC every so often, unless
@@ -6134,7 +6137,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     return;
 
   next_gc_full = (gc->gc_full
-                  && !gc->started_incremental
+                  && !gc->incremental_requested
                   && !gc->full_needed_for_finalization);
 
   if (gc->full_needed_for_finalization && gc->gc_full)
@@ -6178,7 +6181,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   if (do_incremental)
     gc->started_incremental = 1;
 
-  gc->incremental_requested = 0;
+  if (gc->incremental_requested)
+    --gc->incremental_requested;
   
   gc->mark_gen1 = (gc->gc_full || gc->started_incremental) && !gc->all_marked_incremental;
   gc->check_gen1 = gc->gc_full && !gc->all_marked_incremental;
@@ -6384,12 +6388,14 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     else 
       gc->since_last_full += 10;
   }
+  had_started_incremental = gc->started_incremental;
   if (gc->gc_full) {
     gc->last_full_mem_use = gc->memory_in_use;
     gc->started_incremental = 0;
     gc->all_marked_incremental = 0;
     gc->finished_incremental = 0;
     gc->inc_prop_count = 0;
+    gc->incremental_requested = 0; /* request expires completely after a full GC */
   }
 
   /* inform the system (if it wants us to) that we're done with collection */
@@ -6401,7 +6407,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     is_master = (gc == MASTERGC);
 #endif
     park_for_inform_callback(gc);
-    gc->GC_collect_inform_callback(is_master, gc->gc_full, gc->started_incremental,
+    gc->GC_collect_inform_callback(is_master, gc->gc_full, had_started_incremental,
                                    /* original memory use: */
                                    old_mem_use + old_gen0,
                                    /* new memory use; gen0_phantom_count can be non-zero due to
@@ -6435,8 +6441,16 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   if (gc->gc_full)
     merge_run_queues(gc);
 
-  if (!gc->run_queue)
-    next_gc_full = 0;
+  if (!gc->run_queue) {
+    if (had_started_incremental) {
+      /* Keep next_gc_full, if it's set, because that means incremental
+         mode wasn't requested recently, even through we're wrapping up
+         an incremental GC; another major GC is likely to reclaim more
+         memory, reduce fragentation, and generally improve heap
+         health */
+    } else
+      next_gc_full = 0;
+  }
 
   /* Run any queued finalizers, EXCEPT in the case where this
      collection was triggered during the execution of a finalizer.
