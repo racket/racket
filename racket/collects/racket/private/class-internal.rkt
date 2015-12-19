@@ -292,21 +292,21 @@
         [field-set! (make-struct-field-mutator (class-field-set! cls) rpos)])
     (vector field-ref field-set! field-ref field-set!)))
 
-(define (field-info-extend-internal fi ppos pneg)
+(define (field-info-extend-internal fi ppos pneg neg-party)
   (let* ([old-ref (unsafe-vector-ref fi 0)]
          [old-set! (unsafe-vector-ref fi 1)])
-    (vector (λ (o) (ppos (old-ref o)))
-            (λ (o v) (old-set! o (pneg v)))
+    (vector (λ (o) (ppos (old-ref o) neg-party))
+            (λ (o v) (old-set! o (pneg v neg-party)))
             (unsafe-vector-ref fi 2)
             (unsafe-vector-ref fi 3))))
 
-(define (field-info-extend-external fi ppos pneg)
+(define (field-info-extend-external fi ppos pneg neg-party)
   (let* ([old-ref (unsafe-vector-ref fi 2)]
          [old-set! (unsafe-vector-ref fi 3)])
     (vector (unsafe-vector-ref fi 0)
             (unsafe-vector-ref fi 1)
-            (λ (o) (ppos (old-ref o)))
-            (λ (o v) (old-set! o (pneg v))))))
+            (λ (o) (ppos (old-ref o) neg-party))
+            (λ (o v) (old-set! o (pneg v neg-party))))))
 
 (define (field-info-internal-ref  fi) (unsafe-vector-ref fi 0))
 (define (field-info-internal-set! fi) (unsafe-vector-ref fi 1))

@@ -10,7 +10,7 @@
          "../contract/combinator.rkt"
          (only-in "../contract/private/arrow.rkt" making-a-method method-contract?))
 
-(provide make-class/c class/c-proj
+(provide make-class/c class/c-late-neg-proj
          blame-add-method-context blame-add-field-context blame-add-init-context
          class/c ->m ->*m ->dm case->m object/c instanceof/c
          make-wrapper-object
@@ -18,7 +18,7 @@
          (for-syntax parse-class/c-specs)
          (struct-out internal-class/c)
          just-check-existence just-check-existence?
-         build-internal-class/c internal-class/c-proj
+         build-internal-class/c internal-class/c-late-neg-proj
          class/c-internal-name-clauses
          dynamic-object/c)
 
@@ -143,31 +143,31 @@
   
   #t)
 
-(define (class/c-proj ctc)
-  (define ep (class/c-external-proj ctc))
-  (define ip (internal-class/c-proj (class/c-internal ctc)))
+(define (class/c-late-neg-proj ctc)
+  (define ep (class/c-external-late-neg-proj ctc))
+  (define ip (internal-class/c-late-neg-proj (class/c-internal ctc)))
   (λ (blame)
     (define eb (ep blame))
     (define ib (ip blame))
-    (λ (val)
-      (ib (eb val)))))
+    (λ (val neg-party)
+      (ib (eb val neg-party) neg-party))))
 
-(define (class/c-external-proj ctc)
+(define (class/c-external-late-neg-proj ctc)
   (define ctc-methods (class/c-methods ctc))
   (λ (blame)
     (define public-method-projections
       (for/list ([name (in-list ctc-methods)]
                  [c (in-list (class/c-method-contracts ctc))])
         (and c
-             ((contract-projection c) (blame-add-method-context blame name)))))
+             ((contract-late-neg-projection c) (blame-add-method-context blame name)))))
     
     (define external-field-projections
       (for/list ([f (in-list (class/c-fields ctc))]
                  [c (in-list (class/c-field-contracts ctc))])
         (and c
-             (let ([p-pos ((contract-projection c)
+             (let ([p-pos ((contract-late-neg-projection c)
                            (blame-add-field-context blame f #:swap? #f))]
-                   [p-neg ((contract-projection c)
+                   [p-neg ((contract-late-neg-projection c)
                            (blame-add-field-context blame f #:swap? #t))])
                (cons p-pos p-neg)))))
     
@@ -176,12 +176,14 @@
       (for/list ([init (in-list (class/c-inits ctc))]
                  [ctc (in-list (class/c-init-contracts ctc))])
         (if ctc
-            (list init ((contract-projection ctc) 
+            (list init ((contract-late-neg-projection ctc) 
                         (blame-add-init-context blame init)))
             (list init #f))))
     
-    (λ (cls)
-      (class/c-check-first-order ctc cls (λ args (apply raise-blame-error blame cls args)))
+    (λ (cls neg-party)
+      (class/c-check-first-order
+       ctc cls
+       (λ args (apply raise-blame-error blame #:missing-party neg-party cls args)))
       (let* ([name (class-name cls)]
              [never-wrapped? (eq? (class-orig-cls cls) cls)]
              ;; Only add a new slot if we're not projecting an already contracted class.
@@ -296,7 +298,9 @@
                 ;; we're passing through a contract boundary, so the positive blame (aka
                 ;; value server) is taking responsibility for any interface-contracted
                 ;; methods)
-                (define info (replace-ictc-blame (cadr entry) #f (blame-positive blame)))
+                (define info (replace-ictc-blame
+                              (cadr entry) #f
+                              (blame-positive (blame-add-missing-party blame neg-party))))
                 (vector-set! methods i (concretize-ictc-method m (car entry) info)))))
           ;; Now apply projections
           (for ([m (in-list ctc-methods)]
@@ -304,7 +308,7 @@
             (when p
               (define i (hash-ref method-ht m))
               (define mp (vector-ref methods i))
-              (vector-set! methods i (make-method (p mp) m)))))
+              (vector-set! methods i (make-method (p mp neg-party) m)))))
         
         ;; Handle external field contracts
         (unless no-field-ctcs?
@@ -314,7 +318,7 @@
               (define fi (hash-ref field-ht f))
               (define p-pos (car p-pr))
               (define p-neg (cdr p-pr))
-              (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
+              (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg neg-party)))))
         
         ;; Unlike the others, we always want to do this, even if there are no init contracts,
         ;; since we still need to handle either calling the previous class/c's init or
@@ -351,7 +355,7 @@
                    (loop (cdr init-args)
                          (cdr inits/c)
                          (cons (cons (car init-arg) (if p
-                                                        (p (cdr init-arg))
+                                                        (p (cdr init-arg) neg-party)
                                                         (cdr init-arg)))
                                handled-args)))]
                 [else (loop (cdr init-args)
@@ -376,7 +380,7 @@
         
         (copy-seals cls c)))))
 
-(define (internal-class/c-proj internal-ctc)
+(define (internal-class/c-late-neg-proj internal-ctc)
   (define dynamic-features
     (append (internal-class/c-overrides internal-ctc)
             (internal-class/c-augments internal-ctc)
@@ -393,26 +397,27 @@
       (for/list ([name (in-list (internal-class/c-supers internal-ctc))]
                  [c (in-list (internal-class/c-super-contracts internal-ctc))])
         (and c
-             ((contract-projection c) (blame-add-method-context blame name)))))
+             ((contract-late-neg-projection c) (blame-add-method-context blame name)))))
     (define inner-projections
       (for/list ([name (in-list (internal-class/c-inners internal-ctc))]
                  [c (in-list (internal-class/c-inner-contracts internal-ctc))])
         (and c
-             ((contract-projection c) (blame-add-method-context bswap name)))))
+             ((contract-late-neg-projection c) (blame-add-method-context bswap name)))))
     
     (define internal-field-projections
       (for/list ([f (in-list (internal-class/c-inherit-fields internal-ctc))]
                  [c (in-list (internal-class/c-inherit-field-contracts internal-ctc))])
         (and c
-             (let ([p-pos ((contract-projection c) blame)]
-                   [p-neg ((contract-projection c) bswap)])
+             (let* ([blame-acceptor (contract-late-neg-projection c)]
+                    [p-pos (blame-acceptor blame)]
+                    [p-neg (blame-acceptor bswap)])
                (cons p-pos p-neg)))))
     
     (define override-projections
       (for/list ([m (in-list (internal-class/c-overrides internal-ctc))]
                  [c (in-list (internal-class/c-override-contracts internal-ctc))])
         (and c
-             ((contract-projection c) (blame-add-method-context bswap m)))))
+             ((contract-late-neg-projection c) (blame-add-method-context bswap m)))))
     
     (define augment/augride-projections
       (for/list ([m (in-list (append (internal-class/c-augments internal-ctc)
@@ -420,17 +425,19 @@
                  [c (in-list (append (internal-class/c-augment-contracts internal-ctc)
                                      (internal-class/c-augride-contracts internal-ctc)))])
         (and c
-             ((contract-projection c) (blame-add-method-context blame m)))))
+             ((contract-late-neg-projection c) (blame-add-method-context blame m)))))
     
     (define inherit-projections
       (for/list ([m (in-list (internal-class/c-inherits internal-ctc))]
                  [c (in-list (internal-class/c-inherit-contracts internal-ctc))])
         (and c
-             ((contract-projection c) (blame-add-method-context blame m)))))
-    (λ (cls)
+             ((contract-late-neg-projection c) (blame-add-method-context blame m)))))
+    (λ (cls neg-party)
       (internal-class/c-check-first-order internal-ctc
                                           cls 
-                                          (λ args (apply raise-blame-error blame cls args)))
+                                          (λ args (apply raise-blame-error
+                                                         #:missing-party neg-party
+                                                         blame cls args)))
       
       (let* ([name (class-name cls)]
              [never-wrapped? (eq? (class-orig-cls cls) cls)]
@@ -563,7 +570,7 @@
             (when p
               (define i (hash-ref method-ht m))
               (define mp (vector-ref super-methods i))
-              (vector-set! super-methods i (make-method (p mp) m)))))
+              (vector-set! super-methods i (make-method (p mp neg-party) m)))))
         
         ;; Add inner projections
         (unless (null? (internal-class/c-inners internal-ctc))
@@ -573,7 +580,7 @@
             (when p
               (define i (hash-ref method-ht m))
               (define old-proj (vector-ref inner-projs i))
-              (vector-set! inner-projs i (λ (v) (old-proj (p v)))))))
+              (vector-set! inner-projs i (λ (v) (old-proj (p v neg-party)))))))
         
         ;; Handle external field contracts
         (unless no-field-ctcs?
@@ -583,7 +590,7 @@
               (define fi (hash-ref field-ht f))
               (define p-pos (car p-pr))
               (define p-neg (cdr p-pr))
-              (hash-set! field-ht f (field-info-extend-internal fi p-pos p-neg)))))
+              (hash-set! field-ht f (field-info-extend-internal fi p-pos p-neg neg-party)))))
         
         ;; Now the trickiest of them all, internal dynamic dispatch.
         ;; First we update any dynamic indexes, as applicable.
@@ -628,7 +635,7 @@
                        [old-idx (vector-ref old-idxs i)]
                        [proj-vec (vector-ref dynamic-projs i)]
                        [old-proj (vector-ref proj-vec old-idx)])
-                  (vector-set! proj-vec old-idx (λ (v) (old-proj (p v))))))))
+                  (vector-set! proj-vec old-idx (λ (v) (old-proj (p v neg-party))))))))
           
           ;; For augment and augride contracts, we both update the projection
           ;; and go ahead and apply the projection to the last slot (which will
@@ -645,9 +652,9 @@
                        [proj-vec (vector-ref dynamic-projs i)]
                        [int-vec (vector-ref int-methods i)]
                        [old-proj (vector-ref proj-vec old-idx)])
-                  (vector-set! proj-vec old-idx (λ (v) (p (old-proj v))))
+                  (vector-set! proj-vec old-idx (λ (v) (p (old-proj v) neg-party)))
                   (vector-set! int-vec new-idx
-                               (make-method (p (vector-ref int-vec new-idx)) m))))))
+                               (make-method (p (vector-ref int-vec new-idx) neg-party) m))))))
           
           ;; Now (that things have been extended appropriately) we handle
           ;; inherits.
@@ -659,7 +666,7 @@
                        [new-idx (vector-ref dynamic-idxs i)]
                        [int-vec (vector-ref int-methods i)])
                   (vector-set! int-vec new-idx
-                               (make-method (p (vector-ref int-vec new-idx)) m)))))))
+                               (make-method (p (vector-ref int-vec new-idx) neg-party) m)))))))
         
         ;; Unlike the others, we always want to do this, even if there are no init contracts,
         ;; since we still need to handle either calling the previous class/c's init or
@@ -943,7 +950,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
-   #:projection class/c-proj
+   #:late-neg-projection class/c-late-neg-proj
    #:name build-class/c-name
    #:stronger class/c-stronger
    #:first-order
@@ -1207,23 +1214,26 @@
           #:key (compose symbol->string car)))
   (values (map car sorted) (map cdr sorted)))
 
-(define (instanceof/c-proj ctc)
+(define (instanceof/c-late-neg-proj ctc)
   (define proj
     (if (base-instanceof/c? ctc)
-        (contract-projection (base-instanceof/c-class-ctc ctc))
-        (object/c-class-proj ctc)))
+        (contract-late-neg-projection (base-instanceof/c-class-ctc ctc))
+        (object/c-late-neg-class-proj ctc)))
   (λ (blame)
     (define p (proj (blame-add-context blame #f)))
-    (λ (val)
+    (λ (val neg-party)
       (unless (object? val)
-        (raise-blame-error blame val '(expected: "an object" given: "~e") val))
+        (raise-blame-error blame #:missing-party neg-party
+                           val '(expected: "an object" given: "~e") val))
       (when (base-object/c? ctc)
         (check-object-contract val
                                (base-object/c-methods ctc)
                                (base-object/c-fields ctc)
-                               (λ args (apply raise-blame-error blame val args))))
+                               (λ args (apply raise-blame-error blame #:missing-party neg-party
+                                              val args))))
       (define original-obj (if (has-original-object? val) (original-object val) val))
-      (define new-cls (p (object-ref val)))
+      (define new-cls (p (object-ref val) neg-party))
+      (define p-closed-over-neg-party (λ (v) (p v neg-party)))
       (cond
         [(impersonator-prop:has-wrapped-class-neg-party? new-cls)
          (define the-info (impersonator-prop:get-wrapped-class-info new-cls))
@@ -1266,7 +1276,7 @@
                      '())))
          
          (define all-new-projs
-           (cons p
+           (cons p-closed-over-neg-party
                  (if (has-impersonator-prop:instanceof/c-projs? val)
                      (get-impersonator-prop:instanceof/c-projs val)
                      '())))
@@ -1375,7 +1385,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
-   #:projection instanceof/c-proj
+   #:late-neg-projection instanceof/c-late-neg-proj
    #:name
    (λ (ctc)
      (build-compound-type-name 'instanceof/c (base-instanceof/c-class-ctc ctc)))
@@ -1411,15 +1421,15 @@
    method-names (coerce-contracts 'dynamic-object/c method-contracts)
    field-names (coerce-contracts 'dynamic-object/c field-contracts)))
 
-(define (object/c-class-proj ctc)
+(define (object/c-late-neg-class-proj ctc)
   (define methods (base-object/c-methods ctc))
   (define method-contracts (base-object/c-method-contracts ctc))
   (define fields (base-object/c-fields ctc))
   (define field-contracts (base-object/c-field-contracts ctc))
   (λ (blame)
-    (λ (val)
+    (λ (val neg-party)
       (make-wrapper-class
-       val blame
+       val blame neg-party
        methods method-contracts fields field-contracts))))
 
 (define (check-object-contract obj methods fields fail)
@@ -1477,7 +1487,7 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
-   #:projection instanceof/c-proj
+   #:late-neg-projection instanceof/c-late-neg-proj
    #:name
    (λ (ctc)
      (let* ([pair-ids-ctcs
@@ -1518,18 +1528,18 @@
 ;; make-wrapper-object: contract object blame 
 ;;                      (listof symbol) (listof contract?) (listof symbol) (listof contract?)
 ;;                   -> wrapped object
-(define (make-wrapper-object ctc obj blame methods method-contracts fields field-contracts)
+(define (make-wrapper-object ctc obj blame neg-party methods method-contracts fields field-contracts)
   (check-object-contract obj methods fields (λ args (apply raise-blame-error blame obj args)))
   (let ([original-obj (if (has-original-object? obj) (original-object obj) obj)]
         [new-cls (make-wrapper-class (object-ref obj)  ;; TODO: object-ref audit
-                                     blame
+                                     blame neg-party
                                      methods method-contracts fields field-contracts)])
     (impersonate-struct obj object-ref (λ (o c) new-cls) ;; TODO: object-ref audit
                         impersonator-prop:contracted ctc
                         impersonator-prop:original-object original-obj)))
 
 
-(define (make-wrapper-class cls blame methods method-contracts fields field-contracts)
+(define (make-wrapper-class cls blame neg-party methods method-contracts fields field-contracts)
   (let* ([name (class-name cls)]
          [method-width (class-method-width cls)]
          [method-ht (class-method-ht cls)]
@@ -1625,9 +1635,10 @@
             [c (in-list method-contracts)])
         (when c
           (let ([i (hash-ref method-ht m)]
-                [p ((contract-projection c) (blame-add-context blame (format "the ~a method in" m)
-                                                               #:important m))])
-            (vector-set! meths i (make-method (p (vector-ref meths i)) m))))))
+                [p ((contract-late-neg-projection c)
+                    (blame-add-context blame (format "the ~a method in" m)
+                                       #:important m))])
+            (vector-set! meths i (make-method (p (vector-ref meths i) neg-party) m))))))
     
     ;; Handle external field contracts
     (unless (null? fields)
@@ -1635,8 +1646,9 @@
             [c (in-list field-contracts)])
         (unless (just-check-existence? c)
           (define fi (hash-ref field-ht f))
-          (define p-pos ((contract-projection c) (blame-add-field-context blame f #:swap? #f)))
-          (define p-neg ((contract-projection c) (blame-add-field-context blame f #:swap? #t)))
-          (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg)))))
+          (define prj (contract-late-neg-projection c))
+          (define p-pos (prj (blame-add-field-context blame f #:swap? #f)))
+          (define p-neg (prj (blame-add-field-context blame f #:swap? #t)))
+          (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg neg-party)))))
     
     (copy-seals cls c)))
