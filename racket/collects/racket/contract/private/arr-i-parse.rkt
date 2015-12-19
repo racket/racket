@@ -20,12 +20,13 @@ code does the parsing and validation of the syntax.
 
 |#
 
+;; istx-is-chaperone-contract? : boolean?
 ;; args : (listof arg?)
 ;; rst  : (or/c #f arg/res?)
 ;; pre  : (listof pre/post?)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (listof pre/post?)
-(struct istx (args rst pre ress post) #:transparent)
+(struct istx (is-chaperone-contract? args rst pre ress post) #:transparent)
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
 ;;       but only temporarily; in that case, a syntax error
 ;;       is signaled and the istx struct is not used afterwards
@@ -59,11 +60,13 @@ code does the parsing and validation of the syntax.
 (define (parse-->i stx)
   (if (identifier? stx)
       (raise-syntax-error #f "expected ->i to follow an open parenthesis" stx)
-      (let-values ([(raw-mandatory-doms raw-optional-doms
-                                        id/rest-id pre-cond range post-cond)
+      (let-values ([(is-chaperone-contract?
+                     raw-mandatory-doms raw-optional-doms
+                     id/rest-id pre-cond range post-cond)
                     (pull-out-pieces stx)])
         (let ([candidate
-               (istx (append (parse-doms stx #f raw-mandatory-doms)
+               (istx is-chaperone-contract?
+                     (append (parse-doms stx #f raw-mandatory-doms)
                              (parse-doms stx #t raw-optional-doms))
                      id/rest-id
                      pre-cond
@@ -393,12 +396,26 @@ code does the parsing and validation of the syntax.
 ;; pull-out-pieces :
 ;; stx -> (values raw-mandatory-doms raw-optional-doms id/rest-id pre-cond range post-cond) 
 (define (pull-out-pieces stx)
-  (let*-values ([(raw-mandatory-doms leftover) 
+  (let*-values ([(is-chaperone-contract? leftover)
                  (syntax-case stx ()
-                   [(_ (raw-mandatory-doms ...) . leftover)
+                   [(_ #:chaperone . leftover)
+                    (values #t #'leftover)]
+                   [(_ . leftover)
+                    (let ([lst (syntax->list stx)])
+                      (when (null? (cdr lst))
+                        (raise-syntax-error #f "expected a sequence of mandatory domain elements"
+                                            stx))
+                      (when (keyword? (syntax-e (cadr lst)))
+                        (raise-syntax-error #f "unknown keyword"
+                                            stx
+                                            (cadr lst)))
+                      (values #f #'leftover))])]
+                [(raw-mandatory-doms leftover)
+                 (syntax-case leftover ()
+                   [((raw-mandatory-doms ...) . leftover)
                     (values (syntax->list #'(raw-mandatory-doms ...)) 
                             #'leftover)]
-                   [(_ a . leftover)
+                   [(a . leftover)
                     (raise-syntax-error #f 
                                         "expected a sequence of mandatory domain elements"
                                         stx #'a)]
@@ -604,7 +621,9 @@ code does the parsing and validation of the syntax.
                       (values (reverse post-conds) leftover)]))])
     (syntax-case leftover ()
       [() 
-       (values raw-mandatory-doms raw-optional-doms id/rest-id pre-conds range post-conds)]
+       (values is-chaperone-contract?
+               raw-mandatory-doms raw-optional-doms id/rest-id pre-conds
+               range post-conds)]
       [(a . b)
        (raise-syntax-error #f "bad syntax" stx #'a)]
       [_

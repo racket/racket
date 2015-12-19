@@ -2,7 +2,7 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace)])
+                (make-basic-contract-namespace 'racket/contract/parametric)])
   (define exn:fail:contract:blame? (contract-eval 'exn:fail:contract:blame?))
 
   (test/no-error '(->i ([x integer?]) ([y integer?]) any))
@@ -1397,4 +1397,31 @@
      1))
   
   ;; this used to cause a runtime error in the code that parses ->i
-  (test/no-error '(->i ([x () any/c] [y (x) any/c]) any)))
+  (test/no-error '(->i ([x () any/c] [y (x) any/c]) any))
+
+  (test/spec-passed/result
+   'really-chaperones.1
+   '(let ([f (λ () 1)])
+      (chaperone-of?
+       (contract (->i #:chaperone () any) f 'pos 'neg)
+       f))
+   #t)
+
+  (test/spec-passed/result
+   'really-chaperones.2
+   '(let ([f (λ () 1)])
+      (chaperone-of?
+       (contract (->i () [_ (new-∀/c)]) f 'pos 'neg)
+       f))
+   #f)
+
+  (test/spec-passed/result
+   'really-chaperones.3
+   '(with-handlers ([exn:fail?
+                     (λ (x)
+                       (regexp-match? #rx"^->i:.*chaperone" (exn-message x)))])
+      ((contract (->i #:chaperone ([x integer?] [y (x) (new-∀/c)]) any)
+                 (λ (x y) x)
+                 'pos 'neg) 1 2)
+      "didn't raise an error")
+   #t))

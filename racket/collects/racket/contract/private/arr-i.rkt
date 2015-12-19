@@ -27,7 +27,7 @@
 
 (provide (rename-out [->i/m ->i]))
 
-(define (build-??-args ctc blame)
+(define (build-??-args c-or-i-procedure ctc blame)
   (define arg-ctc-projs (map (λ (x) (contract-projection (->i-arg-contract x))) (->i-arg-ctcs ctc)))
   (define indy-arg-ctc-projs (map (λ (x) (contract-projection (cdr x)))
                                   (->i-indy-arg-ctcs ctc)))
@@ -81,7 +81,8 @@
                [rng-pr (in-list (->i-indy-rng-ctcs ctc))])
       (rng-proj (blame-add-context indy-rng-blame (format "the ~a result of" 
                                                           (car rng-pr))))))
-  (list* (λ (val mtd?)
+  (list* c-or-i-procedure
+         (λ (val mtd?)
            (if has-rest
                (check-procedure/more val mtd?
                                      (->i-mandatory-args ctc) 
@@ -104,10 +105,10 @@
                  partial-indy-rngs)))
 
 (define arr->i-proj
-  (λ (ctc) 
+  (λ (ctc c-or-i-procedure)
     (define func (->i-mk-wrapper ctc))
     (λ (blame)
-      (define ???-args (build-??-args ctc blame))
+      (define ???-args (build-??-args c-or-i-procedure ctc blame))
       (apply func ???-args))))
 
 
@@ -183,140 +184,160 @@
              pre/post-procs
              mandatory-args opt-args mandatory-kwds opt-kwds rest
              mtd? here mk-wrapper mk-val-first-wrapper name-info)
-        #:property prop:custom-write custom-write-property-proc
-        #:property prop:contract
-        (build-contract-property
-         #:val-first-projection
-         (λ (ctc)
-           (define blame-accepting-proj (arr->i-proj ctc))
-           (λ (blame)
-             (λ (val)
-               (wrapped-extra-arg-arrow
-                (λ (neg-party)
-                  ((blame-accepting-proj (blame-add-missing-party blame neg-party)) val))
-                (->i-mk-val-first-wrapper ctc)))))
-         #:late-neg-projection
-         (λ (ctc)
-           (define blame-accepting-proj (arr->i-proj ctc))
-           (λ (blame)
-             (λ (val neg-party)
-               ((blame-accepting-proj (blame-add-missing-party blame neg-party)) val))))
-         #:projection arr->i-proj
-         #:name (λ (ctc) 
-                  (define (arg/ress->spec infos ctcs dep-ctcs skip?)
-                    (let loop ([infos infos]
-                               [ctcs ctcs]
-                               [dep-ctcs dep-ctcs])
-                      (cond
-                        [(null? infos) '()]
-                        [else 
-                         (let* ([info (car infos)]
-                                [dep/nodep (list-ref info 0)]
-                                [var (list-ref info 1)]
-                                [vars (list-ref info 2)]
-                                [kwd (list-ref info 3)])
-                           (case dep/nodep
-                             [(nodep)
-                              (if (skip? info)
-                                  (loop (cdr infos) (cdr ctcs) dep-ctcs)
-                                  `(,@(if kwd
-                                          (list kwd)
-                                          (list))
-                                    [,var ,(contract-name (car ctcs))]
-                                    .
-                                    ,(loop (cdr infos) (cdr ctcs) dep-ctcs)))]
-                             [(dep)
-                              (define body-src (list-ref info 5))
-                              (if (skip? info)
-                                  (loop (cdr infos) ctcs (cdr dep-ctcs))
-                                  `(,@(if kwd
-                                          (list kwd)
-                                          (list))
-                                    [,var ,vars ,body-src]
-                                    .
-                                    ,(loop (cdr infos) ctcs (cdr dep-ctcs))))]))])))
-                  (let* ([name-info (->i-name-info ctc)]
-                         [args-info (vector-ref name-info 0)]
-                         [rest-info (vector-ref name-info 1)]
-                         [pre-infos  (vector-ref name-info 2)]
-                         [rng-info  (vector-ref name-info 3)]
-                         [post-infos (vector-ref name-info 4)])
-                    `(->i ,(arg/ress->spec args-info
-                                           (map ->i-arg-contract (->i-arg-ctcs ctc))
-                                           (->i-arg-dep-ctcs ctc)
-                                           (λ (x) (list-ref x 4)))
-                          ,@(let ([rests (arg/ress->spec args-info
-                                                         (map ->i-arg-contract (->i-arg-ctcs ctc))
-                                                         (->i-arg-dep-ctcs ctc)
-                                                         (λ (x) (not (list-ref x 4))))])
-                              (if (null? rests)
-                                  '()
-                                  (list rests)))
-                          ,@(if rest-info
-                                (case (car rest-info)
-                                  [(nodep) `(#:rest 
-                                             [,(list-ref rest-info 1)
-                                              ,(contract-name
-                                                (car 
-                                                 (reverse
-                                                  (map ->i-arg-contract (->i-arg-ctcs ctc)))))])]
-                                  [(dep) `(#:rest [,(list-ref rest-info 1)
-                                                   ,(list-ref rest-info 2)
-                                                   ,(list-ref rest-info 3)])])
-                                '())
-                          ,@(apply
-                             append
-                             (for/list ([pre-info pre-infos])
-                               (define ids (list-ref pre-info 0))
-                               (define name (list-ref pre-info 1))
-                               (define code (list-ref pre-info 2))
-                               (cond
-                                 [(string? name)
-                                  `(#:pre/name ,ids ,name ,code)]
-                                 [(equal? name 'bool)
-                                  `(#:pre ,ids ,code)]
-                                 [(equal? name 'desc)
-                                  `(#:pre/desc ,ids ,code)])))
-                          ,(cond
-                             [(not rng-info)
-                              'any]
-                             [else
-                              (let ([infos (arg/ress->spec rng-info
-                                                           (map cdr (->i-rng-ctcs ctc))
-                                                           (->i-rng-dep-ctcs ctc)
-                                                           (λ (x) #f))])
-                                (cond
-                                  [(or (null? infos) (not (null? (cdr infos))))
-                                   `(values ,@infos)]
-                                  [else
-                                   (car infos)]))])
-                          ,@(apply
-                             append
-                             (for/list ([post-info post-infos])
-                               (define ids (list-ref post-info 0))
-                               (define name (list-ref post-info 1))
-                               (define code (list-ref post-info 2))
-                               (cond
-                                 [(string? name)
-                                  `(#:post/name ,ids ,name ,code)]
-                                 [(equal? name 'bool)
-                                  `(#:post ,ids ,code)]
-                                 [(equal? name 'desc)
-                                  `(#:post/desc ,ids ,code)]))))))
-         #:first-order
-         (λ (ctc)
-             (let ([has-rest (->i-rest ctc)]
-                   [mtd? (->i-mtd? ctc)]
-                   [mand-args (->i-mandatory-args ctc)]
-                   [opt-args (->i-opt-args ctc)]
-                   [mand-kwds (->i-mandatory-kwds ctc)]
-                   [opt-kwds (->i-opt-kwds ctc)])
-               (λ (val)
-                 (if has-rest
-                     (check-procedure/more val mtd? mand-args mand-kwds opt-kwds #f #f)
-                     (check-procedure val mtd? mand-args opt-args mand-kwds opt-kwds #f #f)))))
-         #:exercise exercise->i
-         #:stronger (λ (this that) (eq? this that)))) ;; WRONG
+        #:property prop:custom-write custom-write-property-proc)
+
+(define (mk-prop chaperone?)
+  (define c-or-i-procedure (if chaperone? chaperone-procedure impersonate-procedure))
+  ((if chaperone? build-chaperone-contract-property build-contract-property)
+   #:val-first-projection
+   (λ (ctc)
+     (define blame-accepting-proj (arr->i-proj ctc c-or-i-procedure))
+     (λ (blame)
+       (λ (val)
+         (wrapped-extra-arg-arrow
+          (λ (neg-party)
+            ((blame-accepting-proj (blame-add-missing-party blame neg-party)) val))
+          (->i-mk-val-first-wrapper ctc)))))
+   #:late-neg-projection
+   (λ (ctc)
+     (define blame-accepting-proj (arr->i-proj ctc c-or-i-procedure))
+     (λ (blame)
+       (λ (val neg-party)
+         ((blame-accepting-proj (blame-add-missing-party blame neg-party)) val))))
+   #:projection (λ (ctc) (arr->i-proj ctc c-or-i-procedure))
+   #:name (λ (ctc)
+            (define (arg/ress->spec infos ctcs dep-ctcs skip?)
+              (let loop ([infos infos]
+                         [ctcs ctcs]
+                         [dep-ctcs dep-ctcs])
+                (cond
+                  [(null? infos) '()]
+                  [else
+                   (let* ([info (car infos)]
+                          [dep/nodep (list-ref info 0)]
+                          [var (list-ref info 1)]
+                          [vars (list-ref info 2)]
+                          [kwd (list-ref info 3)])
+                     (case dep/nodep
+                       [(nodep)
+                        (if (skip? info)
+                            (loop (cdr infos) (cdr ctcs) dep-ctcs)
+                            `(,@(if kwd
+                                    (list kwd)
+                                    (list))
+                              [,var ,(contract-name (car ctcs))]
+                              .
+                              ,(loop (cdr infos) (cdr ctcs) dep-ctcs)))]
+                       [(dep)
+                        (define body-src (list-ref info 5))
+                        (if (skip? info)
+                            (loop (cdr infos) ctcs (cdr dep-ctcs))
+                            `(,@(if kwd
+                                    (list kwd)
+                                    (list))
+                              [,var ,vars ,body-src]
+                              .
+                              ,(loop (cdr infos) ctcs (cdr dep-ctcs))))]))])))
+            (let* ([name-info (->i-name-info ctc)]
+                   [args-info (vector-ref name-info 0)]
+                   [rest-info (vector-ref name-info 1)]
+                   [pre-infos  (vector-ref name-info 2)]
+                   [rng-info  (vector-ref name-info 3)]
+                   [post-infos (vector-ref name-info 4)])
+              `(->i ,(arg/ress->spec args-info
+                                     (map ->i-arg-contract (->i-arg-ctcs ctc))
+                                     (->i-arg-dep-ctcs ctc)
+                                     (λ (x) (list-ref x 4)))
+                    ,@(let ([rests (arg/ress->spec args-info
+                                                   (map ->i-arg-contract (->i-arg-ctcs ctc))
+                                                   (->i-arg-dep-ctcs ctc)
+                                                   (λ (x) (not (list-ref x 4))))])
+                        (if (null? rests)
+                            '()
+                            (list rests)))
+                    ,@(if rest-info
+                          (case (car rest-info)
+                            [(nodep) `(#:rest
+                                       [,(list-ref rest-info 1)
+                                        ,(contract-name
+                                          (car
+                                           (reverse
+                                            (map ->i-arg-contract (->i-arg-ctcs ctc)))))])]
+                            [(dep) `(#:rest [,(list-ref rest-info 1)
+                                             ,(list-ref rest-info 2)
+                                             ,(list-ref rest-info 3)])])
+                          '())
+                    ,@(apply
+                       append
+                       (for/list ([pre-info pre-infos])
+                         (define ids (list-ref pre-info 0))
+                         (define name (list-ref pre-info 1))
+                         (define code (list-ref pre-info 2))
+                         (cond
+                           [(string? name)
+                            `(#:pre/name ,ids ,name ,code)]
+                           [(equal? name 'bool)
+                            `(#:pre ,ids ,code)]
+                           [(equal? name 'desc)
+                            `(#:pre/desc ,ids ,code)])))
+                    ,(cond
+                       [(not rng-info)
+                        'any]
+                       [else
+                        (let ([infos (arg/ress->spec rng-info
+                                                     (map cdr (->i-rng-ctcs ctc))
+                                                     (->i-rng-dep-ctcs ctc)
+                                                     (λ (x) #f))])
+                          (cond
+                            [(or (null? infos) (not (null? (cdr infos))))
+                             `(values ,@infos)]
+                            [else
+                             (car infos)]))])
+                    ,@(apply
+                       append
+                       (for/list ([post-info post-infos])
+                         (define ids (list-ref post-info 0))
+                         (define name (list-ref post-info 1))
+                         (define code (list-ref post-info 2))
+                         (cond
+                           [(string? name)
+                            `(#:post/name ,ids ,name ,code)]
+                           [(equal? name 'bool)
+                            `(#:post ,ids ,code)]
+                           [(equal? name 'desc)
+                            `(#:post/desc ,ids ,code)]))))))
+   #:first-order
+   (λ (ctc)
+     (let ([has-rest (->i-rest ctc)]
+           [mtd? (->i-mtd? ctc)]
+           [mand-args (->i-mandatory-args ctc)]
+           [opt-args (->i-opt-args ctc)]
+           [mand-kwds (->i-mandatory-kwds ctc)]
+           [opt-kwds (->i-opt-kwds ctc)])
+       (λ (val)
+         (if has-rest
+             (check-procedure/more val mtd? mand-args mand-kwds opt-kwds #f #f)
+             (check-procedure val mtd? mand-args opt-args mand-kwds opt-kwds #f #f)))))
+   #:exercise exercise->i
+   #:stronger (λ (this that) (eq? this that)))) ;; WRONG
+
+(struct chaperone->i ->i () #:property prop:chaperone-contract (mk-prop #t))
+(struct impersonator->i ->i () #:property prop:contract (mk-prop #f))
+(define (make-->i is-chaperone-contract? blame-info
+                  arg-ctcs arg-dep-ctcs indy-arg-ctcs
+                  rng-ctcs rng-dep-ctcs indy-rng-ctcs
+                  pre/post-procs
+                  mandatory-args opt-args mandatory-kwds opt-kwds rest
+                  mtd? here mk-wrapper mk-val-first-wrapper name-info)
+  (define maker (if is-chaperone-contract? chaperone->i impersonator->i))
+  (maker blame-info
+         arg-ctcs arg-dep-ctcs indy-arg-ctcs
+         rng-ctcs rng-dep-ctcs indy-rng-ctcs
+         pre/post-procs
+         mandatory-args opt-args mandatory-kwds opt-kwds rest
+         mtd? here mk-wrapper mk-val-first-wrapper name-info))
+
+
 
 ;; find-ordering : (listof arg) -> (values (listof arg) (listof number)) 
 ;; sorts the arguments according to the dependency order.
@@ -655,7 +676,7 @@ evaluted left-to-right.)
 ;; adds nested lets that bind the wrapper-args and the indy-arg/res-vars to projected values, 
 ;; with 'body' in the body of the let also handles adding code to check to see if unsupplied
 ;; args are present (skipping the contract check, if so) 
-(define-for-syntax (add-wrapper-let body swapped-blame? neg-calls?
+(define-for-syntax (add-wrapper-let body is-chaperone-contract? swapped-blame? neg-calls?
                                     ordered-arg/reses indicies
                                     arg/res-proj-vars indy-arg/res-proj-vars 
                                     wrapper-arg/ress indy-arg/res-vars
@@ -706,11 +727,12 @@ evaluted left-to-right.)
                     wrapper-arg
                     (cond
                       [(and (eres? an-arg/res) (arg/res-vars an-arg/res))
-                       #`(un-dep #,(eres-eid an-arg/res) 
-                                 #,wrapper-arg
-                                 #,(build-blame-identifier #f 
-                                                           swapped-blame? 
-                                                           (arg/res-var an-arg/res)))]
+                       #`(#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
+                          #,(eres-eid an-arg/res)
+                          #,wrapper-arg
+                          #,(build-blame-identifier #f 
+                                                    swapped-blame? 
+                                                    (arg/res-var an-arg/res)))]
                       [(arg/res-vars an-arg/res)
                        #`(#,arg/res-proj-var 
                           #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars 
@@ -789,6 +811,7 @@ evaluted left-to-right.)
             #,(add-wrapper-let 
                (add-post-cond an-istx indy-arg-vars ordered-args indy-res-vars ordered-ress
                               #`(values #,@(vector->list wrapper-ress)))
+               (istx-is-chaperone-contract? an-istx)
                #f #f
                ordered-ress res-indices
                res-proj-vars indy-res-proj-vars 
@@ -868,6 +891,7 @@ evaluted left-to-right.)
         (istx-rst an-istx)
         wrapper-args
         this-param)))
+     (istx-is-chaperone-contract? an-istx)
      #t #f
      ordered-args arg-indices
      arg-proj-vars indy-arg-proj-vars 
@@ -879,7 +903,7 @@ evaluted left-to-right.)
      #`(λ #,wrapper-proc-arglist
          (λ (val)
            (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
-           (impersonate-procedure
+           (c-or-i-procedure
             val
             (let ([arg-checker
                    (λ #,(args/vars->arglist an-istx wrapper-args this-param)
@@ -954,7 +978,7 @@ evaluted left-to-right.)
                                                     '()))))
   
   (define wrapper-proc-arglist
-    #`(chk ctc blame swapped-blame #,@(map car blame-ids)
+    #`(c-or-i-procedure chk ctc blame swapped-blame #,@(map car blame-ids)
            
            ;; the pre- and post-condition procs
            #,@(for/list ([pres (istx-pre an-istx)]
@@ -1028,7 +1052,7 @@ evaluted left-to-right.)
   (define this-param (and (syntax-parameter-value #'making-a-method)
                           (car (generate-temporaries '(this)))))
   
-  #`(λ #,wrapper-proc-arglist 
+  #`(λ #,wrapper-proc-arglist
       (λ (f)
         (λ (neg-party #,@(args/vars->arglist an-istx wrapper-args this-param))
           #,(add-wrapper-let 
@@ -1037,6 +1061,7 @@ evaluted left-to-right.)
               (istx-rst an-istx)
               wrapper-args
               this-param)
+             (istx-is-chaperone-contract? an-istx)
              #t #t
              ordered-args arg-indices
              arg-proj-vars indy-arg-proj-vars 
@@ -1059,8 +1084,17 @@ evaluted left-to-right.)
       #`(f #,@argument-list)))
 
 (begin-encourage-inline
-  (define (un-dep ctc obj blame)
-    (let ([ctc (coerce-contract '->i ctc)])
+  (define (un-dep/chaperone orig-ctc obj blame)
+    (let ([ctc (coerce-contract '->i orig-ctc)])
+      (unless (chaperone-contract? ctc)
+        (raise-argument-error '->i
+                              "chaperone-contract?"
+                              orig-ctc))
+      (((contract-projection ctc) blame) obj))))
+
+(begin-encourage-inline
+  (define (un-dep orig-ctc obj blame)
+    (let ([ctc (coerce-contract '->i orig-ctc)])
       (((contract-projection ctc) blame) obj))))
 
 (define-for-syntax (mk-used-indy-vars an-istx)
@@ -1160,11 +1194,14 @@ evaluted left-to-right.)
                  "could not find ~s in ~s\n"
                  an-id arg/ress-to-look-in))
         ans))
+
+    (define is-chaperone-contract? (istx-is-chaperone-contract? an-istx))
     
     #`(let ([arg-exp-xs (coerce-contract '->i arg-exps)] ...
             [res-exp-xs (coerce-contract '->i res-exps)] ...)
         #,(syntax-property
-           #`(->i 
+           #`(make-->i
+              #,is-chaperone-contract?
               ;; the information needed to make the blame records and their new contexts
               '#,blame-ids
               ;; all of the non-dependent argument contracts
@@ -1185,7 +1222,8 @@ evaluted left-to-right.)
                              #,@(arg/res-vars arg)
                              ;; this used to use opt/direct, but 
                              ;; opt/direct duplicates code (bad!)
-                             (un-dep #,ctc-stx val blame))))
+                             (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
+                              #,ctc-stx val blame))))
               ;; then the non-dependent argument contracts that are themselves dependend on
               (list #,@(filter values
                                (map (λ (arg/res indy-id) 
@@ -1225,7 +1263,8 @@ evaluted left-to-right.)
                                          ;; this used to use opt/direct, but 
                                          ;; opt/direct duplicates code (bad!)
                                          #,@(arg/res-vars arg)
-                                         (un-dep #,arg-stx val blame)))))
+                                         (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
+                                          #,arg-stx val blame)))))
                     #''())
               #,(if (istx-ress an-istx)
                     #`(list #,@(filter values
