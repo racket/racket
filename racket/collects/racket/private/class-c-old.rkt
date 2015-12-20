@@ -1525,7 +1525,7 @@
            (let bindings
              (make-base-object/c methods method-ctcs fields field-ctcs)))))]))
 
-;; make-wrapper-object: contract object blame 
+;; make-wrapper-object: contract object blame neg-party
 ;;                      (listof symbol) (listof contract?) (listof symbol) (listof contract?)
 ;;                   -> wrapped object
 (define (make-wrapper-object ctc obj blame neg-party methods method-contracts fields field-contracts)
