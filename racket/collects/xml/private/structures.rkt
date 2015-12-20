@@ -43,13 +43,14 @@
 (define permissive/c
   (make-contract
    #:name 'permissive/c
-   #:projection
+   #:late-neg-projection
    (lambda (blame)
-     (lambda (v)
+     (lambda (v neg-party)
        (if (permissive-xexprs)
          v
          (raise-blame-error
-          blame v "not in permissive mode"))))
+          blame #:missing-party neg-party
+          v "not in permissive mode"))))
    #:first-order
    (lambda (v) #t)))
 
