@@ -194,9 +194,9 @@
      (define immutable (base-hash/c-immutable ctc))
      (define flat? (flat-hash/c? ctc))
      (λ (blame)
-       (define dom-proj ((contract-projection (base-hash/c-dom ctc))
+       (define dom-proj ((contract-late-neg-projection (base-hash/c-dom ctc))
                          (blame-add-key-context blame #f)))
-       (define rng-proj ((contract-projection (base-hash/c-rng ctc))
+       (define rng-proj ((contract-late-neg-projection (base-hash/c-rng ctc))
                          (blame-add-value-context blame #f)))
        (λ (val neg-party)
          (cond
@@ -204,8 +204,8 @@
             val]
            [else
             (for ([(k v) (in-hash val)])
-              (dom-proj k)
-              (rng-proj v))
+              (dom-proj k neg-party)
+              (rng-proj v neg-party))
             val]))))))
 
 (define (ho-projection chaperone-or-impersonate-hash)
