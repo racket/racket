@@ -1113,9 +1113,14 @@
                                                      with-record-error setup-printf workerid 
                                                      #f #f lock)
                                        doc))])
-           (let ([v-in  (load-sxref info-in-file)])
-             (unless (equal? (car v-in) (list vers (doc-flags doc)))
-               (error "old info has wrong version or flags"))
+           (let ([v-in  (load-sxref info-in-file)]
+                 [should-be (list vers (doc-flags doc))])
+             (unless (equal? (car v-in) should-be)
+               (error 'scribble
+                      "old info(~e) has wrong version or flags: ~e should be ~e"
+                      info-in-file
+                      (car v-in)
+                      should-be))
              (when (and (or (not provides-time)
                             (provides-time . < . info-out-time))
                         (can-build? only-dirs doc))
@@ -1169,9 +1174,15 @@
                         [out-vs (and info-out-time
                                      (with-handlers ([exn:fail? (lambda (exn) #f)])
                                        (for/list ([info-out-file info-out-files])
-                                         (let ([v (load-sxref info-out-file)])
-                                           (unless (equal? (car v) (list vers (doc-flags doc)))
-                                             (error "old info has wrong version or flags"))
+                                         (let ([v (load-sxref info-out-file)]
+                                               [should-be (list vers (doc-flags doc))])
+                                           (unless (equal? (car v)
+                                                           should-be)
+                                             (error 'scribble
+                                                    "old info(~e) has wrong version or flags: ~e should be ~e"
+                                                    info-out-file
+                                                    (car v)
+                                                    should-be))
                                            v))))]
                         [scis (send renderer serialize-infos ri (add1 (doc-out-count doc)) v)]
                         [defss (send renderer get-defineds ci (add1 (doc-out-count doc)) v)]
@@ -1380,7 +1391,10 @@
                   (equal? in-version2 expected)
                   (for/and ([out-version out-versions])
                     (equal? out-version expected)))
-       (error "old info has wrong version or flags"))
+       (error 'scribble "old info(~e) has wrong version or flags: ~e should all be ~e"
+              in-filename
+              (list* in-version in-version2 out-versions)
+              expected))
      (match (with-my-namespace
              (lambda ()
                (deserialize undef+searches)))
