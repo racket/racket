@@ -1094,18 +1094,21 @@ symbols, and that return a symbol.
 }
 
 @defform*/subs[#:literals (any values)
-[(->i (mandatory-dependent-dom ...)
+[(->i maybe-chaperone
+      (mandatory-dependent-dom ...)
       dependent-rest
       pre-condition
       dependent-range
       post-condition)
- (->i (mandatory-dependent-dom ...)
+ (->i maybe-chaperone
+      (mandatory-dependent-dom ...)
       (optional-dependent-dom ...)
       dependent-rest
       pre-condition
       dependent-range
       post-condition)]
-([mandatory-dependent-dom id+ctc
+([maybe-chaperone #:chaperone (code:line)]
+ [mandatory-dependent-dom id+ctc
                           (code:line keyword id+ctc)]
  [optional-dependent-dom id+ctc
                          (code:line keyword id+ctc)]
@@ -1139,6 +1142,12 @@ The @racket[->i] contract combinator differs from the @racket[->*]
 combinator in that each argument and result is named and these names can
 be used in the subcontracts and in the pre-/post-condition clauses.
 In other words, @racket[->i] expresses dependencies among arguments and results.
+
+The optional first keyword argument to @racket[->i] indicates if the result
+contract will be a chaperone. If it is @racket[#:chaperone], all of the contract for the arguments
+and results must be chaperone contracts and the result of @racket[->i] will be
+a chaperone contract. If it is not present, then the result
+contract will not be a chaperone contract.
 
 The first sub-form of a @racket[->i] contract covers the mandatory and the
 second sub-form covers the optional arguments. Following that is an optional
