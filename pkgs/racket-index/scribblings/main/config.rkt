@@ -13,9 +13,7 @@
 ;; user-specific pages using cookies).  (Note: the subpath must match
 ;; where the corresponding document is generated, this is a hack.)
 (define links
-  `((root    "Racket Documentation" user "index.html")
-    ---
-    (start   "Manual List"      user "start/index.html")
+  `((start   "Racket Documentation" user "index.html")
     (search  "Search Manuals"   user "search/index.html")
     ---
     (license "License"          plt  "license/index.html")
