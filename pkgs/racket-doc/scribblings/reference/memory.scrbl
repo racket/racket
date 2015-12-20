@@ -200,7 +200,8 @@ execution. Otherwise, @racket[#f] is returned.}
 
 Set the @as-index{@envvar{PLTDISABLEGC}} environment variable (to any
 value) before Racket starts to disable @tech{garbage collection}. Set
-the @as-index{@envvar{PLT_INCREMENTAL_GC}} environment variable to
+the @as-index{@envvar{PLT_INCREMENTAL_GC}} environment variable
+to a value that starts with @litchar{1}, @litchar{y}, or @litchar{Y} to
 request incremental mode at all times, but calling
 @racket[(collect-garbage 'incremental)] in a program with a periodic
 task is generally a better mechanism for requesting incremental mode.
@@ -302,6 +303,7 @@ collection mode, the text has the format
 
 @history[#:changed "6.3.0.7" @elem{Added @envvar{PLT_INCREMENTAL_GC}.}]
 
+
 @defproc[(collect-garbage [request (or/c 'major 'minor 'incremental) 'major]) void?]{
 
 Requests an immediate @tech{garbage collection} or requests a
@@ -336,7 +338,11 @@ garbage-collection mode, depending on @racket[request]:
 
        The intent of incremental mode is to significantly reduce pause
        times due to major collections, but incremental mode typically
-       implies longer minor-collection times and higher memory use.}
+       implies longer minor-collection times and higher memory use.
+
+       If the @envvar{PLT_INCREMENTAL_GC} environment variable's value
+       starts with @litchar{0}, @litchar{n}, or @litchar{N} on
+       start-up, then incremental-mode requests are ignored.}
 
 ]
 

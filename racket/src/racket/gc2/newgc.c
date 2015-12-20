@@ -257,6 +257,7 @@ MAYBE_UNUSED static void GCVERBOSEprintf(NewGC *gc, const char *fmt, ...) {
 
 /* Incremental mode */
 static int always_collect_incremental_on_minor = 0;
+static int never_collect_incremental_on_minor = 0;
 #define INCREMENTAL_COLLECT_FUEL_PER_100M (4 * 1024)
 #define INCREMENTAL_REPAIR_FUEL_PER_100M  32
 
@@ -3665,17 +3666,20 @@ void GC_gcollect_minor(void)
 
 void GC_request_incremental_mode(void)
 {
-  NewGC *gc = GC_get_GC();
+  if (!never_collect_incremental_on_minor) {
+    NewGC *gc = GC_get_GC();
 
-  /* The request will expire gradually, so that an extra major GC will
-     be triggered if incremental mode hasn't been requested recently
-     enough: */
-  gc->incremental_requested = 8;
+    /* The request will expire gradually, so that an extra major GC will
+       be triggered if incremental mode hasn't been requested recently
+       enough: */
+    gc->incremental_requested = 8;
+  }
 }
 
 void GC_set_incremental_mode(int on)
 {
-  always_collect_incremental_on_minor = 1;
+  always_collect_incremental_on_minor = (on > 0);
+  never_collect_incremental_on_minor = !on;
 }
 
 void GC_enable_collection(int on)

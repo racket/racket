@@ -176,7 +176,8 @@ GC2_EXTERN void GC_request_incremental_mode(void);
   
 GC2_EXTERN void GC_set_incremental_mode(int on);
 /*
-   Sets whether incremental mode is the default. */
+   Sets whether incremental mode is the default (1), always disabled (0),
+   or available on demand (-1). */
   
 GC2_EXTERN void GC_free_all(void);
 /*

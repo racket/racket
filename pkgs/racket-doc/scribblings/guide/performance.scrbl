@@ -598,8 +598,9 @@ pause is as short as a minor collection's pause. Incremental mode
 tends to run more slowly overall, but it can
 provide much more consistent real-time behavior.
 
-If the @envvar{PLT_INCREMENTAL_GC} environment variable is set when
-Racket starts, incremental mode is permanently enabled. Since
+If the @envvar{PLT_INCREMENTAL_GC} environment variable is set
+to a value that starts with @litchar{1}, @litchar{y}, or @litchar{Y}
+when Racket starts, incremental mode is permanently enabled. Since
 incremental mode is only useful for certain parts of some programs,
 however, and since the need for incremental mode is a property of a
 program rather than its environment, the preferred way to enable
