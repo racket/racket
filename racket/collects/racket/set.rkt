@@ -5,7 +5,8 @@
          racket/private/set
          racket/private/set-types
          racket/generic
-         racket/private/for)
+         racket/private/for
+         (for-syntax racket/base))
 
 (provide (all-from-out racket/private/set)
          (all-from-out racket/private/set-types)
@@ -86,94 +87,112 @@
   (lambda (x)
     (and (generic-set? x) (cmp? x) (kind? x))))
 
-(define (set-contract-check cmp kind b x)
+(define (set-contract-check cmp kind b neg-party x)
   (unless (generic-set? x)
-    (raise-blame-error b x "expected a set"))
+    (raise-blame-error b #:missing-party neg-party x "expected a set"))
   (case cmp
     [(equal)
      (unless (set-equal? x)
-       (raise-blame-error b x "expected an equal?-based set"))]
+       (raise-blame-error b #:missing-party neg-party x "expected an equal?-based set"))]
     [(eqv)
      (unless (set-eqv? x)
-       (raise-blame-error b x "expected an eqv?-based set"))]
+       (raise-blame-error b #:missing-party neg-party x "expected an eqv?-based set"))]
     [(eq)
      (unless (set-eq? x)
-       (raise-blame-error b x "expected an eq?-based set"))])
+       (raise-blame-error b #:missing-party neg-party x "expected an eq?-based set"))])
   (case kind
     [(mutable-or-weak)
      (unless (or (set-mutable? x) (set-weak? x))
-       (raise-blame-error b x "expected a mutable or weak set"))]
+       (raise-blame-error b #:missing-party neg-party x "expected a mutable or weak set"))]
     [(mutable)
      (unless (set-mutable? x)
-       (raise-blame-error b x "expected a mutable set"))]
+       (raise-blame-error b #:missing-party neg-party x "expected a mutable set"))]
     [(weak)
      (unless (set-weak? x)
-       (raise-blame-error b x "expected a weak set"))]
+       (raise-blame-error b #:missing-party neg-party x "expected a weak set"))]
     [(immutable)
      (unless (set? x)
-       (raise-blame-error b x "expected an immutable set"))]))
+       (raise-blame-error b #:missing-party neg-party x "expected an immutable set"))]))
 
-(define (set-contract-projection mode)
+(define (set-contract-late-neg-projection chaperone-ctc?)
   (lambda (ctc)
     (define elem/c (set-contract-elem/c ctc))
     (define cmp (set-contract-cmp ctc))
     (define kind (set-contract-kind ctc))
-    (lambda (b)
-      (lambda (x)
-        (set-contract-check cmp kind b x)
+    (lambda (blame)
+      (define (method sym c)
+        (define name (contract-name c))
+        (define str (format "method ~a with contract ~.s" sym name))
+        (define b2 (blame-add-context blame str))
+        ((contract-late-neg-projection c) b2))
+      (define-syntax (redirect stx)
+        (syntax-case stx ()
+          [(_ [id expr] ...)
+           (with-syntax ([(proj-id ...) (generate-temporaries #'(id ...))])
+             #'(let ([proj-id (method 'id expr)] ...)
+                 (λ (x neg-party)
+                   (redirect-generics chaperone-ctc?
+                                      gen:set x [id (λ (x) (proj-id x neg-party))] ...))))]))
+      (define me (if chaperone-contract?
+                     (make-chaperone-contract
+                      #:name (set-contract-name ctc)
+                      #:stronger set-contract-stronger
+                      #:late-neg-projection
+                      (λ (blame) (λ (val neg-party) (do-redirect val neg-party))))
+                     (make-contract
+                      #:name (set-contract-name ctc)
+                      #:stronger set-contract-stronger
+                      #:late-neg-projection
+                      (λ (blame) (λ (val neg-party) (do-redirect val neg-party))))))
+      (define do-redirect
+        (redirect
+         [set-member? (-> generic-set? elem/c boolean?)]
+         [set-empty? (or/c (-> generic-set? boolean?) #f)]
+         [set-count (or/c (-> generic-set? exact-nonnegative-integer?) #f)]
+         [set=? (or/c (-> generic-set? me boolean?) #f)]
+         [subset? (or/c (-> generic-set? me boolean?) #f)]
+         [proper-subset? (or/c (-> generic-set? me boolean?) #f)]
+         [set-map (or/c (-> generic-set? (-> elem/c any/c) list?) #f)]
+         [set-for-each (or/c (-> generic-set? (-> elem/c any) void?) #f)]
+         [set-copy (or/c (-> generic-set? generic-set?) #f)]
+         [in-set (or/c (-> generic-set? sequence?) #f)]
+         [set->list (or/c (-> generic-set? (listof elem/c)) #f)]
+         [set->stream (or/c (-> generic-set? stream?) #f)]
+         [set-first (or/c (-> generic-set? elem/c) #f)]
+         [set-rest (or/c (-> generic-set? me) #f)]
+         [set-add (or/c (-> generic-set? elem/c me) #f)]
+         [set-remove (or/c (-> generic-set? elem/c me) #f)]
+         [set-clear (or/c (-> generic-set? me) #f)]
+         [set-copy-clear (or/c (-> generic-set? generic-set?) #f)]
+         [set-union
+          (or/c (->* [generic-set?] [] #:rest (listof me) me) #f)]
+         [set-intersect
+          (or/c (->* [generic-set?] [] #:rest (listof me) me) #f)]
+         [set-subtract
+          (or/c (->* [generic-set?] [] #:rest (listof me) me) #f)]
+         [set-symmetric-difference
+          (or/c (->* [generic-set?] [] #:rest (listof me) me) #f)]
+         [set-add! (or/c (-> generic-set? elem/c void?) #f)]
+         [set-remove! (or/c (-> generic-set? elem/c void?) #f)]
+         [set-clear! (or/c (-> generic-set? void?) #f)]
+         [set-union!
+          (or/c (->* [generic-set?] [] #:rest (listof me) void?) #f)]
+         [set-intersect!
+          (or/c (->* [generic-set?] [] #:rest (listof me) void?) #f)]
+         [set-subtract!
+          (or/c (->* [generic-set?] [] #:rest (listof me) void?) #f)]
+         [set-symmetric-difference!
+          (or/c (->* [generic-set?] [] #:rest (listof me) void?) #f)]))
+      (define proj
+        ((contract-projection elem/c)
+         (blame-add-context blame "an element of")))
+      (lambda (x neg-party)
+        (set-contract-check cmp kind blame neg-party x)
         (cond
           [(list? x)
-           (define proj
-             ((contract-projection elem/c)
-              (blame-add-context b "an element of")))
            (map proj x)]
           [else
-           (define (method sym c)
-             (lambda (x)
-               (define name (contract-name c))
-               (define str (format "method ~a with contract ~.s" sym name))
-               (define b2 (blame-add-context b str))
-               (((contract-projection c) b2) x)))
-           (define-syntax-rule (redirect [id expr] ...)
-             (redirect-generics mode gen:set x [id (method 'id expr)] ...))
-           (redirect
-             [set-member? (-> generic-set? elem/c boolean?)]
-             [set-empty? (or/c (-> generic-set? boolean?) #f)]
-             [set-count (or/c (-> generic-set? exact-nonnegative-integer?) #f)]
-             [set=? (or/c (-> generic-set? ctc boolean?) #f)]
-             [subset? (or/c (-> generic-set? ctc boolean?) #f)]
-             [proper-subset? (or/c (-> generic-set? ctc boolean?) #f)]
-             [set-map (or/c (-> generic-set? (-> elem/c any/c) list?) #f)]
-             [set-for-each (or/c (-> generic-set? (-> elem/c any) void?) #f)]
-             [set-copy (or/c (-> generic-set? generic-set?) #f)]
-             [in-set (or/c (-> generic-set? sequence?) #f)]
-             [set->list (or/c (-> generic-set? (listof elem/c)) #f)]
-             [set->stream (or/c (-> generic-set? stream?) #f)]
-             [set-first (or/c (-> generic-set? elem/c) #f)]
-             [set-rest (or/c (-> generic-set? ctc) #f)]
-             [set-add (or/c (-> generic-set? elem/c ctc) #f)]
-             [set-remove (or/c (-> generic-set? elem/c ctc) #f)]
-             [set-clear (or/c (-> generic-set? ctc) #f)]
-             [set-copy-clear (or/c (-> generic-set? generic-set?) #f)]
-             [set-union
-              (or/c (->* [generic-set?] [] #:rest (listof ctc) ctc) #f)]
-             [set-intersect
-              (or/c (->* [generic-set?] [] #:rest (listof ctc) ctc) #f)]
-             [set-subtract
-              (or/c (->* [generic-set?] [] #:rest (listof ctc) ctc) #f)]
-             [set-symmetric-difference
-              (or/c (->* [generic-set?] [] #:rest (listof ctc) ctc) #f)]
-             [set-add! (or/c (-> generic-set? elem/c void?) #f)]
-             [set-remove! (or/c (-> generic-set? elem/c void?) #f)]
-             [set-clear! (or/c (-> generic-set? void?) #f)]
-             [set-union!
-              (or/c (->* [generic-set?] [] #:rest (listof ctc) void?) #f)]
-             [set-intersect!
-              (or/c (->* [generic-set?] [] #:rest (listof ctc) void?) #f)]
-             [set-subtract!
-              (or/c (->* [generic-set?] [] #:rest (listof ctc) void?) #f)]
-             [set-symmetric-difference!
-              (or/c (->* [generic-set?] [] #:rest (listof ctc) void?) #f)])])))))
+           (do-redirect x neg-party)])))))
 
 (define (flat-set-contract-first-order ctc)
   (define set-passes? (set-contract-first-order ctc))
@@ -183,37 +202,43 @@
          (for/and ([e (in-set x)])
            (elem-passes? e)))))
 
-(define (flat-set-contract-projection ctc)
+(define (flat-set-contract-late-neg-projection ctc)
   (define elem/c (set-contract-elem/c ctc))
   (define cmp (set-contract-cmp ctc))
   (define kind (set-contract-kind ctc))
   (lambda (b)
-    (lambda (x)
-      (set-contract-check cmp kind b x)
-      (define proj
-        ((contract-projection elem/c)
-         (blame-add-context b "an element of")))
+    (define proj
+      ((contract-late-neg-projection elem/c)
+       (blame-add-context b "an element of")))
+    (lambda (x neg-party)
+      (set-contract-check cmp kind b neg-party x)
       (for ([e (in-set x)])
-        (proj e))
+        (proj e neg-party))
       x)))
+
+(define (set-contract-stronger this that)
+  #f)
 
 (struct flat-set-contract set-contract []
   #:property prop:flat-contract
   (build-flat-contract-property
     #:name set-contract-name
+    #:stronger set-contract-stronger
     #:first-order flat-set-contract-first-order
-    #:projection flat-set-contract-projection))
+    #:late-neg-projection flat-set-contract-late-neg-projection))
 
 (struct chaperone-set-contract set-contract []
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
     #:name set-contract-name
+    #:stronger set-contract-stronger
     #:first-order set-contract-first-order
-    #:projection (set-contract-projection #t)))
+    #:late-neg-projection (set-contract-late-neg-projection #t)))
 
 (struct impersonator-set-contract set-contract []
   #:property prop:contract
   (build-contract-property
     #:name set-contract-name
+    #:stronger set-contract-stronger
     #:first-order set-contract-first-order
-    #:projection (set-contract-projection #f)))
+    #:late-neg-projection (set-contract-late-neg-projection #f)))
