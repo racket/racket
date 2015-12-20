@@ -626,11 +626,3 @@ runs @filepath{main.rkt} with garbage-collection logging to stderr
 collections are reported by @litchar{min} lines, increment-mode minor
 collection are reported with @litchar{mIn} lines, and major
 collections are reported with @litchar{MAJ} lines.
-
-Some Racket features can interfere with incremental mode. In
-particular, memory accounting via @racket[custodian-limit-memory]
-triggers an accounting pass during a major collection, and that pass
-is not currently incremental. Note that DrRacket uses
-@racket[custodian-limit-memory] to control the memory use of programs
-run within DrRacket, so incremental mode is useful mainly outside of
-DrRacket. (See also @secref["DrRacket-perf"].)

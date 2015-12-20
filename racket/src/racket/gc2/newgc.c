@@ -275,6 +275,8 @@ static int always_collect_incremental_on_minor = 0;
    seems to have been excessively conservative. */
 #define FORCE_MAJOR_AFTER_COUNT 1000
 
+#define AS_100M(c) ((c / (1024 * 1024 * 100)) + 1)
+
 /* This is the log base 2 of the size of one word, given in bytes */
 #ifdef SIXTY_FOUR_BIT_INTEGERS
 # define LOG_WORD_SIZE 3
@@ -2120,7 +2122,8 @@ static int inc_marked_gen1(NewGC *gc, void *p)
 static int is_in_generation_half(NewGC *gc, const void *p)
 {
   mpage *page;
-  if (gc->gc_full) return 0;
+  if (gc->gc_full) /* generation half is never used for a full GC */
+    return 0;
   page = pagemap_find_page_for_marking(gc, p, 1);
   if (!page) return 0;
   GC_ASSERT((page->generation == AGE_GEN_1)
@@ -2784,7 +2787,7 @@ static void push_ptr(NewGC *gc, void *ptr, int inc_gen1)
   }
 #endif
 
-  GC_ASSERT(inc_gen1 || !gc->inc_gen1);
+  GC_ASSERT(inc_gen1 || !gc->inc_gen1 || gc->doing_memory_accounting);
   GC_ASSERT(!inc_gen1 || !gc->all_marked_incremental);
 
   push_ptr_at(ptr, inc_gen1 ? &gc->inc_mark_stack : &gc->mark_stack);
@@ -3128,7 +3131,7 @@ static int designate_modified_gc(NewGC *gc, void *p)
                pages that are otherwise unmodified in the current pass: */
             || gc->fnl_gen1
             /* Memory accounting can also modify otherwise unadjusted
-               pages after incrementa mode: */
+               pages after incremental mode: */
             || (gc->doing_memory_accounting && gc->finished_incremental))) {
       check_incremental_unprotect(gc, page);
       gc->unprotected_page = 1; /* for using fuel */
@@ -3757,7 +3760,7 @@ static void page_newly_marked_on(NewGC *gc, mpage *page, int is_a_master_page, i
     /* If this page isn't already marked as old, it must be a medium page whose
        generation will be updated in the clean-up phase */
     GC_ASSERT((page->generation >= AGE_GEN_1) || (page->size_class == SIZE_CLASS_MED_PAGE));
-    GC_ASSERT(!gc->finished_incremental);
+    GC_ASSERT(!gc->finished_incremental || (!gc->accounted_incremental && gc->really_doing_accounting));
     GC_ASSERT(!page->non_dead_as_mark);
     page->inc_marked_on = 1;
     page->inc_modified_next = gc->inc_modified_next;
@@ -4201,7 +4204,7 @@ static inline void propagate_marks_worker(NewGC *gc, void *pp, int inc_gen1)
     start = PPTR(BIG_PAGE_TO_OBJECT(page));
     alloc_type = page->page_type;
     end = PAGE_END_VSS(page);
-    GC_ASSERT(inc_gen1 || !page->mprotected);
+    GC_ASSERT(inc_gen1 || !page->mprotected || gc->doing_memory_accounting);
   } else {
     objhead *info;
     p = pp;
@@ -5511,7 +5514,11 @@ static void incremental_repair_pages(NewGC *gc, int fuel)
   GC_ASSERT(page == gc->inc_repair_next);
 #endif
 
-  while (fuel && gc->inc_repair_next) {
+  /* If gc->finished_incremental already, then we must be in the
+     process of accounting incrementally */
+  GC_ASSERT(!gc->finished_incremental || !gc->inc_repair_next || gc->really_doing_accounting);
+
+  while ((fuel || gc->finished_incremental) && gc->inc_repair_next) {
     page = gc->inc_repair_next;
     gc->inc_repair_next = page->inc_modified_next;
     if (!gc->inc_repair_next)
@@ -5960,8 +5967,6 @@ extern double scheme_get_inexact_milliseconds(void);
 # define TIME_ARGS /**/
 #endif
 
-#define AS_100M(c) ((c / (1024 * 1024 * 100)) + 1)
-
 static int mark_and_finalize_all(NewGC *gc, int old_gen, int no_full TIME_FORMAL_ARGS)
 {
   int fuel = (old_gen
@@ -6105,6 +6110,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
   GC_ASSERT(!gc->all_marked_incremental || gc->started_incremental);
   GC_ASSERT(!gc->all_marked_incremental || mark_stack_is_empty(gc->inc_mark_stack));
   GC_ASSERT(!gc->finished_incremental || (gc->all_marked_incremental && !gc->inc_repair_next));
+  GC_ASSERT(!gc->accounted_incremental || gc->finished_incremental);
 
   /* determine if this should be a full collection or not */
   gc->gc_full = (force_full
@@ -6129,13 +6135,14 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
                      && !gc->started_incremental)
                  /* In incremental mode, GC earlier if we've done everything
                     that we can do incrementally. */
-                 || gc->finished_incremental);
+                 || gc->accounted_incremental);
 
   if (gc->gc_full && no_full)
     return;
 
   next_gc_full = (gc->gc_full
                   && !gc->incremental_requested
+                  && !always_collect_incremental_on_minor
                   && !gc->full_needed_for_finalization);
 
   if (gc->full_needed_for_finalization && gc->gc_full)
@@ -6320,8 +6327,15 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     reset_nursery(gc);
   TIME_STEP("reset nursurey");
 #ifdef NEWGC_BTC_ACCOUNT
-  if (gc->gc_full && postmaster_and_place_gc(gc))
-    BTC_do_accounting(gc);
+  if ((gc->gc_full || (gc->finished_incremental && !gc->accounted_incremental))
+      && postmaster_and_place_gc(gc)) {
+    BTC_do_accounting(gc, no_full);
+    if (!gc->gc_full && mark_stack_is_empty(gc->acct_mark_stack))
+      gc->accounted_incremental = 1;
+  }
+#else
+  if (gc->finished_incremental)
+    gc->accounted_incremental = 1;
 #endif
   TIME_STEP("accounted");
 
@@ -6392,6 +6406,7 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full, int switchin
     gc->started_incremental = 0;
     gc->all_marked_incremental = 0;
     gc->finished_incremental = 0;
+    gc->accounted_incremental = 0;
     gc->inc_prop_count = 0;
     gc->incremental_requested = 0; /* request expires completely after a full GC */
   }

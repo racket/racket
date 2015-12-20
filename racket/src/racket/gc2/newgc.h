@@ -184,7 +184,7 @@ typedef struct NewGC {
      the end of the GC cycle: */
   struct mpage *reprotect_next;
 
-  MarkSegment *mark_stack, *inc_mark_stack;
+  MarkSegment *mark_stack, *inc_mark_stack, *acct_mark_stack;
 
   /* Finalization */
   Fnl *run_queue, *last_in_queue;
@@ -214,6 +214,7 @@ typedef struct NewGC {
   unsigned char started_incremental          :1; /* must stick with incremental until major GC */
   unsigned char all_marked_incremental       :1; /* finished all marking for an incremental GC */
   unsigned char finished_incremental         :1; /* finished marking and reparing an incremental GC */
+  unsigned char accounted_incremental        :1; /* memory accounting for an incremental GC */
   unsigned char in_unsafe_allocation_mode    :1;
   unsigned char full_needed_for_finalization :1;
   unsigned char no_further_modifications     :1;
