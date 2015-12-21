@@ -9,6 +9,7 @@
          "private/vector.rkt"
          "private/struct-dc.rkt"
          "private/struct-prop.rkt"
+         "private/prefab.rkt"
          "private/misc.rkt"
          "private/provide.rkt"
          "private/guts.rkt"
@@ -42,7 +43,8 @@
                "private/hash.rkt"
                "private/vector.rkt"
                "private/struct-dc.rkt"
-               "private/struct-prop.rkt")
+               "private/struct-prop.rkt"
+               "private/prefab.rkt")
  (except-out (all-from-out "private/base.rkt")
              current-contract-region
              (for-syntax lifted-key add-lifted-property))
