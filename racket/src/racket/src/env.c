@@ -92,6 +92,7 @@ static Scheme_Object *variable_base_phase(int, Scheme_Object *[]);
 static Scheme_Object *variable_inspector(int, Scheme_Object *[]);
 static Scheme_Object *variable_const_p(int, Scheme_Object *[]);
 static Scheme_Object *now_transforming(int argc, Scheme_Object *argv[]);
+static Scheme_Object *now_transforming_with_lifts(int argc, Scheme_Object *argv[]);
 static Scheme_Object *now_transforming_module(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *local_exp_time_value_one(int argc, Scheme_Object *argv[]);
@@ -772,6 +773,7 @@ static void make_kernel_env(void)
   scheme_add_global_constant("variable-reference-constant?", scheme_varref_const_p_proc, env);
 
   GLOBAL_PRIM_W_ARITY("syntax-transforming?", now_transforming, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("syntax-transforming-with-lifts?", now_transforming_with_lifts, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-transforming-module-expression?", now_transforming_module, 0, 0, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-value", local_exp_time_value, 1, 3, env);
   GLOBAL_PRIM_W_ARITY("syntax-local-value/immediate", local_exp_time_value_one, 1, 3, env);
@@ -2240,6 +2242,24 @@ now_transforming(int argc, Scheme_Object *argv[])
   return (scheme_current_thread->current_local_env
 	  ? scheme_true
 	  : scheme_false);
+}
+
+static Scheme_Object *
+now_transforming_with_lifts(int argc, Scheme_Object *argv[])
+{
+  Scheme_Comp_Env *env = scheme_current_thread->current_local_env;
+
+  while (env && !env->lifts) {
+    env = env->next;
+  }
+
+  if (env)
+    if (SCHEME_FALSEP(SCHEME_VEC_ELS(env->lifts)[0]))
+      env = NULL;
+
+  return (env
+          ? scheme_true
+          : scheme_false);
 }
 
 static Scheme_Object *

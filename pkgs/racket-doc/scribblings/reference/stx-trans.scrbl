@@ -651,7 +651,9 @@ Other syntactic forms can capture lifts by using
 @racket[local-expand/capture-lifts] or
 @racket[local-transformer-expand/capture-lifts].
 
-@transform-time[]}
+@transform-time[] In addition, this procedure can be called only when
+a lift target is available, as indicated by
+@racket[syntax-transforming-with-lifts?].}
 
 @defproc[(syntax-local-lift-values-expression [n exact-nonnegative-integer?] [stx syntax?])
          (listof identifier?)]{
@@ -875,6 +877,21 @@ first argument.}
 Returns @racket[#t] during the dynamic extent of a @tech{syntax
 transformer} application by the expander and while a module is being
 @tech{visit}ed, @racket[#f] otherwise.}
+
+
+@defproc[(syntax-transforming-with-lifts?) boolean?]{
+
+Returns @racket[#t] if @racket[(syntax-transforming?)] produces
+@racket[#t] and a target context is available for lifting expressions
+(via @racket[syntax-local-lift-expression]), @racket[#f] otherwise.
+
+For example, during an immedate macro expansion triggered by
+@racket[local-expand], as opposed to
+@racket[local-expand/capture-lifts], @racket[(syntax-transforming?)]
+produces @racket[#t] while @racket[(syntax-transforming-with-lifts?)]
+produces @racket[#f].
+
+@history[#:added "6.3.0.9"]}
 
 
 @defproc[(syntax-transforming-module-expression?) boolean?]{
