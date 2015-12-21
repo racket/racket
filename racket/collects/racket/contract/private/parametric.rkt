@@ -54,38 +54,40 @@
                                (apply (polymorphic-contract-body that) instances))]
           [else #f])]
        [else #f]))
-   #:projection
+   #:late-neg-projection
    (lambda (c)
      (lambda (orig-blame)
        (define blame (blame-add-context orig-blame #f))
-       (define (wrap p)
+       (define negative? (blame-swapped? blame))
+       (define barrier/c (polymorphic-contract-barrier c))
+       (define vars (polymorphic-contract-vars c))
+       (define (wrap p neg-party)
          ;; values in polymorphic types come in from negative position,
          ;; relative to the poly/c contract
-         (define negative? (blame-swapped? blame))
-         (define barrier/c (polymorphic-contract-barrier c))
          (define instances
-           (for/list ([var (in-list (polymorphic-contract-vars c))])
+           (for/list ([var (in-list vars)])
              (barrier/c negative? var)))
          (define protector
            (apply (polymorphic-contract-body c) instances))
-         (((contract-projection protector) blame) p))
+         (((contract-late-neg-projection protector) blame) p neg-party))
 
-       (lambda (p)
+       (lambda (p neg-party)
          (unless (procedure? p)
-           (raise-blame-error blame p '(expected "a procedure" given: "~e") p))
+           (raise-blame-error blame #:missing-party neg-party
+                              p '(expected "a procedure" given: "~e") p))
          (make-keyword-procedure
           (lambda (keys vals . args) (keyword-apply (wrap p) keys vals args))
           (case-lambda
-            [() ((wrap p))]
-            [(a) ((wrap p) a)]
-            [(a b) ((wrap p) a b)]
-            [(a b c) ((wrap p) a b c)]
-            [(a b c d) ((wrap p) a b c d)]
-            [(a b c d e) ((wrap p) a b c d e)]
-            [(a b c d e f) ((wrap p) a b c d e f)]
-            [(a b c d e f g) ((wrap p) a b c d e f g)]
-            [(a b c d e f g h) ((wrap p) a b c d e f g h)]
-            [args (apply (wrap p) args)])))))))
+            [() ((wrap p neg-party))]
+            [(a) ((wrap p neg-party) a)]
+            [(a b) ((wrap p neg-party) a b)]
+            [(a b c) ((wrap p neg-party) a b c)]
+            [(a b c d) ((wrap p neg-party) a b c d)]
+            [(a b c d e) ((wrap p neg-party) a b c d e)]
+            [(a b c d e f) ((wrap p neg-party) a b c d e f)]
+            [(a b c d e f g) ((wrap p neg-party) a b c d e f g)]
+            [(a b c d e f g h) ((wrap p neg-party) a b c d e f g h)]
+            [args (apply (wrap p neg-party) args)])))))))
 
 (define (opaque/c positive? name)
   (define-values [ type make pred getter setter ]
@@ -100,17 +102,20 @@
    #:name (lambda (c) (barrier-contract-name c))
    #:first-order (λ (c) (barrier-contract-pred c))
    #:stronger (λ (this that) (eq? this that))
-   #:projection
+   #:late-neg-projection
    (lambda (c)
      (define mk (barrier-contract-make c))
+     (define (mk-np x neg-party) (mk x))
      (define pred (barrier-contract-pred c))
      (define get (barrier-contract-get c))
+     (define cp? (barrier-contract-positive? c))
      (lambda (blame)
-       (if (equal? (blame-original? blame) (barrier-contract-positive? c))
-           mk
-           (lambda (x)
+       (if (equal? (blame-original? blame) cp?)
+           mk-np
+           (lambda (x neg-party)
              (if (pred x)
                  (get x)
-                 (raise-blame-error blame x '(expected: "~a" given: "~e")
+                 (raise-blame-error blame #:missing-party neg-party
+                                    x '(expected: "~a" given: "~e")
                                     (barrier-contract-name c)
                                     x))))))))
