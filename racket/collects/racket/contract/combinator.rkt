@@ -4,34 +4,93 @@
          "private/guts.rkt"
          "private/blame.rkt")
 
-(provide 
- (except-out (all-from-out "private/prop.rkt")
-             contract-struct-name  
-             contract-struct-first-order
-             contract-struct-projection
-             contract-struct-val-first-projection
-             contract-struct-stronger?
-             contract-struct?
-             chaperone-contract-struct?
-             flat-contract-struct?
-             make-chaperone-contract
-             make-flat-contract
-             build-chaperone-contract-property
-             build-flat-contract-property)
- 
- (except-out (all-from-out "private/guts.rkt")
-             check-flat-contract
-             check-flat-named-contract
-             make-predicate-contract
-             has-contract?
-             value-contract)
- 
- (except-out (all-from-out "private/blame.rkt") make-blame)
- (rename-out [-make-chaperone-contract make-chaperone-contract]
-             [-make-flat-contract make-flat-contract]
-             [-build-chaperone-contract-property build-chaperone-contract-property]
-             [-build-flat-contract-property build-flat-contract-property])
- skip-projection-wrapper?)
+(provide prop:contract
+         prop:flat-contract
+         prop:chaperone-contract
+         
+         contract-property?
+         build-contract-property
+         
+         chaperone-contract-property?
+         
+         flat-contract-property?
+         
+         make-contract
+         
+         prop:opt-chaperone-contract
+         prop:opt-chaperone-contract?
+         prop:opt-chaperone-contract-get-test
+         
+         prop:orc-contract
+         prop:orc-contract?
+         prop:orc-contract-get-subcontracts
+         
+         prop:recursive-contract
+         prop:recursive-contract?
+         prop:recursive-contract-unroll
+         
+         prop:arrow-contract 
+         prop:arrow-contract?
+         prop:arrow-contract-get-info
+
+         coerce-contract
+         coerce-contracts
+         coerce-flat-contract
+         coerce-flat-contracts
+         coerce-chaperone-contract
+         coerce-chaperone-contracts
+         coerce-contract/f
+         
+         build-compound-type-name
+         
+         contract-stronger?
+         list-contract?
+         
+         contract-first-order
+         contract-first-order-passes?
+         
+         prop:contracted prop:blame
+         impersonator-prop:contracted impersonator-prop:blame
+         has-blame? value-blame
+         
+         ;; helpers for adding properties that check syntax uses
+         define/final-prop
+         define/subexpression-pos-prop
+         define/subexpression-pos-prop/name
+         
+         contract-continuation-mark-key
+         
+         (struct-out wrapped-extra-arg-arrow)
+
+         blame?
+         blame-source
+         blame-positive
+         blame-negative
+         blame-contract
+         blame-value
+         blame-original?
+         blame-swapped?
+         blame-swap
+         blame-replace-negative ;; used for indy blame
+         blame-update ;; used for option contract transfers
+         blame-add-context
+         blame-add-unknown-context
+         blame-context
+         blame-add-missing-party
+         blame-missing-party?
+         raise-blame-error
+         current-blame-format
+         (struct-out exn:fail:contract:blame)
+
+         (rename-out [custom-write-property-proc contract-custom-write-property-proc])
+
+         (rename-out [-make-chaperone-contract make-chaperone-contract]
+                     [-make-flat-contract make-flat-contract]
+                     [-build-chaperone-contract-property build-chaperone-contract-property]
+                     [-build-flat-contract-property build-flat-contract-property])
+         skip-projection-wrapper?
+
+         blame-fmt->-string)
 
 (define skip-projection-wrapper? (make-parameter #f))
 
@@ -199,4 +258,3 @@
          (λ (x)
            (x-acceptor x)
            x))))
-
