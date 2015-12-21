@@ -72,17 +72,6 @@
             (let ([r (loop (car rst) (cdr rst))])
               (λ (x) (or (fst-pred x) (r x))))])))]))
 
-(define (single-or/c-projection ctc)
-  (let ([c-proc (contract-projection (single-or/c-ho-ctc ctc))]
-        [pred (single-or/c-pred ctc)])
-    (λ (blame)
-      (define partial-contract
-        (c-proc (blame-add-or-context blame)))
-      (λ (val)
-        (cond
-          [(pred val) val]
-          [else (partial-contract val)])))))
-
 (define (single-or/c-late-neg-projection ctc)
   (define c-proj (get/build-late-neg-projection (single-or/c-ho-ctc ctc)))
   (define c-first-order (contract-first-order (single-or/c-ho-ctc ctc)))
@@ -218,7 +207,6 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection single-or/c-projection
    #:late-neg-projection single-or/c-late-neg-projection
    #:name single-or/c-name
    #:first-order single-or/c-first-order
@@ -233,7 +221,6 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
-   #:projection single-or/c-projection
    #:late-neg-projection single-or/c-late-neg-projection
    #:name single-or/c-name
    #:first-order single-or/c-first-order
@@ -243,52 +230,6 @@
                                             (single-or/c-flat-ctcs ctc))))
    #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))
    #:list-contract? single-or/c-list-contract?))
-
-(define (multi-or/c-proj ctc)
-  (let* ([ho-contracts (multi-or/c-ho-ctcs ctc)]
-         [c-procs (map (λ (x) (contract-projection x)) ho-contracts)]
-         [first-order-checks (map (λ (x) (contract-first-order x)) ho-contracts)]
-         [predicates (map flat-contract-predicate (multi-or/c-flat-ctcs ctc))])
-    (λ (blame)
-      (define disj-blame (blame-add-or-context blame))
-      (define partial-contracts
-        (for/list ([c-proc (in-list c-procs)])
-          (c-proc disj-blame)))
-      (λ (val)
-        (cond
-          [(ormap (λ (pred) (pred val)) predicates)
-           val]
-          [else
-           (let loop ([checks first-order-checks]
-                      [procs partial-contracts]
-                      [contracts ho-contracts]
-                      [candidate-proc #f]
-                      [candidate-contract #f])
-             (cond
-               [(null? checks)
-                (if candidate-proc
-                    (candidate-proc val)
-                    (raise-none-or-matched blame val #f))]
-               [((car checks) val)
-                (if candidate-proc
-                    (raise-blame-error blame val
-                                       '("two of the clauses in the or/c might both match: ~s and ~s"
-                                         given:
-                                         "~e")
-                                       (contract-name candidate-contract)
-                                       (contract-name (car contracts))
-                                       val)
-                    (loop (cdr checks)
-                          (cdr procs)
-                          (cdr contracts)
-                          (car procs)
-                          (car contracts)))]
-               [else
-                (loop (cdr checks)
-                      (cdr procs)
-                      (cdr contracts)
-                      candidate-proc
-                      candidate-contract)]))])))))
 
 (define (multi-or/c-late-neg-proj ctc)  
   (define ho-contracts (multi-or/c-ho-ctcs ctc))
@@ -376,7 +317,6 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection multi-or/c-proj
    #:late-neg-projection multi-or/c-late-neg-proj
    #:name multi-or/c-name
    #:first-order multi-or/c-first-order
@@ -391,7 +331,6 @@
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
-   #:projection multi-or/c-proj
    #:late-neg-projection multi-or/c-late-neg-proj
    #:name multi-or/c-name
    #:first-order multi-or/c-first-order
@@ -453,31 +392,6 @@
 
 (define-struct (flat-first-or/c flat-or/c) ())
 
-(define (first-or/c-proj ctc)
-  (define contracts (base-first-or/c-ctcs ctc))
-  (define c-procs (map (λ (x) (contract-projection x)) contracts))
-  (define first-order-checks (map (λ (x) (contract-first-order x)) contracts))
-  (λ (blame)
-    (define disj-blame (blame-add-ior-context blame))
-    (define partial-contracts
-      (for/list ([c-proc (in-list c-procs)])
-        (c-proc disj-blame)))
-    (λ (val)
-      (let loop ([checks first-order-checks]
-                 [procs partial-contracts]
-                 [contracts contracts])
-        (cond
-          [(null? checks)
-           (raise-none-ior-matched blame val #f)]
-          [else
-           (cond
-             [((car checks) val)
-              ((car procs) val)]
-             [else
-              (loop (cdr checks)
-                    (cdr procs)
-                    (cdr contracts))])])))))
-
 (define (first-or/c-late-neg-proj ctc)  
   (define ho-contracts (base-first-or/c-ctcs ctc))
   (define c-projs (map get/build-late-neg-projection ho-contracts))
@@ -538,7 +452,6 @@
 (define-struct (chaperone-first-or/c base-first-or/c) ()
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
-   #:projection first-or/c-proj
    #:late-neg-projection first-or/c-late-neg-proj
    #:name first-or/c-name
    #:first-order first-or/c-first-order
@@ -549,7 +462,6 @@
 (define-struct (impersonator-first-or/c base-first-or/c) ()
   #:property prop:contract
   (build-contract-property
-   #:projection first-or/c-proj
    #:late-neg-projection first-or/c-late-neg-proj
    #:name first-or/c-name
    #:first-order first-or/c-first-order
