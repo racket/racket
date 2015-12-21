@@ -1999,44 +1999,66 @@
                          #:stronger stronger?
                          #:list-contract? (list-contract? ctc))))))
 
-;; (if/c predicate then/c else/c) applies then/c to satisfying
-;;   predicate, else/c to those that don't.
 (define (if/c predicate then/c else/c)
-  #|
-  Naive version:
-    (or/c (and/c predicate then/c)
-          (and/c (not/c predicate) else/c))
-  But that applies predicate twice.
-  |#
   (unless (procedure? predicate)
     (raise-type-error 'if/c "procedure?" predicate))
-  (unless (contract? then/c)
-    (raise-type-error 'if/c "contract?" then/c))
-  (unless (contract? else/c)
-    (raise-type-error 'if/c "contract?" else/c))
-  (let ([then-ctc (coerce-contract 'if/c then/c)]
-        [else-ctc (coerce-contract 'if/c else/c)])
-    (define name (build-compound-type-name 'if/c predicate then-ctc else-ctc))
-    ;; Special case: if both flat contracts, make a flat contract.
-    (if (and (flat-contract? then-ctc)
-             (flat-contract? else-ctc))
-        ;; flat contract
-        (let ([then-pred (flat-contract-predicate then-ctc)]
-              [else-pred (flat-contract-predicate else-ctc)])
-          (define (pred x)
-            (if (predicate x) (then-pred x) (else-pred x)))
-          (flat-named-contract name pred))
-        ;; ho contract
-        (let ([then-proj (contract-projection then-ctc)]
-              [then-fo (contract-first-order then-ctc)]
-              [else-proj (contract-projection else-ctc)]
-              [else-fo (contract-first-order else-ctc)])
-          (define ((proj blame) x)
-            (if (predicate x)
-                ((then-proj blame) x)
-                ((else-proj blame) x)))
-          (make-contract
-           #:name name
-           #:projection proj
-           #:first-order
-           (lambda (x) (if (predicate x) (then-fo x) (else-fo x))))))))
+  (unless (procedure-arity-includes? predicate 1)
+    (raise-type-error 'if/c "procedure that accepts 1 argument" predicate))
+  (define then-ctc (coerce-contract 'if/c then/c))
+  (define else-ctc (coerce-contract 'if/c else/c))
+  (cond
+    [(and (flat-contract? then-ctc)
+          (flat-contract? else-ctc))
+     (define then-pred (flat-contract-predicate then-ctc))
+     (define else-pred (flat-contract-predicate else-ctc))
+     (define name `(if/c ,(object-name predicate)
+                         ,(contract-name then-pred)
+                         ,(contract-name else-pred)))
+     (define (pred x)
+       (if (predicate x) (then-pred x) (else-pred x)))
+     (flat-named-contract name pred)]
+    [(and (chaperone-contract? then-ctc)
+          (chaperone-contract? else-ctc))
+     (chaperone-if/c predicate then-ctc else-ctc)]
+    [else
+     (impersonator-if/c predicate then-ctc else-ctc)]))
+
+(define (if/c-first-order ctc)
+  (define predicate (base-if/c-predicate ctc))
+  (define thn (contract-first-order (base-if/c-thn ctc)))
+  (define els (contract-first-order (base-if/c-els ctc)))
+  (λ (x) (if (predicate x) (thn x) (els x))))
+
+(define (if/c-name ctc)
+  (define predicate (base-if/c-predicate ctc))
+  (define thn (contract-name (base-if/c-thn ctc)))
+  (define els (contract-name (base-if/c-els ctc)))
+  `(if/c ,(object-name predicate) ,thn ,els))
+
+(define (if/c-late-neg-proj ctc)
+  (define predicate (base-if/c-predicate ctc))
+  (define thn (contract-late-neg-projection (base-if/c-thn ctc)))
+  (define els (contract-late-neg-projection (base-if/c-els ctc)))
+  (λ (blame)
+    (define thn-proj (thn blame))
+    (define els-proj (els blame))
+    (λ (val neg-party)
+      (if (predicate val)
+          (thn-proj val neg-party)
+          (els-proj val neg-party)))))
+
+(define-struct base-if/c (predicate thn els)
+  #:property prop:custom-write custom-write-property-proc)
+(define-struct (chaperone-if/c base-if/c) ()
+  #:property prop:chaperone-contract
+  (build-chaperone-contract-property
+   #:late-neg-projection if/c-late-neg-proj
+   #:first-order if/c-first-order
+   #:name if/c-name))
+
+(define-struct (impersonator-if/c base-if/c) ()
+  #:property prop:contract
+  (build-contract-property
+   #:late-neg-projection if/c-late-neg-proj
+   #:first-order if/c-first-order
+   #:name if/c-name))

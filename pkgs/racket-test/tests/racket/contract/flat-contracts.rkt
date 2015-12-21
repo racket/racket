@@ -71,6 +71,9 @@
   (test-flat-contract #rx#".x." "axq" "x")
   (test-flat-contract ''() '() #f)
 
+  (test-flat-contract '(if/c integer? even? list?) 2 3)
+  (test-flat-contract '(if/c integer? even? list?) '() #f)
+  
   (test/spec-passed 'any/c '(contract any/c 1 'pos 'neg))
   (test-flat-contract 'printable/c (vector (cons 1 (box #f))) (lambda (x) x))
   (let ()

@@ -32,6 +32,11 @@
              (or/c (-> (>=/c 5) (>=/c 5)) boolean?))
   (test-name '(or/c boolean? (-> (>=/c 5) (>=/c 5)))
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
+
+  (test-name '(if/c integer? odd? (-> integer? integer?))
+             (if/c integer? odd? (-> integer? integer?)))
+  (test-name '(if/c integer? odd? boolean?)
+             (if/c integer? odd? boolean?))
   
   (test-name '(first-or/c) (first-or/c))
   (test-name '(first-or/c integer? gt0?) (first-or/c integer? (let ([gt0? (lambda (x) (> x 0))]) gt0?)))
