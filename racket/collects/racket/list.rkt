@@ -45,6 +45,8 @@
          append-map
          filter-not
          shuffle
+         combinations
+         in-combinations
          permutations
          in-permutations
          argmin
@@ -587,6 +589,84 @@
     (unless (= j i) (vector-set! a i (vector-ref a j)))
     (vector-set! a j x))
   (vector->list a))
+
+(define (combinations l [k #f])
+  (for/list ([x (in-combinations l k)]) x))
+
+;; Generate combinations of the list `l`.
+;; - If `k` is a natural number, generate all combinations of size `k`.
+;; - If `k` is #f, generate all combinations of any size (powerset of `l`).
+(define (in-combinations l [k #f])
+  (unless (list? l)
+    (raise-argument-error 'in-combinations "list?" 0 l))
+  (when (and k (not (exact-nonnegative-integer? k)))
+    (raise-argument-error 'in-combinations "exact-nonnegative-integer?" 1 k))
+  (define v (list->vector l))
+  (define N (vector-length v))
+  (define N-1 (- N 1))
+  (define gen-combinations
+    (cond
+      [(not k)
+       ;; Enumerate all binary numbers [1..2**N].
+       ;; Produce the combination with elements in `v` at the same
+       ;;  positions as the 1's in the binary number.
+       (define limit (expt 2 N))
+       (define curr-box (box 0))
+       (lambda ()
+         (let ([curr (unbox curr-box)])
+           (if (< curr limit)
+             (begin0
+               (for/fold ([acc '()])
+                         ([i (in-range N-1 -1 -1)])
+                 (if (bitwise-bit-set? curr i)
+                   (cons (vector-ref v i) acc)
+                   acc))
+               (set-box! curr-box (+ curr 1)))
+             #f)))]
+      [(< N k)
+       (lambda () #f)]
+      [else
+       ;; Keep a vector `k*` that contains `k` indices
+       ;; Use `k*` to generate combinations
+       (define k* #f) ; (U #f (Vectorof Index))
+       (define k-1 (- k 1))
+       ;; `k*-incr` tries to increment the positions in `k*`.
+       ;; On success, can use `k*` to build a combination.
+       ;; Returns #f on failure.
+       (define (k*-incr)
+         (cond
+          [(not k*)
+           ;; 1. Initialize the vector `k*` to the first {0..k-1} indices
+           (set! k* (build-vector k (lambda (i) i)))]
+          [(zero? k)
+           ;; (Cannot increment a zero vector)
+           #f]
+          [else
+           (or
+            ;; 2. Try incrementing the leftmost index that is
+            ;;    at least 2 less than the following index in `k*`.
+            (for/or ([i (in-range 0 k-1)])
+              (let ([k*_i   (vector-ref k* i)]
+                    [k*_i+1 (vector-ref k* (+ i 1))])
+                (and (< k*_i (- k*_i+1 1))
+                     (vector-set! k* i (+ k*_i 1)))))
+            ;; 3. Increment the rightmost index, up to a max of `N-1`.
+            ;;    Also replace the first `k-1` indices to `[0..k-2]`
+            (let ([k*_last (vector-ref k* k-1)])
+              (if (< k*_last N-1)
+                  (begin
+                    (vector-set! k* k-1 (+ k*_last 1))
+                    (for ([i (in-range k-1)])
+                      (vector-set! k* i i)))
+                  #f)))]))
+       (define (k*->combination)
+         ;; Get the `k` elements indexed by `k*`
+         (for/fold ([acc '()])
+                   ([i (in-range k-1 -1 -1)])
+           (cons (vector-ref v (vector-ref k* i)) acc)))
+       (lambda ()
+         (and (k*-incr) (k*->combination)))]))
+      (in-producer gen-combinations #f))
 
 ;; This implements an algorithm known as "Ord-Smith".  (It is described in a
 ;; paper called "Permutation Generation Methods" by Robert Sedgewlck, listed as

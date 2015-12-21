@@ -1252,7 +1252,32 @@ returns @racket[#f].
 Returns a list with all elements from @racket[lst], randomly shuffled.
 
 @mz-examples[#:eval list-eval
+  (shuffle '(1 2 3 4 5 6))
+  (shuffle '(1 2 3 4 5 6))
   (shuffle '(1 2 3 4 5 6))]}
+
+
+@defproc*[([(combinations [lst list?]) list?]
+           [(combinations [lst list?] [size exact-nonnegative-integer?]) list?])]{
+@margin-note{Wikipedia @hyperlink["https://en.wikipedia.org/wiki/Combination"]{combinations}}
+Return a list of all combinations of elements in the input list
+(aka the @index["powerset"]{powerset} of @racket[lst]).
+If @racket[size] is given, limit results to combinations of @racket[size] elements.
+
+@mz-examples[#:eval list-eval
+  (combinations '(1 2 3))
+  (combinations '(1 2 3) 2)]}
+
+
+@defproc*[([(in-combinations [lst list?]) list?]
+           [(in-combinations [lst list?] [size exact-nonnegative-integer?]) sequence?])]{
+@index["in-powerset"]{Returns} a sequence of all combinations of elements in the input list,
+ or all combinations of length @racket[size] if @racket[size] is given.
+Builds combinations one-by-one instead of all at once.
+
+@mz-examples[#:eval list-eval
+  (time (begin (combinations (range 15)) (void)))
+  (time (begin (in-combinations (range 15)) (void)))]}
 
 
 @defproc[(permutations [lst list?])
