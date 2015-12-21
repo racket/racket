@@ -1994,7 +1994,7 @@
           (define (stronger? this other)
             (contract-stronger? ctc other))
           (make-contract #:name name
-                         #:projection (contract-projection ctc)
+                         #:late-neg-projection (contract-late-neg-projection ctc)
                          #:first-order (contract-first-order ctc)
                          #:stronger stronger?
                          #:list-contract? (list-contract? ctc))))))
