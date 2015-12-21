@@ -76,7 +76,7 @@
            (raise-blame-error blame #:missing-party neg-party
                               p '(expected "a procedure" given: "~e") p))
          (make-keyword-procedure
-          (lambda (keys vals . args) (keyword-apply (wrap p) keys vals args))
+          (lambda (keys vals . args) (keyword-apply (wrap p neg-party) keys vals args))
           (case-lambda
             [() ((wrap p neg-party))]
             [(a) ((wrap p neg-party) a)]
