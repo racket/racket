@@ -50,7 +50,9 @@
          prop:arrow-contract 
          prop:arrow-contract?
          prop:arrow-contract-get-info
-         (struct-out arrow-contract-info))
+         (struct-out arrow-contract-info)
+
+         build-context)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -253,6 +255,8 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define-logger racket/contract)
+
 (define ((build-property mk default-name proc-name first-order?)
          #:name [get-name #f]
          #:first-order [get-first-order #f]
@@ -272,7 +276,14 @@
      (string-append
       "expected either the #:get-projection, #:val-first-project, or #:late-neg-projection"
       " to not be #f, but all three were #f")))
-     
+
+  (unless get-late-neg-projection
+    (unless first-order?
+      (log-racket/contract-warning
+       "no late-neg-projection passed to ~s~a"
+       proc-name
+       (build-context))))
+
   (mk (or get-name (λ (c) default-name))
       (or get-first-order get-any?)
       get-projection
@@ -289,6 +300,13 @@
         [else get-late-neg-projection])
       list-contract?))
 
+(define (build-context)
+  (apply
+   string-append
+   (for/list ([i (in-list (continuation-mark-set->context
+                           (current-continuation-marks)))])
+     (format "\n  ~s" i))))
+    
 (define build-contract-property
   (procedure-rename
    (build-property make-contract-property 'anonymous-contract 'build-contract-property #f)
@@ -410,7 +428,7 @@
    #:exercise (lambda (c) (make-flat-contract-exercise c))
    #:list-contract? (λ (c) (make-flat-contract-list-contract? c))))
 
-(define ((build-contract mk default-name)
+(define ((build-contract mk default-name proc-name)
          #:name [name #f]
          #:first-order [first-order #f]
          #:projection [projection #f]
@@ -420,6 +438,12 @@
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? (λ (ctc) #f)])
+
+  (unless late-neg-projection
+    (log-racket/contract-warning
+     "no late-neg-projection passed to ~s~a"
+     proc-name
+     (build-context)))
 
   (mk (or name default-name)
       (or first-order any?) 
@@ -447,17 +471,21 @@
 
 (define make-contract
   (procedure-rename 
-   (build-contract make-make-contract 'anonymous-contract)
+   (build-contract make-make-contract 'anonymous-contract 'make-contract)
    'make-contract))
 
 (define make-chaperone-contract
   (procedure-rename
-   (build-contract make-make-chaperone-contract 'anonymous-chaperone-contract)
+   (build-contract make-make-chaperone-contract
+                   'anonymous-chaperone-contract
+                   'make-chaperone-contract)
    'make-chaperone-contract))
 
 (define make-flat-contract
   (procedure-rename
-   (build-contract make-make-flat-contract 'anonymous-flat-contract)
+   (build-contract make-make-flat-contract
+                   'anonymous-flat-contract
+                   'make-flat-contract)
    'make-flat-contract))
 
 ;; property should be bound to a function that accepts the contract and

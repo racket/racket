@@ -2147,13 +2147,6 @@
     (λ (x)
       (val+np-acceptor x #f))))
 
-(define (build-context)
-  (apply
-   string-append
-   (for/list ([i (in-list (continuation-mark-set->context
-                           (current-continuation-marks)))])
-     (format "\n  ~s" i))))
-
 (define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
 (define (flat-named-contract name pre-contract [generate #f])
   (cond
