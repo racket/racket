@@ -44,7 +44,14 @@
             (cond
              [(bytes? suffix) (hash-set ht suffix #t)]
              [else ht]))]))))
-  (sort (hash-keys ht) bytes<?))
+  (sort (hash-keys ht)
+        ;; Order ".rkt" before everything else, so that it
+        ;; tends to be the default:
+        (lambda (a b)
+          (cond
+           [(bytes=? #"rkt" a) #t]
+           [(bytes=? #"rkt" b) #f]
+           [else (bytes<? a b)]))))
 
 (define (get-module-suffix-regexp #:mode [key 'preferred]
                                   #:group [group 'all]
