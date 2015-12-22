@@ -43,22 +43,10 @@
          channel/c
          evt/c
 
-         chaperone-contract?
-         impersonator-contract?
-         flat-contract?
-         contract?
-         
          flat-contract
          flat-contract-predicate
          flat-named-contract
          
-         contract-projection
-         contract-val-first-projection  ;; might return #f (if none)
-         contract-late-neg-projection   ;; might return #f (if none)
-         get/build-val-first-projection ;; builds one if necc., using contract-projection
-         get/build-late-neg-projection
-         warn-about-val-first?
-         contract-name
          n->th
          
          blame-add-car-context
@@ -68,9 +56,7 @@
          random-any/c
 
          rename-contract
-         if/c
-
-         maybe-warn-about-val-first)
+         if/c)
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()
@@ -1803,116 +1789,6 @@
 (define (flat-contract-predicate x)
   (contract-struct-first-order
    (coerce-flat-contract 'flat-contract-predicate x)))
-
-(define (flat-contract? x) 
-  (let ([c (coerce-contract/f x)])
-    (and c
-         (flat-contract-struct? c))))
-
-(define (chaperone-contract? x)
-  (let ([c (coerce-contract/f x)])
-    (and c
-         (or (chaperone-contract-struct? c)
-             (and (prop:opt-chaperone-contract? c)
-                  ((prop:opt-chaperone-contract-get-test c) c))))))
-
-(define (impersonator-contract? x)
-  (let ([c (coerce-contract/f x)])
-    (and c
-         (not (flat-contract-struct? c))
-         (not (chaperone-contract-struct? c)))))
-
-(define (contract-name ctc)
-  (contract-struct-name
-   (coerce-contract 'contract-name ctc)))
-
-(define (contract? x) (and (coerce-contract/f x) #t))
-(define (contract-projection ctc)
-  (get/build-projection
-   (coerce-contract 'contract-projection ctc)))
-(define (contract-val-first-projection ctc)
-  (get/build-val-first-projection
-   (coerce-contract 'contract-projection ctc)))
-(define (contract-late-neg-projection ctc)
-  (get/build-late-neg-projection
-   (coerce-contract 'contract-projection ctc)))
-
-(define-logger racket/contract)
-(define (get/build-late-neg-projection ctc)
-  (cond
-    [(contract-struct-late-neg-projection ctc) => values]
-    [else
-     (log-racket/contract-warning "no late-neg-projection for ~s" ctc)
-     (cond
-       [(contract-struct-projection ctc)
-        =>
-        (λ (projection)
-          (projection->late-neg-projection projection))]
-       [(contract-struct-val-first-projection ctc)
-        =>
-        (λ (val-first-projection)
-          (val-first-projection->late-neg-projection val-first-projection))]
-       [else
-        (first-order->late-neg-projection (contract-struct-first-order ctc)
-                                          (contract-struct-name ctc))])]))
-
-(define (projection->late-neg-projection proj)
-  (λ (b)
-    (λ (x neg-party)
-      ((proj (blame-add-missing-party b neg-party)) x))))
-(define (val-first-projection->late-neg-projection vf-proj)
-  (λ (b)
-    (define vf-val-accepter (vf-proj b))
-    (λ (x neg-party)
-      ((vf-val-accepter x) neg-party))))
-(define (first-order->late-neg-projection p? name)
-  (λ (b)
-    (λ (x neg-party)
-      (if (p? x)
-          x
-          (raise-blame-error
-           b x #:missing-party neg-party
-           '(expected: "~a" given: "~e")
-           name
-           x)))))
-
-(define warn-about-val-first? (make-parameter #t))
-(define (maybe-warn-about-val-first ctc)
-  (when (warn-about-val-first?)
-    (log-racket/contract-warning
-     "building val-first-projection of contract ~s for~a"
-     ctc
-     (build-context))))
-
-(define (get/build-val-first-projection ctc)
-  (cond
-    [(contract-struct-val-first-projection ctc) => values]
-    [else
-     (maybe-warn-about-val-first ctc)
-     (late-neg-projection->val-first-projection
-      (get/build-late-neg-projection ctc))]))
-(define (late-neg-projection->val-first-projection lnp)
-  (λ (b)
-    (define val+neg-party-accepter (lnp b))
-    (λ (x)
-      (λ (neg-party)
-        (val+neg-party-accepter x neg-party)))))
-
-(define (get/build-projection ctc)
-  (cond
-    [(contract-struct-projection ctc) => values]
-    [else
-     (log-racket/contract-warning
-      "building projection of contract ~s for~a"
-      ctc
-      (build-context))
-     (late-neg-projection->projection
-      (get/build-late-neg-projection ctc))]))
-(define (late-neg-projection->projection lnp)
-  (λ (b)
-    (define val+np-acceptor (lnp b))
-    (λ (x)
-      (val+np-acceptor x #f))))
 
 (define (flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
 (define (flat-named-contract name pre-contract [generate #f])

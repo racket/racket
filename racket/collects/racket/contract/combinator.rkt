@@ -1,32 +1,112 @@
 #lang racket/base
 (require "private/prop.rkt"
-         (prefix-in : "private/prop.rkt")
+         (prefix-in : (only-in "private/prop.rkt"
+                               build-chaperone-contract-property
+                               build-flat-contract-property
+                               make-chaperone-contract
+                               make-flat-contract))
          "private/guts.rkt"
          "private/blame.rkt")
 
 (provide 
- (except-out (all-from-out "private/prop.rkt")
-             contract-struct-name  
-             contract-struct-first-order
-             contract-struct-projection
-             contract-struct-val-first-projection
-             contract-struct-stronger?
-             contract-struct?
-             chaperone-contract-struct?
-             flat-contract-struct?
-             make-chaperone-contract
-             make-flat-contract
-             build-chaperone-contract-property
-             build-flat-contract-property)
+ prop:contract
+ contract-struct-late-neg-projection
+ contract-struct-generate
+ contract-struct-exercise
+ contract-struct-list-contract?
  
- (except-out (all-from-out "private/guts.rkt")
-             check-flat-contract
-             check-flat-named-contract
-             make-predicate-contract
-             has-contract?
-             value-contract)
+ prop:flat-contract
+ prop:chaperone-contract
  
- (except-out (all-from-out "private/blame.rkt") make-blame)
+ contract-property?
+ build-contract-property
+ 
+ chaperone-contract-property?
+ 
+ flat-contract-property?
+ 
+ make-contract
+ 
+ prop:opt-chaperone-contract
+ prop:opt-chaperone-contract?
+ prop:opt-chaperone-contract-get-test
+ 
+ prop:orc-contract
+ prop:orc-contract?
+ prop:orc-contract-get-subcontracts
+ 
+ prop:recursive-contract
+ prop:recursive-contract?
+ prop:recursive-contract-unroll
+ 
+ prop:arrow-contract 
+ prop:arrow-contract?
+ prop:arrow-contract-get-info
+ (struct-out arrow-contract-info)
+ 
+ coerce-contract
+ coerce-contracts
+ coerce-flat-contract
+ coerce-flat-contracts
+ coerce-chaperone-contract
+ coerce-chaperone-contracts
+ coerce-contract/f
+ 
+ build-compound-type-name
+ 
+ contract-stronger?
+ list-contract?
+ 
+ contract-first-order
+ contract-first-order-passes?
+ 
+ prop:contracted prop:blame
+ impersonator-prop:contracted impersonator-prop:blame
+ has-blame? value-blame
+ 
+ ;; helpers for adding properties that check syntax uses
+ define/final-prop
+ define/subexpression-pos-prop
+ define/subexpression-pos-prop/name
+ 
+ eq-contract?
+ eq-contract-val
+ equal-contract?
+ equal-contract-val
+ char-in/c
+ 
+ contract-continuation-mark-key
+ with-contract-continuation-mark
+ 
+ (struct-out wrapped-extra-arg-arrow)
+ contract-custom-write-property-proc
+ (rename-out [contract-custom-write-property-proc custom-write-property-proc])
+ 
+ set-some-basic-contracts!
+ 
+ blame?
+ blame-source
+ blame-positive
+ blame-negative
+ blame-contract
+ blame-value
+ blame-original?
+ blame-swapped?
+ blame-swap
+ blame-replace-negative ;; used for indy blame
+ blame-update ;; used for option contract transfers
+ blame-add-context
+ blame-add-unknown-context
+ blame-context
+ 
+ blame-add-missing-party
+ blame-missing-party?
+ 
+ raise-blame-error
+ current-blame-format
+ (struct-out exn:fail:contract:blame)
+ blame-fmt->-string
+ 
  (rename-out [-make-chaperone-contract make-chaperone-contract]
              [-make-flat-contract make-flat-contract]
              [-build-chaperone-contract-property build-chaperone-contract-property]
@@ -199,4 +279,3 @@
          (λ (x)
            (x-acceptor x)
            x))))
-
