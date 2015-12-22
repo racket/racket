@@ -947,7 +947,7 @@
    absents absent-fields 
    internal opaque? name)
   #:omit-define-syntaxes
-  #:property prop:custom-write contract-custom-write-property-proc
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:late-neg-projection class/c-late-neg-proj
@@ -1382,7 +1382,7 @@
                            (base-instanceof/c-class-ctc that))))
 
 (define-struct base-instanceof/c (class-ctc)
-  #:property prop:custom-write contract-custom-write-property-proc
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property 
    #:late-neg-projection instanceof/c-late-neg-proj
@@ -1484,7 +1484,7 @@
                (contract-stronger? this-ctc that-ctc))))))
 
 (define-struct base-object/c (methods method-contracts fields field-contracts)
-  #:property prop:custom-write contract-custom-write-property-proc
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:late-neg-projection instanceof/c-late-neg-proj

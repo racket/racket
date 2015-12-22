@@ -245,7 +245,7 @@
 (struct base-async-channel/c (content))
 
 (struct chaperone-async-channel/c base-async-channel/c ()
-  #:property prop:custom-write contract-custom-write-property-proc
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name async-channel/c-name
@@ -255,7 +255,7 @@
    #:projection (ho-projection chaperone-async-channel)))
 
 (struct impersonator-async-channel/c base-async-channel/c ()
-  #:property prop:custom-write contract-custom-write-property-proc
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name async-channel/c-name

@@ -272,7 +272,7 @@
 (struct base-stream/c (content))
 
 (struct chaperone-stream/c base-stream/c ()
-  #:property prop:custom-write contract-custom-write-property-proc
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name stream/c-name
@@ -281,7 +281,7 @@
    #:projection (ho-projection chaperone-stream)))
 
 (struct impersonator-stream/c base-stream/c ()
-  #:property prop:custom-write contract-custom-write-property-proc
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
   (build-contract-property
    #:name stream/c-name
