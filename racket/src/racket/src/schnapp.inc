@@ -60,12 +60,19 @@ Scheme_Object *PRIM_APPLY_NAME(Scheme_Object *rator,
 
     t = _SCHEME_TYPE(rator);
 
+    if ((t == scheme_proc_chaperone_type)
+        && SCHEME_VECTORP(((Scheme_Chaperone *)rator)->redirects)
+        && (SCHEME_VEC_SIZE(((Scheme_Chaperone *)rator)->redirects) & 0x1)) {
+      if (SCHEME_FALSEP(SCHEME_VEC_ELS(((Scheme_Chaperone *)rator)->redirects)[0])) {
+        /* No redirection proc (i.e, chaperone is just for properties) */
+        rator = ((Scheme_Chaperone *)rator)->prev;
+        t = _SCHEME_TYPE(rator);
+      } else
+        return scheme_apply_chaperone(rator, argc, argv, NULL, PRIM_CHECK_MULTI | (PRIM_CHECK_VALUE << 1));
+    }
+
     if (t == scheme_prim_type) {
       return PRIM_APPLY_NAME_FAST(rator, argc, argv);
-    } else if ((t == scheme_proc_chaperone_type)
-               && SCHEME_VECTORP(((Scheme_Chaperone *)rator)->redirects)
-               && (SCHEME_VEC_SIZE(((Scheme_Chaperone *)rator)->redirects) & 0x1)) {
-      return scheme_apply_chaperone(rator, argc, argv, NULL, PRIM_CHECK_MULTI | (PRIM_CHECK_VALUE << 1));
     }
   }
 
