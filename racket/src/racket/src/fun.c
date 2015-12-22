@@ -3750,7 +3750,20 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       /* communicate `self_proc` to the next layer: */
       scheme_current_thread->self_for_proc_chaperone = self_proc;
     }
-    return _scheme_tail_apply(px->prev, argc, argv);
+    if (checks) {
+      /* cannot return a tail call */
+      MZ_CONT_MARK_POS -= 2;
+      if (checks & 0x1) {
+        v = _scheme_apply(px->prev, argc, argv);
+      } else if (SAME_TYPE(SCHEME_TYPE(px->prev), scheme_native_closure_type)) {
+        v = _apply_native(px->prev, argc, argv);
+      } else {
+        v = _scheme_apply_multi(px->prev, argc, argv);
+      }
+      MZ_CONT_MARK_POS += 2;
+      return v;
+    } else
+      return _scheme_tail_apply(px->prev, argc, argv);
   }
 
   /* Ensure that the original procedure accepts `argc' arguments: */
