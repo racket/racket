@@ -72,4 +72,23 @@
    '(let ()
       (struct doll (contents))
       (letrec ([doll-ctc2 (or/c 'center (struct/c doll (recursive-contract doll-ctc2 #:flat)))])
-        (contract doll-ctc2 (doll 4) 'pos 'neg)))))
+        (contract doll-ctc2 (doll 4) 'pos 'neg))))
+
+
+  (test/spec-passed/result
+   'recursive-contract-not-too-slow
+   '(let ()
+      (define c
+        (recursive-contract
+         (or/c null?
+               (cons/c (-> integer? integer? integer?) c)
+               (cons/c (-> integer? integer?) (cons/c (-> integer? integer?) c)))))
+
+      (define l (build-list 10000 (λ (x) (λ (x) x))))
+      (define-values (_ cpu real gc)
+        (time-apply (λ () (contract c l 'pos 'neg)) '()))
+      ;; should be substantially less than 5 seconds.
+      ;; with the old implementation it is more like 20 seconds
+      ;; on my laptop and about .3 seconds with the new one
+      (< (- cpu gc) 5000))
+   #t))

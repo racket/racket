@@ -243,38 +243,52 @@
            (pred val))
          val]
         [else
-         (let loop ([checks first-order-checks]
-                    [c-projs c-projs+blame]
-                    [contracts ho-contracts]
-                    [candidate-c-proj #f]
-                    [candidate-contract #f])
+         (define (try)
+           (let loop ([checks first-order-checks]
+                      [c-projs c-projs+blame]
+                      [contracts ho-contracts]
+                      [candidate-c-proj #f]
+                      [candidate-contract #f])
+             (cond
+               [(null? checks)
+                (cond
+                  [candidate-c-proj
+                   (values candidate-c-proj #f)]
+                  [else
+                   (raise-none-or-matched blame val neg-party)])]
+               [((car checks) val)
+                (if candidate-c-proj
+                    (values candidate-contract (car contracts))
+                    (loop (cdr checks)
+                          (cdr c-projs)
+                          (cdr contracts)
+                          (car c-projs)
+                          (car contracts)))]
+               [else
+                (loop (cdr checks)
+                      (cdr c-projs)
+                      (cdr contracts)
+                      candidate-c-proj
+                      candidate-contract)])))
+
+         (let loop ([how-hard '(10 100)])
            (cond
-             [(null? checks)
-              (cond
-                [candidate-c-proj
-                 (candidate-c-proj val neg-party)]
-                [else
-                 (raise-none-or-matched blame val neg-party)])]
-             [((car checks) val)
-              (if candidate-c-proj
-                  (raise-blame-error blame val #:missing-party neg-party
-                                     '("two of the clauses in the or/c might both match: ~s and ~s"
-                                       given:
-                                       "~e")
-                                     (contract-name candidate-contract)
-                                     (contract-name (car contracts))
-                                     val)
-                  (loop (cdr checks)
-                        (cdr c-projs)
-                        (cdr contracts)
-                        (car c-projs)
-                        (car contracts)))]
+             [(null? how-hard)
+              (define-values (last-try-first-one last-try-second-one) (try))
+              (when (and last-try-first-one last-try-second-one)
+                (raise-blame-error blame val #:missing-party neg-party
+                                   '("two of the clauses in the or/c might both match: ~s and ~s"
+                                     given:
+                                     "~e")
+                                   (contract-name last-try-first-one)
+                                   (contract-name last-try-second-one)
+                                   val))]
              [else
-              (loop (cdr checks)
-                    (cdr c-projs)
-                    (cdr contracts)
-                    candidate-c-proj
-                    candidate-contract)]))]))))
+              (define-values (this-try-first-one this-try-second-one)
+                (contract-first-order-only-try-so-hard (car how-hard) (try)))
+              (cond
+                [(not this-try-second-one) (this-try-first-one val neg-party)]
+                [else (loop (cdr how-hard))])]))]))))
 
 (define (raise-none-or-matched blame val neg-party)
   (raise-blame-error blame val #:missing-party neg-party

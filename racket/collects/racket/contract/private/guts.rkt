@@ -70,7 +70,11 @@
          contract-name
          maybe-warn-about-val-first
          
-         set-some-basic-contracts!)
+         set-some-basic-contracts!
+
+         contract-first-order-okay-to-give-up?
+         contract-first-order-try-less-hard
+         contract-first-order-only-try-so-hard)
 
 (define (contract-custom-write-property-proc stct port mode)
   (define (write-prefix)
@@ -729,6 +733,24 @@
     (λ (x)
       (val+np-acceptor x #f))))
 
+
+(define contract-first-order-okay-to-give-up-key (gensym 'contract-first-order-okay-to-give-up-key))
+(define (contract-first-order-okay-to-give-up?)
+  (zero? (continuation-mark-set-first #f
+                                      contract-first-order-okay-to-give-up-key
+                                      1)))
+(define-syntax-rule
+  (contract-first-order-try-less-hard e)
+  (contract-first-order-try-less-hard/proc (λ () e)))
+(define (contract-first-order-try-less-hard/proc th)
+  (define cv (continuation-mark-set-first #f contract-first-order-okay-to-give-up-key))
+  (if cv
+      (with-continuation-mark contract-first-order-okay-to-give-up-key (if (= cv 0) 0 (- cv 1))
+        (th))
+      (th)))
+(define-syntax-rule
+  (contract-first-order-only-try-so-hard n e)
+  (with-continuation-mark contract-first-order-okay-to-give-up-key n e))
 
 ;; Key used by the continuation mark that holds blame information for the current contract.
 ;; That information is consumed by the contract profiler.

@@ -1978,9 +1978,11 @@ The first-order predicate @racket[test] can be used to determine which values
 the contract applies to; this must be the set of values for which the
 contract fails immediately without any higher-order wrapping.  This test is used
 by @racket[contract-first-order-passes?], and indirectly by @racket[or/c]
- and @racket[from-or/c] to determine which higher-order contract to wrap a
- value with when there are multiple higher-order contracts to choose from.
- The default test accepts any value.
+and @racket[from-or/c] to determine which higher-order contract to wrap a
+value with when there are multiple higher-order contracts to choose from.
+The default test accepts any value. The predicate should be influenced by
+the value of @racket[(contract-first-order-okay-to-give-up?)] (see it's documentation
+for more explanation).
 
 The @racket[late-neg-proj] defines the behavior of applying the contract. If it is
 supplied, it accepts a blame object that does not have a value for
@@ -2745,7 +2747,11 @@ If it returns @racket[#f], the contract is guaranteed not to
 hold for that value; if it returns @racket[#t], the contract
 may or may not hold. If the contract is a first-order
 contract, a result of @racket[#t] guarantees that the
-contract holds.}
+contract holds.
+
+See also @racket[contract-first-order-okay-to-give-up?] and
+@racket[contract-first-order-try-less-hard].
+}
 
 @defproc[(contract-first-order [c contract?]) (-> any/c boolean?)]{
 Produces the first-order test used by @racket[or/c] to match values to
@@ -2941,6 +2947,35 @@ currently being checked.
   flat contract.
 
   @history[#:added "6.3"]
+}
+
+@defform[(contract-first-order-okay-to-give-up?)]{
+ This form returns a boolean that controls the result
+ of first-order contact checks. More specifically, if
+ it returns @racket[#t], then a first-order check may
+ return @racket[#t] even when the entire first-order
+ checks have not happened. If it returns @racket[#f]
+ then the first order checks must continue until a
+ definitive answer is returned.
+
+ This will only return @racket[#t] in the dynamic
+ extent of @racket[or/c] or @racket[first-or/c]'s
+ checking to determine which branch to use.
+ 
+ @history[#:added "6.3.0.9"]
+}
+@defform[(contract-first-order-try-less-hard e)]{
+ Encourages first-order checks that happen in the
+ dynamic-extent of @racket[e] to be more likely to
+ give up. That is, makes it more likely that
+ @racket[contract-first-order-okay-to-give-up?] might
+ return @racket[#t].
+
+ If not in the dynamic-extent of @racket[or/c]'s or
+ @racket[first-or/c]'s checking to determine the branch,
+ then this form has no effect.
+
+ @history[#:added "6.3.0.9"]
 }
 
 @defproc[(if/c [predicate (-> any/c any/c)]

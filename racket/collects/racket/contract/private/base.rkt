@@ -165,8 +165,11 @@
 (define (recursive-contract-stronger this that) (equal? this that))
 
 (define ((recursive-contract-first-order ctc) val)
-  (contract-first-order-passes? (force-recursive-contract ctc)
-                                val))
+  (cond
+    [(contract-first-order-okay-to-give-up?) #t]
+    [else (contract-first-order-try-less-hard
+           (contract-first-order-passes? (force-recursive-contract ctc)
+                                         val))]))
 
 (define (recursive-contract-generate ctc)
   (λ (fuel)
