@@ -66,6 +66,7 @@ static Scheme_Object *clear_runstack(Scheme_Object **rs, intptr_t amt, Scheme_Ob
 static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands, GC_CAN_IGNORE jit_insn *refagain)
 {
   GC_CAN_IGNORE jit_insn *ref2, *refz1, *refz2, *refz3, *refz4, *refz5;
+  GC_CAN_IGNORE jit_insn *refz6, *refz7, *refz8;
 
   ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_struct_type);
   jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Structure *)0x0)->stype);
@@ -109,11 +110,27 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   (void)jit_jmpi(refagain);
   CHECK_LIMIT();
 
+  mz_patch_branch(ref2);
+  /* check for a procedure impersonator that just keeps properties */
+  ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_chaperone_type);
+  jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Chaperone *)0x0)->redirects);
+  refz6 = mz_bnei_t(jit_forward(), JIT_R1, scheme_vector_type, JIT_R2);
+  (void)jit_ldxi_l(JIT_R2, JIT_R1, &SCHEME_VEC_SIZE(0x0));
+  refz7 = jit_bmci_i(jit_forward(), JIT_R2, 0x1);
+  (void)jit_ldxi_l(JIT_R2, JIT_R1, &(SCHEME_VEC_ELS(0x0)[0]));
+  refz8 = jit_bnei_p(jit_forward(), JIT_R2, scheme_false);
+  /* Can extract the impersonated function and use it directly */
+  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Chaperone *)0x0)->prev);
+  (void)jit_jmpi(refagain);
+
   mz_patch_branch(refz1);
   mz_patch_branch(refz2);
   mz_patch_branch(refz3);
   mz_patch_branch(refz4);
   mz_patch_branch(refz5);
+  mz_patch_branch(refz6);
+  mz_patch_branch(refz7);
+  mz_patch_branch(refz8);
 
   return ref2;
 }
@@ -347,9 +364,11 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
      must be >= 0 */
 {
   int i, r2_has_runstack = 0;
-  GC_CAN_IGNORE jit_insn *refagain, *ref, *ref2, *ref4, *ref5;
+  GC_CAN_IGNORE jit_insn *top_refagain, *refagain, *ref, *ref2, *ref4, *ref5;
 
   __START_SHORT_JUMPS__(num_rands < 100);
+
+  top_refagain = jit_get_ip();
 
   /* First, try fast direct jump to native code: */
   if (!direct_native) {
@@ -474,7 +493,7 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
     /* Handle simple applicable struct: */
     mz_patch_branch(ref2);
     /* uses JIT_R1: */
-    ref2 = generate_proc_struct_retry(jitter, num_rands, refagain);
+    ref2 = generate_proc_struct_retry(jitter, num_rands, top_refagain);
     CHECK_LIMIT();
   }
 
@@ -767,7 +786,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       if num_rands != -3, need to pop runstack before returning.
      If num_rands == -1 or -3, skip prolog. */
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref4, *ref5, *ref6, *ref7, *ref8, *ref9;
-  GC_CAN_IGNORE jit_insn *ref10, *refagain;
+  GC_CAN_IGNORE jit_insn *ref10, *refagain, *top_refagain;
   GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 #ifndef FUEL_AUTODECEREMENTS
   GC_CAN_IGNORE jit_insn *ref11;
@@ -784,6 +803,8 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
       reftop = jit_get_ip();
     }
   }
+
+  top_refagain = jit_get_ip();
 
   /* Check for inlined native type */
   if (!direct_native) {
@@ -1029,7 +1050,7 @@ int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direc
     if (!is_inlined && (num_rands >= 0)) {
       mz_patch_branch(ref2);
       /* uses JIT_R1 */
-      ref2 = generate_proc_struct_retry(jitter, num_rands, refagain);
+      ref2 = generate_proc_struct_retry(jitter, num_rands, top_refagain);
       CHECK_LIMIT();
     }
   } else {
