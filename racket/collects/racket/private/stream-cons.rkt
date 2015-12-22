@@ -28,46 +28,46 @@
  (syntax-rules ()
   ((stream-lazy expr)
    (make-stream
-    (mcons 'lazy (lambda () expr))))))
+    #false (lambda () expr)))))
 
 (define (stream-eager expr)
  (make-stream
-  (mcons 'eager expr)))
+  #true expr))
 
 (define-syntax stream-delay
  (syntax-rules ()
   ((stream-delay expr)
    (stream-lazy (stream-eager expr)))))
 
-(define (stream-force promise)
- (let ((content (stream-promise promise)))
-  (case (mcar content)
-   ((eager) (mcdr content))
-   ((lazy)  (let* ((promise* ((mcdr content))))
-              ;; check mcar again, it can it was set in the
-              ;; process of evaluating `(mcdr content)':
-              (if (eq? (mcar content) 'eager)
-                  ;; yes, it was set
-                  (mcdr content)
-                  ;; normal case: no, it wasn't set:
-                  (if (stream? promise*)
-                      ;; Flatten the result lazy stream and try again:
-                      (let ([new-content (stream-promise promise*)])
-                        (set-mcar! content (mcar new-content))
-                        (set-mcdr! content (mcdr new-content))
-                        (set-stream-promise! promise* content)
-                        (stream-force promise))
-                      ;; Forced result is not a lazy stream:
-                      (begin
-                        (unless (for:stream? promise*)
-                          (raise-mismatch-error 
-                           'stream-cons
-                           "rest expression produced a non-stream: "
-                           promise*))
-                        (set-mcdr! content promise*)
-                        (set-mcar! content 'eager)
-                        promise*))))))))
-                
+(define (stream-force stream)
+ (let ([value (stream-value stream)])
+   (case (stream-forced? stream)
+     [(#t) value]
+     [(#f) (let* ([value* (value)])
+             ;; check stream-forced? again, it can it was set in the
+             ;; process of evaluating `(value)':
+             (if (stream-forced? stream)
+                 ;; yes, it was set
+                 (stream-value stream)
+                 ;; normal case: no, it wasn't set:
+                 (if (stream? value*)
+                     ;; Flatten the result lazy stream and try again:
+                     (let ()
+                       (set-stream-forced?! stream (stream-forced? value*))
+                       (set-stream-value! stream (stream-value value*))
+                       
+                       (stream-force stream))
+                     ;; Forced result is not a lazy stream:
+                     (begin
+                       (unless (for:stream? value*)
+                         (raise-mismatch-error 
+                          'stream-cons
+                          "rest expression produced a non-stream: "
+                          value*))
+                       (set-stream-value! stream value*)
+                       (set-stream-forced?! stream #true)
+                       value*))))])))
+
 
 (define-syntax stream-lambda
  (syntax-rules ()
@@ -103,7 +103,7 @@
         (stream-pare-kdr v)
         (for:stream-rest v))))
 
-(define-struct stream (promise) 
+(define-struct stream (forced? value) 
   #:mutable
   #:property for:prop:stream (vector
                               stream-null?
