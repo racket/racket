@@ -74,15 +74,13 @@
 
 (define (single-or/c-late-neg-projection ctc)
   (define c-proj (get/build-late-neg-projection (single-or/c-ho-ctc ctc)))
-  (define c-first-order (contract-first-order (single-or/c-ho-ctc ctc)))
   (define pred (single-or/c-pred ctc))
   (λ (blame)
     (define p-app (c-proj (blame-add-or-context blame)))
     (λ (val neg-party)
       (cond 
        [(pred val) val]
-       [(c-first-order val) (p-app val neg-party)]
-       [else (raise-none-or-matched blame val neg-party)]))))
+       [else (p-app val neg-party)]))))
 
 (define (blame-add-or-context blame)
   (blame-add-context blame "a part of the or/c of"))
