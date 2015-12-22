@@ -62,10 +62,15 @@
            (fail val '(expected "an mutable vector" given: "~e" val)))]
         [else (void)])
       (when first-order?
-        (for ([e (in-vector val)]
-              [n (in-naturals)])
-          (unless (contract-first-order-passes? elem-ctc e)
-            (fail val '(expected: "~s for element ~s" given: "~e") (contract-name elem-ctc) n e))))
+        (let loop ([n 0])
+          (cond
+            [(= n (vector-length val))
+             (void)]
+            [else
+             (define e (vector-ref val n))
+             (unless (contract-first-order-passes? elem-ctc e)
+               (fail val '(expected: "~s for element ~s" given: "~e") (contract-name elem-ctc) n e))
+             (contract-first-order-try-less-hard (loop (+ n 1)))])))
       #t)))
 
 (define (check-late-neg-vectorof c)
