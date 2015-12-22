@@ -1,8 +1,7 @@
 #lang racket/base
 (require "guts.rkt"
          "blame.rkt"
-         "prop.rkt"
-         "misc.rkt")
+         "prop.rkt")
 (provide (rename-out [struct-type-property/c* struct-type-property/c]))
 
 (define (get-stpc-late-neg-proj stpc)

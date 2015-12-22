@@ -7,7 +7,6 @@
                     [module-identifier-mapping-get free-identifier-mapping-get]
                     [module-identifier-mapping-put! free-identifier-mapping-put!]
                     [module-identifier-mapping-for-each free-identifier-mapping-for-each])
-         "application-arity-checking.rkt"
          "arr-util.rkt"
          (for-template racket/base
                        "misc.rkt"))

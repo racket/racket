@@ -8,8 +8,6 @@
          "misc.rkt"
          "prop.rkt"
          "guts.rkt"
-         "generate.rkt"
-         racket/stxparam
          (prefix-in arrow: "arrow.rkt"))
 
 (provide (for-syntax build-chaperone-constructor/real)

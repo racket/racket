@@ -20,8 +20,7 @@ it around flattened out.
 (require "guts.rkt"
          "prop.rkt"
          "blame.rkt"
-         "opt.rkt"
-         "misc.rkt")
+         "opt.rkt")
 (require (for-syntax racket/base)
          (for-syntax "ds-helpers.rkt")
          (for-syntax "helpers.rkt")

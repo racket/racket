@@ -1,7 +1,6 @@
 #lang racket/base
 (require "prop.rkt"
          "blame.rkt"
-         "misc.rkt"
          "guts.rkt"
          (for-syntax "arr-util.rkt" racket/base))
 (provide parametric->/c)

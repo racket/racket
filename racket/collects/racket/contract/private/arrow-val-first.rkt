@@ -3,7 +3,6 @@
                      "application-arity-checking.rkt"
                      "arr-util.rkt")
          "kwd-info-struct.rkt"
-         "arity-checking.rkt"
          "blame.rkt"
          "misc.rkt"
          "prop.rkt"

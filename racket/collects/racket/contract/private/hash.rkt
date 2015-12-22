@@ -4,8 +4,7 @@
          syntax/location
          "guts.rkt"
          "blame.rkt"
-         "prop.rkt"
-         "misc.rkt")
+         "prop.rkt")
 
 (provide (rename-out [wrap-hash/c hash/c])
          hash/dc)

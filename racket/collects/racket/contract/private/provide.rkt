@@ -26,14 +26,10 @@
                                 [make-module-identifier-mapping make-free-identifier-mapping]
                                 [module-identifier-mapping-get free-identifier-mapping-get]
                                 [module-identifier-mapping-put! free-identifier-mapping-put!]))
-         "arrow.rkt"
          "arrow-val-first.rkt"
          "base.rkt"
          "guts.rkt"
-         "misc.rkt"
          "exists.rkt"
-         "opt.rkt"
-         "prop.rkt"
          "blame.rkt"
          syntax/location
          syntax/srcloc)

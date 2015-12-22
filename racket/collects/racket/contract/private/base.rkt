@@ -13,10 +13,7 @@
          "guts.rkt"
          "blame.rkt"
          "prop.rkt"
-         "arrow.rkt"
-         "misc.rkt"
-         "generate.rkt"
-         )
+         "generate.rkt")
 
 (begin-for-syntax
  (define lifted-key (gensym 'contract:lifted))

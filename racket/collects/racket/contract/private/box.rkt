@@ -3,8 +3,7 @@
 (require (for-syntax racket/base)
          "prop.rkt"
          "blame.rkt"
-         "guts.rkt"
-         "misc.rkt")
+         "guts.rkt")
 
 (provide box-immutable/c 
          (rename-out [wrap-box/c box/c]))
