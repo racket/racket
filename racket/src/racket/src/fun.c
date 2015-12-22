@@ -3696,11 +3696,12 @@ Scheme_Object *extract_impersonator_results(int c, int argc, Scheme_Object **arg
 /* must be at least 3: */
 #define MAX_QUICK_CHAP_ARGV 5
 
+#define CHAPERONE_KIND_STR(px) (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR) ? "chaperone" : "impersonator")
+
 Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val, int checks)
 /* auto_val => no need to actually call the function (but handle further chaperoning);
    checks & 0x2 => no tail; checks == 0x3 => no tail or multiple */
 {
-  const char *what;
   Scheme_Chaperone *px;
   Scheme_Object *v, *a[1], *a2[MAX_QUICK_CHAP_ARGV], **argv2, *post, *result_v, *orig_obj, *app_mark, *self_proc;
   int c, i, need_restore = 0;
@@ -3743,15 +3744,10 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       self_proc = o;
   }
 
-  if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
-    what = "chaperone";
-  else
-    what = "impersonator";
-
   if (SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0])) {
     /* no redirection procedure */
     if (SCHEME_CHAPERONEP(px->prev)) {
-      /* commuincate `self_proc` to the next layer: */
+      /* communicate `self_proc` to the next layer: */
       scheme_current_thread->self_for_proc_chaperone = self_proc;
     }
     return _scheme_tail_apply(px->prev, argc, argv);
@@ -3842,7 +3838,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   if (c >= argc) {
     int need_pop = 0;
     post = extract_impersonator_results(c, argc, argv2,
-                                        what, o, px,
+                                        CHAPERONE_KIND_STR(px), o, px,
                                         &cframe, &need_pop);
     need_pop_mark = need_pop;
     
@@ -3871,7 +3867,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                      "  wrapper: %V\n"
                      "  expected: %d or more\n"
                      "  received: %d",
-                     what,
+                     CHAPERONE_KIND_STR(px),
                      o,
                      SCHEME_VEC_ELS(px->redirects)[0],
                      argc,
@@ -3985,7 +3981,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "  original: %V\n"
                        "  wrapper: %V\n"
                        "  number of values: %d",
-                       what,
+                       CHAPERONE_KIND_STR(px),
                        o,
                        post,
                        c);
@@ -4031,7 +4027,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "  wrapper: %V\n"
                        "  expected: %d\n"
                        "  received: %d",
-                       what,
+                       CHAPERONE_KIND_STR(px),
                        o,
                        post,
                        c, argc);
