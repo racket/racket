@@ -28,12 +28,12 @@
 (provide (rename-out [->i/m ->i]))
 
 (define (build-??-args c-or-i-procedure ctc blame)
-  (define arg-ctc-projs (map (λ (x) (contract-late-neg-projection (->i-arg-contract x)))
+  (define arg-ctc-projs (map (λ (x) (get/build-late-neg-projection (->i-arg-contract x)))
                              (->i-arg-ctcs ctc)))
-  (define indy-arg-ctc-projs (map (λ (x) (contract-late-neg-projection (cdr x)))
+  (define indy-arg-ctc-projs (map (λ (x) (get/build-late-neg-projection (cdr x)))
                                   (->i-indy-arg-ctcs ctc)))
-  (define rng-ctc-projs (map (λ (x) (contract-late-neg-projection (cdr x))) (->i-rng-ctcs ctc)))
-  (define indy-rng-ctc-projs (map (λ (x) (contract-late-neg-projection (cdr x))) 
+  (define rng-ctc-projs (map (λ (x) (get/build-late-neg-projection (cdr x))) (->i-rng-ctcs ctc)))
+  (define indy-rng-ctc-projs (map (λ (x) (get/build-late-neg-projection (cdr x))) 
                                   (->i-indy-rng-ctcs ctc)))
   (define has-rest (->i-rest ctc))
   (define here (->i-here ctc))
@@ -1094,12 +1094,12 @@ evaluted left-to-right.)
         (raise-argument-error '->i
                               "chaperone-contract?"
                               orig-ctc))
-      (((contract-late-neg-projection ctc) blame) obj neg-party))))
+      (((get/build-late-neg-projection ctc) blame) obj neg-party))))
 
 (begin-encourage-inline
   (define (un-dep orig-ctc obj blame neg-party)
     (let ([ctc (coerce-contract '->i orig-ctc)])
-      (((contract-late-neg-projection ctc) blame) obj neg-party))))
+      (((get/build-late-neg-projection ctc) blame) obj neg-party))))
 
 (define-for-syntax (mk-used-indy-vars an-istx)
   (let ([vars (make-free-identifier-mapping)])

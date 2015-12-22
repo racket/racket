@@ -145,7 +145,7 @@
     [(recursive-contract-list-contract? ctc)
      (λ (blame)
        (define r-ctc (force-recursive-contract ctc))
-       (define f (contract-late-neg-projection r-ctc))
+       (define f (get/build-late-neg-projection r-ctc))
        (define blame-known (blame-add-context blame #f))
        (λ (val neg-party)
          (unless (list? val)
@@ -157,7 +157,7 @@
     [else
      (λ (blame)
        (define r-ctc (force-recursive-contract ctc))
-       (define f (contract-late-neg-projection r-ctc))
+       (define f (get/build-late-neg-projection r-ctc))
        (define blame-known (blame-add-context blame #f))
        (λ (val neg-party)
          ((f blame-known) val neg-party)))]))

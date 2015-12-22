@@ -1994,7 +1994,7 @@
           (define (stronger? this other)
             (contract-stronger? ctc other))
           (make-contract #:name name
-                         #:late-neg-projection (contract-late-neg-projection ctc)
+                         #:late-neg-projection (get/build-late-neg-projection ctc)
                          #:first-order (contract-first-order ctc)
                          #:stronger stronger?
                          #:list-contract? (list-contract? ctc))))))
@@ -2037,8 +2037,8 @@
 
 (define (if/c-late-neg-proj ctc)
   (define predicate (base-if/c-predicate ctc))
-  (define thn (contract-late-neg-projection (base-if/c-thn ctc)))
-  (define els (contract-late-neg-projection (base-if/c-els ctc)))
+  (define thn (get/build-late-neg-projection (base-if/c-thn ctc)))
+  (define els (get/build-late-neg-projection (base-if/c-els ctc)))
   (λ (blame)
     (define thn-proj (thn blame))
     (define els-proj (els blame))

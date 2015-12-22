@@ -184,7 +184,7 @@
 (define (case->-proj wrapper)
   (λ (ctc)
     (define dom-ctcs+case-nums (get-case->-dom-ctcs+case-nums ctc))
-    (define rng-late-neg-ctcs (map contract-late-neg-projection (get-case->-rng-ctcs ctc)))
+    (define rng-late-neg-ctcs (map get/build-late-neg-projection (get-case->-rng-ctcs ctc)))
     (define rst-ctcs (base-case->-rst-ctcs ctc))
     (define specs (base-case->-specs ctc))
     (λ (blame)
@@ -294,11 +294,11 @@
        [rst  (in-list (base-case->-rst-ctcs ctc))]
        [i (in-naturals)])
     (define dom+case-nums 
-      (map (λ (dom) (cons i (contract-late-neg-projection dom))) doms))
+      (map (λ (dom) (cons i (get/build-late-neg-projection dom))) doms))
     (append acc
             (if rst
                 (append dom+case-nums
-                        (list (cons i (contract-late-neg-projection rst))))
+                        (list (cons i (get/build-late-neg-projection rst))))
                 dom+case-nums))))
 
 (define (get-case->-rng-ctcs ctc)

@@ -260,7 +260,7 @@
         (cond
           [(indep? subcontract)
            (define sub-ctc (indep-ctc subcontract))
-           ((contract-late-neg-projection sub-ctc) blame+ctxt)]
+           ((get/build-late-neg-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define mut-projs
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
@@ -268,7 +268,7 @@
         (cond
           [(and (indep? subcontract) (mutable? subcontract))
            (define sub-ctc (indep-ctc subcontract))
-           ((contract-late-neg-projection sub-ctc) blame+ctxt)]
+           ((get/build-late-neg-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define orig-indy-projs
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
@@ -276,7 +276,7 @@
         (cond
           [(indep? subcontract)
            (define sub-ctc (indep-ctc subcontract))
-           ((contract-late-neg-projection sub-ctc) blame+ctxt)]
+           ((get/build-late-neg-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define orig-mut-indy-projs
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
@@ -284,7 +284,7 @@
         (cond
           [(indep? subcontract)
            (define sub-ctc (indep-ctc subcontract))
-           ((contract-late-neg-projection sub-ctc) blame+ctxt)]
+           ((get/build-late-neg-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (λ (v neg-party)
       (cond
@@ -339,7 +339,7 @@
                       'struct/dc 
                       (apply (dep-dep-proc subcontract) dep-args))))
               (when dep-ctc (check-flat/chaperone dep-ctc subcontract))
-              (define dep-ctc-blame-proj (and dep-ctc (contract-late-neg-projection dep-ctc)))
+              (define dep-ctc-blame-proj (and dep-ctc (get/build-late-neg-projection dep-ctc)))
               (define-values (new-chaperone-args new-impersonate-args)
                 (cond
                   [(invariant? subcontract)
@@ -589,7 +589,7 @@
           (define the-ctc 
             (coerce-contract 'struct/dc (apply (dep-dep-proc this-subcontract) dep-args)))
           (check-flat/chaperone the-ctc subcontract)
-          (((contract-late-neg-projection the-ctc) blame) val neg-party)]
+          (((get/build-late-neg-projection the-ctc) blame) val neg-party)]
          [else
           (define indy-blame (car blames))
           (define proj (car projs))
@@ -598,7 +598,7 @@
                  (coerce-contract 
                   'struct/dc 
                   (apply (dep-dep-proc subcontract) dep-args))))
-          (define dep-ctc-blame-proj (and dep-ctc (contract-late-neg-projection dep-ctc)))
+          (define dep-ctc-blame-proj (and dep-ctc (get/build-late-neg-projection dep-ctc)))
           
           (when (dep? subcontract)
             (check-flat/chaperone dep-ctc subcontract))

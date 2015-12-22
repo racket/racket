@@ -7,7 +7,7 @@
 
 (define (get-stpc-late-neg-proj stpc)
   (define get-late-neg-proj
-    (contract-late-neg-projection
+    (get/build-late-neg-projection
      (struct-type-property/c-value-contract stpc)))
   (λ (input-blame)
     (define blame (blame-add-context input-blame "the struct property value of" #:swap? #t))

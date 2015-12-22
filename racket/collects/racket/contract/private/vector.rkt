@@ -358,7 +358,7 @@
        (define blame+ctxt (blame-add-element-of-context blame))
        (define val+np-acceptors
          (for/list ([c (in-list (base-vector/c-elems ctc))])
-           ((contract-late-neg-projection c) blame+ctxt)))
+           ((get/build-late-neg-projection c) blame+ctxt)))
        (λ (val neg-party)
          (with-contract-continuation-mark
           (cons blame neg-party)
@@ -377,12 +377,12 @@
          (let ([elem-pos-projs (for/vector #:length (length elem-ctcs)
                                  ([c (in-list elem-ctcs)]
                                   [i (in-naturals)])
-                                 ((contract-late-neg-projection c)
+                                 ((get/build-late-neg-projection c)
                                   (blame-add-context blame (format "the ~a element of" (n->th i)))))]
                [elem-neg-projs (for/vector #:length (length elem-ctcs)
                                  ([c (in-list elem-ctcs)]
                                   [i (in-naturals)])
-                                 ((contract-late-neg-projection c)
+                                 ((get/build-late-neg-projection c)
                                   (blame-add-context blame (format "the ~a element of" (n->th i))
                                                      #:swap? #t)))])
            (λ (val neg-party)
