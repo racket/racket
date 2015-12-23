@@ -19,7 +19,8 @@
 ; THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #lang racket/base
-(require (prefix-in for: racket/private/for))
+(require (prefix-in for: racket/private/for)
+         racket/promise)
 
 (provide stream-null stream-cons stream? stream-null? stream-pair?
          stream-car stream-cdr stream-lambda)
@@ -55,7 +56,6 @@
                      (let ()
                        (set-stream-forced?! stream (stream-forced? value*))
                        (set-stream-value! stream (stream-value value*))
-                       
                        (stream-force stream))
                      ;; Forced result is not a lazy stream:
                      (begin
@@ -89,12 +89,12 @@
 (define-syntax stream-cons
  (syntax-rules ()
   ((stream-cons obj strm)
-   (stream-eager (make-stream-pare (stream-delay obj) (stream-lazy strm))))))
+   (stream-eager (make-stream-pare (delay obj) (stream-lazy strm))))))
 
 (define (stream-car strm)
   (let ([v (stream-force strm)])
     (if (stream-pare? v)
-        (stream-force (stream-pare-kar v))
+        (force (stream-pare-kar v))
         (for:stream-first v))))
 
 (define (stream-cdr strm)
