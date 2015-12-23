@@ -35,11 +35,6 @@
  (make-stream
   #true expr))
 
-(define-syntax stream-delay
- (syntax-rules ()
-  ((stream-delay expr)
-   (stream-lazy (stream-eager expr)))))
-
 (define (stream-force stream)
  (let ([value (stream-value stream)])
    (case (stream-forced? stream)
@@ -74,33 +69,31 @@
   ((stream-lambda formals body0 body1 ...)
    (lambda formals (stream-lazy (let () body0 body1 ...))))))
 
-(define-struct stream-pare (kar kdr))
-
 (define (stream-null? obj)
   (let ([v (stream-force obj)])
-    (if (stream-pare? v)
+    (if (pair? v)
         #f
         (or (eqv? v (stream-force stream-null))
             (for:stream-empty? v)))))
 
 (define (stream-pair? obj)
- (and (stream? obj) (stream-pare? (stream-force obj))))
+ (and (stream? obj) (pair? (stream-force obj))))
 
 (define-syntax stream-cons
  (syntax-rules ()
   ((stream-cons obj strm)
-   (stream-eager (make-stream-pare (delay obj) (stream-lazy strm))))))
+   (stream-eager (cons (delay obj) (stream-lazy strm))))))
 
 (define (stream-car strm)
   (let ([v (stream-force strm)])
-    (if (stream-pare? v)
-        (force (stream-pare-kar v))
+    (if (pair? v)
+        (force (car v))
         (for:stream-first v))))
 
 (define (stream-cdr strm)
   (let ([v (stream-force strm)])
-    (if (stream-pare? v)
-        (stream-pare-kdr v)
+    (if (pair? v)
+        (cdr v)
         (for:stream-rest v))))
 
 (define-struct stream (forced? value) 
@@ -110,4 +103,4 @@
                               stream-car
                               stream-cdr))
 
-(define stream-null (stream-delay (cons 'stream 'null)))
+(define stream-null (stream-eager '()))
