@@ -98,9 +98,59 @@
 
 (define-struct stream (forced? value) 
   #:mutable
+  #:property prop:custom-write
+  (lambda (this out mode)
+    (cond [(or (not (stream-forced? this)) (boolean? mode))
+           (write-string "#<stream>" out)
+           (void)]
+          [else
+           (print-stream this out)]))
   #:property for:prop:stream (vector
                               stream-null?
                               stream-car
                               stream-cdr))
 
 (define stream-null (stream-eager '()))
+
+(define (print-stream stream out)
+  (define-values [forced-list rest]
+    (let loop ([rev-forced-list '()] [rest stream] [seen (hasheq stream #true)])
+      (cond [(or (not (stream-forced? rest))
+                 (stream-null? rest))
+             (values (reverse rev-forced-list) rest)]
+            [else
+             (define rev-forced-list+
+               (cons (stream-car rest) rev-forced-list))
+             (define rest-rest
+               (stream-cdr rest))
+             (cond [(or (not (stream? rest-rest))
+                        (hash-ref seen rest-rest #f))
+                    (values (reverse rev-forced-list+) rest-rest)]
+                   [else
+                    (loop rev-forced-list+ rest-rest (hash-set seen rest-rest #true))])])))
+  (cond
+    [(stream? rest)
+     (cond
+       [(and (stream-forced? rest) (stream-null? rest))
+        (write-string "(stream" out)
+        (for ([elem (in-list forced-list)])
+          (fprintf out " ~v" elem))
+        (write-string ")" out)
+        (void)]
+       [(not (null? forced-list))
+        (write-string "(stream*" out)
+        (for ([elem (in-list forced-list)])
+          (fprintf out " ~v" elem))
+        (write-string " #<stream>)" out)
+        (void)]
+       [else
+        (write-string "#<stream>" out)
+        (void)])]
+    [else
+     (write-string "(stream*" out)
+     (for ([elem (in-list forced-list)])
+       (fprintf out " ~v" elem))
+     (fprintf out " ~v)" rest)
+     (void)]))
+
+
