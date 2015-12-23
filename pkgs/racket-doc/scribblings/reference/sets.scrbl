@@ -695,6 +695,59 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
+@defproc[(impersonate-hash-set [st mutable-set?]
+                               [ref-proc (-> set? any/c any/c)]
+                               [add-proc (-> set? any/c any/c)]
+                               [remove-proc (-> set? any/c any/c)]
+                               [clear-proc (or/c #f (-> set? any))]
+                               [prop impersonator-property?]
+                               [prop-val any/c] ... ...)
+         (and/c set? impersonator?)]{
+ Impersonates @racket[set], redirecting via the given procedures.
+
+ The @racket[ref-proc] procedure
+ is called whenever an element is extracted from @racket[st]. Its first argument
+ is the set and its second argument is the element being extracted. The
+ result of @racket[ref-proc] is used in place of the extracted argument.
+
+ The @racket[add-proc] procedure is called whenever an element is added to @racket[st].
+ Its first argument is the set and its second argument is the element being
+ added. The result of the procedure is the one actually added to the set.
+
+ The @racket[remove-proc] procedure is called whenever an element is removed
+ from @racket[st]. Its first argument is the set and its second argument is the
+ element being removed. The result of the procedure is the element that actually
+ gets removed from the set.
+ 
+ If @racket[clear-proc] is not @racket[#f], it must accept @racket[set] as
+ an argument and is result is ignored. The fact that @racket[clear-proc]
+ returns (as opposed to raising an exception or otherwise escaping) grants the
+ capability to remove all elements from @racket[st].
+ If @racket[clear-proc] is @racket[#f], then
+ @racket[set-clear] or @racket[set-clear!] on the impersonated set
+ is implemented using @racket[custom-set-first], @racket[custom-set-rest]
+ and @racket[set-remove] or @racket[set-remove!].
+
+ Pairs of @racket[prop] and @racket[prop-val] (the number of arguments to
+ @racket[impersonate-hash-set] must be odd) add @tech{impersonator properties} or
+ override impersonator property values of @racket[st].
+}
+
+@defproc[(chaperone-hash-set [st (or/c set? mutable-set?)]
+                             [ref-proc (-> set? any/c any/c)]
+                             [add-proc (-> set? any/c any/c)]
+                             [remove-proc (-> set? any/c any/c)]
+                             [clear-proc (or/c #f (-> set? any))]
+                             [prop impersonator-property?]
+                             [prop-val any/c] ... ...)
+         (and/c set? chaperone?)]{
+ Chaperones @racket[set]. Like @racket[impersonate-hash-set] but with
+ the constraints that the results of the @racket[ref-proc],
+ @racket[add-proc], and @racket[remove-proc] must be
+ @racket[chaperone-of?] their second arguments. Also, the input
+ may be an @racket[immutable?] set.
+}
+
 @section{Custom Hash Sets}
 
 @defform[(define-custom-set-types name 

@@ -596,4 +596,40 @@
 (test/blame-pos (set-first (app-ctc (set/c string?) (set 1))))
 (test/blame-neg (set-add! (app-ctc (set/c string? #:kind 'mutable) (mutable-set)) 1))
 
+(let ([s (set (list 1 2))])
+  (test #f eq?
+        (set-first (chaperone-hash-set s
+                                       (λ (s l) (apply list l))
+                                       (λ (s l) l)
+                                       (λ (s l) l)))
+        (set-first s)))
+(let ([s (set (list 1 2))])
+  (test #t eq?
+        (set-first (chaperone-hash-set s
+                                       (λ (s l) l)
+                                       (λ (s l) l)
+                                       (λ (s l) l)))
+        (set-first s)))
+(let ([l (list 1 2)])
+  (test #f eq?
+        (set-first (set-add (chaperone-hash-set (set)
+                                                (λ (s l) l)
+                                                (λ (s l) (apply list l))
+                                                (λ (s l) l))
+                            l))
+        l))
+(let ([l (list 1 2)])
+  (test #t eq?
+        (set-first (set-add (chaperone-hash-set (set)
+                                                (λ (s l) l)
+                                                (λ (s l) l)
+                                                (λ (s l) l))
+                            l))
+        l))
+(test #t even?
+      (set-first (impersonate-hash-set (mutable-set 1 3 5)
+                                       (λ (s e) (+ e 1))
+                                       (λ (s l) l)
+                                       (λ (s l) l))))
+
 (report-errs)
