@@ -62,8 +62,8 @@ grammar of @racket[_info-module]:
                 list* reverse append
                 string-append
                 make-immutable-hash hash hash-set hash-set* hash-remove hash-clear hash-update
-                path->string build-path collection-path
-                system-library-subpath]
+                path->string build-path collection-path if equal?
+                system-library-subpath system-type]
 ]
 
 For example, the following declaration could be the @filepath{info.rkt}

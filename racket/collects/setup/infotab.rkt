@@ -67,5 +67,6 @@
            string-append
            path->string build-path collection-path
            system-library-subpath
+           if system-type equal?
            (rename-out [limited-require require])
            lib))
