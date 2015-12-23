@@ -709,7 +709,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
                      (code:line hash1-expr)
                      (code:line hash1-expr hash2-expr)])]{
 
-Creates a new set type based on the given comparison @racket[comparison-expr],
+Creates a new hash set type based on the given comparison @racket[comparison-expr],
 hash functions @racket[hash1-expr] and @racket[hash2-expr], and element
 predicate @racket[predicate-expr]; the interfaces for these functions are the
 same as in @racket[make-custom-set-types].  The new set type has three
@@ -749,6 +749,8 @@ initial elements.
   (make-mutable-string-set '("apple" "banana")))
 (generic-set? imm)
 (generic-set? mut)
+(set? imm)
+(generic-set? imm)
 (string-set? imm)
 (string-set? mut)
 (immutable-string-set? imm)
