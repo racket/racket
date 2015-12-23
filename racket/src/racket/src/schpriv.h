@@ -2788,6 +2788,10 @@ typedef struct Scheme_Native_Closure_Data {
 
 #define SCHEME_NATIVE_CLOSURE_DATA_FLAGS(obj) MZ_OPT_HASH_KEY(&(obj)->iso)
 
+/* This flag is set pre-JIT: */
+#define NATIVE_SPECIALIZED 0x1
+/* Other flags are in "jit.h" */
+
 typedef struct {
   Scheme_Object so;
   Scheme_Native_Closure_Data *code;

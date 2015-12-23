@@ -479,7 +479,7 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   if (direct_native && direct_to_code) {
     __END_SHORT_JUMPS__(num_rands < 100);
     /* load closure pointer into R0: */
-    scheme_mz_load_retained(jitter, JIT_R0, direct_to_code);
+    scheme_mz_load_retained(jitter, JIT_R0, direct_to_code, 0);
     /* jump directly: */
     (void)jit_jmpi(direct_to_code->code->u.tail_code);
     /* no slow path in this mode */
@@ -1762,6 +1762,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   rator = (alt_rands ? alt_rands[0] : app->args[0]);
 
+  rator = scheme_specialize_to_constant(rator, jitter, num_rands);
+
   if (no_call == 2) {
     direct_prim = 1;
   } else if (SCHEME_PRIMP(rator)) {
@@ -1828,6 +1830,9 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
           }
         }
       }
+    } else if (SAME_TYPE(t, scheme_native_closure_type)) {
+      direct_native = can_direct_native(rator, num_rands, &extract_case);
+      reorder_ok = 1;
     } else if (SAME_TYPE(t, scheme_closure_type)) {
       Scheme_Closure_Data *data;
       data = ((Scheme_Closure *)rator)->code;

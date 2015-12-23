@@ -613,13 +613,14 @@
      (define p? (predicate-contract-pred ctc))
      (define name (predicate-contract-name ctc))
      (λ (blame)
-       (λ (v neg-party)
-         (if (p? v)
-             v
-             (raise-blame-error blame v #:missing-party neg-party
-                                '(expected: "~s" given: "~e")
-                                name 
-                                v)))))
+       (procedure-specialize
+        (λ (v neg-party)
+          (if (p? v)
+              v
+              (raise-blame-error blame v #:missing-party neg-party
+                                 '(expected: "~s" given: "~e")
+                                 name
+                                 v))))))
    #:generate (λ (ctc)
                  (let ([generate (predicate-contract-generate ctc)])
                    (cond

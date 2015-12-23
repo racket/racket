@@ -314,7 +314,8 @@
                                    #,(if post post #'#f)
                                    #,(if rngs #'(list rb ...) #'#f))]))
         #`(λ (blame f regb ... optb ... kb ... okb ... rb ... #,@(if rest (list #'restb) '()))
-            #,body-proc)))))
+            (procedure-specialize
+             #,body-proc))))))
 
 (define (make-checking-proc f blame pre
                             original-mandatory-kwds kbs

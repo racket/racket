@@ -487,6 +487,21 @@ field of @racket[v] applied to @racket[v1] and @racket[v2] produces
 and @racket[v2], and its result is returned by
 @racket[checked-procedure-check-and-extract].}
 
+
+@defproc[(procedure-specialize [proc procedure?])
+         procedure?]{
+
+Returns @racket[proc] or its equivalent, but provides a hint to the
+run-time system that it should spend extra time and memory to
+specialize the implementation of @racket[proc].
+
+The hint is currently used when @racket[proc] is the value of a
+@racket[lambda] or @racket[case-lambda] form that references variables
+bound outside of the @racket[lambda] or @racket[case-lambda], and when
+@racket[proc] has not been previously applied.
+
+@history[#:added "6.3.0.10"]}
+
 @; ----------------------------------------------------------------------
 
 @section{Reflecting on Primitives}

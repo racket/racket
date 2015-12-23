@@ -174,7 +174,7 @@ static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter, int ex
       return check_val_struct_prim(p, arity);
     } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_local_type)) {
       Scheme_Object *p;
-      p = scheme_extract_closure_local(o, jitter, extra_push);
+      p = scheme_extract_closure_local(o, jitter, extra_push, 0);
       return check_val_struct_prim(p, arity);
     }
   }
@@ -946,6 +946,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 /* de-sync's, unless branch */
 {
   Scheme_Object *rator = app->rator;
+
+  rator = scheme_specialize_to_constant(rator, jitter, 1);
 
   {
     int k;
@@ -2088,6 +2090,9 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
    Return is 1 if thr arguments are in order, -1 if reversed. */
 {
   int simple1, simple2, direction = 1;
+
+  rand1 = scheme_specialize_to_constant(rand1, jitter, skipped);
+  rand2 = scheme_specialize_to_constant(rand2, jitter, skipped);
   
   simple1 = scheme_is_relatively_constant_and_avoids_r1(rand1, rand2);
   simple2 = scheme_is_relatively_constant_and_avoids_r1(rand2, rand1);
@@ -2480,6 +2485,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 {
   Scheme_Object *rator = app->rator;
 
+  rator = scheme_specialize_to_constant(rator, jitter, 2);
+
   if (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "ptr-ref")) {
     Scheme_App_Rec *app2;
     mz_rs_sync();
@@ -2550,7 +2557,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	  && !SCHEME_FALSEP(a1)
 	  && !SCHEME_VOIDP(a1)
 	  && !SAME_OBJ(a1, scheme_true)) {
-	scheme_mz_load_retained(jitter, JIT_R1, a1);
+	scheme_mz_load_retained(jitter, JIT_R1, a1, 0);
 	ref = jit_bner_p(jit_forward(), JIT_R0, JIT_R1);
         /* In case true is a fall-through, note that the test 
            didn't disturb R0: */
@@ -3837,7 +3844,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         ref = jit_bnei_p(jit_forward(), JIT_R0, scheme_undefined);
         __END_TINY_JUMPS__(1);
 
-        scheme_mz_load_retained(jitter, JIT_R1, app->rand2);
+        scheme_mz_load_retained(jitter, JIT_R1, app->rand2, 0);
         if (IS_NAMED_PRIM(rator, "check-not-unsafe-undefined"))
           (void)jit_calli(sjc.call_check_not_defined_code);
         else
@@ -3950,7 +3957,9 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 /* de-sync's; for branch, sync'd before */
 {
   Scheme_Object *rator = app->args[0];
- 
+
+  rator = scheme_specialize_to_constant(rator, jitter, app->num_args);
+
   if (!for_branch) {
     int k;
     k = inlineable_struct_prim(rator, jitter, app->num_args, app->num_args);

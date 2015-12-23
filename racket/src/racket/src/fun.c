@@ -179,6 +179,7 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonate_procedure(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_procedure_star(int argc, Scheme_Object *argv[]);
@@ -592,6 +593,11 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_make_folding_prim(procedure_equal_closure_p,
 						      "procedure-closure-contents-eq?",
 						      2, 2, 1),
+			     env);
+  scheme_add_global_constant("procedure-specialize",
+			     scheme_make_prim_w_arity(procedure_specialize,
+						      "procedure-specialize",
+						      1, 1),
 			     env);
   scheme_add_global_constant("chaperone-procedure",
 			     scheme_make_prim_w_arity(chaperone_procedure,
@@ -3423,6 +3429,26 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
   }
 
   return scheme_false;
+}
+
+static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_PROCP(argv[0]))
+    scheme_wrong_contract("procedure-specialize", "procedure?", 0, argc, argv);
+  
+  if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_native_closure_type)) {
+    Scheme_Native_Closure *nc = (Scheme_Native_Closure *)argv[0];
+    if ((nc->code->start_code == scheme_on_demand_jit_code)
+        && !(SCHEME_NATIVE_CLOSURE_DATA_FLAGS(nc->code) & NATIVE_SPECIALIZED)) {
+      Scheme_Native_Closure_Data *data;
+      data = MALLOC_ONE_TAGGED(Scheme_Native_Closure_Data);
+      memcpy(data, nc->code, sizeof(Scheme_Native_Closure_Data));
+      SCHEME_NATIVE_CLOSURE_DATA_FLAGS(data) |= NATIVE_SPECIALIZED;
+      nc->code = data;
+    }
+  }
+  
+  return argv[0];
 }
 
 static Scheme_Object *do_chaperone_procedure(const char *name, const char *whating,

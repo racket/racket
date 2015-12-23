@@ -453,18 +453,16 @@ Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc
   return globs->a[pos];
 }
 
-Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push)
+static Scheme_Object *extract_closure_local(int pos, mz_jit_state *jitter, int get_constant)
 {
-  int pos;
-
-  pos = SCHEME_LOCAL_POS(obj);
-  pos -= extra_push;
   if (pos >= jitter->self_pos - jitter->self_to_closure_delta) {
     pos -= (jitter->self_pos - jitter->self_to_closure_delta);
     if (pos < jitter->nc->code->u2.orig_code->closure_size) {
       /* in the closure */
-      return jitter->nc->vals[pos];
-    } else {
+      if (!get_constant
+          || (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED))
+        return jitter->nc->vals[pos];
+    } else if (!get_constant) {
       /* maybe an example argument... which is useful when
          the enclosing function has been lifted, converting
          a closure element into an argument */
@@ -475,6 +473,43 @@ Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *ji
   }
 
   return NULL;
+}
+
+Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter,
+                                            int extra_push, int get_constant)
+{
+  int pos;
+
+  pos = SCHEME_LOCAL_POS(obj);
+  pos -= extra_push;
+  return extract_closure_local(pos, jitter, get_constant);
+}
+
+
+Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *jitter, int extra_push)
+{
+  Scheme_Object *c;
+
+  if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
+    if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)) {
+      c = scheme_extract_closure_local(obj, jitter, extra_push, 1);
+      if (c) {
+        MZ_ASSERT(SCHEME_TYPE(c) != scheme_prefix_type);
+        return c;
+      }
+    }
+
+    if (SAME_TYPE(SCHEME_TYPE(obj), scheme_toplevel_type)) {
+      c = scheme_extract_global(obj, jitter->nc, 0);
+      if (c) {
+        c = ((Scheme_Bucket *)c)->val;
+        if (c)
+          return c;
+      }
+    }
+  }
+
+  return obj;
 }
 
 int scheme_native_closure_preserves_marks(Scheme_Object *p)
@@ -496,6 +531,8 @@ int scheme_native_closure_preserves_marks(Scheme_Object *p)
 
 int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack_start)
 {
+  a = scheme_specialize_to_constant(a, jitter, stack_start);
+
   if (SCHEME_PRIMP(a)) {
     int opts;
     opts = ((Scheme_Prim_Proc_Header *)a)->flags & SCHEME_PRIM_OPT_MASK;
@@ -601,27 +638,40 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
     break;
 
   case scheme_application_type:
-    if (scheme_inlined_nary_prim(((Scheme_App_Rec *)obj)->args[0], obj, jitter)
-        && !SAME_OBJ(((Scheme_App_Rec *)obj)->args[0], scheme_values_func))
-      return 1;
-    if (just_markless) {
-      return scheme_is_noncm(((Scheme_App_Rec *)obj)->args[0], jitter, depth, 
-                             stack_start + ((Scheme_App_Rec *)obj)->num_args);
+    {
+      Scheme_Object *rator;
+      rator = scheme_specialize_to_constant(((Scheme_App_Rec *)obj)->args[0], jitter,
+                                            stack_start +  ((Scheme_App_Rec *)obj)->num_args);
+      if (scheme_inlined_nary_prim(rator, obj, jitter)
+          && !SAME_OBJ(rator, scheme_values_func))
+        return 1;
+      if (just_markless) {
+        return scheme_is_noncm(rator, jitter, depth, 
+                               stack_start + ((Scheme_App_Rec *)obj)->num_args);
+      }
     }
     break;
   case scheme_application2_type:
-    if (scheme_inlined_unary_prim(((Scheme_App2_Rec *)obj)->rator, obj, jitter))
-      return 1;
-    else if (just_markless) {
-      return scheme_is_noncm(((Scheme_App2_Rec *)obj)->rator, jitter, depth, stack_start + 1);
+    {
+      Scheme_Object *rator;
+      rator = scheme_specialize_to_constant(((Scheme_App2_Rec *)obj)->rator, jitter, stack_start + 1);
+      if (scheme_inlined_unary_prim(rator, obj, jitter))
+        return 1;
+      else if (just_markless) {
+        return scheme_is_noncm(rator, jitter, depth, stack_start + 1);
+      }
     }
     break;
   case scheme_application3_type:
-    if (scheme_inlined_binary_prim(((Scheme_App2_Rec *)obj)->rator, obj, jitter)
-        && !SAME_OBJ(((Scheme_App2_Rec *)obj)->rator, scheme_values_func)) 
-      return 1;
-    else if (just_markless) {
-      return scheme_is_noncm(((Scheme_App3_Rec *)obj)->rator, jitter, depth, stack_start + 2);
+    {
+      Scheme_Object *rator;
+      rator = scheme_specialize_to_constant(((Scheme_App3_Rec *)obj)->rator, jitter, stack_start + 2);
+      if (scheme_inlined_binary_prim(rator, obj, jitter)
+          && !SAME_OBJ(rator, scheme_values_func)) 
+        return 1;
+      else if (just_markless) {
+        return scheme_is_noncm(rator, jitter, depth, stack_start + 2);
+      }
     }
     break;
     
@@ -1177,7 +1227,7 @@ static int generate_closure(Scheme_Closure_Data *data,
         jit_movi_l(JIT_R1, init_word);
         jit_str_l(JIT_R0, JIT_R1); 
       }
-    scheme_mz_load_retained(jitter, JIT_R1, code);
+    scheme_mz_load_retained(jitter, JIT_R1, code, 0);
     jit_stxi_p((intptr_t)&((Scheme_Native_Closure *)0x0)->code, JIT_R0, JIT_R1);
 
     return 1;
@@ -1187,7 +1237,7 @@ static int generate_closure(Scheme_Closure_Data *data,
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
 
   mz_prepare(1);
-  scheme_mz_load_retained(jitter, JIT_R0, code);
+  scheme_mz_load_retained(jitter, JIT_R0, code, 0);
   jit_pusharg_p(JIT_R0);
   {
     GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
@@ -1337,7 +1387,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
 
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(1);
-  scheme_mz_load_retained(jitter, JIT_R0, ndata);
+  scheme_mz_load_retained(jitter, JIT_R0, ndata, 0);
   jit_pusharg_p(JIT_R0);
   {
     GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
@@ -1686,6 +1736,9 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   }
   CHECK_LIMIT();
 
+  if (old_self_pos != jitter->self_pos)
+    scheme_signal_error("internal error: self position moved across test");
+
   save_ubd = jitter->unbox_depth;
   scheme_mz_unbox_restore(jitter, &ubs);
 
@@ -1923,6 +1976,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   }
 #endif
 
+  obj = scheme_specialize_to_constant(obj, jitter, 0);
+
   orig_target = target;
   result_ignored = (target < 0);
   if (target < 0) target = JIT_R0;
@@ -1948,12 +2003,20 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         START_JIT_DATA();
         LOG_IT(("top-level\n"));
         mz_rs_sync_fail_branch();
-        /* Load global array: */
-        pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
-        mz_rs_ldxi(JIT_R2, pos);
-        /* Load bucket: */
-        pos = SCHEME_TOPLEVEL_POS(obj);
-        jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+        if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
+          /* Must be a top-level that is not yet defined. */
+          Scheme_Object *b;
+          mz_rs_sync_fail_branch();
+          b = scheme_extract_global(obj, jitter->nc, 0);
+          scheme_mz_load_retained(jitter, JIT_R2, b, 1);
+        } else {
+          /* Load global array: */
+          pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
+          mz_rs_ldxi(JIT_R2, pos);
+          /* Load bucket: */
+          pos = SCHEME_TOPLEVEL_POS(obj);
+          jit_ldxi_p(JIT_R2, JIT_R2, &(((Scheme_Prefix *)0x0)->a[pos]));
+        }
         /* Extract bucket value */
         jit_ldxi_p(target, JIT_R2, &(SCHEME_VAR_BUCKET(0x0)->val));
         CHECK_LIMIT();
@@ -2054,15 +2117,23 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   case scheme_local_unbox_type:
     {
       int pos;
+      Scheme_Object *specialized = NULL;
       START_JIT_DATA();
       LOG_IT(("unbox local\n"));
 
+      if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
+        specialized = scheme_extract_closure_local(obj, jitter, 0, 1);
+
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
       if (!result_ignored) {
-        mz_rs_ldxi(JIT_R0, pos);
+        if (specialized)
+          scheme_mz_load_retained(jitter, JIT_R0, specialized, 1);
+        else
+          mz_rs_ldxi(JIT_R0, pos);
         jit_ldr_p(target, JIT_R0);
       }
-      if (SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_CLEAR_ON_READ) {
+      if ((SCHEME_GET_LOCAL_FLAGS(obj) == SCHEME_LOCAL_CLEAR_ON_READ)
+          && !specialized) {
         LOG_IT(("clear-on-read\n"));
         mz_rs_stxi(pos, JIT_RUNSTACK);
       }
@@ -2255,6 +2326,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       v = SCHEME_PTR1_VAL(obj);
       p = SCHEME_PTR2_VAL(obj);
+
+      v = scheme_specialize_to_constant(v, jitter, 0);
+      p = scheme_specialize_to_constant(p, jitter, 0);
 
       scheme_generate_non_tail(v, jitter, 0, 1, 0);
       CHECK_LIMIT();
@@ -2727,13 +2801,20 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       if (lv->count == 1) {
 	/* Expect one result: */
+        Scheme_Object *specialized = NULL;
+        if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
+          specialized = extract_closure_local(lv->position, jitter, 1);
 	scheme_generate_non_tail(lv->value, jitter, 0, 1, 0); /* no sync */
 	CHECK_LIMIT();
 	if (ab) {
 	  pos = mz_remap(lv->position);
-	  mz_rs_ldxi(JIT_R2, pos);
+          if (specialized)
+            scheme_mz_load_retained(jitter, JIT_R2, specialized, 1);
+          else
+            mz_rs_ldxi(JIT_R2, pos);
 	  jit_str_p(JIT_R2, JIT_R0);
 	} else {
+          MZ_ASSERT(!specialized);
 	  pos = mz_remap(lv->position);
 	  mz_rs_stxi(pos, JIT_R0);
 	}
@@ -3206,7 +3287,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	}
       }
 
-      scheme_mz_load_retained(jitter, target, obj);
+      scheme_mz_load_retained(jitter, target, obj, 0);
 
       END_JIT_DATA(19);
       return 1;
@@ -3347,6 +3428,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   void *retain_code = NULL;
 #endif
   int i, r, cnt, has_rest, is_method, num_params, to_args, argc, argv_delta;
+  int specialized;
   Scheme_Object **argv;
 
   start_code = jit_get_ip();
@@ -3549,26 +3631,32 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   to_args = 0;
 #endif
 
+  specialized = SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED;
+
   /* Extract closure to runstack: */
   cnt = data->closure_size;
   to_args += cnt;
   if (cnt) {
-    mz_rs_dec(cnt);
-    CHECK_RUNSTACK_OVERFLOW();
+    if (specialized) {
+      /* References to closure data will be replaced with values */
+    } else {
+      mz_rs_dec(cnt);
+      CHECK_RUNSTACK_OVERFLOW();
     
-    for (i = cnt; i--; ) {
-      int pos;
-      pos = WORDS_TO_BYTES(i) + (intptr_t)&((Scheme_Native_Closure *)0x0)->vals;
-      jit_ldxi_p(JIT_R1, JIT_R0, pos);
-      mz_rs_stxi(i, JIT_R1);
-      CHECK_LIMIT();
+      for (i = cnt; i--; ) {
+        int pos;
+        pos = WORDS_TO_BYTES(i) + (intptr_t)&((Scheme_Native_Closure *)0x0)->vals;
+        jit_ldxi_p(JIT_R1, JIT_R0, pos);
+        mz_rs_stxi(i, JIT_R1);
+        CHECK_LIMIT();
+      }
     }
   }
 
   mz_rs_sync();
 
   /* If we have a letrec context, record arities */
-  if (data->context && SAME_TYPE(SCHEME_TYPE(data->context), scheme_letrec_type)) {
+  if (data->context && SAME_TYPE(SCHEME_TYPE(data->context), scheme_letrec_type) && !specialized) {
     Scheme_Letrec *lr = (Scheme_Letrec *)data->context;
     int pos, self_pos = -1;
     for (i = data->closure_size; i--; ) {
@@ -3614,7 +3702,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   } else {
 #ifdef USE_FLONUM_UNBOXING
     /* Unpack flonum closure data */
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+    if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) && !specialized) {
       for (i = data->closure_size; i--; ) {
         if (CLOSURE_CONTENT_IS_FLONUM(data, i)
             || CLOSURE_CONTENT_IS_EXTFLONUM(data, i)) {
@@ -3632,7 +3720,12 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       }
     } else
 #endif
-      mz_runstack_pushed(jitter, cnt);
+      {
+        if (specialized)
+          mz_runstack_skipped(jitter, cnt);
+        else
+          mz_runstack_pushed(jitter, cnt);
+      }
   
     /* A define-values context? */
     if (data->context && SAME_TYPE(SCHEME_TYPE(data->context), scheme_toplevel_type)) {
@@ -3737,6 +3830,9 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
     scheme_console_printf("Bad max depth! Given %d, counted %d.\n", data->max_let_depth, gdata.max_depth);
     abort();
   }
+
+  if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_SPECIALIZED)
+    SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) -= NATIVE_SPECIALIZED;
 
   if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_PRESERVES_MARKS)
     SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) |= NATIVE_PRESERVES_MARKS;

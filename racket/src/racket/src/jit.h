@@ -152,8 +152,10 @@ END_XFORM_ARITH;
 # define SCHEME_FLOAT_TYPE scheme_double_type
 #endif
 
+/* These flags are set post-JIT: */
 #define NATIVE_PRESERVES_MARKS 0x1
 #define NATIVE_IS_SINGLE_RESULT 0x2
+/* Pre-JIT flags rae in "schpriv.h" */
 
 #if defined(MZ_PRECISE_GC) && !defined(USE_COMPACT_3M_GC)
 # define CAN_INLINE_ALLOC
@@ -1367,7 +1369,7 @@ int scheme_stack_safety(mz_jit_state *jitter, int cnt, int offset);
 #ifdef USE_FLONUM_UNBOXING
 int scheme_mz_flostack_pos(mz_jit_state *jitter, int i);
 #endif
-void scheme_mz_load_retained(mz_jit_state *jitter, int rs, void *o);
+void scheme_mz_load_retained(mz_jit_state *jitter, int rs, void *o, int non_obj);
 
 void scheme_mz_runstack_skipped(mz_jit_state *jitter, int n);
 void scheme_mz_runstack_unskipped(mz_jit_state *jitter, int n);
@@ -1587,7 +1589,8 @@ int scheme_jit_check_closure_extflonum_bit(Scheme_Closure_Data *data, int pos, i
 #endif
 
 Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc, int local_only);
-Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push);
+Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push, int get_constant);
+Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *jitter, int extra_push);
 
 void scheme_jit_register_traversers(void);
 #ifdef MZ_USE_LWC
