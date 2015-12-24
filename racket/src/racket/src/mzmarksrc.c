@@ -2511,6 +2511,7 @@ native_unclosed_proc {
     gcMARK2(d->u.arities, gc);
   }
   gcMARK2(d->tl_map, gc);
+  gcMARK2(d->eq_key, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));

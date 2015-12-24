@@ -158,6 +158,7 @@ static int native_unclosed_proc_MARK(void *p, struct NewGC *gc) {
     gcMARK2(d->u.arities, gc);
   }
   gcMARK2(d->tl_map, gc);
+  gcMARK2(d->eq_key, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -183,6 +184,7 @@ static int native_unclosed_proc_FIXUP(void *p, struct NewGC *gc) {
     gcFIXUP2(d->u.arities, gc);
   }
   gcFIXUP2(d->tl_map, gc);
+  gcFIXUP2(d->eq_key, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;

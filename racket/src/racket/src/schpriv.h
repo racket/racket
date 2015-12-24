@@ -2784,6 +2784,7 @@ typedef struct Scheme_Native_Closure_Data {
   /* Thumb code is off by one, need real start for GC */
   void *retain_code;
 #endif
+  void *eq_key; /* for `procedure-closure-contents-eq?` */
 } Scheme_Native_Closure_Data;
 
 #define SCHEME_NATIVE_CLOSURE_DATA_FLAGS(obj) MZ_OPT_HASH_KEY(&(obj)->iso)

@@ -3377,7 +3377,8 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
       Scheme_Native_Closure *c1 = (Scheme_Native_Closure *)v1;
       Scheme_Native_Closure *c2 = (Scheme_Native_Closure *)v2;
 
-      if (SAME_OBJ(c1->code, c2->code)) {
+      if (SAME_OBJ(c1->code, c2->code)
+          || (c1->code->eq_key && SAME_OBJ(c1->code->eq_key, c2->code->eq_key))) {
 	int i;
 	i = c1->code->closure_size;
 	if (i < 0) {
@@ -3442,6 +3443,11 @@ static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[])
     if ((nc->code->start_code == scheme_on_demand_jit_code)
         && !(SCHEME_NATIVE_CLOSURE_DATA_FLAGS(nc->code) & NATIVE_SPECIALIZED)) {
       Scheme_Native_Closure_Data *data;
+      if (!nc->code->eq_key) {
+        void *p;
+        p = scheme_malloc_atomic(sizeof(int));
+        nc->code->eq_key = p;
+      }
       data = MALLOC_ONE_TAGGED(Scheme_Native_Closure_Data);
       memcpy(data, nc->code, sizeof(Scheme_Native_Closure_Data));
       SCHEME_NATIVE_CLOSURE_DATA_FLAGS(data) |= NATIVE_SPECIALIZED;
