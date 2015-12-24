@@ -203,12 +203,7 @@ END_XFORM_ARITH;
 
 #include "jitfpu.h"
 
-#if 0
-static void assert_failure(int where) { printf("JIT assert failed %d\n", where); }
-#define JIT_ASSERT(v) if (!(v)) assert_failure(__LINE__);
-#else
-#define JIT_ASSERT(v) /* */
-#endif
+#define JIT_ASSERT(v) MZ_ASSERT(v)
 
 /* Tracking statistics: */
 #if 0
@@ -1364,6 +1359,8 @@ long_double *scheme_mz_retain_long_double(mz_jit_state *jitter, long_double d);
 int scheme_mz_remap_it(mz_jit_state *jitter, int i);
 void scheme_mz_pushr_p_it(mz_jit_state *jitter, int reg);
 void scheme_mz_popr_p_it(mz_jit_state *jitter, int reg, int discard);
+void scheme_extra_pushed(mz_jit_state *jitter, int n);
+void scheme_extra_popped(mz_jit_state *jitter, int n);
 void scheme_mz_need_space(mz_jit_state *jitter, int need_extra);
 int scheme_stack_safety(mz_jit_state *jitter, int cnt, int offset);
 #ifdef USE_FLONUM_UNBOXING
@@ -1480,7 +1477,7 @@ typedef struct jit_direct_arg jit_direct_arg;
 void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int result_ignored, 
                                   int is_tail, int direct_prim, int direct_native, int nontail_self, int unboxed_args);
 void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok, int result_ignored);
-int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
+int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, int num_pushes,
 			mz_jit_state *jitter, int is_tail, int multi_ok, int ignored_result,
                         int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 

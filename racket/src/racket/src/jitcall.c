@@ -1737,7 +1737,7 @@ static int generate_call_path_with_unboxes(mz_jit_state *jitter, int direct_flos
 }
 #endif
 
-int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
+int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, int num_pushes,
 			mz_jit_state *jitter, int is_tail, int multi_ok, int result_ignored, 
                         int no_call)
 /* de-sync'd ok 
@@ -1762,7 +1762,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   rator = (alt_rands ? alt_rands[0] : app->args[0]);
 
-  rator = scheme_specialize_to_constant(rator, jitter, num_rands);
+  rator = scheme_specialize_to_constant(rator, jitter, num_pushes);
 
   if (no_call == 2) {
     direct_prim = 1;
@@ -1785,6 +1785,13 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   } else {
     Scheme_Type t;
     t = SCHEME_TYPE(rator);
+
+    if (t == scheme_case_closure_type) {
+      /* Turn it into a JITted empty case closure: */
+      rator = scheme_unclose_case_lambda(rator, 1);
+      t = SCHEME_TYPE(rator);
+    }
+
     if ((t == scheme_local_type) && scheme_ok_to_delay_local(rator)) {
       /* We can re-order evaluation of the rator. */
       reorder_ok = 1;
@@ -1792,7 +1799,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       /* Call to known native, or even known self? */
       {
 	int pos, flags;
-	pos = SCHEME_LOCAL_POS(rator) - num_rands;
+	pos = SCHEME_LOCAL_POS(rator) - num_pushes;
 	if (scheme_mz_is_closure(jitter, pos, num_rands, &flags)) {
 	  direct_native = 1;
 	  if ((pos == jitter->self_pos)
@@ -1922,7 +1929,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
        locations that will be filled with argument values; that
        is, check how many arguments are already in place for
        the call. */
-    mz_runstack_skipped(jitter, num_rands);
+    mz_runstack_skipped(jitter, num_pushes);
     for (i = 0; i < num_rands; i++) {
       v = (alt_rands ? alt_rands[i+1] : app->args[i+1]);
       if (SAME_TYPE(SCHEME_TYPE(v), scheme_local_type)
@@ -1936,11 +1943,14 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       } else
         break;
     }
-    mz_runstack_unskipped(jitter, num_rands);
+    mz_runstack_unskipped(jitter, num_pushes);
     if (args_already_in_place) {
       direct_native = 2;
-      mz_runstack_skipped(jitter, args_already_in_place);
+      if (num_pushes)
+        mz_runstack_skipped(jitter, args_already_in_place);
       num_rands -= args_already_in_place;
+      if (num_pushes)
+        num_pushes -= args_already_in_place;
     }
     LOG_IT((" [args in place: %d]\n", args_already_in_place));
   }
@@ -1953,7 +1963,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
   if (num_rands) {
     if (inline_direct_args) {
-      mz_runstack_skipped(jitter, num_rands);
+      mz_runstack_skipped(jitter, num_pushes);
     } else if (!direct_prim || (num_rands > 1) || (no_call == 2)) {
       int skip_end = 0;
       if (direct_self && is_tail && !no_call && (num_rands > 0)) {
@@ -1963,13 +1973,17 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       if (num_rands - skip_end > 0) {
         mz_rs_dec(num_rands-skip_end);
         CHECK_RUNSTACK_OVERFLOW();
-        mz_runstack_pushed(jitter, num_rands-skip_end);
+        if (num_pushes)
+          mz_runstack_pushed(jitter, num_pushes-skip_end);
+        else
+          scheme_extra_pushed(jitter, num_rands-skip_end);
       }
       need_safety = num_rands-skip_end;
-      if (skip_end)
+      if (skip_end && num_pushes)
         mz_runstack_skipped(jitter, skip_end);
     } else {
-      mz_runstack_skipped(jitter, 1);
+      if (num_pushes)
+        mz_runstack_skipped(jitter, 1);
     }
   }
 
@@ -2130,7 +2144,8 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     if (!no_call) {
       (void)jit_movi_p(JIT_V1, ((Scheme_Primitive_Proc *)rator)->prim_val);
       if (num_rands == 1) {
-        mz_runstack_unskipped(jitter, 1);
+        if (num_pushes)
+          mz_runstack_unskipped(jitter, 1);
       } else {
         mz_rs_sync();
         JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();

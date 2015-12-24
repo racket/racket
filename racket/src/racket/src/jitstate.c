@@ -488,12 +488,11 @@ static void new_mapping(mz_jit_state *jitter)
   jitter->mappings[jitter->num_mappings] = 0;
 }
 
-void scheme_mz_pushr_p_it(mz_jit_state *jitter, int reg) 
-/* de-sync's rs */
+void scheme_extra_pushed(mz_jit_state *jitter, int n) 
 {
   int v;
 
-  jitter->extra_pushed++;
+  jitter->extra_pushed += n;
   if (jitter->extra_pushed > jitter->max_extra_pushed)
     jitter->max_extra_pushed = jitter->extra_pushed;
 
@@ -503,8 +502,14 @@ void scheme_mz_pushr_p_it(mz_jit_state *jitter, int reg)
     new_mapping(jitter);
   }
   v = (jitter->mappings[jitter->num_mappings]) >> 2;
-  v++;
+  v += n;
   jitter->mappings[jitter->num_mappings] = ((v << 2) | 0x1);
+}
+
+void scheme_mz_pushr_p_it(mz_jit_state *jitter, int reg) 
+/* de-sync's rs */
+{
+  scheme_extra_pushed(jitter, 1);
   
   mz_rs_dec(1);
   CHECK_RUNSTACK_OVERFLOW_NOCL();
@@ -513,21 +518,28 @@ void scheme_mz_pushr_p_it(mz_jit_state *jitter, int reg)
   jitter->need_set_rs = 1;
 }
 
-void scheme_mz_popr_p_it(mz_jit_state *jitter, int reg, int discard) 
+void scheme_extra_popped(mz_jit_state *jitter, int n)
 /* de-sync's rs */
 {
   int v;
 
-  jitter->extra_pushed--;
+  jitter->extra_pushed -= n;
 
   JIT_ASSERT(jitter->mappings[jitter->num_mappings] & 0x1);
   JIT_ASSERT(!(jitter->mappings[jitter->num_mappings] & 0x2));
   v = jitter->mappings[jitter->num_mappings] >> 2;
-  v--;
+  v -= n;
+  JIT_ASSERT(v >= 0);
   if (!v)
     --jitter->num_mappings;
   else
     jitter->mappings[jitter->num_mappings] = ((v << 2) | 0x1);
+}
+
+void scheme_mz_popr_p_it(mz_jit_state *jitter, int reg, int discard) 
+/* de-sync's rs */
+{
+  scheme_extra_popped(jitter, 1);
 
   if (!discard)
     mz_rs_ldr(reg);
