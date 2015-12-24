@@ -3435,7 +3435,8 @@ static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[])
 {
   if (!SCHEME_PROCP(argv[0]))
     scheme_wrong_contract("procedure-specialize", "procedure?", 0, argc, argv);
-  
+
+#ifdef MZ_USE_JIT
   if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_native_closure_type)) {
     Scheme_Native_Closure *nc = (Scheme_Native_Closure *)argv[0];
     if ((nc->code->start_code == scheme_on_demand_jit_code)
@@ -3447,7 +3448,8 @@ static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[])
       nc->code = data;
     }
   }
-  
+#endif
+
   return argv[0];
 }
 
