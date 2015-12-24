@@ -155,7 +155,7 @@ END_XFORM_ARITH;
 /* These flags are set post-JIT: */
 #define NATIVE_PRESERVES_MARKS 0x1
 #define NATIVE_IS_SINGLE_RESULT 0x2
-/* Pre-JIT flags rae in "schpriv.h" */
+/* Pre-JIT flags are in "schpriv.h" */
 
 #if defined(MZ_PRECISE_GC) && !defined(USE_COMPACT_3M_GC)
 # define CAN_INLINE_ALLOC
