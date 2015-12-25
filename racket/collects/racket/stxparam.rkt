@@ -30,4 +30,9 @@
 		   gen-id))))))]))
 
   (define-syntax (syntax-parameterize stx)
-    (do-syntax-parameterize stx #'let-syntaxes #f #f)))
+    (do-syntax-parameterize stx #'let-syntaxes #f #f))
+  
+  (define-syntax syntax-parameterize-rename
+    (syntax-rules ()
+      [(_ ([stx-param id] ...) body0 body ...)
+       (syntax-parameterize ([stx-param (make-rename-transformer id)] ...) body0 body ...)])))
