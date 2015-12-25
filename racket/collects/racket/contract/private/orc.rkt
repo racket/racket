@@ -70,7 +70,8 @@
            [(null? rst) fst-pred]
            [else 
             (let ([r (loop (car rst) (cdr rst))])
-              (λ (x) (or (fst-pred x) (r x))))])))]))
+              (procedure-specialize
+               (λ (x) (or (fst-pred x) (r x)))))])))]))
 
 (define (single-or/c-late-neg-projection ctc)
   (define c-proj (get/build-late-neg-projection (single-or/c-ho-ctc ctc)))
