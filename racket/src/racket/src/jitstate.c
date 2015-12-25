@@ -523,6 +523,8 @@ void scheme_extra_popped(mz_jit_state *jitter, int n)
 {
   int v;
 
+  if (PAST_LIMIT()) return;
+
   jitter->extra_pushed -= n;
 
   JIT_ASSERT(jitter->mappings[jitter->num_mappings] & 0x1);
@@ -559,6 +561,7 @@ void scheme_mz_runstack_skipped(mz_jit_state *jitter, int n)
   int v;
 
   if (!n) return;
+  if (PAST_LIMIT()) return;
 
   if (!(jitter->mappings[jitter->num_mappings] & 0x1)
       || (jitter->mappings[jitter->num_mappings] & 0x2)
@@ -577,6 +580,7 @@ void scheme_mz_runstack_unskipped(mz_jit_state *jitter, int n)
   int v;
 
   if (!n) return;
+  if (PAST_LIMIT()) return;
 
   JIT_ASSERT(jitter->mappings[jitter->num_mappings] & 0x1);
   JIT_ASSERT(!(jitter->mappings[jitter->num_mappings] & 0x2));
@@ -633,6 +637,9 @@ void scheme_mz_runstack_flonum_pushed(mz_jit_state *jitter, int pos)
 void scheme_mz_runstack_popped(mz_jit_state *jitter, int n)
 {
   int v;
+
+  if (PAST_LIMIT()) return;
+
   jitter->depth -= n;
   jitter->self_pos -= n;
 
