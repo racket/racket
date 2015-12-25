@@ -178,7 +178,8 @@ static int inlineable_struct_prim(Scheme_Object *o, mz_jit_state *jitter, int ex
       return check_val_struct_prim(p, arity);
     }
   }
-  return 0;
+
+  return check_val_struct_prim(o, 1);
 }
 
 int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter)
@@ -371,6 +372,9 @@ static int generate_inlined_type_test(mz_jit_state *jitter, Scheme_App2_Rec *app
 
 static Scheme_Object *extract_struct_constant(mz_jit_state *jitter, Scheme_Object *rator)
 {
+  if (SCHEME_PROCP(rator))
+    return rator;
+
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_toplevel_type)
       && (SCHEME_TOPLEVEL_FLAGS(rator) & SCHEME_TOPLEVEL_FLAGS_MASK) >= SCHEME_TOPLEVEL_CONST) {
     rator = scheme_extract_global(rator, jitter->nc, 0);
