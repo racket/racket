@@ -116,7 +116,7 @@ Like @racket[flsin], @racket[flcos], @racket[fltan], @racket[flasin],
 The first four are like @racket[->fl], @racket[fl->exact],
 @racket[fl->real], @racket[inexact->exact], but for @tech{extflonums}.
 The @racket[extfl->inexact] function converts a @tech{extflonum} to
-its closest @racket{flonum} approximation.}
+its closest @tech{flonum} approximation.}
 
 @; ------------------------------------------------------------------------
 
