@@ -2024,8 +2024,8 @@ flat contracts do not need to supply an explicit projection.
 The @racket[stronger] argument is used to implement @racket[contract-stronger?]. The
 first argument is always the contract itself and the second argument is whatever
 was passed as the second argument to @racket[contract-stronger?]. If no
-@racket[stronger] argument is supplied, then a default that always returns
-@racket[#f] is used.
+@racket[stronger] argument is supplied, then a default that compares its arguments
+with @racket[equal?] is used.
 
 The @racket[is-list-contract?] argument is used by the @racket[list-contract?] predicate
 to determine if this is a contract that accepts only @racket[list?] values.
@@ -2721,6 +2721,9 @@ are below):
   Returns @racket[#t] if the contract @racket[x] accepts either fewer
   or the same number of values as @racket[y] does.
 
+  Contracts that are the same (i.e., where @racket[x] is @racket[equal?]
+  to @racket[y]) are considered to always be stronger than each other.
+  
   This function is conservative, so it may return @racket[#f] when
   @racket[x] does, in fact, accept fewer values.
 
@@ -2730,8 +2733,8 @@ are below):
                  (contract-stronger? (between/c 0 100) (between/c 25 75))
                  (contract-stronger? (between/c -10 0) (between/c 0 10))
 
-                 (contract-stronger? (λ (x) (and (real? x) (<= x (random 10))))
-                                     (λ (x) (and (real? x) (<= x (+ 100 (random 10))))))]
+                 (contract-stronger? (λ (x) (and (real? x) (<= x 0)))
+                                     (λ (x) (and (real? x) (<= x 100))))]
 
 
 }

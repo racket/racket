@@ -576,7 +576,9 @@
            (syntax-case stx ()
              [(x) #'x]
              [(x ...) #'(values x ...)]))
-         #`(let* ([cont-mark-value (cons #,(opt/info-positive-blame opt/info) '#,rngs)]
+         #`(let* ([cont-mark-value (list* #,(opt/info-positive-blame opt/info)
+                                          #,(opt/info-negative-blame opt/info)
+                                          '#,rngs)]
                   [exact-proc (case-lambda
                                 [(dom-arg ...)
                                  (let-values ([(rng-checker dom-vars ...)

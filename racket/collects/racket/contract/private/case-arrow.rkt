@@ -52,27 +52,29 @@
     [_
      (raise-syntax-error #f "expected ->" stx case)]))
 
-(define-for-syntax (parse-out-case stx case n)
-  (let-values ([(doms rst rng) (separate-out-doms/rst/rng stx case)])
-    (with-syntax ([(dom-proj-x  ...) (generate-temporaries doms)]
+(define-for-syntax (parse-out-case stx neg-party blame-party-info case n)
+  (let-values ([(dom-ctc-exprs rst-ctc-expr rng-ctc-exprs) (separate-out-doms/rst/rng stx case)])
+    (with-syntax ([(dom-proj-x  ...) (generate-temporaries dom-ctc-exprs)]
                   [(rst-proj-x) (generate-temporaries '(rest-proj-x))]
-                  [(rng-proj-x ...) (generate-temporaries (if rng rng '()))])
-      (with-syntax ([(dom-formals ...) (generate-temporaries doms)]
+                  [(rng-proj-x ...) (generate-temporaries (if rng-ctc-exprs rng-ctc-exprs '()))]
+                  [(rng-ctcs-x) (generate-temporaries '(rng-ctc-x))])
+      (with-syntax ([(dom-formals ...) (generate-temporaries dom-ctc-exprs)]
                     [(rst-formal) (generate-temporaries '(rest-param))]
-                    [(rng-id ...) (if rng
-                                      (generate-temporaries rng)
+                    [(rng-id ...) (if rng-ctc-exprs
+                                      (generate-temporaries rng-ctc-exprs)
                                       '())]
                     [(this-parameter ...)
                      (make-this-parameters (car (generate-temporaries '(this))))])
-        #`(#,doms
-           #,rst
-           #,(if rng #`(list #,@rng) #f)
-           #,(length (syntax->list doms)) ;; spec
-           (dom-proj-x ... #,@(if rst #'(rst-proj-x) #'()))
+        #`(#,dom-ctc-exprs
+           #,rst-ctc-expr
+           #,(if rng-ctc-exprs #`(list #,@rng-ctc-exprs) #f)
+           #,(length (syntax->list dom-ctc-exprs)) ;; spec
+           (dom-proj-x ... #,@(if rst-ctc-expr #'(rst-proj-x) #'()))
            (rng-proj-x ...)
-           (this-parameter ... dom-formals ... . #,(if rst #'rst-formal '()))
+           rng-ctcs-x
+           (this-parameter ... dom-formals ... . #,(if rst-ctc-expr #'rst-formal '()))
            #,(cond
-               [rng
+               [rng-ctc-exprs
                 (let ([rng-checkers 
                        (list #`(case-lambda
                                  [(rng-id ...) (values/drop (rng-proj-x rng-id neg-party) ...)]
@@ -81,19 +83,21 @@
                                                          #,(length (syntax->list #'(rng-id ...)))
                                                          args
                                                          #,n)]))]
-                      [rng-length (length (syntax->list rng))])
-                  (if rst
-                      (check-tail-contract #'(rng-proj-x ...) rng-checkers
+                      [rng-length (length (syntax->list rng-ctc-exprs))])
+                  (if rst-ctc-expr
+                      (check-tail-contract #'rng-ctcs-x
+                                           blame-party-info neg-party
+                                           rng-checkers
                                            (λ (rng-checks)
                                              #`(apply values #,@rng-checks this-parameter ...
                                                       (dom-proj-x dom-formals neg-party) ...
                                                       (rst-proj-x rst-formal neg-party))))
                       (check-tail-contract
-                       #'(rng-proj-x ...) rng-checkers
+                       #'rng-ctcs-x blame-party-info neg-party rng-checkers
                        (λ (rng-checks)
                          #`(values/drop #,@rng-checks this-parameter ...
                                         (dom-proj-x dom-formals neg-party) ...)))))]
-               [rst
+               [rst-ctc-expr
                 #`(apply values this-parameter ...
                          (dom-proj-x dom-formals neg-party) ...
                          (rst-proj-x rst-formal neg-party))]
@@ -106,30 +110,33 @@
     [(_ cases ...)
      (let ()
        (define name (syntax-local-infer-name stx))
-       (with-syntax ([(((dom-proj ...)
-                        rst-proj
-                        rng-proj
+       (with-syntax ([(((dom-ctc-expr ...)
+                        rst-ctc-expr
+                        rng-ctc-exprs
                         spec
                         (dom-proj-x ...)
                         (rng-proj-x ...)
+                        rng-ctcs-x
                         formals
                         body) ...)
                       (for/list ([x (in-list (syntax->list #'(cases ...)))]
                                  [n (in-naturals)])
-                        (parse-out-case stx x n))]
+                        (parse-out-case stx #'neg-party #'blame-party-info x n))]
                      [mctc? (and (syntax-parameter-value #'method-contract?) #t)])
          #`(syntax-parameterize 
             ((making-a-method #f)) 
             (build-case-> 
-             (list (list dom-proj ...) ...)
-             (list rst-proj ...)
-             (list rng-proj ...)
+             (list (list dom-ctc-expr ...) ...)
+             (list rst-ctc-expr ...)
+             (list rng-ctc-exprs ...)
              '(spec ...)
              mctc?
              (λ (chk
                  wrapper
                  blame
+                 blame-party-info
                  ctc
+                 rng-ctcs-x ...
                  #,@(apply append (map syntax->list (syntax->list #'((dom-proj-x ...) ...))))
                  #,@(apply append (map syntax->list (syntax->list #'((rng-proj-x ...) ...)))))
                (λ (f neg-party)
@@ -139,12 +146,12 @@
                       (if name
                           #`(let ([#,name #,case-lam]) #,name)
                           case-lam))
-                  (list (list rng-proj-x ...) ...)
-                  f blame neg-party wrapper ctc
+                  f blame neg-party blame-party-info wrapper ctc
                   chk #,(and (syntax-parameter-value #'making-a-method) #t))))))))]))
 
-(define (put-it-together the-case-lam range-projections f blame neg-party wrapper ctc chk mtd?)
+(define (put-it-together the-case-lam f blame neg-party blame-party-info wrapper ctc chk mtd?)
   (chk f mtd?)
+  (define rng-ctcs (base-case->-rng-ctcs ctc))
   (define checker
     (make-keyword-procedure
      (raise-no-keywords-error f blame neg-party)
@@ -152,14 +159,15 @@
        (with-contract-continuation-mark
         (cons blame neg-party)
         (apply the-case-lam args)))))
-  (define same-rngs (same-range-projections range-projections))
+  (define same-rngs (same-range-contracts rng-ctcs))
   (if same-rngs
       (wrapper
        f
        checker
        impersonator-prop:contracted ctc
        impersonator-prop:blame (blame-add-missing-party blame neg-party)
-       impersonator-prop:application-mark (cons contract-key same-rngs))
+       impersonator-prop:application-mark
+       (cons tail-contract-key (list* neg-party blame-party-info same-rngs)))
       (wrapper
        f
        checker
@@ -184,13 +192,17 @@
 (define (case->-proj wrapper)
   (λ (ctc)
     (define dom-ctcs+case-nums (get-case->-dom-ctcs+case-nums ctc))
-    (define rng-late-neg-ctcs (map get/build-late-neg-projection (get-case->-rng-ctcs ctc)))
+    (define rng-ctcs (get-case->-rng-ctcs ctc))
+    (define rng-lol-ctcs (base-case->-rng-ctcs ctc))
+    (define rng-late-neg-ctcs (map get/build-late-neg-projection rng-ctcs))
     (define rst-ctcs (base-case->-rst-ctcs ctc))
     (define specs (base-case->-specs ctc))
     (λ (blame)
       (define dom-blame (blame-add-context blame "the domain of" #:swap? #t))
       (define rng-blame (blame-add-context blame "the range of"))
-      (define projs (append (map (λ (f) ((cdr f) 
+      (define blame-party-info (get-blame-party-info blame))
+      (define projs (append rng-lol-ctcs
+                            (map (λ (f) ((cdr f)
                                          (blame-add-context 
                                           (blame-add-context 
                                            blame 
@@ -231,6 +243,7 @@
              chk
              wrapper
              blame
+             blame-party-info
              ctc
              projs))))
 
@@ -303,18 +316,23 @@
 
 (define (get-case->-rng-ctcs ctc)
   (for/fold ([acc '()])
-      ([x (in-list (base-case->-rng-ctcs ctc))]
-       #:when x)
+            ([x (in-list (base-case->-rng-ctcs ctc))]
+             #:when x)
     (append acc x)))
 
 ;; Takes a list of (listof projection), and returns one of the
 ;; lists if all the lists contain the same projections. If the list is
 ;; null, it returns #f.
-(define (same-range-projections rng-ctcss)
-  (if (null? rng-ctcss)
-      #f
-      (let* ([fst (car rng-ctcss)]
-             [all-same? (for/and ([ps (in-list (cdr rng-ctcss))])
-                          (and (= (length fst) (length ps))
-                               (andmap procedure-closure-contents-eq? fst ps)))])
-        (and all-same? fst))))
+(define (same-range-contracts rng-ctcss)
+  (cond
+    [(null? rng-ctcss) #f]
+    [else
+     (define fst (car rng-ctcss))
+     (and (for/and ([ps (in-list (cdr rng-ctcss))])
+            (and ps
+                 (= (length fst) (length ps))
+                 (for/and ([c (in-list ps)]
+                           [fst-c (in-list fst)])
+                   (and (contract-stronger? c fst-c)
+                        (contract-stronger? fst-c c)))))
+          fst)]))

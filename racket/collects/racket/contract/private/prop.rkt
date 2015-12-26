@@ -115,42 +115,50 @@
 
 (define trail (make-parameter #f))
 (define (contract-struct-stronger? a b)
-  (define prop (contract-struct-property a))
-  (define stronger? (contract-property-stronger prop))
   (cond
-    [(let ([th (trail)])
-       (and th
-            (for/or ([(a2 bs-h) (in-hash th)])
-              (and (eq? a a2)
-                   (for/or ([(b2 _) (in-hash bs-h)])
-                     (eq? b b2))))))
-     #t]
-    [(or (prop:recursive-contract? a) (prop:recursive-contract? b))
-     (parameterize ([trail (or (trail) (make-hasheq))])
-       (define trail-h (trail))
-       (let ([a-h (hash-ref trail-h a #f)])
-         (cond
-           [a-h
-            (hash-set! a-h b #t)]
-           [else
-            (define a-h (make-hasheq))
-            (hash-set! trail-h a a-h)
-            (hash-set! a-h b #t)]))
-       (contract-struct-stronger? (if (prop:recursive-contract? a)
-                                      ((prop:recursive-contract-unroll a) a)
-                                      a)
-                                  (if (prop:recursive-contract? b)
-                                      ((prop:recursive-contract-unroll b) b)
-                                      b)))]
+    [(equal? a b) #t]
     [else
-     (let loop ([b b])
-       (cond
-         [(stronger? a b) #t]
-         [(prop:orc-contract? b)
-          (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
-          (for/or ([sub-contract (in-list sub-contracts)])
-            (loop sub-contract))]
-         [else #f]))]))
+     (define prop (contract-struct-property a))
+     (define stronger? (contract-property-stronger prop))
+     (cond
+       [(stronger? a b)
+        ;; optimistically try skip some of the more complex work below
+        #t]
+       [(let ([th (trail)])
+          (and th
+               (for/or ([(a2 bs-h) (in-hash th)])
+                 (and (eq? a a2)
+                      (for/or ([(b2 _) (in-hash bs-h)])
+                        (eq? b b2))))))
+        #t]
+       [(or (prop:recursive-contract? a) (prop:recursive-contract? b))
+        (parameterize ([trail (or (trail) (make-hasheq))])
+          (define trail-h (trail))
+          (let ([a-h (hash-ref trail-h a #f)])
+            (cond
+              [a-h
+               (hash-set! a-h b #t)]
+              [else
+               (define a-h (make-hasheq))
+               (hash-set! trail-h a a-h)
+               (hash-set! a-h b #t)]))
+          (contract-struct-stronger? (if (prop:recursive-contract? a)
+                                         ((prop:recursive-contract-unroll a) a)
+                                         a)
+                                     (if (prop:recursive-contract? b)
+                                         ((prop:recursive-contract-unroll b) b)
+                                         b)))]
+       [else
+        (let loop ([b b])
+          (cond
+            [(stronger? a b)
+             #t]
+            [(prop:orc-contract? b)
+             (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
+             (for/or ([sub-contract (in-list sub-contracts)])
+               (loop sub-contract))]
+            [else
+             #f]))])]))
 
 (define (contract-struct-generate c)
   (define prop (contract-struct-property c))

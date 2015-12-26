@@ -32,15 +32,15 @@
                 [(optional-dom-kwd-proj ...) (nvars (length optional-dom-kwds) 'optional-dom-proj)]
                 [(rng-proj ...) (if rngs (generate-temporaries rngs) '())]
                 [(rest-proj ...) (if rest (generate-temporaries '(rest-proj)) '())])
-    #`(λ (blame f neg-party
+    #`(λ (blame f neg-party blame-party-info rng-ctcs
                 mandatory-dom-proj ...  
                 optional-dom-proj ... 
                 rest-proj ...
                 mandatory-dom-kwd-proj ... 
                 optional-dom-kwd-proj ... 
                 rng-proj ...)
-        #,(create-chaperone 
-           #'blame #'f
+        #,(create-chaperone
+           #'blame #'neg-party #'blame-party-info #'f #'rng-ctcs
            this-args
            (syntax->list #'(mandatory-dom-proj ...))
            (syntax->list #'(optional-dom-proj ...))
@@ -114,7 +114,8 @@
       (if pre? "pre" "post")
       condition-result)]))
 
-(define-for-syntax (create-chaperone blame val  
+(define-for-syntax (create-chaperone blame neg-party blame-party-info
+                                     val rng-ctcs
                                      this-args
                                      doms opt-doms
                                      req-kwds opt-kwds
@@ -150,7 +151,7 @@
                     [(opt-kwd ...) (map car opt-kwds)]
                     [(opt-kwd-ctc ...) (map cadr opt-kwds)]
                     [(opt-kwd-x ...) (generate-temporaries (map car opt-kwds))]
-                    [(rng-ctc ...) (if rngs rngs '())]
+                    [(rng-late-neg-projs ...) (if rngs rngs '())]
                     [(rng-x ...) (if rngs (generate-temporaries rngs) '())])
         (with-syntax ([(rng-checker-name ...)
                        (if rngs
@@ -161,7 +162,7 @@
                            (list
                             (with-syntax ([rng-len (length rngs)])
                               (with-syntax ([rng-results
-                                             #'(values (rng-ctc rng-x neg-party)
+                                             #'(values (rng-late-neg-projs rng-x neg-party)
                                                        ...)])
                                 #'(case-lambda
                                     [(rng-x ...)
@@ -248,7 +249,9 @@
                                                   dom-projd-args ...)))])
                                (if no-rng-checking?
                                    (inner-stx-gen #'())
-                                   (arrow:check-tail-contract #'(rng-ctc ...)
+                                   (arrow:check-tail-contract rng-ctcs
+                                                              blame-party-info
+                                                              neg-party
                                                               #'(rng-checker-name ...)
                                                               inner-stx-gen)))]
                             [kwd-return
@@ -273,7 +276,9 @@
                                #`(let ([kwd-results kwd-stx])
                                    #,(if no-rng-checking?
                                          (outer-stx-gen #'())
-                                         (arrow:check-tail-contract #'(rng-ctc ...) 
+                                         (arrow:check-tail-contract rng-ctcs
+                                                                    blame-party-info
+                                                                    neg-party
                                                                     #'(rng-checker-name ...)
                                                                     outer-stx-gen))))])
                 (with-syntax ([basic-lambda-name (gen-id 'basic-lambda)]
@@ -398,12 +403,15 @@
               man-then-opt-partial-kwds
               partial-ranges
               (if partial-rest (list partial-rest) '())))
-
+    (define blame-party-info (arrow:get-blame-party-info orig-blame))
     (define (successfully-got-the-right-kind-of-function val neg-party)
-      (define chap/imp-func (apply chaperone-constructor orig-blame val neg-party the-args))
+      (define chap/imp-func (apply chaperone-constructor
+                                   orig-blame val
+                                   neg-party blame-party-info
+                                   rngs the-args))
       (cond
         [chap/imp-func
-         (if post?
+         (if (or post? (not rngs))
              (chaperone-or-impersonate-procedure
               val
               chap/imp-func
@@ -414,9 +422,8 @@
               chap/imp-func
               impersonator-prop:contracted ctc
               impersonator-prop:blame (blame-add-missing-party orig-blame neg-party)
-              impersonator-prop:application-mark (cons arrow:contract-key 
-                                                       ;; is this right?
-                                                       partial-ranges)))]
+              impersonator-prop:application-mark
+              (cons arrow:tail-contract-key (list* neg-party blame-party-info rngs))))]
         [else val]))
     
     (cond

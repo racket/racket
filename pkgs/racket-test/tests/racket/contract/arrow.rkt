@@ -340,6 +340,21 @@
           ;; pass; this is fixed in a separate branch that can't 
           (regexp-match #rx"expected:? keyword argument #:the-missing-keyword-arg-b"
                         (exn-message x)))))
+
+  ;; need to preserve the inner contract here
+  ;; (not the outer one)
+  ;; when dropping redundant tail contracts
+  (test/pos-blame
+   'tail-wrapping-preserves-blame
+   '(let ([c (-> number? number?)])
+      ((contract
+        c
+        (contract
+         c
+         (λ (x) #f)
+         'pos 'neg)
+        'something-else 'yet-another-thing)
+       1)))
   
   (test/pos-blame
    'predicate/c1

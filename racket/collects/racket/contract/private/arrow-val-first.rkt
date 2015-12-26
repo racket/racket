@@ -895,7 +895,7 @@
                                       optional-keywords
                                       (and rest-contract #t)
                                       rng-len)
-        (λ (blame f neg-party . args)
+        (λ (blame f neg-party blame-party-info rng-ctc-x . args)
           (define-next next args)
           (define mandatory-dom-projs (next min-arity))
           (define optional-dom-projs (next optionals))
@@ -1242,7 +1242,7 @@
     (make--> 0 '() '() #f #f
              (list (coerce-contract 'whatever void?))
              #f
-             (λ (blame f _ignored-rng-contract)
+             (λ (blame f _ignored-rng-ctcs _ignored-rng-proj)
                (λ (neg-party)
                  (call-with-values
                   (λ () (f))
@@ -1276,7 +1276,11 @@
                    (call-with-values
                     (λ () (f argument))
                     (rng-checker f blame neg-party))))
-               (λ (blame f neg-party _ignored-dom-contract _ignored-rng-contract)
+               (λ (blame f neg-party
+                         _ignored-blame-party-info
+                         _ignored-rng-ctcs
+                         _ignored-dom-contract
+                         _ignored-rng-contract)
                  (unless (procedure? f)
                    (raise-blame-error
                     blame #:missing-party neg-party f

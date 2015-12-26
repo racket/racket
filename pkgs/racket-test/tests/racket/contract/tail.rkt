@@ -85,6 +85,29 @@
                    (c)))
   
   (ctest/rewrite '(1)
+                 mut-rec-with-any
+                 (let ()
+                   (define f
+                     (contract (-> number? any)
+                               (lambda (x)
+                                 (if (zero? x)
+                                     (continuation-mark-set->list (current-continuation-marks)
+                                                                  'tail-test)
+                                     (with-continuation-mark 'tail-test x
+                                       (g (- x 1)))))
+                               'something-that-is-not-pos
+                               'neg))
+                   
+                   (define g
+                     (contract (-> number? any)
+                               (lambda (x)
+                                 (f x))
+                               'also-this-is-not-pos
+                               'neg))
+                   
+                   (f 3)))
+
+  (ctest/rewrite '(1 2 3)
                  mut-rec-with-any/c
                  (let ()
                    (define f
