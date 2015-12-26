@@ -79,6 +79,7 @@ READ_ONLY Scheme_Object scheme_void[1]; /* the void constant */
 READ_ONLY Scheme_Object *scheme_values_func; /* the function bound to `values' */
 READ_ONLY Scheme_Object *scheme_procedure_p_proc;
 READ_ONLY Scheme_Object *scheme_procedure_arity_includes_proc;
+READ_ONLY Scheme_Object *scheme_procedure_specialize_proc;
 READ_ONLY Scheme_Object *scheme_void_proc;
 READ_ONLY Scheme_Object *scheme_void_p_proc;
 READ_ONLY Scheme_Object *scheme_check_not_undefined_proc;
@@ -594,11 +595,14 @@ scheme_init_fun (Scheme_Env *env)
 						      "procedure-closure-contents-eq?",
 						      2, 2, 1),
 			     env);
-  scheme_add_global_constant("procedure-specialize",
-			     scheme_make_prim_w_arity(procedure_specialize,
-						      "procedure-specialize",
-						      1, 1),
-			     env);
+
+  REGISTER_SO(scheme_procedure_specialize_proc);
+  o = scheme_make_prim_w_arity(procedure_specialize,
+                               "procedure-specialize",
+                               1, 1);
+  scheme_procedure_specialize_proc = o;
+  scheme_add_global_constant("procedure-specialize", o, env);
+
   scheme_add_global_constant("chaperone-procedure",
 			     scheme_make_prim_w_arity(chaperone_procedure,
 						      "chaperone-procedure",

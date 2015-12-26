@@ -289,6 +289,19 @@ static void note_match(int actual, int expected, Optimize_Info *warn_info)
   }
 }
 
+static Scheme_Object *extract_specialized_proc(Scheme_Object *le, Scheme_Object *default_val)
+{
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_application2_type)) {
+    Scheme_App2_Rec *app = (Scheme_App2_Rec *)le;
+    if (SAME_OBJ(app->rator, scheme_procedure_specialize_proc)) {
+      if (SCHEME_PROCP(app->rand) || IS_COMPILED_PROC(app->rand))
+        return app->rand;
+    }
+  }
+
+  return default_val;
+}
+
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
                           Optimize_Info *opt_info, Optimize_Info *warn_info,
                           int min_id_depth, int id_offset, int no_id)
@@ -469,6 +482,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
                    && (SCHEME_INT_VAL(app->rand) >= 0))
                    && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand))) {
       return 1;
+    } else if (SAME_OBJ(app->rator, scheme_procedure_specialize_proc)) {
+      if ((vals == 1 || vals == -1) && extract_specialized_proc(o, NULL))
+        return 1;
     } else if (SCHEME_PRIMP(app->rator)) {
       if (!(SCHEME_PRIM_PROC_FLAGS(app->rator) & SCHEME_PRIM_IS_MULTI_RESULT)
           || SAME_OBJ(scheme_values_func, app->rator)) {
@@ -1775,6 +1791,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   if (already_opt)
     extract_tail_inside(&le, &prev, &id_offset);
 
+  le = extract_specialized_proc(le, le);
+
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_unclosed_procedure_type)) {
     /* Found a `((lambda' */
     single_use = 1;
@@ -2480,6 +2498,8 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
       return scheme_box_p_proc;
     else if (SAME_OBJ(rator, scheme_void_proc))
       return scheme_void_p_proc;
+    else if (SAME_OBJ(rator, scheme_procedure_specialize_proc))
+      return scheme_procedure_p_proc;
     
     {
       Scheme_Object *p;
@@ -6392,6 +6412,9 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
               value = NULL;
         }
       }
+
+      if (value)
+        value = extract_specialized_proc(value, value);
 
       if (value && (scheme_compiled_propagate_ok(value, body_info))) {
         int cnt;

@@ -1922,6 +1922,28 @@
               (define (g y)
                 (+ y 1))))
 
+
+(test-comp '(let ()
+             (define (f x)
+               (procedure-specialize
+                (lambda (y) (+ x y))))
+             ((f 10) 12))
+           '22)
+
+(test-comp '(let ()
+             (define (f x)
+               (procedure-specialize
+                (lambda (y) (+ x y))))
+             (procedure? (f 10)))
+           '#t)
+
+(test-comp '(let ([f (procedure-specialize
+                      (lambda (y) (+ 1 y)))])
+             (list f (procedure-arity-includes? f 1)))
+           '(let ([f (procedure-specialize
+                      (lambda (y) (+ 1 y)))])
+             (list f #t)))
+
 (test-comp '(values 10)
            10)
 (test-comp '(let ([x (values 10)])

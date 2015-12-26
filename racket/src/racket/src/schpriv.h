@@ -455,6 +455,7 @@ extern Scheme_Object *scheme_apply_proc;
 extern Scheme_Object *scheme_values_func;
 extern Scheme_Object *scheme_procedure_p_proc;
 extern Scheme_Object *scheme_procedure_arity_includes_proc;
+extern Scheme_Object *scheme_procedure_specialize_proc;
 extern Scheme_Object *scheme_void_proc;
 extern Scheme_Object *scheme_void_p_proc;
 extern Scheme_Object *scheme_syntax_p_proc;
