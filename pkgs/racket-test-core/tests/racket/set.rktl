@@ -631,5 +631,10 @@
                                        (λ (s e) (+ e 1))
                                        (λ (s l) l)
                                        (λ (s l) l))))
+(test #t even?
+      (set-first (impersonate-hash-set (weak-set 1 3 5)
+                                       (λ (s e) (+ e 1))
+                                       (λ (s l) l)
+                                       (λ (s l) l))))
 
 (report-errs)

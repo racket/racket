@@ -403,10 +403,15 @@
                              remove-proc
                              clear-proc+props)
   (define who (if impersonate? 'impersonate-hash-set 'chaperone-hash-set))
-  (unless (if impersonate? (set-mutable? s) (or (set? s) (set-mutable? s)))
+  (unless (if impersonate?
+              (or (set-mutable? s) (set-weak? s))
+              (or (set? s) (set-mutable? s) (set-weak? s)))
     (apply raise-argument-error
            who
-           (if impersonate? "set-mutable?" (format "~s" '(or/c set? set-mutable?)))
+           (format "~s"
+                   (if impersonate?
+                       '(or/c set-mutable? set-weak?)
+                       '(or/c set? set-mutable? set-weak?)))
            0 s ref-proc add-proc clear-proc+props))
   (unless (and (procedure? ref-proc)
                (procedure-arity-includes? ref-proc 2))

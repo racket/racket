@@ -699,11 +699,11 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
                                [ref-proc (-> set? any/c any/c)]
                                [add-proc (-> set? any/c any/c)]
                                [remove-proc (-> set? any/c any/c)]
-                               [clear-proc (or/c #f (-> set? any))]
+                               [clear-proc (or/c #f (-> set? any)) #f]
                                [prop impersonator-property?]
                                [prop-val any/c] ... ...)
          (and/c set? impersonator?)]{
- Impersonates @racket[set], redirecting via the given procedures.
+ Impersonates @racket[st], redirecting via the given procedures.
 
  The @racket[ref-proc] procedure
  is called whenever an element is extracted from @racket[st]. Its first argument
@@ -737,11 +737,11 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
                              [ref-proc (-> set? any/c any/c)]
                              [add-proc (-> set? any/c any/c)]
                              [remove-proc (-> set? any/c any/c)]
-                             [clear-proc (or/c #f (-> set? any))]
+                             [clear-proc (or/c #f (-> set? any)) #f]
                              [prop impersonator-property?]
                              [prop-val any/c] ... ...)
          (and/c set? chaperone?)]{
- Chaperones @racket[set]. Like @racket[impersonate-hash-set] but with
+ Chaperones @racket[st]. Like @racket[impersonate-hash-set] but with
  the constraints that the results of the @racket[ref-proc],
  @racket[add-proc], and @racket[remove-proc] must be
  @racket[chaperone-of?] their second arguments. Also, the input
