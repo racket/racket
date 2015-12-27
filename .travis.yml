@@ -29,23 +29,8 @@ before_script:
 - git config --global user.email "travis-test@racket-lang.org"
 - git config --global user.name "Travis Tester"
 script:
-- make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
-- raco test -l tests/racket/test
-- racket -l tests/pkg/test -- -q
-- racket -l tests/racket/contract/all
-- raco test -l tests/json/json
-- raco test -l tests/file/main
-- raco test -l tests/net/head
-- raco test -l tests/net/uri-codec
-- raco test -l tests/net/url
-- raco test -l tests/net/url-port
-- raco test -l tests/net/encoders
-- raco test -l tests/openssl/basic
-- raco test -l tests/openssl/https
-- raco test -l tests/match/plt-match-tests
-- raco test -l tests/zo-path
-- raco test -l tests/xml/test
-- raco test -l tests/db/all-tests
+- make CPUS="2" PKGS="racket-test db-test net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
+- racket -l tests/pkg/test
 notifications:
   irc: chat.freenode.net#racket-dev
   email:
