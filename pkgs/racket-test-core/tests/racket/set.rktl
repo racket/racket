@@ -636,5 +636,26 @@
                                        (λ (s e) (+ e 1))
                                        (λ (s l) l)
                                        (λ (s l) l))))
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (chaperone-hash-set (set) (λ (s l) l) (λ (s l) l) (λ (s l) l) impersonator-prop:p 11)])
+    (test #t has-impersonator-prop:p? s)))
+
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (chaperone-hash-set (set) (λ (s l) l) (λ (s l) l) (λ (s l) l) impersonator-prop:p 11)])
+    (test 11 get-impersonator-prop:p s)))
+
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (impersonate-hash-set (weak-set) (λ (s l) l) (λ (s l) l) (λ (s l) l)
+                                 impersonator-prop:p 11)])
+    (test #t has-impersonator-prop:p? s)))
+
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (impersonate-hash-set (mutable-set) (λ (s l) l) (λ (s l) l) (λ (s l) l)
+                                 impersonator-prop:p 11)])
+    (test 11 get-impersonator-prop:p s)))
 
 (report-errs)
