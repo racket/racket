@@ -357,23 +357,66 @@
              "~s did not return a chaperone of ~e, got ~e"
              who original new))
     new)
+
+  (define (chaperone-hash-set-hash-ref-proc hash key)
+    (values (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key))
+            (λ (hash key val) val)))
+  (define (chaperone-hash-set-hash-set-proc hash key val)
+    (values (check-it 'add-proc key (add-proc (update-custom-set-table s hash) key))
+            val))
+  (define (chaperone-hash-set-hash-remove-proc hash key)
+    (check-it 'remove-proc key (remove-proc (update-custom-set-table s hash) key)))
+  (define (chaperone-hash-set-hash-key-proc hash key)
+    (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key)))
+  (define chaperone-hash-set-hash-clear-proc
+    (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash)))))
   (add-impersonator-properties
    (if ref-proc
-       (update-custom-set-table
-        s
-        (chaperone-hash
-         (custom-set-table s)
-         (λ (hash key)
-           (values (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key))
-                   (λ (hash key val) val)))
-         (λ (hash key val)
-           (values (check-it 'add-proc key (add-proc (update-custom-set-table s hash) key))
-                   val))
-         (λ (hash key) (check-it 'remove-proc key (remove-proc (update-custom-set-table s hash) key)))
-         (λ (hash key) (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key)))
-         (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash))))))
+       (chap-or-imp-hash-set s
+                             chaperone-hash
+                             chaperone-hash-set-hash-ref-proc
+                             chaperone-hash-set-hash-set-proc
+                             chaperone-hash-set-hash-remove-proc
+                             chaperone-hash-set-hash-key-proc
+                             chaperone-hash-set-hash-clear-proc)
        s)
    prop-args))
+
+(define (chap-or-imp-hash-set s
+                              chaperone-or-impersonate-hash
+                              c/i-hash-set-hash-ref-proc
+                              c/i-hash-set-hash-set-proc
+                              c/i-hash-set-hash-remove-proc
+                              c/i-hash-set-hash-key-proc
+                              c/i-hash-set-hash-clear-proc)
+  (define rewrap
+    (and (custom-set-spec s)
+         (custom-spec-wrap (custom-set-spec s))))
+  (update-custom-set-table
+   s
+   (if (custom-set-spec s)
+       (chaperone-or-impersonate-hash
+        (custom-set-table s)
+        (λ (hash key)
+          (define-values (a b)
+            (c/i-hash-set-hash-ref-proc hash (custom-elem-contents key)))
+          (values (rewrap a) b))
+        (λ (hash key val)
+          (define-values (a b)
+            (c/i-hash-set-hash-set-proc hash key (custom-elem-contents key)))
+          (values (rewrap a) b))
+        (λ (hash key)
+          (rewrap (c/i-hash-set-hash-remove-proc hash (custom-elem-contents key))))
+        (λ (hash key)
+          (rewrap (c/i-hash-set-hash-key-proc hash (custom-elem-contents key))))
+        c/i-hash-set-hash-clear-proc)
+       (chaperone-or-impersonate-hash
+        (custom-set-table s)
+        c/i-hash-set-hash-ref-proc
+        c/i-hash-set-hash-set-proc
+        c/i-hash-set-hash-remove-proc
+        c/i-hash-set-hash-key-proc
+        c/i-hash-set-hash-clear-proc))))
 
 (define (impersonate-hash-set s
                               ref-proc
@@ -388,18 +431,29 @@
                          add-proc
                          remove-proc
                          clear-proc+props))
+  (define impersonate-hash-set-hash-ref-proc
+    (λ (hash key) (values (ref-proc (update-custom-set-table s hash) key)
+                               (λ (hash key val) val))))
+  (define impersonate-hash-set-hash-set-proc
+    (λ (hash key val) (values (add-proc (update-custom-set-table s hash) key) val)))
+  (define impersonate-hash-set-hash-remove-proc
+    (λ (hash key) (remove-proc (update-custom-set-table s hash) key)))
+  (define impersonate-hash-set-hash-key-proc
+    (λ (hash key) (ref-proc (update-custom-set-table s hash) key)))
+  (define impersonate-hash-set-hash-clear-proc
+    (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash)))))
+  (define rewrap
+    (and (custom-set-spec s)
+         (custom-spec-wrap (custom-set-spec s))))
   (add-impersonator-properties
    (if ref-proc
-       (update-custom-set-table
-        s
-        (impersonate-hash
-         (custom-set-table s)
-         (λ (hash key) (values (ref-proc (update-custom-set-table s hash) key)
-                               (λ (hash key val) val)))
-         (λ (hash key val) (values (add-proc (update-custom-set-table s hash) key) val))
-         (λ (hash key) (remove-proc (update-custom-set-table s hash) key))
-         (λ (hash key) (ref-proc (update-custom-set-table s hash) key))
-         (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash))))))
+       (chap-or-imp-hash-set s
+                             impersonate-hash
+                             impersonate-hash-set-hash-ref-proc
+                             impersonate-hash-set-hash-set-proc
+                             impersonate-hash-set-hash-remove-proc
+                             impersonate-hash-set-hash-key-proc
+                             impersonate-hash-set-hash-clear-proc)
        s)
    prop-args))
 
@@ -547,7 +601,7 @@
       (sequence-map custom-elem-contents keys)
       keys))
 
-(struct custom-elem [contents])
+(struct custom-elem [contents] #:transparent)
 
 (struct custom-spec [elem? wrap intern])
 

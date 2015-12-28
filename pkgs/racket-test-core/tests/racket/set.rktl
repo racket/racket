@@ -636,6 +636,37 @@
                                        (λ (s e) (+ e 1))
                                        (λ (s l) l)
                                        (λ (s l) l))))
+
+(test #t zero?
+      (let ([ele #f])
+        (set-first (impersonate-hash-set (weak-set 0)
+                                         (λ (s e) (set! ele e))
+                                         (λ (s l) l)
+                                         (λ (s l) l)))
+        ele))
+(test #t zero?
+      (let ([ele #f])
+        (define-custom-set-types set2 equal? equal-hash-code)
+        (define ele #f)
+        (set-first
+         (chaperone-hash-set (set-add (make-immutable-set2) 0)
+                             (λ (s e) (set! ele e) e)
+                             (λ (s l) l)
+                             (λ (s l) l)))
+        ele))
+(test #t zero?
+      (let ([ele #f])
+        (define-custom-set-types set2 equal? equal-hash-code)
+        (define ele #f)
+        (define s (make-weak-set2))
+        (set-add! s 0)
+        (set-first
+         (impersonate-hash-set s
+                               (λ (s e) (set! ele e) e)
+                               (λ (s l) l)
+                               (λ (s l) l)))
+        ele))
+
 (let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
               (make-impersonator-property 'p)])
   (let ([s (chaperone-hash-set (set) (λ (s l) l) (λ (s l) l) (λ (s l) l) impersonator-prop:p 11)])
