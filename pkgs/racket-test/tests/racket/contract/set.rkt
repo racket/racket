@@ -109,4 +109,112 @@
    '(contract (set/c integer? #:kind 'mutable)
               (mutable-set 0)
               'pos 'neg)
-   (contract-eval '(mutable-set 0))))
+   (contract-eval '(mutable-set 0)))
+
+
+  (test/pos-blame
+   'set/c17
+   '(let ()
+      (struct binary-set [integer]
+        #:transparent
+        #:methods gen:set
+        [(define (set-member? st i)
+           (bitwise-bit-set? (binary-set-integer st) i))
+         (define (set-add st i)
+           (binary-set (bitwise-ior (binary-set-integer st)
+                                    (arithmetic-shift 1 i))))
+         (define (set-remove st i)
+           (binary-set (bitwise-and (binary-set-integer st)
+                                    (bitwise-not (arithmetic-shift 1 i)))))])
+      (contract (set/c integer?)
+                (binary-set 5)
+                'pos 'neg)))
+
+  (test/spec-passed
+   'set/c19
+   '(let ()
+      (struct binary-set [integer]
+        #:transparent
+        #:methods gen:set
+        [(define (set-member? st i)
+           (bitwise-bit-set? (binary-set-integer st) i))
+         (define (set-add st i)
+           (binary-set (bitwise-ior (binary-set-integer st)
+                                    (arithmetic-shift 1 i))))
+         (define (set-remove st i)
+           (binary-set (bitwise-and (binary-set-integer st)
+                                    (bitwise-not (arithmetic-shift 1 i)))))])
+      (contract (set/c integer? #:kind 'dont-care)
+                (binary-set 5)
+                'pos 'neg)))
+
+  (test/spec-passed
+   'set/c20
+   '(let ()
+      (struct binary-set [integer]
+        #:transparent
+        #:methods gen:set
+        [(define (set-member? st i)
+           (bitwise-bit-set? (binary-set-integer st) i))
+         (define (set-add st i)
+           (binary-set (bitwise-ior (binary-set-integer st)
+                                    (arithmetic-shift 1 i))))
+         (define (set-remove st i)
+           (binary-set (bitwise-and (binary-set-integer st)
+                                    (bitwise-not (arithmetic-shift 1 i)))))])
+      (contract (set/c boolean? #:kind 'dont-care #:lazy? #t)
+                (binary-set 5)
+                'pos 'neg)))
+
+  (test/spec-passed
+   'set/c21
+   '(let* ([c (set/c (-> integer? integer?))]
+           [s (contract c (set (λ (x) x)) 'pos 'neg)])
+      (and (has-contract? s)
+           (equal? (value-contract s) c))))
+
+  (test/spec-passed
+   'set/c22
+   '(contract (set/c (-> integer? integer?) #:lazy? #t)
+              (set #f) 'pos 'neg))
+
+  (test/pos-blame
+   'set/c23
+   '(set-first
+     (contract (set/c (-> integer? integer?) #:lazy? #t)
+               (set #f) 'pos 'neg)))
+
+  (test/pos-blame
+   'set/c24
+   '(contract (set/c (-> integer? integer?) #:lazy? #f)
+              (set #f) 'pos 'neg))
+
+  (test/spec-passed
+   'set/c25
+   '(contract (set/c integer? #:lazy? #t)
+              (set #f) 'pos 'neg))
+
+  (test/pos-blame
+   'set/c26
+   '(set-first
+     (contract (set/c integer? #:lazy? #t)
+               (set #f) 'pos 'neg)))
+
+  (test/pos-blame
+   'set/c27
+   '(contract (set/c integer? #:lazy? #f)
+              (set #f) 'pos 'neg))
+
+  (test/neg-blame
+   'set/c28
+   '(let ([s (contract (set/c integer? #:lazy? #t)
+                       (set #f) 'pos 'neg)])
+      (set-add! s "x")))
+
+  (test/neg-blame
+   'set/c29
+   '(let ([s (contract (set/c integer? #:lazy? #f)
+                       (set 0) 'pos 'neg)])
+      (set-add! s "x")))
+  
+  )

@@ -203,17 +203,20 @@ named by the @racket[sym]s.
                  'dont-care]
                 [#:kind kind 
                  (or/c 'dont-care 'immutable 'mutable 'weak 'mutable-or-weak)
-                 'immutable])
+                 'immutable]
+                [#:lazy? lazy? any/c
+                 (not (and (equal? kind 'immutable)
+                           (flat-contract? elem/c)))])
          contract?]{
 
   Constructs a contract that recognizes sets whose elements match
-  @racket[contract].
+  @racket[elem/c].
 
   If @racket[kind] is @racket['immutable], @racket['mutable], or
   @racket['weak], the resulting contract accepts only @tech{hash sets} that
   are respectively immutable, mutable with strongly-held keys, or mutable with
   weakly-held keys.  If @racket[kind] is @racket['mutable-or-weak], the
-  resulting contract accepts any mutable @racket{hash sets}, regardless of
+  resulting contract accepts any mutable @tech{hash sets}, regardless of
   key-holding strength.
 
   If @racket[cmp] is @racket['equal], @racket['eqv], or @racket['eq], the
@@ -221,12 +224,30 @@ named by the @racket[sym]s.
   using @racket[equal?], @racket[eqv?], or @racket[eq?], respectively.
 
   If @racket[cmp] is @racket['eqv] or @racket['eq], then @racket[elem/c] must
-  be a flat contract.
+  be a @tech{flat contract}.
 
   If @racket[cmp] and @racket[kind] are both @racket['dont-care], then the
   resulting contract will accept any kind of set, not just @tech{hash
   sets}.
 
+ If @racket[lazy?] is not @racket[#f], then the elements of the set are not checked
+ immediately by the contract and only the set itself is checked (according to the
+ @racket[cmp] and @racket[kind] arguments). If @racket[lazy?] is
+ @racket[#f], then the elements are checked immediately by the contract.
+ The @racket[lazy?] argument is ignored when the set contract accepts generic sets
+ (i.e., when @racket[cmp] and @racket[kind] are both @racket['dont-care]); in that
+ case, the value being checked in that case is a @racket[list?], then the contract
+ is not lazy otherwise the contract is lazy.
+ 
+ If @racket[kind] allows mutable sets (i.e., is @racket['dont-care],
+ @racket['mutable], @racket['weak], or
+ @racket['mutable-or-weak]) and @racket[lazy?] is @racket[#f], then the elements
+ are checked both immediately and when they are accessed from the set.
+ 
+ The result contract will be a @tech{flat contract} when @racket[elem/c] is a @tech{flat
+ contract}, @racket[lazy?] is @racket[#f], and @racket[kind] is @racket['immutable].
+ The result will be a @tech{chaperone contract} when @racket[elem/c] is a
+ @tech{chaperone contract}.
 }
 
 @section{Generic Set Interface}

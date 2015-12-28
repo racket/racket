@@ -393,7 +393,8 @@
   (test-name '(set/c char? #:cmp 'eq) (set/c char? #:cmp 'eq))
   (test-name '(set/c (set/c char?) #:cmp 'eqv) (set/c (set/c char? #:cmp 'dont-care) #:cmp 'eqv))
   (test-name '(set/c (-> char? char?) #:cmp 'equal) (set/c (-> char? char?) #:cmp 'equal))
-
+  (test-name '(set/c (-> integer? boolean?)) (set/c (-> integer? boolean?)))
+  
   (test-name 'α (let ([α (new-∀/c)]) α))
   (test-name 'α (let ([α (new-∀/c #f)]) α))
   (test-name 'β (let ([α (new-∀/c 'β)]) α))
