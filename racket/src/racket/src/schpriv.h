@@ -417,6 +417,7 @@ void scheme_init_exn_config(void);
 #endif
 #ifdef WINDOWS_PROCESSES
 void scheme_init_thread_memory(void);
+void scheme_release_process_job_object(void);
 #endif
 void scheme_init_module_resolver(void);
 

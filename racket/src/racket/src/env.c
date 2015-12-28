@@ -656,6 +656,10 @@ void scheme_place_instance_destroy(int force)
   else
     scheme_run_atexit_closers_on_all(force_more_closed_after);
 
+#ifdef WINDOWS_PROCESSES
+  scheme_release_process_job_object();
+#endif
+
   scheme_release_file_descriptor();
 
   scheme_end_futures_per_place();

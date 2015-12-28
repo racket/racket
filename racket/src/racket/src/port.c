@@ -9417,6 +9417,17 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
   return NULL;
 }
 
+#ifdef WINDOWS_PROCESSES
+void scheme_release_process_job_object(void)
+{
+  if (process_job_object) {
+    TerminateJobObject((HANDLE)process_job_object, 1);
+    CloseHandle((HANDLE)process_job_object);
+    process_job_object = NULL;
+  }
+}
+#endif
+
 static void kill_subproc(Scheme_Object *o, void *data)
 {
   (void)do_subprocess_kill(o, scheme_true, 0);
@@ -9569,10 +9580,10 @@ static char *cmdline_protect(char *s)
 
 static intptr_t mz_spawnv(char *command, const char * const *argv,
 			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
-			  int new_process_group,
+			  int new_process_group, Scheme_Object *cust_mode,
                           void *env, char *wd)
 {
-  int i, l, len = 0;
+  int i, l, len = 0, use_jo;
   intptr_t cr_flag;
   char *cmdline;
   STARTUPINFOW startup;
@@ -9617,10 +9628,30 @@ static intptr_t mz_spawnv(char *command, const char * const *argv,
     cr_flag |= CREATE_NEW_PROCESS_GROUP;
   cr_flag |= CREATE_UNICODE_ENVIRONMENT;
 
+  use_jo = SCHEME_SYMBOLP(cust_mode) && !strcmp(SCHEME_SYM_VAL(cust_mode), "kill");
+  if (use_jo) {
+    /* Use a job object to ensure that the new process will be terminated
+       if this process ends for any reason (including a crash) */
+    if (!process_job_object) {
+      GC_CAN_IGNORE JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
+
+      process_job_object = (void*)CreateJobObject(NULL, NULL);
+
+      memset(&jeli, 0, sizeof(jeli));
+      jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+      SetInformationJobObject((HANDLE)process_job_object,
+			      JobObjectExtendedLimitInformation,
+			      &jeli,
+			      sizeof(jeli));
+    }
+  }
+
   if (CreateProcessW(WIDE_PATH_COPY(command), WIDE_PATH_COPY(cmdline), 
 		     NULL, NULL, 1 /*inherit*/,
 		     cr_flag, env, WIDE_PATH_COPY(wd),
 		     &startup, &info)) {
+    if (use_jo)
+      AssignProcessToJobObject((HANDLE)process_job_object, info.hProcess);
     CloseHandle(info.hThread);
     *pid = info.dwProcessId;
     return (intptr_t)info.hProcess;
@@ -9952,7 +9983,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 			     from_subprocess[1],
 			     err_subprocess[1],
 			     &pid,
-                             new_process_group,
+                             new_process_group, cust_mode,
                              env, SCHEME_BYTE_STR_VAL(tcd));
 
     if (spawn_status != -1)
