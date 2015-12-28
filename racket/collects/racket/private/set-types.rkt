@@ -866,6 +866,8 @@
 
 (define (immutable-custom-set-maker spec name)
   (define (proc [st '()])
+    (unless (stream? st)
+      (raise-argument-error name "stream?" st))
     (dprintf "~a\n" name)
     (define table
       (for/fold ([table (make-immutable-hash)]) ([x (in-stream st)])
@@ -876,6 +878,8 @@
 
 (define (imperative-custom-set-maker spec name make-table make-set)
   (define (proc [st '()])
+    (unless (stream? st)
+      (raise-argument-error name "stream?" st))
     (dprintf "~a\n" name)
     (define table (make-table))
     (for ([x (in-stream st)])
