@@ -173,3 +173,18 @@ TODO: Say something on:
   demand.
 ;}
 }
+
+@defform[(delay* body ...+)]{
+Like @racket[delay], except that it only handles one value, and it
+doesn't deal with exceptions.
+
+If the last @racket[body] expression either produces more than one
+value, forcing it for the first time will raise a result arity
+mismatch error, and subsequent forces will raise a "reentrant promise"
+error.
+
+If it raises an exception, forcing it for the first time will raise
+that exception, and subsequent forces will raise a reentrant promise
+error.
+}
+
