@@ -6,5 +6,5 @@
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR ignored, int nCmdShow)
 {
-  return PlaySoundW(GetCommandLineW(), NULL, SND_SYNC);
+  return !PlaySoundW(GetCommandLineW(), NULL, SND_SYNC | SND_NODEFAULT);
 }
