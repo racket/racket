@@ -155,6 +155,9 @@ More details for Windows:
    uses `-static-libgcc' and `-static-libstdc++' to statically link
    those libraries. Use "depends.exe" to check DLL dependencies.
 
+ * The extra "playsound.c" program is meant to be compiled to
+   "racket-playsound.exe" for the "gui" library.
+
 More details for Mac OS X:
 
  * 32-bit binaries are built for 10.5 and up. 64-bit binaries are
