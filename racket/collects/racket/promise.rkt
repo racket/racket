@@ -212,3 +212,29 @@
                     (cons '#:tick       #'0.2)
                     (cons '#:use        #'0.12))])
     (λ(stx) (make-delayer stx #'delay/idle kwds))))
+
+;; A lighter-weight version of delay that doesn't care about multiple values or
+;; exceptions
+
+;; force/delay* : Delay*-Promise -> Any
+;; Like force/generic from racket/private/promise, except that it
+;; only deals with one value and doesn't care about exceptions
+;; I'm not sure whether the common code could be abstracted out or not
+(define (force/delay* promise)
+  (let ([v (pref promise)])
+    (cond [(pair? v)
+           (car v)]
+          [(procedure? v)
+           (pset! promise (make-running (object-name v)))
+           (let ([v (v)])
+             (pset! promise (list v))
+             v)]
+          [else (error 'force "delay* promise with invalid contents: ~e" v)])))
+
+(define-struct (delay*-promise promise) ()
+  #:property prop:force force/delay*)
+
+(provide (rename-out [delay** delay*]))
+(define delay* make-delay*-promise)
+(define-syntax (delay** stx) (make-delayer stx #'delay* '()))
+
