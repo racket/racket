@@ -358,19 +358,21 @@
              who original new))
     new)
   (add-impersonator-properties
-   (update-custom-set-table
-    s
-    (chaperone-hash
-     (custom-set-table s)
-     (λ (hash key)
-       (values (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key))
-               (λ (hash key val) val)))
-     (λ (hash key val)
-       (values (check-it 'add-proc key (add-proc (update-custom-set-table s hash) key))
-               val))
-     (λ (hash key) (check-it 'remove-proc key (remove-proc (update-custom-set-table s hash) key)))
-     (λ (hash key) (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key)))
-     (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash))))))
+   (if ref-proc
+       (update-custom-set-table
+        s
+        (chaperone-hash
+         (custom-set-table s)
+         (λ (hash key)
+           (values (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key))
+                   (λ (hash key val) val)))
+         (λ (hash key val)
+           (values (check-it 'add-proc key (add-proc (update-custom-set-table s hash) key))
+                   val))
+         (λ (hash key) (check-it 'remove-proc key (remove-proc (update-custom-set-table s hash) key)))
+         (λ (hash key) (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key)))
+         (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash))))))
+       s)
    prop-args))
 
 (define (impersonate-hash-set s
@@ -387,15 +389,18 @@
                          remove-proc
                          clear-proc+props))
   (add-impersonator-properties
-   (update-custom-set-table
-    s
-    (impersonate-hash
-     (custom-set-table s)
-     (λ (hash key) (values (ref-proc (update-custom-set-table s hash) key) (λ (hash key val) val)))
-     (λ (hash key val) (values (add-proc (update-custom-set-table s hash) key) val))
-     (λ (hash key) (remove-proc (update-custom-set-table s hash) key))
-     (λ (hash key) (ref-proc (update-custom-set-table s hash) key))
-     (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash))))))
+   (if ref-proc
+       (update-custom-set-table
+        s
+        (impersonate-hash
+         (custom-set-table s)
+         (λ (hash key) (values (ref-proc (update-custom-set-table s hash) key)
+                               (λ (hash key val) val)))
+         (λ (hash key val) (values (add-proc (update-custom-set-table s hash) key) val))
+         (λ (hash key) (remove-proc (update-custom-set-table s hash) key))
+         (λ (hash key) (ref-proc (update-custom-set-table s hash) key))
+         (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash))))))
+       s)
    prop-args))
 
 (define (add-impersonator-properties without-props prop-args)
@@ -425,24 +430,34 @@
                        '(or/c set-mutable? set-weak?)
                        '(or/c set? set-mutable? set-weak?)))
            0 s ref-proc add-proc clear-proc+props))
-  (unless (and (procedure? ref-proc)
-               (procedure-arity-includes? ref-proc 2))
+  (unless (or (not ref-proc)
+              (and (procedure? ref-proc)
+                   (procedure-arity-includes? ref-proc 2)))
     (apply raise-argument-error
            who
-           "(procedure-arity-includes/c 2)"
+           "(or/c #f (procedure-arity-includes/c 2))"
            1 s ref-proc add-proc clear-proc+props))
-  (unless (and (procedure? add-proc)
-               (procedure-arity-includes? add-proc 2))
+  (unless (or (not add-proc)
+              (and (procedure? add-proc)
+                   (procedure-arity-includes? add-proc 2)))
     (apply raise-argument-error
            who
-           "(procedure-arity-includes/c 2)"
+           "(or/c #f (procedure-arity-includes/c 2))"
            2 s ref-proc add-proc clear-proc+props))
-  (unless (and (procedure? remove-proc)
-               (procedure-arity-includes? remove-proc 2))
+  (unless (or (not remove-proc)
+              (and (procedure? remove-proc)
+                   (procedure-arity-includes? remove-proc 2)))
     (apply raise-argument-error
            who
-           "(procedure-arity-includes/c 2)"
+           "(or/c #f (procedure-arity-includes/c 2))"
            3 s ref-proc add-proc clear-proc+props))
+  (when (or (not ref-proc) (not add-proc) (not remove-proc))
+    (unless (and (not ref-proc) (not add-proc) (not remove-proc))
+      (raise-arguments-error who
+                             "if one of ref-proc, add-proc, or remove-proc is #f, they must all be"
+                             "ref-proc" ref-proc
+                             "add-proc" add-proc
+                             "remove-proc" remove-proc)))
   (unless (null? clear-proc+props)
     (unless (or (not (car clear-proc+props))
                 (and (procedure? (car clear-proc+props))
@@ -472,6 +487,11 @@
              "impersonator-property?"
              (+ i (if supplied-clear-proc? 1 0) 4)
              s ref-proc add-proc clear-proc+props)))
+  (unless ref-proc
+    (when (null? args)
+      (raise-arguments-error
+       who
+       "when ref-proc, add-proc, and remove-proc are #f, at least one property must be supplied")))
   (values clear-proc args))
   
 (define (set-check-compatible name s1 s2)

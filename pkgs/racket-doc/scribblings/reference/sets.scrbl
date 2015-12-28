@@ -696,9 +696,9 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 }
 
 @defproc[(impersonate-hash-set [st mutable-set?]
-                               [ref-proc (-> set? any/c any/c)]
-                               [add-proc (-> set? any/c any/c)]
-                               [remove-proc (-> set? any/c any/c)]
+                               [ref-proc (or/c #f (-> set? any/c any/c))]
+                               [add-proc (or/c #f (-> set? any/c any/c))]
+                               [remove-proc (or/c #f (-> set? any/c any/c))]
                                [clear-proc (or/c #f (-> set? any)) #f]
                                [prop impersonator-property?]
                                [prop-val any/c] ... ...)
@@ -718,6 +718,10 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
  from @racket[st]. Its first argument is the set and its second argument is the
  element being removed. The result of the procedure is the element that actually
  gets removed from the set.
+
+ If any of the @racket[ref-proc], @racket[add-proc], or @racket[remove-proc] arguments
+ is @racket[#f], then all three must be and there must be at least one property supplied.
+ In that case, a more efficient chaperone wrapper is created.
  
  If @racket[clear-proc] is not @racket[#f], it must accept @racket[set] as
  an argument and is result is ignored. The fact that @racket[clear-proc]
@@ -734,9 +738,9 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 }
 
 @defproc[(chaperone-hash-set [st (or/c set? mutable-set?)]
-                             [ref-proc (-> set? any/c any/c)]
-                             [add-proc (-> set? any/c any/c)]
-                             [remove-proc (-> set? any/c any/c)]
+                             [ref-proc (or/c #f (-> set? any/c any/c))]
+                             [add-proc (or/c #f (-> set? any/c any/c))]
+                             [remove-proc (or/c #f (-> set? any/c any/c))]
                              [clear-proc (or/c #f (-> set? any)) #f]
                              [prop impersonator-property?]
                              [prop-val any/c] ... ...)
