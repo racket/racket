@@ -55,8 +55,9 @@
        (syntax-parse stx
          [(_ arg:expr (~and cl0 [(pats ...) rhs ...]) clauses ...)
           (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))])
-            #`(let-values ([(ids ...) arg])
-                (match*/derived (ids ...) #,stx cl0 clauses ...)))]))
+            (quasisyntax/loc stx
+              (let-values ([(ids ...) arg])
+                (match*/derived (ids ...) #,stx cl0 clauses ...))))]))
 
      (define-syntax (match-lambda stx)
        (syntax-parse stx
@@ -89,20 +90,23 @@
                  [rhs (syntax->list #'(rhss ...))])
               (define ids (generate-temporaries pats))
               (values ids #`[#,ids #,rhs])))
-          #`(let-values #,let-clauses
+          (quasisyntax/loc stx
+            (let-values #,let-clauses
               (match*/derived #,(append* idss) #,stx
-                [(patss ... ...) (let () body1 body ...)]))]))
+                [(patss ... ...) (let () body1 body ...)])))]))
 
      (define-syntax (match-let*-values stx)
        (syntax-parse stx
          [(_ () body1 body ...)
-          #'(let () body1 body ...)]
+          (syntax/loc stx (let () body1 body ...))]
          [(_ ([(pats ...) rhs] rest-pats ...) body1 body ...)
           (with-syntax ([(ids ...) (generate-temporaries #'(pats ...))])
-            #`(let-values ([(ids ...) rhs])
+            (quasisyntax/loc stx
+              (let-values ([(ids ...) rhs])
                 (match*/derived (ids ...) #,stx
-                  [(pats ...) #,(syntax/loc stx (match-let*-values (rest-pats ...)
-                                                  body1 body ...))])))]))
+                  [(pats ...) #,(syntax/loc stx
+                                  (match-let*-values (rest-pats ...)
+                                    body1 body ...))]))))]))
 
      ;; there's lots of duplication here to handle named let
      ;; some factoring out would do a lot of good
@@ -111,12 +115,14 @@
          [(_ nm:id (~and clauses ([pat init-exp:expr] ...)) body1 body ...)
           (with-syntax*
            ([vars (generate-temporaries #'(pat ...))]
-            [loop-body #`(match*/derived vars #,stx
-                           [(pat ...) (let () body1 body ...)])])
-           #'(letrec ([nm (lambda vars loop-body)])
-               (nm init-exp ...)))]
+            [loop-body (quasisyntax/loc stx
+                         (match*/derived vars #,stx
+                                         [(pat ...) (let () body1 body ...)]))])
+           (syntax/loc stx
+             (letrec ([nm (lambda vars loop-body)])
+               (nm init-exp ...))))]
          [(_ ([pat init-exp:expr] ...) body1 body ...)
-          #`(match-let-values ([(pat) init-exp] ...) body1 body ...)]))
+          (syntax/loc stx (match-let-values ([(pat) init-exp] ...) body1 body ...))]))
 
      (define-syntax-rule (match-let* ([pat exp] ...) body1 body ...)
        (match-let*-values ([(pat) exp] ...) body1 body ...))
