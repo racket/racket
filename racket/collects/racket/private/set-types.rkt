@@ -794,26 +794,26 @@
   (struct wrapped-elem custom-elem []
     #:methods gen:equal+hash
     [(define equal-proc
-       (if (procedure-arity-includes? =? 2)
-           (lambda (a b f)
-             (=? (custom-elem-contents a)
-                 (custom-elem-contents b)))
+       (if (procedure-arity-includes? =? 3)
            (lambda (a b f)
              (=? (custom-elem-contents a)
                  (custom-elem-contents b)
-                 f))))
+                 f))
+           (lambda (a b f)
+             (=? (custom-elem-contents a)
+                 (custom-elem-contents b)))))
      (define hash-proc
-       (if (procedure-arity-includes? hc1 1)
+       (if (procedure-arity-includes? hc1 2)
            (lambda (a f)
-             (hc1 (custom-elem-contents a)))
+             (hc1 (custom-elem-contents a) f))
            (lambda (a f)
-             (hc1 (custom-elem-contents a) f))))
+             (hc1 (custom-elem-contents a)))))
      (define hash2-proc
-       (if (procedure-arity-includes? hc2 1)
+       (if (procedure-arity-includes? hc2 2)
            (lambda (a f)
-             (hc2 (custom-elem-contents a)))
+             (hc2 (custom-elem-contents a) f))
            (lambda (a f)
-             (hc2 (custom-elem-contents a) f))))])
+             (hc2 (custom-elem-contents a)))))])
   (custom-spec elem? wrapped-elem (make-weak-hasheq)))
 
 (define (default-hc x f) 1)
