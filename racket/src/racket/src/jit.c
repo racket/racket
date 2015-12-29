@@ -1275,7 +1275,7 @@ static int generate_closure(Scheme_Closure_Data *data,
         jit_movi_l(JIT_R1, init_word);
         jit_str_l(JIT_R0, JIT_R1); 
       }
-    scheme_mz_load_retained(jitter, JIT_R1, code, 0);
+    scheme_mz_load_retained(jitter, JIT_R1, code);
     jit_stxi_p((intptr_t)&((Scheme_Native_Closure *)0x0)->code, JIT_R0, JIT_R1);
 
     return 1;
@@ -1285,7 +1285,7 @@ static int generate_closure(Scheme_Closure_Data *data,
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
 
   mz_prepare(1);
-  scheme_mz_load_retained(jitter, JIT_R0, code, 0);
+  scheme_mz_load_retained(jitter, JIT_R0, code);
   jit_pusharg_p(JIT_R0);
   {
     GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
@@ -1302,13 +1302,25 @@ static int generate_closure_fill(Scheme_Closure_Data *data,
   /* Fill in closure */
   int j, size, pos;
   mzshort *map;
+  Scheme_Object *v;
   size = data->closure_size;
   map = data->closure_map;
   jit_addi_p(JIT_R2, JIT_R0, &((Scheme_Native_Closure *)0x0)->vals);
   for (j = 0; j < size; j++) {
     CHECK_LIMIT();
-    pos = mz_remap(map[j]);
-    jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+
+    if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
+      v = extract_closure_local(map[j], jitter, 1);
+    else
+      v = NULL;
+
+    if (v) {
+      /* capture value directly within specialized */
+      scheme_mz_load_retained(jitter, JIT_R1, v);
+    } else {
+      pos = mz_remap(map[j]);
+      jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
+    }
     jit_stxi_p(WORDS_TO_BYTES(j), JIT_R2, JIT_R1);
   }
   return 1;
@@ -1435,7 +1447,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
 
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(1);
-  scheme_mz_load_retained(jitter, JIT_R0, ndata, 0);
+  scheme_mz_load_retained(jitter, JIT_R0, ndata);
   jit_pusharg_p(JIT_R0);
   {
     GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
@@ -2056,7 +2068,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
           Scheme_Object *b;
           mz_rs_sync_fail_branch();
           b = scheme_extract_global(obj, jitter->nc, 0);
-          scheme_mz_load_retained(jitter, JIT_R2, b, 1);
+          scheme_mz_load_retained(jitter, JIT_R2, b);
         } else {
           /* Load global array: */
           pos = mz_remap(SCHEME_TOPLEVEL_DEPTH(obj));
@@ -2175,7 +2187,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
       if (!result_ignored) {
         if (specialized)
-          scheme_mz_load_retained(jitter, JIT_R0, specialized, 1);
+          scheme_mz_load_retained(jitter, JIT_R0, specialized);
         else
           mz_rs_ldxi(JIT_R0, pos);
         jit_ldr_p(target, JIT_R0);
@@ -2879,7 +2891,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	if (ab) {
 	  pos = mz_remap(lv->position);
           if (specialized)
-            scheme_mz_load_retained(jitter, JIT_R2, specialized, 1);
+            scheme_mz_load_retained(jitter, JIT_R2, specialized);
           else
             mz_rs_ldxi(JIT_R2, pos);
 	  jit_str_p(JIT_R2, JIT_R0);
@@ -3357,7 +3369,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	}
       }
 
-      scheme_mz_load_retained(jitter, target, obj, 0);
+      scheme_mz_load_retained(jitter, target, obj);
 
       END_JIT_DATA(19);
       return 1;

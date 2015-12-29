@@ -5064,6 +5064,27 @@
       (dup rep))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check specialization with a capturing lambda:
+
+(let ()
+  (define (f x)
+    (procedure-specialize
+     (lambda (y)
+       (lambda () (+ x y)))))
+  (set! f f)
+  (test 11 ((f 10) 1)))
+
+
+(let ()
+  (define (f x)
+    (set! x (add1 x))
+    (procedure-specialize
+     (lambda (y)
+       (lambda () (+ x y)))))
+  (set! f f)  
+  (test 12 ((f 10) 1)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 (report-errs)

@@ -2561,7 +2561,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 	  && !SCHEME_FALSEP(a1)
 	  && !SCHEME_VOIDP(a1)
 	  && !SAME_OBJ(a1, scheme_true)) {
-	scheme_mz_load_retained(jitter, JIT_R1, a1, 0);
+	scheme_mz_load_retained(jitter, JIT_R1, a1);
 	ref = jit_bner_p(jit_forward(), JIT_R0, JIT_R1);
         /* In case true is a fall-through, note that the test 
            didn't disturb R0: */
@@ -3848,7 +3848,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
         ref = jit_bnei_p(jit_forward(), JIT_R0, scheme_undefined);
         __END_TINY_JUMPS__(1);
 
-        scheme_mz_load_retained(jitter, JIT_R1, app->rand2, 0);
+        scheme_mz_load_retained(jitter, JIT_R1, app->rand2);
         if (IS_NAMED_PRIM(rator, "check-not-unsafe-undefined"))
           (void)jit_calli(sjc.call_check_not_defined_code);
         else

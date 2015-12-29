@@ -70,15 +70,14 @@ int scheme_mz_retain_it(mz_jit_state *jitter, void *v)
   return jitter->retained;
 }
 
-void scheme_mz_load_retained(mz_jit_state *jitter, int rs, void *obj, int non_obj)
+void scheme_mz_load_retained(mz_jit_state *jitter, int rs, void *obj)
 /* obj is a pointer, but not necesarily tagged (in CGC) */
 {
-  if (non_obj
-      || (!SCHEME_INTP((Scheme_Object *)obj)
-          && !SAME_OBJ((Scheme_Object *)obj, scheme_true)
-          && !SAME_OBJ((Scheme_Object *)obj, scheme_false)
-          && !SAME_OBJ((Scheme_Object *)obj, scheme_void)
-          && !SAME_OBJ((Scheme_Object *)obj, scheme_null))) {
+  if (!SCHEME_INTP((Scheme_Object *)obj)
+      && !SAME_OBJ((Scheme_Object *)obj, scheme_true)
+      && !SAME_OBJ((Scheme_Object *)obj, scheme_false)
+      && !SAME_OBJ((Scheme_Object *)obj, scheme_void)
+      && !SAME_OBJ((Scheme_Object *)obj, scheme_null)) {
 #ifdef JIT_PRECISE_GC
     int retptr;
     void *p;

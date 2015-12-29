@@ -479,7 +479,7 @@ int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_na
   if (direct_native && direct_to_code) {
     __END_SHORT_JUMPS__(num_rands < 100);
     /* load closure pointer into R0: */
-    scheme_mz_load_retained(jitter, JIT_R0, direct_to_code, 0);
+    scheme_mz_load_retained(jitter, JIT_R0, direct_to_code);
     /* jump directly: */
     (void)jit_jmpi(direct_to_code->code->u.tail_code);
     /* no slow path in this mode */
