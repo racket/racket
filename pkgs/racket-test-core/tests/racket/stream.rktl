@@ -57,4 +57,9 @@
 (test '(1 3) stream->list (stream-filter odd? '(1 2 3)))
 (test '(1 a 2 a 3) stream->list (stream-add-between '(1 2 3) 'a))
 
+(test 4 'for/stream (stream-ref (for/stream ([x '(1 2 3)]) (* x x)) 1))
+(test 6 'for*/stream (stream-ref (for*/stream ([x '(1 2 3)] [y '(1 2 3)]) (* x y)) 7))
+(test 1 'for/stream (stream-first (for*/stream ([x '(1 0)]) (/ x))))
+(test 625 'for/stream (stream-ref (for/stream ([x (in-naturals)]) (* x x)) 25))
+
 (report-errs)
