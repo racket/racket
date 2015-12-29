@@ -1018,6 +1018,26 @@ stream, but plain lists can be used as streams, and functions such as
   new stream is constructed lazily.
 }
 
+@deftogether[(@defform[(for/stream (for-clause ...) body-or-break ... body)]
+              @defform[(for*/stream (for-clause ...) body-or-break ... body)])]{
+  Iterates like @racket[for/list] and @racket[for*/list], respectively, but the
+  results are lazily collected into a @tech{stream} instead of a list.
+
+  Unlike most @racket[for] forms, these forms are evaluated lazily, so each
+  @racket[body] will not be evaluated until the resulting stream is forced. This
+  allows @racket[for/stream] and @racket[for*/stream] to iterate over infinite
+  sequences, unlike their finite counterparts.
+
+  @examples[#:eval sequence-evaluator
+    (for/stream ([i '(1 2 3)]) (* i i))
+    (stream->list (for/stream ([i '(1 2 3)]) (* i i)))
+    (stream-ref (for/stream ([i '(1 2 3)]) (displayln i) (* i i)) 1)
+    (stream-ref (for/stream ([i (in-naturals)]) (* i i)) 25)
+  ]
+
+  @history[#:added "6.3.0.9"]
+}
+
 @defthing[gen:stream any/c]{
   Associates three methods to a structure type to implement the
   @tech{generic interface} (see @secref["struct-generics"]) for
