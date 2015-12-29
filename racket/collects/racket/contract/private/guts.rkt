@@ -74,7 +74,9 @@
 
          contract-first-order-okay-to-give-up?
          contract-first-order-try-less-hard
-         contract-first-order-only-try-so-hard)
+         contract-first-order-only-try-so-hard
+
+         raise-predicate-blame-error-failure)
 
 (define (contract-custom-write-property-proc stct port mode)
   (define (write-prefix)
@@ -617,10 +619,7 @@
         (λ (v neg-party)
           (if (p? v)
               v
-              (raise-blame-error blame v #:missing-party neg-party
-                                 '(expected: "~s" given: "~e")
-                                 name
-                                 v))))))
+              (raise-predicate-blame-error-failure blame v neg-party name))))))
    #:generate (λ (ctc)
                  (let ([generate (predicate-contract-generate ctc)])
                    (cond
@@ -634,6 +633,12 @@
                              (λ () (built-in-generator fuel))))])))
    #:list-contract? (λ (ctc) (or (equal? (predicate-contract-pred ctc) null?)
                                  (equal? (predicate-contract-pred ctc) empty?)))))
+
+(define (raise-predicate-blame-error-failure blame v neg-party predicate-name)
+  (raise-blame-error blame v #:missing-party neg-party
+                     '(expected: "~s" given: "~e")
+                     predicate-name
+                     v))
 
 (define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
