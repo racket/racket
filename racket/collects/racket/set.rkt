@@ -2,14 +2,51 @@
 
 (require racket/contract/base
          racket/contract/combinator
-         racket/private/set
-         racket/private/set-types
+         "private/set.rkt"
+         "private/set-types.rkt"
          racket/generic
          racket/private/for
          (for-syntax racket/base))
 
-(provide (all-from-out racket/private/set)
-         (all-from-out racket/private/set-types)
+(provide gen:set generic-set? set-implements?
+
+         set-empty? set-member? set-count
+         set=? subset? proper-subset?
+         set-map set-for-each
+         set-copy set-copy-clear
+         set->list set->stream set-first set-rest
+         set-add set-remove set-clear
+         set-union set-intersect set-subtract set-symmetric-difference
+         set-add! set-remove! set-clear!
+         set-union! set-intersect! set-subtract! set-symmetric-difference!
+
+         in-set
+         set-implements/c
+
+         set seteq seteqv
+         weak-set weak-seteq weak-seteqv
+         mutable-set mutable-seteq mutable-seteqv
+         list->set list->seteq list->seteqv
+         list->weak-set list->weak-seteq list->weak-seteqv
+         list->mutable-set list->mutable-seteq list->mutable-seteqv
+         set-eq? set-eqv? set-equal?
+         set-weak? set-mutable? set?
+         for/set for/seteq for/seteqv
+         for*/set for*/seteq for*/seteqv
+         for/weak-set for/weak-seteq for/weak-seteqv
+         for*/weak-set for*/weak-seteq for*/weak-seteqv
+         for/mutable-set for/mutable-seteq for/mutable-seteqv
+         for*/mutable-set for*/mutable-seteq for*/mutable-seteqv
+
+         define-custom-set-types
+         make-custom-set-types
+         make-custom-set
+         make-weak-custom-set
+         make-mutable-custom-set
+
+         chaperone-hash-set
+         impersonate-hash-set
+         
          set/c)
 
 (define/subexpression-pos-prop/name
