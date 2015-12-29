@@ -403,7 +403,7 @@
           (values (rewrap a) b))
         (λ (hash key val)
           (define-values (a b)
-            (c/i-hash-set-hash-set-proc hash key (custom-elem-contents key)))
+            (c/i-hash-set-hash-set-proc hash (custom-elem-contents key) val))
           (values (rewrap a) b))
         (λ (hash key)
           (rewrap (c/i-hash-set-hash-remove-proc hash (custom-elem-contents key))))

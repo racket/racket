@@ -667,6 +667,17 @@
                                (λ (s l) l)))
         ele))
 
+(test #t zero?
+      (let ()
+        (define-custom-set-types set2 equal? equal-hash-code)
+        (set-first
+         (set-add (chaperone-hash-set
+                   (make-immutable-set2)
+                   (λ (a b) b)
+                   (λ (a b) b)
+                   (λ (a b) b))
+                  0))))
+
 (let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
               (make-impersonator-property 'p)])
   (let ([s (chaperone-hash-set (set) (λ (s l) l) (λ (s l) l) (λ (s l) l) impersonator-prop:p 11)])
