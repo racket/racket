@@ -910,9 +910,11 @@
                        ;; directly here in the expansion makes this very expensive at compile time
                        ;; when there are a lot of provide/contract clause using structs
                        (define -struct:struct-name
-                         (make-pc-struct-type 'struct-name
+                         (make-pc-struct-type #,pos-module-source-id
+                                              'struct-name
                                               struct-name-srcloc
                                               struct:struct-name
+                                              '(#,@field-names)
                                               field-contract-ids ...))
                        (provide (rename-out [-struct:struct-name struct:struct-name]))))))))))
 
@@ -1115,9 +1117,18 @@
 (define-syntax (provide/contract-for-contract-out stx)
   (provide/contract-for-whom stx 'contract-out))
 
-(define (make-pc-struct-type struct-name srcloc struct:struct-name . ctcs)
+(define (make-pc-struct-type pos-module-source struct-name srcloc struct-type field-names . ctcs)
+  (define blame
+    (make-blame (build-source-location srcloc) struct-type (λ () `(substruct-of ,struct-name))
+                pos-module-source #f #t))
+  (define late-neg-acceptors
+    (for/list ([ctc (in-list ctcs)]
+               [field-name (in-list field-names)])
+      ((get/build-late-neg-projection ctc)
+       (blame-add-context blame
+                          (format "the ~a field of" field-name)))))
   (chaperone-struct-type
-   struct:struct-name
+   struct-type
    (λ (a b c d e f g h) (values a b c d e f g h))
    (λ (x) x)
    (λ args
@@ -1131,12 +1142,7 @@
             null]
            [else (cons (car args) (loop (cdr args)))])))
      (apply values
-            (map (λ (ctc val)
-                   (contract ctc
-                             val
-                             'not-enough-info-for-blame
-                             'not-enough-info-for-blame
-                             name
-                             srcloc))
-                 ctcs
+            (map (λ (late-neg-acceptors val)
+                   (late-neg-acceptors val 'not-enough-info-for-blame))
+                 late-neg-acceptors
                  vals)))))
