@@ -302,6 +302,7 @@
                                    #f
                                    (memq x the-known-good-contracts))])]
       [(null? x) list/c-empty]
+      [(not x) false/c-contract]
       [(or (symbol? x) (boolean? x) (keyword? x))
        (make-eq-contract x
                          (if (name-default? name)
@@ -476,6 +477,8 @@
               (predicate-contract-sane? that)
               ((predicate-contract-pred that) this-val))))
    #:list-contract? (λ (c) (null? (eq-contract-val c)))))
+
+(define false/c-contract (make-eq-contract #f #f))
 
 (define-struct equal-contract (val name)
   #:property prop:custom-write contract-custom-write-property-proc
