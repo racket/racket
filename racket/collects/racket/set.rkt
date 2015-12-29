@@ -16,9 +16,7 @@
   real-set/c-name (set/c elem/c
                          #:cmp [cmp 'dont-care]
                          #:kind [kind 'immutable]
-                         #:lazy? [_lazy?
-                                  (not (and (equal? kind 'immutable)
-                                            (flat-contract? elem/c)))])
+                         #:lazy? [_lazy? (lazy-default kind elem/c)])
   (define lazy? (and _lazy? #t))
   (define cmp/c
     (case cmp
@@ -62,6 +60,10 @@
 
 (struct set-contract [elem/c cmp kind lazy?])
 
+(define (lazy-default kind elem/c)
+  (not (and (equal? kind 'immutable)
+            (flat-contract? elem/c))))
+
 (define (set-contract-name ctc)
   (define elem/c (set-contract-elem/c ctc))
   (define cmp (set-contract-cmp ctc))
@@ -74,7 +76,7 @@
                 `[]
                 `[#:kind (quote ,kind)])
           ,@(if (equal? (set-contract-lazy? ctc)
-                        (flat-contract? elem/c))
+                        (lazy-default kind elem/c))
                 '()
                 `(#:lazy? ,(set-contract-lazy? ctc)))))
 
