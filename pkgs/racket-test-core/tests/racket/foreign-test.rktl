@@ -474,6 +474,15 @@
   (test 1 ptr-ref v _int16 0)
   (test 3 ptr-ref v _int16 3))
 
+;; Test cstruct pointer access
+(let ()
+  (define-cstruct _stuff ([a _int16]
+                          [b _int32]))
+  (define v (make-stuff 1 0))
+  (test 1 ptr-ref (stuff-a-pointer v) _int16)
+  (ptr-set! (stuff-b-pointer v) _int32 3)
+  (test 3 ptr-ref (stuff-b-pointer v) _int32))
+
 ;; Test intptr:
 (let ([v (malloc _pointer)])
   (ptr-set! v _pointer (ptr-add #f 107))

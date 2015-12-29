@@ -1474,6 +1474,7 @@
          [(stype ...)          (ids (lambda (s) `(,name"-",s"-type")))]
          [(TYPE-SLOT ...)      (ids (lambda (s) `(,name"-",s)))]
          [(set-TYPE-SLOT! ...) (ids (lambda (s) `("set-",name"-",s"!")))]
+         [(TYPE-SLOT-pointer ...)      (ids (lambda (s) `(,name"-",s"-pointer")))]
          [(offset ...) (generate-temporaries
                                (ids (lambda (s) `(,s"-offset"))))]
          [alignment            alignment-stx]
@@ -1541,7 +1542,7 @@
                        (reverse (list (quote-syntax set-TYPE-SLOT!) ...))
                        #t))))
             (define-values (_TYPE _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
-                                  make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
+                                  make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ... TYPE-SLOT-pointer ...
                                   list->TYPE list*->TYPE TYPE->list TYPE->list*
                                   maybe-struct:TYPE ...)
               (let-values ([(super-pointer super-tags super-types super-offsets
@@ -1585,6 +1586,11 @@
                   (unless (TYPE? x)
                     (raise-argument-error 'set-TYPE-SLOT! struct-string 0 x slot))
                   (ptr-set! x stype 'abs offset slot))
+                ...
+                (define (TYPE-SLOT-pointer x)
+                  (unless (TYPE? x)
+                    (raise-argument-error 'TYPE-SLOT-pointer struct-string x))
+                  (ptr-add x offset))
                 ...
                 (define make-TYPE
                   (if (and has-super? super-types super-offsets)
@@ -1649,7 +1655,7 @@
                  _TYPE all-tags all-types all-offsets TYPE->list* list*->TYPE
                  struct:cpointer:TYPE wrap-TYPE-type)
                 (values _TYPE* _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
-                        make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
+                        make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ... TYPE-SLOT-pointer ...
                         list->TYPE list*->TYPE TYPE->list TYPE->list*
                         maybe-struct:TYPE ...)))))))
   (define (err what . xs)
