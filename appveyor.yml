@@ -24,7 +24,7 @@ test_script:
 - racket\raco.exe test -l tests/net/encoders
 - racket\raco.exe test -l tests/openssl/basic
 - racket\raco.exe test -l tests/openssl/https
-- racket\raco.exe test -l tests/match/plt-match-tests
+- racket\raco.exe test -l tests/match/main
 - racket\raco.exe test -l tests/zo-path
 - racket\raco.exe test -l tests/xml/test
 
