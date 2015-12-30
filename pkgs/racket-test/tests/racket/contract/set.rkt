@@ -166,12 +166,20 @@
                 (binary-set 5)
                 'pos 'neg)))
 
-  (test/spec-passed
+  (test/spec-passed/result
    'set/c21
    '(let* ([c (set/c (-> integer? integer?))]
            [s (contract c (set (λ (x) x)) 'pos 'neg)])
       (and (has-contract? s)
-           (equal? (value-contract s) c))))
+           (equal? (value-contract s) c)))
+   #t)
+
+  (test/spec-passed/result
+   'set/c2b
+   '(let* ([c (set/c (-> integer? integer?))]
+           [s (contract c (set (λ (x) x)) 'pos 'neg)])
+      (has-blame? s))
+   #t)
 
   (test/spec-passed
    'set/c22
@@ -207,14 +215,34 @@
 
   (test/neg-blame
    'set/c28
-   '(let ([s (contract (set/c integer? #:lazy? #t)
-                       (set #f) 'pos 'neg)])
+   '(let ([s (contract (set/c integer? #:lazy? #t #:kind 'dont-care)
+                       (mutable-set #f) 'pos 'neg)])
       (set-add! s "x")))
 
   (test/neg-blame
    'set/c29
-   '(let ([s (contract (set/c integer? #:lazy? #f)
-                       (set 0) 'pos 'neg)])
+   '(let ([s (contract (set/c integer? #:lazy? #f #:kind 'mutable)
+                       (mutable-set 0) 'pos 'neg)])
       (set-add! s "x")))
+
+  (test/spec-passed
+   'set/c30
+   '(let ()
+      (define-custom-set-types set2 equal?)
+      (set-add
+       (contract (set/c (-> integer? integer?))
+                 (make-immutable-set2)
+                 'pos 'neg)
+       add1)))
+
+  (test/spec-passed
+   'set/c30
+   '(let ()
+      (define-custom-set-types set2 equal?)
+      (set-add
+       (contract (set/c (-> integer? integer?))
+                 (make-immutable-set2)
+                 'pos 'neg)
+       add1)))
   
   )

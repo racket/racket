@@ -184,50 +184,42 @@
   (λ (blame)
     (define late-neg-pos-proj (late-neg-ele-proj (blame-add-element-context blame #f)))
     (define late-neg-neg-proj (late-neg-ele-proj (blame-add-element-context blame #t)))
-    (define set/c-lazy-late-neg-proj
-      (λ (val neg-party)
+    (cond
+      [lazy?
+       (λ (val neg-party)
         (set-contract-check cmp kind blame neg-party val)
         (define (pos-interpose val ele) (late-neg-pos-proj ele neg-party))
-        (cond
-          [(set? val)
-           (chaperone-hash-set
-            val
-            pos-interpose
-            (λ (val ele) ele)
-            pos-interpose
-            impersonator-prop:contracted
-            ctc)]
-          [else
-           (chaperone-hash-set
-            val
-            pos-interpose
-            (λ (val ele) (late-neg-neg-proj ele neg-party))
-            pos-interpose
-            impersonator-prop:contracted
-            ctc)])))
-    (cond
-      [lazy? set/c-lazy-late-neg-proj]
+         (chaperone-hash-set
+          val
+          pos-interpose
+          (λ (val ele) (late-neg-neg-proj ele neg-party))
+          pos-interpose
+          impersonator-prop:contracted ctc
+          impersonator-prop:blame (cons blame neg-party)))]
       [else
        (λ (val neg-party)
          (set-contract-check cmp kind blame neg-party val)
-         (define w/chaperone
-           (cond
-             [(set? val) val]
-             [else
-              (chaperone-hash-set
-               val
-               (λ (val ele) ele)
-               (λ (val ele) (late-neg-neg-proj ele neg-party))
-               (λ (val ele) ele))]))
-         (chaperone-hash-set
-          (for/set ([ele (in-set w/chaperone)])
-            (late-neg-pos-proj ele neg-party))
-          (chaperone-hash-set
-           val
-           #f #f #f
-           impersonator-prop:contracted
-           ctc)))])))
-            
+         (cond
+           [(set? val)
+            (chaperone-hash-set
+             (for/fold ([s (set-clear val)])
+                       ([e (in-set val)])
+               (set-add s (late-neg-pos-proj e neg-party)))
+             #f #f #f
+             impersonator-prop:contracted ctc
+             impersonator-prop:blame (cons blame neg-party))]
+           [else
+            (define (pos-interpose val ele) (late-neg-pos-proj ele neg-party))
+            (for ([ele (in-list (set->list val))])
+              (set-remove! val ele)
+              (set-add! val (late-neg-pos-proj ele neg-party)))
+            (chaperone-hash-set
+             val
+             pos-interpose
+             (λ (val ele) (late-neg-neg-proj ele neg-party))
+             pos-interpose
+             impersonator-prop:contracted ctc
+             impersonator-prop:blame (cons blame neg-party))]))])))
 
 (define (generic-set-late-neg-projection ctc chaperone-ctc?)
   (define elem/c (set-contract-elem/c ctc))
