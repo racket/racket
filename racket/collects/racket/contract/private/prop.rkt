@@ -282,8 +282,9 @@
     (error
      proc-name
      (string-append
-      "expected either the #:get-projection, #:val-first-project, or #:late-neg-projection"
-      " to not be #f, but all three were #f")))
+      "expected either the"
+      " #:projection, #:val-first-projection, #:late-neg-projection, or #:first-order"
+      " argument to not be #f, but all four were #f")))
 
   (unless get-late-neg-projection
     (unless first-order?
@@ -302,7 +303,7 @@
         [first-order?
          (cond
            [get-late-neg-projection get-late-neg-projection]
-           [(and (not get-projection) (not get-val-first-projection))
+           [(and (not get-projection) (not get-val-first-projection) get-first-order)
             (λ (c) (late-neg-first-order-projection (get-name c) (get-first-order c)))]
            [else #f])]
         [else get-late-neg-projection])
@@ -436,7 +437,7 @@
    #:exercise (lambda (c) (make-flat-contract-exercise c))
    #:list-contract? (λ (c) (make-flat-contract-list-contract? c))))
 
-(define ((build-contract mk default-name proc-name)
+(define ((build-contract mk default-name proc-name first-order?)
          #:name [name #f]
          #:first-order [first-order #f]
          #:projection [projection #f]
@@ -447,15 +448,35 @@
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? (λ (ctc) #f)])
 
-  (unless late-neg-projection
-    (log-racket/contract-warning
-     "no late-neg-projection passed to ~s~a"
+  (unless (or first-order
+              projection
+              val-first-projection
+              late-neg-projection)
+    (error
      proc-name
-     (build-context)))
+     (string-append
+      "expected either the"
+      " #:projection, #:val-first-projection, #:late-neg-projection, or #:first-order"
+      " argument to not be #f, but all four were #f")))
+  
+  (unless late-neg-projection
+    (unless first-order?
+      (log-racket/contract-warning
+       "no late-neg-projection passed to ~s~a"
+       proc-name
+       (build-context))))
 
   (mk (or name default-name)
       (or first-order any?) 
-      projection val-first-projection late-neg-projection
+      projection val-first-projection
+      (cond
+        [first-order?
+         (cond
+           [late-neg-projection late-neg-projection]
+           [(and (not projection) (not val-first-projection) first-order)
+            (late-neg-first-order-projection name first-order)]
+           [else #f])]
+        [else late-neg-projection])
       (or stronger as-strong?)
       generate exercise
       list-contract?))
@@ -479,21 +500,23 @@
 
 (define make-contract
   (procedure-rename 
-   (build-contract make-make-contract 'anonymous-contract 'make-contract)
+   (build-contract make-make-contract 'anonymous-contract 'make-contract #f)
    'make-contract))
 
 (define make-chaperone-contract
   (procedure-rename
    (build-contract make-make-chaperone-contract
                    'anonymous-chaperone-contract
-                   'make-chaperone-contract)
+                   'make-chaperone-contract
+                   #f)
    'make-chaperone-contract))
 
 (define make-flat-contract
   (procedure-rename
    (build-contract make-make-flat-contract
                    'anonymous-flat-contract
-                   'make-flat-contract)
+                   'make-flat-contract
+                   #t)
    'make-flat-contract))
 
 ;; property should be bound to a function that accepts the contract and
