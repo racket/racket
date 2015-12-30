@@ -56,7 +56,7 @@
   (let ()
     (define (proj acc location swap)
       (lambda (ctc blame)
-        ((contract-projection (acc ctc))
+        ((contract-late-neg-projection (acc ctc))
          (blame-add-context blame location #:swap? swap))))
     (values
      (proj base-id-table/c-dom "the keys of" #f)
@@ -96,51 +96,53 @@
               (and (contract-first-order-passes? dom-ctc k)
                    (contract-first-order-passes? rng-ctc v))))))
 
-  (define (check-id-table/c ctc val blame)
+  (define (check-id-table/c ctc val blame neg-party)
     (define immutable (base-id-table/c-immutable ctc))
     (case immutable
       [(#t)
        (unless (immutable-idtbl? val)
-         (raise-blame-error blame val
+         (raise-blame-error blame val #:missing-party neg-party
            '(expected "an immutable ~a," given: "~e") 'idtbl val))]
       [(#f)
        (unless (mutable-idtbl? val)
-         (raise-blame-error blame val
+         (raise-blame-error blame val #:missing-party neg-party
            '(expected "a mutable ~a," given: "~e") 'idtbl val))]
       [(dont-care)
        (unless (idtbl? val)
-         (raise-blame-error blame val
+         (raise-blame-error blame val #:missing-party neg-party
            '(expected "a ~a," given: "~e") 'idtbl val))]))
 
-  (define (fo-projection ctc)
+  (define (late-neg-fo-projection ctc)
     (λ (blame)
        (define dom-proj (id-table/c-dom-pos-proj ctc blame))
        (define rng-proj (id-table/c-rng-pos-proj ctc blame))
-       (λ (val)
-          (check-id-table/c ctc val blame)
+       (λ (val neg-party)
+          (check-id-table/c ctc val blame neg-party)
           (for ([(k v) (in-dict val)])
-            (dom-proj k)
-            (rng-proj v))
+            (dom-proj k neg-party)
+            (rng-proj v neg-party))
           val)))
 
-  (define (ho-projection ctc)
+  (define (late-neg-ho-projection ctc)
     (lambda (blame)
       (define pos-dom-proj (id-table/c-dom-pos-proj ctc blame))
       (define neg-dom-proj (id-table/c-dom-neg-proj ctc blame))
       (define pos-rng-proj (id-table/c-rng-pos-proj ctc blame))
       (define neg-rng-proj (id-table/c-rng-neg-proj ctc blame))
-      (lambda (tbl)
-        (check-id-table/c ctc tbl blame)
+      (lambda (tbl neg-party)
+        (check-id-table/c ctc tbl blame neg-party)
         ;;TODO for immutable hash tables optimize this chaperone to a flat
         ;;check if possible
         (if (immutable-idtbl? tbl)
-            (chaperone-immutable-id-table tbl pos-dom-proj pos-rng-proj
+            (chaperone-immutable-id-table tbl
+                                          (λ (val) (pos-dom-proj val neg-party))
+                                          (λ (val) (pos-rng-proj val neg-party))
                                           impersonator-prop:contracted ctc)
             (chaperone-mutable-id-table tbl
-                                        neg-dom-proj
-                                        pos-dom-proj
-                                        neg-rng-proj
-                                        pos-rng-proj
+                                        (λ (val) (neg-dom-proj val neg-party))
+                                        (λ (val) (pos-dom-proj val neg-party))
+                                        (λ (val) (neg-rng-proj val neg-party))
+                                        (λ (val) (pos-rng-proj val neg-party))
                                         impersonator-prop:contracted ctc)))))
 
   (struct flat-id-table/c base-id-table/c ()
@@ -149,7 +151,7 @@
     (build-flat-contract-property
      #:name id-table/c-name
      #:first-order id-table/c-first-order
-     #:projection fo-projection))
+     #:late-neg-projection late-neg-fo-projection))
 
   (struct chaperone-id-table/c base-id-table/c ()
     #:omit-define-syntaxes
@@ -157,7 +159,7 @@
     (build-chaperone-contract-property
      #:name id-table/c-name
      #:first-order id-table/c-first-order
-     #:projection ho-projection))
+     #:late-neg-projection late-neg-ho-projection))
 
   ;; Note: impersonator contracts not currently supported.
   (struct impersonator-id-table/c base-id-table/c ()
@@ -166,7 +168,7 @@
     (build-contract-property
      #:name id-table/c-name
      #:first-order id-table/c-first-order
-     #:projection ho-projection))
+     #:late-neg-projection late-neg-ho-projection))
 
   (define (id-table/c key/c value/c #:immutable [immutable 'dont-care])
     (define key/ctc (coerce-contract idtbl/c-symbol key/c))
