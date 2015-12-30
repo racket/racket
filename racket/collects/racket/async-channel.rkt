@@ -197,16 +197,10 @@
 (define (add-async-channel-context blame)
   (blame-add-context blame "a value passed through"))
 
-(define (check-async-channel/c ctc val blame)
+(define (check-async-channel/c ctc val blame neg-party)
   (unless (async-channel? val)
-    (raise-blame-error blame val '(expected "an async channel" given: "~e") val)))
-
-(define (check-async-channel/c-np ctc val blame)
-  (if (async-channel? val)
-      #f
-      (λ (neg-party)
-        (raise-blame-error blame #:missing-party neg-party
-                           val '(expected "an async channel" given: "~e") val))))
+    (raise-blame-error blame val #:missing-party neg-party
+                       '(expected "an async channel" given: "~e") val)))
 
 (define ((async-channel/c-first-order ctc) val)
   (async-channel? val))
@@ -214,33 +208,19 @@
 (define (async-channel/c-stronger? a b)
   (contract-stronger? (base-async-channel/c-content a) (base-async-channel/c-content b)))
 
-(define ((ho-val-first-projection impersonate/chaperone-async-channel) ctc)
+(define ((late-neg-projection impersonate/chaperone-async-channel) ctc)
   (define elem-ctc (base-async-channel/c-content ctc))
-  (define vfp (get/build-val-first-projection elem-ctc))
+  (define lnp (contract-late-neg-projection elem-ctc))
   (λ (blame)
-    (define async-channel-blame (add-async-channel-context blame))
-    (define pos-elem-proj (vfp async-channel-blame))
-    (define neg-elem-proj (vfp (blame-swap async-channel-blame)))
-    (λ (val)
-      (or (check-async-channel/c-np ctc val blame)
-          (λ (neg-party)
-            (impersonate/chaperone-async-channel 
-             val
-             (λ (v) ((pos-elem-proj v) neg-party))
-             (λ (v) ((neg-elem-proj v) neg-party))
-             impersonator-prop:contracted ctc
-             impersonator-prop:blame (blame-add-missing-party blame neg-party)))))))
-
-(define ((ho-projection impersonate/chaperone-async-channel) ctc)
-  (let ([elem-ctc (base-async-channel/c-content ctc)])
-    (λ (blame)
-      (let ([pos-elem-proj ((contract-projection elem-ctc) blame)]
-            [neg-elem-proj ((contract-projection elem-ctc) (blame-swap blame))])
-        (λ (val)
-          (check-async-channel/c ctc val blame)
-          (impersonate/chaperone-async-channel val pos-elem-proj neg-elem-proj
-                                               impersonator-prop:contracted ctc
-                                               impersonator-prop:blame blame))))))
+    (define pos-elem-proj (lnp blame))
+    (define neg-elem-proj (lnp (blame-swap blame)))
+    (λ (val neg-party)
+      (check-async-channel/c ctc val blame neg-party)
+      (impersonate/chaperone-async-channel val
+                                           (λ (v) (pos-elem-proj v neg-party))
+                                           (λ (v) (neg-elem-proj v neg-party))
+                                           impersonator-prop:contracted ctc
+                                           impersonator-prop:blame blame))))
 
 (struct base-async-channel/c (content))
 
@@ -251,8 +231,7 @@
    #:name async-channel/c-name
    #:first-order async-channel/c-first-order
    #:stronger async-channel/c-stronger?
-   #:val-first-projection (ho-val-first-projection chaperone-async-channel)
-   #:projection (ho-projection chaperone-async-channel)))
+   #:late-neg-projection (late-neg-projection chaperone-async-channel)))
 
 (struct impersonator-async-channel/c base-async-channel/c ()
   #:property prop:custom-write custom-write-property-proc
@@ -261,8 +240,7 @@
    #:name async-channel/c-name
    #:first-order async-channel/c-first-order
    #:stronger async-channel/c-stronger?
-   #:val-first-projection (ho-val-first-projection impersonate-async-channel)
-   #:projection (ho-projection impersonate-async-channel)))
+   #:late-neg-projection (late-neg-projection impersonate-async-channel)))
 
 (define (async-channel/c elem)
   (define ctc (coerce-contract 'async-channel/c elem))
