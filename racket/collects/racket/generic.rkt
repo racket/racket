@@ -271,8 +271,7 @@
        (define/with-syntax pred predicate)
        (define/with-syntax [ctc-id ...]
          (generate-temporaries #'(ctc-expr ...)))
-       (define/with-syntax [proj-id ...]
-         (generate-temporaries #'(ctc-expr ...)))
+       (define/with-syntax (late-neg-proj-id ...) (generate-temporaries #'(ctc-expr ...)))
        #'(let* ([ctc-id ctc-expr] ...)
            (make-generics-contract
             'gen-name
@@ -280,19 +279,21 @@
             pred
             '(method-id ...)
             (list ctc-id ...)
-            (lambda (b x mode)
-              (redirect-generics/derived
-               original
-               mode
-               gen-name ref-gen-id
-               x
-               [method-id
-                (lambda (m)
-                  (define b2
-                    (blame-add-context b (format "method ~a" 'method-id)))
-                  (((contract-projection ctc-id) b2) m))]
-               ...
-               null)))))]))
+            (λ (mode late-neg-proj-id ...)
+              (λ (x neg-party)
+                (redirect-generics/derived
+                 original
+                 mode
+                 gen-name ref-gen-id
+                 x
+                 [method-id
+                  (lambda (m)
+                    (late-neg-proj-id m neg-party))]
+                 ...
+                 null))))))]))
+
+(define (blame-add-method-context blame method-id)
+  (blame-add-context blame (format "method ~a" method-id)))
 
 (define (make-generics-contract ifc pfx pred mths ctcs proc)
   (define chaperoning?
@@ -320,22 +321,26 @@
 (define (generics-contract-first-order ctc)
   (generics-contract-predicate ctc))
 
-(define (generics-contract-projection mode)
+(define (generics-late-neg-contract-projection mode)
   (lambda (c)
-    (lambda (b)
-      (lambda (x)
-        ((generics-contract-redirect c) b x mode)))))
+    (define mk-late-neg-projs (map contract-late-neg-projection (generics-contract-contracts c)))
+    (lambda (blame)
+      (define late-neg-projs
+        (for/list ([m (in-list (generics-contract-methods c))]
+                   [mk-late-neg-proj (in-list mk-late-neg-projs)])
+          (mk-late-neg-proj (blame-add-method-context blame m))))
+      (apply (generics-contract-redirect c) mode late-neg-projs))))
 
 (struct chaperone-generics-contract generics-contract []
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name generics-contract-name
    #:first-order generics-contract-first-order
-   #:projection (generics-contract-projection #t)))
+   #:late-neg-projection (generics-late-neg-contract-projection #t)))
 
 (struct impersonator-generics-contract generics-contract []
   #:property prop:contract
   (build-contract-property
    #:name generics-contract-name
    #:first-order generics-contract-first-order
-   #:projection (generics-contract-projection #f)))
+   #:late-neg-projection (generics-late-neg-contract-projection #f)))
