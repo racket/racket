@@ -2550,27 +2550,22 @@ is expected to be the blame record for the contract on the value).
            (λ (c) (λ (fuel) (values void '())))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          contract-property?])]{
-
-      @italic{The precise details of the 
-           @racket[val-first-projection] argument
-           are subject to change. (Probably
-           also the default values of the @racket[project] 
-           arguments will change.)}
-
    
 These functions build the arguments for @racket[prop:contract],
 @racket[prop:chaperone-contract], and @racket[prop:flat-contract], respectively.
 
 A @deftech{contract property} specifies the behavior of a structure when used as
-a contract.  It is specified in terms of seven accessors:
+a contract.  It is specified in terms of seven properties:
 @itemlist[
   @item{@racket[get-name] which produces a description to @racket[write] as part
    of a contract violation;}
   @item{@racket[get-first-order], which produces a first-order predicate to be
    used by @racket[contract-first-order-passes?];}
-  @item{@racket[get-projection], which produces a blame-tracking projection
-   defining the behavior of the contract;}
-  @item{@racket[stronger], which is a predicate that determines whether this
+  @item{@racket[get-late-neg-projection], which produces a blame-tracking projection
+   defining the behavior of the contract (The @racket[get-projection]
+   and @racket[get-val-first-projection] arguments also specify the projection,
+   but using a different signature. They are here for backwards compatibility.);}
+  @item{@racket[stronger], a predicate that determines whether this
    contract (passed in the first argument) is stronger than some other
    contract (passed in the second argument) and whose default always
    returns @racket[#f];}
