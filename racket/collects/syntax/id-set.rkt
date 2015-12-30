@@ -106,40 +106,40 @@
     (and (set-passes? s)
          (for/and ([e (in-set s)]) (elem-passes? e)))))
 
-(define (flat-id-set-contract-projection ctc)
+(define (flat-id-set-late-neg-contract-projection ctc)
   (define elem/c (id-set-contract-elem/c ctc))
   (define idsettype (id-set-contract-idsettype ctc))
   (define mutability (id-set-contract-mutability ctc))
   (lambda (b)
     (define proj
-      ((contract-projection elem/c) (blame-add-context b "an element of")))
-    (lambda (s)
-      (id-set-contract-check idsettype mutability b s)
-      (for ([e (in-set s)]) (proj e))
+      ((contract-late-neg-projection elem/c) (blame-add-context b "an element of")))
+    (lambda (s neg-party)
+      (id-set-contract-check idsettype mutability b s neg-party)
+      (for ([e (in-set s)]) (proj e neg-party))
       s)))
 
-(define (id-set-contract-projection ctc)
+(define (id-set-late-neg-contract-projection ctc)
   (define elem/c (id-set-contract-elem/c ctc))
   (define idsettype (id-set-contract-idsettype ctc))
   (define mutability (id-set-contract-mutability ctc))
   (lambda (b)
     (define neg-proj
-      ((contract-projection elem/c) (blame-add-context b "an element of" #:swap? #t)))
-    (lambda (s)
-      (id-set-contract-check idsettype mutability b s)
+      ((contract-late-neg-projection elem/c) (blame-add-context b "an element of" #:swap? #t)))
+    (lambda (s neg-party)
+      (id-set-contract-check idsettype mutability b s neg-party)
       (cond
         [(immutable-free-id-set? s)
          (chaperone-immutable-free-id-set 
-          s (free-id-table/c neg-proj any/c #:immutable #t))]
+          s (free-id-table/c (λ (v) (neg-proj v neg-party)) any/c #:immutable #t))]
         [(mutable-free-id-set? s)
          (chaperone-mutable-free-id-set 
-          s (free-id-table/c neg-proj any/c #:immutable #f))]
+          s (free-id-table/c (λ (v) (neg-proj v neg-party)) any/c #:immutable #f))]
         [(immutable-bound-id-set? s)
          (chaperone-immutable-bound-id-set 
-          s (bound-id-table/c neg-proj any/c #:immutable #t))]
+          s (bound-id-table/c (λ (v) (neg-proj v neg-party)) any/c #:immutable #t))]
         [(mutable-bound-id-set? s)
          (chaperone-mutable-bound-id-set 
-          s (bound-id-table/c neg-proj any/c #:immutable #f))]))))
+          s (bound-id-table/c (λ (v) (neg-proj v neg-party)) any/c #:immutable #f))]))))
           
 
 (struct flat-id-set-contract id-set-contract []
@@ -147,14 +147,14 @@
   (build-flat-contract-property
     #:name id-set-contract-name
     #:first-order flat-id-set-contract-first-order
-    #:projection flat-id-set-contract-projection))
+    #:late-neg-projection flat-id-set-late-neg-contract-projection))
 
 (struct chaperone-id-set-contract id-set-contract []
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
     #:name id-set-contract-name
     #:first-order id-set-contract-first-order
-    #:projection id-set-contract-projection))
+    #:late-neg-projection id-set-late-neg-contract-projection))
 
 (define-syntax (provide-contracted-id-set-fns stx)
   (syntax-parse stx
