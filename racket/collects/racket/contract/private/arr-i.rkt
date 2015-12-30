@@ -1088,30 +1088,24 @@ evaluted left-to-right.)
       #`(f #,@argument-list)))
 
 (begin-encourage-inline
+  (define (un-dep/maybe-chaperone orig-ctc obj blame neg-party chaperone?)
+    (cond
+      [(and (procedure? orig-ctc)
+            (procedure-arity-includes? orig-ctc 1))
+       (if (orig-ctc obj)
+           obj
+           (raise-predicate-blame-error-failure blame obj neg-party
+                                                (object-name orig-ctc)))]
+      [else
+       (define ctc (if chaperone?
+                       (coerce-chaperone-contract '->i orig-ctc)
+                       (coerce-contract '->i orig-ctc)))
+       (((get/build-late-neg-projection ctc) blame) obj neg-party)]))
   (define (un-dep/chaperone orig-ctc obj blame neg-party)
-    (cond
-      [(and (procedure? orig-ctc)
-            (procedure-arity-includes? orig-ctc 1))
-       (if (orig-ctc obj)
-           obj
-           (raise-predicate-blame-error-failure blame obj neg-party
-                                                (object-name orig-ctc)))]
-      [else
-       (define ctc (coerce-chaperone-contract '->i orig-ctc))
-       (((get/build-late-neg-projection ctc) blame) obj neg-party)])))
-
-(begin-encourage-inline
+    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #t))
+  
   (define (un-dep orig-ctc obj blame neg-party)
-    (cond
-      [(and (procedure? orig-ctc)
-            (procedure-arity-includes? orig-ctc 1))
-       (if (orig-ctc obj)
-           obj
-           (raise-predicate-blame-error-failure blame obj neg-party
-                                                (object-name orig-ctc)))]
-      [else
-       (define ctc (coerce-contract '->i orig-ctc))
-       (((get/build-late-neg-projection ctc) blame) obj neg-party)])))
+    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #f)))
 
 (define-for-syntax (mk-used-indy-vars an-istx)
   (let ([vars (make-free-identifier-mapping)])
