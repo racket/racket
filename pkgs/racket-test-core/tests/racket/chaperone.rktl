@@ -1202,11 +1202,15 @@
   (test #t chaperone? (mk))
   (test #t chaperone? (mk #f))
   (test #t chaperone? (mk (lambda (ht) (void))))
+  (test #t chaperone? (mk (lambda (ht) (void)) (lambda (ht k) (void))))
+  (test #t chaperone? (mk #f (lambda (ht k) (void))))
   (err/rt-test (mk (lambda (a b) (void))))
   (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
   (test #t chaperone? (mk prop:blue 'ok))
   (test #t chaperone? (mk #f prop:blue 'ok))
-  (err/rt-test (mk (lambda (a b) (void)) prop:blue 'ok)))
+  (test #t chaperone? (mk #f #f prop:blue 'ok))
+  (err/rt-test (mk (lambda (a b) (void)) prop:blue 'ok))
+  (err/rt-test (mk #f (lambda (a) (void)) prop:blue 'ok)))
 
 (for-each
  (lambda (make-hash)
@@ -1470,7 +1474,124 @@
      (define ht4 (hash-clear ht2))
      (test #t values hit?)
      (test 0 hash-count ht4))))
- 
+
+;; Check use of equal-key-proc argument:
+(as-chaperone-or-impersonator
+ ([chaperone-hash impersonate-hash]
+  [chaperone-procedure impersonate-procedure])
+ (define saw null)
+ (define (mk ht)
+   (chaperone-hash ht
+                   (lambda (h k)
+                     (values k
+                             (lambda (h k v) v)))
+                   (lambda (h k v)
+                     (values k v))
+                   (lambda (h k) k)
+                   (lambda (h k) k)
+                   #f
+                   (lambda (h k) (set! saw (cons k saw)) k)))
+ (for ([make-hash (in-list (list make-hash make-weak-hash))])
+   (set! saw null)
+   (define ht (make-hash))
+   (define cht (mk ht))
+   (hash-set! cht "x" 1)
+   (test '("x") values saw)
+   (define new-x (make-string 1 #\x))
+   (void (hash-ref cht new-x))
+   (test '("x" "x" "x") values saw)
+   (test #t 'new-x (and (member new-x saw) #t))
+   (set! saw null)
+   (hash-set! cht new-x 5)
+   (test '("x" "x") values saw)
+   (test #t 'new-x (and (member new-x saw) #t))
+   (set! saw null)
+   (hash-remove! cht new-x)
+   (test '("x" "x") values saw)
+   (test #t 'new-x (and (member new-x saw) #t)))
+ (unless (eq? chaperone-hash impersonate-hash)
+   (for ([hash (in-list (list hash))])
+     (set! saw null)
+     (define ht (mk (hash)))
+     (define ht1 (hash-set ht "x" 1))
+     (test '("x") values saw)
+     (define new-x (make-string 1 #\x))
+     (void (hash-ref ht1 new-x))
+     (test '("x" "x" "x") values saw)
+     (test #t 'new-x (and (member new-x saw) #t))
+     (set! saw null)
+     (void (hash-set ht1 new-x 5))
+     (test '("x" "x") values saw)
+     (test #t 'new-x (and (member new-x saw) #t))
+     (set! saw null)
+     (void (hash-remove ht1 new-x))
+     (test '("x" "x") values saw)
+     (test #t 'new-x (and (member new-x saw) #t)))))
+
+;; Check that hash table stores given key while
+;; coercing key for hashing and equality:
+(let ()
+  (define (mk ht)
+    (impersonate-hash ht
+                      (lambda (h k)
+                        (values k
+                                (lambda (h k v) v)))
+                      (lambda (h k v)
+                        (values k v))
+                      (lambda (h k) k)
+                      (lambda (h k) k)
+                      #f
+                      (lambda (h k) (inexact->exact (floor k)))))
+  (for ([make-hash (in-list (list make-hash make-weak-hash))])
+    (define ht (make-hash))
+    (define cht (mk ht))
+    (hash-set! cht 1.2 'one)
+    (test 'one hash-ref cht 1.3 #f)
+    (test #f hash-ref ht 1.3 #f)
+    ;; Trying to find 1.2 in `ht` likely won't work, because the hash code was mangled
+    (test '(1.2) hash-keys ht)
+    (test '(1.2) hash-keys cht)
+    (hash-set! cht 1.3 'two)
+    (test 'two hash-ref cht 1.2 #f))
+  (let-values ([(prop:blue blue? blue-ref) (make-impersonator-property 'blue)])
+    (define (mk ht)
+      (chaperone-hash ht
+                      (lambda (h k)
+                        (values k
+                                (lambda (h k v) v)))
+                      (lambda (h k v)
+                        (values k v))
+                      (lambda (h k) k)
+                      (lambda (h k) k)
+                      #f
+                      (lambda (h k) (chaperone-vector k
+                                                 (lambda (vec i v)
+                                                   (if (= i 1)
+                                                       (error "ONE")
+                                                       v))
+                                                 (lambda (vec i v) v)))))
+    (define (one-exn? s) (regexp-match? #rx"ONE" (exn-message s)))
+    (let ()
+      (define cht (mk (hash)))
+      (err/rt-test (hash-set cht (vector 1 2) 'vec) one-exn?)
+      (define ht1 (hash-set cht (vector 1) 'vec))
+      (test 'vec hash-ref ht1 (vector 1) #f)
+      (test #f hash-ref ht1 (vector 2) #f))
+    (for ([make-hash (in-list (list make-hash make-weak-hash))])
+      (define ht (make-hash))
+      (define cht (mk ht))
+      (define key (vector 1 2))
+      (define key7 (vector 7))
+      (hash-set! cht key7 'vec7)
+      (test 'vec7 hash-ref cht (vector 7) #f)
+      (test 'vec7 hash-ref ht (vector 7) #f)
+      (hash-set! ht key 'vec2)
+      (test 'vec2 hash-ref ht (vector 1 2))
+      (err/rt-test (hash-ref cht (vector 1 2) #f) one-exn?)
+      (test 2 length (hash-keys cht)) ; can extract keys without hashing or comparing
+      (test 'vec2 hash-ref ht key)
+      (test 'vec7 hash-ref ht key7))))
+    
 ;; ----------------------------------------
 
 ;; Check broken key impersonator:
@@ -2062,7 +2183,7 @@
        #:a "x"))
 
 ;; ----------------------------------------
-;; Check that importantor transformations are applied for printing:
+;; Check that impersonator transformations are applied for printing:
 
 (let ()
   (define ht 

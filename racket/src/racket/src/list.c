@@ -2944,7 +2944,7 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
-  Scheme_Object *redirects, *clear;
+  Scheme_Object *redirects, *clear, *equal_key_wrap;
   Scheme_Hash_Tree *props;
   int start_props = 5;
 
@@ -2967,15 +2967,23 @@ static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, i
   } else
     clear = scheme_false;
 
+  if ((argc > 6) && (SCHEME_FALSEP(argv[6]) || SCHEME_PROCP(argv[6]))) {
+    scheme_check_proc_arity2(name, 2, 6, argc, argv, 1); /* clear */
+    equal_key_wrap = argv[6];
+    start_props++;
+  } else
+    equal_key_wrap = scheme_false;
+
   /* The allocation of this vector is used to detect when two
      chaperoned immutable hash tables can be
      `{chaperone,impersonator}-of?` when they're not eq. */
-  redirects = scheme_make_vector(5, NULL);
+  redirects = scheme_make_vector(6, NULL);
   SCHEME_VEC_ELS(redirects)[0] = argv[1];
   SCHEME_VEC_ELS(redirects)[1] = argv[2];
   SCHEME_VEC_ELS(redirects)[2] = argv[3];
   SCHEME_VEC_ELS(redirects)[3] = argv[4];
   SCHEME_VEC_ELS(redirects)[4] = clear;
+  SCHEME_VEC_ELS(redirects)[5] = equal_key_wrap;
   redirects = scheme_box(redirects); /* so it doesn't look like a struct chaperone */
 
   props = scheme_parse_chaperone_props(name, start_props, argc, argv);
@@ -3019,7 +3027,7 @@ static Scheme_Object *transfer_chaperone(Scheme_Object *chaperone, Scheme_Object
 }
 
 static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Scheme_Object *k, 
-                                        Scheme_Object *v, int mode);
+                                        Scheme_Object *v, int mode, Scheme_Object *key_wraps);
 
 static Scheme_Object *chaperone_hash_op_k(void)
 {
@@ -3028,13 +3036,15 @@ static Scheme_Object *chaperone_hash_op_k(void)
   Scheme_Object *k = (Scheme_Object *)p->ku.k.p2;
   Scheme_Object *v = (Scheme_Object *)p->ku.k.p3;
   const char *who = (const char *)p->ku.k.p4;
+  Scheme_Object *key_wraps = (Scheme_Object *)p->ku.k.p5;
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
   p->ku.k.p4 = NULL;
+  p->ku.k.p5 = NULL;
 
-  o = chaperone_hash_op(who, o, k, v, p->ku.k.i1);
+  o = chaperone_hash_op(who, o, k, v, p->ku.k.i1, key_wraps);
   
   if (!o)
     return scheme_false;
@@ -3043,7 +3053,7 @@ static Scheme_Object *chaperone_hash_op_k(void)
 }
 
 static Scheme_Object *chaperone_hash_op_overflow(const char *who, Scheme_Object *o, Scheme_Object *k, 
-                                                 Scheme_Object *v, int mode)
+                                                 Scheme_Object *v, int mode, Scheme_Object *key_wraps)
 {
   Scheme_Thread *p = scheme_current_thread;
 
@@ -3052,6 +3062,7 @@ static Scheme_Object *chaperone_hash_op_overflow(const char *who, Scheme_Object 
   p->ku.k.p3 = (void *)v;
   p->ku.k.p4 = (void *)who;
   p->ku.k.i1 = mode;
+  p->ku.k.p5 = (void *)key_wraps;
 
   o = scheme_handle_stack_overflow(chaperone_hash_op_k);
 
@@ -3062,26 +3073,30 @@ static Scheme_Object *chaperone_hash_op_overflow(const char *who, Scheme_Object 
 }
 
 static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Scheme_Object *k, 
-                                        Scheme_Object *v, int mode)
+                                        Scheme_Object *v, int mode, Scheme_Object *key_wraps)
 {
   Scheme_Object *wraps = NULL;
 
   while (1) {
     if (!SCHEME_NP_CHAPERONEP(o)) {
+      if (SCHEME_NULLP(key_wraps))
+        key_wraps = NULL;
+      else
+        key_wraps = scheme_make_raw_pair((Scheme_Object *)who, key_wraps);
       if (mode == 0) {
         /* hash-ref */
         if (SCHEME_HASHTP(o))
-          return scheme_hash_get((Scheme_Hash_Table *)o, k);
+          return scheme_hash_get_w_key_wraps((Scheme_Hash_Table *)o, k, key_wraps);
         else if (SCHEME_HASHTRP(o))
-          return scheme_hash_tree_get((Scheme_Hash_Tree *)o, k);
+          return scheme_hash_tree_get_w_key_wraps((Scheme_Hash_Tree *)o, k, key_wraps);
         else
-          return scheme_lookup_in_table((Scheme_Bucket_Table *)o, (const char *)k);
+          return scheme_lookup_in_table_w_key_wraps((Scheme_Bucket_Table *)o, (const char *)k, key_wraps);
       } else if ((mode == 1) || (mode == 2)) {
         /* hash-set! or hash-remove! */
         if (SCHEME_HASHTP(o))
-          scheme_hash_set((Scheme_Hash_Table *)o, k, v);
+          scheme_hash_set_w_key_wraps((Scheme_Hash_Table *)o, k, v, key_wraps);
         else if (SCHEME_HASHTRP(o)) {
-          o = (Scheme_Object *)scheme_hash_tree_set((Scheme_Hash_Tree *)o, k, v);
+          o = (Scheme_Object *)scheme_hash_tree_set_w_key_wraps((Scheme_Hash_Tree *)o, k, v, key_wraps);
           while (wraps) {
             o = transfer_chaperone(SCHEME_CAR(wraps), o);
             wraps = SCHEME_CDR(wraps);
@@ -3089,13 +3104,13 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
           return o;
         } else if (!v) {
           Scheme_Bucket *b;
-          b = scheme_bucket_or_null_from_table((Scheme_Bucket_Table *)o, (char *)k, 0);
+          b = scheme_bucket_or_null_from_table_w_key_wraps((Scheme_Bucket_Table *)o, (char *)k, 0, key_wraps);
           if (b) {
             HT_EXTRACT_WEAK(b->key) = NULL;
             b->val = NULL;
           }
         } else
-          scheme_add_to_table((Scheme_Bucket_Table *)o, (const char *)k, v, 0);
+          scheme_add_to_table_w_key_wraps((Scheme_Bucket_Table *)o, (const char *)k, v, 0, key_wraps);
         return scheme_void;
       } else if (mode == 3)
         return k;
@@ -3119,14 +3134,21 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
 #ifdef DO_STACK_CHECK
       {
 # include "mzstkchk.h"
-        return chaperone_hash_op_overflow(who, o, k, v, mode);
+        return chaperone_hash_op_overflow(who, o, k, v, mode, key_wraps);
       }
 #endif
+
+      if ((mode != 3) && (mode != 4)) {
+        red = SCHEME_BOX_VAL(px->redirects);
+        red = SCHEME_VEC_ELS(red)[5];
+        if (!SCHEME_FALSEP(red))
+          key_wraps = scheme_make_pair((Scheme_Object *)px, key_wraps);
+      }
 
       if (mode == 0)
         orig = NULL;
       else if (mode == 3) {
-        orig = chaperone_hash_op(who, px->prev, k, v, mode);
+        orig = chaperone_hash_op(who, px->prev, k, v, mode, key_wraps);
         k = orig;
       } else if (mode == 2)
         orig = k;
@@ -3196,7 +3218,7 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
                                who,
                                red);
 
-            orig = chaperone_hash_op(who, px->prev, k, v, mode);
+            orig = chaperone_hash_op(who, px->prev, k, v, mode, key_wraps);
             if (!orig) return NULL;
 
             /* hash-ref */
@@ -3240,27 +3262,27 @@ static Scheme_Object *chaperone_hash_op(const char *who, Scheme_Object *o, Schem
 
 Scheme_Object *scheme_chaperone_hash_get(Scheme_Object *table, Scheme_Object *key)
 {
-  return chaperone_hash_op("hash-ref", table, key, NULL, 0);
+  return chaperone_hash_op("hash-ref", table, key, NULL, 0, scheme_null);
 }
 
 void scheme_chaperone_hash_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val)
 {
-  (void)chaperone_hash_op(val ? "hash-set!" : "hash-remove!", table, key, val, val ? 1 : 2);
+  (void)chaperone_hash_op(val ? "hash-set!" : "hash-remove!", table, key, val, val ? 1 : 2, scheme_null);
 }
 
 Scheme_Object *chaperone_hash_tree_set(Scheme_Object *table, Scheme_Object *key, Scheme_Object *val)
 {
-  return chaperone_hash_op(val ? "hash-set" : "hash-remove", table, key, val, val ? 1 : 2);
+  return chaperone_hash_op(val ? "hash-set" : "hash-remove", table, key, val, val ? 1 : 2, scheme_null);
 }
 
 static Scheme_Object *chaperone_hash_key(const char *name, Scheme_Object *table, Scheme_Object *key)
 {
-  return chaperone_hash_op(name, table, key, NULL, 3);
+  return chaperone_hash_op(name, table, key, NULL, 3, scheme_null);
 }
 
 static Scheme_Object *chaperone_hash_clear(const char *name, Scheme_Object *table)
 {
-  return chaperone_hash_op(name, table, NULL, NULL, 4);
+  return chaperone_hash_op(name, table, NULL, NULL, 4, scheme_null);
 }
 
 Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_Object *key,
@@ -3268,7 +3290,7 @@ Scheme_Object *scheme_chaperone_hash_traversal_get(Scheme_Object *table, Scheme_
 {
   key = chaperone_hash_key("hash-table-iterate-key", table, key);
   *alt_key = key;
-  return chaperone_hash_op("hash-ref", table, key, NULL, 0);
+  return chaperone_hash_op("hash-ref", table, key, NULL, 0, scheme_null);
 }
 
 Scheme_Object *scheme_chaperone_hash_table_copy(Scheme_Object *obj)

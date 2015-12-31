@@ -597,6 +597,22 @@ Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[]);
 
+Scheme_Object *scheme_hash_get_w_key_wraps(Scheme_Hash_Table *table, Scheme_Object *key,
+                                           Scheme_Object *key_wraps);
+void scheme_hash_set_w_key_wraps(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val,
+                                 Scheme_Object *key_wraps);
+Scheme_Bucket *scheme_bucket_or_null_from_table_w_key_wraps(Scheme_Bucket_Table *table,
+                                                            const char *key, int add,
+                                                            Scheme_Object *key_wraps);
+void scheme_add_to_table_w_key_wraps(Scheme_Bucket_Table *table, const char *key, void *val, 
+                                     int constant, Scheme_Object *key_wraps);
+void *scheme_lookup_in_table_w_key_wraps(Scheme_Bucket_Table *table, const char *key,
+                                         Scheme_Object *key_wraps);
+Scheme_Object *scheme_hash_tree_get_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_Object *key,
+                                                Scheme_Object *key_wraps);
+Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val,
+                                                   Scheme_Object *key_wraps);
+
 /*========================================================================*/
 /*                    thread state and maintenance                        */
 /*========================================================================*/

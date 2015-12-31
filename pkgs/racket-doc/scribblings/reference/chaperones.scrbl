@@ -446,6 +446,7 @@ or override impersonator-property values of @racket[box].}
                            [remove-proc (hash? any/c . -> . any/c)]
                            [key-proc (hash? any/c . -> . any/c)]
                            [clear-proc (or/c #f (hash? . -> . any)) #f]
+                           [equal-key-proc (or/c #f (hash? any/c . -> . any/c)) #f]
                            [prop impersonator-property?]
                            [prop-val any] ... ...)
           (and/c hash? impersonator?)]{
@@ -499,6 +500,19 @@ If @racket[clear-proc] is @racket[#f], then @racket[hash-clear] or
 @racket[hash-clear!] on the impersonator is implemented using
 @racket[hash-iterate-key] and @racket[hash-remove] or @racket[hash-remove!].
 
+If @racket[equal-key-proc] is not @racket[#f], it effectively
+interposes on calls to @racket[equal?], @racket[equal-hash-code], and
+@racket[equal-secondary-hash-code] for the keys of @racket[hash]. The
+@racket[equal-key-proc] must accept as its arguments @racket[hash] and
+a key that is either mapped by @racket[hash] or passed to
+@racket[hash-ref], etc., where the latter has potentially been
+adjusted by the corresponding @racket[ref-proc], etc@|.__| The result
+is a value that is passed to @racket[equal?],
+@racket[equal-hash-code], and @racket[equal-secondary-hash-code] as
+needed to hash and compare keys. In the case of @racket[hash-set!] or
+@racket[hash-set], the key that is passed to @racket[equal-key-proc]
+is the one stored in the hash table for future lookup.
+
 The @racket[hash-iterate-value], @racket[hash-map], or
 @racket[hash-for-each] functions use a combination of
 @racket[hash-iterate-key] and @racket[hash-ref]. If a key
@@ -507,7 +521,10 @@ produced by @racket[key-proc] does not yield a value through
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-hash] must be odd) add impersonator properties
-or override impersonator-property values of @racket[hash].}
+or override impersonator-property values of @racket[hash].
+
+@history[#:changed "6.3.0.11" @elem{Added the @racket[equal-key-proc]
+                                    argument.}]}
 
 
 @defproc[(impersonate-channel [channel channel?]
@@ -802,6 +819,7 @@ the same value or a chaperone of the value that it is given.  The
                          [remove-proc (hash? any/c . -> . any/c)]
                          [key-proc (hash? any/c . -> . any/c)]
                          [clear-proc (or/c #f (hash? . -> . any)) #f]
+                         [equal-key-proc (or/c #f (hash? any/c . -> . any/c)) #f]
                          [prop impersonator-property?]
                          [prop-val any] ... ...)
           (and/c hash? chaperone?)]{
@@ -811,8 +829,12 @@ and support for immutable hashes. The @racket[ref-proc] procedure must
 return a found value or a chaperone of the value. The
 @racket[set-proc] procedure must produce two values: the key that it
 is given or a chaperone of the key and the value that it is given or a
-chaperone of the value. The @racket[remove-proc] and @racket[key-proc]
-procedures must produce the given key or a chaperone of the key.}
+chaperone of the value. The @racket[remove-proc], @racket[key-proc],
+and @racket[equal-key-proc]
+procedures must produce the given key or a chaperone of the key.
+
+@history[#:changed "6.3.0.11" @elem{Added the @racket[equal-key-proc]
+                                    argument.}]}
 
 @defproc[(chaperone-struct-type [struct-type struct-type?]
                                 [struct-info-proc procedure?]
