@@ -462,7 +462,7 @@ In addition, operations like
 @racket[hash-iterate-key] or @racket[hash-map], which extract
 keys from the table, use @racket[key-proc] to filter keys extracted
 from the table. Operations like @racket[hash-iterate-value] or
-@racket[hash-map] implicitly use @racket[hash-ref] and
+@racket[hash-values] implicitly use @racket[hash-ref] and
 therefore redirect through @racket[ref-proc].
 
 The @racket[ref-proc] must accept @racket[hash] and a key passed
