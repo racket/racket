@@ -2079,6 +2079,7 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
 					 Scheme_Object *top,
                                          Scheme_Hash_Table *dht,
                                          Scheme_Hash_Table *tht,
+                                         Scheme_Hash_Table *self_contained_ht,
                                          int clone,
                                          int tail_depth);
 
@@ -2089,7 +2090,8 @@ static Scheme_Object *resolve_k(void)
   Scheme_Object *port = (Scheme_Object *)p->ku.k.p2;
   Scheme_Object *top = (Scheme_Object *)p->ku.k.p5;
   Scheme_Hash_Table *dht = (Scheme_Hash_Table *)p->ku.k.p3;
-  Scheme_Hash_Table *tht = (Scheme_Hash_Table *)p->ku.k.p4;
+  Scheme_Hash_Table *tht = (Scheme_Hash_Table *)SCHEME_CAR((Scheme_Object *)p->ku.k.p4);
+  Scheme_Hash_Table *self_contained_ht = (Scheme_Hash_Table *)SCHEME_CDR((Scheme_Object *)p->ku.k.p4);
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
@@ -2097,7 +2099,7 @@ static Scheme_Object *resolve_k(void)
   p->ku.k.p4 = NULL;
   p->ku.k.p5 = NULL;
 
-  return resolve_references(o, port, top, dht, tht, p->ku.k.i1, p->ku.k.i2);
+  return resolve_references(o, port, top, dht, tht, self_contained_ht, p->ku.k.i1, p->ku.k.i2);
 }
 #endif
 
@@ -2106,6 +2108,7 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
 					 Scheme_Object *top,
 					 Scheme_Hash_Table *dht,
 					 Scheme_Hash_Table *tht,
+                                         Scheme_Hash_Table *self_contained_ht,
                                          int clone,
                                          int tail_depth)
 {
@@ -2120,7 +2123,9 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       p->ku.k.p2 = (void *)port;
       p->ku.k.p5 = (void *)top;
       p->ku.k.p3 = (void *)dht;
-      p->ku.k.p4 = (void *)tht;
+      result = scheme_make_pair((Scheme_Object *)tht,
+                                (Scheme_Object *)self_contained_ht);
+      p->ku.k.p4 = (void *)result;
       p->ku.k.i1 = clone;
       p->ku.k.i2 = tail_depth;
       return scheme_handle_stack_overflow(resolve_k);
@@ -2149,6 +2154,10 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
     }
   }
 
+  if (self_contained_ht
+      && scheme_hash_get(self_contained_ht, obj))
+    return obj;
+
   result = scheme_hash_get(dht, obj);
   if (result) {
     if (SCHEME_PAIRP(result)) {
@@ -2168,12 +2177,14 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       result = scheme_make_pair(scheme_false, scheme_false);
     scheme_hash_set(dht, obj, result);
 
-    rr = resolve_references(SCHEME_CAR(obj), port, top, dht, tht, clone, tail_depth + 1);
+    rr = resolve_references(SCHEME_CAR(obj), port, top, dht, tht, self_contained_ht,
+                            clone, tail_depth + 1);
     SCHEME_CAR(result) = rr;
 
     scheme_hash_set(tht, result, scheme_make_integer(tail_depth));
 
-    rr = resolve_references(SCHEME_CDR(obj), port, top, dht, tht, clone, tail_depth);
+    rr = resolve_references(SCHEME_CDR(obj), port, top, dht, tht, self_contained_ht,
+                            clone, tail_depth);
     SCHEME_CDR(result) = rr;
 
     scheme_hash_set(tht, result, NULL);
@@ -2195,7 +2206,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
     }
     scheme_hash_set(dht, obj, result);
 
-    rr = resolve_references(SCHEME_BOX_VAL(obj), port, top, dht, tht, clone, tail_depth + 1);
+    rr = resolve_references(SCHEME_BOX_VAL(obj), port, top, dht, tht, self_contained_ht,
+                            clone, tail_depth + 1);
     SCHEME_BOX_VAL(result) = rr;
 
     if (clone
@@ -2227,7 +2239,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
 	rr = prev_rr;
       } else {
 	prev_v = SCHEME_VEC_ELS(obj)[i];
-	rr = resolve_references(prev_v, port, top, dht, tht, clone, tail_depth + 1);
+	rr = resolve_references(prev_v, port, top, dht, tht, self_contained_ht,
+                                clone, tail_depth + 1);
         if (!SAME_OBJ(prev_v, rr))
           diff = 1;
 	prev_rr = rr;
@@ -2280,7 +2293,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
     result = (Scheme_Object *)t;
     scheme_hash_set(dht, obj, result);
 
-    lst = resolve_references(lst, port, top, dht, tht, clone, tail_depth + 1);
+    lst = resolve_references(lst, port, top, dht, tht, self_contained_ht,
+                             clone, tail_depth + 1);
 
     for (; SCHEME_PAIRP(lst); lst = SCHEME_CDR(lst)) {
       a = SCHEME_CAR(lst);
@@ -2312,7 +2326,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
     }
 
     orig_l = l;
-    l = resolve_references(l, port, top, dht, tht, clone, tail_depth + 1);
+    l = resolve_references(l, port, top, dht, tht, self_contained_ht,
+                           clone, tail_depth + 1);
 
     if (SAME_OBJ(l, orig_l)) {
       result = obj;
@@ -2347,7 +2362,8 @@ static Scheme_Object *resolve_references(Scheme_Object *obj,
       diff = 0;
       for (i = 0; i < c; i++) {
         prev_v = ((Scheme_Structure *)result)->slots[i];
-	v = resolve_references(prev_v, port, top, dht, tht, clone, tail_depth + 1);
+	v = resolve_references(prev_v, port, top, dht, tht, self_contained_ht,
+                               clone, tail_depth + 1);
         if (!SAME_OBJ(prev_v, v))
           diff = 1;
         ((Scheme_Structure *)result)->slots[i] = v;
@@ -2491,12 +2507,12 @@ _internal_read(Scheme_Object *port, Scheme_Object *stxsrc, int crc, int cant_fai
       tht = scheme_make_hash_table(SCHEME_hash_ptr);
 
       if (v)
-	v = resolve_references(v, port, NULL, dht, tht, clone, 0);
+	v = resolve_references(v, port, NULL, dht, tht, NULL, clone, 0);
 
       /* In case some placeholders were introduced by #;: */
       v2 = scheme_hash_get(*ht, unresolved_uninterned_symbol);
       if (v2)
-	resolve_references(v2, port, NULL, dht, tht, clone, 0);
+	resolve_references(v2, port, NULL, dht, tht, NULL, clone, 0);
 
       if (!v)
 	*ht = NULL;
@@ -2585,6 +2601,7 @@ Scheme_Object *scheme_resolve_placeholders(Scheme_Object *obj)
   return resolve_references(obj, NULL, obj, 
                             scheme_make_hash_table(SCHEME_hash_ptr),
                             scheme_make_hash_table(SCHEME_hash_ptr),
+                            NULL,
                             1, 0);
 }
 
@@ -4491,6 +4508,7 @@ typedef struct Scheme_Load_Delay {
   uintptr_t symtab_size;
   Scheme_Object **symtab;
   intptr_t *shared_offsets;
+  Scheme_Hash_Table *symtab_entries; /* `symtab` content to be skipped by resolve_references */
   Scheme_Object *relto;
   Scheme_Unmarshal_Tables *ut;
   struct CPort *current_rp;
@@ -4520,6 +4538,7 @@ typedef struct CPort {
   Scheme_Object *symtab_refs;
   Scheme_Unmarshal_Tables *ut;
   Scheme_Object **symtab;
+  Scheme_Hash_Table *symtab_entries;
   Scheme_Object *magic_sym, *magic_val;
   Scheme_Object *relto;
   intptr_t *shared_offsets;
@@ -4771,6 +4790,20 @@ static Scheme_Object *read_compact_escape(CPort *port)
   return read_escape_from_string(s, len, port->relto, port->ht);
 }
 
+static void record_symtab_self_contained(Scheme_Hash_Table *symtab_entries, Scheme_Object *v)
+{
+  if (SCHEME_PAIRP(v)
+      || SCHEME_BOXP(v)
+      || SCHEME_VECTORP(v)
+      || SCHEME_HASHTRP(v)
+      || SCHEME_STRUCTP(v)) {
+    /* Register `v` as a value that is shared through the symbol table,
+       so that later calls to resolve_references() can avoid re-traversing
+       the value. (Otherwise, bytecode reading can become quadratic-time.) */
+    scheme_hash_set(symtab_entries, v, scheme_true);
+  }
+}
+
 static Scheme_Object *resolve_symtab_refs(Scheme_Object *v, CPort *port)
 {
   Scheme_Object *l;
@@ -4783,7 +4816,8 @@ static Scheme_Object *resolve_symtab_refs(Scheme_Object *v, CPort *port)
     
     v = resolve_references(v, port->orig_port, NULL,
                            scheme_make_hash_table(SCHEME_hash_ptr), 
-                           scheme_make_hash_table(SCHEME_hash_ptr), 
+                           scheme_make_hash_table(SCHEME_hash_ptr),
+                           port->symtab_entries,
                            0, 0);
     
     l = SCHEME_CDR(v);
@@ -4791,9 +4825,10 @@ static Scheme_Object *resolve_symtab_refs(Scheme_Object *v, CPort *port)
     l = port->symtab_refs;
 
   for (; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
-    if (v)
+    if (v) {
       port->symtab[SCHEME_INT_VAL(SCHEME_CAR(SCHEME_CAR(l)))] = SCHEME_CDR(SCHEME_CAR(l));
-    else {
+      record_symtab_self_contained(port->symtab_entries, SCHEME_CDR(SCHEME_CAR(l)));
+    } else {
       /* interrupted; discard partial constructions */
       port->symtab[SCHEME_INT_VAL(SCHEME_CAR(SCHEME_CAR(l)))] = NULL;
     }
@@ -5041,7 +5076,8 @@ static Scheme_Object *read_compact(CPort *port, int use_stack)
           *port->ht = NULL;
           v = resolve_references(v, port->orig_port, NULL,
                                  scheme_make_hash_table(SCHEME_hash_ptr), 
-                                 scheme_make_hash_table(SCHEME_hash_ptr), 
+                                 scheme_make_hash_table(SCHEME_hash_ptr),
+                                 port->symtab_entries,
                                  0, 0);
         }
 
@@ -5527,8 +5563,9 @@ static Scheme_Object *read_compact_quote(CPort *port, int embedded)
 
   if (*q_ht)
     v = resolve_references(v, port->orig_port, NULL,
-                           scheme_make_hash_table(SCHEME_hash_ptr), 
-                           scheme_make_hash_table(SCHEME_hash_ptr), 
+                           scheme_make_hash_table(SCHEME_hash_ptr),
+                           scheme_make_hash_table(SCHEME_hash_ptr),
+                           port->symtab_entries,
                            0, 0);
 
   return v;
@@ -5864,6 +5901,14 @@ static Scheme_Object *read_compiled(Scheme_Object *port,
       rp->symtab = symtab;
       rp->unsafe_ok = params->can_read_unsafe;
 
+      {
+        Scheme_Hash_Table *se_ht;
+        se_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+        rp->symtab_entries = se_ht;
+        if (delay_info)
+          delay_info->symtab_entries = se_ht;
+      }
+
       config = scheme_current_config();
 
       dir = scheme_get_param(config, MZCONFIG_LOAD_DIRECTORY);
@@ -6151,6 +6196,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
   rp->ut = delay_info->ut;
   rp->unsafe_ok = delay_info->unsafe_ok;
   rp->bytecode_hash = delay_info->bytecode_hash;
+  rp->symtab_entries = delay_info->symtab_entries;
   if (delay_info->ut)
     delay_info->ut->rp = rp;
 
@@ -6206,11 +6252,13 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
     if (*ht) {
       v = resolve_references(v, port, NULL,
                              scheme_make_hash_table(SCHEME_hash_ptr), 
-                             scheme_make_hash_table(SCHEME_hash_ptr), 
+                             scheme_make_hash_table(SCHEME_hash_ptr),
+                             delay_info->symtab_entries,
                              0, 0);
     }
 
     delay_info->symtab[which] = v;
+    record_symtab_self_contained(delay_info->symtab_entries, v);
         
     return v;
   } else {
@@ -6391,7 +6439,8 @@ static Scheme_Object *readtable_call(int w_char, int ch, Scheme_Object *proc, Re
         /* resolve references from recursive `read': */
         v = resolve_references(v, port, NULL,
                                scheme_make_hash_table(SCHEME_hash_ptr), 
-                               scheme_make_hash_table(SCHEME_hash_ptr), 
+                               scheme_make_hash_table(SCHEME_hash_ptr),
+                               NULL,
                                1, 0);
       }
 

@@ -2274,6 +2274,7 @@ mark_cport {
   gcMARK2(cp->ht, gc);
   gcMARK2(cp->ut, gc);
   gcMARK2(cp->symtab, gc);
+  gcMARK2(cp->symtab_entries, gc);
   gcMARK2(cp->relto, gc);
   gcMARK2(cp->magic_sym, gc);
   gcMARK2(cp->magic_val, gc);
@@ -2312,6 +2313,7 @@ mark_delay_load {
   Scheme_Load_Delay *ld = (Scheme_Load_Delay *)p;
   gcMARK2(ld->path, gc);
   gcMARK2(ld->symtab, gc);
+  gcMARK2(ld->symtab_entries, gc);
   gcMARK2(ld->shared_offsets, gc);
   gcMARK2(ld->relto, gc);
   gcMARK2(ld->ut, gc);
