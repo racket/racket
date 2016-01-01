@@ -78,7 +78,7 @@
 ;; xexpr->string : Xexpression -> String
 (define (xexpr->string xexpr)
   (let ([port (open-output-string)])
-    (write-xml/content (xexpr->xml xexpr) port)
+    (write-xexpr xexpr port)
     (get-output-string port)))
 
 (define (string->xexpr str)
