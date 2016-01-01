@@ -453,7 +453,7 @@ A @racket[_struct-option] always starts with a keyword:
   @racket[#:auto] field option. The constructor procedure does not
   accept arguments for automatic fields. Automatic fields are
   implicitly mutable (via reflective operations), but mutator
-  functions are bound only if @racket[#:mutator] is also specified.
+  functions are bound only if @racket[#:mutable] is also specified.
 
   @defexamples[
     (struct posn (x y [z #:auto])
