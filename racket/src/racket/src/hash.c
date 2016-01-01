@@ -779,6 +779,7 @@ get_bucket (Scheme_Bucket_Table *table, const char *key, int add, Scheme_Bucket 
     lkey = PTR_TO_LONG((Scheme_Object *)key);
     h = lkey & mask;
     h2 = (lkey >> 1) & mask;
+    ekey = NULL;
   }
 
   h2 |= 0x1;
