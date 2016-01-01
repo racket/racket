@@ -15,7 +15,9 @@
 (provide ->2 ->*2
          dynamic->*
          (for-syntax ->2-handled?
+                     ->2-arity-check-only->?
                      ->*2-handled?
+                     ->2*-arity-check-only->?
                      ->-valid-app-shapes
                      ->*-valid-app-shapes)
          (rename-out [-predicate/c predicate/c]))
@@ -25,10 +27,12 @@
     [(_ args ...)
      (syntax-parameter-value #'arrow:making-a-method)
      #f]
-    [(_ any/c ... any)
-     ;; should turn into a flat contract
-     #f]
     [_ #t]))
+
+(define-for-syntax (->2-arity-check-only->? stx)
+  (syntax-case stx (any any/c)
+    [(_ any/c ... any) (- (length (syntax->list stx)) 2)]
+    [_ #f]))
 
 (define-for-syntax (->*2-handled? stx)
   (syntax-case stx (any values any/c)
@@ -36,6 +40,12 @@
      (syntax-parameter-value #'arrow:making-a-method)
      #f]
     [_ #t]))
+
+(define-for-syntax (->2*-arity-check-only->? stx)
+  (syntax-case stx (any any/c)
+    [(_ (any/c ...) any) (length (syntax->list (cadr (syntax->list stx))))]
+    [(_ (any/c ...) () any) (length (syntax->list (cadr (syntax->list stx))))]
+    [_ #f]))
 
 (define-for-syntax popular-keys
   ;; of the 8417 contracts that get compiled during
@@ -532,6 +542,9 @@
     [(_ args ...)
      (not (->2-handled? stx))
      #'(arrow:-> args ...)]
+    [(_ args ...)
+     (->2-arity-check-only->? stx)
+     #`(build-arity-check-only-> #,(->2-arity-check-only->? stx))]
     [(_ args ... rng)
      (let ()
        (define this-> (gensym 'this->))
@@ -649,6 +662,10 @@
 
 (define-syntax (->*2 stx)
   (cond
+    [(->2*-arity-check-only->? stx)
+     =>
+     (λ (n)
+       #`(build-arity-check-only-> #,n))]
     [(->*2-handled? stx)
      (define this->* (gensym 'this->*))
      (define-values (man-dom man-dom-kwds man-lets
@@ -808,6 +825,18 @@
                           rngs post-cond
                           plus-one-arity-function
                           chaperone-constructor)]))
+
+(define (build-arity-check-only-> n)
+  (make-arity-check-only-> n
+                           (build-list n (λ (_) any/c))
+                           '() #f #f #f #f
+                           (λ args
+                             (error 'arity-check-only->-plus-one-arity-function
+                                    "this function should not be called ~s" args))
+                           (λ args
+                             (error 'arity-check-only->-chaperone-constructor
+                                    "this function should not be called ~s" args))
+                           n))
 
 (define (dynamic->* #:mandatory-domain-contracts [mandatory-domain-contracts '()]
                     #:optional-domain-contracts [optional-domain-contracts '()]
@@ -1187,34 +1216,63 @@
        (define cblame (cthis blame))
        (λ (val)
          ((cblame val) #f))))
-   #:stronger
-   (λ (this that) 
-     (and (base->? that)
-          (= (length (base->-doms that))
-             (length (base->-doms this)))
-          (= (base->-min-arity this) (base->-min-arity that))
-          (andmap contract-stronger? (base->-doms that) (base->-doms this))
-          (= (length (base->-kwd-infos this))
-             (length (base->-kwd-infos that)))
-          (for/and ([this-kwd-info (base->-kwd-infos this)]
-                    [that-kwd-info (base->-kwd-infos that)])
-            (and (equal? (kwd-info-kwd this-kwd-info)
-                         (kwd-info-kwd that-kwd-info))
-                 (contract-stronger? (kwd-info-ctc that-kwd-info)
-                                     (kwd-info-ctc this-kwd-info))))
-          (if (base->-rngs this)
-              (and (base->-rngs that)
-                   (andmap contract-stronger? (base->-rngs this) (base->-rngs that)))
-              (not (base->-rngs that)))
-          (not (base->-pre? this))
-          (not (base->-pre? that))
-          (not (base->-post? this))
-          (not (base->-post? that))))
+   #:stronger ->-stronger
    #:generate ->-generate
    #:exercise ->-exercise
    #:val-first-projection val-first-proj
    #:late-neg-projection late-neg-proj))
 
+(define (->-stronger this that)
+  (and (base->? that)
+       (= (length (base->-doms that))
+          (length (base->-doms this)))
+       (= (base->-min-arity this) (base->-min-arity that))
+       (andmap contract-stronger? (base->-doms that) (base->-doms this))
+       (= (length (base->-kwd-infos this))
+          (length (base->-kwd-infos that)))
+       (for/and ([this-kwd-info (base->-kwd-infos this)]
+                 [that-kwd-info (base->-kwd-infos that)])
+         (and (equal? (kwd-info-kwd this-kwd-info)
+                      (kwd-info-kwd that-kwd-info))
+              (contract-stronger? (kwd-info-ctc that-kwd-info)
+                                  (kwd-info-ctc this-kwd-info))))
+       (if (base->-rngs this)
+           (and (base->-rngs that)
+                (andmap contract-stronger? (base->-rngs this) (base->-rngs that)))
+           (not (base->-rngs that)))
+       (not (base->-pre? this))
+       (not (base->-pre? that))
+       (not (base->-post? this))
+       (not (base->-post? that))))
+
+(define-struct (arity-check-only-> base->) (arity)
+  #:property
+  prop:flat-contract
+  (build-flat-contract-property
+   #:name base->-name 
+   #:first-order
+   (λ (ctc)
+     (define arity (arity-check-only->-arity ctc))
+     (λ (val)
+       (arrow:procedure-arity-includes?/no-kwds val arity)))
+   #:late-neg-projection
+   (λ (ctc)
+     (define arity (arity-check-only->-arity ctc))
+     (λ (blame)
+       (λ (val neg-party)
+         (if (arrow:procedure-arity-includes?/no-kwds val arity)
+             val
+             (raise-blame-error
+              blame #:missing-party neg-party val
+              '(expected: "a procedure that accepts ~a non-keyword argument~a"
+                          given: "~e")
+              arity
+              (if (= arity 1) "" "s")
+              val)))))
+   #:stronger ->-stronger
+   #:generate ->-generate
+   #:exercise ->-exercise))
+     
 (define-struct (-> base->) ()
   #:property
   prop:chaperone-contract

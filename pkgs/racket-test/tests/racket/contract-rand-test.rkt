@@ -157,6 +157,7 @@
  (λ () ((test-contract-generation (-> some-crazy-predicate? some-crazy-predicate?)) 11)))
 (check-not-exn 
  (λ () (((test-contract-generation (-> (-> (>/c 10) (>/c 10))))) 11)))
+(check-not-exn (λ () ((test-contract-generation (-> any/c any)) 1)))
 
 (check-not-exn
  (λ ()

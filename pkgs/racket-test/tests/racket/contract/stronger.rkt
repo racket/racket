@@ -72,7 +72,9 @@
          (-> integer? #:x integer? integer?)
          (-> integer? #:x integer? integer?))
   (ctest #t contract-stronger? (-> #:x (>=/c 3) (>=/c 3)) (-> #:x (>=/c 3) (>=/c 2)))
-
+  (ctest #t contract-stronger? (-> any/c any/c any) (-> any/c any/c any))
+  (ctest #f contract-stronger? (-> any/c any/c any/c any) (-> any/c any/c any))
+  
   (let ([c (contract-eval '(->* () () any))])
     (test #t (contract-eval 'contract-stronger?) c c))
   (let ([c (contract-eval '(->d () () any))])

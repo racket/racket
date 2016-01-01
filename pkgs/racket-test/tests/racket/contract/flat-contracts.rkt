@@ -71,6 +71,11 @@
   (test-flat-contract #rx#".x." "axq" "x")
   (test-flat-contract ''() '() #f)
 
+  (test-flat-contract '(-> any/c any/c any) (λ (x y) 1) (λ (x y z) 1))
+  (test-flat-contract '(->* (any/c any/c) any) (λ (x y) 1) (λ (x y z) 1))
+  (test-flat-contract '(->* () any) (λ () 1) (λ (x y z w) 1))
+  (test-flat-contract '(->* () () any) (λ () 1) (λ (x) 1))
+  
   (test-flat-contract '(if/c integer? even? list?) 2 3)
   (test-flat-contract '(if/c integer? even? list?) '() #f)
   
