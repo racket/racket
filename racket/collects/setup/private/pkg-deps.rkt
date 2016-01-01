@@ -368,10 +368,12 @@
       (define in-mod `(lib ,(string-join 
                              (append (map path-element->string coll-path) (list base))
                              "/")))
+      (define zo-path (build-path dir zo-f))
       (define mod-code (call-with-input-file*
-                        (build-path dir zo-f)
+                        zo-path
                         (lambda (i)
-                          (parameterize ([read-accept-compiled #t])
+                          (parameterize ([read-accept-compiled #t]
+                                         [read-on-demand-source zo-path])
                             (read i)))))
       ;; Recur to cover submodules:
       (let loop ([mod-code mod-code])
