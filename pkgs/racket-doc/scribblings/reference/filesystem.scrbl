@@ -979,6 +979,7 @@ exists and is removed by another thread or process before
 
 @defproc[(find-files [predicate (path? . -> . any/c)]
                      [start-path (or/c path-string? #f) #f]
+                     [#:skip-filtered-directory? skip-filtered-directory? #f]
                      [#:follow-links? follow-links? #f])
          (listof path?)]{
 
@@ -999,6 +1000,10 @@ paths in the former case and relative paths in the latter.  Another
 difference is that @racket[predicate] is not called for the current
 directory when @racket[start-path] is @racket[#f].
 
+If @racket[skip-filtered-directory?] is true, then when
+@racket[predicate] returns @racket[#f] for a directory, the
+directory's content is not traversed.
+
 If @racket[follow-links?] is true, the @racket[find-files] traversal
 follows links, and links are not included in the result. If
 @racket[follow-links?] is @racket[#f], then links are not followed,
@@ -1009,10 +1014,15 @@ directory, then @racket[predicate] will be called exactly once with
 @racket[start-path] as the argument.
 
 The @racket[find-files] procedure raises an exception if it encounters
-a directory for which @racket[directory-list] fails.}
+a directory for which @racket[directory-list] fails.
+
+@history[#:changed "6.3.0.11" @elem{Added the
+                                    @racket[#:skip-filtered-directory?]
+                                    argument.}]}
 
 @defproc[(pathlist-closure [path-list (listof path-string?)]
-                           [#:follow-links? follow-links? #f])
+                           [#:path-filter path-filter (or/c #f (path? . -> . any/c)) #f]
+                           [#:follow-links? follow-links? any/c #f])
          (listof path?)]{
 
 Given a list of paths, either absolute or relative to the current
@@ -1025,17 +1035,25 @@ directory, returns a list such that
        twice);}
 
  @item{if a path refers to directory, all of its descendants are also
-       included in the result;}
+       included in the result, except as omitted by @racket[path-filter];}
 
  @item{ancestor directories appear before their descendants in the
-       result list.}
+       result list, as long as they are not misordered in the given
+       @racket[path-list].}
 
 ]
 
+If @racket[path-filter] is a procedure, then it is applied to each
+descendant of a directory. If @racket[path-filter] returns
+@racket[#f], then the descendant (and any of its descendants, in the
+case of a subdirectory) are omitted from the result.
+
 If @racket[follow-links?] is true, then the traversal of directories
 and files follows links, and the link paths are not included in the
-result. If @racket[follow-links?] is @racket[#f], then he result list
-includes paths to link and the links are not followed.}
+result. If @racket[follow-links?] is @racket[#f], then the result list
+includes paths to link and the links are not followed.
+
+@history[#:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}]}
 
 
 @defproc[(fold-files [proc (or/c (path? (or/c 'file 'dir 'link) any/c 

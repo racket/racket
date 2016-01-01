@@ -20,6 +20,7 @@ in a link must be less than 100 bytes.}
               [#:follow-links? follow-links? any/c #f]
               [#:exists-ok? exists-ok? any/c #f]
               [#:path-prefix path-prefix (or/c #f path-string?) #f]
+              [#:path-filter path-filter (or/c #f (path? . -> . any/c)) #f]
               [#:get-timestamp get-timestamp
                                (path? . -> . exact-integer?)
                                (if timestamp
@@ -48,13 +49,15 @@ date to record in the archive for each file or directory.
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
          #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}
-         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}]}
+         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}
+         #:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}]}
 
 
 @defproc[(tar->output [paths (listof path?)]
                       [out output-port? (current-output-port)]
                       [#:follow-links? follow-links? any/c #f]
                       [#:path-prefix path-prefix (or/c #f path-string?) #f]
+                      [#:path-filter path-filter (or/c #f (path? . -> . any/c)) #f]
                       [#:get-timestamp get-timestamp
                                        (path? . -> . exact-integer?)
                                        (if timestamp
@@ -69,7 +72,8 @@ content is not automatically added, and nested directories are added
 without parent directories.
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
-         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}]}
+         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}
+         #:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}]}
 
 
 @defproc[(tar-gzip [tar-file path-string?]

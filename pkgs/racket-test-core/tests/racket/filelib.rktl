@@ -223,4 +223,130 @@
 
 ;; ----------------------------------------
 
+(let ([dir (make-temporary-file "pathlist~a" 'directory)])
+  (define parents
+    (let loop ([dir dir])
+      (define-values (base name dir?) (split-path dir))
+      (if (path? base)
+          (append (loop base) (list (path->directory-path dir)))
+          (list dir))))
+  (define (p . args)
+    (maybe-as-directory
+     args
+     (apply build-path dir args)))
+  (define (maybe-as-directory args p)
+    (if (regexp-match? #rx"^d" (last args))
+        (path->directory-path p)
+        p))
+  (define (touch f)
+    (call-with-output-file* f void))
+  (touch (p "f1"))
+  (make-directory (p "d1"))
+  (make-directory (p "d2"))
+  (touch (p "d1" "f1"))
+  (touch (p "d2" "f1"))
+  (touch (p "d2" "f2"))
+
+  (unless (eq? 'windows (system-type))
+    (make-file-or-directory-link "d1" (p "l3"))
+    (make-file-or-directory-link "l3" (p "l4"))
+    (make-directory (p "d5"))
+    (make-file-or-directory-link (build-path 'up "d2" "f1") (p "d5" "l5")))
+
+  (make-directory (p "d6"))
+  (touch (p "d6" "f1"))
+  (make-directory (p "d6" "d7"))
+  (touch (p "d6" "d7" "f1"))
+  (touch (p "d6" "d7" "f2"))
+
+  (define (check p parents)
+    (test (append
+           parents
+           (list (p "d1")
+                 (p "d1" "f1")))
+          pathlist-closure
+          (list (p "d1")))
+    (test (append
+           parents
+           (list (p "d1")
+                 (p "d1" "f1")
+                 (p "f1")))
+          pathlist-closure
+          (list (p "d1")
+                (p "f1")))
+    (test (append
+           parents
+           (list (p "d1")
+                 (p "d2")
+                 (p "d2" "f2")))
+          pathlist-closure
+          (list (p "d1")
+                (p "d2"))
+          #:path-filter (lambda (f) (not (regexp-match? #rx"f1$" f))))
+    (test (append
+           parents
+           (list (p "d1")
+                 (p "d1" "f1")
+                 (p "d2")
+                 (p "d2" "f2")))
+          pathlist-closure
+          (list (p "d1")
+                (p "d1" "f1")
+                (p "d2"))
+          #:path-filter (lambda (f) (not (regexp-match? #rx"f1$" f))))
+    (test (append
+           parents
+           (list (p "d6")
+                 (p "d6" "f1")))
+          pathlist-closure
+          (list (p "d6"))
+          #:path-filter (lambda (f) (not (regexp-match? #rx"d7$" f))))
+    (unless (eq? 'windows (system-type))
+      (test (append
+             parents
+             (list (p "l3")))
+            pathlist-closure
+            (list (p "l3")))
+      (test (append
+             parents
+             (list (p "l4")))
+            pathlist-closure
+            (list (p "l4")))
+      (test (append
+             parents
+             (list (p "d5")
+                   (p "d5" "l5")))
+            pathlist-closure
+            (list (p "d5" "l5")))
+      (test (append
+             parents
+             (list (p "d1")
+                   (p "d1" "f1")))
+            pathlist-closure
+            (list (p "l3"))
+            #:follow-links? #t)
+      (test (append
+             parents
+             (list (p "d1")
+                   (p "d1" "f1")))
+            pathlist-closure
+            (list (p "l4"))
+            #:follow-links? #t)
+      (test (append
+             parents
+             (list (p "d2")
+                   (p "d2" "f1")))
+            pathlist-closure
+            (list (p "d5" "l5"))
+            #:follow-links? #t)))
+       
+  (parameterize ([current-directory dir])
+    (check (lambda args (maybe-as-directory args (apply build-path args))) null))
+  (check p parents)
+  
+
+  (delete-directory/files dir))
+
+;; ----------------------------------------
+
 (report-errs)

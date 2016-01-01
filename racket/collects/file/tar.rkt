@@ -152,13 +152,16 @@
 (define (tar tar-file
              #:exists-ok? [exists-ok? #f]
              #:path-prefix [prefix #f]
+             #:path-filter [path-filter #f]
              #:follow-links? [follow-links? #f]
              #:get-timestamp [get-timestamp file-or-directory-modify-seconds]
              . paths)
   (when (null? paths) (error 'tar "no paths specified"))
   (with-output-to-file tar-file
     #:exists (if exists-ok? 'truncate/replace 'error)
-    (lambda () (tar->output (pathlist-closure paths #:follow-links? follow-links?)
+    (lambda () (tar->output (pathlist-closure paths
+                                         #:follow-links? follow-links?
+                                         #:path-filter path-filter)
                        #:get-timestamp get-timestamp
                        #:path-prefix prefix
                        #:follow-links? follow-links?))))
@@ -168,6 +171,7 @@
 (define (tar-gzip tgz-file
                   #:exists-ok? [exists-ok? #f]
                   #:path-prefix [prefix #f]
+                  #:path-filter [path-filter #f]
                   #:follow-links? [follow-links? #f]
                   #:get-timestamp [get-timestamp file-or-directory-modify-seconds]
                   . paths)
@@ -177,7 +181,10 @@
     (lambda ()
       (let-values ([(i o) (make-pipe (* 1024 1024 32))])
         (thread (lambda ()
-                  (tar->output (pathlist-closure paths #:follow-links? follow-links?) o
+                  (tar->output (pathlist-closure paths
+                                                 #:follow-links? follow-links?
+                                                 #:path-filter path-filter)
+                               o
                                #:path-prefix prefix
                                #:follow-links? follow-links?
                                #:get-timestamp get-timestamp)

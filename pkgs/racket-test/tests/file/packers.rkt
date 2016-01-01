@@ -49,7 +49,9 @@
      (and (directory-exists? dest)
           (compare-attributes src dest)
           (let* ([sort-paths (λ (l) (sort l bytes<? #:key path->bytes))]
-                 [srcs       (sort-paths (directory-list src))]
+                 [srcs       (sort-paths (for/list ([p (in-list (directory-list src))]
+                                                    #:unless (regexp-match? #rx"skip" p))
+                                           p))]
                  [dests      (sort-paths (directory-list dest))])
             (and (equal? srcs dests)
                  (for/and ([src-item (in-list srcs)]
@@ -64,7 +66,8 @@
 (define (zip-tests zip unzip timestamps?
                    #:dir-name [ex1 "ex1"]
                    #:file-name [f2 "f2"]
-                   #:links? [links? #f])
+                   #:links? [links? #f]
+                   #:filter-path? [filter-path? #f])
   (make-directory* ex1)
   (make-file (build-path ex1 "f1"))
   (make-file (build-path ex1 f2))
@@ -76,6 +79,10 @@
     (make-file-or-directory-link "f1" (build-path ex1 "f1-link"))
     (make-file-or-directory-link "more" (build-path ex1 "more-link"))
     (make-file-or-directory-link "no" (build-path ex1 "no-link")))
+  (when filter-path?
+    (make-file (build-path ex1 "skip1"))
+    (make-directory (build-path ex1 "skip2"))
+    (make-file (build-path ex1 "skip2" "nope")))
 
   (zip "a.zip" ex1)
   (when timestamps? (sleep 3)) ; at least 2 seconds, plus 1 to likely change parity
@@ -116,11 +123,20 @@
   (zip-tests zip unzip #f)
   (zip-tests (make-zip #f) (make-unzip #f) 'file)
   (zip-tests (make-zip #t) (make-unzip #t) 'file)
-  (zip-tests tar untar #t #:links? #t)
+  (zip-tests tar untar #t #:links? (not (eq? 'windows (system-type))))
   (zip-tests tar untar #t
-             #:links? #t
+             #:links? (not (eq? 'windows (system-type)))
              #:dir-name (make-string 64 #\d)
-             #:file-name (make-string 64 #\f)))
+             #:file-name (make-string 64 #\f))
+  (zip-tests (lambda (#:path-prefix [prefix #f] . args)
+               (apply
+                tar
+                args
+                #:path-prefix prefix
+                #:path-filter (lambda (p)
+                                (define-values (base name dir?) (split-path p))
+                                (not (regexp-match? #rx"skip" name)))))
+             untar #t #:filter-path? #t))
 
 (delete-directory/files work-dir)
 

@@ -639,24 +639,37 @@
   (define (to-path s) (if (path? s) s (string->path s)))
   (if path (do-path (to-path path) init) (do-paths (directory-list) init)))
 
-(define (find-files f [path #f] #:follow-links? [follow-links? #t])
+(define (find-files f [path #f]
+                    #:follow-links? [follow-links? #t]
+                    #:skip-filtered-directory? [skip-filtered-directory? #f])
   (reverse
-   (fold-files (lambda (path kind acc) (if (f path) (cons path acc) acc))
+   (fold-files (lambda (path kind acc) (if (f path)
+                                      (cons path acc) 
+                                      (if (and skip-filtered-directory?
+                                               (eq? kind 'dir))
+                                          (values acc #f)
+                                          acc)))
                null path
                follow-links?)))
 
-(define (pathlist-closure paths #:follow-links? [follow-links? #f])
+(define (pathlist-closure paths
+                          #:follow-links? [follow-links? #f]
+                          #:path-filter [path-filter #f])
   (let loop ([paths
               (map (lambda (p)
                      (simplify-path
-                      (if (and follow-links?
-                               (link-exists? p))
-                        (let ([p2 (resolve-path p)])
-                          (if (relative-path? p2)
-                            (let-values ([(base name dir?) (split-path p)])
-                              (build-path base p2))
-                            p2))
-                        p)
+                      (let loop ([p p])
+                        (if (and follow-links?
+                                 (link-exists? p))
+                            (let ([p2 (resolve-path p)])
+                              (if (relative-path? p2)
+                                  (let-values ([(base name dir?) (split-path p)])
+                                    (loop ((if dir? path->directory-path values)
+                                           (if (path? base)
+                                               (build-path base p2)
+                                               p2))))
+                                  (loop p2)))
+                            p))
                       #f))
                    paths)]
              [r '()])
@@ -669,7 +682,10 @@
                              [(file-exists? (car paths))
                               (list (car paths))]
                              [(directory-exists? (car paths))
-                              (find-files void (car paths) #:follow-links? follow-links?)]
+                              (find-files (or path-filter void)
+                                          (path->directory-path (car paths))
+                                          #:skip-filtered-directory? #t
+                                          #:follow-links? follow-links?)]
                              [else (error 'pathlist-closure
                                           "file/directory not found: ~a"
                                           (car paths))])])
