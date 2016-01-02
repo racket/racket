@@ -9,7 +9,9 @@
          sequence-ormap
          sequence-for-each
          sequence-fold
-         sequence-count)
+         sequence-count
+         sequence-length
+         (rename-out [-sequence-ref sequence-ref]))
 
 (define (sequence-andmap f s)
   (unless (procedure? f) (raise-argument-error 'sequence-andmap "procedure?" f))
