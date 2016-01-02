@@ -276,12 +276,14 @@ static Scheme_Object *do_hash(Scheme_Hash_Table *table, Scheme_Object *key, int 
       h = to_unsigned_hash(hx) & mask;
       if (_h2x)
         h2 = (to_unsigned_hash(h2x) & mask) | 1;
+      ekey = NULL;
     }
   } else {
     uintptr_t lkey;
     lkey = PTR_TO_LONG((Scheme_Object *)key);
     h = lkey & mask;
     h2 = ((lkey >> 1) & mask) | 1;
+    ekey = NULL;
   }
 
   keys = table->keys;
