@@ -842,13 +842,29 @@ both in binary and as integers.
                     [rand-gen pseudo-random-generator?
                                (current-pseudo-random-generator)])
             exact-nonnegative-integer?]
+           [(random [min (integer-in 1 4294967087)]
+                    [max (integer-in 1 4294967087)]
+                    [rand-gen pseudo-random-generator?
+                              (current-pseudo-random-generator)])
+            exact-nonnegative-integer?]
+           [(random [seq sequence?]
+                    [rand-gen pseudo-random-generator?
+                              (current-pseudo-random-generator)])]
            [(random [rand-gen pseudo-random-generator?
                               (current-pseudo-random-generator)]) 
             (and/c real? inexact? (>/c 0) (</c 1))])]{  
 
 When called with an integer argument @racket[k], returns a random
-exact integer in the range @racket[0] to @math{@racket[k]-1}. When
-called with zero arguments, returns a random inexact number between
+exact integer in the range @racket[0] to @math{@racket[k]-1}.
+
+When called with two integer arguments @racket[min] and @racket[max], returns a
+random exact integer in the range @racket[min] to @math{@racket[max]-1}.
+
+When called with a sequence argument @racket[seq], returns a random element of
+the sequence. Like @racket[sequence-length], does not terminate on infinite
+sequences, and extracts elements up to the returned element.
+
+When called with zero arguments, returns a random inexact number between
 @racket[0] and @racket[1], exclusive.
 
 In each case, the number is provided by the given pseudo-random number

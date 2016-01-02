@@ -2449,19 +2449,29 @@
 (test (begin (random-seed 23) (list (random 10) (random 20) (random 30)))
       'random-seed-same
       (begin (random-seed 23) (list (random 10) (random 20) (random 30))))
+(test (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40)))
+      'random-seed-same2
+      (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40))))
+(test (begin (random-seed 23) (list (random '(1 2 3)) (random '(4 5 6)) (random '(7 8 9))))
+      'random-seed-same3
+      (begin (random-seed 23) (list (random '#(1 2 3)) (random '#(4 5 6)) (random '#(7 8 9)))))
+(test (begin (random-seed 23) (list (random '#(1 2 3)) (random '#(4 5 6)) (random '#(7 8 9))))
+      'random-seed-same4
+      (begin (random-seed 23) (list (random '#(1 2 3)) (random '#(4 5 6)) (random '#(7 8 9)))))
 (arity-test random-seed 1 1)
-(arity-test random 0 2)
+(arity-test random 0 3)
 (err/rt-test (random-seed "apple"))
 (err/rt-test (random-seed 4.5))
 (err/rt-test (random-seed -1))
 (err/rt-test (random-seed (expt 2 31)))
 (err/rt-test (random-seed big-num))
-(err/rt-test (random "apple"))
+(err/rt-test (random 'apple))
 (err/rt-test (random 0))
 (err/rt-test (random -6))
 (err/rt-test (random 4294967088))
 (err/rt-test (random (expt 2 32)))
 (err/rt-test (random big-num))
+(err/rt-test (random 10 5))
 
 (random-seed 101)
 (define x (list (random 10) (random 20) (random 30)))
@@ -2501,6 +2511,12 @@
   (test 5353 random 10000)
   (test 8571 random 10000)
   (test 9729 random 10000))
+(parameterize ([current-pseudo-random-generator
+                (vector->pseudo-random-generator
+                 #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
+  (test 3 random '(1 2 3 4 5))
+  (test 10 random '#(7 6 8 9 10))
+  (test #\e random "abcde"))
 
 (test #t = 0 0)
 (test #f = 0 (expt 2 32))
