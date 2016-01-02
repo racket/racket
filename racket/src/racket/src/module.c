@@ -10396,39 +10396,28 @@ static Scheme_Object **compute_indirects(Scheme_Env *genv,
 {
   int i, count, j, start, end;
   Scheme_Bucket **bs, *b;
-  Scheme_Object **exsns = pt->provide_src_names, **exis;
+  Scheme_Object **exsns = pt->provide_src_names, **exss = pt->provide_srcs, **exis;
   int exicount;
   Scheme_Bucket_Table *t;
 
   if (vars) {
     start = 0;
     end = pt->num_provides; /* check both vars & syntax, in case of rename transformer */
+    t = genv->toplevel;
   } else {
     start = pt->num_var_provides;
     end = pt->num_provides;
-  }
-
-  if (vars)
-    t = genv->toplevel;
-  else
     t = genv->syntax;
-    
-
-  if (!t)
-    count = 0;
-  else {
-    bs = t->buckets;
-    for (count = 0, i = t->size; i--; ) {
-      b = bs[i];
-      if (b && b->val)
-        count++;
-    }
   }
+
+  count = (t ? t->count : 0);
 
   if (!count) {
     *_count = 0;
     return NULL;
   }
+
+  bs = t->buckets;
   
   exis = MALLOC_N(Scheme_Object *, count);
 
@@ -10441,7 +10430,8 @@ static Scheme_Object **compute_indirects(Scheme_Env *genv,
       
       /* If the name is directly provided, no need for indirect... */
       for (j = start; j < end; j++) {
-        if (SAME_OBJ(name, exsns[j]))
+        if (SAME_OBJ(name, exsns[j])
+            && SCHEME_FALSEP(exss[j]))
           break;
       }
 

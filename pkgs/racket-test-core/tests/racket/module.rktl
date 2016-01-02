@@ -1705,4 +1705,20 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(module exports-x*-as-x racket/base
+  (define x* 5)
+  (provide (rename-out [x* x])))
+
+(module exports-x**-as-x racket/base
+  (require 'exports-x*-as-x)
+  (define x* 5)
+  (define-syntax-rule (x**) x*)
+  (provide (rename-out [x x***])
+           (rename-out [x** x])))
+
+(require 'exports-x**-as-x)
+(test 5 'five (x))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
