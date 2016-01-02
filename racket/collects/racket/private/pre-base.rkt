@@ -112,18 +112,10 @@
   (define-values (-random) ; more featureful than #%kernel's `random`
     (case-lambda
       [() (random)] ; no args, random float
-      [(x)
-       ;; one arg, either random float with prng, or random integer
-       (cond [(exact-positive-integer? x)
-              (enforce-random-int-range x)
-              (random x)]
-             [(pseudo-random-generator? x)
-              (random x)]
-             [else
-              (raise-argument-error
-               'random
-               "(or/c (integer-in 1 4294967087) pseudo-random-generator?)"
-               x)])]
+      [(x) ; one arg, either random float with prng, or random integer
+       ;; can just pass through to #%kernel's `random`, which will do the
+       ;; necessary checking
+       (random x)]
       [(x y)
        ;; two args, either max and prng, or min and max
        (cond [(exact-positive-integer? y) ; min and max case
