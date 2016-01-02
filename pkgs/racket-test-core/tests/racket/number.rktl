@@ -3,7 +3,7 @@
 
 (Section 'numbers)
 
-(require racket/extflonum)
+(require racket/extflonum racket/random)
 
 (test #f number? 'a)
 (test #f complex? 'a)
@@ -2452,12 +2452,12 @@
 (test (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40)))
       'random-seed-same2
       (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40))))
-(test (begin (random-seed 23) (list (random '(1 2 3)) (random '(4 5 6)) (random '(7 8 9))))
+(test (begin (random-seed 23) (list (random-ref '(1 2 3)) (random-ref '(4 5 6)) (random-ref '(7 8 9))))
       'random-seed-same3
-      (begin (random-seed 23) (list (random '#(1 2 3)) (random '#(4 5 6)) (random '#(7 8 9)))))
-(test (begin (random-seed 23) (list (random '#(1 2 3)) (random '#(4 5 6)) (random '#(7 8 9))))
+      (begin (random-seed 23) (list (random-ref '#(1 2 3)) (random-ref '#(4 5 6)) (random-ref '#(7 8 9)))))
+(test (begin (random-seed 23) (list (random-ref "123") (random-ref "123") (random-ref "123")))
       'random-seed-same4
-      (begin (random-seed 23) (list (random '#(1 2 3)) (random '#(4 5 6)) (random '#(7 8 9)))))
+      (begin (random-seed 23) (list (random-ref "123") (random-ref "123") (random-ref "123"))))
 (arity-test random-seed 1 1)
 (arity-test random 0 3)
 (err/rt-test (random-seed "apple"))
@@ -2514,9 +2514,16 @@
 (parameterize ([current-pseudo-random-generator
                 (vector->pseudo-random-generator
                  #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
-  (test 3 random '(1 2 3 4 5))
-  (test 10 random '#(7 6 8 9 10))
-  (test #\e random "abcde"))
+  (test 3 random-ref '(1 2 3 4 5))
+  (test 10 random-ref '#(7 6 8 9 10))
+  (test #\e random-ref "abcde"))
+(parameterize ([current-pseudo-random-generator
+                (vector->pseudo-random-generator
+                 #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
+  (test '(3) random-sample '(1 2 3 4 5) 1)
+  (test '(5 5 5) random-sample '(1 2 3 4 5) 3)
+  (test '(2 4 5) random-sample '(1 2 3 4 5) 3 #:replacement? #f))
+
 
 (test #t = 0 0)
 (test #f = 0 (expt 2 32))

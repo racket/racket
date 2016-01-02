@@ -847,10 +847,6 @@ both in binary and as integers.
                     [rand-gen pseudo-random-generator?
                               (current-pseudo-random-generator)])
             exact-nonnegative-integer?]
-           [(random [seq sequence?]
-                    [rand-gen pseudo-random-generator?
-                              (current-pseudo-random-generator)])
-            any/c]
            [(random [rand-gen pseudo-random-generator?
                               (current-pseudo-random-generator)]) 
             (and/c real? inexact? (>/c 0) (</c 1))])]{  
@@ -861,10 +857,6 @@ exact integer in the range @racket[0] to @math{@racket[k]-1}.
 When called with two integer arguments @racket[min] and @racket[max], returns a
 random exact integer in the range @racket[min] to @math{@racket[max]-1}.
 
-When called with a sequence argument @racket[seq], returns a random element of
-the sequence. Like @racket[sequence-length], does not terminate on infinite
-sequences, and extracts elements up to the returned element.
-
 When called with zero arguments, returns a random inexact number between
 @racket[0] and @racket[1], exclusive.
 
@@ -873,7 +865,10 @@ generator (which defaults to the current one, as produced by
 @racket[current-pseudo-random-generator]). The generator maintains an
 internal state for generating numbers. The random number generator
 uses a 54-bit version of L'Ecuyer's MRG32k3a algorithm
-@cite["L'Ecuyer02"].}
+@cite["L'Ecuyer02"].
+
+@history[#:changed "6.4"]{Added support for ranges.}}
+
 
 @defproc[(random-seed [k (integer-in 1 (sub1 (expt 2 31)))])
           void?]{
@@ -944,15 +939,16 @@ three integers is non-zero. Otherwise, the result is @racket[#f].}
 
 @; ------------------------------------------------------------------------
 
-@subsection{System-Provided Randomness}
+@subsection{Other Randomness Utilities}
 
-@defmodule[racket/random]{The @racketmodname[racket/random] module
-provides an interface to randomness from the underlying operating
-system. Use @racket[crypto-random-bytes]
-instead of @racket[random] wherever security is a concern.}
+@defmodule[racket/random]{}
 
 @defproc[(crypto-random-bytes [n exact-positive-integer?])
          bytes?]{
+
+Provides an interface to randomness from the underlying operating system. Use
+@racket[crypto-random-bytes] instead of @racket[random] wherever security is a
+concern.
 
 Returns @racket[n] random bytes. On Unix systems, the bytes are
 obtained from @filepath{/dev/urandom}, while Windows uses
@@ -963,6 +959,34 @@ the @tt{RtlGenRand} system function.
 ]
 
 @history[#:added "6.3"]}
+
+@defproc[(random-ref [seq sequence?]
+                     [rand-gen pseudo-random-generator?
+                      (current-pseudo-random-generator)])
+         any/c]{
+
+Returns a random element of the sequence. Like @racket[sequence-length], does
+not terminate on infinite sequences, and extracts elements up to the returned
+element.
+
+@history[#:added "6.4"]}
+
+@defproc[(random-sample [seq sequence?]
+                        [n exact-positive-integer?]
+                        [rand-gen pseudo-random-generator?
+                         (current-pseudo-random-generator)]
+                        [#:replacement? replacement? any/c #t])
+         (listof any/c)]{
+
+Returns a list of @racket[n] elements of @racket[seq], picked at random.
+If @racket[replacement?] is non-false, elements are drawn with replacement,
+which allows for duplicates.
+
+Like @racket[sequence-length], does not terminate on infinite sequences, and
+extracts elements up to the returned element.
+
+@history[#:added "6.4"]}
+
 
 @; ------------------------------------------------------------------------
 @subsection{Number--String Conversions}

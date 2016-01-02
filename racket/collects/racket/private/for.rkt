@@ -78,9 +78,6 @@
              sequence-generate
              sequence-generate*
              prop:sequence
-             sequence-length
-
-             -sequence-ref
 
              define-sequence-syntax
              make-do-sequence
@@ -2031,30 +2028,5 @@
 	      #true
 	      #true
 	      [(next-body l d init-dir use-dir?)])]])))
-
-  (define-values (sequence-length)
-    (λ (s)
-      (unless (sequence? s) (raise-argument-error 'sequence-length "sequence?" s))
-      (for/fold ([c 0]) ([i (in-values*-sequence s)])
-        (add1 c))))
-
-  (define-values (-sequence-ref)
-    (λ (s i)
-      (unless (sequence? s) (raise-argument-error 'sequence-ref "sequence?" s))
-      (unless (exact-nonnegative-integer? i)
-        (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
-      (let-values ([(v) (for/fold ([c #f]) ([v (in-values*-sequence s)]
-                                            [j (in-range (add1 i))]
-                                            #:unless (j . < . i))
-                          (or v '(#f)))])
-        (cond
-         [(not v)
-          (raise-arguments-error 
-           'sequence-ref
-           "sequence ended before index"
-           "index" i
-           "sequence" s)]
-         [(list? v) (apply values v)]
-         [else v]))))
 
   )

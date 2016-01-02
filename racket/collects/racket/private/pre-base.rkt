@@ -113,38 +113,27 @@
     (case-lambda
       [() (random)] ; no args, random float
       [(x)
-       ;; one arg, either random float with prng, or random integer, or random
-       ;; sequence element
+       ;; one arg, either random float with prng, or random integer
        (cond [(exact-positive-integer? x)
               (enforce-random-int-range x)
               (random x)]
              [(pseudo-random-generator? x)
               (random x)]
-             [(sequence? x)
-              (-sequence-ref x (random (sequence-length x)))]
              [else
               (raise-argument-error
                'random
-               "(or/c (integer-in 1 4294967087) sequence? pseudo-random-generator?)"
+               "(or/c (integer-in 1 4294967087) pseudo-random-generator?)"
                x)])]
       [(x y)
-       ;; two args, either min and prng, or min and max, or sequence and prng
+       ;; two args, either min and prng, or min and max
        (cond [(exact-positive-integer? y) ; min and max case
               (enforce-random-int-range x)
               (enforce-random-int-range y)
               (enforce-greater x y)
               (+ x (random (- y x)))]
-             [(pseudo-random-generator? y)
-              (cond [(exact-positive-integer? x) ; int and prng case
-                     (enforce-random-int-range x)
-                     (random x y)]
-                    [(sequence? x) ; sequence and prng case
-                     (-sequence-ref x (random (sequence-length x) y))]
-                    [else
-                     (raise-argument-error
-                      'random
-                      "(or/c (integer-in 1 4294967087) sequence?)"
-                      x)])]
+             [(pseudo-random-generator? y) ; int and prng case
+              (enforce-random-int-range x)
+              (random x y)]
              [else
               (raise-argument-error
                'random
