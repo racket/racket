@@ -125,7 +125,7 @@
                "(or/c (integer-in 1 4294967087) pseudo-random-generator?)"
                x)])]
       [(x y)
-       ;; two args, either min and prng, or min and max
+       ;; two args, either max and prng, or min and max
        (cond [(exact-positive-integer? y) ; min and max case
               (enforce-random-int-range x)
               (enforce-random-int-range y)
