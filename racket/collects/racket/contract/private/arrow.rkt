@@ -41,8 +41,7 @@
          blame-add-range-context
          blame-add-nth-arg-context
          raise-no-keywords-arg
-         raise-wrong-number-of-args-error
-         procedure-arity-includes?/no-kwds)
+         raise-wrong-number-of-args-error)
 
 (define-syntax-parameter making-a-method #f)
 (define-syntax-parameter method-contract? #f)
@@ -1908,25 +1907,7 @@
 
 
 (define-syntax (-> stx) 
-  (syntax-case stx (any any/c boolean?)
-    [(_ any/c ... any)
-     (not (syntax-parameter-value #'making-a-method))
-     ;; special case the (-> any/c ... any) contracts to be first-order checks only
-     ;; this is now implemented by ->2 so we should get here only when we're
-     ;;    building an ->m contract
-     (let ([dom-len (- (length (syntax->list stx)) 2)])
-       #`(flat-named-contract 
-          '(-> #,@(build-list dom-len (λ (x) 'any/c)) any)
-          (λ (x) 
-            (procedure-arity-includes?/no-kwds x #,dom-len))))]
-    [_
-     #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx))]))
-
-(define (procedure-arity-includes?/no-kwds val dom-len)
-  (and (procedure? val)
-       (procedure-arity-includes? val dom-len)
-       (let-values ([(man opt) (procedure-keywords val)])
-         (null? man))))
+  #`(syntax-parameterize ((making-a-method #f)) #,(->/proc/main stx)))
 
 ;; this is to make the expanded versions a little easier to read
 (define-syntax (values/drop stx)

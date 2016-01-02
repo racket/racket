@@ -357,6 +357,14 @@
                  late-neg?)
   (define optionals-length (- (length doms) min-arity))
   (define mtd? #f) ;; not yet supported for the new contracts
+  (define okay-to-do-only-arity-check?
+    (and (not rest)
+         (not pre?)
+         (not post?)
+         (null? kwd-infos)
+         (not rngs)
+         (andmap any/c? doms)
+         (= optionals-length 0)))
   (λ (orig-blame)
     (define rng-blame (arrow:blame-add-range-context orig-blame))
     (define swapped-domain (blame-add-context orig-blame "the domain of" #:swap? #t))
@@ -425,19 +433,24 @@
               impersonator-prop:application-mark
               (cons arrow:tail-contract-key (list* neg-party blame-party-info rngs))))]
         [else val]))
-    
     (cond
       [late-neg?
-       (λ (val neg-party)
+       (define (arrow-higher-order:lnp val neg-party)
          (cond
            [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
             =>
             (λ (f)
               (f neg-party))]
            [else
-            (successfully-got-the-right-kind-of-function val neg-party)]))]
+            (successfully-got-the-right-kind-of-function val neg-party)]))
+       (if okay-to-do-only-arity-check?
+           (λ (val neg-party)
+             (cond
+               [(procedure-arity-exactly/no-kwds val min-arity) val]
+               [else (arrow-higher-order:lnp val neg-party)]))
+           arrow-higher-order:lnp)]
       [else
-       (λ (val)
+       (define (arrow-higher-order:vfp val)
          (wrapped-extra-arg-arrow 
           (cond
             [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
@@ -446,4 +459,20 @@
             [else
              (λ (neg-party)
                (successfully-got-the-right-kind-of-function val neg-party))])
-          (apply plus-one-arity-function orig-blame val plus-one-constructor-args)))])))
+          (apply plus-one-arity-function orig-blame val plus-one-constructor-args)))
+       (if okay-to-do-only-arity-check?
+           (λ (val)
+             (cond
+               [(procedure-arity-exactly/no-kwds val min-arity)
+                (wrapped-extra-arg-arrow 
+                 (λ (neg-party) val)
+                 (apply plus-one-arity-function orig-blame val plus-one-constructor-args))]
+               [else (arrow-higher-order:vfp val)]))
+           arrow-higher-order:vfp)])))
+
+(define (procedure-arity-exactly/no-kwds val min-arity)
+  (and (procedure? val)
+       (equal? (procedure-arity val) min-arity)
+       (let-values ([(man opt) (procedure-keywords val)])
+         (and (null? man)
+              (null? opt)))))

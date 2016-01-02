@@ -15,8 +15,6 @@
   (ctest #t flat-contract? (first-or/c (flat-contract integer?) (flat-contract boolean?)))
   (ctest #t flat-contract? (first-or/c integer? boolean?))
   
-  (ctest #t flat-contract? (-> any/c any/c any))
-
   (ctest #t flat-contract? (and/c))
   (ctest #t flat-contract? (and/c number? integer?))
   (ctest #t flat-contract? (and/c (flat-contract number?)

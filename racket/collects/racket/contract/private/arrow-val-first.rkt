@@ -542,9 +542,6 @@
     [(_ args ...)
      (not (->2-handled? stx))
      #'(arrow:-> args ...)]
-    [(_ args ...)
-     (->2-arity-check-only->? stx)
-     #`(build-arity-check-only-> #,(->2-arity-check-only->? stx))]
     [(_ args ... rng)
      (let ()
        (define this-> (gensym 'this->))
@@ -662,10 +659,6 @@
 
 (define-syntax (->*2 stx)
   (cond
-    [(->2*-arity-check-only->? stx)
-     =>
-     (λ (n)
-       #`(build-arity-check-only-> #,n))]
     [(->*2-handled? stx)
      (define this->* (gensym 'this->*))
      (define-values (man-dom man-dom-kwds man-lets
@@ -825,18 +818,6 @@
                           rngs post-cond
                           plus-one-arity-function
                           chaperone-constructor)]))
-
-(define (build-arity-check-only-> n)
-  (make-arity-check-only-> n
-                           (build-list n (λ (_) any/c))
-                           '() #f #f #f #f
-                           (λ args
-                             (error 'arity-check-only->-plus-one-arity-function
-                                    "this function should not be called ~s" args))
-                           (λ args
-                             (error 'arity-check-only->-chaperone-constructor
-                                    "this function should not be called ~s" args))
-                           n))
 
 (define (dynamic->* #:mandatory-domain-contracts [mandatory-domain-contracts '()]
                     #:optional-domain-contracts [optional-domain-contracts '()]
@@ -1244,34 +1225,6 @@
        (not (base->-pre? that))
        (not (base->-post? this))
        (not (base->-post? that))))
-
-(define-struct (arity-check-only-> base->) (arity)
-  #:property
-  prop:flat-contract
-  (build-flat-contract-property
-   #:name base->-name 
-   #:first-order
-   (λ (ctc)
-     (define arity (arity-check-only->-arity ctc))
-     (λ (val)
-       (arrow:procedure-arity-includes?/no-kwds val arity)))
-   #:late-neg-projection
-   (λ (ctc)
-     (define arity (arity-check-only->-arity ctc))
-     (λ (blame)
-       (λ (val neg-party)
-         (if (arrow:procedure-arity-includes?/no-kwds val arity)
-             val
-             (raise-blame-error
-              blame #:missing-party neg-party val
-              '(expected: "a procedure that accepts ~a non-keyword argument~a"
-                          given: "~e")
-              arity
-              (if (= arity 1) "" "s")
-              val)))))
-   #:stronger ->-stronger
-   #:generate ->-generate
-   #:exercise ->-exercise))
      
 (define-struct (-> base->) ()
   #:property
