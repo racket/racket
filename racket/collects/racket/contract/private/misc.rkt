@@ -1447,6 +1447,7 @@
 (define-struct any/c ()
   #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
+  #:property prop:any/c #f
   #:property prop:flat-contract
   (build-flat-contract-property
    #:late-neg-projection (λ (ctc) any/c-blame->neg-party-fn)

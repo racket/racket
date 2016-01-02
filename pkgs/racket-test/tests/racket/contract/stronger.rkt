@@ -10,6 +10,7 @@
   (contract-eval '(define-contract-struct triple (a b c)))
   
   (ctest #t contract-stronger? any/c any/c)
+  (ctest #t contract-stronger? integer? any/c)
   (ctest #t contract-stronger? (integer-in 0 4) (integer-in 0 4))
   (ctest #t contract-stronger? (integer-in 1 3) (integer-in 0 4))
   (ctest #f contract-stronger? (integer-in 0 4) (integer-in 1 3))
@@ -74,6 +75,8 @@
   (ctest #t contract-stronger? (-> #:x (>=/c 3) (>=/c 3)) (-> #:x (>=/c 3) (>=/c 2)))
   (ctest #t contract-stronger? (-> any/c any/c any) (-> any/c any/c any))
   (ctest #f contract-stronger? (-> any/c any/c any/c any) (-> any/c any/c any))
+  (ctest #t contract-stronger? (-> (-> any/c) integer?) (-> (-> any/c) any/c))
+  (ctest #f contract-stronger? (-> (-> any/c) any/c) (-> (-> any/c) integer?))
   
   (let ([c (contract-eval '(->* () () any))])
     (test #t (contract-eval 'contract-stronger?) c c))
@@ -89,8 +92,8 @@
          (->* () integer? #:post (zero? (random 10))) 
          (->* () integer? #:post (zero? (random 10))))
   
-  (ctest #t contract-stronger? (or/c null? any/c) (or/c null? any/c))
-  (ctest #f contract-stronger? (or/c null? any/c) (or/c boolean? any/c))
+  (ctest #t contract-stronger? (or/c null? #f) (or/c null? #f))
+  (ctest #f contract-stronger? (or/c null? #f) (or/c boolean? #f))
   (ctest #t contract-stronger? (or/c null? boolean?) (or/c null? boolean?))
   (ctest #t contract-stronger? (or/c null? boolean?) (or/c boolean? null?))
   (ctest #t contract-stronger? 
@@ -111,8 +114,8 @@
   (ctest #f contract-stronger? (-> (or/c #f number?)) (-> number?))
   (ctest #f contract-stronger? (-> number? any/c) (-> (or/c #f number?) any/c))
 
-  (ctest #t contract-stronger? (first-or/c null? any/c) (first-or/c null? any/c))
-  (ctest #f contract-stronger? (first-or/c null? any/c) (first-or/c boolean? any/c))
+  (ctest #t contract-stronger? (first-or/c null? #f) (first-or/c null? #f))
+  (ctest #f contract-stronger? (first-or/c null? #f) (first-or/c boolean? #f))
   (ctest #t contract-stronger? (first-or/c null? boolean?) (first-or/c null? boolean?))
   (ctest #t contract-stronger? (first-or/c null? boolean?) (first-or/c boolean? null?))
   (ctest #t contract-stronger? 
@@ -133,13 +136,13 @@
   (ctest #f contract-stronger? (-> (first-or/c #f number?)) (-> number?))
   (ctest #f contract-stronger? (-> number? any/c) (-> (first-or/c #f number?) any/c))
 
-  (ctest #t contract-stronger? (first-or/c null? any/c) (or/c null? any/c))
-  (ctest #f contract-stronger? (first-or/c null? any/c) (or/c boolean? any/c))
+  (ctest #t contract-stronger? (first-or/c null? #f) (or/c null? #f))
+  (ctest #f contract-stronger? (first-or/c null? #f) (or/c boolean? #f))
   (ctest #t contract-stronger? (first-or/c null? boolean?) (or/c null? boolean?))
   (ctest #t contract-stronger? (first-or/c null? boolean?) (or/c boolean? null?))
 
-  (ctest #t contract-stronger? (or/c null? any/c) (first-or/c null? any/c))
-  (ctest #f contract-stronger? (or/c null? any/c) (first-or/c boolean? any/c))
+  (ctest #t contract-stronger? (or/c null? #f) (first-or/c null? #f))
+  (ctest #f contract-stronger? (or/c null? #f) (first-or/c boolean? #f))
   (ctest #t contract-stronger? (or/c null? boolean?) (first-or/c null? boolean?))
   (ctest #t contract-stronger? (or/c null? boolean?) (first-or/c boolean? null?))
   
@@ -176,7 +179,7 @@
         (or/c (-> string?) (-> integer? integer?))
         (or/c (-> string?) (-> any/c integer?)))
   (ctest #f contract-stronger?
-        (or/c (-> string?) (-> any/c integer?))
+        (or/c (-> string?) (-> #f integer?))
         (or/c (-> string?) (-> integer? integer?)))
   (ctest #t contract-stronger?
         (or/c (-> string?) (-> integer? integer?) integer? boolean?)

@@ -52,6 +52,8 @@
          prop:arrow-contract-get-info
          (struct-out arrow-contract-info)
 
+         prop:any/c prop:any/c?
+         
          build-context)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,6 +126,7 @@
        [(stronger? a b)
         ;; optimistically try skip some of the more complex work below
         #t]
+       [(and (flat-contract-struct? a) (prop:any/c? b)) #t] ;; is the flat-check needed here?
        [(let ([th (trail)])
           (and th
                (for/or ([(a2 bs-h) (in-hash th)])
@@ -530,6 +533,11 @@
                 prop:recursive-contract?
                 prop:recursive-contract-unroll)
   (make-struct-type-property 'prop:recursive-contract))
+
+;; this property's value isn't looked at; it is just a signal
+;; that the contract accepts any value
+(define-values (prop:any/c prop:any/c? prop:get-any/c)
+  (make-struct-type-property 'prop:any/c))
 
 ;; get-info : (-> ctc arrow-contract-info?)
 (define-values (prop:arrow-contract prop:arrow-contract? prop:arrow-contract-get-info)
