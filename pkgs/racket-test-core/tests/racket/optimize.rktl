@@ -9,7 +9,10 @@
          racket/unsafe/undefined
          racket/unsafe/ops
          compiler/zo-parse
-         compiler/zo-marshal)
+         compiler/zo-marshal
+         ;; `random` from `racket/base is a Racket function, which makes
+         ;; compilation less predictable than a primitive
+         (only-in '#%kernel random))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
