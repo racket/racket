@@ -163,7 +163,7 @@
         name
         (contract-eval #:test-case-name name
                        `(with-handlers ((exn:fail:syntax?
-                                         (lambda (x) (and (regexp-match ,reg (exn-message x)) #t))))
+                                         (lambda (x) (regexp-match? ,reg (exn-message x)))))
                           (eval ',exp)))))
 
 ;; test/spec-passed : symbol sexp -> void
@@ -281,7 +281,7 @@
                   (define (good-thing? l)
                     (for/or ([x (in-list l)])
                       (and (symbol? x)
-                           (regexp-match #rx"contract" (symbol->string x)))))
+                           (regexp-match? #rx"contract" (symbol->string x)))))
                   (cond
                     [(and (pair? body)
                           (eq? (car body) 'require)

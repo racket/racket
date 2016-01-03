@@ -338,19 +338,9 @@
     [(hash-weak? table) (weak-custom-set (custom-set-spec s) table)]
     [else (mutable-custom-set (custom-set-spec s) table)]))
 
-(define (chaperone-hash-set s
-                            ref-proc
-                            add-proc
-                            remove-proc
-                            .
-                            clear-proc+props)
-  (define-values (clear-proc prop-args)
-    (check-chap/imp-args #f
-                         s
-                         ref-proc
-                         add-proc
-                         remove-proc
-                         clear-proc+props))
+(define (chaperone-hash-set s inject-proc add-proc shrink-proc extract-proc . clear-proc+props)
+  (define-values (clear-proc equal-key-proc prop-args)
+    (check-chap/imp-args #f s inject-proc add-proc shrink-proc extract-proc clear-proc+props))
   (define (check-it who original new)
     (unless (chaperone-of? new original)
       (error 'chaperone-hash-set
@@ -358,104 +348,61 @@
              who original new))
     new)
 
-  (define (chaperone-hash-set-hash-ref-proc hash key)
-    (values (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key))
-            (λ (hash key val) val)))
-  (define (chaperone-hash-set-hash-set-proc hash key val)
-    (values (check-it 'add-proc key (add-proc (update-custom-set-table s hash) key))
-            val))
-  (define (chaperone-hash-set-hash-remove-proc hash key)
-    (check-it 'remove-proc key (remove-proc (update-custom-set-table s hash) key)))
-  (define (chaperone-hash-set-hash-key-proc hash key)
-    (check-it 'ref-proc key (ref-proc (update-custom-set-table s hash) key)))
-  (define chaperone-hash-set-hash-clear-proc
-    (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash)))))
   (add-impersonator-properties
-   (if ref-proc
+   (if inject-proc
        (chap-or-imp-hash-set s
                              chaperone-hash
-                             chaperone-hash-set-hash-ref-proc
-                             chaperone-hash-set-hash-set-proc
-                             chaperone-hash-set-hash-remove-proc
-                             chaperone-hash-set-hash-key-proc
-                             chaperone-hash-set-hash-clear-proc)
+                             (λ (ele) (check-it 'in-proc ele (inject-proc s ele)))
+                             (λ (ele) (check-it 'add-proc ele (add-proc s ele)))
+                             (λ (ele) (check-it 'shrink-proc ele (shrink-proc s ele)))
+                             (λ (ele) (check-it 'extract-proc ele (extract-proc s ele)))
+                             (and clear-proc (λ () (clear-proc s)))
+                             (λ (ele) (equal-key-proc s ele)))
        s)
    prop-args))
 
-(define (chap-or-imp-hash-set s
-                              chaperone-or-impersonate-hash
-                              c/i-hash-set-hash-ref-proc
-                              c/i-hash-set-hash-set-proc
-                              c/i-hash-set-hash-remove-proc
-                              c/i-hash-set-hash-key-proc
-                              c/i-hash-set-hash-clear-proc)
-  (define rewrap
-    (and (custom-set-spec s)
-         (custom-spec-wrap (custom-set-spec s))))
-  (update-custom-set-table
-   s
-   (if (custom-set-spec s)
-       (chaperone-or-impersonate-hash
-        (custom-set-table s)
-        (λ (hash key)
-          (define-values (a b)
-            (c/i-hash-set-hash-ref-proc hash (custom-elem-contents key)))
-          (values (rewrap a) b))
-        (λ (hash key val)
-          (define-values (a b)
-            (c/i-hash-set-hash-set-proc hash (custom-elem-contents key) val))
-          (values (rewrap a) b))
-        (λ (hash key)
-          (rewrap (c/i-hash-set-hash-remove-proc hash (custom-elem-contents key))))
-        (λ (hash key)
-          (rewrap (c/i-hash-set-hash-key-proc hash (custom-elem-contents key))))
-        c/i-hash-set-hash-clear-proc)
-       (chaperone-or-impersonate-hash
-        (custom-set-table s)
-        c/i-hash-set-hash-ref-proc
-        c/i-hash-set-hash-set-proc
-        c/i-hash-set-hash-remove-proc
-        c/i-hash-set-hash-key-proc
-        c/i-hash-set-hash-clear-proc))))
-
-(define (impersonate-hash-set s
-                              ref-proc
-                              add-proc
-                              remove-proc
-                              .
-                              clear-proc+props)
-  (define-values (clear-proc prop-args)
-    (check-chap/imp-args #t
-                         s
-                         ref-proc
-                         add-proc
-                         remove-proc
-                         clear-proc+props))
-  (define impersonate-hash-set-hash-ref-proc
-    (λ (hash key) (values (ref-proc (update-custom-set-table s hash) key)
-                               (λ (hash key val) val))))
-  (define impersonate-hash-set-hash-set-proc
-    (λ (hash key val) (values (add-proc (update-custom-set-table s hash) key) val)))
-  (define impersonate-hash-set-hash-remove-proc
-    (λ (hash key) (remove-proc (update-custom-set-table s hash) key)))
-  (define impersonate-hash-set-hash-key-proc
-    (λ (hash key) (ref-proc (update-custom-set-table s hash) key)))
-  (define impersonate-hash-set-hash-clear-proc
-    (and clear-proc (λ (hash) (clear-proc (update-custom-set-table s hash)))))
-  (define rewrap
-    (and (custom-set-spec s)
-         (custom-spec-wrap (custom-set-spec s))))
+(define (impersonate-hash-set s inject-proc add-proc shrink-proc extract-proc . clear-proc+props)
+  (define-values (clear-proc equal-key-proc prop-args)
+    (check-chap/imp-args #t s inject-proc add-proc shrink-proc extract-proc clear-proc+props))
   (add-impersonator-properties
-   (if ref-proc
+   (if inject-proc
        (chap-or-imp-hash-set s
                              impersonate-hash
-                             impersonate-hash-set-hash-ref-proc
-                             impersonate-hash-set-hash-set-proc
-                             impersonate-hash-set-hash-remove-proc
-                             impersonate-hash-set-hash-key-proc
-                             impersonate-hash-set-hash-clear-proc)
+                             (λ (ele) (inject-proc s ele))
+                             (λ (ele) (add-proc s ele))
+                             (λ (ele) (shrink-proc s ele))
+                             (λ (ele) (extract-proc s ele))
+                             (and clear-proc (λ () (clear-proc s)))
+                             (λ (ele) (equal-key-proc s ele)))
        s)
    prop-args))
+
+(define (chap-or-imp-hash-set s c-or-i-hash
+                              inject-proc add-proc shrink-proc extract-proc
+                              clear-proc equal-key-proc)
+  (update-custom-set-table
+   s
+   (cond
+     [(custom-set-spec s)
+      (define rewrap (custom-spec-wrap (custom-set-spec s)))
+      (c-or-i-hash
+       (custom-set-table s)
+       (λ (hash key) (values (rewrap (inject-proc (custom-elem-contents key)))
+                             (λ (hash key val) val)))
+       (λ (hash key val) (values (rewrap (add-proc (custom-elem-contents key))) val))
+       (λ (hash key) (rewrap (shrink-proc (custom-elem-contents key))))
+       (λ (hash key) (rewrap (extract-proc (custom-elem-contents key))))
+       (λ (hash) (clear-proc))
+       (λ (hash key) (rewrap (equal-key-proc (custom-elem-contents key)))))]
+     [else
+      (c-or-i-hash
+       (custom-set-table s)
+       (λ (hash key) (values (inject-proc key) (λ (hash key val) val)))
+       (λ (hash key val) (values (add-proc key) val))
+       (λ (hash key) (shrink-proc key))
+       (λ (hash key) (extract-proc key))
+       (λ (hash) (clear-proc))
+       (λ (hash key) (equal-key-proc key)))])))
 
 (define (add-impersonator-properties without-props prop-args)
   (cond
@@ -467,12 +414,9 @@
     [else
      (apply chaperone-struct without-props struct:mutable-custom-set prop-args)]))
 
-(define (check-chap/imp-args impersonate?
-                             s
-                             ref-proc
-                             add-proc
-                             remove-proc
-                             clear-proc+props)
+(define (check-chap/imp-args impersonate? s
+                             inject-proc add-proc shrink-proc extract-proc
+                             clear-proc+equal-key-proc+props)
   (define who (if impersonate? 'impersonate-hash-set 'chaperone-hash-set))
   (unless (if impersonate?
               (or (set-mutable? s) (set-weak? s))
@@ -483,55 +427,69 @@
                    (if impersonate?
                        '(or/c set-mutable? set-weak?)
                        '(or/c set? set-mutable? set-weak?)))
-           0 s ref-proc add-proc clear-proc+props))
-  (unless (or (not ref-proc)
-              (and (procedure? ref-proc)
-                   (procedure-arity-includes? ref-proc 2)))
+           0 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (or (not inject-proc)
+              (and (procedure? inject-proc)
+                   (procedure-arity-includes? inject-proc 2)))
     (apply raise-argument-error
            who
            "(or/c #f (procedure-arity-includes/c 2))"
-           1 s ref-proc add-proc clear-proc+props))
+           1 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
   (unless (or (not add-proc)
               (and (procedure? add-proc)
                    (procedure-arity-includes? add-proc 2)))
     (apply raise-argument-error
            who
            "(or/c #f (procedure-arity-includes/c 2))"
-           2 s ref-proc add-proc clear-proc+props))
-  (unless (or (not remove-proc)
-              (and (procedure? remove-proc)
-                   (procedure-arity-includes? remove-proc 2)))
+           2 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (or (not shrink-proc)
+              (and (procedure? shrink-proc)
+                   (procedure-arity-includes? shrink-proc 2)))
     (apply raise-argument-error
            who
            "(or/c #f (procedure-arity-includes/c 2))"
-           3 s ref-proc add-proc clear-proc+props))
-  (when (or (not ref-proc) (not add-proc) (not remove-proc))
-    (unless (and (not ref-proc) (not add-proc) (not remove-proc))
-      (raise-arguments-error who
-                             "if one of ref-proc, add-proc, or remove-proc is #f, they must all be"
-                             "ref-proc" ref-proc
-                             "add-proc" add-proc
-                             "remove-proc" remove-proc)))
-  (unless (null? clear-proc+props)
-    (unless (or (not (car clear-proc+props))
-                (and (procedure? (car clear-proc+props))
-                     (procedure-arity-includes? (car clear-proc+props) 1))
-                (impersonator-property? (car clear-proc+props)))
+           3 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (or (not extract-proc)
+              (and (procedure? extract-proc)
+                   (procedure-arity-includes? extract-proc 2)))
+    (apply raise-argument-error
+           who
+           "(or/c #f (procedure-arity-includes/c 2))"
+           4 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (null? clear-proc+equal-key-proc+props)
+    (unless (or (not (car clear-proc+equal-key-proc+props))
+                (and (procedure? (car clear-proc+equal-key-proc+props))
+                     (procedure-arity-includes? (car clear-proc+equal-key-proc+props) 1))
+                (impersonator-property? (car clear-proc+equal-key-proc+props)))
       (apply raise-argument-error
              who
              (format "~s" `(or/c #f
                                  (procedure-arity-includes/c 1)
                                  impersonator-property?))
-             4
-             s ref-proc add-proc clear-proc+props)))
-  (define-values (supplied-clear-proc? clear-proc args)
+             5
+             s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props)))
+  (define-values (num-supplied-procs clear-proc equal-key-proc args)
     (cond
-      [(null? clear-proc+props) (values #f #f '())]
-      [(impersonator-property? (car clear-proc+props)) (values #f #f clear-proc+props)]
+      [(null? clear-proc+equal-key-proc+props) (values 0 #f #f '())]
+      [(impersonator-property? (car clear-proc+equal-key-proc+props))
+       (values 0 #f #f clear-proc+equal-key-proc+props)]
       [else
-       (values #t
-               (car clear-proc+props)
-               (cdr clear-proc+props))]))
+       (define clear-proc (car clear-proc+equal-key-proc+props))
+       (define equal-key-proc+props (cdr clear-proc+equal-key-proc+props))
+       (cond
+         [(null? equal-key-proc+props) (values 1 clear-proc #f '())]
+         [(impersonator-property? (car equal-key-proc+props))
+          (values 1 clear-proc #f equal-key-proc+props)]
+         [else
+          (values 2 clear-proc (car equal-key-proc+props) (cdr equal-key-proc+props))])]))
+  (unless (or (not equal-key-proc)
+              (and (procedure? equal-key-proc)
+                   (procedure-arity-includes? equal-key-proc 2)))
+    (apply raise-argument-error
+           who
+           "(or/c #f (procedure-arity-includes/c 1))"
+           (+ 4 num-supplied-procs)
+           s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
   (for ([ele (in-list args)]
         [i (in-naturals)]
         #:when (even? i))
@@ -539,14 +497,31 @@
       (apply raise-argument-error
              who
              "impersonator-property?"
-             (+ i (if supplied-clear-proc? 1 0) 4)
-             s ref-proc add-proc clear-proc+props)))
-  (unless ref-proc
+             (+ i num-supplied-procs 4)
+             s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props)))
+  (when (or (not inject-proc) (not add-proc) (not shrink-proc) (not extract-proc))
+    (unless (and (not inject-proc) (not add-proc) (not shrink-proc) (not extract-proc)
+                 (not equal-key-proc) (not clear-proc))
+      (raise-arguments-error who
+                             (string-append
+                              "if one of inject-proc, add-proc, shrink-proc"
+                              " or extract-proc is #f, they must all be and the"
+                              " equal-key-proc and clear-proc must also be")
+                             "inject-proc" inject-proc
+                             "add-proc" add-proc
+                             "shrink-proc" shrink-proc
+                             "extract-proc" extract-proc
+                             "equal-key-proc" equal-key-proc
+                             "clear-proc" clear-proc)))
+  (unless inject-proc
     (when (null? args)
       (raise-arguments-error
        who
-       "when ref-proc, add-proc, and remove-proc are #f, at least one property must be supplied")))
-  (values clear-proc args))
+       "when inject-proc, add-proc, shrink-proc, and extract-proc are #f,"
+       " at least one property must be supplied")))
+  (values clear-proc
+          (or equal-key-proc (λ (s e) e))
+          args))
   
 (define (set-check-compatible name s1 s2)
   (define spec (custom-set-spec s1))

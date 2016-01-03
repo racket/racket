@@ -2,7 +2,8 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace 'racket/unit 'racket/class 'racket/contract)])
+                (make-basic-contract-namespace 'racket/unit 'racket/class
+                                               'racket/contract 'racket/set)])
   
   (ctest #f value-contract #f)
   (ctest #f value-contract (λ (x) x))
@@ -50,7 +51,7 @@
    '(let ()
       (define c (-> integer? integer?))
       (define f (contract c (λ (x) x) 'pos 'neg))
-      ;; opt/c version doesn't yet have blame, so 
+      ;; opt/c version doesn't yet have blame, so
       ;; we require only that when there is blame, that the blame is right.
       (or (and (has-contract? f)
                (equal? c (value-contract f)))
@@ -58,13 +59,49 @@
    #t)
   
   (test/spec-passed/result
-   'value-blame
+   'value-blame.1
    '(let ()
       (define f
         (contract (-> integer? integer?) (λ (x) x) 'pos 'neg))
-      ;; opt/c version doesn't yet have blame, so 
+      ;; opt/c version doesn't yet have blame, so
       ;; we require only that when there is blame, that the blame is right.
       (or (and (has-blame? f)
                (blame-positive (value-blame f)))
           'pos))
-   'pos))
+   'pos)
+
+  (test/spec-passed/result
+   'value-blame.2
+   '(let ()
+      (define f
+        (contract (-> integer? integer?) (λ (x) x) 'pos 'neg))
+      ;; opt/c version doesn't yet have blame, so
+      ;; we require only that when there is blame, that the blame is right.
+      (or (and (has-blame? f)
+               (blame-negative (value-blame f)))
+          'neg))
+   'neg)
+
+  (test/spec-passed/result
+   'value-blame.3
+   '(let ()
+      (define f
+        (contract (set/c (-> integer? integer?) #:kind 'mutable) (mutable-set) 'pos 'neg))
+      ;; opt/c version doesn't yet have blame, so
+      ;; we require only that when there is blame, that the blame is right.
+      (or (and (has-blame? f)
+               (blame-positive (value-blame f)))
+          'pos))
+   'pos)
+
+  (test/spec-passed/result
+   'value-blame.4
+   '(let ()
+      (define f
+        (contract (set/c (-> integer? integer?) #:kind 'mutable) (mutable-set) 'pos 'neg))
+      ;; opt/c version doesn't yet have blame, so
+      ;; we require only that when there is blame, that the blame is right.
+      (or (and (has-blame? f)
+               (blame-negative (value-blame f)))
+          'neg))
+   'neg))

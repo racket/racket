@@ -2384,10 +2384,17 @@ is expected to be the contract on the value).
 @defthing[impersonator-prop:blame impersonator-property?]
 )]{
 These properties attach a blame information to the protected structure,
-chaperone, or impersonator value.  The function @racket[blame-contract?]
+chaperone, or impersonator value.  The function @racket[has-blame?]
 returns @racket[#t] for values that have one of these properties, and
-@racket[blame-contract] extracts the value from the property (which
-is expected to be the blame record for the contract on the value).
+@racket[value-blame] extracts the value from the property.
+
+The value is expected to be the blame record for the contract on the value or
+a @racket[cons]-pair of a blame record with a missing party and the missing
+party. The @racket[value-blame] function reassembles the arguments of the pair
+into a complete blame record using @racket[blame-add-missing-party]. If
+the value has one of the properties, but the value is not a blame object
+or a pair whose @racket[car] position is a blame object, then @racket[has-blame?]
+returns @racket[#f] but @racket[value-blame] returns @racket[#f].
 }
 
 @deftogether[(

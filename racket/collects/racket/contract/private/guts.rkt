@@ -139,11 +139,17 @@
       (has-impersonator-prop:blame? v)))
 
 (define (value-blame v)
+  (define bv
+    (cond
+      [(has-prop:blame? v)
+       (get-prop:blame v)]
+      [(has-impersonator-prop:blame? v)
+       (get-impersonator-prop:blame v)]
+      [else #f]))
   (cond
-    [(has-prop:blame? v)
-     (get-prop:blame v)]
-    [(has-impersonator-prop:blame? v)
-     (get-impersonator-prop:blame v)]
+    [(and (pair? bv) (blame? (car bv)))
+     (blame-add-missing-party (car bv) (cdr bv))]
+    [(blame? bv) bv]
     [else #f]))
 
 (define-values (prop:contracted has-prop:contracted? get-prop:contracted)

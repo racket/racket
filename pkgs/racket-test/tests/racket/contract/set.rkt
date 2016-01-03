@@ -3,6 +3,59 @@
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 'racket/set)])
+  
+  (test/spec-passed/result
+   'set/c.0.1
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"^set/c:" (exn-message x)))])
+      (set/c '(not a contract)))
+   #t)
+  (test/spec-passed/result
+   'set/c.0.2
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"^set/c:" (exn-message x)))])
+      (set/c any/c #:cmp 'not-a-comparison))
+   #t)
+  (test/spec-passed/result
+   'set/c.0.3
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"^set/c:" (exn-message x)))])
+      (set/c any/c #:kind 'not-a-kind-of-set))
+   #t)
+  (test/spec-passed/result
+   'set/c.0.4
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"^set/c:" (exn-message x)))])
+      (set/c (-> integer? string?) #:cmp 'eq))
+   #t)
+  (test/spec-passed/result
+   'set/c.0.5
+   '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"^set/c:" (exn-message x)))])
+      (set/c (-> integer? string?) #:cmp 'eqv))
+   #t)
+  
+  ;; check dont-care defaults
+  (test/spec-passed/result
+   'set/c.0.6
+   '(set? (contract (set/c any/c) (set) 'pos 'neg))
+   #t)
+  (test/spec-passed/result
+   'set/c.0.7
+   '(set? (contract (set/c any/c) (seteq) 'pos 'neg))
+   #t)
+  
+  (test/pos-blame 'set/c.0.8
+                  '(contract (set/c any/c) (mutable-set) 'pos 'neg)) ; check immutable default
+  (test/pos-blame 'set/c.0.9
+                  '(contract (set/c any/c #:cmp 'eq) (set) 'pos 'neg))
+  (test/pos-blame 'set/c.0.10
+                  '(contract (set/c any/c #:kind 'mutable) (set) 'pos 'neg))
+  (test/pos-blame 'set/c.0.11
+                  '(contract (set/c string? #:kind 'immutable) (set 1) 'pos 'neg))
+  (test/pos-blame 'set/c.0.12
+                  '(contract (set/c string?) (set 1) 'pos 'neg))
+  (test/pos-blame 'set/c.0.13
+                  '(set-first (contract (set/c string?) (set 1) 'pos 'neg)))
+  (test/neg-blame 'set/c.0.14
+                  '(set-add! (contract (set/c string? #:kind 'mutable) (mutable-set) 'pos 'neg)
+                             1))
+  
 
   (test/spec-passed/result
    'set/c1
@@ -236,7 +289,7 @@
        add1)))
 
   (test/spec-passed
-   'set/c30
+   'set/c31
    '(let ()
       (define-custom-set-types set2 equal?)
       (set-add
@@ -244,5 +297,25 @@
                  (make-immutable-set2)
                  'pos 'neg)
        add1)))
+
+  (test/pos-blame
+   'set/c32
+   '(let ()
+      (define-custom-set-types set2 equal? (λ (p) (p #f) 0))
+      (set-add (contract (set/c (-> integer? boolean?)
+                                #:equal-key/c (-> integer? boolean?))
+                         (make-immutable-set2)
+                         'pos 'neg)
+               (λ (x) (zero? (+ x 1))))))
+
+  (test/spec-passed
+   'set/c33
+   '(let ()
+      (define-custom-set-types set2 equal? (λ (p) (p 0) 0))
+      (set-add (contract (set/c (-> integer? boolean?)
+                                #:equal-key/c (-> integer? boolean?))
+                         (make-immutable-set2)
+                         'pos 'neg)
+               (λ (x) (zero? (+ x 1))))))
   
   )

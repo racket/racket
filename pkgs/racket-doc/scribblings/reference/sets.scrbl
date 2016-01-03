@@ -206,7 +206,8 @@ named by the @racket[sym]s.
                  'immutable]
                 [#:lazy? lazy? any/c
                  (not (and (equal? kind 'immutable)
-                           (flat-contract? elem/c)))])
+                           (flat-contract? elem/c)))]
+                [#:equal-key/c equal-key/c contract? any/c])
          contract?]{
 
   Constructs a contract that recognizes sets whose elements match
@@ -243,9 +244,13 @@ named by the @racket[sym]s.
  @racket['mutable], @racket['weak], or
  @racket['mutable-or-weak]) and @racket[lazy?] is @racket[#f], then the elements
  are checked both immediately and when they are accessed from the set.
+
+ The @racket[equal-key/c] contract is used when values are passed to the comparison
+ and hashing functions used internally.
  
- The result contract will be a @tech{flat contract} when @racket[elem/c] is a @tech{flat
- contract}, @racket[lazy?] is @racket[#f], and @racket[kind] is @racket['immutable].
+ The result contract will be a @tech{flat contract} when @racket[elem/c]
+ and @racket[equal-key/c] are both @tech{flat contracts},
+ @racket[lazy?] is @racket[#f], and @racket[kind] is @racket['immutable].
  The result will be a @tech{chaperone contract} when @racket[elem/c] is a
  @tech{chaperone contract}.
 }
@@ -716,59 +721,73 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
-@defproc[(impersonate-hash-set [st mutable-set?]
-                               [ref-proc (or/c #f (-> set? any/c any/c))]
+@defproc[(impersonate-hash-set [st (or/c mutable-set? weak-set?)]
+                               [inject-proc (or/c #f (-> set? any/c any/c))]
                                [add-proc (or/c #f (-> set? any/c any/c))]
-                               [remove-proc (or/c #f (-> set? any/c any/c))]
+                               [shrink-proc (or/c #f (-> set? any/c any/c))]
+                               [extract-proc (or/c #f (-> set? any/c any/c))]
                                [clear-proc (or/c #f (-> set? any)) #f]
+                               [equal-key-proc (or/c #f (-> set? any/c any/c)) #f]
                                [prop impersonator-property?]
                                [prop-val any/c] ... ...)
-         (and/c set? impersonator?)]{
- Impersonates @racket[st], redirecting via the given procedures.
+         (and/c (or/c mutable-set? weak-set?) impersonator?)]{
+ Impersonates @racket[st], redirecting various set operations via the given procedures.
 
- The @racket[ref-proc] procedure
- is called whenever an element is extracted from @racket[st]. Its first argument
- is the set and its second argument is the element being extracted. The
- result of @racket[ref-proc] is used in place of the extracted argument.
+ The @racket[inject-proc] procedure
+ is called whenever an element is temporarily put into the set for the purposes
+ of comparing it with other elements that may already be in the set. For example,
+ when evaluating @racket[(set-member? s e)], @racket[e] will be passed to the
+ @racket[inject-proc] before comparing it with other elements of @racket[s].
 
- The @racket[add-proc] procedure is called whenever an element is added to @racket[st].
- Its first argument is the set and its second argument is the element being
- added. The result of the procedure is the one actually added to the set.
+ The @racket[add-proc] procedure is called when adding an element to a set, e.g.,
+ via @racket[set-add] or @racket[set-add!]. The result of the @racket[add-proc] is
+ stored in the set.
 
- The @racket[remove-proc] procedure is called whenever an element is removed
- from @racket[st]. Its first argument is the set and its second argument is the
- element being removed. The result of the procedure is the element that actually
- gets removed from the set.
-
- If any of the @racket[ref-proc], @racket[add-proc], or @racket[remove-proc] arguments
- is @racket[#f], then all three must be and there must be at least one property supplied.
- In that case, a more efficient chaperone wrapper is created.
+ The @racket[shrink-proc] procedure is called when building a new set with
+ one fewer element. For example, when evaluating @racket[(set-remove s e)]
+ or @racket[(set-remove! s e)],
+ an element is removed from a set, e.g.,
+ via @racket[set-remove] or @racket[set-remove!]. The result of the @racket[shrink-proc]
+ is the element actually removed from the set.
  
- If @racket[clear-proc] is not @racket[#f], it must accept @racket[set] as
- an argument and is result is ignored. The fact that @racket[clear-proc]
- returns (as opposed to raising an exception or otherwise escaping) grants the
- capability to remove all elements from @racket[st].
- If @racket[clear-proc] is @racket[#f], then
- @racket[set-clear] or @racket[set-clear!] on the impersonated set
- is implemented using @racket[custom-set-first], @racket[custom-set-rest]
- and @racket[set-remove] or @racket[set-remove!].
+ The @racket[extract-proc] procedure is called when an element is pulled out of
+ a set, e.g., by @racket[set-first]. The result of the @racket[extract-proc] is
+ the element actually produced by from the set.
 
+ The @racket[clear-proc] is called by @racket[set-clear] and @racket[set-clear!]
+ and if it returns (as opposed to escaping, perhaps via raising an exception),
+ the clearing operation is permitted. Its result is ignored. If @racket[clear-proc]
+ is @racket[#f], then clearing is done element by element (via calls into the other
+ supplied procedures).
+
+ The @racket[equal-key-proc] is called when an element's hash code is needed of when an
+ element is supplied to the underlying equality in the set. The result of
+ @racket[equal-key-proc] is used when computing the hash or comparing for equality.
+ 
+ If any of the @racket[inject-proc], @racket[add-proc], @racket[shrink-proc], or
+ @racket[extract-proc] arguments are  @racket[#f], then they all must be @racket[#f],
+ the @racket[clear-proc] and @racket[equal-key-proc] must also be @racket[#f],
+ and there must be at least one property supplied.
+ 
  Pairs of @racket[prop] and @racket[prop-val] (the number of arguments to
  @racket[impersonate-hash-set] must be odd) add @tech{impersonator properties} or
  override impersonator property values of @racket[st].
 }
 
-@defproc[(chaperone-hash-set [st (or/c set? mutable-set?)]
-                             [ref-proc (or/c #f (-> set? any/c any/c))]
+@defproc[(chaperone-hash-set [st (or/c set? mutable-set? weak-set?)]
+                             [inject-proc (or/c #f (-> set? any/c any/c))]
                              [add-proc (or/c #f (-> set? any/c any/c))]
-                             [remove-proc (or/c #f (-> set? any/c any/c))]
+                             [shrink-proc (or/c #f (-> set? any/c any/c))]
+                             [extract-proc (or/c #f (-> set? any/c any/c))]
                              [clear-proc (or/c #f (-> set? any)) #f]
+                             [equal-key-proc (or/c #f (-> set? any/c any/c)) #f]
                              [prop impersonator-property?]
                              [prop-val any/c] ... ...)
-         (and/c set? chaperone?)]{
+         (and/c (or/c set? mutable-set? weak-set?) chaperone?)]{
  Chaperones @racket[st]. Like @racket[impersonate-hash-set] but with
- the constraints that the results of the @racket[ref-proc],
- @racket[add-proc], and @racket[remove-proc] must be
+ the constraints that the results of the @racket[inject-proc],
+ @racket[add-proc], @racket[shrink-proc], @racket[extract-proc], and
+ @racket[equal-key-proc] must be
  @racket[chaperone-of?] their second arguments. Also, the input
  may be an @racket[immutable?] set.
 }

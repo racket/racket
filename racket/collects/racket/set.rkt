@@ -50,10 +50,13 @@
          set/c)
 
 (define/subexpression-pos-prop/name
-  real-set/c-name (set/c elem/c
+  real-set/c-name (set/c _elem/c
+                         #:equal-key/c [_equal-key/c any/c]
                          #:cmp [cmp 'dont-care]
                          #:kind [kind 'immutable]
-                         #:lazy? [_lazy? (lazy-default kind elem/c)])
+                         #:lazy? [_lazy? (lazy-default kind _elem/c)])
+  (define elem/c (coerce-contract 'set/c _elem/c))
+  (define equal-key/c (coerce-contract 'set/c _equal-key/c))
   (define lazy? (and _lazy? #t))
   (define cmp/c
     (case cmp
@@ -80,7 +83,7 @@
        (raise-arguments-error
         'set/c
         "element contract must be a flat contract for eqv? and eq?-based sets"
-        "element contract" (contract-name elem/c)
+        "element contract" elem/c
         "#:cmp option" cmp))]
     [else
      (unless (chaperone-contract? elem/c)
@@ -88,14 +91,15 @@
   (cond
     [(and (eq? kind 'immutable)
           (not lazy?)
-          (flat-contract? elem/c))
-     (flat-set-contract elem/c cmp kind lazy?)]
+          (flat-contract? elem/c)
+          (flat-contract? equal-key/c))
+     (flat-set-contract elem/c equal-key/c cmp kind lazy?)]
     [(chaperone-contract? elem/c)
-     (chaperone-set-contract elem/c cmp kind lazy?)]
+     (chaperone-set-contract elem/c equal-key/c cmp kind lazy?)]
     [else
-     (impersonator-set-contract elem/c cmp kind lazy?)]))
+     (impersonator-set-contract elem/c equal-key/c cmp kind lazy?)]))
 
-(struct set-contract [elem/c cmp kind lazy?])
+(struct set-contract [elem/c equal-key/c cmp kind lazy?])
 
 (define (lazy-default kind elem/c)
   (not (and (equal? kind 'immutable)
@@ -177,25 +181,45 @@
 
 (define (hash-set-late-neg-projection ctc chaperone-ctc?)
   (define elem/c (set-contract-elem/c ctc))
+  (define equal-key/c (set-contract-equal-key/c ctc))
   (define cmp (set-contract-cmp ctc))
   (define kind (set-contract-kind ctc))
   (define late-neg-ele-proj (contract-late-neg-projection elem/c))
+  (define late-neg-equal-key-proj (contract-late-neg-projection equal-key/c))
   (define lazy? (set-contract-lazy? ctc))
   (λ (blame)
+    (define ele-neg-blame (blame-add-element-context blame #t))
     (define late-neg-pos-proj (late-neg-ele-proj (blame-add-element-context blame #f)))
-    (define late-neg-neg-proj (late-neg-ele-proj (blame-add-element-context blame #t)))
+    (define late-neg-neg-proj (late-neg-ele-proj ele-neg-blame))
+    (define late-neg-equal-key-pos-proj (late-neg-equal-key-proj ele-neg-blame))
     (cond
       [lazy?
        (λ (val neg-party)
-        (set-contract-check cmp kind blame neg-party val)
-        (define (pos-interpose val ele) (late-neg-pos-proj ele neg-party))
-         (chaperone-hash-set
-          val
-          pos-interpose
-          (λ (val ele) (late-neg-neg-proj ele neg-party))
-          pos-interpose
-          impersonator-prop:contracted ctc
-          impersonator-prop:blame (cons blame neg-party)))]
+         (set-contract-check cmp kind blame neg-party val)
+         (define (pos-interpose val ele) (late-neg-pos-proj ele neg-party))
+         (cond
+           [(set? val)
+            (chaperone-hash-set
+             val
+             (λ (val ele) ele)
+             (λ (val ele) ele)
+             (λ (val ele) ele)
+             (λ (val ele) (late-neg-pos-proj ele neg-party))
+             (λ (val) (void))
+             (λ (val ele) (late-neg-equal-key-pos-proj ele neg-party))
+             impersonator-prop:contracted ctc
+             impersonator-prop:blame (cons blame neg-party))]
+           [else
+            (chaperone-hash-set
+             val
+             (λ (val ele) ele)
+             (λ (val ele) (late-neg-neg-proj ele neg-party))
+             (λ (val ele) ele)
+             (λ (val ele) (late-neg-pos-proj ele neg-party))
+             (λ (val) (void))
+             (λ (val ele) (late-neg-equal-key-pos-proj ele neg-party))
+             impersonator-prop:contracted ctc
+             impersonator-prop:blame (cons blame neg-party))]))]
       [else
        (λ (val neg-party)
          (set-contract-check cmp kind blame neg-party val)
@@ -209,15 +233,17 @@
              impersonator-prop:contracted ctc
              impersonator-prop:blame (cons blame neg-party))]
            [else
-            (define (pos-interpose val ele) (late-neg-pos-proj ele neg-party))
             (for ([ele (in-list (set->list val))])
               (set-remove! val ele)
               (set-add! val (late-neg-pos-proj ele neg-party)))
             (chaperone-hash-set
              val
-             pos-interpose
+             (λ (val ele) ele)
              (λ (val ele) (late-neg-neg-proj ele neg-party))
-             pos-interpose
+             (λ (val ele) ele)
+             (λ (val ele) (late-neg-pos-proj ele neg-party))
+             (λ (val) (void))
+             (λ (val ele) (late-neg-equal-key-pos-proj ele neg-party))
              impersonator-prop:contracted ctc
              impersonator-prop:blame (cons blame neg-party))]))])))
 
@@ -313,6 +339,10 @@
          (for/and ([e (in-set x)])
            (elem-passes? e)))))
 
+;; since the equal-key/c must be a flat contract
+;; in order for the entire set/c to be a flat contract,
+;; then we know that it doesn't have any negative blame
+;; and thus can never fail; so this projection ignores it.
 (define (flat-set-contract-late-neg-projection ctc)
   (define elem/c (set-contract-elem/c ctc))
   (define cmp (set-contract-cmp ctc))
