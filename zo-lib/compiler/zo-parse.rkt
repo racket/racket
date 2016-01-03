@@ -1175,7 +1175,7 @@
        (struct-copy prefix p [stxs (map walk s)])]
       [(req rs _)
        (struct-copy req p
-                    [reqs (map walk rs)])]
+                    [reqs (walk rs)])]
       [(? mod?)
        (struct-copy mod p
                     [prefix (walk (mod-prefix p))]
@@ -1298,53 +1298,56 @@
                  [_ (error 'decode-wrap "bad shift")]))))
 
 (define (decode-scope s ht)
-  (hash-ref ht s
-            (lambda ()
-              (unless (encoded-scope? s)
-                (error 'decode-wrap "bad scope: ~e" s))
-              (define v (encoded-scope-content s))
-              (define kind
-                (match v
-                  [(? number?) v]
-                  [(cons (? number?) _)
-                   (car v)]
-                  [else (error 'decode-wrap "bad scope")]))
-              (define sc (scope (encoded-scope-relative-id s)
-                                (case kind
-                                  [(0 1) 'module]
-                                  [(2) 'macro]
-                                  [(3) 'local]
-                                  [(4) 'intdef]
-                                  [else 'use-site])
-                                null
-                                null
-                                #f))
-              (hash-set! ht s sc)
-              (unless (number? v)
-                (define-values (bulk-bindings end)
-                  (let loop ([l (cdr v)] [bulk-bindings null])
-                    (cond
-                     [(pair? l)
-                      (loop (cdr l) (cons (list (decode-scope-set (caar l) ht)
-                                                (decode-bulk-import (cdar l) ht))
-                                          bulk-bindings))]
-                     [else (values (reverse bulk-bindings) l)])))
-                (set-scope-bulk-bindings! sc bulk-bindings)
-                (unless (and (vector? end)
-                             (even? (vector-length end)))
-                  (error 'decode-wrap "bad scope"))
-                (define bindings
-                  (let loop ([i 0])
-                    (cond
-                     [(= i (vector-length end)) null]
-                     [else
-                      (append (for/list ([p (in-list (vector-ref end (add1 i)))])
-                                (list (vector-ref end i)
-                                      (decode-scope-set (car p) ht)
-                                      (decode-binding (cdr p) ht)))
-                              (loop (+ i 2)))])))
-                (set-scope-bindings! sc bindings))
-              sc)))
+  (or
+   (and (eq? s root-scope)
+        s)
+   (hash-ref ht s
+             (lambda ()
+               (unless (encoded-scope? s)
+                 (error 'decode-wrap "bad scope: ~e" s))
+               (define v (encoded-scope-content s))
+               (define kind
+                 (match v
+                   [(? number?) v]
+                   [(cons (? number?) _)
+                    (car v)]
+                   [else (error 'decode-wrap "bad scope")]))
+               (define sc (scope (encoded-scope-relative-id s)
+                                 (case kind
+                                   [(0 1) 'module]
+                                   [(2) 'macro]
+                                   [(3) 'local]
+                                   [(4) 'intdef]
+                                   [else 'use-site])
+                                 null
+                                 null
+                                 #f))
+               (hash-set! ht s sc)
+               (unless (number? v)
+                 (define-values (bulk-bindings end)
+                   (let loop ([l (cdr v)] [bulk-bindings null])
+                     (cond
+                      [(pair? l)
+                       (loop (cdr l) (cons (list (decode-scope-set (caar l) ht)
+                                                 (decode-bulk-import (cdar l) ht))
+                                           bulk-bindings))]
+                      [else (values (reverse bulk-bindings) l)])))
+                 (set-scope-bulk-bindings! sc bulk-bindings)
+                 (unless (and (vector? end)
+                              (even? (vector-length end)))
+                   (error 'decode-wrap "bad scope"))
+                 (define bindings
+                   (let loop ([i 0])
+                     (cond
+                      [(= i (vector-length end)) null]
+                      [else
+                       (append (for/list ([p (in-list (vector-ref end (add1 i)))])
+                                 (list (vector-ref end i)
+                                       (decode-scope-set (car p) ht)
+                                       (decode-binding (cdr p) ht)))
+                               (loop (+ i 2)))])))
+                 (set-scope-bindings! sc bindings))
+               sc))))
 
 (define (decode-scope-set l ht)
   (decode-map decode-scope l ht))
