@@ -705,7 +705,6 @@
        [(struct splice (forms))
         (out-marshaled splice-sequence-type-num forms out)]
        [(struct req (reqs dummy))
-        (error "cannot handle top-level `require', yet")
         (out-marshaled require-form-type-num (cons dummy reqs) out)]
        [(struct toplevel (depth pos const? ready?))
         (out-marshaled toplevel-type-num
