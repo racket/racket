@@ -41,7 +41,8 @@
 
 (define (sequence-length s)
   (unless (sequence? s) (raise-argument-error 'sequence-length "sequence?" s))
-  (cond [(vector? s) (vector-length s)]
+  (cond [(list? s) (length s)]
+        [(vector? s) (vector-length s)]
         [(hash? s) (hash-count s)]
         [else
          (for/fold ([c 0]) ([i (in-values*-sequence s)])
