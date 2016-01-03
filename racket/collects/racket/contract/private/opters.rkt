@@ -6,6 +6,7 @@
          "blame.rkt"
          "arrow.rkt"
          "arrow-val-first.rkt"
+         "arrow-higher-order.rkt"
          "orc.rkt"
          (for-syntax racket/base
                      syntax/stx
@@ -619,6 +620,10 @@
                      #`(list 'values #,@rng-names))))))
   
   (define (opt/arrow-any-ctc doms)
+    (define all-anys? (for/and ([d (in-list doms)])
+                        (syntax-case d (any/c)
+                          [any/c #t]
+                          [anything-else #f])))
     (let*-values ([(dom-vars) (generate-temporaries doms)]
                   [(next-doms lifts-doms superlifts-doms partials-doms stronger-ribs-dom dom-chaperone? names)
                    (let loop ([vars dom-vars]
@@ -662,14 +667,20 @@
                      ((dom-arg ...) dom-vars)
                      ((next-dom ...) next-doms)
                      (dom-len (length dom-vars)))
-         (syntax (begin
-                   (check-procedure val #f dom-len 0 '() '() #|keywords|# blame #f)
-                   (chaperone-procedure
-                    val
-                    (case-lambda
-                      [(dom-arg ...)  (values next-dom ...)]
-                      [args 
-                       (bad-number-of-arguments blame val args dom-len)])))))
+         (define do-chap-stx
+           #'(begin
+               (check-procedure val #f dom-len 0 '() '() #|keywords|# blame #f)
+               (chaperone-procedure
+                val
+                (case-lambda
+                  [(dom-arg ...)  (values next-dom ...)]
+                  [args
+                   (bad-number-of-arguments blame val args dom-len)]))))
+         (if all-anys?
+             #`(if (procedure-arity-exactly/no-kwds val #,(length doms))
+                   val
+                   #,do-chap-stx)
+             do-chap-stx))
        lifts-doms
        superlifts-doms
        partials-doms
@@ -682,25 +693,6 @@
                'any))))
   
   (syntax-case* stx (-> values any any/c boolean?) module-or-top-identifier=?
-    [(_ any/c ... any)
-     (with-syntax ([n (- (length (syntax->list stx)) 2)])
-       (build-optres
-        #:exp
-        (with-syntax ((val (opt/info-val opt/info))
-                      (ctc (opt/info-contract opt/info))
-                      (blame (opt/info-blame opt/info)))
-          (syntax (if (and (procedure? val) 
-                           (procedure-arity-includes? val n))
-                      val
-                      (raise-flat-arrow-err blame val n))))
-        #:lifts null
-        #:superlifts null
-        #:partials null
-        #:flat #'(and (procedure? val) (procedure-arity-includes? val n))
-        #:opt #f
-        #:stronger-ribs null
-        #:chaperone #t
-        #:name #`'(-> #,@(build-list (syntax-e #'n) (λ (x) 'any/c)) any)))]
     [(_ any/c boolean?)
      (predicate/c-optres opt/info #f)]
     [(_ dom ... (values rng ...))

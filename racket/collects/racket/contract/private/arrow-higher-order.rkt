@@ -11,6 +11,7 @@
          (prefix-in arrow: "arrow.rkt"))
 
 (provide (for-syntax build-chaperone-constructor/real)
+         procedure-arity-exactly/no-kwds
          ->-proj
          check-pre-cond
          check-post-cond

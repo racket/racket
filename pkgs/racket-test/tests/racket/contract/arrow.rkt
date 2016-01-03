@@ -323,6 +323,19 @@
    'contract-any/c-arrow5
    '((contract (-> any/c any) (λ (x [y 1]) x) 'pos 'neg) 1 2))
   
+  (test/spec-passed/result
+   'contract-any/c-arrow6
+   '(let ([f (λ (x) x)])
+      (eq? f (contract (-> any/c any) f 'pos 'neg)))
+   #t)
+
+  (test/spec-passed/result
+   'contract-any/c-arrow7
+   '(let ([f (λ (x [y 1]) x)])
+      (eq? f (contract (-> any/c any) f 'pos 'neg)))
+   #f)
+  
+  
   (test/spec-passed
    'contract-arrow-all-kwds2
    '((contract (-> #:a string? void?)
