@@ -274,7 +274,7 @@ binding, constructor, etc.}
   The @racket[lang-info] value specifies an optional module path that
   provides information about the module's implementation language.
 
-  The @racket[internal-module-context] value describes the lexical
+  The @racket[internal-context] value describes the lexical
   context of the body of the module.  This value is used by
   @racket[module->namespace].  A @racket[#f] value means that the
   context is unavailable or empty.  A @racket[#t] value means that the
