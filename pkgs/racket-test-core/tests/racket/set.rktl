@@ -651,7 +651,7 @@
           s)
         (λ (s) (set-first s))
         #f)
-  (test '((add 0) (remove 0))
+  (test '((add 0) (extract 0))
         counting-chaperone
         (let ()
           (define-custom-set-types set2 equal? equal-hash-code)
@@ -675,7 +675,7 @@
           (make-immutable-set2))
         (λ (s) (set-add s 1))
         #f)
-  (test '((remove 1))
+  (test '((extract 1))
         counting-chaperone
         (let ()
           (define-custom-set-types set2 equal? equal-hash-code)
@@ -684,7 +684,7 @@
           s)
         (λ (s) (set-first s))
         #f)
-  (test '((remove 1))
+  (test '((extract 1))
         counting-chaperone
         (let ()
           (define-custom-set-types set2 equal? equal-hash-code)
