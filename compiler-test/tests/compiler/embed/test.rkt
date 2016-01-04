@@ -354,6 +354,14 @@
 	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me23.rkt")))
     (try-exe (mk-dest mred?) "1\n2\n" mred?)
 
+    ;; raco exe on a module with `place`
+    (system+ raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me28.rkt")))
+    (try-exe (mk-dest mred?) "28\n" mred?)
+
     ;; raco exe --launcher
     (system+ raco
              "exe"
@@ -656,13 +664,13 @@
   
 ;; ----------------------------------------
 
-(try-basic)
-(try-mzc)
-(try-extension)
-(try-gracket)
-(try-reader)
-(try-planet)
-(try-*sl)
+;(try-basic)
+;(try-mzc)
+;(try-extension)
+;(try-gracket)
+;(try-reader)
+;(try-planet)
+;(try-*sl)
 (try-source)
 
 ;; ----------------------------------------
