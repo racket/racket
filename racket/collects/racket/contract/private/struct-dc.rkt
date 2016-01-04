@@ -289,7 +289,7 @@
     (λ (v neg-party)
       (cond
         [(and (struct/c-imp-prop-pred? v)
-              (contract-stronger? (struct/c-imp-prop-get v) ctc))
+              (contract-struct-stronger? (struct/c-imp-prop-get v) ctc))
          v]
         [else
          (unless (pred? v)
@@ -653,8 +653,8 @@
                           (immutable? that-subcontract))
                      (and (lazy-immutable? this-subcontract)
                           (lazy-immutable? that-subcontract)))
-                 (contract-stronger? (indep-ctc this-subcontract)
-                                     (indep-ctc that-subcontract)))]
+                 (contract-struct-stronger? (indep-ctc this-subcontract)
+                                            (indep-ctc that-subcontract)))]
            [(and (dep? this-subcontract)
                  (dep? that-subcontract))
             (and (or (dep-mutable? this-subcontract)

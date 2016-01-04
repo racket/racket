@@ -662,16 +662,16 @@
 (define (->-stronger? this that)
   (and (base->? that)
        (= (length (base->-doms/c that)) (length (base->-doms/c this)))
-       (andmap contract-stronger? (base->-doms/c that) (base->-doms/c this))
+       (andmap contract-struct-stronger? (base->-doms/c that) (base->-doms/c this))
        
        (equal? (base->-mandatory-kwds this) (base->-mandatory-kwds that))
-       (andmap contract-stronger? (base->-mandatory-kwds/c that) (base->-mandatory-kwds/c this))
+       (andmap contract-struct-stronger? (base->-mandatory-kwds/c that) (base->-mandatory-kwds/c this))
        
        (equal? (base->-optional-kwds this) (base->-optional-kwds that))
-       (andmap contract-stronger? (base->-optional-kwds/c that) (base->-optional-kwds/c this))
+       (andmap contract-struct-stronger? (base->-optional-kwds/c that) (base->-optional-kwds/c this))
        
        (= (length (base->-rngs/c that)) (length (base->-rngs/c this)))
-       (andmap contract-stronger? (base->-rngs/c this) (base->-rngs/c that))
+       (andmap contract-struct-stronger? (base->-rngs/c this) (base->-rngs/c that))
        
        ;; these procs might be based on state; only 
        ;; allow stronger to be true when #:pre and

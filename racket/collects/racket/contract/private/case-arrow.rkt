@@ -333,6 +333,6 @@
                  (= (length fst) (length ps))
                  (for/and ([c (in-list ps)]
                            [fst-c (in-list fst)])
-                   (and (contract-stronger? c fst-c)
-                        (contract-stronger? fst-c c)))))
+                   (and (contract-struct-stronger? c fst-c)
+                        (contract-struct-stronger? fst-c c)))))
           fst)]))

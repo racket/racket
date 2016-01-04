@@ -99,11 +99,11 @@
      (cond
        [(and (equal? this-immutable #t)
              (equal? that-immutable #t))
-        (contract-stronger? this-content-r that-content-r)]
+        (contract-struct-stronger? this-content-r that-content-r)]
        [(or (equal? that-immutable 'dont-care)
             (equal? this-immutable that-immutable))
-        (and (contract-stronger? this-content-r that-content-r)
-             (contract-stronger? that-content-w this-content-w))]
+        (and (contract-struct-stronger? this-content-r that-content-r)
+             (contract-struct-stronger? that-content-w this-content-w))]
        [else #f])]
     [else #f]))
 

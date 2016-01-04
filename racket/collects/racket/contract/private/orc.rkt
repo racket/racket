@@ -94,14 +94,10 @@
 
 (define (single-or/c-stronger? this that)
   (or (and (single-or/c? that)
-           (contract-stronger? (single-or/c-ho-ctc this)
-                               (single-or/c-ho-ctc that))
-           (let ([this-ctcs (single-or/c-flat-ctcs this)]
-                 [that-ctcs (single-or/c-flat-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger?
-                          this-ctcs
-                          that-ctcs))))
+           (contract-struct-stronger? (single-or/c-ho-ctc this)
+                                      (single-or/c-ho-ctc that))
+           (pairwise-stronger-contracts? (single-or/c-flat-ctcs this)
+                                         (single-or/c-flat-ctcs that)))
       (generic-or/c-stronger? this that)))
 
 (define (generic-or/c-stronger? this that)
@@ -111,7 +107,7 @@
        that-sub-ctcs
        (for/and ([this-sub-ctc (in-list this-sub-ctcs)])
          (for/or ([that-sub-ctc (in-list that-sub-ctcs)])
-           (contract-stronger? this-sub-ctc that-sub-ctc)))))
+           (contract-struct-stronger? this-sub-ctc that-sub-ctc)))))
 
 (define (or/c-sub-contracts ctc)
   (cond
@@ -304,14 +300,10 @@
 
 (define (multi-or/c-stronger? this that)
   (or (and (multi-or/c? that)
-           (let ([this-ctcs (multi-or/c-ho-ctcs this)]
-                 [that-ctcs (multi-or/c-ho-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger? this-ctcs that-ctcs)))
-           (let ([this-ctcs (multi-or/c-flat-ctcs this)]
-                 [that-ctcs (multi-or/c-flat-ctcs that)])
-             (and (= (length this-ctcs) (length that-ctcs))
-                  (andmap contract-stronger? this-ctcs that-ctcs))))
+           (pairwise-stronger-contracts? (multi-or/c-ho-ctcs this)
+                                         (multi-or/c-ho-ctcs that))
+           (pairwise-stronger-contracts? (multi-or/c-flat-ctcs this)
+                                         (multi-or/c-flat-ctcs that)))
       (generic-or/c-stronger? this that)))
 
 (define (mult-or/c-list-contract? c)
@@ -373,7 +365,7 @@
                   [(and (<= (length this-ctcs) (length that-ctcs))
                         (for/and ([this-ctc (in-list this-ctcs)]
                                   [that-ctc (in-list that-ctcs)])
-                          (contract-stronger? this-ctc that-ctc)))
+                          (contract-struct-stronger? this-ctc that-ctc)))
                    #t]
                   [(and (andmap (λ (x) (or (eq-contract? x) (equal-contract? x))) this-ctcs)
                         (andmap (λ (x) (or (eq-contract? x) (equal-contract? x))) that-ctcs))
@@ -522,7 +514,7 @@
          [(equal? this that) #t]
          [(recur?) 
           (parameterize ([recur? #f])
-            (contract-stronger? (get-flat-rec-me this) that))]
+            (contract-struct-stronger? (get-flat-rec-me this) that))]
          [else #f])))
    #:first-order
    (λ (ctc) 

@@ -168,14 +168,14 @@
      (cond
        [(and (equal? this-immutable #t)
              (equal? that-immutable #t))
-        (and (contract-stronger? this-dom that-dom)
-             (contract-stronger? this-rng that-rng))]
+        (and (contract-struct-stronger? this-dom that-dom)
+             (contract-struct-stronger? this-rng that-rng))]
        [(or (equal? that-immutable 'dont-care)
             (equal? this-immutable that-immutable))
-        (and (contract-stronger? this-dom that-dom)
-             (contract-stronger? that-dom this-dom)
-             (contract-stronger? this-rng that-rng)
-             (contract-stronger? that-rng this-rng))]
+        (and (contract-struct-stronger? this-dom that-dom)
+             (contract-struct-stronger? that-dom this-dom)
+             (contract-struct-stronger? this-rng that-rng)
+             (contract-struct-stronger? that-rng this-rng))]
        [else #f])]
     [else #f]))
 

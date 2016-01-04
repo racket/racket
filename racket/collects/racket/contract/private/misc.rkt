@@ -56,7 +56,9 @@
          random-any/c
 
          rename-contract
-         if/c)
+         if/c
+
+         pairwise-stronger-contracts?)
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()
@@ -132,12 +134,8 @@
 
 (define (and-stronger? this that)
   (and (base-and/c? that)
-       (let ([this-ctcs (base-and/c-ctcs this)]
-             [that-ctcs (base-and/c-ctcs that)])
-         (and (= (length this-ctcs) (length that-ctcs))
-              (andmap contract-stronger?
-                      this-ctcs
-                      that-ctcs)))))
+       (pairwise-stronger-contracts? (base-and/c-ctcs this)
+                                     (base-and/c-ctcs that))))
 
 (define (and/c-generate? ctc)
   (cond
@@ -206,21 +204,21 @@
 (define (and/c-check-nonneg ctc pred)
   (define sub-contracts (base-and/c-ctcs ctc))
   (cond
-    [(are-stronger-contracts? (list pred (not/c negative?))
-                              sub-contracts)
+    [(pairwise-stronger-contracts? (list pred (not/c negative?))
+                                   sub-contracts)
      (define go (hash-ref predicate-generator-table pred))
      (λ (fuel)
        (λ ()
          (abs (go fuel))))]
     [else #f]))
 
-(define (are-stronger-contracts? c1s c2s)
+(define (pairwise-stronger-contracts? c1s c2s)
   (let loop ([c1s c1s]
              [c2s c2s])
     (cond
       [(and (null? c1s) (null? c2s)) #t]
       [(and (pair? c1s) (pair? c2s))
-       (and (contract-stronger? (car c1s) (car c2s))
+       (and (contract-struct-stronger? (car c1s) (car c2s))
             (loop (cdr c1s) (cdr c2s)))]
       [else #f])))
 
@@ -576,13 +574,13 @@
             [(pe-listof-ctc? this) (pe-listof-ctc? that)]
             [(im-listof-ctc? this) (im-listof-ctc? that)]
             [else #t])
-          (contract-stronger? this-elem that-elem))]
+          (contract-struct-stronger? this-elem that-elem))]
     [(the-cons/c? that)
      (define hd-ctc (the-cons/c-hd-ctc that))
      (define tl-ctc (the-cons/c-tl-ctc that))
      (and (ne-listof-ctc? this)
-          (contract-stronger? this-elem hd-ctc)
-          (contract-stronger? (ne->pe-ctc this) tl-ctc))]
+          (contract-struct-stronger? this-elem hd-ctc)
+          (contract-struct-stronger? (ne->pe-ctc this) tl-ctc))]
     [else #f]))
            
 (define (raise-listof-blame-error blame val empty-ok? neg-party)
@@ -828,16 +826,16 @@
     [(the-cons/c? that)
      (define that-hd (the-cons/c-hd-ctc that))
      (define that-tl (the-cons/c-tl-ctc that))
-     (and (contract-stronger? this-hd that-hd)
-          (contract-stronger? this-tl that-tl))]
+     (and (contract-struct-stronger? this-hd that-hd)
+          (contract-struct-stronger? this-tl that-tl))]
     [(ne-listof-ctc? that)
      (define elem-ctc (listof-ctc-elem-c that))
-     (and (contract-stronger? this-hd elem-ctc)
-          (contract-stronger? this-tl (ne->pe-ctc that)))]
+     (and (contract-struct-stronger? this-hd elem-ctc)
+          (contract-struct-stronger? this-tl (ne->pe-ctc that)))]
     [(pe-listof-ctc? that)
      (define elem-ctc (listof-ctc-elem-c that))
-     (and (contract-stronger? this-hd elem-ctc)
-          (contract-stronger? this-tl that))]
+     (and (contract-struct-stronger? this-hd elem-ctc)
+          (contract-struct-stronger? this-tl that))]
     [else #f]))
 
 
@@ -1109,18 +1107,15 @@
 (define (list/c-stronger this that)
   (cond
     [(generic-list/c? that)
-     (and (= (length (generic-list/c-args this))
-             (length (generic-list/c-args that)))
-          (for/and ([this-s (in-list (generic-list/c-args this))]
-                    [that-s (in-list (generic-list/c-args this))])
-            (contract-stronger? this-s that-s)))]
+     (pairwise-stronger-contracts? (generic-list/c-args this)
+                                   (generic-list/c-args that))]
     [(listof-ctc? that)
      (define that-elem-ctc (listof-ctc-elem-c that))
      (define this-elem-ctcs (generic-list/c-args this))
      (and (or (pair? this-elem-ctcs)
               (pe-listof-ctc? that))
           (for/and ([this-s (in-list this-elem-ctcs)])
-            (contract-stronger? this-s that-elem-ctc)))]
+            (contract-struct-stronger? this-s that-elem-ctc)))]
     [else #f]))
 
 (struct generic-list/c (args))
@@ -1250,8 +1245,8 @@
    #:name (λ (ctc) (build-compound-type-name 'syntax/c (syntax-ctc-ctc ctc)))
    #:stronger (λ (this that)
                 (and (syntax-ctc? that)
-                     (contract-stronger? (syntax-ctc-ctc this)
-                                         (syntax-ctc-ctc that))))
+                     (contract-struct-stronger? (syntax-ctc-ctc this)
+                                                (syntax-ctc-ctc that))))
    #:first-order (λ (ctc) 
                    (define ? (flat-contract-predicate (syntax-ctc-ctc ctc)))
                    (λ (v)
@@ -1299,8 +1294,8 @@
 
 (define (promise-ctc-stronger? this that)
   (and (promise-base-ctc? that)
-       (contract-stronger? (promise-base-ctc-ctc this)
-                           (promise-base-ctc-ctc that))))
+       (contract-struct-stronger? (promise-base-ctc-ctc this)
+                                  (promise-base-ctc-ctc that))))
 
 (struct promise-base-ctc (ctc))
 (struct chaperone-promise-ctc promise-base-ctc ()
@@ -1380,10 +1375,10 @@
    #:stronger
    (λ (this that)
       (and (parameter/c? that)
-           (and (contract-stronger? (parameter/c-out this)
-                                    (parameter/c-out that))
-                (contract-stronger? (parameter/c-in that)
-                                    (parameter/c-in this)))))))
+           (and (contract-struct-stronger? (parameter/c-out this)
+                                           (parameter/c-out that))
+                (contract-struct-stronger? (parameter/c-in that)
+                                           (parameter/c-in this)))))))
 
 (define-struct procedure-arity-includes/c (n)
   #:property prop:custom-write custom-write-property-proc
@@ -1558,10 +1553,10 @@
 
 (define (prompt-tag/c-stronger? this that)
   (and (base-prompt-tag/c? that)
-       (andmap (λ (this that) (contract-stronger? this that))
+       (andmap (λ (this that) (contract-struct-stronger? this that))
                (base-prompt-tag/c-ctcs this)
                (base-prompt-tag/c-ctcs that))
-       (andmap (λ (this that) (contract-stronger? this that))
+       (andmap (λ (this that) (contract-struct-stronger? this that))
                (base-prompt-tag/c-call/ccs this)
                (base-prompt-tag/c-call/ccs that))))
 
@@ -1626,7 +1621,7 @@
 
 (define (continuation-mark-key/c-stronger? this that)
   (and (base-continuation-mark-key/c? that)
-       (contract-stronger?
+       (contract-struct-stronger?
         (base-continuation-mark-key/c-ctc this)
         (base-continuation-mark-key/c-ctc that))))
 
@@ -1707,9 +1702,7 @@
 (define (evt/c-stronger? this that)
   (define this-ctcs (chaperone-evt/c-ctcs this))
   (define that-ctcs (chaperone-evt/c-ctcs that))
-  (and (= (length this-ctcs) (that-ctcs))
-       (for/and ([this this-ctcs] [that that-ctcs])
-         (contract-stronger? this that))))
+  (pairwise-stronger-contracts? this-ctcs that-ctcs))
 
 ;; ctcs - Listof<Contract>
 (define-struct chaperone-evt/c (ctcs)
@@ -1760,7 +1753,7 @@
 
 (define (channel/c-stronger? this that)
   (and (base-channel/c? that)
-       (contract-stronger?
+       (contract-struct-stronger?
         (base-channel/c-ctc this)
         (base-channel/c-ctc that))))
 
@@ -1869,7 +1862,7 @@
         (flat-named-contract name (flat-contract-predicate ctc))
         (let* ([make-contract (if (chaperone-contract? ctc) make-chaperone-contract make-contract)])
           (define (stronger? this other)
-            (contract-stronger? ctc other))
+            (contract-struct-stronger? ctc other))
           (make-contract #:name name
                          #:late-neg-projection (get/build-late-neg-projection ctc)
                          #:first-order (contract-first-order ctc)

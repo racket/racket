@@ -444,6 +444,9 @@
   (ctest #f contract-stronger?
          (implementation?/c one-interface<%>)
          (implementation?/c another-interface<%>))
+
+  (ctest #t contract-stronger? (evt/c integer?) (evt/c integer?))
+  (ctest #f contract-stronger? (evt/c integer?) (evt/c boolean?))
   
   ;; chances are, this predicate will accept "x", but
   ;; we don't want to consider it stronger, since it 

@@ -114,12 +114,12 @@
      (cond
        [(and (equal? this-immutable #t)
              (equal? that-immutable #t))
-        (contract-stronger? this-elem that-elem)]
+        (contract-struct-stronger? this-elem that-elem)]
        [else
         (and (or (equal? that-immutable 'dont-care)
                  (equal? this-immutable that-immutable))
-             (contract-stronger? this-elem that-elem)
-             (contract-stronger? that-elem this-elem))])]
+             (contract-struct-stronger? this-elem that-elem)
+             (contract-struct-stronger? that-elem this-elem))])]
     [else #f]))
 
 (define-struct (flat-vectorof base-vectorof) ()
@@ -325,14 +325,14 @@
         (and (= (length this-elems) (length that-elems))
              (for/and ([this-elem (in-list this-elems)]
                        [that-elem (in-list that-elems)])
-               (contract-stronger? this-elem that-elem)))]
+               (contract-struct-stronger? this-elem that-elem)))]
        [(or (equal? that-immutable 'dont-care)
             (equal? this-immutable that-immutable))
         (and (= (length this-elems) (length that-elems))
              (for/and ([this-elem (in-list this-elems)]
                        [that-elem (in-list that-elems)])
-               (and (contract-stronger? this-elem that-elem)
-                    (contract-stronger? that-elem this-elem))))]
+               (and (contract-struct-stronger? this-elem that-elem)
+                    (contract-struct-stronger? that-elem this-elem))))]
        [else #f])]
     [(base-vectorof? that)
      (define that-elem (base-vectorof-elem that))
@@ -341,12 +341,12 @@
        [(and (equal? this-immutable #t)
              (equal? that-immutable #t))
         (for/and ([this-elem (in-list this-elems)])
-          (contract-stronger? this-elem that-elem))]
+          (contract-struct-stronger? this-elem that-elem))]
        [(or (equal? that-immutable 'dont-care)
             (equal? this-immutable that-immutable))
         (for/and ([this-elem (in-list this-elems)])
-          (and (contract-stronger? this-elem that-elem)
-               (contract-stronger? that-elem this-elem)))]
+          (and (contract-struct-stronger? this-elem that-elem)
+               (contract-struct-stronger? that-elem this-elem)))]
        [else #f])]
     [else #f]))
 

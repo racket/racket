@@ -49,8 +49,8 @@
            (define instances
              (for/list ([var (in-list this-vars)])
                (this-barrier/c #t var)))
-           (contract-stronger? (apply (polymorphic-contract-body this) instances)
-                               (apply (polymorphic-contract-body that) instances))]
+           (contract-struct-stronger? (apply (polymorphic-contract-body this) instances)
+                                      (apply (polymorphic-contract-body that) instances))]
           [else #f])]
        [else #f]))
    #:late-neg-projection
