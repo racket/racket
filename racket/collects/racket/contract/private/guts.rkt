@@ -772,11 +772,24 @@
 (define contract-continuation-mark-key
   (make-continuation-mark-key 'contract))
 
-(define-syntax-rule (with-contract-continuation-mark payload code)
+;; Instrumentation strategy:
+;; - add instrumentation at entry points to the contract system:
+;;   - `contract` (`apply-contract`, really)
+;;   - `contract-out` (`do-partial-app`, really)
+;;   - all others go through one of the above
+;;   that instrumentation picks up "top-level" flat contracts (i.e., not part of
+;;   some higher-order contract) and the "eager" parts of higher-order contracts
+;; - add instrumentation inside chaperones/impersonators created by projections
+;;   that instrumentation picks up the deferred work of higher-order contracts
+;; - add instrumentation to `plus-one-arity-functions`
+;;   those perform checking, but don't rely on chaperones
+;;   they exist for -> and ->*, and are partially implemented for ->i
+;;   TODO once they're fully implemented for ->i, will need to instrument them
+(define-syntax-rule (with-contract-continuation-mark payload code ...)
   (begin
     ;; ;; When debugging a missing blame party error, turn this on, then run
     ;; ;; the contract test suite. It should find the problematic combinator.
     ;; (unless (or (pair? payload) (not (blame-missing-party? payload)))
     ;;   (error "internal error: missing blame party" payload))
-    (with-continuation-mark contract-continuation-mark-key payload code)))
-
+    (with-continuation-mark contract-continuation-mark-key payload
+                            (let () code ...))))

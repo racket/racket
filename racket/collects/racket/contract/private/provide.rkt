@@ -388,14 +388,19 @@
                            (λ () (contract-name ctc))
                            pos-module-source
                            #f #t))
-  (define neg-accepter ((p blme) val))
-  
-  ;; we don't have the negative blame here, but we
-  ;; expect only positive failures from this; do the
-  ;; check and then toss the results.
-  (neg-accepter 'incomplete-blame-from-provide.rkt)
-  
-  neg-accepter)
+  (with-contract-continuation-mark
+   (cons blme 'no-negative-party) ; we don't know the negative party yet
+   ;; computing neg-accepter may involve some front-loaded checking. instrument
+   (define neg-accepter ((p blme) val))
+
+   ;; check as much as we can while knowing only the
+   ;; contracted value (e.g., function arity)
+   ;; we don't have the negative blame here, but we
+   ;; expect only positive failures from this; do the
+   ;; check and then toss the results.
+   (neg-accepter 'incomplete-blame-from-provide.rkt)
+
+   neg-accepter))
 
 (define-for-syntax (true-provide/contract provide-stx just-check-errors? who)
   (syntax-case provide-stx ()

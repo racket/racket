@@ -74,8 +74,12 @@
                   (if clnp #f neg)
                   #t))
     (cond
-      [clnp ((clnp blame) v neg)]
-      [else (((contract-projection c) blame) v)])))
+      [clnp (with-contract-continuation-mark
+             (cons blame neg)
+             ((clnp blame) v neg))]
+      [else (with-contract-continuation-mark
+             blame
+             (((contract-projection c) blame) v))])))
 
 (define-syntax (invariant-assertion stx)
   (syntax-case stx ()
