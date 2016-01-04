@@ -3630,6 +3630,30 @@
            #f)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the type information is shifted in the
+;; right direction while inlining.
+;; The first example triggered a bug in 6.3.
+
+(test-comp '(let ([zz (lambda (x) (lambda (y) 0))])
+              (lambda (a b c)
+                ((zz (let ([loop (lambda () 0)]) loop)) (car a))
+                (list c (pair? c))))
+           '(let ([zz (lambda (x) (lambda (y) 0))])
+              (lambda (a b c)
+                ((zz (let ([loop (lambda () 0)]) loop)) (car a))
+                (list c #t)))
+           #f)
+
+(test-comp '(let ([zz (lambda (x) (lambda (y) 0))])
+              (lambda (a b c)
+                ((zz (let ([loop (lambda () 0)]) loop)) (car a))
+                (list a (pair? a))))
+           '(let ([zz (lambda (x) (lambda (y) 0))])
+              (lambda (a b c)
+                ((zz (let ([loop (lambda () 0)]) loop)) (car a))
+                (list a #t))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that the unused continuations are removed
 
 (test-comp '(call-with-current-continuation (lambda (ignored) 5))
@@ -4179,9 +4203,9 @@
     (test-values '(-100001.0t0 100001.0t0) tail)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check for corect fixpoint calculation when lifting
+;; Check for correct fixpoint calculation when lifting
 
-;; This test is especilly fragile. It's a minimized(?) variant
+;; This test is especially fragile. It's a minimized(?) variant
 ;; of PR 12910, where just enbought `with-continuation-mark's
 ;; are needed to thwart inlining, and enough functions are 
 ;; present in the right order to require enough fixpoint

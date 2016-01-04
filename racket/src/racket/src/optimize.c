@@ -1959,7 +1959,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
                              id_offset, orig_le, prev);
           if (id_offset) {
             optimize_info_done(sub_info, NULL);
-            merge_types(sub_info, info, id_offset);
+            merge_types(sub_info, info, -id_offset);
           }
           return le;
 	} else {
@@ -5922,7 +5922,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
             info->single_result = sub_info->single_result;
             info->preserves_marks = sub_info->preserves_marks;
             optimize_info_done(sub_info, NULL);
-            merge_types(sub_info, info, 1);
+            merge_types(sub_info, info, -1);
           }
 
           return form;
@@ -5948,7 +5948,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
           info->single_result = sub_info->single_result;
           info->preserves_marks = sub_info->preserves_marks;
           optimize_info_done(sub_info, NULL);
-          merge_types(sub_info, info, 1);
+          merge_types(sub_info, info, -1);
           return body;
 	}
       }
