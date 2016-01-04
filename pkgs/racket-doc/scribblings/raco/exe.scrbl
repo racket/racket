@@ -49,7 +49,10 @@ created executable. Such modules can be explicitly included using the
 @racket[define-runtime-path] to embed references to the run-time files
 in the executable; the files are then copied and packaged together
 with the executable when creating a distribution (as described in
-@secref["exe-dist"]).
+@secref["exe-dist"]). Finally, a submodule is included if its
+enclosing module is included and the submodule contains a
+sub-submodule named @racketidfont{declare-preserve-for-embedding}
+(where the implementation of the sub-submodule is ignored).
 
 Modules that are implemented directly by extensions---i.e., extensions
 that are automatically loaded from @racket[(build-path "compiled"
@@ -171,6 +174,9 @@ The @exec{raco exe} command accepts the following command-line flags:
  @item{@DFlag{vv} --- report progress more verbosely than @Flag{v}.}
 
 ]
+
+@history[#:changed "6.3.0.11" @elem{Added support for
+                                    @racketidfont{declare-preserve-for-embedding}.}]
 
 @; ----------------------------------------------------------------------
 

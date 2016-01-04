@@ -571,8 +571,9 @@
                                           (if (or (null? use-submods)
                                                   use-source?)
                                               null
-                                              (for/list ([m l]
-                                                         #:when (member (cadr (module-compiled-name m)) use-submods))
+                                              (for/list ([m (in-list l)]
+                                                         #:when (or (member (last (module-compiled-name m)) use-submods)
+                                                                    (declares-always-preserved? m)))
                                                 m)))]
                        [pre-submods (extract-submods (module-compiled-submodules renamed-code #t))]
                        [post-submods (extract-submods (module-compiled-submodules renamed-code #f))]
@@ -756,6 +757,12 @@
      (apply append
             (map accum-from-mod (module-compiled-submodules mod #f))))))
 
+(define (declares-always-preserved? m)
+  (for/or ([s (in-list
+               (append (module-compiled-submodules m #t)
+                       (module-compiled-submodules m #f)))])
+    (eq? (last (module-compiled-name s)) 'declare-preserve-for-embedding)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (compile-using-kernel e)
@@ -825,7 +832,7 @@
                     (namespace-module-registry (current-namespace))
                     (vector mapping-table library-table))
          (letrec-values ([(lookup)
-                          (lambda (name rel-to stx load? orig)
+                          (lambda (name rel-to stx load? for-submod? orig)
                             (if (not (module-path? name))
                                 ;; Bad input
                                 (orig name rel-to stx load?)
@@ -1018,8 +1025,17 @@
                                                   (if a3
                                                       ;; Have it:
                                                       (make-resolved-module-path (cdr a3))
-                                                      ;; Let default handler try:
-                                                      (orig name rel-to stx load?)))))))))))]
+                                                      (if (if for-submod?
+                                                              (if (pair? name)
+                                                                  (if (eq? (car name) 'quote)
+                                                                      (assq (cadr name) mapping-table)
+                                                                      #f)
+                                                                  #f)
+                                                              #f)
+                                                          ;; Report that we have mappings relative to `name`:
+                                                          (make-resolved-module-path (cadr name))
+                                                          ;; Let default handler try:
+                                                          (orig name rel-to stx load?))))))))))))]
                          [(embedded-resolver)
                           (case-lambda 
                            [(name from-namespace)
@@ -1055,20 +1071,26 @@
                               (void))
                             (orig name from-namespace)]
                            [(name rel-to stx load?)
-                            (lookup name rel-to stx load?
+                            (lookup name rel-to stx load? #f
                                     (lambda (name rel-to stx load?)
                                       ;; For a submodule, if we have a mapping for the base name,
                                       ;; then don't try the original handler.
                                       (let-values ([(base)
                                                     (if (pair? name)
                                                         (if (eq? (car name) 'submod)
-                                                            (lookup (cadr name) rel-to stx load? (lambda (n r s l?) #f))
+                                                            ;; Pass #t for `for-submod?`, which causes a
+                                                            ;; resolved module name to be returned for a quoted
+                                                            ;; module name if we have any relative mappings for it:
+                                                            (lookup (cadr name) rel-to stx load? #t (lambda (n r s l?) #f))
                                                             #f)
                                                         #f)])
                                         (if base
-                                            ;; don't chain to `orig':
-                                            (make-resolved-module-path
-                                             (list* 'submod (resolved-module-path-name base) (cddr name)))
+                                            ;; don't chain to `orig'; try `lookup` again with `(submod "." ...)`,
+                                            ;; and if that still fails, just construct a submodule path:
+                                            (lookup (cons 'submod (cons "." (cddr name))) base stx load? #f
+                                                    (lambda (name rel-to stx load?)
+                                                      (make-resolved-module-path
+                                                       (cons (resolved-module-path-name base) (cddr name)))))
                                             ;; chain to `orig':
                                             (orig name rel-to stx load?)))))])])
            (current-module-name-resolver embedded-resolver))))))

@@ -11,6 +11,7 @@
          racket/place/private/prop
          racket/private/streams
          racket/match
+         racket/runtime-path
 
 
          (for-syntax racket/base
@@ -186,7 +187,7 @@
   (syntax-case stx ()
     [(who ch body1 body ...)
      (if (eq? (syntax-local-context) 'module-begin)
-         ;; when a `place' form is the only thing in a module mody:
+         ;; when a `place' form is the only thing in a module body:
          #`(begin #,stx)
          ;; normal case:
          (let ()
@@ -200,10 +201,14 @@
                (string->symbol
                 (format "place-body-~a" place-body-counter))))
            (with-syntax ([internal-def-name
-                          (syntax-local-lift-module #`(module* #,module-name-stx #f
-                                                        (provide main)
-                                                        (define (main ch)
-                                                          body1 body ...)))]
+                          (syntax-local-lift-module
+                           #`(module* #,module-name-stx #f
+                               (provide main)
+                               (define (main ch)
+                                 body1 body ...)
+                               ;; The existence of this submodule makes the
+                               ;; enclosing submodule preserved by `raco exe`:
+                               (module declare-preserve-for-embedding '#%kernel)))]
                          [in _in]
                          [out _out]
                          [err _err]
@@ -236,9 +241,9 @@
      (error who "the enclosing module's resolved name is not a path or predefined"))
   (define submod-ref
     (match name
-      [(? symbol?) `(quote 'name)]
+      [(? symbol?) `(submod (quote ,name) ,submod-name)]
       [(? path?) `(submod ,name ,submod-name)]
-      [`(,p ,s ...) `(submod ,p ,@s ,submod-name)]))
+      [`(,p ,s ...) `(submod ,(if (symbol? p) `(quote ,p) p) ,@s ,submod-name)]))
   (start-place-func who submod-ref 'main in out err))
 
 (define-syntax (place/context stx)
