@@ -130,7 +130,6 @@
       [(list? exp)
        (for-each loop exp)]
       [else (void)]))
-  (unless deps (printf "no deps ~a\n" file))
   deps)
 
 (define (dep<? a b)
