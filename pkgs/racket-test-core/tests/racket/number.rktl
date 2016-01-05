@@ -3,7 +3,7 @@
 
 (Section 'numbers)
 
-(require racket/extflonum racket/random)
+(require racket/extflonum racket/random racket/list)
 
 (test #f number? 'a)
 (test #f complex? 'a)
@@ -2514,15 +2514,21 @@
 (parameterize ([current-pseudo-random-generator
                 (vector->pseudo-random-generator
                  #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
-  (test 3 random-ref '(1 2 3 4 5))
-  (test 10 random-ref '#(7 6 8 9 10))
-  (test #\e random-ref "abcde"))
+  (test 1 random-ref '(1 2 3 4 5))
+  (test 6 random-ref '#(7 6 8 9 10))
+  (test #\a random-ref "abcde"))
 (parameterize ([current-pseudo-random-generator
                 (vector->pseudo-random-generator
                  #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
-  (test '(3) random-sample '(1 2 3 4 5) 1)
+  (test '(1) random-sample '(1 2 3 4 5) 1)
   (test '(5 5 5) random-sample '(1 2 3 4 5) 3)
-  (test '(2 4 5) random-sample '(1 2 3 4 5) 3 #:replacement? #f))
+  (test '(1 4 3) random-sample '(1 2 3 4 5) 3 #:replacement? #f)
+  ;; distribution is uniform
+  (test '(100077 100479 100375 99943 99869 100055 100482 99979 99405 99336)
+        values ; to avoid the whole pre-`length` list being printed if test fails
+        (map length (group-by values
+                              (apply append (for/list ([i 10000])
+                                              (random-sample (range 10) 100)))))))
 
 
 (test #t = 0 0)

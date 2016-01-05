@@ -20,23 +20,43 @@
                   (current-continuation-marks)))]))
 
 (define (random-ref seq [prng (current-pseudo-random-generator)])
-  (sequence-ref seq (random (sequence-length seq))))
+  (car (random-sample seq 1 prng)))
 
 (define (random-sample seq n [prng (current-pseudo-random-generator)]
                        #:replacement? [replacement? #t])
-  (cond [replacement?
-         (for/list ([i (in-range n)])
-           (random-ref seq prng))]
-        [else
-         (unless (>= (sequence-length seq) n)
-           (raise-argument-error 'random-sample
-                                 "integer less than sequence length"
-                                 n))
-         (define l (sequence-length seq))
-         ;; sequences don't necessarily support removal, so instead sample
-         ;; indices without replacement, then index into the sequence
-         (let loop ([res-idx (set)])
-           (cond [(= (set-count res-idx) n) ; we have all we need, we're done
-                  (for/list ([i (in-set res-idx)]) (sequence-ref seq i))]
-                 [else
-                  (loop (set-add res-idx (random l)))]))]))
+  ;; doing reservoir sampling, to do a single pass over the sequence
+  ;; (some sequences may not like multiple passes)
+  (cond
+   [(not replacement?)
+    ;; Based on: http://rosettacode.org/wiki/Knuth's_algorithm_S#Racket
+    (define not-there (gensym))
+    (define samples (make-vector n not-there))
+    (for ([elt seq]
+          [i   (in-naturals)])
+      (cond [(< i n) ; we're not full, sample for sure
+             (vector-set! samples i elt)]
+            [(< (random (add1 i)) n) ; we've already seen n items; replace one?
+             (vector-set! samples (random n) elt)]))
+    ;; did we get enough?
+    (unless (for/and ([s (in-vector samples)])
+              (not (eq? s not-there)))
+      (raise-argument-error 'random-sample
+                            "integer less than sequence length"
+                            n))
+    (vector->list samples)]
+   [else
+    ;; similar to above, except each sample is independent
+    (define samples #f)
+    (for ([elt seq]
+          [i   (in-naturals)])
+      (cond [(= i 0) ; initialize samples
+             (set! samples (make-vector n elt))]
+            [else ; independently, maybe replace
+             (for ([j (in-range n)])
+               (when (zero? (random (add1 i)))
+                 (vector-set! samples j elt)))]))
+    (unless samples
+      (raise-argument-error 'random-sample
+                            "non-empty sequence"
+                            seq))
+    (vector->list samples)]))
