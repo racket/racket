@@ -204,8 +204,9 @@
 (define (and/c-check-nonneg ctc pred)
   (define sub-contracts (base-and/c-ctcs ctc))
   (cond
-    [(pairwise-stronger-contracts? (list pred (not/c negative?))
-                                   sub-contracts)
+    [(pairwise-stronger-contracts?
+      (list (coerce-contract 'and/c-check-nonneg pred) (not/c negative?))
+      sub-contracts)
      (define go (hash-ref predicate-generator-table pred))
      (λ (fuel)
        (λ ()
