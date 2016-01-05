@@ -43,35 +43,35 @@
   (contract-eval '(require 'prof-fun))
 
   (test/spec-passed
-   'provide/contract1
+   'contract-marks1
    '((contract (-> neg-blame? any/c) (λ (x) x) 'pos 'neg) 1))
 
   (test/spec-passed
-   'provide/contract2
+   'contract-marks2
    '((contract (-> any/c pos-blame?) (λ (x) x) 'pos 'neg) 1))
 
   (test/spec-passed
-   'provide/contract3
+   'contract-marks3
    '(contract (vector/c pos-blame?) (vector 1) 'pos 'neg))
 
   (test/spec-passed
-   'provide/contract4
+   'contract-marks4
    '((contract (parameter/c pos-blame?) (make-parameter #f) 'pos 'neg)))
 
   (test/spec-passed
-   'provide/contract5
+   'contract-marks5
    '(contract (unconstrained-domain-> pos-blame?) (λ () 1) 'pos 'neg))
 
   (test/spec-passed
-   'provide/contract6
+   'contract-marks6
    '(contract (->* () #:pre neg-blame? any) (λ () 1) 'pos 'neg))
 
   (test/spec-passed
-   'provide/contract7
+   'contract-marks7
    '(contract (->* () any/c #:post pos-blame?) (λ () 1) 'pos 'neg))
 
   (test/spec-passed/result
-   'provide/contract8
+   'contract-marks8
    '(let ()
       (eval '(module prof1 racket/base
                (require racket/contract 'prof-fun)
@@ -85,7 +85,7 @@
    11)
 
   (test/spec-passed/result
-   'provide/contract9
+   'contract-marks9
    '(let ()
       (eval '(module prof2 racket/base
                (require racket/contract 'prof-fun)
@@ -98,7 +98,7 @@
    11)
 
   (test/spec-passed/result
-   'provide/contract10
+   'contract-marks10
    '(let ()
       (eval '(module prof3 racket/base
                (require racket/contract 'prof-fun)
@@ -111,21 +111,21 @@
    11)
 
   (test/spec-passed
-   'provide/contract11
+   'contract-marks11
    '(let ()
       (struct posn (x y))
       ((contract (-> (struct/dc posn [x neg-blame?]) any/c) (λ (x) x) 'pos 'neg)
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract12
+   'contract-marks12
    '(let ()
       (struct posn (x y))
       ((contract (-> any/c (struct/dc posn [x pos-blame?])) (λ (x) x) 'pos 'neg)
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract13
+   'contract-marks13
    '(let ()
       (struct posn (x y))
       ((contract (-> any/c (struct/dc posn [x pos-blame?] #:inv (x) pos-blame?))
@@ -133,7 +133,7 @@
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract14
+   'contract-marks14
    '(let ()
       (struct posn (x y) #:mutable)
       ((contract (-> any/c (struct/dc posn [x pos-blame?]))
@@ -141,7 +141,7 @@
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract15
+   'contract-marks15
    '(let ()
       (struct posn (x y))
       ((contract (-> any/c (struct/dc posn [x #:lazy pos-blame?]))
@@ -149,7 +149,7 @@
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract16
+   'contract-marks16
    '(let ()
       (struct posn (x y))
       ((contract (-> any/c (struct/dc posn
@@ -159,7 +159,7 @@
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract17
+   'contract-marks17
    '(let ()
       (struct posn (x y))
       ((contract (-> any/c (struct/dc posn
@@ -169,7 +169,7 @@
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract18
+   'contract-marks18
    '(let ()
       (struct posn (x y) #:mutable)
       ((contract (-> any/c (struct/dc posn
@@ -179,7 +179,7 @@
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract19
+   'contract-marks19
    '(let ()
       (struct posn (x y))
       ((contract (-> any/c (struct/dc posn
@@ -189,7 +189,7 @@
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract20
+   'contract-marks20
    '(let ()
       (struct posn (x y) #:mutable)
       ((contract (-> any/c (struct/dc posn
@@ -199,25 +199,25 @@
        (posn 1 2))))
 
   (test/spec-passed
-   'provide/contract21
+   'contract-marks21
    '(let ()
       ((contract (case-> (-> any/c any/c pos-blame?))
                  (λ (x y) x) 'pos 'neg)
        1 2)))
 
   (test/spec-passed
-   'provide/contract22
+   'contract-marks22
    '(let ()
       ((contract (case-> (-> neg-blame? any/c))
                  (λ (x) x) 'pos 'neg)
        1)))
 
   (test/spec-passed
-   'provide/contract23
+   'contract-marks23
    '(unbox (contract (box/c neg-blame?) (box 1) 'pos 'neg)))
 
   (test/spec-passed
-   'provide/contract24
+   'contract-marks24
    '(set-box! (contract (box/c neg-blame?) (box 1) 'pos 'neg) 2))
 
   )
