@@ -456,7 +456,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
     which determines where the manual appears in the root
     documentation page. A category is either a string or a symbol. If
     it is a string, then the string is the category label on the root
-    page. If it is a symbol, then it a default category label is
+    page. If it is a symbol, then a default category label is
     used. The available symbols and the order of categories on the
     root documentation page is as below:
 
