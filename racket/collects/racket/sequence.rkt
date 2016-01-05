@@ -202,51 +202,87 @@
      (define blame (blame-add-context orig-blame "an element of"))
      (define ps (for/list ([mk-proj (in-list elem/mk-projs)])
                   (mk-proj blame)))
-     (λ (seq neg-party)
-       (unless (sequence? seq)
-         (raise-blame-error
-          orig-blame #:missing-party neg-party seq
-          '(expected: "a sequence" given: "~e")
-          seq))
-       (define result-seq
-       (make-do-sequence
-        (lambda ()
-          (let*-values ([(more? next) (sequence-generate seq)])
-            (values
-             (lambda (idx)
-               (call-with-values 
-                next
-                (lambda elems
-                  (define n-elems (length elems))
-                  (unless (= n-elems n-cs)
-                    (raise-blame-error
-                     blame #:missing-party neg-party seq
-                     '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
-                     n-cs n-elems elems))
-                  (apply
-                   values
-                   (for/list ([elem (in-list elems)]
-                              [p (in-list ps)])
-                     (p elem neg-party))))))
-             add1
-             0
-             (lambda (idx) 
-               (define ans (more?))
-               (when (and min-count (idx . < . min-count))
-                 (unless ans
-                   (raise-blame-error 
-                    orig-blame #:missing-party neg-party
-                    seq
-                    '(expected: "a sequence that contains at least ~a values" given: "~e")
-                    min-count
-                    seq)))
-               ans)
-             (lambda elems #t)
-             (lambda (idx . elems) #t))))))
-       (cond
-         [(list? seq) (sequence->list result-seq)]
-         [(stream? seq) (sequence->stream result-seq)]
-         [else result-seq])))))
+     (cond
+       [(and (= n-cs 1) (not min-count))
+        (define p (car ps))
+        (λ (seq neg-party)
+          (unless (sequence? seq)
+            (raise-blame-error
+             orig-blame #:missing-party neg-party seq
+             '(expected: "a sequence" given: "~e")
+             seq))
+          (define result-seq
+            (make-do-sequence
+             (lambda ()
+               (let*-values ([(more? next) (sequence-generate seq)])
+                 (values
+                  (lambda (idx)
+                    (call-with-values
+                     next
+                     (case-lambda
+                       [(elem)
+                        (p elem neg-party)]
+                       [elems
+                        (define n-elems (length elems))
+                        (raise-blame-error
+                         blame #:missing-party neg-party seq
+                         '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
+                         n-cs n-elems elems)])))
+                  add1
+                  0
+                  (lambda (idx) (more?))
+                  (lambda elems #t)
+                  (lambda (idx . elems) #t))))))
+          (cond
+            [(list? seq) (sequence->list result-seq)]
+            [(stream? seq) (sequence->stream result-seq)]
+            [else result-seq]))]
+       [else
+        (λ (seq neg-party)
+          (unless (sequence? seq)
+            (raise-blame-error
+             orig-blame #:missing-party neg-party seq
+             '(expected: "a sequence" given: "~e")
+             seq))
+          (define result-seq
+            (make-do-sequence
+             (lambda ()
+               (let*-values ([(more? next) (sequence-generate seq)])
+                 (values
+                  (lambda (idx)
+                    (call-with-values
+                     next
+                     (lambda elems
+                       (define n-elems (length elems))
+                       (unless (= n-elems n-cs)
+                         (raise-blame-error
+                          blame #:missing-party neg-party seq
+                          '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
+                          n-cs n-elems elems))
+                       (apply
+                        values
+                        (for/list ([elem (in-list elems)]
+                                   [p (in-list ps)])
+                          (p elem neg-party))))))
+                  add1
+                  0
+                  (lambda (idx)
+                    (define ans (more?))
+                    (when (and min-count (idx . < . min-count))
+                      (unless ans
+                        (raise-blame-error
+                         orig-blame #:missing-party neg-party
+                         seq
+                         '(expected: "a sequence that contains at least ~a values" given: "~e")
+                         min-count
+                         seq)))
+                    ans)
+                  (lambda elems #t)
+                  (lambda (idx . elems) #t))))))
+          (cond
+            [(list? seq) (sequence->list result-seq)]
+            [(stream? seq) (sequence->stream result-seq)]
+            [else result-seq]))]))))
 
 
 ;; additional sequence constructors
