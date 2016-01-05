@@ -2,6 +2,8 @@
 
 (require "stream.rkt"
          "private/sequence.rkt"
+         "fixnum.rkt"
+         "flonum.rkt"
          racket/contract/combinator
          racket/contract/base
          (for-syntax racket/base)
@@ -41,8 +43,13 @@
 
 (define (sequence-length s)
   (unless (sequence? s) (raise-argument-error 'sequence-length "sequence?" s))
-  (cond [(list? s) (length s)]
+  (cond [(exact-nonnegative-integer? s) s]
+        [(list? s) (length s)]
         [(vector? s) (vector-length s)]
+        [(flvector? s) (flvector-length s)]
+        [(fxvector? s) (fxvector-length s)]
+        [(string? s) (string-length s)]
+        [(bytes? s) (bytes-length s)]
         [(hash? s) (hash-count s)]
         [else
          (for/fold ([c 0]) ([i (in-values*-sequence s)])
