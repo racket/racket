@@ -182,7 +182,7 @@
                  (coerce-contract 'sequence/c elem/c)))
   (define elem/mk-projs 
     (for/list ([ctc (in-list ctcs)])
-      (contract-projection ctc)))
+      (contract-late-neg-projection ctc)))
   (define n-cs (length elem/cs))
   (make-contract
    #:name (apply build-compound-type-name 'sequence/c 
@@ -197,15 +197,15 @@
           (if (vector? val) (= n-cs 1) #t)
           (if (list? val)   (= n-cs 1) #t)
           (if (hash? val)   (= n-cs 2) #t)))
-   #:projection
+   #:late-neg-projection
    (λ (orig-blame)
      (define blame (blame-add-context orig-blame "an element of"))
      (define ps (for/list ([mk-proj (in-list elem/mk-projs)])
                   (mk-proj blame)))
-     (λ (seq)
+     (λ (seq neg-party)
        (unless (sequence? seq)
          (raise-blame-error
-          orig-blame seq
+          orig-blame #:missing-party neg-party seq
           '(expected: "a sequence" given: "~e")
           seq))
        (define result-seq
@@ -220,14 +220,14 @@
                   (define n-elems (length elems))
                   (unless (= n-elems n-cs)
                     (raise-blame-error
-                     blame seq
+                     blame #:missing-party neg-party seq
                      '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
                      n-cs n-elems elems))
                   (apply
                    values
                    (for/list ([elem (in-list elems)]
                               [p (in-list ps)])
-                     (p elem))))))
+                     (p elem neg-party))))))
              add1
              0
              (lambda (idx) 
@@ -235,7 +235,7 @@
                (when (and min-count (idx . < . min-count))
                  (unless ans
                    (raise-blame-error 
-                    orig-blame
+                    orig-blame #:missing-party neg-party
                     seq
                     '(expected: "a sequence that contains at least ~a values" given: "~e")
                     min-count
