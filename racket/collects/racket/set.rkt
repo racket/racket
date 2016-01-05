@@ -99,7 +99,8 @@
     [else
      (impersonator-set-contract elem/c equal-key/c cmp kind lazy?)]))
 
-(struct set-contract [elem/c equal-key/c cmp kind lazy?])
+(struct set-contract [elem/c equal-key/c cmp kind lazy?]
+  #:property prop:custom-write contract-custom-write-property-proc)
 
 (define (lazy-default kind elem/c)
   (not (and (equal? kind 'immutable)
