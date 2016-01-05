@@ -210,4 +210,14 @@
    '(let ()
       ((contract (case-> (-> neg-blame? any/c))
                  (λ (x) x) 'pos 'neg)
-       1))))
+       1)))
+
+  (test/spec-passed
+   'provide/contract23
+   '(unbox (contract (box/c neg-blame?) (box 1) 'pos 'neg)))
+
+  (test/spec-passed
+   'provide/contract24
+   '(set-box! (contract (box/c neg-blame?) (box 1) 'pos 'neg) 2))
+
+  )

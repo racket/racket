@@ -141,6 +141,7 @@
       (define pos-elem-r-proj (r-vfp box-blame))
       (define neg-elem-w-proj (w-vfp (blame-swap box-blame)))
       (λ (val neg-party)
+        (define blame+neg-party (cons blame neg-party))
         (cond
           [(check-box/c-np ctc val blame)
            =>
@@ -150,8 +151,14 @@
                (box-immutable (pos-elem-r-proj (unbox val) neg-party))
                (chaperone/impersonate-box 
                 val
-                (λ (b v) (pos-elem-r-proj v neg-party))
-                (λ (b v) (neg-elem-w-proj v neg-party))
+                (λ (b v)
+                  (with-contract-continuation-mark
+                   blame+neg-party
+                   (pos-elem-r-proj v neg-party)))
+                (λ (b v)
+                  (with-contract-continuation-mark
+                   blame+neg-party
+                   (neg-elem-w-proj v neg-party)))
                 impersonator-prop:contracted ctc
                 impersonator-prop:blame (blame-add-missing-party blame neg-party)))])))))
 
