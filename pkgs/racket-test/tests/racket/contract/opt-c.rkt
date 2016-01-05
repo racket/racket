@@ -172,7 +172,134 @@ so that propagation occurs.
 
 |#
 
+   (test/spec-passed/result
+    "or 1"
+    '(contract (opt/c (or/c number? boolean?)) 1 'pos 'neg)
+    1)
+   
+   (test/spec-passed/result
+    "or 2"
+    '(contract (opt/c (or/c number? boolean?)) #t 'pos 'neg)
+    #t)
+   
+   (test/pos-blame
+    "or 3"
+    '(contract (opt/c (or/c number? boolean?)) "string" 'pos 'neg))
+   
+  (test/spec-passed/result
+   "or 4"
+   '((contract (opt/c (or/c number? (-> boolean? number?)))
+               (λ (x) 1) 'pos 'neg) #t)
+   1)
+   
+   (test/spec-passed/result
+    "or 5"
+    '((contract (opt/c (or/c (-> boolean? boolean? number?) (-> boolean? number?)))
+                (λ (x y) 1) 'pos 'neg) #t #f)
+    1)
+   
+   (test/spec-passed/result
+    "lifting 1"
+    '(let ((volatile 0))
+       (contract (opt/c (between/c (begin (set! volatile 1) 3) 5)) 4 'pos 'neg)
+       volatile)
+    1)
+   
+   (test/spec-passed/result
+    "arrow 1"
+    '((contract (opt/c (-> boolean? number?)) (λ (x) 1) 'pos 'neg) #t)
+    1)
+   
+   (test/spec-passed/result
+    "arrow 2"
+    '(call-with-values
+      (λ () ((contract (opt/c (-> boolean? (values number? number?)))
+                       (λ (x) (values 1 2)) 'pos 'neg) #t))
+      list)
+    '(1 2))
+   
+   (test/spec-passed/result
+    "arrow 3"
+    '(call-with-values
+      (λ () ((contract (opt/c (-> boolean? any)) (λ (x) (values 1 2)) 'pos 'neg) #t))
+      list)
+    '(1 2))
+   
+   (test/spec-passed/result
+    "arrow 4"
+    '((contract (opt/c (-> boolean? any)) (λ (x) 1) 'pos 'neg) #t)
+    1)
+   
+   (test/neg-blame
+    "arrow 5"
+    '((contract (opt/c (-> boolean? number?)) (λ (x) #t) 'pos 'neg) 1))
+   
+   (test/pos-blame
+    "arrow 6"
+    '((contract (opt/c (-> boolean? number?)) (λ (x) #t) 'pos 'neg) #t))
+   
+  (test/spec-passed/result
+   "flat-contract 1"
+   '(contract (opt/c (flat-contract (λ (x) (= x 1)))) 1 'pos 'neg)
+   1)
+   
+   (test/spec-passed/result
+    "flat-contract 2"
+    '(with-handlers ([exn:fail? (λ (x) (regexp-match? #rx"expected: flat-contract[?]"
+                                                      (exn-message x)))])
+       (contract (opt/c (flat-contract (λ (x y) #f))) 1 'pos 'neg)
+       'no-exn)
+    #t)
+   
+   (test/spec-passed/result
+    "cons/c 1"
+    '(contract (opt/c (cons/c number? (flat-contract (λ (x) (= x 2)))))
+               (cons 1 2) 'pos 'neg)
+    '(1 . 2))
+   
+   (test/spec-passed/result
+    "cons/c 1b"
+    '(contract (opt/c (cons/c number? (flat-contract (λ (x) (= x 2)))))
+               (cons 1 2) 'pos 'neg)
+    '(1 . 2))
+   
+   (test/spec-passed/result
+    "cons/c 2"
+    '(let ([x (contract (opt/c (cons/c number? (-> number? any)))
+                        (cons 1 (λ (x) 2)) 'pos 'neg)])
+       (and (= (car x) 1) (= ((cdr x) 1) 2)))
+    #t)
+  
+  (test/spec-passed/result
+   "between/c 1"
+   '(contract (opt/c (between/c 1 2)) 1 'pos 'neg)
+   1)
+   
+   (test/pos-blame
+    "between/c 2"
+    '(contract (opt/c (between/c 1 2)) 3 'pos 'neg))
+   
+  (test/spec-passed/result
+   "between/c 2"
+   '(with-handlers ([exn:fail? (λ (x)
+                                 (regexp-match?
+                                  #rx"expected: real[?].*argument position: 1st"
+                                  (exn-message x)))])
+      (contract (opt/c (between/c 'x 'b)) 1 'pos 'neg)
+      'no-exn)
+   #t)
+   
+   (test/spec-passed/result
+    "between/c 3"
+    '(with-handlers ([exn:fail? (λ (x)
+                                  (regexp-match?
+                                   #rx"expected: real[?].*argument position: 2nd"
+                                   (exn-message x)))])
+       (contract (opt/c (between/c 1 'b)) 1 'pos 'neg))
+    #t)
 
+  
+  
   ;; test the predicate
   (ctest #t couple? (contract (couple/c any/c any/c) (make-couple 1 2) 'pos 'neg))
   (ctest #t couple? (make-couple 1 2))

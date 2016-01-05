@@ -13,6 +13,7 @@
          current-contract-namespace
          make-basic-contract-namespace
          make-full-contract-namespace
+         full-contract-namespace-initial-set
          
          contract-syntax-error-test
          contract-error-test
@@ -104,10 +105,10 @@
 
 (define (make-full-contract-namespace . addons)
   (apply make-basic-contract-namespace 
-         'racket/contract
-         'racket/class
-         'racket/set
-         addons))
+         (append full-contract-namespace-initial-set addons)))
+(define full-contract-namespace-initial-set
+  '(racket/contract racket/class racket/set))
+         
 
 (define (contract-eval x #:test-case-name [test-case #f])
   (with-handlers ((exn:fail? (λ (x)
