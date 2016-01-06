@@ -29,8 +29,10 @@ or with the Racket distribution. In particular:
 included in the Racket distribution for Windows.}
 
 @item{For Mac OS X, @racketmodname[openssl] depends on
-@filepath{libssl.dylib} and @filepath{libcrypto.dylib}, which are
-provided by Mac OS X 10.2 and later.}
+@filepath{libssl.dylib} and @filepath{libcrypto.dylib}. Although those
+libraries are provided by Mac OS X 10.2 and later, their use is
+deprecated, so the Racket distribution for Mac OS X includes newer
+versions.}
 
 @item{For Unix, @racketmodname[openssl] depends on
 @filepath{libssl.so} and @filepath{libcrypto.so}, which must be

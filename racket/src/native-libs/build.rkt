@@ -314,21 +314,33 @@
                           (~a "cd " (build-path dest "bin")
                               " && mv libsqlite3-0.dll sqlite3.dll")))]
     [("openssl")
-     (nonmac-only)
+     (define make
+       (if linux?
+           (~a "make SHARED_LDFLAGS=" "-Wl,-rpath," dest "/lib")
+           "make"))
      (config #:configure-exe (find-executable-path "sh")
-             #:configure (if win?
-			     (list "./Configure"
-				   (~a "--cross-compile-prefix=" win-prefix "-")
-				   #f ; other flags here
-				   (~a "mingw" (if m32? "" "64"))
-				   "shared")
-			     (list "./Configure"
-				   #f
-				   "shared"
-				   "linux-x86_64"))
-	     #:make (if linux?
-			(~a "make SHARED_LDFLAGS=" "-Wl,-rpath," dest "/lib")
-			"make"))]
+             #:configure (cond
+                          [win?
+                           (list "./Configure"
+                                 (~a "--cross-compile-prefix=" win-prefix "-")
+                                 #f ; other flags here
+                                 (~a "mingw" (if m32? "" "64"))
+                                 "shared")]
+                          [mac?
+                           (list "./Configure"
+                                 #f
+                                 "shared"
+                                 (cond
+                                  [ppc? "darwin-ppc-cc"]
+                                  [m32? "darwin-i386-cc"]
+                                  [else "darwin64-x86_64-cc"]))]
+                          [else
+                           (list "./Configure"
+                                 #f
+                                 "shared"
+                                 "linux-x86_64")])
+	     #:make make
+             #:make-install (~a make " install_sw"))]
     [("expat") (config)]
     [("gettext") (config #:depends (if win? '("libiconv") '())
                          #:configure '("--enable-languages=c")

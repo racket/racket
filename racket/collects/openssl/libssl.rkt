@@ -14,6 +14,9 @@
 (define-runtime-path libssl-so
   (case (system-type)
     [(windows) '(so "ssleay32")]
+    [(macosx)
+     ;; Version "1.0.0" is bundled with Racket
+     '(so "libssl" ("1.0.0" #f))]
     [else '(so "libssl")]))
 
 (define libssl

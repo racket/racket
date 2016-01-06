@@ -44,6 +44,9 @@
 (define-runtime-path libcrypto-so
   (case (system-type)
     [(windows) '(so "libeay32")]
+    [(macosx)
+     ;; Version "1.0.0" is bundled with Racket
+     '(so "libcrypto" ("1.0.0" #f))]
     [else '(so "libcrypto")]))
 
 (define libcrypto

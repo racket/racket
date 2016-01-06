@@ -9,6 +9,7 @@
                     [tcp-abandon-port plain-tcp-abandon-port])
          openssl
          "win32-ssl.rkt"
+         "osx-ssl.rkt"
          file/gunzip)
 
 (define tolerant? #t)
@@ -65,8 +66,13 @@
     (cond [ssl?
            (set-http-conn-port-usual?! hc (= 443 port))
            (cond
+             [(osx-old-openssl?)
+              ;; OpenSSL is either not available or too old; use
+              ;; native OS X tools
+              (set-http-conn-abandon-p! hc osx-ssl-abandon-port)
+              (osx-ssl-connect host port ssl-version)]
              [(or ssl-available? (not win32-ssl-available?))
-              (set-http-conn-abandon-p! hc ssl-abandon-port)              
+              (set-http-conn-abandon-p! hc ssl-abandon-port)
               (ssl-connect host port ssl-version)]
              [else
               (set-http-conn-abandon-p! hc win32-ssl-abandon-port)

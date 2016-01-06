@@ -11311,6 +11311,48 @@ void scheme_end_sleeper_thread()
 #endif
 
 /*========================================================================*/
+/*                           thread helper                                */
+/*========================================================================*/
+
+/* The scheme_call_sequence() functionc an be used, with some care,
+   via the FFI to run a computation in a foreign thread and thread
+   results through. Keeping the number of procedures below
+   `NUM_COPIED_SEQUENCE_PROCS` can potentially simplify things, too */
+
+#define NUM_COPIED_SEQUENCE_PROCS 5
+
+typedef void *(*Scheme_Sequenced_Proc)(void *);
+
+struct Scheme_Proc_Sequence {
+  Scheme_Object *num_procs; /* pointer simplifies allocation issues */
+  void *init_data;
+  Scheme_Sequenced_Proc p[mzFLEX_ARRAY_DECL];
+};
+
+void *scheme_call_sequence_of_procedures(struct Scheme_Proc_Sequence *s)
+  XFORM_SKIP_PROC
+{
+  int i, num_procs = SCHEME_INT_VAL(s->num_procs);
+  void *data = s->init_data;
+  Scheme_Sequenced_Proc copied[NUM_COPIED_SEQUENCE_PROCS];
+
+  if (num_procs <= NUM_COPIED_SEQUENCE_PROCS) {
+    for (i = 0; i < num_procs; i++) {
+      copied[i] = s->p[i];
+    }
+  }
+
+  for (i = 0; i < num_procs; i++) {
+    if (num_procs <= NUM_COPIED_SEQUENCE_PROCS)
+      data = copied[i](data);
+    else
+      data = s->p[i](data);
+  }
+
+  return data;
+}
+
+/*========================================================================*/
 /*                       memory debugging help                            */
 /*========================================================================*/
 
