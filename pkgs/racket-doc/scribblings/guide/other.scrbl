@@ -28,7 +28,7 @@ many other installed libraries. Run @exec{raco docs} to find
 documentation for libraries that are installed on your system and
 specific to your user account.
 
-@link["http://pkgs.racket-lang.org/"]{The Racket package repository}
+@link["https://pkgs.racket-lang.org/"]{The Racket package repository}
 offer even more downloadable packages that are contributed by
 Racketeers.
 

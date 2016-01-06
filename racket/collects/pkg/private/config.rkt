@@ -45,8 +45,8 @@
   (define (get-default)
     (match k
       ['catalogs
-       (list "http://pkgs.racket-lang.org"
-             "http://planet-compats.racket-lang.org")]
+       (list "https://pkgs.racket-lang.org"
+             "https://planet-compats.racket-lang.org")]
       ['default-scope "user"]
       ['installation-name (version)]
       ['download-cache-dir (build-path (find-system-path 'addon-dir)

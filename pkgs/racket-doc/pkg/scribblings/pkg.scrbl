@@ -337,7 +337,7 @@ URL indicates a remote server, and a @litchar{file://} URL indicates a
 local catalog in the form of an SQLite database or a directory tree.
 
 PLT supports two @tech{package catalog} servers that are enabled by
-default: @url{http://pkgs.racket-lang.org} for new packages and
+default: @url{https://pkgs.racket-lang.org} for new packages and
 @url{http://planet-compats.racket-lang.org} for automatically
 generated packages for old @|PLaneT| packages. Anyone may host a
 @tech{package catalog}, and any file-serving HTTP host can act
@@ -1426,10 +1426,10 @@ tests, and documentation from a package before installing it.
 site (where a Racket distribution downloaded from the site is
 configured to consult the site for packages), at least for packages
 associated with the distribution. Beware that
-@url{http://pkgs.racket-lang.org/} generally refers to @tech{source
+@url{https://pkgs.racket-lang.org/} generally refers to @tech{source
 packages}, not @tech{built packages}. In the near future, built
-variants of the @url{http://pkgs.racket-lang.org/} packages will be
-provided at @url{http://pkg-build.racket-lang.org/catalog/}.
+variants of the @url{https://pkgs.racket-lang.org/} packages will be
+provided at @url{https://pkg-build.racket-lang.org/catalog/}.
 
 Some packages have been split at the source level into separate
 library, test, and documentation packages. For example,
