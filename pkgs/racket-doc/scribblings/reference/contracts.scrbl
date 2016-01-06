@@ -2848,8 +2848,28 @@ Produces the name used to describe the contract in error messages.
   @history[#:added "6.0.1.12"]
 }
 
+@defproc[(contract-late-neg-projection [c contract?]) (-> blame? (-> any/c (or/c #f any/c) any/c))]{
+  Produces the projection defining a contract's behavior.
+
+  The first argument, @racket[blame?] object encapsulates information about
+  the contract checking, mostly used to create a meaningful error message if
+  a contract violation is detected. The resulting function's first argument
+  is the value that should have the contract and its second argument is
+  a ``missing party'' from the blame object, to be passed to @racket[raise-contract-error].
+
+  If possible, use this function instead of @racket[contract-val-first-projection] or
+  @racket[contract-projection].
+}
+
+
 @defproc[(contract-projection [c contract?]) (-> blame? (-> any/c any/c))]{
-  Produces the projection defining a contract's behavior on protected values.
+  Produces the projection defining a contract's behavior. See also
+  @racket[contract-late-neg-projection].
+}
+
+@defproc[(contract-val-first-projection [c contract?]) (-> blame? (-> any/c (-> any/c any/c)))]{
+  Produces the projection defining a contract's behavior.
+  See also @racket[contract-late-neg-projection].
 }
 
 @defproc[(make-none/c [sexp-name any/c]) contract?]{
