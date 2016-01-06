@@ -692,7 +692,7 @@
      ("Specify treatment of multiple clones of a repository;"
       "<mode>s: convert, ask (interactive default), fail (other default), or force")]
     [(#:sym mode [ff-only try rebase] 'ff-only) pull ()
-     ("Specify `git pull' mode for repository clonse;"
+     ("Specify `git pull' mode for repository clones;"
       "<mode>s: ff-only (the default), try, or rebase")])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
