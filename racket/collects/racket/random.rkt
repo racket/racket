@@ -35,8 +35,8 @@
           [i   (in-naturals)])
       (cond [(< i n) ; we're not full, sample for sure
              (vector-set! samples i elt)]
-            [(< (random (add1 i)) n) ; we've already seen n items; replace one?
-             (vector-set! samples (random n) elt)]))
+            [(< (random (add1 i) prng) n) ; we've already seen n items; replace one?
+             (vector-set! samples (random n prng) elt)]))
     ;; did we get enough?
     (unless (for/and ([s (in-vector samples)])
               (not (eq? s not-there)))
@@ -53,7 +53,7 @@
              (set! samples (make-vector n elt))]
             [else ; independently, maybe replace
              (for ([j (in-range n)])
-               (when (zero? (random (add1 i)))
+               (when (zero? (random (add1 i) prng))
                  (vector-set! samples j elt)))]))
     (unless samples
       (raise-argument-error 'random-sample
