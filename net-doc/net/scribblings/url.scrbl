@@ -308,9 +308,8 @@ The DELETE method is used to delete the entity identified by
 verify a server's certificate (i.e., it's equivalent of clicking
 through a browser's warnings), so communication is safe, but the
 identity of the server is not verified. To validate the server's
-certificate, set @racket[current-https-protocol] to a context created
-with @racket[ssl-make-client-context], and enable certificate validation
-in the context with @racket[ssl-set-verify!].
+certificate, set @racket[current-https-protocol] to @racket['secure]
+or a context created with @racket[ssl-secure-client-context].
 
 The @racket["file"] scheme for URLs is handled only by
 @racket[get-pure-port], which uses @racket[open-input-file], does not
