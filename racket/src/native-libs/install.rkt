@@ -333,7 +333,7 @@
                                 (format "~a/~a.dylib" from s)
                                 (format "~a.dylib" s)
                                 p-new)))
-              libs)
+              (append libs nonwin-libs))
     (system (format "strip -S ~a" p-new)))
 
   (define platform (~a (if m32? 
