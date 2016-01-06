@@ -8,7 +8,7 @@
 
 @title[#:tag "cookie"]{Cookie: Legacy HTTP Client Storage}
 
-  @deprecated[@hyperlink["http://pkgs.racket-lang.org/#[net-cookies]"]{the
+  @deprecated[@hyperlink["https://pkgs.racket-lang.org/#[net-cookies]"]{the
                net-cookies package}]{
     That package
     (@hyperlink["https://github.com/RenaissanceBug/racket-cookies"]{source on
@@ -191,7 +191,7 @@ won't have a cookie set then first arrive at your site.
 @margin-note{@racket[cookie@] and @racket[cookie^] are deprecated.
 They exist for backward-compatibility and will likely be removed in
 the future. New code should use
-@hyperlink["http://pkgs.racket-lang.org/#[net-cookies]"]{the
+@hyperlink["https://pkgs.racket-lang.org/#[net-cookies]"]{the
                net-cookies package}.}
 
 @defmodule[net/cookie-unit]
