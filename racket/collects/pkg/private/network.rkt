@@ -58,7 +58,9 @@
        (lambda (f) (f)))
    (lambda ()
      (define-values (p hs)
-       (parameterize ([current-https-protocol 'secure])
+       (parameterize ([current-https-protocol (if (getenv "PLT_PKG_SSL_NO_VERIFY")
+                                                  (current-https-protocol)
+                                                  'secure)])
          (get-pure-port/headers url headers
                                 #:redirections 25
                                 #:status? #t)))
