@@ -7,7 +7,6 @@
          file/gunzip
          file/private/check-path
          openssl/sha1
-         openssl
          net/url
          net/head
          net/http-client
@@ -282,11 +281,10 @@
 (define (ssl-context verify?)
   (cond
    [(or (not verify?)
-        (getenv "GIT_SSL_NO_VERIFY")
-        (not ssl-available?))
+        (getenv "GIT_SSL_NO_VERIFY"))
     (current-https-protocol)]
    [else
-    (ssl-secure-client-context)]))
+    'secure]))
 
 ;; ----------------------------------------
 

@@ -1,5 +1,6 @@
 #lang racket/base
 (require net/url
+         net/url-connect
          racket/format
          "print.rkt"
          "config.rkt")
@@ -57,9 +58,10 @@
        (lambda (f) (f)))
    (lambda ()
      (define-values (p hs)
-       (get-pure-port/headers url headers
-                              #:redirections 25
-                              #:status? #t))
+       (parameterize ([current-https-protocol 'secure])
+         (get-pure-port/headers url headers
+                                #:redirections 25
+                                #:status? #t)))
      (define status (string->number (substring hs 9 12)))
      (cond
       [(memv status success-codes)
