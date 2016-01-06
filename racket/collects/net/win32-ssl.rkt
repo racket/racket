@@ -18,7 +18,7 @@
          win32-ssl-port?
          win32-ssl-available?)
 
-(define (win32-ssl-connect host port [protocol'sslv2-or-v3])
+(define (win32-ssl-connect host port [protocol 'sslv2-or-v3])
   (define-values (i o) (tcp-connect host port))
   (ports->win32-ssl-ports i o #:encrypt protocol))
 
@@ -287,7 +287,7 @@
                                                        0 #f ; mappers
                                                        0 #f ; algs
                                                        (case protocol
-                                                         [(auto sslv2-or-v3)
+                                                         [(secure auto sslv2-or-v3)
                                                           (bitwise-ior SP_PROT_TLS1)]
                                                          [(sslv2) SP_PROT_SSL2]
                                                          [(sslv3) SP_PROT_SSL3]
