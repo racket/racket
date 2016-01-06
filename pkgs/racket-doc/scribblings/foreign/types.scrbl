@@ -1081,7 +1081,8 @@ below for a more efficient approach.
                     (property (code:line #:alignment alignment-expr)
                               (code:line #:malloc-mode malloc-mode-expr)
                               (code:line #:property prop-expr val-expr)
-                              #:no-equal)]
+                              #:no-equal
+                              #:define-unsafe)]
          #:contracts ([offset-expr exact-integer?]
                       [alignment-expr (or/c #f 1 2 4 8 16)]
                       [malloc-mode-expr (one-of/c 'raw 'atomic 'nonatomic
@@ -1130,7 +1131,16 @@ The resulting bindings are as follows:
  @item{@racketidfont{set-}@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{!}
   : a mutator function for each @racket[field-id].}
 
- @item{@racketvarfont{id}: structure-type information compatible with
+ @item{@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{-offset}
+  : the absolute offset, in bytes, of each @racket[field-id], if @racket[#:define-unsafe] is present.}
+
+ @item{@racketidfont{unsafe-}@racketvarfont{id}@racketidfont{-}@racket[field-id]
+  : an unsafe accessor function for each @racket[field-id], if @racket[#:define-unsafe] is present.}
+
+ @item{@racketidfont{unsafe-set-}@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{!}
+  : an unsafe mutator function for each @racket[field-id], if @racket[#:define-unsafe] is present.}
+
+@item{@racketvarfont{id}: structure-type information compatible with
   @racket[struct-out] or @racket[match] (but not @racket[struct] or 
   @racket[define-struct]);
   currently, this information is correct only when no @racket[super-id]
@@ -1328,7 +1338,8 @@ expects arguments for both the super fields and the new ones:
 ]
 
 @history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}
-         #:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}]}
+#:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}
+#:changed "6.3.0.13" @elem{Added @racket[#:define-unsafe].}]}
 
 @; ------------------------------------------------------------
 

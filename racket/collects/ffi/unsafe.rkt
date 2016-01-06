@@ -2,7 +2,7 @@
 
 ;; Foreign Racket interface
 (require '#%foreign setup/dirs racket/unsafe/ops racket/private/for
-         (for-syntax racket/base racket/list syntax/stx
+         (for-syntax racket/base racket/list syntax/stx racket/syntax
                      racket/struct-info))
 
 (provide ctype-sizeof ctype-alignof compiler-sizeof
@@ -1348,15 +1348,16 @@
                      [TYPE?      (id name "?")]
                      [TYPE-tag   (id name "-tag")]
                      [_TYPE/null (id "_" name "/null")])
-         #'(define-values (_TYPE _TYPE/null TYPE? TYPE-tag)
-             (let ([TYPE-tag 'TYPE])
-               ;; Make the predicate function have the right inferred name
-               (define (TYPE? x)
-                 (and (cpointer? x) (cpointer-has-tag? x TYPE-tag)))
-               (values (_cpointer      TYPE-tag ptr-type scheme->c c->scheme)
-                       (_cpointer/null TYPE-tag ptr-type scheme->c c->scheme)
-                       TYPE?
-                       TYPE-tag)))))]))
+         #'(begin
+             (define TYPE-tag
+               (gensym 'TYPE))
+             (define _TYPE
+               (_cpointer      TYPE-tag ptr-type scheme->c c->scheme))
+             (define _TYPE/null
+               (_cpointer/null TYPE-tag ptr-type scheme->c c->scheme))
+             ;; Make the predicate function have the right inferred name
+             (define (TYPE? x)
+               (and (cpointer? x) (cpointer-has-tag? x TYPE-tag))))))]))
 
 ;; ----------------------------------------------------------------------------
 ;; Struct wrappers
@@ -1423,9 +1424,14 @@
 ;; type.
 (provide define-cstruct)
 (define-syntax (define-cstruct stx)
-  (define (make-syntax _TYPE-stx has-super? slot-names-stx slot-types-stx slot-offsets-stx
-                       alignment-stx malloc-mode-stx property-stxes property-binding-stxes
-                       no-equal?)
+  (define (make-syntax
+           _TYPE-stx has-super? slot-names-stx slot-types-stx slot-offsets-stx
+           alignment-stx malloc-mode-stx property-stxes property-binding-stxes
+           no-equal? define-unsafe?)
+    (define change-unsafe-ids
+      (if define-unsafe?
+          (λ (x) x)
+          generate-temporaries))
     (define name
       (cadr (regexp-match #rx"^_(.+)$" (symbol->string (syntax-e _TYPE-stx)))))
     (define slot-names (map (lambda (x) (symbol->string (syntax-e x)))
@@ -1472,10 +1478,14 @@
          [TYPE->list*          (id name"->list*")]
          [TYPE-tag             (id name"-tag")]
          [(stype ...)          (ids (lambda (s) `(,name"-",s"-type")))]
+         [(unsafe-TYPE-SLOT ...)
+          (change-unsafe-ids (ids (lambda (s) `("unsafe-",name"-",s))))]
+         [(unsafe-set-TYPE-SLOT! ...)
+          (change-unsafe-ids (ids (lambda (s) `("unsafe-set-",name"-",s"!"))))]
          [(TYPE-SLOT ...)      (ids (lambda (s) `(,name"-",s)))]
          [(set-TYPE-SLOT! ...) (ids (lambda (s) `("set-",name"-",s"!")))]
-         [(offset ...) (generate-temporaries
-                               (ids (lambda (s) `(,s"-offset"))))]
+         [(offset ...)
+          (change-unsafe-ids (ids (lambda (s) `(,name"-",s"-offset"))))]
          [alignment            alignment-stx]
          [malloc-mode          (or malloc-mode-stx #'(quote atomic))])
       (with-syntax ([get-super-info
@@ -1491,42 +1501,39 @@
                                                              [add-equality-property (if no-equal?
                                                                                         #'values
                                                                                         #'add-equality-property)])
-                                                 #'(define-values (make-wrap-TYPE struct:cpointer:TYPE)
-                                                     (let ()
-                                                       (define-values (struct:cpointer:TYPE
-                                                                       cpointer:TYPE
-                                                                       ?
-                                                                       ref
-                                                                       set)
-                                                         (make-struct-type 'cpointer:TYPE
-                                                                           struct:cpointer:super
-                                                                           (if struct:cpointer:super
-                                                                               0
-                                                                               1)
-                                                                           0 #f
-                                                                           (add-equality-property
-                                                                            (append
-                                                                             (if struct:cpointer:super
-                                                                                 null
-                                                                                 (list
-                                                                                  (cons prop:cpointer 0)))
-                                                                             (list prop ...)))
-                                                                           (current-inspector)
-                                                                           #f
-                                                                           (if struct:cpointer:super
-                                                                               null
-                                                                               '(0))))
-                                                       (values cpointer:TYPE struct:cpointer:TYPE)))))]
+                                                 #'(define-values (struct:cpointer:TYPE
+                                                                   make-wrap-TYPE
+                                                                   _?
+                                                                   _ref
+                                                                   _set)
+                                                     (make-struct-type 'cpointer:TYPE
+                                                                       struct:cpointer:super
+                                                                       (if struct:cpointer:super
+                                                                           0
+                                                                           1)
+                                                                       0 #f
+                                                                       (add-equality-property
+                                                                        (append
+                                                                         (if struct:cpointer:super
+                                                                             null
+                                                                             (list
+                                                                              (cons prop:cpointer 0)))
+                                                                         (list prop ...)))
+                                                                       (current-inspector)
+                                                                       #f
+                                                                       (if struct:cpointer:super
+                                                                           null
+                                                                           '(0))))))]
                     [define-wrap-type (if (null? property-stxes)
-                                          #'(define (wrap-TYPE-type t)
-                                              (super-wrap-type-type t))
+                                          #'(define wrap-TYPE-type
+                                              (procedure-rename super-wrap-type-type 'wrap-TYPE-type))
                                           #'(define (wrap-TYPE-type t)
                                               (make-ctype t
-                                                          values
+                                                          (λ (x) x)
                                                           (lambda (p)
                                                             (and p
                                                                  (make-wrap-TYPE p))))))]
-                    [(property-binding ...) property-binding-stxes]
+                    [([(property-binding-ids ...) . property-binding-form] ...) property-binding-stxes]
                     [(maybe-struct:TYPE ...) (if (null? property-stxes)
                                                  null
                                                  (list #'struct:cpointer:TYPE))])
@@ -1540,118 +1547,119 @@
                        (reverse (list (quote-syntax TYPE-SLOT) ...))
                        (reverse (list (quote-syntax set-TYPE-SLOT!) ...))
                        #t))))
-            (define-values (_TYPE _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
-                                  make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
-                                  list->TYPE list*->TYPE TYPE->list TYPE->list*
-                                  maybe-struct:TYPE ...)
-              (let-values ([(super-pointer super-tags super-types super-offsets
-                                           super->list* list*->super
-                                           struct:cpointer:super super-wrap-type-type)
-                            get-super-info]
-                           property-binding ...)
-                (define-cpointer-type _TYPE super-pointer)
-                define-wrap-type
-                ;; these make it possible to use recursive pointer definitions
-                (define _TYPE-pointer      (wrap-TYPE-type _TYPE))
-                (define _TYPE-pointer/null (wrap-TYPE-type _TYPE/null))
-                (define-values (stype ...)  (values slot-type ...))
-                (define types (list stype ...))
-                (define alignment-v alignment)
-                (define offsets (compute-offsets types alignment-v (list slot-offset ...)))
-                (define-values (offset ...) (apply values offsets))
-                (define all-tags (cons TYPE-tag super-tags))
-                (define _TYPE*
-                  ;; c->scheme adjusts all tags
-                  (let* ([cst (make-cstruct-type types #f alignment-v)]
-                         [t (_cpointer TYPE-tag cst)]
-                         [c->s (ctype-c->scheme t)])
-                    (wrap-TYPE-type
-                     (make-ctype cst (ctype-scheme->c t)
-                                 ;; hack: modify & reuse the procedure made by _cpointer
-                                 (lambda (p)
-                                   (if p (set-cpointer-tag! p all-tags) (c->s p))
-                                   p)))))
-                (define-values (all-types all-offsets)
-                  (if (and has-super? super-types super-offsets)
-                      (values (append super-types   (cdr types))
-                              (append super-offsets (cdr offsets)))
-                      (values types offsets)))
-                (define (TYPE-SLOT x)
-                  (unless (TYPE? x)
-                    (raise-argument-error 'TYPE-SLOT struct-string x))
-                  (ptr-ref x stype 'abs offset))
-                ...
-                (define (set-TYPE-SLOT! x slot)
-                  (unless (TYPE? x)
-                    (raise-argument-error 'set-TYPE-SLOT! struct-string 0 x slot))
-                  (ptr-set! x stype 'abs offset slot))
-                ...
-                (define make-TYPE
-                  (if (and has-super? super-types super-offsets)
-                      ;; init using all slots
-                      (lambda vals
-                        (if (= (length vals) (length all-types))
-                            (let ([block (make-wrap-TYPE (malloc _TYPE* malloc-mode))])
-                              (set-cpointer-tag! block all-tags)
-                              (for-each (lambda (type ofs value)
-                                          (ptr-set! block type 'abs ofs value))
-                                        all-types all-offsets vals)
-                              block)
-                            (error '_TYPE "expecting ~s values, got ~s: ~e"
-                                   (length all-types) (length vals) vals)))
-                      ;; normal initializer
-                      (lambda (slot ...)
-                        (let ([block (make-wrap-TYPE (malloc _TYPE* malloc-mode))])
+            (define-values (super-pointer super-tags super-types super-offsets
+                                          super->list* list*->super
+                                          struct:cpointer:super super-wrap-type-type)
+              get-super-info)
+            (define-values (property-binding-ids ...) . property-binding-form) ...
+            (define-cpointer-type _^TYPE super-pointer)
+            define-wrap-type
+            ;; these make it possible to use recursive pointer definitions
+            (define _TYPE-pointer      (wrap-TYPE-type _^TYPE))
+            (define _TYPE-pointer/null (wrap-TYPE-type _^TYPE/null))
+            (define-values (stype ...)  (values slot-type ...))
+            (define types (list stype ...))
+            (define alignment-v alignment)
+            (define offsets (compute-offsets types alignment-v (list slot-offset ...)))
+            (define-values (offset ...) (apply values offsets))
+            (define all-tags (cons ^TYPE-tag super-tags))
+            (define _TYPE
+              ;; c->scheme adjusts all tags
+              (let* ([cst (make-cstruct-type types #f alignment-v)]
+                     [t (_cpointer ^TYPE-tag cst)]
+                     [c->s (ctype-c->scheme t)])
+                (wrap-TYPE-type
+                 (make-ctype cst (ctype-scheme->c t)
+                             ;; hack: modify & reuse the procedure made by _cpointer
+                             (lambda (p)
+                               (if p (set-cpointer-tag! p all-tags) (c->s p))
+                               p)))))
+            (define-values (all-types all-offsets)
+              (if (and has-super? super-types super-offsets)
+                  (values (append super-types   (cdr types))
+                          (append super-offsets (cdr offsets)))
+                  (values types offsets)))
+            
+            (begin
+              (define (unsafe-TYPE-SLOT x)
+                (ptr-ref x stype 'abs offset))
+              (define (TYPE-SLOT x)
+                (unless (^TYPE? x)
+                  (raise-argument-error 'TYPE-SLOT struct-string x))
+                (unsafe-TYPE-SLOT x)))
+            ...
+            (begin
+              (define (unsafe-set-TYPE-SLOT! x slot)
+                (ptr-set! x stype 'abs offset slot))
+              (define (set-TYPE-SLOT! x slot)
+                (unless (^TYPE? x)
+                  (raise-argument-error 'set-TYPE-SLOT! struct-string 0 x slot))
+                (unsafe-set-TYPE-SLOT! x slot)))
+            ...
+            (define make-TYPE
+              (if (and has-super? super-types super-offsets)
+                  ;; init using all slots
+                  (lambda vals
+                    (if (= (length vals) (length all-types))
+                        (let ([block (make-wrap-TYPE (malloc _TYPE malloc-mode))])
                           (set-cpointer-tag! block all-tags)
-                          (ptr-set! block stype 'abs offset slot)
-                          ...
-                          block))))
-                define-wrapper-struct
-                (define (list->TYPE vals) (apply make-TYPE vals))
-                (define (list*->TYPE vals)
-                  (cond
-                   [(TYPE? vals) vals]
-                   [(= (length vals) (length all-types))
-                    (let ([block (malloc _TYPE* malloc-mode)])
+                          (for-each (lambda (type ofs value)
+                                      (ptr-set! block type 'abs ofs value))
+                                    all-types all-offsets vals)
+                          block)
+                        (error '_TYPE "expecting ~s values, got ~s: ~e"
+                               (length all-types) (length vals) vals)))
+                  ;; normal initializer
+                  (lambda (slot ...)
+                    (let ([block (make-wrap-TYPE (malloc _TYPE malloc-mode))])
                       (set-cpointer-tag! block all-tags)
-                      (for-each
-                       (lambda (type ofs value)
-                         (let-values
-                             ([(ptr tags types offsets T->list* list*->T struct:T wrap)
-                               (cstruct-info
-                                type
-                                (lambda () (values #f '() #f #f #f #f #f values)))])
-                           (ptr-set! block type 'abs ofs
-                                     (if list*->T (list*->T value) value))))
-                       all-types all-offsets vals)
-                      block)]
-                   [else (error '_TYPE "expecting ~s values, got ~s: ~e"
-                                (length all-types) (length vals) vals)]))
-                (define (TYPE->list x)
-                  (unless (TYPE? x)
-                    (raise-argument-error 'TYPE-list struct-string x))
-                  (map (lambda (type ofs) (ptr-ref x type 'abs ofs))
-                       all-types all-offsets))
-                (define (TYPE->list* x)
-                  (unless (TYPE? x)
-                    (raise-argument-error 'TYPE-list struct-string x))
-                  (map (lambda (type ofs)
-                         (let-values
-                             ([(v) (ptr-ref x type 'abs ofs)]
-                              [(ptr tags types offsets T->list* list*->T struct:T wrap)
-                               (cstruct-info
-                                type
-                                (lambda () (values #f '() #f #f #f #f #f values)))])
-                           (if T->list* (T->list* v) v)))
-                       all-types all-offsets))
-                (cstruct-info
-                 _TYPE* 'set!
-                 _TYPE all-tags all-types all-offsets TYPE->list* list*->TYPE
-                 struct:cpointer:TYPE wrap-TYPE-type)
-                (values _TYPE* _TYPE-pointer _TYPE-pointer/null TYPE? TYPE-tag
-                        make-TYPE TYPE-SLOT ... set-TYPE-SLOT! ...
-                        list->TYPE list*->TYPE TYPE->list TYPE->list*
-                        maybe-struct:TYPE ...)))))))
+                      (ptr-set! block stype 'abs offset slot)
+                      ...
+                      block))))
+            define-wrapper-struct
+            (define (list->TYPE vals) (apply make-TYPE vals))
+            (define (list*->TYPE vals)
+              (cond
+                [(^TYPE? vals) vals]
+                [(= (length vals) (length all-types))
+                 (let ([block (malloc _TYPE malloc-mode)])
+                   (set-cpointer-tag! block all-tags)
+                   (for-each
+                    (lambda (type ofs value)
+                      (let-values
+                          ([(ptr tags types offsets T->list* list*->T struct:T wrap)
+                            (cstruct-info
+                             type
+                             (lambda () (values #f '() #f #f #f #f #f values)))])
+                        (ptr-set! block type 'abs ofs
+                                  (if list*->T (list*->T value) value))))
+                    all-types all-offsets vals)
+                   block)]
+                [else (error '_TYPE "expecting ~s values, got ~s: ~e"
+                             (length all-types) (length vals) vals)]))
+            (define (TYPE->list x)
+              (unless (^TYPE? x)
+                (raise-argument-error 'TYPE-list struct-string x))
+              (map (lambda (type ofs) (ptr-ref x type 'abs ofs))
+                   all-types all-offsets))
+            (define (TYPE->list* x)
+              (unless (^TYPE? x)
+                (raise-argument-error 'TYPE-list struct-string x))
+              (map (lambda (type ofs)
+                     (let-values
+                         ([(v) (ptr-ref x type 'abs ofs)]
+                          [(ptr tags types offsets T->list* list*->T struct:T wrap)
+                           (cstruct-info
+                            type
+                            (lambda () (values #f '() #f #f #f #f #f values)))])
+                       (if T->list* (T->list* v) v)))
+                   all-types all-offsets))
+            (cstruct-info
+             _TYPE 'set!
+             _^TYPE all-tags all-types all-offsets TYPE->list* list*->TYPE
+             struct:cpointer:TYPE wrap-TYPE-type)
+            (define TYPE? ^TYPE? #;(procedure-rename  'TYPE?))
+            (define TYPE-tag ^TYPE-tag)))))
   (define (err what . xs)
     (apply raise-syntax-error #f
            (if (list? what) (apply string-append what) what)
@@ -1664,53 +1672,76 @@
                    (syntax-case #'type ()
                      [(t s) (values #'t #'s)]
                      [_ (values #'type #f)])]
-                  [(alignment malloc-mode properties property-bindings no-equal?)
+                  [(alignment malloc-mode
+                              properties property-bindings
+                              no-equal? define-unsafe?)
                    (let loop ([more #'more] 
                               [alignment #f]
                               [malloc-mode #f]
                               [properties null] 
                               [property-bindings null] 
-                              [no-equal? #f])
+                              [no-equal? #f]
+                              [define-unsafe? #f])
                      (define (head) (syntax-case more () [(x . _) #'x]))
                      (syntax-case more ()
                        [() (values alignment
                                    malloc-mode 
                                    (reverse properties)
                                    (reverse property-bindings)
-                                   no-equal?)]
+                                   no-equal?
+                                   define-unsafe?)]
                        [(#:alignment) (err "missing expression for #:alignment" (head))]
                        [(#:alignment a . rest) 
                         (not alignment)
-                        (loop #'rest #'a malloc-mode properties property-bindings no-equal?)]
+                        (loop #'rest
+                              #'a malloc-mode
+                              properties property-bindings
+                              no-equal? define-unsafe?)]
                        [(#:alignment a . rest) 
                         (err "multiple specifications of #:alignment" (head))]
-                       [(#:malloc-mode) (err "missing expression for #:malloc-mode" (head))]
+                       [(#:malloc-mode)
+                        (err "missing expression for #:malloc-mode" (head))]
                        [(#:malloc-mode m . rest) 
                         (not malloc-mode)
-                        (loop #'rest alignment #'m properties property-bindings no-equal?)]
+                        (loop #'rest
+                              alignment #'m
+                              properties property-bindings
+                              no-equal? define-unsafe?)]
                        [(#:malloc-mode m . rest) 
                         (err "multiple specifications of #:malloc-mode" (head))]
-                       [(#:property) (err "missing property expression for #:property" (head))]
-                       [(#:property prop) (err "missing value expression for #:property" (head))]
+                       [(#:property)
+                        (err "missing property expression for #:property" (head))]
+                       [(#:property prop)
+                        (err "missing value expression for #:property" (head))]
                        [(#:property prop val . rest)
                         (let ()
                           (define prop-id (car (generate-temporaries '(prop))))
                           (define val-id (car (generate-temporaries '(prop-val))))
                           (loop #'rest 
-                                alignment 
-                                malloc-mode
+                                alignment malloc-mode
                                 (list* #`(cons #,prop-id #,val-id) properties)
                                 (list* (list (list val-id) #'val) 
                                        (list (list prop-id) #'(check-is-property prop))
                                        property-bindings)
-                                no-equal?))]
+                                no-equal? define-unsafe?))]
                        [(#:no-equal . rest)
                         (if no-equal?
                             (err "multiple specifications of #:no-equal" (head))
-                            (loop #'rest alignment malloc-mode properties property-bindings #t))]
-                       [(x . _) (err (if (keyword? (syntax-e #'x))
-                                         "unknown keyword" "unexpected form")
-                                     #'x)]
+                            (loop #'rest
+                                  alignment malloc-mode
+                                  properties property-bindings
+                                  #t define-unsafe?))]
+                       [(#:define-unsafe . rest)
+                        (if define-unsafe?
+                            (err "multiple specifications of #:define-unsafe" (head))
+                            (loop #'rest
+                                  alignment malloc-mode
+                                  properties property-bindings
+                                  no-equal? #t))]
+                       [(x . _)
+                        (err (if (keyword? (syntax-e #'x))
+                                 "unknown keyword" "unexpected form")
+                             #'x)]
                        [else (err "bad syntax")]))])
        (unless (identifier? _TYPE)
          (err "expecting a `_name' identifier or `(_name _super-name)'"
@@ -1733,13 +1764,13 @@
                           #`(#,(datum->syntax _TYPE 'super _TYPE) slot ...)
                           #`(#,_SUPER slot-type ...)
                           #'(0 slot-offset ...)
-                          alignment
-                          malloc-mode
-                          properties
-                          property-bindings
-                          no-equal?)
+                          alignment malloc-mode
+                          properties property-bindings
+                          no-equal? define-unsafe?)
              (make-syntax _TYPE #f #'(slot ...) #`(slot-type ...) #`(slot-offset ...)
-                          alignment malloc-mode properties property-bindings no-equal?))))]
+                          alignment malloc-mode
+                          properties property-bindings
+                          no-equal? define-unsafe?))))]
     [(_ type () . more)
      (identifier? #'type)
      (err "must have either a supertype or at least one field")]
