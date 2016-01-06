@@ -966,8 +966,7 @@ the @tt{RtlGenRand} system function.
          any/c]{
 
 Returns a random element of the sequence. Like @racket[sequence-length], does
-not terminate on infinite sequences, and extracts elements up to the returned
-element.
+not terminate on infinite sequences, and evaluates the entire sequence.
 
 @history[#:added "6.4"]}
 
@@ -978,12 +977,13 @@ element.
                         [#:replacement? replacement? any/c #t])
          (listof any/c)]{
 
-Returns a list of @racket[n] elements of @racket[seq], picked at random.
+Returns a list of @racket[n] elements of @racket[seq], picked at random, listed
+in any order.
 If @racket[replacement?] is non-false, elements are drawn with replacement,
 which allows for duplicates.
 
 Like @racket[sequence-length], does not terminate on infinite sequences, and
-extracts elements up to the returned element.
+evaluates the entire sequence.
 
 @history[#:added "6.4"]}
 

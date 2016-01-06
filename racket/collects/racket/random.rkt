@@ -25,8 +25,9 @@
 (define (random-sample seq n [prng (current-pseudo-random-generator)]
                        #:replacement? [replacement? #t])
   ;; doing reservoir sampling, to do a single pass over the sequence
-  ;; (some sequences may not like multiple passes)
+  ;; (some sequences may not like multiple passes, e.g., ports)
   (cond
+   [(zero? n) '()]
    [(not replacement?)
     ;; Based on: http://rosettacode.org/wiki/Knuth's_algorithm_S#Racket
     (define not-there (gensym))
@@ -41,7 +42,7 @@
     (unless (for/and ([s (in-vector samples)])
               (not (eq? s not-there)))
       (raise-argument-error 'random-sample
-                            "integer less than sequence length"
+                            "integer less than or equal to sequence length"
                             n))
     (vector->list samples)]
    [else
@@ -57,6 +58,6 @@
                  (vector-set! samples j elt)))]))
     (unless samples
       (raise-argument-error 'random-sample
-                            "non-empty sequence"
+                            "non-empty sequence for n>0"
                             seq))
     (vector->list samples)]))
