@@ -36,7 +36,7 @@ but may be updated by patches to DrRacket.}
 
 Checks the currently available version on the PLT website
 (@selflink["http://download.racket-lang.org"]) and returns a value that
-indicates the current state of the curent installation:
+indicates the current state of the current installation:
 
 @itemize[
 
