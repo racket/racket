@@ -2290,8 +2290,8 @@ the other; both are provided for convenience and clarity.
  Returns @racket[#t] when @racket[b] does not have both parties.
 }
 
-@defproc[(blame-add-missing-party? [b (and/c blame? blame-missing-party?)]
-                                   [missing-party any/c])
+@defproc[(blame-add-missing-party [b (and/c blame? blame-missing-party?)]
+                                  [missing-party any/c])
          (and/c blame? (not/c blame-missing-party?))]{
  Produces a new blame object like @racket[b], except that the missing
  party is replaced with @racket[missing-party].
