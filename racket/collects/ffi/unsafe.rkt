@@ -1334,9 +1334,12 @@
 (provide define-cpointer-type)
 (define-syntax (define-cpointer-type stx)
   (syntax-case stx ()
-    [(_ _TYPE) #'(define-cpointer-type _TYPE #f #f #f)]
-    [(_ _TYPE ptr-type) #'(define-cpointer-type _TYPE ptr-type #f #f)]
-    [(_ _TYPE ptr-type scheme->c c->scheme)
+    [(_ _TYPE) #'(define-cpointer-type _TYPE #f #f #f #:tag #f)]
+    [(_ _TYPE #:tag the-tag) #'(define-cpointer-type _TYPE #f #f #f #:tag the-tag)]
+    [(_ _TYPE ptr-type) #'(define-cpointer-type _TYPE ptr-type #f #f #:tag #f)]
+    [(_ _TYPE ptr-type #:tag the-tag) #'(define-cpointer-type _TYPE ptr-type #f #f #:tag the-tag)]
+    [(_ _TYPE ptr-type scheme->c c->scheme) #'(define-cpointer-type _TYPE ptr-type #f #f #:tag #f)]
+    [(_ _TYPE ptr-type scheme->c c->scheme #:tag the-tag)
      (and (identifier? #'_TYPE)
           (regexp-match #rx"^_.+" (symbol->string (syntax-e #'_TYPE))))
      (let ([name (cadr (regexp-match #rx"^_(.+)$"
@@ -1349,8 +1352,7 @@
                      [TYPE-tag   (id name "-tag")]
                      [_TYPE/null (id "_" name "/null")])
          #'(begin
-             (define TYPE-tag
-               (gensym 'TYPE))
+             (define TYPE-tag (or the-tag 'TYPE))
              (define _TYPE
                (_cpointer      TYPE-tag ptr-type scheme->c c->scheme))
              (define _TYPE/null
@@ -1552,7 +1554,7 @@
                                           struct:cpointer:super super-wrap-type-type)
               get-super-info)
             (define-values (property-binding-ids ...) . property-binding-form) ...
-            (define-cpointer-type _^TYPE super-pointer)
+            (define-cpointer-type _^TYPE super-pointer #:tag 'TYPE)
             define-wrap-type
             ;; these make it possible to use recursive pointer definitions
             (define _TYPE-pointer      (wrap-TYPE-type _^TYPE))

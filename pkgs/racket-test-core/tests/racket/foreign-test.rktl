@@ -171,6 +171,11 @@
                        [c7 _c7_list]
                        [i2 _int]))
 
+(let ()
+  (define-cstruct _posn ([x _int]
+                         [y _int]))
+  (test #t equal? 'posn posn-tag))
+
 (define _borl (_union _byte _long))
 (define _ic7iorl (_union _ic7i _long))
 
