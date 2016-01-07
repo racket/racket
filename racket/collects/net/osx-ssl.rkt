@@ -394,7 +394,7 @@
           (cond
            [(zero? n)
             (wrap-evt always-evt (lambda (v) #f))]
-           [(n . < . -1)
+           [(negative? n)
             (raise-osx-ssl-network-error 'write-bytes
                                          (CFWriteStreamGetError out))]
            [else n]))]
@@ -461,6 +461,7 @@
       (close-output-port p)))
 
 (define (raise-osx-ssl-network-error who err)
-  (exn:fail:network
-   (~a who ": failed " (CFStreamError->list err))
-   (current-continuation-marks)))
+  (raise
+   (exn:fail:network
+    (~a who ": failed " (CFStreamError->list err))
+    (current-continuation-marks))))
