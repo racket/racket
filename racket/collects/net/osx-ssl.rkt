@@ -24,7 +24,11 @@
        (ffi-lib "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation")))
 (define net-lib
   (and (eq? 'macosx (system-type))
-       (ffi-lib "/System/Library/Frameworks/CFNetwork.framework/CFNetwork")))
+       (ffi-lib
+        "/System/Library/Frameworks/CFNetwork.framework/CFNetwork"
+        #:fail (lambda ()
+                 ;; Path inside "CoreServices.framework" needed for OS X 10.5
+                 (ffi-lib "/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CFNetwork.framework/CFNetwork")))))
 
 (define-ffi-definer define-cf cf-lib
   #:default-make-fail make-not-available)
