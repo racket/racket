@@ -2,6 +2,8 @@
 
 (require "stream.rkt"
          "private/sequence.rkt"
+         "fixnum.rkt"
+         "flonum.rkt"
          racket/contract/combinator
          racket/contract/base
          (for-syntax racket/base)
@@ -39,32 +41,56 @@
 (define (sequence->list s)
   (for/list ([v s]) v))
 
+(define (sequence-length/o1 s)
+  (cond [(exact-nonnegative-integer? s) s]
+        [(vector? s) (vector-length s)]
+        [(flvector? s) (flvector-length s)]
+        [(fxvector? s) (fxvector-length s)]
+        [(string? s) (string-length s)]
+        [(bytes? s) (bytes-length s)]
+        [(hash? s) (hash-count s)]
+        [else #f]))
+
 (define (sequence-length s)
   (unless (sequence? s) (raise-argument-error 'sequence-length "sequence?" s))
-  (cond [(list? s) (length s)]
-        [(vector? s) (vector-length s)]
-        [(hash? s) (hash-count s)]
+  (define len/o1 (sequence-length/o1 s))
+  (cond [len/o1 len/o1]
+        [(list? s) (length s)]
         [else
          (for/fold ([c 0]) ([i (in-values*-sequence s)])
            (add1 c))]))
 
+(define (sequence-ref/error i s)
+  (raise-arguments-error 'sequence-ref
+                         "sequence ended before index"
+                         "index" i
+                         "sequence" s))
+                         
 (define (sequence-ref s i)
   (unless (sequence? s) (raise-argument-error 'sequence-ref "sequence?" s))
   (unless (exact-nonnegative-integer? i)
     (raise-argument-error 'sequence-ref "exact-nonnegative-integer?" i))
-  (let ([v (for/fold ([c #f]) ([v (in-values*-sequence s)]
-                               [j (in-range (add1 i))]
-                               #:unless (j . < . i))
-             (or v '(#f)))])
-    (cond
-     [(not v)
-      (raise-arguments-error 
-       'sequence-ref
-       "sequence ended before index"
-       "index" i
-       "sequence" s)]
-     [(list? v) (apply values v)]
-     [else v])))
+  (define len/o1 (or (and (not (hash? s)) (sequence-length/o1 s))
+                     (and (list? s) (length s))))
+  (if len/o1
+    (begin 
+      (unless (< i len/o1)
+        (sequence-ref/error i s))
+      (cond [(exact-nonnegative-integer? s) i]
+            [(vector? s) (vector-ref s i)]
+            [(flvector? s) (flvector-ref s i)]
+            [(fxvector? s) (fxvector-ref s i)]
+            [(string? s) (string-ref s i)]
+            [(bytes? s) (bytes-ref s i)]
+            [(list? s) (list-ref s i)]))
+    (let ([v (for/fold ([c #f]) ([v (in-values*-sequence s)]
+                                 [j (in-range (add1 i))]
+                                 #:unless (j . < . i))
+               (or v '(#f)))])
+      (cond
+        [(not v) (sequence-ref/error i s)]
+        [(list? v) (apply values v)]
+        [else v]))))
 
 (define (sequence-tail seq i)
   (unless (sequence? seq) (raise-argument-error 'sequence-tail "sequence?" seq))
