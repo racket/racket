@@ -218,7 +218,7 @@
    #:name vectorof-name
    #:first-order vectorof-first-order
    #:stronger vectorof-stronger
-   #:late-neg-projection (vectorof-late-neg-ho-projection chaperone-vector)))
+   #:late-neg-projection (vectorof-late-neg-ho-projection impersonate-vector)))
 
 (define-syntax (wrap-vectorof stx)
   (syntax-case stx ()
