@@ -331,6 +331,7 @@ void scheme_init_bool(Scheme_Env *env);
 void scheme_init_syntax(Scheme_Env *env);
 void scheme_init_marshal(Scheme_Env *env);
 void scheme_init_error(Scheme_Env *env);
+void scheme_init_unsafe_hash(Scheme_Env *env);
 #ifndef NO_SCHEME_EXNS
 void scheme_init_exn(Scheme_Env *env);
 #endif
