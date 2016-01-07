@@ -88,7 +88,8 @@
     (saved-ho-id-table
      partially-applied-id
      extra-neg-party-argument-fn
-     valid-argument-lists)
+     valid-argument-lists
+     ex-id)
     #:property
     prop:set!-transformer
     (λ (self stx)
@@ -96,8 +97,9 @@
             [saved-ho-id-table (provide/contract-arrow-transformer-saved-ho-id-table self)]
             [extra-neg-party-argument-fn 
              (provide/contract-arrow-transformer-extra-neg-party-argument-fn self)]
-            [valid-arg-lists (provide/contract-arrow-transformer-valid-argument-lists self)]
-            [rename-id (provide/contract-info-rename-id self)])
+            [the-valid-arg-shapes (provide/contract-arrow-transformer-valid-argument-lists self)]
+            [rename-id (provide/contract-info-rename-id self)]
+            [ex-id (provide/contract-arrow-transformer-ex-id self)])
         (with-syntax ([partially-applied-id partially-applied-id]
                       [extra-neg-party-argument-fn extra-neg-party-argument-fn])
           (if (eq? 'expression (syntax-local-context))
@@ -124,7 +126,15 @@
                            (add-rename-id rename-id
                             (syntax-local-lift-expression
                              (add-lifted-property
-                              #'(partially-applied-id lifted-neg-party))))))))
+                              (generate-medium-speed-wrapper
+                               the-valid-arg-shapes
+                               #'(partially-applied-id lifted-neg-party)
+                               (add-neg-party (add-rename-id
+                                               rename-id
+                                               #'extra-neg-party-argument-fn))
+                               #'lifted-neg-party
+                               #'add-medium-speed-kwd-wrapper
+                               ex-id))))))))
                   (when key (hash-set! saved-ho-id-table key lifted-ctc-val))
                   (adjust-location (syntax-local-introduce lifted-ctc-val)))
                 (syntax-case stx (set!)
@@ -138,7 +148,7 @@
                     stx #'id)]
                   [(name more ...)
                    (with-syntax ([app (datum->syntax stx '#%app)])
-                     (if (valid-argument-list? stx valid-arg-lists)
+                     (if (valid-argument-list? stx the-valid-arg-shapes)
                          (with-syntax ([lifted-neg-party (syntax-local-introduce lifted-neg-party)])
                            (adjust-location
                             #`(app #,(add-neg-party (add-rename-id
@@ -209,12 +219,27 @@
                  #`(app #,id args ...))]
               [x (identifier? #'x) id])))))
   
-  (define (make-provide/contract-arrow-transformer rename-id contract-id id pai enpfn val)
+  (define (make-provide/contract-arrow-transformer rename-id contract-id id pai enpfn val ex-id)
     (provide/contract-arrow-transformer rename-id
                                         contract-id id
                                         (make-hasheq)
-                                        pai enpfn val)))
+                                        pai enpfn val ex-id)))
 
+(define (add-medium-speed-kwd-wrapper chapone-contracted-proc no-keywords-path)
+  (make-keyword-procedure
+   (λ (kwds kwd-args . args)
+     (keyword-apply chapone-contracted-proc kwds kwd-args args))
+   no-keywords-path))
+
+(define-syntax (maybe-add-name stx)
+  (syntax-case stx ()
+    [(_ expr)
+     (let ()
+       (define name (syntax-local-name))
+       (printf "name! ~s\n" name)
+       (if (symbol? name)
+           #`(let ([#,name expr]) #,name)
+           #'expr))]))
 
 ;; tl-code-for-one-id/new-name : syntax syntax syntax (union syntax #f) -> (values syntax syntax)
 ;; given the syntax for an identifier and a contract,
@@ -317,7 +342,8 @@
                    (quote-syntax contract-id) (quote-syntax id)
                    (quote-syntax partially-applied-id)
                    (quote-syntax extra-neg-party-argument-fn)
-                   #,the-valid-app-shapes)
+                   #,the-valid-app-shapes
+                   '#,ex-id)
                 #`(make-provide/contract-transformer
                    (quote-syntax #,id-rename)
                    (quote-syntax contract-id) (quote-syntax id)
