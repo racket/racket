@@ -514,11 +514,19 @@ In more detail:
      `make'. The `README' value is used as a file name to download
      from the server.
 
-     For a Mac OS X installer, set `SIGN_IDENTITY' to sign the
-     installer, where the value of `SIGN_IDENTITY' is the name to
+     To create a ".tgz" archive instead of an installer (or any
+     platform), set `TGZ_MODE' to "--tgz".
+
+     For a Mac OS X installer, set `SIGN_IDENTITY' as the name to
      which the signing certificate is associated. Set `MAC_PKG_MODE'
      to "--mac-pkg" to create a ".pkg" installer instead of a ".dmg"
      image.
+
+     For a Windows installer, set `OSSLSIGNCODE_ARGS_BASE64` as a
+     Base64 encoding of an S-expression for a list of argument strings
+     for `osslsigncode`. The `-n', `-t', `-in', and `-out' arguments
+     are provided to `osslsigncode` automatically, so supply the
+     others.
 
      The `SERVER_CATALOG_PATH' and `SERVER_COLLECTS_PATH' makefile
      variables specify paths at `SERVER' plus `SERVER_PORT' to access
