@@ -69,7 +69,7 @@ plain-in-place:
 
 win32-in-place:
 	$(MAKE) win32-base
-	$(MAKE) win32-pkgs-catalog
+	$(MAKE) win32-pkgs-catalog SRC_CATALOG="$(SRC_CATALOG)"
 	$(WIN32_RUN_RACO) pkg update $(UPDATE_PKGS_ARGS)
 	$(WIN32_RUN_RACO) pkg install $(INSTALL_PKGS_ARGS)
 	$(WIN32_RUN_RACO) setup --only-foreign-libs $(ALL_PLT_SETUP_OPTIONS)
@@ -346,8 +346,10 @@ pkgs-catalog:
 	$(RUN_RACKET) $(PKGS_CONFIG) "$(DEFAULT_SRC_CATALOG)" "$(SRC_CATALOG)"
 	$(RUN_RACKET) racket/src/pkgs-check.rkt racket/share/pkgs-catalog
 
+COPY_PKGS_ARGS = PLAIN_RACKET="$(WIN32_PLAIN_RACKET)" SRC_CATALOG="$(SRC_CATALOG)"
+
 win32-pkgs-catalog:
-	$(MAKE) pkgs-catalog PLAIN_RACKET="$(WIN32_PLAIN_RACKET)"
+	$(MAKE) pkgs-catalog $(COPY_PKGS_ARGS)
 
 # ------------------------------------------------------------
 # On a server platform (for an installer build):
