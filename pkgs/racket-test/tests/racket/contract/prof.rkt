@@ -220,4 +220,27 @@
    'contract-marks24
    '(set-box! (contract (box/c neg-blame?) (box 1) 'pos 'neg) 2))
 
+  ;; do we catch flat contracts applies with `contract-out`?
+  (test/spec-passed/result
+   'contract-marks25
+   '(let ()
+      (eval '(module prof25 racket/base
+               (require racket/contract 'prof-fun)
+               (define x 3)
+               (define a-contract (λ _ (named-blame? 'prof25)))
+               (provide
+                (contract-out
+                 [x a-contract]))))
+      (eval '(require 'prof25))
+      (eval 'x))
+   3)
+
+  (test/spec-passed/result
+   'contract-marks26
+   '(let ()
+      (eval '(define/contract x (λ _ (named-blame? 'top-level)) 3))
+      (eval 'x))
+   3)
+
+
   )
