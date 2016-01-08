@@ -1050,6 +1050,24 @@
                          (f #:x 1))))))
       (eval '(dynamic-require ''provide/contract54-m2 'a)))
    '((1 #t #\x 0) (1 #f #\a 0)))
+
+  (test/spec-passed/result
+   'provide/contract55
+   '(let ()
+      (eval '(module provide/contract55-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [an-s s?]
+                 [s-x (-> s? integer?)]))
+               (struct s (x))
+               (define an-s (s 5))))
+      (eval '(module provide/contract55-m2 racket/base
+               (require 'provide/contract55-m1)
+               (provide a)
+               (define a (s-x (chaperone-struct an-s s-x (λ (s x) x))))))
+      (eval '(dynamic-require ''provide/contract55-m2 'a)))
+   '5)
   
   (contract-error-test
    'contract-error-test8
