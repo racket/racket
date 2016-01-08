@@ -51,7 +51,7 @@ BEGIN
 #ifdef MZSTART
             VALUE "InternalName", "mzstart\0"
 #endif
-            VALUE "LegalCopyright", "Copyright 1996-2015 PLT Design Inc.\0"
+            VALUE "LegalCopyright", "Copyright 1996-2016 PLT Design Inc.\0"
 #ifdef MRSTART
             VALUE "OriginalFilename", "MrStart.exe\0"
 #endif
