@@ -286,4 +286,74 @@
      3)
    3)
 
+  (test/spec-passed/result
+   'contract-marks32
+   '(car (contract (listof pos-blame?) (list 3) 'pos 'neg))
+   3)
+
+  (test/spec-passed/result
+   'contract-marks33
+   '((car (contract (listof (-> neg-blame? pos-blame?)) (list (lambda (x) 3)) 'pos 'neg)) 2)
+   3)
+
+  (test/spec-passed/result
+   'contract-marks34
+   '(begin
+      (require racket/promise)
+      (force (contract (promise/c pos-blame?) (delay 3) 'pos 'neg)))
+   3)
+
+  (test/spec-passed/result
+   'contract-marks35
+   '(let ()
+      (define/contract tag
+        (prompt-tag/c (-> (λ _ (named-blame? 'top-level))
+                          (λ _ (named-blame? 'top-level))))
+        (make-continuation-prompt-tag))
+      (call-with-continuation-prompt
+       (lambda ()
+         (number->string
+          (call-with-composable-continuation
+           (lambda (k)
+            (abort-current-continuation tag k)))))
+       tag
+       (lambda (k) 3)))
+   3)
+
+  (test/spec-passed/result
+   'contract-marks36
+   '(let ()
+      (define/contract mark-key
+        (continuation-mark-key/c (-> (λ _ (named-blame? 'top-level))
+                                     (λ _ (named-blame? 'top-level))))
+        (make-continuation-mark-key))
+      (with-continuation-mark
+       mark-key
+       (lambda (s) (append s '(truffle fudge ganache)))
+       (let ([mark-value (continuation-mark-set-first
+                          (current-continuation-marks) mark-key)])
+         (mark-value '(chocolate-bar)))))
+   '(chocolate-bar truffle fudge ganache))
+
+  (test/spec-passed/result
+   'contract-marks37
+   '(let ()
+      (define/contract my-evt
+        (evt/c (λ _ (named-blame? 'top-level)))
+        always-evt)
+      (sync my-evt)
+      3)
+   3)
+
+  (test/spec-passed/result
+   'contract-marks38
+   '(let ()
+      (define/contract chan
+        (channel/c (λ _ (named-blame? 'top-level)))
+        (make-channel))
+      (thread (λ () (channel-get chan)))
+      (channel-put chan 'not-a-string)
+      3)
+   3)
+
   )

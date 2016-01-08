@@ -1283,7 +1283,10 @@
              (c/i-procedure
               proc
               (λ (promise)
-                (values (λ (val) (p-app val neg-party)) promise)))))
+                (values (λ (val) (with-contract-continuation-mark
+                                  (cons blame neg-party)
+                                  (p-app val neg-party)))
+                        promise)))))
           (raise-blame-error
            blame #:missing-party neg-party
            val
@@ -1520,11 +1523,14 @@
     (define cc-neg-projs (for/list ([proj (in-list call/cc-projs)]) (proj swapped)))
     (define cc-pos-projs (for/list ([proj (in-list call/cc-projs)]) (proj blame)))
     (define (make-proj projs neg-party)
+      (define blame+neg-party (cons blame neg-party))
       (λ vs
-        (apply values
-               (for/list ([proj (in-list projs)]
-                          [v (in-list vs)])
-                 (proj v neg-party)))))
+        (with-contract-continuation-mark
+         blame+neg-party
+         (apply values
+                (for/list ([proj (in-list projs)]
+                           [v (in-list vs)])
+                  (proj v neg-party))))))
     (λ (val neg-party)
       ;; now do the actual wrapping
       (cond
@@ -1604,11 +1610,16 @@
     (define proj1 (ho-proj blame))
     (define proj2 (ho-proj (blame-swap blame)))
     (λ (val neg-party)
+      (define blame+neg-party (cons blame neg-party))
       (cond
         [(continuation-mark-key? val)
          (proxy val 
-                (λ (v) (proj1 v neg-party))
-                (λ (v) (proj2 v neg-party))
+                (λ (v) (with-contract-continuation-mark
+                        blame+neg-party
+                        (proj1 v neg-party)))
+                (λ (v) (with-contract-continuation-mark
+                        blame+neg-party
+                        (proj2 v neg-party)))
                 impersonator-prop:contracted ctc
                 impersonator-prop:blame blame)]
         [else 
@@ -1665,21 +1676,23 @@
   (define ctcs (chaperone-evt/c-ctcs evt-ctc))
   (define projs (map contract-projection ctcs))
   (λ (blame)
-    (define ((checker val) . args)
-      (define expected-num (length ctcs))
-      (unless (= (length args) expected-num)
-        (raise-blame-error
-         blame val
-         `(expected: "event that produces ~a values"
-           given: "event that produces ~a values")
-         expected-num
-         (length args)))
-      (apply
-       values
-       (for/list ([proj projs] [val args])
-         ((proj blame) val))))
-    (define (generator evt)
-      (values evt (checker evt)))
+    (define ((checker val blame+neg-party) . args)
+      (with-contract-continuation-mark
+       blame+neg-party
+       (define expected-num (length ctcs))
+       (unless (= (length args) expected-num)
+         (raise-blame-error
+          blame val
+          `(expected: "event that produces ~a values"
+            given: "event that produces ~a values")
+          expected-num
+          (length args)))
+       (apply
+        values
+        (for/list ([proj projs] [val args])
+          ((proj blame) val)))))
+    (define ((generator blame+neg-party) evt)
+      (values evt (checker evt blame+neg-party)))
     (λ (val neg-party)
       (unless (contract-first-order-passes? evt-ctc val)
         (raise-blame-error
@@ -1687,7 +1700,7 @@
          '(expected: "~s" given: "~e")
          (contract-name evt-ctc)
          val))
-      (chaperone-evt val generator))))
+      (chaperone-evt val (generator (cons blame neg-party))))))
 
 ;; evt/c-first-order : Contract -> Any -> Boolean
 ;; First order check for evt/c
@@ -1733,8 +1746,19 @@
   (λ (blame)
     (define pos-proj (ho-proj blame))
     (define neg-proj (ho-proj (blame-swap blame)))
-    (define (proj1 neg-party) (λ (ch) (values ch (λ (v) (pos-proj v neg-party)))))
-    (define (proj2 neg-party) (λ (ch v) (neg-proj v neg-party)))
+    (define (proj1 neg-party)
+      (define blame+neg-party (cons blame neg-party))
+      (λ (ch)
+        (values ch (λ (v)
+                     (with-contract-continuation-mark
+                      blame+neg-party
+                      (pos-proj v neg-party))))))
+    (define (proj2 neg-party)
+      (define blame+neg-party (cons blame neg-party))
+      (λ (ch v)
+        (with-contract-continuation-mark
+         blame+neg-party
+         (neg-proj v neg-party))))
     (λ (val neg-party)
       (cond
         [(channel? val)
