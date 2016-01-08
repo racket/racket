@@ -1,7 +1,9 @@
 #lang racket/base
 (require ffi/unsafe
          racket/runtime-path
-         (for-syntax racket/base))
+         setup/cross-system
+         (for-syntax racket/base
+                     setup/cross-system))
 
 (provide libcrypto
          libcrypto-load-fail-reason
@@ -42,7 +44,7 @@
 ;; We need to declare because they might be distributed with Racket,
 ;; in which case they should get bundled with stand-alone executables:
 (define-runtime-path libcrypto-so
-  (case (system-type)
+  (case (cross-system-type)
     [(windows) '(so "libeay32")]
     [(macosx)
      ;; Version "1.0.0" is bundled with Racket
