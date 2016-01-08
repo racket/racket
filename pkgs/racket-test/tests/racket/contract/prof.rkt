@@ -242,5 +242,38 @@
       (eval 'x))
    3)
 
+  (test/spec-passed/result
+   'contract-marks27
+   '(with-contract test27 #:result (λ _ (named-blame? '(region test27))) 3)
+   3)
+
+  (test/spec-passed/result
+   'contract-marks28
+   '(let ()
+      (eval '(define-struct/contract foo ([bar (λ _ (named-blame? 'top-level))])))
+      (eval '(foo-bar (foo 3))))
+   3)
+
+  (test/spec-passed/result
+   'contract-marks29
+   '(let ()
+      (eval '(define f (invariant-assertion (-> (λ _ (named-blame? 'top-level))
+                                                (λ _ (named-blame? 'top-level)))
+                                            (λ (x) 3))))
+      (eval '(f 2)))
+   3)
+
+  (test/spec-passed/result
+   'contract-marks30
+   '(let ()
+      (eval '(module test30 racket/base
+               (require racket/contract/base 'prof-fun)
+               (define (f x) 3)
+               (define-module-boundary-contract g f (-> (λ _ (named-blame? 'top-level))
+                                                        (λ _ (named-blame? 'top-level))))
+               (provide g)))
+      (eval '(require 'test30))
+      (eval '(f 2)))
+   3)
 
   )
