@@ -3248,8 +3248,8 @@ scheme_init_unsafe_hash (Scheme_Env *env)
 
   // hash-iterate-value
   p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_value, "unsafe-hash-iterate-value", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_BINARY_INLINED
-                                                            SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE
 );
   scheme_add_global_constant ("unsafe-hash-iterate-value", p, env);
@@ -3258,16 +3258,22 @@ scheme_init_unsafe_hash (Scheme_Env *env)
 static Scheme_Object *unsafe_hash_table_next(mzlonglong start, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *o = argv[0];
-  mzlonglong v;
 
-  // currently only works for HASHTRP (immutable hash)
+  // currently only works for HASHTP (mutable hash)
   // TODO: implement for other SCHEME_HASH
 
-  v = scheme_hash_tree_next((Scheme_Hash_Tree *)o, start);
-  if (v == -1)
-    return scheme_false;
-  else
-    return scheme_make_integer_value_from_long_long(v);
+  Scheme_Hash_Table *hash;
+  int i, sz;
+
+  hash = (Scheme_Hash_Table *)o;
+  
+  sz = hash->size;
+  for (i = start + 1; i < sz; i++) {
+    if (hash->vals[i])
+      return scheme_make_integer(i);
+  }
+
+  return scheme_false;
 }
 
 static Scheme_Object *unsafe_scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[])
@@ -3287,17 +3293,19 @@ static Scheme_Object *unsafe_scheme_hash_table_iterate_next(int argc, Scheme_Obj
 
 static Scheme_Object *unsafe_hash_table_index(int argc, Scheme_Object *argv[], int get_val)
 {
-  Scheme_Object *p = argv[1], *obj, *v, *k;
+  Scheme_Hash_Table *hash = (Scheme_Hash_Table *)argv[0];
+  Scheme_Object *p = argv[1];
   mzlonglong pos;
 
-  obj = argv[0];
+  // currently only works for HASHTP (mutable hash)
+  // TODO: implement for other SCHEME_HASH
 
   scheme_get_long_long_val(p, &pos);
 
-  // currently only works for HASHTRP (immutable hash)
-  // TODO: implement for other SCHEME_HASH
-  hamt_at_index((Scheme_Hash_Tree *)obj, pos, &k, &v, NULL);
-  return (get_val ? v : k);
+  if (get_val)
+    return hash->vals[pos];
+  else
+    return hash->keys[pos];
 }
 
 static Scheme_Object *unsafe_scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[])
