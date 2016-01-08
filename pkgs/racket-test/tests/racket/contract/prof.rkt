@@ -276,4 +276,14 @@
       (eval '(f 2)))
    3)
 
+  (test/spec-passed/result
+   'contract-marks31
+   '((hash-ref (contract (hash/c (-> neg-blame? pos-blame?)
+                                 (-> neg-blame? pos-blame?))
+                         (hash values values)
+                         'pos 'neg)
+               values)
+     3)
+   3)
+
   )

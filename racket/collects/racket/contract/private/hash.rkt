@@ -234,6 +234,7 @@
 (define (handle-the-hash val neg-party
                          pos-dom-proj neg-dom-proj mk-pos-rng-proj mk-neg-rng-proj
                          chaperone-or-impersonate-hash ctc blame)
+  (define blame+neg-party (cons blame neg-party))
   (if (immutable? val) 
       (for/fold ([h val]) ([(k v) (in-hash val)])
         (hash-set h
@@ -242,16 +243,26 @@
       (chaperone-or-impersonate-hash
        val
        (λ (h k)
-         (values (neg-dom-proj k neg-party)
+         (values (with-contract-continuation-mark
+                  blame+neg-party
+                  (neg-dom-proj k neg-party))
                  (λ (h k v)
-                   ((mk-pos-rng-proj k) v neg-party))))
+                   (with-contract-continuation-mark
+                    blame+neg-party
+                    ((mk-pos-rng-proj k) v neg-party)))))
        (λ (h k v)
-         (values (neg-dom-proj k neg-party)
-                 ((mk-neg-rng-proj k) v neg-party)))
+         (with-contract-continuation-mark
+          blame+neg-party
+          (values (neg-dom-proj k neg-party)
+                  ((mk-neg-rng-proj k) v neg-party))))
        (λ (h k)
-         (neg-dom-proj k neg-party))
+         (with-contract-continuation-mark
+          blame+neg-party
+          (neg-dom-proj k neg-party)))
        (λ (h k)
-         (pos-dom-proj k neg-party))
+         (with-contract-continuation-mark
+          blame+neg-party
+          (pos-dom-proj k neg-party)))
        impersonator-prop:contracted ctc
        impersonator-prop:blame blame)))
 
