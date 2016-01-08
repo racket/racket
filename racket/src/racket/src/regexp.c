@@ -1,7 +1,7 @@
 /*
  * @(#)regexp.c 1.3 of 18 April 87
  * Revised for PLT Racket, 1995-2001
- * Copyright (c) 2004-2015 PLT Design Inc.
+ * Copyright (c) 2004-2016 PLT Design Inc.
  *
  * Copyright (c) 1986 by University of Toronto.
  * Written by Henry Spencer.  Not derived from licensed software.
