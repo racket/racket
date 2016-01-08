@@ -36,7 +36,7 @@ WIN32_RUN_RACKET = $(WIN32_PLAIN_RACKET) -G racket/etc -X racket/collects
 RUN_RACO = $(RUN_RACKET) -N raco -l- raco
 WIN32_RUN_RACO = $(WIN32_RUN_RACKET) -N raco -l- raco
 
-DEFAULT_SRC_CATALOG = http://pkgs.racket-lang.org
+DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 
 CPUS = 
 

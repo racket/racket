@@ -34,8 +34,9 @@
             ((length l) . >= . 1)
             (equal? (car l) catalog-relative-path-str)))
      (define has-src-catalog?
-       (member (if src-catalog-is-default? #f src-catalog)
-               l))
+       (or (and src-catalog-is-default?
+                (member #f l))
+           (member src-catalog l)))
      (unless (and starts-as-expected?
                   has-src-catalog?)
        (error 'pkgs-catalog
