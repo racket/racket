@@ -198,10 +198,12 @@ the target identifier is extracted from the structure instance; if the
 field value is not an identifier, then an identifier @racketidfont{?}
 with an empty context is used, instead.
 
-If the property value is a procedure that takes one argument, then the procedure
-is called to obtain the identifier that the rename transformer will use
-as a target identifier. If the procedure returns any value that is not
-an identifier, the @racket[exn:fail:contract] exception is raised.
+If the property value is a procedure that takes one argument, then the
+procedure is called to obtain the identifier that the rename
+transformer will use as a target identifier. The returned identifier
+should probably have the @racket['not-free-identifier=?] syntax
+property. If the procedure returns any value that is not an
+identifier, the @racket[exn:fail:contract] exception is raised.
 
 @examples[#:eval stx-eval #:escape UNSYNTAX
   (code:comment "Example of a procedure argument for prop:rename-transformer")

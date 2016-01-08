@@ -2926,8 +2926,8 @@ Similar to @racket[quote], but produces a @tech{syntax object}
 that preserves the @tech{lexical information} and source-location
 information attached to @racket[datum] at expansion time.
 
-When @racket[#:local] is specified, than all @tech{scopes} in the
-syntax object's @tech{lexical information} is preserved. When
+When @racket[#:local] is specified, then all @tech{scopes} in the
+syntax object's @tech{lexical information} are preserved. When
 @racket[#:local] is omitted, then the @tech{scope sets} within
 @racket[datum] are pruned to omit the @tech{scope} for any binding
 form that appears between the @racket[quote-syntax] form and the

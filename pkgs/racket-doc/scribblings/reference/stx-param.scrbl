@@ -79,6 +79,34 @@ the target's value.
          (if t then else)))]))
 ]}
 
+@defform[(define-rename-transformer-parameter id expr)]{
+
+Binds @racket[id] as syntax to a @tech{syntax parameter} that must
+be bound to a @racket[make-rename-transformer] result and, unlike
+@racket[define-syntax-parameter], @racket[syntax-local-value] of
+@racket[id] @emph{does} produce the target's value, including inside
+of @racket[syntax-parameterize].
+
+@examples[#:eval the-eval #:escape UNSYNTAX
+ (define-syntax (test stx)
+  (syntax-case stx ()
+    [(_ t)
+     #`#,(syntax-local-value #'t)]))
+ (define-syntax one 1)
+ (define-syntax two 2)
+ (define-syntax-parameter not-num
+   (make-rename-transformer #'one))
+ (test not-num)
+
+ (define-rename-transformer-parameter num
+   (make-rename-transformer #'one))
+ (test num)
+ (syntax-parameterize ([num (make-rename-transformer #'two)])
+   (test num))
+]
+
+@history[#:added "6.3.0.14"]}
+
 @; ----------------------------------------------------------------------
 
 @section{Syntax Parameter Inspection}

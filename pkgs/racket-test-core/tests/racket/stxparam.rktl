@@ -132,5 +132,23 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-syntax (slv stx)
+    (syntax-case stx ()
+      [(_ t)
+       #`#,(syntax-local-value #'t)]))
+  (define-syntax one 1)
+  (define-syntax two 2)
+  (define-rename-transformer-parameter num
+    (make-rename-transformer #'one))
+  (test #t = (slv num) 1)
+  (syntax-parameterize ([num (make-rename-transformer #'two)])
+    (test #t = (slv num) 2))
+  (splicing-syntax-parameterize ([num (make-rename-transformer #'two)])
+    (define too (slv num)))
+  (test #t = too 2))
+
+;; ----------------------------------------
+
 (report-errs)
 
