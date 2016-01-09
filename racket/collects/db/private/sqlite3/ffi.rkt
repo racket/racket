@@ -11,7 +11,8 @@
 
 ;; raco distribute should include Racket's sqlite3 if present
 (define-runtime-path sqlite-so
-  (case (cross-system-type)
+  #:runtime?-id runtime?
+  (case (if runtime? (system-type) (cross-system-type))
     [(windows) '(so "sqlite3")]
     [else '(so "libsqlite3" ("0" #f))]))
 
