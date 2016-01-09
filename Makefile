@@ -38,6 +38,10 @@ WIN32_RUN_RACO = $(WIN32_RUN_RACKET) -N raco -l- raco
 
 DEFAULT_SRC_CATALOG = https://pkgs.racket-lang.org
 
+# Belongs in the "Configuration options" section, but here
+# to accomodate nmake:
+SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
+
 CPUS = 
 
 in-place:
@@ -194,8 +198,8 @@ racket/src/build/cross/Makefile: racket/src/configure racket/src/Makefile.in
 # end in "_q" or "_qq", don't use any quote marks on the right-hand
 # side of its definition.
 
-# Catalog for package sources:
-SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
+# Catalog for package sources (defined above):
+# SRC_CATALOG = $(DEFAULT_SRC_CATALOG)
 
 # A URL embedded in documentation for remote searches, where a Racket
 # version and search key are added as query fields to the URL, and ""
