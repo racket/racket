@@ -50,6 +50,7 @@
              (rename *in-bytes-lines in-bytes-lines)
              in-hash
              in-hash-keys
+             in-mutable-hash-keys
              in-hash-values
              in-hash-pairs
              in-directory
@@ -667,6 +668,34 @@
   (define (in-hash-keys ht)
     (unless (hash? ht) (raise-argument-error 'in-hash-keys "hash?" ht))
     (make-do-sequence (lambda () (:hash-gen ht hash-iterate-key))))
+  (define-sequence-syntax in-mutable-hash-keys
+    (lambda () #'in-hash-keys)
+    (lambda (stx)
+      (syntax-case stx ()
+        [[(id) (_ ht-expr)]
+         (for-clause-syntax-protect
+          #'[(id)
+             (:do-in
+              ;;outer bindings
+              ([(ht) ht-expr])
+              ;; outer check
+              (unless (and (hash? ht) (not (immutable? ht)) (not (hash-weak? ht)))
+                ;(and (hash? ht) (immutable? ht)) 
+                (in-hash-keys ht))
+              ;; loop bindings
+              ([i (unsafe-hash-iterate-first ht)])
+              ;; pos check
+              i
+              ;; inner bindings
+              ([(id) (unsafe-hash-iterate-key ht i)])
+              ;; pre guard
+              #t
+              ;; post guard
+              #t
+              ;; loop args
+              ((unsafe-hash-iterate-next ht i)))])]
+        [_ #f])))
+
   (define (in-hash-values ht)
     (unless (hash? ht) (raise-argument-error 'in-hash-values "hash?" ht))
     (make-do-sequence (lambda () (:hash-gen ht hash-iterate-value))))

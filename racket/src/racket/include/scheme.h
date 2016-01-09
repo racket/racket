@@ -644,6 +644,10 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 #define SCHEME_MCAR(obj)      (((Scheme_Simple_Object *)(obj))->u.pair_val.car)
 #define SCHEME_MCDR(obj)      (((Scheme_Simple_Object *)(obj))->u.pair_val.cdr)
 
+#define SCHEME_HASHT_SIZE(obj) (((Scheme_Hash_Table *)(obj))->size)
+#define SCHEME_HASHT_KEYS(obj)  (((Scheme_Hash_Table *)(obj))->keys)
+#define SCHEME_HASHT_VALS(obj)  (((Scheme_Hash_Table *)(obj))->vals)
+
 #define SCHEME_VEC_SIZE(obj) (((Scheme_Vector *)(obj))->size)
 #define SCHEME_VEC_ELS(obj)  (((Scheme_Vector *)(obj))->els)
 #define SCHEME_VEC_BASE(obj) SCHEME_VEC_ELS(obj)

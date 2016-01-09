@@ -34,6 +34,13 @@ THREAD_LOCAL_DECL(intptr_t scheme_hash_iteration_count);
 
 READ_ONLY static Scheme_Object GONE[1];
 
+static Scheme_Object *unsafe_scheme_hash_table_iterate_start (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_hash_table_iterate_next (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_hash_table_iterate_key (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_hash_table_iterate_value (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_hash_table_next (mzlonglong start, int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_hash_table_index (int argc, Scheme_Object *argv[], int get_val);
+
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
 #endif
@@ -3207,3 +3214,106 @@ static void register_traversers(void)
 END_XFORM_SKIP;
 
 #endif
+
+/********************* unsafe hash iteration *********************/
+
+void
+scheme_init_unsafe_hash (Scheme_Env *env)
+{
+  Scheme_Object *p;
+  
+  // hash-iterate-first
+  p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_start, "unsafe-hash-iterate-first", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_UNARY_INLINED
+							     SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+							     | SCHEME_PRIM_PRODUCES_FIXNUM
+);
+  scheme_add_global_constant ("unsafe-hash-iterate-first", p, env);
+
+  // hash-iterate-next
+  p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_next, "unsafe-hash-iterate-next", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_BINARY_INLINED
+							    SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+							    | SCHEME_PRIM_PRODUCES_FIXNUM
+);
+  scheme_add_global_constant ("unsafe-hash-iterate-next", p, env);
+
+  // hash-iterate-key
+  p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_key, "unsafe-hash-iterate-key", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_BINARY_INLINED
+							    SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+							    | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE
+);
+  scheme_add_global_constant ("unsafe-hash-iterate-key", p, env);
+
+  // hash-iterate-value
+  p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_value, "unsafe-hash-iterate-value", 2, 2, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
+                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+                                                            | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE
+);
+  scheme_add_global_constant ("unsafe-hash-iterate-value", p, env);
+}
+
+static Scheme_Object *unsafe_hash_table_next(mzlonglong start, int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o = argv[0];
+
+  // currently only works for HASHTP (mutable hash)
+  // TODO: implement for other SCHEME_HASH
+
+  Scheme_Hash_Table *hash;
+  int i, sz;
+
+  hash = (Scheme_Hash_Table *)o;
+  
+  sz = hash->size;
+  for (i = start + 1; i < sz; i++) {
+    if (hash->vals[i])
+      return scheme_make_integer(i);
+  }
+
+  return scheme_false;
+}
+
+static Scheme_Object *unsafe_scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[])
+{
+  return unsafe_hash_table_next(-1, argc, argv);
+}
+
+static Scheme_Object *unsafe_scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[1];
+  mzlonglong pos;
+
+  scheme_get_long_long_val(p, &pos);
+
+  return unsafe_hash_table_next(pos, argc, argv);
+}
+
+static Scheme_Object *unsafe_hash_table_index(int argc, Scheme_Object *argv[], int get_val)
+{
+  Scheme_Hash_Table *hash = (Scheme_Hash_Table *)argv[0];
+  Scheme_Object *p = argv[1];
+  mzlonglong pos;
+
+  // currently only works for HASHTP (mutable hash)
+  // TODO: implement for other SCHEME_HASH
+
+  scheme_get_long_long_val(p, &pos);
+
+  if (get_val)
+    return hash->vals[pos];
+  else
+    return hash->keys[pos];
+}
+
+static Scheme_Object *unsafe_scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[])
+{
+  return unsafe_hash_table_index(argc, argv, 1);
+}
+
+static Scheme_Object *unsafe_scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[])
+{
+  return unsafe_hash_table_index(argc, argv, 0);
+}

@@ -3422,6 +3422,37 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       scheme_mz_unbox_restore(jitter, &ubs);
 
       return 1;
+    } else if (IS_NAMED_PRIM(rator, "unsafe-hash-iterate-key")) {
+	//	       || IS_NAMED_PRIM(rator, "unsafe-hash-iterate-value")) {
+      int base_offset = (int)(intptr_t)&SCHEME_HASHT_KEYS(0x0);
+      intptr_t offset;
+      mz_jit_unbox_state ubs;
+
+      scheme_mz_unbox_save(jitter, &ubs);
+
+      const char *name = ((Scheme_Primitive_Proc *)rator)->name;
+
+      LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
+
+      mz_runstack_skipped(jitter, 2);
+      
+      scheme_generate_non_tail(app->rand1, jitter, 0, 1, 0);
+      CHECK_LIMIT();
+
+      offset = SCHEME_INT_VAL(app->rand2);
+      offset = base_offset + WORDS_TO_BYTES(offset);
+      // ldxi = immediate, r = register
+      jit_ldxi_p(dest, JIT_R0, offset);
+      /* jit_movi_l(JIT_V1, offset); */
+      /* jit_ldxr_p(dest, JIT_R0, JIT_V1); */
+      CHECK_LIMIT();
+      
+      mz_runstack_unskipped(jitter, 2);
+
+      scheme_mz_unbox_restore(jitter, &ubs);
+
+      return 1;
+      // end unsafe-hash-iterate
     } else if (IS_NAMED_PRIM(rator, "unsafe-f64vector-ref")
                || IS_NAMED_PRIM(rator, "unsafe-flvector-ref")
                || MZ_LONG_DOUBLE_AND(IS_NAMED_PRIM(rator, "unsafe-extflvector-ref")
