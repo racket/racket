@@ -112,7 +112,8 @@
 	   (assoc-pair "CFBundleShortVersionString"
 		       ,(version))
 	   (assoc-pair "NSPrincipalClass" "NSApplicationMain")
-	   (assoc-pair "NSHighResolutionCapable" (true))))
+           (assoc-pair "NSHighResolutionCapable" (true))
+	   (assoc-pair "NSSupportsAutomaticGraphicsSwitching" (true))))
 
     (create-app (build-path (current-directory) (if for-3m? 'up 'same))
                 (string-append "GRacket" suffix)
