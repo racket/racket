@@ -117,6 +117,12 @@
 (define SP_PROT_TLS1_SERVER #x00000040)
 (define SP_PROT_TLS1_CLIENT #x00000080)
 (define SP_PROT_TLS1 (bitwise-ior SP_PROT_TLS1_SERVER SP_PROT_TLS1_CLIENT))
+(define SP_PROT_TLS1_1_SERVER #x00000100)
+(define SP_PROT_TLS1_1_CLIENT #x00000200)
+(define SP_PROT_TLS1_1 (bitwise-ior SP_PROT_TLS1_1_SERVER SP_PROT_TLS1_1_CLIENT))
+(define SP_PROT_TLS1_2_SERVER #x00000400)
+(define SP_PROT_TLS1_2_CLIENT #x00000800)
+(define SP_PROT_TLS1_2 (bitwise-ior SP_PROT_TLS1_2_SERVER SP_PROT_TLS1_2_CLIENT))
 (define SCH_CRED_MANUAL_CRED_VALIDATION #x00000008)
 (define SCH_CRED_NO_DEFAULT_CREDS #x00000010)
 (define SCHANNEL_CRED_VERSION #x00000004)
@@ -287,11 +293,14 @@
                                                     0 #f ; mappers
                                                     0 #f ; algs
                                                     (case protocol
-                                                      [(secure auto sslv2-or-v3)
-                                                       (bitwise-ior SP_PROT_TLS1)]
+                                                      [(secure auto)
+                                                       (bitwise-ior SP_PROT_TLS1 SP_PROT_TLS1_1 SP_PROT_TLS1_2)]
                                                       [(sslv2) SP_PROT_SSL2]
                                                       [(sslv3) SP_PROT_SSL3]
-                                                      [(tls tls11 tls12) SP_PROT_TLS1])
+                                                      [(tls) SP_PROT_TLS1]
+                                                      [(tls11) SP_PROT_TLS1_1]
+                                                      [(tls12) SP_PROT_TLS1_2]
+                                                      [else 0])
                                                     0 0 0
                                                     (if (eq? protocol 'secure)
                                                         0
