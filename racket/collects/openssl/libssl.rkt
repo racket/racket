@@ -14,7 +14,8 @@
 ;; We need to declare because they might be distributed with PLT Scheme
 ;; in which case they should get bundled with stand-alone executables:
 (define-runtime-path libssl-so
-  (case (cross-system-type)
+  #:runtime?-id runtime?
+  (case (if runtime? (system-type) (cross-system-type))
     [(windows) '(so "ssleay32")]
     [(macosx)
      ;; Version "1.0.0" is bundled with Racket

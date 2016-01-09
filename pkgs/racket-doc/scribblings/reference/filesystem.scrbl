@@ -641,13 +641,18 @@ In addition to the bindings described below,
 @tech{phase level} 1, since string constants are often used as
 compile-time expressions with @racket[define-runtime-path].
 
-@defform[(define-runtime-path id expr)]{
+@defform[(define-runtime-path id maybe-runtime?-id expr)
+         #:grammar ([maybe-runtime? code:blank
+                                    (code:line #:runtime?-id runtime?-id)])]{
 
 Uses @racket[expr] as both a compile-time (i.e., @tech{phase} 1)
 expression and a run-time (i.e., @tech{phase} 0) expression. In either
 context, @racket[expr] should produce a path, a string that represents
 a path, a list of the form @racket[(list 'lib _str ...+)], or a list
 of the form @racket[(list 'so _str)] or @racket[(list 'so _str _vers)].
+If @racket[runtime?-id] is provided, then it is bound in the context
+of @racket[expr] to @racket[#f] for the compile-time instance of
+@racket[expr] and @racket[#t] for the run-time instance of @racket[expr].
 
 For run time, @racket[id] is bound to a path that is based on the
 result of @racket[expr]. The path is normally computed by taking a
@@ -781,23 +786,25 @@ Examples:
     [(windows) '(so "ssleay32")]
     [else '(so "libssl")]))
 (define libssl (ffi-lib libssl-so))
-]}
+]
+
+@history[#:changed "6.4" @elem{Added @racket[#:runtime?-id].}]}
 
 
-@defform[(define-runtime-paths (id ...) expr)]{
+@defform[(define-runtime-paths (id ...) maybe-runtime?-id expr)]{
 
 Like @racket[define-runtime-path], but declares and binds multiple
 paths at once. The @racket[expr] should produce as many values as
 @racket[id]s.}
 
 
-@defform[(define-runtime-path-list id expr)]{
+@defform[(define-runtime-path-list id maybe-runtime?-id expr)]{
 
 Like @racket[define-runtime-path], but @racket[expr] should produce a
 list of paths.}
 
 
-@defform[(define-runtime-module-path-index id module-path-expr)]{
+@defform[(define-runtime-module-path-index id maybe-runtime?-id module-path-expr)]{
 
 Similar to @racket[define-runtime-path], but @racket[id] is bound to a
 @tech{module path index} that encapsulates the result of
