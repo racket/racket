@@ -3746,21 +3746,6 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   int need_pop_mark;
   Scheme_Cont_Frame_Data cframe;
 
-  if (argv == MZ_RUNSTACK) {
-    /* Pushing onto the runstack ensures that `(vector-ref px->redirects 0)' won't
-       modify argv. */
-    if (MZ_RUNSTACK > MZ_RUNSTACK_START) {
-      --MZ_RUNSTACK;
-      *MZ_RUNSTACK = NULL;
-      need_restore = 1;
-    } else {
-      /* Can't push! Just allocate a copy. */
-      argv2 = MALLOC_N(Scheme_Object *, argc);
-      memcpy(argv2, argv, sizeof(Scheme_Object*) * argc);
-      argv = argv2;
-    }
-  }
-
   if (SCHEME_RPAIRP(o)) {
     /* An applicable struct, where a layer of struct chaperones
        has been removed from the object to apply, but we will
@@ -3802,6 +3787,21 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       return v;
     } else
       return _scheme_tail_apply(px->prev, argc, argv);
+  }
+
+  if (argv == MZ_RUNSTACK) {
+    /* Pushing onto the runstack ensures that `(vector-ref px->redirects 0)' won't
+       modify argv. */
+    if (MZ_RUNSTACK > MZ_RUNSTACK_START) {
+      --MZ_RUNSTACK;
+      *MZ_RUNSTACK = NULL;
+      need_restore = 1;
+    } else {
+      /* Can't push! Just allocate a copy. */
+      argv2 = MALLOC_N(Scheme_Object *, argc);
+      memcpy(argv2, argv, sizeof(Scheme_Object*) * argc);
+      argv = argv2;
+    }
   }
 
   /* Ensure that the original procedure accepts `argc' arguments: */
