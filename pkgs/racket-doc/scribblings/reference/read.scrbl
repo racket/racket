@@ -156,8 +156,10 @@ interpretation of results is up to external tools, such as DrRacket (see
 If no information is available for a given key, the result should be
 the second argument.
 @mz-examples[
-((read-language (open-input-string "#lang algol60")) 'color-lexer #f)
-((read-language (open-input-string "#lang algol60")) 'something-else #f)
+(define scribble-manual-info
+  (read-language (open-input-string "#lang scribble/manual")))
+(scribble-manual-info 'color-lexer #f)
+(scribble-manual-info 'something-else #f)
 ]
 
 The @racketidfont{get-info} function itself is applied to five
