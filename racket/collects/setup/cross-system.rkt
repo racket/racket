@@ -15,9 +15,11 @@
     (define ht (and lib-dir
                     (let ([f (build-path lib-dir "system.rktd")])
                       (and (file-exists? f)
-                           (let ([ht (call-with-input-file*
-                                      f
-                                      read)])
+                           (let ([ht (call-with-default-reading-parameterization
+                                      (lambda ()
+                                        (call-with-input-file*
+                                         f
+                                         read)))])
                              (and (hash? ht)
                                   (for/and ([sym (in-list (list*
                                                            'library-subpath
