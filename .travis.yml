@@ -24,7 +24,7 @@ install:
 - raco pkg config --set catalogs `cat catalog-config.txt`
 - raco pkg install -i --deps search-auto $PKG-test
 - raco pkg install -i --deps search-auto compiler-lib
-- raco pkg install -i --deps search-auto cover
+- raco pkg install -i --deps search-auto cover-coveralls
 - ls $HOME/.racket/download-cache
 
 script:
