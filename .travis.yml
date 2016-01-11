@@ -20,8 +20,8 @@ before_install:
 install:
 - racket -l- pkg/dirs-catalog --link --check-metadata pkgs-catalog .
 - echo file://`pwd`/pkgs-catalog/ > catalog-config.txt
-- raco pkg config catalogs >> catalog-config.txt
-- raco pkg config --set catalogs `cat catalog-config.txt`
+- raco pkg config -i catalogs >> catalog-config.txt
+- raco pkg config -i --set catalogs `cat catalog-config.txt`
 - raco pkg install -i --deps search-auto $PKG-test
 - raco pkg install -i --deps search-auto compiler-lib
 - raco pkg install -i --deps search-auto cover-coveralls
