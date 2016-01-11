@@ -399,4 +399,12 @@
                'pos 'neg)
      1 2))
 
+  (test/spec-passed
+   'contract-marks44
+   '(let ()
+      (struct s ([x #:mutable]))
+      (define s* (contract (struct/dc s [x pos-blame?] #:inv (x) pos-blame?) (s 3) 'pos 'neg))
+      (set-s-x! s* 3)
+      (s-x s*)))
+
   )
