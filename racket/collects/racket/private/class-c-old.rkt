@@ -1649,6 +1649,15 @@
           (define prj (contract-late-neg-projection c))
           (define p-pos (prj (blame-add-field-context blame f #:swap? #f)))
           (define p-neg (prj (blame-add-field-context blame f #:swap? #t)))
-          (hash-set! field-ht f (field-info-extend-external fi p-pos p-neg neg-party)))))
+          (hash-set! field-ht f (field-info-extend-external fi
+                                                            (lambda args
+                                                              (with-contract-continuation-mark
+                                                               (cons blame neg-party)
+                                                               (apply p-pos args)))
+                                                            (lambda args
+                                                              (with-contract-continuation-mark
+                                                               (cons blame neg-party)
+                                                               (apply p-neg args)))
+                                                            neg-party)))))
     
     (copy-seals cls c)))

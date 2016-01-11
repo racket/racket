@@ -335,25 +335,39 @@
          (mark-value '(chocolate-bar)))))
    '(chocolate-bar truffle fudge ganache))
 
-  (test/spec-passed/result
+  (test/spec-passed
    'contract-marks37
    '(let ()
       (define/contract my-evt
         (evt/c (λ _ (named-blame? 'top-level)))
         always-evt)
-      (sync my-evt)
-      3)
-   3)
+      (sync my-evt)))
 
-  (test/spec-passed/result
+  (test/spec-passed
    'contract-marks38
    '(let ()
       (define/contract chan
         (channel/c (λ _ (named-blame? 'top-level)))
         (make-channel))
       (thread (λ () (channel-get chan)))
-      (channel-put chan 'not-a-string)
-      3)
-   3)
+      (channel-put chan 'not-a-string)))
+
+  (test/spec-passed
+   'contract-marks39
+   '(let ()
+      (eval '(require racket/class))
+      (eval '((contract (->m neg-blame? any/c) (λ (_ x) x) 'pos 'neg) 'a 1))))
+
+  (test/spec-passed
+   'contract-marks40
+   '(let ()
+      (define o
+        (contract
+         (object-contract (field x pos-blame?) (f (->m neg-blame?)))
+         (new (class object% (init-field x) (define/public (f) x) (super-new)) [x 3])
+         'pos 'neg))
+      (get-field x o)
+      (set-field! x o 2)
+      (send o f)))
 
   )
