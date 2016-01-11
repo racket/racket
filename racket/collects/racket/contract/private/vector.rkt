@@ -365,14 +365,11 @@
          (for/list ([c (in-list (base-vector/c-elems ctc))])
            ((get/build-late-neg-projection c) blame+ctxt)))
        (λ (val neg-party)
-         (with-contract-continuation-mark
-          (cons blame neg-party)
-          (begin
-            (check-vector/c ctc val blame neg-party)
-            (for ([e (in-vector val)]
-                  [p (in-list val+np-acceptors)])
-              (p e neg-party))
-            val)))))))
+         (check-vector/c ctc val blame neg-party)
+         (for ([e (in-vector val)]
+               [p (in-list val+np-acceptors)])
+           (p e neg-party))
+         val)))))
 
 (define (vector/c-ho-late-neg-projection vector-wrapper)
   (λ (ctc)

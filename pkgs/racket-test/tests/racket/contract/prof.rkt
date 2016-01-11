@@ -370,4 +370,26 @@
       (set-field! x o 2)
       (send o f)))
 
+  (test/spec-passed
+   'contract-marks41
+   '(contract (vectorof pos-blame? #:flat? #t) #(1 2 3) 'pos 'neg))
+
+  (test/spec-passed
+   'contract-marks42
+   '((vector-ref (contract (vectorof (-> pos-blame? neg-blame?)) (vector values)
+                           'pos 'neg)
+                 0)
+     1))
+
+  (test/spec-passed
+   'contract-marks43
+   '(contract (vector/c pos-blame? #:flat? #t) #(1) 'pos 'neg))
+
+  (test/spec-passed
+   'contract-marks42
+   '((vector-ref (contract (vector/c (-> pos-blame? neg-blame?)) (vector values)
+                           'pos 'neg)
+                 0)
+     1))
+
   )
