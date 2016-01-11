@@ -61,14 +61,16 @@
        (define barrier/c (polymorphic-contract-barrier c))
        (define vars (polymorphic-contract-vars c))
        (define (wrap p neg-party)
-         ;; values in polymorphic types come in from negative position,
-         ;; relative to the poly/c contract
-         (define instances
-           (for/list ([var (in-list vars)])
-             (barrier/c negative? var)))
-         (define protector
-           (apply (polymorphic-contract-body c) instances))
-         (((get/build-late-neg-projection protector) blame) p neg-party))
+         (with-contract-continuation-mark
+          (cons blame neg-party)
+          ;; values in polymorphic types come in from negative position,
+          ;; relative to the poly/c contract
+          (define instances
+            (for/list ([var (in-list vars)])
+              (barrier/c negative? var)))
+          (define protector
+            (apply (polymorphic-contract-body c) instances))
+          (((get/build-late-neg-projection protector) blame) p neg-party)))
 
        (lambda (p neg-party)
          (unless (procedure? p)

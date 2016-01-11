@@ -392,4 +392,11 @@
                  0)
      1))
 
+  (test/spec-passed
+   'contract-marks43
+   '((contract (parametric->/c (X) (-> pos-blame? X neg-blame?))
+               (lambda (x y) x)
+               'pos 'neg)
+     1 2))
+
   )
