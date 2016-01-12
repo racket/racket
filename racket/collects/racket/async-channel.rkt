@@ -215,10 +215,17 @@
     (define pos-elem-proj (lnp blame))
     (define neg-elem-proj (lnp (blame-swap blame)))
     (λ (val neg-party)
+      (define blame+neg-party (cons blame neg-party))
       (check-async-channel/c ctc val blame neg-party)
       (impersonate/chaperone-async-channel val
-                                           (λ (v) (pos-elem-proj v neg-party))
-                                           (λ (v) (neg-elem-proj v neg-party))
+                                           (λ (v)
+                                             (with-contract-continuation-mark
+                                              blame+neg-party
+                                              (pos-elem-proj v neg-party)))
+                                           (λ (v)
+                                             (with-contract-continuation-mark
+                                              blame+neg-party
+                                              (neg-elem-proj v neg-party)))
                                            impersonator-prop:contracted ctc
                                            impersonator-prop:blame blame))))
 

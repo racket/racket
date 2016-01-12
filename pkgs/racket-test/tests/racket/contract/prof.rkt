@@ -513,4 +513,12 @@
                'pos 'neg)
      1))
 
+  (test/spec-passed
+   'contract-marks56
+   '(let ()
+      (eval '(require racket/async-channel))
+      (eval '(define c (contract (async-channel/c pos-blame?) (make-async-channel) 'pos 'neg)))
+      (eval '(async-channel-put c 3))
+      (eval '(async-channel-get c))))
+
   )
