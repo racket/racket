@@ -556,4 +556,10 @@
       (eval '(set-add s 3))
       (eval '(set-member? s 3))))
 
+  (test/spec-passed
+   'contract-marks61
+   '(let ()
+      (eval '(require racket/stream))
+      (eval '(stream-first (contract (stream/c pos-blame?) (in-range 3) 'pos 'neg)))))
+
   )

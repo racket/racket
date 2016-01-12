@@ -256,15 +256,20 @@
       (unless (stream? val)
         (raise-blame-error blame #:missing-party neg-party
                            val '(expected "a stream" given: "~e") val))
+      (define blame+neg-party (cons blame neg-party))
       (if (list? val)
           (listof-elem-ctc-neg-acceptor val neg-party)
           (impersonate/chaperone-stream
            val
-           (λ (v) (elem-ctc-late-neg-acceptor v neg-party))
+           (λ (v) (with-contract-continuation-mark
+                   blame+neg-party
+                   (elem-ctc-late-neg-acceptor v neg-party)))
            (λ (v)
-             (if (list? v)
-                 (listof-elem-ctc-neg-acceptor v neg-party)
-                 (stream/c-late-neg-proj-val-acceptor v neg-party)))
+             (with-contract-continuation-mark
+              blame+neg-party
+              (if (list? v)
+                  (listof-elem-ctc-neg-acceptor v neg-party)
+                  (stream/c-late-neg-proj-val-acceptor v neg-party))))
            impersonator-prop:contracted ctc
            impersonator-prop:blame stream-blame)))
     stream/c-late-neg-proj-val-acceptor))
