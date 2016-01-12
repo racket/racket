@@ -466,4 +466,51 @@
                'pos 'neg)
      1))
 
+  (test/spec-passed
+   'contract-marks50
+   '((contract (opt/c (-> neg-blame? any/c)) (λ (x) x) 'pos 'neg) 1))
+
+  (test/spec-passed
+   'contract-marks51
+   '((contract (opt/c (-> any/c pos-blame?)) (λ (x) x) 'pos 'neg) 1))
+
+  (test/spec-passed
+   'contract-marks52
+   '((contract (->d ([x pos-blame?] [y pos-blame?])
+                    #:rest z pos-blame?
+                    #:pre pos-blame?
+                    [res neg-blame?]
+                    #:post neg-blame?)
+               (lambda (x y . z) 3)
+               'pos 'neg)
+     1 2 3))
+
+  (test/spec-passed
+   'contract-marks53
+   '((contract (->d ([x pos-blame?] [y pos-blame?])
+                    ([w pos-blame?])
+                    #:rest z pos-blame?
+                    #:pre pos-blame?
+                    [res neg-blame?]
+                    #:post neg-blame?)
+               (lambda (x y [w 3] . z) 3)
+               'pos 'neg)
+     1 2 3 4))
+
+  (test/spec-passed
+   'contract-marks54
+   '((contract (->d ([x pos-blame?] [y pos-blame?])
+                    [res neg-blame?])
+               (lambda (x y) 3)
+               'pos 'neg)
+     1 2))
+
+  (test/spec-passed
+   'contract-marks55
+   '((contract (->d ([x pos-blame?])
+                    [res neg-blame?])
+               (lambda (x) 3)
+               'pos 'neg)
+     1))
+
   )
