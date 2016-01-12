@@ -811,7 +811,7 @@ evaluted left-to-right.)
       #`(case-lambda
           [#,(vector->list wrapper-ress)
            (with-contract-continuation-mark
-            blame
+            blame+neg-party
             #,(add-wrapper-let 
                (add-post-cond an-istx indy-arg-vars ordered-args indy-res-vars ordered-ress
                               #`(values #,@(vector->list wrapper-ress)))
@@ -906,6 +906,7 @@ evaluted left-to-right.)
    (with-syntax ([arg-checker (or (syntax-local-infer-name stx) 'arg-checker)])
      #`(λ #,wrapper-proc-arglist
          (λ (val neg-party)
+           (define blame+neg-party (cons blame neg-party))
            (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
            (c-or-i-procedure
             val
@@ -915,10 +916,12 @@ evaluted left-to-right.)
               (make-keyword-procedure
                (λ (kwds kwd-args . args)
                  (with-contract-continuation-mark
-                  blame (keyword-apply arg-checker kwds kwd-args args)))
+                  blame+neg-party
+                  (keyword-apply arg-checker kwds kwd-args args)))
                (λ args
                  (with-contract-continuation-mark
-                  blame (apply arg-checker args)))))
+                  blame+neg-party
+                  (apply arg-checker args)))))
             impersonator-prop:contracted ctc
             impersonator-prop:blame blame))))))
 

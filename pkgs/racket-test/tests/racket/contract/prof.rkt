@@ -427,4 +427,43 @@
       (eval '(define s1 (s even?)))
       (eval '(app-prop s1 5))))
 
+  (test/spec-passed
+   'contract-marks46
+   '((contract (->i ([x () pos-blame?] [y (x) pos-blame?])
+                    #:rest [z (x y) pos-blame?]
+                    #:pre (x y z) pos-blame?
+                    [res (x y z) neg-blame?]
+                    #:post (res x y z) neg-blame?)
+               (lambda (x y . z) 3)
+               'pos 'neg)
+     1 2 3))
+
+  (test/spec-passed
+   'contract-marks47
+   '((contract (->i ([x () pos-blame?] [y (x) pos-blame?])
+                    ([w (x y) pos-blame?])
+                    #:rest [z (x y) pos-blame?]
+                    #:pre (x y z) pos-blame?
+                    [res (x y z) neg-blame?]
+                    #:post (res x y z) neg-blame?)
+               (lambda (x y [w 3] . z) 3)
+               'pos 'neg)
+     1 2 3 4))
+
+  (test/spec-passed
+   'contract-marks48
+   '((contract (->i ([x () pos-blame?] [y (x) pos-blame?])
+                    [res (x y) neg-blame?])
+               (lambda (x y) 3)
+               'pos 'neg)
+     1 2))
+
+  (test/spec-passed
+   'contract-marks49
+   '((contract (->i ([x () pos-blame?])
+                    [res (x) neg-blame?])
+               (lambda (x) 3)
+               'pos 'neg)
+     1))
+
   )
