@@ -198,6 +198,7 @@
        (λ (val neg-party)
          (set-contract-check cmp kind blame neg-party val)
          (define (pos-interpose val ele) (late-neg-pos-proj ele neg-party))
+         (define blame+neg-party (cons blame neg-party))
          (cond
            [(set? val)
             (chaperone-hash-set
@@ -205,31 +206,44 @@
              (λ (val ele) ele)
              (λ (val ele) ele)
              (λ (val ele) ele)
-             (λ (val ele) (late-neg-pos-proj ele neg-party))
+             (λ (val ele) (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-pos-proj ele neg-party)))
              (λ (val) (void))
-             (λ (val ele) (late-neg-equal-key-pos-proj ele neg-party))
+             (λ (val ele) (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-equal-key-pos-proj ele neg-party)))
              impersonator-prop:contracted ctc
              impersonator-prop:blame (cons blame neg-party))]
            [else
             (chaperone-hash-set
              val
              (λ (val ele) ele)
-             (λ (val ele) (late-neg-neg-proj ele neg-party))
+             (λ (val ele) (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-neg-proj ele neg-party)))
              (λ (val ele) ele)
-             (λ (val ele) (late-neg-pos-proj ele neg-party))
+             (λ (val ele) (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-pos-proj ele neg-party)))
              (λ (val) (void))
-             (λ (val ele) (late-neg-equal-key-pos-proj ele neg-party))
+             (λ (val ele) (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-equal-key-pos-proj ele neg-party)))
              impersonator-prop:contracted ctc
              impersonator-prop:blame (cons blame neg-party))]))]
       [else
        (λ (val neg-party)
+         (define blame+neg-party (cons blame neg-party))
          (set-contract-check cmp kind blame neg-party val)
          (cond
            [(set? val)
             (chaperone-hash-set
              (for/fold ([s (set-clear val)])
                        ([e (in-set val)])
-               (set-add s (late-neg-pos-proj e neg-party)))
+               (set-add s (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-pos-proj e neg-party))))
              #f #f #f
              impersonator-prop:contracted ctc
              impersonator-prop:blame (cons blame neg-party))]
@@ -240,11 +254,17 @@
             (chaperone-hash-set
              val
              (λ (val ele) ele)
-             (λ (val ele) (late-neg-neg-proj ele neg-party))
+             (λ (val ele) (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-neg-proj ele neg-party)))
              (λ (val ele) ele)
-             (λ (val ele) (late-neg-pos-proj ele neg-party))
+             (λ (val ele) (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-pos-proj ele neg-party)))
              (λ (val) (void))
-             (λ (val ele) (late-neg-equal-key-pos-proj ele neg-party))
+             (λ (val ele) (with-contract-continuation-mark
+                           blame+neg-party
+                           (late-neg-equal-key-pos-proj ele neg-party)))
              impersonator-prop:contracted ctc
              impersonator-prop:blame (cons blame neg-party))]))])))
 

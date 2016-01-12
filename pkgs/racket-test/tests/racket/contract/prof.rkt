@@ -521,4 +521,39 @@
       (eval '(async-channel-put c 3))
       (eval '(async-channel-get c))))
 
+  (test/spec-passed
+   'contract-marks57
+   '(let ()
+      (eval '(require racket/generic))
+      (eval '(define-generics fooable (foo fooable)))
+      (eval '(struct s () #:methods gen:fooable [(define (foo x) x)]))
+      (eval '(foo (contract (generic-instance/c gen:fooable [foo (-> pos-blame? neg-blame?)])
+                            (s) 'pos 'neg)))))
+
+  (test/spec-passed
+   'contract-marks58
+   '(let ()
+      (eval '(require racket/set))
+      (eval '(define s (contract (set/c pos-blame?) (set 1 2 3) 'pos 'neg)))
+      (eval '(set-add s 3))
+      (eval '(set-member? s 3))))
+
+  (test/spec-passed
+   'contract-marks59
+   '(let ()
+      (eval '(require racket/set))
+      (eval '(define s (contract (set/c pos-blame? #:lazy? #t #:kind 'mutable)
+                                 (mutable-set 1 2 3) 'pos 'neg)))
+      (eval '(set-add! s 3))
+      (eval '(set-member? s 3))))
+
+  (test/spec-passed
+   'contract-marks60
+   '(let ()
+      (eval '(require racket/set))
+      (eval '(define s (contract (set/c pos-blame? #:kind 'dont-care)
+                                 (list 1 2 3) 'pos 'neg)))
+      (eval '(set-add s 3))
+      (eval '(set-member? s 3))))
+
   )
