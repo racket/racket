@@ -16,11 +16,14 @@
         (raise-blame-error input-blame x #:neg-party
                            '(expected "struct-type-property" given: "~e")
                            x))
+      (define blame+neg-party (cons blame neg-party))
       (define-values (nprop _pred _acc)
         (make-struct-type-property
          (wrap-name x)
          (lambda (val _info)
-           (late-neg-proj val neg-party))
+           (with-contract-continuation-mark
+            blame+neg-party
+            (late-neg-proj val neg-party)))
          (list (cons x values))))
       nprop)))
 

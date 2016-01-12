@@ -407,4 +407,24 @@
       (set-s-x! s* 3)
       (s-x s*)))
 
+  (test/spec-passed
+   'contract-marks45
+   '(let ()
+      (eval '(module propmod racket/base
+               (require racket/contract 'prof-fun)
+               (define-values (prop prop? prop-ref)
+                 (make-struct-type-property 'prop))
+               (define (app-prop x v)
+                 (((prop-ref x) x) v))
+               (provide/contract
+                [prop (struct-type-property/c
+                       (-> (lambda _ (named-blame? 'propmod))
+                           (-> (lambda _ (named-blame? 'propmod))
+                               (lambda _ (named-blame? 'propmod)))))])
+               (provide prop-ref app-prop)))
+      (eval '(require 'propmod))
+      (eval '(struct s (f) #:property prop (lambda (s) (s-f s))))
+      (eval '(define s1 (s even?)))
+      (eval '(app-prop s1 5))))
+
   )
