@@ -583,4 +583,18 @@
       marked?)
    #t)
 
+  (test/spec-passed
+   'contract-marks63
+   '(let ()
+      (eval '(require racket/sequence))
+      (eval '(sequence->list (contract (sequence/c pos-blame?) (in-range 3) 'pos 'neg)))))
+
+  (test/spec-passed
+   'contract-marks64
+   '(let ()
+      (eval '(require racket/sequence racket/dict))
+      (eval '(sequence-ref (contract (sequence/c pos-blame? pos-blame?)
+                                     (in-dict '((1 . 2) (3 . 4))) 'pos 'neg)
+                           0))))
+
   )

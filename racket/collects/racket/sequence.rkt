@@ -218,6 +218,7 @@
              orig-blame #:missing-party neg-party seq
              '(expected: "a sequence" given: "~e")
              seq))
+          (define blame+neg-party (cons orig-blame neg-party))
           (define result-seq
             (make-do-sequence
              (lambda ()
@@ -228,7 +229,9 @@
                      next
                      (case-lambda
                        [(elem)
-                        (p elem neg-party)]
+                        (with-contract-continuation-mark
+                         blame+neg-party
+                         (p elem neg-party))]
                        [elems
                         (define n-elems (length elems))
                         (raise-blame-error
@@ -251,6 +254,7 @@
              orig-blame #:missing-party neg-party seq
              '(expected: "a sequence" given: "~e")
              seq))
+          (define blame+neg-party (cons orig-blame neg-party))
           (define result-seq
             (make-do-sequence
              (lambda ()
@@ -260,17 +264,19 @@
                     (call-with-values
                      next
                      (lambda elems
-                       (define n-elems (length elems))
-                       (unless (= n-elems n-cs)
-                         (raise-blame-error
-                          blame #:missing-party neg-party seq
-                          '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
-                          n-cs n-elems elems))
-                       (apply
-                        values
-                        (for/list ([elem (in-list elems)]
-                                   [p (in-list ps)])
-                          (p elem neg-party))))))
+                       (with-contract-continuation-mark
+                        blame+neg-party
+                        (define n-elems (length elems))
+                        (unless (= n-elems n-cs)
+                          (raise-blame-error
+                           blame #:missing-party neg-party seq
+                           '(expected: "a sequence of ~a values" given: "~a values\n values: ~e")
+                           n-cs n-elems elems))
+                        (apply
+                         values
+                         (for/list ([elem (in-list elems)]
+                                    [p (in-list ps)])
+                           (p elem neg-party)))))))
                   add1
                   0
                   (lambda (idx)
