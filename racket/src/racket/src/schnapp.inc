@@ -63,9 +63,10 @@ Scheme_Object *PRIM_APPLY_NAME(Scheme_Object *rator,
     if ((t == scheme_proc_chaperone_type)
         && SCHEME_VECTORP(((Scheme_Chaperone *)rator)->redirects)
         && (SCHEME_VEC_SIZE(((Scheme_Chaperone *)rator)->redirects) & 0x1)) {
-      if (SCHEME_FALSEP(SCHEME_VEC_ELS(((Scheme_Chaperone *)rator)->redirects)[0])) {
-        /* No redirection proc (i.e, chaperone is just for properties) */
-        rator = ((Scheme_Chaperone *)rator)->prev;
+      if (SCHEME_BOOLP(SCHEME_VEC_ELS(((Scheme_Chaperone *)rator)->redirects)[1])) {
+        /* No redirection proc, i.e, chaperone is just for
+	   properties or unsafe-chaperone-procedure result */
+        rator = SCHEME_VEC_ELS(((Scheme_Chaperone *)rator)->redirects)[0];
         t = _SCHEME_TYPE(rator);
       } else
         return scheme_apply_chaperone(rator, argc, argv, NULL, PRIM_CHECK_MULTI | (PRIM_CHECK_VALUE << 1));

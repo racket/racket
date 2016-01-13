@@ -111,16 +111,22 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   CHECK_LIMIT();
 
   mz_patch_branch(ref2);
-  /* check for a procedure impersonator that just keeps properties */
+  /* check for a procedure impersonator that just keeps properties
+     or is the result of unsafe-{impersonate,chaperone}-procedure */
   ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_chaperone_type);
   jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Chaperone *)0x0)->redirects);
   refz6 = mz_bnei_t(jit_forward(), JIT_R1, scheme_vector_type, JIT_R2);
   (void)jit_ldxi_l(JIT_R2, JIT_R1, &SCHEME_VEC_SIZE(0x0));
   refz7 = jit_bmci_i(jit_forward(), JIT_R2, 0x1);
-  (void)jit_ldxi_l(JIT_R2, JIT_R1, &(SCHEME_VEC_ELS(0x0)[0]));
-  refz8 = jit_bnei_p(jit_forward(), JIT_R2, scheme_false);
-  /* Can extract the impersonated function and use it directly */
-  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Chaperone *)0x0)->prev);
+  /* if  &(SCHEME_VEC_ELS(0x0)[1]) is a boolean, we have the fast
+     path; it can only otherwise be a fixnum, so just check that */
+  (void)jit_ldxi_l(JIT_R2, JIT_R1, &(SCHEME_VEC_ELS(0x0)[1]));
+  refz8 = jit_bmsi_ul(jit_forward(), JIT_R2, 0x1);
+  /* Position [0] in SCHEME_VEC_ELS contains either the
+     unwrapped function (if chaperone-procedure got #f
+     for the proc argument) or the unsafe-chaperone
+     replacement-proc argument; either way, just call it */
+  jit_ldxi_p(JIT_V1, JIT_R1, &(SCHEME_VEC_ELS(0x0)[0]));
   (void)jit_jmpi(refagain);
 
   mz_patch_branch(refz1);

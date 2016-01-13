@@ -2311,6 +2311,74 @@
 ;; ----------------------------------------
 
 (let ()
+  (define (f x) (+ x 1))
+  (define f2 (unsafe-chaperone-procedure f f))
+  (test 2 f2 1)
+  (test #t chaperone-of? f2 f)
+  (test #f chaperone-of? f f2)
+
+  (define f3 (unsafe-chaperone-procedure f sub1))
+  (define f3i (unsafe-impersonate-procedure f sub1))
+  (test 0 f3 1)
+  (test 0 f3i 1)
+  (test #t chaperone-of? f3 f)
+  (test #f chaperone-of? f3i f)
+  (test #f chaperone-of? f3 f2)
+  (test #f chaperone-of? f2 f3)
+
+  (test #f chaperone-of?
+        (unsafe-chaperone-procedure f f)
+        (unsafe-chaperone-procedure f f))
+
+  (define-values (prop:p prop:p? prop:get-p)
+    (make-impersonator-property 'p))
+  (test #t prop:p? (unsafe-chaperone-procedure f f prop:p 5))
+  (test 5 prop:get-p (unsafe-chaperone-procedure f f prop:p 5))
+
+  (define f4 (unsafe-chaperone-procedure f (case-lambda
+                                             [(x) (f x)]
+                                             [(x y) (f x)])))
+  (test 2 f4 1)
+
+  (test 1
+        procedure-arity
+        (unsafe-chaperone-procedure (λ (x) (+ x 1))
+                                    (case-lambda
+                                      [(x) (+ x 1)]
+                                      [(x y) (+ x y)])))
+  
+  (define f5 (unsafe-chaperone-procedure f (λ (x #:y [y 1]) (f x))))
+  (test 2 f5 1)
+
+  (err/rt-test (unsafe-chaperone-procedure
+                (λ (#:x x) x)
+                (λ (#:y y) y))
+                exn:fail?)
+
+  (let ()
+
+    (define (f-marks)
+      (continuation-mark-set->list
+       (current-continuation-marks)
+       'mark-key))
+    
+    (define f-marks-chap
+      (unsafe-chaperone-procedure
+       f-marks
+       f-marks
+       impersonator-prop:application-mark
+       (cons 'x 123)))
+    ;; test that impersonator-prop:application-mark
+    ;; is ignored (as the docs say it is).
+    (test '() f-marks-chap))
+
+  (let ()
+    (struct s (f) #:property prop:procedure 0)
+    (test #t s? (unsafe-chaperone-procedure (s add1) (λ (x) x)))))
+
+;; ----------------------------------------
+
+(let ()
   (struct s ([a #:mutable]))
   (err/rt-test (impersonate-struct 5 set-s-a! (lambda (a b) b)))
   (err/rt-test (impersonate-struct (s 1) #f (λ (a b) v))

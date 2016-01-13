@@ -2428,9 +2428,9 @@ int scheme_is_noninterposing_chaperone(Scheme_Object *o)
 
   if (SCHEME_VEC_SIZE(px->redirects) & 1) {
     /* procedure chaperone */
-    if (SCHEME_TRUEP(SCHEME_VEC_ELS(px->redirects)[0]))
-      return 0;
-    return 1;
+    if (SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[1]))
+      return 1;
+    return 0;
   }
 
   if (SCHEME_TRUEP(SCHEME_VEC_ELS(px->redirects)[0]))
