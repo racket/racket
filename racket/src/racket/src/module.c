@@ -7433,8 +7433,14 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                         cons(fm, scheme_null))));
 
     fm = scheme_datum_to_syntax(fm, form, ctx_form, 0, 2);
+
+    /* for future expansion, shift away from self_modidx: */
+    ps = scheme_make_shift(NULL, self_modidx, this_empty_self_modidx, NULL, NULL, NULL);
+    fm = scheme_stx_add_shift(fm, ps);
     
     if (hints) {
+      Scheme_Object *stx, *l;
+
       fm = scheme_stx_property(fm, 
 			       scheme_intern_symbol("module-direct-requires"),
 			       m->requires);
@@ -7444,6 +7450,24 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       fm = scheme_stx_property(fm, 
 			       scheme_intern_symbol("module-direct-for-template-requires"),
 			       m->tt_requires);
+
+      l = scheme_null;
+      if (!SCHEME_NULLP(m->dt_requires))
+        l = scheme_make_pair(scheme_make_pair(scheme_false, m->dt_requires),
+                             l);
+      if (m->other_requires) {
+        int i;
+        for (i = 0; i < m->other_requires->size; i++) {
+          if (m->other_requires->vals[i]) {
+            l = scheme_make_pair(scheme_make_pair(m->other_requires->keys[i],
+                                                  m->other_requires->vals[i]),
+                                 l);
+          }
+        }
+      }      
+      fm = scheme_stx_property(fm, 
+			       scheme_intern_symbol("module-direct-for-meta-requires"),
+			       l);
       
       fm = scheme_stx_property(fm, 
 			       scheme_intern_symbol("module-variable-provides"),
@@ -7463,11 +7487,25 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       fm = scheme_stx_property(fm, 
 			       scheme_intern_symbol("module-self-path-index"),
 			       this_empty_self_modidx);
-    }
 
-    /* for future expansion, shift away from self_modidx: */
-    ps = scheme_make_shift(NULL, self_modidx, this_empty_self_modidx, NULL, NULL, NULL);
-    fm = scheme_stx_add_shift(fm, ps);
+      fm = scheme_stx_property(fm, 
+                               scheme_intern_symbol("module-body-context-simple?"),
+                               (SAME_OBJ(scheme_true, m->rn_stx)
+                                ? scheme_true
+                                : scheme_false));
+
+      stx = scheme_datum_to_syntax(scheme_intern_symbol("inside"), scheme_false, scheme_false, 0, 0);
+      stx = scheme_stx_add_module_context(stx, rn_set);
+      fm = scheme_stx_property(fm,
+                               scheme_intern_symbol("module-body-inside-context"),
+                               scheme_stx_add_shift(stx, ps));
+
+      stx = scheme_datum_to_syntax(scheme_intern_symbol("outside"), scheme_false, scheme_false, 0, 0);
+      stx = scheme_stx_introduce_to_module_context(stx, rn_set);
+      fm = scheme_stx_property(fm,
+                               scheme_intern_symbol("module-body-outside-context"),
+                               scheme_stx_add_shift(stx, ps));
+    }
 
     /* make self_modidx like the empty modidx */
     if (SAME_OBJ(this_empty_self_modidx, empty_self_modidx))
@@ -8383,7 +8421,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
     result = scheme_null;
 
-    /* kernel re-export info (always #f): */
+    /* kernel re-export info (now always #f): */
     result = scheme_make_pair(scheme_false, result);
 
     /* Indirect provides */ 
@@ -8466,6 +8504,12 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       for (bnenv = bnenv->template_env; bnenv; bnenv = bnenv->template_env) {
         add_binding_names_from_environment(env->genv->module, bnenv);
       }
+    }
+  } else {
+    /* For a property on the expanded module: */
+    if (*all_simple_bindings && env->genv->module->rn_stx) {
+      /* We will be able to reconstruct binding for `module->namespace`: */
+      env->genv->module->rn_stx = scheme_true;
     }
   }
 

@@ -1720,5 +1720,34 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test 5 'five (x))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check 'module-body-context-simple? and 'module-body-...context properties
+
+(define (check-module-body-context-properties with-kar?)
+  (define m (expand `(module m racket/base
+                      ,@(if with-kar?
+                            `((require (rename-in racket/base [car kar])))
+                            null)
+                      (define inside 7))))
+  
+  (test (not with-kar?) syntax-property m 'module-body-context-simple?)
+
+  (define i (syntax-property m 'module-body-inside-context))
+  (define o (syntax-property m 'module-body-outside-context))
+  
+  (test #t syntax? i)
+  (test #t syntax? o)
+  
+  (test car eval-syntax (datum->syntax i 'car))
+  (test 'inside cadr (identifier-binding (datum->syntax i 'inside)))
+  (test #f identifier-binding (datum->syntax o 'inside))
+  (test (if with-kar? 'car #f)
+        'kar-binding
+        (let ([v (identifier-binding (datum->syntax i 'kar))])
+          (and v (cadr v)))))
+
+(check-module-body-context-properties #f)
+(check-module-body-context-properties #t)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

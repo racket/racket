@@ -742,9 +742,7 @@ internal-definition context are equivalent to local binding via
 @racket[letrec-syntaxes+values]; macro expansion converts internal
 definitions to a @racket[letrec-syntaxes+values] form.
 
-Expansion of an internal-definition context begins with the
-introduction of a fresh @tech{scope} for the context. Thereafter,
-expansion relies on @tech{partial expansion} of each @racket[_body] in
+Expansion relies on @tech{partial expansion} of each @racket[_body] in
 an internal-definition sequence. Partial expansion of each
 @racket[_body] produces a form matching one of the following cases:
 
@@ -782,8 +780,25 @@ are then converted to bindings in a @racket[letrec-syntaxes+values]
 form, and all expressions after the last definition become the body of
 the @racket[letrec-syntaxes+values] form.
 
+Before partial expansion begins, expansion of an internal-definition
+context begins with the introduction of a fresh @deftech{outside-edge
+scope} on the content of the internal-definition context. This
+outside-edge scope effectively identifies syntax objects that are
+present in the original form. An @deftech{inside-edge scope} is also
+created and added to the original content; furthermore, the
+inside-edge scope is added to the result of any partial expansion.
+This inside-edge scope ensures that all bindings introduced by the
+internal-definition context have a particular scope in common.
+
 @;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-@subsection[#:tag "mod-parse"]{Module Phases and Visits}
+@subsection[#:tag "mod-parse"]{Module Expansion, Phases, and Visits}
+
+Expansion of a @racket[module] form proceeds in a similar way to
+@seclink["intdef-body"]{expansion of an internal-definition context}:
+an @tech{outside-edge scope} is created for the original module
+content, and an @tech{inside-edge scope} is added to both the original
+module and any form that appears during a partial expansion of the
+module's top-level forms to uncover definitions and imports.
 
 A @racket[require] form not only introduces @tech{bindings} at
 expansion time, but also @deftech{visits} the referenced module when
