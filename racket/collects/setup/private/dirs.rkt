@@ -14,20 +14,27 @@
 ;; ----------------------------------------
 ;; config: definitions
 
-(define config-table
+;; read-config-file : path[dir] -> promise[hash]
+(define (read-config-file d)
   (delay/sync
-   (let ([d (find-config-dir)])
-     (if d
-         (let ([p (build-path d "config.rktd")])
+   (let* ([p (build-path d "config.rktd")]
+          [tbl
            (if (file-exists? p)
-               (call-with-input-file* 
-                p
-                (lambda (in) 
-                  (call-with-default-reading-parameterization
-                   (lambda ()
-                     (read in)))))
-               #hash()))
-         #hash()))))
+               (call-with-input-file*
+                   p
+                 (lambda (in)
+                   (call-with-default-reading-parameterization
+                    (lambda ()
+                      (read in)))))
+              #hash())]
+          [fallback (hash-ref tbl 'fallback #f)])
+     (if fallback
+         (hash-set tbl 'fallback (delay/sync (read-config-file fallback)))
+         tbl))))
+
+
+
+(define config-table (read-config-file (find-config-dir)))
 
 (define (to-path l)
   (cond [(string? l) (simplify-path (complete-path (string->path l)))]
@@ -44,8 +51,12 @@
 
 (define-syntax-rule (define-config name key wrap)
   (define name (delay/sync
-                 (wrap 
-                  (hash-ref (force config-table) key #f)))))
+                 (wrap
+                  (let loop ([table (force config-table)])
+                    (hash-ref table key
+                              (lambda ()
+                                (let ([tbl (hash-ref table 'fallback #f)])
+                                  (and tbl (loop (force tbl)))))))))))
 
 (define-config config:collects-search-dirs 'collects-search-dirs to-path)
 (define-config config:doc-dir 'doc-dir to-path)

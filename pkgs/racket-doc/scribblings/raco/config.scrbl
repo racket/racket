@@ -153,6 +153,16 @@ directory}:
        @racket[#t] if the installation uses absolute path names,
        @racket[#f] otherwise.}
 
+ @item{@indexed-racket['fallback] --- a path, string, or byte string
+       for a directory containing an additional @filepath{config.rktd}
+       file. The procedures provided by @racketmodname[setup/dirs]
+       automatically consult this file for keys not found in the
+       @filepath{config.rktd} file in the @tech{configuration
+       directory}. The additional @filepath{config.rktd} file may have
+       a @racket['fallback] entry, which is also consulted as needed.
+
+       @history[#:added "6.4.0.1"]}
+
  @item{@indexed-racket['cgc-suffix] --- a string used as the suffix (before
        the actual suffix, such as @filepath{.exe}) for a
        @filepath{CGC} executable. Use Windows-style casing, and the
