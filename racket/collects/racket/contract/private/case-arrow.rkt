@@ -91,12 +91,14 @@
                                            (λ (rng-checks)
                                              #`(apply values #,@rng-checks this-parameter ...
                                                       (dom-proj-x dom-formals neg-party) ...
-                                                      (rst-proj-x rst-formal neg-party))))
+                                                      (rst-proj-x rst-formal neg-party)))
+                                           #'(cons blame neg-party))
                       (check-tail-contract
                        #'rng-ctcs-x blame-party-info neg-party rng-checkers
                        (λ (rng-checks)
                          #`(values/drop #,@rng-checks this-parameter ...
-                                        (dom-proj-x dom-formals neg-party) ...)))))]
+                                        (dom-proj-x dom-formals neg-party) ...))
+                       #'(cons blame neg-party))))]
                [rst-ctc-expr
                 #`(apply values this-parameter ...
                          (dom-proj-x dom-formals neg-party) ...

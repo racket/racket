@@ -52,7 +52,7 @@
 
 (define tail-contract-key (gensym 'tail-contract-key))
 
-(define-for-syntax (check-tail-contract rng-ctcs blame-party-info neg-party rng-checkers call-gen)
+(define-for-syntax (check-tail-contract rng-ctcs blame-party-info neg-party rng-checkers call-gen blame+neg-party)
   (unless (identifier? rng-ctcs)
     (raise-argument-error 'check-tail-contract
                           "identifier?"
@@ -61,7 +61,7 @@
   #`(call-with-immediate-continuation-mark
      tail-contract-key
      (λ (m)
-       (if (tail-marks-match? m #,rng-ctcs #,blame-party-info #,neg-party)
+       (if (tail-marks-match? m #,rng-ctcs #,blame-party-info #,neg-party #,blame+neg-party)
            #,(call-gen #'())
            #,(call-gen rng-checkers)))))
 
@@ -69,25 +69,28 @@
 ;; rng-ctc : (or/c #f (listof ctc))
 ;; blame-party-info : (list/c pos-party boolean?[blame-swapped?])
 ;; neg-party : neg-party
-(define (tail-marks-match? m rng-ctcs blame-party-info neg-party)
-  (and m
-       rng-ctcs
-       (eq? (car m) neg-party)
-       (let ([mark-blame-part-info (cadr m)])
-         (and (eq? (car mark-blame-part-info) (car blame-party-info))
-              (eq? (cadr mark-blame-part-info) (cadr blame-party-info))))
-       (let loop ([m (cddr m)]
-                  [rng-ctcs rng-ctcs])
-         (cond
-           [(null? m) (null? rng-ctcs)]
-           [(null? rng-ctcs) (null? m)]
-           [else
-            (define m1 (car m))
-            (define rng-ctc1 (car rng-ctcs))
-            (cond
-              [(eq? m1 rng-ctc1) (loop (cdr m) (cdr rng-ctcs))]
-              [(contract-struct-stronger? m1 rng-ctc1) (loop (cdr m) (cdr rng-ctcs))]
-              [else #f])]))))
+;; blame+neg-party : (cons/c blame? neg-party)
+(define (tail-marks-match? m rng-ctcs blame-party-info neg-party blame+neg-party)
+  (with-contract-continuation-mark
+   blame+neg-party
+   (and m
+        rng-ctcs
+        (eq? (car m) neg-party)
+        (let ([mark-blame-part-info (cadr m)])
+          (and (eq? (car mark-blame-part-info) (car blame-party-info))
+               (eq? (cadr mark-blame-part-info) (cadr blame-party-info))))
+        (let loop ([m (cddr m)]
+                   [rng-ctcs rng-ctcs])
+          (cond
+            [(null? m) (null? rng-ctcs)]
+            [(null? rng-ctcs) (null? m)]
+            [else
+             (define m1 (car m))
+             (define rng-ctc1 (car rng-ctcs))
+             (cond
+               [(eq? m1 rng-ctc1) (loop (cdr m) (cdr rng-ctcs))]
+               [(contract-struct-stronger? m1 rng-ctc1) (loop (cdr m) (cdr rng-ctcs))]
+               [else #f])])))))
 
 ;; used as part of the information in the continuation mark
 ;; that records what is to be checked for a pending contract
@@ -115,27 +118,30 @@
                      (λ (val neg-party)
                        (check-is-a-procedure orig-blame neg-party val)
                        (define (res-checker res-x ...) (values/drop (p-app-x res-x neg-party) ...))
+                       (define blame+neg-party (cons orig-blame neg-party))
                        (wrapper
                         val
                         (make-keyword-procedure
                          (λ (kwds kwd-vals . args)
                            (with-contract-continuation-mark
-                            (cons orig-blame neg-party)
+                            blame+neg-party
                             #,(check-tail-contract
                                #'rngs-list
                                #'blame-party-info
                                #'neg-party
                                (list #'res-checker)
-                               (λ (s) #`(apply values #,@s kwd-vals args)))))
+                               (λ (s) #`(apply values #,@s kwd-vals args))
+                               #'blame+neg-party)))
                          (λ args
                            (with-contract-continuation-mark
-                            (cons orig-blame neg-party)
+                            blame+neg-party
                             #,(check-tail-contract
                                #'rngs-list
                                #'blame-party-info
                                #'neg-party
                                (list #'res-checker)
-                               (λ (s) #`(apply values #,@s args))))))
+                               (λ (s) #`(apply values #,@s args))
+                               #'blame+neg-party))))
                         impersonator-prop:contracted ctc
                         impersonator-prop:application-mark
                         (cons tail-contract-key (list neg-party blame-party-info rngs-x ...))))))))
@@ -346,7 +352,8 @@
                                                         blame-party-info
                                                         #'neg-party
                                                         #'(rng-checker-name ...)
-                                                        inner-stx-gen)))]
+                                                        inner-stx-gen
+                                                        #'(cons blame neg-party))))]
                             [kwd-return
                              (let* ([inner-stx-gen
                                      (if need-apply-values?
@@ -370,7 +377,8 @@
                                                               blame-party-info
                                                               #'neg-party
                                                               #'(rng-checker-name ...)
-                                                              outer-stx-gen))))])
+                                                              outer-stx-gen
+                                                              #'(cons blame neg-party)))))])
                 (with-syntax ([basic-lambda-name (gen-id 'basic-lambda)]
                               [basic-lambda #'(λ basic-params
                                                 ;; Arrow contract domain checking is instrumented
