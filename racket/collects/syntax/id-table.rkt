@@ -130,20 +130,35 @@
       (define pos-rng-proj (id-table/c-rng-pos-proj ctc blame))
       (define neg-rng-proj (id-table/c-rng-neg-proj ctc blame))
       (lambda (tbl neg-party)
+        (define blame+neg-party (cons blame neg-party))
         (check-id-table/c ctc tbl blame neg-party)
         ;;TODO for immutable hash tables optimize this chaperone to a flat
         ;;check if possible
         (if (immutable-idtbl? tbl)
-            (chaperone-immutable-id-table tbl
-                                          (λ (val) (pos-dom-proj val neg-party))
-                                          (λ (val) (pos-rng-proj val neg-party))
-                                          impersonator-prop:contracted ctc)
-            (chaperone-mutable-id-table tbl
-                                        (λ (val) (neg-dom-proj val neg-party))
-                                        (λ (val) (pos-dom-proj val neg-party))
-                                        (λ (val) (neg-rng-proj val neg-party))
-                                        (λ (val) (pos-rng-proj val neg-party))
-                                        impersonator-prop:contracted ctc)))))
+            (chaperone-immutable-id-table
+             tbl
+             (λ (val) (with-contract-continuation-mark
+                       blame+neg-party
+                       (pos-dom-proj val neg-party)))
+             (λ (val) (with-contract-continuation-mark
+                       blame+neg-party
+                       (pos-rng-proj val neg-party)))
+             impersonator-prop:contracted ctc)
+            (chaperone-mutable-id-table
+             tbl
+             (λ (val) (with-contract-continuation-mark
+                       blame+neg-party
+                       (neg-dom-proj val neg-party)))
+             (λ (val) (with-contract-continuation-mark
+                       blame+neg-party
+                       (pos-dom-proj val neg-party)))
+             (λ (val) (with-contract-continuation-mark
+                       blame+neg-party
+                       (neg-rng-proj val neg-party)))
+             (λ (val) (with-contract-continuation-mark
+                       blame+neg-party
+                       (pos-rng-proj val neg-party)))
+             impersonator-prop:contracted ctc)))))
 
   (struct flat-id-table/c base-id-table/c ()
     #:omit-define-syntaxes

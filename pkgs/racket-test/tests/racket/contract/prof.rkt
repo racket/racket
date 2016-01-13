@@ -597,4 +597,23 @@
                                      (in-dict '((1 . 2) (3 . 4))) 'pos 'neg)
                            0))))
 
+  (test/spec-passed
+   'contract-marks65
+   '(let ()
+      (eval '(require syntax/id-table))
+      (eval '(define t (contract (free-id-table/c pos-blame? neg-blame?)
+                                 (make-free-id-table)
+                                 'pos 'neg)))
+      (eval '(free-id-table-set! t #'a 3))
+      (eval '(free-id-table-ref t #'a))))
+
+  (test/spec-passed
+   'contract-marks66
+   '(let ()
+      (eval '(require syntax/id-table))
+      (eval '(define t (contract (free-id-table/c pos-blame? neg-blame?)
+                                 (make-immutable-free-id-table)
+                                 'pos 'neg)))
+      (eval '(free-id-table-ref (free-id-table-set t #'a 3) #'a))))
+
   )
