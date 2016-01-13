@@ -1,27 +1,14 @@
 #lang racket/base
-(require racket/tcp)
+
+(require net/url
+         racket/tcp
+         "utils.rkt")
 
 (define version-url "http://download.racket-lang.org/version.txt")
 (define timeout 30)
 
-(require "utils.rkt")
-
-;; This file can be invoked from an installer, and in case it's
-;; without zo files using `net/url' is extremely slow.  Instead, do
-;; things directly.
-;; (require net/url)
-;; (define (url->port url) (get-pure-port (string->url url)))
-
 (define (url->port url)
-  (define-values [host path]
-    (apply values (cdr (regexp-match #rx"^http://([^/:@]+)(/.*)$" url))))
-  (define-values [i o] (tcp-connect host 80))
-  (fprintf o "GET ~a HTTP/1.0\r\nHost: ~a\r\n\r\n" path host)
-  (flush-output o)
-  (close-output-port o)
-  (unless (regexp-match #rx"^HTTP/[0-9.]+ 200 OK\r\n.*?\r\n\r\n" i)
-    (error 'url->port "bad reply from server: ~a" (read-line)))
-  i)
+  (get-pure-port (string->url url)))
 
 (define error-value
   (case-lambda
@@ -104,3 +91,8 @@
 (provide check-version)
 (define (check-version)
   (with-timeout timeout check-version-raw))
+
+(module+ test
+  (let ([result (check-version)])
+    (unless (eq? result 'ok)
+      (error 'check-version "failed due to non-ok result: ~v" result))))
