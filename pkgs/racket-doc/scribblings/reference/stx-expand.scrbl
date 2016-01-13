@@ -146,7 +146,7 @@ to the syntax object:
  be exported indirectly through macro expansions.  Definitions of
  macro-generated identifiers create uninterned symbols in this list.}
 
- @item{@indexed-racket['module-body-inside-context] --- a syntax
+ @item{@indexed-racket['module-body-context] --- a syntax
  object whose @tech{lexical information} corresponds to the inside of
  the module, so it includes the expansion's @tech{outside-edge scope}
  and its @tech{inside-edge scope}; that is, the syntax object
@@ -157,7 +157,7 @@ to the syntax object:
 
  @history[#:added "6.4.0.1"]}
 
- @item{@indexed-racket['module-body-outside-context] --- a syntax
+ @item{@indexed-racket['module-body-inside-context] --- a syntax
  object whose @tech{lexical information} corresponds to an identifier
  that starts with no lexical context and is moved into the macro, so
  that it includes only the expansions's @tech{inside-edge scope}.

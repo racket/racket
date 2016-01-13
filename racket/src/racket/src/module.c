@@ -7497,13 +7497,13 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
       stx = scheme_datum_to_syntax(scheme_intern_symbol("inside"), scheme_false, scheme_false, 0, 0);
       stx = scheme_stx_add_module_context(stx, rn_set);
       fm = scheme_stx_property(fm,
-                               scheme_intern_symbol("module-body-inside-context"),
+                               scheme_intern_symbol("module-body-context"),
                                scheme_stx_add_shift(stx, ps));
 
       stx = scheme_datum_to_syntax(scheme_intern_symbol("outside"), scheme_false, scheme_false, 0, 0);
       stx = scheme_stx_introduce_to_module_context(stx, rn_set);
       fm = scheme_stx_property(fm,
-                               scheme_intern_symbol("module-body-outside-context"),
+                               scheme_intern_symbol("module-body-inside-context"),
                                scheme_stx_add_shift(stx, ps));
     }
 

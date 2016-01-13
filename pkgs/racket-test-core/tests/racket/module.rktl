@@ -1731,8 +1731,8 @@ case of module-leve bindings; it doesn't cover local bindings.
   
   (test (not with-kar?) syntax-property m 'module-body-context-simple?)
 
-  (define i (syntax-property m 'module-body-inside-context))
-  (define o (syntax-property m 'module-body-outside-context))
+  (define i (syntax-property m 'module-body-context))
+  (define o (syntax-property m 'module-body-inside-context))
   
   (test #t syntax? i)
   (test #t syntax? o)
