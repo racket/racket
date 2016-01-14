@@ -51,6 +51,22 @@
                    rt)])
       sp))
 
+  (define (syntax-parameter-local-value-pre id)
+    (define-values (rt* rt-target) (syntax-local-value/immediate id (λ () #f)))
+    (cond
+      [(not rt-target)
+       rt*]
+      [(syntax-parameter? rt*)
+       rt-target]
+      [(parameter-binding? rt*)
+       rt*]
+      [else
+       (syntax-parameter-local-value-pre rt-target)]))
+
+  (define (syntax-parameter-local-value-for-parameter target)
+    (or (syntax-parameter-local-value-pre (syntax-local-get-shadower target #t))
+        (syntax-parameter-local-value-pre target)))
+
   (define (target-value target)
     (syntax-local-value (syntax-local-get-shadower target #t)
                         (lambda ()
@@ -69,10 +85,10 @@
                   v)])
       (if (wrapped-renamer? v)
 	  (wrapped-renamer-renamer v)
-          v)))
+      v)))
 
   (define (syntax-parameter-target-parameter target)
-    (let ([v (target-value target)])
+    (let ([v (syntax-parameter-local-value-for-parameter target)])
       (parameter-binding-param v)))
 
   (define (convert-renamer must-be-renamer?-stx v)

@@ -350,10 +350,7 @@
       'transparent)]))
 
 (define-for-syntax (parameter-of id)
-  (let* ([rt (syntax-local-value id)]
-         [sp (if (set!-transformer? rt)
-                 (set!-transformer-procedure rt)
-                 rt)])
+  (let ([sp (syntax-parameter-local-value id)])
     (syntax-parameter-target-parameter
      (syntax-parameter-target sp))))
 
