@@ -20,18 +20,7 @@
 				  "not an identifier"
 				  stx
 				  id))
-			       (let*-values
-                    ;; If it is a rename-transformer-parameter, then
-                    ;; we need to get the parameter and not what it
-                    ;; points to, otherwise, we can keep going.
-                    ([(rt* rt-target)
-                      (syntax-local-value/immediate id (lambda () #f))]
-                     [(rt) (if (syntax-parameter? rt*)
-                               rt*
-                               (or rt-target rt*))]
-                     [(sp) (if (set!-transformer? rt)
-                               (set!-transformer-procedure rt)
-                               rt)])
+			       (let ([sp (syntax-parameter-local-value id)])
 				 (unless (syntax-parameter? sp)
 				   (raise-syntax-error
 				    #f

@@ -36,6 +36,21 @@
   (define (syntax-parameter-target sp)
     (syntax-parameter-ref sp 1))
 
+  ;; If it is a rename-transformer-parameter, then we need to get the
+  ;; parameter and not what it points to, otherwise, we can keep
+  ;; going.
+  (define (syntax-parameter-local-value id)
+    (let*-values
+        ([(rt* rt-target)
+          (syntax-local-value/immediate id (lambda () #f))]
+         [(rt) (if (syntax-parameter? rt*)
+                   rt*
+                   (or rt-target rt*))]
+         [(sp) (if (set!-transformer? rt)
+                   (set!-transformer-procedure rt)
+                   rt)])
+      sp))
+
   (define (target-value target)
     (syntax-local-value (syntax-local-get-shadower target #t)
                         (lambda ()
@@ -115,6 +130,7 @@
              make-syntax-parameter
              rename-transformer-parameter?
              make-rename-transformer-parameter
+             syntax-parameter-local-value
              syntax-parameter-target
              syntax-parameter-target-value
              syntax-parameter-target-parameter))
