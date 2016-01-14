@@ -11,7 +11,8 @@
            "private/macfw.rkt"
            "private/windlldir.rkt"
            "private/elf.rkt"
-           "private/collects-path.rkt")
+           "private/collects-path.rkt"
+           "private/write-perm.rkt")
 
   (provide assemble-distribution)
 
@@ -59,6 +60,10 @@
 		 orig-binaries
 		 sub-dirs
 		 types)]
+           [old-permss (and executables?
+                            (eq? (system-type) 'unix)
+                            (for/list ([b (in-list binaries)])
+                              (ensure-writable b)))]
 	   [single-mac-app? (and executables?
                                  (eq? 'macosx (cross-system-type))
 				 (= 1 (length types))
@@ -150,6 +155,9 @@
                                                    exts-dir 
                                                    relative-exts-dir
                                                    relative->binary-relative)
+            ;; Restore executable permissions:
+            (when old-permss
+              (map done-writable binaries old-permss))
             ;; Done!
             (void))))))
 
