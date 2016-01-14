@@ -664,13 +664,13 @@
   
 ;; ----------------------------------------
 
-;(try-basic)
-;(try-mzc)
-;(try-extension)
-;(try-gracket)
-;(try-reader)
-;(try-planet)
-;(try-*sl)
+(try-basic)
+(try-mzc)
+(try-extension)
+(try-gracket)
+(try-reader)
+(try-planet)
+(try-*sl)
 (try-source)
 
 ;; ----------------------------------------
