@@ -962,11 +962,12 @@
                     (cons result-checker args-dealt-with)
                     args-dealt-with)))))
           
-          (arrow:arity-checking-wrapper f blame neg-party
-                                        interposition-proc interposition-proc
-                                        min-arity max-arity
-                                        min-arity max-arity 
-                                        mandatory-keywords optional-keywords))))
+          (values (arrow:arity-checking-wrapper f blame neg-party
+                                                interposition-proc #f interposition-proc
+                                                min-arity max-arity
+                                                min-arity max-arity 
+                                                mandatory-keywords optional-keywords)
+                  #f))))
   
   (build--> 'dynamic->*
             mandatory-domain-contracts optional-domain-contracts 
@@ -1159,11 +1160,13 @@
        (arrow:keywords-match man-kwds opt-kwds x)
        #t))
 
-(define (make-property build-X-property chaperone-or-impersonate-procedure)
+(define (make-property chaperone?)
+  (define build-X-property
+    (if chaperone? build-chaperone-contract-property build-contract-property))
   (define val-first-proj
     (λ (->stct)
       (maybe-warn-about-val-first ->stct)
-      (->-proj chaperone-or-impersonate-procedure ->stct
+      (->-proj chaperone? ->stct
                (base->-min-arity ->stct)
                (base->-doms ->stct)
                (base->-kwd-infos ->stct)
@@ -1176,7 +1179,7 @@
                #f)))
   (define late-neg-proj
     (λ (->stct)
-      (->-proj chaperone-or-impersonate-procedure ->stct
+      (->-proj chaperone? ->stct
                (base->-min-arity ->stct)
                (base->-doms ->stct)
                (base->-kwd-infos ->stct)
@@ -1227,19 +1230,13 @@
        (not (base->-post? that))))
      
 (define-struct (-> base->) ()
-  #:property
-  prop:chaperone-contract
-  (make-property build-chaperone-contract-property chaperone-procedure))
+  #:property prop:chaperone-contract (make-property #t))
 
 (define-struct (predicate/c base->) ()
-  #:property
-  prop:chaperone-contract
-  (make-property build-chaperone-contract-property chaperone-procedure))
+  #:property prop:chaperone-contract (make-property #t))
 
 (define-struct (impersonator-> base->) ()
-  #:property
-  prop:contract
-  (make-property build-contract-property impersonate-procedure))
+  #:property prop:contract (make-property #f))
 
 (define ->void-contract
   (let-syntax ([get-chaperone-constructor
@@ -1303,25 +1300,27 @@
                     '(expected: "a procedure that accepts 1 non-keyword argument"
                                 given: "~e")
                     f))
-                 (cond
-                   [(and (struct-predicate-procedure? f)
-                         (not (impersonator? f)))
-                    #f]
-                   [(and (equal? (procedure-arity f) 1)
-                         (let-values ([(required mandatory) (procedure-keywords f)])
-                           (and (null? required)
-                                (null? mandatory))))
-                    (λ (arg)
-                      (values (rng-checker f blame neg-party) arg))]
-                   [(procedure-arity-includes? f 1)
-                    (make-keyword-procedure
-                     (λ (kwds kwd-args . other)
-                       (unless (null? kwds)
-                         (arrow:raise-no-keywords-arg blame #:missing-party neg-party f kwds))
-                       (unless (= 1 (length other))
-                         (arrow:raise-wrong-number-of-args-error #:missing-party neg-party
-                                                                 blame f (length other) 1 1 1))
-                       (values (rng-checker f blame neg-party) (car other))))]))))
+                 (values (cond
+                           [(and (struct-predicate-procedure? f)
+                                 (not (impersonator? f)))
+                            #f]
+                           [(and (equal? (procedure-arity f) 1)
+                                 (let-values ([(required mandatory) (procedure-keywords f)])
+                                   (and (null? required)
+                                        (null? mandatory))))
+                            (λ (arg)
+                              (values (rng-checker f blame neg-party) arg))]
+                           [(procedure-arity-includes? f 1)
+                            (make-keyword-procedure
+                             (λ (kwds kwd-args . other)
+                               (unless (null? kwds)
+                                 (arrow:raise-no-keywords-arg blame #:missing-party neg-party f kwds))
+                               (unless (= 1 (length other))
+                                 (arrow:raise-wrong-number-of-args-error
+                                  #:missing-party neg-party
+                                  blame f (length other) 1 1 1))
+                               (values (rng-checker f blame neg-party) (car other))))])
+                         #f))))
 
 (define -predicate/c (mk-any/c->boolean-contract predicate/c))
 (define any/c->boolean-contract (mk-any/c->boolean-contract make-->))
