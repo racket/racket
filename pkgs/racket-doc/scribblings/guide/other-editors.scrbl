@@ -55,7 +55,7 @@ popular among Racketeers as well.
        name @tt{geiser}.}
 
  @item{Emacs ships with a major mode for Scheme, @tt{scheme-mode},
-       that while not as featureful as the above options, but works
+       that while not as featureful as the above options, works
        reasonably well for editing Racket code. However, this mode
        does not provide support for Racket-specific forms.}
 
