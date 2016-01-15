@@ -636,7 +636,7 @@
                        (let ([#,core-id #,impl])
                          (let ([#,unpack-id #,kwimpl])
                            #,wrap))))))
-                 #`(#%expression #,stx)))])
+                 (quasisyntax/loc stx (#%expression #,stx))))])
       (values new-lambda new-lambda)))
   
   (define (missing-kw proc . args)
