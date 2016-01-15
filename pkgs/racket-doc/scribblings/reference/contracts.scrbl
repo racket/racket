@@ -1784,6 +1784,16 @@ The @racket[define-struct/contract] form only allows a subset of the
   
 }
 
+@defform[#:literals (current-input-port)
+         (read/contract contract-expr [in (current-input-port)])
+         #:contracts ([in input-port?])]{
+  Calls @racket[read] to retrieve a single @tech{datum} from @emph{in}, then applies
+  @racket[contract-expr] to the result.
+
+  @history[#:added "6.4.0.1"]
+
+}
+
 @defidform[current-contract-region]{
   Bound by @racket[define-syntax-parameter], this contains
   information about the current contract region, used by

@@ -4,6 +4,7 @@
          (rename-out [-recursive-contract recursive-contract])
          current-contract-region
          invariant-assertion
+         read/contract
          (for-syntax lifted-key add-lifted-property))
 
 (require (for-syntax racket/base syntax/name syntax/srcloc)
@@ -86,6 +87,21 @@
                    me me
                    '#,(syntax-local-infer-name stx)
                    '#,(build-source-location-vector #'ctc))))]))
+
+(define-syntax (read/contract stx)
+  (with-syntax ([(ctc port)
+                 (syntax-case stx ()
+                  [(_read ctc) #'(ctc #f)]
+                  [(_read ctc in) #'(ctc in)])])
+    (quasisyntax/loc stx
+      (let* ([in (or port (current-input-port))]
+             [v (read in)])
+        (contract ctc
+                  v
+                  in
+                  (current-contract-region)
+                  '#,(syntax-local-infer-name stx)
+                  '#,(build-source-location-vector #'ctc))))))
 
 (define-syntax (-recursive-contract stx)
   (define (do-recursive-contract arg type name list-contract?)
