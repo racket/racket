@@ -230,6 +230,24 @@ list is also in the second list.
 (procedure-keywords (lambda (#:tag t #:mode [m #f]) t))
 ]}
 
+@defproc[(procedure-result-arity [proc procedure?]) (or/c #f procedure-arity?)]{
+ Returns the arity of the result of the procedure @racket[proc] or
+ @racket[#f] if the number of results are not known, perhaps due to shortcomings
+ in the implementation of @racket[procedure-result-arity] or
+ because @racket[proc]'s behavior is not sufficiently simple.
+
+ @mz-examples[(procedure-result-arity car)
+              (procedure-result-arity values)
+              (procedure-result-arity
+               (λ (x)
+                 (apply
+                  values
+                  (let loop ()
+                    (cond
+                      [(zero? (random 10)) '()]
+                      [else (cons 1 (loop))])))))]
+}
+
 @defproc[(make-keyword-procedure
           [proc (((listof keyword?) list?) () #:rest list? . ->* . any)]
           [plain-proc procedure? (lambda args (apply proc null null args))])

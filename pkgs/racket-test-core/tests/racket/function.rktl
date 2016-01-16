@@ -106,6 +106,49 @@
   (arity-test compose1 0 -1)
   (arity-test compose  0 -1))
 
+;; ---------- procedure-result-arity ----------
+
+(test 1 procedure-result-arity car)
+(test 1 procedure-result-arity list)
+(test (arity-at-least 0) procedure-result-arity values)
+(test (arity-at-least 0) procedure-result-arity call/cc)
+(let ()
+  (struct s (x))
+  (test 1 procedure-result-arity s-x)
+  (test 1 procedure-result-arity s?)
+  (test 1 procedure-result-arity s))
+(test 1 procedure-result-arity (λ (x) 0))
+(test 1 procedure-result-arity (let ([f 1]) (λ (x) (+ f x))))
+(test #f procedure-result-arity
+      (λ ()
+        (if (= 0 (random 1))
+            1
+            (values 1 2))))
+(err/rt-test (procedure-result-arity 1) exn:fail?)
+(test 1 procedure-result-arity (chaperone-procedure car values))
+(test 1 procedure-result-arity (impersonate-procedure car (λ (x) 1)))
+(test #f procedure-result-arity (λ (x) (values x x)))
+(test 1 procedure-result-arity (parameterize ([eval-jit-enabled #f])
+                                 (eval '(λ (x) x))))
+(test 1 procedure-result-arity (parameterize ([eval-jit-enabled #f])
+                                 (eval '(case-lambda
+                                          [(x) x]
+                                          [(x y) x]
+                                          [(a b c d e f) a]
+                                          [(a b . whatever) a]))))
+(test #f procedure-result-arity (parameterize ([eval-jit-enabled #f])
+                                  (eval '(case-lambda
+                                           [(x) x]
+                                           [(x y) (values x y)]
+                                           [(a b c d e f) (values 1 2 3 4 5 6 7 8)]
+                                           [(a b . whatever) a]))))
+
+;; hopefully this test will start failing at
+;; some point and return 1 instead of #f
+(let ()
+  (struct s (f) #:property prop:procedure 0)
+  (test #f procedure-result-arity (s car)))
+
 ;; ---------- identity ----------
 (let ()
   (test 'foo identity 'foo)

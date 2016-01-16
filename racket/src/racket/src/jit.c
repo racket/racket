@@ -928,17 +928,21 @@ int scheme_needs_only_target_register(Scheme_Object *obj, int and_can_reorder)
     return (t >= _scheme_compiled_values_types_);
 }
 
+int scheme_native_closure_is_single_result(Scheme_Object *rator)
+{
+  Scheme_Native_Closure *nc = (Scheme_Native_Closure *)rator;
+  if (nc->code->start_code == scheme_on_demand_jit_code)
+    return (SCHEME_CLOSURE_DATA_FLAGS(nc->code->u2.orig_code) & CLOS_SINGLE_RESULT);
+  else
+    return (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(nc->code) & NATIVE_IS_SINGLE_RESULT);
+}
+
 static int produces_single_value(Scheme_Object *rator, int num_args, mz_jit_state *jitter)
 {
   rator = scheme_specialize_to_constant(rator, jitter, num_args);
 
-  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_native_closure_type)) {
-    Scheme_Native_Closure *nc = (Scheme_Native_Closure *)rator;
-    if (nc->code->start_code == scheme_on_demand_jit_code)
-      return (SCHEME_CLOSURE_DATA_FLAGS(nc->code->u2.orig_code) & CLOS_SINGLE_RESULT);
-    else
-      return (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(nc->code) & NATIVE_IS_SINGLE_RESULT);
-  }
+  if (SAME_TYPE(SCHEME_TYPE(rator), scheme_native_closure_type))
+    return scheme_native_closure_is_single_result(rator);
 
   if (SCHEME_PRIMP(rator)) {
     int opt;
@@ -4278,7 +4282,7 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
   Generate_Case_Dispatch_Data gdata;
   Scheme_Closure_Data *data;
   Scheme_Object *o;
-  int i, cnt, num_params, has_rest;
+  int i, cnt, num_params, has_rest, single_result = 1;
   mzshort *arities;
 
   gdata.c = c;
@@ -4302,6 +4306,8 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
     has_rest = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? 1 : 0);
     if (has_rest && num_params)
       --num_params;
+    if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_SINGLE_RESULT))
+      single_result = 0;
 	  
     if (!has_rest) 
       arities[i] = num_params;
@@ -4309,6 +4315,9 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
       arities[i] = -(num_params+1);
   }
   ndata->u.arities = arities;
+
+  if (single_result)
+    SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) |= NATIVE_IS_SINGLE_RESULT;
 }
 
 /*========================================================================*/

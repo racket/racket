@@ -190,6 +190,7 @@ static Scheme_Object *impersonate_procedure_star(int argc, Scheme_Object *argv[]
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_result_arity (int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_result_arity (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_values(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_print(int argc, Scheme_Object **argv);
@@ -652,6 +653,12 @@ scheme_init_fun (Scheme_Env *env)
 						      "primitive-result-arity",
 						      1, 1, 1),
 			     env);
+
+  scheme_add_global_constant("procedure-result-arity",
+                             scheme_make_folding_prim(procedure_result_arity,
+                                                      "procedure-result-arity",
+                                                      1, 1, 1),
+                             env);
 
   scheme_add_global_constant("current-print",
 			     scheme_register_parameter(current_print,
@@ -2885,11 +2892,59 @@ static Scheme_Object *primitive_result_arity(int argc, Scheme_Object *argv[])
       return scheme_make_arity(p->minr, p->maxr);
     }
   } else {
-    scheme_wrong_contract("primitive-result_arity", "primitive?", 0, argc, argv);
+    scheme_wrong_contract("primitive-result-arity", "primitive?", 0, argc, argv);
     return NULL;
   }
-
   return scheme_make_integer(1);
+}
+
+static Scheme_Object *procedure_result_arity(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o, *orig_o;
+
+  orig_o = argv[0];
+  o = orig_o;
+
+  if (SCHEME_CHAPERONEP(o))
+    o = SCHEME_CHAPERONE_VAL(o);
+
+  /* Struct procedures could be keyword-accepting and that
+     requires additional complication; defer for now */
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_proc_struct_type)) {
+    return scheme_false;
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_closure_type)) {
+    if ((SCHEME_CLOSURE_DATA_FLAGS(SCHEME_COMPILED_CLOS_CODE(o)) & CLOS_SINGLE_RESULT)) {
+      return scheme_make_integer(1);
+    }
+#ifdef MZ_USE_JIT
+  } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_native_closure_type)) {
+    if (scheme_native_closure_is_single_result(o))
+      return scheme_make_integer(1);
+#endif
+  } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_case_closure_type)) {
+    Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)o;
+    int i;
+    
+    for (i = cl->count; i--; ) {
+      if (!(SCHEME_CLOSURE_DATA_FLAGS(SCHEME_COMPILED_CLOS_CODE(cl->array[i])) & CLOS_SINGLE_RESULT))
+        break;
+    }
+
+    if (i < 0)
+      return scheme_make_integer(1);
+  } else if (SCHEME_PRIMP(o)) {
+    if (((Scheme_Primitive_Proc *)o)->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT) {
+      Scheme_Prim_W_Result_Arity *p = (Scheme_Prim_W_Result_Arity *)o;
+      return scheme_make_arity(p->minr, p->maxr);
+    }
+    return scheme_make_integer(1);
+  } else if (!SCHEME_PROCP(o)) {
+    scheme_wrong_contract("procedure-result-arity", "procedure?", 0, argc, argv);
+    return NULL;
+  }
+  return scheme_false;
 }
 
 Scheme_Object *scheme_object_name(Scheme_Object *a)
