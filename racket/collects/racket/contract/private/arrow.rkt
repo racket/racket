@@ -450,7 +450,8 @@
     [(matches-arity-exactly? val min-arity max-arity req-kwd opt-kwd)
      (if (and (null? req-kwd) (null? opt-kwd))
          (cond
-           [(and basic-unsafe-lambda/result-values-assumed
+           [(and basic-unsafe-lambda
+                 basic-unsafe-lambda/result-values-assumed
                  (equal? contract-result-val-count
                          (procedure-result-arity val)))
             (values basic-unsafe-lambda/result-values-assumed #t)]

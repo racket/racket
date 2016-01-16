@@ -487,5 +487,23 @@
    'dynamic->*8
    '((contract (dynamic->* #:range-contracts #f) (λ () 1) 'pos 'neg))
    1)
+
+  (test/spec-passed
+   'dynamic->*9
+   '(begin
+      ((contract (dynamic->* #:range-contracts (list (or/c 1 2) (or/c 3 4)))
+                 (λ () (values 1 3))
+                 'pos
+                 'neg))
+      (void)))
+
+  (test/pos-blame
+   'dynamic->*10
+   '(begin
+      ((contract (dynamic->* #:range-contracts (list (or/c 1 2) (or/c 3 4)))
+                 (λ () (values #f #f))
+                 'pos
+                 'neg))
+      (void)))
   
   )
