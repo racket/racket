@@ -8,7 +8,10 @@
          "misc.rkt"
          "prop.rkt"
          "guts.rkt"
-         (prefix-in arrow: "arrow.rkt"))
+         (prefix-in arrow: "arrow.rkt")
+         (only-in racket/unsafe/ops
+                  unsafe-chaperone-procedure
+                  unsafe-impersonate-procedure))
 
 (provide (for-syntax build-chaperone-constructor/real)
          procedure-arity-exactly/no-kwds

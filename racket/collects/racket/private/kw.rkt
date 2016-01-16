@@ -2,7 +2,11 @@
   (#%require "define.rkt"
              "small-scheme.rkt"
              "more-scheme.rkt"
+             (only '#%unsafe
+                   unsafe-chaperone-procedure
+                   unsafe-impersonate-procedure)
              (for-syntax '#%kernel
+                         '#%unsafe
                          "procedure-alias.rkt"
                          "stx.rkt"
                          "small-scheme.rkt"
@@ -26,9 +30,9 @@
              new:procedure->method
              new:procedure-rename
              new:chaperone-procedure
-             new:unsafe-chaperone-procedure
+             (protect new:unsafe-chaperone-procedure)
              new:impersonate-procedure
-             new:unsafe-impersonate-procedure
+             (protect new:unsafe-impersonate-procedure)
              new:chaperone-procedure*
              new:impersonate-procedure*
              (for-syntax kw-expander? kw-expander-impl kw-expander-proc

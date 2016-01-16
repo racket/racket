@@ -611,19 +611,9 @@ scheme_init_fun (Scheme_Env *env)
 						      "chaperone-procedure",
 						      2, -1),
 			     env);
-  scheme_add_global_constant("unsafe-chaperone-procedure",
-			     scheme_make_prim_w_arity(unsafe_chaperone_procedure,
-						      "unsafe-chaperone-procedure",
-						      2, -1),
-			     env);
   scheme_add_global_constant("impersonate-procedure",
 			     scheme_make_prim_w_arity(impersonate_procedure,
 						      "impersonate-procedure",
-						      2, -1),
-			     env);
-  scheme_add_global_constant("unsafe-impersonate-procedure",
-			     scheme_make_prim_w_arity(unsafe_impersonate_procedure,
-						      "unsafe-impersonate-procedure",
 						      2, -1),
 			     env);
   scheme_add_global_constant("chaperone-procedure*",
@@ -763,6 +753,17 @@ scheme_init_unsafe_fun (Scheme_Env *env)
 
   o = scheme_make_prim_w_arity(chaperone_unsafe_undefined, "chaperone-struct-unsafe-undefined", 1, 1);
   scheme_add_global_constant("chaperone-struct-unsafe-undefined", o, env);
+
+  scheme_add_global_constant("unsafe-chaperone-procedure",
+			     scheme_make_prim_w_arity(unsafe_chaperone_procedure,
+						      "unsafe-chaperone-procedure",
+						      2, -1),
+			     env);
+  scheme_add_global_constant("unsafe-impersonate-procedure",
+			     scheme_make_prim_w_arity(unsafe_impersonate_procedure,
+						      "unsafe-impersonate-procedure",
+						      2, -1),
+			     env);
 }
 
 void

@@ -310,77 +310,6 @@ that are overridden by further impersonators, for example.
 
 @history[#:added "6.1.1.5"]}
 
-@defproc[(unsafe-impersonate-procedure [proc procedure?]
-                                       [replacement-proc procedure?]
-                                       [prop impersonator-property?]
-                                       [prop-val any] ... ...)
-         (and/c procedure? impersonator?)]{
- Like @racket[impersonate-procedure], except it assumes that @racket[replacement-proc]
- is already properly wrapping @racket[proc] and so when the procedure that
- @racket[unsafe-impersonate-procedure] produces is invoked, the
- @racket[replacement-proc] is invoked directly, ignoring @racket[proc].
-
- In addition, it does not specially handle @racket[impersonator-prop:application-mark],
- instead just treating it as an ordinary property if it is supplied as one of the
- @racket[prop] arguments.
- 
- This procedure is unsafe only in how it assumes @racket[replacement-proc] is
- a proper wrapper for @racket[proc]. It otherwise does all of the checking
- that @racket[impersonate-procedure] does.
-
- As an example, this function:
- @racketblock[(λ (f)
-                (unsafe-impersonate-procedure
-                 f
-                 (λ (x)
-                   (if (number? x)
-                       (error 'no-numbers!)
-                       (f x)))))]
- is equivalent to this one:
- @racketblock[(λ (f)
-                (impersonate-procedure
-                 f
-                 (λ (x)
-                   (if (number? x)
-                       (error 'no-numbers!)
-                       x))))]
- (except that some error messages start with @litchar{unsafe-impersonate-procedure}
- instead of @litchar{impersonate-procedure}).
- 
- Similarly the two procedures @racket[_wrap-f1] and
- @racket[_wrap-f2] are almost equivalent; they differ only
- in the error message produced when their arguments are
- functions that return multiple values (and that they update
- different global variables). The version using @racket[unsafe-impersonate-procedure]
- will signal an error in the @racket[let] expression about multiple
- value return, whereas the one using @racket[impersonate-procedure] signals
- an error from @racket[impersonate-procedure] about multiple value return.
- @racketblock[(define log1-args '())
-              (define log1-results '())
-              (define wrap-f1
-                (λ (f)
-                  (impersonate-procedure
-                   f
-                   (λ (arg)
-                     (set! log1-args (cons arg log1-args))
-                     (values (λ (res)
-                               (set! log1-results (cons res log1-results))
-                               res)
-                             arg)))))
-              
-              (define log2-args '())
-              (define log2-results '())
-              (define wrap-f2
-                (λ (f)
-                  (unsafe-impersonate-procedure
-                   f
-                   (λ (arg)
-                     (set! log2-args (cons arg log2-args))
-                     (let ([res (f arg)])
-                       (set! log2-results (cons res log2-results))
-                       res)))))]
-}
-
 
 @defproc[(impersonate-struct [v any/c]
                              [struct-type struct-type? _unspecified]
@@ -792,15 +721,6 @@ Like @racket[chaperone-procedure], but @racket[wrapper-proc] receives
 an extra argument as with @racket[impersonate-procedure*].
 
 @history[#:added "6.1.1.5"]}
-
-@defproc[(unsafe-chaperone-procedure [proc procedure?]
-                                     [wrapper-proc procedure?]
-                                     [prop impersonator-property?]
-                                     [prop-val any] ... ...)
-         (and/c procedure? chaperone?)]{
- Like @racket[unsafe-impersonate-procedure], but creates a @tech{chaperone}.
- @history[#:added "6.1.1.5"]
-}
 
 
 @defproc[(chaperone-struct [v any/c]

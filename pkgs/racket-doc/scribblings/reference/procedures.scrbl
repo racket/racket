@@ -246,6 +246,8 @@ list is also in the second list.
                     (cond
                       [(zero? (random 10)) '()]
                       [else (cons 1 (loop))])))))]
+
+ @history[#:added "6.4.0.3"]
 }
 
 @defproc[(make-keyword-procedure

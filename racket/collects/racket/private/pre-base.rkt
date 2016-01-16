@@ -219,9 +219,7 @@
              (rename new:procedure->method procedure->method)
              (rename new:procedure-rename procedure-rename)
              (rename new:chaperone-procedure chaperone-procedure)
-             (rename new:unsafe-chaperone-procedure unsafe-chaperone-procedure)
              (rename new:impersonate-procedure impersonate-procedure)
-             (rename new:unsafe-impersonate-procedure unsafe-impersonate-procedure)
              (rename new:chaperone-procedure* chaperone-procedure*)
              (rename new:impersonate-procedure* impersonate-procedure*)             
              (rename new:collection-path collection-path)
@@ -230,7 +228,6 @@
                               procedure-arity procedure-reduce-arity raise-arity-error
                               procedure->method procedure-rename
                               chaperone-procedure impersonate-procedure
-                              unsafe-chaperone-procedure unsafe-impersonate-procedure
                               chaperone-procedure* impersonate-procedure*
                               assq assv assoc
                               prop:incomplete-arity prop:method-arity-error

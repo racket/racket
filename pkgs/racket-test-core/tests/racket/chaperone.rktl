@@ -3,6 +3,10 @@
 (load-relative "loadtest.rktl")
 (Section 'chaperones)
 
+(require (only-in racket/unsafe/ops
+                  unsafe-impersonate-procedure
+                  unsafe-chaperone-procedure))
+
 ;; ----------------------------------------
 
 (define (chaperone-of?/impersonator a b)
