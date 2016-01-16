@@ -398,7 +398,7 @@
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda])
                              (arity-checking-wrapper val blame neg-party
-                                                     basic-lambda-name #f
+                                                     basic-lambda-name #f #f #f
                                                      void
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -410,7 +410,7 @@
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([kwd-lambda-name kwd-lambda])
                              (arity-checking-wrapper val blame neg-party
-                                                     void #f
+                                                     void #f #f #f
                                                      kwd-lambda-name
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -423,7 +423,7 @@
                            (let ([basic-lambda-name basic-lambda]
                                  [kwd-lambda-name kwd-lambda])
                              (arity-checking-wrapper val blame neg-party
-                                                     basic-lambda-name #f
+                                                     basic-lambda-name #f #f #f
                                                      kwd-lambda-name
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -437,18 +437,26 @@
 ;; namely the chaperone wrapper. Otherwise, returns two values,
 ;; a procedure and a boolean indicating it the procedure is the
 ;; basic-unsafe-lambda or not; note that basic-unsafe-lambda might
-;; also be #f, but that happens only when we know that basic-lambda
+;; also be #t, but that happens only when we know that basic-lambda
 ;; can't be chosen (because there are keywords involved)
-(define (arity-checking-wrapper val blame neg-party basic-lambda basic-unsafe-lambda kwd-lambda
+(define (arity-checking-wrapper val blame neg-party basic-lambda
+                                basic-unsafe-lambda
+                                basic-unsafe-lambda/result-values-assumed contract-result-val-count
+                                kwd-lambda
                                 min-method-arity max-method-arity min-arity max-arity 
                                 req-kwd opt-kwd)
   ;; should not build this unless we are in the 'else' case (and maybe not at all)
   (cond
     [(matches-arity-exactly? val min-arity max-arity req-kwd opt-kwd)
      (if (and (null? req-kwd) (null? opt-kwd))
-         (if basic-unsafe-lambda
-             (values basic-unsafe-lambda #t)
-             basic-lambda)
+         (cond
+           [(and basic-unsafe-lambda/result-values-assumed
+                 (equal? contract-result-val-count
+                         (procedure-result-arity val)))
+            (values basic-unsafe-lambda/result-values-assumed #t)]
+           [basic-unsafe-lambda
+            (values basic-unsafe-lambda #t)]
+           [else basic-lambda])
          (if basic-unsafe-lambda
              (values kwd-lambda #f)
              kwd-lambda))]

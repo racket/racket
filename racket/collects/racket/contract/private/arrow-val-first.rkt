@@ -963,7 +963,7 @@
                     args-dealt-with)))))
           
           (values (arrow:arity-checking-wrapper f blame neg-party
-                                                interposition-proc #f interposition-proc
+                                                interposition-proc #f interposition-proc #f #f
                                                 min-arity max-arity
                                                 min-arity max-arity 
                                                 mandatory-keywords optional-keywords)

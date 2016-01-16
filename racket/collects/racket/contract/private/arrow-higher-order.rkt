@@ -169,22 +169,18 @@
                      [args
                       (arrow:bad-number-of-results blame val rng-len args
                                                    #:missing-party neg-party)]))))
-        (define (wrap-call-with-values-and-range-checking stx)
+        (define (wrap-call-with-values-and-range-checking stx assume-result-values?)
           (if rngs
-              ;; with this version, the unsafe-procedure-chaperone
-              ;; wrappers would work only when the number of values
-              ;; the function returns is known to be a match for
-              ;; what the contract wants.
-              #;
-              #`(let-values ([(rng-x ...) #,stx])
-                  (with-contract-continuation-mark
-                   (cons blame neg-party)
-                   (let ()
-                     post ...
-                     (values (rng-late-neg-projs rng-x neg-party) ...))))
-              #`(call-with-values
-                 (λ () #,stx)
-                 #,rng-checker)
+              (if assume-result-values?
+                  #`(let-values ([(rng-x ...) #,stx])
+                      (with-contract-continuation-mark
+                       (cons blame neg-party)
+                       (let ()
+                         post ...
+                         (values (rng-late-neg-projs rng-x neg-party) ...))))
+                  #`(call-with-values
+                     (λ () #,stx)
+                     #,rng-checker))
               stx))
 
           (let* ([min-method-arity (length doms)]
@@ -266,31 +262,37 @@
                                                               (list rng-checker)
                                                               inner-stx-gen)
                                    (inner-stx-gen #'())))]
-                            [basic-unsafe-return
-                             (let ([inner-stx-gen
-                                    (λ (stuff)
-                                      (define the-call/no-marks
-                                        (if need-apply?
-                                            #`(apply val
-                                                     this-param ...
-                                                     dom-projd-args ...
-                                                     opt+rest-uses)
-                                            #`(val this-param ... dom-projd-args ...)))
-                                      (define the-call
-                                        #`(with-continuation-mark arrow:tail-contract-key
-                                            (list* neg-party blame-party-info #,rng-ctcs)
-                                            #,the-call/no-marks))
-                                      (cond
-                                        [(null? (syntax-e stuff)) ;; surely there must a better way
-                                         the-call]
-                                        [else (wrap-call-with-values-and-range-checking the-call)]))])
-                               (if rngs
-                                   (arrow:check-tail-contract rng-ctcs
-                                                              blame-party-info
-                                                              neg-party
-                                                              #'not-a-null
-                                                              inner-stx-gen)
-                                   (inner-stx-gen #'())))]
+                            [(basic-unsafe-return basic-unsafe-return/result-values-assumed)
+                             (let ()
+                               (define (inner-stx-gen stuff assume-result-values?)
+                                 (define the-call/no-marks
+                                   (if need-apply?
+                                       #`(apply val
+                                                this-param ...
+                                                dom-projd-args ...
+                                                opt+rest-uses)
+                                       #`(val this-param ... dom-projd-args ...)))
+                                 (define the-call
+                                   #`(with-continuation-mark arrow:tail-contract-key
+                                       (list* neg-party blame-party-info #,rng-ctcs)
+                                       #,the-call/no-marks))
+                                 (cond
+                                   [(null? (syntax-e stuff)) ;; surely there must a better way
+                                    the-call]
+                                   [else
+                                    (wrap-call-with-values-and-range-checking
+                                     the-call
+                                     assume-result-values?)]))
+                               (define (mk-return assume-result-values?)
+                                 (if rngs
+                                     (arrow:check-tail-contract
+                                      rng-ctcs
+                                      blame-party-info
+                                      neg-party
+                                      #'not-a-null
+                                      (λ (x) (inner-stx-gen x assume-result-values?)))
+                                     (inner-stx-gen #'() assume-result-values?)))
+                               (list (mk-return #f) (mk-return #t)))]
                             [kwd-return
                              (let* ([inner-stx-gen
                                      (if need-apply?
@@ -333,11 +335,18 @@
                                                  (cons blame neg-party)
                                                  (let ()
                                                    pre ... basic-return)))]
-                              [basic-unsafe-lambda #'(λ basic-params
-                                                       (with-contract-continuation-mark
-                                                        (cons blame neg-party)
-                                                        (let ()
-                                                          pre ... basic-unsafe-return)))]
+                              [basic-unsafe-lambda
+                               #'(λ basic-params
+                                   (with-contract-continuation-mark
+                                    (cons blame neg-party)
+                                    (let ()
+                                      pre ... basic-unsafe-return)))]
+                              [basic-unsafe-lambda/result-values-assumed
+                               #'(λ basic-params
+                                   (with-contract-continuation-mark
+                                    (cons blame neg-party)
+                                    (let ()
+                                      pre ... basic-unsafe-return/result-values-assumed)))]
                               [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-contract-continuation-mark
@@ -348,7 +357,10 @@
                     [(and (null? req-keywords) (null? opt-keywords))
                      #`(arrow:arity-checking-wrapper val 
                                                      blame neg-party
-                                                     basic-lambda basic-unsafe-lambda
+                                                     basic-lambda
+                                                     basic-unsafe-lambda
+                                                     basic-unsafe-lambda/result-values-assumed
+                                                     #,(and rngs (length rngs))
                                                      void
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -359,7 +371,7 @@
                     [(pair? req-keywords)
                      #`(arrow:arity-checking-wrapper val
                                                      blame neg-party
-                                                     void #t
+                                                     void #t #f #f
                                                      kwd-lambda
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -370,7 +382,7 @@
                     [else
                      #`(arrow:arity-checking-wrapper val 
                                                      blame neg-party
-                                                     basic-lambda #t
+                                                     basic-lambda #t #f #f
                                                      kwd-lambda
                                                      #,min-method-arity
                                                      #,max-method-arity
