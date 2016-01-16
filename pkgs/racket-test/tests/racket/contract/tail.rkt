@@ -21,6 +21,17 @@
                                        'neg)])
                      (f 3))
                    (c)))
+
+  (ctest/rewrite 1
+                 tail-arrow.2
+                 (let ([c (counter)])
+                   (letrec ([f
+                             (contract (-> any/c c)
+                                       (λ ([x #f]) (if (zero? x) x (f (- x 1))))
+                                       'pos
+                                       'neg)])
+                     (f 3))
+                   (c)))
   
   (ctest/rewrite 1
                  tail-unconstrained-domain-arrow
