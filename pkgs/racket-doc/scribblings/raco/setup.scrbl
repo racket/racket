@@ -366,8 +366,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
           (list src-string flags category name out-k)
           (list src-string flags category name out-k order-n)]
      [flags (list mode-symbol ...)]
-     [category (list category-symbol)
-               (list category-symbol sort-number)]
+     [category (list category-string-or-symbol)
+               (list category-string-or-symbol sort-number)]
      [name string
            #f]
    ]
@@ -542,7 +542,10 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    source file need not be present. Moving documentation into place
    may require no movement at all, depending on the way that the
    enclosing collection is installed, but movement includes adding a
-   @filepath{synced.rktd} file to represent the installation.}
+   @filepath{synced.rktd} file to represent the installation.
+
+   @history[#:changed "6.4" @elem{Allow a category to be a string
+                                 instead of a symbol.}]}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
