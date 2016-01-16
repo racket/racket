@@ -736,12 +736,12 @@
                 (failure-cont)
                 0)]
            [_ 1]))
-   
+
    (comp 0
          (match (cons 1 2)
            [(cons a b) #:when (= a b) 1]
            [_ 0]))
-   
+
    (comp 1
          (match (cons 1 1)
            [(cons a b) #:when (= a b) 1]
@@ -772,7 +772,7 @@
             [`(,(? L4e?) ...) #t]
             [(? L3v?) #t]
             [_ #f]))
-        
+
         (define (is-biop? sym) (or (is-aop? sym) (is-cmp? sym)))
         (define (is-aop? sym) (memq sym '(+ - *)))
         (define (is-cmp? sym) (memq sym '(< <= =)))
@@ -794,7 +794,7 @@
          (apply max (hash-values ht)))))
     (check-true (car v))
     (check < (cadr v) 50))
-   
+
    (test-case "syntax-local-match-introduce"
      (define-match-expander foo
        (lambda (stx) (syntax-local-match-introduce #'x)))
@@ -809,5 +809,22 @@
         [(and x (? (λ _ (set-box! b #f))) (app unbox #f)) 'yes]
         [_ 'no])
       'yes))
-   
+
+   (test-case "match-expander rename transformer"
+           (define-match-expander foo
+             (lambda (stx) (syntax-case stx () [(_ a) #'a]))
+             (make-rename-transformer #'values))
+
+           (check-equal? (foo 2) 2))
+
+   (test-case "match-expander rename transformer set!"
+              (define x 1)
+              (define-match-expander foo
+                (lambda (stx) (syntax-case stx () [(_ a) #'a]))
+                (make-rename-transformer #'x))
+
+              (set! foo 2)
+              (check-equal? x 2))
+
+
 ))

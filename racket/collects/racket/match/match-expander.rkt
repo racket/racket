@@ -11,13 +11,30 @@
         #:property prop:set!-transformer 
         (λ (me stx)
           (define xf (match-expander-macro-xform me))
-          (if (set!-transformer? xf)
-              ((set!-transformer-procedure xf) stx)
-              (syntax-case stx (set!)
-                [(set! . _)
-                 (raise-syntax-error #f "cannot mutate syntax identifier" stx)]
-                [_ (xf stx)])))
-        #:property prop:match-expander (struct-field-index match-xform)
+          (define proc
+            (cond [(rename-transformer? xf)
+                   (lambda (x)
+                     (define target (rename-transformer-target xf))
+                     (syntax-case stx (set!)
+                       [(set! id args ...)
+                        #`(set! #,target args ...)]
+                       [(id args ...)
+                        (datum->syntax stx
+                                       `(,target ,@(syntax->list #'(args ...)))
+                                       stx stx)]
+                       [_ (rename-transformer-target xf)]))]
+                  [(set!-transformer? xf) (set!-transformer-procedure xf)]
+                  [(procedure? xf)
+                   (lambda (stx)
+                     (syntax-case stx (set!)
+                       [(set! . _)
+                        (raise-syntax-error #f "cannot mutate syntax identifier" stx)]
+                       [_ (xf stx)]))]
+                  [else (raise-syntax-error
+                         #f
+                         "not a procedure for match expander transformer" stx)]))
+          (proc stx))
+          #:property prop:match-expander (struct-field-index match-xform)
         #:property prop:legacy-match-expander (struct-field-index legacy-xform))
       (values make-match-expander))))
 
