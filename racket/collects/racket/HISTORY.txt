@@ -1,3 +1,8 @@
+Version 6.4, January 2016
+Changes noted in the documentation, including support for
+ incremental garbage collection
+Performance improvements and bug repairs
+
 Version 6.3, October 2015
 Bug repairs and other changes noted in the documentation,
  including substantial changes to the macro expander
