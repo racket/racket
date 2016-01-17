@@ -2380,6 +2380,12 @@
     (struct s (f) #:property prop:procedure 0)
     (test #t s? (unsafe-chaperone-procedure (s add1) (λ (x) x)))))
 
+;; Check name in arity error message:
+(let ()
+  (define (pf x) x)
+  (define cf (unsafe-chaperone-procedure pf (lambda (x) x)))
+  (err/rt-test (cf) (λ (x) (regexp-match #rx"^pf:" (exn-message x)))))
+
 ;; ----------------------------------------
 
 (let ()

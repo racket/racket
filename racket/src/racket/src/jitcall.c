@@ -65,13 +65,24 @@ static Scheme_Object *clear_runstack(Scheme_Object **rs, intptr_t amt, Scheme_Ob
 
 static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands, GC_CAN_IGNORE jit_insn *refagain)
 {
-  GC_CAN_IGNORE jit_insn *ref2, *refz1, *refz2, *refz3, *refz4, *refz5;
-  GC_CAN_IGNORE jit_insn *refz6, *refz7, *refz8;
+  GC_CAN_IGNORE jit_insn *ref2, *ref3, *refz1, *refz2, *refz3, *refz4, *refz5;
+  GC_CAN_IGNORE jit_insn *refz6, *refz7, *refz8, *refz9, *ref9;
 
   ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_struct_type);
+
+  /* This is an applicable struct. But if it's for reducing arity,
+     then we can't just apply the struct's procedure. */
   jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Structure *)0x0)->stype);
   jit_ldi_p(JIT_R2, &scheme_reduced_procedure_struct);
-  refz3 = jit_beqr_p(jit_forward(), JIT_R1, JIT_R2);
+  ref3 = jit_bner_p(jit_forward(), JIT_R1, JIT_R2);
+
+  /* Matches reduced arity in a simple way? */
+  jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Structure *)0x0)->slots[1]);
+  refz3 = jit_bnei_p(jit_forward(), JIT_R2, scheme_make_integer(num_rands));
+
+  mz_patch_branch(ref3);
+  /* It's an applicable struct that is not an arity reduce or the
+     arity matches. We can extract the procedure if it's in a field: */
   jit_ldxi_p(JIT_R1, JIT_R1, &((Scheme_Struct_Type *)0x0)->proc_attr);
   refz1 = jit_bmci_i(jit_forward(), JIT_R1, 0x1);
   CHECK_LIMIT();
@@ -81,6 +92,7 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   jit_lshi_ul(JIT_R1, JIT_R1, JIT_LOG_WORD_SIZE);
   jit_addi_p(JIT_R1, JIT_R1, &((Scheme_Structure *)0x0)->slots);
   jit_ldxr_p(JIT_R1, JIT_V1, JIT_R1);
+  CHECK_LIMIT();
 
   /* JIT_R1 now has the wrapped procedure */
   refz4 = jit_bmsi_i(jit_forward(), JIT_R1, 0x1);
@@ -118,16 +130,23 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   refz6 = mz_bnei_t(jit_forward(), JIT_R1, scheme_vector_type, JIT_R2);
   (void)jit_ldxi_l(JIT_R2, JIT_R1, &SCHEME_VEC_SIZE(0x0));
   refz7 = jit_bmci_i(jit_forward(), JIT_R2, 0x1);
-  /* if  &(SCHEME_VEC_ELS(0x0)[1]) is a boolean, we have the fast
-     path; it can only otherwise be a fixnum, so just check that */
-  (void)jit_ldxi_l(JIT_R2, JIT_R1, &(SCHEME_VEC_ELS(0x0)[1]));
-  refz8 = jit_bmsi_ul(jit_forward(), JIT_R2, 0x1);
+  /* Flag is set for a property-only or unsafe chaperone: */
+  jit_ldxi_s(JIT_R2, JIT_V1, &SCHEME_CHAPERONE_FLAGS(((Scheme_Chaperone *)0x0)));
+  refz8 = jit_bmci_ul(jit_forward(), JIT_R2, SCHEME_PROC_CHAPERONE_CALL_DIRECT);
+  /* In the case of an unsafe chaperone, we can only make a direct
+     call if the arity-check will succeed, otherwise the error message
+     will use the wrong name. */
+  jit_ldxi_p(JIT_R2, JIT_R1, &(SCHEME_VEC_ELS(0x0)[1]));
+  ref9 = jit_beqi_p(jit_forward(), JIT_R2, scheme_false);
+  refz9 = jit_bnei_p(jit_forward(), JIT_R2, scheme_make_integer(num_rands));
+  mz_patch_branch(ref9);
   /* Position [0] in SCHEME_VEC_ELS contains either the
      unwrapped function (if chaperone-procedure got #f
      for the proc argument) or the unsafe-chaperone
      replacement-proc argument; either way, just call it */
   jit_ldxi_p(JIT_V1, JIT_R1, &(SCHEME_VEC_ELS(0x0)[0]));
   (void)jit_jmpi(refagain);
+  CHECK_LIMIT();
 
   mz_patch_branch(refz1);
   mz_patch_branch(refz2);
@@ -137,6 +156,7 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   mz_patch_branch(refz6);
   mz_patch_branch(refz7);
   mz_patch_branch(refz8);
+  mz_patch_branch(refz9);
 
   return ref2;
 }

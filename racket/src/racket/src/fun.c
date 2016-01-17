@@ -3604,15 +3604,9 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
      A size of 5 (instead of 3) indicates that the wrapper
      procedure accepts a "self" argument
 
-     If the known-good arity is a boolean, this means the chaperone
-     wrapper defers directly to SCHEME_VEC_ELES(r)[0], instead of
-     following the actual chaperone procedure.
-
-     If the boolean is #f, that means the interposition proc was #f
-     originally and SCHEME_VEC_ELES(r)[0] is the original procedure.
-
-     If the boolean is #t, that means that this chaperone was created
-     via unsafe-{chaperone,impersonate}-procedure.
+     If the known-good arity is #f, this means the chaperone
+     wrapper defers directly to SCHEME_VEC_ELES(r)[0] and no
+     arity check is needed.
   */
   r = scheme_make_vector((pass_self ? 5 : 3), scheme_make_integer(-1));
 
@@ -3620,8 +3614,6 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
     SCHEME_VEC_ELS(r)[0] = argv[0];
   else
     SCHEME_VEC_ELS(r)[0] = argv[1];
-  if (is_unsafe)
-    SCHEME_VEC_ELS(r)[1] = scheme_true;
   if (SCHEME_FALSEP(argv[1]))
     SCHEME_VEC_ELS(r)[1] = scheme_false;
   SCHEME_VEC_ELS(r)[2] = app_mark;
@@ -3630,6 +3622,8 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 
   if (is_impersonator)
     SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+  if (is_unsafe || SCHEME_FALSEP(argv[1]))
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_PROC_CHAPERONE_CALL_DIRECT;
 
   return (Scheme_Object *)px;
 }
@@ -3869,7 +3863,25 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       self_proc = o;
   }
 
-  if (SCHEME_BOOLP(SCHEME_VEC_ELS(px->redirects)[1])) {
+  /* Ensure that the original procedure accepts `argc' arguments: */
+  if (!SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[1]) /* check not needed for props-only mode */
+      && (argc != SCHEME_INT_VAL(SCHEME_VEC_ELS(px->redirects)[1]))) {
+    a[0] = px->prev;
+    if (!scheme_check_proc_arity(NULL, argc, 0, 0, a)) {
+      /* Apply the original procedure, in case the chaperone would accept
+         `argc' arguments (in addition to the original procedure's arity)
+         in case the methodness of the original procedure is different
+         from the chaperone, or in case the procedures have different names. */
+      (void)_scheme_apply_multi(px->prev, argc, argv);
+      scheme_signal_error("internal error: unexpected success applying chaperoned/proxied procedure");
+      return NULL;
+    }
+    /* record that argc is ok, on the grounds that the function is likely
+       to be applied to argc arguments again */
+    SCHEME_VEC_ELS(px->redirects)[1] = scheme_make_integer(argc);
+  }
+
+  if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_PROC_CHAPERONE_CALL_DIRECT) {
     simple_call = SCHEME_VEC_ELS(px->redirects)[0];
     /* no redirection procedure */
     if (SCHEME_CHAPERONEP(simple_call)) {
@@ -3905,23 +3917,6 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       memcpy(argv2, argv, sizeof(Scheme_Object*) * argc);
       argv = argv2;
     }
-  }
-
-  /* Ensure that the original procedure accepts `argc' arguments: */
-  if (argc != SCHEME_INT_VAL(SCHEME_VEC_ELS(px->redirects)[1])) {
-    a[0] = px->prev;
-    if (!scheme_check_proc_arity(NULL, argc, 0, 0, a)) {
-      /* Apply the original procedure, in case the chaperone would accept
-         `argc' arguments (in addition to the original procedure's arity)
-         in case the methodness of the original procedure is different
-         from the chaperone, or in case the procedures have different names. */
-      (void)_scheme_apply_multi(px->prev, argc, argv);
-      scheme_signal_error("internal error: unexpected success applying chaperoned/proxied procedure");
-      return NULL;
-    }
-    /* record that argc is ok, on the grounds that the function is likely
-       to be applied to argc arguments again */
-    SCHEME_VEC_ELS(px->redirects)[1] = scheme_make_integer(argc);
   }
 
   app_mark = SCHEME_VEC_ELS(px->redirects)[2];
