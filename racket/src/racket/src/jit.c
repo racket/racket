@@ -455,6 +455,8 @@ Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc
 
 static Scheme_Object *extract_closure_local(int pos, mz_jit_state *jitter, int get_constant)
 {
+  if (PAST_LIMIT()) return NULL;
+
   if (pos >= jitter->self_pos - jitter->self_to_closure_delta) {
     pos -= (jitter->self_pos - jitter->self_to_closure_delta);
     if (pos < jitter->nc->code->u2.orig_code->closure_size) {
@@ -489,6 +491,8 @@ Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *ji
 Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *jitter, int extra_push)
 {
   Scheme_Object *c;
+
+  if (PAST_LIMIT()) return obj;
 
   if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
     if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)) {
