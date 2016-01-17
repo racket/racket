@@ -453,6 +453,29 @@ Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc
   return globs->a[pos];
 }
 
+static Scheme_Object *extract_syntax(Scheme_Quote_Syntax *qs, Scheme_Native_Closure *nc)
+{
+  /* GLOBAL ASSUMPTION: we assume that globals are the last thing
+     in the closure; grep for "GLOBAL ASSUMPTION" in fun.c. */
+  Scheme_Prefix *globs;
+  int i, pos;
+  Scheme_Object *v;
+
+  globs = (Scheme_Prefix *)nc->vals[nc->code->u2.orig_code->closure_size - 1];
+
+  i = qs->position;
+  pos = qs->midpoint;
+
+  v = globs->a[i+pos+1];
+  if (!v) {
+    v = globs->a[pos];
+    v = scheme_delayed_shift((Scheme_Object **)v, i);
+    globs->a[i+pos+1] = v;
+  }
+
+  return v;
+}
+
 static Scheme_Object *extract_closure_local(int pos, mz_jit_state *jitter, int get_constant)
 {
   if (PAST_LIMIT()) return NULL;
@@ -3277,14 +3300,21 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       
         mz_rs_sync();
 
-        jit_movi_i(JIT_R0, WORDS_TO_BYTES(c));
-        jit_movi_i(JIT_R1, (int)(intptr_t)&(((Scheme_Prefix *)0x0)->a[i + p + 1]));
-        jit_movi_i(JIT_R2, (int)(intptr_t)&(((Scheme_Prefix *)0x0)->a[p]));
-        (void)jit_calli(sjc.quote_syntax_code);
+        if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
+          Scheme_Object *stx;
+          stx = extract_syntax(qs, jitter->nc);
+          scheme_mz_load_retained(jitter, target, stx);
+          CHECK_LIMIT();
+        } else {
+          jit_movi_i(JIT_R0, WORDS_TO_BYTES(c));
+          jit_movi_i(JIT_R1, (int)(intptr_t)&(((Scheme_Prefix *)0x0)->a[i + p + 1]));
+          jit_movi_i(JIT_R2, (int)(intptr_t)&(((Scheme_Prefix *)0x0)->a[p]));
+          (void)jit_calli(sjc.quote_syntax_code);
+          CHECK_LIMIT();
 
-        CHECK_LIMIT();
-        if (target != JIT_R0)
-          jit_movr_p(target, JIT_R0);
+          if (target != JIT_R0)
+            jit_movr_p(target, JIT_R0);
+        }
       }
       
       END_JIT_DATA(10);

@@ -5111,6 +5111,15 @@
   (set! f f)  
   (test 12 ((f 10) 1)))
 
+(let ()
+  (define (f)
+    (procedure-specialize
+     (lambda ()
+       #'x)))
+  (set! f f)
+  (test #t syntax? ((f)))
+  (test 'x syntax-e ((f))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
