@@ -268,17 +268,24 @@
                             [(basic-unsafe-return basic-unsafe-return/result-values-assumed)
                              (let ()
                                (define (inner-stx-gen stuff assume-result-values?)
-                                 (define the-call/no-marks
+                                 (define arg-checking-expressions
                                    (if need-apply?
-                                       #`(apply val
-                                                this-param ...
-                                                dom-projd-args ...
-                                                opt+rest-uses)
-                                       #`(val this-param ... dom-projd-args ...)))
+                                       #'(this-param ... dom-projd-args ... opt+rest-uses)
+                                       #'(this-param ... dom-projd-args ...)))
+                                 (define the-call/no-tail-mark
+                                   (with-syntax ([(tmps ...) (generate-temporaries
+                                                              arg-checking-expressions)])
+                                     #`(let-values ([(tmps ...)
+                                                     (with-contract-continuation-mark
+                                                      (cons blame neg-party)
+                                                      (values #,@arg-checking-expressions))])
+                                         #,(if need-apply?
+                                               #`(apply val tmps ...)
+                                               #`(val tmps ...)))))
                                  (define the-call
                                    #`(with-continuation-mark arrow:tail-contract-key
                                        (list* neg-party blame-party-info #,rng-ctcs)
-                                       #,the-call/no-marks))
+                                       #,the-call/no-tail-mark))
                                  (cond
                                    [(null? (syntax-e stuff)) ;; surely there must a better way
                                     the-call]
@@ -340,16 +347,12 @@
                                                    pre ... basic-return)))]
                               [basic-unsafe-lambda
                                #'(λ basic-params
-                                   (with-contract-continuation-mark
-                                    (cons blame neg-party)
-                                    (let ()
-                                      pre ... basic-unsafe-return)))]
+                                   (let ()
+                                     pre ... basic-unsafe-return))]
                               [basic-unsafe-lambda/result-values-assumed
                                #'(λ basic-params
-                                   (with-contract-continuation-mark
-                                    (cons blame neg-party)
-                                    (let ()
-                                      pre ... basic-unsafe-return/result-values-assumed)))]
+                                   (let ()
+                                     pre ... basic-unsafe-return/result-values-assumed))]
                               [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-contract-continuation-mark
