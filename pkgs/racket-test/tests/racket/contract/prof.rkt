@@ -616,4 +616,27 @@
                                  'pos 'neg)))
       (eval '(free-id-table-ref (free-id-table-set t #'a 3) #'a))))
 
+  ;; check that there's no mark when running the body of a contracted function
+  ;; (i.e., user code)
+  (test/spec-passed/result
+   'contract-marks67
+   '(let ()
+      (eval '(module m racket/base
+               (require racket/contract/base
+                        (only-in racket/contract/private/guts
+                                 contract-continuation-mark-key))
+               (provide
+                (contract-out
+                 [f (-> integer? void?)]))
+               (define (f x)
+                 (define m
+                   (continuation-mark-set->list
+                    (current-continuation-marks)
+                    contract-continuation-mark-key))
+                 (unless (null? m)
+                   (error 'ack "~s" m)))))
+      (eval '(require 'm))
+      (eval '(let ([f f]) (f 1))))
+   (void))
+
   )
