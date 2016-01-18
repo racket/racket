@@ -288,7 +288,7 @@
                                        #,the-call/no-tail-mark))
                                  (cond
                                    [(null? (syntax-e stuff)) ;; surely there must a better way
-                                    the-call]
+                                    the-call/no-tail-mark]
                                    [else
                                     (wrap-call-with-values-and-range-checking
                                      the-call
