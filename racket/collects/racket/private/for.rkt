@@ -590,6 +590,7 @@
     (values car cdr l pair? #f #f))
 
   (define (in-mlist l)
+    (unless (mpair? l) (raise-argument-error 'in-mlist "mpair?" l))
     (make-do-sequence (lambda () (:mlist-gen l))))
 
   (define (:mlist-gen l)

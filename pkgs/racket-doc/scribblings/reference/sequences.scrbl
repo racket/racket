@@ -158,8 +158,8 @@ each element in the sequence.
   (sequence? "word")
   (sequence? #\x)]}
 
-@defproc*[([(in-range [end number?]) stream?]
-           [(in-range [start number?] [end number?] [step number? 1]) stream?])]{
+@defproc*[([(in-range [end real?]) stream?]
+           [(in-range [start real?] [end real?] [step real? 1]) stream?])]{
   Returns a sequence (that is also a @tech{stream}) whose elements are
   numbers.  The single-argument case @racket[(in-range end)] is
   equivalent to @racket[(in-range 0 end 1)].  The first number in the
