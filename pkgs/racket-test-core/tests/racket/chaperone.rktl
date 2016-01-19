@@ -2331,4 +2331,38 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-values (->-c has-->c? get-->-c)
+    (make-impersonator-property '->-c))
+
+  (define-values (->-w has-->w? get-->-w)
+    (make-impersonator-property '->-w))
+
+  (define-values (prop:x x? x-ref)
+    (make-impersonator-property 'x))
+
+  (define (wrap-again function)
+    (chaperone-procedure*
+     function
+     #f
+     ->-w  void
+     ->-c  void))
+
+  (define (do-wrap f)
+    (chaperone-procedure* f
+                          (λ (chap arg)
+                            (test #t has-->w? chap)
+                            (test #t has-->c? chap)
+                            arg
+                            (values (lambda (result) result) arg))))
+
+  (define wrapped-f (wrap-again (do-wrap (lambda (x) (+ x 1)))))
+  (define wrapped2-f (wrap-again (chaperone-procedure (do-wrap (lambda (x) (+ x 1))) #f prop:x 'x)))
+  (define (test-wrapped x) (x 19))
+  (set! test-wrapped test-wrapped)
+  (test-wrapped wrapped-f)
+  (test-wrapped wrapped2-f))
+
+;; ----------------------------------------
+
 (report-errs)

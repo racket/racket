@@ -66,7 +66,7 @@ static Scheme_Object *clear_runstack(Scheme_Object **rs, intptr_t amt, Scheme_Ob
 static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands, GC_CAN_IGNORE jit_insn *refagain)
 {
   GC_CAN_IGNORE jit_insn *ref2, *refz1, *refz2, *refz3, *refz4, *refz5;
-  GC_CAN_IGNORE jit_insn *refz6, *refz7, *refz8;
+  GC_CAN_IGNORE jit_insn *refz6, *refz7, *refz8, *ref9, *ref10;;
 
   ref2 = jit_bnei_i(jit_forward(), JIT_R1, scheme_proc_struct_type);
   jit_ldxi_p(JIT_R1, JIT_V1, &((Scheme_Structure *)0x0)->stype);
@@ -120,6 +120,17 @@ static jit_insn *generate_proc_struct_retry(mz_jit_state *jitter, int num_rands,
   (void)jit_ldxi_l(JIT_R2, JIT_R1, &(SCHEME_VEC_ELS(0x0)[0]));
   refz8 = jit_bnei_p(jit_forward(), JIT_R2, scheme_false);
   /* Can extract the impersonated function and use it directly */
+  /* If the vector is immutable, we need to provide the self proc,
+     if it's not provided already. The self proc is supplied through
+     a side channel in the thread record. */
+  jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY((Scheme_Inclhash_Object *)(0x0)));
+  ref9 = jit_bmci_i(jit_forward(), JIT_R2, 0x1);
+  (void)mz_tl_ldi_p(JIT_R2, tl_scheme_current_thread);
+  jit_ldxi_l(JIT_R1, JIT_R2, &((Scheme_Thread *)0x0)->self_for_proc_chaperone);
+  ref10 = jit_bnei_p(jit_forward(), JIT_R1, NULL);
+  jit_stxi_l(&((Scheme_Thread *)0x0)->self_for_proc_chaperone, JIT_R2, JIT_V1);
+  mz_patch_branch(ref10);
+  mz_patch_branch(ref9);
   jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Chaperone *)0x0)->prev);
   (void)jit_jmpi(refagain);
 

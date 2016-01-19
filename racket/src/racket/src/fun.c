@@ -3467,7 +3467,7 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
                                              int is_impersonator, int pass_self,
                                              int argc, Scheme_Object *argv[])
 {
-  Scheme_Chaperone *px;
+  Scheme_Chaperone *px, *px2;
   Scheme_Object *val = argv[0], *orig, *naya, *r, *app_mark;
   Scheme_Hash_Tree *props;
 
@@ -3524,10 +3524,19 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
   px->props = props;
 
   /* Put the procedure along with known-good arity (to speed checking;
-     initialized to -1) in a vector. An odd-sized vector makes the
-     chaperone recognized as a procedure chaperone, and a size of 5
-     (instead of 3) indicates that the wrapper procedure accepts a
-     "self" argument: */
+     initialized to -1) in a vector. 
+
+     Vector of odd size for redirects means a procedure chaperone,
+     vector with even slots means a structure chaperone.
+     A size of 5 (instead of 3) indicates that the wrapper
+     procedure accepts a "self" argument. An immutable vector
+     means that it wraps a chaperone that wants the "self" 
+     argument.
+
+     If the known-good arity is #f, this means the chaperone
+     wrapper defers directly to SCHEME_VEC_ELES(r)[0] and no
+     arity check is needed.
+  */
   r = scheme_make_vector((pass_self ? 5 : 3), scheme_make_integer(-1));
   SCHEME_VEC_ELS(r)[0] = argv[1];
   SCHEME_VEC_ELS(r)[2] = app_mark;
@@ -3538,6 +3547,18 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 
   if (is_impersonator)
     SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+
+  /* If there's a `pass_self` chaperone in px->prev, then we'll need
+     to pass the self proc along. */
+  for (val = px->prev; SCHEME_P_CHAPERONEP(val); val = ((Scheme_Chaperone *)val)->prev) {
+    px2 = (Scheme_Chaperone *)val;
+    if (SCHEME_VECTORP(px2->redirects) && (SCHEME_VEC_SIZE(px2->redirects) & 0x1)) {
+      if ((SCHEME_VEC_SIZE(px2->redirects) > 3)
+          || SCHEME_IMMUTABLEP(px2->redirects))
+        SCHEME_SET_IMMUTABLE(px->redirects);
+      break;
+    }
+  }
 
   return (Scheme_Object *)px;
 }
@@ -3769,7 +3790,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
 
   if (SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0])) {
     /* no redirection procedure */
-    if (SCHEME_CHAPERONEP(px->prev)) {
+    if (SCHEME_IMMUTABLEP(px->redirects)) {
       /* communicate `self_proc` to the next layer: */
       scheme_current_thread->self_for_proc_chaperone = self_proc;
     }
@@ -3940,7 +3961,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     /* No filter for the result, so tail call: */
     if (app_mark)
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
-    if (SCHEME_CHAPERONEP(px->prev)) {
+    if (SCHEME_IMMUTABLEP(px->redirects)) {
       /* commuincate `self_proc` to the next layer: */
       scheme_current_thread->self_for_proc_chaperone = self_proc;
     }
@@ -3982,7 +4003,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     if (need_pop_mark)
       MZ_CONT_MARK_POS -= 2;
 
-    if (SCHEME_CHAPERONEP(px->prev)) {
+    if (SCHEME_IMMUTABLEP(px->redirects)) {
       /* commuincate `self_proc` to the next layer: */
       scheme_current_thread->self_for_proc_chaperone = self_proc;
     }
