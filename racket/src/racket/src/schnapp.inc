@@ -68,7 +68,10 @@ Scheme_Object *PRIM_APPLY_NAME(Scheme_Object *rator,
           || SCHEME_INT_VAL(SCHEME_VEC_ELS(((Scheme_Chaperone *)rator)->redirects)[1]) == argc) {
         /* No redirection proc, i.e, chaperone is just for
 	   properties or produced by unsafe-chaperone-procedure result -- and in the
-           latter case, the arity is right.. */
+           latter case, the arity is right. */
+        GC_CAN_IGNORE Scheme_Thread *p = scheme_current_thread;
+        if (SCHEME_IMMUTABLEP(((Scheme_Chaperone *)rator)->redirects) && !p->self_for_proc_chaperone)
+          p->self_for_proc_chaperone = rator;
         rator = SCHEME_VEC_ELS(((Scheme_Chaperone *)rator)->redirects)[0];
         t = _SCHEME_TYPE(rator);
       } else
