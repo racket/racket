@@ -5,6 +5,8 @@
 
 @title[#:tag "hash-reader"]{Reader Extensions}
 
+@refdetails["parse-reader"]{reader extensions}
+
 The @tech{reader} layer of the Racket language can be extended through
 the @racketmetafont{#reader} form. A reader extension is implemented
 as a module that is named after @racketmetafont{#reader}. The module
