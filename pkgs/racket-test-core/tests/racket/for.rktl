@@ -369,6 +369,7 @@
 (test '() 'in-empty-vector (let ([v (in-vector '#())]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#() 0)]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#() 0 0)]) (for/list ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#(1) 1)]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#(1) 1 1)]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#(1) 0 0)]) (for/list ([e v]) e)))
 (test '(1) 'in-empty-vector (let ([v (in-vector '#(1) 0 1)]) (for/list ([e v]) e)))
@@ -522,6 +523,28 @@
 (err/rt-test (for ([x (in-hash (hash 1 2))]) x)
              exn:fail:contract:arity?
              #rx"expected number of values not received")
+
+(err/rt-test (for/sum ([x (in-vector (vector 1 2) 2 -1 -1)]) x) ; pr 15227
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector) -1 -1 -1)]) x)
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector) 1 1 1)]) x)
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector 1) 1 2)]) x)
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector 1) 0 2)]) x)
+             exn:fail:contract?
+             #rx"stopping index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector 1) 0 -1)]) x)
+             exn:fail:contract?
+             #rx"starting index more than stopping index, but given a positive step")
+(err/rt-test (for/sum ([x (in-vector (vector 1) 0 1 -1)]) x)
+             exn:fail:contract?
+             #rx"starting index less than stopping index, but given a negative step")
 
 ;; for/fold syntax checking
 (syntax-test #'(for/fold () bad 1) #rx".*bad sequence binding clauses.*")

@@ -232,9 +232,21 @@ each element in the sequence.
   greater or equal to @racket[end] if @racket[step] is non-negative,
   or less or equal to @racket[end] if @racket[step] is negative.
 
-  If @racket[start] is not a valid index, or @racket[stop] is not in
-  [-1, @racket[(vector-length vec)]] then the
-  @exnraise[exn:fail:contract].  If @racket[start] is less than
+  If @racket[start] is not a valid index, then the
+  @exnraise[exn:fail:contract], except when @racket[start], @racket[stop], and
+  @racket[(vector-length vec)] are equal, in which case the result is an
+  empty sequence.
+
+  @examples[#:eval sequence-evaluator
+            (for ([x (in-vector (vector 1) 1)]) x)
+            (eval:error (for ([x (in-vector (vector 1) 2)]) x))
+            (for ([x (in-vector (vector) 0 0)]) x)
+            (for ([x (in-vector (vector 1) 1 1)]) x)]
+
+  If @racket[stop] is not in [-1, @racket[(vector-length vec)]],
+  then the @exnraise[exn:fail:contract].
+  
+  If @racket[start] is less than
   @racket[stop] and @racket[step] is negative, then the
   @exnraise[exn:fail:contract:mismatch].  Similarly, if @racket[start]
   is more than @racket[stop] and @racket[step] is positive, then the
