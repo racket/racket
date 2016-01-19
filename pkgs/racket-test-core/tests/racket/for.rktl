@@ -436,10 +436,18 @@
 (err/rt-test (for*/fold () ([x '(1 2)]) x) exn:fail:contract:arity?)
 
 ;; for/fold result-arity checking:
-(err/rt-test (begin (for/fold () ([i (in-range 10)]) 1) 1) #rx".*expected number of values not received.*")
-(err/rt-test (begin (for/fold () () 1) 1) #rx".*expected number of values not received.*")
-(err/rt-test (begin (for/fold ([x 1]) () (values 1 2)) 1) #rx".*expected number of values not received.*")
-(err/rt-test (begin (for/fold ([x 1] [y 2]) ([i (in-range 10)]) 1) 1) #rx".*expected number of values not received.*")
+(err/rt-test (begin (for/fold () ([i (in-range 10)]) 1) 1)
+             exn:fail:contract:arity?
+             #rx".*expected number of values not received.*")
+(err/rt-test (begin (for/fold () () 1) 1)
+             exn:fail:contract:arity?
+             #rx".*expected number of values not received.*")
+(err/rt-test (begin (for/fold ([x 1]) () (values 1 2)) 1)
+             exn:fail:contract:arity?
+             #rx".*expected number of values not received.*")
+(err/rt-test (begin (for/fold ([x 1] [y 2]) ([i (in-range 10)]) 1) 1)
+             exn:fail:contract:arity?
+             #rx".*expected number of values not received.*")
 (test 1 'one (begin (for/fold () () (values)) 1))
 
 ;; for/fold syntax checking
