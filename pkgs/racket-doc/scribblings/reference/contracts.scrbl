@@ -2147,6 +2147,24 @@ contracts.  The error messages assume that the function named by
  functions, the wrapping (and thus the checks) are skipped.
 }
 
+@defform*[[(with-contract-continuation-mark blame body ...)
+          (with-contract-continuation-mark blame+neg-party body ...)]]{
+Inserts a continuation mark that informs the contract profiler (see
+@other-doc['(lib "contract-profile/scribblings/contract-profile")
+           #:indirect "contract profiling"])
+that contract checking is happening.
+For the costs from checking your new combinator to be included, you should wrap
+any deferred, higher-order checks with this form. First-order checks are
+recognized automatically and do not require this form.
+
+If your combinator's projections operate on complete blame objects (i.e., no
+missing blame parties), the blame object should be the first argument to this
+form. Otherwise (e.g., in the case of @racket[_late-neg] projections), a pair
+of the blame object and the negative party should be used instead.
+
+@history[#:added "6.4.0.4"]
+}
+
 @subsection{Blame Objects}
 
 @defproc[(blame? [x any/c]) boolean?]{
