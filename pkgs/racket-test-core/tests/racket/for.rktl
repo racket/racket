@@ -549,5 +549,44 @@
 ;; for/fold syntax checking
 (syntax-test #'(for/fold () bad 1) #rx".*bad sequence binding clauses.*")
 
+;; specific hash set iterators
+(err/rt-test (for/sum ([x (in-immutable-set '(1 2))]) x)
+             exn:fail:contract?
+             #rx"not a hash set")
+(err/rt-test (for/sum ([x (in-mutable-set '(1 2))]) x)
+             exn:fail:contract?
+             #rx"not a hash set")
+(err/rt-test (for/sum ([x (in-weak-set '(1 2))]) x)
+             exn:fail:contract?
+             #rx"not a hash set")
+(test 10 'in-hash-set (for/sum ([x (in-immutable-set (set 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-mutable-set (mutable-set 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-weak-set (weak-set 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-immutable-set (seteqv 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-mutable-set (mutable-seteqv 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-weak-set (weak-seteqv 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-immutable-set (seteq 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-mutable-set (mutable-seteq 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-weak-set (weak-seteq 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-immutable-set (list->set '(1 2 3 4)))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-mutable-set (list->mutable-set '(1 2 3 4)))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-weak-set (list->weak-set '(1 2 3 4)))]) x))
+(test 30 'custom-in-hash-set
+      (let ()
+        (define-custom-set-types pos-set
+          #:elem? positive?
+          (λ (x y recur) (+ x y))
+          (λ (x recur) x))
+        (define imm
+          (make-immutable-pos-set '(1 2 3 4)))
+        (define m
+          (make-mutable-pos-set '(1 2 3 4)))
+        (define w
+          (make-weak-pos-set '(1 2 3 4)))
+        (+ (for/sum ([x (in-immutable-set imm)]) x)
+           (for/sum ([x (in-mutable-set m)]) x)
+           (for/sum ([x (in-weak-set w)]) x))))
+
+
 
 (report-errs)

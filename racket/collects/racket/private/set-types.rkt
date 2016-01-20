@@ -5,6 +5,7 @@
          racket/serialize
          racket/pretty
          racket/sequence
+         racket/unsafe/ops
          (only-in racket/syntax format-symbol)
          (only-in racket/generic exn:fail:support)
          (for-syntax racket/base racket/syntax))
@@ -30,6 +31,10 @@
          make-weak-custom-set
          make-mutable-custom-set
 
+         in-immutable-set
+         in-mutable-set
+         in-weak-set
+         
          chaperone-hash-set
          impersonate-hash-set)
 
@@ -575,6 +580,63 @@
   (if (custom-set-spec s)
       (sequence-map custom-elem-contents keys)
       keys))
+
+(define (custom-in-set/checked s)
+  (unless (custom-set? s)
+    (raise (exn:fail:contract (format "not a hash set: ~a" s)
+             (current-continuation-marks))))
+  (custom-in-set s))
+
+(define (set-immutable? s) (set? s))
+;; creates an new id with the given id and format str
+(define-for-syntax (mk-id id fmt-str)
+  (datum->syntax id (string->symbol (format fmt-str (syntax->datum id)))))
+  
+(define-syntax (define-in-set-sequence-syntax stx)
+  (syntax-case stx (set-type:)
+    [(_ set-type: SETTYPE)
+     (with-syntax
+      ([IN-SET-NAME (mk-id #'SETTYPE "in-~a-set")]
+       [-first (mk-id #'SETTYPE "unsafe-~a-hash-iterate-first")]
+       [-next (mk-id #'SETTYPE "unsafe-~a-hash-iterate-next")]
+       [-get (mk-id #'SETTYPE "unsafe-~a-hash-iterate-key")]
+       [-test? (mk-id #'SETTYPE "set-~a?")])
+      #'(define-sequence-syntax IN-SET-NAME
+          (lambda () #'custom-in-set/checked)
+          (lambda (stx)
+            (syntax-case stx ()
+              [[(id) (_ set-expr)]
+               (for-clause-syntax-protect
+                #'[(id)
+                   (:do-in
+                    ;;outer bindings
+                    ([(HT fn) (let ([xs set-expr])
+                                (if (custom-set? xs)
+                                    (values
+                                     (custom-set-table xs)
+                                     (if (custom-set-spec xs)
+                                         custom-elem-contents
+                                         (lambda (x) x)))
+                                    (values #f #f)))])
+                    ;; outer check
+                    (unless (and HT (-test? HT))
+                      (custom-in-set/checked set-expr))
+                    ;; loop bindings
+                    ([i (-first HT)])
+                    ;; pos check
+                    i
+                    ;; inner bindings
+                    ([(id) (fn (-get HT i))])
+                    ;; pre guard
+                    #t
+                    ;; post guard
+                    #t
+                    ;; loop args
+                    ((-next HT i)))])]
+              [_ #f]))))]))
+(define-in-set-sequence-syntax set-type: immutable)
+(define-in-set-sequence-syntax set-type: mutable)
+(define-in-set-sequence-syntax set-type: weak) 
 
 (struct custom-elem [contents] #:transparent)
 

@@ -153,6 +153,24 @@ Analogous to @racket[for/list] and @racket[for*/list], but to
 construct a @tech{hash set} instead of a list.
 }
 
+@deftogether[(
+@defproc[(in-immutable-set [st set?]) sequence?]
+@defproc[(in-mutable-set [st set-mutable?]) sequence?]
+@defproc[(in-weak-set [st set-weak?]) sequence?]
+)]{
+
+Explicitly converts a specific kind of @tech{hash set} to a sequence for 
+use with @racket[for] forms.
+
+As with @racket[in-list] and some other sequence constructors,
+@racket[in-immutable-set] is more performant when it appears directly in a
+@racket[for] clause.
+
+These sequence constructors are compatible with
+@secref["Custom_Hash_Sets" #:doc '(lib "scribblings/reference/reference.scrbl")].
+
+}
+
 @section{Set Predicates and Contracts}
 
 @defproc[(generic-set? [v any/c]) boolean?]{
