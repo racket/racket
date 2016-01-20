@@ -177,15 +177,19 @@
                      [args
                       (arrow:bad-number-of-results blame val rng-len args
                                                    #:missing-party neg-party)]))))
-        (define (wrap-call-with-values-and-range-checking stx assume-result-values?)
+        (define (wrap-call-with-values-and-range-checking stx assume-result-values? do-tail-check?)
           (if rngs
               (if assume-result-values?
-                  #`(let-values ([(rng-x ...) #,stx])
-                      (with-contract-continuation-mark
-                       (cons blame neg-party)
-                       (let ()
-                         post ...
-                         (values (rng-late-neg-projs rng-x neg-party) ...))))
+                  (if do-tail-check?
+                      #`(let-values ([(rng-x ...) #,stx])
+                          (with-contract-continuation-mark
+                           (cons blame neg-party)
+                           (let ()
+                             post ...
+                             (values (rng-late-neg-projs rng-x neg-party) ...))))
+                      
+                      #`(let-values ([(rng-x ...) #,stx])
+                          (values (rng-late-neg-projs rng-x neg-party) ...)))
                   #`(call-with-values
                      (λ () #,stx)
                      #,rng-checker))
@@ -276,9 +280,11 @@
                                                               inner-stx-gen
                                                               #'(cons blame neg-party))
                                    (inner-stx-gen #'())))]
-                            [(basic-unsafe-return basic-unsafe-return/result-values-assumed)
+                            [(basic-unsafe-return
+                              basic-unsafe-return/result-values-assumed
+                              basic-unsafe-return/result-values-assumed/no-tail)
                              (let ()
-                               (define (inner-stx-gen stuff assume-result-values?)
+                               (define (inner-stx-gen stuff assume-result-values? do-tail-check?)
                                  (define arg-checking-expressions
                                    (if need-apply?
                                        #'(this-param ... dom-projd-args ... opt+rest-uses)
@@ -301,27 +307,32 @@
                                                   #`(apply val tmps ...)
                                                   #`(val tmps ...))))]))
                                  (define the-call
-                                   #`(with-continuation-mark arrow:tail-contract-key
-                                       (list* neg-party blame-party-info #,rng-ctcs)
-                                       #,the-call/no-tail-mark))
+                                   (if do-tail-check?
+                                       #`(with-continuation-mark arrow:tail-contract-key
+                                           (list* neg-party blame-party-info #,rng-ctcs)
+                                           #,the-call/no-tail-mark)
+                                       the-call/no-tail-mark))
                                  (cond
                                    [(null? (syntax-e stuff)) ;; surely there must a better way
                                     the-call/no-tail-mark]
                                    [else
                                     (wrap-call-with-values-and-range-checking
                                      the-call
-                                     assume-result-values?)]))
-                               (define (mk-return assume-result-values?)
-                                 (if rngs
-                                     (arrow:check-tail-contract
-                                      rng-ctcs
-                                      blame-party-info
-                                      neg-party
-                                      #'not-a-null
-                                      (λ (x) (inner-stx-gen x assume-result-values?))
-                                      #'(cons blame neg-party))
-                                     (inner-stx-gen #'() assume-result-values?)))
-                               (list (mk-return #f) (mk-return #t)))]
+                                     assume-result-values?
+                                     do-tail-check?)]))
+                               (define (mk-return assume-result-values? do-tail-check?)
+                                 (if do-tail-check?
+                                     (if rngs
+                                         (arrow:check-tail-contract
+                                          rng-ctcs
+                                          blame-party-info
+                                          neg-party
+                                          #'not-a-null
+                                          (λ (x) (inner-stx-gen x assume-result-values? do-tail-check?))
+                                          #'(cons blame neg-party))
+                                         (inner-stx-gen #'() assume-result-values? do-tail-check?))
+                                     (inner-stx-gen #'not-a-null assume-result-values? do-tail-check?)))
+                               (list (mk-return #f #t) (mk-return #t #t) (mk-return #t #f)))]
                             [kwd-return
                              (let* ([inner-stx-gen
                                      (if need-apply?
@@ -373,6 +384,10 @@
                                #'(λ basic-params
                                    (let ()
                                      pre ... basic-unsafe-return/result-values-assumed))]
+                              [basic-unsafe-lambda/result-values-assumed/no-tail
+                               #'(λ basic-params
+                                   (let ()
+                                     pre ... basic-unsafe-return/result-values-assumed/no-tail))]
                               [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-contract-continuation-mark
@@ -386,6 +401,7 @@
                                                      basic-lambda
                                                      basic-unsafe-lambda
                                                      basic-unsafe-lambda/result-values-assumed
+                                                     basic-unsafe-lambda/result-values-assumed/no-tail
                                                      #,(and rngs (length rngs))
                                                      void
                                                      #,min-method-arity
@@ -397,7 +413,7 @@
                     [(pair? req-keywords)
                      #`(arrow:arity-checking-wrapper val
                                                      blame neg-party
-                                                     void #t #f #f
+                                                     void #t #f #f #f
                                                      kwd-lambda
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -408,7 +424,7 @@
                     [else
                      #`(arrow:arity-checking-wrapper val 
                                                      blame neg-party
-                                                     basic-lambda #t #f #f
+                                                     basic-lambda #t #f #f #f
                                                      kwd-lambda
                                                      #,min-method-arity
                                                      #,max-method-arity

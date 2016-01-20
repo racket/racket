@@ -90,7 +90,7 @@
                     post post/desc)
   (define regular-args/no-any/c
     (for/list ([stx (in-list regular-args)])
-      (syntax-case stx ()
+      (syntax-case stx (any/c)
         [any/c #f]
         [else stx])))
   (define key (and (not pre) (not pre/desc)
@@ -980,7 +980,7 @@
                     args-dealt-with)))))
           
           (values (arrow:arity-checking-wrapper f blame neg-party
-                                                interposition-proc #f interposition-proc #f #f
+                                                interposition-proc #f interposition-proc #f #f #f
                                                 min-arity max-arity
                                                 min-arity max-arity 
                                                 mandatory-keywords optional-keywords)

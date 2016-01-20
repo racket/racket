@@ -406,7 +406,7 @@
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda])
                              (arity-checking-wrapper val blame neg-party
-                                                     basic-lambda-name #f #f #f
+                                                     basic-lambda-name #f #f #f #f
                                                      void
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -418,7 +418,7 @@
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([kwd-lambda-name kwd-lambda])
                              (arity-checking-wrapper val blame neg-party
-                                                     void #f #f #f
+                                                     void #f #f #f #f
                                                      kwd-lambda-name
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -431,7 +431,7 @@
                            (let ([basic-lambda-name basic-lambda]
                                  [kwd-lambda-name kwd-lambda])
                              (arity-checking-wrapper val blame neg-party
-                                                     basic-lambda-name #f #f #f
+                                                     basic-lambda-name #f #f #f #f
                                                      kwd-lambda-name
                                                      #,min-method-arity
                                                      #,max-method-arity
@@ -449,7 +449,9 @@
 ;; can't be chosen (because there are keywords involved)
 (define (arity-checking-wrapper val blame neg-party basic-lambda
                                 basic-unsafe-lambda
-                                basic-unsafe-lambda/result-values-assumed contract-result-val-count
+                                basic-unsafe-lambda/result-values-assumed
+                                basic-unsafe-lambda/result-values-assumed/no-tail
+                                contract-result-val-count
                                 kwd-lambda
                                 min-method-arity max-method-arity min-arity max-arity 
                                 req-kwd opt-kwd)
@@ -462,7 +464,9 @@
                  basic-unsafe-lambda/result-values-assumed
                  (equal? contract-result-val-count
                          (procedure-result-arity val)))
-            (values basic-unsafe-lambda/result-values-assumed #t)]
+            (if (simple-enough? val)
+                (values basic-unsafe-lambda/result-values-assumed/no-tail #t)
+                (values basic-unsafe-lambda/result-values-assumed #t))]
            [basic-unsafe-lambda
             (values basic-unsafe-lambda #t)]
            [else basic-lambda])
@@ -527,6 +531,12 @@
      (if basic-unsafe-lambda
          (values proc #f)
          proc)]))
+
+(define (simple-enough? f)
+  (or (struct-accessor-procedure? f)
+      (struct-constructor-procedure? f)
+      (struct-predicate-procedure? f)
+      (struct-mutator-procedure? f)))
 
 (define (raise-wrong-number-of-args-error
          blame #:missing-party [missing-party #f] val
