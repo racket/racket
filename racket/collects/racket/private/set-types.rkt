@@ -30,6 +30,8 @@
          make-weak-custom-set
          make-mutable-custom-set
 
+         in-hash-set
+         
          chaperone-hash-set
          impersonate-hash-set)
 
@@ -575,6 +577,45 @@
   (if (custom-set-spec s)
       (sequence-map custom-elem-contents keys)
       keys))
+
+(define (custom-in-set/checked s)
+  (unless (custom-set? s)
+    (raise (exn:fail:contract (format "not a hash set: ~a" s)
+             (current-continuation-marks))))
+  (custom-in-set s))
+
+(define-sequence-syntax in-hash-set
+  (lambda () #'custom-in-set/checked)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[(id) (_ set-expr)]
+       (for-clause-syntax-protect
+         #'[(id)
+            (:do-in
+             ;;outer bindings
+             ([(ht fn) (let ([xs set-expr])
+                         (if (custom-set? xs)
+                             (values
+                              (custom-set-table xs)
+                              (if (custom-set-spec xs)
+                                  custom-elem-contents
+                                  (lambda (x) x)))
+                             (values #f #f)))])
+             ;; outer check
+             (unless ht (custom-in-set/checked set-expr))
+             ;; loop bindings
+             ([i (hash-iterate-first ht)])
+             ;; pos check
+             i
+             ;; inner bindings
+             ([(id) (fn (hash-iterate-key ht i))])
+             ;; pre guard
+             #t
+             ;; post guard
+             #t
+             ;; loop args
+             ((hash-iterate-next ht i)))])]
+      [_ #f])))
 
 (struct custom-elem [contents] #:transparent)
 

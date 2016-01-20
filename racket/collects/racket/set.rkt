@@ -21,6 +21,7 @@
          set-union! set-intersect! set-subtract! set-symmetric-difference!
 
          in-set
+         in-hash-set
          set-implements/c
 
          set seteq seteqv
