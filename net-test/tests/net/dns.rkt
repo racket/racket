@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require net/dns rackunit)
+(require net/private/rr-srv)
 
 ;; internal tests
 
@@ -90,13 +91,39 @@
 (define *nwu-mx*       '("cuda.eecs.northwestern.edu" "barra.eecs.northwestern.edu"))
 (define *kame-url*     "www.kame.net")
 (define *kame-ip*      "2001:200:dff:fff1:216:3eff:feb1:44d7")
+(define *xmpp-client*  (srv-rr 0 0 5222 "xmpp.racket-lang.org"))
 
 (define (nameserver-tests nameserver)
   (check member (dns-get-address nameserver *nwu-url*) *nwu-ips*)
   (check-equal? (dns-get-address nameserver *racket-host*) *racket-ip*)
   (check-equal? (dns-get-address nameserver *kame-url* #:ipv6? #t) *kame-ip*)
   (check-equal? (dns-get-name nameserver *racket-ip*) *racket-host*)
-  (check member (dns-get-mail-exchanger nameserver *nwu-url*) *nwu-mx*))
+  (check member (dns-get-mail-exchanger nameserver *nwu-url*) *nwu-mx*)
+  (check-equal? (dns-get-srv nameserver "racket-lang.org" "xmpp-client") (list *xmpp-client*))
+  (check-equal? (dns-get-srv nameserver "nonexistent-srv-record.racket-lang.org" "xmpp-client")
+                '()))
+
+(define (srv-tests)
+  (define srv-xmpp-8020-srv-rr
+    '((#"_xmpp-client._tcp.leastfixedpoint.com" srv in 62917
+       (0 0
+        0 0
+        20 102
+        4 120 109 112 112 13 101 105 103 104 116 121 45 116 119 101 110 116 121 3 111 114 103 0))))
+  (define srv-xmpp-8020-reply
+    '(0 185 129 128
+      0 1
+      0 1
+      0 3
+      0 0
+      12 95 120 109 112 112 45 99 108 105 101 110 116 4 95 116 99 112 15 108
+      101 97 115 116 102 105 120 101 100 112 111 105 110 116 3 99 111 109 0 0
+      33 0 1 192 12 0 33 0 1 0 1 7 160 0 30 0 0 0 0 20 102 4 120 109 112 112
+      13 101 105 103 104 116 121 45 116 119 101 110 116 121 3 111 114 103 0 192
+      30 0 2 0 1 0 1 51 30 0 13 1 98 2 110 115 5 106 111 107 101 114 192 46 192
+      30 0 2 0 1 0 1 51 30 0 4 1 99 192 111 192 30 0 2 0 1 0 1 51 30 0 4 1 97 192 111))
+  (check-equal? (parse-srv-rr srv-xmpp-8020-srv-rr srv-xmpp-8020-reply)
+                (list (srv-rr 0 0 5222 "xmpp.eighty-twenty.org"))))
 
 (provide tests)
 (module+ main (tests))
@@ -104,6 +131,7 @@
   (internal-tests)
   (nameserver-tests *google-dns*)
   (nameserver-tests *google-dns-2*)
+  (srv-tests)
   (let ([ns (dns-find-nameserver)]) (when ns (nameserver-tests ns))))
 
 (module+ test (require (submod ".." main))) ; for raco test & drdr

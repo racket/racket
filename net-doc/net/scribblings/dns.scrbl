@@ -1,5 +1,8 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label net/dns net/dns-unit net/dns-sig))
+@(require "common.rkt" scribble/eval (for-label net/dns net/dns-unit net/dns-sig))
+
+@(define dns-evaluator (make-base-eval))
+@(dns-evaluator '(require net/dns))
 
 @title[#:tag "dns"]{DNS: Domain Name Service Queries}
 
@@ -29,6 +32,51 @@ in case the server does not provide this optional feature.
 If @racket[ipv6?] is a true value, then the numerical address
 that is returned will be an IPv6 address. If no AAAA record exists,
 an error will be raised.
+}
+
+
+@deftogether[(
+@defproc[(dns-get-srv [nameserver string?]
+		      [name string?]
+		      [service string?]
+		      [proto string? "tcp"])
+         (listof srv-rr?)]
+@defstruct*[srv-rr ([priority (integer-in 0 65535)]
+		    [weight (integer-in 0 65535)]
+		    [port (integer-in 0 65535)]
+		    [target string?]) #:prefab]
+)]{
+
+@margin-note{An SRV record is a particular kind of DNS resource record
+that maps an abstract service name onto a hostname and port
+combination. For more information, see
+@hyperlink["https://en.wikipedia.org/wiki/SRV_record"]{the Wikipedia
+page on SRV records}.}
+
+Consults the specified nameserver (normally a numerical address like
+@racket["128.42.1.30"]) to retrieve the SRV records corresponding to
+the given name, service, and protocol. Returns a list of
+@racket[srv-rr] structs if any corresponding SRV records are found;
+otherwise, returns @racket['()].
+
+If @racket[service] is @racket["X"], @racket[proto] is @racket["Y"],
+and @racket[name] is @racket["example.com"], then this will retrieve
+any SRV records at the domain name @tt{_X._Y.example.com}.
+
+The query record sent to the DNS server includes the "recursive" bit,
+but @racket[dns-get-srv] also implements a recursive search itself
+in case the server does not provide this optional feature.
+
+@examples[#:eval dns-evaluator
+	  (eval:alts (dns-get-srv (dns-find-nameserver) "racket-lang.org" "xmpp-client")
+		     (list (srv-rr 0 0 5222 "xmpp.racket-lang.org")))
+	  (eval:alts (dns-get-srv (dns-find-nameserver) "racket-lang.org" "nonexistent-protocol")
+		     (list))
+	  (eval:alts (dns-get-srv (dns-find-nameserver) "racket-lang.org" "xmpp-client" "tcp")
+		     (list (srv-rr 0 0 5222 "xmpp.racket-lang.org")))
+	  (eval:alts (dns-get-srv (dns-find-nameserver) "racket-lang.org" "xmpp-client" "udp")
+		     (list))
+	  ]
 }
 
 
@@ -80,4 +128,5 @@ Imports nothing, exports @racket[dns^].}
 
 @defsignature[dns^ ()]{}
 
-Includes everything exported by the @racketmodname[net/dns] module.
+Includes @racket[dns-get-address], @racket[dns-get-name],
+@racket[dns-get-mail-exchanger] and @racket[dns-find-nameserver].

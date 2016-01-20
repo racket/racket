@@ -3,17 +3,57 @@
 ;; DNS query library for Racket
 
 (require "private/ip.rkt"
+         "private/rr-generic.rkt"
+         "private/rr-srv.rkt"
          racket/contract
          racket/format
          racket/string
          racket/system
          racket/udp)
 
-(provide (contract-out
+(provide (struct-out srv-rr)
+         (contract-out
           [dns-get-address
            (->* ((or/c ip-address? ip-address-string?) string?)
                 (#:ipv6? any/c)
                 ip-address-string?)]
+          [dns-get-srv
+           (->* ((or/c ip-address? ip-address-string?)
+                 string?
+                 string?)
+                (string?)
+                (listof (struct/c srv-rr
+                                  (integer-in 0 65535)
+                                  (integer-in 0 65535)
+                                  (integer-in 0 65535)
+                                  string?)))]
+          ;; N.B. We should eventually expose this *kind* of
+          ;; functionality, but this interface is very unfriendly. We
+          ;; should make the interface less unfriendly before we
+          ;; expose this function. It should also be documented when
+          ;; it is exposed.
+          ;;
+          ;; A second option, suitable for use in the interim, would
+          ;; be to move dns-lookup to be a provided identifier (with
+          ;; this contract) from some module in `private/`, but this
+          ;; would involve moving most of the code in this file into
+          ;; `private/`, which... ehhh. Could do I suppose. At least
+          ;; that way people would be able to use dns-lookup in
+          ;; extremis, even though it has an ugly API and no
+          ;; documentation.
+          ;;
+          ;; [dns-lookup
+          ;;  (-> (or/c ip-address? ip-address-string?)
+          ;;      string?
+          ;;      #:rr-type symbol?
+          ;;      #:rr-parser (-> (listof (list/c bytes? ;; name
+          ;;                                      symbol? ;; type
+          ;;                                      symbol? ;; class
+          ;;                                      integer? ;; ttl
+          ;;                                      (listof byte?))) ;; rdata
+          ;;                      (listof byte?) ;; the whole packet
+          ;;                      any/c)
+          ;;      any/c)]
           [dns-get-name
            (-> (or/c ip-address? ip-address-string?)
                (or/c ip-address? ip-address-string?)
@@ -49,7 +89,8 @@
     (minfo 14)
     (mx    15)
     (txt   16)
-    (aaaa  28)))
+    (aaaa  28)
+    (srv   33)))
 
 ;; A Class is one of the following
 (define classes
@@ -64,31 +105,6 @@
   (cond [(null? l)            #f]
         [(equal? (cadar l) i) (car l)]
         [else                 (cossa i (cdr l))]))
-
-(define (number->octet-pair n)
-  (list (arithmetic-shift n -8)
-        (modulo n 256)))
-
-(define (octet-pair->number a b)
-  (+ (arithmetic-shift a 8) b))
-
-(define (octet-quad->number a b c d)
-  (+ (arithmetic-shift a 24)
-     (arithmetic-shift b 16)
-     (arithmetic-shift c 8)
-     d))
-
-;; Bytes -> LB
-;; Convert the domain name into a sequence of labels, where each
-;; label is a length octet and then that many octets
-(define (name->octets s)
-  (define (do-one s) (cons (bytes-length s) (bytes->list s)))
-  (let loop ([s s])
-    (define m (regexp-match #rx#"^([^.]*)[.](.*)" s))
-    (if m
-        (append (do-one (cadr m)) (loop (caddr m)))
-        ;; terminate with zero length octet
-        (append (do-one s) (list 0)))))
 
 ;; The query header. See RFC1035 4.1.1 for details
 ;;
@@ -117,37 +133,6 @@
 
 (define (add-size-tag m)
   (append (number->octet-pair (length m)) m))
-
-(define (rr-data rr)
-  (cadddr (cdr rr)))
-
-(define (rr-type rr)
-  (cadr rr))
-
-(define (rr-name rr)
-  (car rr))
-
-(define (parse-name start reply)
-  (define v (car start))
-  (cond
-    [(zero? v)
-     ;; End of name
-     (values #f (cdr start))]
-    [(zero? (bitwise-and #xc0 v))
-     ;; Normal label
-     (let loop ([len v] [start (cdr start)] [accum null])
-       (if (zero? len)
-         (let-values ([(s start) (parse-name start reply)])
-           (define s0 (list->bytes (reverse accum)))
-           (values (if s (bytes-append s0 #"." s) s0)
-                   start))
-         (loop (sub1 len) (cdr start) (cons (car start) accum))))]
-    [else
-     ;; Compression offset
-     (define offset (+ (arithmetic-shift (bitwise-and #x3f v) 8)
-                       (cadr start)))
-     (define-values [s ignore-start] (parse-name (list-tail reply offset) reply))
-     (values s (cddr start))]))
 
 (define (parse-rr start reply)
   (let-values ([(name start) (parse-name start reply)])
@@ -341,23 +326,33 @@
     ans-entry))
 
 (define (dns-get-address nameserver-ip-or-string addr #:ipv6? [ipv6? #f])
+  (or (dns-lookup nameserver-ip-or-string addr
+                  #:rr-type (if ipv6? 'aaaa 'a)
+                  #:rr-parser (lambda (answer-records reply)
+                                (and (positive? (length answer-records))
+                                     ((if ipv6? ipv6->string ip->string)
+                                      (rr-data (car answer-records))))))
+      (error 'dns-lookup "bad address")))
+
+(define (dns-get-srv nameserver-ip-or-string name service [proto "tcp"])
+  (dns-lookup nameserver-ip-or-string
+              (format "_~a._~a.~a" service proto name)
+              #:rr-type 'srv
+              #:rr-parser parse-srv-rr))
+
+(define (dns-lookup nameserver-ip-or-string addr
+                    #:rr-type type
+                    #:rr-parser rr-parser)
   (define nameserver (if (ip-address? nameserver-ip-or-string)
                          nameserver-ip-or-string
                          (make-ip-address nameserver-ip-or-string)))
-  (define type (if ipv6? 'aaaa 'a))
   (define (get-address nameserver)
     (define-values (auth? qds ans nss ars reply)
       (dns-query/cache nameserver addr type 'in))
     (define answer-records (get-records-from-ans ans type))
-    (define address
-      (and (positive? (length answer-records))
-           (let ([data (rr-data (car answer-records))])
-             (if ipv6?
-                 (ipv6->string data)
-                 (ip->string data)))))
-    (values address ars auth?))
-  (or (try-forwarding get-address nameserver)
-      (error 'dns-get-address "bad address")))
+    (define result (rr-parser answer-records reply))
+    (values result ars auth?))
+  (try-forwarding get-address nameserver))
 
 (define (dns-get-mail-exchanger nameserver-ip-or-string addr)
   (define nameserver (if (ip-address? nameserver-ip-or-string)
