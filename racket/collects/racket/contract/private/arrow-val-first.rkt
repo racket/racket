@@ -52,19 +52,21 @@
   ;; 'raco setup' of the current tree, these are all
   ;; the ones that appear at least 50 times (the
   ;; number indicate how many times each appeared)
-  `((0 0 () () #f 1)   ; 1260
-    (0 0 () () #t 1)   ;   58
-    (1 0 () () #f #f)  ;  116
-    (1 0 () () #f 1)   ; 4140
-    (1 0 () () #t 1)   ;   71
-    (1 1 () () #f 1)   ;  186
-    (1 2 () () #f 1)   ;  125
-    (2 0 () () #f #f)  ;   99
-    (2 0 () () #f 1)   ; 1345
-    (2 1 () () #f 1)   ;   68
-    (3 0 () () #f 1)   ;  423
-    (4 0 () () #f 1)   ;  149
-    (5 0 () () #f 1))) ;   74
+  `((()               0 () () #f 1)   ; 1260
+    (()               0 () () #t 1)   ;   58
+    ((#f)             0 () () #f #f)  ;  116
+    ((#f)             0 () () #f 1)   ; 4140
+    ((#t)             0 () () #f 1)   ; a new kind of key; expected to be popular
+    ((#f)             0 () () #t 1)   ;   71
+    ((#f)             1 () () #f 1)   ;  186
+    ((#f)             2 () () #f 1)   ;  125
+    ((#f #f)          0 () () #f #f)  ;   99
+    ((#f #f)          0 () () #f 1)   ; 1345
+    ((#f #f)          1 () () #f 1)   ;   68
+    ((#f #f #f)       0 () () #f 1)   ;  423
+    ((#f #f #f #f)    0 () () #f 1)   ;  149
+    ((#f #f #f #f #f) 0 () () #f 1))) ;   74
+
 
 (define-syntax (generate-popular-key-ids stx)
   (syntax-case stx ()
@@ -86,9 +88,14 @@
                     rest
                     rngs
                     post post/desc)
+  (define regular-args/no-any/c
+    (for/list ([stx (in-list regular-args)])
+      (syntax-case stx ()
+        [any/c #f]
+        [else stx])))
   (define key (and (not pre) (not pre/desc)
                    (not post) (not post/desc)
-                   (list (length regular-args)
+                   (list (map not regular-args/no-any/c)
                          (length optional-args)
                          (map syntax-e mandatory-kwds)
                          (map syntax-e optional-kwds)
@@ -115,7 +122,7 @@
               post post/desc)
              (build-chaperone-constructor/real
               '() ;; this-args 
-              regular-args
+              regular-args/no-any/c
               optional-args
               mandatory-kwds
               optional-kwds
@@ -132,15 +139,20 @@
                        [key (in-list popular-keys)])
               (define plus-one-id (list-ref ids 0))
               (define chaperone-id (list-ref ids 1))
-              (define-values (regular-arg-count
+              (define-values (regular-arg-any/c-or-not?s
                               optional-arg-count
                               mandatory-kwds
                               optional-kwds
                               rest
                               rngs)
                 (apply values key))
-              (define mans (for/list ([x (in-range regular-arg-count)])
+              (define mans (for/list ([is-any/c? (in-list regular-arg-any/c-or-not?s)]
+                                      [x (in-naturals)])
                              (string->symbol (format "man~a" x))))
+              (define mans/no-any/c
+                (for/list ([is-any/c? (in-list regular-arg-any/c-or-not?s)]
+                           [man-var (in-list mans)])
+                  (if is-any/c? #f man-var)))
               (define opts (for/list ([x (in-range optional-arg-count)])
                              (string->symbol (format "opt~a" x))))
               (define rng-vars (and rngs (for/list ([x (in-range rngs)])
@@ -156,15 +168,20 @@
                        rng-vars
                        #f #f))
                   (define #,(syntax-local-introduce chaperone-id)
-                    #,(build-chaperone-constructor/real
-                       '() ;; this arg
-                       mans opts
-                       mandatory-kwds
-                       optional-kwds
-                       #f #f
-                       rest
-                       rng-vars
-                       #f #f))))
+                    #,(let ([ans (build-chaperone-constructor/real
+                                  '() ;; this arg
+                                  mans/no-any/c opts
+                                  mandatory-kwds
+                                  optional-kwds
+                                  #f #f
+                                  rest
+                                  rng-vars
+                                  #f #f)])
+                        #;
+                        (when (equal? key (list '(#t) 0 '() '() #f 1))
+                          ((dynamic-require 'racket/pretty 'pretty-write) (syntax->datum ans))
+                          (exit))
+                        ans))))
          (define popular-chaperone-key-table
            (make-hash
             (list #,@(for/list ([id (in-list popular-key-ids)]
@@ -403,13 +420,13 @@
         (mk-call)]))))
 
 (build-populars popular-chaperone-key-table)
-(define (lookup-popular-chaperone-key regular-arg-count
+(define (lookup-popular-chaperone-key regular-arg-any/c-or-not?s
                                       optional-arg-count
                                       mandatory-kwds
                                       optional-kwds
                                       rest
                                       rngs)
-  (define key (list regular-arg-count
+  (define key (list regular-arg-any/c-or-not?s
                     optional-arg-count
                     mandatory-kwds
                     optional-kwds
@@ -899,7 +916,7 @@
   (define max-arity (if rest-contract #f (+ min-arity optionals)))
 
   (define build-chaperone-constructor
-    (or (lookup-popular-chaperone-key min-arity
+    (or (lookup-popular-chaperone-key (for/list ([i (in-range min-arity)]) #f)
                                       optionals
                                       mandatory-keywords
                                       optional-keywords
@@ -1241,7 +1258,7 @@
 (define ->void-contract
   (let-syntax ([get-chaperone-constructor
                 (λ (_)
-                  (define desired-key '(0 0 () () #f 1))
+                  (define desired-key '(() 0 () () #f 1))
                   (define expected-index 0)
                   (unless (equal? desired-key (list-ref popular-keys expected-index))
                     (error '->void-contract "expected the 0th key to be ~s" desired-key))

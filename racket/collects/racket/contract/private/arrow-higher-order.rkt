@@ -21,7 +21,11 @@
          pre-post/desc-result->string)
 
 (define-for-syntax (build-chaperone-constructor/real this-args
-                                                     mandatory-dom-projs 
+
+                                                     ;; (listof (or/c #f stx))
+                                                     ;; #f => syntactically known to be any/c
+                                                     mandatory-dom-projs
+                                                     
                                                      optional-dom-projs
                                                      mandatory-dom-kwds
                                                      optional-dom-kwds
@@ -46,7 +50,9 @@
         #,(create-chaperone
            #'blame #'neg-party #'blame-party-info #'f #'rng-ctcs
            this-args
-           (syntax->list #'(mandatory-dom-proj ...))
+           (for/list ([id (in-list (syntax->list #'(mandatory-dom-proj ...)))]
+                      [mandatory-dom-proj (in-list mandatory-dom-projs)])
+             (and mandatory-dom-proj id))
            (syntax->list #'(optional-dom-proj ...))
            (map list 
                 mandatory-dom-kwds
@@ -144,7 +150,6 @@
                       (list #`(check-post-cond/desc #,post/desc blame neg-party val))]
                      [else null])])
       (with-syntax ([(this-param ...) this-args]
-                    [(dom-ctc ...) doms]
                     [(dom-x ...) (generate-temporaries doms)]
                     [(opt-dom-ctc ...) opt-doms]
                     [(opt-dom-x ...) (generate-temporaries opt-doms)]
@@ -193,7 +198,12 @@
                  [req-keywords (map (λ (p) (syntax-e (car p))) req-kwds)]
                  [opt-keywords (map (λ (p) (syntax-e (car p))) opt-kwds)]
                  [need-apply? (or dom-rest (not (null? opt-doms)))])
-            (with-syntax ([(dom-projd-args ...) #'((dom-ctc dom-x neg-party) ...)]
+            (with-syntax ([(dom-projd-args ...)
+                           (for/list ([dom (in-list doms)]
+                                      [dom-x (in-list (syntax->list #'(dom-x ...)))])
+                             (if dom
+                                 #`(#,dom #,dom-x neg-party)
+                                 dom-x))]
                           [basic-params
                            (cond
                              [dom-rest
@@ -274,15 +284,22 @@
                                        #'(this-param ... dom-projd-args ... opt+rest-uses)
                                        #'(this-param ... dom-projd-args ...)))
                                  (define the-call/no-tail-mark
-                                   (with-syntax ([(tmps ...) (generate-temporaries
-                                                              arg-checking-expressions)])
-                                     #`(let-values ([(tmps ...)
-                                                     (with-contract-continuation-mark
-                                                      (cons blame neg-party)
-                                                      (values #,@arg-checking-expressions))])
-                                         #,(if need-apply?
-                                               #`(apply val tmps ...)
-                                               #`(val tmps ...)))))
+                                   (cond
+                                     [(for/and ([dom (in-list doms)])
+                                        (not dom))
+                                      (if need-apply?
+                                          #`(apply val #,@arg-checking-expressions)
+                                          #`(val #,@arg-checking-expressions))]
+                                     [else
+                                      (with-syntax ([(tmps ...) (generate-temporaries
+                                                                 arg-checking-expressions)])
+                                        #`(let-values ([(tmps ...)
+                                                        (with-contract-continuation-mark
+                                                         (cons blame neg-party)
+                                                         (values #,@arg-checking-expressions))])
+                                            #,(if need-apply?
+                                                  #`(apply val tmps ...)
+                                                  #`(val tmps ...))))]))
                                  (define the-call
                                    #`(with-continuation-mark arrow:tail-contract-key
                                        (list* neg-party blame-party-info #,rng-ctcs)

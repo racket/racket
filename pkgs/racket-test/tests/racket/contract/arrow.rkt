@@ -425,6 +425,30 @@
                 (struct s ())
                 ((impersonate-procedure s? (λ (x) (values (λ (r) "") x))) 11))
               'pos 'neg))
+
+  (test/spec-passed
+   'any/c-in-domain1
+   '((contract (-> any/c real?)
+               (λ (x) 0)
+               'pos 'neg) 0))
+
+  (test/pos-blame
+   'any/c-in-domain2
+   '((contract (-> any/c real?)
+               (λ (x) #f)
+               'pos 'neg) 0))
+
+  (test/spec-passed
+   'any/c-in-domain3
+   '((contract (-> any/c any/c any/c any/c real?)
+               (λ (x y z w) 0)
+               'pos 'neg) 0 1 2 3))
+
+  (test/pos-blame
+   'any/c-in-domain4
+   '((contract (-> any/c any/c any/c any/c real?)
+               (λ (x y z w) #f)
+               'pos 'neg) 0 1 2 3))
   
   ;; this test ensures that no contract wrappers
   ;; are created for struct predicates
