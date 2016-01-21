@@ -177,19 +177,15 @@
                      [args
                       (arrow:bad-number-of-results blame val rng-len args
                                                    #:missing-party neg-party)]))))
-        (define (wrap-call-with-values-and-range-checking stx assume-result-values? do-tail-check?)
+        (define (wrap-call-with-values-and-range-checking stx assume-result-values?)
           (if rngs
               (if assume-result-values?
-                  (if do-tail-check?
-                      #`(let-values ([(rng-x ...) #,stx])
-                          (with-contract-continuation-mark
-                           (cons blame neg-party)
-                           (let ()
-                             post ...
-                             (values (rng-late-neg-projs rng-x neg-party) ...))))
-                      
-                      #`(let-values ([(rng-x ...) #,stx])
-                          (values (rng-late-neg-projs rng-x neg-party) ...)))
+                  #`(let-values ([(rng-x ...) #,stx])
+                      (with-contract-continuation-mark
+                       (cons blame neg-party)
+                       (let ()
+                         post ...
+                         (values (rng-late-neg-projs rng-x neg-party) ...))))
                   #`(call-with-values
                      (λ () #,stx)
                      #,rng-checker))
@@ -318,8 +314,7 @@
                                    [else
                                     (wrap-call-with-values-and-range-checking
                                      the-call
-                                     assume-result-values?
-                                     do-tail-check?)]))
+                                     assume-result-values?)]))
                                (define (mk-return assume-result-values? do-tail-check?)
                                  (if do-tail-check?
                                      (if rngs

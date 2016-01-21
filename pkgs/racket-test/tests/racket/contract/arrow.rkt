@@ -261,6 +261,12 @@
   (test/pos-blame
    'contract-arrow4
    '((contract (integer? . -> . integer?) (lambda (x) #f) 'pos 'neg) 1))
+
+  (test/pos-blame
+   'contract-arrow5
+   '(let ()
+      (struct s (x))
+      ((contract (-> s? integer?) s-x 'pos 'neg) (s #f))))
   
   (test/neg-blame
    'contract-arrow-arity1

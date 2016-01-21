@@ -51,6 +51,12 @@
    '((contract (-> any/c pos-blame?) (λ (x) x) 'pos 'neg) 1))
 
   (test/spec-passed
+   'contract-marks2b
+   '(let ()
+      (struct s (x))
+      ((contract (-> any/c pos-blame?) s-x 'pos 'neg) (s 1))))
+
+  (test/spec-passed
    'contract-marks3
    '(contract (vector/c pos-blame?) (vector 1) 'pos 'neg))
 
