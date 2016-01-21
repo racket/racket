@@ -1094,7 +1094,23 @@ former list).}
          require-transformer?]{
 
 Creates a @tech{require transformer} using the given procedure as the
-transformer.}
+transformer.
+Often used in combination with @racket[expand-import].
+
+@examples[
+#:eval stx-eval
+(require (for-syntax racket/require-transform))
+
+(define-syntax printing
+  (make-require-transformer
+   (lambda (stx)
+     (syntax-case stx ()
+       [(_ path)
+        (printf "Importing: ~a~n" #'path)
+        (expand-import #'path)]))))
+
+(require (printing racket/match))
+]}
 
 
 @defthing[prop:require-transformer struct-type-property?]{
