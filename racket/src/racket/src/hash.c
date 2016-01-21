@@ -40,6 +40,18 @@ static Scheme_Object *unsafe_scheme_hash_table_iterate_key (int argc, Scheme_Obj
 static Scheme_Object *unsafe_scheme_hash_table_iterate_value (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_hash_table_next (mzlonglong start, int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_hash_table_index (int argc, Scheme_Object *argv[], int get_val);
+static Scheme_Object *unsafe_scheme_hash_tree_iterate_start (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_hash_tree_iterate_next (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_hash_tree_iterate_key (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_hash_tree_iterate_value (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_hash_tree_next (mzlonglong start, int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_hash_tree_index (int argc, Scheme_Object *argv[], int get_val);
+static Scheme_Object *unsafe_scheme_bucket_table_iterate_start (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_bucket_table_iterate_next (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_bucket_table_iterate_key (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_scheme_bucket_table_iterate_value (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_bucket_table_next (mzlonglong start, int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_bucket_table_index (int argc, Scheme_Object *argv[], int get_val);
 
 #ifdef MZ_PRECISE_GC
 static void register_traversers(void);
@@ -3215,6 +3227,7 @@ END_XFORM_SKIP;
 
 #endif
 
+
 /********************* unsafe hash iteration *********************/
 
 void
@@ -3222,51 +3235,123 @@ scheme_init_unsafe_hash (Scheme_Env *env)
 {
   Scheme_Object *p;
   
-  // hash-iterate-first
-  p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_start, "unsafe-hash-iterate-first", 1, 1, 1);
+  // hash-iterate-first ----------------------------------------
+  // mutable/hash_table
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_start, "unsafe-mutable-hash-iterate-first", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_UNARY_INLINED
-							     SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
-							     | SCHEME_PRIM_PRODUCES_FIXNUM
-);
-  scheme_add_global_constant ("unsafe-hash-iterate-first", p, env);
+							    SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+							    | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-mutable-hash-iterate-first", p, env);
 
-  // hash-iterate-next
-  p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_next, "unsafe-hash-iterate-next", 2, 2, 1);
+  // immutable/hash_tree
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_start, "unsafe-immutable-hash-iterate-first", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_UNARY_INLINED
+							    SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+							    | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-immutable-hash-iterate-first", p, env);
+
+  // weak/bucket_table
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_start, "unsafe-weak-hash-iterate-first", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_UNARY_INLINED
+							    SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+							    | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-weak-hash-iterate-first", p, env);
+
+  // hash-iterate-next ----------------------------------------
+  // mutable/hash_table
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_next, "unsafe-mutable-hash-iterate-next", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_BINARY_INLINED
 							    SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
-							    | SCHEME_PRIM_PRODUCES_FIXNUM
-);
-  scheme_add_global_constant ("unsafe-hash-iterate-next", p, env);
+							    | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-mutable-hash-iterate-next", p, env);
 
-  // hash-iterate-key
-  p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_key, "unsafe-hash-iterate-key", 2, 2, 1);
+  // immutable/hash_tree
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_next, "unsafe-immutable-hash-iterate-next", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_BINARY_INLINED
 							    SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
-							    | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE
-);
-  scheme_add_global_constant ("unsafe-hash-iterate-key", p, env);
+							    | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-immutable-hash-iterate-next", p, env);
 
-  // hash-iterate-value
-  p = scheme_make_folding_prim(unsafe_scheme_hash_table_iterate_value, "unsafe-hash-iterate-value", 2, 2, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
-                                                            | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE
+  // weak/bucket_table
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_next, "unsafe-weak-hash-iterate-next", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(//SCHEME_PRIM_IS_BINARY_INLINED
+							    SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
+							    | SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-weak-hash-iterate-next", p, env);
+
+  // hash-iterate-key ----------------------------------------
+  // mutable/hash_table
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_key, "unsafe-mutable-hash-iterate-key", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(// SCHEME_PRIM_IS_BINARY_INLINED
+							    SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
 );
-  scheme_add_global_constant ("unsafe-hash-iterate-value", p, env);
+  scheme_add_global_constant ("unsafe-mutable-hash-iterate-key", p, env);
+
+  // immutable/hash_tree
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_key, "unsafe-immutable-hash-iterate-key", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(// SCHEME_PRIM_IS_BINARY_INLINED
+							    SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-immutable-hash-iterate-key", p, env);
+
+  // weak/bucket_table
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_key, "unsafe-weak-hash-iterate-key", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(// SCHEME_PRIM_IS_BINARY_INLINED
+							    SCHEME_PRIM_IS_UNSAFE_OMITABLE
+							    | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-weak-hash-iterate-key", p, env);
+
+  // hash-iterate-value ----------------------------------------
+  // mutable/hash_table
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_value, "unsafe-mutable-hash-iterate-value", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(// SCHEME_PRIM_IS_BINARY_INLINED
+                                                            SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                                            | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-mutable-hash-iterate-value", p, env);
+  
+  // immutable/hash_tree
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_value, "unsafe-immutable-hash-iterate-value", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(// SCHEME_PRIM_IS_BINARY_INLINED
+                                                            SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                                            | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-immutable-hash-iterate-value", p, env);
+
+  // weak/bucket_table
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_value, "unsafe-weak-hash-iterate-value", 2, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(// SCHEME_PRIM_IS_BINARY_INLINED
+                                                            SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                                            | SCHEME_PRIM_IS_OMITABLE
+							    );
+  scheme_add_global_constant ("unsafe-weak-hash-iterate-value", p, env);
 }
 
+
+// unsafe-hash-iterate- ops do not support chaperones and impersonators
+// becuase they cannot be redirectede
+
+// mutable/hash_table
 static Scheme_Object *unsafe_hash_table_next(mzlonglong start, int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *o = argv[0];
-
-  // currently only works for HASHTP (mutable hash)
-  // TODO: implement for other SCHEME_HASH
-
-  Scheme_Hash_Table *hash;
+  Scheme_Hash_Table *hash = (Scheme_Hash_Table *)argv[0];
   int i, sz;
 
-  hash = (Scheme_Hash_Table *)o;
-  
   sz = hash->size;
   for (i = start + 1; i < sz; i++) {
     if (hash->vals[i])
@@ -3297,9 +3382,6 @@ static Scheme_Object *unsafe_hash_table_index(int argc, Scheme_Object *argv[], i
   Scheme_Object *p = argv[1];
   mzlonglong pos;
 
-  // currently only works for HASHTP (mutable hash)
-  // TODO: implement for other SCHEME_HASH
-
   scheme_get_long_long_val(p, &pos);
 
   if (get_val)
@@ -3316,4 +3398,117 @@ static Scheme_Object *unsafe_scheme_hash_table_iterate_value(int argc, Scheme_Ob
 static Scheme_Object *unsafe_scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[])
 {
   return unsafe_hash_table_index(argc, argv, 0);
+}
+
+// immutable/hash_tree
+static Scheme_Object *unsafe_hash_tree_next(mzlonglong start, int argc, Scheme_Object *argv[])
+{
+  Scheme_Hash_Tree *hash = (Scheme_Hash_Tree *)argv[0];
+  mzlonglong v;
+  
+  v = scheme_hash_tree_next(hash, start);
+  if (v == -1)
+    return scheme_false;
+  else
+    return scheme_make_integer_value_from_long_long(v);
+}
+
+static Scheme_Object *unsafe_scheme_hash_tree_iterate_start(int argc, Scheme_Object *argv[])
+{
+  return unsafe_hash_tree_next(-1, argc, argv);
+}
+
+static Scheme_Object *unsafe_scheme_hash_tree_iterate_next(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[1];
+  mzlonglong pos;
+
+  scheme_get_long_long_val(p, &pos);
+
+  return unsafe_hash_tree_next(pos, argc, argv);
+}
+
+static Scheme_Object *unsafe_hash_tree_index(int argc, Scheme_Object *argv[], int get_val)
+{
+  Scheme_Hash_Tree *hash = (Scheme_Hash_Tree *)argv[0];
+  Scheme_Object *v, *k, *p = argv[1];
+  mzlonglong pos;
+
+  scheme_get_long_long_val(p, &pos);
+
+  scheme_hash_tree_index(hash, pos, &k, &v);
+
+  return (get_val ? v : k);
+}
+
+static Scheme_Object *unsafe_scheme_hash_tree_iterate_value(int argc, Scheme_Object *argv[])
+{
+  return unsafe_hash_tree_index(argc, argv, 1);
+}
+
+static Scheme_Object *unsafe_scheme_hash_tree_iterate_key(int argc, Scheme_Object *argv[])
+{
+  return unsafe_hash_tree_index(argc, argv, 0);
+}
+
+// weak/bucket_table
+static Scheme_Object *unsafe_bucket_table_next(mzlonglong start, int argc, Scheme_Object *argv[])
+{
+  Scheme_Bucket_Table *hash = (Scheme_Bucket_Table *)argv[0];
+  Scheme_Bucket *bucket;
+  int i, sz;
+
+  sz = hash->size;
+  for (i = start + 1; i < sz; i++) {
+    bucket = hash->buckets[i];
+    if (bucket && bucket->val && bucket->key) {
+      return scheme_make_integer(i);
+    }
+  }
+
+  return scheme_false;
+}
+
+static Scheme_Object *unsafe_scheme_bucket_table_iterate_start(int argc, Scheme_Object *argv[])
+{
+  return unsafe_bucket_table_next(-1, argc, argv);
+}
+
+static Scheme_Object *unsafe_scheme_bucket_table_iterate_next(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *p = argv[1];
+  mzlonglong pos;
+
+  scheme_get_long_long_val(p, &pos);
+
+  return unsafe_bucket_table_next(pos, argc, argv);
+}
+
+static Scheme_Object *unsafe_bucket_table_index(int argc, Scheme_Object *argv[], int get_val)
+{
+  Scheme_Bucket_Table *hash = (Scheme_Bucket_Table *)argv[0];
+  Scheme_Object *p = argv[1];
+  Scheme_Bucket *bucket;
+  mzlonglong pos;
+
+  scheme_get_long_long_val(p, &pos);
+  
+  bucket = hash->buckets[pos];
+  if (get_val)
+    return (Scheme_Object *)bucket->val;
+  else
+    if (hash->weak)
+      return (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
+    else
+      return (Scheme_Object *)bucket->key;
+}
+
+static Scheme_Object *unsafe_scheme_bucket_table_iterate_value(int argc, Scheme_Object *argv[])
+{
+  return unsafe_bucket_table_index(argc, argv, 1);
+}
+
+static Scheme_Object *unsafe_scheme_bucket_table_iterate_key(int argc, Scheme_Object *argv[])
+{
+  return unsafe_bucket_table_index(argc, argv, 0);
 }

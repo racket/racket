@@ -3422,17 +3422,22 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       scheme_mz_unbox_restore(jitter, &ubs);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-hash-iterate-key")) {
-	//	       || IS_NAMED_PRIM(rator, "unsafe-hash-iterate-value")) {
-      int base_offset = (int)(intptr_t)&SCHEME_HASHT_KEYS(0x0);
+    } else if (IS_NAMED_PRIM(rator, "unsafe-hash-iterate-key")
+	       || IS_NAMED_PRIM(rator, "unsafe-hash-iterate-value")) {
+      int base_offset;
       intptr_t offset;
       mz_jit_unbox_state ubs;
 
-      scheme_mz_unbox_save(jitter, &ubs);
-
       const char *name = ((Scheme_Primitive_Proc *)rator)->name;
 
-      LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
+      LOG_IT(("inlined %s\n", name));
+
+      if (IS_NAMED_PRIM(rator, "unsafe-hash-iterate-key"))
+	base_offset = (int)(intptr_t)&SCHEME_HASHT_KEYS(0x0);
+      else 
+	base_offset = (int)(intptr_t)&SCHEME_HASHT_VALS(0x0);
+
+      scheme_mz_unbox_save(jitter, &ubs);
 
       mz_runstack_skipped(jitter, 2);
       
@@ -3441,7 +3446,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       offset = SCHEME_INT_VAL(app->rand2);
       offset = base_offset + WORDS_TO_BYTES(offset);
-      // ldxi = immediate, r = register
+      // ldxi = immediate, ldxr = register
       jit_ldxi_p(dest, JIT_R0, offset);
       /* jit_movi_l(JIT_V1, offset); */
       /* jit_ldxr_p(dest, JIT_R0, JIT_V1); */
