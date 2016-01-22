@@ -718,8 +718,7 @@
               ;; pos check
               i
               ;; inner bindings
-              ([(k v) (values (unsafe-mutable-hash-iterate-key ht i)
-                              (unsafe-mutable-hash-iterate-value ht i))])
+              ([(k v) (unsafe-mutable-hash-iterate-key+value ht i)])
               ;; pre guard
               #t
               ;; post guard
@@ -745,8 +744,7 @@
               ;; pos check
               i
               ;; inner bindings
-              ([(k v) (values (unsafe-immutable-hash-iterate-key ht i)
-                              (unsafe-immutable-hash-iterate-value ht i))])
+              ([(k v) (unsafe-immutable-hash-iterate-key+value ht i)])
               ;; pre guard
               #t
               ;; post guard
@@ -774,8 +772,7 @@
               ;; pos check
               i
               ;; inner bindings
-              ([(k v) (values (unsafe-weak-hash-iterate-key ht i)
-                              (unsafe-weak-hash-iterate-value ht i))])
+              ([(k v) (unsafe-weak-hash-iterate-key+value ht i)])
               ;; pre guard
               #t
               ;; post guard
@@ -1063,8 +1060,7 @@
               ;; pos check
               i
               ;; inner bindings
-              ([(id) (cons (unsafe-mutable-hash-iterate-key ht i)
-                           (unsafe-mutable-hash-iterate-value ht i))])
+              ([(id) (unsafe-mutable-hash-iterate-key+value-pair ht i)])
               ;; pre guard
               #t
               ;; post guard
@@ -1090,8 +1086,7 @@
               ;; pos check
               i
               ;; inner bindings
-              ([(id) (cons (unsafe-immutable-hash-iterate-key ht i)
-                           (unsafe-immutable-hash-iterate-value ht i))])
+              ([(id) (unsafe-immutable-hash-iterate-key+value-pair ht i)])
               ;; pre guard
               #t
               ;; post guard
@@ -1119,8 +1114,7 @@
               ;; pos check
               i
               ;; inner bindings
-              ([(id) (cons (unsafe-weak-hash-iterate-key ht i)
-                           (unsafe-weak-hash-iterate-value ht i))])
+               ([(id) (unsafe-weak-hash-iterate-key+value-pair ht i)])
               ;; pre guard
               #t
               ;; post guard

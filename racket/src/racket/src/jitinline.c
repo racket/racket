@@ -3422,8 +3422,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       scheme_mz_unbox_restore(jitter, &ubs);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-hash-iterate-key")
-	       || IS_NAMED_PRIM(rator, "unsafe-hash-iterate-value")) {
+    } else if (IS_NAMED_PRIM(rator, "unsafe-mutable-hash-iterate-key")
+	       || IS_NAMED_PRIM(rator, "unsafe-mutable-hash-iterate-value")) {
       int base_offset;
       intptr_t offset;
       mz_jit_unbox_state ubs;
@@ -3439,7 +3439,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
 
       scheme_mz_unbox_save(jitter, &ubs);
 
-      mz_runstack_skipped(jitter, 2);
+       mz_runstack_skipped(jitter, 2);
       
       scheme_generate_non_tail(app->rand1, jitter, 0, 1, 0);
       CHECK_LIMIT();
