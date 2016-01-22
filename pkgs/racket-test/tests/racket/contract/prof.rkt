@@ -645,4 +645,99 @@
       (eval '(let ([f f]) (f 1))))
    (void))
 
+  (test/spec-passed
+   'contract-marks68
+   '(let ()
+      (define woody%
+        (class object%
+          (define/public (draw who)
+            (format "reach for the sky, ~a" who))
+          (super-new)))
+      (define woody+c%
+        (contract
+         (class/c [draw (->m neg-blame? pos-blame?)])
+         woody% 'pos 'neg))
+      (send (new woody+c%) draw #f)))
+
+  (test/spec-passed
+   'contract-marks69
+   '(let ()
+      (define woody%
+        (class object%
+          (define/public (draw who)
+            (format "reach for the sky, ~a" who))
+          (super-new)))
+      (define woody/hat%
+        (class woody%
+          (field [hat-location 'uninitialized])
+          (define/public (lose-hat) (set! hat-location 'lost))
+          (define/public (find-hat) (set! hat-location 'on-head))
+          (super-new)))
+      (define woody/hat+c%
+        (contract (class/c [draw (->m neg-blame? pos-blame?)]
+                           [lose-hat (->m pos-blame?)]
+                           [find-hat (->m pos-blame?)]
+                           (field [hat-location pos-blame?]))
+                  woody/hat% 'pos 'neg))
+      (get-field hat-location (new woody/hat+c%))
+      (let ([woody (new woody/hat+c%)])
+        (set-field! hat-location woody 'under-the-dresser))))
+
+  (test/spec-passed
+   'contract-marks70
+   '(let ()
+      (define woody%
+        (class object%
+          (define/public (draw who)
+            (format "reach for the sky, ~a" who))
+          (super-new)))
+      (define woody/hat%
+        (class woody%
+          (field [hat-location 'uninitialized])
+          (define/public (lose-hat) (set! hat-location 'lost))
+          (define/public (find-hat) (set! hat-location 'on-head))
+          (super-new)))
+      (define woody/hat+c%
+        (contract (class/c [draw (->m neg-blame? pos-blame?)]
+                           [lose-hat (->m pos-blame?)]
+                           [find-hat (->m pos-blame?)]
+                           (field [hat-location pos-blame?]))
+                  woody/hat% 'pos 'neg))
+      (define woody/hat2%
+        (class woody/hat+c%
+          (inherit-field hat-location)
+          (define/public (eat-hat) (set! hat-location 'stomach))
+          (super-new)))
+      (send (new woody/hat2%) eat-hat)))
+
+  (test/spec-passed
+   'contract-marks71
+   '(let ()
+      (define woody%
+        (class object%
+          (define/public (draw who)
+            (format "reach for the sky, ~a" who))
+          (super-new)))
+      (define woody/init-hat%
+        (class woody%
+          (init init-hat-location)
+          (field [hat-location init-hat-location])
+          (define/public (lose-hat) (set! hat-location 'lost))
+          (define/public (find-hat) (set! hat-location 'on-head))
+          (super-new)))
+      (define woody/init-hat+c%
+        (contract
+         (class/c [draw (->m neg-blame? pos-blame?)]
+                  [lose-hat (->m pos-blame?)]
+                  [find-hat (->m pos-blame?)]
+                  (init [init-hat-location pos-blame?])
+                  (field [hat-location pos-blame?]))
+         woody/init-hat% 'pos 'neg))
+      (get-field hat-location
+                 (new woody/init-hat+c%
+                      [init-hat-location 'lost]))
+      (get-field hat-location
+                 (new woody/init-hat+c%
+                      [init-hat-location 'slinkys-mouth]))))
+
   )

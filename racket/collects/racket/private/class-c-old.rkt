@@ -164,21 +164,36 @@
     (define external-field-projections
       (for/list ([f (in-list (class/c-fields ctc))]
                  [c (in-list (class/c-field-contracts ctc))])
+        (define pos-blame (blame-add-field-context blame f #:swap? #f))
+        (define neg-blame (blame-add-field-context blame f #:swap? #t))
         (and c
              (let ([p-pos ((contract-late-neg-projection c)
-                           (blame-add-field-context blame f #:swap? #f))]
+                           pos-blame)]
                    [p-neg ((contract-late-neg-projection c)
-                           (blame-add-field-context blame f #:swap? #t))])
-               (cons p-pos p-neg)))))
+                           neg-blame)])
+               (cons (lambda (x pos-party)
+                       (define blame+pos-party (cons pos-blame pos-party))
+                       (with-contract-continuation-mark
+                        blame+pos-party
+                        (p-pos x pos-party)))
+                     (lambda (x neg-party)
+                       (define blame+neg-party (cons neg-blame neg-party))
+                       (with-contract-continuation-mark
+                        blame+neg-party
+                        (p-neg x neg-party))))))))
     
     ;; zip the inits and contracts together for ordered selection
     (define inits+contracts 
       (for/list ([init (in-list (class/c-inits ctc))]
                  [ctc (in-list (class/c-init-contracts ctc))])
-        (if ctc
-            (list init ((contract-late-neg-projection ctc) 
-                        (blame-add-init-context blame init)))
-            (list init #f))))
+        (cond [ctc
+               (define blame* (blame-add-init-context blame init))
+               (define neg-acceptor ((contract-late-neg-projection ctc) blame*))
+               (list init (lambda (x neg-party)
+                            (with-contract-continuation-mark
+                             (cons blame* neg-party)
+                             (neg-acceptor x neg-party))))]
+              [else (list init #f)])))
     
     (λ (cls neg-party)
       (class/c-check-first-order
@@ -411,7 +426,16 @@
              (let* ([blame-acceptor (contract-late-neg-projection c)]
                     [p-pos (blame-acceptor blame)]
                     [p-neg (blame-acceptor bswap)])
-               (cons p-pos p-neg)))))
+               (cons (lambda (x pos-party)
+                       (define blame+pos-party (cons blame pos-party))
+                       (with-contract-continuation-mark
+                        blame+pos-party
+                        (p-pos x pos-party)))
+                     (lambda (x neg-party)
+                       (define blame+neg-party (cons blame neg-party))
+                       (with-contract-continuation-mark
+                        blame+neg-party
+                        (p-neg x neg-party))))))))
     
     (define override-projections
       (for/list ([m (in-list (internal-class/c-overrides internal-ctc))]
