@@ -740,4 +740,50 @@
                  (new woody/init-hat+c%
                       [init-hat-location 'slinkys-mouth]))))
 
+  (test/spec-passed
+   'contract-marks72
+   '(let ()
+      (define c% (class object% (define/public (foo) 1) (super-new)))
+      (send (contract (object/c (foo (->m pos-blame?)))
+                      (new c%) 'pos 'neg)
+            foo)))
+
+  (test/spec-passed
+   'contract-marks73
+   '(let ()
+      (define c% (class object% (init-field foo) (super-new)))
+      (get-field foo (contract (object/c (field (foo pos-blame?)))
+                               (new c% [foo 1]) 'pos 'neg))))
+
+  (test/spec-passed
+   'contract-marks74
+   '(let ()
+      (define c% (class object% (init-field foo) (super-new)))
+      (set-field! foo (contract (object/c (field (foo pos-blame?)))
+                                (new c% [foo 1]) 'pos 'neg)
+                  3)))
+
+  (test/spec-passed
+   'contract-marks75
+   '(let ()
+      (define c% (class object% (define/public (foo) 1) (super-new)))
+      (send (contract (dynamic-object/c '(foo) (list (->m pos-blame?)) '() '())
+                      (new c%) 'pos 'neg)
+            foo)))
+
+  (test/spec-passed
+   'contract-marks76
+   '(let ()
+      (define c% (class object% (init-field foo) (super-new)))
+      (get-field foo (contract (dynamic-object/c '() '() '(foo) (list pos-blame?))
+                               (new c% [foo 1]) 'pos 'neg))))
+
+  (test/spec-passed
+   'contract-marks77
+   '(let ()
+      (define c% (class object% (init-field foo) (super-new)))
+      (set-field! foo (contract (dynamic-object/c '() '() '(foo) (list pos-blame?))
+                                (new c% [foo 1]) 'pos 'neg)
+                  3)))
+
   )
