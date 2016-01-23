@@ -80,6 +80,9 @@ for each pair of keywords is the same as using
 @; ----------------------------------------------------------------------
 @include-section["vectors.scrbl"]
 
+@; ----------------------------------------------------------------------
+@include-section["immutable.scrbl"]
+
 @; ------------------------------------------------------------
 @section[#:tag "boxes"]{Boxes}
 
