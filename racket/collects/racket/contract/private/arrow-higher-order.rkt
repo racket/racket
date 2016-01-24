@@ -539,6 +539,8 @@
            arrow-higher-order:lnp)]
       [else
        (define (arrow-higher-order:vfp val)
+         (define-values (normal-proc proc-with-no-result-checking expected-number-of-results)
+           (apply plus-one-arity-function orig-blame val plus-one-constructor-args))
          (wrapped-extra-arg-arrow 
           (cond
             [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
@@ -547,14 +549,18 @@
             [else
              (λ (neg-party)
                (successfully-got-the-right-kind-of-function val neg-party))])
-          (apply plus-one-arity-function orig-blame val plus-one-constructor-args)))
+          (if (equal? (procedure-result-arity val) expected-number-of-results)
+              proc-with-no-result-checking
+              normal-proc)))
        (if okay-to-do-only-arity-check?
            (λ (val)
              (cond
                [(procedure-arity-exactly/no-kwds val min-arity)
+                (define-values (normal-proc proc-with-no-result-checking expected-number-of-results)
+                  (apply plus-one-arity-function orig-blame val plus-one-constructor-args))
                 (wrapped-extra-arg-arrow 
                  (λ (neg-party) val)
-                 (apply plus-one-arity-function orig-blame val plus-one-constructor-args))]
+                 normal-proc)]
                [else (arrow-higher-order:vfp val)]))
            arrow-higher-order:vfp)])))
 

@@ -238,7 +238,7 @@
                          (list #`(check-post-cond #,post blame neg-party f))
                          (list))]
                     [(restb) (generate-temporaries '(rest-args))])
-        (define body-proc
+        (define (make-body-proc range-checking?)
           (cond
             [(or (and (null? optional-args)
                       (null? optional-kwds))
@@ -286,31 +286,47 @@
                        #`[#,the-args
                           (let ([blame+neg-party (cons blame neg-party)])
                             pre-check ...
-                            (define-values (failed res-x ...)
-                              (call-with-values
-                               (λ () (let-values (#,let-values-clause)
-                                       #,full-call))
-                               (case-lambda
-                                 [(res-x ...)
-                                  (values #f res-x ...)]
-                                 [args
-                                  (values args #,@(map (λ (x) #'#f) 
-                                                       (syntax->list #'(res-x ...))))])))
-                            (with-contract-continuation-mark
-                              blame+neg-party
-                              (cond
-                                [failed
-                                 (wrong-number-of-results-blame
-                                  blame neg-party f
-                                  failed
-                                  #,(length
-                                     (syntax->list
-                                      #'(res-x ...))))]
-                                [else
-                                 post-check ...
-                                 (values
-                                  (rb res-x neg-party)
-                                  ...)])))]
+                            #,@
+                            (cond
+                              [range-checking?
+                               (list
+                                #`(define-values (failed res-x ...)
+                                    (call-with-values
+                                     (λ () (let-values (#,let-values-clause)
+                                             #,full-call))
+                                     (case-lambda
+                                       [(res-x ...)
+                                        (values #f res-x ...)]
+                                       [args
+                                        (values args #,@(map (λ (x) #'#f) 
+                                                             (syntax->list #'(res-x ...))))])))
+                                #`(with-contract-continuation-mark
+                                   blame+neg-party
+                                   (cond
+                                     [failed
+                                      (wrong-number-of-results-blame
+                                       blame neg-party f
+                                       failed
+                                       #,(length
+                                          (syntax->list
+                                           #'(res-x ...))))]
+                                     [else
+                                      post-check ...
+                                      (values
+                                       (rb res-x neg-party)
+                                       ...)])))]
+                              [else
+                               (list
+                                #`(define-values (res-x ...)
+                                    (let-values (#,let-values-clause)
+                                      #,full-call))
+                                #`(with-contract-continuation-mark
+                                   blame+neg-party
+                                   (begin
+                                     post-check ...
+                                     (values
+                                      (rb res-x neg-party)
+                                      ...))))]))]
                        #`[#,the-args
                           pre-check ...
                           (let ([blame+neg-party (cons blame neg-party)])
@@ -339,9 +355,24 @@
                                    #,(if rest #'restb #'#f)
                                    #,(if post post #'#f)
                                    #,(if rngs #'(list rb ...) #'#f))]))
+        (define body-proc (make-body-proc #t))
+        (define body-proc/no-range-checking (make-body-proc #f))
+        (define number-of-rngs (and rngs (with-syntax ([rngs rngs]) (length (syntax->list #'rngs)))))
         #`(λ (blame f regb ... optb ... kb ... okb ... rb ... #,@(if rest (list #'restb) '()))
-            (procedure-specialize
-             #,body-proc))))))
+            (values
+             (procedure-specialize
+              #,body-proc)
+             #,(if rngs
+                   #`(procedure-specialize
+                      #,body-proc/no-range-checking)
+                   #'shouldnt-be-called)
+             '#,(if rngs number-of-rngs 'there-is-no-range-contract)))))))
+
+(define (shouldnt-be-called . args)
+  (error 'arrow-val-first.rkt
+         (string-append
+          "this function should not ever be called because"
+          " procedure-result-arity shouldn't return 'there-is-no-range-contract")))
 
 (define (make-checking-proc f blame pre
                             original-mandatory-kwds kbs
@@ -906,9 +937,11 @@
           [else (cons (car _args) (loop (- n 1) (cdr _args)))]))))
   
   (define (plus-one-arity-function blame f . args)
-    (make-keyword-procedure
-     (λ (kwds kwd-args . regular-args)
-       (error 'plus-one-arity-function "not implemented for dynamic->*"))))
+    (define f
+      (make-keyword-procedure
+       (λ (kwds kwd-args . regular-args)
+         (error 'plus-one-arity-function "not implemented for dynamic->*"))))
+    (values f f 'not-a-number-so-it-doesnt-match-any-result-from-procedure-result-arity))
   
   (define min-arity (length mandatory-domain-contracts))
   (define optionals (length optional-domain-contracts))
@@ -1268,39 +1301,54 @@
              (list (coerce-contract 'whatever void?))
              #f
              (λ (blame f _ignored-rng-ctcs _ignored-rng-proj)
-               (λ (neg-party)
-                 (call-with-values
-                  (λ () (f))
-                  (case-lambda
-                    [(rng)
-                     (if (void? rng)
-                         rng
-                         (raise-blame-error blame #:missing-party neg-party rng
-                                            '(expected: "void?" given: "~e")
-                                            rng))]
-                    [args
-                     (wrong-number-of-results-blame blame neg-party f args 1)]))))
+               (values
+                (λ (neg-party)
+                  (call-with-values
+                   (λ () (f))
+                   (case-lambda
+                     [(rng)
+                      (if (void? rng)
+                          rng
+                          (raise-blame-error blame #:missing-party neg-party rng
+                                             '(expected: "void?" given: "~e")
+                                             rng))]
+                     [args
+                      (wrong-number-of-results-blame blame neg-party f args 1)])))
+                (λ (neg-party)
+                  (let ([rng (f)])
+                    (if (void? rng)
+                        rng
+                        (raise-blame-error blame #:missing-party neg-party rng
+                                           '(expected: "void?" given: "~e")
+                                           rng))))
+                1))
              (get-chaperone-constructor))))
 
 (define (mk-any/c->boolean-contract constructor)
+  (define (check-result blame neg-party rng)
+    (if (boolean? rng)
+        rng
+        (raise-blame-error blame #:missing-party neg-party rng
+                           '(expected: "boolean?" given: "~e")
+                           rng)))
   (define (rng-checker f blame neg-party)
     (case-lambda
       [(rng)
-       (if (boolean? rng)
-           rng
-           (raise-blame-error blame #:missing-party neg-party rng
-                              '(expected: "boolean?" given: "~e")
-                              rng))]
+       (check-result blame neg-party rng)]
       [args
        (wrong-number-of-results-blame blame neg-party f args 1)]))
   (constructor 1 (list any/c) '() #f #f
                (list (coerce-contract 'whatever boolean?))
                #f
                (λ (blame f _ignored-dom-contract _ignored-rng-contract)
-                 (λ (neg-party argument)
-                   (call-with-values
-                    (λ () (f argument))
-                    (rng-checker f blame neg-party))))
+                 (values
+                  (λ (neg-party argument)
+                    (call-with-values
+                     (λ () (f argument))
+                     (rng-checker f blame neg-party)))
+                  (λ (neg-party argument)
+                    (check-result blame neg-party (f argument)))
+                  1))
                (λ (blame f neg-party
                          _ignored-blame-party-info
                          _ignored-rng-ctcs
