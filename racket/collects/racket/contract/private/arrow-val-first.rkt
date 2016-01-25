@@ -47,6 +47,34 @@
     [(_ (any/c ...) () any) (length (syntax->list (cadr (syntax->list stx))))]
     [_ #f]))
 
+; Like call-with-values, but only for a receiver that is a case-lambda with a special pattern.
+; It saves the results in temporal variables to avoid creating closures. 
+(define-syntax (call-with-values/check-range stx)
+  (syntax-protect
+    (syntax-case stx (case-lambda)
+      [(_
+        thunk
+        (case-lambda
+          [(res-x ...) success ...]
+          [failed/args failure ...]))
+       (and (identifier? #'failed/args)
+            (andmap identifier? (syntax-e #'(res-x ...))))
+       (quasisyntax/loc
+        stx
+        (let ()
+          (define-values (failed/args res-x ...)
+          (call-with-values
+            thunk
+            (case-lambda
+              [(res-x ...)
+               (values #f res-x ...)]
+              [failed/args
+               (values failed/args #,@(map (λ (x) #'#f) 
+                                           (syntax->list #'(res-x ...))))])))
+          (cond
+            [failed/args failure ...]
+            [else success ...])))])))
+
 (define-for-syntax popular-keys
   ;; of the 8417 contracts that get compiled during
   ;; 'raco setup' of the current tree, these are all
@@ -286,41 +314,33 @@
                        #`[#,the-args
                           (let ([blame+neg-party (cons blame neg-party)])
                             pre-check ...
-                            #,@
+                            #,
                             (cond
                               [range-checking?
-                               (list
-                                #`(define-values (failed res-x ...)
-                                    (call-with-values
-                                     (λ () (let-values (#,let-values-clause)
-                                             #,full-call))
-                                     (case-lambda
-                                       [(res-x ...)
-                                        (values #f res-x ...)]
-                                       [args
-                                        (values args #,@(map (λ (x) #'#f) 
-                                                             (syntax->list #'(res-x ...))))])))
-                                #`(with-contract-continuation-mark
-                                   blame+neg-party
-                                   (cond
-                                     [failed
-                                      (wrong-number-of-results-blame
-                                       blame neg-party f
-                                       failed
-                                       #,(length
-                                          (syntax->list
-                                           #'(res-x ...))))]
-                                     [else
+                               #`(call-with-values/check-range
+                                  (λ () (let-values (#,let-values-clause)
+                                          #,full-call))
+                                  (case-lambda
+                                    [(res-x ...)
+                                     (with-contract-continuation-mark
+                                      blame+neg-party
                                       post-check ...
                                       (values
                                        (rb res-x neg-party)
-                                       ...)])))]
+                                       ...))]
+                                    [args
+                                     (with-contract-continuation-mark
+                                      blame+neg-party
+                                      (wrong-number-of-results-blame
+                                       blame neg-party f
+                                       args
+                                       #,(length (syntax->list #'(res-x ...)))))]))]
                               [else
-                               (list
-                                #`(define-values (res-x ...)
+                               #`(begin
+                                  (define-values (res-x ...)
                                     (let-values (#,let-values-clause)
                                       #,full-call))
-                                #`(with-contract-continuation-mark
+                                  (with-contract-continuation-mark
                                    blame+neg-party
                                    (begin
                                      post-check ...
@@ -1303,7 +1323,7 @@
              (λ (blame f _ignored-rng-ctcs _ignored-rng-proj)
                (values
                 (λ (neg-party)
-                  (call-with-values
+                  (call-with-values/check-range
                    (λ () (f))
                    (case-lambda
                      [(rng)
@@ -1343,9 +1363,13 @@
                (λ (blame f _ignored-dom-contract _ignored-rng-contract)
                  (values
                   (λ (neg-party argument)
-                    (call-with-values
+                    (call-with-values/check-range
                      (λ () (f argument))
-                     (rng-checker f blame neg-party)))
+                     (case-lambda
+                       [(rng)
+                        (check-result blame neg-party rng)]
+                       [args
+                        (wrong-number-of-results-blame blame neg-party f args 1)])))
                   (λ (neg-party argument)
                     (check-result blame neg-party (f argument)))
                   1))
