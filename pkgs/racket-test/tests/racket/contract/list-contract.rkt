@@ -56,6 +56,16 @@
    'list-contract-10b
    '(list-contract? (list*of any/c))
    #f)
+
+  (test/spec-passed/result
+   'list-contract-10c
+   '(list-contract? (list*of any/c boolean?))
+   #f)
+
+  (test/spec-passed/result
+   'list-contract-10d
+   '(list-contract? (list*of any/c null?))
+   #t)
   
   (test/spec-passed/result
    'list-contract-11

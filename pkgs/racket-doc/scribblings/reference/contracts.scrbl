@@ -469,13 +469,14 @@ a value, the result is not necessarily @racket[eq?] to the input.
                     (list)))]
 }
 
-@defproc[(list*of [c contract?]) contract?]{
+@defproc[(list*of [ele-c contract?] [last-c contract? ele-c]) contract?]{
 
 Returns a contract that recognizes improper lists whose elements match
-the contract @racket[c]. If an improper list is created with @racket[cons],
-then its @racket[car] position is expected to match @racket[c] and
-its @racket[cdr] position is expected to be @racket[(list*of c)]. Otherwise,
-it is expected to match @racket[c]. Beware that when this contract is applied to
+the contract @racket[ele-c] and whose last position matches @racket[last-c].
+If an improper list is created with @racket[cons],
+then its @racket[car] position is expected to match @racket[ele-c] and
+its @racket[cdr] position is expected to be @racket[(list*of ele-c list-c)]. Otherwise,
+it is expected to match @racket[last-c]. Beware that when this contract is applied to
 a value, the result is not necessarily @racket[eq?] to the input.
 
 @examples[#:eval (contract-eval) #:once
@@ -488,7 +489,8 @@ a value, the result is not necessarily @racket[eq?] to the input.
                     (list*of number?)
                     (list 1 2 3)))]
 
-@history[#:added "6.1.1.1"]
+@history[#:added "6.1.1.1"
+         #:changed "6.4.0.4" @list{Added the @racket[last-c] argument.}]
 }
 
 

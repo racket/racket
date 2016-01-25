@@ -210,6 +210,14 @@
   (ctest #f contract-stronger? (listof number?) (cons/c number? (cons/c number? (listof any/c))))
   (ctest #t contract-stronger? (list*of (<=/c 2)) (list*of (<=/c 3)))
   (ctest #f contract-stronger? (list*of (<=/c 3)) (list*of (<=/c 2)))
+  (ctest #t contract-stronger? (list*of (<=/c 2) char?) (list*of (<=/c 3) char?))
+  (ctest #f contract-stronger? (list*of (<=/c 3) char?) (list*of (<=/c 2) char?))
+  (ctest #t contract-stronger? (list*of char? (<=/c 2)) (list*of char? (<=/c 3)))
+  (ctest #f contract-stronger? (list*of char? (<=/c 3)) (list*of char? (<=/c 2)))
+  (ctest #t contract-stronger? (list*of char? null?) (listof char?))
+  (ctest #t contract-stronger? (listof char?) (list*of char? null?))
+  (ctest #f contract-stronger? (list*of char? any/c) (listof char?))
+  
   
   (ctest #f contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))
   (ctest #f contract-stronger? (vectorof (<=/c 3)) (vectorof (<=/c 4)))

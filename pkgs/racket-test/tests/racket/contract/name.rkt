@@ -273,6 +273,9 @@
   (test-name '(list*of boolean?) (list*of boolean?))
   (test-name '(list*of any/c) (list*of any/c))
   (test-name '(list*of (-> boolean? boolean?)) (list*of (-> boolean? boolean?)))
+  (test-name '(list*of boolean? char?) (list*of boolean? char?))
+  (test-name '(list*of any/c char?) (list*of any/c char?))
+  (test-name '(list*of (-> boolean? boolean?) char?) (list*of (-> boolean? boolean?) char?))
 
 
   (test-name '(vectorof boolean?) (vectorof boolean?))

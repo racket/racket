@@ -64,6 +64,29 @@
   (test/pos-blame 
    'imlistof5
    '(contract (list*of integer?) (cons #f #t) 'pos 'neg))
+
+  (test/spec-passed/result 
+   'imlistof6
+   '(contract (list*of integer? char?) '(1 2 . #\3) 'pos 'neg)
+   '(1 2 . #\3))
+  (test/pos-blame
+   'imlistof7
+   '(contract (list*of integer? char?) '() 'pos 'neg))
+  (test/pos-blame 
+   'imlistof8
+   '(contract (list*of integer? char?) #f 'pos 'neg))
+  (test/pos-blame 
+   'imlistof9
+   '(contract (list*of integer? char?) (list 1 2) 'pos 'neg))
+  (test/pos-blame 
+   'imlistof10
+   '(contract (list*of integer? char?) (cons #f #t) 'pos 'neg))
+  (test/spec-passed
+   'imlistof11
+   '(contract (list*of (-> integer? integer?)
+                       (-> boolean? boolean? boolean?))
+              (cons (λ (x) x) (cons (λ (y) y) (λ (a b) a)))
+              'pos 'neg))   
   
   (test/pos-blame
    'cons/dc1
