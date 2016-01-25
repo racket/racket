@@ -2386,6 +2386,39 @@
   (define cf (unsafe-chaperone-procedure pf (lambda (x) x)))
   (err/rt-test (cf) (λ (x) (regexp-match #rx"^pf:" (exn-message x)))))
 
+;; Make sure `unsafe-chaperone-procedure` doesn't propagate a bogus
+;;  identity to a `chaperone-procedure*` wrapper:
+(let ()
+  (define found-prop? #f)
+  
+  (define (f1 x) x)
+  
+  (define-values (prop:p prop:p? prop:get-p)
+    (make-impersonator-property 'p))
+  
+  (define (mk*)
+    (chaperone-procedure*
+     f1
+     (λ (f x)
+       (when (prop:p? f)
+         (set! found-prop? #t))
+       x)))
+  
+  (define f2 (mk*)) 
+  (define f2x (mk*))
+  
+  (define f3 (unsafe-chaperone-procedure f2 f2))
+  (define f3x (unsafe-chaperone-procedure f2 (lambda (v)
+                                               (f2x v)
+                                               (f2 v))))
+  
+  (define f4 (chaperone-procedure f3 #f prop:p 1234))
+  
+  (test 1 f4 1)
+  (test #f values found-prop?)
+  (test 1 f3x 1)
+  (test #f values found-prop?))
+
 ;; ----------------------------------------
 
 (let ()

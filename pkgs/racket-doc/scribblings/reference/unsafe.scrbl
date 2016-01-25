@@ -441,20 +441,36 @@ fixnum).}
                                        [prop impersonator-property?]
                                        [prop-val any] ... ...)
          (and/c procedure? impersonator?)]{
- Like @racket[impersonate-procedure], except it assumes that @racket[replacement-proc]
- is already properly wrapping @racket[proc] and so when the procedure that
- @racket[unsafe-impersonate-procedure] produces is invoked, the
- @racket[replacement-proc] is invoked directly, ignoring @racket[proc].
 
- In addition, it does not specially handle @racket[impersonator-prop:application-mark],
- instead just treating it as an ordinary property if it is supplied as one of the
- @racket[prop] arguments.
- 
- This procedure is unsafe only in how it assumes @racket[replacement-proc] is
- a proper wrapper for @racket[proc]. It otherwise does all of the checking
- that @racket[impersonate-procedure] does.
+ Like @racket[impersonate-procedure], but assumes that
+ @racket[replacement-proc] calls @racket[proc] itself. When the result
+ of @racket[unsafe-impersonate-procedure] is applied to arguments, the
+ arguments are passed on to @racket[replacement-proc] directly,
+ ignoring @racket[proc]. At the same time, @racket[impersonator-of?]
+ reports @racket[#t] when given the result of
+ @racket[unsafe-impersonate-procedure] and @racket[proc].
 
- As an example, this function:
+ If @racket[proc] is itself an impersonator that is derived from
+ @racket[impersonate-procedure*] or @racket[chaperone-procedure*],
+ beware that @racket[replacement-proc] will not be able to call it
+ correctly. Specifically, the impersonator produced by
+ @racket[unsafe-impersonate-procedure] will not get passed to a
+ wrapper procedure that was supplied to
+ @racket[impersonate-procedure*] or @racket[chaperone-procedure*] to
+ generate @racket[proc].
+
+ Finally, unlike @racket[impersonate-procedure],
+ @racket[unsafe-impersonate-procedure] does not specially handle
+ @racket[impersonator-prop:application-mark] as a @racket[prop].
+
+ The unsafety of @racket[unsafe-impersonate-procedure] is limited to
+ the above differences from @racket[impersonate-procedure]. The
+ contracts on the arguments of @racket[unsafe-impersonate-procedure] are
+ checked when the arguments are supplied.
+
+ As an example, assuming that @racket[f] accepts a single argument and
+ is not derived from @racket[impersonate-procedure*] or
+ @racket[chaperone-procedure*], then
  @racketblock[(λ (f)
                 (unsafe-impersonate-procedure
                  f
@@ -462,7 +478,7 @@ fixnum).}
                    (if (number? x)
                        (error 'no-numbers!)
                        (f x)))))]
- is equivalent to this one:
+ is equivalent to
  @racketblock[(λ (f)
                 (impersonate-procedure
                  f
@@ -470,17 +486,16 @@ fixnum).}
                    (if (number? x)
                        (error 'no-numbers!)
                        x))))]
- (except that some error messages start with @litchar{unsafe-impersonate-procedure}
- instead of @litchar{impersonate-procedure}).
  
- Similarly the two procedures @racket[_wrap-f1] and
+ Similarly, with the same assumptions about @racket[f], the following
+ two procedures @racket[_wrap-f1] and
  @racket[_wrap-f2] are almost equivalent; they differ only
  in the error message produced when their arguments are
  functions that return multiple values (and that they update
  different global variables). The version using @racket[unsafe-impersonate-procedure]
  will signal an error in the @racket[let] expression about multiple
- value return, whereas the one using @racket[impersonate-procedure] signals
- an error from @racket[impersonate-procedure] about multiple value return.
+ return svalue, whereas the one using @racket[impersonate-procedure] signals
+ an error from @racket[impersonate-procedure] about multiple return values.
  @racketblock[(define log1-args '())
               (define log1-results '())
               (define wrap-f1
@@ -516,6 +531,10 @@ fixnum).}
                                      [prop-val any] ... ...)
          (and/c procedure? chaperone?)]{
  Like @racket[unsafe-impersonate-procedure], but creates a @tech{chaperone}.
+ Since @racket[wrapper-proc] will be called in lieu of @racket[proc],
+ @racket[wrapper-proc] is assumed to return a chaperone of the value that
+ @racket[proc] would return.
+
  @history[#:added "6.4.0.4"]
 }
 

@@ -3627,15 +3627,17 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
   if (is_unsafe || SCHEME_FALSEP(argv[1]))
     SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_PROC_CHAPERONE_CALL_DIRECT;
 
-  /* If there's a `pass_self` chaperone in px->prev, then we'll need
-     to pass the self proc along. */
-  for (val = px->prev; SCHEME_P_CHAPERONEP(val); val = ((Scheme_Chaperone *)val)->prev) {
-    px2 = (Scheme_Chaperone *)val;
-    if (SCHEME_VECTORP(px2->redirects) && (SCHEME_VEC_SIZE(px2->redirects) & 0x1)) {
-      if ((SCHEME_VEC_SIZE(px2->redirects) > 3)
-          || SCHEME_IMMUTABLEP(px2->redirects))
-        SCHEME_SET_IMMUTABLE(px->redirects);
-      break;
+  if (!is_unsafe) {
+    /* If there's a `pass_self` chaperone in px->prev, then we'll need
+       to pass the self proc along. */
+    for (val = px->prev; SCHEME_P_CHAPERONEP(val); val = ((Scheme_Chaperone *)val)->prev) {
+      px2 = (Scheme_Chaperone *)val;
+      if (SCHEME_VECTORP(px2->redirects) && (SCHEME_VEC_SIZE(px2->redirects) & 0x1)) {
+        if ((SCHEME_VEC_SIZE(px2->redirects) > 3)
+            || SCHEME_IMMUTABLEP(px2->redirects))
+          SCHEME_SET_IMMUTABLE(px->redirects);
+        break;
+      }
     }
   }
 
