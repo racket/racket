@@ -496,6 +496,7 @@ MZ_EXTERN Scheme_Bucket *scheme_bucket_from_table(Scheme_Bucket_Table *table, co
 MZ_EXTERN int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2);
 MZ_EXTERN Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt);
 MZ_EXTERN void scheme_clear_bucket_table(Scheme_Bucket_Table *bt);
+XFORM_NONGCING MZ_EXTERN int scheme_bucket_table_index(Scheme_Bucket_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
 
 MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table(int type);
 MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table_equal();
@@ -510,6 +511,7 @@ MZ_EXTERN int scheme_is_hash_table_equal(Scheme_Object *o);
 MZ_EXTERN int scheme_is_hash_table_eqv(Scheme_Object *o);
 MZ_EXTERN Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht);
 MZ_EXTERN void scheme_clear_hash_table(Scheme_Hash_Table *ht);
+XFORM_NONGCING MZ_EXTERN int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
 
 MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree(int kind);
 MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree_set(int kind);

@@ -660,10 +660,7 @@
     (unless (hash? ht) (raise-argument-error 'in-hash "hash?" ht))
     (make-do-sequence (lambda () (:hash-key+val-gen ht))))
 
-  (define (:hash-key+val-gen ht)
-    (:hash-gen ht (lambda (ht pos)
-                    (values (hash-iterate-key ht pos)
-                            (hash-iterate-value ht pos)))))
+  (define (:hash-key+val-gen ht) (:hash-gen ht hash-iterate-key+value))
 
   (define-sequence-syntax *in-hash
     (lambda () #'in-hash)
@@ -682,8 +679,7 @@
               ;; pos check
               i
               ;; inner bindings
-              ([(k v) (values (hash-iterate-key ht i)
-                              (hash-iterate-value ht i))])
+              ([(k v) (hash-iterate-key+value ht i)])
               ;; pre guard
               #t
               ;; post guard
@@ -754,10 +750,7 @@
 
   (define (in-hash-pairs ht)
     (unless (hash? ht) (raise-argument-error 'in-hash-values "hash?" ht))
-    (make-do-sequence (lambda ()
-                        (:hash-gen ht (lambda (ht pos)
-                                        (cons (hash-iterate-key ht pos)
-                                              (hash-iterate-value ht pos)))))))
+    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-pair))))
 
   (define-sequence-syntax *in-hash-pairs
     (lambda () #'in-hash-pairs)
@@ -776,8 +769,7 @@
               ;; pos check
               i
               ;; inner bindings
-              ([(id) (cons (hash-iterate-key ht i)
-                           (hash-iterate-value ht i))])
+              ([(id) (hash-iterate-pair ht i)])
               ;; pre guard
               #t
               ;; post guard

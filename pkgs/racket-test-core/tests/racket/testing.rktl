@@ -23,7 +23,7 @@
 
 The test form has these two shapes:
 
-  (test <expected> <procdure> <argument1> <argument2> ...)
+  (test <expected> <procedure> <argument1> <argument2> ...)
 
   (test <expected> <symbolic-name> <expression>)
 

@@ -485,6 +485,23 @@ Returns the value for the element in @racket[hash] at index
 @racket[pos]. If @racket[pos] is not a valid index for
 @racket[hash], the @exnraise[exn:fail:contract].}
 
+@defproc[(hash-iterate-pair [hash hash?]
+                           [pos exact-nonnegative-integer?])
+         (cons any any)]{
+
+Returns a pair containing the key and value for the element 
+in @racket[hash] at index
+@racket[pos]. If @racket[pos] is not a valid index for
+@racket[hash], the @exnraise[exn:fail:contract].}
+
+@defproc[(hash-iterate-key+value [hash hash?]
+                           [pos exact-nonnegative-integer?])
+         (values any any)]{
+
+Returns the key and value for the element in @racket[hash] at index
+@racket[pos]. If @racket[pos] is not a valid index for
+@racket[hash], the @exnraise[exn:fail:contract].}
+
 
 @defproc[(hash-copy [hash hash?]) 
          (and/c hash? (not/c immutable?))]{

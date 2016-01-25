@@ -657,6 +657,20 @@ void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
   table->mcount = 0;
 }
 
+int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
+{
+  if (pos < hash->size) {
+    if (hash->vals[pos]) {
+      *_key = hash->keys[pos];
+      if (_val)
+	*_val = hash->vals[pos];
+      return 1;
+    }
+  }
+  
+  return 0;
+}
+
 /*========================================================================*/
 /*                  old-style hash table, with buckets                    */
 /*========================================================================*/
@@ -1101,6 +1115,26 @@ Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt)
   }
 
   return table;
+}
+
+int scheme_bucket_table_index(Scheme_Bucket_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
+{
+  Scheme_Bucket *bucket;
+
+  if (pos < hash->size) {
+    bucket = hash->buckets[pos];
+    if (bucket && bucket->val && bucket->key) {
+      if (hash->weak)
+	*_key = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
+      else
+	*_key = (Scheme_Object *)bucket->key;
+      if (_val)
+	*_val = (Scheme_Object *)bucket->val;
+      return 1;
+    }
+  }
+  
+  return 0;
 }
 
 /*========================================================================*/
