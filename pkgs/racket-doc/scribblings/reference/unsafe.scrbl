@@ -494,7 +494,7 @@ fixnum).}
  functions that return multiple values (and that they update
  different global variables). The version using @racket[unsafe-impersonate-procedure]
  will signal an error in the @racket[let] expression about multiple
- return svalue, whereas the one using @racket[impersonate-procedure] signals
+ return values, whereas the one using @racket[impersonate-procedure] signals
  an error from @racket[impersonate-procedure] about multiple return values.
  @racketblock[(define log1-args '())
               (define log1-results '())
