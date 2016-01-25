@@ -1222,7 +1222,7 @@ void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env,
   state->menv              = menv;
 }
 
-static void *apply_again_k()
+static void *apply_again_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *val = p->ku.k.p1;
@@ -9697,7 +9697,6 @@ double scheme_get_inexact_milliseconds(void)
 /* this function can be called from any OS thread */
 {
 #ifdef USE_WIN32_TIME
-  FILETIME ft;
   mzlonglong v;
   v = get_hectonanoseconds_as_longlong();
   return (double)(v / 10000) + (((double)(v % 10000)) / 10000.0);
