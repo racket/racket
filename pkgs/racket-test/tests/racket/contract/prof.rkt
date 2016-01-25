@@ -786,4 +786,92 @@
                                 (new c% [foo 1]) 'pos 'neg)
                   3)))
 
+  (test/spec-passed
+   'contract-marks78
+   '(let ()
+      (eval '(module server8 racket
+               (require racket/contract/option 'prof-fun)
+               (provide
+                change
+                (contract-out
+                 [vec (invariant/c
+                       (lambda _ (named-blame? 'server8))
+                       (lambda _ (named-blame? 'server8)))]))
+               (define vec (vector 1 2 3 4 5))
+               (define (change) (vector-set! vec 2 42))
+               (define (sorted? vec)
+                 (for/and ([el vec]
+                           [cel (vector-drop vec 1)])
+                   (<= el cel)))))
+      (eval '(require 'server8))
+      (eval '(vector-set! vec 2 42))))
+
+  (test/spec-passed
+   'contract-marks79
+   '(let ()
+      (eval '(module server0 racket
+               (require racket/contract/option 'prof-fun)
+               (provide
+                (contract-out
+                 [vec (option/c (lambda _ (named-blame? 'server0)))]))
+               (define vec (vector 1 2 3 4))))
+      (eval '(require 'server0))
+      (eval '(vector-set! vec 1 'foo))
+      (eval '(vector-ref vec 1))
+      (eval '(module server1 racket
+               (require racket/contract/option 'prof-fun)
+               (provide
+                (contract-out
+                 [vec (option/c (lambda _ (named-blame? 'server1)) #:with-contract #t)]))
+               (define vec (vector 1 2 3 4))))
+      (eval '(require 'server1))
+      (eval '(vector-set! vec 1 'foo))
+      (eval '(module server2 racket
+               (require racket/contract/option 'prof-fun)
+               (provide
+                (contract-out
+                 [vec (option/c (lambda _ (named-blame? 'server2)) #:tester sorted?)]))
+               (define vec (vector 1 42 3 4))
+               (define (sorted? vec) #t)))
+      (eval '(require 'server2))
+      ))
+
+  (test/spec-passed
+   'contract-marks80
+   '(let ()
+      (eval '(module server3 racket
+               (require racket/contract/option 'prof-fun)
+               (provide (contract-out [foo (option/c (-> (lambda _ (named-blame? 'server3))
+                                                         (lambda _ (named-blame? 'server3))))]))
+               (define foo (λ (x) x))))
+      (eval '(require 'server3 racket/contract/option))
+      (eval '(define e-foo (exercise-option foo)))
+      (eval '(foo 42))
+      (eval '(e-foo 'wrong))
+      (eval '((exercise-option e-foo) 'wrong))
+      ))
+
+  (test/spec-passed/result
+   'contract-marks81
+   '(let ()
+      (eval '(module server4 racket
+               (require racket/contract/option 'prof-fun)
+               (provide (contract-out [foo (option/c (-> (lambda _ (named-blame? '(middleman server4)))
+                                                         (lambda _ (named-blame? '(middleman server4)))))]))
+               (define foo (λ (x) x))))
+      (eval '(module middleman racket
+               (require racket/contract/option 'server4)
+               (provide (contract-out [foo transfer/c]))))
+      (eval '(require 'middleman racket/contract/option))
+      (eval '(define e-foo (exercise-option foo)))
+      (eval '(e-foo 1))
+      (eval '(module server5 racket
+               (require racket/contract/option)
+               (provide (contract-out [boo transfer/c]))
+               (define (boo x) x)))
+      (eval '(require 'server5))
+      (eval '(boo 42))
+      (void))
+   (void))
+
   )

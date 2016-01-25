@@ -22,6 +22,9 @@
                ;; for `json` tests
                "at-exp-lib"
 
+               ;; for contract tests
+               "option-contract-lib"
+
                ;; used by the planet packages tested by the pkg tests
                "srfi-lib"
 
