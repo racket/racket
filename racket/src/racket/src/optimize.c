@@ -127,8 +127,8 @@ static Scheme_Object *optimize_info_lookup(Optimize_Info *info, int pos, int *cl
                                            int once_used_ok, int context, int *potential_size, int *_mutated);
 static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos, int *is_mutated);
 static void optimize_info_used_top(Optimize_Info *info);
-static Scheme_Object *do_optimize_get_predicate(int pos, Optimize_Info *info, int ignore_no_types);
-static Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info);
+static Scheme_Object *do_optimize_get_predicate(Optimize_Info *info, int pos, int ignore_no_types);
+static Scheme_Object *optimize_get_predicate(Optimize_Info *info, int pos);
 static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred);
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta);
 static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand, int delta);
@@ -2462,7 +2462,7 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
         return NULL;
 
       if (!optimize_is_mutated(info, pos)){
-        p = optimize_get_predicate(pos, info);
+        p = optimize_get_predicate(info, pos);
         if (p)
           return p;
 
@@ -4183,7 +4183,7 @@ static Scheme_Object *collapse_local(int pos, Optimize_Info *info, int context)
   if (!optimize_is_mutated(info, pos)) {
     Scheme_Object *pred;
 
-    pred = optimize_get_predicate(pos, info);
+    pred = optimize_get_predicate(info, pos);
     if (pred) {
       if (SAME_OBJ(pred, scheme_not_prim))
         return scheme_false;
@@ -4244,7 +4244,7 @@ static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred)
     return;
 
   /* Don't add the type if something is already there, this may happen when no_types. */
-  if (do_optimize_get_predicate(pos, info, 1)
+  if (do_optimize_get_predicate(info, pos, 1)
       || optimize_is_local_type_valued(info, pos)) {
     return;
   }
@@ -4348,7 +4348,7 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
     if (SAME_OBJ(app->rator, scheme_eq_prim)) {
       if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_local_type)
           && !optimize_is_mutated(info, SCHEME_LOCAL_POS(app->rand1))) {
-        pred1 = optimize_get_predicate(SCHEME_LOCAL_POS(app->rand1), info);
+        pred1 = optimize_get_predicate(info, SCHEME_LOCAL_POS(app->rand1));
         if (!pred1) {
           pred2 = expr_implies_predicate(app->rand2, info, 0, 5);
           if (pred2)
@@ -4357,7 +4357,7 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
       }
       if (SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_local_type)
           && !optimize_is_mutated(info, SCHEME_LOCAL_POS(app->rand2))) {
-        pred2 = optimize_get_predicate(SCHEME_LOCAL_POS(app->rand2), info);
+        pred2 = optimize_get_predicate(info, SCHEME_LOCAL_POS(app->rand2));
         if (!pred2) {
           pred1 = expr_implies_predicate(app->rand1, info, 0, 5);
           if (pred1)
@@ -9156,7 +9156,7 @@ static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos,
   return do_optimize_info_lookup(info, pos, 0, NULL, NULL, NULL, 0, 0, NULL, 0, is_mutated, 1);
 }
 
-Scheme_Object *do_optimize_get_predicate(int pos, Optimize_Info *info, int ignore_no_types)
+Scheme_Object *do_optimize_get_predicate(Optimize_Info *info, int pos, int ignore_no_types)
 /* pos is in new-frame counts */
 {
   Scheme_Object *pred;
@@ -9178,10 +9178,10 @@ Scheme_Object *do_optimize_get_predicate(int pos, Optimize_Info *info, int ignor
   return NULL;
 }
 
-Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
+Scheme_Object *optimize_get_predicate(Optimize_Info *info, int pos)
 /* pos is in new-frame counts */
 {
-  return do_optimize_get_predicate(pos, info, 0);
+  return do_optimize_get_predicate(info, pos, 0);
 }
 
 static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)
