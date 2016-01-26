@@ -4,6 +4,7 @@
          "guts.rkt"
          "prop.rkt"
          "misc.rkt"
+         "and.rkt"
          "opt.rkt"
          "blame.rkt"
          (for-syntax "opt-guts.rkt")

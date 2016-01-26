@@ -17,7 +17,9 @@
          "private/opt.rkt"
          "private/out.rkt"
          "private/arrow-val-first.rkt"
-         "private/orc.rkt")
+         "private/orc.rkt"
+         "private/list.rkt"
+         "private/and.rkt")
 
 (provide
  base->?

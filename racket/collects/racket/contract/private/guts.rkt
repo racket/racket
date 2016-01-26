@@ -76,7 +76,9 @@
          contract-first-order-try-less-hard
          contract-first-order-only-try-so-hard
 
-         raise-predicate-blame-error-failure)
+         raise-predicate-blame-error-failure
+
+         n->th)
 
 (define (contract-custom-write-property-proc stct port mode)
   (define (write-prefix)
@@ -298,8 +300,14 @@
       [(and (procedure? x) (procedure-arity-includes? x 1))
        (cond
          [(eq? x null?) list/c-empty]
-         [(and (eq? x list?) listof-any) listof-any]
-         [(and (eq? x pair?) consc-anyany) consc-anyany]
+         [(eq? x list?)
+          (unless listof-any
+            (error 'coerce-contract/f::listof-any "too soon!"))
+          listof-any]
+         [(eq? x pair?)
+          (unless consc-anyany
+            (error 'coerce-contract/f::consc-anyany "too soon!"))
+          consc-anyany]
          [else
           (make-predicate-contract (if (name-default? name)
                                        (or (object-name x) '???)
@@ -307,7 +315,10 @@
                                    x
                                    #f
                                    (memq x the-known-good-contracts))])]
-      [(null? x) list/c-empty]
+      [(null? x)
+       (unless list/c-empty
+         (error 'coerce-contract/f::list/c-empty "too soon!"))
+       list/c-empty]
       [(not x) false/c-contract]
       [(or (symbol? x) (boolean? x) (keyword? x))
        (make-eq-contract x
@@ -605,7 +616,6 @@
    (λ (this that)
       (and (regexp/c? that) (equal? (regexp/c-reg this) (regexp/c-reg that))))))
 
-
 ;; sane? : boolean -- indicates if we know that the predicate is well behaved
 ;; (for now, basically amounts to trusting primitive procedures)
 (define-struct predicate-contract (name pred generate sane?)
@@ -793,3 +803,12 @@
     ;;   (error "internal error: missing blame party" payload))
     (with-continuation-mark contract-continuation-mark-key payload
                             (let () code ...))))
+
+(define (n->th n)
+  (string-append 
+   (number->string n)
+   (case (modulo n 10)
+     [(1) "st"]
+     [(2) "nd"]
+     [(3) "rd"]
+     [else "th"])))
