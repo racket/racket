@@ -988,6 +988,7 @@
              (for/list ([kwd (in-list (append mandatory-keywords optional-keywords))]
                         [kwd-proj (in-list (append mandatory-dom-kwd-projs optional-dom-kwd-projs))])
                (cons kwd kwd-proj))))
+          (define blame+neg-party (cons blame neg-party))
           
           (define interposition-proc
             (make-keyword-procedure
@@ -1029,7 +1030,7 @@
                     (cons result-checker args-dealt-with)
                     args-dealt-with)))))
           
-          (values (arrow:arity-checking-wrapper f blame neg-party
+          (values (arrow:arity-checking-wrapper f blame neg-party blame+neg-party
                                                 interposition-proc #f interposition-proc #f #f #f
                                                 min-arity max-arity
                                                 min-arity max-arity 

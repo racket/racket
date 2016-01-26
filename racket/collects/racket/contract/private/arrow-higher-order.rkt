@@ -47,8 +47,9 @@
                 mandatory-dom-kwd-proj ... 
                 optional-dom-kwd-proj ... 
                 rng-proj ...)
+        (define blame+neg-party (cons blame neg-party))
         #,(create-chaperone
-           #'blame #'neg-party #'blame-party-info #'f #'rng-ctcs
+           #'blame #'neg-party #'blame+neg-party #'blame-party-info #'f #'rng-ctcs
            this-args
            (for/list ([id (in-list (syntax->list #'(mandatory-dom-proj ...)))]
                       [mandatory-dom-proj (in-list mandatory-dom-projs)])
@@ -124,7 +125,7 @@
       (if pre? "pre" "post")
       condition-result)]))
 
-(define-for-syntax (create-chaperone blame neg-party blame-party-info
+(define-for-syntax (create-chaperone blame neg-party blame+neg-party blame-party-info
                                      val rng-ctcs
                                      this-args
                                      doms opt-doms
@@ -134,6 +135,7 @@
                                      rngs
                                      post post/desc)
   (with-syntax ([blame blame]
+                [blame+neg-party blame+neg-party]
                 [val val])
     (with-syntax ([(pre ...) 
                    (cond
@@ -170,7 +172,7 @@
                  #'(case-lambda
                      [(rng-x ...)
                       (with-contract-continuation-mark
-                       (cons blame neg-party)
+                       blame+neg-party
                        (let ()
                          post ...
                          rng-results))]
@@ -182,7 +184,7 @@
               (if assume-result-values?
                   #`(let-values ([(rng-x ...) #,stx])
                       (with-contract-continuation-mark
-                       (cons blame neg-party)
+                       blame+neg-party
                        (let ()
                          post ...
                          (values (rng-late-neg-projs rng-x neg-party) ...))))
@@ -297,7 +299,7 @@
                                                                  arg-checking-expressions)])
                                         #`(let-values ([(tmps ...)
                                                         (with-contract-continuation-mark
-                                                         (cons blame neg-party)
+                                                         blame+neg-party
                                                          (values #,@arg-checking-expressions))])
                                             #,(if need-apply?
                                                   #`(apply val tmps ...)
@@ -368,7 +370,7 @@
                 ;;  - stamourv
                 (with-syntax ([basic-lambda #'(λ basic-params
                                                 (with-contract-continuation-mark
-                                                 (cons blame neg-party)
+                                                 blame+neg-party
                                                  (let ()
                                                    pre ... basic-return)))]
                               [basic-unsafe-lambda
@@ -386,13 +388,13 @@
                               [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-contract-continuation-mark
-                                               (cons blame neg-party)
+                                               blame+neg-party
                                                (let ()
                                                  pre ... kwd-return)))])
                   (cond
                     [(and (null? req-keywords) (null? opt-keywords))
                      #`(arrow:arity-checking-wrapper val 
-                                                     blame neg-party
+                                                     blame neg-party blame+neg-party
                                                      basic-lambda
                                                      basic-unsafe-lambda
                                                      basic-unsafe-lambda/result-values-assumed
@@ -407,7 +409,7 @@
                                                      '(opt-kwd ...))]
                     [(pair? req-keywords)
                      #`(arrow:arity-checking-wrapper val
-                                                     blame neg-party
+                                                     blame neg-party blame+neg-party
                                                      void #t #f #f #f
                                                      kwd-lambda
                                                      #,min-method-arity
@@ -418,7 +420,7 @@
                                                      '(opt-kwd ...))]
                     [else
                      #`(arrow:arity-checking-wrapper val 
-                                                     blame neg-party
+                                                     blame neg-party blame+neg-party
                                                      basic-lambda #t #f #f #f
                                                      kwd-lambda
                                                      #,min-method-arity

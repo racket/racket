@@ -230,11 +230,12 @@
            (loop (cdr accepted) req-kwds (cdr opt-kwds))]
           [else #f]))])))
 
-(define-for-syntax (create-chaperone blame neg-party blame-party-info val pre post this-args
+(define-for-syntax (create-chaperone blame neg-party blame+neg-party blame-party-info val pre post this-args
                                      doms opt-doms dom-rest req-kwds opt-kwds
                                      rngs rng-ctc-id)
   (with-syntax ([blame blame]
                 [neg-party neg-party]
+                [blame+neg-party blame+neg-party]
                 [val val])
     (with-syntax ([(pre ...) 
                    (if pre
@@ -281,7 +282,7 @@
                                 #'(case-lambda
                                     [(rng-x ...)
                                      (with-contract-continuation-mark
-                                      (cons blame neg-party)
+                                      blame+neg-party
                                       (let ()
                                         post ...
                                         rng-results))]
@@ -391,13 +392,13 @@
                                                 ;; noticeable in my measurements so far.
                                                 ;;  - stamourv
                                                 (with-contract-continuation-mark
-                                                 (cons blame neg-party)
+                                                 blame+neg-party
                                                  (let ()
                                                    pre ... basic-return)))]
                               [kwd-lambda-name (gen-id 'kwd-lambda)]
                               [kwd-lambda #`(λ kwd-lam-params
                                               (with-contract-continuation-mark
-                                               (cons blame neg-party)
+                                               blame+neg-party
                                                (let ()
                                                  pre ... kwd-return)))])
                   (with-syntax ([(basic-checker-name) (generate-temporaries '(basic-checker))])
@@ -405,7 +406,7 @@
                       [(and (null? req-keywords) (null? opt-keywords))
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda])
-                             (arity-checking-wrapper val blame neg-party
+                             (arity-checking-wrapper val blame neg-party blame+neg-party
                                                      basic-lambda-name #f #f #f #f
                                                      void
                                                      #,min-method-arity
@@ -417,7 +418,7 @@
                       [(pair? req-keywords)
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([kwd-lambda-name kwd-lambda])
-                             (arity-checking-wrapper val blame neg-party
+                             (arity-checking-wrapper val blame neg-party blame+neg-party
                                                      void #f #f #f #f
                                                      kwd-lambda-name
                                                      #,min-method-arity
@@ -430,7 +431,7 @@
                        #`(let-values ([(rng-checker-name ...) (values/drop rng-checker ...)])
                            (let ([basic-lambda-name basic-lambda]
                                  [kwd-lambda-name kwd-lambda])
-                             (arity-checking-wrapper val blame neg-party
+                             (arity-checking-wrapper val blame neg-party blame+neg-party
                                                      basic-lambda-name #f #f #f #f
                                                      kwd-lambda-name
                                                      #,min-method-arity
@@ -447,7 +448,7 @@
 ;; basic-unsafe-lambda or not; note that basic-unsafe-lambda might
 ;; also be #t, but that happens only when we know that basic-lambda
 ;; can't be chosen (because there are keywords involved)
-(define (arity-checking-wrapper val blame neg-party basic-lambda
+(define (arity-checking-wrapper val blame neg-party blame+neg-party basic-lambda
                                 basic-unsafe-lambda
                                 basic-unsafe-lambda/result-values-assumed
                                 basic-unsafe-lambda/result-values-assumed/no-tail
@@ -490,7 +491,7 @@
              (raise-no-keywords-arg blame #:missing-party neg-party val kwds))
            (λ (kwds kwd-args . args)
              (with-contract-continuation-mark
-              (cons blame neg-party)
+              blame+neg-party
               (let ()
              (define args-len (length args))
              (unless (valid-number-of-args? args)
@@ -516,7 +517,7 @@
        (if (null? req-kwd)
            (λ args
              (with-contract-continuation-mark
-              (cons blame neg-party)
+              blame+neg-party
               (let ()
              (unless (valid-number-of-args? args)
                (define args-len (length args))
@@ -895,8 +896,9 @@
                     [outer-lambda
                      #`(lambda (blame neg-party blame-party-info val rng-ctc-x
                                       dom-names ... kwd-names ... rng-names ...)
+                         (define blame+neg-party (cons blame neg-party))
                          #,(create-chaperone 
-                            #'blame #'neg-party #'blame-party-info #'val #f #f
+                            #'blame #'neg-party #'blame+neg-party #'blame-party-info #'val #f #f
                             (syntax->list #'(this-params ...))
                             (syntax->list #'(dom-names ...)) null #f
                             (map list (syntax->list #'(kwds ...))
@@ -1086,8 +1088,9 @@
                         mandatory-dom-kwd-proj ... 
                         optional-dom-kwd-proj ... 
                         rng-proj ...)
+                      (define blame+neg-party (cons blame neg-party))
                       #,(create-chaperone 
-                         #'blame #'neg-party #'blame-party-info #'f pre post
+                         #'blame #'neg-party #'blame+neg-party #'blame-party-info #'f pre post
                          (syntax->list #'(this-parameter ...))
                          (syntax->list #'(mandatory-dom-proj ...))
                          (syntax->list #'(optional-dom-proj ...))
@@ -1370,6 +1373,7 @@
       (define dom-blame (blame-add-context blame "the domain of" #:swap? #t))
       (define rng-blame (blame-add-range-context blame))
       (λ (val neg-party)
+        (define blame+neg-party (cons blame neg-party))
         (if (base-->d-rest-ctc ->d-stct)
             (check-procedure/more val
                                   (base-->d-mtd? ->d-stct)
@@ -1391,7 +1395,7 @@
          (make-keyword-procedure
           (λ (kwd-args kwd-arg-vals . raw-orig-args)
             (with-contract-continuation-mark
-                (cons blame neg-party)
+              blame+neg-party
               (let* ([orig-args (if (base-->d-mtd? ->d-stct)
                                     (cdr raw-orig-args)
                                     raw-orig-args)]
@@ -1421,7 +1425,7 @@
                     (if rng
                         (list (λ orig-results
                                 (with-contract-continuation-mark
-                                  (cons blame neg-party)
+                                  blame+neg-party
                                   (let* ([range-count (length rng)]
                                          [post-args (append orig-results raw-orig-args)]
                                          [post-non-kwd-arg-count (+ non-kwd-ctc-count range-count)]
