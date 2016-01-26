@@ -131,8 +131,10 @@ static Scheme_Object *hash_table_map(int argc, Scheme_Object *argv[]);
 static Scheme_Object *hash_table_for_each(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_pair(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_key_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[]);
@@ -631,6 +633,16 @@ scheme_init_list (Scheme_Env *env)
 			     scheme_make_noncm_prim(scheme_hash_table_iterate_key,
 						    "hash-iterate-key",
                                                     2, 2),
+			     env);
+  scheme_add_global_constant("hash-iterate-pair",
+			     scheme_make_immed_prim(scheme_hash_table_iterate_pair,
+						    "hash-iterate-pair",
+                                                    2, 2),
+			     env);
+  scheme_add_global_constant("hash-iterate-key+value",
+			     scheme_make_prim_w_arity2(scheme_hash_table_iterate_key_value,
+						    "hash-iterate-key+value",
+                                                    2, 2, 2, 2),
 			     env);
 
   scheme_add_global_constant("chaperone-hash",
@@ -2824,18 +2836,14 @@ Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
-static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object *argv[], int get_val)
+static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object *argv[], Scheme_Object **_k, Scheme_Object **_v)
 {
-  Scheme_Object *p = argv[1], *obj, *chaperone, *key;
+  Scheme_Object *p = argv[1], *obj = argv[0];
   mzlonglong pos;
-  intptr_t sz;
+  int res;
 
-  obj = argv[0];
-  if (SCHEME_NP_CHAPERONEP(obj)) {
-    chaperone = obj;
-    obj = SCHEME_CHAPERONE_VAL(chaperone);
-  } else
-    chaperone = NULL;
+  if (SCHEME_NP_CHAPERONEP(obj))
+    obj = SCHEME_CHAPERONE_VAL(obj);
 
   if (!scheme_get_long_long_val(p, &pos))
     pos = HASH_POS_TOO_BIG;
@@ -2843,78 +2851,17 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
     pos = HASH_POS_TOO_BIG;
 
   if (SCHEME_HASHTP(obj)) {
-    Scheme_Hash_Table *hash;
-
-    hash = (Scheme_Hash_Table *)obj;
-
-    sz = hash->size;
-    if (pos < sz) {
-      if (hash->vals[pos]) {
-        if (chaperone) {
-          if (get_val) {
-            key = chaperone_hash_key(name, chaperone, hash->keys[pos]);
-            obj = scheme_chaperone_hash_get(chaperone, key);
-            if (!obj)
-              no_post_key("hash-iterate-value", key, 0);
-            return obj;
-          } else
-            return chaperone_hash_key(name, chaperone, hash->keys[pos]);
-        } else if (get_val)
-          return hash->vals[pos];
-        else
-          return hash->keys[pos];
-      }
-    }
+    res = scheme_hash_table_index((Scheme_Hash_Table *)obj, pos, _k, _v);
   } else if (SCHEME_HASHTRP(obj)) {
-    Scheme_Object *v, *k;
-    if (scheme_hash_tree_index((Scheme_Hash_Tree *)obj, pos, &k, &v)) {
-      if (chaperone) {
-        if (get_val) {
-          key = chaperone_hash_key(name, chaperone, k);
-          obj = scheme_chaperone_hash_get(chaperone, key);
-          if (!obj)
-            no_post_key("hash-iterate-value", key, 1);
-          return obj;
-        } else
-          return chaperone_hash_key(name, chaperone, k);
-      } else
-        return (get_val ? v : k);
-    }
+    res = scheme_hash_tree_index((Scheme_Hash_Tree *)obj, pos, _k, _v);
   } else if (SCHEME_BUCKTP(obj)) {
-    Scheme_Bucket_Table *hash;
-    Scheme_Bucket *bucket;
-
-    hash = (Scheme_Bucket_Table *)obj;
-
-    sz = hash->size;
-    if (pos < sz) {
-      bucket = hash->buckets[pos];
-      if (bucket && bucket->val && bucket->key) {
-        if (get_val && !chaperone)
-          return (Scheme_Object *)bucket->val;
-        else {
-          if (hash->weak)
-            obj = (Scheme_Object *)HT_EXTRACT_WEAK(bucket->key);
-          else
-            obj = (Scheme_Object *)bucket->key;
-          if (chaperone) {
-            if (get_val) {
-              key = chaperone_hash_key(name, chaperone, obj);
-              obj = scheme_chaperone_hash_get(chaperone, key);
-              if (!obj)
-                no_post_key("hash-iterate-value", key, 0);
-              return obj;
-            } else
-              return chaperone_hash_key(name, chaperone, obj);
-          } else
-            return obj;
-        }
-      }
-    }
+    res = scheme_bucket_table_index((Scheme_Bucket_Table *)obj, pos, _k, _v);
   } else {
     scheme_wrong_contract(name, "hash?", 0, argc, argv);
-    return NULL;
+    return 0;
   }
+
+  if (res) return 1;
 
   if ((SCHEME_INTP(p)
        && (SCHEME_INT_VAL(p) >= 0))
@@ -2923,21 +2870,89 @@ static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object
     scheme_contract_error(name, "no element at index",
                           "index", 1, p,
                           NULL);
-    return NULL;
+    return 0;
   }
 
   scheme_wrong_contract(name, "exact-nonnegative-integer?", 1, argc, argv);  
+  return 0;
+}
+
+Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[])
+{
+  const char *name = "hash-iterate-key";
+  Scheme_Object *key;
+  if (hash_table_index(name, argc, argv, &key, NULL)) {
+    Scheme_Object *obj = argv[0];
+    if (SCHEME_NP_CHAPERONEP(obj))
+      return chaperone_hash_key(name, obj, key);
+    else
+      return key;
+  }
   return NULL;
 }
 
 Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[])
 {
-  return hash_table_index("hash-iterate-value", argc, argv, 1);
+  const char *name = "hash-iterate-value";
+  Scheme_Object *key, *val;
+  if (hash_table_index(name, argc, argv, &key, &val)) {
+    Scheme_Object *obj = argv[0];
+    if (SCHEME_NP_CHAPERONEP(obj)) {
+      Scheme_Object *chap_key, *chap_val;
+      chap_key = chaperone_hash_key(name, obj, key);
+      chap_val = scheme_chaperone_hash_get(obj, chap_key);
+      if (!chap_val)
+	no_post_key(name, chap_key, SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj)));
+      return chap_val;
+    }
+    else
+      return val;
+  }
+  return NULL;
 }
 
-Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_hash_table_iterate_pair(int argc, Scheme_Object *argv[])
 {
-  return hash_table_index("hash-iterate-key", argc, argv, 0);
+  const char *name = "hash-iterate-pair";
+  Scheme_Object *key, *val;
+  if (hash_table_index(name, argc, argv, &key, &val)) {
+    Scheme_Object *obj = argv[0];
+    if (SCHEME_NP_CHAPERONEP(obj)) {
+      Scheme_Object *chap_key, *chap_val;
+      chap_key = chaperone_hash_key(name, obj, key);
+      chap_val = scheme_chaperone_hash_get(obj, chap_key);
+      if (!chap_val)
+	no_post_key(name, chap_key, SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj)));
+      return scheme_make_pair(chap_key, chap_val);
+    }
+    else
+      return scheme_make_pair(key, val);
+  }
+  return NULL;
+}
+
+Scheme_Object *scheme_hash_table_iterate_key_value(int argc, Scheme_Object *argv[])
+{
+  const char *name = "hash-iterate-key+value";
+  Scheme_Object *key, *val;
+  if (hash_table_index(name, argc, argv, &key, &val)) {
+    Scheme_Object *res[2], *obj = argv[0];
+    if (SCHEME_NP_CHAPERONEP(obj)) {
+      Scheme_Object *chap_key, *chap_val;
+      chap_key = chaperone_hash_key(name, obj, key);
+      chap_val = scheme_chaperone_hash_get(obj, chap_key);
+      if (!chap_val)
+	no_post_key(name, chap_key, SCHEME_HASHTRP(SCHEME_CHAPERONE_VAL(obj)));
+      res[0] = chap_key;
+      res[1] = chap_val;
+    }
+    else {
+      res[0] = key;
+      res[1] = val;
+    }
+    return scheme_values(2, res);
+  }
+  return NULL;
 }
 
 static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
