@@ -127,6 +127,7 @@ static Scheme_Object *optimize_info_lookup(Optimize_Info *info, int pos, int *cl
                                            int once_used_ok, int context, int *potential_size, int *_mutated);
 static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos, int *is_mutated);
 static void optimize_info_used_top(Optimize_Info *info);
+static Scheme_Object *do_optimize_get_predicate(int pos, Optimize_Info *info, int ignore_no_types);
 static Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info);
 static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred);
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta);
@@ -4237,8 +4238,17 @@ static Scheme_Object *equivalent_exprs(Scheme_Object *a, Scheme_Object *b,
 
 static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred)
 {
-  Scheme_Hash_Tree *new_types;
-  new_types = info->types;
+  Scheme_Hash_Tree *new_types = info->types;
+  
+  if (optimize_is_mutated(info, pos))
+    return;
+
+  /* Don't add the type if something is already there, this may happen when no_types. */
+  if (do_optimize_get_predicate(pos, info, 1)
+      || optimize_is_local_type_valued(info, pos)) {
+    return;
+  }
+
   if (!new_types)
     new_types = scheme_make_hash_tree(0);
   new_types = scheme_hash_tree_set(new_types,
@@ -4267,19 +4277,13 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta)
 
 static void intersect_and_merge_types(Optimize_Info *t_info, Optimize_Info *f_info,
                                       Optimize_Info *base_info)
-/* Save in base_info->types the result of
-   (union (intersection t_info->type f_info->types) base_info->types) 
-   in case a key is already in base_info->types, the value is not modified */
+/* Add to base_info the intersection of the types of t_info and f_info */
 {
-  Scheme_Hash_Tree *t_types = t_info->types, *f_types = f_info->types,
-                   *base_types = base_info->types;
-  Scheme_Object *pos, *t_pred, *f_pred, *base_pred;
+  Scheme_Hash_Tree *t_types = t_info->types, *f_types = f_info->types;
+  Scheme_Object *pos, *t_pred, *f_pred;
   intptr_t i;
 
   if (!t_types || !f_types)
-    return;
-
-  if (base_types && (SAME_OBJ(f_types, base_types) || SAME_OBJ(t_types, base_types)))
     return;
 
   if (f_types->count > t_types->count) {
@@ -4292,21 +4296,10 @@ static void intersect_and_merge_types(Optimize_Info *t_info, Optimize_Info *f_in
   while (i != -1) {
     scheme_hash_tree_index(f_types, i, &pos, &f_pred);
     t_pred = scheme_hash_tree_get(t_types, pos);
-    if (t_pred && SAME_OBJ(t_pred, f_pred)) {
-      if (base_types)
-        base_pred = scheme_hash_tree_get(base_types, pos);
-      else
-        base_pred = NULL;
-
-      if (!base_pred) {
-        if (!base_types)
-          base_types = scheme_make_hash_tree(0);
-        base_types = scheme_hash_tree_set(base_types, pos, f_pred);
-      }
-    }
+    if (t_pred && SAME_OBJ(t_pred, f_pred))
+      add_type(base_info, SCHEME_INT_VAL(pos), f_pred);
     i = scheme_hash_tree_next(f_types, i);
   }
-  base_info->types = base_types;
 }
 
 static int relevant_predicate(Scheme_Object *pred)
@@ -5660,7 +5653,7 @@ static void update_rhs_value(Scheme_Compiled_Let_Value *naya, Scheme_Object *e,
   if (tst) {
     Scheme_Object *n;
     
-    n = equivalent_exprs(naya->value, e, info, info, 0);
+    n = equivalent_exprs(naya->value, e, NULL, NULL, 0);
     if (!n) {
       Scheme_Branch_Rec *b;
 
@@ -9163,12 +9156,12 @@ static Scheme_Object *optimize_info_mutated_lookup(Optimize_Info *info, int pos,
   return do_optimize_info_lookup(info, pos, 0, NULL, NULL, NULL, 0, 0, NULL, 0, is_mutated, 1);
 }
 
-Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
+Scheme_Object *do_optimize_get_predicate(int pos, Optimize_Info *info, int ignore_no_types)
 /* pos is in new-frame counts */
 {
   Scheme_Object *pred;
 
-  if (info->no_types) return NULL;
+  if (info->no_types && !ignore_no_types) return NULL;
 
   while (info) {
     if (info->types) {
@@ -9183,6 +9176,12 @@ Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
   }
 
   return NULL;
+}
+
+Scheme_Object *optimize_get_predicate(int pos, Optimize_Info *info)
+/* pos is in new-frame counts */
+{
+  return do_optimize_get_predicate(pos, info, 0);
 }
 
 static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)
