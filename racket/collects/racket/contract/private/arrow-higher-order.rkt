@@ -67,17 +67,17 @@
            post post/desc))))
 
 
-(define (check-pre-cond pre blame neg-party val)
+(define (check-pre-cond pre blame neg-party blame+neg-party val)
   (with-contract-continuation-mark
-   (cons blame neg-party)
+   blame+neg-party
    (unless (pre)
      (raise-blame-error (blame-swap blame)
                         #:missing-party neg-party
                         val "#:pre condition"))))
 
-(define (check-post-cond post blame neg-party val)
+(define (check-post-cond post blame neg-party blame+neg-party val)
   (with-contract-continuation-mark
-   (cons blame neg-party)
+   blame+neg-party
    (unless (post)
      (raise-blame-error blame
                         #:missing-party neg-party
@@ -140,14 +140,14 @@
     (with-syntax ([(pre ...) 
                    (cond
                      [pre
-                      (list #`(check-pre-cond #,pre blame neg-party val))]
+                      (list #`(check-pre-cond #,pre blame neg-party blame+neg-party val))]
                      [pre/desc
                       (list #`(check-pre-cond/desc #,pre/desc blame neg-party val))]
                      [else null])]
                   [(post ...)
                    (cond
                      [post
-                      (list #`(check-post-cond #,post blame neg-party val))]
+                      (list #`(check-post-cond #,post blame neg-party blame+neg-party val))]
                      [post/desc
                       (list #`(check-post-cond/desc #,post/desc blame neg-party val))]
                      [else null])])

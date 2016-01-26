@@ -256,11 +256,11 @@
                     [(the-call ...) #`(f #,@(reverse normal-arg-vars) kwd-arg-exps ...)]
                     [(pre-check ...)
                      (if pre 
-                         (list #`(check-pre-cond #,pre blame neg-party f))
+                         (list #`(check-pre-cond #,pre blame neg-party (cons blame neg-party) f))
                          (list))]
                     [(post-check ...)
                      (if post
-                         (list #`(check-post-cond #,post blame neg-party f))
+                         (list #`(check-post-cond #,post blame neg-party (cons blame neg-party) f))
                          (list))]
                     [(restb) (generate-temporaries '(rest-args))])
         (define (make-body-proc range-checking?)
@@ -451,14 +451,14 @@
              (cons ((car rbs) (car regular-args) neg-party)
                    (loop (cdr regular-args) (cdr rbs)))]))))
      (define complete-blame (blame-add-missing-party blame neg-party))
-     (when pre (check-pre-cond pre blame neg-party f))
+     (when pre (check-pre-cond pre blame neg-party complete-blame f))
      (cond
        [rngs
         (define results (call-with-values mk-call list))
         (define rng-len (length rngs))
         (unless (= (length results) rng-len)
           (arrow:bad-number-of-results complete-blame f rng-len results))
-        (when post (check-post-cond post blame neg-party f))
+        (when post (check-post-cond post blame neg-party complete-blame f))
         (apply
          values
          (for/list ([result (in-list results)]
