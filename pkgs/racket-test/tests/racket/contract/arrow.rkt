@@ -378,6 +378,27 @@
          'pos 'neg)
         'something-else 'yet-another-thing)
        1)))
+
+  (test/spec-passed/result
+   'chaperone-procedure*-and-contract-interaction
+   '(let ()
+      (define (f1 x) x)
+      
+      (define-values (prop:p prop:p? prop:get-p)
+        (make-impersonator-property 'p))
+      
+      (define the-answer 'dont-know)
+      
+      (define f2 (chaperone-procedure*
+                  f1
+                  (λ (f x)
+                    (set! the-answer (and (prop:p? f) (prop:get-p f)))
+                    x)))
+      (define f3 (contract (-> integer? integer?) f2 'pos 'neg))
+      (define f4 (chaperone-procedure f3 #f prop:p 1234))
+      (f4 1)
+      the-answer)
+   1234)
   
   (test/pos-blame
    'predicate/c1

@@ -460,6 +460,10 @@
     [(matches-arity-exactly? val min-arity max-arity req-kwd opt-kwd)
      (if (and (null? req-kwd) (null? opt-kwd))
          (cond
+           [(impersonator? val)
+            (if basic-unsafe-lambda
+                (values basic-lambda #f)
+                basic-lambda)]
            [(and basic-unsafe-lambda
                  basic-unsafe-lambda/result-values-assumed
                  (equal? contract-result-val-count
