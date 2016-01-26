@@ -2836,7 +2836,7 @@ Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
-static Scheme_Object *hash_table_index(const char *name, int argc, Scheme_Object *argv[], Scheme_Object **_k, Scheme_Object **_v)
+static int hash_table_index(const char *name, int argc, Scheme_Object *argv[], Scheme_Object **_k, Scheme_Object **_v)
 {
   Scheme_Object *p = argv[1], *obj = argv[0];
   mzlonglong pos;
