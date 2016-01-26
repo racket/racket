@@ -76,25 +76,22 @@
             [else success ...])))])))
 
 (define-for-syntax popular-keys
-  ;; of the 8417 contracts that get compiled during
-  ;; 'raco setup' of the current tree, these are all
-  ;; the ones that appear at least 50 times (the
-  ;; number indicate how many times each appeared)
-  `((()               0 () () #f 1)   ; 1260
-    (()               0 () () #t 1)   ;   58
-    ((#f)             0 () () #f #f)  ;  116
-    ((#f)             0 () () #f 1)   ; 4140
-    ((#t)             0 () () #f 1)   ; a new kind of key; expected to be popular
-    ((#f)             0 () () #t 1)   ;   71
-    ((#f)             1 () () #f 1)   ;  186
-    ((#f)             2 () () #f 1)   ;  125
-    ((#f #f)          0 () () #f #f)  ;   99
-    ((#f #f)          0 () () #f 1)   ; 1345
-    ((#f #f)          1 () () #f 1)   ;   68
-    ((#f #f #f)       0 () () #f 1)   ;  423
-    ((#f #f #f #f)    0 () () #f 1)   ;  149
-    ((#f #f #f #f #f) 0 () () #f 1))) ;   74
-
+  ;; of the 6075 contracts that get compiled during
+  ;; 'raco setup' of main-distribution and main-distribution-test,
+  ;; these are all the ones that appear at least 60 times
+  `((() 0 () () #f 1)
+    (() 0 () () #f #f)
+    ((#f) 0 () () #f 1)
+    ((#f) 1 () () #f 1)
+    ((#f) 0 () () #f #f)
+    ((#f #f) 0 () () #f 1)
+    ((#f #f) 0 () () #f #f)
+    ((#f #f #f) 0 () () #f 1)
+    ((#f #f #f) 0 () () #f #f)
+    ((#f #f #f #f) 0 () () #f 1)
+    ((#f #f #f #f) 0 () () #f #f)
+    ((#f #f #f #f #f) 0 () () #f #f)
+    ((#f #f #f #f #f #f) 0 () () #f #f)))
 
 (define-syntax (generate-popular-key-ids stx)
   (syntax-case stx ()
