@@ -299,12 +299,12 @@
       [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
       [(and (procedure? x) (procedure-arity-includes? x 1))
        (cond
-         [(eq? x null?) list/c-empty]
-         [(eq? x list?)
+         [(chaperone-of? x null?) list/c-empty]
+         [(chaperone-of? x list?)
           (unless listof-any
             (error 'coerce-contract/f::listof-any "too soon!"))
           listof-any]
-         [(eq? x pair?)
+         [(chaperone-of? x pair?)
           (unless consc-anyany
             (error 'coerce-contract/f::consc-anyany "too soon!"))
           consc-anyany]
