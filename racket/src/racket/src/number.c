@@ -226,6 +226,7 @@ static Scheme_Object *exact_to_extfl(int argc, Scheme_Object *argv[]);
 #endif
 
 /* globals */
+READ_ONLY Scheme_Object *scheme_unsafe_fxnot_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxand_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxior_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_fxxor_proc;
@@ -1327,6 +1328,8 @@ void scheme_init_unsafe_number(Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxnot", p, env);
+  REGISTER_SO(scheme_unsafe_fxnot_proc);
+  scheme_unsafe_fxnot_proc = p;
 
   p = scheme_make_folding_prim(unsafe_fx_lshift, "unsafe-fxlshift", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED

@@ -317,7 +317,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
         depth allowed for local-variable reference; use this to disallow
         access to the first N variables that represent bindings being set up,
         for example.
-        The id_offset value indincates an offset for local variables relative
+        The id_offset value indicates an offset for local variables relative
         to opt_info; id_offset is also implicitly added to min_id_depth.
         If no_id is NO_ID_OMIT (= 1), then an identifier doesn't count as omittable,
         unless the identifier is a consistent top-level; the no_id mode
@@ -751,6 +751,13 @@ static Scheme_Object *make_discarding_first_sequence(Scheme_Object *e1, Scheme_O
 static Scheme_Object *make_application_2(Scheme_Object *a, Scheme_Object *b, Optimize_Info *info)
 {
   return scheme_make_application(scheme_make_pair(a, scheme_make_pair(b, scheme_null)), info);
+}
+
+static Scheme_Object *make_application_3(Scheme_Object *a, Scheme_Object *b, Scheme_Object *c,
+                                         Optimize_Info *info)
+{
+  return scheme_make_application(scheme_make_pair(a, scheme_make_pair(b, scheme_make_pair(c, scheme_null))),
+                                 info);
 }
 
 static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *inside, Scheme_Object *orig) {
@@ -2896,6 +2903,41 @@ static void check_known_rator(Optimize_Info *info, Scheme_Object *rator, int id_
   }
 }
 
+static void check_known_try(Optimize_Info *info, Scheme_Object *app,
+                            Scheme_Object *rator, Scheme_Object *rand, int id_offset,
+                            const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe)
+/* Replace the rator with an unsafe version if rand have the right type.
+   If not, don't save the type, nor mark this as an error */
+{
+  if (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, who)) {
+    Scheme_Object *pred;
+      
+    pred = expr_implies_predicate(rand, info, id_offset, 5); 
+    if (pred && SAME_OBJ(pred, expect_pred)) 
+      reset_rator(app, unsafe);
+  }
+}
+
+static void check_known_both_try(Optimize_Info *info, Scheme_Object *app,
+                                 Scheme_Object *rator, Scheme_Object *rand1, Scheme_Object *rand2,
+                                 int id_offset,
+                                 const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe)
+/* Replace the rator with an unsafe version if both rands have the right type.
+   If not, don't save the type, nor mark this as an error */
+{
+  if (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, who)) {
+    Scheme_Object *pred1, *pred2;
+      
+    pred1 = expr_implies_predicate(rand1, info, id_offset, 5); 
+    if (pred1 && SAME_OBJ(pred1, expect_pred)) { 
+      pred2 = expr_implies_predicate(rand2, info, id_offset, 5);
+      if (pred2 && SAME_OBJ(pred2, expect_pred)) { 
+          reset_rator(app, unsafe);
+      }
+    }
+  }
+}
+
 static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme_Object *rator, int argc,
                                                       Optimize_Info *info, int context)
 {
@@ -3385,9 +3427,26 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       }
     }
 
+
+    if (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "zero?")) {
+      Scheme_Object* pred;
+      Scheme_App3_Rec *new;
+   
+      pred = expr_implies_predicate(rand, info, id_offset, 5); 
+      if (pred && SAME_OBJ(pred, scheme_fixnum_p_proc)) {
+        new = (Scheme_App3_Rec *)make_application_3(scheme_unsafe_fx_eq_proc, app->rand, scheme_make_integer(0), info);
+        SCHEME_APPN_FLAGS(new) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+        scheme_check_leaf_rator(scheme_unsafe_fx_eq_proc, &rator_flags);
+        return finish_optimize_application3(new, info, context, rator_flags);
+      }
+    }
+
     {
       /* Try to check the argument's type, and use the unsafe versions if possible. */ 
       Scheme_Object *app_o = (Scheme_Object *)app;
+
+      check_known_try(info, app_o, rator, rand, id_offset, "bitwise-not", scheme_fixnum_p_proc, scheme_unsafe_fxnot_proc);
+      check_known_try(info, app_o, rator, rand, id_offset, "fxnot", scheme_fixnum_p_proc, scheme_unsafe_fxnot_proc);
 
       check_known(info, app_o, rator, rand, id_offset, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
       check_known(info, app_o, rator, rand, id_offset, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
@@ -3776,20 +3835,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 #endif
   } else if (SCHEME_PRIMP(app->rator)
              && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)) {
-    /* Recognize combinations of bitwise operations as generating fixnums */
-    if (IS_NAMED_PRIM(app->rator, "bitwise-and")
-        || IS_NAMED_PRIM(app->rator, "bitwise-ior")
-        || IS_NAMED_PRIM(app->rator, "bitwise-xor")) {
-      if ((is_local_type_expression(app->rand1, info) == SCHEME_LOCAL_TYPE_FIXNUM)
-          && (is_local_type_expression(app->rand2, info) == SCHEME_LOCAL_TYPE_FIXNUM)) {
-        if (IS_NAMED_PRIM(app->rator, "bitwise-and"))
-          app->rator = scheme_unsafe_fxand_proc;
-        else if (IS_NAMED_PRIM(app->rator, "bitwise-ior"))
-          app->rator = scheme_unsafe_fxior_proc;
-        else
-          app->rator = scheme_unsafe_fxxor_proc;
-      }
-    } else if (IS_NAMED_PRIM(app->rator, "arithmetic-shift")) {
+    if (IS_NAMED_PRIM(app->rator, "arithmetic-shift")) {
       if (SCHEME_INTP(app->rand2) && (SCHEME_INT_VAL(app->rand2) <= 0)
           && (is_local_type_expression(app->rand1, info) == SCHEME_LOCAL_TYPE_FIXNUM)) {
         app->rator = scheme_unsafe_fxrshift_proc;
@@ -3817,6 +3863,30 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
   if (SCHEME_PRIMP(app->rator)) {
     Scheme_Object *app_o = (Scheme_Object *)app, *rator = app->rator, *rand1 = app->rand1, *rand2 = app->rand2;
     
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "bitwise-and", scheme_fixnum_p_proc, scheme_unsafe_fxand_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "bitwise-ior", scheme_fixnum_p_proc, scheme_unsafe_fxior_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "bitwise-xor", scheme_fixnum_p_proc, scheme_unsafe_fxxor_proc);
+
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fxand", scheme_fixnum_p_proc, scheme_unsafe_fxand_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fxior", scheme_fixnum_p_proc, scheme_unsafe_fxior_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fxxor", scheme_fixnum_p_proc, scheme_unsafe_fxxor_proc);
+
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "=", scheme_fixnum_p_proc, scheme_unsafe_fx_eq_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "<", scheme_fixnum_p_proc, scheme_unsafe_fx_lt_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, ">", scheme_fixnum_p_proc, scheme_unsafe_fx_gt_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "<=", scheme_fixnum_p_proc, scheme_unsafe_fx_lt_eq_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, ">=", scheme_fixnum_p_proc, scheme_unsafe_fx_gt_eq_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "min", scheme_fixnum_p_proc, scheme_unsafe_fx_min_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "max", scheme_fixnum_p_proc, scheme_unsafe_fx_max_proc);
+
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fx=", scheme_fixnum_p_proc, scheme_unsafe_fx_eq_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fx<", scheme_fixnum_p_proc, scheme_unsafe_fx_lt_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fx>", scheme_fixnum_p_proc, scheme_unsafe_fx_gt_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fx<=", scheme_fixnum_p_proc, scheme_unsafe_fx_lt_eq_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fx>=", scheme_fixnum_p_proc, scheme_unsafe_fx_gt_eq_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fxmin", scheme_fixnum_p_proc, scheme_unsafe_fx_min_proc);
+    check_known_both_try(info, app_o, rator, rand1, rand2, 0, "fxmax", scheme_fixnum_p_proc, scheme_unsafe_fx_max_proc);
+
     check_known(info, app_o, rator, rand1, 0, "vector-ref", scheme_vector_p_proc, NULL);
 
     check_known(info, app_o, rator, rand1, 0, "procedure-closure-contents-eq?", scheme_procedure_p_proc, NULL);
@@ -6193,7 +6263,7 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
     /* Change (let-values ([(id ...) (values e ...)]) body)
        to (let-values ([id e] ...) body) for simple e.
        The is_values_apply() and related functions also handle
-       (if id (values e1 ...) (values e2 ...)) to effetcively convert to
+       (if id (values e1 ...) (values e2 ...)) to effectively convert to
        (values (if id e1 e2) ...) and then split the values call, since
        duplicating the id use and test is likely to pay off.
        Beware that the transformation reorders the e sequence if
