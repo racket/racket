@@ -156,14 +156,16 @@
       (define elem-pos-proj (vfp pos-blame))
       (define elem-neg-proj (vfp neg-blame))
       (define checked-ref (λ (neg-party)
+                            (define blame+neg-party (cons pos-blame neg-party))
                             (λ (vec i val)
                               (with-contract-continuation-mark
-                                (cons pos-blame neg-party)
+                                blame+neg-party
                                 (elem-pos-proj val neg-party)))))
       (define checked-set (λ (neg-party)
+                            (define blame+neg-party (cons neg-blame neg-party))
                             (λ (vec i val)
                               (with-contract-continuation-mark
-                                (cons neg-blame neg-party)
+                                blame+neg-party
                                 (elem-neg-proj val neg-party)))))
       (cond
         [(flat-contract? elem-ctc)
@@ -389,6 +391,7 @@
                                                      #:swap? #t)))])
            (λ (val neg-party)
              (check-vector/c ctc val blame neg-party)
+             (define blame+neg-party (cons blame neg-party))
              (if (and (immutable? val) (not (chaperone? val)))
                  (apply vector-immutable
                         (for/list ([e (in-vector val)]
@@ -398,11 +401,11 @@
                   val
                   (λ (vec i val)
                     (with-contract-continuation-mark
-                     (cons blame neg-party)
+                     blame+neg-party
                      ((vector-ref elem-pos-projs i) val neg-party)))
                   (λ (vec i val)
                     (with-contract-continuation-mark
-                     (cons blame neg-party)
+                     blame+neg-party
                      ((vector-ref elem-neg-projs i) val neg-party)))
                   impersonator-prop:contracted ctc
                   impersonator-prop:blame blame))))))))

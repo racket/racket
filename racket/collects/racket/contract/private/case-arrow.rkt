@@ -142,16 +142,17 @@
                  #,@(apply append (map syntax->list (syntax->list #'((dom-proj-x ...) ...))))
                  #,@(apply append (map syntax->list (syntax->list #'((rng-proj-x ...) ...)))))
                (λ (f neg-party)
+                 (define blame+neg-party (cons blame neg-party))
                  (put-it-together 
                   #,(let ([case-lam (syntax/loc stx 
                                       (case-lambda [formals body] ...))])
                       (if name
                           #`(let ([#,name #,case-lam]) #,name)
                           case-lam))
-                  f blame neg-party blame-party-info wrapper ctc
+                  f blame neg-party blame+neg-party blame-party-info wrapper ctc
                   chk #,(and (syntax-parameter-value #'making-a-method) #t))))))))]))
 
-(define (put-it-together the-case-lam f blame neg-party blame-party-info wrapper ctc chk mtd?)
+(define (put-it-together the-case-lam f blame neg-party blame+neg-party blame-party-info wrapper ctc chk mtd?)
   (chk f mtd?)
   (define rng-ctcs (base-case->-rng-ctcs ctc))
   (define checker
@@ -159,7 +160,7 @@
      (raise-no-keywords-error f blame neg-party)
      (λ args
        (with-contract-continuation-mark
-        (cons blame neg-party)
+        blame+neg-party
         (apply the-case-lam args)))))
   (define same-rngs (same-range-contracts rng-ctcs))
   (if same-rngs

@@ -60,9 +60,9 @@
        (define negative? (blame-swapped? blame))
        (define barrier/c (polymorphic-contract-barrier c))
        (define vars (polymorphic-contract-vars c))
-       (define (wrap p neg-party)
+       (define (wrap p neg-party blame+neg-party)
          (with-contract-continuation-mark
-          (cons blame neg-party)
+          blame+neg-party
           ;; values in polymorphic types come in from negative position,
           ;; relative to the poly/c contract
           (define instances
@@ -76,19 +76,20 @@
          (unless (procedure? p)
            (raise-blame-error blame #:missing-party neg-party
                               p '(expected "a procedure" given: "~e") p))
+         (define blame+neg-party (cons blame neg-party))
          (make-keyword-procedure
-          (lambda (keys vals . args) (keyword-apply (wrap p neg-party) keys vals args))
+          (lambda (keys vals . args) (keyword-apply (wrap p neg-party blame+neg-party) keys vals args))
           (case-lambda
-            [() ((wrap p neg-party))]
-            [(a) ((wrap p neg-party) a)]
-            [(a b) ((wrap p neg-party) a b)]
-            [(a b c) ((wrap p neg-party) a b c)]
-            [(a b c d) ((wrap p neg-party) a b c d)]
-            [(a b c d e) ((wrap p neg-party) a b c d e)]
-            [(a b c d e f) ((wrap p neg-party) a b c d e f)]
-            [(a b c d e f g) ((wrap p neg-party) a b c d e f g)]
-            [(a b c d e f g h) ((wrap p neg-party) a b c d e f g h)]
-            [args (apply (wrap p neg-party) args)])))))))
+            [() ((wrap p neg-party blame+neg-party))]
+            [(a) ((wrap p neg-party blame+neg-party) a)]
+            [(a b) ((wrap p neg-party blame+neg-party) a b)]
+            [(a b c) ((wrap p neg-party blame+neg-party) a b c)]
+            [(a b c d) ((wrap p neg-party blame+neg-party) a b c d)]
+            [(a b c d e) ((wrap p neg-party blame+neg-party) a b c d e)]
+            [(a b c d e f) ((wrap p neg-party blame+neg-party) a b c d e f)]
+            [(a b c d e f g) ((wrap p neg-party blame+neg-party) a b c d e f g)]
+            [(a b c d e f g h) ((wrap p neg-party blame+neg-party) a b c d e f g h)]
+            [args (apply (wrap p neg-party blame+neg-party) args)])))))))
 
 (define (opaque/c positive? name)
   (define-values [ type make pred getter setter ]

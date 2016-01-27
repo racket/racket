@@ -333,6 +333,7 @@
   (λ (blame)
     (define p-app (ctc-proc (blame-add-context blame "the promise from")))
     (λ (val neg-party)
+      (define blame+neg-party (cons blame neg-party))
       (if (promise? val)
           (c/i-struct
            val
@@ -342,7 +343,7 @@
               proc
               (λ (promise)
                 (values (λ (val) (with-contract-continuation-mark
-                                  (cons blame neg-party)
+                                  blame+neg-party
                                   (p-app val neg-party)))
                         promise)))))
           (raise-blame-error
@@ -406,12 +407,13 @@
        (define in-proj (in-proc (blame-swap blame/c)))
        (define out-proj (out-proc blame/c))
        (λ (val neg-party)
+         (define blame+neg-party (cons blame/c neg-party))
          (cond
            [(parameter? val)
             (define (add-profiling f)
               (λ (x)
                 (with-contract-continuation-mark
-                 (cons blame/c neg-party)
+                 blame+neg-party
                  (f x neg-party))))
             (make-derived-parameter
              val
