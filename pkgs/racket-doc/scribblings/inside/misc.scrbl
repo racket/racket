@@ -364,10 +364,12 @@ any place.}
                  [void* val])]{
 
 Gets or sets a value in a process-global table (i.e., shared across
-multiple places, if any). If @var{val} is NULL, the current mapping
-for @var{key} is given, otherwise @var{val} is installed as the value
-for @var{key} and @cpp{NULL} is returned. The given @var{val} must not
-refer to garbage-collected memory.
+multiple places, if any). If @var{val} is @cpp{NULL}, the current mapping
+for @var{key} is given. If @var{val} is not @cpp{NULL}, and no value has been
+installed for that @var{key}, then the value is installed and @cpp{NULL} is returned. If a
+value has already been installed, then no new value is installed and the old
+value is returned. The given @var{val} must not refer to garbage-collected
+memory.
 
 This function is intended for infrequent use with a small number of
 keys.}
