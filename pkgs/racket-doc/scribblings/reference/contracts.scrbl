@@ -552,6 +552,29 @@ each element of the list must match the corresponding contract. Beware
 that when this contract is applied to a value, the result is not
 necessarily @racket[eq?] to the input.}
 
+@defproc[(*list/c [prefix contract?] [suffix contract?] ...) list-contract?]{
+
+Produces a contract for a list. The number of elements in the list
+must be at least as long as the number of @racket[suffix] contracts
+and the tail of the list must match those contracts, one for each
+element. The beginning portion of the list can be arbitrarily long,
+and each element must match @racket[prefix].
+
+Beware that when this contract is applied to a value, the result is not
+necessarily @racket[eq?] to the input.
+
+ @examples[#:eval (contract-eval) #:once
+           (define/contract a-list-of-numbers-ending-with-two-integers
+             (*list/c number? integer? integer?)
+             (list 1/2 4/5 +1i -11 322))
+           
+           (eval:error
+            (define/contract not-enough-integers-at-the-end
+              (*list/c number? integer? integer? integer?)
+              (list 1/2 4/5 1/2 321 322)))]
+
+}
+
 
 @defproc[(syntax/c [c flat-contract?]) flat-contract?]{
 

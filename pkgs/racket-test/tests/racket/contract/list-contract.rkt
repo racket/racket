@@ -158,6 +158,18 @@
      (letrec ([c (recursive-contract (first-or/c (cons/c 1 c) empty?) #:list-contract?)])
        c))
    #t)
+
+  (test/spec-passed/result
+   'list-contract-25
+   '(list-contract?
+     (*list/c integer? boolean? char?))
+   #t)
+
+  (test/spec-passed/result
+   'list-contract-26
+   '(list-contract?
+     (*list/c (-> integer? integer?) boolean? char?))
+   #t)
   
   (test/pos-blame
    'test-contract-25

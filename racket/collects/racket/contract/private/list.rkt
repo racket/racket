@@ -14,7 +14,8 @@
 (provide listof list*of non-empty-listof cons/c list/c cons/dc
          blame-add-car-context
          blame-add-cdr-context
-         raise-not-cons-blame-error)
+         raise-not-cons-blame-error
+         *list/c)
 
 (define (listof-generate ctc)
   (cond
@@ -779,7 +780,198 @@
    #:late-neg-projection list/c-chaperone/other-late-neg-projection
    #:list-contract? (λ (c) #t)))
 
+(define (*list/c-name-proc ctc)
+  `(*list/c ,(contract-name (*list-ctc-prefix ctc))
+            ,@(map contract-name (*list-ctc-suffix ctc))))
 
+(define (*list/c-first-order ctc)
+  (define prefix? (contract-first-order (*list-ctc-prefix ctc)))
+  (define suffix?s (map contract-first-order (*list-ctc-suffix ctc)))
+  (define suffix?s-len (length suffix?s))
+  (λ (val)
+    (cond
+      [(list? val)
+       (define-values (long-enough? end) (get-end val suffix?s-len))
+       (cond
+         [long-enough?
+          (let loop ([val val]
+                     [end end])
+            (cond
+              [(null? end)
+               (for/and ([ele (in-list val)]
+                         [suffix? (in-list suffix?s)])
+                 (suffix? ele))]
+              [else
+               (and (prefix? (car val))
+                    (loop (cdr val) (cdr end)))]))]
+         [else #f])]
+      [else #f])))
+
+(define (get-end val suffix?s-len)
+  (let loop ([val val]
+             [i suffix?s-len])
+    (cond
+      [(zero? i) (values #t val)]
+      [(null? val) (values #f #f)]
+      [else (loop (cdr val) (- i 1))])))
+
+(define (*list/c-generate ctc)
+  (λ (fuel)
+    (define prefix-gen (contract-random-generate/choose (*list-ctc-prefix ctc) fuel))
+    (define suffix-gens
+      (for/list ([suf (*list-ctc-suffix ctc)])
+        (contract-random-generate/choose suf fuel)))
+    (and prefix-gen
+         (for/and ([i (in-list suffix-gens)]) i)
+         (λ ()
+           (let loop ()
+             (rand-choice
+              [1/5 (for/list ([suffix-gen (in-list suffix-gens)])
+                     (suffix-gen))]
+              [else (cons (prefix-gen) (loop))]))))))
+
+(define (*list/c-exercise ctc)
+  (define suffix (reverse (*list-ctc-suffix ctc)))
+  (λ (fuel)
+    (define env (contract-random-generate-get-current-environment))
+    (values
+     (λ (lst)
+       (let loop ([lst (reverse lst)]
+                  [suffix suffix])
+         (cond
+           [(null? suffix) (void)]
+           [else
+            (contract-random-generate-stash env (car lst) (car suffix))
+            (loop (cdr lst) (cdr suffix))])))
+     suffix)))
+
+(define (*list/c-stronger this that)
+  (define this-prefix (*list-ctc-prefix this))
+  (define this-suffix (*list-ctc-suffix this))
+  (cond
+    [(*list-ctc? that)
+     (define that-prefix (*list-ctc-prefix that))
+     (define that-suffix (*list-ctc-suffix that))
+     (define (pad-to a-suf b-suf a-prefix)
+       (define a-len (length a-suf))
+       (define b-len (length b-suf))
+       (cond
+         [(< a-len b-len)
+          (append (build-list (- b-len a-len) (λ (x) a-prefix))
+                  a-suf)]
+         [else a-suf]))
+     (define padded-this (pad-to this-suffix that-suffix this-prefix))
+     (define padded-that (pad-to that-suffix this-suffix that-prefix))
+     (and (contract-struct-stronger? this-prefix that-prefix)
+          (for/and ([this (in-list padded-this)]
+                    [that (in-list padded-that)])
+            (contract-struct-stronger? this that)))]
+    [(listof-ctc? that)
+     (define that-elem (listof-ctc-elem-c that))
+     (and (contract-struct-stronger? this-prefix that-elem)
+          (for/and ([suf (in-list this-suffix)])
+            (contract-struct-stronger? suf that-elem)))]
+    [else #f]))
+
+(define (*list/c-late-neg-projection ctc flat?)
+  (define prefix-lnp (contract-late-neg-projection (*list-ctc-prefix ctc)))
+  (define suffix-lnps (map contract-late-neg-projection (*list-ctc-suffix ctc)))
+  (define suffix?s-len (length suffix-lnps))
+  (λ (blame)
+    (define prefix-val-acceptor (prefix-lnp (blame-add-context blame "the prefix of")))
+    (define suffix-val-acceptors
+      (for/list ([i (in-naturals)]
+                 [suffix-lnp (in-list suffix-lnps)])
+        (define which (- suffix?s-len i))
+        (define msg
+          (if (= 1 which)
+              "the last element of"
+              (format "the ~a to the last element of" (n->th which))))
+        (suffix-lnp (blame-add-context blame msg))))
+    (λ (val neg-party)
+      (cond
+        [(list? val)
+         (define-values (long-enough? end) (get-end val suffix?s-len))
+         (cond
+           [long-enough?
+            (let loop ([remainder-to-process val]
+                       [end end])
+              (cond
+                [(null? end)
+                 (cond
+                   [flat?
+                    (for ([ele (in-list remainder-to-process)]
+                          [suffix-val-acceptor (in-list suffix-val-acceptors)])
+                      (suffix-val-acceptor ele neg-party))
+                    val]
+                   [else
+                    (for/list ([ele (in-list remainder-to-process)]
+                               [suffix-val-acceptor (in-list suffix-val-acceptors)])
+                      (suffix-val-acceptor ele neg-party))])]
+                [else
+                 (define fst (prefix-val-acceptor (car remainder-to-process) neg-party))
+                 (if flat?
+                     (loop (cdr remainder-to-process) (cdr end))
+                     (cons fst (loop (cdr remainder-to-process) (cdr end))))]))]
+           [else
+            (raise-blame-error
+             blame
+             val
+             '(expected: "list? with at least ~a elements" given: "~e")
+             suffix?s-len
+             val)])]
+        [else (raise-blame-error
+               blame
+               val
+               '(expected: "list?" given: "~e") val)]))))
+  
+;; prefix : contract
+;; suffix : (listof contract)
+(struct *list-ctc (prefix suffix)
+    #:property prop:custom-write custom-write-property-proc)
+
+(struct flat-*list/c *list-ctc ()
+  #:property prop:contract
+  (build-contract-property
+   #:name *list/c-name-proc
+   #:first-order *list/c-first-order
+   #:generate *list/c-generate
+   #:exercise *list/c-exercise
+   #:stronger *list/c-stronger
+   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #t))
+   #:list-contract? (λ (c) #t)))
+(struct chaperone-*list/c *list-ctc ()
+  #:property prop:contract
+  (build-contract-property
+   #:name *list/c-name-proc
+   #:first-order *list/c-first-order
+   #:generate *list/c-generate
+   #:exercise *list/c-exercise
+   #:stronger *list/c-stronger
+   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f))
+   #:list-contract? (λ (c) #t)))
+(struct impersonator-*list/c *list-ctc ()
+  #:property prop:contract
+  (build-contract-property
+   #:name *list/c-name-proc
+   #:first-order *list/c-first-order
+   #:generate *list/c-generate
+   #:exercise *list/c-exercise
+   #:stronger *list/c-stronger
+   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f))
+   #:list-contract? (λ (c) #t)))
+
+(define (*list/c ele . rest)
+  (define ctcs (coerce-contracts '*list/c (cons ele rest)))
+  (cond
+    [(null? rest) (listof ele)]
+    [(andmap flat-contract? ctcs)
+     (flat-*list/c (car ctcs) (cdr ctcs))]
+    [(andmap chaperone-contract? ctcs)
+     (chaperone-*list/c (car ctcs) (cdr ctcs))]
+    [else
+     (impersonator-*list/c (car ctcs) (cdr ctcs))]))
+     
 ;; this is a hack to work around cyclic linking issues;
 ;; see definition of set-some-basic-contracts!
 (set-some-basic-contracts!

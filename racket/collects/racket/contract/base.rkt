@@ -76,6 +76,7 @@
  false/c
  printable/c
  listof list*of non-empty-listof cons/c list/c cons/dc
+ *list/c
  promise/c
  syntax/c
  

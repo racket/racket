@@ -58,7 +58,13 @@
   (ctest #t contract-first-order-passes? (non-empty-listof integer?) (list 1))
   (ctest #f contract-first-order-passes? (non-empty-listof integer?) (list))
 
-
+  (ctest #t contract-first-order-passes? (*list/c integer? boolean? char?) '(1 2 3 4 #f #\a))
+  (ctest #t contract-first-order-passes? (*list/c integer? boolean? char?) '(#f #\a))
+  (ctest #f contract-first-order-passes? (*list/c integer? boolean? char?) '(1 2 #f 4 #f #\a))
+  (ctest #f contract-first-order-passes? (*list/c integer? boolean? char?) '())
+  (ctest #f contract-first-order-passes? (*list/c integer? boolean? char?) '(#f))
+  (ctest #f contract-first-order-passes? (*list/c integer? boolean? char?) 1)
+  
   (ctest #t contract-first-order-passes?
          (vector-immutableof integer?)
          (vector->immutable-vector (vector 1)))

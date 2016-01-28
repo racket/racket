@@ -170,5 +170,40 @@
    'cons/dc13
    '(contract? (cons/dc [hd integer?] [tl (hd) integer?] #:impersonator))
    #t)
+
+  (test/spec-passed/result
+   '*list/c1
+   '(contract (*list/c integer? char? boolean?) '(1 2 3 #\a #f) 'pos 'neg)
+   '(1 2 3 #\a #f))
+  (test/pos-blame
+   '*list/c2
+   '(contract (*list/c integer? char? boolean?) '(1 2 #\a #\a #f) 'pos 'neg))
+  (test/spec-passed/result
+   '*list/c3
+   '((car (contract (*list/c (-> integer? integer?) (-> boolean? boolean?))
+                    (list (λ (x) x) (λ (y) y)) 'pos 'neg))
+     1)
+   1)
+  (test/neg-blame
+   '*list/c4
+   '((car (contract (*list/c (-> integer? integer?) (-> boolean? boolean?))
+                    (list (λ (x) x) (λ (y) y)) 'pos 'neg))
+     #f))
+  (test/spec-passed/result
+   '*list/c5
+   '((cadr (contract (*list/c (-> integer? integer?) (-> boolean? boolean?))
+                     (list (λ (x) x) (λ (y) y)) 'pos 'neg))
+     #f)
+   #f)
+  (test/neg-blame
+   '*list/c6
+   '((cadr (contract (*list/c (-> integer? integer?) (-> boolean? boolean?))
+                     (list (λ (x) x) (λ (y) y)) 'pos 'neg))
+     1))
+  (test/pos-blame
+   '*list/c7
+   '((caddr (contract (*list/c (-> integer? integer?) (-> boolean? boolean?) (-> char? char?))
+                      (list (λ (x) x) (λ (y) y) (λ (y) 'not-a-bool) (λ (y) y)) 'pos 'neg))
+     #f))
   
   )
