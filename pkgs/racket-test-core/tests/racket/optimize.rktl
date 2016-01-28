@@ -22,8 +22,8 @@
   (namespace-require 'racket/flonum)
   (namespace-require 'racket/extflonum)
   (namespace-require 'racket/fixnum)
+  (namespace-require 'racket/unsafe/ops)
   (namespace-require 'racket/unsafe/undefined)
-  #;(namespace-require '(rename '#%kernel k:map map))
   (eval '(define-values (prop:thing thing? thing-ref) 
            (make-struct-type-property 'thing)))
   (eval '(struct rock (x) #:property prop:thing 'yes))
@@ -2806,7 +2806,49 @@
   (test-use-unsafe 'pair? 'cdr 'unsafe-cdr)
   (test-use-unsafe 'mpair? 'mcar 'unsafe-mcar)
   (test-use-unsafe 'mpair? 'mcdr 'unsafe-mcdr)
-  (test-use-unsafe 'box? 'unbox 'unsafe-unbox))
+  (test-use-unsafe 'box? 'unbox 'unsafe-unbox)
+  (test-use-unsafe 'vector? 'vector-length 'unsafe-vector-length))
+
+(let ([test-use-unsafe-fxbinary
+       (lambda (op unsafe-op)
+         (test-comp `(lambda (vx vy)
+                       (let ([x (vector-length vx)]
+                             [y (vector-length vy)])
+                         (,op x y)))
+                    `(lambda (vx vy)
+                       (let ([x (vector-length vx)]
+                             [y (vector-length vy)])
+                         (,unsafe-op x y))))
+         (test-comp `(lambda (x y)
+                       (when (and (fixnum? x) (fixnum? y))
+                         (,op x y)))
+                    `(lambda (x y)
+                       (when (and (fixnum? x) (fixnum? y))
+                         (,unsafe-op x y))))
+         (test-comp `(lambda (x y)
+                       (when (and (fixnum? x) (fixnum? y) (zero? (random 2)))
+                         (,op x y)))
+                    `(lambda (x y)
+                       (when (and (fixnum? x) (fixnum? y) (zero? (random 2)))
+                         (,unsafe-op x y)))))])
+  (test-use-unsafe-fxbinary 'bitwise-and 'unsafe-fxand)
+  (test-use-unsafe-fxbinary 'bitwise-ior 'unsafe-fxior)
+  (test-use-unsafe-fxbinary 'bitwise-xor 'unsafe-fxxor))
+
+;test special case for bitwise-and and fixnum?
+(test-comp '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (list y y (fixnum? y))))
+           '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (list y y #t))))
+(test-comp '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                (fixnum? x)))
+           '(lambda (x)
+              (let ([y (bitwise-and x 2)])
+                #t))
+           #f)
 
 (test-comp `(module m racket/base
               (require racket/unsafe/ops)
@@ -2837,7 +2879,7 @@
               (- (expt 2 31) 2))
            #f)
 
-;; Propagate type impliciations from RHS:
+;; Propagate type implications from RHS:
 (test-comp '(lambda (x)
               (let ([y (car x)])
                 (list (cdr x) y (car x) y)))

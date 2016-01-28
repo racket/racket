@@ -132,6 +132,8 @@ static void add_type(Optimize_Info *info, int pos, Scheme_Object *pred);
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, int delta);
 static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand, int delta);
 
+static int predicate_to_local_type(Scheme_Object *pred);
+static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info, int delta, int fuel);
 static void optimize_mutated(Optimize_Info *info, int pos);
 static void optimize_produces_local_type(Optimize_Info *info, int pos, int ct);
 static int produces_local_type(Scheme_Object *rator, int argc);
@@ -2041,17 +2043,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
 static int is_local_type_expression(Scheme_Object *expr, Optimize_Info *info)
 {
-  int ty;
-
-  ty = scheme_expr_produces_local_type(expr);
-  if (ty) return ty;
-
-  if (SAME_TYPE(SCHEME_TYPE(expr), scheme_local_type)) {
-    ty = optimize_is_local_type_valued(info, SCHEME_LOCAL_POS(expr));
-    if (ty) return ty;
-  }
-
-  return 0;
+  return predicate_to_local_type(expr_implies_predicate(expr, info, 0, 5));
 }
 
 static void register_local_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
@@ -2368,96 +2360,6 @@ static int produces_local_type(Scheme_Object *rator, int argc)
   return 0;
 }
 
-static int expr_produces_local_type(Scheme_Object *expr, int fuel)
-/* can be called by the JIT; beware that the validator must be
-   able to reconstruct the result in a shallow way, so don't
-   make the result of a function call depend on its arguments */
-{
-  if (fuel <= 0) return 0;
-
-  while (1) {
-    switch (SCHEME_TYPE(expr)) {
-    case scheme_application_type:
-      {
-        Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
-        return produces_local_type(app->args[0], app->num_args);
-      }
-      break;
-    case scheme_application2_type:
-      {
-        Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
-        return produces_local_type(app->rator, 1);
-      }
-      break;
-    case scheme_application3_type:
-      {
-        Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
-
-        if (SCHEME_PRIMP(app->rator)
-            && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
-            && IS_NAMED_PRIM(app->rator, "bitwise-and")) {
-          /* Assume that a fixnum argument to bitwise-and will never get lost,
-             and so the validator will be able to confirm that a `bitwise-and`
-             combination produces a fixnum. */
-          if ((SCHEME_INTP(app->rand1)
-               && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand1)))
-              || (SCHEME_INTP(app->rand2)
-                  && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand2))))
-            return SCHEME_LOCAL_TYPE_FIXNUM;
-        }
-        
-        return produces_local_type(app->rator, 2);
-      }
-      break;
-    case scheme_branch_type:
-      {
-        Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
-        int t1, t2;
-
-        t1 = expr_produces_local_type(b->tbranch, fuel / 2);
-        if (t1) {
-          t2 = expr_produces_local_type(b->fbranch, fuel / 2);
-          return ((t1 == t2) ? t1 : 0);
-        } else
-          return 0;
-      }
-      break;
-    case scheme_sequence_type:
-      {
-        Scheme_Sequence *seq = (Scheme_Sequence *)expr;
-
-        expr = seq->array[seq->count-1];
-        break;
-      }
-    case scheme_compiled_let_void_type:
-      {
-        Scheme_Let_Header *lh = (Scheme_Let_Header *)expr;
-        int i;
-        expr = lh->body;
-        for (i = 0; i < lh->num_clauses; i++) {
-          expr = ((Scheme_Compiled_Let_Value *)expr)->body;
-        }
-        /* check expr again */
-      }
-      break;
-    default:
-      if (SCHEME_FLOATP(expr))
-        return SCHEME_LOCAL_TYPE_FLONUM;
-      if (SCHEME_LONG_DBLP(expr))
-        return SCHEME_LOCAL_TYPE_EXTFLONUM;
-      if (SCHEME_INTP(expr)
-          && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(expr)))
-        return SCHEME_LOCAL_TYPE_FIXNUM;
-      return 0;
-    }
-  }
-}
-
-int scheme_expr_produces_local_type(Scheme_Object *expr)
-{
-  return expr_produces_local_type(expr, 10);
-}
-
 static Scheme_Object *local_type_to_predicate(int t)
 {
   switch (t) {
@@ -2469,6 +2371,24 @@ static Scheme_Object *local_type_to_predicate(int t)
     return scheme_extflonum_p_proc;
   }
   return NULL;
+}
+
+static int predicate_to_local_type(Scheme_Object *pred)
+{
+  if (!pred)
+    return 0;
+  if (SAME_OBJ(scheme_flonum_p_proc, pred))
+    return SCHEME_LOCAL_TYPE_FLONUM;
+  if (SAME_OBJ(scheme_fixnum_p_proc, pred))
+    return SCHEME_LOCAL_TYPE_FIXNUM;
+  if (SAME_OBJ(scheme_extflonum_p_proc, pred))
+    return SCHEME_LOCAL_TYPE_EXTFLONUM;
+  return 0;
+}
+
+int scheme_expr_produces_local_type(Scheme_Object *expr)
+{
+  return predicate_to_local_type(expr_implies_predicate(expr, NULL, 0, 10));
 }
 
 static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
@@ -2513,10 +2433,11 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
 }
 
 static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info, int delta, int fuel)
+/* can be called by the JIT with info = NULL;
+   in that case, beware that the validator must be
+   able to reconstruct the result in a shallow way, so don't 
+   make the result of a function call depend on its arguments */
 {
-  Scheme_Object *rator = NULL;
-  int argc = 0;
-
   if (fuel <= 0)
     return NULL;
 
@@ -2528,6 +2449,10 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
       pos -= delta;
       if (pos < 0)
         return NULL;
+
+      if (!info)
+        return NULL;
+
       if (!optimize_is_mutated(info, pos)){
         p = optimize_get_predicate(pos, info);
         if (p)
@@ -2540,16 +2465,36 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
     }
     break;
   case scheme_application2_type:
-    rator = ((Scheme_App2_Rec *)expr)->rator;
-    argc = 1;
+    {
+      Scheme_App2_Rec *app = (Scheme_App2_Rec *)expr;
+
+      return rator_implies_predicate(app->rator, 1);
+    }
     break;
   case scheme_application3_type:
-    rator = ((Scheme_App3_Rec *)expr)->rator;
-    argc = 2;
+    {
+    Scheme_App3_Rec *app = (Scheme_App3_Rec *)expr;
+      if (SCHEME_PRIMP(app->rator)
+          && (SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_IS_BINARY_INLINED)
+          && IS_NAMED_PRIM(app->rator, "bitwise-and")) {
+         /* Assume that a fixnum argument to bitwise-and will never get lost,
+            and so the validator will be able to confirm that a `bitwise-and`
+            combination produces a fixnum. */
+         if ((SCHEME_INTP(app->rand1)
+              && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand1)))
+             || (SCHEME_INTP(app->rand2)
+                 && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand2))))
+           return scheme_fixnum_p_proc;
+      }
+      return rator_implies_predicate(app->rator, 2);
+    }
     break;
   case scheme_application_type:
-    argc = ((Scheme_App_Rec *)expr)->num_args;
-    rator = ((Scheme_App_Rec *)expr)->args[0];
+    {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)expr;
+      
+      return rator_implies_predicate(app->args[0], app->num_args);
+    }
     break;
   case scheme_compiled_unclosed_procedure_type:
     return scheme_procedure_p_proc;
@@ -2590,6 +2535,12 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
       return expr_implies_predicate(expr, info, delta, fuel-1);
     }
     break;
+  case scheme_begin0_sequence_type:
+    {
+      Scheme_Sequence *seq = (Scheme_Sequence *)expr;
+
+      return expr_implies_predicate(seq->array[0], info, delta, fuel-1);
+    }
   case scheme_pair_type:
     return scheme_pair_p_proc;
     break;
@@ -2626,12 +2577,12 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
       return scheme_not_prim;
   }
 
-  if (rator)
-    return rator_implies_predicate(rator, argc);
-
   {
     /* These tests are slower, so put them at the end */  
     int flags, sub_context = 0;
+    if (!info)
+      return NULL;
+
     if (lookup_constant_proc(info, expr, delta)
         || optimize_for_inline(info, expr, 1, NULL, NULL, NULL, &flags, sub_context, 1, delta)){
       return scheme_procedure_p_proc;
