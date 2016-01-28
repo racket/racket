@@ -15,7 +15,9 @@
          blame-add-car-context
          blame-add-cdr-context
          raise-not-cons-blame-error
-         *list/c)
+         *list/c ellipsis-rest-arg
+         (struct-out ellipsis-rest-arg-ctc)
+         (struct-out *list-ctc))
 
 (define (listof-generate ctc)
   (cond
@@ -873,20 +875,26 @@
             (contract-struct-stronger? suf that-elem)))]
     [else #f]))
 
-(define (*list/c-late-neg-projection ctc flat?)
+(define (*list/c-late-neg-projection ctc start-index flat?)
   (define prefix-lnp (contract-late-neg-projection (*list-ctc-prefix ctc)))
   (define suffix-lnps (map contract-late-neg-projection (*list-ctc-suffix ctc)))
   (define suffix?s-len (length suffix-lnps))
   (λ (blame)
-    (define prefix-val-acceptor (prefix-lnp (blame-add-context blame "the prefix of")))
+    (define prefix-val-acceptor
+      (prefix-lnp (if start-index
+                      (blame-add-context blame "the repeated argument of")
+                      (blame-add-context blame "the prefix of"))))
     (define suffix-val-acceptors
       (for/list ([i (in-naturals)]
                  [suffix-lnp (in-list suffix-lnps)])
         (define which (- suffix?s-len i))
         (define msg
           (if (= 1 which)
-              "the last element of"
-              (format "the ~a to the last element of" (n->th which))))
+              (if start-index "the last argument of" "the last element of")
+              (format (if start-index
+                          "the ~a to the last argument of"
+                          "the ~a to the last element of")
+                      (n->th which))))
         (suffix-lnp (blame-add-context blame msg))))
     (λ (val neg-party)
       (cond
@@ -914,12 +922,18 @@
                      (loop (cdr remainder-to-process) (cdr end))
                      (cons fst (loop (cdr remainder-to-process) (cdr end))))]))]
            [else
-            (raise-blame-error
-             blame
-             val
-             '(expected: "list? with at least ~a elements" given: "~e")
-             suffix?s-len
-             val)])]
+            (if start-index
+                (raise-blame-error
+                 blame
+                 val
+                 '(expected: "at least ~a arguments"
+                             (+ start-index suffix?s-len)))
+                (raise-blame-error
+                 blame
+                 val
+                 '(expected: "list? with at least ~a elements" given: "~e")
+                 suffix?s-len
+                 val))])]
         [else (raise-blame-error
                blame
                val
@@ -938,7 +952,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
-   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #t))
+   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #t))
    #:list-contract? (λ (c) #t)))
 (struct chaperone-*list/c *list-ctc ()
   #:property prop:contract
@@ -948,7 +962,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
-   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f))
+   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #f))
    #:list-contract? (λ (c) #t)))
 (struct impersonator-*list/c *list-ctc ()
   #:property prop:contract
@@ -958,7 +972,7 @@
    #:generate *list/c-generate
    #:exercise *list/c-exercise
    #:stronger *list/c-stronger
-   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f))
+   #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #f))
    #:list-contract? (λ (c) #t)))
 
 (define (*list/c ele . rest)
@@ -978,3 +992,51 @@
  (listof any/c)
  (cons/c any/c any/c)
  (list/c))
+
+;; used by -> when it gets an ellipsis. This
+;; contract turns into the equivalent of the #:rest
+;; argument (if the same contract had been an ->*)
+(define (ellipsis-rest-arg start-index . eles)
+  (define ctcs (coerce-contracts '-> eles))
+  (cond
+    [(andmap flat-contract? ctcs)
+     (flat-ellipsis-rest-arg (car ctcs) (cdr ctcs) start-index)]
+    [(andmap chaperone-contract? ctcs)
+     (chaperone-ellipsis-rest-arg (car ctcs) (cdr ctcs) start-index)]
+    [else
+     (impersonator-ellipsis-rest-arg (car ctcs) (cdr ctcs) start-index)]))
+
+(struct ellipsis-rest-arg-ctc *list-ctc (start-index))
+(struct flat-ellipsis-rest-arg ellipsis-rest-arg-ctc ()
+  #:property prop:contract
+  (build-contract-property
+   #:name (λ (ctc) (error 'flat-ellipsis-rest-arg "the name property shouldn't be called!"))
+   #:first-order *list/c-first-order
+   #:generate *list/c-generate
+   #:exercise *list/c-exercise
+   #:stronger *list/c-stronger
+   #:late-neg-projection
+   (λ (ctc) (*list/c-late-neg-projection ctc (ellipsis-rest-arg-ctc-start-index ctc) #t))
+   #:list-contract? (λ (c) #t)))
+(struct chaperone-ellipsis-rest-arg ellipsis-rest-arg-ctc ()
+  #:property prop:contract
+  (build-contract-property
+   #:name (λ (ctc) (error 'flat-ellipsis-rest-arg "the name property shouldn't be called!"))
+   #:first-order *list/c-first-order
+   #:generate *list/c-generate
+   #:exercise *list/c-exercise
+   #:stronger *list/c-stronger
+   #:late-neg-projection
+   (λ (ctc) (*list/c-late-neg-projection ctc (ellipsis-rest-arg-ctc-start-index ctc) #f))
+   #:list-contract? (λ (c) #t)))
+(struct impersonator-ellipsis-rest-arg ellipsis-rest-arg-ctc ()
+  #:property prop:contract
+  (build-contract-property
+   #:name (λ (ctc) (error 'flat-ellipsis-rest-arg "the name property shouldn't be called!"))
+   #:first-order *list/c-first-order
+   #:generate *list/c-generate
+   #:exercise *list/c-exercise
+   #:stronger *list/c-stronger
+   #:late-neg-projection
+   (λ (ctc) (*list/c-late-neg-projection ctc (ellipsis-rest-arg-ctc-start-index ctc) #f))
+   #:list-contract? (λ (c) #t)))

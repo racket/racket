@@ -341,6 +341,34 @@
       (eq? f (contract (-> any/c any) f 'pos 'neg)))
    #f)
   
+  (test/spec-passed/result
+   'contract->...1
+   '((contract (-> integer? char? ... boolean? any)
+               (λ args args)
+               'pos 'neg)
+     1 #\a #\b #\c #f)
+   '(1 #\a #\b #\c #f))
+  (test/neg-blame
+   'contract->...2
+   '((contract (-> integer? char? ... boolean? any)
+               (λ args args)
+               'pos 'neg)
+     1 #\a "b" #\c #f))
+  (test/spec-passed/result
+   'contract->...3
+   '((contract (-> integer? ... any)
+               (λ args args)
+               'pos 'neg)
+     1 2 3 4 5 6 7)
+   '(1 2 3 4 5 6 7))
+  (test/neg-blame
+   'contract->...4
+   '((contract (-> integer? ... any)
+               (λ args args)
+               'pos 'neg)
+     1 2 3 4 5 6 7)
+   '(1 2 3 4 5 "6" 7))
+
   
   (test/spec-passed
    'contract-arrow-all-kwds2
@@ -556,5 +584,28 @@
                  'pos
                  'neg))
       (void)))
+
+  (test/spec-passed/result
+   '->-order-of-evaluation1
+   '(let ([l '()])
+      (-> (begin (set! l (cons 1 l)) #f)
+          (begin (set! l (cons 2 l)) #f)
+          (begin (set! l (cons 3 l)) #f)
+          (begin (set! l (cons 4 l)) #f)
+          (begin (set! l (cons 5 l)) #f))
+      (reverse l))
+   '(1 2 3 4 5))
+  (test/spec-passed/result
+   '->-order-of-evaluation2
+   '(let ([l '()])
+      (-> (begin (set! l (cons 1 l)) #f)
+          (begin (set! l (cons 2 l)) #f)
+          (begin (set! l (cons 3 l)) #f)
+          ...
+          (begin (set! l (cons 4 l)) #f)
+          (begin (set! l (cons 5 l)) #f)
+          (begin (set! l (cons 6 l)) #f))
+      (reverse l))
+   '(1 2 3 4 5))
   
   )

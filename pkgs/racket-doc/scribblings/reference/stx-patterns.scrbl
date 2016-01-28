@@ -501,8 +501,9 @@ but with syntax errors potentially phrased in terms of
 
 The @racket[...] transformer binding prohibits @racket[...] from
 being used as an expression. This binding is useful only in syntax
-patterns and templates, where it indicates repetitions of a pattern or
-template. See @racket[syntax-case] and @racket[syntax].}
+patterns and templates (or other unrelated expression forms
+that treat it specially like @racket[->]), where it indicates repetitions
+of a pattern or template. See @racket[syntax-case] and @racket[syntax].}
 
 @defidform[_]{
 

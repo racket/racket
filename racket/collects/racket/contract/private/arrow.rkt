@@ -4,6 +4,7 @@
          "blame.rkt"
          "prop.rkt"
          "misc.rkt"
+         "list.rkt"
          racket/stxparam
          racket/private/performance-hint)
 (require (for-syntax racket/base)
@@ -619,7 +620,8 @@
          [func (base->-func ctc)]
          [dom-length (length (base->-doms/c ctc))]
          [optionals-length (length (base->-optional-doms/c ctc))]
-         [has-rest? (and (base->-dom-rest/c ctc) #t)]
+         [rest-ctc (base->-dom-rest/c ctc)]
+         [has-rest? (and rest-ctc #t)]
          [pre (base->-pre ctc)]
          [post (base->-post ctc)]
          [mtd? (base->-mtd? ctc)])
@@ -628,13 +630,21 @@
       (define partial-doms 
         (for/list ([dom (in-list doms-proj)]
                    [n (in-naturals 1)])
-          (dom (blame-add-context orig-blame
+          (define dom-blame
+            (cond
+              [(and has-rest?
+                    (n . > . dom-length)
+                    (ellipsis-rest-arg-ctc? rest-ctc))
+               (blame-swap orig-blame)]
+              [else
+               (blame-add-context orig-blame
                                   (if (and has-rest?
                                            (n . > . dom-length))
                                       "the rest argument of"
                                       (format "the ~a argument of"
                                               (n->th n)))
-                                  #:swap? #t))))
+                                  #:swap? #t)]))
+          (dom dom-blame)))
       (define partial-optional-doms 
         (for/list ([dom (in-list doms-optional-proj)]
                    [n (in-naturals (+ 1 (length doms-proj)))])

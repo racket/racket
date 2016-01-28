@@ -8,6 +8,7 @@
          "misc.rkt"
          "prop.rkt"
          "guts.rkt"
+         "list.rkt"
          (prefix-in arrow: "arrow.rkt")
          (only-in racket/unsafe/ops
                   unsafe-chaperone-procedure
@@ -461,10 +462,14 @@
          (blame-add-context orig-blame 
                             (format "the ~a argument of" (n->th n))
                             #:swap? #t))))
+    (define rest-blame
+      (if (ellipsis-rest-arg-ctc? rest)
+          (blame-swap orig-blame)
+          (blame-add-context orig-blame "the rest argument of"
+                             #:swap? #t)))
     (define partial-rest (and rest
                               ((get/build-late-neg-projection rest)
-                               (blame-add-context orig-blame "the rest argument of"
-                                                  #:swap? #t))))
+                               rest-blame)))
     (define partial-ranges
       (if rngs
           (for/list ([rng (in-list rngs)])

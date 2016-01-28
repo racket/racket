@@ -9,6 +9,7 @@
          "guts.rkt"
          "generate.rkt"
          "arrow-higher-order.rkt"
+         "list.rkt"
          racket/stxparam
          (prefix-in arrow: "arrow.rkt"))
 
@@ -551,7 +552,8 @@
              [regular-args '()]
              [kwds '()]
              [kwd-args '()]
-             [let-bindings '()])
+             [let-bindings '()]
+             [ellipsis #f])
     (cond
       [(null? args) 
        (define sorted
@@ -561,27 +563,63 @@
        (values (reverse regular-args)
                (map car sorted)
                (map cdr sorted)
-               let-bindings)]
+               (reverse let-bindings)
+               #f)]
       [else
-       (with-syntax ([(arg-x) (generate-temporaries (list (car args)))])
-         (syntax-case (car args) ()
-           [kwd
-            (keyword? (syntax-e #'kwd))
-            (begin
-              (when (null? (cdr args))
-                (raise-syntax-error '-> 
-                                    "expected a contract to follow the keyword (plus the range)"
-                                    stx
-                                    (car args)))
-              (loop (cddr args)
-                    regular-args
-                    (cons (car args) kwds)
-                    (cons #'arg-x kwd-args)
-                    (cons #`[arg-x #,(syntax-property (cadr args) 
-                                                      'racket/contract:negative-position 
-                                                      this->)]
-                          let-bindings)))]
-           [else
+       (cond
+         [(and (identifier? (car args)) (free-identifier=? (car args) #'(... ...)))
+          (when ellipsis
+            (raise-syntax-error '-> "expected at most one ellipsis"
+                                stx (car args) ellipsis))
+          (when (null? regular-args)
+            (raise-syntax-error '->
+                                "expected the ellipsis to follow a contract"
+                                stx
+                                (car args)))
+          (for ([arg (in-list (cdr args))])
+            (when (keyword? (syntax-e arg))
+              (raise-syntax-error '->
+                                  "keywords are not allowed after the ellipsis"
+                                  stx arg)))
+          (define sorted
+            (sort (map cons kwds kwd-args)
+                  keyword<?
+                  #:key (compose syntax-e car)))
+          (define arg-xes (generate-temporaries (cdr args)))
+          (values (reverse (cdr regular-args))
+                  (map car sorted)
+                  (map cdr sorted)
+                  (append (reverse let-bindings)
+                          (for/list ([arg-exp (cdr args)]
+                                     [arg-x (in-list arg-xes)])
+                            #`[#,arg-x #,(syntax-property arg-exp 
+                                                          'racket/contract:negative-position 
+                                                          this->)]))
+                  (cons (car regular-args) arg-xes))]
+         [(keyword? (syntax-e (car args)))
+          (when (null? (cdr args))
+            (raise-syntax-error '-> 
+                                "expected a contract to follow the keyword (plus the range)"
+                                stx
+                                (car args)))
+          (when (and (identifier? (cadr args))
+                     (free-identifier=? (cadr args) #'(... ...)))
+            (raise-syntax-error '->
+                                "expected a contract to follow a keyword, not an ellipsis"
+                                stx
+                                (car args)))
+          (with-syntax ([(arg-x) (generate-temporaries (list (car args)))])
+            (loop (cddr args)
+                  regular-args
+                  (cons (car args) kwds)
+                  (cons #'arg-x kwd-args)
+                  (cons #`[arg-x #,(syntax-property (cadr args) 
+                                                    'racket/contract:negative-position 
+                                                    this->)]
+                        let-bindings)
+                  ellipsis))]
+         [else
+          (with-syntax ([(arg-x) (generate-temporaries (list (car args)))])
             (loop (cdr args)
                   (cons #'arg-x regular-args)
                   kwds
@@ -589,16 +627,20 @@
                   (cons #`[arg-x #,(syntax-property (car args) 
                                                     'racket/contract:negative-position 
                                                     this->)]
-                        let-bindings))]))])))
+                        let-bindings)
+                  ellipsis))])])))
 
 (define-for-syntax (->-valid-app-shapes stx)
   (syntax-case stx ()
     [(_ args ...)
      (let ()
        (define this-> (gensym 'this->))
-       (define-values (regular-args kwds kwd-args let-bindings)
+       (define-values (regular-args kwds kwd-args let-bindings ellipsis-info)
          (parse-arrow-args stx (syntax->list #'(args ...)) this->))
-       (valid-app-shapes (list (- (length regular-args) 1))
+       (define arg-count (- (length regular-args) 1))
+       (valid-app-shapes (if ellipsis-info
+                             (+ arg-count (- (length ellipsis-info) 1))
+                             (list arg-count))
                          (map syntax->datum kwds)
                          '()))]))
 
@@ -610,7 +652,7 @@
     [(_ args ... rng)
      (let ()
        (define this-> (gensym 'this->))
-       (define-values (regular-args kwds kwd-args let-bindings)
+       (define-values (regular-args kwds kwd-args let-bindings ellipsis-info)
          (parse-arrow-args stx (syntax->list #'(args ...)) this->))
        (define (add-pos-obligations stxes)
          (for/list ([stx (in-list stxes)])
@@ -622,7 +664,7 @@
            [rng (add-pos-obligations (list #'rng))]))
        (define-values (plus-one-arity-function chaperone-constructor)
          (build-plus-one-arity-function+chaperone-constructor 
-          regular-args '() kwds '() #f #f #f rngs #f #f))
+          regular-args '() kwds '() #f #f (and ellipsis-info #t) rngs #f #f))
        (syntax-property
         #`(let #,let-bindings
             #,(quasisyntax/loc stx
@@ -634,7 +676,10 @@
                        #`(list #,@rngs)
                        #'#f)
                  #,plus-one-arity-function
-                 #,chaperone-constructor)))
+                 #,chaperone-constructor
+                 #,(if ellipsis-info
+                       #`(ellipsis-rest-arg #,(length regular-args) #,@ellipsis-info)
+                       #'#f))))
         'racket/contract:contract
         (vector this->
                 ;; the -> in the original input to this guy
@@ -805,12 +850,13 @@
                          mandatory-kwds mandatory-raw-kwd-doms
                          raw-rngs
                          plus-one-arity-function
-                         chaperone-constructor)
+                         chaperone-constructor
+                         raw-rest-ctc)
   (build--> '->
             raw-regular-doms '() 
             mandatory-kwds mandatory-raw-kwd-doms
             '() '()
-            #f
+            raw-rest-ctc
             #f raw-rngs #f
             plus-one-arity-function
             chaperone-constructor))
@@ -1168,16 +1214,29 @@
        [(and (andmap kwd-info-mandatory? (base->-kwd-infos ctc))
              (= (base->-min-arity ctc)
                 (length (base->-doms ctc)))
-             (not (base->-rest ctc))
+             (or (not (base->-rest ctc))
+                 (ellipsis-rest-arg-ctc? (base->-rest ctc)))
              (not (base->-pre? ctc))
              (not (base->-post? ctc)))
-        `(-> ,@(map contract-name (base->-doms ctc))
-             ,@(apply
-                append
-                (for/list ([kwd-info (base->-kwd-infos ctc)])
-                  (list (kwd-info-kwd kwd-info)
-                        (contract-name (kwd-info-ctc kwd-info)))))
-             ,rng-sexp)]
+        (define kwd-args
+          (apply
+           append
+           (for/list ([kwd-info (in-list (base->-kwd-infos ctc))])
+             (list (kwd-info-kwd kwd-info)
+                   (contract-name (kwd-info-ctc kwd-info))))))
+        (cond
+          [(ellipsis-rest-arg-ctc? (base->-rest ctc))
+           `(-> ,@(map contract-name (base->-doms ctc))
+                ,@kwd-args
+                ,(contract-name (*list-ctc-prefix (base->-rest ctc)))
+                ...
+                ,@(for/list ([ctc (in-list (*list-ctc-suffix (base->-rest ctc)))])
+                    (contract-name ctc))
+                ,rng-sexp)]
+          [else
+           `(-> ,@(map contract-name (base->-doms ctc))
+                ,@kwd-args
+                ,rng-sexp)])]
        [else
         (define (take l n) (reverse (list-tail (reverse l) (- (length l) n))))
         (define mandatory-args

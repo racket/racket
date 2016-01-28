@@ -1011,19 +1011,31 @@ designed to match @racket[case-lambda] and
 without requiring that the domain have any particular shape
 (see below for an example use).
 
-@defform*/subs[#:literals (any values)
-               [(-> dom ... range)]
-               ([dom dom-expr (code:line keyword dom-expr)]
-                [range range-expr (values range-expr ...) any])]{
+@(define lit-ellipsis (racket ...))
 
-Produces a contract for a function that accepts a fixed
-number of arguments and returns either a fixed number of
+@defform*/subs[#:literals (any values)
+               [(-> dom ... range)
+                (-> dom ... ellipsis dom-expr ... range)]
+               ([dom dom-expr (code:line keyword dom-expr)]
+                [range range-expr (values range-expr ...) any]
+                [ellipsis #,lit-ellipsis])]{
+
+Produces a contract for a function that accepts the argument
+specified by the @racket[dom-expr] contracts and returns
+either a fixed number of
 results or completely unspecified results (the latter when
 @racket[any] is specified).
 
 Each @racket[dom-expr] is a contract on an argument to a
 function, and each @racket[range-expr] is a contract on a
 result of the function.
+
+If the domain contain @racket[...]
+then the function accepts as many arguments as the rest of
+the contracts in the domain portion specify, as well as
+arbitrarily many more that match the contract just before the
+@racket[...]. Otherwise, the contract accepts exactly the
+argument specified.
 
 @margin-note{Using a @racket[->] between two whitespace-delimited
 @racketparenfont{.}s is the same as putting the @racket[->] right
@@ -1032,9 +1044,7 @@ after the enclosing opening parenthesis. See
 information.}
 
 For example,
-
 @racketblock[(integer? boolean? . -> . integer?)]
-
 produces a contract on functions of two arguments. The first argument
 must be an integer, and the second argument must be a boolean. The
 function must produce an integer.
@@ -1043,11 +1053,15 @@ A domain specification may include a keyword. If so, the function must
 accept corresponding (mandatory) keyword arguments, and the values for
 the keyword arguments must match the corresponding contracts. For
 example:
-
 @racketblock[(integer? #:x boolean? . -> . integer?)]
-
 is a contract on a function that accepts a by-position argument that
 is an integer and a @racket[#:x] argument that is a boolean.
+
+As an example that uses an @racket[...], this contract:
+@racketblock[(integer? string? ... integer? . -> . any)]
+on a function insists that the first and last arguments to
+the function must be integers (and there must be at least
+two arguments) and any other arguments must be strings.
 
 If @racket[any] is used as the last sub-form for @racket[->], no
 contract checking is performed on the result of the function, and

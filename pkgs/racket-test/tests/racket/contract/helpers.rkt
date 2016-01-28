@@ -78,8 +78,16 @@
               (valid-app-shapes '(2) '() '()))
 (check-equal? (->-valid-app-shapes #'(-> integer? #:x any/c integer?))
               (valid-app-shapes '(1) '(#:x) '()))
-(check-equal? (->-valid-app-shapes #'(-> integer? #:x any/c #:y any/c integer?))
-              (valid-app-shapes '(1) '(#:x #:y) '()))
+(check-equal? (->-valid-app-shapes #'(-> integer? (... ...) any))
+              (valid-app-shapes 0 '() '()))
+(check-equal? (->-valid-app-shapes #'(-> integer? integer? (... ...) any))
+              (valid-app-shapes 1 '() '()))
+(check-equal? (->-valid-app-shapes #'(-> integer? integer? (... ...) integer? any))
+              (valid-app-shapes 2 '() '()))
+(check-equal? (->-valid-app-shapes #'(-> integer? integer? (... ...) integer? boolean? char? any))
+              (valid-app-shapes 4 '() '()))
+(check-equal? (->-valid-app-shapes #'(-> integer? boolean? char? (... ...) integer? char? any))
+              (valid-app-shapes 4 '() '()))
 
 (check-equal? (->*-valid-app-shapes #'(->* (integer? #:x any/c #:y any/c) integer?))
               (valid-app-shapes '(1) '(#:x #:y) '()))
@@ -97,7 +105,6 @@
 (check-equal? (->*-valid-app-shapes #'(->i ([m any/c]) ([o any/c]) #:rest [r any/c] [r any/c]))
               (valid-app-shapes '(1 2 . 3) '() '()))
 
-              
 (check-true  (valid-argument-list? #'(f x) (valid-app-shapes '(1 2 . 3) '() '())))
 (check-true  (valid-argument-list? #'(f x y) (valid-app-shapes '(1 2 . 3) '() '())))
 (check-true  (valid-argument-list? #'(f x y a b c d) (valid-app-shapes '(1 2 . 3) '() '())))
