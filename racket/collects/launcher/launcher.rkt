@@ -399,7 +399,14 @@
                                   (find-lib-dir)
                                   (let ([p (path-only dest)])
                                     (if (eq? 'macosx (cross-system-type))
-                                        (build-path p 'up)
+                                        (let* ([cdir (find-console-bin-dir)]
+                                               [gdir (find-gui-bin-dir)]
+                                               [rel (find-relative-path cdir gdir)])
+                                          (cond
+                                           [(relative-path? rel)
+                                            (build-path p rel)]
+                                           [(equal? cdir gdir) p]
+                                           [else rel]))
                                         p))))
                             (find-console-bin-dir))])
             (if (let ([a (assq 'relative? aux)])

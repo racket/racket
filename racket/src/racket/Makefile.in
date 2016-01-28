@@ -12,6 +12,7 @@ bindir = @bindir@
 libdir = @libdir@
 includepltdir = @includepltdir@
 libpltdir = @libpltdir@
+libpltdir_rel = @libpltdir_rel@
 etcpltdir = @etcpltdir@
 sharepltdir = @sharepltdir@
 collectsdir = @collectsdir@
@@ -494,7 +495,8 @@ mingw-install-3m-final:
 
 MZFWDIR = @FRAMEWORK_INSTALL_DIR@/Racket.framework
 MZFWMMM = Racket.framework/Versions/$(FWVERSION)_3m/Racket
-FRAMEWORK_REL_PREFIX = "@executable_path/../lib/"
+FRAMEWORK_REL_PREFIX = "@executable_path/../$(libpltdir_rel)/"
+FRAMEWORK_ABS_PREFIX = "$(libpltdir)/"
 
 osx-install:
 	$(MAKE) unix-install

@@ -1486,8 +1486,11 @@
                                            (mac-dest->executable dest mred?)
                                            mred?)
                     (when mred?
-                      ;; adjust relative path (since GRacket is off by one):
-                      (update-framework-path "@executable_path/../../../lib/"
+                      ;; adjust relative path (since GRacket is normally off by one):
+                      (define rel (find-relative-path (find-gui-bin-dir)
+                                                      (find-lib-dir)))
+                      (update-framework-path (format "@executable_path/../../../~a"
+                                                     (path->directory-path rel))
                                              (mac-dest->executable dest mred?)
                                              #t)))
                 ;; Check whether we need an absolute path to frameworks:
