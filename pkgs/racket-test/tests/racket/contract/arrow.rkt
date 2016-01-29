@@ -366,8 +366,7 @@
    '((contract (-> integer? ... any)
                (λ args args)
                'pos 'neg)
-     1 2 3 4 5 6 7)
-   '(1 2 3 4 5 "6" 7))
+     1 2 3 4 #f 6 7))
 
   
   (test/spec-passed
@@ -606,6 +605,6 @@
           (begin (set! l (cons 5 l)) #f)
           (begin (set! l (cons 6 l)) #f))
       (reverse l))
-   '(1 2 3 4 5))
+   '(1 2 3 4 5 6))
   
   )
