@@ -78,7 +78,7 @@
              in-weak-hash-pairs*
 
              in-directory
-             
+
              in-sequences
              in-cycle
              in-parallel
@@ -724,8 +724,8 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
-                           (not (immutable? ht)) 
+              (unless (and (hash? ht)
+                           (not (immutable? ht))
                            (not (hash-weak? ht)))
                 (in-hash ht))
               ;; loop bindings
@@ -793,7 +793,7 @@
               ;; loop args
               ((unsafe-weak-hash-iterate-next ht i)))])]
         [_ #f])))
-  
+
   (define-sequence-syntax in-mutable-hash*
     (lambda () #'in-hash)
     (lambda (stx)
@@ -805,8 +805,8 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
-                           (not (immutable? ht)) 
+              (unless (and (hash? ht)
+                           (not (immutable? ht))
                            (not (hash-weak? ht))
                            (not (chaperone? ht))
                            (not (impersonator? ht)))
@@ -836,7 +836,7 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
+              (unless (and (hash? ht)
                            (immutable? ht)
                            (not (chaperone? ht))
                            (not (impersonator? ht)))
@@ -926,8 +926,8 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
-                           (not (immutable? ht)) 
+              (unless (and (hash? ht)
+                           (not (immutable? ht))
                            (not (hash-weak? ht)))
                 (in-hash-keys ht))
               ;; loop bindings
@@ -1007,8 +1007,8 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
-                           (not (immutable? ht)) 
+              (unless (and (hash? ht)
+                           (not (immutable? ht))
                            (not (hash-weak? ht))
                            (not (chaperone? ht))
                            (not (impersonator? ht)))
@@ -1068,7 +1068,7 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
+              (unless (and (hash? ht)
                            (hash-weak? ht)
                            (not (chaperone? ht))
                            (not (impersonator? ht)))
@@ -1128,8 +1128,8 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
-                           (not (immutable? ht)) 
+              (unless (and (hash? ht)
+                           (not (immutable? ht))
                            (not (hash-weak? ht)))
                 (in-hash-values ht))
               ;; loop bindings
@@ -1209,8 +1209,8 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
-                           (not (immutable? ht)) 
+              (unless (and (hash? ht)
+                           (not (immutable? ht))
                            (not (hash-weak? ht))
                            (not (chaperone? ht))
                            (not (impersonator? ht)))
@@ -1240,7 +1240,7 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
+              (unless (and (hash? ht)
                            (immutable? ht)
                            (not (chaperone? ht))
                            (not (impersonator? ht)))
@@ -1330,8 +1330,8 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
-                           (not (immutable? ht)) 
+              (unless (and (hash? ht)
+                           (not (immutable? ht))
                            (not (hash-weak? ht)))
                 (in-hash-pairs ht))
               ;; loop bindings
@@ -1411,7 +1411,7 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
+              (unless (and (hash? ht)
                            (not (immutable? ht)) 
                            (not (hash-weak? ht))
                            (not (chaperone? ht))
@@ -1472,7 +1472,7 @@
               ;;outer bindings
               ([(ht) ht-expr])
               ;; outer check
-              (unless (and (hash? ht) 
+              (unless (and (hash? ht)
                            (hash-weak? ht)
                            (not (chaperone? ht))
                            (not (impersonator? ht)))

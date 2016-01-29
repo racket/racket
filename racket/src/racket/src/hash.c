@@ -657,14 +657,14 @@ void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
   table->mcount = 0;
 }
 
-Scheme_Object *scheme_hash_table_next(Scheme_Hash_Table *hash, 
+Scheme_Object *scheme_hash_table_next(Scheme_Hash_Table *hash,
 				      mzlonglong start)
 {
   if (start >= 0) {
     if ((start >= hash->size) || !hash->vals[start])
       return NULL;
   }
-  
+
   return scheme_hash_table_next_no_check(hash, start);
 }
 
@@ -680,7 +680,7 @@ Scheme_Object *scheme_hash_table_next_no_check(Scheme_Hash_Table *hash,
   return scheme_false;
 }
 
-int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos, 
+int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos,
 			    Scheme_Object **_key, Scheme_Object **_val)
 {
   if (pos < hash->size) {
@@ -1141,19 +1141,19 @@ Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt)
   return table;
 }
 
-Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash, 
+Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash,
 					mzlonglong start)
 {
   Scheme_Bucket *bucket;
   if (start >= 0) {
     bucket = ((start < hash->size) ? hash->buckets[start] : NULL);
-    if (!bucket || !bucket->val || !bucket->key) 
-      return NULL;      
+    if (!bucket || !bucket->val || !bucket->key)
+      return NULL;
   }
   return scheme_bucket_table_next_no_check(hash, start);
 }
 
-Scheme_Object *scheme_bucket_table_next_no_check(Scheme_Bucket_Table *hash, 
+Scheme_Object *scheme_bucket_table_next_no_check(Scheme_Bucket_Table *hash,
 						 mzlonglong start)
 {
   Scheme_Bucket *bucket;
@@ -2747,12 +2747,13 @@ Scheme_Object *scheme_hash_tree_next_no_check(Scheme_Hash_Tree *tree, mzlonglong
 # define HAMT_TRAVERSE_NEXT(i) ((i)+1)
 #endif
 
-// these unsafe ops currently do not support REVERSE_HASH_TABLE_ORDER
-// - avoids spurious popcount computation
-// - speeds up traversal by returning view into tree consisting of:
+// instead of returning an index, these unsafe ieration ops speed up traversal 
+// by returning a view into the tree consisting of a:
 //   - subtree
 //   - subtree index
-//   - stack of parent subtrees
+//   - stack of parent subtrees and indices
+// these unsafe ops currently do not support REVERSE_HASH_TABLE_ORDER
+// to avoid spurious popcount computations
 Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
 {
   Scheme_Object *stack = scheme_null;
@@ -2773,7 +2774,7 @@ Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
       ht = (Scheme_Hash_Tree *)ht->els[i];
       i = 0;
     } else {
-      return scheme_make_pair((Scheme_Object *)ht, 
+      return scheme_make_pair((Scheme_Object *)ht,
 			      scheme_make_pair(scheme_make_integer_value(i),
 					       stack));
     }
@@ -2789,15 +2790,14 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
   Scheme_Object *stack = SCHEME_CDDR(args);
 
   //  ht = resolve_placeholder(ht); // only need to check for iterate-first
-  
+
   popcount = hamt_popcount(ht->bitmap);
 
   while(1) {
     if (i == popcount) { // pop up the tree
       if (SCHEME_NULLP(stack)) {
 	return scheme_false;
-      }
-      else {
+      } else {
 	ht = (Scheme_Hash_Tree *)SCHEME_CAR(stack);
 	i = SCHEME_INT_VAL(SCHEME_CADR(stack))+1;
 	popcount = hamt_popcount(ht->bitmap);
@@ -2805,7 +2805,7 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
       }
     } else { 
       if (HASHTR_SUBTREEP(ht->els[i])
-	  || HASHTR_COLLISIONP(ht->els[i])) { 
+	  || HASHTR_COLLISIONP(ht->els[i])) {
 	stack = // go down tree but save return point
 	  scheme_make_pair((Scheme_Object *)ht,
 			   scheme_make_pair(scheme_make_integer_value(i),
@@ -2814,7 +2814,7 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
 	i = 0;
 	popcount = hamt_popcount(ht->bitmap);
       } else {
-	return scheme_make_pair((Scheme_Object *)ht, 
+	return scheme_make_pair((Scheme_Object *)ht,
 				scheme_make_pair(scheme_make_integer_value(i),
 						 stack));
       }
@@ -2856,69 +2856,6 @@ XFORM_NONGCING static void hamt_at_index(Scheme_Hash_Tree *ht, mzlonglong pos,
     }
   }
 }
-/* // these individual key/val functions are ~33% faster than hamt_at_index */
-/* Scheme_Object *scheme_hash_tree_index_key(Scheme_Hash_Tree *hash, mzlonglong pos) */
-/* { */
-/*   Scheme_Hash_Tree *sub, *ht = hash; */
-/*   int popcount, i; */
-
-/*   ht = resolve_placeholder(ht); */
-  
-/*   while (1) { */
-/*     popcount = hamt_popcount(ht->bitmap); */
-/*     i = HAMT_TRAVERSE_INIT(popcount); */
-/*     while (1) { */
-/*       if (HASHTR_SUBTREEP(ht->els[i]) */
-/* 	  || HASHTR_COLLISIONP(ht->els[i])) { */
-/* 	sub = (Scheme_Hash_Tree *)ht->els[i]; */
-/* 	if (pos < sub->count) { */
-/* 	  ht = sub; */
-/* 	  break; /\* to outer loop *\/ */
-/* 	} else */
-/* 	  pos -= sub->count; */
-/*       } else { */
-/* 	if (!pos) return (Scheme_Object *)ht->els[i]; */
-/* 	--pos; */
-/*       } */
-/*       i = HAMT_TRAVERSE_NEXT(i); */
-/*     } */
-/*   } */
-/*   return NULL; */
-/* } */
-
-/* void scheme_hash_tree_index_no_check(Scheme_Hash_Tree *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val) */
-/* { */
-/*   Scheme_Hash_Tree *sub, *ht = hash; */
-/*   int popcount, i; */
-
-/*   ht = resolve_placeholder(ht); */
-  
-/*   while (1) { */
-/*     popcount = hamt_popcount(ht->bitmap); */
-/*     i = HAMT_TRAVERSE_INIT(popcount); */
-/*     while (1) { */
-/*       if (HASHTR_SUBTREEP(ht->els[i]) */
-/* 	  || HASHTR_COLLISIONP(ht->els[i])) { */
-/* 	sub = (Scheme_Hash_Tree *)ht->els[i]; */
-/* 	if (pos < sub->count) { */
-/* 	  ht = sub; */
-/* 	  break; /\* to outer loop *\/ */
-/* 	} else */
-/* 	  pos -= sub->count; */
-/*       } else { */
-/* 	if (!pos) { */
-/*           *_key = (Scheme_Object *)ht->els[i]; */
-/* 	  *_val = (Scheme_Object *)ht->els[i+popcount]; */
-/* 	  //	  *_val = (Scheme_Object *)_mzHAMT_VAL(ht, i, popcount); */
-/* 	  return; */
-/* 	} */
-/* 	//	return (Scheme_Object *)_mzHAMT_VAL(ht, i, popcount); */
-/* 	--pos; */
-/*       } */
-/*       i = HAMT_TRAVERSE_NEXT(i); */
-/*     } */
-/*   } */
-/* } */
 
 int scheme_hash_tree_index(Scheme_Hash_Tree *ht, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
 {

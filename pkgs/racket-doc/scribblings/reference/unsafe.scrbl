@@ -347,6 +347,171 @@ The index @racket[k] must be between @racket[0] (inclusive) and
 the number of fields in the structure (exclusive). In the case of
 @racket[unsafe-struct-set!], the field must be mutable.}
 
+@deftogether[(
+@defproc[(unsafe-mutable-hash-iterate-first
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+	  (or/c #f exact-nonnegative-integer?)]
+@defproc[(unsafe-mutable-hash-iterate-next
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i exact-nonnegative-integer?])
+	  (or/c #f exact-nonnegative-integer?)]
+@defproc[(unsafe-mutable-hash-iterate-key
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i exact-nonnegative-integer?]) 
+	  any/c]
+@defproc[(unsafe-mutable-hash-iterate-value
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i exact-nonnegative-integer?]) 
+	  any/c]
+@defproc[(unsafe-mutable-hash-iterate-key+value
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i exact-nonnegative-integer?]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-mutable-hash-iterate-pair
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i exact-nonnegative-integer?]) 
+	  pair?]
+@defproc[(unsafe-mutable-hash-iterate-first*
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	            (not/c impersonator?) (not/c chaperone?))])
+	  (or/c #f exact-nonnegative-integer?)]
+@defproc[(unsafe-mutable-hash-iterate-next*
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?])
+	  (or/c #f exact-nonnegative-integer?)]
+@defproc[(unsafe-mutable-hash-iterate-key*
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?]) 
+	  any/c]
+@defproc[(unsafe-mutable-hash-iterate-value*
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?]) 
+	  any/c]
+@defproc[(unsafe-mutable-hash-iterate-key+value*
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-mutable-hash-iterate-pair*
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?]) 
+	  pair?]
+@defproc[(unsafe-immutable-hash-iterate-first
+          [h (and/c hash? immutable?)])
+	  (or/c #f any/c)]
+@defproc[(unsafe-immutable-hash-iterate-next
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-immutable-hash-iterate-key
+          [h (and/c hash? immutable?)]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-immutable-hash-iterate-value
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  any/c]
+@defproc[(unsafe-immutable-hash-iterate-key+value
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  (values any/c any/c)]
+@defproc[(unsafe-immutable-hash-iterate-pair
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  pair?]
+@defproc[(unsafe-immutable-hash-iterate-first*
+          [h (and/c hash? immutable? (not/c chaperone?))])
+	  (or/c #f any/c)]
+@defproc[(unsafe-immutable-hash-iterate-next*
+          [h (and/c hash? immutable? (not/c chaperone?))]
+	  [i any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-immutable-hash-iterate-key*
+          [h (and/c hash? immutable? (not/c chaperone?))]
+	  [i any/c])
+	  any/c]
+@defproc[(unsafe-immutable-hash-iterate-value*
+          [h (and/c hash? immutable? (not/c chaperone?))]
+	  [i any/c])
+	  any/c]
+@defproc[(unsafe-immutable-hash-iterate-key+value*
+          [h (and/c hash? immutable? (not/c chaperone?))]
+	  [i any/c])
+	  (values any/c any/c)]
+@defproc[(unsafe-immutable-hash-iterate-pair*
+          [h (and/c hash? immutable? (not/c chaperone?))]
+	  [i any/c])
+	  pair?]
+@defproc[(unsafe-weak-hash-iterate-first
+          [h (and/c hash? hash-weak?)])
+	  (or/c #f exact-nonnegative-integer?)]
+@defproc[(unsafe-weak-hash-iterate-next
+          [h (and/c hash? hash-weak?)]
+	  [i exact-nonnegative-integer?])
+	  (or/c #f exact-nonnegative-integer?)]
+@defproc[(unsafe-weak-hash-iterate-key
+          [h (and/c hash? hash-weak?)]
+	  [i exact-nonnegative-integer?]) 
+	  any/c]
+@defproc[(unsafe-weak-hash-iterate-value
+          [h (and/c hash? hash-weak?)]
+	  [i exact-nonnegative-integer?]) 
+	  any/c]
+@defproc[(unsafe-weak-hash-iterate-key+value
+          [h (and/c hash? hash-weak?)]
+	  [i exact-nonnegative-integer?]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-weak-hash-iterate-pair
+          [h (and/c hash? hash-weak?)]
+	  [i exact-nonnegative-integer?]) 
+	  pair?]
+@defproc[(unsafe-weak-hash-iterate-first*
+          [h (and/c hash? hash-weak?
+	            (not/c impersonator?) (not/c chaperone?))])
+	  (or/c #f exact-nonnegative-integer?)]
+@defproc[(unsafe-weak-hash-iterate-next*
+          [h (and/c hash? hash-weak?
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?])
+	  (or/c #f exact-nonnegative-integer?)]
+@defproc[(unsafe-weak-hash-iterate-key*
+          [h (and/c hash? hash-weak?
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?]) 
+	  any/c]
+@defproc[(unsafe-weak-hash-iterate-value*
+          [h (and/c hash? hash-weak?
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?]) 
+	  any/c]
+@defproc[(unsafe-weak-hash-iterate-key+value*
+          [h (and/c hash? hash-weak?
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-weak-hash-iterate-pair*
+          [h (and/c hash? hash-weak?
+	            (not/c impersonator?) (not/c chaperone?))]
+	  [i exact-nonnegative-integer?]) 
+	  pair?]
+)]{
+Unsafe versions of @racket[hash-iterate-key] and similar ops. The "star"
+versions do not support @tech{chaperones} or @tech{impersonators}.
+
+The @racket[unsafe-immutable-hash-iterate-first] and 
+@racket[unsafe-immutable-hash-iterate-next] operations do not return an index 
+but rather an internal view into the hash tree, enabling faster iteration. 
+
+The result of these functions should be given to 
+@racket[unsafe-immutable-hash-key] and other similar operations.
+
+@history[#:added "6.4.0.6"]
+}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "unsafeextfl"]{Unsafe Extflonum Operations}

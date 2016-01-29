@@ -905,185 +905,185 @@ void
 scheme_init_unsafe_hash (Scheme_Env *env)
 {
   Scheme_Object *p;
-  
+
   // unsafe-hash-iterate-first ----------------------------------------
   // mutable/hash_table
-  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_start, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_start,
 			     "unsafe-mutable-hash-iterate-first", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-first", p, env);
 
-  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_start_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_start_star,
 			     "unsafe-mutable-hash-iterate-first*", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-first*", p, env);
 
   // immutable/hash_tree
-  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_start, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_start,
 			     "unsafe-immutable-hash-iterate-first", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-first", p, env);
 
-  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_start_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_start_star,
 			     "unsafe-immutable-hash-iterate-first*", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-first*", p, env);
 
   // weak/bucket_table
-  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_start, 
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_start,
 			     "unsafe-weak-hash-iterate-first", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-first", p, env);
 
-  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_start_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_start_star,
 			     "unsafe-weak-hash-iterate-first*", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-first*", p, env);
 
   // unsafe-hash-iterate-next ----------------------------------------
   // mutable/hash_table
-  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_next, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_next,
 			     "unsafe-mutable-hash-iterate-next", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-next", p, env);
 
-  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_next_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_next_star,
 			     "unsafe-mutable-hash-iterate-next*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-next*", p, env);
 
   // immutable/hash_tree
-  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_next, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_next,
 			     "unsafe-immutable-hash-iterate-next", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-next", p, env);
 
-  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_next_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_next_star,
 			     "unsafe-immutable-hash-iterate-next*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-next*", p, env);
 
   // weak/bucket_table
-  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_next, 
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_next,
 			     "unsafe-weak-hash-iterate-next", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-next", p, env);
 
-  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_next_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_next_star,
 			     "unsafe-weak-hash-iterate-next*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-next*", p, env);
 
   // unsafe-hash-iterate-key ----------------------------------------
   // mutable/hash_table
-  p = scheme_make_noncm_prim(unsafe_scheme_hash_table_iterate_key, 
+  p = scheme_make_noncm_prim(unsafe_scheme_hash_table_iterate_key,
 			     "unsafe-mutable-hash-iterate-key", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-key", p, env);
   
-  p = scheme_make_noncm_prim(unsafe_scheme_hash_table_iterate_key_star, 
+  p = scheme_make_noncm_prim(unsafe_scheme_hash_table_iterate_key_star,
 			     "unsafe-mutable-hash-iterate-key*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-key*", p, env);
 
   // immutable/hash_tree
-  p = scheme_make_noncm_prim(unsafe_scheme_hash_tree_iterate_key, 
+  p = scheme_make_noncm_prim(unsafe_scheme_hash_tree_iterate_key,
 			     "unsafe-immutable-hash-iterate-key", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-key", p, env);
   
-  p = scheme_make_noncm_prim(unsafe_scheme_hash_tree_iterate_key_star, 
+  p = scheme_make_noncm_prim(unsafe_scheme_hash_tree_iterate_key_star,
 			     "unsafe-immutable-hash-iterate-key*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-key*", p, env);
 
   // weak/bucket_table
-  p = scheme_make_noncm_prim(unsafe_scheme_bucket_table_iterate_key, 
+  p = scheme_make_noncm_prim(unsafe_scheme_bucket_table_iterate_key,
 			     "unsafe-weak-hash-iterate-key", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-key", p, env);
 
-  p = scheme_make_noncm_prim(unsafe_scheme_bucket_table_iterate_key_star, 
+  p = scheme_make_noncm_prim(unsafe_scheme_bucket_table_iterate_key_star,
 			     "unsafe-weak-hash-iterate-key*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-key*", p, env);
 
   // unsafe-hash-iterate-value ----------------------------------------
   // mutable/hash_table
-  p = scheme_make_noncm_prim(unsafe_scheme_hash_table_iterate_value, 
+  p = scheme_make_noncm_prim(unsafe_scheme_hash_table_iterate_value,
 			     "unsafe-mutable-hash-iterate-value", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-value", p, env);
 
-  p = scheme_make_noncm_prim(unsafe_scheme_hash_table_iterate_value_star, 
+  p = scheme_make_noncm_prim(unsafe_scheme_hash_table_iterate_value_star,
 			     "unsafe-mutable-hash-iterate-value*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-value*", p, env);
 
   // immutable/hash_tree
-  p = scheme_make_noncm_prim(unsafe_scheme_hash_tree_iterate_value, 
+  p = scheme_make_noncm_prim(unsafe_scheme_hash_tree_iterate_value,
 			     "unsafe-immutable-hash-iterate-value", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-value", p, env);
 
-  p = scheme_make_noncm_prim(unsafe_scheme_hash_tree_iterate_value_star, 
+  p = scheme_make_noncm_prim(unsafe_scheme_hash_tree_iterate_value_star,
 			     "unsafe-immutable-hash-iterate-value*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-value*", p, env);
 
   // weak/bucket_table
-  p = scheme_make_noncm_prim(unsafe_scheme_bucket_table_iterate_value, 
+  p = scheme_make_noncm_prim(unsafe_scheme_bucket_table_iterate_value,
 			     "unsafe-weak-hash-iterate-value", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-value", p, env);
 
-  p = scheme_make_noncm_prim(unsafe_scheme_bucket_table_iterate_value_star, 
+  p = scheme_make_noncm_prim(unsafe_scheme_bucket_table_iterate_value_star,
 			     "unsafe-weak-hash-iterate-value*", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-value*", p, env);
 
   // unsafe-hash-iterate-key+value ----------------------------------------
   // mutable/hash_table
-  p = scheme_make_prim_w_arity2(unsafe_scheme_hash_table_iterate_key_value, 
+  p = scheme_make_prim_w_arity2(unsafe_scheme_hash_table_iterate_key_value,
 				"unsafe-mutable-hash-iterate-key+value", 
 				2, 2, 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-key+value", p, env);
@@ -1091,90 +1091,90 @@ scheme_init_unsafe_hash (Scheme_Env *env)
   p = scheme_make_prim_w_arity2(unsafe_scheme_hash_table_iterate_key_value_star, 
 				"unsafe-mutable-hash-iterate-key+value*", 
 				2, 2, 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-key+value*", p, env);
   
   // immutable/hash_tree
-  p = scheme_make_prim_w_arity2(unsafe_scheme_hash_tree_iterate_key_value, 
+  p = scheme_make_prim_w_arity2(unsafe_scheme_hash_tree_iterate_key_value,
 				"unsafe-immutable-hash-iterate-key+value", 
 				2, 2, 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-key+value", p, env);
-  p = scheme_make_prim_w_arity2(unsafe_scheme_hash_tree_iterate_key_value_star, 
+  p = scheme_make_prim_w_arity2(unsafe_scheme_hash_tree_iterate_key_value_star,
 				"unsafe-immutable-hash-iterate-key+value*", 
 				2, 2, 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
 				 | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-key+value*", p, env);
 
   // weak/bucket_table
-  p = scheme_make_prim_w_arity2(unsafe_scheme_bucket_table_iterate_key_value, 
+  p = scheme_make_prim_w_arity2(unsafe_scheme_bucket_table_iterate_key_value,
 				"unsafe-weak-hash-iterate-key+value", 
 				2, 2, 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-key+value", p, env);
 
-  p = scheme_make_prim_w_arity2(unsafe_scheme_bucket_table_iterate_key_value_star, 
+  p = scheme_make_prim_w_arity2(unsafe_scheme_bucket_table_iterate_key_value_star,
 				"unsafe-weak-hash-iterate-key+value*", 
 				2, 2, 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-key+value*", p, env);
 
   // unsafe-hash-iterate-pair ----------------------------------------
   // mutable/hash_table
-  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_pair, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_pair,
 			     "unsafe-mutable-hash-iterate-pair", 
 			     2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-pair", p, env);
   
-  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_pair_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_table_iterate_pair_star,
 			     "unsafe-mutable-hash-iterate-pair*", 
 			     2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-mutable-hash-iterate-pair*", p, env);
   
   // immutable/hash_tree
-  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_pair, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_pair,
 			     "unsafe-immutable-hash-iterate-pair", 
 			     2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-pair", p, env);
 
-  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_pair_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_hash_tree_iterate_pair_star,
 			     "unsafe-immutable-hash-iterate-pair*", 
 			     2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant ("unsafe-immutable-hash-iterate-pair*", p, env);
 
   // weak/bucket_table
-  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_pair, 
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_pair,
 			     "unsafe-weak-hash-iterate-pair", 
 			     2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-pair", p, env);
 
-  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_pair_star, 
+  p = scheme_make_immed_prim(unsafe_scheme_bucket_table_iterate_pair_star,
 			     "unsafe-weak-hash-iterate-pair*", 
 			     2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= 
+  SCHEME_PRIM_PROC_FLAGS(p) |=
     scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE_ALLOCATION
 				 | SCHEME_PRIM_IS_UNSAFE_OMITABLE);
   scheme_add_global_constant ("unsafe-weak-hash-iterate-pair*", p, env);
@@ -4270,6 +4270,7 @@ Scheme_Object *unsafe_scheme_hash_table_iterate_key_value_star(int argc, Scheme_
   res[1] = ht->vals[pos];
   return scheme_values(2, res);
 }
+
 // unsafe_scheme_hash_tree, ie SCHEME_HASHTRP
 Scheme_Object *unsafe_scheme_hash_tree_iterate_start(int argc, Scheme_Object *argv[])
 {
@@ -4400,6 +4401,7 @@ Scheme_Object *unsafe_scheme_hash_tree_iterate_key_value_star(int argc, Scheme_O
   res[1] = ht->els[i+popcount];
   return scheme_values(2, res);
 }
+
 // unsafe_scheme_bucket_table, ie SCHEME_BUCKTP
 Scheme_Object *unsafe_scheme_bucket_table_iterate_start(int argc, Scheme_Object *argv[])
 {

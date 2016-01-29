@@ -378,6 +378,102 @@ each element in the sequence.
       (printf "key and value: ~a\n" key+value))]
 }
 
+@deftogether[(
+@defproc[(in-mutable-hash 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[(in-mutable-hash-keys
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[(in-mutable-hash-values
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[(in-mutable-hash-pairs
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[(in-mutable-hash*
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-mutable-hash-keys*
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-mutable-hash-values*
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-mutable-hash-pairs*
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-immutable-hash 
+          [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[(in-immutable-hash-keys
+          [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[(in-immutable-hash-values
+          [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[(in-immutable-hash-pairs
+          [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[(in-immutable-hash*
+          [hash (and/c hash? immutable?
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-immutable-hash-keys*
+          [hash (and/c hash? immutable?
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-immutable-hash-values*
+          [hash (and/c hash? immutable?
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-immutable-hash-pairs*
+          [hash (and/c hash? immutable?
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-weak-hash 
+          [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+@defproc[(in-weak-hash-keys
+          [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+@defproc[(in-weak-hash-values
+          [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+@defproc[(in-weak-hash-pairs
+          [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+@defproc[(in-weak-hash*
+          [hash (and/c hash? hash-weak?
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-weak-hash-keys*
+          [hash (and/c hash? hash-weak?
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-weak-hash-values*
+          [hash (and/c hash? hash-weak?
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+@defproc[(in-weak-hash-pairs*
+          [hash (and/c hash? hash-weak?
+	               (not/c chaperone?) (not/c impersonator?))])
+	  sequence?]
+)]{
+   Sequence constructors for specific kinds of hash tables that should be
+   more performant than the analogous @racket[in-hash] constructor. 
+   
+   The "star" versions do not support @tech{impersonators} or 
+   @tech{chaperones}.
+   
+   @history[#:added "6.4.0.6"]
+}
+
+
 @defproc[(in-directory [dir (or/c #f path-string?) #f]
                        [use-dir? ((and/c path? complete-path?) . -> . any/c)
                                  (lambda (dir-path) #t)])
