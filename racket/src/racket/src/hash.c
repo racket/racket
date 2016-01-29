@@ -657,7 +657,24 @@ void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
   table->mcount = 0;
 }
 
-int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
+Scheme_Object *scheme_hash_table_next(Scheme_Hash_Table *hash,
+				      mzlonglong start)
+{
+    int i, sz = hash->size;
+    if (start >= 0) {
+      if ((start >= sz) || !hash->vals[start])
+        return NULL;
+    }
+    for (i = start + 1; i < sz; i++) {
+      if (hash->vals[i])
+        return scheme_make_integer(i);
+    }
+
+    return scheme_false;
+}
+
+int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos,
+			    Scheme_Object **_key, Scheme_Object **_val)
 {
   if (pos < hash->size) {
     if (hash->vals[pos]) {
@@ -1115,6 +1132,27 @@ Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt)
   }
 
   return table;
+}
+
+Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash,
+					mzlonglong start)
+{
+  Scheme_Bucket *bucket;
+  int i, sz = hash->size;
+    
+  if (start >= 0) {
+    bucket = ((start < sz) ? hash->buckets[start] : NULL);
+    if (!bucket || !bucket->val || !bucket->key) 
+      return NULL;      
+  }
+  for (i = start + 1; i < sz; i++) {
+    bucket = hash->buckets[i];
+    if (bucket && bucket->val && bucket->key) {
+      return scheme_make_integer(i);
+    }
+  }
+
+  return scheme_false;
 }
 
 int scheme_bucket_table_index(Scheme_Bucket_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val)
@@ -2669,17 +2707,24 @@ static Scheme_Hash_Tree *hamt_remove(Scheme_Hash_Tree *ht, uintptr_t code, int s
     return ht;
 }
 
+/* this signature is different from other scheme_<hash type>_next fns */
+/* but is used else where, so leave as is */
 mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos)
 {
-  if (pos == -1)
-    pos = 0;
-  else
-    pos++;
-  
-  if (pos == tree->count)
+  mzlonglong i = pos+1;
+  if (i == tree->count)
     return -1;
   else
-    return pos;
+    return i;
+}
+
+Scheme_Object *scheme_hash_tree_next_pos(Scheme_Hash_Tree *tree, mzlonglong pos)
+{
+  mzlonglong i = pos+1;
+  if (i == tree->count)
+    return scheme_false;
+  else
+    return scheme_make_integer_value_from_long_long(i);
 }
 
 #if REVERSE_HASH_TABLE_ORDER
@@ -2690,6 +2735,81 @@ mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos)
 # define HAMT_TRAVERSE_NEXT(i) ((i)+1)
 #endif
 
+/* instead of returning a pos, these unsafe iteration ops */
+/* return a view into the tree consisting of a: */
+/*   - subtree */
+/*   - subtree index */
+/*   - stack of parent subtrees and indices */
+/* This speeds up performance of immutable hash table iteration. */
+/* These unsafe ops currently do not support REVERSE_HASH_TABLE_ORDER */
+/* to avoid unneeded popcount computations */
+Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
+{
+  Scheme_Object *stack = scheme_null;
+  int i;
+
+  ht = resolve_placeholder(ht);
+
+  if (0 == ht->count)
+    return scheme_false;
+
+  i = hamt_popcount(ht->bitmap)-1;
+
+  while (1) {
+    if (HASHTR_SUBTREEP(ht->els[i])
+	|| HASHTR_COLLISIONP(ht->els[i])) {
+      stack = /* go down tree but save return point */
+	scheme_make_pair((Scheme_Object *)ht,
+			 scheme_make_pair(scheme_make_integer(i),
+					  stack));
+      ht = (Scheme_Hash_Tree *)ht->els[i];
+      i = hamt_popcount(ht->bitmap)-1;
+    } else {
+      return scheme_make_pair((Scheme_Object *)ht,
+			      scheme_make_pair(scheme_make_integer(i),
+					       stack));
+    }
+  }
+  return NULL;
+}
+
+/* args is a (cons subtree (cons subtree-index stack-of-parents)) */
+Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
+{
+  Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)SCHEME_CAR(args);
+  int i = SCHEME_INT_VAL(SCHEME_CADR(args));
+  Scheme_Object *stack = SCHEME_CDDR(args);
+
+  /* ht = resolve_placeholder(ht); /\* only check this in iterate-first *\/ */
+
+  while(1) {
+    if (!i) { /* pop up the tree */
+      if (SCHEME_NULLP(stack)) {
+	return scheme_false;
+      } else {
+	ht = (Scheme_Hash_Tree *)SCHEME_CAR(stack);
+	i = SCHEME_INT_VAL(SCHEME_CADR(stack));
+	stack = SCHEME_CDDR(stack);
+      }
+    } else { 
+      i -= 1;
+      if (HASHTR_SUBTREEP(ht->els[i])
+	  || HASHTR_COLLISIONP(ht->els[i])) {
+	stack = /* go down tree but save return point */
+	  scheme_make_pair((Scheme_Object *)ht,
+			   scheme_make_pair(scheme_make_integer(i),
+					    stack));
+	ht = (Scheme_Hash_Tree *)ht->els[i];
+	i = hamt_popcount(ht->bitmap);
+      } else {
+	return scheme_make_pair((Scheme_Object *)ht,
+				scheme_make_pair(scheme_make_integer(i),
+						 stack));
+      }
+    }
+  }
+  return NULL;
+}
 
 XFORM_NONGCING static void hamt_at_index(Scheme_Hash_Tree *ht, mzlonglong pos,
                                          Scheme_Object **_key, Scheme_Object **_val, uintptr_t *_code)

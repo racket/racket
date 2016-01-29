@@ -485,46 +485,6 @@ MZ_EXTERN Scheme_Object *scheme_add_gc_callback(Scheme_Object *pre, Scheme_Objec
 MZ_EXTERN void scheme_remove_gc_callback(Scheme_Object *key);
 
 /*========================================================================*/
-/*                             hash tables                                */
-/*========================================================================*/
-
-MZ_EXTERN Scheme_Bucket_Table *scheme_make_bucket_table(intptr_t size_hint, int type);
-MZ_EXTERN void scheme_add_to_table(Scheme_Bucket_Table *table, const char *key, void *val, int);
-MZ_EXTERN void scheme_change_in_table(Scheme_Bucket_Table *table, const char *key, void *new_val);
-MZ_EXTERN void *scheme_lookup_in_table(Scheme_Bucket_Table *table, const char *key);
-MZ_EXTERN Scheme_Bucket *scheme_bucket_from_table(Scheme_Bucket_Table *table, const char *key);
-MZ_EXTERN int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2);
-MZ_EXTERN Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt);
-MZ_EXTERN void scheme_clear_bucket_table(Scheme_Bucket_Table *bt);
-XFORM_NONGCING MZ_EXTERN int scheme_bucket_table_index(Scheme_Bucket_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
-
-MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table(int type);
-MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table_equal();
-MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table_eqv();
-MZ_EXTERN void scheme_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
-MZ_EXTERN Scheme_Object *scheme_hash_get(Scheme_Hash_Table *table, Scheme_Object *key);
-XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_eq_hash_get(Scheme_Hash_Table *table, Scheme_Object *key);
-MZ_EXTERN void scheme_hash_set_atomic(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
-MZ_EXTERN Scheme_Object *scheme_hash_get_atomic(Scheme_Hash_Table *table, Scheme_Object *key);
-MZ_EXTERN int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
-MZ_EXTERN int scheme_is_hash_table_equal(Scheme_Object *o);
-MZ_EXTERN int scheme_is_hash_table_eqv(Scheme_Object *o);
-MZ_EXTERN Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht);
-MZ_EXTERN void scheme_clear_hash_table(Scheme_Hash_Table *ht);
-XFORM_NONGCING MZ_EXTERN int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
-
-MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree(int kind);
-MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree_set(int kind);
-MZ_EXTERN Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
-MZ_EXTERN Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
-XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
-XFORM_NONGCING MZ_EXTERN mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos);
-XFORM_NONGCING MZ_EXTERN int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
-MZ_EXTERN int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
-MZ_EXTERN int scheme_is_hash_tree_equal(Scheme_Object *o);
-MZ_EXTERN int scheme_is_hash_tree_eqv(Scheme_Object *o);
-
-/*========================================================================*/
 /*                   basic Scheme value constructors                      */
 /*========================================================================*/
 
