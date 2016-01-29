@@ -289,6 +289,7 @@ void scheme_init_logger_wait();
 void scheme_init_struct_wait();
 void scheme_init_list(Scheme_Env *env);
 void scheme_init_unsafe_list(Scheme_Env *env);
+void scheme_init_unsafe_hash(Scheme_Env *env);
 void scheme_init_stx(Scheme_Env *env);
 void scheme_init_module(Scheme_Env *env);
 void scheme_init_module_path_table(void);
