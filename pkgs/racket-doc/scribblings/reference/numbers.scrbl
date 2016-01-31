@@ -437,7 +437,7 @@ Coerces @racket[q] to an exact number, finds the numerator of the
 
 @defproc[(denominator [q rational?]) integer?]{
 
-Coerces @racket[q] to an exact number, finds the numerator of the
+Coerces @racket[q] to an exact number, finds the denominator of the
  number expressed in its simplest fractional form, and returns this
  number coerced to the exactness of @racket[q].
 
