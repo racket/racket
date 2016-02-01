@@ -353,7 +353,7 @@ the number of fields in the structure (exclusive). In the case of
 	  (or/c #f any/c)]
 @defproc[(unsafe-mutable-hash-iterate-next
           [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
-	  [i exact-nonnegative-integer?])
+	  [i any/c])
 	  (or/c #f any/c)]
 @defproc[(unsafe-mutable-hash-iterate-key
           [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
@@ -379,7 +379,7 @@ the number of fields in the structure (exclusive). In the case of
           [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
 	            (not/c impersonator?) (not/c chaperone?))]
 	  [i any/c])
-	  (or/c #f exact-nonnegative-integer?)]
+	  (or/c #f any/c)]
 @defproc[(unsafe-mutable-hash-iterate-key*
           [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
 	            (not/c impersonator?) (not/c chaperone?))]
