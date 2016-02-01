@@ -2769,13 +2769,13 @@ Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
 	|| HASHTR_COLLISIONP(ht->els[i])) {
       stack = // go down tree but save return point
 	scheme_make_pair((Scheme_Object *)ht,
-			 scheme_make_pair(scheme_make_integer_value(i),
+			 scheme_make_pair(scheme_make_integer(i),
 					  stack));
       ht = (Scheme_Hash_Tree *)ht->els[i];
       i = 0;
     } else {
       return scheme_make_pair((Scheme_Object *)ht,
-			      scheme_make_pair(scheme_make_integer_value(i),
+			      scheme_make_pair(scheme_make_integer(i),
 					       stack));
     }
   }
@@ -2808,14 +2808,14 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
 	  || HASHTR_COLLISIONP(ht->els[i])) {
 	stack = // go down tree but save return point
 	  scheme_make_pair((Scheme_Object *)ht,
-			   scheme_make_pair(scheme_make_integer_value(i),
+			   scheme_make_pair(scheme_make_integer(i),
 					    stack));
 	ht = (Scheme_Hash_Tree *)ht->els[i];
 	i = 0;
 	popcount = hamt_popcount(ht->bitmap);
       } else {
 	return scheme_make_pair((Scheme_Object *)ht,
-				scheme_make_pair(scheme_make_integer_value(i),
+				scheme_make_pair(scheme_make_integer(i),
 						 stack));
       }
     }

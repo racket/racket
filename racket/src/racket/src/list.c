@@ -4223,7 +4223,7 @@ Scheme_Object *unsafe_scheme_hash_table_iterate_pair(int argc, Scheme_Object *ar
 }
 Scheme_Object *unsafe_scheme_hash_table_iterate_key_value(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *obj = argv[0], *res[0];
+  Scheme_Object *obj = argv[0], *res[2];
   mzlonglong pos = SCHEME_INT_VAL(argv[1]);
 
   if (SCHEME_NP_CHAPERONEP(obj)) {
