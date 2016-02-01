@@ -2786,21 +2786,19 @@ Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
 Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
 {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)SCHEME_CAR(args);
-  int i = SCHEME_INT_VAL(SCHEME_CADR(args))+1, popcount;
+  int i = SCHEME_INT_VAL(SCHEME_CADR(args))+1;
   Scheme_Object *stack = SCHEME_CDDR(args);
 
   //  ht = resolve_placeholder(ht); // only need to check for iterate-first
 
-  popcount = hamt_popcount(ht->bitmap);
-
   while(1) {
-    if (i == popcount) { // pop up the tree
+    
+    if (i == hamt_popcount(ht->bitmap)) { // pop up the tree
       if (SCHEME_NULLP(stack)) {
 	return scheme_false;
       } else {
 	ht = (Scheme_Hash_Tree *)SCHEME_CAR(stack);
 	i = SCHEME_INT_VAL(SCHEME_CADR(stack))+1;
-	popcount = hamt_popcount(ht->bitmap);
 	stack = SCHEME_CDDR(stack);
       }
     } else { 
@@ -2812,7 +2810,6 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
 					    stack));
 	ht = (Scheme_Hash_Tree *)ht->els[i];
 	i = 0;
-	popcount = hamt_popcount(ht->bitmap);
       } else {
 	return scheme_make_pair((Scheme_Object *)ht,
 				scheme_make_pair(scheme_make_integer(i),
