@@ -2757,12 +2757,14 @@ Scheme_Object *scheme_hash_tree_next_no_check(Scheme_Hash_Tree *tree, mzlonglong
 Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
 {
   Scheme_Object *stack = scheme_null;
-  int i = 0;
+  int i;
 
   ht = resolve_placeholder(ht);
 
   if (0 == ht->count)
     return scheme_false;
+
+  i = hamt_popcount(ht->bitmap)-1;
 
   while (1) {
     if (HASHTR_SUBTREEP(ht->els[i])
@@ -2772,7 +2774,7 @@ Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
 			 scheme_make_pair(scheme_make_integer(i),
 					  stack));
       ht = (Scheme_Hash_Tree *)ht->els[i];
-      i = 0;
+      i = hamt_popcount(ht->bitmap)-1;
     } else {
       return scheme_make_pair((Scheme_Object *)ht,
 			      scheme_make_pair(scheme_make_integer(i),
@@ -2786,22 +2788,22 @@ Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
 Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
 {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)SCHEME_CAR(args);
-  int i = SCHEME_INT_VAL(SCHEME_CADR(args))+1;
+  int i = SCHEME_INT_VAL(SCHEME_CADR(args));
   Scheme_Object *stack = SCHEME_CDDR(args);
 
   //  ht = resolve_placeholder(ht); // only need to check for iterate-first
 
   while(1) {
-    
-    if (i == hamt_popcount(ht->bitmap)) { // pop up the tree
+    if (!i) { // pop up the tree
       if (SCHEME_NULLP(stack)) {
 	return scheme_false;
       } else {
 	ht = (Scheme_Hash_Tree *)SCHEME_CAR(stack);
-	i = SCHEME_INT_VAL(SCHEME_CADR(stack))+1;
+	i = SCHEME_INT_VAL(SCHEME_CADR(stack));
 	stack = SCHEME_CDDR(stack);
       }
     } else { 
+      i -= 1;
       if (HASHTR_SUBTREEP(ht->els[i])
 	  || HASHTR_COLLISIONP(ht->els[i])) {
 	stack = // go down tree but save return point
@@ -2809,7 +2811,7 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
 			   scheme_make_pair(scheme_make_integer(i),
 					    stack));
 	ht = (Scheme_Hash_Tree *)ht->els[i];
-	i = 0;
+	i = hamt_popcount(ht->bitmap);
       } else {
 	return scheme_make_pair((Scheme_Object *)ht,
 				scheme_make_pair(scheme_make_integer(i),
