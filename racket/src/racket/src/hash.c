@@ -2782,39 +2782,38 @@ Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
   return NULL;
 }
 
-#define INT_OBJ_PLUS1(obj) obj = scheme_make_integer(SCHEME_INT_VAL(obj)+1);
-
 // args is a (cons subtree (cons subtree-index stack-of-parents))
-// args is mutated in-place
 Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
 {
-  Scheme_Hash_Tree *ht;
-  int i;
-  Scheme_Object *stack;
-  
-  //  ht = resolve_placeholder(ht); // only need this check in iterate-first
+  Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)SCHEME_CAR(args);
+  int i = SCHEME_INT_VAL(SCHEME_CADR(args))+1;
+  Scheme_Object *stack = SCHEME_CDDR(args);
 
-  INT_OBJ_PLUS1(SCHEME_CADR(args));
+  //  ht = resolve_placeholder(ht); // only need to check for iterate-first
 
   while(1) {
-    ht = (Scheme_Hash_Tree *)SCHEME_CAR(args);
-    i = SCHEME_INT_VAL(SCHEME_CADR(args));
-    stack = SCHEME_CDDR(args);
+    
     if (i == hamt_popcount(ht->bitmap)) { // pop up the tree
       if (SCHEME_NULLP(stack)) {
 	return scheme_false;
       } else {
-	args = stack;
-	INT_OBJ_PLUS1(SCHEME_CADR(args));
+	ht = (Scheme_Hash_Tree *)SCHEME_CAR(stack);
+	i = SCHEME_INT_VAL(SCHEME_CADR(stack))+1;
+	stack = SCHEME_CDDR(stack);
       }
     } else { 
       if (HASHTR_SUBTREEP(ht->els[i])
-	  || HASHTR_COLLISIONP(ht->els[i])) { // descend and save return point
-	args = scheme_make_pair((Scheme_Object *)ht->els[i],
-				scheme_make_pair(scheme_make_integer(0),
-						 args));
+	  || HASHTR_COLLISIONP(ht->els[i])) {
+	stack = // go down tree but save return point
+	  scheme_make_pair((Scheme_Object *)ht,
+			   scheme_make_pair(scheme_make_integer(i),
+					    stack));
+	ht = (Scheme_Hash_Tree *)ht->els[i];
+	i = 0;
       } else {
-	return args;
+	return scheme_make_pair((Scheme_Object *)ht,
+				scheme_make_pair(scheme_make_integer(i),
+						 stack));
       }
     }
   }
