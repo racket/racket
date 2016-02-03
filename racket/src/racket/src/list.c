@@ -2962,7 +2962,7 @@ static int hash_table_index(const char *name, int argc, Scheme_Object *argv[], S
   if (SCHEME_NP_CHAPERONEP(obj))
     obj = SCHEME_CHAPERONE_VAL(obj);
 
-  if (!scheme_get_long_long_val(p, &pos) || pos < 0)
+  if (!scheme_get_long_long_val(p, &pos) || (pos < 0))
     pos = HASH_POS_TOO_BIG;
 
   if (SCHEME_HASHTP(obj)) {

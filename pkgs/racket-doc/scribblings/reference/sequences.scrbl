@@ -391,10 +391,6 @@ each element in the sequence.
 @defproc[(in-mutable-hash-pairs
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
 	  sequence?]
-@defproc[(in-mutable-hash*
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
 @defproc[(in-immutable-hash 
           [hash (and/c hash? immutable?)])
 	  sequence?]
