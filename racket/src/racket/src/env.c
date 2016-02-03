@@ -570,7 +570,6 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_error_config();
 
 /* BEGIN PRIMITIVE MODULES */
-  scheme_init_memtrace(env);
 #ifndef NO_TCP_SUPPORT
   scheme_init_network(env);
 #endif

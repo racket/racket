@@ -1,16 +1,14 @@
+This README provides an overview of the precise GC interface used by
+Racket. The header files "gc2.h" and "gc2_dump.h" provide additional
+API documentation.
 
-This README provides and overview of the precise GC interface used by
-Racket. The header files gc2.h and gc2_dump.h provide additional
-documentation.
+GC Interface
+------------
 
-GC Architecture
----------------
-
-The GC interface for Racket (and GRacket) is designed to support
-precise collection with both moving and non-moving
-collectors. Generational and incremental collectors must rely on
-hardware-based memory protection for their implementation (to detect
-writes into old objects, etc.).
+The GC interface for Racket is designed to support precise collection
+with both moving and non-moving collectors. Generational and
+incremental collectors must rely on hardware-based memory protection
+for their implementation (to detect writes into old objects, etc.).
 
 As a general rule, all pointers to collectable objects reference the
 beginning of the object (i.e., the pointer is never into the interior

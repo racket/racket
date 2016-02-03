@@ -334,8 +334,6 @@ static void register_traversers(void);
 static Scheme_Object *custodian_require_mem(int argc, Scheme_Object *args[]);
 static Scheme_Object *custodian_limit_mem(int argc, Scheme_Object *args[]);
 static Scheme_Object *custodian_can_mem(int argc, Scheme_Object *args[]);
-static Scheme_Object *new_tracking_fun(int argc, Scheme_Object *args[]);
-static Scheme_Object *union_tracking_val(int argc, Scheme_Object *args[]);
 
 static Scheme_Object *collect_garbage(int argc, Scheme_Object *args[]);
 static Scheme_Object *current_memory_use(int argc, Scheme_Object *args[]);
@@ -639,25 +637,6 @@ void scheme_init_thread_places(void) {
   gc_info_prefab = scheme_lookup_prefab_type(scheme_intern_symbol("gc-info"), 10);
 }
 
-void scheme_init_memtrace(Scheme_Env *env)
-{
-  Scheme_Object *v;
-  Scheme_Env *newenv;
-
-  v = scheme_intern_symbol("#%memtrace");
-  newenv = scheme_primitive_module(v, env);
-    
-  v = scheme_make_symbol("memory-trace-continuation-mark");
-  scheme_add_global("memory-trace-continuation-mark", v , newenv);
-  v = scheme_make_prim_w_arity(new_tracking_fun, 
-                              "new-memtrace-tracking-function", 1, 1);
-  scheme_add_global("new-memtrace-tracking-function", v, newenv);
-  v = scheme_make_prim_w_arity(union_tracking_val, 
-                               "unioned-memtrace-tracking-value", 1, 1);
-  scheme_add_global("unioned-memtrace-tracking-value", v, newenv);
-  scheme_finish_primitive_module(newenv);
-}
-
 void scheme_init_inspector() {
   REGISTER_SO(initial_inspector);
   initial_inspector = scheme_make_initial_inspectors();
@@ -914,28 +893,6 @@ static Scheme_Object *custodian_can_mem(int argc, Scheme_Object *args[])
 #else
   return scheme_false;
 #endif
-}
-
-static Scheme_Object *new_tracking_fun(int argc, Scheme_Object *args[])
-{
-  int retval = 0;
-
-#ifdef MZ_PRECISE_GC
-  retval = GC_mtrace_new_id(args[0]);
-#endif
-
-  return scheme_make_integer(retval);
-}
-
-static Scheme_Object *union_tracking_val(int argc, Scheme_Object *args[])
-{
-  int retval = 0;
-
-#ifdef MZ_PRECISE_GC
-  retval = GC_mtrace_union_current_with(SCHEME_INT_VAL(args[0]));
-#endif
-
-  return scheme_make_integer(retval);
 }
 
 static void ensure_custodian_space(Scheme_Custodian *m, int k)

@@ -467,6 +467,7 @@ gc2.@LTO@: \
 		$(srcdir)/newgc.c \
 		$(srcdir)/newgc.h \
 		$(srcdir)/page_range.c \
+		$(srcdir)/places_gc.c \
 		$(srcdir)/rlimit_heapsize.c \
 		$(srcdir)/roots.c \
 		$(srcdir)/stack_comp.c \

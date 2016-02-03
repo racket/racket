@@ -1,13 +1,57 @@
 #include "commongc_internal.h"
 #include "gc2_obj.h"
 
-#if defined(MZ_USE_PLACES)
-/*
-# define GC_DEBUG_PAGES
-# define MASTER_ALLOC_DEBUG
-# define KILLING_DEBUG
-*/
-#endif
+/* the page type constants */
+enum {
+  PAGE_TAGGED   = 0,
+  PAGE_ATOMIC   = 1,
+  PAGE_ARRAY    = 2,
+  PAGE_PAIR     = 3,
+  PAGE_BIG      = 4,
+  /* the number of page types in then gen1 array: */
+  PAGE_TYPES    = 5,
+  /* medium page types: */
+  PAGE_MED_ATOMIC = 6,
+  PAGE_MED_NONATOMIC = 7
+};
+
+enum {
+  MED_PAGE_NONATOMIC_INDEX   = 0,
+  MED_PAGE_ATOMIC_INDEX      = 1,
+  /* the number of medium-page types in the array: */
+  MED_PAGE_TYPES       = 2
+};
+
+enum {
+  SIZE_CLASS_SMALL_PAGE      = 0, /* can be a nursery page */
+  SIZE_CLASS_MED_PAGE        = 1,
+  SIZE_CLASS_BIG_PAGE        = 2,
+  SIZE_CLASS_BIG_PAGE_MARKED = 3
+};
+
+enum {
+  MMU_ZEROED = 0,
+  MMU_DIRTY  = 1,
+};
+
+enum {
+  MMU_SMALL_GEN1   = 0,
+  MMU_BIG_MED      = 1,
+  MMU_SMALL_GEN0   = 1,
+};
+
+enum {
+  MMU_NON_PROTECTABLE   = 0,
+  MMU_PROTECTABLE       = 1,
+};
+
+enum {
+  AGE_GEN_0    = 0,
+  AGE_GEN_HALF = 1,
+  AGE_GEN_1    = 2,
+  AGE_VACATED  = 3, /* used for pages to be removed */
+  AGE_GEN_INC  = 4  /* used for naming a finalizer set */
+};
 
 typedef struct mpage {
   struct mpage *next;
@@ -300,6 +344,7 @@ typedef struct NewGC {
   void *park[2];
   void *park_fsave[2];
   void *park_isave[2];
+# define CHECK_PARK_UNUSED(gc) GC_ASSERT(!gc->park[0])
 
   unsigned short weak_array_tag;
   unsigned short weak_box_tag;
