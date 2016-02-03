@@ -462,6 +462,12 @@ END
      (test-syntax:read-xml/element
       "<a href=\"#\">inner</a>"
       '(a ([href "#"]) "inner"))
+
+     (test-syntax:read-xml/element
+      "<a c=\"1\" a=\"2\" b=\"3\">inner</a>"
+      '(a ([c "1"] [a "2"] [b "3"]) "inner"))
+
+     (test-syntax:read-xml/element/exn "<a c=\"1\" a=\"2\" c=\"3\">inner</a>" "read-xml: lex-error: at position 1.20/21: duplicated attribute name c")
      
      (test-syntax:read-xml/element
       "<root>&nbsp;</root>"
