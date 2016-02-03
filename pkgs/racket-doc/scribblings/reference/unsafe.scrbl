@@ -371,35 +371,6 @@ the number of fields in the structure (exclusive). In the case of
           [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
 	  [i any/c]) 
 	  pair?]
-@defproc[(unsafe-mutable-hash-iterate-first*
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	            (not/c impersonator?) (not/c chaperone?))])
-	  (or/c #f any/c)]
-@defproc[(unsafe-mutable-hash-iterate-next*
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c])
-	  (or/c #f any/c)]
-@defproc[(unsafe-mutable-hash-iterate-key*
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c]) 
-	  any/c]
-@defproc[(unsafe-mutable-hash-iterate-value*
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c]) 
-	  any/c]
-@defproc[(unsafe-mutable-hash-iterate-key+value*
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c]) 
-	  (values any/c any/c)]
-@defproc[(unsafe-mutable-hash-iterate-pair*
-          [h (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c]) 
-	  pair?]
 @defproc[(unsafe-immutable-hash-iterate-first
           [h (and/c hash? immutable?)])
 	  (or/c #f any/c)]
@@ -421,29 +392,6 @@ the number of fields in the structure (exclusive). In the case of
 	  (values any/c any/c)]
 @defproc[(unsafe-immutable-hash-iterate-pair
           [h (and/c hash? immutable?)]
-	  [i any/c])
-	  pair?]
-@defproc[(unsafe-immutable-hash-iterate-first*
-          [h (and/c hash? immutable? (not/c chaperone?))])
-	  (or/c #f any/c)]
-@defproc[(unsafe-immutable-hash-iterate-next*
-          [h (and/c hash? immutable? (not/c chaperone?))]
-	  [i any/c])
-	  (or/c #f any/c)]
-@defproc[(unsafe-immutable-hash-iterate-key*
-          [h (and/c hash? immutable? (not/c chaperone?))]
-	  [i any/c])
-	  any/c]
-@defproc[(unsafe-immutable-hash-iterate-value*
-          [h (and/c hash? immutable? (not/c chaperone?))]
-	  [i any/c])
-	  any/c]
-@defproc[(unsafe-immutable-hash-iterate-key+value*
-          [h (and/c hash? immutable? (not/c chaperone?))]
-	  [i any/c])
-	  (values any/c any/c)]
-@defproc[(unsafe-immutable-hash-iterate-pair*
-          [h (and/c hash? immutable? (not/c chaperone?))]
 	  [i any/c])
 	  pair?]
 @defproc[(unsafe-weak-hash-iterate-first
@@ -469,45 +417,20 @@ the number of fields in the structure (exclusive). In the case of
           [h (and/c hash? hash-weak?)]
 	  [i any/c]) 
 	  pair?]
-@defproc[(unsafe-weak-hash-iterate-first*
-          [h (and/c hash? hash-weak?
-	            (not/c impersonator?) (not/c chaperone?))])
-	  (or/c #f any/c)]
-@defproc[(unsafe-weak-hash-iterate-next*
-          [h (and/c hash? hash-weak?
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c])
-	  (or/c #f any/c)]
-@defproc[(unsafe-weak-hash-iterate-key*
-          [h (and/c hash? hash-weak?
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c]) 
-	  any/c]
-@defproc[(unsafe-weak-hash-iterate-value*
-          [h (and/c hash? hash-weak?
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c]) 
-	  any/c]
-@defproc[(unsafe-weak-hash-iterate-key+value*
-          [h (and/c hash? hash-weak?
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c]) 
-	  (values any/c any/c)]
-@defproc[(unsafe-weak-hash-iterate-pair*
-          [h (and/c hash? hash-weak?
-	            (not/c impersonator?) (not/c chaperone?))]
-	  [i any/c]) 
-	  pair?]
 )]{
-Unsafe versions of @racket[hash-iterate-key] and similar ops. The "star"
-versions do not support @tech{chaperones} or @tech{impersonators}.
+Unsafe versions of @racket[hash-iterate-key] and similar ops. These operations
+support @tech{chaperones} and @tech{impersonators}.
 
-Each unsafe @code{-first} and @code{-next} operation may not return an 
+Each unsafe @code{-first} and @code{-next} operation may not return a number
 index but rather an internal representation of a view into the hash structure,
 enabling faster iteration. 
 
 The result of these @code{-first} and @code{-next}] functions should be given
 to the corresponding unsafe accessor functions.
+
+If the key or value at the position returned by the @code{-first} and
+@code{-next} ops becomes invalid (e.g., because of mutation or garbage
+collection), then the operations @exnraise[exn:fail:contract].
 
 @history[#:added "6.4.0.6"]
 }

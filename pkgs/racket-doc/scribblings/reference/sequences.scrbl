@@ -395,18 +395,6 @@ each element in the sequence.
           [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
 	               (not/c chaperone?) (not/c impersonator?))])
 	  sequence?]
-@defproc[(in-mutable-hash-keys*
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
-@defproc[(in-mutable-hash-values*
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
-@defproc[(in-mutable-hash-pairs*
-          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?)
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
 @defproc[(in-immutable-hash 
           [hash (and/c hash? immutable?)])
 	  sequence?]
@@ -419,22 +407,6 @@ each element in the sequence.
 @defproc[(in-immutable-hash-pairs
           [hash (and/c hash? immutable?)])
 	  sequence?]
-@defproc[(in-immutable-hash*
-          [hash (and/c hash? immutable?
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
-@defproc[(in-immutable-hash-keys*
-          [hash (and/c hash? immutable?
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
-@defproc[(in-immutable-hash-values*
-          [hash (and/c hash? immutable?
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
-@defproc[(in-immutable-hash-pairs*
-          [hash (and/c hash? immutable?
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
 @defproc[(in-weak-hash 
           [hash (and/c hash? hash-weak?)]) 
 	  sequence?]
@@ -446,22 +418,6 @@ each element in the sequence.
 	  sequence?]
 @defproc[(in-weak-hash-pairs
           [hash (and/c hash? hash-weak?)]) 
-	  sequence?]
-@defproc[(in-weak-hash*
-          [hash (and/c hash? hash-weak?
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
-@defproc[(in-weak-hash-keys*
-          [hash (and/c hash? hash-weak?
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
-@defproc[(in-weak-hash-values*
-          [hash (and/c hash? hash-weak?
-	               (not/c chaperone?) (not/c impersonator?))])
-	  sequence?]
-@defproc[(in-weak-hash-pairs*
-          [hash (and/c hash? hash-weak?
-	               (not/c chaperone?) (not/c impersonator?))])
 	  sequence?]
 )]{
    Sequence constructors for specific kinds of hash tables that should be

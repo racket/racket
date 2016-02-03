@@ -660,24 +660,17 @@ void scheme_reset_hash_table(Scheme_Hash_Table *table, int *history)
 Scheme_Object *scheme_hash_table_next(Scheme_Hash_Table *hash,
 				      mzlonglong start)
 {
-  if (start >= 0) {
-    if ((start >= hash->size) || !hash->vals[start])
-      return NULL;
-  }
+    int i, sz = hash->size;
+    if (start >= 0) {
+      if ((start >= sz) || !hash->vals[start])
+        return NULL;
+    }
+    for (i = start + 1; i < sz; i++) {
+      if (hash->vals[i])
+        return scheme_make_integer(i);
+    }
 
-  return scheme_hash_table_next_no_check(hash, start);
-}
-
-Scheme_Object *scheme_hash_table_next_no_check(Scheme_Hash_Table *hash, 
-					       mzlonglong start)
-{
-  mzlonglong i, sz;
-  sz = hash->size;
-  for (i = start + 1; i < sz; i++) {
-    if (hash->vals[i])
-      return scheme_make_integer_value_from_long_long(i);
-  }
-  return scheme_false;
+    return scheme_false;
 }
 
 int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos,
@@ -1145,25 +1138,20 @@ Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash,
 					mzlonglong start)
 {
   Scheme_Bucket *bucket;
+  int i, sz = hash->size;
+    
   if (start >= 0) {
-    bucket = ((start < hash->size) ? hash->buckets[start] : NULL);
-    if (!bucket || !bucket->val || !bucket->key)
-      return NULL;
+    bucket = ((start < sz) ? hash->buckets[start] : NULL);
+    if (!bucket || !bucket->val || !bucket->key) 
+      return NULL;      
   }
-  return scheme_bucket_table_next_no_check(hash, start);
-}
-
-Scheme_Object *scheme_bucket_table_next_no_check(Scheme_Bucket_Table *hash,
-						 mzlonglong start)
-{
-  Scheme_Bucket *bucket;
-  mzlonglong i, sz;
-  sz = hash->size;
   for (i = start + 1; i < sz; i++) {
     bucket = hash->buckets[i];
-    if (bucket && bucket->val && bucket->key)
-      return scheme_make_integer_value_from_long_long(i);
+    if (bucket && bucket->val && bucket->key) {
+      return scheme_make_integer(i);
+    }
   }
+
   return scheme_false;
 }
 
@@ -2719,8 +2707,8 @@ static Scheme_Hash_Tree *hamt_remove(Scheme_Hash_Tree *ht, uintptr_t code, int s
     return ht;
 }
 
-// this signature is different from other scheme_<hash type>_next fns
-// but is used else where, so leave as is
+/* this signature is different from other scheme_<hash type>_next fns */
+/* but is used else where, so leave as is */
 mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos)
 {
   mzlonglong i = pos+1;
@@ -2730,7 +2718,7 @@ mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos)
     return i;
 }
 
-Scheme_Object *scheme_hash_tree_next_no_check(Scheme_Hash_Tree *tree, mzlonglong pos)
+Scheme_Object *scheme_hash_tree_next_pos(Scheme_Hash_Tree *tree, mzlonglong pos)
 {
   mzlonglong i = pos+1;
   if (i == tree->count)
@@ -2747,13 +2735,14 @@ Scheme_Object *scheme_hash_tree_next_no_check(Scheme_Hash_Tree *tree, mzlonglong
 # define HAMT_TRAVERSE_NEXT(i) ((i)+1)
 #endif
 
-// instead of returning an index, these unsafe ieration ops speed up traversal 
-// by returning a view into the tree consisting of a:
-//   - subtree
-//   - subtree index
-//   - stack of parent subtrees and indices
-// these unsafe ops currently do not support REVERSE_HASH_TABLE_ORDER
-// to avoid spurious popcount computations
+/* instead of returning a pos, these unsafe iteration ops */
+/* return a view into the tree consisting of a: */
+/*   - subtree */
+/*   - subtree index */
+/*   - stack of parent subtrees and indices */
+/* This speeds up performance of immutable hash table iteration. */
+/* These unsafe ops currently do not support REVERSE_HASH_TABLE_ORDER */
+/* to avoid unneeded popcount computations */
 Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
 {
   Scheme_Object *stack = scheme_null;
@@ -2769,7 +2758,7 @@ Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
   while (1) {
     if (HASHTR_SUBTREEP(ht->els[i])
 	|| HASHTR_COLLISIONP(ht->els[i])) {
-      stack = // go down tree but save return point
+      stack = /* go down tree but save return point */
 	scheme_make_pair((Scheme_Object *)ht,
 			 scheme_make_pair(scheme_make_integer(i),
 					  stack));
@@ -2784,17 +2773,17 @@ Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
   return NULL;
 }
 
-// args is a (cons subtree (cons subtree-index stack-of-parents))
+/* args is a (cons subtree (cons subtree-index stack-of-parents)) */
 Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
 {
   Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)SCHEME_CAR(args);
   int i = SCHEME_INT_VAL(SCHEME_CADR(args));
   Scheme_Object *stack = SCHEME_CDDR(args);
 
-  //  ht = resolve_placeholder(ht); // only need to check for iterate-first
+  /* ht = resolve_placeholder(ht); /\* only check this in iterate-first *\/ */
 
   while(1) {
-    if (!i) { // pop up the tree
+    if (!i) { /* pop up the tree */
       if (SCHEME_NULLP(stack)) {
 	return scheme_false;
       } else {
@@ -2806,7 +2795,7 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args)
       i -= 1;
       if (HASHTR_SUBTREEP(ht->els[i])
 	  || HASHTR_COLLISIONP(ht->els[i])) {
-	stack = // go down tree but save return point
+	stack = /* go down tree but save return point */
 	  scheme_make_pair((Scheme_Object *)ht,
 			   scheme_make_pair(scheme_make_integer(i),
 					    stack));

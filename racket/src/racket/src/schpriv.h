@@ -928,6 +928,8 @@ struct Scheme_Hash_Tree {
 Scheme_Object *scheme_intern_literal_string(Scheme_Object *str);
 Scheme_Object *scheme_intern_literal_number(Scheme_Object *num);
 
+XFORM_NONGCING int hamt_popcount(hash_tree_bitmap_t x);
+
 /*========================================================================*/
 /*                              structs                                   */
 /*========================================================================*/
