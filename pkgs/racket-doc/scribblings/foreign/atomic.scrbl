@@ -11,11 +11,17 @@ computation in this sense is @emph{not} atomic with respect to other
 @tech[#:doc reference.scrbl]{places}, but only to other @tech[#:doc
 reference.scrbl]{threads} within a place.
 
-Atomic mode is unsafe, because the Racket scheduler is not able to
-operate while execution is in atomic mode; the scheduler cannot switch
-threads or poll certain kinds of events, which can lead to deadlock or
-starvation of other threads. Beware that many operations can involve
-such synchronization, such as writing to an output port.
+@elemtag["atomic-unsafe"]{Atomic mode is @bold{unsafe}}, because the
+Racket scheduler is not able to operate while execution is in atomic
+mode; the scheduler cannot switch threads or poll certain kinds of
+events, which can lead to deadlock or starvation of other threads.
+Beware that many operations can involve such synchronization, such as
+writing to an output port. Even if an output target is known to be
+free of synchronization, beware that values can have arbitrary
+printing procedures attached through @racket[prop:custom-write].
+Successful use of atomic mode requires a detailed knowledge of any
+implementation that might be reached during atomic mode to ensure that
+it terminates and does not involve synchronization.
 
 @deftogether[(
 @defproc[(start-atomic) void?]
@@ -51,7 +57,9 @@ Using @racket[call-as-atomic] is somewhat safer than using
 exiting atomic mode, and it wraps any call to the error value
 conversion handler with @racket[call-as-nonatomic]. The latter is safe
 for a particular atomic region, however, only if the region can be
-safely interrupted by a non-atomic exception construction.}
+safely interrupted by a non-atomic exception construction.
+
+See also the caveat that @elemref["atomic-unsafe"]{atomic mode is unsafe}.}
 
 
 @deftogether[(
@@ -82,11 +90,7 @@ re-raised after exiting atomic mode. Any call to the current
 @tech[#:doc reference.scrbl]{error value conversion handler} is
 effectively wrapped with @racket[call-as-nonatomic].
 
-Besides obvious paths to unknown expressions that may not be safe for
-atomic mode, beware of printing an arbitrary value in any way other
-than the error value conversion handler, because values can have
-arbitrary printing procedures attached through
-@racket[prop:custom-write].}
+See also the caveat that @elemref["atomic-unsafe"]{atomic mode is unsafe}.}
 
 
 @defproc[(call-as-nonatomic [thunk (-> any)]) any]{
