@@ -5433,6 +5433,12 @@ static Scheme_Env *instantiate_module(Scheme_Module *m, Scheme_Env *env, int res
     } else {
       Scheme_Env *env2;
 
+      if (menv->module->num_phases < m->num_phases) {
+        char *running;
+        running = (char *)scheme_malloc_atomic(m->num_phases);
+        menv->running = running;
+      }
+
       menv->module = m;
       memset(menv->running, 0, menv->module->num_phases);
       menv->ran = 0;
