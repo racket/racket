@@ -591,38 +591,6 @@ extern Scheme_Object *scheme_int64_ctype;
 extern Scheme_Object *scheme_uint64_ctype;
 
 /*========================================================================*/
-/*                    hash functions                                      */
-/*========================================================================*/
-
-Scheme_Object *scheme_make_immutable_hash(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_make_immutable_hasheq(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_make_immutable_hasheqv(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_eq_p(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_eqv_p(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_equal_p(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_table_put(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[]);
-Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[]);
-
-Scheme_Object *scheme_hash_get_w_key_wraps(Scheme_Hash_Table *table, Scheme_Object *key,
-                                           Scheme_Object *key_wraps);
-void scheme_hash_set_w_key_wraps(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val,
-                                 Scheme_Object *key_wraps);
-Scheme_Bucket *scheme_bucket_or_null_from_table_w_key_wraps(Scheme_Bucket_Table *table,
-                                                            const char *key, int add,
-                                                            Scheme_Object *key_wraps);
-void scheme_add_to_table_w_key_wraps(Scheme_Bucket_Table *table, const char *key, void *val, 
-                                     int constant, Scheme_Object *key_wraps);
-void *scheme_lookup_in_table_w_key_wraps(Scheme_Bucket_Table *table, const char *key,
-                                         Scheme_Object *key_wraps);
-Scheme_Object *scheme_hash_tree_get_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_Object *key,
-                                                Scheme_Object *key_wraps);
-Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val,
-                                                   Scheme_Object *key_wraps);
-
-/*========================================================================*/
 /*                    thread state and maintenance                        */
 /*========================================================================*/
 
@@ -927,6 +895,83 @@ struct Scheme_Hash_Tree {
 
 Scheme_Object *scheme_intern_literal_string(Scheme_Object *str);
 Scheme_Object *scheme_intern_literal_number(Scheme_Object *num);
+
+/*========================================================================*/
+/*                    hash functions                                      */
+/*========================================================================*/
+
+Scheme_Object *scheme_make_immutable_hash(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_make_immutable_hasheq(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_make_immutable_hasheqv(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_eq_p(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_eqv_p(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_equal_p(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_put(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_start(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_next(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[]);
+Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[]);
+
+Scheme_Object *scheme_hash_get_w_key_wraps(Scheme_Hash_Table *table, Scheme_Object *key,
+                                           Scheme_Object *key_wraps);
+void scheme_hash_set_w_key_wraps(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val,
+                                 Scheme_Object *key_wraps);
+Scheme_Bucket *scheme_bucket_or_null_from_table_w_key_wraps(Scheme_Bucket_Table *table,
+                                                            const char *key, int add,
+                                                            Scheme_Object *key_wraps);
+void scheme_add_to_table_w_key_wraps(Scheme_Bucket_Table *table, const char *key, void *val, 
+                                     int constant, Scheme_Object *key_wraps);
+void *scheme_lookup_in_table_w_key_wraps(Scheme_Bucket_Table *table, const char *key,
+                                         Scheme_Object *key_wraps);
+Scheme_Object *scheme_hash_tree_get_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_Object *key,
+                                                Scheme_Object *key_wraps);
+Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val,
+                                                   Scheme_Object *key_wraps);
+
+/*========================================================================*/
+/*                             hash tables                                */
+/*========================================================================*/
+
+Scheme_Bucket_Table *scheme_make_bucket_table(intptr_t size_hint, int type);
+void scheme_add_to_table(Scheme_Bucket_Table *table, const char *key, void *val, int);
+void scheme_change_in_table(Scheme_Bucket_Table *table, const char *key, void *new_val);
+void *scheme_lookup_in_table(Scheme_Bucket_Table *table, const char *key);
+Scheme_Bucket *scheme_bucket_from_table(Scheme_Bucket_Table *table, const char *key);
+int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2);
+Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt);
+void scheme_clear_bucket_table(Scheme_Bucket_Table *bt);
+Scheme_Object *scheme_bucket_table_next(Scheme_Bucket_Table *hash, mzlonglong start);
+XFORM_NONGCING int scheme_bucket_table_index(Scheme_Bucket_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
+
+Scheme_Hash_Table *scheme_make_hash_table(int type);
+Scheme_Hash_Table *scheme_make_hash_table_equal();
+Scheme_Hash_Table *scheme_make_hash_table_eqv();
+void scheme_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
+Scheme_Object *scheme_hash_get(Scheme_Hash_Table *table, Scheme_Object *key);
+XFORM_NONGCING Scheme_Object *scheme_eq_hash_get(Scheme_Hash_Table *table, Scheme_Object *key);
+void scheme_hash_set_atomic(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
+Scheme_Object *scheme_hash_get_atomic(Scheme_Hash_Table *table, Scheme_Object *key);
+int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
+int scheme_is_hash_table_equal(Scheme_Object *o);
+int scheme_is_hash_table_eqv(Scheme_Object *o);
+Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht);
+void scheme_clear_hash_table(Scheme_Hash_Table *ht);
+Scheme_Object *scheme_hash_table_next(Scheme_Hash_Table *hash, mzlonglong start);
+XFORM_NONGCING int scheme_hash_table_index(Scheme_Hash_Table *hash, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
+
+Scheme_Hash_Tree *scheme_make_hash_tree(int kind);
+Scheme_Hash_Tree *scheme_make_hash_tree_set(int kind);
+Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
+Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
+XFORM_NONGCING Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
+XFORM_NONGCING mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos);
+Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht);
+Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args);
+Scheme_Object *scheme_hash_tree_next_pos(Scheme_Hash_Tree *tree, mzlonglong pos);
+XFORM_NONGCING int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
+int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
+int scheme_is_hash_tree_equal(Scheme_Object *o);
+int scheme_is_hash_tree_eqv(Scheme_Object *o);
 
 XFORM_NONGCING int hamt_popcount(hash_tree_bitmap_t x);
 
