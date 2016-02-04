@@ -48,19 +48,20 @@
              (rename *in-port in-port)
              (rename *in-lines in-lines)
              (rename *in-bytes-lines in-bytes-lines)
-             (rename *in-hash in-hash)
-             (rename *in-hash-keys in-hash-keys)
-             (rename *in-hash-values in-hash-values)
-             (rename *in-hash-pairs in-hash-pairs)
-             in-mutable-hash
+             
+             (rename in-hash-key+values in-hash)
+             in-hash-keys
+             in-hash-values
+             in-hash-pairs
+             (rename in-mutable-hash-key+values in-mutable-hash)
              in-mutable-hash-keys
              in-mutable-hash-values
              in-mutable-hash-pairs
-             in-immutable-hash
+             (rename in-immutable-hash-key+values in-immutable-hash)
              in-immutable-hash-keys
              in-immutable-hash-values
              in-immutable-hash-pairs
-             in-weak-hash
+             (rename in-weak-hash-key+values in-weak-hash)
              in-weak-hash-keys
              in-weak-hash-values
              in-weak-hash-pairs
@@ -101,6 +102,17 @@
              (for-syntax make-in-vector-like
                          for-clause-syntax-protect))
 
+  ;; redefininition of functions not in #%kernel
+  (begin-for-syntax
+    (define (format-id ctx str . args)
+      (define datum 
+        (string->symbol (apply format str (map syntax->datum args))))
+      (datum->syntax ctx datum))
+    (define (init-list n val)
+      (if (zero? n) 
+          null 
+          (cons val (init-list (sub1 n) val)))))
+  
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
 
@@ -184,7 +196,7 @@
 
     (define (for-clause-syntax-protect clause)
       ;; This is slightly painful. The expansion into `:do-in' involves a lot
-      ;; of pieces that are no treated as sub-expressions. We have to push the
+      ;; of pieces that are not treated as sub-expressions. We have to push the
       ;; taints down to all the relevant identifiers and expressions:
       (arm-for-clause clause syntax-arm))
 
@@ -505,7 +517,7 @@
       [(string? v) (:string-gen v 0 (string-length v) 1)]
       [(bytes? v) (:bytes-gen v 0 (bytes-length v) 1)]
       [(input-port? v) (:input-port-gen v)]
-      [(hash? v) (:hash-key+val-gen v)]
+      [(hash? v) (:hash-gen v hash-iterate-key+value)]
       [(sequence-via-prop? v) ((sequence-ref v) v)]
       [(:sequence? v) (make-sequence who ((:sequence-ref v) v))]
       [(stream? v) (:stream-gen v)]
@@ -669,452 +681,20 @@
        (check-in-bytes-lines p mode)
        (in-producer (lambda () (read-bytes-line p mode)) eof)]))
 
-  (define (in-hash ht)
-    (unless (hash? ht) (raise-argument-error 'in-hash "hash?" ht))
-    (make-do-sequence (lambda () (:hash-key+val-gen ht))))
+  (define (in-stream l)
+    (unless (stream? l) (raise-argument-error 'in-stream "stream?" l))
+    (make-do-sequence (lambda () (:stream-gen l))))
+  
+  (define (:stream-gen l)
+    (values 
+     unsafe-stream-first unsafe-stream-rest l unsafe-stream-not-empty? #f #f))
 
-  (define (:hash-key+val-gen ht) (:hash-gen ht hash-iterate-key+value))
 
-  (define-sequence-syntax *in-hash
-    (lambda () #'in-hash)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (hash? ht) (in-hash ht))
-              ;; loop bindings
-              ([i (hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k v) (hash-iterate-key+value ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-mutable-hash
-    (lambda () #'in-hash)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht)
-                           (not (immutable? ht))
-                           (not (hash-weak? ht)))
-                (in-hash ht))
-              ;; loop bindings
-              ([i (unsafe-mutable-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k v) (unsafe-mutable-hash-iterate-key+value ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-mutable-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-immutable-hash
-    (lambda () #'in-hash)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht) (immutable? ht)) (in-hash ht))
-              ;; loop bindings
-              ([i (unsafe-immutable-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k v) (unsafe-immutable-hash-iterate-key+value ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-immutable-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-weak-hash
-    (lambda () #'in-hash)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht) (hash-weak? ht)) (in-hash ht))
-              ;; loop bindings
-              ([i (unsafe-weak-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k v) (unsafe-weak-hash-iterate-key+value ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-weak-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define (in-hash-keys ht)
-    (unless (hash? ht) (raise-argument-error 'in-hash-keys "hash?" ht))
-    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-key))))
-
-  (define-sequence-syntax *in-hash-keys
-    (lambda () #'in-hash-keys)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(id) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(id)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (hash? ht) (in-hash-keys ht))
-              ;; loop bindings
-              ([i (hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(id) (hash-iterate-key ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-mutable-hash-keys
-    (lambda () #'in-hash-keys)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht)
-                           (not (immutable? ht))
-                           (not (hash-weak? ht)))
-                (in-hash-keys ht))
-              ;; loop bindings
-              ([i (unsafe-mutable-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k) (unsafe-mutable-hash-iterate-key ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-mutable-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-immutable-hash-keys
-    (lambda () #'in-hash-keys)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht) (immutable? ht)) (in-hash-keys ht))
-              ;; loop bindings
-              ([i (unsafe-immutable-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k) (unsafe-immutable-hash-iterate-key ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-immutable-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-weak-hash-keys
-    (lambda () #'in-hash-keys)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht) (hash-weak? ht)) (in-hash-keys ht))
-              ;; loop bindings
-              ([i (unsafe-weak-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k) (unsafe-weak-hash-iterate-key ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-weak-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define (in-hash-values ht)
-    (unless (hash? ht) (raise-argument-error 'in-hash-values "hash?" ht))
-    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-value))))
-
-  (define-sequence-syntax *in-hash-values
-    (lambda () #'in-hash-values)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(id) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(id)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (hash? ht) (in-hash-values ht))
-              ;; loop bindings
-              ([i (hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(id) (hash-iterate-value ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-mutable-hash-values
-    (lambda () #'in-hash-values)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht)
-                           (not (immutable? ht))
-                           (not (hash-weak? ht)))
-                (in-hash-values ht))
-              ;; loop bindings
-              ([i (unsafe-mutable-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(v) (unsafe-mutable-hash-iterate-value ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-mutable-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-immutable-hash-values
-    (lambda () #'in-hash-values)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht) (immutable? ht)) (in-hash-values ht))
-              ;; loop bindings
-              ([i (unsafe-immutable-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(v) (unsafe-immutable-hash-iterate-value ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-immutable-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-weak-hash-values
-    (lambda () #'in-hash-values)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht) (hash-weak? ht)) (in-hash-values ht))
-              ;; loop bindings
-              ([i (unsafe-weak-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(v) (unsafe-weak-hash-iterate-value ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-weak-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define (in-hash-pairs ht)
-    (unless (hash? ht) (raise-argument-error 'in-hash-values "hash?" ht))
-    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-pair))))
-
-  (define-sequence-syntax *in-hash-pairs
-    (lambda () #'in-hash-pairs)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(id) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(id)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (hash? ht) (in-hash-pairs ht))
-              ;; loop bindings
-              ([i (hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(id) (hash-iterate-pair ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-mutable-hash-pairs
-    (lambda () #'in-hash-pairs)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k+v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k+v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht)
-                           (not (immutable? ht))
-                           (not (hash-weak? ht)))
-                (in-hash-pairs ht))
-              ;; loop bindings
-              ([i (unsafe-mutable-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k+v) (unsafe-mutable-hash-iterate-pair ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-mutable-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-immutable-hash-pairs
-    (lambda () #'in-hash-pairs)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k+v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k+v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht) (immutable? ht)) (in-hash-pairs ht))
-              ;; loop bindings
-              ([i (unsafe-immutable-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k+v) (unsafe-immutable-hash-iterate-pair ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-immutable-hash-iterate-next ht i)))])]
-        [_ #f])))
-
-  (define-sequence-syntax in-weak-hash-pairs
-    (lambda () #'in-hash-pairs)
-    (lambda (stx)
-      (syntax-case stx ()
-        [[(k+v) (_ ht-expr)]
-         (for-clause-syntax-protect
-          #'[(k+v)
-             (:do-in
-              ;;outer bindings
-              ([(ht) ht-expr])
-              ;; outer check
-              (unless (and (hash? ht) (hash-weak? ht)) (in-hash-pairs ht))
-              ;; loop bindings
-              ([i (unsafe-weak-hash-iterate-first ht)])
-              ;; pos check
-              i
-              ;; inner bindings
-              ([(k+v) (unsafe-weak-hash-iterate-pair ht i)])
-              ;; pre guard
-              #t
-              ;; post guard
-              #t
-              ;; loop args
-              ((unsafe-weak-hash-iterate-next ht i)))])]
-        [_ #f])))
-
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; hash sequences
+  
+  ;; assembles hash iterator functions to give to make-do-sequence
   (define (:hash-gen ht sel)
     (values (lambda (pos) (sel ht pos))
             (lambda (pos) (hash-iterate-next ht pos))
@@ -1123,12 +703,109 @@
             #f
             #f))
 
-  (define (in-stream l)
-    (unless (stream? l) (raise-argument-error 'in-stream "stream?" l))
-    (make-do-sequence (lambda () (:stream-gen l))))
-
-  (define (:stream-gen l)
-    (values unsafe-stream-first unsafe-stream-rest l unsafe-stream-not-empty? #f #f))
+  ;; each call defines 4 in-hash- sequences for a kind of VAL
+  ;; - one generic
+  ;; - one for each hash table type: immutable, mutable, weak
+  ;; where VAL = key, value, pair, etc
+  (define-syntax (define-in-hash-sequences stx)
+    (syntax-case stx (element-type: num-vals:)
+     [(_ element-type: VAL) ; eg, VAL = key, value, pair
+      #'(define-in-hash-sequences element-type: VAL num-vals: 1)]
+     [(_ element-type: VAL num-vals: n) 
+      (with-syntax 
+       ([IN-HASH-SEQUENCE-DEFINER-NAME
+            (format-id #'VAL "define-in-hash-~as-sequence" #'VAL)]
+        [FALLBACK-SEQUENCE-NAME (format-id #'VAL "default-in-hash-~as" #'VAL)]
+        [-fallback-accessor (format-id #'VAL "hash-iterate-~a" #'VAL)]
+        [IDs (generate-temporaries (init-list (syntax-e #'n) 'x))])
+       #'(begin
+          ;; 1) define fallback sequence constructor function for VAL type
+          ;;    (using make-do-sequence)
+          (define (FALLBACK-SEQUENCE-NAME ht)
+            (unless (hash? ht) 
+              (raise-argument-error 'FALLBACK-SEQUENCE-NAME "hash?" ht))
+            (make-do-sequence (lambda () (:hash-gen ht -fallback-accessor))))
+          ;; 2) define sequence syntax definer
+          ;; defines sequences in-HASHTYPE-hash-VALs, eg:
+          ;; - in-mutable-hash-keys
+          ;; - in-immutable-hash-pairs, etc
+          (define-syntax (IN-HASH-SEQUENCE-DEFINER-NAME stx)
+            (syntax-case stx (hash-type: outer-check: => :generic)
+             ;; defines generic in-hash-VALs sequence
+             [(def :generic)
+              (with-syntax 
+               ([_generic-sequence-name (format-id #'def "in-hash-~as" #'VAL)]
+                [_safe-iterate-fn-prefix (format-id #'def "hash-iterate")])
+               #'(IN-HASH-SEQUENCE-DEFINER-NAME
+                   _generic-sequence-name
+                   _safe-iterate-fn-prefix
+                   outer-check: (ht) => (hash? ht)))]
+             ;; defines in-hash-VALs sequence for a specific kind of hash table
+             ;; eg, HASHTYPE = mutable, immutable, weak
+             [(def hash-type: HASHTYPE outer-check: . test-clause)
+              (with-syntax 
+               ([_sequence-name
+                    (format-id #'def "in-~a-hash-~as" #'HASHTYPE #'VAL)]
+                [_unsafe-iterate-fn-prefix
+                    (format-id #'def "unsafe-~a-hash-iterate" #'HASHTYPE)])
+               #'(IN-HASH-SEQUENCE-DEFINER-NAME
+                   _sequence-name
+                   _unsafe-iterate-fn-prefix
+                   outer-check: . test-clause))]
+             ;; main (internal) clause
+             [(_ IN-HASH-SEQUENCE-NAME PREFIX outer-check: (HT) => TEST-EXPR) 
+              (with-syntax
+               ([-iterate-first (format-id #'PREFIX "~a-first" #'PREFIX)]
+                [-iterate-next (format-id #'PREFIX "~a-next" #'PREFIX)]
+                [-iterate-VAL (format-id #'PREFIX "~a-~a" #'PREFIX #'VAL)])
+               #'(define-sequence-syntax IN-HASH-SEQUENCE-NAME
+                  (lambda () #'FALLBACK-SEQUENCE-NAME)
+                  (lambda (stx)
+                    (syntax-case stx ()
+                     [[IDs (_ ht-expr)]
+                      (for-clause-syntax-protect
+                       #'[IDs
+                          (:do-in
+                           ;;outer bindings
+                           ([(HT) ht-expr])
+                           ;; outer check
+                           (unless TEST-EXPR (FALLBACK-SEQUENCE-NAME HT))
+                           ;; loop bindings
+                           ([i (-iterate-first HT)])
+                           ;; pos check
+                           i
+                           ;; inner bindings
+                           ([IDs (-iterate-VAL HT i)])
+                           ;; pre guard
+                           #t
+                           ;; post guard
+                           #t
+                           ;; loop args
+                           ((-iterate-next HT i)))])]
+                     [_ #f]))))]))
+          ;; 3) define sequence syntaxes (using definer):
+          ;;    - in-hash-VALs, works for any hash table
+          ;;    - one in-HASHTYPE-hash-VALs for each kind of hash table:
+          ;;      - immutable, mutable, and weak
+          ;;      - enables faster iteration using unsafe functions
+          (IN-HASH-SEQUENCE-DEFINER-NAME :generic)
+          (IN-HASH-SEQUENCE-DEFINER-NAME
+              hash-type: mutable 
+              outer-check: (ht) => (and (hash? ht) 
+                                        (not (immutable? ht))
+                                        (not (hash-weak? ht))))
+          (IN-HASH-SEQUENCE-DEFINER-NAME
+              hash-type: immutable
+              outer-check: (ht) => (and (hash? ht) (immutable? ht)))
+          (IN-HASH-SEQUENCE-DEFINER-NAME
+              hash-type: weak
+              outer-check: (ht) => (and (hash? ht) (hash-weak? ht)))
+          ))]))
+  
+  (define-in-hash-sequences element-type: key+value num-vals: 2)
+  (define-in-hash-sequences element-type: key)
+  (define-in-hash-sequences element-type: value)
+  (define-in-hash-sequences element-type: pair)
 
   ;; Vector-like sequences --------------------------------------------------
 
