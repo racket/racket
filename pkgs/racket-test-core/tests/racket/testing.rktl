@@ -217,7 +217,6 @@ transcript.
        (syntax
 	(thunk-error-test (err:mz:lambda () e) (quote-syntax e) exn?))]
       [(_ e exn? msg-rx)
-       (regexp? (syntax-e #'msg-rx))
        #'(thunk-error-test
           (err:mz:lambda () e)
           (quote-syntax e)

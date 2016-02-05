@@ -347,6 +347,94 @@ The index @racket[k] must be between @racket[0] (inclusive) and
 the number of fields in the structure (exclusive). In the case of
 @racket[unsafe-struct-set!], the field must be mutable.}
 
+@deftogether[(
+@defproc[(unsafe-mutable-hash-iterate-first
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+	  (or/c #f any/c)]
+@defproc[(unsafe-mutable-hash-iterate-next
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-mutable-hash-iterate-key
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-mutable-hash-iterate-value
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-mutable-hash-iterate-key+value
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-mutable-hash-iterate-pair
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c]) 
+	  pair?]
+@defproc[(unsafe-immutable-hash-iterate-first
+          [h (and/c hash? immutable?)])
+	  (or/c #f any/c)]
+@defproc[(unsafe-immutable-hash-iterate-next
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-immutable-hash-iterate-key
+          [h (and/c hash? immutable?)]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-immutable-hash-iterate-value
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  any/c]
+@defproc[(unsafe-immutable-hash-iterate-key+value
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  (values any/c any/c)]
+@defproc[(unsafe-immutable-hash-iterate-pair
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  pair?]
+@defproc[(unsafe-weak-hash-iterate-first
+          [h (and/c hash? hash-weak?)])
+	  (or/c #f any/c)]
+@defproc[(unsafe-weak-hash-iterate-next
+          [h (and/c hash? hash-weak?)]
+	  [i any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-weak-hash-iterate-key
+          [h (and/c hash? hash-weak?)]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-weak-hash-iterate-value
+          [h (and/c hash? hash-weak?)]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-weak-hash-iterate-key+value
+          [h (and/c hash? hash-weak?)]
+	  [i any/c]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-weak-hash-iterate-pair
+          [h (and/c hash? hash-weak?)]
+	  [i any/c]) 
+	  pair?]
+)]{
+Unsafe versions of @racket[hash-iterate-key] and similar ops. These operations
+support @tech{chaperones} and @tech{impersonators}.
+
+Each unsafe @code{-first} and @code{-next} operation may not return a number
+index but rather an internal representation of a view into the hash structure,
+enabling faster iteration. 
+
+The result of these @code{-first} and @code{-next}] functions should be given
+to the corresponding unsafe accessor functions.
+
+If the key or value at the position returned by the @code{-first} and
+@code{-next} ops becomes invalid (e.g., because of mutation or garbage
+collection), then the operations @exnraise[exn:fail:contract].
+
+@history[#:added "6.4.0.6"]
+}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "unsafeextfl"]{Unsafe Extflonum Operations}
