@@ -416,11 +416,10 @@ each element in the sequence.
           [hash (and/c hash? hash-weak?)]) 
 	  sequence?]
 )]{
-   Sequence constructors for specific kinds of hash tables that should be
-   more performant than the analogous @racket[in-hash] constructor. 
+   Sequence constructors for specific kinds of hash tables.
    
-   The "star" versions do not support @tech{impersonators} or 
-   @tech{chaperones}.
+   These may be more performant than the analogous @racket[in-hash] 
+   forms. However, they may consume more space to help with iteration.
    
    @history[#:added "6.4.0.6"]
 }
