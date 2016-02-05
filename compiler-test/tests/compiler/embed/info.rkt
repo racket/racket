@@ -17,6 +17,6 @@
                           "embed-planet-1"
                           "embed-planet-2"))
 
-(define test-timeouts '(("test.rkt" 600)))
+(define test-timeouts '(("test.rkt" 900)))
 
 (define test-responsibles '((all mflatt)))
