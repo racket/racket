@@ -1503,6 +1503,9 @@
 (test-comp '(lambda (x) (car x) #f)
            '(lambda (x) (car x) (eq? x (begin (newline) (box 0))))
            #f)
+(test-comp '(lambda () (begin (newline) 7))
+           '(lambda () (eq? (box 0) (begin (newline) 7)))
+           #f)
 
 (test-comp '(lambda (w) (car w) (mcar w))
            '(lambda (w) (car w) (mcar w) (random)))

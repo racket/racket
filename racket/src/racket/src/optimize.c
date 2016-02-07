@@ -3733,9 +3733,9 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
                                              do_make_discarding_sequence(app->rand2,
                                                                          scheme_false,
                                                                          info, 0,
-                                                                         1, 0),
+                                                                         0, 0),
                                              info, 0,
-                                             1, 0);
+                                             0, 0);
         }
       }
     }
