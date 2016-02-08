@@ -698,7 +698,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
       mzchar cbuf[100], *cs, *cresult;
       intptr_t clen;
       int p = 0;
-      uintptr_t i = 0;
+      intptr_t i = 0;
       intptr_t rlen;
 
       dz = 0;
