@@ -1042,18 +1042,38 @@
 (test-comp '(lambda (x) (eq? 7 x))
            '(lambda (x) (eqv? 7 x)))
 
-(test-comp #t
-           '(eq? 7 7))
-(test-comp #f
-           '(eq? 9 6))
-(test-comp #t
-           '(eqv? 7 7))
-(test-comp #f
-           '(eqv? 9 6))
-(test-comp #t
-           '(equal? 7 7))
-(test-comp #f
-           '(equal? 9 6))
+; car is a primitive, map is required from another module
+(let ([test-equal?
+       (lambda (e?)
+         (test-comp #t
+                    `(,e? 7 7))
+         (test-comp #f
+                    `(,e? 9 6))
+         (test-comp #t
+                    `(,e? (values 1 2) (values 1 2))
+                    #f)
+         (test-comp '(lambda (x) #t)
+                    `(lambda (x) (,e? x x)))
+         (test-comp '(lambda (x) #t)
+                    `(lambda (x) (,e? car car)))
+         (test-comp '(lambda (x) (list map #t))
+                    `(lambda (x) (list map (,e? map map))))
+         (test-comp '(module ? racket/base
+                       (define x (if (zero? (random 2)) '() '(1)))
+                       #t)
+                    `(module ? racket/base
+                       (define x (if (zero? (random 2)) '() '(1)))
+                       (,e? x x)))
+         (test-comp '(letrec ([x #t]
+                              [y (random)])
+                       (list x x y y))
+                    `(letrec ([x (,e? y y)]
+                              [y (random)])
+                       (list x x y y))
+                    #f))])
+  (test-equal? eq?)
+  (test-equal? eqv?)
+  (test-equal? equal?))
 
 (test-comp '(let ([x 3]) x)
 	   '((lambda (x) x) 3))
@@ -1761,11 +1781,29 @@
 
 (test-comp '(lambda (x) (if x x #f))
            '(lambda (x) x))
+(test-comp '(lambda (x y) (set! x y) (if x x #f))
+           '(lambda (x y) (set! x y) x))
 (test-comp '(lambda (x) (if (cons 1 x) 78 78))
+           '(lambda (x) 78))
+(test-comp '(lambda (x) (if (null? x) 78 78))
            '(lambda (x) 78))
 (test-comp '(lambda (x) (if (values 1 2) 78 78))
            '(lambda (x) (values 1 2) 78)
            #f)
+(test-comp '(if (values 1 2) (values 1 2) #f)
+           '(values 1 2)
+           #f)
+; car is a primitive, map is required from another module
+(test-comp '(lambda (x) (if (null? x) car car))
+           '(lambda (x) car))
+(test-comp '(lambda (x) (if (null? x) map map))
+           '(lambda (x) map))
+(test-comp '(module ? racket/base
+              (define x (if (zero? (random 2)) '() '(1)))
+              (if (null? x) x x))
+           '(module ? racket/base
+              (define x (if (zero? (random 2)) '() '(1)))
+              x))
 (test-comp '(lambda (x) (if (null? x) x x))
            '(lambda (x) x))
 (test-comp '(lambda (x) (if (null? x) null x))
@@ -1884,7 +1922,7 @@
                     (if (let ([y (random)]) (pair? x)) 1 2)))
            '(lambda (x)
               (cons (car x)
-                    (begin (let ([y (random)]) (void (pair? x))) 1))))
+                    (let ([y (random)]) 1))))
 (test-comp '(lambda (x)
               (cons (car x)
                     (if (begin (random) (random) (pair? x)) 1 2)))
@@ -1892,13 +1930,37 @@
               (cons (car x)
                     (begin (random) (random) 1))))
 (test-comp '(lambda (x)
+              (cons (car x)
+                    (if (begin (random) (random) (box? x)) 1 2)))
+           '(lambda (x)
+              (cons (car x)
+                    (begin (random) (random) 2))))
+(test-comp '(lambda (x)
               (if (begin (random) (random) (cons x x)) 1 2))
            '(lambda (x)
               (begin (random) (random) 1)))
 (test-comp '(lambda (x)
-              (if (let ([n (random)]) (random n) (random n) (cons (car x) x)) 1 2))
+              (if (begin (random) (random) (not (cons x x))) 1 2))
            '(lambda (x)
-              (let ([n (random)]) (random n) (random n) (car x) (void) 1)))
+              (begin (random) (random) 2)))
+(test-comp '(lambda (x)
+              (if (let ([n (random 9)]) (random n) (random n) (cons (car x) x)) 1 2))
+           '(lambda (x)
+              (let ([n (random 9)]) (random n) (random n) (car x) 1)))
+(test-comp '(lambda (x)
+              (if (let ([n (random 9)]) (random n) (random n) (not (cons (car x) x))) 1 2))
+           '(lambda (x)
+              (let ([n (random 9)]) (random n) (random n) (car x) 2)))
+
+(test-comp '(lambda (x)
+              (if (let ([n (random 9)]) (random n) (random n) (cons (car x) x)) (cons x 1) (cons x 2)))
+           '(lambda (x)
+              (let ([n (random 9)]) (random n) (random n) (car x) (cons x 1))))
+(test-comp '(lambda (x)
+              (if (let ([n (random 9)]) (random n) (random n) (not (cons (car x) x))) (cons x 1) (cons x 2)))
+           '(lambda (x)
+              (let ([n (random 9)]) (random n) (random n) (car x) (cons x 2))))
+
 (test-comp '(lambda (x)
               (if (begin (random) (not (begin (random) x))) 1 2))
            '(lambda (x)

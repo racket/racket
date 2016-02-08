@@ -154,6 +154,8 @@ static int single_valued_noncm_expression(Scheme_Object *expr, int fuel);
 static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info,
                                        int expected_vals, int maybe_omittable,
                                        int fuel);
+static Scheme_Object *equivalent_exprs(Scheme_Object *a, Scheme_Object *b,
+                                       Optimize_Info *a_info, Optimize_Info *b_info, int context);
 static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
                               int cross_lambda, int cross_k, int cross_s,
                               int check_space, int fuel);
@@ -680,6 +682,12 @@ static Scheme_Object *make_discarding_reverse_sequence(Scheme_Object *e1, Scheme
                                                        Optimize_Info *info)
 {
   return do_make_discarding_sequence(e1, e2, info, 0, 1);
+}
+
+static Scheme_Object *make_discarding_sequence_3(Scheme_Object *e1, Scheme_Object *e2, Scheme_Object *e3,
+                                                 Optimize_Info *info)
+{
+  return make_discarding_sequence(e1, make_discarding_sequence(e2, e3, info), info);
 }
 
 static Scheme_Object *make_discarding_app_sequence(Scheme_App_Rec *appr, int result_pos, Scheme_Object *result,
@@ -3697,6 +3705,15 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     }
   }
 
+  if ((SAME_OBJ(app->rator, scheme_equal_proc)
+       || SAME_OBJ(app->rator, scheme_eqv_proc)
+       || SAME_OBJ(app->rator, scheme_eq_proc))
+      && equivalent_exprs(app->rand1, app->rand2, NULL, NULL, 0)) {
+    info->preserves_marks = 1;
+    info->single_result = 1;
+    return make_discarding_sequence_3(app->rand1, app->rand2, scheme_true, info);
+  }
+
   /* Optimize `equal?' or `eqv?' test on certain types
      to `eq?'. This is especially helpful for the JIT. */
   if ((SAME_OBJ(app->rator, scheme_equal_proc)
@@ -3724,13 +3741,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         if (!SAME_OBJ(pred1, pred2)) {
           info->preserves_marks = 1;
           info->single_result = 1;
-          return do_make_discarding_sequence(app->rand1,
-                                             do_make_discarding_sequence(app->rand2,
-                                                                         scheme_false,
-                                                                         info,
-                                                                         0, 0),
-                                             info,
-                                             0, 0);
+          return make_discarding_sequence_3(app->rand1, app->rand2, scheme_false, info);
         }
       }
     }
@@ -4181,10 +4192,21 @@ static Scheme_Object *collapse_local(Scheme_Object *var, Optimize_Info *info, in
   return NULL;
 }
 
+/* This function is used to reduce: 
+   (if <x> a b) => (begin <x> <result-a-or-b>)
+   (if a b #f) => a , and similar
+   (eq? a b) => (begin a b #t)
+   The function considers only values and variable references, so <a> and <b> don't have side effects.
+   But each reduction has a very different behavior for expressions with side effects. */
 static Scheme_Object *equivalent_exprs(Scheme_Object *a, Scheme_Object *b,
                                        Optimize_Info *a_info, Optimize_Info *b_info, int context)
 {
   if (SAME_OBJ(a, b))
+    return a;
+
+  if (SAME_TYPE(SCHEME_TYPE(a), scheme_ir_toplevel_type)
+      && SAME_TYPE(SCHEME_TYPE(b), scheme_ir_toplevel_type)
+      && (SCHEME_TOPLEVEL_POS(a) == SCHEME_TOPLEVEL_POS(b)))
     return a;
 
   if (b_info 
@@ -4390,7 +4412,6 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   Optimize_Info *then_info, *else_info;
   Optimize_Info *then_info_init, *else_info_init;
   Optimize_Info_Sequence info_seq;
-  Scheme_Object *pred;
 
   b = (Scheme_Branch_Rec *)o;
 
@@ -4399,21 +4420,14 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   fb = b->fbranch;
 
   /* Convert (if <id> expr <id>) to (if <id> expr #f) */
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_ir_local_type)
-      && SAME_OBJ(t, fb)) {
+  if (equivalent_exprs(t, fb, NULL, NULL, 0)) {
     fb = scheme_false;
   }
   
-  if (context & OPT_CONTEXT_BOOLEAN) {
-    /* For test position, convert (if <id> <id> expr) to (if <id> #t expr) */
-    if (SAME_TYPE(SCHEME_TYPE(t), scheme_ir_local_type)
-        && SAME_OBJ(t, tb)) {
+  /* For test position, convert (if <id> <id> expr) to (if <id> #t expr) */
+  if ((context & OPT_CONTEXT_BOOLEAN)
+      && equivalent_exprs(t, tb, NULL, NULL, 0)) {
       tb = scheme_true;
-    }
-
-    /* Convert (if <expr> #t #f) to <expr> */
-    if (SAME_OBJ(tb, scheme_true) && SAME_OBJ(fb, scheme_false))
-      return scheme_optimize_expr(t, info, context);
   }
 
   optimize_info_seq_init(info, &info_seq);
@@ -4449,24 +4463,29 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
         break;
     }
 
-    pred = expr_implies_predicate(t2, info, NULL, 5); 
-    if (pred) {
-      /* (if (let () (cons x y)) a b) => (if (begin (let () (begin x y #<void>)) #t/#f) a b) */
-      Scheme_Object *test_val = SAME_OBJ(pred, scheme_not_proc) ? scheme_false : scheme_true;
+    if (!(SCHEME_TYPE(t2) > _scheme_ir_values_types_)) {
+      /* (if (let (...) (cons x y)) a b) => (if (begin (let (...) (begin x y #<void>)) #t/#f) a b)
+         but don't expand (if (let (...) (begin x K)) a b) */
+      Scheme_Object *pred;
 
-      t2 = optimize_ignored(t2, info, 1, 0, 5);
-      t = replace_tail_inside(t2, inside, t);
-      
-      t2 = test_val;
-      if (scheme_omittable_expr(t, 1, 5, 0, info, NULL)) {
-        t = test_val;
-        inside = NULL;
-      } else {       
-        t = make_sequence_2(t, test_val);
-        inside = t;
+      pred = expr_implies_predicate(t2, info, NULL, 5); 
+      if (pred) {
+        Scheme_Object *test_val = SAME_OBJ(pred, scheme_not_proc) ? scheme_false : scheme_true;
+
+        t2 = optimize_ignored(t2, info, 1, 0, 5);
+        t = replace_tail_inside(t2, inside, t);
+
+        t2 = test_val;
+        if (scheme_omittable_expr(t, 1, 5, 0, info, NULL)) {
+          t = test_val;
+          inside = NULL;
+        } else {
+          t = make_sequence_2(t, test_val);
+          inside = t;
+        }
       }
     }
-    
+
     if (SCHEME_TYPE(t2) > _scheme_ir_values_types_) {
       /* Branch is statically known */
       Scheme_Object *xb;
@@ -4479,6 +4498,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       else
         xb = scheme_optimize_expr(tb, info, scheme_optimize_tail_context(context));
       
+      optimize_info_seq_done(info, &info_seq);
       return replace_tail_inside(xb, inside, t);
     }
   }
@@ -4563,25 +4583,31 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     return make_optimize_prim_application2(scheme_not_proc, t, info, context);
   }
 
-  /* Try optimize: (if <omitable-expr> v v) => v */
+  /* For test position, convert (if <expr> #t #f) to <expr> */
+  if ((context & OPT_CONTEXT_BOOLEAN)
+      && SAME_OBJ(tb, scheme_true) && SAME_OBJ(fb, scheme_false)) {
+      info->size -= 2;
+      return t;
+  }
+
+  /* Try optimize: (if <expr> v v) => (begin <expr> v) */
   {
     Scheme_Object *nb;
 
     nb = equivalent_exprs(tb, fb, then_info_init, else_info_init, context);
     if (nb) {
-      info->size -= 1; /* could be more precise */
+      info->size -= 1;
       return make_discarding_first_sequence(t, nb, info);
     }
   }
 
   /* Try optimize: (if x x #f) => x 
      This pattern is included in the previous reduction,
-     but this is still useful if x is mutable */
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_ir_local_type)
-      && SAME_OBJ(t, tb)
-      && SCHEME_FALSEP(fb)) {
-    info->size -= 2;
-    return t;
+     but this is still useful if x is mutable or a top level*/
+  if (SCHEME_FALSEP(fb)
+      && equivalent_exprs(t, tb, NULL, NULL, 0)) {
+      info->size -= 2;
+      return t;
   }
 
   /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)
