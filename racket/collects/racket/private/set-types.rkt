@@ -5,6 +5,7 @@
          racket/serialize
          racket/pretty
          racket/sequence
+         racket/unsafe/ops
          (only-in racket/syntax format-symbol)
          (only-in racket/generic exn:fail:support)
          (for-syntax racket/base racket/syntax))
@@ -30,7 +31,9 @@
          make-weak-custom-set
          make-mutable-custom-set
 
-         in-hash-set
+         in-immutable-set
+         in-mutable-set
+         in-weak-set
          
          chaperone-hash-set
          impersonate-hash-set)
@@ -584,7 +587,7 @@
              (current-continuation-marks))))
   (custom-in-set s))
 
-(define-sequence-syntax in-hash-set
+(define-sequence-syntax in-immutable-set
   (lambda () #'custom-in-set/checked)
   (lambda (stx)
     (syntax-case stx ()
@@ -602,19 +605,88 @@
                                   (lambda (x) x)))
                              (values #f #f)))])
              ;; outer check
-             (unless ht (custom-in-set/checked set-expr))
+             (unless (and ht (set? ht)) 
+               (custom-in-set/checked set-expr))
              ;; loop bindings
-             ([i (hash-iterate-first ht)])
+             ([i (unsafe-immutable-hash-iterate-first ht)])
              ;; pos check
              i
              ;; inner bindings
-             ([(id) (fn (hash-iterate-key ht i))])
+             ([(id) (fn (unsafe-immutable-hash-iterate-key ht i))])
              ;; pre guard
              #t
              ;; post guard
              #t
              ;; loop args
-             ((hash-iterate-next ht i)))])]
+             ((unsafe-immutable-hash-iterate-next ht i)))])]
+      [_ #f])))
+
+(define-sequence-syntax in-mutable-set
+  (lambda () #'custom-in-set/checked)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[(id) (_ set-expr)]
+       (for-clause-syntax-protect
+         #'[(id)
+            (:do-in
+             ;;outer bindings
+             ([(ht fn) (let ([xs set-expr])
+                         (if (custom-set? xs)
+                             (values
+                              (custom-set-table xs)
+                              (if (custom-set-spec xs)
+                                  custom-elem-contents
+                                  (lambda (x) x)))
+                             (values #f #f)))])
+             ;; outer check
+             (unless (and ht (set-mutable? ht)) 
+               (custom-in-set/checked set-expr))
+             ;; loop bindings
+             ([i (unsafe-mutable-hash-iterate-first ht)])
+             ;; pos check
+             i
+             ;; inner bindings
+             ([(id) (fn (unsafe-mutable-hash-iterate-key ht i))])
+             ;; pre guard
+             #t
+             ;; post guard
+             #t
+             ;; loop args
+             ((unsafe-mutable-hash-iterate-next ht i)))])]
+      [_ #f])))
+
+(define-sequence-syntax in-weak-set
+  (lambda () #'custom-in-set/checked)
+  (lambda (stx)
+    (syntax-case stx ()
+      [[(id) (_ set-expr)]
+       (for-clause-syntax-protect
+         #'[(id)
+            (:do-in
+             ;;outer bindings
+             ([(ht fn) (let ([xs set-expr])
+                         (if (custom-set? xs)
+                             (values
+                              (custom-set-table xs)
+                              (if (custom-set-spec xs)
+                                  custom-elem-contents
+                                  (lambda (x) x)))
+                             (values #f #f)))])
+             ;; outer check
+             (unless (and ht (set-weak? ht)) 
+               (custom-in-set/checked set-expr))
+             ;; loop bindings
+             ([i (unsafe-weak-hash-iterate-first ht)])
+             ;; pos check
+             i
+             ;; inner bindings
+             ([(id) (fn (unsafe-weak-hash-iterate-key ht i))])
+             ;; pre guard
+             #t
+             ;; post guard
+             #t
+             ;; loop args
+             ((unsafe-weak-hash-iterate-next ht i)))])]
       [_ #f])))
 
 (struct custom-elem [contents] #:transparent)
