@@ -2361,6 +2361,7 @@ extern int scheme_is_nan(double);
 #     define MZ_IS_POS_INFINITY(d) (!__isfinite(d) && (d > 0))
 #     define MZ_IS_NEG_INFINITY(d) (!__isfinite(d) && (d < 0))
 #     define MZ_IS_NAN(d) __isnan(d)
+#     define MZ_IS_NEG_ZERO(d) signbit(d)
 #    else
 #     ifdef USE_MSVC_FP_PREDS
 #      include <float.h>
@@ -2374,6 +2375,7 @@ extern int scheme_is_nan(double);
 #      define MZ_IS_POS_INFINITY(d) (isinf(d) && (d > 0))
 #      define MZ_IS_NEG_INFINITY(d) (isinf(d) && (d < 0))
 #      define MZ_IS_NAN(d) isnan(d)
+#      define MZ_IS_NEG_ZERO(d) signbit(d)
 #     endif
 #    endif
 #   endif

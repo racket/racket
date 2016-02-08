@@ -111,9 +111,9 @@ typedef uintptr_t	_ul;
 #define _jit_L(L)         _jit_VD(((*_jit.x.ul_pc++)= _jit_UL((L)       )))
 #define _jit_I_noinc(I)   _jit_VD(((*_jit.x.ui_pc)=   _jit_UI((I)       )))
 
-#define _COPY_HIGH_BIT(N, I) (((uintptr_t)(I) & (1 << ((N)-1))) ? ~_MASK(N) : 0)
+#define _COPY_HIGH_BIT(N, I) (((uintptr_t)(I) & ((uintptr_t)1 << ((N)-1))) ? ~_MASK(N) : 0)
 
-#define _MASK(N)	((uintptr_t)(((intptr_t)1<<(N)))-1)
+#define _MASK(N)	((uintptr_t)(((uintptr_t)1<<(N)))-1)
 #define _siP(N,I)	(!((((uintptr_t)(I))^(_COPY_HIGH_BIT(N, I)))&~_MASK(N)))
 #define _uiP(N,I)	(!(((uintptr_t)(I))&~_MASK(N)))
 #define _suiP(N,I)	(_siP(N,I) | _uiP(N,I))

@@ -2607,7 +2607,7 @@ Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Obje
     /* Integer encoding, but shift to use low bit to indicate whether
        it preserves marks, which is useful information for the JIT. */
     intptr_t i = SCHEME_INT_VAL(p);
-    i <<= 1;
+    i = ((uintptr_t)i) << 1;
     if (scheme_closure_preserves_marks(e)) {
       i |= 0x1;
     }
@@ -9926,7 +9926,8 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 {
   UNBUNDLE_TIME_TYPE lnow;
   int get_gmt;
-  int hour, min, sec, month, day, year, wday, yday, dst;
+  int hour, min, sec, month, day, wday, yday, dst;
+  intptr_t year;
   long tzoffset;
 #ifdef USE_WIN32_TIME
 # define CHECK_TIME_T uintptr_t
@@ -10051,7 +10052,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 
       month = localTime->tm_mon + 1;
       day = localTime->tm_mday;
-      year = localTime->tm_year + 1900;
+      year = (uintptr_t)localTime->tm_year + 1900;
 
       wday = localTime->tm_wday;
       yday = localTime->tm_yday;

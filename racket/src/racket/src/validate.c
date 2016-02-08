@@ -1359,12 +1359,12 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         if ((uintptr_t)tl_use_map & 0x1) {
           if (p2 > 31)
             scheme_ill_formed_code(port);
-          if (!((uintptr_t)tl_use_map & (1 << (p2 + 1))))
+          if (!((uintptr_t)tl_use_map & ((unsigned int)1 << (p2 + 1))))
             scheme_ill_formed_code(port);
         } else {
           if (p2 >= (*(int *)tl_use_map * 32))
             scheme_ill_formed_code(port);
-          if (!(((int *)tl_use_map)[1 + (p2 / 32)] & (1 << (p2 & 31))))
+          if (!(((int *)tl_use_map)[1 + (p2 / 32)] & ((unsigned int)1 << (p2 & 31))))
             scheme_ill_formed_code(port);
         }
       }
@@ -1757,12 +1757,12 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         if ((uintptr_t)tl_use_map & 0x1) {
           if (p > 31)
             scheme_ill_formed_code(port);
-          if (!((uintptr_t)tl_use_map & (1 << (p + 1))))
+          if (!((uintptr_t)tl_use_map & ((unsigned int)1 << (p + 1))))
             scheme_ill_formed_code(port);
         } else {
           if (p >= (*(int *)tl_use_map * 32))
             scheme_ill_formed_code(port);
-          if (!(((int *)tl_use_map)[1 + (p / 32)] & (1 << (p & 31))))
+          if (!(((int *)tl_use_map)[1 + (p / 32)] & ((unsigned int)1 << (p & 31))))
             scheme_ill_formed_code(port);
         }
       }

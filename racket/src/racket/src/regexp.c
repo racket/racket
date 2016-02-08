@@ -5379,7 +5379,9 @@ static Scheme_Object *gen_compare(char *name, int pos,
 
   dropped = scheme_make_integer(0);
 
-  m = regexec(name, r, full_s, offset, endset - offset, offset, lazy_string,
+  m = regexec(name, r, full_s,
+              offset, (endset < 0 ? endset : endset - offset),
+              offset, lazy_string,
               startp, maybep, endp, match_stack,
 	      iport, unless_evt, nonblock,
 	      &full_s, peek, pos, last_bytes_count, oport, 

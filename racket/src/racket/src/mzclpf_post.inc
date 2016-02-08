@@ -58,8 +58,8 @@
         map = (((uintptr_t)data->tl_map) >> 1) & 0x7FFFFFFF;
         if ((use_bits[0] & map) != map) {
           for (i = 0; i < 31; i++) {
-            if (map & (1 << i)) {
-              if (!(use_bits[0] & (1 << i))) {
+            if (map & ((unsigned int)1 << i)) {
+              if (!(use_bits[0] & ((unsigned int)1 << i))) {
                 if ((i < pf->num_toplevels) || !pf->num_stxes)
                   gcMARK2(pf->a[i], gc); /* top level */
                 else if (i == pf->num_toplevels)
@@ -78,8 +78,8 @@
           map = u[i+1];
           if ((use_bits[i] & map) != map) {
             for (j = 0; j < 32; j++) {
-              if (map & (1 << j)) {
-                if (!(use_bits[i] & (1 << j))) {
+              if (map & ((unsigned int)1 << j)) {
+                if (!(use_bits[i] & ((unsigned int)1 << j))) {
                   pos = (i * 32) + j;
                   if ((pos < pf->num_toplevels) || !pf->num_stxes)
                     gcMARK2(pf->a[pos], gc);  /* top level */

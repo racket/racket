@@ -75,9 +75,15 @@
                      (= fx-result unsafe-result)))])
       (unless ans
         (newline)
-        (error 'same-results "better die now, rather than continue, what with unsafe ops around:\n     fx-result ~s\n unsafe-result ~s"
+        (error 'same-results (~a "better die now, rather than continue, what with unsafe ops around:\n"
+                                 "     fx-result ~s\n"
+                                 " unsafe-result ~s\n"
+                                 "    op: ~s\n"
+                                 "  args: ~s")
                fx-result
-               unsafe-result))
+               unsafe-result
+               fx
+               args))
       #t)))
 
 (define (flonum? x) (inexact-real? x))

@@ -94,7 +94,7 @@ END_XFORM_ARITH;
 # define JIT_LOG_WORD_SIZE 2
 #endif
 #define JIT_WORD_SIZE (1 << JIT_LOG_WORD_SIZE)
-#define WORDS_TO_BYTES(x) ((x) << JIT_LOG_WORD_SIZE)
+#define WORDS_TO_BYTES(x) ((unsigned)(x) << JIT_LOG_WORD_SIZE)
 #define MAX_TRY_SHIFT 30
 
 #ifdef USE_THREAD_LOCAL

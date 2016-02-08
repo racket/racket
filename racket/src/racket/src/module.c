@@ -2249,10 +2249,12 @@ static Scheme_Object *do_namespace_attach_module(const char *who, int argc, Sche
     }
     
     past_checkeds = SCHEME_CDR(past_checkeds);
-    from_modchain = SCHEME_VEC_ELS(from_modchain)[2];
-    if (phase > orig_phase)
-      to_modchain = SCHEME_VEC_ELS(to_modchain)[2];   
-    --phase;
+    if (!SCHEME_NULLP(past_checkeds)) {
+      from_modchain = SCHEME_VEC_ELS(from_modchain)[2];
+      if (phase > orig_phase)
+        to_modchain = SCHEME_VEC_ELS(to_modchain)[2];
+      --phase;
+    }
   }
 
   /* Notify module name resolver of attached modules: */
@@ -4959,7 +4961,7 @@ static void unlock_registry(Scheme_Env *env)
 
 XFORM_NONGCING static intptr_t make_key(int base_phase, int eval_exp, int eval_run)
 {
-  return ((base_phase << 3) 
+  return (((unsigned)base_phase << 3) 
           | (eval_exp ? ((eval_exp > 0) ? 2 : 4) : 0) 
           | (eval_run ? 1 : 0));
 }

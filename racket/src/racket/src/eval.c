@@ -6112,7 +6112,7 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
         for (i = (maxpos + 31) / 32; i--; ) {
           int j;
           for (j = 0; j < 32; j++) {
-            if (!(use_bits[i] & (1 << j))) {
+            if (!(use_bits[i] & ((unsigned)1 << j))) {
               int pos;
               pos = (i * 32) + j;
               if (pos < pf->num_toplevels)

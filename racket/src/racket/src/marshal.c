@@ -983,11 +983,11 @@ static Scheme_Object *read_compiled_closure(Scheme_Object *obj)
       for (i = 0; i < len/2; i++) {
         v1 = SCHEME_INT_VAL(SCHEME_VEC_ELS(tl_map)[2*i]);
         v2 = SCHEME_INT_VAL(SCHEME_VEC_ELS(tl_map)[(2*i) + 1]);
-        v2 = (v2 << 16) | v1;
+        v2 = ((unsigned int)v2 << 16) | v1;
         n[i+1] = v2;
       }
       if ((len == 2) && (!(n[1] & 0x80000000)))
-        data->tl_map = (void *)(intptr_t)((n[1] << 1) | 0x1);
+        data->tl_map = (void *)(intptr_t)(((uintptr_t)n[1] << 1) | 0x1);
       else
         data->tl_map = n;
     } else

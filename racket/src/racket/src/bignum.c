@@ -193,7 +193,7 @@ Scheme_Object *scheme_make_small_bignum(intptr_t v, Small_Bignum *o)
   o->o.iso.so.type = scheme_bignum_type;
   SCHEME_SET_BIGPOS(&o->o, ((v >= 0) ? 1 : 0));
   if (v < 0)
-    bv = -v;
+    bv = -((bigdig)v);
   else
     bv = v;
 
@@ -414,7 +414,7 @@ int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v)
     /* Special case for the most negative number representable in a signed long long */
     mzlonglong v2;
     v2 = 1;
-    v2 = (v2 << 63);
+    v2 = ((umzlonglong)v2 << 63);
     *v = v2;
     return 1;
   } else if ((SCHEME_BIGDIG(o)[MAX_BN_SIZE_FOR_LL - 1] & FIRST_BIT_MASK_LL) != 0) { /* Won't fit into a signed long long */
@@ -423,7 +423,7 @@ int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v)
     mzlonglong v2;
     v2 = SCHEME_BIGDIG(o)[0];
     if (SCHEME_BIGLEN(o) > 1) {
-      v2 |= ((mzlonglong)(SCHEME_BIGDIG(o)[1])) << 32;
+      v2 |= ((umzlonglong)(SCHEME_BIGDIG(o)[1])) << 32;
     }
     if (!SCHEME_BIGPOS(o)) {
       v2 = -v2;
@@ -1658,7 +1658,7 @@ static uintptr_t fixnum_sqrt(uintptr_t n, uintptr_t *rem)
 
   for (i = SQRT_BIT_MAX; i >= 0; i--)
   {
-    try_root = root | ((intptr_t)0x1 << i);
+    try_root = root | ((uintptr_t)0x1 << i);
     try_square = try_root * try_root;
     if (try_square <= n)
     {

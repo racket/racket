@@ -3305,7 +3305,7 @@ read_string(int is_byte, Scheme_Object *port,
 	      ch = scheme_peekc_special_ok(port);
 	      if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
                 initial[count] = ch;
-		n = n*16 + (ch<='9' ? ch-'0' : (scheme_toupper(ch)-'A'+10));
+		n = ((unsigned)n<<4) + (ch<='9' ? ch-'0' : (scheme_toupper(ch)-'A'+10));
 		scheme_getc(port); /* must be ch */
 		count++;
 	      } else
@@ -4050,7 +4050,7 @@ read_character(Scheme_Object *port,
       ch = scheme_peekc_special_ok(port);
       if (NOT_EOF_OR_SPECIAL(ch) && scheme_isxdigit(ch)) {
 	nbuf[count] = ch;
-	n = n*16 + (ch<='9' ? ch-'0' : (scheme_toupper(ch)-'A'+10));
+	n = ((unsigned)n<<4) + (ch<='9' ? ch-'0' : (scheme_toupper(ch)-'A'+10));
 	scheme_getc(port); /* must be ch */
 	count++;
       } else
@@ -5617,7 +5617,7 @@ static void install_byecode_hash_code(CPort *rp, char *hash_code)
   int i;
 
   for (i = 0; i < 20; i++) {
-    l ^= ((mzlonglong)(hash_code[i]) << ((i % 8) * 8));
+    l ^= ((umzlonglong)(hash_code[i]) << ((i % 8) * 8));
   }
 
   /* Make sure the hash code leaves lots of room for

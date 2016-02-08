@@ -520,7 +520,7 @@ $(MZFWMMM): ../libracket3m.@LIBSFX@
 	ln -s Versions/$(FWVERSION)_3m/Racket Racket.framework/Racket	
 
 ../racket@MMM@@OSX@: $(MZFWMMM) main.@LTO@
-	@MZLINKER@ -o ../racket@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket
+	@MZLINKER@ -o ../racket@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket @LIBS@
 	mkdir -p "../Racket.framework/Versions/$(FWVERSION)_3m"
 	cp "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"

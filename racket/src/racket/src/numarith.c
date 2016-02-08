@@ -592,12 +592,12 @@ static Scheme_Object *ADD(intptr_t a, intptr_t b)
   intptr_t r;
   Scheme_Object *o;
 
-  r = a + b;
+  r = (uintptr_t)a + (uintptr_t)b;
 
   o = scheme_make_integer(r);
   r = SCHEME_INT_VAL(o);
 
-  if (b == r - a)
+  if (b == (uintptr_t)r - (uintptr_t)a)
     return o;
   else
     return ADD_slow(a, b);
@@ -615,12 +615,12 @@ static Scheme_Object *SUBTRACT(intptr_t a, intptr_t b)
   intptr_t r;
   Scheme_Object *o;
 
-  r = a - b;
+  r = (uintptr_t)a - (uintptr_t)b;
 
   o = scheme_make_integer(r);
   r = SCHEME_INT_VAL(o);
 
-  if (a == r + b)
+  if (a == (uintptr_t)r + (uintptr_t)b)
     return o;
   else
     return SUBTRACT_slow(a, b);
@@ -634,12 +634,15 @@ static Scheme_Object *MULTIPLY(intptr_t a, intptr_t b)
   if (!b)
     return zeroi;
 
-  r = a * b;
+  r = (uintptr_t)a * (uintptr_t)b;
 
   o = scheme_make_integer(r);
   r = SCHEME_INT_VAL(o);
 
-  if (a == r / b)
+  /* if b == -1, division could overflow; otherwise, division is defined */
+  if ((b == -1)
+      ? (a == (uintptr_t)r * (uintptr_t)-1)
+      : (a == r / b))
     return o;
   else {
     Small_Bignum sa, sb;

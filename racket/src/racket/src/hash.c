@@ -1459,9 +1459,10 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
       if (!(MZ_OPT_HASH_KEY(&s->iso) & 0x1)) {
 	/* Interned. Make key depend only on the content. */
 	if (!(MZ_OPT_HASH_KEY(&s->iso) & 0xFFFC)) {
-	  int i, h = 0;
+	  int i;
+          unsigned int h = 0;
 	  for (i = s->len; i--; ) {
-	    h += (h << 5) + h + s->s[i];
+	    h += (h << 5) + h + (unsigned int)s->s[i];
 	  }
 	  h += (h << 2);
 	  if (!(((short)h) & 0xFFFC))
@@ -2913,7 +2914,7 @@ XFORM_NONGCING static uintptr_t hamt_find_free_code(Scheme_Hash_Tree *tree, int 
   Scheme_Hash_Tree *subtree;
   
   for (i = 0; i < mzHAMT_WORD_SIZE; i++) {
-    if (!(tree->bitmap & (1 << i)))
+    if (!(tree->bitmap & ((unsigned)1 << i)))
       return (i << shift) + base;
   }
 
@@ -2922,9 +2923,9 @@ XFORM_NONGCING static uintptr_t hamt_find_free_code(Scheme_Hash_Tree *tree, int 
   minpos = mzHAMT_WORD_SIZE;
   for (i = mzHAMT_WORD_SIZE; i--; ) {
     if (!HASHTR_SUBTREEP(tree->els[i])) {
-      uintptr_t code = (i << shift) + base;
+      uintptr_t code = ((unsigned)i << shift) + base;
       if (_mzHAMT_CODE(tree, i, mzHAMT_WORD_SIZE) == code)
-        return code + (1 << (shift + mzHAMT_LOG_WORD_SIZE));
+        return code + ((unsigned)1 << (shift + mzHAMT_LOG_WORD_SIZE));
       else
         return code;
     } else {
@@ -2938,7 +2939,7 @@ XFORM_NONGCING static uintptr_t hamt_find_free_code(Scheme_Hash_Tree *tree, int 
   }
 
   return hamt_find_free_code((Scheme_Hash_Tree *)tree->els[minpos],
-                             (minpos << shift) + base,
+                             ((unsigned)minpos << shift) + base,
                              shift + mzHAMT_LOG_WORD_SIZE);
 }
 

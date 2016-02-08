@@ -70,7 +70,7 @@ static inline void gclist_splice(GCList *head, GCList *list) {
 }
 
 #define gclist_item(ptr, type, member) \
-  ((type) (((void*)(ptr)) - ((void *) (&(((type) 0x0)->member)))))
+  ((type*) (((void*)(ptr)) - ((void *) offsetof(type, member))))
 
 #define gclist_first_item(head, type, member) \
   gclist_item((head)->next, type, member)

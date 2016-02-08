@@ -179,6 +179,9 @@ static void reset_locale(void);
 
 #define current_locale_name ((const mzchar *)current_locale_name_ptr)
 
+static const mzchar empty_char_string[1] = { 0 };
+static const mzchar xes_char_string[2] = { 0x78787878, 0 };
+
 #ifdef USE_ICONV_DLL
 static char *nl_langinfo(int which)
 {
@@ -186,7 +189,7 @@ static char *nl_langinfo(int which)
 
   reset_locale();
   if (!current_locale_name)
-    current_locale_name_ptr = "\0\0\0\0";
+    current_locale_name_ptr = empty_char_string;
 
   if ((current_locale_name[0] == 'C')
       && !current_locale_name[1])
@@ -986,7 +989,7 @@ scheme_init_string (Scheme_Env *env)
 
 void scheme_init_string_places(void) {
   REGISTER_SO(current_locale_name_ptr);
-  current_locale_name_ptr = "xxxx\0\0\0\0";
+  current_locale_name_ptr = (void *)xes_char_string;
 }
 
 /**********************************************************************/
@@ -1008,7 +1011,7 @@ Scheme_Object *scheme_make_sized_offset_utf8_string(char *chars, intptr_t d, int
                        NULL, 0 /* not UTF-16 */, 0xFFFD);
     us[ulen] = 0;
   } else {
-    us = (mzchar *)"\0\0\0";
+    us = (mzchar *)empty_char_string;
     ulen = 0;
   }
   return scheme_make_sized_offset_char_string(us, 0, ulen, 0);
@@ -4624,6 +4627,8 @@ static Scheme_Object *string_normalize_kd (int argc, Scheme_Object *argv[])
 intptr_t scheme_char_strlen(const mzchar *s)
 {
   intptr_t i;
+  if ((intptr_t)s & 0x3)
+    abort();
   for (i = 0; s[i]; i++) {
   }
   return i;

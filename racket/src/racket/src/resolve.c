@@ -2858,7 +2858,7 @@ static void set_tl_pos_used(Resolve_Info *info, int pos)
   if ((uintptr_t)info->tl_map & 0x1)
     info->tl_map = (void *)((uintptr_t)tl_map | ((uintptr_t)1 << (tl_pos + 1)));
   else
-    ((int *)tl_map)[1 + (tl_pos / 32)] |= (1 << (tl_pos & 31));
+    ((int *)tl_map)[1 + (tl_pos / 32)] |= ((unsigned)1 << (tl_pos & 31));
 }
 
 static void *merge_tl_map(void *tl_map, void *new_tl_map)
