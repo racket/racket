@@ -2542,9 +2542,10 @@
                                               type)))])
 		 (if (hash-ref non-gcing-functions name (lambda () #f))
 		     (when saw-gcing-call
-		       (log-error "[GCING] ~a in ~a: Function ~a declared __xform_nongcing__, but includes a function call."
+		       (log-error "[GCING] ~a in ~a: Function ~a declared __xform_nongcing__, but includes a function call at ~s."
 				  (tok-line saw-gcing-call) (tok-file saw-gcing-call)
-				  name))
+				  name
+                                  (tok-n saw-gcing-call)))
 		     (unless saw-gcing-call
 		       '
 		       (eprintf "[SUGGEST] Consider declaring ~a as __xform_nongcing__.\n"
@@ -3580,7 +3581,7 @@
 						   (list->seq (append func (list args))))
 						  ;; Call with pointer pushes
 						  (begin
-						    (set! saw-gcing-call (car e-))
+						    (set! saw-gcing-call (car func))
 						    (make-call
 						     "func call"
 						     #f #f
