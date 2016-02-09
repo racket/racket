@@ -900,11 +900,11 @@
 
                strlen cos cosl sin sinl exp expl pow powl log logl sqrt sqrtl atan2 atan2l frexp
                isnan isinf fpclass signbit _signbit _fpclass __fpclassify __fpclassifyf __fpclassifyl
-	       _isnan __isfinited __isnanl __isnan __signbit
+	       _isnan __isfinited __isnanl __isnan __signbit __signbitf __signbitd __signbitl
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf
                __inline_isnanl __inline_isnan __inline_signbitf __inline_signbitd __inline_signbitl
                __builtin_popcount __builtin_clz __builtin_isnan __builtin_isinf __builtin_signbit
-               __builtin_signbitf __builtin_signbitl __builtin_isinf_sign
+               __builtin_signbitf __builtin_signbitd __builtin_signbitl __builtin_isinf_sign
                _Generic
                __inline_isinff __inline_isinfl __inline_isinfd __inline_isnanf __inline_isnand __inline_isinf
                floor floorl ceil ceill round roundl fmod fmodl modf modfl fabs fabsl __maskrune _errno __errno
