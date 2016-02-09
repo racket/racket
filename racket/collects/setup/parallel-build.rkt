@@ -36,15 +36,21 @@
     (define depends (make-hash))
     (define/public (lock fn wrkr)
       (let ([v (hash-ref locks fn #f)])
-        (hash-set! locks fn
-          (if v
-            (match v [(list w waitlst) 
-                      (hash-set! depends wrkr (cons w fn))
-                      (check-cycles wrkr (hash) null)
-                      (list w (append waitlst (list wrkr)))])
-            (begin
-              (wrkr/send wrkr (list 'locked))
-              (list wrkr null))))
+        (hash-set!
+         locks fn
+         (match v
+           [(list w waitlst) 
+            (hash-set! depends wrkr (cons w fn))
+            (let ([fns (check-cycles wrkr (hash) null)])
+              (cond
+               [fns
+                (wrkr/send wrkr (list 'cycle (cons fn fns)))
+                v]
+               [else
+                (list w (append waitlst (list wrkr)))]))]
+           [else
+            (wrkr/send wrkr (list 'locked))
+            (list wrkr null)]))
         (not v)))
     (define/public (unlock fn)
       (match (hash-ref locks fn)
@@ -55,13 +61,11 @@
           (hash-remove! locks fn)]))
     (define/private (check-cycles w seen fns)
       (cond
-       [(hash-ref seen w #f)
-        (error 'setup "dependency cycle: ~s"
-               (cons (car fns) (reverse fns)))]
+       [(hash-ref seen w #f) fns]
        [(hash-ref depends w #f)
         => (lambda (d)
              (check-cycles (car d) (hash-set seen w #t) (cons (cdr d) fns)))]
-       [else (void)]))
+       [else #f]))
     (super-new)))
 
 (define/class/generics lock-manager%
@@ -293,6 +297,8 @@
                (DEBUG_COMM (eprintf "REQUESTING LOCK ~a ~a ~a\n" worker-id name _full-file))
                (match (send/recv (list (list 'LOCK (path->bytes fn)) "" ""))
                  [(list 'locked) #t]
+                 [(list 'cycle fns)
+                  (error 'setup "dependency cycle: ~s" fns)]
                  [(list 'compiled) #f]
                  [(list 'DIE) (worker/die 1)]
                  [x (send/error (format "DIDNT MATCH B ~v\n" x))]
