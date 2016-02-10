@@ -44,6 +44,7 @@
         #:max-width (or/c exact-nonnegative-integer? +inf.0)
         #:min-width exact-nonnegative-integer?
         #:limit-marker string?
+        #:limit-prefix? boolean?
         #:align align-mode/c
         #:pad-string padding/c
         #:left-pad-string padding/c
@@ -74,10 +75,15 @@
 
 (define (%limit #:limit limit
                 #:limit-marker limit-marker
+                #:limit-prefix? limit-prefix?
                 s)
-  (cond [(> (string-length s) limit)
-         (string-append (substring s 0 (- limit (string-length limit-marker)))
-                        limit-marker)]
+  (define len (string-length s))
+  (cond [(> len limit)
+         (if limit-prefix?
+           (string-append limit-marker
+                          (substring s (+ (- len limit) (string-length limit-marker))))
+           (string-append (substring s 0 (- limit (string-length limit-marker)))
+                          limit-marker))]
         [else s]))
 
 (define (%pad #:pad-to pad-to
@@ -141,6 +147,7 @@
      (let ([who (λ (#:width            [width         #f]
                     #:max-width        [limit         (or width +inf.0)]
                     #:limit-marker     [limit-marker  default-limit-marker]
+                    #:limit-prefix?    [limit-prefix? #f]
                     #:min-width        [pad-to        (or width 0)]
                     #:align            [align         'left]
                     #:pad-string       [padding       " "]
@@ -150,6 +157,7 @@
                     . s)
                   (do-checks 'who limit limit-marker pad-to)
                   (%pad (%limit #:limit limit #:limit-marker limit-marker
+                                #:limit-prefix? limit-prefix?
                                 (if (and (pair? s) (null? (cdr s)))
                                   (fmt (car s))
                                   (apply string-append
