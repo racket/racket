@@ -84,7 +84,7 @@
 (define *google-dns*   "8.8.8.8")
 (define *google-dns-2* "8.8.4.4")
 (define *nwu-url*      "eecs.northwestern.edu")
-(define *nwu-ips*       '("129.105.8.227" "129.105.5.15"))
+(define *nwu-ips*       '("129.105.8.227" "129.105.5.15" "129.105.8.237"))
 (define *racket-host*  "winooski.ccs.neu.edu")
 (define *racket-ip*    "129.10.115.117")
 (define *nwu-mx*       '("cuda.eecs.northwestern.edu" "barra.eecs.northwestern.edu"))
@@ -92,11 +92,11 @@
 (define *kame-ip*      "2001:200:dff:fff1:216:3eff:feb1:44d7")
 
 (define (nameserver-tests nameserver)
-  (check-not-false (member (dns-get-address nameserver *nwu-url*) *nwu-ips*))
+  (check member (dns-get-address nameserver *nwu-url*) *nwu-ips*)
   (check-equal? (dns-get-address nameserver *racket-host*) *racket-ip*)
   (check-equal? (dns-get-address nameserver *kame-url* #:ipv6? #t) *kame-ip*)
   (check-equal? (dns-get-name nameserver *racket-ip*) *racket-host*)
-  (check-not-false (member (dns-get-mail-exchanger nameserver *nwu-url*) *nwu-mx*)))
+  (check member (dns-get-mail-exchanger nameserver *nwu-url*) *nwu-mx*))
 
 (provide tests)
 (module+ main (tests))
