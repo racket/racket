@@ -26,6 +26,14 @@
       (define (call*2 f1 x0) (f1 x0))
       (define (call*3 f2 x1 x0) (f2 x1 x0))))
 
+  ;; the two are incomparable, but we still want to check, to make sure
+  ;; contract-stronger works on contracts that use different kinds of
+  ;; projections (late-neg for any/c, regular for proj:blame/c)
+  (test/spec-passed/result
+   'stronger-with-no-late-neg-projection
+   '(contract-stronger? proj:blame/c any/c)
+   #f)
+
   (test/spec-passed/result
    'opt/c-blame-0
    '((contract
