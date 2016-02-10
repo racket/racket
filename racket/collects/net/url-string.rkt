@@ -399,10 +399,8 @@
 (provide (struct-out url) (struct-out path/param))
 
 (provide/contract
- (string->url (-> (and/c string?
-                         (or/c #rx"^[a-zA-Z][a-zA-Z0-9+.-]*:"
-                               (not/c #rx"^[^:/?#]*:")))
-                  url?))
+ (url-regexp regexp?)
+ (string->url (-> (and/c string? url-regexp) url?))
  (path->url ((or/c path-string? path-for-some-system?) . -> . url?))
  (relative-path->relative-url-string ((and/c (or/c path-string? path-for-some-system?)
                                              relative-path?)
