@@ -27,6 +27,7 @@ shorter than @racket[format] (with format string),
              [#:max-width max-width (or/c exact-nonnegative-integer? +inf.0) (or width +inf.0)]
              [#:min-width min-width exact-nonnegative-integer? (or width 0)]
              [#:limit-marker limit-marker string? ""]
+             [#:limit-prefix? limit-prefix? boolean? #f]
              [#:align align (or/c 'left 'center 'right) 'left]
              [#:pad-string pad-string non-empty-string? " "]
              [#:left-pad-string left-pad-string non-empty-string? pad-string]
@@ -68,6 +69,8 @@ If @racket[_s] is longer than @racket[max-width] characters, it is
 truncated and the end of the string is replaced with
 @racket[limit-marker]. If @racket[limit-marker] is longer than
 @racket[max-width], an exception is raised.
+If @racket[limit-prefix?] is @racket[#t], the beginning of the string
+is truncated instead of the end.
 
 @examples[#:eval the-eval
 (~a "abcde" #:max-width 5)
@@ -76,6 +79,7 @@ truncated and the end of the string is replaced with
 (~a "abcde" #:max-width 4 #:limit-marker "...")
 (~a "The quick brown fox" #:max-width 15 #:limit-marker "")
 (~a "The quick brown fox" #:max-width 15 #:limit-marker "...")
+(~a "The quick brown fox" #:max-width 15 #:limit-marker "..." #:limit-prefix? #f)
 ]
 
 If @racket[_s] is shorter than @racket[min-width], it is padded to at
@@ -120,6 +124,7 @@ simultaneously, ensuring that the resulting string is exactly
              [#:max-width max-width (or/c exact-nonnegative-integer? +inf.0) (or width +inf.0)]
              [#:min-width min-width exact-nonnegative-integer? (or width 0)]
              [#:limit-marker limit-marker string? "..."]
+             [#:limit-prefix? limit-prefix? boolean? #f]
              [#:align align (or/c 'left 'center 'right) 'left]
              [#:pad-string pad-string non-empty-string? " "]
              [#:left-pad-string left-pad-string non-empty-string? pad-string]
@@ -154,6 +159,7 @@ Use @racket[~v] to produce text that talks about Racket values.
              [#:max-width max-width (or/c exact-nonnegative-integer? +inf.0) (or width +inf.0)]
              [#:min-width min-width exact-nonnegative-integer? (or width 0)]
              [#:limit-marker limit-marker string? "..."]
+             [#:limit-prefix? limit-prefix? boolean? #f]
              [#:align align (or/c 'left 'center 'right) 'left]
              [#:pad-string pad-string non-empty-string? " "]
              [#:left-pad-string left-pad-string non-empty-string? pad-string]
@@ -181,6 +187,7 @@ marker is @racket["..."].
              [#:max-width max-width (or/c exact-nonnegative-integer? +inf.0) (or width +inf.0)]
              [#:min-width min-width exact-nonnegative-integer? (or width 0)]
              [#:limit-marker limit-marker string? "..."]
+             [#:limit-prefix? limit-prefix? boolean? #f]
              [#:align align (or/c 'left 'center 'right) 'left]
              [#:pad-string pad-string non-empty-string? " "]
              [#:left-pad-string left-pad-string non-empty-string? pad-string]
@@ -406,6 +413,7 @@ the resulting string is appended to the significand:
               [#:max-width max-width (or/c exact-nonnegative-integer? +inf.0) (or width +inf.0)]
               [#:min-width min-width exact-nonnegative-integer? (or width 0)]
               [#:limit-marker limit-marker string? ""]
+              [#:limit-prefix? limit-prefix? boolean? #f]
               [#:align align (or/c 'left 'center 'right) 'left]
               [#:pad-string pad-string non-empty-string? " "]
               [#:left-pad-string left-pad-string non-empty-string? pad-string]
@@ -417,6 +425,7 @@ the resulting string is appended to the significand:
               [#:max-width max-width (or/c exact-nonnegative-integer? +inf.0) (or width +inf.0)]
               [#:min-width min-width exact-nonnegative-integer? (or width 0)]
               [#:limit-marker limit-marker string? "..."]
+              [#:limit-prefix? limit-prefix? boolean? #f]
               [#:align align (or/c 'left 'center 'right) 'left]
               [#:pad-string pad-string non-empty-string? " "]
               [#:left-pad-string left-pad-string non-empty-string? pad-string]
@@ -428,6 +437,7 @@ the resulting string is appended to the significand:
               [#:max-width max-width (or/c exact-nonnegative-integer? +inf.0) (or width +inf.0)]
               [#:min-width min-width exact-nonnegative-integer? (or width 0)]
               [#:limit-marker limit-marker string? "..."]
+              [#:limit-prefix? limit-prefix? boolean? #f]
               [#:align align (or/c 'left 'center 'right) 'left]
               [#:pad-string pad-string non-empty-string? " "]
               [#:left-pad-string left-pad-string non-empty-string? pad-string]
