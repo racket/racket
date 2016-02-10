@@ -11,7 +11,8 @@
                      prop:chaperone-unsafe-undefined
                      chaperone-struct-unsafe-undefined
                      unsafe-chaperone-procedure
-                     unsafe-impersonate-procedure)
+                     unsafe-impersonate-procedure
+                     unsafe-vector*->immutable!)
          (rename-out [new:unsafe-impersonate-procedure unsafe-impersonate-procedure]
                      [new:unsafe-chaperone-procedure unsafe-chaperone-procedure])
          (prefix-out unsafe-

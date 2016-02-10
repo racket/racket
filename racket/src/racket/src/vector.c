@@ -35,6 +35,8 @@ READ_ONLY Scheme_Object *scheme_vector_ref_proc;
 READ_ONLY Scheme_Object *scheme_vector_set_proc;
 READ_ONLY Scheme_Object *scheme_list_to_vector_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_vector_length_proc;
+READ_ONLY Scheme_Object *scheme_vector_to_immutable_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_vector_star_to_immutable_bang_proc;
 
 /* locals */
 static Scheme_Object *vector_p (int argc, Scheme_Object *argv[]);
@@ -47,6 +49,7 @@ static Scheme_Object *list_to_vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_fill (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_vector_star_to_immutable_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv);
 static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv);
@@ -102,7 +105,7 @@ scheme_init_vector (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant("vector-immutable", p, env);
-  
+
   p = scheme_make_folding_prim(vector_length, "vector-length", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
@@ -147,11 +150,14 @@ scheme_init_vector (Scheme_Env *env)
 						    "vector-copy!", 
 						    3, 5), 
 			     env);
-  scheme_add_global_constant("vector->immutable-vector", 
-			     scheme_make_immed_prim(vector_to_immutable, 
-						    "vector->immutable-vector", 
-						    1, 1), 
-			     env);
+
+  REGISTER_SO(scheme_vector_to_immutable_proc);
+  p = scheme_make_immed_prim(vector_to_immutable,
+                             "vector->immutable-vector",
+                             1, 1);
+  scheme_vector_to_immutable_proc = p;
+  scheme_add_global_constant("vector->immutable-vector", p, env);
+
   scheme_add_global_constant("vector->values", 
 			     scheme_make_prim_w_arity2(vector_to_values, 
                                                        "vector->values", 
@@ -209,6 +215,13 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   p = scheme_make_immed_prim(unsafe_vector_star_set, "unsafe-vector*-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("unsafe-vector*-set!", p, env);  
+
+  REGISTER_SO(scheme_unsafe_vector_star_to_immutable_bang_proc);
+  p = scheme_make_immed_prim(unsafe_vector_star_to_immutable_bang, "unsafe-vector*->immutable!", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNSAFE_OMITABLE
+                                                            | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("unsafe-vector*->immutable!", p, env);
+  scheme_unsafe_vector_star_to_immutable_bang_proc = p;
 
   p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct-ref", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
@@ -767,6 +780,16 @@ static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[])
       SCHEME_VEC_ELS(vec)[i] = SCHEME_VEC_ELS(ovec)[i];
     }
   }
+  SCHEME_SET_IMMUTABLE(vec);
+
+  return vec;  
+}
+
+static Scheme_Object *unsafe_vector_star_to_immutable_bang(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *vec;
+
+  vec = argv[0];
   SCHEME_SET_IMMUTABLE(vec);
 
   return vec;  

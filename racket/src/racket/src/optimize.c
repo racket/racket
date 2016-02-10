@@ -2368,6 +2368,47 @@ static int produces_local_type(Scheme_Object *rator, int argc)
   return 0;
 }
 
+static int rator_implies_fresh(Scheme_Object *rator, int argc)
+{
+  if (SCHEME_PRIMP(rator)) {
+    if ((SAME_OBJ(rator, scheme_cons_proc)
+         || SAME_OBJ(rator, scheme_unsafe_cons_list_proc)))
+      return 1;
+    else if (SAME_OBJ(rator, scheme_mcons_proc))
+      return 1;
+    else if (SAME_OBJ(rator, scheme_list_proc)) {
+      if (argc >= 1)
+        return 1;
+      else
+        return 0;
+    } else if (SAME_OBJ(rator, scheme_list_star_proc)) {
+      if (argc > 2)
+        return 1;
+    } else if (SAME_OBJ(rator, scheme_vector_proc)
+               || SAME_OBJ(rator, scheme_vector_immutable_proc)
+               || SAME_OBJ(rator, scheme_make_vector_proc)
+               || SAME_OBJ(rator, scheme_list_to_vector_proc)
+               || SAME_OBJ(rator, scheme_struct_to_vector_proc))
+      return 1;
+    else if (SAME_OBJ(rator, scheme_box_proc)
+             || SAME_OBJ(rator, scheme_box_immutable_proc))
+      return 1;
+    else if (SAME_OBJ(rator, scheme_void_proc))
+      return 0;
+    else if (SAME_OBJ(rator, scheme_procedure_specialize_proc))
+      return 0;
+    
+    /* {
+      Scheme_Object *p;
+      p = local_type_to_predicate(produces_local_type(rator, argc));
+      if (p)
+        return 0;
+    } */
+  }
+
+  return 0;
+}
+
 static Scheme_Object *local_type_to_predicate(int t)
 {
   switch (t) {
@@ -3271,6 +3312,22 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     le = try_optimize_fold(rator, NULL, (Scheme_Object *)app, info);
     if (le)
       return le;
+  }
+
+  if (1 && SAME_OBJ(rator, scheme_vector_to_immutable_proc)
+      && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_application2_type)) {
+    Scheme_App2_Rec *app2 = (Scheme_App2_Rec *)app->rand;
+
+    if (SCHEME_PRIMP(app2->rator)
+        && rator_implies_fresh(app2->rator, 1)){
+      Scheme_Object *pred;
+      
+      pred = rator_implies_predicate(app2->rator, 1);
+      if (pred && SAME_OBJ(pred, scheme_vector_p_proc)) {
+        reset_rator((Scheme_Object *)app, scheme_unsafe_vector_star_to_immutable_bang_proc);
+        rator = scheme_unsafe_vector_star_to_immutable_bang_proc;
+      }
+    }
   }
 
   rand = app->rand;

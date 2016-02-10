@@ -484,6 +484,8 @@ extern Scheme_Object *scheme_vector_ref_proc;
 extern Scheme_Object *scheme_vector_set_proc;
 extern Scheme_Object *scheme_list_to_vector_proc;
 extern Scheme_Object *scheme_unsafe_vector_length_proc;
+extern Scheme_Object *scheme_vector_to_immutable_proc;
+extern Scheme_Object *scheme_unsafe_vector_star_to_immutable_bang_proc;
 extern Scheme_Object *scheme_hash_ref_proc;
 extern Scheme_Object *scheme_box_p_proc;
 extern Scheme_Object *scheme_box_proc;
