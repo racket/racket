@@ -103,7 +103,8 @@ paths to from URL structure types and back again are provided by the
 A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{regexp value} 
 that can be useful for matching url strings. Mostly follows 
 RFC 3986 @cite["RFC3986"], Appendix B, except for using @tt{*} instead of 
-@tt{+} for the scheme part (see @racket[url]).}
+@tt{+} for the scheme part (see @racket[url]).
+@history[#:added "6.4.0.7"]}
 
 @defproc[(string->url [str url-regexp]) url?]{
 
