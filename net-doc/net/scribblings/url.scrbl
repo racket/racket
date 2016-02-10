@@ -99,9 +99,13 @@ A pair that joins a path segment with its params in a URL.}
 paths to from URL structure types and back again are provided by the
  @racketmodname[net/url-string] library, and re-exported by @racketmodname[net/url].}
 
-@defproc[(string->url [str (or/c (not/c #rx"^([^:/?#]*):")
-                                 #rx"^[a-zA-Z][a-zA-Z0-9+.-]*:")])
-         url?]{
+@defthing[url-regexp regexp?]{
+A @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{regexp value} 
+that can be useful for matching url strings. Mostly follows 
+RFC 3986 @cite["RFC3986"], Appendix B, except for using @tt{*} instead of 
+@tt{+} for the scheme part (see @racket[url]).}
+
+@defproc[(string->url [str url-regexp]) url?]{
 
 Parses the URL specified by @racket[str] into a @racket[url]
 struct. The @racket[string->url] procedure uses
@@ -138,7 +142,9 @@ the path.
 @history[#:changed "6.3.0.1" @elem{Changed handling of @litchar{file:}
                                    URLs when the value of
                                    @racket[file-url-path-convention-type]
-                                   is @racket['windows].}]}
+                                   is @racket['windows].}]
+@history[#:changed "6.4.0.7" @elem{Use more specific regexp for 
+                                   input contract.}]}
 
 
 @defproc[(combine-url/relative [base url?] [relative string?]) url?]{
