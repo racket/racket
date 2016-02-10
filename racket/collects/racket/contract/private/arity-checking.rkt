@@ -15,8 +15,7 @@
                            ->stct-kwd-infos)
   (let/ec k
     (unless (procedure? val)
-      (maybe-err 
-       k blame
+      (k
        (λ (neg-party)
          (raise-blame-error blame #:missing-party neg-party val
                             '(expected: "a procedure" given: "~e")
@@ -37,8 +36,7 @@
                        (<= (arity-at-least-value lst) ->stct-min-arity)))
                 #t)))
      (unless matching-arity?
-       (maybe-err
-        k blame
+       (k
         (λ (neg-party)
           (raise-blame-error blame #:missing-party neg-party val
                              '(expected: 
@@ -54,8 +52,7 @@
                              (arity-as-string val)))))
     
     (define (should-have-supplied kwd)
-      (maybe-err
-       k blame
+      (k
        (λ (neg-party)
          (raise-blame-error blame #:missing-party neg-party val
                             '(expected: 
@@ -67,8 +64,7 @@
                             (arity-as-string val)))))
     
     (define (should-not-have-supplied kwd)
-      (maybe-err
-       k blame
+      (k
        (λ (neg-party)
          (raise-blame-error blame #:missing-party neg-party val
                             '(expected: 
@@ -107,8 +103,7 @@
              [(equal? kwd (kwd-info-kwd kwd-info))
               (when (and (not (kwd-info-mandatory? kwd-info))
                          mandatory?)
-                (maybe-err
-                 k blame
+                (k
                  (λ (neg-party)
                    (raise-blame-error 
                     blame #:missing-party neg-party val
@@ -224,7 +219,3 @@
            (cons (format "~a, " (car kwds))
                  (loop (cdr kwds)))])))]))
 
-(define (maybe-err k blame neg-accepter)
-  (if (blame-original? blame)
-      (neg-accepter #f)
-      (k neg-accepter)))

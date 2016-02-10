@@ -548,17 +548,21 @@
        (define (arrow-higher-order:vfp val)
          (define-values (normal-proc proc-with-no-result-checking expected-number-of-results)
            (apply plus-one-arity-function orig-blame val plus-one-constructor-args))
-         (wrapped-extra-arg-arrow 
-          (cond
-            [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
-             =>
-             values]
-            [else
+         (cond
+           [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
+            =>
+            (λ (neg-party-acceptor)
+              ;; probably don't need to include the wrapped-extra-arrow wrapper
+              ;; here, but it is easier to reason about the contract-out invariant
+              ;; with it here
+              (wrapped-extra-arg-arrow neg-party-acceptor normal-proc))]
+           [else
+            (wrapped-extra-arg-arrow
              (λ (neg-party)
-               (successfully-got-the-right-kind-of-function val neg-party))])
-          (if (equal? (procedure-result-arity val) expected-number-of-results)
-              proc-with-no-result-checking
-              normal-proc)))
+               (successfully-got-the-right-kind-of-function val neg-party))
+             (if (equal? (procedure-result-arity val) expected-number-of-results)
+                 proc-with-no-result-checking
+                 normal-proc))]))
        (if okay-to-do-only-arity-check?
            (λ (val)
              (cond
