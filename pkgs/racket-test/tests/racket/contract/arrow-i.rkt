@@ -732,7 +732,8 @@
                  (quote neg))
        b)
       (unbox b))
-   '(5 4 3 2 1))
+   '(5 4 3 2 1)
+   '(5 4 5 4 3 2 1 2 1)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i44
@@ -856,7 +857,8 @@
                  'neg)
        1)
       x)
-   '(res-check res-eval body arg-eval))
+   '(res-check res-eval body arg-eval)
+   '(res-check res-eval res-check res-eval body arg-eval arg-eval)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i49
@@ -872,7 +874,8 @@
                  'neg)
        1)
       x)
-   '(res-check body res-eval arg-eval))
+   '(res-check body res-eval arg-eval)
+   '(res-check res-check body res-eval res-eval arg-eval arg-eval)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i50
@@ -888,7 +891,8 @@
                  'neg)
        1)
       x)
-   '(res-check body res-eval arg-eval))
+   '(res-check body res-eval arg-eval)
+   '(res-check res-check body res-eval arg-eval res-eval arg-eval)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i51
@@ -904,7 +908,8 @@
                  'neg)
        1)
       x)
-   '(res-check body res-eval arg-eval))
+   '(res-check body res-eval arg-eval)
+   '(res-check res-check body res-eval arg-eval res-eval arg-eval)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i52
@@ -1341,7 +1346,8 @@
                  'pos
                  'neg))
       x)
-   '(body ctc))
+   '(body ctc)
+   '(body ctc ctc)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i-underscore3
@@ -1351,7 +1357,8 @@
                  'pos
                  'neg))
       x)
-   '(body ctc))
+   '(body ctc)
+   '(body ctc ctc)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i-underscore4
@@ -1378,7 +1385,8 @@
                  'neg)
        11)
       x)
-   '(body ctc))
+   '(body ctc)
+   '(body ctc ctc)) ; result if contract is applied twice
   
   (test/pos-blame
    '->i-bad-number-of-result-values1

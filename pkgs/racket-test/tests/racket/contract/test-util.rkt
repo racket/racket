@@ -24,6 +24,7 @@
          
          rewrite-to-add-opt/c
          rewrite-to-double-wrap
+         do-not-double-wrap
          
          test-cases failures)
 
@@ -208,21 +209,22 @@
   (rewrite-test rewrite-to-add-opt/c   "rewrite-to-add-opt/c")
   (rewrite-test rewrite-to-double-wrap "rewrite-to-double-wrap"))
 
-(define (test/spec-passed/result name expression result)
+(define (test/spec-passed/result name expression result [double-wrapped-result result])
   (parameterize ([compile-enforce-module-constants #f])
     (contract-eval #:test-case-name name `(,test #:test-case-name ',name ',result eval ',expression))
-    (define (rewrite-test wrapper wrapper-name)
+    (define (rewrite-test wrapper wrapper-name [result* result])
       (let/ec k
         (define rewrite-name (format "~a ~a" name wrapper-name))
         (contract-eval
          #:test-case-name rewrite-name
          `(,test
            #:test-case-name ,rewrite-name
-           ',result
+           ',result*
            eval
            ',(wrapper expression k)))))
     (rewrite-test rewrite-to-add-opt/c   "rewrite-to-add-opt/c")
-    (rewrite-test rewrite-to-double-wrap "rewrite-to-double-wrap")
+    (unless (eq? double-wrapped-result do-not-double-wrap)
+      (rewrite-test rewrite-to-double-wrap "rewrite-to-double-wrap" double-wrapped-result))
 
     (let ([new-expression (rewrite-out expression)])
       (when new-expression
@@ -335,6 +337,7 @@
                                   ,(loop val)
                                   ,@new-parties)
                         ,@new-parties))))
+(define do-not-double-wrap (gensym)) ; recognized by some test forms
 
 ;; blame : (or/c 'pos 'neg string?)
 ;;   if blame is a string, expect to find the string (format "blaming: ~a" blame) in the exn message
@@ -381,15 +384,15 @@
                    [double-name (string->symbol (format "~a+double" (syntax-e #'name)))])
        #'(begin
            (contract-eval #:test-case-name 'name `(,test expected 'name expression))
-           (define (rewrite-test wrapper name)
+           (define (rewrite-test wrapper name*)
              (let/ec k
                (contract-eval
-                #:test-case-name name
+                #:test-case-name name*
                 `(,test expected 
-                        'opt-name
+                        ',name*
                         ,(wrapper 'expression k)))))
-           (rewrite-test 'opt-name rewrite-to-add-opt/c)
-           (rewrite-test 'double-name rewrite-to-double-wrap)))]))
+           (rewrite-test rewrite-to-add-opt/c   'opt-name)
+           (rewrite-test rewrite-to-double-wrap 'double-name)))]))
 
 (define (test/well-formed stx)
   (contract-eval

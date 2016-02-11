@@ -29,7 +29,8 @@
 (test/spec-passed/result
  'make-contract-1
  '((contract proj:add1->sub1 sqrt 'pos 'neg) 15)
- 3)
+ 3
+ do-not-double-wrap)
 
 (test/pos-blame
  'make-contract-2

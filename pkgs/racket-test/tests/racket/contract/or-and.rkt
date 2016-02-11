@@ -102,7 +102,8 @@
                 'pos
                 'neg)
       x)
-   '(1 2))
+   '(1 2)
+   '(1 2 1 2)) ; result if contract is applied twice
   
   (test/spec-passed/result
    'or/c-ordering2
@@ -112,7 +113,8 @@
                 'pos
                 'neg)
       x)
-   '(2))
+   '(2)
+   '(2 2)) ; result if contract is applied twice
   
   (test/spec-passed
    'or/c-hmm
@@ -185,7 +187,8 @@
                 'pos
                 'neg)
       x)
-   '(1 2))
+   '(1 2)
+   '(1 2 1 2)) ; result if contract is applied twice
   
   (test/spec-passed/result
    'ho-and/c-ordering
@@ -199,7 +202,8 @@
                  'neg)
        1)
       (reverse x))
-   '(3 1 2 4))
+   '(3 1 2 4)
+   '(3 1 3 1 2 4 2 4)) ; result if contract is applied twice
   
   (test/spec-passed/result
    'and/c-isnt
@@ -339,7 +343,8 @@
                 'pos
                 'neg)
       x)
-   '(1 2))
+   '(1 2)
+   '(1 2 1 2)) ; result if contract is applied twice
   
   (test/spec-passed/result
    'first-or/c-ordering2
@@ -349,7 +354,8 @@
                 'pos
                 'neg)
       x)
-   '(2))
+   '(2)
+   '(2 2)) ; result if contract is applied twice
   
   (test/spec-passed
    'first-or/c-hmm

@@ -953,7 +953,8 @@
                       (λ (x) (s 11 x))
                       'pos
                       'neg) 1)))
-   1)
+   1
+   do-not-double-wrap)
   
   (test/spec-passed/result
    'struct/dc-new42
