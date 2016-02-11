@@ -36,7 +36,7 @@ int scheme_jit_is_fixnum(Scheme_Object *rand)
       || (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
           && (SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FIXNUM)))
     return 1;
-  else if (scheme_expr_produces_local_type(rand) == SCHEME_LOCAL_TYPE_FIXNUM)
+  else if (scheme_expr_produces_local_type(rand, NULL) == SCHEME_LOCAL_TYPE_FIXNUM)
     return 1;
   else
     return 0;

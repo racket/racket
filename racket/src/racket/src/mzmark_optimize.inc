@@ -12,18 +12,15 @@ static int mark_optimize_info_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Optimize_Info *i = (Optimize_Info *)p;
   
-  gcMARK2(i->stat_dists, gc);
-  gcMARK2(i->sd_depths, gc);
   gcMARK2(i->next, gc);
-  gcMARK2(i->use, gc);
   gcMARK2(i->consts, gc);
   gcMARK2(i->cp, gc);
   gcMARK2(i->top_level_consts, gc);
-  gcMARK2(i->transitive_use, gc);
-  gcMARK2(i->transitive_use_len, gc);
+  gcMARK2(i->transitive_use_var, gc);
   gcMARK2(i->context, gc);
   gcMARK2(i->logger, gc);
   gcMARK2(i->types, gc);
+  gcMARK2(i->uses, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -38,18 +35,15 @@ static int mark_optimize_info_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Optimize_Info *i = (Optimize_Info *)p;
   
-  gcFIXUP2(i->stat_dists, gc);
-  gcFIXUP2(i->sd_depths, gc);
   gcFIXUP2(i->next, gc);
-  gcFIXUP2(i->use, gc);
   gcFIXUP2(i->consts, gc);
   gcFIXUP2(i->cp, gc);
   gcFIXUP2(i->top_level_consts, gc);
-  gcFIXUP2(i->transitive_use, gc);
-  gcFIXUP2(i->transitive_use_len, gc);
+  gcFIXUP2(i->transitive_use_var, gc);
   gcFIXUP2(i->context, gc);
   gcFIXUP2(i->logger, gc);
   gcFIXUP2(i->types, gc);
+  gcFIXUP2(i->uses, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -76,8 +70,7 @@ static int mark_once_used_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Once_Used *o = (Scheme_Once_Used *)p;
   gcMARK2(o->expr, gc);
-  gcMARK2(o->info, gc);
-  gcMARK2(o->next, gc);
+  gcMARK2(o->var, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -91,8 +84,7 @@ static int mark_once_used_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Once_Used *o = (Scheme_Once_Used *)p;
   gcFIXUP2(o->expr, gc);
-  gcFIXUP2(o->info, gc);
-  gcFIXUP2(o->next, gc);
+  gcFIXUP2(o->var, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else

@@ -649,17 +649,17 @@ static Scheme_Object *write_sequence(Scheme_Object *obj)
 
 static Scheme_Object *read_sequence(Scheme_Object *obj)
 {
-  return scheme_make_sequence_compilation(obj, 1);
+  return scheme_make_sequence_compilation(obj, 1, 1);
 }
 
 static Scheme_Object *read_sequence_save_first(Scheme_Object *obj)
 {
-  return scheme_make_sequence_compilation(obj, -2);
+  return scheme_make_sequence_compilation(obj, -2, 1);
 }
 
 static Scheme_Object *read_sequence_splice(Scheme_Object *obj)
 {
-  obj = scheme_make_sequence_compilation(obj, 1);
+  obj = scheme_make_sequence_compilation(obj, 1, 1);
   if (!obj) return NULL;
 
   if (SAME_TYPE(SCHEME_TYPE(obj), scheme_sequence_type))

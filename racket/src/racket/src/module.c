@@ -9255,7 +9255,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
               body_lists = SCHEME_CDR(m);
             m = SCHEME_CAR(m);
             /* turn list of compiled expressions into a splice: */
-            m = scheme_make_sequence_compilation(m, 0);
+            m = scheme_make_sequence_compilation(m, 0, 0);
             if (m->type == scheme_sequence_type)
               m->type = scheme_splice_sequence_type;
           } else {
@@ -9727,7 +9727,7 @@ static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_
     Scheme_Object *prev = NULL, *next;
     for (p = first; !SCHEME_NULLP(p); p = next) {
       next = SCHEME_CDR(p);
-      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL, NULL, 0, 0, 0)) {
+      if (scheme_omittable_expr(SCHEME_CAR(p), -1, -1, 0, NULL, NULL)) {
 	if (prev)
 	  SCHEME_CDR(prev) = next;
 	else

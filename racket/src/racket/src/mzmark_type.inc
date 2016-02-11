@@ -947,6 +947,78 @@ static int with_cont_mark_FIXUP(void *p, struct NewGC *gc) {
 #define with_cont_mark_IS_CONST_SIZE 1
 
 
+static int comp_local_SIZE(void *p, struct NewGC *gc) {
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
+  gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Local));
+#else
+  return 0;
+#endif
+}
+
+static int comp_local_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
+  Scheme_Compiled_Local *var = (Scheme_Compiled_Local *)p;
+
+  gcMARK2(var->name, gc);
+  switch (var->mode) {
+  case SCHEME_VAR_MODE_LETREC_CHECK:
+    gcMARK2(var->letrec_check.frame, gc);
+    break;
+  case SCHEME_VAR_MODE_OPTIMIZE:
+    gcMARK2(var->optimize.known_val, gc);
+    gcMARK2(var->optimize.transitive_uses, gc);
+    gcMARK2(var->optimize.transitive_uses_to, gc);
+    break;
+  case SCHEME_VAR_MODE_RESOLVE:
+    gcMARK2(var->resolve.lifted, gc);
+    break;
+  default:
+    break;
+  }
+
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Local));
+# endif
+#endif
+}
+
+static int comp_local_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
+  Scheme_Compiled_Local *var = (Scheme_Compiled_Local *)p;
+
+  gcFIXUP2(var->name, gc);
+  switch (var->mode) {
+  case SCHEME_VAR_MODE_LETREC_CHECK:
+    gcFIXUP2(var->letrec_check.frame, gc);
+    break;
+  case SCHEME_VAR_MODE_OPTIMIZE:
+    gcFIXUP2(var->optimize.known_val, gc);
+    gcFIXUP2(var->optimize.transitive_uses, gc);
+    gcFIXUP2(var->optimize.transitive_uses_to, gc);
+    break;
+  case SCHEME_VAR_MODE_RESOLVE:
+    gcFIXUP2(var->resolve.lifted, gc);
+    break;
+  default:
+    break;
+  }
+
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Local));
+# endif
+#endif
+}
+
+#define comp_local_IS_ATOMIC 0
+#define comp_local_IS_CONST_SIZE 1
+
+
 static int comp_let_value_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Let_Value));
@@ -959,10 +1031,9 @@ static int comp_let_value_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Compiled_Let_Value *c = (Scheme_Compiled_Let_Value *)p;
 
-  gcMARK2(c->flags, gc);
   gcMARK2(c->value, gc);
   gcMARK2(c->body, gc);
-  gcMARK2(c->names, gc);
+  gcMARK2(c->vars, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -977,10 +1048,9 @@ static int comp_let_value_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Compiled_Let_Value *c = (Scheme_Compiled_Let_Value *)p;
 
-  gcFIXUP2(c->flags, gc);
   gcFIXUP2(c->value, gc);
   gcFIXUP2(c->body, gc);
-  gcFIXUP2(c->names, gc);
+  gcFIXUP2(c->vars, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;

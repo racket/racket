@@ -140,6 +140,7 @@ scheme_init_type ()
 
   set_name(scheme_let_value_type, "<let-value-code>");
   set_name(scheme_let_void_type, "<let-void-code>");
+  set_name(scheme_compiled_local_type, "<local-semi-code>");
   set_name(scheme_compiled_let_value_type, "<let-value-semi-code>");
   set_name(scheme_compiled_let_void_type, "<let-void-semi-code>");
   set_name(scheme_compiled_toplevel_type, "<variable-semi-code>");
@@ -589,6 +590,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(_scheme_values_types_, bad_trav);
   
   GC_REG_TRAV(scheme_compiled_unclosed_procedure_type, unclosed_proc);
+  GC_REG_TRAV(scheme_compiled_local_type, comp_local);
   GC_REG_TRAV(scheme_compiled_let_value_type, comp_let_value);
   GC_REG_TRAV(scheme_compiled_let_void_type, let_header);
   GC_REG_TRAV(scheme_compiled_toplevel_type, toplevel_obj);
