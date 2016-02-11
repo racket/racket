@@ -23,6 +23,7 @@
          contract-expand-once
          
          rewrite-to-add-opt/c
+         rewrite-to-double-wrap
          
          test-cases failures)
 
@@ -193,29 +194,36 @@
            '(with-handlers ([exn:fail? exn-message])
               ,new-expression
               'no-exn-raised))))))
-  
-  (let/ec k
-    (contract-eval
-     #:test-case-name (format "~a rewrite-to-add-opt/c" name)
-     `(,test #:test-case-name ,(format "~a rewrite-to-add-opt/c" name)
-             'no-exn-raised
-             eval
-             '(with-handlers ([exn:fail? exn-message])
-                ,(rewrite-to-add-opt/c expression k)
-                'no-exn-raised)))))
+
+  (define (rewrite-test wrapper wrapper-name)
+    (let/ec k
+      (contract-eval
+       #:test-case-name (format "~a ~a" name wrapper-name)
+       `(,test #:test-case-name ,(format "~a ~a" name wrapper-name)
+               'no-exn-raised
+               eval
+               '(with-handlers ([exn:fail? exn-message])
+                  ,(wrapper expression k)
+                  'no-exn-raised)))))
+  (rewrite-test rewrite-to-add-opt/c   "rewrite-to-add-opt/c")
+  (rewrite-test rewrite-to-double-wrap "rewrite-to-double-wrap"))
 
 (define (test/spec-passed/result name expression result)
   (parameterize ([compile-enforce-module-constants #f])
     (contract-eval #:test-case-name name `(,test #:test-case-name ',name ',result eval ',expression))
-    (let/ec k
-      (define opt-rewrite-name (format "~a rewrite-to-add-opt/c" name))
-      (contract-eval
-       #:test-case-name opt-rewrite-name
-       `(,test
-         #:test-case-name ,opt-rewrite-name
-         ',result
-         eval
-         ',(rewrite-to-add-opt/c expression k))))
+    (define (rewrite-test wrapper wrapper-name)
+      (let/ec k
+        (define rewrite-name (format "~a ~a" name wrapper-name))
+        (contract-eval
+         #:test-case-name rewrite-name
+         `(,test
+           #:test-case-name ,rewrite-name
+           ',result
+           eval
+           ',(wrapper expression k)))))
+    (rewrite-test rewrite-to-add-opt/c   "rewrite-to-add-opt/c")
+    (rewrite-test rewrite-to-double-wrap "rewrite-to-double-wrap")
+
     (let ([new-expression (rewrite-out expression)])
       (when new-expression
         (define out-rewrite-name (format "~a rewrite-out" name))
@@ -299,19 +307,34 @@
   
   (and rewrote? maybe-rewritten?))
 
-;; rewrites `contract' to use opt/c. If there is a module definition in there, we skip that test.
-(define (rewrite-to-add-opt/c exp k)
+(define ((rewrite contract-case) exp k)
   (let loop ([exp exp])
     (cond
-      [(null? exp) null]
-      [(list? exp)
-       (case (car exp)
-         [(contract) `(contract (opt/c ,(loop (cadr exp))) ,@(map loop (cddr exp)))]
-         [(module) (k #f)]
-         [else (map loop exp)])]
-      [(pair? exp) (cons (loop (car exp))
-                         (loop (cdr exp)))]
-      [else exp])))
+     [(null? exp) null]
+     [(list? exp)
+      (case (car exp)
+        [(contract) (contract-case (cadr exp) (caddr exp) (cdddr exp) loop)]
+        [(module) (k #f)]
+        [else (map loop exp)])]
+     [(pair? exp) (cons (loop (car exp))
+                        (loop (cdr exp)))]
+     [else exp])))
+
+;; rewrites `contract' to use opt/c. If there is a module definition in there, we skip that test.
+(define rewrite-to-add-opt/c
+  (rewrite (lambda (ctc val parties loop)
+             `(contract (opt/c ,(loop ctc)) ,(loop val) ,@(map loop parties)))))
+
+;; rewrites `contract` to double-wrap. To test space-efficient wrappers.
+(define rewrite-to-double-wrap
+  (rewrite (lambda (ctc val parties loop)
+             (define new-ctc (loop ctc))
+             (define new-parties (map loop parties))
+             `(contract ,new-ctc
+                        (contract ,(loop ctc)
+                                  ,(loop val)
+                                  ,@new-parties)
+                        ,@new-parties))))
 
 ;; blame : (or/c 'pos 'neg string?)
 ;;   if blame is a string, expect to find the string (format "blaming: ~a" blame) in the exn message
@@ -333,17 +356,20 @@
      (lambda (exn)
        (and (exn:fail:contract:blame? exn)
             (,has-proper-blame? (exn-message exn))))))
-  (let/ec k
-    (let ([rewritten (rewrite-to-add-opt/c expression k)])
-      (contract-eval
-       #:test-case-name (format "~a rewrite-to-add-opt/c" name)
-       `(,test-an-error
-         ',(string->symbol (format "~a+opt/c" name))
-         (lambda () ,rewritten)
-         ',rewritten
-         (lambda (exn)
-           (and (exn:fail:contract:blame? exn)
-                (,has-proper-blame? (exn-message exn)))))))))
+  (define (rewrite-test wrapper wrapper-name short-wrapper-name)
+    (let/ec k
+      (let ([rewritten (wrapper expression k)])
+        (contract-eval
+         #:test-case-name (format "~a ~a" name wrapper-name)
+         `(,test-an-error
+           ',(string->symbol (format "~a+~a" name short-wrapper-name))
+           (lambda () ,rewritten)
+           ',rewritten
+           (lambda (exn)
+             (and (exn:fail:contract:blame? exn)
+                  (,has-proper-blame? (exn-message exn)))))))))
+  (rewrite-test rewrite-to-add-opt/c   "rewrite-to-add-opt/c"   "opt/c")
+  (rewrite-test rewrite-to-double-wrap "rewrite-to-double-wrap" "double"))
 
 (define (test/pos-blame name expression) (test/spec-failed name expression 'pos))
 (define (test/neg-blame name expression) (test/spec-failed name expression 'neg))
@@ -351,15 +377,19 @@
 (define-syntax (ctest/rewrite stx)
   (syntax-case stx ()
     [(_ expected name expression)
-     (with-syntax ([opt-name (string->symbol (format "~a+opt/c" (syntax-e #'name)))])
+     (with-syntax ([opt-name    (string->symbol (format "~a+opt/c" (syntax-e #'name)))]
+                   [double-name (string->symbol (format "~a+double" (syntax-e #'name)))])
        #'(begin
            (contract-eval #:test-case-name 'name `(,test expected 'name expression))
-           (let/ec k
-             (contract-eval
-              #:test-case-name 'opt-name
-              `(,test expected 
-                      'opt-name
-                      ,(rewrite-to-add-opt/c 'expression k))))))]))
+           (define (rewrite-test wrapper name)
+             (let/ec k
+               (contract-eval
+                #:test-case-name name
+                `(,test expected 
+                        'opt-name
+                        ,(wrapper 'expression k)))))
+           (rewrite-test 'opt-name rewrite-to-add-opt/c)
+           (rewrite-test 'double-name rewrite-to-double-wrap)))]))
 
 (define (test/well-formed stx)
   (contract-eval
@@ -384,11 +414,14 @@
    `(,test (void)
            eval
            '(begin ,sexp (void))))
-  (let/ec k
-    (define rewritten (rewrite-to-add-opt/c sexp k))
+  (define (rewrite-test wrapper wrapper-name)
+      (let/ec k
+    (define rewritten (wrapper sexp k))
     (unless (equal? rewritten sexp)
       (contract-eval
-       #:test-case-name (format "~a:~a opt/c" fn line)
+       #:test-case-name (format "~a:~a ~a" fn line wrapper-name)
        `(,test (void)
                eval
                '(begin ,rewritten (void)))))))
+  (rewrite-test rewrite-to-add-opt/c   "opt/c")
+  (rewrite-test rewrite-to-double-wrap "double"))
