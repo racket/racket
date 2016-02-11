@@ -12,8 +12,8 @@ static int mark_closure_info_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Closure_Info *i = (Closure_Info *)p;
   
-  gcMARK2(i->local_flags, gc);
-  gcMARK2(i->base_closure_map, gc);
+  gcMARK2(i->base_closure, gc);
+  gcMARK2(i->vars, gc);
   gcMARK2(i->local_type_map, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
@@ -29,8 +29,8 @@ static int mark_closure_info_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Closure_Info *i = (Closure_Info *)p;
   
-  gcFIXUP2(i->local_flags, gc);
-  gcFIXUP2(i->base_closure_map, gc);
+  gcFIXUP2(i->base_closure, gc);
+  gcFIXUP2(i->vars, gc);
   gcFIXUP2(i->local_type_map, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS

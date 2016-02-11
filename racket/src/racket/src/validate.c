@@ -169,9 +169,8 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
   if (num_toplevels || num_stxes || num_lifts) {
     stack[depth - 1] = VALID_TOPLEVELS;
   }
-
   delta = depth - ((num_toplevels || num_stxes || num_lifts) ? 1 : 0);
-
+    
   tls = MALLOC_N(mzshort*, num_lifts);
   
   if (code_vec) {
@@ -1024,6 +1023,8 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
         vld = VALID_BOX;
         typed_arg = 1;
       } else if (ct) {
+        if ((ct - CLOS_TYPE_TYPE_OFFSET) > SCHEME_MAX_LOCAL_TYPE)
+          scheme_ill_formed_code(port);
         vld = (VALID_TYPED + (ct - CLOS_TYPE_TYPE_OFFSET));
         typed_arg = 1;
       } else
@@ -1199,7 +1200,7 @@ static void no_typed(int need_local_type, Mz_CPort *port)
 static void check_typed(Scheme_Object *expr, int need_local_type, Mz_CPort *port)
 {
   if (need_local_type) {
-    if (scheme_expr_produces_local_type(expr) != need_local_type)
+    if (scheme_expr_produces_local_type(expr, NULL) != need_local_type)
       scheme_ill_formed_code(port);
   }
 }
@@ -2052,6 +2053,10 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                             result_ignored, vc, tailpos, procs);
     result = validate_join_const(result, expected_results);
     break;
+  case scheme_compiled_local_type:
+    {
+      scheme_ill_formed_code(port);
+    }
   default:
     /* All values are definitely ok, except pre-closed closures. 
        Such a closure can refer back to itself, so we use a flag

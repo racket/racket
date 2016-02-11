@@ -15,7 +15,6 @@ static int mark_letrec_check_frame_MARK(void *p, struct NewGC *gc) {
   gcMARK2(frame->def, gc);
   gcMARK2(frame->next, gc);
   gcMARK2(frame->ref, gc);
-  gcMARK2(frame->head, gc);
   gcMARK2(frame->deferred_chain, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
@@ -34,7 +33,6 @@ static int mark_letrec_check_frame_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(frame->def, gc);
   gcFIXUP2(frame->next, gc);
   gcFIXUP2(frame->ref, gc);
-  gcFIXUP2(frame->head, gc);
   gcFIXUP2(frame->deferred_chain, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS

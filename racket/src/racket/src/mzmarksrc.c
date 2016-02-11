@@ -228,14 +228,38 @@ with_cont_mark {
   gcBYTES_TO_WORDS(sizeof(Scheme_With_Continuation_Mark));
 }
 
+comp_local {
+ mark:
+  Scheme_Compiled_Local *var = (Scheme_Compiled_Local *)p;
+
+  gcMARK2(var->name, gc);
+  switch (var->mode) {
+  case SCHEME_VAR_MODE_LETREC_CHECK:
+    gcMARK2(var->letrec_check.frame, gc);
+    break;
+  case SCHEME_VAR_MODE_OPTIMIZE:
+    gcMARK2(var->optimize.known_val, gc);
+    gcMARK2(var->optimize.transitive_uses, gc);
+    gcMARK2(var->optimize.transitive_uses_to, gc);
+    break;
+  case SCHEME_VAR_MODE_RESOLVE:
+    gcMARK2(var->resolve.lifted, gc);
+    break;
+  default:
+    break;
+  }
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Local));
+}
+
 comp_let_value {
  mark:
   Scheme_Compiled_Let_Value *c = (Scheme_Compiled_Let_Value *)p;
 
-  gcMARK2(c->flags, gc);
   gcMARK2(c->value, gc);
   gcMARK2(c->body, gc);
-  gcMARK2(c->names, gc);
+  gcMARK2(c->vars, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Let_Value));
@@ -1268,6 +1292,7 @@ mark_comp_env {
   gcMARK2(e->bindings, gc);
   gcMARK2(e->vals, gc);
   gcMARK2(e->shadower_deltas, gc);
+  gcMARK2(e->vars, gc);
   gcMARK2(e->dup_check, gc);
   gcMARK2(e->intdef_name, gc);
   gcMARK2(e->in_modidx, gc);
@@ -1298,12 +1323,9 @@ mark_resolve_info {
   gcMARK2(i->prefix, gc);
   gcMARK2(i->stx_map, gc);
   gcMARK2(i->tl_map, gc);
-  gcMARK2(i->old_pos, gc);
-  gcMARK2(i->new_pos, gc);
   gcMARK2(i->old_stx_pos, gc);
-  gcMARK2(i->flags, gc);
+  gcMARK2(i->redirects, gc);
   gcMARK2(i->lifts, gc);
-  gcMARK2(i->lifted, gc);
   gcMARK2(i->next, gc);
 
  size:
@@ -1314,16 +1336,13 @@ mark_unresolve_info {
  mark:
   Unresolve_Info *i = (Unresolve_Info *)p;
   
-  gcMARK2(i->flags, gc);
-  gcMARK2(i->depths, gc);
+  gcMARK2(i->vars, gc);
   gcMARK2(i->prefix, gc);
-  gcMARK2(i->closures, gc);
   gcMARK2(i->closures, gc);
   gcMARK2(i->module, gc);
   gcMARK2(i->comp_prefix, gc);
   gcMARK2(i->toplevels, gc);
   gcMARK2(i->definitions, gc);
-  gcMARK2(i->ref_args, gc);
   gcMARK2(i->ref_lifts, gc);
 
  size:
@@ -1361,7 +1380,6 @@ mark_letrec_check_frame {
   gcMARK2(frame->def, gc);
   gcMARK2(frame->next, gc);
   gcMARK2(frame->ref, gc);
-  gcMARK2(frame->head, gc);
   gcMARK2(frame->deferred_chain, gc);
 
  size:
@@ -1390,18 +1408,15 @@ mark_optimize_info {
  mark:
   Optimize_Info *i = (Optimize_Info *)p;
   
-  gcMARK2(i->stat_dists, gc);
-  gcMARK2(i->sd_depths, gc);
   gcMARK2(i->next, gc);
-  gcMARK2(i->use, gc);
   gcMARK2(i->consts, gc);
   gcMARK2(i->cp, gc);
   gcMARK2(i->top_level_consts, gc);
-  gcMARK2(i->transitive_use, gc);
-  gcMARK2(i->transitive_use_len, gc);
+  gcMARK2(i->transitive_use_var, gc);
   gcMARK2(i->context, gc);
   gcMARK2(i->logger, gc);
   gcMARK2(i->types, gc);
+  gcMARK2(i->uses, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Optimize_Info));
@@ -1411,8 +1426,7 @@ mark_once_used {
  mark:
   Scheme_Once_Used *o = (Scheme_Once_Used *)p;
   gcMARK2(o->expr, gc);
-  gcMARK2(o->info, gc);
-  gcMARK2(o->next, gc);
+  gcMARK2(o->var, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Once_Used));
 }
@@ -1461,8 +1475,8 @@ mark_closure_info {
  mark:
   Closure_Info *i = (Closure_Info *)p;
   
-  gcMARK2(i->local_flags, gc);
-  gcMARK2(i->base_closure_map, gc);
+  gcMARK2(i->base_closure, gc);
+  gcMARK2(i->vars, gc);
   gcMARK2(i->local_type_map, gc);
 
  size:

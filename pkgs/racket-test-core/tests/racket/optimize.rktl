@@ -879,20 +879,22 @@
 
     ))
 
-(define (comp=? c1 c2)
+(define (comp=? c1 c2 want-same?)
   (let ([s1 (open-output-bytes)]
 	[s2 (open-output-bytes)])
     (write c1 s1)
     (write c2 s2)
     (let ([t1 (get-output-bytes s1)]
 	  [t2 (get-output-bytes s2)])
-      (or (bytes=? t1 t2)
-	  (begin
-	    (printf "~s\n~s\n" 
-                     (zo-parse (open-input-bytes t1))
-                     (zo-parse (open-input-bytes t2)))
-	    #f
-	    )))))
+      (define same? (bytes=? t1 t2))
+      (when (and (not same?) want-same?)
+        (printf "~s\n~s\n" 
+                (zo-parse (open-input-bytes t1))
+                (zo-parse (open-input-bytes t2))))
+      (unless (equal? same? want-same?)
+        ;; Unquote to cause a failure to stop
+        'stop)
+      same?)))
 
 (define test-comp
   (case-lambda
@@ -902,7 +904,7 @@
       ;; Give `s` a minimal location, so that other macro locations
       ;; don't bleed through:
       (datum->syntax #f s (vector 'here #f #f #f #f)))
-    (test same? `(compile ,same? ,expr2) (comp=? (compile (->stx expr1)) (compile (->stx expr2))))]))
+    (test same? `(compile ,same? ,expr2) (comp=? (compile (->stx expr1)) (compile (->stx expr2)) same?))]))
 
 (let ([x (compile '(lambda (x) x))])
   (test #t 'fixpt (eq? x (compile x))))
@@ -1742,7 +1744,6 @@
                       (begin (quote-syntax foo) 3))])
               x)
            '3)
-
 (test-comp '(if (lambda () 10)
                 'ok
                 (quote-syntax no!))
@@ -2139,7 +2140,7 @@
               (define z (random))
               (define (f)
                 (let-values ([(a b) (values (cons 1 z) (cons 2 z))])
-                  (list a b)))
+                  (list b a)))
               (set! z 5)))
            '(module m racket/base
              ;; Reference to a ready module-level variable shouldn't
@@ -2147,7 +2148,7 @@
              (#%plain-module-begin
               (define z (random))
               (define (f)
-                (list (cons 1 z) (cons 2 z)))
+                (list (cons 2 z) (cons 1 z)))
               (set! z 5)))
            #f)
 
@@ -3095,38 +3096,45 @@
 
 (test-comp '(lambda (n)
               (let ([p (fl+ n n)])
-                (list 
+                (list
+                  p p
                   (flonum? p)
                   (flonum? (begin (random) p))
                   (flonum? (letrec ([x (lambda (t) x)]) (x x) p)))))
            '(lambda (n)
               (let ([p (fl+ n n)])
                 (list
-                  #t  
+                  p p
+                  #t 
                   (begin (random) #t)
                   (letrec ([x (lambda (t) x)]) (x x) #t)))))
+
 (test-comp '(lambda (n)
               (let ([p (fx+ n n)])
-                (list 
+                (list
+                  p p
                   (fixnum? p)
                   (fixnum? (begin (random) p))
                   (fixnum? (letrec ([x (lambda (t) x)]) (x x) p)))))
            '(lambda (n)
               (let ([p (fx+ n n)])
                 (list
+                  p p
                   #t  
                   (begin (random) #t)
                   (letrec ([x (lambda (t) x)]) (x x) #t)))))
 (test-comp '(lambda (n)
               (let ([p (extfl+ n n)])
-                (list 
+                (list
+                  p p
                   (extflonum? p)
                   (extflonum? (begin (random) p))
                   (extflonum? (letrec ([x (lambda (t) x)]) (x x) p)))))
            '(lambda (n)
               (let ([p (extfl+ n n)])
                 (list
-                  #t  
+                  p p
+                  #t
                   (begin (random) #t)
                   (letrec ([x (lambda (t) x)]) (x x) #t)))))
 

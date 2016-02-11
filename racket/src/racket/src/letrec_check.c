@@ -109,7 +109,6 @@ void scheme_init_letrec_check()
 #define LET_CHECKED   (0x1 << 2)
 
 #define FRAME_TYPE_LETREC   1
-#define FRAME_TYPE_LETSTAR  2
 #define FRAME_TYPE_LET      3
 #define FRAME_TYPE_CLOSURE  4
 #define FRAME_TYPE_TOP      5
@@ -139,9 +138,6 @@ typedef struct Letrec_Check_Frame {
      in an applied (or "unsafe") position, and whether it has ever
      been wrapped with an #<unsafe-undefined> check */
   int *ref;
-
-  /* so we can get to variable names */
-  Scheme_Let_Header *head;
 
   /* we keep a list of all deferred expressions, only so that we can
      drop the body for any that are not processed (which means that
@@ -178,12 +174,13 @@ static Letrec_Check_Frame *init_letrec_check_frame(int frame_type, int subexpr,
                                                    mzshort count,
                                                    Letrec_Check_Frame *prev,
                                                    Letrec_Check_Frame *share_with,
-                                                   Scheme_Let_Header *head)
+                                                   Scheme_Let_Header *head,
+                                                   Scheme_Closure_Data *data)
 {
   Scheme_Deferred_Expr **chain;
   Letrec_Check_Frame *frame;
   Scheme_Object **def;
-  int *ref, i;
+  int *ref, i, j, pos;
 
   frame = (Letrec_Check_Frame *)MALLOC_ONE_RT(Letrec_Check_Frame);
 #ifdef MZTAG_REQUIRED
@@ -195,7 +192,23 @@ static Letrec_Check_Frame *init_letrec_check_frame(int frame_type, int subexpr,
   frame->count = count;
   frame->next = prev;
 
-  frame->head = head;
+  if (head) {
+    Scheme_Compiled_Let_Value *clv = (Scheme_Compiled_Let_Value *)head->body;
+    pos = 0;
+    for (i = head->num_clauses; i--; clv = (Scheme_Compiled_Let_Value *)clv->body) {
+      for (j = 0; j < clv->count; j++) {
+        clv->vars[j]->mode = SCHEME_VAR_MODE_LETREC_CHECK;
+        clv->vars[j]->letrec_check.frame = frame;
+        clv->vars[j]->letrec_check.frame_pos = pos++;
+      }
+    }
+  } else if (data) {
+    for (j = data->num_params; j--; ) {
+      ((Closure_Info *)data->closure_map)->vars[j]->mode = SCHEME_VAR_MODE_LETREC_CHECK;
+      ((Closure_Info *)data->closure_map)->vars[j]->letrec_check.frame = frame;
+      ((Closure_Info *)data->closure_map)->vars[j]->letrec_check.frame_pos = j;
+    }
+  }
 
   if (share_with) {
     /* Moving from RHS phase to BODY phase for `let[rec]`,
@@ -256,33 +269,10 @@ static Letrec_Check_Frame *get_nearest_rhs(Letrec_Check_Frame *frame)
 
 /* returns the frame that was created when pos was created, and
    changes pos to be relative to that frame */
-static Letrec_Check_Frame *get_relative_frame(int *pos, Letrec_Check_Frame *frame)
+static Letrec_Check_Frame *get_relative_frame(int *pos, Scheme_Compiled_Local *var)
 {
-  while (1) {
-    /* we've gone wrong if pos_int is negative or if the frame has
-       become NULL because pos should have be a valid LHS variable
-       reference */
-    SCHEME_ASSERT(*pos >= 0, "get_relative_frame: pos is negative");
-    SCHEME_ASSERT(frame, "get_relative_frame: frame is NULL");
-
-    /* if we're in the RHS of a let, no bindings for the LHS variables
-       have been pushed yet, pos can't possibly be in this frame.  so
-       don't do any offsetting and look in the next frame */
-    if ((frame->frame_type == FRAME_TYPE_LET)
-        && (frame->subexpr == LET_RHS_EXPR)) {
-      frame = frame->next;
-      /* recur */
-    } else {
-      if (*pos >= frame->count) {
-        /* we're not in the right frame yet, so offset pos by the
-           number of bindings in this frame */
-        (*pos) -= frame->count;
-        frame = frame->next;
-        /* recur */
-      } else
-        return frame;
-    }
-  }
+  *pos = var->letrec_check.frame_pos;
+  return var->letrec_check.frame;
 }
 
 /* adds expr to the deferred bindings of lhs */
@@ -325,7 +315,7 @@ static void letrec_check_lets_resume(Letrec_Check_Frame *frame, Scheme_Let_Heade
 {
   Scheme_Compiled_Let_Value *clv;
   Scheme_Object *body;
-  int i, j, k, *clv_flags;
+  int i, j, k;
   int was_checked;
 
   body = head->body;
@@ -337,62 +327,36 @@ static void letrec_check_lets_resume(Letrec_Check_Frame *frame, Scheme_Let_Heade
     k = head->count;
     for (i = head->num_clauses; i--;) {
       clv = (Scheme_Compiled_Let_Value *) body;
-      clv_flags = clv->flags;
       k -= clv->count;
       for (j = 0; j < clv->count; j++) {
         was_checked = (frame->ref[k + j] & LET_CHECKED);
-        if (was_checked) {
-          clv_flags[j] -= (clv_flags[j] & SCHEME_WAS_ONLY_APPLIED);
-          clv_flags[j] -= (clv_flags[j] & SCHEME_WAS_APPLIED_EXCEPT_ONCE);
-        } 
+        if (was_checked)
+          clv->vars[j]->non_app_count = clv->vars[j]->use_count;
       }
-      clv->flags = clv_flags;
-      clv->names = NULL; /* not used in later passes */
       body = clv->body;
     }
   }
 }
 
 /* records that we have seen a reference to loc */
-static Scheme_Object *record_checked(Scheme_Local *loc, Letrec_Check_Frame *frame)
+static Scheme_Object *record_checked(Scheme_Compiled_Local *loc, Letrec_Check_Frame *frame)
 {
-  int position = SCHEME_LOCAL_POS(loc), k;
-  Scheme_Object *obj;
-
-  frame = get_relative_frame(&position, frame);
+  int position;
+  
+  frame = get_relative_frame(&position, loc);
   frame->ref[position] |= LET_CHECKED;
 
-  obj = frame->head->body;
-  k = frame->head->count;
-
-  while (1) {
-    Scheme_Compiled_Let_Value *clv = (Scheme_Compiled_Let_Value *)obj;
-      
-    SCHEME_ASSERT(SAME_TYPE(SCHEME_TYPE(obj), scheme_compiled_let_value_type), "not a clv");
-    SCHEME_ASSERT(position >= 0, "position went negative");
-      
-    k -= clv->count;
-
-    if (position >= k)
-      return clv->names[position - k];
-      
-    obj = clv->body;
-  }
-
-  ESCAPED_BEFORE_HERE;
+  return loc->name;
 }
 
 static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *frame,
                                          Scheme_Object *pos)
 {
   Letrec_Check_Frame *in_frame;
-  Scheme_Local *loc = (Scheme_Local *)o;
-  int position, in_position;
+  Scheme_Compiled_Local *loc = (Scheme_Compiled_Local *)o;
+  int in_position;
 
-  position = SCHEME_LOCAL_POS(loc);
-
-  in_position = position;
-  in_frame = get_relative_frame(&in_position, frame);
+  in_frame = get_relative_frame(&in_position, loc);
 
   if (SCHEME_FALSEP(pos)) {
     /* mark as potentially applied (i.e., in an "unsafe" context)
@@ -604,7 +568,7 @@ static Scheme_Object *letrec_check_closure_compilation(Scheme_Object *o, Letrec_
     num_params = data->num_params;
     new_frame = init_letrec_check_frame(FRAME_TYPE_CLOSURE, LET_BODY_EXPR,
                                         num_params, frame, NULL,
-                                        NULL);
+                                        NULL, data);
 
     SCHEME_ASSERT(num_params >= 0, "lambda has negative arguments what do");
         
@@ -675,7 +639,7 @@ static void letrec_check_deferred_expr(Scheme_Object *o)
 
   new_frame = init_letrec_check_frame(FRAME_TYPE_CLOSURE, LET_BODY_EXPR,
                                       num_params, inner, NULL, 
-                                      NULL);
+                                      NULL, data);
 
   val = letrec_check_expr(data->code, new_frame, scheme_false);
   data->code = val;
@@ -751,8 +715,6 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
 
   if (header_flags & SCHEME_LET_RECURSIVE)
     frame_type = FRAME_TYPE_LETREC; 
-  else if (header_flags & SCHEME_LET_STAR)
-    frame_type = FRAME_TYPE_LETSTAR; 
   else
     frame_type = FRAME_TYPE_LET; 
 
@@ -761,22 +723,16 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
      resolving local-variable offsets */
   frame = init_letrec_check_frame(frame_type, LET_RHS_EXPR,
                                   count, old_frame, NULL,
-                                  head);
+                                  head, NULL);
 
   body = head->body;
 
-  if (frame_type == FRAME_TYPE_LETREC)
-    k = head->count;
-  else
-    k = 0;
+  k = 0;
 
   /* loops through every right hand side */
   clv = NULL;
   for (i = num_clauses; i--;) {
     clv = (Scheme_Compiled_Let_Value *)body;
-
-    if (frame_type == FRAME_TYPE_LETREC)
-      k -= clv->count;
 
     if (clv->count == 0) {
       val = letrec_check_expr(clv->value, frame,
@@ -806,14 +762,13 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
       val = letrec_check_expr(clv->value, frame, new_pos);
     }
 
-    if (frame_type != FRAME_TYPE_LETREC)
-      k += clv->count;
-
     if (frame_type == FRAME_TYPE_LETREC) {
       for (j = 0; j < clv->count; j++) {
         frame->ref[j + k] |= LET_READY;
       }
     }
+
+    k += clv->count;
         
     clv->value = val;
 
@@ -826,7 +781,7 @@ static Scheme_Object *letrec_check_lets(Scheme_Object *o, Letrec_Check_Frame *ol
      information) */
   body_frame = init_letrec_check_frame(frame_type, LET_BODY_EXPR,
                                        count, old_frame, frame,
-                                       head);
+                                       head, NULL);
   
   val = letrec_check_expr(body, body_frame, pos);
 
@@ -883,12 +838,12 @@ static Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *fra
   val = letrec_check_expr(val, frame, rhs_pos);
   sb->val = val;
 
-  if (SAME_TYPE(SCHEME_TYPE(sb->var), scheme_local_type)) {
+  if (SAME_TYPE(SCHEME_TYPE(sb->var), scheme_compiled_local_type)) {
     /* We may need to insert a definedness check before the assignment */
     Letrec_Check_Frame *in_frame;
-    int position = SCHEME_LOCAL_POS(sb->var);
+    int position;
 
-    in_frame = get_relative_frame(&position, frame);
+    in_frame = get_relative_frame(&position, (Scheme_Compiled_Local *)sb->var);
     
     if (in_frame->ref
         && !(in_frame->ref[position] & LET_READY)) {
@@ -897,7 +852,7 @@ static Scheme_Object *letrec_check_set(Scheme_Object *o, Letrec_Check_Frame *fra
       Scheme_Object *name;
       Scheme_Sequence *seq;
       
-      name = record_checked((Scheme_Local *)sb->var, frame);
+      name = record_checked((Scheme_Compiled_Local *)sb->var, frame);
       
       app3 = MALLOC_ONE_TAGGED(Scheme_App3_Rec);
       app3->iso.so.type = scheme_application3_type;
@@ -1040,7 +995,7 @@ static Scheme_Object *letrec_check_expr(Scheme_Object *expr, Letrec_Check_Frame 
   SCHEME_USE_FUEL(1);
 
   switch (type) {
-  case scheme_local_type:
+  case scheme_compiled_local_type:
     return letrec_check_local(expr, frame, pos);
   case scheme_application_type:
     return letrec_check_application(expr, frame, pos);
@@ -1103,7 +1058,7 @@ Scheme_Object *scheme_letrec_check_expr(Scheme_Object *expr)
 
   frame = init_letrec_check_frame(FRAME_TYPE_TOP, LET_BODY_EXPR,
                                   0, NULL, NULL,
-                                  NULL);
+                                  NULL, NULL);
 
   /* (Grep "EXPL-3" for information): The `pos` argument, starting
      here as `init_pos`, represents whether we're in a non-application

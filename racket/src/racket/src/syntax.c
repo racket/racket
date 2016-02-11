@@ -47,10 +47,10 @@ ROSYM static Scheme_Object *fallbacks_symbol;
 
 READ_ONLY Scheme_Object *scheme_syntax_p_proc;
 
-READ_ONLY Scheme_Hash_Tree *empty_hash_tree;
-READ_ONLY Scheme_Scope_Table *empty_scope_table;
-READ_ONLY Scheme_Scope_Table *empty_propagate_table;
-READ_ONLY Scheme_Scope_Set *empty_scope_set;
+READ_ONLY static Scheme_Hash_Tree *empty_hash_tree;
+READ_ONLY static Scheme_Scope_Table *empty_scope_table;
+READ_ONLY static Scheme_Scope_Table *empty_propagate_table;
+READ_ONLY static Scheme_Scope_Set *empty_scope_set;
 
 ROSYM Scheme_Object *scheme_paren_shape_symbol;
 
@@ -5856,6 +5856,18 @@ static int compare_nums(const void *_a, const void *_b)
 static void sort_number_array(Scheme_Object **a, intptr_t count)
 {
   my_qsort(a, count, sizeof(Scheme_Object *), compare_nums);
+}
+
+static int compare_vars_at_resolve(const void *_a, const void *_b)
+{
+  Scheme_Compiled_Local *a = *(Scheme_Compiled_Local **)_a;
+  Scheme_Compiled_Local *b = *(Scheme_Compiled_Local **)_b;
+  return a->resolve.co_depth - b->resolve.co_depth;
+}
+
+void scheme_sort_resolve_compiled_local_array(Scheme_Compiled_Local **a, intptr_t count)
+{
+  my_qsort(a, count, sizeof(Scheme_Compiled_Local *), compare_vars_at_resolve);
 }
 
 static Scheme_Object *drop_export_registries(Scheme_Object *shifts)

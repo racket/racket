@@ -1459,6 +1459,105 @@ Scheme_Object *scheme_top_introduce(Scheme_Object *form, Scheme_Env *genv);
 /*                   syntax run-time structures                           */
 /*========================================================================*/
 
+/* A Scheme_Compiled_Local record represents a local variable,
+   both the binding and references to that binding. When inlining
+   of other transformations duplicate a variable, a new instance
+   is allocated to represent a separate variable. Different passes
+   in the comiler store different information about the variable. */
+typedef struct Scheme_Compiled_Local
+{
+  Scheme_Object so;
+
+  /* The `mode` value is one of `SCHEME_VAR_MODE_NONE`, etc.,
+     and it determines which of the union cases below (if any)
+     is active, corresponding to information for a particular
+     pass: */
+  unsigned int mode : 3;
+  /* Number of time the variable was referenced as counted by
+     the initial compile phase; a `SCHEME_USE_COUNT_INF`
+     value corresponds to "more than we counted": */
+  unsigned int use_count : 3;
+  /* Subset of `use_count` references that are in non-rator
+     positions: */
+  unsigned int non_app_count : 3;
+  /* Records whether the variable is mutated; set in several
+     phases, and currently never unset: */
+  unsigned int mutated : 1;
+  /* Records whether the optimizer discovered any uses;
+     if true, then `use_count` must be non-zero, but the
+     optimizer eliminate references and produce 0 here even
+     if `use_count` is non-zero: */
+  unsigned int optimize_used : 1;
+  /* Set while compiling the right-hand side of a letrec
+     to indicate that current and later left-hand sides
+     are not yet initialized: */
+  unsigned int optimize_unready : 1;
+  /* Records an anlaysis during the resolve pass: */
+  unsigned int resolve_omittable : 1;
+  /* The type desired by use positions for unboxing purposes;
+     set by the optimizer: */
+  unsigned int arg_type : SCHEME_MAX_LOCAL_TYPE_BITS;
+  /* The type provided by the binding position, mainly for unboxing
+     purposes; set by the optimizer and potentially refined by the
+     resolve pass (especially for function arguments whose types are
+     set via local_type_map): */
+  unsigned int val_type : SCHEME_MAX_LOCAL_TYPE_BITS;
+  /* Unboxing might be disabled because allocation of boxes would
+     be moved past a continuation: */
+  unsigned int escapes_after_k_tick : 1;
+  /* During unresolve, indicates whether references should be
+     converted to calls: */
+  unsigned int is_ref_arg : 1;
+
+  Scheme_Object *name;
+
+  /* `mode` determines which union is active: */
+  union {
+    struct {
+      /* Maps the variable into the letrec-check pass's frames: */
+      struct Letrec_Check_Frame *frame;
+      int frame_pos;
+    } letrec_check;
+    struct {
+      /* Constant- and copy-propagation information: */
+      Scheme_Object *known_val;
+      /* Number of `lambda` wrappers, which is relevant for
+         accumulating closures, etc.: */
+      int lambda_depth;
+      /* Vitual continuation-capture clock for the variable's
+         initialation, used to detect potential captures of
+         allocation: */
+      int init_kclock;
+      /* Transitive uses record uses that become used if
+         the variable itself is used; which is relevant
+         for analyzing a letrec-bound function that might
+         not get called: */
+      Scheme_Hash_Table *transitive_uses;
+      struct Optimize_Info *transitive_uses_to;
+    } optimize;
+    struct {
+      /* Records the position where the variable will be
+         on the runstack, counting down from the enclosing
+         procedure's starting point (i.e., backwards from the
+         run-time direction): */
+      int co_depth;
+      /* Information on closure-converstion of this
+         variable's binding: */
+      Scheme_Object *lifted;
+    } resolve;
+  };
+} Scheme_Compiled_Local;
+
+#define SCHEME_VAR(v) ((Scheme_Compiled_Local *)v)
+
+#define SCHEME_USE_COUNT_INF    7
+
+#define SCHEME_VAR_MODE_NONE         0
+#define SCHEME_VAR_MODE_COMPILE      1
+#define SCHEME_VAR_MODE_LETREC_CHECK 2
+#define SCHEME_VAR_MODE_OPTIMIZE     3
+#define SCHEME_VAR_MODE_RESOLVE      4
+
 typedef struct {
   Scheme_Inclhash_Object iso; /* keyex used for flags */
   mzshort num_args; /* doesn't include rator, so arguments are at args[1]...args[num_args] */
@@ -1514,33 +1613,12 @@ typedef struct {
                                     additions to the top-level bindings table */
 } Scheme_Compilation_Top;
 
-/* A `let', `let*', or `letrec' form is compiled to the intermediate
+/* A `let' or `letrec' form is compiled to the intermediate
    format (used during the optimization pass) as a Scheme_Let_Header
    with a chain of Scheme_Compiled_Let_Value records as its body,
    where there's one Scheme_Compiled_Let_Value for each binding
-   clause. A `let*' is normally expanded to nested `let's before
-   compilation, but the intermediate format also supports `let*',
-   which is useful mostly for converting a simple enough `letrec' form
-   into `let*.
-
-   The body of the `let...' form is the body of the innermost
-   Scheme_Compiled_Let_Value record. Obviously, all N bindings of a
-   `let...' form are pushed onto the virtual stack for the body, but
-   the situation is more complex for the binding right-hand
-   sides. There are three cases:
-
-    * Plain `let': no bindings are pushed, yet. (This is in contrast
-      to the convention for the final bytecode format, where space for
-      the binding is allocated before the right-hand side is
-      evaluated.)
-
-    * `letrec': all bindings are pushed; the first clause is pushed
-      first, etc.
-
-    * `let*' can be like `letrec', but also can have the bindings in
-      reverse order; that is, all bindings are pushed before any
-      right-hand side, but the last binding may be pushed first
-      instead of last.
+   clause. The body of the `let...' form is the body of the innermost
+   Scheme_Compiled_Let_Value record.
 */
 
 typedef struct Scheme_Let_Header {
@@ -1552,16 +1630,13 @@ typedef struct Scheme_Let_Header {
 
 #define SCHEME_LET_FLAGS(lh) MZ_OPT_HASH_KEY(&lh->iso)
 #define SCHEME_LET_RECURSIVE 0x1
-#define SCHEME_LET_STAR 0x2
 
 typedef struct Scheme_Compiled_Let_Value {
   Scheme_Inclhash_Object iso; /* keyex used for set-starting */
   mzshort count;
-  mzshort position;
-  int *flags;
   Scheme_Object *value;
   Scheme_Object *body;
-  Scheme_Object **names; /* NULL after letrec_check phase */
+  Scheme_Compiled_Local **vars;
 } Scheme_Compiled_Let_Value;
 
 #define SCHEME_CLV_FLAGS(clv) MZ_OPT_HASH_KEY(&(clv)->iso)
@@ -2688,8 +2763,9 @@ typedef struct Scheme_Comp_Env
   Scheme_Object **bindings; /* symbols */
   Scheme_Object **vals; /* compile-time values */
   Scheme_Object **shadower_deltas;
+  Scheme_Compiled_Local **vars;
   int *use;
-  int min_use, any_use;
+  int max_use, any_use;
   
   Scheme_Object *lifts;
 
@@ -2765,10 +2841,9 @@ typedef struct Resolve_Info Resolve_Info;
    before a closure mapping is resolved. */
 typedef struct {
   MZTAG_IF_REQUIRED
-  int *local_flags; /* for arguments from compile pass, flonum info updated in optimize pass */
-  mzshort base_closure_size; /* doesn't include top-level (if any) */
-  mzshort *base_closure_map;
-  char *local_type_map; /* NULL when has_tymap set => no local types */
+  Scheme_Hash_Table *base_closure;
+  Scheme_Compiled_Local **vars;
+  char *local_type_map; /* determined by callers; NULL when has_tymap set => no local types */
   char has_tl, has_tymap, has_nonleaf;
   int body_size, body_psize;
 } Closure_Info;
@@ -3189,7 +3264,7 @@ Scheme_Logger *scheme_optimize_info_logger(Optimize_Info *);
 
 Scheme_Object *scheme_toplevel_to_flagged_toplevel(Scheme_Object *tl, int flags);
 
-int scheme_expr_produces_local_type(Scheme_Object *expr);
+int scheme_expr_produces_local_type(Scheme_Object *expr, int *_involves_k_cross);
 
 Scheme_Object *scheme_make_compiled_syntax(Scheme_Syntax *syntax,
 					   Scheme_Syntax_Expander *exp);
@@ -3254,24 +3329,12 @@ Scheme_Object *scheme_build_closure_name(Scheme_Object *code, Scheme_Comp_Env *e
 #define SCHEME_SYNTAX(obj)     SCHEME_PTR1_VAL(obj)
 #define SCHEME_SYNTAX_EXP(obj) SCHEME_PTR2_VAL(obj)
 
-int *scheme_env_get_flags(Scheme_Comp_Env *frame, int start, int count);
 int scheme_env_check_reset_any_use(Scheme_Comp_Env *frame);
-int scheme_env_min_use_below(Scheme_Comp_Env *frame, int pos);
+int scheme_env_max_use_above(Scheme_Comp_Env *frame, int pos);
 void scheme_mark_all_use(Scheme_Comp_Env *frame);
-
-/* flags reported by scheme_env_get_flags */
-#define SCHEME_WAS_USED                0x1
-#define SCHEME_WAS_SET_BANGED          0x2
-#define SCHEME_WAS_ONLY_APPLIED        0x4
-#define SCHEME_WAS_APPLIED_EXCEPT_ONCE 0x8
-
-#define SCHEME_USE_COUNT_MASK   0x70
-#define SCHEME_USE_COUNT_SHIFT  4
-#define SCHEME_USE_COUNT_INF    (SCHEME_USE_COUNT_MASK >> SCHEME_USE_COUNT_SHIFT)
-
-#define SCHEME_WAS_TYPED_ARGUMENT_SHIFT 7
-#define SCHEME_WAS_TYPED_ARGUMENT_MASK (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_WAS_TYPED_ARGUMENT_SHIFT)
-#define SCHEME_WAS_TYPED_ARGUMENT(f) ((f & SCHEME_WAS_TYPED_ARGUMENT_MASK) >> SCHEME_WAS_TYPED_ARGUMENT_SHIFT)
+void scheme_env_make_variables(Scheme_Comp_Env *frame);
+void scheme_set_compilation_variables(Scheme_Comp_Env *frame, Scheme_Compiled_Local **vars,
+                                      int pos, int count);
 
 /* flags reported by scheme_resolve_info_flags */
 #define SCHEME_INFO_BOXED 0x1
@@ -3349,14 +3412,11 @@ void scheme_prepare_env_stx_context(Scheme_Env *env);
 XFORM_NONGCING Scheme_Object *scheme_env_phase(Scheme_Env *env);
 Scheme_Env *scheme_find_env_at_phase(Scheme_Env *env, Scheme_Object *phase);
 
-int scheme_used_app_only(Scheme_Comp_Env *env, int which);
-int scheme_used_ever(Scheme_Comp_Env *env, int which);
-
 int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
                           Optimize_Info *opt_info, Optimize_Info *warn_info, 
                           int min_id_depth, int id_offset, int no_id);
 int scheme_might_invoke_call_cc(Scheme_Object *value);
-int scheme_is_liftable(Scheme_Object *o, int bind_count, int fuel, int as_rator, int or_escape);
+int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fuel, int as_rator, int or_escape);
 int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals);
 
 typedef struct {
@@ -3392,8 +3452,6 @@ int scheme_decode_struct_shape(Scheme_Object *shape, intptr_t *_v);
 int scheme_closure_preserves_marks(Scheme_Object *p);
 int scheme_native_closure_preserves_marks(Scheme_Object *p);
 int scheme_native_closure_is_single_result(Scheme_Object *rator);
-
-int scheme_is_env_variable_boxed(Scheme_Comp_Env *env, int which);
 
 int scheme_get_eval_type(Scheme_Object *obj);
 
@@ -4533,6 +4591,7 @@ void scheme_place_check_memory_use();
 void scheme_clear_place_ifs_stack();
 
 Scheme_Object **scheme_extract_sorted_keys(Scheme_Object *ht);
+void scheme_sort_resolve_compiled_local_array(Scheme_Compiled_Local **a, intptr_t count);
 
 #ifdef MZ_USE_PLACES
 Scheme_Object *scheme_place_make_async_channel();
