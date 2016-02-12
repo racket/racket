@@ -27,7 +27,8 @@
                  'pos
                  'neg)
        (λ (x) x)))
-   11)
+   11
+   do-not-double-wrap)
 
   (test/pos-blame
    '∀1
@@ -52,4 +53,5 @@
                  'pos
                  'neg)
        11))
-   11))
+   11
+   do-not-double-wrap))
