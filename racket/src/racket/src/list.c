@@ -4118,30 +4118,34 @@ Scheme_Object *unsafe_scheme_hash_tree_iterate_next(int argc, Scheme_Object *arg
   
   if (SCHEME_NP_CHAPERONEP(o)) o = SCHEME_CHAPERONE_VAL(o);
 
-  return scheme_unsafe_hash_tree_next(argv[1]);
+  return scheme_unsafe_hash_tree_next((Scheme_Hash_Tree *)o, argv[1]);
 }
 Scheme_Object *unsafe_scheme_hash_tree_iterate_key(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *obj = argv[0], *args = argv[1], *key;
-  Scheme_Hash_Tree *subtree = (Scheme_Hash_Tree *)SCHEME_CAR(args);
-  int i = SCHEME_INT_VAL(SCHEME_CADR(args));
+  Scheme_Hash_Tree *subtree;
+  int i;
+  
+  scheme_unsafe_hash_tree_subtree(obj, args, &subtree, &i);
   key = subtree->els[i];
   
   if (SCHEME_NP_CHAPERONEP(obj))
-    return chaperone_hash_key("unsafe-weak-hash-iterate-key", obj, key);
+    return chaperone_hash_key("unsafe-immutable-hash-iterate-key", obj, key);
   else
     return key;
 }
 Scheme_Object *unsafe_scheme_hash_tree_iterate_value(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *obj = argv[0], *args = argv[1];
-  Scheme_Hash_Tree *subtree = (Scheme_Hash_Tree *)SCHEME_CAR(args);
-  int i = SCHEME_INT_VAL(SCHEME_CADR(args));
+  Scheme_Hash_Tree *subtree;
+  int i;
+
+  scheme_unsafe_hash_tree_subtree(obj, args, &subtree, &i);
 
   if (SCHEME_NP_CHAPERONEP(obj)) {
     Scheme_Object *chap_key, *chap_val;
-    chaperone_hash_key_value("unsafe-weak-hash-iterate-value",
-			     obj, subtree->els[i], &chap_key, &chap_val, 0);
+    chaperone_hash_key_value("unsafe-immutable-hash-iterate-value",
+                             obj, subtree->els[i], &chap_key, &chap_val, 0);
     return chap_val;
   } else {
     int popcount;
@@ -4151,15 +4155,17 @@ Scheme_Object *unsafe_scheme_hash_tree_iterate_value(int argc, Scheme_Object *ar
 }
 Scheme_Object *unsafe_scheme_hash_tree_iterate_pair(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *obj = argv[0], *args = argv[1];
-  Scheme_Hash_Tree *subtree = (Scheme_Hash_Tree *)SCHEME_CAR(args);
-  int i = SCHEME_INT_VAL(SCHEME_CADR(args));
-  Scheme_Object *key = subtree->els[i];
+  Scheme_Object *obj = argv[0], *args = argv[1], *key;
+  Scheme_Hash_Tree *subtree;
+  int i;
+
+  scheme_unsafe_hash_tree_subtree(obj, args, &subtree, &i);
+  key = subtree->els[i];
 
   if (SCHEME_NP_CHAPERONEP(obj)) {
     Scheme_Object *chap_key, *chap_val;
-    chaperone_hash_key_value("unsafe-weak-hash-iterate-pair",
-			     obj, subtree->els[i], &chap_key, &chap_val, 0);
+    chaperone_hash_key_value("unsafe-immutable-hash-iterate-pair",
+                             obj, subtree->els[i], &chap_key, &chap_val, 0);
     return scheme_make_pair(chap_key, chap_val);
   } else {
     Scheme_Object *val;
@@ -4171,14 +4177,16 @@ Scheme_Object *unsafe_scheme_hash_tree_iterate_pair(int argc, Scheme_Object *arg
 }
 Scheme_Object *unsafe_scheme_hash_tree_iterate_key_value(int argc, Scheme_Object *argv[])
 {
-  Scheme_Object *obj = argv[0], *args = argv[1], *res[2];
-  Scheme_Hash_Tree *subtree = (Scheme_Hash_Tree *)SCHEME_CAR(args);
-  int i = SCHEME_INT_VAL(SCHEME_CADR(args));
-  Scheme_Object *key = subtree->els[i];
+  Scheme_Object *obj = argv[0], *args = argv[1], *key, *res[2];
+  Scheme_Hash_Tree *subtree;
+  int i;
+
+  scheme_unsafe_hash_tree_subtree(obj, args, &subtree, &i);
+  key = subtree->els[i];
 
   if (SCHEME_NP_CHAPERONEP(obj)) {
-    chaperone_hash_key_value("unsafe-weak-hash-iterate-pair",
-			     obj, subtree->els[i], &res[0], &res[1], 0);
+    chaperone_hash_key_value("unsafe-immutable-hash-iterate-pair",
+                             obj, subtree->els[i], &res[0], &res[1], 0);
   } else {
     Scheme_Object *val;
     int popcount;

@@ -966,7 +966,9 @@ Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
 XFORM_NONGCING Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
 XFORM_NONGCING mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos);
 Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht);
-Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Object *args);
+XFORM_NONGCING void scheme_unsafe_hash_tree_subtree(Scheme_Object *obj, Scheme_Object *args,
+                                                    Scheme_Hash_Tree **_subtree, int *_i);
+Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Hash_Tree *ht, Scheme_Object *args);
 Scheme_Object *scheme_hash_tree_next_pos(Scheme_Hash_Tree *tree, mzlonglong pos);
 XFORM_NONGCING int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
 int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);

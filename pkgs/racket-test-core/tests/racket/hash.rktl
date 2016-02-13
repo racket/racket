@@ -212,6 +212,27 @@
   (test-hash-iters-generic lst3 lst4)
   (test-hash-iters-specific lst3 lst4))
 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Use keys that are a multile of a power of 2 to
+; get "almost" collisions that force the hash table
+; to use a deeper tree.
+
+(let ()
+  (define vals (for/list ([j (in-range 100)]) (add1 j)))
+  (define sum-vals (for/sum ([v (in-list vals)]) v))
+  (for ([shift (in-range 150)])
+    (define keys (for/list ([j (in-range 100)])
+                   (arithmetic-shift j shift)))
+    ; test first the weak table to ensure the keys are not collected
+    (define ht/weak (make-weak-hash (map cons keys vals)))
+    (define sum-ht/weak (for/sum ([v (in-weak-hash-values ht/weak)]) v))
+    (define ht/mut (make-hash (map cons keys vals)))
+    (define sum-ht/mut (for/sum ([v (in-mutable-hash-values ht/mut)]) v))
+    (define ht/immut (make-immutable-hash (map cons keys vals)))
+    (define sum-ht/immut (for/sum ([v (in-immutable-hash-values ht/immut)]) v))
+    (test #t = sum-vals sum-ht/weak sum-ht/mut sum-ht/immut)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (let ()
