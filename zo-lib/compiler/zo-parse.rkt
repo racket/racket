@@ -389,9 +389,9 @@
     [(26) 'case-lambda-sequence-type]
     [(27) 'module-type]
     [(28) 'inline-variant-type]
-    [(36) 'variable-type]
-    [(37) 'module-variable-type]
-    [(121) 'resolve-prefix-type]
+    [(37) 'variable-type]
+    [(38) 'module-variable-type]
+    [(122) 'resolve-prefix-type]
     [else (error 'int->type "unknown type: ~e" i)]))
 
 (define type-readers

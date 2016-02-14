@@ -293,8 +293,8 @@
 (define case-lambda-sequence-type-num 26)
 (define module-type-num 27)
 (define inline-variants-type-num 28)
-(define variable-type-num 36)
-(define prefix-type-num 121)
+(define variable-type-num 37)
+(define prefix-type-num 122)
 
 (define-syntax define-enum
   (syntax-rules ()
