@@ -2985,7 +2985,8 @@ the name @racket[opt/c].
 @defform[(define-opt/c (id id ...) expr)]{
 
 This defines a recursive contract and simultaneously
-optimizes it. Semantically, it behaves just as if
+optimizes it. As long as the defined function terminates,
+@racket[define-opt/c] behaves just as if
 the @racket[-opt/c] were not present, defining a function on
 contracts (except that the body expression must return a
 contract). But, it also optimizes that contract definition,
@@ -3008,7 +3009,15 @@ For example,
 defines the @racket[bst/c] contract that checks the binary
 search tree invariant. Removing the @racket[-opt/c] also
 makes a binary search tree contract, but one that is
-(approximately) 20 times slower.}
+(approximately) 20 times slower.
+
+Note that in some cases, a call to a function defined by
+@racket[define-opt/c] may terminate, even if the corresponding
+@racket[define]-based function would not terminate. This is a
+shortcoming in @racket[define-opt/c] that we hope to understand
+and fix at some point, but have no concrete plans currently.
+
+}
 
 @defthing[contract-continuation-mark-key continuation-mark-key?]{
 Key used by continuation marks that are present during contract checking.
