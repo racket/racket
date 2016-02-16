@@ -14,14 +14,18 @@
            (for/list ([f-stx (in-list (syntax->list #'(f ...)))])
              (define f (syntax->datum f-stx))
              (format "tests-~a.rkt" f))])
-       (syntax/loc stx
-         (run-tests*
-          (list (let ()
-                  (local-require (only-in tests-f run-pkg-tests))
-                  (λ ()
-                    (printf "starting ~a\n" 'tests-f)
-                    (run-pkg-tests)))
-                ...))))]))
+         (syntax/loc stx
+           (let ([succesful 0])
+             (run-tests*
+              (list (let ()
+                      (local-require (only-in tests-f run-pkg-tests))
+                      (λ ()
+                        (printf "starting ~a\n" 'tests-f)
+                        (run-pkg-tests)
+                        (set! succesful (add1 succesful))))
+                    ...))
+             (unless (= succesful (length '(f ...)))
+               (exit 1)))))]))
 
 (define (run-tests* l)
   (run-pkg-tests*
