@@ -1545,6 +1545,9 @@ typedef struct Scheme_Compiled_Local
          procedure's starting point (i.e., backwards from the
          run-time direction): */
       int co_depth;
+      /* Records a lexical depth for the purposes of sorting
+         variables (as needed to make compilation deterministic): */
+      int lex_depth;
       /* Information on closure-converstion of this
          variable's binding: */
       Scheme_Object *lifted;

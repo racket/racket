@@ -42,6 +42,7 @@ struct Resolve_Info
   MZTAG_IF_REQUIRED
   char use_jit, in_module, in_proc, enforce_const, no_lift;
   int current_depth;
+  int current_lex_depth;
   int max_let_depth; /* filled in by sub-expressions */
   Resolve_Prefix *prefix;
   Scheme_Hash_Table *stx_map; /* compile offset => resolve offset; prunes prefix-recored stxes */
@@ -721,6 +722,7 @@ with_immed_mark_resolve(Scheme_Object *data, Resolve_Info *orig_rslv)
   var = SCHEME_VAR(SCHEME_CAR(wcm->body));
   set_resolve_mode(var);
   var->resolve.co_depth = rslv->current_depth;
+  var->resolve.lex_depth = rslv->current_lex_depth;
   
   e = scheme_resolve_expr(SCHEME_CDR(wcm->body), rslv);
   wcm->body = e;
@@ -1049,6 +1051,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
           num_frames++;
           set_resolve_mode(clv->vars[0]);
           clv->vars[0]->resolve.co_depth = linfo->current_depth;
+          clv->vars[0]->resolve.lex_depth = linfo->current_lex_depth;
 
           if (!info->no_lift
               && !clv->vars[0]->non_app_count
@@ -1193,10 +1196,12 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
             MZ_ASSERT(!info->no_lift || !lift);
             clv->vars[0]->resolve.lifted = lift;
             clv->vars[0]->resolve.co_depth = linfo->current_depth - rpos;
+            clv->vars[0]->resolve.lex_depth = linfo->current_lex_depth - rpos;
             rpos++;
           } else {
             clv->vars[j]->resolve.lifted = NULL;
             clv->vars[j]->resolve.co_depth = linfo->current_depth - pos;
+            clv->vars[j]->resolve.lex_depth = linfo->current_lex_depth - pos;
             /* Since Scheme_Let_Value doesn't record type info, we have
                to drop any unboxing type info recorded for the variable: */
             clv->vars[j]->val_type = 0;
@@ -1676,22 +1681,6 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     }
   }
 
-  /* To make compilation deterministic, sort the captured variables */
-  if (closure_size) {
-    Scheme_Compiled_Local **c;
-    int j = 0;
-    c = MALLOC_N(Scheme_Compiled_Local*, closure_size);
-    for (i = 0; i < captured->size; i++) {
-      if (captured->vals[i]) {
-        c[j++] = SCHEME_VAR(captured->keys[i]);
-      }
-    }
-    scheme_sort_resolve_compiled_local_array(c, closure_size);
-    for (i = 0; i < closure_size; i++) {
-      scheme_hash_set(captured, (Scheme_Object *)c[i], scheme_make_integer(i));
-    }
-  }
-
   if (has_tl && !can_lift)
     convert = 0;
 
@@ -1716,6 +1705,22 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     }
 
     lifteds = SCHEME_CDR(lifteds);
+  }
+
+  /* To make compilation deterministic, sort the captured variables */
+  if (closure_size) {
+    Scheme_Compiled_Local **c;
+    int j = 0;
+    c = MALLOC_N(Scheme_Compiled_Local*, closure_size);
+    for (i = 0; i < captured->size; i++) {
+      if (captured->vals[i]) {
+        c[j++] = SCHEME_VAR(captured->keys[i]);
+      }
+    }
+    scheme_sort_resolve_compiled_local_array(c, closure_size);
+    for (i = 0; i < closure_size; i++) {
+      scheme_hash_set(captured, (Scheme_Object *)c[i], scheme_make_integer(i));
+    }
   }
 
   if (convert && (closure_size || has_tl || using_lifted)) {
@@ -1789,6 +1794,7 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
     for (i = 0; i < num_params - new_params; i++) {
       set_resolve_mode(cl->vars[i]);
       cl->vars[i]->resolve.co_depth = new_info->current_depth - (i + new_params + closure_size);
+      cl->vars[i]->resolve.lex_depth = new_info->current_lex_depth - (i + new_params + closure_size);
       if (convert) {
         /* If we're lifting this function, then arguments can have unboxing
            types, because the valdiator will be able to check all the
@@ -2412,6 +2418,7 @@ Resolve_Info *scheme_resolve_info_create(Resolve_Prefix *rp)
   naya->prefix = rp;
   naya->current_depth = 1; /* initial slot for prefix */
   naya->max_let_depth = naya->current_depth;
+  naya->current_lex_depth = 0;
   naya->next = NULL;
 
   ht = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -2488,6 +2495,7 @@ static Resolve_Info *resolve_info_extend(Resolve_Info *info, int size, int lambd
   naya->use_jit = info->use_jit;
   naya->enforce_const = info->enforce_const;
   naya->current_depth = (lambda ? 0 : info->current_depth) + size;
+  naya->current_lex_depth = info->current_lex_depth + size;
   naya->toplevel_pos = (lambda
                         ? 0
                         : ((info->toplevel_pos < 0)

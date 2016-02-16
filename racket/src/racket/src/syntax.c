@@ -5862,7 +5862,7 @@ static int compare_vars_at_resolve(const void *_a, const void *_b)
 {
   Scheme_Compiled_Local *a = *(Scheme_Compiled_Local **)_a;
   Scheme_Compiled_Local *b = *(Scheme_Compiled_Local **)_b;
-  return a->resolve.co_depth - b->resolve.co_depth;
+  return a->resolve.lex_depth - b->resolve.lex_depth;
 }
 
 void scheme_sort_resolve_compiled_local_array(Scheme_Compiled_Local **a, intptr_t count)
