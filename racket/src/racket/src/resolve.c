@@ -2921,8 +2921,10 @@ static Scheme_Object *unresolve_closure_data_2(Scheme_Closure_Data *rdata, Unres
     for (i = 0; i < data->num_params; i++) {
       LOG_UNRESOLVE(printf("ref_args[%d] = %d\n", ui->stack_pos - i - 1,
                            scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size)));
-      if (scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size) == CLOS_TYPE_BOXED)
+      if (scheme_boxmap_get(rdata->closure_map, i, rdata->closure_size) == CLOS_TYPE_BOXED) {
         vars[i]->mutated = 1;
+        vars[i]->is_ref_arg = 1;
+      }
     }
   }
 
@@ -3667,7 +3669,7 @@ Scheme_App_Rec *maybe_unresolve_app_refs(Scheme_App_Rec *app, Unresolve_Info *ui
         sb->so.type = scheme_set_bang_type;
         sb->var = (Scheme_Object *)arg;
         local = scheme_make_local(scheme_local_type, 0, 0);
-        sb->val = (Scheme_Object *)vars[1];
+        sb->val = (Scheme_Object *)vars[0];
         d1->code = (Scheme_Object *)sb;
         ci = MALLOC_ONE_RT(Closure_Info);
         SET_REQUIRED_TAG(ci->type = scheme_rt_closure_info);
@@ -3878,6 +3880,7 @@ static Scheme_Object *unresolve_expr_2(Scheme_Object *e, Unresolve_Info *ui, int
     {
       Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)e, *wcm2;
       Scheme_Object *k, *v, *b;
+      Scheme_Compiled_Local **vars;
       int pos;
 
       k = unresolve_expr_2(wcm->key, ui, 0);
@@ -3885,7 +3888,8 @@ static Scheme_Object *unresolve_expr_2(Scheme_Object *e, Unresolve_Info *ui, int
       v = unresolve_expr_2(wcm->val, ui, 0);
       if (!v) return_NULL;
 
-      pos = unresolve_stack_push(ui, 1, 0);
+      pos = unresolve_stack_push(ui, 1, 1);
+      vars = unresolve_stack_extract(ui, 0, 1);
       b = unresolve_expr_2(wcm->body, ui, 0);
       if (!b) return_NULL;
       (void)unresolve_stack_pop(ui, pos, 0);
@@ -3894,6 +3898,7 @@ static Scheme_Object *unresolve_expr_2(Scheme_Object *e, Unresolve_Info *ui, int
       wcm2->so.type = scheme_with_immed_mark_type;
       wcm2->key = k;
       wcm2->val = v;
+      b = scheme_make_raw_pair((Scheme_Object *)vars[0], b);
       wcm2->body = b;
 
       return (Scheme_Object *)wcm2;
