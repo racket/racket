@@ -2672,7 +2672,7 @@ static Scheme_Object *compile_sequence(Scheme_Object *forms,
       body = compile_block(forms, env, rec, drec);
     else
       body = compile_list(forms, env, rec, drec);
-    return scheme_make_sequence_compilation(body, 1);
+    return scheme_make_sequence_compilation(body, 1, 0);
   }
 }
 
@@ -2752,7 +2752,7 @@ do_begin_syntax(char *name,
     body = compile_list(forms, env, rec, drec);
   }
 
-  forms = scheme_make_sequence_compilation(body, zero ? -1 : 1);
+  forms = scheme_make_sequence_compilation(body, zero ? -1 : 1, 0);
 
   if (!zero
       && SAME_TYPE(SCHEME_TYPE(forms), scheme_sequence_type)
@@ -2783,7 +2783,7 @@ Scheme_Sequence *scheme_malloc_sequence(int count)
 						 * sizeof(Scheme_Object *));
 }
 
-Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
+Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt, int resolved)
 {
   /* We have to be defensive in processing `seq'; it might be bad due
      to a bad .zo */
@@ -2811,7 +2811,9 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
       total++;
     } else if (opt
                && (((opt > 0) && !last) || ((opt < 0) && !first))
-               && scheme_omittable_expr(v, -1, -1, 0, NULL, NULL, 0, 0, 1)) {
+               && scheme_omittable_expr(v, -1, -1,
+                                        (resolved ? OMITTABLE_RESOLVED : OMITTABLE_KEEP_VARS),
+                                        NULL, NULL)) {
       /* A value that is not the result. We'll drop it. */
       total++;
     } else {
@@ -2837,7 +2839,10 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
   if (count == 1) {
     if (opt < -1) {
       /* can't optimize away a begin0 reading a .zo time */
-    } else if ((opt < 0) && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1, 0, NULL, NULL, 0, 0, 1)) {
+    } else if ((opt < 0)
+               && !scheme_omittable_expr(SCHEME_CAR(seq), 1, -1,
+                                         (resolved ? OMITTABLE_RESOLVED : OMITTABLE_KEEP_VARS),
+                                         NULL, NULL)) {
       /* We can't optimize (begin0 expr cont) to expr because
 	 exp is not in tail position in the original (so we'd mess
 	 up continuation marks). */
@@ -2867,7 +2872,9 @@ Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *seq, int opt)
     } else if (opt 
 	       && (((opt > 0) && (k < total))
 		   || ((opt < 0) && k))
-	       && scheme_omittable_expr(v, -1, -1, 0, NULL, NULL, 0, 0, 1)) {
+	       && scheme_omittable_expr(v, -1, -1,
+                                        (resolved ? OMITTABLE_RESOLVED : OMITTABLE_KEEP_VARS),
+                                        NULL, NULL)) {
       /* Value not the result. Do nothing. */
     } else
       o->array[i++] = v;
@@ -2891,7 +2898,7 @@ stratified_body_syntax (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compil
   if (SCHEME_NULLP(SCHEME_CDR(body)))
     return SCHEME_CAR(body);
   else
-    return scheme_make_sequence_compilation(body, 1);
+    return scheme_make_sequence_compilation(body, 1, 0);
 }
 
 static Scheme_Object *
@@ -3424,7 +3431,7 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
 
   save_runstack = scheme_push_prefix(NULL, rp, NULL, NULL, phase, phase, rhs_env->genv, NULL);
 
-  if (scheme_omittable_expr(a, 1, -1, 0, NULL, NULL, 0, 0, 0)) {
+  if (scheme_omittable_expr(a, 1, -1, OMITTABLE_RESOLVED, NULL, NULL)) {
     /* short cut */
     a = _scheme_eval_linked_expr_multi(a);
   } else {
@@ -3854,7 +3861,7 @@ do_letrec_syntaxes(const char *where,
         v = compile_list(body, var_env, rec, drec);
       else
         v = compile_block(body, var_env, rec, drec);
-      v = scheme_make_sequence_compilation(v, 1);
+      v = scheme_make_sequence_compilation(v, 1, 0);
     } else {
       if (env_already)
         v = expand_list(body, var_env, rec, drec);

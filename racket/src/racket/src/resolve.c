@@ -475,7 +475,7 @@ static Scheme_Object *look_for_letv_change(Scheme_Sequence *s)
     v = s->array[i];
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_let_value_type)) {
       Scheme_Let_Value *lv = (Scheme_Let_Value *)v;
-      if (scheme_omittable_expr(lv->body, 1, -1, 0, NULL, NULL, 0, 0, 0)) {
+      if (scheme_omittable_expr(lv->body, 1, -1, 0, NULL, NULL)) {
 	int esize = s->count - (i + 1);
 	int nsize = i + 1;
 	Scheme_Object *nv, *ev;
@@ -960,7 +960,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 
       if ((clv->count == 1)
           && !clv->vars[0]->optimize_used
-          && scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL, NULL, 0, 0, 0)) {
+          && scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL, NULL)) {
         /* record omittable, so we don't have to keep checking: */
         clv->vars[0]->resolve_omittable = 1;
       } else {
@@ -1042,7 +1042,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 	Scheme_Object *le;
 
 	if (!clv->vars[0]->optimize_used
-            && scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL, NULL, 0, 0, 0)) {
+            && scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL, NULL)) {
           /* unused and omittable; skip */
 	} else {
           linfo = resolve_info_extend(linfo, 1, 0);
@@ -1115,7 +1115,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
           }
         }
         if (((clv->count == 1) || !any_used)
-            && scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL, NULL, 0, 0, 0)) {
+            && scheme_omittable_expr(clv->value, clv->count, -1, 0, NULL, NULL)) {
           if ((clv->count == 1) && !clv->vars[0]->optimize_used)
             clv->vars[0]->resolve_omittable = 1;
         } else
@@ -1367,6 +1367,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
           expr = scheme_make_sequence_compilation(scheme_make_pair(expr,
                                                                    scheme_make_pair(scheme_false,
                                                                                     scheme_null)),
+                                                  0,
                                                   0);
           
           if (last)

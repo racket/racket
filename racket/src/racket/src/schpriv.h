@@ -1492,6 +1492,10 @@ typedef struct Scheme_Compiled_Local
      to indicate that current and later left-hand sides
      are not yet initialized: */
   unsigned int optimize_unready : 1;
+  /* After optimizing a `let[rec]` form, we might still go into
+     the body (e.g., for funciton inlining), but mark the variable
+     as having a binding set up: */
+  unsigned int optimize_outside_binding : 1;
   /* Records an anlaysis during the resolve pass: */
   unsigned int resolve_omittable : 1;
   /* The type desired by use positions for unboxing purposes;
@@ -3298,7 +3302,8 @@ void scheme_init_expand_recs(Scheme_Expand_Info *src, int drec,
 			     Scheme_Expand_Info *dest, int n);
 
 Scheme_Object *scheme_make_sequence_compilation(Scheme_Object *compiled_list,
-						int strip_values);
+						int strip_values,
+                                                int resolved);
 
 Scheme_App_Rec *scheme_malloc_application(int n);
 void scheme_finish_application(Scheme_App_Rec *app);
@@ -3412,9 +3417,12 @@ void scheme_prepare_env_stx_context(Scheme_Env *env);
 XFORM_NONGCING Scheme_Object *scheme_env_phase(Scheme_Env *env);
 Scheme_Env *scheme_find_env_at_phase(Scheme_Env *env, Scheme_Object *phase);
 
-int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int resolved,
-                          Optimize_Info *opt_info, Optimize_Info *warn_info, 
-                          int min_id_depth, int id_offset, int no_id);
+int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
+                          Optimize_Info *opt_info, Optimize_Info *warn_info);
+#define OMITTABLE_RESOLVED          0x1
+#define OMITTABLE_KEEP_VARS         0x2
+#define OMITTABLE_KEEP_MUTABLE_VARS 0x4
+
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fuel, int as_rator, int or_escape);
 int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args, int expected_vals);
