@@ -176,17 +176,20 @@
            "(?:"              ; | / user-at-opt
            "([^/?#@]*)"       ; | | #2 = user-opt
            "@)?"              ; | \
-           "([^/?#:]*)?"      ; | #3 = host-opt
+           "(\\["             ; | / #3 = ipv6-host-opt
+           "(?:.*)"           ; | | hex-addresses
+           "\\])?"            ; | \
+           "([^/?#:]*)?"      ; | #4 = host-opt
            "(?::"             ; | / colon-port-opt
-           "([0-9]*)"         ; | | #4 = port-opt
+           "([0-9]*)"         ; | | #5 = port-opt
            ")?"               ; | \
            ")?"               ; \
-           "([^?#]*)"         ; #5 = path
+           "([^?#]*)"         ; #6 = path
            "(?:\\?"           ; / question-query-opt
-           "([^#]*)"          ; | #6 = query-opt
+           "([^#]*)"          ; | #7 = query-opt
            ")?"               ; \
            "(?:#"             ; / hash-fragment-opt
-           "(.*)"             ; | #7 = fragment-opt
+           "(.*)"             ; | #8 = fragment-opt
            ")?"               ; \
            "$")))
 
@@ -194,7 +197,7 @@
 ;; Original version by Neil Van Dyke
 (define (string->url str)
   (apply
-   (lambda (scheme user host port path query fragment)
+   (lambda (scheme user ipv6host host port path query fragment)
      (when (and scheme (not (regexp-match? #rx"^[a-zA-Z][a-zA-Z0-9+.-]*$"
                                            scheme)))
        (url-error "Invalid URL string; bad scheme ~e: ~e" scheme str))
@@ -214,9 +217,9 @@
        (define win-file-url (and win-file?
                                  (path->url (bytes->path (string->bytes/utf-8 path) 'windows))))
        (let* ([scheme   (and scheme (string-downcase scheme))]
-              [host     (if win-file-url
-                            (url-host win-file-url)
-                            (and host (string-downcase host)))]
+              [host     (cond  [win-file-url (url-host win-file-url)]
+                               [ipv6host (and ipv6host (string-downcase ipv6host))]
+                               [else (and host (string-downcase host))])]
               [user     (uri-decode/maybe user)]
               [port     (and port (string->number port))]
               [abs?     (or (equal? "file" scheme)
