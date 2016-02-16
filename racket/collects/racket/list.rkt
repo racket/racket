@@ -604,69 +604,40 @@
   (define v (list->vector l))
   (define N (vector-length v))
   (define N-1 (- N 1))
-  (define gen-combinations
+  (define (vector-ref/bits v b)
+    (for/fold ([acc '()])
+              ([i (in-range N-1 -1 -1)])
+      (if (bitwise-bit-set? b i)
+        (cons (vector-ref v i) acc)
+        acc)))
+  (define-values (first last incr)
     (cond
-      [(not k)
-       ;; Enumerate all binary numbers [1..2**N].
-       ;; Produce the combination with elements in `v` at the same
-       ;;  positions as the 1's in the binary number.
-       (define limit (expt 2 N))
-       (define curr-box (box 0))
-       (lambda ()
-         (let ([curr (unbox curr-box)])
-           (if (< curr limit)
-             (begin0
-               (for/fold ([acc '()])
-                         ([i (in-range N-1 -1 -1)])
-                 (if (bitwise-bit-set? curr i)
-                   (cons (vector-ref v i) acc)
-                   acc))
-               (set-box! curr-box (+ curr 1)))
-             #f)))]
-      [(< N k)
-       (lambda () #f)]
-      [else
-       ;; Keep a vector `k*` that contains `k` indices
-       ;; Use `k*` to generate combinations
-       (define k* #f) ; (U #f (Vectorof Index))
-       (define k-1 (- k 1))
-       ;; `k*-incr` tries to increment the positions in `k*`.
-       ;; On success, can use `k*` to build a combination.
-       ;; Returns #f on failure.
-       (define (k*-incr)
-         (cond
-          [(not k*)
-           ;; 1. Initialize the vector `k*` to the first {0..k-1} indices
-           (set! k* (build-vector k (lambda (i) i)))]
-          [(zero? k)
-           ;; (Cannot increment a zero vector)
-           #f]
-          [else
-           (or
-            ;; 2. Try incrementing the leftmost index that is
-            ;;    at least 2 less than the following index in `k*`.
-            (for/or ([i (in-range 0 k-1)])
-              (let ([k*_i   (vector-ref k* i)]
-                    [k*_i+1 (vector-ref k* (+ i 1))])
-                (and (< k*_i (- k*_i+1 1))
-                     (vector-set! k* i (+ k*_i 1)))))
-            ;; 3. Increment the rightmost index, up to a max of `N-1`.
-            ;;    Also replace the first `k-1` indices to `[0..k-2]`
-            (let ([k*_last (vector-ref k* k-1)])
-              (if (< k*_last N-1)
-                  (begin
-                    (vector-set! k* k-1 (+ k*_last 1))
-                    (for ([i (in-range k-1)])
-                      (vector-set! k* i i)))
-                  #f)))]))
-       (define (k*->combination)
-         ;; Get the `k` elements indexed by `k*`
-         (for/fold ([acc '()])
-                   ([i (in-range k-1 -1 -1)])
-           (cons (vector-ref v (vector-ref k* i)) acc)))
-       (lambda ()
-         (and (k*-incr) (k*->combination)))]))
-      (in-producer gen-combinations #f))
+     [(not k)
+      ;; Enumerate all binary numbers [1..2**N].
+      (values 0 (- (expt 2 N) 1) add1)]
+     [(< N k)
+      ;; Nothing to produce
+      (values 1 0 values)]
+     [else
+      ;; Enumerate numbers with `k` ones, smallest to largest
+      (define first (- (expt 2 k) 1))
+      (define gospers-hack ;; https://en.wikipedia.org/wiki/Combinatorial_number_system#Applications
+        (if (zero? first)
+          add1
+          (lambda (n)
+            (let* ([u (bitwise-and n (- n))]
+                   [v (+ u n)])
+              (+ v (arithmetic-shift (quotient (bitwise-xor v n) u) -2))))))
+      (values first (arithmetic-shift first (- N k)) gospers-hack)]))
+  (define gen-next
+    (let ([curr-box (box first)])
+      (lambda ()
+        (let ([curr (unbox curr-box)])
+          (and (<= curr last)
+               (begin0
+                 (vector-ref/bits v curr)
+                 (set-box! curr-box (incr curr))))))))
+  (in-producer gen-next #f))
 
 ;; This implements an algorithm known as "Ord-Smith".  (It is described in a
 ;; paper called "Permutation Generation Methods" by Robert Sedgewlck, listed as

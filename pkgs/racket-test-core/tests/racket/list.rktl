@@ -456,7 +456,16 @@
   (test '(()) sorted-combs '(4 1 2 5 3) 0)
   (test
    '((1 2) (1 3) (1 5) (2 3) (2 5) (4 1) (4 2) (4 3) (4 5) (5 3))
-   sorted-combs '(4 1 2 5 3) 2))
+   sorted-combs '(4 1 2 5 3) 2)
+  (test
+   '((1 2 3) (1 2 5) (1 5 3) (2 5 3) (4 1 2) (4 1 3) (4 1 5) (4 2 3) (4 2 5) (4 5 3))
+   sorted-combs '(4 1 2 5 3) 3)
+  (test
+   21
+   (lambda (n k)
+     (length (combinations n k)))
+   '(1 2 3 4 5 6 7)
+   5))
 
 ;; ---------- permutations ----------
 (let ()
