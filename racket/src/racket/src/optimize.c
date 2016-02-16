@@ -73,7 +73,7 @@ struct Optimize_Info
                  for constraining the movement of allocation operations */
   int sclock; /* virtual clock that ticks when space consumption is potentially observed */
   int psize;
-  short inline_fuel, shift_fuel, flatten_fuel;
+  short inline_fuel, flatten_fuel;
   char letrec_not_twice, enforce_const, use_psize, has_nonleaf;
   Scheme_Hash_Table *top_level_consts;
 
@@ -99,7 +99,6 @@ struct Optimize_Info
 };
 
 typedef struct Optimize_Info_Sequence {
-  int init_shift_fuel, min_shift_fuel;
   int init_flatten_fuel, min_flatten_fuel;
 } Optimize_Info_Sequence;
 
@@ -7992,7 +7991,6 @@ Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger)
   info->type = scheme_rt_optimize_info;
 #endif
   info->inline_fuel = 32;
-  info->shift_fuel = 16;
   info->flatten_fuel = 16;
   info->cp = cp;
 
@@ -8008,17 +8006,12 @@ Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger)
 
 static void optimize_info_seq_init(Optimize_Info *info, Optimize_Info_Sequence *info_seq)
 {
-  info_seq->init_shift_fuel = info->shift_fuel;
-  info_seq->min_shift_fuel = info->shift_fuel;
   info_seq->init_flatten_fuel = info->flatten_fuel;
   info_seq->min_flatten_fuel = info->flatten_fuel;
 }
 
 static void optimize_info_seq_step(Optimize_Info *info, Optimize_Info_Sequence *info_seq)
 {
-  if (info->shift_fuel < info_seq->min_shift_fuel)
-    info_seq->min_shift_fuel = info->shift_fuel;
-  info->shift_fuel = info_seq->init_shift_fuel;
   if (info->flatten_fuel < info_seq->min_flatten_fuel)
     info_seq->min_flatten_fuel = info->flatten_fuel;
   info->flatten_fuel = info_seq->init_flatten_fuel;
@@ -8026,8 +8019,6 @@ static void optimize_info_seq_step(Optimize_Info *info, Optimize_Info_Sequence *
 
 static void optimize_info_seq_done(Optimize_Info *info, Optimize_Info_Sequence *info_seq)
 {
-  if (info->shift_fuel > info_seq->min_shift_fuel)
-    info->shift_fuel = info_seq->min_shift_fuel;
   if (info->flatten_fuel > info_seq->min_flatten_fuel)
     info->flatten_fuel = info_seq->min_flatten_fuel;
 }
@@ -8314,7 +8305,6 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->original_frame = orig;
   naya->new_frame = current;
   naya->inline_fuel = info->inline_fuel;
-  naya->shift_fuel = info->shift_fuel;
   naya->flatten_fuel = info->flatten_fuel;
   naya->letrec_not_twice = info->letrec_not_twice;
   naya->enforce_const = info->enforce_const;
@@ -8348,7 +8338,6 @@ static void optimize_info_done(Optimize_Info *info, Optimize_Info *parent)
   parent->sclock = info->sclock;
   parent->escapes = info->escapes;
   parent->psize += info->psize;
-  parent->shift_fuel = info->shift_fuel;
   parent->flatten_fuel = info->flatten_fuel;
   if (info->has_nonleaf)
     parent->has_nonleaf = 1;
