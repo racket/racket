@@ -6412,6 +6412,13 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
       }
     }
 
+    /* once-used moved implies not optimize_used: */
+    MZ_ASSERT(!(used
+                && (pre_body->count == 1)
+                && pre_body->vars[0]->optimize.known_val
+                && SAME_TYPE(scheme_once_used_type, SCHEME_TYPE(pre_body->vars[0]->optimize.known_val))
+                && ((Scheme_Once_Used *)pre_body->vars[0]->optimize.known_val)->moved));
+
     if (!used
         && (scheme_omittable_expr(pre_body->value, pre_body->count, -1, 0, info, info)
             || ((pre_body->count == 1)
@@ -8244,8 +8251,11 @@ static Scheme_Object *optimize_info_lookup(Optimize_Info *info, Scheme_Object *v
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_once_used_type)) {
         MZ_ASSERT(!((Scheme_Once_Used *)n)->moved);
         MZ_ASSERT(!SCHEME_VAR(var)->optimize_outside_binding);
-        if (once_used_ok)
+        if (once_used_ok) {
+          /* In case this variable was tenatively used before: */
+          SCHEME_VAR(var)->optimize_used = 0;
           return n;
+        }
       } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_compiled_local_type)) {
         Scheme_Object *v2;
         int cnt = SCHEME_VAR(var)->use_count;
