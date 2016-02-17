@@ -20,6 +20,7 @@
 */
 
 #include "schpriv.h"
+#include "schmach.h"
 
 /* PLAN:
  *
@@ -987,9 +988,37 @@ static Scheme_Object *letrec_check_module(Scheme_Object *o, Letrec_Check_Frame *
   return o;
 }
 
+static Scheme_Object *letrec_check_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *expr = (Scheme_Object *)p->ku.k.p1;
+  Letrec_Check_Frame *frame = (Letrec_Check_Frame *)p->ku.k.p3;
+  Scheme_Object *pos = (Scheme_Object *)p->ku.k.p3;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+
+  return letrec_check_expr(expr, frame, pos);
+}
+
 static Scheme_Object *letrec_check_expr(Scheme_Object *expr, Letrec_Check_Frame *frame, Scheme_Object *pos)
 {
   int type;
+
+#ifdef DO_STACK_CHECK
+# include "mzstkchk.h"
+  {
+    Scheme_Thread *p = scheme_current_thread;
+
+    p->ku.k.p1 = (void *)expr;
+    p->ku.k.p2 = (void *)frame;
+    p->ku.k.p3 = (void *)pos;
+
+    return scheme_handle_stack_overflow(letrec_check_k);
+  }
+#endif
+
   type = SCHEME_TYPE(expr);
 
   SCHEME_USE_FUEL(1);
