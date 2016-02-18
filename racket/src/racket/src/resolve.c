@@ -1568,7 +1568,7 @@ static int is_nonconstant_procedure(Scheme_Object *_data, Resolve_Info *info, Sc
 
         if (var->optimize_used) {
           MZ_ASSERT(var->mode == SCHEME_VAR_MODE_RESOLVE);
-          resolve_info_lookup(info, var, &lifted, 0, 0);
+          (void)resolve_info_lookup(info, var, &lifted, 0, 0);
           if (!lifted)
             return 1;
           if (SAME_TYPE(SCHEME_TYPE(lifted), scheme_toplevel_type)
@@ -1649,14 +1649,13 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
   for (i = 0; i < cl->base_closure->size; i++) {
     if (cl->base_closure->vals[i]) {
       Scheme_Compiled_Local *var = SCHEME_VAR(cl->base_closure->keys[i]);
-      int li;
 
       if ((var->mode == SCHEME_VAR_MODE_OPTIMIZE)
           || !var->optimize_used) {
         /* reference must have been optimized away; drop it
            from the closure */
       } else {
-        li = resolve_info_lookup(info, var, &lifted, 0, 0);
+        (void)resolve_info_lookup(info, var, &lifted, 0, 0);
         if (lifted) {
           /* Drop lifted binding from closure. */
           if (SAME_TYPE(SCHEME_TYPE(lifted), scheme_toplevel_type)
@@ -1882,6 +1881,9 @@ resolve_closure_compilation(Scheme_Object *_data, Resolve_Info *info,
         data->code = bcode;
       }
     }
+  } else {
+    new_info = NULL;
+    closure_map = NULL;
   }
 
   if ((closure_size == 1)
@@ -3633,7 +3635,6 @@ Scheme_App_Rec *maybe_unresolve_app_refs(Scheme_App_Rec *app, Unresolve_Info *ui
         Scheme_Case_Lambda *cl;
         Scheme_Closure_Data *d0, *d1;
         Scheme_Set_Bang *sb;
-        Scheme_Object *local;
         Scheme_Object *s;
         Scheme_Compiled_Local *arg;
         int pos;
@@ -3676,7 +3677,6 @@ Scheme_App_Rec *maybe_unresolve_app_refs(Scheme_App_Rec *app, Unresolve_Info *ui
         sb = MALLOC_ONE_TAGGED(Scheme_Set_Bang);
         sb->so.type = scheme_set_bang_type;
         sb->var = (Scheme_Object *)arg;
-        local = scheme_make_local(scheme_local_type, 0, 0);
         sb->val = (Scheme_Object *)vars[0];
         d1->code = (Scheme_Object *)sb;
         ci = MALLOC_ONE_RT(Closure_Info);

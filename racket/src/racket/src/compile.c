@@ -2024,7 +2024,6 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
   Scheme_Compiled_Let_Value *last = NULL, *lv;
   DupCheckRecord r;
   int rec_env_already = rec[drec].env_already, body_block;
-  int already_compiled_body;
   Scheme_Let_Header *head;
 
   form = scheme_stx_taint_disarm(form, NULL);
@@ -2341,14 +2340,6 @@ gen_let_syntax (Scheme_Object *form, Scheme_Comp_Env *origenv, char *formname,
       }
     }
   }
-
-  if (SCHEME_STX_PAIRP(forms)
-      && SAME_TYPE(SCHEME_TYPE(SCHEME_STX_VAL(SCHEME_STX_CAR(forms))),
-                   scheme_already_comp_type))
-    already_compiled_body = 1;
-  else
-    already_compiled_body = 0;
-
 
   env->value_name = defname ? SCHEME_STX_SYM(defname) : NULL;
   {

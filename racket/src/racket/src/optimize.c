@@ -1759,7 +1759,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 {
   int single_use = 0, psize = 0;
   Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
-  int outside_nested = 0, already_opt = optimized_rator, nonleaf, noapp, via_local = 0;
+  int already_opt = optimized_rator, nonleaf, noapp;
 
   noapp = !app && !app2 && !app3;
   if ((info->inline_fuel < 0) && info->has_nonleaf && !noapp)
@@ -1780,9 +1780,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_compiled_local_type)) {
     /* Check for inlining: */
     le = optimize_info_lookup(info, le, 1, &single_use, 0, 0, &psize, NULL);
-    outside_nested = 1;
     already_opt = 1;
-    via_local = 1;
   }
 
   if (le) {
@@ -1829,7 +1827,6 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         }
         if (!le)
           break;
-        outside_nested = 1;
         already_opt = 1;
       } else
         break;
@@ -4008,6 +4005,8 @@ static Scheme_Object *optimize_sequence(Scheme_Object *o, Optimize_Info *info, i
 
   if (sub_opt)
     optimize_info_seq_init(info, &info_seq);
+  else
+    memset(&info_seq, 0, sizeof(info_seq));
   
   count = s->count;
   for (i = 0; i < count; i++) {
@@ -6144,13 +6143,6 @@ scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, i
         value = extract_specialized_proc(value, value);
 
       if (value && (scheme_compiled_propagate_ok(value, body_info))) {
-        int cnt;
-
-        if (is_rec)
-          cnt = 2;
-        else
-          cnt = pre_body->vars[0]->use_count;
-
         pre_body->vars[0]->optimize.known_val = value;
         did_set_value = 1;
       } else if (value && !is_rec) {
