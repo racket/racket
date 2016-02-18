@@ -564,7 +564,7 @@
                                  (if (list? v)
                                      (for/list ([i (in-list v)]
                                                 #:when (and (pair? i)
-                                                            (string? i)))
+                                                            (string? (car i))))
                                        i)
                                      null)))))
              null)
