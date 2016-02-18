@@ -4437,7 +4437,9 @@ static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui, int a
       pos = unresolve_stack_push(ui, 1, 1);
 
       rhs = unresolve_expr(lo->value, ui, 0);
+      if (!rhs) return_NULL;
       body = unresolve_expr(lo->body, ui, 0);
+      if (!body) return_NULL;
 
       vars = unresolve_stack_pop(ui, pos, 1);
 
