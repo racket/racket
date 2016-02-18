@@ -40,7 +40,7 @@ Returns a @tech{resolved module path} that encapsulates @racket[path],
 where a list @racket[path] corresponds to a @tech{submodule} path.
 If @racket[path] is a path or starts with a path, the path normally should be
 @tech{cleanse}d (see @racket[cleanse-path]) and simplified (see
-@racket[simplify-path]).
+@racket[simplify-path], including consulting the file system).
 
 A @tech{resolved module path} is interned. That is, if two
 @tech{resolved module path} values encapsulate paths that are
