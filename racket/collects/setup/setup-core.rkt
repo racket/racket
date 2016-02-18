@@ -274,11 +274,22 @@
   (define info-ns (make-base-namespace))
   (define getinfo (make-getinfo info-ns))
 
+  (define info-failures (make-hash))
+  (define (getinfo/log-failure path)
+    (with-handlers ([exn:fail? (lambda (exn)
+                                 (if (hash-ref info-failures path #f)
+                                     #f
+                                     (begin
+                                       (hash-set! info-failures path #t)
+                                       (handle-error path "load of info.rkt" exn "" "" "error")
+                                       #f)))])
+      (getinfo path)))
+
   (define (make-cc* collection parent path omit-root info-root 
                     info-path info-path-mode shadowing-policy 
                     main?)
     (define info
-      (or (with-handlers ([exn:fail? (warning-handler #f)]) (getinfo path))
+      (or (getinfo/log-failure path)
           (lambda (flag mk-default) (mk-default))))
     (define name
       (call-info
@@ -495,7 +506,7 @@
       ;; note: omit can be 'all, if this happens then this collection
       ;; should not have been included, but we might jump in if a
       ;; command-line argument specified a coll/subcoll
-      (define omit (omitted-paths ccp getinfo (cc-omit-root cc)))
+      (define omit (omitted-paths ccp getinfo/log-failure (cc-omit-root cc)))
       (define subs (if (eq? 'all omit)
                      '()
                      (filter (lambda (p)
@@ -523,7 +534,7 @@
       ;; note: omit can be 'all, if this happens then this collection
       ;; should not have been included, but we might jump in if a
       ;; command-line argument specified a coll/subcoll
-      (define omit (let ([omit (omitted-paths ccp getinfo (cc-omit-root cc))])
+      (define omit (let ([omit (omitted-paths ccp getinfo/log-failure (cc-omit-root cc))])
                      (if (eq? omit 'all)
                          'all
                          (append
@@ -1168,7 +1179,7 @@
                                              ;; relative path => no root needed for checking omits:
                                              #f)])
                                     (and (directory-exists? dir)
-                                         (not (eq? 'all (omitted-paths dir getinfo omit-root)))))
+                                         (not (eq? 'all (omitted-paths dir getinfo/log-failure omit-root)))))
                                   (or (file-exists? (build-path dir "info.rkt"))
                                       (file-exists? (build-path dir "info.ss"))))
                              (hash-set! t a (list b c d e))
