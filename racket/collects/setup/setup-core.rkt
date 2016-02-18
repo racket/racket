@@ -558,8 +558,15 @@
                   (not (eq? omit 'all)))
              (filter (lambda (p) (not (member p omit)))
                      (map (lambda (s) (if (string? s) (string->path s) s))
-                          (map car (call-info info 'scribblings
-                                              (lambda () null) (lambda (x) #f)))))
+                          (map car 
+                               (let ([v (call-info info 'scribblings (lambda () null) void)])
+                                 ;; Ignore ill-formed 'scribblings entries at this level:
+                                 (if (list? v)
+                                     (for/list ([i (in-list v)]
+                                                #:when (and (pair? i)
+                                                            (string? i)))
+                                       i)
+                                     null)))))
              null)
          (map (lambda (s) (if (string? s) (string->path s) s))
               (call-info info 'compile-include-files (lambda () null) void))))
