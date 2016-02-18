@@ -353,7 +353,7 @@
               (not (equal? (url-host url) ""))
               (pair? strs))
          (if (equal? (car strs) "")
-             (error 'file://->path "rmpty drive element: ~e" url)
+             (error 'file://->path "empty drive element: ~e" url)
              (apply build-path
                     (string->path/win
                      (string-append "\\\\" (url-host url) "\\" (car strs) "\\"))
