@@ -4291,9 +4291,17 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
 # define MOVE_ERRNO_FORMAT "%E"
 # else
   if (!exists_ok && (scheme_file_exists(dest) || scheme_directory_exists(dest))) {
-    exists_ok = -1;
-    errno = EEXIST;
-    goto failed;
+    /* We use a specialized error message here, because it's not
+       a system error (e.g., setting `errno` to `EEXIST` would
+       be a lie). */
+    scheme_raise_exn((exists_ok < 0) ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
+                     "rename-file-or-directory: cannot rename file or directory;\n"
+                     " the destination path already exists\n"
+                     "  source path: %q\n"
+                     "  dest path: %q",
+                     filename_for_error(argv[0]),
+                     filename_for_error(argv[1]));
+    return NULL;
   }
   
   while (1) {
@@ -4305,9 +4313,6 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
 # define MOVE_ERRNO_FORMAT "%e"
 # endif
 
-#ifndef DOS_FILE_SYSTEM
-failed:
-#endif
   scheme_raise_exn((exists_ok < 0) ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
 		   "rename-file-or-directory: cannot rename file or directory\n"
                    "  source path: %q\n"

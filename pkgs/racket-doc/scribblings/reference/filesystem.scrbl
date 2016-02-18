@@ -300,7 +300,8 @@ renamed successfully, the @exnraise[exn:fail:filesystem].
 This procedure can be used to move a file/directory to a different
 directory (on the same filesystem) as well as rename a file/directory within
 a directory. Unless @racket[exists-ok?]  is provided as a true value,
-@racket[new] cannot refer to an existing file or directory. Even if
+@racket[new] cannot refer to an existing file or directory, but the
+check is not atomic with the rename operation on Unix and Mac OS X. Even if
 @racket[exists-ok?] is true, @racket[new] cannot refer to an existing
 file when @racket[old] is a directory, and vice versa.
 
