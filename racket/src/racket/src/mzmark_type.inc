@@ -967,7 +967,6 @@ static int comp_local_MARK(void *p, struct NewGC *gc) {
   case SCHEME_VAR_MODE_OPTIMIZE:
     gcMARK2(var->optimize.known_val, gc);
     gcMARK2(var->optimize.transitive_uses, gc);
-    gcMARK2(var->optimize.transitive_uses_to, gc);
     break;
   case SCHEME_VAR_MODE_RESOLVE:
     gcMARK2(var->resolve.lifted, gc);
@@ -997,7 +996,6 @@ static int comp_local_FIXUP(void *p, struct NewGC *gc) {
   case SCHEME_VAR_MODE_OPTIMIZE:
     gcFIXUP2(var->optimize.known_val, gc);
     gcFIXUP2(var->optimize.transitive_uses, gc);
-    gcFIXUP2(var->optimize.transitive_uses_to, gc);
     break;
   case SCHEME_VAR_MODE_RESOLVE:
     gcFIXUP2(var->resolve.lifted, gc);

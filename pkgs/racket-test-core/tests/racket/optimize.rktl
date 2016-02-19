@@ -2313,6 +2313,12 @@
               15)
            15)
 
+(test-comp '(letrec ((c (λ () T))
+                     (T (λ () c))
+                     (E (λ () T)))
+             5)
+           5)
+
 (parameterize ([compile-context-preservation-enabled 
                 ;; Avoid different amounts of unrolling
                 #t])

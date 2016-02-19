@@ -240,7 +240,6 @@ comp_local {
   case SCHEME_VAR_MODE_OPTIMIZE:
     gcMARK2(var->optimize.known_val, gc);
     gcMARK2(var->optimize.transitive_uses, gc);
-    gcMARK2(var->optimize.transitive_uses_to, gc);
     break;
   case SCHEME_VAR_MODE_RESOLVE:
     gcMARK2(var->resolve.lifted, gc);
@@ -1413,6 +1412,7 @@ mark_optimize_info {
   gcMARK2(i->cp, gc);
   gcMARK2(i->top_level_consts, gc);
   gcMARK2(i->transitive_use_var, gc);
+  gcMARK2(i->transitive_uses_to, gc);
   gcMARK2(i->context, gc);
   gcMARK2(i->logger, gc);
   gcMARK2(i->types, gc);

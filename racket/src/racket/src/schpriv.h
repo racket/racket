@@ -1537,7 +1537,6 @@ typedef struct Scheme_Compiled_Local
          for analyzing a letrec-bound function that might
          not get called: */
       Scheme_Hash_Table *transitive_uses;
-      struct Optimize_Info *transitive_uses_to;
     } optimize;
     struct {
       /* Records the position where the variable will be

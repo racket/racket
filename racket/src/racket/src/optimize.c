@@ -89,6 +89,7 @@ struct Optimize_Info
   int used_toplevel;
 
   Scheme_Compiled_Local *transitive_use_var; /* set when optimizing a letrec-bound procedure */
+  struct Optimize_Info *transitive_uses_to;
 
   Scheme_Object *context; /* for logging */
   Scheme_Logger *logger;
@@ -5742,9 +5743,9 @@ static void start_transitive_use_record(Optimize_Info *to_info, Optimize_Info *i
 {
   if (var->optimize_used)
     return;
-  
+
   info->transitive_use_var = var;
-  var->optimize.transitive_uses_to = to_info;
+  info->transitive_uses_to = to_info;
 
   /* Restore use flags, if any, saved from before: */
   if (var->optimize.transitive_uses)
@@ -5757,6 +5758,7 @@ static void end_transitive_use_record(Optimize_Info *info)
 
   if (var != info->next->transitive_use_var) {
     info->transitive_use_var = info->next->transitive_use_var;
+    info->transitive_uses_to = info->next->transitive_uses_to;
 
     if (var->optimize.transitive_uses)
       flip_transitive(var->optimize.transitive_uses, 0);
@@ -8037,22 +8039,24 @@ void scheme_optimize_info_never_inline(Optimize_Info *oi)
   oi->inline_fuel = -1;
 }
 
-static void register_transitive(Scheme_Compiled_Local *var);
+static void register_transitive(Scheme_Compiled_Local *var, Optimize_Info *info);
 static void register_use_at(Scheme_Compiled_Local *var, Optimize_Info *info);
 
 static Scheme_Object *transitive_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Compiled_Local *var = SCHEME_VAR(p->ku.k.p1);
+  Optimize_Info *info = (Optimize_Info *)p->ku.k.p2;
 
   p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
 
-  register_transitive(var);
+  register_transitive(var, info);
 
   return scheme_false;
 }
 
-static void register_transitive(Scheme_Compiled_Local *var)
+static void register_transitive(Scheme_Compiled_Local *var, Optimize_Info *info)
 {
   Scheme_Hash_Table *ht;
   Scheme_Compiled_Local *tvar;
@@ -8064,6 +8068,7 @@ static void register_transitive(Scheme_Compiled_Local *var)
     Scheme_Thread *p = scheme_current_thread;
 
     p->ku.k.p1 = (void *)var;
+    p->ku.k.p2 = (void *)info;
 
     scheme_handle_stack_overflow(transitive_k);
 
@@ -8076,7 +8081,7 @@ static void register_transitive(Scheme_Compiled_Local *var)
   for (j = 0; j < ht->size; j++) {
     if (ht->vals[j]) {
       tvar = SCHEME_VAR(ht->keys[j]);
-      register_use_at(tvar, var->optimize.transitive_uses_to);
+      register_use_at(tvar, info);
     }
   }
 }
@@ -8183,7 +8188,7 @@ static void register_use_at(Scheme_Compiled_Local *var, Optimize_Info *info)
 
     if (info->transitive_use_var
         && (var->optimize.lambda_depth
-            <= info->transitive_use_var->optimize.transitive_uses_to->lambda_depth)) {
+            <= info->transitive_uses_to->lambda_depth)) {
       Scheme_Hash_Table *ht = info->transitive_use_var->optimize.transitive_uses;
 
       if (!ht) {
@@ -8194,7 +8199,7 @@ static void register_use_at(Scheme_Compiled_Local *var, Optimize_Info *info)
     }
 
     if (var->optimize.transitive_uses)
-      register_transitive(var);
+      register_transitive(var, info);
   }
 }
 
@@ -8325,6 +8330,7 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
   naya->lambda_depth = info->lambda_depth + ((flags & SCHEME_LAMBDA_FRAME) ? 1 : 0);
   naya->uses = info->uses;
   naya->transitive_use_var = info->transitive_use_var;
+  naya->transitive_uses_to = info->transitive_uses_to;
 
   return naya;
 }
