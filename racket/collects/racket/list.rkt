@@ -627,7 +627,7 @@
           (lambda (n)
             (let* ([u (bitwise-and n (- n))]
                    [v (+ u n)])
-              (+ v (arithmetic-shift (/ (bitwise-xor v n) u) -2))))))
+              (+ v (arithmetic-shift (quotient (bitwise-xor v n) u) -2))))))
       (values first (arithmetic-shift first (- N k)) gospers-hack)]))
   (define gen-next
     (let ([curr-box (box first)])
