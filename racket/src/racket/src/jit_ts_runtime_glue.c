@@ -44,7 +44,7 @@ case SIG_n_s:
   {
      prim_n_s f = (prim_n_s)future->prim_func;
      GC_CAN_IGNORE Scheme_Object* retval;
-     JIT_TS_LOCALIZE(Scheme_Native_Closure_Data*, arg_n0);
+     JIT_TS_LOCALIZE(Scheme_Native_Lambda*, arg_n0);
      
      future->arg_n0 = NULL;
      

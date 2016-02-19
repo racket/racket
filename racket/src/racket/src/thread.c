@@ -2720,8 +2720,8 @@ static void do_swap_thread()
       Scheme_Closure_Func f;
       for (l = thread_swap_callbacks; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
 	o = SCHEME_CAR(l);
-	f = SCHEME_CLOS_FUNC(o);
-	o = SCHEME_CLOS_DATA(o);
+	f = SCHEME_RAW_CLOS_FUNC(o);
+	o = SCHEME_RAW_CLOS_DATA(o);
 	f(o);
       }
     }
@@ -2759,8 +2759,8 @@ static void do_swap_thread()
       Scheme_Closure_Func f;
       for (l = thread_swap_out_callbacks; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
 	o = SCHEME_CAR(l);
-	f = SCHEME_CLOS_FUNC(o);
-	o = SCHEME_CLOS_DATA(o);
+	f = SCHEME_RAW_CLOS_FUNC(o);
+	o = SCHEME_RAW_CLOS_DATA(o);
 	f(o);
       }
     }
@@ -3056,8 +3056,8 @@ static void start_child(Scheme_Thread * volatile child,
       Scheme_Closure_Func f;
       for (l = thread_swap_callbacks; SCHEME_RPAIRP(l); l = SCHEME_CDR(l)) {
 	o = SCHEME_CAR(l);
-	f = SCHEME_CLOS_FUNC(o);
-	o = SCHEME_CLOS_DATA(o);
+	f = SCHEME_RAW_CLOS_FUNC(o);
+	o = SCHEME_RAW_CLOS_DATA(o);
 	f(o);
       }
     }

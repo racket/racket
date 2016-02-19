@@ -218,7 +218,7 @@ static int common0(mz_jit_state *jitter, void *_data)
   mz_push_threadlocal(in);
   jit_movi_i(JIT_R1, -1);
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
+  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Lambda *)0x0)->arity_code);
   jit_jmpr(JIT_V1); /* leads to a jit_ret() that assumes NATIVE_ARG_COUNT arguments */
   CHECK_LIMIT();
 
@@ -238,7 +238,7 @@ static int common0(mz_jit_state *jitter, void *_data)
   jit_movi_i(JIT_R1, -1);
   (void)jit_movi_p(JIT_R2, 0x0);
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
+  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Lambda *)0x0)->arity_code);
   jit_jmpr(JIT_V1); /* leads to a jit_ret() that assumes NATIVE_ARG_COUNT arguments */
   CHECK_LIMIT();
 
@@ -806,7 +806,7 @@ static int common2(mz_jit_state *jitter, void *_data)
   /* Also, check that the runstack is big enough with the revised
      max_let_depth. */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-  jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->max_let_depth);
+  jit_ldxi_i(JIT_V1, JIT_V1, &((Scheme_Native_Lambda *)0x0)->max_let_depth);
   mz_set_local_p(JIT_R2, JIT_LOCAL2);
   mz_tl_ldi_p(JIT_R2, tl_MZ_RUNSTACK_START);
   jit_subr_ul(JIT_R2, JIT_RUNSTACK, JIT_R2);
@@ -822,7 +822,7 @@ static int common2(mz_jit_state *jitter, void *_data)
   mz_st_runstack_base_alt(JIT_V1);
   /* Extract function and jump: */
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->arity_code);
+  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Lambda *)0x0)->arity_code);
   jit_jmpr(JIT_V1);
   CHECK_LIMIT();
   /* Slower path (non-tail) when argv != runstack. */
@@ -3173,9 +3173,9 @@ static int common10(mz_jit_state *jitter, void *_data)
     /* native: */
     mz_patch_branch(ref_nc);
     jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-    jit_ldxi_i(JIT_R2, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->closure_size);
+    jit_ldxi_i(JIT_R2, JIT_V1, &((Scheme_Native_Lambda *)0x0)->closure_size);
     (void)jit_blti_i(refslow, JIT_R2, 0); /* case lambda */
-    jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->start_code);
+    jit_ldxi_p(JIT_R2, JIT_V1, &((Scheme_Native_Lambda *)0x0)->start_code);
     /* patchable_movi_p doesn't depend on actual address, which might change size: */
     (void)jit_patchable_movi_p(JIT_V1, scheme_on_demand_jit_code);
     ref_nc = jit_beqr_p(jit_forward(), JIT_R2, JIT_V1); /* not yet JITted? */
@@ -3196,11 +3196,11 @@ static int common10(mz_jit_state *jitter, void *_data)
     /* not-yet-JITted native: */
     mz_patch_branch(ref_nc);
     jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-    jit_ldxi_p(JIT_R0, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u2.orig_code);
+    jit_ldxi_p(JIT_R0, JIT_V1, &((Scheme_Native_Lambda *)0x0)->u2.orig_code);
     jit_rshi_l(JIT_V1, JIT_R1, 1);
-    jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Closure_Data *)0x0)->num_params);
-    jit_ldxi_s(JIT_R0, JIT_R0, &SCHEME_CLOSURE_DATA_FLAGS(((Scheme_Closure_Data *)0x0)));
-    ref_nc = jit_bmsi_i(jit_forward(), JIT_R0, CLOS_HAS_REST);
+    jit_ldxi_i(JIT_R2, JIT_R0, &((Scheme_Lambda *)0x0)->num_params);
+    jit_ldxi_s(JIT_R0, JIT_R0, &SCHEME_LAMBDA_FLAGS(((Scheme_Lambda *)0x0)));
+    ref_nc = jit_bmsi_i(jit_forward(), JIT_R0, LAMBDA_HAS_REST);
     (void)jit_bner_i(refno, JIT_V1, JIT_R2);
     (void)jit_movi_p(JIT_R0, scheme_true);
     mz_epilog(JIT_R2);

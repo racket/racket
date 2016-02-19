@@ -676,7 +676,7 @@ void scheme_jit_now(Scheme_Object *f)
 {
   if (SAME_TYPE(SCHEME_TYPE(f), scheme_native_closure_type)) {
     Scheme_Native_Closure *nc;
-    Scheme_Native_Closure_Data *ncd;
+    Scheme_Native_Lambda *ncd;
 
     nc = (Scheme_Native_Closure*)f;
     ncd = nc->code;

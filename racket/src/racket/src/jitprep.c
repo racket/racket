@@ -302,11 +302,11 @@ static Scheme_Object *define_values_jit(Scheme_Object *data)
 {
   Scheme_Object *orig = SCHEME_VEC_ELS(data)[0], *naya;
 
-  if (SAME_TYPE(SCHEME_TYPE(orig), scheme_unclosed_procedure_type)
+  if (SAME_TYPE(SCHEME_TYPE(orig), scheme_lambda_type)
       && (SCHEME_VEC_SIZE(data) == 2))
     naya = scheme_jit_closure(orig, SCHEME_VEC_ELS(data)[1]);
   else if (SAME_TYPE(SCHEME_TYPE(orig), scheme_inline_variant_type)
-           && SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(orig)[0]), scheme_unclosed_procedure_type)
+           && SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(orig)[0]), scheme_lambda_type)
            && (SCHEME_VEC_SIZE(data) == 2)) {
     naya = scheme_jit_closure(SCHEME_VEC_ELS(orig)[0], SCHEME_VEC_ELS(data)[1]);
     if (!SAME_OBJ(naya, SCHEME_VEC_ELS(orig)[0]))
@@ -409,7 +409,7 @@ Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
 
   if (!seqin->native_code) {
     Scheme_Case_Lambda *seqout;
-    Scheme_Native_Closure_Data *ndata;
+    Scheme_Native_Lambda *ndata;
     Scheme_Object *val, *name;
     int i, cnt, size, all_closed = 1;
 
@@ -431,8 +431,8 @@ Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
 	val = (Scheme_Object *)((Scheme_Closure *)val)->code;
 	seqout->array[i] = val;
       }
-      ((Scheme_Closure_Data *)val)->name = name;
-      if (((Scheme_Closure_Data *)val)->closure_size)
+      ((Scheme_Lambda *)val)->name = name;
+      if (((Scheme_Lambda *)val)->closure_size)
 	all_closed = 0;
     }
 
@@ -448,7 +448,7 @@ Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
       for (i = 0; i < cnt; i++) {
 	val = seqout->array[i];
 	if (!SCHEME_PROCP(val)) {
-	  val = scheme_make_native_closure(((Scheme_Closure_Data *)val)->u.native_code);
+	  val = scheme_make_native_closure(((Scheme_Lambda *)val)->u.native_code);
 	}
 	nc->vals[i] = val;
       }
@@ -461,10 +461,10 @@ Scheme_Object *scheme_case_lambda_jit(Scheme_Object *expr)
       for (i = 0; i < cnt; i++) {
 	val = seqout->array[i];
 	if (!SCHEME_PROCP(val)) {
-	  Scheme_Closure_Data *data;
-	  data = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
-	  memcpy(data, val, sizeof(Scheme_Closure_Data));
-	  data->code = NULL;
+	  Scheme_Lambda *data;
+	  data = MALLOC_ONE_TAGGED(Scheme_Lambda);
+	  memcpy(data, val, sizeof(Scheme_Lambda));
+	  data->body = NULL;
 	  seqout->array[i] = (Scheme_Object *)data;
 	}
       }
@@ -548,7 +548,7 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
      for JIT compilation. */
 {
 #ifdef MZ_USE_JIT
-  Scheme_Closure_Data *data = (Scheme_Closure_Data *)code, *data2;
+  Scheme_Lambda *data = (Scheme_Lambda *)code, *data2;
 
   /* We need to cache clones to support multiple references
      to a zero-sized closure in bytecode. We need either a clone
@@ -561,10 +561,10 @@ Scheme_Object *scheme_jit_closure(Scheme_Object *code, Scheme_Object *context)
     data2 = NULL;
 
   if (!data2) {
-    Scheme_Native_Closure_Data *ndata;
+    Scheme_Native_Lambda *ndata;
     
-    data2 = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
-    memcpy(data2, code, sizeof(Scheme_Closure_Data));
+    data2 = MALLOC_ONE_TAGGED(Scheme_Lambda);
+    memcpy(data2, code, sizeof(Scheme_Lambda));
 
     data2->context = context;
 
@@ -607,7 +607,7 @@ Scheme_Object *scheme_jit_expr(Scheme_Object *expr)
     return jit_branch(expr);
   case scheme_with_cont_mark_type:
     return jit_wcm(expr);
-  case scheme_unclosed_procedure_type:
+  case scheme_lambda_type:
     return scheme_jit_closure(expr, NULL);
   case scheme_let_value_type:
     return jit_let_value(expr);

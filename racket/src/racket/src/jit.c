@@ -32,19 +32,19 @@
 static void register_traversers(void);
 #endif
 
-static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata, int is_method);
+static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Lambda *nlam, int is_method);
 static void *generate_lambda_simple_arity_check(int num_params, int has_rest, int is_method, int permanent);
 int scheme_generate_non_tail_mark_pos_prefix(mz_jit_state *jitter);
 void scheme_generate_non_tail_mark_pos_suffix(mz_jit_state *jitter);
-static int lambda_has_been_jitted(Scheme_Native_Closure_Data *ndata);
+static int lambda_has_been_jitted(Scheme_Native_Lambda *nlam);
 
 void scheme_jit_fill_threadlocal_table();
 
 
 typedef struct {
-  Scheme_Native_Closure_Data nc;
-  Scheme_Native_Closure_Data *case_lam;
-} Scheme_Native_Closure_Data_Plus_Case;
+  Scheme_Native_Lambda nc;
+  Scheme_Native_Lambda *case_lam;
+} Scheme_Native_Lambda_Plus_Case;
 
 static Scheme_Object *make_global_ref(Scheme_Object *var, Scheme_Object *dummy)
 {
@@ -72,7 +72,7 @@ static Scheme_Object *make_global_const_ref(Scheme_Object *var, Scheme_Object *d
 /*                               run time                                 */
 /*========================================================================*/
 
-static MZ_INLINE Scheme_Object *do_make_native_closure(Scheme_Native_Closure_Data *code, int size)
+static MZ_INLINE Scheme_Object *do_make_native_closure(Scheme_Native_Lambda *code, int size)
 {
   Scheme_Native_Closure *o;
 
@@ -84,12 +84,12 @@ static MZ_INLINE Scheme_Object *do_make_native_closure(Scheme_Native_Closure_Dat
   return (Scheme_Object *)o;
 }
 
-Scheme_Object *scheme_make_native_closure(Scheme_Native_Closure_Data *code)
+Scheme_Object *scheme_make_native_closure(Scheme_Native_Lambda *code)
 {
   return do_make_native_closure(code, code->closure_size);
 }
 
-Scheme_Object *scheme_make_native_case_closure(Scheme_Native_Closure_Data *code)
+Scheme_Object *scheme_make_native_case_closure(Scheme_Native_Lambda *code)
 {
   return do_make_native_closure(code, -(code->closure_size + 1));
 }
@@ -333,23 +333,23 @@ Scheme_Object *scheme_apply_lightweight_continuation_stack(Scheme_Current_LWC *l
 /*========================================================================*/
 
 #ifdef USE_FLONUM_UNBOXING
-int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int delta)
+int scheme_jit_check_closure_flonum_bit(Scheme_Lambda *lam, int pos, int delta)
 {
   int ct;
   pos += delta;
-  ct = scheme_boxmap_get(data->closure_map, pos, data->closure_size);
-  if (ct == (CLOS_TYPE_TYPE_OFFSET + SCHEME_LOCAL_TYPE_FLONUM))
+  ct = scheme_boxmap_get(lam->closure_map, pos, lam->closure_size);
+  if (ct == (LAMBDA_TYPE_TYPE_OFFSET + SCHEME_LOCAL_TYPE_FLONUM))
     return 1;
   else
     return 0;
 }
-int scheme_jit_check_closure_extflonum_bit(Scheme_Closure_Data *data, int pos, int delta)
+int scheme_jit_check_closure_extflonum_bit(Scheme_Lambda *lam, int pos, int delta)
 {
 #ifdef MZ_LONG_DOUBLE
   int ct;
   pos += delta;
-  ct = scheme_boxmap_get(data->closure_map, pos, data->closure_size);
-  if (ct == (CLOS_TYPE_TYPE_OFFSET + SCHEME_LOCAL_TYPE_EXTFLONUM))
+  ct = scheme_boxmap_get(lam->closure_map, pos, lam->closure_size);
+  if (ct == (LAMBDA_TYPE_TYPE_OFFSET + SCHEME_LOCAL_TYPE_EXTFLONUM))
     return 1;
   else
     return 0;
@@ -423,7 +423,7 @@ static int is_short(Scheme_Object *obj, int fuel)
   case scheme_quote_syntax_type:
   case scheme_local_type:
   case scheme_local_unbox_type:
-  case scheme_unclosed_procedure_type:
+  case scheme_lambda_type:
     return fuel - 1;
   default:
     if (t > _scheme_values_types_)
@@ -485,7 +485,7 @@ static Scheme_Object *extract_closure_local(int pos, mz_jit_state *jitter, int g
     if (pos < jitter->nc->code->u2.orig_code->closure_size) {
       /* in the closure */
       if (!get_constant
-          || (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED))
+          || (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED))
         return jitter->nc->vals[pos];
     } else if (!get_constant) {
       /* maybe an example argument... which is useful when
@@ -517,7 +517,7 @@ Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *j
 
   if (PAST_LIMIT()) return obj;
 
-  if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
+  if (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
     if (SAME_TYPE(SCHEME_TYPE(obj), scheme_local_type)) {
       c = scheme_extract_closure_local(obj, jitter, extra_push, 1);
       if (c) {
@@ -541,14 +541,14 @@ Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *j
 
 int scheme_native_closure_preserves_marks(Scheme_Object *p)
 {
-  Scheme_Native_Closure_Data *ndata = ((Scheme_Native_Closure *)p)->code;
+  Scheme_Native_Lambda *nlam = ((Scheme_Native_Closure *)p)->code;
 
-  if (ndata->closure_size >= 0) { /* not case-lambda */
-    if (lambda_has_been_jitted(ndata)) {
-      if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_PRESERVES_MARKS)
+  if (nlam->closure_size >= 0) { /* not case-lambda */
+    if (lambda_has_been_jitted(nlam)) {
+      if (SCHEME_NATIVE_LAMBDA_FLAGS(nlam) & NATIVE_PRESERVES_MARKS)
         return 1;
     } else {
-      if (SCHEME_CLOSURE_DATA_FLAGS(ndata->u2.orig_code) & CLOS_PRESERVES_MARKS)
+      if (SCHEME_LAMBDA_FLAGS(nlam->u2.orig_code) & LAMBDA_PRESERVES_MARKS)
         return 1;
     }
   }
@@ -598,10 +598,10 @@ int scheme_is_noncm(Scheme_Object *a, mz_jit_state *jitter, int depth, int stack
   }
 
   if (depth && SAME_TYPE(SCHEME_TYPE(a), scheme_closure_type)) {
-    Scheme_Closure_Data *data;
+    Scheme_Lambda *lam;
 
-    data = ((Scheme_Closure *)a)->code;
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_PRESERVES_MARKS)
+    lam = ((Scheme_Closure *)a)->code;
+    if (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_PRESERVES_MARKS)
       return 1;
   }
 
@@ -670,7 +670,7 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
       rator = scheme_specialize_to_constant(((Scheme_App_Rec *)obj)->args[0], jitter,
                                             stack_start +  ((Scheme_App_Rec *)obj)->num_args);
       if (scheme_inlined_nary_prim(rator, obj, jitter)
-          && !SAME_OBJ(rator, scheme_values_func))
+          && !SAME_OBJ(rator, scheme_values_proc))
         return 1;
       if (just_markless) {
         return scheme_is_noncm(rator, jitter, depth, 
@@ -694,7 +694,7 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
       Scheme_Object *rator;
       rator = scheme_specialize_to_constant(((Scheme_App3_Rec *)obj)->rator, jitter, stack_start + 2);
       if (scheme_inlined_binary_prim(rator, obj, jitter)
-          && !SAME_OBJ(rator, scheme_values_func)) 
+          && !SAME_OBJ(rator, scheme_values_proc)) 
         return 1;
       else if (just_markless) {
         return scheme_is_noncm(rator, jitter, depth, stack_start + 2);
@@ -706,7 +706,7 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
   case scheme_quote_syntax_type:
   case scheme_local_type:
   case scheme_local_unbox_type:
-  case scheme_unclosed_procedure_type:
+  case scheme_lambda_type:
     return 1;
     break;
   }
@@ -765,7 +765,7 @@ int scheme_is_non_gc(Scheme_Object *obj, int depth)
 
   case scheme_toplevel_type:
     break;
-  case scheme_unclosed_procedure_type:
+  case scheme_lambda_type:
     break;
 
   case scheme_local_type:
@@ -792,7 +792,7 @@ static int is_a_procedure(Scheme_Object *v, mz_jit_state *jitter)
 
   t = SCHEME_TYPE(v);
   if (SAME_TYPE(t, scheme_closure_type)
-      || SAME_TYPE(t, scheme_unclosed_procedure_type))
+      || SAME_TYPE(t, scheme_lambda_type))
     return 1;
   else if (SAME_TYPE(t, scheme_case_lambda_sequence_type)) {
     return 1;
@@ -846,7 +846,7 @@ int scheme_can_delay_and_avoids_r1_r2(Scheme_Object *obj)
   if (SAME_TYPE(t, scheme_local_type) && scheme_ok_to_delay_local(obj)) {
     return 1;
   } else
-    return (t >= _scheme_compiled_values_types_);
+    return (t >= _scheme_ir_values_types_);
 }
 
 int scheme_can_delay_and_avoids_r1(Scheme_Object *obj)
@@ -872,7 +872,7 @@ int scheme_is_constant_and_avoids_r1(Scheme_Object *obj)
   } else if (SAME_TYPE(t, scheme_local_type) && scheme_ok_to_move_local(obj)) {
     return 1;
   } else
-    return (t >= _scheme_compiled_values_types_);
+    return (t >= _scheme_ir_values_types_);
 }
 
 static int expression_avoids_clearing_local(Scheme_Object *wrt, int pos, int fuel)
@@ -952,16 +952,16 @@ int scheme_needs_only_target_register(Scheme_Object *obj, int and_can_reorder)
       return 0;
     return 1;
   } else 
-    return (t >= _scheme_compiled_values_types_);
+    return (t >= _scheme_ir_values_types_);
 }
 
 int scheme_native_closure_is_single_result(Scheme_Object *rator)
 {
   Scheme_Native_Closure *nc = (Scheme_Native_Closure *)rator;
   if (nc->code->start_code == scheme_on_demand_jit_code)
-    return (SCHEME_CLOSURE_DATA_FLAGS(nc->code->u2.orig_code) & CLOS_SINGLE_RESULT);
+    return (SCHEME_LAMBDA_FLAGS(nc->code->u2.orig_code) & LAMBDA_SINGLE_RESULT);
   else
-    return (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(nc->code) & NATIVE_IS_SINGLE_RESULT);
+    return (SCHEME_NATIVE_LAMBDA_FLAGS(nc->code) & NATIVE_IS_SINGLE_RESULT);
 }
 
 static int produces_single_value(Scheme_Object *rator, int num_args, mz_jit_state *jitter)
@@ -978,7 +978,7 @@ static int produces_single_value(Scheme_Object *rator, int num_args, mz_jit_stat
       return 1;
 
    /* special case: (values <expr>) */
-   if (SAME_OBJ(rator, scheme_values_func) && (num_args == 1))
+   if (SAME_OBJ(rator, scheme_values_proc) && (num_args == 1))
      return 1;
   }
 
@@ -1251,34 +1251,34 @@ int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push, int no
 static Scheme_Object example_so = { scheme_native_closure_type, 0 };
 #endif
 
-static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
-                                                        Scheme_Native_Closure_Data *case_lam);
+static Scheme_Native_Lambda *create_native_lambda(Scheme_Lambda *lam, int clear_code_after_jit,
+                                                  Scheme_Native_Lambda *case_lam);
 
-static void ensure_closure_native(Scheme_Closure_Data *data, 
-				  Scheme_Native_Closure_Data *case_lam)
+static void ensure_closure_native(Scheme_Lambda *lam, 
+				  Scheme_Native_Lambda *case_lam)
 {
-  if (!data->u.native_code || SCHEME_FALSEP((Scheme_Object *)data->u.native_code)) {
-    Scheme_Native_Closure_Data *code;
-    code = create_native_lambda(data, 0, case_lam);
-    data->u.native_code = code;
+  if (!lam->u.native_code || SCHEME_FALSEP((Scheme_Object *)lam->u.native_code)) {
+    Scheme_Native_Lambda *code;
+    code = create_native_lambda(lam, 0, case_lam);
+    lam->u.native_code = code;
   }
 }
 
-static int generate_closure(Scheme_Closure_Data *data, 
+static int generate_closure(Scheme_Lambda *lam, 
 			    mz_jit_state *jitter,
                             int immediately_filled)
 {
-  Scheme_Native_Closure_Data *code;
+  Scheme_Native_Lambda *code;
 
-  ensure_closure_native(data, NULL);
-  code = data->u.native_code;
+  ensure_closure_native(lam, NULL);
+  code = lam->u.native_code;
 
 #ifdef JIT_PRECISE_GC
-  if (data->closure_size < 100) {
+  if (lam->closure_size < 100) {
     int sz;
     intptr_t init_word;
     sz = (sizeof(Scheme_Native_Closure)
-          + ((data->closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+          + ((lam->closure_size - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
 # ifdef CAN_INLINE_ALLOC
     if (immediately_filled) {
       /* Inlined alloc */
@@ -1327,20 +1327,20 @@ static int generate_closure(Scheme_Closure_Data *data,
   return 1;
 }
 
-static int generate_closure_fill(Scheme_Closure_Data *data, 
+static int generate_closure_fill(Scheme_Lambda *lam, 
 				 mz_jit_state *jitter)
 {
   /* Fill in closure */
   int j, size, pos;
   mzshort *map;
   Scheme_Object *v;
-  size = data->closure_size;
-  map = data->closure_map;
+  size = lam->closure_size;
+  map = lam->closure_map;
   jit_addi_p(JIT_R2, JIT_R0, &((Scheme_Native_Closure *)0x0)->vals);
   for (j = 0; j < size; j++) {
     CHECK_LIMIT();
 
-    if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
+    if (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
       v = extract_closure_local(map[j], jitter, 1);
     else
       v = NULL;
@@ -1357,7 +1357,7 @@ static int generate_closure_fill(Scheme_Closure_Data *data,
   return 1;
 }
 
-static int generate_closure_prep(Scheme_Closure_Data *data, mz_jit_state *jitter)
+static int generate_closure_prep(Scheme_Lambda *lam, mz_jit_state *jitter)
 {
   int retval = 0;
 #ifdef USE_FLONUM_UNBOXING
@@ -1365,14 +1365,14 @@ static int generate_closure_prep(Scheme_Closure_Data *data, mz_jit_state *jitter
   int j, size, pos;
   mzshort *map;
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
-    size = data->closure_size;
-    map = data->closure_map;
+  if (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_TYPED_ARGS) {
+    size = lam->closure_size;
+    map = lam->closure_map;
     for (j = 0; j < size; j++) {
-      if (CLOSURE_CONTENT_IS_FLONUM(data, j)
-          || CLOSURE_CONTENT_IS_EXTFLONUM(data, j)) {
+      if (CLOSURE_CONTENT_IS_FLONUM(lam, j)
+          || CLOSURE_CONTENT_IS_EXTFLONUM(lam, j)) {
         int extfl;
-        extfl = CLOSURE_CONTENT_IS_EXTFLONUM(data, j);
+        extfl = CLOSURE_CONTENT_IS_EXTFLONUM(lam, j);
         pos = mz_remap(map[j]);
         jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(pos));
         generate_flonum_local_boxing(jitter, pos, map[j], JIT_R1, extfl);
@@ -1386,66 +1386,66 @@ static int generate_closure_prep(Scheme_Closure_Data *data, mz_jit_state *jitter
   return retval;
 }
 
-static Scheme_Native_Closure_Data *create_native_case_lambda(Scheme_Case_Lambda *c)
+static Scheme_Native_Lambda *create_native_case_lambda(Scheme_Case_Lambda *c)
 {
-  Scheme_Closure_Data *data;
-  Scheme_Native_Closure_Data *ndata;
+  Scheme_Lambda *lam;
+  Scheme_Native_Lambda *nlam;
   Scheme_Object *name, *o;
   int max_let_depth = 0, i, count, is_method = 0;
 
-  ndata = MALLOC_ONE_RT(Scheme_Native_Closure_Data);
+  nlam = MALLOC_ONE_RT(Scheme_Native_Lambda);
 #ifdef MZTAG_REQUIRED
-  ndata->iso.so.type = scheme_rt_native_code;
+  nlam->iso.so.type = scheme_rt_native_code;
 #endif
   name = c->name;
   if (name && SCHEME_BOXP(name)) {
     name = SCHEME_BOX_VAL(name);
     is_method = 1;
   }
-  ndata->u2.name = name;
+  nlam->u2.name = name;
   count = c->count;
   for (i = 0; i < count; i++) {
     o = c->array[i];
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
-    data = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
-    memcpy(data, o, sizeof(Scheme_Closure_Data));
-    ensure_closure_native(data, ndata);
-    if (data->u.native_code->max_let_depth > max_let_depth)
-      max_let_depth = data->u.native_code->max_let_depth;
-    c->array[i] = (Scheme_Object *)data;
+    lam = MALLOC_ONE_TAGGED(Scheme_Lambda);
+    memcpy(lam, o, sizeof(Scheme_Lambda));
+    ensure_closure_native(lam, nlam);
+    if (lam->u.native_code->max_let_depth > max_let_depth)
+      max_let_depth = lam->u.native_code->max_let_depth;
+    c->array[i] = (Scheme_Object *)lam;
   }
-  ndata->max_let_depth = max_let_depth;
-  ndata->closure_size = -(count + 1); /* Indicates case-lambda */
+  nlam->max_let_depth = max_let_depth;
+  nlam->closure_size = -(count + 1); /* Indicates case-lambda */
 
   if (count) {
     o = c->array[0];
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
-    data = (Scheme_Closure_Data *)o;
-    is_method = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD) ? 1 : 0);
+    lam = (Scheme_Lambda *)o;
+    is_method = ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_IS_METHOD) ? 1 : 0);
   }
 
-  generate_case_lambda(c, ndata, is_method);
+  generate_case_lambda(c, nlam, is_method);
 
-  return ndata;
+  return nlam;
 }
 
-Scheme_Native_Closure_Data *scheme_generate_case_lambda(Scheme_Case_Lambda *c)
+Scheme_Native_Lambda *scheme_generate_case_lambda(Scheme_Case_Lambda *c)
 {
-  Scheme_Native_Closure_Data *ndata;
+  Scheme_Native_Lambda *nlam;
 
-  ndata = create_native_case_lambda(c);
+  nlam = create_native_case_lambda(c);
 
-  return ndata;
+  return nlam;
 }
 
 static void ensure_case_closure_native(Scheme_Case_Lambda *c)
 {
   if (!c->native_code || SCHEME_FALSEP((Scheme_Object *)c->native_code)) {
-    Scheme_Native_Closure_Data *ndata;
-    ndata = create_native_case_lambda(c);
-    c->native_code = ndata;
+    Scheme_Native_Lambda *nlam;
+    nlam = create_native_case_lambda(c);
+    c->native_code = nlam;
   }
 }
 
@@ -1453,13 +1453,13 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
 /* de-sync's */
 {
   Scheme_Case_Lambda *c = (Scheme_Case_Lambda *)obj;
-  Scheme_Native_Closure_Data *ndata;
-  Scheme_Closure_Data *data;
+  Scheme_Native_Lambda *nlam;
+  Scheme_Lambda *lam;
   Scheme_Object *o;
   int i, offset, count;
 
   ensure_case_closure_native(c);
-  ndata = c->native_code;
+  nlam = c->native_code;
 
   count = c->count;
 
@@ -1467,10 +1467,10 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
     o = c->array[i];
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
-    data = (Scheme_Closure_Data *)o;
+    lam = (Scheme_Lambda *)o;
     mz_rs_sync();
     CHECK_LIMIT();
-    generate_closure_prep(data, jitter);
+    generate_closure_prep(lam, jitter);
     CHECK_LIMIT();
   }
 
@@ -1478,7 +1478,7 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
 
   JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
   mz_prepare(1);
-  scheme_mz_load_retained(jitter, JIT_R0, ndata);
+  scheme_mz_load_retained(jitter, JIT_R0, nlam);
   jit_pusharg_p(JIT_R0);
   {
     GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
@@ -1491,12 +1491,12 @@ static int generate_case_closure(Scheme_Object *obj, mz_jit_state *jitter, int t
     o = c->array[i];
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
-    data = (Scheme_Closure_Data *)o;
+    lam = (Scheme_Lambda *)o;
     mz_pushr_p(JIT_R1);
     mz_rs_sync();
-    generate_closure(data, jitter, 1);
+    generate_closure(lam, jitter, 1);
     CHECK_LIMIT();
-    generate_closure_fill(data, jitter);
+    generate_closure_fill(lam, jitter);
     CHECK_LIMIT();
     mz_popr_p(JIT_R1);
     offset = WORDS_TO_BYTES(i) + (uintptr_t)&((Scheme_Native_Closure *)0x0)->vals;
@@ -1793,8 +1793,8 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
     can_chain_branch = 1;
   else
     can_chain_branch = 0;
-  chain_true = (SCHEME_TYPE(branch->tbranch) > _scheme_compiled_values_types_);
-  chain_false = (SCHEME_TYPE(branch->fbranch) > _scheme_compiled_values_types_);
+  chain_true = (SCHEME_TYPE(branch->tbranch) > _scheme_ir_values_types_);
+  chain_false = (SCHEME_TYPE(branch->fbranch) > _scheme_ir_values_types_);
 
   if (can_chain_branch && chain_true)
     for_this_branch.true_needs_jump = 1;
@@ -1808,7 +1808,7 @@ static int generate_branch(Scheme_Object *obj, mz_jit_state *jitter, int is_tail
   LOG_IT(("if...\n"));
 
   if (result_ignored 
-      && (SCHEME_TYPE(branch->fbranch) > _scheme_compiled_values_types_))
+      && (SCHEME_TYPE(branch->fbranch) > _scheme_ir_values_types_))
     else_is_empty = 1;
   else if (can_chain_branch && chain_false)
     else_is_empty = 1;
@@ -2094,7 +2094,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
         START_JIT_DATA();
         LOG_IT(("top-level\n"));
         mz_rs_sync_fail_branch();
-        if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
+        if (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
           /* Must be a top-level that is not yet defined. */
           Scheme_Object *b;
           mz_rs_sync_fail_branch();
@@ -2212,7 +2212,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       START_JIT_DATA();
       LOG_IT(("unbox local\n"));
 
-      if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
+      if (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
         specialized = scheme_extract_closure_local(obj, jitter, 0, 1);
 
       pos = mz_remap(SCHEME_LOCAL_POS(obj));
@@ -2731,7 +2731,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       LOG_IT(("app %d\n", app->num_args));
 
       if (for_values
-          && SAME_OBJ(app->args[0], scheme_values_func)
+          && SAME_OBJ(app->args[0], scheme_values_proc)
           && (app->num_args == for_values->count)) {
         int i, pos;
 
@@ -2800,7 +2800,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       int r;
 
       if (for_values
-          && SAME_OBJ(app->rator, scheme_values_func)
+          && SAME_OBJ(app->rator, scheme_values_proc)
           && (for_values->count == 2)) {
         int pos;
 
@@ -2871,9 +2871,9 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     {
       return generate_branch(obj, jitter, is_tail, wcm_may_replace, multi_ok, orig_target, result_ignored, for_branch);
     }
-  case scheme_unclosed_procedure_type:
+  case scheme_lambda_type:
     {
-      Scheme_Closure_Data *data = (Scheme_Closure_Data *)obj;
+      Scheme_Lambda *lam = (Scheme_Lambda *)obj;
       START_JIT_DATA();
 
       LOG_IT(("lambda\n"));
@@ -2883,14 +2883,14 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       else {
         mz_rs_sync();
 
-        generate_closure_prep(data, jitter);
+        generate_closure_prep(lam, jitter);
         CHECK_LIMIT();
       
         /* Allocate closure */
-        generate_closure(data, jitter, 1);
+        generate_closure(lam, jitter, 1);
         CHECK_LIMIT();
 
-        generate_closure_fill(data, jitter);
+        generate_closure_fill(lam, jitter);
 
         CHECK_LIMIT();
         if (target != JIT_R0)
@@ -2915,7 +2915,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       if (lv->count == 1) {
 	/* Expect one result: */
         Scheme_Object *specialized = NULL;
-        if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
+        if (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED)
           specialized = extract_closure_local(lv->position, jitter, 1);
 	scheme_generate_non_tail(lv->value, jitter, 0, 1, 0); /* no sync */
 	CHECK_LIMIT();
@@ -3084,15 +3084,15 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       /* Box any unboxed values that will go into a closure */
       for (i = 0; i < l->count; i++) {
-	if (generate_closure_prep((Scheme_Closure_Data *)l->procs[i], jitter))
+	if (generate_closure_prep((Scheme_Lambda *)l->procs[i], jitter))
           prepped = 1;
         CHECK_LIMIT();
       }
 
       /* Create unfinished closures */
       for (i = 0; i < l->count; i++) {
-	((Scheme_Closure_Data *)l->procs[i])->context = (Scheme_Object *)l;
-	generate_closure((Scheme_Closure_Data *)l->procs[i], jitter, i + 1 == l->count);
+	((Scheme_Lambda *)l->procs[i])->context = (Scheme_Object *)l;
+	generate_closure((Scheme_Lambda *)l->procs[i], jitter, i + 1 == l->count);
 	CHECK_LIMIT();
 	jit_stxi_p(WORDS_TO_BYTES(i), JIT_RUNSTACK, JIT_R0);
       }
@@ -3106,7 +3106,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 	if (prepped || (i != l->count - 1)) {
 	  jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(i));
 	}
-	generate_closure_fill((Scheme_Closure_Data *)l->procs[i], jitter);
+	generate_closure_fill((Scheme_Lambda *)l->procs[i], jitter);
 	CHECK_LIMIT();
       }
 
@@ -3119,16 +3119,16 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       if (mz_try_runstack_pop(jitter, l->count)) {
         int i;
         for (i = l->count; i--; ) {
-          Scheme_Closure_Data *data2 = (Scheme_Closure_Data *)l->procs[i];
+          Scheme_Lambda *lam2 = (Scheme_Lambda *)l->procs[i];
           mz_runstack_closure_pushed(jitter, 
-                                     (data2->num_params
-                                      - ((SCHEME_CLOSURE_DATA_FLAGS(data2) & CLOS_HAS_REST)
+                                     (lam2->num_params
+                                      - ((SCHEME_LAMBDA_FLAGS(lam2) & LAMBDA_HAS_REST)
                                          ? 1
                                          : 0)),
-                                     (((SCHEME_CLOSURE_DATA_FLAGS(data2) & CLOS_PRESERVES_MARKS)
+                                     (((SCHEME_LAMBDA_FLAGS(lam2) & LAMBDA_PRESERVES_MARKS)
                                        ? NATIVE_PRESERVES_MARKS
                                        : 0)
-                                      | ((SCHEME_CLOSURE_DATA_FLAGS(data2) & CLOS_SINGLE_RESULT)
+                                      | ((SCHEME_LAMBDA_FLAGS(lam2) & LAMBDA_SINGLE_RESULT)
                                          ? NATIVE_IS_SINGLE_RESULT
                                          : 0)));
         }
@@ -3304,7 +3304,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       
         mz_rs_sync();
 
-        if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
+        if (SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED) {
           Scheme_Object *stx;
           stx = extract_syntax(qs, jitter->nc);
           scheme_mz_load_retained(jitter, target, stx);
@@ -3396,7 +3396,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
                into an expression: */
             int i;
             obj = scheme_jit_closure((Scheme_Object *)c->code, NULL);
-            obj = scheme_make_native_closure(((Scheme_Closure_Data *)obj)->u.native_code);
+            obj = scheme_make_native_closure(((Scheme_Lambda *)obj)->u.native_code);
             for (i = c->code->closure_size; i--; ) {
               ((Scheme_Native_Closure *)obj)->vals[i] = c->vals[i];
             }
@@ -3528,7 +3528,7 @@ static int generate_function_getarg(mz_jit_state *jitter, int has_rest, int num_
 }
 
 typedef struct {
-  Scheme_Closure_Data *data;
+  Scheme_Lambda *lam;
   void *arity_code, *start_code, *tail_code, *code_end, **patch_depth;
   int max_extra, max_depth, max_tail_depth;
   Scheme_Native_Closure *nc;
@@ -3537,12 +3537,12 @@ typedef struct {
 #ifdef NEED_RETAIN_CODE_POINTERS
   void *retain_code;
 #endif
-} Generate_Closure_Data;
+} Generate_Lambda;
 
 static int do_generate_closure(mz_jit_state *jitter, void *_data)
 {
-  Generate_Closure_Data *gdata = (Generate_Closure_Data *)_data;
-  Scheme_Closure_Data *data = gdata->data;
+  Generate_Lambda *gdata = (Generate_Lambda *)_data;
+  Scheme_Lambda *lam = gdata->lam;
   void *start_code, *tail_code, *code_end, *arity_code, *do_arity_code;
 #ifdef NEED_RETAIN_CODE_POINTERS
   void *retain_code = NULL;
@@ -3563,8 +3563,8 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   CHECK_LIMIT();
 
   cnt = generate_function_getarg(jitter, 
-				 (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST),
-				 data->num_params);
+				 (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST),
+				 lam->num_params);
   /* At this point, all non-rest arguments are now at the runstack */
   CHECK_LIMIT();
 
@@ -3572,9 +3572,9 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
      (This is a little reundant checking when `start_code' is the
      entry point, but that's the slow path anyway.) */
   
-  has_rest = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? 1 : 0);
-  is_method = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD) ? 1 : 0);
-  num_params = data->num_params;
+  has_rest = ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST) ? 1 : 0);
+  is_method = ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_IS_METHOD) ? 1 : 0);
+  num_params = lam->num_params;
   if (num_params && has_rest)
     --num_params;
 
@@ -3619,7 +3619,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
      so accept any number of arguments and just clear them (for space 
      safety). */
 
-  if (has_rest && data->num_params) {
+  if (has_rest && lam->num_params) {
     /* If runstack == argv and argc == cnt, then we didn't
        copy args down, and we need to make room for scheme_null. */
     GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3;
@@ -3653,7 +3653,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     jit_movi_i(JIT_V1, cnt);
     mz_set_local_p(JIT_V1, JIT_LOCAL3);
     mz_rs_sync();
-    if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_NEED_REST_CLEAR))
+    if ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_NEED_REST_CLEAR))
       (void)jit_calli(sjc.make_rest_list_clear_code);
     else
       (void)jit_calli(sjc.make_rest_list_code);
@@ -3664,12 +3664,12 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     __END_SHORT_JUMPS__(cnt < 100);
 
     has_rest = 1;
-    if (argc < (data->num_params - 1)) {
+    if (argc < (lam->num_params - 1)) {
       argv = NULL;
       argc = 0;
     }
   } else {
-    if (has_rest && (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_NEED_REST_CLEAR)) {
+    if (has_rest && (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_NEED_REST_CLEAR)) {
       /* if we get here, the rest argument isn't used */
       GC_CAN_IGNORE jit_insn *ref;
       __START_TINY_JUMPS__(1);
@@ -3693,7 +3693,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       __END_TINY_JUMPS__(1);
     }
     has_rest = 0;
-    if (argc != data->num_params) {
+    if (argc != lam->num_params) {
       argv = NULL;
       argc = 0;
     }
@@ -3701,7 +3701,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
 #ifdef USE_FLONUM_UNBOXING
   /* Unpack flonum arguments */
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+  if (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_TYPED_ARGS) {
     GC_CAN_IGNORE jit_insn *zref;
     int f_offset;
 
@@ -3712,11 +3712,11 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     jit_subr_p(JIT_R1, JIT_SP, JIT_FP);
     zref = jit_bnei_l(jit_forward(), JIT_R1, f_offset);
         
-    for (i = data->num_params; i--; ) {
-      if (CLOSURE_ARGUMENT_IS_FLONUM(data, i)
-          || CLOSURE_ARGUMENT_IS_EXTFLONUM(data, i)) {
+    for (i = lam->num_params; i--; ) {
+      if (CLOSURE_ARGUMENT_IS_FLONUM(lam, i)
+          || CLOSURE_ARGUMENT_IS_EXTFLONUM(lam, i)) {
         int extfl;
-        extfl = CLOSURE_ARGUMENT_IS_EXTFLONUM(data, i);
+        extfl = CLOSURE_ARGUMENT_IS_EXTFLONUM(lam, i);
         mz_rs_ldxi(JIT_R1, i);
         MZ_FPUSEL_STMT(extfl,
                        jit_fpu_ldxi_ld_fppush(JIT_FPU_FPR0, JIT_R1, &((Scheme_Long_Double *)0x0)->long_double_val),
@@ -3739,7 +3739,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
      that the code won't be GCed while we're running it. If the
      closure is empty, it's ok, faster, and useful to keep it,
      otherwise keep just the code pointer for space safety. */
-  if (!data->closure_size) {
+  if (!lam->closure_size) {
     jitter->closure_self_on_runstack = 1;
     mz_pushr_p(JIT_R0);  /* no sync */
   } else {
@@ -3751,10 +3751,10 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   to_args = 0;
 #endif
 
-  specialized = SCHEME_NATIVE_CLOSURE_DATA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED;
+  specialized = SCHEME_NATIVE_LAMBDA_FLAGS(jitter->nc->code) & NATIVE_SPECIALIZED;
 
   /* Extract closure to runstack: */
-  cnt = data->closure_size;
+  cnt = lam->closure_size;
   to_args += cnt;
   if (cnt) {
     if (specialized) {
@@ -3776,34 +3776,34 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
   mz_rs_sync();
 
   /* If we have a letrec context, record arities */
-  if (data->context && SAME_TYPE(SCHEME_TYPE(data->context), scheme_letrec_type) && !specialized) {
-    Scheme_Letrec *lr = (Scheme_Letrec *)data->context;
+  if (lam->context && SAME_TYPE(SCHEME_TYPE(lam->context), scheme_letrec_type) && !specialized) {
+    Scheme_Letrec *lr = (Scheme_Letrec *)lam->context;
     int pos, self_pos = -1;
-    for (i = data->closure_size; i--; ) {
-      pos = data->closure_map[i];
+    for (i = lam->closure_size; i--; ) {
+      pos = lam->closure_map[i];
       if (pos < lr->count) {
-	Scheme_Closure_Data *data2 = (Scheme_Closure_Data *)lr->procs[pos];
+	Scheme_Lambda *lam2 = (Scheme_Lambda *)lr->procs[pos];
 	mz_runstack_closure_pushed(jitter, 
-                                   (data2->num_params
-                                    - ((SCHEME_CLOSURE_DATA_FLAGS(data2) & CLOS_HAS_REST)
+                                   (lam2->num_params
+                                    - ((SCHEME_LAMBDA_FLAGS(lam2) & LAMBDA_HAS_REST)
                                        ? 1
                                        : 0)),
-                                   (((SCHEME_CLOSURE_DATA_FLAGS(data2) & CLOS_PRESERVES_MARKS)
+                                   (((SCHEME_LAMBDA_FLAGS(lam2) & LAMBDA_PRESERVES_MARKS)
                                      ? NATIVE_PRESERVES_MARKS
                                      : 0)
-                                    | ((SCHEME_CLOSURE_DATA_FLAGS(data2) & CLOS_SINGLE_RESULT)
+                                    | ((SCHEME_LAMBDA_FLAGS(lam2) & LAMBDA_SINGLE_RESULT)
                                      ? NATIVE_IS_SINGLE_RESULT
                                        : 0)));
-	if (SAME_OBJ(lr->procs[pos], (Scheme_Object *)data)) {
+	if (SAME_OBJ(lr->procs[pos], (Scheme_Object *)lam)) {
           self_pos = i;
 	}
       } else {
 #ifdef USE_FLONUM_UNBOXING
-        if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS)
-            && (CLOSURE_CONTENT_IS_FLONUM(data, i)
-                || CLOSURE_CONTENT_IS_EXTFLONUM(data, i))) {
+        if ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_TYPED_ARGS)
+            && (CLOSURE_CONTENT_IS_FLONUM(lam, i)
+                || CLOSURE_CONTENT_IS_EXTFLONUM(lam, i))) {
           int extfl;
-          extfl = CLOSURE_CONTENT_IS_EXTFLONUM(data, i);
+          extfl = CLOSURE_CONTENT_IS_EXTFLONUM(lam, i);
           mz_rs_ldxi(JIT_R1, i);
           MZ_FPUSEL_STMT(extfl,
                          jit_fpu_ldxi_ld_fppush(JIT_FPU_FPR0, JIT_R1, &((Scheme_Long_Double *)0x0)->long_double_val),
@@ -3817,17 +3817,17 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
     }
     if ((self_pos >= 0) && !has_rest) {
       jitter->self_pos = self_pos;
-      jitter->self_closure_size = data->closure_size;
+      jitter->self_closure_size = lam->closure_size;
     }
   } else {
 #ifdef USE_FLONUM_UNBOXING
     /* Unpack flonum closure data */
-    if ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) && !specialized) {
-      for (i = data->closure_size; i--; ) {
-        if (CLOSURE_CONTENT_IS_FLONUM(data, i)
-            || CLOSURE_CONTENT_IS_EXTFLONUM(data, i)) {
+    if ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_TYPED_ARGS) && !specialized) {
+      for (i = lam->closure_size; i--; ) {
+        if (CLOSURE_CONTENT_IS_FLONUM(lam, i)
+            || CLOSURE_CONTENT_IS_EXTFLONUM(lam, i)) {
           int extfl;
-          extfl = CLOSURE_CONTENT_IS_EXTFLONUM(data, i);
+          extfl = CLOSURE_CONTENT_IS_EXTFLONUM(lam, i);
           mz_rs_ldxi(JIT_R1, i);
           MZ_FPUSEL_STMT(extfl,
                          jit_fpu_ldxi_ld_fppush(JIT_FPU_FPR0, JIT_R1, &((Scheme_Long_Double *)0x0)->long_double_val),
@@ -3848,25 +3848,25 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
       }
   
     /* A define-values context? */
-    if (data->context && SAME_TYPE(SCHEME_TYPE(data->context), scheme_toplevel_type)) {
-      jitter->self_toplevel_pos = SCHEME_TOPLEVEL_POS(data->context);
-      jitter->self_closure_size = data->closure_size;
+    if (lam->context && SAME_TYPE(SCHEME_TYPE(lam->context), scheme_toplevel_type)) {
+      jitter->self_toplevel_pos = SCHEME_TOPLEVEL_POS(lam->context);
+      jitter->self_closure_size = lam->closure_size;
     }
   }
 
   FOR_LOG({
       char *log_name;
       Scheme_Object *a[1];
-      a[0] = data->name;
-      log_name = (data->name ? scheme_format_utf8("~s", 2, 1, a, NULL) : "???");
+      a[0] = lam->name;
+      log_name = (lam->name ? scheme_format_utf8("~s", 2, 1, a, NULL) : "???");
       LOG_IT(("PROC: %s, %d args, flags: %x\n", 
               log_name,
-              data->num_params,
-              SCHEME_CLOSURE_DATA_FLAGS(data)));
+              lam->num_params,
+              SCHEME_LAMBDA_FLAGS(lam)));
       jitter->log_depth++;
     });
   
-  jitter->self_data = data;
+  jitter->self_lam = lam;
 
   jitter->self_restart_code = jit_get_ip();
   jitter->self_restart_space = jitter->flostack_space;
@@ -3882,7 +3882,7 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
   /* Generate code for the body: */
   jitter->need_set_rs = 1;
-  r = scheme_generate(data->code, jitter, 1, 1, 1, JIT_R0, NULL, NULL); /* no need for sync */
+  r = scheme_generate(lam->body, jitter, 1, 1, 1, JIT_R0, NULL, NULL); /* no need for sync */
   /* Result is in JIT_R0 */
 
   CHECK_LIMIT();
@@ -3921,52 +3921,52 @@ static int do_generate_closure(mz_jit_state *jitter, void *_data)
 
 static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Scheme_Object **argv, int argv_delta)
 {
-  Scheme_Native_Closure_Data *ndata = nc->code;
-  Scheme_Closure_Data *data;
-  Generate_Closure_Data gdata;
+  Scheme_Native_Lambda *nlam = nc->code;
+  Scheme_Lambda *lam;
+  Generate_Lambda gdata;
   void *start_code, *tail_code, *arity_code;
   int max_depth;
 
-  data = ndata->u2.orig_code;
+  lam = nlam->u2.orig_code;
   
-  gdata.data = data;
+  gdata.lam = lam;
   gdata.nc = nc;
   gdata.argc = argc;
   gdata.argv = argv;
   gdata.argv_delta = argv_delta;
 
   /* This action is not atomic: */
-  scheme_delay_load_closure(data);
+  scheme_delay_load_closure(lam);
 
   /* So, check again whether we still need to generate: */
-  if (ndata->start_code != scheme_on_demand_jit_code)
+  if (nlam->start_code != scheme_on_demand_jit_code)
     return;
 
-  ndata->arity_code = sjc.in_progress_on_demand_jit_arity_code; /* => in progress */
+  nlam->arity_code = sjc.in_progress_on_demand_jit_arity_code; /* => in progress */
 
-  scheme_generate_one(NULL, do_generate_closure, &gdata, 1, data->name, ndata);
+  scheme_generate_one(NULL, do_generate_closure, &gdata, 1, lam->name, nlam);
 
-  if (gdata.max_depth > data->max_let_depth) {
-    scheme_console_printf("Bad max depth! Given %d, counted %d.\n", data->max_let_depth, gdata.max_depth);
+  if (gdata.max_depth > lam->max_let_depth) {
+    scheme_console_printf("Bad max depth! Given %d, counted %d.\n", lam->max_let_depth, gdata.max_depth);
     abort();
   }
 
-  if (SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) & NATIVE_SPECIALIZED)
-    SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) -= NATIVE_SPECIALIZED;
+  if (SCHEME_NATIVE_LAMBDA_FLAGS(nlam) & NATIVE_SPECIALIZED)
+    SCHEME_NATIVE_LAMBDA_FLAGS(nlam) -= NATIVE_SPECIALIZED;
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_PRESERVES_MARKS)
-    SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) |= NATIVE_PRESERVES_MARKS;
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_SINGLE_RESULT)
-    SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) |= NATIVE_IS_SINGLE_RESULT;
+  if (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_PRESERVES_MARKS)
+    SCHEME_NATIVE_LAMBDA_FLAGS(nlam) |= NATIVE_PRESERVES_MARKS;
+  if (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_SINGLE_RESULT)
+    SCHEME_NATIVE_LAMBDA_FLAGS(nlam) |= NATIVE_IS_SINGLE_RESULT;
 
   arity_code = gdata.arity_code;
   start_code = gdata.start_code;
   tail_code = gdata.tail_code;
   
-  if (data->name) {
+  if (lam->name) {
     scheme_jit_add_symbol((uintptr_t)jit_unadjust_ip(start_code),
                           (uintptr_t)jit_unadjust_ip(gdata.code_end) - 1,
-                          data->name, 1);
+                          lam->name, 1);
   } else {
 #ifdef MZ_USE_DWARF_LIBUNWIND
     scheme_jit_add_symbol((uintptr_t)jit_unadjust_ip(start_code),
@@ -3978,18 +3978,18 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
   /* Add a couple of extra slots to computed let-depth, as needed
      by various inlined operations. */
 # define JIT_RUNSTACK_RESERVE 4
-  max_depth = WORDS_TO_BYTES(data->max_let_depth + gdata.max_extra + JIT_RUNSTACK_RESERVE);
+  max_depth = WORDS_TO_BYTES(lam->max_let_depth + gdata.max_extra + JIT_RUNSTACK_RESERVE);
   if (gdata.max_tail_depth > max_depth)
     max_depth = gdata.max_tail_depth;
 
   /* max_let_depth is used for flags by generate_lambda: */
-  if (ndata->max_let_depth & 0x1) {
-    data->code = NULL;
+  if (nlam->max_let_depth & 0x1) {
+    lam->body = NULL;
   }
-  data->context = NULL;
-  if (ndata->max_let_depth & 0x2) {
-    Scheme_Native_Closure_Data *case_lam;
-    case_lam = ((Scheme_Native_Closure_Data_Plus_Case *)ndata)->case_lam;
+  lam->context = NULL;
+  if (nlam->max_let_depth & 0x2) {
+    Scheme_Native_Lambda *case_lam;
+    case_lam = ((Scheme_Native_Lambda_Plus_Case *)nlam)->case_lam;
     if (case_lam->max_let_depth < max_depth)
       case_lam->max_let_depth = max_depth;
   }
@@ -4001,14 +4001,14 @@ static void on_demand_generate_lambda(Scheme_Native_Closure *nc, int argc, Schem
     jit_patch_movi(((jit_insn *)(*pd)), (void *)(intptr_t)max_depth);
   }
 
-  ndata->start_code = start_code;
-  ndata->u.tail_code = tail_code;
-  ndata->arity_code = arity_code;
-  ndata->u2.name = data->name;
+  nlam->start_code = start_code;
+  nlam->u.tail_code = tail_code;
+  nlam->arity_code = arity_code;
+  nlam->u2.name = lam->name;
   /* Let-depth is in bytes instead of words: */
-  ndata->max_let_depth = max_depth;
+  nlam->max_let_depth = max_depth;
 #ifdef NEED_RETAIN_CODE_POINTERS
-  ndata->retain_code = gdata.retain_code;
+  nlam->retain_code = gdata.retain_code;
 #endif
 }
 
@@ -4036,10 +4036,10 @@ Scheme_Object **scheme_on_demand(Scheme_Object **rs)
   return scheme_on_demand_with_args(MZ_RUNSTACK, rs, 0);
 }
 
-static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
-                                                        Scheme_Native_Closure_Data *case_lam)
+static Scheme_Native_Lambda *create_native_lambda(Scheme_Lambda *lam, int clear_code_after_jit,
+                                                  Scheme_Native_Lambda *case_lam)
 {
-  Scheme_Native_Closure_Data *ndata;
+  Scheme_Native_Lambda *nlam;
 
   if (!sjc.check_arity_code) {
     /* Create shared code used for stack-overflow handling, etc.: */
@@ -4049,43 +4049,43 @@ static Scheme_Native_Closure_Data *create_native_lambda(Scheme_Closure_Data *dat
   }
 
   if (!case_lam) {
-    ndata = MALLOC_ONE_RT(Scheme_Native_Closure_Data);
+    nlam = MALLOC_ONE_RT(Scheme_Native_Lambda);
 #ifdef MZTAG_REQUIRED
-    ndata->iso.so.type = scheme_rt_native_code;
+    nlam->iso.so.type = scheme_rt_native_code;
 #endif
   } else {
-    Scheme_Native_Closure_Data_Plus_Case *ndatap;
-    ndatap = MALLOC_ONE_RT(Scheme_Native_Closure_Data_Plus_Case);
-    ndatap->case_lam = case_lam;
-    ndata = (Scheme_Native_Closure_Data *)ndatap;
+    Scheme_Native_Lambda_Plus_Case *nlamp;
+    nlamp = MALLOC_ONE_RT(Scheme_Native_Lambda_Plus_Case);
+    nlamp->case_lam = case_lam;
+    nlam = (Scheme_Native_Lambda *)nlamp;
 #ifdef MZTAG_REQUIRED
-    ndata->iso.so.type = scheme_rt_native_code_plus_case;
+    nlam->iso.so.type = scheme_rt_native_code_plus_case;
 #endif
   }
-  ndata->start_code = scheme_on_demand_jit_code;
-  ndata->u.tail_code = sjc.on_demand_jit_arity_code;
-  ndata->arity_code = sjc.on_demand_jit_arity_code;
-  ndata->u2.orig_code = data;
-  ndata->closure_size = data->closure_size;
-  ndata->max_let_depth = (JIT_RUNSTACK_RESERVE * sizeof(void*)) | (case_lam ? 0x2 : 0) | (clear_code_after_jit ? 0x1 : 0);
-  ndata->tl_map = data->tl_map;
+  nlam->start_code = scheme_on_demand_jit_code;
+  nlam->u.tail_code = sjc.on_demand_jit_arity_code;
+  nlam->arity_code = sjc.on_demand_jit_arity_code;
+  nlam->u2.orig_code = lam;
+  nlam->closure_size = lam->closure_size;
+  nlam->max_let_depth = (JIT_RUNSTACK_RESERVE * sizeof(void*)) | (case_lam ? 0x2 : 0) | (clear_code_after_jit ? 0x1 : 0);
+  nlam->tl_map = lam->tl_map;
 
 #if 0
   /* Compile immediately: */
-  on_demand_generate_lambda(ndata);
+  on_demand_generate_lambda(nlam);
 #endif
 
-  return ndata;
+  return nlam;
 }
 
-Scheme_Native_Closure_Data *scheme_generate_lambda(Scheme_Closure_Data *data, int clear_code_after_jit,
-						   Scheme_Native_Closure_Data *case_lam)
+Scheme_Native_Lambda *scheme_generate_lambda(Scheme_Lambda *lam, int clear_code_after_jit,
+                                             Scheme_Native_Lambda *case_lam)
 {
-  Scheme_Native_Closure_Data *ndata;
+  Scheme_Native_Lambda *nlam;
 
-  ndata = create_native_lambda(data, clear_code_after_jit, case_lam);
+  nlam = create_native_lambda(lam, clear_code_after_jit, case_lam);
 
-  return ndata;
+  return nlam;
 }
 
 static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int has_rest, int is_method)
@@ -4110,7 +4110,7 @@ static int generate_simple_arity_check(mz_jit_state *jitter, int num_params, int
     ref = jit_blti_i(jit_forward(), JIT_R1, num_params);
 
   jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u.tail_code);
+  jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Lambda *)0x0)->u.tail_code);
   jit_jmpr(JIT_V1);
   CHECK_LIMIT();
 
@@ -4215,11 +4215,11 @@ static void *generate_lambda_simple_arity_check(int num_params, int has_rest, in
   return scheme_generate_one(NULL, do_generate_lambda_simple_arity_check, &data, !permanent, NULL, NULL);
 }
 
-static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata,
+static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambda *c, Scheme_Native_Lambda *nlam,
 					 int do_getarg)
 {
   /* See top of generate_simple_arity_check for register and other context info. */
-  Scheme_Closure_Data *data;
+  Scheme_Lambda *lam;
   Scheme_Object *o;
   int i, cnt, has_rest, offset, num_params;
   GC_CAN_IGNORE jit_insn *ref = NULL;
@@ -4231,10 +4231,10 @@ static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambd
     o = c->array[i];
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
-    data = (Scheme_Closure_Data *)o;
+    lam = (Scheme_Lambda *)o;
 
-    num_params = data->num_params;
-    has_rest = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? 1 : 0);
+    num_params = lam->num_params;
+    has_rest = ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST) ? 1 : 0);
     if (has_rest && num_params)
       --num_params;
 
@@ -4254,7 +4254,7 @@ static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambd
     offset = WORDS_TO_BYTES(i) + (uintptr_t)&((Scheme_Native_Closure *)0x0)->vals;
     jit_ldxi_p(JIT_R0, JIT_R0, offset);
     jit_ldxi_p(JIT_V1, JIT_R0, &((Scheme_Native_Closure *)0x0)->code);
-    jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Closure_Data *)0x0)->u.tail_code);
+    jit_ldxi_p(JIT_V1, JIT_V1, &((Scheme_Native_Lambda *)0x0)->u.tail_code);
     jit_jmpr(JIT_V1);
     CHECK_LIMIT();
     
@@ -4279,7 +4279,7 @@ static int generate_case_lambda_dispatch(mz_jit_state *jitter, Scheme_Case_Lambd
 
 typedef struct {
   Scheme_Case_Lambda *c;
-  Scheme_Native_Closure_Data *ndata;
+  Scheme_Native_Lambda *nlam;
   int is_method;
 } Generate_Case_Dispatch_Data;
 
@@ -4293,13 +4293,13 @@ static int do_generate_case_lambda_dispatch(mz_jit_state *jitter, void *_data)
   scheme_generate_function_prolog(jitter);
   CHECK_LIMIT();
   
-  if (generate_case_lambda_dispatch(jitter, data->c, data->ndata, 1)) {
+  if (generate_case_lambda_dispatch(jitter, data->c, data->nlam, 1)) {
     arity_code = jit_get_ip();
-    if (generate_case_lambda_dispatch(jitter, data->c, data->ndata, 0)) {
-      data->ndata->start_code = start_code;
-      data->ndata->arity_code = arity_code;
+    if (generate_case_lambda_dispatch(jitter, data->c, data->nlam, 0)) {
+      data->nlam->start_code = start_code;
+      data->nlam->arity_code = arity_code;
 #ifdef NEED_RETAIN_CODE_POINTERS
-      data->ndata->retain_code = jit_unadjust_ip(start_code);
+      data->nlam->retain_code = jit_unadjust_ip(start_code);
 #endif
 
       scheme_jit_register_helper_func(jitter, start_code, 1);
@@ -4311,19 +4311,19 @@ static int do_generate_case_lambda_dispatch(mz_jit_state *jitter, void *_data)
   return 0;
 }
 
-static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Data *ndata, int is_method)
+static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Lambda *nlam, int is_method)
 {
   Generate_Case_Dispatch_Data gdata;
-  Scheme_Closure_Data *data;
+  Scheme_Lambda *lam;
   Scheme_Object *o;
   int i, cnt, num_params, has_rest, single_result = 1;
   mzshort *arities;
 
   gdata.c = c;
-  gdata.ndata = ndata;
+  gdata.nlam = nlam;
   gdata.is_method = is_method;
 
-  scheme_generate_one(NULL, do_generate_case_lambda_dispatch, &gdata, 1, NULL, ndata);
+  scheme_generate_one(NULL, do_generate_case_lambda_dispatch, &gdata, 1, NULL, nlam);
 
   /* Generate arity table used by scheme_native_arity_check
      and scheme_get_native_arity: */
@@ -4335,12 +4335,12 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
     o = c->array[i];
     if (SCHEME_PROCP(o))
       o = (Scheme_Object *)((Scheme_Closure *)o)->code;
-    data = (Scheme_Closure_Data *)o;
-    num_params = data->num_params;
-    has_rest = ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) ? 1 : 0);
+    lam = (Scheme_Lambda *)o;
+    num_params = lam->num_params;
+    has_rest = ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST) ? 1 : 0);
     if (has_rest && num_params)
       --num_params;
-    if (!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_SINGLE_RESULT))
+    if (!(SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_SINGLE_RESULT))
       single_result = 0;
 	  
     if (!has_rest) 
@@ -4348,20 +4348,20 @@ static void generate_case_lambda(Scheme_Case_Lambda *c, Scheme_Native_Closure_Da
     else
       arities[i] = -(num_params+1);
   }
-  ndata->u.arities = arities;
+  nlam->u.arities = arities;
 
   if (single_result)
-    SCHEME_NATIVE_CLOSURE_DATA_FLAGS(ndata) |= NATIVE_IS_SINGLE_RESULT;
+    SCHEME_NATIVE_LAMBDA_FLAGS(nlam) |= NATIVE_IS_SINGLE_RESULT;
 }
 
 /*========================================================================*/
 /*                          native arity queries                          */
 /*========================================================================*/
 
-XFORM_NONGCING static int lambda_has_been_jitted(Scheme_Native_Closure_Data *ndata)
+XFORM_NONGCING static int lambda_has_been_jitted(Scheme_Native_Lambda *nlam)
 /* called by scheme_native_arity_check(), which is not XFORMed */
 {
-  return (ndata->start_code != scheme_on_demand_jit_code);
+  return (nlam->start_code != scheme_on_demand_jit_code);
 }
 
 int scheme_native_arity_check(Scheme_Object *closure, int argc)
@@ -4390,10 +4390,10 @@ int scheme_native_arity_check(Scheme_Object *closure, int argc)
   }
 
   if (!lambda_has_been_jitted(((Scheme_Native_Closure *)closure)->code)) {
-    Scheme_Closure_Data *data = ((Scheme_Native_Closure *)closure)->code->u2.orig_code;
+    Scheme_Lambda *lam = ((Scheme_Native_Closure *)closure)->code->u2.orig_code;
     int mina, maxa;
-    mina = maxa = data->num_params;
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+    mina = maxa = lam->num_params;
+    if (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST) {
       if (mina)
 	--mina;
       maxa = -1;
@@ -4447,7 +4447,7 @@ Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode)
     c.so.type = scheme_closure_type;
     c.code = ((Scheme_Native_Closure *)closure)->code->u2.orig_code;
     a = scheme_get_or_check_arity((Scheme_Object *)&c, -1);
-    if (SCHEME_CLOSURE_DATA_FLAGS(c.code) & CLOS_IS_METHOD)
+    if (SCHEME_LAMBDA_FLAGS(c.code) & LAMBDA_IS_METHOD)
       a = scheme_box(a);
     return a;
   }

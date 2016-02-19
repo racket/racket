@@ -413,7 +413,7 @@ typedef struct mz_jit_state {
   int need_set_rs;
   void **retain_start;
   double *retain_double_start;
-  Scheme_Native_Closure_Data *retaining_data; /* poke when setting retain_start for generational GC */
+  Scheme_Native_Lambda *retaining_data; /* poke when setting retain_start for generational GC */
   int local1_busy, pushed_marks;
   int log_depth;
   int self_pos, self_closure_size, self_toplevel_pos;
@@ -424,7 +424,7 @@ typedef struct mz_jit_state {
   void *self_restart_code;
   void *self_nontail_code;
   Scheme_Native_Closure *nc; /* for extract_globals and extract_closure_local, only */
-  Scheme_Closure_Data *self_data;
+  Scheme_Lambda *self_lam;
   void *status_at_ptr;
   int r0_status, r1_status;
   void *patch_depth;
@@ -1344,7 +1344,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 			  void *data,
 			  int gcable,
 			  void *save_ptr,
-			  Scheme_Native_Closure_Data *ndata);
+			  Scheme_Native_Lambda *ndata);
 int scheme_mz_is_closure(mz_jit_state *jitter, int i, int arity, int *_flags);
 void scheme_mz_runstack_saved(mz_jit_state *jitter);
 int scheme_mz_runstack_restored(mz_jit_state *jitter);
@@ -1482,7 +1482,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
                         int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
                               int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg,
-                              Scheme_Closure_Data *direct_data);
+                              Scheme_Lambda *direct_data);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
 				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
                                   int is_inlined, int unboxed_args, jit_insn *reftop);
@@ -1577,10 +1577,10 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
 int scheme_is_non_gc(Scheme_Object *obj, int depth);
 
 #ifdef USE_FLONUM_UNBOXING
-int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int delta);
+int scheme_jit_check_closure_flonum_bit(Scheme_Lambda *data, int pos, int delta);
 # define CLOSURE_ARGUMENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, 0)
 # define CLOSURE_CONTENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, data->num_params)
-int scheme_jit_check_closure_extflonum_bit(Scheme_Closure_Data *data, int pos, int delta);
+int scheme_jit_check_closure_extflonum_bit(Scheme_Lambda *data, int pos, int delta);
 # define CLOSURE_ARGUMENT_IS_EXTFLONUM(data, pos) scheme_jit_check_closure_extflonum_bit(data, pos, 0)
 # define CLOSURE_CONTENT_IS_EXTFLONUM(data, pos) scheme_jit_check_closure_extflonum_bit(data, pos, data->num_params)
 #endif

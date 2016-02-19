@@ -602,7 +602,7 @@ Scheme_Object *scheme_make_toplevel(mzshort depth, int position, int resolved, i
     pr = NULL;
 
   tl = (Scheme_Toplevel *)scheme_malloc_atomic_tagged(sizeof(Scheme_Toplevel));
-  tl->iso.so.type = (resolved ? scheme_toplevel_type : scheme_compiled_toplevel_type);
+  tl->iso.so.type = (resolved ? scheme_toplevel_type : scheme_ir_toplevel_type);
   tl->depth = depth;
   tl->position = position;
   SCHEME_TOPLEVEL_FLAGS(tl) = flags | HIGH_BIT_TO_DISABLE_HASHING;
@@ -712,7 +712,7 @@ Scheme_Object *scheme_register_stx_in_comp_prefix(Scheme_Object *var, Comp_Prefi
   pos = cp->num_stxes;
 
   l = (Scheme_Local *)scheme_malloc_atomic_tagged(sizeof(Scheme_Local));
-  l->iso.so.type = scheme_compiled_quote_syntax_type;
+  l->iso.so.type = scheme_ir_quote_syntax_type;
   l->position = pos;
 
   cp->num_stxes++;
@@ -732,7 +732,7 @@ Scheme_Object *scheme_register_stx_in_prefix(Scheme_Object *var, Scheme_Comp_Env
   if (rec && rec[drec].dont_mark_local_use) {
     /* Make up anything; it's going to be ignored. */
     l = (Scheme_Local *)scheme_malloc_atomic_tagged(sizeof(Scheme_Local));
-    l->iso.so.type = scheme_compiled_quote_syntax_type;
+    l->iso.so.type = scheme_ir_quote_syntax_type;
     l->position = 0;
 
     return (Scheme_Object *)l;
@@ -887,12 +887,12 @@ static Scheme_Object *get_local_name(Scheme_Object *id)
     return SCHEME_STX_VAL(id);
 }
 
-static Scheme_Compiled_Local *make_variable(Scheme_Object *id)
+static Scheme_IR_Local *make_variable(Scheme_Object *id)
 {
-  Scheme_Compiled_Local *var;
+  Scheme_IR_Local *var;
 
-  var = MALLOC_ONE_TAGGED(Scheme_Compiled_Local);
-  var->so.type = scheme_compiled_local_type;
+  var = MALLOC_ONE_TAGGED(Scheme_IR_Local);
+  var->so.type = scheme_ir_local_type;
   if (id) {
     id = get_local_name(id);
     var->name = id;
@@ -901,19 +901,19 @@ static Scheme_Compiled_Local *make_variable(Scheme_Object *id)
   return var;
 }
 
-static Scheme_Compiled_Local *get_frame_loc(Scheme_Comp_Env *frame,
-                                            int i, int j, int p, int flags)
-/* Generates a Scheme_Compiled_Local record as needed, and also
+static Scheme_IR_Local *get_frame_loc(Scheme_Comp_Env *frame,
+                                      int i, int j, int p, int flags)
+/* Generates a Scheme_IR_Local record as needed, and also
    marks the variable as used for closures. */
 {
   if (!frame->vars) {
-    Scheme_Compiled_Local **vars;
-    vars = MALLOC_N(Scheme_Compiled_Local*, frame->num_bindings);
+    Scheme_IR_Local **vars;
+    vars = MALLOC_N(Scheme_IR_Local*, frame->num_bindings);
     frame->vars = vars;
   }
 
   if (!frame->vars[i]) {
-    Scheme_Compiled_Local *var;
+    Scheme_IR_Local *var;
     var = make_variable(frame->binders ? frame->binders[i] : NULL);
     frame->vars[i] = var;
   }
@@ -935,14 +935,14 @@ static Scheme_Compiled_Local *get_frame_loc(Scheme_Comp_Env *frame,
 
 void scheme_env_make_variables(Scheme_Comp_Env *frame)
 {
-  Scheme_Compiled_Local *var, **vars;
+  Scheme_IR_Local *var, **vars;
   int i;
 
   if (!frame->num_bindings)
     return;
   
   if (!frame->vars) {
-    vars = MALLOC_N(Scheme_Compiled_Local*, frame->num_bindings);
+    vars = MALLOC_N(Scheme_IR_Local*, frame->num_bindings);
     frame->vars = vars;
   }
 
@@ -954,7 +954,7 @@ void scheme_env_make_variables(Scheme_Comp_Env *frame)
   }
 }
 
-void scheme_set_compilation_variables(Scheme_Comp_Env *frame, Scheme_Compiled_Local **vars,
+void scheme_set_compilation_variables(Scheme_Comp_Env *frame, Scheme_IR_Local **vars,
                                       int pos, int count)
 {
   int i;
@@ -962,8 +962,8 @@ void scheme_set_compilation_variables(Scheme_Comp_Env *frame, Scheme_Compiled_Lo
   MZ_ASSERT((pos + count) <= frame->num_bindings);
     
   if (!frame->vars) {
-    Scheme_Compiled_Local **fvars;
-    fvars = MALLOC_N(Scheme_Compiled_Local*, frame->num_bindings);
+    Scheme_IR_Local **fvars;
+    fvars = MALLOC_N(Scheme_IR_Local*, frame->num_bindings);
     frame->vars = fvars;
   }
 
@@ -1195,7 +1195,7 @@ static void set_binder(Scheme_Object **_binder, Scheme_Object *ref, Scheme_Objec
 
      scheme_macro_id_type (id was bound to a rename-transformer),
 
-     scheme_compiled_local_type (id was lexical),
+     scheme_ir_local_type (id was lexical),
 
      scheme_variable_type (id is a global or module-bound variable),
      or

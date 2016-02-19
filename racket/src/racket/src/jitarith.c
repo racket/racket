@@ -2224,7 +2224,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
       use_fx = 0;
       if (trigger_arg == i)
         trigger_arg++;
-    } else if (SCHEME_TYPE(v) >= _scheme_compiled_values_types_) {
+    } else if (SCHEME_TYPE(v) >= _scheme_ir_values_types_) {
       use_fx = 0;
       mzSET_USE_FL(use_fl = 0);
     }

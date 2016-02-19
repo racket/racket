@@ -34,10 +34,10 @@
 READ_ONLY Scheme_Object scheme_true[1];
 READ_ONLY Scheme_Object scheme_false[1];
 
-READ_ONLY Scheme_Object *scheme_not_prim;
-READ_ONLY Scheme_Object *scheme_eq_prim;
-READ_ONLY Scheme_Object *scheme_eqv_prim;
-READ_ONLY Scheme_Object *scheme_equal_prim;
+READ_ONLY Scheme_Object *scheme_not_proc;
+READ_ONLY Scheme_Object *scheme_eq_proc;
+READ_ONLY Scheme_Object *scheme_eqv_proc;
+READ_ONLY Scheme_Object *scheme_equal_proc;
 
 /* locals */
 static Scheme_Object *not_prim (int argc, Scheme_Object *argv[]);
@@ -82,13 +82,13 @@ void scheme_init_bool (Scheme_Env *env)
 {
   Scheme_Object *p;
 
-  REGISTER_SO(scheme_not_prim);
-  REGISTER_SO(scheme_eq_prim);
-  REGISTER_SO(scheme_eqv_prim);
-  REGISTER_SO(scheme_equal_prim);
+  REGISTER_SO(scheme_not_proc);
+  REGISTER_SO(scheme_eq_proc);
+  REGISTER_SO(scheme_eqv_proc);
+  REGISTER_SO(scheme_equal_proc);
 
   p = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
-  scheme_not_prim = p;
+  scheme_not_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("not", p, env);
@@ -101,19 +101,19 @@ void scheme_init_bool (Scheme_Env *env)
   p = scheme_make_folding_prim(eq_prim, "eq?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
-  scheme_eq_prim = p;
+  scheme_eq_proc = p;
   scheme_add_global_constant("eq?", p, env);
 
   p = scheme_make_folding_prim(eqv_prim, "eqv?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
-  scheme_eqv_prim = p;
-  scheme_add_global_constant("eqv?", scheme_eqv_prim, env);
+  scheme_eqv_proc = p;
+  scheme_add_global_constant("eqv?", scheme_eqv_proc, env);
   
   p = scheme_make_prim_w_arity(equal_prim, "equal?", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_equal_prim = p;
-  scheme_add_global_constant("equal?", scheme_equal_prim, env);
+  scheme_equal_proc = p;
+  scheme_add_global_constant("equal?", scheme_equal_proc, env);
 
   scheme_add_global_constant("equal?/recur", 
                              scheme_make_prim_w_arity(equalish_prim, "equal?/recur", 3, 3), 

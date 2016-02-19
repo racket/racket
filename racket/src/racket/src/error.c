@@ -1375,12 +1375,12 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
   if (minc == -1) {
     /* Extract arity, check for is_method in case-lambda, etc. */
     if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_closure_type)) {
-      Scheme_Closure_Data *data;
-      data = SCHEME_COMPILED_CLOS_CODE((Scheme_Object *)name);
+      Scheme_Lambda *data;
+      data = SCHEME_CLOSURE_CODE((Scheme_Object *)name);
       name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
       
       minc = data->num_params;
-      if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+      if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
         minc -= 1;
         maxc = -1;
       } else
@@ -1388,9 +1388,9 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
     } else if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_case_closure_type)) {
       Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)name;
       if (cl->count) {
-	Scheme_Closure_Data *data;
-	data = (Scheme_Closure_Data *)SCHEME_COMPILED_CLOS_CODE(cl->array[0]);
-	if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD)
+	Scheme_Lambda *data;
+	data = (Scheme_Lambda *)SCHEME_CLOSURE_CODE(cl->array[0]);
+	if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_IS_METHOD)
 	  is_method = 1;
       } else if (cl->name && SCHEME_BOXP(cl->name)) {
 	/* See note in schpriv.h about the IS_METHOD hack */
@@ -1527,11 +1527,11 @@ char *scheme_make_arity_expect_string(const char *map_name,
     mina = -1;
     maxa = 0;
   } else {
-    Scheme_Closure_Data *data;
+    Scheme_Lambda *data;
 
-    data = (Scheme_Closure_Data *)SCHEME_COMPILED_CLOS_CODE(proc);
+    data = (Scheme_Lambda *)SCHEME_CLOSURE_CODE(proc);
     mina = maxa = data->num_params;
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+    if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
       --mina;
       maxa = -1;
     }

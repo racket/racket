@@ -5860,14 +5860,14 @@ static void sort_number_array(Scheme_Object **a, intptr_t count)
 
 static int compare_vars_at_resolve(const void *_a, const void *_b)
 {
-  Scheme_Compiled_Local *a = *(Scheme_Compiled_Local **)_a;
-  Scheme_Compiled_Local *b = *(Scheme_Compiled_Local **)_b;
+  Scheme_IR_Local *a = *(Scheme_IR_Local **)_a;
+  Scheme_IR_Local *b = *(Scheme_IR_Local **)_b;
   return a->resolve.lex_depth - b->resolve.lex_depth;
 }
 
-void scheme_sort_resolve_compiled_local_array(Scheme_Compiled_Local **a, intptr_t count)
+void scheme_sort_resolve_ir_local_array(Scheme_IR_Local **a, intptr_t count)
 {
-  my_qsort(a, count, sizeof(Scheme_Compiled_Local *), compare_vars_at_resolve);
+  my_qsort(a, count, sizeof(Scheme_IR_Local *), compare_vars_at_resolve);
 }
 
 static Scheme_Object *drop_export_registries(Scheme_Object *shifts)

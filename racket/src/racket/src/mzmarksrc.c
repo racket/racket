@@ -158,11 +158,11 @@ branch_rec {
 
 unclosed_proc {
  mark:
-  Scheme_Closure_Data *d = (Scheme_Closure_Data *)p;
+  Scheme_Lambda *d = (Scheme_Lambda *)p;
 
   gcMARK2(d->name, gc);
-  gcMARK2(d->code, gc);
-  gcMARK2(d->closure_map, gc);
+  gcMARK2(d->body, gc);
+  gcMARK2(d->closure_map, gc); /* covers `ir_info` */
   gcMARK2(d->tl_map, gc);
 #ifdef MZ_USE_JIT
   gcMARK2(d->u.native_code, gc);
@@ -170,7 +170,7 @@ unclosed_proc {
 #endif
 
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Closure_Data));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Lambda));
 }
 
 let_value {
@@ -228,9 +228,9 @@ with_cont_mark {
   gcBYTES_TO_WORDS(sizeof(Scheme_With_Continuation_Mark));
 }
 
-comp_local {
+ir_local {
  mark:
-  Scheme_Compiled_Local *var = (Scheme_Compiled_Local *)p;
+  Scheme_IR_Local *var = (Scheme_IR_Local *)p;
 
   gcMARK2(var->name, gc);
   switch (var->mode) {
@@ -249,29 +249,29 @@ comp_local {
   }
 
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Local));
+  gcBYTES_TO_WORDS(sizeof(Scheme_IR_Local));
 }
 
-comp_let_value {
+ir_let_value {
  mark:
-  Scheme_Compiled_Let_Value *c = (Scheme_Compiled_Let_Value *)p;
+  Scheme_IR_Let_Value *c = (Scheme_IR_Let_Value *)p;
 
   gcMARK2(c->value, gc);
   gcMARK2(c->body, gc);
   gcMARK2(c->vars, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Compiled_Let_Value));
+  gcBYTES_TO_WORDS(sizeof(Scheme_IR_Let_Value));
 }
 
 let_header {
  mark:
-  Scheme_Let_Header *h = (Scheme_Let_Header *)p;
+  Scheme_IR_Let_Header *h = (Scheme_IR_Let_Header *)p;
   
   gcMARK2(h->body, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Let_Header));
+  gcBYTES_TO_WORDS(sizeof(Scheme_IR_Let_Header));
 }
 
 set_bang {
@@ -331,14 +331,14 @@ closed_prim_proc {
 scm_closure {
   Scheme_Closure *c = (Scheme_Closure *)p;
   int closure_size = (c->code 
-                      ? ((Scheme_Closure_Data *)GC_resolve2(c->code, gc))->closure_size
+                      ? ((Scheme_Lambda *)GC_resolve2(c->code, gc))->closure_size
                       : 0);
 
  mark:
 
   int i = closure_size;
   START_MARK_ONLY;
-# define CLOSURE_DATA_TYPE Scheme_Closure_Data
+# define CLOSURE_DATA_TYPE Scheme_Lambda
 # include "mzclpf_decl.inc"
   END_MARK_ONLY;
 
@@ -1471,18 +1471,6 @@ END validate;
 
 START fun;
 
-mark_closure_info {
- mark:
-  Closure_Info *i = (Closure_Info *)p;
-  
-  gcMARK2(i->base_closure, gc);
-  gcMARK2(i->vars, gc);
-  gcMARK2(i->local_type_map, gc);
-
- size:
-  gcBYTES_TO_WORDS(sizeof(Closure_Info));
-}
-
 mark_dyn_wind_cell {
  mark:
   Scheme_Dynamic_Wind_List *l = (Scheme_Dynamic_Wind_List *)p;
@@ -2268,6 +2256,18 @@ END struct;
 
 START compile;
 
+mark_ir_lambda_info {
+ mark:
+  Scheme_IR_Lambda_Info *i = (Scheme_IR_Lambda_Info *)p;
+  
+  gcMARK2(i->base_closure, gc);
+  gcMARK2(i->vars, gc);
+  gcMARK2(i->local_type_map, gc);
+
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_IR_Lambda_Info));
+}
+
 END compile;
 
 /**********************************************************************/
@@ -2464,7 +2464,7 @@ START jit;
 
 native_closure {
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
-  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(c->code, gc))->closure_size;
+  int closure_size = ((Scheme_Native_Lambda *)GC_resolve2(c->code, gc))->closure_size;
 
   if (closure_size < 0) {
     closure_size = -(closure_size + 1);
@@ -2474,7 +2474,7 @@ native_closure {
   {
   int i = closure_size;
   START_MARK_ONLY;
-# define CLOSURE_DATA_TYPE Scheme_Native_Closure_Data
+# define CLOSURE_DATA_TYPE Scheme_Native_Lambda
 # include "mzclpf_decl.inc"
   END_MARK_ONLY;
 
@@ -2502,7 +2502,7 @@ mark_jit_state {
  mark:
   mz_jit_state *j = (mz_jit_state *)p;
   gcMARK2(j->mappings, gc);
-  gcMARK2(j->self_data, gc);
+  gcMARK2(j->self_lam, gc);
   gcMARK2(j->example_argv, gc);
   gcMARK2(j->nc, gc);
   gcMARK2(j->retaining_data, gc);
@@ -2514,7 +2514,7 @@ mark_jit_state {
 
 native_unclosed_proc {
  mark:
-  Scheme_Native_Closure_Data *d = (Scheme_Native_Closure_Data *)p;
+  Scheme_Native_Lambda *d = (Scheme_Native_Lambda *)p;
   int i;
 
   gcMARK2(d->u2.name, gc);
@@ -2530,18 +2530,18 @@ native_unclosed_proc {
   gcMARK2(d->eq_key, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Lambda));
 }
 
 native_unclosed_proc_plus_case {
  mark:
-  Scheme_Native_Closure_Data_Plus_Case *d = (Scheme_Native_Closure_Data_Plus_Case *)p;
+  Scheme_Native_Lambda_Plus_Case *d = (Scheme_Native_Lambda_Plus_Case *)p;
 
   native_unclosed_proc_MARK(p, gc);
   gcMARK2(d->case_lam, gc);
 
  size:
-  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data_Plus_Case));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Lambda_Plus_Case));
 }
 
 END jit;

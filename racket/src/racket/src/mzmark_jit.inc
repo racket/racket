@@ -3,7 +3,7 @@
 static int native_closure_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
-  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(c->code, gc))->closure_size;
+  int closure_size = ((Scheme_Native_Lambda *)GC_resolve2(c->code, gc))->closure_size;
 
   if (closure_size < 0) {
     closure_size = -(closure_size + 1);
@@ -19,7 +19,7 @@ static int native_closure_SIZE(void *p, struct NewGC *gc) {
 static int native_closure_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
-  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(c->code, gc))->closure_size;
+  int closure_size = ((Scheme_Native_Lambda *)GC_resolve2(c->code, gc))->closure_size;
 
   if (closure_size < 0) {
     closure_size = -(closure_size + 1);
@@ -27,7 +27,7 @@ static int native_closure_MARK(void *p, struct NewGC *gc) {
 
   {
   int i = closure_size;
-# define CLOSURE_DATA_TYPE Scheme_Native_Closure_Data
+# define CLOSURE_DATA_TYPE Scheme_Native_Lambda
 # include "mzclpf_decl.inc"
 
   gcMARK2(c->code, gc);
@@ -54,7 +54,7 @@ static int native_closure_MARK(void *p, struct NewGC *gc) {
 static int native_closure_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Native_Closure *c = (Scheme_Native_Closure *)p;
-  int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(c->code, gc))->closure_size;
+  int closure_size = ((Scheme_Native_Lambda *)GC_resolve2(c->code, gc))->closure_size;
 
   if (closure_size < 0) {
     closure_size = -(closure_size + 1);
@@ -97,7 +97,7 @@ static int mark_jit_state_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   mz_jit_state *j = (mz_jit_state *)p;
   gcMARK2(j->mappings, gc);
-  gcMARK2(j->self_data, gc);
+  gcMARK2(j->self_lam, gc);
   gcMARK2(j->example_argv, gc);
   gcMARK2(j->nc, gc);
   gcMARK2(j->retaining_data, gc);
@@ -116,7 +116,7 @@ static int mark_jit_state_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   mz_jit_state *j = (mz_jit_state *)p;
   gcFIXUP2(j->mappings, gc);
-  gcFIXUP2(j->self_data, gc);
+  gcFIXUP2(j->self_lam, gc);
   gcFIXUP2(j->example_argv, gc);
   gcFIXUP2(j->nc, gc);
   gcFIXUP2(j->retaining_data, gc);
@@ -137,7 +137,7 @@ static int mark_jit_state_FIXUP(void *p, struct NewGC *gc) {
 
 static int native_unclosed_proc_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Lambda));
 #else
   return 0;
 #endif
@@ -145,7 +145,7 @@ static int native_unclosed_proc_SIZE(void *p, struct NewGC *gc) {
 
 static int native_unclosed_proc_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Native_Closure_Data *d = (Scheme_Native_Closure_Data *)p;
+  Scheme_Native_Lambda *d = (Scheme_Native_Lambda *)p;
   int i;
 
   gcMARK2(d->u2.name, gc);
@@ -164,14 +164,14 @@ static int native_unclosed_proc_MARK(void *p, struct NewGC *gc) {
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Lambda));
 # endif
 #endif
 }
 
 static int native_unclosed_proc_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Native_Closure_Data *d = (Scheme_Native_Closure_Data *)p;
+  Scheme_Native_Lambda *d = (Scheme_Native_Lambda *)p;
   int i;
 
   gcFIXUP2(d->u2.name, gc);
@@ -190,7 +190,7 @@ static int native_unclosed_proc_FIXUP(void *p, struct NewGC *gc) {
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Lambda));
 # endif
 #endif
 }
@@ -201,7 +201,7 @@ static int native_unclosed_proc_FIXUP(void *p, struct NewGC *gc) {
 
 static int native_unclosed_proc_plus_case_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data_Plus_Case));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Lambda_Plus_Case));
 #else
   return 0;
 #endif
@@ -209,7 +209,7 @@ static int native_unclosed_proc_plus_case_SIZE(void *p, struct NewGC *gc) {
 
 static int native_unclosed_proc_plus_case_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  Scheme_Native_Closure_Data_Plus_Case *d = (Scheme_Native_Closure_Data_Plus_Case *)p;
+  Scheme_Native_Lambda_Plus_Case *d = (Scheme_Native_Lambda_Plus_Case *)p;
 
   native_unclosed_proc_MARK(p, gc);
   gcMARK2(d->case_lam, gc);
@@ -218,14 +218,14 @@ static int native_unclosed_proc_plus_case_MARK(void *p, struct NewGC *gc) {
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data_Plus_Case));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Lambda_Plus_Case));
 # endif
 #endif
 }
 
 static int native_unclosed_proc_plus_case_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  Scheme_Native_Closure_Data_Plus_Case *d = (Scheme_Native_Closure_Data_Plus_Case *)p;
+  Scheme_Native_Lambda_Plus_Case *d = (Scheme_Native_Lambda_Plus_Case *)p;
 
   native_unclosed_proc_FIXUP(p, gc);
   gcFIXUP2(d->case_lam, gc);
@@ -234,7 +234,7 @@ static int native_unclosed_proc_plus_case_FIXUP(void *p, struct NewGC *gc) {
   return 0;
 # else
   return
-  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Closure_Data_Plus_Case));
+  gcBYTES_TO_WORDS(sizeof(Scheme_Native_Lambda_Plus_Case));
 # endif
 #endif
 }

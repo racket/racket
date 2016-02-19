@@ -9,7 +9,7 @@
    S = Scheme_Object**
    v = void 
    b = Scheme_Bucket*
-   n = Scheme_Native_Closure_Data* 
+   n = Scheme_Native_Lambda* 
    p = void*, CGC only
    z = size_t
    m = MZ_MARK_STACK_TYPE */

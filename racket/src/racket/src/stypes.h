@@ -10,7 +10,7 @@ enum {
   scheme_application3_type,             /* 5 */
   scheme_sequence_type,                 /* 6 */
   scheme_branch_type,                   /* 7 */
-  scheme_unclosed_procedure_type,       /* 8 */
+  scheme_lambda_type,                   /* 8 */
   scheme_let_value_type,                /* 9 */
   scheme_let_void_type,                 /* 10 */
   scheme_letrec_type,                   /* 11 */
@@ -35,13 +35,13 @@ enum {
 
   _scheme_values_types_, /* All following types are values */
   
-  /* intermediate compiled: */
-  scheme_compiled_local_type,           /* 30 */
-  scheme_compiled_unclosed_procedure_type,/* 31 */
-  scheme_compiled_let_value_type,       /* 32 */
-  scheme_compiled_let_void_type,        /* 33 */
-  scheme_compiled_toplevel_type,        /* 34 */
-  scheme_compiled_quote_syntax_type,    /* 35 */
+  /* intermediate compiled variants (as seen by optimizer): */
+  scheme_ir_local_type,                 /* 30 */
+  scheme_ir_lambda_type,                /* 31 */
+  scheme_ir_let_value_type,             /* 32 */
+  scheme_ir_let_void_type,              /* 33 */
+  scheme_ir_toplevel_type,              /* 34 */
+  scheme_ir_quote_syntax_type,          /* 35 */
 
   scheme_quote_compilation_type, /* used while writing, only */
 
@@ -49,7 +49,7 @@ enum {
   scheme_variable_type,                 /* 37 */
   scheme_module_variable_type, /* link replaces with scheme_variable_type */
 
-  _scheme_compiled_values_types_,       /* 39 */
+  _scheme_ir_values_types_,             /* 39 */
 
   /* procedure types */
   scheme_prim_type,                     /* 40 */
@@ -97,7 +97,7 @@ enum {
   scheme_true_type,                     /* 73 */
   scheme_false_type,                    /* 74 */
   scheme_void_type,                     /* 75 */
-  scheme_syntax_compiler_type,          /* 76 */
+  scheme_primitive_syntax_type,         /* 76 */
   scheme_macro_type,                    /* 77 */
   scheme_box_type,                      /* 78 */
   scheme_thread_type,                   /* 79 */
@@ -237,7 +237,7 @@ enum {
   scheme_rt_cont_mark,                  /* 209 */
   scheme_rt_saved_stack,                /* 210 */
   scheme_rt_reply_item,                 /* 211 */
-  scheme_rt_closure_info,               /* 212 */
+  scheme_rt_ir_lambda_info,             /* 212 */
   scheme_rt_overflow,                   /* 213 */
   scheme_rt_overflow_jmp,               /* 214 */
   scheme_rt_meta_cont,                  /* 215 */

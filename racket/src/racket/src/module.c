@@ -84,17 +84,17 @@ static Scheme_Object *resolved_module_path_name(int argc, Scheme_Object *argv[])
 static Scheme_Object *module_export_protected_p(int argc, Scheme_Object **argv);
 
 /* syntax */
-static Scheme_Object *module_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *module_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *module_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
-static Scheme_Object *modulestar_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *modulestar_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *modulestar_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
-static Scheme_Object *module_begin_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *module_begin_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *module_begin_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
-static Scheme_Object *declare_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *declare_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *declare_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
-static Scheme_Object *require_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *require_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *require_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
-static Scheme_Object *provide_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
+static Scheme_Object *provide_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec);
 static Scheme_Object *provide_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec);
 
 static Scheme_Module *module_load(Scheme_Object *modname, Scheme_Env *env, const char *who);
@@ -378,34 +378,34 @@ static void qsort_provides(Scheme_Object **exs, Scheme_Object **exsns, Scheme_Ob
 void scheme_init_module(Scheme_Env *env)
 {
   scheme_add_global_keyword("module", 
-			    scheme_make_compiled_syntax(module_syntax, 
-							module_expand),
+			    scheme_make_primitive_syntax(module_compile, 
+                                                         module_expand),
 			    env);
   scheme_add_global_keyword("module*", 
-			    scheme_make_compiled_syntax(modulestar_syntax, 
-							modulestar_expand),
+			    scheme_make_primitive_syntax(modulestar_compile, 
+                                                         modulestar_expand),
 			    env);
 
   REGISTER_SO(modbeg_syntax);
-  modbeg_syntax = scheme_make_compiled_syntax(module_begin_syntax, 
-					      module_begin_expand);
+  modbeg_syntax = scheme_make_primitive_syntax(module_begin_compile, 
+                                               module_begin_expand);
 
   scheme_add_global_keyword("#%module-begin", 
 			    modbeg_syntax,
 			    env);
 
   scheme_add_global_keyword("#%declare",
-                            scheme_make_compiled_syntax(declare_syntax,
-                                                        declare_expand),
+                            scheme_make_primitive_syntax(declare_compile,
+                                                         declare_expand),
 			    env);
 
   scheme_add_global_keyword("#%require", 
-			    scheme_make_compiled_syntax(require_syntax, 
-							require_expand), 
+			    scheme_make_primitive_syntax(require_compile, 
+                                                         require_expand), 
 			    env);
   scheme_add_global_keyword("#%provide", 
-			    scheme_make_compiled_syntax(provide_syntax, 
-							provide_expand), 
+			    scheme_make_primitive_syntax(provide_compile, 
+                                                         provide_expand), 
 			    env);
 
 #ifdef MZ_USE_PLACES
@@ -4347,7 +4347,7 @@ static int is_procedure_expression(Scheme_Object *e)
 
   t = SCHEME_TYPE(e);
 
-  return ((t == scheme_unclosed_procedure_type)
+  return ((t == scheme_lambda_type)
           || (t == scheme_case_lambda_sequence_type));
 }
 
@@ -4432,7 +4432,7 @@ static void setup_accessible_table(Scheme_Module *m)
                            might leave bindings out of the `toplevels' table. */
                       } else {
                         if (SCHEME_VEC_SIZE(form) == 2) {
-                          if (scheme_compiled_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
+                          if (scheme_ir_duplicate_ok(SCHEME_VEC_ELS(form)[0], 1)) {
                             /* record simple constant from cross-module propagation: */
                             v = scheme_make_pair(v, SCHEME_VEC_ELS(form)[0]);
                           } else if (SAME_TYPE(SCHEME_TYPE(SCHEME_VEC_ELS(form)[0]), scheme_inline_variant_type)) {
@@ -5892,7 +5892,7 @@ static int needs_prompt(Scheme_Object *e)
       return 0;
   
     switch (t) {
-    case scheme_unclosed_procedure_type:
+    case scheme_lambda_type:
     case scheme_toplevel_type:
     case scheme_local_type:
     case scheme_local_unbox_type:
@@ -6364,7 +6364,7 @@ static int is_simple_expr(Scheme_Object *v)
   Scheme_Type t;
 
   t = SCHEME_TYPE(v);
-  if (SAME_TYPE(t, scheme_unclosed_procedure_type))
+  if (SAME_TYPE(t, scheme_lambda_type))
     return 1;
 
   return 0;
@@ -7538,7 +7538,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 }
 
 static Scheme_Object *
-module_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+module_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   return do_module(form, env, rec, drec, scheme_null, scheme_null, 0,
                    NULL, scheme_make_integer(0));
@@ -7552,7 +7552,7 @@ module_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *ere
 }
 
 static Scheme_Object *
-modulestar_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+modulestar_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   scheme_wrong_syntax(NULL, NULL, form, "illegal use (not in a module top-level)");
   return NULL;
@@ -7561,7 +7561,7 @@ modulestar_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info
 static Scheme_Object *
 modulestar_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *erec, int drec)
 {
-  return modulestar_syntax(form, env, erec, drec);
+  return modulestar_compile(form, env, erec, drec);
 }
 
 /* For mzc: */
@@ -10088,7 +10088,7 @@ static void install_stops(Scheme_Comp_Env *xenv, int phase, Scheme_Object **_beg
 }
 
 static Scheme_Object *
-module_begin_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+module_begin_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   return do_module_begin(form, env, rec, drec);
 }
@@ -12726,7 +12726,7 @@ static Scheme_Object *do_require(Scheme_Object *form, Scheme_Comp_Env *env,
 }
 
 static Scheme_Object *
-require_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+require_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   return do_require(form, env, rec, drec);
 }
@@ -12759,7 +12759,7 @@ Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path,
 /**********************************************************************/
 
 static Scheme_Object *
-provide_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+provide_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   scheme_wrong_syntax(NULL, NULL, form, "not in module body");
   return NULL;
@@ -12774,7 +12774,7 @@ provide_expand(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Expand_Info *er
 }
 
 static Scheme_Object *
-declare_syntax(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
+declare_compile(Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec, int drec)
 {
   scheme_wrong_syntax(NULL, NULL, form, "not in module body");
   return NULL;

@@ -58,7 +58,7 @@ int scheme_mz_retain_it(mz_jit_state *jitter, void *v)
     jitter->retain_start[jitter->retained] = v;
 #ifdef JIT_PRECISE_GC
     /* We just change an array that is marked indirectly for GC
-       via a Scheme_Native_Closure_Data. Write to that record
+       via a Scheme_Native_Lambda. Write to that record
        so that a minor GC will trace it and therefore trace
        the reatined array: */
     if (jitter->retaining_data) {
@@ -180,7 +180,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 			  void *data,
 			  int gcable,
 			  void *save_ptr,
-			  Scheme_Native_Closure_Data *ndata)
+			  Scheme_Native_Lambda *ndata)
 /* The given generate() function is called at least twice: once to gather
    the size of the generated code (at a temporary location), and again
    to generate the final code at its final location. The size of the

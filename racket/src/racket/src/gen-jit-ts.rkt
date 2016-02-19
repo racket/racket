@@ -7,7 +7,7 @@
     [(#\t) "const Scheme_Object*"]
     [(#\S) "Scheme_Object**"]
     [(#\b) "Scheme_Bucket*"]
-    [(#\n) "Scheme_Native_Closure_Data*"]
+    [(#\n) "Scheme_Native_Lambda*"]
     [(#\m) "MZ_MARK_STACK_TYPE"]
     [(#\p) "void*"]
     [(#\i) "int"]

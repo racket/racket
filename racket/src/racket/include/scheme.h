@@ -883,7 +883,7 @@ typedef struct {
 /* ------------------------------------------------- */
 
 #define SCHEME_PROCP(obj)  (!SCHEME_INTP(obj) && ((_SCHEME_TYPE(obj) >= scheme_prim_type) && (_SCHEME_TYPE(obj) <= scheme_proc_chaperone_type)))
-#define SCHEME_SYNTAXP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_syntax_compiler_type)
+#define SCHEME_SYNTAXP(obj)  SAME_TYPE(SCHEME_TYPE(obj), scheme_primitive_syntax_type)
 #define SCHEME_PRIMP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_prim_type)
 #define SCHEME_CLSD_PRIMP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_closed_prim_type)
 #define SCHEME_CONTP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_cont_type)
@@ -895,8 +895,8 @@ typedef struct {
 #define SCHEME_PRIM(obj)     (((Scheme_Primitive_Proc *)(obj))->prim_val)
 #define SCHEME_CLSD_PRIM(obj) (((Scheme_Closed_Primitive_Proc *)(obj))->prim_val)
 #define SCHEME_CLSD_PRIM_DATA(obj) (((Scheme_Closed_Primitive_Proc *)(obj))->data)
-#define SCHEME_CLOS_FUNC(obj) ((Scheme_Closure_Func)SCHEME_CAR(obj))
-#define SCHEME_CLOS_DATA(obj) SCHEME_CDR(obj)
+#define SCHEME_RAW_CLOS_FUNC(obj) ((Scheme_Closure_Func)SCHEME_CAR(obj))
+#define SCHEME_RAW_CLOS_DATA(obj) SCHEME_CDR(obj)
 
 /*========================================================================*/
 /*                      hash tables and environments                      */

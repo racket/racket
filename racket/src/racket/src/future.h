@@ -155,7 +155,7 @@ typedef struct future_t {
   int arg_i0;
   intptr_t arg_l0;
   size_t arg_z0;
-  Scheme_Native_Closure_Data *arg_n0;
+  Scheme_Native_Lambda *arg_n0;
   Scheme_Object *arg_s1;
   const Scheme_Object *arg_t1;
   Scheme_Object **arg_S1;

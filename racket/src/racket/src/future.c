@@ -1291,7 +1291,7 @@ static Scheme_Object *make_future(Scheme_Object *lambda, int enqueue, future_t *
   int futureid;
   future_t *ft;
   Scheme_Native_Closure *nc;
-  Scheme_Native_Closure_Data *ncd;
+  Scheme_Native_Lambda *ncd;
   Scheme_Custodian *c;
 
   if (SAME_TYPE(SCHEME_TYPE(lambda), scheme_native_closure_type)) {

@@ -76,7 +76,7 @@ SHARED_OK int scheme_defining_primitives; /* set to 1 during start-up */
 SHARED_OK int scheme_prim_opt_flags[(1 << SCHEME_PRIM_OPT_INDEX_SIZE)];
 
 READ_ONLY Scheme_Object scheme_void[1]; /* the void constant */
-READ_ONLY Scheme_Object *scheme_values_func; /* the function bound to `values' */
+READ_ONLY Scheme_Object *scheme_values_proc; /* the function bound to `values' */
 READ_ONLY Scheme_Object *scheme_procedure_p_proc;
 READ_ONLY Scheme_Object *scheme_procedure_arity_includes_proc;
 READ_ONLY Scheme_Object *scheme_procedure_specialize_proc;
@@ -309,17 +309,17 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_call_with_values_proc,
 			     env);
 
-  REGISTER_SO(scheme_values_func);
-  scheme_values_func = scheme_make_prim_w_arity2(scheme_values,
+  REGISTER_SO(scheme_values_proc);
+  scheme_values_proc = scheme_make_prim_w_arity2(scheme_values,
 						 "values",
 						 0, -1,
 						 0, -1);
-  SCHEME_PRIM_PROC_FLAGS(scheme_values_func) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+  SCHEME_PRIM_PROC_FLAGS(scheme_values_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                                              | SCHEME_PRIM_IS_BINARY_INLINED
                                                                              | SCHEME_PRIM_IS_NARY_INLINED
                                                                              | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("values",
-			     scheme_values_func,
+			     scheme_values_proc,
 			     env);
 
   o = scheme_make_prim_w_arity2(scheme_call_ec,
@@ -2168,7 +2168,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
   } else if ((type == scheme_case_closure_type)
              || (type == scheme_case_lambda_sequence_type)) {
     Scheme_Case_Lambda *seq;
-    Scheme_Closure_Data *data;
+    Scheme_Lambda *data;
     int i;
     Scheme_Object *first, *last = NULL, *v;
 
@@ -2180,12 +2180,12 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     seq = (Scheme_Case_Lambda *)p;
     for (i = 0; i < seq->count; i++) {
       v = seq->array[i];
-      if (SAME_TYPE(SCHEME_TYPE(v), scheme_unclosed_procedure_type))
-        data = (Scheme_Closure_Data *)v;
+      if (SAME_TYPE(SCHEME_TYPE(v), scheme_lambda_type))
+        data = (Scheme_Lambda *)v;
       else
-        data = SCHEME_COMPILED_CLOS_CODE(v);
+        data = SCHEME_CLOSURE_CODE(v);
       mina = maxa = data->num_params;
-      if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+      if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
 	if (mina)
 	  --mina;
 	maxa = -1;
@@ -2376,15 +2376,15 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     SCHEME_USE_FUEL(1);
     goto top;
   } else {
-    Scheme_Closure_Data *data;
+    Scheme_Lambda *data;
 
-    if (type == scheme_unclosed_procedure_type) 
-      data = (Scheme_Closure_Data *)p;
+    if (type == scheme_lambda_type) 
+      data = (Scheme_Lambda *)p;
     else
-      data = SCHEME_COMPILED_CLOS_CODE(p);
+      data = SCHEME_CLOSURE_CODE(p);
 
     mina = maxa = data->num_params;
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+    if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
       if (mina)
 	--mina;
       maxa = -1;
@@ -2544,7 +2544,7 @@ int scheme_check_proc_arity(const char *where, int a,
 int scheme_closure_preserves_marks(Scheme_Object *p)
 {
   Scheme_Type type = SCHEME_TYPE(p);
-  Scheme_Closure_Data *data;
+  Scheme_Lambda *data;
 
 #ifdef MZ_USE_JIT
   if (type == scheme_native_closure_type)
@@ -2552,13 +2552,13 @@ int scheme_closure_preserves_marks(Scheme_Object *p)
 #endif
 
   if (type == scheme_closure_type) {
-    data = SCHEME_COMPILED_CLOS_CODE(p);
-  } else if (type == scheme_unclosed_procedure_type) {
-    data = (Scheme_Closure_Data *)p;
+    data = SCHEME_CLOSURE_CODE(p);
+  } else if (type == scheme_lambda_type) {
+    data = (Scheme_Lambda *)p;
   } else
     return 0;
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_PRESERVES_MARKS)
+  if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_PRESERVES_MARKS)
     return 1;
 
   return 0;
@@ -2826,23 +2826,23 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
   } else {
     Scheme_Object *name;
 
-    if (type == scheme_compiled_unclosed_procedure_type) {
-      name = ((Scheme_Closure_Data *)p)->name;
+    if (type == scheme_ir_lambda_type) {
+      name = ((Scheme_Lambda *)p)->name;
     } else if (type == scheme_closure_type) {
-      name = SCHEME_COMPILED_CLOS_CODE(p)->name;
+      name = SCHEME_CLOSURE_CODE(p)->name;
     } else if (type == scheme_case_lambda_sequence_type) {
       Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)p;
       if (!cl->count)
         name = NULL;
       else
-        name = ((Scheme_Closure_Data *)cl->array[0])->name;
+        name = ((Scheme_Lambda *)cl->array[0])->name;
     } else {
       /* Native closure: */
       name = ((Scheme_Native_Closure *)p)->code->u2.name;
-      if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_unclosed_procedure_type)) {
+      if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_lambda_type)) {
 	/* Not yet jitted. Use `name' as the other alternaive of 
 	   the union: */
-	name = ((Scheme_Closure_Data *)name)->name;
+	name = ((Scheme_Lambda *)name)->name;
       }
     }
 
@@ -2916,7 +2916,7 @@ static Scheme_Object *procedure_result_arity(int argc, Scheme_Object *argv[])
   }
 
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_closure_type)) {
-    if ((SCHEME_CLOSURE_DATA_FLAGS(SCHEME_COMPILED_CLOS_CODE(o)) & CLOS_SINGLE_RESULT)) {
+    if ((SCHEME_LAMBDA_FLAGS(SCHEME_CLOSURE_CODE(o)) & LAMBDA_SINGLE_RESULT)) {
       return scheme_make_integer(1);
     }
 #ifdef MZ_USE_JIT
@@ -2929,7 +2929,7 @@ static Scheme_Object *procedure_result_arity(int argc, Scheme_Object *argv[])
     int i;
     
     for (i = cl->count; i--; ) {
-      if (!(SCHEME_CLOSURE_DATA_FLAGS(SCHEME_COMPILED_CLOS_CODE(cl->array[i])) & CLOS_SINGLE_RESULT))
+      if (!(SCHEME_LAMBDA_FLAGS(SCHEME_CLOSURE_CODE(cl->array[i])) & LAMBDA_SINGLE_RESULT))
         break;
     }
 
@@ -3313,7 +3313,7 @@ static int proc_is_method(Scheme_Object *proc)
   }
 
   if (SAME_TYPE(SCHEME_TYPE(proc), scheme_closure_type)) {
-    return ((SCHEME_CLOSURE_DATA_FLAGS(SCHEME_COMPILED_CLOS_CODE(proc)) & CLOS_IS_METHOD)
+    return ((SCHEME_LAMBDA_FLAGS(SCHEME_CLOSURE_CODE(proc)) & LAMBDA_IS_METHOD)
             ? 1
             : 0);
   }
@@ -3513,16 +3513,16 @@ static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[])
   if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_native_closure_type)) {
     Scheme_Native_Closure *nc = (Scheme_Native_Closure *)argv[0];
     if ((nc->code->start_code == scheme_on_demand_jit_code)
-        && !(SCHEME_NATIVE_CLOSURE_DATA_FLAGS(nc->code) & NATIVE_SPECIALIZED)) {
-      Scheme_Native_Closure_Data *data;
+        && !(SCHEME_NATIVE_LAMBDA_FLAGS(nc->code) & NATIVE_SPECIALIZED)) {
+      Scheme_Native_Lambda *data;
       if (!nc->code->eq_key) {
         void *p;
         p = scheme_malloc_atomic(sizeof(int));
         nc->code->eq_key = p;
       }
-      data = MALLOC_ONE_TAGGED(Scheme_Native_Closure_Data);
-      memcpy(data, nc->code, sizeof(Scheme_Native_Closure_Data));
-      SCHEME_NATIVE_CLOSURE_DATA_FLAGS(data) |= NATIVE_SPECIALIZED;
+      data = MALLOC_ONE_TAGGED(Scheme_Native_Lambda);
+      memcpy(data, nc->code, sizeof(Scheme_Native_Lambda));
+      SCHEME_NATIVE_LAMBDA_FLAGS(data) |= NATIVE_SPECIALIZED;
       nc->code = data;
     }
   }
@@ -3714,7 +3714,7 @@ static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Obje
 
 static Scheme_Object *_apply_native(Scheme_Object *obj, int num_rands, Scheme_Object **rands)
 {
-  Scheme_Native_Closure_Data *data;
+  Scheme_Native_Lambda *data;
   GC_MAYBE_IGNORE_INTERIOR MZ_MARK_STACK_TYPE old_cont_mark_stack;
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **rs;
 
@@ -6335,7 +6335,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
         cc_guard = get_set_cont_mark_by_pos(prompt_cc_guard_key, p, mc, pos, NULL);
         
         if (SCHEME_FALSEP(cc_guard))
-          cc_guard = scheme_values_func;
+          cc_guard = scheme_values_proc;
         if (SCHEME_NP_CHAPERONEP(cont->prompt_tag))  
           cc_guard = chaperone_wrap_cc_guard(cont->prompt_tag, cc_guard);
         
@@ -6968,7 +6968,7 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
     if (init_guard || !SCHEME_PROMPT_TAGP(obj)) {
       if (init_guard) {
         proc = init_guard;
-        if (SAME_OBJ(NULL, scheme_values_func))
+        if (SAME_OBJ(NULL, scheme_values_proc))
           proc = NULL;
         px = NULL;
       } else {
@@ -7333,7 +7333,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
             argv = chaperone_do_prompt_handler(chaperone, argc, argv);
           }
 
-          if (SAME_OBJ(handler, scheme_values_func)) {
+          if (SAME_OBJ(handler, scheme_values_proc)) {
             v = scheme_values(argc, argv);
             if (v == SCHEME_MULTIPLE_VALUES) {
               if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
@@ -7412,7 +7412,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
   if (handler) {
     return _scheme_tail_apply(handler, argc, argv);
   } else if (cc_guard) {
-    if (SAME_OBJ(cc_guard, scheme_values_func))
+    if (SAME_OBJ(cc_guard, scheme_values_proc))
       cc_guard = NULL;
     if (cc_guard || chaperone)
       return do_cc_guard(v, cc_guard, chaperone);
@@ -10416,7 +10416,6 @@ START_XFORM_SKIP;
 
 static void register_traversers(void)
 {
-  GC_REG_TRAV(scheme_rt_closure_info, mark_closure_info);
   GC_REG_TRAV(scheme_rt_dyn_wind_cell, mark_dyn_wind_cell);
   GC_REG_TRAV(scheme_rt_dyn_wind_info, mark_dyn_wind_info);
   GC_REG_TRAV(scheme_cont_mark_chain_type, mark_cont_mark_chain);

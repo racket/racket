@@ -87,10 +87,10 @@
    tracks variable usage (including whether a variable is mutated or
    not). See "compile.c" along with "compenv.c".
 
-   The second pass, called "letrec_rec", determines which references
+   The second pass, called "letrec_check", determines which references
    to `letrec'-bound variables need to be guarded with a run-time
    check to prevent use before definition. The analysis result is
-   reflected by the insertion of `check-notunsafe-undefined`
+   reflected by the insertion of `check-not-unsafe-undefined`
    calls. This this pass mutates records produced by the "compile"
    pass.
 
@@ -134,7 +134,7 @@
    forms are converted to native-code generators, instead of bytecode
    variants.  The code is not actually JITted until it is called; this
    preparation step merely sets up a JIT hook for each function. The
-   preparation pass is a shallow, function (i.e., it doesn't mutate
+   preparation pass is a shallow, functional (i.e., it doesn't mutate
    the original bytecode) pass; the body of a function is prepared for
    JITting lazily. See "jitprep.c".
 
@@ -2085,7 +2085,7 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
       if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
         int flags = GLOB_IS_IMMUTATED;
         if (SCHEME_PROCP(vals_expr) 
-            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_unclosed_procedure_type)
+            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_lambda_type)
             || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type)
             || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_inline_variant_type))
           flags |= GLOB_IS_CONSISTENT;
@@ -2243,9 +2243,9 @@ scheme_case_lambda_execute(Scheme_Object *expr)
 
 #ifdef MZ_USE_JIT
   if (seqin->native_code) {
-    Scheme_Native_Closure_Data *ndata;
+    Scheme_Native_Lambda *ndata;
     Scheme_Native_Closure *nc, *na;
-    Scheme_Closure_Data *data;
+    Scheme_Lambda *data;
     Scheme_Object *val;
     GC_CAN_IGNORE Scheme_Object **runstack;
     GC_CAN_IGNORE mzshort *map;
@@ -2258,7 +2258,7 @@ scheme_case_lambda_execute(Scheme_Object *expr)
     for (i = 0; i < cnt; i++) {
       val = seqin->array[i];
       if (!SCHEME_PROCP(val)) {
-	data = (Scheme_Closure_Data *)val;
+	data = (Scheme_Lambda *)val;
 	na = (Scheme_Native_Closure *)scheme_make_native_closure(data->u.native_code);
 	runstack = MZ_RUNSTACK;
 	jcnt = data->closure_size;
@@ -2483,21 +2483,21 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
         time; note that the byte-code marshaller in print.c can handle
         empty closures for that reason). */
 {
-  Scheme_Closure_Data *data;
+  Scheme_Lambda *data;
   Scheme_Closure *closure;
   GC_CAN_IGNORE Scheme_Object **runstack;
   GC_CAN_IGNORE Scheme_Object **dest;
   GC_CAN_IGNORE mzshort *map;
   int i;
 
-  data = (Scheme_Closure_Data *)code;
+  data = (Scheme_Lambda *)code;
   
 #ifdef MZ_USE_JIT
   if (data->u.native_code
-      /* If the union points to a another Scheme_Closure_Data*, then it's not actually
+      /* If the union points to a another Scheme_Lambda*, then it's not actually
          a pointer to native code. We must have a closure referenced frmo non-JITted code
          where the closure is also referenced by JITted code. */
-      && !SAME_TYPE(SCHEME_TYPE(data->u.native_code), scheme_unclosed_procedure_type)) {
+      && !SAME_TYPE(SCHEME_TYPE(data->u.native_code), scheme_lambda_type)) {
     Scheme_Object *nc;
 
     nc = scheme_make_native_closure(data->u.native_code);
@@ -2525,7 +2525,7 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
 			 + (i - mzFLEX_DELTA) * sizeof(Scheme_Object *));
 
   closure->so.type = scheme_closure_type;
-  SCHEME_COMPILED_CLOS_CODE(closure) = data;
+  SCHEME_CLOSURE_CODE(closure) = data;
 
   if (!close || !i)
     return (Scheme_Object *)closure;
@@ -2552,20 +2552,20 @@ Scheme_Closure *scheme_malloc_empty_closure()
   return cl;
 }
 
-void scheme_delay_load_closure(Scheme_Closure_Data *data)
+void scheme_delay_load_closure(Scheme_Lambda *data)
 {
-  if (SCHEME_RPAIRP(data->code)) {
+  if (SCHEME_RPAIRP(data->body)) {
     Scheme_Object *v, *vinfo = NULL;
 
-    v = SCHEME_CAR(data->code);
+    v = SCHEME_CAR(data->body);
     if (SCHEME_VECTORP(v)) {
       /* Has info for delayed validation */
       vinfo = v;
       v = SCHEME_VEC_ELS(vinfo)[0];
     }
     v = scheme_load_delayed_code(SCHEME_INT_VAL(v), 
-                                 (struct Scheme_Load_Delay *)SCHEME_CDR(data->code));
-    data->code = v;
+                                 (struct Scheme_Load_Delay *)SCHEME_CDR(data->body));
+    data->body = v;
     
     if (vinfo) {
       scheme_validate_closure(NULL, 
@@ -2779,13 +2779,13 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       DEBUG_CHECK_TYPE(v);
     } else if (type == scheme_closure_type) {
-      Scheme_Closure_Data *data;
+      Scheme_Lambda *data;
       GC_CAN_IGNORE Scheme_Object **stack, **src;
       int i, has_rest, num_params;
       
       DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
 
-      data = SCHEME_COMPILED_CLOS_CODE(obj);
+      data = SCHEME_CLOSURE_CODE(obj);
 
       if ((RUNSTACK - RUNSTACK_START) < data->max_let_depth) {
         rands = evacuate_runstack(num_rands, rands, RUNSTACK);
@@ -2808,7 +2808,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
 
       num_params = data->num_params;
-      has_rest = SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST;
+      has_rest = SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST;
       
       if (num_params) {
 	if (has_rest) {
@@ -2820,7 +2820,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    scheme_wrong_count_m((const char *)obj, 
 				 -1, -1,
 				 num_rands, rands,
-				 SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD);
+				 SCHEME_LAMBDA_FLAGS(data) & LAMBDA_IS_METHOD);
 	    return NULL; /* Doesn't get here */
 	  }
 
@@ -2883,7 +2883,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    scheme_wrong_count_m((const char *)obj,
 				 -1, -1,
 				 num_rands, rands,
-				 SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD);
+				 SCHEME_LAMBDA_FLAGS(data) & LAMBDA_IS_METHOD);
 	    return NULL; /* Doesn't get here */
 	  }
 	
@@ -2919,7 +2919,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	int n = data->closure_size;
       
 	if (n) {
-	  src = SCHEME_COMPILED_CLOS_ENV(obj);
+	  src = SCHEME_CLOSURE_ENV(obj);
 	  stack = PUSH_RUNSTACK(p, RUNSTACK, n);
 	  RUNSTACK_CHANGED();
 
@@ -2929,13 +2929,13 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	}
       }
 
-      obj = data->code;
+      obj = data->body;
 
       if (SCHEME_RPAIRP(obj)) {
         UPDATE_THREAD_RSPTR_FOR_GC();
         make_tail_buffer_safe();
         scheme_delay_load_closure(data);
-        obj = data->code;
+        obj = data->body;
       }
 
       if (pmstack >= 0) {
@@ -2979,16 +2979,16 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       goto eval_top;
     } else if (type == scheme_case_closure_type) {
       Scheme_Case_Lambda *seq;
-      Scheme_Closure_Data *data;
+      Scheme_Lambda *data;
       
       int i;
       
       seq = (Scheme_Case_Lambda *)obj;
       for (i = 0; i < seq->count; i++) {
-	data = SCHEME_COMPILED_CLOS_CODE(seq->array[i]);
-	if ((!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) 
+	data = SCHEME_CLOSURE_CODE(seq->array[i]);
+	if ((!(SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) 
 	     && (data->num_params == num_rands))
-	    || ((SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST)
+	    || ((SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST)
 		&& (data->num_params - 1 <= num_rands))) {
 	  obj = seq->array[i];
 	  goto apply_top;
@@ -3002,7 +3002,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       return NULL; /* Doesn't get here. */
 #ifdef MZ_USE_JIT
     } else if (type == scheme_native_closure_type) {
-      GC_CAN_IGNORE Scheme_Native_Closure_Data *data;
+      GC_CAN_IGNORE Scheme_Native_Lambda *data;
 
       VACATE_TAIL_BUFFER_USE_RUNSTACK();
 
@@ -3552,7 +3552,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
 	  goto eval_top;
 	}
-      case scheme_unclosed_procedure_type:
+      case scheme_lambda_type:
 	UPDATE_THREAD_RSPTR();
 	v = scheme_make_closure(p, obj, 1);
 	goto returnv_never_multi;
@@ -3672,7 +3672,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    GC_CAN_IGNORE Scheme_Object *clos;
 	    GC_CAN_IGNORE Scheme_Object **dest;
 	    GC_CAN_IGNORE mzshort *map;
-	    GC_CAN_IGNORE Scheme_Closure_Data *data;
+	    GC_CAN_IGNORE Scheme_Lambda *data;
 	    int j;
 
 	    clos = stack[i];
@@ -3687,7 +3687,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    dest = ((Scheme_Closure *)clos)->vals;
 #endif
 	    
-	    data = (Scheme_Closure_Data *)a[i];
+	    data = (Scheme_Lambda *)a[i];
 	      
 	    map = data->closure_map;
 	    j = data->closure_size;
@@ -4454,7 +4454,7 @@ static void *eval_k(void)
 
       if (as_tail) {
         /* Cons up a closure to capture the prefix */
-        Scheme_Closure_Data *data;
+        Scheme_Lambda *data;
         mzshort *map;
         int i, sz;
 
@@ -4464,13 +4464,13 @@ static void *eval_k(void)
           map[i] = i;
         }
 
-        data = MALLOC_ONE_TAGGED(Scheme_Closure_Data);
-        data->iso.so.type = scheme_compiled_unclosed_procedure_type;
+        data = MALLOC_ONE_TAGGED(Scheme_Lambda);
+        data->iso.so.type = scheme_ir_lambda_type;
         data->num_params = 0;
         data->max_let_depth = top->max_let_depth + sz;
         data->closure_size = sz;
         data->closure_map = map;
-        data->code = v;
+        data->body = v;
 
         v = scheme_make_closure(p, (Scheme_Object *)data, 1);
 
@@ -6159,12 +6159,12 @@ static void mark_pruned_prefixes(struct NewGC *gc) XFORM_SKIP_PROC
         Scheme_Object *next;
         if (SCHEME_TYPE(clo) == scheme_closure_type) {
           Scheme_Closure *cl = (Scheme_Closure *)clo;
-          int closure_size = ((Scheme_Closure_Data *)GC_resolve2(cl->code, gc))->closure_size;
+          int closure_size = ((Scheme_Lambda *)GC_resolve2(cl->code, gc))->closure_size;
           next = cl->vals[closure_size - 1];
           cl->vals[closure_size-1] = (Scheme_Object *)pf;
         } else if (SCHEME_TYPE(clo) == scheme_native_closure_type) {
           Scheme_Native_Closure *cl = (Scheme_Native_Closure *)clo;
-          int closure_size = ((Scheme_Native_Closure_Data *)GC_resolve2(cl->code, gc))->closure_size;
+          int closure_size = ((Scheme_Native_Lambda *)GC_resolve2(cl->code, gc))->closure_size;
           next = cl->vals[closure_size - 1];
           cl->vals[closure_size-1] = (Scheme_Object *)pf;
         } else {

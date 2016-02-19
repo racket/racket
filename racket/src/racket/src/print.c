@@ -2775,7 +2775,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
               } else {
                 print_compact(pp, CPT_CLOSURE);
                 print_symtab_set(pp, mt, obj);
-                print((Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(closure), notdisplay, compact, ht, mt, pp);
+                print((Scheme_Object *)SCHEME_CLOSURE_CODE(closure), notdisplay, compact, ht, mt, pp);
               }
               compact = 1;
               done = 1;
