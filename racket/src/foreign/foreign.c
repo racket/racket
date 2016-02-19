@@ -4290,7 +4290,16 @@ static void save_errno_values(int kind)
 static Scheme_Object *foreign_saved_errno(int argc, Scheme_Object *argv[])
 {
   Scheme_Thread *p = scheme_current_thread;
-  return scheme_make_integer_value(p->saved_errno);
+  if (argc == 0) {
+    return scheme_make_integer_value(p->saved_errno);
+  } else {
+    intptr_t v;
+    if (!scheme_get_int_val(argv[0], &v)) {
+      wrong_intptr(MYNAME, 0, argc, argv);
+    }
+    p->saved_errno = v;
+    return scheme_void;
+  }
 }
 #undef MYNAME
 
@@ -4552,7 +4561,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("ffi-callback",
     scheme_make_noncm_prim(foreign_ffi_callback, "ffi-callback", 3, 6), menv);
   scheme_add_global_constant("saved-errno",
-    scheme_make_immed_prim(foreign_saved_errno, "saved-errno", 0, 0), menv);
+    scheme_make_immed_prim(foreign_saved_errno, "saved-errno", 0, 1), menv);
   scheme_add_global_constant("lookup-errno",
     scheme_make_immed_prim(foreign_lookup_errno, "lookup-errno", 1, 1), menv);
   scheme_add_global_constant("make-stubborn-will-executor",
@@ -4923,7 +4932,7 @@ void scheme_init_foreign(Scheme_Env *env)
   scheme_add_global_constant("ffi-callback",
    scheme_make_noncm_prim((Scheme_Prim *)unimplemented, "ffi-callback", 3, 6), menv);
   scheme_add_global_constant("saved-errno",
-   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "saved-errno", 0, 0), menv);
+   scheme_make_immed_prim((Scheme_Prim *)unimplemented, "saved-errno", 0, 1), menv);
   scheme_add_global_constant("lookup-errno",
    scheme_make_immed_prim((Scheme_Prim *)unimplemented, "lookup-errno", 1, 1), menv);
   scheme_add_global_constant("make-stubborn-will-executor",
