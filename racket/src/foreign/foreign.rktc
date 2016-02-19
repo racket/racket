@@ -3441,9 +3441,18 @@ static void save_errno_values(int kind)
   p->saved_errno = errno;
 }
 
-@cdefine[saved-errno 0 #:kind immed]{
+@cdefine[saved-errno 0 1 #:kind immed]{
   Scheme_Thread *p = scheme_current_thread;
-  return scheme_make_integer_value(p->saved_errno);
+  if (argc == 0) {
+    return scheme_make_integer_value(p->saved_errno);
+  } else {
+    intptr_t v;
+    if (!scheme_get_int_val(argv[0], &v)) {
+      wrong_intptr(MYNAME, 0, argc, argv);
+    }
+    p->saved_errno = v;
+    return scheme_void;
+  }
 }
 
 @cdefine[lookup-errno 1 #:kind immed]{

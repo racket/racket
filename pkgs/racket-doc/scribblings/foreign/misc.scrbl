@@ -26,11 +26,16 @@ internal representation of @racket[vec].}
 Returns a pointer to an array of @racket[_double] values, which is the
 internal representation of @racket[flvec].}
 
-@defproc[(saved-errno) exact-integer?]{
+@defproc*[([(saved-errno) exact-integer?]
+           [(saved-errno [new-value exact-integer?]) void?])]{
 
-Returns the value most recently saved (in the current thread) after a
-foreign call with a non-@racket[#f] @racket[#:save-errno] option (see
-@racket[_fun] and @racket[_cprocedure]).}
+Returns or sets the error code saved for the current Racket
+thread. The saved error code is set after a foreign call with a
+non-@racket[#f] @racket[#:save-errno] option (see @racket[_fun] and
+@racket[_cprocedure]), but it can also be set explicitly (for example,
+to create mock foreign functions for testing).
+
+@history[#:changed "6.4.0.9"]{Added the one-argument variant.}}
 
 @defproc[(lookup-errno [sym (or/c 'EINTR 'EEXIST 'EAGAIN)])
          exact-integer?]{
