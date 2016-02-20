@@ -1,7 +1,7 @@
 
 enum {
 
-  /* compiled object types: (internal) */
+  /* Compiled bytecode elements: */
   scheme_toplevel_type,                 /* 0 */
   scheme_local_type,                    /* 1 */
   scheme_local_unbox_type,              /* 2 */
@@ -33,9 +33,12 @@ enum {
   scheme_module_type,                   /* 27 */
   scheme_inline_variant_type,           /* 28 */
 
-  _scheme_values_types_, /* All following types are values */
+  _scheme_values_types_,                /* 29 */
+  /* All following types are values at run time */
   
-  /* intermediate compiled variants (as seen by optimizer): */
+  /* Replacements for some of the above as the
+     compiler's intermediate representation for
+     optimization: */
   scheme_ir_local_type,                 /* 30 */
   scheme_ir_lambda_type,                /* 31 */
   scheme_ir_let_value_type,             /* 32 */
@@ -45,11 +48,15 @@ enum {
 
   scheme_quote_compilation_type, /* used while writing, only */
 
-  /* Registered in prefix table: */
+  /* Generated in the compiler front-end, but
+     registered in the prefix table instead of
+     used directly as an "expression": */
   scheme_variable_type,                 /* 37 */
   scheme_module_variable_type, /* link replaces with scheme_variable_type */
 
   _scheme_ir_values_types_,             /* 39 */
+  /* All of the following are literal values from the
+     perspective of the compiler */
 
   /* procedure types */
   scheme_prim_type,                     /* 40 */
@@ -223,84 +230,87 @@ enum {
   scheme_ctype_type,                    /* 199 */
   scheme_plumber_type,                  /* 200 */
   scheme_plumber_handle_type,           /* 201 */
+  scheme_deferred_expr_type,            /* 202 */
                                         
 #ifdef MZTAG_REQUIRED                            
-  _scheme_last_normal_type_,            /* 202 */
+  _scheme_last_normal_type_,            /* 203 */
+
+  /* The remaining tags exist for GC tracing (in non-conservative
+     mode), but they are not needed for run-time tag tests */
                                                  
-  scheme_rt_weak_array,                 /* 203 */
+  scheme_rt_weak_array,                 /* 204 */
                                         
-  scheme_rt_comp_env,                   /* 204 */
-  scheme_rt_constant_binding,           /* 205 */
-  scheme_rt_resolve_info,               /* 206 */
-  scheme_rt_unresolve_info,             /* 207 */
-  scheme_rt_optimize_info,              /* 208 */
-  scheme_rt_cont_mark,                  /* 209 */
-  scheme_rt_saved_stack,                /* 210 */
-  scheme_rt_reply_item,                 /* 211 */
-  scheme_rt_ir_lambda_info,             /* 212 */
-  scheme_rt_overflow,                   /* 213 */
-  scheme_rt_overflow_jmp,               /* 214 */
-  scheme_rt_meta_cont,                  /* 215 */
-  scheme_rt_dyn_wind_cell,              /* 216 */
-  scheme_rt_dyn_wind_info,              /* 217 */
-  scheme_rt_dyn_wind,                   /* 218 */
-  scheme_rt_dup_check,                  /* 219 */
-  scheme_rt_thread_memory,              /* 220 */
-  scheme_rt_input_file,                 /* 221 */
-  scheme_rt_input_fd,                   /* 222 */
-  scheme_rt_oskit_console_input,        /* 223 */
-  scheme_rt_tested_input_file,          /* 224 */
-  scheme_rt_tested_output_file,         /* 225 */
-  scheme_rt_indexed_string,             /* 226 */
-  scheme_rt_output_file,                /* 227 */
-  scheme_rt_load_handler_data,          /* 228 */
-  scheme_rt_pipe,                       /* 229 */
-  scheme_rt_beos_process,               /* 230 */
-  scheme_rt_system_child,               /* 231 */
-  scheme_rt_tcp,                        /* 232 */
-  scheme_rt_write_data,                 /* 233 */
-  scheme_rt_tcp_select_info,            /* 234 */
-  scheme_rt_param_data,                 /* 235 */
-  scheme_rt_will,                       /* 236 */
-  scheme_rt_linker_name,                /* 237 */
-  scheme_rt_param_map,                  /* 238 */
-  scheme_rt_finalization,               /* 239 */
-  scheme_rt_finalizations,              /* 240 */
-  scheme_rt_cpp_object,                 /* 241 */
-  scheme_rt_cpp_array_object,           /* 242 */
-  scheme_rt_stack_object,               /* 243 */
-  scheme_rt_preallocated_object,        /* 244 */
-  scheme_thread_hop_type,               /* 245 */
-  scheme_rt_srcloc,                     /* 246 */
-  scheme_rt_evt,                        /* 247 */
-  scheme_rt_syncing,                    /* 248 */
-  scheme_rt_comp_prefix,                /* 249 */
-  scheme_rt_user_input,                 /* 250 */
-  scheme_rt_user_output,                /* 251 */
-  scheme_rt_compact_port,               /* 252 */
-  scheme_rt_read_special_dw,            /* 253 */
-  scheme_rt_regwork,                    /* 254 */
-  scheme_rt_rx_lazy_string,             /* 255 */
-  scheme_rt_buf_holder,                 /* 256 */
-  scheme_rt_parameterization,           /* 257 */
-  scheme_rt_print_params,               /* 258 */
-  scheme_rt_read_params,                /* 259 */
-  scheme_rt_native_code,                /* 260 */
-  scheme_rt_native_code_plus_case,      /* 261 */
-  scheme_rt_jitter_data,                /* 262 */
-  scheme_rt_module_exports,             /* 263 */
-  scheme_rt_delay_load_info,            /* 264 */
-  scheme_rt_marshal_info,               /* 265 */
-  scheme_rt_unmarshal_info,             /* 266 */
-  scheme_rt_runstack,                   /* 267 */
-  scheme_rt_sfs_info,                   /* 268 */
-  scheme_rt_validate_clearing,          /* 269 */
-  scheme_rt_lightweight_cont,           /* 270 */
-  scheme_rt_export_info,                /* 271 */
-  scheme_rt_cont_jmp,                   /* 272 */
-  scheme_rt_letrec_check_frame,         /* 273 */
+  scheme_rt_comp_env,                   /* 205 */
+  scheme_rt_constant_binding,           /* 206 */
+  scheme_rt_resolve_info,               /* 207 */
+  scheme_rt_unresolve_info,             /* 208 */
+  scheme_rt_optimize_info,              /* 209 */
+  scheme_rt_cont_mark,                  /* 210 */
+  scheme_rt_saved_stack,                /* 211 */
+  scheme_rt_reply_item,                 /* 212 */
+  scheme_rt_ir_lambda_info,             /* 213 */
+  scheme_rt_overflow,                   /* 214 */
+  scheme_rt_overflow_jmp,               /* 215 */
+  scheme_rt_meta_cont,                  /* 216 */
+  scheme_rt_dyn_wind_cell,              /* 217 */
+  scheme_rt_dyn_wind_info,              /* 218 */
+  scheme_rt_dyn_wind,                   /* 219 */
+  scheme_rt_dup_check,                  /* 220 */
+  scheme_rt_thread_memory,              /* 221 */
+  scheme_rt_input_file,                 /* 222 */
+  scheme_rt_input_fd,                   /* 223 */
+  scheme_rt_oskit_console_input,        /* 224 */
+  scheme_rt_tested_input_file,          /* 225 */
+  scheme_rt_tested_output_file,         /* 226 */
+  scheme_rt_indexed_string,             /* 227 */
+  scheme_rt_output_file,                /* 228 */
+  scheme_rt_load_handler_data,          /* 229 */
+  scheme_rt_pipe,                       /* 230 */
+  scheme_rt_beos_process,               /* 231 */
+  scheme_rt_system_child,               /* 232 */
+  scheme_rt_tcp,                        /* 233 */
+  scheme_rt_write_data,                 /* 234 */
+  scheme_rt_tcp_select_info,            /* 235 */
+  scheme_rt_param_data,                 /* 236 */
+  scheme_rt_will,                       /* 237 */
+  scheme_rt_linker_name,                /* 238 */
+  scheme_rt_param_map,                  /* 239 */
+  scheme_rt_finalization,               /* 240 */
+  scheme_rt_finalizations,              /* 241 */
+  scheme_rt_cpp_object,                 /* 242 */
+  scheme_rt_cpp_array_object,           /* 243 */
+  scheme_rt_stack_object,               /* 244 */
+  scheme_rt_preallocated_object,        /* 245 */
+  scheme_thread_hop_type,               /* 246 */
+  scheme_rt_srcloc,                     /* 247 */
+  scheme_rt_evt,                        /* 248 */
+  scheme_rt_syncing,                    /* 249 */
+  scheme_rt_comp_prefix,                /* 250 */
+  scheme_rt_user_input,                 /* 251 */
+  scheme_rt_user_output,                /* 252 */
+  scheme_rt_compact_port,               /* 253 */
+  scheme_rt_read_special_dw,            /* 254 */
+  scheme_rt_regwork,                    /* 255 */
+  scheme_rt_rx_lazy_string,             /* 256 */
+  scheme_rt_buf_holder,                 /* 257 */
+  scheme_rt_parameterization,           /* 258 */
+  scheme_rt_print_params,               /* 259 */
+  scheme_rt_read_params,                /* 260 */
+  scheme_rt_native_code,                /* 261 */
+  scheme_rt_native_code_plus_case,      /* 262 */
+  scheme_rt_jitter_data,                /* 263 */
+  scheme_rt_module_exports,             /* 264 */
+  scheme_rt_delay_load_info,            /* 265 */
+  scheme_rt_marshal_info,               /* 266 */
+  scheme_rt_unmarshal_info,             /* 267 */
+  scheme_rt_runstack,                   /* 268 */
+  scheme_rt_sfs_info,                   /* 269 */
+  scheme_rt_validate_clearing,          /* 270 */
+  scheme_rt_lightweight_cont,           /* 271 */
+  scheme_rt_export_info,                /* 272 */
+  scheme_rt_cont_jmp,                   /* 273 */
+  scheme_rt_letrec_check_frame,         /* 274 */
 #endif
-  scheme_deferred_expr_type,            /* 274 */
 
   _scheme_last_type_
 };

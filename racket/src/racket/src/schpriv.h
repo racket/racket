@@ -1459,9 +1459,10 @@ Scheme_Object *scheme_top_introduce(Scheme_Object *form, Scheme_Env *genv);
 /*                   syntax run-time structures                           */
 /*========================================================================*/
 
-/* A Scheme_IR_Local record represents a local variable,
-   both the binding and references to that binding. When inlining
-   of other transformations duplicate a variable, a new instance
+/* A Scheme_IR_Local record represents a local variable, where
+   both the binding and references to that same binding are
+   represented by the same allocated object. When inlining
+   or other transformations duplicate a variable, a new instance
    is allocated to represent a separate variable. Different passes
    in the comiler store different information about the variable. */
 typedef struct Scheme_IR_Local
@@ -3178,20 +3179,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
                           int *_pos, Scheme_Object *rename_rib, int replace_value);
 int scheme_is_sub_env(Scheme_Comp_Env *stx_env, Scheme_Comp_Env *env);
 
-typedef struct SFS_Info {
-  MZTAG_IF_REQUIRED  
-  int for_mod, pass;
-  int tail_pos; /* in tail position? */
-  int depth, stackpos, tlpos; /* stack shape */
-  int selfpos, selfstart, selflen; /* tracks self calls */
-  int ip; /* "instruction pointer" --- counts up during traversal of expressions */
-  int seqn; /* tracks nesting */
-  int max_nontail; /* ip of last non-tail call in the body */
-  int min_touch, max_touch; /* tracks range of `macx_used' values changed */
-  int *max_used; /* maps stack position (i.e., variable) to ip of the variable's last use */
-  int *max_calls; /* maps stack position to ip of last non-tail call in variable's scope */
-  Scheme_Object *saved;
-} SFS_Info;
+typedef struct SFS_Info SFS_Info;
 
 SFS_Info *scheme_new_sfs_info(int depth);
 Scheme_Object *scheme_sfs(Scheme_Object *expr, SFS_Info *info, int max_let_depth);

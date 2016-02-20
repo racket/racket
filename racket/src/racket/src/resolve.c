@@ -24,12 +24,16 @@
 */
 
 /* This file implements the bytecode "resolve" pass, which converts
-   the optimization IR to the evaluation IR --- where the main
-   difference between the IRs is a change in stack addresses. This
+   the optimization IR to the evaluation bytecode --- where the main
+   difference between the representations is to use stack addresses. This
    pass is also responsible for closure conversion (in the sense of
    lifting closures that are used only in application positions where
    all variables captured by the closure can be converted to arguments
    at all call sites).
+
+   The "unresolve" functions convert run-time bytecode back into the
+   optimizer's IR, which is used for cross-module inlining and for
+   `compiled-expression-recompile`.
 
    See "eval.c" for an overview of compilation passes. */
 
@@ -41,17 +45,24 @@ struct Resolve_Info
 {
   MZTAG_IF_REQUIRED
   char use_jit, in_module, in_proc, enforce_const, no_lift;
-  int current_depth;
-  int current_lex_depth;
-  int max_let_depth; /* filled in by sub-expressions */
+  int current_depth; /* tracks the stack depth, so variables can be
+                        resolved relative to it; this depth is reset
+                        on entry to `lambda` forms */
+  int current_lex_depth; /* keeps track of the lexical depth, which isn't
+                            reset on entry; this absolute depth is useful
+                            for sorting */
+  int max_let_depth; /* filled in by sub-expressions to track the maximum
+                        stack depth experienced so far */
   Resolve_Prefix *prefix;
   Scheme_Hash_Table *stx_map; /* compile offset => resolve offset; prunes prefix-recored stxes */
-  mzshort toplevel_pos;
-  void *tl_map; /* fixnum or bit array (as array of `int's) indicating which globals+lifts in prefix are used */
-  int stx_count;
-  mzshort *old_stx_pos; /* NULL => consult next; new pos is index in array */
-  Scheme_Hash_Tree *redirects;
-  Scheme_Object *lifts;
+  mzshort toplevel_pos; /* tracks where the run-time prefix will be, relative
+                           to the current stack depth */
+  void *tl_map; /* fixnum or bit array (as array of `int's) indicating which
+                   globals+lifts in prefix are used */
+  int stx_count; /* tracks the number of literal syntax objects used */
+  Scheme_Hash_Tree *redirects; /* maps variables that will be from the closure
+                                  to their stack depths for the enclosing `lambda` */
+  Scheme_Object *lifts; /* tracks functions lifted by closure conversion */
   struct Resolve_Info *next;
 };
 

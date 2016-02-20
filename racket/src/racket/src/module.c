@@ -19,10 +19,11 @@
     Boston, MA 02110-1301 USA.
 */
 
-/* This file implements the first-order, top-level module system. An
-   initiantiated module is implemented essentially as a namespace. The
-   bindings at the top level of a module are namespace top-level
-   bindings. */
+/* This file implements the first-order, top-level module system --
+   both the expander and compiler front-end, as well as run-time
+   support for modules. An initiantiated module is implemented
+   essentially as a namespace. The bindings at the top level of a
+   module are namespace top-level bindings. */
 
 #include "schpriv.h"
 #include "schmach.h"

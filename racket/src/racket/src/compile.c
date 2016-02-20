@@ -19,10 +19,14 @@
     Boston, MA 02110-1301 USA.
 */
 
-/* This file implements macro expansion and compilation. Instead of
-   always fully expanding code and then compiling it, the compiler
-   expands as it goes, which enables some shortcuts compared to fully
-   expanding first.
+/* This file implements macro expansion and front-end compilation.
+   Instead of always fully expanding code and then compiling it to an
+   intermediate format, the compiler front-end expands as it goes,
+   which enables some shortcuts compared to fully expanding first.
+
+   The intermediate format generated from here accumulates references
+   to non-local variables in a prefix, and it indicates whether each
+   local variable is mutatble.
 
    See "eval.c" for an overview of compilation passes.
 
@@ -213,7 +217,7 @@ void scheme_init_compile (Scheme_Env *env)
 			    scheme_lambda_syntax,
 			    env);
   {
-    /* Graak lambda binding: */
+    /* Greek lambda binding: */
     Scheme_Object *macro, *fn;
 
     fn = scheme_make_prim_w_arity(expand_lam, "\316\273", 1, 1);

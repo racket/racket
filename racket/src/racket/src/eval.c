@@ -83,9 +83,8 @@
 
    Compilation works in five passes.
 
-   The first pass, called "compile", performs most of the work and
-   tracks variable usage (including whether a variable is mutated or
-   not). See "compile.c" along with "compenv.c".
+   The first pass, called "compile", is the expander and compiler
+   front-end. See "compile.c", along with "compenv.c" and "module.c".
 
    The second pass, called "letrec_check", determines which references
    to `letrec'-bound variables need to be guarded with a run-time

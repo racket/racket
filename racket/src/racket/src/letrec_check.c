@@ -22,7 +22,11 @@
 #include "schpriv.h"
 #include "schmach.h"
 
-/* PLAN:
+/* This file implements the compiler's letrec-check pass.
+ *
+ * See "eval.c" for an overview of compilation passes.
+ * 
+ * PLAN:
  *
  * Imagine starting with a simple abstract interpretation: traverse
  * the program in evaluation order, treating `if` like `begin` and

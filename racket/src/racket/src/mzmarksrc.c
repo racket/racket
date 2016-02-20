@@ -1322,7 +1322,6 @@ mark_resolve_info {
   gcMARK2(i->prefix, gc);
   gcMARK2(i->stx_map, gc);
   gcMARK2(i->tl_map, gc);
-  gcMARK2(i->old_stx_pos, gc);
   gcMARK2(i->redirects, gc);
   gcMARK2(i->lifts, gc);
   gcMARK2(i->next, gc);
