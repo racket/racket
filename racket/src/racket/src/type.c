@@ -142,7 +142,7 @@ scheme_init_type ()
   set_name(scheme_let_void_type, "<let-void-code>");
   set_name(scheme_ir_local_type, "<local-semi-code>");
   set_name(scheme_ir_let_value_type, "<let-value-semi-code>");
-  set_name(scheme_ir_let_void_type, "<let-void-semi-code>");
+  set_name(scheme_ir_let_header_type, "<let-header-semi-code>");
   set_name(scheme_ir_toplevel_type, "<variable-semi-code>");
   set_name(scheme_ir_quote_syntax_type, "<quote-syntax-semi-code>");
   set_name(scheme_letrec_type, "<letrec-code>");
@@ -592,7 +592,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_ir_lambda_type, unclosed_proc);
   GC_REG_TRAV(scheme_ir_local_type, ir_local);
   GC_REG_TRAV(scheme_ir_let_value_type, ir_let_value);
-  GC_REG_TRAV(scheme_ir_let_void_type, let_header);
+  GC_REG_TRAV(scheme_ir_let_header_type, let_header);
   GC_REG_TRAV(scheme_ir_toplevel_type, toplevel_obj);
   GC_REG_TRAV(scheme_ir_quote_syntax_type, local_obj);
 

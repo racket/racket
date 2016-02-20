@@ -2956,7 +2956,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
 #endif
     }
     break;
-  case scheme_ir_let_void_type:
+  case scheme_ir_let_header_type:
     {
       Scheme_Let_Header *let = (Scheme_Let_Header *)root;
 

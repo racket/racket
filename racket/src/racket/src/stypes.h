@@ -42,7 +42,7 @@ enum {
   scheme_ir_local_type,                 /* 30 */
   scheme_ir_lambda_type,                /* 31 */
   scheme_ir_let_value_type,             /* 32 */
-  scheme_ir_let_void_type,              /* 33 */
+  scheme_ir_let_header_type,            /* 33 */
   scheme_ir_toplevel_type,              /* 34 */
   scheme_ir_quote_syntax_type,          /* 35 */
 

@@ -1045,7 +1045,7 @@ static Scheme_Object *letrec_check_expr(Scheme_Object *expr, Letrec_Check_Frame 
     return letrec_check_wcm(expr, frame, pos);
   case scheme_ir_lambda_type:
     return letrec_check_lambda(expr, frame, pos);
-  case scheme_ir_let_void_type:
+  case scheme_ir_let_header_type:
     return letrec_check_lets(expr, frame, pos);
   case scheme_ir_toplevel_type: /* var ref to a top level */
     return expr;

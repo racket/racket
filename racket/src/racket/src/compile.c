@@ -1867,7 +1867,7 @@ static Scheme_IR_Let_Header *make_header(Scheme_Object *first, int num_bindings,
   Scheme_IR_Let_Header *head;
 
   head = MALLOC_ONE_TAGGED(Scheme_IR_Let_Header);
-  head->iso.so.type = scheme_ir_let_void_type;
+  head->iso.so.type = scheme_ir_let_header_type;
   head->body = first;
   head->count = num_bindings;
   head->num_clauses = num_clauses;
