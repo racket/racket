@@ -15,9 +15,6 @@
     [(bytes? pkg)
      pkg]))
 
-(define (directory-path-no-slash pkg)
-  (bytes->path (regexp-replace* #rx#"/$" (path->bytes* pkg) #"")))
-
 (define (directory-list* d)
   (append-map
    (λ (pp)

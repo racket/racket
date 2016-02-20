@@ -609,47 +609,46 @@
                          (package-source->path pkg type)))
     (unless (directory-exists? pkg-path)
       (pkg-error "no such directory\n  path: ~a" pkg-path))
-    (let ([pkg-path (directory-path-no-slash pkg-path)])
-      (cond
-       [(or (eq? type 'link)
-            (eq? type 'static-link))
-        (install-info pkg-name
-                      (desc->orig-pkg type pkg-path #f)
-                      pkg-path
-                      #f ; no git-dir
-                      #f ; no clean?
-                      given-checksum ; if a checksum is provided, just use it
-                      (directory->module-paths pkg-path pkg-name metadata-ns)
-                      (directory->additional-installs pkg-path pkg-name metadata-ns))]
-       [else
-        (define pkg-dir
-          (if in-place?
+    (cond
+     [(or (eq? type 'link)
+          (eq? type 'static-link))
+      (install-info pkg-name
+                    (desc->orig-pkg type pkg-path #f)
+                    pkg-path
+                    #f ; no git-dir
+                    #f ; no clean?
+                    given-checksum ; if a checksum is provided, just use it
+                    (directory->module-paths pkg-path pkg-name metadata-ns)
+                    (directory->additional-installs pkg-path pkg-name metadata-ns))]
+     [else
+      (define pkg-dir
+        (if in-place?
+            (if strip-mode
+                (pkg-error "cannot strip directory in place")
+                pkg-path)
+            (let ([pkg-dir (make-temporary-file "pkg~a" 'directory)])
+              (delete-directory pkg-dir)
               (if strip-mode
-                  (pkg-error "cannot strip directory in place")
-                  pkg-path)
-              (let ([pkg-dir (make-temporary-file "pkg~a" 'directory)])
-                (delete-directory pkg-dir)
-                (if strip-mode
-                    (begin
-                      (unless force-strip?
-                        (check-strip-compatible strip-mode pkg-name pkg pkg-error))
-                      (make-directory* pkg-dir)
-                      (generate-stripped-directory strip-mode pkg pkg-dir))
-                    (begin
-                      (make-parent-directory* pkg-dir)
-                      (copy-directory/files pkg-path pkg-dir #:keep-modify-seconds? #t)))
-                pkg-dir)))
-        (when (or (not in-place?)
-                  in-place-clean?)
-          (drop-redundant-files pkg-dir))
-        (install-info pkg-name
-                      `(dir ,(simple-form-path* pkg-path))
-                      pkg-dir
-                      #f ; no git-dir
-                      (or (not in-place?) in-place-clean?) 
-                      given-checksum ; if a checksum is provided, just use it
-                      (directory->module-paths pkg-dir pkg-name metadata-ns)
-                      (directory->additional-installs pkg-dir pkg-name metadata-ns))]))]
+                  (begin
+                    (unless force-strip?
+                      (check-strip-compatible strip-mode pkg-name pkg pkg-error))
+                    (make-directory* pkg-dir)
+                    (generate-stripped-directory strip-mode pkg pkg-dir))
+                  (begin
+                    (make-parent-directory* pkg-dir)
+                    (copy-directory/files pkg-path pkg-dir #:keep-modify-seconds? #t)))
+              pkg-dir)))
+      (when (or (not in-place?)
+                in-place-clean?)
+        (drop-redundant-files pkg-dir))
+      (install-info pkg-name
+                    `(dir ,(simple-form-path* pkg-path))
+                    pkg-dir
+                    #f ; no git-dir
+                    (or (not in-place?) in-place-clean?)
+                    given-checksum ; if a checksum is provided, just use it
+                    (directory->module-paths pkg-dir pkg-name metadata-ns)
+                    (directory->additional-installs pkg-dir pkg-name metadata-ns))])]
    [(eq? type 'name)
     (define catalog-info (package-catalog-lookup pkg #f catalog-lookup-cache
                                                  download-printf))
