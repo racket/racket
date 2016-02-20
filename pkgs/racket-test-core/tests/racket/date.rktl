@@ -26,6 +26,8 @@
 (test 0 find-seconds 0 0 0 1 1 1970 #f)
 (test 32416215 find-seconds 15 30 4 11 1 1971 #f)
 
+(test 1969 date-year (seconds->date (- (* 24 60 60))))
+
 (let* ([s (current-seconds)]
        [d1 (seconds->date s)]
        [d2 (seconds->date (+ s 1/100000000))])
@@ -116,5 +118,11 @@
 (let ([d ;; 2015-08-22T12:34:56.789000000Z
        (date* 56 34 12 22 08 2015 6 233 #f 0 789000000 "UTC")])
   (test 789/1000 - (date*->seconds d) (date->seconds d)))
+
+;; Check some overflow handling on Windows:
+(let ([out-of-range (lambda (exn) (regexp-match? #rx"out-of-range" (exn-message exn)))])
+  (err/rt-test (seconds->date (expt 2 40)) out-of-range)
+  (err/rt-test (seconds->date (expt 2 50)) out-of-range)
+  (err/rt-test (seconds->date (expt 2 60)) out-of-range))
 
 (report-errs)

@@ -9975,18 +9975,30 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 
 #ifdef USE_WIN32_TIME
     {
-      mzlonglong nsC;
-      FILETIME ft;
-      nsC = (((mzlonglong)lnow) * 10000000) + ((mzlonglong)MSEC_OFFSET * 10000);
-      ft.dwLowDateTime = nsC & (mzlonglong)0xFFFFFFFF;
-      ft.dwHighDateTime = nsC >> 32;
-      success = FileTimeToSystemTime(&ft, &localTime);
-      if (success && !get_gmt) {
-	SYSTEMTIME t2 = localTime;
-	if (SystemTimeToTzSpecificLocalTimeExProc)
-	  success = SystemTimeToTzSpecificLocalTimeExProc(NULL, &t2, &localTime);
-	else
-	  success = SystemTimeToTzSpecificLocalTime(NULL, &t2, &localTime);
+      umzlonglong tmpC;
+      tmpC = ((umzlonglong)lnow * 10000000);
+      if ((mzlonglong)tmpC / 10000000 != lnow) {
+	/* overflow */
+	success = 0;
+      } else {
+	mzlonglong nsC;
+	FILETIME ft;
+	nsC = tmpC + ((umzlonglong)MSEC_OFFSET * 10000);
+	if (nsC < (mzlonglong)tmpC) {
+	  /* overflow */
+	  success = 0;
+	} else {
+	  ft.dwLowDateTime = nsC & (mzlonglong)0xFFFFFFFF;
+	  ft.dwHighDateTime = nsC >> 32;
+	  success = FileTimeToSystemTime(&ft, &localTime);
+	  if (success && !get_gmt) {
+	    SYSTEMTIME t2 = localTime;
+	    if (SystemTimeToTzSpecificLocalTimeExProc)
+	      success = SystemTimeToTzSpecificLocalTimeExProc(NULL, &t2, &localTime);
+	    else
+	      success = SystemTimeToTzSpecificLocalTime(NULL, &t2, &localTime);
+	  }
+	}
       }
     }
 #else
