@@ -1411,7 +1411,6 @@ mark_optimize_info {
   gcMARK2(i->cp, gc);
   gcMARK2(i->top_level_consts, gc);
   gcMARK2(i->transitive_use_var, gc);
-  gcMARK2(i->transitive_uses_to, gc);
   gcMARK2(i->context, gc);
   gcMARK2(i->logger, gc);
   gcMARK2(i->types, gc);

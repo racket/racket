@@ -17,7 +17,6 @@ static int mark_optimize_info_MARK(void *p, struct NewGC *gc) {
   gcMARK2(i->cp, gc);
   gcMARK2(i->top_level_consts, gc);
   gcMARK2(i->transitive_use_var, gc);
-  gcMARK2(i->transitive_uses_to, gc);
   gcMARK2(i->context, gc);
   gcMARK2(i->logger, gc);
   gcMARK2(i->types, gc);
@@ -41,7 +40,6 @@ static int mark_optimize_info_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(i->cp, gc);
   gcFIXUP2(i->top_level_consts, gc);
   gcFIXUP2(i->transitive_use_var, gc);
-  gcFIXUP2(i->transitive_uses_to, gc);
   gcFIXUP2(i->context, gc);
   gcFIXUP2(i->logger, gc);
   gcFIXUP2(i->types, gc);
