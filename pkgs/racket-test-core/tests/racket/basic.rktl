@@ -1356,7 +1356,7 @@
                                     o))
     (test (- N M) string-length (get-output-string o)))))
 
-(arity-test regexp 1 1)
+(arity-test regexp 1 2)
 (arity-test regexp? 1 1)
 (arity-test regexp-match 2 6)
 (arity-test regexp-match-positions 2 6)
