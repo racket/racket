@@ -1785,5 +1785,17 @@
              (lambda () (regexp-match-peek-positions-immediate/end #rx".*" (open-input-string "abc"))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test failure handlers
+
+(test #f regexp "+" (λ () #f))
+(test #f pregexp "+" (λ () #f))
+(test #f byte-regexp #"+" (λ () #f))
+(test #f byte-pregexp #"+" (λ () #f))
+(test 3 regexp "+" (λ () (+ 1 2)))
+(test 3 pregexp "+" (λ () (+ 1 2)))
+(test 3 byte-regexp #"+" (λ () (+ 1 2)))
+(test 3 byte-pregexp #"+" (λ () (+ 1 2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
