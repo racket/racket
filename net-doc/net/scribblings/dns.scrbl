@@ -77,6 +77,8 @@ in case the server does not provide this optional feature.
 	  (eval:alts (dns-get-srv (dns-find-nameserver) "racket-lang.org" "xmpp-client" "udp")
 		     (list))
 	  ]
+
+@history[#:added "6.4.0.8"]
 }
 
 
