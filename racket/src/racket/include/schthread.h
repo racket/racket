@@ -229,6 +229,8 @@ typedef struct Thread_Local_Variables {
   rxpos regcodesize_;
   rxpos regcodemax_;
   intptr_t regmaxlookback_;
+  Scheme_Object *regerrorproc_;
+  Scheme_Object *regerrorval_;
   intptr_t rx_buffer_size_;
   rxpos *startp_buffer_cache_;
   rxpos *endp_buffer_cache_;
@@ -624,6 +626,8 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define regcodesize XOA (scheme_get_thread_local_variables()->regcodesize_)
 #define regcodemax XOA (scheme_get_thread_local_variables()->regcodemax_)
 #define regmaxlookback XOA (scheme_get_thread_local_variables()->regmaxlookback_)
+#define regerrorproc XOA (scheme_get_thread_local_variables()->regerrorproc_)
+#define regerrorval XOA (scheme_get_thread_local_variables()->regerrorval_)
 #define rx_buffer_size XOA (scheme_get_thread_local_variables()->rx_buffer_size_)
 #define startp_buffer_cache XOA (scheme_get_thread_local_variables()->startp_buffer_cache_)
 #define endp_buffer_cache XOA (scheme_get_thread_local_variables()->endp_buffer_cache_)

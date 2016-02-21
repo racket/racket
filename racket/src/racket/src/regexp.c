@@ -60,7 +60,7 @@
 # define rOPRNGS(o) OPRNGS(o, regstr)
 # define NEXT_OP(scan) (scan + rNEXT(scan))
 
-static regexp *regcomp(char *, rxpos, int, int);
+static regexp *regcomp(char *, rxpos, int, int, Scheme_Object*);
 /* static int regexec(regexp *, char *, int, int, rxpos *, rxpos * ...); */
 
 /*
@@ -84,6 +84,9 @@ THREAD_LOCAL_DECL(static rxpos regcode) ;    /* Code-emit pointer, if less than 
 THREAD_LOCAL_DECL(static rxpos regcodesize);
 THREAD_LOCAL_DECL(static rxpos regcodemax);
 THREAD_LOCAL_DECL(static intptr_t regmaxlookback);
+
+THREAD_LOCAL_DECL(static Scheme_Object *regerrorproc); /* error handler for regexp construction */
+THREAD_LOCAL_DECL(static Scheme_Object *regerrorval);  /* result of error handler for failed regexp construction */
 
 /* caches to avoid gc */
 THREAD_LOCAL_DECL(static intptr_t rx_buffer_size);
@@ -126,8 +129,12 @@ READ_ONLY static Scheme_Object *empty_byte_string;
 static void
 regerror(char *s)
 {
-  scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-		   "regexp: %s", s);
+  if (SCHEME_FALSEP(regerrorproc)) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "regexp: %s", s);
+  } else {
+    regerrorval = scheme_apply(regerrorproc, 0, NULL);
+  }
 }
 
 THREAD_LOCAL_DECL(const char *failure_msg_for_read);
@@ -158,7 +165,7 @@ regcomperror(char *s)
  * of the structure of the compiled regexp.
  */
 static regexp *
-regcomp(char *expstr, rxpos exp, int explen, int pcre)
+regcomp(char *expstr, rxpos exp, int explen, int pcre, Scheme_Object *handler)
 {
   regexp *r;
   rxpos scan, next;
@@ -180,6 +187,8 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre)
   regmaxbackposn = 0;
   regbackknown = NULL;
   regbackdepends = NULL;
+  regerrorproc = handler;
+  regerrorval = NULL;
   regc(MAGIC);
   if (reg(0, &flags, 0, 0, PARSE_CASE_SENS | PARSE_SINGLE_LINE | (pcre ? PARSE_PCRE : 0)) == 0) {
     FAIL("unknown regexp failure");
@@ -5035,6 +5044,7 @@ int scheme_is_pregexp(Scheme_Object *o)
 static Scheme_Object *do_make_regexp(const char *who, int is_byte, int pcre, int argc, Scheme_Object *argv[])
 {
   Scheme_Object *re, *bs;
+  Scheme_Object *handler;
   char *s;
   int slen;
 
@@ -5046,6 +5056,16 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int pcre, int
     if (!SCHEME_CHAR_STRINGP(argv[0]))
       scheme_wrong_contract(who, "string?", 0, argc, argv);
     bs = scheme_char_string_to_byte_string(argv[0]);
+  }
+
+  if (argc >= 2) {
+    if (!SCHEME_PROCP(argv[1])) {
+      scheme_wrong_contract(who, "(-> any)", 0, argc, argv);
+    }
+    scheme_check_proc_arity(who, 0, 1, argc, argv);
+    handler = argv[1];
+  } else {
+    handler = scheme_false;
   }
 
   s = SCHEME_BYTE_STR_VAL(bs);
@@ -5068,7 +5088,12 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int pcre, int
 #endif
   }
 
-  re = (Scheme_Object *)regcomp(s, 0, slen, pcre);
+  re = (Scheme_Object *)regcomp(s, 0, slen, pcre, handler);
+
+  /* passed a handler and regexp compilation failed */
+  if (!re) {
+    return regerrorval;
+  }
 
   if (!is_byte)
     ((regexp *)re)->flags |= REGEXP_IS_UTF8;
@@ -5993,10 +6018,10 @@ void scheme_regexp_initialize(Scheme_Env *env)
   REGISTER_SO(empty_byte_string);
   empty_byte_string = scheme_alloc_byte_string(0, 0);
 
-  GLOBAL_PRIM_W_ARITY("byte-regexp",                           make_regexp,             1, 1, env);
-  GLOBAL_PRIM_W_ARITY("regexp",                                make_utf8_regexp,        1, 1, env);
-  GLOBAL_PRIM_W_ARITY("byte-pregexp",                          make_pregexp,            1, 1, env);
-  GLOBAL_PRIM_W_ARITY("pregexp",                               make_utf8_pregexp,       1, 1, env);
+  GLOBAL_PRIM_W_ARITY("byte-regexp",                           make_regexp,             1, 2, env);
+  GLOBAL_PRIM_W_ARITY("regexp",                                make_utf8_regexp,        1, 2, env);
+  GLOBAL_PRIM_W_ARITY("byte-pregexp",                          make_pregexp,            1, 2, env);
+  GLOBAL_PRIM_W_ARITY("pregexp",                               make_utf8_pregexp,       1, 2, env);
   GLOBAL_PRIM_W_ARITY("regexp-match",                          compare,                 2, 6, env);
   GLOBAL_PRIM_W_ARITY("regexp-match/end",                      compare_end,             2, 7, env);
   GLOBAL_PRIM_W_ARITY("regexp-match-positions",                positions,               2, 6, env);
