@@ -3204,7 +3204,6 @@ Scheme_Object *scheme_protect_quote(Scheme_Object *expr);
 Scheme_Object *scheme_letrec_check_expr(Scheme_Object *);
 
 Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int context);
-Scheme_Object *scheme_optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);
 
 /* Context uses result as a boolean: */
 #define OPT_CONTEXT_BOOLEAN    0x1
