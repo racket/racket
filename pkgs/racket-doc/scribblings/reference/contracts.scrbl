@@ -110,11 +110,11 @@ Contracts in Racket are subdivided into three different categories:
                 may hide properties of values, or even make them completely
                 opaque (e.g, @racket[new-∀/c]).
                 
-                All contracts are impersonator contracts.}]
+                All @tech{contracts} are impersonator contracts.}]
 
-For more about this hierarchy, see @tech{chaperones} and
-a research paper on chaperones, impersonators, and how they can be used to 
-implement contracts @cite{Strickland12}.
+For more about this hierarchy, see the section ``@secref["chaperones"]''
+as well as a research paper @cite{Strickland12} on chaperones, impersonators,
+and how they can be used to implement contracts.
 
 @history[#:changed "6.1.1.8" @list{Changed @racket[+nan.0] and @racket[+nan.f] to
                                            be @racket[equal?]-based contracts.}]
@@ -3209,6 +3209,10 @@ it is called with @racket[#t] when there is no generator for @racket[ctc]
 and called with @racket[#f] when there is a generator, but the generator
 ended up returning @racket[contract-random-generate-fail].
 
+ @examples[#:eval (contract-eval) #:once
+           (for/list ([i (in-range 10)])
+             (contract-random-generate (or/c integer? #f)))]
+
 @history[#:changed "6.1.1.5" @list{Allow @racket[fail] to accept a boolean.}]
 
 }
@@ -3219,7 +3223,21 @@ ended up returning @racket[contract-random-generate-fail].
   Uses @racket[value-contract] to determine if any of the @racket[val]s have a
   contract and, for those that do, uses information about the contract's shape
   to poke and prod at the value. For example, if the value is function, it will
-  use the contract to tell it what arguments to supply to the value. 
+  use the contract to tell it what arguments to supply to the value.
+
+ @examples[#:eval (contract-eval) #:once
+           (define/contract (returns-false x)
+             (-> integer? integer?)
+             (code:comment "does not obey its contract")
+             #f)
+           (eval:error (contract-exercise returns-false))
+
+           (define/contract (calls-its-argument-with-eleven f)
+             (-> (-> integer? integer?) boolean?)
+             (code:comment "f returns an integer, but")
+             (code:comment "we're supposed to return a boolean")
+             (f 11))
+           (eval:error (contract-exercise calls-its-argument-with-eleven))]
 }
 
 @defproc[(contract-random-generate/choose [c contract?] [fuel exact-nonnegative-integer?])
