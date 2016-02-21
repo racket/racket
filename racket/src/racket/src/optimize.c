@@ -3996,7 +3996,7 @@ static Scheme_Object *flatten_sequence(Scheme_Object *o, Optimize_Info *info, in
 {
   Scheme_Sequence *s = (Scheme_Sequence *)o, *s2, *s3;
   Scheme_Object *o3;
-  int i, j, k, count, extra = 0, split = 0, b0, move_to_let = 0, new_count;
+  int i, j, k, count, extra = 0, split = 0, b0, new_count;
 
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_splice_sequence_type))
     return o;
@@ -4015,19 +4015,16 @@ static Scheme_Object *flatten_sequence(Scheme_Object *o, Optimize_Info *info, in
       s3 = (Scheme_Sequence *)o3;
       extra += s3->count;
       split++;
-    } else if (SAME_TYPE(SCHEME_TYPE(o3), scheme_ir_let_header_type) && !(!i && b0)) {
-      move_to_let = count - i - 1;
-      break;
     }
   }
 
-  if (!split && !move_to_let)
+  if (!split)
     return o;
   
   info->flatten_fuel--;
   info->size -= split;
 
-  new_count = s->count + extra - split - move_to_let;
+  new_count = s->count + extra - split;
   if (new_count > 0) {
     s2 = scheme_malloc_sequence(new_count);
     s2->so.type = s->so.type;
@@ -4045,35 +4042,6 @@ static Scheme_Object *flatten_sequence(Scheme_Object *o, Optimize_Info *info, in
       for (j = 0; j < s3->count; j++) {
         s2->array[k++] = s3->array[j];
       }
-    } else if (SAME_TYPE(SCHEME_TYPE(o3), scheme_ir_let_header_type) && !(!i && b0)) {
-      /* move rest under `let`: */
-      Scheme_IR_Let_Header *head = (Scheme_IR_Let_Header *)o3;
-      Scheme_IR_Let_Value *irlv;
-
-      if (s2)
-        s2->array[k++] = o3;
-      
-      s3 = scheme_malloc_sequence(move_to_let + 1);
-      s3->so.type = scheme_sequence_type;
-      s3->count = move_to_let + 1;
-      
-      for (j = 0; j < move_to_let; j++) {
-        s3->array[1 + j] = s->array[i + 1 + j];
-      }
-      
-      irlv = (Scheme_IR_Let_Value *)head->body;
-      for (j = 1; j < head->num_clauses; j++) {
-        irlv = (Scheme_IR_Let_Value *)irlv->body;
-      }
-      
-      s3->array[0] = irlv->body;
-
-      o3 = flatten_sequence((Scheme_Object *)s3, info, context);
-      irlv->body = (Scheme_Object *)o3;
-
-      return ((s2 && (s2->count > 1))
-              ? (Scheme_Object *)s2
-              : (Scheme_Object *)head);
     } else {
       s2->array[k++] = o3;
     }

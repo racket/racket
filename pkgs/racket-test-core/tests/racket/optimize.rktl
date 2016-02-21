@@ -1898,7 +1898,7 @@
 (test-comp '(lambda (x)
               (if (let ([n (random)]) (random n) (random n) (cons (car x) x)) 1 2))
            '(lambda (x)
-              (begin (let ([n (random)]) (random n) (random n) (car x) (void)) 1)))
+              (let ([n (random)]) (random n) (random n) (car x) (void) 1)))
 (test-comp '(lambda (x)
               (if (begin (random) (not (begin (random) x))) 1 2))
            '(lambda (x)
