@@ -66,7 +66,7 @@
     (if (null? to-show)
         (printf " [none]\n")
         (table-display
-         long?
+         (if full-checksum +inf.0 long?)
          (list* 'right 'right 'middle
                 (if dir? '(left) '()))
          (list*
