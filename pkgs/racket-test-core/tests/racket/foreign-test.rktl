@@ -552,6 +552,21 @@
   (define a-bar (bar (malloc 16 'raw)))
   (free a-bar))
 
+(let ()
+  ;; saved-errno tests
+  (define check-multiple-of-ten
+    (get-ffi-obj 'check_multiple_of_ten test-lib (_fun #:save-errno 'posix _int -> _int)))
+  (test 0 check-multiple-of-ten 40)
+  (test -1 check-multiple-of-ten 42)
+  (test 2 saved-errno)
+  (saved-errno 5)
+  (test 5 saved-errno)
+  ;; test saved-errno is thread-local
+  (define errno-from-thread #f)
+  (sync (thread (lambda () (check-multiple-of-ten 17) (set! errno-from-thread (saved-errno)))))
+  (test 5 saved-errno) ;; same as before
+  (test 7 (lambda () errno-from-thread)))
+
 (delete-test-files)
 
 (let ()

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <errno.h>
 #ifdef USE_THREAD_TEST
 #include <pthread.h>
 #endif
@@ -256,3 +257,13 @@ X void* foreign_thread_callback(test_callback_t f,
   return r;
 }
 #endif
+
+X int check_multiple_of_ten(int v) {
+  int r = v % 10;
+  if (r == 0) {
+    return 0;
+  } else {
+    errno = r;
+    return -1;
+  }
+}
