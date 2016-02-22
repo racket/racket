@@ -2690,7 +2690,9 @@ static Scheme_Hash_Tree *hamt_remove(Scheme_Hash_Tree *ht, uintptr_t code, int s
           return hamt_contract(ht, popcount, index, pos);
         ht = hamt_dup(ht, popcount);
         ht->count -= 1;
-        if ((sub_ht->count == 1) && !HASHTR_SUBTREEP(sub_ht->els[0])) {
+        if (((sub_ht->count == 1) && !HASHTR_SUBTREEP(sub_ht->els[0]))
+            || (HASHTR_COLLISIONP(sub_ht->els[0])
+                && (sub_ht->count == ((Scheme_Hash_Tree *)sub_ht->els[0])->count))) {
           /* drop extra layer that has 1 immediate entry */
           ht->els[pos] = sub_ht->els[0];
           if (SCHEME_HASHTR_FLAGS(ht) & HASHTR_HAS_VAL) {
