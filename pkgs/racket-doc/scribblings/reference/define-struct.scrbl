@@ -233,6 +233,11 @@ supplied, then the @racket[struct] form is equivalent to
   (eval:error ellipse-width)
 ]
 
+@margin-note{
+  Expressions supplied to @racket[#:auto-value] are evaluated once and shared
+  between every instance of the structure type. In particular, updates to
+  a mutable @racket[#:auto-value] affect all current and future instances.
+}
 If @racket[#:auto] is supplied as a @racket[field-option], then the
 @tech{constructor} procedure for the structure type does not accept an
 argument corresponding to the field. Instead, the structure type's
