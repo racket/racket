@@ -398,7 +398,7 @@ GNU_BUILD_FILES= configure.ac Makefile.am configure acinclude.m4 \
 		 cord/cord.am tests/tests.am autogen.sh \
 		 bdw-gc.pc.in compile
 
-OTHER_MAKEFILES= OS2_MAKEFILE NT_MAKEFILE NT_THREADS_MAKEFILE gc.mak \
+OTHER_MAKEFILES= NT_MAKEFILE NT_THREADS_MAKEFILE gc.mak \
 		 BCC_MAKEFILE EMX_MAKEFILE WCC_MAKEFILE Makefile.dj \
 		 PCR-Makefile SMakefile.amiga Makefile.DLLs \
 		 digimars.mak Makefile.direct NT_STATIC_THREADS_MAKEFILE \

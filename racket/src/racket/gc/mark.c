@@ -631,12 +631,8 @@ mse * GC_mark_from(mse *mark_stack_top, mse *mark_stack, mse *mark_stack_limit)
 
   GC_objects_are_marked = TRUE;
   INIT_HDR_CACHE;
-# ifdef OS2 /* Use untweaked version to circumvent compiler problem */
-  while (mark_stack_top >= mark_stack && credit >= 0) {
-# else
   while ((((ptr_t)mark_stack_top - (ptr_t)mark_stack) | credit)
   	>= 0) {
-# endif
     current_p = mark_stack_top -> mse_start;
     descr = mark_stack_top -> mse_descr;
   retry:

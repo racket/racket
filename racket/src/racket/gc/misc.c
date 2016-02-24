@@ -883,7 +883,7 @@ out:
 
 #endif
 
-#if defined(OS2) || defined(MACOS)
+#if defined(MACOS)
 FILE * GC_stdout = NULL;
 FILE * GC_stderr = NULL;
 FILE * GC_log = NULL;
@@ -903,7 +903,7 @@ int GC_tmp;  /* Should really be local ... */
   }
 #endif
 
-#if !defined(OS2) && !defined(MACOS) && !defined(MSWIN32) && !defined(MSWINCE)
+#if !defined(MACOS) && !defined(MSWIN32) && !defined(MSWINCE)
   int GC_stdout = 1;
   int GC_stderr = 2;
   int GC_log = 2;
@@ -912,7 +912,7 @@ int GC_tmp;  /* Should really be local ... */
 # endif
 #endif
 
-#if !defined(MSWIN32) && !defined(MSWINCE) && !defined(OS2) \
+#if !defined(MSWIN32) && !defined(MSWINCE) \
     && !defined(MACOS)  && !defined(ECOS) && !defined(NOSYS)
 int GC_write(fd, buf, len)
 int fd;
@@ -957,7 +957,7 @@ int GC_write(fd, buf, len)
     /* FIXME: This is pretty ugly ... */
 #   define WRITE(f, buf, len) GC_write(buf, len)
 #else
-#   if defined(OS2) || defined(MACOS)
+#   if defined(MACOS)
 #   define WRITE(f, buf, len) (GC_set_files(), \
 			       GC_tmp = fwrite((buf), 1, (len), (f)), \
 			       fflush(f), GC_tmp)

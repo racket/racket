@@ -26,28 +26,6 @@
 #include <string.h>
 #include "private/gc_priv.h"
 
-#ifdef OS2
-/* GETPAGESIZE() is set to getpagesize() by default, but that	*/
-/* doesn't really exist, and the collector doesn't need it.	*/
-#define INCL_DOSFILEMGR
-#define INCL_DOSMISC
-#define INCL_DOSERRORS
-#include <os2.h>
-
-int
-getpagesize()
-{
-    ULONG result[1];
-    
-    if (DosQuerySysInfo(QSV_PAGE_SIZE, QSV_PAGE_SIZE,
-    		        (void *)result, sizeof(ULONG)) != NO_ERROR) {
-    	fprintf(stderr, "DosQuerySysInfo failed\n");
-    	result[0] = 4096;
-    }
-    return((int)(result[0]));
-}
-#endif
-
 struct {char a_a; char * a_b;} a;
 
 int * nested_sp()

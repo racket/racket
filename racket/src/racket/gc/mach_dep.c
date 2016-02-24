@@ -15,7 +15,7 @@
 # include "private/gc_priv.h"
 # include <stdio.h>
 # include <setjmp.h>
-# if defined(OS2) || defined(CX_UX)
+# if defined(CX_UX)
 #   define _setjmp(b) setjmp(b)
 #   define _longjmp(b,v) longjmp(b,v)
 # endif

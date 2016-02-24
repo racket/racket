@@ -48,7 +48,7 @@
 #     endif /* 2 <= __GLIBC__ */
 #   endif
 # endif
-# if !defined(OS2) && !defined(PCR) && !defined(AMIGA) && !defined(MACOS) \
+# if !defined(PCR) && !defined(AMIGA) && !defined(MACOS) \
     && !defined(MSWINCE)
 #   include <sys/types.h>
 #   if !defined(MSWIN32)
@@ -605,108 +605,6 @@ static void *tiny_sbrk(ptrdiff_t increment)
 #endif
 
 
-# ifdef OS2
-
-# include <stddef.h>
-
-# if !defined(__IBMC__) && !defined(__WATCOMC__) /* e.g. EMX */
-
-struct exe_hdr {
-    unsigned short      magic_number;
-    unsigned short      padding[29];
-    long                new_exe_offset;
-};
-
-#define E_MAGIC(x)      (x).magic_number
-#define EMAGIC          0x5A4D  
-#define E_LFANEW(x)     (x).new_exe_offset
-
-struct e32_exe {
-    unsigned char       magic_number[2]; 
-    unsigned char       byte_order; 
-    unsigned char       word_order; 
-    unsigned long       exe_format_level;
-    unsigned short      cpu;       
-    unsigned short      os;
-    unsigned long       padding1[13];
-    unsigned long       object_table_offset;
-    unsigned long       object_count;    
-    unsigned long       padding2[31];
-};
-
-#define E32_MAGIC1(x)   (x).magic_number[0]
-#define E32MAGIC1       'L'
-#define E32_MAGIC2(x)   (x).magic_number[1]
-#define E32MAGIC2       'X'
-#define E32_BORDER(x)   (x).byte_order
-#define E32LEBO         0
-#define E32_WORDER(x)   (x).word_order
-#define E32LEWO         0
-#define E32_CPU(x)      (x).cpu
-#define E32CPU286       1
-#define E32_OBJTAB(x)   (x).object_table_offset
-#define E32_OBJCNT(x)   (x).object_count
-
-struct o32_obj {
-    unsigned long       size;  
-    unsigned long       base;
-    unsigned long       flags;  
-    unsigned long       pagemap;
-    unsigned long       mapsize; 
-    unsigned long       reserved;
-};
-
-#define O32_FLAGS(x)    (x).flags
-#define OBJREAD         0x0001L
-#define OBJWRITE        0x0002L
-#define OBJINVALID      0x0080L
-#define O32_SIZE(x)     (x).size
-#define O32_BASE(x)     (x).base
-
-# else  /* IBM's compiler */
-
-/* A kludge to get around what appears to be a header file bug */
-# ifndef WORD
-#   define WORD unsigned short
-# endif
-# ifndef DWORD
-#   define DWORD unsigned long
-# endif
-
-# define EXE386 1
-# include <newexe.h>
-# include <exe386.h>
-
-# endif  /* __IBMC__ */
-
-# define INCL_DOSEXCEPTIONS
-# define INCL_DOSPROCESS
-# define INCL_DOSERRORS
-# define INCL_DOSMODULEMGR
-# define INCL_DOSMEMMGR
-# include <os2.h>
-
-
-/* Disable and enable signals during nontrivial allocations	*/
-
-void GC_disable_signals(void)
-{
-    ULONG nest;
-    
-    DosEnterMustComplete(&nest);
-    if (nest != 1) ABORT("nested GC_disable_signals");
-}
-
-void GC_enable_signals(void)
-{
-    ULONG nest;
-    
-    DosExitMustComplete(&nest);
-    if (nest != 0) ABORT("GC_enable_signals");
-}
-
-
-# else
 
 #  if !defined(PCR) && !defined(AMIGA) && !defined(MSWIN32) \
       && !defined(MSWINCE) \
@@ -784,7 +682,6 @@ void GC_enable_signals(void)
 
 #  endif  /* !PCR */
 
-# endif /*!OS/2 */
 
 /* Ivan Demakov: simplest way (to me) */
 #if defined (DOS4GW)
@@ -890,21 +787,6 @@ ptr_t GC_get_main_stack_base(void){
 # endif /* BEOS */
 
 
-# ifdef OS2
-
-ptr_t GC_get_main_stack_base(void)
-{
-    PTIB ptib;
-    PPIB ppib;
-    
-    if (DosGetInfoBlocks(&ptib, &ppib) != NO_ERROR) {
-    	GC_err_printf("DosGetInfoBlocks failed\n");
-    	ABORT("DosGetInfoBlocks failed\n");
-    }
-    return((ptr_t)(ptib -> tib_pstacklimit));
-}
-
-# endif /* OS2 */
 
 # ifdef AMIGA
 #   define GC_AMIGA_SB
@@ -1209,7 +1091,7 @@ ptr_t GC_get_main_stack_base(void)
 #endif /* FREEBSD_STACKBOTTOM */
 
 #if !defined(BEOS) && !defined(AMIGA) && !defined(MSWIN32) \
-    && !defined(MSWINCE) && !defined(OS2) && !defined(NOSYS) && !defined(ECOS) \
+    && !defined(MSWINCE) && !defined(NOSYS) && !defined(ECOS) \
     && !defined(CYGWIN32) && !defined(GC_OPENBSD_THREADS)
 
 ptr_t GC_get_main_stack_base(void)
@@ -1386,97 +1268,6 @@ int GC_get_stack_base(struct GC_stack_base *b)
  * Called with allocator lock held.
  */
 
-# ifdef OS2
-
-void GC_register_data_segments(void)
-{
-    PTIB ptib;
-    PPIB ppib;
-    HMODULE module_handle;
-#   define PBUFSIZ 512
-    UCHAR path[PBUFSIZ];
-    FILE * myexefile;
-    struct exe_hdr hdrdos;	/* MSDOS header.	*/
-    struct e32_exe hdr386;	/* Real header for my executable */
-    struct o32_obj seg;	/* Currrent segment */
-    int nsegs;
-    
-    
-    if (DosGetInfoBlocks(&ptib, &ppib) != NO_ERROR) {
-    	GC_err_printf("DosGetInfoBlocks failed\n");
-    	ABORT("DosGetInfoBlocks failed\n");
-    }
-    module_handle = ppib -> pib_hmte;
-    if (DosQueryModuleName(module_handle, PBUFSIZ, path) != NO_ERROR) {
-    	GC_err_printf("DosQueryModuleName failed\n");
-    	ABORT("DosGetInfoBlocks failed\n");
-    }
-    myexefile = fopen(path, "rb");
-    if (myexefile == 0) {
-        GC_err_puts("Couldn't open executable ");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Failed to open executable\n");
-    }
-    if (fread((char *)(&hdrdos), 1, sizeof hdrdos, myexefile) < sizeof hdrdos) {
-        GC_err_puts("Couldn't read MSDOS header from ");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Couldn't read MSDOS header");
-    }
-    if (E_MAGIC(hdrdos) != EMAGIC) {
-        GC_err_puts("Executable has wrong DOS magic number: ");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Bad DOS magic number");
-    }
-    if (fseek(myexefile, E_LFANEW(hdrdos), SEEK_SET) != 0) {
-        GC_err_puts("Seek to new header failed in ");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Bad DOS magic number");
-    }
-    if (fread((char *)(&hdr386), 1, sizeof hdr386, myexefile) < sizeof hdr386) {
-        GC_err_puts("Couldn't read MSDOS header from ");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Couldn't read OS/2 header");
-    }
-    if (E32_MAGIC1(hdr386) != E32MAGIC1 || E32_MAGIC2(hdr386) != E32MAGIC2) {
-        GC_err_puts("Executable has wrong OS/2 magic number:");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Bad OS/2 magic number");
-    }
-    if ( E32_BORDER(hdr386) != E32LEBO || E32_WORDER(hdr386) != E32LEWO) {
-        GC_err_puts("Executable %s has wrong byte order: ");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Bad byte order");
-    }
-    if ( E32_CPU(hdr386) == E32CPU286) {
-        GC_err_puts("GC can't handle 80286 executables: ");
-        GC_err_puts(path); GC_err_puts("\n");
-        EXIT();
-    }
-    if (fseek(myexefile, E_LFANEW(hdrdos) + E32_OBJTAB(hdr386),
-    	      SEEK_SET) != 0) {
-        GC_err_puts("Seek to object table failed: ");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Seek to object table failed");
-    }
-    for (nsegs = E32_OBJCNT(hdr386); nsegs > 0; nsegs--) {
-      int flags;
-      if (fread((char *)(&seg), 1, sizeof seg, myexefile) < sizeof seg) {
-        GC_err_puts("Couldn't read obj table entry from ");
-        GC_err_puts(path); GC_err_puts("\n");
-        ABORT("Couldn't read obj table entry");
-      }
-      flags = O32_FLAGS(seg);
-      if (!(flags & OBJWRITE)) continue;
-      if (!(flags & OBJREAD)) continue;
-      if (flags & OBJINVALID) {
-          GC_err_printf("Object with invalid pages?\n");
-          continue;
-      } 
-      GC_add_roots_inner(O32_BASE(seg), O32_BASE(seg)+O32_SIZE(seg), FALSE);
-    }
-}
-
-# else /* !OS2 */
 
 # if defined(MSWIN32) || defined(MSWINCE)
 
@@ -1724,7 +1515,7 @@ void GC_register_data_segments(void)
 #     endif
   }
 
-# else /* !OS2 && !Windows */
+# else /* !Windows */
 
 # if (defined(SVR4) || defined(AUX) || defined(DGUX) \
       || (defined(LINUX) && defined(SPARC))) && !defined(PCR)
@@ -1796,7 +1587,7 @@ ptr_t GC_FreeBSDGetDataStart(size_t max_page_size, ptr_t etext_addr)
 #  include "AmigaOS.c"
 #  undef GC_AMIGA_DS
 
-#else /* !OS2 && !Windows && !AMIGA */
+#else /* !Windows && !AMIGA */
 
 #if defined(OPENBSD)
 
@@ -1821,7 +1612,7 @@ void GC_register_data_segments(void)
   }
 }
 
-# else /* !OS2 && !Windows && !AMIGA && !OPENBSD */
+# else /* !Windows && !AMIGA && !OPENBSD */
 
 void GC_register_data_segments(void)
 {
@@ -1883,13 +1674,12 @@ void GC_register_data_segments(void)
 # endif  /* ! OPENBSD */
 # endif  /* ! AMIGA */
 # endif  /* ! MSWIN32 && ! MSWINCE*/
-# endif  /* ! OS2 */
 
 /*
  * Auxiliary routines for obtaining memory from OS.
  */
 
-# if !defined(OS2) && !defined(PCR) && !defined(AMIGA) \
+# if !defined(PCR) && !defined(AMIGA) \
 	&& !defined(MSWIN32) && !defined(MSWINCE) \
 	&& !defined(MACOS) && !defined(DOS4GW) && !defined(NONSTOP)
 
@@ -2042,22 +1832,6 @@ ptr_t GC_unix_get_mem(word bytes)
 
 # endif /* UN*X */
 
-# ifdef OS2
-
-void * os2_alloc(size_t bytes)
-{
-    void * result;
-
-    if (DosAllocMem(&result, bytes, PAG_EXECUTE | PAG_READ |
-    				    PAG_WRITE | PAG_COMMIT)
-		    != NO_ERROR) {
-	return(0);
-    }
-    if (result == 0) return(os2_alloc(bytes));
-    return(result);
-}
-
-# endif /* OS2 */
 
 
 # if defined(MSWIN32) || defined(MSWINCE)

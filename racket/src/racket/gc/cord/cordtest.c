@@ -117,7 +117,7 @@ void test_basics()
 
 void test_extras()
 {
-#   if defined(__OS2__) || defined(__DJGPP__)
+#   if defined(__DJGPP__)
 #	define FNAME1 "tmp1"
 #	define FNAME2 "tmp2"
 #   elif defined(AMIGA)
