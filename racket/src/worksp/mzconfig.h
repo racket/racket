@@ -10,9 +10,6 @@
 
 /* Undefined items are not used on Windows. */
 
-/* The size of a `char', as computed by sizeof. */
-#undef SIZEOF_CHAR
-
 /* The size of a `int', as computed by sizeof. */
 #undef SIZEOF_INT
 

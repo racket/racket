@@ -26,12 +26,8 @@
 #endif /* WINDOWS_DYNAMIC_LOAD */
 
 #if !defined(WINDOWS_DYNAMIC_LOAD) || defined(__MINGW32__)
-# if SIZEOF_CHAR == 1
    typedef   signed char Tsint8;
    typedef unsigned char Tuint8;
-# else
-#  error "configuration error, please contact PLT (int8)"
-# endif
 
 # if SIZEOF_SHORT == 2
    typedef   signed short Tsint16;
