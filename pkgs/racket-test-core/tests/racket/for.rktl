@@ -587,6 +587,104 @@
            (for/sum ([x (in-mutable-set m)]) x)
            (for/sum ([x (in-weak-set w)]) x))))
 
-
+(err/rt-test 
+    (for ([(k v) (in-immutable-hash (make-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([(k v) (in-immutable-hash (make-weak-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([(k v) (in-mutable-hash (make-immutable-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([(k v) (in-mutable-hash (make-weak-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([(k v) (in-weak-hash (make-immutable-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+(err/rt-test 
+    (for ([(k v) (in-weak-hash (make-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+;; keys
+(err/rt-test 
+    (for ([k (in-immutable-hash-keys (make-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([k (in-immutable-hash-keys (make-weak-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([k (in-mutable-hash-keys (make-immutable-hash '((1 . 2))))]) k) 
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([k (in-mutable-hash-keys (make-weak-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([k (in-weak-hash-keys (make-immutable-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+(err/rt-test 
+    (for ([k (in-weak-hash-keys (make-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+;; values
+(err/rt-test 
+    (for ([v (in-immutable-hash-values (make-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([v (in-immutable-hash-values (make-weak-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([v (in-mutable-hash-values (make-immutable-hash '((1 . 2))))]) v) 
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([v (in-mutable-hash-values (make-weak-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([v (in-weak-hash-values (make-immutable-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+(err/rt-test 
+    (for ([v (in-weak-hash-values (make-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+;; pairs
+(err/rt-test 
+    (for ([p (in-immutable-hash-pairs (make-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([p (in-immutable-hash-pairs (make-weak-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([p (in-mutable-hash-pairs (make-immutable-hash '((1 . 2))))]) p) 
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([p (in-mutable-hash-pairs (make-weak-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([p (in-weak-hash-pairs (make-immutable-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+(err/rt-test 
+    (for ([p (in-weak-hash-pairs (make-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
 
 (report-errs)

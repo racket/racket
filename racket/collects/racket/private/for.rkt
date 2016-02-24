@@ -49,19 +49,19 @@
              (rename *in-lines in-lines)
              (rename *in-bytes-lines in-bytes-lines)
              
-             (rename in-hash-key+values in-hash)
+             in-hash
              in-hash-keys
              in-hash-values
              in-hash-pairs
-             (rename in-mutable-hash-key+values in-mutable-hash)
+             in-mutable-hash
              in-mutable-hash-keys
              in-mutable-hash-values
              in-mutable-hash-pairs
-             (rename in-immutable-hash-key+values in-immutable-hash)
+             in-immutable-hash
              in-immutable-hash-keys
              in-immutable-hash-values
              in-immutable-hash-pairs
-             (rename in-weak-hash-key+values in-weak-hash)
+             in-weak-hash
              in-weak-hash-keys
              in-weak-hash-values
              in-weak-hash-pairs
@@ -108,10 +108,10 @@
       (define datum 
         (string->symbol (apply format str (map syntax->datum args))))
       (datum->syntax ctx datum))
-    (define (init-list n val)
-      (if (zero? n) 
-          null 
-          (cons val (init-list (sub1 n) val)))))
+    (define (join-ids ids sep) ; joins ids with sep; ids = stx-pair
+      (syntax-case ids ()
+       [(id) #'id]
+       [(id . ids) (format-id #'id "~a~a~a" #'id sep (join-ids #'ids sep))])))
   
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
@@ -517,7 +517,9 @@
       [(string? v) (:string-gen v 0 (string-length v) 1)]
       [(bytes? v) (:bytes-gen v 0 (bytes-length v) 1)]
       [(input-port? v) (:input-port-gen v)]
-      [(hash? v) (:hash-gen v hash-iterate-key+value)]
+      [(hash? v) (:hash-gen v hash-iterate-key+value
+                              hash-iterate-first
+                              hash-iterate-next)]
       [(sequence-via-prop? v) ((sequence-ref v) v)]
       [(:sequence? v) (make-sequence who ((:sequence-ref v) v))]
       [(stream? v) (:stream-gen v)]
@@ -695,117 +697,100 @@
   ;; hash sequences
   
   ;; assembles hash iterator functions to give to make-do-sequence
-  (define (:hash-gen ht sel)
-    (values (lambda (pos) (sel ht pos))
-            (lambda (pos) (hash-iterate-next ht pos))
-            (hash-iterate-first ht)
+  (define (:hash-gen ht -get -first -next)
+    (values (lambda (pos) (-get ht pos))
+            (lambda (pos) (-next ht pos))
+            (-first ht)
             (lambda (pos) pos) ; #f position means stop
             #f
             #f))
 
-  ;; each call defines 4 in-hash- sequences for a kind of VAL
-  ;; - one generic
-  ;; - one for each hash table type: immutable, mutable, weak
-  ;; where VAL = key, value, pair, etc
+  (define (mutable? ht) (not (immutable? ht)))
+  (define (not-weak? ht) (not (hash-weak? ht)))
+
+  ;; Each call defines 4 in-HASHTYPE-VALs sequences,
+  ;;   where VAL = key, value, pair, key+value (key+value not used in seq name)
+  ;;   and HASHTYPE specifies the the set of hash-iterate- fns to use
+  ;;     eg, hash, immutable-hash, mutable-hash, weak-hash
   (define-syntax (define-in-hash-sequences stx)
-    (syntax-case stx (element-type: num-vals:)
-     [(_ element-type: VAL) ; eg, VAL = key, value, pair
-      #'(define-in-hash-sequences element-type: VAL num-vals: 1)]
-     [(_ element-type: VAL num-vals: n) 
-      (with-syntax 
-       ([IN-HASH-SEQUENCE-DEFINER-NAME
-            (format-id #'VAL "define-in-hash-~as-sequence" #'VAL)]
-        [FALLBACK-SEQUENCE-NAME (format-id #'VAL "default-in-hash-~as" #'VAL)]
-        [-fallback-accessor (format-id #'VAL "hash-iterate-~a" #'VAL)]
-        [IDs (generate-temporaries (init-list (syntax-e #'n) 'x))])
-       #'(begin
-          ;; 1) define fallback sequence constructor function for VAL type
-          ;;    (using make-do-sequence)
-          (define (FALLBACK-SEQUENCE-NAME ht)
-            (unless (hash? ht) 
-              (raise-argument-error 'FALLBACK-SEQUENCE-NAME "hash?" ht))
-            (make-do-sequence (lambda () (:hash-gen ht -fallback-accessor))))
-          ;; 2) define sequence syntax definer
-          ;; defines sequences in-HASHTYPE-hash-VALs, eg:
-          ;; - in-mutable-hash-keys
-          ;; - in-immutable-hash-pairs, etc
-          (define-syntax (IN-HASH-SEQUENCE-DEFINER-NAME stx)
-            (syntax-case stx (hash-type: outer-check: => :generic)
-             ;; defines generic in-hash-VALs sequence
-             [(def :generic)
-              (with-syntax 
-               ([_generic-sequence-name (format-id #'def "in-hash-~as" #'VAL)]
-                [_safe-iterate-fn-prefix (format-id #'def "hash-iterate")])
-               #'(IN-HASH-SEQUENCE-DEFINER-NAME
-                   _generic-sequence-name
-                   _safe-iterate-fn-prefix
-                   outer-check: (ht) => (hash? ht)))]
-             ;; defines in-hash-VALs sequence for a specific kind of hash table
-             ;; eg, HASHTYPE = mutable, immutable, weak
-             [(def hash-type: HASHTYPE outer-check: . test-clause)
-              (with-syntax 
-               ([_sequence-name
-                    (format-id #'def "in-~a-hash-~as" #'HASHTYPE #'VAL)]
-                [_unsafe-iterate-fn-prefix
-                    (format-id #'def "unsafe-~a-hash-iterate" #'HASHTYPE)])
-               #'(IN-HASH-SEQUENCE-DEFINER-NAME
-                   _sequence-name
-                   _unsafe-iterate-fn-prefix
-                   outer-check: . test-clause))]
-             ;; main (internal) clause
-             [(_ IN-HASH-SEQUENCE-NAME PREFIX outer-check: (HT) => TEST-EXPR) 
+    (syntax-case stx (element-types:)
+     [(_ element-types: V ...)
+      (with-syntax
+       ([VAL (join-ids #'(V ...) #'+)])
+       (with-syntax 
+        ([IN-HASH-DEFINER (format-id #'VAL "define-in-hash-~as-seq" #'VAL)])
+        #'(begin
+           ;; 1) define sequence syntax definer
+           ;; where HASHTYPE = hash, immutable-hash, etc
+           ;; and "checks" are predicates to apply to the input hash
+           ;; (not including hash?)
+           (define-syntax (IN-HASH-DEFINER stx)
+            (syntax-case stx (hash-type: checks:)
+             [(def hash-type: HASHTYPE) #'(def hash-type: HASHTYPE checks:)]
+             [(def hash-type: HASHTYPE checks: p? (... ...))
               (with-syntax
-               ([-iterate-first (format-id #'PREFIX "~a-first" #'PREFIX)]
-                [-iterate-next (format-id #'PREFIX "~a-next" #'PREFIX)]
-                [-iterate-VAL (format-id #'PREFIX "~a-~a" #'PREFIX #'VAL)])
-               #'(define-sequence-syntax IN-HASH-SEQUENCE-NAME
-                  (lambda () #'FALLBACK-SEQUENCE-NAME)
-                  (lambda (stx)
-                    (syntax-case stx ()
-                     [[IDs (_ ht-expr)]
-                      (for-clause-syntax-protect
-                       #'[IDs
-                          (:do-in
-                           ;;outer bindings
-                           ([(HT) ht-expr])
-                           ;; outer check
-                           (unless TEST-EXPR (FALLBACK-SEQUENCE-NAME HT))
-                           ;; loop bindings
-                           ([i (-iterate-first HT)])
-                           ;; pos check
-                           i
-                           ;; inner bindings
-                           ([IDs (-iterate-VAL HT i)])
-                           ;; pre guard
-                           #t
-                           ;; post guard
-                           #t
-                           ;; loop args
-                           ((-iterate-next HT i)))])]
-                     [_ #f]))))]))
-          ;; 3) define sequence syntaxes (using definer):
-          ;;    - in-hash-VALs, works for any hash table
-          ;;    - one in-HASHTYPE-hash-VALs for each kind of hash table:
-          ;;      - immutable, mutable, and weak
-          ;;      - enables faster iteration using unsafe functions
-          (IN-HASH-SEQUENCE-DEFINER-NAME :generic)
-          (IN-HASH-SEQUENCE-DEFINER-NAME
-              hash-type: mutable 
-              outer-check: (ht) => (and (hash? ht) 
-                                        (not (immutable? ht))
-                                        (not (hash-weak? ht))))
-          (IN-HASH-SEQUENCE-DEFINER-NAME
-              hash-type: immutable
-              outer-check: (ht) => (and (hash? ht) (immutable? ht)))
-          (IN-HASH-SEQUENCE-DEFINER-NAME
-              hash-type: weak
-              outer-check: (ht) => (and (hash? ht) (hash-weak? ht)))
-          ))]))
-  
-  (define-in-hash-sequences element-type: key+value num-vals: 2)
-  (define-in-hash-sequences element-type: key)
-  (define-in-hash-sequences element-type: value)
-  (define-in-hash-sequences element-type: pair)
+               ([IN-HASH-SEQ
+                 (if (equal? (syntax->datum #'VAL) 'key+value)
+                     (format-id #'def "in-~a" #'HASHTYPE)
+                     (format-id #'def "in-~a-~as" #'HASHTYPE #'VAL))]
+                [PREFIX
+                 (if (equal? (syntax->datum #'HASHTYPE) 'hash)
+                     (format-id #'def "~a-iterate" #'HASHTYPE)
+                     (format-id #'def "unsafe-~a-iterate" #'HASHTYPE))]
+                [HASHTYPE? #'(lambda (ht) (and (hash? ht) (p? ht) (... ...)))]
+                [ERR-STR
+                 (datum->syntax #'HASHTYPE
+                  (if (null? (syntax->list #'(p? (... ...)))) 
+                      "hash?"
+                      (string-append 
+                        "(and/c hash? "
+                        (symbol->string 
+                          (syntax->datum (join-ids #'(p? (... ...)) #'" "))) 
+                        ")")))])
+               (with-syntax
+                ([-first (format-id #'PREFIX "~a-first" #'PREFIX)]
+                 [-next (format-id #'PREFIX "~a-next" #'PREFIX)]
+                 [-VAL (format-id #'PREFIX "~a-~a" #'PREFIX #'VAL)]
+                 [AS-EXPR-SEQ (format-id #'VAL "default-~a" #'IN-HASH-SEQ)])
+                #'(begin
+                   (define (AS-EXPR-SEQ ht)
+                     (unless (HASHTYPE? ht)
+                       (raise-argument-error 'IN-HASH-SEQ ERR-STR ht))
+                     (make-do-sequence (lambda () (:hash-gen ht -VAL -first -next))))
+                   (define-sequence-syntax IN-HASH-SEQ
+                    (lambda () #'AS-EXPR-SEQ)
+                    (lambda (stx)
+                     (syntax-case stx ()
+                      [[(V ...) (_ ht-expr)]
+                       (for-clause-syntax-protect
+                        #'[(V ...)
+                           (:do-in
+                            ;;outer bindings
+                            ([(ht) ht-expr])
+                            ;; outer check
+                            (unless (HASHTYPE? ht) (AS-EXPR-SEQ ht))
+                            ;; loop bindings
+                            ([i (-first ht)])
+                            ;; pos check
+                            i
+                            ;; inner bindings
+                            ([(V ...) (-VAL ht i)])
+                            ;; pre guard
+                            #t
+                            ;; post guard
+                            #t
+                            ;; loop args
+                            ((-next ht i)))])]
+                      [_ #f]))))))]))
+          ;; 2) define sequence syntaxes (using just-defined definer):
+          (IN-HASH-DEFINER hash-type: hash)
+          (IN-HASH-DEFINER hash-type: mutable-hash   checks: mutable? not-weak?)
+          (IN-HASH-DEFINER hash-type: immutable-hash checks: immutable?)
+          (IN-HASH-DEFINER hash-type: weak-hash      checks: hash-weak?))))]))
+  (define-in-hash-sequences element-types: key value)
+  (define-in-hash-sequences element-types: key)
+  (define-in-hash-sequences element-types: value)
+  (define-in-hash-sequences element-types: pair)
 
   ;; Vector-like sequences --------------------------------------------------
 
