@@ -4,9 +4,6 @@
 #ifndef __MZSCHEME_CONFIGURATION_INFO__
 #define __MZSCHEME_CONFIGURATION_INFO__
 
-/* The size of a `char', as computed by sizeof. */
-#undef SIZEOF_CHAR
-
 /* The size of a `int', as computed by sizeof. */
 #undef SIZEOF_INT
 
