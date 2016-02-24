@@ -114,11 +114,11 @@ static int wants_local_type_arguments(Scheme_Object *rator, int argpos);
 
 static void add_types_for_f_branch(Scheme_Object *t, Optimize_Info *info, int fuel);
 
-static Scheme_Object *optimize_info_lookup(Optimize_Info *info, Scheme_Object *var, int closure_ok, int *single_use,
-                                           int once_used_ok, int context, int *potential_size, int *_mutated);
+static void register_use(Scheme_IR_Local *var, Optimize_Info *info);
+static Scheme_Object *optimize_info_lookup_lambda(Scheme_Object *var);
+static Scheme_Object *optimize_info_propagate_local(Scheme_Object *var);
 static void optimize_info_used_top(Optimize_Info *info);
-static Scheme_Object *do_optimize_get_predicate(Optimize_Info *info, Scheme_Object *var, int ignore_no_types);
-static Scheme_Object *optimize_get_predicate(Optimize_Info *info, Scheme_Object *var);
+static Scheme_Object *optimize_get_predicate(Optimize_Info *info, Scheme_Object *var, int ignore_no_types);
 static void add_type(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pred);
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, Scheme_Hash_Tree *skip_vars);
 static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand);
@@ -1923,6 +1923,31 @@ int scheme_check_leaf_rator(Scheme_Object *le, int *_flags)
   return 0;
 }
 
+int check_single_use(Scheme_Object *var)
+{
+   Scheme_IR_Local *v = SCHEME_VAR(var);
+
+  return ((v->use_count == 1)
+          /* If we're outside the binding, then the binding
+             itself will remain as a used: */
+          && !v->optimize_outside_binding
+          /* To help avoid infinite unrolling,
+             don't count a self use as "single" use. */
+          && !v->optimize_unready);
+}
+
+int check_potential_size(Scheme_Object *var)
+{
+  Scheme_Object* n;
+
+  n = SCHEME_VAR(var)->optimize.known_val;
+  if (n && SCHEME_BOXP(n)) {
+    return (int)SCHEME_INT_VAL(SCHEME_BOX_VAL(n));
+  }
+
+  return 0;
+}
+
 #if 0
 # define LOG_INLINE(x) x
 #else
@@ -1961,7 +1986,9 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_local_type)) {
     /* Check for inlining: */
-    le = optimize_info_lookup(info, le, 1, &single_use, 0, 0, &psize, NULL);
+    single_use = check_single_use(le);
+    psize = check_potential_size(le);
+    le = optimize_info_lookup_lambda(le);
     already_opt = 1;
   }
 
@@ -2198,7 +2225,7 @@ static void register_local_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec *
 
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_ir_local_type)) {
     {
-      le = optimize_info_lookup(info, rator, 1, NULL, 0, 0, NULL, NULL);
+      le = optimize_info_lookup_lambda(rator);
       if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type)) {
         Scheme_Lambda *lam = (Scheme_Lambda *)le;
         char *map;
@@ -2478,7 +2505,7 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
         Scheme_Object *p;
 
         if (info) {
-          p = optimize_get_predicate(info, expr);
+          p = optimize_get_predicate(info, expr, 0);
           if (p)
             return p;
         }
@@ -2871,8 +2898,7 @@ static int appn_flags(Scheme_Object *rator, Optimize_Info *info)
     return 0;
   }
 
-  if (SAME_TYPE(scheme_ir_lambda_type, SCHEME_TYPE(rator))
-      || SAME_TYPE(scheme_case_lambda_sequence_type, SCHEME_TYPE(rator))
+  if (SCHEME_LAMBDAP(rator)
       || SAME_TYPE(scheme_noninline_proc_type, SCHEME_TYPE(rator)))
     return APPN_FLAG_SFS_TAIL;
   
@@ -3076,10 +3102,10 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
 {
   Scheme_Object *c = NULL;
 
-  if (SAME_TYPE(scheme_ir_lambda_type, SCHEME_TYPE(rand)))
+  if (SCHEME_LAMBDAP(rand))
     c = rand;
   else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_ir_local_type))
-    c = optimize_info_lookup(info, rand, 1, NULL, 0, 0, NULL, NULL);
+    c = optimize_info_lookup_lambda(rand);
   else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_ir_toplevel_type)) {
     if (info->top_level_consts) {
       int pos;
@@ -3100,8 +3126,7 @@ static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *r
     c = SCHEME_BOX_VAL(c);
   }
 
-  if (c && (SAME_TYPE(scheme_ir_lambda_type, SCHEME_TYPE(c))
-            || SAME_TYPE(scheme_case_lambda_sequence_type, SCHEME_TYPE(c))))
+  if (c && (SCHEME_LAMBDAP(c)))
     return c;
 
   return NULL;
@@ -4171,7 +4196,7 @@ static Scheme_Object *collapse_local(Scheme_Object *var, Optimize_Info *info, in
   if (!SCHEME_VAR(var)->mutated) {
     Scheme_Object *pred;
 
-    pred = optimize_get_predicate(info, var);
+    pred = expr_implies_predicate(var, info, NULL, 5);
     if (pred) {
       if (SAME_OBJ(pred, scheme_not_proc))
         return scheme_false;
@@ -4238,8 +4263,8 @@ static void add_type(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pre
     return;
 
   /* Don't add the type if something is already there, this may happen when no_types. */
-  if (do_optimize_get_predicate(info, var, 1)
-      || SCHEME_VAR(var)->val_type) {
+  if (SCHEME_VAR(var)->val_type
+      || optimize_get_predicate(info, var, 1)) {
     return;
   }
 
@@ -4340,7 +4365,7 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
     if (SAME_OBJ(app->rator, scheme_eq_proc)) {
       if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_ir_local_type)
           && !SCHEME_VAR(app->rand1)->mutated) {
-        pred1 = optimize_get_predicate(info, app->rand1);
+        pred1 = expr_implies_predicate(app->rand1, info, NULL, 5);
         if (!pred1) {
           pred2 = expr_implies_predicate(app->rand2, info, NULL, 5);
           if (pred2)
@@ -4349,7 +4374,7 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
       }
       if (SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_ir_local_type)
           && !SCHEME_VAR(app->rand2)->mutated) {
-        pred2 = optimize_get_predicate(info, app->rand2);
+        pred2 = expr_implies_predicate(app->rand2, info, NULL, 5);
         if (!pred2) {
           pred1 = expr_implies_predicate(app->rand1, info, NULL, 5);
           if (pred1)
@@ -4749,8 +4774,7 @@ set_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   info->single_result = 1;
 
   if (SAME_TYPE(SCHEME_TYPE(var), scheme_ir_local_type)) {
-    /* Register that we use this variable: */
-    optimize_info_lookup(info, var, 0, NULL, 0, 0, NULL, NULL);
+    register_use(SCHEME_VAR(var), info);
   } else {
     optimize_info_used_top(info);
   }
@@ -5407,9 +5431,7 @@ int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info)
 /* Does `value` definitely produce a procedure of a specific shape? */
 {
   while (1) {
-    if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_lambda_type))
-      return 1;
-    else if (SAME_TYPE(SCHEME_TYPE(value), scheme_case_lambda_sequence_type)) {
+    if (SCHEME_LAMBDAP(value)) {
       return 1;
     } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_let_header_type)) {
       /* Look for (let ([x <omittable>]) <proc>), which is generated for optional arguments. */
@@ -7639,17 +7661,37 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
   case scheme_ir_local_type:
     {
       Scheme_Object *val;
-      int is_mutated = 0;
 
       info->size += 1;
 
-      val = optimize_info_lookup(info, expr, 0, NULL,
-                                 (context & OPT_CONTEXT_NO_SINGLE) ? 0 : 1,
-                                 context, NULL, &is_mutated);
+      if (SCHEME_VAR(expr)->mutated) {
+        info->vclock += 1;
+        register_use(SCHEME_VAR(expr), info);
+        return expr;
+      }
 
+      val = optimize_info_propagate_local(expr);
       if (val) {
-        if (SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
+        info->size -= 1;
+        return scheme_optimize_expr(val, info, context);
+      }
+
+      val = collapse_local(expr, info, context);
+      if (val)
+        return val;
+
+      if (!(context & OPT_CONTEXT_NO_SINGLE)) {
+        val = SCHEME_VAR(expr)->optimize.known_val;
+      
+        if (val && SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
           Scheme_Once_Used *o = (Scheme_Once_Used *)val;
+
+          MZ_ASSERT(!o->moved);
+          MZ_ASSERT(!SCHEME_VAR(expr)->optimize_outside_binding);
+
+          /* In case this variable was tentatively used before: */
+          SCHEME_VAR(expr)->optimize_used = 0;
+        
           if (((o->vclock == info->vclock)
                && ((o->aclock == info->aclock)
                    || !o->spans_k)
@@ -7692,27 +7734,15 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
             info->sclock = save_sclock;
             return val;
           }
-          /* Can't move expression, so lookup again to mark as used
-             and to perform any copy propagation that might apply. */
-          val = optimize_info_lookup(info, expr, 0, NULL, 0, context, NULL, NULL);
-          if (val)
-            return val;
-        } else {
-          if (SAME_TYPE(SCHEME_TYPE(val), scheme_ir_toplevel_type)
-              || (SCHEME_TYPE(val) > _scheme_ir_values_types_)) {
-            info->size -= 1;
-            return scheme_optimize_expr(val, info, context);
-          }
-          return val;
         }
-      } else if (is_mutated) {
-        info->vclock += 1;
       }
 
-      val = collapse_local(expr, info, context);
-      if (val)
-        return val;
-
+      /* If everything fails, mark it as used. */ 
+      if (OPT_CONTEXT_TYPE(context))
+        SCHEME_VAR(expr)->arg_type = OPT_CONTEXT_TYPE(context);
+      if (info->kclock > SCHEME_VAR(expr)->optimize.init_kclock)
+        SCHEME_VAR(expr)->escapes_after_k_tick = 1;
+      register_use(SCHEME_VAR(expr), info);
       return expr;
     }
   case scheme_application_type:
@@ -8230,6 +8260,9 @@ static int optimize_any_uses(Optimize_Info *info, Scheme_IR_Let_Value *at_irlv, 
 
 static void register_use(Scheme_IR_Local *var, Optimize_Info *info)
 {
+  MZ_ASSERT(SCHEME_VAR(var)->mode == SCHEME_VAR_MODE_OPTIMIZE);
+  MZ_ASSERT(SCHEME_VAR(var)->use_count);
+
   if (var->optimize.lambda_depth < info->lambda_depth)
     scheme_hash_set(info->uses, (Scheme_Object *)var, scheme_true);
 
@@ -8266,83 +8299,51 @@ static void register_transitive_uses(Scheme_IR_Local *var, Optimize_Info *info)
   }
 }
 
-static Scheme_Object *optimize_info_lookup(Optimize_Info *info, Scheme_Object *var, int closure_ok, int *single_use,
-                                           int once_used_ok, int context, int *potential_size, int *is_mutated)
+static Scheme_Object *optimize_info_lookup_lambda(Scheme_Object *var)
 {
   Scheme_Object *n;
-  int kclock = info->kclock;
 
   MZ_ASSERT(SCHEME_VAR(var)->mode == SCHEME_VAR_MODE_OPTIMIZE);
   MZ_ASSERT(SCHEME_VAR(var)->use_count);
 
-  if (OPT_CONTEXT_TYPE(context))
-    SCHEME_VAR(var)->arg_type = OPT_CONTEXT_TYPE(context);
-  if (kclock > SCHEME_VAR(var)->optimize.init_kclock)
-    SCHEME_VAR(var)->escapes_after_k_tick = 1;
-
-  if (is_mutated && SCHEME_VAR(var)->mutated)
-    *is_mutated = 1;
-  if (single_use)
-    *single_use = ((SCHEME_VAR(var)->use_count == 1)
-                   /* If we're outside the binding, then the binding
-                      itself will remain as a used: */
-                   && !SCHEME_VAR(var)->optimize_outside_binding
-                   /* To help avoid infinite unrolling,
-                      don't count a self use as "single" use. */
-                   && !SCHEME_VAR(var)->optimize_unready);
-
   n = SCHEME_VAR(var)->optimize.known_val;
-  if (n) {
-    if (SCHEME_BOXP(n)) {
-      /* A potential-size record: */
-      if (potential_size)
-        *potential_size = (int)SCHEME_INT_VAL(SCHEME_BOX_VAL(n));
-    } else {
-      if (SAME_TYPE(SCHEME_TYPE(n), scheme_ir_lambda_type)) {
-        if (context & OPT_CONTEXT_BOOLEAN) return scheme_true;
-        if (closure_ok) return n;
-      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_case_lambda_sequence_type)) {
-        if (context & OPT_CONTEXT_BOOLEAN) return scheme_true;
-        if (closure_ok) return n;
-      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_ir_toplevel_type)) {
-        return n;
-      } else if (closure_ok) {
-        /* Inlining can deal with procedures and top-levels, but not other things. */
-      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_once_used_type)) {
-        MZ_ASSERT(!((Scheme_Once_Used *)n)->moved);
-        MZ_ASSERT(!SCHEME_VAR(var)->optimize_outside_binding);
-        if (once_used_ok) {
-          /* In case this variable was tenatively used before: */
-          SCHEME_VAR(var)->optimize_used = 0;
-          return n;
-        }
-      } else if (SAME_TYPE(SCHEME_TYPE(n), scheme_ir_local_type)) {
-        Scheme_Object *v2;
-        int cnt = SCHEME_VAR(var)->use_count;
-
-        v2 = optimize_info_lookup(info, n, 0, single_use,
-                                  once_used_ok && (cnt == 1), context,
-                                  potential_size, NULL);
-
-        if (v2)
-          return v2;
-        else {
-          if (cnt != 1)
-            increment_use_count(SCHEME_VAR(n), 0);
-          return n;
-        }
-      } else
-        return n;
-    }
+  if (n
+      && (SCHEME_LAMBDAP(n)
+          || SAME_TYPE(SCHEME_TYPE(n), scheme_ir_toplevel_type))) {
+    return n;
   }
-
-  if (!closure_ok)
-    register_use(SCHEME_VAR(var), info);
 
   return NULL;
 }
 
-Scheme_Object *do_optimize_get_predicate(Optimize_Info *info, Scheme_Object *var, int ignore_no_types)
+static Scheme_Object *optimize_info_propagate_local(Scheme_Object *var)
+{
+  Scheme_Object *last, *val = var;
+
+  while (val && SAME_TYPE(SCHEME_TYPE(val), scheme_ir_local_type)) {
+    MZ_ASSERT(SCHEME_VAR(val)->mode == SCHEME_VAR_MODE_OPTIMIZE);
+    MZ_ASSERT(SCHEME_VAR(val)->use_count);
+    last = val;
+    val = SCHEME_VAR(val)->optimize.known_val;
+  }
+  
+  if (!val
+      || SCHEME_BOXP(val) /* A potential-size record */
+      || SCHEME_LAMBDAP(val)
+      || SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
+    if (SAME_OBJ(last, var))
+      return NULL;
+
+    if (SCHEME_VAR(var)->use_count != 1)
+      increment_use_count(SCHEME_VAR(last), 0);
+  
+    return last;
+  }
+
+  return val;
+}
+
+Scheme_Object *optimize_get_predicate(Optimize_Info *info, Scheme_Object *var, int ignore_no_types)
 {
   Scheme_Object *pred;
 
@@ -8358,11 +8359,6 @@ Scheme_Object *do_optimize_get_predicate(Optimize_Info *info, Scheme_Object *var
   }
 
   return NULL;
-}
-
-Scheme_Object *optimize_get_predicate(Optimize_Info *info, Scheme_Object *var)
-{
-  return do_optimize_get_predicate(info, var, 0);
 }
 
 static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int current, int flags)

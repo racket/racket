@@ -1630,10 +1630,29 @@
            '(lambda (a b)
               (not (if a b #t))))
 
+;ensure that variable p is not marked as used in the lambda
+(test-comp '(let ([p (if (zero? (random 2)) 1 2)])
+              (list p p (lambda () (not p))))
+           '(let ([p (if (zero? (random 2)) 1 2)])
+              (list p p (lambda () #f))))
+(test-comp '(let ([p (lambda () 0)])
+              (list p p (lambda () (not p))))
+           '(let ([p (lambda () 0)])
+              (list p p (lambda () #f))))
+;this still doesn't work without the additional p
+#;(test-comp '(let ([p (lambda () 0)])
+                (list p p (lambda () (procedure? p))))
+             '(let ([p (lambda () 0)])
+                (list p p (lambda () #t))))
+(test-comp '(let ([p (lambda () 0)])
+              (list p p (lambda () (procedure? p))))
+           '(let ([p (lambda () 0)])
+              (list p p (lambda () p #t))))
+
 (test-comp '(lambda (w) (if (void (list w)) 1 2))
            '(lambda (w) 1))
 
-; Diferent number of argumets use different codepaths
+; Different number of arguments use different code paths
 (test-comp '(lambda (f x) (void))
            '(lambda (f x) (void (list))))
 (test-comp '(lambda (f x) (begin (values (f x)) (void)))
@@ -1810,6 +1829,19 @@
            '(lambda (x) x))
 (test-comp '(lambda (x) (not (if (null? x) #t x)))
            '(lambda (x) (not x)))
+
+(test-comp '(lambda (x) (let ([n (list 1)])
+                          (list n n (not (if x #t n)))))
+           '(lambda (x) (let ([n (list 1)])
+                          (list n n #f))))
+(test-comp '(lambda (x) (let ([n (if (zero? (random 2)) 1 -1)])
+                          (list n n (not (if x #t n)))))
+           '(lambda (x) (let ([n (if (zero? (random 2)) 1 -1)])
+                          (list n n #f))))
+(test-comp '(lambda (x) (let ([n (if (zero? (random 2)) 1 -1)])
+                          (list n n (not (if x #t n)))))
+           '(lambda (x) (let ([n (if (zero? (random 2)) 1 -1)])
+                          (list n n #f))))
 
 (test-comp '(lambda (x) (if (let ([r (something)])
                               (if r r (something-else)))
