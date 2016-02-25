@@ -695,7 +695,7 @@ enclosing module body or top-level sequence.
 
 @transform-time[] If the current expression being transformed is not
 within a @racket[module] form or within a top-level expansion, then
-the @exnraise[exn:fail:contract]. If @racket[stx] form does start with
+the @exnraise[exn:fail:contract]. If @racket[stx] form does not start with
 @racket[module] or @racket[module*], or if it starts with @racket[module*]
 in a top-level context, the @exnraise[exn:fail:contract].
 
