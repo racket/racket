@@ -3380,7 +3380,7 @@ static void release_ffi_lock(void *lock)
 
 #define MAX_QUICK_ARGS 16
 
-typedef void(*VoidFun)();
+typedef void(*VoidFun)(void);
 
 #ifdef MZ_USE_PLACES
 
@@ -4244,6 +4244,11 @@ static Scheme_Object *foreign_ffi_callback(int argc, Scheme_Object *argv[])
 
 /*****************************************************************************/
 
+#ifdef WINDOWS_DYNAMIC_LOAD
+typedef int *(*get_errno_ptr_t)(void);
+static get_errno_ptr_t get_errno_ptr;
+#endif /* WINDOWS_DYNAMIC_LOAD */
+
 static void save_errno_values(int kind)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -4256,6 +4261,27 @@ static void save_errno_values(int kind)
     p->saved_errno = v;
     return;
   }
+
+# ifdef WINDOWS_DYNAMIC_LOAD
+  /* Depending on how Racket is compiled and linked, `errno` might
+     not corresponds to the one from "MSVCRT.dll", which is likely
+     to be the one that foreign code uses. Go get that one via
+     _errno(), which returns a pointer to the current thread's
+     `errno`. */
+  if (!get_errno_ptr) {
+    HMODULE hm;
+    hm = LoadLibrary("msvcrt.dll");
+    if (hm) {
+      get_errno_ptr = (get_errno_ptr_t)GetProcAddress(hm, "_errno");
+    }
+  }
+
+  if (get_errno_ptr) {
+    GC_CAN_IGNORE int *errno_ptr;
+    errno_ptr = get_errno_ptr();
+    errno = *errno_ptr;
+  }
+# endif /* WINDOWS_DYNAMIC_LOAD */
 
   p->saved_errno = errno;
 }
