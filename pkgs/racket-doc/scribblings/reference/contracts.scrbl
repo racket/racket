@@ -1070,7 +1070,10 @@ invocations of the function).
 
 If @racket[(values range-expr ...)] is used as the last sub-form of
 @racket[->], the function must produce a result for each contract, and
-each value must match its respective contract.}
+each value must match its respective contract.
+
+@history[#:changed "6.4.0.5" @list{Added support for ellipses}]
+}
 
 
 @defform*/subs[#:literals (any values)
