@@ -263,7 +263,7 @@ static Scheme_Object *compile_module_constants(int argc, Scheme_Object **argv);
 static Scheme_Object *use_jit(int argc, Scheme_Object **argv);
 static Scheme_Object *disallow_inline(int argc, Scheme_Object **argv);
 
-static Scheme_Object *recompile_top(Scheme_Object *top);
+static Scheme_Object *recompile_top(Scheme_Object *top, int comp_flags);
 
 static Scheme_Object *_eval_compiled_multi_with_prompt(Scheme_Object *obj, Scheme_Env *env);
 
@@ -4056,19 +4056,18 @@ static Scheme_Object *binding_namess_as_list(Scheme_Hash_Table *binding_namess)
 
 static Scheme_Object *optimize_resolve_expr(Scheme_Object* o, Comp_Prefix *cp,
                                             Scheme_Object *src_insp_desc,
-                                            Scheme_Object *binding_namess)
+                                            Scheme_Object *binding_namess,
+                                            int comp_flags)
 {
   Optimize_Info *oi;
   Resolve_Prefix *rp;
   Resolve_Info *ri;
   Scheme_Compilation_Top *top;
-  /* TODO: see if this can be moved here completely */
-  int comp_flags, enforce_consts, max_let_depth;
+  int enforce_consts, max_let_depth;
   Scheme_Config *config;
 
   config = scheme_current_config();
   enforce_consts = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_COMPILE_MODULE_CONSTS));
-  comp_flags = get_comp_flags(config);
   if (enforce_consts)
     comp_flags |= COMP_ENFORCE_CONSTS;
   oi = scheme_optimize_info_create(cp, 1);
@@ -4291,7 +4290,7 @@ static void *compile_k(void)
       if (recompile_every_compile) {
         int i;
         for (i = recompile_every_compile; i--; ) {
-          top = (Scheme_Compilation_Top *)recompile_top((Scheme_Object *)top);
+          top = (Scheme_Compilation_Top *)recompile_top((Scheme_Object *)top, comp_flags);
         }
       }
 
@@ -4923,7 +4922,7 @@ compiled_p(int argc, Scheme_Object *argv[])
 	  : scheme_false);
 }
 
-static Scheme_Object *recompile_top(Scheme_Object *top)
+static Scheme_Object *recompile_top(Scheme_Object *top, int comp_flags)
 {
   Comp_Prefix *cp;
   Scheme_Object *code;
@@ -4932,7 +4931,7 @@ static Scheme_Object *recompile_top(Scheme_Object *top)
   printf("Resolved Code:\n%s\n\n", scheme_print_to_string(((Scheme_Compilation_Top *)top)->code, NULL));
 #endif
 
-  code = scheme_unresolve_top(top, &cp);
+  code = scheme_unresolve_top(top, &cp, comp_flags);
 
 #if 0
   printf("Unresolved Prefix:\n");
@@ -4942,7 +4941,8 @@ static Scheme_Object *recompile_top(Scheme_Object *top)
 #endif
 
   top = optimize_resolve_expr(code, cp, ((Scheme_Compilation_Top*)top)->prefix->src_insp_desc,
-                              ((Scheme_Compilation_Top*)top)->binding_namess);
+                              ((Scheme_Compilation_Top*)top)->binding_namess,
+                              comp_flags);
 
   return top;
 }
@@ -4954,7 +4954,7 @@ recompile(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("compiled-expression-recompile", "compiled-expression?", 0, argc, argv);
   }
 
-  return recompile_top(argv[0]);
+  return recompile_top(argv[0], get_comp_flags(NULL));
 }
 
 static Scheme_Object *expand(int argc, Scheme_Object **argv)

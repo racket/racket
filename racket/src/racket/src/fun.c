@@ -735,7 +735,8 @@ scheme_init_unsafe_fun (Scheme_Env *env)
   REGISTER_SO(scheme_check_not_undefined_proc);
   o = scheme_make_prim_w_arity(scheme_check_not_undefined, "check-not-unsafe-undefined", 2, 2);
   scheme_check_not_undefined_proc = o;
-  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(o) |= (SCHEME_PRIM_OPT_IMMEDIATE
+                                | scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED));
   scheme_add_global_constant("check-not-unsafe-undefined", o, env);
 
   REGISTER_SO(scheme_check_assign_not_undefined_proc);

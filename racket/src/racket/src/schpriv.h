@@ -3231,7 +3231,7 @@ Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);
 Scheme_Object *scheme_resolve_expr(Scheme_Object *, Resolve_Info *);
 Scheme_Object *scheme_resolve_list(Scheme_Object *, Resolve_Info *);
 Scheme_Object *scheme_unresolve(Scheme_Object *, int argv, int *_has_cases);
-Scheme_Object *scheme_unresolve_top(Scheme_Object *, Comp_Prefix **);
+Scheme_Object *scheme_unresolve_top(Scheme_Object *, Comp_Prefix **, int comp_flags);
 
 int scheme_check_leaf_rator(Scheme_Object *le, int *_flags);
 
