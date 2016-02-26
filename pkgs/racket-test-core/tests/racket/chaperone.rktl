@@ -2475,5 +2475,26 @@
   (test-wrapped wrapped2-f))
 
 ;; ----------------------------------------
+;; Check that continuation-mark depth is handled
+;; properly when the JIT has to take a slow
+;; path for a tail call
+
+(let ()
+  (define (counter)
+    (let ([c 0])
+      (case-lambda
+        [() c]
+        [(x) (when (= c 1) (error 'fail)) (set! c (+ c 1)) #t])))
+
+  (for ([i 1000])
+    (let ([c (counter)])
+      (letrec ([f
+                (contract (-> any/c c)
+                          (λ ([x #f]) (if (zero? x) x (f (- x 1))))
+                          'pos
+                          'neg)])
+        (f 6)))))
+
+;; ----------------------------------------
 
 (report-errs)

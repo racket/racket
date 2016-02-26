@@ -3732,7 +3732,7 @@ static Scheme_Object *_apply_native(Scheme_Object *obj, int num_rands, Scheme_Ob
   obj = data->start_code(obj, num_rands, rands EXTRA_NATIVE_ARGUMENT);
 
   if (obj == SCHEME_TAIL_CALL_WAITING)
-    obj = force_values(obj, 1);
+    obj = scheme_force_value_same_mark(obj);
 
   MZ_CONT_MARK_STACK = old_cont_mark_stack;
   MZ_CONT_MARK_POS -= 2;
