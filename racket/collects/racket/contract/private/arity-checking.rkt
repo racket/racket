@@ -1,6 +1,7 @@
 #lang racket/base
 (require "blame.rkt"
-         "kwd-info-struct.rkt")
+         "kwd-info-struct.rkt"
+         "list.rkt")
 
 (provide do-arity-checking
          
@@ -24,7 +25,11 @@
      (define arity (if (list? (procedure-arity val))
                        (procedure-arity val)
                        (list (procedure-arity val))))
-     (define expected-number-of-non-keyword-args (length ->stct-doms))
+    
+     (define exra-required-args (if (ellipsis-rest-arg-ctc? ->stct-rest)
+                                    (length (*list-ctc-suffix ->stct-rest))
+                                    0))
+     (define expected-number-of-non-keyword-args (+ (length ->stct-doms) exra-required-args))
      (define matching-arity?
        (and (for/or ([a (in-list arity)])
               (or (equal? expected-number-of-non-keyword-args a)
@@ -33,7 +38,7 @@
             (if ->stct-rest
                 (let ([lst (car (reverse arity))])
                   (and (arity-at-least? lst)
-                       (<= (arity-at-least-value lst) ->stct-min-arity)))
+                       (<= (arity-at-least-value lst) (+ exra-required-args ->stct-min-arity))))
                 #t)))
      (unless matching-arity?
        (k

@@ -367,6 +367,11 @@
                (λ args args)
                'pos 'neg)
      1 2 3 4 #f 6 7))
+  (test/spec-passed
+   'contract->...5
+   '(contract (-> procedure? any/c ... list? any)
+              (λ (proc last . stuff) stuff)
+              'pos 'neg))
 
   
   (test/spec-passed
