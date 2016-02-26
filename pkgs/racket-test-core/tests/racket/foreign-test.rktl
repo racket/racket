@@ -552,7 +552,7 @@
   (define a-bar (bar (malloc 16 'raw)))
   (free a-bar))
 
-(let ()
+(unless (eq? (system-type) 'windows)
   ;; saved-errno tests
   (define check-multiple-of-ten
     (get-ffi-obj 'check_multiple_of_ten test-lib (_fun #:save-errno 'posix _int -> _int)))
@@ -566,6 +566,28 @@
   (sync (thread (lambda () (check-multiple-of-ten 17) (set! errno-from-thread (saved-errno)))))
   (test 5 saved-errno) ;; same as before
   (test 7 (lambda () errno-from-thread)))
+
+(when (eq? (system-type) 'windows)
+  ;; Use functions from msvcrt.dll that are documented to affect errno.
+  ;; (See note in /racket/src/foreign/foreign.rktc about Windows.)
+  (define msvcrt (ffi-lib "msvcrt.dll"))
+  (define ENOENT 2)
+  (define ERANGE 34)
+  (define _getcwd   ;; sets errno = ERANGE if path longer than buffer
+    (get-ffi-obj '_getcwd msvcrt (_fun #:save-errno 'posix _bytes _int -> _void)))
+  (define _chdir    ;; sets errno = ENOENT if path doesn't exist
+    (get-ffi-obj '_chdir  msvcrt (_fun #:save-errno 'posix _string -> _int)))
+  (define (bad/ERANGE) (_getcwd (make-bytes 1) 1))
+  (define (bad/ENOENT) (_chdir "no-such-directory"))
+  (bad/ERANGE)
+  (test ERANGE saved-errno)
+  (test -1 bad/ENOENT)
+  (test ENOENT saved-errno)
+  ;; test saved-errno is thread-local
+  (define errno-from-thread #f)
+  (sync (thread (lambda () (bad/ERANGE) (set! errno-from-thread (saved-errno)))))
+  (test ENOENT saved-errno) ;; same as above
+  (test ERANGE (lambda () errno-from-thread)))
 
 (delete-test-files)
 
