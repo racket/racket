@@ -258,6 +258,8 @@ X void* foreign_thread_callback(test_callback_t f,
 }
 #endif
 
+/* This testing function doesn't work reliably on Windows, because it sometimes
+ * writes to a different errno. */
 X int check_multiple_of_ten(int v) {
   int r = v % 10;
   if (r == 0) {
