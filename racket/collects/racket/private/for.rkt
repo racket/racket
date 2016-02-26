@@ -751,7 +751,7 @@
                 ([-first (format-id #'PREFIX "~a-first" #'PREFIX)]
                  [-next (format-id #'PREFIX "~a-next" #'PREFIX)]
                  [-VAL (format-id #'PREFIX "~a-~a" #'PREFIX #'VAL)]
-                 [AS-EXPR-SEQ (format-id #'VAL "default-~a" #'IN-HASH-SEQ)])
+                 [AS-EXPR-SEQ (format-id #'def "default-~a" #'IN-HASH-SEQ)])
                 #'(begin
                    (define (AS-EXPR-SEQ ht)
                      (unless (HASHTYPE? ht)
