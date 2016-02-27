@@ -25,11 +25,11 @@
 
 /* This file implements the bytecode "resolve" pass, which converts
    the optimization IR to the evaluation bytecode --- where the main
-   difference between the representations is to use stack addresses. This
-   pass is also responsible for closure conversion (in the sense of
-   lifting closures that are used only in application positions where
-   all variables captured by the closure can be converted to arguments
-   at all call sites).
+   difference between the representations is to use stack addresses.
+   This pass is also responsible for closure conversion: lifting
+   functions that are used only in application positions, where all
+   variables captured by the closure can be converted to arguments at
+   every call site.
 
    The "unresolve" functions convert run-time bytecode back into the
    optimizer's IR, which is used for cross-module inlining and for
@@ -113,6 +113,9 @@ void scheme_init_resolve()
 
 static Scheme_Object *check_converted_rator(Scheme_Object *rator, Resolve_Info *info, Scheme_Object **new_rator,
                                             int orig_arg_cnt, int *_rdelta)
+/* Check whether `rator` refers to a function that has been lifted and
+   changed to accept extra arguments, in which case the application
+   needs to be adjusted with the extra arguments. */
 {
   Scheme_Object *lifted;
 
@@ -338,6 +341,7 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
 }
 
 static void set_app3_eval_type(Scheme_App3_Rec *app)
+/* set flags used for a shortcut in the interpreter */
 {
   short et;
 
@@ -860,6 +864,7 @@ static Scheme_Object *begin_for_syntax_resolve(Scheme_Object *data, Resolve_Info
 /*========================================================================*/
 
 static int is_lifted_reference(Scheme_Object *v)
+/* check whether `v` is a reference to a lifted function */
 {
   if (SCHEME_RPAIRP(v))
     return 1;
@@ -937,224 +942,204 @@ static Scheme_Object *drop_zero_value_return(Scheme_Object *expr)
 
 #define HAS_UNBOXABLE_TYPE(var) ((var)->val_type && (!(var)->escapes_after_k_tick || ALWAYS_PREFER_UNBOX_TYPE((var)->val_type)))
 
-Scheme_Object *
-scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
+static int check_need_boxed_letrec_rhs(Scheme_IR_Let_Header *head, Scheme_Hash_Tree *binding_vars, Resolve_Info *info,
+                                       int *_num_rec_procs, int *_rec_proc_nonapply)
+/* Check whether a `let`+`set!` is needed to implement a set of `letrec` bindings;
+   the result is true if so, otherwise report the number of bindings that are
+   functions for a function-only `letrec`. Set `_rec_proc_nonapply` if any binding
+   is used in a non-application position, since that will disable lifting for
+   closure conversion. */
 {
-  Resolve_Info *linfo;
-  Scheme_IR_Let_Header *head = (Scheme_IR_Let_Header *)form;
-  Scheme_IR_Let_Value *irlv, *pre_body;
-  Scheme_Let_Value *lv, *last = NULL;
-  Scheme_Object *first = NULL, *body, *last_body = NULL, *last_seq = NULL;
-  Scheme_Letrec *letrec;
-  Scheme_Object *boxes;
-  int i, j, pos, rpos, recbox, num_rec_procs = 0, extra_alloc;
-  int rec_proc_nonapply = 0;
-  int resolve_phase, num_skips, lifted_recs;
-  Scheme_Hash_Tree *lift_exclude_vars;
+  int recbox = 0;
+  Scheme_IR_Let_Value *irlv;
+  int i;
 
-  /* Find body and make a set of local bindings: */
-  body = head->body;
-  pre_body = NULL;
-  lift_exclude_vars = scheme_make_hash_tree(0);
-  for (i = head->num_clauses; i--; ) {
-    pre_body = (Scheme_IR_Let_Value *)body;
-    for (j = 0; j < pre_body->count; j++) {
-      lift_exclude_vars = scheme_hash_tree_set(lift_exclude_vars, (Scheme_Object *)pre_body->vars[j], scheme_true);
-    }
-    body = pre_body->body;
-  }
-
-  recbox = 0;
-  if (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) {
-    /* Do we need to box vars in a letrec? */
-    irlv = (Scheme_IR_Let_Value *)head->body;
-    for (i = head->num_clauses; i--; irlv = (Scheme_IR_Let_Value *)irlv->body) {
-      int is_proc, is_lift;
-
-      if ((irlv->count == 1)
-          && !irlv->vars[0]->optimize_used
-          && scheme_omittable_expr(irlv->value, irlv->count, -1, 0, NULL, NULL)) {
-        /* record omittable, so we don't have to keep checking: */
-        irlv->vars[0]->resolve_omittable = 1;
-      } else {
-        if (irlv->count == 1) 
-          is_proc = scheme_is_ir_lambda(irlv->value, 1, 1);
-        else
-          is_proc = 0;
-
-        if (is_proc)
-          is_lift = 0;
-        else if (SCHEME_IRLV_FLAGS(irlv) & SCHEME_IRLV_NO_GROUP_USES)
-          is_lift = 1;
-        else
-          is_lift = scheme_is_liftable(irlv->value, lift_exclude_vars, 5, 1, 0);
-      
-        if (!is_proc && !is_lift) {
-          recbox = 1;
-          break;
-        } else {
-          if (!is_lift) {
-            /* is_proc must be true ... */
-            int j;
-
-            for (j = 0; j < irlv->count; j++) {
-              if (irlv->vars[j]->mutated) {
-                recbox = 1;
-                break;
-              }
-            }
-            if (recbox)
-              break;
-
-            if (is_nonconstant_procedure(irlv->value, info, lift_exclude_vars)) {
-              num_rec_procs++;
-              if (irlv->vars[0]->non_app_count)
-                rec_proc_nonapply = 1;
-            }
-          }
-        }
-      }
-    }
-
-    if (recbox)
-      num_rec_procs = 0;
-  } else {
-    /* Sequence of single-value, non-assigned lets? */
-
-    irlv = (Scheme_IR_Let_Value *)head->body;
-    for (i = head->num_clauses; i--; irlv = (Scheme_IR_Let_Value *)irlv->body) {
-      if (irlv->count != 1)
-	break;
-      if (irlv->vars[0]->mutated)
-	break;
-    }
-
-    if (i < 0) {
-      /* Yes - build chain of Scheme_Let_Ones and we're done: */
-      int j, num_frames;
-
-      j = head->num_clauses;
-
-      irlv = (Scheme_IR_Let_Value *)head->body;
-      for (i = 0; i < j; i++, irlv = (Scheme_IR_Let_Value *)irlv->body) {
-	if (irlv->vars[0]->optimize_used) {
-          int aty, pty, involes_k_cross;
-          aty = irlv->vars[0]->arg_type;
-          pty = scheme_expr_produces_local_type(irlv->value, &involes_k_cross);
-          if (pty && !involes_k_cross && ((pty == aty) || ALWAYS_PREFER_UNBOX_TYPE(pty)))
-            irlv->vars[0]->val_type = pty;
-          else
-            irlv->vars[0]->val_type = 0;
-        }
-      }
-
-      irlv = (Scheme_IR_Let_Value *)head->body;
-      linfo = info;
-      num_frames = 0;
-      for (i = 0; i < head->num_clauses; i++, irlv = (Scheme_IR_Let_Value *)irlv->body) {
-	Scheme_Object *le;
-
-	if (!irlv->vars[0]->optimize_used
-            && scheme_omittable_expr(irlv->value, irlv->count, -1, 0, NULL, NULL)) {
-          /* unused and omittable; skip */
-	} else {
-          linfo = resolve_info_extend(linfo, 1, 0);
-          num_frames++;
-          set_resolve_mode(irlv->vars[0]);
-          irlv->vars[0]->resolve.co_depth = linfo->current_depth;
-          irlv->vars[0]->resolve.lex_depth = linfo->current_lex_depth;
-
-          if (!info->no_lift
-              && !irlv->vars[0]->non_app_count
-              && SAME_TYPE(SCHEME_TYPE(irlv->value), scheme_ir_lambda_type))
-            le = resolve_lambda(irlv->value, linfo, 1, 1, 0, NULL);
-          else
-            le = scheme_resolve_expr(irlv->value, linfo);
-
-          if (is_lifted_reference(le)) {
-            MZ_ASSERT(!info->no_lift);
-            irlv->vars[0]->resolve.lifted = le;
-            /* Use of binding will be replaced by lift, so drop binding. */
-            linfo = linfo->next;
-            --num_frames;
-          } else {
-            Scheme_Let_One *lo;
-            int et;
-
-            irlv->vars[0]->resolve.lifted = NULL;
-            
-            lo = MALLOC_ONE_TAGGED(Scheme_Let_One);
-            lo->iso.so.type = scheme_let_one_type;
-            MZ_ASSERT(!SCHEME_RPAIRP(le));
-            lo->value = le;
-            
-            et = scheme_get_eval_type(lo->value);
-            if (HAS_UNBOXABLE_TYPE(irlv->vars[0]))
-              et |= (irlv->vars[0]->val_type << LET_ONE_TYPE_SHIFT);
-            SCHEME_LET_EVAL_TYPE(lo) = et;
-            
-            if (last)
-              ((Scheme_Let_One *)last)->body = (Scheme_Object *)lo;
-            else
-              first = (Scheme_Object *)lo;
-            last = (Scheme_Let_Value *)lo;
-          }
-        }
-      }
-
-      body = scheme_resolve_expr(body, linfo);
-      if (last)
-	((Scheme_Let_One *)last)->body = body;
-      else
-	first = body;
-
-      for (i = 0; i < num_frames; i++) {
-        merge_resolve(linfo->next, linfo);
-        linfo = linfo->next;
-      }
-
-      return first;
-    } else {
-      /* Maybe some multi-binding lets, but all of them are unused
-         and the RHSes are omittable? This can happen with auto-generated
-         code. */
-      int j, any_used = 0;
-
-      irlv = (Scheme_IR_Let_Value *)head->body;
-      for (i = head->num_clauses; i--; irlv = (Scheme_IR_Let_Value *)irlv->body) {
-        for (j = irlv->count; j--; ) {
-          if (irlv->vars[j]->optimize_used) {
-            any_used = 1;
-            break;
-          }
-        }
-        if (((irlv->count == 1) || !any_used)
-            && scheme_omittable_expr(irlv->value, irlv->count, -1, 0, NULL, NULL)) {
-          if ((irlv->count == 1) && !irlv->vars[0]->optimize_used)
-            irlv->vars[0]->resolve_omittable = 1;
-        } else
-          any_used = 1;
-      }
-      if (!any_used) {
-        /* All unused and omittable */
-        return scheme_resolve_expr((Scheme_Object *)irlv, info);
-      }
-    }
-  }
-
-  num_skips = 0;
   irlv = (Scheme_IR_Let_Value *)head->body;
   for (i = head->num_clauses; i--; irlv = (Scheme_IR_Let_Value *)irlv->body) {
-    if ((irlv->count == 1) && irlv->vars[0]->resolve_omittable) {
-      num_skips++;
-    } 
+    int is_proc, is_lift;
+
+    if ((irlv->count == 1)
+        && !irlv->vars[0]->optimize_used
+        && scheme_omittable_expr(irlv->value, irlv->count, -1, 0, NULL, NULL)) {
+      /* record omittable, so we don't have to keep checking: */
+      irlv->vars[0]->resolve_omittable = 1;
+    } else {
+      if (irlv->count == 1)
+        is_proc = scheme_is_ir_lambda(irlv->value, 1, 1);
+      else
+        is_proc = 0;
+
+      if (is_proc)
+        is_lift = 0;
+      else if (SCHEME_IRLV_FLAGS(irlv) & SCHEME_IRLV_NO_GROUP_USES)
+        is_lift = 1;
+      else
+        is_lift = scheme_is_liftable(irlv->value, binding_vars, 5, 1, 0);
+
+      if (!is_proc && !is_lift) {
+        recbox = 1;
+        break;
+      } else {
+        if (!is_lift) {
+          /* is_proc must be true ... */
+          int j;
+
+          for (j = 0; j < irlv->count; j++) {
+            if (irlv->vars[j]->mutated) {
+              recbox = 1;
+              break;
+            }
+          }
+          if (recbox)
+            break;
+
+          if (is_nonconstant_procedure(irlv->value, info, binding_vars)) {
+            (*_num_rec_procs)++;
+            if (irlv->vars[0]->non_app_count)
+              *_rec_proc_nonapply = 1;
+          }
+        }
+      }
+    }
   }
 
-  /* First assume that all letrec-bound procedures can be lifted to empty closures.
-     Then try assuming that all letrec-bound procedures can be at least lifted.
-     Then fall back to assuming no lifts. */
+  if (recbox)
+    *_num_rec_procs = 0;
+
+  return recbox;
+}
+
+static Scheme_Object *build_let_one_chain(Scheme_IR_Let_Header *head, Scheme_Object *body, Resolve_Info *info)
+/* Build a chain of Scheme_Let_One records for a simple binding set */
+{
+  Scheme_IR_Let_Value *irlv;
+  Scheme_Let_Value *last = NULL;
+  Scheme_Object *first = NULL;
+  int i, j, num_frames;
+  Resolve_Info *linfo;
+
+  j = head->num_clauses;
+
+  irlv = (Scheme_IR_Let_Value *)head->body;
+  for (i = 0; i < j; i++, irlv = (Scheme_IR_Let_Value *)irlv->body) {
+    if (irlv->vars[0]->optimize_used) {
+      int aty, pty, involes_k_cross;
+      aty = irlv->vars[0]->arg_type;
+      pty = scheme_expr_produces_local_type(irlv->value, &involes_k_cross);
+      if (pty && !involes_k_cross && ((pty == aty) || ALWAYS_PREFER_UNBOX_TYPE(pty)))
+        irlv->vars[0]->val_type = pty;
+      else
+        irlv->vars[0]->val_type = 0;
+    }
+  }
+
+  irlv = (Scheme_IR_Let_Value *)head->body;
+  linfo = info;
+  num_frames = 0;
+  for (i = 0; i < head->num_clauses; i++, irlv = (Scheme_IR_Let_Value *)irlv->body) {
+    Scheme_Object *le;
+
+    if (!irlv->vars[0]->optimize_used
+        && scheme_omittable_expr(irlv->value, irlv->count, -1, 0, NULL, NULL)) {
+      /* unused and omittable; skip */
+    } else {
+      linfo = resolve_info_extend(linfo, 1, 0);
+      num_frames++;
+      set_resolve_mode(irlv->vars[0]);
+      irlv->vars[0]->resolve.co_depth = linfo->current_depth;
+      irlv->vars[0]->resolve.lex_depth = linfo->current_lex_depth;
+
+      if (!info->no_lift
+          && !irlv->vars[0]->non_app_count
+          && SAME_TYPE(SCHEME_TYPE(irlv->value), scheme_ir_lambda_type))
+        le = resolve_lambda(irlv->value, linfo, 1, 1, 0, NULL);
+      else
+        le = scheme_resolve_expr(irlv->value, linfo);
+
+      if (is_lifted_reference(le)) {
+        MZ_ASSERT(!info->no_lift);
+        irlv->vars[0]->resolve.lifted = le;
+        /* Use of binding will be replaced by lift, so drop binding. */
+        linfo = linfo->next;
+        --num_frames;
+      } else {
+        Scheme_Let_One *lo;
+        int et;
+
+        irlv->vars[0]->resolve.lifted = NULL;
+
+        lo = MALLOC_ONE_TAGGED(Scheme_Let_One);
+        lo->iso.so.type = scheme_let_one_type;
+        MZ_ASSERT(!SCHEME_RPAIRP(le));
+        lo->value = le;
+
+        et = scheme_get_eval_type(lo->value);
+        if (HAS_UNBOXABLE_TYPE(irlv->vars[0]))
+          et |= (irlv->vars[0]->val_type << LET_ONE_TYPE_SHIFT);
+        SCHEME_LET_EVAL_TYPE(lo) = et;
+
+        if (last)
+          ((Scheme_Let_One *)last)->body = (Scheme_Object *)lo;
+        else
+          first = (Scheme_Object *)lo;
+        last = (Scheme_Let_Value *)lo;
+      }
+    }
+  }
+
+  body = scheme_resolve_expr(body, linfo);
+  if (last)
+    ((Scheme_Let_One *)last)->body = body;
+  else
+    first = body;
+
+  for (i = 0; i < num_frames; i++) {
+    merge_resolve(linfo->next, linfo);
+    linfo = linfo->next;
+  }
+
+  return first;
+}
+
+static int all_unused_and_omittable(Scheme_IR_Let_Header *head)
+{
+  Scheme_IR_Let_Value *irlv;
+  int i, j, any_used = 0;
+
+  irlv = (Scheme_IR_Let_Value *)head->body;
+  for (i = head->num_clauses; i--; irlv = (Scheme_IR_Let_Value *)irlv->body) {
+    for (j = irlv->count; j--; ) {
+      if (irlv->vars[j]->optimize_used) {
+        any_used = 1;
+        break;
+      }
+    }
+    if (((irlv->count == 1) || !any_used)
+        && scheme_omittable_expr(irlv->value, irlv->count, -1, 0, NULL, NULL)) {
+      if ((irlv->count == 1) && !irlv->vars[0]->optimize_used)
+        irlv->vars[0]->resolve_omittable = 1;
+    } else
+      any_used = 1;
+  }
+
+  return !any_used;
+}
+
+static Resolve_Info *compute_possible_lifts(Scheme_IR_Let_Header *head, Resolve_Info *info, Scheme_Hash_Tree *binding_vars,
+                                            int recbox, int num_skips, int num_rec_procs, int rec_proc_nonapply,
+                                            GC_CAN_IGNORE int *_lifted_recs)
+/* First assume that all letrec-bound procedures can be lifted to empty closures.
+   Then try assuming that all letrec-bound procedures can be at least lifted.
+   Then fall back to assuming no lifts.
+   Returns a resolve frame that is set up with lift decisions, and sets
+   `_lifted_recs` to indicate the number of lifted functions. */
+{
+  int resolve_phase;
+  Resolve_Info *linfo;
+  int i, pos, rpos, lifted_recs = 0;
+  Scheme_IR_Let_Value *irlv;
   
-  linfo = 0;
+  linfo = NULL;
   for (resolve_phase = ((num_rec_procs && !rec_proc_nonapply && !info->no_lift) ? 0 : 2); 
        resolve_phase < 3; 
        resolve_phase++) {
@@ -1172,8 +1157,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       lifted_recs = 0;
     }
 
-    /* Build mapping to run-time indices, shuffling
-       letrecs to fall together in the shallowest part. Also determine
+    /* Shuffle procedure letrecs to fall together in the shallowest part. Also determine
        and initialize lifts for recursive procedures. Generating lift information
        requires an iteration. */
     irlv = (Scheme_IR_Let_Value *)head->body;
@@ -1196,7 +1180,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 
           if (num_rec_procs
               && (irlv->count == 1)
-              && is_nonconstant_procedure(irlv->value, info, lift_exclude_vars)) {
+              && is_nonconstant_procedure(irlv->value, info, binding_vars)) {
             MZ_ASSERT(!recbox);
             if (resolve_phase == 0)
               lift = scheme_resolve_generate_stub_closure();
@@ -1238,7 +1222,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
               && irlv->vars[0]->resolve_omittable) {
             /* skipped */
           } else if ((irlv->count == 1)
-                     && is_nonconstant_procedure(irlv->value, info, lift_exclude_vars)) {
+                     && is_nonconstant_procedure(irlv->value, info, binding_vars)) {
             Scheme_Object *lift, *old_lift;
             int old_convert_count;
             Scheme_Object *old_convert_map, *convert_map;
@@ -1294,7 +1278,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
               && !irlv->vars[0]->optimize_used
               && irlv->vars[0]->resolve_omittable) {
             /* skipped */
-          } else if ((irlv->count == 1) && is_nonconstant_procedure(irlv->value, info, lift_exclude_vars)) {
+          } else if ((irlv->count == 1) && is_nonconstant_procedure(irlv->value, info, binding_vars)) {
             Scheme_Object *lift;
             lift = irlv->vars[0]->resolve.lifted;
             if (is_closed_reference(lift)) {
@@ -1318,10 +1302,99 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
     }
   }
 
+  *_lifted_recs = lifted_recs;
+
+  return linfo;
+}
+
+Scheme_Object *scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
+/* Convert a Scheme_IR_Let_Header plus Scheme_IR_Let_Value records
+   into either a sequence of Scheme_Let_One records or Scheme_Let_Void
+   plus either Scheme_Letrec or Scheme_Let_Value records. Also, check
+   whether functions that are locally bound can be lifted through
+   closure conversion. The closure-conversion step may require
+   iteration to a fixpoint to determine whether a set of
+   mutually-referential functions can be lifted together, and whether
+   they must be lifted to the top level or module level (bacsue they
+   refer to other top-level or module-level bindings) or whether they
+   can be converted to constant empty closures. */
+{
+  Resolve_Info *linfo;
+  Scheme_IR_Let_Header *head = (Scheme_IR_Let_Header *)form;
+  Scheme_IR_Let_Value *irlv, *pre_body;
+  Scheme_Let_Value *lv, *last = NULL;
+  Scheme_Object *first = NULL, *body, *last_body = NULL, *last_seq = NULL;
+  Scheme_Letrec *letrec;
+  Scheme_Object *boxes;
+  int i, j, rpos, recbox, num_rec_procs = 0, extra_alloc;
+  int rec_proc_nonapply = 0;
+  int num_skips, lifted_recs;
+  Scheme_Hash_Tree *binding_vars;
+
+  /* Find body and make a set of local bindings: */
+  body = head->body;
+  pre_body = NULL;
+  binding_vars = scheme_make_hash_tree(0);
+  for (i = head->num_clauses; i--; ) {
+    pre_body = (Scheme_IR_Let_Value *)body;
+    for (j = 0; j < pre_body->count; j++) {
+      binding_vars = scheme_hash_tree_set(binding_vars, (Scheme_Object *)pre_body->vars[j], scheme_true);
+    }
+    body = pre_body->body;
+  }
+
+  recbox = 0;
+  if (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) {
+    /* Do we need to box vars in a letrec? */
+    recbox = check_need_boxed_letrec_rhs(head, binding_vars, info,
+                                         &num_rec_procs, &rec_proc_nonapply);
+  } else {
+    /* Sequence of single-value, non-assigned lets? */
+
+    irlv = (Scheme_IR_Let_Value *)head->body;
+    for (i = head->num_clauses; i--; irlv = (Scheme_IR_Let_Value *)irlv->body) {
+      if (irlv->count != 1)
+	break;
+      if (irlv->vars[0]->mutated)
+	break;
+    }
+
+    if (i < 0) {
+      /* Yes - build chain of Scheme_Let_Ones and we're done: */
+      return build_let_one_chain(head, body, info);
+    } else {
+      /* Maybe some multi-binding lets, but all of them are unused and
+         the RHSes are omittable? This can happen with auto-generated
+         code. Checking has the side effect of setting
+         `resolve_omittable` fields. */
+      if (all_unused_and_omittable(head)) {
+        /* All unused and omittable */
+        return scheme_resolve_expr(body, info);
+      }
+    }
+  }
+
+  /* Count number of right-hand sides to be skipped entirely */
+  num_skips = 0;
+  irlv = (Scheme_IR_Let_Value *)head->body;
+  for (i = head->num_clauses; i--; irlv = (Scheme_IR_Let_Value *)irlv->body) {
+    if ((irlv->count == 1) && irlv->vars[0]->resolve_omittable) {
+      num_skips++;
+    }
+  }
+
+  /* Compute lifts */
+  linfo = compute_possible_lifts(head, info, binding_vars,
+                                 recbox, num_skips, num_rec_procs, rec_proc_nonapply,
+                                 &lifted_recs);
+
   extra_alloc = 0;
   
   if (num_rec_procs) {
     if (!lifted_recs) {
+      /* Since we didn't lift, prepare a frame for function-only
+         `letrec`; non-function bindings will be put in additional
+         Scheme_Let_Value steps. */
       Scheme_Object **sa;
       letrec = MALLOC_ONE_TAGGED(Scheme_Letrec);
       letrec->so.type = scheme_letrec_type;
@@ -1335,7 +1408,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
   } else
     letrec = NULL;
 
-  /* Resolve values: */
+  /* Resolve right-hand sides: */
   boxes = scheme_null;
   irlv = (Scheme_IR_Let_Value *)head->body;
   rpos = 0;
@@ -1350,7 +1423,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
       if (!irlv->value)
         isproc = 1;
       else if (irlv->count == 1)
-        isproc = is_nonconstant_procedure(irlv->value, info, lift_exclude_vars);
+        isproc = is_nonconstant_procedure(irlv->value, info, binding_vars);
       else
         isproc = 0;
       if (num_rec_procs && isproc) {
@@ -1472,6 +1545,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
     boxes = SCHEME_CDR(boxes);
   }
 
+  /* Link up function-only `letrec` and Scheme_Let_Values chain */
   if (letrec) {
     letrec->body = body;
     if (last)
@@ -1491,6 +1565,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
   else
     first = body;
 
+  /* Check one last time for a simplification: */
   if (head->count + extra_alloc - num_skips) {
     int cnt;
 
@@ -1532,7 +1607,7 @@ scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
 }
 
 /*========================================================================*/
-/*                             closures                                   */
+/*                               lambda                                   */
 /*========================================================================*/
 
 XFORM_NONGCING int scheme_boxmap_size(int n)
