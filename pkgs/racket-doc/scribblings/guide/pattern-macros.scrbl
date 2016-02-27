@@ -387,7 +387,7 @@ definition
 
 At the same time, @racket[define-cbr] needs to define @racket[do-f]
 using the body of @racket[f], this second part is slightly more
-complex, so we defer most it to a @racket[define-for-cbr] helper
+complex, so we defer most of it to a @racket[define-for-cbr] helper
 module, which lets us write @racket[define-cbr] easily enough:
 
 
