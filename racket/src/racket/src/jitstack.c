@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2006-2014 PLT Design Inc.
+  Copyright (c) 2006-2016 PLT Design Inc.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -676,7 +676,7 @@ void scheme_jit_now(Scheme_Object *f)
 {
   if (SAME_TYPE(SCHEME_TYPE(f), scheme_native_closure_type)) {
     Scheme_Native_Closure *nc;
-    Scheme_Native_Closure_Data *ncd;
+    Scheme_Native_Lambda *ncd;
 
     nc = (Scheme_Native_Closure*)f;
     ncd = nc->code;
@@ -689,11 +689,12 @@ void scheme_jit_now(Scheme_Object *f)
 typedef void *(*Module_Run_Proc)(Scheme_Env *menv, Scheme_Env *env, Scheme_Object **name);
 typedef void *(*Module_Exprun_Proc)(Scheme_Env *menv, int set_ns, Scheme_Object **name);
 typedef void *(*Module_Start_Proc)(struct Start_Module_Args *a, Scheme_Object **name);
+typedef void (*Thread_Start_Child_Proc)(Scheme_Thread *child, Scheme_Object *child_thunk);
 
 void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *name)
 {
   Module_Run_Proc proc = (Module_Run_Proc)sjc.module_run_start_code;
-  if (proc)
+  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
     return proc(menv, env, &name);
   else
     return scheme_module_run_finish(menv, env);
@@ -702,7 +703,7 @@ void *scheme_module_run_start(Scheme_Env *menv, Scheme_Env *env, Scheme_Object *
 void *scheme_module_exprun_start(Scheme_Env *menv, int set_ns, Scheme_Object *name)
 {
   Module_Exprun_Proc proc = (Module_Exprun_Proc)sjc.module_exprun_start_code;
-  if (proc)
+  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
     return proc(menv, set_ns, &name);
   else
     return scheme_module_exprun_finish(menv, set_ns);
@@ -711,14 +712,30 @@ void *scheme_module_exprun_start(Scheme_Env *menv, int set_ns, Scheme_Object *na
 void *scheme_module_start_start(struct Start_Module_Args *a, Scheme_Object *name)
 {
   Module_Start_Proc proc = (Module_Start_Proc)sjc.module_start_start_code;
-  if (proc)
+  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
     return proc(a, &name);
   else
     return scheme_module_start_finish(a);
 }
 
+void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk)
+  XFORM_SKIP_PROC
+{
+  Thread_Start_Child_Proc proc = (Thread_Start_Child_Proc)sjc.thread_start_child_code;
+  if (proc && !CHECK_RUNSTACK_REGISTER_UPDATE)
+    proc(child, child_thunk);
+  else
+    scheme_do_thread_start_child(child, child_thunk);
+}
+
+
 #else
 
 void* scheme_jit_find_code_end(void *p) { return NULL; }
+
+void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk)
+{
+  return scheme_do_thread_start_child(child, child_thunk);
+}
 
 #endif

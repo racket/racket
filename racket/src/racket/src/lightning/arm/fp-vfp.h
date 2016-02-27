@@ -420,7 +420,7 @@ _vcmp_10_f(jit_state_t _jitp, int cc, jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 }
 
 __jit_inline void
-_vcmp_10_d(jit_state_t _jitp, int cc, jit_gpr_t r0, jit_gpr_t r1, jit_gpr_t r2)
+_vcmp_10_d(jit_state_t _jitp, int cc, jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 {
     _VCMP_F64(r1, r2);
     _vcmp10_x(_jitp, cc, r0);

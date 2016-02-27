@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 2000-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -386,7 +386,7 @@ END_XFORM_ARITH;
 static double STRTOD(const char *orig_c, char **f, int extfl)
 {
   int neg = 0;
-  int found_dot = 0, is_infinity = 0, is_zero = 0;
+  int found_dot = 0, is_infinity = 0, is_zero = 0, is_nonzero = 0;
   const char *c = orig_c;
 
   *f = (char *)c;
@@ -410,7 +410,8 @@ static double STRTOD(const char *orig_c, char **f, int extfl)
     int ch = *c;
 
     if (isdigit(ch)) {
-      /* ok */
+      if (ch != '0')
+	is_nonzero = 1;
     } else if ((ch == 'e') || (ch == 'E')) {
       int e = 0, neg_exp = 0;
 
@@ -431,7 +432,7 @@ static double STRTOD(const char *orig_c, char **f, int extfl)
 	else {
 	  e = (e * 10) + (ch - '0');
 	  if (e > CHECK_INF_EXP_THRESHOLD(extfl)) {
-	    if (neg_exp)
+	    if (neg_exp || !is_nonzero)
 	      is_zero  = 1;
 	    else
 	      is_infinity  = 1;
@@ -494,13 +495,27 @@ START_XFORM_ARITH;
 # define STRTOD(x, y, extfl) strtod(x, y)
 #endif
 
-static Scheme_Object *CHECK_SINGLE(Scheme_Object *v, int s, int long_dbl)
+#ifdef MZ_LONG_DOUBLE
+# define CHECK_SINGLE(v, s, il, l, str, len, radix) do_CHECK_SINGLE(v, s, il, l, NULL, 0, 0)
+#else
+# define CHECK_SINGLE(v, s, il, l, str, len, radix) do_CHECK_SINGLE(v, s, il, NULL, str, len, radix)
+#endif
+
+static Scheme_Object *do_CHECK_SINGLE(Scheme_Object *v, int s, int long_dbl,
+                                      Scheme_Object *lv, const mzchar *str, intptr_t len, int radix)
 {
   if (SCHEME_DBLP(v)) {
 #ifdef MZ_USE_SINGLE_FLOATS
     if (s)
       return scheme_make_float((float)SCHEME_DBL_VAL(v));
 #endif
+    if (long_dbl) {
+#ifdef MZ_LONG_DOUBLE
+      return lv;
+#else
+      return wrap_as_long_double(scheme_utf8_encode_to_buffer(str, len, NULL, 0), radix);
+#endif
+    }
   }
 
   return v;
@@ -1392,7 +1407,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     } else {
       /* Mantissa is not a fraction. */
       mzchar *digits;
-      int extra_power = 0, dcp = 0, num_ok;
+      int extra_power = 0, dcp = 0, non_zero = 0, num_ok;
 
       digits = (mzchar *)scheme_malloc_atomic((has_expt - delta + 1) * sizeof(mzchar));
 
@@ -1401,7 +1416,11 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 	digits[dcp++] = str[i++];
 
       for (; isAdigit(str[i]) || ((radix > 10) && isbaseNdigit(radix, str[i])); i++) {
+        if ((radix < 10) && ((str[i] - '0') >= radix))
+          break;
 	digits[dcp++] = str[i];
+        if (str[i] != '0')
+          non_zero = 1;
       }
 
       if (str[i] == '#') {
@@ -1411,13 +1430,17 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 	num_ok = 0;
       } else
 	num_ok = 1;
-	
+
       if (str[i] == '.') {
 	i++;
 	if (num_ok)
 	  for (; isAdigit(str[i]) || ((radix > 10) && isbaseNdigit(radix, str[i])); i++) {
+            if ((radix < 10) && ((str[i] - '0') >= radix))
+              break;
 	    digits[dcp++] = str[i];
 	    extra_power++;
+            if (str[i] != '0')
+              non_zero = 1;
 	  }
 
 	for (; str[i] == '#'; i++) {
@@ -1444,22 +1467,36 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
         return scheme_false;
       }
 
-      /* Reduce unnecessary mantissa-reading work for inexact results.
-         This is also necessary to make the range check on `exponent'
-         correct. */
-      if (result_is_float && (dcp > MAX_FLOATREAD_PRECISION_DIGITS(is_long_double))) {
-	extra_power -= (dcp - MAX_FLOATREAD_PRECISION_DIGITS(is_long_double));
-	dcp = MAX_FLOATREAD_PRECISION_DIGITS(is_long_double);
+      /* Zero mantissa => zero inexact result */
+      if (!non_zero && result_is_float) {
+        if (dcp && (digits[0] == '-'))
+          return CHECK_SINGLE(scheme_nzerod, sgl, is_long_double, scheme_nzerol, str, len, radix);
+        else
+          return CHECK_SINGLE(scheme_zerod, sgl, is_long_double, scheme_zerol, str, len, radix);
+      }
+
+      /* Reduce unnecessary mantissa-reading work for inexact results. */
+      if (result_is_float) {
+        Scheme_Object *max_useful;
+
+        max_useful = scheme_bin_plus(scheme_make_integer(MAX_FLOATREAD_PRECISION_DIGITS(is_long_double)),
+                                     exponent);
+        if (scheme_bin_lt(max_useful, scheme_make_integer(2))) {
+          /* will definitely underflow */
+          if (dcp > 2)
+            dcp = 2; /* leave room for a sign and a digit */
+        } else if (SCHEME_INTP(max_useful)) {
+          if (result_is_float && (dcp > SCHEME_INT_VAL(max_useful))) {
+            extra_power -= (dcp - SCHEME_INT_VAL(max_useful));
+            dcp = SCHEME_INT_VAL(max_useful);
+          }
+        }
       }
 
       digits[dcp] = 0;
       mantissa = scheme_read_bignum(digits, 0, radix);
       if (SCHEME_FALSEP(mantissa)) {
-	/* can get here with bad radix */
-	if (report)
-	  scheme_read_err(complain, stxsrc, line, col, pos, span, 0, indentation,
-			   "read: bad number: %u", 
-			   str, len);
+        scheme_signal_error("internal error parsing mantissa: %s", digits);
 	return scheme_false;
       }
 
@@ -1470,14 +1507,14 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       if (result_is_float) {
 	if (scheme_bin_gt(exponent, scheme_make_integer(CHECK_INF_EXP_THRESHOLD(is_long_double)))) {
 	  if (scheme_is_negative(mantissa))
-	    return CHECK_SINGLE(scheme_minus_inf_object, sgl, is_long_double);
+	    return CHECK_SINGLE(scheme_minus_inf_object, sgl, is_long_double, scheme_long_minus_inf_object, str, len, radix);
 	  else
-	    return CHECK_SINGLE(scheme_inf_object, sgl, is_long_double);
+	    return CHECK_SINGLE(scheme_inf_object, sgl, is_long_double, scheme_long_inf_object, str, len, radix);
 	} else if (scheme_bin_lt(exponent, scheme_make_integer(-CHECK_INF_EXP_THRESHOLD(is_long_double)))) {
 	  if (scheme_is_negative(mantissa))
-	    return CHECK_SINGLE(scheme_nzerod, sgl, is_long_double);
+	    return CHECK_SINGLE(scheme_nzerod, sgl, is_long_double, scheme_nzerol, str, len, radix);
 	  else
-	    return CHECK_SINGLE(scheme_zerod, sgl, is_long_double);
+	    return CHECK_SINGLE(scheme_zerod, sgl, is_long_double, scheme_zerol, str, len, radix);
 	}
       }
     }
@@ -1506,7 +1543,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
         n = wrap_as_long_double(scheme_utf8_encode_to_buffer(str, len, NULL, 0), radix);
 #endif
       } else {
-        n = CHECK_SINGLE(TO_DOUBLE(n), sgl, 0);
+        n = CHECK_SINGLE(TO_DOUBLE(n), sgl, 0, NULL, NULL, 0, 0);
       }
     } else {
       if (is_long_double) {
@@ -1516,7 +1553,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
                           str, len);
         return scheme_false;
       }
-      n = CHECK_SINGLE(n, sgl, 0);
+      n = CHECK_SINGLE(n, sgl, 0, NULL, NULL, 0, 0);
     }
 
     if (SCHEME_FLOATP(n) && str[delta] == '-') {
@@ -1545,7 +1582,8 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     first[has_slash - delta] = 0;
 
     n1 = scheme_read_number(first, has_slash - delta,
-			    is_float, is_not_float, 1,
+                            /* recur without is_float to keep all precision */
+			    0, is_not_float, 1,
 			    radix, 1, next_complain,
 			    div_by_zero,
 			    test_only,
@@ -1569,7 +1607,8 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
 #endif
 
       n2 = scheme_read_number(substr, len - has_slash - 1,
-			      is_float, is_not_float, 1,
+                              /* recur without is_float to keep all precision */
+			      0, is_not_float, 1,
 			      radix, 1, next_complain,
 			      div_by_zero,
 			      test_only,
@@ -1611,7 +1650,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
     } else if (is_float)
       n1 = TO_DOUBLE(n1);
 
-    return CHECK_SINGLE(n1, sgl, 0);
+    return CHECK_SINGLE(n1, sgl, 0, NULL, NULL, 0, 0);
   }
 
   o = scheme_read_bignum(str, delta, radix);
@@ -1629,7 +1668,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
       return scheme_nzerod;
     }
 
-    return CHECK_SINGLE(TO_DOUBLE(o), sgl, 0);
+    return CHECK_SINGLE(TO_DOUBLE(o), sgl, 0, NULL, NULL, 0, 0);
   }
 
   return o;

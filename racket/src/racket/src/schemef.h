@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
   All rights reserved.
 
@@ -412,7 +412,6 @@ MZ_EXTERN void *GC_malloc_atomic(size_t size_in_bytes);
 MZ_EXTERN void *GC_malloc_one_tagged(size_t size_in_bytes);
 MZ_EXTERN void *GC_malloc_atomic_uncollectable(size_t size_in_bytes);
 MZ_EXTERN void *scheme_malloc_uncollectable(size_t size_in_bytes);
-MZ_EXTERN void *GC_malloc_array_tagged(size_t size_in_bytes);
 MZ_EXTERN void *GC_malloc_allow_interior(size_t size_in_bytes);
 MZ_EXTERN void *GC_malloc_atomic_allow_interior(size_t size_in_bytes);
 MZ_EXTERN void *GC_malloc_tagged_allow_interior(size_t size_in_bytes);
@@ -463,7 +462,9 @@ MZ_EXTERN void scheme_dont_gc_ptr(void *p);
 MZ_EXTERN void scheme_gc_ptr_ok(void *p);
 
 MZ_EXTERN void scheme_collect_garbage(void);
+MZ_EXTERN void scheme_collect_garbage_minor(void);
 MZ_EXTERN void scheme_enable_garbage_collection(int on);
+MZ_EXTERN void scheme_incremental_garbage_collection(int on);
 
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL
@@ -472,7 +473,7 @@ MZ_EXTERN void **GC_variable_stack;
 MZ_EXTERN void GC_register_traversers(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				      int is_constant_size, int is_atomic);
 MZ_EXTERN void *GC_resolve(void *p);
-MZ_EXTERN void GC_mark(const void *p);
+MZ_EXTERN void GC_mark(void *p);
 MZ_EXTERN void GC_fixup(void *p);
 MZ_EXTERN void *GC_fixup_self(void *p);
 #endif
@@ -482,43 +483,6 @@ MZ_EXTERN void scheme_free_immobile_box(void **b);
 
 MZ_EXTERN Scheme_Object *scheme_add_gc_callback(Scheme_Object *pre, Scheme_Object *post);
 MZ_EXTERN void scheme_remove_gc_callback(Scheme_Object *key);
-
-/*========================================================================*/
-/*                             hash tables                                */
-/*========================================================================*/
-
-MZ_EXTERN Scheme_Bucket_Table *scheme_make_bucket_table(intptr_t size_hint, int type);
-MZ_EXTERN void scheme_add_to_table(Scheme_Bucket_Table *table, const char *key, void *val, int);
-MZ_EXTERN void scheme_change_in_table(Scheme_Bucket_Table *table, const char *key, void *new_val);
-MZ_EXTERN void *scheme_lookup_in_table(Scheme_Bucket_Table *table, const char *key);
-MZ_EXTERN Scheme_Bucket *scheme_bucket_from_table(Scheme_Bucket_Table *table, const char *key);
-MZ_EXTERN int scheme_bucket_table_equal(Scheme_Bucket_Table *t1, Scheme_Bucket_Table *t2);
-MZ_EXTERN Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt);
-MZ_EXTERN void scheme_clear_bucket_table(Scheme_Bucket_Table *bt);
-
-MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table(int type);
-MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table_equal();
-MZ_EXTERN Scheme_Hash_Table *scheme_make_hash_table_eqv();
-MZ_EXTERN void scheme_hash_set(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
-MZ_EXTERN Scheme_Object *scheme_hash_get(Scheme_Hash_Table *table, Scheme_Object *key);
-XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_eq_hash_get(Scheme_Hash_Table *table, Scheme_Object *key);
-MZ_EXTERN void scheme_hash_set_atomic(Scheme_Hash_Table *table, Scheme_Object *key, Scheme_Object *val);
-MZ_EXTERN Scheme_Object *scheme_hash_get_atomic(Scheme_Hash_Table *table, Scheme_Object *key);
-MZ_EXTERN int scheme_hash_table_equal(Scheme_Hash_Table *t1, Scheme_Hash_Table *t2);
-MZ_EXTERN int scheme_is_hash_table_equal(Scheme_Object *o);
-MZ_EXTERN int scheme_is_hash_table_eqv(Scheme_Object *o);
-MZ_EXTERN Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht);
-MZ_EXTERN void scheme_clear_hash_table(Scheme_Hash_Table *ht);
-
-MZ_EXTERN Scheme_Hash_Tree *scheme_make_hash_tree(int kind);
-MZ_EXTERN Scheme_Hash_Tree *scheme_hash_tree_set(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
-MZ_EXTERN Scheme_Object *scheme_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
-XFORM_NONGCING MZ_EXTERN Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *key);
-XFORM_NONGCING MZ_EXTERN mzlonglong scheme_hash_tree_next(Scheme_Hash_Tree *tree, mzlonglong pos);
-XFORM_NONGCING MZ_EXTERN int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
-MZ_EXTERN int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
-MZ_EXTERN int scheme_is_hash_tree_equal(Scheme_Object *o);
-MZ_EXTERN int scheme_is_hash_tree_eqv(Scheme_Object *o);
 
 /*========================================================================*/
 /*                   basic Scheme value constructors                      */
@@ -1140,8 +1104,8 @@ MZ_EXTERN intptr_t scheme_equal_hash_key(Scheme_Object *o);
 MZ_EXTERN intptr_t scheme_equal_hash_key2(Scheme_Object *o);
 MZ_EXTERN intptr_t scheme_recur_equal_hash_key(Scheme_Object *o, void *cycle_data);
 MZ_EXTERN intptr_t scheme_recur_equal_hash_key2(Scheme_Object *o, void *cycle_data);
-MZ_EXTERN intptr_t scheme_eqv_hash_key(Scheme_Object *o);
-MZ_EXTERN intptr_t scheme_eqv_hash_key2(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_eqv_hash_key(Scheme_Object *o);
+XFORM_NONGCING MZ_EXTERN intptr_t scheme_eqv_hash_key2(Scheme_Object *o);
 
 MZ_EXTERN void scheme_set_type_equality(Scheme_Type type, 
                                         Scheme_Equal_Proc f,

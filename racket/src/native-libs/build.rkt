@@ -113,11 +113,23 @@
 ;; Fix a problem with glyph extents and clipped rendering:
 (define-runtime-path cairo-coretext-patch "patches/cairo-coretext.patch")
 
+;; Avoid CGFontGetGlyphPath:
+(define-runtime-path cairo-cgfontgetglpyh-patch "patches/cgfontgetglyph.patch")
+
+;; Patch to avoid writing to a global constant:
+(define-runtime-path cairo-allclipmodifybug-patch "patches/allclipmodifybug.patch")
+
 ;; Hack to workaround broken Courier New in Mac OS X 10.{7.8}:
 (define-runtime-path courier-new-patch "patches/courier-new.patch")
 
 ;; Enable kerning and set DPI to 72:
 (define-runtime-path coretext-patch "patches/coretext.patch")
+
+;; Support registration of extra font families:
+(define-runtime-path coretext-fontreg-patch "patches/coretext-fontreg.patch")
+
+;; Avoid crash when CTFontCollectionCreateMatchingFontDescriptors fails:
+(define-runtime-path coretext-nullarray "patches/coretext-nullarray.patch")
 
 ;; Enable "symbol" fonts, and fix off-by-one:
 (define-runtime-path win32text-patch "patches/win32text.patch")
@@ -302,21 +314,33 @@
                           (~a "cd " (build-path dest "bin")
                               " && mv libsqlite3-0.dll sqlite3.dll")))]
     [("openssl")
-     (nonmac-only)
+     (define make
+       (if linux?
+           (~a "make SHARED_LDFLAGS=" "-Wl,-rpath," dest "/lib")
+           "make"))
      (config #:configure-exe (find-executable-path "sh")
-             #:configure (if win?
-			     (list "./Configure"
-				   (~a "--cross-compile-prefix=" win-prefix "-")
-				   #f ; other flags here
-				   (~a "mingw" (if m32? "" "64"))
-				   "shared")
-			     (list "./Configure"
-				   #f
-				   "shared"
-				   "linux-x86_64"))
-	     #:make (if linux?
-			(~a "make SHARED_LDFLAGS=" "-Wl,-rpath," dest "/lib")
-			"make"))]
+             #:configure (cond
+                          [win?
+                           (list "./Configure"
+                                 (~a "--cross-compile-prefix=" win-prefix "-")
+                                 #f ; other flags here
+                                 (~a "mingw" (if m32? "" "64"))
+                                 "shared")]
+                          [mac?
+                           (list "./Configure"
+                                 #f
+                                 "shared"
+                                 (cond
+                                  [ppc? "darwin-ppc-cc"]
+                                  [m32? "darwin-i386-cc"]
+                                  [else "darwin64-x86_64-cc"]))]
+                          [else
+                           (list "./Configure"
+                                 #f
+                                 "shared"
+                                 "linux-x86_64")])
+	     #:make make
+             #:make-install (~a make " install_sw"))]
     [("expat") (config)]
     [("gettext") (config #:depends (if win? '("libiconv") '())
                          #:configure '("--enable-languages=c")
@@ -412,6 +436,8 @@
 				       '("--enable-xlib=no")
 				       null)
                        #:patches (list cairo-coretext-patch
+                                       cairo-cgfontgetglpyh-patch
+                                       cairo-allclipmodifybug-patch
                                        courier-new-patch
                                        win32cairofallback-patch))]
     [("harfbuzz") (config #:depends '("fontconfig" "freetype" "cairo")
@@ -429,6 +455,8 @@
 				    '("--with-included-modules=yes"
 				      "--with-dynamic-modules=no"))
                        #:patches (list coretext-patch
+                                       coretext-fontreg-patch
+                                       coretext-nullarray
                                        win32text-patch))]
     [("gmp") (config #:patches (if gcc-4.0? (list gmp-weak-patch) null)
                      #:configure (append

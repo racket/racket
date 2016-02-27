@@ -8,7 +8,8 @@
          all-but-last
          known-good-contract?
          known-good-contracts
-         update-loc)
+         update-loc
+         gen-id)
 
 (require setup/main-collects
          racket/struct-info
@@ -373,5 +374,8 @@
        (free-identifier=? id (datum->syntax #'here r-id))))
 
 (define (known-good-contracts)
-  (for/list ([(k v) (in-hash known-good-syms-ht)])
+  (for/list ([k (in-list (sort (hash-keys known-good-syms-ht) symbol<?))])
     (datum->syntax #'here k)))
+
+(define (gen-id sym)
+  (car (generate-temporaries (list sym))))

@@ -23,6 +23,7 @@
          opt/info-add-blame-context
          opt/info-change-val
          opt/info-positive-blame
+         opt/info-negative-blame
          
          opt/unknown
          opt-error-name
@@ -164,6 +165,10 @@
   (if (opt/info-swap-blame? oi)
       #`(blame-positive #,(opt/info-blame-original-id oi))
       #`(blame-negative #,(opt/info-blame-original-id oi))))
+(define (opt/info-negative-blame oi)
+  (if (opt/info-swap-blame? oi)
+      #`(blame-negative #,(opt/info-blame-original-id oi))
+      #`(blame-positive #,(opt/info-blame-original-id oi))))
 
 ;; opt/info-swap-blame : opt/info -> opt/info
 ;; swaps pos and neg

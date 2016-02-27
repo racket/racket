@@ -27,21 +27,14 @@ To compile with Microsoft Visual C, read the instructions in
 
 To compile with MinGW tools, follow the Unix instructions below; do not
 use `--enable-shared', because DLLs will be generated automatically.
-The result is a Windows-style build, but without MzCOM. If you are using
-a variant of MinGW without "libdelayimp.a", get the implementation of
-"delayimp.c" from MinGW-w64 and compile it to "libdelayimp.a".
+The result is a Windows-style build. If you are using a variant of
+MinGW without "libdelayimp.a", get the implementation of "delayimp.c"
+from MinGW-w64 and compile it to "libdelayimp.a".
 
 To compile with Cygwin tools, follow the Unix instructions below.  The
 result is a Unix-style build, not a Windows-style build (e.g.,
 Racket's `system-type' procedure returns 'unix, not 'windows, and
 `racket/gui' uses Gtk instead of Win32).
-
-Beware that MinGW/Cygwin builds different from the MSVC build when
-SSE-based floating-point math is enabled in the C compiler. In that
-case, Racket includes sets the floating-point mode to extended
-precision to support extflonums, and changing precision may affect
-other libraries. To avoid the floating-point mode change, disable
-extflonum support with `--disable-extflonum'.
 
 ========================================================================
  Compiling for Mac OS X
@@ -278,11 +271,16 @@ Cross-compilation requires at least two flags to `configure':
    such as `OS-gcc' and `OS-strip'.
 
  * `--enable-racket=RACKET', where RACKET is a path to a Racket
-   executable for the version being compiled that runs on the build
-   platform.
+   executable that runs on the build platform; the executable must be
+   the same version of Racket as being built for the target platform.
 
    This flag is needed because building and installing Racket requires
-   running (an intermediate version of) Racket.
+   running (an existing build of) Racket.
+
+   Use "auto" for RACKET to indicates that one should be built
+   automatically for the current platform. In that case, `make`
+   will run `configure` again (with no arguments) in a "local"
+   subdirectory to create a build for the current platform.
 
 Some less commonly needed `configure' flags:
 
@@ -299,7 +297,7 @@ the NDK, use (all on one line)
 
   configure --host=arm-linux-androideabi 
             --enable-sysroot="[ndk]/platforms/android-[N]/arch-arm"
-            --enable-racket=racket
+            --enable-racket=auto
 
 where [ndk] is the path to the installed NDK, [N] is a target version
 of Android (such as 14), and

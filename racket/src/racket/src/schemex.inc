@@ -223,7 +223,6 @@
   scheme_extension_table->GC_malloc_one_tagged = GC_malloc_one_tagged;
   scheme_extension_table->GC_malloc_atomic_uncollectable = GC_malloc_atomic_uncollectable;
   scheme_extension_table->scheme_malloc_uncollectable = scheme_malloc_uncollectable;
-  scheme_extension_table->GC_malloc_array_tagged = GC_malloc_array_tagged;
   scheme_extension_table->GC_malloc_allow_interior = GC_malloc_allow_interior;
   scheme_extension_table->GC_malloc_atomic_allow_interior = GC_malloc_atomic_allow_interior;
   scheme_extension_table->GC_malloc_tagged_allow_interior = GC_malloc_tagged_allow_interior;
@@ -262,7 +261,9 @@
   scheme_extension_table->scheme_dont_gc_ptr = scheme_dont_gc_ptr;
   scheme_extension_table->scheme_gc_ptr_ok = scheme_gc_ptr_ok;
   scheme_extension_table->scheme_collect_garbage = scheme_collect_garbage;
+  scheme_extension_table->scheme_collect_garbage_minor = scheme_collect_garbage_minor;
   scheme_extension_table->scheme_enable_garbage_collection = scheme_enable_garbage_collection;
+  scheme_extension_table->scheme_incremental_garbage_collection = scheme_incremental_garbage_collection;
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL
   scheme_extension_table->GC_variable_stack = GC_variable_stack;
@@ -299,6 +300,7 @@
   scheme_extension_table->scheme_clone_hash_table = scheme_clone_hash_table;
   scheme_extension_table->scheme_clear_hash_table = scheme_clear_hash_table;
   scheme_extension_table->scheme_make_hash_tree = scheme_make_hash_tree;
+  scheme_extension_table->scheme_make_hash_tree_set = scheme_make_hash_tree_set;
   scheme_extension_table->scheme_hash_tree_set = scheme_hash_tree_set;
   scheme_extension_table->scheme_hash_tree_get = scheme_hash_tree_get;
   scheme_extension_table->scheme_eq_hash_tree_get = scheme_eq_hash_tree_get;

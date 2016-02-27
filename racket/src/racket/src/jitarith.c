@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2006-2014 PLT Design Inc.
+  Copyright (c) 2006-2016 PLT Design Inc.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -36,7 +36,7 @@ int scheme_jit_is_fixnum(Scheme_Object *rand)
       || (SAME_TYPE(SCHEME_TYPE(rand), scheme_local_type)
           && (SCHEME_GET_LOCAL_TYPE(rand) == SCHEME_LOCAL_TYPE_FIXNUM)))
     return 1;
-  else if (scheme_expr_produces_local_type(rand) == SCHEME_LOCAL_TYPE_FIXNUM)
+  else if (scheme_expr_produces_local_type(rand, NULL) == SCHEME_LOCAL_TYPE_FIXNUM)
     return 1;
   else
     return 0;
@@ -1640,7 +1640,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
               __START_INNER_TINY__(branch_short);
               /* watch out for negation of most negative fixnum,
                  which is a positive number too big for a fixnum */
-              refz = jit_beqi_p(jit_forward(), JIT_R0, (void *)(((intptr_t)1 << ((8 * JIT_WORD_SIZE) - 2))));
+              refz = jit_beqi_p(jit_forward(), JIT_R0, (void *)(((uintptr_t)1 << ((8 * JIT_WORD_SIZE) - 2))));
               __END_INNER_TINY__(branch_short);
               if (reversed)
                 jit_mulr_l(JIT_R2, JIT_R0, JIT_R2);
@@ -1678,12 +1678,12 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
               if (!unsafe_fx || overflow_refslow) {
                 GC_CAN_IGNORE jit_insn *refx;
                 __START_INNER_TINY__(branch_short);
-                refx = jit_bnei_p(jit_forward(), JIT_R0, (void *)(((intptr_t)1 << ((8 * JIT_WORD_SIZE) - 2))));
+                refx = jit_bnei_p(jit_forward(), JIT_R0, (void *)(((uintptr_t)1 << ((8 * JIT_WORD_SIZE) - 2))));
                 __END_INNER_TINY__(branch_short);
                 /* first argument must have been most negative fixnum, 
                    second argument must have been -1: */
                 if (reversed)
-                  (void)jit_movi_p(JIT_R0, (void *)(((intptr_t)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
+                  (void)jit_movi_p(JIT_R0, (void *)(((uintptr_t)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
                 else
                   (void)jit_movi_p(JIT_R0, scheme_make_integer(-1));
                 (void)jit_jmpi(refslow);
@@ -1800,10 +1800,10 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
           /* Non-constant arg is in JIT_R0 */
           if (arith == ARITH_ADD) {
             if (unsafe_fx && !overflow_refslow)
-              jit_addi_l(dest, JIT_R0, v << 1);
+              jit_addi_l(dest, JIT_R0, (uintptr_t)v << 1);
             else {
               jit_movr_p(JIT_R2, JIT_R0);
-              (void)jit_boaddi_l(refslow, JIT_R2, v << 1);
+              (void)jit_boaddi_l(refslow, JIT_R2, (uintptr_t)v << 1);
               jit_movr_p(dest, JIT_R2);
             }
           } else if (arith == ARITH_SUB) {
@@ -1816,10 +1816,10 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
               jit_addi_ul(dest, JIT_R2, 0x1);
             } else {
               if (unsafe_fx && !overflow_refslow)
-                jit_subi_l(dest, JIT_R0, v << 1);
+                jit_subi_l(dest, JIT_R0, (uintptr_t)v << 1);
               else {
                 jit_movr_p(JIT_R2, JIT_R0);
-                (void)jit_bosubi_l(refslow, JIT_R2, v << 1);
+                (void)jit_bosubi_l(refslow, JIT_R2, (uintptr_t)v << 1);
                 jit_movr_p(dest, JIT_R2);
               }
             }
@@ -1851,7 +1851,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
               jit_ori_ul(dest, JIT_R0, l);
             } else if (arith == ARITH_XOR) {
               /* xor */
-              jit_xori_ul(dest, JIT_R0, v << 1);
+              jit_xori_ul(dest, JIT_R0, (uintptr_t)v << 1);
             } else if ((arith == ARITH_LSH) || (arith == ARITH_RSH)) {
               /* arithmetic-shift */
               /* We only get here when v is between -MAX_TRY_SHIFT and MAX_TRY_SHIFT, inclusive */
@@ -1902,7 +1902,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
               __END_INNER_TINY__(branch_short);
               /* watch out for most negative fixnum! */
               if (!unsafe_fx || overflow_refslow)
-                (void)jit_beqi_p(refslow, JIT_R0, (void *)(((intptr_t)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
+                (void)jit_beqi_p(refslow, JIT_R0, (void *)(((uintptr_t)1 << ((8 * JIT_WORD_SIZE) - 1)) | 0x1));
               (void)jit_movi_p(JIT_R1, scheme_make_integer(0));
               jit_subr_l(JIT_R0, JIT_R1, JIT_R0);
               jit_ori_l(JIT_R0, JIT_R0, 0x1);
@@ -2040,7 +2040,7 @@ int scheme_generate_arith_for(mz_jit_state *jitter, Scheme_Object *rator, Scheme
             jit_lshr_l(JIT_R0, JIT_V1, JIT_R0);
             ref3 = jit_bmcr_l(jit_forward(), JIT_R1, JIT_R0);
           } else {
-            ref3 = jit_bmci_l(jit_forward(), JIT_R0, 1 << (v+1));
+            ref3 = jit_bmci_l(jit_forward(), JIT_R0, (uintptr_t)1 << (v+1));
             rs_can_keep = 1;
           }
           break;
@@ -2138,7 +2138,7 @@ static int extract_nary_arg(int reg, int n, mz_jit_state *jitter, Scheme_App_Rec
       scheme_generate_unboxing(jitter, JIT_R0);
   } else if (scheme_is_constant_and_avoids_r1(app->args[n+1])) {
     __END_SHORT_JUMPS__(old_short_jumps);
-    scheme_generate(app->args[n+1], jitter, 0, 0, 0, reg, NULL);
+    scheme_generate(app->args[n+1], jitter, 0, 0, 0, reg, NULL, NULL);
     CHECK_LIMIT();
     __START_SHORT_JUMPS__(old_short_jumps);
   } else {
@@ -2224,7 +2224,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
       use_fx = 0;
       if (trigger_arg == i)
         trigger_arg++;
-    } else if (SCHEME_TYPE(v) >= _scheme_compiled_values_types_) {
+    } else if (SCHEME_TYPE(v) >= _scheme_ir_values_types_) {
       use_fx = 0;
       mzSET_USE_FL(use_fl = 0);
     }
@@ -2241,7 +2241,7 @@ int scheme_generate_nary_arith(mz_jit_state *jitter, Scheme_App_Rec *app,
   }
 
   if (stack_c)
-    scheme_generate_app(app, alt_args, stack_c, jitter, 0, 0, 0, 2);
+    scheme_generate_app(app, alt_args, stack_c, stack_c, jitter, 0, 0, 0, 2);
   CHECK_LIMIT();
   mz_rs_sync();
 

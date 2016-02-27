@@ -7,7 +7,7 @@
     [(#\t) "const Scheme_Object*"]
     [(#\S) "Scheme_Object**"]
     [(#\b) "Scheme_Bucket*"]
-    [(#\n) "Scheme_Native_Closure_Data*"]
+    [(#\n) "Scheme_Native_Lambda*"]
     [(#\m) "MZ_MARK_STACK_TYPE"]
     [(#\p) "void*"]
     [(#\i) "int"]
@@ -197,7 +197,8 @@
     ss_i
     iSp_v
     sss_s
-    _v))
+    _v
+    iS_v))
 
 (with-output-to-file "jit_ts_def.c"
   #:exists 'replace

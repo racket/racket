@@ -27,7 +27,7 @@ FP_TYPE SCHEME_BIGNUM_TO_FLOAT_INFO(const Scheme_Object *n, intptr_t skip, intpt
   FP_TYPE d;
 
   nl = SCHEME_BIGLEN(n);
-  na = SCHEME_BIGDIG(n) + nl;
+  na = SCHEME_BIGDIG(n);
 
   skipped = nl;
 
@@ -38,14 +38,63 @@ FP_TYPE SCHEME_BIGNUM_TO_FLOAT_INFO(const Scheme_Object *n, intptr_t skip, intpt
       return FP_scheme_floating_point_nzero;
   } else
     nl -= skip;
-	
-  d = FP_ZEROx;
-  while (nl--) {
-    d = FP_TYPE_MULT(d, FP_TYPE_FROM_DOUBLE(BIG_RADIX));
-    d = FP_TYPE_PLUS(d, FP_TYPE_FROM_UINTPTR(*(--na)));
-    if (IS_FLOAT_INF(d))
-      break;
-    --skipped;
+
+  if (!nl)
+    d = FP_ZEROx;
+  else if (nl == 1) {
+    d = FP_TYPE_FROM_UINTPTR(*na);
+    skipped = 0;
+  } else {
+    /* We'll get all the bits that matter in the first word or two,
+       and we won't lose precision as long as we shift so that the
+       highest bit in a word is non-zero */
+    bigdig b = na[nl-1];
+    int delta;
+
+    delta = mz_clz(b);
+    if (delta) {
+      /* zero bits in the highest word => pull in bits from the
+         second-highest word */
+      b = (b << delta) + (na[nl-2] >> (WORD_SIZE - delta));
+    }
+    if (sizeof(FP_TYPE) <= sizeof(bigdig)) {
+      /* one bigdig is enough, and the last bit is certainly
+         not needed, but it needs to summarize whether there
+         are any more non-zero bits in the number */
+      if (!(b & 0x1) && any_nonzero_digits(na, nl-1, delta))
+        b |= 0x1;
+      d = FP_TYPE_FROM_UINTPTR(b);
+    } else {
+      /* Need to look at a second word, possibly pulling in bits from
+         a third word */
+      d = FP_TYPE_FROM_UINTPTR(b);
+      d = FP_TYPE_MULT(d, FP_TYPE_FROM_DOUBLE(BIG_RADIX));
+      b = (na[nl-2] << delta);
+      if ((nl > 2) && delta)
+        b += (na[nl-3] >> (WORD_SIZE - delta));
+      if (!(b & 0x1) && (nl > 2) && any_nonzero_digits(na, nl-2, delta))
+        b |= 0x1;
+      d = FP_TYPE_PLUS(d, FP_TYPE_FROM_UINTPTR(b));
+      d = FP_TYPE_DIV(d, FP_TYPE_FROM_DOUBLE(BIG_RADIX));
+    }
+    /* Shift `d` back down by delta: */
+    if (delta)
+      d = FP_TYPE_DIV(d, FP_TYPE_POW(FP_TYPE_FROM_DOUBLE(2.0),
+                                     FP_TYPE_FROM_INT(delta)));
+    nl--;
+
+    /* Shift `d` up by remaining bignum words */
+    if (_skipped) {
+      while (nl--) {
+        d = FP_TYPE_MULT(d, FP_TYPE_FROM_DOUBLE(BIG_RADIX));
+        if (IS_FLOAT_INF(d))
+          break;
+        --skipped;
+      }
+    } else {
+      d = FP_TYPE_MULT(d, FP_TYPE_POW(FP_TYPE_FROM_DOUBLE(2.0),
+                                      FP_TYPE_FROM_UINTPTR(nl * WORD_SIZE)));
+    }
   }
 
   if (_skipped)
@@ -151,6 +200,7 @@ Scheme_Object *SCHEME_BIGNUM_FROM_FLOAT(FP_TYPE d)
 #undef FP_TYPE_MULT
 #undef FP_TYPE_PLUS
 #undef FP_TYPE_DIV
+#undef FP_TYPE_POW
 #undef FP_TYPE_FROM_INT
 #undef FP_TYPE_GREATER_OR_EQV
 #undef FP_TYPE_MINUS

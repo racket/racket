@@ -196,6 +196,13 @@
                                         (complain "URL path ends with a directory indicator"))
                                    (cor ((num-empty p) . < . 2)
                                         (complain "URL path ends with two empty elements"))))
+                              (let ([a (assoc 'path (url-query url))])
+                                (or (not a)
+                                    (not (cdr a))
+                                    (cor (for/and ([e (in-list (string-split (cdr a) "/"))])
+                                           (not (or (equal? e ".")
+                                                    (equal? e ".."))))
+                                         (complain "path query includes a directory indicator"))))
                               (extract-git-name url p complain-name))
                          ;; github://
                          (let ([p (if (equal? "" (path/param-path (last p)))

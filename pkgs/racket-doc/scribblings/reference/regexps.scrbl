@@ -240,7 +240,7 @@ returns the source byte string for a @tech{regexp value}.
 @examples[
 (byte-regexp #"ap*le")
 (object-name #rx#"ap*le")
-(byte-regexp "ap*le")
+(eval:error (byte-regexp "ap*le"))
 ]}
 
 @defproc[(byte-pregexp [bstr bytes?]) byte-pregexp?]{

@@ -334,15 +334,17 @@
     (map (lambda (n) (format "xsrc/~a.obj" n)) srcs))))
 (link-dll libracket-objs null null dll "" #f)
 
-(define (check-rc res rc)
+(define (check-rc res rc ico)
   (unless (and (file-exists? res)
 	       (>= (file-or-directory-modify-seconds res)
-		   (file-or-directory-modify-seconds rc)))
+		   (file-or-directory-modify-seconds rc))
+	       (>= (file-or-directory-modify-seconds res)
+		   (file-or-directory-modify-seconds ico)))
 	  (system- (string-append 
 		    "rc /l 0x409 "
 		    (format "/fo~a ~a" res rc)))))
 
-(check-rc "racket.res" "../racket/racket.rc")
+(check-rc "racket.res" "../racket/racket.rc" "../racket/racket.ico")
 
 (define (link-exe objs libs exe subsystem-flags)
   (link-dll (append objs (if use-libracket-dll?
@@ -387,7 +389,7 @@
      #f
      #t)
 
-(check-rc "gracket.res" "../gracket/gracket.rc")
+(check-rc "gracket.res" "../gracket/gracket.rc" "../gracket/gracket.ico")
 
 (link-exe (list
            "gracket.res"
@@ -411,3 +413,6 @@
 
 (copy-file/diff "mzdyn3m.exp" "../../../lib/msvc/mzdyn3m.exp")
 (copy-file/diff "mzdyn3m.obj" "../../../lib/msvc/mzdyn3m.obj")
+
+(parameterize ([current-command-line-arguments (vector "../../../lib/system.rktd")])
+  (dynamic-require "../../racket/mksystem.rkt" #f))

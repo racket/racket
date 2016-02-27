@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -2411,9 +2411,9 @@ Scheme_Object *combine_link_path(char *copy, int len, char *clink, int clen,
 # define MZ_UNC_WRITE 0x2
 # define MZ_UNC_EXEC 0x4
 
-static int UNC_stat(char *dirname, int len, int *flags, int *isdir, int *islink, 
+static int UNC_stat(const char *dirname, int len, int *flags, int *isdir, int *islink, 
 		    Scheme_Object **date, mzlonglong *filesize,
-		    char **resolved_path, int set_flags)
+		    const char **resolved_path, int set_flags)
   /* dirname must be absolute */
 {
   /* Note: stat() doesn't work with UNC "drive" names or \\?\ paths.
@@ -4179,7 +4179,7 @@ static char *filename_for_error(Scheme_Object *p)
 }
 
 #ifdef DOS_FILE_SYSTEM
-static int enable_write_permission(char *fn)
+static int enable_write_permission(const char *fn)
 {
   int len;
   int flags;
@@ -4291,9 +4291,17 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
 # define MOVE_ERRNO_FORMAT "%E"
 # else
   if (!exists_ok && (scheme_file_exists(dest) || scheme_directory_exists(dest))) {
-    exists_ok = -1;
-    errno = EEXIST;
-    goto failed;
+    /* We use a specialized error message here, because it's not
+       a system error (e.g., setting `errno` to `EEXIST` would
+       be a lie). */
+    scheme_raise_exn((exists_ok < 0) ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
+                     "rename-file-or-directory: cannot rename file or directory;\n"
+                     " the destination path already exists\n"
+                     "  source path: %q\n"
+                     "  dest path: %q",
+                     filename_for_error(argv[0]),
+                     filename_for_error(argv[1]));
+    return NULL;
   }
   
   while (1) {
@@ -4305,9 +4313,6 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
 # define MOVE_ERRNO_FORMAT "%e"
 # endif
 
-#ifndef DOS_FILE_SYSTEM
-failed:
-#endif
   scheme_raise_exn((exists_ok < 0) ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
 		   "rename-file-or-directory: cannot rename file or directory\n"
                    "  source path: %q\n"
@@ -5407,10 +5412,10 @@ static Scheme_Object *do_directory_list(int break_ok, int argc, Scheme_Object *a
     err_val = GetLastError();
     if ((err_val == ERROR_DIRECTORY) && CreateSymbolicLinkProc) {
       /* check for symbolic link */
-      char *resolved;
+      const char *resolved;
       if (UNC_stat(filename, strlen(filename), NULL, NULL, NULL, NULL, NULL, &resolved, -1)) {
 	if (resolved) {
-	  filename = resolved;
+	  filename = (char *)resolved;
 	  goto retry;
 	}
       }
@@ -5612,9 +5617,26 @@ static Scheme_Object *do_explode_path(Scheme_Object *p)
   return explode_path(1, &p);
 }
 
-Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir)
+static Scheme_Object *to_bytes(Scheme_Object *p)
 {
-  Scheme_Object *de, *be, *oe;
+  if (SCHEME_PATHP(p))
+    return scheme_make_sized_byte_string(SCHEME_PATH_VAL(p),
+                                         SCHEME_PATH_LEN(p),
+                                         1);
+  else
+    return p;
+}
+
+Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir, Scheme_Hash_Table *cache)
+/* When cache is non-NULL, generate a path or a list of byte strings (suitable for bytecode) */
+{
+  Scheme_Object *de, *be, *oe, *orig_obj = obj;
+
+  if (cache) {
+    de = scheme_hash_get(cache, obj);
+    if (de)
+      return de;
+  }
 
   if (SCHEME_PAIRP(dir)) {
     be = do_explode_path(SCHEME_CAR(dir));
@@ -5644,30 +5666,76 @@ Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir
       be = SCHEME_CDR(be);
     }
 
+    /* If cache is non-NULL, generate a list of byte strings */
+
     if (SCHEME_NULLP(oe)) {
-      a[0] = same_symbol;
-      obj = scheme_build_path(1, a);
+      if (cache) {
+        obj = scheme_null;
+      } else {
+        a[0] = same_symbol;
+        obj = scheme_build_path(1, a);
+      }
     } else {
       obj = SCHEME_CAR(oe);
+      if (cache)
+        obj = scheme_make_pair(to_bytes(obj), scheme_null);
       oe = SCHEME_CDR(oe);
     }
 
     while (SCHEME_PAIRP(oe)) {
-      a[0] = obj;
-      a[1] = SCHEME_CAR(oe);
-      obj = scheme_build_path(2, a);
+      if (cache) {
+        obj = scheme_make_pair(to_bytes(SCHEME_CAR(oe)), obj);
+      } else {
+        a[0] = obj;
+        a[1] = SCHEME_CAR(oe);
+        obj = scheme_build_path(2, a);
+      }
       oe = SCHEME_CDR(oe);
     }
 
+    if (cache)
+      obj = scheme_reverse(obj);
+
     while (!SCHEME_NULLP(be)) {
-      a[0] = up_symbol;
-      a[1] = obj;
-      obj = scheme_build_path(2, a);
+      if (cache) {
+        obj = scheme_make_pair(up_symbol, obj);
+      } else {
+        a[0] = up_symbol;
+        a[1] = obj;
+        obj = scheme_build_path(2, a);
+      }
       be = SCHEME_CDR(be);
     }
   }
 
+  if (cache)
+    scheme_hash_set(cache, orig_obj, obj);
+
   return obj;
+}
+
+Scheme_Object *scheme_maybe_build_path(Scheme_Object *base, Scheme_Object *elem)
+{
+  Scheme_Object *a[2];
+  
+  if (!base)
+    base = scheme_get_param(scheme_current_config(), MZCONFIG_CURRENT_DIRECTORY);
+
+  if (SAME_OBJ(elem, same_symbol)
+      || SAME_OBJ(elem, up_symbol)) {
+    /* ok */
+  } else if (SCHEME_BYTE_STRINGP(elem)) {
+    a[0] = elem;
+    elem = bytes_to_path_element(1, a);
+  } else
+    elem = NULL;
+
+  if (elem) {
+    a[0] = base;
+    a[1] = elem;
+    return scheme_build_path(2, a);
+  } else
+    return base;
 }
 
 static Scheme_Object *filesystem_root_list(int argc, Scheme_Object *argv[])
@@ -6080,7 +6148,11 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
       } while ((ok == -1) && (errno == EINTR));
       write = !ok;
       
-      if (ok && (errno != EACCES))
+      /* Don't fail at the exec step if errno is EPERM; under Mac OS
+         X, at least, such a failure seems to mean that the file is
+         not writable. (We assume it's not a directory-access issue,
+         since the read test succeeded.) */
+      if (ok && (errno != EACCES) && (errno != EPERM))
 	l = NULL;
       else {
 	do {
@@ -6088,12 +6160,10 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
 	} while ((ok == -1) && (errno == EINTR));
 	execute = !ok;
       
-        /* Don't fail at the exec step if the user is the
-           superuser and errno is EPERM; under Mac OS X,
-           at least, such a failure simply means tha the
-           file is not executable. */
-	if (ok && (errno != EACCES) 
-            && (uid || gid || (errno != EPERM))) {
+        /* Don't fail at the exec step if errno is EPERM; under Mac OS
+           X, at least, such a failure simply means that the file is
+           not executable. */
+	if (ok && (errno != EACCES) && (errno != EPERM)) {
 	  l = NULL;
 	} else {
 	  if (read)

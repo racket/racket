@@ -3,6 +3,10 @@
 
 (Section 'wills)
 
+(collect-garbage 'major)
+(collect-garbage 'minor)
+(err/rt-test (collect-garbage 'other))
+
 (test #t exact-nonnegative-integer? (current-memory-use))
 (test #t exact-nonnegative-integer? (current-memory-use #f))
 (test #t exact-nonnegative-integer? (current-memory-use (current-custodian)))
@@ -288,6 +292,25 @@
          (for/fold ([n 0]) ([p (in-list l)])
            (if (car p) (add1 n) n))))
     (test #t < fraction-retained 1/2)))
+
+;; ----------------------------------------
+;;  Check space safety conversion for nested `if`s
+
+(let ([ht (make-weak-hasheq)])
+  (letrec ([f (lambda (false long-vector values n)
+                (begin
+                  (if false
+                      (if (random) 7 (length long-vector))
+                      'long-vector-not-cleared-here)
+                  (if (zero? n)
+                      (begin
+                        (collect-garbage)
+                        (hash-count ht))
+                      (let ([vec (make-vector 1000)])
+                        (hash-set! ht vec #t)
+                        (values (f false vec values (sub1 n)))))))])
+    (set! f f)
+    (test #t < (f #f #f values 100) 33)))
 
 ;; ----------------------------------------
 

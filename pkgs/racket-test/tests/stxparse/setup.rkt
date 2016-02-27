@@ -4,7 +4,7 @@
          (only-in syntax/parse/private/residual
                   attribute-binding)
          syntax/parse/private/residual-ct  ;; for attr functions
-         unstable/macro-testing
+         syntax/macro-testing
          (for-syntax racket/base))
 
 (provide tok

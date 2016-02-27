@@ -160,7 +160,7 @@
                  (ext-class/c-contract-opaque? this)
                  (ext-class/c-contract-name this)))
               (λ (neg-party)
-                (((class/c-proj ctc) (blame-add-missing-party blame neg-party)) cls))]
+                (((class/c-late-neg-proj ctc) blame) cls neg-party))]
              [else 
               (build-neg-acceptor-proc this maybe-err blame cls #f '() 
                                        (make-hasheq) (make-hasheq))])]
@@ -176,7 +176,8 @@
   (define mth->idx (class-method-ht cls))
   (define mtd-vec (class-methods cls))
   
-  (define internal-proj (internal-class/c-proj (ext-class/c-contract-internal-ctc this)))
+  (define internal-late-neg-proj
+    (internal-class/c-late-neg-proj (ext-class/c-contract-internal-ctc this)))
   
   ;; The #f may survive if the method is just-check-existence or
   ;; if the contract doesn't mention the method (and it isn't opaque)
@@ -330,8 +331,7 @@
     ;; on the class only when it is
     ;; time to instantiate it; not here
     (define class+one-property/adjusted
-      (chaperone-struct ((internal-proj (blame-add-missing-party blame neg-party))
-                         cls)
+      (chaperone-struct ((internal-late-neg-proj blame) cls neg-party)
                         set-class-orig-cls! (λ (a b) b)
                         impersonator-prop:wrapped-class-info
                         the-info))

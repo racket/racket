@@ -29,7 +29,8 @@
 (test/spec-passed/result
  'make-contract-1
  '((contract proj:add1->sub1 sqrt 'pos 'neg) 15)
- 3)
+ 3
+ do-not-double-wrap)
 
 (test/pos-blame
  'make-contract-2
@@ -134,6 +135,52 @@
  '(contract proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
  exn:fail?)
 
+  (contract-eval
+   '(define val-first-proj:bad-prime-box-list/c
+      (let* ([prime? (λ (n)
+                       (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                         (not (= (remainder n m) 0))))]
+             [wrap-box (λ (blame b) (box (unbox b)))])
+        (make-chaperone-contract
+         #:name 'bad-prime-box-list/c
+         #:first-order (λ (v) (and (list? v) (andmap box? v)))
+         #:val-first-projection
+         (λ (blame)
+           (λ (v)
+             (λ (neg-party)
+               (unless (and (list? v) (andmap box? v))
+                 (raise-blame-error blame v
+                                    #:missing-party neg-party
+                                    "expected list of boxes, got ~v" v))
+               (map (λ (b) (wrap-box blame b)) v))))))))
+  
+  (contract-error-test
+   'contract-error-test6
+   '(contract val-first-proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
+   exn:fail?)
+
+  (contract-eval
+   '(define late-neg-proj:bad-prime-box-list/c
+      (let* ([prime? (λ (n)
+                       (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                         (not (= (remainder n m) 0))))]
+             [wrap-box (λ (blame b) (box (unbox b)))])
+        (make-chaperone-contract
+         #:name 'bad-prime-box-list/c
+         #:first-order (λ (v) (and (list? v) (andmap box? v)))
+         #:late-neg-projection
+         (λ (blame)
+           (λ (v neg-party)
+             (unless (and (list? v) (andmap box? v))
+               (raise-blame-error blame v
+                                  "expected list of boxes, got ~v" v))
+             (map (λ (b) (wrap-box blame b)) v)))))))
+  
+  (contract-error-test
+   'contract-error-test7
+   '(contract late-neg-proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
+   exn:fail?)
+  
   (test/pos-blame
    'build-chaperone-contract-property1
    '(let ()
@@ -156,6 +203,88 @@
       (((contract-projection (val-first-none))
         (make-blame (srcloc #f #f #f #f #f) 5 (λ () 'the-name) 'pos 'neg #t))
        5)))
+
+  (contract-eval
+   '(define prop:late-neg-proj:bad-prime-box-list/c
+      (let* ([prime? (λ (n)
+                       (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                         (not (= (remainder n m) 0))))]
+             [wrap-box (λ (blame b) (box (unbox b)))])
+        (struct ctc ()
+          #:property
+          prop:chaperone-contract
+          (build-chaperone-contract-property
+           #:name (λ (c) 'bad-prime-box-list/c)
+           #:first-order (λ (c) (λ (v) (and (list? v) (andmap box? v))))
+           #:late-neg-projection
+           (λ (c)
+             (λ (blame)
+               (λ (v neg-party)
+                 (unless (and (list? v) (andmap box? v))
+                   (raise-blame-error blame v #:missing-party neg-party
+                                      "expected list of boxes, got ~v" v))
+                 (map (λ (b) (wrap-box blame b)) v))))))
+        (ctc))))
+  
+  (contract-error-test
+   'contract-error-test8
+   '(contract prop:late-neg-proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
+   exn:fail?)
+
+  (contract-eval
+   '(define prop:val-first-proj:bad-prime-box-list/c
+      (let* ([prime? (λ (n)
+                       (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                         (not (= (remainder n m) 0))))]
+             [wrap-box (λ (blame b) (box (unbox b)))])
+        (struct ctc ()
+          #:property
+          prop:chaperone-contract
+          (build-chaperone-contract-property
+           #:name (λ (c) 'bad-prime-box-list/c)
+           #:first-order (λ (c) (λ (v) (and (list? v) (andmap box? v))))
+           #:val-first-projection
+           (λ (c)
+             (λ (blame)
+               (λ (v)
+                 (λ (neg-party)
+                   (unless (and (list? v) (andmap box? v))
+                     (raise-blame-error blame v #:missing-party neg-party
+                                        "expected list of boxes, got ~v" v))
+                   (map (λ (b) (wrap-box blame b)) v)))))))
+        (ctc))))
+  
+  (contract-error-test
+   'contract-error-test9
+   '(contract prop:val-first-proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
+   exn:fail?)
+
+  (contract-eval
+   '(define prop:proj:bad-prime-box-list/c
+      (let* ([prime? (λ (n)
+                       (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                         (not (= (remainder n m) 0))))]
+             [wrap-box (λ (blame b) (box (unbox b)))])
+        (struct ctc ()
+          #:property
+          prop:chaperone-contract
+          (build-chaperone-contract-property
+           #:name (λ (c) 'bad-prime-box-list/c)
+           #:first-order (λ (c) (λ (v) (and (list? v) (andmap box? v))))
+           #:projection
+           (λ (c)
+             (λ (blame)
+               (λ (v)
+                 (unless (and (list? v) (andmap box? v))
+                   (raise-blame-error blame v
+                                      "expected list of boxes, got ~v" v))
+                 (map (λ (b) (wrap-box blame b)) v))))))
+        (ctc))))
+  
+  (contract-error-test
+   'contract-error-test10
+   '(contract prop:proj:bad-prime-box-list/c (list (box 2) (box 3)) 'pos 'neg)
+   exn:fail?)
   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -226,4 +355,228 @@
 (test/spec-passed/result
  'make-flat-contract-bad-6
  '(chaperone-contract? proj:prime-list/c)
+ #t)
+
+  (contract-eval
+   '(define val-first-proj:prime-list/c
+      (let ([prime? (λ (n)
+                      (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                        (not (= (remainder n m) 0))))])
+        (make-flat-contract
+         #:name 'prime-list/c
+         #:first-order (λ (v) (and (list? v) (andmap prime? v)))
+         #:val-first-projection
+         (λ (b)
+           (λ (v)
+             (λ (neg-party)
+               (unless (and (list? v) (andmap prime? v))
+                 (raise-blame-error b v #:missing-party neg-party
+                                    "expected prime list, got ~v" v))
+               (map values v))))))))
+
+
+  
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-7
+ '(contract val-first-proj:prime-list/c (list 2 3 5 7) 'pos 'neg)
+ (list 2 3 5 7))
+
+(test/pos-blame
+ 'make-flat-contract-bad-8
+ '(contract val-first-proj:prime-list/c (list 2 3 4 5) 'pos 'neg))
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-9
+ '(let ([l (list 2 3 5 7)])
+    (eq? l (contract val-first-proj:prime-list/c l 'pos 'neg)))
+ #t)
+
+(ctest #t contract? val-first-proj:prime-list/c)
+(ctest #t flat-contract? val-first-proj:prime-list/c)
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-10
+ '(chaperone-contract? val-first-proj:prime-list/c)
+ #t)
+
+  
+  (contract-eval
+   '(define late-neg-proj:prime-list/c
+      (let ([prime? (λ (n)
+                      (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                        (not (= (remainder n m) 0))))])
+        (make-flat-contract
+         #:name 'prime-list/c
+         #:first-order (λ (v) (and (list? v) (andmap prime? v)))
+         #:late-neg-projection
+         (λ (b)
+           (λ (v neg-party)
+             (unless (and (list? v) (andmap prime? v))
+               (raise-blame-error b v #:missing-party neg-party "expected prime list, got ~v" v))
+             (map values v)))))))
+
+
+  
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-11
+ '(contract late-neg-proj:prime-list/c (list 2 3 5 7) 'pos 'neg)
+ (list 2 3 5 7))
+
+(test/pos-blame
+ 'make-flat-contract-bad-12
+ '(contract late-neg-proj:prime-list/c (list 2 3 4 5) 'pos 'neg))
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-13
+ '(let ([l (list 2 3 5 7)])
+    (eq? l (contract late-neg-proj:prime-list/c l 'pos 'neg)))
+ #t)
+
+(ctest #t contract? late-neg-proj:prime-list/c)
+(ctest #t flat-contract? late-neg-proj:prime-list/c)
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-14
+ '(chaperone-contract? late-neg-proj:prime-list/c)
+ #t)
+
+
+(contract-eval
+ '(define prop:proj:prime-list/c
+    (let ([prime? (λ (n)
+                    (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                      (not (= (remainder n m) 0))))])
+      (struct ctc ()
+        #:property
+        prop:flat-contract
+        (build-flat-contract-property
+         #:name (λ (c) 'prime-list/c)
+         #:first-order (λ (c) (λ (v) (and (list? v) (andmap prime? v))))
+         #:projection
+         (λ (c)
+           (λ (b)
+             (λ (v)
+               (unless (and (list? v) (andmap prime? v))
+                 (raise-blame-error b v "expected prime list, got ~v" v))
+               (map values v))))))
+      
+      (ctc))))
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-15
+ '(contract prop:proj:prime-list/c (list 2 3 5 7) 'pos 'neg)
+ (list 2 3 5 7))
+
+(test/pos-blame
+ 'make-flat-contract-bad-16
+ '(contract prop:proj:prime-list/c (list 2 3 4 5) 'pos 'neg))
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-17
+ '(let ([l (list 2 3 5 7)])
+    (eq? l (contract prop:proj:prime-list/c l 'pos 'neg)))
+ #t)
+
+(ctest #t contract? prop:proj:prime-list/c)
+(ctest #t flat-contract? prop:proj:prime-list/c)
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-18
+ '(chaperone-contract? prop:proj:prime-list/c)
+ #t)
+
+
+(contract-eval
+ '(define prop:val-first-proj:prime-list/c
+    (let ([prime? (λ (n)
+                    (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                      (not (= (remainder n m) 0))))])
+      (struct ctc ()
+        #:property
+        prop:flat-contract
+        (build-flat-contract-property
+         #:name (λ (c) 'prime-list/c)
+         #:first-order (λ (c) (λ (v) (and (list? v) (andmap prime? v))))
+         #:val-first-projection
+         (λ (c)
+           (λ (b)
+             (λ (v)
+               (λ (neg-party)
+                 (unless (and (list? v) (andmap prime? v))
+                   (raise-blame-error b v
+                                      #:missing-party neg-party
+                                      "expected prime list, got ~v" v))
+                 (map values v)))))))
+      
+      (ctc))))
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-19
+ '(contract prop:val-first-proj:prime-list/c (list 2 3 5 7) 'pos 'neg)
+ (list 2 3 5 7))
+
+(test/pos-blame
+ 'make-flat-contract-bad-20
+ '(contract prop:val-first-proj:prime-list/c (list 2 3 4 5) 'pos 'neg))
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-21
+ '(let ([l (list 2 3 5 7)])
+    (eq? l (contract prop:val-first-proj:prime-list/c l 'pos 'neg)))
+ #t)
+
+(ctest #t contract? prop:val-first-proj:prime-list/c)
+(ctest #t flat-contract? prop:val-first-proj:prime-list/c)
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-22
+ '(chaperone-contract? prop:val-first-proj:prime-list/c)
+ #t)
+
+  (contract-eval
+ '(define prop:late-neg-proj:prime-list/c
+    (let ([prime? (λ (n)
+                    (for/and ([m (in-range 2 (add1 (floor (sqrt n))))])
+                      (not (= (remainder n m) 0))))])
+      (struct ctc ()
+        #:property
+        prop:flat-contract
+        (build-flat-contract-property
+         #:name (λ (c) 'prime-list/c)
+         #:first-order (λ (c) (λ (v) (and (list? v) (andmap prime? v))))
+         #:late-neg-projection
+         (λ (c)
+           (λ (b)
+             (λ (v neg-party)
+               (unless (and (list? v) (andmap prime? v))
+                 (raise-blame-error b v
+                                    #:missing-party neg-party
+                                    "expected prime list, got ~v" v))
+               (map values v))))))
+      
+      (ctc))))
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-23
+ '(contract prop:late-neg-proj:prime-list/c (list 2 3 5 7) 'pos 'neg)
+ (list 2 3 5 7))
+
+(test/pos-blame
+ 'make-flat-contract-bad-24
+ '(contract prop:late-neg-proj:prime-list/c (list 2 3 4 5) 'pos 'neg))
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-25
+ '(let ([l (list 2 3 5 7)])
+    (eq? l (contract prop:late-neg-proj:prime-list/c l 'pos 'neg)))
+ #t)
+
+(ctest #t contract? prop:late-neg-proj:prime-list/c)
+(ctest #t flat-contract? prop:late-neg-proj:prime-list/c)
+
+(test/spec-passed/result
+ 'make-flat-contract-bad-26
+ '(chaperone-contract? prop:late-neg-proj:prime-list/c)
  #t))

@@ -75,3 +75,12 @@ The @racketmodname[compiler/zo-parse] module re-exports
   or @racket[mod] structure indicates the list of global variables and
   quoted syntax that need to be instantiated (and put into an array on
   the stack) before evaluating expressions that might use them.}
+
+
+@defproc[(decode-module-binding [binding module-binding?]
+                                [name symbol?])
+         decoded-module-binding?]{
+
+Given a compact-form representation of a module binding and the name
+from which the binding is mapped, returns a normalized form of the
+binding.}

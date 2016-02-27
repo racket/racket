@@ -2,7 +2,7 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace)])
+                (make-basic-contract-namespace 'racket/contract/parametric)])
   (define exn:fail:contract:blame? (contract-eval 'exn:fail:contract:blame?))
 
   (test/no-error '(->i ([x integer?]) ([y integer?]) any))
@@ -732,7 +732,8 @@
                  (quote neg))
        b)
       (unbox b))
-   '(5 4 3 2 1))
+   '(5 4 3 2 1)
+   '(5 4 5 4 3 2 1 2 1)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i44
@@ -856,7 +857,8 @@
                  'neg)
        1)
       x)
-   '(res-check res-eval body arg-eval))
+   '(res-check res-eval body arg-eval)
+   '(res-check res-eval res-check res-eval body arg-eval arg-eval)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i49
@@ -872,7 +874,8 @@
                  'neg)
        1)
       x)
-   '(res-check body res-eval arg-eval))
+   '(res-check body res-eval arg-eval)
+   '(res-check res-check body res-eval res-eval arg-eval arg-eval)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i50
@@ -888,7 +891,8 @@
                  'neg)
        1)
       x)
-   '(res-check body res-eval arg-eval))
+   '(res-check body res-eval arg-eval)
+   '(res-check res-check body res-eval arg-eval res-eval arg-eval)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i51
@@ -904,7 +908,8 @@
                  'neg)
        1)
       x)
-   '(res-check body res-eval arg-eval))
+   '(res-check body res-eval arg-eval)
+   '(res-check res-check body res-eval arg-eval res-eval arg-eval)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i52
@@ -1341,7 +1346,8 @@
                  'pos
                  'neg))
       x)
-   '(body ctc))
+   '(body ctc)
+   '(body ctc ctc)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i-underscore3
@@ -1351,7 +1357,8 @@
                  'pos
                  'neg))
       x)
-   '(body ctc))
+   '(body ctc)
+   '(body ctc ctc)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->i-underscore4
@@ -1378,7 +1385,8 @@
                  'neg)
        11)
       x)
-   '(body ctc))
+   '(body ctc)
+   '(body ctc ctc)) ; result if contract is applied twice
   
   (test/pos-blame
    '->i-bad-number-of-result-values1
@@ -1397,4 +1405,31 @@
      1))
   
   ;; this used to cause a runtime error in the code that parses ->i
-  (test/no-error '(->i ([x () any/c] [y (x) any/c]) any)))
+  (test/no-error '(->i ([x () any/c] [y (x) any/c]) any))
+
+  (test/spec-passed/result
+   'really-chaperones.1
+   '(let ([f (λ () 1)])
+      (chaperone-of?
+       (contract (->i #:chaperone () any) f 'pos 'neg)
+       f))
+   #t)
+
+  (test/spec-passed/result
+   'really-chaperones.2
+   '(let ([f (λ () 1)])
+      (chaperone-of?
+       (contract (->i () [_ (new-∀/c)]) f 'pos 'neg)
+       f))
+   #f)
+
+  (test/spec-passed/result
+   'really-chaperones.3
+   '(with-handlers ([exn:fail?
+                     (λ (x)
+                       (regexp-match? #rx"^->i:.*chaperone" (exn-message x)))])
+      ((contract (->i #:chaperone ([x integer?] [y (x) (new-∀/c)]) any)
+                 (λ (x y) x)
+                 'pos 'neg) 1 2)
+      "didn't raise an error")
+   #t))

@@ -12,6 +12,7 @@
          function subfunction
          FormatD
          tech-place
+         reference-doc raco-doc
          (except-out (all-from-out scribble/manual) var)
          (for-label (all-from-out scheme/base)))
 
@@ -157,8 +158,11 @@
 
 (define mzc (exec "raco ctool"))
 
+(define reference-doc '(lib "scribblings/reference/reference.scrbl"))
+(define raco-doc '(lib "scribblings/raco/raco.scrbl"))
+
 (define (refsecref s)
-  (secref #:doc '(lib "scribblings/reference/reference.scrbl") s))
+  (secref #:doc reference-doc s))
 
 (define Racket
   (other-manual '(lib "scribblings/reference/reference.scrbl")))

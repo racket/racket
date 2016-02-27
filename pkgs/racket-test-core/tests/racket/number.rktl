@@ -3,6 +3,8 @@
 
 (Section 'numbers)
 
+(require racket/extflonum racket/random racket/list)
+
 (test #f number? 'a)
 (test #f complex? 'a)
 (test #f real? 'a)
@@ -566,6 +568,14 @@
 (test 0.0f0 expt -0.9999f0 (expt 2 5000))
 (test -0.0f0 expt -0.9999f0 (add1 (expt 2 5000)))
 
+(test +inf.0 expt -4.0 (expt 2 5000))
+(test -inf.0 expt -4.0 (add1 (expt 2 5000)))
+(test +inf.f expt -4.0f0 (expt 2 5000))
+(test -inf.f expt -4.0f0 (add1 (expt 2 5000)))
+;; exponent large enough to overflow singles, but not doubles
+(test +inf.f expt -4.0f0 (lcm (exact-round -1.7976931348623151e+308)))
+(test -inf.f expt -4.0f0 (add1 (lcm (exact-round -1.7976931348623151e+308))))
+
 (define (inf-non-real? x)
   (and (not (real? x))
        (= +inf.0 (abs (imag-part x)))
@@ -705,9 +715,9 @@
 (err/rt-test (inexact->exact -inf.0))
 (err/rt-test (inexact->exact +nan.0))
 
-(err/rt-test (inexact->exact +inf.f) (lambda (exn) (regexp-match? #rx"[+]inf[.]f" (exn-messgae exn))))
-(err/rt-test (inexact->exact -inf.f) (lambda (exn) (regexp-match? #rx"[-]inf[.]f" (exn-messgae exn))))
-(err/rt-test (inexact->exact +nan.f) (lambda (exn) (regexp-match? #rx"[+]nan[.]f" (exn-messgae exn))))
+(err/rt-test (inexact->exact +inf.f) (lambda (exn) (regexp-match? #rx"[+]inf[.]f" (exn-message exn))))
+(err/rt-test (inexact->exact -inf.f) (lambda (exn) (regexp-match? #rx"[-]inf[.]f" (exn-message exn))))
+(err/rt-test (inexact->exact +nan.f) (lambda (exn) (regexp-match? #rx"[+]nan[.]f" (exn-message exn))))
 
 (test 2.0f0 real->single-flonum 2)
 (test 2.25f0 real->single-flonum 2.25)
@@ -1607,6 +1617,9 @@
 (test +inf.0 magnitude 0.0+inf.0i)
 (test +nan.0 magnitude +nan.0+inf.0i)
 (test +nan.0 magnitude +inf.0+nan.0i)
+(test +inf.f magnitude 3.0f0-inf.fi)
+(test +nan.f magnitude 3.0f0+nan.fi)
+(test 3.0f0 magnitude 3.0f0+0.0f0i)
 
 (test 0 angle 1)
 (test 0 angle 1.0)
@@ -2401,24 +2414,64 @@
 (err/rt-test (string->number "1" "1"))
 (err/rt-test (string->number 1 1))
 
+(define (string->extfl-number s)
+  (read (open-input-string s)))
+  
+;; Test inexacts with large exponents
+(test 0.0 string->number "0e401")
+(test 0.0 string->number "0e6001")
+(test -0.0 string->number "-0e401")
+(test -0.0 string->number "-0e6001")
+(test +inf.0 string->number "0.1e401")
+(test +inf.0 string->number "0.1e6001")
+(test -inf.0 string->number "-0.1e401")
+(test -inf.0 string->number "-0.1e6001")
+(test 0.0 string->number (string-append "0." (make-string 400 #\0) "0e400"))
+(test 0.0 string->number (string-append "0." (make-string 8000 #\0) "0e8000"))
+(test #t extflonum? (string->extfl-number (string-append "0." (make-string 400 #\0) "0t9000")))
+(test -0.0 string->number (string-append "-0." (make-string 400 #\0) "0e400"))
+(test -0.0 string->number (string-append "-0." (make-string 8000 #\0) "0e8000"))
+(test #t extflonum? (string->extfl-number (string-append "-0." (make-string 400 #\0) "0t9000")))
+(test 0.1 string->number (string-append "0." (make-string 400 #\0) "1e400"))
+(test 0.1 string->number (string-append "0." (make-string 8000 #\0) "1e8000"))
+(test 1.0e-101 string->number (string-append "0." (make-string 8000 #\0) "1e7900"))
+(test +inf.0 string->number (string-append "0." (make-string 400 #\0) "1e1000"))
+(test -inf.0 string->number (string-append "-0." (make-string 400 #\0) "1e1000"))
+(test +inf.0 string->number (string-append "0." (make-string 8000 #\0) "1e8400"))
+(test -inf.0 string->number (string-append "-0." (make-string 8000 #\0) "1e8400"))
+(test #t extflonum? (string->extfl-number (string-append "0." (make-string 8000 #\0) "1t8400")))
+(test #t extflonum? (string->extfl-number (string-append "-0." (make-string 8000 #\0) "1t8400")))
+(test #f string->number (string-append "-0." (make-string 8000 #\0) "9e10000") 8)
+(test #f string->number (string-append "0." (make-string 8000 #\0) "e1008") 8)
+
 (test #t andmap (lambda (x) (and (>= x 0) (< x 10))) (map random '(10 10 10 10)))
 (test (void) random-seed 5)
 (test (begin (random-seed 23) (list (random 10) (random 20) (random 30)))
       'random-seed-same
       (begin (random-seed 23) (list (random 10) (random 20) (random 30))))
+(test (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40)))
+      'random-seed-same2
+      (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40))))
+(test (begin (random-seed 23) (list (random-ref '(1 2 3)) (random-ref '(4 5 6)) (random-ref '(7 8 9))))
+      'random-seed-same3
+      (begin (random-seed 23) (list (random-ref '#(1 2 3)) (random-ref '#(4 5 6)) (random-ref '#(7 8 9)))))
+(test (begin (random-seed 23) (list (random-ref "123") (random-ref "123") (random-ref "123")))
+      'random-seed-same4
+      (begin (random-seed 23) (list (random-ref "123") (random-ref "123") (random-ref "123"))))
 (arity-test random-seed 1 1)
-(arity-test random 0 2)
+(arity-test random 0 3)
 (err/rt-test (random-seed "apple"))
 (err/rt-test (random-seed 4.5))
 (err/rt-test (random-seed -1))
 (err/rt-test (random-seed (expt 2 31)))
 (err/rt-test (random-seed big-num))
-(err/rt-test (random "apple"))
+(err/rt-test (random 'apple))
 (err/rt-test (random 0))
 (err/rt-test (random -6))
 (err/rt-test (random 4294967088))
 (err/rt-test (random (expt 2 32)))
 (err/rt-test (random big-num))
+(err/rt-test (random 10 5))
 
 (random-seed 101)
 (define x (list (random 10) (random 20) (random 30)))
@@ -2458,6 +2511,25 @@
   (test 5353 random 10000)
   (test 8571 random 10000)
   (test 9729 random 10000))
+(parameterize ([current-pseudo-random-generator
+                (vector->pseudo-random-generator
+                 #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
+  (test 1 random-ref '(1 2 3 4 5))
+  (test 6 random-ref '#(7 6 8 9 10))
+  (test #\a random-ref "abcde"))
+(parameterize ([current-pseudo-random-generator
+                (vector->pseudo-random-generator
+                 #(3620087466 1904163406 3177592043 1406334318 257151704 3090455638))])
+  (test '(1) random-sample '(1 2 3 4 5) 1)
+  (test '(5 5 5) random-sample '(1 2 3 4 5) 3)
+  (test '(1 4 3) random-sample '(1 2 3 4 5) 3 #:replacement? #f)
+  ;; distribution is uniform
+  (test '(100077 100479 100375 99943 99869 100055 100482 99979 99405 99336)
+        values ; to avoid the whole pre-`length` list being printed if test fails
+        (map length (group-by values
+                              (apply append (for/list ([i 10000])
+                                              (random-sample (range 10) 100)))))))
+
 
 (test #t = 0 0)
 (test #f = 0 (expt 2 32))
@@ -2724,6 +2796,8 @@
 (test (- (sub1 (expt 2 256))) string->number "-ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" 16)
 (test #f string->number "144r" 10)
 (err/rt-test (string->number "10" 30))
+(test 0.0 string->number "0e401")
+(test 0.0 string->number "00000.00000e9999999999")
 
 (define (q-test quotient)
   (test 0 quotient 0 12345678909876532341)
@@ -3160,9 +3234,107 @@
   (test #t list? (filter n-digit-has-nth-root? (build-list 5000 (lambda (x) (+ x 1))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; exact->inexact precision (thanks to Neil Toronto)
+;; exact->inexact precision on bignums (round-trip and proper rounding)
 
-(require racket/extflonum)
+(define max-53-bit-number (sub1 (arithmetic-shift 1 53)))
+
+(define (check-conversion 53-bit-number)
+  ;; Any 53-bit integer fits in a 64-bit floating point:
+  (unless (= 53-bit-number (inexact->exact (exact->inexact 53-bit-number)))
+    (error 'random-exact->inexact "round-trip failed ~s" 53-bit-number))
+  
+  ;; The same holds if we shift by up to (- 1023 52):
+  (define (check-shift p)
+    (define n2 (arithmetic-shift 53-bit-number p))
+    (unless (= n2 (inexact->exact (exact->inexact n2)))
+      (error 'random-exact->inexact "round-trip of shifted failed ~s" n2)))
+  (check-shift (- 1023 52))
+  (for ([i 10])
+    (check-shift (random (- 1023 52))))
+  
+  ;; The same holds if we shift by up to (- -1022 52):
+  (define (check-div p)
+    (define n2 (/ 53-bit-number (arithmetic-shift 1 (- p))))
+    (unless (= n2 (inexact->exact (exact->inexact n2)))
+      (error 'random-exact->inexact "round-trip of shifted failed ~s" n2)))
+  (check-div (- (+ 1022 52)))
+  (for ([i 10])
+    (check-div (- (random (+ 1022 52)))))
+  
+  ;; Helper for checking rounding:
+  (define (check-random-pairs check-shift-pair)
+    (check-shift-pair 1 0)
+    (check-shift-pair (- 1023 52 1) 0)
+    (check-shift-pair 1 (- 1023 52 2))
+    (for ([i 10])
+      (define zeros (add1 (random (- 1023 52 3))))
+      (define extra (random (- 1023 52 1 zeros)))
+      (check-shift-pair zeros extra)))
+  
+  ;; If we add a zero bit and then a non-zero bit anywhere later,
+  ;; conversion to inexact should round down.
+  (define (check-shift-plus-bits-to-truncate num-zeros extra-p)
+    (define n2 (arithmetic-shift
+                (bitwise-ior (arithmetic-shift 53-bit-number (add1 num-zeros))
+                             1)
+                extra-p))
+    (define n3 (inexact->exact (exact->inexact n2)))
+    (unless (= n3 (arithmetic-shift 53-bit-number (+ num-zeros 1 extra-p)))
+      (error 'random-exact->inexact "truncating round failed ~s" n2)))
+  (check-random-pairs check-shift-plus-bits-to-truncate)
+  
+  ;; If we add a one bit and then a non-zero bit anywhere later,
+  ;; conversion to inexact should round up.
+  (unless (= 53-bit-number max-53-bit-number)
+    (define (check-shift-plus-bits-to-up num-one-then-zeros extra-p)
+      (define n2 (arithmetic-shift
+                  (bitwise-ior (arithmetic-shift 
+                                (bitwise-ior (arithmetic-shift 53-bit-number 1)
+                                             1)
+                                num-one-then-zeros)
+                               1)
+                  extra-p))
+      (define n3 (inexact->exact (exact->inexact n2)))
+      (unless (= n3 (arithmetic-shift (add1 53-bit-number) (+ num-one-then-zeros 1 extra-p)))
+        (error 'random-exact->inexact "round up failed ~s" n2)))
+    (check-random-pairs check-shift-plus-bits-to-up))
+
+  ;; If we add a one bit and then only zero bits,
+  ;; conversion to inexact should round to even.
+  (unless (= 53-bit-number max-53-bit-number)
+    (define (check-shift-plus-bits-to-even num-one-then-zeros extra-p)
+      (define n2 (arithmetic-shift 
+                  (bitwise-ior (arithmetic-shift 53-bit-number 1)
+                               1)
+                  (+ num-one-then-zeros extra-p)))
+      (define n3 (inexact->exact (exact->inexact n2)))
+      (unless (= n3 (arithmetic-shift (if (even? 53-bit-number)
+                                          53-bit-number
+                                          (add1 53-bit-number))
+                                      (+ num-one-then-zeros 1 extra-p)))
+        (error 'random-exact->inexact "round to even failed ~s" n2)))
+    (check-random-pairs check-shift-plus-bits-to-even)))
+  
+(check-conversion max-53-bit-number)
+(for ([i 100])
+  (check-conversion
+   ;; Random 53-bit number:
+   (+ (arithmetic-shift 1 52)
+      (arithmetic-shift (random (expt 2 24)) 24)
+      (random (expt 2 28)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check roun-to-even of rationale conversion (thanks to Robby)
+
+(let ()
+  (define l (floating-point-bytes->real #"\x1a\xd8\x9c\x17\x21\x2e\xfd\x25" #t))
+  (define r (floating-point-bytes->real #"\x1a\xd8\x9c\x17\x21\x2e\xfd\x26" #t))
+  (test r exact->inexact (/ (+ (inexact->exact l)
+                               (inexact->exact r))
+                            2)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; exact->inexact precision (thanks to Neil Toronto)
 
 (define (check start end exact-> ->exact >=?)
   (define delta (/ (- end start) 300))

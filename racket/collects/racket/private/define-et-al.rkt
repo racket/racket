@@ -71,6 +71,8 @@
 	     "bad syntax"
 	     x)))))
 
+  (define-values (call/ec) call-with-escape-continuation)
+
   (-define-syntax let/ec 
     (lambda (code)
       (let ([l (syntax->list code)])
@@ -198,4 +200,4 @@
 					 (syntax-local-introduce super-id))
 			result))))))))))
 
-  (#%provide -define -define-syntax when unless let/ec -define-struct))
+  (#%provide -define -define-syntax when unless call/ec let/ec -define-struct))

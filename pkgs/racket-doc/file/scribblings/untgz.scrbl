@@ -11,6 +11,7 @@ a function to extract items from a possible @exec{gzip}ped TAR/USTAR archive.}
 @defproc[(untgz           [in (or/c path-string? input-port?)]
                           [#:dest dest-path (or/c path-string? #f) #f]
                           [#:strip-count strip-count exact-nonnegative-integer? 0]
+                          [#:permissive? permissive? any/c #f]
                           [#:filter filter-proc
                                     (path? (or/c path? #f)
                                      symbol? exact-integer? (or/c path? #f)
@@ -21,4 +22,6 @@ a function to extract items from a possible @exec{gzip}ped TAR/USTAR archive.}
          void?]{
 
 The same as @racket[untar], but if @racket[in] is in @exec{gzip} form,
-it is @racket[gunzip]ped as it is unpacked.}
+it is @racket[gunzip]ped as it is unpacked.
+
+@history[#:changed "6.3" @elem{Added the @racket[#:permissive?] argument.}]}

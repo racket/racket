@@ -18,3 +18,6 @@
   (void (place-wait (go)))
   (collect-garbage)
   (void (place-wait (go))))
+
+(module+ test
+  (require (submod ".." main)))

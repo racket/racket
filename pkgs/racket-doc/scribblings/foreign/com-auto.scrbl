@@ -209,6 +209,14 @@ A constant for use with @racket[com-invoke] in place of an optional
 argument.}
 
 
+@defproc[(com-omit? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is @racket[com-omit], @racket[#f]
+otherwise.
+
+@history[#:added "6.3.0.3"]}
+
+
 @; ----------------------------------------
 
 @section{COM Properties}

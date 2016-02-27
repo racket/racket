@@ -787,7 +787,8 @@
                  'pos
                  'neg))
       x)
-   '(body ctc))
+   '(body ctc)
+   '(body ctc ctc)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->d-underscore3
@@ -797,7 +798,8 @@
                  'pos
                  'neg))
       x)
-   '(ctc body))
+   '(ctc body)
+   '(ctc ctc body)) ; result if contract is applied twice
   
   (test/spec-passed/result
    '->d-underscore4

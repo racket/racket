@@ -545,7 +545,7 @@
 #|
  with-contract-helper takes syntax of the form:
 
- (with-contract-helper ((p b e e-expr c c-expr) ...) blame . body)
+ (with-contract-helper ((p b e e-expr c c-expr) ...) m-id um-id blame . body)
 
  where
  p = internal id (transformer binding)
@@ -564,16 +564,19 @@
  requires the contract.  We set up all the transformer bindings
  before calling with-contract-helper, so we don't need definitions
  for p (or marked-p, in the main with-contract macro).
+
+  For identifiers not among the `p`s, use `m-id` and `um-id` to
+  remove a mark.
 |#   
 (define-syntax (with-contract-helper stx)
   (syntax-case stx ()
-    [(_ () blame)
+    [(_ () blame m-id um-id)
      #'(begin)]
-    [(_ ((p0 . rest0) (p . rest) ...) blame)
+    [(_ ((p0 . rest0) (p . rest) ...) m-id um-id blame)
      (raise-syntax-error 'with-contract
                          "no definition found for identifier"
                          #'p0)]
-    [(_ id-info blame body0 body ...)
+    [(_ id-info blame m-id um-id body0 body ...)
      (let ([expanded-body0 (local-expand #'body0
                                          (syntax-local-context)
                                          (cons #'define (kernel-form-identifier-list)))])
@@ -584,7 +587,13 @@
        (define (recreate-ids ids id-pairs)
          (for/list ([id (in-list ids)])
            (let ([id-pair (findf (λ (p) (bound-identifier=? id (car p))) id-pairs)])
-             (if id-pair (cadr id-pair) id))))
+             (if id-pair
+                 (cadr id-pair)
+                 (unmark id)))))
+       (define unmark
+         (let ([f (make-syntax-delta-introducer #'m-id #'um-id)])
+           (lambda (stx)
+             (f stx 'remove))))
        ;; rewrite-define returns:
        ;; * The unused parts of id-info
        ;; * The definition, possibly rewritten to replace certain identifiers
@@ -603,26 +612,26 @@
        (syntax-case expanded-body0 (begin define define-values define-syntaxes)
          [(begin sub ...)
           (syntax/loc stx
-            (with-contract-helper id-info blame sub ... body ...))]
+            (with-contract-helper id-info blame m-id um-id sub ... body ...))]
          [(define rest ...)
           (let-values ([(def-id body-stx) (normalize-definition expanded-body0 #'lambda #t #t)])
             (with-syntax ([(unused-ps def) (rewrite-define #'define-values (list def-id) body-stx)])
               (syntax/loc stx
-                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame body ...)))))]
+                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame m-id um-id body ...)))))]
          [(define-syntaxes (id ...) expr)
           (let ([ids (syntax->list #'(id ...))])
             (with-syntax ([(unused-ps def) (rewrite-define #'define-syntaxes ids #'expr)])
               (syntax/loc stx
-                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame body ...)))))]
+                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame m-id um-id body ...)))))]
          [(define-values (id ...) expr)
           (let ([ids (syntax->list #'(id ...))])
             (with-syntax ([(unused-ps def) (rewrite-define #'define-values ids #'expr)])
               (syntax/loc stx
-                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame body ...)))))]
+                (begin (add-blame-region blame def) (with-contract-helper unused-ps blame m-id um-id body ...)))))]
          [else
           (quasisyntax/loc stx
             (begin (add-blame-region blame #,expanded-body0)
-                   (with-contract-helper id-info blame body ...)))]))]))
+                   (with-contract-helper id-info blame m-id um-id body ...)))]))]))
 
 (define-syntax (with-contract stx)
   (define-splicing-syntax-class region-clause
@@ -666,16 +675,11 @@
     [(_ (~optional :region-clause #:defaults ([region #'region])) blame:id rc:results-clause fv:fvs . body)
      (if (not (eq? (syntax-local-context) 'expression))
          (quasisyntax/loc stx (#%expression #,stx))
-         (let*-values ([(intdef) (syntax-local-make-definition-context)]
-                       [(ctx) (list (gensym 'intdef))]
-                       [(cid-marker) (make-syntax-introducer)]
+         (let*-values ([(cid-marker) (make-syntax-introducer)]
                        [(free-vars free-ctcs)
                         (values (syntax->list #'(fv.var ...))
                                 (syntax->list #'(fv.ctc ...)))])
-           (define (add-context stx)
-             (internal-definition-context-apply intdef stx))
-           (syntax-local-bind-syntaxes free-vars #f intdef)
-           (internal-definition-context-seal intdef)
+           (define add-context (make-syntax-introducer #t))
            (with-syntax ([blame-stx #''(region blame)]
                          [blame-id (generate-temporary)]
                          [(res ...) (generate-temporaries #'(rc.ctc ...))]
@@ -720,9 +724,7 @@
        (raise-syntax-error 'with-contract
                            "not used in definition context"
                            stx))
-     (let*-values ([(intdef) (syntax-local-make-definition-context)]
-                   [(ctx) (list (gensym 'intdef))]
-                   [(cid-marker) (make-syntax-introducer)]
+     (let*-values ([(cid-marker) (make-syntax-introducer)]
                    [(tid-marker) (make-syntax-introducer)]
                    [(eid-marker) (make-syntax-introducer)]
                    [(free-vars free-ctcs)
@@ -731,11 +733,7 @@
                    [(protected protections)
                     (values (syntax->list #'(ec.var ...))
                             (syntax->list #'(ec.ctc ...)))])
-       (define (add-context stx)
-         (internal-definition-context-apply intdef stx))
-       (syntax-local-bind-syntaxes protected #f intdef)
-       (syntax-local-bind-syntaxes free-vars #f intdef)
-       (internal-definition-context-seal intdef)
+       (define add-context (make-syntax-introducer #t))
        (with-syntax ([blame-stx #''(region blame)]
                      [blame-id (generate-temporary)]
                      [(free-var ...) free-vars]
@@ -753,7 +751,9 @@
                      [(p ...) protected]
                      [(true-p ...) (map tid-marker protected)]
                      [(ext-id ...) (map eid-marker protected)]
-                     [(marked-p ...) (add-context #`#,protected)])
+                     [(marked-p ...) (add-context #`#,protected)]
+                     [unmarked-id #'here]
+                     [marked-id (add-context #'here)])
          (with-syntax ([new-stx (add-context #'body)])
                (syntax/loc stx
                  (begin
@@ -791,6 +791,7 @@
                                            (verify-contract 'with-contract ctc))
                                           ...)
                                          blame-stx
+                                         marked-id unmarked-id
                                          .
                                          new-stx)
                    (define-syntaxes (p ...)

@@ -78,7 +78,7 @@
 ;; xexpr->string : Xexpression -> String
 (define (xexpr->string xexpr)
   (let ([port (open-output-string)])
-    (write-xml/content (xexpr->xml xexpr) port)
+    (write-xexpr xexpr port)
     (get-output-string port)))
 
 (define (string->xexpr str)
@@ -131,7 +131,7 @@
          (write-string/escape (cadr att) escape-attribute-table out)
          (write-string "\"" out))
        (when insert-newlines?
-         (newline))
+         (newline out))
        ; Write end of opening tag
        (if (and (null? content)
                 (case short

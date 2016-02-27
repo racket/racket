@@ -6,6 +6,8 @@
           "parse-common.rkt"
           (for-label racket/class))
 
+@(define the-eval (make-sp-eval))
+
 @title{Phases and Reusable Syntax Classes}
 
 As demonstrated in the @secref{stxparse-intro}, the simplest place to
@@ -17,7 +19,7 @@ classes requires some awareness of the Racket @tech[#:doc '(lib
 syntax class defined immediately within a module cannot be used by
 macros in the same module; it is defined at the wrong phase.
 
-@myinteraction[
+@interaction[#:eval the-eval
 (module phase-mismatch-mod racket
   (require syntax/parse (for-syntax syntax/parse))
   (define-syntax-class foo
@@ -37,7 +39,7 @@ phase level incompatibility.)
 The phase level mismatch is easily remedied by putting the syntax
 class definition within a @racket[begin-for-syntax] block:
 
-@myinteraction[
+@interaction[#:eval the-eval
 (module phase-ok-mod racket
   (require (for-syntax syntax/parse))
   (begin-for-syntax
@@ -55,7 +57,7 @@ An alternative to @racket[begin-for-syntax] is to define the syntax
 class in a separate module and require that module
 @racket[for-syntax].
 
-@myinteraction[
+@interaction[#:eval the-eval
 (module stxclass-mod racket
   (require syntax/parse)
   (define-syntax-class foo
@@ -77,7 +79,7 @@ expressions via syntax templates, then the module containing the
 syntax class must generally require @racket[for-template] the bindings
 referred to in the patterns and templates.
 
-@myinteraction[
+@interaction[#:eval the-eval
 (module arith-keywords-mod racket
   (define-syntax plus (syntax-rules ()))
   (define-syntax times (syntax-rules ()))
@@ -124,3 +126,5 @@ implicit syntax @racket[#%app]) must be bound at ``absolute'' phase
 level 0. Since the module @racket['arith-stxclass-mod] is required
 with a phase level offset of 1 (that is, @racket[for-syntax]), it must
 compensate with a phase level offset of -1, or @racket[for-template].
+
+@(close-eval the-eval)

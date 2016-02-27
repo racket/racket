@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2006-2014 PLT Design Inc.
+  Copyright (c) 2006-2016 PLT Design Inc.
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Library General Public
@@ -1291,7 +1291,7 @@ static Scheme_Object *make_future(Scheme_Object *lambda, int enqueue, future_t *
   int futureid;
   future_t *ft;
   Scheme_Native_Closure *nc;
-  Scheme_Native_Closure_Data *ncd;
+  Scheme_Native_Lambda *ncd;
   Scheme_Custodian *c;
 
   if (SAME_TYPE(SCHEME_TYPE(lambda), scheme_native_closure_type)) {
@@ -2168,7 +2168,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
   }
 }
 
-#if defined(linux) || defined(__QNX__)
+#if defined(__linux__) || defined(__QNX__)
 # include <unistd.h>
 #elif defined(OS_X)
 # include <sys/param.h>
@@ -2180,7 +2180,7 @@ Scheme_Object *touch(int argc, Scheme_Object *argv[])
 static void init_cpucount(void)
 /* Called in runtime thread */
 {
-#if defined(linux) || defined(__QNX__)
+#if defined(__linux__) || defined(__QNX__)
   cpucount = sysconf(_SC_NPROCESSORS_ONLN);
 #elif defined(OS_X)
   size_t size = sizeof(cpucount);

@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2000 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -163,7 +163,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 /*                            OS process name                             */
 /*========================================================================*/
 
-#if defined(linux)
+#if defined(__linux__)
 # include <sys/prctl.h>
 # ifdef PR_SET_NAME
 #  define CAN_SET_OS_PROCESS_NAME 1
@@ -292,13 +292,8 @@ START_XFORM_SKIP;
 # include "parse_cmdl.inc"
 #endif
 
-#ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-extern intptr_t _tls_index;
-# ifdef __MINGW32__
-static __thread void *tls_space;
-# else
-static __declspec(thread) void *tls_space;
-# endif
+#ifdef DOS_FILE_SYSTEM
+# include "win_tls.inc"
 #endif
 
 #ifdef DOS_FILE_SYSTEM
@@ -314,25 +309,8 @@ void load_delayed()
   load_delayed_dll(NULL, "libracket" DLL_3M_SUFFIX "xxxxxxx.dll");
 # endif
   record_dll_path();
-# ifdef IMPLEMENT_THREAD_LOCAL_VIA_WIN_TLS
-#  ifdef __MINGW32__
-  {
-    /* gcc declares space for the thread-local variable in a way that
-       the OS can set up, but its doesn't actually map variables
-       through the OS-supplied mechanism. Just assume that the first
-       thread-local variable is ours. */
-    void **base;
-#  ifdef _WIN64
-    asm("mov %%gs:(0x58), %0;" :"=r"(base));
-#  else
-    asm("mov %%fs:(0x2C), %0;" :"=r"(base));
-#  endif
-    scheme_register_tls_space(*base, _tls_index);
-  }
-#  else
-  scheme_register_tls_space(&tls_space, _tls_index);
-#  endif
-# endif
+
+  register_win_tls();
 }
 #endif
 

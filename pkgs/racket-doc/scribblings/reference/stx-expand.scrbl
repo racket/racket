@@ -105,6 +105,14 @@ to the syntax object:
  list of @tech{module path index}es (or symbols) representing the
  modules explicitly for-template imported into the module.}
 
+ @item{@indexed-racket['module-direct-for-meta-requires] --- a list of
+ lists: each list is an integer or @racket[#f] representing a
+ @tech{phase level} followed by a list of @tech{module path index}es
+ (or symbols) representing the modules explicitly imported into the
+ module at the corresponding phase.
+
+ @history[#:added "6.4.0.1"]}
+
  @item{@indexed-racket['module-variable-provides] --- a list of
  provided items, where each item is one of the following:
  
@@ -137,6 +145,36 @@ to the syntax object:
  variables that are defined in the module but not exported; they may
  be exported indirectly through macro expansions.  Definitions of
  macro-generated identifiers create uninterned symbols in this list.}
+
+ @item{@indexed-racket['module-body-context] --- a syntax
+ object whose @tech{lexical information} corresponds to the inside of
+ the module, so it includes the expansion's @tech{outside-edge scope}
+ and its @tech{inside-edge scope}; that is, the syntax object
+ simulates an identifier that is present in the original module body
+ and inaccessible to manipulation by any macro, so that its lexical
+ information includes bindings for the module's imports and
+ definitions.
+
+ @history[#:added "6.4.0.1"]}
+
+ @item{@indexed-racket['module-body-inside-context] --- a syntax
+ object whose @tech{lexical information} corresponds to an identifier
+ that starts with no lexical context and is moved into the macro, so
+ that it includes only the expansions's @tech{inside-edge scope}.
+
+ @history[#:added "6.4.0.1"]}
+
+ @item{@indexed-racket['module-body-context-simple?] --- a boolean,
+ where @racket[#t] indicates that the bindings of the module's body
+ (as recorded in the @tech{lexical information} of the value of the
+ @racket['module-body-inside-context] property) can be directly
+ reconstructed from the values of @racket['module-direct-requires],
+ @racket['module-direct-for-syntax-requires],
+ @racket['module-direct-for-template-requires], and
+ @racket['module-direct-for-meta-requires].
+
+ @history[#:added "6.4.0.1"]}
+
 
 ]
 

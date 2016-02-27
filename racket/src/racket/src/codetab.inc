@@ -19,6 +19,7 @@ extern MZ_DLLIMPORT int GC_is_marked(void *);
 #define NODE_HEADER_SIZE 3
 #define NODE_STARTS_OFFSET 1
 #define NODE_GCABLE_OFFSET 2
+#define NODE_MODIFIED_OFFSET 2
 
 /* Represent a node in the tree as an array of
    NODE_HEADER_SIZE + KEY_COUNT pointers.
@@ -34,7 +35,10 @@ extern MZ_DLLIMPORT int GC_is_marked(void *);
 
    The third "pointer" is similar to the first, but it represents the
    GC status of the reference for CGC, and the bit is only used at a
-   range start.
+   range start. For precise GC, this "pointer" is used to indicate
+   when the array has changed and should be scanned for being
+   completely empty; it's ok for that flag to be approximate due to
+   a GC happening while arrays are being modified.
 
    Then there are KEY_COUNT "key" pointers for the content of the
    node.  Note that KEY_COUNT is smaller than the number of bits
@@ -177,6 +181,11 @@ void scheme_jit_add_symbol(uintptr_t start, uintptr_t end, void *value, int gc_a
   t1 = t2 = the_tree;
   split_t = NULL;
   while (offset) {
+#ifdef MZ_PRECISE_GC
+    /* mark as modified */
+    t1[NODE_MODIFIED_OFFSET] = (void *)0x1;
+    t2[NODE_MODIFIED_OFFSET] = (void *)0x1;
+#endif
     offset -= LOG_KEY_SIZE;
 
     k1 = ((start >> offset) & KEY_MASK) + NODE_HEADER_SIZE;
@@ -341,9 +350,15 @@ static void check_clear_symbols(void **t)
   void *val, **subt;
 
 #ifdef MZ_PRECISE_GC
+# if 0
   if (((uintptr_t *)t)[NODE_GCABLE_OFFSET] != 0x1)
     printf("Found GCed\n");
+# endif
 #endif
+
+  if (!t[NODE_MODIFIED_OFFSET])
+    return;
+  t[NODE_MODIFIED_OFFSET] = NULL;
 
   for (i = 0; i < KEY_COUNT; i++) {
     val = t[i + NODE_HEADER_SIZE];
@@ -359,7 +374,6 @@ static void check_clear_symbols(void **t)
         }
         if (j == KEY_COUNT) {
           t[i+NODE_HEADER_SIZE] = NULL;
-          // should_have_cleared();
         }
       }
     }

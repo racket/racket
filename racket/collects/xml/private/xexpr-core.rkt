@@ -42,14 +42,14 @@
 
 (define xexpr/c 
   (make-flat-contract
-   #:name 'xexpr?
-   #:projection
+   #:name 'xexpr/c
+   #:late-neg-projection
    (lambda (blame)
-     (lambda (val)
+     (lambda (val neg-party)
        (with-handlers ([exn:invalid-xexpr?
                         (lambda (exn)
                           (raise-blame-error
-                           blame
+                           blame #:missing-party neg-party
                            val
                            "Not an Xexpr. ~a\n\nContext:\n~a"
                            (exn-message exn)

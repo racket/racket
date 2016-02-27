@@ -7,7 +7,7 @@
   (define val (bytes-ref bs byte))
   (bytes-set! bs byte (bitwise-xor (expt 2 bit) val)))
 
-(define (run-file bs)
+(define (run-bytes bs)
   (sync
    (parameterize ([current-custodian (make-custodian)])
      (thread
@@ -18,7 +18,7 @@
           (eval (parameterize ([read-accept-compiled #t])
                   (with-input-from-bytes bs read)))))))))
 
-(define (run fname seed0)
+(define (run-file fname seed0 #:write? [out-fname? #f])
   (define seed (or seed0 (+ 1 (random (expt 2 30)))))
   (printf "seed: ~s\nname: ~a\n" seed fname)
   (flush-output)
@@ -26,39 +26,77 @@
   (define bs  (file->bytes fname))
   (define len (* 8 (bytes-length bs)))
   (for ([i (in-range (quotient len 10000))]) (flip-bit bs (random len)))
-  (with-handlers ([void void]) (run-file bs)))
+  (with-handlers ([void void]) 
+    (if out-fname?
+        (begin
+          (displayln (build-path (current-directory) out-fname?))
+          (call-with-output-file (build-path (current-directory) out-fname?)
+            (lambda (o)
+              (write-bytes bs o))))
+        (run-bytes bs))))
 
-(let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f])
-  (command-line
-   #:once-each
-   ["--oo" "forever" (set! forever? #t)]
-   #:once-any
-   ["-g" global-seed* "gloabl random seed"  (set! global-seed (string->number global-seed*))]
-   ["-s" seed "random seed" (set! seed0 (string->number seed))]
-   #:once-any
-   ["-f" file* "filename to run"     (set! file file*)]
-   ["-d" dir* "dir to run"          (set! dir dir*)]
-   ["-c" "run over all collections" (set! dir (find-collects-dir))]
-   #:args () (void))
-  (unless global-seed
-    (set! global-seed (+ 1 (random (expt 2 30)))))
+(define (go)
+  (let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f] [write? #f])
+    (command-line
+     #:once-each
+     ["--oo" "forever" (set! forever? #t)]
+     #:once-any
+     ["-g" global-seed* "global random seed"  (set! global-seed (string->number global-seed*))]
+     ["-s" seed "random seed" (set! seed0 (string->number seed))]
+     #:once-any
+     ["-f" file* "filename to run"     (set! file file*)]
+     ["-d" dir* "dir to run"          (set! dir dir*)]
+     ["-c" "run over all collections" (set! dir (find-collects-dir))]
+     #:once-any
+     ["--write" filename "write mutated file" (begin (unless file
+                                                       (error "--write requires -f"))
+                                                     (set! write? filename))]
+     #:args () (void))
+    (cond [global-seed]
+          [(getenv "RACKET_FUZZ_GLOBAL_SEED") => (lambda (v) (set! global-seed (string->number v)))]
+          [else (set! global-seed (+ 1 (random (expt 2 30))))])
+    (run seed0 file dir forever? global-seed write?)))
+
+(define (run seed0 file dir forever? global-seed write?)
   (printf "Global seed: ~a\n" global-seed)
   (random-seed global-seed)
   (let loop ()
-    (cond [file (run file seed0)]
+    (cond [file (run-file file seed0 #:write? write?)]
           [dir 
-	   (define files (sort (for/list ([f (in-directory dir)]
-					  #:when (regexp-match #rx"\\.zo" f))
-			         f)
-			       #:key path->string
-			       string<?))
-	   (for ([p files]) (run p seed0))]
+           (define files (sort (for/list ([f (in-directory dir)]
+                                          #:when (regexp-match #rx"\\.zo" f))
+                                 f)
+                               #:key path->string
+                               string<?))
+           (for ([p files]) (run-file p seed0))]
           [else (printf "Nothing to do.\n")])
     (when forever? (loop))))
 
-(module test racket/base
-  (require syntax/location)
-  (parameterize ([current-command-line-arguments (vector "-c")])
-    (dynamic-require (quote-module-path "..") #f))
+(module+ main
+  (let ([seed0 #f] [file #f] [dir #f] [forever? #f] [global-seed #f] [write? #f])
+    (command-line
+     #:once-each
+     ["--oo" "forever" (set! forever? #t)]
+     #:once-any
+     ["-g" global-seed* "global random seed"  (set! global-seed (string->number global-seed*))]
+     ["-s" seed "random seed" (set! seed0 (string->number seed))]
+     #:once-any
+     ["-f" file* "filename to run"     (set! file file*)]
+     ["-d" dir* "dir to run"          (set! dir dir*)]
+     ["-c" "run over all collections" (set! dir (find-collects-dir))]
+     #:once-any
+     ["--write" filename "write mutated file" (begin (unless file
+                                                       (error "--write requires -f"))
+                                                     (set! write? filename))]
+     #:args () (void))
+    (cond [global-seed]
+          [(getenv "RACKET_FUZZ_GLOBAL_SEED") => (lambda (v) (set! global-seed (string->number v)))]
+          [else (set! global-seed (+ 1 (random (expt 2 30))))])
+    (run seed0 file dir forever? global-seed write?)))
+
+(module+ test
+  (require racket/vector syntax/location)
+  (parameterize ([current-command-line-arguments (vector-append #("-c") (current-command-line-arguments))])
+    (dynamic-require (quote-module-path ".." main) #f))
   (module config info
     (define random? #t)))

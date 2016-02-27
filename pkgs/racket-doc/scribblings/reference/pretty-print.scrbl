@@ -54,14 +54,21 @@ Same as @racket[pretty-print], but @racket[v] is printed like
 @racket[display] instead of like @racket[print].}
 
 
-@defproc[(pretty-format [v any/c] [columns exact-nonnegative-integer? (pretty-print-columns)])
+@defproc[(pretty-format [v any/c] [columns exact-nonnegative-integer? (pretty-print-columns)]
+                        [#:mode mode (or/c 'print 'write 'display) 'print])
          string?]{
 
 Like @racket[pretty-print], except that it returns a string containing
 the pretty-printed value, rather than sending the output to a port.
 
 The optional argument @racket[columns] argument is used to
-parameterize @racket[pretty-print-columns].}
+parameterize @racket[pretty-print-columns].
+
+The keyword argument @racket[mode] controls whether printing is done like
+either @racket[pretty-print] (the default), @racket[pretty-write] or
+@racket[pretty-display].
+
+@history[#:changed "6.3" @elem{Added a @racket[mode] argument.}]}
 
 
 @defproc[(pretty-print-handler [v any/c]) void?]{

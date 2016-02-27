@@ -3,7 +3,8 @@
 (provide contract
          (rename-out [-recursive-contract recursive-contract])
          current-contract-region
-         invariant-assertion)
+         invariant-assertion
+         (for-syntax lifted-key add-lifted-property))
 
 (require (for-syntax racket/base syntax/name syntax/srcloc)
          racket/stxparam
@@ -12,10 +13,14 @@
          "guts.rkt"
          "blame.rkt"
          "prop.rkt"
-         "arrow.rkt"
-         "misc.rkt"
-         "generate.rkt"
-         )
+         "generate.rkt")
+
+(begin-for-syntax
+ (define lifted-key (gensym 'contract:lifted))
+ ;; syntax? -> syntax?
+ ;; tells clients that the expression is a lifted application
+ (define (add-lifted-property stx)
+   (syntax-property stx lifted-key #t)))
 
 (define-for-syntax lifted-ccrs (make-hasheq))
 
@@ -26,7 +31,8 @@
                 [id (hash-ref lifted-ccrs ctxt #f)])
            (with-syntax ([id (or id
                                  (let ([id (syntax-local-lift-expression 
-                                            (syntax/loc stx (quote-module-name)))])
+                                            (add-lifted-property
+                                             (syntax/loc stx (quote-module-name))))])
                                    (hash-set! lifted-ccrs ctxt (syntax-local-introduce id))
                                    id))])
              #'id))
@@ -51,7 +57,7 @@
 (define (apply-contract c v pos neg name loc)
   (let ([c (coerce-contract 'contract c)])
     (check-source-location! 'contract loc)
-    (define cvfp (contract-val-first-projection c))
+    (define clnp (contract-late-neg-projection c))
     (define blame
       (make-blame (build-source-location loc)
                   name
@@ -65,11 +71,15 @@
                   ;; instead of changing the library around.
                   (or pos "false")
                   
-                  (if cvfp #f neg)
+                  (if clnp #f neg)
                   #t))
     (cond
-      [cvfp (((cvfp blame) v) neg)]
-      [else (((contract-projection c) blame) v)])))
+      [clnp (with-contract-continuation-mark
+             (cons blame neg)
+             ((clnp blame) v neg))]
+      [else (with-contract-continuation-mark
+             blame
+             (((contract-projection c) blame) v))])))
 
 (define-syntax (invariant-assertion stx)
   (syntax-case stx ()
@@ -131,35 +141,36 @@
      forced-ctc]
     [else current]))
 
-(define (recursive-contract-projection ctc)
+(define (recursive-contract-late-neg-projection ctc)
   (cond
     [(recursive-contract-list-contract? ctc)
      (λ (blame)
        (define r-ctc (force-recursive-contract ctc))
-       (define f (contract-projection r-ctc))
+       (define f (get/build-late-neg-projection r-ctc))
        (define blame-known (blame-add-context blame #f))
-       (λ (val)
+       (λ (val neg-party)
          (unless (list? val)
-           (raise-blame-error blame-known
+           (raise-blame-error blame-known #:missing-party neg-party
                               val
                               '(expected: "list?" given: "~e")
                               val))
-         ((f blame-known) val)))]
+         ((f blame-known) val neg-party)))]
     [else
      (λ (blame)
        (define r-ctc (force-recursive-contract ctc))
-       (define f (contract-projection r-ctc))
+       (define f (get/build-late-neg-projection r-ctc))
        (define blame-known (blame-add-context blame #f))
-       (λ (val)
-         ((f blame-known) val)))]))
+       (λ (val neg-party)
+         ((f blame-known) val neg-party)))]))
   
 (define (recursive-contract-stronger this that) (equal? this that))
 
-(define trail (make-parameter #f))
-
 (define ((recursive-contract-first-order ctc) val)
-  (contract-first-order-passes? (force-recursive-contract ctc)
-                                val))
+  (cond
+    [(contract-first-order-okay-to-give-up?) #t]
+    [else (contract-first-order-try-less-hard
+           (contract-first-order-passes? (force-recursive-contract ctc)
+                                         val))]))
 
 (define (recursive-contract-generate ctc)
   (λ (fuel)
@@ -180,7 +191,7 @@
   (build-flat-contract-property
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
-   #:projection recursive-contract-projection
+   #:late-neg-projection recursive-contract-late-neg-projection
    #:stronger recursive-contract-stronger
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
@@ -190,7 +201,7 @@
   (build-chaperone-contract-property
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
-   #:projection recursive-contract-projection
+   #:late-neg-projection recursive-contract-late-neg-projection
    #:stronger recursive-contract-stronger
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))
@@ -200,7 +211,7 @@
   (build-contract-property
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
-   #:projection recursive-contract-projection
+   #:late-neg-projection recursive-contract-late-neg-projection
    #:stronger recursive-contract-stronger
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))

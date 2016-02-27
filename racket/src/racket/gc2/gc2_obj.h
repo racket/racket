@@ -10,7 +10,7 @@
 #endif
 typedef struct objhead {
   /* the type and size of the object */
-  uintptr_t type      : 3;
+  uintptr_t type      : 3; /* if `moved`, then non-0 means moved to gen 1/2 */
   /* these are the various mark bits we use */
   uintptr_t mark      : 1;
   uintptr_t btc_mark  : 1;

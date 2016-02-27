@@ -51,7 +51,7 @@ written.
 
 Creates an input port, which is immediately open for reading. If
 @racket[close] procedure has no side effects, then the port need not
-be explicitly closed. See also @racket[make-input-port/peek-to-read].
+be explicitly closed. See also @racket[make-input-port/read-to-peek].
 
 The arguments implement the port as follows:
 
@@ -216,8 +216,8 @@ The arguments implement the port as follows:
     @elemref["special"]{special} when @racket[peek] is
     @racket[#f]. Finally, the automatic peek implementation is
     incompatible with progress events, so if @racket[peek] is
-    @racket[#f], then @racket[progress-evt] and @racket[commit] must
-    be @racket[#f]. See also @racket[make-input-port/peek-to-read],
+    @racket[#f], then @racket[get-progress-evt] and @racket[commit] must
+    be @racket[#f]. See also @racket[make-input-port/read-to-peek],
     which implements peeking in terms of @racket[read-in] without
     these constraints.
 
@@ -455,7 +455,7 @@ The arguments implement the port as follows:
 
 ;; The port doesn't supply procedures to implement progress events:
 (port-provides-progress-evts? infinite-ones)
-(port-progress-evt infinite-ones)
+(eval:error (port-progress-evt infinite-ones))
 
 ;; Non-byte port results:
 (define infinite-voids
@@ -464,7 +464,7 @@ The arguments implement the port as follows:
    (lambda (s) (lambda args 'void))
    (lambda (skip s evt) (lambda args 'void))
    void))
-(read-char infinite-voids)
+(eval:error (read-char infinite-voids))
 (read-char-or-special infinite-voids)
 
 ;; This port produces 0, 1, 2, 0, 1, 2, etc., but it is not

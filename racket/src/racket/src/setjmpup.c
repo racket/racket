@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -737,5 +737,27 @@ Scheme_Setjmp_Proc scheme_get_mz_setjmp(void)
   scheme_log_abort("internal error: setjmp was indirect?");
   abort();
   return NULL;
+}
+#endif
+
+#if defined(USE_MZ_SETJMP_INDIRECT) && defined(__MINGW32__)
+extern int _scheme_mz_setjmp(mz_pre_jmp_buf b);
+extern void _scheme_mz_longjmp(mz_pre_jmp_buf b, int v);
+
+Scheme_Setjmp_Proc scheme_get_mz_setjmp(void)
+{
+  return _scheme_mz_setjmp;
+}
+
+void scheme_mz_longjmp(mz_pre_jmp_buf b, int v)
+{
+  _scheme_mz_longjmp(b, v);
+}
+
+int scheme_mz_setjmp(mz_pre_jmp_buf b)
+{
+  scheme_log_abort("internal error: setjmp wasn't indirect");
+  abort();
+  return 0;
 }
 #endif

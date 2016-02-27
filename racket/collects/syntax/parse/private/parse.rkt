@@ -16,7 +16,7 @@
          racket/syntax
          racket/stxparam
          syntax/stx
-         unstable/struct
+         racket/struct
          syntax/parse/private/residual ;; keep abs. path
          syntax/parse/private/runtime  ;; keep abs.path 
          syntax/parse/private/runtime-reflect) ;; keep abs. path
@@ -161,7 +161,8 @@
     [(syntax-parse stx-expr . clauses)
      (quasisyntax/loc stx
        (let ([x (datum->syntax #f stx-expr)])
-         (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx))))]))
+         (with ([this-syntax x])
+           (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx)))))]))
 
 (define-syntax (syntax-parser stx)
   (syntax-case stx ()
@@ -169,7 +170,8 @@
      (quasisyntax/loc stx
        (lambda (x)
          (let ([x (datum->syntax #f x)])
-           (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx)))))]))
+           (with ([this-syntax x])
+             (parse:clauses x clauses body-sequence #,((make-syntax-introducer) stx))))))]))
 
 (define-syntax (syntax-parser/template stx)
   (syntax-case stx ()
@@ -177,7 +179,8 @@
      (quasisyntax/loc stx
        (lambda (x)
          (let ([x (datum->syntax #f x)])
-           (parse:clauses x clauses one-template ctx))))]))
+           (with ([this-syntax x])
+             (parse:clauses x clauses one-template ctx)))))]))
 
 (define-syntax (define/syntax-parse stx)
   (syntax-case stx ()
@@ -358,6 +361,10 @@ Conventions:
      (with-disappeared-uses
       (with-txlifts
        (lambda ()
+        (define who
+          (syntax-case #'ctx ()
+            [(m . _) (identifier? #'m) #'m]
+            [_ 'syntax-parse]))
         (define-values (chunks clauses-stx)
           (parse-keyword-options #'clauses parse-directive-table
                                  #:context #'ctx
@@ -400,13 +407,13 @@ Conventions:
           (for/lists (patterns body-exprs defs2s) ([clause (in-list (stx->list clauses-stx))])
             (for-clause clause)))
         (with-syntax ([(def ...) (apply append (get-txlifts-as-definitions) defs defs2s)])
-          #`(let* ([ctx0 #,context]
-                   [pr (ps-empty x ctx0)]
+          #`(let* ([ctx0 (normalize-context '#,who #,context x)]
+                   [pr (ps-empty x (cadr ctx0))]
                    [es #f]
                    [cx x]
                    [fh0 (syntax-patterns-fail ctx0)])
               def ...
-              (parameterize ((current-syntax-context ctx0))
+              (parameterize ((current-syntax-context (cadr ctx0)))
                 (with ([fail-handler fh0]
                        [cut-prompt fh0])
                   #,(cond [(pair? patterns)

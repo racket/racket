@@ -29,17 +29,25 @@ static int block_cache_chain_stat(GCList *head, int *bcnt);
 #endif
 
 struct block_group;
+
 typedef struct block_desc {
   GCList gclist;
   void *block;
   void *free;
+  unsigned char *protect_map; /* 1 => write protected, 0 => not protected */
+  unsigned char *alloc_map; /* 1 => allocated, 0 => not allocated */
   intptr_t size;
   intptr_t used;
   intptr_t totalcnt;
   intptr_t freecnt;
   struct block_group *group;
-  int in_queue;
+  char in_queue, want_compact;
 } block_desc;
+
+#define BD_BLOCK_PTR_TO_POS(p, bd) (((char *)(p) - (char *)((bd)->block)) >> LOG_APAGE_SIZE)
+#define BD_MAP_GET_BIT(map, pos) ((map)[(pos) >> 3] & (1 << ((pos) & 0x7)))
+#define BD_MAP_SET_BIT(map, pos) ((map)[(pos) >> 3] |= (1 << ((pos) & 0x7)))
+#define BD_MAP_UNSET_BIT(map, pos) ((map)[(pos) >> 3] -= (1 << ((pos) & 0x7)))
 
 typedef struct block_group {
   GCList full;
@@ -80,16 +88,15 @@ static BlockCache* block_cache_create(MMU *mmu) {
 static ssize_t block_cache_free(BlockCache* bc) {
   ssize_t acf = alloc_cache_free(bc->bigBlockCache);
   page_range_free(bc->page_range);
-  free(bc);
+  ofm_free(bc, sizeof(BlockCache));
   return acf;
 }
 
-static block_desc *bc_alloc_std_block(block_group *bg) {
+static block_desc *bc_alloc_std_block(block_group *bg, int expect_mprotect) {
   int this_block_size = bg->block_size;
   void *r = os_alloc_pages(this_block_size);
   block_desc *bd;
   void *ps;
-
   if (!r) return NULL;
 
   ps = align_up_ptr(r, APAGE_SIZE);
@@ -98,6 +105,7 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
     bg->block_size <<= 1;
   }
 
+  /* printf("BLOCK ALLOC %d %d\n", expect_mprotect, this_block_size); */
   bd = (block_desc*) ofm_malloc_zero(sizeof(block_desc));
   if (!bd) {
     os_free_pages(r, this_block_size);
@@ -124,6 +132,8 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
     }
   }
 
+  bd->protect_map = (unsigned char *)ofm_malloc_zero(1 + (bd->size >> (LOG_APAGE_SIZE + 3)));
+  bd->alloc_map = (unsigned char *)ofm_malloc_zero(1 + (bd->size >> (LOG_APAGE_SIZE + 3)));
 
   /* setup free list of APAGE_SIZE sized pages inside block */
   { 
@@ -138,10 +148,10 @@ static block_desc *bc_alloc_std_block(block_group *bg) {
       p = n;
       i++;
     }
+    if (p > pe) { p = (pfree_list *)((char *)p - (2 * APAGE_SIZE)); i--; }
+    else        { p = (pfree_list *)((char *)p - APAGE_SIZE); }
     bd->totalcnt = i;
     bd->freecnt  = i;
-    if (p > pe) { p = (p - (2 * APAGE_SIZE)); }
-    else        { p = (p - APAGE_SIZE); }
     p->next = NULL;
     /* printf("ENDUP %p %p %p %i\n", n, p, p->next, i); */
   }
@@ -158,7 +168,8 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
 
   tryagain:
   if (!gclist_is_empty(free_head)) {
-    if (!gclist_first_item(free_head, block_desc*, gclist)->free) {
+    if (!gclist_first_item(free_head, block_desc, gclist)->free) {
+      GC_ASSERT(!gclist_first_item(free_head, block_desc, gclist)->freecnt);
       gclist_move(free_head->next, &bg->full);
       goto tryagain;
     }
@@ -168,7 +179,7 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
 #if BC_ASSERTS
     newbl = 1;
 #endif
-    bd = bc_alloc_std_block(bg);
+    bd = bc_alloc_std_block(bg, expect_mprotect);
     if (!bd) return NULL;
     gclist_add(free_head, &(bd->gclist));
     (*size_diff) += bd->size;
@@ -176,16 +187,47 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
   }
   
   {
-    block_desc *bd = gclist_first_item(free_head, block_desc*, gclist);
+    block_desc *bd = gclist_first_item(free_head, block_desc, gclist);
     pfree_list *fl = bd->free;
     void *p = fl;
+    int pos = BD_BLOCK_PTR_TO_POS(p, bd);
+
+    GC_ASSERT(pos >= 0);
+    GC_ASSERT(pos < (bd->size >> LOG_APAGE_SIZE));
+    
     bd->free = fl->next;
     bd->freecnt--;
 
     *src_block = bd;
+
+    GC_ASSERT(!BD_MAP_GET_BIT(bd->alloc_map, pos));
+    BD_MAP_SET_BIT(bd->alloc_map, pos);
+
     if (expect_mprotect) {
-      GC_MP_CNT_INC(mp_alloc_med_big_cnt);
-      os_protect_pages(p, APAGE_SIZE, 1);
+      if (BD_MAP_GET_BIT(bd->protect_map, pos)) {
+        /* Unprotect a contiguous range of unallocated pages,
+           in case we need to allocate more, since expanding
+           the range costs much less than multiple unprotect
+           calls. */
+        int start_pos = pos, end_pos = pos + 1;
+
+        BD_MAP_UNSET_BIT(bd->protect_map, pos);
+        while (start_pos
+               && !BD_MAP_GET_BIT(bd->alloc_map, (start_pos-1))
+               && BD_MAP_GET_BIT(bd->protect_map, (start_pos-1))) {
+          --start_pos;
+          BD_MAP_UNSET_BIT(bd->protect_map, start_pos);
+        }
+        while ((end_pos < (bd->size >> LOG_APAGE_SIZE))
+               && !BD_MAP_GET_BIT(bd->alloc_map, end_pos)
+               && BD_MAP_GET_BIT(bd->protect_map, end_pos)) {
+          BD_MAP_UNSET_BIT(bd->protect_map, end_pos);
+          end_pos++;
+        }
+        os_protect_pages((char *)p - ((pos - start_pos) * APAGE_SIZE),
+                         (end_pos - start_pos) * APAGE_SIZE,
+                         1);
+      }
     }
 
     if (!dirty_ok) {
@@ -195,9 +237,9 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
         fl->next = 0;
     }
 
+    GC_ASSERT(p >= bd->block);
+    GC_ASSERT(p+APAGE_SIZE <= bd->block + bd->size);
 #if BC_ASSERTS
-    assert(p >= bd->block);
-    assert(p+APAGE_SIZE <= bd->block + bd->size);
     if (!bg->atomic)
     {
       int afub = 0;
@@ -215,12 +257,15 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
   }
 }
 
-static ssize_t bc_free_std_block(block_desc *b) {
+static ssize_t bc_free_std_block(block_desc *b, int expect_mprotect) {
   ssize_t size_diff = 0;
+  /* printf("BLOCK FREE %d %ld\n", expect_mprotect, b->size); */
   gclist_del(&b->gclist);
   os_free_pages(b->block, b->size);
   size_diff -= b->size;
-  free(b);
+  ofm_free(b->protect_map, 1 + (b->size >> (LOG_APAGE_SIZE + 3)));
+  ofm_free(b->alloc_map, 1 + (b->size >> (LOG_APAGE_SIZE + 3)));
+  ofm_free(b, sizeof(block_desc));
   return size_diff;
 }
   
@@ -239,7 +284,7 @@ static void *block_cache_alloc_page(BlockCache* bc, size_t len, size_t alignment
 #if BC_ASSERTS
 static int find_addr_in_bd(GCList *head, void *p, char* msg) {
   block_desc *b;
-  gclist_each_item(b, head, block_desc*, gclist) {
+  gclist_each_item(b, head, block_desc, gclist) {
     if (p >= b->block && p < b->block + b->size) {
       return 1;
     }
@@ -252,17 +297,20 @@ static ssize_t block_cache_free_page(BlockCache* bc, void *p, size_t len, int ty
                                      int originated_here) {
   switch(type) {
     case MMU_SMALL_GEN1:
+      GC_ASSERT(*src_block != (char*)~0x0);
       {
         GCList *free_head = &((expect_mprotect ? &bc->non_atomic : &bc->atomic)->free);
         block_desc *b = (block_desc*)(*src_block);
         pfree_list *fl = p;
+        int pos = BD_BLOCK_PTR_TO_POS(p, b);
+        GC_ASSERT(b->group == (expect_mprotect ? &bc->non_atomic : &bc->atomic));
+        GC_ASSERT(pos >= 0);
+        GC_ASSERT(pos < (b->size >> LOG_APAGE_SIZE));
         fl->next = b->free;
         fl->dirty = 1;
         b->free = fl;
-#if BC_ASSERTS
-        assert(*src_block != (char*)~0x0);
-        assert(b->group == bg);
-#endif
+        GC_ASSERT(BD_MAP_GET_BIT(b->alloc_map, pos));
+        BD_MAP_UNSET_BIT(b->alloc_map, pos);
         gclist_move(&b->gclist, free_head);
         b->freecnt++;
 #if BC_ASSERTS
@@ -283,21 +331,42 @@ static ssize_t block_cache_free_page(BlockCache* bc, void *p, size_t len, int ty
       }
       break;
     default:
+      GC_ASSERT(*src_block == (char*)~0x0);
 #if BC_ASSERTS
       assert(!(find_addr_in_bd(&bc->atomic.full, p, "atomic full") ||
                find_addr_in_bd(&bc->atomic.free, p, "atomic freeblock") ||
                find_addr_in_bd(&bc->non_atomic.full, p, "non_atomic full") ||
                find_addr_in_bd(&bc->non_atomic.free, p, "non_atomic freeblock")));
-      assert(*src_block == (char*)~0x0);
 #endif
       return alloc_cache_free_page(bc->bigBlockCache, p, len, MMU_DIRTY, originated_here);
       break;
   }
 }
 
+static void compute_compacts(block_group *bg)
+{
+  block_desc *b;
+  intptr_t avail, wanted;
+
+  wanted = 0;
+  gclist_each_item(b, &bg->free, block_desc, gclist) {
+    wanted += (b->totalcnt - b->freecnt);
+  }
+  
+  avail = 0;
+  gclist_each_item(b, &bg->free, block_desc, gclist) {
+    if (avail > wanted)
+      b->want_compact = 1;
+    else {
+      b->want_compact = 0;
+      avail += b->totalcnt;
+    }
+  }
+}
+
 static int sort_full_to_empty(void *priv, GCList *a, GCList *b) {
-  block_desc *ba = gclist_item(a, block_desc*, gclist);
-  block_desc *bb = gclist_item(b, block_desc*, gclist);
+  block_desc *ba = gclist_item(a, block_desc, gclist);
+  block_desc *bb = gclist_item(b, block_desc, gclist);
 
   if ((ba->freecnt) <= (bb->freecnt)) {
     return -1;
@@ -308,24 +377,28 @@ static int sort_full_to_empty(void *priv, GCList *a, GCList *b) {
 static void block_cache_prep_for_compaction(BlockCache* bc) {
   gclist_sort(NULL, &bc->atomic.free, sort_full_to_empty);
   gclist_sort(NULL, &bc->non_atomic.free, sort_full_to_empty);
+
+  compute_compacts(&bc->atomic);
+  compute_compacts(&bc->non_atomic);
+    
 #if 0
   {
     block_desc *b;
-    gclist_each_item(b, &bc->atomic.free, block_desc*, gclist) {
-      printf("   ATOMIC %05li %03li %p\n", b->freecnt, b->totalcnt, b); }
-    gclist_each_item(b, &bc->non_atomic.free, block_desc*, gclist) {
-      printf("NONATOMIC %03li %03li %p\n", b->freecnt, b->totalcnt, b);
-    }
+    gclist_each_item(b, &bc->atomic.full, block_desc, gclist) {
+      printf(" X    ATOMIC _ %05li %03li %p\n", b->freecnt, b->totalcnt, b); }
+    gclist_each_item(b, &bc->atomic.free, block_desc, gclist) {
+      printf("      ATOMIC %d %05li %03li %p\n", b->want_compact, b->freecnt, b->totalcnt, b); }
+    gclist_each_item(b, &bc->non_atomic.full, block_desc, gclist) {
+      printf(" X NONATOMIC _ %05li %03li %p\n", b->freecnt, b->totalcnt, b); }
+    gclist_each_item(b, &bc->non_atomic.free, block_desc, gclist) {
+      printf("   NONATOMIC %d %05li %03li %p\n", b->want_compact, b->freecnt, b->totalcnt, b); }
   }
 #endif
 }
 
 static int block_cache_compact(void **src_block) {
   block_desc *b = *src_block;
-  if (b->freecnt > (b->totalcnt/2)) {
-    return 1;
-  }
-  return 0;
+  return b->want_compact;
 }
 
 static ssize_t block_cache_flush_freed_pages(BlockCache* bc) {
@@ -334,20 +407,45 @@ static ssize_t block_cache_flush_freed_pages(BlockCache* bc) {
   ssize_t size_diff = 0;
   ssize_t alloc_cache_size_diff = 0;
   
-  gclist_each_item_safe(b, bn, &bc->atomic.free, block_desc*, gclist) {
-    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b); }
+  gclist_each_item_safe(b, bn, &bc->atomic.free, block_desc, gclist) {
+    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b, 0); }
   }
-  gclist_each_item_safe(b, bn, &bc->non_atomic.free, block_desc*, gclist) {
-    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b); }
+  gclist_each_item_safe(b, bn, &bc->non_atomic.free, block_desc, gclist) {
+    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b, 1); }
   }
   alloc_cache_size_diff = alloc_cache_flush_freed_pages(bc->bigBlockCache);
 
-#ifdef GC_MP_CNT 
-  mp_bc_freed = -size_diff;
-  mp_ac_freed = -alloc_cache_size_diff;
-#endif
-  
   return size_diff + alloc_cache_size_diff;
+}
+
+static void block_cache_protect_one_page(BlockCache* bc, void *p, size_t len, int type, int writeable, void **src_block) {
+  switch(type) {
+    case MMU_SMALL_GEN1:
+      GC_ASSERT(len == APAGE_SIZE);
+      {
+        block_desc *b = (block_desc *)*src_block;
+        int pos = BD_BLOCK_PTR_TO_POS(p, b);
+        GC_ASSERT(pos >= 0);
+        GC_ASSERT(pos < (b->size >> LOG_APAGE_SIZE));
+        GC_ASSERT(BD_MAP_GET_BIT(b->alloc_map, pos));
+        /* Since a queued mprotect affects more pages than the client can be sure of,
+           we have to accomodate redundant requests. */
+        if (writeable) {
+          if (BD_MAP_GET_BIT(b->protect_map, pos)) {
+            BD_MAP_UNSET_BIT(b->protect_map, pos);
+            os_protect_pages(p, len, writeable);
+          }
+        } else {
+          if (!BD_MAP_GET_BIT(b->protect_map, pos)) {
+            BD_MAP_SET_BIT(b->protect_map, pos);
+            os_protect_pages(p, len, writeable);
+          }
+        }
+      }
+      break;
+  default:
+    os_protect_pages(p, len, writeable);
+  }
 }
 
 static void block_cache_queue_protect_range(BlockCache* bc, void *p, size_t len, int type, int writeable, void **src_block) {
@@ -358,8 +456,8 @@ static void block_cache_queue_protect_range(BlockCache* bc, void *p, size_t len,
                find_addr_in_bd(&bc->atomic.free, p, "atomic freeblock")));
       assert(find_addr_in_bd(&bc->non_atomic.full, p, "non_atomic full") ||
              find_addr_in_bd(&bc->non_atomic.free, p, "non_atomic freeblock"));
-      assert(*src_block != (char*)~0x0);
 #endif
+      GC_ASSERT(*src_block != (char*)~0x0);
       {
         block_desc *b = (block_desc *)*src_block;
         b->in_queue = 1;
@@ -367,9 +465,7 @@ static void block_cache_queue_protect_range(BlockCache* bc, void *p, size_t len,
       return;
       break;
     default:
-#if BC_ASSERTS 
-      assert(*src_block == (char*)~0x0);
-#endif
+      GC_ASSERT(*src_block == (char*)~0x0);
       page_range_add(bc->page_range, p, len, writeable);
       return;
       break;
@@ -379,16 +475,18 @@ static void block_cache_queue_protect_range(BlockCache* bc, void *p, size_t len,
 static void block_cache_flush_protect_ranges(BlockCache* bc, int writeable) {
   block_group *bg = &bc->non_atomic;
   block_desc *b;
-  gclist_each_item(b, &bg->full, block_desc*, gclist) {
+  gclist_each_item(b, &bg->full, block_desc, gclist) {
     if (b->in_queue) {
       b->in_queue = 0;
       page_range_add(bc->page_range, b->block, b->size, writeable);
+      memset(b->protect_map, writeable ? 0 : 255, 1+(b->size >> (LOG_APAGE_SIZE + 3)));
     }
   }
-  gclist_each_item(b, &bg->free, block_desc*, gclist) {
+  gclist_each_item(b, &bg->free, block_desc, gclist) {
     if (b->in_queue) {
       b->in_queue = 0;
       page_range_add(bc->page_range, b->block, b->size, writeable);
+      memset(b->protect_map, writeable ? 0 : 255, 1+(b->size >> (LOG_APAGE_SIZE + 3)));
     }
   }
 
@@ -399,7 +497,7 @@ static void block_cache_flush_protect_ranges(BlockCache* bc, int writeable) {
 static int block_cache_chain_stat(GCList *head, int *blcnt) {
   block_desc *b;
   int freecnt = 0;
-  gclist_each_item(b, head, block_desc*, gclist) {
+  gclist_each_item(b, head, block_desc, gclist) {
     pfree_list *fl;
     int lfcnt = 0;
     for (fl = b->free; fl; fl = fl->next) {

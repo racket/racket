@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -542,6 +542,11 @@ static void ext_get_into_line(Scheme_Object *ch, Scheme_Schedule_Info *sinfo)
 void scheme_get_outof_line(Scheme_Channel_Syncer *ch_w)
 {
   get_outof_line((Scheme_Sema *)ch_w->obj, ch_w);
+}
+
+void scheme_get_back_into_line(Scheme_Channel_Syncer *ch_w)
+{
+  get_into_line((Scheme_Sema *)ch_w->obj, ch_w);
 }
 
 static int try_channel(Scheme_Sema *sema, Syncing *syncing, int pos, Scheme_Object **result)

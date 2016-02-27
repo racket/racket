@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -116,8 +116,8 @@ scheme_init_type ()
   set_name(scheme_application_type, "<application-code>");
   set_name(scheme_application2_type, "<unary-application-code>");
   set_name(scheme_application3_type, "<binary-application-code>");
-  set_name(scheme_compiled_unclosed_procedure_type, "<procedure-semi-code>");
-  set_name(scheme_unclosed_procedure_type, "<procedure-code>");
+  set_name(scheme_ir_lambda_type, "<procedure-semi-code>");
+  set_name(scheme_lambda_type, "<procedure-code>");
   set_name(scheme_branch_type, "<branch-code>");
   set_name(scheme_sequence_type, "<sequence-code>");
   set_name(scheme_with_cont_mark_type, "<with-continuation-mark-code>");
@@ -129,19 +129,22 @@ scheme_init_type ()
   set_name(scheme_begin0_sequence_type, "<begin0-code>");
   set_name(scheme_splice_sequence_type, "<splicing-begin-code>");
   set_name(scheme_module_type, "<module-code>");
+  set_name(scheme_inline_variant_type, "<inline-variant-code>");
   set_name(scheme_set_bang_type, "<set!-code>");
   set_name(scheme_boxenv_type, "<boxenv-code>");
   set_name(scheme_require_form_type, "<require-code>");
   set_name(scheme_varref_form_type, "<varref-code>");
   set_name(scheme_apply_values_type, "<apply-values-code>");
+  set_name(scheme_with_immed_mark_type, "<with-immediate-mark-code>");
   set_name(scheme_case_lambda_sequence_type, "<case-lambda-code>");
 
   set_name(scheme_let_value_type, "<let-value-code>");
   set_name(scheme_let_void_type, "<let-void-code>");
-  set_name(scheme_compiled_let_value_type, "<let-value-semi-code>");
-  set_name(scheme_compiled_let_void_type, "<let-void-semi-code>");
-  set_name(scheme_compiled_toplevel_type, "<variable-semi-code>");
-  set_name(scheme_compiled_quote_syntax_type, "<quote-syntax-semi-code>");
+  set_name(scheme_ir_local_type, "<local-semi-code>");
+  set_name(scheme_ir_let_value_type, "<let-value-semi-code>");
+  set_name(scheme_ir_let_header_type, "<let-header-semi-code>");
+  set_name(scheme_ir_toplevel_type, "<variable-semi-code>");
+  set_name(scheme_ir_quote_syntax_type, "<quote-syntax-semi-code>");
   set_name(scheme_letrec_type, "<letrec-code>");
   set_name(scheme_let_one_type, "<let-one-code>");
   set_name(scheme_quote_compilation_type, "<quote-code>");
@@ -184,7 +187,7 @@ scheme_init_type ()
 #endif
   set_name(scheme_symbol_type, "<symbol>");
   set_name(scheme_keyword_type, "<keyword>");
-  set_name(scheme_syntax_compiler_type, "<syntax-compiler>");
+  set_name(scheme_primitive_syntax_type, "<primitive-syntax>");
   set_name(scheme_macro_type, "<macro>");
   set_name(scheme_vector_type, "<vector>");
   set_name(scheme_flvector_type, "<flvector>");
@@ -197,6 +200,11 @@ scheme_init_type ()
   set_name(scheme_channel_put_type, "<channel-put>");
   set_name(scheme_hash_table_type, "<hash>");
   set_name(scheme_hash_tree_type, "<hash>");
+  set_name(scheme_eq_hash_tree_type, "<hash>");
+  set_name(scheme_eqv_hash_tree_type, "<hash>");
+  set_name(scheme_hash_tree_indirection_type, "<hash>");
+  set_name(scheme_hash_tree_subtree_type, "<hash-node>");
+  set_name(scheme_hash_tree_collision_type, "<hash-node>");
   set_name(scheme_bucket_table_type, "<hash>");
   set_name(scheme_module_registry_type, "<module-registry>");
   set_name(scheme_case_closure_type, "<procedure>");
@@ -215,7 +223,9 @@ scheme_init_type ()
   set_name(scheme_will_executor_type, "<will-executor>");
   set_name(scheme_random_state_type, "<pseudo-random-generator>");
   set_name(scheme_regexp_type, "<regexp>");
-  set_name(scheme_rename_table_type, "<rename-table>");
+  set_name(scheme_scope_table_type, "<scope-table>");
+  set_name(scheme_propagate_table_type, "<propagate-table>");
+  set_name(scheme_scope_type, "<scope>");
   set_name(scheme_bucket_type, "<hash-table-bucket>");
   set_name(scheme_prefix_type, "<runtime-prefix>");
   set_name(scheme_resolve_prefix_type, "<resolve-prefix>");
@@ -304,7 +314,7 @@ scheme_init_type ()
   set_name(scheme_fsemaphore_type, "<fsemaphore>");
 
   set_name(_scheme_values_types_, "<resurrected>");
-  set_name(_scheme_compiled_values_types_, "<internal>");
+  set_name(_scheme_ir_values_types_, "<internal>");
 
   set_name(scheme_place_type, "<place>");
   set_name(scheme_place_async_channel_type, "<place-half-channel>");
@@ -552,7 +562,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_application3_type, app3_rec);
   GC_REG_TRAV(scheme_sequence_type, seq_rec);
   GC_REG_TRAV(scheme_branch_type, branch_rec);
-  GC_REG_TRAV(scheme_unclosed_procedure_type, unclosed_proc);
+  GC_REG_TRAV(scheme_lambda_type, unclosed_proc);
   GC_REG_TRAV(scheme_let_value_type, let_value);
   GC_REG_TRAV(scheme_let_void_type, let_void);
   GC_REG_TRAV(scheme_letrec_type, letrec);
@@ -566,6 +576,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_begin_for_syntax_type, vector_obj);
   GC_REG_TRAV(scheme_varref_form_type, twoptr_obj);
   GC_REG_TRAV(scheme_apply_values_type, twoptr_obj);
+  GC_REG_TRAV(scheme_with_immed_mark_type, with_cont_mark);
   GC_REG_TRAV(scheme_boxenv_type, twoptr_obj);
   GC_REG_TRAV(scheme_case_lambda_sequence_type, case_closure);
   GC_REG_TRAV(scheme_begin0_sequence_type, seq_rec);
@@ -578,15 +589,16 @@ void scheme_register_traversers(void)
 
   GC_REG_TRAV(_scheme_values_types_, bad_trav);
   
-  GC_REG_TRAV(scheme_compiled_unclosed_procedure_type, unclosed_proc);
-  GC_REG_TRAV(scheme_compiled_let_value_type, comp_let_value);
-  GC_REG_TRAV(scheme_compiled_let_void_type, let_header);
-  GC_REG_TRAV(scheme_compiled_toplevel_type, toplevel_obj);
-  GC_REG_TRAV(scheme_compiled_quote_syntax_type, local_obj);
+  GC_REG_TRAV(scheme_ir_lambda_type, unclosed_proc);
+  GC_REG_TRAV(scheme_ir_local_type, ir_local);
+  GC_REG_TRAV(scheme_ir_let_value_type, ir_let_value);
+  GC_REG_TRAV(scheme_ir_let_header_type, let_header);
+  GC_REG_TRAV(scheme_ir_toplevel_type, toplevel_obj);
+  GC_REG_TRAV(scheme_ir_quote_syntax_type, local_obj);
 
   GC_REG_TRAV(scheme_quote_compilation_type, small_object);
 
-  GC_REG_TRAV(_scheme_compiled_values_types_, bad_trav);
+  GC_REG_TRAV(_scheme_ir_values_types_, bad_trav);
 
   GC_REG_TRAV(scheme_prefix_type, prefix_val);
   GC_REG_TRAV(scheme_resolve_prefix_type, resolve_prefix_val);
@@ -643,7 +655,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_true_type, small_atomic_obj);
   GC_REG_TRAV(scheme_false_type, small_atomic_obj);
   GC_REG_TRAV(scheme_void_type, small_atomic_obj); 
-  GC_REG_TRAV(scheme_syntax_compiler_type, syntax_compiler);
+  GC_REG_TRAV(scheme_primitive_syntax_type, syntax_compiler);
   GC_REG_TRAV(scheme_macro_type, small_object);
   GC_REG_TRAV(scheme_box_type, small_object);
   GC_REG_TRAV(scheme_thread_type, thread_val);
@@ -711,6 +723,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_global_ref_type, twoptr_obj);
 
   GC_REG_TRAV(scheme_delay_syntax_type, small_object);
+  GC_REG_TRAV(scheme_marshal_share_type, small_object);
 
   GC_REG_TRAV(scheme_resolved_module_path_type, small_object);
 
@@ -718,8 +731,6 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_log_reader_type, mark_log_reader);
 
   GC_REG_TRAV(scheme_rt_runstack, runstack_val);
-
-  GC_REG_TRAV(scheme_free_id_info_type, vector_obj);
 
   GC_REG_TRAV(scheme_rib_delimiter_type, small_object);
   GC_REG_TRAV(scheme_noninline_proc_type, small_object);

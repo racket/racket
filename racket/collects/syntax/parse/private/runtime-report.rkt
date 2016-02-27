@@ -2,20 +2,16 @@
 (require racket/list
          racket/format
          syntax/stx
-         unstable/struct
-         unstable/error
+         racket/struct
          syntax/srcloc
          "minimatch.rkt"
-         (except-in syntax/parse/private/residual
-                    syntax-patterns-fail)
+         syntax/parse/private/residual
          "kws.rkt")
-(provide syntax-patterns-fail
+(provide call-current-failure-handler
          current-failure-handler
          maximal-failures
-
          invert-ps
-         ps->stx+index
-         )
+         ps->stx+index)
 
 #|
 TODO: given (expect:thing _ D _ R) and (expect:thing _ D _ #f),
@@ -28,8 +24,8 @@ Note: there is a cyclic dependence between residual.rkt and this module,
 broken by a lazy-require of this module into residual.rkt
 |#
 
-(define ((syntax-patterns-fail stx0) fs)
-  (call-with-values (lambda () ((current-failure-handler) stx0 fs))
+(define (call-current-failure-handler ctx fs)
+  (call-with-values (lambda () ((current-failure-handler) ctx fs))
     (lambda vals
       (error 'current-failure-handler
              "current-failure-handler: did not escape, produced ~e"
@@ -37,8 +33,8 @@ broken by a lazy-require of this module into residual.rkt
                ((1) (car vals))
                (else (cons 'values vals)))))))
 
-(define (default-failure-handler stx0 fs)
-  (report-failureset stx0 fs))
+(define (default-failure-handler ctx fs)
+  (report-failureset ctx fs))
 
 (define current-failure-handler
   (make-parameter default-failure-handler))
@@ -57,11 +53,11 @@ special handling of failures like "unexpected term" make things more
 complicated.
 |#
 
-;; report-failureset : stx FailureSet -> escapes
-(define (report-failureset stx0 fs)
+;; report-failureset : (list Symbol/#f Syntax) FailureSet -> escapes
+(define (report-failureset ctx fs)
   (let* ([classes (maximal-failures fs)]
          [reports (apply append (map report/class classes))])
-    (raise-syntax-error/reports stx0 reports)))
+    (error/reports ctx reports)))
 
 ;; A Report is
 ;;   - (report string (listof string) stx stx)
@@ -175,15 +171,55 @@ complicated.
 
 ;; == Do Report ==
 
-(define (raise-syntax-error/reports stx0 reports)
-  (let* ([report (car reports)]
-         [more? (pair? (cdr reports))]
-         [message0 (report-message report)]
-         [context (report-context report)])
-    (raise-syntax-error* message0 stx0 (report-stx report)
-                         #:within (report-within-stx report)
-                         '("parsing context" multi maybe) context
-                         '("note" maybe) (and more? "additional errors omitted"))))
+(define (error/reports ctx reports)
+  (error/report ctx (car reports) (pair? (cdr reports))))
+
+(define (format-if prefix val)
+  (if val
+      (format "\n  ~a: ~a" prefix val)
+      ""))
+
+(define (error/report ctx report more?)
+  (let* ([message (report-message report)]
+         [context (report-context report)]
+         [stx (cadr ctx)]
+         [who (or (car ctx) (infer-who stx))]
+         [sub-stx (report-stx report)]
+         [within-stx (report-within-stx report)]
+         [message
+          (format "~a: ~a~a~a~a~a~a"
+                  who message
+                  (format-if "at" (stx-if-loc sub-stx))
+                  (format-if "within" (stx-if-loc within-stx))
+                  (format-if "in" (stx-if-loc stx))
+                  (if (null? context)
+                      ""
+                      (apply string-append
+                             "\n  parsing context: "
+                             (for/list ([c (in-list context)])
+                               (format "\n   ~a" c))))
+                  (format-if "note" (and more? "additional errors omitted")))]
+         [message
+          (if (error-print-source-location)
+              (let ([source-stx (or stx sub-stx within-stx)])
+                (string-append (source-location->prefix source-stx) message))
+              message)])
+    (raise
+     (exn:fail:syntax message (current-continuation-marks)
+                      (map syntax-taint
+                           (cond [within-stx (list within-stx)]
+                                 [sub-stx (list sub-stx)]
+                                 [stx (list stx)]
+                                 [else null]))))))
+
+(define (stx-if-loc stx)
+  (and (syntax? stx)
+       (error-print-source-location)
+       (format "~.s" (syntax->datum stx))))
+
+(define (infer-who stx)
+  (let* ([maybe-id (if (stx-pair? stx) (stx-car stx) stx)])
+    (if (identifier? maybe-id) (syntax-e maybe-id) '?)))
 
 ;; ====
 

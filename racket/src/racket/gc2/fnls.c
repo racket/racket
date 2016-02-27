@@ -8,6 +8,7 @@
       num_fnls
    Requires:
       is_finalizable_page(gc, p)
+      is_in_gen_half(p, gc)
       park
 */
 
@@ -22,12 +23,37 @@
 #undef splay_insert
 #undef splay_delete
 
+static void remove_finalizer(Fnl *fnl, int lvl, GCTYPE *gc)
+{
+  if (fnl->prev)
+    fnl->prev->next = fnl->next;
+  else
+    gc->finalizers[lvl] = fnl->next;
+  if (fnl->next)
+    fnl->next->prev = fnl->prev;
+  
+  gc->splayed_finalizers[lvl] = fnl_splay_delete((intptr_t)fnl->p, gc->splayed_finalizers[lvl]);
+}
+
+static void add_finalizer(Fnl *fnl, int lvl, GCTYPE *gc)
+{
+  fnl->next = gc->finalizers[lvl];
+
+  fnl->prev = NULL;
+  if (fnl->next)
+    fnl->next->prev = fnl;
+
+  gc->finalizers[lvl] = fnl;
+  gc->splayed_finalizers[lvl] = fnl_splay_insert((intptr_t)fnl->p, fnl, gc->splayed_finalizers[lvl]);
+}
+
 void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *data), 
     void *data, void (**oldf)(void *p, void *data), 
     void **olddata)
 {
   GCTYPE *gc = GC_get_GC();
   Fnl *fnl;
+  int lvl;
 
   if (!is_finalizable_page(gc, p)) {
     /* Never collected. Don't finalize it. */
@@ -36,8 +62,21 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
     return;
   }
 
-  gc->splayed_finalizers = fnl_splay((intptr_t)p, gc->splayed_finalizers);
-  fnl = gc->splayed_finalizers;
+  for (lvl = 0; lvl < NUM_FNL_LEVELS; lvl++) {
+    gc->splayed_finalizers[lvl] = fnl_splay((intptr_t)p, gc->splayed_finalizers[lvl]);
+    fnl = gc->splayed_finalizers[lvl];
+    if (!fnl || (fnl->p != p)) {
+      fnl = NULL;
+    } else {
+      if (lvl > FNL_LEVEL_GEN_0) {
+        /* since we're mutating this finalizer, move it to the gen0 set */
+        remove_finalizer(fnl, lvl, gc);
+        add_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
+      }
+      break;
+    }
+  }
+  
   if (fnl && (fnl->p == p)) {
     if (oldf) *oldf = fnl->f;
     if (olddata) *olddata = fnl->data;
@@ -47,15 +86,8 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
       fnl->eager_level = level;
     } else {
       /* remove finalizer */
-      if (fnl->prev)
-        fnl->prev->next = fnl->next;
-      else
-        gc->finalizers = fnl->next;
-      if (fnl->next)
-        fnl->next->prev = fnl->prev;
-
+      remove_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
       --gc->num_fnls;
-      gc->splayed_finalizers = fnl_splay_delete((intptr_t)p, gc->splayed_finalizers);
     }
     return;
   }
@@ -78,8 +110,7 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
   data = gc->park[1];
   gc->park[0] = NULL;
   gc->park[1] = NULL;
-
-
+  
   fnl->p = p;
   fnl->f = f;
   fnl->data = data;
@@ -103,32 +134,70 @@ void GC_set_finalizer(void *p, int tagged, int level, void (*f)(void *p, void *d
   }
 #endif
 
-  /* push finalizer */
-  fnl->next = gc->finalizers;
-  fnl->prev = NULL;
-  if (gc->finalizers) {
-    gc->finalizers->prev = fnl;
-  }
-  gc->finalizers = fnl;
-
-  gc->splayed_finalizers = fnl_splay_insert((intptr_t)p, fnl, gc->splayed_finalizers);
-
+  add_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
   gc->num_fnls++;
 }
 
-static void reset_finalizer_tree(GCTYPE *gc)
-  /* After a GC, rebuild the splay tree, since object addresses
-     have moved. */
+static void merge_finalizer_trees(GCTYPE *gc)
+/* For a full GC, move all finalizers to the gen0 list */
 {
-  Fnl *fnl;
-  Fnl *prev = NULL;
+  Fnl *fnl, *next;
+  int lvl;
 
-  gc->splayed_finalizers = NULL;
-
-  for (fnl = gc->finalizers; fnl; fnl = fnl->next) {
-    fnl->prev = prev;
-    gc->splayed_finalizers = fnl_splay_insert((intptr_t)fnl->p, fnl, gc->splayed_finalizers);
-    prev = fnl;
+  for (lvl = FNL_LEVEL_GEN_1; lvl < NUM_FNL_LEVELS; lvl++) {
+    for (fnl = gc->finalizers[lvl]; fnl; fnl = next) {
+      next = fnl->next;
+      add_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
+    }
+    gc->finalizers[lvl] = NULL;
+    gc->splayed_finalizers[lvl] = NULL;
   }
 }
 
+static void reset_finalizer_tree(GCTYPE *gc)
+/* After a GC, move gen0 finalizers to the old finalizer list. Note
+   that the old gen0 splay tree is otherwise broken, since object
+   addresses have moved. */
+{
+  Fnl *fnl, *next;
+
+  if (gc->gc_full) {
+    GC_ASSERT(!gc->finalizers[FNL_LEVEL_INC_1]);
+    GC_ASSERT(!gc->splayed_finalizers[FNL_LEVEL_INC_1]);
+    GC_ASSERT(!gc->finalizers[FNL_LEVEL_INC_2]);
+    GC_ASSERT(!gc->splayed_finalizers[FNL_LEVEL_INC_2]);
+    if (gc->finished_incremental) {
+      fnl = gc->finalizers[FNL_LEVEL_GEN_1];
+      for (; fnl; fnl = next) {
+        next = fnl->next;
+        add_finalizer(fnl, FNL_LEVEL_INC_3, gc);
+      }
+      gc->finalizers[FNL_LEVEL_GEN_1] = gc->finalizers[FNL_LEVEL_INC_3];
+      gc->splayed_finalizers[FNL_LEVEL_GEN_1] = gc->splayed_finalizers[FNL_LEVEL_INC_3];
+      gc->finalizers[FNL_LEVEL_INC_3] = NULL;
+      gc->splayed_finalizers[FNL_LEVEL_INC_3] = NULL;
+    } else {
+      GC_ASSERT(!gc->finalizers[FNL_LEVEL_INC_3]);
+      GC_ASSERT(!gc->splayed_finalizers[FNL_LEVEL_INC_3]);
+    }
+  }
+
+  fnl = gc->finalizers[FNL_LEVEL_GEN_0];
+  gc->finalizers[FNL_LEVEL_GEN_0] = NULL;
+  gc->splayed_finalizers[FNL_LEVEL_GEN_0] = NULL;
+
+  for (; fnl; fnl = next) {
+    next = fnl->next;
+    /* Checking both `fnl` and `fnl->p` is redundant, since
+       `fnl` is always allocated after `fnl->p`, but check
+       both just in case the order of allocation somehow
+       changes in the future. */
+    if (is_in_generation_half(gc, fnl)
+        || is_in_generation_half(gc, fnl->f)
+        || is_in_generation_half(gc, fnl->p)
+        || is_in_generation_half(gc, fnl->data))
+      add_finalizer(fnl, FNL_LEVEL_GEN_0, gc);
+    else
+      add_finalizer(fnl, FNL_LEVEL_GEN_1, gc);
+  }
+}

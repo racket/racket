@@ -80,6 +80,12 @@ If a @racket[delay/name] promise forces itself, no exception is
 raised, the promise is never considered ``running'' or ``forced'' in
 the sense of @racket[promise-running?] and @racket[promise-forced?].}
 
+@defproc[(promise/name? [promise any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[promise] is a promise created with @racket[delay/name].
+@history[#:added "6.3"]
+}
+
 @defform[(delay/strict body ...+)]{
 
 Creates a ``strict'' promise: it is evaluated immediately, and the

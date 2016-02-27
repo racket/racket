@@ -44,14 +44,15 @@
 
     (define a-dir (build-path tmp-dir "a"))
 
+    (define (commit-changes-cmd [a-dir a-dir])
+      (~a "cd " a-dir "; git add .; git commit -m change; git update-server-info"))
+
     ;; ----------------------------------------
     ;; Single-package repository
 
     (make-directory a-dir)    
     $ (~a "cd " a-dir "; git init")
     (set-file (build-path a-dir "main.rkt") "#lang racket/base 1")
-    (define (commit-changes-cmd [a-dir a-dir])
-      (~a "cd " a-dir "; git add .; git commit -m change; git update-server-info"))
     $ (commit-changes-cmd)
 
     (with-fake-root
@@ -186,6 +187,61 @@
     (delete-directory/files (build-path clone-dir "a"))
     (delete-directory/files a-dir)
     
+    ;; ----------------------------------------
+    ;; Single-package repository that becomes multi-package
+
+    (define (check-changing try-bogus?)
+      (shelly-case
+       "Single-package repository that becomes multi-package"
+       (make-directory a-dir)
+       $ (~a "cd " a-dir "; git init")
+       (set-file (build-path a-dir "main.rkt") "#lang racket/base 1")
+       $ (commit-changes-cmd)
+       
+       (with-fake-root
+           (shelly-begin
+            (shelly-case
+             "--clone installation with path into repository"
+             $ (~a "raco pkg install --clone " (build-path clone-dir "a") " --name one http://localhost:9998/a/.git")
+             $ "racket -l one" =stdout> "1\n"
+             $ (~a "ls " (build-path clone-dir "a")))
+            
+            $ (~a "cd " a-dir "; git rm main.rkt")
+            (make-directory* (build-path a-dir "one"))
+            (set-file (build-path a-dir "one" "main.rkt") "#lang racket/base 1")
+            (set-file (build-path a-dir "one" "info.rkt") "#lang info (define deps '(\"http://localhost:9998/a/.git?path=two\"))")
+            (make-directory* (build-path a-dir "two"))
+            (set-file (build-path a-dir "two" "main.rkt") "#lang racket/base 2")
+            $ (commit-changes-cmd)
+            
+            (when try-bogus?
+              ;; A `raco pkg update one` at this point effectively
+              ;; breaks the package installation, because the package
+              ;; source will remain pathless. We only try this sometimes,
+              ;; so that we check the next step with an without creating
+              ;; paths "one" and "two" before that step.
+              (shelly-begin
+               $ "raco pkg update one"
+               $ "racket -l one" =exit> 1))
+            
+            $ (~a "raco pkg update --clone " (build-path clone-dir "a") " --auto --multi-clone convert http://localhost:9998/a/.git?path=one")
+            
+            $ "racket -l one" =stdout> "1\n"
+            $ "racket -l two" =stdout> "2\n"
+            
+            (set-file (build-path a-dir "two" "main.rkt") "#lang racket/base 2.0")
+            $ (commit-changes-cmd)
+            
+            $ "racket -l two" =stdout> "2\n"
+            $ "raco pkg update two"
+            $ "racket -l two" =stdout> "2.0\n"))
+
+       (delete-directory/files (build-path clone-dir "a"))
+       (delete-directory/files a-dir)))
+    
+    (check-changing #f)
+    (check-changing #t)
+
     ;; ----------------------------------------
     ;; Using local changes for metadata
 

@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt, Scott Owens
 
     This library is free software; you can redistribute it and/or
@@ -90,6 +90,7 @@ void scheme_bignum_use_fuel(intptr_t n);
 
 #if defined(SIXTY_FOUR_BIT_INTEGERS) || defined(USE_LONG_LONG_FOR_BIGDIG)
 # define BIG_RADIX 18446744073709551616.0 /* = 0x10000000000000000 */
+# define BIG_HALF_RADIX 4294967296.0
 # define WORD_SIZE 64
 #else
 # define BIG_RADIX 4294967296.0 /* = 0x100000000 */
@@ -192,7 +193,7 @@ Scheme_Object *scheme_make_small_bignum(intptr_t v, Small_Bignum *o)
   o->o.iso.so.type = scheme_bignum_type;
   SCHEME_SET_BIGPOS(&o->o, ((v >= 0) ? 1 : 0));
   if (v < 0)
-    bv = -v;
+    bv = -((bigdig)v);
   else
     bv = v;
 
@@ -413,7 +414,7 @@ int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v)
     /* Special case for the most negative number representable in a signed long long */
     mzlonglong v2;
     v2 = 1;
-    v2 = (v2 << 63);
+    v2 = ((umzlonglong)v2 << 63);
     *v = v2;
     return 1;
   } else if ((SCHEME_BIGDIG(o)[MAX_BN_SIZE_FOR_LL - 1] & FIRST_BIT_MASK_LL) != 0) { /* Won't fit into a signed long long */
@@ -422,7 +423,7 @@ int scheme_bignum_get_long_long_val(const Scheme_Object *o, mzlonglong *v)
     mzlonglong v2;
     v2 = SCHEME_BIGDIG(o)[0];
     if (SCHEME_BIGLEN(o) > 1) {
-      v2 |= ((mzlonglong)(SCHEME_BIGDIG(o)[1])) << 32;
+      v2 |= ((umzlonglong)(SCHEME_BIGDIG(o)[1])) << 32;
     }
     if (!SCHEME_BIGPOS(o)) {
       v2 = -v2;
@@ -1422,19 +1423,77 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
     *_stk_o = bignum_copy(*_stk_o, carry);
 }
 
+XFORM_NONGCING static int mz_clz(uintptr_t n)
+{
+#ifdef MZ_HAS_BUILTIN_CLZ
+# if defined(SIXTY_FOUR_BIT_INTEGERS) || defined(USE_LONG_LONG_FOR_BIGDIG)
+  uintptr_t hi = (n >> (WORD_SIZE >> 1));
+  if (hi)
+    return __builtin_clz(hi);
+  else {
+    unsigned int low = n;
+    return (WORD_SIZE >> 1) + __builtin_clz(low);
+  }
+# else
+  return __builtin_clz(n);
+# endif
+#else
+  int c = 0, d = (WORD_SIZE >> 1);
+  while (d) {
+    if (n >> (c + d))
+      c += d;
+    d = d >> 1;
+  }
+  return WORD_SIZE - 1 - c;
+#endif
+}
+
+XFORM_NONGCING static int any_nonzero_digits(bigdig *na, intptr_t nl, int delta)
+/* if `delta`, then check only after that many bits in the most-significant
+   digit */
+{
+  if (delta) {
+    if (na[nl-1] & (((bigdig)1 << (WORD_SIZE - delta)) - 1))
+      return 1;
+    nl--;
+  }
+  
+  while (nl--) {
+    if (na[nl])
+      return 1;
+  }
+  return 0;
+}
+
+#if defined(SIXTY_FOUR_BIT_INTEGERS) && defined(AVOID_INT_TO_FLOAT_TRUNCATION)
+XFORM_NONGCING static double double_from_bigdig(bigdig b)
+{
+  double d1, d2;
+
+  d1 = (double)(b >> (WORD_SIZE >> 1));
+  d2 = (double)(b & (((bigdig)1 << (WORD_SIZE >> 1))-1));
+  return (d1 * BIG_HALF_RADIX) + d2;
+}
+#endif
+
 #define USE_FLOAT_BITS 53
 #define FP_TYPE double
 
-#define FP_TYPE_FROM_DOUBLE(x) (FP_TYPE)x
+#define FP_TYPE_FROM_DOUBLE(x) ((FP_TYPE)(x))
 #define FP_TYPE_NEG(x) (-(x))
 #define FP_TYPE_LESS(x, y) ((x)<(y))
 #define FP_TYPE_MULT(x, y) ((x)*(y))
 #define FP_TYPE_PLUS(x, y) ((x)+(y))
 #define FP_TYPE_DIV(x, y) ((x)/(y))
+#define FP_TYPE_POW(x, y) pow(x, y)
 #define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#if defined(SIXTY_FOUR_BIT_INTEGERS) && defined(AVOID_INT_TO_FLOAT_TRUNCATION)
+# define FP_TYPE_FROM_UINTPTR(x) double_from_bigdig(x)
+#else
+# define FP_TYPE_FROM_UINTPTR(x) ((FP_TYPE)(x))
+#endif
 #define FP_TYPE_GREATER_OR_EQV(x, y) ((x)>=(y))
 #define FP_TYPE_MINUS(x, y) ((x)-(y))
-#define FP_TYPE_FROM_UINTPTR
 
 #define IS_FLOAT_INF scheme__is_double_inf
 #define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_double_inf_info
@@ -1447,16 +1506,26 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 # define USE_FLOAT_BITS 24
 # define FP_TYPE float
 
-# define FP_TYPE_FROM_DOUBLE(x) (FP_TYPE)x
+#define FP_TYPE_FROM_DOUBLE(x) ((FP_TYPE)(x))
 #define FP_TYPE_NEG(x) (-(x))
 #define FP_TYPE_LESS(x, y) ((x)<(y))
 #define FP_TYPE_MULT(x, y) ((x)*(y))
 #define FP_TYPE_PLUS(x, y) ((x)+(y))
 #define FP_TYPE_DIV(x, y) ((x)/(y))
-#define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#define FP_TYPE_POW(x, y) pow(x, y)
+#if defined(AVOID_INT_TO_FLOAT_TRUNCATION)
+# if defined(SIXTY_FOUR_BIT_INTEGERS)
+#  define FP_TYPE_FROM_UINTPTR(x) ((FP_TYPE)double_from_bigdig(x))
+# else
+#  define FP_TYPE_FROM_UINTPTR(x) (FP_TYPE)((double)(x))
+# endif
+# define FP_TYPE_FROM_INT(x) (FP_TYPE)((double)(x))
+#else
+# define FP_TYPE_FROM_UINTPTR(x) ((FP_TYPE)(x))
+# define FP_TYPE_FROM_INT(x) ((FP_TYPE)(x))
+#endif
 #define FP_TYPE_GREATER_OR_EQV(x, y) ((x)>=(y))
 #define FP_TYPE_MINUS(x, y) ((x)-(y))
-# define FP_TYPE_FROM_UINTPTR 
 
 # define IS_FLOAT_INF scheme__is_float_inf
 # define SCHEME_BIGNUM_TO_FLOAT_INFO scheme_bignum_to_float_inf_info
@@ -1475,6 +1544,7 @@ static void bignum_add1_inplace(Scheme_Object **_stk_o)
 # define FP_TYPE_MULT(x, y) long_double_mult(x, y)
 # define FP_TYPE_DIV(x, y) long_double_div(x, y)
 # define FP_TYPE_PLUS(x, y) long_double_plus(x, y)
+# define FP_TYPE_POW(x, y) long_double_pow(x, y)
 # define FP_TYPE_FROM_INT(x) long_double_from_int(x)
 # define FP_TYPE_GREATER_OR_EQV(x, y) long_double_greater_or_eqv(x, y)
 # define FP_TYPE_MINUS(x, y) long_double_minus(x, y)
@@ -1588,7 +1658,7 @@ static uintptr_t fixnum_sqrt(uintptr_t n, uintptr_t *rem)
 
   for (i = SQRT_BIT_MAX; i >= 0; i--)
   {
-    try_root = root | ((intptr_t)0x1 << i);
+    try_root = root | ((uintptr_t)0x1 << i);
     try_square = try_root * try_root;
     if (try_square <= n)
     {

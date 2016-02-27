@@ -3,8 +3,8 @@
 
 (load-relative "loadtest.rktl")
 
-(require scheme/class)
-(require scheme/unit)
+(require racket/class)
+(require racket/unit)
 
 (Section 'names)
 
@@ -64,6 +64,9 @@
 
 (test 'w object-name (let ([w (let ([x 5]) (lambda () x))]) w))
 (test 'z object-name (let ([z (let ([x 5]) (cons 1 2) (lambda () x))]) z))
+
+(test 'w object-name (let ([w (let () (lambda () 'x))]) w))
+(test 'z object-name (let ([z (let () (cons 1 2) (lambda () 'x))]) z))
 
 (set! f (lambda () 10))
 (test 'f object-name f)
@@ -130,5 +133,32 @@
                                         10)])
                    5))
              #rx"^(?!.*unmentionable)")
+
+;; Test use of the 'inferred-name syntax property
+(define-syntax (named-thunk1 stx)
+  (syntax-case stx ()
+    [(_ v)
+     (syntax-property #'(lambda () 1) 'inferred-name (eval #'v))]))
+
+(test 'one object-name (let ([tmp (named-thunk1 'one)]) tmp))
+(test #t src-name? (object-name (let ([tmp (named-thunk1 (void))]) tmp)))
+(test 'tmp object-name (let ([tmp (named-thunk1 #f)]) tmp))
+(test 'tmp object-name (let ([tmp (named-thunk1 1)]) tmp))
+(test 'tmp object-name (let ([tmp (named-thunk1 "one")]) tmp))
+
+(test 'one object-name (let ([tmp (named-thunk1 (cons 'one 'one))]) tmp))
+(test #t src-name? (object-name (let ([tmp (named-thunk1 (cons (void) (void)))]) tmp)))
+(test 'tmp object-name (let ([tmp (named-thunk1 (cons #f #f))]) tmp))
+(test 'tmp object-name (let ([tmp (named-thunk1 (cons 1 1))]) tmp))
+(test 'tmp object-name (let ([tmp (named-thunk1 (cons "one" "one"))]) tmp))
+
+(test 'norm values
+      (let-syntax ([m (lambda (stx)
+                        #`'#,(syntax-local-name))])
+        (define norm
+          (let ()
+            (define x 8)
+            (m)))
+        norm))
 
 (report-errs)

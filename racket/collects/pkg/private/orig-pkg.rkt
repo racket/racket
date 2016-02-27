@@ -19,10 +19,12 @@
     [(link static-link) `(,type
                           ,(path->string
                             (find-relative-path (pkg-installed-dir)
-                                                (simple-form-path src)
+                                                ;; normalize with ending slash
+                                                (path->directory-path
+                                                 (simple-form-path src))
                                                 #:more-than-root? #t)))]
     [(clone) 
-     (define-values (host port repo branch path)
+     (define-values (transport host port repo branch path)
        (split-git-or-hub-url (string->url src)))
      `(clone ,(path->string
                (find-relative-path (pkg-installed-dir)

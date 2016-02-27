@@ -239,5 +239,23 @@
   (test #f sync/timeout 0 r22))
 
 ; --------------------
+; racket/logging
+
+(require racket/logging)
+(define (test-intercepted-logging)
+  (define log '())
+  (cons (with-intercepted-logging
+            (lambda (v) (set! log (cons (vector-ref v 1) log)))
+          (lambda ()
+            (log-warning "1")
+            (log-warning "2")
+            (log-warning "3")
+            (log-info "4")
+            #t)
+          'warning)
+        log))
+(test '(#t "3" "2" "1") test-intercepted-logging)
+
+; --------------------
 
 (report-errs)

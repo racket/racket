@@ -482,7 +482,7 @@ mutually recursive functions with modules. This capability is unique to
 @image["mut-rec-contracts.png" #:scale .8]{Mutually recursive functions with contracts}
 
 In contrast, submodules act exactly like plain modules when it comes to
-contract boundaries. Like @racket[define/contract], a submodue establishes
+contract boundaries. Like @racket[define/contract], a submodule establishes
 a contract boundary between itself and the rest of the module. Any value
 flow between a client module and the submodule is governed by
 contracts. Any value flow within the submodule is free of any constraints.

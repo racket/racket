@@ -21,10 +21,6 @@
     (raise-user-error name "regular expression flag does not make sense without package names"))
   (define db (read-pkg-db))
   (define pkgs (sort (hash-keys db) string-ci<=?))
-  (define (shorten-checksum s full)
-    (if (or full (not (string? s)) (< (string-length s) 11))
-        s
-        (~a (substring s 0 (min 8 (string-length s))) "...")))
   (define auto-shown? #f)
   (define to-show
     (for/list ([pkg (in-list pkgs)]
@@ -41,7 +37,7 @@
                      pkg
                      (if auto? "*" ""))
              (if (or checksum long?)
-                 (format "~a" (shorten-checksum checksum full-checksum))
+                 (format "~a" checksum)
                  "")
              (let ([src (case (car orig-pkg)
                           [(link static-link clone)
@@ -65,18 +61,24 @@
            empty))))
     (if (null? to-show)
         (printf " [none]\n")
-        (table-display
-         long?
-         (list* 'right 'right 'middle
-                (if dir? '(left) '()))
-         (list*
-          (list* (format "~aPackage~a"
-                         indent 
-                         (if auto-shown? "[*=auto]" ""))
-                 "Checksum"
-                 "Source"
-                 (if dir? '("Directory") '()))
-          to-show)))
+        (let* ([col-headers (list* (format "~aPackage~a"
+                                          indent
+                                          (if auto-shown? "[*=auto]" ""))
+                                   "Checksum"
+                                   "Source"
+                                   (if dir? '("Directory") '()))]
+               [checksum-index (for/first ([hdr (in-list col-headers)]
+                                           [i   (in-naturals)]
+                                           #:when (string=? hdr "Checksum")) i)]
+               [exact-columns (if (and full-checksum checksum-index)
+                                (list checksum-index)
+                                '())])
+          (table-display
+           #:exact-columns exact-columns
+           long?
+           (list* 'right 'right 'middle
+                  (if dir? '(left) '()))
+           (list* col-headers to-show))))
     (unless (or only-pkgs show-auto?)
       (define n (for/sum ([pkg (in-list pkgs)] 
                           #:when (pkg-info-auto? (hash-ref db pkg)))
@@ -87,7 +89,7 @@
                 n
                 (if (= n 1) "" "s")))))
 
-(define (table-display long? dots-poses l)
+(define (table-display long? dots-poses l #:exact-columns [exact-columns '()])
   (define how-many-cols (length (first l)))
   (define full-max-widths
     (for/list ([col (in-range how-many-cols)])
@@ -112,13 +114,15 @@
                         (* sep (sub1 how-many-cols))))
        (cons (car full-max-widths)
              (for/list ([(c i) (in-indexed (in-list (cdr full-max-widths)))])
-               (define frac
-                 ;; Give last column twice the space:
-                 (if (= i (sub1 how-many-cols))
-                     (/ 2 how-many-cols)
-                     (/ 1 how-many-cols)))
-               (max 3
-                    (floor (* avail frac)))))]))
+               (if (memq (+ i 1) exact-columns)
+                 c
+                 (let ([frac
+                        ;; Give last column twice the space:
+                        (if (= i (sub1 how-many-cols))
+                            (/ 2 how-many-cols)
+                            (/ 1 how-many-cols))])
+                   (max 3
+                        (floor (* avail frac)))))))]))
   (for ([row (in-list l)])
     (for ([col (in-list row)]
           [i (in-naturals 1)]
@@ -126,7 +130,8 @@
           [dots-pos (in-list dots-poses)])
       (define col-width (string-length col))
       (printf "~a~a"
-              (if (col-width . <= . width)
+              (if (or (col-width . <= . width)
+                      (memq (- i 1) exact-columns))
                   col
                   (case dots-pos
                    [(right)

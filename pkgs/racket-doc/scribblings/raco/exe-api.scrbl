@@ -187,11 +187,11 @@ currently supported keys are as follows:
         @filepath{.icns}) to use for the executable's desktop icon.}
 
   @item{@racket['ico] (Windows) : An icon file path (suffix
-        @filepath{.ico}) to use for the executable's desktop icon;
-        the executable will have 16x16, 32x32, and 48x48 icons at
-        4-bit, 8-bit, and 32-bit (RGBA) depths; the icons are copied
-        and generated from any 16x16, 32x32, and 48x48 icons in the
-        @filepath{.ico} file.}
+        @filepath{.ico}) to use for the executable's desktop icon.
+
+        @history[#:changed "6.3" @elem{All icons in the
+        executable are replaced with icons from the file,
+        instead of setting only certain sizes and depths.}]}
 
   @item{@racket['creator] (Mac OS X) : Provides a 4-character string
         to use as the application signature.}
@@ -473,9 +473,17 @@ A unit that imports nothing and exports @racket[compiler:embed^].}
 
 @defmodule[compiler/find-exe]
 
-@defproc[(find-exe [gracket? any/c #f]
-                   [variant (or/c 'cgc '3m) (system-type 'gc)])
+@defproc[(find-exe [#:cross? cross? any/c #f]
+                   [gracket? any/c #f]
+                   [variant (or/c 'cgc '3m) (if cross?
+                                                (cross-system-type 'gc)
+                                                (system-type 'gc))])
          path?]{
 
   Finds the path to the @exec{racket} or @exec{gracket} (when
-  @racket[gracket?] is true) executable.}
+  @racket[gracket?] is true) executable.
+
+  If @racket[cross?] is true, the executable is found for the target
+  platform in @seclink["cross-system"]{cross-installation mode}.
+
+  @history[#:changed "6.3" @elem{Added the @racket[#:cross?] argument.}]}

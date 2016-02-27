@@ -14,14 +14,18 @@
            (for/list ([f-stx (in-list (syntax->list #'(f ...)))])
              (define f (syntax->datum f-stx))
              (format "tests-~a.rkt" f))])
-       (syntax/loc stx
-         (run-tests*
-          (list (let ()
-                  (local-require (only-in tests-f run-pkg-tests))
-                  (λ ()
-                    (printf "starting ~a\n" 'tests-f)
-                    (run-pkg-tests)))
-                ...))))]))
+         (syntax/loc stx
+           (let ([succesful 0])
+             (run-tests*
+              (list (let ()
+                      (local-require (only-in tests-f run-pkg-tests))
+                      (λ ()
+                        (printf "starting ~a\n" 'tests-f)
+                        (run-pkg-tests)
+                        (set! succesful (add1 succesful))))
+                    ...))
+             (unless (= succesful (length '(f ...)))
+               (exit 1)))))]))
 
 (define (run-tests* l)
   (run-pkg-tests*
@@ -29,35 +33,46 @@
      (shelly-case "All tests"
                   (for-each (λ (x) (x)) l)))))
 
-(run-tests
- "name"
- "basic" "create" "install" "permissions"
- "conflicts" "checksums"
- "deps" "update" "implies"
- "remove"
- "promote"
- "locking"
- "overwrite"
- "config"
- "clone"
- "catalog-links"
- 
- "network"
- "planet"
- "main-server"
+(define (go)
+  (run-tests
+   "name"
+   "basic" "create" "install" "permissions"
+   "conflicts" "checksums"
+   "deps" "update" "implies"
+   "remove"
+   "promote"
+   "locking"
+   "overwrite"
+   "config"
+   "clone"
+   "catalog-links"
 
- "update-deps"
- "update-auto"
- "scope"
- "trash"
- "migrate"
- "versions"
- "platform"
- "raco"
- "binary"
- "catalogs"
- "failure")
+   "network"
+   "planet"
+   "main-server"
+
+   "update-deps"
+   "update-auto"
+   "scope"
+   "trash"
+   "migrate"
+   "versions"
+   "platform"
+   "raco"
+   "binary"
+   "catalogs"
+   "failure"))
 
 (module+ test
   (module config info
-    (define timeout 2400)))
+    (define timeout 2400))
+  (go))
+
+(module+ main
+  (require racket/cmdline)
+  (define quiet? #f)
+  (command-line
+   #:once-each
+   ["-q" "run quietly" (set! quiet? #t)]
+   #:args ()
+   (parameterize ([verbose? (not quiet?)]) (go))))

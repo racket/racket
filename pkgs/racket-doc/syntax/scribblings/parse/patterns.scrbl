@@ -5,6 +5,8 @@
           scribble/eval
           "parse-common.rkt")
 
+@(define the-eval (make-sp-eval))
+
 @(define-syntax-rule (define-dotsplus-names dotsplus def-dotsplus)
    (begin (require (for-label (only-in syntax/parse ...+)))
           (define dotsplus (racket ...+))
@@ -200,7 +202,7 @@ An identifier can be either a @tech{pattern variable}, an
   literals list, it is a @tech{literal} pattern that behaves
   like @racket[(~literal id)].
 
-  @myexamples[
+  @examples[#:eval the-eval
     (syntax-parse #'(define x 12)
       #:literals (define)
       [(define var:id body:expr) 'ok])
@@ -221,7 +223,7 @@ An identifier can be either a @tech{pattern variable}, an
   @tech{annotated pattern variable}, and the pattern is equivalent to
   @racket[(~var _pvar-id _syntax-class-id)].
 
-  @myexamples[
+  @examples[#:eval the-eval
     (syntax-parse #'a
       [var:id (syntax-e #'var)])
     (syntax-parse #'12
@@ -246,7 +248,7 @@ An identifier can be either a @tech{pattern variable}, an
   where @racket[_literal-id] is in the literals list, then it is
   equivalent to @racket[(~and (~var _pvar-id) literal-id)].
 
-  @myexamples[
+  @examples[#:eval the-eval
     (require (only-in racket/base [define def]))
     (syntax-parse #'(def x 7)
       #:literals (define)
@@ -299,7 +301,7 @@ If @svar[pvar-id] is @racket[_], no attributes are bound.  If
 If @racket[role-expr] is given and evaluates to a string, it is
 combined with the syntax class's description in error messages.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'a
   [(~var var id) (syntax-e #'var)])
 (syntax-parse #'12
@@ -327,7 +329,7 @@ combined with the syntax class's description in error messages.
 A @deftech{literal} identifier pattern. Matches any identifier
 @racket[free-identifier=?] to @racket[literal-id].
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(define x 12)
   [((~literal define) var:id body:expr) 'ok])
 (syntax-parse #'(lambda x 12)
@@ -344,7 +346,7 @@ The identifiers are compared at the phase given by
 Numbers, strings, booleans, keywords, and the empty list match as
 literals.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(a #:foo bar)
   [(x #:foo y) (syntax->datum #'y)])
 (syntax-parse #'(a foo bar)
@@ -358,7 +360,7 @@ Matches syntax whose S-expression contents (obtained by
 @racket[syntax->datum]) is @racket[equal?] to the given
 @racket[datum].
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(a #:foo bar)
   [(x (~datum #:foo) y) (syntax->datum #'y)])
 (syntax-parse #'(a foo bar)
@@ -369,7 +371,7 @@ The @racket[~datum] form is useful for recognizing identifiers
 symbolically, in contrast to the @racket[~literal] form, which
 recognizes them by binding.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse (let ([define 'something-else]) #'(define x y))
   [((~datum define) var:id e:expr) 'yes]
   [_ 'no])
@@ -435,7 +437,7 @@ That is, the following patterns are equivalent:
 @item[@racket[((~between H 1 +inf.0) ... . S)]]
 ]
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(1 2 3)
   [(n:nat ...+) 'ok])
 (syntax-parse #'()
@@ -461,7 +463,7 @@ term (including its lexical context, source location, etc) while also
 examining its structure. Syntax classes are useful for the same
 purpose, but @racket[~and] can be lighter weight.
 
-@myexamples[
+@examples[#:eval the-eval
 (define-syntax (import stx)
   (raise-syntax-error #f "illegal use of import" stx))
 (eval:alts
@@ -490,7 +492,7 @@ of @racket[#f]. The same attribute may be bound by multiple
 subpatterns, and if it is bound by all of the subpatterns, it is sure
 to have a value if the whole pattern matches.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'a
   [(~or x:id y:nat) (values (attribute x) (attribute y))])
 (syntax-parse #'(a 1)
@@ -506,7 +508,7 @@ Matches any term that does not match the subpattern. None of the
 subpattern's attributes are bound outside of the
 @racket[~not]-pattern.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(x y z => u v)
   #:literals (=>)
   [((~and before (~not =>)) ... => after ...)
@@ -520,7 +522,7 @@ Matches a term that is a vector whose elements, when considered as a
 list, match the @tech{@Spattern} corresponding to
 @racket[(pattern-part ...)].
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'#(1 2 3)
   [#(x y z) (syntax->datum #'z)])
 (syntax-parse #'#(1 2 3)
@@ -536,7 +538,7 @@ Matches a term that is a prefab struct whose key is exactly the given
 key and whose sequence of fields, when considered as a list, match the
 @tech{@Spattern} corresponding to @racket[(pattern-part ...)].
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'#s(point 1 2 3)
   [#s(point x y z) 'ok])
 (syntax-parse #'#s(point 1 2 3)
@@ -551,7 +553,7 @@ key and whose sequence of fields, when considered as a list, match the
 Matches a term that is a box whose contents matches the inner
 @tech{@Spattern}.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'#&5
   [#&n:nat 'ok])
 ]
@@ -564,7 +566,7 @@ is useful in positions where improper (``dotted'') lists are not
 allowed by the reader, such as vector and structure patterns (see
 above).
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(1 2 3)
   [(x ~rest y) (syntax->datum #'y)])
 (syntax-parse #'#(1 2 3)
@@ -572,7 +574,7 @@ above).
 ]
 }
 
-@specsubform[(@#,def[~describe s] maybe-opaque expr S-pattern)
+@specsubform[(@#,def[~describe s] maybe-role maybe-opaque expr S-pattern)
              #:grammar
              ([maybe-opaque (code:line)
                             (code:line #:opaque)]
@@ -594,7 +596,7 @@ terms of the description given.
 If @racket[role-expr] is given and produces a string, its value is
 combined with the description in error messages.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(m 1)
   [(_ (~describe "id pair" (x:id y:id))) 'ok])
 (syntax-parse #'(m (a 2))
@@ -681,7 +683,7 @@ matches a head pattern.
 Matches a sequence of terms whose elements, if put in a list, would
 match @racket[L-pattern].
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(1 2 3 4)
   [((~seq 1 2 3) 4) 'ok])
 ]
@@ -695,7 +697,7 @@ examples of @racket[~seq].
 Like the @Spattern version, @ref[~and s], but matches a sequence of
 terms instead.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(#:a 1 #:b 2 3 4 5)
   [((~and (~seq (~seq k:keyword e:expr) ...)
           (~seq keyword-stuff ...))
@@ -708,7 +710,7 @@ subpatterns be @tech{proper @Hpatterns} (not @tech{@Spatterns}). This
 is to prevent typos like the following, a variant of the previous
 example with the second @racket[~seq] omitted:
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(#:a 1 #:b 2 3 4 5)
   [((~and (~seq (~seq k:keyword e:expr) ...)
           (keyword-stuff ...))
@@ -728,7 +730,7 @@ example with the second @racket[~seq] omitted:
 Like the @Spattern version, @ref[~or s], but matches a sequence of
 terms instead.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(m #:foo 2 a b c)
   [(_ (~or (~seq #:foo x) (~seq)) y:id ...)
    (attribute x)])
@@ -752,7 +754,7 @@ terms. If the @racket[#:defaults] option is given, the subsequent
 attribute bindings are used if the subpattern does not match. The
 default attributes must be a subset of the subpattern's attributes.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(m #:foo 2 a b c)
   [(_ (~optional (~seq #:foo x) #:defaults ([x #'#f])) y:id ...)
    (attribute x)])
@@ -812,7 +814,7 @@ matching position, so the pattern consumes no input. Used to look
 ahead in a sequence. None of the subpattern's attributes are bound
 outside of the @racket[~peek-not]-pattern.
 
-@myexamples[
+@examples[#:eval the-eval
 (define-splicing-syntax-class final (code:comment "final term")
   (pattern (~seq x (~peek-not _))))
 
@@ -841,7 +843,7 @@ repetition. They are useful for matching, for example, keyword
 arguments where the keywords may come in any order. Multiple
 alternatives are grouped together via @ref[~or eh].
 
-@myexamples[
+@examples[#:eval the-eval
 (define parser1
   (syntax-parser
    [((~or (~once (~seq #:a x) #:name "#:a keyword")
@@ -1041,7 +1043,7 @@ There is currently no way to bind attributes using a @racket[~do]
 pattern. It is an error to shadow an attribute binding with a
 definition in a @racket[~do] block.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(1 2 3)
   [(a b (~do (printf "a was ~s\n" #'a)) c:id) 'ok])
 ]
@@ -1057,11 +1059,14 @@ The grammar of @tech{syntax patterns} is extensible through the use of
 @deftech{pattern expanders}, which allow the definition of new pattern
 forms by rewriting them into existing pattern forms.
 
+@margin-note{As a convention to avoid ambiguity, @tech{pattern expander}
+             names normally begin with a @code{~} character.}
+
 @defproc[(pattern-expander [proc (-> syntax? syntax?)]) pattern-expander?]{
 
 Returns a @tech{pattern expander} that uses @racket[proc] to transform the pattern.
 
-@myexamples[
+@examples[#:eval the-eval
 (define-syntax ~maybe
   (pattern-expander
    (syntax-rules ()
@@ -1096,3 +1101,5 @@ Returns @racket[#t] if @racket[v] is a @tech{pattern expander},
 
 Like @racket[syntax-local-introduce], but for @tech{pattern expanders}.
 }
+
+@(close-eval the-eval)

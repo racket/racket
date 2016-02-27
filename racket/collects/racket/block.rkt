@@ -4,7 +4,8 @@
                          "private/stx.rkt"
                          "private/small-scheme.rkt"
                          "private/stxcase-scheme.rkt"
-                         "private/qqstx.rkt"))
+                         "private/qqstx.rkt"
+                         syntax/intdef))
 
 (#%provide block)
 
@@ -41,12 +42,16 @@
                      (syntax-local-bind-syntaxes
                       (syntax->list #'(id ...))
                       #'rhs def-ctx)
-                     (loop todo (cons #'(define-syntaxes (id ...) rhs) r)))]
+                     (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                                                  (syntax->list #'(id ...)))])
+                       (loop todo (cons #'(define-syntaxes (id ...) rhs) r))))]
                   [(define-values (id ...) rhs)
                    (andmap identifier? (syntax->list #'(id ...)))
                    (let ([ids (syntax->list #'(id ...))])
                      (syntax-local-bind-syntaxes ids #f def-ctx)
-                     (loop todo (cons expr r)))]
+                     (with-syntax ([(id ...) (map syntax-local-identifier-as-binding
+                                                    (syntax->list #'(id ...)))])
+                       (loop todo (cons #'(define-values (id ...) rhs) r))))]
                   [else (loop todo (cons expr r))]))))])
     (internal-definition-context-seal def-ctx)
     (let loop ([exprs exprs]
@@ -55,12 +60,14 @@
                [prev-exprs null])
       (cond
         [(null? exprs)
-         #`(letrec-syntaxes+values
-            #,(map stx-cdr (reverse prev-stx-defns))
-            #,(map stx-cdr (reverse prev-defns))
-            #,@(if (null? prev-exprs)
-                 (list #'(void))
-                 (reverse prev-exprs)))]
+         (internal-definition-context-track
+          def-ctx
+          #`(letrec-syntaxes+values
+             #,(map stx-cdr (reverse prev-stx-defns))
+             #,(map stx-cdr (reverse prev-defns))
+             #,@(if (null? prev-exprs)
+                    (list #'(void))
+                    (reverse prev-exprs))))]
         [(and (stx-pair? (car exprs))
               (identifier? (stx-car (car exprs)))
               (free-identifier=? #'define-syntaxes (stx-car (car exprs))))

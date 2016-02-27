@@ -11,7 +11,9 @@
          quote-character-position
          quote-character-span
          quote-module-path
-         quote-module-name)
+         quote-module-name
+         syntax-source-directory
+         syntax-source-file-name)
 
 (begin-for-syntax
 
@@ -143,3 +145,19 @@
       [(null? path) src]
       [(pair? src) (append src path)]
       [else (cons src path)])))
+
+;; ------------------------------------------------------------------------
+
+(define (syntax-source-directory stx)
+  (let* ([source (syntax-source stx)])
+    (and (path-string? source)
+         (let-values ([(base file dir?) (split-path source)])
+           (and (path? base)
+                (path->complete-path base
+                                     (or (current-load-relative-directory)
+                                         (current-directory))))))))
+
+(define (syntax-source-file-name stx)
+  (let* ([f (syntax-source stx)])
+    (and (path-string? f)
+         (let-values ([(base file dir?) (split-path f)]) file))))

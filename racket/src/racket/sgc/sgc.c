@@ -1,7 +1,7 @@
 /*
   SenoraGC, a relatively portable conservative GC for a slightly
     cooperative environment
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1996-98 Matthew Flatt
   All rights reserved.
 
@@ -49,6 +49,8 @@
 #  define SIXTY_FOUR_BIT_INTEGERS
 # endif
 #endif
+
+#include "../utils/schiptr.h"
 
 /****************************************************************************/
 /* Option bundles                                                           */
@@ -2023,15 +2025,15 @@ void GC_dump(void)
   FPRINTF(STDERR, "Begin Map\n");
 
   FPRINTF(STDERR,
-	  "allocated: %ld  collectable: %ld  uncollectable: %ld\n"
-	  "including known overhead: %ld  scheduled gc: %ld  last collect depth: %ld\n"
-	  "managed: %ld  managed including overhead: %ld\n"
-	  "sector used: %ld  sector free: %ld  sector total: %ld\n"
-	  "sector range: %ld  sector administration: %ld\n"
-	  "num sector allocs: %ld  num sector frees: %ld\n"
+	  "allocated: %"PRIdPTR"  collectable: %"PRIdPTR"  uncollectable: %"PRIdPTR"\n"
+	  "including known overhead: %"PRIdPTR"  scheduled gc: %"PRIdPTR"  last collect depth: %"PRIdPTR"\n"
+	  "managed: %"PRIdPTR"  managed including overhead: %"PRIdPTR"\n"
+	  "sector used: %"PRIdPTR"  sector free: %"PRIdPTR"  sector total: %"PRIdPTR"\n"
+	  "sector range: %"PRIdPTR"  sector administration: %"PRIdPTR"\n"
+	  "num sector allocs: %"PRIdPTR"  num sector frees: %"PRIdPTR"\n"
 	  "num disappearing links: %d  num finalizations: %d  queued: %d\n"
 #if STAMP_AND_REMEMBER_SOURCE
-	  "current clock: %ld\n"
+	  "current clock: %"PRIdPTR"\n"
 #endif
 	  , mem_use + mem_uncollectable_use, mem_use, mem_uncollectable_use, 
 	  mem_real_use, mem_limit, collect_mem_use,
@@ -2058,11 +2060,11 @@ void GC_dump(void)
 #if DUMP_BLOCK_MAPS
     FPRINTF(STDERR, "roots: ======================================\n");
     for (i = 0; i < roots_count; i += 2)
-      FPRINTF(STDERR, ">%lx-%lx", roots[i], roots[i + 1]);
+      FPRINTF(STDERR, ">%"PRIxPTR"-%"PRIxPTR"", roots[i], roots[i + 1]);
     FPRINTF(STDERR, "\n");
 
     FPRINTF(STDERR, "stack: ======================================\n");
-    FPRINTF(STDERR, ">%lx-%lx>%lx-%lx\n",
+    FPRINTF(STDERR, ">%"PRIxPTR"-%"PRIxPTR">%"PRIxPTR"-%"PRIxPTR"\n",
 	    trace_stack_start, trace_stack_end, trace_reg_start, trace_reg_end);
 #endif
 
@@ -2087,7 +2089,7 @@ void GC_dump(void)
 	  FPRINTF(STDERR, "%d:", block->size);
 
 #if DUMP_BLOCK_MAPS
-	  FPRINTF(STDERR, "[%lx]", block->start - (uintptr_t)block);
+	  FPRINTF(STDERR, "[%"PRIxPTR"]", block->start - (uintptr_t)block);
 #endif
 
 	  while (block) {
@@ -2109,9 +2111,9 @@ void GC_dump(void)
 
 #if DUMP_BLOCK_MAPS
 	    FPRINTF(STDERR,
-		    ">%lxx%d"
+		    ">%"PRIxPTR"x%d"
 #if STAMP_AND_REMEMBER_SOURCE
-		    "@%ld-%ld:%lx-%lx" 
+		    "@%"PRIdPTR"-%"PRIdPTR":%"PRIxPTR"-%"PRIxPTR"" 
 #endif
 		    , (uintptr_t)block, counter
 #if STAMP_AND_REMEMBER_SOURCE
@@ -2139,10 +2141,10 @@ void GC_dump(void)
 	
 	for (c = *(cs->othersptr); c; c = cnext) {
 	  uintptr_t size = c->end - c->start;
-	  FPRINTF(STDERR, "%ld:", size);
+	  FPRINTF(STDERR, "%"PRIdPTR":", size);
 
 #if DUMP_BLOCK_MAPS
-	  FPRINTF(STDERR, "[%lx]", c->start - (uintptr_t)c);
+	  FPRINTF(STDERR, "[%"PRIxPTR"]", c->start - (uintptr_t)c);
 #endif
 	  
 	  cnext = c->next;
@@ -2154,9 +2156,9 @@ void GC_dump(void)
 	    if (size == (t->end - t->start)) {
 #if DUMP_BLOCK_MAPS
 	      FPRINTF(STDERR,
-		      ">%lx"
+		      ">%"PRIxPTR""
 #if STAMP_AND_REMEMBER_SOURCE
-		      "@%ld:%lx" 
+		      "@%"PRIdPTR":%"PRIxPTR"" 
 #endif
 		      , (uintptr_t)t
 #if STAMP_AND_REMEMBER_SOURCE
@@ -2207,7 +2209,7 @@ void GC_dump(void)
       }
 #endif
       
-      FPRINTF(STDERR, "total size: %ld\n", total);
+      FPRINTF(STDERR, "total size: %"PRIdPTR"\n", total);
     }
 
     FPRINTF(STDERR, "summary: ======================================\n");
@@ -2215,13 +2217,13 @@ void GC_dump(void)
     for (j = 0; j < num_common_sets; j++) {
       GC_Set *cs = common_sets[j];
       FPRINTF(STDERR,
-	      "%12s: %10ld  [%s/%s]\n",
+	      "%12s: %10"PRIdPTR"  [%s/%s]\n",
 	      cs->name, cs->total,
 	      cs->atomic ? "atomic" : (cs->code ? "code" : "pointerful"),
 	      cs->uncollectable ? "eternal" : "collectable");
       total += cs->total;
     }
-    FPRINTF(STDERR, "%12s: %10ld\n", "total", total);
+    FPRINTF(STDERR, "%12s: %10"PRIdPTR"\n", "total", total);
   }
 #endif
   FPRINTF(STDERR, "End Map\n");
@@ -2651,7 +2653,7 @@ static void *do_malloc(SET_NO_BACKINFO
       || block->top < block->start
       || block->top > block->end)
     FPRINTF(STDERR,
-	    "bad block: %ld %ld %ld %ld\n",
+	    "bad block: %"PRIdPTR" %"PRIdPTR" %"PRIdPTR" %"PRIdPTR"\n",
 	    size, block->start, block->top, block->end);
 #endif      
 
@@ -3080,7 +3082,7 @@ static void free_chunk(MemoryChunk *k, MemoryChunk **prev, GC_Set *set)
   mem_real_use -= (k->end - k->start + sizeof(MemoryChunk));
   
 #if PRINT && 0
-  FPRINTF(STDERR, "free chunk: %ld (%ld) %d %d\n", 
+  FPRINTF(STDERR, "free chunk: %"PRIdPTR" (%"PRIdPTR") %d %d\n", 
 	  (uintptr_t)k, k->end - k->start,
 	  set->atomic, set->uncollectable);
 #endif
@@ -3121,7 +3123,7 @@ void GC_free(void *p)
   if (!found) {
 # if CHECK_FREES
     char b[256];
-    sprintf(b, "GC_free failed! %lx\n", (intptr_t)p);
+    sprintf(b, "GC_free failed! %"PRIxPTR"\n", (intptr_t)p);
     free_error(b);
 # endif
     return;
@@ -3138,13 +3140,13 @@ void GC_free(void *p)
 # if CHECK_FREES
       if (block->free[pos] & fbit) {
 	char b[256];
-	sprintf(b, "Block element already free! %lx\n", (intptr_t)p);
+	sprintf(b, "Block element already free! %"PRIxPTR"\n", (intptr_t)p);
 	return;
       }
 #   if EXTRA_FREE_CHECKS
       if (block->set_no != 5) {
 	char b[256];
-	sprintf(b, "GC_free on ptr from wrong block! %lx\n", (intptr_t)p);
+	sprintf(b, "GC_free on ptr from wrong block! %"PRIxPTR"\n", (intptr_t)p);
 	free_error(b);
 	return;
       }
@@ -3196,7 +3198,7 @@ void GC_free(void *p)
 # if CHECK_FREES && EXTRA_FREE_CHECKS
       if (chunk->set_no != 5) {
 	char b[256];
-	sprintf(b, "GC_free on ptr from wrong block! %lx\n", (intptr_t)p);
+	sprintf(b, "GC_free on ptr from wrong block! %"PRIxPTR"\n", (intptr_t)p);
 	free_error(b);
 	return;
       }
@@ -3210,7 +3212,7 @@ void GC_free(void *p)
 # if CHECK_FREES
   else {
     char b[256];
-    sprintf(b, "GC_free on block interior! %lx != %lx\n", 
+    sprintf(b, "GC_free on block interior! %"PRIxPTR" != %"PRIxPTR"\n", 
 	    (intptr_t)p, (intptr_t)PAD_FORWARD(found));
     free_error(b);
   }
@@ -3247,7 +3249,7 @@ static void bad_pad(char *where, void *s, int type, intptr_t sz, intptr_t diff, 
 		    intptr_t pd, intptr_t expect)
 {
   FPRINTF(STDERR,
-	  "pad %s violation at %lx <%d>, len %ld (diff %ld+%ld): %lx != %lx\n", 
+	  "pad %s violation at %"PRIxPTR" <%d>, len %"PRIdPTR" (diff %"PRIdPTR"+%"PRIdPTR"): %"PRIxPTR" != %"PRIxPTR"\n", 
 	  where, (uintptr_t)s, type, sz, diff, offset, pd, expect);
 }
 #endif
@@ -3470,7 +3472,7 @@ static void collect_finish_common(BlockOfMemory **blocks,
 	  || block->top < block->start
 	  || block->top > block->end)
 	FPRINTF(STDERR,
-		"bad block: %ld %ld %ld %ld\n",
+		"bad block: %"PRIdPTR" %"PRIdPTR" %"PRIdPTR" %"PRIdPTR"\n",
 		size, block->start, block->top, block->end);
 #endif
 
@@ -3785,7 +3787,7 @@ static void push_stack(void *stack_now)
   end = PTR_TO_INT(stack_now);
 
 #if PRINT && STAMP_AND_REMEMBER_SOURCE
-  FPRINTF(STDERR, "stack in [%lx, %lx]\n", start, end);
+  FPRINTF(STDERR, "stack in [%"PRIxPTR", %"PRIxPTR"]\n", start, end);
 #endif
 
   if (start < end) {
@@ -3813,7 +3815,7 @@ static void push_stack(void *stack_now)
   prepare_stack_collect();
 
 #if PRINT && STAMP_AND_REMEMBER_SOURCE
-  FPRINTF(STDERR, "jmpbuf in [%lx, %lx]\n", start, end);
+  FPRINTF(STDERR, "jmpbuf in [%"PRIxPTR", %"PRIxPTR"]\n", start, end);
 #endif
 }
 
@@ -4082,7 +4084,7 @@ static void mark_common_for_finalizations(BlockOfMemory **blocks, int atomic)
 #if WATCH_FOR_FINALIZATION_CYCLES
 	      collect();
 	      if (IS_MARKED(block->free[apos] & bit))
-		FPRINTF(STDERR, "cycle: %lx\n", p);
+		FPRINTF(STDERR, "cycle: %"PRIxPTR"\n", p);
 #endif
 	    }
 	  }
@@ -4482,7 +4484,7 @@ static void do_GC_gcollect(void *stack_now)
   intptr_t orig_mem_use = mem_use;
   intptr_t start_time;
   start_time = GETTIME();
-  FPRINTF(STDERR, "gc at %ld (%ld): %ld after %ld msecs\n",
+  FPRINTF(STDERR, "gc at %"PRIdPTR" (%"PRIdPTR"): %"PRIdPTR" after %"PRIdPTR" msecs\n",
 	  mem_use, sector_mem_use, 
 # if GET_MEM_VIA_SBRK
 	  (intptr_t)sbrk(0),
@@ -4528,7 +4530,7 @@ static void do_GC_gcollect(void *stack_now)
 # endif
 
   INITTIME();
-  PRINTTIME((STDERR, "gc: init start: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: init start: %"PRIdPTR"\n", GETTIMEREL()));
 
   for (j = 0; j < num_common_sets; j++) {
 # if ALLOW_SET_LOCKING
@@ -4547,18 +4549,18 @@ static void do_GC_gcollect(void *stack_now)
 
 # if CHECK
   if (num_chunks != chk_count) {
-    FPRINTF(STDERR, "bad chunk count: %ld != %ld\n", num_chunks, chk_count);
+    FPRINTF(STDERR, "bad chunk count: %"PRIdPTR" != %"PRIdPTR"\n", num_chunks, chk_count);
   }
 
   if (num_blocks != cmn_count) {
-    FPRINTF(STDERR, "bad block count: %ld != %ld\n", num_blocks, cmn_count);
+    FPRINTF(STDERR, "bad block count: %"PRIdPTR" != %"PRIdPTR"\n", num_blocks, cmn_count);
   }
 # endif
 
 # if PRINT
-  FPRINTF(STDERR, "gc at %ld (%ld)\n", mem_use, mem_real_use);
+  FPRINTF(STDERR, "gc at %"PRIdPTR" (%"PRIdPTR")\n", mem_use, mem_real_use);
   FPRINTF(STDERR,
-	  "low: %lx hi: %lx blocks: %ld chunks: %ld\n", 
+	  "low: %"PRIxPTR" hi: %"PRIxPTR" blocks: %"PRIdPTR" chunks: %"PRIdPTR"\n", 
 	  low_plausible, high_plausible, 
 	  num_blocks, num_chunks);
 # endif
@@ -4609,7 +4611,7 @@ static void do_GC_gcollect(void *stack_now)
 # endif
   }
 
-  PRINTTIME((STDERR, "gc: root collect start: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: root collect start: %"PRIdPTR"\n", GETTIMEREL()));
 
 # if ALLOW_TRACE_COUNT
   collect_trace_count = 0;
@@ -4643,20 +4645,20 @@ static void do_GC_gcollect(void *stack_now)
   root_marked = mem_use;
 # endif
 
-  PRINTTIME((STDERR, "gc: stack push start: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: stack push start: %"PRIdPTR"\n", GETTIMEREL()));
 
   /*** Mark from stack ***/
   push_stack(stack_now);
   
 # if PRINT && 0
-  FPRINTF(STDERR, "stack until: %ld\n", collect_end_stackbased);
+  FPRINTF(STDERR, "stack until: %"PRIdPTR"\n", collect_end_stackbased);
 # endif
 
 # if ALLOW_TRACE_PATH
   current_trace_source = "stack";
 # endif
 
-  PRINTTIME((STDERR, "gc: stack collect start: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: stack collect start: %"PRIdPTR"\n", GETTIMEREL()));
 
   collect();
 
@@ -4665,7 +4667,7 @@ static void do_GC_gcollect(void *stack_now)
   collect_trace_count = 0;
 # endif
 
-  PRINTTIME((STDERR, "gc: uncollectable start: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: uncollectable start: %"PRIdPTR"\n", GETTIMEREL()));
 
   /*** Uncollectable and pointerful ***/
   for (j = 0; j < num_common_sets; j++)
@@ -4696,10 +4698,10 @@ static void do_GC_gcollect(void *stack_now)
 # endif
 
   if (GC_push_last_roots) {
-    PRINTTIME((STDERR, "gc: last roots push start: %ld\n", GETTIMEREL()));
+    PRINTTIME((STDERR, "gc: last roots push start: %"PRIdPTR"\n", GETTIMEREL()));
     /*** ``Last'' roots external hook ***/
     GC_push_last_roots();
-    PRINTTIME((STDERR, "gc: last roots start: %ld\n", GETTIMEREL()));
+    PRINTTIME((STDERR, "gc: last roots start: %"PRIdPTR"\n", GETTIMEREL()));
   }
 
 # if ALLOW_TRACE_PATH
@@ -4714,7 +4716,7 @@ static void do_GC_gcollect(void *stack_now)
   collect_trace_count = 0;
 # endif
   
-  PRINTTIME((STDERR, "gc: queue finalize start: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: queue finalize start: %"PRIdPTR"\n", GETTIMEREL()));
 
 # if ALLOW_TRACE_PATH
   current_trace_source = "finalization";
@@ -4727,7 +4729,7 @@ static void do_GC_gcollect(void *stack_now)
   traced_from_finals = collect_trace_count;
 # endif
 
-  PRINTTIME((STDERR, "gc: finish start: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: finish start: %"PRIdPTR"\n", GETTIMEREL()));
 
   low_plausible = high_plausible = 0;
 
@@ -4743,11 +4745,11 @@ static void do_GC_gcollect(void *stack_now)
   flush_freed_sectors();
 #endif
 
-  PRINTTIME((STDERR, "gc: all done: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: all done: %"PRIdPTR"\n", GETTIMEREL()));
 
 # if PRINT
   FPRINTF(STDERR,
-	  "done %ld (%ld), %ld from stack\n", mem_use, mem_real_use,
+	  "done %"PRIdPTR" (%"PRIdPTR"), %"PRIdPTR" from stack\n", mem_use, mem_real_use,
 	  mem_use - root_marked);
 # endif
 
@@ -4782,7 +4784,7 @@ static void do_GC_gcollect(void *stack_now)
 #endif
 
 #if PRINT_INFO_PER_GC
-  FPRINTF(STDERR, "done  %ld (%ld); recovered %ld in %ld msecs\n",
+  FPRINTF(STDERR, "done  %"PRIdPTR" (%"PRIdPTR"); recovered %"PRIdPTR" in %"PRIdPTR" msecs\n",
 	  mem_use, sector_mem_use, orig_mem_use - mem_use,
 	  (intptr_t)GETTIME() - start_time);
 # if SHOW_SECTOR_MAPS_AT_GC
@@ -4803,9 +4805,9 @@ static void do_GC_gcollect(void *stack_now)
     GC_collect_end_callback();
 
   /* Run queued finalizers. Garbage collections may happen: */
-  PRINTTIME((STDERR, "gc: finalize start: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: finalize start: %"PRIdPTR"\n", GETTIMEREL()));
   run_finalizers();
-  PRINTTIME((STDERR, "gc: finalize end: %ld\n", GETTIMEREL()));
+  PRINTTIME((STDERR, "gc: finalize end: %"PRIdPTR"\n", GETTIMEREL()));
 
 #if MARK_STATS
   fprintf(STDERR, 

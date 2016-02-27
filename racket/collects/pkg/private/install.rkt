@@ -8,7 +8,6 @@
          racket/set
          racket/function
          openssl/sha1
-         compiler/compilation-path
          version/utils
          setup/link
          "../path.rkt"
@@ -31,19 +30,30 @@
          "clone-path.rkt"
          "orig-pkg.rkt"
          "info-to-desc.rkt"
-         "git.rkt")
+         "git.rkt"
+         "check-will-exist.rkt"
+         "prefetch.rkt")
 
 (provide pkg-install
          pkg-update)
 
+;; A [prefetch-shared] annotation means that a hash table is shared
+;; with prefetch threads. If a prefetch group is terminated, then all
+;; prefetch-shared tables must be abaondoned, because a thread with a
+;; lock can be terminated.
+
 (define (checksum-for-pkg-source pkg-source type pkg-name given-checksum download-printf
-                                 #:catalog-lookup-cache [catalog-lookup-cache #f]
-                                 #:remote-checksum-cache [remote-checksum-cache #f])
+                                 #:prefetch? [prefetch? #f]
+                                 #:prefetch-group [prefetch-group #f]
+                                 #:catalog-lookup-cache [catalog-lookup-cache #f] ; [prefetch-shared]
+                                 #:remote-checksum-cache [remote-checksum-cache #f])  ; [prefetch-shared]
   (case type
     [(file-url dir-url github git clone)
      (or given-checksum
          (remote-package-checksum `(url ,pkg-source) download-printf pkg-name
                                   #:type type
+                                  #:prefetch? prefetch?
+                                  #:prefetch-group prefetch-group
                                   #:catalog-lookup-cache catalog-lookup-cache
                                   #:remote-checksum-cache remote-checksum-cache))]
     [(file)
@@ -56,6 +66,8 @@
      (or given-checksum
          (remote-package-checksum `(catalog ,pkg-source) download-printf pkg-name
                                   #:type type
+                                  #:prefetch? prefetch?
+                                  #:prefetch-group prefetch-group
                                   #:catalog-lookup-cache catalog-lookup-cache
                                   #:remote-checksum-cache remote-checksum-cache))]
     [else given-checksum]))
@@ -83,17 +95,21 @@
                  pkg-path
                  pkg-name)))
   ;; Check installed packages:
-  (for ([f (in-directory simple-pkg-path)])
-    (define found-pkg (path->pkg f #:cache path-pkg-cache))
-    (when (and found-pkg
-               (not (equal? found-pkg pkg-name)))
-      (pkg-error (~a "cannot link a directory that overlaps with existing packages\n"
-                     "  existing package: ~a\n"
-                     "  overlapping path: ~a\n"
-                     "  attempted package: ~a")
-                 found-pkg
-                 f
-                 pkg-name)))
+  (when (directory-exists? simple-pkg-path) ; might not exist for a clone shifting to a subdir
+    (for ([f (in-directory simple-pkg-path)])
+      (define found-pkg (path->pkg f #:cache path-pkg-cache))
+      (when (and found-pkg
+                 (not (equal? found-pkg pkg-name))
+                 ;; In case a new clone dir would overlap with an old one that is being
+                 ;; relocated (and if simultaneous installs really overlap, it's caught below):
+                 (not (hash-ref simultaneous-installs found-pkg #f)))
+        (pkg-error (~a "cannot link a directory that overlaps with existing packages\n"
+                       "  existing package: ~a\n"
+                       "  overlapping path: ~a\n"
+                       "  attempted package: ~a")
+                   found-pkg
+                   f
+                   pkg-name))))
   ;; Check simultaneous installs:
   (for ([(other-pkg other-dir) (in-hash simultaneous-installs)])
     (unless (equal? other-pkg pkg-name)
@@ -130,8 +146,9 @@
          #:update-deps? update-deps?
          #:update-implies? update-implies?
          #:update-cache update-cache
-         #:catalog-lookup-cache catalog-lookup-cache
-         #:remote-checksum-cache remote-checksum-cache
+         #:prefetch-group prefetch-group
+         #:catalog-lookup-cache catalog-lookup-cache   ; [prefetch-shared]
+         #:remote-checksum-cache remote-checksum-cache ; [prefetch-shared]
          #:updating? updating-all?
          #:extra-updating extra-updating
          #:ignore-checksums? ignore-checksums?
@@ -258,17 +275,18 @@
           (when f
             (unless (path? f)
               (pkg-error "expected a filesystem path for a resolved module path: ~a" mp)))
-          ;; Check for source or compiled:
+          (define found-f
+            (and f
+                 ;; Check for source or compiled; may need to use a slower process to
+                 ;; find the relevant one:
+                 (check-found-module-will-exist f mp metadata-ns)))
           (cond
-           [(and f
-                 (or (file-exists? f)
-                     (file-exists? (path-replace-suffix f #".ss"))
-                     (file-exists? (get-compilation-bytecode-file f))
-                     (file-exists? (get-compilation-bytecode-file (path-replace-suffix f #".ss"))))
-                 (or (not updating?)
-                     (not (hash-ref simultaneous-installs (path->pkg f #:cache path-pkg-cache)))))
+           [(and found-f
+                 ;; If it's from a simultaneous install, we'll want to check the updated
+                 ;; version of the package, instead:
+                 (not (hash-ref simultaneous-installs (path->pkg found-f #:cache path-pkg-cache) #f)))
             ;; This module is already installed
-            (cons (path->pkg f #:cache path-pkg-cache) mp)]
+            (cons (path->pkg found-f #:cache path-pkg-cache) mp)]
            [else
             ;; Compare with simultaneous installs
             (for/or ([other-pkg-info (in-list infos)]
@@ -411,20 +429,23 @@
                                     (or do-update-deps?
                                         (set-member? implies name))
                                     (not (hash-ref simultaneous-installs name #f))
-                                    ((packages-to-update download-printf current-scope-db 
-                                                         #:must-update? #f
-                                                         #:deps? do-update-deps?
-                                                         #:implies? update-implies?
-                                                         #:update-cache update-cache
-                                                         #:namespace metadata-ns
-                                                         #:catalog-lookup-cache catalog-lookup-cache
-                                                         #:remote-checksum-cache remote-checksum-cache
-                                                         #:all-platforms? all-platforms?
-                                                         #:ignore-checksums? ignore-checksums?
-                                                         #:use-cache? use-cache?
-                                                         #:from-command-line? from-command-line?
-                                                         #:link-dirs? link-dirs?)
-                                     name))
+                                    (let ([updater
+                                           (packages-to-update download-printf current-scope-db 
+                                                               #:must-update? #f
+                                                               #:deps? do-update-deps?
+                                                               #:implies? update-implies?
+                                                               #:update-cache update-cache
+                                                               #:prefetch-group prefetch-group
+                                                               #:namespace metadata-ns
+                                                               #:catalog-lookup-cache catalog-lookup-cache
+                                                               #:remote-checksum-cache remote-checksum-cache
+                                                               #:all-platforms? all-platforms?
+                                                               #:ignore-checksums? ignore-checksums?
+                                                               #:use-cache? use-cache?
+                                                               #:from-command-line? from-command-line?
+                                                               #:link-dirs? link-dirs?)])
+                                      (updater #:prefetch? #t name)
+                                      (updater name)))
                                null))
                         deps))
           (and (not (empty? update-pkgs))
@@ -522,19 +543,21 @@
             (define update-pkgs (map car update-deps))
             (define (make-pre-succeed)
               (define db current-scope-db)
-              (let ([to-update (append-map (packages-to-update download-printf db
-                                                               #:deps? update-deps? 
-                                                               #:implies? update-implies?
-                                                               #:update-cache update-cache
-                                                               #:namespace metadata-ns
-                                                               #:catalog-lookup-cache catalog-lookup-cache
-                                                               #:remote-checksum-cache remote-checksum-cache
-                                                               #:all-platforms? all-platforms?
-                                                               #:ignore-checksums? ignore-checksums?
-                                                               #:use-cache? use-cache?
-                                                               #:from-command-line? from-command-line?
-                                                               #:link-dirs? link-dirs?)
-                                           update-pkgs)])
+              (let ([to-update (let ([updater (packages-to-update download-printf db
+                                                                  #:deps? update-deps? 
+                                                                  #:implies? update-implies?
+                                                                  #:update-cache update-cache
+                                                                  #:prefetch-group prefetch-group
+                                                                  #:namespace metadata-ns
+                                                                  #:catalog-lookup-cache catalog-lookup-cache
+                                                                  #:remote-checksum-cache remote-checksum-cache
+                                                                  #:all-platforms? all-platforms?
+                                                                  #:ignore-checksums? ignore-checksums?
+                                                                  #:use-cache? use-cache?
+                                                                  #:from-command-line? from-command-line?
+                                                                  #:link-dirs? link-dirs?)])
+                                 (for ([pkg (in-list update-pkgs)]) (updater #:prefetch? #t pkg))
+                                 (append-map updater update-pkgs))])
                 (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) to-update))))
             (match this-dep-behavior
               ['fail
@@ -815,8 +838,9 @@
                      #:update-deps? [update-deps? #f]
                      #:update-implies? [update-implies? #t]
                      #:update-cache [update-cache (make-hash)]
-                     #:catalog-lookup-cache [catalog-lookup-cache (make-hash)]
-                     #:remote-checksum-cache [remote-checksum-cache (make-hash)]
+                     #:prefetch-group [prefetch-group (make-prefetch-group)]
+                     #:catalog-lookup-cache [catalog-lookup-cache (make-hash)]   ; [prefetch-shared]
+                     #:remote-checksum-cache [remote-checksum-cache (make-hash)] ; [prefetch-shared]
                      #:check-pkg-early? [check-pkg-early? #t]
                      #:updating? [updating? #f]
                      #:quiet? [quiet? #f]
@@ -860,98 +884,105 @@
               force)
     (early-check-for-installed filtered-descs db #:wanted? #f))
 
-  (define-values (new-descs done-descs done-infos clone-behavior repo-descs
-                            extra-updating)
-    (adjust-to-normalize-repos filtered-descs old-descs old-infos
-                               old-clone-behavior old-repo-descs
-                               updating?
-                               catalog-lookup-cache
-                               download-printf
-                               from-command-line?
-                               convert-to-non-clone?))
-  (with-handlers* ([vector?
-                    (match-lambda
-                     [(vector updating? new-infos dep-pkg deps more-pre-succeed conv clone-info)
-                      (pkg-install
-                       #:summary-deps (snoc summary-deps (vector dep-pkg deps))
-                       #:old-infos new-infos
-                       #:old-descs (append done-descs new-descs)
-                       #:all-platforms? all-platforms?
-                       #:force? force
-                       #:ignore-checksums? ignore-checksums?
-                       #:strict-doc-conflicts? strict-doc-conflicts?
-                       #:use-cache? use-cache?
-                       #:dep-behavior dep-behavior
-                       #:update-deps? update-deps?
-                       #:update-implies? update-implies?
-                       #:update-cache update-cache
-                       #:catalog-lookup-cache catalog-lookup-cache
-                       #:remote-checksum-cache remote-checksum-cache
-                       #:check-pkg-early? #f
-                       #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
-                       #:updating? updating?
-                       #:quiet? quiet?
-                       #:use-trash? use-trash?
-                       #:from-command-line? from-command-line?
-                       #:conversation conv
-                       #:strip strip-mode
-                       #:force-strip? force-strip?
-                       #:multi-clone-behavior (vector-ref clone-info 0)
-                       #:repo-descs (vector-ref clone-info 1)
-                       #:pull-behavior pull-behavior
-                       (for/list ([dep (in-list deps)])
-                         (if (pkg-desc? dep)
-                             dep
-                             (pkg-desc dep #f #f #f #t #f))))])])
-    (begin0
-      (install-packages
-       #:old-infos done-infos
-       #:old-descs done-descs
-       #:all-platforms? all-platforms?
-       #:force? force
-       #:ignore-checksums? ignore-checksums?
-       #:use-cache? use-cache?
-       #:skip-installed? skip-installed?
-       #:dep-behavior dep-behavior
-       #:update-deps? update-deps?
-       #:update-implies? update-implies?
-       #:update-cache update-cache
-       #:catalog-lookup-cache catalog-lookup-cache
-       #:remote-checksum-cache remote-checksum-cache
-       #:pre-succeed (λ ()
-                       (for ([pkg-name (in-hash-keys extra-updating)])
-                         ((remove-package #t quiet? use-trash?) pkg-name))
-                       (pre-succeed))
-       #:updating? updating?
-       #:extra-updating extra-updating
-       #:quiet? quiet?
-       #:use-trash? use-trash?
-       #:from-command-line? from-command-line?
-       #:conversation conversation
-       #:strip strip-mode
-       #:force-strip? force-strip?
-       #:link-dirs? link-dirs?
-       #:local-docs-ok? (not strict-doc-conflicts?)
-       #:ai-cache (box #f)
-       #:clone-info (vector clone-behavior
-                            repo-descs)
-       #:pull-behavior pull-behavior
-       new-descs)
-      (unless (empty? summary-deps)
-        (unless quiet?
-          (printf/flush "The following~a packages were listed as dependencies~a:~a\n"
-                        (if updating? " out-of-date" " uninstalled")
-                        (format "\nand they were ~a~a"
-                                (if (eq? dep-behavior 'search-auto) "automatically " "")
-                                (if updating? "updated" "installed"))
-                        (string-append*
-                         (for/list ([p*ds (in-list summary-deps)])
-                           (match-define (vector n ds) p*ds)
-                           (format "\n dependencies of ~a:~a"
-                                   n
-                                   (if updating?
-                                     (format-deps ds)
-                                     (format-list ds)))))))))))
+  (call-with-prefetch-cleanup
+   prefetch-group
+   (lambda ()
+     (define-values (new-descs done-descs done-infos clone-behavior repo-descs
+                               extra-updating)
+       (adjust-to-normalize-repos filtered-descs old-descs old-infos
+                                  old-clone-behavior old-repo-descs
+                                  updating?
+                                  catalog-lookup-cache
+                                  download-printf
+                                  from-command-line?
+                                  convert-to-non-clone?
+                                  prefetch-group))
+
+    (with-handlers* ([vector?
+                      (match-lambda
+                       [(vector updating? new-infos dep-pkg deps more-pre-succeed conv clone-info)
+                        (pkg-install
+                         #:summary-deps (snoc summary-deps (vector dep-pkg deps))
+                         #:old-infos new-infos
+                         #:old-descs (append done-descs new-descs)
+                         #:all-platforms? all-platforms?
+                         #:force? force
+                         #:ignore-checksums? ignore-checksums?
+                         #:strict-doc-conflicts? strict-doc-conflicts?
+                         #:use-cache? use-cache?
+                         #:dep-behavior dep-behavior
+                         #:update-deps? update-deps?
+                         #:update-implies? update-implies?
+                         #:update-cache update-cache
+                         #:prefetch-group prefetch-group
+                         #:catalog-lookup-cache catalog-lookup-cache
+                         #:remote-checksum-cache remote-checksum-cache
+                         #:check-pkg-early? #f
+                         #:pre-succeed (lambda () (pre-succeed) (more-pre-succeed))
+                         #:updating? updating?
+                         #:quiet? quiet?
+                         #:use-trash? use-trash?
+                         #:from-command-line? from-command-line?
+                         #:conversation conv
+                         #:strip strip-mode
+                         #:force-strip? force-strip?
+                         #:multi-clone-behavior (vector-ref clone-info 0)
+                         #:repo-descs (vector-ref clone-info 1)
+                         #:pull-behavior pull-behavior
+                         (for/list ([dep (in-list deps)])
+                           (if (pkg-desc? dep)
+                               dep
+                               (pkg-desc dep #f #f #f #t #f))))])])
+      (begin0
+       (install-packages
+        #:old-infos done-infos
+        #:old-descs done-descs
+        #:all-platforms? all-platforms?
+        #:force? force
+        #:ignore-checksums? ignore-checksums?
+        #:use-cache? use-cache?
+        #:skip-installed? skip-installed?
+        #:dep-behavior dep-behavior
+        #:update-deps? update-deps?
+        #:update-implies? update-implies?
+        #:update-cache update-cache
+        #:prefetch-group prefetch-group
+        #:catalog-lookup-cache catalog-lookup-cache
+        #:remote-checksum-cache remote-checksum-cache
+        #:pre-succeed (λ ()
+                        (for ([pkg-name (in-hash-keys extra-updating)])
+                          ((remove-package #t quiet? use-trash?) pkg-name))
+                        (pre-succeed))
+        #:updating? updating?
+        #:extra-updating extra-updating
+        #:quiet? quiet?
+        #:use-trash? use-trash?
+        #:from-command-line? from-command-line?
+        #:conversation conversation
+        #:strip strip-mode
+        #:force-strip? force-strip?
+        #:link-dirs? link-dirs?
+        #:local-docs-ok? (not strict-doc-conflicts?)
+        #:ai-cache (box #f)
+        #:clone-info (vector clone-behavior
+                             repo-descs)
+        #:pull-behavior pull-behavior
+        new-descs)
+       (unless (empty? summary-deps)
+         (unless quiet?
+           (printf/flush "The following~a packages were listed as dependencies~a:~a\n"
+                         (if updating? " out-of-date" " uninstalled")
+                         (format "\nand they were ~a~a"
+                                 (if (eq? dep-behavior 'search-auto) "automatically " "")
+                                 (if updating? "updated" "installed"))
+                         (string-append*
+                          (for/list ([p*ds (in-list summary-deps)])
+                            (match-define (vector n ds) p*ds)
+                            (format "\n dependencies of ~a:~a"
+                                    n
+                                    (if updating?
+                                        (format-deps ds)
+                                        (format-list ds)))))))))))))
 
 ;; Determine packages to update, starting with `pkg-name'. If `pkg-name'
 ;; needs to be updated, return it in a list. Otherwise, if `deps?',
@@ -969,9 +1000,10 @@
                              #:deps? deps?
                              #:implies? implies?
                              #:namespace metadata-ns 
-                             #:catalog-lookup-cache catalog-lookup-cache
-                             #:remote-checksum-cache remote-checksum-cache
+                             #:catalog-lookup-cache catalog-lookup-cache   ; [prefetch-shared]
+                             #:remote-checksum-cache remote-checksum-cache ; [prefetch-shared]
                              #:update-cache update-cache
+                             #:prefetch-group prefetch-group
                              #:all-platforms? all-platforms?
                              #:ignore-checksums? ignore-checksums?
                              #:use-cache? use-cache?
@@ -980,11 +1012,17 @@
                              #:skip-uninstalled? [skip-uninstalled? #f]
                              #:all-mode? [all-mode? #f]
                              #:force-update? [force-update? #f])
-         pkg-name)
+         pkg-name
+         ;; In prefetch mode, do as much work as possible to generate
+         ;; server requests without waiting for results and without
+         ;; making any other state changes --- but forced errors are
+         ;; ok.
+         #:prefetch? [prefetch? #f])
   (let update-loop ([pkg-name pkg-name]
                     [must-update? must-update?]
                     [force-update? force-update?]
-                    [report-skip? #t])
+                    [report-skip? #t]
+                    [prefetch? prefetch?])
     (cond
      [(pkg-desc? pkg-name)
       ;; Infer the package-source type and name:
@@ -993,7 +1031,7 @@
                                            (pkg-desc-type pkg-name)
                                            #:link-dirs? link-dirs?
                                            #:must-infer-name? (not (pkg-desc-name pkg-name))
-                                           #:complain (complain-about-source  (pkg-desc-name pkg-name))))
+                                           #:complain (complain-about-source (pkg-desc-name pkg-name))))
       (define name (or (pkg-desc-name pkg-name)
                        inferred-name))
       ;; Check that the package is installed, and get current checksum:
@@ -1008,46 +1046,59 @@
                                                       name
                                                       (pkg-desc-checksum pkg-name)
                                                       download-printf
+                                                      #:prefetch? prefetch?
+                                                      #:prefetch-group prefetch-group
                                                       #:catalog-lookup-cache catalog-lookup-cache
                                                       #:remote-checksum-cache remote-checksum-cache))
-        (hash-set! update-cache name new-checksum) ; record downloaded checksum
-        (unless (or ignore-checksums? (not (pkg-desc-checksum pkg-name)))
-          (unless (equal? (pkg-desc-checksum pkg-name) new-checksum)
-            (pkg-error (~a "incorrect checksum on package\n"
-                           "  package source: ~a\n"
-                           "  expected: ~e\n"
-                           "  got: ~e")
-                       (pkg-desc-source pkg-name)
-                       (pkg-desc-checksum pkg-name) 
-                       new-checksum)))
-        
-        (if (or force-update?
-                (not (equal? (pkg-info-checksum info)
-                             new-checksum))
-                ;; No checksum available => always update
-                (not new-checksum)
-                ;; Different source => always update
-                (not (same-orig-pkg? (pkg-info-orig-pkg info)
-                                     (desc->orig-pkg type
-                                                     (pkg-desc-source pkg-name)
-                                                     (pkg-desc-extra-path pkg-name)))))
-            ;; Update:
-            (begin
-              (hash-set! update-cache (box name) #t)
-              (list (pkg-desc (pkg-desc-source pkg-name)
-                              (pkg-desc-type pkg-name)
-                              name
-                              (pkg-desc-checksum pkg-name)
-                              (pkg-desc-auto? pkg-name)
-                              (or (pkg-desc-extra-path pkg-name)
-                                  (and (eq? type 'clone)
-                                       (current-directory))))))
-            ;; No update needed, but maybe check dependencies:
-            (if (or deps?
-                    implies?)
-                (update-loop name #f #f #f)
-                null))])]
-     [(hash-ref update-cache (box pkg-name) #f)
+        (cond
+         [prefetch?
+          ;; Don't proceed further if we're just issuing prefetches
+          null]
+         [else
+          (hash-set! update-cache name new-checksum) ; record downloaded checksum
+          (unless (or ignore-checksums? (not (pkg-desc-checksum pkg-name)))
+            (unless (equal? (pkg-desc-checksum pkg-name) new-checksum)
+              (pkg-error (~a "incorrect checksum on package\n"
+                             "  package source: ~a\n"
+                             "  expected: ~e\n"
+                             "  got: ~e")
+                         (pkg-desc-source pkg-name)
+                         (pkg-desc-checksum pkg-name) 
+                         new-checksum)))
+          
+          (if (or force-update?
+                  ;; Different checksum => update
+                  (not (equal? (pkg-info-checksum info)
+                               new-checksum))
+                  ;; No checksum available => always update
+                  (not new-checksum)
+                  ;; Different source => always update
+                  (not (same-orig-pkg? (pkg-info-orig-pkg info)
+                                       (desc->orig-pkg type
+                                                       (pkg-desc-source pkg-name)
+                                                       (pkg-desc-extra-path pkg-name)))))
+              ;; Update:
+              (begin
+                (hash-set! update-cache (box name) #t)
+                (list (pkg-desc (pkg-desc-source pkg-name)
+                                (pkg-desc-type pkg-name)
+                                name
+                                (pkg-desc-checksum pkg-name)
+                                (pkg-desc-auto? pkg-name)
+                                (or (pkg-desc-extra-path pkg-name)
+                                    (and (eq? type 'clone)
+                                         (current-directory))))))
+              ;; No update needed, but maybe check dependencies:
+              (if (or deps?
+                      implies?)
+                  (update-loop name #f #f #f prefetch?)
+                  null))])])]
+     [(and prefetch?
+           (hash-ref (prefetch-group-in-progress prefetch-group) pkg-name #f))
+      ;; Already covered for prefetch
+      null]
+     [(and (not prefetch?)
+           (hash-ref update-cache (box pkg-name) #f))
       ;; package is already being updated
       null]
      ;; A string indicates that package source that should be
@@ -1078,22 +1129,26 @@
             ;; needing an update, even if it is installed as a link, so
             ;; that the user is asked about installing dependencies, etc.
             (log-pkg-debug "Missing dependencies of ~s: ~s" pkg-name missing-deps)
-            (update-loop (pkg-info->desc pkg-name info) #f #t #t)]
+            (update-loop (pkg-info->desc pkg-name info) #f #t #t prefetch?)]
            [else (k)]))
           
         (define (update-dependencies)
-          (hash-set! update-cache (box pkg-name) #t)
+          ;; Mark in progress:
+          (if prefetch?
+              (hash-set! (prefetch-group-in-progress prefetch-group) pkg-name #t)
+              (hash-set! update-cache (box pkg-name) #t))
+          ;; Dependencies?
           (if (or deps? implies?)
               ;; Check dependencies
               (append-map
-               (lambda (dep) (update-loop dep #f #f #t))
+               (lambda (dep) (update-loop dep #f #f #t prefetch?))
                deps)
               null))
         
         (define (skip/update-dependencies kind)
           (check-missing-dependencies
            (lambda ()
-             (unless (or all-mode? (not report-skip?))
+             (unless (or all-mode? (not report-skip?) prefetch?)
                (download-printf "Skipping update of ~a: ~a\n"
                                 kind
                                 pkg-name))
@@ -1143,20 +1198,27 @@
              (hash-ref update-cache pkg-name
                        (lambda ()
                          (remote-package-checksum orig-pkg download-printf pkg-name
+                                                  #:prefetch? prefetch?
+                                                  #:prefetch-group prefetch-group
                                                   #:catalog-lookup-cache catalog-lookup-cache
                                                   #:remote-checksum-cache remote-checksum-cache))))
            ;; Record downloaded checksum:
-           (hash-set! update-cache pkg-name new-checksum)
+           (unless prefetch?
+             (hash-set! update-cache pkg-name new-checksum))
            (or (and new-checksum
                     (not (equal? checksum new-checksum))
                     ;; Update it:
-                    (begin
+                    (cond
+                     [prefetch?
+                      ;; Don't proceed further if we're just issuing prefetches
+                      null]
+                     [else
                       ;; Flush cache of downloaded checksums, in case
                       ;; there was a race between our checkig and updates on
                       ;; the catalog server:
                       (clear-checksums-in-cache! update-cache)
                       (list (pkg-desc orig-pkg-source orig-pkg-type pkg-name #f auto?
-                                      orig-pkg-dir))))
+                                      orig-pkg-dir))]))
                ;; Continue with dependencies, maybe
                (check-missing-dependencies update-dependencies))]))]
      [else null])))
@@ -1194,116 +1256,137 @@
                    (early-check-for-installed in-pkgs db #:wanted? #t))
                  in-pkgs]))
   (define update-cache (make-hash))
-  (define catalog-lookup-cache (make-hash))
-  (define remote-checksum-cache (make-hash))
-  (define to-updat* (append-map (packages-to-update download-printf db
-                                                    #:must-update? (and (not all-mode?)
-                                                                        (not update-deps?))
-                                                    #:deps? (or update-deps? 
-                                                                all-mode?) ; avoid races
-                                                    #:implies? update-implies?
-                                                    #:update-cache update-cache
-                                                    #:namespace metadata-ns
-                                                    #:catalog-lookup-cache catalog-lookup-cache
-                                                    #:remote-checksum-cache remote-checksum-cache
-                                                    #:all-platforms? all-platforms?
-                                                    #:ignore-checksums? ignore-checksums?
-                                                    #:use-cache? use-cache?
-                                                    #:from-command-line? from-command-line?
-                                                    #:skip-uninstalled? skip-uninstalled?
-                                                    #:link-dirs? link-dirs?
-                                                    #:all-mode? all-mode?)
-                                (map (compose
-                                      (if infer-clone-from-dir?
-                                          (convert-directory-to-installed-clone db)
-                                          values)
-                                      (if lookup-for-clone?
-                                          (convert-clone-name-to-clone-repo/install catalog-lookup-cache
-                                                                                    download-printf)
-                                          (convert-clone-name-to-clone-repo/update db
-                                                                                   skip-uninstalled?
-                                                                                   from-command-line?)))
-                                     pkgs)))
-  (cond
-    [(empty? pkgs)
-     (unless quiet?
-       (cond
-        [all?
-         (printf/flush (~a "No updates available; no packages installed in ~a scope\n")
-                       (current-pkg-scope))]
-        [else
-         (printf/flush (~a "No packages given to update"
-                           (if from-command-line?
-                               (~a
-                                ";\n use `--all' to update all packages, or run from a package's directory"
-                                "\n to update that package")
-                               "")
-                           "\n"))]))
-     'skip]
-    [(empty? to-updat*)
-     (unless quiet?
-       (printf/flush "No updates available\n"))
-     'skip]
-    [else
-     (define to-update
-       (hash-values
-        (for/fold ([ht #hash()]) ([u (in-list to-updat*)])
-          (cond
-           [(hash-ref ht (pkg-desc-name u) #f)
-            => (lambda (v)
-                 (cond
-                  [(pkg-desc=? v u) ht]
-                  [else
-                   (pkg-error (~a "cannot update with conflicting update information;\n"
-                                  "  package name: ~a")
-                              (pkg-desc-name u))]))]
-           [else
-            (hash-set ht (pkg-desc-name u) u)]))))
-     (unless quiet?
-       (printf "Updating:\n")
-       (for ([u (in-list to-update)])
-         (printf "  ~a\n" (pkg-desc-name u)))
-       (flush-output))
-     (pkg-install
-      #:updating? #t
-      #:pre-succeed (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) to-update))
-      #:dep-behavior dep-behavior
-      #:update-deps? update-deps?
-      #:update-implies? update-implies?
-      #:update-cache update-cache
-      #:catalog-lookup-cache catalog-lookup-cache
-      #:remote-checksum-cache remote-checksum-cache
-      #:check-pkg-early? #f
-      #:quiet? quiet?
-      #:use-trash? use-trash?
-      #:from-command-line? from-command-line?
-      #:strip strip-mode
-      #:force-strip? force-strip?
-      #:all-platforms? all-platforms?
-      #:force? force?
-      #:ignore-checksums? ignore-checksums?
-      #:strict-doc-conflicts? strict-doc-conflicts?
-      #:use-cache? use-cache?
-      #:link-dirs? link-dirs?
-      #:multi-clone-behavior clone-behavior
-      #:convert-to-non-clone? (and lookup-for-clone?
-                                   (andmap pkg-desc? in-pkgs)
-                                   (not (ormap pkg-desc-extra-path in-pkgs)))
-      #:pull-behavior pull-behavior
-      to-update)]))
+  (define prefetch-group (make-prefetch-group))
+  (define catalog-lookup-cache (make-hash))  ; [prefetch-shared]
+  (define remote-checksum-cache (make-hash)) ; [prefetch-shared]
+  (call-with-prefetch-cleanup
+   prefetch-group
+   (lambda ()
+     (define to-updat* (let ([updater (packages-to-update download-printf db
+                                                          #:must-update? (and (not all-mode?)
+                                                                              (not update-deps?))
+                                                          #:deps? (or update-deps? 
+                                                                      all-mode?) ; avoid races
+                                                          #:implies? update-implies?
+                                                          #:update-cache update-cache
+                                                          #:prefetch-group prefetch-group
+                                                          #:namespace metadata-ns
+                                                          #:catalog-lookup-cache catalog-lookup-cache
+                                                          #:remote-checksum-cache remote-checksum-cache
+                                                          #:all-platforms? all-platforms?
+                                                          #:ignore-checksums? ignore-checksums?
+                                                          #:use-cache? use-cache?
+                                                          #:from-command-line? from-command-line?
+                                                          #:skip-uninstalled? skip-uninstalled?
+                                                          #:link-dirs? link-dirs?
+                                                          #:all-mode? all-mode?)]
+                             [pkgs (map (compose
+                                         (if infer-clone-from-dir?
+                                             (convert-directory-to-installed-clone db)
+                                             values)
+                                         (if lookup-for-clone?
+                                             (convert-clone-name-to-clone-repo/install catalog-lookup-cache
+                                                                                       download-printf)
+                                             (convert-clone-name-to-clone-repo/update db
+                                                                                      skip-uninstalled?
+                                                                                      from-command-line?)))
+                                        pkgs)])
+                         ;; Prefetch packages info and checksums:
+                         (for ([pkg (in-list pkgs)]) (updater #:prefetch? #t pkg))
+                         ;; Build update info:
+                         (append-map updater pkgs)))
+     (cond
+      [(empty? pkgs)
+       (unless quiet?
+         (cond
+          [all?
+           (printf/flush (~a "No updates available; no packages installed in ~a scope\n")
+                         (current-pkg-scope))]
+          [else
+           (printf/flush (~a "No packages given to update"
+                             (if from-command-line?
+                                 (~a
+                                  ";\n use `--all' to update all packages, or run from a package's directory"
+                                  "\n to update that package")
+                                 "")
+                             "\n"))]))
+       'skip]
+      [(empty? to-updat*)
+       (unless quiet?
+         (printf/flush "No updates available\n"))
+       'skip]
+      [else
+       (define to-update
+         (hash-values
+          (for/fold ([ht #hash()]) ([u (in-list to-updat*)])
+            (cond
+             [(hash-ref ht (pkg-desc-name u) #f)
+              => (lambda (v)
+                   (cond
+                    [(pkg-desc=? v u) ht]
+                    [else
+                     (pkg-error (~a "cannot update with conflicting update information;\n"
+                                    "  package name: ~a")
+                                (pkg-desc-name u))]))]
+             [else
+              (hash-set ht (pkg-desc-name u) u)]))))
+       (unless quiet?
+         (printf "Updating:\n")
+         (for ([u (in-list to-update)])
+           (printf "  ~a\n" (pkg-desc-name u)))
+         (flush-output))
+       (pkg-install
+        #:updating? #t
+        #:pre-succeed (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) to-update))
+        #:dep-behavior dep-behavior
+        #:update-deps? update-deps?
+        #:update-implies? update-implies?
+        #:update-cache update-cache
+        #:prefetch-group prefetch-group
+        #:catalog-lookup-cache catalog-lookup-cache
+        #:remote-checksum-cache remote-checksum-cache
+        #:check-pkg-early? #f
+        #:quiet? quiet?
+        #:use-trash? use-trash?
+        #:from-command-line? from-command-line?
+        #:strip strip-mode
+        #:force-strip? force-strip?
+        #:all-platforms? all-platforms?
+        #:force? force?
+        #:ignore-checksums? ignore-checksums?
+        #:strict-doc-conflicts? strict-doc-conflicts?
+        #:use-cache? use-cache?
+        #:link-dirs? link-dirs?
+        #:multi-clone-behavior clone-behavior
+        #:convert-to-non-clone? (and lookup-for-clone?
+                                     (andmap pkg-desc? in-pkgs)
+                                     (not (ormap pkg-desc-extra-path in-pkgs)))
+        #:pull-behavior pull-behavior
+        to-update)]))))
 
 ;; ----------------------------------------
 
 (define (early-check-for-installed in-pkgs db #:wanted? wanted?)
   (for ([d (in-list in-pkgs)])
-    (define name
+    (define-values (name ignored-type)
       (if (pkg-desc? d)
-          (or (pkg-desc-name d)
-              (package-source->name (pkg-desc-source d)
-                                    (if (eq? 'clone (pkg-desc-type d))
-                                        'name
-                                        (pkg-desc-type d))))
-          (package-source->name d)))
+          ;; For install of update:
+          (cond
+           [(pkg-desc-name d)
+            (values (pkg-desc-name d) #f)]
+           [(and (eq? (pkg-desc-type d) 'clone)
+                 ;; If syntax of the source is a package name, then it's a package name:
+                 (let-values ([(name type) (package-source->name+type (pkg-desc-source d) 'name)])
+                   name))
+            => (lambda (name)
+                 (values name #f))]
+           [else
+            (package-source->name+type (pkg-desc-source d)
+                                       (pkg-desc-type d)
+                                       #:must-infer-name? #t
+                                       #:complain (complain-about-source #f))])
+          ;; Must be a string package name for update:
+          (values d #f)))
     (define info (package-info name wanted? #:db db))
     (when (and info
                (not wanted?)

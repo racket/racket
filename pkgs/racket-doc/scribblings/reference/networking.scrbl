@@ -13,7 +13,7 @@
 For information about TCP in general, see @italic{TCP/IP Illustrated,
  Volume 1} by W. Richard Stevens.
 
-@defproc[(tcp-listen [port-no (integer-in 0 65535)]
+@defproc[(tcp-listen [port-no listen-port-number?]
                      [max-allow-wait exact-nonnegative-integer? 4]
                      [reuse? any/c #f]
                      [hostname (or/c string? #f) #f]) 
@@ -67,9 +67,9 @@ A TCP listener is @tech{ready for synchronization} when
 
 
 @defproc[(tcp-connect [hostname string?]
-                      [port-no (integer-in 1 65535)]
+                      [port-no port-number?]
                       [local-hostname (or/c string? #f) #f]
-                      [local-port-no (or/c (integer-in 1 65535) #f)
+                      [local-port-no (or/c port-number? #f)
                                      #f])
           (values input-port? output-port?)]{
 
@@ -121,9 +121,9 @@ If a connection cannot be established by @racket[tcp-connect], the
 @exnraise[exn:fail:network].}
 
 @defproc[(tcp-connect/enable-break [hostname string?]
-                      [port-no (integer-in 1 65535)]
+                      [port-no port-number?]
                       [local-hostname (or/c string? #f) #f]
-                      [local-port-no (or/c (integer-in 1 65535) #f)])
+                      [local-port-no (or/c port-number? #f)])
           (values input-port? output-port?)]{
 
 Like @racket[tcp-connect], but breaking is enabled (see
@@ -224,8 +224,8 @@ connections, so @racket[tcp-abandon-port] is equivalent to
 @defproc[(tcp-addresses [tcp-port (or/c tcp-port? tcp-listener?)]
                         [port-numbers? any/c #f]) 
          (or/c (values string? string?)
-               (values string? (integer-in 1 65535) 
-                       string? (integer-in 0 65535)))]{
+               (values string? port-number?
+                       string? listen-port-number?))]{
 
 Returns two strings when @racket[port-numbers?] is @racket[#f] (the
 default). The first string is the Internet address for the local
@@ -255,6 +255,18 @@ port returned by @racket[tcp-accept], @racket[tcp-connect],
 @racket[tcp-accept/enable-break], or
 @racket[tcp-connect/enable-break]---@racket[#f] otherwise.}
 
+@defthing[port-number? contract?]{
+Equivalent to @racket[(between/c 1 65535)].
+
+@history[#:added "6.3"]{}
+}
+
+@defthing[listen-port-number? contract?]{
+Equivalent to @racket[(between/c 0 65535)].
+
+@history[#:added "6.3"]{}
+}
+
 @;------------------------------------------------------------------------
 @section[#:tag "udp"]{UDP}
 
@@ -264,7 +276,7 @@ For information about UDP in general, see @italic{TCP/IP Illustrated,
 Volume 1} by W. Richard Stevens.
 
 @defproc[(udp-open-socket [family-hostname (or/c string? #f) #f]
-                          [family-port-no (or/c (integer-in 1 65535) #f) #f])
+                          [family-port-no (or/c port-number? #f) #f])
          udp?]{
 
 Creates and returns a @deftech{UDP socket} to send and receive
@@ -285,7 +297,7 @@ non-@racket[#f], then the socket's protocol family is IPv4.}
 
 @defproc[(udp-bind! [udp-socket udp?]
                     [hostname-string (or/c string? #f)]
-                    [port-no (integer-in 0 65535)]
+                    [port-no listen-port-number?]
 		    [reuse? any/c #f])
          void?]{
 
@@ -327,8 +339,7 @@ machine when using UDP multicast.}
 
 @defproc[(udp-connect! [udp-socket udp?]
                        [hostname-string (or/c string? #f)]
-                       [port-no (or/c (integer-in 1 65535)
-                                      #f)])
+                       [port-no (or/c port-number? #f)])
          void?]{
 
 Connects the socket to the indicated remote address and port if
@@ -351,7 +362,7 @@ If @racket[udp-socket] is closed, the @exnraise[exn:fail:network].}
 
 @defproc[(udp-send-to [udp-socket udp?]
                       [hostname string?]
-                      [port-no (integer-in 1 65535)]
+                      [port-no port-number?]
                       [bstr bytes?]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
@@ -385,7 +396,7 @@ connected, and the datagram goes to the connection target.  If
 
 @defproc[(udp-send-to* [udp-socket udp?]
                        [hostname string?]
-                       [port-no (integer-in 1 65535)]
+                       [port-no port-number?]
                        [bstr bytes?]
                        [start-pos exact-nonnegative-integer? 0]
                        [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
@@ -406,7 +417,7 @@ never blocks and returns @racket[#f] or @racket[#t].}
 
 @defproc[(udp-send-to/enable-break [udp-socket udp?]
                       [hostname string?]
-                      [port-no (integer-in 1 65535)]
+                      [port-no port-number?]
                       [bstr bytes?]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
@@ -435,7 +446,7 @@ Like @racket[udp-send], except that breaks are enabled like
                        [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (values exact-nonnegative-integer?
                  string?
-                 (integer-in 1 65535))]{
+                 port-number?)]{
 
 Accepts up to @math{@racket[end-pos]-@racket[start-pos]} bytes of
 @racket[udp-socket]'s next incoming datagram into @racket[bstr],
@@ -462,7 +473,7 @@ the length of @racket[bstr], the @exnraise[exn:fail:contract].}
                        [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (values (or/c exact-nonnegative-integer? #f)
                  (or/c string? #f)
-                 (or/c (integer-in 1 65535) #f))]{
+                 (or/c port-number? #f))]{
 
 Like @racket[udp-receive!], except that it never blocks. If no
 datagram is available, the three result values are all @racket[#f].}
@@ -473,7 +484,7 @@ datagram is available, the three result values are all @racket[#f].}
                        [end-pos exact-nonnegative-integer? (bytes-length bstr)])
          (values exact-nonnegative-integer?
                  string?
-                 (integer-in 1 65535))]{
+                 port-number?)]{
 
 Like @racket[udp-receive!], but breaking is enabled (see
 @secref["breakhandler"]) while trying to receive the datagram. If
@@ -523,7 +534,7 @@ would block. The @tech{synchronization result} is the event itself.
 
 @defproc[(udp-send-to-evt [udp-socket udp?]
                       [hostname string?]
-                      [port-no (integer-in 1 65535)]
+                      [port-no port-number?]
                       [bstr bytes?]
                       [start-pos exact-nonnegative-integer? 0]
                       [end-pos exact-nonnegative-integer? (bytes-length bstr)]) 
@@ -570,8 +581,8 @@ content is not modified if the event is not chosen.)}
 @defproc[(udp-addresses [udp-port udp?]
                         [port-numbers? any/c #f]) 
          (or/c (values string? string?)
-               (values string? (integer-in 0 65535) 
-                       string? (integer-in 0 65535)))]{
+               (values string? listen-port-number?
+                       string? listen-port-number?))]{
 
 Returns two strings when @racket[port-numbers?] is @racket[#f] (the
 default). The first string is the Internet address for the local

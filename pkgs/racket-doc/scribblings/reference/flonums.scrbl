@@ -2,7 +2,7 @@
 @(require "mz.rkt" (for-label racket/flonum))
 
 @(define fl-eval (make-base-eval))
-@(interaction-eval #:eval fl-eval (require racket/flonum))
+@examples[#:hidden #:eval fl-eval (require racket/flonum)]
 
 @title[#:tag "flonums"]{Flonums}
 
@@ -162,6 +162,10 @@ foreign libraries. The lack of indirections makes unsafe
 Two @tech{flvectors} are @racket[equal?] if they have the same length,
 and if the values in corresponding slots of the @tech{flvectors} are
 @racket[equal?].
+
+A printed @tech{flvector} starts with @litchar{#fl(}, optionally with
+a number between the @litchar{#fl} and
+@litchar{(}. @see-read-print["vector" #:print "vectors"]{flvectors}
 
 @defproc[(flvector? [v any/c]) boolean?]{
 

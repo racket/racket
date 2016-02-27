@@ -7,7 +7,7 @@
                      racket/require))
 
 @(define flfx-eval (make-base-eval))
-@(interaction-eval #:eval flfx-eval (require racket/fixnum))
+@examples[#:hidden #:eval flfx-eval (require racket/fixnum)]
 
 
 @title[#:tag "fixnums"]{Fixnums}
@@ -103,6 +103,10 @@ like @racket[shared-fxvector].
 Two @tech{fxvectors} are @racket[equal?] if they have the same length,
 and if the values in corresponding slots of the @tech{fxvectors} are
 @racket[equal?].
+
+A printed @tech{fxvector} starts with @litchar{#fx(}, optionally with
+a number between the @litchar{#fx} and
+@litchar{(}. @see-read-print["vector" #:print "vectors"]{fxvectors}
 
 @defproc[(fxvector? [v any/c]) boolean?]{
 

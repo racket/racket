@@ -49,10 +49,11 @@
     $ "raco pkg remove pkg-test1" =stdout> #rx"Inferred package scope: installation")
 
    (shelly-case
-    "conflict due to installations in different scopes: user-specific first"
+    "no conflict due to installations in different scopes: user-specific first"
     $ "raco pkg install -u --copy test-pkgs/pkg-test1"
     $ "racket -l pkg-test1"  =stdout> #rx"main loaded"
-    $ "raco pkg install -i --copy test-pkgs/pkg-test1" =exit> 1 =stderr> #rx"packages in different scopes conflict"
+    $ "raco pkg install -i --copy test-pkgs/pkg-test1"
+    $ "raco pkg remove -i --no-trash pkg-test1" =stdout> "Removing pkg-test1\n"
     $ "raco pkg remove --no-trash pkg-test1" =stdout> "Removing pkg-test1\n")
 
    (shelly-case
@@ -67,11 +68,10 @@
     $ "raco pkg remove pkg-test1" =stdout> #rx"Inferred package scope: installation")
 
    (shelly-case
-    "override conflist, user first"
+    "check usability of user first, then installation"
     $ "raco pkg install -u --copy test-pkgs/pkg-test1"
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "1\n"
-    $ "raco pkg install -i --name pkg-test1 --copy test-pkgs/pkg-test1-v2" =exit> 1
-    $ "raco pkg install --force -i --name pkg-test1 --copy test-pkgs/pkg-test1-v2"
+    $ "raco pkg install -i --name pkg-test1 --copy test-pkgs/pkg-test1-v2"
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "1\n"
     $ "raco pkg remove --no-trash pkg-test1" =stdout> "Removing pkg-test1\n"
     $ "racket -l racket/base -l pkg-test1/number -e '(number)'"  =stdout> "2\n"

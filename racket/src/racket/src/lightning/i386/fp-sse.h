@@ -100,6 +100,7 @@
 
 #define jit_ldxi_d(f0, r0, i0) MOVSDmr(i0, r0, _NOREG, _SCL1, f0)
 
+#define jit_str_f(r0, f0) MOVSSrm(f0, 0, r0, _NOREG, _SCL1)
 #define jit_str_d(r0, f0) MOVSDrm(f0, 0, r0, _NOREG, _SCL1)
 
 #define _jit_sti_d(i0, f0) MOVSDrm(f0, (long)i0, _NOREG, _NOREG, _SCL1)
@@ -140,6 +141,7 @@
 #endif
 
 # define jit_extr_d_f(f0, f1) CVTSD2SSrr(f1, f0)
+# define jit_extr_f_d(f0, f1) CVTSS2SDrr(f1, f0)
 
 #define jit_abs_d(f0, f1) \
   ((f0 == f1) \

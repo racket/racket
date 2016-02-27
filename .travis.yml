@@ -1,56 +1,58 @@
+sudo: false
 language: c
 matrix:
   include:
-    # osx, defaults, gcc and clang
-    - os: osx
-      compiler: gcc
-      env: PATH=./racket/bin:$PATH
-    - os: osx
-      compiler: clang
-      env: PATH=./racket/bin:$PATH
-    # linux, defaults, gcc and clang
-    - os: linux
-      compiler: gcc
-      env: PATH=./racket/bin:$PATH
-    - os: linux
-      compiler: clang
-      env: PATH=./racket/bin:$PATH
-    # linux, no places, no futures, no extflonum, gcc
-    - os: linux
-      compiler: gcc
-      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-places --disable-futures --disable-extflonum"
-    # linux, no jit, gcc
-    - os: linux
-      compiler: gcc
-      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit"
-    # linux, no jit, no places, no futures, no extflonum, gcc
-    - os: linux
-      compiler: gcc
-      env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places --disable-futures --disable-extflonum"
-# Just run tests for the core
+  - os: osx
+    compiler: gcc
+    env: PATH=./racket/bin:$PATH
+  - os: osx
+    compiler: clang
+    env: PATH=./racket/bin:$PATH
+  - os: linux
+    compiler: gcc
+    env: PATH=./racket/bin:$PATH
+  - os: linux
+    compiler: clang
+    env: PATH=./racket/bin:$PATH
+  - os: linux
+    compiler: gcc
+    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-places --disable-futures
+      --disable-extflonum"
+  - os: linux
+    compiler: gcc
+    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit"
+  - os: linux
+    compiler: gcc
+    env: PATH=./racket/bin:$PATH RACKET_CONFIGURE_ARGS="--disable-jit --disable-places
+      --disable-futures --disable-extflonum"
+before_script:
+- git config --global user.email "travis-test@racket-lang.org"
+- git config --global user.name "Travis Tester"
 script:
-  - make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
-  - raco test -l tests/racket/test
-  - racket -l tests/racket/contract/all
-  - raco test -l tests/json/json
-  - raco test -l tests/file/main
-  - raco test -l tests/net/head
-  - raco test -l tests/net/uri-codec
-  - raco test -l tests/net/url
-  - raco test -l tests/net/url-port
-  - raco test -l tests/net/encoders
-  - raco test -l tests/openssl/basic
-  - raco test -l tests/openssl/https
-  - raco test -l tests/match/plt-match-tests
-  - raco test -l tests/zo-path
-  - raco test -l tests/xml/test
-  - raco test -l tests/db/all-tests
+- make CPUS="2" PKGS="racket-test db-test unstable-flonum-lib net-test" CONFIGURE_ARGS_qq="$RACKET_CONFIGURE_ARGS"
+- raco test -l tests/racket/test
+- racket -l tests/pkg/test -- -q
+- racket -l tests/racket/contract/all
+- raco test -l tests/json/json
+- raco test -l tests/file/main
+- raco test -l tests/net/head
+- raco test -l tests/net/uri-codec
+- raco test -l tests/net/url
+- raco test -l tests/net/url-port
+- raco test -l tests/net/encoders
+- raco test -l tests/openssl/basic
+- raco test -l tests/openssl/https
+- raco test -l tests/match/main
+- raco test -l tests/zo-path
+- raco test -l tests/xml/test
+- raco test -l tests/db/all-tests
 notifications:
-  irc: "chat.freenode.net#racket-dev"
+  irc: chat.freenode.net#racket-dev
   email:
     recipients:
-      - samth@racket-lang.org
-      - robby@racket-lang.org
-      - mflatt@racket-lang.org
+    - samth@racket-lang.org
+    - robby@racket-lang.org
+    - mflatt@racket-lang.org
     on_success: change
-
+  slack:
+    secure: A19kphrabQHO8TU6qZcBaLQxdSNpm1ypEtbQsh8Ucg6HYPP7y1q7O7JZEndoMRHE9CNKZ9oXQzqR8H1IFVTlnjFFIJfkZzZ1YSNk4abSomhpWCq9daKMfwlcuTtY6PeI1nDVpka4/hiJGn9qzmaKYXle9Sl4CX2VEYp8o8PgMEs=

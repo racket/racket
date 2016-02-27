@@ -10,26 +10,13 @@
          net/git-checkout
          "path.rkt"
          "print.rkt"
-         "config.rkt")
+         "config.rkt"
+         "network.rkt")
 
-(provide call/input-url+200
-         download-file!
+(provide download-file!
          download-repo!
          url-path/no-slash
          clean-cache)
-
-(define (call/input-url+200 u fun
-                            #:headers [headers '()]
-                            #:failure [fail-k (lambda (s) #f)])
-  #;(printf "\t\tReading ~a\n" (url->string u))
-  (define-values (ip hs) (get-pure-port/headers u headers
-                                                #:redirections 25
-                                                #:status? #t))
-  (if (string=? "200" (substring hs 9 12))
-      (begin0
-       (fun ip)
-       (close-input-port ip))
-      (fail-k hs)))
 
 (define (url-path/no-slash url)
   (define p (url-path url))
@@ -40,12 +27,12 @@
       rest]
      [_ rp])))
 
-(define (do-cache-file file url checksum use-cache? download-printf download!)
+(define (do-cache-file file url key checksum use-cache? download-printf download!)
   (cond
    [(and use-cache? checksum)
     (cache-file file
                 #:exists-ok? #t
-                (list (url->string url) checksum)
+                (list key checksum)
                 (get-download-cache-dir)
                 download!
                 #:log-error-string (lambda (s) (log-pkg-error s))
@@ -72,21 +59,26 @@
     (define (download!)
       (when download-printf
         (download-printf "Downloading ~a\n" (url->string url)))
-      (call-with-output-file*
-       file
-       #:exists 'truncate/replace
-       (λ (op)
-         (call/input-url+200
-          url
-          (λ (ip) (copy-port ip op))
-          #:failure
-          (lambda (reply-s)
-            (pkg-error (~a "error downloading package\n"
-                           "  URL: ~a\n"
-                           "  server response: ~a")
-                       (url->string url)
-                       (read-line (open-input-string reply-s))))))))
-    (do-cache-file file url checksum use-cache? download-printf download!)))
+      (call-with-network-retries
+       (lambda ()
+         (call-with-output-file*
+          file
+          #:exists 'truncate/replace
+          (λ (op)
+            (call/input-url+200
+             url
+             (λ (ip) (copy-port ip op))
+             #:auto-retry? #f
+             #:who 'download
+             #:not-found-handler
+             (lambda (reply-s)
+               (pkg-error (~a "error downloading package\n"
+                              "  URL: ~a\n"
+                              "  server response: ~a")
+                          (url->string url)
+                          (read-line (open-input-string reply-s))))))))))
+    (do-cache-file file url (url->string url) checksum 
+                   use-cache? download-printf download!)))
 
 (define (clean-cache pkg-url checksum)
   (when pkg-url
@@ -98,7 +90,7 @@
                     #:log-debug-string (lambda (s) (log-pkg-debug s))))))
 
 
-(define (download-repo! url host port repo dest-dir checksum
+(define (download-repo! url transport host port repo dest-dir checksum
                         #:download-printf [download-printf #f]
                         #:use-cache? [use-cache? #t])
   (log-pkg-debug "\t\tDownloading ~a to ~a" (url->string url) dest-dir)
@@ -107,11 +99,20 @@
   (define unpacked? #f)
   
   (define (download!)
-    (git-checkout host #:port port repo
-                  #:dest-dir dest-dir
-                  #:ref checksum
-                  #:status-printf (or download-printf void)
-                  #:transport (string->symbol (url-scheme url)))
+    (when download-printf
+      (download-printf "Downloading repository ~a\n" (url->string url)))
+    (call-with-network-retries
+     (lambda ()
+       (git-checkout host #:port port repo
+                     #:dest-dir dest-dir
+                     #:ref checksum
+                     #:status-printf (lambda (fmt . args)
+                                       (define (strip-ending-newline s)
+                                         (regexp-replace #rx"\n$" s ""))
+                                       (log-pkg-debug (strip-ending-newline (apply format fmt args))))
+                     #:transport transport
+                     #:strict-links? #t
+                     #:depth 1)))
     (set! unpacked? #t)
     ;; package directory as ".tgz" so it can be cached:
     (parameterize ([current-directory dest-dir])
@@ -119,7 +120,8 @@
              #:exists-ok? #t
              (directory-list))))
   
-  (do-cache-file tmp.tgz url checksum use-cache? download-printf download!)
+  (do-cache-file tmp.tgz url (vector transport host port repo) checksum 
+                 use-cache? download-printf download!)
 
   (unless unpacked?
     (untgz tmp.tgz #:dest dest-dir))

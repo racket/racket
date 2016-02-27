@@ -6,6 +6,8 @@
           "parse-common.rkt"
           (for-label racket/class))
 
+@(define the-eval (make-sp-eval))
+
 @title[#:tag "exprc"]{Contracts on Macro Sub-expressions}
 
 Just as procedures often expect certain kinds of values as arguments,
@@ -17,7 +19,7 @@ For example, here is a macro @racket[myparameterize] that behaves like
 @racket[parameterize] but enforces the @racket[parameter?] contract on
 the parameter expressions.
 
-@myinteraction[
+@interaction[#:eval the-eval
 (define-syntax (myparameterize stx)
   (syntax-parse stx
     [(_ ((p v:expr) ...) body:expr)
@@ -37,3 +39,5 @@ template, the expansion would have used the raw, unchecked
 expressions. The @racket[expr/c] syntax class does not change how
 pattern variables are bound; it only computes an attribute that
 represents the checked expression.
+
+@(close-eval the-eval)

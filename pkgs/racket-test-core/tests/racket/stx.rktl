@@ -142,6 +142,23 @@
       (syntax-case #'#&(1 2 3) ()
                    [#&(x ...) #'(0 x ... 4)]))
 
+;; ----------------------------------------
+
+(test #t syntax-original? #'here)
+(test #f syntax-original? ((make-syntax-introducer) #'here))
+(test #t syntax-original? ((make-syntax-introducer #t) #'here))
+
+(let* ([a (datum->syntax #f 'a)]
+       [a1 ((make-syntax-introducer) a)]
+       [a2 ((make-syntax-introducer) a)])
+  (test #f bound-identifier=? a1 a2)
+  (test #t bound-identifier=? a1 ((make-syntax-delta-introducer a1 a2) a))
+  (test #t bound-identifier=? a2 ((make-syntax-delta-introducer a2 a1) a))
+  (test #t bound-identifier=? a2 ((make-syntax-delta-introducer a2 #f) a))
+  (test #t bound-identifier=?
+        ((make-syntax-delta-introducer a1 a2) a2)
+        ((make-syntax-delta-introducer a2 a1) a1)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test basic expansion and property propagation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -320,7 +337,7 @@
 ;; Check tracking of (formerly) primitive expanders
 
 (test '(let) (tree-map syntax-e) (syntax-property (expand #'(let ([x 10]) x)) 'origin))
-(test '(let*-values let*) (tree-map syntax-e) (syntax-property (expand #'(let* ([x 10]) x)) 'origin))
+(test '((let*) let*-values let*) (tree-map syntax-e) (syntax-property (expand #'(let* ([x 10]) x)) 'origin))
 (test '(let) (tree-map syntax-e) (syntax-property (expand #'(let loop ([x 10]) x)) 'origin))
 (test '(letrec) (tree-map syntax-e) (syntax-property (expand #'(letrec ([x 10]) x)) 'origin))
 (test '(let*-values) (tree-map syntax-e) (syntax-property (expand #'(let*-values ([(x) 10]) x)) 'origin))
@@ -540,6 +557,192 @@
            (parameterize ([read-accept-compiled #t])
              (eval (read i))))))
 
+(module x-with-identifier-binding-of-alt racket/base
+  (define x 1)
+  (define-syntax-rule (m id)
+    (begin
+      (define x 5)
+      (define id #'x)))
+  (m x-id)
+  (provide x-id))
+(let ([b (identifier-binding
+          (dynamic-require ''x-with-identifier-binding-of-alt 'x-id))])
+  (test #f eq? 'x (cadr b))
+  (test 'x cadddr b)
+  (test #t equal? (car b) (caddr b)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; identifier-binding and (nominal) phase reporting
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module ib-mod-1 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base)))
+  (define extra #f)
+  (provide extra)
+  
+  (define x-1-0 0)
+  (provide x-1-0)
+  
+  (begin-for-syntax
+    (define x-1-1 1)
+    (provide x-1-1)
+    
+    (begin-for-syntax
+      (define x-1-2 2)
+      (provide x-1-2))))
+
+(module ib-mod-2 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           'ib-mod-1)
+  
+  (define x-1-0-b (identifier-binding #'x-1-0))
+  (define x-1-0-b+1 (identifier-transformer-binding (syntax-shift-phase-level #'x-1-0 1)))
+  (define x-1-0-b+f (identifier-label-binding (syntax-shift-phase-level #'x-1-0 #f)))
+  (define x-1-1-b (identifier-transformer-binding #'x-1-1))
+  (define x-1-1-b+f (identifier-label-binding (syntax-shift-phase-level #'x-1-1 #f)))
+  (define x-1-2-b (identifier-binding #'x-1-2 2))
+  (provide x-1-0-b
+           x-1-0-b+1
+           x-1-0-b+f
+           x-1-1-b
+           x-1-1-b+f
+           x-1-2-b))
+
+(module ib-mod-2b racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (only-in 'ib-mod-1
+                    x-1-1
+                    x-1-0
+                    x-1-2))
+  
+  (define x-1-0-b2 (identifier-binding #'x-1-0))
+  (define x-1-0-b2+1 (identifier-transformer-binding (syntax-shift-phase-level #'x-1-0 1)))
+  (define x-1-0-b2+f (identifier-label-binding (syntax-shift-phase-level #'x-1-0 #f)))
+  (define x-1-1-b2 (identifier-transformer-binding #'x-1-1))
+  (define x-1-2-b2 (identifier-binding #'x-1-2 2))
+  (provide x-1-0-b2
+           x-1-0-b2+1
+           x-1-0-b2+f
+           x-1-1-b2
+           x-1-2-b2))
+
+(module ib-mod-3 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (for-template 'ib-mod-1))
+  (provide (for-template x-1-0)
+           x-1-1
+           (for-syntax x-1-2)
+           extra2)
+  
+  (define extra2 #f)
+  
+  (define x-1-0-b3 (identifier-template-binding #'x-1-0))
+  (define x-1-1-b3 (identifier-binding #'x-1-1))
+  (define x-1-2-b3 (identifier-transformer-binding #'x-1-2))
+  (provide x-1-0-b3
+           x-1-1-b3
+           x-1-2-b3))
+
+(module ib-mod-4 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           'ib-mod-3)
+  
+  (define x-1-0-b4 (identifier-template-binding #'x-1-0))
+  (define x-1-1-b4 (identifier-binding #'x-1-1))
+  (define x-1-2-b4 (identifier-transformer-binding #'x-1-2))
+  (provide x-1-0-b4
+           x-1-1-b4
+           x-1-2-b4))
+
+(module ib-mod-5 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (for-syntax 'ib-mod-3))
+  
+  (define x-1-0-b5 (identifier-binding #'x-1-0))
+  (define x-1-1-b5 (identifier-transformer-binding #'x-1-1))
+  (define x-1-2-b5 (identifier-binding #'x-1-2 2))
+  (provide x-1-0-b5
+           x-1-1-b5
+           x-1-2-b5))
+
+(module ib-mod-5b racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (for-syntax (only-in 'ib-mod-3
+                                x-1-1
+                                x-1-0
+                                x-1-2)))
+  
+  (define x-1-0-b6 (identifier-binding #'x-1-0))
+  (define x-1-1-b6 (identifier-transformer-binding #'x-1-1))
+  (define x-1-2-b6 (identifier-binding #'x-1-2 2))
+  (provide x-1-0-b6
+           x-1-1-b6
+           x-1-2-b6))
+
+(module ib-mod-7 racket/base
+  (require (for-syntax racket/base
+                       (for-syntax racket/base))
+           (for-label 'ib-mod-1))
+  
+  (define x-1-0-b7 (identifier-label-binding #'x-1-0))
+  (define x-1-1-b7 (identifier-label-binding #'x-1-1))
+  (define x-1-2-b7 (identifier-label-binding #'x-1-2))
+  (provide x-1-0-b7
+           x-1-1-b7
+           x-1-2-b7))
+
+(require 'ib-mod-2
+         'ib-mod-2b
+         'ib-mod-3
+         'ib-mod-4
+         'ib-mod-5
+         'ib-mod-5b
+         'ib-mod-7)
+
+(define (simplify l)
+  (and l
+       (for/list ([v (in-list l)])
+         (if (module-path-index? v)
+             (let-values ([(name base) (module-path-index-split v)])
+               (cadr name))
+             v))))
+
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b+1)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b+f)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b2)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b2+1)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 0 0) simplify x-1-0-b2+f)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 -1 0) simplify x-1-0-b3)
+(test '(ib-mod-1 x-1-0 ib-mod-3 x-1-0 0 0 -1) simplify x-1-0-b4)
+(test '(ib-mod-1 x-1-0 ib-mod-3 x-1-0 0 1 -1) simplify x-1-0-b5)
+(test '(ib-mod-1 x-1-0 ib-mod-3 x-1-0 0 1 -1) simplify x-1-0-b6)
+(test '(ib-mod-1 x-1-0 ib-mod-1 x-1-0 0 #f 0) simplify x-1-0-b7)
+
+(test '(ib-mod-1 x-1-1 ib-mod-1 x-1-1 1 0 1) simplify x-1-1-b)
+(test '#f                                    simplify x-1-1-b+f)
+(test '(ib-mod-1 x-1-1 ib-mod-1 x-1-1 1 0 1) simplify x-1-1-b2)
+(test '(ib-mod-1 x-1-1 ib-mod-1 x-1-1 1 -1 1) simplify x-1-1-b3)
+(test '(ib-mod-1 x-1-1 ib-mod-3 x-1-1 1 0 0) simplify x-1-1-b4)
+(test '(ib-mod-1 x-1-1 ib-mod-3 x-1-1 1 1 0) simplify x-1-1-b5)
+(test '(ib-mod-1 x-1-1 ib-mod-3 x-1-1 1 1 0) simplify x-1-1-b6)
+(test '(ib-mod-1 x-1-1 ib-mod-1 x-1-1 1 #f 1) simplify x-1-1-b7)
+
+(test '(ib-mod-1 x-1-2 ib-mod-1 x-1-2 2 0 2) simplify x-1-2-b)
+(test '(ib-mod-1 x-1-2 ib-mod-1 x-1-2 2 0 2) simplify x-1-2-b2)
+(test '(ib-mod-1 x-1-2 ib-mod-1 x-1-2 2 -1 2) simplify x-1-2-b3)
+(test '(ib-mod-1 x-1-2 ib-mod-3 x-1-2 2 0 1) simplify x-1-2-b4)
+(test '(ib-mod-1 x-1-2 ib-mod-3 x-1-2 2 1 1) simplify x-1-2-b5)
+(test '(ib-mod-1 x-1-2 ib-mod-3 x-1-2 2 1 1) simplify x-1-2-b6)
+(test '(ib-mod-1 x-1-2 ib-mod-1 x-1-2 2 #f 2) simplify x-1-2-b7)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; eval versus eval-syntax, etc.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -616,11 +819,10 @@
   (test eval 'expand-to-top-form (eval (expand-syntax-to-top-form #'eval)))
   (test #t syntax? (expand-syntax-to-top-form (datum->syntax #f 'eval))))
 
-(let ()
-  (define-syntax name 'dummy)
-  (define-syntax alias (make-rename-transformer #'name))
-  (test (identifier-binding-symbol #'name)
-        identifier-binding-symbol #'alias))
+(define-syntax @$@name 'dummy)
+(define-syntax @$@alias (make-rename-transformer #'@$@name))
+(test (identifier-binding-symbol #'@$@name)
+      identifier-binding-symbol #'@$@alias)
 
 (require (only-in racket/base [add1 increment-by-one]))
 (test (identifier-binding-symbol #'add1)
@@ -760,7 +962,7 @@
                                     (= 1 (length o))
                                     (andmap identifier? db)
                                     (identifier? (car o))
-                                    (ormap (lambda (db) (bound-identifier=? db (car o))) db)))
+                                    (ormap (lambda (db) (free-identifier=? db (car o))) db)))
                           db o))))])))])
   (check-expr #'(let () (letrec-syntaxes+values ([(x) (lambda (stx) #'(quote y))]) () x)))
   (check-expr #'(let () (letrec-syntaxes+values ([(x) (lambda (stx) #'(quote y))]) () (list x))))
@@ -913,15 +1115,18 @@
   (define-syntax (++y-macro stx) (syntax-protect #'++x))
   (define-syntax (++y-macro2 stx) (syntax-protect (datum->syntax stx '++x)))
   (define-syntax (++u-macro stx) (syntax-protect #'++u))
+  (define-syntax (++v-macro stx) (syntax-protect #'++v))
   (define-syntax ++u2 (make-rename-transformer (syntax-protect #'++u)))
-  (define ++u 8) ; unexported
-  (provide ++y ++y-macro ++y-macro2 ++u-macro ++u2))
+  (define ++u 8) ; would be unexported, but export of rename transformer exports it
+  (define ++v 9) ; unexported
+  (provide ++y ++y-macro ++y-macro2 ++u-macro ++u2 ++v-macro))
 (require '++n)
 
 (test 10 values ++y)
 (test 10 values ++y-macro)
 (test 8 values ++u-macro)
 (test 8 values ++u2)
+(test 9 values ++v-macro)
 
 (require '++m)
 
@@ -1088,7 +1293,7 @@
       (let-syntax ([z (lambda (stx) #`#,(@@foo 3))])
         z))
 
-(test (void) eval (expand #'(begin-for-syntax (define @@zoo (@@foo 2)))))
+(test (void) eval-syntax (expand #'(begin-for-syntax (define @@zoo (@@foo 2)))))
 (define-syntax (@@x stx) #`#, @@zoo)
 (test 2 '@@x/@@zoo @@x)
 (begin-for-syntax (define @@zoo2 (@@foo 2)))
@@ -1096,7 +1301,7 @@
 (test 2 '@@x/@@zoo @@x)
 
 (begin-for-syntax (@@foo 1))
-(test (void) eval (expand #'(begin-for-syntax (@@foo 1))))
+(test (void) eval-syntax (expand #'(begin-for-syntax (@@foo 1))))
 
 (module @@p racket/base
   (require (for-syntax racket/base
@@ -1214,6 +1419,7 @@
            (eval '(require 'mm))
            (eval '(current-namespace (module->namespace ''mm)))
 
+           (test '(1 2) eval '(list a b))
            (eval '(define$ c 7))
            (test '(1 2 7) eval '(list a b c))
            (eval '(define$ d 8))
@@ -1232,7 +1438,6 @@
                     (printf "~a ~a\n" a b)))
            (eval '(require 'mm))
            (eval '(current-namespace (module->namespace ''mm)))
-
            (eval '(define$ c 7))
            (test '(1 2 7) eval '(list a b c))
            (eval '(define$ d 8))
@@ -1242,6 +1447,9 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; layers of lexical binding
+
+#|
+ This test is supposed to fail, now: 
 
 (test '(1 2) 'macro-nested-lexical
       (let ()
@@ -1270,18 +1478,18 @@
   (provide @!$get))
 (require '@!$m)
 (test '(10 20 #t) '@!$get @!$get)
+|#
 
-(unless building-flat-tests?
-  (test '(12)
-        eval
-        (expand
-         #'(let ([b 12])
-             (let-syntax ([goo (lambda (stx)
-                                 #`(let ()
-                                     (define #,(syntax-local-introduce #'b) 1)
-                                     (define z (list b))
-                                     z))])
-               (goo))))))
+(test '(12)
+      eval
+      (expand
+       #'(let ([b 12])
+           (let-syntax ([goo (lambda (stx)
+                               #`(let ()
+                                   (define #,(syntax-local-introduce #'b) 1)
+                                   (define z (list b))
+                                   z))])
+             (goo)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test lazy unmarshaling of renamings and module-name resolution
@@ -1319,7 +1527,6 @@
                         (parameterize ([read-accept-compiled #t])
                           (read (open-input-bytes (get-output-bytes p))))))]
             [x-id (parameterize ([current-namespace (make-base-namespace)])
-                    (printf "here\n")
                     (eval a-code)
                     (eval '(require 'a))
                     (eval '#'x))])
@@ -1330,7 +1537,9 @@
         (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
         (eval '(require 'a))
         (test #t eval '(free-identifier=? (f) #'x))
+        ;; check namespace fallbacks:
         (test #t eval `(free-identifier=? (f) (quote-syntax ,x-id)))
+        (test #t free-identifier=? (eval '(f)) x-id)
         (parameterize ([current-namespace (make-base-namespace)])
           (eval '(module a racket/base
                    (provide y)
@@ -1611,10 +1820,22 @@
   (let ([a-b-stx (parameterize ([current-namespace (make-base-namespace)])
                    (eval '(define-syntax-rule (b e)
                             (begin e)))
-                   (expand #'(b 1)))])
+                   (expand '(b 1)))])
     (test #f free-identifier=? #'begin (datum->syntax a-b-stx 'begin))
     (test #t free-identifier=? #'begin (syntax-case a-b-stx ()
                                          [(b . _) (datum->syntax #'b 'begin)]))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; syntax-debug-info
+
+(let ([check (lambda (syntax-debug-info)
+               (test 'x hash-ref (syntax-debug-info #'x) 'name)
+               (test 'nope hash-ref (syntax-debug-info #'1) 'name 'nope)
+               (test 'nope hash-ref (syntax-debug-info #'(x y)) 'name 'nope))])
+  (check syntax-debug-info)
+  (parameterize ([current-namespace (make-base-namespace)])
+    (eval '(require (prefix-in foo: racket/base)))
+    (check (lambda (stx) (syntax-debug-info (namespace-syntax-introduce stx))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that attacks are thwarted via `syntax-local-get-shadower'
@@ -1848,6 +2069,230 @@
   (define s (parameterize ([read-accept-compiled #t])
               (read i)))
   (test #t syntax? (cdr (syntax-e (eval s)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check interation of bindings across namespaces:
+
+(let ()
+  (define ns1 (make-base-namespace))
+  (define ns2 (make-base-namespace))
+  (eval '(require (only-in racket/base [add1 cons])) ns1)
+  ;; In `ns1`, `cons` refers to `add1`
+  ;; In `ns2`, `cons` refers to `cons`
+  (define cons-id/ns1 (eval '(quote-syntax cons) ns1))
+  (test add1 eval cons-id/ns1 ns1)
+  (test add1 eval cons-id/ns1 ns2)
+  (eval `(define ,cons-id/ns1 1) ns2)
+  (test 1 eval cons-id/ns1 ns2)
+  (test cons eval 'cons ns2)
+  (test 1 eval (quasiquote (let () (define ,cons-id/ns1 1) ,cons-id/ns1)) ns2))
+
+(module x-id-is-alias-for-plus racket/base
+  (provide x-id)
+  (require (only-in racket/base [+ x]))
+  (define x-id #'x))
+(let ([x-id (dynamic-require ''x-id-is-alias-for-plus 'x-id)])
+  (define ns (make-base-namespace))
+  (eval '(require (only-in racket/base [- x])) ns)
+  (test - eval 'x ns)
+  (test + eval x-id ns))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that a phase shift also shifts fallback contexts
+
+(let ()
+  (define ns (make-base-namespace))
+  (define (evalx e)
+    (parameterize ([current-namespace ns])
+      (eval-syntax (expand (datum->syntax #f e)))))
+  (evalx '(module m racket/base (provide e) (define e #'1)))
+  (evalx '(module n racket/base (require (for-syntax 'm)) (provide s) (define-syntax (s stx) e)))
+  (evalx '(require 'n))
+  (err/rt-test (evalx 's) (lambda (exn) (regexp-match? #rx"literal data is not allowed" (exn-message exn)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check source-location reporting by `raise-syntax-error`
+
+(let ()
+  (define (check a0 a1 . args)
+    (err/rt-test (apply raise-syntax-error #f "oops" a0 a1 args)
+                 (lambda (exn)
+                   (and (exn:fail:syntax? exn)
+                        (regexp-match? (format "^([a-zA-Z]:)?[^:\n]*:~a:~a:"
+                                               (or (syntax-line a1)
+                                                   (syntax-line a0))
+                                               (or (syntax-column a1)
+                                                   (syntax-column a0)))
+                                       (exn-message exn))))))
+  (define stx #'(a b))
+  (define a-stx (car (syntax-e stx)))
+  (check stx a-stx)
+  (check stx #f)
+  (check #f a-stx))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test prop:rename-transformer with procedure content
+
+(begin-for-syntax
+  (struct slv-struct-1 (id)
+    #:property prop:rename-transformer
+    (λ (o) (slv-struct-1-id o)))
+
+  (struct slv-struct-2 (t1? t1 t2)
+    #:property prop:rename-transformer
+    (λ (o)
+      (if (slv-struct-2-t1? o)
+          (slv-struct-2-t1 o)
+          (slv-struct-2-t2 o))))
+
+  (struct slv-struct-bad ()
+    #:property prop:rename-transformer
+    (λ (o) 'not-an-identifier)))
+
+(let ()
+  (define-syntax target-1 't1)
+  (define-syntax target-2 't2)
+
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ id)
+       #`(quote #,(syntax-local-value #'id) )]))
+
+  (define-syntax (m2 stx)
+    (syntax-case stx ()
+      [(_ id)
+       (let-values ([(x y) (syntax-local-value/immediate #'id)])
+         #`(list (quote #,(if (rename-transformer? x) 'rename-transformer x))
+                 (quote #,(and y (syntax-e y)))))]))
+
+  (define-syntax s1 (slv-struct-1 #'target-1))
+  (define-syntax s2 (slv-struct-1 #'target-2))
+  (define-syntax s3 (make-rename-transformer #'target-2))
+  (define-syntax s4 (slv-struct-1 #'s3))
+  (define-syntax s5 (slv-struct-2 #t #'target-1 #'target-2))
+  (define-syntax s6 (slv-struct-2 #f #'target-1 #'target-2))
+  (define-syntax s7 (slv-struct-2 #t #'s3 #'target-2))
+  (define-syntax s8 (slv-struct-2 #f #'s3 #'target-2))
+  (define-syntax s9 (make-rename-transformer #'s8))
+
+  (test 't1 values (m s1))
+  (test '(rename-transformer target-1) values (m2 s1))
+  (test 't2 values (m s2))
+  (test '(rename-transformer target-2) values (m2 s2))
+  (test 't2 values (m s4))
+  (test '(rename-transformer s3) values (m2 s4))
+  (test 't1 values (m s5))
+  (test '(rename-transformer target-1) values (m2 s5))
+  (test 't2 values (m s6))
+  (test '(rename-transformer target-2) values (m2 s6))
+  (test 't2 values (m s7))
+  (test '(rename-transformer s3) values (m2 s7))
+  (test 't2 values (m s8))
+  (test '(rename-transformer target-2) values (m2 s8))
+  (test 't2 values (m s9))
+  (test '(rename-transformer s8) values (m2 s9))
+
+  (define target-3 't3)
+  (define target-4 't4)
+  (define-syntax r1 (slv-struct-1 #'target-3))
+  (define-syntax r2 (slv-struct-1 #'target-4))
+  (define-syntax r3 (slv-struct-2 #t #'target-3 #'target-4))
+  (define-syntax r4 (slv-struct-2 #f #'target-3 #'target-4))
+  (test 't3 values r1)
+  (test 't4 values r2)
+  (test 't3 values r3)
+  (test 't4 values r4)
+
+  (err/rt-test
+   (let ()
+     (struct foo () #:property prop:rename-transformer (λ (x y) 3))
+     (void))
+   exn:fail:contract?)
+  (err/rt-test
+   (eval #'(let () (define-syntax s-bad (slv-struct-bad)) (m s-bad)))
+   exn:fail:contract?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval
+   '(define-syntax (m stx)
+     (define x (car (generate-temporaries '(1))))
+     (syntax-case stx ()
+       [(_ lib name)
+        #`(begin (require (only-in lib [name #,x]))
+                 (define-syntax name
+                   (make-rename-transformer (quote-syntax #,x)))
+                 name)])))
+  (eval '(m racket/base values)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check marshaling and unmarshaling with relative paths
+
+(let ()
+  (define dir (find-system-path 'temp-dir))
+
+  (define x (parameterize ([current-namespace (make-base-namespace)])
+              (compile (datum->syntax #f '#'x (vector (build-path dir "sub" "x.rkt")
+                                                      1
+                                                      1
+                                                      1
+                                                      1)))))
+  (define-values (i o) (make-pipe))
+  (parameterize ([current-write-relative-directory
+                  (cons (build-path dir "nested")
+                        dir)])
+    (write x o))
+  (test (build-path dir "inner" 'up "sub" "x.rkt")
+        syntax-source
+        (eval (parameterize ([read-accept-compiled #t]
+                             [current-load-relative-directory (build-path dir "inner")])
+                (read i)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that shadowing doesn't create an ill-formed internal
+;; representation of binding:
+
+(let ()
+  ;; Make introducers before namespace, so they have older scopes, which
+  ;; means that bindings will be attached to the namespace's scope:
+  (define i1 (make-syntax-introducer))
+  (define i2 (make-syntax-introducer))
+  (define ns (make-base-namespace))
+  (eval `(define car 0) ns)
+  (eval `(define ,(i1 (datum->syntax #f 'car)) 1) ns)
+  (eval `(define ,(i2 (datum->syntax #f 'car)) 2) ns)
+  (eval `(require racket/base) ns) ; replaces plain `car` mapping
+  (write (compile-syntax
+          #`(quote-syntax #,(parameterize ([current-namespace ns])
+                              (namespace-syntax-introduce (datum->syntax #f 'car)))))
+         (open-output-bytes)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that reading a compiled module doesn't mutate the
+;; shared "self" modix for a submodule:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (define o (open-output-bytes))
+  (write (compile `(module name-1 racket/base (module+ inside))) o)
+  (define m
+    (parameterize ([read-accept-compiled #t])
+      (read (open-input-bytes (get-output-bytes o)))))
+  (define s (expand `(module name-2 racket/base (module+ inside (define check-me 1)))))
+  (test "(|expanded module| inside)"
+        format
+        "~s"
+        (resolved-module-path-name
+         (let loop ([s s])
+           (cond
+            [(identifier? s)
+             (and (equal? 'check-me (syntax-e s))
+                  (module-path-index-resolve (car (identifier-binding s))))]
+            [(syntax? s) (loop (syntax-e s))]
+            [(pair? s)
+             (or (loop (car s)) (loop (cdr s)))]
+            [else #f])))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

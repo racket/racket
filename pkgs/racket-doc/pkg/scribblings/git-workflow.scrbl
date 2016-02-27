@@ -102,7 +102,7 @@ develops only a few of them. The intended workflow is as follows:
 
   @commandline{@command{update} --lookup --catalog @nonterm{catalog} --clone @nonterm{path-to}/@nonterm{pkg-name}}
 
-  A suitable @nonterm{catalog} might be @url{http://pkgs.racket-lang.org}.}
+  A suitable @nonterm{catalog} might be @url{https://pkgs.racket-lang.org}.}
 
  @item{A newly cloned package will have the specified (or existing
   installation's) repository as its Git @exec{origin}. If you want to

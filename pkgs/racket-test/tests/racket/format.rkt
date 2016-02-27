@@ -47,6 +47,10 @@
     "abc*")
 (tc (~a "abcde" #:max-width 4 #:limit-marker "")
     "abcd")
+(tc (~a "abcde" #:max-width 4 #:limit-marker "..." #:limit-prefix? #f)
+    "a...")
+(tc (~a "abcde" #:max-width 4 #:limit-marker "..." #:limit-prefix? #t)
+    "...e")
 (tc (~a "The quick brown fox" #:max-width 15 #:limit-marker "")
     "The quick brown")
 (tc (~a "The quick brown fox" #:max-width 15 #:limit-marker "...")
@@ -66,6 +70,8 @@
     "short ")
 (tc (~a "loquacious" #:width 6 #:limit-marker "...")
     "loq...")
+(tc (~a "ostentatious" #:align 'right #:width 5 #:limit-marker "..." #:limit-prefix? #t)
+    "...us")
 
 ;; ~v
 
@@ -82,6 +88,8 @@
 
 (tc (~v '(123456) #:max-width 5)
     "'(...")
+(tc (~v '(123456) #:max-width 5 #:limit-prefix? #t)
+    "...6)")
 
 ;; ~s
 
@@ -98,6 +106,8 @@
 
 (tc (~s 123456 #:max-width 5)
     "12...")
+(tc (~s 123456 #:max-width 5 #:limit-prefix? #t)
+    "...56")
 
 ;; ~r
 

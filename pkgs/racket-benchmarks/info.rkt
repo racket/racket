@@ -6,7 +6,6 @@
                "compatibility-lib"
                "r5rs-lib"
                "scheme-lib"
-               "srfi-lite-lib"
                "racket-test"
                "typed-racket-lib"
                "gui-lib"))

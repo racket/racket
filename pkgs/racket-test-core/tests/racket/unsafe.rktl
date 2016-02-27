@@ -579,4 +579,104 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ()
+  (define err-msg "no element at index")
+
+;; Check that unsafe-weak-hash-iterate- ops do not segfault
+;; when a key is collected before access; throw exception instead.
+;; They are used for safe iteration in in-weak-hash- sequence forms
+  (let ()
+    (define ht #f)
+
+    (let ([lst (build-list 10 add1)])
+      (set! ht (make-weak-hash `((,lst . val)))))
+
+    (define i (unsafe-weak-hash-iterate-first ht))
+
+    ;; everything ok
+    (test #t number? i)
+    (test #t list? (unsafe-weak-hash-iterate-key ht i))
+    (test #t equal? (unsafe-weak-hash-iterate-value ht i) 'val)
+    (test #t equal? (cdr (unsafe-weak-hash-iterate-pair ht i)) 'val)
+    (test #t equal? 
+          (call-with-values 
+              (lambda () (unsafe-weak-hash-iterate-key+value ht i)) cons)
+          '((1 2 3 4 5 6 7 8 9 10) . val))
+    (test #t boolean? (unsafe-weak-hash-iterate-next ht i))
+
+    ;; collect key, everything should error (but not segfault)
+    (collect-garbage)(collect-garbage)(collect-garbage)
+    (test #t boolean? (unsafe-weak-hash-iterate-first ht))
+    (err/rt-test
+        (unsafe-weak-hash-iterate-key ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-weak-hash-iterate-value ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-weak-hash-iterate-pair ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-weak-hash-iterate-key+value ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-weak-hash-iterate-next ht i) exn:fail:contract? err-msg))
+
+;; Check that unsafe mutable hash table operations do not segfault
+;; after getting valid index from unsafe-mutable-hash-iterate-first and -next.
+;; Throw exception instead since they're used for safe iteration
+  (let ()
+    (define ht (make-hash '((a . b))))
+    (define i (unsafe-mutable-hash-iterate-first ht))
+
+    ;; everything ok
+    (test #t number? i)
+    (test #t equal? (unsafe-mutable-hash-iterate-key ht i) 'a)
+    (test #t equal? (unsafe-mutable-hash-iterate-value ht i) 'b)
+    (test #t equal? (unsafe-mutable-hash-iterate-pair ht i) '(a . b))
+    (test #t equal? 
+          (call-with-values 
+              (lambda () (unsafe-mutable-hash-iterate-key+value ht i)) cons)
+          '(a . b))
+    (test #t boolean? (unsafe-mutable-hash-iterate-next ht i))
+    
+    ;; remove element, everything should error (but not segfault)
+    (hash-remove! ht 'a)
+    (test #t boolean? (unsafe-mutable-hash-iterate-first ht))
+    (err/rt-test
+        (unsafe-mutable-hash-iterate-key ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-mutable-hash-iterate-value ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-mutable-hash-iterate-pair ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-mutable-hash-iterate-key+value ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-mutable-hash-iterate-next ht i) exn:fail:contract? err-msg))
+
+  (let ()
+    (define ht (make-weak-hash '((a . b))))
+    (define i (unsafe-weak-hash-iterate-first ht))
+    
+    ;; everything ok
+    (test #t number? i)
+    (test #t equal? (unsafe-weak-hash-iterate-key ht i) 'a)
+    (test #t equal? (unsafe-weak-hash-iterate-value ht i) 'b)
+    (test #t equal? (unsafe-weak-hash-iterate-pair ht i) '(a . b))
+    (test #t equal? 
+          (call-with-values 
+              (lambda () (unsafe-weak-hash-iterate-key+value ht i)) cons)
+          '(a . b))
+    (test #t boolean? (unsafe-weak-hash-iterate-next ht i))
+
+    ;; remove element, everything should error (but not segfault)
+    (hash-remove! ht 'a)
+    (test #t boolean? (unsafe-weak-hash-iterate-first ht))
+    (err/rt-test
+        (unsafe-weak-hash-iterate-key ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-weak-hash-iterate-value ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-weak-hash-iterate-pair ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-weak-hash-iterate-key+value ht i) exn:fail:contract? err-msg)
+    (err/rt-test
+        (unsafe-weak-hash-iterate-next ht i) exn:fail:contract? err-msg)))
+
 (report-errs)

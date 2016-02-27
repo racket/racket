@@ -6,7 +6,6 @@
          (only-in racket/list split-at)
          (for-syntax scheme/base)
          (prefix-in m: mzlib/match)
-         (only-in srfi/13 string-contains)
          rackunit)
 
 (define-syntax (comp stx)
@@ -200,6 +199,26 @@
    (comp '(x y z)
          (match '(1 x 2 y 3 z)
            [(list-no-order 1 2 3 rest ...) rest]
+           [_ 'no]))
+
+   (comp '(x y z)
+         (match '(1 x 2 y 3 z)
+           [(list-no-order 1 2 3 rest ..1) rest]
+           [_ 'no]))
+
+   (comp '(x y z)
+         (match '(1 x 2 y 3 z)
+           [(list-no-order 1 2 3 rest ..2) rest]
+           [_ 'no]))
+
+   (comp '(x y z)
+         (match '(1 x 2 y 3 z)
+           [(list-no-order 1 2 3 rest ..3) rest]
+           [_ 'no]))
+
+   (comp 'no
+         (match '(1 x 2 y 3 z)
+           [(list-no-order 1 2 3 rest ..4) rest]
            [_ 'no]))
 
    (comp
@@ -717,22 +736,95 @@
                 (failure-cont)
                 0)]
            [_ 1]))
-   
+
    (comp 0
          (match (cons 1 2)
            [(cons a b) #:when (= a b) 1]
            [_ 0]))
-   
+
    (comp 1
          (match (cons 1 1)
            [(cons a b) #:when (= a b) 1]
            [_ 0]))
-   
+
+   (test-case
+    "robby's slow example"
+    (define v
+      (let ()
+        (define ht (make-hash))
+        (define (L4e? e-exp)
+          (hash-set! ht e-exp (+ (hash-ref ht e-exp 0) 1))
+          (match e-exp
+            [`(,(? is-biop?) ,(? L4e?) ,(? L4e?)) #t]
+            [`(,_ ,(? L4e?)) #t]
+            [`(new-array ,(? L4e?) ,(? L4e?)) #t]
+            [`(new-tuple ,(? L4e?) ...) #t]
+            [`(aref ,(? L4e?) ,(? L4e?)) #t]
+            [`(aset ,(? L4e?) ,(? L4e?) ,(? L4e?)) #t]
+            [`(alen ,(? L4e?)) #t]
+            [`(print ,(? L4e?)) #t]
+            [`(make-closure ,(? symbol?) ,(? L4e?)) #t]
+            [`(closure-proc ,(? L4e?)) #t]
+            [`(begin ,(? L4e?) ,(? L4e?)) #t]
+            [`(closure-vars ,(? L4e?)) #t]
+            [`(let ((,(? symbol?) ,(? L4e?))) ,(? L4e?)) #t]
+            [`(if ,(? L4e?) ,(? L4e?) ,(? L4e?)) #t]
+            [`(,(? L4e?) ...) #t]
+            [(? L3v?) #t]
+            [_ #f]))
+
+        (define (is-biop? sym) (or (is-aop? sym) (is-cmp? sym)))
+        (define (is-aop? sym) (memq sym '(+ - *)))
+        (define (is-cmp? sym) (memq sym '(< <= =)))
+        (define (L3v? v) (or (number? v) (symbol? v)))
+        (list
+         (L4e? '(let ((less_than (make-closure :lambda_0 (new-tuple))))
+                  (let ((L5_swap (make-closure :lambda_1 (new-tuple))))
+                    (let ((L5_sort_helper (new-tuple 0)))
+                      (begin
+                        (aset L5_sort_helper 0 (make-closure :lambda_2 (new-tuple L5_sort_helper L5_swap)))
+                        (let ((L5_sort (new-tuple 0)))
+                          (begin
+                            (aset L5_sort 0 (make-closure :lambda_3 (new-tuple L5_sort_helper L5_sort)))
+                            (print (let ((f (aref L5_sort 0)))
+                                     ((closure-proc f)
+                                      (closure-vars f)
+                                      (new-tuple 3 1 9 4 5 6 2 8 7 10)
+                                      less_than))))))))))
+         (apply max (hash-values ht)))))
+    (check-true (car v))
+    (check < (cadr v) 50))
+
    (test-case "syntax-local-match-introduce"
      (define-match-expander foo
        (lambda (stx) (syntax-local-match-introduce #'x)))
      (check-equal? (match 42
                      [(foo) x])
                    42))
-   
+
+   (test-case "ordering"
+     (define b (box #t))
+     (check-equal?
+      (match b
+        [(and x (? (λ _ (set-box! b #f))) (app unbox #f)) 'yes]
+        [_ 'no])
+      'yes))
+
+   (test-case "match-expander rename transformer"
+           (define-match-expander foo
+             (lambda (stx) (syntax-case stx () [(_ a) #'a]))
+             (make-rename-transformer #'values))
+
+           (check-equal? (foo 2) 2))
+
+   (test-case "match-expander rename transformer set!"
+              (define x 1)
+              (define-match-expander foo
+                (lambda (stx) (syntax-case stx () [(_ a) #'a]))
+                (make-rename-transformer #'x))
+
+              (set! foo 2)
+              (check-equal? x 2))
+
+
 ))

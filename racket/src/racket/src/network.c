@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 2000-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -76,6 +76,16 @@ static int mzerrno = 0;
 # define WAS_EBADADDRESS(e) (e == EINVAL)
 # define WAS_WSAEMSGSIZE(e) 0
 # define mz_AFNOSUPPORT EAFNOSUPPORT
+#endif
+
+#ifdef CANT_SET_SOCKET_BUFSIZE
+# undef SET_SOCKET_BUFFSIZE_ON_CREATE
+#endif
+
+#ifdef SET_SOCKET_BUFFSIZE_ON_CREATE
+# define mzWHEN_SET_SOCKBUF_SIZE(x) x
+#else
+# define mzWHEN_SET_SOCKBUF_SIZE(x) /* empty */
 #endif
 
 #ifdef USE_WINSOCK_TCP
@@ -388,6 +398,12 @@ SHARED_OK static struct protoent *proto;
 
 /* mz_addrinfo is defined in scheme.h */
 
+#if defined(__MINGW32__) && !defined(HAVE_GETADDRINFO)
+/* Although `configure` didn't discover it, we do have getaddrinfo()
+   from Winsock */
+# define HAVE_GETADDRINFO
+#endif
+
 #ifdef HAVE_GETADDRINFO
 # define mzAI_PASSIVE AI_PASSIVE 
 # define mz_getaddrinfo getaddrinfo
@@ -400,24 +416,6 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
   XFORM_SKIP_PROC
 {
   struct hostent *h;
-
-#ifdef __MINGW32__
-  {
-    HMODULE hm;
-    hm = LoadLibrary("ws2_32.dll");
-    if (hm) {
-      gai_t gai;
-      gai = (gai_t)GetProcAddress(hm, "getaddrinfo");
-      if (gai) {
-	int v;
-	v = gai(nodename, servname, hints, res);
-	if (!v && !(*res)->ai_addr)
-	  (*res)->ai_addrlen = 0;
-	return v;
-      }
-    }
-  }
-#endif
 
   if (nodename)
     h = gethostbyname(nodename);
@@ -461,32 +459,13 @@ static int mz_getaddrinfo(const char *nodename, const char *servname,
 void mz_freeaddrinfo(struct mz_addrinfo *ai)
   XFORM_SKIP_PROC
 {
-#ifdef __MINGW32__
-  {
-    HMODULE hm;
-    hm = LoadLibrary("ws2_32.dll");
-    if (hm) {
-      fai_t fai;
-      fai = (fai_t)GetProcAddress(hm, "freeaddrinfo");
-      if (fai) {
-	fai(ai);
-	return;
-      }
-    }
-  }
-#endif
-
   free(ai->ai_addr);
   free(ai);
 }
 const char *mz_gai_strerror(int ecode)
   XFORM_SKIP_PROC
 {
-#ifdef __MINGW32__
-  return NULL; /* => use FormatMessageW(), instead */
-#else
   return hstrerror(ecode);
-#endif
 }
 #endif
 
@@ -586,6 +565,14 @@ static intptr_t getaddrinfo_in_thread(void *_data)
 
   return 1;
 }
+
+#ifdef USE_WINSOCK_TCP
+static unsigned int WINAPI win_getaddrinfo_in_thread(void *_data)
+  XFORM_SKIP_PROC
+{
+  return (unsigned int)getaddrinfo_in_thread(_data);
+}
+#endif
 
 static void release_ghbn_lock(GHBN_Rec *rec)
 {
@@ -691,13 +678,13 @@ static int MZ_GETADDRINFO(const char *name, const char *svc, struct mz_addrinfo 
 # ifdef USE_WINSOCK_TCP
   {
     HANDLE ready_sema;
-    DWORD id;
+    unsigned int id;
     intptr_t th;
     
     ready_sema = CreateSemaphore(NULL, 0, 1, NULL);
     ghbn_thread_data->ready_sema = ready_sema;
     th = _beginthreadex(NULL, 5000, 
-			(MZ_LPTHREAD_START_ROUTINE)getaddrinfo_in_thread,
+			win_getaddrinfo_in_thread,
 			ghbn_thread_data, 0, &id);
     WaitForSingleObject(ghbn_thread_data->ready_sema, INFINITE);
     CloseHandle(ghbn_thread_data->ready_sema);
@@ -1855,11 +1842,9 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 	    unsigned long ioarg = 1;
 	    ioctlsocket(s, FIONBIO, &ioarg);
 #else
-	    int size = TCP_SOCKSENDBUF_SIZE;
+	    mzWHEN_SET_SOCKBUF_SIZE(int size = TCP_SOCKSENDBUF_SIZE);
 	    fcntl(s, F_SETFL, MZ_NONBLOCKING);
-# ifndef CANT_SET_SOCKET_BUFSIZE
-	    setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int));
-# endif
+	    mzWHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #endif
 	    status = connect(s, addr->ai_addr, addr->ai_addrlen);
 #ifdef USE_UNIX_SOCKETS_TCP
@@ -2441,10 +2426,8 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
     Scheme_Tcp *tcp;
     
 #  ifdef USE_UNIX_SOCKETS_TCP
-    int size = TCP_SOCKSENDBUF_SIZE;
-#   ifndef CANT_SET_SOCKET_BUFSIZE
-    setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int));
-#   endif
+    mzWHEN_SET_SOCKBUF_SIZE(int size = TCP_SOCKSENDBUF_SIZE);
+    mzWHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #  endif
 
     tcp = make_tcp_port_data(s, 2);

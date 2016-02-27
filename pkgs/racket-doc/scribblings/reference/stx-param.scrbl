@@ -1,6 +1,5 @@
 #lang scribble/doc
 @(require "mz.rkt"
-          scribble/eval
           (for-label racket/stxparam racket/stxparam-exptime racket/splicing))
 
 @(define the-eval (make-base-eval))
@@ -30,7 +29,7 @@ used as a macro that expands to a use of the target identifier, but
 @racket[syntax-local-value] of @racket[id] does not produce
 the target's value.
 
-@defexamples[#:eval the-eval
+@examples[#:eval the-eval
   (define-syntax-parameter current-class #f)
   (define-syntax-parameter yield (make-rename-transformer #'abort))
   (define-syntax-parameter define/public
@@ -59,7 +58,7 @@ used as a macro that expands to a use of the target identifier, but
 @racket[syntax-local-value] of @racket[id] does not produce
 the target's value.
 
-@defexamples[#:eval the-eval
+@examples[#:eval the-eval
 (define-syntax-parameter abort (syntax-rules ()))
 
 (define-syntax forever
@@ -79,6 +78,34 @@ the target's value.
        (syntax-parameterize ([it (syntax-id-rules () [_ t])])
          (if t then else)))]))
 ]}
+
+@defform[(define-rename-transformer-parameter id expr)]{
+
+Binds @racket[id] as syntax to a @tech{syntax parameter} that must
+be bound to a @racket[make-rename-transformer] result and, unlike
+@racket[define-syntax-parameter], @racket[syntax-local-value] of
+@racket[id] @emph{does} produce the target's value, including inside
+of @racket[syntax-parameterize].
+
+@examples[#:eval the-eval #:escape UNSYNTAX
+ (define-syntax (test stx)
+  (syntax-case stx ()
+    [(_ t)
+     #`#,(syntax-local-value #'t)]))
+ (define-syntax one 1)
+ (define-syntax two 2)
+ (define-syntax-parameter not-num
+   (make-rename-transformer #'one))
+ (test not-num)
+
+ (define-rename-transformer-parameter num
+   (make-rename-transformer #'one))
+ (test num)
+ (syntax-parameterize ([num (make-rename-transformer #'two)])
+   (test num))
+]
+
+@history[#:added "6.3.0.14"]}
 
 @; ----------------------------------------------------------------------
 

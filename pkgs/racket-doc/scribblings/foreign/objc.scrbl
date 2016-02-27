@@ -269,6 +269,56 @@ Check whether @racket[subcls] is @racket[cls] or a subclass.
 
 @history[#:added "6.1.0.5"]}
 
+
+@defproc[(objc-get-class [obj _id]) _Class]{
+
+Extract the class of @racket[obj].
+
+@history[#:added "6.3"]}
+
+
+@defproc[(objc-set-class! [obj _id] [cls _Class]) void?]{
+
+Changes the class of @racket[obj] to @racket[cls]. The object's
+existing representation must be compatible with the new class.
+
+@history[#:added "6.3"]}
+
+
+@defproc[(objc-get-superclass [cls _Class]) _Class]{
+
+Returns the superclass of @racket[cls].
+
+@history[#:added "6.3"]}
+
+
+@defproc[(objc-dispose-class [cls _Class]) void?]{
+
+Destroys @racket[cls], which must have no existing instances or
+subclasses.
+
+@history[#:added "6.3"]}
+
+
+@defproc[(objc-block [function-type? ctype]
+                     [proc procedure?]
+                     [#:keep keep (box/c list?)])
+         cpointer?]{
+
+Wraps a Racket function @racket[proc] as an Objective-C block. The
+procedure must accept an initial pointer argument that is the ``self''
+argument for the block, and that extra argument must be included in
+the given @racket[function-type].
+
+Extra records that are allocated to implement the block are added to
+the list in @racket[keep], which might also be included in
+@racket[function-type] through a @racket[#:keep] option to
+@racket[_fun]. The pointers registered in @racket[keep] must be
+retained as long as the block remains in use.
+
+@history[#:added "6.3"]}
+
+
 @; ----------------------------------------------------------------------
 
 @section{Raw Runtime Functions}

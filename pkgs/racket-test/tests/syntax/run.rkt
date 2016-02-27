@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require rackunit rackunit/text-ui racket/runtime-path)
+(require rackunit rackunit/text-ui racket/runtime-path racket/port)
 
 ;; Runs all the files in the tests subdirectory.
 ;; A test fails if it throws an exception.
@@ -15,6 +15,8 @@
      (test-suite
       (path->string t)
       (check-not-exn (lambda ()
-                       (dynamic-require (build-path tests-dir t) #f)))))))
+                       (with-output-to-string
+                           (lambda ()
+                             (dynamic-require (build-path tests-dir t) #f)))))))))
 
 (run-tests tests)

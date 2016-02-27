@@ -12,7 +12,9 @@
                     setup/getinfo
                     setup/main-collects
                     setup/collection-name
+                    setup/collection-search
                     setup/matching-platform
+                    setup/cross-system
                     setup/path-to-relative
                     setup/xref scribble/xref
                     ;; info -- no bindings from this are used
@@ -21,6 +23,7 @@
                     setup/unpack
                     setup/link
                     compiler/compiler
+                    compiler/module-suffix
                     launcher/launcher
                     compiler/sig
                     launcher/launcher-sig
@@ -141,6 +144,11 @@ flags:
    files, thus ensuring a clean build from the source files. The exact
    set of deleted files can be controlled by @filepath{info.rkt}; see
    @elemref["clean"]{@racket[clean]} for more information.}
+
+ @item{@DFlag{fast-clean} or @Flag{c} --- like @DFlag{clean}, but
+   without forcing a bootstrap of @exec{raco setup} from source (which
+   means that @DFlag{fast-clean} cannot clean corruption that affects
+   @exec{raco setup} itself).}
 
  @item{@DFlag{no-zo} or @Flag{n} --- refrain from compiling source
    files to @filepath{.zo} files.}
@@ -358,8 +366,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
           (list src-string flags category name out-k)
           (list src-string flags category name out-k order-n)]
      [flags (list mode-symbol ...)]
-     [category (list category-symbol)
-               (list category-symbol sort-number)]
+     [category (list category-string-or-symbol)
+               (list category-string-or-symbol sort-number)]
      [name string
            #f]
    ]
@@ -374,7 +382,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    documentation, instead of defaulting to the source file's name
    (sans extension), where @racket[#f] means to use the default; a
    non-@racket[#f] value for @racket[_name] must fit the grammar
-   of a colelction-name element as checked by 
+   of a collection-name element as checked by 
    @racket[collection-name-element?]. If a
    document's list contains a fifth item, @racket[_out-k], it is used
    a hint for the number of files to use for the document's
@@ -444,9 +452,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
     ]
 
     The @racket[_category] list specifies how to show the document in
-    the root table of contents. The list must start with a symbol,
-    usually one of the following categories, which are ordered as
-    below in the root documentation page:
+    the root table of contents. The list must start with a category,
+    which determines where the manual appears in the root
+    documentation page. A category is either a string or a symbol. If
+    it is a string, then the string is the category label on the root
+    page. If it is a symbol, then a default category label is
+    used. The available symbols and the order of categories on the
+    root documentation page is as below:
 
    @itemize[
 
@@ -475,6 +487,8 @@ Optional @filepath{info.rkt} fields trigger additional actions by
      @item{@racket['interop] : Documentation for interoperability
            tools and libraries.}
 
+     @item{All string categories as ordered by @racket[string<=?].}
+     
      @item{@racket['library] : Documentation for libraries; this
            category is the default and used for unrecognized category
            symbols.}
@@ -528,7 +542,10 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    source file need not be present. Moving documentation into place
    may require no movement at all, depending on the way that the
    enclosing collection is installed, but movement includes adding a
-   @filepath{synced.rktd} file to represent the installation.}
+   @filepath{synced.rktd} file to represent the installation.
+
+   @history[#:changed "6.4" @elem{Allow a category to be a string
+                                 instead of a symbol.}]}
 
  @item{@as-index{@racketidfont{release-note-files}} : @racket[(listof (cons/c string? (cons/c string? list?)))] ---
    A list of release-notes text files to link from the main documentation pages.
@@ -639,7 +656,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
    On Windows, deleting a previously installed foreign library may be
    complicated by a lock on the file, if it is in use. To compensate,
-   @exec{raco setup} deletes a foriegn-library file by first renaming
+   @exec{raco setup} deletes a foreign-library file by first renaming
    the file to have the prefix @filepath{raco-setup-delete-}; it then
    attempts to delete the renamed file and merely issues a warning on
    a failure to delete the renamed file. Meanwhile, in modes where
@@ -752,6 +769,13 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    modules are deleted based on the used module's @filepath{.dep}
    file, etc. Supplying a specific list of collections to @exec{raco
    setup} disables this dependency-based deletion of compiled files.}
+
+ @item{@racket[compile-omit-paths], @racket[compile-omit-files], and
+   @racket[compile-include-files] --- Used indirectly via
+   @racket[compile-collection-zos].}
+
+@item{@racket[module-suffixes] and @racket[doc-module-suffixes] ---
+   Used indirectly via @racket[get-module-suffixes].}
 
 ]
 
@@ -1207,7 +1231,7 @@ function for installing a single @filepath{.plt} file.
   @envvar{PLTCOLLECTS} setting or change to the parameter may cause
   them to be omitted. Any other path in
   @racket[(current-library-collection-paths)] is treated as
-  user-specific. The dierctories indicated by the returned paths may
+  user-specific. The directories indicated by the returned paths may
   or may not exist.}
 
 @defproc[(find-config-dir) (or/c path? #f)]{
@@ -1280,7 +1304,7 @@ function for installing a single @filepath{.plt} file.
 @defproc[(get-lib-search-dirs) (listof path?)]{
   Returns a list of paths to search for foreign libraries. Unless it is
   configured otherwise, the result includes any non-@racket[#f] result of
-  @racket[(find-lib-dir)] and
+  @racket[(find-lib-dir)]
   and @racket[(find-user-lib-dir)]---but the latter is included only if the
   value of the @racket[use-user-specific-search-paths] parameter
   is @racket[#t].
@@ -1526,7 +1550,7 @@ function for installing a single @filepath{.plt} file.
 The Racket installation tree can usually be moved around the filesystem.
 To support this, care must be taken to avoid absolute paths.  The
 following two APIs cover two aspects of this: a way to convert a path to
-a value that is relative to the @filepath{collets} tree, and a way to
+a value that is relative to the @filepath{collects} tree, and a way to
 display such paths (e.g., in error messages).
 
 @subsection{Representing Collection-Based Paths}
@@ -1559,7 +1583,7 @@ is a pair that starts with @racket['collects], then it is converted
 back to a path using @racket[collection-file-path].}
 
 @defproc[(path->module-path [path path-string?]
-                            [#:cache cache (or/c #f (and/c hash? (not/c imutable?)))])
+                            [#:cache cache (or/c #f (and/c hash? (not/c immutable?)))])
          (or/c path-string? module-path?)]{
 
 Like @racket[path->collects-relative], but the result is either
@@ -1709,6 +1733,50 @@ is not the ASCII value of a letter, digit, @litchar{-}, @litchar{+},
 or @litchar{_}.}
 
 
+@; ------------------------------------------------------------------------
+
+@section[#:tag "collection-search"]{API for Collection Searches}
+
+@defmodule[setup/collection-search]
+
+@history[#:added "6.3"]
+
+@defproc[(collection-search [mod-path normalized-lib-module-path?]
+                            [#:init result any/c #f]
+                            [#:combine combine (any/c (and/c path? complete-path?) . -> . any/c) (lambda (r v) v)]
+                            [#:break? break? (any/c . -> . any/c) (lambda (r) #f)]
+                            [#:all-possible-roots? all-possible-roots? any/c #f])
+         any/c]{
+
+Generalizes @racket[collection-file-path] to support folding over all
+possible locations of a collection-based file in the current
+configuration. Unlike @racket[collection-file-path],
+@racket[collection-search] takes the file to location in module-path
+form, but always as a @racket['lib] path.
+
+Each possible path for the file (not counting a @filepath{.ss} to/from
+@filepath{.rkt} conversion) is provided as a second argument to the
+@racket[combine] function, where the first argument is the current
+result, and the value produced by @racket[combine] becomes the new
+result. The @racket[#:init] argument provides the initial result.
+
+The @racket[break?] function short-circuits a search based on the
+current value. For example, it could be used to short-circuit a search
+after a suitable path is found.
+
+If @racket[all-possible-roots?] is @racket[#f], then @racket[combine]
+is called only on paths within @filepath{collects}-like directories
+(for the current configuration) where at least a matching collection
+directory exists.}
+
+
+@defproc[(normalized-lib-module-path? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] is a module path (in the sense of
+@racket[module-path?]) of the form @racket['(lib _str)] where
+@racket[_str] contains at least one slash. The
+@racket[collapse-module-path] function produces such module paths for
+collection-based module references.}
 
 @; ------------------------------------------------------------------------
 
@@ -1724,9 +1792,14 @@ Returns @racket[#t] if @racket[v] is a symbol, string, or regexp value
 (in the sense of @racket[regexp?]), @racket[#f] otherwise.}
 
 @defproc[(matching-platform? [spec platform-spec?]
-                             [#:system-type sys-type (or/c #f symbol?) (system-type)]
-                             [#:system-library-subpath sys-lib-subpath (or/c #f path?)
-                                                       (system-library-subpath #f)])
+                             [#:cross? cross? any/c #f]
+                             [#:system-type sys-type (or/c #f symbol?) (if cross?
+                                                                           (cross-system-type)
+                                                                           (system-type))]
+                             [#:system-library-subpath sys-lib-subpath (or/c #f path-for-some-system?)
+                                                       (if cross?
+                                                           (cross-system-library-subpath #f)
+                                                           (system-library-subpath #f))])
          boolean?]{
 
 Reports whether @racket[spec] matches @racket[sys-type] or
@@ -1742,7 +1815,73 @@ If @racket[spec] is a string, then the result is @racket[#t] if
 
 If @racket[spec] is a regexp value, then the result is @racket[#t] if
 the regexp matches @racket[(path->string sys-lib-subpath)],
+@racket[#f] otherwise.
+
+@history[#:changed "6.3" @elem{Added @racket[#:cross?] argument and
+                                      changed the contract on @racket[sys-lib-subpath]
+                                      to accept @racket[path-for-some-system?]
+                                      instead of just @racket[path?].}]}
+
+@; ------------------------------------------------------------------------
+
+@section[#:tag "cross-system"]{API for Cross-Platform Configuration}
+
+@defmodule[setup/cross-system]{The @racketmodname[setup/cross-system]
+library provides functions for querying the system properties of a
+destination platform, which can be different than the current platform
+in cross-installation modes.}
+
+A Racket installation includes a @filepath{system.rktd} file in the
+directory reported by @racket[(find-lib-dir)]. When the information in that file
+does not match the running Racket's information, then the
+@racketmodname[setup/cross-system] module infers that Racket is being
+run in cross-installation mode.
+
+For example, if an in-place Racket installation for a different
+platform resides at @nonterm{cross-dir}, then
+
+@commandline{racket -G @nonterm{cross-dir}/etc -X @nonterm{cross-dir}/collects -l- raco pkg}
+
+runs @exec{raco pkg} using the current platform's @exec{racket}
+executable, but using the collections and other configuration
+information of @nonterm{cross-dir}, as well as modifying the packages
+of @nonterm{cross-dir}. That can work as long as no platform-specific
+libraries need to run to perform the requested @exec{raco pkg} action
+(e.g., when installing built packages).
+
+
+@history[#:added "6.3"]
+
+@defproc[(cross-system-type [mode (or/c 'os 'word 'gc 'link 'machine
+                                        'so-suffix 'so-mode 'fs-change)
+                            'os])
+         (or/c symbol? string? bytes? exact-positive-integer? vector?)]{
+
+Like @racket[system-type], but for the target platform instead of the
+current platform in cross-installation mode. When not in
+cross-installation mode, the results are the same as for
+@racket[system-type].}
+
+
+@defproc[(cross-system-library-subpath [mode (or/c 'cgc '3m #f)
+                                             (system-type 'gc)])
+         path-for-some-system?]{
+
+Like @racket[system-library-subpath], but for the target platform
+instead of the current platform in cross-installation mode. When not
+in cross-installation mode, the results are the same as for
+@racket[system-library-subpath].
+
+In cross-installation mode, the target platform may have a different
+path convention than the current platform, so the result is
+@racket[path-for-some-system?] instead of @racket[path?].}
+
+
+@defproc[(cross-installation?) boolean?]{
+
+Returns @racket[#t] if cross-installation mode has been detected,
 @racket[#f] otherwise.}
+
 
 @; ------------------------------------------------------------------------
 

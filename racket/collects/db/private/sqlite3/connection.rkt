@@ -3,7 +3,6 @@
          ffi/unsafe
          ffi/unsafe/atomic
          ffi/unsafe/custodian
-         unstable/error
          "../generic/interfaces.rkt"
          "../generic/common.rkt"
          "../generic/prepared.rkt"
@@ -453,7 +452,8 @@
 (define (simplify-status s)
   (cond
    [(or (= SQLITE_IOERR_BLOCKED s)
-        (= SQLITE_IOERR_LOCK s))
+        (= SQLITE_IOERR_LOCK s)
+        (= SQLITE_READONLY_ROLLBACK s))
     ;; Kept in extended form, because these indicate
     ;; cases where retry is appropriate
     s]
@@ -468,6 +468,7 @@
     [,SQLITE_LOCKED      locked     "table in the database is locked"]
     [,SQLITE_NOMEM       nomem      "malloc() failed"]
     [,SQLITE_READONLY    readonly   "attempt to write a readonly database"]
+    [,SQLITE_READONLY_ROLLBACK readonly-rollback "attempt to write a readonly database (hot journal)"]
     [,SQLITE_INTERRUPT   interrupt  "operation terminated by sqlite3_interrupt()"]
     [,SQLITE_IOERR       ioerr      "some kind of disk I/O error occurred"]
     [,SQLITE_IOERR_BLOCKED ioerr-blocked "some kind of disk I/O error occurred (blocked)"]
@@ -495,7 +496,7 @@
         SQLITE_IOERR_BLOCKED SQLITE_IOERR_LOCK))
 
 (define include-db-file-status-list
-  (list SQLITE_READONLY SQLITE_PERM SQLITE_ABORT SQLITE_BUSY SQLITE_LOCKED
+  (list SQLITE_READONLY SQLITE_READONLY_ROLLBACK SQLITE_PERM SQLITE_ABORT SQLITE_BUSY SQLITE_LOCKED
         SQLITE_IOERR SQLITE_IOERR_BLOCKED SQLITE_IOERR_LOCK SQLITE_CORRUPT
         SQLITE_NOTFOUND SQLITE_FULL SQLITE_CANTOPEN SQLITE_PROTOCOL SQLITE_EMPTY
         SQLITE_FORMAT SQLITE_NOTADB))

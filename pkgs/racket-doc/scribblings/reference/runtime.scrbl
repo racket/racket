@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt"
+          (for-label setup/cross-system))
 
 @title[#:tag "runtime"]{Environment and Runtime Information}
 
@@ -9,7 +10,8 @@
          (or/c symbol? string? bytes? exact-positive-integer? vector?)]{
 
 Returns information about the operating system, build mode, or machine
-for a running Racket.
+for a running Racket. (Installation tools should use @racket[cross-system-type],
+instead, to support cross-installation.)
 
 In @indexed-racket['os] mode,
  the possible symbol results are:
@@ -117,7 +119,10 @@ The optional @racket[mode] argument specifies the relevant
 garbage-collection variant, which one of the possible results of
 @racket[(system-type 'gc)]: @racket['cgc] or @racket['3m]. It can also
 be @racket[#f], in which case the result is independent of the
-garbage-collection variant.}
+garbage-collection variant.
+
+Installation tools should use @racket[cross-system-library-subpath],
+instead, to support cross-installation.}
 
 
 @defproc[(version) (and/c string? immutable?)]{

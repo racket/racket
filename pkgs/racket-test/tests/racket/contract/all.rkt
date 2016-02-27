@@ -98,7 +98,7 @@
              #:when 
              (and (regexp-match #rx"[.]rkt$" (path->string file))
                   (not (member (path->string file)
-                               '("test-util.rkt" "all.rkt")))))
+                               '("info.rkt" "test-util.rkt" "all.rkt")))))
     file))
 
 (define (find-deps file)
@@ -117,26 +117,33 @@
     (cond
       [(and (list? exp)
             (pair? exp)
-            (eq? (car exp) 'make-basic-contract-namespace))
-       (when deps 
+            (or (equal? (car exp) 'make-basic-contract-namespace)
+                (equal? (car exp) 'make-full-contract-namespace)))
+       (when deps
          (error 'find-deps 
                 "found two calls to make-basic-contract-namespace in ~a"
                 file))
-       (set! deps (map remove-quote (cdr exp)))]
+       (set! deps (append (if (equal? (car exp) 'make-full-contract-namespace)
+                              full-contract-namespace-initial-set
+                              '())
+                          (map remove-quote (cdr exp))))]
       [(list? exp)
        (for-each loop exp)]
       [else (void)]))
   deps)
 
 (define (dep<? a b)
-  (set! a (or a '()))
-  (set! b (or b '()))
-  (define (subset? a b)
-    (for/and ([x (in-list a)])
-      (member x b)))
-  (or (and (subset? a b)
-           (not (subset? b a)))
-      (< (length a) (length b))))
+  (cond
+    [(and (not a) (not b)) #t]
+    [(not a) #f]
+    [(not b) #t]
+    [else
+     (define (subset? a b)
+       (for/and ([x (in-list a)])
+         (member x b)))
+     (or (and (subset? a b)
+              (not (subset? b a)))
+         (< (length a) (length b)))]))
 
 (define files-to-run
   (sort 

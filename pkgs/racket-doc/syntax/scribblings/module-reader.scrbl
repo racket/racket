@@ -37,6 +37,7 @@ language, though it may also be @racket[require]d to get
                   (code:line #:whole-body-readers? whole?-expr)
                   (code:line #:wrapper1    wrapper1-expr)
                   (code:line #:wrapper2    wrapper2-expr)
+                  (code:line #:module-wrapper module-wrapper-expr)
                   (code:line #:language    lang-expr)
                   (code:line #:info        info-expr)
                   (code:line #:language-info language-info-expr)])
@@ -49,6 +50,8 @@ language, though it may also be @racket[require]d to get
                                      . -> . any/c)
                                     (input-port? (input-port? . -> . any/c) 
                                      boolean? . -> . any/c))]
+               [module-wrapper (or/c ((-> any/c) . -> . any/c)
+                                     ((-> any/c) boolean? . -> . any/c))]
                [info-expr (symbol? any/c (symbol? any/c . -> . any/c) . -> . any/c)]
                [language-info-expr (or/c (vector/c module-path? symbol? any/c) #f)]
                [lang-expr (or/c module-path?
@@ -150,6 +153,23 @@ identifiers used by the @racket[reader-option]s.
        @racket[#:wrapper2]-specified function can optionally accept an
        boolean that indicates whether it is used in @racket[read]
        (@racket[#f]) or @racket[read-syntax] (@racket[#t]) mode.}
+
+ @item{@racket[#:module-wrapper] specifies a function that controls
+       the dynamic context in which the overall @racket[module] form
+       is produced, including calls to the @racket[read] and
+       @racket[read-syntax] functions and to any @racket[#:wrapper1]
+       and @racket[#:wrapper2] functions. The
+       @racket[#:module-wrapper1]-specified function must accept a
+       thunk, and it can optionally accept a boolean that indicates
+       whether it is used in @racket[read] (@racket[#f]) or
+       @racket[read-syntax] (@racket[#t]) mode.
+
+       While a @racket[#:wrapper1]-specified or
+       @racket[#:wrapper2]-specified function sees only individual
+       forms within the read module, a
+       @racket[#:module-wrapper]-specified function sees the entire
+       result @racket[module] form (via the result of its thunk
+       argument).}
 
  @item{@racket[#:info] specifies an implementation of reflective
        information that is used by external tools to manipulate the
@@ -342,7 +362,9 @@ concisely:
 
 For such cases, however, the alternative reader constructor
 @racket[make-meta-reader] implements a might tightly controlled
-reading of the module language.}
+reading of the module language.
+
+@history[#:changed "6.3" @elem{Added the @racket[#:module-reader] option.}]}
 
 
 @defproc[(make-meta-reader [self-sym symbol?]

@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -58,6 +58,7 @@ READ_ONLY static Scheme_Object *proc_property;
 READ_ONLY static Scheme_Object *method_property;
 READ_ONLY static Scheme_Object *rename_transformer_property;
 READ_ONLY static Scheme_Object *set_transformer_property;
+READ_ONLY static Scheme_Object *expansion_contexts_property;
 READ_ONLY static Scheme_Object *not_free_id_symbol;
 READ_ONLY static Scheme_Object *scheme_checked_proc_property;
 READ_ONLY static Scheme_Object *struct_info_proc;
@@ -117,6 +118,7 @@ static Scheme_Object *check_output_port_property_value_ok(int argc, Scheme_Objec
 static Scheme_Object *check_cpointer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_Object *argv[]);
+static Scheme_Object *check_expansion_contexts_property_value_ok(int argc, Scheme_Object *argv[]);
 static Scheme_Object *check_checked_proc_property_value_ok(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *unary_acc(int argc, Scheme_Object **argv, Scheme_Object *self);
@@ -222,10 +224,10 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 
 #define BUILTIN_STRUCT_FLAGS (SCHEME_STRUCT_NO_SET | SCHEME_STRUCT_EXPTIME | SCHEME_STRUCT_NO_MAKE_PREFIX)
 
-#define TYPE_NAME(base, blen) make_name("struct:", base, blen, "", NULL, 0, "", 1)
-#define CSTR_NAME(base, blen) make_name("", base, blen, "", NULL, 0, "", 1)
-#define CSTR_MAKE_NAME(base, blen) make_name("make-", base, blen, "", NULL, 0, "", 1)
-#define PRED_NAME(base, blen) make_name("", base, blen, "?", NULL, 0, "", 1)
+#define TYPE_NAME(base, blen, sym) make_name("struct:", base, blen, "", NULL, 0, "", sym)
+#define CSTR_NAME(base, blen, sym) make_name("", base, blen, "", NULL, 0, "", sym)
+#define CSTR_MAKE_NAME(base, blen, sym) make_name("make-", base, blen, "", NULL, 0, "", sym)
+#define PRED_NAME(base, blen, sym) make_name("", base, blen, "?", NULL, 0, "", sym)
 #define GET_NAME(base, blen, field, flen, sym) make_name("", base, blen, "-", field, flen, "", sym)
 #define SET_NAME(base, blen, field, flen, sym) make_name("set-", base, blen, "-", field, flen, "!", sym)
 #define GENGET_NAME(base, blen, sym) make_name("", base, blen, "-ref", NULL, 0, "", sym)
@@ -238,7 +240,7 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type);
 
 static char *pred_name_string(Scheme_Object *sym)
 {
-  return scheme_symbol_val(PRED_NAME(scheme_symbol_val(sym), SCHEME_SYM_LEN(sym)));
+  return (char *)PRED_NAME(scheme_symbol_val(sym), SCHEME_SYM_LEN(sym), 0);
 }
 
 void
@@ -247,11 +249,9 @@ scheme_init_struct (Scheme_Env *env)
   Scheme_Object **as_names;
   Scheme_Object **as_values;
   int as_count;
-#ifdef TIME_SYNTAX
   Scheme_Object **ts_names;
   Scheme_Object **ts_values;
   int ts_count;
-#endif
   Scheme_Object **loc_names;
   Scheme_Object **loc_values;
   int loc_count;
@@ -259,12 +259,10 @@ scheme_init_struct (Scheme_Env *env)
   Scheme_Object *guard;
 
   READ_ONLY static const char *arity_fields[1] = { "value" };
-#ifdef TIME_SYNTAX
   READ_ONLY static const char *date_fields[10] = { "second", "minute", "hour",
                                                    "day", "month", "year",
                                                    "week-day", "year-day", "dst?", "time-zone-offset" };
   READ_ONLY static const char *date_star_fields[2] = { "nanosecond", "time-zone-name" };
-#endif
   READ_ONLY static const char *location_fields[10] = { "source", "line", "column", "position", "span" };
   
 #ifdef MZ_PRECISE_GC
@@ -288,7 +286,6 @@ scheme_init_struct (Scheme_Env *env)
 			       env);
   }
 
-#ifdef TIME_SYNTAX
   /* Add date structure: */
   REGISTER_SO(scheme_date);
   scheme_date = scheme_make_struct_type_from_string("date", NULL, 10, NULL,
@@ -320,8 +317,6 @@ scheme_init_struct (Scheme_Env *env)
 			       env);
   }
   
-
-#endif
 
   /* Add location structure: */
   REGISTER_SO(location_struct);
@@ -487,6 +482,18 @@ scheme_init_struct (Scheme_Env *env)
                                                                         guard);
     
     scheme_add_global_constant("prop:set!-transformer", set_transformer_property, env);
+  }
+
+  {
+    REGISTER_SO(expansion_contexts_property);
+
+    guard = scheme_make_prim_w_arity(check_expansion_contexts_property_value_ok,
+				     "guard-for-prop:expansion-contexts",
+				     2, 2);
+    expansion_contexts_property = scheme_make_struct_type_property_w_guard(scheme_intern_symbol("expansion-contexts"),
+                                                                           guard);
+    
+    scheme_add_global_constant("prop:expansion-contexts", expansion_contexts_property, env);
   }
 
 
@@ -978,6 +985,8 @@ int scheme_is_subinspector(Scheme_Object *i, Scheme_Object *sup)
 
   if (SCHEME_FALSEP(i))
     return 1;
+  if (SCHEME_FALSEP(sup))
+    return 0;
 
   ins = (Scheme_Inspector *)i;
   superior = (Scheme_Inspector *)sup;
@@ -1866,15 +1875,30 @@ int scheme_is_binding_rename_transformer(Scheme_Object *o)
 
 static int is_stx_id(Scheme_Object *o) { return (SCHEME_STXP(o) && SCHEME_SYMBOLP(SCHEME_STX_VAL(o))); }
 
+static int is_stx_id_or_proc_1(Scheme_Object *o) { return (is_stx_id(o) || is_proc_1(o)); }
+
 Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
 {
+  Scheme_Object *a[1];
+
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_id_macro_type))
     return SCHEME_PTR1_VAL(o);
   if (SCHEME_CHAPERONE_STRUCTP(o)) {
     Scheme_Object *v;
     v = scheme_struct_type_property_ref(rename_transformer_property, o);
-    if (SCHEME_BOXP(v)) v = SCHEME_BOX_VAL(v);
-    if (SCHEME_INTP(v)) {
+    if (SCHEME_PROCP(v)) {
+      a[0] = o;
+      /* apply a continuation barrier here to prevent a capture in
+       * the property access */
+      v = scheme_apply(v, 1, a);
+      if (!is_stx_id(v)) {
+        scheme_contract_error("prop:rename-transformer",
+                              "contract violation for given value",
+                              "expected", 0, "identifier?",
+                              "given", 1, v,
+                              NULL);
+      }
+    } else if (SCHEME_INTP(v)) {
       v = scheme_struct_ref(o, SCHEME_INT_VAL(v));
       if (!is_stx_id(v)) {
         v = scheme_datum_to_syntax(scheme_intern_symbol("?"), scheme_false, scheme_false, 0, 0);
@@ -1888,8 +1912,8 @@ Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
 static Scheme_Object *check_rename_transformer_property_value_ok(int argc, Scheme_Object *argv[])
 {
   return check_indirect_property_value_ok("guard-for-prop:rename-transformer", 
-                                          is_stx_id, 0,
-                                          "(or/c exact-nonnegative-integer? (boxof exact-nonnegative-integer?))",
+                                          is_stx_id_or_proc_1, 0,
+                                          "(or/c exact-nonnegative-integer? identifier? (-> any/c identifier?))",
                                           argc, argv);
 }
 
@@ -1948,6 +1972,51 @@ static Scheme_Object *check_set_transformer_property_value_ok(int argc, Scheme_O
                                           is_proc_1_or_2, 0,
                                           "(or/c  (any/c . -> . any) (any/c any/c . -> . any) exact-nonnegative-integer?)",
                                           argc, argv);
+}
+
+/*========================================================================*/
+/*                        expansion-contexts property                     */
+/*========================================================================*/
+
+static Scheme_Object *check_expansion_contexts_property_value_ok(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+  
+  v = argv[0];
+
+  while (SCHEME_PAIRP(v)) {
+    if (!scheme_is_expansion_context_symbol(SCHEME_CAR(v)))
+      break;
+    v = SCHEME_CDR(v);
+  }
+
+  if (SCHEME_NULLP(v))
+    return argv[0];
+
+  wrong_property_contract("guard-for-prop:expression-contexts",
+                          "(lisrof (or/c 'expression 'top-level 'module 'module-begin 'definition-context)",
+                          v);
+
+  return NULL;
+}
+
+int scheme_expansion_contexts_include(Scheme_Object *o, Scheme_Object *ctx)
+{
+  Scheme_Object *v;
+
+  if (SCHEME_CHAPERONE_STRUCTP(o)) {
+    v = scheme_chaperone_struct_type_property_ref(expansion_contexts_property, o);
+    if (v) {
+      while (!SCHEME_NULLP(v)) {
+        if (SAME_OBJ(SCHEME_CAR(v), ctx))
+          return 1;
+        v = SCHEME_CDR(v);
+      }
+      return 0;
+    }
+  }
+  
+  return 1;
 }
 
 /*========================================================================*/
@@ -2359,9 +2428,9 @@ int scheme_is_noninterposing_chaperone(Scheme_Object *o)
 
   if (SCHEME_VEC_SIZE(px->redirects) & 1) {
     /* procedure chaperone */
-    if (SCHEME_TRUEP(SCHEME_VEC_ELS(px->redirects)[0]))
-      return 0;
-    return 1;
+    if (SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[1]))
+      return 1;
+    return 0;
   }
 
   if (SCHEME_TRUEP(SCHEME_VEC_ELS(px->redirects)[0]))
@@ -3068,6 +3137,7 @@ static Scheme_Object *struct_type_info(int argc, Scheme_Object *argv[])
 static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[])
 {
   Scheme_Struct_Type *stype;
+  char *name;
 
   check_type_and_inspector("struct-type-make-predicate", 0, argc, argv);
   if (SCHEME_NP_CHAPERONEP(argv[0]))
@@ -3075,11 +3145,11 @@ static Scheme_Object *struct_type_pred(int argc, Scheme_Object *argv[])
   else
     stype = (Scheme_Struct_Type *)argv[0];
 
-  return make_struct_proc(stype, 
-			  scheme_symbol_val(PRED_NAME(scheme_symbol_val(stype->name),
-						      SCHEME_SYM_LEN(stype->name))),
-			  SCHEME_PRED,
-			  stype->num_slots);
+  name = (char *)PRED_NAME(scheme_symbol_val(stype->name),
+                           SCHEME_SYM_LEN(stype->name),
+                           0);
+
+  return make_struct_proc(stype, name, SCHEME_PRED, stype->num_slots);
 }
 
 static Scheme_Object *type_constr_chaperone(Scheme_Object *o, Scheme_Object *v)
@@ -3114,7 +3184,7 @@ static Scheme_Object *struct_type_constr(int argc, Scheme_Object *argv[])
     stype = (Scheme_Struct_Type *)argv[0];
 
   if ((argc < 2) || SCHEME_FALSEP(argv[1]))
-    v = CSTR_MAKE_NAME(scheme_symbol_val(stype->name), SCHEME_SYM_LEN(stype->name));
+    v = CSTR_MAKE_NAME(scheme_symbol_val(stype->name), SCHEME_SYM_LEN(stype->name), 1);
   else if (SCHEME_SYMBOLP(argv[1]))
     v = argv[1];
   else {
@@ -3176,7 +3246,7 @@ Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown
   i = stype->num_slots;
   last_is_unknown = 0;
  
-  name = TYPE_NAME((char *)SCHEME_STRUCT_NAME_SYM(s), -1);
+  name = TYPE_NAME((char *)SCHEME_STRUCT_NAME_SYM(s), -1, 1);
 
   /* Precise GC >>> BEWARE <<<, array is not GC_aligned,
      and is therefore marked with GC_CAN_IGNORE. */
@@ -4131,6 +4201,13 @@ Syncing *scheme_replace_evt_nack(Scheme_Object *o)
   return s;
 }
 
+Syncing *scheme_replace_evt_get(Scheme_Object *o)
+{
+  Active_Replace_Evt *a = (Active_Replace_Evt *)o;
+
+  return a->syncing;
+}
+
 /*========================================================================*/
 /*                          struct op maker                               */
 /*========================================================================*/
@@ -4145,6 +4222,8 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
 {
   Scheme_Struct_Type *struct_type;
   Scheme_Object **values;
+  Scheme_Object *vi;
+  char *nm;
   int slot_num, pos;
 
   struct_type = (Scheme_Struct_Type *)type;
@@ -4165,18 +4244,22 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
   if (!(flags & SCHEME_STRUCT_NO_TYPE))
     values[pos++] = (Scheme_Object *)struct_type;
   if (!(flags & SCHEME_STRUCT_NO_CONSTR)) {
-    Scheme_Object *vi;
+    nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+          ? (char *)names[pos]
+          : scheme_symbol_val(names[pos]));
     vi = make_struct_proc(struct_type,
-			  scheme_symbol_val(names[pos]),
+                          nm,
 			  SCHEME_CONSTR, 
 			  struct_type->num_slots);
     values[pos] = vi;
     pos++;
   }
   if (!(flags & SCHEME_STRUCT_NO_PRED)) {
-    Scheme_Object *vi;
+    nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+          ? (char *)names[pos]
+          : scheme_symbol_val(names[pos]));
     vi = make_struct_proc(struct_type,
-			  scheme_symbol_val(names[pos]),
+                          nm,
 			  SCHEME_PRED,
 			  0);
     values[pos] = vi;
@@ -4193,9 +4276,11 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
 	      : 0);
   while (pos < count) {
     if (!(flags & SCHEME_STRUCT_NO_GET)) {
-      Scheme_Object *vi;
+      nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+            ? (char *)names[pos]
+            : scheme_symbol_val(names[pos]));
       vi = make_struct_proc(struct_type,
-			    scheme_symbol_val(names[pos]),
+                            nm,
 			    SCHEME_GETTER,
 			    slot_num);
       values[pos] = vi;
@@ -4203,9 +4288,11 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
     }
     
     if (!(flags & SCHEME_STRUCT_NO_SET)) {
-      Scheme_Object *vi;
+      nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+            ? (char *)names[pos]
+            : scheme_symbol_val(names[pos]));
       vi = make_struct_proc(struct_type,
-			    scheme_symbol_val(names[pos]),
+                            nm,
 			    SCHEME_SETTER,
 			    slot_num);
       values[pos] = vi;
@@ -4216,18 +4303,22 @@ Scheme_Object **scheme_make_struct_values(Scheme_Object *type,
   }
 
   if (flags & SCHEME_STRUCT_GEN_GET) {
-    Scheme_Object *vi;
+    nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+          ? (char *)names[pos]
+          : scheme_symbol_val(names[pos]));
     vi = make_struct_proc(struct_type,
-			  scheme_symbol_val(names[pos]),
+                          nm,
 			  SCHEME_GEN_GETTER,
 			  slot_num);
     values[pos] = vi;
     pos++;
   }
   if (flags & SCHEME_STRUCT_GEN_SET) {
-    Scheme_Object *vi;
+    nm = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS)
+          ? (char *) names[pos]
+          : scheme_symbol_val(names[pos]));
     vi = make_struct_proc(struct_type,
-			  scheme_symbol_val(names[pos]),
+                          nm,
 			  SCHEME_GEN_SETTER,
 			  slot_num);
     values[pos] = vi;
@@ -4246,7 +4337,7 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
   Scheme_Object **names;
   const char *field_name;
   int count, fnlen;
-  int slot_num, pos;
+  int slot_num, pos, as_sym;
 
   count = 0;
 
@@ -4283,22 +4374,24 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
 
   pos = 0;
 
+  as_sym = ((flags & SCHEME_STRUCT_NAMES_ARE_STRINGS) ? 0 : 1);
+
   if (!(flags & SCHEME_STRUCT_NO_TYPE)) {
     Scheme_Object *nm;
-    nm = TYPE_NAME(base, blen);
+    nm = TYPE_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
   if (!(flags & SCHEME_STRUCT_NO_CONSTR)) {
     Scheme_Object *nm;
     if (flags & SCHEME_STRUCT_NO_MAKE_PREFIX)
-      nm = CSTR_NAME(base, blen);
+      nm = CSTR_NAME(base, blen, as_sym);
     else
-      nm = CSTR_MAKE_NAME(base, blen);
+      nm = CSTR_MAKE_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
   if (!(flags & SCHEME_STRUCT_NO_PRED)) {
     Scheme_Object *nm;
-    nm = PRED_NAME(base, blen);
+    nm = PRED_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
 
@@ -4317,12 +4410,12 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
 
       if (!(flags & SCHEME_STRUCT_NO_GET)) {
 	Scheme_Object *nm;
-	nm = GET_NAME(base, blen, field_name, fnlen, 1);
+	nm = GET_NAME(base, blen, field_name, fnlen, as_sym);
 	names[pos++] = nm;
       }
       if (!(flags & SCHEME_STRUCT_NO_SET)) {
 	Scheme_Object *nm;
-	nm = SET_NAME(base, blen, field_name, fnlen, 1);
+	nm = SET_NAME(base, blen, field_name, fnlen, as_sym);
 	names[pos++] = nm;
       }
     }
@@ -4330,18 +4423,18 @@ static Scheme_Object **_make_struct_names(const char *base, int blen,
 
   if (flags & SCHEME_STRUCT_GEN_GET) {
     Scheme_Object *nm;
-    nm = GENGET_NAME(base, blen, 1);
+    nm = GENGET_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
   if (flags & SCHEME_STRUCT_GEN_SET) {
     Scheme_Object *nm;
-    nm = GENSET_NAME(base, blen, 1);
+    nm = GENSET_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
 
   if (flags & SCHEME_STRUCT_EXPTIME) {
     Scheme_Object *nm;
-    nm = EXPTIME_NAME(base, blen, 1);
+    nm = EXPTIME_NAME(base, blen, as_sym);
     names[pos++] = nm;
   }
 
@@ -5318,12 +5411,16 @@ static Scheme_Object *make_struct_type(int argc, Scheme_Object **argv)
 
     names = scheme_make_struct_names(argv[0],
                                      NULL,
-                                     SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET, 
+                                     (SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET
+                                      | SCHEME_STRUCT_NAMES_ARE_STRINGS), 
                                      &i);
-    if (cstr_name)
-      names[1] = cstr_name;
+    if (cstr_name) {
+      a = (Scheme_Object *)scheme_symbol_val(cstr_name);
+      names[1] = a;
+    }
     r = scheme_make_struct_values((Scheme_Object *)type, names, i, 
-                                  SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET);
+                                  (SCHEME_STRUCT_GEN_GET | SCHEME_STRUCT_GEN_SET
+                                   | SCHEME_STRUCT_NAMES_ARE_STRINGS));
 
     return scheme_values(i, r);
   }

@@ -9,6 +9,7 @@ a function to extract items from a TAR/USTAR archive.}
 @defproc[(untar           [in (or/c path-string? input-port?)]
                           [#:dest dest-path (or/c path-string? #f) #f]
                           [#:strip-count strip-count exact-nonnegative-integer? 0]
+                          [#:permissive? permissive? any/c #f]
                           [#:filter filter-proc
                                     (path? (or/c path? #f)
                                      symbol? exact-integer? (or/c path? #f)
@@ -27,6 +28,12 @@ If @racket[strip-count] is positive, then @racket[strip-count] path
 elements are removed from the item path from the archive (before
 prefixing the path with @racket[dest-path]); if the item's path
 contains @racket[strip-count] elements, then it is not extracted.
+
+Unless @racket[permissive?] is true, then archive items with paths containing
+an up-directory indicator are disallowed, and a link item whose target
+is an absolute path or contains an up-directory indicator is also
+disallowed. Absolute paths are always disallowed. A disallowed
+path triggers an exception.
 
 For each item in the archive, @racket[filter-proc] is applied to
 
@@ -60,4 +67,6 @@ For each item in the archive, @racket[filter-proc] is applied to
 ]
 
 If the result of @racket[filter-proc] is @racket[#f], then the item is
-not unpacked.}
+not unpacked.
+
+@history[#:changed "6.3" @elem{Added the @racket[#:permissive?] argument.}]}

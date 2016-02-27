@@ -103,6 +103,18 @@ used.
 @history[#:added "6.1.1.6"]}
 
 
+@deftogether[(
+@defparam[current-pkg-network-retries max-retries (or/c #f real?)]
+)]{
+
+A parameter that determines the number of times to retry a network communication
+that fails due to a connection error.  If
+a parameter's value is @racket[#f], then the user's configuration is
+used.
+
+@history[#:added "6.3"]}
+
+
 @defproc[(pkg-directory [name string?]
                         [#:cache cache (or/c #f (and/c hash? (not/c immutable?))) #f])
          (or/c path-string? #f)]{
@@ -161,7 +173,7 @@ the package is should be treated as installed automatically for a
 dependency.
 
 The optional @racket[path] argument is intended for use when
-@racket[type] is @racket['clone], in which case it specifies< a
+@racket[type] is @racket['clone], in which case it specifies a
 directory containing the repository clone (where the repository itself
 is a directory within @racket[path]).
 
@@ -678,7 +690,7 @@ represented by @racket[dir] and named @racket[pkg-name].}
                                              [pkg-name string]
                                              [#:namespace namespace namespace? (make-base-namespace)]
                                              [#:system-type sys-type (or/c #f symbol?) (system-type)]
-                                             [#:system-library-subpath sys-lib-subpath (or/c #f path?)
+                                             [#:system-library-subpath sys-lib-subpath (or/c #f path-for-some-system?)
                                                                        (system-library-subpath #f)])
          (listof (cons/c symbol? string?))]{
 

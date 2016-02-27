@@ -220,9 +220,11 @@
          (zo-marshal
           (compilation-top
            10
+           #hash()
            (prefix 0
                    (list 'dummy)
-                   null)
+                   null
+                   'insp0)
            (mod 'unsafe
                 'unsafe
                 (module-path-index-join #f #f)
@@ -232,7 +234,8 @@
                                                -1
                                                0
                                                #f))
-                        null)
+                        null
+                        'insp0)
                 null
                 null
                 null ; body
@@ -242,6 +245,7 @@
                 (toplevel 0 0 #f #f)
                 #f
                 #f
+                #hash()
                 null
                 null
                 null)))])

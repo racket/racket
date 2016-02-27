@@ -88,7 +88,7 @@ inline static void clean_up_thread_list(NewGC *gc)
   GC_Thread_Info *prev = NULL;
 
   while(work) {
-    if(!pagemap_find_page(gc->page_maps, work->thread) || marked(gc, work->thread)) {
+    if (marked(gc, work->thread)) {
       work->thread = GC_resolve2(work->thread, gc);
       prev = work;
       work = work->next;
@@ -97,7 +97,7 @@ inline static void clean_up_thread_list(NewGC *gc)
 
       if(prev) prev->next = next;
       if(!prev) gc->thread_infos = next;
-      free(work);
+      ofm_free(work, sizeof(GC_Thread_Info));
       work = next;
     }
   }
@@ -148,6 +148,8 @@ inline static int custodian_to_owner_set(NewGC *gc,Scheme_Custodian *cust)
 {
   int i;
 
+  GC_ASSERT(SAME_TYPE(SCHEME_TYPE(cust), scheme_custodian_type));
+
   if (cust->gc_owner_set)
     return cust->gc_owner_set;
 
@@ -175,7 +177,7 @@ void BTC_register_root_custodian(void *_c)
 
   if (gc->owner_table) {
     /* Reset */
-    free(gc->owner_table);
+    ofm_free(gc->owner_table, sizeof(OTEntry*) * gc->owner_table_size);
     gc->owner_table = NULL;
     gc->owner_table_size = 0;
   }
@@ -214,7 +216,7 @@ inline static void free_owner_set(NewGC *gc, int set)
 {
   OTEntry **owner_table = gc->owner_table;
   if(owner_table[set]) {
-    free(owner_table[set]);
+    ofm_free(owner_table[set], sizeof(OTEntry));
   }
   owner_table[set] = NULL;
 }
@@ -223,21 +225,27 @@ inline static void clean_up_owner_table(NewGC *gc)
 {
   OTEntry **owner_table = gc->owner_table;
   const int table_size = gc->owner_table_size;
-  int i;
+  int i, really_doing_accounting = 0;
 
   for(i = 1; i < table_size; i++)
     if(owner_table[i]) {
       /* repair or delete the originator */
       if(!marked(gc, owner_table[i]->originator)) {
         owner_table[i]->originator = NULL;
-      } else 
+      } else {
         owner_table[i]->originator = GC_resolve2(owner_table[i]->originator, gc);
+        if (((Scheme_Custodian *)owner_table[i]->originator)->really_doing_accounting) {
+          really_doing_accounting = 1;
+        }
+      }
 
       /* potential delete */
       if(i != 1) 
         if((owner_table[i]->memory_use == 0) && !owner_table[i]->originator)
           free_owner_set(gc, i);
     }
+
+  gc->next_really_doing_accounting |= really_doing_accounting;
 }
 
 inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
@@ -246,12 +254,14 @@ inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
   uintptr_t retval = 0;
   int i;
 
+  ((Scheme_Custodian *)custodian)->really_doing_accounting = 1;
+
   if(!gc->really_doing_accounting) {
     if (!gc->avoid_collection) {
       CHECK_PARK_UNUSED(gc);
       gc->park[0] = custodian;
-      gc->really_doing_accounting = 1;
-      garbage_collect(gc, 1, 0, NULL);
+      gc->next_really_doing_accounting = 1;
+      garbage_collect(gc, 1, 0, 0, NULL);
       custodian = gc->park[0]; 
       gc->park[0] = NULL;
     }
@@ -268,15 +278,85 @@ inline static uintptr_t custodian_usage(NewGC*gc, void *custodian)
   return gcWORDS_TO_BYTES(retval);
 }
 
+#ifdef MZ_USE_PLACES
+
+static mzrt_mutex *master_btc_lock;
+static mzrt_sema *master_btc_sema;
+static int master_btc_lock_count = 0;
+static int master_btc_lock_waiters = 0;
+
+void init_master_btc_locks()
+{
+  mzrt_mutex_create(&master_btc_lock);
+  mzrt_sema_create(&master_btc_sema, 0);
+}
+
+static void check_master_btc_mark(NewGC *gc, mpage *page)
+{
+  if (!gc->master_page_btc_mark_checked) {
+    int pause = 1;
+    RELEASE_PAGE_LOCK(1, page);
+    while (pause) {
+      mzrt_mutex_lock(master_btc_lock);
+      if (master_btc_lock_count
+          && (gc->new_btc_mark != MASTERGC->new_btc_mark)) {
+        pause = 1;
+        master_btc_lock_waiters++;
+      } else {
+        pause = 0;
+        MASTERGC->new_btc_mark = gc->new_btc_mark;
+        master_btc_lock_count++;
+      }
+      mzrt_mutex_unlock(master_btc_lock);
+
+      if (pause)
+        mzrt_sema_wait(master_btc_sema);
+    }
+    TAKE_PAGE_LOCK(1, page);
+    gc->master_page_btc_mark_checked = 1;
+  }
+}
+
+static void release_master_btc_mark(NewGC *gc)
+{
+  if (gc->master_page_btc_mark_checked) {
+    /* release the lock on the master's new_btc_mark value */
+    mzrt_mutex_lock(master_btc_lock);
+    --master_btc_lock_count;
+    if (!master_btc_lock_count && master_btc_lock_waiters) {
+      --master_btc_lock_waiters;
+      mzrt_sema_post(master_btc_sema);
+    }
+    mzrt_mutex_unlock(master_btc_lock);
+  }
+}
+
+#else
+
+static void check_master_btc_mark(NewGC *gc, mpage *page) { }
+static void release_master_btc_mark(NewGC *gc) { }
+
+#endif
+
 inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr, int is_a_master_page)
 {
   GCDEBUG((DEBUGOUTF, "BTC_memory_account_mark: %p/%p\n", page, ptr));
 
   /* In the case of is_a_master_page, whether this place is charged is
-     a little random: there's no guarantee that the btc_mark values are
-     in sync, and there are races among places. Approximations are ok for
-     accounting, though, as long as the probably for completely wrong
-     accounting is very low. */
+     a little random: there's no guarantee that the btc_mark values
+     are in sync, and there are races among places. Approximations are
+     ok for accounting, though, as long as the probably for completely
+     wrong accounting is very low.
+
+     At the same time, we need to synchronize enough so that two
+     places with different new_btc_mark values don't send each other
+     into infinite loops (with the btc_mark value bouncing back and
+     forth) or overcounting. We synchronize enough by having a single
+     new_btc_mark value for master pages, and we stall if the value
+     isn't what this place wants. */
+
+  if (is_a_master_page)
+    check_master_btc_mark(gc, page);
 
   if(page->size_class) {
     if(page->size_class > 1) {
@@ -286,7 +366,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr, in
       if(info->btc_mark == gc->old_btc_mark) {
         info->btc_mark = gc->new_btc_mark;
         account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(page->size), is_a_master_page);
-        push_ptr(gc, TAG_AS_BIG_PAGE_PTR(ptr));
+        push_ptr(gc, TAG_AS_BIG_PAGE_PTR(ptr), 0);
       }
     } else {
       /* medium page */
@@ -296,7 +376,7 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr, in
         info->btc_mark = gc->new_btc_mark;
         account_memory(gc, gc->current_mark_owner, info->size, is_a_master_page);
         ptr = OBJHEAD_TO_OBJPTR(info);
-        push_ptr(gc, ptr);
+        push_ptr(gc, ptr, 0);
       }
     }
   } else {
@@ -305,7 +385,8 @@ inline static void BTC_memory_account_mark(NewGC *gc, mpage *page, void *ptr, in
     if(info->btc_mark == gc->old_btc_mark) {
       info->btc_mark = gc->new_btc_mark;
       account_memory(gc, gc->current_mark_owner, info->size, 0);
-      push_ptr(gc, ptr);
+      if (page->generation != AGE_GEN_HALF)
+        push_ptr(gc, ptr, 0);
     }
   }
 }
@@ -368,11 +449,17 @@ int BTC_bi_chan_mark(void *p, struct NewGC *gc)
 {
   if (gc->doing_memory_accounting) {
     Scheme_Place_Bi_Channel *bc = (Scheme_Place_Bi_Channel *)p;
-    /* Race conditions here on `mem_size', and likely double counting
-       when the same async channels are accessible from paired bi
-       channels --- but those approximations are ok for accounting. */
-    account_memory(gc, gc->current_mark_owner, bc->link->sendch->mem_size, 0);
-    account_memory(gc, gc->current_mark_owner, bc->link->recvch->mem_size, 0);
+    /* The `link` field can be NULL if the channel is still being
+       set up: */
+    if (bc->link) {
+      /* Race conditions here on `mem_size', and likely double counting
+         when the same async channels are accessible from paired bi
+         channels --- but those approximations are ok for accounting. */
+      if (bc->link->sendch)
+        account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(bc->link->sendch->mem_size), 0);
+      if (bc->link->recvch)
+        account_memory(gc, gc->current_mark_owner, gcBYTES_TO_WORDS(bc->link->recvch->mem_size), 0);
+    }
   }
   return gc->mark_table[btc_redirect_bi_chan](p, gc);
 }
@@ -384,16 +471,34 @@ static void btc_overmem_abort(NewGC *gc)
         "Info will be wrong.\n"));
 }
 
-static void propagate_accounting_marks(NewGC *gc)
+static void propagate_accounting_marks(NewGC *gc, int no_full)
 {
   void *p;
-  Mark2_Proc *mark_table = gc->mark_table;
+  int fuel = (gc->gc_full
+              ? -1
+              : (no_full
+                 ? INCREMENTAL_COLLECT_FUEL_PER_100M / INCREMENTAL_MINOR_REQUEST_DIVISOR
+                 : (INCREMENTAL_COLLECT_FUEL_PER_100M * AS_100M(gc->memory_in_use)) / 2));
 
-  while(pop_ptr(gc, &p) && !gc->kill_propagation_loop) {
+  while (pop_ptr(gc, &p, 0) && !gc->kill_propagation_loop) {
+    gc->traverse_count = 0;
+    
     /* GCDEBUG((DEBUGOUTF, "btc_account: popped off page %p:%p, ptr %p\n", page, page->addr, p)); */
-    propagate_marks_worker(gc, mark_table, p); 
+    propagate_marks_worker(gc, p, 0);
+    
+    if (fuel >= 0) {
+      fuel--;
+      fuel -= (gc->traverse_count >> 2);
+      if (gc->unprotected_page) {
+        gc->unprotected_page = 0;
+        fuel -= 100;
+      }
+      if (fuel <= 0)
+        break;
+    }
   }
-  if(gc->kill_propagation_loop)
+
+  if (gc->kill_propagation_loop)
     reset_pointer_stack(gc);
 }
 
@@ -414,23 +519,71 @@ inline static int BTC_get_redirect_tag(NewGC *gc, int tag) {
   return tag;
 }
 
-static void BTC_do_accounting(NewGC *gc)
+static void BTC_do_accounting(NewGC *gc, int no_full)
 {
   const int table_size = gc->owner_table_size;
+  int init_table_start, init_table_end, do_mark_threads;
   OTEntry **owner_table = gc->owner_table;
+  MarkSegment *orig_mark_stack;
 
+  GC_ASSERT(gc->gc_full || gc->finished_incremental);
+  GC_ASSERT(gc->gc_full || !gc->accounted_incremental);
+
+  if (gc->gc_full) {
+    if (!gc->acct_mark_stack)
+      gc->really_doing_accounting = gc->next_really_doing_accounting;
+    gc->next_really_doing_accounting = 0;
+  } else {
+    if (gc->next_really_doing_accounting)
+      gc->really_doing_accounting = 1;
+
+    GC_ASSERT(!gc->mark_gen1);
+    GC_ASSERT(!gc->inc_gen1);
+    GC_ASSERT(!gc->check_gen1);
+    
+    gc->mark_gen1 = 1;
+    gc->check_gen1 = 1;
+    gc->inc_gen1 = 1;
+  }
+  
   if(gc->really_doing_accounting) {
     Scheme_Custodian *cur = owner_table[current_owner(gc, NULL)]->originator, *last, *parent;
     Scheme_Custodian_Reference *box = cur->global_next;
     int i;
 
+    GC_ASSERT(SAME_TYPE(SCHEME_TYPE(cur), scheme_custodian_type));
+
     GCDEBUG((DEBUGOUTF, "\nBEGINNING MEMORY ACCOUNTING\n"));
     gc->doing_memory_accounting = 1;
     gc->in_unsafe_allocation_mode = 1;
     gc->unsafe_allocation_abort = btc_overmem_abort;
+    gc->master_page_btc_mark_checked = 0;
+
+    if (!gc->gc_full || gc->acct_mark_stack) {
+      orig_mark_stack = gc->mark_stack;
+      if (gc->acct_mark_stack) {
+        gc->mark_stack = gc->acct_mark_stack;
+        init_table_start = 2;
+        do_mark_threads = 0;
+      } else {
+        gc->mark_stack = NULL;
+        mark_stack_initialize(gc);
+        init_table_start = 1;
+        do_mark_threads = 1;
+      }
+      if (gc->gc_full)
+        init_table_end = table_size;
+      else
+        init_table_end = 2;
+    } else {
+      orig_mark_stack = NULL;
+      init_table_start = 1;
+      init_table_end = table_size;
+      do_mark_threads = 1;
+    }
 
     /* clear the memory use numbers out */
-    for(i = 1; i < table_size; i++)
+    for(i = init_table_start; i < init_table_end; i++)
       if(owner_table[i]) {
         owner_table[i]->memory_use = 0;
 #ifdef MZ_USE_PLACES
@@ -438,62 +591,93 @@ static void BTC_do_accounting(NewGC *gc)
           owner_table[i]->master_memory_use = 0;
 #endif
       }
-    
+
     /* start with root: */
     while (cur->parent && SCHEME_PTR1_VAL(cur->parent)) {
       cur = SCHEME_PTR1_VAL(cur->parent);
+      GC_ASSERT(SAME_TYPE(SCHEME_TYPE(cur), scheme_custodian_type));
     }
 
     /* walk forward for the order we want (blame parents instead of children) */
     last = cur;
     while(cur) {
       int owner = custodian_to_owner_set(gc, cur);
-      uintptr_t save_count = gc->phantom_count;
 
-      gc->phantom_count = 0;
+      GC_ASSERT(gc->gc_full || (owner == 1));
+      
+      GC_ASSERT(owner >= 0);
+      GC_ASSERT(owner <= gc->owner_table_size);
+      
+      gc->acct_phantom_count = 0;
 
       gc->current_mark_owner = owner;
       GCDEBUG((DEBUGOUTF,"MARKING THREADS OF OWNER %i (CUST %p)\n", owner, cur));
       gc->kill_propagation_loop = 0;
-      mark_threads(gc, owner);
-      mark_cust_boxes(gc, cur);
+      if (do_mark_threads)  {
+        mark_threads(gc, owner);
+        mark_cust_boxes(gc, cur);
+      }
       GCDEBUG((DEBUGOUTF, "Propagating accounting marks\n"));
-      propagate_accounting_marks(gc);
-
-      last = cur;
-      box = cur->global_next; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
+      propagate_accounting_marks(gc, no_full);
 
       owner_table = gc->owner_table;
       owner_table[owner]->memory_use = add_no_overflow(owner_table[owner]->memory_use, 
-                                                       gcBYTES_TO_WORDS(gc->phantom_count));
-      gc->phantom_count = save_count;
+                                                       gcBYTES_TO_WORDS(gc->acct_phantom_count));
+
+      if (!gc->gc_full)
+        break;
+
+      last = cur;
+      box = cur->global_next;
+      cur = box ? SCHEME_PTR1_VAL(box) : NULL;
+
+      do_mark_threads = 1;
     }
 
-    /* walk backward folding totals int parent */
-    cur = last;
-    while (cur) {
-      int owner = custodian_to_owner_set(gc, cur);
-      
-      box = cur->parent; parent = box ? SCHEME_PTR1_VAL(box) : NULL;
-      if (parent) {
-        int powner = custodian_to_owner_set(gc, parent);
+    release_master_btc_mark(gc);
 
-        owner_table = gc->owner_table;
-        owner_table[powner]->memory_use = add_no_overflow(owner_table[powner]->memory_use,
-                                                          owner_table[owner]->memory_use);
-        owner_table[powner]->master_memory_use += owner_table[owner]->master_memory_use;
+    if (gc->gc_full) {
+      /* walk backward folding totals into parent */
+      cur = last;
+      while (cur) {
+        int owner = custodian_to_owner_set(gc, cur);
+      
+        box = cur->parent; parent = box ? SCHEME_PTR1_VAL(box) : NULL;
+        if (parent) {
+          int powner = custodian_to_owner_set(gc, parent);
+
+          owner_table = gc->owner_table;
+          owner_table[powner]->memory_use = add_no_overflow(owner_table[powner]->memory_use,
+                                                            owner_table[owner]->memory_use);
+          owner_table[powner]->master_memory_use += owner_table[owner]->master_memory_use;
+        }
+
+        box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
       }
 
-      box = cur->global_prev; cur = box ? SCHEME_PTR1_VAL(box) : NULL;
+      if (orig_mark_stack) {
+        free_stack_pages_at(gc->mark_stack);
+        gc->acct_mark_stack = NULL;
+        gc->mark_stack = orig_mark_stack;
+      }
+    } else {
+      gc->acct_mark_stack = gc->mark_stack;
+      gc->mark_stack = orig_mark_stack;
     }
 
     gc->in_unsafe_allocation_mode = 0;
     gc->doing_memory_accounting = 0;
-    gc->old_btc_mark = gc->new_btc_mark;
-    gc->new_btc_mark = !gc->new_btc_mark;
+    if (gc->gc_full) {
+      gc->old_btc_mark = gc->new_btc_mark;
+      gc->new_btc_mark = !gc->new_btc_mark;
+    }
   }
 
-  clear_stack_pages(gc);
+  if (!gc->gc_full) {
+    gc->mark_gen1 = 0;
+    gc->check_gen1 = 0;
+    gc->inc_gen1 = 0;
+  }
 }
 
 inline static void BTC_add_account_hook(int type,void *c1,void *c2,uintptr_t b)
@@ -501,13 +685,15 @@ inline static void BTC_add_account_hook(int type,void *c1,void *c2,uintptr_t b)
   NewGC *gc = GC_get_GC();
   AccountHook *work;
 
+  ((Scheme_Custodian *)c1)->really_doing_accounting = 1;
+
   if(!gc->really_doing_accounting) {
     if (!gc->avoid_collection) {
       CHECK_PARK_UNUSED(gc);
       gc->park[0] = c1; 
       gc->park[1] = c2;
-      gc->really_doing_accounting = 1;
-      garbage_collect(gc, 1, 0, NULL);
+      gc->next_really_doing_accounting = 1;
+      garbage_collect(gc, 1, 0, 0, NULL);
       c1 = gc->park[0]; gc->park[0] = NULL;
       c2 = gc->park[1]; gc->park[1] = NULL;
     }
@@ -559,7 +745,7 @@ inline static void clean_up_account_hooks(NewGC *gc)
 
       if(prev) prev->next = next;
       if(!prev) gc->hooks = next;
-      free(work);
+      ofm_free(work, sizeof(AccountHook));
       work = next;
     }
   }
@@ -616,7 +802,7 @@ inline static void BTC_run_account_hooks(NewGC *gc)
       if(prev) prev->next = next;
       if(!prev) gc->hooks = next;
       scheme_schedule_custodian_close(work->c2);
-      free(work);
+      ofm_free(work, sizeof(AccountHook));
       work = next;
     } else {
       prev = work; 

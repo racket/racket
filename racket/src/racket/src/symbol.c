@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -340,7 +340,12 @@ scheme_init_symbol (Scheme_Env *env)
   GLOBAL_IMMED_PRIM("string->uninterned-symbol",  string_to_uninterned_symbol_prim, 1, 1, env);
   GLOBAL_IMMED_PRIM("string->unreadable-symbol",  string_to_unreadable_symbol_prim, 1, 1, env);
   GLOBAL_IMMED_PRIM("symbol->string",             symbol_to_string_prim,            1, 1, env);
-  GLOBAL_FOLDING_PRIM("keyword?",                 keyword_p_prim,                   1, 1, 1, env);
+
+  p = scheme_make_folding_prim(keyword_p_prim, "keyword?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("keyword?", p, env);
+
   GLOBAL_FOLDING_PRIM("keyword<?",                keyword_lt,                       2, -1, 1, env);
   GLOBAL_IMMED_PRIM("string->keyword",            string_to_keyword_prim,           1, 1, env);
   GLOBAL_IMMED_PRIM("keyword->string",            keyword_to_string_prim,           1, 1, env);
@@ -350,6 +355,17 @@ scheme_init_symbol (Scheme_Env *env)
 uintptr_t scheme_get_max_symbol_length() {
   /* x86, x86_64, and powerpc support aligned_atomic_loads_and_stores */
   return scheme_max_symbol_length;
+}
+
+void scheme_ensure_max_symbol_length(uintptr_t len)
+{
+#ifdef MZ_USE_PLACES
+  mzrt_ensure_max_cas(&scheme_max_symbol_length, len);
+#else
+  if (len > scheme_max_symbol_length) {
+    scheme_max_symbol_length = len;
+  }
+#endif
 }
 
 
@@ -366,15 +382,9 @@ make_a_symbol(const char *name, uintptr_t len, int kind)
   memcpy(sym->s, name, len);
   sym->s[len] = 0;
 
-#ifdef MZ_USE_PLACES
-  mzrt_ensure_max_cas(&scheme_max_symbol_length, len);
-#else
-  if ( len > scheme_max_symbol_length ) {
-    scheme_max_symbol_length = len;
-  }
-#endif
+  scheme_ensure_max_symbol_length(len);
 
-  return (Scheme_Object *) sym;
+  return (Scheme_Object *)sym;
 }
 
 Scheme_Object *
@@ -688,7 +698,7 @@ const char *scheme_symbol_name_and_size(Scheme_Object *sym, uintptr_t *length, i
       mzchar cbuf[100], *cs, *cresult;
       intptr_t clen;
       int p = 0;
-      uintptr_t i = 0;
+      intptr_t i = 0;
       intptr_t rlen;
 
       dz = 0;
@@ -928,6 +938,7 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
 {
   char buffer[100], *str;
   Scheme_Object *r;
+  Scheme_Thread *p;
 
   if (argc)
     r = argv[0];
@@ -937,6 +948,18 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
   if (r && !SCHEME_SYMBOLP(r) && !SCHEME_CHAR_STRINGP(r))
     scheme_wrong_contract("gensym", "(or/c symbol? string?)", 0, argc, argv);
 
+  if (!r) {
+    /* Generate a name using an enclosing module name during compilation, if available */
+    p = scheme_current_thread;
+    if (p->current_local_env && p->current_local_env->genv->module) {
+      r = SCHEME_PTR_VAL(p->current_local_env->genv->module->modname);
+      if (SCHEME_PAIRP(r))
+        r = SCHEME_CAR(r);
+      if (!SCHEME_SYMBOLP(r))
+        r = NULL;
+    }
+  }
+  
   if (r) {
     char buf[64];
     if (SCHEME_CHAR_STRINGP(r)) {
@@ -953,6 +976,13 @@ static Scheme_Object *gensym(int argc, Scheme_Object *argv[])
   r = scheme_make_symbol(buffer);
 
   return r;
+}
+
+Scheme_Object *scheme_gensym(Scheme_Object *base)
+{
+  Scheme_Object *a[1];
+  a[0] = base;
+  return gensym(1, a);
 }
 
 Scheme_Object *scheme_symbol_append(Scheme_Object *s1, Scheme_Object *s2)

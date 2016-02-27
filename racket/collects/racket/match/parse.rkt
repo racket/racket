@@ -38,7 +38,7 @@
      (identifier? #'v)
      (Var (rearm #'v))]
     [(and p ...)
-     (And (map rearm+parse (syntax->list #'(p ...))))]
+     (OrderedAnd (map rearm+parse (syntax->list #'(p ...))))]
     [(or)
      (Not (Dummy stx))]
     [(or p ps ...)
@@ -48,7 +48,7 @@
     [(not p ...)
      ;; nots are conjunctions of negations
      (let ([ps (map (compose Not rearm+parse) (syntax->list #'(p ...)))])
-       (And ps))]
+       (OrderedAnd ps))]
     [(regexp r)
      (trans-match #'matchable?
                   (rearm #'(lambda (e) (regexp-match r e)))
@@ -101,12 +101,11 @@
      (ddk? #'dd)
      (let* ([count (ddk? #'dd)]
             [min (if (number? count) count #f)]
-            [max (if (number? count) count #f)]
             [ps (syntax->list #'(p ...))])
        (GSeq (cons (list (rearm+parse #'lp))
                         (for/list ([p ps]) (list (parse p))))
                   (cons min (map (lambda _ 1) ps))
-                  (cons max (map (lambda _ 1) ps))
+                  (cons #f (map (lambda _ 1) ps))
                   ;; vars in lp are lists, vars elsewhere are not
                   (cons #f (map (lambda _ #t) ps))
                   (Null (Dummy (syntax/loc stx _)))
@@ -163,7 +162,7 @@
     [(? p q1 qs ...)
      (OrderedAnd 
       (list (Pred (rearm #'p))
-            (And (map rearm+parse (syntax->list #'(q1 qs ...))))))]
+            (OrderedAnd (map rearm+parse (syntax->list #'(q1 qs ...))))))]
     [(? p)
      (Pred (rearm #'p))]
     [(app f ps ...) ;; only make a list for more than one pattern

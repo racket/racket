@@ -17,38 +17,95 @@
          "private/opt.rkt"
          "private/out.rkt"
          "private/arrow-val-first.rkt"
-         "private/orc.rkt")
+         "private/orc.rkt"
+         "private/list.rkt"
+         "private/and.rkt")
 
 (provide
- (except-out (all-from-out "private/arrow.rkt")
-             making-a-method
-             procedure-accepts-and-more?
-             check-procedure
-             check-procedure/more
-
-             contract-key
-             
-             ;; these two are provided for-syntax
-             ;check-tail-contract
-             ;make-this-parameters
-             
-             -> ->*)
+ base->?
+ ->d
+ base->-rngs/c
+ base->-doms/c
+ unconstrained-domain->
+ the-unsupplied-arg
+ unsupplied-arg?
+ method-contract?
+ matches-arity-exactly?
+ keywords-match
+ bad-number-of-results
+ (for-syntax check-tail-contract
+             make-this-parameters
+             parse-leftover->*)
+ tail-marks-match?
+ values/drop
+ arity-checking-wrapper
+ unspecified-dom
+ blame-add-range-context
+ blame-add-nth-arg-context
+ 
  (rename-out [->2 ->] [->*2 ->*])
  dynamic->*
+ predicate/c
+
+ ->i
+ box-immutable/c 
+ box/c
+ hash/c
+ hash/dc
+ vectorof
+ vector/c
+ vector-immutable/c
+ vector-immutableof
+ struct/dc
+ struct/c
+ struct-type-property/c
  
- (all-from-out "private/arr-i.rkt"
-               "private/box.rkt"
-               "private/hash.rkt"
-               "private/vector.rkt"
-               "private/struct-dc.rkt"
-               "private/struct-prop.rkt")
- (except-out (all-from-out "private/base.rkt")
-             current-contract-region)
- (except-out (all-from-out "private/misc.rkt")
-             check-between/c
-             check-unary-between/c
-             random-any/c)
- symbols or/c one-of/c
+ contract
+ recursive-contract
+ invariant-assertion
+ 
+ flat-murec-contract
+ and/c
+ not/c
+ =/c >=/c <=/c </c >/c between/c
+ integer-in
+ char-in
+ real-in
+ natural-number/c
+ string-len/c
+ false/c
+ printable/c
+ listof list*of non-empty-listof cons/c list/c cons/dc
+ *list/c
+ promise/c
+ syntax/c
+ 
+ parameter/c
+ procedure-arity-includes/c
+ 
+ any/c
+ any
+ none/c
+ make-none/c
+ 
+ prompt-tag/c
+ continuation-mark-key/c
+ 
+ channel/c
+ evt/c
+ 
+ flat-contract
+ flat-contract-predicate
+ flat-named-contract
+ 
+ blame-add-car-context
+ blame-add-cdr-context
+ raise-not-cons-blame-error
+ 
+ rename-contract
+ if/c
+ 
+ symbols or/c first-or/c one-of/c
  flat-rec-contract
  provide/contract
  ;(for-syntax make-provide/contract-transformer) ;; not documented!
@@ -68,4 +125,30 @@
  list-contract?
  
  ;; from private/case-arrow.rkt
- case->)
+ case->
+
+ ;; from here (needs `->`, so can't be deeper)
+ failure-result/c
+
+ contract?
+ chaperone-contract?
+ impersonator-contract?
+ flat-contract?
+ 
+ contract-late-neg-projection
+ contract-name
+ contract-projection
+ contract-val-first-projection
+ get/build-late-neg-projection
+ get/build-val-first-projection
+ 
+ ;; not documented.... (ie unintentional export)
+ n->th)
+
+
+;; failure-result/c : contract
+;; Describes the optional failure argument passed to hash-ref, for example.
+;; If the argument is a procedure, it must be a thunk, and it is applied. Otherwise
+;; the argument is simply the value to return.
+(define failure-result/c
+  (if/c procedure? (-> any) any/c))

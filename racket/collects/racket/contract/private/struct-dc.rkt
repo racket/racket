@@ -223,7 +223,7 @@
 (define (struct/dc-first-order ctc)
   (base-struct/dc-pred ctc))
 
-(define (struct/dc-proj ctc)
+(define (struct/dc-late-neg-proj ctc)
   (define pred? (base-struct/dc-pred ctc))
   (λ (blame)
     (define orig-blames
@@ -240,7 +240,7 @@
            (define ctxt-string (format "the ~a field of" (subcontract-field-name subcontract)))
            (blame-add-context blame ctxt-string #:swap? #t)]
           [else #f])))
-    (define orig-indy-blames 
+    (define orig-indy-blames
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
         (and (subcontract? subcontract)
              (blame-replace-negative
@@ -260,7 +260,7 @@
         (cond
           [(indep? subcontract)
            (define sub-ctc (indep-ctc subcontract))
-           ((contract-projection sub-ctc) blame+ctxt)]
+           ((get/build-late-neg-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define mut-projs
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
@@ -268,7 +268,7 @@
         (cond
           [(and (indep? subcontract) (mutable? subcontract))
            (define sub-ctc (indep-ctc subcontract))
-           ((contract-projection sub-ctc) blame+ctxt)]
+           ((get/build-late-neg-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define orig-indy-projs
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
@@ -276,7 +276,7 @@
         (cond
           [(indep? subcontract)
            (define sub-ctc (indep-ctc subcontract))
-           ((contract-projection sub-ctc) blame+ctxt)]
+           ((get/build-late-neg-projection sub-ctc) blame+ctxt)]
           [else #f])))
     (define orig-mut-indy-projs
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))]
@@ -284,16 +284,17 @@
         (cond
           [(indep? subcontract)
            (define sub-ctc (indep-ctc subcontract))
-           ((contract-projection sub-ctc) blame+ctxt)]
+           ((get/build-late-neg-projection sub-ctc) blame+ctxt)]
           [else #f])))
-    (λ (v)
+    (λ (v neg-party)
       (cond
         [(and (struct/c-imp-prop-pred? v)
-              (contract-stronger? (struct/c-imp-prop-get v) ctc))
+              (contract-struct-stronger? (struct/c-imp-prop-get v) ctc))
          v]
         [else
          (unless (pred? v)
-           (raise-blame-error blame v '(expected: "~a?" given: "~e")
+           (raise-blame-error blame #:missing-party neg-party
+                              v '(expected: "~a?" given: "~e")
                               (base-struct/dc-struct-name ctc)
                               v))
          (define invariant (for/or ([c (in-list (base-struct/dc-subcontracts ctc))])
@@ -319,7 +320,7 @@
                           v
                           impersonate-args)
                     (if invariant
-                        (add-invariant-checks blame invariant chaperone-args)
+                        (add-invariant-checks blame neg-party invariant chaperone-args)
                         chaperone-args))]
              [else
               (define subcontract (car subcontracts)) ;; (or/c subcontract? invariant?)
@@ -329,6 +330,7 @@
               (define mut-indy-proj (car mut-indy-projs))
               (define sel (and (subcontract? subcontract) (subcontract-ref subcontract)))
               (define blame (car blames))
+              (define blame+neg-party (cons blame neg-party))
               (define mut-blame (car mut-blames))
               (define indy-blame (car indy-blames))
               (define mut-indy-blame (car mut-indy-blames))
@@ -338,20 +340,21 @@
                       'struct/dc 
                       (apply (dep-dep-proc subcontract) dep-args))))
               (when dep-ctc (check-flat/chaperone dep-ctc subcontract))
-              (define dep-ctc-blame-proj (and dep-ctc (contract-projection dep-ctc)))
+              (define dep-ctc-blame-proj (and dep-ctc (get/build-late-neg-projection dep-ctc)))
               (define-values (new-chaperone-args new-impersonate-args)
                 (cond
                   [(invariant? subcontract)
-                   (unless (with-continuation-mark contract-continuation-mark-key blame
-                             (apply (invariant-dep-proc subcontract) dep-args))
-                     (raise-invariant-blame-failure blame v
+                   (unless (with-contract-continuation-mark
+                            blame+neg-party
+                            (apply (invariant-dep-proc subcontract) dep-args))
+                     (raise-invariant-blame-failure blame neg-party v
                                                     (reverse dep-args)
                                                     (reverse (invariant-fields subcontract))))
                    (values chaperone-args impersonate-args)]
                   [(immutable? subcontract)
-                   (define (chk fld v) (with-continuation-mark
-                                           contract-continuation-mark-key blame
-                                         (proj v)))
+                   (define (chk fld v) (with-contract-continuation-mark
+                                        blame+neg-party
+                                        (proj v neg-party)))
                    (chk #f (sel v)) ;; check the field contract immediately
                    (values (if (flat-contract? (indep-ctc subcontract))
                                chaperone-args
@@ -360,9 +363,9 @@
                   [(lazy-immutable? subcontract)
                    (values (list* sel
                                   (cache-λ (fld v)
-                                           (with-continuation-mark
-                                            contract-continuation-mark-key blame
-                                            (proj v)))
+                                           (with-contract-continuation-mark
+                                            blame+neg-party
+                                            (proj v neg-party)))
                                   chaperone-args)
                            impersonate-args)]
                   [(mutable? subcontract)
@@ -370,34 +373,34 @@
                        (values chaperone-args
                                (list* sel
                                       (λ (fld v)
-                                        (with-continuation-mark
-                                         contract-continuation-mark-key blame
-                                         (proj v)))
+                                        (with-contract-continuation-mark
+                                         blame+neg-party
+                                         (proj v neg-party)))
                                       (mutable-set subcontract)
                                       (λ (fld v)
-                                        (with-continuation-mark
-                                         contract-continuation-mark-key blame
-                                         (mut-proj v)))
+                                        (with-contract-continuation-mark
+                                         blame+neg-party
+                                         (mut-proj v neg-party)))
                                       impersonate-args))
                        (values (list* sel
                                       (λ (fld v)
-                                        (with-continuation-mark
-                                         contract-continuation-mark-key blame
-                                         (proj v)))
+                                        (with-contract-continuation-mark
+                                         blame+neg-party
+                                         (proj v neg-party)))
                                       (mutable-set subcontract)
                                       (λ (fld v)
-                                        (with-continuation-mark
-                                         contract-continuation-mark-key blame
-                                         (mut-proj v)))
+                                        (with-contract-continuation-mark
+                                         blame+neg-party
+                                         (mut-proj v neg-party)))
                                       chaperone-args)
                                impersonate-args))]
                   [else
                    (define proj (dep-ctc-blame-proj blame))
                    (cond
                      [(dep-immutable? subcontract)
-                      (define (chk fld v) (with-continuation-mark
-                                              contract-continuation-mark-key blame
-                                            (proj v)))
+                      (define (chk fld v) (with-contract-continuation-mark
+                                           blame+neg-party
+                                           (proj v neg-party)))
                       (chk #f (sel v)) ;; check the field contract immediately
                       (values (if (flat-contract? dep-ctc)
                                   chaperone-args
@@ -406,9 +409,9 @@
                      [(dep-lazy-immutable? subcontract)
                       (values (list* sel
                                      (cache-λ (fld v)
-                                              (with-continuation-mark
-                                               contract-continuation-mark-key blame
-                                               (proj v)))
+                                              (with-contract-continuation-mark
+                                               blame+neg-party
+                                               (proj v neg-party)))
                                      chaperone-args)
                               impersonate-args)]
                      [(dep-mutable? subcontract)
@@ -416,51 +419,53 @@
                       (if (equal? (dep-type subcontract) '#:impersonator)
                           (values (list* sel
                                          (λ (fld v)
-                                           (with-continuation-mark
-                                            contract-continuation-mark-key blame
-                                            (proj v)))
+                                           (with-contract-continuation-mark
+                                            blame+neg-party
+                                            (proj v neg-party)))
                                          (dep-mutable-set subcontract)
                                          (λ (fld v)
-                                           (with-continuation-mark
-                                            contract-continuation-mark-key blame
-                                            (mut-proj v)))
+                                           (with-contract-continuation-mark
+                                            blame+neg-party
+                                            (mut-proj v neg-party)))
                                          chaperone-args)
                                   impersonate-args)
                           (values chaperone-args
                                   (list* sel
                                          (λ (fld v)
-                                           (with-continuation-mark
-                                            contract-continuation-mark-key blame
-                                            (proj v)))
+                                           (with-contract-continuation-mark
+                                            blame+neg-party
+                                            (proj v neg-party)))
                                          (dep-mutable-set subcontract)
                                          (λ (fld v)
-                                           (with-continuation-mark
-                                            contract-continuation-mark-key blame
-                                            (mut-proj v)))
+                                           (with-contract-continuation-mark
+                                            blame+neg-party
+                                            (mut-proj v neg-party)))
                                          impersonate-args)))]
                      [(dep-on-state-immutable? subcontract)
-                      (proj (sel v))
+                      (proj (sel v) neg-party)
                       (values (list* sel
                                      (λ (strct val)
-                                       (with-continuation-mark
-                                        contract-continuation-mark-key blame
+                                       (with-contract-continuation-mark
+                                        blame+neg-party
                                         (build-dep-on-state-proj
                                          (base-struct/dc-subcontracts ctc) subcontract strct
-                                         orig-indy-projs orig-indy-blames blame val)))
+                                         orig-indy-projs orig-indy-blames blame neg-party val)))
                                      chaperone-args)
                               impersonate-args)]
                      [(dep-on-state-mutable? subcontract)
-                      (proj (sel v))
+                      (proj (sel v) neg-party)
                       (define (get-chap-proc strct val)
-                        (with-continuation-mark
-                         contract-continuation-mark-key blame
+                        (with-contract-continuation-mark
+                         blame+neg-party
                          (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
-                                                  orig-indy-projs orig-indy-blames blame val)))
+                                                  orig-indy-projs orig-indy-blames blame neg-party
+                                                  val)))
                       (define (set-chap-proc strct val)
-                        (with-continuation-mark contract-continuation-mark-key blame
-                          (build-dep-on-state-proj
-                           (base-struct/dc-subcontracts ctc) subcontract strct
-                           orig-mut-indy-projs orig-mut-indy-blames mut-blame val)))
+                        (with-contract-continuation-mark
+                         blame+neg-party
+                         (build-dep-on-state-proj
+                          (base-struct/dc-subcontracts ctc) subcontract strct
+                          orig-mut-indy-projs orig-mut-indy-blames mut-blame neg-party val)))
                       (if (eq? (dep-type subcontract) '#:impersonator)
                           (values chaperone-args
                                   (list* sel
@@ -481,12 +486,14 @@
                     new-impersonate-args
                     (if (and (subcontract? subcontract) (subcontract-depended-on? subcontract))
                         (cons (if dep-ctc-blame-proj 
-                                  ((dep-ctc-blame-proj indy-blame) ((subcontract-ref subcontract) v))
-                                  (indy-proj ((subcontract-ref subcontract) v)))
+                                  ((dep-ctc-blame-proj indy-blame)
+                                   ((subcontract-ref subcontract) v)
+                                   neg-party)
+                                  (indy-proj ((subcontract-ref subcontract) v) neg-party))
                               dep-args)
                         dep-args))]))]))))
 
-(define (check-invariant/mut blame invariant val sel field-v)
+(define (check-invariant/mut blame neg-party invariant val sel field-v)
   (define args
     (let loop ([sels (invariant-sels invariant)]
                [args '()])
@@ -498,15 +505,15 @@
              (loop (cdr sels) (cons field-v args))
              (loop (cdr sels) (cons (sel val) args)))])))
   (unless (apply (invariant-dep-proc invariant) args)
-    (raise-invariant-blame-failure (blame-swap blame) val
+    (raise-invariant-blame-failure (blame-swap blame) neg-party val
                                    (reverse args)
                                    (reverse
                                     (invariant-fields invariant)))))
 
-(define (raise-invariant-blame-failure blame v vals field-names)
+(define (raise-invariant-blame-failure blame neg-party v vals field-names)
   (raise-blame-error 
-   blame
-   v 
+   blame #:missing-party neg-party
+   v
    "#:inv does not hold~a" 
    (apply
     string-append
@@ -515,7 +522,7 @@
                [field-name (in-list field-names)])
       (format "\n  ~a: ~e" field-name dep-arg)))))
 
-(define (add-invariant-checks blame invariant chaperone-args)
+(define (add-invariant-checks blame neg-party invariant chaperone-args)
   (let loop ([invariant-field-sels/muts
               (for/list ([sel (in-list (invariant-sels invariant))]
                          [mut (in-list (invariant-muts invariant))]
@@ -531,7 +538,7 @@
           (define mut (cdr sel/mut))
           (list mut
                 (λ (stct field-v)
-                  (check-invariant/mut blame invariant stct sel field-v)
+                  (check-invariant/mut blame neg-party invariant stct sel field-v)
                   field-v))))]
       [else
        (define fn (car chaperone-args))
@@ -548,7 +555,7 @@
          [which
           (list* fn
                  (λ (stct field-v)
-                   (check-invariant/mut blame invariant stct sel field-v)
+                   (check-invariant/mut blame neg-party invariant stct sel field-v)
                    (proc stct field-v))
                  (loop (remove-ith invariant-field-sels/muts which)
                        (cddr chaperone-args)))]
@@ -565,7 +572,8 @@
          (cdr l)
          (cons (car l) (remove-ith (cdr l) (- i 1))))]))
 
-(define (build-dep-on-state-proj orig-subcontracts this-subcontract strct projs blames blame val)
+(define (build-dep-on-state-proj orig-subcontracts this-subcontract strct projs
+                                 blames blame neg-party val)
   (let loop ([subcontracts orig-subcontracts]
              [blames blames]
              [projs projs]
@@ -582,7 +590,7 @@
           (define the-ctc 
             (coerce-contract 'struct/dc (apply (dep-dep-proc this-subcontract) dep-args)))
           (check-flat/chaperone the-ctc subcontract)
-          (((contract-projection the-ctc) blame) val)]
+          (((get/build-late-neg-projection the-ctc) blame) val neg-party)]
          [else
           (define indy-blame (car blames))
           (define proj (car projs))
@@ -591,7 +599,7 @@
                  (coerce-contract 
                   'struct/dc 
                   (apply (dep-dep-proc subcontract) dep-args))))
-          (define dep-ctc-blame-proj (and dep-ctc (contract-projection dep-ctc)))
+          (define dep-ctc-blame-proj (and dep-ctc (get/build-late-neg-projection dep-ctc)))
           
           (when (dep? subcontract)
             (check-flat/chaperone dep-ctc subcontract))
@@ -599,8 +607,10 @@
           (define new-dep-args
             (if (and (subcontract? subcontract) (subcontract-depended-on? subcontract))
                 (cons (if dep-ctc-blame-proj 
-                          ((dep-ctc-blame-proj indy-blame) ((subcontract-ref subcontract) strct))
-                          (proj ((subcontract-ref subcontract) strct)))
+                          ((dep-ctc-blame-proj indy-blame)
+                           ((subcontract-ref subcontract) strct)
+                           neg-party)
+                          (proj ((subcontract-ref subcontract) strct) neg-party))
                       dep-args)
                 dep-args))
           (loop (cdr subcontracts)
@@ -644,8 +654,8 @@
                           (immutable? that-subcontract))
                      (and (lazy-immutable? this-subcontract)
                           (lazy-immutable? that-subcontract)))
-                 (contract-stronger? (indep-ctc this-subcontract)
-                                     (indep-ctc that-subcontract)))]
+                 (contract-struct-stronger? (indep-ctc this-subcontract)
+                                            (indep-ctc that-subcontract)))]
            [(and (dep? this-subcontract)
                  (dep? that-subcontract))
             (and (or (dep-mutable? this-subcontract)
@@ -678,36 +688,33 @@
 
 (define-struct (struct/dc base-struct/dc) ()
   #:property prop:chaperone-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-chaperone-contract-property
-     #:name struct/dc-name
-     #:first-order struct/dc-first-order
-     #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?
-     #:generate struct/dc-generate
-     #:exercise struct/dc-exercise)))
+  (build-chaperone-contract-property
+   #:name struct/dc-name
+   #:first-order struct/dc-first-order
+   #:late-neg-projection struct/dc-late-neg-proj
+   #:stronger struct/dc-stronger?
+   #:generate struct/dc-generate
+   #:exercise struct/dc-exercise))
 
 (define-struct (flat-struct/dc base-struct/dc) ()
   #:property prop:flat-contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-flat-contract-property
-     #:name struct/dc-name
-     #:first-order struct/dc-flat-first-order
-     #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?
-     #:generate struct/dc-generate
-     #:exercise struct/dc-exercise)))
+  (build-flat-contract-property
+   #:name struct/dc-name
+   #:first-order struct/dc-flat-first-order
+   #:late-neg-projection struct/dc-late-neg-proj
+   #:stronger struct/dc-stronger?
+   #:generate struct/dc-generate
+   #:exercise struct/dc-exercise))
 
 (define-struct (impersonator-struct/dc base-struct/dc) ()
   #:property prop:contract
-  (parameterize ([skip-projection-wrapper? #t])
-    (build-contract-property
-     #:name struct/dc-name
-     #:first-order struct/dc-first-order
-     #:projection struct/dc-proj
-     #:stronger struct/dc-stronger?
-     #:generate struct/dc-generate
-     #:exercise struct/dc-exercise)))
+  (build-contract-property
+   #:name struct/dc-name
+   #:first-order struct/dc-first-order
+   #:late-neg-projection struct/dc-late-neg-proj
+   #:stronger struct/dc-stronger?
+   #:generate struct/dc-generate
+   #:exercise struct/dc-exercise))
 
 (define (build-struct/dc subcontracts constructor pred struct-name here name-info struct/c?)
   (for ([subcontract (in-list subcontracts)])
@@ -1412,24 +1419,28 @@
              #:exp
              ;; if this is #t, when we have to avoid putting the property on here.
              (if (null? s-chap-code) 
-                 #`(if (pred? #,(opt/info-val opt/info))
-                       (begin
-                         #,@s-fo-code
-                         #,(opt/info-val opt/info))
-                       (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name))
-                 #`(if (and (stronger-prop-pred? #,(opt/info-val opt/info))
-                            (let ([v (stronger-prop-get #,(opt/info-val opt/info))])
-                              (and (eq? (vector-ref v index) free-var) ...)))
-                       #,(opt/info-val opt/info)
-                       (if (pred? #,(opt/info-val opt/info))
-                           (begin
-                             #,@s-fo-code
-                             (chaperone-struct
-                              #,(opt/info-val opt/info)
-                              #,@(reverse s-chap-code) ;; built the last backwards, so reverse it here
-                              stronger-prop-desc
-                              (vector free-var ...)))
-                           (struct/dc-error #,(opt/info-blame opt/info) #,(opt/info-val opt/info) 'struct-name))))
+                 #`(with-contract-continuation-mark
+                    #,(opt/info-blame opt/info)
+                    (if (pred? #,(opt/info-val opt/info))
+                        (begin
+                          #,@s-fo-code
+                          #,(opt/info-val opt/info))
+                        (struct/dc-error blame #,(opt/info-val opt/info) 'struct-name)))
+                 #`(with-contract-continuation-mark
+                    #,(opt/info-blame opt/info)
+                    (if (and (stronger-prop-pred? #,(opt/info-val opt/info))
+                             (let ([v (stronger-prop-get #,(opt/info-val opt/info))])
+                               (and (eq? (vector-ref v index) free-var) ...)))
+                        #,(opt/info-val opt/info)
+                        (if (pred? #,(opt/info-val opt/info))
+                            (begin
+                              #,@s-fo-code
+                              (chaperone-struct
+                               #,(opt/info-val opt/info)
+                               #,@(reverse s-chap-code) ;; built the last backwards, so reverse it here
+                               stronger-prop-desc
+                               (vector free-var ...)))
+                            (struct/dc-error #,(opt/info-blame opt/info) #,(opt/info-val opt/info) 'struct-name)))))
              #:lifts
              s-lifts
              #:superlifts
@@ -1446,7 +1457,8 @@
   (blame-add-context blame (format "the ~a field of" fld)))
 
 (define (struct/dc-error blame obj what)
-  (raise-blame-error blame obj 
+  (raise-blame-error blame
+                     obj
                      '(expected: "a struct of type ~a")
                      what))
 

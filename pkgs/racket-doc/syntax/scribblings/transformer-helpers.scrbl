@@ -10,3 +10,4 @@
 @include-section["struct.scrbl"]
 @include-section["path-spec.scrbl"]
 @include-section["template.scrbl"]
+@include-section["transformer.scrbl"]

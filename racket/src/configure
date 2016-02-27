@@ -624,11 +624,13 @@ enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 subdirs
+MAKE_LOCAL_RACKET
 CGC_IF_NEEDED_FOR_MMM
 RUN_RACKET_MAIN_VARIANT
 RUN_RACKET_MMM
 RUN_RACKET_CGC
 INSTALL_LIBS_ENABLE
+INSTALL_SETUP_RACKET_FLAGS
 INSTALL_SETUP_FLAGS
 MAIN_VARIANT
 CGC_CAP_INSTALLED
@@ -637,11 +639,16 @@ CGC
 MMM_CAP_INSTALLED
 MMM_INSTALLED
 MMM
+GR_APP_CONFIG_PATH
+GUI_CONFIG_PATH
 CONFIG_PATH
+GR_APP_COLLECTS_PATH
+GUI_COLLECTS_PATH
 COLLECTS_PATH
 includepltdir
 etcpltdir
 sharepltdir
+libpltdir_rel
 libpltdir
 appsdir
 collectsdir
@@ -668,6 +675,7 @@ MAKE_COPYTREE
 MAKE_GRACKET
 LIBFINISH
 MRLIBINSTALL
+ICP_LIB
 ICP
 WXVARIANT
 WXLIBS
@@ -708,6 +716,7 @@ PLAIN_CC
 MZLINKER
 REZ
 CC_FOR_BUILD
+STRIP_LIB_DEBUG
 STRIP_DEBUG
 ARFLAGS
 STATIC_AR
@@ -800,6 +809,7 @@ enable_natipkg
 enable_shared
 enable_dynlib
 enable_lt
+enable_libs
 enable_libffi
 enable_sdk
 enable_xonx
@@ -1437,7 +1447,7 @@ Optional Features:
   --enable-float          support single-precision floats (enabled by default)
   --enable-floatinstead   use single-precision by default (NOT RECOMMENDED)
   --enable-extflonum      support extflonums (enabled by default, if available)
-  --enable-racket=<path>  use <path> as Racket executable to build Racket
+  --enable-racket=<path>  use <path> as Racket to build; or "auto" to create
   --enable-origtree       install with original directory structure
   --enable-pkgscope=<s>   set `raco pkg' default: installation, user, or shared
   --enable-docs           build docs on install (enabled by default)
@@ -1446,7 +1456,7 @@ Optional Features:
   --enable-shared         create shared libraries (ok, but not recommended)
   --enable-dynlib         same as --enable-shared
   --enable-lt=<prog>      use <prog> instead of libtool; disable to use bundled
-  --enable-libs           install Racket static libraries, if any
+  --enable-libs           install static libraries (enabled by default for Unix)
   --enable-libffi         use installed libffi (enabled by default for Unix)
   --enable-sdk=<path>     use Mac OS X 10.4 SDK directory
   --enable-sdk5=<path>    use Mac OS X 10.5 SDK directory
@@ -1459,7 +1469,7 @@ Optional Features:
   --enable-macprefix      allow --prefix with a Mac OS X install
   --enable-mac64          allow 64-bit Mac OS X build (enabled by default)
   --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)
-  --enable-sgc            use Senora GC instead of the Boehm GC (enabled by default)
+  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)
   --enable-sgcdebug       use Senora GC for debugging (expensive debug mode)
   --enable-backtrace      3m: support GC backtrace dumps (expensive debug mode)
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
@@ -2677,9 +2687,9 @@ else
   enable_lt=default
 fi
 
-# Check whether --enable-dynlib was given.
-if test "${enable_dynlib+set}" = set; then :
-  enableval=$enable_dynlib;
+# Check whether --enable-libs was given.
+if test "${enable_libs+set}" = set; then :
+  enableval=$enable_libs;
 fi
 
 
@@ -2865,7 +2875,9 @@ else
   case "$host_os" in
   darwin*)
     enable_quartz=yes
-    enable_origtree=yes
+    if test "${enable_origtree}" != "no" ; then
+      enable_origtree=yes
+    fi
     if test "${prefix}" != "NONE" ; then
       if test "${enable_macprefix}" != "yes" ; then
         echo "ERROR: --prefix not allowed for a Mac OS X build, unless either"
@@ -2945,6 +2957,7 @@ if test "${unixstyle}" = "no" ; then
   fi
   bindir='${prefix}/bin'
   libpltdir='${prefix}/lib'
+  libpltdir_rel='lib'
   sharepltdir='${prefix}/share'
   etcpltdir='${prefix}/etc'
   includepltdir='${prefix}/include'
@@ -2954,6 +2967,8 @@ if test "${unixstyle}" = "no" ; then
   appsdir='${prefix}/share/applications'
   COLLECTS_PATH="../collects"
   CONFIG_PATH="../etc"
+  GR_APP_COLLECTS_PATH="../../../../collects"
+  GR_APP_CONFIG_PATH="../../../../etc"
   INSTALL_ORIG_TREE=yes
 else
   if test "${prefix}" = "NONE" ; then
@@ -2961,14 +2976,25 @@ else
     prefix="${ac_default_prefix}"
   fi
   libpltdir="${libdir}/"'${PACKAGE}'
+  libpltdir_rel=""
+  if test "${libpltdir}" = '${exec_prefix}/lib/${PACKAGE}' ; then
+    if test "${bindir}" = '${exec_prefix}/bin' ; then
+      libpltdir_rel="lib/"'${PACKAGE}'
+    fi
+  fi
   sharepltdir="${datadir}/"'${PACKAGE}'
   etcpltdir="${sysconfdir}/"'${PACKAGE}'
   includepltdir="${includedir}/"'${PACKAGE}'
   MAKE_COPYTREE=copytree
   COLLECTS_PATH='${collectsdir}'
   CONFIG_PATH='${etcpltdir}'
+  GR_APP_COLLECTS_PATH="${COLLECTS_PATH}"
+  GR_APP_CONFIG_PATH="${CONFIG_PATH}"
   INSTALL_ORIG_TREE=no
 fi
+
+GUI_COLLECTS_PATH="${COLLECTS_PATH}"
+GUI_CONFIG_PATH="${CONFIG_PATH}"
 
 ###### Make sure GRacket is really there ######
 
@@ -3045,6 +3071,7 @@ show_explicitly_enabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
+show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
 show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
 
@@ -3087,7 +3114,11 @@ if test "${enable_sysroot}" != "" ; then
 fi
 
 if test "${enable_racket}" != "" ; then
-   echo "=== Using Racket executable ${enable_racket}"
+  if test "${enable_racket}" == "auto" ; then
+     echo "=== Creating and using local Racket executable"
+  else
+     echo "=== Using Racket executable ${enable_racket}"
+  fi
 fi
 
 INSTALL_PKGSCOPE=user
@@ -3159,16 +3190,21 @@ CGC_CAP_INSTALLED=CGC
 MAIN_VARIANT=3m
 
 INSTALL_SETUP_FLAGS=
+INSTALL_SETUP_RACKET_FLAGS=
 
 INSTALL_LIBS_ENABLE=no-install
 
 STRIP_DEBUG=":"
+STRIP_LIB_DEBUG=":"
+strip_debug_flags=""
 enable_strip_by_default=yes
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
 skip_iconv_check=no
 check_page_size=yes
+
+MAKE_LOCAL_RACKET=no-local-racket
 
 ###### OSKit stuff #######
 
@@ -3268,7 +3304,16 @@ if test "${enable_ios}" != "" ; then
   SUB_CONFIGURE_EXTRAS="${SUB_CONFIGURE_EXTRAS} LDFLAGS="'"'"${LDFLAGS}"'"'
 fi
 
+
 if test "${enable_oskit}" = "no" ; then
+  # Auto-set CC, CPP, etc.
+
+  if test "${CFLAGS}${CC}${CPP}" = "" ; then
+    starts_out_default=yes
+  else
+    starts_out_default=no
+  fi
+
   ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -4195,6 +4240,18 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+
+  if test "$starts_out_default" = "yes" ; then
+    if test "$GCC" = "yes" ; then
+      # Auto selection of C compiler picked GCC, so we
+      # assume it also picked the GNU preprocessor; move
+      # auto-picked CFLAGS to PREFLAGS so that compilation
+      # and preprocessing are in sync (e.g., for optimization flags)
+      PREFLAGS="${CFLAGS} ${PREFLAGS}"
+      CPPFLAGS="${CFLAGS} ${CPPFLAGS}"
+      CFLAGS=""
+    fi
+  fi
   if test "$AS" = '' ; then
     AS="${ac_tool_prefix}as"
     as_was_set=no
@@ -4490,7 +4547,8 @@ if test "${enable_jit}" = "yes" ; then
   check_for_mprotect=yes
 fi
 
-if test "${enable_libs}" = "yes" ; then
+if test "${enable_libs}" != "no" ; then
+  # Canceled for some platforms below:
   INSTALL_LIBS_ENABLE=install
 fi
 
@@ -4516,7 +4574,7 @@ case "$host_os" in
     LIBS="$LIBS -lsocket -lnsl -lintl"
     need_gcc_static_libgcc="yes"
     check_gcc_dash_e="yes"
-    try_poll_syscall="yes"
+    try_poll_syscall="no" # poll() has performance problems on Solaris?
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"
     ;;
@@ -4614,9 +4672,15 @@ case "$host_os" in
     MZINSTALLBINDIR="${MZINSTALLBINDIR}/.."
     EXE_SUFFIX=".exe"
     COLLECTS_PATH="collects"
+    GUI_COLLECTS_PATH="../collects"
     CONFIG_PATH="etc"
+    GUI_CONFIG_PATH="../etc"
     skip_iconv_check=yes
     check_for_mprotect=no
+    # ".a" is typically not useful, since we always build a DLL:
+    if test "${enable_libs}" == "" ; then
+      INSTALL_LIBS_ENABLE=no-install
+    fi
 
 $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
 
@@ -4625,6 +4689,52 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     fi
     if `which ${host}-dlltool > /dev/null` ; then
       DLLTOOL="${host}-dlltool"
+    fi
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lwinpthread" >&5
+$as_echo_n "checking for pthread_create in -lwinpthread... " >&6; }
+if ${ac_cv_lib_winpthread_pthread_create+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lwinpthread  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pthread_create ();
+int
+main ()
+{
+return pthread_create ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_winpthread_pthread_create=yes
+else
+  ac_cv_lib_winpthread_pthread_create=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_winpthread_pthread_create" >&5
+$as_echo "$ac_cv_lib_winpthread_pthread_create" >&6; }
+if test "x$ac_cv_lib_winpthread_pthread_create" = xyes; then :
+  has_winpthread=yes
+else
+  has_winpthread=no
+fi
+
+    if test "${has_winpthread}" == "yes" ; then
+      LIBS="${LIBS} -Wl,-Bstatic -lwinpthread"
     fi
     case "$build_os" in
       *cygwin*)
@@ -4698,6 +4808,16 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
     try_kqueue_syscall=yes
 
+    # Although select() generally works as well as poll() on OS X,
+    # getdtablesize() appears not to be constant within a process,
+    # and that breaks static allocation of fd_sets
+    try_poll_syscall=yes
+
+    # ".a" is typically not useful, since we always build a ".dylib":
+    if test "${enable_libs}" == "" ; then
+      INSTALL_LIBS_ENABLE=no-install
+    fi
+
     SO_SUFFIX=.dylib
 
     # Force 32-bit build unless mac64 is enabled:
@@ -4743,9 +4863,13 @@ $as_echo "#define HAVE_STDINT_H 1" >>confdefs.h
         FRAMEWORK_REL_INSTALL=no
         FRAMEWORK_PREFIX=''
       else
-        FRAMEWORK_INSTALL_DIR='${libdir}'
+        FRAMEWORK_INSTALL_DIR='${libpltdir}'
         FRAMEWORK_REL_INSTALL=yes
-        FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
+        if test "${libpltdir_rel}" = "" ; then
+          FRAMEWORK_PREFIX='$(FRAMEWORK_ABS_PREFIX)'
+        else
+          FRAMEWORK_PREFIX='$(FRAMEWORK_REL_PREFIX)'
+        fi
       fi
     else
       PREFLAGS="$PREFLAGS -DXONX "
@@ -4801,6 +4925,11 @@ if test "${enable_strip}" = "" ; then
     enable_strip=yes
   fi
 fi
+
+try_archive_conftest()
+{
+   $AR $ARFLAGS conftest.a conftest.$OBJEXT > /dev/null 2>&1
+}
 
 if test "${enable_strip}" = "yes" ; then
   if test -n "$ac_tool_prefix"; then
@@ -4896,7 +5025,32 @@ else
 fi
 
   # Used to add -S flag, but not all `strip' variants support it:
-  STRIP_DEBUG="$STRIP"
+  STRIP_DEBUG="${STRIP}"
+  if test "${INSTALL_LIBS_ENABLE}" = "install" ; then
+    # Can only support library stripping if something like "-S" is available:
+     msg="for strip -S"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+    set_strip_lib=no
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int f() { return 0; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  try_archive_conftest
+else
+  set_strip_lib=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+    if test conftest.a ; then
+      if "${STRIP_DEBUG}" -S conftest.a > /dev/null 2>&1 ; then
+        STRIP_LIB_DEBUG="${STRIP_DEBUG} -S"
+        set_strip_lib=yes
+      fi
+    fi
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $set_strip_lib" >&5
+$as_echo "$set_strip_lib" >&6; }
+  fi
 fi
 
 ############## C flags ################
@@ -5638,6 +5792,58 @@ $as_echo "$use_large_page_size" >&6; }
 $as_echo "#define MZ_USE_LARGE_PAGE_SIZE 1" >>confdefs.h
 
   fi
+fi
+
+ msg="for __builtin_popcount"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    int main(int argc, char **argv) {
+      unsigned int i = argc;
+      return __builtin_popcount(i);
+    }
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  has_builtin_popcount=yes
+else
+  has_builtin_popcount=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_builtin_popcount" >&5
+$as_echo "$has_builtin_popcount" >&6; }
+if test "${has_builtin_popcount}" = "yes" ; then
+
+$as_echo "#define MZ_HAS_BUILTIN_POPCOUNT 1" >>confdefs.h
+
+fi
+
+ msg="for __builtin_clz"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
+$as_echo_n "checking $msg... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+    int main(int argc, char **argv) {
+      unsigned int i = argc;
+      return __builtin_clz(i);
+    }
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  has_builtin_clz=yes
+else
+  has_builtin_clz=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $has_builtin_clz" >&5
+$as_echo "$has_builtin_clz" >&6; }
+if test "${has_builtin_clz}" = "yes" ; then
+
+$as_echo "#define MZ_HAS_BUILTIN_CLZ 1" >>confdefs.h
+
 fi
 
 if test "${enable_backtrace}" = "yes" ; then
@@ -6428,6 +6634,11 @@ $as_echo "#define MZ_NO_EXTFLONUMS 1" >>confdefs.h
   fi
 fi
 
+if test "${enable_extflonum}" = "yes" ; then
+  $as_echo "#define MZ_INSIST_EXTFLONUMS 1" >>confdefs.h
+
+fi
+
 ############## libffi ################
 
 # Depends on pthread on some platforms
@@ -6560,12 +6771,15 @@ fi
 if test "${enable_noopt}" = "yes" ; then
   AWKPRG='BEGIN { FS = "(^| )-O(0|1|2|3|4|5|6|7|8|9)?( |$)" } /.*/ { for (i = 1; i < NF; i++) printf "%s ", $i; print $NF }'
   CFLAGS=`echo "$CFLAGS" | awk "$AWKPRG"`
+  CPPFLAGS=`echo "$CPPFLAGS" | awk "$AWKPRG"`
+  PREFLAGS=`echo "$PREFLAGS" | awk "$AWKPRG"`
 fi
 
 ############## usersetup ################
 
 if test "${enable_usersetup}" != "yes" ; then
   INSTALL_SETUP_FLAGS="${INSTALL_SETUP_FLAGS} --no-user"
+  INSTALL_SETUP_RACKET_FLAGS="${INSTALL_SETUP_RACKET_FLAGS} --no-user-path"
 fi
 
 ############## docs ################
@@ -6583,6 +6797,11 @@ $as_echo "#define SPLS_SUFFIX \"-natipkg\"" >>confdefs.h
 fi
 
 ############## Racket for Racket ################
+
+if test "${enable_racket}" = "auto" ; then
+  enable_racket="`pwd`/local/racket/racket3m"
+  MAKE_LOCAL_RACKET="local/racket/racket3m"
+fi
 
 if test "${enable_racket}" = "" ; then
   RUN_RACKET_CGC='$(RUN_THIS_RACKET_CGC)'
@@ -6649,6 +6868,7 @@ if test "${enable_shared}" = "yes" ; then
   LIBSFX=la
   WXLIBS=WXLIBSDYN
   ICP="${LIBTOOLPROG} --mode=install cp"
+  ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
   MRLIBINSTALL="install-lib"
   LIBFINISH="${LIBTOOLPROG} --mode=finish"
   LTO="lo"
@@ -6656,10 +6876,12 @@ if test "${enable_shared}" = "yes" ; then
   FOREIGN_CONVENIENCE="_convenience"
   FOREIGN_OBJSLIB="\$(FOREIGN_LIB)"
   MZOPTIONS="$MZOPTIONS -DMZ_USES_SHARED_LIB"
+  STRIP_LIB_DEBUG=":"
 else
   LIBSFX=a
   WXLIBS=WXLIBSNORM
   ICP=cp
+  ICP_LIB=cp
   MRLIBINSTALL="install-no-lib"
   LIBFINISH=echo
   LTO="o"
@@ -6674,6 +6896,16 @@ fi
 ############## final output ################
 
 LIBS="$LIBS $EXTRALIBS"
+
+
+
+
+
+
+
+
+
+
 
 
 

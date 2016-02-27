@@ -79,11 +79,11 @@ The difference is that each @racket[_id] is available for use in later
 visible one.
 
 @examples[
-(let* ([x (list "Borroughs")]
+(let* ([x (list "Burroughs")]
        [y (cons "Rice" x)]
        [z (cons "Edgar" y)])
   (list x y z))
-(let* ([name (list "Borroughs")]
+(let* ([name (list "Burroughs")]
        [name (cons "Rice" name)]
        [name (cons "Edgar" name)])
   name)
@@ -93,7 +93,7 @@ In other words, a @racket[let*] form is equivalent to nested
 @racket[let] forms, each with a single binding:
 
 @interaction[
-(let ([name (list "Borroughs")])
+(let ([name (list "Burroughs")])
   (let ([name (cons "Rice" name)])
     (let ([name (cons "Edgar" name)])
       name)))

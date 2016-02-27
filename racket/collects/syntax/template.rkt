@@ -1,6 +1,6 @@
 #lang racket/base
 (require "stx.rkt"
-         unstable/struct
+         racket/struct
          (for-template racket/base
                        "private/template-runtime.rkt"))
 

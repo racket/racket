@@ -204,7 +204,7 @@
 
 	(define (character? s)
 	  (and (symbol? s)
-	       (regexp-match #rx"'[\\]?.'" (symbol->string s))))
+	       (regexp-match #rx"'[\\]?.+'" (symbol->string s))))
         
         (define (mk-string s)
           (count-newlines s)
@@ -233,6 +233,9 @@
         (define IS "(?:u|U|l|L)*")
         
         (define symbol-complex (trans (seqs L (arbno (alt L D)))))
+
+        ;; Accomodate things like 10_1 in `availability` attributes:
+        (define pseudo-symbol-complex (trans (seqs (arbno D) "_" (arbno D))))
         
         (define number-complex
           (trans (alt*
@@ -246,8 +249,8 @@
                   (seqs "0" (one+/ D) IS) ;; octal
                   (seqs (one+/ D) IS))))  ;; integer
         
-        (define char-complex (trans (seqs (maybe L) "'([^\\']|\\\\.)+'")))
-        (define string-complex (trans (seqs (maybe L) "\"([^\\\"]|\\\\.)*\"")))
+        (define char-complex (trans "'([^\\']|\\\\.)+'"))
+        (define string-complex (trans "\"([^\\\"]|\\\\.)*\""))
         
         (define simple-table (make-vector 256 #f))
         
@@ -372,6 +375,11 @@
                            [(not simple)
                             (cond
                               [(regexp-match-positions symbol-complex s p)
+                               => (lambda (m)
+                                    (loop (cdar m)
+                                          (cons (symbol (subbytes s (caar m) (cdar m)))
+                                                result)))]
+                              [(regexp-match-positions pseudo-symbol-complex s p)
                                => (lambda (m)
                                     (loop (cdar m)
                                           (cons (symbol (subbytes s (caar m) (cdar m)))
@@ -876,7 +884,7 @@
                return if for while else switch case XFORM_OK_ASSIGN
                asm __asm __asm__ __volatile __volatile__ volatile __extension__
                __typeof sizeof __builtin_object_size
-
+            
                ;; These don't act like functions:
                setjmp longjmp _longjmp scheme_longjmp_setjmp scheme_mz_longjmp scheme_jit_longjmp
                scheme_jit_setjmp_prepare
@@ -890,11 +898,13 @@
                __get_errno_ptr ; QNX preprocesses errno to __get_errno_ptr
                __getreent ; Cygwin
 
-               strlen cos cosl sin sinl exp expl pow powl log logl sqrt sqrtl atan2 atan2l
-               isnan isinf fpclass _fpclass __fpclassify __fpclassifyf __fpclassifyl
-	       _isnan __isfinited __isnanl __isnan
+               strlen cos cosl sin sinl exp expl pow powl log logl sqrt sqrtl atan2 atan2l frexp
+               isnan isinf fpclass signbit _signbit _fpclass __fpclassify __fpclassifyf __fpclassifyl
+	       _isnan __isfinited __isnanl __isnan __signbit __signbitf __signbitd __signbitl
                __isinff __isinfl isnanf isinff __isinfd __isnanf __isnand __isinf
-               __inline_isnanl __inline_isnan
+               __inline_isnanl __inline_isnan __inline_signbit __inline_signbitf __inline_signbitd __inline_signbitl
+               __builtin_popcount __builtin_clz __builtin_isnan __builtin_isinf __builtin_signbit
+               __builtin_signbitf __builtin_signbitd __builtin_signbitl __builtin_isinf_sign
                _Generic
                __inline_isinff __inline_isinfl __inline_isinfd __inline_isnanf __inline_isnand __inline_isinf
                floor floorl ceil ceill round roundl fmod fmodl modf modfl fabs fabsl __maskrune _errno __errno
@@ -906,6 +916,7 @@
                __error __errno_location __toupper __tolower ___errno
                __attribute__ __mode__ ; not really functions in gcc
                __iob_func ; VC 8
+               __acrt_iob_func ; VC 14.0 (2015)
                |GetStdHandle| |__CFStringMakeConstantString|
                _vswprintf_c
                
@@ -955,6 +966,7 @@
           '(exit
             scheme_wrong_type scheme_wrong_number scheme_wrong_syntax
             scheme_wrong_count scheme_wrong_count_m scheme_wrong_rator scheme_read_err
+            scheme_wrong_contract scheme_contract_error
             scheme_raise_exn scheme_signal_error
             scheme_raise_out_of_memory
             ))
@@ -2531,9 +2543,10 @@
                                               type)))])
 		 (if (hash-ref non-gcing-functions name (lambda () #f))
 		     (when saw-gcing-call
-		       (log-error "[GCING] ~a in ~a: Function ~a declared __xform_nongcing__, but includes a function call."
+		       (log-error "[GCING] ~a in ~a: Function ~a declared __xform_nongcing__, but includes a function call at ~s."
 				  (tok-line saw-gcing-call) (tok-file saw-gcing-call)
-				  name))
+				  name
+                                  (tok-n saw-gcing-call)))
 		     (unless saw-gcing-call
 		       '
 		       (eprintf "[SUGGEST] Consider declaring ~a as __xform_nongcing__.\n"
@@ -3569,7 +3582,7 @@
 						   (list->seq (append func (list args))))
 						  ;; Call with pointer pushes
 						  (begin
-						    (set! saw-gcing-call (car e-))
+						    (set! saw-gcing-call (car func))
 						    (make-call
 						     "func call"
 						     #f #f
@@ -3995,8 +4008,6 @@
                       ;; Not a decl
                       (values (reverse decls) el))))))
         
-        (define braces-then-semi '(typedef struct union enum __extension__))
-        
         (define (get-one e comma-sep?)
           (let loop ([e e][result null][first #f][second #f])
             (cond
@@ -4016,7 +4027,7 @@
               [(and (eq? '|,| (tok-n (car e))) comma-sep?)
                (values (reverse (cons (car e) result)) (cdr e))]
               [(and (braces? (car e))
-                    (not (memq first '(typedef enum __extension__)))
+                    (not (memq first '(typedef enum)))
                     (or (not (memq first '(static extern const struct union)))
                         (equal? second "C") ; => extern "C" ...
                         (equal? second "C++") ; => extern "C++" ...
@@ -4028,7 +4039,10 @@
                      (values (reverse (cons (car e) result)) rest)
                      (values (reverse (list* (car rest) (car e) result)) (cdr rest))))]
               [else (loop (cdr e) (cons (car e) result)
-                          (or first (tok-n (car e)))
+                          (or first (let ([s (tok-n (car e))])
+                                      (if (memq s '(__extension__))
+                                          #f ; skip over annotation when deciding shape
+                                          s)))
                           (or second (and first (tok-n (car e)))))])))
         
         (define (foldl-statement e comma-sep? f a-init)

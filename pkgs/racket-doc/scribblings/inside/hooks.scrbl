@@ -64,6 +64,13 @@ Sets the path to be returned by @racket[(find-system-path
 'addon-dir)].}
 
 
+@function[(void scheme_set_exec_cmd
+                [const-char* path])]{
+
+Sets the path to be returned by @racket[(find-system-path
+'exec-file)].}
+
+
 @function[(void scheme_init_collection_paths_post
            [Scheme_Env* env]
            [Scheme_Object* pre_extra_paths]
@@ -82,6 +89,15 @@ The function calls @cpp{scheme_seal_parameters} automatically.}
 
 Like @cpp{scheme_init_collection_paths_post}, but with @racket[null]
 as the last argument.}
+
+
+@function[(void scheme_set_dll_path
+            [wchar_t* path])]{
+
+On Windows only, sets the path used to find optional DLLs that are used
+by the runtime system: @filepath{longdouble.dll} and one of @filepath{iconv.dll},
+@filepath{libiconv.dll}, or @filepath{libiconv-2.dll}. The given @var{path}
+should be an absolute path.}
 
 
 @function[(void scheme_seal_parameters)]{

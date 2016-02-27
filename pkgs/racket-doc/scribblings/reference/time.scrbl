@@ -165,6 +165,9 @@ result is the result of  the last @racket[body].}
 @; ----------------------------------------------------------------------
 
 @section[#:tag "date-string"]{Date Utilities}
+@margin-note{For more date & time operations, see
+  @other-doc['(lib "gregor/scribblings/gregor.scrbl") #:indirect "Gregor: Date and Time"]
+  or @link["../srfi/srfi-19.html"]{srfi/19}}
 
 @note-lib-only[racket/date]
 

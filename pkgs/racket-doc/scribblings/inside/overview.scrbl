@@ -41,7 +41,7 @@ source distribution from @url{http://download.racket-lang.org};
 detailed build instructions are in the @filepath{README} file in the
 top-level @filepath{src} directory. You can also get the latest
 sources from the @tt{git} repository at
-@url{https://github.com/plt/racket}, but beware that the repository is
+@url{https://github.com/racket/racket}, but beware that the repository is
 one step away from a normal source distribution, and it provides build
 modes that are more suitable for developing Racket itself; see
 @filepath{INSTALL.txt} in the @tt{git} repository for more

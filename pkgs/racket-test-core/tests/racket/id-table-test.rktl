@@ -11,16 +11,23 @@
 (test #t mutable-bound-id-table? (make-bound-id-table))
 (test #t immutable-bound-id-table? (make-immutable-bound-id-table))
 
+(module module-that-supplies-a-b racket/base
+  (provide b)
+  (define b #'b))
+
 (let ()
-  (define a #'a)
-  (define b #'b)
-  (define b2 (let ([b 0]) #'b))
-  (define b3 ((make-syntax-introducer) #'b)) ;; free=? to b
+  (define i (make-syntax-introducer))
+  (define a (i #'a))
+  (define b (i #'b))
+  (define b2 (dynamic-require ''module-that-supplies-a-b 'b))
+  (define b3 ((make-syntax-introducer) b)) ;; free=? to b
   (define alist (list (cons a 1) (cons b 2) (cons b2 3) (cons b3 4)))
   (test 4 bound-id-table-count (make-bound-id-table alist))
   (test 4 bound-id-table-count (make-immutable-bound-id-table alist))
   (test 3 free-id-table-count (make-free-id-table alist))
   (test 3 free-id-table-count (make-immutable-free-id-table alist))
+  (test 3 length (free-id-table-keys (make-immutable-free-id-table alist)))
+  (test 3 length (free-id-table-values (make-immutable-free-id-table alist)))
 
   (let ()
     ;; Test in-dict, iteration methods for immutable id-tables
@@ -29,10 +36,18 @@
     (define d2 (for/fold ([d (make-immutable-bound-id-table)])
                    ([(id v) (in-dict d1)])
                  (dict-set d id (add1 v))))
+    ;; Test in-bound-id-table
+    (define d3 (for/fold ([d (make-immutable-bound-id-table)])
+                   ([(id v) (in-bound-id-table d1)])
+                 (dict-set d id (add1 v))))
     (test 2 bound-id-table-ref d2 a)
     (test 3 bound-id-table-ref d2 b)
     (test 4 bound-id-table-ref d2 b2)
-    (test 5 bound-id-table-ref d2 b3))
+    (test 5 bound-id-table-ref d2 b3)
+    (test 2 bound-id-table-ref d3 a)
+    (test 3 bound-id-table-ref d3 b)
+    (test 4 bound-id-table-ref d3 b2)
+    (test 5 bound-id-table-ref d3 b3))
 
   (let ()
     ;; Test in-dict, iteration methods for mutable id-tables
@@ -41,7 +56,13 @@
     (test (+ 1 2 3 4) (lambda () (for/sum ([(id v) (in-dict d1)]) v)))
     (for ([(id v) (in-dict d1)])
       (bound-id-table-set! d1 id (add1 v)))
-    (test (+ 2 3 4 5) (lambda () (for/sum ([(id v) (in-dict d1)]) v)))))
+    (test (+ 2 3 4 5) (lambda () (for/sum ([(id v) (in-dict d1)]) v)))
+    ;; Repeat test with in-bound-id-table
+    (define d2 (make-bound-id-table alist))
+    (test (+ 1 2 3 4) (lambda () (for/sum ([(id v) (in-bound-id-table d2)]) v)))
+    (for ([(id v) (in-bound-id-table d2)])
+      (bound-id-table-set! d2 id (add1 v)))
+    (test (+ 2 3 4 5) (lambda () (for/sum ([(id v) (in-bound-id-table d2)]) v)))))
 
 (let ()
   ;; contains-same? : (listof x) (listof x) -> boolean
@@ -89,6 +110,10 @@
       (test #t
             contains-same?
             (list 2 4)
+            (bound-id-table-values table))
+      (test #t
+            contains-same?
+            (list 2 4)
             (dict-map table (lambda (x y) y)))
 
       (test 2 bound-id-table-count table)
@@ -128,6 +153,10 @@
             contains-same?
             (list 2 4)
             (free-id-table-map table (lambda (x y) y)))
+      (test #t
+            contains-same?
+            (list 2 4)
+            (free-id-table-values table))
       (test #t
             contains-same?
             (list 2 4)
@@ -179,6 +208,10 @@
       (test #t
             contains-same?
             (list 1 2 3 4)
+            (bound-id-table-values table))
+      (test #t
+            contains-same?
+            (list 1 2 3 4)
             (dict-map table (lambda (x y) y)))
       (test 4 bound-id-table-count table)
 
@@ -218,6 +251,10 @@
             contains-same?
             (list 2 4)
             (free-id-table-map table (lambda (x y) y)))
+      (test #t
+            contains-same?
+            (list 2 4)
+            (free-id-table-values table))
       (test #t
             contains-same?
             (list 2 4)
@@ -329,11 +366,68 @@
 
     ))
 
+;; Tests for id-table-keys
 (let ()
-  (define-syntax name 'dummy)
-  (define-syntax alias (make-rename-transformer #'name))
+  ;; contains-same-keys? : (listof id) (listof id) -> boolean
+  (define (contains-same-keys? l1 l2 id=?)
+    (and (andmap (lambda (x) (member x l2 id=?)) l1)
+         (andmap (lambda (x) (member x l1 id=?)) l2)
+         #t))
+
+  (test #t
+        contains-same-keys?
+        (list #'x #'y)
+        (free-id-table-keys
+         (make-immutable-free-id-table
+          (list (cons #'x 0) (cons #'x 1) (cons #'y 2))))
+        free-identifier=?)
+  (test #t
+        contains-same-keys?
+        (list #'x #'y)
+        (bound-id-table-keys
+         (make-immutable-bound-id-table
+          (list (cons #'x 0) (cons #'x 1) (cons #'y 2))))
+        bound-identifier=?))
+
+;; Tests for id-table-set*, set*!, update, update!, ref!
+(let ()
+  (define table (make-bound-id-table))
+  (define table2 (make-immutable-bound-id-table))
+  (define x0 #'x)
+  (define x1 ((make-syntax-introducer) x0))
+  (define y0 #'y)
+  (define y1 ((make-syntax-introducer) y0))
+
+  (test 0 bound-id-table-ref! table x0 0)
+  (test 1 bound-id-table-ref! table x1 1)
+  (test 0 bound-id-table-ref table x0)
+  (test 1 bound-id-table-ref (bound-id-table-update table2 y0 add1 0) y0)
+  (test 1 bound-id-table-ref (bound-id-table-set* table2 y0 0 y1 1) y1)
+  (test (void) bound-id-table-set*! table y0 1 y1 5)
+  (test (void) bound-id-table-update! table y0 add1 0)
+  (test 2 bound-id-table-ref table y0))
+
+(let ()
   (define table (make-free-id-table))
-  (free-id-table-set! table #'alias 0)
-  (test 0 free-id-table-ref table #'name))
+  (define table2 (make-immutable-free-id-table))
+  (define x0 #'x)
+  (define x1 #'x1)
+  (define y0 #'y)
+  (define y1 #'y1)
+
+  (test 0 free-id-table-ref! table x0 0)
+  (test 1 free-id-table-ref! table x1 1)
+  (test 0 free-id-table-ref table x0)
+  (test 1 free-id-table-ref (free-id-table-update table2 y0 add1 0) y0)
+  (test 1 free-id-table-ref (free-id-table-set* table2 y0 0 y1 1) y1)
+  (test (void) free-id-table-set*! table y0 1 y1 5)
+  (test (void) free-id-table-update! table y0 add1 0)
+  (test 2 free-id-table-ref table y0))
+
+(define-syntax name-for-boundmap-test 'dummy)
+(define-syntax alias-for-boundmap-test (make-rename-transformer #'name-for-boundmap-test))
+(define table (make-free-id-table))
+(free-id-table-set! table #'alias-for-boundmap-test 0)
+(test 0 free-id-table-ref table #'name-for-boundmap-test)
 
 (report-errs)

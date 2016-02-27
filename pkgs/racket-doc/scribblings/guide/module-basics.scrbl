@@ -113,7 +113,7 @@ Racket tools all work automatically with relative paths. For example,
 
 @commandline{racket sort.rkt}
 
-on the comamnd line runs the @filepath{sort.rkt} program and
+on the command line runs the @filepath{sort.rkt} program and
 automatically loads and compiles required modules. With a large enough
 program, compilation from source can take too long, so use
 
@@ -205,7 +205,7 @@ provided by the @filepath{gui} package, while
 @filepath{parser-tools} library.@margin-note{More precisely,
 @racketmodname[racket/gui] is provided by @filepath{gui-lib},
 @racketmodname[parser-tools/lex] is provided by
-@filepath{parser-tools}, and the @filepath{gui} and
+@filepath{parser-tools-lib}, and the @filepath{gui} and
 @filepath{parser-tools} packages extend @filepath{gui-lib} and
 @filepath{parser-tools-lib} with documentation.}
 

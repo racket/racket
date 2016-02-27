@@ -17,7 +17,7 @@ enum {
 };
 
 #if defined(_WIN32) || defined(__CYGWIN32__)
-/* No block cache or alloc cache */
+/* No block cache or alloc cache; relies on APAGE_SIZE matching allocator's alignment */
 #elif defined(OSKIT)
 # define OS_ALLOCATOR_NEEDS_ALIGNMENT
 #elif defined(MZ_USE_PLACES) || defined(PREFER_MMAP_LARGE_BLOCKS)
@@ -28,7 +28,15 @@ enum {
 
 #ifdef USE_BLOCK_CACHE
 # define USE_ALLOC_CACHE
+# define QUEUED_MPROTECT_INFECTS_SMALL 1
+#else
+# define QUEUED_MPROTECT_INFECTS_SMALL 0
 #endif
+#define QUEUED_MPROTECT_INFECTS_MED 0
+
+/* Either USE_ALLOC_CACHE or OS_ALLOCATOR_NEEDS_ALIGNMENT must be
+   enabled, unless the lower-level allocator's alignment matches
+   APAGE_SIZE. */
 
 struct AllocCacheBlock;
 struct BlockCache;
@@ -39,7 +47,8 @@ typedef struct MMU {
   struct AllocCacheBlock *alloc_caches[2];
   Page_Range *page_range;
 #endif
-  intptr_t memory_allocated;
+  intptr_t memory_allocated; /* allocated from OS */
+  intptr_t memory_used; /* subset of alloctaed from OS that's being used */
   size_t os_pagesize;
   NewGC *gc;
 } MMU;
@@ -78,7 +87,7 @@ static inline size_t mmu_round_up_to_os_page_size(MMU *mmu, size_t len) {
 
 static inline void mmu_assert_os_page_aligned(MMU *mmu, size_t p) {
   if (p & (mmu->os_pagesize - 1)) {
-    printf("address or size is not OS PAGE ALIGNED!!!!");
+    GCPRINT(GCOUTF, "address or size is not page-aligned\n");
     abort();
   }
 }
@@ -131,6 +140,7 @@ static void mmu_free(MMU *mmu) {
 
 static void *mmu_alloc_page(MMU* mmu, size_t len, size_t alignment, int dirty, int type, int expect_mprotect, void **src_block) {
   mmu_assert_os_page_aligned(mmu, len);
+  mmu->memory_used += len;
 #ifdef USE_BLOCK_CACHE
   return block_cache_alloc_page(mmu->block_cache, len, alignment, dirty, type, expect_mprotect, src_block, &mmu->memory_allocated);
 #else
@@ -156,6 +166,7 @@ static void mmu_free_page(MMU* mmu, void *p, size_t len, int type, int expect_mp
                           int originated_here) {
   mmu_assert_os_page_aligned(mmu, (size_t)p);
   mmu_assert_os_page_aligned(mmu, len);
+  mmu->memory_used -= len;
 #ifdef USE_BLOCK_CACHE
   mmu->memory_allocated += block_cache_free_page(mmu->block_cache, p, len, type, expect_mprotect, src_block,
                                                  originated_here);
@@ -193,10 +204,14 @@ static int mmu_should_compact_page(MMU *mmu, void **src_block) {
   return 0;
 }
 
-static void mmu_write_unprotect_page(MMU *mmu, void *p, size_t len) {
+static void mmu_write_unprotect_page(MMU *mmu, void *p, size_t len, int type, void **src_block) {
   mmu_assert_os_page_aligned(mmu, (size_t)p);
   mmu_assert_os_page_aligned(mmu, len);
+#ifdef USE_BLOCK_CACHE
+  block_cache_protect_one_page(mmu->block_cache, p, len, type, 1, src_block);
+#else
   os_protect_pages(p, len, 1);
+#endif
 }
 
 static void mmu_queue_protect_range(MMU *mmu, void *p, size_t len, int type, int writeable, void **src_block) {
@@ -237,6 +252,10 @@ static void mmu_flush_write_unprotect_ranges(MMU *mmu) {
 
 static size_t mmu_memory_allocated(MMU *mmu) {
   return mmu->memory_allocated;
+}
+
+static size_t mmu_memory_allocated_and_used(MMU *mmu) {
+  return mmu->memory_used;
 }
 
 

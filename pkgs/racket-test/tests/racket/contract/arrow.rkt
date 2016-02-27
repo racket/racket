@@ -261,6 +261,12 @@
   (test/pos-blame
    'contract-arrow4
    '((contract (integer? . -> . integer?) (lambda (x) #f) 'pos 'neg) 1))
+
+  (test/pos-blame
+   'contract-arrow5
+   '(let ()
+      (struct s (x))
+      ((contract (-> s? integer?) s-x 'pos 'neg) (s #f))))
   
   (test/neg-blame
    'contract-arrow-arity1
@@ -318,6 +324,55 @@
   (test/pos-blame
    'contract-any/c-arrow4
    '(contract (-> any/c any) (λ (x #:y y) x) 'pos 'neg))
+
+  (test/neg-blame
+   'contract-any/c-arrow5
+   '((contract (-> any/c any) (λ (x [y 1]) x) 'pos 'neg) 1 2))
+  
+  (test/spec-passed/result
+   'contract-any/c-arrow6
+   '(let ([f (λ (x) x)])
+      (eq? f (contract (-> any/c any) f 'pos 'neg)))
+   #t)
+
+  (test/spec-passed/result
+   'contract-any/c-arrow7
+   '(let ([f (λ (x [y 1]) x)])
+      (eq? f (contract (-> any/c any) f 'pos 'neg)))
+   #f)
+  
+  (test/spec-passed/result
+   'contract->...1
+   '((contract (-> integer? char? ... boolean? any)
+               (λ args args)
+               'pos 'neg)
+     1 #\a #\b #\c #f)
+   '(1 #\a #\b #\c #f))
+  (test/neg-blame
+   'contract->...2
+   '((contract (-> integer? char? ... boolean? any)
+               (λ args args)
+               'pos 'neg)
+     1 #\a "b" #\c #f))
+  (test/spec-passed/result
+   'contract->...3
+   '((contract (-> integer? ... any)
+               (λ args args)
+               'pos 'neg)
+     1 2 3 4 5 6 7)
+   '(1 2 3 4 5 6 7))
+  (test/neg-blame
+   'contract->...4
+   '((contract (-> integer? ... any)
+               (λ args args)
+               'pos 'neg)
+     1 2 3 4 #f 6 7))
+  (test/spec-passed
+   'contract->...5
+   '(contract (-> procedure? any/c ... list? any)
+              (λ (proc last . stuff) stuff)
+              'pos 'neg))
+
   
   (test/spec-passed
    'contract-arrow-all-kwds2
@@ -340,6 +395,42 @@
           ;; pass; this is fixed in a separate branch that can't 
           (regexp-match #rx"expected:? keyword argument #:the-missing-keyword-arg-b"
                         (exn-message x)))))
+
+  ;; need to preserve the inner contract here
+  ;; (not the outer one)
+  ;; when dropping redundant tail contracts
+  (test/pos-blame
+   'tail-wrapping-preserves-blame
+   '(let ([c (-> number? number?)])
+      ((contract
+        c
+        (contract
+         c
+         (λ (x) #f)
+         'pos 'neg)
+        'something-else 'yet-another-thing)
+       1)))
+
+  (test/spec-passed/result
+   'chaperone-procedure*-and-contract-interaction
+   '(let ()
+      (define (f1 x) x)
+      
+      (define-values (prop:p prop:p? prop:get-p)
+        (make-impersonator-property 'p))
+      
+      (define the-answer 'dont-know)
+      
+      (define f2 (chaperone-procedure*
+                  f1
+                  (λ (f x)
+                    (set! the-answer (and (prop:p? f) (prop:get-p f)))
+                    x)))
+      (define f3 (contract (-> integer? integer?) f2 'pos 'neg))
+      (define f4 (chaperone-procedure f3 #f prop:p 1234))
+      (f4 1)
+      the-answer)
+   1234)
   
   (test/pos-blame
    'predicate/c1
@@ -353,6 +444,70 @@
   (test/spec-passed
    'predicate/c4
    '((contract predicate/c (λ (x) #t) 'pos 'neg) 12))
+  (test/spec-passed/result
+   'predicate/c5
+   '(let ()
+      (struct s ())
+      (eq? (contract (-> any/c boolean?) s? 'pos 'neg) s?))
+   #t)
+  (test/spec-passed/result
+   'predicate/c6
+   '(let ()
+      (struct s ())
+      (eq? (contract predicate/c s? 'pos 'neg) s?))
+   #t)
+  (test/pos-blame
+   'predicate/c7
+   '(contract (-> any/c boolean?) 1 'pos 'neg))
+  (test/pos-blame
+   'predicate/c8
+   '(contract (-> any/c boolean?) (λ (x y) 1) 'pos 'neg))
+  (test/pos-blame
+   'predicate/c9
+   '((contract (-> any/c boolean?) (λ (x) 1) 'pos 'neg) 12))
+  (test/spec-passed
+   'predicate/c10
+   '((contract (-> any/c boolean?) (λ (x) #t) 'pos 'neg) 12))
+  (test/spec-passed
+   'predicate/c11
+   '((contract (-> any/c boolean?) (λ x #t) 'pos 'neg) 12))
+  (test/neg-blame
+   'predicate/c12
+   '((contract (-> any/c boolean?) (λ (x #:y [y 1]) #t) 'pos 'neg) 12 #:y 1))
+  (test/pos-blame
+   'predicate/c13
+   '(contract (-> any/c boolean?) (λ (x #:y y) #t) 'pos 'neg))
+  (test/pos-blame
+   'predicate/c14
+   '(contract (-> any/c boolean?)
+              (let ()
+                (struct s ())
+                ((impersonate-procedure s? (λ (x) (values (λ (r) "") x))) 11))
+              'pos 'neg))
+
+  (test/spec-passed
+   'any/c-in-domain1
+   '((contract (-> any/c real?)
+               (λ (x) 0)
+               'pos 'neg) 0))
+
+  (test/pos-blame
+   'any/c-in-domain2
+   '((contract (-> any/c real?)
+               (λ (x) #f)
+               'pos 'neg) 0))
+
+  (test/spec-passed
+   'any/c-in-domain3
+   '((contract (-> any/c any/c any/c any/c real?)
+               (λ (x y z w) 0)
+               'pos 'neg) 0 1 2 3))
+
+  (test/pos-blame
+   'any/c-in-domain4
+   '((contract (-> any/c any/c any/c any/c real?)
+               (λ (x y z w) #f)
+               'pos 'neg) 0 1 2 3))
   
   ;; this test ensures that no contract wrappers
   ;; are created for struct predicates
@@ -415,5 +570,46 @@
    'dynamic->*8
    '((contract (dynamic->* #:range-contracts #f) (λ () 1) 'pos 'neg))
    1)
+
+  (test/spec-passed
+   'dynamic->*9
+   '(begin
+      ((contract (dynamic->* #:range-contracts (list (or/c 1 2) (or/c 3 4)))
+                 (λ () (values 1 3))
+                 'pos
+                 'neg))
+      (void)))
+
+  (test/pos-blame
+   'dynamic->*10
+   '(begin
+      ((contract (dynamic->* #:range-contracts (list (or/c 1 2) (or/c 3 4)))
+                 (λ () (values #f #f))
+                 'pos
+                 'neg))
+      (void)))
+
+  (test/spec-passed/result
+   '->-order-of-evaluation1
+   '(let ([l '()])
+      (-> (begin (set! l (cons 1 l)) #f)
+          (begin (set! l (cons 2 l)) #f)
+          (begin (set! l (cons 3 l)) #f)
+          (begin (set! l (cons 4 l)) #f)
+          (begin (set! l (cons 5 l)) #f))
+      (reverse l))
+   '(1 2 3 4 5))
+  (test/spec-passed/result
+   '->-order-of-evaluation2
+   '(let ([l '()])
+      (-> (begin (set! l (cons 1 l)) #f)
+          (begin (set! l (cons 2 l)) #f)
+          (begin (set! l (cons 3 l)) #f)
+          ...
+          (begin (set! l (cons 4 l)) #f)
+          (begin (set! l (cons 5 l)) #f)
+          (begin (set! l (cons 6 l)) #f))
+      (reverse l))
+   '(1 2 3 4 5 6))
   
   )

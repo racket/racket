@@ -1,7 +1,7 @@
 #lang racket/base
 (require syntax/parse/pre
          "provide.rkt"
-         unstable/wrapc
+         syntax/contract
          (only-in syntax/parse/private/residual ;; keep abs. path
                   this-context-syntax
                   this-role)

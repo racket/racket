@@ -35,6 +35,7 @@
 ;; Extended error codes:
 (define SQLITE_IOERR_BLOCKED (bitwise-ior SQLITE_IOERR (arithmetic-shift 11 8)))
 (define SQLITE_IOERR_LOCK    (bitwise-ior SQLITE_IOERR (arithmetic-shift 15 8)))
+(define SQLITE_READONLY_ROLLBACK (bitwise-ior SQLITE_READONLY (arithmetic-shift 3 8)))
 
 (define SQLITE_INTEGER  1)
 (define SQLITE_FLOAT    2)

@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -68,9 +68,8 @@ void scheme_init_portable_case(void)
   init_uchar_table();
 }
 
-void scheme_init_char (Scheme_Env *env)
+void scheme_init_char_constants(void)
 {
-  Scheme_Object *p;
   int i;
 
   REGISTER_SO(scheme_char_constants);
@@ -93,6 +92,11 @@ void scheme_init_char (Scheme_Env *env)
     s = scheme_intern_symbol(general_category_names[i]);
     general_category_symbols[i] = s;
   }
+}
+
+void scheme_init_char (Scheme_Env *env)
+{
+  Scheme_Object *p;
 
   p = scheme_make_folding_prim(char_p, "char?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED

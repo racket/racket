@@ -127,7 +127,6 @@
 (syntax-test #'(module m racket/base (#%require (rename n n not-there))))
 (syntax-test #'(module m racket/base (#%require (rename n n m extra))))
 
-(syntax-test #'(module m racket/base (#%require racket/base) (define car 5)))
 (syntax-test #'(module m racket/base (define x 6) (define x 5)))
 (syntax-test #'(module m racket/base (define x 10) (define-syntax x 10)))
 (syntax-test #'(module m racket/base (define-syntax x 10) (define x 10)))
@@ -141,6 +140,14 @@
   (provide car))
 
 (test 5 dynamic-require ''_shadow_ 'car)
+
+;; Ok to redefine imported:
+(module defines-car-that-overrides-import racket/base (#%require racket/base) (define car 5) (provide car))
+(module defines-car-that-overrides-import/stx racket/base (#%require racket/base (for-syntax racket/base)) (define-syntax (car stx) #'6) (provide car))
+(test 5 dynamic-require ''defines-car-that-overrides-import 'car)
+(test 6 dynamic-require ''defines-car-that-overrides-import/stx 'car)
+;; Can't redefine multiple times or import after definition:
+(syntax-test #'(module m racket/base (#%require racket/base) (define car 5) (define car 5)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -224,17 +231,22 @@
 	     (require 'e 'b)))
     (test '(d b d b c) values l)
     (eval `(require 'f))
-    (let ([finished '(f b e  a d b  d b d b c)])
+    (let ([finished '(f b e  a  d b d b c)])
       (test finished values l)
-      (namespace-attach-module n ''f)
-      (test finished values l)
-      (parameterize ([current-namespace (make-empty-namespace)])
-	(namespace-attach-module n ''f)
-	(test finished values l)
-        (namespace-require 'racket/base)
-	(eval `(require 'a))
-	(eval `(require 'f))
-	(test (list* 'd 'b finished) values l)))))
+      (eval '10) ; triggers `d` and `b`
+      (let ([finished (append '(d b) finished)])
+        (test finished values l)
+        (namespace-attach-module n ''f)
+        (test finished values l)
+        (parameterize ([current-namespace (make-empty-namespace)])
+          (namespace-attach-module n ''f)
+          (test finished values l)
+          (namespace-require 'racket/base)
+          (eval `(require 'a))
+          (eval `(require 'f))
+          (test finished values l)
+          (eval '10)
+          (test (list* 'd 'b finished) values l))))))
 
 (let* ([n (make-base-namespace)]
        [l null]
@@ -349,7 +361,6 @@
 	 (module m 'mod_beg2
            3)))
 
-
 (test (void) eval
       '(begin
 	 (module mod_beg2 racket/base
@@ -381,6 +392,60 @@
            3)))
 
 (define expand-test-use-toplevel? #f)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check line between macro definition and use:
+
+(module local-binding-produces-identity racket/base
+  (provide proc)
+  
+  (define proc
+    (let ()
+      (define-syntax identity
+        (syntax-rules ()
+          [(_ misc-id)
+           (lambda (x)
+             (let ([misc-id 'other])
+               x))]))
+      
+      (identity x))))
+
+(test 77 (dynamic-require ''local-binding-produces-identity 'proc) 77)
+
+(module module-binding-produces-identity racket/base
+  (define-syntax identity
+    (syntax-rules ()
+      [(_ misc-id)
+       (lambda (x)
+         (let ([misc-id 'other])
+           x))]))
+  (identity x))
+
+(test 79
+      (let ([proc #f])
+        (parameterize ([current-print (lambda (v) (set! proc v))])
+          (dynamic-require ''module-binding-produces-identity #f))
+        proc)
+      79)
+
+(module macro-introduced-binding-produces-identity racket/base
+  (define-syntax-rule (gen)
+    (begin
+      (define-syntax identity
+        (syntax-rules ()
+          [(_ misc-id)
+           (lambda (x)
+             (let ([misc-id 'other])
+               x))]))
+      (identity x)))
+  (gen))
+
+(test 78
+      (let ([proc #f])
+        (parameterize ([current-print (lambda (v) (set! proc v))])
+          (dynamic-require ''macro-introduced-binding-produces-identity #f))
+        proc)
+      78)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -614,7 +679,7 @@
       (test 5 eval 'five ns)
       (eval p-code ns)
       (eval '(require 'p) ns)
-      (test #f eval 'same? ns)
+      ; (test #f eval 'same? ns)
       (let ([n-ns (eval '(module->namespace ''n) ns)])
         (test 5 eval '(lambda (x) x) n-ns)))))
 
@@ -973,7 +1038,8 @@
         (require (for-syntax racket/base))
         (begin-for-syntax
          (require 'm))))
-    (eval '(require 'n)))
+    (eval '(require 'n))
+    (eval '10))
   (test #"1\n1\n" get-output-bytes o))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1004,7 +1070,7 @@
 
 (module avail-y racket/base
   (require 'avail-z)
-  (eval #'(foo 10)))
+  (eval-syntax #'(foo 10)))
 
 (err/rt-test (dynamic-require ''avail-y #f)
              (lambda (exn) (and (exn? exn)
@@ -1163,6 +1229,12 @@
 ;; the enclosing module work, even though the identifier is missing
 ;; a module context.
 
+#|
+
+I think this was a bad idea. It's trying to make generated identifiers
+"just work", but the hack to provide this behavior only covered the
+case of module-leve bindings; it doesn't cover local bindings.
+
 (let ()
   (define (mk mode wrap?)
     `(module m racket
@@ -1196,6 +1268,8 @@
          [wrap? '(#t #f)])
     (parameterize ([current-namespace (make-base-namespace)])
       (eval (mk m wrap?)))))
+
+|#
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that module caching doesn't cause submodules
@@ -1255,7 +1329,7 @@
   (delete-file zo-path))
 
 ;; Check that module-code caching works
-(let ()
+(let ([saved-namespace #f])
   (define dir (find-system-path 'temp-dir))
   (define tmx (build-path dir "tmx2.rkt"))
   (define e (compile '(module tmx2 racket/kernel
@@ -1292,7 +1366,10 @@
   (test 2 add1
         (parameterize ([current-namespace (make-base-namespace)])
           (dynamic-require tmx 'x)))
-  (delete-file zo-path))
+  (delete-file zo-path)
+
+  ;; Need to retain the namespace until here
+  (set! saved-namespace first-namespace))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that `provide` doesn't run enclosed expanders until within a
@@ -1352,6 +1429,54 @@
     (m)))
 
 (test #t syntax? (expand-syntax (expand lifted-require-of-submodule)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check module lifting
+
+(module module-lift-example-1 racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (m stx)
+    (syntax-local-lift-module
+     #'(module m racket/base
+         (provide x)
+         (define x 10)))
+    #'(begin
+        (require 'm)
+        (define out x)
+        (provide out)))
+  (m))
+
+(test 10 dynamic-require ''module-lift-example-1 'out)
+
+(module module-lift-example-2 racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (m stx)
+    (syntax-local-lift-module #'(module* sub #f
+                                  (provide s)
+                                  (define s (add1 a))))
+    #'(void))
+  (m)
+  (define a 1))
+
+(test 2 dynamic-require '(submod 'module-lift-example-2 sub) 's)
+
+
+(module module-lift-example-3 racket/base
+  (require (for-syntax racket/base))
+  (define-syntax (m stx)
+    (syntax-local-lift-module #'(module m racket/base
+                                  (provide x)
+                                  (define x 11)))
+    (syntax-local-lift-module-end-declaration
+     #'(let ()
+         (local-require (submod "." m))
+         (set! out x)))
+    #'(void))
+  (define out -10)
+  (m)
+  (provide out))
+
+(test 11 dynamic-require ''module-lift-example-3 'out)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check addition of 'disappeared-use by `provide`
@@ -1420,6 +1545,208 @@
   
   (begin-for-syntax
     (local-require (only-in racket [+ ++]))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Try trivial nested `begin-for-syntax`,
+;; avoiding anything else that might prepare phase 2 in advance
+
+(module starts-phase-2-without-any-content racket
+  (begin-for-syntax
+    (begin-for-syntax)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `eval-syntax` doesn't create a fallback context
+
+(module exports-cons-with-context racket/base
+  (provide cons-id)
+  (define cons-id #'cons))
+(require 'exports-cons-with-context racket/base)
+
+(let ([mod (datum->syntax #f `(,#'module m racket/base
+                               ;; If a fallback is installed, then
+                               ;; the module context of `cons` applies:
+                               ,cons-id))])
+  (err/rt-test (eval-syntax mod)
+               (lambda (exn) (regexp-match #rx"ambiguous" (exn-message exn)))))
+
+;; `eval` should install a fallback for a non`-module` form:
+(test (void) eval (datum->syntax #f `(begin (,#'module m racket/base
+                                              ,cons-id))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module shadows-a-racket-base-binding-and-exports racket/base
+  (provide (all-defined-out)) ; exports `path?`
+  (struct path ()))
+
+(module import-shadows-a-racket-base-binding racket/base
+  (require 'shadows-a-racket-base-binding-and-exports)
+  (provide (all-from-out racket/base)))
+
+;; Fails because imported module doesn't provide `path?`:
+(syntax-test #'(module m racket/base
+                 (require (rename-in 'import-shadows-a-racket-base-binding
+                                     [path? other-path?]))))
+
+(module import-shadows-a-racket-base-binding-and-doesnt-confuse-struct-out racket/base
+  (require 'shadows-a-racket-base-binding-and-exports)
+  (provide (struct-out path)))
+
+(module shadows-a-racket-base-binding-and-exports-all racket/base
+  (provide (all-from-out racket/base)) ; does not export `path?`
+  (struct path ()))
+
+(syntax-test #'(module m racket/base
+                 (require (rename-in 'shadows-a-racket-base-binding-and-exports-all
+                                     [path? other-path?]))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `syntax-local-lift-require` on an
+;; spec that doesn't have the target environment's
+;; context:
+
+(module has-a-submodule-that-exports-x racket
+  (module b racket/base
+    (define x 1)
+    (provide x))
+
+  (define-syntax (lifted-require-of-x stx)
+    (syntax-case stx ()
+      [(_ mod)
+       (let ([x (car (generate-temporaries '(x)))])
+         (syntax-local-lift-require
+          #`(rename mod #,x x)
+          x))]))
+
+  (provide lifted-require-of-x))
+
+(require 'has-a-submodule-that-exports-x)
+
+(test 1 values (lifted-require-of-x (submod 'has-a-submodule-that-exports-x b)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; This test happens to trigger a combination
+;; of lazy adds and reoves that exposed a bug
+;; in caching lazy scope propagations
+
+(eval
+ (expand
+  #'(module x racket/kernel
+      (module ma racket/base
+        (#%module-begin
+         (#%require (for-syntax racket/kernel))
+         (define-values (x) 1)
+         (define-syntaxes (foo) (lambda (stx) (quote-syntax x)))
+         (#%provide foo)))
+      (module mb racket/kernel
+        (#%require (submod ".." ma))
+        (foo)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that shutting down a custodian
+;; releases a lock as it should
+
+(parameterize ([current-custodian (make-custodian)])
+  (thread-wait
+   (thread
+    (lambda ()
+      (parameterize ([current-namespace (make-base-namespace)])
+        (eval '(module m racket/base
+                (require (for-syntax racket/base))
+                (begin-for-syntax
+                  #;(log-error "nested")
+                  ;; Using an environment variable to communicate across phases:
+                  (when (getenv "PLT_ready_to_end")
+                    #;(log-error "adios")
+                    (custodian-shutdown-all (current-custodian))))))
+        (eval '(module n racket/base
+                (require (for-syntax racket/base))
+                (begin-for-syntax
+                  #;(log-error "outer")
+                  (dynamic-require ''m 0)
+                  (eval #f))))
+        (putenv "PLT_ready_to_end" "yes")
+        (dynamic-require ''n 0)
+        #;(log-error "go")
+        (eval #f))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check `namespace-mapped-symbols` and modidx shifting
+
+(let ()
+  (define tmp (make-temporary-file "~a-module-test" 'directory))
+  (parameterize ([current-directory tmp]
+                 [current-load-relative-directory tmp])
+    (make-directory "compiled")
+    (call-with-output-file*
+     "compiled/a_rkt.zo"
+     (lambda (o) (write (compile '(module a racket/base
+                              (provide (all-defined-out))
+                              (define a 1)
+                              (define b 2)
+                              (define c 3)))
+                   o)))
+    (call-with-output-file*
+     "compiled/b_rkt.zo"
+     (lambda (o) (write (compile '(module b racket/base
+                              (require "a.rkt"
+                                       ;; Force saving of context, instead of
+                                       ;; reconstruction:
+                                       (only-in racket/base [car extra-car]))))
+                   o))))
+  (dynamic-require (build-path tmp "b.rkt") #f)
+  (define ns (module->namespace (build-path tmp "b.rkt")))
+  (test #t
+        'mapped-symbols
+        (and (for/and ([name '(a b c)])
+               (member name (namespace-mapped-symbols ns)))
+             #t))
+  (delete-directory/files tmp))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(module exports-x*-as-x racket/base
+  (define x* 5)
+  (provide (rename-out [x* x])))
+
+(module exports-x**-as-x racket/base
+  (require 'exports-x*-as-x)
+  (define x* 5)
+  (define-syntax-rule (x**) x*)
+  (provide (rename-out [x x***])
+           (rename-out [x** x])))
+
+(require 'exports-x**-as-x)
+(test 5 'five (x))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check 'module-body-context-simple? and 'module-body-...context properties
+
+(define (check-module-body-context-properties with-kar?)
+  (define m (expand `(module m racket/base
+                      ,@(if with-kar?
+                            `((require (rename-in racket/base [car kar])))
+                            null)
+                      (define inside 7))))
+  
+  (test (not with-kar?) syntax-property m 'module-body-context-simple?)
+
+  (define i (syntax-property m 'module-body-context))
+  (define o (syntax-property m 'module-body-inside-context))
+  
+  (test #t syntax? i)
+  (test #t syntax? o)
+  
+  (test car eval-syntax (datum->syntax i 'car))
+  (test 'inside cadr (identifier-binding (datum->syntax i 'inside)))
+  (test #f identifier-binding (datum->syntax o 'inside))
+  (test (if with-kar? 'car #f)
+        'kar-binding
+        (let ([v (identifier-binding (datum->syntax i 'kar))])
+          (and v (cadr v)))))
+
+(check-module-body-context-properties #f)
+(check-module-body-context-properties #t)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

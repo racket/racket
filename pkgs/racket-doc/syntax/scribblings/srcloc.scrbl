@@ -219,12 +219,38 @@ The first produces a string describing the source location; the second appends
 
 }
 
-@section[#:tag "location"]{Quoting}
+@section[#:tag "location"]{Source Location Utilities}
 
 @defmodule[syntax/location]
 
-This module defines macros that evaluate to various aspects of their own source
-location.
+@deftogether[(
+@defproc[(syntax-source-directory [stx syntax?]) (or/c path? #f)]
+@defproc[(syntax-source-file-name [stx syntax?]) (or/c path? #f)]
+)]{
+
+These produce the directory and file name, respectively, of the path with which
+@racket[stx] is associated, or @racket[#f] if @racket[stx] is not associated
+with a path.
+
+@defexamples[
+#:eval (new-evaluator)
+(define loc
+  (list (build-path "/tmp" "dir" "somewhere.rkt")
+        #f #f #f #f))
+(define stx1 (datum->syntax #f 'somewhere loc))
+(syntax-source-directory stx1)
+(syntax-source-file-name stx1)
+(define stx2 (datum->syntax #f 'nowhere #f))
+(syntax-source-directory stx2)
+(syntax-source-directory stx2)
+]
+
+@history[#:added "6.3"]{}
+}
+
+@subsection{Quoting}
+
+The following macros evaluate to various aspects of their own source location.
 
 @emph{Note:} The examples below illustrate the use of these macros and the
 representation of their output.  However, due to the mechanism by which they are

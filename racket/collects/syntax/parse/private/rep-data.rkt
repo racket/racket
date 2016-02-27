@@ -5,7 +5,7 @@
          syntax/private/id-table
          racket/syntax
          syntax/parse/private/residual-ct ;; keep abs. path
-         unstable/struct
+         "make.rkt"
          "minimatch.rkt"
          "kws.rkt"
          "rep-attrs.rkt"
@@ -286,10 +286,20 @@ expressions are duplicated, and may be evaluated in different scopes.
   (cond [(and (stxclass-colon-notation?)
               (regexp-match #rx"^([^:]*):(.+)$" (symbol->string (syntax-e id0))))
          => (lambda (m)
+              (define-values [src ln col pos span]
+                (syntax-srcloc-values id0))
+              (define id-str (cadr m))
+              (define id-len (string-length id-str))
+              (define suffix-str (caddr m))
+              (define suffix-len (string-length suffix-str))
               (define id
-                (datum->syntax id0 (string->symbol (cadr m)) id0 id0))
+                (datum->syntax id0 (string->symbol id-str)
+                  (list src ln col pos id-len)
+                  id0))
               (define suffix
-                (datum->syntax id0 (string->symbol (caddr m)) id0 id0))
+                (datum->syntax id0 (string->symbol suffix-str)
+                  (list src ln (and col (+ col id-len 1)) (and pos (+ pos id-len 1)) suffix-len)
+                  id0))
               (declenv-check-unbound decls id (syntax-e suffix)
                                      #:blame-declare? #t)
               (let ([suffix-entry (declenv-lookup decls suffix)])
@@ -299,6 +309,13 @@ expressions are duplicated, and may be evaluated in different scopes.
                        (let ([sc (get-stxclass/check-arity suffix id0 0 null)])
                          (values id sc))])))]
         [else (values id0 #f)]))
+
+(define (syntax-srcloc-values stx)
+  (values (syntax-source stx)
+          (syntax-line stx)
+          (syntax-column stx)
+          (syntax-position stx)
+          (syntax-span stx)))
 
 ;; ----
 

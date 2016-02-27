@@ -162,7 +162,8 @@
            (or (not name) (collection-name-element? name))
            (and (list? cat)
                 (<= 1 (length cat) 2)
-                (symbol? (car cat))
+                (or (symbol? (car cat))
+                    (string? (car cat)))
                 (or (null? (cdr cat))
                     (real? (cadr cat))))
            (and (exact-positive-integer? out-count))
@@ -1062,7 +1063,10 @@
                                (and can-run?
                                     (not (equal? (car stamp-data)
                                                  src-sha1))
-                                    'newer)))]
+                                    'newer)
+                               (and (or (not provides-time)
+                                        (provides-time . < . info-out-time))
+                                    (not (file-exists? (build-path (doc-dest-dir doc) "provides.sxref"))))))]
          [up-to-date? (not out-of-date)]
          [can-run? (and src-zo
                         (or (not latex-dest)

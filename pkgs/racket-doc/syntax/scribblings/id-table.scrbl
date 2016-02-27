@@ -1,5 +1,10 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label syntax/id-table racket/dict))
+@(require "common.rkt"
+          scribble/eval
+          (for-label syntax/id-table racket/dict))
+
+@(define id-table-eval (make-base-eval))
+@(id-table-eval '(require (for-syntax racket/base syntax/id-table)))
 
 @title[#:tag "idtable"]{Dictionaries with Identifier Keys}
 
@@ -18,6 +23,41 @@ A free-identifier table is a dictionary whose keys are compared using
 dictionary interface of @racketmodname[racket/dict], so all of the
 appropriate generic functions (@racket[dict-ref], @racket[dict-map],
 etc) can be used on free-identifier tables.
+
+A caveat for using these tables is that a lookup can fail with
+unexpected results if the binding of an identifier changes between
+key-value insertion and the lookup.
+
+For example, consider the following use:
+
+@interaction[#:eval id-table-eval
+(define-syntax-rule (m)
+  (begin
+    (begin-for-syntax
+      (define table (make-free-id-table))
+      (code:comment "set table entry to #t")
+      (free-id-table-set! table #'x #t)
+      (code:comment "sanity check, it's set to #t")
+      (displayln (free-id-table-ref table #'x #f)))
+
+    (define x 'defined-now)
+
+    (begin-for-syntax
+      (code:comment "might expect to get #t, but prints #f")
+      (displayln (free-id-table-ref table #'x #f)))))
+
+(m)]
+
+The macro @racket[m] expands to code that initializes an identifier table
+at compile-time and inserts a key-value pair for @racket[#'x] and
+@racket[#t]. The @racket[#'x] identifier has no binding, however, until
+the definition @racket[(define x 'defined-now)] is evaluated.
+
+As a result, the lookup at the end of @racket[m] will return @racket[#f]
+instead of @racket[#t] because the binding symbol for @racket[#'x] changes
+after the initial key-value pair is put into the table. If the definition
+is evaluated @emph{before} the initial insertion, both expressions will
+print @racket[#t].
 
 @deftogether[[
 @defproc[(make-free-id-table 
@@ -78,6 +118,16 @@ the @racket[failure] argument is applied if it is a procedure, or
 simply returned otherwise.
 }
 
+@defproc[(free-id-table-ref! [table mutable-free-id-table?]
+                             [id identifier?]
+                             [failure any/c])
+         any]{
+
+Like @racket[hash-ref!].
+
+@history[#:added "6.3.0.6"]
+}
+
 @defproc[(free-id-table-set! [table mutable-free-id-table?]
                              [id identifier?]
                              [v any/c])
@@ -94,6 +144,26 @@ Like @racket[hash-set!].
 Like @racket[hash-set].
 }
 
+@defproc[(free-id-table-set*! [table mutable-free-id-table?]
+                              [id identifier?]
+                              [v any/c] ...)
+         void?]{
+
+Like @racket[hash-set*!].
+
+@history[#:added "6.3.0.6"]
+}
+
+@defproc[(free-id-table-set* [table immutable-free-id-table?]
+                             [id identifier?]
+                             [v any/c] ...)
+         immutable-free-id-table?]{
+
+Like @racket[hash-set*].
+
+@history[#:added "6.3.0.6"]
+}
+
 @defproc[(free-id-table-remove! [table mutable-free-id-table?]
                                 [id identifier?])
          void?]{
@@ -108,11 +178,59 @@ Like @racket[hash-remove!].
 Like @racket[hash-remove].
 }
 
+@defproc[(free-id-table-update! [table mutable-free-id-table?]
+                                [id identifier?]
+                                [updater (any/c . -> . any/c)]
+                                [failure any/c
+                                 (lambda () (raise (make-exn:fail .....)))])
+         void?]{
+
+Like @racket[hash-update!].
+
+@history[#:added "6.3.0.6"]
+}
+
+@defproc[(free-id-table-update [table immutable-free-id-table?]
+                               [id identifier?]
+                               [updater (any/c . -> . any/c)]
+                               [failure any/c
+                                (lambda () (raise (make-exn:fail .....)))])
+         immutable-free-id-table?]{
+
+Like @racket[hash-update].
+
+@history[#:added "6.3.0.6"]
+}
+
 @defproc[(free-id-table-map [table free-id-table?]
                             [proc (-> identifier? any/c any)])
          list?]{
 
 Like @racket[hash-map].
+}
+
+@defproc[(free-id-table-keys [table free-id-table?])
+         (listof identifier?)]{
+
+Like @racket[hash-keys].
+
+@history[#:added "6.3.0.3"]
+}
+
+@defproc[(free-id-table-values [table free-id-table?])
+         (listof any/c)]{
+
+Like @racket[hash-values].
+
+@history[#:added "6.3.0.3"]
+}
+
+@defproc[(in-free-id-table [table free-id-table?])
+         sequence?]{
+
+Like @racket[in-hash].
+
+@history[#:added "6.3.0.3"]
 }
 
 @defproc[(free-id-table-for-each [table free-id-table?]
@@ -190,6 +308,10 @@ etc) can be used on bound-identifier tables.
                              [failure any/c
                               (lambda () (raise (make-exn:fail .....)))])
          any]
+@defproc[(bound-id-table-ref! [table mutable-bound-id-table?]
+                              [id identifier?]
+                              [failure any/c])
+         any]
 @defproc[(bound-id-table-set! [table mutable-bound-id-table?]
                               [id identifier?]
                               [v any/c])
@@ -198,15 +320,41 @@ etc) can be used on bound-identifier tables.
                              [id identifier?]
                              [v any/c])
          immutable-bound-id-table?]
+@defproc[(bound-id-table-set*! [table mutable-bound-id-table?]
+                               [id identifier?]
+                               [v any/c] ...)
+         void?]
+@defproc[(bound-id-table-set* [table immutable-bound-id-table?]
+                              [id identifier?]
+                              [v any/c] ...)
+         immutable-bound-id-table?]
 @defproc[(bound-id-table-remove! [table mutable-bound-id-table?]
                                  [id identifier?])
          void?]
 @defproc[(bound-id-table-remove [table immutable-bound-id-table?]
                                 [id identifier?])
          immutable-bound-id-table?]
+@defproc[(bound-id-table-update! [table mutable-bound-id-table?]
+                                 [id identifier?]
+                                 [updater (any/c . -> . any/c)]
+                                 [failure any/c
+                                  (lambda () (raise (make-exn:fail .....)))])
+         void?]
+@defproc[(bound-id-table-update [table immutable-bound-id-table?]
+                                [id identifier?]
+                                [updater (any/c . -> . any/c)]
+                                [failure any/c
+                                 (lambda () (raise (make-exn:fail .....)))])
+         immutable-bound-id-table?]
 @defproc[(bound-id-table-map [table bound-id-table?]
                              [proc (-> identifier? any/c any)])
          list?]
+@defproc[(bound-id-table-keys [table bound-id-table?])
+         (listof identifier?)]
+@defproc[(bound-id-table-values [table bound-id-table?])
+         (listof any/c)]
+@defproc[(in-bound-id-table [table bound-id-table?])
+         sequence?]
 @defproc[(bound-id-table-for-each [table bound-id-table?]
                                   [proc (-> identifier? any/c any)])
          void?]
@@ -233,4 +381,11 @@ Like the procedures for free-identifier tables
 (@racket[make-free-id-table], @racket[free-id-table-ref], etc), but
 for bound-identifier tables, which use @racket[bound-identifier=?] to
 compare keys.
+
+@history[#:changed "6.3.0.3" "Added bound-id-table-keys, bound-id-table-values, in-bound-id-table."
+         #:changed "6.3.0.6"
+         @string-append{Added bound-id-table-ref!, bound-id-table-set*,
+                        bound-id-table-set*!, bound-id-table-update!, and bound-id-table-update}]
 }
+
+@close-eval[id-table-eval]

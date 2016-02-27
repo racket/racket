@@ -570,7 +570,7 @@ swf_iff(jit_state_t _jitp, int (*i0)(float, float),
 
 __jit_inline void
 swf_idd(jit_state_t _jitp, int (*i0)(double, double),
-	jit_fpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
+	jit_gpr_t r0, jit_fpr_t r1, jit_fpr_t r2)
 {
     int			l;
     l = 0xf;

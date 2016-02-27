@@ -1,8 +1,8 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/eval (for-label racket/generic))
+@(require "mz.rkt" (for-label racket/generic))
 
 @(define dict-eval (make-base-eval))
-@(interaction-eval #:eval dict-eval (require racket/dict racket/generic))
+@examples[#:hidden #:eval dict-eval (require racket/dict racket/generic)]
 
 @title[#:tag "dicts"]{Dictionaries}
 
@@ -180,7 +180,8 @@ only supported for dictionary types that directly implement them.
 
 @defproc[(dict-ref [dict dict?]
                    [key any/c]
-                   [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+                   [failure-result (failure-result/c any/c)
+                                   (lambda () (raise (make-exn:fail ....)))])
          any]{
 
 Returns the value for @racket[key] in @racket[dict]. If no value
@@ -199,12 +200,12 @@ result:
 @examples[
 #:eval dict-eval
 (dict-ref #hash((a . "apple") (b . "beer")) 'a)
-(dict-ref #hash((a . "apple") (b . "beer")) 'c)
+(eval:error (dict-ref #hash((a . "apple") (b . "beer")) 'c))
 (dict-ref #hash((a . "apple") (b . "beer")) 'c #f)
 (dict-ref '((a . "apple") (b . "banana")) 'b)
 (dict-ref #("apple" "banana") 1)
 (dict-ref #("apple" "banana") 3 #f)
-(dict-ref #("apple" "banana") -3 #f)
+(eval:error (dict-ref #("apple" "banana") -3 #f))
 ]}
 
 @defproc[(dict-set! [dict (and/c dict? (not/c immutable?))]
@@ -460,10 +461,10 @@ Supported for any @racket[dict] that implements @racket[dict-ref] and
 
 @examples[
 #:eval dict-eval
-(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'a)
+(dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'a #f)
 (dict-ref! (make-hasheq '((a . "apple") (b . "beer"))) 'c 'cabbage)
 (define h (make-hasheq '((a . "apple") (b . "beer"))))
-(dict-ref h 'c)
+(eval:error (dict-ref h 'c))
 (dict-ref! h 'c (λ () 'cabbage))
 (dict-ref h 'c)
 ]}
@@ -471,7 +472,8 @@ Supported for any @racket[dict] that implements @racket[dict-ref] and
 @defproc[(dict-update! [dict (and/c dict? (not/c immutable?))]
                        [key any/c]
                        [updater (any/c . -> . any/c)]
-                       [failure-result any/c (lambda () (raise (make-exn:fail ....)))]) void?]{
+                       [failure-result (failure-result/c any/c)
+                                       (lambda () (raise (make-exn:fail ....)))]) void?]{
 
 Composes @racket[dict-ref] and @racket[dict-set!] to update an
 existing mapping in @racket[dict], where the optional @racket[failure-result]
@@ -484,7 +486,7 @@ Supported for any @racket[dict] that implements @racket[dict-ref] and
 @examples[
 #:eval dict-eval
 (define h (make-hash))
-(dict-update! h 'a add1)
+(eval:error (dict-update! h 'a add1))
 (dict-update! h 'a add1 0)
 h
 (define v (vector #f #f #f))
@@ -496,7 +498,8 @@ v
 @defproc[(dict-update [dict dict?]
                       [key any/c]
                       [updater (any/c . -> . any/c)]
-                      [failure-result any/c (lambda () (raise (make-exn:fail ....)))])
+                      [failure-result (failure-result/c any/c)
+                                      (lambda () (raise (make-exn:fail ....)))])
           (and/c dict? immutable?)]{
 
 Composes @racket[dict-ref] and @racket[dict-set] to functionally
@@ -509,7 +512,7 @@ Supported for any @racket[dict] that implements @racket[dict-ref] and
 
 @examples[
 #:eval dict-eval
-(dict-update #hash() 'a add1)
+(eval:error (dict-update #hash() 'a add1))
 (dict-update #hash() 'a add1 0)
 (dict-update #hash((a . "apple") (b . "beer")) 'b string-length)
 ]}
@@ -622,7 +625,7 @@ Supported for any @racket[dict] that supports @racket[dict-remove],
 
 }
 
-@defproc[(dict-clear! [dict dict?]) dict?]{
+@defproc[(dict-clear! [dict dict?]) void?]{
 
 Removes all of the key/value associations in @racket[dict].
 

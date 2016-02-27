@@ -1,8 +1,8 @@
 Build Options
 =============
 
-For Unix platforms, instead of using this source repository, consider
-getting source for the current Racket release from
+Instead of using this source repository, consider getting source for
+the current Racket release from
 
   http://download.racket-lang.org/
 
@@ -16,7 +16,9 @@ documentation are pre-built.
 
 In contrast to this repository, release and snapshot source
 distributions will work in the
+
   configure --prefix=... && make && make install
+
 way that you probably expect.
 
 
@@ -31,7 +33,7 @@ If you stick with this repository, then you have several options:
    Instructions: In-place Build" below.
 
  * Unix-style install --- installs to a given destination directory
-   (Unix and Mac OS X, only), leaving no reference to the source
+   (on platforms other Windows), leaving no reference to the source
    directory. This is the most natural mode for installing once from
    the source repository. See "Quick Instructions: Unix-style Install"
    below.
@@ -51,11 +53,11 @@ If you stick with this repository, then you have several options:
 Quick Instructions: In-place Build
 ==================================
 
-On Unix, `make' (or `make in-place') creates a build in the "racket"
-directory.
+On Unix (including Linux) and Mac OS X, `make' (or `make in-place')
+creates a build in the "racket" directory.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
-and 2013/12.0), `nmake win32-in-place' creates a build in the "racket"
+and 2015/14.0), `nmake win32-in-place' creates a build in the "racket"
 directory. For information on configuring your command-line
 environment for Visual Studio, see "racket/src/worksp/README".
 
@@ -74,10 +76,10 @@ See "More Instructions: Building Racket" below for more information.
 Quick Instructions: Unix-style Install
 ======================================
 
-On Unix, `make unix-style PREFIX=<dir>' builds and installs into
-"<dir>" (which must be an absolute path) with binaries in "<dir>/bin",
-packages in "<dir>/share/racket/pkgs", documentation in
-"<dir>/share/racket/doc", etc.
+On Unix (including Linux), `make unix-style PREFIX=<dir>' builds and
+installs into "<dir>" (which must be an absolute path) with binaries
+in "<dir>/bin", packages in "<dir>/share/racket/pkgs", documentation
+in "<dir>/share/racket/doc", etc.
 
 On Mac OS X, `make unix-style PREFIX=<dir>' builds and installs into
 "<dir>" (whichmust be an absolute path) with binaries in "<dir>/bin",
@@ -127,6 +129,12 @@ main-distribution-test". If you run `make' a second time, all
 previously installed packages remain installed and are updated, while
 new packages are added. To uninstall previously selected package, use
 `raco pkg remove'.
+
+To build anything other than the latest sources in the repository
+(e.g., when building from the "v6.2.1" tag), you need a catalog
+that's compatible with those sources. Note that a release distribution
+is configured to use a catalog specific to that release, so you can
+extract the catalog's URL from there.
 
 Using `make' (or `make in-place') sets the installation's name to
 "development", unless the installation has been previously configured
@@ -181,10 +189,17 @@ but under Windows, encoding-conversion, extflonum, and SSL
 functionality is hobbled until native libraries from the
 `racket-win32-i386' or `racket-win32-x86_64' package are installed.
 
-On all platforms, `JOB_OPTIONS' as a makefile variable and
-`PLT_SETUP_OPTIONS' as an environment variable are passed on to the
-`raco setup' that is used to build minimal-Racket libraries. See the
-documentation for `raco setup' for information on the options.
+On all platforms, fom the top-level makefile, `JOB_OPTIONS' as a
+makefile variable and `PLT_SETUP_OPTIONS' as an environment variable
+are passed on to the `raco setup' that is used to build minimal-Racket
+libraries. See the documentation for `raco setup' for information on
+the options.
+
+For cross compilation, add configuration options to
+`CONFIGURE_ARGS_qq="..."' as descibed in the "README" of "racket/src",
+but also add a `PLAIN_RACKET=...' argument for the top-level makefile
+to specify the same executable as in an `--enable-racket=...' for
+`configure'.
 
 Installing Packages
 -------------------
@@ -305,8 +320,8 @@ where <dist-base> defaults to "racket" (but can be set via
 normalizing the Windows results to "i386-win32" and "x86_63-win32",
 -<dist-suffix> is omitted unless a `#:dist-suffix' string is specified
 for the client in the site configuration, and <ext> is
-platform-specific: ".sh" for Unix, ".dmg" or ".pkg" for Mac OS X, and
-".exe" for Windows.
+platform-specific: ".sh" for Unix (including Linux), ".dmg" or ".pkg"
+for Mac OS X, and ".exe" for Windows.
 
 Generating Installer Web Sites
 ------------------------------
@@ -475,8 +490,8 @@ In more detail:
      To change the base name of the installer file, provide `DIST_BASE'
      to `make'. The default is "racket".
 
-     To change the directory name for Unix installation, provide
-     `DIST_DIR' to `make'. The default is "racket".
+     To change the directory name for installation on Unix (including
+     Linux), provide `DIST_DIR' to `make'. The default is "racket".
 
      To add an extra piece to the installer's name, such as an
      identifier for a variant of Linux, provide `DIST_SUFFIX' to
@@ -499,11 +514,19 @@ In more detail:
      `make'. The `README' value is used as a file name to download
      from the server.
 
-     For a Mac OS X installer, set `SIGN_IDENTITY' to sign the
-     installer, where the value of `SIGN_IDENTITY' is the name to
+     To create a ".tgz" archive instead of an installer (or any
+     platform), set `TGZ_MODE' to "--tgz".
+
+     For a Mac OS X installer, set `SIGN_IDENTITY' as the name to
      which the signing certificate is associated. Set `MAC_PKG_MODE'
      to "--mac-pkg" to create a ".pkg" installer instead of a ".dmg"
      image.
+
+     For a Windows installer, set `OSSLSIGNCODE_ARGS_BASE64` as a
+     Base64 encoding of an S-expression for a list of argument strings
+     for `osslsigncode`. The `-n', `-t', `-in', and `-out' arguments
+     are provided to `osslsigncode` automatically, so supply the
+     others.
 
      The `SERVER_CATALOG_PATH' and `SERVER_COLLECTS_PATH' makefile
      variables specify paths at `SERVER' plus `SERVER_PORT' to access

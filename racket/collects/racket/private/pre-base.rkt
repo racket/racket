@@ -17,6 +17,7 @@
              "member.rkt"
              "kernstruct.rkt"
              "norm-arity.rkt"
+             "performance-hint.rkt"
              "top-int.rkt"
              '#%builtin  ; so it's attached
              (for-syntax "kw.rkt"
@@ -97,6 +98,51 @@
   (define-values (double-flonum?) ; for symmetry with single-flonum?
     (lambda (x) (flonum? x)))
 
+  (define-values (enforce-random-int-range)
+    (lambda (x)
+      (unless (and (exact-positive-integer? x)
+                   (<= x 4294967087))
+        (raise-argument-error 'random "(integer-in 1 4294967087)" x))))
+  (define-values (enforce-greater)
+    (lambda (x y)
+      (unless (> y x)
+        (raise-argument-error
+         'random
+         (string-append "integer greater than " (number->string x))
+         y))))
+  (begin-encourage-inline
+   (define-values (-random) ; more featureful than #%kernel's `random`
+     (let ([random ; to get the right name
+            (case-lambda
+              [() (random)] ; no args, random float
+              [(x) ; one arg, either random float with prng, or random integer
+               ;; can just pass through to #%kernel's `random`, which will do the
+               ;; necessary checking
+               (random x)]
+              [(x y)
+               ;; two args, either max and prng, or min and max
+               (cond [(exact-positive-integer? y) ; min and max case
+                      (enforce-random-int-range x)
+                      (enforce-random-int-range y)
+                      (enforce-greater x y)
+                      (+ x (random (- y x)))]
+                     [(pseudo-random-generator? y) ; int and prng case
+                      (enforce-random-int-range x)
+                      (random x y)]
+                     [else
+                      (raise-argument-error
+                       'random
+                       "(or/c (integer-in 1 4294967087) pseudo-random-generator?)"
+                       y)])]
+              [(min max prng) ; three args: min, max, and prng
+               (enforce-random-int-range min)
+               (enforce-random-int-range max)
+               (enforce-greater min max)
+               (unless (pseudo-random-generator? prng)
+                 (raise-argument-error 'random "pseudo-random-generator?" prng))
+               (+ min (random (- max min) prng))])])
+       random)))
+
   (define-values (new:collection-path)
     (let ([collection-path (new-lambda (collection 
                                         #:fail [fail (lambda (s)
@@ -148,7 +194,7 @@
                         (cdr l)))
              stx)
             (raise-syntax-error #f "bad syntax" stx)))))
-
+  
   (#%provide (all-from-except "more-scheme.rkt" old-case fluid-let)
              (all-from-except "misc.rkt" collection-path collection-file-path)
              (all-from "define.rkt")
@@ -184,7 +230,8 @@
                               chaperone-procedure impersonate-procedure
                               chaperone-procedure* impersonate-procedure*
                               assq assv assoc
-                              prop:incomplete-arity prop:method-arity-error)
+                              prop:incomplete-arity prop:method-arity-error
+                              random)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like
@@ -207,4 +254,5 @@
              define-struct/derived
              struct-field-index
              struct-copy
-             double-flonum?))
+             double-flonum?
+             (rename -random random)))

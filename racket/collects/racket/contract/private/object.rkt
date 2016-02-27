@@ -4,6 +4,7 @@
          "guts.rkt"
          "prop.rkt"
          "misc.rkt"
+         "and.rkt"
          "opt.rkt"
          "blame.rkt"
          (for-syntax "opt-guts.rkt")
@@ -43,11 +44,11 @@
   #:omit-define-syntaxes
   #:property prop:contract
   (build-contract-property
-   #:projection
+   #:late-neg-projection
    (λ (ctc)
      (λ (blame)
-       (λ (val)
-         (make-wrapper-object ctc val blame
+       (λ (val neg-party)
+         (make-wrapper-object ctc val blame neg-party
                               (object-contract-methods ctc) (object-contract-method-ctcs ctc)
                               (object-contract-fields ctc) (object-contract-field-ctcs ctc)))))
    #:name

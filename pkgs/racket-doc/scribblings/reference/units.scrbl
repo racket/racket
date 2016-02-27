@@ -700,10 +700,21 @@ Expands to a @racket[provide] of all identifiers implied by the
 
 @section[#:tag "unitcontracts"]{Unit Contracts}
 
-@defform/subs[#:literals (import export)
-              (unit/c (import sig-block ...) (export sig-block ...))
+@defform/subs[#:literals (import export values init-depend)
+              (unit/c
+	        (import sig-block ...)
+	        (export sig-block ...)
+		init-depends-decl
+		optional-body-ctc)
               ([sig-block (tagged-sig-id [id contract] ...)
-                          tagged-sig-id])]{
+                          tagged-sig-id]
+	       [init-depends-decl
+	         code:blank
+		 (init-depend tagged-sig-id ...)]
+	       [optional-body-ctc
+	         code:blank
+		 contract
+		 (values contract ...)])]{
 
 A @deftech{unit contract} wraps a unit and checks both its imported and
 exported identifiers to ensure that they match the appropriate contracts.
@@ -711,21 +722,30 @@ This allows the programmer to add contract checks to a single unit value
 without adding contracts to the imported and exported signatures.
 
 The unit value must import a subset of the import signatures and export a
-superset of the export signatures listed in the unit contract.  Any
-identifier which is not listed for a given signature is left alone.
-Variables used in a given @racket[contract] expression first refer to other
-variables in the same signature, and then to the context of the 
-@racket[unit/c] expression.}
+superset of the export signatures listed in the unit contract. Additionally,
+the unit value must declare initialization dependencies that are a subset of
+those specified in the unit contract. Any identifier which is not listed
+for a given signature is left alone. Variables used in a given
+@racket[contract] expression first refer to other variables in the same
+signature, and then to the context of the @racket[unit/c] expression.
+If a body contract is specified then the result of invoking the unit value
+is wrapped with the given contract, if no body contract is supplied then
+no wrapping occurs when the unit value is invoked.}
 
-@defform/subs[#:literals (import export)
+@defform/subs[#:literals (import export values)
               (define-unit/contract unit-id
                 (import sig-spec-block ...)
                 (export sig-spec-block ...)
                 init-depends-decl
+		optional-body-ctc
                 unit-body-expr-or-defn
                 ...)
               ([sig-spec-block (tagged-sig-spec [id contract] ...)
-                               tagged-sig-spec])]{
+                               tagged-sig-spec]
+	       [optional-body-ctc
+	         code:blank
+		 (code:line #:invoke/contract contract)
+		 (code:line #:invoke/contract (values contract ...))])]{
 The @racket[define-unit/contract] form defines a unit compatible with
 link inference whose imports and exports are contracted with a unit
 contract.  The unit name is used for the positive blame of the contract.}
@@ -855,6 +875,10 @@ values:
   @item{a list of identifiers with syntax definitions in the signature.}
 
 ]
+
+Each of the result identifiers is given a lexical context that is
+based on @racket[sig-identifier], so the names are suitable for
+reference or binding in the context of @racket[sign-identifier].
 
 If @racket[sig-identifier] is not bound to a signature, then the
 @exnraise[exn:fail:syntax]. In that case, the given

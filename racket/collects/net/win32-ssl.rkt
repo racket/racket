@@ -18,9 +18,9 @@
          win32-ssl-port?
          win32-ssl-available?)
 
-(define (win32-ssl-connect host port [protocol'sslv2-or-v3])
+(define (win32-ssl-connect host port [protocol 'auto])
   (define-values (i o) (tcp-connect host port))
-  (ports->win32-ssl-ports i o #:encrypt protocol))
+  (ports->win32-ssl-ports i o #:encrypt protocol #:hostname host))
 
 (define (win32-ssl-abandon-port port)
   ;; We don't try to implement shutdown, anyway
@@ -117,6 +117,12 @@
 (define SP_PROT_TLS1_SERVER #x00000040)
 (define SP_PROT_TLS1_CLIENT #x00000080)
 (define SP_PROT_TLS1 (bitwise-ior SP_PROT_TLS1_SERVER SP_PROT_TLS1_CLIENT))
+(define SP_PROT_TLS1_1_SERVER #x00000100)
+(define SP_PROT_TLS1_1_CLIENT #x00000200)
+(define SP_PROT_TLS1_1 (bitwise-ior SP_PROT_TLS1_1_SERVER SP_PROT_TLS1_1_CLIENT))
+(define SP_PROT_TLS1_2_SERVER #x00000400)
+(define SP_PROT_TLS1_2_CLIENT #x00000800)
+(define SP_PROT_TLS1_2 (bitwise-ior SP_PROT_TLS1_2_SERVER SP_PROT_TLS1_2_CLIENT))
 (define SCH_CRED_MANUAL_CRED_VALIDATION #x00000008)
 (define SCH_CRED_NO_DEFAULT_CREDS #x00000010)
 (define SCHANNEL_CRED_VERSION #x00000004)
@@ -126,7 +132,7 @@
 
 (define (check-status who r)
   (unless (zero? r)
-    (error who "failed: ~x" r)))
+    (network-error who "failed: ~x" r)))
 
 (define-secur32 AcquireCredentialsHandleW
   (_fun #:abi winapi
@@ -262,7 +268,7 @@
 ;; Creating a context (i.e., an SSL connection)
 
 ;; Returns a context plus initial bytes for stream
-(define (create-context protocol i o out-sb in-sb)
+(define (create-context protocol hostname i o out-sb in-sb)
   ;; Pointers to particular SecBuffer records:
   (define out-sb0 (ptr-ref out-sb _SecBuffer 0))
   (define in-sb0 (ptr-ref in-sb _SecBuffer 0))
@@ -278,26 +284,31 @@
      ;; Allocate credentials.
      (define cred (make-cred-handle 0 0))
      (AcquireCredentialsHandleW #f
-                                   "Microsoft Unified Security Protocol Provider"
-                                   SECPKG_CRED_OUTBOUND ; SECPKG_CRED_INBOUND or SECPKG_CRED_OUTBOUND
-                                   #f
-                                   (make-SCHANNEL_CRED SCHANNEL_CRED_VERSION
-                                                       0 #f
-                                                       #f
-                                                       0 #f ; mappers
-                                                       0 #f ; algs
-                                                       (case protocol
-                                                         [(auto sslv2-or-v3)
-                                                          (bitwise-ior SP_PROT_TLS1)]
-                                                         [(sslv2) SP_PROT_SSL2]
-                                                         [(sslv3) SP_PROT_SSL3]
-                                                         [(tls) SP_PROT_TLS1])
-                                                       0 0 0
-                                                       (bitwise-ior SCH_CRED_MANUAL_CRED_VALIDATION)
-                                                       0)
-                                   #f
-                                   #f
-                                   cred)
+                                "Microsoft Unified Security Protocol Provider"
+                                SECPKG_CRED_OUTBOUND
+                                #f
+                                (make-SCHANNEL_CRED SCHANNEL_CRED_VERSION
+                                                    0 #f
+                                                    #f
+                                                    0 #f ; mappers
+                                                    0 #f ; algs
+                                                    (case protocol
+                                                      [(secure auto)
+                                                       (bitwise-ior SP_PROT_TLS1 SP_PROT_TLS1_1 SP_PROT_TLS1_2)]
+                                                      [(sslv2) SP_PROT_SSL2]
+                                                      [(sslv3) SP_PROT_SSL3]
+                                                      [(tls) SP_PROT_TLS1]
+                                                      [(tls11) SP_PROT_TLS1_1]
+                                                      [(tls12) SP_PROT_TLS1_2]
+                                                      [else 0])
+                                                    0 0 0
+                                                    (if (eq? protocol 'secure)
+                                                        0
+                                                        SCH_CRED_MANUAL_CRED_VALIDATION)
+                                                    0)
+                                #f
+                                #f
+                                cred)
 
      ;; Allocate a content and take responsibility for freeing
      ;; credientials, but it's not a real content until the
@@ -309,11 +320,15 @@
        (define-values (r attr)
          (InitializeSecurityContextW cred
                                      (if init? #f (ctx->handle ctx))
-                                     #f
+                                     (if (eq? protocol 'secure)
+                                         hostname
+                                         #f)
                                      (bitwise-ior ISC_REQ_REPLAY_DETECT ISC_REQ_SEQUENCE_DETECT
                                                   ISC_REQ_CONFIDENTIALITY ISC_REQ_STREAM 
                                                   ISC_REQ_ALLOCATE_MEMORY
-                                                  ISC_REQ_MANUAL_CRED_VALIDATION)
+                                                  (if (eq? protocol 'secure)
+                                                      0
+                                                      ISC_REQ_MANUAL_CRED_VALIDATION))
                                      0
                                      SECURITY_NATIVE_DREP
                                      (if init?
@@ -348,7 +363,7 @@
 
        (define (get-leftover-bytes)
          (if (equal? (SecBuffer-BufferType in-sb1) SECBUFFER_EXTRA)
-             ;; Same the leftover bytes:
+             ;; Save the leftover bytes:
              (let ([amt (SecBuffer-cbBuffer in-sb1)])
                (log-win32-ssl-debug "init context: leftover ~a" amt)
                (memcpy buffer (ptr-add buffer (- data-len amt)) amt)
@@ -362,12 +377,15 @@
          (values ctx
                  (let ([n (get-leftover-bytes)])
                    (subbytes buffer 0 n)))]
-        [(= r SEC_I_CONTINUE_NEEDED)
+        [(or (= r SEC_I_CONTINUE_NEEDED)
+             (= r SEC_E_INCOMPLETE_MESSAGE))
          ;; Pull more data from the server
-         (define data-len (get-leftover-bytes))
+         (define new-data-len (if (= r SEC_E_INCOMPLETE_MESSAGE)
+                                  data-len
+                                  (get-leftover-bytes)))
          ;; Unlikely, but maybe it's possible that we don't have room
          ;; to read more due to leftover bytes:
-         (when (= data-len buffer-size)
+         (when (= new-data-len buffer-size)
            (define new-buffer (malloc (* 2 buffer-size) 'atomic-interior))
            (memcpy new-buffer buffer buffer-size)
            (set! buffer-size (* 2 buffer-size))
@@ -375,14 +393,16 @@
          ;; Go back to non-atomic mode for a potentially blocking read:
          (define n (call-as-nonatomic
                     (lambda ()
-                      (read-bytes-avail! buffer i data-len buffer-size))))
+                      (read-bytes-avail! buffer i new-data-len buffer-size))))
          (log-win32-ssl-debug "init context: read ~a" n)
-         (when (eof-object? n) (error "unexpected EOF"))
-         (loop (+ data-len n) #f)]
+         (when (eof-object? n) (network-error "unexpected EOF"))
+         (loop (+ new-data-len n) (if (= r SEC_I_CONTINUE_NEEDED)
+                                      #f
+                                      init?))]
         ;; Some other things are allowed to happen without implying
         ;; failure, but we don't handle all of them.
-        [else (error 'create-context
-                     "unexpected result: ~x" r)])))))
+        [else (network-error 'create-context
+                             "unexpected result: ~x" r)])))))
 
 (define (decrypt ctx in-pre-r in-post-w out-sb)
   ;; Read encrypted byte from `in-pre-r', write decrypted bytes to
@@ -420,7 +440,7 @@
           (and (= SECBUFFER_DATA (SecBuffer-BufferType sb))
                sb)))
       (unless sb
-        (error "expected decrypted data"))
+        (network-error "expected decrypted data"))
       (write-bytes (make-sized-byte-string (SecBuffer-pvBuffer sb)
                                            (SecBuffer-cbBuffer sb))
                    in-post-w)
@@ -446,7 +466,7 @@
       ;; Other end closed the connection.
       (close-output-port in-post-w)]
      [else
-      (error 'decrypt "unexpected result: ~x" r)])))
+      (network-error 'decrypt "unexpected result: ~x" r)])))
 
 (define (encrypt ctx bstr start end out-sb sizes buffer)
   ;; Encrypt bytes [start, end) from bstr.
@@ -497,16 +517,18 @@
       ;; The encrypted bytes don't fit in the unencrypted space?
       (divide-and-conquer)]
      [else
-      (error 'decrypt "unexpected result: ~x" r)])]))
+      (network-error 'decrypt "unexpected result: ~x" r)])]))
 
 ;; Wrap input and output ports to produce SSL versions of the ports:
-(define (ports->win32-ssl-ports i o #:encrypt [protocol 'sslv2-or-v3])
+(define (ports->win32-ssl-ports i o
+                                #:encrypt [protocol 'auto]
+                                #:hostname [hostname #f])
   ;; Working space for encoding, decoding, and more:
   (define out-sb (make-SecBuffers 4))
   (define in-sb (make-SecBuffers 2))
   
   ;; Allocate the encoding/decoding context:
-  (define-values (ctx init-bytes) (create-context protocol i o out-sb in-sb))
+  (define-values (ctx init-bytes) (create-context protocol hostname i o out-sb in-sb))
 
   ;; Get some sizes that we need for encoding:
   (define sizes (make-SecPkgContext_StreamSizes 0 0 0 0 0))
@@ -663,6 +685,18 @@
 
   ;; Done:
   (values (register in) (register out)))
+
+;; ----------------------------------------
+;; Errors
+
+(define network-error
+  (case-lambda
+    [(str) (network-error 'win32-ssl str)]
+    [(who msg . args)
+     (raise
+      (exn:fail:network
+       (format "~a: ~a" who (apply format msg args))
+       (current-continuation-marks)))]))
 
 ;; ----------------------------------------
 ;; Recognizing win32 ports

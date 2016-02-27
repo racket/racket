@@ -70,6 +70,9 @@
       "fails due to unrecognized scheme"
       $ "raco pkg install magic://download" =exit> 1)
      (shelly-case
+      "fails due to 401 status result"
+      $ "raco pkg install broken" =exit> 1 =stderr> #rx"401")
+     (shelly-case
       "local directory name fails because not inferred as such (inferred as package name)"
       $ "raco pkg install test-pkgs" =exit> 1)
      (shelly-case

@@ -5,4 +5,9 @@
 (provide local)
 
 (define-syntax (local stx)
-  (do-local stx #'letrec-syntaxes+values))
+  (do-local stx (lambda (def-ctx expand-context sbindings vbindings bodys)
+                  (quasisyntax/loc stx
+                    (letrec-syntaxes+values
+                     #,sbindings
+                     #,vbindings
+                     #,@bodys)))))

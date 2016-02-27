@@ -68,6 +68,6 @@
             (list*
              #'module* 
              #'the-submodule 
-             #'#f
+             #f ; namespace context is the original context
              (map syntax-local-introduce (reverse (unbox stxs-box))))
             stx))]))))

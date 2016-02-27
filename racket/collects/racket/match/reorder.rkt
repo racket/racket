@@ -56,25 +56,25 @@
 (define (score col)
   (define n (length col))
   (define c (car col))
-  (define preds (list Var? Pair? Null?))
+  (define preds (list Var? Pair? Null? Exact?))
   (cond [(or-all? preds col) (add1 n)]
         [(andmap CPat? col) n]
         [(Var? c)    (count-while Var? col)]
         [(Pair? c)   (count-while Pair? col)]
         [(Vector? c) (count-while Vector? col)]
         [(Box? c)    (count-while Box? col)]
+        [(Exact? c)  (count-while Exact? col)]
+        [(Null? c)   (count-while Null? col)]
         [else 0]))
 
 (define (reorder-by ps scores*)
-  (for/fold 
-      ([pats null])
-    ([score-ref scores*])
-    (cons (list-ref ps score-ref) pats)))
+  (for/list ([score-ref (in-list scores*)])
+    (list-ref ps score-ref)))
 
 
 (define (reorder-columns rows vars)
   (define scores (for/list ([i (in-naturals)]
-                            [column (in-par (map (compose Row-pats) rows))])
+                            [column (in-par (map Row-pats rows))])
                    (cons i (score column))))
   (define scores* (reverse (map car (sort scores > #:key cdr))))
   (values

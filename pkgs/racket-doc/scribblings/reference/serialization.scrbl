@@ -2,7 +2,7 @@
 @(require "mz.rkt" racket/serialize (for-label racket/serialize racket/fasl))
 
 @(define ser-eval (make-base-eval))
-@(interaction-eval #:eval ser-eval (require racket/serialize))
+@examples[#:hidden #:eval ser-eval (require racket/serialize)]
 
 @title[#:tag "serialization"]{Serialization}
 

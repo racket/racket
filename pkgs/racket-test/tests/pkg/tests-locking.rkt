@@ -14,19 +14,30 @@
 
    ;; Step 1: Start a special server that waits for our signal to respond
    (initialize-catalogs)
-   (define okay-to-respond?-sema (make-semaphore))
+
+   (define succeed-catalog (make-channel))
+   (define fail-catalog (make-channel))
+
    (thread
     (λ ()
+      (define first-time? #t)
       (serve/servlet (pkg-index/basic
                       (λ (pkg-name)
-                        (semaphore-wait okay-to-respond?-sema)
+                        ;; only do the synchronization protocol once:
+                        ;;  `pkg-index/basic` can decide to return 500
+                        ;;  which triggers a retry, and since no one is
+                        ;;  posting a second time to these channels, we
+                        ;;  would get stuck.
+                        (when first-time?
+                          (channel-put fail-catalog 'go)
+                          (define v (sync fail-catalog)) ;; => 'continue
+                          (set! first-time? #f))
                         (define r (hash-ref *index-ht-1* pkg-name #f))
                         r)
                       (λ () *index-ht-1*))
                      #:command-line? #t
                      #:servlet-regexp #rx""
-                     #:port 9967)
-      (sleep 1)))
+                     #:port 9967)))
 
    ;; Step 2: Assign it as our server
    $ "raco pkg config --set catalogs http://localhost:9967"
@@ -35,11 +46,14 @@
    (thread
     (λ ()
       (shelly-begin
-       $ "raco pkg install pkg-test1")))
-   (sleep 1)
+       $ "raco pkg install pkg-test1")
+      (channel-put succeed-catalog 'done)))
+   (sync fail-catalog) ;; => 'go
 
    ;; Step 4: Start the installation request that will fail
    $ "raco pkg install pkg-test1" =exit> 1
 
    ;; Step 5: Free the other one
-   (semaphore-post okay-to-respond?-sema))))
+   (channel-put fail-catalog 'continue)
+   (sync succeed-catalog) ;; => 'done
+   )))

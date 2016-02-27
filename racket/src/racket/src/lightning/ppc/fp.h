@@ -234,6 +234,8 @@
                               STWrm(JIT_AUX, -4, JIT_SP), \
                               LFDrri(rd, JIT_SP, -8), \
                               FSUBDrrr(rd, rd, JIT_FPR(5)))
-                              
+                
+#define jit_extr_d_f(rd, rs) jit_movr_d(rd, rs)              
+#define jit_extr_f_d(rd, rs) jit_movr_d(rd, rs)              
 
 #endif /* __lightning_asm_h */

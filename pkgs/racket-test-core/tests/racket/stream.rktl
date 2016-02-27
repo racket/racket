@@ -35,6 +35,10 @@
 (test 4 stream-ref one-to-four 3)
 (test 2 'stream (stream-length (stream 1 (/ 0))))
 (test 'a 'stream (stream-first (stream 'a (/ 0))))
+(test 2 'stream* (stream-length (stream* 1 (stream (/ 0)))))
+(test 'a 'stream* (stream-first (stream* 'a (stream (/ 0)))))
+(test 4 'stream* (stream-length (stream* 'a 'b 'c (stream (/ 0)))))
+(test 'c 'stream* (stream-first (stream-rest (stream-rest (stream* 'a 'b 'c (stream (/ 0)))))))
 
 ;; make sure stream operations work on lists
 (test #t stream-empty? '())
@@ -52,5 +56,10 @@
 (test 1 stream-count even? '(1 2 3))
 (test '(1 3) stream->list (stream-filter odd? '(1 2 3)))
 (test '(1 a 2 a 3) stream->list (stream-add-between '(1 2 3) 'a))
+
+(test 4 'for/stream (stream-ref (for/stream ([x '(1 2 3)]) (* x x)) 1))
+(test 6 'for*/stream (stream-ref (for*/stream ([x '(1 2 3)] [y '(1 2 3)]) (* x y)) 7))
+(test 1 'for/stream (stream-first (for*/stream ([x '(1 0)]) (/ x))))
+(test 625 'for/stream (stream-ref (for/stream ([x (in-naturals)]) (* x x)) 25))
 
 (report-errs)

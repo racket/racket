@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
   All rights reserved.
 
@@ -320,7 +320,6 @@ void *(*GC_malloc_atomic)(size_t size_in_bytes);
 void *(*GC_malloc_one_tagged)(size_t size_in_bytes);
 void *(*GC_malloc_atomic_uncollectable)(size_t size_in_bytes);
 void *(*scheme_malloc_uncollectable)(size_t size_in_bytes);
-void *(*GC_malloc_array_tagged)(size_t size_in_bytes);
 void *(*GC_malloc_allow_interior)(size_t size_in_bytes);
 void *(*GC_malloc_atomic_allow_interior)(size_t size_in_bytes);
 void *(*GC_malloc_tagged_allow_interior)(size_t size_in_bytes);
@@ -362,7 +361,9 @@ void (*scheme_remove_all_finalization)(void *p);
 void (*scheme_dont_gc_ptr)(void *p);
 void (*scheme_gc_ptr_ok)(void *p);
 void (*scheme_collect_garbage)(void);
+void (*scheme_collect_garbage_minor)(void);
 void (*scheme_enable_garbage_collection)(int on);
+void (*scheme_incremental_garbage_collection)(int on);
 #ifdef MZ_PRECISE_GC
 # ifndef USE_THREAD_LOCAL
 void **GC_variable_stack;
@@ -370,7 +371,7 @@ void **GC_variable_stack;
 void (*GC_register_traversers)(short tag, Size_Proc size, Mark_Proc mark, Fixup_Proc fixup,
 				      int is_constant_size, int is_atomic);
 void *(*GC_resolve)(void *p);
-void (*GC_mark)(const void *p);
+void (*GC_mark)(void *p);
 void (*GC_fixup)(void *p);
 void *(*GC_fixup_self)(void *p);
 #endif
@@ -403,6 +404,7 @@ int (*scheme_is_hash_table_eqv)(Scheme_Object *o);
 Scheme_Hash_Table *(*scheme_clone_hash_table)(Scheme_Hash_Table *ht);
 void (*scheme_clear_hash_table)(Scheme_Hash_Table *ht);
 Scheme_Hash_Tree *(*scheme_make_hash_tree)(int kind);
+Scheme_Hash_Tree *(*scheme_make_hash_tree_set)(int kind);
 Scheme_Hash_Tree *(*scheme_hash_tree_set)(Scheme_Hash_Tree *tree, Scheme_Object *key, Scheme_Object *val);
 Scheme_Object *(*scheme_hash_tree_get)(Scheme_Hash_Tree *tree, Scheme_Object *key);
 Scheme_Object *(*scheme_eq_hash_tree_get)(Scheme_Hash_Tree *tree, Scheme_Object *key);

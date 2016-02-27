@@ -21,16 +21,21 @@ void mzrt_set_user_break_handler(void (*user_break_handler)(int));
 
 #if (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))
 # include <winsock2.h>
-typedef DWORD mzrt_thread_id;
+typedef HANDLE mzrt_thread_id;
+typedef DWORD mzrt_os_thread_id;
 #else
 #include <pthread.h>
 typedef pthread_t mzrt_thread_id;
+typedef pthread_t mzrt_os_thread_id;
 #endif
 
 
 typedef struct mz_proc_thread {
   mzrt_thread_id threadid;
   int refcount;
+#if (defined(__WIN32__) || defined(WIN32) || defined(_WIN32))
+  void *res;
+#endif
 } mz_proc_thread;
 
 
@@ -45,7 +50,7 @@ void mz_proc_thread_exit(void *rc);
 
 void mzrt_sleep(int seconds);
 
-mzrt_thread_id mz_proc_thread_self();
+mzrt_os_thread_id mz_proc_os_thread_self();
 mzrt_thread_id mz_proc_thread_id(mz_proc_thread* thread);
 
 /****************** THREAD RWLOCK ******************************************/

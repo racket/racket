@@ -50,6 +50,7 @@ directory while returning the result of @racket[proc].
 @defproc[(make-filesystem-entry-reader
           [#:dest dest-path (or/c path-string? #f) #f]
           [#:strip-count strip-count exact-nonnegative-integer? 0]
+          [#:permissive? permissive? any/c #f]
           [#:exists exists (or/c 'skip 'error 'replace 'truncate 
                                  'truncate/replace 'append 'update
                                  'can-update 'must-truncate)
@@ -72,13 +73,21 @@ elements are removed from the entry path from the archive (before
 prefixing the path with @racket[dest-path]); if the item's path
 contains @racket[strip-count] elements, then it is not extracted.
 
+Unless @racket[permissive?] is true, then entries with paths containing
+an up-directory indicator are disallowed, and a link entry whose target
+is an absolute path or contains an up-directory indicator is also
+disallowed. Absolute paths are always disallowed. A disallowed
+path triggers an exception.
+
 If @racket[exists] is @racket['skip] and the file for an entry already
 exists, then the entry is skipped. Otherwise, @racket[exists] is
 passed on to @racket[open-output-file] for writing the entry's
 inflated content.
 
 @history[#:changed "6.0.0.3"
-         @elem{Added support for the optional timestamp argument in the result function.}]}
+         @elem{Added support for the optional timestamp argument in the result function.}
+         #:changed "6.3"
+         @elem{Added the @racket[#:permissive?] argument.}]}
 
 
 @defproc[(read-zip-directory [in (or/c path-string? input-port?)]) zip-directory?]{

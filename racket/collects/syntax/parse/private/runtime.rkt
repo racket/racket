@@ -1,6 +1,5 @@
 #lang racket/base
 (require racket/stxparam
-         unstable/syntax
          syntax/parse/private/residual ;; keep abs. path
          (for-syntax racket/base
                      racket/list
@@ -55,10 +54,10 @@ residual.rkt.
 
 (define-syntax-parameter fail-handler
   (lambda (stx)
-    (wrong-syntax stx "internal error: used out of context")))
+    (wrong-syntax stx "internal error: fail-handler used out of context")))
 (define-syntax-parameter cut-prompt
   (lambda (stx)
-    (wrong-syntax stx "internal error: used out of context")))
+    (wrong-syntax stx "internal error: cut-prompt used out of context")))
 
 (define-syntax-rule (wrap-user-code e)
   (with ([fail-handler #f]
@@ -140,6 +139,10 @@ residual.rkt.
                   ...
                   (define-syntax name (make-syntax-mapping 'depth (quote-syntax stmp)))
                   ...)))]))
+
+(define-syntax-rule (phase-of-enclosing-module)
+  (variable-reference->module-base-phase
+   (#%variable-reference)))
 
 ;; (check-literal id phase-level-expr ctx) -> void
 (define-syntax (check-literal stx)

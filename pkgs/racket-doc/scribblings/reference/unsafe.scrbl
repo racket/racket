@@ -347,6 +347,94 @@ The index @racket[k] must be between @racket[0] (inclusive) and
 the number of fields in the structure (exclusive). In the case of
 @racket[unsafe-struct-set!], the field must be mutable.}
 
+@deftogether[(
+@defproc[(unsafe-mutable-hash-iterate-first
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))])
+	  (or/c #f any/c)]
+@defproc[(unsafe-mutable-hash-iterate-next
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-mutable-hash-iterate-key
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-mutable-hash-iterate-value
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-mutable-hash-iterate-key+value
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-mutable-hash-iterate-pair
+          [h (and/c hash? (not/c immutable?) (not/c hash-weak?))]
+	  [i any/c]) 
+	  pair?]
+@defproc[(unsafe-immutable-hash-iterate-first
+          [h (and/c hash? immutable?)])
+	  (or/c #f any/c)]
+@defproc[(unsafe-immutable-hash-iterate-next
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-immutable-hash-iterate-key
+          [h (and/c hash? immutable?)]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-immutable-hash-iterate-value
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  any/c]
+@defproc[(unsafe-immutable-hash-iterate-key+value
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  (values any/c any/c)]
+@defproc[(unsafe-immutable-hash-iterate-pair
+          [h (and/c hash? immutable?)]
+	  [i any/c])
+	  pair?]
+@defproc[(unsafe-weak-hash-iterate-first
+          [h (and/c hash? hash-weak?)])
+	  (or/c #f any/c)]
+@defproc[(unsafe-weak-hash-iterate-next
+          [h (and/c hash? hash-weak?)]
+	  [i any/c])
+	  (or/c #f any/c)]
+@defproc[(unsafe-weak-hash-iterate-key
+          [h (and/c hash? hash-weak?)]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-weak-hash-iterate-value
+          [h (and/c hash? hash-weak?)]
+	  [i any/c]) 
+	  any/c]
+@defproc[(unsafe-weak-hash-iterate-key+value
+          [h (and/c hash? hash-weak?)]
+	  [i any/c]) 
+	  (values any/c any/c)]
+@defproc[(unsafe-weak-hash-iterate-pair
+          [h (and/c hash? hash-weak?)]
+	  [i any/c]) 
+	  pair?]
+)]{
+Unsafe versions of @racket[hash-iterate-key] and similar ops. These operations
+support @tech{chaperones} and @tech{impersonators}.
+
+Each unsafe @code{-first} and @code{-next} operation may not return a number
+index but rather an internal representation of a view into the hash structure,
+enabling faster iteration. 
+
+The result of these @code{-first} and @code{-next}] functions should be given
+to the corresponding unsafe accessor functions.
+
+If the key or value at the position returned by the @code{-first} and
+@code{-next} ops becomes invalid (e.g., because of mutation or garbage
+collection), then the operations @exnraise[exn:fail:contract].
+
+@history[#:added "6.4.0.6"]
+}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "unsafeextfl"]{Unsafe Extflonum Operations}
@@ -431,6 +519,112 @@ Unchecked versions of @racket[extflvector-length], @racket[extflvector-ref], and
 @racket[extflvector-set!]. A @tech{extflvector}'s size can never be larger than a
 @tech{fixnum} (so even @racket[extflvector-length] always returns a
 fixnum).}
+
+@; ------------------------------------------------------------------------
+
+@section{Unsafe Impersonators and Chaperones}
+
+@defproc[(unsafe-impersonate-procedure [proc procedure?]
+                                       [replacement-proc procedure?]
+                                       [prop impersonator-property?]
+                                       [prop-val any] ... ...)
+         (and/c procedure? impersonator?)]{
+
+ Like @racket[impersonate-procedure], but assumes that
+ @racket[replacement-proc] calls @racket[proc] itself. When the result
+ of @racket[unsafe-impersonate-procedure] is applied to arguments, the
+ arguments are passed on to @racket[replacement-proc] directly,
+ ignoring @racket[proc]. At the same time, @racket[impersonator-of?]
+ reports @racket[#t] when given the result of
+ @racket[unsafe-impersonate-procedure] and @racket[proc].
+
+ If @racket[proc] is itself an impersonator that is derived from
+ @racket[impersonate-procedure*] or @racket[chaperone-procedure*],
+ beware that @racket[replacement-proc] will not be able to call it
+ correctly. Specifically, the impersonator produced by
+ @racket[unsafe-impersonate-procedure] will not get passed to a
+ wrapper procedure that was supplied to
+ @racket[impersonate-procedure*] or @racket[chaperone-procedure*] to
+ generate @racket[proc].
+
+ Finally, unlike @racket[impersonate-procedure],
+ @racket[unsafe-impersonate-procedure] does not specially handle
+ @racket[impersonator-prop:application-mark] as a @racket[prop].
+
+ The unsafety of @racket[unsafe-impersonate-procedure] is limited to
+ the above differences from @racket[impersonate-procedure]. The
+ contracts on the arguments of @racket[unsafe-impersonate-procedure] are
+ checked when the arguments are supplied.
+
+ As an example, assuming that @racket[f] accepts a single argument and
+ is not derived from @racket[impersonate-procedure*] or
+ @racket[chaperone-procedure*], then
+ @racketblock[(λ (f)
+                (unsafe-impersonate-procedure
+                 f
+                 (λ (x)
+                   (if (number? x)
+                       (error 'no-numbers!)
+                       (f x)))))]
+ is equivalent to
+ @racketblock[(λ (f)
+                (impersonate-procedure
+                 f
+                 (λ (x)
+                   (if (number? x)
+                       (error 'no-numbers!)
+                       x))))]
+ 
+ Similarly, with the same assumptions about @racket[f], the following
+ two procedures @racket[_wrap-f1] and
+ @racket[_wrap-f2] are almost equivalent; they differ only
+ in the error message produced when their arguments are
+ functions that return multiple values (and that they update
+ different global variables). The version using @racket[unsafe-impersonate-procedure]
+ will signal an error in the @racket[let] expression about multiple
+ return values, whereas the one using @racket[impersonate-procedure] signals
+ an error from @racket[impersonate-procedure] about multiple return values.
+ @racketblock[(define log1-args '())
+              (define log1-results '())
+              (define wrap-f1
+                (λ (f)
+                  (impersonate-procedure
+                   f
+                   (λ (arg)
+                     (set! log1-args (cons arg log1-args))
+                     (values (λ (res)
+                               (set! log1-results (cons res log1-results))
+                               res)
+                             arg)))))
+              
+              (define log2-args '())
+              (define log2-results '())
+              (define wrap-f2
+                (λ (f)
+                  (unsafe-impersonate-procedure
+                   f
+                   (λ (arg)
+                     (set! log2-args (cons arg log2-args))
+                     (let ([res (f arg)])
+                       (set! log2-results (cons res log2-results))
+                       res)))))]
+
+ @history[#:added "6.4.0.4"]
+}
+
+
+@defproc[(unsafe-chaperone-procedure [proc procedure?]
+                                     [wrapper-proc procedure?]
+                                     [prop impersonator-property?]
+                                     [prop-val any] ... ...)
+         (and/c procedure? chaperone?)]{
+ Like @racket[unsafe-impersonate-procedure], but creates a @tech{chaperone}.
+ Since @racket[wrapper-proc] will be called in lieu of @racket[proc],
+ @racket[wrapper-proc] is assumed to return a chaperone of the value that
+ @racket[proc] would return.
+
+ @history[#:added "6.4.0.4"]
+}
 
 @; ------------------------------------------------------------------------
 

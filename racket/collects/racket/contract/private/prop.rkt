@@ -10,6 +10,7 @@
          contract-struct-first-order
          contract-struct-projection
          contract-struct-val-first-projection
+         contract-struct-late-neg-projection
          contract-struct-stronger?
          contract-struct-generate
          contract-struct-exercise
@@ -34,8 +35,6 @@
          make-chaperone-contract
          make-flat-contract
          
-         skip-projection-wrapper?
-         
          prop:opt-chaperone-contract
          prop:opt-chaperone-contract?
          prop:opt-chaperone-contract-get-test
@@ -51,7 +50,11 @@
          prop:arrow-contract 
          prop:arrow-contract?
          prop:arrow-contract-get-info
-         (struct-out arrow-contract-info))
+         (struct-out arrow-contract-info)
+
+         prop:any/c prop:any/c?
+         
+         build-context)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -66,6 +69,7 @@
                                    generate
                                    exercise
                                    val-first-projection
+                                   late-neg-projection
                                    list-contract? ]
   #:omit-define-syntaxes)
 
@@ -95,10 +99,9 @@
     first-order))
 
 (define (contract-struct-projection c)
-  (let* ([prop (contract-struct-property c)]
-         [get-projection (contract-property-projection prop)]
-         [projection (get-projection c)])
-    projection))
+  (define prop (contract-struct-property c))
+  (define get-projection (contract-property-projection prop))
+  (and get-projection (get-projection c)))
 
 (define (contract-struct-val-first-projection c)
   (define prop (contract-struct-property c))
@@ -106,44 +109,59 @@
   (and get-projection 
        (get-projection c)))
 
+(define (contract-struct-late-neg-projection c)
+  (define prop (contract-struct-property c))
+  (define get-projection (contract-property-late-neg-projection prop))
+  (and get-projection
+       (get-projection c)))
+
 (define trail (make-parameter #f))
 (define (contract-struct-stronger? a b)
-  (define prop (contract-struct-property a))
-  (define stronger? (contract-property-stronger prop))
   (cond
-    [(let ([th (trail)])
-       (and th
-            (for/or ([(a2 bs-h) (in-hash th)])
-              (and (eq? a a2)
-                   (for/or ([(b2 _) (in-hash bs-h)])
-                     (eq? b b2))))))
-     #t]
-    [(or (prop:recursive-contract? a) (prop:recursive-contract? b))
-     (parameterize ([trail (or (trail) (make-hasheq))])
-       (define trail-h (trail))
-       (let ([a-h (hash-ref trail-h a #f)])
-         (cond
-           [a-h
-            (hash-set! a-h b #t)]
-           [else
-            (define a-h (make-hasheq))
-            (hash-set! trail-h a a-h)
-            (hash-set! a-h b #t)]))
-       (contract-struct-stronger? (if (prop:recursive-contract? a)
-                                      ((prop:recursive-contract-unroll a) a)
-                                      a)
-                                  (if (prop:recursive-contract? b)
-                                      ((prop:recursive-contract-unroll b) b)
-                                      b)))]
+    [(equal? a b) #t]
     [else
-     (let loop ([b b])
-       (cond
-         [(stronger? a b) #t]
-         [(prop:orc-contract? b)
-          (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
-          (for/or ([sub-contract (in-list sub-contracts)])
-            (loop sub-contract))]
-         [else #f]))]))
+     (define prop (contract-struct-property a))
+     (define stronger? (contract-property-stronger prop))
+     (cond
+       [(stronger? a b)
+        ;; optimistically try skip some of the more complex work below
+        #t]
+       [(and (flat-contract-struct? a) (prop:any/c? b)) #t] ;; is the flat-check needed here?
+       [(let ([th (trail)])
+          (and th
+               (for/or ([(a2 bs-h) (in-hash th)])
+                 (and (eq? a a2)
+                      (for/or ([(b2 _) (in-hash bs-h)])
+                        (eq? b b2))))))
+        #t]
+       [(or (prop:recursive-contract? a) (prop:recursive-contract? b))
+        (parameterize ([trail (or (trail) (make-hasheq))])
+          (define trail-h (trail))
+          (let ([a-h (hash-ref trail-h a #f)])
+            (cond
+              [a-h
+               (hash-set! a-h b #t)]
+              [else
+               (define a-h (make-hasheq))
+               (hash-set! trail-h a a-h)
+               (hash-set! a-h b #t)]))
+          (contract-struct-stronger? (if (prop:recursive-contract? a)
+                                         ((prop:recursive-contract-unroll a) a)
+                                         a)
+                                     (if (prop:recursive-contract? b)
+                                         ((prop:recursive-contract-unroll b) b)
+                                         b)))]
+       [else
+        (let loop ([b b])
+          (cond
+            [(stronger? a b)
+             #t]
+            [(prop:orc-contract? b)
+             (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
+             (for/or ([sub-contract (in-list sub-contracts)])
+               (loop sub-contract))]
+            [else
+             #f]))])]))
 
 (define (contract-struct-generate c)
   (define prop (contract-struct-property c))
@@ -248,81 +266,69 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define skip-projection-wrapper? (make-parameter #f))
+(define-logger racket/contract)
 
-(define ((build-property mk default-name projection-wrapper)
+(define ((build-property mk default-name proc-name first-order?)
          #:name [get-name #f]
          #:first-order [get-first-order #f]
          #:projection [get-projection #f]
          #:val-first-projection [get-val-first-projection #f]
+         #:late-neg-projection [get-late-neg-projection #f]
          #:stronger [stronger #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? (λ (c) #f)])
-  
-  ;; this code is here to help me find the combinators that
-  ;; are still using only #:projection and not #:val-first-projection
-  #;
-  (when (and get-projection
-             (not get-val-first-projection))
-    (printf "missing val-first-projection ~s\n" 
-            get-projection))
-  
-  (let* ([get-name (or get-name (lambda (c) default-name))]
-         [get-first-order (or get-first-order get-any?)]
-         [get-val-first-projection
-          (or get-val-first-projection 
-              (and (not get-projection)
-                   (get-val-first-first-order-projection get-name get-first-order)))]
-         [get-projection
-          (cond
-            [get-projection 
-             (blame-context-projection-wrapper
-              (if (skip-projection-wrapper?)
-                  get-projection
-                  (projection-wrapper get-projection)))]
-            [else (val-first-projection->projection get-val-first-projection
-                                                    get-name
-                                                    get-first-order)])]
-         [stronger (or stronger weakest)])
+  (unless (or get-first-order
+              get-projection
+              get-val-first-projection
+              get-late-neg-projection)
+    (error
+     proc-name
+     (string-append
+      "expected either the"
+      " #:projection, #:val-first-projection, #:late-neg-projection, or #:first-order"
+      " argument to not be #f, but all four were #f")))
 
-    (mk get-name get-first-order
-        get-projection stronger 
-        generate exercise 
-        get-val-first-projection 
-        list-contract?)))
+  (unless get-late-neg-projection
+    (unless first-order?
+      (log-racket/contract-warning
+       "no late-neg-projection passed to ~s~a"
+       proc-name
+       (build-context))))
 
+  (mk (or get-name (λ (c) default-name))
+      (or get-first-order get-any?)
+      get-projection
+      (or stronger weakest)
+      generate exercise 
+      get-val-first-projection
+      (cond
+        [first-order?
+         (cond
+           [get-late-neg-projection get-late-neg-projection]
+           [(and (not get-projection) (not get-val-first-projection) get-first-order)
+            (λ (c) (late-neg-first-order-projection (get-name c) (get-first-order c)))]
+           [else #f])]
+        [else get-late-neg-projection])
+      list-contract?))
+
+(define (build-context)
+  (apply
+   string-append
+   (for/list ([i (in-list (continuation-mark-set->context
+                           (current-continuation-marks)))])
+     (format "\n  ~s" i))))
+    
 (define build-contract-property
   (procedure-rename
-   (build-property make-contract-property 'anonymous-contract values)
+   (build-property make-contract-property 'anonymous-contract 'build-contract-property #f)
    'build-contract-property))
-
-;; Here we'll force the projection to always return the original value,
-;; instead of assuming that the provided projection does so appropriately.
-(define (flat-projection-wrapper f)
-  (λ (c)
-    (let ([proj (f c)])
-      (λ (b)
-        (let ([p (proj b)])
-          (λ (v) (p v) v))))))
 
 (define build-flat-contract-property
   (procedure-rename
    (build-property (compose make-flat-contract-property make-contract-property)
-                   'anonymous-flat-contract
-                   flat-projection-wrapper)
+                   'anonymous-flat-contract 'build-flat-contract-property #t)
    'build-flat-contract-property))
-
-(define (chaperone-projection-wrapper f)
-  (λ (c)
-    (let ([proj (f c)])
-      (λ (b)
-        (let ([p (proj b)])
-          (λ (v)
-            (let ([v* (p v)])
-              (unless (chaperone-of? v* v)
-                (error 'prop:chaperone-contract (format "expected a chaperone of ~v, got ~v" v v*)))
-              v*)))))))
 
 (define (blame-context-projection-wrapper proj)
   (λ (ctc)
@@ -333,8 +339,7 @@
 (define build-chaperone-contract-property
   (procedure-rename
    (build-property (compose make-chaperone-contract-property make-contract-property)
-                   'anonymous-chaperone-contract
-                   chaperone-projection-wrapper)
+                   'anonymous-chaperone-contract 'build-chaperone-contract-property #f)
    'build-chaperone-contract-property))
 
 (define (get-any? c) any?)
@@ -372,7 +377,8 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-struct make-contract [ name first-order projection val-first-projection 
+(define-struct make-contract [ name first-order projection
+                                    val-first-projection late-neg-projection 
                                     stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
@@ -386,12 +392,14 @@
    #:first-order (lambda (c) (make-contract-first-order c))
    #:projection (lambda (c) (make-contract-projection c))
    #:val-first-projection (lambda (c) (make-contract-val-first-projection c))
+   #:late-neg-projection (lambda (c) (make-contract-late-neg-projection c))
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
    #:generate (lambda (c) (make-contract-generate c))
    #:exercise (lambda (c) (make-contract-exercise c))
    #:list-contract? (λ (c) (make-contract-list-contract? c))))
 
-(define-struct make-chaperone-contract [ name first-order projection val-first-projection
+(define-struct make-chaperone-contract [ name first-order projection
+                                              val-first-projection late-neg-projection
                                               stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
@@ -405,12 +413,14 @@
    #:first-order (lambda (c) (make-chaperone-contract-first-order c))
    #:projection (lambda (c) (make-chaperone-contract-projection c))
    #:val-first-projection (lambda (c) (make-chaperone-contract-val-first-projection c))
+   #:late-neg-projection (lambda (c) (make-chaperone-contract-late-neg-projection c))
    #:stronger (lambda (a b) ((make-chaperone-contract-stronger a) a b))
    #:generate (lambda (c) (make-chaperone-contract-generate c))
    #:exercise (lambda (c) (make-chaperone-contract-exercise c))
    #:list-contract? (λ (c) (make-chaperone-contract-list-contract? c))))
 
-(define-struct make-flat-contract [ name first-order projection val-first-projection
+(define-struct make-flat-contract [ name first-order projection
+                                         val-first-projection late-neg-projection
                                          stronger generate exercise list-contract? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
@@ -423,70 +433,94 @@
    #:name (lambda (c) (make-flat-contract-name c))
    #:first-order (lambda (c) (make-flat-contract-first-order c))
    #:val-first-projection (λ (c) (make-flat-contract-val-first-projection c))
+   #:late-neg-projection (λ (c) (make-flat-contract-late-neg-projection c))
    #:projection (lambda (c) (make-flat-contract-projection c))
    #:stronger (lambda (a b) ((make-flat-contract-stronger a) a b))
    #:generate (lambda (c) (make-flat-contract-generate c))
    #:exercise (lambda (c) (make-flat-contract-exercise c))
    #:list-contract? (λ (c) (make-flat-contract-list-contract? c))))
 
-(define ((build-contract mk default-name)
+(define ((build-contract mk default-name proc-name first-order?)
          #:name [name #f]
          #:first-order [first-order #f]
          #:projection [projection #f]
          #:val-first-projection [val-first-projection #f]
+         #:late-neg-projection [late-neg-projection #f]
          #:stronger [stronger #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
          #:list-contract? [list-contract? (λ (ctc) #f)])
 
-  (let* ([name (or name default-name)]
-         [first-order (or first-order any?)]
-         [projection (or projection (first-order-projection name first-order))]
-         [val-first-projection (or val-first-projection 
-                                   (and (not projection)
-                                        (val-first-first-order-projection name first-order)))]
-         [stronger (or stronger as-strong?)])
+  (unless (or first-order
+              projection
+              val-first-projection
+              late-neg-projection)
+    (error
+     proc-name
+     (string-append
+      "expected either the"
+      " #:projection, #:val-first-projection, #:late-neg-projection, or #:first-order"
+      " argument to not be #f, but all four were #f")))
+  
+  (unless late-neg-projection
+    (unless first-order?
+      (log-racket/contract-warning
+       "no late-neg-projection passed to ~s~a"
+       proc-name
+       (build-context))))
 
-    (mk name first-order 
-        projection val-first-projection
-        stronger 
-        generate exercise
-        list-contract?)))
+  (mk (or name default-name)
+      (or first-order any?) 
+      projection val-first-projection
+      (cond
+        [first-order?
+         (cond
+           [late-neg-projection late-neg-projection]
+           [(and (not projection) (not val-first-projection) first-order)
+            (late-neg-first-order-projection name first-order)]
+           [else #f])]
+        [else late-neg-projection])
+      (or stronger as-strong?)
+      generate exercise
+      list-contract?))
 
-(define ((get-val-first-first-order-projection get-name get-first-order) c)
-  (val-first-first-order-projection (get-name c) (get-first-order c)))
-
-(define (val-first-first-order-projection name p?)
-  (λ (b) 
-    (λ (v) 
-      (λ (neg-party) 
-        (if (p? v)
-            v
-            (raise-blame-error 
-             b #:missing-party neg-party
-             v
-             '(expected: "~s" given: "~e")
-             name 
-             v))))))
+(define (late-neg-first-order-projection name p?)
+  (λ (b)
+    (λ (v neg-party)
+      (if (p? v)
+          v
+          (raise-blame-error
+           b #:missing-party neg-party
+           v
+           '(expected: "~s" given: "~e")
+           name
+           v)))))
 
 (define (as-strong? a b)
-  (procedure-closure-contents-eq?
-   (contract-struct-projection a)
-   (contract-struct-projection b)))
+  (define late-neg-a (contract-struct-late-neg-projection a))
+  (define late-neg-b (contract-struct-late-neg-projection b))
+  (and late-neg-a late-neg-b
+       (procedure-closure-contents-eq? late-neg-a late-neg-b)))
 
 (define make-contract
   (procedure-rename 
-   (build-contract make-make-contract 'anonymous-contract)
+   (build-contract make-make-contract 'anonymous-contract 'make-contract #f)
    'make-contract))
 
 (define make-chaperone-contract
   (procedure-rename
-   (build-contract make-make-chaperone-contract 'anonymous-chaperone-contract)
+   (build-contract make-make-chaperone-contract
+                   'anonymous-chaperone-contract
+                   'make-chaperone-contract
+                   #f)
    'make-chaperone-contract))
 
 (define make-flat-contract
   (procedure-rename
-   (build-contract make-make-flat-contract 'anonymous-flat-contract)
+   (build-contract make-make-flat-contract
+                   'anonymous-flat-contract
+                   'make-flat-contract
+                   #t)
    'make-flat-contract))
 
 ;; property should be bound to a function that accepts the contract and
@@ -500,6 +534,11 @@
                 prop:recursive-contract?
                 prop:recursive-contract-unroll)
   (make-struct-type-property 'prop:recursive-contract))
+
+;; this property's value isn't looked at; it is just a signal
+;; that the contract accepts any value
+(define-values (prop:any/c prop:any/c? prop:get-any/c)
+  (make-struct-type-property 'prop:any/c))
 
 ;; get-info : (-> ctc arrow-contract-info?)
 (define-values (prop:arrow-contract prop:arrow-contract? prop:arrow-contract-get-info)

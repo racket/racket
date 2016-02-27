@@ -191,18 +191,31 @@ required keyword arguments of @racket[wrapper-proc] must be a subset
 of the required keywords of @racket[proc].
 
 For applications without keywords, the result of @racket[wrapper-proc]
-must be either the same number of values as supplied to it or one more
-than the number of supplied values, where an extra result is supplied
-before the others. The additional result, if any, must be a procedure
+must be at least the same number of values as supplied to it.
+Additional results can be supplied---before the values that correspond
+to the supplied values---in the following pattern:
+
+@itemlist[
+
+ @item{An optional procedure, @racket[_result-wrapper-proc], which
+       will be applied to the results of @racket[proc]; followed by}
+
+ @item{any number of repetitions of @racket['mark _key _val] (i.e.,
+       three values), where the call @racket[_proc] is wrapped to
+       install a @tech{continuation mark} @racket[_key] and @racket[_val].}
+
+]
+
+If @racket[_result-wrapper-proc] is produced, it must be a procedure
 that accepts as many results as produced by @racket[proc]; it must
-return the same number of results.  If @racket[wrapper-proc] returns
-the same number of values as it is given (i.e., it does not return a
-procedure to impersonator @racket[proc]'s result), then @racket[proc] is
-called in @tech{tail position} with respect to the call to the impersonator.
+return the same number of results. If @racket[_result-wrapper-proc] is
+not supplied, then @racket[proc] is called in @tech{tail position}
+with respect to the call to the impersonator.
 
 For applications that include keyword arguments, @racket[wrapper-proc]
-must return an additional value before any other values but after the
-result-impersonating procedure (if any). The additional value must be a
+must return an additional value before any other values but after
+@racket[_result-wrapper-proc] and @racket['mark _key _val]
+sequences (if any). The additional value must be a
 list of replacements for the keyword arguments that were supplied to the
 impersonator (i.e., not counting optional arguments that were
 not supplied). The arguments must be ordered according to the sorted
@@ -221,13 +234,59 @@ If any @racket[prop] is @racket[impersonator-prop:application-mark] and if the
 associated @racket[prop-val] is a pair, then the call to @racket[proc]
 is wrapped with @racket[with-continuation-mark] using @racket[(car
 prop-val)] as the mark key and @racket[(cdr prop-val)] as the mark
-value. In addition, if @racket[continuation-mark-set-first] with
-@racket[(car prop-val)] produces a value for the immediate
-continuation frame of the call to the impersonated procedure, the value is
+value. In addition, if the immediate
+continuation frame of the call to the impersonated procedure
+includes a value for @racket[(car prop-val)]---that is, if
+@racket[call-with-immediate-continuation-mark] would produce a value
+for @racket[(car prop-val)] in the call's continuation---then the value is
 also installed as an immediate value for @racket[(car prop-val)] as a
 mark during the call to @racket[wrapper-proc] (which allows tail-calls
 of impersonators with respect to wrapping impersonators to be detected within
-@racket[wrapper-proc]).}
+@racket[wrapper-proc]).
+
+@history[#:changed "6.3.0.5" @elem{Added support for @racket['mark
+                                   _key _val] results from
+                                   @racket[wrapper-proc].}]
+
+ @examples[
+
+ (define (add15 x) (+ x 15))
+ (define add15+print
+   (impersonate-procedure add15
+                          (λ (x)
+                            (printf "called with ~s\n" x)
+                            (values (λ (res)
+                                      (printf "returned ~s\n" res)
+                                      res)
+                                    x))))
+ (add15 27)
+ (add15+print 27)
+           
+ (define-values (imp-prop:p1 imp-prop:p1? imp-prop:p1-get)
+   (make-impersonator-property 'imp-prop:p1))
+ (define-values (imp-prop:p2 imp-prop:p2? imp-prop:p2-get)
+   (make-impersonator-property 'imp-prop:p2))
+  
+ (define add15.2 (impersonate-procedure add15 #f imp-prop:p1 11))
+ (add15.2 2)
+ (imp-prop:p1? add15.2)
+ (imp-prop:p1-get add15.2)
+ (imp-prop:p2? add15.2)
+ 
+ (define add15.3 (impersonate-procedure add15.2 #f imp-prop:p2 13))
+ (add15.3 3)
+ (imp-prop:p1? add15.3)
+ (imp-prop:p1-get add15.3)
+ (imp-prop:p2? add15.3)
+ (imp-prop:p2-get add15.3)
+ 
+ (define add15.4 (impersonate-procedure add15.3 #f imp-prop:p1 101))
+ (add15.4 4)
+ (imp-prop:p1? add15.4)
+ (imp-prop:p1-get add15.4)
+ (imp-prop:p2? add15.4)
+ (imp-prop:p2-get add15.4)]
+}
 
 @defproc[(impersonate-procedure* [proc procedure?]
                                  [wrapper-proc (or/c procedure? #f)]
@@ -387,6 +446,7 @@ or override impersonator-property values of @racket[box].}
                            [remove-proc (hash? any/c . -> . any/c)]
                            [key-proc (hash? any/c . -> . any/c)]
                            [clear-proc (or/c #f (hash? . -> . any)) #f]
+                           [equal-key-proc (or/c #f (hash? any/c . -> . any/c)) #f]
                            [prop impersonator-property?]
                            [prop-val any] ... ...)
           (and/c hash? impersonator?)]{
@@ -402,7 +462,7 @@ In addition, operations like
 @racket[hash-iterate-key] or @racket[hash-map], which extract
 keys from the table, use @racket[key-proc] to filter keys extracted
 from the table. Operations like @racket[hash-iterate-value] or
-@racket[hash-iterate-map] implicitly use @racket[hash-ref] and
+@racket[hash-values] implicitly use @racket[hash-ref] and
 therefore redirect through @racket[ref-proc].
 
 The @racket[ref-proc] must accept @racket[hash] and a key passed
@@ -440,6 +500,19 @@ If @racket[clear-proc] is @racket[#f], then @racket[hash-clear] or
 @racket[hash-clear!] on the impersonator is implemented using
 @racket[hash-iterate-key] and @racket[hash-remove] or @racket[hash-remove!].
 
+If @racket[equal-key-proc] is not @racket[#f], it effectively
+interposes on calls to @racket[equal?], @racket[equal-hash-code], and
+@racket[equal-secondary-hash-code] for the keys of @racket[hash]. The
+@racket[equal-key-proc] must accept as its arguments @racket[hash] and
+a key that is either mapped by @racket[hash] or passed to
+@racket[hash-ref], etc., where the latter has potentially been
+adjusted by the corresponding @racket[ref-proc], etc@|.__| The result
+is a value that is passed to @racket[equal?],
+@racket[equal-hash-code], and @racket[equal-secondary-hash-code] as
+needed to hash and compare keys. In the case of @racket[hash-set!] or
+@racket[hash-set], the key that is passed to @racket[equal-key-proc]
+is the one stored in the hash table for future lookup.
+
 The @racket[hash-iterate-value], @racket[hash-map], or
 @racket[hash-for-each] functions use a combination of
 @racket[hash-iterate-key] and @racket[hash-ref]. If a key
@@ -448,7 +521,10 @@ produced by @racket[key-proc] does not yield a value through
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-hash] must be odd) add impersonator properties
-or override impersonator-property values of @racket[hash].}
+or override impersonator-property values of @racket[hash].
+
+@history[#:changed "6.3.0.11" @elem{Added the @racket[equal-key-proc]
+                                    argument.}]}
 
 
 @defproc[(impersonate-channel [channel channel?]
@@ -707,7 +783,6 @@ or structure type.
          #:changed "6.1.1.8" @elem{Added optional @racket[struct-type]
                                    argument.}]}
 
-
 @defproc[(chaperone-vector [vec vector?]
                            [ref-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
                            [set-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
@@ -743,6 +818,7 @@ the same value or a chaperone of the value that it is given.  The
                          [remove-proc (hash? any/c . -> . any/c)]
                          [key-proc (hash? any/c . -> . any/c)]
                          [clear-proc (or/c #f (hash? . -> . any)) #f]
+                         [equal-key-proc (or/c #f (hash? any/c . -> . any/c)) #f]
                          [prop impersonator-property?]
                          [prop-val any] ... ...)
           (and/c hash? chaperone?)]{
@@ -752,8 +828,12 @@ and support for immutable hashes. The @racket[ref-proc] procedure must
 return a found value or a chaperone of the value. The
 @racket[set-proc] procedure must produce two values: the key that it
 is given or a chaperone of the key and the value that it is given or a
-chaperone of the value. The @racket[remove-proc] and @racket[key-proc]
-procedures must produce the given key or a chaperone of the key.}
+chaperone of the value. The @racket[remove-proc], @racket[key-proc],
+and @racket[equal-key-proc]
+procedures must produce the given key or a chaperone of the key.
+
+@history[#:changed "6.3.0.11" @elem{Added the @racket[equal-key-proc]
+                                    argument.}]}
 
 @defproc[(chaperone-struct-type [struct-type struct-type?]
                                 [struct-info-proc procedure?]
@@ -865,11 +945,12 @@ procedure.
      (lambda (n) (* n 2))
      (lambda (n) (+ n 1))))
 
-  (call-with-continuation-prompt
-    (lambda ()
-      (abort-current-continuation bad-chaperone 5))
-    bad-chaperone
-    (lambda (n) n))
+  (eval:error
+   (call-with-continuation-prompt
+     (lambda ()
+       (abort-current-continuation bad-chaperone 5))
+     bad-chaperone
+     (lambda (n) n)))
 
   (define good-chaperone
     (chaperone-prompt-tag
@@ -907,10 +988,11 @@ given.
      (lambda (l) (map char-upcase l))
      string->list))
 
-  (with-continuation-mark bad-chaperone "timballo"
-    (continuation-mark-set-first
-     (current-continuation-marks)
-     bad-chaperone))
+  (eval:error
+   (with-continuation-mark bad-chaperone "timballo"
+     (continuation-mark-set-first
+      (current-continuation-marks)
+      bad-chaperone)))
 
   (define (checker s)
     (if (> (string-length s) 5)

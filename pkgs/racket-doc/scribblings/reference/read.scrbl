@@ -121,7 +121,9 @@ See @secref["readtables"] for an extended example that uses
          (or/c (any/c any/c . -> . any) #f)]{
 
 Reads from @racket[in] in the same way as @racket[read], but stopping as
-soon as a @tech{reader language} (or its absence) is determined.
+soon as a @tech{reader language} (or its absence) is determined, and
+using the @tech{current namespace} to load a reader module instead
+of its @tech{root namespace} (if those are different).
 
 A @deftech{reader language} is specified by @litchar{#lang} or
 @litchar{#!} (see @secref["parse-reader"]) at the beginning of the
@@ -154,8 +156,10 @@ interpretation of results is up to external tools, such as DrRacket (see
 If no information is available for a given key, the result should be
 the second argument.
 @mz-examples[
-((read-language (open-input-string "#lang algol60")) 'color-lexer #f)
-((read-language (open-input-string "#lang algol60")) 'something-else #f)
+(define scribble-manual-info
+  (read-language (open-input-string "#lang scribble/manual")))
+(scribble-manual-info 'color-lexer #f)
+(scribble-manual-info 'something-else #f)
 ]
 
 The @racketidfont{get-info} function itself is applied to five
@@ -215,6 +219,23 @@ A @tech{parameter} that controls whether @litchar["{"] and @litchar["}"]
 are treated as parentheses. See @secref["parse-pair"] for more
 information.}
 
+@defboolparam[read-square-bracket-with-tag on?]{
+
+A @tech{parameter} that controls whether @litchar{[} and @litchar{]}
+are treated as parentheses, but the resulting list tagged with
+@racket[#%brackets]. See @secref["parse-pair"] for more information.
+
+@history[#:added "6.3.0.5"]}
+
+@defboolparam[read-curly-brace-with-tag on?]{
+
+A @tech{parameter} that controls whether @litchar["{"] and
+@litchar["}"] are treated as parentheses, but the resulting list
+tagged with @racket[#%braces]. See @secref["parse-pair"] for more
+information.
+
+@history[#:added "6.3.0.5"]}
+
 @defboolparam[read-accept-box on?]{
 
 A @tech{parameter} that controls parsing @litchar{#&} input. See
@@ -253,6 +274,14 @@ information.}
 
 A @tech{parameter} that controls parsing input with two dots to trigger infix
  conversion. See @secref["parse-pair"] for more information.}
+
+@defboolparam[read-cdot on?]{
+
+A @tech{parameter} that controls parsing input with a dot, in a C
+structure accessor style. See @secref["parse-cdot"] for more
+information.
+
+@history[#:added "6.3.0.5"]}
 
 @defboolparam[read-accept-quasiquote on?]{
 

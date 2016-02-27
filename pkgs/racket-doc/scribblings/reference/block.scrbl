@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/eval (for-label racket/block))
+@(require "mz.rkt" (for-label racket/block))
 
 @(define ev (make-base-eval))
 @(ev '(require racket/block))

@@ -50,6 +50,7 @@ qp      ::= literal                           @match literal
          |  (qp ooo . qp)                     @match qps beginning with repeated qp
          |  #(qp ...)                         @match vector of qps
          |  #&qp                              @match boxed qp
+         |  #s(prefab-key qp ...)             @match prefab struct with qp fields
          |  ,pat                              @match pat
          |  ,@(LIST lvp ...)                  @match lvps, spliced
          |  ,@(LIST-REST lvp ... pat)         @match lvps plus pat, spliced

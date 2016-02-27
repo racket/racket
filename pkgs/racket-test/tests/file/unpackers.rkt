@@ -98,7 +98,6 @@
   (delete-directory/files "sub")
   (file-or-directory-permissions* more-dir "rwx")
   
-  
   ;; make sure top-level file extraction works
   (untgz (open-input-bytes
           ;; bytes gotten from 'tar' and 'gzip' command-line tools
@@ -112,7 +111,28 @@
   (test (file-exists? "L1c"))
   (test (file-exists? "helper.rkt"))
   (delete-file "L1c")
-  (delete-file "helper.rkt"))
+  (delete-file "helper.rkt")
+
+  ;; check on [non-]permissive unpacking
+  (unless (eq? (system-type) 'windows)
+    (for ([target (in-list '("../x" "/tmp/abs" "ok"))])
+      (define ok? (equal? target "ok"))
+      (make-directory* "ex2")
+      (make-file-or-directory-link target (build-path "ex2" "link"))
+      (tar "ex2" a.tar)
+      (make-directory "sub")
+      (test (with-handlers ([exn:fail? (lambda (exn)
+                                         (regexp-match? #rx"up-directory|absolute" (exn-message exn)))])
+              (untar "a.tar" #:dest "sub")
+              ok?))
+      (test (equal? ok? (link-exists? (build-path "sub" "ex2" "link"))))
+      (delete-directory/files "sub")
+
+      (make-directory "sub")
+      (untar "a.tar" #:dest "sub" #:permissive? #t)
+      (test (link-exists? (build-path "sub" "ex2" "link")))
+      (delete-directory/files "sub")
+      (delete-directory/files "ex2"))))
 
 (define ((make-unzip-tests* preserve-timestamps?))
   (make-directory* "ex1")
@@ -174,8 +194,22 @@
 (define (unzip-tests [preserve-timestamps? #f])
   (when zip-exe (test do (run-tests (make-unzip-tests* preserve-timestamps?)))))
 
+(define (untar-of-invalid-tests)
+  ;; Make sure we don't get an internal error for this misformatted tar file:
+  (define bad-tar.gz
+    (bytes-append #"\37\213\b\b!D\363U\0\3test.tar\0\355\321A\n\302@\f\205\341\254=\305\334\240\223qb\316\323"
+                  #"\205]YZl\274\277V\21\334\210(\fR\370\277M\26\t\344\301\213\343\22\235\264\225o\334m\235"
+                  #"\352\226_\347\223h1\257\207\252V\\\262j\325*\311\32\347\272\273,\321\237S\222q8\365\21\357"
+                  #"\357>\3557*\326\376\207ij\371\343\321\277\177\321\377\336r\221T\272\30\347\326\341\350?v\377"
+                  #"\16\1\0\0\0\0\0\0\0\0\0\0\0\0\340'W\327\1)\27\0(\0\0"))
+  (test (regexp-match?
+         #rx"^unt"
+         (with-handlers ([exn? exn-message])
+           (untgz (open-input-bytes bad-tar.gz) #:filter (lambda args #f))))))
+
 (module+ main (tests))
 (define (tests)
   (test do (untar-tests)
         do (unzip-tests)
-        do (unzip-tests #t)))
+        do (unzip-tests #t)
+        do (untar-of-invalid-tests)))

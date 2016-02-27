@@ -782,11 +782,13 @@ See the scribble documentation on the planet/resolver module.
              (let ([maj/str (extract-field "Package-Major-Version" head)]
                    [min/str (extract-field "Package-Minor-Version" head)]
                    [content-length/str (extract-field "Content-Length" head)])
-               (unless (and maj/str min/str content-length/str
+               (unless (and maj/str min/str
                             (nat? (string->number maj/str))
-                            (nat? (string->number min/str))
-                            (nat? (string->number content-length/str)))
+                            (nat? (string->number min/str)))
                  (abort "Server did not include valid major and minor version information"))
+               (unless (and content-length/str
+                            (nat? (string->number content-length/str)))
+                 (abort "Server did not include content-length"))
                (let* ([filename (make-temporary-file "planettmp~a.plt")]
                       [maj      (string->number maj/str)]
                       [min      (string->number min/str)]

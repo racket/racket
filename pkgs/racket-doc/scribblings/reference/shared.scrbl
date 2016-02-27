@@ -3,7 +3,7 @@
 
 
 @(define shared-eval (make-base-eval))
-@(interaction-eval #:eval shared-eval (require racket/shared))
+@examples[#:hidden #:eval shared-eval (require racket/shared)]
 
 @(define maker
    (make-element #f (list
@@ -59,12 +59,12 @@ production take precedence over later variants:
 
 The @|maker| identifier above matches three kinds of references. The
 first kind is any binding whose name has @racketidfont{make-} in the
-middle, and where @|typedef| has a @tech{transformer binding} to
+middle, and where @|typedef| has a @tech{transformer} binding to
 structure information with a full set of mutator bindings; see
 @secref["structinfo"]. The second kind is an identifier that itself has a
-@tech{transformer binding} to structure information. The third kind is an
+@tech{transformer} binding to structure information. The third kind is an
 identifier that has a @racket['constructor-for] @tech{syntax property}
-whose value is an identifier with a @tech{transformer binding} to structure
+whose value is an identifier with a @tech{transformer} binding to structure
 information. A @racket[_shell-id], meanwhile, must be one of the
 @racket[id]s bound by the @racket[shared] form to a
 @racket[_shell-expr].
@@ -125,11 +125,11 @@ that can be created via mutation).
 (shared ([a (cons 1 b)]
          [b 7])
   a)
-(shared ([a a]) (code:comment @#,t{no indirection...})
-  a)
-(shared ([a (cons 1 b)] (code:comment @#,t{@racket[b] is early...})
-         [b a])
-  a)
+(eval:error (shared ([a a]) (code:comment @#,t{no indirection...})
+              a))
+(eval:error (shared ([a (cons 1 b)] (code:comment @#,t{@racket[b] is early...})
+                     [b a])
+              a))
 (shared ([a (mcons 1 b)] (code:comment @#,t{@racket[b] is patchable...})
          [b a])
   a)

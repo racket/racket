@@ -9,7 +9,8 @@
 
 (provide (rename-out [module-begin #%module-begin]
                      [struct~s struct])
-         (except-out (all-from-out racket/base) #%module-begin)
+         (except-out (all-from-out racket/base)
+                     #%module-begin)
          (all-from-out racket/unit)
          (all-from-out racket/contract)
          (for-syntax (all-from-out racket/base)))
@@ -25,7 +26,8 @@
 
 (define-syntax (module-begin stx)
   (parameterize ((error-syntax stx))
-    (with-syntax ((name (make-name (syntax-property stx 'enclosing-module-name))))
+    (with-syntax ((name (datum->syntax stx
+                                       (make-name (syntax-property stx 'enclosing-module-name)))))
       (syntax-case stx ()
         ((_ . x)
          (with-syntax ((((reqs ...) . (body ...))

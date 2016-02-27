@@ -30,6 +30,7 @@ a typical Racket installation.
 @include-section["test.scrbl"]
 @include-section["docs.scrbl"]
 @include-section["expand.scrbl"]
+@include-section["read.scrbl"]
 @include-section["scribble.scrbl"]
 @include-section["command.scrbl"]
 @include-section["config.scrbl"]

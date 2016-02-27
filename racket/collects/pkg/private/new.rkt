@@ -94,16 +94,13 @@ EOS
 
       ;; .travis.yml
       (with-output-to-file ".travis.yml"
-        (lambda () (display #<<EOS
+        (lambda () (expand/display #<<EOS
 language: c
 
 # Based from: https://github.com/greghendershott/travis-racket
 
-# Optional: To use Travis CI's newer container infrastucture,
-# un-comment the following line. (Also be sure RACKET_DIR is set to
-# somewhere like ~/racket that doesn't require sudo.)
-#
-# sudo: false
+# Optional: Remove to use Travis CI's older infrastructure.
+sudo: false
 
 env:
   global:
@@ -120,13 +117,17 @@ env:
     # Supply more than one RACKET_VERSION (as in the example below) to
     # create a Travis-CI build matrix to test against multiple Racket
     # versions.
-    # - RACKET_VERSION=5.3.4
-    # - RACKET_VERSION=5.3.5
-    # - RACKET_VERSION=5.92
     - RACKET_VERSION=6.0
     - RACKET_VERSION=6.1
     - RACKET_VERSION=6.1.1
+    - RACKET_VERSION=6.2
+    - RACKET_VERSION=6.3
     - RACKET_VERSION=HEAD
+
+matrix:
+  allow_failures:
+    env: RACKET_VERSION=HEAD
+    fast_finish: true
 
 before_install:
 - git clone https://github.com/greghendershott/travis-racket.git
@@ -142,18 +143,14 @@ before_script:
 # `raco pkg install --deps search-auto <<name>>` to install any required
 # packages without it getting stuck on a confirmation prompt.
 script:
- - /usr/racket/bin/raco make main.rkt
- - /usr/racket/bin/raco test -x .
+ - raco pkg install --deps search-auto cover
+ - raco test -x -p <<name>>
 
-# NOTE: If your repo is a Racket package with an info.rkt that
-# includes some `deps`, the following is more elegant:
-#
-# script:
-# - cd ..   # Travis did a cd into the dir. Back up, for the next:
-# - /usr/racket/bin/raco pkg install --deps search-auto --link <<name>>
-# - /usr/racket/bin/raco test -x -p <<name>>
-
-after_script:
+after_success:
+ - raco setup --check-deps <<name>>
+ - raco pkg install --deps search-auto cover-coveralls
+ - raco pkg install --deps search-auto
+ - raco cover -b -f coveralls -d $TRAVIS_BUILD_DIR/coverage .
 
 EOS
 )))

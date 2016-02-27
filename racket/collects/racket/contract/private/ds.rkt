@@ -20,8 +20,7 @@ it around flattened out.
 (require "guts.rkt"
          "prop.rkt"
          "blame.rkt"
-         "opt.rkt"
-         "misc.rkt")
+         "opt.rkt")
 (require (for-syntax racket/base)
          (for-syntax "ds-helpers.rkt")
          (for-syntax "helpers.rkt")
@@ -236,7 +235,7 @@ it around flattened out.
                        [b-sel (contract-get b selector-indices)])
                    (if (contract-struct? a-sel)
                        (if (contract-struct? b-sel)
-                           (contract-stronger? a-sel b-sel)
+                           (contract-struct-stronger? a-sel b-sel)
                            #f)
                        (if (contract-struct? b-sel)
                            #f
@@ -276,8 +275,8 @@ it around flattened out.
                     (let ([old-contract/info (wrap-get val 1)])
                       (if (and (equal? (contract/info-blame new-contract/info)
                                        (contract/info-blame old-contract/info))
-                               (contract-stronger? (contract/info-contract old-contract/info)
-                                                   (contract/info-contract new-contract/info)))
+                               (contract-struct-stronger? (contract/info-contract old-contract/info)
+                                                          (contract/info-contract new-contract/info)))
                           #t
                           (already-there? new-contract/info (wrap-get val 0) (- depth 1)))))]
               [else 

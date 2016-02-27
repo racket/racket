@@ -996,6 +996,91 @@
                (provide a)))
       (eval '(dynamic-require ''provide/contract51-m2 'a)))
    '(1 2 3 4))
+
+  (test/spec-passed/result
+   'provide/contract52
+   '(let ()
+      (eval '(module provide/contract52-m1 racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         [f (->* (integer?) (boolean? char? any/c) any)]))
+               (define (f x [y #f] [z #\a] [w 0]) (list x y z w))))
+      (eval '(module provide/contract52-m2 racket/base
+               (require 'provide/contract52-m1)
+               (provide a)
+               (define a
+                 (let ([f f])
+                   (list (f 1 #t #\x)
+                         (f 1))))))
+      (eval '(dynamic-require ''provide/contract52-m2 'a)))
+   '((1 #t #\x 0) (1 #f #\a 0)))
+
+  (test/spec-passed/result
+   'provide/contract53
+   '(let ()
+      (eval '(module provide/contract53-m1 racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         [f (->* (integer?) (boolean? char? any/c) #:rest any/c any)]))
+               (define (f x [y #f] [z #\a] [w 0] . rest) (list* x y z w rest))))
+      (eval '(module provide/contract53-m2 racket/base
+               (require 'provide/contract53-m1)
+               (provide a)
+               (define a
+                 (let ([f f])
+                   (list (f 1 #t #\x 11 22 33 44 55 66)
+                         (f 1))))))
+      (eval '(dynamic-require ''provide/contract53-m2 'a)))
+   '((1 #t #\x 11 22 33 44 55 66) (1 #f #\a 0)))
+
+  (test/spec-passed/result
+   'provide/contract54
+   '(let ()
+      (eval '(module provide/contract54-m1 racket/base
+               (require racket/contract/base)
+               (provide (contract-out
+                         [f (->* (#:x integer?) (#:y boolean? #:z char? #:w any/c) any)]))
+               (define (f #:x x #:y [y #f] #:z [z #\a] #:w [w 0]) (list x y z w))))
+      (eval '(module provide/contract54-m2 racket/base
+               (require 'provide/contract54-m1)
+               (provide a)
+               (define a
+                 (let ([f f])
+                   (list (f #:x 1 #:y #t #:z #\x)
+                         (f #:x 1))))))
+      (eval '(dynamic-require ''provide/contract54-m2 'a)))
+   '((1 #t #\x 0) (1 #f #\a 0)))
+
+  (test/spec-passed/result
+   'provide/contract55
+   '(let ()
+      (eval '(module provide/contract55-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [an-s s?]
+                 [s-x (-> s? integer?)]))
+               (struct s (x))
+               (define an-s (s 5))))
+      (eval '(module provide/contract55-m2 racket/base
+               (require 'provide/contract55-m1)
+               (provide a)
+               (define a (s-x (chaperone-struct an-s s-x (λ (s x) x))))))
+      (eval '(dynamic-require ''provide/contract55-m2 'a)))
+   '5)
+
+  (test/spec-failed
+   'provide/contract56
+   '(let ()
+      (eval '(module provide/contract56-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> integer? integer?)]))
+               (define f 1)))
+      (eval '(dynamic-require ''provide/contract56-m1 #f)))
+   "provide/contract56-m1")
+   
   
   (contract-error-test
    'contract-error-test8

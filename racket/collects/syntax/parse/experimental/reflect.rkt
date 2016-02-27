@@ -125,20 +125,20 @@
                               (#:<kw> any/c ...)
                               #:rest list?
                               (or/c reified-syntax-class? reified-splicing-syntax-class/c))
-                 #:projection
+                 #:late-neg-projection
                  (lambda (blame)
                    (let ([check-reified
-                          ((contract-projection
+                          ((contract-late-neg-projection
                             (or/c reified-syntax-class? reified-splicing-syntax-class?))
                            (blame-swap blame))])
-                     (lambda (f)
+                     (lambda (f neg-party)
                        (if (and (procedure? f)
                                 (procedure-arity-includes? f 1))
                            (make-keyword-procedure
                             (lambda (kws kwargs r . args)
-                              (keyword-apply f kws kwargs (check-reified r) args)))
+                              (keyword-apply f kws kwargs (check-reified r neg-party) args)))
                            (raise-blame-error
-                            blame
+                            blame #:missing-party neg-party
                             f
                             "expected a procedure of at least one argument, given ~e"
                             f)))))

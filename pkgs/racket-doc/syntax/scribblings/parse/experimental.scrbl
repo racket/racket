@@ -5,6 +5,8 @@
           scribble/eval
           "parse-common.rkt")
 
+@(define the-eval (make-sp-eval))
+
 @title{Experimental}
 
 The following facilities are experimental.
@@ -118,7 +120,7 @@ must be specified explicitly.
 Like @racket[~reflect] but for reified splicing syntax classes.
 }
 
-@myexamples[
+@examples[#:eval the-eval
 (define-syntax-class (nat> x)
   #:description (format "natural number greater than ~s" x)
   #:attributes (diff)
@@ -216,7 +218,7 @@ Includes the alternatives of @racket[eh-alternative-set-id], prefixing
 their attributes with @racket[name].
 }
 
-@myexamples[
+@examples[#:eval the-eval
 (define-eh-alternative-set options
   (pattern (~once (~seq #:a a:expr) #:name "#:a option"))
   (pattern (~seq #:b b:expr)))
@@ -443,3 +445,5 @@ If @racket[join] were defined as a macro, it would not be usable in
 the context above; instead, @racket[let-values] would report an
 invalid binding list.
 }
+
+@(close-eval the-eval)

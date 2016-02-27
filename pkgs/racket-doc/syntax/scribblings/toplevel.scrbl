@@ -12,7 +12,7 @@ Expands @racket[stx] as a top-level expression, and evaluates its
 compile-time portion for the benefit of later expansions.
 
 The expander recognizes top-level @racket[begin] expressions, and
-interleaves the evaluation and expansion of of the @racket[begin]
+interleaves the evaluation and expansion of the @racket[begin]
 body, so that compile-time expressions within the @racket[begin] body
 affect later expansions within the body. (In other words, it ensures
 that expanding a @racket[begin] is the same as expanding separate

@@ -379,7 +379,9 @@
                       [() 10]))))))
   (eval (syntax-case m ()
           [(md m r/b (m-b cr mod))
-           #`(md m r/b (m-b (begin 10 mod)))])))
+           (with-syntax ([begin (datum->syntax #'m-b 'begin)]
+                         [ten (datum->syntax #'m-b 10)])
+             #`(md m r/b (m-b (begin ten mod))))])))
 
 (parameterize ([current-namespace (make-base-namespace)])
   (eval
@@ -974,6 +976,17 @@
  (λ (x) (and (exn:fail? x)
              (regexp-match (regexp-quote "(submod 'variable-error-message-in-submodule m2)")
                            (exn-message x)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that submodule binding works ok with rename transformers
+
+(module has-a-rename-transformer-and-submodule racket/base
+  (require (for-syntax racket/base))
+
+  (begin-for-syntax
+    (define kar (make-rename-transformer #'car)))
+
+  (module+ test))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

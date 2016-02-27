@@ -104,7 +104,10 @@ Many forms in the decompiled code, such as @racket[module],
 
 @item{A form @racket[(#%apply-values _proc _expr)] is equivalent to
  @racket[(call-with-values (lambda () _expr) _proc)], but the run-time
- system avoids allocating a closure for @racket[_expr].}
+ system avoids allocating a closure for @racket[_expr]. Similarly,
+ a @racket[#%call-with-immediate-continuation-mark] call is equivalent to
+ a @racket[call-with-immediate-continuation-mark] call, but avoiding
+ a closure allocation.}
 
 @item{A @racket[define-values] form may have @racket[(begin
  '%%inline-variant%% _expr1 _expr2)] for its expression, in which case

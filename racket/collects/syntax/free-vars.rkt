@@ -43,26 +43,38 @@
      [(null? f) null]
      [(syntax? f) (loop (syntax-e f))])))
 
-;; free-vars : expr-stx -> (listof id)
+;; free-vars : expr-stx [inspector?] [#:module-bound? any/c] -> (listof id)
 ;; Returns a list of free lambda- and let-bound identifiers in a
 ;;  given epression. The expression must be fully expanded.
-(define (free-vars e [code-insp
-                      (variable-reference->module-declaration-inspector
-                       (#%variable-reference))])
-  ;; It would be nicers to have a functional mapping:
+;; If `module-bound?` is true, also return module-bound variables.
+(define (free-vars e
+                   [code-insp
+                    (variable-reference->module-declaration-inspector
+                     (#%variable-reference))]
+                   #:module-bound? [module-bound? #f])
+  (define (submodule-error e)
+    (error 'free-vars "submodules not supported: ~a" e))
+  ;; It would be nicer to have a functional mapping:
   (define bindings (make-bound-identifier-mapping))
   (merge
    (let free-vars ([e e])
      (kernel-syntax-case (syntax-disarm e code-insp) #f
-       [id 
-        (identifier? #'id) 
-        (if (and (eq? 'lexical (identifier-binding #'id))
-                 (not (bound-identifier-mapping-get bindings #'id (lambda () #f))))
-            (list #'id)
-            null)]
+       [id
+        (identifier? #'id)
+        (let ([b (identifier-binding #'id)])
+          (cond [(and (eq? 'lexical b)
+                      (not (bound-identifier-mapping-get bindings #'id (lambda () #f))))
+                 (list #'id)]
+                [(and module-bound? ; do we count module-bound vars too?
+                      ;; we're in an expression context, so any module-bound
+                      ;; variable is free
+                      (list? b))
+                 (list #'id)]
+                [else
+                 null]))]
        [(#%top . id) null]
        [(quote q) null]
-       [(quote-syntax q) null]
+       [(quote-syntax . _) null]
        [(#%plain-lambda formals expr ...)
         (let ([ids (formals->ids #'formals)])
           (for ([id (in-list ids)])
@@ -89,5 +101,9 @@
                (list #'if #'begin #'begin0 #'set! #'#%plain-app #'#%expression
                      #'#%variable-reference #'with-continuation-mark))
         (map free-vars (syntax->list #'(expr ...)))]
+       [(module . _)
+        (submodule-error e)]
+       [(module* . _)
+        (submodule-error e)]
        [(kw . _)
         (error 'free-vars "unknown core form: ~a" (syntax->datum #'kw))]))))

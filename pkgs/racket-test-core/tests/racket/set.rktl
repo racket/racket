@@ -561,39 +561,223 @@
                        (add1 i)))
 
 ;; ----------------------------------------
-;; set/c tests
+;; chaperone-hash-set tests
 
-(err/rt-test (set/c '(not a contract)))
-(err/rt-test (set/c any/c #:cmp 'not-a-comparison))
-(err/rt-test (set/c any/c #:kind 'not-a-kind-of-set))
-(err/rt-test (set/c (-> integer? string?) #:cmp 'eq))
-(err/rt-test (set/c (-> integer? string?) #:cmp 'eqv))
+(let ()
+  
+  ;; adds a tracing chaperone to 's', runs 'go' on it, and returns the trace
+  (define (counting-chaperone s go equal-key?)
+    (define trace '())
+    (define (add-to-trace ele) (set! trace (cons ele trace)))
+    (define (count name)
+      (procedure-rename
+       (λ (s ele) (add-to-trace (list name ele)) ele)
+       name))
+    (go
+     (chaperone-hash-set
+      s
+      (count 'inject)
+      (count 'add)
+      (count 'shrink)
+      (count 'extract)
+      (λ (s) (add-to-trace 'clear))
+      (if equal-key? (count 'equal-key) (λ (s ele) ele))))
+    (reverse trace))
+  
+  (test '((extract 1))
+        counting-chaperone
+        (set 1)
+        (λ (s) (set-first s))
+        #f)
+  (test '((add 1))
+        counting-chaperone
+        (set)
+        (λ (s) (set-add s 1))
+        #f)
+  (test '((extract 1))
+        counting-chaperone
+        (mutable-set 1)
+        (λ (s) (set-first s))
+        #f)
+  (test '((extract 1))
+        counting-chaperone
+        (weak-set 1)
+        (λ (s) (set-first s))
+        #f)
+  (test '((add 2))
+        counting-chaperone
+        (mutable-set 1)
+        (λ (s) (set-add! s 2))
+        #f)
+  (test '((inject 2))
+        counting-chaperone
+        (mutable-set 1)
+        (λ (s) (set-member? s 2))
+        #f)
+  (test '((inject 1))
+        counting-chaperone
+        (mutable-set 1)
+        (λ (s) (set-member? s 1))
+        #f)
+  (test '((shrink 1))
+        counting-chaperone
+        (set 1)
+        (λ (s) (set-remove s 1))
+        #f)
+  (test '((shrink 1))
+        counting-chaperone
+        (mutable-set 1)
+        (λ (s) (set-remove! s 1))
+        #f)
+  (test '((inject 2) (equal-key 2) (equal-key 2))
+        counting-chaperone
+        (set 2)
+        (λ (s) (set-member? s 2))
+        #t)
+  (test '((extract 0))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define ele #f)
+          (set-add (make-immutable-set2) 0))
+        (λ (s) (set-first s))
+        #f)
+  (test '((extract 0))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define s (make-weak-set2))
+          (set-add! s 0)
+          s)
+        (λ (s) (set-first s))
+        #f)
+  (test '((add 0) (extract 0))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (make-immutable-set2))
+        (λ (s)
+          (set-first (set-add s 0)))
+        #f)
+  (test '((extract 1))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define ele #f)
+          (set-add (make-immutable-set2) 1))
+        (λ (s) (set-first s))
+        #f)
+  (test '((add 1))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define ele #f)
+          (make-immutable-set2))
+        (λ (s) (set-add s 1))
+        #f)
+  (test '((extract 1))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define s (make-mutable-set2))
+          (set-add! s 1)
+          s)
+        (λ (s) (set-first s))
+        #f)
+  (test '((extract 1))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define s (make-weak-set2))
+          (set-add! s 1)
+          s)
+        (λ (s) (set-first s))
+        #f)
+  (test '((add 2))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define s (make-mutable-set2))
+          (set-add! s 1)
+          s)
+        (λ (s) (set-add! s 2))
+        #f)
+  (test '((inject 2))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define s (make-mutable-set2))
+          (set-add! s 1)
+          s)
+        (λ (s) (set-member? s 2))
+        #f)
+  (test '((inject 1))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define s (make-mutable-set2))
+          (set-add! s 1)
+          s)
+        (λ (s) (set-member? s 1))
+        #f)
+  (test '((shrink 1))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define ele #f)
+          (set-add (make-immutable-set2) 1))
+        (λ (s) (set-remove s 1))
+        #f)
+  (test '((inject 2) (equal-key 2) (equal-key 2))
+        counting-chaperone
+        (let ()
+          (define-custom-set-types set2 equal? equal-hash-code)
+          (define ele #f)
+          (set-add (make-immutable-set2) 2))
+        (λ (s) (set-member? s 2))
+        #t))
 
-(define (app-ctc ctc value)
-  (contract ctc value 'positive 'negative))
+(let ([s (set 1 2 3)])
+  (test #t equal?
+        (chaperone-hash-set s (λ (x y) y) (λ (x y) y) (λ (x y) y) (λ (x y) y))
+        s))
+(let ([s (set 1 2 3)])
+  (test #t equal?
+        s
+        (chaperone-hash-set s (λ (x y) y) (λ (x y) y) (λ (x y) y) (λ (x y) y))))
 
-(define (positive-error? exn)
-  (and exn:fail:contract?
-       (regexp-match? "blaming: positive" (exn-message exn))))
-(define (negative-error? exn)
-  (and exn:fail:contract?
-       (regexp-match? "blaming: negative" (exn-message exn))))
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (chaperone-hash-set (set) (λ (s l) l) (λ (s l) l) (λ (s l) l) (λ (s l) l)
+                               impersonator-prop:p 11)])
+    (test #t has-impersonator-prop:p? s)))
 
-(define-syntax-rule (test/blame-pos e)
-  (thunk-error-test (lambda () e) #'e positive-error?))
-(define-syntax-rule (test/blame-neg e)
-  (thunk-error-test (lambda () e) #'e negative-error?))
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (chaperone-hash-set (set) (λ (s l) l) (λ (s l) l) (λ (s l) l) (λ (s l) l)
+                               impersonator-prop:p 11)])
+    (test 11 get-impersonator-prop:p s)))
 
-;; check dont-care defaults
-(test #t set? (app-ctc (set/c any/c) (set)))
-(test #t set? (app-ctc (set/c any/c) (seteq)))
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (impersonate-hash-set (weak-set) (λ (s l) l) (λ (s l) l) (λ (s l) l) (λ (s l) l)
+                                 impersonator-prop:p 11)])
+    (test #t has-impersonator-prop:p? s)))
 
-(test/blame-pos (app-ctc (set/c any/c) (mutable-set))) ; check immutable default
-(test/blame-pos (app-ctc (set/c any/c #:cmp 'eq) (set)))
-(test/blame-pos (app-ctc (set/c any/c #:kind 'mutable) (set)))
-(test/blame-pos (app-ctc (set/c string? #:kind 'immutable) (set 1)))
-(test/blame-pos (app-ctc (set/c string?) (set 1)))
-(test/blame-pos (set-first (app-ctc (set/c string?) (set 1))))
-(test/blame-neg (set-add! (app-ctc (set/c string? #:kind 'mutable) (mutable-set)) 1))
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (impersonate-hash-set (mutable-set) (λ (s l) l) (λ (s l) l) (λ (s l) l) (λ (s l) l)
+                                 impersonator-prop:p 11)])
+    (test 11 get-impersonator-prop:p s)))
+
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (chaperone-hash-set (set) #f #f #f #f impersonator-prop:p 11)])
+    (test #t has-impersonator-prop:p? s)))
+
+(let-values ([(impersonator-prop:p has-impersonator-prop:p? get-impersonator-prop:p)
+              (make-impersonator-property 'p)])
+  (let ([s (impersonate-hash-set (mutable-set) #f #f #f #f impersonator-prop:p 11)])
+    (test 11 get-impersonator-prop:p s)))
 
 (report-errs)

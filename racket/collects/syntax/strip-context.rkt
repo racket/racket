@@ -1,5 +1,5 @@
 #lang racket/base
-(require unstable/struct)
+(require racket/struct)
 
 (provide strip-context
          replace-context)

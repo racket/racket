@@ -5,7 +5,7 @@
 (require racket/contract/base
          racket/match
          racket/stream
-         unstable/custom-write)
+         racket/struct)
 
 (provide well-formed-set?
          (contract-out

@@ -9,6 +9,7 @@
          racket/path
          racket/class
          racket/stxparam
+         setup/dirs
          (for-syntax syntax/parse
                      racket/base))
 
@@ -73,7 +74,10 @@
     (define/public (spawn _id _module-path _funcname [initialmsg #f])
       (set! module-path _module-path)
       (set! funcname _funcname)
-      (define worker-cmdline-list (list (current-executable-path) "-X" (path->string (current-collects-path)) "-e" "(eval(read))"))
+      (define worker-cmdline-list (list (current-executable-path)
+                                        "-X" (path->string (current-collects-path))
+                                        "-G" (path->string (find-config-dir))
+                                        "-e" "(eval(read))"))
       (define dynamic-require-cmd `((dynamic-require (string->path ,module-path) (quote ,funcname)) #f))
       (let-values ([(_process-handle _out _in _err) (apply subprocess #f #f (current-error-port) worker-cmdline-list)])
         (set! id _id)

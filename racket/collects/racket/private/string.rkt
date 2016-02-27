@@ -410,7 +410,9 @@
                                       (or (and (equal? (char->integer #\&) next)
                                                #"&")
                                           (and (equal? (char->integer #\\) next)
-                                               #"\\")))
+                                               #"\\")
+                                          (and (equal? (char->integer #\$) next)
+                                               #"")))
                                     => (lambda (s)
                                          (cons s (loop (add1 (cdar m)))))]
                                    [else

@@ -224,8 +224,7 @@ result event remains ready; after each suspend of @racket[thd] a fresh
 event is generated to be returned by @racket[thread-resume-evt].  The
 result of the event is @racket[thd], but if @racket[thd] is never
 resumed, then reference to the event does not prevent @racket[thd]
-from being garbage collected (see @secref["gc-model"]).
-@ResultItself{thread-result event}.}
+from being garbage collected (see @secref["gc-model"]).}
 
 @defproc[(thread-suspend-evt [thd thread?]) evt?]{
 

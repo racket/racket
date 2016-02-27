@@ -9,13 +9,14 @@
 ;; of the binary and restarting that copy for the actual change.
 
 #lang racket/base
+(require setup/cross-system)
 
 (define verbose? #t)
 (define binary-extensions '("exe" "dll" "lib" "so" "def" "exp" #|"obj" "o"|#))
 (define xxxs #"xxxxxxx")
 (define xxxs-re
   (bytes-append #"(?:lib(?:g?racket|mzgc)(?:|3m))(" xxxs #")"))
-(define renaming (regexp (format "^~a[.](?:dll|lib|exp)$" xxxs-re)))
+(define renaming (regexp (format "^~a[.](?:dll|lib|exp|def)$" xxxs-re)))
 (define substitutions
   (map (lambda (s) (byte-regexp (regexp-replace #rx#"~a" s xxxs-re)))
        ;; pdb not needed, but this way we can expect no
@@ -24,6 +25,7 @@
          #"~a_NULL_THUNK_DATA\0"
          #"__IMPORT_DESCRIPTOR_~a\0"
          #"__head_~a_lib\0"
+         #"_head_~a_lib\0"
          #"__~a_lib_iname\0")))
 
 (require dynext/filename-version)
@@ -69,12 +71,13 @@
     (close-input-port i)
     (close-output-port o)))
 
-(let loop ([paths (if (zero? (vector-length (current-command-line-arguments)))
-                    '(".")
-                    (vector->list (current-command-line-arguments)))])
-  (for ([path (in-list paths)])
-    (cond [(file-exists? path)
-           (when (binary-file? path) (do-file path))]
-          [(directory-exists? path)
-           (parameterize ([current-directory path])
-             (loop (map path->string (directory-list))))])))
+(when (eq? 'windows (cross-system-type))
+  (let loop ([paths (if (zero? (vector-length (current-command-line-arguments)))
+                        '(".")
+                        (vector->list (current-command-line-arguments)))])
+    (for ([path (in-list paths)])
+      (cond [(file-exists? path)
+             (when (binary-file? path) (do-file path))]
+            [(directory-exists? path)
+             (parameterize ([current-directory path])
+               (loop (map path->string (directory-list))))]))))

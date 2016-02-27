@@ -5,8 +5,8 @@
                     ;; has these old, wrong names in it.
                     [make-module-identifier-mapping make-free-identifier-mapping]
                     [module-identifier-mapping-get free-identifier-mapping-get]
-                    [module-identifier-mapping-put! free-identifier-mapping-put!])
-         "application-arity-checking.rkt"
+                    [module-identifier-mapping-put! free-identifier-mapping-put!]
+                    [module-identifier-mapping-for-each free-identifier-mapping-for-each])
          "arr-util.rkt"
          (for-template racket/base
                        "misc.rkt"))
@@ -19,12 +19,13 @@ code does the parsing and validation of the syntax.
 
 |#
 
+;; istx-is-chaperone-contract? : boolean?
 ;; args : (listof arg?)
 ;; rst  : (or/c #f arg/res?)
 ;; pre  : (listof pre/post?)
 ;; ress : (or/c #f (listof eres?) (listof lres?))
 ;; post : (listof pre/post?)
-(struct istx (args rst pre ress post) #:transparent)
+(struct istx (is-chaperone-contract? args rst pre ress post) #:transparent)
 ;; NOTE: the ress field may contain a mixture of eres and lres structs
 ;;       but only temporarily; in that case, a syntax error
 ;;       is signaled and the istx struct is not used afterwards
@@ -58,11 +59,13 @@ code does the parsing and validation of the syntax.
 (define (parse-->i stx)
   (if (identifier? stx)
       (raise-syntax-error #f "expected ->i to follow an open parenthesis" stx)
-      (let-values ([(raw-mandatory-doms raw-optional-doms
-                                        id/rest-id pre-cond range post-cond)
+      (let-values ([(is-chaperone-contract?
+                     raw-mandatory-doms raw-optional-doms
+                     id/rest-id pre-cond range post-cond)
                     (pull-out-pieces stx)])
         (let ([candidate
-               (istx (append (parse-doms stx #f raw-mandatory-doms)
+               (istx is-chaperone-contract?
+                     (append (parse-doms stx #f raw-mandatory-doms)
                              (parse-doms stx #t raw-optional-doms))
                      id/rest-id
                      pre-cond
@@ -100,8 +103,41 @@ code does the parsing and validation of the syntax.
     (define (ensure-bound vars)
       (for ([var (in-list vars)])
         (unless (free-identifier-mapping-get nm var (λ () #f))
-          (raise-syntax-error #f "dependent variable not bound"
-                              stx var))))
+          (define vars '())
+          (free-identifier-mapping-for-each
+           nm
+           (λ (id _)
+             (define sym (syntax-e id))
+             (unless (member sym vars)
+               (set! vars (cons sym vars)))))
+
+          (define (insert x l)
+            (cond
+              [(null? l) (list x)]
+              [else
+               (cond
+                 [(symbol<? x (car l))
+                  (cons x l)]
+                 [else
+                  (cons (car l) (insert x (cdr l)))])]))
+
+          (define sorted-vars
+            (let loop ([vars vars])
+              (cond
+                [(null? vars) '()]
+                [else (insert (car vars) (loop (cdr vars)))])))
+          
+          (raise-syntax-error
+           #f
+           (apply
+            string-append
+            "unknown dependent variable;"
+            "\n not the variable used in any of the components of the ->i expression"
+            "\n  variables:"
+            (for/list ([var (in-list sorted-vars)]
+                       [i (in-naturals)])
+              (format " ~a" var)))
+           stx var))))
     
     ;; not-range-bound : (listof identifier[used-by-an-arg]) -> void
     (define (not-range-bound arg-vars arg?)
@@ -142,6 +178,7 @@ code does the parsing and validation of the syntax.
     ;; no dups in the rest var
     (when (istx-rst istx)
       (when (arg/res-vars (istx-rst istx))
+        (ensure-bound (arg/res-vars (istx-rst istx)))
         (not-range-bound (arg/res-vars (istx-rst istx)) #t))
       (no-var-dups (arg/res-var (istx-rst istx))))
     
@@ -358,12 +395,26 @@ code does the parsing and validation of the syntax.
 ;; pull-out-pieces :
 ;; stx -> (values raw-mandatory-doms raw-optional-doms id/rest-id pre-cond range post-cond) 
 (define (pull-out-pieces stx)
-  (let*-values ([(raw-mandatory-doms leftover) 
+  (let*-values ([(is-chaperone-contract? leftover)
                  (syntax-case stx ()
-                   [(_ (raw-mandatory-doms ...) . leftover)
+                   [(_ #:chaperone . leftover)
+                    (values #t #'leftover)]
+                   [(_ . leftover)
+                    (let ([lst (syntax->list stx)])
+                      (when (null? (cdr lst))
+                        (raise-syntax-error #f "expected a sequence of mandatory domain elements"
+                                            stx))
+                      (when (keyword? (syntax-e (cadr lst)))
+                        (raise-syntax-error #f "unknown keyword"
+                                            stx
+                                            (cadr lst)))
+                      (values #f #'leftover))])]
+                [(raw-mandatory-doms leftover)
+                 (syntax-case leftover ()
+                   [((raw-mandatory-doms ...) . leftover)
                     (values (syntax->list #'(raw-mandatory-doms ...)) 
                             #'leftover)]
-                   [(_ a . leftover)
+                   [(a . leftover)
                     (raise-syntax-error #f 
                                         "expected a sequence of mandatory domain elements"
                                         stx #'a)]
@@ -569,7 +620,9 @@ code does the parsing and validation of the syntax.
                       (values (reverse post-conds) leftover)]))])
     (syntax-case leftover ()
       [() 
-       (values raw-mandatory-doms raw-optional-doms id/rest-id pre-conds range post-conds)]
+       (values is-chaperone-contract?
+               raw-mandatory-doms raw-optional-doms id/rest-id pre-conds
+               range post-conds)]
       [(a . b)
        (raise-syntax-error #f "bad syntax" stx #'a)]
       [_

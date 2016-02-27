@@ -45,6 +45,13 @@ through the following indices:
 @item{@cppdef{MZCONFIG_CAN_READ_COMPILED} --- @racket[read-accept-compiled]}
 @item{@cppdef{MZCONFIG_CAN_READ_BOX} --- @racket[read-accept-box]}
 @item{@cppdef{MZCONFIG_CAN_READ_PIPE_QUOTE} --- @racket[read-accept-bar-quote]}
+@item{@cppdef{MZCONFIG_CAN_READ_DOT} --- @racket[read-accept-dot]}
+@item{@cppdef{MZCONFIG_CAN_READ_INFIX_DOT} --- @racket[read-accept-infix-dot]}
+@item{@cppdef{MZCONFIG_CAN_READ_QUASI} --- @racket[read-accept-quasiquote]}
+@item{@cppdef{MZCONFIG_CAN_READ_READER} --- @racket[read-accept-reader]}
+@item{@cppdef{MZCONFIG_CAN_READ_LANG} --- @racket[read-accept-lang]}
+@item{@cppdef{MZCONFIG_READ_DECIMAL_INEXACT} --- @racket[read-decimal-as-inexact]}
+@item{@cppdef{MZCONFIG_READ_CDOT} --- @racket[read-cdot]}
 
 @item{@cppdef{MZCONFIG_PRINT_GRAPH} --- @racket[print-graph]}
 @item{@cppdef{MZCONFIG_PRINT_STRUCT} --- @racket[print-struct]}
@@ -53,6 +60,8 @@ through the following indices:
 @item{@cppdef{MZCONFIG_CASE_SENS} --- @racket[read-case-sensitive]}
 @item{@cppdef{MZCONFIG_SQUARE_BRACKETS_ARE_PARENS} --- @racket[read-square-brackets-as-parens]}
 @item{@cppdef{MZCONFIG_CURLY_BRACES_ARE_PARENS} --- @racket[read-curly-braces-as-parens]}
+@item{@cppdef{MZCONFIG_SQUARE_BRACKETS_ARE_TAGGED} --- @racket[read-square-brackets-with-tag]}
+@item{@cppdef{MZCONFIG_CURLY_BRACES_ARE_TAGGED} --- @racket[read-curly-braces-with-tag]}
 
 @item{@cppdef{MZCONFIG_ERROR_PRINT_WIDTH} --- @racket[error-print-width]}
 

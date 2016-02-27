@@ -31,12 +31,13 @@ typedef int (*Fixup_Proc)(void *obj);
 typedef int (*Fixup2_Proc)(void *obj, struct NewGC *);
 typedef void (*GC_collect_start_callback_Proc)(void);
 typedef void (*GC_collect_end_callback_Proc)(void);
-typedef void (*GC_collect_inform_callback_Proc)(int master_gc, int major_gc, 
+typedef void (*GC_collect_inform_callback_Proc)(int master_gc, int major_gc, int inc_gc,
                                                 intptr_t pre_used, intptr_t post_used,
                                                 intptr_t pre_admin, intptr_t post_admin,
                                                 intptr_t post_child_places_used);
 typedef uintptr_t (*GC_get_thread_stack_base_Proc)(void);
 typedef void (*GC_Post_Propagate_Hook_Proc)(struct NewGC *);
+typedef int (*GC_Treat_As_Incremental_Mark_Proc)(void *p);
 /* 
    Types of the traversal procs (supplied by Racket); see overview in README
    for information about traversals. The return value is the size of
@@ -119,6 +120,7 @@ GC2_EXTERN GC_collect_start_callback_Proc GC_set_collect_start_callback(GC_colle
 GC2_EXTERN GC_collect_end_callback_Proc GC_set_collect_end_callback(GC_collect_end_callback_Proc);
 GC2_EXTERN void GC_set_collect_inform_callback(GC_collect_inform_callback_Proc);
 GC2_EXTERN void GC_set_post_propagate_hook(GC_Post_Propagate_Hook_Proc);
+GC2_EXTERN void GC_set_treat_as_incremental_mark(short tag, GC_Treat_As_Incremental_Mark_Proc);
 /*
    Sets callbacks called by GC before/after performing a collection.  Used by
    Racket to zero out some data and record collection times. The end
@@ -168,6 +170,15 @@ GC2_EXTERN void GC_enable_collection(int on);
 /*
    Performs an immediate (full) collection. */
 
+GC2_EXTERN void GC_request_incremental_mode(void);
+/*
+   Requests incremental mode; lasts until the next major collection. */
+  
+GC2_EXTERN void GC_set_incremental_mode(int on);
+/*
+   Sets whether incremental mode is the default (1), always disabled (0),
+   or available on demand (-1). */
+  
 GC2_EXTERN void GC_free_all(void);
 /*
    Releases all memory, removes all signal handlers, etc.
@@ -203,12 +214,6 @@ GC2_EXTERN void *GC_malloc_pair(void *car, void *cdr);
    Like GC_malloc_one_tagged, but even more streamlined.
    The main potential advantage is that `car' and `cdr' don't
    have to be retained by the callee in the case of a GC. */
-
-GC2_EXTERN void *GC_malloc_array_tagged(size_t);
-/* 
-   Alloc an array of tagged items. Racket sets the tag in the first
-   item before a collection, by maybe not all items. When traversing,
-   use the first one for size. */
 
 GC2_EXTERN void *GC_malloc_atomic(size_t size_in_bytes);
 /*
@@ -277,10 +282,10 @@ GC2_EXTERN int GC_is_on_allocated_page(void *p);
    the GC allocates objects (although p may or may not
    be a valid pointer to the start of an alloctaed object). */
 
-GC2_EXTERN int GC_allocate_phantom_bytes(intptr_t);
+GC2_EXTERN int GC_allocate_phantom_bytes(void *pb, intptr_t);
 /* 
    Returns 0 if allocation should fail due to a memory limit, 
-   1 otherwise. */
+   1 otherwise. The representative `pb` determines who is charged. */
 
 /***************************************************************************/
 /* Memory tracing                                                          */
@@ -364,9 +369,9 @@ GC2_EXTERN void *GC_fixup_self(void *p);
    be moved after fixup. */
 
 /* INTERNAL for the current implemenation (used by macros): */
-GC2_EXTERN void GC_mark(const void *p);
+GC2_EXTERN void GC_mark(void *p);
 GC2_EXTERN void GC_fixup(void *p);
-GC2_EXTERN void GC_mark2(const void *p, struct NewGC *gc);
+GC2_EXTERN void GC_mark2(void *p, struct NewGC *gc);
 GC2_EXTERN void GC_fixup2(void *p, struct NewGC *gc);
 /*
    Used in the expansion of gcMARK and gcFIXUP. 
@@ -378,10 +383,36 @@ GC2_EXTERN int GC_is_marked2(const void *p, struct NewGC *gc);
 /*
    Reports whether p has been marked. */
 
+GC2_EXTERN int GC_current_mode(struct NewGC *gc);
+# define GC_CURRENT_MODE_MINOR               0
+# define GC_CURRENT_MODE_MAJOR               1
+# define GC_CURRENT_MODE_INCREMENTAL         2
+# define GC_CURRENT_MODE_INCREMENTAL_FINAL   3
+# define GC_CURRENT_MODE_BACKPOINTER_REMARK  4
+# define GC_CURRENT_MODE_ACCOUNTING          5
+/*
+   The mode during a mark or fixup function callback.
+   The GC_CURRENT_MODE_BACKPOINTER_REMARK mode corresponds
+   to re-traversing an old-generation object that was
+   formerly marked but has been mutated. */
+
 GC2_EXTERN int GC_is_partial(struct NewGC *gc);
 /* 
-   Reports whether the current GC is a non-full collection. */
+   Reports whether the current GC is a non-full collection
+   or accounting pass. GC_current_mode() is better. */
 
+GC2_EXTERN int GC_started_incremental(struct NewGC *gc);
+/* 
+   Reports whether the current GC uses incremental collection. */
+
+GC2_EXTERN void *GC_malloc_for_incremental(size_t amt);
+/*
+   Use only when GC_started_incremental(); allocates
+   atomic memory that will be released at the end of the
+   next full collection, which ends the current
+   incremental pass. */
+
+GC2_EXTERN void GC_mark_no_recur(struct NewGC *gc, int enable);
 GC2_EXTERN void GC_retract_only_mark_stack_entry(void *pf, struct NewGC *gc);
 /*
    Used for very special collaboration with GC. */
@@ -584,17 +615,17 @@ GC2_EXTERN void GC_set_backpointer_object(void *p);
 #endif
 
 /* Macros (implementation-specific): */
-#if defined(__x86_64__) || defined(_WIN64)
+#ifdef SIXTY_FOUR_BIT_INTEGERS
 # define gcLOG_WORD_SIZE 3
 #else
 # define gcLOG_WORD_SIZE 2
 #endif
-#define gcMARK(x) GC_mark(x)
-#define gcMARK2(x, gc) GC_mark2(x, gc)
-#define gcMARK_TYPED(t, x) gcMARK(x)
-#define gcMARK2_TYPED(t, x, gc) gcMARK2(x, gc)
-#define gcMARK_TYPED_NOW(t, x) gcMARK(x)
-#define gcMARK2_TYPED_NOW(t, x, gc) gcMARK(x, gc)
+#define gcMARK(x) GC_mark(&(x))
+#define gcMARK2(x, gc) GC_mark2(&(x), gc)
+#define gcMARK_TYPED(t, x) gcMARK(&(x))
+#define gcMARK2_TYPED(t, x, gc) gcMARK2(&(x), gc)
+#define gcMARK_TYPED_NOW(t, x) gcMARK(&(x))
+#define gcMARK2_TYPED_NOW(t, x, gc) gcMARK(&(x), gc)
 #define gcFIXUP_TYPED_NOW(t, x) GC_fixup(&(x))
 #define gcFIXUP2_TYPED_NOW(t, x, gc) GC_fixup2(&(x), gc)
 #define gcFIXUP_TYPED(t, x) gcFIXUP_TYPED_NOW(void*, x)
@@ -603,6 +634,8 @@ GC2_EXTERN void GC_set_backpointer_object(void *p);
 #define gcFIXUP2(x, gc) gcFIXUP2_TYPED(void*, x, gc)
 #define gcBYTES_TO_WORDS(x) ((x + (1 << gcLOG_WORD_SIZE) - 1) >> gcLOG_WORD_SIZE)
 #define gcWORDS_TO_BYTES(x) (x << gcLOG_WORD_SIZE)
+
+#define GC_NO_SIZE_NEEDED_FROM_PROCS 1
 
 #define GC_INTERIORABLES_NEVER_MOVE 1
 

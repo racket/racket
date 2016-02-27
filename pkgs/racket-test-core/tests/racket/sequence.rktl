@@ -266,5 +266,17 @@
 (test '(1 2 3) 'kw-seq (for/list ([x (in-X* #:x '(1 2 3))]) x))
 
 ;; ----------------------------------------
+;; Additional sequence constructors
+
+(test #t sequence? (in-slice 1 '()))
+(test '() values (for/list ([v (in-slice 1 '())]) v))
+(test '((0 1)) values (for/list ([v (in-slice 3 (in-range 2))]) v))
+(test '((0 1 2) (3 4 5))
+      values (for/list ([v (in-slice 3 (in-range 6))]) v))
+(test '((0 1 2) (3 4 5) (6 7))
+      values (for/list ([v (in-slice 3 (in-range 8))]) v))
+(err/rt-test (for/list ([x (in-slice 0 (in-range 8))]) x) exn:fail:contract?)
+
+;; ----------------------------------------
 
 (report-errs)

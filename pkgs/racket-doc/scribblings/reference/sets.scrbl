@@ -3,7 +3,7 @@
 
 @title[#:tag "sets"]{Sets}
 @(define set-eval (make-base-eval))
-@(interaction-eval #:eval set-eval (require racket/set))
+@examples[#:hidden #:eval set-eval (require racket/set)]
 
 A @deftech{set} represents a collection of distinct elements.  The following
 datatypes are all sets:
@@ -153,6 +153,24 @@ Analogous to @racket[for/list] and @racket[for*/list], but to
 construct a @tech{hash set} instead of a list.
 }
 
+@deftogether[(
+@defproc[(in-immutable-set [st set?]) sequence?]
+@defproc[(in-mutable-set [st set-mutable?]) sequence?]
+@defproc[(in-weak-set [st set-weak?]) sequence?]
+)]{
+
+Explicitly converts a specific kind of @tech{hash set} to a sequence for 
+use with @racket[for] forms.
+
+As with @racket[in-list] and some other sequence constructors,
+@racket[in-immutable-set] is more performant when it appears directly in a
+@racket[for] clause.
+
+These sequence constructors are compatible with
+@secref["Custom_Hash_Sets" #:doc '(lib "scribblings/reference/reference.scrbl")].
+
+}
+
 @section{Set Predicates and Contracts}
 
 @defproc[(generic-set? [v any/c]) boolean?]{
@@ -203,17 +221,21 @@ named by the @racket[sym]s.
                  'dont-care]
                 [#:kind kind 
                  (or/c 'dont-care 'immutable 'mutable 'weak 'mutable-or-weak)
-                 'immutable])
+                 'immutable]
+                [#:lazy? lazy? any/c
+                 (not (and (equal? kind 'immutable)
+                           (flat-contract? elem/c)))]
+                [#:equal-key/c equal-key/c contract? any/c])
          contract?]{
 
   Constructs a contract that recognizes sets whose elements match
-  @racket[contract].
+  @racket[elem/c].
 
   If @racket[kind] is @racket['immutable], @racket['mutable], or
   @racket['weak], the resulting contract accepts only @tech{hash sets} that
   are respectively immutable, mutable with strongly-held keys, or mutable with
   weakly-held keys.  If @racket[kind] is @racket['mutable-or-weak], the
-  resulting contract accepts any mutable @racket{hash sets}, regardless of
+  resulting contract accepts any mutable @tech{hash sets}, regardless of
   key-holding strength.
 
   If @racket[cmp] is @racket['equal], @racket['eqv], or @racket['eq], the
@@ -221,12 +243,34 @@ named by the @racket[sym]s.
   using @racket[equal?], @racket[eqv?], or @racket[eq?], respectively.
 
   If @racket[cmp] is @racket['eqv] or @racket['eq], then @racket[elem/c] must
-  be a flat contract.
+  be a @tech{flat contract}.
 
   If @racket[cmp] and @racket[kind] are both @racket['dont-care], then the
   resulting contract will accept any kind of set, not just @tech{hash
   sets}.
 
+ If @racket[lazy?] is not @racket[#f], then the elements of the set are not checked
+ immediately by the contract and only the set itself is checked (according to the
+ @racket[cmp] and @racket[kind] arguments). If @racket[lazy?] is
+ @racket[#f], then the elements are checked immediately by the contract.
+ The @racket[lazy?] argument is ignored when the set contract accepts generic sets
+ (i.e., when @racket[cmp] and @racket[kind] are both @racket['dont-care]); in that
+ case, the value being checked in that case is a @racket[list?], then the contract
+ is not lazy otherwise the contract is lazy.
+ 
+ If @racket[kind] allows mutable sets (i.e., is @racket['dont-care],
+ @racket['mutable], @racket['weak], or
+ @racket['mutable-or-weak]) and @racket[lazy?] is @racket[#f], then the elements
+ are checked both immediately and when they are accessed from the set.
+
+ The @racket[equal-key/c] contract is used when values are passed to the comparison
+ and hashing functions used internally.
+ 
+ The result contract will be a @tech{flat contract} when @racket[elem/c]
+ and @racket[equal-key/c] are both @tech{flat contracts},
+ @racket[lazy?] is @racket[#f], and @racket[kind] is @racket['immutable].
+ The result will be a @tech{chaperone contract} when @racket[elem/c] is a
+ @tech{chaperone contract}.
 }
 
 @section{Generic Set Interface}
@@ -446,10 +490,10 @@ Supported for any @racket[st] that @impl{implements}  @racket[set-add] and @supp
 (set-union (seteq))
 (set-union (set 1 2) (set 2 3))
 (set-union (list 1 2) (list 2 3))
-(set-union (set 1 2) (seteq 2 3)) (code:comment "Sets of different types cannot be unioned.")
+(eval:error (set-union (set 1 2) (seteq 2 3))) (code:comment "Sets of different types cannot be unioned")
 ]}
 
-@defproc[(set-union! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
+@defproc[(set-union! [st0 generic-set?] [st generic-set?] ...) void?]{
 
 Adds the elements from all of the @racket[st]s to @racket[st0].
 
@@ -483,7 +527,7 @@ both @racket[set-clear] and @racket[set-add], and @supp{supports} @racket[set->s
 
 }
 
-@defproc[(set-intersect! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
+@defproc[(set-intersect! [st0 generic-set?] [st generic-set?] ...) void?]{
 
 Removes every element from @racket[st0] that is not contained by all of the
 @racket[st]s.
@@ -518,7 +562,7 @@ both @racket[set-clear] and @racket[set-add], and @supp{supports} @racket[set->s
 
 }
 
-@defproc[(set-subtract! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
+@defproc[(set-subtract! [st0 generic-set?] [st generic-set?] ...) void?]{
 
 Removes every element from @racket[st0] that is contained by any of the
 @racket[st]s.
@@ -557,7 +601,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove] or both
 
 }
 
-@defproc[(set-symmetric-difference! [st0 generic-set?] [st generic-set?] ...) generic-set?]{
+@defproc[(set-symmetric-difference! [st0 generic-set?] [st generic-set?] ...) void?]{
 
 Adds and removes elements of @racket[st0] so that it includes all of the
 elements contained an odd number of times in the @racket[st]s and the
@@ -598,8 +642,7 @@ Supported for any @racket[st] and @racket[st2] that both @supp{support}
 (set=? (set 1 2 3) (set 1))
 (set=? (set 1 2 3) (set 1 2 3))
 (set=? (seteq 1 2) (mutable-seteq 2 1))
-(set=? (seteq 1 2) (seteqv 1 2)) (code:comment "Sets of different types cannot
-be compared.")
+(eval:error (set=? (seteq 1 2) (seteqv 1 2))) (code:comment "Sets of different types cannot be compared")
 ]
 
 }
@@ -696,6 +739,77 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 
 }
 
+@defproc[(impersonate-hash-set [st (or/c mutable-set? weak-set?)]
+                               [inject-proc (or/c #f (-> set? any/c any/c))]
+                               [add-proc (or/c #f (-> set? any/c any/c))]
+                               [shrink-proc (or/c #f (-> set? any/c any/c))]
+                               [extract-proc (or/c #f (-> set? any/c any/c))]
+                               [clear-proc (or/c #f (-> set? any)) #f]
+                               [equal-key-proc (or/c #f (-> set? any/c any/c)) #f]
+                               [prop impersonator-property?]
+                               [prop-val any/c] ... ...)
+         (and/c (or/c mutable-set? weak-set?) impersonator?)]{
+ Impersonates @racket[st], redirecting various set operations via the given procedures.
+
+ The @racket[inject-proc] procedure
+ is called whenever an element is temporarily put into the set for the purposes
+ of comparing it with other elements that may already be in the set. For example,
+ when evaluating @racket[(set-member? s e)], @racket[e] will be passed to the
+ @racket[inject-proc] before comparing it with other elements of @racket[s].
+
+ The @racket[add-proc] procedure is called when adding an element to a set, e.g.,
+ via @racket[set-add] or @racket[set-add!]. The result of the @racket[add-proc] is
+ stored in the set.
+
+ The @racket[shrink-proc] procedure is called when building a new set with
+ one fewer element. For example, when evaluating @racket[(set-remove s e)]
+ or @racket[(set-remove! s e)],
+ an element is removed from a set, e.g.,
+ via @racket[set-remove] or @racket[set-remove!]. The result of the @racket[shrink-proc]
+ is the element actually removed from the set.
+ 
+ The @racket[extract-proc] procedure is called when an element is pulled out of
+ a set, e.g., by @racket[set-first]. The result of the @racket[extract-proc] is
+ the element actually produced by from the set.
+
+ The @racket[clear-proc] is called by @racket[set-clear] and @racket[set-clear!]
+ and if it returns (as opposed to escaping, perhaps via raising an exception),
+ the clearing operation is permitted. Its result is ignored. If @racket[clear-proc]
+ is @racket[#f], then clearing is done element by element (via calls into the other
+ supplied procedures).
+
+ The @racket[equal-key-proc] is called when an element's hash code is needed of when an
+ element is supplied to the underlying equality in the set. The result of
+ @racket[equal-key-proc] is used when computing the hash or comparing for equality.
+ 
+ If any of the @racket[inject-proc], @racket[add-proc], @racket[shrink-proc], or
+ @racket[extract-proc] arguments are  @racket[#f], then they all must be @racket[#f],
+ the @racket[clear-proc] and @racket[equal-key-proc] must also be @racket[#f],
+ and there must be at least one property supplied.
+ 
+ Pairs of @racket[prop] and @racket[prop-val] (the number of arguments to
+ @racket[impersonate-hash-set] must be odd) add @tech{impersonator properties} or
+ override impersonator property values of @racket[st].
+}
+
+@defproc[(chaperone-hash-set [st (or/c set? mutable-set? weak-set?)]
+                             [inject-proc (or/c #f (-> set? any/c any/c))]
+                             [add-proc (or/c #f (-> set? any/c any/c))]
+                             [shrink-proc (or/c #f (-> set? any/c any/c))]
+                             [extract-proc (or/c #f (-> set? any/c any/c))]
+                             [clear-proc (or/c #f (-> set? any)) #f]
+                             [equal-key-proc (or/c #f (-> set? any/c any/c)) #f]
+                             [prop impersonator-property?]
+                             [prop-val any/c] ... ...)
+         (and/c (or/c set? mutable-set? weak-set?) chaperone?)]{
+ Chaperones @racket[st]. Like @racket[impersonate-hash-set] but with
+ the constraints that the results of the @racket[inject-proc],
+ @racket[add-proc], @racket[shrink-proc], @racket[extract-proc], and
+ @racket[equal-key-proc] must be
+ @racket[chaperone-of?] their second arguments. Also, the input
+ may be an @racket[immutable?] set.
+}
+
 @section{Custom Hash Sets}
 
 @defform[(define-custom-set-types name 
@@ -710,7 +824,7 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
                      (code:line hash1-expr)
                      (code:line hash1-expr hash2-expr)])]{
 
-Creates a new set type based on the given comparison @racket[comparison-expr],
+Creates a new hash set type based on the given comparison @racket[comparison-expr],
 hash functions @racket[hash1-expr] and @racket[hash2-expr], and element
 predicate @racket[predicate-expr]; the interfaces for these functions are the
 same as in @racket[make-custom-set-types].  The new set type has three
@@ -750,6 +864,8 @@ initial elements.
   (make-mutable-string-set '("apple" "banana")))
 (generic-set? imm)
 (generic-set? mut)
+(set? imm)
+(generic-set? imm)
 (string-set? imm)
 (string-set? mut)
 (immutable-string-set? imm)

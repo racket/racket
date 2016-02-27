@@ -2,7 +2,6 @@
 (require racket/vector
          racket/class
          racket/promise
-         unstable/error
          "interfaces.rkt"
          (only-in "sql-data.rkt" sql-null sql-null?))
 (provide connected?

@@ -74,15 +74,7 @@ by @racket[and]ing or @racket[or]ing:
 (ormap number? (list "a" "b" 6))
 ]
 
-The @racket[filter] function keeps elements for which the body result
-is true, and discards elements for which it is @racket[#f]:
-
-@interaction[
-(filter string? (list "a" "b" 6))
-(filter positive? (list 1 -2 6 7 0))
-]
-
-The @racket[map], @racket[andmap], @racket[ormap], and @racket[filter]
+The @racket[map], @racket[andmap], and @racket[ormap]
 functions can all handle multiple lists, instead of just a single
 list. The lists must all have the same length, and the given function
 must accept one argument for each list:
@@ -91,6 +83,14 @@ must accept one argument for each list:
 (map (lambda (s n) (substring s 0 n))
      (list "peanuts" "popcorn" "crackerjack")
      (list 6 3 7))
+]
+
+The @racket[filter] function keeps elements for which the body result
+is true, and discards elements for which it is @racket[#f]:
+
+@interaction[
+(filter string? (list "a" "b" 6))
+(filter positive? (list 1 -2 6 7 0))
 ]
 
 The @racket[foldl] function generalizes some iteration functions. It

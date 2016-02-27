@@ -51,7 +51,8 @@
                                    catalog-lookup-cache
                                    download-printf
                                    from-command-line?
-                                   convert-to-non-clone?)
+                                   convert-to-non-clone?
+                                   prefetch-group)
   ;; A `repo-descs` is (hash repo (hash pkg-name desc) ...)
   (define (add-repo repo-descs repo name desc)
     (hash-set repo-descs repo
@@ -60,18 +61,27 @@
                         desc)))
   
   ;; Filter `descs` to get get repo mappings
+  (define (add-repo-desc desc ht #:prefetch? [prefetch? #f])
+    (cond
+     [(desc->name desc)
+      => (lambda (name)
+           (cond
+            [(desc->repo desc catalog-lookup-cache download-printf
+                         #:prefetch? prefetch?
+                         #:prefetch-group prefetch-group)
+             => (lambda (repo)
+                  (if prefetch?
+                      ht
+                      (add-repo ht repo name desc)))]
+            [else ht]))]
+     [else ht]))
+  (when prefetch-group
+    (for ([desc (in-list descs)])
+      (add-repo-desc desc (hash) #:prefetch? #t)))
   (define new-repo-descs
     (for/fold ([ht (hash)]) ([desc (in-list descs)])
-      (cond
-       [(desc->name desc)
-        => (lambda (name)
-             (cond
-              [(desc->repo desc catalog-lookup-cache download-printf)
-               => (lambda (repo)
-                    (add-repo ht repo name desc))]
-              [else ht]))]
-       [else ht])))
-
+      (add-repo-desc desc ht)))
+  
   ;; If updating, we don't want to complain about repos
   ;; whose repo status isn't changing.
   (define check-repo-descs
@@ -130,17 +140,18 @@
          string-append 
          "packages from a Git repository " would " not share a local clone"
          convert "\n"
-         (~a "  repository: " repo "\n")
+         (~a "  repository: " repo)
          (append
           (for/list ([(clone names) (in-hash clones)])
-            (~a "  local clone: " clone "\n"
+            (~a "\n"
+                "  local clone: " clone "\n"
                 "  packages for local clone:"
-                (format-list names)
-                "\n"))
+                (format-list names)))
           (list
            (if (null? non-clones)
                ""
-               (~a "  non-clone packages:"
+               (~a "\n"
+                   "  non-clone packages:"
                    (format-list non-clones)))))))
       
       ;; Determine a direction of conversion; we consider converting from
@@ -352,8 +363,13 @@
 ;; If `catalog-lookup-cache` is given, then check the catalog
 ;; if necessary to see whether the name resolves to a repository
 ;; (where the catalog will be used, anyway, so it's fine to
-;; lookup now and cache the result)
-(define (desc->repo d catalog-lookup-cache download-printf)
+;; lookup now and cache the result).
+;; In prefetch mode, the result is not useful (even as a prefetch
+;; future), because no prefetch is set up for a recursive
+;; resolution.
+(define (desc->repo d catalog-lookup-cache download-printf
+                    #:prefetch? [prefetch? #f]
+                    #:prefetch-group [prefetch-group #f])
   (define-values (name type) (package-source->name+type 
                               (pkg-desc-source d) 
                               (pkg-desc-type d)))
@@ -364,16 +380,23 @@
            [catalog-lookup-cache
             (define src (package-catalog-lookup-source name 
                                                        catalog-lookup-cache
-                                                       download-printf))
-            (desc->repo (pkg-desc src #f name #f #f #f)
-                        catalog-lookup-cache
-                        download-printf)]
+                                                       download-printf
+                                                       #:prefetch? prefetch?
+                                                       #:prefetch-group prefetch-group))
+            ;; Might be a prefetch future in prefetch mode, so continue
+            ;; only if possible:
+            (and (string? src)
+                 (desc->repo (pkg-desc src #f name #f #f #f)
+                             catalog-lookup-cache
+                             download-printf
+                             #:prefetch? prefetch?
+                             #:prefetch-group prefetch-group))]
            [else #f])]
          [(git github clone)
           (define pkg-url (string->url (pkg-desc-source d)))
-          (define-values (host port repo branch path)
-            (split-git-or-hub-url pkg-url))
-          (real-git-url pkg-url host port repo)]
+          (define-values (transport host port repo branch path)
+            (split-git-or-hub-url #:type type pkg-url))
+          (real-git-url pkg-url #:type type host port repo)]
          [else #f])))
 
 (define (pkg-info->clone-desc name info

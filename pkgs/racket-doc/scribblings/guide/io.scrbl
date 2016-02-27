@@ -69,10 +69,11 @@ file:
 (close-output-port out)
 ]
 
-Instead of having to match @racket[open-input-file] and
-@racket[open-output-file] calls, most Racket programmers will instead
-use @racket[call-with-output-file], which takes a function to call
-with the output port; when the function returns, the port is closed.
+Instead of having to match the open calls with close calls, most Racket
+programmers will use the @racket[call-with-input-file] and
+@racket[call-with-output-file] functions which take a function to call to carry
+out the desired operation. This function gets as its only argument the port,
+which is automatically opened and closed for the operation.
 
 @examples[
         #:eval io-eval
@@ -318,7 +319,7 @@ Other structure types created by @racket[struct], which offer
 more abstraction than @tech{prefab} structure types, normally
 @racket[write] either using @racketresultfont{#<....>} notation (for
 opaque structure types) or using @racketresultfont{#(....)} vector
-notation (for transparent structure types). In neither can the
+notation (for transparent structure types). In neither case can the
 result be read back in as an instance of the structure type:
 
 @interaction[

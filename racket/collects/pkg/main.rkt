@@ -11,7 +11,8 @@
          "lib.rkt"
          "commands.rkt"
          (prefix-in setup: setup/setup)
-         (for-syntax racket/base))
+         (for-syntax racket/base
+                     syntax/strip-context))
 
 (define (setup what no-setup? fail-fast? setup-collects jobs)
   (unless (or (eq? setup-collects 'skip)
@@ -128,7 +129,7 @@
                 "  package: ~a\n"
                 "  given path: ~a\n")
             pkg
-            name)
+            clone)
     (list pkg)]
    [else
     ((pkg-error cmd)
@@ -136,7 +137,6 @@
          "  given path: ~a")
      clone)]))
 
-(splicing-let ()
   (define-syntax (make-commands stx)
     (syntax-case stx ()
       [(_ #:scope-flags (scope-flags ...)
@@ -144,7 +144,7 @@
           #:trash-flags (trash-flags ...)
           #:catalog-flags (catalog-flags ...)
           #:install-type-flags (install-type-flags ...)
-          #:install-dep-flags (install-dep-flags ...)
+          #:install-dep-flags ((install-dep-flags ... (dep-desc ...)))
           #:install-dep-desc (install-dep-desc ...)
           #:install-force-flags (install-force-flags ...)
           #:install-clone-flags (install-clone-flags ...)
@@ -152,30 +152,8 @@
           #:install-copy-flags (install-copy-flags ...)
           #:install-copy-defns (install-copy-defns ...)
           #:install-copy-checks (install-copy-checks ...))
-       (with-syntax ([([scope-flags ...]
-                       [job-flags ...]
-                       [trash-flags ...]
-                       [catalog-flags ...]
-                       [install-type-flags ...]
-                       [(install-dep-flags ... (dep-desc ...))]
-                       [install-force-flags ...]
-                       [install-clone-flags ...]
-                       [update-deps-flags ...]
-                       [install-copy-flags ...]
-                       [install-copy-defns ...]
-                       [install-copy-checks ...])
-                      (syntax-local-introduce #'([scope-flags ...]
-                                                 [job-flags ...]
-                                                 [trash-flags ...]
-                                                 [catalog-flags ...]
-                                                 [install-type-flags ...]
-                                                 [install-dep-flags ...]
-                                                 [install-force-flags ...]
-                                                 [install-clone-flags ...]
-                                                 [update-deps-flags ...]
-                                                 [install-copy-flags ...]
-                                                 [install-copy-defns ...]
-                                                 [install-copy-checks ...]))])
+       (replace-context
+        stx
          #`(commands
             "This tool is used for managing installed packages."
             "pkg-~a-command"
@@ -603,15 +581,37 @@
              [(#:str state-database #f) state () "Read/write <state-database> as state of <dest-dir>"]
              [(#:str vers #f) version ("-v") "Copy information suitable for Racket <vers>"]
              [#:bool relative () "Make source paths relative when possible"]
+             [(#:sym mode [fail skip continue] 'fail) pkg-fail ()
+              ("Select handling of package-download failure;"
+               "<mode>s: fail (the default), skip, continue (but with exit status of 5)")]
              #:args (dest-dir . src-catalog)
              (parameterize ([current-pkg-error (pkg-error 'catalog-archive)]
                             [current-pkg-lookup-version (or version
                                                             (current-pkg-lookup-version))])
+                 (define fail-at-end? #f)
                  (pkg-catalog-archive dest-dir
                                       src-catalog
                                       #:from-config? from-config
                                       #:state-catalog state
-                                      #:relative-sources? relative))]
+                                      #:relative-sources? relative
+                                      #:package-exn-handler (case pkg-fail
+                                                              [(fail) (lambda (name exn) (raise exn))]
+                                                              [(skip continue)
+                                                               (lambda (name exn)
+                                                                 (log-error (~a "archiving failed for package; ~a\n"
+                                                                                "  package name: ~a\n"
+                                                                                "  original error:\n~a")
+                                                                            (if (eq? pkg-fail 'continue)
+                                                                                "continuing"
+                                                                                "skipping")
+                                                                            name
+                                                                            (regexp-replace* #rx"(?m:^)"
+                                                                                             (exn-message exn)
+                                                                                             "   "))
+                                                                 (when (eq? pkg-fail 'continue)
+                                                                   (set! fail-at-end? #t)))]))
+                 (when fail-at-end?
+                   (exit 5)))]
             ;; ----------------------------------------
             [archive
              "Create catalog from installed packages"
@@ -644,6 +644,7 @@
               (lambda ()
                 (pkg-empty-trash #:list? list
                                  #:quiet? #f)))]))]))
+
   (make-commands
    #:scope-flags
    ([(#:sym scope [installation user] #f) scope ()
@@ -691,7 +692,7 @@
      ("Specify treatment of multiple clones of a repository;"
       "<mode>s: convert, ask (interactive default), fail (other default), or force")]
     [(#:sym mode [ff-only try rebase] 'ff-only) pull ()
-     ("Specify `git pull' mode for repository clonse;"
+     ("Specify `git pull' mode for repository clones;"
       "<mode>s: ff-only (the default), try, or rebase")])
    #:update-deps-flags
    ([#:bool update-deps () "For `search-ask' or `search-auto', also update dependencies"]
@@ -725,4 +726,4 @@
                                    (cond
                                     [link "link"]
                                     [static-link "static-link"]
-                                    [clone "clone"]))))]))
+                                    [clone "clone"]))))])

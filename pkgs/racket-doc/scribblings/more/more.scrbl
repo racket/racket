@@ -747,7 +747,7 @@ import a library of control operators:
 Specifically, we need @racket[prompt] and @racket[abort] from
 @racketmodname[racket/control]. We use @racket[prompt] to mark the
 place where a servlet is started, so that we can abort a computation
-to that point. Change @racket[handle] by wrapping an @racket[prompt]
+to that point. Change @racket[handle] by wrapping a @racket[prompt]
 around the call to @racket[dispatch]:
 
 @racketblock[

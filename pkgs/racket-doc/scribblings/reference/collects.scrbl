@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt"
-          (for-label setup/dirs))
+          (for-label setup/dirs
+                     setup/collection-search))
 
 @title[#:tag "collects"]{Libraries and Collections}
 
@@ -263,6 +264,9 @@ collection specified by the @racket[collection]s, where the second
 @racket[collection] (if any) names a sub-collection, and so on.  The
 search uses the values of @racket[current-library-collection-links]
 and @racket[current-library-collection-paths].
+
+@margin-note{See also @racket[collection-search] in
+             @racketmodname[setup/collection-search].}
 
 If @racket[file] is not found, but @racket[file] ends in
 @filepath{.rkt} and a file with the suffix @filepath{.ss} exists, then

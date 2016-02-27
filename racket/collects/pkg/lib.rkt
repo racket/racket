@@ -67,6 +67,8 @@
    (parameter/c (or/c #f real?))]
   [current-pkg-trash-max-seconds
    (parameter/c (or/c #f real?))]
+  [current-pkg-network-retries
+   (parameter/c (or/c #f real?))]
   [pkg-directory
    (->* (string?)
         (#:cache (or/c #f (and/c hash? (not/c immutable?))))
@@ -280,5 +282,5 @@
   [pkg-directory->additional-installs (->* (path-string? string?)
                                            (#:namespace namespace?
                                                         #:system-type (or/c #f symbol?)
-                                                        #:system-library-subpath (or/c #f path?))
+                                                        #:system-library-subpath (or/c #f path-for-some-system?))
                                            (listof (cons/c symbol? string?)))]))

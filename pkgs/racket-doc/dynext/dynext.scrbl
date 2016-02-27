@@ -9,7 +9,8 @@
              dynext/link-unit
              dynext/link-sig
              dynext/file-unit
-             dynext/file-sig))
+             dynext/file-sig
+             compiler/module-suffix))
 
 @title{Dynext: Running a C Compiler/Linker}
 
@@ -359,7 +360,11 @@ Appends the platform-standard dynamic-extension file suffix to
          (or/c path? false/c)]{
 
 Strips the Racket file suffix from @racket[s] and returns a stripped
-path. Unlike the other functions below, when @racket[program] is not
+path. The recognized suffixes are the ones reported by
+@racket[(get-module-suffixes #:group 'libs)] when
+@racket[extract-base-filename/ss] is first called.
+
+Unlike the other functions below, when @racket[program] is not
 @racket[#f], then any suffix (including no suffix) is allowed. If
 @racket[s] is not a Racket file and @racket[program] is @racket[#f],
 @racket[#f] is returned.}

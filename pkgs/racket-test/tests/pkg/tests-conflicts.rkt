@@ -23,7 +23,7 @@
   (shelly-install "only modules are considered for conflicts"
                   "test-pkgs/pkg-test1.plt"
                   $ "raco pkg install test-pkgs/pkg-test1-not-conflict.plt")
-
+  
   (shelly-case
    "conflicts"
    (shelly-install "double install fails" "test-pkgs/pkg-test1.zip"
@@ -165,4 +165,74 @@
                (path-only (collection-file-path "test.rkt" "tests/pkg"))
                "racket-test"))
          "'")
-   =stdout> "'()\n")))
+   =stdout> "'()\n")
+  
+  (with-fake-root
+      (shelly-case
+       "non-conflicts on .zo files that will be deletced by `raco setup`"
+
+       (define (copy+install-not-conflict)
+         (define t1nc-dir (make-temporary-file "~a-t1nc" 'directory))
+         (define src-dir "test-pkgs/pkg-test1-not-conflict/")
+         (for ([i (directory-list src-dir)])
+           (copy-directory/files (build-path src-dir i) (build-path t1nc-dir i)))
+         (shelly-begin
+          $ (~a "raco pkg install " t1nc-dir))
+         t1nc-dir)
+       (define (set-conflict-mode t1nc-dir mode)
+         (define (maybe-delete-file p) (when (file-exists? p) (delete-file p)))
+         (case mode
+           [(src)
+            (set-file (build-path t1nc-dir "data" "empty-set.rkt") "#lang racket/base 'empty")
+            (maybe-delete-file (build-path t1nc-dir "data" "compiled" "empty-set_rkt.zo"))
+            (maybe-delete-file (build-path t1nc-dir "data" "info.rkt"))]
+           [(both)
+            (set-file (build-path t1nc-dir "data" "empty-set.rkt") "#lang racket/base 'empty")
+            (set-file (build-path t1nc-dir "data" "compiled" "empty-set_rkt.zo") "not real...")
+            (set-file (build-path t1nc-dir "data" "info.rkt") "#lang info\n(define assume-virtual-sources #t)")]
+           [(zo-stays)
+            (set-file (build-path t1nc-dir "data" "compiled" "empty-set_rkt.zo") "not real...")
+            (maybe-delete-file (build-path t1nc-dir "data" "empty-set.rkt"))
+            (set-file (build-path t1nc-dir "data" "info.rkt") "#lang info\n(define assume-virtual-sources #t)")]
+           [(zo-goes)
+            (set-file (build-path t1nc-dir "data" "compiled" "empty-set_rkt.zo") "not real...")
+            (maybe-delete-file (build-path t1nc-dir "data" "empty-set.rkt"))
+            (maybe-delete-file (build-path t1nc-dir "data" "info.rkt"))]))
+       
+       (define (install-pkg1-fails)
+         (shelly-begin
+          $ "raco pkg install test-pkgs/pkg-test1.zip"
+          =exit> 1
+          =stderr> #rx"packages conflict.*data/empty-set"))
+       (define (install-pkg1-succeeds)
+         (shelly-begin
+          $ "raco pkg install test-pkgs/pkg-test1.zip"
+          $ "raco pkg remove pkg-test1"))
+       
+       (define t1-nc1-dir (copy+install-not-conflict))
+       (set-conflict-mode t1-nc1-dir 'src)
+       (install-pkg1-fails)
+
+       (set-conflict-mode t1-nc1-dir 'both)
+       (install-pkg1-fails)
+
+       (set-conflict-mode t1-nc1-dir 'zo-stays)
+       (install-pkg1-fails)
+       
+       (set-conflict-mode t1-nc1-dir 'zo-goes)
+       (install-pkg1-succeeds)
+       
+       (define t1-nc2-dir (copy+install-not-conflict))
+
+       (for* ([m1 '(src both zo-stays zo-goes)]
+              [m2 '(src both zo-stays zo-goes)])
+         (when (verbose?)
+           (printf "trying ~s ~s\n" m1 m2))
+         (set-conflict-mode t1-nc1-dir m1)
+         (set-conflict-mode t1-nc2-dir m2)
+         (if (and (eq? m1 'zo-goes) (eq? m2 'zo-goes))
+             (install-pkg1-succeeds)
+             (install-pkg1-fails)))
+       
+       (delete-directory/files t1-nc1-dir)
+       (delete-directory/files t1-nc2-dir)))))

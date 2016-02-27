@@ -32,5 +32,5 @@
 
 (define (dependency-this-platform? dep)
   (define p (dependency-lookup '#:platform dep))
-  (or (not p) (matching-platform? p)))
+  (or (not p) (matching-platform? p #:cross? #t)))
 

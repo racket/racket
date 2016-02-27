@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -35,41 +35,33 @@
 
 /* The implementations of the time primitives, such as
    `current-seconds', vary a lot from platform to platform. */
-#ifdef TIME_SYNTAX
-# ifdef USE_WIN32_TIME
-#  include <Windows.h>
-# else
-#  ifndef USE_PALMTIME
-#   if defined(OSKIT) && !defined(OSKIT_TEST)
-    /* Get FreeBSD version, not oskit/time.h version */
-#    include <freebsd/time.h>
-#   endif
-#   include <time.h>
-#   ifdef USE_FTIME
-#    include <sys/timeb.h>
-#   else
-#    include <sys/time.h>
-#   endif /* USE_FTIME */
-#   ifdef USE_GETRUSAGE
-#    include <sys/types.h>
-#    include <sys/time.h>
-#    include <sys/resource.h>
-#    include <errno.h>
-#   endif /* USE_GETRUSAGE */
-#   ifdef USE_SYSCALL_GETRUSAGE
-#    include <sys/syscall.h>
-#    define getrusage(a, b)  syscall(SYS_GETRUSAGE, a, b)
-#    define USE_GETRUSAGE
-#   endif /* USE_SYSCALL_GETRUSAGE */
-#   ifdef WINDOWS_GET_PROCESS_TIMES
-#    include <Windows.h>
-#   endif
-#   if !defined(USE_GETRUSAGE) && !defined(WINDOWS_GET_PROCESS_TIMES) && !defined(USER_TIME_IS_CLOCK)
-#    include <sys/times.h>
-#   endif
-#  endif /* USE_PALMTIME */
-# endif /* USE_MACTIME */
-#endif /* TIME_SYNTAX */
+#ifdef USE_WIN32_TIME
+# include <windows.h>
+#else
+#  if defined(OSKIT) && !defined(OSKIT_TEST)
+   /* Get FreeBSD version, not oskit/time.h version */
+#   include <freebsd/time.h>
+#  endif
+#  include <time.h>
+#  include <sys/time.h>
+#  ifdef USE_GETRUSAGE
+#   include <sys/types.h>
+#   include <sys/time.h>
+#   include <sys/resource.h>
+#   include <errno.h>
+#  endif /* USE_GETRUSAGE */
+#  ifdef USE_SYSCALL_GETRUSAGE
+#   include <sys/syscall.h>
+#   define getrusage(a, b)  syscall(SYS_GETRUSAGE, a, b)
+#   define USE_GETRUSAGE
+#  endif /* USE_SYSCALL_GETRUSAGE */
+#  ifdef WINDOWS_GET_PROCESS_TIMES
+#   include <windows.h>
+#  endif
+#  if !defined(USE_GETRUSAGE) && !defined(WINDOWS_GET_PROCESS_TIMES) && !defined(USER_TIME_IS_CLOCK)
+#   include <sys/times.h>
+#  endif
+#endif /* USE_WIN32_TIME */
 
 static void ASSERT_SUSPEND_BREAK_ZERO() {
 #if 0
@@ -84,14 +76,17 @@ SHARED_OK int scheme_defining_primitives; /* set to 1 during start-up */
 SHARED_OK int scheme_prim_opt_flags[(1 << SCHEME_PRIM_OPT_INDEX_SIZE)];
 
 READ_ONLY Scheme_Object scheme_void[1]; /* the void constant */
-READ_ONLY Scheme_Object *scheme_values_func; /* the function bound to `values' */
+READ_ONLY Scheme_Object *scheme_values_proc; /* the function bound to `values' */
 READ_ONLY Scheme_Object *scheme_procedure_p_proc;
 READ_ONLY Scheme_Object *scheme_procedure_arity_includes_proc;
+READ_ONLY Scheme_Object *scheme_procedure_specialize_proc;
 READ_ONLY Scheme_Object *scheme_void_proc;
+READ_ONLY Scheme_Object *scheme_void_p_proc;
 READ_ONLY Scheme_Object *scheme_check_not_undefined_proc;
 READ_ONLY Scheme_Object *scheme_check_assign_not_undefined_proc;
 READ_ONLY Scheme_Object *scheme_apply_proc;
 READ_ONLY Scheme_Object *scheme_call_with_values_proc; /* the function bound to `call-with-values' */
+READ_ONLY Scheme_Object *scheme_call_with_immed_mark_proc;
 READ_ONLY Scheme_Object *scheme_reduced_procedure_struct;
 READ_ONLY Scheme_Object *scheme_tail_call_waiting;
 READ_ONLY Scheme_Object *scheme_default_prompt_tag;
@@ -110,6 +105,7 @@ ROSYM static Scheme_Object *is_method_symbol;
 ROSYM static Scheme_Object *cont_key; /* uninterned */
 ROSYM static Scheme_Object *barrier_prompt_key; /* uninterned */
 ROSYM static Scheme_Object *prompt_cc_guard_key; /* uninterned */
+ROSYM static Scheme_Object *mark_symbol;
 READ_ONLY static Scheme_Prompt *original_default_prompt; /* for escapes, represents the implicit initial prompt */
 READ_ONLY static Scheme_Object *call_with_prompt_proc;
 READ_ONLY static Scheme_Object *abort_continuation_proc;
@@ -170,7 +166,6 @@ static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv
 static Scheme_Object *void_func (int argc, Scheme_Object *argv[]);
 static Scheme_Object *void_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *dynamic_wind (int argc, Scheme_Object *argv[]);
-#ifdef TIME_SYNTAX
 static Scheme_Object *time_apply(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_inexact_milliseconds(int argc, Scheme_Object **argv);
@@ -178,7 +173,6 @@ static Scheme_Object *current_process_milliseconds(int argc, Scheme_Object **arg
 static Scheme_Object *current_gc_milliseconds(int argc, Scheme_Object **argv);
 static Scheme_Object *current_seconds(int argc, Scheme_Object **argv);
 static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv);
-#endif
 static Scheme_Object *object_name(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_arity_p(int argc, Scheme_Object *argv[]);
@@ -186,13 +180,17 @@ static Scheme_Object *procedure_reduce_arity(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_rename(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_to_method(int argc, Scheme_Object *argv[]);
 static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_chaperone_procedure(int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonate_procedure(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_impersonate_procedure(int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_procedure_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonate_procedure_star(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_closure_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *primitive_result_arity (int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_result_arity (int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_with_values(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_values(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_print(int argc, Scheme_Object **argv);
@@ -311,17 +309,17 @@ scheme_init_fun (Scheme_Env *env)
 			     scheme_call_with_values_proc,
 			     env);
 
-  REGISTER_SO(scheme_values_func);
-  scheme_values_func = scheme_make_prim_w_arity2(scheme_values,
+  REGISTER_SO(scheme_values_proc);
+  scheme_values_proc = scheme_make_prim_w_arity2(scheme_values,
 						 "values",
 						 0, -1,
 						 0, -1);
-  SCHEME_PRIM_PROC_FLAGS(scheme_values_func) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+  SCHEME_PRIM_PROC_FLAGS(scheme_values_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                                              | SCHEME_PRIM_IS_BINARY_INLINED
                                                                              | SCHEME_PRIM_IS_NARY_INLINED
                                                                              | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("values",
-			     scheme_values_func,
+			     scheme_values_proc,
 			     env);
 
   o = scheme_make_prim_w_arity2(scheme_call_ec,
@@ -329,7 +327,6 @@ scheme_init_fun (Scheme_Env *env)
 				1, 1,
 				0, -1);
   scheme_add_global_constant("call-with-escape-continuation", o, env);
-  scheme_add_global_constant("call/ec", o, env);
 
   REGISTER_SO(internal_call_cc_prim);
   internal_call_cc_prim = scheme_make_prim_w_arity2(internal_call_cc,
@@ -349,7 +346,6 @@ scheme_init_fun (Scheme_Env *env)
 				0, -1);
 
   scheme_add_global_constant("call-with-current-continuation", o, env);
-  scheme_add_global_constant("call/cc", o, env);
 
   scheme_add_global_constant("continuation?",
                              scheme_make_folding_prim(continuation_p,
@@ -482,11 +478,13 @@ scheme_init_fun (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant("continuation-mark-set-first", o, env);
 
+  REGISTER_SO(scheme_call_with_immed_mark_proc);
+  scheme_call_with_immed_mark_proc = scheme_make_prim_w_arity2(call_with_immediate_cc_mark,
+                                                               "call-with-immediate-continuation-mark",
+                                                               2, 3,
+                                                               0, -1);
   scheme_add_global_constant("call-with-immediate-continuation-mark",
-			     scheme_make_prim_w_arity2(call_with_immediate_cc_mark,
-                                                       "call-with-immediate-continuation-mark",
-                                                       2, 3,
-                                                       0, -1),
+			     scheme_call_with_immed_mark_proc,
 			     env);
   scheme_add_global_constant("continuation-mark-set?",
 			     scheme_make_prim_w_arity(cc_marks_p,
@@ -507,12 +505,12 @@ scheme_init_fun (Scheme_Env *env)
   scheme_add_global_constant("void", scheme_void_proc, env);
 
   
-  o = scheme_make_folding_prim(void_p, "void?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant("void?", o, env);
+  REGISTER_SO(scheme_void_p_proc);
+  scheme_void_p_proc = scheme_make_folding_prim(void_p, "void?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(scheme_void_p_proc) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                                             | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("void?", scheme_void_p_proc, env);
 
-#ifdef TIME_SYNTAX
   scheme_add_global_constant("time-apply",
 			     scheme_make_prim_w_arity2(time_apply,
 						       "time-apply",
@@ -549,7 +547,6 @@ scheme_init_fun (Scheme_Env *env)
                                                     "seconds->date",
                                                     1, 2),
 			     env);
-#endif
 
   scheme_add_global_constant("dynamic-wind",
 			     scheme_make_prim_w_arity(dynamic_wind,
@@ -601,6 +598,14 @@ scheme_init_fun (Scheme_Env *env)
 						      "procedure-closure-contents-eq?",
 						      2, 2, 1),
 			     env);
+
+  REGISTER_SO(scheme_procedure_specialize_proc);
+  o = scheme_make_prim_w_arity(procedure_specialize,
+                               "procedure-specialize",
+                               1, 1);
+  scheme_procedure_specialize_proc = o;
+  scheme_add_global_constant("procedure-specialize", o, env);
+
   scheme_add_global_constant("chaperone-procedure",
 			     scheme_make_prim_w_arity(chaperone_procedure,
 						      "chaperone-procedure",
@@ -638,6 +643,12 @@ scheme_init_fun (Scheme_Env *env)
 						      "primitive-result-arity",
 						      1, 1, 1),
 			     env);
+
+  scheme_add_global_constant("procedure-result-arity",
+                             scheme_make_folding_prim(procedure_result_arity,
+                                                      "procedure-result-arity",
+                                                      1, 1, 1),
+                             env);
 
   scheme_add_global_constant("current-print",
 			     scheme_register_parameter(current_print,
@@ -685,6 +696,9 @@ scheme_init_fun (Scheme_Env *env)
   barrier_prompt_key = scheme_make_symbol("bar"); /* uninterned */
   prompt_cc_guard_key = scheme_make_symbol("cc"); /* uninterned */
 
+  REGISTER_SO(mark_symbol);
+  mark_symbol = scheme_intern_symbol("mark");
+
   REGISTER_SO(scheme_default_prompt_tag);
   {
     Scheme_Object *a[1];
@@ -721,7 +735,8 @@ scheme_init_unsafe_fun (Scheme_Env *env)
   REGISTER_SO(scheme_check_not_undefined_proc);
   o = scheme_make_prim_w_arity(scheme_check_not_undefined, "check-not-unsafe-undefined", 2, 2);
   scheme_check_not_undefined_proc = o;
-  SCHEME_PRIM_PROC_FLAGS(o) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(o) |= (SCHEME_PRIM_OPT_IMMEDIATE
+                                | scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED));
   scheme_add_global_constant("check-not-unsafe-undefined", o, env);
 
   REGISTER_SO(scheme_check_assign_not_undefined_proc);
@@ -739,6 +754,17 @@ scheme_init_unsafe_fun (Scheme_Env *env)
 
   o = scheme_make_prim_w_arity(chaperone_unsafe_undefined, "chaperone-struct-unsafe-undefined", 1, 1);
   scheme_add_global_constant("chaperone-struct-unsafe-undefined", o, env);
+
+  scheme_add_global_constant("unsafe-chaperone-procedure",
+			     scheme_make_prim_w_arity(unsafe_chaperone_procedure,
+						      "unsafe-chaperone-procedure",
+						      2, -1),
+			     env);
+  scheme_add_global_constant("unsafe-impersonate-procedure",
+			     scheme_make_prim_w_arity(unsafe_impersonate_procedure,
+						      "unsafe-impersonate-procedure",
+						      2, -1),
+			     env);
 }
 
 void
@@ -1167,7 +1193,8 @@ static Scheme_Prompt *allocate_prompt(Scheme_Prompt **cached_prompt) {
 
 static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *state) {
     state->current_local_env = thread->current_local_env;
-    state->mark              = thread->current_local_mark;
+    state->scope             = thread->current_local_scope;
+    state->use_scope         = thread->current_local_use_scope;
     state->name              = thread->current_local_name;
     state->modidx            = thread->current_local_modidx;
     state->menv              = thread->current_local_menv;
@@ -1175,25 +1202,28 @@ static void save_dynamic_state(Scheme_Thread *thread, Scheme_Dynamic_State *stat
 
 static void restore_dynamic_state(Scheme_Dynamic_State *state, Scheme_Thread *thread) {
     thread->current_local_env     = state->current_local_env;
-    thread->current_local_mark    = state->mark;
+    thread->current_local_scope   = state->scope;
+    thread->current_local_use_scope = state->use_scope;
     thread->current_local_name    = state->name;
     thread->current_local_modidx  = state->modidx;
     thread->current_local_menv    = state->menv;
 }
 
-void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env, Scheme_Object *mark, 
+void scheme_set_dynamic_state(Scheme_Dynamic_State *state, Scheme_Comp_Env *env,
+                              Scheme_Object *scope, Scheme_Object *use_scope,
                               Scheme_Object *name, 
                               Scheme_Env *menv,
                               Scheme_Object *modidx)
 {
   state->current_local_env = env;
-  state->mark              = mark;
+  state->scope             = scope;
+  state->use_scope         = use_scope;
   state->name              = name;
   state->modidx            = modidx;
   state->menv              = menv;
 }
 
-static void *apply_again_k()
+static void *apply_again_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *val = p->ku.k.p1;
@@ -1824,16 +1854,16 @@ cert_with_specials(Scheme_Object *code,
         name = scheme_stx_taint_disarm(code, NULL);
         name = SCHEME_STX_CAR(name);
 	if (SCHEME_STX_SYMBOLP(name)) {
-	  if (scheme_stx_module_eq_x(scheme_begin_stx, name, phase)
-              || scheme_stx_module_eq_x(scheme_module_begin_stx, name, phase)) {
+	  if (scheme_stx_free_eq_x(scheme_begin_stx, name, phase)
+              || scheme_stx_free_eq_x(scheme_module_begin_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
-	  } else if (scheme_stx_module_eq_x(scheme_begin_for_syntax_stx, name, phase)) {
+	  } else if (scheme_stx_free_eq_x(scheme_begin_for_syntax_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 0;
             phase_delta = 1;
-	  } else if (scheme_stx_module_eq_x(scheme_define_values_stx, name, phase)
-		     || scheme_stx_module_eq_x(scheme_define_syntaxes_stx, name, phase)) {
+	  } else if (scheme_stx_free_eq_x(scheme_define_values_stx, name, phase)
+		     || scheme_stx_free_eq_x(scheme_define_syntaxes_stx, name, phase)) {
 	    trans = 1;
 	    next_cadr_deflt = 1;
 	  }
@@ -1889,19 +1919,20 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 		   Scheme_Object *rator, Scheme_Object *code,
 		   Scheme_Comp_Env *env, Scheme_Object *boundname,
                    Scheme_Compile_Expand_Info *rec, int drec,
-		   int for_set)
+		   int for_set,
+                   int scope_macro_use)
 {
   Scheme_Object *orig_code = code;
 
   if (scheme_is_rename_transformer(rator)) {
-    Scheme_Object *mark;
+    Scheme_Object *scope;
    
     rator = scheme_rename_transformer_id(rator);
     /* rator is now an identifier */
 
     /* and it's introduced by this expression: */
-    mark = scheme_new_mark();
-    rator = scheme_add_remove_mark(rator, mark);
+    scope = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
+    rator = scheme_stx_flip_scope(rator, scope, scheme_true);
 
     if (for_set) {
       Scheme_Object *tail, *setkw;
@@ -1926,7 +1957,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
 
     return code;
   } else {
-    Scheme_Object *mark, *rands_vec[1], *track_code, *pre_code;
+    Scheme_Object *scope, *use_scope, *rands_vec[1], *track_code, *pre_code;
 
     if (scheme_is_set_transformer(rator))
       rator = scheme_set_transformer_proc(rator);
@@ -1944,13 +1975,20 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
     }
     track_code = code;  /* after mode properties are removed */
 
-    mark = scheme_new_mark();
-    code = scheme_add_remove_mark(code, mark);
+    scope = scheme_new_scope(SCHEME_STX_MACRO_SCOPE);
+    code = scheme_stx_flip_scope(code, scope, scheme_true);
 
+    if (scope_macro_use) {
+      use_scope = scheme_new_scope(SCHEME_STX_USE_SITE_SCOPE);
+      scheme_add_compilation_frame_use_site_scope(env, use_scope);
+      code = scheme_stx_add_scope(code, use_scope, scheme_true);
+    } else
+      use_scope = NULL;
+    
     code = scheme_stx_taint_disarm(code, NULL);
 
     pre_code = code;
-    SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(rec[drec].observer, code);
+    SCHEME_EXPAND_OBSERVE_MACRO_PRE_X(env->observer, code);
 
     {
       Scheme_Dynamic_State dyn_state;
@@ -1964,7 +2002,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
 
-      scheme_set_dynamic_state(&dyn_state, env, mark, boundname, 
+      scheme_set_dynamic_state(&dyn_state, env, scope, use_scope, boundname, 
                                menv, menv ? menv->link_midx : env->genv->link_midx);
 
       rands_vec[0] = code;
@@ -1973,7 +2011,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
       scheme_pop_continuation_frame(&cframe);
     }
 
-    SCHEME_EXPAND_OBSERVE_MACRO_POST_X(rec[drec].observer, code, pre_code);
+    SCHEME_EXPAND_OBSERVE_MACRO_POST_X(env->observer, code, pre_code);
 
     if (!SCHEME_STXP(code)) {
       scheme_raise_exn(MZEXN_FAIL_CONTRACT,
@@ -1983,7 +2021,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
                        code);
     }
 
-    code = scheme_add_remove_mark(code, mark);
+    code = scheme_stx_flip_scope(code, scope, scheme_true);
 
     code = scheme_stx_track(code, track_code, name);
     
@@ -2131,7 +2169,7 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
   } else if ((type == scheme_case_closure_type)
              || (type == scheme_case_lambda_sequence_type)) {
     Scheme_Case_Lambda *seq;
-    Scheme_Closure_Data *data;
+    Scheme_Lambda *data;
     int i;
     Scheme_Object *first, *last = NULL, *v;
 
@@ -2143,12 +2181,12 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     seq = (Scheme_Case_Lambda *)p;
     for (i = 0; i < seq->count; i++) {
       v = seq->array[i];
-      if (SAME_TYPE(SCHEME_TYPE(v), scheme_unclosed_procedure_type))
-        data = (Scheme_Closure_Data *)v;
+      if (SAME_TYPE(SCHEME_TYPE(v), scheme_lambda_type))
+        data = (Scheme_Lambda *)v;
       else
-        data = SCHEME_COMPILED_CLOS_CODE(v);
+        data = SCHEME_CLOSURE_CODE(v);
       mina = maxa = data->num_params;
-      if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+      if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
 	if (mina)
 	  --mina;
 	maxa = -1;
@@ -2339,15 +2377,15 @@ static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Ob
     SCHEME_USE_FUEL(1);
     goto top;
   } else {
-    Scheme_Closure_Data *data;
+    Scheme_Lambda *data;
 
-    if (type == scheme_unclosed_procedure_type) 
-      data = (Scheme_Closure_Data *)p;
+    if (type == scheme_lambda_type) 
+      data = (Scheme_Lambda *)p;
     else
-      data = SCHEME_COMPILED_CLOS_CODE(p);
+      data = SCHEME_CLOSURE_CODE(p);
 
     mina = maxa = data->num_params;
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+    if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
       if (mina)
 	--mina;
       maxa = -1;
@@ -2507,7 +2545,7 @@ int scheme_check_proc_arity(const char *where, int a,
 int scheme_closure_preserves_marks(Scheme_Object *p)
 {
   Scheme_Type type = SCHEME_TYPE(p);
-  Scheme_Closure_Data *data;
+  Scheme_Lambda *data;
 
 #ifdef MZ_USE_JIT
   if (type == scheme_native_closure_type)
@@ -2515,13 +2553,13 @@ int scheme_closure_preserves_marks(Scheme_Object *p)
 #endif
 
   if (type == scheme_closure_type) {
-    data = SCHEME_COMPILED_CLOS_CODE(p);
-  } else if (type == scheme_unclosed_procedure_type) {
-    data = (Scheme_Closure_Data *)p;
+    data = SCHEME_CLOSURE_CODE(p);
+  } else if (type == scheme_lambda_type) {
+    data = (Scheme_Lambda *)p;
   } else
     return 0;
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_PRESERVES_MARKS)
+  if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_PRESERVES_MARKS)
     return 1;
 
   return 0;
@@ -2570,7 +2608,7 @@ Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Obje
     /* Integer encoding, but shift to use low bit to indicate whether
        it preserves marks, which is useful information for the JIT. */
     intptr_t i = SCHEME_INT_VAL(p);
-    i <<= 1;
+    i = ((uintptr_t)i) << 1;
     if (scheme_closure_preserves_marks(e)) {
       i |= 0x1;
     }
@@ -2789,23 +2827,23 @@ const char *scheme_get_proc_name(Scheme_Object *p, int *len, int for_error)
   } else {
     Scheme_Object *name;
 
-    if (type == scheme_compiled_unclosed_procedure_type) {
-      name = ((Scheme_Closure_Data *)p)->name;
+    if (type == scheme_ir_lambda_type) {
+      name = ((Scheme_Lambda *)p)->name;
     } else if (type == scheme_closure_type) {
-      name = SCHEME_COMPILED_CLOS_CODE(p)->name;
+      name = SCHEME_CLOSURE_CODE(p)->name;
     } else if (type == scheme_case_lambda_sequence_type) {
       Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)p;
       if (!cl->count)
         name = NULL;
       else
-        name = ((Scheme_Closure_Data *)cl->array[0])->name;
+        name = ((Scheme_Lambda *)cl->array[0])->name;
     } else {
       /* Native closure: */
       name = ((Scheme_Native_Closure *)p)->code->u2.name;
-      if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_unclosed_procedure_type)) {
+      if (name && SAME_TYPE(SCHEME_TYPE(name), scheme_lambda_type)) {
 	/* Not yet jitted. Use `name' as the other alternaive of 
 	   the union: */
-	name = ((Scheme_Closure_Data *)name)->name;
+	name = ((Scheme_Lambda *)name)->name;
       }
     }
 
@@ -2856,11 +2894,59 @@ static Scheme_Object *primitive_result_arity(int argc, Scheme_Object *argv[])
       return scheme_make_arity(p->minr, p->maxr);
     }
   } else {
-    scheme_wrong_contract("primitive-result_arity", "primitive?", 0, argc, argv);
+    scheme_wrong_contract("primitive-result-arity", "primitive?", 0, argc, argv);
     return NULL;
   }
-
   return scheme_make_integer(1);
+}
+
+static Scheme_Object *procedure_result_arity(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *o, *orig_o;
+
+  orig_o = argv[0];
+  o = orig_o;
+
+  if (SCHEME_CHAPERONEP(o))
+    o = SCHEME_CHAPERONE_VAL(o);
+
+  /* Struct procedures could be keyword-accepting and that
+     requires additional complication; defer for now */
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_proc_struct_type)) {
+    return scheme_false;
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_closure_type)) {
+    if ((SCHEME_LAMBDA_FLAGS(SCHEME_CLOSURE_CODE(o)) & LAMBDA_SINGLE_RESULT)) {
+      return scheme_make_integer(1);
+    }
+#ifdef MZ_USE_JIT
+  } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_native_closure_type)) {
+    if (scheme_native_closure_is_single_result(o))
+      return scheme_make_integer(1);
+#endif
+  } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_case_closure_type)) {
+    Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)o;
+    int i;
+    
+    for (i = cl->count; i--; ) {
+      if (!(SCHEME_LAMBDA_FLAGS(SCHEME_CLOSURE_CODE(cl->array[i])) & LAMBDA_SINGLE_RESULT))
+        break;
+    }
+
+    if (i < 0)
+      return scheme_make_integer(1);
+  } else if (SCHEME_PRIMP(o)) {
+    if (((Scheme_Primitive_Proc *)o)->pp.flags & SCHEME_PRIM_IS_MULTI_RESULT) {
+      Scheme_Prim_W_Result_Arity *p = (Scheme_Prim_W_Result_Arity *)o;
+      return scheme_make_arity(p->minr, p->maxr);
+    }
+    return scheme_make_integer(1);
+  } else if (!SCHEME_PROCP(o)) {
+    scheme_wrong_contract("procedure-result-arity", "procedure?", 0, argc, argv);
+    return NULL;
+  }
+  return scheme_false;
 }
 
 Scheme_Object *scheme_object_name(Scheme_Object *a)
@@ -3228,7 +3314,7 @@ static int proc_is_method(Scheme_Object *proc)
   }
 
   if (SAME_TYPE(SCHEME_TYPE(proc), scheme_closure_type)) {
-    return ((SCHEME_CLOSURE_DATA_FLAGS(SCHEME_COMPILED_CLOS_CODE(proc)) & CLOS_IS_METHOD)
+    return ((SCHEME_LAMBDA_FLAGS(SCHEME_CLOSURE_CODE(proc)) & LAMBDA_IS_METHOD)
             ? 1
             : 0);
   }
@@ -3364,7 +3450,8 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
       Scheme_Native_Closure *c1 = (Scheme_Native_Closure *)v1;
       Scheme_Native_Closure *c2 = (Scheme_Native_Closure *)v2;
 
-      if (SAME_OBJ(c1->code, c2->code)) {
+      if (SAME_OBJ(c1->code, c2->code)
+          || (c1->code->eq_key && SAME_OBJ(c1->code->eq_key, c2->code->eq_key))) {
 	int i;
 	i = c1->code->closure_size;
 	if (i < 0) {
@@ -3418,11 +3505,38 @@ static Scheme_Object *procedure_equal_closure_p(int argc, Scheme_Object *argv[])
   return scheme_false;
 }
 
+static Scheme_Object *procedure_specialize(int argc, Scheme_Object *argv[])
+{
+  if (!SCHEME_PROCP(argv[0]))
+    scheme_wrong_contract("procedure-specialize", "procedure?", 0, argc, argv);
+
+#ifdef MZ_USE_JIT
+  if (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_native_closure_type)) {
+    Scheme_Native_Closure *nc = (Scheme_Native_Closure *)argv[0];
+    if ((nc->code->start_code == scheme_on_demand_jit_code)
+        && !(SCHEME_NATIVE_LAMBDA_FLAGS(nc->code) & NATIVE_SPECIALIZED)) {
+      Scheme_Native_Lambda *data;
+      if (!nc->code->eq_key) {
+        void *p;
+        p = scheme_malloc_atomic(sizeof(int));
+        nc->code->eq_key = p;
+      }
+      data = MALLOC_ONE_TAGGED(Scheme_Native_Lambda);
+      memcpy(data, nc->code, sizeof(Scheme_Native_Lambda));
+      SCHEME_NATIVE_LAMBDA_FLAGS(data) |= NATIVE_SPECIALIZED;
+      nc->code = data;
+    }
+  }
+#endif
+
+  return argv[0];
+}
+
 static Scheme_Object *do_chaperone_procedure(const char *name, const char *whating,
                                              int is_impersonator, int pass_self,
-                                             int argc, Scheme_Object *argv[])
+                                             int argc, Scheme_Object *argv[], int is_unsafe)
 {
-  Scheme_Chaperone *px;
+  Scheme_Chaperone *px, *px2;
   Scheme_Object *val = argv[0], *orig, *naya, *r, *app_mark;
   Scheme_Hash_Tree *props;
 
@@ -3431,8 +3545,13 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
 
   if (!SCHEME_PROCP(val))
     scheme_wrong_contract(name, "procedure?", 0, argc, argv);
-  if (!SCHEME_FALSEP(argv[1]) && !SCHEME_PROCP(argv[1]))
-    scheme_wrong_contract(name, "(or/c procedure? #f)", 1, argc, argv);
+  if (is_unsafe) {
+    if (!SCHEME_PROCP(argv[1]))
+      scheme_wrong_contract(name, "procedure?", 1, argc, argv);
+  } else {
+    if (!SCHEME_FALSEP(argv[1]) && !SCHEME_PROCP(argv[1]))
+      scheme_wrong_contract(name, "(or/c procedure? #f)", 1, argc, argv);
+  }
 
   orig = get_or_check_arity(val, -1, NULL, 1);
   if (SCHEME_FALSEP(argv[1]))
@@ -3479,42 +3598,81 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
   px->props = props;
 
   /* Put the procedure along with known-good arity (to speed checking;
-     initialized to -1) in a vector. An odd-sized vector makes the
-     chaperone recognized as a procedure chaperone, and a size of 5
-     (instead of 3) indicates that the wrapper procedure accepts a
-     "self" argument: */
+     initialized to -1) in a vector. 
+
+     Vector of odd size for redirects means a procedure chaperone,
+     vector with even slots means a structure chaperone.
+     A size of 5 (instead of 3) indicates that the wrapper
+     procedure accepts a "self" argument. An immutable vector
+     means that it wraps a chaperone that wants the "self" 
+     argument.
+
+     If the known-good arity is #f, this means the chaperone
+     wrapper defers directly to SCHEME_VEC_ELES(r)[0] and no
+     arity check is needed.
+  */
   r = scheme_make_vector((pass_self ? 5 : 3), scheme_make_integer(-1));
-  SCHEME_VEC_ELS(r)[0] = argv[1];
+
+  if (SCHEME_FALSEP(argv[1]))
+    SCHEME_VEC_ELS(r)[0] = argv[0];
+  else
+    SCHEME_VEC_ELS(r)[0] = argv[1];
+  if (SCHEME_FALSEP(argv[1]))
+    SCHEME_VEC_ELS(r)[1] = scheme_false;
   SCHEME_VEC_ELS(r)[2] = app_mark;
 
-  /* Vector of odd size for redirects means a procedure chaperone,
-     vector with even slots means a structure chaperone. */
   px->redirects = r;
 
   if (is_impersonator)
     SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
+  if (is_unsafe || SCHEME_FALSEP(argv[1]))
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_PROC_CHAPERONE_CALL_DIRECT;
+
+  if (!is_unsafe) {
+    /* If there's a `pass_self` chaperone in px->prev, then we'll need
+       to pass the self proc along. */
+    for (val = px->prev; SCHEME_P_CHAPERONEP(val); val = ((Scheme_Chaperone *)val)->prev) {
+      px2 = (Scheme_Chaperone *)val;
+      if (SCHEME_VECTORP(px2->redirects) && (SCHEME_VEC_SIZE(px2->redirects) & 0x1)) {
+        if ((SCHEME_VEC_SIZE(px2->redirects) > 3)
+            || SCHEME_IMMUTABLEP(px2->redirects))
+          SCHEME_SET_IMMUTABLE(px->redirects);
+        break;
+      }
+    }
+  }
 
   return (Scheme_Object *)px;
 }
 
 static Scheme_Object *chaperone_procedure(int argc, Scheme_Object *argv[])
 {
-  return do_chaperone_procedure("chaperone-procedure", "chaperoning", 0, 0, argc, argv);
+  return do_chaperone_procedure("chaperone-procedure", "chaperoning", 0, 0, argc, argv, 0);
+}
+
+static Scheme_Object *unsafe_chaperone_procedure(int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_procedure("unsafe-chaperone-procedure", "chaperoning", 0, 0, argc, argv, 1);
 }
 
 static Scheme_Object *impersonate_procedure(int argc, Scheme_Object *argv[])
 {
-  return do_chaperone_procedure("impersonate-procedure", "impersonating", 1, 0, argc, argv);
+  return do_chaperone_procedure("impersonate-procedure", "impersonating", 1, 0, argc, argv, 0);
+}
+
+static Scheme_Object *unsafe_impersonate_procedure(int argc, Scheme_Object *argv[])
+{
+  return do_chaperone_procedure("unsafe-impersonate-procedure", "impersonating", 1, 0, argc, argv, 1);
 }
 
 static Scheme_Object *chaperone_procedure_star(int argc, Scheme_Object *argv[])
 {
-  return do_chaperone_procedure("chaperone-procedure*", "chaperoning", 0, 1, argc, argv);
+  return do_chaperone_procedure("chaperone-procedure*", "chaperoning", 0, 1, argc, argv, 0);
 }
 
 static Scheme_Object *impersonate_procedure_star(int argc, Scheme_Object *argv[])
 {
-  return do_chaperone_procedure("impersonate-procedure*", "impersonating", 1, 1, argc, argv);
+  return do_chaperone_procedure("impersonate-procedure*", "impersonating", 1, 1, argc, argv, 0);
 }
 
 static Scheme_Object *apply_chaperone_k(void)
@@ -3557,7 +3715,7 @@ static Scheme_Object *do_apply_chaperone(Scheme_Object *o, int argc, Scheme_Obje
 
 static Scheme_Object *_apply_native(Scheme_Object *obj, int num_rands, Scheme_Object **rands)
 {
-  Scheme_Native_Closure_Data *data;
+  Scheme_Native_Lambda *data;
   GC_MAYBE_IGNORE_INTERIOR MZ_MARK_STACK_TYPE old_cont_mark_stack;
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **rs;
 
@@ -3574,7 +3732,7 @@ static Scheme_Object *_apply_native(Scheme_Object *obj, int num_rands, Scheme_Ob
   obj = data->start_code(obj, num_rands, rands EXTRA_NATIVE_ARGUMENT);
 
   if (obj == SCHEME_TAIL_CALL_WAITING)
-    obj = force_values(obj, 1);
+    obj = scheme_force_value_same_mark(obj);
 
   MZ_CONT_MARK_STACK = old_cont_mark_stack;
   MZ_CONT_MARK_POS -= 2;
@@ -3588,34 +3746,118 @@ Scheme_Object *_scheme_apply_native(Scheme_Object *obj, int num_rands, Scheme_Ob
   return _apply_native(obj, num_rands, rands);
 }
 
+Scheme_Object *extract_impersonator_results(int c, int argc, Scheme_Object **argv2,
+                                            const char *what, Scheme_Object *o,
+                                            Scheme_Chaperone *px,
+                                            Scheme_Cont_Frame_Data *cframe, int *_need_pop)
+{
+  int extra = c - argc;
+  int i, fail_reason = 0;
+  Scheme_Object *post;
+  char nth[32];
+  Scheme_Config *config = NULL;
+ 
+  if (!extra)
+    return NULL;
+  
+  post = NULL;
+  for (i = 0; i < extra; ) {
+    if (!i && SCHEME_PROCP(argv2[0])) {
+      post = argv2[i];
+      i++;
+    } else if (SAME_OBJ(argv2[i], mark_symbol)) {
+      if (i + 3 > extra) {
+        fail_reason = 2;
+        break;
+      }
+      if (post && !*_need_pop) {
+        scheme_push_continuation_frame(cframe);
+        *_need_pop = 1;
+      }
+      scheme_set_cont_mark(argv2[i+1], argv2[i+2]);
+      i += 3;
+    } else {
+      fail_reason = 1;
+      break;
+    }
+  }
+
+  if (!fail_reason) {
+    if (config) {
+      if (post && !*_need_pop) {
+        scheme_push_continuation_frame(cframe);
+        *_need_pop = 1;
+      }
+      scheme_set_cont_mark(scheme_parameterization_key, (Scheme_Object *)config);
+    }
+    return post;
+  }
+
+  /* Failure at argument i */
+
+  switch (i % 10) {
+  case 1:
+    sprintf(nth, "%dst", i);
+    break;
+  case 2:
+    sprintf(nth, "%dnd", i);
+    break;
+  case 3:
+    sprintf(nth, "%drd", i);
+    break;
+  default:
+    sprintf(nth, "%dth", i);
+  }
+
+  if (fail_reason == 1) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "procedure %s: wrapper's %s result is not valid;\n"
+                     " %s extra result (before original argument count) should be\n"
+                     " 'mark%s'parameter%s\n"
+                     "  original: %V\n"
+                     "  wrapper: %V\n"
+                     "  received: %V",
+                     what,
+                     nth,
+                     nth,
+                     (i ? " or " : ", "),
+                     (i ? "" : ", or a wrapper for the original procedure's result"),
+                     o,
+                     SCHEME_VEC_ELS(px->redirects)[0],
+                     argv2[i]);
+  } else if (fail_reason == 2) {
+    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                     "procedure %s: wrapper's %s result needs addition extra results;\n"
+                     " %s extra result (before original argument count) needs an\n"
+                     " additional %s after %V\n"
+                     "  original: %V\n"
+                     "  wrapper: %V",
+                     what,
+                     nth,
+                     nth,
+                     ((i + 1 < extra) ? "result" : "two results"),
+                     argv2[i],
+                     o,
+                     SCHEME_VEC_ELS(px->redirects)[0]);
+  }
+
+  return NULL;
+}
+
 /* must be at least 3: */
 #define MAX_QUICK_CHAP_ARGV 5
+
+#define CHAPERONE_KIND_STR(px) (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR) ? "chaperone" : "impersonator")
 
 Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object **argv, Scheme_Object *auto_val, int checks)
 /* auto_val => no need to actually call the function (but handle further chaperoning);
    checks & 0x2 => no tail; checks == 0x3 => no tail or multiple */
 {
-  const char *what;
   Scheme_Chaperone *px;
-  Scheme_Object *v, *a[1], *a2[MAX_QUICK_CHAP_ARGV], **argv2, *post, *result_v, *orig_obj, *app_mark, *self_proc;
+  Scheme_Object *v, *a[1], *a2[MAX_QUICK_CHAP_ARGV], **argv2, *post, *result_v, *orig_obj, *app_mark, *self_proc, *simple_call;
   int c, i, need_restore = 0;
   int need_pop_mark;
   Scheme_Cont_Frame_Data cframe;
-
-  if (argv == MZ_RUNSTACK) {
-    /* Pushing onto the runstack ensures that `(vector-ref px->redirects 0)' won't
-       modify argv. */
-    if (MZ_RUNSTACK > MZ_RUNSTACK_START) {
-      --MZ_RUNSTACK;
-      *MZ_RUNSTACK = NULL;
-      need_restore = 1;
-    } else {
-      /* Can't push! Just allocate a copy. */
-      argv2 = MALLOC_N(Scheme_Object *, argc);
-      memcpy(argv2, argv, sizeof(Scheme_Object*) * argc);
-      argv = argv2;
-    }
-  }
 
   if (SCHEME_RPAIRP(o)) {
     /* An applicable struct, where a layer of struct chaperones
@@ -3638,22 +3880,9 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
       self_proc = o;
   }
 
-  if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
-    what = "chaperone";
-  else
-    what = "impersonator";
-
-  if (SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0])) {
-    /* no redirection procedure */
-    if (SCHEME_CHAPERONEP(px->prev)) {
-      /* commuincate `self_proc` to the next layer: */
-      scheme_current_thread->self_for_proc_chaperone = self_proc;
-    }
-    return _scheme_tail_apply(px->prev, argc, argv);
-  }
-
   /* Ensure that the original procedure accepts `argc' arguments: */
-  if (argc != SCHEME_INT_VAL(SCHEME_VEC_ELS(px->redirects)[1])) {
+  if (!SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[1]) /* check not needed for props-only mode */
+      && (argc != SCHEME_INT_VAL(SCHEME_VEC_ELS(px->redirects)[1]))) {
     a[0] = px->prev;
     if (!scheme_check_proc_arity(NULL, argc, 0, 0, a)) {
       /* Apply the original procedure, in case the chaperone would accept
@@ -3669,12 +3898,50 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     SCHEME_VEC_ELS(px->redirects)[1] = scheme_make_integer(argc);
   }
 
+  if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_PROC_CHAPERONE_CALL_DIRECT) {
+    simple_call = SCHEME_VEC_ELS(px->redirects)[0];
+    /* no redirection procedure */
+    if (SCHEME_IMMUTABLEP(px->redirects)) {
+      /* communicate `self_proc` to the next layer: */
+      scheme_current_thread->self_for_proc_chaperone = self_proc;
+    }
+    if (checks) {
+      /* cannot return a tail call */
+      MZ_CONT_MARK_POS -= 2;
+      if (checks & 0x1) {
+        v = _scheme_apply(simple_call, argc, argv);
+      } else if (SAME_TYPE(SCHEME_TYPE(simple_call), scheme_native_closure_type)) {
+        v = _apply_native(simple_call, argc, argv);
+      } else {
+        v = _scheme_apply_multi(simple_call, argc, argv);
+      }
+      MZ_CONT_MARK_POS += 2;
+      return v;
+    } else
+      return _scheme_tail_apply(simple_call, argc, argv);
+  }
+
+  if (argv == MZ_RUNSTACK) {
+    /* Pushing onto the runstack ensures that `(vector-ref px->redirects 0)' won't
+       modify argv. */
+    if (MZ_RUNSTACK > MZ_RUNSTACK_START) {
+      --MZ_RUNSTACK;
+      *MZ_RUNSTACK = NULL;
+      need_restore = 1;
+    } else {
+      /* Can't push! Just allocate a copy. */
+      argv2 = MALLOC_N(Scheme_Object *, argc);
+      memcpy(argv2, argv, sizeof(Scheme_Object*) * argc);
+      argv = argv2;
+    }
+  }
+
   app_mark = SCHEME_VEC_ELS(px->redirects)[2];
   if (SCHEME_FALSEP(app_mark))
     app_mark = NULL;
 
   if (app_mark) {
-    v = scheme_extract_one_cc_mark(NULL, SCHEME_CAR(app_mark));
+    v = scheme_chaperone_get_immediate_cc_mark(SCHEME_CAR(app_mark), NULL);
     if (v) {
       scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(SCHEME_CAR(app_mark), v);
@@ -3733,13 +4000,16 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
     MZ_CONT_MARK_POS += 2;
     scheme_pop_continuation_frame(&cframe);
   }
-  
-  if ((c == argc) || (c == (argc + 1))) {
-    if (c > argc) {
-      post = argv2[0];
-      memmove(argv2, argv2 + 1, sizeof(Scheme_Object*)*argc);
-    } else
-      post = NULL;
+
+  if (c >= argc) {
+    int need_pop = 0;
+    post = extract_impersonator_results(c, argc, argv2,
+                                        CHAPERONE_KIND_STR(px), o, px,
+                                        &cframe, &need_pop);
+    need_pop_mark = need_pop;
+    
+    if (c > argc)
+      memmove(argv2, argv2 + (c - argc), sizeof(Scheme_Object*)*argc);
     if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)) {
       for (i = 0; i < argc; i++) {
         if (!SAME_OBJ(argv2[i], argv[i])
@@ -3761,12 +4031,12 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                      " procedure's arguments\n"
                      "  original: %V\n"
                      "  wrapper: %V\n"
-                     "  expected: %d or %d\n"
+                     "  expected: %d or more\n"
                      "  received: %d",
-                     what,
+                     CHAPERONE_KIND_STR(px),
                      o,
                      SCHEME_VEC_ELS(px->redirects)[0],
-                     argc, argc + 1,
+                     argc,
                      c);
     return NULL;
   }
@@ -3781,17 +4051,17 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
   } else
     argv = NULL;
 
-  if (c == argc) {
+  if (!post) {
     /* No filter for the result, so tail call: */
     if (app_mark)
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
-    if (SCHEME_CHAPERONEP(px->prev)) {
+    if (SCHEME_IMMUTABLEP(px->redirects)) {
       /* commuincate `self_proc` to the next layer: */
       scheme_current_thread->self_for_proc_chaperone = self_proc;
     }
     if (auto_val) {
       if (SCHEME_CHAPERONEP(px->prev))
-        return do_apply_chaperone(px->prev, c, argv2, auto_val, 0);
+        return do_apply_chaperone(px->prev, argc, argv2, auto_val, 0);
       else
         return argv2[0];
     } else {
@@ -3804,41 +4074,30 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
         /* cannot return a tail call */
         MZ_CONT_MARK_POS -= 2;
         if (checks & 0x1) {
-          v = _scheme_apply(orig_obj, c, argv2);
+          v = _scheme_apply(orig_obj, argc, argv2);
         } else if (SAME_TYPE(SCHEME_TYPE(orig_obj), scheme_native_closure_type)) {
-          v = _apply_native(orig_obj, c, argv2);
+          v = _apply_native(orig_obj, argc, argv2);
         } else {
-          v = _scheme_apply_multi(orig_obj, c, argv2);
+          v = _scheme_apply_multi(orig_obj, argc, argv2);
         }
         MZ_CONT_MARK_POS += 2;
         return v;
       } else
-        return scheme_tail_apply(orig_obj, c, argv2);
+        return scheme_tail_apply(orig_obj, argc, argv2);
     }
   } else {
-    /* First element is a filter for the result(s) */
-    if (!SCHEME_PROCP(post))
-      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                       "procedure %s: wrapper's first result is not a procedure;\n"
-                       " extra result compared to original argument count should be\n"
-                       " a wrapper for the original procedure's result\n"
-                       "  original: %V\n"
-                       "  wrapper: %V\n"
-                       "  received: %V",
-                       what,
-                       o,
-                       SCHEME_VEC_ELS(px->redirects)[0],
-                       post);
-
     if (app_mark) {
-      scheme_push_continuation_frame(&cframe);
+      if (!need_pop_mark)
+        scheme_push_continuation_frame(&cframe);
       scheme_set_cont_mark(SCHEME_CAR(app_mark), SCHEME_CDR(app_mark));
-      MZ_CONT_MARK_POS -= 2;
       need_pop_mark = 1;
     }else
       need_pop_mark = 0;
 
-    if (SCHEME_CHAPERONEP(px->prev)) {
+    if (need_pop_mark)
+      MZ_CONT_MARK_POS -= 2;
+
+    if (SCHEME_IMMUTABLEP(px->redirects)) {
       /* commuincate `self_proc` to the next layer: */
       scheme_current_thread->self_for_proc_chaperone = self_proc;
     }
@@ -3888,7 +4147,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "  original: %V\n"
                        "  wrapper: %V\n"
                        "  number of values: %d",
-                       what,
+                       CHAPERONE_KIND_STR(px),
                        o,
                        post,
                        c);
@@ -3934,7 +4193,7 @@ Scheme_Object *scheme_apply_chaperone(Scheme_Object *o, int argc, Scheme_Object 
                        "  wrapper: %V\n"
                        "  expected: %d\n"
                        "  received: %d",
-                       what,
+                       CHAPERONE_KIND_STR(px),
                        o,
                        post,
                        c, argc);
@@ -4337,24 +4596,10 @@ static Scheme_Object *impersonate_continuation_mark_key(int argc, Scheme_Object 
   return do_chaperone_continuation_mark_key("impersonate-continuation-mark-key", 1, argc, argv);
 }
 
-
-static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[])
+Scheme_Object *scheme_get_immediate_cc_mark(Scheme_Object *key, Scheme_Object *def_val)
 {
   Scheme_Thread *p = scheme_current_thread;
   intptr_t findpos, bottom;
-  Scheme_Object *a[1], *key;
-
-  scheme_check_proc_arity("call-with-immediate-continuation-mark", 1, 1, argc, argv);
-
-  key = argv[0];
-  if (SCHEME_NP_CHAPERONEP(key)
-      && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key)))
-    key = SCHEME_CHAPERONE_VAL(key);
-
-  if (argc > 2)
-    a[0] = argv[2];
-  else
-    a[0] = scheme_false;
 
   if (p->cont_mark_stack_segments) {
     findpos = (intptr_t)MZ_CONT_MARK_STACK;
@@ -4367,22 +4612,39 @@ static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv
       if ((intptr_t)find->pos < (intptr_t)MZ_CONT_MARK_POS) {
         break;
       } else {
-        if (find->key == key) {
-          /*
-           * If not equal, it was a chaperone since we unwrapped the key
-           */
-          if (argv[0] != key) {
-            Scheme_Object *val;
-            val = scheme_chaperone_do_continuation_mark("call-with-immediate-continuation-mark",
-                                                        1, argv[0], find->val);
-            a[0] = val;
-          } else
-            a[0] = find->val;
-          break;
-        }
+        if (find->key == key)
+          return find->val;
       }
     }
   }
+
+  return def_val;
+}
+
+Scheme_Object *scheme_chaperone_get_immediate_cc_mark(Scheme_Object *key, Scheme_Object *def_val)
+{
+  Scheme_Object *val;
+
+  if (SCHEME_NP_CHAPERONEP(key)
+      && SCHEME_CONTINUATION_MARK_KEYP(SCHEME_CHAPERONE_VAL(key))) {
+    val = scheme_get_immediate_cc_mark(SCHEME_CHAPERONE_VAL(key), NULL);
+    if (val)
+      return scheme_chaperone_do_continuation_mark("call-with-immediate-continuation-mark",
+                                                   1, key, val);
+    else
+      return def_val;
+  } else
+    return scheme_get_immediate_cc_mark(key, def_val);
+}
+
+static Scheme_Object *call_with_immediate_cc_mark (int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a[1], *val;
+
+  scheme_check_proc_arity("call-with-immediate-continuation-mark", 1, 1, argc, argv);
+
+  val = scheme_chaperone_get_immediate_cc_mark(argv[0], ((argc > 2) ? argv[2] : scheme_false));
+  a[0] = val;
 
   return scheme_tail_apply(argv[1], 1, a);
 }
@@ -6074,7 +6336,7 @@ internal_call_cc (int argc, Scheme_Object *argv[])
         cc_guard = get_set_cont_mark_by_pos(prompt_cc_guard_key, p, mc, pos, NULL);
         
         if (SCHEME_FALSEP(cc_guard))
-          cc_guard = scheme_values_func;
+          cc_guard = scheme_values_proc;
         if (SCHEME_NP_CHAPERONEP(cont->prompt_tag))  
           cc_guard = chaperone_wrap_cc_guard(cont->prompt_tag, cc_guard);
         
@@ -6707,7 +6969,7 @@ static Scheme_Object **chaperone_do_control(const char *name, int mode,
     if (init_guard || !SCHEME_PROMPT_TAGP(obj)) {
       if (init_guard) {
         proc = init_guard;
-        if (SAME_OBJ(NULL, scheme_values_func))
+        if (SAME_OBJ(NULL, scheme_values_proc))
           proc = NULL;
         px = NULL;
       } else {
@@ -7072,7 +7334,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
             argv = chaperone_do_prompt_handler(chaperone, argc, argv);
           }
 
-          if (SAME_OBJ(handler, scheme_values_func)) {
+          if (SAME_OBJ(handler, scheme_values_proc)) {
             v = scheme_values(argc, argv);
             if (v == SCHEME_MULTIPLE_VALUES) {
               if (SAME_OBJ(p->ku.multiple.array, p->values_buffer))
@@ -7151,7 +7413,7 @@ static Scheme_Object *call_with_prompt (int in_argc, Scheme_Object *in_argv[])
   if (handler) {
     return _scheme_tail_apply(handler, argc, argv);
   } else if (cc_guard) {
-    if (SAME_OBJ(cc_guard, scheme_values_func))
+    if (SAME_OBJ(cc_guard, scheme_values_proc))
       cc_guard = NULL;
     if (cc_guard || chaperone)
       return do_cc_guard(v, cc_guard, chaperone);
@@ -9399,8 +9661,6 @@ static Scheme_Object *jump_to_alt_continuation()
 /*                                  time                                  */
 /*========================================================================*/
 
-#ifdef TIME_SYNTAX
-
 #ifndef CLOCKS_PER_SEC
 #define CLOCKS_PER_SEC 1000000
 #endif
@@ -9424,22 +9684,12 @@ intptr_t scheme_get_milliseconds(void)
   XFORM_SKIP_PROC
 /* this function can be called from any OS thread */
 {
-#ifdef USE_MACTIME
-  return scheme_get_process_milliseconds();
-#else
-# ifdef USE_FTIME
-  struct MSC_IZE(timeb) now;
-  MSC_IZE(ftime)(&now);
-  return (intptr_t)(now.time * 1000 + now.millitm);
-# else
-#  ifdef USE_WIN32_TIME
+#ifdef USE_WIN32_TIME
   return (intptr_t)(get_hectonanoseconds_as_longlong() / (mzlonglong)10000);
-#  else
+#else
   struct timeval now;
   gettimeofday(&now, NULL);
   return now.tv_sec * 1000 + now.tv_usec / 1000;
-#  endif
-# endif
 #endif
 }
 
@@ -9447,32 +9697,14 @@ double scheme_get_inexact_milliseconds(void)
   XFORM_SKIP_PROC
 /* this function can be called from any OS thread */
 {
-#ifdef USE_MACTIME
-  {
-    /* This is wrong, since it's not since January 1, 1970 */
-    UnsignedWide time;
-    Microseconds(&time);
-    return (((double)(time.lo >> 10)
-	    + ((double)(time.hi >> 10) * 4294967296.0))
-	    * 1.024);
-  }
-#else
-# ifdef USE_FTIME
-  struct MSC_IZE(timeb) now;
-  MSC_IZE(ftime)(&now);
-  return (double)now.time * 1000.0 + (double)now.millitm;
-# else
-#  ifdef USE_WIN32_TIME
-  FILETIME ft;
+#ifdef USE_WIN32_TIME
   mzlonglong v;
   v = get_hectonanoseconds_as_longlong();
   return (double)(v / 10000) + (((double)(v % 10000)) / 10000.0);
-#  else
+#else
   struct timeval now;
   gettimeofday(&now, NULL);
   return (double)now.tv_sec * 1000.0 + (double)now.tv_usec / 1000;
-#  endif
-# endif
 #endif
 }
 
@@ -9496,14 +9728,7 @@ intptr_t scheme_get_process_milliseconds(void)
 
   return s * 1000 + u / 1000;
 # else
-#  ifdef USE_MACTIME
-  {
-    UnsignedWide time;
-    Microseconds(&time);
-    return ((uintptr_t)time.lo) / 1000;
-  }
-#  else
-#   ifdef WINDOWS_GET_PROCESS_TIMES
+#  ifdef WINDOWS_GET_PROCESS_TIMES
   {
     FILETIME cr, ex, kr, us;
     if (GetProcessTimes(GetCurrentProcess(), &cr, &ex, &kr, &us)) {
@@ -9514,9 +9739,8 @@ intptr_t scheme_get_process_milliseconds(void)
     } else
       return 0; /* anything better to do? */
   }
-#   else
+#  else
   return clock()  * 1000 / CLOCKS_PER_SEC;
-#   endif
 
 #  endif
 # endif
@@ -9573,14 +9797,6 @@ intptr_t scheme_get_seconds(void)
 #ifdef USE_WIN32_TIME
   return (intptr_t)(get_hectonanoseconds_as_longlong() / (mzlonglong)10000000);
 #else
-# ifdef USE_PALMTIME
-  return TimGetSeconds();
-# else
-#  ifdef USE_FTIME
-  struct MSC_IZE(timeb) now;
-  MSC_IZE(ftime)(&now);
-  return (intptr_t)now.time;
-#  else
 #   ifdef USE_PLAIN_TIME
   time_t now;
   now = time(NULL);
@@ -9589,8 +9805,6 @@ intptr_t scheme_get_seconds(void)
   struct timeval now;
   gettimeofday(&now, NULL);
   return now.tv_sec;
-#   endif
-#  endif
 # endif
 #endif
 }
@@ -9713,19 +9927,15 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 {
   UNBUNDLE_TIME_TYPE lnow;
   int get_gmt;
-  int hour, min, sec, month, day, year, wday, yday, dst;
+  int hour, min, sec, month, day, wday, yday, dst;
+  intptr_t year;
   long tzoffset;
 #ifdef USE_WIN32_TIME
 # define CHECK_TIME_T uintptr_t
   SYSTEMTIME localTime;
 #else
-# ifdef USE_PALMTIME
-#  define CHECK_TIME_T UInt32
-  DateTimeType localTime;
-# else
-#  define CHECK_TIME_T time_t
+# define CHECK_TIME_T time_t
   struct tm *localTime;
-# endif
 #endif
   CHECK_TIME_T now;
   char *tzn;
@@ -9766,30 +9976,38 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 
 #ifdef USE_WIN32_TIME
     {
-      mzlonglong nsC;
-      FILETIME ft;
-      nsC = (((mzlonglong)lnow) * 10000000) + ((mzlonglong)MSEC_OFFSET * 10000);
-      ft.dwLowDateTime = nsC & (mzlonglong)0xFFFFFFFF;
-      ft.dwHighDateTime = nsC >> 32;
-      success = FileTimeToSystemTime(&ft, &localTime);
-      if (success && !get_gmt) {
-	SYSTEMTIME t2 = localTime;
-	if (SystemTimeToTzSpecificLocalTimeExProc)
-	  success = SystemTimeToTzSpecificLocalTimeExProc(NULL, &t2, &localTime);
-	else
-	  success = SystemTimeToTzSpecificLocalTime(NULL, &t2, &localTime);
+      umzlonglong tmpC;
+      tmpC = ((umzlonglong)lnow * 10000000);
+      if ((mzlonglong)tmpC / 10000000 != lnow) {
+	/* overflow */
+	success = 0;
+      } else {
+	mzlonglong nsC;
+	FILETIME ft;
+	nsC = tmpC + ((umzlonglong)MSEC_OFFSET * 10000);
+	if (nsC < (mzlonglong)tmpC) {
+	  /* overflow */
+	  success = 0;
+	} else {
+	  ft.dwLowDateTime = nsC & (mzlonglong)0xFFFFFFFF;
+	  ft.dwHighDateTime = nsC >> 32;
+	  success = FileTimeToSystemTime(&ft, &localTime);
+	  if (success && !get_gmt) {
+	    SYSTEMTIME t2 = localTime;
+	    if (SystemTimeToTzSpecificLocalTimeExProc)
+	      success = SystemTimeToTzSpecificLocalTimeExProc(NULL, &t2, &localTime);
+	    else
+	      success = SystemTimeToTzSpecificLocalTime(NULL, &t2, &localTime);
+	  }
+	}
       }
     }
 #else
-# ifdef USE_PALMTIME
-    TimSecondsToDateTime(lnow, &localTime) ;
-# else
     if (get_gmt)
       localTime = gmtime(&now);
     else
       localTime = localtime(&now);
     success = !!localTime;
-# endif
 #endif
 
     if (success) {
@@ -9847,7 +10065,7 @@ static Scheme_Object *seconds_to_date(int argc, Scheme_Object **argv)
 
       month = localTime->tm_mon + 1;
       day = localTime->tm_mday;
-      year = localTime->tm_year + 1900;
+      year = (uintptr_t)localTime->tm_year + 1900;
 
       wday = localTime->tm_wday;
       yday = localTime->tm_yday;
@@ -10028,8 +10246,6 @@ static Scheme_Object *current_seconds(int argc, Scheme_Object **argv)
   return scheme_make_integer_value_from_time(secs);
 }
 
-#endif
-
 
 /*========================================================================*/
 /*                             read-eval-print                            */
@@ -10201,7 +10417,6 @@ START_XFORM_SKIP;
 
 static void register_traversers(void)
 {
-  GC_REG_TRAV(scheme_rt_closure_info, mark_closure_info);
   GC_REG_TRAV(scheme_rt_dyn_wind_cell, mark_dyn_wind_cell);
   GC_REG_TRAV(scheme_rt_dyn_wind_info, mark_dyn_wind_info);
   GC_REG_TRAV(scheme_cont_mark_chain_type, mark_cont_mark_chain);

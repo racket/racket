@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -5593,6 +5593,7 @@ Scheme_Object *scheme_file_truncate(int argc, Scheme_Object *argv[])
 
   errid = -1;
 #ifdef WINDOWS_FILE_HANDLES
+  flush_fd(scheme_output_port_record(argv[0]), NULL, 0, 0, 0, 0);
   if (win_seekable(fd)) {
     DWORD r;
     LONG lo_w, hi_w, old_lo_w, old_hi_w;
@@ -6104,12 +6105,12 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
     char *try_filename = filename;
     
     while (1) {
-      h = FindFirstChangeNotification(try_filename, FALSE, 
-                                      (FILE_NOTIFY_CHANGE_FILE_NAME
-                                       | FILE_NOTIFY_CHANGE_DIR_NAME
-                                       | FILE_NOTIFY_CHANGE_SIZE
-                                       | FILE_NOTIFY_CHANGE_LAST_WRITE
-                                       | FILE_NOTIFY_CHANGE_ATTRIBUTES));
+      h = FindFirstChangeNotificationW(WIDE_PATH(try_filename), FALSE,
+                                       (FILE_NOTIFY_CHANGE_FILE_NAME
+                                        | FILE_NOTIFY_CHANGE_DIR_NAME
+                                        | FILE_NOTIFY_CHANGE_SIZE
+                                        | FILE_NOTIFY_CHANGE_LAST_WRITE
+                                        | FILE_NOTIFY_CHANGE_ATTRIBUTES));
       if (h == INVALID_HANDLE_VALUE) {
         /* If `filename' refers to a file, then monitor its enclosing directory. */
         errid = GetLastError();
@@ -9416,6 +9417,17 @@ static Scheme_Object *do_subprocess_kill(Scheme_Object *_sp, Scheme_Object *kill
   return NULL;
 }
 
+#ifdef WINDOWS_PROCESSES
+void scheme_release_process_job_object(void)
+{
+  if (process_job_object) {
+    TerminateJobObject((HANDLE)process_job_object, 1);
+    CloseHandle((HANDLE)process_job_object);
+    process_job_object = NULL;
+  }
+}
+#endif
+
 static void kill_subproc(Scheme_Object *o, void *data)
 {
   (void)do_subprocess_kill(o, scheme_true, 0);
@@ -9568,10 +9580,10 @@ static char *cmdline_protect(char *s)
 
 static intptr_t mz_spawnv(char *command, const char * const *argv,
 			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
-			  int new_process_group,
+			  int new_process_group, Scheme_Object *cust_mode,
                           void *env, char *wd)
 {
-  int i, l, len = 0;
+  int i, l, len = 0, use_jo;
   intptr_t cr_flag;
   char *cmdline;
   STARTUPINFOW startup;
@@ -9616,10 +9628,30 @@ static intptr_t mz_spawnv(char *command, const char * const *argv,
     cr_flag |= CREATE_NEW_PROCESS_GROUP;
   cr_flag |= CREATE_UNICODE_ENVIRONMENT;
 
+  use_jo = SCHEME_SYMBOLP(cust_mode) && !strcmp(SCHEME_SYM_VAL(cust_mode), "kill");
+  if (use_jo) {
+    /* Use a job object to ensure that the new process will be terminated
+       if this process ends for any reason (including a crash) */
+    if (!process_job_object) {
+      GC_CAN_IGNORE JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
+
+      process_job_object = (void*)CreateJobObject(NULL, NULL);
+
+      memset(&jeli, 0, sizeof(jeli));
+      jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+      SetInformationJobObject((HANDLE)process_job_object,
+			      JobObjectExtendedLimitInformation,
+			      &jeli,
+			      sizeof(jeli));
+    }
+  }
+
   if (CreateProcessW(WIDE_PATH_COPY(command), WIDE_PATH_COPY(cmdline), 
 		     NULL, NULL, 1 /*inherit*/,
 		     cr_flag, env, WIDE_PATH_COPY(wd),
 		     &startup, &info)) {
+    if (use_jo)
+      AssignProcessToJobObject((HANDLE)process_job_object, info.hProcess);
     CloseHandle(info.hThread);
     *pid = info.dwProcessId;
     return (intptr_t)info.hProcess;
@@ -9951,7 +9983,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 			     from_subprocess[1],
 			     err_subprocess[1],
 			     &pid,
-                             new_process_group,
+                             new_process_group, cust_mode,
                              env, SCHEME_BYTE_STR_VAL(tcd));
 
     if (spawn_status != -1)
@@ -10287,7 +10319,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 	scheme_contract_error(name,
                               "non-#f port argument not allowed on this platform",
                               "port", 1, args[i],
-                              NULL));
+                              NULL);
     }
 
     if (c > 4) {
@@ -11277,6 +11309,48 @@ void scheme_end_sleeper_thread()
 }
 
 #endif
+
+/*========================================================================*/
+/*                           thread helper                                */
+/*========================================================================*/
+
+/* The scheme_call_sequence() functionc an be used, with some care,
+   via the FFI to run a computation in a foreign thread and thread
+   results through. Keeping the number of procedures below
+   `NUM_COPIED_SEQUENCE_PROCS` can potentially simplify things, too */
+
+#define NUM_COPIED_SEQUENCE_PROCS 5
+
+typedef void *(*Scheme_Sequenced_Proc)(void *);
+
+struct Scheme_Proc_Sequence {
+  Scheme_Object *num_procs; /* pointer simplifies allocation issues */
+  void *init_data;
+  Scheme_Sequenced_Proc p[mzFLEX_ARRAY_DECL];
+};
+
+void *scheme_call_sequence_of_procedures(struct Scheme_Proc_Sequence *s)
+  XFORM_SKIP_PROC
+{
+  int i, num_procs = SCHEME_INT_VAL(s->num_procs);
+  void *data = s->init_data;
+  Scheme_Sequenced_Proc copied[NUM_COPIED_SEQUENCE_PROCS];
+
+  if (num_procs <= NUM_COPIED_SEQUENCE_PROCS) {
+    for (i = 0; i < num_procs; i++) {
+      copied[i] = s->p[i];
+    }
+  }
+
+  for (i = 0; i < num_procs; i++) {
+    if (num_procs <= NUM_COPIED_SEQUENCE_PROCS)
+      data = copied[i](data);
+    else
+      data = s->p[i](data);
+  }
+
+  return data;
+}
 
 /*========================================================================*/
 /*                       memory debugging help                            */

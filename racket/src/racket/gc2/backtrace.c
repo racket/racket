@@ -12,7 +12,6 @@
       trace_page_type
        TRACE_PAGE_TAGGED
        TRACE_PAGE_ARRAY
-       TRACE_PAGE_TAGGED_ARRAY
        TRACE_PAGE_ATOMIC
        TRACE_PAGE_PAIR
        TRACE_PAGE_MALLOCFREE
@@ -73,8 +72,6 @@ static void *print_out_pointer(const char *prefix, void *p,
     what = NULL;
   } else if (trace_page_type(page) == TRACE_PAGE_ARRAY) {
     what = "ARRAY";
-  } else if (trace_page_type(page) == TRACE_PAGE_TAGGED_ARRAY) {
-    what = "TARRAY";
   } else if (trace_page_type(page) == TRACE_PAGE_ATOMIC) {
     what = "ATOMIC";
   } else if (trace_page_type(page) == TRACE_PAGE_MALLOCFREE) {

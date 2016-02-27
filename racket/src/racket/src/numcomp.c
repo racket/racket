@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 2000-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -27,6 +27,16 @@
 #include "nummacs.h"
 #include <math.h>
 
+/* read only globals */
+READ_ONLY Scheme_Object *scheme_unsafe_fx_eq_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_lt_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_gt_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_lt_eq_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_gt_eq_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_min_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_fx_max_proc;
+
+/* locals */
 static Scheme_Object *eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *gt (int argc, Scheme_Object *argv[]);
@@ -326,42 +336,56 @@ void scheme_init_unsafe_numcomp(Scheme_Env *env)
   Scheme_Object *p;
   int flags;
 
+  REGISTER_SO(scheme_unsafe_fx_eq_proc);
   p = scheme_make_folding_prim(unsafe_fx_eq, "unsafe-fx=", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx=", p, env);
+  scheme_unsafe_fx_eq_proc = p;
 
+  REGISTER_SO(scheme_unsafe_fx_lt_proc);
   p = scheme_make_folding_prim(unsafe_fx_lt, "unsafe-fx<", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx<", p, env);
+  scheme_unsafe_fx_lt_proc = p;
 
+  REGISTER_SO(scheme_unsafe_fx_gt_proc);
   p = scheme_make_folding_prim(unsafe_fx_gt, "unsafe-fx>", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx>", p, env);
+  scheme_unsafe_fx_gt_proc = p;
 
+  REGISTER_SO(scheme_unsafe_fx_lt_eq_proc);
   p = scheme_make_folding_prim(unsafe_fx_lt_eq, "unsafe-fx<=", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx<=", p, env);
+  scheme_unsafe_fx_lt_eq_proc = p;
 
+  REGISTER_SO(scheme_unsafe_fx_gt_eq_proc);
   p = scheme_make_folding_prim(unsafe_fx_gt_eq, "unsafe-fx>=", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL);
   scheme_add_global_constant("unsafe-fx>=", p, env);
+  scheme_unsafe_fx_gt_eq_proc = p;
 
+  REGISTER_SO(scheme_unsafe_fx_min_proc);
   p = scheme_make_folding_prim(unsafe_fx_min, "unsafe-fxmin", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxmin", p, env);
+  scheme_unsafe_fx_min_proc = p;
 
+  REGISTER_SO(scheme_unsafe_fx_max_proc);
   p = scheme_make_folding_prim(unsafe_fx_max, "unsafe-fxmax", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL
                                                             | SCHEME_PRIM_PRODUCES_FIXNUM);
   scheme_add_global_constant("unsafe-fxmax", p, env);
+  scheme_unsafe_fx_max_proc = p;
 
   p = scheme_make_folding_prim(unsafe_fl_eq, "unsafe-fl=", 2, 2, 1);
   if (scheme_can_inline_fp_comp())

@@ -1,9 +1,11 @@
 #lang racket/base
 
-(require (for-syntax racket/base syntax/name) racket/private/norm-arity)
+(require (for-syntax racket/base racket/list syntax/name)
+         racket/match racket/private/arity)
 
 (provide identity const thunk thunk* negate curry curryr
-         normalize-arity normalized-arity? arity=? arity-includes?)
+         (all-from-out racket/private/arity)
+         conjoin disjoin)
 
 (define (identity x) x)
 
@@ -82,104 +84,142 @@
 (define curry  (make-curry #f))
 (define curryr (make-curry #t))
 
-(define (normalized-arity? a)
-  (or (null? a)
-      (arity? a)
-      (and (list? a)
-           ((length a) . >= . 2)
-           (andmap arity? a)
-           (if (ormap arity-at-least? a)
-               (non-empty-non-singleton-sorted-list-ending-with-arity? a)
-               (non-singleton-non-empty-sorted-list? a)))))
 
-(define (arity? a)
-  (or (exact-nonnegative-integer? a)
-      (and (arity-at-least? a)
-           (exact-nonnegative-integer? (arity-at-least-value a)))))
+;; Originally from `unstable/function`.
+;; Originally written by Carl Eastlund
 
-;; non-empty-non-singleton-sorted-list-ending-with-arity? : xx -> boolean
-;; know that 'a' is a list of at least 2 elements
-(define (non-empty-non-singleton-sorted-list-ending-with-arity? a)
-  (let loop ([bound (car a)]
-             [lst (cdr a)])
-    (cond
-      [(null? (cdr lst))
-       (and (arity-at-least? (car lst))
-            (> (arity-at-least-value (car lst)) (+ 1 bound)))]
-      [else
-       (and (exact-nonnegative-integer? (car lst))
-            ((car lst) . > . bound)
-            (loop (car lst)
-                  (cdr lst)))])))
+;; ryanc: adjusted limit of inner cases from 8 to 2
+;; All uses so far seem to be predicates, so more cases seem
+;; unnecessary. Also, all uses so far are first-order, so
+;; outer case-lambda* might be better replaced with macro.
 
-(define (non-empty-sorted-list? a)
-  (and (pair? a)
-       (sorted-list? a)))
+(define conjoin
+  (case-lambda*
+   [(f ... 8)
+    (begin
+      (for ([f* (in-list (list f ...))])
+        (unless (procedure? f*)
+          (raise-argument-error 'conjoin "procedure?" f*)))
+      (make-intermediate-procedure
+       'conjoined
+       [(x (... ...) 2) (and (f x (... ...)) ...)]
+       [xs (and (apply f xs) ...)]
+       #:keyword
+       [(keys vals . args)
+        (and (keyword-apply f keys vals args) ...)]))]
+   [fs
+    (begin
+      (for ([f* (in-list fs)])
+        (unless (procedure? f*)
+          (raise-argument-error 'conjoin "procedure?" f*)))
+      (make-intermediate-procedure
+       'conjoined
+       [(x ... 2) (andmap (lambda (f) (f x ...)) fs)]
+       [xs (andmap (lambda (f) (apply f xs)) fs)]
+       #:keyword
+       [(keys vals . args)
+        (andmap (lambda (f) (keyword-apply f keys vals args)) fs)]))]))
 
-(define (non-singleton-non-empty-sorted-list? a)
-  (and (pair? a)
-       (pair? (cdr a))
-       (sorted-list? a)))
+(define disjoin
+  (case-lambda*
+   [(f ... 8)
+    (begin
+      (for ([f* (in-list (list f ...))])
+        (unless (procedure? f*)
+          (raise-argument-error 'conjoin "procedure?" f*)))
+      (make-intermediate-procedure
+       'disjoined
+       [(x (... ...) 2) (or (f x (... ...)) ...)]
+       [xs (or (apply f xs) ...)]
+       #:keyword
+       [(keys vals . args)
+        (or (keyword-apply f keys vals args) ...)]))]
+   [fs
+    (begin
+      (for ([f* (in-list fs)])
+        (unless (procedure? f*)
+          (raise-argument-error 'conjoin "procedure?" f*)))
+      (make-intermediate-procedure
+       'disjoined
+       [(x ... 2) (ormap (lambda (f) (f x ...)) fs)]
+       [xs (ormap (lambda (f) (apply f xs)) fs)]
+       #:keyword
+       [(keys vals . args)
+        (ormap (lambda (f) (keyword-apply f keys vals args)) fs)]))]))
 
-(define (sorted-list? a)
-  (or (null? a)
-      (sorted/bounded-list? (cdr a) (car a))))
+(define-syntax (make-intermediate-procedure stx)
+  (syntax-case stx [quote]
+    [(_ (quote name) positional-clause ... #:keyword keyword-clause)
+     (syntax/loc stx
+       (make-keyword-procedure
+        (let* ([name (case-lambda keyword-clause)]) name)
+        (let* ([name (case-lambda* positional-clause ...)]) name)))]))
 
-(define (sorted/bounded-list? a bound)
-  (or (null? a)
-      (and (number? (car a))
-           (< bound (car a))
-           (sorted/bounded-list? (cdr a) (car a)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;  Automatic case-lambda repetition
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define (arity-supports-number? arity n)
+(define-for-syntax (split-syntax-at orig stx id)
+  (let loop ([found #f]
+             [seen null]
+             [stx stx])
+    (syntax-case stx []
+      [(head . tail)
+       (and (identifier? #'head)
+            (free-identifier=? #'head id))
+       (if found
+           (raise-syntax-error
+            #f
+            (format "duplicate occurrence of ~a" (syntax-e id))
+            orig
+            #'head)
+           (loop (list (reverse seen) #'head #'tail)
+                 (cons #'head seen)
+                 #'tail))]
+      [(head . tail) (loop found (cons #'head seen) #'tail)]
+      [_ found])))
+
+(define-for-syntax (expand-ellipsis-clause stx pattern expr)
   (cond
-    [(exact-nonnegative-integer? arity) (= arity n)]
-    [(arity-at-least? arity) (<= (arity-at-least-value arity) n)]
-    [(list? arity)
-     (for/or {[elem (in-list arity)]}
-       (arity-supports-number? elem n))]))
+   [(split-syntax-at stx pattern #'(... ...))
+    =>
+    (lambda (found)
+      (syntax-case found [...]
+        [([pre ... repeat] (... ...) [count post ... . tail])
+         (and (identifier? #'repeat)
+              (exact-nonnegative-integer? (syntax-e #'count)))
+         (build-list
+          (add1 (syntax-e #'count))
+          (lambda (i)
+            (with-syntax ([(var ...)
+                           (generate-temporaries
+                            (build-list i (lambda (j) #'repeat)))]
+                          [body expr])
+              (list
+               (syntax/loc pattern (pre ... var ... post ... . tail))
+               (syntax/loc expr
+                 (let-syntax ([the-body
+                               (lambda _
+                                 (with-syntax ([(repeat (... ...)) #'(var ...)])
+                                   #'body))])
+                   the-body))))))]
+        [(pre mid post)
+         (raise-syntax-error
+          #f
+          "expected ellipsis between identifier and natural number literal"
+          stx
+          #'mid)]))]
+   [else (list (list pattern expr))]))
 
-(define (arity-supports-at-least? arity n)
-  (cond
-    [(exact-nonnegative-integer? arity) #f]
-    [(arity-at-least? arity) (<= (arity-at-least-value arity) n)]
-    [(list? arity)
-     (define min-at-least
-       (for/fold {[min-at-least #f]} {[elem (in-list arity)]}
-         (cond
-           [(exact-nonnegative-integer? elem) min-at-least]
-           [(arity-at-least? elem)
-            (cond
-              [(not min-at-least) (arity-at-least-value elem)]
-              [else (min min-at-least (arity-at-least-value elem))])])))
-     (cond
-       [(not min-at-least) #f]
-       [else
-        (for/and {[i (in-range n min-at-least)]}
-          (arity-supports-number? arity i))])]))
-
-(define (unchecked-arity-includes? one two)
-  (cond
-    [(exact-nonnegative-integer? two)
-     (arity-supports-number? one two)]
-    [(arity-at-least? two)
-     (arity-supports-at-least? one (arity-at-least-value two))]
-    [(list? two)
-     (for/and {[elem (in-list two)]}
-       (unchecked-arity-includes? one elem))]))
-
-(define (arity-includes? one two)
-  (unless (procedure-arity? one)
-    (raise-argument-error 'arity-includes? "procedure-arity?" 0 one two))
-  (unless (procedure-arity? two)
-    (raise-argument-error 'arity-includes? "procedure-arity?" 1 one two))
-  (unchecked-arity-includes? one two))
-
-(define (arity=? one two)
-  (unless (procedure-arity? one)
-    (raise-argument-error 'arity=? "procedure-arity?" 0 one two))
-  (unless (procedure-arity? two)
-    (raise-argument-error 'arity=? "procedure-arity?" 1 one two))
-  (and
-    (unchecked-arity-includes? one two)
-    (unchecked-arity-includes? two one)))
+(define-syntax (case-lambda* stx)
+  (syntax-case stx []
+    [(_ [pattern body] ...)
+     (with-syntax ([([pattern body] ...)
+                    (append-map
+                     (lambda (p e) (expand-ellipsis-clause stx p e))
+                     (syntax->list #'(pattern ...))
+                     (syntax->list #'(body ...)))])
+       (syntax/loc stx
+         (case-lambda [pattern body] ...)))]))

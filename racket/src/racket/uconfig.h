@@ -5,7 +5,6 @@
 #define SYSTEM_TYPE_NAME "unix"
 #define UNIX_FILE_SYSTEM
 
-#define TIME_SYNTAX
 #define PROCESS_FUNCTION
 #define DIR_FUNCTION
 #define GETENV_FUNCTION

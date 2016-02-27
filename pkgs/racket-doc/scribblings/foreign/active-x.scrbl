@@ -36,9 +36,11 @@ the ``Sysmon'' ActiveX control that is included with Windows.
                              (lambda (doc url) (semaphore-post ready)) 
                              ex)
 
-;; Navigate to an empty URL to get an initial document:
-(com-invoke ie "Navigate" "")
-(semaphore-wait ready)
+;; Navigate to get an initial document:
+(com-invoke ie "Navigate" "about:blank")
+(define READYSTATE_COMPLETE 4)
+(unless (= (com-get-property ie "READYSTATE") READYSTATE_COMPLETE)
+  (semaphore-wait ready))
 (define doc (com-get-property ie "Document"))
 
 ;; Install HTML to show the ActiveX control:

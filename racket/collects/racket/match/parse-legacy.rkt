@@ -40,7 +40,7 @@
      (make-Box (parse (unbox (syntax-e #'bx))))]
     [#(es ...)
      (ormap ddk? (syntax->list #'(es ...)))
-     (make-And (list (make-Pred #'vector?)
+     (make-OrderedAnd (list (make-Pred #'vector?)
                      (make-App #'vector->list
                                (list (parse (syntax/loc stx (es ...)))))))]
     [#(es ...)
@@ -48,8 +48,9 @@
     [($ s . pats)
      (parse-struct disarmed-stx parse #'s #'pats)]
     [(? p q1 qs ...)
-     (make-And (cons (make-Pred #'p)
-                     (map parse (syntax->list #'(q1 qs ...)))))]
+     (make-OrderedAnd (cons (make-Pred #'p)
+                            (list (make-And
+                                   (map parse (syntax->list #'(q1 qs ...)))))))]
     [(? p)
      (make-Pred (rearm #'p))]
     [(= f p)

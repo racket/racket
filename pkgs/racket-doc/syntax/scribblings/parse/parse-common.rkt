@@ -1,54 +1,64 @@
 #lang racket/base
 (require scribble/manual
          scribble/eval
+         racket/string
          racket/sandbox)
-
 (provide ellipses
-         the-eval
-         myexamples
-         myinteraction)
+         make-sp-eval)
 
 (define ellipses (racket ...))
 
-(define (fixup exn)
+(define (fixup/short exn)
   (let ([src (ormap values (exn:fail:syntax-exprs exn))])
     (if src
         (make-exn:fail:syntax
-         (format "~a at: ~s" (exn-message exn) (syntax->datum src))
+         (let* ([msg (exn-message exn)]
+                [oneline? (not (regexp-match? #rx"\n" msg))])
+           (format "~a~a at: ~s"
+                   msg (if oneline? "" "\n ") (syntax->datum src)))
          (exn-continuation-marks exn)
          (exn:fail:syntax-exprs exn))
         exn)))
-(define the-eval
-  (call-with-trusted-sandbox-configuration
-   (lambda ()
-     (parameterize ([sandbox-output 'string]
-                    [sandbox-error-output 'string]
-                    [sandbox-propagate-breaks #f]
-                    [sandbox-eval-handlers
-                     (list #f
-                           (lambda (thunk)
-                             (with-handlers ([exn:fail:syntax?
-                                              (lambda (e) (raise (fixup e)))])
-                               (thunk))))])
-       (make-evaluator 'racket/base
-                       #:requires (let ([mods '(racket/promise
-                                                syntax/parse
-                                                syntax/parse/debug
-                                                syntax/parse/experimental/splicing
-                                                syntax/parse/experimental/contract
-                                                syntax/parse/experimental/reflect
-                                                syntax/parse/experimental/specialize
-                                                syntax/parse/experimental/template
-                                                syntax/parse/experimental/eh)])
-                                    `((for-syntax racket/base ,@mods)
-                                      ,@mods)))))))
-(the-eval '(error-print-source-location #f))
 
-(define-syntax-rule (myexamples e ...)
-  (examples #:eval the-eval e ...))
+(define (fixup/long exn)
+  (let ([src (ormap values (exn:fail:syntax-exprs exn))])
+    (if src
+        (make-exn:fail:syntax
+         (string-trim (exn-message exn)
+                      #rx"[^ ]*[ ]"
+                      #:left? #t #:right? #f)
+         (exn-continuation-marks exn)
+         (exn:fail:syntax-exprs exn))
+        exn)))
 
-(define-syntax-rule (myinteraction e ...)
-  (interaction #:eval the-eval e ...))
+(define (make-sp-eval [short? #f])
+  (define fixup (if short? fixup/short fixup/long))
+  (define the-eval
+    (call-with-trusted-sandbox-configuration
+     (lambda ()
+       (parameterize ([sandbox-output 'string]
+                      [sandbox-error-output 'string]
+                      [sandbox-propagate-breaks #f]
+                      [sandbox-eval-handlers
+                       (list #f
+                             (lambda (thunk)
+                               (with-handlers ([exn:fail:syntax?
+                                                (lambda (e) (raise (fixup e)))])
+                                 (thunk))))])
+         (make-evaluator 'racket/base
+                         #:requires (let ([mods '(racket/promise
+                                                  syntax/parse
+                                                  syntax/parse/debug
+                                                  syntax/parse/experimental/splicing
+                                                  syntax/parse/experimental/contract
+                                                  syntax/parse/experimental/reflect
+                                                  syntax/parse/experimental/specialize
+                                                  syntax/parse/experimental/template
+                                                  syntax/parse/experimental/eh)])
+                                      `((for-syntax racket/base ,@mods)
+                                        ,@mods)))))))
+  (when short? (the-eval '(error-print-source-location #f)))
+  the-eval)
 
 ;; ----
 

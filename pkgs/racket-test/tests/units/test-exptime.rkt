@@ -52,4 +52,40 @@
 (test '((#f . one^)) (unit-dep-info one@ quote))
 (test '((Four . four^)) (unit-dep-info two@ quote))
 
+(module m racket/base
+  (require racket/unit
+           (for-syntax racket/base))
+  (provide x^ y^)
+  (define-signature x^ (x))
+  (define-signature y^ (y
+                        (define-syntaxes (get-y) (lambda (stx) #'y))
+                        (define-values (y2) 10))))
+(require 'm)
+
+;; based on code by Jay:
+(define-syntax (as-s stx)
+  (syntax-case stx ()
+    [(_ e ...)
+     (with-syntax ([([i-export e-export] ...)
+                    (let-values ([(_1 ids _2 _3) (signature-members #'x^ stx)])
+                      (for/list ([i (in-list ids)])
+                        (list i (datum->syntax stx (syntax->datum i)))))]
+                   [([i-import e-import] ...)
+                    (let-values ([(_1 ids var-ids stx-ids) (signature-members #'y^ stx)])
+                      (for/list ([i (in-list (append ids var-ids stx-ids))])
+                        (list i (datum->syntax stx (syntax->datum i)))))])
+       (syntax/loc stx
+         (unit (import y^) (export x^)
+           (define-syntax e-import (make-rename-transformer #'i-import))
+           ...
+           e ...
+           (define i-export e-export)
+           ...)))]))
+(define y 'y)
+(define-values/invoke-unit
+  (as-s (define x (list y (get-y) y2)))
+  (import y^)
+  (export x^))
+(test '(y y 10) x)
+
 (displayln "tests passed")

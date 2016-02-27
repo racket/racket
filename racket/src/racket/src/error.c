@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -1375,12 +1375,12 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
   if (minc == -1) {
     /* Extract arity, check for is_method in case-lambda, etc. */
     if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_closure_type)) {
-      Scheme_Closure_Data *data;
-      data = SCHEME_COMPILED_CLOS_CODE((Scheme_Object *)name);
+      Scheme_Lambda *data;
+      data = SCHEME_CLOSURE_CODE((Scheme_Object *)name);
       name = scheme_get_proc_name((Scheme_Object *)name, NULL, 1);
       
       minc = data->num_params;
-      if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+      if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
         minc -= 1;
         maxc = -1;
       } else
@@ -1388,9 +1388,9 @@ void scheme_wrong_count_m(const char *name, int minc, int maxc,
     } else if (SAME_TYPE(SCHEME_TYPE((Scheme_Object *)name), scheme_case_closure_type)) {
       Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)name;
       if (cl->count) {
-	Scheme_Closure_Data *data;
-	data = (Scheme_Closure_Data *)SCHEME_COMPILED_CLOS_CODE(cl->array[0]);
-	if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_IS_METHOD)
+	Scheme_Lambda *data;
+	data = (Scheme_Lambda *)SCHEME_CLOSURE_CODE(cl->array[0]);
+	if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_IS_METHOD)
 	  is_method = 1;
       } else if (cl->name && SCHEME_BOXP(cl->name)) {
 	/* See note in schpriv.h about the IS_METHOD hack */
@@ -1527,11 +1527,11 @@ char *scheme_make_arity_expect_string(const char *map_name,
     mina = -1;
     maxa = 0;
   } else {
-    Scheme_Closure_Data *data;
+    Scheme_Lambda *data;
 
-    data = (Scheme_Closure_Data *)SCHEME_COMPILED_CLOS_CODE(proc);
+    data = (Scheme_Lambda *)SCHEME_CLOSURE_CODE(proc);
     mina = maxa = data->num_params;
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST) {
+    if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST) {
       --mina;
       maxa = -1;
     }
@@ -2175,7 +2175,7 @@ void scheme_read_err(Scheme_Object *port,
 
     if (port) {
       Scheme_Object *pn;
-      pn = SCHEME_IPORT_NAME(port);
+      pn = scheme_input_port_record(port)->name;
       if (SCHEME_PATHP(pn)) {
 	pn = scheme_remove_current_directory_prefix(pn);
 	fn = SCHEME_PATH_VAL(pn);
@@ -2230,12 +2230,10 @@ static void do_wrong_syntax(const char *where,
   intptr_t len, vlen, dvlen, blen, plen;
   char *buffer;
   char *v, *dv, *p;
-  Scheme_Object *mod, *nomwho, *who;
+  Scheme_Object *who;
   int show_src;
 
   who = NULL;
-  nomwho = NULL;
-  mod = scheme_false;
 
   if (!s) {
     s = "bad syntax";
@@ -2249,14 +2247,10 @@ static void do_wrong_syntax(const char *where,
     where = NULL;
   } else if (where == scheme_application_stx_string) {
     who = scheme_intern_symbol("#%app");
-    nomwho = who;
-    mod = scheme_intern_symbol("racket");
   } else if ((where == scheme_set_stx_string)
 	     || (where == scheme_var_ref_string)
 	     || (where == scheme_begin_stx_string)) {
     who = scheme_intern_symbol(where);
-    nomwho = who;
-    mod = scheme_intern_symbol("racket");
     if (where == scheme_begin_stx_string)
       where = "begin (possibly implicit)";
   }
@@ -2275,23 +2269,14 @@ static void do_wrong_syntax(const char *where,
       pform = scheme_syntax_to_datum(form, 0, NULL);
 
       /* Try to extract syntax name from syntax */
-      if (!nomwho && (SCHEME_SYMBOLP(SCHEME_STX_VAL(form)) || SCHEME_STX_PAIRP(form))) {
+      if (!who && (SCHEME_SYMBOLP(SCHEME_STX_VAL(form)) || SCHEME_STX_PAIRP(form))) {
 	Scheme_Object *first;
 	if (SCHEME_STX_PAIRP(form))
 	  first = SCHEME_STX_CAR(form);
 	else
 	  first = form;
-	if (SCHEME_SYMBOLP(SCHEME_STX_VAL(first))) {
-	  /* Get module and name at source: */
-	  int phase;
+	if (SCHEME_SYMBOLP(SCHEME_STX_VAL(first)))
 	  who = SCHEME_STX_VAL(first); /* printed name is local name */
-	  /* name in exception is nominal source: */
- 	  if (scheme_current_thread->current_local_env)
-	    phase = scheme_current_thread->current_local_env->genv->phase;
-	  else phase = 0;
-	  scheme_stx_module_name(0, &first, scheme_make_integer(phase), &mod, &nomwho, 
-                                 NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-	}
       }
     } else {
       pform = form;
@@ -2346,8 +2331,6 @@ static void do_wrong_syntax(const char *where,
     else
       who = scheme_false;
   }
-  if (!nomwho)
-    nomwho = who;
 
   if (!where) {
     if (SCHEME_FALSEP(who))
@@ -2377,12 +2360,19 @@ static void do_wrong_syntax(const char *where,
 			    where,
                             s, slen,
 			    v, vlen);
-  } else
+  } else if (dv)
+      blen = scheme_sprintf(buffer, blen, 
+                            "%t%s%s: %t\n"
+                            "  at: %t",
+                            p, plen,
+                            p ? ": " : "",
+			    where,
+                            s, slen,
+			    dv, dvlen);
+  else
     blen = scheme_sprintf(buffer, blen, "%s: %t", 
                           where,
                           s, slen);
-
-  /* We don't actually use nomwho and mod, anymore. */
 
   if (SCHEME_FALSEP(form))
     form = extra_sources;

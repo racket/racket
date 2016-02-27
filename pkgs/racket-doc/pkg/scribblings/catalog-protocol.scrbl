@@ -33,7 +33,7 @@ information about packages:
        @exec{version=}@nonterm{version} query (where @nonterm{version}
        is a Racket version number) in the case of a remote URL.
 
-       This URL/path form is use to obtain information about
+       This URL/path form is used to obtain information about
        @nonterm{package}. An HTTP request for a remote URL should
        respond with a @racket[read]-able hash table, as described
        below. A path in a local directory formed by adding
@@ -130,7 +130,8 @@ information about packages:
 
 Note that a local directory served as files through an HTTP server
 works as a remote URL, as long as the @filepath{pkgs} and
-@filepath{pkgs-all} files are present.
+@filepath{pkgs-all} files are present (since those are optional for
+local but required for HTTP).
 
 The source for the PLT-hosted @tech{package catalog} is in the
 @racket[(collection-file-path "pkg-catalog" "meta")]

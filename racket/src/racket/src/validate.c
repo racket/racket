@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -31,8 +31,8 @@
    where the abstract values are "not available", "value", "boxed
    value", "syntax object", or "global array". */
 
-/* FIXME: validation doesn't check CLOS_SINGLE_RESULT or
-   CLOS_PRESERVES_MARKS. (Maybe check them in the JIT pass?) */
+/* FIXME: validation doesn't check LAMBDA_SINGLE_RESULT or
+   LAMBDA_PRESERVES_MARKS. (Maybe check them in the JIT pass?) */
 
 static int validate_expr(Mz_CPort *port, Scheme_Object *expr, 
                          char *stack, Validate_TLS tls,
@@ -169,9 +169,8 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
   if (num_toplevels || num_stxes || num_lifts) {
     stack[depth - 1] = VALID_TOPLEVELS;
   }
-
   delta = depth - ((num_toplevels || num_stxes || num_lifts) ? 1 : 0);
-
+    
   tls = MALLOC_N(mzshort*, num_lifts);
   
   if (code_vec) {
@@ -321,7 +320,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
       /* It's a lift. Check whether it needs to take reference arguments
          and/or install reference info. */
       Scheme_Object *app_rator;
-      Scheme_Closure_Data *data = NULL;
+      Scheme_Lambda *data = NULL;
       int tp = pos - (num_toplevels + num_stxes + (num_stxes ? 1 : 0));
       mzshort *a, *new_a = NULL;
 
@@ -334,10 +333,10 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
       app_rator = val;
       while (1) {
         if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_closure_type)) {
-          data = SCHEME_COMPILED_CLOS_CODE(app_rator);
+          data = SCHEME_CLOSURE_CODE(app_rator);
           break;
-        } else if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_unclosed_procedure_type)) {
-          data = (Scheme_Closure_Data *)app_rator;
+        } else if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_lambda_type)) {
+          data = (Scheme_Lambda *)app_rator;
           break;
         } else if (SAME_TYPE(SCHEME_TYPE(app_rator), scheme_toplevel_type)) {
           /* Record an indirection */
@@ -354,16 +353,16 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
         }
       }
       if (data) {
-        if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+        if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_TYPED_ARGS) {
           int sz;
           sz = data->num_params;
           new_a = MALLOC_N_ATOMIC(mzshort, (sz + 2));
           new_a[0] = -sz;
-          new_a[sz+1] = !!(SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_REST);
+          new_a[sz+1] = !!(SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_REST);
           for (i = 0; i < sz; i++) {
             int ct;
             ct = scheme_boxmap_get(data->closure_map, i, data->closure_size);
-            if (ct == CLOS_TYPE_BOXED)
+            if (ct == LAMBDA_TYPE_BOXED)
               new_a[i + 1] = 1;
             else
               new_a[i + 1] = 0;
@@ -598,7 +597,7 @@ static void case_lambda_validate(Scheme_Object *data, Mz_CPort *port, char *stac
 
   for (i = 0; i < seq->count; i++) { 
     e = seq->array[i];
-    if (!SAME_TYPE(SCHEME_TYPE(e), scheme_unclosed_procedure_type)
+    if (!SAME_TYPE(SCHEME_TYPE(e), scheme_lambda_type)
         && !SAME_TYPE(SCHEME_TYPE(e), scheme_closure_type))
       scheme_ill_formed_code(port);
     validate_expr(port, e, stack, tls, depth, letlimit, delta, 
@@ -800,16 +799,16 @@ int validate_rator_wants_box(Scheme_Object *app_rator, int pos,
                              Validate_TLS tls,
                              int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map)
 {
-  Scheme_Closure_Data *data = NULL;
+  Scheme_Lambda *data = NULL;
   Scheme_Type ty;
 
   while (1) {
     ty = SCHEME_TYPE(app_rator);
     if (SAME_TYPE(ty, scheme_closure_type)) {
-      data = SCHEME_COMPILED_CLOS_CODE(app_rator);
+      data = SCHEME_CLOSURE_CODE(app_rator);
       break;
-    } else if (SAME_TYPE(ty, scheme_unclosed_procedure_type)) {
-      data = (Scheme_Closure_Data *)app_rator;
+    } else if (SAME_TYPE(ty, scheme_lambda_type)) {
+      data = (Scheme_Lambda *)app_rator;
       break;
     } else if (SAME_TYPE(ty, scheme_toplevel_type)) {
       int p;
@@ -877,11 +876,11 @@ int validate_rator_wants_box(Scheme_Object *app_rator, int pos,
       return 0;
   }
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+  if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_TYPED_ARGS) {
     if (pos < data->num_params) {
       int ct;
       ct = scheme_boxmap_get(data->closure_map, pos, data->closure_size);
-      if (ct == CLOS_TYPE_BOXED)
+      if (ct == LAMBDA_TYPE_BOXED)
         return 1;
     }
   }
@@ -904,7 +903,7 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
                              mzshort *tl_state, mzshort tl_timestamp,
                              int self_pos_in_closure, Scheme_Hash_Tree *procs)
 {
-  Scheme_Closure_Data *data = (Scheme_Closure_Data *)expr;
+  Scheme_Lambda *data = (Scheme_Lambda *)expr;
   int i, sz, cnt, base, base2;
   char *new_stack;
   struct Validate_Clearing *vc;
@@ -919,7 +918,7 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
   cnt = data->num_params;
   base = sz - cnt;
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+  if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_TYPED_ARGS) {
     base2 = data->closure_size;
     for (i = 0; i < cnt; i++) {
       new_stack[base + i] = closure_stack[base2 + i];
@@ -974,7 +973,7 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
     tl_use_map = data->tl_map;
   }
 
-  validate_expr(port, data->code, new_stack, tls, sz, sz, base, 
+  validate_expr(port, data->body, new_stack, tls, sz, sz, base, 
                 num_toplevels, num_stxes, num_lifts, tl_use_map,
                 tl_state, tl_timestamp,
                 NULL, 0, 0, vc, 1, 0, procs, -1, NULL);
@@ -987,22 +986,22 @@ static Scheme_Hash_Tree *as_nonempty_procs(Scheme_Hash_Tree *procs)
   return procs;
 }
 
-static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr, 
-                                        char *stack, Validate_TLS tls,
-                                        int depth, int delta, 
-                                        int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
-                                        mzshort *tl_state, mzshort tl_timestamp,
-                                        Scheme_Object *app_rator, int proc_with_refs_ok,
-                                        int self_pos, Scheme_Hash_Tree *procs)
+static void validate_lambda(Mz_CPort *port, Scheme_Object *expr, 
+                            char *stack, Validate_TLS tls,
+                            int depth, int delta, 
+                            int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
+                            mzshort *tl_state, mzshort tl_timestamp,
+                            Scheme_Object *app_rator, int proc_with_refs_ok,
+                            int self_pos, Scheme_Hash_Tree *procs)
 {
-  Scheme_Closure_Data *data = (Scheme_Closure_Data *)expr;
+  Scheme_Lambda *data = (Scheme_Lambda *)expr;
   int i, cnt, q, p, sz, base, stack_delta, vld, self_pos_in_closure = -1, typed_arg = 0;
   mzshort *map;
   char *closure_stack;
   Scheme_Object *proc;
   Scheme_Hash_Tree *new_procs = NULL;
       
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+  if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_TYPED_ARGS) {
     sz = data->closure_size + data->num_params;
   } else {
     sz = data->closure_size;
@@ -1014,17 +1013,19 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
   else
     closure_stack = NULL;
 
-  if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+  if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_TYPED_ARGS) {
     cnt = data->num_params;
     base = sz - cnt;
     for (i = 0; i < cnt; i++) {
       int ct;
       ct = scheme_boxmap_get(map, i, data->closure_size);
-      if (ct == CLOS_TYPE_BOXED) {
+      if (ct == LAMBDA_TYPE_BOXED) {
         vld = VALID_BOX;
         typed_arg = 1;
       } else if (ct) {
-        vld = (VALID_TYPED + (ct - CLOS_TYPE_TYPE_OFFSET));
+        if ((ct - LAMBDA_TYPE_TYPE_OFFSET) > SCHEME_MAX_LOCAL_TYPE)
+          scheme_ill_formed_code(port);
+        vld = (VALID_TYPED + (ct - LAMBDA_TYPE_TYPE_OFFSET));
         typed_arg = 1;
       } else
         vld = VALID_VAL;
@@ -1051,14 +1052,14 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
     else if (vld == VALID_BOX_NOCLEAR)
       vld = VALID_BOX;
 
-    if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+    if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_TYPED_ARGS) {
       int pos = data->num_params + i;
       int ct;
       ct = scheme_boxmap_get(map, pos, data->closure_size);
-      if (ct == CLOS_TYPE_BOXED)
+      if (ct == LAMBDA_TYPE_BOXED)
         scheme_ill_formed_code(port);
-      if (ct > CLOS_TYPE_TYPE_OFFSET) {
-        if (vld != (VALID_TYPED + (ct - CLOS_TYPE_TYPE_OFFSET)))
+      if (ct > LAMBDA_TYPE_TYPE_OFFSET) {
+        if (vld != (VALID_TYPED + (ct - LAMBDA_TYPE_TYPE_OFFSET)))
           vld = VALID_NOT;
       } else if (vld > VALID_TYPED)
         vld = VALID_NOT;
@@ -1084,11 +1085,11 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
 
   tl_timestamp++; /* closure delays use; needed for self-use <= check */
       
-  if (SCHEME_RPAIRP(data->code)) {
+  if (SCHEME_RPAIRP(data->body)) {
     /* Delay validation */
     Scheme_Object *vec;
     vec = scheme_make_vector(11, NULL);
-    SCHEME_VEC_ELS(vec)[0] = SCHEME_CAR(data->code);
+    SCHEME_VEC_ELS(vec)[0] = SCHEME_CAR(data->body);
     SCHEME_VEC_ELS(vec)[1] = (Scheme_Object *)closure_stack;
     SCHEME_VEC_ELS(vec)[2] = (Scheme_Object *)tls;
     SCHEME_VEC_ELS(vec)[3] = scheme_make_integer(num_toplevels);
@@ -1099,7 +1100,7 @@ static void validate_unclosed_procedure(Mz_CPort *port, Scheme_Object *expr,
     SCHEME_VEC_ELS(vec)[8] = tl_use_map ? tl_use_map : scheme_false;
     SCHEME_VEC_ELS(vec)[9] = tl_state ? (Scheme_Object *)tl_state : scheme_false;
     SCHEME_VEC_ELS(vec)[10] = scheme_make_integer(tl_timestamp);
-    SCHEME_CAR(data->code) = vec;
+    SCHEME_CAR(data->body) = vec;
   } else
     scheme_validate_closure(port, expr, closure_stack, tls, 
                             num_toplevels, num_stxes, num_lifts, tl_use_map,
@@ -1145,6 +1146,9 @@ static void module_validate(Scheme_Object *data, Mz_CPort *port,
     scheme_ill_formed_code(port);
 
   if (m->phaseless && m->prefix->num_stxes)
+    scheme_ill_formed_code(port);
+
+  if (m->max_let_depth < 0)
     scheme_ill_formed_code(port);
 
   validate_toplevel(m->dummy, port, stack, tls, depth, delta, 
@@ -1196,7 +1200,7 @@ static void no_typed(int need_local_type, Mz_CPort *port)
 static void check_typed(Scheme_Object *expr, int need_local_type, Mz_CPort *port)
 {
   if (need_local_type) {
-    if (scheme_expr_produces_local_type(expr) != need_local_type)
+    if (scheme_expr_produces_local_type(expr, NULL) != need_local_type)
       scheme_ill_formed_code(port);
   }
 }
@@ -1356,12 +1360,12 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         if ((uintptr_t)tl_use_map & 0x1) {
           if (p2 > 31)
             scheme_ill_formed_code(port);
-          if (!((uintptr_t)tl_use_map & (1 << (p2 + 1))))
+          if (!((uintptr_t)tl_use_map & ((unsigned int)1 << (p2 + 1))))
             scheme_ill_formed_code(port);
         } else {
           if (p2 >= (*(int *)tl_use_map * 32))
             scheme_ill_formed_code(port);
-          if (!(((int *)tl_use_map)[1 + (p2 / 32)] & (1 << (p2 & 31))))
+          if (!(((int *)tl_use_map)[1 + (p2 / 32)] & ((unsigned int)1 << (p2 & 31))))
             scheme_ill_formed_code(port);
         }
       }
@@ -1754,12 +1758,12 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         if ((uintptr_t)tl_use_map & 0x1) {
           if (p > 31)
             scheme_ill_formed_code(port);
-          if (!((uintptr_t)tl_use_map & (1 << (p + 1))))
+          if (!((uintptr_t)tl_use_map & ((unsigned int)1 << (p + 1))))
             scheme_ill_formed_code(port);
         } else {
           if (p >= (*(int *)tl_use_map * 32))
             scheme_ill_formed_code(port);
-          if (!(((int *)tl_use_map)[1 + (p / 32)] & (1 << (p & 31))))
+          if (!(((int *)tl_use_map)[1 + (p / 32)] & ((unsigned int)1 << (p & 31))))
             scheme_ill_formed_code(port);
         }
       }
@@ -1767,10 +1771,10 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       result = validate_join_const(result, expected_results);
     }
     break;
-  case scheme_unclosed_procedure_type:
+  case scheme_lambda_type:
     {
       no_typed(need_local_type, port);
-      validate_unclosed_procedure(port, expr, stack, tls, depth, delta, 
+      validate_lambda(port, expr, stack, tls, depth, delta, 
                                   num_toplevels, num_stxes, num_lifts, tl_use_map,
                                   tl_state, tl_timestamp,
                                   app_rator, proc_with_refs_ok, -1, procs);
@@ -1798,16 +1802,16 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       for (i = 0; i < c; i++, p++) {
 	if ((q < 0) 
             || (p < 0)
-	    || (SCHEME_LET_AUTOBOX(lv) && ((p >= depth)
+	    || (SCHEME_LET_VALUE_AUTOBOX(lv) && ((p >= depth)
 					   || ((stack[p] != VALID_BOX)
                                                && (stack[p] != VALID_BOX_NOCLEAR))))
-	    || (!SCHEME_LET_AUTOBOX(lv) && ((p >= letlimit)
+	    || (!SCHEME_LET_VALUE_AUTOBOX(lv) && ((p >= letlimit)
 					    || !(WHEN_CAN_RESET_STACK_SLOT(stack[p] == VALID_VAL) 
                                                  || WHEN_CAN_RESET_STACK_SLOT(stack[p] == VALID_VAL_NOCLEAR) 
                                                  || (stack[p] == VALID_UNINIT)))))
 	  scheme_ill_formed_code(port);
 
-	if (!SCHEME_LET_AUTOBOX(lv)) {
+	if (!SCHEME_LET_VALUE_AUTOBOX(lv)) {
           if (stack[p] != VALID_VAL_NOCLEAR)
             stack[p] = VALID_VAL;
 	}
@@ -1827,7 +1831,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       if ((c < 0) || (c > delta))
 	scheme_ill_formed_code(port);
 
-      if (SCHEME_LET_AUTOBOX(lv)) {
+      if (SCHEME_LET_VOID_AUTOBOX(lv)) {
 	for (i = 0; i < c; i++) {
 	  stack[--delta] = VALID_BOX;
 	}
@@ -1843,7 +1847,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
   case scheme_letrec_type:
     {
       Scheme_Letrec *l = (Scheme_Letrec *)expr;
-      Scheme_Closure_Data *data;
+      Scheme_Lambda *data;
       int i, c;
 
       c = l->count;
@@ -1852,7 +1856,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
 	scheme_ill_formed_code(port);
 
       for (i = 0; i < c; i++) {
-	if (!SAME_TYPE(SCHEME_TYPE(l->procs[i]), scheme_unclosed_procedure_type))
+	if (!SAME_TYPE(SCHEME_TYPE(l->procs[i]), scheme_lambda_type))
 	  scheme_ill_formed_code(port);
       }
 
@@ -1862,8 +1866,8 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
           scheme_ill_formed_code(port);
 #endif
 	stack[delta + i] = VALID_VAL;
-        data = (Scheme_Closure_Data *)l->procs[i];
-        if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_HAS_TYPED_ARGS) {
+        data = (Scheme_Lambda *)l->procs[i];
+        if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_HAS_TYPED_ARGS) {
           /* If any arguments (as opposed to closure slots) are typed, then
              add the procedure to `procs': */
           int j;
@@ -1880,7 +1884,7 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       }
 
       for (i = 0; i < c; i++) {
-	validate_unclosed_procedure(port, l->procs[i], stack, tls, depth, delta, 
+	validate_lambda(port, l->procs[i], stack, tls, depth, delta, 
                                     num_toplevels, num_stxes, num_lifts, tl_use_map,
                                     tl_state, tl_timestamp,
                                     NULL, 1, i, procs);
@@ -1995,6 +1999,36 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                           result_ignored, vc, tailpos, procs);
     result = validate_join(0, result);
     break;
+  case scheme_with_immed_mark_type:
+    {
+      Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr;
+      int r;
+
+      no_typed(need_local_type, port);
+      
+      r = validate_expr(port, wcm->key, stack, tls, depth, letlimit, delta, 
+                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        tl_state, tl_timestamp,
+                        NULL, 0, 0, vc, 0, 0, procs,
+                        1, _st_ht);
+      result = validate_join_seq(r, result);
+      
+      r = validate_expr(port, wcm->val, stack, tls, depth, letlimit, delta, 
+                        num_toplevels, num_stxes, num_lifts, tl_use_map,
+                        tl_state, tl_timestamp,
+                        NULL, 0, 0, vc, 0, 0, procs,
+                        1, _st_ht);
+      result = validate_join_seq(r, result);
+
+      --delta;
+      if (delta < 0)
+	scheme_ill_formed_code(port);
+      stack[delta] = VALID_VAL;
+
+      expr = wcm->body;
+      goto top;
+    }
+    break;
   case scheme_case_lambda_sequence_type:
     no_typed(need_local_type, port);
     case_lambda_validate(expr, port, stack, tls, depth, letlimit, delta, 
@@ -2019,6 +2053,10 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
                             result_ignored, vc, tailpos, procs);
     result = validate_join_const(result, expected_results);
     break;
+  case scheme_ir_local_type:
+    {
+      scheme_ill_formed_code(port);
+    }
   default:
     /* All values are definitely ok, except pre-closed closures. 
        Such a closure can refer back to itself, so we use a flag
@@ -2028,15 +2066,15 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         /* If the closure is not empty, then it must be from 3-D code
            (where PLT_VALIDATE_COMPILE is set), and validation is not
            our responsibility here: */
-        && (SCHEME_COMPILED_CLOS_CODE(expr)->closure_size == 0)) {
-      Scheme_Closure_Data *data;
+        && (SCHEME_CLOSURE_CODE(expr)->closure_size == 0)) {
+      Scheme_Lambda *data;
       no_typed(need_local_type, port);
-      expr = (Scheme_Object *)SCHEME_COMPILED_CLOS_CODE(expr);
-      data = (Scheme_Closure_Data *)expr;
-      if (SCHEME_CLOSURE_DATA_FLAGS(data) & CLOS_VALIDATED) {
+      expr = (Scheme_Object *)SCHEME_CLOSURE_CODE(expr);
+      data = (Scheme_Lambda *)expr;
+      if (SCHEME_LAMBDA_FLAGS(data) & LAMBDA_VALIDATED) {
         /* Done with this one. */
       } else {
-        SCHEME_CLOSURE_DATA_FLAGS(data) |= CLOS_VALIDATED;
+        SCHEME_LAMBDA_FLAGS(data) |= LAMBDA_VALIDATED;
         did_one = 0;
         goto top;
       }

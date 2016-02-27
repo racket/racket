@@ -285,8 +285,8 @@ is a GitHub package source.
 @margin-note{A Github repository source that starts with
 @litchar{git://} obtains the same content that would be accessed if
 @litchar{github.com} were not treated specially. The special treatment
-is preserved for historical reasons and because GitHub provides an
-interface that is always efficient.}
+is preserved for historical reasons, especially in combination
+with @envvar{PLT_USE_GITHUB_API}.}
 
 For backward compatibility, an older format is also supported:
 
@@ -304,7 +304,15 @@ with @litchar{git://github.com/} or @litchar{github://}; a package
 source that is otherwise specified as a GitHub reference is
 automatically prefixed with @litchar{git://github.com/}. The inferred
 package name is the last element of @nonterm{path} if it is non-empty,
-otherwise the inferred name is @nonterm{repo}.}
+otherwise the inferred name is @nonterm{repo}.
+
+If the @indexed-envvar{PLT_USE_GITHUB_API} environment variable is
+set, GitHub packages are obtained using the GitHub API protocol
+instead of using the Git protocol.
+
+@history[#:changed "6.3" @elem{Changed handling of
+                                      GitHub sources to use the Git
+                                      protocol by default.}]}
 
 @; ----------------------------------------
 @item{a @tech{package name} --- A @tech{package catalog} is
@@ -329,7 +337,7 @@ URL indicates a remote server, and a @litchar{file://} URL indicates a
 local catalog in the form of an SQLite database or a directory tree.
 
 PLT supports two @tech{package catalog} servers that are enabled by
-default: @url{http://pkgs.racket-lang.org} for new packages and
+default: @url{https://pkgs.racket-lang.org} for new packages and
 @url{http://planet-compats.racket-lang.org} for automatically
 generated packages for old @|PLaneT| packages. Anyone may host a
 @tech{package catalog}, and any file-serving HTTP host can act
@@ -932,9 +940,12 @@ for @nonterm{key}.
         updated that its implementation is kept in the trash folder. Package implementations are
         removed from a trash folder only when another package is potentially added
         to the trash folder or @command-ref{empty-trash} is used.}
+  @item{@exec{network-retries} --- The number of times to retry a network communication that
+        fails due to a connection error.}
  ]
 
-@history[#:changed "6.1.1.6" @elem{Added @exec{trash-max-packages} and @exec{trash-max-seconds}.}]}
+@history[#:changed "6.1.1.6" @elem{Added @exec{trash-max-packages} and @exec{trash-max-seconds}.}
+         #:changed "6.3" @elem{Added @exec{network-retries}.}]}
 
 
 @subcommand{@command/toc{catalog-show} @nonterm{option} ... @nonterm{package-name} ...
@@ -1015,6 +1026,15 @@ for @nonterm{key}.
  @item{@DFlag{version} @nonterm{version} or @Flag{v} @nonterm{version} --- Copies catalog
        results specific to @nonterm{version}
        (for catalogs that make a distinction), instead of the installation's Racket version.}
+  @item{@DFlag{pkg-fail} @nonterm{mode} --- Determines handling of failure for an individual
+       package, such as when a @nonterm{src-catalog} contains a bad package source. The
+       following @nonterm{mode}s are available:
+       @itemlist[
+         @item{@exec{fail} (the default) --- archiving stops and fails;}
+         @item{@exec{skip} --- the package is skipped and omitted from the archive catalog; or}
+         @item{@exec{continue} --- like @exec{skip}, but @exec{raco pkg catalog-archive}
+               exits with a status code of @exec{5} if any package was skipped.}
+       ]}
  ]
 
  @history[#:added "6.0.17"]
@@ -1406,10 +1426,10 @@ tests, and documentation from a package before installing it.
 site (where a Racket distribution downloaded from the site is
 configured to consult the site for packages), at least for packages
 associated with the distribution. Beware that
-@url{http://pkgs.racket-lang.org/} generally refers to @tech{source
+@url{https://pkgs.racket-lang.org/} generally refers to @tech{source
 packages}, not @tech{built packages}. In the near future, built
-variants of the @url{http://pkgs.racket-lang.org/} packages will be
-provided at @url{http://pkg-build.racket-lang.org/catalog/}.
+variants of the @url{https://pkgs.racket-lang.org/} packages will be
+provided at @url{https://pkg-build.racket-lang.org/catalog/}.
 
 Some packages have been split at the source level into separate
 library, test, and documentation packages. For example,

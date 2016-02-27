@@ -1,7 +1,7 @@
 #lang racket/base
 (require racket/contract/base
          (for-syntax racket/base
-                     unstable/wrapc))
+                     syntax/contract))
 
 ;; A Queue contains a linked list with mutable cdrs, holding two pointers
 ;; to the head and the tail -- where items are pulled from the head and

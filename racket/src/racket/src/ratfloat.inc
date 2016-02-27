@@ -104,7 +104,7 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
     if (shift > FLOAT_M_BITS) {
       shift = FLOAT_M_BITS;
     }
-    
+
     a[0] = n;
     a[1] = scheme_make_integer(shift);
     n = scheme_bitwise_shift(2, a);
@@ -120,9 +120,9 @@ FP_TYPE SCHEME_RATIONAL_TO_FLOAT(const Scheme_Object *o)
       } else {
         /* Round to even: */
         a[0] = d;
-        if (!scheme_odd_p(1, a)) {
+        if (SCHEME_FALSEP(scheme_odd_p(1, a))) {
           a[0] = n;
-          if (!scheme_even_p(1, a)) {
+          if (SCHEME_FALSEP(scheme_even_p(1, a))) {
             n = scheme_bin_plus(n, scheme_make_integer(1));
           }
         }

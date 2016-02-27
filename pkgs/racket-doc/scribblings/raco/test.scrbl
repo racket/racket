@@ -5,7 +5,8 @@
           (for-label racket/runtime-path
                      racket/base
                      launcher/launcher
-                     rackunit/log))
+                     rackunit/log
+                     compiler/module-suffix))
 
 @title[#:tag "test"]{@exec{raco test}: Run tests}
 
@@ -19,12 +20,14 @@ the file.
 
 When an argument path refers to a directory, @exec{raco test}
 recursively discovers and runs all files within the directory that end
-in @filepath{.rkt}, end in @filepath{.scrbl}, or have a (possibly
-empty) list of command-line arguments provided by
-@racket[test-command-line-arguments] in an @filepath{info.rkt} file.
-At the same time, @exec{raco test} omits files and directories within
-a directory as directed by @racket[test-omit-paths] in an
-@filepath{info.rkt} file.
+in a module suffix (see @racket[get-module-suffixes], but the suffixes
+always include @filepath{.rkt}, @filepath{.scrbl}, @filepath{.ss}, and
+@filepath{.scm}) or have a (possibly empty) list of command-line arguments provided by
+@racket[test-command-line-arguments] in an @filepath{info.rkt} file,
+or as directed by @racket[test-include-paths] in an
+@filepath{info.rkt} file.  At the same time, @exec{raco test} omits
+files and directories within a directory as directed by
+@racket[test-omit-paths] in an @filepath{info.rkt} file.
 
 A test is counted as failing if it logs a failing test code via
 @racket[test-log!], causes Racket to exit with a non-zero exit code, or
@@ -52,11 +55,11 @@ The @exec{raco test} command accepts several flags:
        --- Not only interprets the arguments as paths (which is the
        default mode), but treats them the same as paths found in a
        directory, which means ignoring a file argument that does not
-       have the extension @filepath{.rkt}, does not have the extension
-       @filepath{.scrbl}, or is not enabled explicitly via
-       @racket[test-command-line-arguments] in an @filepath{info.rkt}
-       file; meanwhile, paths that are otherwise enabled can be disabled
-       via @racket[test-omit-paths] in an @filepath{info.rkt} file.}
+       have a module extension or is not enabled explicitly via
+       @racket[test-command-line-arguments] or @racket[test-include-paths]
+       in an @filepath{info.rkt} file; meanwhile, paths that are otherwise
+       enabled can be disabled via @racket[test-omit-paths] in an
+       @filepath{info.rkt} file.}
 
  @item{@DFlag{drdr}
        --- Configures defaults to imitate the DrDr continuous testing
@@ -85,6 +88,14 @@ The @exec{raco test} command accepts several flags:
  @item{@DFlag{first-avail}
        --- When multiple submodule names are provided with @Flag{s} or
        @DFlag{submodule}, runs only the first available submodule.}
+
+@item{@DFlag{configure-runtime}
+       --- Run a @racketidfont{configure-runtime} submodule (if any) of
+       each specified module before the module or a
+       submodule is run. This mode is the default when only a single
+       module is provided or when @DFlag{process} or @DFlag{place}
+       mode is specified, unless a submodule name is provided
+       via @Flag{s} or @DFlag{submodule}.}
 
  @item{@DFlag{direct}
       --- Runs each test in a thread. This mode is the default if
@@ -151,7 +162,9 @@ The @exec{raco test} command accepts several flags:
 
 ]
 
-@history[#:changed "1.1" @elem{Added @DFlag{heartbeat}.}]
+@history[#:changed "1.1" @elem{Added @DFlag{heartbeat}.}
+         #:changed "1.4" @elem{Changed recognition of module suffixes to use @racket[get-module-suffixes],
+                               which implies recognizing @filepath{.ss} and @filepath{.rkt}.}]
 
 @section[#:tag "test-config"]{Test Configuration by Submodule}
 
@@ -212,21 +225,30 @@ impossible (e.g., because the file will not always compile). Thus,
 @exec{raco test} also consults any @filepath{info.rkt} file in the
 candidate test file's directory. In the case of a file within a
 collection, @filepath{info.rkt} files from any enclosing collection
-directories are also consulted for @racket[test-omit-paths]. Finally,
-for a file within a package, the package's @filepath{info.rkt} is
-consulted for @racket[pkg-authors] to set the default responsible
-parties (see @secref["test-responsible"]) for all files in the
-package.
+directories are also consulted for @racket[test-omit-paths] and
+@racket[test-include-paths]. Finally, for a file within a package, the
+package's @filepath{info.rkt} is consulted for @racket[pkg-authors] to
+set the default responsible parties (see @secref["test-responsible"])
+for all files in the package.
 
 The following @filepath{info.rkt} fields are recognized:
 
 @itemlist[
 
  @item{@racket[test-omit-paths] --- a list of path strings (relative
-       to the enclosing directory) or @racket['all] to omit all files
-       within the enclosing directory.  When a path string refers to a
-       directory, all files within the directory are omitted.}
+       to the enclosing directory) and regexp values (to omit all
+       files within the enclosing directory matching the expression),
+       or @racket['all] to omit all files within the enclosing directory.
+       When a path string refers to a directory, all files within the
+       directory are omitted.}
 
+ @item{@racket[test-include-paths] --- a list of path strings (relative
+       to the enclosing directory) and regexp values (to include all
+       files within the enclosing directory matching the expression),
+       or @racket['all] to include all files within the enclosing directory.
+       When a path string refers to a directory, all files within the
+       directory are included.}
+      
  @item{@racket[test-command-line-arguments] --- a list of
        @racket[(list _module-path-string (list _argument-path-string
        ...))], where @racket[current-command-line-arguments] is set to
@@ -253,6 +275,9 @@ The following @filepath{info.rkt} fields are recognized:
  @item{@racket[test-randoms] --- a list of path strings (relative to
        the enclosing directory) for modules whose output varies.
        See @secref["test-responsible"].}
+
+ @item{@racket[module-suffixes] and @racket[doc-module-suffixes] ---
+       Used indirectly via @racket[get-module-suffixes].}
 
 ]
 

@@ -70,27 +70,27 @@ synchronization} when @racket[(async-channel-put ach v)] would return
 a value (i.e., when the channel holds fewer values already than its
 limit); @resultItself{asychronous channel-put event}.}
 
-@defexamples[#:eval (async-eval)
-(define (server input-channel output-channel)
-  (thread (lambda ()
-	    (define (get)
-	      (async-channel-get input-channel))
-	    (define (put x)
-	      (async-channel-put output-channel x))
-	    (define (do-large-computation)
-	      (sqrt 9))
-	    (let loop ([data (get)])
-	      (case data
-		[(quit) (void)]
-		[(add) (begin
-			 (put (+ 1 (get)))
-			 (loop (get)))]
-		[(long) (begin
-			  (put (do-large-computation))
-			  (loop (get)))])))))
-
-(define to-server (make-async-channel))
-(define from-server (make-async-channel))
+@examples[#:eval (async-eval) #:once
+(eval:no-prompt
+ (define (server input-channel output-channel)
+   (thread (lambda ()
+             (define (get)
+               (async-channel-get input-channel))
+             (define (put x)
+               (async-channel-put output-channel x))
+             (define (do-large-computation)
+               (sqrt 9))
+             (let loop ([data (get)])
+               (case data
+                 [(quit) (void)]
+                 [(add) (begin
+                          (put (+ 1 (get)))
+                          (loop (get)))]
+                 [(long) (begin
+                           (put (do-large-computation))
+                           (loop (get)))])))))
+ (define to-server (make-async-channel))
+ (define from-server (make-async-channel)))
 
 (server to-server from-server)
 

@@ -2,6 +2,7 @@
 (require rackunit
          syntax/parse
          syntax/parse/debug
+         syntax/parse/define
          "setup.rkt"
          (for-syntax syntax/parse))
 
@@ -267,14 +268,29 @@
 
 ;; == syntax-parse: other feature tests
 
-(test-case "syntax-parse: #:context"
-           (check-exn
-            (lambda (exn)
-              (regexp-match #rx"me: expected exact-nonnegative-integer" (exn-message exn)))
-            (lambda ()
-              (syntax-parse #'(m x) #:context #'me
-                [(_ n:nat) 'ok])))
-           (void))
+(test-case "syntax-parse: #:context w/ syntax"
+  (check-exn
+   #rx"me: expected exact-nonnegative-integer"
+   (lambda ()
+     (syntax-parse #'(m x)
+       #:context #'me
+       [(_ n:nat) 'ok]))))
+
+(test-case "syntax-parse: #:context w/ symbol"
+  (check-exn
+   #rx"me: expected identifier"
+   (lambda ()
+     (syntax-parse #'(m 1)
+       #:context 'me
+       [(_ x:id) 'ok]))))
+
+(test-case "syntax-parse: #:context w/ symbol+stx"
+  (check-exn
+   #rx"me: expected identifier.*in: \\(bigterm\\)"
+   (lambda ()
+     (syntax-parse #'(m 1)
+       #:context (list 'me #'(bigterm))
+       [(_ x:id) 'ok]))))
 
 (test-case "syntax-parse: #:literals"
            (syntax-parse #'(0 + 1 * 2)
@@ -546,23 +562,23 @@
 ;; from http://lists.racket-lang.org/users/archive/2014-June/063095.html
 (test-case "pattern-expanders"
   (let ()
-      (define-splicing-syntax-class binding #:literals (=)
-        [pattern (~seq name:id = expr:expr)])
-      
-      (define-syntax ~separated
-        (pattern-expander
-         (lambda (stx)
-           (syntax-case stx ()
-             [(separated sep pat)
-              (with-syntax ([ooo '...])
-                #'((~seq pat (~or (~peek-not _)
-                                  (~seq sep (~peek _))))
-                   ooo))]))))
-      
-      (define-splicing-syntax-class bindings
-        [pattern (~separated (~datum /) b:binding)
-                 #:with (name ...) #'(b.name ...)
-                 #:with (expr ...) #'(b.expr ...)])
+    (define-splicing-syntax-class binding #:literals (=)
+      [pattern (~seq name:id = expr:expr)])
+    
+    (define-syntax ~separated
+      (pattern-expander
+       (lambda (stx)
+         (syntax-case stx ()
+           [(separated sep pat)
+            (with-syntax ([ooo '...])
+              #'((~seq pat (~or (~peek-not _)
+                                (~seq sep (~peek _))))
+                 ooo))]))))
+    
+    (define-splicing-syntax-class bindings
+      [pattern (~separated (~datum /) b:binding)
+               #:with (name ...) #'(b.name ...)
+               #:with (expr ...) #'(b.expr ...)])
     
     (define (parse-my-let stx)
       (syntax-parse stx
@@ -575,4 +591,53 @@
                                      (+ x y z))))
                   (syntax->datum #'(let ([x 1] [y 2] [z 3])
                                      (+ x y z))))
+
+    (define-syntax sep-comma ; test pattern expanders that don't begin with tilde
+      (pattern-expander
+       (lambda (stx)
+         (syntax-case stx ()
+           [(sep-comma pat)
+            (with-syntax ([ooo '...])
+              #'((~seq (~or (~and pat (~not ((~datum unquote) _))) ((~datum unquote) pat))
+                       (~or (~peek-not _) (~peek ((~datum unquote) _))))
+                 ooo))]))))
+
+    (define-splicing-syntax-class bindings2
+      [pattern (sep-comma [b:binding])
+               #:with (name ...) #'(b.name ...)
+               #:with (expr ...) #'(b.expr ...)])
+
+    (define (parse-my-let2 stx)
+      (syntax-parse stx
+        [(_ bs:bindings2 body)
+         #'(let ([bs.name bs.expr] ...)
+             body)]))
+
+    (check-equal? (syntax->datum
+                   (parse-my-let2 #'(my-let ([x = 1], [y = 2], [z = 3])
+                                      (+ x y z))))
+                  (syntax->datum #'(let ([x 1] [y 2] [z 3])
+                                     (+ x y z))))
     ))
+
+(test-case "this-syntax"
+  (let ()
+    (define-syntax-class identity
+      [pattern _
+               #:with stx this-syntax])
+    (define stx #'(1 2 3))
+    (syntax-parse stx
+      [x:identity
+       (check-eq? this-syntax stx)
+       (check-eq? #'x.stx stx)])
+    ((syntax-parser
+       [x:identity
+        (check-eq? this-syntax stx)
+        (check-eq? #'x.stx stx)])
+     stx)
+    (define-simple-macro (x . _)
+      #:with stx (syntax/loc this-syntax (void))
+      stx)
+    (check-eq? (x) (void))
+    ))
+

@@ -26,10 +26,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.  */
 #ifndef LIBUNWIND_H
 #define LIBUNWIND_H
 
-#if defined(linux)
+#if defined(__linux__)
 # define LINUX
 #endif
-#if defined(i386)
+#if defined(__i386__)
 # define PLAIN_X86
 #endif
 #if defined(__x86_64__)

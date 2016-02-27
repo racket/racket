@@ -170,7 +170,14 @@ See also @racket[make-custom-hash].}
 
 Like @racket[make-hash], @racket[make-hasheq], and
 @racket[make-hasheqv], but creates a mutable hash table that holds
-keys weakly.}
+keys weakly.
+
+Beware that values in the table are retained normally. If a value in
+the table refers back to its key, then the table will retain the value
+and therefore the key; the mapping will never be removed from the
+table even if the key becomes otherwise inaccessible. To avoid that
+problem, instead of mapping the key to the value, map the key to an
+@tech{ephemeron} that pairs the key and value.}
 
 @deftogether[(
 @defproc[(make-immutable-hash [assocs (listof pair?) null])
@@ -235,8 +242,9 @@ later mappings overwrite earlier mappings.
 
 @defproc[(hash-ref [hash hash?]
                    [key any/c]
-                   [failure-result any/c (lambda () 
-                                           (raise (make-exn:fail:contract ....)))])
+                   [failure-result (failure-result/c any/c)
+                                   (lambda ()
+                                     (raise (make-exn:fail:contract ....)))])
          any]{
 
 Returns the value for @racket[key] in @racket[hash]. If no value
@@ -277,8 +285,9 @@ Returns @racket[#t] if @racket[hash] contains a value for the given
 @defproc[(hash-update! [hash (and/c hash? (not/c immutable?))]
                        [key any/c]
                        [updater (any/c . -> . any/c)]
-                       [failure-result any/c (lambda () 
-                                               (raise (make-exn:fail:contract ....)))])
+                       [failure-result (failure-result/c any/c)
+                                       (lambda ()
+                                         (raise (make-exn:fail:contract ....)))])
          void?]{
 
 Composes @racket[hash-ref] and @racket[hash-set!] to update an
@@ -293,8 +302,9 @@ concurrent updates.
 @defproc[(hash-update [hash (and/c hash? immutable?)]
                       [key any/c]
                       [updater (any/c . -> . any/c)]
-                      [failure-result any/c (lambda () 
-                                              (raise (make-exn:fail:contract ....)))])
+                      [failure-result (failure-result/c any/c)
+                                      (lambda ()
+                                        (raise (make-exn:fail:contract ....)))])
           (and/c hash? immutable?)]{
 
 Composes @racket[hash-ref] and @racket[hash-set] to functionally
@@ -355,13 +365,15 @@ procedure and mutability of @racket[hash].}
 
 
 @defproc[(hash-map [hash hash?]
-                   [proc (any/c any/c . -> . any/c)])
+                   [proc (any/c any/c . -> . any/c)]
+                   [try-order? any/c #f])
          (listof any/c)]{
 
 Applies the procedure @racket[proc] to each element in
 @racket[hash] in an unspecified order, accumulating the results
 into a list. The procedure @racket[proc] is called each time with a
-key and its value.
+key and its value, and the procedure's individual results appear in
+order in the result list.
 
 If a hash table is extended with new keys (either through
 @racket[proc] or by another thread) while a @racket[hash-map] or
@@ -372,7 +384,14 @@ change does not affect a traversal if the key has been seen already,
 otherwise the traversal skips a deleted key or uses the remapped key's
 new value.
 
-@see-also-concurrency-caveat[]}
+If @racket[try-order?] is true, then the order of keys and values
+passed to @racket[proc] is normalized under certain circumstances,
+such as when the keys are all symbols and @racket[hash] is not an
+@tech{impersonator}.
+
+@see-also-concurrency-caveat[]
+
+@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}]}
 
 @defproc[(hash-keys [hash hash?])
          (listof any/c)]{
@@ -396,15 +415,19 @@ See @racket[hash-map] for information about modifying @racket[hash]
 during @racket[hash->list]. @see-also-concurrency-caveat[]}
 
 @defproc[(hash-for-each [hash hash?]
-                        [proc (any/c any/c . -> . any)])
+                        [proc (any/c any/c . -> . any)]
+                        [try-order? any/c #f])
          void?]{
 
 Applies @racket[proc] to each element in @racket[hash] (for the
 side-effects of @racket[proc]) in an unspecified order. The procedure
 @racket[proc] is called each time with a key and its value.
 
-See @racket[hash-map] for information about modifying @racket[hash]
-within @racket[proc]. @see-also-concurrency-caveat[]}
+See @racket[hash-map] for information about @racket[try-order?] and
+about modifying @racket[hash] within @racket[proc].
+@see-also-concurrency-caveat[]
+
+@history[#:changed "6.3" @elem{Added the @racket[try-order?] argument.}]}
 
 
 @defproc[(hash-count [hash hash?])
@@ -462,6 +485,26 @@ Returns the value for the element in @racket[hash] at index
 @racket[pos]. If @racket[pos] is not a valid index for
 @racket[hash], the @exnraise[exn:fail:contract].}
 
+@defproc[(hash-iterate-pair [hash hash?]
+                           [pos exact-nonnegative-integer?])
+         (cons any any)]{
+
+Returns a pair containing the key and value for the element 
+in @racket[hash] at index
+@racket[pos]. If @racket[pos] is not a valid index for
+@racket[hash], the @exnraise[exn:fail:contract].}
+
+@history[#:added "6.4.0.5"]
+
+@defproc[(hash-iterate-key+value [hash hash?]
+                           [pos exact-nonnegative-integer?])
+         (values any any)]{
+
+Returns the key and value for the element in @racket[hash] at index
+@racket[pos]. If @racket[pos] is not a valid index for
+@racket[hash], the @exnraise[exn:fail:contract].}
+
+@history[#:added "6.4.0.5"]
 
 @defproc[(hash-copy [hash hash?]) 
          (and/c hash? (not/c immutable?))]{
@@ -496,3 +539,73 @@ inspectable structure fields. See also @racket[gen:equal+hash].}
 
 Like @racket[equal-hash-code], but computes a secondary value suitable
 for use in double hashing.}
+
+@;------------------------------------------------------------------------
+@section{Additional Hash Table Functions}
+
+@note-lib-only[racket/hash]
+
+@(require (for-label racket/hash))
+
+@(define the-eval (make-base-eval))
+@(the-eval '(require racket/hash))
+
+@defproc[(hash-union [h0 (and/c hash? hash-can-functional-set?)]
+                     [h hash?] ...
+                     [#:combine combine
+                                (-> any/c any/c any/c)
+                                (lambda _ (error 'hash-union ....))]
+                     [#:combine/key combine/key
+                                    (-> any/c any/c any/c any/c)
+                                    (lambda (k a b) (combine a b))])
+         (and/c hash? hash-can-functional-set?)]{
+
+Computes the union of @racket[h0] with each hash table @racket[h] by functional
+update, adding each element of each @racket[h] to @racket[h0] in turn.  For each
+key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
+@racket[v0] already exists, it is replaced with a mapping from @racket[k] to
+@racket[(combine/key k v0 v)].
+
+@examples[
+#:eval the-eval
+(hash-union (make-immutable-hash '([1 . one]))
+            (make-immutable-hash '([2 . two]))
+            (make-immutable-hash '([3 . three])))
+(hash-union (make-immutable-hash '([1 . (one uno)] [2 . (two dos)]))
+            (make-immutable-hash '([1 . (ein une)] [2 . (zwei deux)]))
+            #:combine/key (lambda (k v1 v2) (append v1 v2)))
+]
+
+}
+
+@defproc[(hash-union! [h0 (and/c hash? hash-mutable?)]
+                      [h hash?] ...
+                      [#:combine combine
+                                 (-> any/c any/c any/c)
+                                 (lambda _ (error 'hash-union ....))]
+                      [#:combine/key combine/key
+                                     (-> any/c any/c any/c any/c)
+                                     (lambda (k a b) (combine a b))])
+         void?]{
+
+Computes the union of @racket[h0] with each hash table @racket[h] by mutable
+update, adding each element of each @racket[h] to @racket[h0] in turn.  For each
+key @racket[k] and value @racket[v], if a mapping from @racket[k] to some value
+@racket[v0] already exists, it is replaced with a mapping from @racket[k] to
+@racket[(combine/key k v0 v)].
+
+@examples[
+#:eval the-eval
+(define h (make-hash))
+h
+(hash-union! h (make-immutable-hash '([1 . (one uno)] [2 . (two dos)])))
+h
+(hash-union! h
+             (make-immutable-hash '([1 . (ein une)] [2 . (zwei deux)]))
+             #:combine/key (lambda (k v1 v2) (append v1 v2)))
+h
+]
+
+}
+
+@(close-eval the-eval)

@@ -1,15 +1,18 @@
 #lang racket/base
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     setup/cross-system)
          racket/runtime-path
          ffi/unsafe
-         ffi/unsafe/define)
+         ffi/unsafe/define
+         setup/cross-system)
 (require "ffi-constants.rkt")
 (provide (all-from-out "ffi-constants.rkt")
          (protect-out (all-defined-out)))
 
 ;; raco distribute should include Racket's sqlite3 if present
 (define-runtime-path sqlite-so
-  (case (system-type)
+  #:runtime?-id runtime?
+  (case (if runtime? (system-type) (cross-system-type))
     [(windows) '(so "sqlite3")]
     [else '(so "libsqlite3" ("0" #f))]))
 

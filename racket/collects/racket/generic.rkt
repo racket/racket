@@ -169,7 +169,7 @@
 
 (define-syntax (redirect-generics/derived stx)
   (syntax-case stx ()
-    [(_ orig mode gen-name val-expr [method-name proc-expr] ... props-expr)
+    [(_ orig mode gen-name ref-gen-id val-expr [method-name proc-expr] ... props-expr)
      (parameterize ([current-syntax-context #'orig])
        (define gen-id #'gen-name)
        (unless (identifier? gen-id)
@@ -177,7 +177,7 @@
        (define gen-info (syntax-local-value gen-id (lambda () #f)))
        (unless (generic-info? gen-info)
          (wrong-syntax gen-id "expected a name for a generic interface"))
-       (define delta (syntax-local-make-delta-introducer gen-id))
+       (define delta (make-method-delta #'ref-gen-id (generic-info-name gen-info)))
        (define predicate (generic-info-predicate gen-info))
        (define accessor (generic-info-accessor gen-info))
        (define method-ids (syntax->list #'(method-name ...)))
@@ -198,23 +198,23 @@
 (define-syntax (redirect-generics stx)
   (syntax-case stx ()
     [(_ mode gen-name val-expr [id expr] ...)
-     #`(redirect-generics/derived #,stx mode gen-name val-expr [id expr] ... null)]
+     #`(redirect-generics/derived #,stx mode gen-name gen-name val-expr [id expr] ... null)]
     [(_ mode gen-name val-expr [id expr] ... #:properties props-expr)
-     #`(redirect-generics/derived #,stx mode gen-name val-expr [id expr] ... props-expr)]))
+     #`(redirect-generics/derived #,stx mode gen-name gen-name val-expr [id expr] ... props-expr)]))
 
 (define-syntax (chaperone-generics stx)
   (syntax-case stx ()
     [(_ gen-name val-expr [id expr] ...)
-     #`(redirect-generics/derived #,stx #t gen-name val-expr [id expr] ... null)]
+     #`(redirect-generics/derived #,stx #t gen-name gen-name val-expr [id expr] ... null)]
     [(_ gen-name val-expr [id expr] ... #:properties props-expr)
-     #`(redirect-generics/derived #,stx #t gen-name val-expr [id expr] ... props-expr)]))
+     #`(redirect-generics/derived #,stx #t gen-name gen-name val-expr [id expr] ... props-expr)]))
 
 (define-syntax (impersonate-generics stx)
   (syntax-case stx ()
     [(_ gen-name val-expr [id expr] ...)
-     #`(redirect-generics/derived #,stx #f gen-name val-expr [id expr] ... null)]
+     #`(redirect-generics/derived #,stx #f gen-name gen-name val-expr [id expr] ... null)]
     [(_ gen-name val-expr [id expr] ... #:properties props-expr)
-     #`(redirect-generics/derived #,stx #f gen-name val-expr [id expr] ... props-expr)]))
+     #`(redirect-generics/derived #,stx #f gen-name gen-name val-expr [id expr] ... props-expr)]))
 
 (define (redirect-generics-proc name chaperoning? pred ref x proc props)
   (unless (pred x)
@@ -241,10 +241,10 @@
 (define-syntax-rule (define-generics-contract ctc-name gen-name)
   (define-syntax (ctc-name stx)
     (syntax-case stx ()
-      [(_ [id expr] (... ...))
+      [(ref-id [id expr] (... ...))
        #`(generic-instance/c/derived #,stx
                                      [ctc-name]
-                                     gen-name
+                                     gen-name ref-id
                                      [id expr]
                                      (... ...))])))
 
@@ -253,13 +253,13 @@
     [(_ gen-name [id expr] ...)
      #`(generic-instance/c/derived #,stx
                                    [generic-instance/c gen-name]
-                                   gen-name
+                                   gen-name gen-name
                                    [id expr]
                                    ...)]))
 
 (define-syntax (generic-instance/c/derived stx)
   (syntax-case stx ()
-    [(_ original [prefix ...] gen-name [method-id ctc-expr] ...)
+    [(_ original [prefix ...] gen-name ref-gen-id [method-id ctc-expr] ...)
      (parameterize ([current-syntax-context #'original])
        (define gen-id #'gen-name)
        (unless (identifier? gen-id)
@@ -271,8 +271,7 @@
        (define/with-syntax pred predicate)
        (define/with-syntax [ctc-id ...]
          (generate-temporaries #'(ctc-expr ...)))
-       (define/with-syntax [proj-id ...]
-         (generate-temporaries #'(ctc-expr ...)))
+       (define/with-syntax (late-neg-proj-id ...) (generate-temporaries #'(ctc-expr ...)))
        #'(let* ([ctc-id ctc-expr] ...)
            (make-generics-contract
             'gen-name
@@ -280,17 +279,21 @@
             pred
             '(method-id ...)
             (list ctc-id ...)
-            (lambda (b x mode)
-              (redirect-generics
-               mode
-               gen-name
-               x
-               [method-id
-                (lambda (m)
-                  (define b2
-                    (blame-add-context b (format "method ~a" 'method-id)))
-                  (((contract-projection ctc-id) b2) m))]
-               ...)))))]))
+            (λ (mode late-neg-proj-id ...)
+              (λ (x neg-party)
+                (redirect-generics/derived
+                 original
+                 mode
+                 gen-name ref-gen-id
+                 x
+                 [method-id
+                  (lambda (m)
+                    (late-neg-proj-id m neg-party))]
+                 ...
+                 null))))))]))
+
+(define (blame-add-method-context blame method-id)
+  (blame-add-context blame (format "method ~a" method-id)))
 
 (define (make-generics-contract ifc pfx pred mths ctcs proc)
   (define chaperoning?
@@ -318,22 +321,26 @@
 (define (generics-contract-first-order ctc)
   (generics-contract-predicate ctc))
 
-(define (generics-contract-projection mode)
+(define (generics-late-neg-contract-projection mode)
   (lambda (c)
-    (lambda (b)
-      (lambda (x)
-        ((generics-contract-redirect c) b x mode)))))
+    (define mk-late-neg-projs (map contract-late-neg-projection (generics-contract-contracts c)))
+    (lambda (blame)
+      (define late-neg-projs
+        (for/list ([m (in-list (generics-contract-methods c))]
+                   [mk-late-neg-proj (in-list mk-late-neg-projs)])
+          (mk-late-neg-proj (blame-add-method-context blame m))))
+      (apply (generics-contract-redirect c) mode late-neg-projs))))
 
 (struct chaperone-generics-contract generics-contract []
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name generics-contract-name
    #:first-order generics-contract-first-order
-   #:projection (generics-contract-projection #t)))
+   #:late-neg-projection (generics-late-neg-contract-projection #t)))
 
 (struct impersonator-generics-contract generics-contract []
   #:property prop:contract
   (build-contract-property
    #:name generics-contract-name
    #:first-order generics-contract-first-order
-   #:projection (generics-contract-projection #f)))
+   #:late-neg-projection (generics-late-neg-contract-projection #f)))

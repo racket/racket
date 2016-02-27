@@ -1,10 +1,11 @@
 #lang racket/base
+(require setup/cross-system)
 
 (provide add-plt-segment
          get/set-dylib-path)
 
 (define exe-id
-  (if (equal? (path->bytes (system-library-subpath #f)) #"x86_64-macosx")
+  (if (equal? (path->bytes (cross-system-library-subpath #f)) #"x86_64-macosx")
       #xFeedFacf
       #xFeedFace))
 

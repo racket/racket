@@ -12,7 +12,7 @@
     (syntax-case stx ()
       [(_ ([id val] ...) body ...)
        (let ([ids (syntax->list #'(id ...))])
-	 (with-syntax ([(gen-id ...)
+	 (with-syntax ([((gen-id must-be-renamer?) ...)
 			(map (lambda (id)
 			       (unless (identifier? id)
 				 (raise-syntax-error
@@ -20,18 +20,18 @@
 				  "not an identifier"
 				  stx
 				  id))
-			       (let* ([rt (syntax-local-value id (lambda () #f))]
-				      [sp (if (set!-transformer? rt)
-					      (set!-transformer-procedure rt)
-					      rt)])
+			       (let ([sp (syntax-parameter-local-value id)])
 				 (unless (syntax-parameter? sp)
 				   (raise-syntax-error
 				    #f
 				    "not bound as a syntax parameter"
 				    stx
 				    id))
-				 (syntax-local-get-shadower 
-				  (syntax-local-introduce (syntax-parameter-target sp)))))
+				 (list
+                  (syntax-local-get-shadower
+                   (syntax-local-introduce (syntax-parameter-target sp))
+                   #t)
+                  (rename-transformer-parameter? sp))))
 			     ids)])
 	   (let ([dup (check-duplicate-identifier ids)])
 	     (when dup
@@ -51,6 +51,10 @@
                                          (list ids)
                                          #'())])
              (syntax/loc stx
-               (let-syntaxes ([(gen-id) (convert-renamer val)] ...)
+               (let-syntaxes ([(gen-id)
+                               (convert-renamer
+                                (if must-be-renamer? (quote-syntax val) #f)
+                                val)]
+                              ...)
                  orig ...
                  body ...)))))])))

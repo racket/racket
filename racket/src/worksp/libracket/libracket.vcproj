@@ -504,6 +504,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\racket\src\mzsj86w64.S"
+				>
+				<FileConfiguration
+					Name="SRelease|x64"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="ml64.exe /c /Cx /Fo $(PlatformName)\$(ConfigurationName)\mzsj86w64.obj ..\..\racket\src\mzsj86w64.S"
+						Outputs=" $(PlatformName)\$(ConfigurationName)\mzsj86w64.obj"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\..\racket\src\network.c"
 				>
 			</File>

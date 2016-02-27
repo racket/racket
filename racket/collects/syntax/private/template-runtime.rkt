@@ -1,6 +1,6 @@
 #lang racket/base
 (require "../stx.rkt"
-         unstable/struct)
+         racket/struct)
 
 (provide template-map-apply)
 

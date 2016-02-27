@@ -54,6 +54,7 @@ TAGS:
 	etags `find "@srcdir@/racket" -type f`
 
 3m:
+	$(MAKE) @MAKE_LOCAL_RACKET@
 	cd racket; $(MAKE) 3m
 	$(MAKE) @MAKE_GRACKET@-3m
 
@@ -64,6 +65,7 @@ no-3m:
 	$(NOOP)
 
 cgc:
+	$(MAKE) @MAKE_LOCAL_RACKET@
 	cd racket; $(MAKE) cgc
 	$(MAKE) @MAKE_GRACKET@-cgc
 
@@ -77,10 +79,25 @@ both:
 	$(MAKE) cgc
 	$(MAKE) 3m
 
+# Cross-compilation helper:
+
+no-local-racket:
+	$(NOOP)
+
+local/racket/racket3m:
+	mkdir -p local
+	$(MAKE) local/Makefile
+	cd local ; $(MAKE)
+
+local/Makefile:
+	cd local ; `cd ..; cd $(srcdir); pwd`/configure --disable-gracket
+
 # Install (common) ----------------------------------------
 
 INST_CONFIG = -X @DIRCVTPRE@"$(DESTDIR)$(collectsdir)"@DIRCVTPOST@ -G @DIRCVTPRE@"$(DESTDIR)$(configdir)"@DIRCVTPOST@
-SETUP_ARGS = $(INST_CONFIG) $(SELF_RACKET_FLAGS) -N "raco" -l- setup @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
+SETUP_RACKET_FLAGS = $(INST_CONFIG) $(SELF_RACKET_FLAGS) @INSTALL_SETUP_RACKET_FLAGS@
+SETUP_SETUP_FLAGS = @INSTALL_SETUP_FLAGS@ $(PLT_SETUP_OPTIONS) $(PLT_ISO)
+SETUP_ARGS = $(SETUP_RACKET_FLAGS) -N "raco" -l- setup $(SETUP_SETUP_FLAGS)
 
 install:
 	$(MAKE) install-@MAIN_VARIANT@

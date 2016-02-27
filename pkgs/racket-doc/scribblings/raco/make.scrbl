@@ -497,6 +497,18 @@ result will not call @racket[proc] with @racket['unlock].)
             compilations of the same racket source files in multiple places.
 }
 
+@defproc[(install-module-hashes! [bstr btyes?]
+                                 [start exact-nonnegatve-integer? 0]
+                                 [end exact-nonnegatve-integer? (bytes-length bstr)])
+         void?]{
+
+Adjusts the bytecode representation in @racket[bstr] (from bytes
+@racket[start] to @racket[end]) to install a hash code, including any
+submodules within the region. The existing representation should have
+zero bytes in place of each hash string, which is what @racket[write]
+produces for a compiled form.
+
+@history[#:added "6.3"]}
 
 @; ----------------------------------------------------------------------
 

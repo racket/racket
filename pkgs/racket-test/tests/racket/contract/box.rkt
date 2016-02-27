@@ -6,6 +6,18 @@
                             (λ (box v) v)
                             (λ (box v) v))])
       (contract (box/c any/c) v 'pos 'neg)))
+
+  (test/no-error
+   '(let ([v (chaperone-box (box-immutable 1)
+                            (λ (box v) v)
+                            (λ (box v) v))])
+      (contract (box/c none/c any/c) v 'pos 'neg)))
+
+  (test/no-error
+   '(let ([v (chaperone-box (box 1)
+                            (λ (box v) v)
+                            (λ (box v) v))])
+      (set-box! (contract (box/c boolean? none/c) v 'pos 'neg) #t)))
   
   (test/pos-blame
    'box/c1
@@ -30,16 +42,33 @@
   (test/neg-blame
    'box/c6
    '(set-box! (contract (box/c boolean?) (box #f) 'pos 'neg) 11))
+
+  (test/neg-blame
+   'box/c6
+   '(set-box! (contract (box/c boolean? any/c) (box #f) 'pos 'neg) 11))
   
   (test/neg-blame
    'box/c7
    '(set-box! (contract (box/c boolean?) (box 12) 'pos 'neg) 11))
+
+  (test/neg-blame
+   'box/c7
+   '(set-box! (contract (box/c boolean? any/c) (box 12) 'pos 'neg) 11))
   
   
   (test/neg-blame
    'box/c-with-cons/c-inside
    '(let ([f
            (contract (box/c (cons/c (-> boolean? boolean?) '()))
+                     (box (list values))
+                     'pos 
+                     'neg)])
+      ((car (unbox f)) 3)))
+
+  (test/neg-blame
+   'box/c-with-cons/c-inside
+   '(let ([f
+           (contract (box/c (cons/c (-> boolean? boolean?) '()) any/c)
                      (box (list values))
                      'pos 
                      'neg)])

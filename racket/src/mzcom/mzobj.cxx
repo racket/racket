@@ -35,7 +35,7 @@ END_XFORM_SKIP;
 START_XFORM_SKIP;
 #endif
 
-static void ErrorBox(char *s) {
+static void ErrorBox(const char *s) {
   ::MessageBox(NULL,s,"MzCOM",MB_OK);
 }
 
@@ -112,12 +112,12 @@ static Scheme_Object *eval_string_or_get_exn_message(char *s) {
   return exn;
 }
 
-OLECHAR *wideStringFromSchemeObj(Scheme_Object *obj,char *fmt,int fmtlen) {
+OLECHAR *wideStringFromSchemeObj(Scheme_Object *obj,const char *fmt,int fmtlen) {
   char *s;
   OLECHAR *wideString;
   int len;
 
-  s = scheme_format_utf8(fmt,fmtlen,1,&obj,NULL);
+  s = scheme_format_utf8((char *)fmt,fmtlen,1,&obj,NULL);
   len = strlen(s);
   wideString = (OLECHAR *)scheme_malloc((len + 1) * sizeof(OLECHAR));
   MultiByteToWideChar(CP_ACP,(DWORD)0,s,len,wideString,len + 1);
@@ -133,7 +133,7 @@ void exitHandler(int) {
 
 void setupSchemeEnv(Scheme_Env *in_env)
 {
-  char *wrapper;
+  const char *wrapper;
   char exeBuff[260];
   HMODULE mod;
   static BOOL registered;
@@ -302,17 +302,17 @@ static int do_evalLoop(Scheme_Env *env, int argc, char **_args)
   return 0;
 }
 
-static void record_at_exit(Scheme_At_Exit_Callback_Proc p) XFORM_SKIP_PROC
+static int record_at_exit(Scheme_At_Exit_Callback_Proc p) XFORM_SKIP_PROC
 {
   at_exit_callback = p;
+  return 0;
 }
 
-static __declspec(thread) void *tls_space;
+#define NO_TLS_INDEX_FOR_WIN_TLS 1
+#include "../racket/win_tls.inc"
 
 static unsigned WINAPI evalLoop(void *args) XFORM_SKIP_PROC {
-#ifndef _WIN64
-  scheme_register_tls_space(&tls_space, 0);
-#endif
+  register_win_tls();
   scheme_set_atexit(record_at_exit);
 
   return scheme_main_setup(1, do_evalLoop, 0, (char **)args);
@@ -561,6 +561,20 @@ HRESULT mzobj_eval(void *o, BSTR s, BSTR *r)
 {
   return ((CMzObj *)o)->Eval(s, r);
 }
+
+#ifdef __MINGW32__
+
+void * operator new(size_t n)
+{
+  return malloc(n);
+}
+
+void operator delete(void * p)
+{
+  free(p);
+}
+
+#endif
 
 #ifdef MZ_PRECISE_GC
 END_XFORM_SKIP;

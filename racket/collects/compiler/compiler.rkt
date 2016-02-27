@@ -90,10 +90,11 @@
           (compile-to-zo f zo n prefix verbose? mod?)))))
 
   (define (compile-directory-visitor dir info worker omit-root
-                                     #:verbose [verbose? #t] 
-                                     #:skip-path [orig-skip-path #f]
-                                     #:skip-paths [orig-skip-paths null]
-                                     #:skip-doc-sources? [skip-docs? #f])
+                                     #:verbose verbose?
+                                     #:has-module-suffix? has-module-suffix?
+                                     #:skip-path orig-skip-path
+                                     #:skip-paths orig-skip-paths
+                                     #:skip-doc-sources? skip-docs?)
     (define info* (or info (lambda (key mk-default) (mk-default))))
     (define omit-paths (omitted-paths dir c-get-info/full omit-root))
     (define skip-paths (for/list ([p (in-list (if orig-skip-path
@@ -128,12 +129,15 @@
                                                           (cons -inf.0 "")))))))))])
                     (let* ([sses (append
                                   ;; Find all .rkt/.ss/.scm files:
-                                  (filter extract-base-filename/ss (directory-list))
+                                  (filter has-module-suffix? (directory-list))
                                   ;; Add specified doc sources:
                                   (if skip-docs?
                                       null
                                       (map (lambda (s) (if (string? s) (string->path s) s))
-                                           (map car (info* 'scribblings (lambda () null))))))]
+                                           (map car (info* 'scribblings (lambda () null)))))
+                                  ;; Add specified additional sources:
+                                  (map (lambda (s) (if (string? s) (string->path s) s))
+                                       (info* 'compile-include-files (lambda () null))))]
                            [sses (remove* omit-paths sses)])
                       (worker null sses)))])
 
@@ -146,14 +150,16 @@
               (let ([p* (build-path dir p)])
                 (if (and (directory-exists? p*) (not (member p omit-paths)))
                     (compile-directory-visitor p* (c-get-info/full p*) worker omit-root
+                                               #:has-module-suffix? has-module-suffix?
                                                #:verbose verbose?
                                                #:skip-path orig-skip-path
                                                #:skip-paths orig-skip-paths
                                                #:skip-doc-sources? skip-docs?)
                     init))))
           init))))
-  (define (compile-directory dir info 
-                             #:verbose [verbose? #t] 
+  (define (compile-directory dir info
+                             #:has-module-suffix? [has-module-suffix? extract-base-filename/ss]
+                             #:verbose [verbose? #t]
                              #:skip-path [orig-skip-path #f]
                              #:skip-paths [orig-skip-paths null]
                              #:skip-doc-sources? [skip-docs? #f]
@@ -163,29 +169,30 @@
     (define (worker prev sses)
       (for-each managed-compile-zo sses))
     (compile-directory-visitor dir info worker omit-root
+                               #:has-module-suffix? has-module-suffix?
                                #:verbose verbose?
                                #:skip-path orig-skip-path
                                #:skip-paths orig-skip-paths
                                #:skip-doc-sources? skip-docs?))
   
-  (define (get-compile-directory-srcs dir info 
+  (define (get-compile-directory-srcs dir info
+                                      #:has-module-suffix? [has-module-suffix? extract-base-filename/ss]
                                       #:verbose [verbose? #t] 
                                       #:skip-path [orig-skip-path #f]
                                       #:skip-paths [orig-skip-paths null]
                                       #:skip-doc-sources? [skip-docs? #f]
-                                      #:managed-compile-zo [managed-compile-zo
-                                                            (make-caching-managed-compile-zo)]
                                       #:omit-root [omit-root dir])
     (compile-directory-visitor dir info append omit-root
+                               #:has-module-suffix? has-module-suffix?
                                #:verbose verbose?
                                #:skip-path orig-skip-path
                                #:skip-paths orig-skip-paths
-                               #:skip-doc-sources? skip-docs?
-                               #:managed-compile-zo managed-compile-zo))
+                               #:skip-doc-sources? skip-docs?))
   
   (define unspec (gensym))
 
-  (define (compile-collection-zos collection 
+  (define (compile-collection-zos collection
+                                  #:has-module-suffix? [has-module-suffix? extract-base-filename/ss]
                                   #:skip-path [skip-path #f]
                                   #:skip-paths [skip-paths null]
                                   #:skip-doc-sources? [skip-docs? #f]
@@ -199,6 +206,7 @@
                        #:omit-root (if (eq? omit-root unspec)
                                        dir
                                        omit-root)
+                       #:has-module-suffix? has-module-suffix?
                        #:verbose #f
                        #:skip-path skip-path
                        #:skip-paths skip-paths

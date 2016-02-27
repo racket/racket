@@ -1,3 +1,3 @@
 #lang info
 
-(define test-timeouts '(("test.rkt" 300)))
+(define test-timeouts '(("test.rkt" 400)))

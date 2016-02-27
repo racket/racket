@@ -32,17 +32,23 @@
      (list (cons prop:equal+hash vector->list))))
 
   ;; forgeries of generic functions that don't exist
-  (define (equal-proc a b e) (equal? a b))
-  (define (hash-proc x h)  (equal-hash-code x))
-  (define (hash2-proc x h) (equal-secondary-hash-code x))
+  (define (equal-proc-impl a b e) (equal? a b))
+  (define (hash-proc-impl x h)  (equal-hash-code x))
+  (define (hash2-proc-impl x h) (equal-secondary-hash-code x))
 
   (define-syntax gen:equal+hash
-    (make-generic-info (quote-syntax prop:gen:equal+hash)
+    (make-generic-info (quote-syntax gen:equal+hash)
+                       (quote-syntax prop:gen:equal+hash)
                        (quote-syntax equal+hash?)
                        (quote-syntax gen:equal+hash-acc)
+                       ;; Unbound identifiers will be `free-identifier=?` to unbound in clients:
                        (list (quote-syntax equal-proc)
                              (quote-syntax hash-proc)
-                             (quote-syntax hash2-proc))))
+                             (quote-syntax hash2-proc))
+                       ;; Bound identifiers used for implementations:
+                       (list (quote-syntax equal-proc-impl)
+                             (quote-syntax hash-proc-impl)
+                             (quote-syntax hash2-proc-impl))))
 
 
   (define-values (prop:gen:custom-write gen:custom-write? gen:custom-write-acc)
@@ -60,7 +66,7 @@
      (list (cons prop:custom-write (lambda (v) (vector-ref v 0))))))
 
   ;; see above for equal+hash
-  (define (write-proc v p w)
+  (define (write-proc-impl v p w)
     (case w
       [(#t) (write v p)]
       [(#f) (display v p)]
@@ -68,9 +74,11 @@
       [else (error 'write-proc "internal error; should not happen")]))
 
   (define-syntax gen:custom-write
-    (make-generic-info (quote-syntax prop:gen:custom-write)
+    (make-generic-info (quote-syntax gen:custom-write)
+                       (quote-syntax prop:gen:custom-write)
                        (quote-syntax gen:custom-write?)
                        (quote-syntax gen:custom-write-acc)
-                       (list (quote-syntax write-proc))))
+                       (list (quote-syntax write-proc))
+                       (list (quote-syntax write-proc-impl))))
 
   )

@@ -148,45 +148,52 @@
             [else (let ([e (local-expand (car l)
                                          expand-context
                                          stop-forms)])
+                    (define (check-bindings ids)
+                      (for/list ([id (in-list ids)])
+                        (cond
+                         [(identifier? id) (syntax-local-identifier-as-binding id)]
+                         [else
+                          (syntax-case id ()
+                            [(a b)
+                             (and (identifier? #'a)
+                                  (identifier? #'b))
+                             (syntax/loc id (list (syntax-local-identifier-as-binding #'a)
+                                                  #'b))]
+                            [_
+                             (raise-syntax-error #f
+                                                 "bad syntax"
+                                                 e)])])))
                     (syntax-case e (begin define-values)
                       [(begin expr ...)
                        (loop (append
                               (syntax->list (syntax (expr ...)))
                               (cdr l)))]
-                      [(define-values (id) rhs)
-                       (cons e (loop (cdr l)))]
+                      [(dv (id) rhs)
+                       (free-identifier=? #'define-values #'dv)
+                       (cons (datum->syntax e
+                                            (list #'dv
+                                                  (list (syntax-local-identifier-as-binding #'id))
+                                                  #'rhs)
+                                            e
+                                            e)
+                             (loop (cdr l)))]
                       [(field (id expr) ...)
-                       (if (andmap (lambda (id)
-                                     (or (identifier? id)
-                                         (syntax-case id ()
-                                           [(a b)
-                                            (and (identifier? #'a)
-                                                 (identifier? #'b))]
-                                           [_else #f])))
-                                   (syntax->list #'(id ...)))
-                           (cons e (loop (cdr l)))
-                           (raise-syntax-error
-                            #f
-                            "bad syntax"
-                            e))]
-                      [(id . rest)
-                       (ormap (lambda (x) (free-identifier=? x #'id))
+                       (with-syntax ([(id ...) (check-bindings (syntax->list #'(id ...)))])
+                         (cons (syntax/loc e (field (id expr) ...))
+                               (loop (cdr l))))]
+                      [(form . rest)
+                       (ormap (lambda (x) (free-identifier=? x #'form))
                               (syntax->list
                                #'(public public-final pubment
                                          override override-final augment augment-final augride overment
                                          inherit inherit/super inherit/inner
                                          inherit-field)))
                        (let ([l2 (syntax->list #'rest)])
-                         (if (and l2
-                                  (andmap (lambda (i)
-                                            (or (identifier? i)
-                                                (syntax-case i ()
-                                                  [(a b)
-                                                   (and (identifier? #'a)
-                                                        (identifier? #'b))]
-                                                  [_else #f])))
-                                          l2))
-                             (cons e (loop (cdr l)))
+                         (if l2
+                             (cons (with-syntax ([(id ...) (check-bindings l2)])
+                                     (syntax/loc e
+                                       (form id ...)))
+                                   (loop (cdr l)))
                              (raise-syntax-error
                               #f
                               "bad syntax (inside trait)"
@@ -244,7 +251,7 @@
         (for-each (lambda (clause)
                     (syntax-case clause (define-values field)
                       [(define-values (id) rhs)
-                       (bound-identifier-mapping-put! boundmap #'id #'rhs)]
+                       (bound-identifier-mapping-put! boundmap (syntax-local-identifier-as-binding #'id) #'rhs)]
                       [(field [id expr] ...)
                        (for-each (lambda (id expr)
                                    (bound-identifier-mapping-put! boundmap (internal-name id) expr))
@@ -258,9 +265,10 @@
       (bound-identifier=? (internal-name a) (internal-name b)))
 
     (define (internal-name decl)
-      (if (identifier? decl)
-          decl
-          (stx-car decl)))
+      (syntax-local-identifier-as-binding
+       (if (identifier? decl)
+           decl
+           (stx-car decl))))
 
     (define (external-name decl)
       (if (identifier? decl)

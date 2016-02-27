@@ -26,7 +26,7 @@ vice-versa.
 @(define sequence-evaluator
    (let ([evaluator (make-base-eval)])
      (evaluator '(require racket/generic racket/list racket/stream racket/sequence
-                          racket/contract))
+                          racket/contract racket/dict))
      evaluator))
 
 @guideintro["sequences"]{sequences}
@@ -152,14 +152,14 @@ each element in the sequence.
   Returns @racket[#t] if @racket[v] can be used as a @tech{sequence},
   @racket[#f] otherwise.
 
-@interaction[#:eval sequence-evaluator
+@examples[#:eval sequence-evaluator
   (sequence? 42)
   (sequence? '(a b c))
   (sequence? "word")
   (sequence? #\x)]}
 
-@defproc*[([(in-range [end number?]) stream?]
-           [(in-range [start number?] [end number?] [step number? 1]) stream?])]{
+@defproc*[([(in-range [end real?]) stream?]
+           [(in-range [start real?] [end real?] [step real? 1]) stream?])]{
   Returns a sequence (that is also a @tech{stream}) whose elements are
   numbers.  The single-argument case @racket[(in-range end)] is
   equivalent to @racket[(in-range 0 end 1)].  The first number in the
@@ -169,12 +169,12 @@ each element in the sequence.
   @racket[step] is non-negative, or less or equal to @racket[end] if
   @racket[step] is negative.  @speed[in-range "number"]
 
-  Example: gaussian sum
-  @interaction[#:eval sequence-evaluator
+  
+  @examples[#:label "Example: gaussian sum" #:eval sequence-evaluator
     (for/sum ([x (in-range 10)]) x)]
 
-  Example: sum of even numbers
-  @interaction[#:eval sequence-evaluator
+  
+  @examples[#:label "Example: sum of even numbers" #:eval sequence-evaluator
     (for/sum ([x (in-range 0 100 2)]) x)]
 }
 
@@ -184,7 +184,7 @@ each element in the sequence.
   integers starting with @racket[start], where each element is one
   more than the preceding element.  @speed[in-naturals "integer"]
 
-  @interaction[#:eval sequence-evaluator
+  @examples[#:eval sequence-evaluator
     (for/list ([k (in-naturals)]
                [x (in-range 10)])
       (list k x))]
@@ -197,7 +197,7 @@ each element in the sequence.
   @info-on-seq["pairs" "lists"]
   @speed[in-list "list"]
 
-  @interaction[#:eval sequence-evaluator
+  @examples[#:eval sequence-evaluator
     (for/list ([x (in-list '(3 1 4))])
       `(,x ,(* x x)))]
 }
@@ -207,7 +207,7 @@ each element in the sequence.
   @info-on-seq["mpairs" "mutable lists"]
   @speed[in-mlist "mutable list"]
 
-  @interaction[#:eval sequence-evaluator
+  @examples[#:eval sequence-evaluator
     (for/list ([x (in-mlist (mcons "RACKET" (mcons "LANG" '())))])
       (string-length x))]
 }
@@ -232,9 +232,21 @@ each element in the sequence.
   greater or equal to @racket[end] if @racket[step] is non-negative,
   or less or equal to @racket[end] if @racket[step] is negative.
 
-  If @racket[start] is not a valid index, or @racket[stop] is not in
-  [-1, @racket[(vector-length vec)]] then the
-  @exnraise[exn:fail:contract].  If @racket[start] is less than
+  If @racket[start] is not a valid index, then the
+  @exnraise[exn:fail:contract], except when @racket[start], @racket[stop], and
+  @racket[(vector-length vec)] are equal, in which case the result is an
+  empty sequence.
+
+  @examples[#:eval sequence-evaluator
+            (for ([x (in-vector (vector 1) 1)]) x)
+            (eval:error (for ([x (in-vector (vector 1) 2)]) x))
+            (for ([x (in-vector (vector) 0 0)]) x)
+            (for ([x (in-vector (vector 1) 1 1)]) x)]
+
+  If @racket[stop] is not in [-1, @racket[(vector-length vec)]],
+  then the @exnraise[exn:fail:contract].
+  
+  If @racket[start] is less than
   @racket[stop] and @racket[step] is negative, then the
   @exnraise[exn:fail:contract:mismatch].  Similarly, if @racket[start]
   is more than @racket[stop] and @racket[step] is positive, then the
@@ -242,9 +254,9 @@ each element in the sequence.
 
   @speed[in-vector "vector"]
 
-  @interaction[#:eval sequence-evaluator
+  @examples[#:eval sequence-evaluator
     (define (histogram vector-of-words)
-      (define a-hash (hash))
+      (define a-hash (make-hash))
       (for ([word (in-vector vector-of-words)])
         (hash-set! a-hash word (add1 (hash-ref a-hash word 0))))
       a-hash)
@@ -266,7 +278,7 @@ each element in the sequence.
 
   @speed[in-string "string"]
 
-  @interaction[#:eval sequence-evaluator
+  @examples[#:eval sequence-evaluator
     (define (line-count str)
       (for/sum ([ch (in-string str)])
         (if (char=? #\newline ch) 1 0)))
@@ -288,7 +300,7 @@ each element in the sequence.
 
   @speed[in-bytes "byte string"]
 
-  @interaction[#:eval sequence-evaluator
+  @examples[#:eval sequence-evaluator
     (define (has-eof? bs)
       (for/or ([ch (in-bytes bs)])
         (= ch 0)))
@@ -366,6 +378,53 @@ each element in the sequence.
       (printf "key and value: ~a\n" key+value))]
 }
 
+@deftogether[(
+@defproc[(in-mutable-hash 
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[(in-mutable-hash-keys
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[(in-mutable-hash-values
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[(in-mutable-hash-pairs
+          [hash (and/c hash? (not/c immutable?) (not/c hash-weak?))]) 
+	  sequence?]
+@defproc[(in-immutable-hash 
+          [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[(in-immutable-hash-keys
+          [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[(in-immutable-hash-values
+          [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[(in-immutable-hash-pairs
+          [hash (and/c hash? immutable?)])
+	  sequence?]
+@defproc[(in-weak-hash 
+          [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+@defproc[(in-weak-hash-keys
+          [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+@defproc[(in-weak-hash-values
+          [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+@defproc[(in-weak-hash-pairs
+          [hash (and/c hash? hash-weak?)]) 
+	  sequence?]
+)]{
+   Sequence constructors for specific kinds of hash tables.
+   
+   These may be more performant than the analogous @racket[in-hash] 
+   forms. However, they may consume more space to help with iteration.
+   
+   @history[#:added "6.4.0.6"]
+}
+
+
 @defproc[(in-directory [dir (or/c #f path-string?) #f]
                        [use-dir? ((and/c path? complete-path?) . -> . any/c)
                                  (lambda (dir-path) #t)])
@@ -383,6 +442,48 @@ each element in the sequence.
   To generate a sequence that includes only the immediate
   content of a directory, use the result of @racket[directory-list] as
   a sequence.
+
+@examples[
+    (code:comment @#,t{Given a directory tree:})
+    (code:comment @#,t{})
+    (code:comment @#,t{ /example})
+    (code:comment @#,t{ ├── a})
+    (code:comment @#,t{ │   ├── alpha})
+    (code:comment @#,t{ │   └── apple})
+    (code:comment @#,t{ ├── b})
+    (code:comment @#,t{ │   └── beta})
+    (code:comment @#,t{ └── c})
+    (code:comment @#,t{})
+    (eval:alts
+      (parameterize ([current-directory "/example"])
+        (for ([p (in-directory)])
+          (printf "~a\n" p)))
+      (for ([p (in-list '("a"
+                          "a/alpha"
+                          "a/apple"
+                          "b"
+                          "b/beta"
+                          "c"))])
+        (printf "~a\n" p)))
+    (eval:alts
+      (for ([p (in-directory "/example")])
+        (printf "~a\n" p))
+      (for ([p (in-list '("/example/a"
+                          "/example/a/alpha"
+                          "/example/a/apple"
+                          "/example/b"
+                          "/example/b/beta"
+                          "/example/c"))])
+        (printf "~a\n" p)))
+    (eval:alts
+      (let ([f (lambda (path) (regexp-match? #rx"/example/b.*" path))])
+        (for ([p (in-directory "/example" f)])
+          (printf "~a\n" p)))
+      (for ([p (in-list '("/example/a"
+                          "/example/b"
+                          "/example/b/beta"
+                          "/example/c"))])
+        (printf "~a\n" p)))]
 
 @history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}]}
 
@@ -614,7 +715,7 @@ each element in the sequence.
   values in the sequence), the @exnraise[exn:fail:contract].}
 
 @; ----------------------------------------------------------------------
-@subsection[#:tag "more-sequences"]{Sequence Combinations & Contract}
+@subsection[#:tag "more-sequences"]{Additional Sequence Operations}
 
 @note-lib[racket/sequence]
 
@@ -755,30 +856,59 @@ for instance, a wrapped list is not guaranteed to satisfy @racket[list?].
 
 If @racket[min-count] is a number, the stream is required to have at least that many elements in it.
 
-@defexamples[
+@examples[
 #:eval sequence-evaluator
 (define/contract predicates
   (sequence/c (-> any/c boolean?))
   (in-list (list integer?
                  string->symbol)))
-(for ([P predicates])
-  (printf "~s\n" (P "cat")))
+(eval:error
+ (for ([P predicates])
+   (printf "~s\n" (P "cat"))))
 (define/contract numbers&strings
   (sequence/c number? string?)
   (in-dict (list (cons 1 "one")
                  (cons 2 "two")
                  (cons 3 'three))))
-(for ([(N S) numbers&strings])
-  (printf "~s: ~a\n" N S))
+(eval:error
+ (for ([(N S) numbers&strings])
+   (printf "~s: ~a\n" N S)))
 (define/contract a-sequence
   (sequence/c #:min-count 2 char?)
   "x")
-(for ([x a-sequence]
-      [i (in-naturals)])
-  (printf "~a is ~a\n" i x))
+(eval:error
+ (for ([x a-sequence]
+       [i (in-naturals)])
+   (printf "~a is ~a\n" i x)))
 ]
 
 }
+
+@subsubsection{Additional Sequence Constructors}
+
+@defproc[(in-syntax [stx syntax?]) sequence?]{
+  Produces a sequence whose elements are the successive subparts of
+  @racket[stx].
+  Equivalent to @racket[(syntax->list lst)].
+  @speed[in-syntax "syntax"]
+
+@examples[#:eval sequence-evaluator
+(for/list ([x (in-syntax #'(1 2 3))])
+  x)]
+
+@history[#:added "6.3"]}
+
+@defproc[(in-slice [length exact-positive-integer?] [seq sequence?])
+         sequence?]{
+  Returns a sequence whose elements are lists with the first @racket[length]
+  elements of @racket[seq], then the next @racket[length] and so on.
+
+  @examples[#:eval sequence-evaluator
+  (for/list ([e (in-slice 3 (in-range 8))]) e)
+  ]
+  @history[#:added "6.3"]
+}
+
 
 @; ======================================================================
 @section[#:tag "streams"]{Streams}
@@ -827,6 +957,13 @@ stream, but plain lists can be used as streams, and functions such as
   A shorthand for nested @racket[stream-cons]es ending with
   @racket[empty-stream].
 }
+
+@defform[(stream* expr ...)]{
+  A shorthand for nested @racket[stream-cons]es, but the final @racket[expr]
+  must be a stream, and it is used as the rest of the stream instead of
+  @racket[empty-stream]. Similar to @racket[list*] but for streams.
+
+@history[#:added "6.3"]}
 
 @defproc[(in-stream [s stream?]) sequence?]{
   Returns a sequence that is equivalent to @racket[s].
@@ -938,6 +1075,26 @@ stream, but plain lists can be used as streams, and functions such as
   Returns a stream whose elements are the elements of @racket[s], but
   with @racket[e] between each pair of elements in @racket[s].  The
   new stream is constructed lazily.
+}
+
+@deftogether[(@defform[(for/stream (for-clause ...) body-or-break ... body)]
+              @defform[(for*/stream (for-clause ...) body-or-break ... body)])]{
+  Iterates like @racket[for/list] and @racket[for*/list], respectively, but the
+  results are lazily collected into a @tech{stream} instead of a list.
+
+  Unlike most @racket[for] forms, these forms are evaluated lazily, so each
+  @racket[body] will not be evaluated until the resulting stream is forced. This
+  allows @racket[for/stream] and @racket[for*/stream] to iterate over infinite
+  sequences, unlike their finite counterparts.
+
+  @examples[#:eval sequence-evaluator
+    (for/stream ([i '(1 2 3)]) (* i i))
+    (stream->list (for/stream ([i '(1 2 3)]) (* i i)))
+    (stream-ref (for/stream ([i '(1 2 3)]) (displayln i) (* i i)) 1)
+    (stream-ref (for/stream ([i (in-naturals)]) (* i i)) 25)
+  ]
+
+  @history[#:added "6.3.0.9"]
 }
 
 @defthing[gen:stream any/c]{
@@ -1127,11 +1284,12 @@ values from the generator.
   literal, exact, non-negative integer.
   
   @examples[#:eval generator-eval
-    (let ([g (in-generator
-              (let loop ([n 3])
-                (unless (zero? n) (yield n (add1 n)) (loop (sub1 n)))))])
-      (let-values ([(not-empty? next) (sequence-generate g)])
-        (let loop () (when (not-empty?) (next) (loop))) 'done))
+    (eval:error
+     (let ([g (in-generator
+               (let loop ([n 3])
+                 (unless (zero? n) (yield n (add1 n)) (loop (sub1 n)))))])
+       (let-values ([(not-empty? next) (sequence-generate g)])
+         (let loop () (when (not-empty?) (next) (loop))) 'done)))
     (let ([g (in-generator #:arity 2
               (let loop ([n 3])
                 (unless (zero? n) (yield n (add1 n)) (loop (sub1 n)))))])
@@ -1141,7 +1299,7 @@ values from the generator.
   To use an existing generator as a sequence, use @racket[in-producer]
   with a stop-value known for the generator:
 
-  @interaction[#:eval generator-eval
+  @examples[#:label #f #:eval generator-eval
     (define abc-generator (generator ()
                            (for ([x '(a b c)])
                               (yield x))))

@@ -28,7 +28,7 @@
                                       (truncate (/ (caar l) 10))))])
                     (if sep? (cons (mk-sep lbl) l) l))]))))
 
-(define (get-docs all? tag)
+(define (get-docs all? tag #:custom-secs [custom-secs (make-hash)])
   (let* ([recs (find-relevant-directory-records (list tag) (if all? 'all-available 'no-user))]
          [infos (map get-info/full (map directory-record-path recs))]
          [docs (append-map
@@ -55,7 +55,10 @@
                             ;; Category
                             (let ([the-cat
                                    (if (pair? new-cat) (car new-cat) 'unknown)])
-                              (or (and (or (eq? the-cat 'omit) 
+                              (or (and (string? the-cat)
+                                       (let ([the-cat-sym (gensym)])
+                                         (hash-ref! custom-secs the-cat the-cat-sym)))
+                                  (and (or (eq? the-cat 'omit) 
                                            (eq? the-cat 'omit-start))
                                        the-cat)
                                   (ormap (lambda (sec)
@@ -90,7 +93,18 @@
       (cdr l)))
 
 (define (make-start-page all?)
-  (let* ([docs (get-docs all? 'scribblings)]
+  (let* ([custom-secs (make-hash)]
+         [docs (get-docs all? 'scribblings
+                         #:custom-secs custom-secs)]
+         [sections+custom
+          (append-map (λ (sec)
+                        (if (eq? 'library (sec-cat sec))
+                            (append (for/list ([label (sort (hash-keys custom-secs)
+                                                            string<=?)])
+                                      (make-sec (hash-ref custom-secs label) label))
+                                    (list sec))
+                            (list sec)))
+                      sections)]
          [plain-line
           (lambda content
             (list (make-flow (list (make-paragraph content)))))]
@@ -151,5 +165,5 @@
                                                 renderer part resolve-info))])
                                     (string-ci<? (str ad) (str bd)))
                                   (> (car ad) (car bd)))))))])))
-         sections))))
+         sections+custom))))
     (make-delayed-block contents)))

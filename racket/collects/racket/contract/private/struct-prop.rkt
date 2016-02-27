@@ -1,27 +1,29 @@
 #lang racket/base
 (require "guts.rkt"
          "blame.rkt"
-         "prop.rkt"
-         "misc.rkt")
+         "prop.rkt")
 (provide (rename-out [struct-type-property/c* struct-type-property/c]))
 
-(define (get-stpc-proj stpc)
-  (define get-val-proj
-    (contract-projection
+(define (get-stpc-late-neg-proj stpc)
+  (define get-late-neg-proj
+    (get/build-late-neg-projection
      (struct-type-property/c-value-contract stpc)))
   (λ (input-blame)
     (define blame (blame-add-context input-blame "the struct property value of" #:swap? #t))
-    (define val-proj (get-val-proj blame))
-    (λ (x)
+    (define late-neg-proj (get-late-neg-proj blame))
+    (λ (x neg-party)
       (unless (struct-type-property? x)
-        (raise-blame-error input-blame x
+        (raise-blame-error input-blame x #:neg-party
                            '(expected "struct-type-property" given: "~e")
                            x))
+      (define blame+neg-party (cons blame neg-party))
       (define-values (nprop _pred _acc)
         (make-struct-type-property
          (wrap-name x)
          (lambda (val _info)
-           (val-proj val))
+           (with-contract-continuation-mark
+            blame+neg-party
+            (late-neg-proj val neg-party)))
          (list (cons x values))))
       nprop)))
 
@@ -37,7 +39,7 @@
                         'struct-type-property/c
                         (struct-type-property/c-value-contract c)))
               #:first-order (lambda (c) struct-type-property?)
-              #:projection get-stpc-proj))
+              #:late-neg-projection get-stpc-late-neg-proj))
 
 (define struct-type-property/c*
   (let ([struct-type-property/c

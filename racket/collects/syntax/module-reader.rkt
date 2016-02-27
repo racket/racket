@@ -39,6 +39,7 @@
         [#:read-syntax         ~read-syntax         #'read-syntax]
         [#:wrapper1            ~wrapper1            #'#f]
         [#:wrapper2            ~wrapper2            #'#f]
+        [#:module-wrapper      ~module-wrapper      #'#f]
         [#:whole-body-readers? ~whole-body-readers? #'#f]
         [#:info                ~info                #'#f]
         [#:language-info       ~module-get-info     #'#f]
@@ -72,24 +73,32 @@
                           #,~read)]
                   [w1 #,~wrapper1]
                   [w2 #,~wrapper2]
+                  [mw #,~module-wrapper]
                   [whole? #,~whole-body-readers?]
                   [rd (lambda (in)
                         (wrap-internal (if (and (not stx?) (syntax? lang))
                                          (syntax->datum lang)
                                          lang)
                                        in read whole? w1 stx?
-                                       modpath src line col pos))]
-                  [r (cond [(not w2) (rd in)]
-                           [(ar? w2 3) (w2 in rd stx?)]
-                           [else (w2 in rd)])])
-             (if stx?
-                 (let ([prop #,(if (syntax-e ~module-get-info)
-                                   ~module-get-info
-                                   #'#f)])
-                   (if prop 
-                       (syntax-property r 'module-language prop)
-                       r))
-                 r)))
+                                       modpath src line col pos))])
+             ((or (and mw
+                       (if (procedure-arity-includes? mw 2)
+                           mw
+                           (lambda (thunk stx?) (mw thunk))))
+                  (lambda (thunk stx?) (thunk)))
+              (lambda ()
+                (let ([r (cond [(not w2) (rd in)]
+                               [(ar? w2 3) (w2 in rd stx?)]
+                               [else (w2 in rd)])])
+                  (if stx?
+                      (let ([prop #,(if (syntax-e ~module-get-info)
+                                        ~module-get-info
+                                        #'#f)])
+                        (if prop 
+                            (syntax-property r 'module-language prop)
+                            r))
+                      r)))
+              stx?)))
          (define read-properties (lang->read-properties #,~lang))
          (define (get-info in modpath line col pos)
            (get-info-getter (read-properties in modpath line col pos)))

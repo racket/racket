@@ -425,7 +425,35 @@
                           '(1 2 3 4 5)))])
       (try-print pretty-print val 10 "(list\n (DUO\n  '(a\n    b\n    c\n    d\n    e)\n  '(1\n    2\n    3\n    4\n    5)))\n")
       (try-print pretty-write val 10 "((DUO\n  (a\n   b\n   c\n   d\n   e)\n  (1\n   2\n   3\n   4\n   5)))\n")
-      (try-print pretty-display val 10 "((DUO\n  (a\n   b\n   c\n   d\n   e)\n  (1\n   2\n   3\n   4\n   5)))\n"))))
+      (try-print pretty-display val 10 "((DUO\n  (a\n   b\n   c\n   d\n   e)\n  (1\n   2\n   3\n   4\n   5)))\n")))
+
+  (test "(DUO 1 2)"
+        pretty-format (duo 1 2) 40 #:mode 'print)
+  (test "(DUO 1 2)"
+        pretty-format (duo 1 2) 40 #:mode 'write)
+  (test "(DUO 1 2)"
+        pretty-format (duo 1 2) 40 #:mode 'display)
+
+  (test "(DUO \"a\" 'b)"
+        pretty-format (duo "a" 'b) #:mode 'print 40)
+  (test "(DUO \"a\" b)"
+        pretty-format (duo "a" 'b) #:mode 'write 40)
+  (test "(DUO a b)"
+        pretty-format (duo "a" 'b) #:mode 'display 40)
+
+  (test "(DUO\n \"abcdefghijklmno\"\n 'b)"
+        pretty-format (duo "abcdefghijklmno" 'b) 20 #:mode 'print)
+  (test "(DUO\n \"abcdefghijklmno\"\n b)"
+        pretty-format (duo "abcdefghijklmno" 'b) 20 #:mode 'write)
+  (test "(DUO\n abcdefghijklmno\n b)"
+        pretty-format (duo "abcdefghijklmno" 'b) 20 #:mode 'display)
+
+  (test "(list\n (DUO\n  \"abcdefghijklmno\"\n  'b))"
+        pretty-format (list (duo "abcdefghijklmno" 'b)) 20 #:mode 'print)
+  (test "((DUO\n  \"abcdefghijklmno\"\n  b))"
+        pretty-format (list (duo "abcdefghijklmno" 'b)) 20 #:mode 'write)
+  (test "((DUO\n  abcdefghijklmno\n  b))"
+        pretty-format (list (duo "abcdefghijklmno" 'b)) 20 #:mode 'display))
 
 ;; ----------------------------------------
 

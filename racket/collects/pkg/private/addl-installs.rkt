@@ -111,6 +111,7 @@
     (define v (i 'install-platform (lambda () #rx"")))
     (or (not (platform-spec? v))
         (matching-platform? v
+                            #:cross? #t
                             #:system-type sys-type
                             #:system-library-subpath sys-lib-subpath)))
   (set-union (extract-documents i)

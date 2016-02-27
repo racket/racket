@@ -8,6 +8,7 @@
          compiler/embed
          setup/dirs
          setup/variant
+         setup/cross-system
 
          compiler/private/winutf16)
 
@@ -69,7 +70,7 @@
 	 installed-desktop-path->icon-path)
 
 (define current-launcher-variant
-  (make-parameter (system-type 'gc)
+  (make-parameter (cross-system-type 'gc)
                   (lambda (v)
                     (unless (memq v '(3m script-3m cgc script-cgc))
                       (raise-type-error
@@ -80,8 +81,8 @@
 
 (define (variant-available? kind cased-kind-name variant)
   (cond
-   [(or (eq? 'unix (system-type))
-        (and (eq? 'macosx (system-type))
+   [(or (eq? 'unix (cross-system-type))
+        (and (eq? 'macosx (cross-system-type))
              (eq? kind 'mzscheme)))
     (let ([bin-dir (if (eq? kind 'mzscheme)
                        (find-console-bin-dir)
@@ -94,13 +95,13 @@
                                   [(mzscheme) 'racket]
                                   [(mred) 'gracket])
                                 (variant-suffix variant #f))))))]
-   [(eq? 'macosx (system-type))
+   [(eq? 'macosx (cross-system-type))
     ;; kind must be mred, because mzscheme case is caught above
     (directory-exists? (build-path (find-lib-dir)
                                    (format "~a~a.app"
                                            cased-kind-name
                                            (variant-suffix variant #f))))]
-   [(eq? 'windows (system-type))
+   [(eq? 'windows (cross-system-type))
     (file-exists?
      (build-path
       (if (eq? kind 'mzscheme) (find-console-bin-dir) (find-lib-dir))
@@ -111,7 +112,7 @@
   (let* ([cased-kind-name (if (eq? kind 'mzscheme)
                               "Racket"
                               "GRacket")]
-         [normal-kind (system-type 'gc)]
+         [normal-kind (cross-system-type 'gc)]
          [alt-kind (if (eq? '3m normal-kind)
                        'cgc
                        '3m)]
@@ -121,7 +122,7 @@
          [alt (if (variant-available? kind cased-kind-name alt-kind)
                   (list alt-kind)
                   null)]
-         [script (if (and (eq? 'macosx (system-type))
+         [script (if (and (eq? 'macosx (cross-system-type))
                           (eq? kind 'mred)
                           (pair? normal))
                      (if (eq? normal-kind '3m)
@@ -167,7 +168,7 @@
 (define (add-file-suffix path variant mred?)
   (let ([s (variant-suffix
             variant
-            (case (system-type)
+            (case (cross-system-type)
               [(unix) #f]
               [(windows) #t]
               [(macosx) (and mred? (not (script-variant? variant)))]))])
@@ -176,7 +177,7 @@
       (path-replace-suffix
        path
        (string->bytes/utf-8
-        (if (and (eq? 'windows (system-type))
+        (if (and (eq? 'windows (cross-system-type))
                  (regexp-match #rx#"[.]exe$" (path->bytes path)))
           (format "~a.exe" s)
           s))))))
@@ -295,7 +296,7 @@
   (define (has-exe? exe)
     (or (file-exists? (build-path "/usr/bin" exe))
         (file-exists? (build-path "/bin" exe))))
-  (let* ([has-readlink?  (and (not (eq? 'macosx (system-type)))
+  (let* ([has-readlink?  (and (not (eq? 'macosx (cross-system-type)))
                               (has-exe? "readlink"))]
          [dest-explode   (normalize+explode-path dest)]
          [bindir-explode (normalize+explode-path bindir)])
@@ -364,7 +365,7 @@
                                  (cdr m) (variant-suffix variant #t)
                                  (cdr m) (variant-suffix variant #t))))]
          [x-flags? (and (eq? kind 'mred)
-                        (eq? (system-type) 'unix)
+                        (eq? (cross-system-type) 'unix)
                         (not (script-variant? variant)))]
          [flags (let ([m (assq 'wm-class aux)])
                   (if m
@@ -397,8 +398,15 @@
                               (if (and m (cdr m))
                                   (find-lib-dir)
                                   (let ([p (path-only dest)])
-                                    (if (eq? 'macosx (system-type))
-                                        (build-path p 'up)
+                                    (if (eq? 'macosx (cross-system-type))
+                                        (let* ([cdir (find-console-bin-dir)]
+                                               [gdir (find-gui-bin-dir)]
+                                               [rel (find-relative-path cdir gdir)])
+                                          (cond
+                                           [(relative-path? rel)
+                                            (build-path p rel)]
+                                           [(equal? cdir gdir) p]
+                                           [else rel]))
                                         p))))
                             (find-console-bin-dir))])
             (if (let ([a (assq 'relative? aux)])
@@ -411,7 +419,7 @@
                     "librktdir"
                     "bindir")
                 (or alt-exe (case kind
-                              [(mred) (if (eq? 'macosx (system-type))
+                              [(mred) (if (eq? 'macosx (cross-system-type))
                                           (format "GRacket~a.app/Contents/MacOS/Gracket"
                                                   (variant-suffix variant #t))
                                           "gracket")]
@@ -419,7 +427,7 @@
                 (if alt-exe
                     ""
                     (variant-suffix variant (and (eq? kind 'mred)
-                                                 (eq? 'macosx (system-type)))))
+                                                 (eq? 'macosx (cross-system-type)))))
                 pre-str)]
          [args (format
                 "~a~a ${1+\"$@\"}\n"
@@ -516,7 +524,7 @@
                 extension))))
 
 (define (check-desktop aux dest)
-  (when (eq? 'unix (system-type))
+  (when (eq? 'unix (cross-system-type))
     (let ([im (assoc 'install-mode aux)])
       (when (and im (member (cdr im) '(main user)))
         (define user? (eq? (cdr im) 'user))
@@ -601,7 +609,7 @@
                                    (find-collects-dir)))
     ;; Independent launcher (needed for Setup PLT):
     (begin
-      (install-template dest kind "mzstart.exe" "mrstart.exe")
+      (install-template dest kind "MzStart.exe" "MrStart.exe")
       (let ([bstr (bytes->utf-16-bytes
                    (string->bytes/utf-8 (str-list->dos-str
                                          (list* "-N"
@@ -715,7 +723,7 @@
         (close-output-port p)))))
 
 (define (get-maker)
-  (case (system-type)
+  (case (cross-system-type)
     [(unix)    make-unix-launcher]
     [(windows) make-windows-launcher]
     [(macos)   make-macos-launcher]
@@ -880,7 +888,7 @@
   (string-downcase (regexp-replace* #px"\\s" file "-")))
 
 (define (sfx file mred?)
-  (case (system-type)
+  (case (cross-system-type)
     [(unix) (unix-sfx file mred?)]
     [(windows)
      (string-append (if mred? file (unix-sfx file mred?)) ".exe")]
@@ -888,7 +896,7 @@
 
 (define (program-launcher-path name mred? user?)
   (let* ([variant (current-launcher-variant)]
-         [mac-script? (and (eq? (system-type) 'macosx)
+         [mac-script? (and (eq? (cross-system-type) 'macosx)
                            (script-variant? variant))])
     (let ([p (add-file-suffix
               (build-path
@@ -902,7 +910,7 @@
                ((if mac-script? unix-sfx sfx) name mred?))
               variant
               mred?)])
-      (if (and (eq? (system-type) 'macosx)
+      (if (and (eq? (cross-system-type) 'macosx)
                (not (script-variant? variant)))
           (path-replace-suffix p #".app")
           p))))
@@ -913,7 +921,7 @@
   (gracket-program-launcher-path name #:user? user?))
 
 (define (racket-program-launcher-path name #:user? [user? #f])
-  (case (system-type)
+  (case (cross-system-type)
     [(macosx)
      (add-file-suffix (build-path (if user?
                                       (find-user-console-bin-dir)
@@ -935,7 +943,7 @@
   #f)
 
 (define (gracket-launcher-is-actually-directory?)
-  (and (eq? 'macosx (system-type))
+  (and (eq? 'macosx (cross-system-type))
        (not (script-variant? (current-launcher-variant)))))
 (define (mred-launcher-is-actually-directory?)
   (gracket-launcher-is-actually-directory?))
@@ -963,16 +971,16 @@
 
 (define (gracket-launcher-put-file-extension+style+filters)
   (put-file-extension+style+filters
-   (if (and (eq? 'macosx (system-type))
+   (if (and (eq? 'macosx (cross-system-type))
             (script-variant? (current-launcher-variant)))
      'unix
-     (system-type))))
+     (cross-system-type))))
 (define (mred-launcher-put-file-extension+style+filters)
   (gracket-launcher-put-file-extension+style+filters))
 
 (define (racket-launcher-put-file-extension+style+filters)
   (put-file-extension+style+filters
-   (if (eq? 'macosx (system-type)) 'unix (system-type))))
+   (if (eq? 'macosx (cross-system-type)) 'unix (cross-system-type))))
 (define (mzscheme-launcher-put-file-extension+style+filters)
   (racket-launcher-put-file-extension+style+filters))
 
@@ -991,7 +999,7 @@
     ;;  overwritten at that time. So we assume
     ;;  that a Setup-PLT-style independent launcher
     ;;  is always up-to-date.
-    [(eq? 'windows (system-type))
+    [(eq? 'windows (cross-system-type))
      (and (let ([m (assq 'independent? aux)]) (and m (cdr m)))
           (file-exists? dest))]
     ;; For any other setting, we could implement

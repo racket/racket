@@ -388,13 +388,21 @@ elements are themselves in @racket[read-syntax] mode, so that the
 result is a list or pair of syntax objects that is itself wrapped as a
 syntax object. If the reader constructs nested pairs because the input
 included a single delimited @litchar{.}, then only the innermost pair
-and outermost pair are wrapped as syntax objects. Whether wrapping a
-pair or list, if the pair or list was formed with @litchar{[} and
-@litchar{]}, then a @indexed-racket['paren-shape] property is attached
-to the result with the value @racket[#\[]; if the list or pair was
-formed with @litchar["{"] and @litchar["}"], then a
-@racket['paren-shape] property is attached to the result with the
-value @racket[#\{].
+and outermost pair are wrapped as syntax objects.
+
+Whether wrapping a pair or list, if the pair or list was formed with
+@litchar{[} and @litchar{]}, then a @indexed-racket['paren-shape]
+property is attached to the result with the value @racket[#\[]. If the
+@racket[read-square-bracket-with-tag] @tech{parameter} is set to
+@racket[#t], then the resulting pair or list is wrapped by the
+equivalent of @racket[(cons '#%brackets _pair-or-list)].
+
+Similarly, if the list or pair was formed with @litchar["{"] and
+@litchar["}"], then a @racket['paren-shape] property is attached to
+the result with the value @racket[#\{].  If the
+@racket[read-curly-brace-with-tag] @tech{parameter} is set to
+@racket[#t], then the resulting pair or list is wrapped by the
+equivalent of @racket[(cons '#%braces _pair-or-list)].
 
 If a delimited @litchar{.} appears in any other configuration, then
 the @exnraise[exn:fail:read]. Similarly, if the reader encounters a
@@ -412,12 +420,14 @@ being parsed, then the @exnraise[exn:fail:read].
 "(1 . 2 . 3)"
 ]
 
-If the @racket[read-square-bracket-as-paren] @tech{parameter} is set to
+If the @racket[read-square-bracket-as-paren] and
+@racket[read-square-bracket-with-tag] @tech{parameter}s are set to
 @racket[#f], then when the reader encounters @litchar{[} and
 @litchar{]}, the @exnraise{exn:fail:read}. Similarly, if the
-@racket[read-curly-brace-as-paren] @tech{parameter} is set to @racket[#f],
-then when the reader encounters @litchar["{"] and @litchar["}"], the
-@exnraise{exn:fail:read}.
+@racket[read-curly-brace-as-paren] and
+@racket[read-curly-brace-with-tag] @tech{parameter}s are set to
+@racket[#f], then when the reader encounters @litchar["{"] and
+@litchar["}"], the @exnraise{exn:fail:read}.
 
 If the @racket[read-accept-dot] @tech{parameter} is set to
 @racket[#f], then a delimited @litchar{.} triggers an
@@ -631,7 +641,7 @@ The elements of the vector are recursively read until a matching
 lists (see @secref["parse-pair"]). A delimited @litchar{.} is not
 allowed among the vector elements. In the case of @tech{flvectors},
 the recursive read for element is implicitly prefixed with @litchar{#i}
-and must produce a @tech{flonum}. In the case of @tech{flvectors},
+and must produce a @tech{flonum}. In the case of @tech{fxvectors},
 the recursive read for element is implicitly prefixed with @litchar{#e}
 and must produce a @tech{fixnum}.
 
@@ -866,7 +876,8 @@ and passes it to the procedure that is the value of the
 module path. The module path is passed to @racket[dynamic-require]
 with either @racket['read] or @racket['read-syntax] (depending on
 whether the reader is in @racket[read] or @racket[read-syntax]
-mode).
+mode). The module is loaded in a @tech{root namespace} of the
+@tech{current namespace}.
 
 The arity of the resulting procedure determines whether it accepts
 extra source-location information: a @racketidfont{read} procedure
@@ -929,6 +940,30 @@ file, possibly after comment forms, to specify the syntax of a module.
 If the @racket[read-accept-reader] or @racket[read-accept-lang]
 @tech{parameter} is set to @racket[#f], then if the reader encounters
 @litchar{#lang} or equivalent @litchar{#!}, the @exnraise[exn:fail:read].
+
+@section[#:tag "parse-cdot"]{Reading with C-style infix dot notation}
+
+When the @racket[read-cdot] @tech{parameter} is set to @racket[#t],
+then a variety of changes occur in the reader.
+
+First, symbols can no longer include the character @litchar{.}, unless
+the entire symbol is quoted with @litchar{|}.
+
+Second, numbers can no longer include the character @litchar{.},
+unless the number is prefixed with @litchar{#e} or @litchar{#i}, or an
+equivalent prefix as discussed in @secref["parse-number"]. If these
+numbers are followed by a @litchar{.} intended to be read as a C-style
+infix dot, then there must be separating whitespace.
+
+Finally, after reading any value, @racket[_x], the reader will seek
+over whitespace until it reaches a non-whitespace character. If the
+character is not @litchar{.}, then the value, @racket[_x], is returned
+as usual. If the character is @litchar{.}, then another value,
+@racket[_y], is read and the result @racket[(list '#%dot _x _y)] is
+returned. In @racket[read-syntax] mode, the @racket['#%dot] symbol has
+the source location information of the @litchar{.} character and the
+entire list has the source location information spanning from the
+start of @racket[_x] to the end of @racket[_y].
 
 @subsection{S-Expression Reader Language}
 

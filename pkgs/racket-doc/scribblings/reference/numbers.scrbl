@@ -4,10 +4,11 @@
                      racket/flonum
                      racket/fixnum
                      racket/unsafe/ops
-                     racket/require))
+                     racket/require
+                     racket/random))
 
 @(define math-eval (make-base-eval))
-@(interaction-eval #:eval math-eval (require racket/math))
+@examples[#:hidden #:eval math-eval (require racket/math)]
 
 @title[#:tag "numbers" #:style '(toc)]{Numbers}
 
@@ -192,12 +193,12 @@ number, @racket[#f] otherwise.}
 @defproc[(even? [n integer?]) boolean?]{ Returns @racket[(zero? (modulo
  n 2))].
 
-@mz-examples[(even? 10.0) (even? 11) (even? +inf.0)]}
+@mz-examples[(even? 10.0) (even? 11) (eval:error (even? +inf.0))]}
 
 
 @defproc[(odd? [n integer?]) boolean?]{ Returns @racket[(not (even? n))].
 
-@mz-examples[(odd? 10.0) (odd? 11) (odd? +inf.0)]}
+@mz-examples[(odd? 10.0) (odd? 11) (eval:error (odd? +inf.0))]}
 
 
 @defproc[(exact? [z number?]) boolean?]{ Returns @racket[#t] if @racket[z]
@@ -288,7 +289,7 @@ If @racket[z] is exact @racket[0] and no @racket[w] is exact
 
 Returns @racket[(truncate (/ n m))].
 
-@mz-examples[(quotient 10 3) (quotient -10.0 3) (quotient +inf.0 3)]}
+@mz-examples[(quotient 10 3) (quotient -10.0 3) (eval:error (quotient +inf.0 3))]}
 
 
 @defproc[(remainder [n integer?] [m integer?]) integer?]{
@@ -306,7 +307,7 @@ Returns @racket[_q] with the same sign as @racket[n] such that
 If @racket[m] is exact @racket[0], the
  @exnraise[exn:fail:contract:divide-by-zero].
 
-@mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (remainder +inf.0 3)]}
+@mz-examples[(remainder 10 3) (remainder -10.0 3) (remainder 10.0 -3) (remainder -10 -3) (eval:error (remainder +inf.0 3))]}
 
 
 @defproc[(quotient/remainder [n integer?] [m integer?]) (values integer? integer?)]{
@@ -335,7 +336,7 @@ Returns @racket[_q] with the same sign as @racket[m] where
 If @racket[m] is exact @racket[0], the
  @exnraise[exn:fail:contract:divide-by-zero].
 
-@mz-examples[(modulo 10 3) (modulo -10.0 3)  (modulo 10.0 -3) (modulo -10 -3) (modulo +inf.0 3)]}
+@mz-examples[(modulo 10 3) (modulo -10.0 3)  (modulo 10.0 -3) (modulo -10 -3) (eval:error (modulo +inf.0 3))]}
 
 
 @defproc[(add1 [z number?]) number?]{ Returns @racket[(+ z 1)].}
@@ -436,7 +437,7 @@ Coerces @racket[q] to an exact number, finds the numerator of the
 
 @defproc[(denominator [q rational?]) integer?]{
 
-Coerces @racket[q] to an exact number, finds the numerator of the
+Coerces @racket[q] to an exact number, finds the denominator of the
  number expressed in its simplest fractional form, and returns this
  number coerced to the exactness of @racket[q].
 
@@ -835,17 +836,28 @@ both in binary and as integers.
 @; ------------------------------------------------------------------------
 @subsection{Random Numbers}
 
+@margin-note{When security is a concern, use @racket[crypto-random-bytes] instead of @racket[random].}
+
 @defproc*[([(random [k (integer-in 1 4294967087)]
                     [rand-gen pseudo-random-generator?
                                (current-pseudo-random-generator)])
+            exact-nonnegative-integer?]
+           [(random [min (integer-in 1 4294967087)]
+                    [max (integer-in 1 4294967087)]
+                    [rand-gen pseudo-random-generator?
+                              (current-pseudo-random-generator)])
             exact-nonnegative-integer?]
            [(random [rand-gen pseudo-random-generator?
                               (current-pseudo-random-generator)]) 
             (and/c real? inexact? (>/c 0) (</c 1))])]{  
 
 When called with an integer argument @racket[k], returns a random
-exact integer in the range @racket[0] to @math{@racket[k]-1}. When
-called with zero arguments, returns a random inexact number between
+exact integer in the range @racket[0] to @math{@racket[k]-1}.
+
+When called with two integer arguments @racket[min] and @racket[max], returns a
+random exact integer in the range @racket[min] to @math{@racket[max]-1}.
+
+When called with zero arguments, returns a random inexact number between
 @racket[0] and @racket[1], exclusive.
 
 In each case, the number is provided by the given pseudo-random number
@@ -853,7 +865,9 @@ generator (which defaults to the current one, as produced by
 @racket[current-pseudo-random-generator]). The generator maintains an
 internal state for generating numbers. The random number generator
 uses a 54-bit version of L'Ecuyer's MRG32k3a algorithm
-@cite["L'Ecuyer02"].}
+@cite["L'Ecuyer02"].
+
+@history[#:changed "6.4"]{Added support for ranges.}}
 
 
 @defproc[(random-seed [k (integer-in 1 (sub1 (expt 2 31)))])
@@ -922,6 +936,57 @@ where the first three integers are in the range @racket[0] to
 range @racket[0] to @racket[4294944442], inclusive; at least one of
 the first three integers is non-zero; and at least one of the last
 three integers is non-zero. Otherwise, the result is @racket[#f].}
+
+@; ------------------------------------------------------------------------
+
+@subsection{Other Randomness Utilities}
+
+@defmodule[racket/random]{}
+
+@defproc[(crypto-random-bytes [n exact-positive-integer?])
+         bytes?]{
+
+Provides an interface to randomness from the underlying operating system. Use
+@racket[crypto-random-bytes] instead of @racket[random] wherever security is a
+concern.
+
+Returns @racket[n] random bytes. On Unix systems, the bytes are
+obtained from @filepath{/dev/urandom}, while Windows uses
+the @tt{RtlGenRand} system function.
+
+@examples[
+ (eval:alts (crypto-random-bytes 14) #"\0\1\1\2\3\5\b\r\25\"7Y\220\351")
+]
+
+@history[#:added "6.3"]}
+
+@defproc[(random-ref [seq sequence?]
+                     [rand-gen pseudo-random-generator?
+                      (current-pseudo-random-generator)])
+         any/c]{
+
+Returns a random element of the sequence. Like @racket[sequence-length], does
+not terminate on infinite sequences, and evaluates the entire sequence.
+
+@history[#:added "6.4"]}
+
+@defproc[(random-sample [seq sequence?]
+                        [n exact-positive-integer?]
+                        [rand-gen pseudo-random-generator?
+                         (current-pseudo-random-generator)]
+                        [#:replacement? replacement? any/c #t])
+         (listof any/c)]{
+
+Returns a list of @racket[n] elements of @racket[seq], picked at random, listed
+in any order.
+If @racket[replacement?] is non-false, elements are drawn with replacement,
+which allows for duplicates.
+
+Like @racket[sequence-length], does not terminate on infinite sequences, and
+evaluates the entire sequence.
+
+@history[#:added "6.4"]}
+
 
 @; ------------------------------------------------------------------------
 @subsection{Number--String Conversions}

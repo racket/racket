@@ -12,7 +12,7 @@
              [(regexp-match? #rx"[.][ch]$" path)
               (define-values (ts) (file-or-directory-modify-seconds path))
               (define-values (sdep) (path-replace-suffix path ".sdep"))
-              (call/ec
+              (call-with-escape-continuation
                (lambda (esc)
                  (with-continuation-mark
                      exception-handler-key

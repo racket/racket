@@ -3,10 +3,13 @@
           (for-label framework/preferences
                      racket/runtime-path
                      launcher/launcher
-                     setup/dirs))
+                     setup/dirs
+                     setup/cross-system))
 
 @(define file-eval (make-base-eval))
-@(interaction-eval #:eval file-eval (begin (require racket/file) (define filename (make-temporary-file))))
+@examples[#:hidden #:eval file-eval
+          (require racket/file)
+          (define filename (make-temporary-file))]
 
 
 @title{Filesystem}
@@ -295,9 +298,10 @@ exists---to the path @racket[new]. If the file or directory is not
 renamed successfully, the @exnraise[exn:fail:filesystem].
 
 This procedure can be used to move a file/directory to a different
-directory (on the same disk) as well as rename a file/directory within
+directory (on the same filesystem) as well as rename a file/directory within
 a directory. Unless @racket[exists-ok?]  is provided as a true value,
-@racket[new] cannot refer to an existing file or directory. Even if
+@racket[new] cannot refer to an existing file or directory, but the
+check is not atomic with the rename operation on Unix and Mac OS X. Even if
 @racket[exists-ok?] is true, @racket[new] cannot refer to an existing
 file when @racket[old] is a directory, and vice versa.
 
@@ -638,13 +642,18 @@ In addition to the bindings described below,
 @tech{phase level} 1, since string constants are often used as
 compile-time expressions with @racket[define-runtime-path].
 
-@defform[(define-runtime-path id expr)]{
+@defform[(define-runtime-path id maybe-runtime?-id expr)
+         #:grammar ([maybe-runtime? code:blank
+                                    (code:line #:runtime?-id runtime?-id)])]{
 
 Uses @racket[expr] as both a compile-time (i.e., @tech{phase} 1)
 expression and a run-time (i.e., @tech{phase} 0) expression. In either
 context, @racket[expr] should produce a path, a string that represents
 a path, a list of the form @racket[(list 'lib _str ...+)], or a list
 of the form @racket[(list 'so _str)] or @racket[(list 'so _str _vers)].
+If @racket[runtime?-id] is provided, then it is bound in the context
+of @racket[expr] to @racket[#f] for the compile-time instance of
+@racket[expr] and @racket[#t] for the run-time instance of @racket[expr].
 
 For run time, @racket[id] is bound to a path that is based on the
 result of @racket[expr]. The path is normally computed by taking a
@@ -778,23 +787,25 @@ Examples:
     [(windows) '(so "ssleay32")]
     [else '(so "libssl")]))
 (define libssl (ffi-lib libssl-so))
-]}
+]
+
+@history[#:changed "6.4" @elem{Added @racket[#:runtime?-id].}]}
 
 
-@defform[(define-runtime-paths (id ...) expr)]{
+@defform[(define-runtime-paths (id ...) maybe-runtime?-id expr)]{
 
 Like @racket[define-runtime-path], but declares and binds multiple
 paths at once. The @racket[expr] should produce as many values as
 @racket[id]s.}
 
 
-@defform[(define-runtime-path-list id expr)]{
+@defform[(define-runtime-path-list id maybe-runtime?-id expr)]{
 
 Like @racket[define-runtime-path], but @racket[expr] should produce a
 list of paths.}
 
 
-@defform[(define-runtime-module-path-index id module-path-expr)]{
+@defform[(define-runtime-module-path-index id maybe-runtime?-id module-path-expr)]{
 
 Similar to @racket[define-runtime-path], but @racket[id] is bound to a
 @tech{module path index} that encapsulates the result of
@@ -936,20 +947,24 @@ Displays each element of @racket[lst] to @racket[path], adding
 @racket[open-output-file].}
 
 @defproc[(copy-directory/files [src path-string?] [dest path-string?]
-                               [#:keep-modify-seconds? keep-modify-seconds? #f])
+                               [#:keep-modify-seconds? keep-modify-seconds? #f]
+                               [#:preserve-links? preserve-links? #f])
          void?]{
 
 Copies the file or directory @racket[src] to @racket[dest], raising
 @racket[exn:fail:filesystem] if the file or directory cannot be
 copied, possibly because @racket[dest] exists already. If @racket[src]
 is a directory, the copy applies recursively to the directory's
-content. If a source is a link, the target of the link is copied
-rather than the link itself.
+content. If a source is a link and @racket[preserve-links?] is @racket[#f],
+the target of the link is copied rather than the link itself; if
+@racket[preserve-links?] is @racket[#t], the link is copied.
 
 If @racket[keep-modify-seconds?] is @racket[#f], then file copies
-keep only the properties kept by @racket[copy-file], If
+keep only the properties kept by @racket[copy-file]. If
 @racket[keep-modify-seconds?] is true, then each file copy also keeps
-the modification date of the original.}
+the modification date of the original.
+
+@history[#:changed "6.3" @elem{Added the @racket[#:preserve-links?] argument.}]}
 
 
 @defproc[(delete-directory/files [path path-string?]
@@ -972,6 +987,7 @@ exists and is removed by another thread or process before
 
 @defproc[(find-files [predicate (path? . -> . any/c)]
                      [start-path (or/c path-string? #f) #f]
+                     [#:skip-filtered-directory? skip-filtered-directory? #f]
                      [#:follow-links? follow-links? #f])
          (listof path?)]{
 
@@ -992,6 +1008,10 @@ paths in the former case and relative paths in the latter.  Another
 difference is that @racket[predicate] is not called for the current
 directory when @racket[start-path] is @racket[#f].
 
+If @racket[skip-filtered-directory?] is true, then when
+@racket[predicate] returns @racket[#f] for a directory, the
+directory's content is not traversed.
+
 If @racket[follow-links?] is true, the @racket[find-files] traversal
 follows links, and links are not included in the result. If
 @racket[follow-links?] is @racket[#f], then links are not followed,
@@ -1002,10 +1022,15 @@ directory, then @racket[predicate] will be called exactly once with
 @racket[start-path] as the argument.
 
 The @racket[find-files] procedure raises an exception if it encounters
-a directory for which @racket[directory-list] fails.}
+a directory for which @racket[directory-list] fails.
+
+@history[#:changed "6.3.0.11" @elem{Added the
+                                    @racket[#:skip-filtered-directory?]
+                                    argument.}]}
 
 @defproc[(pathlist-closure [path-list (listof path-string?)]
-                           [#:follow-links? follow-links? #f])
+                           [#:path-filter path-filter (or/c #f (path? . -> . any/c)) #f]
+                           [#:follow-links? follow-links? any/c #f])
          (listof path?)]{
 
 Given a list of paths, either absolute or relative to the current
@@ -1018,17 +1043,25 @@ directory, returns a list such that
        twice);}
 
  @item{if a path refers to directory, all of its descendants are also
-       included in the result;}
+       included in the result, except as omitted by @racket[path-filter];}
 
  @item{ancestor directories appear before their descendants in the
-       result list.}
+       result list, as long as they are not misordered in the given
+       @racket[path-list].}
 
 ]
 
+If @racket[path-filter] is a procedure, then it is applied to each
+descendant of a directory. If @racket[path-filter] returns
+@racket[#f], then the descendant (and any of its descendants, in the
+case of a subdirectory) are omitted from the result.
+
 If @racket[follow-links?] is true, then the traversal of directories
 and files follows links, and the link paths are not included in the
-result. If @racket[follow-links?] is @racket[#f], then he result list
-includes paths to link and the links are not followed.}
+result. If @racket[follow-links?] is @racket[#f], then the result list
+includes paths to link and the links are not followed.
+
+@history[#:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}]}
 
 
 @defproc[(fold-files [proc (or/c (path? (or/c 'file 'dir 'link) any/c 
@@ -1398,7 +1431,8 @@ in the sense of @racket[port-try-file-lock?].
                                  [name path-element?]) 
             path?])]{
 
-Creates a lock filename by prepending @racket["_LOCK"] on Windows or
+Creates a lock filename by prepending @racket["_LOCK"] on Windows
+(i.e., when @racket[cross-system-type] reports @racket['windows]) or
 @racket[".LOCK"] on other platforms to the file portion of the path.
 
 @examples[
@@ -1422,7 +1456,7 @@ and bitwise operations such as @racket[bitwise-ior], and
 @racket[bitwise-and].}
 
 
-@(interaction-eval #:eval file-eval (begin
-                                     (delete-file filename)
-                                     (delete-file (make-lock-file-name filename))))
+@examples[#:hidden #:eval file-eval
+          (delete-file filename)
+          (delete-file (make-lock-file-name filename))]
 @(close-eval file-eval)

@@ -10,6 +10,15 @@ APPLICATION             ICON    DISCARDABLE     "gracket.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Manifest (for MinGW)
+//
+
+#ifdef __MINGW32__
+1  RT_MANIFEST "gracket.manifest"
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // Version
 //
 
@@ -34,7 +43,7 @@ BEGIN
             VALUE "FileDescription", "Racket GUI application\0"
             VALUE "InternalName", "GRacket\0"
             VALUE "FileVersion", MZSCHEME_VERSION "\0"
-            VALUE "LegalCopyright", "Copyright 1995-2014 PLT Design Inc.\0"
+            VALUE "LegalCopyright", "Copyright 1995-2016 PLT Design Inc.\0"
             VALUE "OriginalFilename", "GRacket.exe\0"
             VALUE "ProductName", "Racket\0"
             VALUE "ProductVersion", MZSCHEME_VERSION "\0"

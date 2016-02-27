@@ -61,7 +61,7 @@
 
       ;; Setup an xform-collects tree for running xform.
       ;; Delete existing xform-collects tree if it's for an old version
-      (begin
+      (let retry ()
         (parameterize ([current-directory rel-dir])
           (unless (and (file-exists? "xform-collects/version.rkt")
                        (equal? (version)
@@ -71,7 +71,7 @@
             ;; In case multiple xforms run in parallel, use a lock file
             ;;  so that only one is building.
             (let ([lock-file "XFORM-LOCK"])
-              ((call/ec
+              ((call-with-escape-continuation
                 (lambda (escape)
                   (parameterize ([uncaught-exception-handler
                                   (lambda (exn)
@@ -88,7 +88,8 @@
                                                (sleep 0.1)
                                                (if (file-exists? lock-file)
                                                    (loop)
-                                                   (printf " ... continuing\n"))))
+                                                   (printf " ... continuing\n")))
+                                             (retry))
                                            (raise exn)))))])
                     (dynamic-wind
                         (lambda ()

@@ -1,4 +1,6 @@
 #lang racket/base
+(require racket/promise
+         compiler/module-suffix)
 
 (provide append-zo-suffix
 	 append-c-suffix
@@ -32,39 +34,62 @@
 (define (extract-suffix appender)
   (subbytes (path->bytes (appender (bytes->path #"x"))) 1))
 
-(define-values (extract-base-filename/ss
-		extract-base-filename/c
-		extract-base-filename/kp
-		extract-base-filename/o
-		extract-base-filename/ext)
-  (let ([mk
-	 (lambda (who pat kind simple)
-	   (define (extract-base-filename s [p #f])
-	     (define rx
-	       (byte-pregexp (bytes-append #"^(.*)\\.(?i:" pat #")$")))
-	     (unless (path-string? s)
-		     (raise-type-error who "path or valid-path string" s))
-	     (cond [(regexp-match
-		     rx (path->bytes (if (path? s) s (string->path s))))
-		    => (lambda (m) (bytes->path (cadr m)))]
-		   [p (if simple
-                          (error p "not a ~a filename (doesn't end with ~a): ~a"
-                                 kind simple s)
-                          (path-replace-suffix s #""))]
-		   [else #f]))
-	   extract-base-filename)])
-    (values
-     (mk 'extract-base-filename/ss #"rkt|ss|scm" "Racket" #f)
-     (mk 'extract-base-filename/c
-	 #"c|cc|cxx|cpp|c[+][+]|m" "C" ".c, .cc, .cxx, .cpp, .c++, or .m")
-     (mk 'extract-base-filename/kp #"kp" "constant pool" ".kp")
-     (mk 'extract-base-filename/o
-	 (case (system-type)
-	   [(unix beos macos macosx) #"o"]
-	   [(windows) #"obj"])
-	 "compiled object"
-	 (extract-suffix append-object-suffix))
-     (mk 'extract-base-filename/ext
-	 (regexp-quote (subbytes (system-type 'so-suffix) 1) #f)
-	 "Racket extension"
-	 (extract-suffix append-extension-suffix)))))
+(define (extract-rx pat)
+  (byte-pregexp (bytes-append #"^(.*)\\.(?i:" pat #")$")))
+
+(define (extract who s program rx kind simple)
+  (unless (path-string? s)
+    (raise-argument-error who "path-string?" s))
+  (cond
+   [(regexp-match rx (if (path? s) s (string->path s)))
+    => (lambda (m) (bytes->path (cadr m)))]
+   [program
+    (if simple
+        (error program "not a ~a filename (doesn't end with ~a): ~a"
+               kind simple s)
+        (path-replace-suffix s #""))]
+   [else #f]))
+
+(define module-suffix-regexp
+  (delay (get-module-suffix-regexp #:group 'libs)))
+
+(define (extract-base-filename/ss s [program #f]
+                                  #:module-pattern [module-pattern
+                                                    (force module-suffix-regexp)])
+  (extract 'extract-base-filename/ss
+           s program
+           module-pattern
+           "Racket"
+           #f))
+
+(define (extract-base-filename/c s [program #f])
+  (extract 'extract-base-filename/c
+           s program
+           (extract-rx #"c|cc|cxx|cpp|c[+][+]|m")
+           "C"
+           ".c, .cc, .cxx, .cpp, .c++, or .m"))
+
+(define (extract-base-filename/kp s [program #f])
+  (extract 'extract-base-filename/kp
+           s
+           program
+           (extract-rx #"kp")
+           "constant pool"
+           ".kp"))
+
+(define (extract-base-filename/o s [program #f])
+  (extract 'extract-base-filename/o
+           s program
+           (extract-rx (case (system-type)
+                         [(unix beos macos macosx) #"o"]
+                         [(windows) #"obj"]))
+           "compiled object"
+           (extract-suffix append-object-suffix)))
+  
+(define (extract-base-filename/ext s [program #f])
+  (extract 'extract-base-filename/ext
+           s
+           program
+           (extract-rx (regexp-quote (subbytes (system-type 'so-suffix) 1) #f))
+           "Racket extension"
+           (extract-suffix append-extension-suffix)))

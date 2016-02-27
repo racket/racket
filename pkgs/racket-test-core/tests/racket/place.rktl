@@ -102,4 +102,8 @@
   (test (not (place-enabled?)) place-message-allowed? (cons v 1))
   (test (not (place-enabled?)) place-message-allowed? (vector v)))
 
+
+(require (submod "place-utils.rkt" place-test-submod))
+(test 0 p 0)
+
 (report-errs)

@@ -20,7 +20,10 @@
          process-tagged-import process-tagged-export
          lookup-signature lookup-def-unit make-id-mapper make-id-mappers sig-names sig-int-names sig-ext-names
          map-sig split-requires split-requires* apply-mac complete-exports complete-imports check-duplicate-subs
-         process-spec)
+         process-spec
+         make-relative-introducer
+         bind-at
+         build-init-depend-property)
 
 (define-syntax (apply-mac stx)
   (syntax-case stx ()
@@ -118,7 +121,7 @@
 ;; (make-unit-info identifier (listof (cons symbol identifier)) (listof (cons symbol identifier)) identifier boolean)
 (define-struct/proc unit-info (unit-id import-sig-ids export-sig-ids deps orig-binder contracted?)
   (lambda (struct stx) 
-    (with-syntax ((u (unit-info-unit-id struct)))
+    (with-syntax ((u (syntax-local-introduce (unit-info-unit-id struct))))
       (syntax-case stx (set!)
         ((set! x y)
          (if (unit-info-contracted? struct)
@@ -169,12 +172,12 @@
 (define (check-bound-id-subset i1 i2)
   (let ((ht (make-bound-identifier-mapping)))
     (for-each (lambda (id)
-                (bound-identifier-mapping-put! ht id #t))
+                (bound-identifier-mapping-put! ht (syntax-local-identifier-as-binding id) #t))
               i2)
     (for-each
      (lambda (id)
        (check-id id)
-       (unless (bound-identifier-mapping-get ht id (lambda () #f))
+       (unless (bound-identifier-mapping-get ht (syntax-local-identifier-as-binding id) (lambda () #f))
          (raise-stx-err "listed identifier not present in signature specification" id)))
      i1)))
 
@@ -188,14 +191,15 @@
     (for-each
      (lambda (int ext)
        (check-id int)
-       (when (bound-identifier-mapping-get ht ext (lambda () #f))
-         (raise-stx-err "duplicate renamings" ext))
-       (bound-identifier-mapping-put! ht ext int))
+       (let ([ext (syntax-local-identifier-as-binding ext)])
+         (when (bound-identifier-mapping-get ht ext (lambda () #f))
+           (raise-stx-err "duplicate renamings" ext))
+         (bound-identifier-mapping-put! ht ext int)))
      (syntax->list internals)
      (syntax->list externals))
     (map-sig
      (lambda (id)
-       (bound-identifier-mapping-get ht id (lambda () id)))
+       (bound-identifier-mapping-get ht (syntax-local-identifier-as-binding id) (lambda () id)))
      (lambda (x) x)
      sig)))
 
@@ -226,8 +230,16 @@
      (lambda (x) x)
      sig)))
 
-;; do-identifier : identifier (box (cons identifier siginfo)) -> sig
-(define (do-identifier spec res bind? add-prefix)
+(define (make-relative-introducer ref-id orig-id)
+  (lambda (id)
+    ((make-syntax-delta-introducer id orig-id)
+     (datum->syntax ref-id
+                    (syntax-e id)
+                    id
+                    id))))
+
+;; do-identifier : identifier syntax-object (box (cons identifier siginfo)) -> sig
+(define (do-identifier spec spec-bind res bind? add-prefix)
   (let* ((sig (lookup-signature spec))
          (vars (signature-vars sig))
          (vals (signature-val-defs sig))
@@ -235,16 +247,14 @@
          (p-vals (signature-post-val-defs sig))
          (ctcs  (signature-ctcs sig))
          (delta-introduce (if bind?
-                              (let ([f (syntax-local-make-delta-introducer
-                                        spec)])
-                                (lambda (id) (syntax-local-introduce (f id))))
-                              values)))
+                              (make-relative-introducer spec-bind
+                                                        (car (siginfo-names (signature-siginfo sig))))
+                              (lambda (id)
+                                (syntax-local-introduce id)))))
     (set-box! res (cons spec (signature-siginfo sig)))
     (map-sig (lambda (id)
-               (syntax-local-introduce 
-                (syntax-local-get-shadower
-                 (add-prefix
-                  (delta-introduce id)))))
+               (add-prefix
+                (delta-introduce id)))
              syntax-local-introduce
              (list (map cons vars vars)
                    (map 
@@ -313,57 +323,66 @@
 ;; A tagged-import-spec is one of
 ;; - import-spec
 ;; - (tag symbol import-spec)
+;; - (bind-at id tagged-import-spec)
 
 ;; A tagged-export-spec is one of
 ;; - export-spec
 ;; - (tag symbol export-spec)
-
+;; - (bind-at id tagged-export-spec)
 
 ;; process-tagged-import/export : syntax-object boolean -> tagged-sig
 (define (process-tagged-import/export spec import? bind?)
   (define res (box #f))
-  (check-tagged-spec-syntax spec import? identifier?)
-  (syntax-case spec (tag)
-    ((tag sym spec)
-     (let ([s (process-import/export #'spec res bind? values)])
-       (list (cons (syntax-e #'sym) (cdr (unbox res)))
-             (cons (syntax-e #'sym) (car (unbox res)))
-             s)))
-    ((tag . _)
-     (raise-stx-err "expected (tag symbol <import/export-spec>)" spec))
-    (_ (let ([s (process-import/export spec res bind? values)])
-         (list (cons #f (cdr (unbox res)))
-               (cons #f (car (unbox res)))
-               s)))))
+  (let loop ([spec spec] [spec-bind #f])
+    (syntax-case spec (bind-at)
+      ((bind-at id spec)
+       (loop #'spec #'id))
+      (_
+       (begin
+         (check-tagged-spec-syntax spec import? identifier?)
+         (syntax-case spec (tag)
+           ((tag sym spec)
+            (let ([s (process-import/export #'spec spec-bind res bind? values)])
+              (list (cons (syntax-e #'sym) (cdr (unbox res)))
+                    (cons (syntax-e #'sym) (car (unbox res)))
+                    s)))
+           ((tag . _)
+            (raise-stx-err "expected (tag symbol <import/export-spec>)" spec))
+           (_ (let ([s (process-import/export spec spec-bind res bind? values)])
+                (list (cons #f (cdr (unbox res)))
+                      (cons #f (car (unbox res)))
+                      s)))))))))
 
 (define (add-prefixes add-prefix l)
   (map add-prefix (syntax->list l)))
 
-;; process-import/export : syntax-object (box (cons identifier) siginfo) -> sig
-(define (process-import/export spec res bind? add-prefix)
-  (syntax-case spec (only except prefix rename)
+;; process-import/export : syntax-object syntax-object (box (cons identifier) siginfo) -> sig
+(define (process-import/export spec spec-bind res bind? add-prefix)
+  (syntax-case spec (only except prefix rename bind-at)
     (_
      (identifier? spec)
-     (do-identifier spec res bind? add-prefix))
+     (do-identifier spec (or spec-bind spec) res bind? add-prefix))
+    ((bind-at spec-bind spec)
+     (process-import/export #'spec #'spec-bind res bind? add-prefix))
     ((only sub-spec id ...)
-     (do-only/except (process-import/export #'sub-spec res bind? add-prefix)
+     (do-only/except (process-import/export #'sub-spec spec-bind res bind? add-prefix)
                      (add-prefixes add-prefix #'(id ...))
                      (lambda (id) id)
                      (lambda (id)
                        (car (generate-temporaries #`(#,id))))))
     ((except sub-spec id ...)
-     (do-only/except (process-import/export #'sub-spec res bind? add-prefix)
+     (do-only/except (process-import/export #'sub-spec spec-bind res bind? add-prefix)
                      (add-prefixes add-prefix #'(id ...))
                      (lambda (id)
                        (car (generate-temporaries #`(#,id))))
                      (lambda (id) id)))
     ((prefix pid sub-spec)
-     (process-import/export #'sub-spec res bind?
+     (process-import/export #'sub-spec spec-bind res bind?
                             (lambda (id)
                               (add-prefix (do-prefix id #'pid)))))
     ((rename sub-spec (internal external) ...)
      (let* ((sig-res
-             (do-rename (process-import/export #'sub-spec res bind? add-prefix)
+             (do-rename (process-import/export #'sub-spec spec-bind res bind? add-prefix)
                         #'(internal ...)
                         (datum->syntax #f (add-prefixes add-prefix #'(external ...)))))
             (dup (check-duplicate-identifier (sig-int-names sig-res))))
@@ -381,7 +400,7 @@
 ;; process-spec : syntax-object -> sig
 (define (process-spec spec)
   (check-tagged-spec-syntax spec #f identifier?)
-  (process-import/export spec (box #f) #t values))
+  (process-import/export spec spec (box #f) #t values))
 
 
 ;  ;; extract-siginfo : (union import-spec export-spec) -> ???
@@ -576,3 +595,16 @@
          sstx
          (cons unbox-stx #'x)
          sstx)]))))
+
+;; This utility function returns a list of natural numbers for use as a syntax
+;; property needed to support units in Typed Racket
+;; Each number in the list is an index into a unit's list of imports signifying
+;; that the import at that index is also an init-dependency of the unit
+(define (build-init-depend-property init-depends imports)
+  (define (sig=? s1 s2)
+    (and (eq? (syntax-e (car s1)) (car s2))
+         (free-identifier=? (cdr s1) (cdr s2))))
+  (for/list ([import (in-list imports)]
+             [index (in-naturals)]
+             #:when (member import init-depends sig=?))
+    index))

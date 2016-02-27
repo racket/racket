@@ -483,4 +483,44 @@
   (test "foo\\1bar" string-replace "foo===bar" #rx"(=+)" "\\1")
   (test "foo\\1bar" string-replace "foo===bar" #px"={3}" "\\1"))
 
+;test that mutable string are not cached incorrectly
+(let ([str (string-copy "_1_")])
+  (test "!!! _2_" string-replace "_1_ _2_" str "!!!") ;add str to the internal cache
+  (string-set! str 1 #\2)
+  (test "_1_ !!!" string-replace "_1_ _2_" str "!!!") ;verify that the new str is used
+)
+
+;; ---------- string-prefix?/suffix? ----------
+(let ()
+  (test #t string-prefix? "racket" "")
+  (test #t string-prefix? "racket" "r")
+  (test #t string-prefix? "racket" "rack")
+  (test #t string-prefix? "racket" "racket")
+  (test #t string-suffix? "racket" "")
+  (test #t string-suffix? "racket" "t")
+  (test #t string-suffix? "racket" "cket")
+  (test #t string-suffix? "racket" "racket")
+  ;; --------------------
+  (test #f string-prefix? ""       "racket")
+  (test #f string-prefix? "racket" "R")
+  (test #f string-prefix? "racket" "rak")
+  (test #f string-prefix? "racket" "racket2")
+  (test #f string-suffix? ""       "racket")
+  (test #f string-suffix? "racket" "T")
+  (test #f string-suffix? "racket" "r")
+  (test #f string-suffix? "racket" "kat"))
+
+;; ---------- string-contains? ----------
+
+(let ()
+  (test #t string-contains? "racket" "racket")
+  (test #t string-contains? "racket" "cket")
+  (test #t string-contains? "racket" "acke")
+  (test #t string-contains? "racket" "t")
+  (test #t string-contains? "racket" "")
+  (test #f string-contains? "racket" "b")
+  (test #f string-contains? "racket" "R")
+  (test #f string-contains? "racket" "kc")
+  (test #f string-contains? "racket" "racketr"))
+
 (report-errs)

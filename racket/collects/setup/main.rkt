@@ -120,7 +120,7 @@
 		    (let loop ([skip-zo? (null? (use-compiled-file-paths))])
 		      (when skip-zo?
 			(print-bootstrapping))
-		      ((call/ec 
+		      ((call-with-escape-continuation
                         (lambda (escape)
 			 ;; Create a new namespace, and also install load handlers
 			 ;;  to check file dates, if necessary.
@@ -147,9 +147,14 @@
                                                                       (bytes->path (regexp-replace #"[.]zo$" (path->bytes path) #".dep"))
                                                                     read)])
                                                         (for-each (lambda (dep)
-                                                                    (unless (and (pair? dep)
-                                                                                 (eq? (car dep) 'ext))
-                                                                      (dynamic-require (main-collects-relative->path dep) #f)))
+                                                                    (let ([dep
+                                                                           (if (and (pair? dep)
+                                                                                    (eq? (car dep) 'indirect))
+                                                                               (cdr dep)
+                                                                               dep)])
+                                                                      (unless (and (pair? dep)
+                                                                                   (eq? (car dep) 'ext))
+                                                                        (dynamic-require (main-collects-relative->path dep) #f))))
                                                                   (cddr deps))))
 						     ;; Not a .zo! Don't use .zo files at all...
 						     (escape (lambda ()

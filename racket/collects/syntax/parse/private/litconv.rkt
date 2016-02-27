@@ -6,8 +6,7 @@
                      "kws.rkt"
                      racket/syntax)
          syntax/parse/private/residual-ct ;; keep abs. path
-         syntax/parse/private/residual    ;; keep abs. path
-         (only-in unstable/syntax phase-of-enclosing-module))
+         syntax/parse/private/residual)   ;; keep abs. path
 (begin-for-syntax
  (lazy-require
   [syntax/private/keyword (options-select-value parse-keyword-options)]
@@ -18,7 +17,7 @@
     create-aux-def)]))
 ;; FIXME: workaround for phase>0 bug in racket/runtime-path (and thus lazy-require)
 ;; Without this, dependencies don't get collected.
-(require racket/runtime-path (for-meta 2 '#%kernel))
+(require racket/runtime-path racket/syntax (for-meta 2 '#%kernel))
 (define-runtime-module-path-index _unused_ 'syntax/parse/private/rep)
 
 (provide define-conventions

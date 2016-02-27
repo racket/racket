@@ -31,7 +31,7 @@ should be considered standard:
         and eight numbers; like @racket['png-bytes+bounds], but where
         the image encoded that is in the byte string can be padded in
         each direction (to allow the drawn region to extend beyond
-        it's ``bounding box''), where the extra four numbers in the
+        its ``bounding box''), where the extra four numbers in the
         list specify the amount of padding that was added to the
         image: left, right, top, and bottom}
  @item{@racket['png@2x-bytes] --- like @racket['png-bytes], but for an

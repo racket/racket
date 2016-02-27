@@ -71,6 +71,9 @@
   (test-flat-contract #rx#".x." "axq" "x")
   (test-flat-contract ''() '() #f)
 
+  (test-flat-contract '(if/c integer? even? list?) 2 3)
+  (test-flat-contract '(if/c integer? even? list?) '() #f)
+  
   (test/spec-passed 'any/c '(contract any/c 1 'pos 'neg))
   (test-flat-contract 'printable/c (vector (cons 1 (box #f))) (lambda (x) x))
   (let ()
@@ -109,6 +112,12 @@
                         (contract-eval `(new (class* object% (flat-is-a-test<%>) (super-new))))
                         (contract-eval '(new object%)))
     (test-flat-contract `(or/c #f (is-a?/c flat-is-a-test%))
+                        (contract-eval `(new flat-is-a-test%))
+                        (contract-eval '(new object%)))
+    (test-flat-contract `(first-or/c #f (is-a?/c flat-is-a-test<%>))
+                        (contract-eval `(new (class* object% (flat-is-a-test<%>) (super-new))))
+                        (contract-eval '(new object%)))
+    (test-flat-contract `(first-or/c #f (is-a?/c flat-is-a-test%))
                         (contract-eval `(new flat-is-a-test%))
                         (contract-eval '(new object%))))
 
@@ -162,6 +171,11 @@
                                             even1)
                       '(1 2 3 4)
                       '(1 2 3))
+  (test-flat-contract '(flat-murec-contract ([even1 (first-or/c null? (cons/c number? even2))]
+                                             [even2 (cons/c number? even1)])
+                                            even1)
+                      '(1 2 3 4)
+                      '(1 2 3))
 
   (test-flat-contract '(hash/c symbol? boolean? #:flat? #t) (make-hash) 1)
   (test-flat-contract '(hash/c symbol? boolean? #:flat? #t)
@@ -199,6 +213,9 @@
 
   (test-flat-contract '(or/c (flat-contract integer?) char?) #\a #t)
   (test-flat-contract '(or/c (flat-contract integer?) char?) 1 #t)
+
+  (test-flat-contract '(first-or/c (flat-contract integer?) char?) #\a #t)
+  (test-flat-contract '(first-or/c (flat-contract integer?) char?) 1 #t)
 
   
   ;; test flat-contract-predicate

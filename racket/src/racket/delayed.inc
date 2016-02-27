@@ -21,10 +21,10 @@ static int _dlldir_offset = 14; /* Skip permanent tag */
 START_XFORM_SKIP;
 # endif
 
-static void load_delayed_dll(HINSTANCE me, char *lib) 
+static void load_delayed_dll(HINSTANCE me, const char *lib) 
 {
   /* Don't use the C library here! */
-  wchar_t *dlldir = _dlldir + _dlldir_offset;
+  const wchar_t *dlldir = _dlldir + _dlldir_offset;
 
   if (dlldir[0] != '<') {
     if ((dlldir[0] == '\\')

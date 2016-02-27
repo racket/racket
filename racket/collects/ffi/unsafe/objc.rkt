@@ -149,6 +149,13 @@
                                 #f))])
     (cast new _objc_class-pointer _Class)))
 
+(define (dispose-class-pair-the-hard-way c-id)
+  (define c (cast _Class _objc_class-pointer))
+  (define meta (cast  _pointer _objc_class-pointer))
+  (free (objc_class-name c))
+  (free (objc_class-isa c))
+  (free c))
+
 (define (add-ivar-the-hard-way class field-name field-name-type)
   (let* ([class (cast class _Class _objc_class-pointer)]
          [ivars (or (objc_class-ivars class)
@@ -218,6 +225,8 @@
 
 (define-objc objc_allocateClassPair (_fun _Class _string _long -> _Class)
   #:fail (lambda () #f))
+(define-objc objc_disposeClassPair (_fun _Class -> _void)
+  #:fail (lambda () #f))
 (define-objc objc_registerClassPair (_fun _Class -> _void)
   #:fail (lambda () #f))
 
@@ -225,6 +234,8 @@
   #:fail (lambda () #f))
 
 (define-objc object_getClass (_fun _id -> _Class)
+  #:fail (lambda () #f))
+(define-objc object_setClass (_fun _id _Class -> _void)
   #:fail (lambda () #f))
 
 (define-objc class_addMethod/raw (_fun _Class _SEL _fpointer _string -> _BOOL)
@@ -567,7 +578,8 @@
 
 (provide define-objc-class
          define-objc-mixin
-         self super-tell)
+         self super-tell
+         objc-dispose-class)
 
 (define-for-syntax ((check-id stx what) id)
   (unless (identifier? id)
@@ -674,6 +686,11 @@
       (objc_allocateClassPair superclass-id id-str 0)
       (allocate-class-pair-the-hard-way superclass-id id-str)))
 
+(define (dispose-class-pair c-id)
+  (if objc_disposeClassPair
+      (objc_disposeClassPair c-id)
+      (dispose-class-pair-the-hard-way c-id)))
+
 (define (register-class-pair id)
   (if objc_registerClassPair
       (objc_registerClassPair id)
@@ -688,6 +705,11 @@
   (if object_getClass
       (object_getClass id)
       (ptr-ref id _Class)))
+
+(define (object-set-class! id c-id)
+  (if object_setClass
+      (object_setClass id c-id)
+      (ptr-set! id _Class c-id)))
 
 (define (layout->string l)
   (case l
@@ -874,10 +896,16 @@
                  #'((make-objc_super self super-class))
                  #'(method/arg ...))]))
 
+(define (objc-dispose-class c)
+  (dispose-class-pair c))
+
 ;; --------------------------------------------------
 
 (provide objc-is-a?
-         objc-subclass?)
+         objc-subclass?
+         objc-get-class
+         objc-set-class!
+         objc-get-superclass)
 
 (define-objc class_getSuperclass (_fun _Class -> _Class))
 
@@ -890,6 +918,12 @@
         (and pc
              (objc-subclass? pc c)))))
 
+(define (objc-get-class v) (object-get-class v))
+(define (objc-set-class! v c) (object-set-class! v c))
+
+(define (objc-get-superclass c)
+  (class_getSuperclass c))
+
 ;; --------------------------------------------------
 
 (define-objc class_getInstanceMethod (_fun _Class _SEL -> _Method))
@@ -898,3 +932,36 @@
                       (set-objc_method-method_imp! 
                        (cast meth _Method _objc_method-pointer) 
                        (function-ptr imp _IMP)))))
+
+;; --------------------------------------------------
+
+(provide objc-block)
+
+(define-cstruct _block ([isa _pointer]
+                        [flags _int]
+                        [reserved _int]
+                        [invoke _fpointer]
+                        [descriptor _pointer])
+  #:malloc-mode 'atomic-interior)
+
+(define-cstruct _block-desc ([reserved _ulong]
+                             [size _ulong])
+  #:malloc-mode 'atomic-interior)
+
+(define-objc _NSConcreteGlobalBlock _pointer
+  #:fail (lambda () #f))
+
+(define (objc-block type proc #:keep keep)
+  (unless _NSConcreteGlobalBlock
+    (error 'objc-block "unsupported"))
+  
+  (define desc
+    (make-block-desc 0 (ctype-sizeof _block)))
+  (define blk
+    (make-block _NSConcreteGlobalBlock
+                (arithmetic-shift 3 28)
+                0
+                (cast proc type _fpointer)
+                desc))
+  (set-box! keep (list* blk desc (unbox keep)))
+  blk)

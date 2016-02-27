@@ -2,7 +2,8 @@
 @(require scribble/manual "guide-utils.rkt"
           (for-label racket/flonum
                      racket/unsafe/ops
-                     racket/performance-hint))
+                     racket/performance-hint
+                     ffi/unsafe))
 
 @title[#:tag "performance"]{Performance}
 
@@ -358,6 +359,31 @@ crashes or memory corruption.
 
 @; ----------------------------------------------------------------------
 
+@section[#:tag "ffi-pointer-access"]{Foreign Pointers}
+
+The @racketmodname[ffi/unsafe] library provides functions for unsafely
+reading and writing arbitrary pointer values. The JIT recognizes uses
+of @racket[ptr-ref] and @racket[ptr-set!] where the second argument is
+a direct reference to one of the following built-in C types:
+@racket[_int8], @racket[_int16], @racket[_int32], @racket[_int64],
+@racket[_double], @racket[_float], and @racket[_pointer]. Then, if the
+first argument to @racket[ptr-ref] or @racket[ptr-set!] is a C pointer
+(not a byte string), then the pointer read or write is performed
+inline in the generated code.
+
+The bytecode compiler will optimize references to integer
+abbreviations like @racket[_int] to C types like
+@racket[_int32]---where the representation sizes are constant across
+platforms---so the JIT can specialize access with those C types. C
+types such as @racket[_long] or @racket[_intptr] are not constant
+across platforms, so their uses are currently not specialized by the
+JIT.
+
+Pointer reads and writes using @racket[_float] or @racket[_double] are
+not currently subject to unboxing optimizations.
+
+@; ----------------------------------------------------------------------
+
 @section[#:tag "regexp-perf"]{Regular Expression Performance}
 
 When a string or byte string is provided to a function like
@@ -445,7 +471,7 @@ then the expansion of the @racket[let] form to implement
 automatically converts the closure to pass itself @racket[n] as an
 argument instead.
 
-@section{Reachability and Garbage Collection}
+@section[#:tag "Reachability and Garbage Collection"]{Reachability and Garbage Collection}
 
 In general, Racket re-uses the storage for a value when the
 garbage collector can prove that the object is unreachable from
@@ -508,7 +534,7 @@ There are a number of exceptions, however:
          @item{Interned symbols are allocated only once (per place). A table inside
                Racket tracks this allocation so a symbol may not become garbage
                because that table holds onto it.}
-         @item{Reachability is only approximate with the CGC collector (i.e.,
+         @item{Reachability is only approximate with the @tech{CGC} collector (i.e.,
                a value may appear reachable to that collector when there is,
                in fact, no way to reach it anymore.}]
 
@@ -551,3 +577,53 @@ occurrence of the variable @racket[_fishes]. That constitutes
 a reference to the list, ensuring that the list is not itself
 garbage collected, and thus the red fish is not either.
 
+
+@section{Reducing Garbage Collection Pauses}
+
+By default, Racket's @tech{generational garbage collector} creates
+brief pauses for frequent @deftech{minor collections}, which inspect
+only the most recently allocated objects, and long pauses for infrequent
+@deftech{major collections}, which re-inspect all memory.
+
+For some applications, such as animations and games,
+long pauses due to a major collection can interfere
+unacceptably with a program's operation. To reduce major-collection
+pauses, the Racket garbage collector supports @deftech{incremental
+garbage-collection} mode. In incremental mode, minor collections
+create longer (but still relatively short) pauses by performing extra
+work toward the next major collection. If all goes well, most of a
+major collection's work has been performed by minor collections the
+time that a major collection is needed, so the major collection's
+pause is as short as a minor collection's pause. Incremental mode
+tends to run more slowly overall, but it can
+provide much more consistent real-time behavior.
+
+If the @envvar{PLT_INCREMENTAL_GC} environment variable is set
+to a value that starts with @litchar{1}, @litchar{y}, or @litchar{Y}
+when Racket starts, incremental mode is permanently enabled. Since
+incremental mode is only useful for certain parts of some programs,
+however, and since the need for incremental mode is a property of a
+program rather than its environment, the preferred way to enable
+incremental mode is with @racket[(collect-garbage 'incremental)].
+
+Calling @racket[(collect-garbage 'incremental)] does not perform an
+immediate garbage collection, but instead requests that each minor
+collection perform incremental work up to the next major collection.
+The request expires with the next major collection. Make a call to
+@racket[(collect-garbage 'incremental)] in any repeating task within
+an application that needs to be responsive in real time. Force a
+full collection with @racket[(collect-garbage)] just before an initial
+@racket[(collect-garbage 'incremental)] to initiate incremental mode
+from an optimal state.
+
+To check whether incremental mode is use and how it affects pause
+times, enable @tt{debug}-level logging output for the
+@racketidfont{GC} topic. For example,
+
+@commandline{racket -W "debuG@"@"GC error" main.rkt}
+
+runs @filepath{main.rkt} with garbage-collection logging to stderr
+(while preserving @tt{error}-level logging for all topics). Minor
+collections are reported by @litchar{min} lines, increment-mode minor
+collection are reported with @litchar{mIn} lines, and major
+collections are reported with @litchar{MAJ} lines.

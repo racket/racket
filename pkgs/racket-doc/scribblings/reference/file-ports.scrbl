@@ -27,8 +27,8 @@
                             (delete-file i)))))
          (clean)
          (begin0
-           (defexamples #:eval my-eval
-                        expr ...)
+           (examples #:eval my-eval
+                     expr ...)
            (clean)))]))
 
   "")

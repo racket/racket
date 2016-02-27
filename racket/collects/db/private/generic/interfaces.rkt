@@ -1,7 +1,8 @@
 #lang racket/base
 (require racket/class
+         racket/list
          racket/serialize
-         unstable/error)
+         racket/string)
 (provide connection<%>
          dbsystem<%>
          prepared-statement<%>
@@ -200,7 +201,95 @@ For SQLite, use symbol instead of SQLSTATE string.
          error/want-cursor
          error/column-count
          error/row-count
-         error/statement-binding-args)
+         error/statement-binding-args
+         ;; other modules also define some error reporting
+         compose-error-message
+         error*)
+
+(define (error* who message
+                #:continued [continued-message null]
+                . field+detail-list)
+  (raise
+   (exn:fail
+    (compose* who message
+              continued-message
+              (field+detail-list->table 'error* field+detail-list null))
+    (current-continuation-marks))))
+
+;; compose-error-message : .... -> string
+(define (compose-error-message who message
+                               #:continued [continued-message null]
+                               . field+detail-list)
+  (define details
+    (field+detail-list->table 'compose-error-message field+detail-list null))
+  (compose* who message continued-message details))
+
+(define (compose* who message continued-message details)
+  (let* ([parts (apply append
+                       (for/list ([detail (in-list details)])
+                         (let* ([field+opts (car detail)]
+                                [field (if (pair? field+opts) (car field+opts) field+opts)]
+                                [options (if (pair? field+opts) (cdr field+opts) '())]
+                                [value (cdr detail)])
+                           (compose-detail* field options value))))]
+         [parts (let loop ([continued continued-message])
+                  (cond [(pair? continued) (list* "\n " (car continued) (loop (cdr continued)))]
+                        [(string? continued) (loop (list continued))]
+                        [(null? continued) parts]))]
+         [parts (list* message (if (null? continued-message) "" ";") parts)]
+         [parts (if who
+                    (list* (symbol->string who) ": " parts)
+                    parts)])
+    (apply string-append parts)))
+
+(define (compose-detail* field options value)
+  (let* ([value? (memq 'value options)]
+         [multi? (memq 'multi options)]
+         [maybe? (memq 'maybe options)]
+         [noindent? (memq 'noindent options)]
+         [convert-value0
+          (cond [value?
+                 (lambda (v) ((error-value->string-handler) v (error-print-width)))]
+                [else
+                 (lambda (v) (format "~a" v))])]
+         [convert-value
+          (if noindent?
+              (lambda (v indent) (list (convert-value0 v)))
+              (lambda (v indent)
+                (let* ([s (convert-value0 v)]
+                       [lines (string-split s #rx"[\n]" #:trim? #f)]
+                       [spacing
+                        (case indent
+                          ((3) "\n   ") ;; common case, make constant
+                          (else (string-append "\n" (make-string indent #\space))))])
+                  (add-between lines spacing))))])
+    (cond [(and (or maybe? multi? (not value?))
+                (not value))
+           null]
+          [(and maybe? multi?
+                (null? value))
+           null]
+          [multi?
+           (list* "\n  " field ": "
+                  (let value-loop ([value value])
+                    (cond [(pair? value)
+                           (list* "\n   "
+                                  (append (convert-value (car value) 3)
+                                          (value-loop (cdr value))))]
+                          [(null? value)
+                           null])))]
+          [else
+           (list* "\n  " field ": "
+                  (convert-value value (+ 4 (string-length field))))])))
+
+(define (field+detail-list->table who lst onto)
+  (cond [(null? lst) onto]
+        [else
+         (let ([field (car lst)]
+               [value (cadr lst)])
+           (cons (cons field value)
+                 (field+detail-list->table who (cddr lst) onto)))]))
+
 
 (define (error/internal fsym fmt . args)
   (error* fsym "internal error"

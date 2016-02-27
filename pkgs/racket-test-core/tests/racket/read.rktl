@@ -2,7 +2,7 @@
 (load-relative "loadtest.rktl")
 
 (Section 'reading)
-(define readstr
+(define core-readstr
   (lambda (s)
     (let* ([o (open-input-string s)]
 	   [read (lambda () (read o))])
@@ -11,6 +11,40 @@
 	  (if (eof-object? v)
 	      last
 	      (loop v)))))))
+
+(define (readstr s)
+  (if (current-readtable)
+      (core-readstr s)
+      ;; Try using a readtable that behaves the same as the default,
+      ;; since that triggers some different paths in the reader:
+      (let* ([normal (with-handlers ([exn:fail? values])
+                       (core-readstr s))]
+             [c-normal (adjust-result-to-compare normal)]
+             [rt (adjust-result-to-compare
+                  (with-handlers ([exn:fail? values])
+                    (parameterize ([current-readtable (make-readtable (current-readtable))])
+                      (core-readstr s))))])
+        (if (equal? c-normal rt)
+            (if (exn? normal)
+                (raise normal)
+                normal)
+            (list "different with readtable" s c-normal rt)))))
+
+(require racket/extflonum)
+
+(define (adjust-result-to-compare v)
+  ;; Make results from two readstrs comparable
+  (cond
+   [(hash? v)
+    (for/fold ([ht (hash)]) ([(k hv) (in-hash v)])
+      (hash-update ht
+                   (if (eq? k v) 'SELF k)
+                   (lambda (vht)
+                     (hash-set vht hv #t))
+                   (hash)))]
+   [(exn? v) (exn-message v)]
+   [(extflonum? v) (format "~s" v)]
+   [else v]))
 
 (define readerrtype
   (lambda (x) x))
@@ -54,6 +88,9 @@
 (err/rt-test (readstr "(8 . 9 . ]") exn:fail:read?)
 (err/rt-test (readstr "(8 . 9 . 1 . )") exn:fail:read?)
 (err/rt-test (readstr "(8 . 9 . 1 . 10)") exn:fail:read?)
+(err/rt-test (readstr "(8 . 9 . #;1)") exn:fail:read?)
+(err/rt-test (readstr "(8 . 9 . ;\n)") exn:fail:read?)
+(err/rt-test (readstr "(8 . 9 . #|x|#)") exn:fail:read?)
 
 (let ([w-suffix
        (lambda (s)
@@ -857,7 +894,31 @@
   (err/rt-test (read (make-p (list #"|x" a-special #"y|") (lambda (x) 1) void)) exn:fail:read:non-char?))
 (run-delim-special a-special)
 (run-delim-special special-comment)
+(parameterize ([current-readtable (make-readtable #f)])
+  (run-delim-special special-comment))
 
+(require racket/flonum
+         racket/fixnum)
+
+(define (run-comment-special)
+  (test (list 5) read (make-p (list #"(" special-comment #"5)") (lambda (x) 1) void))
+  (test (list 5) read (make-p (list #"(5" special-comment #")") (lambda (x) 1) void))
+  (test (cons 1 5) read (make-p (list #"(1 . " special-comment #"5)") (lambda (x) 1) void))
+  (test (cons 1 5) read (make-p (list #"(1 . 5" special-comment #")") (lambda (x) 1) void))
+  (err/rt-test (read (make-p (list #"(1 . " special-comment #")") (lambda (x) 1) void)) exn:fail:read?)
+  (test (list 2 1 5) read (make-p (list #"(1 . 2 . " special-comment #"5)") (lambda (x) 1) void))
+  (test (list 2 1 a-special 5) read (make-p (list #"(1 . 2 ." a-special #"5)") (lambda (x) 1) void))
+  (test (list 2 1 5) read (make-p (list #"(1 . " special-comment #"2 . 5)") (lambda (x) 1) void))
+  (test (list 2 1 5) read (make-p (list #"(1 . 2 " special-comment #" . 5)") (lambda (x) 1) void))
+  (test (vector 1 2 5) read (make-p (list #"#(1 2 " special-comment #"5)") (lambda (x) 1) void))
+  (test (flvector 1.0) read (make-p (list #"#fl(1.0 " special-comment #")") (lambda (x) 1) void))
+  (test (fxvector 1) read (make-p (list #"#fx(1 " special-comment #")") (lambda (x) 1) void))
+  (err/rt-test (read (make-p (list #"#fl(1.0 " a-special #")") (lambda (x) 1) void)) exn:fail:read?)
+  (err/rt-test (read (make-p (list #"#fx(1 " a-special #")") (lambda (x) 1) void)) exn:fail:read?))
+(run-comment-special)
+(parameterize ([current-readtable (make-readtable #f)])
+  (run-comment-special))
+  
 ;; Test read-char-or-special:
 (let ([p (make-p (list #"x" a-special #"y") (lambda (x) 5) void)])
   (test #\x peek-char-or-special p)
@@ -1010,7 +1071,6 @@
         (read (open-input-string
                "!#hash((apple . (red round)) (banana . (yellow long)))"))))
 
-
 (test #hash((apple . (red round))
             (banana . (yellow long)))
       values
@@ -1135,6 +1195,9 @@
 (test #t equal? (fxvector 1000 76 100000 100000 100000 100000 100000 100000 100000 100000) (readstr "#fx10(1000 76 100000)"))
 (test #t equal? (flvector 0.0 0.0 0.0) (readstr "#fl3()"))
 (test #t equal? (flvector 2.0 1.0 1.0) (readstr "#fl3(2 1)"))
+(test #t equal? (flvector 2.0 1.0) (readstr "#fl(2 #;5 1)"))
+(test #t equal? (flvector 2.0 1.0) (readstr "#fl(2 #|5|# 1)"))
+(test #t equal? (flvector 2.0 1.0) (readstr "#fl(2 ;5\n 1)"))
 (test #t equal? (fxvector 0 0 0) (readstr "#fx3()"))
 (test #t equal? (fxvector 2 1 1) (readstr "#fx3(2 1)"))
 
@@ -1151,6 +1214,11 @@
 
 (err/rt-test (read-syntax 'x (open-input-string "#fx()")) exn:fail:read?)
 (err/rt-test (read-syntax 'x (open-input-string "#fl()")) exn:fail:read?)
+
+(parameterize ([current-readtable (make-readtable
+                                   #f
+                                   #f 'non-terminating-macro (lambda args 3.0))])
+  (test #t equal? (flvector 3.0) (readstr "#fl(3)")))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require racket/extflonum)

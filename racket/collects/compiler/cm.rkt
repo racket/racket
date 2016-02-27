@@ -31,7 +31,9 @@
          
          parallel-lock-client
          make-compile-lock
-         compile-lock->parallel-lock-client)
+         compile-lock->parallel-lock-client
+         
+         install-module-hashes!)
 
 (define cm-logger (make-logger 'compiler/cm (current-logger)))
 (define (default-manager-trace-handler str)
@@ -308,9 +310,12 @@
           (write (list* (version)
                         (cons (or src-sha1 (get-source-sha1 path))
                               (get-dep-sha1s deps up-to-date collection-cache read-src-syntax mode roots #t #hash()))
-                        deps)
+                        (sort deps s-exp<?))
                  op)
           (newline op))))))
+
+(define (s-exp<? a b)
+  (string<? (format "~s" a) (format "~s" b)))
 
 (define (format-time sec)
   (let ([d (seconds->date sec)])
@@ -459,7 +464,7 @@
               (write code b)
               ;; Compute SHA1 over modules within bytecode
               (let* ([s (get-output-bytes b)])
-                (install-module-hashes! s 0 (bytes-length s))
+                (install-module-hashes! s)
                 ;; Write out the bytecode with module hash
                 (write-bytes s out)))))
         ;; redundant, but close as early as possible:
@@ -471,7 +476,7 @@
                     external-deps external-module-deps reader-deps 
                     up-to-date collection-cache read-src-syntax)))))
 
-(define (install-module-hashes! s start len)
+(define (install-module-hashes! s [start 0] [len (bytes-length s)])
   (define vlen (bytes-ref s (+ start 2)))
   (define mode (integer->char (bytes-ref s (+ start 3 vlen))))
   (case mode

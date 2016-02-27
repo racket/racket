@@ -48,10 +48,24 @@
              (rename *in-port in-port)
              (rename *in-lines in-lines)
              (rename *in-bytes-lines in-bytes-lines)
+             
              in-hash
              in-hash-keys
              in-hash-values
              in-hash-pairs
+             in-mutable-hash
+             in-mutable-hash-keys
+             in-mutable-hash-values
+             in-mutable-hash-pairs
+             in-immutable-hash
+             in-immutable-hash-keys
+             in-immutable-hash-values
+             in-immutable-hash-pairs
+             in-weak-hash
+             in-weak-hash-keys
+             in-weak-hash-values
+             in-weak-hash-pairs
+
              in-directory
 
              in-sequences
@@ -88,6 +102,17 @@
              (for-syntax make-in-vector-like
                          for-clause-syntax-protect))
 
+  ;; redefininition of functions not in #%kernel
+  (begin-for-syntax
+    (define (format-id ctx str . args)
+      (define datum 
+        (string->symbol (apply format str (map syntax->datum args))))
+      (datum->syntax ctx datum))
+    (define (join-ids ids sep) ; joins ids with sep; ids = stx-pair
+      (syntax-case ids ()
+       [(id) #'id]
+       [(id . ids) (format-id #'id "~a~a~a" #'id sep (join-ids #'ids sep))])))
+  
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; sequence transformers:
 
@@ -171,7 +196,7 @@
 
     (define (for-clause-syntax-protect clause)
       ;; This is slightly painful. The expansion into `:do-in' involves a lot
-      ;; of pieces that are no treated as sub-expressions. We have to push the
+      ;; of pieces that are not treated as sub-expressions. We have to push the
       ;; taints down to all the relevant identifiers and expressions:
       (arm-for-clause clause syntax-arm))
 
@@ -492,7 +517,9 @@
       [(string? v) (:string-gen v 0 (string-length v) 1)]
       [(bytes? v) (:bytes-gen v 0 (bytes-length v) 1)]
       [(input-port? v) (:input-port-gen v)]
-      [(hash? v) (:hash-key+val-gen v)]
+      [(hash? v) (:hash-gen v hash-iterate-key+value
+                              hash-iterate-first
+                              hash-iterate-next)]
       [(sequence-via-prop? v) ((sequence-ref v) v)]
       [(:sequence? v) (make-sequence who ((:sequence-ref v) v))]
       [(stream? v) (:stream-gen v)]
@@ -590,6 +617,7 @@
     (values car cdr l pair? #f #f))
 
   (define (in-mlist l)
+    (unless (mpair? l) (raise-argument-error 'in-mlist "mpair?" l))
     (make-do-sequence (lambda () (:mlist-gen l))))
 
   (define (:mlist-gen l)
@@ -655,42 +683,114 @@
        (check-in-bytes-lines p mode)
        (in-producer (lambda () (read-bytes-line p mode)) eof)]))
 
-  (define (in-hash ht)
-    (unless (hash? ht) (raise-argument-error 'in-hash "hash?" ht))
-    (make-do-sequence (lambda () (:hash-key+val-gen ht))))
+  (define (in-stream l)
+    (unless (stream? l) (raise-argument-error 'in-stream "stream?" l))
+    (make-do-sequence (lambda () (:stream-gen l))))
+  
+  (define (:stream-gen l)
+    (values 
+     unsafe-stream-first unsafe-stream-rest l unsafe-stream-not-empty? #f #f))
 
-  (define (:hash-key+val-gen ht)
-    (:hash-gen ht (lambda (ht pos)
-                    (values (hash-iterate-key ht pos)
-                            (hash-iterate-value ht pos)))))
 
-  (define (in-hash-keys ht)
-    (unless (hash? ht) (raise-argument-error 'in-hash-keys "hash?" ht))
-    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-key))))
-  (define (in-hash-values ht)
-    (unless (hash? ht) (raise-argument-error 'in-hash-values "hash?" ht))
-    (make-do-sequence (lambda () (:hash-gen ht hash-iterate-value))))
-  (define (in-hash-pairs ht)
-    (unless (hash? ht) (raise-argument-error 'in-hash-values "hash?" ht))
-    (make-do-sequence (lambda ()
-                        (:hash-gen ht (lambda (ht pos)
-                                        (cons (hash-iterate-key ht pos)
-                                              (hash-iterate-value ht pos)))))))
-
-  (define (:hash-gen ht sel)
-    (values (lambda (pos) (sel ht pos))
-            (lambda (pos) (hash-iterate-next ht pos))
-            (hash-iterate-first ht)
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;; hash sequences
+  
+  ;; assembles hash iterator functions to give to make-do-sequence
+  (define (:hash-gen ht -get -first -next)
+    (values (lambda (pos) (-get ht pos))
+            (lambda (pos) (-next ht pos))
+            (-first ht)
             (lambda (pos) pos) ; #f position means stop
             #f
             #f))
 
-  (define (in-stream l)
-    (unless (stream? l) (raise-argument-error 'in-stream "stream?" l))
-    (make-do-sequence (lambda () (:stream-gen l))))
+  (define (mutable? ht) (not (immutable? ht)))
+  (define (not-weak? ht) (not (hash-weak? ht)))
 
-  (define (:stream-gen l)
-    (values unsafe-stream-first unsafe-stream-rest l unsafe-stream-not-empty? #f #f))
+  ;; Each call defines 4 in-HASHTYPE-VALs sequences,
+  ;;   where VAL = key, value, pair, key+value (key+value not used in seq name)
+  ;;   and HASHTYPE specifies the the set of hash-iterate- fns to use
+  ;;     eg, hash, immutable-hash, mutable-hash, weak-hash
+  (define-syntax (define-in-hash-sequences stx)
+    (syntax-case stx (element-types:)
+     [(_ element-types: V ...)
+      (with-syntax
+       ([VAL (join-ids #'(V ...) #'+)])
+       (with-syntax 
+        ([IN-HASH-DEFINER (format-id #'VAL "define-in-hash-~as-seq" #'VAL)])
+        #'(begin
+           ;; 1) define sequence syntax definer
+           ;; where HASHTYPE = hash, immutable-hash, etc
+           ;; and "checks" are predicates to apply to the input hash
+           ;; (not including hash?)
+           (define-syntax (IN-HASH-DEFINER stx)
+            (syntax-case stx (hash-type: checks:)
+             [(def hash-type: HASHTYPE) #'(def hash-type: HASHTYPE checks:)]
+             [(def hash-type: HASHTYPE checks: p? (... ...))
+              (with-syntax
+               ([IN-HASH-SEQ
+                 (if (equal? (syntax->datum #'VAL) 'key+value)
+                     (format-id #'def "in-~a" #'HASHTYPE)
+                     (format-id #'def "in-~a-~as" #'HASHTYPE #'VAL))]
+                [PREFIX
+                 (if (equal? (syntax->datum #'HASHTYPE) 'hash)
+                     (format-id #'def "~a-iterate" #'HASHTYPE)
+                     (format-id #'def "unsafe-~a-iterate" #'HASHTYPE))]
+                [HASHTYPE? #'(lambda (ht) (and (hash? ht) (p? ht) (... ...)))]
+                [ERR-STR
+                 (datum->syntax #'HASHTYPE
+                  (if (null? (syntax->list #'(p? (... ...)))) 
+                      "hash?"
+                      (string-append 
+                        "(and/c hash? "
+                        (symbol->string 
+                          (syntax->datum (join-ids #'(p? (... ...)) #'" "))) 
+                        ")")))])
+               (with-syntax
+                ([-first (format-id #'PREFIX "~a-first" #'PREFIX)]
+                 [-next (format-id #'PREFIX "~a-next" #'PREFIX)]
+                 [-VAL (format-id #'PREFIX "~a-~a" #'PREFIX #'VAL)]
+                 [AS-EXPR-SEQ (format-id #'def "default-~a" #'IN-HASH-SEQ)])
+                #'(begin
+                   (define (AS-EXPR-SEQ ht)
+                     (unless (HASHTYPE? ht)
+                       (raise-argument-error 'IN-HASH-SEQ ERR-STR ht))
+                     (make-do-sequence (lambda () (:hash-gen ht -VAL -first -next))))
+                   (define-sequence-syntax IN-HASH-SEQ
+                    (lambda () #'AS-EXPR-SEQ)
+                    (lambda (stx)
+                     (syntax-case stx ()
+                      [[(V ...) (_ ht-expr)]
+                       (for-clause-syntax-protect
+                        #'[(V ...)
+                           (:do-in
+                            ;;outer bindings
+                            ([(ht) ht-expr])
+                            ;; outer check
+                            (unless (HASHTYPE? ht) (AS-EXPR-SEQ ht))
+                            ;; loop bindings
+                            ([i (-first ht)])
+                            ;; pos check
+                            i
+                            ;; inner bindings
+                            ([(V ...) (-VAL ht i)])
+                            ;; pre guard
+                            #t
+                            ;; post guard
+                            #t
+                            ;; loop args
+                            ((-next ht i)))])]
+                      [_ #f]))))))]))
+          ;; 2) define sequence syntaxes (using just-defined definer):
+          (IN-HASH-DEFINER hash-type: hash)
+          (IN-HASH-DEFINER hash-type: mutable-hash   checks: mutable? not-weak?)
+          (IN-HASH-DEFINER hash-type: immutable-hash checks: immutable?)
+          (IN-HASH-DEFINER hash-type: weak-hash      checks: hash-weak?))))]))
+  (define-in-hash-sequences element-types: key value)
+  (define-in-hash-sequences element-types: key)
+  (define-in-hash-sequences element-types: value)
+  (define-in-hash-sequences element-types: pair)
 
   ;; Vector-like sequences --------------------------------------------------
 
@@ -700,21 +800,22 @@
   ;; the largest fixnum, after running these checks start,
   ;; stop, and step are guaranteed to be fixnums.
   (define (check-ranges who vec start stop step len)
-    (unless (and (exact-nonnegative-integer? start) (<= start len))
-      (raise-range-error who "vector" "starting " start vec 0 len))
+    (unless (and (exact-nonnegative-integer? start)
+                 (or (< start len) (= len start stop)))
+      (raise-range-error who "vector" "starting " start vec 0 (sub1 len)))
     (unless (and (exact-integer? stop) (<= -1 stop) (<= stop len))
       (raise-range-error who "vector" "stopping " stop vec -1 len))
     (unless (and (exact-integer? step) (not (zero? step)))
       (raise-argument-error who "(and/c exact-integer? (not/c zero?))" step))
     (when (and (< start stop) (< step 0))
       (raise-arguments-error who 
-                             "starting index less then stopping index, but given a negative step"
+                             "starting index less than stopping index, but given a negative step"
                              "starting index" start
                              "stopping index" stop
                              "step" step))
     (when (and (< stop start) (> step 0))
       (raise-arguments-error who 
-                             "starting index more then stopping index, but given a positive step"
+                             "starting index more than stopping index, but given a positive step"
                              "starting index" start
                              "stopping index" stop
                              "step" step)))

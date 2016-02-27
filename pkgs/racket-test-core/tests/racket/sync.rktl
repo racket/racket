@@ -234,12 +234,16 @@
 	    (wrap-evt
 	     (alarm-evt (+ (current-inexact-milliseconds) (* 1000 amt)))
 	     (lambda (v) amt)))))])
-  (test #f sync/timeout 0.1 (make-delay 0.15) (make-delay 0.2))
-  (test 0.15 sync/timeout 18 (make-delay 0.15) (make-delay 0.2))
-  (test 0.15 sync/timeout 18 (make-delay 0.2) (make-delay 0.15))
-  (test 0.15 sync/timeout 0.18 (make-delay 0.15) (make-delay 0.2))
-  (test 0.15 sync/timeout 18 
-	(choice-evt (make-delay 0.2) (make-delay 0.15))))
+  (define fast SYNC-SLEEP-DELAY)
+  (define slow1 (* 100 SYNC-SLEEP-DELAY))
+  (define slow2 (* 99 SYNC-SLEEP-DELAY))
+  (test #f sync/timeout fast (make-delay slow1) (make-delay slow1))
+  (test fast sync/timeout slow1 (make-delay fast) (make-delay slow2))
+  (test fast sync/timeout slow1 (make-delay slow2) (make-delay fast))
+  (test fast sync/timeout slow2 (make-delay fast) (make-delay slow1))
+  (test fast sync/timeout slow2 (make-delay slow1) (make-delay fast))
+  (test fast sync/timeout slow2
+	(choice-evt (make-delay slow1) (make-delay fast))))
 
 ;;check flattening of choice evts returned by a guard:
 (let ()
@@ -1402,6 +1406,38 @@
   (sync (system-idle-evt))
   (break-thread t)
   (test t sync t))
+
+;; ----------------------------------------
+;; result from a break during `sync`
+
+(let ()
+  (define (try wrap val)
+    (for ([tsync (list sync sync/enable-break)])
+      (define ch (make-channel))
+      (define got #f)
+      (define t (thread (lambda ()
+                          (define nack #f)
+                          (call-with-exception-handler
+                           (lambda (exn)
+                             (test #f sync/timeout 0 nack)
+                             (if (exn:break? exn)
+                                 ((exn:break-continuation exn))
+                                 exn))
+                           (lambda ()
+                             (set! got (tsync (nack-guard-evt
+                                               (lambda (n)
+                                                 (set! nack n)
+                                                 (wrap ch))))))))))
+      (sync (system-idle-evt))
+      (break-thread t)
+      (sync (system-idle-evt))
+      (channel-put ch val)
+      (sync t)
+      (test val values got)))
+
+  (try values 'ok-channel)
+  (try (lambda (c) (choice-evt c (alarm-evt (+ 10000 (current-inexact-milliseconds)))))
+       'ok-channel+alarm))
 
 ;; ----------------------------------------
 

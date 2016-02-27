@@ -51,3 +51,19 @@
              (λ () (dict-set dict "bad" 5))))
 
 (require 'c)
+
+;; ----------------------------------------
+
+(module contract-on-method racket
+  (require racket/generic)
+  (provide gen:foo foo? foo/c (contract-out [bar (foo? . -> . any/c)]))
+  (define-generics foo
+    (bar foo)))
+
+(module make-generic-contract racket
+  (require 'contract-on-method)
+  (define (foo/c* c)
+    (foo/c
+     [bar (foo? . -> . c)])))
+
+

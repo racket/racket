@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval "utils.rkt"
-          (for-label racket/contract))
+          (for-label racket/base
+                     racket/contract))
 
 @title[#:tag "contract-boundaries"]{Contracts and Boundaries}
 

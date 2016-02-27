@@ -62,7 +62,7 @@ as in the grammar for @racket[if]:
          (if test-expr then-expr else-expr)]
 ]
 
-Since every @deftech{form} is expressed in terms of @tech{syntax
+Since every @tech{form} is expressed in terms of @tech{syntax
 objects}, parentheses in a grammar specification indicate a @tech{syntax
 object} wrapping a list, and the leading @racket[if] is an identifier
 that starts the list whose @tech{binding} is the @racket[if] binding

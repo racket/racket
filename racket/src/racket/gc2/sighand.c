@@ -84,7 +84,7 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
       /* running w/ places in GDB */
       printf("SIGSEGV SI_USER SI_ERRNO %i fault on addr %p\n", si->si_errno, p);
 #ifdef MZ_USE_PLACES
-      printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_thread_self());
+      printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_os_thread_self());
 #else
       printf("pid %i uid %i\n", si->si_pid, si->si_uid);
 #endif      
@@ -219,9 +219,10 @@ static void initialize_signal_handler(GCTYPE *gc)
 # ifdef NEED_SIGSTACK
   {
     stack_t ss;
+    uintptr_t sz = 10*SIGSTKSZ;
     
-    ss.ss_sp = malloc(SIGSTKSZ);
-    ss.ss_size = SIGSTKSZ;
+    ss.ss_sp = malloc(sz);
+    ss.ss_size = sz;
     ss.ss_flags = 0;
     
     sigaltstack(&ss, NULL);

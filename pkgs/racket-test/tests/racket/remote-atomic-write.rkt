@@ -24,3 +24,6 @@
   (unless (equal? 65 (place-channel-get p))
     (error "crash"))
   'ok)
+
+(module+ test
+  (require (submod ".." main)))

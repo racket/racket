@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require racket/generic racket/engine unstable/macro-testing)
+(require racket/generic racket/engine syntax/macro-testing)
 
 (module+ test
   (require rackunit)

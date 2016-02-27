@@ -9,8 +9,7 @@
          syntax/parse/private/residual
          "private/runtime.rkt"
          "private/runtime-progress.rkt"
-         (except-in "private/runtime-report.rkt"
-                    syntax-patterns-fail)
+         "private/runtime-report.rkt"
          "private/kws.rkt")
 
 ;; No lazy loading for this module's dependencies.

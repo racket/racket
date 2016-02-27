@@ -1,6 +1,7 @@
 #lang racket/base
 (require "blame.rkt"
-         "kwd-info-struct.rkt")
+         "kwd-info-struct.rkt"
+         "list.rkt")
 
 (provide do-arity-checking
          
@@ -15,8 +16,7 @@
                            ->stct-kwd-infos)
   (let/ec k
     (unless (procedure? val)
-      (maybe-err 
-       k blame
+      (k
        (λ (neg-party)
          (raise-blame-error blame #:missing-party neg-party val
                             '(expected: "a procedure" given: "~e")
@@ -25,7 +25,11 @@
      (define arity (if (list? (procedure-arity val))
                        (procedure-arity val)
                        (list (procedure-arity val))))
-     (define expected-number-of-non-keyword-args (length ->stct-doms))
+    
+     (define exra-required-args (if (ellipsis-rest-arg-ctc? ->stct-rest)
+                                    (length (*list-ctc-suffix ->stct-rest))
+                                    0))
+     (define expected-number-of-non-keyword-args (+ (length ->stct-doms) exra-required-args))
      (define matching-arity?
        (and (for/or ([a (in-list arity)])
               (or (equal? expected-number-of-non-keyword-args a)
@@ -34,11 +38,10 @@
             (if ->stct-rest
                 (let ([lst (car (reverse arity))])
                   (and (arity-at-least? lst)
-                       (<= (arity-at-least-value lst) ->stct-min-arity)))
+                       (<= (arity-at-least-value lst) (+ exra-required-args ->stct-min-arity))))
                 #t)))
      (unless matching-arity?
-       (maybe-err
-        k blame
+       (k
         (λ (neg-party)
           (raise-blame-error blame #:missing-party neg-party val
                              '(expected: 
@@ -54,8 +57,7 @@
                              (arity-as-string val)))))
     
     (define (should-have-supplied kwd)
-      (maybe-err
-       k blame
+      (k
        (λ (neg-party)
          (raise-blame-error blame #:missing-party neg-party val
                             '(expected: 
@@ -67,8 +69,7 @@
                             (arity-as-string val)))))
     
     (define (should-not-have-supplied kwd)
-      (maybe-err
-       k blame
+      (k
        (λ (neg-party)
          (raise-blame-error blame #:missing-party neg-party val
                             '(expected: 
@@ -107,8 +108,7 @@
              [(equal? kwd (kwd-info-kwd kwd-info))
               (when (and (not (kwd-info-mandatory? kwd-info))
                          mandatory?)
-                (maybe-err
-                 k blame
+                (k
                  (λ (neg-party)
                    (raise-blame-error 
                     blame #:missing-party neg-party val
@@ -224,7 +224,3 @@
            (cons (format "~a, " (car kwds))
                  (loop (cdr kwds)))])))]))
 
-(define (maybe-err k blame neg-accepter)
-  (if (blame-original? blame)
-      (neg-accepter #f)
-      (k neg-accepter)))

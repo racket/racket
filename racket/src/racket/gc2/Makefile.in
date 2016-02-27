@@ -181,7 +181,11 @@ xsrc:
 
 xobjects: $(OBJS) main.@LTO@
 
-XFORMDEP_NOPRE = $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt
+# These headers have only preprocessor definitions, so they're not
+# picked up in ".sdep":
+QUIET_DEPS = $(srcdir)/../src/schvers.h $(srcdir)/../sconfig.h ../mzconfig.h
+
+XFORMDEP_NOPRE = $(srcdir)/xform.rkt $(srcdir)/xform-mod.rkt $(QUIET_DEPS)
 XFORMDEP = $(XFORMDEP_NOPRE) $(XSRCDIR)/precomp.h
 
 MZRTDEP = $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
@@ -193,7 +197,7 @@ MZRTDEP = $(srcdir)/../src/schpriv.h $(srcdir)/../include/scheme.h \
 check-sdep :
 	@RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/check-sdep.rkt
 
-$(XSRCDIR)/precomp.h : $(XFORMDEP_NOPRE)  $(srcdir)/../src/schvers.h
+$(XSRCDIR)/precomp.h : $(XFORMDEP_NOPRE)
 	env XFORM_PRECOMP=yes $(XFORM_NOPRECOMP) $(XSRCDIR)/precomp.h $(srcdir)/precomp.c
 
 $(XSRCDIR)/salloc.c: $(XFORMDEP)
@@ -288,7 +292,7 @@ $(XSRCDIR)/setjmpup.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/setjmpup.c $(SRCDIR)/setjmpup.c
 $(XSRCDIR)/sfs.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/sfs.c $(SRCDIR)/sfs.c
-$(XSRCDIR)/string.c: $(XFORMDEP)
+$(XSRCDIR)/string.c: $(XFORMDEP)  $(SRCDIR)/systype.inc
 	$(XFORM_SETUP) --cpp "$(CPP) -I../src $(ALL_CPPFLAGS)" @XFORMFLAGS@ -o $(XSRCDIR)/string.c $(SRCDIR)/string.c
 $(XSRCDIR)/struct.c: $(XFORMDEP)
 	$(XFORM) $(XSRCDIR)/struct.c $(SRCDIR)/struct.c
@@ -308,6 +312,9 @@ $(XSRCDIR)/foreign.c: $(XFORMDEP)
 	$(XFORM_SETUP) --cpp "$(CPP) $(ALL_CPPFLAGS) $(LIBFFI_INCLUDE_@OWN_LIBFFI@) -I${SRCDIR}/../../racket/src" @XFORMFLAGS@ -o $(XSRCDIR)/foreign.c $(SRCDIR)/../../foreign/foreign.c
 $(XSRCDIR)/main.c: $(XFORMDEP)
 	$(XFORM_NOPRECOMP) $(XSRCDIR)/main.c $(DEF_C_DIRS) $(srcdir)/../main.c
+
+$(XSRCDIR)/mzobj.cxx: $(XFORMDEP)
+	$(XFORM_NOPRECOMP) $(XSRCDIR)/mzobj.cxx $(DEF_C_DIRS) $(srcdir)/../../mzcom/mzobj.cxx
 
 salloc.@LTO@: $(XSRCDIR)/salloc.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/salloc.c -o salloc.@LTO@
@@ -424,6 +431,11 @@ foreign.@LTO@: $(XSRCDIR)/foreign.c
 main.@LTO@: $(XSRCDIR)/main.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/main.c -o main.@LTO@
 
+mzcom.@LTO@: $(srcdir)/../../mzcom/mzcom.cxx
+	$(CC) -DMZCOM_3M $(ALL_CFLAGS) -fno-exceptions -c $(srcdir)/../../mzcom/mzcom.cxx -o mzcom.@LTO@
+mzobj.@LTO@: $(XSRCDIR)/mzobj.cxx
+	$(CC) $(ALL_CFLAGS) -fno-exceptions -c $(XSRCDIR)/mzobj.cxx -o mzobj.@LTO@
+
 gc2.@LTO@: \
 		$(srcdir)/alloc_cache.c \
 		$(srcdir)/block_cache.c \
@@ -455,6 +467,7 @@ gc2.@LTO@: \
 		$(srcdir)/newgc.c \
 		$(srcdir)/newgc.h \
 		$(srcdir)/page_range.c \
+		$(srcdir)/places_gc.c \
 		$(srcdir)/rlimit_heapsize.c \
 		$(srcdir)/roots.c \
 		$(srcdir)/stack_comp.c \
@@ -507,21 +520,28 @@ $(MZFWMMM): ../libracket3m.@LIBSFX@
 	ln -s Versions/$(FWVERSION)_3m/Racket Racket.framework/Racket	
 
 ../racket@MMM@@OSX@: $(MZFWMMM) main.@LTO@
-	@MZLINKER@ -o ../racket@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket
+	@MZLINKER@ -o ../racket@MMM@ @PROFFLAGS@ @LDFLAGS@ main.@LTO@ -Wl,-headerpad_max_install_names -F. -framework Racket @LIBS@
 	mkdir -p "../Racket.framework/Versions/$(FWVERSION)_3m"
 	cp "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"
 
 ../lib/libracket3mxxxxxxx.dll: ../libracket3m.@LIBSFX@ ../mzsj86g.o
 	mkdir -p ../lib
-	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive -lshell32 -luser32 -lws2_32 -static-libgcc
+	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive  @LDFLAGS@ -lshell32 -luser32 -lws2_32 -static-libgcc @LIBS@
 
 libracket3m.dll.a: ../lib/libracket3mxxxxxxx.dll
-	@DLLTOOL@ --def libracket3m.def -D libracket3mxxxxxxx.dll --output-delaylib libracket3m.dll.a
+	@DLLTOOL@ --def libracket3m.def -D libracket3mxxxxxxx.dll --output-exp libracket3mxxxxxxx.exp --output-lib libracket3mxxxxxxx.lib --output-delaylib libracket3m.dll.a
+
+MW_RACKET_LIBS = gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
 
 ../racket@MMM@@MINGW@: libracket3m.dll.a main.@LTO@ ../rres.o $(SPECIALIZINGOBJECTS)
-	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) gc2/libracket3m.dll.a @LDFLAGS@ @LIBS@ -ldelayimp -static-libgcc
+	cd ..; @MZLINKER@ -o racket@MMM@ gc2/main.@LTO@ rres.o $(SPECIALIZINGOBJECTS) $(MW_RACKET_LIBS)
 
+../mzcom@MMM@@NOT_MINGW@:
+	$(NOOP)
+
+../mzcom@MMM@@MINGW@: libracket3m.dll.a mzcom.@LTO@ mzobj.@LTO@ ../com_glue.@LTO@ $(SPECIALIZINGOBJECTS) ../comres.o
+	cd ..; @MZLINKER@ -mwindows -o mzcom@MMM@ gc2/mzcom.@LTO@ gc2/mzobj.@LTO@ com_glue.@LTO@ comres.o $(SPECIALIZINGOBJECTS) -lole32 -loleaut32 -luuid $(MW_RACKET_LIBS)
 
 clean:
 	/bin/rm -f ../racket@MMM@ *.@LTO@ $(XSRCDIR)/*

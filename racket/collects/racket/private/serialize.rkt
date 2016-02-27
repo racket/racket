@@ -1,6 +1,6 @@
 (module serialize racket/base
   (require syntax/modcollapse
-           unstable/struct
+           racket/struct
            racket/list
            racket/flonum
            racket/fixnum

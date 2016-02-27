@@ -1,12 +1,10 @@
 #ifndef MZ_LONGDOUBLE_H
 #define MZ_LONGDOUBLE_H
 
-#if defined(_MSC_VER)
-# define MZ_LONG_DOUBLE_API_IS_EXTERNAL
-#endif
-
-#if defined(__MINGW32__) && defined(MZ_LONG_DOUBLE)
-# define LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL
+#ifndef MZ_LONG_DOUBLE_API_IS_EXTERNAL
+# if defined(__MINGW32__) && defined(MZ_LONG_DOUBLE)
+#  define LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL
+# endif
 #endif
 
 #if defined(MZ_LONG_DOUBLE_API_IS_EXTERNAL)           \

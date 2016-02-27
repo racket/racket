@@ -16,7 +16,7 @@ Most of our collections come with test suites. These tests suites tend to
 Run the test suites before you commit. To facilitate testing, we urge you
  to add a @tt{TESTME.txt} file to your collections. Ideally, you may also
  wish to have a file in this directory that runs the basic tests.  See the
- @hyperlink["https://github.com/plt/racket/tree/master/collects/2htdp/"]{2htdp},
+ @hyperlink["https://github.com/racket/racket/tree/master/collects/2htdp/"]{2htdp},
  which is one of the collections with its own testing style.  The file should
  describe where the tests are located, how to run these tests, and what to
  look for in terms of successes and failures. These files are necessary
@@ -30,7 +30,7 @@ After you commit, watch for and read(!)
  parts: @tt{success} and @tt{failure}. The former is for tests that should
  succeed now, and the latter is for tests that are currently expected to
  fail. See the
- @hyperlink["https://github.com/plt/racket/tree/master/collects/tests/typed-scheme"]{Typed
+ @hyperlink["https://github.com/racket/racket/tree/master/collects/tests/typed-scheme"]{Typed
  Racket testing arrangement} for an example. When you create such
  @tt{failure} tests, you may wish to disable DrDr's checking like this:
 @verbatim[#:indent 2]{

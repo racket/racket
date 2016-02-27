@@ -10,6 +10,9 @@
 
          make-list
 
+         list-update
+         list-set
+
          drop
          take
          split-at
@@ -23,10 +26,16 @@
          dropf-right
          splitf-at-right
 
+         list-prefix?
+         split-common-prefix
+         take-common-prefix
+         drop-common-prefix
+
          append*
          flatten
          add-between
          remove-duplicates
+         check-duplicates
          filter-map
          count
          partition
@@ -36,10 +45,16 @@
          append-map
          filter-not
          shuffle
+         combinations
+         in-combinations
          permutations
          in-permutations
          argmin
-         argmax)
+         argmax
+         group-by
+         cartesian-product
+         remf
+         remf*)
 
 (define (first x)
   (if (and (pair? x) (list? x))
@@ -98,6 +113,25 @@
     (raise-argument-error 'make-list "exact-nonnegative-integer?" n))
   (let loop ([n n] [r '()])
     (if (zero? n) r (loop (sub1 n) (cons x r)))))
+
+(define (list-update l i f)
+  (unless (list? l)
+    (raise-argument-error 'list-update "list?" l))
+  (unless (exact-nonnegative-integer? i)
+    (raise-argument-error 'list-update "exact-nonnegative-integer?" i))
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-argument-error 'list-update "(-> any/c any/c)" f))
+  (cond
+   [(zero? i) (cons (f (car l)) (cdr l))]
+   [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
+
+(define (list-set l k v)
+  (unless (list? l)
+    (raise-argument-error 'list-update "list?" l))
+  (unless (exact-nonnegative-integer? k)
+    (raise-argument-error 'list-update "exact-nonnegative-integer?" k))
+  (list-update l k (lambda (_) v)))
 
 ;; internal use below
 (define (drop* list n) ; no error checking, returns #f if index is too large
@@ -232,6 +266,55 @@
 (define (splitf-at-right list pred)
   (split-at list (count-from-right 'splitf-at-right list pred)))
 
+; list-prefix? : list? list? -> boolean?
+; Is l a prefix or r?
+(define (list-prefix? ls rs [same? equal?])
+  (unless (list? ls)
+    (raise-argument-error 'list-prefix? "list?" ls))
+  (unless (list? rs)
+    (raise-argument-error 'list-prefix? "list?" rs))
+  (unless (and (procedure? same?)
+               (procedure-arity-includes? same? 2))
+    (raise-argument-error 'list-prefix? "(any/c any/c . -> . any/c)" same?))
+  (or (null? ls)
+      (and (pair? rs)
+           (same? (car ls) (car rs))
+           (list-prefix? (cdr ls) (cdr rs)))))
+
+;; Eli: How about a version that removes the equal prefix from two lists
+;; and returns the tails -- this way you can tell if they're equal, or
+;; one is a prefix of the other, or if there was any equal prefix at
+;; all.  (Which can be useful for things like making a path relative to
+;; another path.)  A nice generalization is to make it get two or more
+;; lists, and return a matching number of values.
+
+(define (internal-split-common-prefix as bs same? keep-prefix? name)
+  (unless (list? as)
+    (raise-argument-error name "list?" as))
+  (unless (list? bs)
+    (raise-argument-error name "list?" bs))
+  (unless (and (procedure? same?)
+               (procedure-arity-includes? same? 2))
+    (raise-argument-error name "(any/c any/c . -> . any/c)" same?))
+  (let loop ([as as] [bs bs])
+    (if (and (pair? as) (pair? bs) (same? (car as) (car bs)))
+        (let-values ([(prefix atail btail) (loop (cdr as) (cdr bs))])
+          (values (and keep-prefix? (cons (car as) prefix)) atail btail))
+        (values null as bs))))
+
+(define (split-common-prefix as bs [same? equal?])
+  (internal-split-common-prefix as bs same? #t 'split-common-prefix))
+
+(define (take-common-prefix as bs [same? equal?])
+  (let-values ([(prefix atail btail)
+                (internal-split-common-prefix as bs same? #t 'take-common-prefix)])
+    prefix))
+
+(define (drop-common-prefix as bs [same? equal?])
+  (let-values ([(prefix atail btail)
+                (internal-split-common-prefix as bs same? #f 'drop-common-prefix)])
+    (values atail btail)))
+
 (define append*
   (case-lambda [(ls) (apply append ls)] ; optimize common case
                [(l1 l2) (apply append l1 l2)]
@@ -347,6 +430,59 @@
                                        (cons x (loop l)))))))])])
          (if key (loop key) (loop no-key)))])))
 
+;; check-duplicates : (listof X)
+;;                    [(K K -> bool)]
+;;                    #:key (X -> K)
+;;                -> X or #f
+(define (check-duplicates items
+                          [same? equal?]
+                          #:key [key values])
+  (unless (list? items)
+    (raise-argument-error 'check-duplicates "list?" items))
+  (unless (and (procedure? key)
+               (procedure-arity-includes? key 1))
+    (raise-argument-error 'check-duplicates "(-> any/c any/c)" key))
+  (cond [(eq? same? equal?)
+         (check-duplicates/t items key (make-hash))]
+        [(eq? same? eq?)
+         (check-duplicates/t items key (make-hasheq))]
+        [(eq? same? eqv?)
+         (check-duplicates/t items key (make-hasheqv))]
+        [else
+         (unless (and (procedure? same?)
+                      (procedure-arity-includes? same? 2))
+           (raise-argument-error 'check-duplicates
+                                 "(any/c any/c . -> . any/c)"
+                                 same?))
+         (check-duplicates/list items key same?)]))
+(define (check-duplicates/t items key table)
+  (let loop ([items items])
+    (and (pair? items)
+         (let ([key-item (key (car items))])
+           (if (hash-ref table key-item #f)
+               (car items)
+               (begin (hash-set! table key-item #t)
+                      (loop (cdr items))))))))
+(define (check-duplicates/list items key same?)
+  (let loop ([items items] [sofar null])
+    (and (pair? items)
+         (let ([key-item (key (car items))])
+           (if (for/or ([prev (in-list sofar)])
+                 (same? key-item prev))
+               (car items)
+               (loop (cdr items) (cons key-item sofar)))))))
+
+;; Eli: Just to have a record of this: my complaint about having this
+;; code separately from `remove-duplicates' still stands.  Specifically,
+;; that function decides when to use a hash table to make things faster,
+;; and this code would benefit from the same.  It would be much better
+;; to extend that function so it can be used for both tasks rather than
+;; a new piece of code that does it (only do it in a worse way, re
+;; performance).  Doing this can also benefit `remove-duplicates' -- for
+;; example, make it accept a container so that users can choose how
+;; when/if to use a hash table.
+
+
 (define (check-filter-arguments who f l ls)
   (unless (procedure? f)
     (raise-argument-error who "procedure?" f))
@@ -454,6 +590,55 @@
     (vector-set! a j x))
   (vector->list a))
 
+(define (combinations l [k #f])
+  (for/list ([x (in-combinations l k)]) x))
+
+;; Generate combinations of the list `l`.
+;; - If `k` is a natural number, generate all combinations of size `k`.
+;; - If `k` is #f, generate all combinations of any size (powerset of `l`).
+(define (in-combinations l [k #f])
+  (unless (list? l)
+    (raise-argument-error 'in-combinations "list?" 0 l))
+  (when (and k (not (exact-nonnegative-integer? k)))
+    (raise-argument-error 'in-combinations "exact-nonnegative-integer?" 1 k))
+  (define v (list->vector l))
+  (define N (vector-length v))
+  (define N-1 (- N 1))
+  (define (vector-ref/bits v b)
+    (for/fold ([acc '()])
+              ([i (in-range N-1 -1 -1)])
+      (if (bitwise-bit-set? b i)
+        (cons (vector-ref v i) acc)
+        acc)))
+  (define-values (first last incr)
+    (cond
+     [(not k)
+      ;; Enumerate all binary numbers [1..2**N].
+      (values 0 (- (expt 2 N) 1) add1)]
+     [(< N k)
+      ;; Nothing to produce
+      (values 1 0 values)]
+     [else
+      ;; Enumerate numbers with `k` ones, smallest to largest
+      (define first (- (expt 2 k) 1))
+      (define gospers-hack ;; https://en.wikipedia.org/wiki/Combinatorial_number_system#Applications
+        (if (zero? first)
+          add1
+          (lambda (n)
+            (let* ([u (bitwise-and n (- n))]
+                   [v (+ u n)])
+              (+ v (arithmetic-shift (quotient (bitwise-xor v n) u) -2))))))
+      (values first (arithmetic-shift first (- N k)) gospers-hack)]))
+  (define gen-next
+    (let ([curr-box (box first)])
+      (lambda ()
+        (let ([curr (unbox curr-box)])
+          (and (<= curr last)
+               (begin0
+                 (vector-ref/bits v curr)
+                 (set-box! curr-box (incr curr))))))))
+  (in-producer gen-next #f))
+
 ;; This implements an algorithm known as "Ord-Smith".  (It is described in a
 ;; paper called "Permutation Generation Methods" by Robert Sedgewlck, listed as
 ;; Algorithm 8.)  It has a number of good properties: it is very fast, returns
@@ -557,3 +742,89 @@
               (loop min min-var (cdr xs))]))]))))
 (define (argmin f xs) (mk-min < 'argmin f xs))
 (define (argmax f xs) (mk-min > 'argmax f xs))
+
+;; (x -> y) (listof x) [(y y -> bool)] -> (listof (listof x))
+;; groups together elements that are considered equal
+;; =? should be reflexive, transitive and commutative
+(define (group-by key l [=? equal?])
+
+  (unless (and (procedure? key)
+               (procedure-arity-includes? key 1))
+    (raise-argument-error 'group-by "(-> any/c any/c)" key))
+  (unless (and (procedure? =?)
+               (procedure-arity-includes? =? 2))
+    (raise-argument-error 'group-by "(any/c any/c . -> . any/c)" =?))
+  (unless (list? l)
+    (raise-argument-error 'group-by "list?" l))
+
+  ;; like hash-update, but for alists
+  (define (alist-update al k up fail)
+    (let loop ([al al])
+      (cond [(null? al)
+             ;; did not find equivalence class, create one
+             (list (cons k (up '())))]
+            [(=? (car (car al)) k)
+             ;; found the right equivalence class
+             (cons
+              (cons k (up (cdr (car al)))) ; updater takes elements, w/o key
+              (cdr al))]
+            [else ; keep going
+             (cons (car al) (loop (cdr al)))])))
+
+  ;; In cases where `=?` is a built-in equality, can use hash tables instead
+  ;; of lists to compute equivalence classes.
+  (define-values (base update)
+    (cond [(equal? =? eq?)    (values (hasheq)  hash-update)]
+          [(equal? =? eqv?)   (values (hasheqv) hash-update)]
+          [(equal? =? equal?) (values (hash)    hash-update)]
+          [else               (values '()       alist-update)]))
+
+  (define classes
+    (for/fold ([res base])
+        ([elt (in-list l)]
+         [idx (in-naturals)]) ; to keep ordering stable
+      (define k (key elt))
+      (define v (cons idx elt))
+      (update res k (lambda (o) (cons v o)) '())))
+  (define sorted-classes
+    (if (list? classes)
+        (for/list ([p (in-list classes)])
+          (sort (cdr p) < #:key car))
+        (for/list ([(_ c) (in-hash classes)])
+          (sort c < #:key car))))
+  ;; sort classes by order of first appearance, then remove indices
+  (for/list ([c (in-list (sort sorted-classes < #:key caar))])
+    (map cdr c)))
+
+;; (listof x) ... -> (listof (listof x))
+(define (cartesian-product . ls)
+  (for ([l (in-list ls)])
+    (unless (list? l)
+      (raise-argument-error 'cartesian-product "list?" l)))
+  (define (cp-2 as bs)
+    (for*/list ([i (in-list as)] [j (in-list bs)]) (cons i j)))
+  (foldr cp-2 (list (list)) ls))
+
+(define (remf f ls)
+  (unless (list? ls)
+    (raise-argument-error 'remf "list?" ls))
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-argument-error 'remf "(-> any/c any/c)" f))
+  (cond [(null? ls) '()]
+        [(f (car ls)) (cdr ls)]
+        [else
+         (cons (car ls)
+               (remf f (cdr ls)))]))
+
+(define (remf* f ls)
+  (unless (list? ls)
+    (raise-argument-error 'remf* "list?" ls))
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-argument-error 'remf* "(-> any/c any/c)" f))
+  (cond [(null? ls) '()]
+        [(f (car ls)) (remf* f (cdr ls))]
+        [else
+         (cons (car ls)
+               (remf* f (cdr ls)))]))

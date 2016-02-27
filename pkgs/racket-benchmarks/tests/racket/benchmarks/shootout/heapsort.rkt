@@ -7,9 +7,6 @@
 
 #lang racket/base
 
-(require (only-in srfi/13 string-index string-pad-right)
-         (only-in mzlib/string real->decimal-string))
-
 (define IM   139968)
 (define IA     3877)
 (define IC    29573)

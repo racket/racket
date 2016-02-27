@@ -71,6 +71,12 @@ typedef unsigned long uintptr_t;
 /* To enable 2^16 page size instead of 2^14: */
 #undef MZ_USE_LARGE_PAGE_SIZE
 
+/* When __builtin_popcount() is available: */
+#undef MZ_HAS_BUILTIN_POPCOUNT
+
+/* When __builtin_clz() is available: */
+#undef MZ_HAS_BUILTIN_CLZ
+
 /* Enable futures: */
 #undef MZ_USE_FUTURES
 
@@ -91,6 +97,9 @@ typedef unsigned long uintptr_t;
 
 /* To disable extflonums when they would otherwise work: */
 #undef MZ_NO_EXTFLONUMS
+
+/* Extflonums are specifically requested (so complain if not supported): */
+#undef MZ_INSIST_EXTFLONUMS
 
 /* Library subpath */
 #undef SPLS_SUFFIX

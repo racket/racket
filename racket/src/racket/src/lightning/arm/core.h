@@ -1329,6 +1329,7 @@ arm_branch(jit_state_t _jitp, int cc, jit_insn *i0)
     _CC_B(cc, d & 0x00ffffff);
   } else {
     int im = (int)i0;
+    jit_assert(_jitl.long_jumps);
     if (jit_armv6t_p()) {
       _CC_MOVWI(cc, JIT_TMP, _jit_US(im));
       _CC_MOVTI(cc, JIT_TMP, _jit_US((unsigned)im >> 16));

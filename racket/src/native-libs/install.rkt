@@ -39,6 +39,10 @@
     "zlib1"
     "libpangowin32-1.0.0"))
 
+(define nonwin-libs
+  '("libcrypto.1.0.0"
+    "libssl.1.0.0"))
+
 (define linux-libs
   (append
    '("libXau.6"
@@ -49,9 +53,7 @@
      "libXext.6"
      "libXrender.1"
      "fonts")
-   '("libcrypto.1.0.0"
-     "libssl.1.0.0"
-     "libz.1"
+   '("libz.1"
      "libsqlite3.0")
    '("libgtk-x11-2.0.0"
      "libgdk-x11-2.0.0"
@@ -262,7 +264,7 @@
    #:exists 'truncate
    (lambda (o)
      (displayln pkg-name o)
-     (displayln "Copyright (c) 2010-2014 PLT Design Inc." o)
+     (displayln "Copyright (c) 2010-2016 PLT Design Inc." o)
      (newline o)
      (displayln "This package is distributed under the GNU Lesser General Public" o)
      (displayln "License (LGPL).  This means that you can link this package into" o)
@@ -323,13 +325,15 @@
 (define (install-mac)
   (define (fixup p p-new)
     (printf "Fixing ~s\n" p-new)
+    (unless (memq 'write (file-or-directory-permissions p-new))
+      (file-or-directory-permissions p-new #o744))
     (system (format "install_name_tool -id ~a ~a" (file-name-from-path p-new) p-new))
     (for-each (lambda (s)
                 (system (format "install_name_tool -change ~a @loader_path/~a ~a" 
                                 (format "~a/~a.dylib" from s)
                                 (format "~a.dylib" s)
                                 p-new)))
-              libs)
+              (append libs nonwin-libs))
     (system (format "strip -S ~a" p-new)))
 
   (define platform (~a (if m32? 
@@ -337,7 +341,7 @@
                            "x86_64")
                        "-macosx"))
   
-  (install platform platform "dylib" fixup libs))
+  (install platform platform "dylib" fixup (append libs nonwin-libs)))
 
 (define (install-win)
   (define exe-prefix (if m32?
@@ -398,6 +402,7 @@
 
   (install platform platform add-so fixup (append (remove* linux-remove-libs
 							   libs)
+                                                  nonwin-libs
 						  linux-libs)))
 
 (cond

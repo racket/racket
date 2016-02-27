@@ -196,28 +196,28 @@ A size procedure simply takes a pointer to an object with the tag and
 returns its size in words (not bytes). The @cppi{gcBYTES_TO_WORDS}
 macro converts a byte count to a word count.
 
-A mark procedure is used to trace references among objects without
-moving any objects. The procedure takes a pointer to an object, and it
-should apply the @cppi{gcMARK} macro to every pointer within the
-object.  The mark procedure should return the same result as the size
-procedure.
+A mark procedure is used to trace references among objects. The
+procedure takes a pointer to an object, and it should apply the
+@cppi{gcMARK} macro to every pointer within the object. The mark
+procedure should return the same result as the size procedure.
 
-A fixup procedure is used to update references to objects after or
-while they are moved. The procedure takes a pointer to an object, and
-it should apply the @cppi{gcFIXUP} macro to every pointer within the
-object; the expansion of this macro takes the address of its
-argument. The fixup procedure should return the same result as the
-size procedure.
+A fixup procedure is potentially used to update references to objects
+that have moved, although the mark procedure may have moved objects
+and updated references already. The fixup procedure takes a pointer to
+an object, and it should apply the @cppi{gcFIXUP} macro to every
+pointer within the object. The fixup procedure should return the same
+result as the size procedure.
 
-Depending on the collector's implementation, the mark or fixup
-procedure might not be used. For example, the collector may only use
-the mark procedure and not actually move the object. Or it may use the
-fixup procedure to mark and move objects at the same time. To
-dereference an object pointer during a fixup procedure, use
+Depending on the collector's implementation, the @cpp{gcMARK} and/or
+@cpp{gcFIXUP} macros may take take the address of their arguments, and
+the fixup procedure might not be used. For example, the collector may
+only use the mark procedure and not actually move the object. Or it
+may use mark to move objects at the same time. To dereference an
+object pointer during a mark or fixup procedure, use @cppi{GC_resolve}
+to convert a potentially old address to the location where the object
+has been moved. To dereference an object pointer during a fixup procedure, use
 @cppi{GC_fixup_self} to convert the address passed to the procedure to
-refer to the potentially moved object, and use @cppi{GC_resolve} to
-convert an address that is not yet fixed up to determine the object's
-current location.
+refer to the potentially moved object.
 
 When allocating a tagged object in 3m, the tag must be installed
 immediately after the object is allocated---or, at least, before the
@@ -899,7 +899,7 @@ overflow.}
            [void* ptr]
            [int   tls_index])]{
 
-Only available on 32-bit Windows; registers @var{ptr} as the address of a
+For Windows, registers @var{ptr} as the address of a
  thread-local pointer variable that is declared in the main
  executable. The variable's storage will be used to implement
  thread-local storage within the Racket run-time. See
@@ -908,7 +908,10 @@ Only available on 32-bit Windows; registers @var{ptr} as the address of a
 The @var{tls_index} argument must be @cpp{0}. It is currently
  ignored, but a future version may use the argument to allow
  declaration of the thread-local variable in a dynamically linked
- DLL.}
+ DLL.
+
+@history[#:changed "6.3" @elem{Changed from available only on 32-bit Windows
+                               to available on all Windows variants.}]}
 
 @function[(void scheme_register_static
            [void* ptr]
@@ -1106,9 +1109,7 @@ If the result of the size procedure is a constant, then pass a
 
 3m only. Can be called by a size, mark, or fixup procedure that is registered
 with @cpp{GC_register_traversers}. It returns the current address of
-an object @var{p} that might have been moved already, where @var{p}
-corresponds to an object that is referenced directly by the object
-being sized, marked, or fixed. This translation is necessary, for
+an object @var{p} that might have been moved already. This translation is necessary, for
 example, if the size or structure of an object depends on the content
 of an object it references. For example, the size of a class instance
 usually depends on a field count that is stored in the class. A fixup
@@ -1120,7 +1121,9 @@ fixing it.}
 
 3m only. Can be called by a fixup procedure that is registered with
 @cpp{GC_register_traversers}. It returns the final address of @var{p},
-which must be the pointer passed to the fixup procedure. For some
+which must be the pointer passed to the fixup procedure. The
+@cpp{GC_resolve} function would produce the same result, but
+@cpp{GC_fixup_self} may be more efficient. For some
 implementations of the memory manager, the result is the same as
 @var{p}, either because objects are not moved or because the object is
 moved before it is fixed. With other implementations, an object might

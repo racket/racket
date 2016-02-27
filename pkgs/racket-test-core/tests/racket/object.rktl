@@ -1241,9 +1241,8 @@
 (let ([c% (class object%
             (define/public (m . args) this)
             (super-new))])
-  (syntax-test #'(send+ (new c%) (m 5) (m 10)))
-  (syntax-test #'(send+ (new c%) (m . (1 2 3))))
-  (syntax-test #'(send+ (new c%) (m 5) (m . (1 2 3))))
+  (syntax-test #'(send+ (new c%) m 5))
+  (syntax-test #'(send+ (new c%) . 5))
 
   (test #t object? (send+ (new c%) (m 5) (m 15)))
   (test #t object? (send+ (new c%) (m 5) (m . (1 2 3 4)))))
@@ -2153,6 +2152,53 @@
 (err/rt-test (let ([c% (seal object% (gensym) null null null)])
                (class c% (super-new) (field [x 0])))
              exn:fail?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check for Check-Syntax support for a `struct`
+;; form in `class`, which depends on proper handling
+;; of bindings from an internal-definition context
+
+(let ()
+  (define binds null)
+  (define refs null)
+  
+  (define (inspect stx)
+    (when (and (identifier? stx)
+               (eq? 's (syntax-e stx)))
+      (set! refs (cons stx refs)))
+    (cond
+     [(syntax? stx)
+      (check stx 'disappeared-binding)
+      (inspect (syntax-e stx))
+      (inspect (syntax-property stx 'origin))]
+     [(pair? stx)
+      (inspect (car stx))
+      (inspect (cdr stx))]))
+  
+  (define (check stx prop)
+    (define v (syntax-property stx prop))
+    (when (and v (get-s v))
+      (set! binds (cons (get-s v) binds))))
+
+  (define (get-s e)
+    (or (and (identifier? e)
+             (eq? 's (syntax-e e))
+             e)
+        (and (pair? e)
+             (or (get-s (car e))
+                 (get-s (cdr e))))
+        (and (syntax? e)
+             (get-s (syntax-e e)))))
+
+  (inspect (expand #'(module m racket/base
+                       (require racket/class)
+                       (class object%
+                         (define-struct s ())
+                         s))))
+  
+  (for ([r (in-list refs)])
+    (test #t 'has-binding-match? (for/or ([b (in-list binds)])
+                                   (free-identifier=? r b)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

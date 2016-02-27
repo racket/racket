@@ -1,8 +1,8 @@
 #lang racket/base
 (require "prop.rkt"
-         "misc.rkt"
          "blame.rkt"
          "guts.rkt"
+         "base.rkt"
          racket/stxparam)
 (require (for-syntax racket/base 
                      "helpers.rkt"
@@ -273,7 +273,7 @@
 (define-syntax (begin-lifted stx)
   (syntax-case stx ()
     [(_ expr)
-     (syntax-local-lift-expression #'expr)]))
+     (syntax-local-lift-expression (add-lifted-property #'expr))]))
 
 (define-syntax (define-opt/c stx)
   (syntax-case stx ()

@@ -1290,7 +1290,7 @@
 (syntax-test #'#%top)
 (syntax-test #'(#%top 1))
 (syntax-test #'(let ([#%top 5])
-		 x))
+		 an-identifier-that-is-never-defined))
 (err/rt-test (#%top . lambda) exn:fail:contract:variable?)
 (define x 5)
 (test 5 '#%top (#%top . x))
@@ -1482,6 +1482,30 @@
                                                           (define x 10))
                                   (abcdefg)))
 
+(test '(1 2)
+      'nested-splicing-expr
+      (splicing-let ([a 1])
+                    (list a
+                          (splicing-let ([a 2])
+                                        a))))
+
+(test '(1 2)
+      'nested-splicing-def
+      (let ()
+        (splicing-let ([a 1])
+                      (define x a)
+                      (splicing-let ([a 2])
+                                    (define y a)))
+        (list x y)))
+
+(test '(1 2)
+      'nested-splicing-syntax
+      (let ()
+        (splicing-let-syntax ([a (syntax-rules () [(_) 1])])
+                             (define x (a))
+                             (splicing-let-syntax ([a (syntax-rules () [(_) 2])])
+                                                  (define y (a))))
+        (list x y)))
 
 ;; ----------------------------------------
 
@@ -1527,6 +1551,10 @@
                                    [q 81])
                   x)))
              exn:fail:contract:variable?)
+
+(test 1
+      values
+      (letrec-syntaxes+values () ([(b) 0]) (define x 1) x))
 
 (test 82 'splicing-letrec-syntaxes+values
       (let ()
@@ -1598,6 +1626,13 @@
                (define (q) 82)]
             (define (a) (m)))
           (m))))
+
+(test 105 'splicing-local
+      (let ()
+        (splicing-local
+         [(define x 105)]
+         (define-syntax outer-x (make-rename-transformer #'x)))
+        outer-x))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check keyword & optionals for define-syntax 
@@ -1872,6 +1907,59 @@
                    "non-symbol"))])
   (proc-that-accepts-anything #:contract
                               (x #:flag? #t)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that the default eval handler doesn't add too much context:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(define thing 5))
+  (test #f
+        (lambda (info)
+          (ormap
+           (lambda (b)
+             (subset? (hash-ref b 'context null)
+                      (hash-ref info 'context)))
+           (hash-ref info 'bindings null)))
+        (syntax-debug-info
+         ((current-eval) (datum->syntax (namespace-syntax-introduce #'top)
+                                        (cons 'quote-syntax (datum->syntax #f '(thing))))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `eval-syntax` cooperates with `local-expand` on 
+;; a top-level inner-edge scope
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (namespace-require '(for-syntax racket/base))
+  (eval-syntax (datum->syntax #f `(,#'define x ,#'1)))
+  (eval '(define-syntax-rule (same x) x))
+  (eval '(define-syntax (m stx)
+          (syntax-case stx ()
+            [(_ same-e) (let ([id (local-expand #'same-e 'top-level null)])
+                          (unless (identifier-binding id)
+                            (error "not bound")))])))
+  (eval-syntax (datum->syntax #f
+                              (list
+                               (namespace-syntax-introduce
+                                (datum->syntax #f 'same))
+                               'x))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check error formatting from the keyword-argument lambda layer.
+
+(let ()
+  (define l (make-log-receiver (current-logger) 'warning))
+  (test #t
+        procedure?
+        (eval (datum->syntax #'here '(lambda () (sort '(1))) (list 'a #f #f #f #f)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check marshaling of a top-level `begin-for-syntax`:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (write (compile '(begin-for-syntax
+                    (require racket/match)))
+         (open-output-bytes)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

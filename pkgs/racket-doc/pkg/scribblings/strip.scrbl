@@ -74,7 +74,7 @@ the following files and directories:
 Any of the above can be suppressed, however, by a
 @racket[source-keep-files] (for @tech{source package} and @tech{built
 package} bundling), @racket[binary-keep-files] (for @tech{binary
-package}, @tech{binary library package} @tech{built package} bundling),
+package}, @tech{binary library package} and @tech{built package} bundling),
 or @racket[binary-lib-keep-files] (for @tech{binary library package} bundling) definition in an
 @filepath{info.rkt} in the package or any subdirectory. A
 @racket[source-keep-files], @racket[binary-keep-files], or @racket[binary-lib-keep-files] definition

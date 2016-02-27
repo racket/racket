@@ -1121,6 +1121,8 @@
 (test "x&cy&z" regexp-replace* #rx"a(.)" "xabcyawz" "\\&")
 (test "x\\cy\\z" regexp-replace* #rx"a(.)" "xabcyawz" "\\\\")
 
+(test "ap0p0le" regexp-replace* #rx"p" "apple" "\\0\\$0")
+
 ;; Test sub-matches with procedure replace (second example by synx)
 (test "myCERVEZA myMI Mi"
       regexp-replace* "([Mm])i ([a-zA-Z]*)" "mi cerveza Mi Mi Mi"
@@ -2548,8 +2550,8 @@
 (arity-test hash-set 3 3)
 (arity-test hash-remove! 2 2)
 (arity-test hash-remove 2 2)
-(arity-test hash-map 2 2)
-(arity-test hash-for-each 2 2)
+(arity-test hash-map 2 3)
+(arity-test hash-for-each 2 3)
 (arity-test hash? 1 1)
 (arity-test hash-eq? 1 1)
 (arity-test hash-weak? 1 1)
@@ -2677,6 +2679,48 @@
   ;; If the indexes go bad, this loop fails:
   (for ([(k v) (in-hash ht2)])
     v))
+
+;; Check remove in the vicinity of a hash collision:
+(let ()
+  (struct a (x y)
+          #:property prop:equal+hash
+          (list
+           (lambda (a b eql?) (and (equal? (a-x a)
+                                      (a-x b))
+                              (equal? (a-y a)
+                                      (a-y b))))
+           (lambda (a hc) (a-x a))
+           (lambda (a hc) 1)))
+
+  (define k (+ (arithmetic-shift 1 10) 1))
+  (define k2 (+ (arithmetic-shift 1 15) 1))
+
+  ;; The second hash here is intended to provoke a
+  ;; collision in a subtable, and then remove an
+  ;; element that causes the subtable, in which
+  ;; case the collision should be moved up a layer.
+  (equal? (hash (a 1 'a) 1
+                (a 1 'b) 2
+                (a 2 'c) 3)
+          (hash-remove (hash (a 1 'a) 1
+                             (a 1 'b) 2
+                             (a 2 'c) 3
+                             (a k 'd) 4)
+                       (a k 'd)))
+
+  ;; The second hash here is meanto to provoke
+  ;; a similar shape as above, but where the
+  ;; nested table is created to distinguish
+  ;; hash keys instead of handle a collision,
+  ;; and so it should not be moved up.
+  (equal? (hash (a 1 'a) 1
+                (a k2 'b) 2
+                (a 2 'c) 3)
+          (hash-remove (hash (a 1 'a) 1
+                             (a k2 'b) 2
+                             (a 2 'c) 3
+                             (a k 'd) 4)
+                       (a k 'd))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc

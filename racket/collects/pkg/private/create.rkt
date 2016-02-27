@@ -47,8 +47,7 @@
        ;; To make checksums more consistent, set a directory's timestamp to
        ;; the latest time of any of its source files.
        (define (use-real-timestamp? p)
-         (and (file-exists? p)
-              (regexp-match? #rx"[.](?:rkt|ss|scrbl|txt)$" p)))
+         (file-exists? p))
        (define latest-timestamp
          (for/fold ([ts #f]) ([f (in-directory dir)])
            (define fts (and (use-real-timestamp? f)

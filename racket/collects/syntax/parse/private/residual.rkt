@@ -65,6 +65,7 @@
          name->too-few/once
          name->too-few
          name->too-many
+         normalize-context
          syntax-patterns-fail)
 
 ;; == from runtime.rkt
@@ -98,7 +99,7 @@
              (raise-syntax-error #f "not bound as an attribute" stx #'name))
            (syntax-property (attribute-mapping-var attr)
                             'disappeared-use
-                            #'name))))]))
+                            (list (syntax-local-introduce #'name))))))]))
 
 ;; (attribute-binding id)
 ;; mostly for debugging/testing
@@ -241,9 +242,32 @@
 
 ;; == parse.rkt
 
+;; normalize-context : Symbol Any Syntax -> (list Symbol/#f Syntax)
+(define (normalize-context who ctx stx)
+  (cond [(syntax? ctx)
+         (list #f ctx)]
+        [(symbol? ctx)
+         (list ctx stx)]
+        [(eq? ctx #f)
+         (list #f stx)]
+        [(and (list? ctx)
+              (= (length ctx) 2)
+              (or (symbol? (car ctx)) (eq? #f (car ctx)))
+              (syntax? (cadr ctx)))
+         ctx]
+        [else (error who "bad #:context argument\n  expected: ~s\n  given: ~e"
+                     '(or/c syntax? symbol? #f (list/c (or/c symbol? #f) syntax?))
+                     ctx)]))
+
+;; == parse.rkt
+
 (lazy-require
  ["runtime-report.rkt"
-  (syntax-patterns-fail)])
+  (call-current-failure-handler ctx fs)])
+
+;; syntax-patterns-fail : (list Symbol/#f Syntax) -> FailureSet -> (escapes)
+(define ((syntax-patterns-fail ctx) fs)
+  (call-current-failure-handler ctx fs))
 
 ;; == specialized ellipsis parser
 ;; returns (values 'ok attr-values) or (values 'fail failure)

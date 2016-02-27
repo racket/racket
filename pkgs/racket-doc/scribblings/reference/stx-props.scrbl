@@ -6,8 +6,9 @@
 Every syntax object has an associated @deftech{syntax property} list,
 which can be queried or extended with
 @racket[syntax-property]. Properties are not preserved for a
-@racket[syntax-quoted] syntax object in a compiled form that is
-marshaled to a byte string.
+syntax object in a compiled form that is
+marshaled to a byte string or @filepath{.zo} file, except for a @racket['paren-shape]
+property value of @racket[#\[] or @racket[#\{].
 
 In @racket[read-syntax], the reader attaches a @racket['paren-shape]
 property to any pair or vector syntax object generated from parsing a
@@ -89,6 +90,12 @@ Racket adds properties to expanded syntax (often using
 
 ]
 
+See also @seclink["Syntax_Properties_that_Check_Syntax_Looks_For"
+                  #:doc '(lib "scribblings/tools/tools.scrbl")
+                  #:indirect? #t]{Check Syntax}
+for one client of the @racket['disappeared-use] and @racket['disappeared-binding]
+properties.
+
 See @secref["modinfo"] for information about properties generated
 by the expansion of a module declaration. See @racket[lambda] and
 @secref["infernames"] for information about properties recognized
@@ -117,7 +124,7 @@ in @racket[stx]. @tech{Uninterned} symbols (see @secref["symbols"])
 are not included in the result list.}
 
 
-@defproc[(syntax-track-origin [new-stx syntax?] [orig-stx syntax?] [id-stx syntax?])
+@defproc[(syntax-track-origin [new-stx syntax?] [orig-stx syntax?] [id-stx identifier?])
          any]{
 
 Adds properties to @racket[new-stx] in the same way that macro

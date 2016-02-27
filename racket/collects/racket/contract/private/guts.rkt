@@ -38,6 +38,7 @@
          ;; helpers for adding properties that check syntax uses
          define/final-prop
          define/subexpression-pos-prop
+         define/subexpression-pos-prop/name
          
          make-predicate-contract
          
@@ -47,22 +48,81 @@
          equal-contract-val
          char-in/c
 
+         contract?
+         chaperone-contract?
+         impersonator-contract?
+         flat-contract?
+         
          contract-continuation-mark-key
+         with-contract-continuation-mark
          
          (struct-out wrapped-extra-arg-arrow)
          contract-custom-write-property-proc
          (rename-out [contract-custom-write-property-proc custom-write-property-proc])
-         
-         set-some-basic-contracts!)
 
-(define (contract-custom-write-property-proc stct port display?)
-  (write-string "#<" port)
+         contract-projection
+         contract-val-first-projection  ;; might return #f (if none)
+         contract-late-neg-projection   ;; might return #f (if none)
+         get/build-val-first-projection ;; builds one if necc., using contract-projection
+         get/build-late-neg-projection
+         warn-about-val-first?
+
+         contract-name
+         maybe-warn-about-val-first
+         
+         set-some-basic-contracts!
+
+         contract-first-order-okay-to-give-up?
+         contract-first-order-try-less-hard
+         contract-first-order-only-try-so-hard
+
+         raise-predicate-blame-error-failure
+
+         n->th)
+
+(define (contract-custom-write-property-proc stct port mode)
+  (define (write-prefix)
+    (write-string "#<" port)
+    (cond
+      [(flat-contract-struct? stct) (write-string "flat-" port)]
+      [(chaperone-contract-struct? stct) (write-string "chaperone-" port)])
+    (write-string "contract: " port))
+  (define (write-suffix)
+    (write-string ">" port))
   (cond
-    [(flat-contract-struct? stct) (write-string "flat-" port)]
-    [(chaperone-contract-struct? stct) (write-string "chaperone-" port)])
-  (write-string "contract: " port)
-  (write-string (format "~.s" (contract-struct-name stct)) port)
-  (write-string ">" port))
+    [(boolean? mode)
+     (write-prefix)
+     (write-string (format "~.s" (contract-struct-name stct)) port)
+     (write-suffix)]
+    [else
+     (cond
+       [(zero? mode)
+        (print (contract-struct-name stct) port 1)]
+       [else
+        (write-prefix)
+        (print (contract-struct-name stct) port 1)
+        (write-suffix)])]))
+
+(define (contract? x) (and (coerce-contract/f x) #t))
+
+(define (flat-contract? x) 
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (flat-contract-struct? c))))
+
+(define (chaperone-contract? x)
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (or (chaperone-contract-struct? c)
+             (and (prop:opt-chaperone-contract? c)
+                  ((prop:opt-chaperone-contract-get-test c) c))))))
+
+(define (impersonator-contract? x)
+  (let ([c (coerce-contract/f x)])
+    (and c
+         (not (flat-contract-struct? c))
+         (not (chaperone-contract-struct? c)))))
+
 
 (define (has-contract? v)
   (or (has-prop:contracted? v)
@@ -81,11 +141,17 @@
       (has-impersonator-prop:blame? v)))
 
 (define (value-blame v)
+  (define bv
+    (cond
+      [(has-prop:blame? v)
+       (get-prop:blame v)]
+      [(has-impersonator-prop:blame? v)
+       (get-impersonator-prop:blame v)]
+      [else #f]))
   (cond
-    [(has-prop:blame? v)
-     (get-prop:blame v)]
-    [(has-impersonator-prop:blame? v)
-     (get-impersonator-prop:blame v)]
+    [(and (pair? bv) (blame? (car bv)))
+     (blame-add-missing-party (car bv) (cdr bv))]
+    [(blame? bv) bv]
     [else #f]))
 
 (define-values (prop:contracted has-prop:contracted? get-prop:contracted)
@@ -233,9 +299,15 @@
       [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
       [(and (procedure? x) (procedure-arity-includes? x 1))
        (cond
-         [(eq? x null?) list/c-empty]
-         [(and (eq? x list?) listof-any) listof-any]
-         [(and (eq? x pair?) consc-anyany) consc-anyany]
+         [(chaperone-of? x null?) list/c-empty]
+         [(chaperone-of? x list?)
+          (unless listof-any
+            (error 'coerce-contract/f::listof-any "too soon!"))
+          listof-any]
+         [(chaperone-of? x pair?)
+          (unless consc-anyany
+            (error 'coerce-contract/f::consc-anyany "too soon!"))
+          consc-anyany]
          [else
           (make-predicate-contract (if (name-default? name)
                                        (or (object-name x) '???)
@@ -243,7 +315,11 @@
                                    x
                                    #f
                                    (memq x the-known-good-contracts))])]
-      [(null? x) list/c-empty]
+      [(null? x)
+       (unless list/c-empty
+         (error 'coerce-contract/f::list/c-empty "too soon!"))
+       list/c-empty]
+      [(not x) false/c-contract]
       [(or (symbol? x) (boolean? x) (keyword? x))
        (make-eq-contract x
                          (if (name-default? name)
@@ -318,6 +394,42 @@
                              (list (car (syntax-e stx)))
                              '())))])))))]))
 
+(define-syntax (define/subexpression-pos-prop/name stx)
+  (syntax-case stx ()
+    [(_ ctc/proc header bodies ...)
+     (with-syntax ([ctc (if (identifier? #'header)
+                            #'header
+                            (car (syntax-e #'header)))])
+       #'(begin
+           (define ctc/proc
+             (let ()
+               (define header bodies ...)
+               ctc))
+           (define-syntax (ctc stx)
+             (syntax-case stx ()
+               [x
+                (identifier? #'x)
+                (syntax-property
+                 #'ctc/proc
+                 'racket/contract:contract
+                 (vector (gensym 'ctc)
+                         (list stx)
+                         '()))]
+               [(_ margs (... ...))
+                (let ([this-one (gensym 'ctc)])
+                  (with-syntax ([(margs (... ...))
+                                 (map (λ (x) (syntax-property x
+                                                              'racket/contract:positive-position
+                                                              this-one))
+                                      (syntax->list #'(margs (... ...))))]
+                                [app (datum->syntax stx '#%app)])
+                    (syntax-property
+                     #'(app ctc/proc margs (... ...))
+                     'racket/contract:contract
+                     (vector this-one
+                             (list (car (syntax-e stx)))
+                             '()))))]))))]))
+
 (define-syntax (define/subexpression-pos-prop stx)
   (syntax-case stx ()
     [(_ header bodies ...)
@@ -325,35 +437,7 @@
                             #'header
                             (car (syntax-e #'header)))])
        (with-syntax ([ctc/proc (string->symbol (format "~a/proc" (syntax-e #'ctc)))])
-         #'(begin
-             (define ctc/proc
-               (let ()
-                 (define header bodies ...)
-                 ctc))
-             (define-syntax (ctc stx)
-               (syntax-case stx ()
-                 [x
-                  (identifier? #'x)
-                  (syntax-property 
-                   #'ctc/proc
-                   'racket/contract:contract 
-                   (vector (gensym 'ctc) 
-                           (list stx)
-                           '()))]
-                 [(_ margs (... ...))
-                  (let ([this-one (gensym 'ctc)])
-                    (with-syntax ([(margs (... ...)) 
-                                   (map (λ (x) (syntax-property x
-                                                                'racket/contract:positive-position
-                                                                this-one))
-                                        (syntax->list #'(margs (... ...))))]
-                                  [app (datum->syntax stx '#%app)])
-                      (syntax-property 
-                       #'(app ctc/proc margs (... ...))
-                       'racket/contract:contract 
-                       (vector this-one 
-                               (list (car (syntax-e stx)))
-                               '()))))])))))]))
+         #'(define/subexpression-pos-prop/name ctc/proc header bodies ...)))]))
 
 ;; build-compound-type-name : (union contract symbol) ... -> (-> sexp)
 (define (build-compound-type-name . fs)
@@ -410,6 +494,8 @@
               (predicate-contract-sane? that)
               ((predicate-contract-pred that) this-val))))
    #:list-contract? (λ (c) (null? (eq-contract-val c)))))
+
+(define false/c-contract (make-eq-contract #f #f))
 
 (define-struct equal-contract (val name)
   #:property prop:custom-write contract-custom-write-property-proc
@@ -530,7 +616,6 @@
    (λ (this that)
       (and (regexp/c? that) (equal? (regexp/c-reg this) (regexp/c-reg that))))))
 
-
 ;; sane? : boolean -- indicates if we know that the predicate is well behaved
 ;; (for now, basically amounts to trusting primitive procedures)
 (define-struct predicate-contract (name pred generate sane?)
@@ -544,22 +629,16 @@
                                           (predicate-contract-pred that))))
    #:name (λ (ctc) (predicate-contract-name ctc))
    #:first-order (λ (ctc) (predicate-contract-pred ctc))
-   #:val-first-projection
+   #:late-neg-projection
    (λ (ctc)
      (define p? (predicate-contract-pred ctc))
      (define name (predicate-contract-name ctc))
      (λ (blame)
-       (let ([predicate-contract-proj
-              (λ (v)
-                (if (p? v)
-                    (λ (neg-party)
-                      v)
-                    (λ (neg-party)
-                      (raise-blame-error blame v #:missing-party neg-party
-                                         '(expected: "~s" given: "~e")
-                                         name 
-                                         v))))])
-         predicate-contract-proj)))
+       (procedure-specialize
+        (λ (v neg-party)
+          (if (p? v)
+              v
+              (raise-predicate-blame-error-failure blame v neg-party name))))))
    #:generate (λ (ctc)
                  (let ([generate (predicate-contract-generate ctc)])
                    (cond
@@ -574,13 +653,162 @@
    #:list-contract? (λ (ctc) (or (equal? (predicate-contract-pred ctc) null?)
                                  (equal? (predicate-contract-pred ctc) empty?)))))
 
+(define (raise-predicate-blame-error-failure blame v neg-party predicate-name)
+  (raise-blame-error blame v #:missing-party neg-party
+                     '(expected: "~s" given: "~e")
+                     predicate-name
+                     v))
+
 (define (check-flat-named-contract predicate) (coerce-flat-contract 'flat-named-contract predicate))
 (define (check-flat-contract predicate) (coerce-flat-contract 'flat-contract predicate))
 (define (build-flat-contract name pred [generate #f])
   (make-predicate-contract name pred generate #f))
 
 
+
+(define (contract-name ctc)
+  (contract-struct-name
+   (coerce-contract 'contract-name ctc)))
+
+(define (contract-projection ctc)
+  (get/build-projection
+   (coerce-contract 'contract-projection ctc)))
+(define (contract-val-first-projection ctc)
+  (get/build-val-first-projection
+   (coerce-contract 'contract-projection ctc)))
+(define (contract-late-neg-projection ctc)
+  (get/build-late-neg-projection
+   (coerce-contract 'contract-projection ctc)))
+
+(define-logger racket/contract)
+
+(define (get/build-late-neg-projection ctc)
+  (cond
+    [(contract-struct-late-neg-projection ctc) => values]
+    [else
+     (log-racket/contract-warning "no late-neg-projection for ~s" ctc)
+     (cond
+       [(contract-struct-projection ctc)
+        =>
+        (λ (projection)
+          (projection->late-neg-projection projection))]
+       [(contract-struct-val-first-projection ctc)
+        =>
+        (λ (val-first-projection)
+          (val-first-projection->late-neg-projection val-first-projection))]
+       [else
+        (first-order->late-neg-projection (contract-struct-first-order ctc)
+                                          (contract-struct-name ctc))])]))
+
+(define (projection->late-neg-projection proj)
+  (λ (b)
+    (λ (x neg-party)
+      ((proj (blame-add-missing-party b neg-party)) x))))
+(define (val-first-projection->late-neg-projection vf-proj)
+  (λ (b)
+    (define vf-val-accepter (vf-proj b))
+    (λ (x neg-party)
+      ((vf-val-accepter x) neg-party))))
+(define (first-order->late-neg-projection p? name)
+  (λ (b)
+    (λ (x neg-party)
+      (if (p? x)
+          x
+          (raise-blame-error
+           b x #:missing-party neg-party
+           '(expected: "~a" given: "~e")
+           name
+           x)))))
+
+(define warn-about-val-first? (make-parameter #t))
+(define (maybe-warn-about-val-first ctc)
+  (when (warn-about-val-first?)
+    (log-racket/contract-warning
+     "building val-first-projection of contract ~s for~a"
+     ctc
+     (build-context))))
+
+(define (get/build-val-first-projection ctc)
+  (cond
+    [(contract-struct-val-first-projection ctc) => values]
+    [else
+     (maybe-warn-about-val-first ctc)
+     (late-neg-projection->val-first-projection
+      (get/build-late-neg-projection ctc))]))
+(define (late-neg-projection->val-first-projection lnp)
+  (λ (b)
+    (define val+neg-party-accepter (lnp b))
+    (λ (x)
+      (λ (neg-party)
+        (val+neg-party-accepter x neg-party)))))
+
+(define (get/build-projection ctc)
+  (cond
+    [(contract-struct-projection ctc) => values]
+    [else
+     (log-racket/contract-warning
+      "building projection of contract ~s for~a"
+      ctc
+      (build-context))
+     (late-neg-projection->projection
+      (get/build-late-neg-projection ctc))]))
+(define (late-neg-projection->projection lnp)
+  (λ (b)
+    (define val+np-acceptor (lnp b))
+    (λ (x)
+      (val+np-acceptor x #f))))
+
+
+(define contract-first-order-okay-to-give-up-key (gensym 'contract-first-order-okay-to-give-up-key))
+(define (contract-first-order-okay-to-give-up?)
+  (zero? (continuation-mark-set-first #f
+                                      contract-first-order-okay-to-give-up-key
+                                      1)))
+(define-syntax-rule
+  (contract-first-order-try-less-hard e)
+  (contract-first-order-try-less-hard/proc (λ () e)))
+(define (contract-first-order-try-less-hard/proc th)
+  (define cv (continuation-mark-set-first #f contract-first-order-okay-to-give-up-key))
+  (if cv
+      (with-continuation-mark contract-first-order-okay-to-give-up-key (if (= cv 0) 0 (- cv 1))
+        (th))
+      (th)))
+(define-syntax-rule
+  (contract-first-order-only-try-so-hard n e)
+  (with-continuation-mark contract-first-order-okay-to-give-up-key n e))
+
 ;; Key used by the continuation mark that holds blame information for the current contract.
 ;; That information is consumed by the contract profiler.
 (define contract-continuation-mark-key
   (make-continuation-mark-key 'contract))
+
+;; Instrumentation strategy:
+;; - add instrumentation at entry points to the contract system:
+;;   - `contract` (`apply-contract`, really)
+;;   - `contract-out` (`do-partial-app`, really)
+;;   - all others go through one of the above
+;;   that instrumentation picks up "top-level" flat contracts (i.e., not part of
+;;   some higher-order contract) and the "eager" parts of higher-order contracts
+;; - add instrumentation inside chaperones/impersonators created by projections
+;;   that instrumentation picks up the deferred work of higher-order contracts
+;; - add instrumentation to `plus-one-arity-functions`
+;;   those perform checking, but don't rely on chaperones
+;;   they exist for -> and ->*, and are partially implemented for ->i
+;;   TODO once they're fully implemented for ->i, will need to instrument them
+(define-syntax-rule (with-contract-continuation-mark payload code ...)
+  (begin
+    ;; ;; When debugging a missing blame party error, turn this on, then run
+    ;; ;; the contract test suite. It should find the problematic combinator.
+    ;; (unless (or (pair? payload) (not (blame-missing-party? payload)))
+    ;;   (error "internal error: missing blame party" payload))
+    (with-continuation-mark contract-continuation-mark-key payload
+                            (let () code ...))))
+
+(define (n->th n)
+  (string-append 
+   (number->string n)
+   (case (modulo n 10)
+     [(1) "st"]
+     [(2) "nd"]
+     [(3) "rd"]
+     [else "th"])))

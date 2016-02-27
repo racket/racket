@@ -284,10 +284,139 @@
 
 (parameterize ([current-namespace (make-base-namespace)])
   (let ([i (make-syntax-introducer)])
-    (namespace-require (i #'racket/list))
+    (namespace-require (i (datum->syntax #f 'racket/list)))
     (let ([e (namespace-syntax-introduce (datum->syntax #f '(cons? #t)))])
       (err/rt-test (eval e))
       (test #f eval (i e)))))
+
+;; ----------------------------------------
+;; Check cannot-redefine error
+
+(parameterize ([current-namespace (make-base-empty-namespace)])
+  (namespace-require/constant 'racket/base)
+  (err/rt-test (eval '(define + -)) #rx"cannot change constant"))
+
+;; ----------------------------------------
+;; Check that bulk `require` replaces individual bindings
+
+(let ([ns (make-base-empty-namespace)])
+  (parameterize ([current-namespace ns])
+    (namespace-require '(only racket/base)))
+  (eval #`(define #,(datum->syntax #f 'cons) 1) ns)
+  (eval #`(define #,(datum->syntax #f 'extra) 2) ns)
+  (test 1 eval 'cons ns)
+  (eval #`(require #,(datum->syntax #f 'racket/base)) ns)
+  (test cons eval 'cons ns)
+  (test 2 eval 'extra ns))
+
+(let ([ns (make-base-empty-namespace)])
+  (parameterize ([current-namespace ns])
+    ;; To ensure that the namespace ends up with more than
+    ;; `racket/base` individual bindings:
+    (namespace-require/copy 'racket/base))
+  (eval #`(define #,(datum->syntax #f 'cons) 1) ns)
+  (eval #`(define #,(datum->syntax #f 'extra) 2) ns)
+  (test 1 eval 'cons ns)
+  (eval #`(require #,(datum->syntax #f 'racket/base)) ns)
+  (test cons eval 'cons ns)
+  (test 2 eval 'extra ns))
+
+;; ----------------------------------------
+;; Check that compilation in one namespace can
+;; be transferred to another namespace
+
+(let ()
+  (define (check-namespace-transfer compile-wrap)
+    (let ()
+      ;; transfer a `require`
+      (define c
+        (parameterize ([current-namespace (make-base-namespace)])
+          (compile-wrap (compile '(require racket/base)))))
+      (parameterize ([current-namespace (make-base-empty-namespace)])
+        (test (void) 'eval (eval c))
+        (test add1 eval 'add1)))
+
+    (let ()
+      ;; transfer a definition, reference is visible, original
+      ;; namespace is unchanged
+      (define-values (c get)
+        (parameterize ([current-namespace (make-base-namespace)])
+          (define c (compile-wrap (compile '(define one 1))))
+          (values
+           c
+           (eval '(lambda () one)))))
+      (parameterize ([current-namespace (make-base-empty-namespace)])
+        (test (void) 'eval (eval c))
+        (test 1 eval 'one)
+        (err/rt-test (get) exn:fail:contract:variable?)))
+
+    (let ()
+      ;; transfer a definition of a macro-introduced variable, and
+      ;; check access via a syntax object that is compiled at the same time:
+      (define-values (c get)
+        (parameterize ([current-namespace (make-base-namespace)])
+          (eval '(define-syntax-rule (m id)
+                  (begin
+                    (define one 1)
+                    (define id (quote-syntax one))
+                    one)))
+          (define c (compile-wrap (compile '(m id))))
+          (values
+           c
+           (eval '(lambda () one)))))
+      (parameterize ([current-namespace (make-base-empty-namespace)])
+        (test 1 'eval (eval c))
+        (err/rt-test (eval 'one) exn:fail:syntax?)
+        (test #t identifier? (eval 'id))
+        (test 1 eval (eval 'id))
+        (err/rt-test (get) exn:fail:contract:variable?))))
+  (check-namespace-transfer values)
+  (check-namespace-transfer (lambda (c)
+                              (define o (open-output-bytes))
+                              (write c o)
+                              (parameterize ([read-accept-compiled #t])
+                                (read (open-input-bytes (get-output-bytes o)))))))
+
+;; ----------------------------------------
+;; Make sure compilation doesn't bind in the current namespace
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(define-syntax-rule (m2 c-id r-id)
+          (begin
+            (require (rename-in racket/base [+ plus]))
+            (define (c-id) (compile #'(define plus 1)))
+            (define (r-id) (eval #'plus)))))
+  (eval '(m2 def ref))
+  (test + eval '(ref))
+  (eval '(def))
+  (test + eval '(ref))
+  (eval (eval '(def)))
+  (test 1 eval '(ref)))
+
+;; When a binding is present, it takes precedence over
+;; a "temporary" binding:
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval '(define-syntax-rule (m3 c-id)
+          (begin
+            (define-syntax plus #f)
+            (define (c-id) (compile #'(define plus plus))))))
+  (eval '(m3 cdef))
+  (err/rt-test (eval '(cdef)) exn:fail:syntax?))
+
+;; A "temporary" binding should work on an identifier with
+;; no `#%top` in its context:
+(parameterize ([current-namespace (make-base-namespace)])
+  (eval '(require (for-syntax racket/base)))
+  (eval '(define-syntax (m3 stx)
+          (with-syntax ([(gen) (generate-temporaries '(gen))])
+            (syntax-case stx ()
+              [(_ id)
+               #'(begin
+                   (define (gen) gen)
+                   (define id gen))]))))
+  (eval '(m3 self))
+  (test #t eval '(eq? self (self))))
 
 ;; ----------------------------------------
 

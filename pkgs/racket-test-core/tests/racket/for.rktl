@@ -369,6 +369,7 @@
 (test '() 'in-empty-vector (let ([v (in-vector '#())]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#() 0)]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#() 0 0)]) (for/list ([e v]) e)))
+(test '() 'in-empty-vector (let ([v (in-vector '#(1) 1)]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#(1) 1 1)]) (for/list ([e v]) e)))
 (test '() 'in-empty-vector (let ([v (in-vector '#(1) 0 0)]) (for/list ([e v]) e)))
 (test '(1) 'in-empty-vector (let ([v (in-vector '#(1) 0 1)]) (for/list ([e v]) e)))
@@ -436,13 +437,254 @@
 (err/rt-test (for*/fold () ([x '(1 2)]) x) exn:fail:contract:arity?)
 
 ;; for/fold result-arity checking:
-(err/rt-test (begin (for/fold () ([i (in-range 10)]) 1) 1) #rx".*expected number of values not received.*")
-(err/rt-test (begin (for/fold () () 1) 1) #rx".*expected number of values not received.*")
-(err/rt-test (begin (for/fold ([x 1]) () (values 1 2)) 1) #rx".*expected number of values not received.*")
-(err/rt-test (begin (for/fold ([x 1] [y 2]) ([i (in-range 10)]) 1) 1) #rx".*expected number of values not received.*")
+(err/rt-test (begin (for/fold () ([i (in-range 10)]) 1) 1)
+             exn:fail:contract:arity?
+             #rx".*expected number of values not received.*")
+(err/rt-test (begin (for/fold () () 1) 1)
+             exn:fail:contract:arity?
+             #rx".*expected number of values not received.*")
+(err/rt-test (begin (for/fold ([x 1]) () (values 1 2)) 1)
+             exn:fail:contract:arity?
+             #rx".*expected number of values not received.*")
+(err/rt-test (begin (for/fold ([x 1] [y 2]) ([i (in-range 10)]) 1) 1)
+             exn:fail:contract:arity?
+             #rx".*expected number of values not received.*")
 (test 1 'one (begin (for/fold () () (values)) 1))
+
+;; iterator contract tests
+(err/rt-test (for ([x (in-range (sqrt -1))]) x)
+             exn:fail:contract?
+             #rx"expected\\: real\\?")
+(err/rt-test (for ([x (in-range 1 (sqrt -1))]) x)
+             exn:fail:contract?
+             #rx"expected\\: real\\?")
+(err/rt-test (for ([x (in-range 1 2 (sqrt -1))]) x)
+             exn:fail:contract?
+             #rx"expected\\: real\\?")
+(test (* 10 pi) 'in-range-with-reals
+      (for/sum ([x (in-range 0 (+ (* 4 pi) .1) pi)]) x))
+(err/rt-test (for ([x (in-naturals 1.1)]) x)
+             exn:fail:contract?
+             #rx"expected\\: exact-nonnegative-integer\\?")
+(err/rt-test (for ([x (in-naturals -1)]) x)
+             exn:fail:contract?
+             #rx"expected\\: exact-nonnegative-integer\\?")
+(err/rt-test (for ([x (in-list 1)]) x)
+             exn:fail:contract?
+             #rx"expected\\: list\\?")
+(err/rt-test (for ([x (in-list (vector 1 2 3))]) x)
+             exn:fail:contract?
+             #rx"expected\\: list\\?")
+(err/rt-test (for ([x (in-list (mcons 1 '()))]) x)
+             exn:fail:contract?
+             #rx"expected\\: list\\?")
+(err/rt-test (for ([x (in-mlist (list 1 2 3))]) x)
+             exn:fail:contract?
+             #rx"expected\\: mpair\\?")
+(err/rt-test (for ([x (in-vector '(1 2))]) x)
+             exn:fail:contract?
+             #rx"expected\\: vector")
+(err/rt-test (for ([x (in-vector (vector 1 2) -1)]) x)
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for ([x (in-vector (vector 1 2) 10)]) x)
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for ([x (in-vector (vector 1 2) 1.1)]) x)
+             exn:fail:contract?
+             #rx"expected\\: exact-integer\\?")
+(err/rt-test (for ([x (in-vector (vector 1 2) 0 1.1)]) x)
+             exn:fail:contract?
+             #rx"expected\\: exact-integer\\?")
+(err/rt-test (for ([x (in-vector (vector 1 2) 0 2 1.1)]) x)
+             exn:fail:contract?
+             #rx"expected:.*exact-integer\\?")
+(err/rt-test (for ([x (in-vector (vector 1 2) 0 2 0)]) x)
+             exn:fail:contract?
+             #rx"expected:.*not/c zero\\?")
+(err/rt-test (for ([x (in-port (vector 1 2))]) x)
+             exn:fail:contract?
+             #rx"expected:.*procedure-arity-includes/c 1")
+(err/rt-test (for ([x (in-input-port-bytes (vector 1 2))]) x)
+             exn:fail:contract?
+             #rx"expected: input-port\\?")
+(err/rt-test (for ([x (in-hash (vector 1 2))]) x)
+             exn:fail:contract?
+             #rx"expected: hash\\?")
+(err/rt-test (for ([x (in-hash-pairs (vector 1 2))]) x)
+             exn:fail:contract?
+             #rx"expected: hash\\?")
+(err/rt-test (for ([x (in-hash-keys (vector 1 2))]) x)
+             exn:fail:contract?
+             #rx"expected: hash\\?")
+(err/rt-test (for ([x (in-hash-values (vector 1 2))]) x)
+             exn:fail:contract?
+             #rx"expected: hash\\?")
+(err/rt-test (for ([x (in-hash (hash 1 2))]) x)
+             exn:fail:contract:arity?
+             #rx"expected number of values not received")
+
+(err/rt-test (for/sum ([x (in-vector (vector 1 2) 2 -1 -1)]) x) ; pr 15227
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector) -1 -1 -1)]) x)
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector) 1 1 1)]) x)
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector 1) 1 2)]) x)
+             exn:fail:contract?
+             #rx"starting index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector 1) 0 2)]) x)
+             exn:fail:contract?
+             #rx"stopping index is out of range")
+(err/rt-test (for/sum ([x (in-vector (vector 1) 0 -1)]) x)
+             exn:fail:contract?
+             #rx"starting index more than stopping index, but given a positive step")
+(err/rt-test (for/sum ([x (in-vector (vector 1) 0 1 -1)]) x)
+             exn:fail:contract?
+             #rx"starting index less than stopping index, but given a negative step")
 
 ;; for/fold syntax checking
 (syntax-test #'(for/fold () bad 1) #rx".*bad sequence binding clauses.*")
+
+;; specific hash set iterators
+(err/rt-test (for/sum ([x (in-immutable-set '(1 2))]) x)
+             exn:fail:contract?
+             #rx"not a hash set")
+(err/rt-test (for/sum ([x (in-mutable-set '(1 2))]) x)
+             exn:fail:contract?
+             #rx"not a hash set")
+(err/rt-test (for/sum ([x (in-weak-set '(1 2))]) x)
+             exn:fail:contract?
+             #rx"not a hash set")
+(test 10 'in-hash-set (for/sum ([x (in-immutable-set (set 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-mutable-set (mutable-set 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-weak-set (weak-set 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-immutable-set (seteqv 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-mutable-set (mutable-seteqv 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-weak-set (weak-seteqv 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-immutable-set (seteq 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-mutable-set (mutable-seteq 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-weak-set (weak-seteq 1 2 3 4))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-immutable-set (list->set '(1 2 3 4)))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-mutable-set (list->mutable-set '(1 2 3 4)))]) x))
+(test 10 'in-hash-set (for/sum ([x (in-weak-set (list->weak-set '(1 2 3 4)))]) x))
+(test 30 'custom-in-hash-set
+      (let ()
+        (define-custom-set-types pos-set
+          #:elem? positive?
+          (λ (x y recur) (+ x y))
+          (λ (x recur) x))
+        (define imm
+          (make-immutable-pos-set '(1 2 3 4)))
+        (define m
+          (make-mutable-pos-set '(1 2 3 4)))
+        (define w
+          (make-weak-pos-set '(1 2 3 4)))
+        (+ (for/sum ([x (in-immutable-set imm)]) x)
+           (for/sum ([x (in-mutable-set m)]) x)
+           (for/sum ([x (in-weak-set w)]) x))))
+
+(err/rt-test 
+    (for ([(k v) (in-immutable-hash (make-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([(k v) (in-immutable-hash (make-weak-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([(k v) (in-mutable-hash (make-immutable-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([(k v) (in-mutable-hash (make-weak-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([(k v) (in-weak-hash (make-immutable-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+(err/rt-test 
+    (for ([(k v) (in-weak-hash (make-hash '((1 . 2))))]) (+ k v))
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+;; keys
+(err/rt-test 
+    (for ([k (in-immutable-hash-keys (make-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([k (in-immutable-hash-keys (make-weak-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([k (in-mutable-hash-keys (make-immutable-hash '((1 . 2))))]) k) 
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([k (in-mutable-hash-keys (make-weak-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([k (in-weak-hash-keys (make-immutable-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+(err/rt-test 
+    (for ([k (in-weak-hash-keys (make-hash '((1 . 2))))]) k)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+;; values
+(err/rt-test 
+    (for ([v (in-immutable-hash-values (make-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([v (in-immutable-hash-values (make-weak-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([v (in-mutable-hash-values (make-immutable-hash '((1 . 2))))]) v) 
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([v (in-mutable-hash-values (make-weak-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([v (in-weak-hash-values (make-immutable-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+(err/rt-test 
+    (for ([v (in-weak-hash-values (make-hash '((1 . 2))))]) v)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+;; pairs
+(err/rt-test 
+    (for ([p (in-immutable-hash-pairs (make-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([p (in-immutable-hash-pairs (make-weak-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? immutable\\?")
+(err/rt-test 
+    (for ([p (in-mutable-hash-pairs (make-immutable-hash '((1 . 2))))]) p) 
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([p (in-mutable-hash-pairs (make-weak-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? mutable\\?")
+(err/rt-test 
+    (for ([p (in-weak-hash-pairs (make-immutable-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
+(err/rt-test 
+    (for ([p (in-weak-hash-pairs (make-hash '((1 . 2))))]) p)
+  exn:fail:contract?
+  #rx"expected:.*and/c hash\\? hash-weak\\?")
 
 (report-errs)

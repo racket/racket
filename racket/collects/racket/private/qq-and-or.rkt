@@ -5,19 +5,50 @@
 (module qq-and-or '#%kernel
   (#%require (for-syntax "stx.rkt" '#%kernel))
   
-  (define-syntaxes (let let* letrec)
+  (define-syntaxes (let*-values let let* letrec)
     (let-values ([(lambda-stx) (quote-syntax lambda-stx)]
-                 [(letrec-values-stx) (quote-syntax letrec-values)])
+                 [(letrec-values-stx) (quote-syntax letrec-values)]
+                 [(check-for-duplicates)
+                  (lambda (new-bindings sel stx)
+                    (define-values (id-in-list?)
+                      (lambda (id l)
+                        (if (null? l)
+                            #f
+                            (if (bound-identifier=? id (car l)) 
+                                #t
+                                (id-in-list? id (cdr l))))))
+                    (if ((length new-bindings) . > . 5)
+                        (let-values ([(ht) (make-hasheq)])
+                          (letrec-values ([(check) (lambda (l)
+                                                     (if (null? l)
+                                                         (void)
+                                                         (let-values ([(id) (sel (car l))])
+                                                           (let-values ([(idl) (hash-ref ht (syntax-e id) null)])
+                                                             (if (id-in-list? id idl)
+                                                                 (raise-syntax-error
+                                                                  #f
+                                                                  "duplicate identifier"
+                                                                  stx
+                                                                  id)
+                                                                 (begin
+                                                                   (hash-set! ht (syntax-e id) (cons id idl))
+                                                                   (check (cdr l))))))))])
+                                         (check new-bindings)))
+                        (letrec-values ([(check) (lambda (l accum)
+                                                   (if (null? l)
+                                                       (void)
+                                                       (let-values ([(id) (sel (car l))])
+                                                         (if (id-in-list? id accum)
+                                                             (raise-syntax-error
+                                                              #f
+                                                              "duplicate identifier"
+                                                              stx
+                                                              id)
+                                                             (check (cdr l) (cons id accum))))))])
+                                       (check new-bindings null))))])
       (let-values ([(go)
                     (lambda (stx named? star? target)
                       (define-values (stx-cadr) (lambda (x) (stx-car (stx-cdr x))))
-                      (define-values (id-in-list?)
-                        (lambda (id l)
-                          (if (null? l)
-                              #f
-                              (if (bound-identifier=? id (car l)) 
-                                  #t
-                                  (id-in-list? id (cdr l))))))
                       (define-values (stx-2list?)
                         (lambda (x)
                           (if (stx-pair? x)
@@ -97,39 +128,11 @@
                                               (loop bindings))])
                                 (if star?
                                     (void)
-                                    (if ((length new-bindings) . > . 5)
-                                        (let-values ([(ht) (make-hasheq)])
-                                          (letrec-values ([(check) (lambda (l)
-                                                                     (if (null? l)
-                                                                         (void)
-                                                                         (let*-values ([(id) (if name
-                                                                                                 (caar l)
-                                                                                                 (stx-car (stx-car (car l))))]
-                                                                                       [(idl) (hash-ref ht (syntax-e id) null)])
-                                                                           (if (id-in-list? id idl)
-                                                                               (raise-syntax-error
-                                                                                #f
-                                                                                "duplicate identifier"
-                                                                                stx
-                                                                                id)
-                                                                               (begin
-                                                                                 (hash-set! ht (syntax-e id) (cons id idl))
-                                                                                 (check (cdr l)))))))])
-                                            (check new-bindings)))
-                                        (letrec-values ([(check) (lambda (l accum)
-                                                                   (if (null? l)
-                                                                       (void)
-                                                                       (let-values ([(id) (if name
-                                                                                              (caar l)
-                                                                                              (stx-car (stx-car (car l))))])
-                                                                         (if (id-in-list? id accum)
-                                                                             (raise-syntax-error
-                                                                              #f
-                                                                              "duplicate identifier"
-                                                                              stx
-                                                                              id)
-                                                                             (check (cdr l) (cons id accum))))))])
-                                          (check new-bindings null))))
+                                    (check-for-duplicates new-bindings 
+                                                          (if name
+                                                              car
+                                                              (lambda (v) (stx-car (stx-car v))))
+                                                          stx))
                                 (datum->syntax
                                  lambda-stx
                                  (if name
@@ -149,6 +152,44 @@
                                             body))
                                  stx))))))])
         (values
+         (lambda (stx)
+           (define-values (bad-syntax)
+             (lambda ()
+               (raise-syntax-error #f "bad syntax" stx)))
+           (define-values (l) (syntax->list stx))
+           (if (not l) (bad-syntax) (void))
+           (if ((length l) . < . 3) (bad-syntax) (void))
+           (define-values (bindings) (syntax->list (cadr l)))
+           (if (not bindings) (raise-syntax-error #f "bad syntax" stx (cadr l)) (void))
+           (for-each (lambda (binding)
+                       (define-values (l) (syntax->list binding))
+                       (if (if (not l)
+                               #t
+                               (not (= 2 (length l))))
+                           (raise-syntax-error #f "bad syntax" stx binding)
+                           (void))
+                       (define-values (vars) (syntax->list (car l)))
+                       (if (not vars) (raise-syntax-error #f "bad syntax" stx (car l)) (void))
+                       (for-each (lambda (var)
+                                   (if (not (symbol? (syntax-e var)))
+                                       (raise-syntax-error 
+                                        #f 
+                                        "bad syntax (not an identifier)" 
+                                        stx
+                                        var)
+                                       (void)))
+                                 vars)
+                       (check-for-duplicates vars values stx))
+                     bindings)
+           (define-values (gen)
+             (lambda (bindings nested?)
+               (if (null? bindings)
+                   (if nested?
+                       (cddr l)
+                       (list* (quote-syntax let-values) '() (cddr l)))
+                   ((if nested? list values)
+                    (list* (quote-syntax let-values) (list (car bindings)) (gen (cdr bindings) #t))))))
+           (datum->syntax #f (gen bindings #f) stx stx))
          (lambda (stx) (go stx #t #f (quote-syntax let-values)))
          (lambda (stx) (go stx #f #t (quote-syntax let*-values)))
          (lambda (stx) (go stx #f #f (quote-syntax letrec-values)))))))
@@ -380,7 +421,7 @@
                                                                    (list (quote-syntax quote)
                                                                          rest)
                                                                    rest)))))))))
-                                            (let-values (((l0) (hash-map (syntax-e x) cons)))
+                                            (let-values (((l0) (hash-map (syntax-e x) cons #t)))
                                               (let-values
                                                   (((l) (qq-hash-assocs l0 level)))
                                                 (if (eq? l0 l)
@@ -458,5 +499,6 @@
 		       "bad syntax"
 		       x))))))))
 
-  (#%provide let let* letrec
+  (#%provide let*-values
+             let let* letrec
              quasiquote and or))

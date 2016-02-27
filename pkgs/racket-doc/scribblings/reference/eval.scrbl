@@ -484,6 +484,18 @@ Like @racket[eval-syntax], but calls the current @tech{compilation
 handler} in tail position with @racket[stx].}
 
 
+@defproc[(compiled-expression-recompile [ce compiled-expression?]) compiled-expression?]{
+
+Recompiles @racket[ce], effectively re-running optimization passes to
+produce an equivalent compiled form with potentially different
+performance characteristics.
+
+If @racket[ce] includes module forms, then only phase-0 code in the
+immediate module (not in submodules) is recompiled.
+
+@history[#:added "6.3"]}
+
+
 @defproc[(compiled-expression? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a compiled form, @racket[#f]

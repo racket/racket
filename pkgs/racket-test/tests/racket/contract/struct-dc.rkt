@@ -416,6 +416,22 @@
                                   'pos
                                   'neg))))
    2)
+
+  (test/spec-passed/result
+   'struct/dc-12b
+   '(let ()
+      (struct kons (hd tl) #:transparent)
+      (define (unknown-function a) (=/c a))
+      (define-opt/c (f a b)
+        (first-or/c not
+               (struct/dc kons
+                          [hd (unknown-function a)]
+                          [tl () #:lazy (first-or/c #f (f b a))])))
+      (kons-hd (kons-tl (contract (f 1 2)
+                                  (kons 1 (kons 2 #f))
+                                  'pos
+                                  'neg))))
+   2)
   
   (test/spec-passed
    'struct/dc-13
@@ -937,7 +953,8 @@
                       (λ (x) (s 11 x))
                       'pos
                       'neg) 1)))
-   1)
+   1
+   do-not-double-wrap)
   
   (test/spec-passed/result
    'struct/dc-new42

@@ -36,13 +36,13 @@ in the argument list are automatically converted to symbols.
     [(make-pred name)
      (format-id #'name "~a?" (syntax-e #'name))]))
 (make-pred pair)
-(make-pred none-such)
+(eval:error (make-pred none-such))
 (define-syntax (better-make-pred stx)
   (syntax-case stx ()
     [(better-make-pred name)
      (format-id #'name #:source #'name
                 "~a?" (syntax-e #'name))]))
-(better-make-pred none-such)
+(eval:error (better-make-pred none-such))
 ]
 
 (Scribble doesn't show it, but the DrRacket pinpoints the location of
@@ -108,9 +108,10 @@ is prefixed with the special form name as described under
 @racket[current-syntax-context].
 
 @examples[#:eval the-eval
-(wrong-syntax #'here "expected ~s" 'there)
-(parameterize ([current-syntax-context #'(look over here)])
-  (wrong-syntax #'here "expected ~s" 'there))
+(eval:error (wrong-syntax #'here "expected ~s" 'there))
+(eval:error
+ (parameterize ([current-syntax-context #'(look over here)])
+   (wrong-syntax #'here "expected ~s" 'there)))
 ]
 
 A macro using @racket[wrong-syntax] might set the syntax context at the very

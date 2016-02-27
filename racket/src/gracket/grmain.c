@@ -52,7 +52,9 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 
 #if WIN32
 # define DLL_RELATIVE_PATH L"."
-# define INITIAL_COLLECTS_DIRECTORY "../collects"
+# ifndef INITIAL_COLLECTS_DIRECTORY
+#  define INITIAL_COLLECTS_DIRECTORY "../collects"
+# endif
 #endif
 
 #ifndef INITIAL_CONFIG_DIRECTORY
@@ -113,7 +115,7 @@ static void init_console_in()
   if (!console_in) {
     console_in = GetStdHandle(STD_INPUT_HANDLE);
     MZ_REGISTER_STATIC(console_inport);
-    console_inport = scheme_make_fd_input_port((int)console_in, scheme_intern_symbol("stdin"), 0, 0);
+    console_inport = scheme_make_fd_input_port((intptr_t)console_in, scheme_intern_symbol("stdin"), 0, 0);
   }
 }
 

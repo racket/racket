@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -34,10 +34,10 @@
 READ_ONLY Scheme_Object scheme_true[1];
 READ_ONLY Scheme_Object scheme_false[1];
 
-READ_ONLY Scheme_Object *scheme_not_prim;
-READ_ONLY Scheme_Object *scheme_eq_prim;
-READ_ONLY Scheme_Object *scheme_eqv_prim;
-READ_ONLY Scheme_Object *scheme_equal_prim;
+READ_ONLY Scheme_Object *scheme_not_proc;
+READ_ONLY Scheme_Object *scheme_eq_proc;
+READ_ONLY Scheme_Object *scheme_eqv_proc;
+READ_ONLY Scheme_Object *scheme_equal_proc;
 
 /* locals */
 static Scheme_Object *not_prim (int argc, Scheme_Object *argv[]);
@@ -60,6 +60,7 @@ typedef struct Equal_Info {
   Scheme_Object *next, *next_next;
   Scheme_Object *insp;
   intptr_t for_chaperone; /* 3 => for impersonator */
+  intptr_t eq_for_modidx;
 } Equal_Info;
 
 static int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql);
@@ -81,13 +82,13 @@ void scheme_init_bool (Scheme_Env *env)
 {
   Scheme_Object *p;
 
-  REGISTER_SO(scheme_not_prim);
-  REGISTER_SO(scheme_eq_prim);
-  REGISTER_SO(scheme_eqv_prim);
-  REGISTER_SO(scheme_equal_prim);
+  REGISTER_SO(scheme_not_proc);
+  REGISTER_SO(scheme_eq_proc);
+  REGISTER_SO(scheme_eqv_proc);
+  REGISTER_SO(scheme_equal_proc);
 
   p = scheme_make_folding_prim(not_prim, "not", 1, 1, 1);
-  scheme_not_prim = p;
+  scheme_not_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("not", p, env);
@@ -100,19 +101,19 @@ void scheme_init_bool (Scheme_Env *env)
   p = scheme_make_folding_prim(eq_prim, "eq?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
-  scheme_eq_prim = p;
+  scheme_eq_proc = p;
   scheme_add_global_constant("eq?", p, env);
 
   p = scheme_make_folding_prim(eqv_prim, "eqv?", 2, 2, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
-  scheme_eqv_prim = p;
-  scheme_add_global_constant("eqv?", scheme_eqv_prim, env);
+  scheme_eqv_proc = p;
+  scheme_add_global_constant("eqv?", scheme_eqv_proc, env);
   
   p = scheme_make_prim_w_arity(equal_prim, "equal?", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_equal_prim = p;
-  scheme_add_global_constant("equal?", scheme_equal_prim, env);
+  scheme_equal_proc = p;
+  scheme_add_global_constant("equal?", scheme_equal_proc, env);
 
   scheme_add_global_constant("equal?/recur", 
                              scheme_make_prim_w_arity(equalish_prim, "equal?/recur", 3, 3), 
@@ -160,19 +161,25 @@ eqv_prim (int argc, Scheme_Object *argv[])
   return (scheme_eqv(argv[0], argv[1]) ? scheme_true : scheme_false);
 }
 
+XFORM_NONGCING static void init_equal_info(Equal_Info *eql)
+{
+  eql->depth = 1;
+  eql->car_depth = 1;
+  eql->ht = NULL;
+  eql->recur = NULL;
+  eql->next = NULL;
+  eql->next_next = NULL;
+  eql->insp = NULL;
+  eql->for_chaperone = 0;
+  eql->eq_for_modidx = 0;
+}
+
 static Scheme_Object *
 equal_prim (int argc, Scheme_Object *argv[])
 {
   Equal_Info eql;
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next = NULL;
-  eql.next_next = NULL;
-  eql.insp = NULL;
-  eql.for_chaperone = 0;
+  init_equal_info(&eql);
 
   return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
 }
@@ -184,14 +191,8 @@ equalish_prim (int argc, Scheme_Object *argv[])
 
   scheme_check_proc_arity("equal?/recur", 2, 2, argc, argv);
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next = NULL;
+  init_equal_info(&eql);
   eql.next_next = argv[2];
-  eql.insp = NULL;
-  eql.for_chaperone = 0;
 
   return (is_equal(argv[0], argv[1], &eql) ? scheme_true : scheme_false);
 }
@@ -219,8 +220,8 @@ XFORM_NONGCING static MZ_INLINE int mz_long_double_eqv(long_double a, long_doubl
     if (MZ_IS_LONG_NAN(b))
       return 0;
     else {
-      if (long_double_eqv(a, get_long_double_zero()) {
-        if (long_double_eqv(b, get_long_double_zero()) {
+      if (long_double_eqv(a, get_long_double_zero())) {
+        if (long_double_eqv(b, get_long_double_zero())) {
           return scheme_long_minus_zero_p(a) == scheme_long_minus_zero_p(b);
         }
       }
@@ -317,6 +318,11 @@ XFORM_NONGCING static int is_eqv(Scheme_Object *obj1, Scheme_Object *obj2)
       }
     case scheme_char_type:
       return SCHEME_CHAR_VAL(obj1) == SCHEME_CHAR_VAL(obj2);
+    case scheme_symbol_type:
+    case scheme_keyword_type:
+    case scheme_scope_type:
+      /* `eqv?` requires `eq?` */
+      return 0;
     default:
       return -1;
     }
@@ -418,14 +424,7 @@ int is_slow_equal (Scheme_Object *obj1, Scheme_Object *obj2)
 {
   Equal_Info eql;
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next_next = NULL;
-  eql.next = NULL;
-  eql.insp = NULL;
-  eql.for_chaperone = 0;
+  init_equal_info(&eql);
 
   return is_equal(obj1, obj2, &eql);
 }
@@ -439,6 +438,16 @@ int scheme_equal (Scheme_Object *obj1, Scheme_Object *obj2)
     return v;
 
   return is_slow_equal(obj1, obj2);
+}
+
+int scheme_equal_modix_eq (Scheme_Object *obj1, Scheme_Object *obj2)
+{
+  Equal_Info eql;
+
+  init_equal_info(&eql);
+  eql.eq_for_modidx = 1;
+
+  return is_equal(obj1, obj2, &eql);
 }
 
 static Scheme_Object *union_find(Scheme_Object *obj1, Scheme_Hash_Table *ht)
@@ -581,8 +590,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       /* for immutable hashes, it's ok for the two objects to not be eq,
          as long as the interpositions are the same and the underlying
          values are `{impersonator,chaperone}-of?`: */
-      if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj1)->val), scheme_hash_tree_type)
-          && SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj2)->val), scheme_hash_tree_type)
+      if (SCHEME_HASHTRP(((Scheme_Chaperone *)obj1)->val)
+          && SCHEME_HASHTRP(((Scheme_Chaperone *)obj2)->val)
           /* eq redirects means redirects were propagated: */
           && SAME_OBJ(((Scheme_Chaperone *)obj1)->redirects,
                       ((Scheme_Chaperone *)obj2)->redirects))
@@ -600,9 +609,15 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
       if (SCHEME_CHAPERONEP(obj1)) {
         obj1 = ((Scheme_Chaperone *)obj1)->val;
         goto top_after_next;
+      } else if (t1 == scheme_hash_tree_indirection_type) {
+        obj1 = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)obj1);
+        goto top_after_next;
       }
       if (SCHEME_CHAPERONEP(obj2)) {
         obj2 = ((Scheme_Chaperone *)obj2)->val;
+        goto top_after_next;
+      } else if (t2 == scheme_hash_tree_indirection_type) {
+        obj2 = (Scheme_Object *)scheme_hash_tree_resolve_placeholder((Scheme_Hash_Tree *)obj2);
         goto top_after_next;
       }
     }
@@ -810,6 +825,9 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
                                            eql);
       }
     case scheme_hash_tree_type:
+    case scheme_eq_hash_tree_type:
+    case scheme_eqv_hash_tree_type:
+    case scheme_hash_tree_indirection_type:
       {
 #   include "mzeqchk.inc"
         if (union_check(obj1, obj2, eql))
@@ -844,12 +862,25 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
 #   include "mzeqchk.inc"
         midx1 = (Scheme_Modidx *)obj1;
         midx2 = (Scheme_Modidx *)obj2;
-        if (is_equal(midx1->path, midx2->path, eql)) {
+        if (eql->eq_for_modidx
+            && (SCHEME_FALSEP(midx1->path)
+                || SCHEME_FALSEP(midx2->path)))
+          return 0;
+        else if (is_equal(midx1->path, midx2->path, eql)) {
           obj1 = midx1->base;
           obj2 = midx2->base;
           goto top;
-        } else
+        }
+      }
+    case scheme_scope_table_type:
+      {
+        Scheme_Scope_Table *mt1 = (Scheme_Scope_Table *)obj1;
+        Scheme_Scope_Table *mt2 = (Scheme_Scope_Table *)obj2;
+        if (!is_equal((Scheme_Object *)mt1->simple_scopes, (Scheme_Object *)mt2->simple_scopes, eql))
           return 0;
+        obj1 = mt1->multi_scopes;
+        obj2 = mt2->multi_scopes;
+        goto top;
       }
     default:
       if (!eql->for_chaperone && ((t1 == scheme_chaperone_type)
@@ -968,13 +999,7 @@ int scheme_chaperone_of(Scheme_Object *obj1, Scheme_Object *obj2)
 {
   Equal_Info eql;
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next = NULL;
-  eql.next_next = NULL;
-  eql.insp = NULL;
+  init_equal_info(&eql);
   eql.for_chaperone = 1;
 
   return is_equal(obj1, obj2, &eql);
@@ -984,13 +1009,7 @@ int scheme_impersonator_of(Scheme_Object *obj1, Scheme_Object *obj2)
 {
   Equal_Info eql;
 
-  eql.depth = 1;
-  eql.car_depth = 1;
-  eql.ht = NULL;
-  eql.recur = NULL;
-  eql.next = NULL;
-  eql.next_next = NULL;
-  eql.insp = NULL;
+  init_equal_info(&eql);
   eql.for_chaperone = 3;
 
   return is_equal(obj1, obj2, &eql);

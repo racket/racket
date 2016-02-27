@@ -211,7 +211,7 @@ future.@LTO@: $(srcdir)/future.c
 gmp.@LTO@: $(srcdir)/gmp/gmp.c $(srcdir)/gmp/gmplonglong.h \
            $(srcdir)/../include/schthread.h $(srcdir)/../sconfig.h
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/gmp/gmp.c -o gmp.@LTO@
-hash.@LTO@: $(srcdir)/hash.c
+hash.@LTO@: $(srcdir)/hash.c $(srcdir)/hamt_subset.inc
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/hash.c -o hash.@LTO@
 jit.@LTO@: $(srcdir)/jit.c
 	$(CC) $(ALL_CFLAGS) -c $(srcdir)/jit.c -o jit.@LTO@
@@ -303,7 +303,7 @@ SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 
 COMMON_HEADERS = $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
                  $(srcdir)/../include/schthread.h $(srcdir)/mzrt.h $(srcdir)/mzrt_cas.inc \
-                 $(srcdir)/longdouble/longdouble.h
+                 $(srcdir)/longdouble/longdouble.h $(srcdir)/../utils/schiptr.h
 JIT_HEADERS = $(srcdir)/jit.h $(srcdir)/jitfpu.h $(srcdir)/stypes.h \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
         $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
@@ -419,7 +419,7 @@ sfs.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_sfs.inc
 string.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark_string.inc $(srcdir)/strops.inc \
-         $(srcdir)/schustr.inc
+         $(srcdir)/schustr.inc $(srcdir)/systype.inc
 struct.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_struct.inc
 syntax.@LTO@: $(COMMON_HEADERS) \

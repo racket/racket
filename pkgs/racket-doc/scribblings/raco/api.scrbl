@@ -2,6 +2,7 @@
 
 @(require scribble/manual
           scribble/bnf
+          "common.rkt"
           (for-label scheme/gui
                      compiler/compiler
                      compiler/sig
@@ -12,7 +13,9 @@
                      dynext/compile-sig
                      dynext/link-sig
                      dynext/file-sig
-                     launcher/launcher))
+                     launcher/launcher
+                     compiler/module-suffix
+                     setup/getinfo))
 
 @title{API for Raw Compilation}
 
@@ -70,6 +73,7 @@ file is reported through the current output port.}
 
 @defproc[(compile-collection-zos [collection string?] ...+
                                  [#:skip-path skip-path (or/c path-string? #f) #f]
+                                 [#:skip-paths skip-paths (listof path-string?) null]
                                  [#:skip-doc-sources? skip-docs? any/c #f]
                                  [#:managed-compile-zo managed-compile-zo 
                                                        (path-string? . -> . void?)
@@ -83,8 +87,10 @@ The @filepath{.zo} files are placed into the collection's
 
 By default, all files with the
 extension @filepath{.rkt}, @filepath{.ss}, or @filepath{.scm} in a collection are
-compiled, as are all such files within subdirectories, execept that
-any file or directory whose path starts with @racket[skip-path] is
+compiled, as are all such files within subdirectories; the set of such suffixes
+is extensible globally as described in @racket[get-module-suffixes], and
+@racket[compile-collection-zos] recognizes suffixes from the @racket['libs] group. However,
+any file or directory whose path starts with @racket[skip-path] or an element of @racket[skip-paths] is
 skipped. (``Starts with'' means that the simplified path @racket[_p]'s
 byte-string form after @racket[(simplify-path _p #f)]starts with the
 byte-string form of @racket[(simplify-path skip-path #f)].)
@@ -113,24 +119,33 @@ collection.  The following fields are used:
        field's value is @racket['all].}
 
  @item{@indexed-racket[compile-omit-files] : A list of filenames (without
-       directory paths); that are not compiled, in addition to the
+       directory paths) that are not compiled, in addition to the
        contents of @racket[compile-omit-paths].  Do not use this
        field; it is for backward compatibility.}
 
  @item{@indexed-racket[scribblings] : A list of pairs, each of which
        starts with a path for documentation source. The sources (and
        the files that they require) are compiled in the same way as
-       @filepath{.rkt}, @filepath{.ss}, and @filepath{.scm} files,
-       unless the provided @racket[skip-docs?] argument is a true
-       value.}
+       other module files, unless @racket[skip-docs?] is a true value.}
 
-]}
+ @item{@indexed-racket[compile-include-files] : A list of filenames (without
+       directory paths) to be compiled, in addition to files that
+       are compiled based on the file's extension, being in @racket[scribblings],
+       or being @racket[require]d by other compiled files.}
+
+ @item{@racket[module-suffixes] and @racket[doc-module-suffixes] ---
+       Used indirectly via @racket[get-module-suffixes].}
+
+]
+
+@history[#:changed "6.3" @elem{Added support for @racket[compile-include-files].}]}
 
 
 @defproc[(compile-directory-zos [path path-string?]
                                 [info ()]
                                 [#:verbose verbose? any/c #f]
                                 [#:skip-path skip-path (or/c path-string? #f) #f]
+                                [#:skip-paths skip-paths (listof path-string?) null]
                                 [#:skip-doc-sources? skip-docs? any/c #f]
                                 [#:managed-compile-zo managed-compile-zo 
                                                       (path-string? . -> . void?)
@@ -141,6 +156,69 @@ Like @racket[compile-collection-zos], but compiles the given directory
 rather than a collection. The @racket[info] function behaves like the
 result of @racket[get-info] to supply @filepath{info.rkt} fields,
 instead of using an @filepath{info.rkt} file (if any) in the directory.}
+
+@; ----------------------------------------------------------------------
+
+@section[#:tag "module-suffix"]{Recognizing Module Suffixes}
+
+@defmodule[compiler/module-suffix]{The
+@racketmodname[compiler/module-suffix] library provides functions for
+recognizing file suffixes that correspond to Racket modules for the
+purposes of compiling files in a directory, running tests for files in
+a directory, and so on. The set of suffixes always includes
+@filepath{.rkt}, @filepath{.ss}, and @filepath{.scm}, but it can be
+extended globally by @filepath{info.rkt} configuration in collections.}
+
+@history[#:added "6.3"]
+
+@defproc[(get-module-suffixes [#:group group (or/c 'all 'libs 'docs) 'all]
+                              [#:mode mode (or/c 'preferred 'all-available 'no-planet 'no-user) 'preferred]
+                              [#:namespace namespace (or/c #f namespace?) #f])
+         (listof bytes?)]{
+
+Inspects @filepath{info.rkt} files (see @secref["info.rkt"]) of
+installed collections to produce a list of file suffixes that should
+be recognized as Racket modules. Each suffix is reported as a byte
+string that does not include the @litchar{.} that precedes a suffix.
+
+The @racket[mode] and @racket[namespace] arguments are propagated to
+@racket[find-relevant-directories] to determine which collection
+directories might configure the set of suffixes. Consequently, suffix
+registrations are found reliably only if @exec{raco setup} (or package
+installations or updates that trigger @exec{raco setup}) is run.
+
+The @racket[group] argument determines whether the result includes all
+registered suffixes, only those that are registered as general library
+suffixes, or only those that are registered as documentation suffixes.
+The set of general-library suffixes always includes @filepath{.rkt},
+@filepath{.ss}, and @filepath{.scm}. The set of documentation suffixes
+always includes @filepath{.scrbl}.
+
+The following fields in an @filepath{info.rkt} file extend the set of
+suffixes:
+
+@itemize[
+
+ @item{@indexed-racket[module-suffixes] : A list of byte strings that
+       correspond to general-library module suffixes (without the
+       @litchar{.} that must appear before the suffix). Non-lists or
+       non-byte-string elements of the list are ignored.}
+
+ @item{@indexed-racket[doc-module-suffixes] : A list of byte strings
+       as for @racket[module-suffixes], but for documentation
+       modules.}
+
+]}
+
+@defproc[(get-module-suffix-regexp [#:group group (or/c 'all 'libs 'docs) 'all]
+                                   [#:mode mode (or/c 'preferred 'all-available 'no-planet 'no-user) 'preferred]
+                                   [#:namespace namespace (or/c #f namespace?) #f])
+         byte-regexp?]{
+
+Returns a @tech[#:doc reference-doc]{regexp value} that matches paths ending
+with a suffix as reported by @racket[get-module-suffixes]. The pattern
+includes a subpatterns for the suffix without its leading @litchar{.}}
+
 
 @; ----------------------------------------------------------------------
 

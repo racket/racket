@@ -1,16 +1,14 @@
+This README provides an overview of the precise GC interface used by
+Racket. The header files "gc2.h" and "gc2_dump.h" provide additional
+API documentation.
 
-This README provides and overview of the precise GC interface used by
-Racket. The header files gc2.h and gc2_dump.h provide additional
-documentation.
+GC Interface
+------------
 
-GC Architecture
----------------
-
-The GC interface for Racket (and GRacket) is designed to support
-precise collection with both moving and non-moving
-collectors. Generational and incremental collectors must rely on
-hardware-based memory protection for their implementation (to detect
-writes into old objects, etc.).
+The GC interface for Racket is designed to support precise collection
+with both moving and non-moving collectors. Generational and
+incremental collectors must rely on hardware-based memory protection
+for their implementation (to detect writes into old objects, etc.).
 
 As a general rule, all pointers to collectable objects reference the
 beginning of the object (i.e., the pointer is never into the interior
@@ -59,6 +57,38 @@ GC_get_thread_stack_base() (which is supplied by Racket).
 More generally, GC_mark_variable_stack() can be used to GC a stack
 that has been copied into the heap. See below for more details.
 
+Marking and Moving Objects
+--------------------------
+
+Cooperation between the garbage collector's movement of objects and
+Racket's view of object shapes (pointers versus non-pointers) is
+mediated by "mark" and "fixup" functions:
+
+ * The "mark" pass traverses objects in the heap, potentially moving
+   them and adjusting references.
+
+ * An optional extra "fixup" pass further adjusts references to moved
+   objects.
+
+The mark and fixup steps are exposed by gcMARK and gcFIXUP macros that
+are provided by the collector. In addition, the collector provides a
+GC_resolve operation, which converts an object's old address to a new
+one in the case that the object is being moved; given an object's new
+address GC_resolve returns the same address. A GC_is_marked operation
+reports whether an object at its old address has been marked; it works
+only on old addresses.
+
+Normally, the mark function for an object is called only when the
+object is first marked in a given GC pass. With generational
+collection, the mark function can be called for an old-generation
+object if it potentially changed since a previous collection; still,
+the mark function will be called only once during that collection, so
+it's as if the object were in the new generation. With incremental
+collection, however, a macro procedure can be called due to changes
+even if the object is already incrementally marked as an
+old-generaiton object. The GC_current_mode() function reports the
+current mode for a given call to the marking function.
+
 Memory Kinds
 ------------
 
@@ -72,19 +102,14 @@ Racket allocates the following kinds of memory objects:
     o an operation for obtaining the value's size in words (not
       bytes!);
 
-    o an operation for marking pointers within the object; and 
+    o an operation for marking pointers within the object; and
 
-    o an operation for "fixing up" pointers in the object to other
-      objects that have been moved.
+    o an operation for another fixup pass.
 
    The mark and fixup procedures use the gcMARK and gcFIXUP macros
    provided by the collector. The mark and fixup operations also
-   return the size of the object, like the size procedure.
-
-   Note that a two-space copying collector might use only the fixup
-   operation, while a non-moving collector might use only the mark
-   operation. However, Racket currently relies on at least fixup
-   calls for scheme_runstack_rt-tagged objects.
+   return the size of the object, like the size procedure, unless
+   GC_NO_SIZE_NEEDED_FROM_PROCS is defined.
 
  * Atomic - The allocated object contains no pointers to other
    allocated objects.
@@ -94,14 +119,6 @@ Racket allocates the following kinds of memory objects:
  
  * Array - The allocated object is an array of pointers to other
    allocated objects.
-
- * Tagged Array - The allocated object is an array of tagged
-   objects. Every tagged object in the array is the same size and has
-   the same effective tag. After allocating the memory, Racket sets
-   the tag on the initial array element, but might not set the tag of
-   other elements until later. (Even if tags are not set for all
-   objects, the mark and fixup operations might be applied to all of
-   them.)
 
  * Pair - specialization of Tagged to pairs.
 

@@ -36,7 +36,7 @@ but may be updated by patches to DrRacket.}
 
 Checks the currently available version on the PLT website
 (@selflink["http://download.racket-lang.org"]) and returns a value that
-indicates the current state of the curent installation:
+indicates the current state of the current installation:
 
 @itemize[
 
@@ -76,12 +76,12 @@ indicates the current state of the curent installation:
   utilities for dealing with version strings.  Unless explicitly noted,
   these functions do not handle legacy versions of Racket.}
 
-@defproc[(valid-version? [str string?]) boolean?]{
-  Returns @racket[#t] if @racket[str] is a valid Racket version
+@defproc[(valid-version? [v any/c]) boolean?]{
+  Returns @racket[#t] if @racket[v] is a valid Racket version
   string, @racket[#f] otherwise.}
 
 @defproc[(version->list [str valid-version?])
-         (list integer? integer? integer? integer?)]{
+         (list/c integer? integer? integer? integer?)]{
   Returns a list of four numbers that the given version string
   represent.  @racket[str] is assumed to be a valid version.}
 
@@ -99,7 +99,7 @@ indicates the current state of the curent installation:
   Returns @racket[#t] if the version that @racket[str] represents is an
   alpha version.  @racket[str] is assumed to be a valid version.}
 
-@defproc[(version->integer [str string?]) (or/c integer? false/c)]{
+@defproc[(version->integer [str string?]) (or/c integer? #f)]{
   Converts the version string into an integer.  For version
   @racket["X.YY.ZZZ.WWW"], the result will be @racketvalfont{XYYZZZWWW}.
   This function works also for legacy Racket versions, by

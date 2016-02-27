@@ -9,6 +9,7 @@
          racket/path
          racket/list
          racket/format
+         racket/port
          setup/dirs
          "shelly.rkt")
 
@@ -111,20 +112,26 @@
 (require web-server/http
          web-server/servlet-env)
 (define (start-file-server)
-  (serve/servlet (λ (req) (response/xexpr "None"))
-                 #:command-line? #t
-                 #:port 9997
-                 #:extra-files-paths (list (build-path test-directory "test-pkgs"))))
+  (parameterize ([current-error-port (if (verbose?)
+                                         (current-output-port)
+                                         (open-output-nowhere))])
+    (serve/servlet (λ (req) (response/xexpr "None"))
+                   #:command-line? #t
+                   #:port 9997
+                   #:extra-files-paths (list (build-path test-directory "test-pkgs")))))
 
 (require "basic-index.rkt")
 (define *index-ht-1* (make-hash))
 (define *index-ht-2* (make-hash))
 (define (start-pkg-server index-ht port)
-  (parameterize ([current-error-port (current-output-port)])
+  (parameterize ([current-error-port (if (verbose?)
+                                         (current-output-port)
+                                         (open-output-nowhere))])
     (serve/servlet (pkg-index/basic
                     (λ (pkg-name)
                       (define r (hash-ref index-ht pkg-name #f))
-                      (printf "[>server ~a] ~a = ~a\n" port pkg-name r)
+                      (when (verbose?)
+                        (printf "[>server ~a] ~a = ~a\n" port pkg-name r))
                       r)
                     (λ () index-ht))
                    #:command-line? #t
@@ -161,7 +168,14 @@
               e ...))
            (provide run-pkg-tests)
            (module+ main
-             (run-pkg-tests* run-pkg-tests)))))]))
+             (require racket/cmdline)
+             (define verb? #t)
+             (command-line
+              #:once-each
+              ["-q" "run quietly" (set! verb? #f)]
+              #:args () (void))
+             (parameterize ([verbose? verb?])
+               (run-pkg-tests* run-pkg-tests))))))]))
 
 (define (run-pkg-tests* t)
   (putenv "PLT_PKG_NOSETUP" "y")

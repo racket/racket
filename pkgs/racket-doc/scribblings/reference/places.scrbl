@@ -240,9 +240,15 @@ The @racket[dynamic-place*] binding is protected in the same way as
   expressions with @racket[id] bound to a place channel.  The
   @racket[body]s close only over @racket[id] plus the top-level
   bindings of the enclosing module, because the
-  @racket[body]s are lifted to a function that is exported by
-  the module. The result of @racket[place] is a place descriptor,
+  @racket[body]s are lifted to a submodule.
+  The result of @racket[place] is a place descriptor,
   like the result of @racket[dynamic-place].
+
+The generated submodule has the name @racketidfont{place-body-@racket[_n]}
+for an integer @racket[_n], and the submodule exports a @racket[main]
+function that takes a place channel for the new place. The submodule
+is not intended for use, however, except by the expansion of the
+@racket[place] form.
 
 The @racket[place] binding is protected in the same way as
  @racket[dynamic-place].}
@@ -261,6 +267,13 @@ The @racket[place] binding is protected in the same way as
 
 The @racket[place*] binding is protected in the same way as
  @racket[dynamic-place].}
+
+@defform[(place/context id body ...+)]{
+  Like @racket[place], but @racket[body ...] may have free lexical
+  variables, which are automatically sent to the newly-created place.
+  Note that these variables must have values accepted by
+  @racket[place-message-allowed?], otherwise an @exnraise[exn:fail:contract].
+}
 
 
 @defproc[(place-wait [p place?]) exact-integer?]{

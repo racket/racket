@@ -474,6 +474,7 @@ the later case, the result is the @racket[ctype]).}
                       [#:abi abi (or/c #f 'default 'stdcall 'sysv) #f]
                       [#:atomic? atomic? any/c #f]
                       [#:async-apply async-apply (or/c #f ((-> any/c) . -> . any/c) box?) #f]
+                      [#:lock-name lock-name (or/c string? #f) #f]
                       [#:in-original-place? in-original-place? any/c #f]
                       [#:save-errno save-errno (or/c #f 'posix 'windows) #f]
                       [#:wrapper wrapper (or/c #f (procedure? . -> . procedure?))
@@ -535,6 +536,12 @@ For @tech{callouts} to foreign functions with the generated type:
        @tech{callout} is invoked, and it can return different results
        (for example, grabbing a value stored in an ``output'' pointer
        and returning multiple values).}
+
+ @item{If @racket[lock-name] is not @racket[#f], then a process-wide
+       lock with the given name is held during the foreign call. In a
+       build that supports parallel places, @racket[lock-name] is
+       registered via @cpp{scheme_register_process_global}, so choose
+       names that are suitably distinct.}
 
  @item{If @racket[in-original-place?] is true, then when a foreign
        @tech{callout} procedure with the generated type is called in
@@ -692,7 +699,8 @@ For @tech{callbacks} to Racket functions with the generated type:
        is not used.}
 
 ]
-}
+
+@history[#:changed "6.3" @elem{Added the @racket[#:lock-name] argument.}]}
 
 @defform/subs[#:literals (->> :: :)
               (_fun fun-option ... maybe-args type-spec ... ->> type-spec
@@ -702,6 +710,7 @@ For @tech{callbacks} to Racket functions with the generated type:
                            (code:line #:keep keep-expr)
                            (code:line #:atomic? atomic?-expr)
                            (code:line #:async-apply async-apply-expr)
+                           (code:line #:lock-name lock-name-expr)
                            (code:line #:in-original-place? in-original-place?-expr)
                            (code:line #:retry (retry-id [arg-id init-expr]))]
                [maybe-args code:blank
@@ -821,7 +830,8 @@ specifications:
 
 ]
 
-@history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}]}
+@history[#:changed "6.2" @elem{Added the @racket[#:retry] option.}
+         #:changed "6.3" @elem{Added the @racket[#:lock-name] option.}]}
 
 @defproc[(function-ptr [ptr-or-proc (or cpointer? procedure?)]
                        [fun-type ctype?])
@@ -1013,13 +1023,11 @@ Racket vectors instead of lists.}
            (_bytes o len-expr)]]{
 
 A @tech{custom function type} that can be used by itself as a simple
-type for a byte string as a C pointer.  Alternatively, the second form
-is for a pointer return value, where the size should be explicitly
-specified.
-
-There is no need for other modes analogous to those of @racket[_ptr]:
-input or input/output would be just like @racket[_bytes], since the
-string carries its size information.}
+type for a byte string as a C pointer. Coercion of a C pointer to
+simply @racket[_bytes] (without a specified length) requires that the pointer
+refers to a nul-terminated byte string. When the length-specifying form is used
+for a function argument, a byte string is allocated with the given
+length, including an extra byte for the nul terminator.}
 
 
 @; ------------------------------------------------------------
@@ -1073,7 +1081,8 @@ below for a more efficient approach.
                     (property (code:line #:alignment alignment-expr)
                               (code:line #:malloc-mode malloc-mode-expr)
                               (code:line #:property prop-expr val-expr)
-                              #:no-equal)]
+                              #:no-equal
+                              #:define-unsafe)]
          #:contracts ([offset-expr exact-integer?]
                       [alignment-expr (or/c #f 1 2 4 8 16)]
                       [malloc-mode-expr (one-of/c 'raw 'atomic 'nonatomic
@@ -1122,7 +1131,16 @@ The resulting bindings are as follows:
  @item{@racketidfont{set-}@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{!}
   : a mutator function for each @racket[field-id].}
 
- @item{@racketvarfont{id}: structure-type information compatible with
+ @item{@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{-offset}
+  : the absolute offset, in bytes, of each @racket[field-id], if @racket[#:define-unsafe] is present.}
+
+ @item{@racketidfont{unsafe-}@racketvarfont{id}@racketidfont{-}@racket[field-id]
+  : an unsafe accessor function for each @racket[field-id], if @racket[#:define-unsafe] is present.}
+
+ @item{@racketidfont{unsafe-set-}@racketvarfont{id}@racketidfont{-}@racket[field-id]@racketidfont{!}
+  : an unsafe mutator function for each @racket[field-id], if @racket[#:define-unsafe] is present.}
+
+@item{@racketvarfont{id}: structure-type information compatible with
   @racket[struct-out] or @racket[match] (but not @racket[struct] or 
   @racket[define-struct]);
   currently, this information is correct only when no @racket[super-id]
@@ -1320,7 +1338,8 @@ expects arguments for both the super fields and the new ones:
 ]
 
 @history[#:changed "6.0.0.6" @elem{Added @racket[#:malloc-mode].}
-         #:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}]}
+#:changed "6.1.1.8" @elem{Added @racket[#:offset] for fields.}
+#:changed "6.3.0.13" @elem{Added @racket[#:define-unsafe].}]}
 
 @; ------------------------------------------------------------
 

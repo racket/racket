@@ -94,7 +94,7 @@ END_XFORM_ARITH;
 # define JIT_LOG_WORD_SIZE 2
 #endif
 #define JIT_WORD_SIZE (1 << JIT_LOG_WORD_SIZE)
-#define WORDS_TO_BYTES(x) ((x) << JIT_LOG_WORD_SIZE)
+#define WORDS_TO_BYTES(x) ((unsigned)(x) << JIT_LOG_WORD_SIZE)
 #define MAX_TRY_SHIFT 30
 
 #ifdef USE_THREAD_LOCAL
@@ -152,8 +152,10 @@ END_XFORM_ARITH;
 # define SCHEME_FLOAT_TYPE scheme_double_type
 #endif
 
+/* These flags are set post-JIT: */
 #define NATIVE_PRESERVES_MARKS 0x1
 #define NATIVE_IS_SINGLE_RESULT 0x2
+/* Pre-JIT flags are in "schpriv.h" */
 
 #if defined(MZ_PRECISE_GC) && !defined(USE_COMPACT_3M_GC)
 # define CAN_INLINE_ALLOC
@@ -201,12 +203,7 @@ END_XFORM_ARITH;
 
 #include "jitfpu.h"
 
-#if 0
-static void assert_failure(int where) { printf("JIT assert failed %d\n", where); }
-#define JIT_ASSERT(v) if (!(v)) assert_failure(__LINE__);
-#else
-#define JIT_ASSERT(v) /* */
-#endif
+#define JIT_ASSERT(v) MZ_ASSERT(v)
 
 /* Tracking statistics: */
 #if 0
@@ -313,6 +310,8 @@ struct scheme_jit_common_record {
   void *bad_vector_length_code;
   void *bad_flvector_length_code;
   void *bad_fxvector_length_code;
+  void *bad_string_length_code;
+  void *bad_bytes_length_code;
   void *vector_ref_code, *vector_ref_check_index_code, *vector_set_code, *vector_set_check_index_code;
   void *chap_vector_ref_code, *chap_vector_ref_check_index_code, *chap_vector_set_code, *chap_vector_set_check_index_code;
   void *string_ref_code, *string_ref_check_index_code, *string_set_code, *string_set_check_index_code;
@@ -339,12 +338,14 @@ struct scheme_jit_common_record {
   void *bad_app_vals_target;
   void *app_values_slow_code, *app_values_multi_slow_code, *app_values_tail_slow_code;
   void *bad_char_to_integer_code, *slow_integer_to_char_code;
+  void *slow_cpointer_tag_code, *slow_set_cpointer_tag_code;
   void *values_code;
   void *list_p_code, *list_p_branch_code;
   void *list_length_code;
   void *list_ref_code, *list_tail_code;
   void *finish_tail_call_code, *finish_tail_call_fixup_code;
   void *module_run_start_code, *module_exprun_start_code, *module_start_start_code;
+  void *thread_start_child_code;
   void *box_flonum_from_stack_code, *box_flonum_from_reg_code;
   void *fl1_fail_code[JIT_NUM_FL_KINDS], *fl2rr_fail_code[2][JIT_NUM_FL_KINDS];
   void *fl2fr_fail_code[2][JIT_NUM_FL_KINDS], *fl2rf_fail_code[2][JIT_NUM_FL_KINDS];
@@ -353,8 +354,11 @@ struct scheme_jit_common_record {
   void *box_extflonum_from_stack_code, *box_extflonum_from_reg_code;
 #endif
   void *wcm_code, *wcm_nontail_code, *wcm_chaperone;
+  void *with_immed_mark_code;
   void *apply_to_list_tail_code, *apply_to_list_code, *apply_to_list_multi_ok_code;
   void *eqv_code, *eqv_branch_code;
+  void *bad_string_eq_2_code;
+  void *bad_bytes_eq_2_code;
   void *proc_arity_includes_code;
 
 #ifdef CAN_INLINE_ALLOC
@@ -369,6 +373,7 @@ struct scheme_jit_common_record {
   void *make_rest_list_code, *make_rest_list_clear_code;
   void *call_check_not_defined_code, *call_check_assign_not_defined_code;
   void *force_value_same_mark_code;
+  void *slow_ptr_set_code, *slow_ptr_ref_code;
 
   Continuation_Apply_Indirect continuation_apply_indirect_code;
 #ifdef MZ_USE_LWC
@@ -408,7 +413,7 @@ typedef struct mz_jit_state {
   int need_set_rs;
   void **retain_start;
   double *retain_double_start;
-  Scheme_Native_Closure_Data *retaining_data; /* poke when setting retain_start for generational GC */
+  Scheme_Native_Lambda *retaining_data; /* poke when setting retain_start for generational GC */
   int local1_busy, pushed_marks;
   int log_depth;
   int self_pos, self_closure_size, self_toplevel_pos;
@@ -419,7 +424,7 @@ typedef struct mz_jit_state {
   void *self_restart_code;
   void *self_nontail_code;
   Scheme_Native_Closure *nc; /* for extract_globals and extract_closure_local, only */
-  Scheme_Closure_Data *self_data;
+  Scheme_Lambda *self_lam;
   void *status_at_ptr;
   int r0_status, r1_status;
   void *patch_depth;
@@ -456,6 +461,12 @@ typedef struct {
   int addrs_count, addrs_size;
   Branch_Info_Addr *addrs;
 } Branch_Info;
+
+typedef struct {
+  int position;
+  int count;
+  char delivered;
+} Expected_Values_Info;
 
 #define mz_CURRENT_REG_STATUS_VALID() (jitter->status_at_ptr == _jit.x.pc)
 #define mz_SET_REG_STATUS_VALID(v) (jitter->status_at_ptr = (v ? _jit.x.pc : 0))
@@ -702,15 +713,16 @@ static void *top4;
 #define mz_popr_p(x) scheme_mz_popr_p_it(jitter, x, 0)
 #define mz_popr_x() scheme_mz_popr_p_it(jitter, JIT_R1, 1)
 
-#if 0
+#define CHECK_RUNSTACK_REGISTER_UPDATE 0
+
+#if CHECK_RUNSTACK_REGISTER_UPDATE
 /* Debugging: at each _finish(), double-check that the runstack register has been
    copied into scheme_current_runstack. This code assumes that mz_finishr() is not
    used with JIT_R0.  Failure is "reported" by going into an immediate loop, but
    check_location is set to the source line number to help indicate where the
    problem originated. */
 static void *top;
-int check_location;
-# define CONFIRM_RUNSTACK() (jit_movi_l(JIT_R0, __LINE__), jit_sti_l(&check_location, JIT_R0), \
+# define CONFIRM_RUNSTACK() (jit_movi_l(JIT_R0, __LINE__), \
                              mz_tl_ldi_p(JIT_R0, tl_MZ_RUNSTACK), top = (_jit.x.pc), jit_bner_p(top, JIT_RUNSTACK, JIT_R0))
 #else
 # define CONFIRM_RUNSTACK() 0
@@ -719,6 +731,7 @@ int check_location;
 #define mz_prepare(x) jit_prepare(x)
 #define mz_finish(x) ((void)CONFIRM_RUNSTACK(), jit_finish(x))
 #define mz_finishr(x) ((void)CONFIRM_RUNSTACK(), jit_finishr(x))
+#define mz_finish_unsynced_runstack(x) jit_finish(x)
 
 #define mz_nonrs_finish(x) jit_finish(x)
 
@@ -1160,7 +1173,9 @@ static void emit_indentation(mz_jit_state *jitter)
 #define jit_movi_d_fppush(rd,immd)    jit_movi_d(rd,immd)
 #define jit_ldi_d_fppush(rd, is)      jit_ldi_d(rd, is)
 #define jit_ldr_d_fppush(rd, rs)      jit_ldr_d(rd, rs)
+#define jit_ldr_f_fppush(rd, rs)      jit_ldr_f(rd, rs)
 #define jit_ldxi_d_fppush(rd, rs, is) jit_ldxi_d(rd, rs, is)
+#define jit_ldxi_f_fppush(rd, rs, is) jit_ldxi_f(rd, rs, is)
 #define jit_ldxr_d_fppush(rd, rs, is) jit_ldxr_d(rd, rs, is)
 #define jit_addr_d_fppop(rd,s1,s2)    jit_addr_d(rd,s1,s2)
 #define jit_subr_d_fppop(rd,s1,s2)    jit_subr_d(rd,s1,s2)
@@ -1173,6 +1188,7 @@ static void emit_indentation(mz_jit_state *jitter)
 #define jit_sqrt_d_fppop(rd,rs)       jit_sqrt_d(rd,rs)
 #define jit_sti_d_fppop(id, rs)       jit_sti_d(id, rs)
 #define jit_str_d_fppop(id, rd)       jit_str_d(id, rd)
+#define jit_str_f_fppop(id, rd)       jit_str_f(id, rd)
 #define jit_stxi_d_fppop(id, rd, rs)  jit_stxi_d(id, rd, rs)
 #define jit_stxr_d_fppop(id, rd, rs)  jit_stxr_d(id, rd, rs)
 #define jit_bger_d_fppop(d, s1, s2)   jit_bger_d(d, s1, s2)
@@ -1296,11 +1312,7 @@ static void emit_indentation(mz_jit_state *jitter)
 /*                             jitstate                               */
 /**********************************************************************/
 
-#if defined(SIXTY_FOUR_BIT_INTEGERS) || defined(MZ_USE_JIT_PPC)
-# define JIT_BUFFER_PAD_SIZE 200
-#else
-# define JIT_BUFFER_PAD_SIZE 100
-#endif
+#define JIT_BUFFER_PAD_SIZE 200
 
 #define PAST_LIMIT() ((uintptr_t)jit_get_raw_ip() > (uintptr_t)jitter->limit)
 #define CHECK_LIMIT() if (PAST_LIMIT()) return past_limit(jitter, __FILE__, __LINE__);
@@ -1332,7 +1344,7 @@ void *scheme_generate_one(mz_jit_state *old_jitter,
 			  void *data,
 			  int gcable,
 			  void *save_ptr,
-			  Scheme_Native_Closure_Data *ndata);
+			  Scheme_Native_Lambda *ndata);
 int scheme_mz_is_closure(mz_jit_state *jitter, int i, int arity, int *_flags);
 void scheme_mz_runstack_saved(mz_jit_state *jitter);
 int scheme_mz_runstack_restored(mz_jit_state *jitter);
@@ -1347,6 +1359,8 @@ long_double *scheme_mz_retain_long_double(mz_jit_state *jitter, long_double d);
 int scheme_mz_remap_it(mz_jit_state *jitter, int i);
 void scheme_mz_pushr_p_it(mz_jit_state *jitter, int reg);
 void scheme_mz_popr_p_it(mz_jit_state *jitter, int reg, int discard);
+void scheme_extra_pushed(mz_jit_state *jitter, int n);
+void scheme_extra_popped(mz_jit_state *jitter, int n);
 void scheme_mz_need_space(mz_jit_state *jitter, int need_extra);
 int scheme_stack_safety(mz_jit_state *jitter, int cnt, int offset);
 #ifdef USE_FLONUM_UNBOXING
@@ -1388,16 +1402,16 @@ int scheme_inlined_unary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_stat
 int scheme_inlined_binary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_inlined_nary_prim(Scheme_Object *o, Scheme_Object *_app, mz_jit_state *jitter);
 int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, int is_tail, int multi_ok, 
-				  Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored,
+				  Branch_Info *for_branch, int branch_short, int result_ignored,
                                   int dest);
 int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, int is_tail, int multi_ok, 
-				   Branch_Info *for_branch, int branch_short, int need_sync, int result_ignored,
+				   Branch_Info *for_branch, int branch_short, int result_ignored,
                                    int dest);
 int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int is_tail, int multi_ok, 
                                  Branch_Info *for_branch, int branch_short, int result_ignored,
                                  int dest);
 int scheme_generate_inlined_test(mz_jit_state *jitter, Scheme_Object *obj, int branch_short, 
-                                 Branch_Info *for_branch, int need_sync);
+                                 Branch_Info *for_branch);
 int scheme_generate_cons_alloc(mz_jit_state *jitter, int rev, int inline_retry, int known_list, int dest);
 int scheme_generate_struct_alloc(mz_jit_state *jitter, int num_args, 
                                  int inline_slow, int pop_and_jump,
@@ -1463,12 +1477,12 @@ typedef struct jit_direct_arg jit_direct_arg;
 void *scheme_generate_shared_call(int num_rands, mz_jit_state *old_jitter, int multi_ok, int result_ignored, 
                                   int is_tail, int direct_prim, int direct_native, int nontail_self, int unboxed_args);
 void scheme_ensure_retry_available(mz_jit_state *jitter, int multi_ok, int result_ignored);
-int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, 
+int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_rands, int num_pushes,
 			mz_jit_state *jitter, int is_tail, int multi_ok, int ignored_result,
                         int no_call);
 int scheme_generate_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
                               int is_inline, Scheme_Native_Closure *direct_to_code, jit_direct_arg *direct_arg,
-                              Scheme_Closure_Data *direct_data);
+                              Scheme_Lambda *direct_data);
 int scheme_generate_non_tail_call(mz_jit_state *jitter, int num_rands, int direct_native, int need_set_rs, 
 				  int multi_ok, int result_ignored, int nontail_self, int pop_and_jump, 
                                   int is_inlined, int unboxed_args, jit_insn *reftop);
@@ -1520,8 +1534,10 @@ int scheme_generate_struct_op(mz_jit_state *jitter, int kind, int for_branch,
 int scheme_generate_non_tail(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored);
 int scheme_generate_non_tail_with_branch(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored,  
                                          Branch_Info *for_branch);
+int scheme_generate_non_tail_for_values(Scheme_Object *obj, mz_jit_state *jitter, int multi_ok, int need_ends, int ignored,  
+                                        Expected_Values_Info *for_values);
 int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int tail_ok, int wcm_may_replace, int multi_ok, int target,
-                    Branch_Info *for_branch);
+                    Branch_Info *for_branch, Expected_Values_Info *for_values);
 int scheme_generate_unboxed(Scheme_Object *obj, mz_jit_state *jitter, int inlined_ok, int unbox_anyway);
 
 void scheme_generate_function_prolog(mz_jit_state *jitter);
@@ -1561,16 +1577,17 @@ int scheme_is_simple(Scheme_Object *obj, int depth, int just_markless, mz_jit_st
 int scheme_is_non_gc(Scheme_Object *obj, int depth);
 
 #ifdef USE_FLONUM_UNBOXING
-int scheme_jit_check_closure_flonum_bit(Scheme_Closure_Data *data, int pos, int delta);
+int scheme_jit_check_closure_flonum_bit(Scheme_Lambda *data, int pos, int delta);
 # define CLOSURE_ARGUMENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, 0)
 # define CLOSURE_CONTENT_IS_FLONUM(data, pos) scheme_jit_check_closure_flonum_bit(data, pos, data->num_params)
-int scheme_jit_check_closure_extflonum_bit(Scheme_Closure_Data *data, int pos, int delta);
+int scheme_jit_check_closure_extflonum_bit(Scheme_Lambda *data, int pos, int delta);
 # define CLOSURE_ARGUMENT_IS_EXTFLONUM(data, pos) scheme_jit_check_closure_extflonum_bit(data, pos, 0)
 # define CLOSURE_CONTENT_IS_EXTFLONUM(data, pos) scheme_jit_check_closure_extflonum_bit(data, pos, data->num_params)
 #endif
 
 Scheme_Object *scheme_extract_global(Scheme_Object *o, Scheme_Native_Closure *nc, int local_only);
-Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push);
+Scheme_Object *scheme_extract_closure_local(Scheme_Object *obj, mz_jit_state *jitter, int extra_push, int get_constant);
+Scheme_Object *scheme_specialize_to_constant(Scheme_Object *obj, mz_jit_state *jitter, int extra_push);
 
 void scheme_jit_register_traversers(void);
 #ifdef MZ_USE_LWC

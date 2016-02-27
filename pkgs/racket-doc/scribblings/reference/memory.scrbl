@@ -199,7 +199,12 @@ execution. Otherwise, @racket[#f] is returned.}
 @section[#:tag "garbagecollection"]{Garbage Collection}
 
 Set the @as-index{@envvar{PLTDISABLEGC}} environment variable (to any
-value) before Racket starts to disable @tech{garbage collection}.
+value) before Racket starts to disable @tech{garbage collection}. Set
+the @as-index{@envvar{PLT_INCREMENTAL_GC}} environment variable
+to a value that starts with @litchar{1}, @litchar{y}, or @litchar{Y} to
+request incremental mode at all times, but calling
+@racket[(collect-garbage 'incremental)] in a program with a periodic
+task is generally a better mechanism for requesting incremental mode.
 
 In Racket 3m (the main variant of Racket), each garbage collection
 logs a message (see @secref["logging"]) at the @racket['debug] level with topic @racket['GC].
@@ -209,22 +214,33 @@ versions of Racket may use a @racket[gc-info] @tech{prefab} structure
 with additional fields:
 
 @racketblock[
-(struct gc-info (major? pre-amount pre-admin-amount code-amount
-                        post-amount post-admin-amount
-                        start-process-time end-process-time
-                        start-time end-time)
+(struct gc-info (mode pre-amount pre-admin-amount code-amount
+                      post-amount post-admin-amount
+                      start-process-time end-process-time
+                      start-time end-time)
   #:prefab)
 ]
 
 @itemlist[
 
- @item{The @racket[major?] field indicates whether the collection was
-       a ``major'' collection that inspects all memory or a ``minor''
-       collection that mostly inspects just recent allocations.}
+ @item{The @racket[mode] field is a symbol @racket['major],
+       @racket['minor], or @racket['incremental]; @racket['major]
+       indicates a collection that inspects all memory,
+       @racket['minor] indicates collection that mostly inspects just
+       recent allocations, and @racket['incremental] indicates a minor
+       collection that performs extra work toward the next major
+       collection.
+
+       @history[#:changed "6.3.0.7" @elem{Changed first field from a
+                                          boolean (@racket[#t] for
+                                          @racket['major], @racket[#f]
+                                          for @racket['minor]) to a
+                                          mode symbol.}]}
 
  @item{The @racket[pre-amount] field reports place-local memory use
       (i.e., not counting the memory use of child places) in bytes at
-      the time that the @tech{garbage collection} started.}
+      the time that the @tech{garbage collection} started. Additional
+      bytes registered via @racket[make-phantom-bytes] are included.}
 
  @item{The @racket[pre-admin-amount] is a larger number that includes
        memory use for the garbage collector's overhead, such as space
@@ -285,17 +301,54 @@ collection mode, the text has the format
               @elem{Processor time since startup of garbage collection's start}))
 ]}
 
+@history[#:changed "6.3.0.7" @elem{Added @envvar{PLT_INCREMENTAL_GC}.}]
 
-@defproc[(collect-garbage) void?]{
 
-Forces an immediate @tech{garbage collection} (unless garbage
-collection is disabled by setting @envvar{PLTDISABLEGC}). Some
-effectively unreachable data may remain uncollected, because the
-collector cannot prove that it is unreachable.
+@defproc[(collect-garbage [request (or/c 'major 'minor 'incremental) 'major]) void?]{
 
-The @racket[collect-garbage] procedure provides some control over the
-timing of collections, but garbage will obviously be collected even if
-this procedure is never called (unless garbage collection is disabled).}
+Requests an immediate @tech{garbage collection} or requests a
+garbage-collection mode, depending on @racket[request]:
+
+@itemlist[
+
+ @item{@racket['major] --- Forces a ``major'' collection, which
+       inspects all memory. Some effectively unreachable data may
+       remain uncollected, because the collector cannot prove that it
+       is unreachable.
+
+       This mode of @racket[collect-garbage] procedure provides some
+       control over the timing of collections, but garbage will
+       obviously be collected even if this procedure is never
+       called---unless garbage collection is disabled by setting
+       @envvar{PLTDISABLEGC}.}
+
+ @item{@racket['minor] --- Requests a ``minor'' collection, which
+       mostly inspects only recent allocations. If minor collection is
+       not supported (e.g., when @racket[(system-type 'gc)] returns
+       @racket['cgc]) or if the next collection must be a major
+       collection, no collection is performed. More generally, minor collections
+       triggered by @racket[(collect-garbage 'minor)] do not cause
+       major collections any sooner than they would occur otherwise.}
+
+ @item{@racket['incremental] --- Requests that each minor
+       collection performs incremental work toward a major collection
+       (but does not request an immediate minor collection).
+       This incremental-mode request expires at the next major
+       collection.
+
+       The intent of incremental mode is to significantly reduce pause
+       times due to major collections, but incremental mode typically
+       implies longer minor-collection times and higher memory use.
+
+       If the @envvar{PLT_INCREMENTAL_GC} environment variable's value
+       starts with @litchar{0}, @litchar{n}, or @litchar{N} on
+       start-up, then incremental-mode requests are ignored.}
+
+]
+
+@history[#:changed "6.3" @elem{Added the @racket[request] argument.}
+         #:changed "6.3.0.2" @elem{Added @racket['incremental] mode.}]}
+
 
 @defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{
 

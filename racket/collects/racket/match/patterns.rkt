@@ -38,23 +38,35 @@
 (define-struct (Box CPat) (p) #:transparent)
 
 ;; p is a pattern to match against the literal
-(define-struct (Atom CPat) (p) #:transparent)
-(define-struct (String Atom) () #:transparent)
-(define-struct (Number Atom) () #:transparent)
-(define-struct (Symbol Atom) () #:transparent)
-(define-struct (Keyword Atom) () #:transparent)
-(define-struct (Char Atom) () #:transparent)
-(define-struct (Bytes Atom) () #:transparent)
-(define-struct (Regexp Atom) () #:transparent)
-(define-struct (Boolean Atom) () #:transparent)
-(define-struct (Null Atom) () #:transparent)
+;;(define-struct (Atom CPat) (p) #:transparent)
+;(define-struct (String Atom) () #:transparent)
+;; (define-struct (Number Atom) () #:transparent)
+;; (define-struct (Symbol Atom) () #:transparent)
+;; (define-struct (Keyword Atom) () #:transparent)
+;; (define-struct (Char Atom) () #:transparent)
+;; (define-struct (Bytes Atom) () #:transparent)
+;; (define-struct (Regexp Atom) () #:transparent)
+;; (define-struct (Boolean Atom) () #:transparent)
+(define-struct (Null CPat) (p) #:transparent)
 
 ;; expr is an expression
 ;; ps is a list of patterns
 (define-struct (App Pat) (expr ps) #:transparent)
 
 ;; pred is an expression
-(define-struct (Pred Pat) (pred) #:transparent)
+(define-struct (Pred Pat) (pred) #:transparent
+  #:property prop:equal+hash
+  (list (lambda (a b e?)
+          (and (identifier? (Pred-pred a)) (identifier? (Pred-pred b))
+               (free-identifier=? (Pred-pred a) (Pred-pred b))))
+        (lambda (v r)
+          (if (identifier? (Pred-pred v))
+              (r (syntax-e (Pred-pred v)))
+              (r (Pred-pred v))))
+        (lambda (v r)
+          (if (identifier? (Pred-pred v))
+              (r (syntax-e (Pred-pred v)))
+              (r (Pred-pred v))))))
 
 ;; pred is an identifier
 ;; super is an identifier, or #f
@@ -114,14 +126,6 @@
         [(Vector? p) 'vector]
         [(Pair? p) 'pair]
         [(MPair? p) 'mpair]
-        [(String? p) 'string]
-        [(Symbol? p) 'symbol]
-        [(Number? p) 'number]
-        [(Bytes? p) 'bytes]
-        [(Char? p) 'char]
-        [(Regexp? p) 'regexp]
-        [(Keyword? p) 'keyword]
-        [(Boolean? p) 'boolean]
         [(Null? p) 'null]
         [else #f]))
 
@@ -142,10 +146,13 @@
 (define (merge l)
   (cond [(null? l) null]
         [(null? (cdr l)) (car l)]
-        [else (let ([m (make-module-identifier-mapping)])
+        [else (let ([m (make-module-identifier-mapping)]
+                    [in-order null])
                 (for* ([ids l] [id ids])
-                  (module-identifier-mapping-put! m id #t))
-                (module-identifier-mapping-map m (lambda (k v) k)))]))
+                  (unless (module-identifier-mapping-get m id (lambda () #f))
+                    (set! in-order (cons id in-order))
+                    (module-identifier-mapping-put! m id #t)))
+                (reverse in-order))]))
 ;; bound-vars : Pat -> listof identifiers
 (define (bound-vars p)
   (cond
@@ -158,7 +165,7 @@
      (bound-vars (car (Or-ps p)))]
     [(Box? p)
      (bound-vars (Box-p p))]
-    [(Atom? p) null]
+    [(Null? p) null]
     [(Pair? p)
      (merge (list (bound-vars (Pair-a p)) (bound-vars (Pair-d p))))]
     [(MPair? p)
@@ -213,5 +220,5 @@
                                [rhs syntax?]
                                [unmatch (or/c identifier? false/c)]
                                [vars-seen (listof (cons/c identifier?
-                                                          identifier?))])))
+                                                          (or/c #f identifier?)))])))
 

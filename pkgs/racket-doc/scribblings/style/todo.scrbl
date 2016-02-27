@@ -14,6 +14,4 @@
 
 @item{Find and link to good/bad examples in the code base.}
 
-@item{Do we need a discussion of life cycles that start in @tt{unstable}?}
-
 ]

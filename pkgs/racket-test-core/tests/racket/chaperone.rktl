@@ -3,6 +3,10 @@
 (load-relative "loadtest.rktl")
 (Section 'chaperones)
 
+(require (only-in racket/unsafe/ops
+                  unsafe-impersonate-procedure
+                  unsafe-chaperone-procedure))
+
 ;; ----------------------------------------
 
 (define (chaperone-of?/impersonator a b)
@@ -348,6 +352,28 @@
    (test (vector 1110 1111) values in)
    (check-proc-prop f mk)))
 
+;; Single argument, no post filter, set continuation mark:
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**
+                       impersonate-procedure**])
+ (let* ([f (lambda (x) (list x (continuation-mark-set-first #f 'the-mark)))]
+        [in #f]
+        [mk (lambda (f)
+              (chaperone-procedure 
+               f 
+               (lambda (x) 
+                 (set! in x)
+                 (values 'mark 'the-mark 8 x))))]
+        [f2 (mk f)])
+   (with-continuation-mark 'the-mark
+     7
+     (test '(110 7) f 110))
+   (test #f values in)
+   (test '(111 8) f2 111)
+   (test 111 values in)
+   (check-proc-prop f mk)))
+
 ;; Single argument, post filter on single value:
 (as-chaperone-or-impersonator
  ([chaperone-procedure impersonate-procedure
@@ -400,6 +426,42 @@
    (test (vector 'b '(a c)) values out)
    (check-proc-prop f mk)))
 
+;; Multiple arguments, post filter on multiple values
+;; and set multiple continuation marks:
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**
+                       impersonate-procedure**])
+ (let* ([f (lambda (x y z) (values y (list x z
+                                      (continuation-mark-set-first #f 'the-mark)
+                                      (continuation-mark-set-first #f 'the-other-mark))))]
+        [in #f]
+        [out #f]
+        [mk (lambda (f)
+              (chaperone-procedure 
+               f 
+               (lambda (x y z)
+                 (set! in (vector x y z))
+                 (values (lambda (y z)
+                           (set! out (vector y z))
+                           (values y z))
+                         'mark 'the-mark 88
+                         'mark 'the-other-mark 86
+                         x y z))))]
+        [f2 (mk f)])
+   (with-continuation-mark 'the-mark
+     77
+     (with-continuation-mark 'the-other-mark
+       79
+       (begin
+         (test-values '(b (a c 77 79)) (lambda () (f 'a 'b 'c)))
+         (test #f values in)
+         (test #f values out)
+         (test-values '(b (a c 88 86)) (lambda () (f2 'a 'b 'c)))
+         (test (vector 'a 'b 'c) values in)
+         (test (vector 'b '(a c 88 86)) values out)
+         (check-proc-prop f mk))))))
+
 ;; Optional keyword arguments:
 (as-chaperone-or-impersonator
  ([chaperone-procedure impersonate-procedure
@@ -431,6 +493,43 @@
    (test 'f object-name f2)
    (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2)))
    (check-proc-prop f mk)))
+
+;; Optional keyword arguments with mark:
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**/kw
+                       impersonate-procedure**/kw])
+ (let* ([f (lambda (x #:a [a 'a] #:b [b 'b]) (list x a b (continuation-mark-set-first #f 'the-mark)))]
+        [in #f]
+        [mk (lambda (f)
+              (chaperone-procedure
+               f
+               (lambda (x #:a [a 'nope] #:b [b 'nope])
+                 (if (and (eq? a 'nope) (eq? b 'nope))
+                     (values 'mark 'the-mark 8
+                             x)
+                     (values
+                      'mark 'the-mark 8
+                      (append 
+                       (if (eq? a 'nope) null (list a))
+                       (if (eq? b 'nope) null (list b)))
+                      x)))))]
+        [f2 (mk f)])
+   (with-continuation-mark 'the-mark
+     7
+     (begin
+       (test '(1 a b 7) f 1)
+       (test '(1 a b 8) f2 1)
+       (test '(1 2 b 7) f 1 #:a 2)
+       (test '(1 2 b 8) f2 1 #:a 2)
+       (test '(1 a 3 7) f 1 #:b 3)
+       (test '(1 a 3 8) f2 1 #:b 3)
+       (test '(1 2 3 7) f 1 #:a 2 #:b 3)
+       (test '(1 2 3 8) f2 1 #:a 2 #:b 3)
+       (test 1 procedure-arity f2)
+       (test 'f object-name f2)
+       (test-values '(() (#:a #:b)) (lambda () (procedure-keywords f2)))
+       (check-proc-prop f mk)))))
 
 ;; Optional keyword arguments with result chaperone:
 (as-chaperone-or-impersonator
@@ -502,7 +601,7 @@
    (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))
    (check-proc-prop f mk)))
 
-;; Required keyword arguments:
+;; Required keyword arguments with result chaperone:
 (as-chaperone-or-impersonator
  ([chaperone-procedure impersonate-procedure
                        chaperone-procedure**/kw
@@ -537,6 +636,46 @@
    (test 'f object-name f2)
    (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))
    (check-proc-prop f mk)))
+
+;; Required keyword arguments with result chaperone and marks:
+(as-chaperone-or-impersonator
+ ([chaperone-procedure impersonate-procedure
+                       chaperone-procedure**/kw
+                       impersonate-procedure**/kw])
+ (let* ([f (lambda (x #:a [a 'a] #:b b) (list x a b (continuation-mark-set-first #f 'the-mark)))]
+        [in #f]
+        [out #f]
+        [mk (lambda (f)
+              (chaperone-procedure
+               f
+               (lambda (x #:a [a 'nope] #:b [b 'nope])
+                 (set! in (list x a b))
+                 (if (and (eq? a 'nope) (eq? b 'nope))
+                     x
+                     (values
+                      (lambda (z) (set! out z) z)
+                      'mark 'the-mark 9
+                      (append 
+                       (if (eq? a 'nope) null (list a))
+                       (if (eq? b 'nope) null (list b)))
+                      x)))))]
+        [f2 (mk f)])
+   (with-continuation-mark 'the-mark
+     7
+     (begin
+       (err/rt-test (f 1))
+       (err/rt-test (f2 1))
+       (err/rt-test (f 1 #:a 2))
+       (err/rt-test (f2 1 #:a 2))
+       (test '(1 a 3 7) f 1 #:b 3)
+       (test '(1 a 3 9) f2 1 #:b 3)
+       (test '((1 nope 3) (1 a 3 9)) list in out)
+       (test '(1 2 3 7) f 1 #:a 2 #:b 3)
+       (test '(1 2 3 9) f2 1 #:a 2 #:b 3)
+       (test 1 procedure-arity f2)
+       (test 'f object-name f2)
+       (test-values '((#:b) (#:a #:b)) (lambda () (procedure-keywords f2)))
+       (check-proc-prop f mk)))))
 
 (err/rt-test ((chaperone-procedure (lambda (x) x) (lambda (y) (values y y))) 1))
 (err/rt-test ((impersonate-procedure (lambda (x) x) (lambda (y) (values y y))) 1))
@@ -1067,11 +1206,15 @@
   (test #t chaperone? (mk))
   (test #t chaperone? (mk #f))
   (test #t chaperone? (mk (lambda (ht) (void))))
+  (test #t chaperone? (mk (lambda (ht) (void)) (lambda (ht k) (void))))
+  (test #t chaperone? (mk #f (lambda (ht k) (void))))
   (err/rt-test (mk (lambda (a b) (void))))
   (define-values (prop:blue blue? blue-ref) (make-impersonator-property 'blue))
   (test #t chaperone? (mk prop:blue 'ok))
   (test #t chaperone? (mk #f prop:blue 'ok))
-  (err/rt-test (mk (lambda (a b) (void)) prop:blue 'ok)))
+  (test #t chaperone? (mk #f #f prop:blue 'ok))
+  (err/rt-test (mk (lambda (a b) (void)) prop:blue 'ok))
+  (err/rt-test (mk #f (lambda (a) (void)) prop:blue 'ok)))
 
 (for-each
  (lambda (make-hash)
@@ -1335,7 +1478,124 @@
      (define ht4 (hash-clear ht2))
      (test #t values hit?)
      (test 0 hash-count ht4))))
- 
+
+;; Check use of equal-key-proc argument:
+(as-chaperone-or-impersonator
+ ([chaperone-hash impersonate-hash]
+  [chaperone-procedure impersonate-procedure])
+ (define saw null)
+ (define (mk ht)
+   (chaperone-hash ht
+                   (lambda (h k)
+                     (values k
+                             (lambda (h k v) v)))
+                   (lambda (h k v)
+                     (values k v))
+                   (lambda (h k) k)
+                   (lambda (h k) k)
+                   #f
+                   (lambda (h k) (set! saw (cons k saw)) k)))
+ (for ([make-hash (in-list (list make-hash make-weak-hash))])
+   (set! saw null)
+   (define ht (make-hash))
+   (define cht (mk ht))
+   (hash-set! cht "x" 1)
+   (test '("x") values saw)
+   (define new-x (make-string 1 #\x))
+   (void (hash-ref cht new-x))
+   (test '("x" "x" "x") values saw)
+   (test #t 'new-x (and (member new-x saw) #t))
+   (set! saw null)
+   (hash-set! cht new-x 5)
+   (test '("x" "x") values saw)
+   (test #t 'new-x (and (member new-x saw) #t))
+   (set! saw null)
+   (hash-remove! cht new-x)
+   (test '("x" "x") values saw)
+   (test #t 'new-x (and (member new-x saw) #t)))
+ (unless (eq? chaperone-hash impersonate-hash)
+   (for ([hash (in-list (list hash))])
+     (set! saw null)
+     (define ht (mk (hash)))
+     (define ht1 (hash-set ht "x" 1))
+     (test '("x") values saw)
+     (define new-x (make-string 1 #\x))
+     (void (hash-ref ht1 new-x))
+     (test '("x" "x" "x") values saw)
+     (test #t 'new-x (and (member new-x saw) #t))
+     (set! saw null)
+     (void (hash-set ht1 new-x 5))
+     (test '("x" "x") values saw)
+     (test #t 'new-x (and (member new-x saw) #t))
+     (set! saw null)
+     (void (hash-remove ht1 new-x))
+     (test '("x" "x") values saw)
+     (test #t 'new-x (and (member new-x saw) #t)))))
+
+;; Check that hash table stores given key while
+;; coercing key for hashing and equality:
+(let ()
+  (define (mk ht)
+    (impersonate-hash ht
+                      (lambda (h k)
+                        (values k
+                                (lambda (h k v) v)))
+                      (lambda (h k v)
+                        (values k v))
+                      (lambda (h k) k)
+                      (lambda (h k) k)
+                      #f
+                      (lambda (h k) (inexact->exact (floor k)))))
+  (for ([make-hash (in-list (list make-hash make-weak-hash))])
+    (define ht (make-hash))
+    (define cht (mk ht))
+    (hash-set! cht 1.2 'one)
+    (test 'one hash-ref cht 1.3 #f)
+    (test #f hash-ref ht 1.3 #f)
+    ;; Trying to find 1.2 in `ht` likely won't work, because the hash code was mangled
+    (test '(1.2) hash-keys ht)
+    (test '(1.2) hash-keys cht)
+    (hash-set! cht 1.3 'two)
+    (test 'two hash-ref cht 1.2 #f))
+  (let-values ([(prop:blue blue? blue-ref) (make-impersonator-property 'blue)])
+    (define (mk ht)
+      (chaperone-hash ht
+                      (lambda (h k)
+                        (values k
+                                (lambda (h k v) v)))
+                      (lambda (h k v)
+                        (values k v))
+                      (lambda (h k) k)
+                      (lambda (h k) k)
+                      #f
+                      (lambda (h k) (chaperone-vector k
+                                                 (lambda (vec i v)
+                                                   (if (= i 1)
+                                                       (error "ONE")
+                                                       v))
+                                                 (lambda (vec i v) v)))))
+    (define (one-exn? s) (regexp-match? #rx"ONE" (exn-message s)))
+    (let ()
+      (define cht (mk (hash)))
+      (err/rt-test (hash-set cht (vector 1 2) 'vec) one-exn?)
+      (define ht1 (hash-set cht (vector 1) 'vec))
+      (test 'vec hash-ref ht1 (vector 1) #f)
+      (test #f hash-ref ht1 (vector 2) #f))
+    (for ([make-hash (in-list (list make-hash make-weak-hash))])
+      (define ht (make-hash))
+      (define cht (mk ht))
+      (define key (vector 1 2))
+      (define key7 (vector 7))
+      (hash-set! cht key7 'vec7)
+      (test 'vec7 hash-ref cht (vector 7) #f)
+      (test 'vec7 hash-ref ht (vector 7) #f)
+      (hash-set! ht key 'vec2)
+      (test 'vec2 hash-ref ht (vector 1 2))
+      (err/rt-test (hash-ref cht (vector 1 2) #f) one-exn?)
+      (test 2 length (hash-keys cht)) ; can extract keys without hashing or comparing
+      (test 'vec2 hash-ref ht key)
+      (test 'vec7 hash-ref ht key7))))
+    
 ;; ----------------------------------------
 
 ;; Check broken key impersonator:
@@ -1883,6 +2143,27 @@
         (f 42))
   (test '(#f #f) values msgs))
 
+;; Make sure that `impersonator-prop:application-mark'
+;; doesn't propagate for non-tail values:
+(let ()
+  (define msgs '())
+  (define (wrap f)
+    (chaperone-procedure
+     f
+     (λ (x)
+        (call-with-immediate-continuation-mark
+         'key
+         (λ (m)
+            (set! msgs (cons m msgs))
+            (values x))))
+     impersonator-prop:application-mark
+     (cons 'key 'skip-this-check)))
+  
+  (test 42
+        values
+        ((wrap (lambda (x) (+ ((wrap (lambda (x) x)) x) 0))) 42))
+  (test '(#f #f) values msgs))
+
 ;; ----------------------------------------
 
 ;; Check that supplying a procedure `to make-keyword-procedure' that 
@@ -1906,7 +2187,7 @@
        #:a "x"))
 
 ;; ----------------------------------------
-;; Check that importantor transformations are applied for printing:
+;; Check that impersonator transformations are applied for printing:
 
 (let ()
   (define ht 
@@ -2034,6 +2315,113 @@
 ;; ----------------------------------------
 
 (let ()
+  (define (f x) (+ x 1))
+  (define f2 (unsafe-chaperone-procedure f f))
+  (test 2 f2 1)
+  (test #t chaperone-of? f2 f)
+  (test #f chaperone-of? f f2)
+
+  (define f3 (unsafe-chaperone-procedure f sub1))
+  (define f3i (unsafe-impersonate-procedure f sub1))
+  (test 0 f3 1)
+  (test 0 f3i 1)
+  (test #t chaperone-of? f3 f)
+  (test #f chaperone-of? f3i f)
+  (test #f chaperone-of? f3 f2)
+  (test #f chaperone-of? f2 f3)
+
+  (test #f chaperone-of?
+        (unsafe-chaperone-procedure f f)
+        (unsafe-chaperone-procedure f f))
+
+  (define-values (prop:p prop:p? prop:get-p)
+    (make-impersonator-property 'p))
+  (test #t prop:p? (unsafe-chaperone-procedure f f prop:p 5))
+  (test 5 prop:get-p (unsafe-chaperone-procedure f f prop:p 5))
+
+  (define f4 (unsafe-chaperone-procedure f (case-lambda
+                                             [(x) (f x)]
+                                             [(x y) (f x)])))
+  (test 2 f4 1)
+
+  (test 1
+        procedure-arity
+        (unsafe-chaperone-procedure (λ (x) (+ x 1))
+                                    (case-lambda
+                                      [(x) (+ x 1)]
+                                      [(x y) (+ x y)])))
+  
+  (define f5 (unsafe-chaperone-procedure f (λ (x #:y [y 1]) (f x))))
+  (test 2 f5 1)
+
+  (err/rt-test (unsafe-chaperone-procedure
+                (λ (#:x x) x)
+                (λ (#:y y) y))
+                exn:fail?)
+
+  (let ()
+
+    (define (f-marks)
+      (continuation-mark-set->list
+       (current-continuation-marks)
+       'mark-key))
+    
+    (define f-marks-chap
+      (unsafe-chaperone-procedure
+       f-marks
+       f-marks
+       impersonator-prop:application-mark
+       (cons 'x 123)))
+    ;; test that impersonator-prop:application-mark
+    ;; is ignored (as the docs say it is).
+    (test '() f-marks-chap))
+
+  (let ()
+    (struct s (f) #:property prop:procedure 0)
+    (test #t s? (unsafe-chaperone-procedure (s add1) (λ (x) x)))))
+
+;; Check name in arity error message:
+(let ()
+  (define (pf x) x)
+  (define cf (unsafe-chaperone-procedure pf (lambda (x) x)))
+  (err/rt-test (cf) (λ (x) (regexp-match #rx"^pf:" (exn-message x)))))
+
+;; Make sure `unsafe-chaperone-procedure` doesn't propagate a bogus
+;;  identity to a `chaperone-procedure*` wrapper:
+(let ()
+  (define found-prop? #f)
+  
+  (define (f1 x) x)
+  
+  (define-values (prop:p prop:p? prop:get-p)
+    (make-impersonator-property 'p))
+  
+  (define (mk*)
+    (chaperone-procedure*
+     f1
+     (λ (f x)
+       (when (prop:p? f)
+         (set! found-prop? #t))
+       x)))
+  
+  (define f2 (mk*)) 
+  (define f2x (mk*))
+  
+  (define f3 (unsafe-chaperone-procedure f2 f2))
+  (define f3x (unsafe-chaperone-procedure f2 (lambda (v)
+                                               (f2x v)
+                                               (f2 v))))
+  
+  (define f4 (chaperone-procedure f3 #f prop:p 1234))
+  
+  (test 1 f4 1)
+  (test #f values found-prop?)
+  (test 1 f3x 1)
+  (test #f values found-prop?))
+
+;; ----------------------------------------
+
+(let ()
   (struct s ([a #:mutable]))
   (err/rt-test (impersonate-struct 5 set-s-a! (lambda (a b) b)))
   (err/rt-test (impersonate-struct (s 1) #f (λ (a b) v))
@@ -2051,6 +2439,61 @@
                       (chaperone-vector (vector "a" "b" "c")
                                         (lambda (b i v) v) (lambda (b i v) v))])
         (vector-ref (current-command-line-arguments) 1)))
+
+;; ----------------------------------------
+
+(let ()
+  (define-values (->-c has-->c? get-->-c)
+    (make-impersonator-property '->-c))
+
+  (define-values (->-w has-->w? get-->-w)
+    (make-impersonator-property '->-w))
+
+  (define-values (prop:x x? x-ref)
+    (make-impersonator-property 'x))
+
+  (define (wrap-again function)
+    (chaperone-procedure*
+     function
+     #f
+     ->-w  void
+     ->-c  void))
+
+  (define (do-wrap f)
+    (chaperone-procedure* f
+                          (λ (chap arg)
+                            (test #t has-->w? chap)
+                            (test #t has-->c? chap)
+                            arg
+                            (values (lambda (result) result) arg))))
+
+  (define wrapped-f (wrap-again (do-wrap (lambda (x) (+ x 1)))))
+  (define wrapped2-f (wrap-again (chaperone-procedure (do-wrap (lambda (x) (+ x 1))) #f prop:x 'x)))
+  (define (test-wrapped x) (x 19))
+  (set! test-wrapped test-wrapped)
+  (test-wrapped wrapped-f)
+  (test-wrapped wrapped2-f))
+
+;; ----------------------------------------
+;; Check that continuation-mark depth is handled
+;; properly when the JIT has to take a slow
+;; path for a tail call
+
+(let ()
+  (define (counter)
+    (let ([c 0])
+      (case-lambda
+        [() c]
+        [(x) (when (= c 1) (error 'fail)) (set! c (+ c 1)) #t])))
+
+  (for ([i 1000])
+    (let ([c (counter)])
+      (letrec ([f
+                (contract (-> any/c c)
+                          (λ ([x #f]) (if (zero? x) x (f (- x 1))))
+                          'pos
+                          'neg)])
+        (f 6)))))
 
 ;; ----------------------------------------
 

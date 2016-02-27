@@ -79,7 +79,7 @@
 ;; Struct definitions
 (provide cstructs)
 (define cstructs (make-parameter '()))
-(define (_cdefstruct name slots types)
+(define (_cdefstruct name slots types #:tag [tag #f])
   (define cname (regexp-replace* #rx"-" (symbol->string name) "_"))
   (define mname (string-upcase (regexp-replace* #rx"_" cname "")))
   (define predname (string->symbol (format "~a?" name)))
@@ -94,7 +94,9 @@
           }})
   (cstructs (cons (list* name cname slots) (cstructs)))
   @list{/* @name structure definition */
-        static Scheme_Type @|cname|_tag;
+        @(if tag
+             @list{#define @|cname|_tag @tag}
+             @list{static Scheme_Type @|cname|_tag;})
         typedef struct @|cname|_struct {
           Scheme_Object so;
           @(maplines (lambda (s t) @list{@t @s}) slots types)
@@ -114,8 +116,8 @@
         END_XFORM_SKIP;
         #endif})
 (provide cdefstruct)
-(define-syntax-rule (cdefstruct name [slot type] ...)
-  (_cdefstruct `name (list `slot ...) (list type ...)))
+(define-syntax-rule (cdefstruct name [arg ...] [slot type] ...)
+  (_cdefstruct `name (list `slot ...) (list type ...) arg ...))
 
 ;; Tagged object allocation
 (define (_cmake var type . values)

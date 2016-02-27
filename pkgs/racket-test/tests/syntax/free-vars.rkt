@@ -1,5 +1,6 @@
 #lang racket
-(require syntax/free-vars)
+(require syntax/free-vars
+         rackunit)
 
 (parameterize ([current-namespace (make-base-namespace)])
   (define (check stx)
@@ -40,3 +41,9 @@
              '(x)
              (let ([y 3])
                (list x y)))))
+
+(check-equal? (free-vars (expand #'(+ 1 2)))
+              '())
+(check-pred (lambda (x) (free-identifier=? x #'+))
+            (first (free-vars (expand #'(+ 1 2))
+                              #:module-bound? #t)))

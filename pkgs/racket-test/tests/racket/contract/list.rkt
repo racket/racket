@@ -64,6 +64,29 @@
   (test/pos-blame 
    'imlistof5
    '(contract (list*of integer?) (cons #f #t) 'pos 'neg))
+
+  (test/spec-passed/result 
+   'imlistof6
+   '(contract (list*of integer? char?) '(1 2 . #\3) 'pos 'neg)
+   '(1 2 . #\3))
+  (test/pos-blame
+   'imlistof7
+   '(contract (list*of integer? char?) '() 'pos 'neg))
+  (test/pos-blame 
+   'imlistof8
+   '(contract (list*of integer? char?) #f 'pos 'neg))
+  (test/pos-blame 
+   'imlistof9
+   '(contract (list*of integer? char?) (list 1 2) 'pos 'neg))
+  (test/pos-blame 
+   'imlistof10
+   '(contract (list*of integer? char?) (cons #f #t) 'pos 'neg))
+  (test/spec-passed
+   'imlistof11
+   '(contract (list*of (-> integer? integer?)
+                       (-> boolean? boolean? boolean?))
+              (cons (λ (x) x) (cons (λ (y) y) (λ (a b) a)))
+              'pos 'neg))   
   
   (test/pos-blame
    'cons/dc1
@@ -147,5 +170,40 @@
    'cons/dc13
    '(contract? (cons/dc [hd integer?] [tl (hd) integer?] #:impersonator))
    #t)
+
+  (test/spec-passed/result
+   '*list/c1
+   '(contract (*list/c integer? char? boolean?) '(1 2 3 #\a #f) 'pos 'neg)
+   '(1 2 3 #\a #f))
+  (test/pos-blame
+   '*list/c2
+   '(contract (*list/c integer? char? boolean?) '(1 2 #\a #\a #f) 'pos 'neg))
+  (test/spec-passed/result
+   '*list/c3
+   '((car (contract (*list/c (-> integer? integer?) (-> boolean? boolean?))
+                    (list (λ (x) x) (λ (y) y)) 'pos 'neg))
+     1)
+   1)
+  (test/neg-blame
+   '*list/c4
+   '((car (contract (*list/c (-> integer? integer?) (-> boolean? boolean?))
+                    (list (λ (x) x) (λ (y) y)) 'pos 'neg))
+     #f))
+  (test/spec-passed/result
+   '*list/c5
+   '((cadr (contract (*list/c (-> integer? integer?) (-> boolean? boolean?))
+                     (list (λ (x) x) (λ (y) y)) 'pos 'neg))
+     #f)
+   #f)
+  (test/neg-blame
+   '*list/c6
+   '((cadr (contract (*list/c (-> integer? integer?) (-> boolean? boolean?))
+                     (list (λ (x) x) (λ (y) y)) 'pos 'neg))
+     1))
+  (test/pos-blame
+   '*list/c7
+   '((caddr (contract (*list/c (-> integer? integer?) (-> boolean? boolean?) (-> char? char?))
+                      (list (λ (x) x) (λ (y) y) (λ (y) 'not-a-bool) (λ (y) y)) 'pos 'neg))
+     #f))
   
   )

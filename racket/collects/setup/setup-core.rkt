@@ -15,12 +15,13 @@
          planet/planet-archives
          planet/private/planet-shared
          (only-in planet/resolver resolve-planet-path)
+         setup/cross-system
 
          "option.rkt"
          compiler/compiler
          (prefix-in compiler:option: compiler/option)
          launcher/launcher
-         dynext/file
+         compiler/module-suffix
 
          "unpack.rkt"
          "getinfo.rkt"
@@ -273,11 +274,22 @@
   (define info-ns (make-base-namespace))
   (define getinfo (make-getinfo info-ns))
 
+  (define info-failures (make-hash))
+  (define (getinfo/log-failure path)
+    (with-handlers ([exn:fail? (lambda (exn)
+                                 (if (hash-ref info-failures path #f)
+                                     #f
+                                     (begin
+                                       (hash-set! info-failures path #t)
+                                       (handle-error path "load of info.rkt" exn "" "" "error")
+                                       #f)))])
+      (getinfo path)))
+
   (define (make-cc* collection parent path omit-root info-root 
                     info-path info-path-mode shadowing-policy 
                     main?)
     (define info
-      (or (with-handlers ([exn:fail? (warning-handler #f)]) (getinfo path))
+      (or (getinfo/log-failure path)
           (lambda (flag mk-default) (mk-default))))
     (define name
       (call-info
@@ -292,18 +304,16 @@
       (setup-printf "WARNING"
                     "ignoring `compile-subcollections' entry in info ~a"
                     path-name))
-    ;; this check is also done in compiler/compiler, in compile-directory
-    (and (not (eq? 'all (omitted-paths path getinfo omit-root)))
-         (make-cc collection path
-                  (if name
-                      (format "~a (~a)" path-name name)
-                      path-name)
-                  info
-                  parent
-                  omit-root
-                  info-root info-path info-path-mode
-                  shadowing-policy
-                  main?)))
+    (make-cc collection path
+             (if name
+                 (format "~a (~a)" path-name name)
+                 path-name)
+             info
+             parent
+             omit-root
+             info-root info-path info-path-mode
+             shadowing-policy
+             main?))
 
   (define ((warning-handler v) exn)
     (setup-printf "WARNING" "~a" (exn->string exn))
@@ -496,7 +506,7 @@
       ;; note: omit can be 'all, if this happens then this collection
       ;; should not have been included, but we might jump in if a
       ;; command-line argument specified a coll/subcoll
-      (define omit (omitted-paths ccp getinfo (cc-omit-root cc)))
+      (define omit (omitted-paths ccp getinfo/log-failure (cc-omit-root cc)))
       (define subs (if (eq? 'all omit)
                      '()
                      (filter (lambda (p)
@@ -508,7 +518,7 @@
             (let loop ([l collections-to-compile])
               (append-map (lambda (cc) (cons cc (loop (get-subs cc)))) l))))
 
-  (define (collection-tree-map collections-to-compile)
+  (define (collection-tree-map collections-to-compile has-module-suffix?)
     (define (build-collection-tree cc)
       (define (make-child-cc parent-cc name)
         (collection-cc! (append (cc-collection parent-cc) (list name))
@@ -524,11 +534,14 @@
       ;; note: omit can be 'all, if this happens then this collection
       ;; should not have been included, but we might jump in if a
       ;; command-line argument specified a coll/subcoll
-      (define omit (append
-                    (if make-docs?
-                        null
-                        (list (string->path "scribblings")))
-                    (omitted-paths ccp getinfo (cc-omit-root cc))))
+      (define omit (let ([omit (omitted-paths ccp getinfo/log-failure (cc-omit-root cc))])
+                     (if (eq? omit 'all)
+                         'all
+                         (append
+                          (if make-docs?
+                              null
+                              (list (string->path "scribblings")))
+                          omit))))
       (define-values [dirs files]
         (if (eq? 'all omit)
             (values null null)
@@ -540,13 +553,23 @@
              (filter-map (lambda (x) (make-child-cc cc x)) dirs)))
       (define srcs
         (append
-         (filter extract-base-filename/ss files)
-         (if make-docs?
-           (filter (lambda (p) (not (member p omit)))
-                   (map (lambda (s) (if (string? s) (string->path s) s))
-                        (map car (call-info info 'scribblings
-                                            (lambda () null) (lambda (x) #f)))))
-           null)))
+         (filter has-module-suffix? files)
+         (if (and make-docs?
+                  (not (eq? omit 'all)))
+             (filter (lambda (p) (not (member p omit)))
+                     (map (lambda (s) (if (string? s) (string->path s) s))
+                          (map car 
+                               (let ([v (call-info info 'scribblings (lambda () null) void)])
+                                 ;; Ignore ill-formed 'scribblings entries at this level:
+                                 (if (list? v)
+                                     (for/list ([i (in-list v)]
+                                                #:when (and (pair? i)
+                                                            (string? (car i))))
+                                       i)
+                                     null)))))
+             null)
+         (map (lambda (s) (if (string? s) (string->path s) s))
+              (call-info info 'compile-include-files (lambda () null) void))))
       (list cc srcs children-ccs))
     (map build-collection-tree collections-to-compile))
 
@@ -586,7 +609,7 @@
                nothing-else-to-do?
                (not (make-tidy)))
       (setup-printf #f "nothing to do")
-      (exit 1))
+      (exit 0))
     (define (cc->name cc)
       (string-join (map path->string (cc-collection cc)) "/"))
     (define (cc->cc+name+id cc)
@@ -660,9 +683,9 @@
                ;; let `collection-path' complain about the name, if that's the problem:
                (with-handlers ([exn? (compose1 raise-user-error exn-message)])
                  (apply collection-path elems))
-               ;; otherwise, it's probably a collection with nothing to compile
+               ;; otherwise, it's probably a collection with nothing to compile;
                ;; spell the name
-               (setup-printf "WARNING"
+               (setup-printf "warning"
                              "nothing to compile in a given collection path: \"~a\""
                              (string-join sc "/")))
              ccs)
@@ -878,7 +901,7 @@
                                (string? v)
                                (symbol? v))
                      (error "entry is not regexp, string, or symbol:" v)))))
-    (matching-platform? sys))
+    (matching-platform? sys #:cross? #t))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Make zo                      ;;
@@ -899,9 +922,11 @@
                        [compile-notify-handler doing-path])
           (thunk)))))
 
-  (define (clean-cc cc dir info)
+  (define (clean-cc cc)
     ;; Clean up bad .zos:
     (unless (assume-virtual-sources? cc)
+      (define dir (cc-path cc))
+      (define info (cc-info cc))
       (define roots
         ;; If there's more than one relative root, then there will
         ;; be multiple ways to get to a ".zo" file, and our strategy
@@ -980,7 +1005,7 @@
   ;; and it makes a do-nothing setup complete much faster.
   (define caching-managed-compile-zo (make-caching-managed-compile-zo))
 
-  (define (compile-cc cc gcs)
+  (define (compile-cc cc gcs has-module-suffix?)
     (parameterize ([current-namespace (make-base-empty-namespace)])
       (begin-record-error cc "making"
         (setup-printf "making" "~a" (cc-name cc))
@@ -994,8 +1019,8 @@
          (lambda ()
            (define dir  (cc-path cc))
            (define info (cc-info cc))
-           (clean-cc cc dir info)
            (compile-directory-zos dir info
+                                  #:has-module-suffix? has-module-suffix?
                                   #:omit-root (cc-omit-root cc)
                                   #:managed-compile-zo caching-managed-compile-zo
                                   #:skip-path (and (avoid-main-installation) main-collects-dir)
@@ -1022,6 +1047,14 @@
         (case where
           [(beginning) (append same diff)]
           [(end) (append diff same)])))
+    (define has-module-suffix?
+      (let ([rx (get-module-suffix-regexp
+                 #:mode (cond
+                         [(make-user) 'preferred]
+                         [else 'no-user])
+                 #:group 'libs
+                 #:namespace info-ns)])
+        (lambda (p) (regexp-match? rx p))))
     (setup-printf #f "--- compiling collections ---")
     (if ((parallel-workers) . > . 1)
       (begin
@@ -1031,26 +1064,25 @@
             (when (and (cc-main? cc)
                        (member (cc-info-root cc)
                                (current-library-collection-paths)))
-              (compile-cc cc 0))))
+              (compile-cc cc 0 has-module-suffix?))))
         (with-specified-mode
           (lambda ()
             (define cct
               (move-to 'beginning (list #rx"/compiler$" #rx"/raco$" #rx"/racket$" #rx"<pkgs>/images/")
                        (move-to 'end (list #rx"<pkgs>/drracket")
                                 (sort-collections-tree
-                                 (collection-tree-map top-level-plt-collects)))))
-            (iterate-cct (lambda (cc)
-                           (define dir (cc-path cc))
-                           (define info (cc-info cc))
-                           (clean-cc cc dir info))
-                         cct)
+                                 (collection-tree-map top-level-plt-collects
+                                                      has-module-suffix?)))))
+            (iterate-cct clean-cc cct)
             (parallel-compile (parallel-workers) setup-fprintf handle-error cct)
             (for/fold ([gcs 0]) ([cc planet-dirs-to-compile])
-              (compile-cc cc gcs)))))
+              (compile-cc cc gcs has-module-suffix?)))))
       (with-specified-mode
         (lambda ()
+          (for ([cc ccs-to-compile])
+            (clean-cc cc))
           (for/fold ([gcs 0]) ([cc ccs-to-compile])
-            (compile-cc cc gcs))))))
+            (compile-cc cc gcs has-module-suffix?))))))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;               Info-Domain Cache               ;;
@@ -1154,7 +1186,7 @@
                                              ;; relative path => no root needed for checking omits:
                                              #f)])
                                     (and (directory-exists? dir)
-                                         (not (eq? 'all (omitted-paths dir getinfo omit-root)))))
+                                         (not (eq? 'all (omitted-paths dir getinfo/log-failure omit-root)))))
                                   (or (file-exists? (build-path dir "info.rkt"))
                                       (file-exists? (build-path dir "info.ss"))))
                              (hash-set! t a (list b c d e))
@@ -1396,7 +1428,7 @@
                     [(console) (path->relative-string/console-bin p)]
                     [else (error 'make-launcher "internal error (~s)" kind)])
                   (let ([v (current-launcher-variant)])
-                    (if (eq? v (system-type 'gc)) "" (format " [~a]" v))))
+                    (if (eq? v (cross-system-type 'gc)) "" (format " [~a]" v))))
                  (make-launcher
                   (or mzlf
                       (if (cc-collection cc)
@@ -1552,7 +1584,7 @@
                         (setup-printf "deleting" "launcher ~a" rel-exe-path)
                         (delete-directory/files exe-path)])
                       ;; Clean up any associated .desktop file and icon file:
-                      (when (eq? 'unix (system-type))
+                      (when (eq? 'unix (cross-system-type))
                         (let ([desktop (installed-executable-path->desktop-path
                                         exe-path
                                         user?)])
@@ -1769,11 +1801,11 @@
                              (error "entry is not a list of relative path strings:" l)))
                          build-path
                          this-platform?
-                         (case (system-type)
+                         (case (cross-system-type)
                            [(macosx)
                             adjust-dylib-path/install]
                            [else void])
-                         (case (system-type)
+                         (case (cross-system-type)
                            [(unix)
                             copy-file/install-elf-rpath]
                            [else copy-file])))
@@ -1894,7 +1926,8 @@
   ;; setup Body                     ;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (setup-printf "version" "~a [~a]" (version) (system-type 'gc))
+  (setup-printf "version" "~a" (version))
+  (setup-printf "platform" "~a [~a]" (cross-system-library-subpath #f) (cross-system-type 'gc))
   (setup-printf "installation name" "~a" (get-installation-name))
   (setup-printf "variants" "~a" (string-join (map symbol->string (available-mzscheme-variants)) ", "))
   (setup-printf "main collects" "~a" main-collects-dir)
@@ -1909,7 +1942,8 @@
   (setup-printf "links files" "")
   (for ([p (get-links-search-files)])
     (setup-printf #f "  ~a" p))
-  (setup-printf #f "  ~a" (find-user-links-file))
+  (when (use-user-specific-search-paths)
+    (setup-printf #f "  ~a" (find-user-links-file)))
   (setup-printf "main docs" "~a" (find-doc-dir))
 
   (when (and (not (null? (archives))) no-specific-collections?)
@@ -1932,7 +1966,7 @@
 
   (when (make-launchers) (make-launchers-step))
   (when (make-launchers) 
-    (unless (eq? 'windows (system-type))
+    (unless (eq? 'windows (cross-system-type))
       (make-mans-step)))
 
   (when make-docs?

@@ -2,13 +2,13 @@
 
 (require scribble/struct
          scribble/manual
-         scribble/eval
+         scribble/examples
          scribble/decode
          racket/contract
          "../icons.rkt")
 
 (provide (all-from-out scribble/manual)
-         (all-from-out scribble/eval)
+         (all-from-out scribble/examples)
          (all-from-out racket/contract))
 
 (require (for-label racket))

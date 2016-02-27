@@ -1,9 +1,11 @@
 #lang racket/base
 (require racket/private/set
+         racket/private/custom-write
          racket/stream
          racket/serialize
          racket/pretty
          racket/sequence
+         racket/unsafe/ops
          (only-in racket/syntax format-symbol)
          (only-in racket/generic exn:fail:support)
          (for-syntax racket/base racket/syntax))
@@ -27,7 +29,14 @@
          make-custom-set-types
          make-custom-set
          make-weak-custom-set
-         make-mutable-custom-set)
+         make-mutable-custom-set
+
+         in-immutable-set
+         in-mutable-set
+         in-weak-set
+         
+         chaperone-hash-set
+         impersonate-hash-set)
 
 (define (custom-set-empty? s)
   (dprintf "custom-set-empty?\n")
@@ -334,6 +343,191 @@
     [(hash-weak? table) (weak-custom-set (custom-set-spec s) table)]
     [else (mutable-custom-set (custom-set-spec s) table)]))
 
+(define (chaperone-hash-set s inject-proc add-proc shrink-proc extract-proc . clear-proc+props)
+  (define-values (clear-proc equal-key-proc prop-args)
+    (check-chap/imp-args #f s inject-proc add-proc shrink-proc extract-proc clear-proc+props))
+  (define (check-it who original new)
+    (unless (chaperone-of? new original)
+      (error 'chaperone-hash-set
+             "~s did not return a chaperone of ~e, got ~e"
+             who original new))
+    new)
+
+  (add-impersonator-properties
+   (if inject-proc
+       (chap-or-imp-hash-set s
+                             chaperone-hash
+                             (λ (ele) (check-it 'in-proc ele (inject-proc s ele)))
+                             (λ (ele) (check-it 'add-proc ele (add-proc s ele)))
+                             (λ (ele) (check-it 'shrink-proc ele (shrink-proc s ele)))
+                             (λ (ele) (check-it 'extract-proc ele (extract-proc s ele)))
+                             (and clear-proc (λ () (clear-proc s)))
+                             (λ (ele) (equal-key-proc s ele)))
+       s)
+   prop-args))
+
+(define (impersonate-hash-set s inject-proc add-proc shrink-proc extract-proc . clear-proc+props)
+  (define-values (clear-proc equal-key-proc prop-args)
+    (check-chap/imp-args #t s inject-proc add-proc shrink-proc extract-proc clear-proc+props))
+  (add-impersonator-properties
+   (if inject-proc
+       (chap-or-imp-hash-set s
+                             impersonate-hash
+                             (λ (ele) (inject-proc s ele))
+                             (λ (ele) (add-proc s ele))
+                             (λ (ele) (shrink-proc s ele))
+                             (λ (ele) (extract-proc s ele))
+                             (and clear-proc (λ () (clear-proc s)))
+                             (λ (ele) (equal-key-proc s ele)))
+       s)
+   prop-args))
+
+(define (chap-or-imp-hash-set s c-or-i-hash
+                              inject-proc add-proc shrink-proc extract-proc
+                              clear-proc equal-key-proc)
+  (update-custom-set-table
+   s
+   (cond
+     [(custom-set-spec s)
+      (define rewrap (custom-spec-wrap (custom-set-spec s)))
+      (c-or-i-hash
+       (custom-set-table s)
+       (λ (hash key) (values (rewrap (inject-proc (custom-elem-contents key)))
+                             (λ (hash key val) val)))
+       (λ (hash key val) (values (rewrap (add-proc (custom-elem-contents key))) val))
+       (λ (hash key) (rewrap (shrink-proc (custom-elem-contents key))))
+       (λ (hash key) (rewrap (extract-proc (custom-elem-contents key))))
+       (λ (hash) (clear-proc))
+       (λ (hash key) (rewrap (equal-key-proc (custom-elem-contents key)))))]
+     [else
+      (c-or-i-hash
+       (custom-set-table s)
+       (λ (hash key) (values (inject-proc key) (λ (hash key val) val)))
+       (λ (hash key val) (values (add-proc key) val))
+       (λ (hash key) (shrink-proc key))
+       (λ (hash key) (extract-proc key))
+       (λ (hash) (clear-proc))
+       (λ (hash key) (equal-key-proc key)))])))
+
+(define (add-impersonator-properties without-props prop-args)
+  (cond
+    [(null? prop-args) without-props]
+    [(immutable-custom-set? without-props)
+     (apply chaperone-struct without-props struct:immutable-custom-set prop-args)]
+    [(weak-custom-set? without-props)
+     (apply chaperone-struct without-props struct:weak-custom-set prop-args)]
+    [else
+     (apply chaperone-struct without-props struct:mutable-custom-set prop-args)]))
+
+(define (check-chap/imp-args impersonate? s
+                             inject-proc add-proc shrink-proc extract-proc
+                             clear-proc+equal-key-proc+props)
+  (define who (if impersonate? 'impersonate-hash-set 'chaperone-hash-set))
+  (unless (if impersonate?
+              (or (set-mutable? s) (set-weak? s))
+              (or (set? s) (set-mutable? s) (set-weak? s)))
+    (apply raise-argument-error
+           who
+           (format "~s"
+                   (if impersonate?
+                       '(or/c set-mutable? set-weak?)
+                       '(or/c set? set-mutable? set-weak?)))
+           0 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (or (not inject-proc)
+              (and (procedure? inject-proc)
+                   (procedure-arity-includes? inject-proc 2)))
+    (apply raise-argument-error
+           who
+           "(or/c #f (procedure-arity-includes/c 2))"
+           1 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (or (not add-proc)
+              (and (procedure? add-proc)
+                   (procedure-arity-includes? add-proc 2)))
+    (apply raise-argument-error
+           who
+           "(or/c #f (procedure-arity-includes/c 2))"
+           2 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (or (not shrink-proc)
+              (and (procedure? shrink-proc)
+                   (procedure-arity-includes? shrink-proc 2)))
+    (apply raise-argument-error
+           who
+           "(or/c #f (procedure-arity-includes/c 2))"
+           3 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (or (not extract-proc)
+              (and (procedure? extract-proc)
+                   (procedure-arity-includes? extract-proc 2)))
+    (apply raise-argument-error
+           who
+           "(or/c #f (procedure-arity-includes/c 2))"
+           4 s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (unless (null? clear-proc+equal-key-proc+props)
+    (unless (or (not (car clear-proc+equal-key-proc+props))
+                (and (procedure? (car clear-proc+equal-key-proc+props))
+                     (procedure-arity-includes? (car clear-proc+equal-key-proc+props) 1))
+                (impersonator-property? (car clear-proc+equal-key-proc+props)))
+      (apply raise-argument-error
+             who
+             (format "~s" `(or/c #f
+                                 (procedure-arity-includes/c 1)
+                                 impersonator-property?))
+             5
+             s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props)))
+  (define-values (num-supplied-procs clear-proc equal-key-proc args)
+    (cond
+      [(null? clear-proc+equal-key-proc+props) (values 0 #f #f '())]
+      [(impersonator-property? (car clear-proc+equal-key-proc+props))
+       (values 0 #f #f clear-proc+equal-key-proc+props)]
+      [else
+       (define clear-proc (car clear-proc+equal-key-proc+props))
+       (define equal-key-proc+props (cdr clear-proc+equal-key-proc+props))
+       (cond
+         [(null? equal-key-proc+props) (values 1 clear-proc #f '())]
+         [(impersonator-property? (car equal-key-proc+props))
+          (values 1 clear-proc #f equal-key-proc+props)]
+         [else
+          (values 2 clear-proc (car equal-key-proc+props) (cdr equal-key-proc+props))])]))
+  (unless (or (not equal-key-proc)
+              (and (procedure? equal-key-proc)
+                   (procedure-arity-includes? equal-key-proc 2)))
+    (apply raise-argument-error
+           who
+           "(or/c #f (procedure-arity-includes/c 1))"
+           (+ 4 num-supplied-procs)
+           s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props))
+  (for ([ele (in-list args)]
+        [i (in-naturals)]
+        #:when (even? i))
+    (unless (impersonator-property? ele)
+      (apply raise-argument-error
+             who
+             "impersonator-property?"
+             (+ i num-supplied-procs 4)
+             s inject-proc add-proc shrink-proc extract-proc clear-proc+equal-key-proc+props)))
+  (when (or (not inject-proc) (not add-proc) (not shrink-proc) (not extract-proc))
+    (unless (and (not inject-proc) (not add-proc) (not shrink-proc) (not extract-proc)
+                 (not equal-key-proc) (not clear-proc))
+      (raise-arguments-error who
+                             (string-append
+                              "if one of inject-proc, add-proc, shrink-proc"
+                              " or extract-proc is #f, they must all be and the"
+                              " equal-key-proc and clear-proc must also be")
+                             "inject-proc" inject-proc
+                             "add-proc" add-proc
+                             "shrink-proc" shrink-proc
+                             "extract-proc" extract-proc
+                             "equal-key-proc" equal-key-proc
+                             "clear-proc" clear-proc)))
+  (unless inject-proc
+    (when (null? args)
+      (raise-arguments-error
+       who
+       "when inject-proc, add-proc, shrink-proc, and extract-proc are #f,"
+       " at least one property must be supplied")))
+  (values clear-proc
+          (or equal-key-proc (λ (s e) e))
+          args))
+  
 (define (set-check-compatible name s1 s2)
   (define spec (custom-set-spec s1))
   (unless (and (custom-set? s2)
@@ -354,79 +548,32 @@
     [(hash-eq? x) (hash-eq? y)]))
 
 (define (write-custom-set s port mode)
+  (cond [(custom-set-spec s)
+         (define table (custom-set-table s))
+         (define key-str
+           (cond [(immutable? table) ""]
+                 [(hash-weak? table) "weak-"]
+                 [else "mutable-"]))
+         (fprintf port "#<~acustom-set>" key-str)]
+        [else (write-hash-set s port mode)]))
 
-  (define table (custom-set-table s))
-  (define key-str
-    (cond
-      [(immutable? table) ""]
-      [(hash-weak? table) "weak-"]
-      [else "mutable-"]))
-
-  (cond
-    [(custom-set-spec s) (fprintf port "#<~acustom-set>" key-str)]
-    [else
-
-     (define show
-       (case mode
-         [(#t) write]
-         [(#f) display]
-         [else (lambda (p port) (print p port mode))]))
-
-     (define-values (left-str mid-str right-str)
-       (case mode
-         [(0) (values "(" "" ")")]
-         [else (values "#<" ":" ">")]))
-     (define cmp-str
-       (cond
-         [(hash-equal? table) "set"]
-         [(hash-eqv? table) "seteqv"]
-         [(hash-eq? table) "seteq"]))
-
-     (define (show-prefix port)
-       (write-string left-str port)
-       (write-string key-str port)
-       (write-string cmp-str port)
-       (write-string mid-str port))
-
-     (define (show-suffix port)
-       (write-string right-str port))
-
-     (define (show-one-line port)
-       (show-prefix port)
-       (for ([k (in-hash-keys table)])
-         (write-string " " port)
-         (show k port))
-       (show-suffix port))
-
-     (define (show-multi-line port)
-       (define-values (line col pos) (port-next-location port))
-       (show-prefix port)
-       (for ([k (in-hash-keys table)])
-         (pretty-print-newline port (pretty-print-columns))
-         (for ([i (in-range (add1 col))])
-           (write-char #\space port))
-         (show k port))
-       (show-suffix port))
-
-     (cond
-       [(and (pretty-printing)
-             (integer? (pretty-print-columns)))
-        (define proc
-          (let/ec return
-            (define pretty-port
-              (make-tentative-pretty-print-output-port
-               port
-               (- (pretty-print-columns) 1)
-               (lambda ()
-                 (return
-                  (lambda ()
-                    (tentative-pretty-print-port-cancel pretty-port)
-                    (show-multi-line port))))))
-            (show-one-line port)
-            (tentative-pretty-print-port-transfer pretty-port port)
-            void))
-        (proc)]
-       [else (show-one-line port)])]))
+(define write-hash-set
+  (make-constructor-style-printer
+   (lambda (s)
+     (define table (custom-set-table s))
+     (define key-str
+       (cond [(immutable? table) ""]
+             [(hash-weak? table) "weak-"]
+             [else "mutable-"]))
+     (cond [(custom-set-spec s)
+            (string-append key-str "custom-set")]
+           [else
+            (define cmp-str
+              (cond [(hash-equal? table) "set"]
+                    [(hash-eqv? table) "seteqv"]
+                    [(hash-eq? table) "seteq"]))
+            (string-append key-str cmp-str)]))
+   (lambda (s) (hash-keys (custom-set-table s)))))
 
 (define (custom-in-set s)
   (define keys (in-hash-keys (custom-set-table s)))
@@ -434,7 +581,64 @@
       (sequence-map custom-elem-contents keys)
       keys))
 
-(struct custom-elem [contents])
+(define (custom-in-set/checked s)
+  (unless (custom-set? s)
+    (raise (exn:fail:contract (format "not a hash set: ~a" s)
+             (current-continuation-marks))))
+  (custom-in-set s))
+
+(define (set-immutable? s) (set? s))
+;; creates an new id with the given id and format str
+(define-for-syntax (mk-id id fmt-str)
+  (datum->syntax id (string->symbol (format fmt-str (syntax->datum id)))))
+  
+(define-syntax (define-in-set-sequence-syntax stx)
+  (syntax-case stx (set-type:)
+    [(_ set-type: SETTYPE)
+     (with-syntax
+      ([IN-SET-NAME (mk-id #'SETTYPE "in-~a-set")]
+       [-first (mk-id #'SETTYPE "unsafe-~a-hash-iterate-first")]
+       [-next (mk-id #'SETTYPE "unsafe-~a-hash-iterate-next")]
+       [-get (mk-id #'SETTYPE "unsafe-~a-hash-iterate-key")]
+       [-test? (mk-id #'SETTYPE "set-~a?")])
+      #'(define-sequence-syntax IN-SET-NAME
+          (lambda () #'custom-in-set/checked)
+          (lambda (stx)
+            (syntax-case stx ()
+              [[(id) (_ set-expr)]
+               (for-clause-syntax-protect
+                #'[(id)
+                   (:do-in
+                    ;;outer bindings
+                    ([(HT fn) (let ([xs set-expr])
+                                (if (custom-set? xs)
+                                    (values
+                                     (custom-set-table xs)
+                                     (if (custom-set-spec xs)
+                                         custom-elem-contents
+                                         (lambda (x) x)))
+                                    (values #f #f)))])
+                    ;; outer check
+                    (unless (and HT (-test? HT))
+                      (custom-in-set/checked set-expr))
+                    ;; loop bindings
+                    ([i (-first HT)])
+                    ;; pos check
+                    i
+                    ;; inner bindings
+                    ([(id) (fn (-get HT i))])
+                    ;; pre guard
+                    #t
+                    ;; post guard
+                    #t
+                    ;; loop args
+                    ((-next HT i)))])]
+              [_ #f]))))]))
+(define-in-set-sequence-syntax set-type: immutable)
+(define-in-set-sequence-syntax set-type: mutable)
+(define-in-set-sequence-syntax set-type: weak) 
+
+(struct custom-elem [contents] #:transparent)
 
 (struct custom-spec [elem? wrap intern])
 
@@ -627,26 +831,26 @@
   (struct wrapped-elem custom-elem []
     #:methods gen:equal+hash
     [(define equal-proc
-       (if (procedure-arity-includes? =? 2)
-           (lambda (a b f)
-             (=? (custom-elem-contents a)
-                 (custom-elem-contents b)))
+       (if (procedure-arity-includes? =? 3)
            (lambda (a b f)
              (=? (custom-elem-contents a)
                  (custom-elem-contents b)
-                 f))))
+                 f))
+           (lambda (a b f)
+             (=? (custom-elem-contents a)
+                 (custom-elem-contents b)))))
      (define hash-proc
-       (if (procedure-arity-includes? hc1 1)
+       (if (procedure-arity-includes? hc1 2)
            (lambda (a f)
-             (hc1 (custom-elem-contents a)))
+             (hc1 (custom-elem-contents a) f))
            (lambda (a f)
-             (hc1 (custom-elem-contents a) f))))
+             (hc1 (custom-elem-contents a)))))
      (define hash2-proc
-       (if (procedure-arity-includes? hc2 1)
+       (if (procedure-arity-includes? hc2 2)
            (lambda (a f)
-             (hc2 (custom-elem-contents a)))
+             (hc2 (custom-elem-contents a) f))
            (lambda (a f)
-             (hc2 (custom-elem-contents a) f))))])
+             (hc2 (custom-elem-contents a)))))])
   (custom-spec elem? wrapped-elem (make-weak-hasheq)))
 
 (define (default-hc x f) 1)
@@ -699,6 +903,8 @@
 
 (define (immutable-custom-set-maker spec name)
   (define (proc [st '()])
+    (unless (stream? st)
+      (raise-argument-error name "stream?" st))
     (dprintf "~a\n" name)
     (define table
       (for/fold ([table (make-immutable-hash)]) ([x (in-stream st)])
@@ -709,6 +915,8 @@
 
 (define (imperative-custom-set-maker spec name make-table make-set)
   (define (proc [st '()])
+    (unless (stream? st)
+      (raise-argument-error name "stream?" st))
     (dprintf "~a\n" name)
     (define table (make-table))
     (for ([x (in-stream st)])

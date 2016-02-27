@@ -6,6 +6,8 @@
           "parse-common.rkt"
           (for-label racket/syntax))
 
+@(define the-eval (make-sp-eval))
+
 @title{Parsing Syntax}
 
 This section describes @racket[syntax-parse], the
@@ -40,7 +42,8 @@ Two parsing forms are provided: @racket[syntax-parse] and
                               (code:line #:phase phase-expr)]
           [clause (syntax-pattern pattern-directive ... body ...+)])
          #:contracts ([stx-expr syntax?]
-                      [context-expr syntax?]
+                      [context-expr (or/c syntax? symbol? #f
+                                          (list/c symbol? syntax?))]
                       [phase-expr (or/c exact-integer? #f)])]{
 
 Evaluates @racket[stx-expr], which should produce a syntax object, and
@@ -60,19 +63,34 @@ error is raised.
 The following options are supported:
 
 @specsubform[(code:line #:context context-expr)
-             #:contracts ([context-expr syntax?])]{
+             #:contracts
+             ([context-expr (or/c syntax? symbol? #f
+                                  (list/c symbol? syntax?))])]{
 
 When present, @racket[context-expr] is used in reporting parse
-failures; otherwise @racket[stx-expr] is used. The
-@racket[current-syntax-context] parameter is also set to the value of
-@racket[context-expr].
+failures; otherwise @racket[stx-expr] is used. If
+@racket[context-expr] evaluates to @racket[(list _who _context-stx)],
+then @racket[_who] appears in the error message as the form raising
+the error, and @racket[_context-stx] is used as the term. If
+@racket[context-expr] evaluates to a symbol, it is used as
+@racket[_who] and @racket[stx-expr] (the syntax to be destructured) is
+used as @racket[_context-stx]. If @racket[context-expr] evaluates to a
+syntax object, it is used as @racket[_context-stx] and @racket[_who]
+is inferred as with @racket[raise-syntax-error].
 
-@(myexamples
-  (syntax-parse #'(a b 3)
-    [(x:id ...) 'ok])
-  (syntax-parse #'(a b 3)
-    #:context #'(lambda (a b 3) (+ a b))
-    [(x:id ...) 'ok]))
+The @racket[current-syntax-context] parameter is also set to the
+syntax object @racket[_context-stx].
+
+@examples[#:eval the-eval
+(syntax-parse #'(a b 3)
+  [(x:id ...) 'ok])
+(syntax-parse #'(a b 3)
+  #:context #'(lambda (a b 3) (+ a b))
+  [(x:id ...) 'ok])
+(syntax-parse #'(a b 3)
+  #:context 'check-id-list
+  [(x:id ...) 'ok])
+]
 }
 
 @specsubform[(code:line #:literals (literal ...))
@@ -157,7 +175,7 @@ bindings. See the section on @tech{conventions} for examples.
 
 Suppresses the ``colon notation'' for annotated pattern variables.
 
-@myexamples[
+@examples[#:eval the-eval
 (syntax-parse #'(a b c)
   [(x:y ...) 'ok])
 (syntax-parse #'(a b c) #:disable-colon-notation
@@ -180,7 +198,7 @@ syntax object result of @racket[stx-expr] against
 @racket[syntax-pattern] and creates pattern variable definitions for
 the attributes of @racket[syntax-pattern].
 
-@myexamples[
+@examples[#:eval the-eval
 (define/syntax-parse ((~seq kw:keyword arg:expr) ...)
   #'(#:a 1 #:b 2 #:c 3))
 #'(kw ...)
@@ -189,3 +207,5 @@ the attributes of @racket[syntax-pattern].
 Compare with @racket[define/with-syntax], a similar definition form
 that uses the simpler @racket[syntax-case] patterns.
 }
+
+@(close-eval the-eval)

@@ -1,6 +1,7 @@
 #lang racket/base
 (require "path.rkt"
          setup/dirs
+         setup/cross-system
          (for-syntax racket/base
                      setup/path-to-relative))
 
@@ -64,15 +65,21 @@
 (define (raise-not-a-file-or-directory who path)
   (raise
    (make-exn:fail:filesystem
-    (format "~a: encountered ~a, neither a file nor a directory"
+    (format "~a: encountered path that is neither file nor directory\n  path: ~a"
             who
             path)
     (current-continuation-marks))))
 
-(define (copy-directory/files src dest 
-                              #:keep-modify-seconds? [keep-modify-seconds? #f])
+(define (copy-directory/files src dest
+                              #:keep-modify-seconds? [keep-modify-seconds? #f]
+                              #:preserve-links? [preserve-links? #f])
   (let loop ([src src] [dest dest])
-    (cond [(file-exists? src)
+    (cond [(and preserve-links?
+                (link-exists? src))
+           (make-file-or-directory-link
+            (resolve-path src)
+            dest)]
+          [(file-exists? src)
            (copy-file src dest)
            (when keep-modify-seconds?
              (file-or-directory-modify-seconds
@@ -206,7 +213,7 @@
       (delete-file path)))
   (let ([bp (current-break-parameterization)]
         [tmp-path (parameterize ([current-security-guard (or guard (current-security-guard))])
-                    (make-temporary-file "tmp~a" #f (path-only path)))]
+                    (make-temporary-file "tmp~a" #f (or (path-only path) (current-directory))))]
         [ok? #f])
     (dynamic-wind
      void
@@ -237,11 +244,14 @@
   (parameterize ([read-case-sensitive #f]
                  [read-square-bracket-as-paren #t]
                  [read-curly-brace-as-paren #t]
+                 [read-square-bracket-with-tag #f]
+                 [read-curly-brace-with-tag #f]
                  [read-accept-box #t]
                  [read-accept-compiled #f]
                  [read-accept-bar-quote #t]
                  [read-accept-graph #t]
                  [read-decimal-as-inexact #t]
+                 [read-cdot #f]
                  [read-accept-dot #t]
                  [read-accept-infix-dot #t]
                  [read-accept-quasiquote #t]
@@ -272,7 +282,7 @@
 (define (make-pathless-lock-file-name name)
   (bytes->path-element
    (bytes-append
-    (if (eq? 'windows (system-type))
+    (if (eq? 'windows (cross-system-type))
         #"_"
         #".")
     #"LOCK"
@@ -629,24 +639,37 @@
   (define (to-path s) (if (path? s) s (string->path s)))
   (if path (do-path (to-path path) init) (do-paths (directory-list) init)))
 
-(define (find-files f [path #f] #:follow-links? [follow-links? #t])
+(define (find-files f [path #f]
+                    #:follow-links? [follow-links? #t]
+                    #:skip-filtered-directory? [skip-filtered-directory? #f])
   (reverse
-   (fold-files (lambda (path kind acc) (if (f path) (cons path acc) acc))
+   (fold-files (lambda (path kind acc) (if (f path)
+                                      (cons path acc) 
+                                      (if (and skip-filtered-directory?
+                                               (eq? kind 'dir))
+                                          (values acc #f)
+                                          acc)))
                null path
                follow-links?)))
 
-(define (pathlist-closure paths #:follow-links? [follow-links? #f])
+(define (pathlist-closure paths
+                          #:follow-links? [follow-links? #f]
+                          #:path-filter [path-filter #f])
   (let loop ([paths
               (map (lambda (p)
                      (simplify-path
-                      (if (and follow-links?
-                               (link-exists? p))
-                        (let ([p2 (resolve-path p)])
-                          (if (relative-path? p2)
-                            (let-values ([(base name dir?) (split-path p)])
-                              (build-path base p2))
-                            p2))
-                        p)
+                      (let loop ([p p])
+                        (if (and follow-links?
+                                 (link-exists? p))
+                            (let ([p2 (resolve-path p)])
+                              (if (relative-path? p2)
+                                  (let-values ([(base name dir?) (split-path p)])
+                                    (loop ((if dir? path->directory-path values)
+                                           (if (path? base)
+                                               (build-path base p2)
+                                               p2))))
+                                  (loop p2)))
+                            p))
                       #f))
                    paths)]
              [r '()])
@@ -659,7 +682,10 @@
                              [(file-exists? (car paths))
                               (list (car paths))]
                              [(directory-exists? (car paths))
-                              (find-files void (car paths) #:follow-links? follow-links?)]
+                              (find-files (or path-filter void)
+                                          (path->directory-path (car paths))
+                                          #:skip-filtered-directory? #t
+                                          #:follow-links? follow-links?)]
                              [else (error 'pathlist-closure
                                           "file/directory not found: ~a"
                                           (car paths))])])

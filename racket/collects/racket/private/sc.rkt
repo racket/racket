@@ -730,6 +730,7 @@
            (let* ([ht (if proto-r
                           #f
                           (make-hasheq))]
+                  [in-order null] ; same content as ht, but in deterministic order
                   [l (expander p proto-r p #t
                                (and proto-r (sub1 (length proto-r)))
                                (if proto-r
@@ -742,7 +743,9 @@
                                                              l))])
                                          (if pr
                                              (set-mcdr! pr (cons r (mcdr pr)))
-                                             (hash-set! ht (syntax-e r) (cons (mcons r (list r)) l)))))))
+                                             (let ([pr (mcons r (list r))])
+                                               (set! in-order (cons pr in-order))
+                                               (hash-set! ht (syntax-e r) (cons pr l))))))))
                                #f)])
              (if proto-r
                  `(lambda (r)
@@ -766,7 +769,7 @@
                              ;; This is a trick to minimize the syntax structure we keep:
                              (quote-syntax ,(datum->syntax #f '... p)))
                            main)))
-                 (let ([l (apply append (hash-map ht (lambda (k v) v)))])
+                 (let ([l in-order])
                    (values
                     ;; Get list of unique vars:
                     (map mcar l)

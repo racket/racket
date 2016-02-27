@@ -37,9 +37,9 @@
                             [(eq? (car l) 'd) `(cons/c any/c ,(loop (cdr l)))]))]
               [equiv (let loop ([l xs])
                        (cond
-                         [(null? l) 'p]
-                         [(eq? (car l) 'a) `(car ,(loop (cdr l)))]
-                         [(eq? (car l) 'd) `(cdr ,(loop (cdr l)))]))])
+                         [(null? l) 'v]
+                         [(eq? (car l) 'a) #`(car #,(loop (cdr l)))]
+                         [(eq? (car l) 'd) #`(cdr #,(loop (cdr l)))]))])
           (with-syntax ([name name]
                         [contract (let loop ([c contract] [pos 0])
                                     (if (pair? c)
@@ -56,9 +56,9 @@
                                       (datum->syntax #'here c
                                                      (list (syntax-source stx) 1 pos (add1 pos) 1))))]
                         [example (let ([ex #'example-arg])
-                                   (datum->syntax #f
+                                   (datum->syntax #'here
                                                   (list
-                                                   (datum->syntax #f
+                                                   (datum->syntax #'here
                                                                   name
                                                                   (vector (syntax-source ex)
                                                                           (syntax-line ex)
@@ -73,7 +73,7 @@
                                                           (+ (syntax-span ex) 4))))]
                         [equiv equiv])
             #'(defproc (name [v contract]) any/c
-                "Returns " (to-element 'equiv) (mz-examples example)))))]))
+                "Returns " (racket equiv) "." (mz-examples example)))))]))
 
 
 @title[#:tag "pairs"]{Pairs and Lists}
@@ -249,7 +249,8 @@ merely start with a chain of at least @racket[(add1 pos)] pairs.
   (list-ref (list 'a 'b 'c) 0)
   (list-ref (list 'a 'b 'c) 1)
   (list-ref (list 'a 'b 'c) 2)
-  (list-ref (cons 1 2) 0)]}
+  (list-ref (cons 1 2) 0)
+  (eval:error (list-ref (cons 1 2) 1))]}
 
 
 @defproc[(list-tail [lst any/c] [pos exact-nonnegative-integer?])
@@ -264,8 +265,9 @@ must merely start with a chain of at least @racket[pos] pairs.
 
 @mz-examples[
   (list-tail (list 1 2 3 4) 2)
-  (list-ref (cons 1 2) 1)
-  (list-ref 'not-a-pair 0)]}
+  (list-tail (cons 1 2) 1)
+  (eval:error (list-tail (cons 1 2) 2))
+  (list-tail 'not-a-pair 0)]}
 
 
 @defproc*[([(append [lst list?] ...) list?]
@@ -342,7 +344,7 @@ If the @racket[lst]s are empty, then @racket[#t] is returned.
 
 @mz-examples[
   (andmap positive? '(1 2 3))
-  (andmap positive? '(1 2 a))
+  (eval:error (andmap positive? '(1 2 a)))
   (andmap positive? '(1 -2 a))
   (andmap + '(1 2 3) '(4 5 6))]}
 
@@ -532,6 +534,10 @@ either order), then the elements preserve their relative order from
 @racket[sort] with a strict comparison functions (e.g., @racket[<] or
 @racket[string<?]; not @racket[<=] or @racket[string<=?]).
 
+@margin-note{Because of the peculiar fact that the IEEE-754 number system
+specifies that +nan.0 is neither greater nor less than nor equal to any other
+number, sorting lists containing this value may produce a surprising result.}
+
 The @racket[#:key] argument @racket[extract-key] is used to extract a
 key value for comparison from each list element.  That is, the full
 comparison procedure is essentially
@@ -711,8 +717,8 @@ Like @racket[assoc], but finds an element using the predicate
 
 @note-lib[racket/list]
 @(define list-eval (make-base-eval))
-@(interaction-eval #:eval list-eval
-                   (require racket/list (only-in racket/function negate)))
+@examples[#:hidden #:eval list-eval
+          (require racket/list (only-in racket/function negate))]
 
 
 @defthing[empty null?]{
@@ -866,6 +872,31 @@ Returns a newly constructed list of length @racket[k], holding
 @mz-examples[#:eval list-eval
   (make-list 7 'foo)]}
 
+@defproc[(list-update [lst list?]
+                      [pos (and/c (>=/c 0) (</c (length lst)))]
+                      [updater (-> any/c any/c)])
+         list?]{
+
+Returns a list that is the same as @racket[lst] except at the specified index.
+The element at the specified index is @racket[(updater (list-ref lst pos))].
+
+@examples[#:eval list-eval
+(list-update '(zero one two) 1 symbol->string)]
+@history[#:added "6.3"]{}
+}
+
+@defproc[(list-set [lst list?]
+                   [pos (and/c (>=/c 0) (</c (length lst)))]
+                   [value any/c])
+         list?]{
+
+Returns a list that is the same as @racket[lst] except at the specified index.
+The element at the specified index is @racket[value].
+
+@examples[#:eval list-eval
+(list-set '(zero one two) 2 "two")]
+@history[#:added "6.3"]{}
+}
 
 @defproc[(take [lst any/c] [pos exact-nonnegative-integer?])
          list?]{
@@ -990,6 +1021,54 @@ Like @racket[takef], @racket[dropf], and @racket[splitf-at], but
 combined with the from-right functionality of @racket[take-right],
 @racket[drop-right], and @racket[split-at-right].}
 
+@defproc[(list-prefix? [l list?]
+                       [r list?]
+                       [same? (any/c any/c . -> . any/c) equal?])
+         boolean?]{
+ True if @racket[l] is a prefix of @racket[r].
+@examples[#:eval list-eval
+(list-prefix? '(1 2) '(1 2 3 4 5))
+]
+@history[#:added "6.3"]{}
+}
+
+@defproc[(take-common-prefix [l list?] [r list?]
+                             [same? (any/c any/c . -> . any/c) equal?])
+         list?]{
+
+  Returns the longest common prefix of @racket[l] and @racket[r].
+
+@examples[#:eval list-eval
+(take-common-prefix '(a b c d) '(a b x y z))
+]
+@history[#:added "6.3"]{}
+}
+
+@defproc[(drop-common-prefix [l list?] [r list?]
+                             [same? (any/c any/c . -> . any/c) equal?])
+         (values list? list?)]{
+
+  Returns the tails of @racket[l] and @racket[r] with the common
+  prefix removed.
+
+@examples[#:eval list-eval
+(drop-common-prefix '(a b c d) '(a b x y z))
+]
+@history[#:added "6.3"]{}
+}
+
+@defproc[(split-common-prefix [l list?] [r list?]
+                              [same? (any/c any/c . -> . any/c) equal?])
+         (values list? list? list?)]{
+
+  Returns the longest common prefix together with the tails of
+  @racket[l] and @racket[r] with the common prefix removed.
+
+@examples[#:eval list-eval
+(split-common-prefix '(a b c d) '(a b x y z))
+]
+@history[#:added "6.3"]{}
+}
 
 
 @defproc[(add-between [lst list?] [v any/c]
@@ -1048,6 +1127,30 @@ traversal.
   (flatten '((a) b (c (d) . e) ()))
   (flatten 'a)]}
 
+
+@defproc[(check-duplicates [lst list?]
+                           [same? (any/c any/c . -> . any/c) equal?]
+                           [#:key extract-key (-> any/c any/c) (lambda (x) x)])
+         (or/c any/c #f)]{
+
+Returns the first duplicate item in @racket[lst]. More precisely, it
+returns the first @racket[_x] such that there was a previous
+@racket[_y] where @racket[(same? (extract-key _x) (extract-key _y))].
+
+The @racket[same?] argument should be an equivalence predicate such as
+@racket[equal?] or @racket[eqv?] or a dictionary.
+The procedures @racket[equal?], @racket[eqv?], and @racket[eq?] automatically
+use a dictionary for speed.
+
+@examples[#:eval list-eval
+(check-duplicates '(1 2 3 4))
+(check-duplicates '(1 2 3 2 1))
+(check-duplicates '((a 1) (b 2) (a 3)) #:key car)
+(check-duplicates '(1 2 3 4 5 6)
+                  (lambda (x y) (equal? (modulo x 3) (modulo y 3))))
+]
+@history[#:added "6.3"]{}
+}
 
 @defproc[(remove-duplicates [lst list?]
                             [same? (any/c any/c . -> . any/c) equal?]
@@ -1153,7 +1256,32 @@ returns @racket[#f].
 Returns a list with all elements from @racket[lst], randomly shuffled.
 
 @mz-examples[#:eval list-eval
+  (shuffle '(1 2 3 4 5 6))
+  (shuffle '(1 2 3 4 5 6))
   (shuffle '(1 2 3 4 5 6))]}
+
+
+@defproc*[([(combinations [lst list?]) list?]
+           [(combinations [lst list?] [size exact-nonnegative-integer?]) list?])]{
+@margin-note{Wikipedia @hyperlink["https://en.wikipedia.org/wiki/Combination"]{combinations}}
+Return a list of all combinations of elements in the input list
+(aka the @index["powerset"]{powerset} of @racket[lst]).
+If @racket[size] is given, limit results to combinations of @racket[size] elements.
+
+@mz-examples[#:eval list-eval
+  (combinations '(1 2 3))
+  (combinations '(1 2 3) 2)]}
+
+
+@defproc*[([(in-combinations [lst list?]) list?]
+           [(in-combinations [lst list?] [size exact-nonnegative-integer?]) sequence?])]{
+@index["in-powerset"]{Returns} a sequence of all combinations of elements in the input list,
+ or all combinations of length @racket[size] if @racket[size] is given.
+Builds combinations one-by-one instead of all at once.
+
+@mz-examples[#:eval list-eval
+  (time (begin (combinations (range 15)) (void)))
+  (time (begin (in-combinations (range 15)) (void)))]}
 
 
 @defproc[(permutations [lst list?])
@@ -1196,6 +1324,61 @@ result of @racket[proc].  Signals an error on an empty list.
 @mz-examples[#:eval list-eval
   (argmax car '((3 pears) (1 banana) (2 apples)))
   (argmax car '((3 pears) (3 oranges)))]}
+
+
+@defproc[(group-by [key (-> any/c any/c)]
+                   [lst list?]
+                   [same? (any/c any/c . -> . any/c) equal?])
+         (listof list?)]{
+
+Groups the given list into equivalence classes, with equivalence being
+determined by @racket[same?]. Within each equivalence class, @racket[group-by]
+preserves the ordering of the original list. Equivalence classes themselves are
+in order of first appearance in the input.
+
+@examples[#:eval list-eval
+(group-by (lambda (x) (modulo x 3)) '(1 2 1 2 54 2 5 43 7 2 643 1 2 0))
+]
+@history[#:added "6.3"]{}
+}
+
+@defproc[(cartesian-product [lst list?] ...)
+         (listof list?)]{
+
+Computes the n-ary cartesian product of the given lists.
+
+@examples[#:eval list-eval
+(cartesian-product '(1 2 3) '(a b c))
+(cartesian-product '(4 5 6) '(d e f) '(#t #f))
+]
+@history[#:added "6.3"]{}
+}
+
+@defproc[(remf [pred procedure?]
+               [lst list?])
+         list?]{
+Returns a list that is like @racket[lst], omitting the first element of @racket[lst]
+for which @racket[pred] produces a true value.
+
+@examples[
+#:eval list-eval
+(remf negative? '(1 -2 3 4 -5))
+]
+@history[#:added "6.3"]{}
+}
+
+@defproc[(remf* [pred procedure?]
+                [lst list?])
+         list?]{
+Like @racket[remf], but removes all the elements for which @racket[pred]
+produces a true value.
+
+@examples[
+#:eval list-eval
+(remf* negative? '(1 -2 3 4 -5))
+]
+@history[#:added "6.3"]{}
+}
 
 
 @close-eval[list-eval]

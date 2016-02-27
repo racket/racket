@@ -18,6 +18,7 @@
          blame-context
          
          blame-add-missing-party
+         blame-missing-party?
          
          raise-blame-error
          current-blame-format
@@ -30,7 +31,11 @@
        (equal?/recur (blame-contract a) (blame-contract b))
        (equal?/recur (blame-positive a) (blame-positive b))
        (equal?/recur (blame-negative a) (blame-negative b))
-       (equal?/recur (blame-original? a) (blame-original? b))))
+       (equal?/recur (blame-original? a) (blame-original? b))
+       (equal?/recur (blame-context a) (blame-context b))
+       (equal?/recur (blame-top-known? a) (blame-top-known? b))
+       (equal?/recur (blame-important a) (blame-important b))
+       (equal?/recur (blame-missing-party? a) (blame-missing-party? b))))
 
 (define (blame-hash b hash/recur)
   (bitwise-xor (hash/recur (blame-source b))
@@ -38,10 +43,17 @@
                (hash/recur (blame-contract b))
                (hash/recur (blame-positive b))
                (hash/recur (blame-negative b))
-               (hash/recur (blame-original? b))))
+               (hash/recur (blame-original? b))
+               (hash/recur (blame-context b))
+               (hash/recur (blame-top-known? b))
+               (hash/recur (blame-important b))
+               (hash/recur (blame-missing-party? b))))
 
+;; missing-party? field is #t when the missing party
+;; is still missing and it is #f when the missing party
+;; has been filled in (or if it was filled in from the start)
 (define-struct blame
-  [source value build-name positive negative original? context top-known? important]
+  [source value build-name positive negative original? context top-known? important missing-party?]
   #:property prop:equal+hash
   (list blame=? blame-hash blame-hash))
 
@@ -67,7 +79,8 @@
             original?
             '()
             #t 
-            #f))])
+            #f
+            (not negative)))])
     make-blame))
 
 ;; s : (or/c string? #f)
@@ -177,22 +190,25 @@
     blame)))
 
 (define (blame-add-missing-party b missing-party)
+  (define (check-and-fail)
+    (unless (blame-missing-party? b)
+      (error 'blame-add-missing-party "already have the party: ~s; trying to add ~s" 
+             (if (blame-swapped? b) (blame-positive b) (blame-negative b))
+             missing-party)))
   (cond
     [(not missing-party) b]
     [(blame-swapped? b)
-     (when (blame-positive b)
-       (error 'add-missing-party "already have the party: ~s; trying to add ~s" 
-              (blame-positive b)
-              missing-party))
+     (check-and-fail)
      (struct-copy blame b
-                  [positive (list missing-party)])]
+                  [positive (or (blame-positive b)
+                                (list missing-party))]
+                  [missing-party? #f])]
     [else
-     (when (blame-negative b)
-       (error 'add-missing-party "already have the party: ~s; trying to add ~s" 
-              (blame-negative b)
-              missing-party))
+     (check-and-fail)
      (struct-copy blame b
-                  [negative (list missing-party)])]))
+                  [negative (or (blame-negative b)
+                                (list missing-party))]
+                  [missing-party? #f])]))
 
 (define (blame-fmt->-string blame fmt)
   (cond

@@ -12,13 +12,16 @@
          setup/variant
          file/ico
          racket/private/so-search
+         setup/cross-system
          "private/winsubsys.rkt"
          "private/macfw.rkt"
          "private/mach-o.rkt"
          "private/elf.rkt"
          "private/windlldir.rkt"
+         "private/pe-rsrc.rkt"
          "private/collects-path.rkt"
          "private/configdir.rkt"
+         "private/write-perm.rkt"
          "find-exe.rkt")
 
 
@@ -83,10 +86,10 @@
   #f)
 
 (define (embedding-executable-is-actually-directory? mred?)
-  (and mred? (eq? 'macosx (system-type))))
+  (and mred? (eq? 'macosx (cross-system-type))))
 
 (define (embedding-executable-put-file-extension+style+filters mred?)
-  (case (system-type)
+  (case (cross-system-type)
     [(windows) (values "exe" null '(("Executable" "*.exe")))]
     [(macosx) (if mred?
                   (values "app" '(enter-packages) '(("App" "*.app")))
@@ -101,7 +104,7 @@
                   (if (regexp-match re (path->bytes path))
                       path
                       (path-replace-suffix path sfx)))])
-    (case (system-type)
+    (case (cross-system-type)
       [(windows) (fixup #rx#"[.][eE][xX][eE]$" #".exe")]
       [(macosx) (if mred?
                     (fixup #rx#"[.][aA][pP][pP]$" #".app")
@@ -117,7 +120,7 @@
       dest))
 
 (define exe-suffix?
-  (delay (equal? #"i386-cygwin" (path->bytes (system-library-subpath)))))
+  (delay (equal? #"i386-cygwin" (path->bytes (cross-system-library-subpath)))))
 
 ;; Find the magic point in the binary:
 (define (find-cmdline what rx)
@@ -316,11 +319,13 @@
 (define (make-mod normal-file-path normal-module-path 
                   code name prefix full-name relative-mappings-box 
                   runtime-paths runtime-module-syms
-                  actual-file-path)
+                  actual-file-path
+                  use-source?)
   (list normal-file-path normal-module-path code
         name prefix full-name relative-mappings-box
         runtime-paths runtime-module-syms 
-        actual-file-path))
+        actual-file-path
+        use-source?))
 
 (define (mod-file m) (car m))
 (define (mod-mod-path m) (cadr m))
@@ -332,6 +337,7 @@
 (define (mod-runtime-paths m) (list-ref m 7))
 (define (mod-runtime-module-syms m) (list-ref m 8))
 (define (mod-actual-file m) (list-ref m 9))
+(define (mod-use-source? m) (list-ref m 10))
 
 (define (generate-prefix)
   (format "#%embedded:~a:" (gensym)))
@@ -348,13 +354,17 @@
               (build-path (normal-case-path base) name)
               f)))))
 
+(define (strip-submod a)
+  (if (and (pair? a)
+           (eq? 'submod (car a)))
+      (cadr a)
+      a))
+
 (define (is-lib-path? a)
-  (or (and (pair? a)
-           (eq? 'lib (car a)))
-      (symbol? a)
-      (and (pair? a)
-           (eq? 'submod (car a))
-           (is-lib-path? (cadr a)))))
+  (let ([a (strip-submod a)])
+    (or (and (pair? a)
+             (eq? 'lib (car a)))
+        (symbol? a))))
 
 (define (symbol-to-lib-form l)
   (if (symbol? l)
@@ -373,9 +383,24 @@
         (values (reverse dirs) (car l))
         (loop (cdr l) (cons (car l) dirs)))))
 
+(define (adjust-ss/rkt-suffix path)
+  (cond
+   [(file-exists? path) path]
+   [(regexp-match? #rx"[.]ss$" path)
+    (define rkt-path (path-replace-suffix path #".rkt"))
+    (if (file-exists? rkt-path)
+        rkt-path
+        path)]
+   [(regexp-match? #rx"[.]rkt$" path)
+    (define ss-path (path-replace-suffix path #".ss"))
+    (if (file-exists? ss-path)
+        ss-path
+        path)]
+   [else path]))
+
 (define (lib-module-filename collects-dest module-path)
   (let-values ([(dir file) 
-                (let ([s (lib-path->string module-path)])
+                (let ([s (lib-path->string (strip-submod module-path))])
                   (extract-last (unix-style-split s)))])
     (let ([p (build-path collects-dest
                          (apply build-path dir)
@@ -393,9 +418,28 @@
 
 ;; Loads module code, using .zo if there, compiling from .scm if not
 (define (get-code filename module-path ready-code use-submods codes prefixes verbose? collects-dest on-extension 
-                  compiler expand-namespace get-extra-imports working)
+                  compiler expand-namespace src-filter get-extra-imports working)
   ;; filename can have the form `(submod ,filename ,sym ...)
-  (let ([a (assoc filename (unbox codes))])
+  (let* ([a (assoc filename (unbox codes))]
+         ;; If we didn't fine `filename` as-is, check now for
+         ;; using source, because in that case we'll only register the
+         ;; main module even if a submodule is include in `filename`.
+         [use-source?
+          (and (not a)
+               (src-filter (adjust-ss/rkt-suffix (strip-submod filename))))]
+         ;; When using source or writing to collects, keep full modules:
+         [keep-full? (or use-source? collects-dest)]
+         ;; When keeping a full module, strip away submodule paths:
+         [filename (or (and (not a)
+                            keep-full?
+                            (pair? filename)
+                            (cadr filename))
+                       filename)]
+         ;; Maybe search again after deciding whether to strip submodules:
+         [a (or a 
+                (and keep-full?
+                     ;; Try again:
+                     (assoc filename (unbox codes))))])
     (cond
      [a
       ;; Already have this module. Make sure that library-referenced
@@ -421,13 +465,8 @@
       (let* ([submod-path (if (pair? filename)
                               (cddr filename)
                               null)]
-             [just-filename (if (pair? filename)
-                                (cadr filename)
-                                filename)]
-             [root-module-path (if (and (pair? module-path)
-                                        (eq? 'submod (car module-path)))
-                                   (cadr module-path)
-                                   module-path)]
+             [just-filename (strip-submod filename)]
+             [root-module-path (strip-submod module-path)]
              [actual-filename just-filename] ; `set!'ed below to adjust file suffix
              [name (let-values ([(base name dir?) (split-path just-filename)])
                      (path->string (path-replace-suffix name #"")))]
@@ -474,17 +513,21 @@
                       (cons (make-mod filename module-path code 
                                       name prefix full-name
                                       (box null) null null
-                                      actual-filename)
+                                      actual-filename
+                                      #f)
                             (unbox codes)))]
            [code
             (let ([importss (module-compiled-imports code)])
-              (let ([all-file-imports (filter (lambda (x) 
-                                                (let-values ([(x base) (module-path-index-split x)])
-                                                  (not (and (pair? x)
-                                                            (eq? 'quote (car x))))))
+              (let ([all-file-imports (filter (keep-import-dependency? keep-full? actual-filename)
                                               (apply append (map cdr importss)))]
                     [extra-paths 
-                     (map symbol-to-lib-form (get-extra-imports actual-filename code))])
+                     (map symbol-to-lib-form (append (if keep-full?
+                                                         (extract-full-imports module-path actual-filename code)
+                                                         null)
+                                                     (if use-source?
+                                                         (list 'compiler/private/read-bstr)
+                                                         null)
+                                                     (get-extra-imports actual-filename code)))])
                 (let* ([runtime-paths
                         (if (module-compiled-cross-phase-persistent? code)
                             ;; avoid potentially trying to redeclare cross-phase persistent modules,
@@ -526,19 +569,23 @@
                                          code
                                          (module-compiled-name code (last (module-compiled-name code))))]
                        [extract-submods (lambda (l)
-                                          (if (null? use-submods)
+                                          (if (or (null? use-submods)
+                                                  use-source?)
                                               null
-                                              (for/list ([m l]
-                                                         #:when (member (cadr (module-compiled-name m)) use-submods)) 
+                                              (for/list ([m (in-list l)]
+                                                         #:when (or (member (last (module-compiled-name m)) use-submods)
+                                                                    (declares-always-preserved? m)))
                                                 m)))]
                        [pre-submods (extract-submods (module-compiled-submodules renamed-code #t))]
                        [post-submods (extract-submods (module-compiled-submodules renamed-code #f))]
-                       [code (module-compiled-submodules (module-compiled-submodules
-                                                          renamed-code
-                                                          #f
-                                                          null)
-                                                         #t
-                                                         null)])
+                       [code (if keep-full?
+                                 code
+                                 (module-compiled-submodules (module-compiled-submodules
+                                                              renamed-code
+                                                              #f
+                                                              null)
+                                                             #t
+                                                             null))])
                   (let ([sub-files (map (lambda (i) 
                                           ;; use `just-filename', because i has submod name embedded
                                           (normalize (resolve-module-path-index i just-filename)))
@@ -563,7 +610,7 @@
                                 on-extension
                                 compiler
                                 expand-namespace
-                                get-extra-imports
+                                src-filter get-extra-imports
                                 working))
                     (define (get-one-submodule-code m)
                       (define name (cadr (module-compiled-name m)))
@@ -601,7 +648,8 @@
                                     (cons (make-mod filename module-path #f
                                                     #f #f #f
                                                     (box null) null null
-                                                    actual-filename)
+                                                    actual-filename
+                                                    use-source?)
                                           (unbox codes))))
                         ;; Build up relative module resolutions, relative to this one,
                         ;; that will be requested at run-time.
@@ -610,7 +658,12 @@
                                                      (if m
                                                          (mod-full-name m)
                                                          ;; must have been a cycle...
-                                                         (hash-ref working sub-filename))))]
+                                                         (hash-ref working sub-filename
+                                                                   (lambda ()
+                                                                     ;; If `sub-filename` was included from source,
+                                                                     ;; then we'll need to use a submodule path:
+                                                                     `(,(hash-ref working (strip-submod sub-filename))
+                                                                       ,@(cddr sub-filename)))))))]
                                [get-submod-mapping
                                 (lambda (m)
                                   (define name (cadr (module-compiled-name m)))
@@ -657,7 +710,8 @@
                                                               (loop (cdr runtime-paths) (cdr extra-files)))]
                                                        [else
                                                         (cons #f (loop (cdr runtime-paths) extra-files))]))
-                                                    actual-filename)
+                                                    actual-filename
+                                                    use-source?)
                                           (unbox codes)))
                           ;; Add code for post submodules:
                           (for-each get-one-submodule-code post-submods)
@@ -670,8 +724,45 @@
                       (cons (make-mod filename module-path code 
                                       name #f #f
                                       null null null
-                                      actual-filename)
+                                      actual-filename
+                                      use-source?)
                             (unbox codes)))])))])))
+
+(define ((keep-import-dependency? keep-full? path) orig-x)
+  (define-values (x base) (module-path-index-split orig-x))
+  (not (or (and (pair? x)
+                (eq? 'quote (car x)))
+           (and keep-full?
+                ;; Don't try to include submodules specifically if the enclosing
+                ;; module is kept fully. Any needed dependencies will be
+                ;; extracted via `extract-full-imports`.
+                (pair? x)
+                (eq? (car x) 'submod)
+                (or (equal? (cadr x) ".")
+                    (equal? path
+                            (normalize (resolve-module-path-index (module-path-index-join (cadr x) #f)
+                                                                  path))))))))
+
+(define (extract-full-imports module-path path code)
+  ;; When embedding a module from source or otherwise keeping a full
+  ;; module, we need to collect all dependencies from submodules
+  ;; (recursively), because they'll be needed to start again from
+  ;; source.
+  (let accum-from-mod ([mod code])
+    (append
+     (map (lambda (i) (collapse-module-path-index i module-path))
+          (filter (keep-import-dependency? #t path)
+                  (apply append (map cdr (module-compiled-imports mod)))))
+     (apply append
+            (map accum-from-mod (module-compiled-submodules mod #t)))
+     (apply append
+            (map accum-from-mod (module-compiled-submodules mod #f))))))
+
+(define (declares-always-preserved? m)
+  (for/or ([s (in-list
+               (append (module-compiled-submodules m #t)
+                       (module-compiled-submodules m #f)))])
+    (eq? (last (module-compiled-name s)) 'declare-preserve-for-embedding)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -742,7 +833,7 @@
                     (namespace-module-registry (current-namespace))
                     (vector mapping-table library-table))
          (letrec-values ([(lookup)
-                          (lambda (name rel-to stx load? orig)
+                          (lambda (name rel-to stx load? for-submod? orig)
                             (if (not (module-path? name))
                                 ;; Bad input
                                 (orig name rel-to stx load?)
@@ -765,7 +856,15 @@
                                                    [(library-table) (vector-ref table-vec 1)])
                                         ;; Have a relative mapping?
                                         (let-values ([(a) (if rel-to
-                                                              (assq (resolved-module-path-name rel-to) mapping-table)
+                                                              (let-values ([(v) (assq (resolved-module-path-name rel-to) mapping-table)])
+                                                                (if v
+                                                                    v
+                                                                    ;; It we're loading a module from source, then `rel-to` might not be
+                                                                    ;; our eventual name, but `(current-module-declare-name)` provides
+                                                                    ;; one, so try using that to resolve the module:
+                                                                    (if (current-module-declare-name)
+                                                                        (assq (resolved-module-path-name (current-module-declare-name)) mapping-table)
+                                                                        #f)))
                                                               #f)]
                                                      [(ss->rkt)
                                                       (lambda (s)
@@ -927,8 +1026,17 @@
                                                   (if a3
                                                       ;; Have it:
                                                       (make-resolved-module-path (cdr a3))
-                                                      ;; Let default handler try:
-                                                      (orig name rel-to stx load?)))))))))))]
+                                                      (if (if for-submod?
+                                                              (if (pair? name)
+                                                                  (if (eq? (car name) 'quote)
+                                                                      (assq (cadr name) mapping-table)
+                                                                      #f)
+                                                                  #f)
+                                                              #f)
+                                                          ;; Report that we have mappings relative to `name`:
+                                                          (make-resolved-module-path (cadr name))
+                                                          ;; Let default handler try:
+                                                          (orig name rel-to stx load?))))))))))))]
                          [(embedded-resolver)
                           (case-lambda 
                            [(name from-namespace)
@@ -964,20 +1072,26 @@
                               (void))
                             (orig name from-namespace)]
                            [(name rel-to stx load?)
-                            (lookup name rel-to stx load?
+                            (lookup name rel-to stx load? #f
                                     (lambda (name rel-to stx load?)
                                       ;; For a submodule, if we have a mapping for the base name,
                                       ;; then don't try the original handler.
                                       (let-values ([(base)
                                                     (if (pair? name)
                                                         (if (eq? (car name) 'submod)
-                                                            (lookup (cadr name) rel-to stx load? (lambda (n r s l?) #f))
+                                                            ;; Pass #t for `for-submod?`, which causes a
+                                                            ;; resolved module name to be returned for a quoted
+                                                            ;; module name if we have any relative mappings for it:
+                                                            (lookup (cadr name) rel-to stx load? #t (lambda (n r s l?) #f))
                                                             #f)
                                                         #f)])
                                         (if base
-                                            ;; don't chain to `orig':
-                                            (make-resolved-module-path
-                                             (list* 'submod (resolved-module-path-name base) (cddr name)))
+                                            ;; don't chain to `orig'; try `lookup` again with `(submod "." ...)`,
+                                            ;; and if that still fails, just construct a submodule path:
+                                            (lookup (cons 'submod (cons "." (cddr name))) base stx load? #f
+                                                    (lambda (name rel-to stx load?)
+                                                      (make-resolved-module-path
+                                                       (cons (resolved-module-path-name base) (cddr name)))))
                                             ;; chain to `orig':
                                             (orig name rel-to stx load?)))))])])
            (current-module-name-resolver embedded-resolver))))))
@@ -1035,7 +1149,7 @@
          [get-code-at (lambda (f mp submods)
                         (get-code f mp #f submods codes prefix-mapping verbose? collects-dest
                                   on-extension compiler expand-namespace
-                                  get-extra-imports
+                                  src-filter get-extra-imports
                                   (make-hash)))]
          [__
           ;; Load all code:
@@ -1190,10 +1304,13 @@
                      (make-resolved-module-path
                       ',(mod-full-name nc))))
                   outp)
-           (if (src-filter (mod-actual-file nc))
+           (if (mod-use-source? nc)
                (call-with-input-file* (mod-actual-file nc)
                  (lambda (inp)
-                   (copy-port inp outp)))
+                   (define bstr (port->bytes inp))
+                   ;; The indirection through `compiler/private/read-bstr` ensures
+                   ;; that the source module is delimited by an EOF:
+                   (fprintf outp "#reader compiler/private/read-bstr ~s" bstr)))
                (write (mod-code nc) outp))))
        l))
     (write (compile-using-kernel '(current-module-declare-name #f)) outp)
@@ -1250,7 +1367,7 @@
                 cmdline
                 [aux null]
                 [launcher? #f]
-                [variant (system-type 'gc)]
+                [variant (cross-system-type 'gc)]
                 [collects-path #f])
     (create-embedding-executable dest
                                  #:mred? mred?
@@ -1281,7 +1398,7 @@
                                      #:cmdline [cmdline null]
                                      #:aux [aux null]
                                      #:launcher? [launcher? #f]
-                                     #:variant [variant (system-type 'gc)]
+                                     #:variant [variant (cross-system-type 'gc)]
                                      #:collects-path [collects-path #f]
                                      #:collects-dest [collects-dest #f]
                                      #:on-extension [on-extension #f]
@@ -1296,18 +1413,18 @@
                          (let ([m (assq 'forget-exe? aux)])
                            (or (not m)
                                (not (cdr m))))))
-  (define unix-starter? (and (eq? (system-type) 'unix)
+  (define unix-starter? (and (eq? (cross-system-type) 'unix)
                              (let ([m (assq 'original-exe? aux)])
                                (or (not m)
                                    (not (cdr m))))))
-  (define long-cmdline? (or (eq? (system-type) 'windows)
-                            (eq? (system-type) 'macosx)
+  (define long-cmdline? (or (eq? (cross-system-type) 'windows)
+                            (eq? (cross-system-type) 'macosx)
                             unix-starter?))
   (define relative? (let ([m (assq 'relative? aux)])
                       (and m (cdr m))))
   (define collects-path-bytes (collects-path->bytes 
                                ((if (and mred?
-                                         (eq? 'macosx (system-type)))
+                                         (eq? 'macosx (cross-system-type)))
                                     mac-mred-collects-path-adjust
                                     values)
                                 collects-path)))
@@ -1319,12 +1436,12 @@
                            cmdline)) . < . 80))
     (error 'create-embedding-executable "command line too long: ~e" cmdline))
   (check-collects-path 'create-embedding-executable collects-path collects-path-bytes)
-  (let ([exe (find-exe mred? variant)])
+  (let ([exe (find-exe #:cross? #t mred? variant)])
     (when verbose?
       (eprintf "Copying to ~s\n" dest))
     (let-values ([(dest-exe orig-exe osx?)
                   (cond
-                    [(and mred? (eq? 'macosx (system-type)))
+                    [(and mred? (eq? 'macosx (cross-system-type)))
                      (values (prepare-macosx-mred exe dest aux variant) 
                              (mac-dest->executable (build-path (find-lib-dir) "Starter.app")
                                                    #t)
@@ -1359,7 +1476,7 @@
                                     (delete-file dest)))
                               (raise x))])
         (define old-perms (ensure-writable dest-exe))
-        (when (and (eq? 'macosx (system-type))
+        (when (and (eq? 'macosx (cross-system-type))
                    (not unix-starter?))
           (let ([m (or (assq 'framework-root aux)
                        (and relative? '(framework-root . #f)))])
@@ -1369,8 +1486,11 @@
                                            (mac-dest->executable dest mred?)
                                            mred?)
                     (when mred?
-                      ;; adjust relative path (since GRacket is off by one):
-                      (update-framework-path "@executable_path/../../../lib/"
+                      ;; adjust relative path (since GRacket is normally off by one):
+                      (define rel (find-relative-path (find-gui-bin-dir)
+                                                      (find-lib-dir)))
+                      (update-framework-path (format "@executable_path/../../../~a"
+                                                     (path->directory-path rel))
                                              (mac-dest->executable dest mred?)
                                              #t)))
                 ;; Check whether we need an absolute path to frameworks:
@@ -1382,7 +1502,7 @@
                                             "/")
                                            dest
                                            mred?))))))
-        (when (eq? 'windows (system-type))
+        (when (eq? 'windows (cross-system-type))
           (let ([m (or (assq 'dll-dir aux)
                        (and relative? '(dll-dir . #f)))])
             (if m
@@ -1412,7 +1532,7 @@
                         ;; adjust relative path (since GRacket is off by one):
                         (update-config-dir (mac-dest->executable dest mred?)
                                            "../../../etc/")]
-                       [(eq? 'windows (system-type))
+                       [(eq? 'windows (cross-system-type))
                         (unless keep-exe?
                           ;; adjust relative path (since GRacket is off by one):
                           (update-config-dir dest "etc/"))])))
@@ -1446,7 +1566,7 @@
 			   [decl-end-s (number->string decl-end)]
                        [end-s (number->string end)])
 		       (append (if launcher?
-				   (if (and (eq? 'windows (system-type))
+				   (if (and (eq? 'windows (cross-system-type))
 					    keep-exe?)
 				       ;; argv[0] replacement:
 				       (list (path->string 
@@ -1490,54 +1610,76 @@
                   full-cmdline)
                  (display "\0\0\0\0" out))])
           (let-values ([(start decl-end end cmdline-end)
-                        (if (and (eq? (system-type) 'macosx)
-                                 (not unix-starter?))
-                            ;; For Mach-O, we know how to add a proper segment
-                            (let ([s (open-output-bytes)])
-                              (define decl-len (write-module s))
-                              (let* ([s (get-output-bytes s)]
-                                     [cl (let ([o (open-output-bytes)])
-                                           ;; position is relative to __PLTSCHEME:
-                                           (write-cmdline (make-full-cmdline 0 decl-len (bytes-length s)) o)
-                                           (get-output-bytes o))])
-                                (let ([start (add-plt-segment 
-                                              dest-exe 
-                                              (bytes-append
-                                               s
-                                               cl))])
-                                  (let ([start 0]) ; i.e., relative to __PLTSCHEME
-                                    (values start
-                                            (+ start decl-len)
-                                            (+ start (bytes-length s))
-                                            (+ start (bytes-length s) (bytes-length cl)))))))
-                            ;; Unix starter: Maybe ELF, in which case we 
-                            ;; can add a proper section
-                            (let-values ([(s e dl p)
-                                          (if unix-starter?
-                                              (add-racket-section 
-                                               orig-exe 
-                                               dest-exe
-                                               (if launcher? #".rackcmdl" #".rackprog")
-                                               (lambda (start)
-                                                 (let ([s (open-output-bytes)])
-                                                   (define decl-len (write-module s))
-                                                   (let ([p (file-position s)])
-                                                     (display (make-starter-cmdline
-                                                               (make-full-cmdline start 
-                                                                                  (+ start decl-len)
-                                                                                  (+ start p)))
-                                                              s)
-                                                     (values (get-output-bytes s) decl-len p)))))
-                                              (values #f #f #f #f))])
-                              (if (and s e)
-                                  ;; ELF succeeded:
-                                  (values s (+ s dl) (+ s p) e)
-                                  ;; Otherwise, just add to the end of the file:
-                                  (let ([start (file-size dest-exe)])
-                                    (define decl-end
-                                      (call-with-output-file* dest-exe write-module 
-                                                              #:exists 'append))
-                                    (values start decl-end (file-size dest-exe) #f)))))])
+                        (cond
+                         [(eq? (cross-system-type) 'windows)
+                          ;; Add as a resource
+                          (define o (open-output-bytes))
+                          (define decl-len (write-module o))
+                          (define init-len (bytes-length (get-output-bytes o)))
+                          (write-cmdline (make-full-cmdline 0 decl-len init-len) o)
+                          (define bstr (get-output-bytes o))
+                          (define cmdline-len (- (bytes-length bstr) init-len))
+                          (define-values (pe rsrcs) (call-with-input-file*
+                                                     dest-exe
+                                                     read-pe+resources))
+                          (define new-rsrcs (resource-set rsrcs
+                                                          ;; Racket's "user-defined" type for excutable 
+                                                          ;; plus command line:
+                                                          257
+                                                          1
+                                                          1033 ; U.S. English
+                                                          bstr))
+                          (update-resources dest-exe pe new-rsrcs)
+                          (values 0 decl-len init-len (+ init-len cmdline-len))]
+                         [(and (eq? (cross-system-type) 'macosx)
+                               (not unix-starter?))
+                          ;; For Mach-O, we know how to add a proper segment
+                          (define s (open-output-bytes))
+                          (define decl-len (write-module s))
+                          (let* ([s (get-output-bytes s)]
+                                 [cl (let ([o (open-output-bytes)])
+                                       ;; position is relative to __PLTSCHEME:
+                                       (write-cmdline (make-full-cmdline 0 decl-len (bytes-length s)) o)
+                                       (get-output-bytes o))])
+                            (let ([start (add-plt-segment 
+                                          dest-exe 
+                                          (bytes-append
+                                           s
+                                           cl))])
+                              (let ([start 0]) ; i.e., relative to __PLTSCHEME
+                                (values start
+                                        (+ start decl-len)
+                                        (+ start (bytes-length s))
+                                        (+ start (bytes-length s) (bytes-length cl))))))]
+                         [else
+                          ;; Unix starter: Maybe ELF, in which case we 
+                          ;; can add a proper section
+                          (define-values (s e dl p)
+                            (if unix-starter?
+                                (add-racket-section 
+                                 orig-exe 
+                                 dest-exe
+                                 (if launcher? #".rackcmdl" #".rackprog")
+                                 (lambda (start)
+                                   (let ([s (open-output-bytes)])
+                                     (define decl-len (write-module s))
+                                     (let ([p (file-position s)])
+                                       (display (make-starter-cmdline
+                                                 (make-full-cmdline start 
+                                                                    (+ start decl-len)
+                                                                    (+ start p)))
+                                                s)
+                                       (values (get-output-bytes s) decl-len p)))))
+                                (values #f #f #f #f)))
+                          (if (and s e)
+                             ;; ELF succeeded:
+                             (values s (+ s dl) (+ s p) e)
+                             ;; Otherwise, just add to the end of the file:
+                             (let ([start (file-size dest-exe)])
+                               (define decl-end
+                                 (call-with-output-file* dest-exe write-module 
+                                                         #:exists 'append))
+                               (values start decl-end (file-size dest-exe) #f)))])])
             (when unix-starter?
               (adjust-config-dir))
             (when verbose?
@@ -1554,7 +1696,7 @@
                    [osx?
                     ;; default path in `gracket' is off by one:
                     (set-collects-path dest-exe #"../../../collects")]
-                   [(eq? 'windows (system-type))
+                   [(eq? 'windows (cross-system-type))
                     (unless keep-exe?
                       ;; off by one in this case, too:
                       (set-collects-path dest-exe #"collects"))])])
@@ -1611,7 +1753,7 @@
                                                "cmdline"
                                                #"\\[Replace me for EXE hack")))]
                          [anotherpos (and mred?
-                                          (eq? 'windows (system-type))
+                                          (eq? 'windows (cross-system-type))
                                           (let ([m (assq 'single-instance? aux)])
                                             (and m (not (cdr m))))
                                           (with-input-from-file dest-exe 
@@ -1637,22 +1779,22 @@
                         (unless cmdline-done?
                           (write-cmdline full-cmdline out))
                         (when long-cmdline?
-                          ;; cmdline written at the end;
+                          ;; cmdline written at the end, in a resource, etc.;
                           ;; now put forwarding information at the normal cmdline pos
                           (let ([new-end (or cmdline-end
                                              (file-position out))])
                             (file-position out cmdpos)
                             (fprintf out "~a...~a~a"
-                                     (if (and keep-exe? (eq? 'windows (system-type))) "*" "?")
+                                     (if (and keep-exe? (eq? 'windows (cross-system-type))) "*" "?")
                                      (integer->integer-bytes end 4 #t #f)
                                      (integer->integer-bytes (- new-end end) 4 #t #f)))))
                       (lambda ()
                         (close-output-port out)))
-                     (let ([m (and (eq? 'windows (system-type))
+                     (let ([m (and (eq? 'windows (cross-system-type))
                                    (assq 'ico aux))])
                        (when m
-                         (replace-icos (read-icos (cdr m)) dest-exe)))
-                     (let ([m (and (eq? 'windows (system-type))
+                         (replace-all-icos (read-icos (cdr m)) dest-exe)))
+                     (let ([m (and (eq? 'windows (cross-system-type))
                                    (assq 'subsystem aux))])
                        (when m
                          (set-subsystem dest-exe (cdr m)))))]))))
@@ -1666,20 +1808,3 @@
     [(list? p) (map mac-mred-collects-path-adjust p)]
     [(relative-path? p) (build-path 'up 'up 'up p)]
     [else p]))
-
-;; Returns #f (no change needed) or old permissions
-(define (ensure-writable dest-exe)
-  (cond
-   [(member 'write (file-or-directory-permissions dest-exe))
-    ;; No change needed
-    #f]
-   [else
-    (define old-perms
-      (file-or-directory-permissions dest-exe 'bits))
-    (file-or-directory-permissions dest-exe (bitwise-ior old-perms #o200))
-    old-perms]))
-
-;; Restores old permissions (if not #f)
-(define (done-writable dest-exe old-perms)
-  (when old-perms
-    (file-or-directory-permissions dest-exe old-perms)))

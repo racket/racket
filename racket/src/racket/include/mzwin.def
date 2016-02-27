@@ -224,7 +224,9 @@ EXPORTS
  scheme_dont_gc_ptr
  scheme_gc_ptr_ok
  scheme_collect_garbage
+ scheme_collect_garbage_minor
  scheme_enable_garbage_collection
+ scheme_incremental_garbage_collection
  scheme_malloc_immobile_box
  scheme_free_immobile_box
  scheme_add_gc_callback
@@ -251,6 +253,7 @@ EXPORTS
  scheme_clone_hash_table
  scheme_clear_hash_table
  scheme_make_hash_tree
+ scheme_make_hash_tree_set
  scheme_hash_tree_set
  scheme_hash_tree_get
  scheme_eq_hash_tree_get

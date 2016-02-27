@@ -10,8 +10,11 @@
   (ctest #t flat-contract? (or/c (flat-contract integer?) (flat-contract boolean?)))
   (ctest #t flat-contract? (or/c integer? boolean?))
   
-  (ctest #t flat-contract? (-> any/c any/c any))
-
+  (ctest #t flat-contract? (first-or/c))
+  (ctest #t flat-contract? (first-or/c integer? (lambda (x) (> x 0))))
+  (ctest #t flat-contract? (first-or/c (flat-contract integer?) (flat-contract boolean?)))
+  (ctest #t flat-contract? (first-or/c integer? boolean?))
+  
   (ctest #t flat-contract? (and/c))
   (ctest #t flat-contract? (and/c number? integer?))
   (ctest #t flat-contract? (and/c (flat-contract number?)
@@ -196,7 +199,7 @@
                                                (cons/c (recursive-contract ctc #:flat)
                                                        (recursive-contract ctc #:flat)))])
                              ctc))
-
+  
   (ctest #f flat-contract? (letrec ([ctc (or/c number?
                                                (box/c (recursive-contract ctc #:chaperone)))])
                              ctc))
@@ -204,6 +207,20 @@
                                                     (box/c (recursive-contract ctc #:chaperone)))])
                                   ctc))
   (ctest #f impersonator-contract? (letrec ([ctc (or/c number?
+                                                       (box/c (recursive-contract ctc #:chaperone)))])
+                                     ctc))
+  (ctest #t flat-contract? (letrec ([ctc (first-or/c number?
+                                                (cons/c (recursive-contract ctc #:flat)
+                                                        (recursive-contract ctc #:flat)))])
+                             ctc))
+  
+  (ctest #f flat-contract? (letrec ([ctc (first-or/c number?
+                                                (box/c (recursive-contract ctc #:chaperone)))])
+                             ctc))
+  (ctest #t chaperone-contract? (letrec ([ctc (first-or/c number?
+                                                     (box/c (recursive-contract ctc #:chaperone)))])
+                                  ctc))
+  (ctest #f impersonator-contract? (letrec ([ctc (first-or/c number?
                                                   (box/c (recursive-contract ctc #:chaperone)))])
                                     ctc))
 

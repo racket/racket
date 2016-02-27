@@ -34,7 +34,7 @@ modular reasoning about programs. For example, in the module,
   (provide rx:fish fishy-string?)
   (define rx:fish #rx"fish")
   (define (fishy-string? s)
-    (regexp-match? s rx:fish)))
+    (regexp-match? rx:fish s)))
 ]
 
 the function @racket[fishy-string?] will always match strings that

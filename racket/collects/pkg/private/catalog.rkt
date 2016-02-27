@@ -7,7 +7,9 @@
          "../name.rkt"
          "params.rkt"
          "config.rkt"
-         "print.rkt")
+         "print.rkt"
+         "prefetch.rkt"
+         "network.rkt")
 
 (provide select-info-version
          source->relative-source
@@ -127,58 +129,86 @@
         ;; No further adjustments:
         new-ht)))
 
-(define (package-catalog-lookup pkg details? cache download-printf)
+(define (package-catalog-lookup pkg details? cache download-printf
+                                 #:prefetch? [prefetch? #f]
+                                 #:prefetch-group [prefetch-group #f])
+  (define (lookup-normally download-printf)
+    (or (add-to-cache
+         pkg cache
+         (for/or ([i (in-list (pkg-catalogs))])
+           (define (consulting-catalog suffix)
+             (if download-printf
+                 (download-printf "Resolv~a ~s via ~a\n" suffix pkg (url->string i))
+                 (log-pkg-debug "consult~a catalog ~a" suffix (url->string i))))
+           (source->absolute-source
+            i
+            (select-info-version
+             (catalog-dispatch
+              i
+              ;; Server:
+              (lambda (i)
+                (consulting-catalog "ing")
+                (define addr (add-version-query
+                              (combine-url/relative i (format "pkg/~a" pkg))))
+                (log-pkg-debug "resolving via ~a" (url->string addr))
+                (read-from-server
+                 'package-catalog-lookup
+                 addr
+                 (lambda (v) (and (hash? v)
+                             (for/and ([k (in-hash-keys v)])
+                               (symbol? k))))
+                 (lambda (s) #f)))
+              ;; Local database:
+              (lambda ()
+                (define pkgs (db:get-pkgs #:name pkg))
+                (and (pair? pkgs)
+                     (begin
+                       (consulting-catalog "ed")
+                       (db-pkg-info (car pkgs) details?))))
+              ;; Local directory:
+              (lambda (path)
+                (define pkg-path (build-path path "pkg" pkg))
+                (and (file-exists? pkg-path)
+                     (begin
+                       (consulting-catalog "ed")
+                       (call-with-input-file* pkg-path read)))))))))
+        (pkg-error (~a "cannot find package on catalogs\n"
+                       "  package: ~a")
+                   pkg)))
+
   (when (and details? cache)
     (error "internal error: catalog-lookup cache doesn't keep details"))
+
   (or
    (and cache
-        (hash-ref cache pkg #f))
-   (add-to-cache
-    pkg cache
-    (for/or ([i (in-list (pkg-catalogs))])
-      (define (consulting-catalog suffix)
-        (if download-printf
-            (download-printf "Resolv~a ~s via ~a\n" suffix pkg (url->string i))
-            (log-pkg-debug "consult~a catalog ~a" suffix (url->string i))))
-      (source->absolute-source
-       i
-       (select-info-version
-        (catalog-dispatch
-         i
-         ;; Server:
-         (lambda (i)
-           (consulting-catalog "ing")
-           (define addr (add-version-query
-                         (combine-url/relative i (format "pkg/~a" pkg))))
-           (log-pkg-debug "resolving via ~a" (url->string addr))
-           (read-from-server
-            'package-catalog-lookup
-            addr
-            (lambda (v) (and (hash? v)
-                        (for/and ([k (in-hash-keys v)])
-                          (symbol? k))))
-            (lambda (s) #f)))
-         ;; Local database:
-         (lambda ()
-           (define pkgs (db:get-pkgs #:name pkg))
-           (and (pair? pkgs)
-                (begin
-                  (consulting-catalog "ed")
-                  (db-pkg-info (car pkgs) details?))))
-         ;; Local directory:
-         (lambda (path)
-           (define pkg-path (build-path path "pkg" pkg))
-           (and (file-exists? pkg-path)
-                (begin
-                  (consulting-catalog "ed")
-                  (call-with-input-file* pkg-path read)))))))))
-   (pkg-error (~a "cannot find package on catalogs\n"
-                  "  package: ~a")
-              pkg)))
+        (let ([v (hash-ref cache pkg #f)])
+          (if (and (prefetch-future? v)
+                   (not prefetch?))
+              (prefetch-touch v prefetch-group download-printf)
+              v)))
+   (cond
+    [prefetch?
+     (make-prefetch-future/hash cache
+                                pkg
+                                lookup-normally
+                                prefetch-group
+                                download-printf)]
+    [else (lookup-normally download-printf)])))
 
-(define (package-catalog-lookup-source pkg cache download-printf)
-  (hash-ref (package-catalog-lookup pkg #f cache download-printf)
-            'source))
+;; Beware that this function produces `#f` in prefetch mode when a
+;; prefetch future is created or hasn't been touched.
+(define (package-catalog-lookup-source pkg cache download-printf
+                                       #:prefetch? [prefetch? #f]
+                                       #:prefetch-group [prefetch-group #f])
+  (define info (package-catalog-lookup pkg #f cache download-printf
+                                       #:prefetch? prefetch?
+                                       #:prefetch-group prefetch-group))
+  (cond
+   [(and (prefetch-future? info)
+         (not prefetch?))
+    (hash-ref (prefetch-touch info prefetch-group download-printf) 'source)]
+   [(prefetch-future? info) #f]
+   [else (hash-ref info 'source)]))
 
 (define (add-to-cache pkg cache v)
   (when (and cache v)
@@ -194,7 +224,7 @@
                                         "  response: ~v")
                                     (url->string url)
                                     s))])
-  (define bytes (call-with-url url port->bytes))
+  (define bytes (call/input-url+200 url port->bytes #:who who))
   ((if bytes
      (with-handlers ([exn:fail:read? (lambda (exn)
                                        (lambda () (failure bytes)))])
@@ -204,22 +234,6 @@
            v
            (failure bytes))))
      (lambda () (failure #f)))))
-
-;; uses a custodian to avoid leaks:
-(define (call-with-url url handler)
-  (define c (make-custodian))
-  (dynamic-wind
-      void
-      (lambda ()
-        (define-values (p hs)
-          (parameterize ([current-custodian c])
-            (get-pure-port/headers url #:redirections 25 #:status? #t)))
-        (begin0
-          (and (string=? "200" (substring hs 9 12))
-               (handler p))
-          (close-input-port p)))
-      (lambda ()
-        (custodian-shutdown-all c))))
 
 (define (db-pkg-info pkg details?)
   (if details?
@@ -256,7 +270,7 @@
                      (add-version-query
                       (combine-url/relative i "pkgs"))
                      (lambda (l) (and (list? l) 
-                                      (andmap string? l)))))
+                                 (andmap string? l)))))
                   ;; Local database:
                   (lambda ()
                     (map db:pkg-name (db:get-pkgs)))

@@ -23,7 +23,7 @@
 
 The test form has these two shapes:
 
-  (test <expected> <procdure> <argument1> <argument2> ...)
+  (test <expected> <procedure> <argument1> <argument2> ...)
 
   (test <expected> <symbolic-name> <expression>)
 
@@ -216,6 +216,13 @@ transcript.
       [(_ e exn?)
        (syntax
 	(thunk-error-test (err:mz:lambda () e) (quote-syntax e) exn?))]
+      [(_ e exn? msg-rx)
+       #'(thunk-error-test
+          (err:mz:lambda () e)
+          (quote-syntax e)
+          (lambda (exn)
+            (and (exn? exn)
+                 (regexp-match? msg-rx (exn-message exn)))))]
       [(_ e)
        (syntax
 	(err/rt-test e exn:application:type?))])))

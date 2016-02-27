@@ -18,11 +18,11 @@
    (cond
     [(or win? linux?)
      '("sqlite"
-       "openssl"
        "zlib")]
     [else
      null])
-   '("expat"
+   '("openssl"
+     "expat"
      "gettext")
    (cond
     [linux?

@@ -1,6 +1,6 @@
 /*
   Racket
-  Copyright (c) 2004-2014 PLT Design Inc.
+  Copyright (c) 2004-2016 PLT Design Inc.
   Copyright (c) 1995-2001 Matthew Flatt
 
     This library is free software; you can redistribute it and/or
@@ -222,6 +222,11 @@ void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC
 Thread_Local_Variables *scheme_external_get_thread_local_variables() XFORM_SKIP_PROC
 {
   return scheme_get_thread_local_variables();
+}
+#else
+void scheme_register_tls_space(void *tls_space, int tls_index) XFORM_SKIP_PROC
+{
+  /* Nothing to do; provided for compatibility. */
 }
 #endif
 
@@ -1633,6 +1638,14 @@ void scheme_collect_garbage(void)
   GC_gcollect();
 }
 
+void scheme_collect_garbage_minor(void)
+{
+#ifdef MZ_PRECISE_GC
+  GC_gcollect_minor();
+#else
+#endif
+}
+
 void scheme_enable_garbage_collection(int on)
 {
 #ifdef MZ_PRECISE_GC
@@ -1642,6 +1655,13 @@ void scheme_enable_garbage_collection(int on)
     --GC_dont_gc;
   else
     GC_dont_gc++;
+#endif
+}
+
+void scheme_incremental_garbage_collection(int on)
+{
+#ifdef MZ_PRECISE_GC
+  GC_set_incremental_mode(on);
 #endif
 }
 
@@ -2003,7 +2023,7 @@ static void print_tagged_value(const char *prefix,
   scheme_check_print_is_obj = check_home;
 
   {
-    if (SCHEME_TYPE(v) > _scheme_compiled_values_types_) {
+    if (SCHEME_TYPE(v) > _scheme_ir_values_types_) {
       sprintf(hashstr, "{%" PRIdPTR "}", scheme_hash_key(v));
       hash_code = hashstr;
     }
@@ -2893,13 +2913,13 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
 #endif
     }
     break;
-  case scheme_unclosed_procedure_type:
-  case scheme_compiled_unclosed_procedure_type:
+  case scheme_lambda_type:
+  case scheme_ir_lambda_type:
     {
-      Scheme_Closure_Data *data = 
-	(Scheme_Closure_Data *)root;
+      Scheme_Lambda *data = 
+	(Scheme_Lambda *)root;
 
-      s = sizeof(Scheme_Closure_Data);
+      s = sizeof(Scheme_Lambda);
       s += data->closure_size * sizeof(mzshort);
 #if FORCE_KNOWN_SUBPARTS
       e = COUNT(data->code);
@@ -2916,11 +2936,11 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
 #endif
     }
     break;
-  case scheme_compiled_let_value_type:
+  case scheme_ir_let_value_type:
     {
-      Scheme_Compiled_Let_Value *let = (Scheme_Compiled_Let_Value *)root;
+      Scheme_IR_Let_Value *let = (Scheme_IR_Let_Value *)root;
 
-      s = sizeof(Scheme_Compiled_Let_Value);
+      s = sizeof(Scheme_IR_Let_Value);
 #if FORCE_KNOWN_SUBPARTS
       e = COUNT(let->value) + COUNT(let->body);
 #endif
@@ -2936,7 +2956,7 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
 #endif
     }
     break;
-  case scheme_compiled_let_void_type:
+  case scheme_ir_let_header_type:
     {
       Scheme_Let_Header *let = (Scheme_Let_Header *)root;
 
@@ -3020,11 +3040,11 @@ intptr_t scheme_count_memory(Scheme_Object *root, Scheme_Hash_Table *ht)
     break;
   case scheme_closure_type:
     {
-      Scheme_Closure_Data *data;
+      Scheme_Lambda *data;
       Scheme_Object **vals;
       
-      data = SCHEME_COMPILED_CLOS_CODE(root);
-      vals = SCHEME_COMPILED_CLOS_ENV(root);
+      data = SCHEME_CLOSURE_CODE(root);
+      vals = SCHEME_CLOSURE_ENV(root);
 
       s += (data->closure_size * sizeof(Scheme_Object *));
 #if FORCE_KNOWN_SUBPARTS

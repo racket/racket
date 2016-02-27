@@ -2,13 +2,17 @@
 
 #ifdef USE_TCP
 static int mark_listener_SIZE(void *p, struct NewGC *gc) {
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   listener_t *l = (listener_t *)p;
 
-  return
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
+#else
+  return 0;
+#endif
 }
 
 static int mark_listener_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
   listener_t *l = (listener_t *)p;
 
 
@@ -17,11 +21,17 @@ static int mark_listener_MARK(void *p, struct NewGC *gc) {
   gcMARK2(l->pfd, gc);
 # endif
 
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
+# endif
+#endif
 }
 
 static int mark_listener_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   listener_t *l = (listener_t *)p;
 
 
@@ -30,8 +40,13 @@ static int mark_listener_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(l->pfd, gc);
 # endif
 
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(listener_t) + ((l->count - mzFLEX_DELTA) * sizeof(tcp_t)));
+# endif
+#endif
 }
 
 #define mark_listener_IS_ATOMIC 0
@@ -39,28 +54,43 @@ static int mark_listener_FIXUP(void *p, struct NewGC *gc) {
 
 
 static int mark_tcp_SIZE(void *p, struct NewGC *gc) {
-  return
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
+#else
+  return 0;
+#endif
 }
 
 static int mark_tcp_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Tcp *tcp = (Scheme_Tcp *)p;
 
   gcMARK2(tcp->b.buffer, gc);
   gcMARK2(tcp->b.out_buffer, gc);
 
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
+# endif
+#endif
 }
 
 static int mark_tcp_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Tcp *tcp = (Scheme_Tcp *)p;
 
   gcFIXUP2(tcp->b.buffer, gc);
   gcFIXUP2(tcp->b.out_buffer, gc);
 
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
+# endif
+#endif
 }
 
 #define mark_tcp_IS_ATOMIC 0
@@ -69,28 +99,43 @@ static int mark_tcp_FIXUP(void *p, struct NewGC *gc) {
 
 # ifdef UDP_IS_SUPPORTED
 static int mark_udp_SIZE(void *p, struct NewGC *gc) {
-  return
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP));
+#else
+  return 0;
+#endif
 }
 
 static int mark_udp_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_UDP *udp = (Scheme_UDP *)p;
 
   gcMARK2(udp->previous_from_addr, gc);
   gcMARK2(udp->mref, gc);
 
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP));
+# endif
+#endif
 }
 
 static int mark_udp_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_UDP *udp = (Scheme_UDP *)p;
 
   gcFIXUP2(udp->previous_from_addr, gc);
   gcFIXUP2(udp->mref, gc);
 
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP));
+# endif
+#endif
 }
 
 #define mark_udp_IS_ATOMIC 0
@@ -98,11 +143,15 @@ static int mark_udp_FIXUP(void *p, struct NewGC *gc) {
 
 
 static int mark_udp_evt_SIZE(void *p, struct NewGC *gc) {
-  return
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
+#else
+  return 0;
+#endif
 }
 
 static int mark_udp_evt_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_UDP_Evt *uw = (Scheme_UDP_Evt *)p;
 
   gcMARK2(uw->udp, gc);
@@ -110,11 +159,17 @@ static int mark_udp_evt_MARK(void *p, struct NewGC *gc) {
   gcMARK2(uw->dest_addrs, gc);
   gcMARK2(uw->dest_addr_lens, gc);
 
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
+# endif
+#endif
 }
 
 static int mark_udp_evt_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_UDP_Evt *uw = (Scheme_UDP_Evt *)p;
 
   gcFIXUP2(uw->udp, gc);
@@ -122,8 +177,13 @@ static int mark_udp_evt_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(uw->dest_addrs, gc);
   gcFIXUP2(uw->dest_addr_lens, gc);
 
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
   return
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
+# endif
+#endif
 }
 
 #define mark_udp_evt_IS_ATOMIC 0

@@ -11,6 +11,7 @@
               (#:dest 
                (or/c #f path-string?)
                #:strip-count exact-nonnegative-integer?
+               #:permissive? any/c
                #:filter (path? (or/c path? #f)
                                symbol? exact-integer? (or/c path? #f)
                                exact-nonnegative-integer? exact-nonnegative-integer?
@@ -20,6 +21,7 @@
 (define (untgz in 
                #:dest [dest #f]
                #:strip-count [strip-count 0]
+               #:permissive? [permissive? #f]
                #:filter [filter void])
   ((if (input-port? in)
        (lambda (in f) (f in))
@@ -44,7 +46,7 @@
                        (thread-wait t)))]
         [else (values in void)]))
      (begin0
-      (untar in2 #:dest dest #:strip-count strip-count #:filter filter)
+      (untar in2 #:dest dest #:strip-count strip-count #:permissive? permissive? #:filter filter)
       (wait)))))
 
       

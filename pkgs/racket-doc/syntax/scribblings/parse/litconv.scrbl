@@ -5,6 +5,8 @@
           scribble/eval
           "parse-common.rkt")
 
+@(define the-eval (make-sp-eval))
+
 @title{Literal Sets and Conventions}
 
 Sometimes the same literals are recognized in a number of different
@@ -38,7 +40,7 @@ identifiers the literal matches. If the @racket[#:literal-sets] option
 is present, the contents of the given @racket[imported-litset-id]s are
 included.
 
-@myexamples[
+@examples[#:eval the-eval
 (define-literal-set def-litset
   (define-values define-syntaxes))
 (syntax-parse #'(define-syntaxes (x) 12)
@@ -56,7 +58,7 @@ given, then @racket[phase-level] is @racket[0].
 
 For example:
 
-@myexamples[
+@interaction[#:eval the-eval
 (module common racket/base
   (define x 'something)
   (provide x))
@@ -74,7 +76,7 @@ module @racketmodname['common].
 The following module defines an equivalent literal set, but imports
 the @racket['common] module for-template instead:
 
-@myexamples[
+@interaction[#:eval the-eval
 (module lits racket/base
   (require syntax/parse (for-template 'common))
   (define-literal-set common-lits #:for-template (x))
@@ -85,7 +87,7 @@ When a literal set is @emph{used} with the @racket[#:phase phase-expr]
 option, the literals' fixed bindings are compared against the binding of
 the input literal at the specified phase. Continuing the example:
 
-@myexamples[
+@interaction[#:eval the-eval
 (require syntax/parse 'lits (for-syntax 'common))
 (syntax-parse #'x #:literal-sets ([common-lits #:phase 1])
   [x 'yes]
@@ -106,7 +108,7 @@ phase @racket[_phase] at which to examine the binding of @racket[_id];
 the @racket[_phase] argument defaults to
 @racket[(syntax-local-phase-level)].
 
-@myexamples[
+@examples[#:eval the-eval
 (define kernel? (literal-set->predicate kernel-literals))
 (kernel? #'lambda)
 (kernel? #'#%plain-lambda)
@@ -130,7 +132,7 @@ that matches determines the syntax class for the pattern. If no
 @racket[name-pattern] matches, then the pattern variable has no syntax
 class.
 
-@myexamples[
+@examples[#:eval the-eval
 (define-conventions xyz-as-ids
   [x id] [y id] [z id])
 (syntax-parse #'(a b c 1 2 3)
@@ -149,7 +151,7 @@ Local conventions, introduced with the @racket[#:local-conventions]
 keyword argument of @racket[syntax-parse] and syntax class
 definitions, may refer to local bindings:
 
-@myexamples[
+@examples[#:eval the-eval
 (define-syntax-class (nat> bound)
   (pattern n:nat
            #:fail-unless (> (syntax-e #'n) bound)
@@ -168,3 +170,5 @@ definitions, may refer to local bindings:
 ]
 
 }
+
+@(close-eval the-eval)

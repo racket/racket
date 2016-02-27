@@ -7,7 +7,7 @@
 
 (define-struct (promise/name promise) ()
   #:property prop:force (λ(p) ((pref p))))
-(provide (rename-out [delay/name* delay/name]))
+(provide (rename-out [delay/name* delay/name]) promise/name?)
 (define delay/name make-promise/name)
 (define-syntax (delay/name* stx) (make-delayer stx #'delay/name '()))
 

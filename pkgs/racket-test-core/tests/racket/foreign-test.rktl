@@ -171,6 +171,11 @@
                        [c7 _c7_list]
                        [i2 _int]))
 
+(let ()
+  (define-cstruct _posn ([x _int]
+                         [y _int]))
+  (test #t equal? 'posn posn-tag))
+
 (define _borl (_union _byte _long))
 (define _ic7iorl (_union _ic7i _long))
 
@@ -546,6 +551,43 @@
   
   (define a-bar (bar (malloc 16 'raw)))
   (free a-bar))
+
+(unless (eq? (system-type) 'windows)
+  ;; saved-errno tests
+  (define check-multiple-of-ten
+    (get-ffi-obj 'check_multiple_of_ten test-lib (_fun #:save-errno 'posix _int -> _int)))
+  (test 0 check-multiple-of-ten 40)
+  (test -1 check-multiple-of-ten 42)
+  (test 2 saved-errno)
+  (saved-errno 5)
+  (test 5 saved-errno)
+  ;; test saved-errno is thread-local
+  (define errno-from-thread #f)
+  (sync (thread (lambda () (check-multiple-of-ten 17) (set! errno-from-thread (saved-errno)))))
+  (test 5 saved-errno) ;; same as before
+  (test 7 (lambda () errno-from-thread)))
+
+(when (eq? (system-type) 'windows)
+  ;; Use functions from msvcrt.dll that are documented to affect errno.
+  ;; (See note in /racket/src/foreign/foreign.rktc about Windows.)
+  (define msvcrt (ffi-lib "msvcrt.dll"))
+  (define ENOENT 2)
+  (define ERANGE 34)
+  (define _getcwd   ;; sets errno = ERANGE if path longer than buffer
+    (get-ffi-obj '_getcwd msvcrt (_fun #:save-errno 'posix _bytes _int -> _void)))
+  (define _chdir    ;; sets errno = ENOENT if path doesn't exist
+    (get-ffi-obj '_chdir  msvcrt (_fun #:save-errno 'posix _string -> _int)))
+  (define (bad/ERANGE) (_getcwd (make-bytes 1) 1))
+  (define (bad/ENOENT) (_chdir "no-such-directory"))
+  (bad/ERANGE)
+  (test ERANGE saved-errno)
+  (test -1 bad/ENOENT)
+  (test ENOENT saved-errno)
+  ;; test saved-errno is thread-local
+  (define errno-from-thread #f)
+  (sync (thread (lambda () (bad/ERANGE) (set! errno-from-thread (saved-errno)))))
+  (test ENOENT saved-errno) ;; same as above
+  (test ERANGE (lambda () errno-from-thread)))
 
 (delete-test-files)
 
@@ -965,6 +1007,122 @@
 
 (define-cpointer-type _foo)
 (test 'foo? object-name foo?)
+
+;; ----------------------------------------
+;; Test JIT inlining
+
+(define bstr (cast (make-bytes 64) _pointer _pointer))
+
+(for/fold ([v 1.0]) ([i (in-range 100)])
+  (ptr-set! bstr _float v)
+  (ptr-set! bstr _float 1 (+ v 0.5))
+  (ptr-set! bstr _float 'abs 8 (+ v 0.25))
+  (unless (= v (ptr-ref bstr _float))
+    (error 'float "failed"))
+  (unless (= (+ v 0.5) (ptr-ref bstr _float 'abs 4))
+    (error 'float "failed(2) ~s ~s" (+ v 0.5) (ptr-ref bstr _float 'abs 4)))
+  (unless (= (+ v 0.25) (ptr-ref bstr _float 2))
+    (error 'float "failed(3)"))
+  (+ 1.0 v))
+
+(for/fold ([v 1.0]) ([i (in-range 100)])
+  (ptr-set! bstr _double v)
+  (ptr-set! bstr _double 1 (+ v 0.5))
+  (ptr-set! bstr _double 'abs 16 (+ v 0.25))
+  (unless (= v (ptr-ref bstr _double))
+    (error 'double "failed"))
+  (unless (= (+ v 0.5) (ptr-ref bstr _double 'abs 8))
+    (error 'double "failed(2)"))
+  (unless (= (+ v 0.25) (ptr-ref bstr _double 2))
+    (error 'double "failed(3)"))
+  (+ 1.0 v))
+
+(for ([i (in-range 256)])
+  (ptr-set! bstr _uint8 i)
+  (ptr-set! bstr _uint8 1 (- 255 i))
+  (unless (= i (ptr-ref bstr _uint8))
+    (error 'uint8 "fail ~s vs. ~s" i (ptr-ref bstr _uint8)))
+  (unless (= (- 255 i) (ptr-ref bstr _uint8 'abs 1))
+    (error 'uint8 "fail(2) ~s vs. ~s" (- 255 i) (ptr-ref bstr _uint8 'abs 1))))
+
+(for ([i (in-range -128 128)])
+  (ptr-set! bstr _int8 i)
+  (unless (= i (ptr-ref bstr _int8))
+    (error 'int8 "fail ~s vs. ~s" i (ptr-ref bstr _int8))))
+
+(for ([i (in-range (expt 2 16))])
+  (ptr-set! bstr _uint16 i)
+  (ptr-set! bstr _uint16 3 (- (sub1 (expt 2 16)) i))
+  (unless (= i (ptr-ref bstr _uint16))
+    (error 'uint16 "fail ~s vs. ~s" i (ptr-ref bstr _uint16)))
+  (unless (= (- (sub1 (expt 2 16)) i) (ptr-ref bstr _uint16 'abs 6))
+    (error 'uint16 "fail(2) ~s vs. ~s" (- (sub1 (expt 2 16)) i) (ptr-ref bstr _uint16 'abs 6))))
+
+(for ([j (in-range 100)])
+  (for ([i (in-range (- (expt 2 15)) (sub1 (expt 2 15)))])
+    (ptr-set! bstr _int16 i)
+    (unless (= i (ptr-ref bstr _int16))
+      (error 'int16 "fail ~s vs. ~s" i (ptr-ref bstr _int16)))))
+
+(let ()
+  (define (go lo hi)
+    (for ([i (in-range lo hi)])
+      (ptr-set! bstr _uint32 i)
+      (ptr-set! bstr _uint32 1 (- hi (- i lo) 1))
+      (unless (= i (ptr-ref bstr _uint32))
+        (error 'uint32 "fail ~s vs. ~s" i (ptr-ref bstr _uint32)))
+      (unless (= (- hi (- i lo) 1) (ptr-ref bstr _uint32 'abs 4))
+        (error 'uint32 "fail ~s vs. ~s" (- hi (- i lo) 1) (ptr-ref bstr _uint32)))))
+  (go 0 256)
+  (go (- (expt 2 31) 256) (+ (expt 2 31) 256))
+  (go (- (expt 2 32) 256) (expt 2 32)))
+
+(let ()
+  (define (go lo hi)
+    (for ([i (in-range lo hi)])
+      (ptr-set! bstr _int32 i)
+      (unless (= i (ptr-ref bstr _int32))
+        (error 'int32 "fail ~s vs. ~s" i (ptr-ref bstr _int32)))))
+  (go -256 256)
+  (go (- (expt 2 31) 256) (sub1 (expt 2 31)))
+  (go (- (expt 2 31)) (- 256 (expt 2 31))))
+
+(let ()
+  (define (go lo hi)
+    (for ([i (in-range lo hi)])
+      (ptr-set! bstr _uint64 i)
+      (ptr-set! bstr _uint64 1 (- hi (- i lo) 1))
+      (unless (= i (ptr-ref bstr _uint64))
+        (error 'uint64 "fail ~s vs. ~s" i (ptr-ref bstr _uint64)))
+      (unless (= (- hi (- i lo) 1) (ptr-ref bstr _uint64 'abs 8))
+        (error 'uint32 "fail ~s vs. ~s" (- hi (- i lo) 1) (ptr-ref bstr _uint64)))))
+  (go 0 256)
+  (go (- (expt 2 63) 256) (+ (expt 2 63) 256))
+  (go (- (expt 2 64) 256) (expt 2 64)))
+
+(let ()
+  (define (go lo hi)
+    (for ([i (in-range lo hi)])
+      (ptr-set! bstr _int64 i)
+      (unless (= i (ptr-ref bstr _int64))
+        (error 'int64 "fail ~s vs. ~s" i (ptr-ref bstr _int64)))))
+  (go -256 256)
+  (go (- (expt 2 63) 256) (sub1 (expt 2 63)))
+  (go (- (expt 2 63)) (- 256 (expt 2 63))))
+
+(let ()
+  (define p (cast bstr _pointer _pointer))
+  (for ([i (in-range 100)])
+    (ptr-set! bstr _pointer (ptr-add p i))
+    (ptr-set! bstr _pointer 2 p)
+    (unless (ptr-equal? p (ptr-add (ptr-ref bstr _pointer) (- i)))
+      (error 'pointer "fail ~s vs. ~s"
+             (cast p _pointer _intptr)
+             (cast (ptr-ref bstr _pointer) _pointer _intptr)))
+    (unless (ptr-equal? p (ptr-ref bstr _pointer 'abs (* 2 (ctype-sizeof _pointer))))
+      (error 'pointer "fail ~s vs. ~s"
+             (cast p _pointer _intptr)
+             (cast (ptr-ref bstr _pointer 'abs (ctype-sizeof _pointer)) _pointer _intptr)))))
 
 ;; ----------------------------------------
 
