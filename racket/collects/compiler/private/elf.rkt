@@ -434,7 +434,7 @@
                    [offset (section-offset s)])
                (file-position out (adjust (+ (elf-sh-offset elf)
                                              (* i (elf-sh-esize elf))
-                                             (at-class 14 16))))
+                                             (at-class 12 16))))
 
 	       (define new-addr (vm-adjust addr))
 	       (unless (or (= new-addr addr)
