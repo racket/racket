@@ -72,21 +72,41 @@
 
 
 /* We support 2^SCHEME_PRIM_OPT_INDEX_SIZE combinations of optimization flags: */
+
+/* marks a primitive as JIT-inlined for 1 argument: */
 #define SCHEME_PRIM_IS_UNARY_INLINED       (1 << 0)
+/* marks a primitive as JIT-inlined for 2 arguments: */
 #define SCHEME_PRIM_IS_BINARY_INLINED      (1 << 1)
+/* marks a primitive as JIT-inlined for 0 or 3+ arguments: */
 #define SCHEME_PRIM_IS_NARY_INLINED        (1 << 2)
+/* indicates that a primitive call can be dropped if it's result is not used;
+   although the function never raises an exception, it should not be reordered
+   past a test that might be a guard: */
 #define SCHEME_PRIM_IS_UNSAFE_OMITABLE     (1 << 3)
+/* indicates that a primitive call can be dropped if it's result is not used,
+   because it has no side-effect and never raises an exception: */
 #define SCHEME_PRIM_IS_OMITABLE            (1 << 4)
+/* indicates that a primitive call can be dropped, but it allocates,
+   so it's not as reorderable as it might be otherwise: */
 #define SCHEME_PRIM_IS_OMITABLE_ALLOCATION (1 << 5)
+/* indicates that a primitive call will produce the same results for the same
+   inputs; note that UNSAFE_FUNCTIONAL is stronger than UNSAFE_OMITABLE: */
 #define SCHEME_PRIM_IS_UNSAFE_FUNCTIONAL   (1 << 6)
+/* the SCHEME_PRIMT_WANTS_... flags indicate a primitive that
+   expects certain kinds of arguments and can encourage unboxing: */
 #define SCHEME_PRIM_WANTS_FLONUM_FIRST     (1 << 7)
 #define SCHEME_PRIM_WANTS_FLONUM_SECOND    (1 << 8)
 #define SCHEME_PRIM_WANTS_FLONUM_THIRD     (1 << 9)
 #define SCHEME_PRIM_WANTS_EXTFLONUM_FIRST  (1 << 10)
 #define SCHEME_PRIM_WANTS_EXTFLONUM_SECOND (1 << 11)
 #define SCHEME_PRIM_WANTS_EXTFLONUM_THIRD  (1 << 12)
+/* indicates an unsafe operation that does not allocate: */
 #define SCHEME_PRIM_IS_UNSAFE_NONALLOCATE  (1 << 13)
+/* indicates a primitive that always raises an exception or
+   otherwise escapes from the current continuation: */
 #define SCHEME_PRIM_ALWAYS_ESCAPES         (1 << 14)
+/* indicates a primitive that is JIT-inlined on some platforms,
+   but not the current one: */
 #define SCHEME_PRIM_SOMETIMES_INLINED      (1 << 15)
 
 #define SCHEME_PRIM_OPT_TYPE_SHIFT           16
