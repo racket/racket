@@ -2496,5 +2496,37 @@
         (f 6)))))
 
 ;; ----------------------------------------
+;; Check that property-only impersonator does not
+;; interfere with `chaperone-of?`
+;; (Test provided by Vincent)
+
+(let ()
+  (define-values (prop has-prop? get-prop)
+    (make-impersonator-property 'prop))
+  
+  (define add1* (impersonate-procedure add1 #f
+                                       prop #f))
+  
+  (test #t chaperone-of? (chaperone-procedure add1* #f)
+        add1*)
+  (test #t chaperone-of? (chaperone-procedure add1* (lambda (x) x))
+        add1*)
+  
+  (test #f chaperone-of? (chaperone-procedure add1* #f)
+        add1)
+  (test #f chaperone-of? (chaperone-procedure add1* (lambda (x) x))
+        add1)
+
+  (test #t impersonator-of? (chaperone-procedure add1* #f)
+        add1*)
+  (test #t impersonator-of? (chaperone-procedure add1* (lambda (x) x))
+        add1*)
+
+  (test #t impersonator-of? (chaperone-procedure add1* #f)
+        add1)
+  (test #t impersonator-of? (chaperone-procedure add1* (lambda (x) x))
+        add1))
+
+;; ----------------------------------------
 
 (report-errs)
