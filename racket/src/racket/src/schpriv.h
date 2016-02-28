@@ -4599,4 +4599,7 @@ void scheme_place_async_channel_send(Scheme_Object *ch, Scheme_Object *uo);
 Scheme_Object *scheme_place_async_channel_receive(Scheme_Object *ch);
 #endif
 
+void scheme_process_global_lock(void);
+void scheme_process_global_unlock(void);
+
 #endif /* __mzscheme_private__ */

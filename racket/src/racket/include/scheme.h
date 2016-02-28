@@ -1848,6 +1848,10 @@ extern void *scheme_malloc_envunbox(size_t);
 # define MZ_GC_UNREG()                   /* empty */
 #endif
 
+#define SCHEME_GC_SHAPE_TERM       0
+#define SCHEME_GC_SHAPE_PTR_OFFSET 1
+#define SCHEME_GC_SHAPE_ADD_SIZE   2
+
 /*========================================================================*/
 /*                   embedding configuration and hooks                    */
 /*========================================================================*/

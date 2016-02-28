@@ -205,6 +205,7 @@ enum {
 typedef struct NewGC {
   Gen0 gen0;
   Gen_Half gen_half;
+  int number_of_tags;
   Mark2_Proc  *mark_table;   /* the table of mark procs */
   Fixup2_Proc *fixup_table;  /* the table of repair procs */
   PageMap page_maps;

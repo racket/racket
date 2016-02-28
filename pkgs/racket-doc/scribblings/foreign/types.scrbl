@@ -1055,7 +1055,7 @@ members.}
 
 @defproc[(_list-struct [#:alignment alignment (or/c #f 1 2 4 8 16) #f] 
                        [#:malloc-mode malloc-mode
-                                      (one-of/c 'raw 'atomic 'nonatomic
+                                      (one-of/c 'raw 'atomic 'nonatomic 'tagged
                                                  'atomic-interior 'interior
                                                  'stubborn 'uncollectable 'eternal)
                                       'atomic]
@@ -1085,7 +1085,7 @@ below for a more efficient approach.
                               #:define-unsafe)]
          #:contracts ([offset-expr exact-integer?]
                       [alignment-expr (or/c #f 1 2 4 8 16)]
-                      [malloc-mode-expr (one-of/c 'raw 'atomic 'nonatomic
+                      [malloc-mode-expr (one-of/c 'raw 'atomic 'nonatomic 'tagged
                                                   'atomic-interior 'interior
                                                   'stubborn 'uncollectable 'eternal)]
                       [prop-expr struct-type-property?])]{

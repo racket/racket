@@ -2616,10 +2616,7 @@ void *scheme_register_process_global(const char *key, void *val)
   Proc_Global_Rec *pg;
   intptr_t len;
 
-#if defined(MZ_USE_MZRT)
-  if (process_global_lock)
-    mzrt_mutex_lock(process_global_lock);
-#endif
+  scheme_process_global_lock();
 
   for (pg = process_globals; pg; pg = pg->next) {
     if (!strcmp(pg->key, key)) {
@@ -2639,10 +2636,7 @@ void *scheme_register_process_global(const char *key, void *val)
     process_globals = pg;
   }
 
-#if defined(MZ_USE_MZRT)
-  if (process_global_lock)
-    mzrt_mutex_unlock(process_global_lock);
-#endif
+  scheme_process_global_unlock();
 
   return old_val;
 }
@@ -2651,6 +2645,22 @@ void scheme_init_process_globals(void)
 {
 #if defined(MZ_USE_MZRT)
   mzrt_mutex_create(&process_global_lock);
+#endif
+}
+
+void scheme_process_global_lock(void)
+{
+#if defined(MZ_USE_MZRT)
+  if (process_global_lock)
+    mzrt_mutex_lock(process_global_lock);
+#endif
+}
+
+void scheme_process_global_unlock(void)
+{
+#if defined(MZ_USE_MZRT)
+  if (process_global_lock)
+    mzrt_mutex_unlock(process_global_lock);
 #endif
 }
 

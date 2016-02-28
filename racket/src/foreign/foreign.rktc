@@ -1863,7 +1863,7 @@ static void* SCHEME2C(const char *who,
 /* Pointer type user functions */
 
 @defsymbols[nonatomic atomic stubborn uncollectable eternal
-            interior atomic-interior raw fail-ok]
+            interior atomic-interior raw tagged fail-ok]
 
 /* (malloc num type cpointer mode) -> pointer */
 /* The arguments for this function are:
@@ -1871,8 +1871,8 @@ static void* SCHEME2C(const char *who,
  * - type: malloc the size of this type (or num instances of it),
  * - cpointer: a source pointer to copy contents from,
  * - mode: a symbol for different allocation functions to use - one of
- *   'nonatomic, 'atomic, 'stubborn, 'uncollectable, 'eternal, 'raw (the last
- *   one is for using the real malloc)
+ *   'nonatomic, 'atomic, 'stubborn, 'uncollectable, 'eternal, 'tagged,
+ *   or 'raw (the last one is for using the real malloc)
  * - if an additional 'fail-ok flag is given, then scheme_malloc_fail_ok is
  *   used with the chosen malloc function
  * The arguments can be specified in any order at all since they are all
@@ -1920,7 +1920,8 @@ static void* SCHEME2C(const char *who,
                             "(or/c (and/c exact-nonnegative-integer? fixnum?)\n"
                             "      ctype?\n"
                             "      (or/c 'nonatomic 'stubborn 'uncollectable\n"
-                            "             'eternal 'interior 'atomic-interior 'raw)\n"
+                            "             'eternal 'interior 'atomic-interior\n"
+                            "             'tagged 'raw)\n"
                             "      'fail-on\n"
                             "      (and/c cpointer? (not/c #f)))", 
                             i, argc, argv);
@@ -1940,6 +1941,7 @@ static void* SCHEME2C(const char *who,
   else if (SAME_OBJ(mode, interior_sym))      mf = scheme_malloc_atomic_allow_interior;
   else if (SAME_OBJ(mode, atomic_interior_sym)) mf = scheme_malloc_atomic_allow_interior;
   else if (SAME_OBJ(mode, raw_sym))           mf = malloc;
+  else if (SAME_OBJ(mode, tagged_sym))        mf = scheme_malloc_tagged;
   else {
     scheme_signal_error(MYNAME": bad allocation mode: %V", mode);
     return NULL; /* hush the compiler */

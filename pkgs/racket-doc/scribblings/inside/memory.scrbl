@@ -1130,6 +1130,49 @@ moved before it is fixed. With other implementations, an object might
 be moved after the fixup process, and the result is the location that
 the object will have after garbage collection finished.}
 
+
+@function[(void scheme_register_type_gc_shape [short type]
+                                              [intptr_t* shape])]{
+
+Like @cpp{GC_register_traversers}, but using a set of predefined
+functions that interpret @var{shape} to traverse a value. The
+@var{shape} array is a sequence of commands terminated with
+@cpp{SCHEME_GC_SHAPE_TERM}, where each command has a single argument.
+
+Commands:
+
+@itemlist[
+
+ @item{@tt{#define @cppdef{SCHEME_GC_SHAPE_TERM} 0} --- the terminator
+       command, which has no argument.}
+
+ @item{@tt{#define @cppdef{SCHEME_GC_SHAPE_PTR_OFFSET} 1} ---
+       specifies that a object tagged with @var{type} has a pointer
+       to be made visible to the garbage collector, where the command
+       argument is the offset from the beginning of the object.}
+
+ @item{@tt{#define @cppdef{SCHEME_GC_SHAPE_ADD_SIZE} 2} --- specifies
+       the allocated size of an object tagged with @var{type},
+       where the command argument is an amount to add to an
+       accumulated size; currently, size information is not used, but
+       it may be needed with future implementations of the garbage
+       collector.}
+
+]
+
+To improve forward compatibility, any other command is assumed to take
+a single argument and is ignored.
+
+A GC-shape registration is place-specific, even though
+@cpp{scheme_make_type} creates a type tag that spans places. If a
+traversal is already installed for @cpp{type} in the current place,
+the old traversal specification is replaced. The
+@cpp{scheme_register_type_gc_shape} function keeps its own copy of the
+array @var{shape}, so the array need not be retained.
+
+@history[#:added "6.4.0.10"]}
+
+
 @function[(Scheme_Object* scheme_add_gc_callback [Scheme_Object* pre_desc]
                                                  [Scheme_Object* post_desc])]{
 

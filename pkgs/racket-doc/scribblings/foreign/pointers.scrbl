@@ -233,7 +233,7 @@ see @|InsideRacket|.
                                       ctype?) 
                                 @#,elem{absent}]
                  [cptr cpointer? @#,elem{absent}]
-                 [mode (one-of/c 'raw 'atomic 'nonatomic
+                 [mode (one-of/c 'raw 'atomic 'nonatomic 'tagged
                                  'atomic-interior 'interior
                                  'stubborn 'uncollectable 'eternal)
                        @#,elem{absent}]
@@ -266,6 +266,8 @@ specification is required at minimum:
   what allocation function to use.  It should be one of
   @indexed-racket['nonatomic] (uses @cpp{scheme_malloc} from
   Racket's C API), @indexed-racket['atomic]
+  (@cpp{scheme_malloc_atomic}), @indexed-racket['tagged]
+  (@cpp{scheme_malloc_tagged}), @indexed-racket['atomic]
   (@cpp{scheme_malloc_atomic}), @indexed-racket['stubborn]
   (@cpp{scheme_malloc_stubborn}), @indexed-racket['uncollectable]
   (@cpp{scheme_malloc_uncollectable}), @indexed-racket['eternal]
@@ -282,7 +284,9 @@ specification is required at minimum:
 
 If no mode is specified, then @racket['nonatomic] allocation is used
 when the type is a @racket[_gcpointer]- or @racket[_scheme]-based
-type, and @racket['atomic] allocation is used otherwise.}
+type, and @racket['atomic] allocation is used otherwise.
+
+@history[#:changed "6.4.0.10" @elem{Added the @racket['tagged] allocation mode.}]}
 
 
 @defproc[(free [cptr cpointer?]) void]{

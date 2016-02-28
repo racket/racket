@@ -1126,6 +1126,46 @@
 
 ;; ----------------------------------------
 
+(define scheme_make_type
+  (get-ffi-obj 'scheme_make_type #f (_fun _string -> _short)))
+(define scheme_register_type_gc_shape
+  (get-ffi-obj 'scheme_register_type_gc_shape #f (_fun _short (_list i _intptr) -> _void)))
+
+(define SHAPE_STR_TERM       0)
+(define SHAPE_STR_PTR_OFFSET 1)
+
+(define-cstruct _tagged ([type-tag _short]
+                         [obj1 _racket]
+                         [non2 _intptr]
+                         [obj3 _racket]
+                         [non4 _intptr])
+  #:define-unsafe
+  #:malloc-mode 'tagged)
+
+(define t (scheme_make_type "new-type"))
+(scheme_register_type_gc_shape t (list SHAPE_STR_PTR_OFFSET tagged-obj1-offset
+                                       SHAPE_STR_PTR_OFFSET tagged-obj3-offset
+                                       SHAPE_STR_TERM))
+
+(define obj1 (make-string 10))
+(define obj2 (make-bytes 12))
+(define obj3 (make-bytes 14))
+(define obj4 (make-string 16))
+
+(define obj2-addr (cast obj2 _racket _intptr))
+(define obj4-addr (cast obj4 _racket _intptr))
+
+(define o (make-tagged t obj1 obj2-addr obj3 obj4-addr))
+
+(collect-garbage)
+
+(eq? (tagged-obj1 o) obj1)
+(eq? (tagged-obj3 o) obj3)
+(= (tagged-non2 o) obj2-addr)
+(= (tagged-non4 o) obj4-addr)
+
+;; ----------------------------------------
+
 (report-errs)
 
 #| --- ignore everything below ---

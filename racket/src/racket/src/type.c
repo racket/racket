@@ -747,3 +747,117 @@ void scheme_register_traversers(void)
 END_XFORM_SKIP;
 
 #endif
+
+/***********************************************************************/
+
+#ifdef MZ_PRECISE_GC
+
+/* A shape string is a SCHEME_GC_SHAPE_TERM-terminated array of `intptr_t`s,
+   where each instruction is followed by a value. For now, the only
+   required instructions are SCHEME_GC_SHAPE_PTR_OFFSET, but other values
+   are tolerated and ignored for future extensions in case they become
+   necessary. */
+
+static int shape_str_array_size = 0;
+static intptr_t **shape_strs = NULL;
+
+START_XFORM_SKIP;
+
+static int shape_size(void *p, struct NewGC *gc) {
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
+  intptr_t *shape_str = shape_strs[*(Scheme_Type *)p];
+  int sz = 0;
+  while (*shape_str != SCHEME_GC_SHAPE_TERM) {
+    if (shape_str[0] == SCHEME_GC_SHAPE_ADD_SIZE)
+      sz += shape_str[1];
+    shape_str += 2;
+  }
+#else
+  return 0;
+#endif
+}
+
+static int shape_mark(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
+  intptr_t *shape_str = shape_strs[*(Scheme_Type *)p];
+
+  while (*shape_str != SCHEME_GC_SHAPE_TERM) {
+    if (shape_str[0] == SCHEME_GC_SHAPE_PTR_OFFSET) {
+      gcMARK2(*(void **)((char *)p + shape_str[1]), gc);
+    }
+    shape_str += 2;
+  }
+
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return shape_size(p, gc);
+# endif
+#endif
+}
+
+static int shape_fixup(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
+  intptr_t *shape_str = shape_strs[*(Scheme_Type *)p];
+
+  while (*shape_str != SCHEME_GC_SHAPE_TERM) {
+    if (shape_str[0] == SCHEME_GC_SHAPE_PTR_OFFSET) {
+      gcFIXUP2(*(void **)((char *)p + shape_str[1]), gc);
+    }
+    shape_str += 2;
+  }
+
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return shape_size(p, gc);
+# endif
+#endif
+}
+
+END_XFORM_SKIP;
+
+void scheme_register_type_gc_shape(Scheme_Type type, intptr_t *shape_str)
+{
+  intptr_t len;
+  GC_CAN_IGNORE intptr_t *str;
+
+  for (len = 0; shape_str[len] != SCHEME_GC_SHAPE_TERM; len += 2) {
+  }
+  len++;
+
+  str = (intptr_t *)malloc(len * sizeof(intptr_t));
+  memcpy(str, shape_str, len * sizeof(intptr_t));
+
+  scheme_process_global_lock();
+
+  if (shape_str_array_size <= type) {
+    GC_CAN_IGNORE intptr_t **naya;
+    int sz = 2 * (type + 1);
+    naya = malloc(sz * sizeof(intptr_t *));
+    memset(naya, 0, sz * sizeof(intptr_t *));
+    if (shape_str_array_size) {
+      memcpy(naya, shape_strs, sizeof(intptr_t *) * shape_str_array_size);
+      free(shape_strs);
+    }
+    shape_strs = naya;
+    shape_str_array_size = sz;
+  }
+
+  if (shape_strs[type])
+    free(shape_strs[type]);
+  shape_strs[type] = str;
+  
+  scheme_process_global_unlock();
+
+  GC_register_traversers2(type, shape_size, shape_mark, shape_fixup, 1, 0);
+}
+
+#else
+
+void scheme_register_type_gc_shape(Scheme_Type type, intptr_t *shape_str)
+{
+  
+}
+
+#endif

@@ -2628,6 +2628,7 @@ static Scheme_Object *eternal_sym;
 static Scheme_Object *interior_sym;
 static Scheme_Object *atomic_interior_sym;
 static Scheme_Object *raw_sym;
+static Scheme_Object *tagged_sym;
 static Scheme_Object *fail_ok_sym;
 
 /* (malloc num type cpointer mode) -> pointer */
@@ -2636,8 +2637,8 @@ static Scheme_Object *fail_ok_sym;
  * - type: malloc the size of this type (or num instances of it),
  * - cpointer: a source pointer to copy contents from,
  * - mode: a symbol for different allocation functions to use - one of
- *   'nonatomic, 'atomic, 'stubborn, 'uncollectable, 'eternal, 'raw (the last
- *   one is for using the real malloc)
+ *   'nonatomic, 'atomic, 'stubborn, 'uncollectable, 'eternal, 'tagged,
+ *   or 'raw (the last one is for using the real malloc)
  * - if an additional 'fail-ok flag is given, then scheme_malloc_fail_ok is
  *   used with the chosen malloc function
  * The arguments can be specified in any order at all since they are all
@@ -2687,7 +2688,8 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
                             "(or/c (and/c exact-nonnegative-integer? fixnum?)\n"
                             "      ctype?\n"
                             "      (or/c 'nonatomic 'stubborn 'uncollectable\n"
-                            "             'eternal 'interior 'atomic-interior 'raw)\n"
+                            "             'eternal 'interior 'atomic-interior\n"
+                            "             'tagged 'raw)\n"
                             "      'fail-on\n"
                             "      (and/c cpointer? (not/c #f)))",
                             i, argc, argv);
@@ -2707,6 +2709,7 @@ static Scheme_Object *foreign_malloc(int argc, Scheme_Object *argv[])
   else if (SAME_OBJ(mode, interior_sym))      mf = scheme_malloc_atomic_allow_interior;
   else if (SAME_OBJ(mode, atomic_interior_sym)) mf = scheme_malloc_atomic_allow_interior;
   else if (SAME_OBJ(mode, raw_sym))           mf = malloc;
+  else if (SAME_OBJ(mode, tagged_sym))        mf = scheme_malloc_tagged;
   else {
     scheme_signal_error(MYNAME": bad allocation mode: %V", mode);
     return NULL; /* hush the compiler */
@@ -4410,6 +4413,8 @@ void scheme_init_foreign_globals()
   atomic_interior_sym = scheme_intern_symbol("atomic-interior");
   MZ_REGISTER_STATIC(raw_sym);
   raw_sym = scheme_intern_symbol("raw");
+  MZ_REGISTER_STATIC(tagged_sym);
+  tagged_sym = scheme_intern_symbol("tagged");
   MZ_REGISTER_STATIC(fail_ok_sym);
   fail_ok_sym = scheme_intern_symbol("fail-ok");
   MZ_REGISTER_STATIC(abs_sym);

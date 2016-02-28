@@ -81,7 +81,7 @@ static int never_collect_incremental_on_minor = 0;
 /* Use a mark stack when recurring this deep or more: */
 #define MAX_RECUR_MARK_DEPTH 5
 
-/* the maximum number of tags to support for tagged objects */
+/* initial number of tags to support for tagged objects */
 #define NUMBER_OF_TAGS 512
 
 #if 0
@@ -692,9 +692,18 @@ static int master_wants_to_collect();
 #endif
 
 static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
+
+  if (inheritgc)
+    newgc->number_of_tags = inheritgc->number_of_tags;
+  else
+    newgc->number_of_tags = NUMBER_OF_TAGS;
+
+  newgc->mark_table  = ofm_malloc_zero(newgc->number_of_tags * sizeof(Mark2_Proc));
+  newgc->fixup_table = ofm_malloc_zero(newgc->number_of_tags * sizeof(Fixup2_Proc));
+    
   if (inheritgc) {
-    newgc->mark_table  = inheritgc->mark_table;
-    newgc->fixup_table = inheritgc->fixup_table;
+    memcpy(newgc->mark_table, inheritgc->mark_table, newgc->number_of_tags * sizeof(Mark2_Proc));
+    memcpy(newgc->fixup_table, inheritgc->fixup_table, newgc->number_of_tags * sizeof(Fixup2_Proc));
     newgc->avoid_collection = 0;
 #ifdef MZ_USE_PLACES
     newgc->parent_gc = parentgc;
@@ -703,8 +712,6 @@ static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
 #ifdef MZ_USE_PLACES
     NewGCMasterInfo_initialize();
 #endif
-    newgc->mark_table  = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Mark2_Proc)); 
-    newgc->fixup_table = ofm_malloc_zero(NUMBER_OF_TAGS * sizeof (Fixup2_Proc)); 
 #ifdef NEWGC_BTC_ACCOUNT
     BTC_initialize_mark_table(newgc);
 #endif
@@ -892,7 +899,6 @@ void GC_register_traversers2(short tag, Size2_Proc size, Mark2_Proc mark,
                              Fixup2_Proc fixup, int constant_Size, int atomic)
 {
   NewGC *gc = GC_get_GC();
-
   int mark_tag = tag;
 
 #ifdef NEWGC_BTC_ACCOUNT
@@ -903,6 +909,25 @@ void GC_register_traversers2(short tag, Size2_Proc size, Mark2_Proc mark,
   /* Keep tagged objects in tagged space: */
   atomic = 0;
 #endif
+
+  if (tag >= gc->number_of_tags) {
+    Mark2_Proc *mark_table;
+    Fixup2_Proc *fixup_table;
+    int sz = 2 * (int)tag;
+    
+    mark_table  = ofm_malloc_zero(sz * sizeof(Mark2_Proc));
+    fixup_table = ofm_malloc_zero(sz * sizeof(Fixup2_Proc));
+
+    memcpy(mark_table, gc->mark_table, gc->number_of_tags * sizeof(Mark2_Proc));
+    memcpy(fixup_table, gc->fixup_table, gc->number_of_tags * sizeof(Fixup2_Proc));
+
+    ofm_free(gc->mark_table, gc->number_of_tags * sizeof (Mark2_Proc));
+    ofm_free(gc->fixup_table, gc->number_of_tags * sizeof (Fixup2_Proc));
+
+    gc->mark_table = mark_table;
+    gc->fixup_table = fixup_table;
+    gc->number_of_tags = sz;
+  }
 
   gc->mark_table[mark_tag]  = atomic ? (Mark2_Proc)PAGE_ATOMIC : mark;
   gc->fixup_table[tag]      = fixup;
@@ -1063,7 +1088,7 @@ void GC_write_barrier(void *p)
    important meaning. */
 #define MAX_OBJECT_SIZE  (APAGE_SIZE - ((PREFIX_WSIZE + 3) * WORD_SIZE))
 
-#define ASSERT_TAG(tag) GC_ASSERT((tag) >= 0 && (tag) <= NUMBER_OF_TAGS)
+#define ASSERT_TAG(gc, tag) GC_ASSERT((tag) >= 0 && (tag) <= (gc)->number_of_tags)
 #define ASSERT_VALID_OBJPTR(objptr) GC_ASSERT(!((intptr_t)(objptr) & CHECK_ALIGN_MASK))
 #define ASSERT_VALID_INFOPTR(objptr) GC_ASSERT(!(((intptr_t)(objptr) + sizeof(objhead)) & CHECK_ALIGN_MASK))
 
@@ -2774,7 +2799,7 @@ static void push_ptr(NewGC *gc, void *ptr, int inc_gen1)
     }
     if (alloc_type == PAGE_TAGGED) {
       short tag = *(short *)start;
-      ASSERT_TAG(tag);      
+      ASSERT_TAG(gc, tag);      
     }
   }
 #endif
@@ -3195,7 +3220,7 @@ static void mark_recur_or_push_ptr(struct NewGC *gc, void *p, int is_a_master_pa
       {
         const unsigned short tag = *(unsigned short*)p;
         Mark2_Proc markproc;
-        ASSERT_TAG(tag);
+        ASSERT_TAG(gc, tag);
         markproc = gc->mark_table[tag];
         if(((uintptr_t) markproc) >= PAGE_TYPES) {
           GC_ASSERT(markproc);
@@ -3533,7 +3558,7 @@ static inline void mark_traverse_object(NewGC *gc, void **start, void **end, int
       {
         const unsigned short tag = *(unsigned short*)start;
         Mark2_Proc markproc;
-        ASSERT_TAG(tag);
+        ASSERT_TAG(gc, tag);
         markproc = gc->mark_table[tag];
         if(((uintptr_t) markproc) >= PAGE_TYPES) {
           GC_ASSERT(markproc);
@@ -4236,7 +4261,7 @@ static void repair_mixed_page(NewGC *gc, mpage *page, void **end)
         {
           void *obj_start = OBJHEAD_TO_OBJPTR(start);
           unsigned short tag = *(unsigned short *)obj_start;
-          ASSERT_TAG(tag);
+          ASSERT_TAG(gc, tag);
           fixup_table[tag](obj_start, gc);
         }
         break;
@@ -4387,7 +4412,7 @@ static void repair_heap(NewGC *gc)
               if (fixup) {
                 void *obj_start = OBJHEAD_TO_OBJPTR(start);
                 unsigned short tag = *(unsigned short *)obj_start;
-                ASSERT_TAG(tag);
+                ASSERT_TAG(gc, tag);
                 fixup_table[tag](obj_start, gc);
               }
               start += info->size;
@@ -5785,6 +5810,9 @@ static void free_gc(NewGC *gc)
 
   mmu_flush_freed_pages(gc->mmu);
   mmu_free(gc->mmu);
+
+  ofm_free(gc->mark_table, gc->number_of_tags * sizeof(Mark2_Proc));
+  ofm_free(gc->fixup_table, gc->number_of_tags * sizeof(Fixup2_Proc));
 }
 
 void GC_free_all(void)
@@ -5794,9 +5822,6 @@ void GC_free_all(void)
   remove_signal_handler(gc);
 
   free_gc(gc);
-
-  ofm_free(gc->mark_table, NUMBER_OF_TAGS * sizeof (Mark2_Proc));
-  ofm_free(gc->fixup_table, NUMBER_OF_TAGS * sizeof (Fixup2_Proc));
 
   ofm_free(gc, sizeof(NewGC));
 }
@@ -5901,7 +5926,7 @@ void GC_dump_with_traces(int flags,
         if(!info->dead) {
           void *obj_start = OBJHEAD_TO_OBJPTR(start);
           unsigned short tag = *(unsigned short *)obj_start;
-          ASSERT_TAG(tag);
+          ASSERT_TAG(gc, tag);
           if (tag < MAX_DUMP_TAG) {
             counts[tag]++;
             sizes[tag] += info->size;
@@ -5924,7 +5949,7 @@ void GC_dump_with_traces(int flags,
       void **start = PAGE_START_VSS(page);
       void *obj_start = OBJHEAD_TO_OBJPTR(start);
       unsigned short tag = *(unsigned short *)obj_start;
-      ASSERT_TAG(tag);
+      ASSERT_TAG(gc, tag);
       if (tag < MAX_DUMP_TAG) {
         counts[tag]++;
         sizes[tag] += gcBYTES_TO_WORDS(page->size);
@@ -5952,7 +5977,7 @@ void GC_dump_with_traces(int flags,
             if (info->type == PAGE_TAGGED) {
               void *obj_start = OBJHEAD_TO_OBJPTR(start);
               unsigned short tag = *(unsigned short *)obj_start;
-              ASSERT_TAG(tag);
+              ASSERT_TAG(gc, tag);
               if (tag < MAX_DUMP_TAG) {
                 counts[tag]++;
                 sizes[tag] += info->size;

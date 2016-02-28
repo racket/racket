@@ -484,6 +484,8 @@ MZ_EXTERN void scheme_free_immobile_box(void **b);
 MZ_EXTERN Scheme_Object *scheme_add_gc_callback(Scheme_Object *pre, Scheme_Object *post);
 MZ_EXTERN void scheme_remove_gc_callback(Scheme_Object *key);
 
+MZ_EXTERN void scheme_register_type_gc_shape(Scheme_Type type, intptr_t *shape_str);
+
 /*========================================================================*/
 /*                   basic Scheme value constructors                      */
 /*========================================================================*/
