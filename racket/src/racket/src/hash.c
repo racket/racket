@@ -2418,7 +2418,7 @@ XFORM_NONGCING static int hamt_index(uintptr_t code, int shift)
   return (code >> shift) & ((1 << mzHAMT_LOG_WORD_SIZE) - 1);
 }
 
-XFORM_NONGCING int hamt_popcount(hash_tree_bitmap_t x)
+XFORM_NONGCING static int hamt_popcount(hash_tree_bitmap_t x)
 {
 #if MZ_HAS_BUILTIN_POPCOUNT
   return __builtin_popcount(x);
@@ -2834,6 +2834,15 @@ XFORM_NONGCING void scheme_unsafe_hash_tree_subtree(Scheme_Object *obj, Scheme_O
   
   *_subtree = subtree;
   *_i =i;
+}
+
+XFORM_NONGCING Scheme_Object *scheme_unsafe_hash_tree_access(Scheme_Hash_Tree *subtree, int i)
+{
+  int popcount;
+
+  popcount = hamt_popcount(subtree->bitmap);
+
+  return subtree->els[i+popcount];
 }
 
 /* args is a (cons subtree (cons subtree-index stack-of-parents))
