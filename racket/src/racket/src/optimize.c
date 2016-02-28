@@ -1809,9 +1809,9 @@ static Scheme_Object *no_potential_size(Scheme_Object *v)
 }
 
 static Scheme_Object *apply_inlined(Scheme_Lambda *lam, Optimize_Info *info,
-				    int argc, Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
+                                    int argc, Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
                                     int context, Scheme_Object *orig, Scheme_Object *le_prev,
-                                    int single_use)
+                                    int single_use, int size, int threshold)
 /* Optimize the body of `lam` given the known arguments in `app`, `app2`, or `app3` */
 {
   Scheme_IR_Let_Header *lh;
@@ -1827,8 +1827,13 @@ static Scheme_Object *apply_inlined(Scheme_Lambda *lam, Optimize_Info *info,
   if (!expected) {
     /* No arguments, so no need for a `let` wrapper: */
     sub_info = optimize_info_add_frame(info, 0, 0, 0);
-    if (!single_use || lam->ir_info->is_dup)
-      sub_info->inline_fuel >>= 1;
+    if ((!single_use || lam->ir_info->is_dup)
+        && (sub_info->inline_fuel >= 0)) {
+      if (size < (threshold >> 1))
+        sub_info->inline_fuel = (sub_info->inline_fuel >> 1) + (sub_info->inline_fuel >> 2);
+      else
+        sub_info->inline_fuel >>= 1;
+    }
     p = scheme_optimize_expr(p, sub_info, context);
     info->single_result = sub_info->single_result;
     info->preserves_marks = sub_info->preserves_marks;
@@ -1893,8 +1898,13 @@ static Scheme_Object *apply_inlined(Scheme_Lambda *lam, Optimize_Info *info,
     lh->body = p;
 
   sub_info = optimize_info_add_frame(info, 0, 0, 0);
-  if (!single_use || lam->ir_info->is_dup)
-    sub_info->inline_fuel >>= 1;
+  if ((!single_use || lam->ir_info->is_dup)
+      && (sub_info->inline_fuel >= 0)) {
+    if (size < (threshold >> 1))
+      sub_info->inline_fuel = (sub_info->inline_fuel >> 1) + (sub_info->inline_fuel >> 2);
+    else
+      sub_info->inline_fuel >>= 1;
+  }
 
   p = optimize_lets((Scheme_Object *)lh, sub_info, 1, context);
 
@@ -2118,7 +2128,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 		     threshold,
 		     scheme_optimize_context_to_string(info->context));
           le = apply_inlined((Scheme_Lambda *)le, sub_info, argc, app, app2, app3, context,
-                             orig_le, prev, single_use);
+                             orig_le, prev, single_use, sz, threshold);
           return le;
 	} else {
           LOG_INLINE(fprintf(stderr, "No inline %s\n", scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL)));
