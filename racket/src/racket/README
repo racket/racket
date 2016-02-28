@@ -5,3 +5,24 @@ information on compiling it.
 Compiled binaries, documentation, and up-to-date information about
 Racket are at:
  http://racket-lang.org/
+
+----------------------------------------------------------------------
+
+Some general guidelines for modying this code:
+
+ * Use `scheme_...` for a definition that is globally visible. In
+   particular, any non-`static` function name should start with
+   `scheme_`.
+
+ * If a globally visible function is meant for exporting to embedding
+   applications, extensions, or through the FFI, put the prototype in
+   "src/schemef.h" (and re-generated files with `make exports`).
+   Functions available only to embedding applications can go in
+   "scheme.h". Otherwise, put global function prototypes in
+   "schpriv.h".
+
+ * Don't use "//" comments, because we still use pre-C99 compilers
+   that don't support them.
+
+ * Declare all variables at the beginning of a block (again, for
+   pre-C99 compilers).
