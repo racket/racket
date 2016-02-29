@@ -8320,6 +8320,8 @@ static Scheme_Object *optimize_info_propagate_local(Scheme_Object *var)
 {
   Scheme_Object *last, *val = var;
 
+  last = val; /* Avoid compiler warning */
+
   while (val && SAME_TYPE(SCHEME_TYPE(val), scheme_ir_local_type)) {
     MZ_ASSERT(SCHEME_VAR(val)->mode == SCHEME_VAR_MODE_OPTIMIZE);
     MZ_ASSERT(SCHEME_VAR(val)->use_count);

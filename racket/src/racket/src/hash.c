@@ -2755,7 +2755,7 @@ Scheme_Object *scheme_hash_tree_next_pos(Scheme_Hash_Tree *tree, mzlonglong pos)
 /* to avoid unneeded popcount computations */
 Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht)
 {
-  Scheme_Object *stack;
+  Scheme_Object *stack = scheme_null;
   int j, i, i_n[mzHAMT_MAX_INDEX_LEVEL], level;
   Scheme_Hash_Tree *ht_n[mzHAMT_MAX_INDEX_LEVEL];
 
@@ -2849,7 +2849,7 @@ XFORM_NONGCING Scheme_Object *scheme_unsafe_hash_tree_access(Scheme_Hash_Tree *s
    or the comppressed representation as a fixnum */
 Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Hash_Tree *ht, Scheme_Object *args)
 {
-  Scheme_Object *stack;
+  Scheme_Object *stack = scheme_null;
   int j, i, i_n[mzHAMT_MAX_INDEX_LEVEL], level;
   Scheme_Hash_Tree *ht_n[mzHAMT_MAX_INDEX_LEVEL];
 
