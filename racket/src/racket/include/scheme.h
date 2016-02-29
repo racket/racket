@@ -177,9 +177,19 @@ typedef long FILE;
 #endif
 
 #ifdef MZ_XFORM
+/* A non-GCing function will never trigger a garbage collection.
+   The xform tool checks this declaration, and it uses this hint
+   to avoid registering variables unnecessarily. */
 # define XFORM_NONGCING __xform_nongcing__
+/* A non-GCing, non-aliasing function is non-GCing, and it may take
+   arguments that are addresses of local variables, but it doesn't
+   leak those addresses; it only filles them in. The xform tool only
+   checks the non-GCing part of this declaration, but uses both
+   facets of the hint. */
+# define XFORM_NONGCING_NONALIASING __xform_nongcing_nonaliasing__
 #else
 # define XFORM_NONGCING /* empty */
+# define XFORM_NONGCING_NONALIASING /* empty */
 #endif
 
 #ifdef MZ_XFORM

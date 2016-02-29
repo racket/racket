@@ -949,12 +949,11 @@ Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Schem
                                                    Scheme_Object *key_wraps);
 
 Scheme_Object *scheme_unsafe_hash_tree_start(Scheme_Hash_Tree *ht);
-XFORM_NONGCING void scheme_unsafe_hash_tree_subtree(Scheme_Object *obj, Scheme_Object *args,
-                                                    Scheme_Hash_Tree **_subtree, int *_i);
+XFORM_NONGCING_NONALIASING void scheme_unsafe_hash_tree_subtree(Scheme_Object *obj, Scheme_Object *args,
+                                                                Scheme_Hash_Tree **_subtree, int *_i);
 XFORM_NONGCING Scheme_Object *scheme_unsafe_hash_tree_access(Scheme_Hash_Tree *subtree, int i);
 Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Hash_Tree *ht, Scheme_Object *args);
 Scheme_Object *scheme_hash_tree_next_pos(Scheme_Hash_Tree *tree, mzlonglong pos);
-XFORM_NONGCING int scheme_hash_tree_index(Scheme_Hash_Tree *tree, mzlonglong pos, Scheme_Object **_key, Scheme_Object **_val);
 int scheme_hash_tree_equal(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2);
 int scheme_is_hash_tree_equal(Scheme_Object *o);
 int scheme_is_hash_tree_eqv(Scheme_Object *o);

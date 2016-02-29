@@ -60,6 +60,7 @@
              [else
               (let* ([l (regexp-replace #rx"^extern " l "")]
                      [l (regexp-replace #rx"^XFORM_NONGCING " l "")]
+                     [l (regexp-replace #rx"^XFORM_NONGCING_NONALIASING " l "")]
                      [l (regexp-replace #rx"^MZ_EXTERN " l "")]
                      [l (regexp-replace #rx"^THREAD_LOCAL " l "")]
                      [l2 (regexp-replace #rx"^volatile " l "")]

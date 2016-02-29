@@ -741,6 +741,7 @@
           (printf "#define GC_CAN_IGNORE /**/\n")
           (printf "#define XFORM_CAN_IGNORE /**/\n")
           (printf "#define __xform_nongcing__ /**/\n")
+          (printf "#define __xform_nongcing_nonaliasing__ /**/\n")
           ;; Another annotation to protect against GC conversion:
           (printf "#define HIDE_FROM_XFORM(x) x\n")
           (printf "#define XFORM_HIDE_EXPR(x) x\n")
@@ -959,7 +960,13 @@
 	(for-each (lambda (name)
 		    (hash-set! non-gcing-functions name #t))
 		  non-gcing-builtin-functions)
-        
+
+        ;; Non-aliasing function may take address of variables as arguments to fill
+        ;; them in, but they don't expose those addresses, so taking a variable's
+        ;; address for an argument doesn't make it live for the rest of the enclosing
+        ;; function.
+        (define non-aliasing-functions (make-hasheq))
+
         (define non-returning-functions
           ;; The following functions never return, so the wrappers
           ;; don't need to push any variables:
@@ -1122,8 +1129,9 @@
                 (set! struct-defs (list-ref l 6))
                 
                 (set! non-gcing-functions (hash-copy (list-ref l 7)))
+                (set! non-aliasing-functions (hash-copy (list-ref l 8)))
 
-                (set! gc-var-stack-mode (list-ref l 8))))))
+                (set! gc-var-stack-mode (list-ref l 9))))))
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; Pretty-printing output
@@ -1560,6 +1568,9 @@
              (let ([name (register-proto-information e)])
                (when (eq? (tok-n (car e)) '__xform_nongcing__)
 		 (hash-set! non-gcing-functions name #t))
+               (when (eq? (tok-n (car e)) '__xform_nongcing_nonaliasing__)
+		 (hash-set! non-gcing-functions name #t)
+		 (hash-set! non-aliasing-functions name #t))
 	       (when show-info?
                  (printf "/* PROTO ~a */\n" name))
                (if (or precompiling-header?
@@ -1594,6 +1605,9 @@
              (let ([name (register-proto-information e)])
                (when (eq? (tok-n (car e)) '__xform_nongcing__)
                  (hash-set! non-gcing-functions name #t))
+               (when (eq? (tok-n (car e)) '__xform_nongcing_nonaliasing__)
+                 (hash-set! non-gcing-functions name #t)
+                 (hash-set! non-aliasing-functions name #t))
                (if (skip-function? e)
                    e
                    (begin
@@ -1866,7 +1880,8 @@
                              (if (pair? t)
                                  (if (or (memq (tok-n (car t)) '(extern static virtual __stdcall __cdecl 
                                                                         inline _inline __inline __inline__
-                                                                        __xform_nongcing__))
+                                                                        __xform_nongcing__
+                                                                        __xform_nongcing_nonaliasing__))
                                          (equal? "C" (tok-n (car t))))
                                      (loop (cdr t))
                                      (cons (car t) (loop (cdr t))))
@@ -2541,7 +2556,7 @@
                                             e
                                             (lambda (name class-name type args static?)
                                               type)))])
-		 (if (hash-ref non-gcing-functions name (lambda () #f))
+		 (if (hash-ref non-gcing-functions name #f)
 		     (when saw-gcing-call
 		       (log-error "[GCING] ~a in ~a: Function ~a declared __xform_nongcing__, but includes a function call at ~s."
 				  (tok-line saw-gcing-call) (tok-file saw-gcing-call)
@@ -3903,6 +3918,21 @@
                null]
               [(pragma? (car e))
                (loop (cdr e))]
+              [(and (pair? (cdr e))
+                    (parens? (cadr e))
+                    (hash-ref non-aliasing-functions (tok-n (car e)) #f))
+               ;; A call to a non-aliasing function: drop immediate '&'s on args:
+               (define (drop-&s now? e)
+                 (cond
+                  [(null? e) null]
+                  [(and now? (eq? '& (tok-n (car e))))
+                   (drop-&s #f (cdr e))]
+                  [(eq? '|,| (tok-n (car e)))
+                   (cons (car e) (drop-&s #t (cdr e)))]
+                  [else
+                   (cons (car e) (drop-&s #f (cdr e)))]))
+               (append (loop (drop-&s #t (seq->list (seq-in (cadr e)))))
+                       (loop (cddr e)))]
               [(eq? '& (tok-n (car e)))
                (if (null? (cdr e))
                    null
@@ -4121,6 +4151,7 @@
                     (marshall non-pointer-types)
                     (marshall struct-defs)
 		    non-gcing-functions
+		    non-aliasing-functions
                     (list 'quote gc-var-stack-mode))])
               (with-output-to-file (change-suffix file-out #".zo")
                 (lambda ()

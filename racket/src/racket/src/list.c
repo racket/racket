@@ -4029,7 +4029,7 @@ Scheme_Object *unsafe_hash_table_iterate_next(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
-static Scheme_Object *unsafe_hash_table_iterate_key_slow(int argc, Scheme_Object *argv[])
+Scheme_Object *unsafe_hash_table_iterate_key(int argc, Scheme_Object *argv[])
 {
   GC_CAN_IGNORE const char *name = "unsafe-mutable-hash-iterate-key";
   Scheme_Object *obj = argv[0], *key;
@@ -4045,18 +4045,6 @@ static Scheme_Object *unsafe_hash_table_iterate_key_slow(int argc, Scheme_Object
   }
   scheme_contract_error(name, "no element at index", "index", 1, argv[1], NULL);
   return NULL;  
-}
-
-Scheme_Object *unsafe_hash_table_iterate_key(int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *obj = argv[0], *key;
-  mzlonglong pos = SCHEME_INT_VAL(argv[1]);
-
-  if (!SCHEME_NP_CHAPERONEP(obj)
-      && scheme_hash_table_index((Scheme_Hash_Table *)obj, pos, &key, NULL))
-    return key;
-  else
-    return unsafe_hash_table_iterate_key_slow(argc, argv);
 }
 
 static Scheme_Object *unsafe_hash_table_iterate_value_slow(int argc, Scheme_Object *argv[])
@@ -4162,7 +4150,7 @@ Scheme_Object *unsafe_hash_tree_iterate_key(int argc, Scheme_Object *argv[])
   scheme_unsafe_hash_tree_subtree(obj, args, &subtree, &i);
   key = subtree->els[i];
   
-  if (!SCHEME_NP_CHAPERONEP(obj))
+  if (SCHEME_NP_CHAPERONEP(obj))
     return chaperone_hash_key("unsafe-immutable-hash-iterate-key", obj, key);
   else
     return key;
