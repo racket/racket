@@ -691,6 +691,11 @@ static void initialize_signal_handler(GCTYPE *gc);
 static int master_wants_to_collect();
 #endif
 
+/* Due to the way Racket initializes the mark table,
+   MASTERGC needs to share its mark and fixup tables
+   with the initial tables of the first place place: */
+static int has_made_first_place;
+
 static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
 
   if (inheritgc)
@@ -698,12 +703,20 @@ static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
   else
     newgc->number_of_tags = NUMBER_OF_TAGS;
 
-  newgc->mark_table  = ofm_malloc_zero(newgc->number_of_tags * sizeof(Mark2_Proc));
-  newgc->fixup_table = ofm_malloc_zero(newgc->number_of_tags * sizeof(Fixup2_Proc));
+  if (has_made_first_place || !inheritgc) {
+    newgc->mark_table  = ofm_malloc_zero(newgc->number_of_tags * sizeof(Mark2_Proc));
+    newgc->fixup_table = ofm_malloc_zero(newgc->number_of_tags * sizeof(Fixup2_Proc));
+  } else {
+    newgc->mark_table  = inheritgc->mark_table;
+    newgc->fixup_table  = inheritgc->fixup_table;
+    has_made_first_place = 1;
+  }
     
   if (inheritgc) {
-    memcpy(newgc->mark_table, inheritgc->mark_table, newgc->number_of_tags * sizeof(Mark2_Proc));
-    memcpy(newgc->fixup_table, inheritgc->fixup_table, newgc->number_of_tags * sizeof(Fixup2_Proc));
+    if (newgc->mark_table != inheritgc->mark_table) {
+      memcpy(newgc->mark_table, inheritgc->mark_table, newgc->number_of_tags * sizeof(Mark2_Proc));
+      memcpy(newgc->fixup_table, inheritgc->fixup_table, newgc->number_of_tags * sizeof(Fixup2_Proc));
+    }
     newgc->avoid_collection = 0;
 #ifdef MZ_USE_PLACES
     newgc->parent_gc = parentgc;
