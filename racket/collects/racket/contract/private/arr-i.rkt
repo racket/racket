@@ -1154,6 +1154,9 @@ evaluted left-to-right.)
                            (if (istx-rst an-istx)
                                (list (istx-rst an-istx))
                                '())))
+  (define args+rst+results
+    (append (or (istx-ress an-istx) '())
+            args+rst))
   (define this->i (gensym 'this->i))
   (with-syntax ([(arg-exp-xs ...) 
                  (generate-temporaries 
@@ -1196,8 +1199,8 @@ evaluted left-to-right.)
                                          (istx-ress an-istx)))
                      '())])
     
-    (define (find-orig-vars arg arg/ress-to-look-in)
-      (for/list ([an-id (in-list (arg/res-vars arg))])
+    (define (find-orig-vars ids arg/ress-to-look-in)
+      (for/list ([an-id (in-list ids)])
         (define ans
           (for/or ([o-arg (in-list arg/ress-to-look-in)])
             (and (free-identifier=? an-id (arg/res-var o-arg))
@@ -1222,7 +1225,7 @@ evaluted left-to-right.)
               ;; all of the dependent argument contracts
               (list #,@(for/list ([arg (in-list args+rst)]
                                   #:when (arg/res-vars arg))
-                         (define orig-vars (find-orig-vars arg args+rst))
+                         (define orig-vars (find-orig-vars (arg/res-vars arg) args+rst))
                          (define ctc-stx
                            (syntax-property
                             (syntax-property 
@@ -1256,10 +1259,7 @@ evaluted left-to-right.)
                                                 (istx-ress an-istx))]
                                           #:when (arg/res-vars arg))
                                  (define orig-vars 
-                                   (find-orig-vars 
-                                    arg 
-                                    (append (istx-ress an-istx)
-                                            args+rst)))
+                                   (find-orig-vars (arg/res-vars arg) args+rst+results))
                                  (define arg-stx
                                    (syntax-property
                                     (syntax-property 
@@ -1292,12 +1292,16 @@ evaluted left-to-right.)
                                             (syntax->list #'(res-exp-xs ...)))))
                     #''())
               
-              #,(let ([func (λ (pre/post) #`(λ #,(pre/post-vars pre/post)
-                                              #,(pre/post-exp pre/post)))])
+              #,(let ([func (λ (pre/post vars-to-look-in)
+                              (define orig-vars (find-orig-vars (pre/post-vars pre/post)
+                                                                vars-to-look-in))
+                              #`(λ #,orig-vars
+                                  (void #,@(pre/post-vars pre/post))
+                                  #,(pre/post-exp pre/post)))])
                   #`(list #,@(for/list ([pre (in-list (istx-pre an-istx))])
-                               (func pre))
+                               (func pre args+rst))
                           #,@(for/list ([post (in-list (istx-post an-istx))])
-                               (func post))))
+                               (func post args+rst+results))))
               
               #,(length (filter values (map (λ (arg) (and (not (arg-kwd arg)) 
                                                           (not (arg-optional? arg))))
