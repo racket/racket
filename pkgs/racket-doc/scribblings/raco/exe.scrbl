@@ -11,10 +11,11 @@
 
 @title[#:tag "exe"]{@exec{raco exe}: Creating Stand-Alone Executables}
 
-@margin-note{Use a smaller base language to achieve a faster startup time such
-as @racketmodfont{#lang} @racketmodname[racket/base] instead of
-@racketmodfont{#lang} @racketmodname[racket] rather than relying on @exec{raco
-exe}.}
+@margin-note{To achieve a faster startup time, instead of trying
+@exec{raco exe}, use a smaller base language---such as
+@racketmodfont{#lang} @racketmodname[racket/base] instead of
+@racketmodfont{#lang} @racketmodname[racket]. Also, ensure that
+bytecode files are compiled by using @seclink["make"]{@exec{raco make}}.}
 
 Compiled code produced by @exec{raco make} relies on Racket
 executables to provide run-time support to the compiled code. However,
@@ -88,8 +89,11 @@ The @exec{raco exe} command accepts the following command-line flags:
 
  @item{@Flag{l} or @DFlag{launcher} --- create a @tech{launcher} (see
    @secref["launcher"]), instead of a stand-alone executable. Flags
-   such as @DFlag{config-path}, @DFlag{collects-path}, and
-   @DFlag{lib} have no effect on launchers.}
+   such as @DFlag{config-path}, @DFlag{collects-path}, and @DFlag{lib}
+   have no effect on launchers. Beware that the default command-line
+   flags to build into the launcher prevent access to packages that
+   are installed in user scope; use @exec{--exf -U} to enable access
+   to user-scope packages from the launcher.}
 
  @item{@DFlag{config-path} @nonterm{path} --- set @nonterm{path}
    within the executable as the path to the @tech{configuration
@@ -153,19 +157,19 @@ The @exec{raco exe} command accepts the following command-line flags:
    in the executable, even if it is not referenced by the main program,
    so that it is available via @racket[dynamic-require].}
 
- @item{@DPFlag{exfl} @nonterm{flag} --- provide the @nonterm{flag}
+ @item{@DPFlag{exf} @nonterm{flag} --- provide the @nonterm{flag}
    command-line argument on startup to the embedded @exec{racket} or
    @exec{gracket}.}
 
- @item{@DFlag{exfl} @nonterm{flag} --- remove @nonterm{flag} from the
+ @item{@DFlag{exf} @nonterm{flag} --- remove @nonterm{flag} from the
    command-line arguments to be provided on startup to the embedded
    @exec{racket} or @exec{gracket}.}
 
- @item{@DFlag{exfl-clear} --- remove all command-line arguments to be
+ @item{@DFlag{exf-clear} --- remove all command-line arguments to be
    provided on startup to the embedded @exec{racket} or
    @exec{gracket}.}
 
- @item{@DFlag{exfl-show} --- show (without changing) the command-line
+ @item{@DFlag{exf-show} --- show (without changing) the command-line
    arguments to be provided on startup to the embedded
    @exec{racket} or @exec{gracket}.}
 
