@@ -116,7 +116,7 @@
           (make-Struct pred
                        (syntax-property
                         pred
-                        'disappeared-use (list struct-name))
+                        'disappeared-use (list (syntax-local-introduce struct-name)))
                        lineage (and (checked-struct-info? v) complete?)
                        acc
                        (cond [(eq? '_ (syntax-e pats))
