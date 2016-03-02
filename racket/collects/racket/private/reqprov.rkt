@@ -1074,7 +1074,18 @@
                    #f
                    "identifier is not bound to struct type information"
                    stx
-                   id))))]))))
+                   id))))]))
+     (λ (stx modes)
+       (syntax-case stx ()
+         [(_ id)
+          (and (identifier? #'id)
+               (struct-info? (syntax-local-value #'id (lambda () #f))))
+          (syntax-local-lift-expression
+           (syntax-property #'(void)
+                            'disappeared-use
+                            (syntax-local-introduce #'id)))]
+         [whatevs (void)])
+       stx)))
 
   (define-syntax combine-out
     (make-provide-transformer
