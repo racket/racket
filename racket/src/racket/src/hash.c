@@ -1699,6 +1699,12 @@ static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi)
 	
           hi->depth += 2;
 
+          /* Use structure-type names (especially for prefabs): */
+          for (i = s1->stype->name_pos+1; i--; ) {
+            k += equal_hash_key(s1->stype->parent_types[i]->name, 0, hi);
+            MZ_MIX(k);
+          }
+
           for (i = SCHEME_STRUCT_NUM_SLOTS(s1); i--; ) {
             if (SAME_OBJ(o, orig_obj))
               elem = s1->slots[i];
