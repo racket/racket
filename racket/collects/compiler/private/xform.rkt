@@ -756,6 +756,7 @@
           (printf "#define XFORM_START_SUSPEND /**/\n")
           (printf "#define XFORM_END_SUSPEND /**/\n")
           (printf "#define XFORM_SKIP_PROC /**/\n")
+          (printf "#define XFORM_ASSERT_NO_CONVERSION /**/\n")
           ;; For avoiding warnings:
           (printf "#define XFORM_OK_PLUS +\n")
           (printf "#define XFORM_OK_MINUS -\n")
@@ -1796,7 +1797,7 @@
         (define (class-decl? e)
           (memq (tok-n (car e)) '(class)))
         
-        ; ;Recognize a function (as opposed to a prototype):
+        ;; Recognize a function (as opposed to a prototype):
         (define (function? e)
           (let ([l (length e)])
             (and (> l 2)
@@ -1809,6 +1810,7 @@
                           (let ([v (list-ref e (sub1 ll))])
                             (or (parens? v)
                                 (eq? (tok-n v) 'XFORM_SKIP_PROC)
+                                (eq? (tok-n v) 'XFORM_ASSERT_NO_CONVERSION)
                                 ;; `const' can appear between the arg parens
                                 ;;  and the function body; this happens in the
                                 ;;  OS X headers
@@ -2419,6 +2421,9 @@
                                         (if (eq? semi (tok-n v))
                                             (values (list-ref e (sub1 len)) (sub1 len))
                                             (values v len)))]
+                        [(assert-no-conversion?)
+                         (eq? (tok-n (list-ref e (sub1 len)))
+                              'XFORM_ASSERT_NO_CONVERSION)]
                         [(body-e) (seq->list (seq-in body-v))]
                         [(class-name function-name func-pos) 
                          (let loop ([e e][p 0])
@@ -2433,7 +2438,9 @@
                         [(args-e) (seq->list (seq-in (list-ref e (if (and func-pos
                                                                           (eq? class-name function-name))
                                                                      (add1 func-pos)
-                                                                     (sub1 len)))))]
+                                                                     (if assert-no-conversion?
+                                                                         (- len 2)
+                                                                         (sub1 len))))))]
                         [(arg-vars all-arg-vars) 
                          (let-values ([(arg-pragmas arg-decls) (body->lines (append
                                                                              args-e
@@ -2583,8 +2590,13 @@
                       (cons
                        (make-note 'note #f #f "/* No conversion */")
                        orig-body-e))
-                     (list->seq body-e))))))))
-        
+                     (begin
+                       (when assert-no-conversion?
+                         (log-error "[CONVERSION] ~a in ~a: Function ~a declared XFORM_ASSERT_NO_CONVERSION, but requires conversion."
+                                    (tok-line (car e)) (tok-file (car e))
+                                    name))
+                       (list->seq body-e)))))))))
+
         (define (convert-class-vars body-e arg-vars c++-class new-vars-box)
           (when c++-class
             (let-values ([(pragmas el) (body->lines body-e #f)])

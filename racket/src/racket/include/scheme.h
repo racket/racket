@@ -237,6 +237,7 @@ typedef struct FSSpec mzFSSpec;
 #ifdef MZ_PRECISE_GC
 # ifndef MZ_XFORM
 #  define XFORM_SKIP_PROC /* empty */
+#  define XFORM_ASSERT_NO_CONVERSION /* empty */
 #  define XFORM_CAN_IGNORE /**/
 # endif
 #else
@@ -246,6 +247,7 @@ typedef struct FSSpec mzFSSpec;
 # define XFORM_START_SUSPEND /**/
 # define XFORM_END_SUSPEND /**/
 # define XFORM_SKIP_PROC /**/
+#  define XFORM_ASSERT_NO_CONVERSION /**/
 # define XFORM_START_TRUST_ARITH /**/
 # define XFORM_END_TRUST_ARITH /**/
 # define XFORM_CAN_IGNORE /**/

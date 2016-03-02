@@ -432,6 +432,7 @@ static MZ_INLINE Scheme_Input_Port *input_port_record_slow(Scheme_Object *port)
 }
 
 Scheme_Input_Port *scheme_input_port_record(Scheme_Object *port)
+  XFORM_ASSERT_NO_CONVERSION
 {
   /* Avoid MZ_PRECISE_GC instrumentation in the common case: */
   if (SCHEME_INPORTP(port))
@@ -464,6 +465,7 @@ static MZ_INLINE Scheme_Output_Port *output_port_record_slow(Scheme_Object *port
 }
 
 Scheme_Output_Port *scheme_output_port_record(Scheme_Object *port)
+  XFORM_ASSERT_NO_CONVERSION
 {
   /* Avoid MZ_PRECISE_GC instrumentation in the common case: */
   if (SCHEME_OUTPORTP(port))

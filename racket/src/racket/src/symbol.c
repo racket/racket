@@ -102,6 +102,7 @@ static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
 static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
 				    GC_CAN_IGNORE const char *key, uintptr_t length,
 				    Scheme_Object *naya)
+  XFORM_ASSERT_NO_CONVERSION
 {
   hash_v_t h, h2;
   uintptr_t mask;

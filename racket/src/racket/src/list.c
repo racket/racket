@@ -4030,6 +4030,7 @@ Scheme_Object *unsafe_hash_table_iterate_next(int argc, Scheme_Object *argv[])
 }
 
 Scheme_Object *unsafe_hash_table_iterate_key(int argc, Scheme_Object *argv[])
+  XFORM_ASSERT_NO_CONVERSION
 {
   GC_CAN_IGNORE const char *name = "unsafe-mutable-hash-iterate-key";
   Scheme_Object *obj = argv[0], *key;
@@ -4069,6 +4070,7 @@ static Scheme_Object *unsafe_hash_table_iterate_value_slow(int argc, Scheme_Obje
 }
 
 Scheme_Object *unsafe_hash_table_iterate_value(int argc, Scheme_Object *argv[])
+  XFORM_ASSERT_NO_CONVERSION
 {
   Scheme_Object *obj = argv[0], *key, *val;
   mzlonglong pos = SCHEME_INT_VAL(argv[1]);
@@ -4142,6 +4144,7 @@ Scheme_Object *unsafe_hash_tree_iterate_next(int argc, Scheme_Object *argv[])
 }
 
 Scheme_Object *unsafe_hash_tree_iterate_key(int argc, Scheme_Object *argv[])
+  XFORM_ASSERT_NO_CONVERSION
 {
   Scheme_Object *obj = argv[0], *args = argv[1], *key;
   Scheme_Hash_Tree *subtree;
@@ -4174,6 +4177,7 @@ static Scheme_Object *unsafe_hash_tree_iterate_value_slow(int argc, Scheme_Objec
 }
 
 Scheme_Object *unsafe_hash_tree_iterate_value(int argc, Scheme_Object *argv[])
+  XFORM_ASSERT_NO_CONVERSION
 {
   Scheme_Object *obj = argv[0], *args = argv[1];
   Scheme_Hash_Tree *subtree;
