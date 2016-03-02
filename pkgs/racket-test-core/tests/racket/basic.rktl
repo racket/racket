@@ -2650,8 +2650,14 @@
   (set-a-y! an-a 8)
   (test v equal-hash-code an-a))
 
+;; Check that `equal-hash-code` is consistent for interned symbols:
+(let ()
+  (define v (random))
+  (define k (equal-hash-code (string->symbol (format "sym:~a" v))))
+  (collect-garbage 'minor)
+  (test k equal-hash-code (string->symbol (format "sym:~a" v))))
 
-;; Try to build a hash table whose indexes fonr't fit in 32 bits:
+;; Try to build a hash table whose indexes don't fit in 32 bits:
 (let ()
   (struct a (x)
     #:property 

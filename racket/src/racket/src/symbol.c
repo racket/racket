@@ -129,6 +129,11 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
     h ^= (h << 5) + (h >> 2) + 0xA0A0;
     h ^= (h << 5) + (h >> 2) + 0x0505;
 
+    if (naya) {
+      /* record hash code (or some fragment of it) for `equal?` hashing: */
+      scheme_install_symbol_hash_code(naya, h);
+    }
+
     h = h & mask;
     h2 = h2 & mask;
   }

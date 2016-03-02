@@ -194,6 +194,8 @@ intptr_t scheme_hash_key(Scheme_Object *o);
 #endif
 typedef int (*Compare_Proc)(void *v1, void *v2);
 
+XFORM_NONGCING void scheme_install_symbol_hash_code(Scheme_Object *sym, uintptr_t h);
+
 Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 
 #define REGISTER_SO(x) MZ_REGISTER_STATIC(x)

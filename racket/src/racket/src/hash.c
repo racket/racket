@@ -128,6 +128,31 @@ uintptr_t PTR_TO_LONG(Scheme_Object *o)
 # define PTR_TO_LONG(p) ((uintptr_t)(p)>>2)
 #endif
 
+void scheme_install_symbol_hash_code(Scheme_Object *sym, uintptr_t h)
+{
+#ifdef MZ_PRECISE_GC
+  /* Record a hash code for the symbol as its `eq?` hash code ---
+     intended mainly to make `equal?` hashing depend only on the
+     symbol content */
+  short v;
+
+  v = sym->keyex;
+
+  if (!(v & 0xFFFC)) {
+    v |= (short)(h & ~0x7);
+#ifdef OBJHEAD_HAS_HASH_BITS
+    if (GC_is_allocated(sym)) {
+      OBJHEAD_HASH_BITS(sym) = (h >> 16);
+      v |= GCABLE_OBJ_HASH_BIT;
+    } else
+      v &= ~GCABLE_OBJ_HASH_BIT;
+#endif
+    if (!v) v = 0x1AD0;
+    sym->keyex = v;
+  }
+#endif
+}
+
 #define FILL_FACTOR 1.4
 
 #define MIN_HTABLE_SIZE 8
@@ -1474,6 +1499,10 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
       } else
 	return k + PTR_TO_LONG(o);
     }
+# else
+  case scheme_keyword_type:
+  case scheme_symbol_type:
+    return PTR_TO_LONG(o);
 # endif
   default:
     {
