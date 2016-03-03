@@ -3612,6 +3612,49 @@
            `(lambda ()
               (with-continuation-mark 'x (values 1 2) (list 1)))
            #f)
+(test-comp `(lambda (x)
+             (with-continuation-mark
+               x 1
+               (with-continuation-mark
+                x 2
+                (x))))
+            `(lambda (x)
+              (with-continuation-mark
+                x 2
+                (x))))
+(test-comp `(lambda (x)
+             (with-continuation-mark
+               x (display x)
+               (with-continuation-mark
+                x 2
+                (x))))
+            `(lambda (x)
+              (display x)
+              (with-continuation-mark
+                x 2
+                (x))))
+(test-comp `(lambda (x)
+             (with-continuation-mark
+               x 1
+               (with-continuation-mark
+                x (current-continuation-marks)
+                (x))))
+            `(lambda (x)
+              (with-continuation-mark
+                x (current-continuation-marks)
+               (x)))
+            #f)
+(test-comp '(lambda (v)
+             (let ([x (with-continuation-mark
+                          'x 10
+                          (+ v v))])
+               x))
+           '(lambda (v)
+             (begin0
+              (with-continuation-mark
+                  'x 10
+                  (+ v v))
+              #f)))
 
 (test-comp `(lambda (x y f)
               (set! x 5)

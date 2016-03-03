@@ -4721,6 +4721,8 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
 
   optimize_info_seq_done(info, &info_seq);
 
+  /* If the body cannot inspect the continution, and if the key is not
+     a chaperone, no need to add the mark: */
   if (omittable_key(k, info)
       && scheme_omittable_expr(b, -1, 20, 0, info, info))
     return make_discarding_first_sequence(v, b, info);
@@ -4733,6 +4735,19 @@ static Scheme_Object *optimize_wcm(Scheme_Object *o, Optimize_Info *info, int co
   wcm->body = b;
 
   info->size += 1;
+
+  /* Simplify (with-continuation-mark <same-key> <val1>
+               (with-continuation-mark <same-key> <val2>
+                 <body>))
+     to (begin
+         <val1>
+         (with-continuation-mark <same-key> <val2>
+         <body>))
+     as long as <val2> doesn't inspect the continuation. */
+  if (SAME_TYPE(SCHEME_TYPE(wcm->body), scheme_with_cont_mark_type)
+      && equivalent_exprs(wcm->key, ((Scheme_With_Continuation_Mark *)wcm->body)->key, NULL, NULL, 0)
+      && scheme_omittable_expr(((Scheme_With_Continuation_Mark *)wcm->body)->val, 1, 20, 0, info, info))
+    return make_discarding_first_sequence(wcm->val, wcm->body, info);
 
   return (Scheme_Object *)wcm;
 }
