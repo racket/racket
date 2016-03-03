@@ -108,8 +108,22 @@
 /* indicates a primitive that is JIT-inlined on some platforms,
    but not the current one: */
 #define SCHEME_PRIM_SOMETIMES_INLINED      (1 << 15)
+/* indicates a primitive that produces a real or number (or
+   errors): */
+#define SCHEME_PRIM_PRODUCES_REAL          (1 << 16)
+#define SCHEME_PRIM_PRODUCES_NUMBER        (1 << 17)
+/* indicates a primitive that requires certain argument types (all the
+   same type): */
+#define SCHEME_PRIM_WANTS_REAL             (1 << 18)
+#define SCHEME_PRIM_WANTS_NUMBER           (1 << 19)
+/* indicates a primitive that always succeed when given
+   arguments of the expected type: */
+#define SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS (1 << 20)
+/* indicates a primitive that produces a real number when
+   given real-number arguments: */
+#define SCHEME_PRIM_CLOSED_ON_REALS        (1 << 21)
 
-#define SCHEME_PRIM_OPT_TYPE_SHIFT           16
+#define SCHEME_PRIM_OPT_TYPE_SHIFT           22
 #define SCHEME_PRIM_OPT_TYPE_MASK            (SCHEME_MAX_LOCAL_TYPE_MASK << SCHEME_PRIM_OPT_TYPE_SHIFT)
 #define SCHEME_PRIM_OPT_TYPE(x) ((x & SCHEME_PRIM_OPT_TYPE_MASK) >> SCHEME_PRIM_OPT_TYPE_SHIFT)
 
@@ -474,6 +488,8 @@ void scheme_done_os_thread();
 extern Scheme_Object *scheme_fixnum_p_proc;
 extern Scheme_Object *scheme_flonum_p_proc;
 extern Scheme_Object *scheme_extflonum_p_proc;
+extern Scheme_Object *scheme_real_p_proc;
+extern Scheme_Object *scheme_number_p_proc;
 extern Scheme_Object *scheme_apply_proc;
 extern Scheme_Object *scheme_values_proc;
 extern Scheme_Object *scheme_procedure_p_proc;
@@ -525,6 +541,25 @@ extern Scheme_Object *scheme_unsafe_fxand_proc;
 extern Scheme_Object *scheme_unsafe_fxior_proc;
 extern Scheme_Object *scheme_unsafe_fxxor_proc;
 extern Scheme_Object *scheme_unsafe_fxrshift_proc;
+
+extern Scheme_Object *scheme_unsafe_real_add1_proc;
+extern Scheme_Object *scheme_unsafe_real_sub1_proc;
+extern Scheme_Object *scheme_unsafe_real_abs_proc;
+extern Scheme_Object *scheme_unsafe_real_plus_proc;
+extern Scheme_Object *scheme_unsafe_real_minus_proc;
+extern Scheme_Object *scheme_unsafe_real_times_proc;
+extern Scheme_Object *scheme_unsafe_real_divide_proc;
+extern Scheme_Object *scheme_unsafe_real_modulo_proc;
+extern Scheme_Object *scheme_unsafe_real_quotient_proc;
+extern Scheme_Object *scheme_unsafe_real_remainder_proc;
+
+extern Scheme_Object *scheme_unsafe_real_eq_proc;
+extern Scheme_Object *scheme_unsafe_real_lt_proc;
+extern Scheme_Object *scheme_unsafe_real_gt_proc;
+extern Scheme_Object *scheme_unsafe_real_lt_eq_proc;
+extern Scheme_Object *scheme_unsafe_real_gt_eq_proc;
+extern Scheme_Object *scheme_unsafe_real_min_proc;
+extern Scheme_Object *scheme_unsafe_real_max_proc;
 
 extern Scheme_Object *scheme_unsafe_fx_eq_proc;
 extern Scheme_Object *scheme_unsafe_fx_lt_proc;
@@ -1570,9 +1605,14 @@ enum {
 /* Flags to indicate to SFS pass that a [tail] application doesn't
    need clearing before it (because the call is to a immediate
    primitive or a Racket-implemented function). */
-#define APPN_FLAG_IMMED (1 << 12)
 #define APPN_FLAG_SFS_TAIL (1 << 13)
-#define APPN_FLAG_MASK (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL)
+#define APPN_FLAG_IMMED (1 << 12)
+/* The compiler may determine that a call is omittable; usually that
+   information is encoded in the primitive itself, but sometimes the
+   optimizer can figure out more (e.g., based on known types of the
+   arguments): */
+#define APPN_FLAG_OMITTABLE (1 << 11)
+#define APPN_FLAG_MASK (APPN_FLAG_OMITTABLE | APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL)
 
 typedef struct {
   Scheme_Inclhash_Object iso; /* keyex used for flags */
@@ -1580,7 +1620,7 @@ typedef struct {
   Scheme_Object *rand;
 } Scheme_App2_Rec;
 
-#define SCHEME_APPN_FLAGS(app) MZ_OPT_HASH_KEY(&app->iso)
+#define SCHEME_APPN_FLAGS(app) MZ_OPT_HASH_KEY(&(app)->iso)
 
 typedef struct {
   Scheme_Inclhash_Object iso; /* keyex used for flags */

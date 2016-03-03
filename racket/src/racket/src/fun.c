@@ -1005,10 +1005,7 @@ scheme_make_closed_prim(Scheme_Closed_Prim *fun, void *data)
 
 void scheme_prim_is_method(Scheme_Object *o)
 {
-  if (SCHEME_CLSD_PRIMP(o))
-    ((Scheme_Closed_Primitive_Proc *)o)->pp.flags |= SCHEME_PRIM_IS_METHOD;
-  else
-    ((Scheme_Primitive_Proc *)o)->pp.flags |= SCHEME_PRIM_IS_METHOD;
+  scheme_signal_error("no longer supported");
 }
 
 int scheme_has_method_property(Scheme_Object *code)

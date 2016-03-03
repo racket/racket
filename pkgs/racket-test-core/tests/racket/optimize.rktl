@@ -2064,6 +2064,10 @@
               (values x))
            '(let ([x (+ (cons 1 2) 0)])
               x))
+(test-comp '(let ([x (+ (random) 0)])
+              (values x))
+           '(let ([x (+ (random) 0)])
+              x))
 (test-comp '(lambda (x)
               (begin (random) x))
            '(lambda (x)
@@ -2272,6 +2276,18 @@
            '(lambda (z)
              (+ (car z) (unsafe-car void))))
 
+;; Ok to reorder arithmetic that will not raise an error:
+(test-comp '(lambda (x y)
+             (if (and (real? x) (real? y))
+                 (let ([w (+ x y)]
+                       [z (- y x)])
+                   (+ z w))
+                 (void)))
+           '(lambda (x y)
+             (if (and (real? x) (real? y))
+                 (+ (- y x) (+ x y))
+                 (void))))
+
 (test-comp '(lambda (z)
               (let-values ([(x y)
                             (if z
@@ -2285,11 +2301,11 @@
               (let-values ([(x y)
                             (if z
                                 (values 1 1)
-                                (let ([more (+ z z)])
+                                (let ([more (list z z)])
                                   (values 4 more)))])
                 (list x y)))
            '(lambda (z)
-              (let ([r (if z 1 (+ z z))])
+              (let ([r (if z 1 (list z z))])
                 (list (if z 1 4) r))))
 
 (test-comp '(lambda (a b c f)
@@ -2309,11 +2325,11 @@
                                   #f
                                   (add1 c))))))
 
-(test-comp '(lambda (x y)
+(test-comp '(lambda (x y q)
               (let ([z (+ x y)])
-                (list (if x x y) z)))
-           '(lambda (x y)
-              (list (if x x y) (+ x y))))
+                (list (if q x y) z)))
+           '(lambda (x y q)
+              (list (if q x y) (+ x y))))
 
 (test-comp '(lambda (x y)
               (let ([z (car y)])
@@ -3685,6 +3701,131 @@
              (define g (random))
              (list #t
                    (#%variable-reference g))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Types related to arithmetic
+
+(let ()
+  (define (check-real-op op [can-omit? #t] [can-multi? #t])
+    (test-comp `(lambda (x y)
+                 (list (,op x y)
+                       (real? x)
+                       (real? y)
+                       (number? x)
+                       (number? y)))
+               `(lambda (x y)
+                 (list (,op x y)
+                       #t
+                       #t
+                       #t
+                       #t)))
+    (when can-multi?
+      (test-comp `(lambda (x y z w)
+                   (list (,op x y z w)
+                         (real? x)
+                         (real? y)
+                         (real? z)
+                         (real? w)))
+                 `(lambda (x y z w)
+                   (list (,op x y z w)
+                         #t
+                         #t
+                         #t
+                         #t))))
+    (when can-omit?
+      (test-comp `(lambda (x y)
+                   (if (and (real? x) (real? y))
+                       (with-continuation-mark
+                           'x 'y
+                         (,op x y))
+                       (error "bad")))
+                 `(lambda (x y)
+                   (if (and (real? x) (real? y))
+                       (,op x y)
+                       (error "bad"))))))
+  (check-real-op 'quotient #f #f)
+  (check-real-op 'remainder #f #f)
+  (check-real-op 'modulo #f #f)
+  (check-real-op 'max)
+  (check-real-op 'min)
+  (check-real-op '<)
+  (check-real-op '>)
+  (check-real-op '<=)
+  (check-real-op '>=)
+
+  (define (check-number-op op [closed-under-reals? #t])
+    (test-comp `(lambda (x y)
+                 (list (,op x y)
+                       (number? x)
+                       (number? y)))
+               `(lambda (x y)
+                 (list (,op x y)
+                       #t
+                       #t)))
+    (test-comp `(lambda (x y z w)
+                 (list (,op x y z w)
+                       (number? x)
+                       (number? y)
+                       (number? z)
+                       (number? w)))
+               `(lambda (x y z w)
+                 (list (,op x y z w)
+                       #t
+                       #t
+                       #t
+                       #t)))
+    (test-comp `(lambda (x y)
+                 (list (,op x y)
+                       (real? x)))
+               `(lambda (x y)
+                 (list (,op x y)
+                       #t))
+               ;; cannot assume `real?`
+               #f)
+    (when closed-under-reals?
+      (test-comp `(lambda (x y)
+                   (if (and (real? x) (real? y))
+                       (let ([v (,op x y)])
+                         (with-continuation-mark
+                             'x 'y
+                             ;; No error possible from `<`:
+                             (list (< 2 v) (< 1 v))))
+                       (error "bad")))
+                 `(lambda (x y)
+                   (if (and (real? x) (real? y))
+                       (let ([v (,op x y)])
+                         (list (< 2 v) (< 1 v)))
+                       (error "bad"))))))
+  (check-number-op '+)
+  (check-number-op '-)
+  (check-number-op '*)
+  (check-number-op '/)
+  (check-number-op '+)
+  (check-number-op '= #f)
+  
+  (define (check-number-op-unary op)
+    (test-comp `(lambda (x y)
+                 (list (,op x)
+                       (number? x)))
+               `(lambda (x y)
+                 (list (,op x)
+                       #t)))
+    ;; Check closed under reals:
+    (test-comp `(lambda (x y)
+                 (if (real? x)
+                     (with-continuation-mark
+                       'x 'y
+                       ;; No error possible from `<`:
+                       (< 1 (,op x)))
+                     (error "bad")))
+               `(lambda (x y)
+                 (if (real? x)
+                     (< 1 (,op x))
+                     (error "bad")))))
+  
+  (check-number-op-unary 'add1)
+  (check-number-op-unary 'sub1)
+  (check-number-op-unary 'abs))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check remotion of dead code after error

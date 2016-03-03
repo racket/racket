@@ -61,6 +61,8 @@
 READ_ONLY Scheme_Object *scheme_fixnum_p_proc;
 READ_ONLY Scheme_Object *scheme_flonum_p_proc;
 READ_ONLY Scheme_Object *scheme_extflonum_p_proc;
+READ_ONLY Scheme_Object *scheme_real_p_proc;
+READ_ONLY Scheme_Object *scheme_number_p_proc;
 
 /* locals */
 static Scheme_Object *number_p (int argc, Scheme_Object *argv[]);
@@ -472,7 +474,9 @@ scheme_init_number (Scheme_Env *env)
 #endif
 #endif
 
+  REGISTER_SO(scheme_number_p_proc);
   p = scheme_make_folding_prim(number_p, "number?", 1, 1, 1);
+  scheme_number_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("number?", p, env);
@@ -481,11 +485,12 @@ scheme_init_number (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("complex?", p, env);
 
+  REGISTER_SO(scheme_real_p_proc);
   p = scheme_make_folding_prim(real_p, "real?", 1, 1, 1);
+  scheme_real_p_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("real?", p, env);
-
   
   p = scheme_make_folding_prim(rational_p, "rational?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);

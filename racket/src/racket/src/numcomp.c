@@ -104,49 +104,71 @@ void scheme_init_numcomp(Scheme_Env *env)
 
   p = scheme_make_folding_prim(eq, "=", 2, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_NUMBER
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS);
   scheme_add_global_constant("=", p, env);
 
   p = scheme_make_folding_prim(lt, "<", 2, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_REAL
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS);
   scheme_add_global_constant("<", p, env);
 
   p = scheme_make_folding_prim(gt, ">", 2, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_REAL
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS);
   scheme_add_global_constant(">", p, env);
 
   p = scheme_make_folding_prim(lt_eq, "<=", 2, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_REAL
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS);
   scheme_add_global_constant("<=", p, env);
 
   p = scheme_make_folding_prim(gt_eq, ">=", 2, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_REAL
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS);
   scheme_add_global_constant(">=", p, env);
 
   p = scheme_make_folding_prim(zero_p, "zero?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_NUMBER
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS);
   scheme_add_global_constant("zero?", p, env);
 
   p = scheme_make_folding_prim(positive_p, "positive?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_REAL
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS);
   scheme_add_global_constant("positive?", p, env);
 
   p = scheme_make_folding_prim(negative_p, "negative?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_REAL
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS);
   scheme_add_global_constant("negative?", p, env);
 
   p = scheme_make_folding_prim(sch_max, "max", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_REAL
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
+                                                            | SCHEME_PRIM_PRODUCES_REAL);
   scheme_add_global_constant("max", p, env);
 
   p = scheme_make_folding_prim(sch_min, "min", 1, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_NARY_INLINED);
+                                                            | SCHEME_PRIM_IS_NARY_INLINED
+                                                            | SCHEME_PRIM_WANTS_REAL
+                                                            | SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS
+                                                            | SCHEME_PRIM_PRODUCES_REAL);
   scheme_add_global_constant("min", p, env);
 }
 

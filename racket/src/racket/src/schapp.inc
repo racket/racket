@@ -38,8 +38,7 @@
 
 #if PRIM_CHECK_ARITY
   if (argc < prim->p.mina || (argc > prim->p.mu.maxa && prim->p.mina >= 0)) {
-    scheme_wrong_count_m(prim->p.name, prim->p.mina, prim->p.mu.maxa, argc, argv,
-                         prim->p.pp.flags & SCHEME_PRIM_IS_METHOD);
+    scheme_wrong_count_m(prim->p.name, prim->p.mina, prim->p.mu.maxa, argc, argv, 0);
     return NULL; /* Shouldn't get here */
   }
 #endif
