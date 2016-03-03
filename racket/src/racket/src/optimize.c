@@ -867,7 +867,7 @@ static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *ins
 }
 
 static void extract_tail_inside(Scheme_Object **_t2, Scheme_Object **_inside)
-/* Looks through various forms, like `begin` to extract a reslt expression;
+/* Looks through various forms, like `begin` to extract a result expression;
    replace_tail_inside() needs to be consistent with this function */
 {
   while (1) {
@@ -2578,6 +2578,12 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
       Scheme_Sequence *seq = (Scheme_Sequence *)expr;
 
       return expr_implies_predicate(seq->array[seq->count-1], info, _involves_k_cross, fuel-1);
+    }
+  case scheme_with_cont_mark_type:
+    {
+      Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr;
+
+      return expr_implies_predicate(wcm->body, info, _involves_k_cross, fuel-1);
     }
   case scheme_ir_let_header_type:
     {
@@ -5923,15 +5929,31 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     }
   }
 
-  /* Special case: (let ([x E]) x) where E is lambda, case-lambda, or
-     a constant. (If we allowed arbitrary E here, it would affect the
-     tailness of E.) */
+  /* Special case: (let ([x E]) x).
+     If E is lambda, case-lambda, or a constant, we can prduce just E.
+     Otherwise, convert to (begin0 E #f) to preserve non-tailness of E. */
   if (!(SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) && (head->count == 1) && (head->num_clauses == 1)) {
     irlv = (Scheme_IR_Let_Value *)head->body;
     if (SAME_OBJ((Scheme_Object *)irlv->vars[0], irlv->body)) {
       if (can_unwrap(irlv->value)) {
         /* Drop the let */
         return scheme_optimize_expr(irlv->value, info, context);
+      } else {
+        /* Use `begin0`: */
+        Scheme_Sequence *seq;
+
+        seq = scheme_malloc_sequence(2);
+        seq->so.type = scheme_begin0_sequence_type;
+        seq->count = 2;
+
+        value = irlv->value;
+        if (!single_valued_noncm_expression(value, 5))
+          value = ensure_single_value(value);
+
+        seq->array[0] = value;
+        seq->array[1] = scheme_false;
+
+        return scheme_optimize_expr((Scheme_Object *)seq, info, context);
       }
     }
   }
@@ -6225,6 +6247,10 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
         if (SAME_TYPE(SCHEME_TYPE(value), scheme_sequence_type)) {
           Scheme_Sequence *seq = (Scheme_Sequence *)value;
           value = seq->array[seq->count - 1];
+          indirect++;
+        } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_with_cont_mark_type)) {
+          Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)value;
+          value = wcm->body;
           indirect++;
         } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_let_header_type)) {
           Scheme_IR_Let_Header *head2 = (Scheme_IR_Let_Header *)value;
