@@ -173,8 +173,8 @@ For example,
 
 A package source is inferred to refer
 to a directory only when it does not have a file-archive suffix, does
-not match the grammar of a package name, and either starts with starts 
-with @litchar{file://} or does not start
+not match the grammar of a package name, and either starts with
+@litchar{file://} or does not start
 with alphabetic characters followed by @litchar{://}.  In the
 case that the package source starts with @litchar{file://},
 it must be a URL without a @litchar{type} query or
