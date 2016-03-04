@@ -2260,7 +2260,8 @@ mark_ir_lambda_info {
   
   gcMARK2(i->base_closure, gc);
   gcMARK2(i->vars, gc);
-  gcMARK2(i->local_type_map, gc);
+  gcMARK2(i->arg_types, gc);
+  gcMARK2(i->arg_type_contributors, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_IR_Lambda_Info));

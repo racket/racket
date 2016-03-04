@@ -103,12 +103,11 @@ typedef struct Optimize_Info_Sequence {
   int init_flatten_fuel, min_flatten_fuel;
 } Optimize_Info_Sequence;
 
-static char *get_closure_local_type_map(Scheme_Lambda *lam, int arg_n, int *ok);
-static void set_closure_local_type_map(Scheme_Lambda *lam, char *local_type_map);
-static void merge_closure_local_type_map(Scheme_Lambda *lam1, Scheme_Lambda *lam2);
-static int closure_body_size(Scheme_Lambda *lam, int check_assign,
-                             Optimize_Info *info, int *is_leaf);
-static int closure_has_top_level(Scheme_Lambda *lam);
+static void merge_lambda_arg_types(Scheme_Lambda *lam1, Scheme_Lambda *lam2);
+static void check_lambda_arg_types_registered(Scheme_Lambda *lam, int app_count);
+static int lambda_body_size_plus_info(Scheme_Lambda *lam, int check_assign,
+                                      Optimize_Info *info, int *is_leaf);
+static int lambda_has_top_level(Scheme_Lambda *lam);
 
 static int wants_local_type_arguments(Scheme_Object *rator, int argpos);
 
@@ -123,7 +122,6 @@ static void add_type(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pre
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, Scheme_Hash_Tree *skip_vars);
 static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand);
 
-static int predicate_to_local_type(Scheme_Object *pred);
 static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info,
                                              int *_involves_k_cross, int fuel);
 static int produces_local_type(Scheme_Object *rator, int argc);
@@ -164,6 +162,10 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
 
 #define SCHEME_LAMBDAP(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_ir_lambda_type) \
                                    || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
+
+#define SCHEME_WILL_BE_LAMBDAP(v)     SAME_TYPE(SCHEME_TYPE(v), scheme_will_be_lambda_type)
+#define SCHEME_WILL_BE_LAMBDA_SIZE(v) SCHEME_PINT_VAL(v)
+#define SCHEME_WILL_BE_LAMBDA(v)      SCHEME_IPTR_VAL(v)
 
 static int lambda_body_size(Scheme_Object *o, int less_args);
 
@@ -897,6 +899,13 @@ static void extract_tail_inside(Scheme_Object **_t2, Scheme_Object **_inside)
   }
 }
 
+Scheme_Object *scheme_optimize_extract_tail_inside(Scheme_Object *t2)
+{
+  Scheme_Object *inside;
+  extract_tail_inside(&t2, &inside);
+  return t2;
+}
+
 /*========================================================================*/
 /*        detecting `make-struct-type` calls and struct shapes            */
 /*========================================================================*/
@@ -1593,7 +1602,7 @@ int scheme_is_ir_lambda(Scheme_Object *o, int can_be_closed, int can_be_liftable
       if (!can_be_closed && !lam->closure_size)
         return 0;
       /* Because procs that reference only globals are lifted: */
-      if (!can_be_liftable && (lam->closure_size == 1) && closure_has_top_level(lam))
+      if (!can_be_liftable && (lam->closure_size == 1) && lambda_has_top_level(lam))
         return 0;
     }
     return 1;
@@ -1815,14 +1824,21 @@ static int estimate_expr_size(Scheme_Object *expr, int sz, int fuel)
 
 static Scheme_Object *estimate_closure_size(Scheme_Object *e)
 {
+  Scheme_Object *wbl;
   int sz;
   sz = estimate_expr_size(e, 0, 32);
-  return scheme_box(scheme_make_integer(sz));
+
+  wbl = scheme_alloc_object();
+  wbl->type = scheme_will_be_lambda_type;
+  SCHEME_WILL_BE_LAMBDA_SIZE(wbl) = sz;
+  SCHEME_WILL_BE_LAMBDA(wbl) = e;
+  
+  return wbl;
 }
 
 static Scheme_Object *no_potential_size(Scheme_Object *v)
 {
-  if (v && SCHEME_BOXP(v))
+  if (v && SCHEME_WILL_BE_LAMBDAP(v))
     return NULL;
   else
     return v;
@@ -1961,8 +1977,8 @@ int check_potential_size(Scheme_Object *var)
   Scheme_Object* n;
 
   n = SCHEME_VAR(var)->optimize.known_val;
-  if (n && SCHEME_BOXP(n)) {
-    return (int)SCHEME_INT_VAL(SCHEME_BOX_VAL(n));
+  if (n && SCHEME_WILL_BE_LAMBDAP(n)) {
+    return SCHEME_PINT_VAL(n);
   }
 
   return 0;
@@ -2050,8 +2066,8 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
       }
       if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_toplevel_type) && info->top_level_consts) {
         le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
-        if (le && SCHEME_BOXP(le)) {
-          psize = SCHEME_INT_VAL(SCHEME_BOX_VAL(le));
+        if (le && SCHEME_WILL_BE_LAMBDAP(le)) {
+          psize = SCHEME_WILL_BE_LAMBDA_SIZE(le);
           le = NULL;
         }
         if (!le)
@@ -2111,7 +2127,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
         return NULL;
       }
 
-      sz = closure_body_size(lam, 1, info, &is_leaf);
+      sz = lambda_body_size_plus_info(lam, 1, info, &is_leaf);
       if (is_leaf) {
         /* encourage inlining of leaves: */
         sz >>= 2;
@@ -2220,7 +2236,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
 static int is_local_type_expression(Scheme_Object *expr, Optimize_Info *info)
 /* Get an unboxing type (e.g., flonum) for `expr` */
 {
-  return predicate_to_local_type(expr_implies_predicate(expr, info, NULL, 5));
+  return scheme_predicate_to_local_type(expr_implies_predicate(expr, info, NULL, 5));
 }
 
 static void register_local_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
@@ -2230,57 +2246,96 @@ static void register_local_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec *
    procedure will accept unboxed arguments at run time. */
 {
   Scheme_Object *rator, *rand, *le;
-  int n, i;
+  int n, i, nth_app;
 
   if (app) {
     rator = app->args[0];
     n = app->num_args;
+    nth_app = SCHEME_APPN_FLAGS(app) & APPN_POSITION_MASK;
   } else if (app2) {
     rator = app2->rator;
     n = 1;
+    nth_app = SCHEME_APPN_FLAGS(app2) & APPN_POSITION_MASK;
   } else {
     rator = app3->rator;
     n = 2;
+    nth_app = SCHEME_APPN_FLAGS(app3) & APPN_POSITION_MASK;
   }
 
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_ir_local_type)) {
-    {
-      le = optimize_info_lookup_lambda(rator);
-      if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type)) {
-        Scheme_Lambda *lam = (Scheme_Lambda *)le;
-        char *map;
-        int ok;
+    le = optimize_info_lookup_lambda(rator);
+    if (SCHEME_VAR(rator)->optimize.known_val
+        && SCHEME_WILL_BE_LAMBDAP(SCHEME_VAR(rator)->optimize.known_val))
+      le = SCHEME_WILL_BE_LAMBDA(SCHEME_VAR(rator)->optimize.known_val);
 
-        map = get_closure_local_type_map(lam, n, &ok);
+    if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type)) {
+      Scheme_Lambda *lam = (Scheme_Lambda *)le;
+      if ((lam->num_params == n)
+          && !(SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST)) {
+        Scheme_Object *pred;
 
-        if (ok) {
-          for (i = 0; i < n; i++) {
-            int ct;
-
-            if (app)
-              rand = app->args[i+1];
-            else if (app2)
-              rand = app2->rand;
-            else {
-              if (!i)
-                rand = app3->rand1;
-              else
-                rand = app3->rand2;
-            }
-
-            ct = is_local_type_expression(rand, info);
-            if (ct) {
-              if (!map) {
-                map = MALLOC_N_ATOMIC(char, n);
-                memset(map, ct, n);
-                memset(map, 0, i);
-              }
-            }
-            if (map)
-              map[i] = ct;
+        if (!lam->ir_info->arg_types) {
+          Scheme_Object **arg_types;
+          short *contributors;
+          arg_types = MALLOC_N(Scheme_Object*, n);
+          lam->ir_info->arg_types = arg_types;
+          contributors = MALLOC_N_ATOMIC(short, n);
+          memset(contributors, 0, sizeof(short) * n);
+          lam->ir_info->arg_type_contributors = contributors;
+        }
+        
+        for (i = 0; i < n; i++) {
+          if (app)
+            rand = app->args[i+1];
+          else if (app2)
+            rand = app2->rand;
+          else {
+            if (!i)
+              rand = app3->rand1;
+            else
+              rand = app3->rand2;
           }
 
-          set_closure_local_type_map(lam, map);
+          if (lam->ir_info->arg_types[i]
+              || !lam->ir_info->arg_type_contributors[i]) {
+            int widen_to_top = 0;
+
+            pred = expr_implies_predicate(rand, info, NULL, 5);
+
+            if (pred) {
+              if (!lam->ir_info->arg_type_contributors[i]) {
+                lam->ir_info->arg_types[i] = pred;
+                if (nth_app)
+                  lam->ir_info->arg_type_contributors[i] |= (1 << (nth_app-1));
+              } else if (predicate_implies(pred, lam->ir_info->arg_types[i])) {
+                /* ok */
+                if (nth_app)
+                  lam->ir_info->arg_type_contributors[i] |= (1 << (nth_app-1));
+              } else if (predicate_implies(lam->ir_info->arg_types[i], pred)) {
+                /* widen */
+                lam->ir_info->arg_types[i] = pred;
+                lam->ir_info->arg_type_contributors[i] |= (1 << (nth_app-1));
+              } else
+                widen_to_top = 1;
+            } else
+              widen_to_top = 1;
+
+            if (widen_to_top) {
+              if (nth_app) {
+                /* Since we cant provide a nice type right now, just
+                   don't check in, in case a future iteration provides
+                   better information. If we never check in with a type,
+                   it will count as widening in the end. */
+              } else {
+                /* since we don't have an identity, the lambda won't
+                   be able to tell whether all apps have checked in,
+                   so we have to registers a "top" as an anonymous
+                   contributor. */
+                lam->ir_info->arg_type_contributors[i] |= (1 << (SCHEME_USE_COUNT_INF-1));
+                lam->ir_info->arg_types[i] = NULL;
+              }
+            }
+          }
         }
       }
     }
@@ -2463,7 +2518,7 @@ static Scheme_Object *local_type_to_predicate(int t)
   return NULL;
 }
 
-static int predicate_to_local_type(Scheme_Object *pred)
+int scheme_predicate_to_local_type(Scheme_Object *pred)
 {
   if (!pred)
     return 0;
@@ -2479,7 +2534,7 @@ static int predicate_to_local_type(Scheme_Object *pred)
 int scheme_expr_produces_local_type(Scheme_Object *expr, int *_involves_k_cross)
 {
   if (_involves_k_cross) *_involves_k_cross = 0;
-  return predicate_to_local_type(expr_implies_predicate(expr, NULL, _involves_k_cross, 10));
+  return scheme_predicate_to_local_type(expr_implies_predicate(expr, NULL, _involves_k_cross, 10));
 }
 
 static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
@@ -2556,6 +2611,10 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
             *_involves_k_cross = 1;
           return p;
         }
+
+        if ((SCHEME_VAR(expr)->mode == SCHEME_VAR_MODE_OPTIMIZE)
+            && SCHEME_VAR(expr)->optimize.known_val)
+          return expr_implies_predicate(SCHEME_VAR(expr)->optimize.known_val, info, _involves_k_cross, fuel-1);
       }
     }
     break;
@@ -5573,7 +5632,7 @@ int scheme_ir_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_lambda_type)) {
     int sz;
-    sz = closure_body_size((Scheme_Lambda *)value, 1, info, NULL);
+    sz = lambda_body_size_plus_info((Scheme_Lambda *)value, 1, info, NULL);
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
    else {
@@ -5842,9 +5901,9 @@ static int set_one_code_flags(Scheme_Object *value, int flags,
     }
 
     if (merge_local_typed) {
-      merge_closure_local_type_map(lam, lam2);
-      merge_closure_local_type_map(lam, lam3);
-      merge_closure_local_type_map(lam, lam2);
+      merge_lambda_arg_types(lam, lam2);
+      merge_lambda_arg_types(lam, lam3);
+      merge_lambda_arg_types(lam, lam2);
     }
 
     if (!just_tentative || (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_RESULT_TENTATIVE)) {
@@ -5901,14 +5960,14 @@ static int lambda_body_size(Scheme_Object *o, int less_args)
   int bsz;
 
   if (SAME_TYPE(SCHEME_TYPE(o), scheme_ir_lambda_type)) {
-    bsz = closure_body_size((Scheme_Lambda *)o, 0, NULL, NULL);
+    bsz = lambda_body_size_plus_info((Scheme_Lambda *)o, 0, NULL, NULL);
     if (less_args) bsz -= ((Scheme_Lambda *)o)->num_params;
     return bsz;
   } else if (SAME_TYPE(SCHEME_TYPE(o), scheme_case_lambda_sequence_type)) {
     Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)o;
     int i, sz = 0;
     for (i = cl->count; i--; ) {
-      bsz = closure_body_size((Scheme_Lambda *)cl->array[i], 0, NULL, NULL);
+      bsz = lambda_body_size_plus_info((Scheme_Lambda *)cl->array[i], 0, NULL, NULL);
       if (less_args) {
         bsz -= ((Scheme_Lambda *)cl->array[i])->num_params;
         if (bsz > sz) sz = bsz;
@@ -5996,6 +6055,65 @@ void advance_clocks_for_optimized(Scheme_Object *o,
       || (*_kclock > info->kclock)
       || (*_sclock > info->sclock))
     scheme_signal_error("internal error: optimizer clock tracking has gone wrong");
+}
+
+static void set_application_types(Scheme_Object *o, Optimize_Info *info, int fuel)
+/* Peek ahead in an expression to set readily apparent type information
+   for function calls. This information is useful for type-invariant loop
+   arguments, for example. */
+{
+  if (!fuel) return;
+
+  switch (SCHEME_TYPE(o)) {
+  case scheme_application_type:
+    {
+      Scheme_App_Rec *app = (Scheme_App_Rec *)o;
+      int i;
+      register_local_argument_types(app, NULL, NULL, info);
+      for (i = 0; i < app->num_args+1; i++) {
+        set_application_types(app->args[i], info, fuel - 1);
+      }
+    }
+    break;
+  case scheme_application2_type:
+    {
+      Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
+      register_local_argument_types(NULL, app, NULL, info);
+      set_application_types(app->rator, info, fuel - 1);
+      set_application_types(app->rand, info, fuel - 1);
+      break;
+    }
+  case scheme_application3_type:
+    {
+      Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
+      register_local_argument_types(NULL, NULL, app, info);
+      set_application_types(app->rator, info, fuel - 1);
+      set_application_types(app->rand1, info, fuel - 1);
+      set_application_types(app->rand2, info, fuel - 1);
+    }
+    break;
+  case scheme_sequence_type:
+  case scheme_begin0_sequence_type:
+    {
+      Scheme_Sequence *seq = (Scheme_Sequence *)o;
+      int i;
+
+      for (i = 0; i < seq->count; i++) {
+        set_application_types(seq->array[i], info, fuel - 1);
+      }
+    }
+    break;
+  case scheme_branch_type:
+    {
+      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)o;
+      set_application_types(b->test, info, fuel - 1);
+      set_application_types(b->tbranch, info, fuel - 1);
+      set_application_types(b->fbranch, info, fuel - 1);
+    }
+    break;
+  default:
+    break;
+  }
 }
 
 static int can_unwrap(Scheme_Object *v)
@@ -6272,9 +6390,13 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
       if (!found_escapes) {
         optimize_info_seq_step(rhs_info, &info_seq);
         value = scheme_optimize_expr(pre_body->value, rhs_info,
-                                     ((pre_body->count == 1)
-                                      ? OPT_CONTEXT_SINGLED
-                                      : 0));
+                                     (((pre_body->count == 1)
+                                       ? OPT_CONTEXT_SINGLED
+                                       : 0)
+                                      | (((pre_body->count == 1)
+                                          && !pre_body->vars[0]->non_app_count)
+                                         ? (pre_body->vars[0]->use_count << OPT_CONTEXT_APP_COUNT_SHIFT)
+                                         : 0)));
         pre_body->value = value;
         if (rhs_info->escapes)
           found_escapes = 1;
@@ -6498,6 +6620,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
           pred = NULL;
         } else
           pred = expr_implies_predicate(value, rhs_info, NULL, 5);
+
         if (pred)
           add_type(body_info, (Scheme_Object *)pre_body->vars[0], pred);
 
@@ -6535,6 +6658,12 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
            but then assume not for all if any turn out not (i.e., approximate fix point). */
         int flags;
         Scheme_Object *clones, *cl, *cl_first;
+
+        /* If this is the last binding, peek ahead in the body to
+           check for easy type info in function calls */
+        if (!i)
+          set_application_types(pre_body->body, body_info, 5);
+
         /* Reset "unready" flags: */
         for (rp_last = ready_pairs_start; !SAME_OBJ(rp_last, ready_pairs); rp_last = SCHEME_CDR(rp_last)) {
           SCHEME_VAR(SCHEME_CAR(rp_last))->optimize_unready = 1;
@@ -6585,10 +6714,14 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
 
             optimize_info_seq_step(rhs_info, &info_seq);
             value = scheme_optimize_expr(self_value, rhs_info,
-                                         ((irlv->count == 1)
-                                          ? OPT_CONTEXT_SINGLED
-                                          : 0));
-
+                                         (((irlv->count == 1)
+                                           ? OPT_CONTEXT_SINGLED
+                                           : 0)
+                                          | (((irlv->count == 1)
+                                              && !irlv->vars[0]->non_app_count)
+                                             ? (irlv->vars[0]->use_count << OPT_CONTEXT_APP_COUNT_SHIFT)
+                                             : 0)));
+            
             if (!OPT_DISCOURAGE_EARLY_INLINE)
               --rhs_info->letrec_not_twice;
             rhs_info->use_psize = use_psize;
@@ -6744,7 +6877,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     int used = 0, j;
 
     pre_body = (Scheme_IR_Let_Value *)body;
-
+        
     for (j = pre_body->count; j--; ) {
       if (pre_body->vars[j]->optimize_used) {
         used = 1;
@@ -6907,6 +7040,7 @@ optimize_lambda(Scheme_Object *_lam, Optimize_Info *info, int context)
   Scheme_IR_Lambda_Info *cl;
   int i, init_vclock, init_aclock, init_kclock, init_sclock;
   Scheme_Hash_Table *ht;
+  int app_count = OPT_CONTEXT_APP_COUNT(context);
 
   lam = (Scheme_Lambda *)_lam;
 
@@ -6944,6 +7078,14 @@ optimize_lambda(Scheme_Object *_lam, Optimize_Info *info, int context)
     cl->vars[i]->optimize.lambda_depth = info->lambda_depth;
     cl->vars[i]->optimize_used = 0;
     cl->vars[i]->optimize.init_kclock = info->kclock;
+    if (app_count
+        && (app_count < SCHEME_USE_COUNT_INF)
+        && cl->arg_types
+        && cl->arg_types[i]
+        && (cl->arg_type_contributors[i] == ((1 << app_count) - 1))) {
+      /* All uses accounted for, so we can rely on type info */
+      add_type(info, (Scheme_Object *)cl->vars[i], cl->arg_types[i]);
+    }
   }
 
   code = scheme_optimize_expr(lam->body, info, 0);
@@ -6993,79 +7135,56 @@ optimize_lambda(Scheme_Object *_lam, Optimize_Info *info, int context)
   return (Scheme_Object *)lam;
 }
 
-static char *get_closure_local_type_map(Scheme_Lambda *lam, int arg_n, int *ok)
-{
-  Scheme_IR_Lambda_Info *cl = lam->ir_info;
-
-  if ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST)
-      || (arg_n != lam->num_params)) {
-    *ok = 0;
-    return NULL;
-  }
-
-  if (cl->has_tymap && !cl->local_type_map) {
-    *ok = 0;
-    return NULL;
-  }
-
-  *ok = 1;
-  return cl->local_type_map;
-}
-
-static void set_closure_local_type_map(Scheme_Lambda *lam, char *local_type_map)
-{
-  Scheme_IR_Lambda_Info *cl = lam->ir_info;
-  int i;
-
-  if (!cl->local_type_map) {
-    cl->has_tymap = 1;
-    cl->local_type_map = local_type_map;
-  }
-
-  if (local_type_map) {
-    for (i = lam->num_params; i--; ) {
-      if (local_type_map[i]) break;
-    }
-
-    if (i < 0) {
-      cl->local_type_map = NULL;
-    }
-  }
-}
-
-static void merge_closure_local_type_map(Scheme_Lambda *lam1, Scheme_Lambda *lam2)
+static void merge_lambda_arg_types(Scheme_Lambda *lam1, Scheme_Lambda *lam2)
 {
   Scheme_IR_Lambda_Info *cl1 = lam1->ir_info;
   Scheme_IR_Lambda_Info *cl2 = lam2->ir_info;
+  int i;
 
-  if (cl1->has_tymap) {
-    if (!cl1->local_type_map || !cl2->has_tymap) {
-      cl2->has_tymap = 1;
-      cl2->local_type_map = cl1->local_type_map;
-    } else if (cl2->local_type_map) {
-      int i, recheck = 0;
-      for (i = lam1->num_params; i--; ) {
-        if (cl1->local_type_map[i] != cl2->local_type_map[i]) {
-          cl1->local_type_map[i] = 0;
-          cl2->local_type_map[i] = 0;
-          recheck = 1;
-        }
-      }
-      if (recheck) {
-        for (i = lam1->num_params; i--; ) {
-          if (cl1->local_type_map[i]) break;
-        }
-        if (i < 0) {
-          cl1->local_type_map = NULL;
-          cl2->local_type_map = NULL;
-        }
-      }
-    } else {
-      cl1->local_type_map = NULL;
+  if (!cl1->arg_types) {
+    if (cl2->arg_types) {
+      cl1->arg_types = cl2->arg_types;
+      cl1->arg_type_contributors = cl2->arg_type_contributors;
     }
-  } else if (cl2->has_tymap) {
-    cl1->has_tymap = 1;
-    cl1->local_type_map = cl2->local_type_map;
+  } else {
+    if (cl2->arg_types) {
+      for (i = lam1->num_params; i--; ) {
+        if (!cl1->arg_type_contributors[i]) {
+          cl1->arg_types[i] = cl2->arg_types[i];
+          cl1->arg_type_contributors[i] = cl2->arg_type_contributors[i];
+        } else if (cl2->arg_type_contributors[i]) {
+          if (!cl2->arg_types[i])
+            cl1->arg_types[i] = NULL;
+          else if (predicate_implies(cl1->arg_types[i], cl2->arg_types[i]))
+            cl1->arg_types[i] = cl2->arg_types[i];
+          else if (!predicate_implies(cl2->arg_types[i], cl1->arg_types[i])) {
+            cl1->arg_types[i] = NULL;
+            cl1->arg_type_contributors[i] |= (1 << (SCHEME_USE_COUNT_INF-1));
+          }
+          cl1->arg_type_contributors[i] |= cl2->arg_type_contributors[i];
+        }
+      }
+    }
+
+    cl2->arg_types = cl1->arg_types;
+    cl2->arg_type_contributors = cl1->arg_type_contributors;
+  }
+}
+
+static void check_lambda_arg_types_registered(Scheme_Lambda *lam, int app_count)
+{
+  if (lam->ir_info->arg_types) {
+    int i;
+    for (i = lam->num_params; i--; ) {
+      if (lam->ir_info->arg_types[i]) {
+        if ((lam->ir_info->arg_type_contributors[i] & (1 << (SCHEME_USE_COUNT_INF-1)))
+            || (lam->ir_info->arg_type_contributors[i] < ((1 << app_count) - 1))) {
+          /* someone caller didn't weigh in with a type,
+             of an anonymous caller had no type to record */
+          lam->ir_info->arg_types[i] = NULL;
+        }
+      }
+    }
   }
 }
 
@@ -7106,7 +7225,8 @@ static Scheme_Object *clone_lambda(int single_use, Scheme_Object *_lam, Optimize
   Scheme_IR_Lambda_Info *cl;
   Scheme_IR_Local **vars;
   int sz;
-  char *local_type_map;
+  Scheme_Object **arg_types;
+  short *arg_type_contributors;
 
   lam = (Scheme_Lambda *)_lam;
 
@@ -7127,11 +7247,14 @@ static Scheme_Object *clone_lambda(int single_use, Scheme_Object *_lam, Optimize
 
   lam2->body = body;
 
-  if (cl->local_type_map) {
+  if (cl->arg_types) {
     sz = lam2->num_params;
-    local_type_map = (char *)scheme_malloc_atomic(sz);
-    memcpy(local_type_map, cl->local_type_map, sz);
-    cl->local_type_map = local_type_map;
+    arg_types = MALLOC_N(Scheme_Object*, sz);
+    arg_type_contributors = MALLOC_N_ATOMIC(short, sz);
+    memcpy(arg_types, cl->arg_types, sz * sizeof(Scheme_Object*));
+    memcpy(arg_type_contributors, cl->arg_type_contributors, sz * sizeof(short));
+    cl->arg_types = arg_types;
+    cl->arg_type_contributors = arg_type_contributors;
   }
 
   if (cl->base_closure && var_map->count) {
@@ -7153,8 +7276,8 @@ static Scheme_Object *clone_lambda(int single_use, Scheme_Object *_lam, Optimize
   return (Scheme_Object *)lam2;
 }
 
-static int closure_body_size(Scheme_Lambda *lam, int check_assign,
-                             Optimize_Info *info, int *is_leaf)
+static int lambda_body_size_plus_info(Scheme_Lambda *lam, int check_assign,
+                                      Optimize_Info *info, int *is_leaf)
 {
   int i;
   Scheme_IR_Lambda_Info *cl;
@@ -7175,7 +7298,7 @@ static int closure_body_size(Scheme_Lambda *lam, int check_assign,
   return cl->body_size + ((info && info->use_psize) ? cl->body_psize : 0);
 }
 
-static int closure_has_top_level(Scheme_Lambda *lam)
+static int lambda_has_top_level(Scheme_Lambda *lam)
 {
   return lam->ir_info->has_tl;
 }
@@ -8137,6 +8260,8 @@ Scheme_Object *optimize_clone(int single_use, Scheme_Object *expr, Optimize_Info
       app2->rand = expr;
 
       SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
+      if (single_use)
+        SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_POSITION_MASK);
 
       return (Scheme_Object *)app2;
     }
@@ -8154,6 +8279,8 @@ Scheme_Object *optimize_clone(int single_use, Scheme_Object *expr, Optimize_Info
       }
 
       SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
+      if (single_use)
+        SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_POSITION_MASK);
 
       return (Scheme_Object *)app2;
     }
@@ -8177,6 +8304,8 @@ Scheme_Object *optimize_clone(int single_use, Scheme_Object *expr, Optimize_Info
       app2->rand2 = expr;
 
       SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_FLAG_MASK);
+      if (single_use)
+        SCHEME_APPN_FLAGS(app2) |= (SCHEME_APPN_FLAGS(app) & APPN_POSITION_MASK);
 
       return (Scheme_Object *)app2;
     }
@@ -8561,7 +8690,7 @@ static Scheme_Object *optimize_info_propagate_local(Scheme_Object *var)
   }
   
   if (!val
-      || SCHEME_BOXP(val) /* A potential-size record */
+      || SCHEME_WILL_BE_LAMBDAP(val)
       || SCHEME_LAMBDAP(val)
       || SAME_TYPE(SCHEME_TYPE(val), scheme_once_used_type)) {
     if (SAME_OBJ(last, var))

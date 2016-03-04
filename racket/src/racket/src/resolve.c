@@ -1706,22 +1706,25 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
      closure. */
 
   closure_size = lam->closure_size;
-  if (cl->local_type_map) {
+  if (cl->arg_types) {
     int at_least_one = 0;
     for (i = lam->num_params; i--; ) {
-      if (cl->local_type_map[i]) {
-        if ((cl->vars[i]->arg_type == cl->local_type_map[i])
+      if (cl->arg_types[i]) {
+        int ct;
+        ct = scheme_predicate_to_local_type(cl->arg_types[i]);
+        if (ct
+            && (cl->vars[i]->arg_type == ct)
             && (!cl->vars[i]->escapes_after_k_tick
                 || ALWAYS_PREFER_UNBOX_TYPE(cl->vars[i]->arg_type)))
           at_least_one = 1;
         else
-          cl->local_type_map[i] = 0;
+          cl->arg_types[i] = NULL;
       }
     }
     if (at_least_one)
       need_type_map = 1;
     else
-      cl->local_type_map = NULL;
+      cl->arg_types = NULL;
   }
 
   has_tl = cl->has_tl;
@@ -1884,12 +1887,16 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
         /* If we're lifting this function, then arguments can have unboxing
            types, because the valdiator will be able to check all the
            calls: */
-        if (cl->local_type_map)
-          cl->vars[i]->val_type = cl->local_type_map[i];
+        int lt;
+        if (cl->arg_types) {
+          lt = scheme_predicate_to_local_type(cl->arg_types[i]);
+          cl->vars[i]->val_type = lt;
+        } else
+          lt = 0;
         if (need_type_map) {
-          if (cl->local_type_map && cl->local_type_map[i])
+          if (lt)
             scheme_boxmap_set(closure_map, i + new_params,
-                              cl->local_type_map[i] + LAMBDA_TYPE_TYPE_OFFSET,
+                              lt + LAMBDA_TYPE_TYPE_OFFSET,
                               closure_size);
         }
       }

@@ -4205,7 +4205,7 @@ inner_compile_list(Scheme_Object *form, Scheme_Comp_Env *env,
 static Scheme_Object *compile_application(Scheme_Object *form, Scheme_Comp_Env *env,
 					  Scheme_Compile_Info *rec, int drec)
 {
-  Scheme_Object *result;
+  Scheme_Object *result, *rator;
   int len;
 
   form = scheme_stx_taint_disarm(form, NULL);
@@ -4221,7 +4221,31 @@ static Scheme_Object *compile_application(Scheme_Object *form, Scheme_Comp_Env *
   form = inner_compile_list(form, scheme_no_defines(env), rec, drec, 1);
 
   result = scheme_make_application(form, NULL);
-  
+
+  /* Record which application this is for a variable that is used only in
+     application positions. */
+  if (SAME_TYPE(SCHEME_TYPE(result), scheme_application_type))
+    rator = ((Scheme_App_Rec *)result)->args[0];
+  else if (SAME_TYPE(SCHEME_TYPE(result), scheme_application2_type))
+    rator = ((Scheme_App2_Rec *)result)->rator;
+  else if (SAME_TYPE(SCHEME_TYPE(result), scheme_application3_type))
+    rator = ((Scheme_App3_Rec *)result)->rator;
+  else
+    rator = NULL;
+  if (rator) {
+    rator = scheme_optimize_extract_tail_inside(rator);
+    if (SAME_TYPE(SCHEME_TYPE(rator), scheme_ir_local_type)) {
+      if (SCHEME_VAR(rator)->use_count < SCHEME_USE_COUNT_INF) {
+        if (SAME_TYPE(SCHEME_TYPE(result), scheme_application_type))
+          SCHEME_APPN_FLAGS((Scheme_App_Rec *)result) |= SCHEME_VAR(rator)->use_count;
+        else if (SAME_TYPE(SCHEME_TYPE(result), scheme_application2_type))
+          SCHEME_APPN_FLAGS((Scheme_App2_Rec *)result) |= SCHEME_VAR(rator)->use_count;
+        else if (SAME_TYPE(SCHEME_TYPE(result), scheme_application3_type))
+          SCHEME_APPN_FLAGS((Scheme_App3_Rec *)result) |= SCHEME_VAR(rator)->use_count;
+      }
+    }
+  }
+
   return result;
 }
 

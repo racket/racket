@@ -1592,6 +1592,17 @@ typedef struct {
   /* After array of f & args, array of chars for eval type */
 } Scheme_App_Rec;
 
+#define SCHEME_APPN_FLAGS(app) MZ_OPT_HASH_KEY(&(app)->iso)
+/* For all application types, throgh optimization, the low bits of the flags
+   are used to hold an index for an application indicate that it's the Nth
+   application of an identifier, which is useful to type inference.
+   The same bits are used after resolve for app2 and app3 to indicate
+   lookahead types (as below) */
+
+/* A value of N means that the application is the (N-1)th
+   application of a variable, where 0 means "unknown". */
+#define APPN_POSITION_MASK  SCHEME_USE_COUNT_INF
+
 /* Lookahead types for evaluating application arguments. */
 /* 4 cases + else => magic number for some compilers doing a switch? */
 enum {
@@ -1619,8 +1630,6 @@ typedef struct {
   Scheme_Object *rator;
   Scheme_Object *rand;
 } Scheme_App2_Rec;
-
-#define SCHEME_APPN_FLAGS(app) MZ_OPT_HASH_KEY(&(app)->iso)
 
 typedef struct {
   Scheme_Inclhash_Object iso; /* keyex used for flags */
@@ -2875,8 +2884,14 @@ typedef struct {
   MZTAG_IF_REQUIRED
   Scheme_Hash_Table *base_closure;
   Scheme_IR_Local **vars;
-  char *local_type_map; /* determined by callers; NULL when has_tymap set => no local types */
-  char has_tl, has_tymap, has_nonleaf, is_dup;
+  Scheme_Object **arg_types; /* predicates for the arguments, as determined by callers */
+  short *arg_type_contributors; /* bitmap of applications that have provided type info;
+                                   when the number of calls is know, this information
+                                   can reveal when all callers have checked in; the
+                                   contributor SCHEME_USE_COUNT_INF is an anonymous
+                                   contributor; if a contributor set is non-empty;
+                                   then NULL for a type mean "top" */
+  char has_tl, has_nonleaf, is_dup;
   int body_size, body_psize;
 } Scheme_IR_Lambda_Info;
 
@@ -3239,9 +3254,11 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int contex
 #define OPT_CONTEXT_TYPE_SHIFT 4
 #define OPT_CONTEXT_TYPE_MASK  (SCHEME_MAX_LOCAL_TYPE_MASK << OPT_CONTEXT_TYPE_SHIFT)
 #define OPT_CONTEXT_TYPE(oc)   ((oc & OPT_CONTEXT_TYPE_MASK) >> OPT_CONTEXT_TYPE_SHIFT)
+#define OPT_CONTEXT_APP_COUNT_SHIFT (OPT_CONTEXT_TYPE_SHIFT + SCHEME_MAX_LOCAL_TYPE_BITS)
+#define OPT_CONTEXT_APP_COUNT(oc) ((oc >> OPT_CONTEXT_APP_COUNT_SHIFT) & SCHEME_USE_COUNT_INF)
 
 #define scheme_optimize_result_context(c) (c & (~(OPT_CONTEXT_TYPE_MASK | OPT_CONTEXT_NO_SINGLE | OPT_CONTEXT_SINGLED)))
-#define scheme_optimize_tail_context(c) scheme_optimize_result_context(c) 
+#define scheme_optimize_tail_context(c)   scheme_optimize_result_context(c) 
 
 Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e, 
                                             Optimize_Info *info,
@@ -3251,7 +3268,9 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
 int scheme_ir_duplicate_ok(Scheme_Object *o, int cross_mod);
 int scheme_ir_propagate_ok(Scheme_Object *o, Optimize_Info *info);
 int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info);
+XFORM_NONGCING int scheme_predicate_to_local_type(Scheme_Object *pred);
 Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);
+Scheme_Object *scheme_optimize_extract_tail_inside(Scheme_Object *t2);
 
 Scheme_Object *scheme_resolve_expr(Scheme_Object *, Resolve_Info *);
 Scheme_Object *scheme_resolve_list(Scheme_Object *, Resolve_Info *);

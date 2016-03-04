@@ -14,7 +14,8 @@ static int mark_ir_lambda_info_MARK(void *p, struct NewGC *gc) {
   
   gcMARK2(i->base_closure, gc);
   gcMARK2(i->vars, gc);
-  gcMARK2(i->local_type_map, gc);
+  gcMARK2(i->arg_types, gc);
+  gcMARK2(i->arg_type_contributors, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -31,7 +32,8 @@ static int mark_ir_lambda_info_FIXUP(void *p, struct NewGC *gc) {
   
   gcFIXUP2(i->base_closure, gc);
   gcFIXUP2(i->vars, gc);
-  gcFIXUP2(i->local_type_map, gc);
+  gcFIXUP2(i->arg_types, gc);
+  gcFIXUP2(i->arg_type_contributors, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;

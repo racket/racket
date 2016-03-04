@@ -2288,6 +2288,20 @@
                  (+ (- y x) (+ x y))
                  (void))))
 
+(parameterize ([compile-context-preservation-enabled
+                ;; Avoid different amounts of unrolling
+                #t])
+  ;; Inferece of loop variable as number should allow
+  ;; additions to be reordered:
+  (test-comp '(lambda ()
+               (let loop ([n 0] [m 9])
+                 (let ([a (+ n 9)]
+                       [b (+ m 10)])
+                   (loop b a))))
+             '(lambda ()
+               (let loop ([n 0] [m 9])
+                 (loop (+ m 10) (+ n 9))))))
+
 (test-comp '(lambda (z)
               (let-values ([(x y)
                             (if z
