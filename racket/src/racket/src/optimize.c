@@ -7065,7 +7065,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
         break;
     }
 
-    if (prev)
+    if (prev && SAME_TYPE(SCHEME_TYPE(prev), scheme_sequence_type))
       form = optimize_sequence(form, info, context, 0);
   }
 
