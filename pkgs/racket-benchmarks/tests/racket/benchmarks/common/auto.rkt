@@ -48,6 +48,19 @@ exec racket -qu "$0" ${1+"$@"}
         (compile-file name
                       "compiled/current-bm_rkt.zo"))))
 
+  (define (mk-errortrace bm)
+    (unless (directory-exists? "compiled")
+      (make-directory "compiled"))
+    (parameterize ([current-namespace (make-base-namespace)]
+                   [read-accept-reader #t]
+                   [current-compile (current-compile)]
+                   [error-display-handler (error-display-handler)]
+                   [use-compiled-file-paths (use-compiled-file-paths)])
+      (dynamic-require 'errortrace #f)
+      (let ([name (format "~a.rkt" bm)])
+        (compile-file name
+                      "compiled/current-bm_rkt.zo"))))
+
   (define (compiled-path bm)
     "current-bm.rkt")
 
@@ -392,6 +405,14 @@ exec racket -qu "$0" ${1+"$@"}
                 mk-racket
                 (lambda (bm)
                   (system (format "racket3m -u ~a" (compiled-path bm))))
+                extract-racket-times
+                clean-up-zo
+                racket-skip-progs)
+     (make-impl 'errortrace
+                void
+                mk-errortrace
+                (lambda (bm)
+                  (system (format "racket -l errortrace -u ~a" (compiled-path bm))))
                 extract-racket-times
                 clean-up-zo
                 racket-skip-progs)
