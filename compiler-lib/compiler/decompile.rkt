@@ -505,8 +505,11 @@
      `(begin ,@(for/list ([expr (in-list exprs)])
                  (decompile-expr expr globs stack closed)))]
     [(struct beg0 (exprs))
-     `(begin0 ,@(for/list ([expr (in-list exprs)])
-                  (decompile-expr expr globs stack closed)))]
+     `(begin0
+       ,@(for/list ([expr (in-list exprs)])
+           (decompile-expr expr globs stack closed))
+       ;; Make sure a single expression doesn't look like tail position:
+       ,@(if (null? (cdr exprs)) (list #f) null))]
     [(struct with-cont-mark (key val body))
      `(with-continuation-mark
           ,(decompile-expr key globs stack closed)
