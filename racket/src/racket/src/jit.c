@@ -3235,9 +3235,12 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
   case scheme_with_cont_mark_type:
     {
       Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)obj;
+      mz_jit_unbox_state ubs;
       START_JIT_DATA();
 
       LOG_IT(("wcm...\n"));
+
+      scheme_mz_unbox_save(jitter, &ubs);
 
       /* Key: */
       scheme_generate_non_tail(wcm->key, jitter, 0, 1, 0); /* sync'd below */
@@ -3283,6 +3286,8 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       LOG_IT(("...in\n"));
 
       jitter->pushed_marks++;
+
+      scheme_mz_unbox_restore(jitter, &ubs);
 	
       return scheme_generate(wcm->body, jitter, is_tail, wcm_may_replace, 
                              multi_ok, orig_target, for_branch, for_values);

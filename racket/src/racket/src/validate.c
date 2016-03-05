@@ -1721,8 +1721,6 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
       Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr;
       int r;
 
-      no_typed(need_local_type, port);
-      
       r = validate_expr(port, wcm->key, stack, tls, depth, letlimit, delta, 
                         num_toplevels, num_stxes, num_lifts, tl_use_map,
                         tl_state, tl_timestamp,
