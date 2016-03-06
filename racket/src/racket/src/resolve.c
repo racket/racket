@@ -2886,7 +2886,26 @@ typedef struct Unresolve_Info {
 
   int inlining;
   Scheme_Module *module;
-  Comp_Prefix *comp_prefix;
+
+  Comp_Prefix *comp_prefix; /* Top-level and syntax-constant info for
+                               top-level unresolved. This prefix is
+                               the unresolved from of the original
+                               resolved prefix.
+
+                               When unresolving a single lambda for
+                               inlining, this prefix is NULL, and
+                               tenattive additions are added to
+                               `new_toplevels`, instead. */
+
+  Scheme_Hash_Table *new_toplevels; /* toplevels to add to an optimiation context */
+  int new_toplevel_offset; /* the number of toplevels already registered in the
+                              optimization context */
+  Scheme_Object *from_modidx, *to_modidx; /* non-NULL => shift for adding to `new_toplevels` */
+  intptr_t toplevel_ref_phase;
+  Scheme_Env *opt_env;
+  Scheme_Object *opt_insp;
+  Scheme_Object *inline_variants;
+
   Scheme_Hash_Table *toplevels;
   Scheme_Object *definitions;
   int lift_offset, lift_to_local;
@@ -2899,7 +2918,7 @@ static void locate_cyclic_closures(Scheme_Object *e, Unresolve_Info *ui);
 static Scheme_IR_Let_Header *make_let_header(int count);
 static Scheme_IR_Let_Value *make_ir_let_value(int count);
 
-static Unresolve_Info *new_unresolve_info(Scheme_Prefix *prefix, int comp_flags)
+static Unresolve_Info *new_unresolve_info(Resolve_Prefix *prefix, int comp_flags)
 {
   Unresolve_Info *ui;
   Scheme_IR_Local **vars;
@@ -2908,12 +2927,13 @@ static Unresolve_Info *new_unresolve_info(Scheme_Prefix *prefix, int comp_flags)
   ui = MALLOC_ONE_RT(Unresolve_Info);
   SET_REQUIRED_TAG(ui->type = scheme_rt_unresolve_info);
 
+  ui->prefix = prefix;
+
   ui->stack_pos = 0;
   ui->stack_size = 10;
   vars = MALLOC_N(Scheme_IR_Local *, ui->stack_size);
   ui->vars = vars;
 
-  ui->inlining = 1;
   ht = scheme_make_hash_table(SCHEME_hash_ptr);
   ui->toplevels = ht;
   ui->definitions = scheme_null;
@@ -3091,6 +3111,7 @@ static int unresolve_toplevel_pos(int pos, Unresolve_Info *ui)
   LOG_UNRESOLVE(printf("pos before = %d\n", pos));
   if (ui->prefix->num_stxes
       && (pos > (ui->prefix->num_toplevels + ui->prefix->num_stxes))) {
+    /* shift lifted reference down to toplevel range */
     pos -= ui->prefix->num_stxes + 1; /* extra slot for lazy syntax */
   }
   LOG_UNRESOLVE(printf("pos = %d\n", pos));
@@ -3100,23 +3121,132 @@ static int unresolve_toplevel_pos(int pos, Unresolve_Info *ui)
 
 static Scheme_Object *unresolve_toplevel(Scheme_Object *rdata, Unresolve_Info *ui)
 {
-  Scheme_Object *v, *opos;
-  int pos;
+  Scheme_Object *v;
 
-  if (!ui->prefix) return_NULL;
+  if (ui->inlining) {
+    /* Create a reference that works for the optimization context. */
+    int pos = SCHEME_TOPLEVEL_POS(rdata);
+    if (ui->prefix->num_stxes
+        && (pos > (ui->prefix->num_toplevels + ui->prefix->num_stxes))) {
+      /* Cannot refer to a lift across a module boundary. */
+      return_NULL;
+    } else {
+      Scheme_Object *hv, *modidx, *mod_constant;
+      int flags, is_constant;
+      int sym_pos;
+      intptr_t mod_defn_phase;
 
-  pos = unresolve_toplevel_pos(SCHEME_TOPLEVEL_POS(rdata), ui);
-  opos = scheme_make_integer(pos);
-  v = scheme_hash_get(ui->toplevels, opos);
-  if (!v) {
-    v = scheme_make_toplevel(0,
-                             pos,
-                             0,
-                             SCHEME_TOPLEVEL_FLAGS(rdata) & SCHEME_TOPLEVEL_FLAGS_MASK);
-    scheme_hash_set(ui->toplevels, opos, v);
+      flags = SCHEME_TOPLEVEL_FLAGS(rdata) & SCHEME_TOPLEVEL_FLAGS_MASK;
+      switch (flags) {
+      case SCHEME_TOPLEVEL_CONST:
+        is_constant = 2;
+        break;
+      case SCHEME_TOPLEVEL_FIXED:
+        is_constant = 1;
+        break;
+      case SCHEME_TOPLEVEL_READY:
+      default:
+        /* Since we're referencing from an imported context, the
+           variable is now at least ready: */
+        flags = SCHEME_TOPLEVEL_READY;
+        is_constant = 0;
+      }
+
+      v = ui->prefix->toplevels[pos];
+      if (SCHEME_MPAIRP(v)) {
+        /* Simplified version was installed by link_module_variable; original is in CDR */
+        v = SCHEME_CDR(v);
+      }
+
+      if (SCHEME_SYMBOLP(v)) {
+        mod_defn_phase = ui->toplevel_ref_phase;
+        modidx = ui->to_modidx;
+        sym_pos = -1;
+        hv = scheme_hash_module_variable(ui->opt_env, modidx,
+                                         v, ui->opt_insp,
+                                         sym_pos, mod_defn_phase, is_constant,
+                                         NULL);
+      } else {
+        Module_Variable *mv = (Module_Variable *)v;
+        MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(v), scheme_module_variable_type));
+        mod_defn_phase = mv->mod_phase;
+        modidx = scheme_modidx_shift(mv->modidx, ui->from_modidx, ui->to_modidx);
+        hv = scheme_hash_module_variable(ui->opt_env, modidx,
+                                         mv->sym, ui->opt_insp,
+                                         mv->pos, mv->mod_phase, is_constant,
+                                         mv->shape);
+        v = mv->sym;
+        sym_pos = mv->pos;
+      }
+
+      mod_constant = NULL;
+      if (!scheme_check_accessible_in_module_name(modidx, mod_defn_phase, ui->opt_env,
+                                                  v, sym_pos,
+                                                  ui->opt_insp, NULL,
+                                                  &mod_constant))
+        return_NULL;
+
+      /* Check whether this variable is already known in the optimzation context: */
+      v = scheme_hash_get(ui->comp_prefix->toplevels, hv);
+      if (!v) {
+        /* Not already in optimization context; check/extend tentative additions */
+        if (!ui->new_toplevels) {
+          Scheme_Hash_Table *ht;
+          ht = scheme_make_hash_table(SCHEME_hash_ptr);
+          ui->new_toplevels = ht;
+        }
+
+        v = scheme_hash_get(ui->new_toplevels, hv);
+        if (!v) {
+          int new_pos = ui->new_toplevel_offset + ui->new_toplevels->count;
+          v = scheme_make_toplevel(0, new_pos, 0, flags);
+          scheme_hash_set(ui->new_toplevels, hv, v);
+
+          if (mod_constant
+              && ui->comp_prefix->inline_variants) {
+            if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type)) {
+              Scheme_Object *shiftable;
+              shiftable = scheme_make_vector(4, scheme_false);
+              SCHEME_VEC_ELS(shiftable)[0] = mod_constant;
+              SCHEME_VEC_ELS(shiftable)[1] = ui->from_modidx;
+              SCHEME_VEC_ELS(shiftable)[2] = ui->to_modidx;
+              SCHEME_VEC_ELS(shiftable)[3] = scheme_make_integer(mod_defn_phase);
+              mod_constant = shiftable;
+            } else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_struct_proc_shape_type)) {
+              /* keep it */
+            } else
+              mod_constant = NULL;
+
+            if (mod_constant) {
+              mod_constant = scheme_make_pair(scheme_make_pair(scheme_make_integer(new_pos),
+                                                               mod_constant),
+                                              ui->inline_variants);
+              ui->inline_variants = mod_constant;
+            }
+          }
+        }
+      }
+      MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(v), scheme_ir_toplevel_type));
+    }
+  } else {
+    /* If needed, shift top-level position to account for moving
+       lifts to toplevels. */
+    Scheme_Object *opos;
+    int pos;
+
+    pos = unresolve_toplevel_pos(SCHEME_TOPLEVEL_POS(rdata), ui);
+    opos = scheme_make_integer(pos);
+    v = scheme_hash_get(ui->toplevels, opos);
+    if (!v) {
+      v = scheme_make_toplevel(0,
+                               pos,
+                               0,
+                               SCHEME_TOPLEVEL_FLAGS(rdata) & SCHEME_TOPLEVEL_FLAGS_MASK);
+      scheme_hash_set(ui->toplevels, opos, v);
+    }
+    LOG_UNRESOLVE(printf("flags for %d: %d\n", pos, SCHEME_TOPLEVEL_FLAGS(rdata) & SCHEME_TOPLEVEL_FLAGS_MASK));
   }
-  LOG_UNRESOLVE(printf("flags for %d: %d\n", pos, SCHEME_TOPLEVEL_FLAGS(rdata) & SCHEME_TOPLEVEL_FLAGS_MASK));
-  
+
   ui->has_tl = 1;
   
   return v;
@@ -3186,9 +3316,7 @@ static Scheme_Object *unresolve_define_or_begin_syntaxes(int def, Scheme_Object 
   } else
     names = NULL;
 
-  nui = new_unresolve_info(NULL, ui->comp_flags);
-  nui->inlining = 0;
-  nui->prefix = prefix;
+  nui = new_unresolve_info(prefix, ui->comp_flags);
   nui->lift_to_local = 1;
 
   dummy = unresolve_expr(dummy, ui, 0);
@@ -3739,15 +3867,12 @@ Scheme_Object *unresolve_module(Scheme_Object *e, Unresolve_Info *ui_in)
   Unresolve_Info *ui;
   int i, cnt, len;
 
-  ui = new_unresolve_info(NULL, ui_in->comp_flags);
-  ui->inlining = 0;
+  ui = new_unresolve_info(m->prefix, ui_in->comp_flags);
 
   ui->module = m;
   cp = unresolve_prefix(m->prefix, ui);
   if (!cp) return_NULL;
   ui->comp_prefix = cp;
-
-  ui->prefix = m->prefix;
 
   cnt = SCHEME_VEC_SIZE(m->bodies[0]);
   bs = scheme_make_vector(cnt, NULL);
@@ -4431,7 +4556,7 @@ static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui, int a
       Scheme_Quote_Syntax *qs = (Scheme_Quote_Syntax *)e;
       Scheme_Local *cqs;
 
-      if (!ui->prefix) return_NULL;
+      if (ui->inlining) return_NULL;
 
       cqs = (Scheme_Local *)scheme_malloc_atomic_tagged(sizeof(Scheme_Local));
       cqs->iso.so.type = scheme_ir_quote_syntax_type;
@@ -4466,6 +4591,9 @@ static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui, int a
 }
 
 Scheme_Object *scheme_unresolve_top(Scheme_Object* o, Comp_Prefix **cp, int comp_flags)
+/* Convert from "resolved" form back to the intermediate representation used
+   by the optimizer. Unresolving generates an intermediate-representation prefix
+   (for top levels and syntax literals) in addition to the code. */
 {
   Scheme_Compilation_Top *top = (Scheme_Compilation_Top *)o;
   Scheme_Object *code = top->code, *defns;
@@ -4474,9 +4602,7 @@ Scheme_Object *scheme_unresolve_top(Scheme_Object* o, Comp_Prefix **cp, int comp
   Unresolve_Info *ui;
   int len, i;
 
-  ui = new_unresolve_info(NULL, comp_flags);
-  ui->inlining = 0;
-  ui->prefix = rp;
+  ui = new_unresolve_info(rp, comp_flags);
 
   c = unresolve_prefix(rp, ui);
   ui->comp_prefix = c;
@@ -4507,10 +4633,18 @@ Scheme_Object *scheme_unresolve_top(Scheme_Object* o, Comp_Prefix **cp, int comp
   return code;
 }
 
-Scheme_Object *scheme_unresolve(Scheme_Object *iv, int argc, int *_has_cases)
+Scheme_Object *scheme_unresolve(Scheme_Object *iv, int argc, int *_has_cases,
+                                Comp_Prefix *cp, Scheme_Env *env, Scheme_Object *insp, intptr_t ref_phase,
+                                Scheme_Object *from_modidx, Scheme_Object *to_modidx)
+/* Convert a single function from "resolved" form back to the
+   intermediate representation used by the optimizer. Unresolving can
+   add new items to the intermediate-representation prefix for top levels. */
 {
   Scheme_Object *o;
   Scheme_Lambda *lam = NULL;
+  Unresolve_Info *ui;
+
+  MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(iv), scheme_inline_variant_type));
 
   o = SCHEME_VEC_ELS(iv)[1];
 
@@ -4545,12 +4679,44 @@ Scheme_Object *scheme_unresolve(Scheme_Object *iv, int argc, int *_has_cases)
   if (!lam)
     return_NULL;
 
-  if (lam->closure_size)
-    return_NULL;
+  ui = new_unresolve_info((Resolve_Prefix *)SCHEME_VEC_ELS(iv)[2], 0);
+  ui->inlining = 1;
+  ui->from_modidx = from_modidx;
+  ui->to_modidx = to_modidx;
+  ui->new_toplevel_offset = cp->num_toplevels;
+  ui->comp_prefix = cp;
+  ui->opt_env = env;
+  ui->opt_insp = insp;
+  ui->toplevel_ref_phase = ref_phase;
+  ui->inline_variants = scheme_null;
 
   /* convert an optimized & resolved closure back to compiled form: */
-  return unresolve_lambda(lam, 
-                          new_unresolve_info((Scheme_Prefix *)SCHEME_VEC_ELS(iv)[2], 0));
+  o = unresolve_lambda(lam, ui);
+
+  if (o) {
+    /* Added any toplevels? */
+    if (ui->new_toplevels) {
+      int i;
+      Scheme_Object *l;
+
+      for (i = ui->new_toplevels->size; i--; ) {
+        if (ui->new_toplevels->vals[i]) {
+          scheme_hash_set(cp->toplevels,
+                          ui->new_toplevels->keys[i],
+                          ui->new_toplevels->vals[i]);
+          cp->num_toplevels++;
+        }
+      }
+
+      for (l = ui->inline_variants; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+        scheme_hash_set(ui->comp_prefix->inline_variants,
+                        SCHEME_CAR(SCHEME_CAR(l)),
+                        SCHEME_CDR(SCHEME_CAR(l)));
+      }
+    }
+  }
+
+  return o;
 }
 
 /*========================================================================*/

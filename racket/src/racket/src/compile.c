@@ -3404,7 +3404,7 @@ Scheme_Env *scheme_environment_from_dummy(Scheme_Object *dummy)
 
 static void *eval_letmacro_rhs_k(void);
 
-static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_env, 
+static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Env *genv, Scheme_Comp_Env *rhs_env,
 					int max_let_depth, Resolve_Prefix *rp,
 					int phase)
 {
@@ -3417,12 +3417,13 @@ static Scheme_Object *eval_letmacro_rhs(Scheme_Object *a, Scheme_Comp_Env *rhs_e
     p->ku.k.p1 = a;
     p->ku.k.p2 = rhs_env;
     p->ku.k.p3 = rp;
+    p->ku.k.p4 = genv;
     p->ku.k.i1 = max_let_depth;
     p->ku.k.i2 = phase;
     return (Scheme_Object *)scheme_enlarge_runstack(depth, eval_letmacro_rhs_k);
   }
 
-  save_runstack = scheme_push_prefix(NULL, rp, NULL, NULL, phase, phase, rhs_env->genv, NULL);
+  save_runstack = scheme_push_prefix(genv, 1, rp, NULL, NULL, phase, phase, rhs_env->genv, NULL);
 
   if (scheme_omittable_expr(a, 1, -1, OMITTABLE_RESOLVED, NULL, NULL)) {
     /* short cut */
@@ -3460,10 +3461,12 @@ static void *eval_letmacro_rhs_k(void)
   Scheme_Comp_Env *rhs_env;
   int max_let_depth, phase;
   Resolve_Prefix *rp;
+  Scheme_Env *genv;
 
   a = (Scheme_Object *)p->ku.k.p1;
   rhs_env = (Scheme_Comp_Env *)p->ku.k.p2;
   rp = (Resolve_Prefix *)p->ku.k.p3;
+  genv = (Scheme_Env *)p->ku.k.p4;
   max_let_depth = p->ku.k.i1;
   phase = p->ku.k.i2;
 
@@ -3471,7 +3474,7 @@ static void *eval_letmacro_rhs_k(void)
   p->ku.k.p2 = NULL;
   p->ku.k.p3 = NULL;
 
-  return (void *)eval_letmacro_rhs(a, rhs_env, max_let_depth, rp, phase);
+  return (void *)eval_letmacro_rhs(a, genv, rhs_env, max_let_depth, rp, phase);
 }
 
 void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object *a, 
@@ -3521,15 +3524,11 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
 
   a = scheme_letrec_check_expr(a);
 
-  oi = scheme_optimize_info_create(eenv->prefix, 1);
+  oi = scheme_optimize_info_create(eenv->prefix, eenv->genv, insp, 1);
   if (!(rec[drec].comp_flags & COMP_CAN_INLINE))
     scheme_optimize_info_never_inline(oi);
   a = scheme_optimize_expr(a, oi, 0);
 
-  /* For internal defn, don't simplify as resolving, because the
-       expression may have syntax objects with a lexical rename that
-       is still being extended. 
-     For letrec-syntaxes+values, don't simplify because it's too expensive. */
   rp = scheme_resolve_prefix(eenv->genv->phase, eenv->prefix, insp);
 
   ri = scheme_resolve_info_create(rp);
@@ -3547,7 +3546,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
   }
 
   a_expr = a;
-  a = eval_letmacro_rhs(a_expr, rhs_env, 
+  a = eval_letmacro_rhs(a_expr, eenv->genv, rhs_env,
                         scheme_resolve_info_max_let_depth(ri), 
                         rp, eenv->genv->phase);
 

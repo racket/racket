@@ -900,17 +900,18 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
     }
 
     if (check_access && !SAME_OBJ(menv, env)) {
-      varname = scheme_check_accessible_in_module(menv, NULL, varname, NULL, 
-                                                  NULL, insp, 
-                                                  pos, 0, 
-                                                  NULL, NULL, 
-                                                  env, NULL, NULL);
+      varname = scheme_check_accessible_in_module_instance(menv, varname, NULL,
+                                                           NULL, insp,
+                                                           pos, 0,
+                                                           NULL, NULL,
+                                                           env, NULL, NULL);
     }
   }
 
   if (exprs) {
+    Scheme_Object *simplified;
     if (self) {
-      exprs[which] = varname;
+      simplified = varname;
     } else {
       if (flags & SCHEME_MODVAR_CONST) {
         Scheme_Object *v;
@@ -919,14 +920,17 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
         SCHEME_VEC_ELS(v)[2] = (shape ? shape : scheme_false);
         if (mod_phase != 0)
           SCHEME_VEC_ELS(v)[3] = scheme_make_integer(mod_phase);
+        simplified = v;
       } else {
         Scheme_Object *v = modname;
         if (mod_phase != 0)
           v = scheme_make_pair(v, scheme_make_integer(mod_phase));
         v = scheme_make_pair(varname, v);
-        exprs[which] = v;
+        simplified = v;
       }
+      simplified = scheme_make_mutable_pair(simplified, exprs[which]);
     }
+    exprs[which] = simplified;
   }
 
   bkt = scheme_global_bucket(varname, menv);
@@ -944,8 +948,8 @@ static Scheme_Object *link_module_variable(Scheme_Object *modidx,
             bad_reason = "has the wrong procedure or structure-type shape";
         }
       } else {
-        if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & GLOB_IS_IMMUTATED))
-          bad_reason = "not constant";
+        if (!(((Scheme_Bucket_With_Flags *)bkt)->flags & (GLOB_IS_CONST | GLOB_IS_IMMUTATED)))
+          bad_reason = "is not constant";
       }
     }
 
@@ -981,6 +985,12 @@ static Scheme_Object *link_toplevel(Scheme_Object **exprs, int which, Scheme_Env
                                     Scheme_Object *insp)
 {
   Scheme_Object *expr = exprs[which];
+
+  if (SCHEME_MPAIRP(expr)) {
+    /* Simplified reference was installed by link_module_variable;
+       simplified is in CAR, and original is in CDR */
+    expr = SCHEME_CAR(expr);
+  }
 
   if (SCHEME_FALSEP(expr)) {
     /* See scheme_make_environment_dummy */
@@ -1997,7 +2007,7 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
   if (dm_env) {
     scheme_prepare_exp_env(dm_env);
 
-    save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1, NULL, scheme_false);
+    save_runstack = scheme_push_prefix(dm_env->exp_env, 0, rp, NULL, NULL, 1, 1, NULL, scheme_false);
     vals = scheme_eval_linked_expr_multi_with_dynamic_state(vals_expr, dyn_state);
     scheme_pop_prefix(save_runstack);
   } else {
@@ -2446,7 +2456,7 @@ do_define_syntaxes_execute(Scheme_Object *form, Scheme_Env *dm_env)
 
       form = SCHEME_VEC_ELS(form)[0];
 
-      save_runstack = scheme_push_prefix(dm_env->exp_env, rp, NULL, NULL, 1, 1, NULL, scheme_false);
+      save_runstack = scheme_push_prefix(dm_env->exp_env, 0, rp, NULL, NULL, 1, 1, NULL, scheme_false);
 
       while (!SCHEME_NULLP(form)) {
         ignore_result(scheme_eval_linked_expr_multi_with_dynamic_state(SCHEME_CAR(form), &dyn_state));
@@ -4054,7 +4064,8 @@ static Scheme_Object *binding_namess_as_list(Scheme_Hash_Table *binding_namess)
   return l;
 }
 
-static Scheme_Object *optimize_resolve_expr(Scheme_Object* o, Comp_Prefix *cp,
+static Scheme_Object *optimize_resolve_expr(Scheme_Object* o,
+                                            Comp_Prefix *cp, Scheme_Env *env, Scheme_Object *insp,
                                             Scheme_Object *src_insp_desc,
                                             Scheme_Object *binding_namess,
                                             int comp_flags)
@@ -4070,7 +4081,7 @@ static Scheme_Object *optimize_resolve_expr(Scheme_Object* o, Comp_Prefix *cp,
   enforce_consts = SCHEME_TRUEP(scheme_get_param(config, MZCONFIG_COMPILE_MODULE_CONSTS));
   if (enforce_consts)
     comp_flags |= COMP_ENFORCE_CONSTS;
-  oi = scheme_optimize_info_create(cp, 1);
+  oi = scheme_optimize_info_create(cp, env, insp, 1);
   scheme_optimize_info_enforce_const(oi, enforce_consts);
   if (!(comp_flags & COMP_CAN_INLINE))
     scheme_optimize_info_never_inline(oi);
@@ -4259,7 +4270,7 @@ static void *compile_k(void)
 
       o = scheme_letrec_check_expr(o);
 
-      oi = scheme_optimize_info_create(cenv->prefix, 1);
+      oi = scheme_optimize_info_create(cenv->prefix, genv, insp, 1);
       scheme_optimize_info_enforce_const(oi, enforce_consts);
       if (!(comp_flags & COMP_CAN_INLINE))
         scheme_optimize_info_never_inline(oi);
@@ -4448,7 +4459,7 @@ static void *eval_k(void)
 
       scheme_install_binding_names(top->binding_namess, env);
 
-      save_runstack = scheme_push_prefix(env, rp, NULL, NULL, 0, env->phase, NULL, scheme_false);
+      save_runstack = scheme_push_prefix(env, 0, rp, NULL, NULL, 0, env->phase, NULL, scheme_false);
 
       if (as_tail) {
         /* Cons up a closure to capture the prefix */
@@ -4940,7 +4951,9 @@ static Scheme_Object *recompile_top(Scheme_Object *top, int comp_flags)
   printf("%s\n\n", scheme_print_to_string(code, NULL));
 #endif
 
-  top = optimize_resolve_expr(code, cp, ((Scheme_Compilation_Top*)top)->prefix->src_insp_desc,
+  top = optimize_resolve_expr(code, cp, scheme_get_env(NULL),
+                              scheme_get_param(scheme_current_config(), MZCONFIG_CODE_INSPECTOR),
+                              ((Scheme_Compilation_Top*)top)->prefix->src_insp_desc,
                               ((Scheme_Compilation_Top*)top)->binding_namess,
                               comp_flags);
 
@@ -5969,7 +5982,7 @@ int scheme_prefix_depth(Resolve_Prefix *rp)
     return 0;
 }
 
-Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp, 
+Scheme_Object **scheme_push_prefix(Scheme_Env *genv, int already_linked, Resolve_Prefix *rp,
 				   Scheme_Object *src_modidx, Scheme_Object *now_modidx,
 				   int src_phase, int now_phase,
                                    Scheme_Env *dummy_env, Scheme_Object *insp)
@@ -6002,8 +6015,12 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
    
     for (i = 0; i < rp->num_toplevels; i++) {
       v = rp->toplevels[i];
-      if (genv || SCHEME_FALSEP(v))
+      if (!already_linked || SCHEME_FALSEP(v))
 	v = link_toplevel(rp->toplevels, i, genv ? genv : dummy_env, src_modidx, now_modidx, insp);
+      else if (SAME_TYPE(SCHEME_TYPE(v), scheme_module_variable_type)) {
+        /* not already linked, after all */
+        v = link_toplevel(rp->toplevels, i, genv, src_modidx, now_modidx, insp);
+      }
       pf->a[i] = v;
     }
 
@@ -6013,7 +6030,7 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
       i = rp->num_toplevels;
       v = scheme_make_shift(scheme_make_integer(now_phase - src_phase), 
                             src_modidx, now_modidx, 
-                            genv ? genv->module_registry->exports : NULL,
+                            !already_linked ? genv->module_registry->exports : NULL,
                             rp->src_insp_desc, insp);
       if (v || (rp->delay_info_rpair && SCHEME_CDR(rp->delay_info_rpair))) {
 	/* Put lazy-shift info in pf->a[i]: */

@@ -3285,6 +3285,25 @@
               empty? ; so that it counts as imported
               (null? 10)))
 
+(test-comp `(module m racket/base
+             (module a racket/base
+               (provide b c)
+               (define c #f)
+               (set! c c)
+               (define (b) (c)))
+             (module d racket/base
+               (require (submod ".." a))
+               (list b c (b))))
+           `(module m racket/base
+             (module a racket/base
+               (provide b c)
+               (define c #f)
+               (set! c c)
+               (define (b) (c)))
+             (module d racket/base
+               (require (submod ".." a))
+               (list b c (c)))))
+
 (module check-inline-request racket/base
   (require racket/performance-hint)
   (provide loop)

@@ -3274,7 +3274,9 @@ Scheme_Object *scheme_optimize_extract_tail_inside(Scheme_Object *t2);
 
 Scheme_Object *scheme_resolve_expr(Scheme_Object *, Resolve_Info *);
 Scheme_Object *scheme_resolve_list(Scheme_Object *, Resolve_Info *);
-Scheme_Object *scheme_unresolve(Scheme_Object *, int argv, int *_has_cases);
+Scheme_Object *scheme_unresolve(Scheme_Object *, int argv, int *_has_cases,
+                                Comp_Prefix *cp, Scheme_Env *env, Scheme_Object *insp, intptr_t ref_phase,
+                                Scheme_Object *from_modidx, Scheme_Object *to_modidx);
 Scheme_Object *scheme_unresolve_top(Scheme_Object *, Comp_Prefix **, int comp_flags);
 
 int scheme_check_leaf_rator(Scheme_Object *le, int *_flags);
@@ -3294,7 +3296,7 @@ int scheme_resolve_info_use_jit(Resolve_Info *ri);
 void scheme_enable_expression_resolve_lifts(Resolve_Info *ri);
 Scheme_Object *scheme_merge_expression_resolve_lifts(Scheme_Object *expr, Resolve_Prefix *rp, Resolve_Info *ri);
 
-Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger);
+Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, Scheme_Env *env, Scheme_Object *insp, int get_logger);
 void scheme_optimize_info_enforce_const(Optimize_Info *, int enforce_const);
 void scheme_optimize_info_set_context(Optimize_Info *, Scheme_Object *ctx);
 void scheme_optimize_info_never_inline(Optimize_Info *);
@@ -3518,7 +3520,7 @@ void scheme_install_binding_names(Scheme_Object *binding_namess, Scheme_Env *env
 Scheme_Hash_Table *scheme_get_binding_names_table(Scheme_Env *env);
 
 int scheme_prefix_depth(Resolve_Prefix *rp);
-Scheme_Object **scheme_push_prefix(Scheme_Env *genv, Resolve_Prefix *rp,
+Scheme_Object **scheme_push_prefix(Scheme_Env *genv, int already_linked, Resolve_Prefix *rp,
 				   Scheme_Object *src_modix, Scheme_Object *now_modix,
 				   int src_phase, int now_phase,
                                    Scheme_Env *dummy_env, Scheme_Object *insp);
@@ -3890,13 +3892,17 @@ int scheme_module_export_position(Scheme_Object *modname, Scheme_Env *env, Schem
 
 Scheme_Module_Exports *scheme_make_module_exports();
 
-Scheme_Object *scheme_check_accessible_in_module(Scheme_Env *env, Scheme_Object *in_modidx,
-						 Scheme_Object *symbol, Scheme_Object *stx, 
-						 Scheme_Object *current_insp, Scheme_Object *binding_insp,
-						 int position, int want_pos,
-						 int *_protected, int *_unexported, 
-                                                 Scheme_Env *from_env, int *_would_complain,
-                                                 Scheme_Object **_is_constant);
+Scheme_Object *scheme_check_accessible_in_module_instance(Scheme_Env *env,
+                                                          Scheme_Object *symbol, Scheme_Object *stx, 
+                                                          Scheme_Object *current_insp, Scheme_Object *binding_insp,
+                                                          int position, int want_pos,
+                                                          int *_protected, int *_unexported, 
+                                                          Scheme_Env *from_env, int *_would_complain,
+                                                          Scheme_Object **_is_constant);
+int scheme_check_accessible_in_module_name(Scheme_Object *modidx, intptr_t mod_phase, Scheme_Env *env,
+                                           Scheme_Object *symbol, int position,
+                                           Scheme_Object *current_insp, Scheme_Object *binding_insp,
+                                           Scheme_Object **_is_constant);
 Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name, int mod_phase);
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,

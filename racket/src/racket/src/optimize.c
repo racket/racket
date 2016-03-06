@@ -37,6 +37,7 @@
 #define OPT_LIMIT_FUNCTION_RESIZE   0
 #define OPT_BRANCH_ADDS_NO_SIZE     1
 #define OPT_DELAY_GROUP_PROPAGATE   0
+#define OPT_PRE_OPTIMIZE_FOR_CROSS_MODULE(size_override) (size_override)
 
 #define MAX_PROC_INLINE_SIZE     256
 #define CROSS_MODULE_INLINE_SIZE 8
@@ -56,6 +57,10 @@ struct Optimize_Info
   Scheme_Object *consts;
   Comp_Prefix *cp;
   int init_kclock;
+
+  /* Compilation context, used for unresolving for cross-module inlining: */
+  Scheme_Env *env;
+  Scheme_Object *insp;
 
   /* Propagated up and down the chain: */
   int size;
@@ -2057,10 +2062,14 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
             if (!iv)
               iv = scheme_hash_get(iv_ht, scheme_false);
           }
-          if (SAME_TYPE(SCHEME_TYPE(iv), scheme_inline_variant_type)) {
+          if (SAME_TYPE(SCHEME_TYPE(iv), scheme_vector_type)) { /* inline variant + shift info */
             int has_cases = 0;
             Scheme_Object *orig_iv = iv;
-            iv = scheme_unresolve(iv, argc, &has_cases);
+            MZ_ASSERT(SAME_TYPE(scheme_inline_variant_type, SCHEME_TYPE(SCHEME_VEC_ELS(iv)[0])));
+            /* unresolving may add new top-levels to `info->cp`: */
+            iv = scheme_unresolve(SCHEME_VEC_ELS(iv)[0], argc, &has_cases,
+                                  info->cp, info->env, info->insp, SCHEME_INT_VAL(SCHEME_VEC_ELS(iv)[3]),
+                                  SCHEME_VEC_ELS(iv)[1], SCHEME_VEC_ELS(iv)[2]);
             if (has_cases) {
               if (!iv_ht) {
                 iv_ht = scheme_make_hash_table(SCHEME_hash_ptr);
@@ -5510,7 +5519,7 @@ static Scheme_Object *do_define_syntaxes_optimize(Scheme_Object *data, Optimize_
 
   val = SCHEME_VEC_ELS(data)[3];
 
-  einfo = scheme_optimize_info_create(info->cp, 0);
+  einfo = scheme_optimize_info_create(info->cp, info->env, info->insp, 0);
   if (info->inline_fuel < 0)
     einfo->inline_fuel = -1;
   einfo->logger = info->logger;
@@ -5535,7 +5544,7 @@ static Scheme_Object *begin_for_syntax_optimize(Scheme_Object *data, Optimize_In
   l = SCHEME_VEC_ELS(data)[2];
 
   while (!SCHEME_NULLP(l)) {
-    einfo = scheme_optimize_info_create(info->cp, 0);
+    einfo = scheme_optimize_info_create(info->cp, info->env, info->insp, 0);
     if (info->inline_fuel < 0)
       einfo->inline_fuel = -1;
     einfo->logger = info->logger;
@@ -7851,7 +7860,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               e = SCHEME_VEC_ELS(e)[1];
 
               old_e = scheme_hash_get(info->top_level_consts, rpos);
-              if (old_e && SCHEME_LAMBDAP(old_e)) {
+              if (old_e && SCHEME_LAMBDAP(old_e) && OPT_PRE_OPTIMIZE_FOR_CROSS_MODULE(1)) {
                 if (!originals)
                   originals = scheme_make_hash_table(SCHEME_hash_ptr);
                 scheme_hash_set(originals, scheme_make_integer(start_simultaneous), old_e);
@@ -7937,7 +7946,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
           Scheme_Object *sub_e, *alt_e;
           sub_e = SCHEME_VEC_ELS(e)[1];
           alt_e = is_cross_module_inline_candidiate(sub_e, info, 0);
-          if (!alt_e && originals) {
+          if (!alt_e && originals && OPT_PRE_OPTIMIZE_FOR_CROSS_MODULE(size_override)) {
             alt_e = scheme_hash_get(originals, scheme_make_integer(i_m));
             if (SAME_OBJ(alt_e, sub_e) && !size_override)
               alt_e = NULL;
@@ -8514,7 +8523,7 @@ Scheme_Object *optimize_clone(int single_use, Scheme_Object *expr, Optimize_Info
 /*                 compile-time env for optimization                      */
 /*========================================================================*/
 
-Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger)
+Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, Scheme_Env *env, Scheme_Object *insp, int get_logger)
 {
   Optimize_Info *info;
 
@@ -8525,6 +8534,8 @@ Optimize_Info *scheme_optimize_info_create(Comp_Prefix *cp, int get_logger)
   info->inline_fuel = INITIAL_INLINING_FUEL;
   info->flatten_fuel = INITIAL_FLATTENING_FUEL;
   info->cp = cp;
+  info->env = env;
+  info->insp = insp;
 
   if (get_logger) {
     Scheme_Logger *logger;
@@ -8771,7 +8782,7 @@ static Optimize_Info *optimize_info_add_frame(Optimize_Info *info, int orig, int
 {
   Optimize_Info *naya;
 
-  naya = scheme_optimize_info_create(info->cp, 0);
+  naya = scheme_optimize_info_create(info->cp, info->env, info->insp, 0);
   naya->flags = (short)flags;
   naya->next = info;
   naya->original_frame = orig;
