@@ -4617,7 +4617,7 @@ static Scheme_Object *do_resolve_path(int argc, Scheme_Object *argv[], int guard
       return scheme_make_sized_path(buffer, len, 1);
   }
 
-  if (!expanded)
+  if (!expanded && SCHEME_PATHP(argv[0]))
     return argv[0];
   else
     return scheme_make_sized_path(filename, strlen(filename), 1);
