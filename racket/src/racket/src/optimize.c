@@ -855,7 +855,7 @@ static Scheme_Object *make_application_3(Scheme_Object *a, Scheme_Object *b, Sch
 }
 
 static Scheme_Object *replace_tail_inside(Scheme_Object *alt, Scheme_Object *inside, Scheme_Object *orig)
-/* Installs a new expression inthe result position of various forms, such as `begin`;
+/* Installs a new expression in the result position of various forms, such as `begin`;
    extract_tail_inside() needs to be consistent with this function */
 {
   if (inside) {
@@ -3552,14 +3552,16 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     info->single_result = -info->single_result;
   }
 
-  if ((SAME_OBJ(scheme_values_proc, rator)
-        || SAME_OBJ(scheme_list_star_proc, rator))
-      && ((context & OPT_CONTEXT_SINGLED)
-          || scheme_omittable_expr(rand, 1, -1, 0, info, info)
-          || single_valued_noncm_expression(rand, 5))) {
+  if (SAME_OBJ(scheme_values_proc, rator)
+      || SAME_OBJ(scheme_list_star_proc, rator)) {
+    SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
     info->preserves_marks = 1;
     info->single_result = 1;
-    return replace_tail_inside(rand, inside, app->rand);
+    if ((context & OPT_CONTEXT_SINGLED)
+        || scheme_omittable_expr(rand, 1, -1, 0, info, info)
+        || single_valued_noncm_expression(rand, 5)) {
+      return replace_tail_inside(rand, inside, app->rand);
+    }
   }
 
   if (SCHEME_PRIMP(rator)) {
@@ -6159,21 +6161,6 @@ static void set_application_types(Scheme_Object *o, Optimize_Info *info, int fue
   }
 }
 
-static int can_unwrap(Scheme_Object *v)
-/* Can `v` be unwrapped from `(let ([x v]) v)`? */
-{
-  Scheme_Type lhs;
-  lhs = SCHEME_TYPE(v);
-  if ((lhs == scheme_ir_lambda_type)
-      || (lhs == scheme_case_lambda_sequence_type)
-      || (lhs == scheme_ir_local_type)
-      || (lhs == scheme_ir_toplevel_type)
-      || (lhs == scheme_ir_quote_syntax_type)
-      || (lhs > _scheme_ir_values_types_))
-    return 1;
-  return 0;
-}
-
 static void flip_transitive(Scheme_Hash_Table *ht, int on)
 /* Adjust usage flags based on recorded tentative uses */
 {
@@ -6274,36 +6261,20 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     }
   }
 
-  /* Special case: (let ([x E]) x).
-     If E is lambda, case-lambda, or a constant, we can prduce just E.
-     Otherwise, convert to (begin0 E #f) to preserve non-tailness of E. */
-  if (!(SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) && (head->count == 1) && (head->num_clauses == 1)) {
+  is_rec = (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE);
+
+  /* Special case: (let ([x E]) x) => E or (values E) */
+  if (!is_rec
+      && (head->count == 1)
+      && (head->num_clauses == 1)) {
     irlv = (Scheme_IR_Let_Value *)head->body;
     if (SAME_OBJ((Scheme_Object *)irlv->vars[0], irlv->body)) {
-      if (can_unwrap(irlv->value)) {
-        /* Drop the let */
-        return scheme_optimize_expr(irlv->value, info, context);
-      } else {
-        /* Use `begin0`: */
-        Scheme_Sequence *seq;
-
-        seq = scheme_malloc_sequence(2);
-        seq->so.type = scheme_begin0_sequence_type;
-        seq->count = 2;
-
-        value = irlv->value;
-        if (!single_valued_expression(value, 5, 0))
-          value = ensure_single_value(value);
-
-        seq->array[0] = value;
-        seq->array[1] = scheme_false;
-
-        return scheme_optimize_expr((Scheme_Object *)seq, info, context);
-      }
+      body = irlv->value;
+      if (!single_valued_noncm_expression(body, 5))
+        body = ensure_single_value(body);
+      return scheme_optimize_expr(body, info, context);
     }
   }
-
-  is_rec = (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE);
 
   if (!is_rec) {
     int try_again;
@@ -7001,12 +6972,8 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     body = pre_body->body;
   }
 
-  /* Optimized away all clauses? */
-  if (!head->num_clauses) {
-    optimize_info_done(body_info, NULL);
-    merge_types(body_info, info, merge_skip_vars);
-    return body;
-  }
+  optimize_info_done(body_info, NULL);
+  merge_types(body_info, info, merge_skip_vars);
 
   if (is_rec && !not_simply_let_star) {
     /* We can simplify letrec to let* */
@@ -7014,15 +6981,45 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     is_rec = 0;
   }
 
-  optimize_info_done(body_info, NULL);
-  merge_types(body_info, info, merge_skip_vars);
+  /* Optimized away all clauses? */
+  if (!head->num_clauses) {
+    return body;
+  }
 
-  /* Check again for (let ([x <proc>]) x). */
-  if (!is_rec && (head->count == 1) && (head->num_clauses == 1)) {
-    irlv = (Scheme_IR_Let_Value *)head->body;
-    if (SAME_OBJ(irlv->body, (Scheme_Object *)irlv->vars[0])) {
-      if (can_unwrap(irlv->value))
-        return irlv->value;
+  if (!is_rec
+      && ((SCHEME_TYPE(body) > _scheme_ir_values_types_)
+          || SAME_TYPE(SCHEME_TYPE(body), scheme_ir_toplevel_type)
+          || SAME_TYPE(SCHEME_TYPE(body), scheme_ir_local_type))) {
+    /* If the body is a constant, toplevel or another local, the last binding
+       is unused, so reduce (let ([x <expr>]) K) => (begin <expr> K). 
+       As a special case, include a second check for (let ([x E]) x) => E or (values E). */ 
+    Scheme_Object *inside;
+
+    inside = (Scheme_Object *)head;
+    pre_body = (Scheme_IR_Let_Value *)head->body;
+    for (i = head->num_clauses - 1; i--; ) {
+      inside = (Scheme_Object *)pre_body;
+      pre_body = (Scheme_IR_Let_Value *)pre_body->body;
+    }
+
+    if (pre_body->count == 1) {
+      if (!SAME_OBJ((Scheme_Object *)pre_body->vars[0], body)
+          && !found_escapes) {
+        body = make_discarding_sequence(pre_body->value, body, info);
+      } else {
+        /* Special case for (let ([x E]) x) and (let ([x <error>]) #f) */
+        found_escapes = 0; /* Perhaps the error is moved to the body. */
+        body = pre_body->value;
+        if (!single_valued_noncm_expression(body, 5))
+          body = ensure_single_value(body);
+      }
+
+      if (head->num_clauses == 1)
+        return body;
+
+      (void)replace_tail_inside(body, inside, NULL);
+      head->count--;
+      head->num_clauses--;
     }
   }
 
