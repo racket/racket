@@ -1341,7 +1341,8 @@
                        [old-classes (reverse old-classes)])
               (cond
                 [(null? projs) (list class)]
-                [else (loop ((car projs) class) (cdr ctcs) (cdr projs) '() '())]))))
+                [else (cons class
+                            (loop ((car projs) class) (cdr ctcs) (cdr projs) '() '()))]))))
          
          (impersonate-struct
           interposed-val object-ref
