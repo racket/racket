@@ -2944,7 +2944,7 @@ static Scheme_Object *procedure_result_arity(int argc, Scheme_Object *argv[])
     return scheme_make_integer(1);
   } else if (SCHEME_STRUCTP(o)
              && scheme_is_struct_instance(scheme_reduced_procedure_struct, o)) {
-    return ((Scheme_Structure *)o)->slots[4];
+    return procedure_result_arity(1, &((Scheme_Structure *)o)->slots[0]);
   } else if (!SCHEME_PROCP(o)) {
     scheme_wrong_contract("procedure-result-arity", "procedure?", 0, argc, argv);
     return NULL;
@@ -3138,7 +3138,7 @@ void scheme_init_reduced_proc_struct(Scheme_Env *env)
     scheme_reduced_procedure_struct = scheme_make_struct_type2(NULL,
                                                                NULL,
                                                                (Scheme_Object *)insp,
-                                                               5, 0,
+                                                               4, 0,
                                                                scheme_false,
                                                                scheme_null,
                                                                scheme_make_integer(0),
@@ -3148,7 +3148,7 @@ void scheme_init_reduced_proc_struct(Scheme_Env *env)
 
 static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty, Scheme_Object *name, Scheme_Object *is_meth)
 {
-  Scheme_Object *a[5];
+  Scheme_Object *a[4];
   
   if (SCHEME_STRUCTP(proc)
       && scheme_is_struct_instance(scheme_reduced_procedure_struct, proc)) {
@@ -3164,9 +3164,8 @@ static Scheme_Object *make_reduced_proc(Scheme_Object *proc, Scheme_Object *aty,
   a[1] = aty;
   a[2] = (name ? name : scheme_false);
   a[3] = (is_meth ? is_meth : scheme_false);
-  a[4] = procedure_result_arity(1, &proc);
 
-  return scheme_make_struct_instance(scheme_reduced_procedure_struct, 5, a);
+  return scheme_make_struct_instance(scheme_reduced_procedure_struct, 4, a);
 }
 
 static int is_subarity(Scheme_Object *req, Scheme_Object *orig, int req_delta)
