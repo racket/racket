@@ -2093,10 +2093,7 @@ define_execute_with_dynamic_state(Scheme_Object *vec, int delta, int defmacro,
       
       if (SCHEME_TOPLEVEL_FLAGS(var) & SCHEME_TOPLEVEL_SEAL) {
         int flags = GLOB_IS_IMMUTATED;
-        if (SCHEME_PROCP(vals_expr) 
-            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_lambda_type)
-            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type)
-            || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_inline_variant_type))
+        if (scheme_is_statically_proc(vals_expr, NULL, OMITTABLE_RESOLVED))
           flags |= GLOB_IS_CONSISTENT;
         ((Scheme_Bucket_With_Flags *)b)->flags |= flags;
       }

@@ -3267,7 +3267,7 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
 
 int scheme_ir_duplicate_ok(Scheme_Object *o, int cross_mod);
 int scheme_ir_propagate_ok(Scheme_Object *o, Optimize_Info *info);
-int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info);
+int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info, int flags);
 XFORM_NONGCING int scheme_predicate_to_local_type(Scheme_Object *pred);
 Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);
 Scheme_Object *scheme_optimize_extract_tail_inside(Scheme_Object *t2);

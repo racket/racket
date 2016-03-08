@@ -5736,22 +5736,51 @@ int scheme_ir_propagate_ok(Scheme_Object *value, Optimize_Info *info)
   return 0;
 }
 
-int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info)
-/* Does `value` definitely produce a procedure of a specific shape? */
+int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info, int flags)
+/* Does `value` definitely produce a procedure of a specific shape?
+   This function can be used on resolved (and SFS) forms, too, and it
+   must be consistent with (i.e., as least as accepting as)
+   optimization-time decisions. The `flags` argument is for
+   scheme_omittable_expr(). */
 {
   while (1) {
-    if (SCHEME_LAMBDAP(value)) {
+    if (SCHEME_LAMBDAP(value)
+        || SCHEME_PROCP(value)
+        || SAME_TYPE(SCHEME_TYPE(value), scheme_lambda_type)
+        || SAME_TYPE(SCHEME_TYPE(value), scheme_case_lambda_sequence_type)
+        || SAME_TYPE(SCHEME_TYPE(value), scheme_inline_variant_type))
       return 1;
-    } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_let_header_type)) {
+    else if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_let_header_type)) {
       /* Look for (let ([x <omittable>]) <proc>), which is generated for optional arguments. */
       Scheme_IR_Let_Header *lh = (Scheme_IR_Let_Header *)value;
       if (lh->num_clauses == 1) {
         Scheme_IR_Let_Value *lv = (Scheme_IR_Let_Value *)lh->body;
-        if (scheme_omittable_expr(lv->value, lv->count, 20, 0, info, NULL)) {
+        if (scheme_omittable_expr(lv->value, lv->count, 20, flags, info, NULL)) {
           value = lv->body;
-          info = NULL;
         } else
           break;
+      } else
+        break;
+    } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_let_one_type)) {
+      Scheme_Let_One *lo = (Scheme_Let_One *)value;
+      if (scheme_omittable_expr(lo->value, 1, 20, flags, info, NULL)) {
+        value = lo->body;
+      } else
+        break;
+    } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_boxenv_type)) {
+      value = SCHEME_PTR2_VAL(value);
+    } else if (SAME_TYPE(SCHEME_TYPE(value), scheme_sequence_type)
+               /* Handle a sequence for resolved mode, because it might
+                  be for safe-for-space clears around a procedure */
+               && (flags & OMITTABLE_RESOLVED)) {
+      Scheme_Sequence *seq = (Scheme_Sequence *)value;
+      int i;
+      for (i = 0; i < seq->count-1; i++) {
+        if (!scheme_omittable_expr(seq->array[i], 1, 5, flags, info, NULL))
+          break;
+      }
+      if (i == seq->count-1) {
+        value = seq->array[i];
       } else
         break;
     } else
@@ -7709,7 +7738,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
         if (n == 1) {
           if (scheme_ir_propagate_ok(e, info))
             cnst = 1;
-          else if (scheme_is_statically_proc(e, info)) {
+          else if (scheme_is_statically_proc(e, info, 0)) {
             cnst = 1;
             sproc = 1;
           }
@@ -7864,7 +7893,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               }
 
               if (!scheme_ir_propagate_ok(e, info)
-                  && scheme_is_statically_proc(e, info)) {
+                  && scheme_is_statically_proc(e, info, 0)) {
                 /* If we previously installed a procedure for inlining,
                    don't replace that with a worse approximation. */
                 if (SCHEME_LAMBDAP(old_e))

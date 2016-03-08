@@ -3345,6 +3345,35 @@
                (require (submod ".." a))
                (list b c (c)))))
 
+(test-comp `(module m racket/base
+             (module a racket/base
+               (provide b c)
+               (define c
+                 (let ([x 0])
+                   (lambda (y)
+                     (begin0
+                      x
+                      (set! x y)))))
+               (define (b z)
+                 (c z)))
+             (module d racket/base
+               (require (submod ".." a))
+               (list b c (b 1))))
+           `(module m racket/base
+             (module a racket/base
+               (provide b c)
+               (define c
+                 (let ([x 0])
+                   (lambda (y)
+                     (begin0
+                      x
+                      (set! x y)))))
+               (define (b z)
+                 (c z)))
+             (module d racket/base
+               (require (submod ".." a))
+               (list b c (c 1)))))
+
 (module check-inline-request racket/base
   (require racket/performance-hint)
   (provide loop)
