@@ -1304,7 +1304,12 @@
                  (if (has-impersonator-prop:instanceof/c-projs? val)
                      (get-impersonator-prop:instanceof/c-projs val)
                      '())))
-         
+
+         (define (stronger? x y)
+           (and (contract? x) ; could instead get a `just-check-existence`
+                (contract? y)
+                (contract-stronger? x y)))
+
          (define-values (reverse-without-redundant-ctcs reverse-without-redundant-projs)
            (let loop ([prior-ctcs '()]
                       [prior-projs '()]
@@ -1316,8 +1321,8 @@
                [(null? next-ctcs) (values (cons this-ctc prior-ctcs)
                                           (cons this-proj prior-projs))]
                [else
-                (if (and (ormap (λ (x) (contract-stronger? x this-ctc)) prior-ctcs)
-                         (ormap (λ (x) (contract-stronger? this-ctc x)) next-ctcs))
+                (if (and (ormap (λ (x) (stronger? x this-ctc)) prior-ctcs)
+                         (ormap (λ (x) (stronger? this-ctc x)) next-ctcs))
                     (loop prior-ctcs prior-projs
                           (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs))
                     (loop (cons this-ctc prior-ctcs) (cons this-proj prior-projs)
@@ -1328,12 +1333,9 @@
                (get-impersonator-prop:instanceof/c-unwrapped-class val)
                (object-ref val)))
          (define wrapped-class
-           (let loop ([class unwrapped-class]
-                      [ctcs  reverse-without-redundant-ctcs]
-                      [projs reverse-without-redundant-projs])
-             (cond
-              [(null? projs) class]
-              [else (loop ((car projs) class) (cdr ctcs) (cdr projs))])))
+           (for/fold ([class unwrapped-class])
+               ([proj (in-list reverse-without-redundant-projs)])
+             (proj class)))
          
          (impersonate-struct
           interposed-val object-ref
