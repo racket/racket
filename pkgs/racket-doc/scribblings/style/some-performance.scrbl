@@ -142,14 +142,14 @@ expands to many nested definitions and expressions every time it is used.
 @section{Unsafe: Beware}
 
 Racket provides a number of unsafe operations that behave
-the same as other, safe operations when given valid inputs,
-but eschewing checking for performance reasons and thus behave
-unpredictably on invalid inputs.
+like their related, safe variants but only when given valid inputs.
+They differ in that they eschew checking for performance reasons
+and thus behave unpredictably on invalid inputs.
 
 As one example, consider @racket[fx+] and @racket[unsafe-fx+].
-If you supply a non-@racket[fixnum?] to @racket[fx+], it raises
-an error. If you supply a non-@racket[fixnum?] to @racket[unsafe-fx+],
-it does not raise an error; instead it either returns a strange result
+When @racket[fx+] is applied to a non-@racket[fixnum?], it raises
+an error. In contrast, when @racket[unsafe-fx+] is applied to a non-@racket[fixnum?],
+it does not raise an error. Instead it either returns a strange result
 that may violate invariants of the run-time system and may cause
 later operations (such as printing out the value) to crash Racket itself.
 
