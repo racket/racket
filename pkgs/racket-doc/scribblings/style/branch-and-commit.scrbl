@@ -71,30 +71,3 @@ On occasion, you will find that you are spending a significant amount of
  code base. In some cases it is acceptable to delay such tests, e.g., when
  you will not know for a long time whether the performance implications
  allow a commit to the PLT repository.
-
-@margin-note*{See
-@hyperlink["http://git.racket-lang.org/intro.html"]{the write-up} on
-using git in PLT for details.}
-
-As a reminder, here are the essential elements of git for working on a
-fork:
-@itemlist[
-
-@item{setup a fork:
-  @verbatim{
-    ssh pltgit fork plt eli/my-plt}}
-
-@item{setup mail notifications:
-  @verbatim{
-    ssh pltgit config set eli/my-plt hooks.counter true
-    ssh pltgit config set eli/my-plt hooks.mailinglist @eli,...}}
-
-@item{allow someone else to push commits to my repository:
-  @verbatim{
-    ssh pltgit setperms eli/my-plt
-    RW eli
-    RW someone-else
-    ^D}}
-
-]
-
