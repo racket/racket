@@ -1090,7 +1090,7 @@ evaluted left-to-right.)
        (if (orig-ctc obj)
            obj
            (raise-predicate-blame-error-failure blame obj neg-party
-                                                (object-name orig-ctc)))]
+                                                (contract-name orig-ctc)))]
       [else
        (define ctc (if chaperone?
                        (coerce-chaperone-contract '->i orig-ctc)

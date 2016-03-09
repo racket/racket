@@ -1440,4 +1440,22 @@
                  (λ (x y) x)
                  'pos 'neg) 1 2)
       "didn't raise an error")
-   #t))
+   #t)
+
+  (test/spec-passed/result
+   'shortcut-error-message
+   '(with-handlers ([exn:fail?
+                     (λ (x) (define m
+                              (regexp-match #rx"expected: ([^\n]*)\n"
+                                            (exn-message x)))
+                       (if m
+                           (list-ref m 1)
+                           (format "ack regexp didn't match: ~s"
+                                   (exn-message x))))])
+      ((contract (->i ([y () (and/c number? (>/c 1))]) any)
+                  (λ (y) 1)
+                  'pos 'neg)
+        1))
+   "(and/c number? (>/c 1))")
+      
+  )
