@@ -246,8 +246,10 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %gx = long int
   %ld = intptr_t
   %Id = intptr_t (for MSVC)
+  %I64d = intptr_t (for MingGW)
   %lx = intptr_t
   %Ix = intptr_t (for MSVC)
+  %I64x = intptr_t (for MingGW)
   %o = int, octal
   %f = double
   %% = percent
@@ -431,6 +433,8 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	  {
 	    intptr_t d;
             int as_hex;
+            if ((type == 'I') && (msg[j] == '6') && (msg[j+1] == '4'))
+              j++;
             as_hex = (msg[j] == 'x');
 	    j++;
 	    d = ints[ip++];
