@@ -245,7 +245,9 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %gd = long int
   %gx = long int
   %ld = intptr_t
+  %Id = intptr_t (for MSVC)
   %lx = intptr_t
+  %Ix = intptr_t (for MSVC)
   %o = int, octal
   %f = double
   %% = percent
@@ -315,6 +317,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	ints[ip++] = mzVA_ARG(args, long);
 	break;
       case 'l':
+      case 'I':
 	ints[ip++] = mzVA_ARG(args, intptr_t);
 	break;
       case 'f':
@@ -422,6 +425,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    tlen = strlen(t);
 	  }
 	  break;
+	case 'I':
 	case 'l':
 	case 'g':
 	  {
