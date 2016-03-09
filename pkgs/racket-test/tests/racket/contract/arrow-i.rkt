@@ -928,6 +928,14 @@
                'pos 'neg)
      3 2 1)
    3)
+
+  (test/spec-passed/result
+   '->i54
+   '((contract (->i (#:one [one any/c] #:two [two any/c] #:three [three any/c]) any)
+               (λ (#:one one #:two two #:three three) (list one two three))
+               'pos 'neg)
+     #:one 1 #:two 2 #:three 3)
+   '(1 2 3))
   
   (test/pos-blame
    '->i-arity1
