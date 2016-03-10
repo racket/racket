@@ -1256,12 +1256,17 @@
                                     (norm (vector-ref esrcloc 2))
                                     (norm (vector-ref esrcloc 3))
                                     (norm (vector-ref esrcloc 4))))
-                       (if (and esrcloc ((vector-length esrcloc) . > . 5))
-                           (case (vector-ref esrcloc 5)
-                             [(#\[) #hasheq((paren-shape . #\[))]
-                             [(#\{) #hasheq((paren-shape . #\{))]
-                             [else #hasheq()])
-                           #hasheq())))))
+                       (let ([props
+                              (if (and esrcloc ((vector-length esrcloc) . > . 5))
+                                  (case (vector-ref esrcloc 5)
+                                    [(#\[) #hasheq((paren-shape . #\[))]
+                                    [(#\{) #hasheq((paren-shape . #\{))]
+                                    [else #hasheq()])
+                                  #hasheq())])
+                         (if (and esrcloc ((vector-length esrcloc) . > . 6))
+                             (for/fold ([props props]) ([p (in-list (vector-ref esrcloc 6))])
+                               (hash-set props (car p) (cdr p)))
+                             props))))))
   (values (car p) (cdr p)))
 
 ;; ----------------------------------------
