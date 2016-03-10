@@ -71,6 +71,10 @@
 (arity-test complete-path? 1 1)
 (err/rt-test (complete-path? 'a))
 
+(define original-dir (current-directory))
+(define work-dir (make-temporary-file "path~a" 'directory))
+(current-directory work-dir)
+
 (call-with-output-file "tmp6" void #:exists 'replace)
 (define existant "tmp6")
 
@@ -219,6 +223,9 @@
 (test #f delete-directory/tf deepdir)
 (test #t delete-directory/tf "down")
 (test #f delete-directory/tf "down")
+
+(current-directory original-dir)
+(delete-directory work-dir)
 
 ; Redefine these per-platform
 (define drives null)
@@ -875,12 +882,12 @@
     (test (bytes->path #"/home/mflatt/././~") build-path (bytes->path #"/home/mflatt") (bytes->path #"././~"))
     (test (bytes->path #"./~") build-path (bytes->path #"./~"))
     (when use-fs?
-      (let ([dir "tmp79"])
+      (let ([dir (make-temporary-file "tmp79~a" 'directory)])
         (unless (directory-exists? dir)
           (make-directory dir))
-        (close-output-port (open-output-file "tmp79/~me" #:exists 'replace))
+        (close-output-port (open-output-file (build-path dir "~me") #:exists 'replace))
         (test (list (bytes->path #"~me")) directory-list dir)
-        (delete-file (build-path "tmp79" (bytes->path #"~me")))
+        (delete-file (build-path dir (bytes->path #"~me")))
         (delete-directory dir)))
     (void)))
 

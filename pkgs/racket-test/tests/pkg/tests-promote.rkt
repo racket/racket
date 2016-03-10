@@ -15,11 +15,11 @@
     "promote"
     $ "raco pkg config --set catalogs http://localhost:9990"
     $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
-    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\"\\)\n"
+    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
     $ "raco pkg install test-pkgs/pkg-test2.zip" =exit> 1 =stderr> #rx"already installed"
     $ "raco pkg install test-pkgs/pkg-test1.zip" =exit> 1 =stderr> #rx"already installed from a different source"
     $ "raco pkg install pkg-test1" ; promote
-    $ "raco pkg show -l -u -a" =stdout> #rx"Package +Checksum +Source\npkg-test1 +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\"\\)\n"
+    $ "raco pkg show -l -u -a" =stdout> #rx"Package +Checksum +Source\npkg-test1 +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
     $ "raco pkg install pkg-test1" =exit> 1 =stderr> #rx"already installed" ; redundant promote fails
     $ "racket -e '(require pkg-test1)'" =exit> 0
     $ "racket -e '(require pkg-test2)'" =exit> 0
@@ -32,9 +32,9 @@
     "demote"
     $ "raco pkg config --set catalogs http://localhost:9990"
     $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
-    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\"\\)\n"
+    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
     $ "raco pkg remove --demote pkg-test2"
-    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2\\* +[a-f0-9.]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\"\\)\n"
+    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2\\* +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
     $ "racket -e '(require pkg-test1)'" =exit> 0
     $ "racket -e '(require pkg-test2)'" =exit> 0
     $ "raco pkg remove --auto"
@@ -44,8 +44,8 @@
     "demote+auto"
     $ "raco pkg config --set catalogs http://localhost:9990"
     $ "raco pkg install --deps search-auto test-pkgs/pkg-test2.zip" =exit> 0
-    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\"\\)\n"
+    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
     $ "raco pkg remove --demote --auto pkg-test1" =exit> 0 ; should have no effect
-    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+tests/pkg/test-pkgs/pkg-test2.zip\"\\)\n"
+    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-test1\\* +[a-f0-9.]+ +\\(catalog \"pkg-test1\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
     $ "raco pkg remove --demote --auto pkg-test2"
     $ "raco pkg show -l -u -a" =stdout> " [none]\n"))))

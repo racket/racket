@@ -3,6 +3,15 @@
 
 (Section 'port)
 
+(define (call-in-temporary-directory thunk)
+  (define dir (make-temporary-file "tmp~a" 'directory))
+  (dynamic-wind
+   void
+   (lambda ()
+     (parameterize ([current-directory dir])
+       (thunk)))
+   (lambda () (delete-directory dir))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tests for progress events and commits
 
@@ -57,12 +66,15 @@
   (test-pipe #t))
 (let ([test-file
        (lambda (commit-eof?)
-         (with-output-to-file "tmp8" #:exists 'truncate/replace
-           (lambda () (write-string "hello")))
-         (define p (open-input-file "tmp8"))
-         (test-hello-port p commit-eof?)
-         (close-input-port p)
-         (delete-file "tmp8"))])
+         (call-in-temporary-directory
+          (lambda ()
+            (with-output-to-file "tmp8"
+              #:exists 'truncate/replace
+              (lambda () (write-string "hello")))
+            (define p (open-input-file "tmp8"))
+            (test-hello-port p commit-eof?)
+            (close-input-port p)
+            (delete-file "tmp8"))))])
   (test-file #f)
   (test-file #t))
 
@@ -777,14 +789,16 @@
       (count-lines! in)
       (check in))
     (let ()
-      (with-output-to-file "tmp8" 
-        #:exists 'truncate/replace
-        (lambda () (display "12345")))
-      (define in (open-input-file "tmp8"))
-      (count-lines! in)
-      (check in)
-      (close-input-port in)
-      (delete-file "tmp8")))
+      (call-in-temporary-directory
+       (lambda ()
+         (with-output-to-file "tmp8" 
+           #:exists 'truncate/replace
+           (lambda () (display "12345")))
+         (define in (open-input-file "tmp8"))
+         (count-lines! in)
+         (check in)
+         (close-input-port in)
+         (delete-file "tmp8")))))
   (check-all void)
   (check-all port-count-lines!))
 

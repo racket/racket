@@ -7,7 +7,8 @@
 	 racket/system
 	 racket/list)
 
-(define tmp-name "tmp0-filelib")
+(define tmp-dir (make-temporary-file "filelib~a" 'directory))
+(define tmp-name (build-path tmp-dir "tmp0-filelib"))
 (when (file-exists? tmp-name) (delete-file tmp-name))
 (display-lines-to-file '("a" "b" "c") tmp-name #:separator #"\r\n" #:mode 'binary)
 (test '(a b c) file->list tmp-name)
@@ -28,6 +29,7 @@
 (test #"\"\316\273\"" file->bytes tmp-name)
 (test "\u03BB" file->value tmp-name)
 (when (file-exists? tmp-name) (delete-file tmp-name))
+(delete-directory tmp-dir)
 
 (define-syntax-rule (err/rt-chk-test (op arg ...))
   (err/rt-test (op arg ...) (check-msg 'op)))
@@ -87,57 +89,79 @@
       (test #t equal? (sort rel) (sort rel2))
 
       (unless (eq? (system-type) 'windows)
-        (make-file-or-directory-link "filelib.rktl" "filelib-link")
-        (make-file-or-directory-link "." "loop-link")
+        (define tmp-dir (make-temporary-file "filelib~a" 'directory))
+        (define (touch . elems)
+          (call-with-output-file
+           (apply build-path elems)
+           void))
+        
+        (copy-file "filelib.rktl" (build-path tmp-dir "filelib.rktl"))
+        (make-directory (build-path tmp-dir "sub"))
+        (touch tmp-dir "a")
+        (touch tmp-dir "b")
+        (touch tmp-dir "sub" "x")
+         
+        (parameterize ([current-directory tmp-dir])
+          (define rel2 (fold-files (lambda (name kind accum)
+                                     (test kind name (if (file-exists? name)
+                                                         'file
+                                                         'dir))
+                                     (cons name accum))
+                                   null))
+          
+          (make-file-or-directory-link "filelib.rktl" "filelib-link")
+          (make-file-or-directory-link "." "loop-link")
 
-	(test (+ 2 (length rel2))
-	      fold-files 
-	      (lambda (name kind accum)
-		(test kind values (cond
-				   [(link-exists? name) 'link]
-				   [(file-exists? name) 'file]
-				   [(directory-exists? name) 'dir]
-				   [else '???]))
-		(when (member name '("filelib-link" "loop-link"))
-		  (test kind name 'link))
-		(add1 accum))
-	      0
-	      #f
-	      #f)
+          (test (+ 2 (length rel2))
+                fold-files 
+                (lambda (name kind accum)
+                  (test kind values (cond
+                                     [(link-exists? name) 'link]
+                                     [(file-exists? name) 'file]
+                                     [(directory-exists? name) 'dir]
+                                     [else '???]))
+                  (when (member name '("filelib-link" "loop-link"))
+                    (test kind name 'link))
+                  (add1 accum))
+                0
+                #f
+                #f)
 
-	(test (+ 2 (length rel2))
-	      fold-files 
-	      (lambda (name kind accum)
-		(test kind values (cond
-				   [(link-exists? name) 'link]
-				   [(file-exists? name) 'file]
-				   [(directory-exists? name) 'dir]
-				   [else '???]))
-		(when (member name '("filelib-link" "loop-link"))
-		  (test kind name 'link))
-		(values (add1 accum) #t))
-	      0
-	      #f
-	      #f)
+          (test (+ 2 (length rel2))
+                fold-files 
+                (lambda (name kind accum)
+                  (test kind values (cond
+                                     [(link-exists? name) 'link]
+                                     [(file-exists? name) 'file]
+                                     [(directory-exists? name) 'dir]
+                                     [else '???]))
+                  (when (member name '("filelib-link" "loop-link"))
+                    (test kind name 'link))
+                  (values (add1 accum) #t))
+                0
+                #f
+                #f)
 
-        (delete-file "loop-link")
+          (delete-file "loop-link")
 
-	(test (+ 1 (length rel2))
-	      fold-files 
-	      (lambda (name kind accum)
-		(test kind values (cond
-				   [(file-exists? name) 'file]
-				   [else 'dir]))
-		(when (member name '("filelib-link"))
-		  (test kind name 'file))
-		(add1 accum))
-	      0
-	      #f
-	      #t)
+          (test (+ 1 (length rel2))
+                fold-files 
+                (lambda (name kind accum)
+                  (test kind values (cond
+                                     [(file-exists? name) 'file]
+                                     [else 'dir]))
+                  (when (member name '("filelib-link"))
+                    (test kind name 'file))
+                  (add1 accum))
+                0
+                #f
+                #t)
 
-	(delete-file "filelib-link")
+          (delete-file "filelib-link")
 
-	'done))))
+          'done)
+        (delete-directory/files tmp-dir)))))
+
 ;; ----------------------------------------
 
 ;;----------------------------------------------------------------------

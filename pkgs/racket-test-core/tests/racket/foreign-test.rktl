@@ -7,7 +7,8 @@
          ffi/unsafe/cvector
          ffi/vector
          racket/extflonum
-         racket/place)
+         racket/place
+         racket/file)
 
 (define test-async? (and (place-enabled?) (not (eq? 'windows (system-type)))))
 
@@ -97,34 +98,38 @@
 
 (require dynext/compile dynext/link racket/runtime-path)
 (define-runtime-path here ".")
+
+(define test-tmp-dir
+  (make-temporary-file "foreign~a" 'directory))
+(copy-file (build-path here "foreign-test.c")
+           (build-path test-tmp-dir "foreign-test.c"))
 (define delete-test-files
-  (let ([c  (build-path here "foreign-test.c")]
-        [o  (build-path (current-directory)
-                        (if (eq? 'windows (system-type))
-                          "foreign-test.obj" "foreign-test.o"))]
-        [so (build-path (current-directory)
-                        (bytes->path (bytes-append #"foreign-test"
-                                                   (system-type 'so-suffix))))])
-    (when (file-exists? o) (delete-file o))
-    (when (file-exists? so) (delete-file so))
-    (parameterize ([current-standard-link-libraries '()]
-                   [current-extension-compiler-flags
-                    (if test-async?
-                        (append '("-pthread" "-DUSE_THREAD_TEST") (current-extension-compiler-flags))
-                        (current-extension-compiler-flags))]
-                   [current-extension-linker-flags
-                    (if test-async?
-                        (append '("-pthread") (current-extension-linker-flags))
-                        (current-extension-linker-flags))])
-      (compile-extension #t c o '())
-      (link-extension #t (list o) so))
-    (lambda ()
+  (parameterize ([current-directory test-tmp-dir])
+    (let ([c  (build-path (current-directory) "foreign-test.c")]
+          [o  (build-path (current-directory)
+                          (if (eq? 'windows (system-type))
+                              "foreign-test.obj" "foreign-test.o"))]
+          [so (build-path (current-directory)
+                          (bytes->path (bytes-append #"foreign-test"
+                                                     (system-type 'so-suffix))))])
       (when (file-exists? o) (delete-file o))
-      (when (file-exists? so)
+      (when (file-exists? so) (delete-file so))
+      (parameterize ([current-standard-link-libraries '()]
+                     [current-extension-compiler-flags
+                      (if test-async?
+                          (append '("-pthread" "-DUSE_THREAD_TEST") (current-extension-compiler-flags))
+                          (current-extension-compiler-flags))]
+                     [current-extension-linker-flags
+                      (if test-async?
+                          (append '("-pthread") (current-extension-linker-flags))
+                          (current-extension-linker-flags))])
+        (compile-extension #t c o '())
+        (link-extension #t (list o) so))
+      (lambda ()
         (with-handlers ([exn:fail:filesystem?
                          (lambda (e)
-                           (eprintf "warning: could not delete ~e\n" so))])
-          (delete-file so))))))
+                           (eprintf "warning: could not delete ~e\n" test-tmp-dir))])
+          (delete-directory/files test-tmp-dir))))))
 
 ;; Test arrays
 (define _c7_list (_array/list _byte 7))
@@ -179,7 +184,7 @@
 (define _borl (_union _byte _long))
 (define _ic7iorl (_union _ic7i _long))
 
-(define test-lib (ffi-lib "./foreign-test"))
+(define test-lib (ffi-lib (build-path test-tmp-dir "foreign-test")))
 
 (for ([n (in-range 5)])
   (define (ffi name type) (get-ffi-obj name test-lib type))

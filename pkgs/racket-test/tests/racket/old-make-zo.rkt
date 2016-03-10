@@ -1,7 +1,14 @@
-#lang racket
-(require setup/dirs)
+#lang racket/base
+(require setup/dirs
+         racket/path
+         racket/file
+         racket/system)
 
-(define src (collection-file-path "old-make-zo.rkt" "tests" "racket"))
+(define orig-src (collection-file-path "old-make-zo.rkt" "tests" "racket"))
+
+(define tmp-dir (make-temporary-file "old-zo~a" 'directory))
+(define src (build-path tmp-dir (file-name-from-path orig-src)))
+(copy-file orig-src src)
 
 (define (exe s)
   (if (eq? (system-type) 'windows)
@@ -28,3 +35,5 @@
           "make"
           "--no-deps"
           (path->string src)))
+
+(delete-directory/files tmp-dir)

@@ -5,6 +5,10 @@
 
 (define testing.rktl (build-path (current-load-relative-directory) "testing.rktl"))
 
+(define original-dir (current-directory))
+(define work-dir (make-temporary-file "path~a" 'directory))
+(current-directory work-dir)
+
 (test #t input-port? (current-input-port))
 (test #t output-port? (current-output-port))
 (test #t output-port? (current-error-port))
@@ -1614,6 +1618,9 @@
 
 ;; Cleanup files created above
 (for ([f '("tmp1" "tmp2" "tmp3")] #:when (file-exists? f)) (delete-file f))
+
+(current-directory original-dir)
+(delete-directory work-dir)
 
 ;; Network - - - - - - - - - - - - - - - - - - - - - -
 

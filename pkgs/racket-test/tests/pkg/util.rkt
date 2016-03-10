@@ -13,7 +13,23 @@
          setup/dirs
          "shelly.rkt")
 
-(define-runtime-path test-directory ".")
+(define-runtime-path test-source-directory ".")
+
+;; Use a consistent directory, so that individual tests can be
+;; run after "tests-create.rkt":
+(define-runtime-path test-directory (build-path (find-system-path 'temp-dir)
+                                                "pkg-test-work"))
+
+(define (sync-test-directory)
+  (printf "Syncing test directory\n")
+  (make-directory* test-directory)
+  (parameterize ([current-directory test-source-directory])
+    (for ([f (in-directory)])
+      (define src f)
+      (define dest (build-path test-directory f))
+      (cond
+       [(directory-exists? src) (make-directory* dest)]
+       [else (copy-file src dest #t)]))))
 
 (define-syntax-rule (this-test-is-run-by-the-main-test)
   (module test racket/base))
@@ -186,6 +202,7 @@
       (shelly-case "setup info cache" $ "raco setup -nDKxiI --no-foreign-libs")
       (with-fake-root
        (parameterize ([current-directory test-directory])
+         (sync-test-directory)
          (t)))))))
 
 (define-syntax-rule (shelly-install** message pkg rm-pkg (pre ...) (more ...))
