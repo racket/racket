@@ -67,12 +67,7 @@ to the same binding:
 (free-identifier=? #'car #'car)
 (require (only-in racket/base [car also-car]))
 (free-identifier=? #'car #'also-car)
-(free-identifier=? #'car (let ([car 8])
-                           #'car))
 ]
-
-The last example above, in particular, illustrates how syntax objects
-preserve lexical-context information.
 
 To see the lists, symbols, numbers, @|etc| within a syntax object, use
 @racket[syntax->datum]:

@@ -1274,7 +1274,7 @@
                (get-impersonator-prop:instanceof/c-original-object val)
                (impersonate-struct 
                 val object-ref
-                (λ (o c) (car (get-impersonator-prop:instanceof/c-wrapped-classes o))))))
+                (λ (o c) (get-impersonator-prop:instanceof/c-wrapped-class o)))))
 	
 
          ;; this code is doing a fairly complicated dance to 
@@ -1304,12 +1304,12 @@
                  (if (has-impersonator-prop:instanceof/c-projs? val)
                      (get-impersonator-prop:instanceof/c-projs val)
                      '())))
-         
-         (define old-classes
-           (if (has-impersonator-prop:instanceof/c-wrapped-classes? val)
-               (get-impersonator-prop:instanceof/c-wrapped-classes val)
-               '()))
-         
+
+         (define (stronger? x y)
+           (and (contract? x) ; could instead get a `just-check-existence`
+                (contract? y)
+                (contract-stronger? x y)))
+
          (define-values (reverse-without-redundant-ctcs reverse-without-redundant-projs)
            (let loop ([prior-ctcs '()]
                       [prior-projs '()]
@@ -1321,37 +1321,21 @@
                [(null? next-ctcs) (values (cons this-ctc prior-ctcs)
                                           (cons this-proj prior-projs))]
                [else
-                (if (and (ormap (λ (x) (contract-stronger? x this-ctc)) prior-ctcs)
-                         (ormap (λ (x) (contract-stronger? this-ctc x)) next-ctcs))
+                (if (and (ormap (λ (x) (stronger? x this-ctc)) prior-ctcs)
+                         (ormap (λ (x) (stronger? this-ctc x)) next-ctcs))
                     (loop prior-ctcs prior-projs
                           (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs))
                     (loop (cons this-ctc prior-ctcs) (cons this-proj prior-projs)
                           (car next-ctcs) (cdr next-ctcs) (car next-projs) (cdr next-projs)))])))
-         
-         (define wrapped-classes 
-           (reverse
-            (let loop ([class (if (has-impersonator-prop:instanceof/c-wrapped-classes? val)
-                                  (car (reverse 
-                                        (get-impersonator-prop:instanceof/c-wrapped-classes val)))
-                                  (object-ref val))]
-                       [ctcs reverse-without-redundant-ctcs]
-                       [projs reverse-without-redundant-projs]
-                       
-                       [old-ctcs (reverse (cdr all-new-ctcs))]
-                       [old-classes (reverse old-classes)])
-              (cond
-                [(null? projs) (list class)]
-                [else
-                 (cons class
-                       (cond
-                         [(and (pair? old-ctcs) (eq? (car old-ctcs) (car ctcs)))
-                          (loop (car old-classes)
-                                (cdr ctcs)
-                                (cdr projs)
-                                (cdr old-ctcs)
-                                (cdr old-classes))]
-                         [else
-                          (loop ((car projs) class) (cdr ctcs) (cdr projs) '() '())]))]))))
+
+         (define unwrapped-class
+           (if (has-impersonator-prop:instanceof/c-unwrapped-class? val)
+               (get-impersonator-prop:instanceof/c-unwrapped-class val)
+               (object-ref val)))
+         (define wrapped-class
+           (for/fold ([class unwrapped-class])
+               ([proj (in-list reverse-without-redundant-projs)])
+             (proj class)))
          
          (impersonate-struct
           interposed-val object-ref
@@ -1363,7 +1347,8 @@
           impersonator-prop:instanceof/c-original-object interposed-val
           impersonator-prop:instanceof/c-ctcs (reverse reverse-without-redundant-ctcs)
           impersonator-prop:instanceof/c-projs (reverse reverse-without-redundant-projs)
-          impersonator-prop:instanceof/c-wrapped-classes wrapped-classes
+          impersonator-prop:instanceof/c-wrapped-class wrapped-class
+          impersonator-prop:instanceof/c-unwrapped-class unwrapped-class
           impersonator-prop:contracted ctc
           impersonator-prop:original-object original-obj)]))))
 
@@ -1377,15 +1362,20 @@
                 get-impersonator-prop:instanceof/c-projs)
   (make-impersonator-property 'impersonator-prop:instanceof/c-projs))
 
-(define-values (impersonator-prop:instanceof/c-wrapped-classes
-                has-impersonator-prop:instanceof/c-wrapped-classes?
-                get-impersonator-prop:instanceof/c-wrapped-classes)
-  (make-impersonator-property 'impersonator-prop:instanceof/c-wrapped-classes))
+(define-values (impersonator-prop:instanceof/c-unwrapped-class
+                has-impersonator-prop:instanceof/c-unwrapped-class?
+                get-impersonator-prop:instanceof/c-unwrapped-class)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-unwrapped-class))
+
+(define-values (impersonator-prop:instanceof/c-wrapped-class
+                has-impersonator-prop:instanceof/c-wrapped-class?
+                get-impersonator-prop:instanceof/c-wrapped-class)
+  (make-impersonator-property 'impersonator-prop:instanceof/c-wrapped-class))
 
 ;; when an object has the original-object property, 
 ;; then we also know that value of this property is
 ;; an object whose object-ref has been redirected to
-;; use impersonator-prop:instanceof/c-wrapped-classes
+;; use impersonator-prop:instanceof/c-wrapped-class
 (define-values (impersonator-prop:instanceof/c-original-object
                 has-impersonator-prop:instanceof/c-original-object?
                 get-impersonator-prop:instanceof/c-original-object)

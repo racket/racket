@@ -928,6 +928,14 @@
                'pos 'neg)
      3 2 1)
    3)
+
+  (test/spec-passed/result
+   '->i54
+   '((contract (->i (#:one [one any/c] #:two [two any/c] #:three [three any/c]) any)
+               (λ (#:one one #:two two #:three three) (list one two three))
+               'pos 'neg)
+     #:one 1 #:two 2 #:three 3)
+   '(1 2 3))
   
   (test/pos-blame
    '->i-arity1
@@ -1432,4 +1440,22 @@
                  (λ (x y) x)
                  'pos 'neg) 1 2)
       "didn't raise an error")
-   #t))
+   #t)
+
+  (test/spec-passed/result
+   'shortcut-error-message
+   '(with-handlers ([exn:fail?
+                     (λ (x) (define m
+                              (regexp-match #rx"expected: ([^\n]*)\n"
+                                            (exn-message x)))
+                       (if m
+                           (list-ref m 1)
+                           (format "ack regexp didn't match: ~s"
+                                   (exn-message x))))])
+      ((contract (->i ([y () (and/c number? (>/c 1))]) any)
+                  (λ (y) 1)
+                  'pos 'neg)
+        1))
+   "(and/c number? (>/c 1))")
+      
+  )

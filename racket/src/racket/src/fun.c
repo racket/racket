@@ -2909,7 +2909,10 @@ static Scheme_Object *procedure_result_arity(int argc, Scheme_Object *argv[])
 
   /* Struct procedures could be keyword-accepting and that
      requires additional complication; defer for now */
-  if (SAME_TYPE(SCHEME_TYPE(o), scheme_proc_struct_type)) {
+  if (SAME_TYPE(SCHEME_TYPE(o), scheme_proc_struct_type)
+      /* Structs corresponding to reduced-arity procedures are ok, though.
+         Their result arity is just that of the underlying procedure. */
+      && !scheme_is_struct_instance(scheme_reduced_procedure_struct, o)) {
     return scheme_false;
   }
 
@@ -2939,6 +2942,9 @@ static Scheme_Object *procedure_result_arity(int argc, Scheme_Object *argv[])
       return scheme_make_arity(p->minr, p->maxr);
     }
     return scheme_make_integer(1);
+  } else if (SCHEME_STRUCTP(o)
+             && scheme_is_struct_instance(scheme_reduced_procedure_struct, o)) {
+    return procedure_result_arity(1, &((Scheme_Structure *)o)->slots[0]);
   } else if (!SCHEME_PROCP(o)) {
     scheme_wrong_contract("procedure-result-arity", "procedure?", 0, argc, argv);
     return NULL;

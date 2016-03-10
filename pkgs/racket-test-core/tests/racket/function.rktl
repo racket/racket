@@ -110,7 +110,9 @@
 
 (test 1 procedure-result-arity car)
 (test 1 procedure-result-arity list)
+(test 1 procedure-result-arity (procedure-reduce-arity car 1))
 (test (arity-at-least 0) procedure-result-arity values)
+(test (arity-at-least 0) procedure-result-arity (procedure-reduce-arity values 1))
 (test (arity-at-least 0) procedure-result-arity call/cc)
 (let ()
   (struct s (x))
@@ -124,6 +126,13 @@
         (if (= 0 (random 1))
             1
             (values 1 2))))
+(test #f procedure-result-arity
+      (procedure-reduce-arity
+       (λ ()
+         (if (= 0 (random 1))
+             1
+             (values 1 2)))
+       0))
 (err/rt-test (procedure-result-arity 1) exn:fail?)
 (test 1 procedure-result-arity (chaperone-procedure car values))
 (test 1 procedure-result-arity (impersonate-procedure car (λ (x) 1)))

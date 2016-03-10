@@ -137,3 +137,27 @@ As you can see, the macro on the left calls a function with a list of the
 searchable values and a function that encapsulates the body. Every
 expansion is a single function call. In contrast, the macro on the right
 expands to many nested definitions and expressions every time it is used.
+
+@; -----------------------------------------------------------------------------
+@section{Unsafe: Beware}
+
+Racket provides a number of unsafe operations that behave
+like their related, safe variants but only when given valid inputs.
+They differ in that they eschew checking for performance reasons
+and thus behave unpredictably on invalid inputs.
+
+As one example, consider @racket[fx+] and @racket[unsafe-fx+].
+When @racket[fx+] is applied to a non-@racket[fixnum?], it raises
+an error. In contrast, when @racket[unsafe-fx+] is applied to a non-@racket[fixnum?],
+it does not raise an error. Instead it either returns a strange result
+that may violate invariants of the run-time system and may cause
+later operations (such as printing out the value) to crash Racket itself.
+
+Do not use unsafe operations in your programs unless you are writing
+software that builds proofs that the unsafe operations receive only
+valid inputs (e.g., a type system like Typed Racket) or you are building
+an abstraction that always inserts the right checks very close to
+the unsafe operation (e.g., a macro like @racket[for]). And even in these
+situations, avoid unsafe operations unless you have done a careful performance
+analysis to be sure that the performance improvement outweighs
+the risk of using the unsafe operations.

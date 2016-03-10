@@ -1814,4 +1814,29 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([tf (make-temporary-file)])
+  (test tf resolve-path (path->string tf))
+  (unless (eq? 'windows (system-type))
+    (delete-file tf)
+    (make-file-or-directory-link "other.txt" tf)
+    (test (string->path "other.txt") resolve-path tf))
+  (delete-file tf)
+  (case (system-path-convention-type)
+    [(unix)
+     (test (string->path "/testing-root/testing-dir/testing-file")
+           resolve-path
+           "//testing-root/testing-dir/testing-file")
+     (test (string->path "/testing-root/testing-dir/testing-file")
+           resolve-path
+           "//testing-root////testing-dir//testing-file")]
+    [(windows)
+     (test (string->path "C:/testing-root/testing-dir/testing-file")
+           resolve-path
+           "C://testing-root/testing-dir/testing-file")
+     (test (string->path "C:/testing-root/testing-dir\\testing-file")
+           resolve-path
+           "C://testing-root////testing-dir\\\\testing-file")]))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

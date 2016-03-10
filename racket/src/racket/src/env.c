@@ -1425,7 +1425,8 @@ scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
     if (constant && scheme_defining_primitives) {
       ((Scheme_Bucket_With_Flags *)b)->id = builtin_ref_counter++;
       ((Scheme_Bucket_With_Flags *)b)->flags |= (GLOB_HAS_REF_ID | GLOB_IS_CONST | GLOB_STRONG_HOME_LINK);
-    }
+    } else if (constant)
+      ((Scheme_Bucket_With_Flags *)b)->flags |= (GLOB_IS_CONST | GLOB_STRONG_HOME_LINK);
     scheme_set_bucket_home(b, env);
   } else
     scheme_add_to_table(env->syntax, (const char *)sym, obj, constant);

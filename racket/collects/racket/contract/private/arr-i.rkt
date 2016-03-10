@@ -480,31 +480,33 @@ evaluted left-to-right.)
 (define-for-syntax (args/vars->arg-checker result-checkers args rst vars this-param)
   (let ([opts? (ormap arg-optional? args)]
         [this-params (if this-param (list this-param) '())])
+
+    (define arg->var (make-hash))
+    (define kwd-args (filter arg-kwd args))
+    (define non-kwd-args (filter (λ (x) (not (arg-kwd x))) args))
+    
+    (for ([arg (in-list args)]
+          [var (in-vector vars)])
+      (hash-set! arg->var arg var))
+    
+    (define sorted-kwd/arg-pairs 
+      (sort
+       (map (λ (arg) (cons (arg-kwd arg) (hash-ref arg->var arg))) kwd-args)
+       (λ (x y) (keyword<? (syntax-e (car x)) (syntax-e (car y))))))
+    (define keyword-arguments (map cdr sorted-kwd/arg-pairs))
+    (define regular-arguments (map (λ (arg) (hash-ref arg->var arg)) non-kwd-args))
     (cond
       [(and opts? (ormap arg-kwd args))
-       (let* ([arg->var (make-hash)]
-              [kwd-args (filter arg-kwd args)]
-              [non-kwd-args (filter (λ (x) (not (arg-kwd x))) args)])
-         
-         (for ([arg (in-list args)]
-               [var (in-vector vars)])
-           (hash-set! arg->var arg var))
-         
-         (let ([sorted-kwd/arg-pairs 
-                (sort
-                 (map (λ (arg) (cons (arg-kwd arg) (hash-ref arg->var arg))) kwd-args)
-                 (λ (x y) (keyword<? (syntax-e (car x)) (syntax-e (car y)))))])
-           
-           ;; has both optional and keyword args
-           #`(keyword-return/no-unsupplied 
-              #,(if (null? result-checkers) #f (car result-checkers)) 
-              '#,(map car sorted-kwd/arg-pairs)
-              (list #,@(map cdr sorted-kwd/arg-pairs))
-              #,(if rst
-                    #'rest-args
-                    #''())
-              #,@this-params
-              #,@(map (λ (arg) (hash-ref arg->var arg)) non-kwd-args))))]
+       ;; has both optional and keyword args
+       #`(keyword-return/no-unsupplied 
+          #,(if (null? result-checkers) #f (car result-checkers)) 
+          '#,(map car sorted-kwd/arg-pairs)
+          (list #,@keyword-arguments)
+          #,(if rst
+                #'rest-args
+                #''())
+          #,@this-params
+          #,@regular-arguments)]
       [opts?
        ;; has optional args, but no keyword args
        #`(return/no-unsupplied #,(if (null? result-checkers) #f (car result-checkers))
@@ -516,27 +518,17 @@ evaluted left-to-right.)
                                       (all-but-last (vector->list vars))
                                       (vector->list vars)))] 
       [else
-       (let*-values ([(rev-regs rev-kwds)
-                      (for/fold ([regs null]
-                                 [kwds null])
-                        ([arg (in-list args)]
-                         [i (in-naturals)])
-                        (if (arg-kwd arg)
-                            (values regs (cons (vector-ref vars i) kwds))
-                            (values (cons (vector-ref vars i) regs) kwds)))]
-                     [(regular-arguments keyword-arguments)
-                      (values (reverse rev-regs) (reverse rev-kwds))])
-         (cond
-           [(and (null? keyword-arguments) rst)
-            #`(apply values #,@result-checkers #,@this-params #,@regular-arguments rest-args)]
-           [(null? keyword-arguments)
-            #`(values #,@result-checkers #,@this-params #,@regular-arguments)]
-           [rst
-            #`(apply values #,@result-checkers (list #,@keyword-arguments) 
-                     #,@this-params #,@regular-arguments rest-args)]
-           [else
-            #`(values #,@result-checkers (list #,@keyword-arguments) 
-                      #,@this-params #,@regular-arguments)]))])))
+       (cond
+         [(and (null? keyword-arguments) rst)
+          #`(apply values #,@result-checkers #,@this-params #,@regular-arguments rest-args)]
+         [(null? keyword-arguments)
+          #`(values #,@result-checkers #,@this-params #,@regular-arguments)]
+         [rst
+          #`(apply values #,@result-checkers (list #,@keyword-arguments) 
+                   #,@this-params #,@regular-arguments rest-args)]
+         [else
+          #`(values #,@result-checkers (list #,@keyword-arguments) 
+                    #,@this-params #,@regular-arguments)])])))
 
 (define (return/no-unsupplied res-checker rest-args . args)
   (if res-checker
@@ -1098,7 +1090,7 @@ evaluted left-to-right.)
        (if (orig-ctc obj)
            obj
            (raise-predicate-blame-error-failure blame obj neg-party
-                                                (object-name orig-ctc)))]
+                                                (contract-name orig-ctc)))]
       [else
        (define ctc (if chaperone?
                        (coerce-chaperone-contract '->i orig-ctc)

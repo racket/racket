@@ -1485,12 +1485,12 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
   if (modname) {
     val = scheme_module_syntax(modname, env->genv, find_id, SCHEME_INT_VAL(mod_defn_phase));
     if (val && !(flags & SCHEME_NO_CERT_CHECKS))
-      scheme_check_accessible_in_module(genv, in_modidx, 
-					find_id, src_find_id,
-                                        env->insp, rename_insp,
-                                        -2, 0, 
-					NULL, NULL,
-                                        env->genv, NULL, NULL);
+      scheme_check_accessible_in_module_instance(genv,
+                                                 find_id, src_find_id,
+                                                 env->insp, rename_insp,
+                                                 -2, 0,
+                                                 NULL, NULL,
+                                                 env->genv, NULL, NULL);
   } else {
     /* Only try syntax table if there's not an explicit (later)
        variable mapping: */
@@ -1511,12 +1511,12 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
     if (flags & SCHEME_NO_CERT_CHECKS) 
       pos = 0;
     else
-      pos = scheme_check_accessible_in_module(genv, in_modidx, 
-					      find_id, src_find_id, 
-                                              env->insp, rename_insp,
-                                              -1, 1,
-					      _protected, NULL, 
-                                              env->genv, NULL, &mod_constant);
+      pos = scheme_check_accessible_in_module_instance(genv,
+                                                       find_id, src_find_id,
+                                                       env->insp, rename_insp,
+                                                       -1, 1,
+                                                       _protected, NULL,
+                                                       env->genv, NULL, &mod_constant);
     modpos = (int)SCHEME_INT_VAL(pos);
   } else
     modpos = -1;
@@ -1579,8 +1579,17 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       is_constant = 2;
       shape = intern_struct_proc_shape(SCHEME_PROC_SHAPE_MODE(mod_constant));
     } else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type)) {
-      if (_inline_variant)
-        *_inline_variant = mod_constant;
+      if (_inline_variant) {
+        /* In case the inline variant includes references to module
+           variables, we'll need to shift the references: */
+        Scheme_Object *shiftable;
+        shiftable = scheme_make_vector(4, scheme_false);
+        SCHEME_VEC_ELS(shiftable)[0] = mod_constant;
+        SCHEME_VEC_ELS(shiftable)[1] = genv->module->me->src_modidx;
+        SCHEME_VEC_ELS(shiftable)[2] = modidx;
+        SCHEME_VEC_ELS(shiftable)[3] = mod_defn_phase;
+        *_inline_variant = shiftable;
+      }
       is_constant = 2;
       shape = scheme_get_or_check_procedure_shape(mod_constant, NULL);
     } else {

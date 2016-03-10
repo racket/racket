@@ -217,4 +217,71 @@
                 (define/public (baz n) (list foo bar))))
          'pos 'neg)
         baz 1)
- '(0 1)))
+ '(0 1))
+
+(test/pos-blame
+ 'object/c-multiple-wrapping-1
+ '(let ()
+    (define c%
+      (class object%
+        (define/public (m) (void))
+        (define/public (n) (void))
+        (define/public (p) (void))
+        (super-new)))
+
+    (define a/c (object/c [m (-> any/c symbol?)]))
+    (define b/c (object/c [n (-> any/c string?)]))
+    (define c/c (object/c [p (-> any/c vector?)]))
+
+    (define a-c (new c%))
+
+    (define x1 (contract a/c a-c 'pos 'neg))
+    (define x2 (contract b/c x1 'pos 'neg))
+    (define x3 (contract c/c x2 'pos 'neg))
+
+    (send x3 m)))
+(test/pos-blame
+ 'object/c-multiple-wrapping-2
+ '(let ()
+    (define c%
+      (class object%
+        (define/public (m) (void))
+        (define/public (n) (void))
+        (define/public (p) (void))
+        (super-new)))
+
+    (define a/c (object/c [m (-> any/c symbol?)]))
+    (define b/c (object/c [n (-> any/c string?)]))
+    (define c/c (object/c [p (-> any/c vector?)]))
+
+    (define a-c (new c%))
+
+    (define x1 (contract a/c a-c 'pos 'neg))
+    (define x2 (contract b/c x1 'pos 'neg))
+    (define x3 (contract c/c x2 'pos 'neg))
+
+    (send x3 n)))
+(test/pos-blame
+ 'object/c-multiple-wrapping-3
+ '(let ()
+    (define c%
+      (class object%
+        (define/public (m) (void))
+        (define/public (n) (void))
+        (define/public (p) (void))
+        (super-new)))
+
+    (define a/c (object/c [m (-> any/c symbol?)]))
+    (define b/c (object/c [n (-> any/c string?)]))
+    (define c/c (object/c [p (-> any/c vector?)]))
+
+    (define a-c (new c%))
+
+    (define x1 (contract a/c a-c 'pos 'neg))
+    (define x2 (contract b/c x1 'pos 'neg))
+    (define x3 (contract c/c x2 'pos 'neg))
+
+    (send x3 p)))
+
+
+)

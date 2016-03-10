@@ -1339,6 +1339,12 @@ mark_unresolve_info {
   gcMARK2(i->closures, gc);
   gcMARK2(i->module, gc);
   gcMARK2(i->comp_prefix, gc);
+  gcMARK2(i->new_toplevels, gc);
+  gcMARK2(i->from_modidx, gc);
+  gcMARK2(i->to_modidx, gc);
+  gcMARK2(i->opt_env, gc);
+  gcMARK2(i->opt_insp, gc);
+  gcMARK2(i->inline_variants, gc);
   gcMARK2(i->toplevels, gc);
   gcMARK2(i->definitions, gc);
   gcMARK2(i->ref_lifts, gc);
@@ -1409,6 +1415,8 @@ mark_optimize_info {
   gcMARK2(i->next, gc);
   gcMARK2(i->consts, gc);
   gcMARK2(i->cp, gc);
+  gcMARK2(i->env, gc);
+  gcMARK2(i->insp, gc);
   gcMARK2(i->top_level_consts, gc);
   gcMARK2(i->transitive_use_var, gc);
   gcMARK2(i->context, gc);
