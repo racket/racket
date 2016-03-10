@@ -5,12 +5,12 @@
 
 Every syntax object has an associated @deftech{syntax property} list,
 which can be queried or extended with
-@racket[syntax-property]. Properties are not preserved for a
-syntax object in a compiled form that is
-marshaled to a byte string or @filepath{.zo} file, except for a @racket['paren-shape]
-property value of @racket[#\[] or @racket[#\{].
+@racket[syntax-property]. A property is set as @tech{preserved} or not;
+a preserved property is maintained for a syntax object in a compiled form that is
+marshaled to a byte string or @filepath{.zo} file, and other properties
+are discarded when marshaling.
 
-In @racket[read-syntax], the reader attaches a @racket['paren-shape]
+In @racket[read-syntax], the reader attaches a preserved @racket['paren-shape]
 property to any pair or vector syntax object generated from parsing a
 pair @litchar{[} and @litchar{]} or @litchar["{"] and
 @litchar["}"]; the property value is @racket[#\[] in the former case,
@@ -23,7 +23,8 @@ transformer may have associated properties. The two sets of properties
 are merged by the syntax expander: each property in the original and
 not present in the result is copied to the result, and the values of
 properties present in both are combined with @racket[cons] (result
-value first, original value second).
+value first, original value second) and the @racket[cons]ed value is
+@tech{preserved} if either of the values were preserved.
 
 Before performing the merge, however, the syntax expander
 automatically adds a property to the original syntax object using the
@@ -33,11 +34,12 @@ before the merge, the identifier that triggered the macro expansion
 (as syntax) is @racket[cons]ed onto the @racket['origin]
 property so far.  The @racket['origin] property thus records (in
 reverse order) the sequence of macro expansions that produced an
-expanded expression. Usually, the @racket['origin] value is an
-immutable list of identifiers. However, a transformer might return
+expanded expression. Usually, the @racket['origin] value is a
+list of identifiers. However, a transformer might return
 syntax that has already been expanded, in which case an
 @racket['origin] list can contain other lists after a merge. The
 @racket[syntax-track-origin] procedure implements this tracking.
+The @racket['origin] property is added as non-@tech{preserved}.
 
 Besides @racket['origin] tracking for general macro expansion,
 Racket adds properties to expanded syntax (often using
@@ -104,17 +106,35 @@ information on properties and byte codes.
 
 @;------------------------------------------------------------------------
 
-@defproc*[([(syntax-property [stx syntax?] [key any/c] [v any/c]) syntax?]
+@defproc*[([(syntax-property [stx syntax?]
+                             [key (if preserved? (and/c symbol? symbol-interned?) any/c)]
+                             [v any/c]
+                             [preserved? any/c (eq? key 'paren-shape)])
+             syntax?]
            [(syntax-property [stx syntax?] [key any/c]) any])]{
 
-The three-argument form extends @racket[stx] by associating an
-arbitrary property value @racket[v] with the key @racket[key]; the
+The three- or four-argument form extends @racket[stx] by associating
+an arbitrary property value @racket[v] with the key @racket[key]; the
 result is a new syntax object with the association (while @racket[stx]
-itself is unchanged).
+itself is unchanged). The property is added as @tech{preserved} if
+@racket[preserved?] is true, in which case @racket[key] must be an
+@tech{interned} symbol, and @racket[v] should be a value can itself
+be saved in marshaled bytecode.
 
 The two-argument form returns an arbitrary property value associated
 to @racket[stx] with the key @racket[key], or @racket[#f] if no value
-is associated to @racket[stx] for @racket[key].}
+is associated to @racket[stx] for @racket[key].
+
+@history[#:changed "6.4.0.14" @elem{Added the @racket[preserved?] argument.}]}
+
+
+@defproc[(syntax-property-preserved? [stx syntax?] [key (and/c symbol? symbol-interned?)])
+         boolean?]{
+
+Returns @racket[#t] if @racket[stx] has a @tech{preserved} property
+value for @racket[key], @racket[#f] otherwise.
+
+@history[#:added "6.4.0.14"]}
 
 
 @defproc[(syntax-property-symbol-keys [stx syntax?]) list?]{

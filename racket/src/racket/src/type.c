@@ -742,6 +742,7 @@ void scheme_register_traversers(void)
   GC_REG_TRAV(scheme_struct_proc_shape_type, small_atomic_obj);
 
   GC_REG_TRAV(scheme_environment_variables_type, small_object);
+  GC_REG_TRAV(scheme_syntax_property_preserve_type, small_object);
 
   GC_REG_TRAV(scheme_plumber_handle_type, twoptr_obj);
 }

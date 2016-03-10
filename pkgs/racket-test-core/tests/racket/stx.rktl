@@ -2296,4 +2296,50 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(let ([zo-bounce
+       (lambda (stx)
+         (define o (open-output-bytes))
+         (write (compile #`(quote-syntax #,stx)) o)
+         (eval
+          (parameterize ([read-accept-compiled #t])
+            (read (open-input-bytes (get-output-bytes o))))))])
+  (test #\{ syntax-property (zo-bounce #'{0}) 'paren-shape)
+  (test #\[ syntax-property (zo-bounce #'[0]) 'paren-shape)
+  (test #f syntax-property (zo-bounce (syntax-property #'[0] 'something-else 1))
+        'something-else)
+  (test 1 syntax-property (zo-bounce (syntax-property #'[0] 'something-else 1 #t))
+        'something-else)
+  
+  (define s0 (syntax-property
+              (syntax-property
+               (syntax-property #'[0]
+                                'something-else 1 #t)
+               'something-not-saved 2)
+              'a-third-thing 3 #t))
+  (define s (zo-bounce s0))
+  (test #\[ syntax-property s 'paren-shape)
+  (test #\[ syntax-property s0 'paren-shape)
+  (test #t syntax-property-preserved? s 'paren-shape)
+  (test #t syntax-property-preserved? s0 'paren-shape)
+  
+  (test 1 syntax-property s 'something-else)
+  (test 1 syntax-property s0 'something-else)
+  (test #t syntax-property-preserved? s 'something-else)
+  (test #t syntax-property-preserved? s0 'something-else)
+  
+  (test #f syntax-property s 'something-not-saved)
+  (test 2 syntax-property s0 'something-not-saved)
+  (test #f syntax-property-preserved? s 'something-not-saved)
+  (test #f syntax-property-preserved? s0 'something-not-saved)
+
+  (test 3 syntax-property s 'a-third-thing)
+  (test 3 syntax-property s0 'a-third-thing)
+  (test #t syntax-property-preserved? s 'a-third-thing)
+  (test #t syntax-property-preserved? s0 'a-third-thing)
+  
+  ;; 'paren-shape has a special default:
+  (test #t syntax-property-preserved? (syntax-property #'#f 'paren-shape #\() 'paren-shape))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)

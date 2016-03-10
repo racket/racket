@@ -75,7 +75,7 @@
                                          #,(syntax-position e)
                                          #,(syntax-span e)))])
               (if (syntax-property e 'paren-shape)
-                  #`(syntax-property #,s 'paren-shape '#,(syntax-property e 'paren-shape))
+                  #`(syntax-property #,s 'paren-shape '#,(syntax-property e 'paren-shape) #t)
                   s)))]
        [else e])))
   (syntax-case stx ()

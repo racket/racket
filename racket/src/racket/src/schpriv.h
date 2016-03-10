@@ -608,6 +608,8 @@ extern Scheme_Object *scheme_recur_symbol, *scheme_display_symbol, *scheme_write
 extern Scheme_Object *scheme_none_symbol, *scheme_line_symbol, *scheme_block_symbol;
 
 extern Scheme_Object *scheme_paren_shape_symbol;
+extern Scheme_Object *scheme_paren_shape_preserve_square;
+extern Scheme_Object *scheme_paren_shape_preserve_curly;
 extern Scheme_Hash_Tree *scheme_source_stx_props;
 
 extern Scheme_Object *scheme_stack_dump_key;
@@ -1417,6 +1419,10 @@ char *scheme_stx_describe_context(Scheme_Object *stx, Scheme_Object *phase, int 
 Scheme_Object *scheme_stx_property(Scheme_Object *_stx,
 				   Scheme_Object *key,
 				   Scheme_Object *val);
+Scheme_Object *scheme_stx_property2(Scheme_Object *_stx,
+                                    Scheme_Object *key,
+                                    Scheme_Object *val,
+                                    int preserve);
 
 int scheme_stx_list_length(Scheme_Object *list);
 int scheme_stx_proper_list_length(Scheme_Object *list);
