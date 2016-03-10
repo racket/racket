@@ -3486,6 +3486,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, i
                                                  Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
                                                  int fuel);
 
+Scheme_Object *scheme_intern_struct_proc_shape(int shape);
 intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *sinfo);
 Scheme_Object *scheme_make_struct_proc_shape(intptr_t k);
 #define STRUCT_PROC_SHAPE_STRUCT  0
@@ -3905,10 +3906,10 @@ Scheme_Object *scheme_check_accessible_in_module_instance(Scheme_Env *env,
                                                           int *_protected, int *_unexported, 
                                                           Scheme_Env *from_env, int *_would_complain,
                                                           Scheme_Object **_is_constant);
-int scheme_check_accessible_in_module_name(Scheme_Object *modidx, intptr_t mod_phase, Scheme_Env *env,
-                                           Scheme_Object *symbol, int position,
-                                           Scheme_Object *current_insp, Scheme_Object *binding_insp,
-                                           Scheme_Object **_is_constant);
+Scheme_Object *scheme_check_accessible_in_module_name(Scheme_Object *modidx, intptr_t mod_phase, Scheme_Env *env,
+                                                      Scheme_Object *symbol, int position,
+                                                      Scheme_Object *current_insp, Scheme_Object *binding_insp,
+                                                      Scheme_Object **_is_constant);
 Scheme_Object *scheme_module_syntax(Scheme_Object *modname, Scheme_Env *env, Scheme_Object *name, int mod_phase);
 
 Scheme_Object *scheme_modidx_shift(Scheme_Object *modidx,

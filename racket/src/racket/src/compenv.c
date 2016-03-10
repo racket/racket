@@ -1128,7 +1128,8 @@ static void check_taint(Scheme_Object *find_id)
                         "cannot use identifier tainted by macro transformation");
 }
 
-static Scheme_Object *intern_struct_proc_shape(int shape) {
+Scheme_Object *scheme_intern_struct_proc_shape(int shape)
+{
   char buf[20];
   sprintf(buf, "struct%d", shape);
   return scheme_intern_symbol(buf);
@@ -1577,7 +1578,7 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
       if (_inline_variant)
         *_inline_variant = mod_constant;
       is_constant = 2;
-      shape = intern_struct_proc_shape(SCHEME_PROC_SHAPE_MODE(mod_constant));
+      shape = scheme_intern_struct_proc_shape(SCHEME_PROC_SHAPE_MODE(mod_constant));
     } else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type)) {
       if (_inline_variant) {
         /* In case the inline variant includes references to module

@@ -4824,13 +4824,13 @@ Scheme_Object *scheme_check_accessible_in_module_instance(Scheme_Env *env,
                                     _is_constant);
 }
 
-int scheme_check_accessible_in_module_name(Scheme_Object *modidx, intptr_t mod_phase, Scheme_Env *env,
-                                           Scheme_Object *symbol, int position,
-                                           Scheme_Object *current_insp, Scheme_Object *binding_insp,
-                                           Scheme_Object **_is_constant)
+Scheme_Object *scheme_check_accessible_in_module_name(Scheme_Object *modidx, intptr_t mod_phase, Scheme_Env *env,
+                                                      Scheme_Object *symbol, int position,
+                                                      Scheme_Object *current_insp, Scheme_Object *binding_insp,
+                                                      Scheme_Object **_is_constant)
 {
   Scheme_Module *module;
-  Scheme_Object *modname;
+  Scheme_Object *modname, *pos;
   int would_complain = 0;
 
   modname = scheme_module_resolve(modidx, 0);
@@ -4839,16 +4839,18 @@ int scheme_check_accessible_in_module_name(Scheme_Object *modidx, intptr_t mod_p
   if (!module)
     return 0;
 
-  (void)check_accessible_in_module(module, mod_phase, scheme_make_inspector(module->insp),
+  pos = check_accessible_in_module(module, mod_phase, scheme_make_inspector(module->insp),
                                    symbol, NULL,
                                    current_insp, binding_insp,
-                                   position, 0,
+                                   position, 1,
                                    NULL, NULL,
                                    NULL,
                                    &would_complain,
                                    _is_constant);
 
-  return !would_complain;
+  return (would_complain
+          ? NULL
+          : (pos ? pos : scheme_make_integer(position)));
 }
 
 

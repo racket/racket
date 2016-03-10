@@ -3131,7 +3131,7 @@ static Scheme_Object *unresolve_toplevel(Scheme_Object *rdata, Unresolve_Info *u
       /* Cannot refer to a lift across a module boundary. */
       return_NULL;
     } else {
-      Scheme_Object *hv, *modidx, *mod_constant;
+      Scheme_Object *hv, *modidx, *mod_constant, *sym, *npos, *shape;
       int flags, is_constant;
       int sym_pos;
       intptr_t mod_defn_phase;
@@ -3162,29 +3162,39 @@ static Scheme_Object *unresolve_toplevel(Scheme_Object *rdata, Unresolve_Info *u
         mod_defn_phase = ui->toplevel_ref_phase;
         modidx = ui->to_modidx;
         sym_pos = -1;
-        hv = scheme_hash_module_variable(ui->opt_env, modidx,
-                                         v, ui->opt_insp,
-                                         sym_pos, mod_defn_phase, is_constant,
-                                         NULL);
+        sym = v;
       } else {
         Module_Variable *mv = (Module_Variable *)v;
         MZ_ASSERT(SAME_TYPE(SCHEME_TYPE(v), scheme_module_variable_type));
         mod_defn_phase = mv->mod_phase;
         modidx = scheme_modidx_shift(mv->modidx, ui->from_modidx, ui->to_modidx);
-        hv = scheme_hash_module_variable(ui->opt_env, modidx,
-                                         mv->sym, ui->opt_insp,
-                                         mv->pos, mv->mod_phase, is_constant,
-                                         mv->shape);
-        v = mv->sym;
+        sym = mv->sym;
         sym_pos = mv->pos;
       }
 
       mod_constant = NULL;
-      if (!scheme_check_accessible_in_module_name(modidx, mod_defn_phase, ui->opt_env,
-                                                  v, sym_pos,
-                                                  ui->opt_insp, NULL,
-                                                  &mod_constant))
+      npos = scheme_check_accessible_in_module_name(modidx, mod_defn_phase, ui->opt_env,
+                                                    sym, sym_pos,
+                                                    ui->opt_insp, NULL,
+                                                    &mod_constant);
+      if (!npos)
         return_NULL;
+
+      if (sym_pos < 0)
+        sym_pos = SCHEME_INT_VAL(npos);
+
+      shape = NULL;
+      if (mod_constant) {
+        if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_struct_proc_shape_type))
+          shape = scheme_intern_struct_proc_shape(SCHEME_PROC_SHAPE_MODE(mod_constant));
+        else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type))
+          shape = scheme_get_or_check_procedure_shape(mod_constant, NULL);
+      }
+      
+      hv = scheme_hash_module_variable(ui->opt_env, modidx,
+                                       sym, ui->opt_insp,
+                                       sym_pos, mod_defn_phase, is_constant,
+                                       shape);
 
       /* Check whether this variable is already known in the optimzation context: */
       v = scheme_hash_get(ui->comp_prefix->toplevels, hv);
