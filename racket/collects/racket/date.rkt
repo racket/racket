@@ -18,7 +18,9 @@
                 . ->* .
                 exact-integer?)]
  [date->julian/scalinger (date? . -> . exact-integer?)]
- [julian/scalinger->string (exact-integer? . -> . string?)])
+ [date->julian/scaliger (date? . -> . exact-integer?)]
+ [julian/scalinger->string (exact-integer? . -> . string?)]
+ [julian/scaliger->string (exact-integer? . -> . string?)])
 
 (define (current-date)
   (seconds->date (* #i1/1000 (current-inexact-milliseconds))))
@@ -348,6 +350,8 @@
        gregorian-adjustment))
   final-date)
 
+(define date->julian/scaliger date->julian/scalinger)
+
 ;; julian/scalinger->string :
 ;; number [julian-day] -> string [julian-day-format]
 
@@ -372,3 +376,5 @@
                                              (cadr reversed-digits)
                                              (car reversed-digits)))
                                 (loop (cdr (cdr (cdr reversed-digits))))))))))))
+
+(define julian/scaliger->string julian/scalinger->string)
