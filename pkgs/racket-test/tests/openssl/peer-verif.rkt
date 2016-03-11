@@ -62,10 +62,10 @@
            (check "Server: Verified ~v~n" (ssl-peer-verified? out) valid?)
            (check "Server: Verified Peer Subject Name ~v~n" (ssl-peer-subject-name in)
                   (and valid?
-                       #"/CN=testclient.okcomps.com/ST=OH/C=US/emailAddress=root@okcomps.com/O=OK Computers LLC/OU=IT"))
+                       #"/C=US/ST=Racketa/O=Testing Examples/OU=Testing/CN=client.example.com/emailAddress=client@example.com"))
            (check "Server: Verified Peer Issuer Name ~v~n" (ssl-peer-issuer-name in)
                   (and valid?
-                       #"/CN=okcomps.com/ST=OH/C=US/emailAddress=root@okcomps.com/O=OK Computers LLC/OU=IT Department"))
+                       #"/C=US/ST=Racketa/L=Racketville/O=Testing Examples/OU=Testing/CN=example.com/emailAddress=ca@example.com"))
            (ssl-close ssl-listener)
            (check "Server: From Client: ~a~n" (read-line in) "yay the connection was made")
            (close-input-port in)
@@ -83,7 +83,6 @@
     (ssl-load-verify-root-certificates! ssl-client-context cacert)
     (ssl-set-verify! ssl-client-context #t))
 
-
   (let-values ([(in out) (ssl-connect "127.0.0.1"
                                       55000
                                       ssl-client-context)])
@@ -96,9 +95,9 @@
     (check "Client: Verified ~v~n" (ssl-peer-verified? in) valid?)
     (check "Client: Verified ~v~n" (ssl-peer-verified? out) valid?)
     (check "Client: Verified Peer Subject Name ~v~n" (ssl-peer-subject-name in)
-           #"/CN=test.okcomps.com/ST=OH/C=US/emailAddress=root@okcomps.com/O=OK Computers LLC/OU=IT")
+           #"/C=US/ST=Racketa/O=Testing Examples/OU=Testing/CN=server.example.com/emailAddress=server@example.com")
     (check "Client: Verified Peer Issuer Name ~v~n" (ssl-peer-issuer-name in)
-           #"/CN=okcomps.com/ST=OH/C=US/emailAddress=root@okcomps.com/O=OK Computers LLC/OU=IT Department")
+           #"/C=US/ST=Racketa/L=Racketville/O=Testing Examples/OU=Testing/CN=example.com/emailAddress=ca@example.com")
     
     (write-string (format "yay the connection was made~n") out)
     (close-input-port in)
