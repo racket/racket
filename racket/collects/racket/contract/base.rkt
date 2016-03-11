@@ -141,6 +141,8 @@
  contract-val-first-projection
  get/build-late-neg-projection
  get/build-val-first-projection
+
+ suggest/c
  
  ;; not documented.... (ie unintentional export)
  n->th)
@@ -152,3 +154,4 @@
 ;; the argument is simply the value to return.
 (define failure-result/c
   (if/c procedure? (-> any) any/c))
+

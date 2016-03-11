@@ -49,7 +49,9 @@
          if/c
 
          pairwise-stronger-contracts?
-         check-two-args)
+         check-two-args
+
+         suggest/c)
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()
@@ -1012,3 +1014,26 @@
        (and (contract-struct-stronger? (car c1s) (car c2s))
             (loop (cdr c1s) (cdr c2s)))]
       [else #f])))
+
+(define (suggest/c _ctc field message)
+  (define ctc (coerce-contract 'suggest/c _ctc))
+  (unless (string? field)
+    (raise-argument-error 'suggest/c
+                          "string?"
+                          1 _ctc field message))
+  (unless (string? message)
+    (raise-argument-error 'suggest/c
+                          "string?"
+                          2 _ctc field message))
+  (define ctc-lnp (contract-late-neg-projection ctc))
+  (define constructor
+    (cond
+      [(flat-contract? ctc) make-flat-contract]
+      [(chaperone-contract? ctc) make-chaperone-contract]
+      [else make-contract]))
+  (constructor
+   #:name (contract-name ctc)
+   #:first-order (contract-first-order ctc)
+   #:late-neg-projection (λ (b) (ctc-lnp (blame-add-extra-field b field message)))
+   #:stronger (λ (this that) (contract-stronger? ctc that))
+   #:list-contract? (list-contract? ctc)))

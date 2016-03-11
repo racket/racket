@@ -984,6 +984,25 @@ This function is a holdover from before @tech{flat contracts} could be used
 directly as predicates. It exists today for backwards compatibility.
 }
 
+@defproc[(suggest/c [c contract?]
+                    [field string?]
+                    [message string?]) contract?]{
+ Returns a contract that behaves like @racket[c], except
+ that it adds an extra line to the error message on a contract
+ violation.
+
+ The @racket[field] and @racket[message] strings are added
+ following the guidelines in
+ @secref["err-msg-conventions"].
+
+ @examples[#:eval (contract-eval) #:once
+           (define allow-calls? #f)
+           (define/contract (f)
+             (suggest/c (->* () #:pre allow-calls? any)
+                        "suggestion" "maybe you should set! allow-calls? to #t")
+             5)
+           (eval:error (f))]
+}
 
 @; ------------------------------------------------------------------------
 

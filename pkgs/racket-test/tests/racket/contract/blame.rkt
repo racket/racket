@@ -283,4 +283,16 @@
         (define-struct/contract thing ([stuff flat-blame-ok/c]))
         (thing-stuff (thing 5)))))
 
+  (test/spec-passed/result
+   'suggest/c1
+   '(with-handlers ([exn:fail?
+                     (λ (x)
+                       (define m (regexp-match #rx"suggestion:[^\n]*\n"
+                                               (exn-message x)))
+                       (and m (car m)))])
+      (contract (suggest/c zero? "suggestion" "try zero?")
+                1
+                'pos 'neg))
+   "suggestion: try zero?\n")
+
   )

@@ -19,6 +19,7 @@
          
          blame-add-missing-party
          blame-missing-party?
+         blame-add-extra-field
          
          raise-blame-error
          current-blame-format
@@ -53,7 +54,8 @@
 ;; is still missing and it is #f when the missing party
 ;; has been filled in (or if it was filled in from the start)
 (define-struct blame
-  [source value build-name positive negative original? context top-known? important missing-party?]
+  [source value build-name positive negative original? context top-known? important missing-party?
+          extra-fields]
   #:property prop:equal+hash
   (list blame=? blame-hash blame-hash))
 
@@ -80,7 +82,8 @@
             '()
             #t 
             #f
-            (not negative)))])
+            (not negative)
+            '()))])
     make-blame))
 
 ;; s : (or/c string? #f)
@@ -183,7 +186,7 @@
   
   (raise
    (make-exn:fail:contract:blame
-    ((current-blame-format) 
+    ((current-blame-format)
      blame x 
      (apply format (blame-fmt->-string blame fmt) args))
     (current-continuation-marks)
@@ -331,6 +334,8 @@
   
   (define custom-message-appears-to-start-with-fields?
     (regexp-match? #rx"^[^\n]*:" custom-message))
+
+  (define extra-fields (blame-extra-fields blme))
   
   (combine-lines
    (if custom-message-appears-to-start-with-fields?
@@ -340,6 +345,7 @@
                "  ~a"
                " ~a")
            custom-message)
+   extra-fields
    context-lines
    (if context-lines
        contract-line
@@ -352,16 +358,35 @@
    "   (assuming the contract is correct)"
    at-line))
 
-;; combine-lines : (->* #:rest (listof (or/c string? #f))) string?)
+(define (blame-add-extra-field b name field)
+  (unless (blame? b)
+    (raise-argument-error 'blame-add-extra-field
+                          "blame?"
+                          0 b name field))
+  (unless (string? name)
+    (raise-argument-error 'blame-add-extra-field
+                          "string?"
+                          1 b name field))
+  (unless (string? field)
+    (raise-argument-error 'blame-add-extra-field
+                          "string?"
+                          2 b name field))
+  (struct-copy
+   blame b
+   [extra-fields (cons (format "  ~a: ~a" name field)
+                       (blame-extra-fields b))]))
+  
+;; combine-lines : (-> (listof (or/c string? #f))) string?)
 ;; combines each of 'lines' into a single message, dropping #fs,
 ;; and otherwise guaranteeing that each string is on its own line,
-;; with no ending newline.
+;; with no ending newline. (Note that the argument contract is
+;; more restrictive than the function actually requires)
 (define (combine-lines . lines)
   (regexp-replace
    #rx"\n$"
    (apply 
     string-append
-    (for/list ([line (in-list lines)]
+    (for/list ([line (in-list (flatten lines))]
                #:when (string? line))
       (if (regexp-match #rx"\n$" line)
           line
