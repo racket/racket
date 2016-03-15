@@ -5586,7 +5586,7 @@ static int is_liftable_prim(Scheme_Object *v, int or_escape)
 
 int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fuel, int as_rator, int or_escape)
   /* Can we lift `o` out of a `letrec` to a wrapping `let`? Refences
-     to `exclude_vars` are now allowed, since those are the LHS. */
+     to `exclude_vars` are not allowed, since those are the LHS. */
 {
   Scheme_Type t = SCHEME_TYPE(o);
 
@@ -5680,31 +5680,30 @@ int scheme_ir_propagate_ok(Scheme_Object *value, Optimize_Info *info)
     sz = lambda_body_size_plus_info((Scheme_Lambda *)value, 1, info, NULL);
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
-   else {
-     Scheme_Lambda *lam = (Scheme_Lambda *)value;
-     if (sz < 0)
-       scheme_log(info->logger,
-		  SCHEME_LOG_DEBUG,
-		  0,
-		  /* contains non-copyable body elements that prevent inlining */
-		  "non-copyable %s size: %d threshold: %d#<separator>%s",
-		  scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
-		  sz,
-		  0, /* no sensible threshold here */
-		  scheme_optimize_context_to_string(info->context));
-     else
-       scheme_log(info->logger,
-		  SCHEME_LOG_DEBUG,
-		  0,
-		  /* too large to be an inlining candidate */
-		  "too-large %s size: %d threshold: %d#<separator>%s",
-		  scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
-		  sz,
-		  0, /* no sensible threshold here */
-		  scheme_optimize_context_to_string(info->context));
-     return 0;
-   }
-
+    else {
+      Scheme_Lambda *lam = (Scheme_Lambda *)value;
+      if (sz < 0)
+        scheme_log(info->logger,
+                   SCHEME_LOG_DEBUG,
+                   0,
+                   /* contains non-copyable body elements that prevent inlining */
+                   "non-copyable %s size: %d threshold: %d#<separator>%s",
+                   scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
+                   sz,
+                   0, /* no sensible threshold here */
+                   scheme_optimize_context_to_string(info->context));
+      else
+        scheme_log(info->logger,
+                   SCHEME_LOG_DEBUG,
+                   0,
+                   /* too large to be an inlining candidate */
+                   "too-large %s size: %d threshold: %d#<separator>%s",
+                   scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
+                   sz,
+                   0, /* no sensible threshold here */
+                   scheme_optimize_context_to_string(info->context));
+      return 0;
+    }
   }
 
   if (SAME_TYPE(scheme_case_lambda_sequence_type, SCHEME_TYPE(value))) {
@@ -6309,12 +6308,12 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     int try_again;
     do {
       try_again = 0;
-      /* (let ([x (let~ ([y M]) N)]) P) => (let~ ([y M]) (let ([x N]) P))
+      /* (let ([x (let ([y M]) N)]) P) => (let ([y M]) (let ([x N]) P))
          or (let ([x (begin M ... N)]) P) => (begin M ... (let ([x N]) P)) */
       if (head->num_clauses == 1) {
         irlv = (Scheme_IR_Let_Value *)head->body; /* ([x ...]) */
         if (SAME_TYPE(SCHEME_TYPE(irlv->value), scheme_ir_let_header_type)) {
-          Scheme_IR_Let_Header *lh = (Scheme_IR_Let_Header *)irlv->value; /* (let~ ([y ...]) ...) */
+          Scheme_IR_Let_Header *lh = (Scheme_IR_Let_Header *)irlv->value; /* (let ([y ...]) ...) */
 
           if (!lh->num_clauses) {
             irlv->value = lh->body;

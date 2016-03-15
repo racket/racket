@@ -4497,10 +4497,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
 
   DO_CHECK_FOR_BREAK(scheme_current_thread, ;);
 
-#if 1
-  if (!SCHEME_STXP(form))
-    scheme_signal_error("internal error: not syntax");
-#endif
+  MZ_ASSERT(SCHEME_STXP(form));
 
   if (rec[drec].comp) {
     scheme_default_compile_rec(rec, drec);

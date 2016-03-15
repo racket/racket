@@ -1697,14 +1697,7 @@ resolve_lambda(Scheme_Object *_lam, Resolve_Info *info,
       can_lift = 0;
   }
 
-  /* We have to perform a small bit of constant propagation here.
-     Procedures closed only over top-level bindings are lifted during
-     this pass. Some of the captured bindings from this phase may
-     refer to a lifted procedure. In that case, we can replace the
-     lexical reference with a direct reference to the top-level
-     binding, which means that we can drop the binding from the
-     closure. */
-
+  /* Check possibility of unboxing arguments: */
   closure_size = lam->closure_size;
   if (cl->arg_types) {
     int at_least_one = 0;
