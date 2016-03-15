@@ -1,6 +1,10 @@
 #ifndef MZ_LONGDOUBLE_H
 #define MZ_LONGDOUBLE_H
 
+/* Functions like `extfl->floating-point-bytes` assume that the
+   content of a `long double' occupies the first 10 bytes: */
+#define LONG_DOUBLE_BYTE_LEN 10
+
 #ifndef MZ_LONG_DOUBLE_API_IS_EXTERNAL
 # if defined(__MINGW32__) && defined(MZ_LONG_DOUBLE)
 #  define LONG_DOUBLE_STRING_OP_API_IS_EXTERNAL

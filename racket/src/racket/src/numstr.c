@@ -2620,10 +2620,6 @@ static Scheme_Object *real_to_bytes (int argc, Scheme_Object *argv[])
   return s;
 }
 
-/* Assume that the content of a `long double' occupies the first 10
-   bytes: */
-#define LONG_DOUBLE_BYTE_LEN 10
-
 static Scheme_Object *bytes_to_long_double (int argc, Scheme_Object *argv[])
 {
 #ifdef MZ_LONG_DOUBLE

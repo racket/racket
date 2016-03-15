@@ -1235,6 +1235,11 @@ typedef struct Hash_Info {
 static uintptr_t equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Info *hi);
 static uintptr_t equal_hash_key2(Scheme_Object *o, Hash_Info *hi);
 
+/* Based on Bob Jenkins's one-at-a-time hash function at
+   http://www.burtleburtle.net/bob/hash/doobs.html: */
+#define MZ_MIX(k) (k += (k << 10), k ^= (k >> 6))
+
+
 static Scheme_Object *hash_recur(int argc, Scheme_Object **argv, Scheme_Object *prim)
 {
   intptr_t v;
@@ -1291,93 +1296,70 @@ static uintptr_t overflow_equal_hash_key(Scheme_Object *o, uintptr_t k, Hash_Inf
 XFORM_NONGCING static uintptr_t dbl_hash_val(double d) 
   XFORM_SKIP_PROC
 {
-  int e;
-  
-  if (MZ_IS_NAN(d)) {
-    d = 0.0;
-    e = 1000;
-  } else if (MZ_IS_POS_INFINITY(d)) {
-    d = 0.5;
-    e = 1000;
-  } else if (MZ_IS_NEG_INFINITY(d)) {
-    d = -0.5;
-    e = 1000;
-  } else if (!d && scheme_minus_zero_p(d)) {
-    d = 0;
-    e = 1000;
-  } else {
-    /* frexp should not be used on inf or nan: */
-    d = frexp(d, &e);
-  }
+  const umzlonglong m = (umzlonglong)0x880355f21e6d1965;
+  umzlonglong h = (16 * m);
+  umzlonglong v;
 
-  return ((uintptr_t)(intptr_t)(d * (1 << 30))) + (uintptr_t)e;
+  if (MZ_IS_NAN(d))
+    return 0;
+
+  MZ_ASSERT(sizeof(d) == sizeof(v));
+
+  memcpy(&v, &d, sizeof(umzlonglong));
+
+  /* based one https://code.google.com/archive/p/fast-hash/ */
+#define MZ_MIX_FOR_DBL(h) \
+  (h) ^= (h) >> 23;       \
+  (h) *= (umzlonglong)0x2127599bf4325c37; \
+  (h) ^= (h) >> 47;
+
+  MZ_MIX_FOR_DBL(v);
+  h ^= v;
+  h *= m;
+
+  MZ_MIX_FOR_DBL(h);
+  
+  return (uintptr_t)h;
 }
 
 XFORM_NONGCING static uintptr_t dbl_hash2_val(double d)  
   XFORM_SKIP_PROC
 {
-  int e;
-  
-  if (MZ_IS_NAN(d)
-      || MZ_IS_POS_INFINITY(d)
-      || MZ_IS_NEG_INFINITY(d)) {
-    e = 1;
-  } else {
-    /* frexp should not be used on inf or nan: */
-    d = frexp(d, &e);
-  }
-  return to_unsigned_hash(e);
+  return dbl_hash_val(d) >> (sizeof(uintptr_t) / 2);
 }
 
 #ifdef MZ_LONG_DOUBLE
 XFORM_NONGCING static uintptr_t long_dbl_hash_val(long_double d) 
   XFORM_SKIP_PROC
 {
-  int e;
-  
-  if (MZ_IS_LONG_NAN(d)) {
-    d = get_long_double_zero();
-    e = 1000;
-  } else if (MZ_IS_LONG_POS_INFINITY(d)) {
-    d = get_long_double_one_half();
-    e = 1000;
-  } else if (MZ_IS_LONG_NEG_INFINITY(d)) {
-    d = long_double_neg(get_long_double_one_half());
-    e = 1000;
-  } else if (long_double_eqv(d, get_long_double_zero()) && scheme_long_minus_zero_p(d)) {
-    d = get_long_double_zero();
-    e = 1000;
-  } else {
-    /* frexpl should not be used on inf or nan: */
-    d = long_double_frexp(d, &e);
+  char s[LONG_DOUBLE_BYTE_LEN];
+  int i;
+  uintptr_t k;
+
+  if (MZ_IS_LONG_NAN(d))
+    return 0;
+
+  /* Like `extfl->floating-point-bytes`, we assume that the
+     content of a `long double' occupies the first 10 bytes: */
+  memcpy(s, &d, LONG_DOUBLE_BYTE_LEN);
+
+  k = 0;
+  for (i = LONG_DOUBLE_BYTE_LEN; i--; ) {
+    k += s[i];
+    MZ_MIX(k);
   }
 
-  return uintptr_from_long_double(long_double_mult_i(d, 1<<30)) + e;
-  /*return ((uintptr_t)(d * (1 << 30))) + e;*/
+  return k;  
 }
 
 XFORM_NONGCING static uintptr_t long_dbl_hash2_val(long_double d)  
   XFORM_SKIP_PROC
 {
-  int e;
-  
-  if (MZ_IS_LONG_NAN(d)
-      || MZ_IS_LONG_POS_INFINITY(d)
-      || MZ_IS_LONG_NEG_INFINITY(d)) {
-    e = 1;
-  } else {
-    /* frexp should not be used on inf or nan: */
-    d = long_double_frexp(d, &e);
-  }
-  return to_unsigned_hash(e);
+  return long_dbl_hash_val(d) >> (sizeof(uintptr_t) / 2);
 }
 #endif
 
 #define OVERFLOW_HASH() overflow_equal_hash_key(o, k - t, hi)
-
-/* Based on Bob Jenkins's one-at-a-time hash function at
-   http://www.burtleburtle.net/bob/hash/doobs.html: */
-#define MZ_MIX(k) (k += (k << 10), k ^= (k >> 6))
 
 XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t k, int *_done)
 /* must cover eqv hash keys that are just eq hash keys */
