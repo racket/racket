@@ -8,7 +8,8 @@
                      racket/file
                      compiler/cm
                      compiler/cm-accomplice
-                     setup/parallel-build))
+                     setup/parallel-build
+                     compiler/compilation-path))
 
 
 @(define cm-eval (make-base-eval))
@@ -708,14 +709,14 @@ of @racket[modes] and @racket[roots].}
                               [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)])
          path?]{
 
-The same as @racket[get-compilation-dir+home], but returning only the first result.}
+The same as @racket[get-compilation-dir+name], but returning only the first result.}
 
 @defproc[(get-compilation-bytecode-file [path path-string?]
                                         [#:modes modes (non-empty-listof (and/c path-string? relative-path?)) (use-compiled-file-paths)]
                                         [#:roots roots (non-empty-listof (or/c path-string? 'same)) (current-compiled-file-roots)])
          path?]{
 
-The same as @racket[get-compilation-dir+home], but combines the
+The same as @racket[get-compilation-dir+name], but combines the
 results and adds a @filepath{.zo} suffix to arrive at a bytecode file
 path.}
 
