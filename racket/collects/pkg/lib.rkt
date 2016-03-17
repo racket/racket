@@ -119,7 +119,8 @@
                         #:infer-clone-from-dir? boolean?
                         #:lookup-for-clone? boolean?
                         #:multi-clone-behavior (or/c 'fail 'force 'convert 'ask)
-                        #:pull-behavior (or/c 'ff-only 'rebase 'try))
+                        #:pull-behavior (or/c 'ff-only 'rebase 'try)
+                        #:dry-run? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-remove
    (->* ((listof string?))
@@ -128,7 +129,8 @@
                  #:quiet? boolean?
                  #:use-trash? boolean?
                  #:from-command-line? boolean?
-                 #:demote? boolean?)
+                 #:demote? boolean?
+                 #:dry-run? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-show
    (->* (string? (or/c #f (listof string?)))
@@ -156,7 +158,8 @@
                         #:force-strip? boolean?
                         #:link-dirs? boolean?
                         #:multi-clone-behavior (or/c 'fail 'force 'convert 'ask)
-                        #:pull-behavior (or/c 'ff-only 'rebase 'try))
+                        #:pull-behavior (or/c 'ff-only 'rebase 'try)
+                        #:dry-run? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-migrate
    (->* (string?)
@@ -169,7 +172,8 @@
                         #:quiet? boolean?
                         #:from-command-line? boolean?
                         #:strip (or/c #f 'source 'binary 'binary-lib)
-                        #:force-strip? boolean?)
+                        #:force-strip? boolean?
+                        #:dry-run? boolean?)
         (or/c #f 'skip (listof (or/c path-string? (non-empty-listof path-string?)))))]
   [pkg-catalog-show
    (->* ((listof string?))

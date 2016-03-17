@@ -22,18 +22,35 @@
  (shelly-begin
   (initialize-catalogs)
 
+  (define-syntax-rule (shelly-install-dry-run what src)
+    (shelly-case
+     (format "Test dry-run installation of ~a" what)
+     $ "racket -e '(require pkg-test1)'" =exit> 1
+     $ (~a "raco pkg install --dry-run " src)
+     $ "racket -e '(require pkg-test1)'" =exit> 1))
+
+  (define-syntax-rule (shelly-install/d what src)
+    (begin
+      (shelly-install-dry-run what src)
+      (shelly-install what src)))
+
+  (define-syntax-rule (shelly-install*/d what srcs pkgs)
+    (begin
+      (shelly-install-dry-run what srcs)
+      (shelly-install* what srcs pkgs)))
+
   (shelly-case
    "raco pkg install tests"
-   (shelly-install "local package (tgz)" "test-pkgs/pkg-test1.tgz")
-   (shelly-install "local package (zip)" "test-pkgs/pkg-test1.zip")
-   (shelly-install "local package (file://zip)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1.zip"))))
-   (shelly-install "local package (plt)" "test-pkgs/pkg-test1.plt")
-   (shelly-install* "local package (zip, compiled)" "test-pkgs/pkg-test1b.zip" "pkg-test1b")
-   (shelly-install* "local package (zip, single-collection)" 
-                    "test-pkgs/pkg-test1.zip test-pkgs/pkg-test3.zip" 
-                    "pkg-test1 pkg-test3")
-   (shelly-install "local package (dir)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1"))))
-   (shelly-install "local package (file://dir)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1"))))
+   (shelly-install/d "local package (tgz)" "test-pkgs/pkg-test1.tgz")
+   (shelly-install/d "local package (zip)" "test-pkgs/pkg-test1.zip")
+   (shelly-install/d "local package (file://zip)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1.zip"))))
+   (shelly-install/d "local package (plt)" "test-pkgs/pkg-test1.plt")
+   (shelly-install*/d "local package (zip, compiled)" "test-pkgs/pkg-test1b.zip" "pkg-test1b")
+   (shelly-install*/d "local package (zip, single-collection)" 
+                      "test-pkgs/pkg-test1.zip test-pkgs/pkg-test3.zip" 
+                      "pkg-test1 pkg-test3")
+   (shelly-install/d "local package (dir)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1"))))
+   (shelly-install/d "local package (file://dir)" (url->string (path->url (path->complete-path "test-pkgs/pkg-test1"))))
 
    ;; Check ".zip" file with extra directory layer:
    (let ([dir (make-temporary-file "zip~a" 'directory)]

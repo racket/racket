@@ -596,6 +596,9 @@ sub-commands.
     ]}
 
 
+  @item{@DFlag{dry-run} --- Prevents changes to the current installation. All installation and update work is
+                            staged and checked, but the final installation step is skipped.}
+
   @item{@DFlag{no-setup} --- Does not run @exec{raco setup} after installation. This behavior is also the case if the
         environment variable @envvar{PLT_PKG_NOSETUP} is set to any non-empty value.}
 
@@ -613,7 +616,8 @@ sub-commands.
                                    @DFlag{multi-clone} flags.}
          #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag, and changed
                                    the @DFlag{deps} default to depend only on interactive mode.}
-         #:changed "6.1.1.8" @elem{Added the @DFlag{pull} flag.}]}
+         #:changed "6.1.1.8" @elem{Added the @DFlag{pull} flag.}
+         #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}]}
 
 
 @subcommand{@command/toc{update} @nonterm{option} ... @nonterm{pkg-source} ... 
@@ -723,6 +727,7 @@ the given @nonterm{pkg-source}s.
 
  @item{@DFlag{pull} @nonterm{mode} --- Same as for @command-ref{install}}
 
+ @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
@@ -735,7 +740,8 @@ the given @nonterm{pkg-source}s.
                                    when no arguments are provided.}
          #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag, and changed
                                    the @DFlag{deps} default to depend only on interactive mode.}
-         #:changed "6.1.1.8" @elem{Added the @DFlag{skip-uninstalled} and @DFlag{pull} flags.}]}
+         #:changed "6.1.1.8" @elem{Added the @DFlag{skip-uninstalled} and @DFlag{pull} flags.}]
+         #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}}
 
 @subcommand{@command/toc{remove} @nonterm{option} ... @nonterm{pkg} ... 
 --- Attempts to remove the given packages. By default, if a package is the dependency
@@ -761,6 +767,7 @@ the given @nonterm{pkg}s.
  @item{@Flag{i} or @DFlag{installation} --- Shorthand for @exec{--scope installation}.}
  @item{@Flag{u} or @DFlag{user} --- Shorthand for @exec{--scope user}.}
  @item{@DFlag{scope-dir} @nonterm{dir} --- Selects @nonterm{dir} as the @tech{package scope}, the same as for @command-ref{install}.}
+ @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
  @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
  @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  @item{@DFlag{batch} --- Same as for @command-ref{install}.}
@@ -768,7 +775,8 @@ the given @nonterm{pkg}s.
  ]
 
 @history[#:changed "6.1.1.5" @elem{Added the @DFlag{batch} flag.}
-         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}]}
+         #:changed "6.1.1.6" @elem{Added the @DFlag{no-trash} flag.}
+         #:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}]}
 
 
 @subcommand{@command/toc{new} @nonterm{pkg} ---
@@ -848,10 +856,12 @@ package is created.
   @item{@DFlag{ignore-checksums} --- Same as for @command-ref{install}.}
   @item{@DFlag{strict-doc-conflicts} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-cache} --- Same as for @command-ref{install}.}
+  @item{@DFlag{dry-run} --- Same as for @command-ref{install}.}
   @item{@DFlag{no-setup} --- Same as for @command-ref{install}.}
   @item{@DFlag{jobs} @nonterm{n} or @Flag{j} @nonterm{n} --- Same as for @command-ref{install}.}
  ]
-}
+
+@history[#:changed "6.4.0.14" @elem{Added the @DFlag{dry-run} flag.}]}
 
 @subcommand{@command/toc{create} @nonterm{option} ... @nonterm{directory-or-package}
 --- Bundles a package into an archive. Bundling

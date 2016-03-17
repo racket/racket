@@ -140,6 +140,7 @@
   (define-syntax (make-commands stx)
     (syntax-case stx ()
       [(_ #:scope-flags (scope-flags ...)
+          #:dry-run-flags (dry-run-flags ...)
           #:job-flags (job-flags ...)
           #:trash-flags (trash-flags ...)
           #:catalog-flags (catalog-flags ...)
@@ -181,6 +182,7 @@
              [#:bool pkgs () ("Install only the specified packages, even when none are provided")]
              install-force-flags ...
              install-clone-flags ...
+             dry-run-flags ...
              job-flags ...
              trash-flags ...
              [#:bool fail-fast () ("Break `raco setup' when it discovers an error")]
@@ -242,6 +244,7 @@
                                                                       'ask))
                                        #:pull-behavior pull
                                        #:link-dirs? link-dirs?
+                                       #:dry-run? dry-run
                                        #:use-trash? (not no-trash)
                                        (for/list ([p (in-list sources)])
                                          (pkg-desc p a-type* name checksum #f
@@ -274,6 +277,7 @@
              [#:bool skip-uninstalled () ("Skip a given <pkg-source> if not installed")]
              install-force-flags ...
              install-clone-flags ...
+             dry-run-flags ...
              job-flags ...
              trash-flags ...
              #:args pkg-source
@@ -345,6 +349,7 @@
                                       #:pull-behavior pull
                                       #:link-dirs? link-dirs?
                                       #:infer-clone-from-dir? (not (or link static-link copy))
+                                      #:dry-run? dry-run
                                       #:use-trash? (not no-trash)))))
                   (setup "updated" no-setup #f setup-collects jobs))))]
             ;; ----------------------------------------
@@ -357,6 +362,7 @@
              #:once-any
              scope-flags ...
              #:once-each
+             dry-run-flags ...
              job-flags ...
              trash-flags ...
              #:args pkg
@@ -371,6 +377,7 @@
                                #:demote? demote
                                #:auto? auto
                                #:force? force
+                               #:dry-run? dry-run
                                #:use-trash? (not no-trash))))
                 (setup "removed" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
@@ -445,6 +452,7 @@
              #:once-each
              catalog-flags ...
              install-force-flags ...
+             dry-run-flags ...
              job-flags ...
              #:args (from-version)
              (call-with-package-scope
@@ -466,7 +474,8 @@
                                   #:strip (or (and source 'source)
                                               (and binary 'binary)
                                               (and binary-lib 'binary-lib))
-                                  #:force-strip? force))))
+                                  #:force-strip? force
+                                  #:dry-run? dry-run))))
                 (setup "migrated" no-setup #f setup-collects jobs)))]
             ;; ----------------------------------------
             [create
@@ -654,6 +663,8 @@
     [#:bool installation ("-i") "Shorthand for `--scope installation'"]
     [#:bool user ("-u") "Shorthand for `--scope user'"]
     [(#:str dir #f) scope-dir () "Select package scope <dir>"])
+   #:dry-run-flags
+   ([#:bool dry-run () ("Don't actually change package installation")])
    #:job-flags
    ([#:bool no-setup () ("Don't `raco setup' after changing packages (usually a bad idea)")]
     [(#:num n #f) jobs ("-j") "Setup with <n> parallel jobs"]

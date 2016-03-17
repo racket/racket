@@ -167,6 +167,7 @@
          #:ai-cache ai-cache
          #:clone-info clone-info
          #:pull-behavior pull-behavior
+         #:dry-run? dry-run?
          descs)
   (define download-printf (if quiet? void printf/flush))
   (define check-sums? (not ignore-checksums?))
@@ -240,8 +241,11 @@
           ;; The `do-it` thunk:
           (lambda (fail-repos)
             (unless quiet?
-              (download-printf "Promoting ~a from auto-installed to explicitly installed\n" pkg-name))
-            (update-pkg-db! pkg-name (update-auto existing-pkg-info #f))))]
+              (download-printf "Promoting ~a from auto-installed to explicitly installed~a\n"
+                               pkg-name
+                               (dry-run-explain dry-run?)))
+            (unless dry-run?
+              (update-pkg-db! pkg-name (update-auto existing-pkg-info #f)))))]
         [else
          ;; Fail --- already installed
          (clean!)
@@ -453,7 +457,7 @@
                (let ()
                  (define (continue conversation)
                    (raise (vector #t infos pkg-name update-pkgs
-                                  (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) update-pkgs))
+                                  (λ () (for-each (compose (remove-package #t quiet? use-trash? dry-run?) pkg-desc-name) update-pkgs))
                                   conversation
                                   clone-info)))
                  (match (if (andmap (lambda (dep) (set-member? implies (pkg-desc-name dep)))
@@ -558,7 +562,7 @@
                                                                   #:link-dirs? link-dirs?)])
                                  (for ([pkg (in-list update-pkgs)]) (updater #:prefetch? #t pkg))
                                  (append-map updater update-pkgs))])
-                (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) to-update))))
+                (λ () (for-each (compose (remove-package #t quiet? use-trash? dry-run?) pkg-desc-name) to-update))))
             (match this-dep-behavior
               ['fail
                (clean!)
@@ -591,17 +595,19 @@
         ;; The "do-it" function (see `repos+do-its` below):
         (λ (fail-repos)
           (when updating?
-            (download-printf "Re-installing ~a\n" pkg-name))
+            (download-printf "Re-installing ~a~a\n" pkg-name (dry-run-explain dry-run?)))
           (define final-pkg-dir
             (cond
              [clean?
               (define final-pkg-dir (or git-dir
                                         (select-package-directory
-                                         (build-path (pkg-installed-dir) pkg-name))))
-              (unless git-dir
-                (make-parent-directory* final-pkg-dir)
-                (copy-directory/files pkg-dir final-pkg-dir #:keep-modify-seconds? #t))
-              (clean!)
+                                         (build-path (pkg-installed-dir) pkg-name)
+                                         dry-run?)))
+              (unless dry-run?
+                (unless git-dir
+                  (make-parent-directory* final-pkg-dir)
+                  (copy-directory/files pkg-dir final-pkg-dir #:keep-modify-seconds? #t))
+                (clean!))
               final-pkg-dir]
              [else
               pkg-dir]))
@@ -612,14 +618,15 @@
                          (if single-collect "single-collection " "") 
                          final-pkg-dir)
           (define scope (current-pkg-scope))
-          (links final-pkg-dir
-                 #:name single-collect
-                 #:user? (not (or (eq? 'installation scope)
-                                  (path? scope)))
-                 #:file (scope->links-file scope)
-                 #:root? (not single-collect)
-                 #:static-root? (and (pair? orig-pkg)
-                                     (eq? 'static-link (car orig-pkg))))
+          (unless dry-run?
+            (links final-pkg-dir
+                   #:name single-collect
+                   #:user? (not (or (eq? 'installation scope)
+                                    (path? scope)))
+                   #:file (scope->links-file scope)
+                   #:root? (not single-collect)
+                   #:static-root? (and (pair? orig-pkg)
+                                       (eq? 'static-link (car orig-pkg)))))
           (define alt-dir-name
             ;; If we had to pick an alternate dir name, then record it:
             (let-values ([(base name dir?) (split-path final-pkg-dir)])
@@ -635,7 +642,8 @@
           (define this-pkg-info
             (make-pkg-info orig-pkg new-checksum auto? single-collect alt-dir-name))
           (log-pkg-debug "updating db with ~e to ~e" pkg-name this-pkg-info)
-          (update-pkg-db! pkg-name this-pkg-info)))]))
+          (unless dry-run?
+            (update-pkg-db! pkg-name this-pkg-info))))]))
   (define metadata-ns (make-metadata-namespace))
   (define infos
     (for/list ([v (in-list descs)])
@@ -694,8 +702,9 @@
   (define fail-repos
     (for/fold ([fail-repos #hash()]) ([(git-dir checksums) (in-hash repos)])
       (parameterize ([current-directory git-dir])
-        (download-printf "Merging commits at ~a\n"
-                         git-dir)
+        (download-printf "Merging commits at ~a~a\n"
+                         git-dir
+                         (dry-run-explain dry-run?))
         (when ((length checksums) . > . 1)
           (download-printf (~a "Multiple packages in the of the clone\n"
                                "  " git-dir "\n"
@@ -706,6 +715,7 @@
           (define ok?
             (git #:status (lambda (s) (download-printf "~a\n" s))
                  #:fail-mode 'status
+                 #:dry-run? dry-run?
                  (if rebase? "rebase" "merge")
                  (if rebase? "--onto" "--ff-only")
                  checksum))
@@ -762,7 +772,8 @@
 
   (cond
    [(or (null? repo+do-its)
-        (and (not updating-any?) (andmap is-promote? all-infos)))
+        (and (not updating-any?) (andmap is-promote? all-infos))
+        dry-run?)
     ;; No actions, so no setup:
     'skip]
    [else
@@ -792,7 +803,7 @@
       (loop new-check
             (set-union setup-pkgs new-check))])))
 
-(define (select-package-directory dir #:counter [counter 0])
+(define (select-package-directory dir dry-run? #:counter [counter 0])
   (define full-dir (if (zero? counter)
                        dir
                        (let-values ([(base name dir?) (split-path dir)])
@@ -804,7 +815,8 @@
                              (build-path base new-name)
                              new-name))))
   (cond
-   [(directory-exists? full-dir)
+   [(and (directory-exists? full-dir)
+         (not dry-run?))
     ;; If the directory exists, assume that we'd like to replace it.
     ;; Maybe the directory couldn't be deleted when a package was
     ;; uninstalled, and maybe it will work now (because some process
@@ -813,7 +825,7 @@
                      (lambda (exn)
                        (log-pkg-warning "error deleting old directory: ~a" 
                                         (exn-message exn))
-                       (select-package-directory dir #:counter (add1 counter)))])
+                       (select-package-directory dir #f #:counter (add1 counter)))])
       (delete-directory/files full-dir)
       ;; delete succeeded:
       full-dir)]
@@ -856,7 +868,8 @@
                                                    (read-pkg-db)
                                                    (if quiet? void printf/flush))]
                      #:pull-behavior [pull-behavior 'ff-only]
-                     #:convert-to-non-clone? [convert-to-non-clone? #f])
+                     #:convert-to-non-clone? [convert-to-non-clone? #f]
+                     #:dry-run? [dry-run? #f])
   (define download-printf (if quiet? void printf/flush))
   
   (define descs
@@ -929,6 +942,7 @@
                          #:multi-clone-behavior (vector-ref clone-info 0)
                          #:repo-descs (vector-ref clone-info 1)
                          #:pull-behavior pull-behavior
+                         #:dry-run? dry-run?
                          (for/list ([dep (in-list deps)])
                            (if (pkg-desc? dep)
                                dep
@@ -951,7 +965,7 @@
         #:remote-checksum-cache remote-checksum-cache
         #:pre-succeed (λ ()
                         (for ([pkg-name (in-hash-keys extra-updating)])
-                          ((remove-package #t quiet? use-trash?) pkg-name))
+                          ((remove-package #t quiet? use-trash? dry-run?) pkg-name))
                         (pre-succeed))
         #:updating? updating?
         #:extra-updating extra-updating
@@ -967,6 +981,7 @@
         #:clone-info (vector clone-behavior
                              repo-descs)
         #:pull-behavior pull-behavior
+        #:dry-run? dry-run?
         new-descs)
        (unless (empty? summary-deps)
          (unless quiet?
@@ -1243,7 +1258,8 @@
                     #:infer-clone-from-dir? [infer-clone-from-dir? #f]
                     #:lookup-for-clone? [lookup-for-clone? #f]
                     #:multi-clone-behavior [clone-behavior 'fail]
-                    #:pull-behavior [pull-behavior 'ff-only])
+                    #:pull-behavior [pull-behavior 'ff-only]
+                    #:dry-run? [dry-run? #f])
   (define download-printf (if quiet? void printf/flush))
   (define metadata-ns (make-metadata-namespace))
   (define db (read-pkg-db))
@@ -1337,7 +1353,7 @@
          (flush-output))
        (pkg-install
         #:updating? #t
-        #:pre-succeed (λ () (for-each (compose (remove-package #t quiet? use-trash?) pkg-desc-name) to-update))
+        #:pre-succeed (λ () (for-each (compose (remove-package #t quiet? use-trash? dry-run?) pkg-desc-name) to-update))
         #:dep-behavior dep-behavior
         #:update-deps? update-deps?
         #:update-implies? update-implies?
@@ -1362,6 +1378,7 @@
                                      (andmap pkg-desc? in-pkgs)
                                      (not (ormap pkg-desc-extra-path in-pkgs)))
         #:pull-behavior pull-behavior
+        #:dry-run? dry-run?
         to-update)]))))
 
 ;; ----------------------------------------

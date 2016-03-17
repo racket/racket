@@ -14,6 +14,7 @@
 (define (git #:status [status void]
              #:quiet-stderr? [quiet-stderr? #t] ; suppress stderr unless error
              #:fail-mode [fail-mode 'error]
+             #:dry-run? [dry-run? #f]
              . args)
   (define exe (force git-exe))
   (unless exe
@@ -28,7 +29,11 @@
                (with-handlers ([values (lambda (exn)
                                          ;; re-raise after restoring stderr:
                                          (lambda () (raise exn)))])
-                 (define r (apply system* exe args))
+                 (define r
+                   (cond
+                    [dry-run? #t]
+                    [else
+                     (apply system* exe args)]))
                  (lambda () r)))))
   (cond
    [r #t]

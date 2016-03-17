@@ -23,7 +23,8 @@
                      #:use-cache? [use-cache? #t]
                      #:dep-behavior [dep-behavior #f]
                      #:strip [strip-mode #f]
-                     #:force-strip? [force-strip? #f])
+                     #:force-strip? [force-strip? #f]
+                     #:dry-run? [dry-run? #f])
   (define from-db
     (parameterize ([current-pkg-scope-version from-version])
       (installed-pkg-table #:scope 'user)))
@@ -77,6 +78,7 @@
                     #:quiet? quiet? 
                     #:from-command-line? from-command-line?
                     #:strip strip-mode
-                    #:force-strip? force-strip?)
+                    #:force-strip? force-strip?
+                    #:dry-run? dry-run?)
        (unless quiet?
          (printf "Packages migrated\n")))))

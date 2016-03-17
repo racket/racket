@@ -265,7 +265,8 @@ is true, error messages may suggest specific command-line flags for
                            [#:force-strip? force-string? boolean? #f]
                            [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                            [#:pull-mode pull-mode (or/c 'ff-only 'try 'rebase) 'ff-only]
-                           [#:link-dirs? link-dirs? boolean? #f])
+                           [#:link-dirs? link-dirs? boolean? #f]
+                           [#:dry-run? dry-run? boolean? #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?
@@ -299,7 +300,8 @@ The package lock must be held; see @racket[with-pkg-lock].
 @history[#:changed "6.1.1.5" @elem{Added the @racket[#:multi-clone-mode] 
                                    and @racket[#:infer-clone-from-dir?] arguments.}
          #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
-         #:changed "6.1.1.8" @elem{Added the @racket[#:pull-mode] argument.}]}
+         #:changed "6.1.1.8" @elem{Added the @racket[#:pull-mode] argument.}
+         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
 
 
 @defproc[(pkg-update      [sources (listof (or/c string? pkg-desc?))]
@@ -322,7 +324,8 @@ The package lock must be held; see @racket[with-pkg-lock].
                           [#:multi-clone-mode multi-clone-mode (or/c 'fail 'force 'convert 'ask) 'fail]
                           [#:pull-mode pull-mode (or/c 'ff-only 'try 'rebase) 'ff-only]
                           [#:link-dirs? link-dirs? boolean? #f]
-                          [#:infer-clone-from-dir? infer-clone-from-dir? boolean? #f])
+                          [#:infer-clone-from-dir? infer-clone-from-dir? boolean? #f]
+                          [#:dry-run? dry-run? boolean? #f])
         (or/c 'skip
               #f
               (listof (or/c path-string?
@@ -357,7 +360,8 @@ The package lock must be held; see @racket[with-pkg-lock].
 @history[#:changed "6.1.1.5" @elem{Added the @racket[#:multi-clone-mode] 
                                    and @racket[#:infer-clone-from-dir?] arguments.}
          #:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
-         #:changed "6.1.1.8" @elem{Added the @racket[#:skip-uninstalled?] and @racket[#:pull-mode] arguments.}]}
+         #:changed "6.1.1.8" @elem{Added the @racket[#:skip-uninstalled?] and @racket[#:pull-mode] arguments.}
+         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
 
 
 @defproc[(pkg-remove      [names (listof string?)]
@@ -366,7 +370,8 @@ The package lock must be held; see @racket[with-pkg-lock].
                           [#:force? force? boolean? #f]
                           [#:quiet? quiet? boolean? #f]
                           [#:use-trash? boolean? use-trash? #f]
-                          [#:from-command-line? from-command-line? boolean? #f])
+                          [#:from-command-line? from-command-line? boolean? #f]
+                          [#:dry-run? dry-run? boolean? #f])
          (or/c 'skip
                #f
                (listof (or/c path-string? 
@@ -381,7 +386,8 @@ specific command-line flags for @command-ref{remove}.
 
 The package lock must be held; see @racket[with-pkg-lock].
 
-@history[#:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}]}
+@history[#:changed "6.1.1.6" @elem{Added the @racket[#:use-trash?] argument.}
+         #:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
 
 
 @defproc[(pkg-new [name path-string?])
@@ -419,7 +425,8 @@ The package lock must be held to allow reads; see
                            [#:quiet? quiet? boolean? #f]
                            [#:from-command-line? from-command-line? boolean? #f]
                            [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
-                           [#:force-strip? force-string? boolean? #f])
+                           [#:force-strip? force-string? boolean? #f]
+                           [#:dry-run? dry-run? boolean? #f])
          (or/c 'skip
                #f
                (listof (or/c path-string?
@@ -431,7 +438,9 @@ Implements @racket[pkg-migrate-command].  The result is the same as for
 If @racket[from-command-line?]  is true, error messages may suggest
 specific command-line flags for @command-ref{migrate}.
 
-The package lock must be held; see @racket[with-pkg-lock].}
+The package lock must be held; see @racket[with-pkg-lock].
+
+@history[#:changed "6.4.0.14" @elem{Added the @racket[#:dry-run] argument.}]}
 
 
 @defproc[(pkg-catalog-show [names (listof string?)]

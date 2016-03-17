@@ -67,3 +67,9 @@
                 (if default-yes? "" "nothing or "))
        (eprintf " `a' or `A' for \"yes for all\", or `c' or `C' for \"cancel\".\n")
        (loop)])))
+
+
+(define (dry-run-explain dry-run?)
+  (if dry-run?
+      " (but not really)"
+      ""))

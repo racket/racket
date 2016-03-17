@@ -45,12 +45,16 @@
                      "test-pkgs/pkg-test1.zip"
                      "pkg-test1"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
+                     $ "raco pkg update --dry-run test-pkgs/update-test/pkg-test1.zip"
+                     $ "racket -e '(require pkg-test1/update)'" =exit> 42
                      $ "raco pkg update test-pkgs/update-test/pkg-test1.zip"
                      $ "racket -e '(require pkg-test1/update)'" =exit> 43)
     (finally
      $ "rm -f test-pkgs/update-test/pkg-test1.zip"))
    (shelly-install "packages can be replaced with local packages (file + name)"
                    "test-pkgs/pkg-test1.zip"
+                   $ "racket -e '(require pkg-test1/update)'" =exit> 42
+                   $ "raco pkg update --dry-run --name pkg-test1 test-pkgs/pkg-test1-v2.zip"
                    $ "racket -e '(require pkg-test1/update)'" =exit> 42
                    $ "raco pkg update --name pkg-test1 test-pkgs/pkg-test1-v2.zip"
                    $ "racket -e '(require pkg-test1/update)'" =exit> 43)
@@ -60,6 +64,8 @@
     (shelly-install "packages can be replaced with local packages (directory)"
                     "test-pkgs/pkg-test1.zip"
                     $ "racket -e '(require pkg-test1/update)'" =exit> 42
+                    $ (~a "raco pkg update --dry-run --name pkg-test1 "tmp2-dir"pkg-test1-v2")
+                    $ "racket -e '(require pkg-test1/update)'" =exit> 42
                     $ (~a "raco pkg update --name pkg-test1 "tmp2-dir"pkg-test1-v2")
                     $ "racket -e '(require pkg-test1/update)'" =exit> 43)
     (shelly-install "replacement checksum can be checked"
@@ -67,6 +73,8 @@
                     $ "raco pkg update test-pkgs/pkg-test1.zip" =stdout> "No updates available\n")
     (shelly-install "checksum can be supplied for local directory"
                     "test-pkgs/pkg-test1.zip"
+                    $ "racket -e '(require pkg-test1/update)'" =exit> 42
+                    $ (~a "raco pkg update --dry-run --name pkg-test1 --checksum abcdef "tmp2-dir"pkg-test1-v2")
                     $ "racket -e '(require pkg-test1/update)'" =exit> 42
                     $ (~a "raco pkg update --name pkg-test1 --checksum abcdef "tmp2-dir"pkg-test1-v2")
                     $ "racket -e '(require pkg-test1/update)'" =exit> 43
@@ -92,6 +100,8 @@
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
                      $ "cp -f test-pkgs/pkg-test1-v2.zip test-pkgs/update-test/pkg-test1.zip"
                      $ "cp -f test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
+                     $ "raco pkg update --dry-run pkg-test1" =exit> 0
+                     $ "racket -e '(require pkg-test1/update)'" =exit> 42
                      $ "raco pkg update pkg-test1" =exit> 0
                      $ "racket -e '(require pkg-test1/update)'" =exit> 43)
     (finally
@@ -105,9 +115,12 @@
     (shelly-install* "remote packages can be updated, single-collection to multi-collection"
                      "test-pkgs/pkg-test1.zip http://localhost:9997/update-test/pkg-test3.zip"
                      "pkg-test1 pkg-test3"
+                     $ "racket -e '(require pkg-test3)'" =stdout> "pkg-test3/main loaded\n"
                      $ "raco pkg update pkg-test3" =exit> 0 =stdout> "Downloading checksum for pkg-test3\nNo updates available\n"
                      $ "cp -f test-pkgs/pkg-test3-v2.zip test-pkgs/update-test/pkg-test3.zip"
                      $ "cp -f test-pkgs/pkg-test3-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
+                     $ "raco pkg update --dry-run pkg-test3" =exit> 0
+                     $ "racket -e '(require pkg-test3)'" =stdout> "pkg-test3/main loaded\n"
                      $ "raco pkg update pkg-test3" =exit> 0
                      $ "racket -e '(require pkg-test3)'" =stdout> "pkg-test3/main version 2 loaded\n")
     (finally
@@ -118,12 +131,15 @@
     $ "mkdir -p test-pkgs/update-test"
     $ "cp -f test-pkgs/pkg-test3-v2.zip test-pkgs/update-test/pkg-test3.zip"
     $ "cp -f test-pkgs/pkg-test3-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
-    (shelly-install* "remote packages can be updated, multi-colelction to single-collection"
+    (shelly-install* "remote packages can be updated, multi-collection to single-collection"
                      "test-pkgs/pkg-test1.zip http://localhost:9997/update-test/pkg-test3.zip"
                      "pkg-test1 pkg-test3"
+                     $ "racket -e '(require pkg-test3)'" =stdout> "pkg-test3/main version 2 loaded\n"
                      $ "raco pkg update pkg-test3" =exit> 0 =stdout> "Downloading checksum for pkg-test3\nNo updates available\n"
                      $ "cp -f test-pkgs/pkg-test3.zip test-pkgs/update-test/pkg-test3.zip"
                      $ "cp -f test-pkgs/pkg-test3.zip.CHECKSUM test-pkgs/update-test/pkg-test3.zip.CHECKSUM"
+                     $ "raco pkg update --dry-run pkg-test3" =exit> 0
+                     $ "racket -e '(require pkg-test3)'" =stdout> "pkg-test3/main version 2 loaded\n"
                      $ "raco pkg update pkg-test3" =exit> 0
                      $ "racket -e '(require pkg-test3)'" =stdout> "pkg-test3/main loaded\n")
     (finally
@@ -145,6 +161,8 @@
                      $ "racket -e '(require pkg-test1/update)'" =exit> 42
                      $ "cp -f test-pkgs/pkg-test1-v2.zip test-pkgs/update-test/pkg-test1.zip"
                      $ "cp -f test-pkgs/pkg-test1-v2.zip.CHECKSUM test-pkgs/update-test/pkg-test1.zip.CHECKSUM"
+                     $ "raco pkg update --dry-run --update-deps pkg-test2" =exit> 0
+                     $ "racket -e '(require pkg-test1/update)'" =exit> 42
                      $ "raco pkg update --update-deps pkg-test2" =exit> 0
                      $ "racket -e '(require pkg-test1/update)'" =exit> 43
                      $ "raco pkg remove pkg-test2")

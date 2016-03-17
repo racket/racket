@@ -29,5 +29,7 @@
          "                            (build-path (find-system-path 'addon-dir) (symbol->string 'other)))\"")
    $ "raco pkg remove -u --auto pkg-b"
    $ "raco pkg show -l -u -a" =stdout> " [none]\n"
+   $ "raco pkg migrate --dry-run -u other"
+   $ "raco pkg show -l -u -a" =stdout> " [none]\n"
    $ "raco pkg migrate -u other"
    $ "raco pkg show -l -u -a" =stdout> #rx"Package\\[\\*=auto\\] +Checksum +Source\npkg-a\\* +[a-f0-9.]+    \\(catalog \"pkg-a\"\\)\npkg-b +[a-f0-9.]+ +\\(catalog \"pkg-b\"\\)\n")))

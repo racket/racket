@@ -21,7 +21,8 @@
    "remove and show"
    (shelly-case "remove of not installed package fails"
                 $ "raco pkg show -l -u -a" =stdout> " [none]\n"
-                $ "raco pkg remove not-there" =exit> 1)
+                $ "raco pkg remove not-there" =exit> 1
+                $ "raco pkg remove --dry-run not-there" =exit> 1)
    (shelly-case "remove of bad name"
                 $ "raco pkg remove bad/" =exit> 1
                 =stderr> #rx"disallowed")
@@ -39,11 +40,16 @@
                    $ "raco pkg install test-pkgs/pkg-test2.zip"
                    $ "raco pkg show -l -u -a" =stdout> #rx"Package +Checksum +Source\npkg-test1 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test1.zip\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
                    $ "raco pkg remove pkg-test1" =exit> 1 =stderr> #rx"pkg-test1 \\(required by: \\(pkg-test2\\)\\)"
+                   $ "raco pkg remove --dry-run pkg-test1" =exit> 1 =stderr> #rx"pkg-test1 \\(required by: \\(pkg-test2\\)\\)"
+                   $ "raco pkg remove --dry-run pkg-test2"
+                   $ "raco pkg show -l -u -a" =stdout> #rx"Package +Checksum +Source\npkg-test1 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test1.zip\"\\)\npkg-test2 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test2.zip\"\\)\n"
                    $ "raco pkg remove pkg-test2"
                    $ "raco pkg show -l -u -a" =stdout>  #rx"Package +Checksum +Source\npkg-test1 +[a-f0-9.]+ +\\(file .+/test-pkgs/pkg-test1.zip\"\\)\n")
    (shelly-install "remove of dep can be forced"
                    "test-pkgs/pkg-test1.zip"
                    $ "raco pkg install test-pkgs/pkg-test2.zip"
+                   $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
+                   $ "raco pkg remove --dry-run --force pkg-test1"
                    $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 0
                    $ "raco pkg remove --force pkg-test1"
                    $ "racket -e '(require pkg-test2/contains-dep)'" =exit> 1

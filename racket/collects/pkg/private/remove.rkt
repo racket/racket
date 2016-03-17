@@ -16,51 +16,57 @@
 (provide remove-package
          pkg-remove)
 
-(define (demote-packages quiet? pkg-names)
+(define (demote-packages quiet? dry-run? pkg-names)
   (define db (read-pkg-db))
   (for ([pkg-name (in-list pkg-names)])
     (define pi (package-info pkg-name #:db db))
     (unless (pkg-info-auto? pi)
       (unless quiet?
-        (printf/flush "Demoting ~a to auto-installed\n" pkg-name))
-      (update-pkg-db! pkg-name (update-auto pi #t)))))
+        (printf/flush "Demoting ~a to auto-installed~a\n"
+                      pkg-name 
+                      (dry-run-explain dry-run?)))
+      (unless dry-run?
+        (update-pkg-db! pkg-name (update-auto pi #t))))))
 
-(define ((remove-package for-install? quiet? use-trash?) pkg-name)
+(define ((remove-package for-install? quiet? use-trash? dry-run?) pkg-name)
   (unless quiet?
-    (printf/flush "~a ~a\n"
+    (printf/flush "~a ~a~a\n"
                   (if for-install?
                       "Uninstalling to prepare re-install of"
                       "Removing")
-                  pkg-name))
+                  pkg-name
+                  (dry-run-explain dry-run?)))
   (define db (read-pkg-db))
   (define pi (package-info pkg-name #:db db))
   (match-define (pkg-info orig-pkg checksum _) pi)
   (define pkg-dir (pkg-directory* pkg-name #:db db))
-  (remove-from-pkg-db! pkg-name)
+  (unless dry-run?
+    (remove-from-pkg-db! pkg-name))
   (define scope (current-pkg-scope))
   (define user? (not (or (eq? scope 'installation)
                          (path? scope))))
-  (match orig-pkg
-    [`(,(or 'link 'static-link 'clone) ,_ . ,_)
-     (links pkg-dir
-            #:remove? #t
-            #:user? user?
-            #:file (scope->links-file scope)
-            #:root? (not (sc-pkg-info? pi)))]
-    [_
-     (links pkg-dir
-            #:remove? #t
-            #:user? user?
-            #:file (scope->links-file scope)
-            #:root? (not (sc-pkg-info? pi)))
-     (cond
-      [(and use-trash?
-            (select-trash-dest pkg-name))
-       => (lambda (trash-dest)
-            (printf/flush "Moving ~a to trash: ~a\n" pkg-name trash-dest)
-            (rename-file-or-directory pkg-dir trash-dest))]
-      [else
-       (delete-directory/files pkg-dir)])]))
+  (unless dry-run?
+    (match orig-pkg
+      [`(,(or 'link 'static-link 'clone) ,_ . ,_)
+       (links pkg-dir
+              #:remove? #t
+              #:user? user?
+              #:file (scope->links-file scope)
+              #:root? (not (sc-pkg-info? pi)))]
+      [_
+       (links pkg-dir
+              #:remove? #t
+              #:user? user?
+              #:file (scope->links-file scope)
+              #:root? (not (sc-pkg-info? pi)))
+       (cond
+        [(and use-trash?
+              (select-trash-dest pkg-name))
+         => (lambda (trash-dest)
+              (printf/flush "Moving ~a to trash: ~a\n" pkg-name trash-dest)
+              (rename-file-or-directory pkg-dir trash-dest))]
+        [else
+         (delete-directory/files pkg-dir)])])))
       
 
 (define (pkg-remove given-pkgs
@@ -69,6 +75,7 @@
                     #:auto? [auto? #f]
                     #:quiet? [quiet? #f]
                     #:use-trash? [use-trash? #f]
+                    #:dry-run? [dry-run? #f]
                     #:from-command-line? [from-command-line? #f])
   (define db (read-pkg-db))
   (define all-pkgs
@@ -143,14 +150,15 @@
     ;; Demote any package that is not going to be removed:
     (demote-packages
      quiet?
+     dry-run?
      (set->list (set-subtract (list->set in-pkgs)
                               (list->set remove-pkgs)))))
 
-  (for-each (remove-package #f quiet? use-trash?)
+  (for-each (remove-package #f quiet? use-trash? dry-run?)
             remove-pkgs)
 
   (cond
-   [(or (null? remove-pkgs) demote?)
+   [(or (null? remove-pkgs) demote? dry-run?)
     ;; Did nothing, so no setup:
     'skip]
    [else
