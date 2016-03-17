@@ -10,7 +10,9 @@
          with-pkg-lock
          with-pkg-lock/read-only
          ;; Checks that the lock is held:
-         write-file-hash!)
+         write-file-hash!
+         ;; For migrate:
+         call-with-separate-lock)
 
 (define pkg-lock-held (make-parameter #f))
 (define pkg-lock-scope (make-parameter #f))
@@ -61,6 +63,13 @@
   (with-pkg-lock* #f (λ () e ...)))
 (define-syntax-rule (with-pkg-lock/read-only e ...)
   (with-pkg-lock* #t (λ () e ...)))
+
+;; Intended for use with `pkg-migrate`, which needs to
+;; read a different version than it writes to:
+(define (call-with-separate-lock f)
+  (parameterize ([pkg-lock-held #f]
+                 [pkg-lock-scope #f])
+    (f)))
 
 (define (write-file-hash! file new-db)
   (unless (eq? (pkg-lock-held) 'exclusive)
