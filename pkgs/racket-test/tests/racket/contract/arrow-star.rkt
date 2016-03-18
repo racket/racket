@@ -716,4 +716,20 @@
   
   (test/spec-passed
    '->*-opt-optional5
-   '((contract (->* () integer? #:post #t) (lambda x 1) 'pos 'neg))))
+   '((contract (->* () integer? #:post #t) (lambda x 1) 'pos 'neg)))
+
+  (test/pos-blame
+   '->*-opt-vs-mand1
+   '(contract (->* (integer?) (symbol? boolean?) number?)
+              (lambda (x y [z #t])
+                x)
+              'pos
+              'neg))
+  (test/pos-blame
+   '->*-opt-vs-mand2
+   '(contract (->* () (symbol? boolean?) symbol?)
+              (lambda (y [z #t])
+                y)
+              'pos
+              'neg))
+  )

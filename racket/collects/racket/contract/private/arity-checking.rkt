@@ -29,33 +29,36 @@
      (define exra-required-args (if (ellipsis-rest-arg-ctc? ->stct-rest)
                                     (length (*list-ctc-suffix ->stct-rest))
                                     0))
-     (define expected-number-of-non-keyword-args (+ (length ->stct-doms) exra-required-args))
-     (define matching-arity?
-       (and (for/or ([a (in-list arity)])
-              (or (equal? expected-number-of-non-keyword-args a)
-                  (and (arity-at-least? a)
-                       (>= expected-number-of-non-keyword-args (arity-at-least-value a)))))
-            (if ->stct-rest
-                (let ([lst (car (reverse arity))])
-                  (and (arity-at-least? lst)
-                       (<= (arity-at-least-value lst) (+ exra-required-args ->stct-min-arity))))
-                #t)))
-     (unless matching-arity?
-       (k
-        (λ (neg-party)
-          (raise-blame-error blame #:missing-party neg-party val
-                             '(expected: 
-                               "a procedure that accepts ~a non-keyword argument~a~a"
-                               given: "~e"
-                               "\n  ~a")
-                             expected-number-of-non-keyword-args
-                             (if (= expected-number-of-non-keyword-args 1) "" "s")
-                             (if ->stct-rest
-                                 " and arbitrarily many more"
-                                 "")
-                             val
-                             (arity-as-string val)))))
-    
+
+     ;; the function must be ok for *all* the arities the contract says are ok
+     (for/and ([base-number-of-non-keyword-args (in-range ->stct-min-arity (add1 (length ->stct-doms)))])
+       (define expected-number-of-non-keyword-args (+ base-number-of-non-keyword-args exra-required-args))
+       (define matching-arity?
+         (and (for/or ([a (in-list arity)])
+                (or (and (equal? expected-number-of-non-keyword-args a))
+                    (and (arity-at-least? a)
+                         (>= expected-number-of-non-keyword-args (arity-at-least-value a)))))
+              (if ->stct-rest
+                  (let ([lst (car (reverse arity))])
+                    (and (arity-at-least? lst)
+                         (<= (arity-at-least-value lst) (+ exra-required-args ->stct-min-arity))))
+                  #t)))
+       (unless matching-arity?
+         (k
+          (λ (neg-party)
+            (raise-blame-error blame #:missing-party neg-party val
+                               '(expected:
+                                 "a procedure that accepts ~a non-keyword argument~a~a"
+                                 given: "~e"
+                                 "\n  ~a")
+                               expected-number-of-non-keyword-args
+                               (if (= expected-number-of-non-keyword-args 1) "" "s")
+                               (if ->stct-rest
+                                   " and arbitrarily many more"
+                                   "")
+                               val
+                               (arity-as-string val))))))
+
     (define (should-have-supplied kwd)
       (k
        (λ (neg-party)
