@@ -633,7 +633,6 @@ void scheme_init_thread_places(void) {
   REGISTER_SO(gc_prepost_callback_descs);
   REGISTER_SO(place_local_misc_table);
   REGISTER_SO(gc_info_prefab);
-  REGISTER_SO(initial_config);
   gc_info_prefab = scheme_lookup_prefab_type(scheme_intern_symbol("gc-info"), 10);
 }
 
@@ -8102,6 +8101,7 @@ static void make_initial_config(Scheme_Thread *p)
     }
   }
 
+  REGISTER_SO(initial_config);
   initial_config = config;
 }
 
