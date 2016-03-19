@@ -8958,10 +8958,11 @@ static void prepare_thread_for_GC(Scheme_Object *t)
           rs_end = saved->runstack_size;
         }
 
-        scheme_set_runstack_limits(saved->runstack_start,
-                                   saved->runstack_size,
-                                   saved->runstack_offset,
-                                   rs_end);
+        if (saved->runstack_start)
+          scheme_set_runstack_limits(saved->runstack_start,
+                                     saved->runstack_size,
+                                     saved->runstack_offset,
+                                     rs_end);
       }
     }
 
