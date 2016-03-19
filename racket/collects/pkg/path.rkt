@@ -191,5 +191,5 @@
 
 (define (path->pkg given-p #:cache [cache #f])
   (define-values (pkg subpath collect scope)
-    (path->pkg+subpath+collect* path->pkg given-p cache #f))
+    (path->pkg+subpath+collect* 'path->pkg given-p cache #f))
   pkg)
