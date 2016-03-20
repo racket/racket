@@ -391,6 +391,29 @@ A parameter whose value is called for each file that is loaded and
  @racket[#f], then the file is compiled as usual. The default is
  @racket[(lambda (x) #f)].}
 
+
+@defparam[current-path->mode path->mode
+          (or/c #f (-> path? (and/c path? relative-path?)))
+          #:value #f]{
+ Used by @racket[make-compilation-manager-load/use-compiled-handler] and
+ @racket[make-caching-managed-compile-zo] to override @racket[use-compiled-file-paths]
+ for deciding where to write compiled @filepath{.zo} files. If it is @racket[#f],
+ then the first element of @racket[use-compiled-file-paths] is used. If it isn't
+ @racket[#f], then it is called with the original source file's location and its
+ result is treated the same as if it had been the first element of
+ @racket[use-compiled-file-paths].
+
+ Note that this parameter is not used by @racket[current-load/use-compiled]. So if
+ the parameter causes @filepath{.zo} files to be placed in different directories, then
+ the correct @filepath{.zo} file must still be communicated via @racket[use-compiled-file-paths],
+ and one way to do that is to override @racket[current-load/use-compiled] to delete
+ @filepath{.zo} files that would cause the wrong one to be chosen right before they are
+ loaded.
+
+ @history[#:added "6.4.0.14"]
+}
+
+
 @defproc[(file-stamp-in-collection [p path?]) (or/c (cons/c number? promise?) #f)]{
   Calls @racket[file-stamp-in-paths] with @racket[p] and
   @racket[(current-library-collection-paths)].}
