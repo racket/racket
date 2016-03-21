@@ -316,7 +316,7 @@ The package lock must be held; see @racket[with-pkg-lock].
                           [#:use-cache? use-cache? boolean? #t]
                           [#:skip-uninstalled? skip-uninstalled? boolean? #t]
                           [#:quiet? quiet? boolean? #f]
-                          [#:use-trash? boolean? use-trash? #f]
+                          [#:use-trash? use-trash? boolean? #f]
                           [#:from-command-line? from-command-line? boolean? #f]
                           [#:strip strip (or/c #f 'source 'binary 'binary-lib) #f]
                           [#:force-strip? force-string? boolean? #f]
