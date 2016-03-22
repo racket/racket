@@ -12,7 +12,8 @@
          compiler/zo-marshal
          ;; `random` from `racket/base is a Racket function, which makes
          ;; compilation less predictable than a primitive
-         (only-in '#%kernel random))
+         (only-in '#%kernel random
+                            (list-pair? k:list-pair?)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,6 +25,7 @@
   (namespace-require 'racket/fixnum)
   (namespace-require 'racket/unsafe/ops)
   (namespace-require 'racket/unsafe/undefined)
+  (namespace-require '(rename '#%kernel k:list-pair? list-pair?))
   (eval '(define-values (prop:thing thing? thing-ref) 
            (make-struct-type-property 'thing)))
   (eval '(struct rock (x) #:property prop:thing 'yes))
@@ -35,7 +37,7 @@
                                             #:first-arg [first-arg #f]
                                             #:second-arg [second-arg #f])
 				(unless (memq name '(eq? eqv? equal? 
-                                                         not null? pair? list?
+                                                         not null? pair? list? k:list-pair?
 							 real? number? boolean?
 							 procedure? symbol? keyword?
 							 string? bytes?
@@ -198,6 +200,11 @@
     (un #f 'list? '(1 2 . 3))
     (un-exact #t 'list? '(1 2 3))
     (un-exact 3 'length '(1 2 3))
+    (un #f 'k:list-pair? 0)
+    (un #f 'k:list-pair? '())
+    (un #f 'k:list-pair? '(1 . 2))
+    (un-exact #t 'k:list-pair? '(1))
+    (un-exact #t 'k:list-pair? '(1 2))
     (un #f 'boolean? 0)
     (un #t 'boolean? #t)
     (un #t 'boolean? #f)
@@ -904,7 +911,7 @@
       ;; Give `s` a minimal location, so that other macro locations
       ;; don't bleed through:
       (datum->syntax #f s (vector 'here #f #f #f #f)))
-    (test same? `(compile ,same? ,expr2) (comp=? (compile (->stx expr1)) (compile (->stx expr2)) same?))]))
+    (test same? `(compile ,same? (,expr1 => ,expr2)) (comp=? (compile (->stx expr1)) (compile (->stx expr2)) same?))]))
 
 (let ([x (compile '(lambda (x) x))])
   (test #t 'fixpt (eq? x (compile x))))
@@ -2852,6 +2859,7 @@
   (test-pred 'pair?)
   (test-pred 'mpair?)
   (test-pred 'list?)
+  (test-pred 'k:list-pair?)
   (test-pred 'box?)
   (test-pred 'number?)
   (test-pred 'real?)
@@ -2880,6 +2888,146 @@
   (test-pred 'eof-object?)
   (test-pred 'immutable?)
   (test-pred 'not))
+
+(let ([test-implies
+       (lambda (pred1 pred2 [val '=>])
+         (cond
+           [(eq? val '=>) 
+            (test-comp `(lambda (z) (when (,pred1 z) (,pred2 z)))
+                       `(lambda (z) (when (,pred1 z) #t)))
+            (test-comp `(lambda (z) (when (,pred2 z) (,pred1 z)))
+                       `(lambda (z) (when (,pred2 z) #t))
+                       #f)
+            (test-comp `(lambda (z) (when (,pred2 z) (,pred1 z)))
+                       `(lambda (z) (when (,pred2 z) #f))
+                       #f)]
+           [(eq? val '!=) 
+            (test-comp `(lambda (z) (when (,pred1 z) (,pred2 z)))
+                       `(lambda (z) (when (,pred1 z) #f)))
+            (test-comp `(lambda (z) (when (,pred2 z) (,pred1 z)))
+                       `(lambda (z) (when (,pred2 z) #f)))]
+            [(eq? val '?) 
+            (test-comp `(lambda (z) (when (,pred1 z) (,pred2 z)))
+                       `(lambda (z) (when (,pred1 z) #t))
+                       #f)
+            (test-comp `(lambda (z) (when (,pred1 z) (,pred2 z)))
+                       `(lambda (z) (when (,pred1 z) #f))
+                       #f)
+            (test-comp `(lambda (z) (when (,pred2 z) (,pred1 z)))
+                       `(lambda (z) (when (,pred2 z) #t))
+                       #f)
+            (test-comp `(lambda (z) (when (,pred2 z) (,pred1 z)))
+                       `(lambda (z) (when (,pred2 z) #f))
+                       #f)]
+            [else
+              (test '= (list pred1 pred2 val) 'bad-option)]))])
+
+  (test-implies 'null? 'k:list-pair? '!=)
+  (test-implies 'null? 'pair? '!=)
+  (test-implies 'null? 'list?)
+  (test-implies 'k:list-pair? 'pair?)
+  (test-implies 'k:list-pair? 'list?)
+  (test-implies 'list? 'pair? '?)
+)
+
+(test-comp '(lambda (z)
+              (when (and (list? z)
+                         (pair? z))
+                (k:list-pair? z)))
+           '(lambda (z)
+              (when (and (list? z)
+                         (pair? z))
+                #t)))
+(test-comp '(lambda (z)
+              (when (and (list? z)
+                         (not (null? z)))
+                (k:list-pair? z)))
+           '(lambda (z)
+              (when (and (list? z)
+                         (not (null? z)))
+                #t)))
+(test-comp '(lambda (z)
+              (when (and (list? z)
+                         (not (pair? z)))
+                (null? z)))
+           '(lambda (z)
+              (when (and (list? z)
+                         (not (pair? z)))
+                #t)))
+(test-comp '(lambda (z)
+              (when (and (list? z)
+                         (not (k:list-pair? z)))
+                (null? z)))
+           '(lambda (z)
+              (when (and (list? z)
+                         (not (k:list-pair? z)))
+                #t)))
+                      
+
+(let ([test-reduce
+       (lambda (pred-name expr [val #t])
+         (test-comp `(list ',pred-name (,pred-name ,expr))
+                    `(list ',pred-name ,val))
+         (test-comp `(let ([e ,expr])
+                       (list ',pred-name e e (,pred-name e)))
+                    `(let ([e ,expr])
+                       (list ',pred-name e e ,val))))])
+  (test-reduce 'list? 0 #f)
+  (test-reduce 'list? ''())
+  (test-reduce 'list? ''(1))
+  (test-reduce 'list? ''(1 2))
+  #;(test-reduce 'list? ''(1 . 2) #f)
+  (test-reduce 'list? '(list))
+  (test-reduce 'list? '(list 1))
+  (test-reduce 'list? '(list 1 2))
+  #;(test-reduce 'list? '(cons 1 2) #f)
+  (test-reduce 'list? '(cons 1 null))
+  (test-reduce 'list? '(cons 1 (list 2 3)))
+  (test-reduce 'list? '(cdr (list 1 2)))
+  (test-reduce 'list? '(cdr (list 1)))
+
+  (test-reduce 'null? 0 #f)
+  (test-reduce 'null? ''())
+  (test-reduce 'null? ''(1) #f)
+  (test-reduce 'null? ''(1 2) #f)
+  (test-reduce 'null? ''(1 . 2) #f)
+  (test-reduce 'null? '(list))
+  (test-reduce 'null? '(list 1) #f)
+  (test-reduce 'null? '(list 1 2) #f)
+  (test-reduce 'null? '(cons 1 2) #f)
+  (test-reduce 'null? '(cons 1 null) #f)
+  (test-reduce 'null? '(cons 1 (list 2 3)) #f)
+  (test-reduce 'null? '(cdr (list 1 2)) #f)
+  (test-reduce 'null? '(cdr (list 1)))
+
+  (test-reduce 'pair? 0 #f)
+  (test-reduce 'pair? ''() #f)
+  (test-reduce 'pair? ''(1))
+  (test-reduce 'pair? ''(1 2))
+  (test-reduce 'pair? ''(1 . 2))
+  (test-reduce 'pair? '(list) #f)
+  (test-reduce 'pair? '(list 1))
+  (test-reduce 'pair? '(list 1 2))
+  (test-reduce 'pair? '(cons 1 2))
+  (test-reduce 'pair? '(cons 1 null))
+  (test-reduce 'pair? '(cons 1 (list 2 3)))
+  (test-reduce 'pair? '(cdr (list 1 2)))
+  (test-reduce 'pair? '(cdr (list 1)) #f)
+
+  (test-reduce 'k:list-pair? 0 #f)
+  (test-reduce 'k:list-pair? ''() #f)
+  (test-reduce 'k:list-pair? ''(1))
+  (test-reduce 'k:list-pair? ''(1 2))
+  #;(test-reduce 'k:list-pair? ''(1 . 2) #f)
+  (test-reduce 'k:list-pair? '(list) #f)
+  (test-reduce 'k:list-pair? '(list 1))
+  (test-reduce 'k:list-pair? '(list 1 2))
+  #;(test-reduce 'k:list-pair? '(cons 1 2) #f)
+  (test-reduce 'k:list-pair? '(cons 1 null))
+  (test-reduce 'k:list-pair? '(cons 1 (list 2 3)))
+  (test-reduce 'k:list-pair? '(cdr (list 1 2)))
+  (test-reduce 'k:list-pair? '(cdr (list 1)) #f)
+)
 
 (let ([test-bin
        (lambda (bin-name)
@@ -5608,6 +5756,5 @@
     (void proc proc)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 (report-errs)

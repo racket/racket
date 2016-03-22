@@ -4,7 +4,8 @@
 (Section 'basic)
 
 (require racket/flonum
-         racket/function)
+         racket/function
+         (only-in '#%kernel (list-pair? k:list-pair?)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,6 +148,13 @@
 (test #f pair? '())
 (test #f pair? '#(a b))
 (arity-test pair? 1 1)
+
+(test #f k:list-pair? '(a . b))
+(test #f k:list-pair? '(a . 1))
+(test #t k:list-pair? '(a b c))
+(test #f k:list-pair? '())
+(test #f k:list-pair? '#(a b))
+(arity-test k:list-pair? 1 1)
 
 (test '(a) cons 'a '())
 (test '((a) b c d) cons '(a) '(b c d))

@@ -31,11 +31,14 @@ READ_ONLY Scheme_Object scheme_null[1];
 READ_ONLY Scheme_Object *scheme_null_p_proc;
 READ_ONLY Scheme_Object *scheme_pair_p_proc;
 READ_ONLY Scheme_Object *scheme_mpair_p_proc;
+READ_ONLY Scheme_Object *scheme_car_proc;
+READ_ONLY Scheme_Object *scheme_cdr_proc;
 READ_ONLY Scheme_Object *scheme_cons_proc;
 READ_ONLY Scheme_Object *scheme_mcons_proc;
 READ_ONLY Scheme_Object *scheme_list_p_proc;
 READ_ONLY Scheme_Object *scheme_list_proc;
 READ_ONLY Scheme_Object *scheme_list_star_proc;
+READ_ONLY Scheme_Object *scheme_list_pair_p_proc;
 READ_ONLY Scheme_Object *scheme_box_proc;
 READ_ONLY Scheme_Object *scheme_box_immutable_proc;
 READ_ONLY Scheme_Object *scheme_box_p_proc;
@@ -59,6 +62,7 @@ static Scheme_Object *null_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_star_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *list_pair_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *immutablep (int argc, Scheme_Object *argv[]);
 static Scheme_Object *length_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *append_prim (int argc, Scheme_Object *argv[]);
@@ -239,11 +243,15 @@ scheme_init_list (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant ("cons", p, env);
 
+  REGISTER_SO(scheme_car_proc);
   p = scheme_make_folding_prim(scheme_checked_car, "car", 1, 1, 1);
+  scheme_car_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant ("car", p, env);
 
+  REGISTER_SO(scheme_cdr_proc);
   p = scheme_make_folding_prim(scheme_checked_cdr, "cdr", 1, 1, 1);
+  scheme_cdr_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant ("cdr", p, env);
 
@@ -301,6 +309,13 @@ scheme_init_list (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
   scheme_add_global_constant ("list*", p, env);
+
+  REGISTER_SO(scheme_list_pair_p_proc);
+  p = scheme_make_folding_prim(list_pair_p_prim, "list-pair?", 1, 1, 1);
+  scheme_list_pair_p_proc = p;
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant ("list-pair?", p, env);
 
   p = scheme_make_folding_prim(immutablep, "immutable?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
@@ -1418,6 +1433,15 @@ static Scheme_Object *
 list_star_prim (int argc, Scheme_Object *argv[])
 {
   LIST_BODY(STAR_LIST_INIT(), cons);
+}
+
+static Scheme_Object *
+list_pair_p_prim (int argc, Scheme_Object *argv[])
+{
+  return ((SCHEME_PAIRP(argv[0])
+           && scheme_is_list(argv[0]))
+          ? scheme_true
+          : scheme_false);
 }
 
 static Scheme_Object *

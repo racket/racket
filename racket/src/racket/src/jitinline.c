@@ -1083,8 +1083,13 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   } else if (IS_NAMED_PRIM(rator, "odd?")) {
     scheme_generate_arith(jitter, rator, app->rand, NULL, 1, 0, CMP_ODDP, 0, for_branch, branch_short, 0, 0, NULL, dest);
     return 1;
-  } else if (IS_NAMED_PRIM(rator, "list?")) {
+  } else if (IS_NAMED_PRIM(rator, "list?")
+             || IS_NAMED_PRIM(rator, "list-pair?")) {
+    int for_list_pair = 0;
     GC_CAN_IGNORE jit_insn *ref0, *ref1, *ref3, *ref4, *ref6;
+
+    if (IS_NAMED_PRIM(rator, "list-pair?"))
+      for_list_pair = 1;
 
     mz_runstack_skipped(jitter, 1);
     
@@ -1104,6 +1109,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
     ref1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
     jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
+    /* The difference between list? and list-pair? is only for null. */
     ref3 = jit_beqi_i(jit_forward(), JIT_R1, scheme_null_type);
     ref4 = jit_bnei_i(jit_forward(), JIT_R1, scheme_pair_type);
     CHECK_LIMIT();
@@ -1116,11 +1122,14 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       ref0 = jit_patchable_movi_p(JIT_V1, jit_forward());
       (void)jit_calli(sjc.list_p_branch_code);
 
-      mz_patch_branch(ref3);
+      if (!for_list_pair)
+        mz_patch_branch(ref3);
       mz_patch_branch(ref6);
 
       scheme_add_branch_false_movi(for_branch, ref0);
       scheme_add_branch_false(for_branch, ref1);
+      if (for_list_pair)
+        scheme_add_branch_false(for_branch, ref3);
       scheme_add_branch_false(for_branch, ref4);
       scheme_branch_for_true(jitter, for_branch);
     } else {
@@ -1132,10 +1141,13 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       mz_patch_branch(ref1);
       mz_patch_branch(ref4);
+      if (for_list_pair)
+        mz_patch_branch(ref3);
       (void)jit_movi_p(dest, scheme_false);
       ref1 = jit_jmpi(jit_forward());
       
-      mz_patch_branch(ref3);
+      if (!for_list_pair)
+        mz_patch_branch(ref3);
       mz_patch_branch(ref6);
       (void)jit_movi_p(dest, scheme_true);
 

@@ -2567,14 +2567,15 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
       return scheme_real_p_proc;
     else if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_PRODUCES_NUMBER)
       return scheme_number_p_proc;
-    else if ((SAME_OBJ(rator, scheme_cons_proc)
-         || SAME_OBJ(rator, scheme_unsafe_cons_list_proc)))
+    else if (SAME_OBJ(rator, scheme_cons_proc))
       return scheme_pair_p_proc;
+    else if (SAME_OBJ(rator, scheme_unsafe_cons_list_proc))
+      return scheme_list_pair_p_proc;
     else if (SAME_OBJ(rator, scheme_mcons_proc))
       return scheme_mpair_p_proc;
     else if (SAME_OBJ(rator, scheme_list_proc)) {
       if (argc >= 1)
-        return scheme_pair_p_proc;
+        return scheme_list_pair_p_proc;
       else
         return scheme_null_p_proc;
     } else if (SAME_OBJ(rator, scheme_list_star_proc)) {
@@ -2657,7 +2658,15 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
         if (p && predicate_implies(p, scheme_real_p_proc))
           return scheme_real_p_proc;
       }
-
+    
+      if (SAME_OBJ(app->rator, scheme_cdr_proc)
+          || SAME_OBJ(app->rator, scheme_unsafe_cdr_proc)) {
+        Scheme_Object *p;
+        p = do_expr_implies_predicate(app->rand, info, NULL, fuel-1, ignore_vars);
+        if (SAME_OBJ(p, scheme_list_pair_p_proc))
+          return scheme_list_p_proc;
+      }
+      
       return rator_implies_predicate(app->rator, 1);
     }
     break;
@@ -2687,6 +2696,15 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
             return scheme_real_p_proc;
           }
         }
+      }
+
+      if (SAME_OBJ(app->rator, scheme_cons_proc)) {
+        Scheme_Object *p;
+        p = do_expr_implies_predicate(app->rand2, info, NULL, fuel-1, ignore_vars);
+        if (SAME_OBJ(p, scheme_list_pair_p_proc)
+            || SAME_OBJ(p, scheme_list_p_proc)
+            || SAME_OBJ(p, scheme_null_p_proc))
+          return scheme_list_pair_p_proc;
       }
 
       return rator_implies_predicate(app->rator, 2);
@@ -2772,12 +2790,6 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
 
       return do_expr_implies_predicate(seq->array[0], info, _involves_k_cross, fuel-1, ignore_vars);
     }
-  case scheme_pair_type:
-    return scheme_pair_p_proc;
-    break;
-  case scheme_mutable_pair_type:
-    return scheme_mpair_p_proc;
-    break;
   case scheme_vector_type:
     return scheme_vector_p_proc;
     break;
@@ -2799,6 +2811,8 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
 
     if (SCHEME_NULLP(expr))
       return scheme_null_p_proc;
+    if (scheme_is_list(expr))
+      return scheme_list_pair_p_proc;
     if (SCHEME_PAIRP(expr))
       return scheme_pair_p_proc;
     if (SCHEME_MPAIRP(expr))
@@ -3121,10 +3135,8 @@ static int check_known_variant(Optimize_Info *info, Scheme_Object *app,
         info->escapes = 1;
       }
     } else {
-      if (SAME_TYPE(SCHEME_TYPE(rand), scheme_ir_local_type)) {
-        if (!SCHEME_VAR(rand)->mutated)
-          add_type(info, rand, implies_pred);
-      }
+      if (SAME_TYPE(SCHEME_TYPE(rand), scheme_ir_local_type))
+        add_type(info, rand, implies_pred);
     }
   }
 
@@ -3149,10 +3161,8 @@ static void check_known_rator(Optimize_Info *info, Scheme_Object *rator)
     if (predicate_implies_not(pred, scheme_procedure_p_proc))
       info->escapes = 1;
   } else {
-    if (SAME_TYPE(SCHEME_TYPE(rator), scheme_ir_local_type)) {
-      if (!SCHEME_VAR(rator)->mutated)
-        add_type(info, rator, scheme_procedure_p_proc);
-    }
+    if (SAME_TYPE(SCHEME_TYPE(rator), scheme_ir_local_type))
+      add_type(info, rator, scheme_procedure_p_proc);
   }
 }
 
@@ -4501,6 +4511,8 @@ static Scheme_Object *equivalent_exprs(Scheme_Object *a, Scheme_Object *b,
 }
 
 static void add_type(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pred)
+/* This is conceptually an intersection, but `Any` is represented by a
+   missing entry, so the implementation looks like an union. */
 {
   Scheme_Hash_Tree *new_types = info->types;
   Scheme_Object *old_pred;
@@ -4516,10 +4528,44 @@ static void add_type(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pre
   if (old_pred && predicate_implies(old_pred, pred))
     return;
 
+  /* special case: list? and pair? => list-pair? */
+  if (old_pred) {
+    if ((SAME_OBJ(old_pred, scheme_list_p_proc)
+         && (SAME_OBJ(pred, scheme_pair_p_proc)))
+        || (SAME_OBJ(old_pred, scheme_pair_p_proc)
+            && (SAME_OBJ(pred, scheme_list_p_proc)))) {
+      pred = scheme_list_pair_p_proc;
+    }
+  }
+
   if (!new_types)
     new_types = scheme_make_hash_tree(0);
   new_types = scheme_hash_tree_set(new_types, var, pred);
   info->types = new_types;
+}
+
+static void add_type_no(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pred)
+/* Currently only check a few special cases for lists. */
+{
+  Scheme_Hash_Tree *new_types = info->types;
+  Scheme_Object *old_pred;
+  
+  if (SCHEME_VAR(var)->mutated)
+    return;
+
+  old_pred = optimize_get_predicate(info, var, 1);
+
+  if (old_pred && SAME_OBJ(old_pred, scheme_list_p_proc)) {
+    /* list? but not null? => list-pair? */
+    if (SAME_OBJ(pred, scheme_null_p_proc))
+      add_type(info, var, scheme_list_pair_p_proc);
+
+    /* list? but not pair? => null? */
+    /* list? but not list-pair? => null? */
+    if (SAME_OBJ(pred, scheme_pair_p_proc)
+        ||SAME_OBJ(pred, scheme_list_pair_p_proc))
+      add_type(info, var, scheme_null_p_proc);
+  }
 }
 
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, Scheme_Hash_Tree *skip_vars)
@@ -4540,9 +4586,11 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, Scheme_Has
   }
 }
 
-static void intersect_and_merge_types(Optimize_Info *t_info, Optimize_Info *f_info,
+static void merge_branchs_types(Optimize_Info *t_info, Optimize_Info *f_info,
                                       Optimize_Info *base_info)
-/* Add to base_info the intersection of the types of t_info and f_info */
+/* This is conceptually an union, but `Any` is represented by a
+   missing entry, so the implementation looks like an intersection.
+   This adds to base_info the "intersection" of the types of t_info and f_info */
 {
   Scheme_Hash_Tree *t_types = t_info->types, *f_types = f_info->types;
   Scheme_Object *var, *t_pred, *f_pred;
@@ -4566,6 +4614,15 @@ static void intersect_and_merge_types(Optimize_Info *t_info, Optimize_Info *f_in
         add_type(base_info, var, t_pred);
       else if (predicate_implies(t_pred, f_pred))
         add_type(base_info, var, f_pred);
+      else {
+        /* special case: null? or list-pair? => list? */
+       if ((SAME_OBJ(t_pred, scheme_null_p_proc)
+         && (SAME_OBJ(f_pred, scheme_list_pair_p_proc)))
+        || (SAME_OBJ(t_pred, scheme_list_pair_p_proc)
+            && (SAME_OBJ(f_pred, scheme_null_p_proc)))) {
+        add_type(base_info, var, scheme_list_p_proc);
+       }
+      }
     }
     i = scheme_hash_tree_next(f_types, i);
   }
@@ -4583,6 +4640,7 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_mpair_p_proc)
           || SAME_OBJ(pred, scheme_box_p_proc)
           || SAME_OBJ(pred, scheme_list_p_proc)
+          || SAME_OBJ(pred, scheme_list_pair_p_proc)      
           || SAME_OBJ(pred, scheme_vector_p_proc)
           || SAME_OBJ(pred, scheme_procedure_p_proc)
           || SAME_OBJ(pred, scheme_syntax_p_proc)
@@ -4606,6 +4664,16 @@ static int predicate_implies(Scheme_Object *pred1, Scheme_Object *pred2)
   /* null? => list? */
   if (SAME_OBJ(pred2, scheme_list_p_proc)
       && SAME_OBJ(pred1, scheme_null_p_proc))
+    return 1;
+
+  /* list-pair? => list? */
+  if (SAME_OBJ(pred2, scheme_list_p_proc)
+      && SAME_OBJ(pred1, scheme_list_pair_p_proc))
+    return 1;
+
+  /* list-pair? => pair? */
+  if (SAME_OBJ(pred2, scheme_pair_p_proc)
+      && SAME_OBJ(pred1, scheme_list_pair_p_proc))
     return 1;
 
   /* real?, fixnum?, or flonum? => number? */
@@ -4645,7 +4713,6 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)t;
     if (SCHEME_PRIMP(app->rator)
         && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_ir_local_type)
-        && !SCHEME_VAR(app->rand)->mutated
         && relevant_predicate(app->rator)) {
       /* Looks like a predicate on a local variable. Record that the
          predicate succeeded, which may allow conversion of safe
@@ -4660,8 +4727,7 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)t;
     Scheme_Object *pred1, *pred2;
     if (SAME_OBJ(app->rator, scheme_eq_proc)) {
-      if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_ir_local_type)
-          && !SCHEME_VAR(app->rand1)->mutated) {
+      if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_ir_local_type)) {
         pred1 = expr_implies_predicate(app->rand1, info);
         if (!pred1) {
           pred2 = expr_implies_predicate(app->rand2, info);
@@ -4669,8 +4735,7 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
             add_type(info, app->rand1, pred2);
         }
       }
-      if (SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_ir_local_type)
-          && !SCHEME_VAR(app->rand2)->mutated) {
+      if (SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_ir_local_type)) {
         pred2 = expr_implies_predicate(app->rand2, info);
         if (!pred2) {
           pred1 = expr_implies_predicate(app->rand1, info);
@@ -4700,8 +4765,15 @@ static void add_types_for_f_branch(Scheme_Object *t, Optimize_Info *info, int fu
 
   if (SAME_TYPE(SCHEME_TYPE(t), scheme_ir_local_type)) {
     add_type(info, t, scheme_not_proc);
-    if (SAME_OBJ(app->rator, scheme_not_proc)) {
-      add_types_for_t_branch(app->rand, info, fuel-1);
+  
+  } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_application2_type)) {
+    Scheme_App2_Rec *app = (Scheme_App2_Rec *)t;
+    if (SCHEME_PRIMP(app->rator)
+        && SAME_TYPE(SCHEME_TYPE(app->rand), scheme_ir_local_type)
+        && relevant_predicate(app->rator)) {
+      /* Looks like a predicate on a local variable. Record that the
+         predicate failed, this is currently useful only for lists. */
+      add_type_no(info, app->rand, app->rator);
     }
 
   } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)) {
@@ -4885,7 +4957,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     info->single_result = new_single_result;
     if (then_info->kclock > info->kclock)
       info->kclock = then_info->kclock;
-    intersect_and_merge_types(then_info, else_info, info);
+    merge_branchs_types(then_info, else_info, info);
   }
 
   if (then_info->sclock > info->sclock)
