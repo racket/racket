@@ -4652,6 +4652,9 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
          operations to unsafe operations. */
       add_type(info, app->rand, app->rator);
     }
+    if (SAME_OBJ(app->rator, scheme_not_proc)) {
+      add_types_for_f_branch(app->rand, info, fuel-1);
+    }
 
   } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_application3_type)) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)t;
@@ -4697,6 +4700,9 @@ static void add_types_for_f_branch(Scheme_Object *t, Optimize_Info *info, int fu
 
   if (SAME_TYPE(SCHEME_TYPE(t), scheme_ir_local_type)) {
     add_type(info, t, scheme_not_proc);
+    if (SAME_OBJ(app->rator, scheme_not_proc)) {
+      add_types_for_t_branch(app->rand, info, fuel-1);
+    }
 
   } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)) {
     Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)t;
