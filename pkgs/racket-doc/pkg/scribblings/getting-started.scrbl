@@ -385,7 +385,9 @@ is:
 
 If you want the package to be @nonterm{branch} or @nonterm{tag}
 instead of @exec{master}, then add @filepath{#@nonterm{branch}} or
-@filepath{#@nonterm{tag}} to the end of the package source.
+@filepath{#@nonterm{tag}} to the end of the package source. If your
+package is a subdirectory @nonterm{path} within the repository, add
+@filepath{?path=@nonterm{path}} to the end of the package source.
 
 Whenever you
 
@@ -395,9 +397,10 @@ your changes will automatically be discovered by those who use
 @command-ref{update} after installing from your
 GitHub-based @tech{package source}.
 
-As of Racket version 6.1.1.1, other Git repository services can work
+Other Git repository services@margin-note*{Support for services other
+than GitHub requires Racket version 6.1.1.1 or later.} can work
 just as well as GitHub---including Gitorious or BitBucket---as long as
-the server supports either the ``smart'' HTTP(S) protocol or the
+the server supports either the HTTP(S) protocol or the
 native Git protocol (but use a @exec{git://} path for the latter).
 
 The Racket package manager provides more support for Git-based
