@@ -477,10 +477,11 @@ Conventions:
 
 (define-syntax (first-desc:matrix stx)
   (syntax-case stx ()
-    [(fdm (#s(pk (pat1 . pats) k)))
+    [(fdm (#s(pk1 (pat1 . pats) k)))
      #'(first-desc:S pat1)]
-    [(fdm (pk ...))
-     ;; FIXME
+    [(fdm (#s(pk/same pat1 pks)))
+     #'(first-desc:S pat1)]
+    [(fdm (pk ...)) ;; FIXME
      #'#f]))
 
 ;; ----

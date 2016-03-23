@@ -55,14 +55,19 @@
 ;; ----
 
 (define (optimize-matrix0 rows)
+  (define now (current-inexact-milliseconds))
+  (when (and DEBUG-OPT-SUCCEED (> (length rows) 1))
+    (eprintf "\n%% optimizing (~s):\n" (length rows))
+    (pretty-write (matrix->sexpr rows) (current-error-port)))
   (define result (optimize-matrix rows))
-  #|
-  (when DEBUG-OPT-SUCCEED
-    (let ([sexpr (matrix->sexpr result)])
-      (unless (equal? (car sexpr) 'MATCH)
-        (eprintf "%% optimized matrix (~s):\n" (length rows))
-        (pretty-write (matrix->sexpr result) (current-error-port)))))
-  |#
+  (define then (current-inexact-milliseconds))
+  (when (and DEBUG-OPT-SUCCEED (> (length rows) 1))
+    (cond [(= (length result) (length rows))
+           (eprintf "%% !! FAILED !! (~s ms)\n\n" (floor (- then now)))]
+          [else
+           (eprintf "==> (~s ms)\n" (floor (- then now)))
+           (pretty-write (matrix->sexpr result) (current-error-port))
+           (eprintf "\n")]))
   result)
 
 ;; optimize-matrix : (listof pk1) -> Matrix
@@ -113,12 +118,12 @@
 ;; pattern->partitioner : pattern -> (values (pattern -> boolean) ((listof pk1) -> PK))
 (define (pattern->partitioner pat1)
   (match pat1
-    [(pat:pair proper? attrs head tail)
+    [(pat:pair attrs proper? head tail)
      (values (lambda (p) (and (pat:pair? p) (eq? (pat:pair-proper? p) proper?)))
              (lambda (rows)
+               (when DEBUG-OPT-SUCCEED
+                 (eprintf "-- accumulated ~s rows like ~e\n" (length rows) (pattern->sexpr pat1)))
                (cond [(> (length rows) 1)
-                      (when DEBUG-OPT-SUCCEED
-                        (eprintf "** pairs (~s)\n" (length rows)))
                       (pk/pair proper?
                                (optimize-matrix
                                 (for/list ([row (in-list rows)])
@@ -132,9 +137,9 @@
     [(? pattern-factorable?)
      (values (lambda (pat2) (pattern-equal? pat1 pat2))
              (lambda (rows)
+               (when DEBUG-OPT-SUCCEED
+                 (eprintf "-- accumulated ~s rows like ~e\n" (length rows) (pattern->sexpr pat1)))
                (cond [(> (length rows) 1)
-                      (when DEBUG-OPT-SUCCEED
-                        (eprintf "** factored(~s): ~e\n" (length rows) (syntax->datum #`#,pat1)))
                       (pk/same pat1
                                (optimize-matrix
                                 (for/list ([row (in-list rows)])
@@ -372,7 +377,6 @@
 
 ;; ----
 
-#|
 (define (matrix->sexpr rows)
   (cond [(null? rows) ;; shouldn't happen
          '(FAIL)]
@@ -386,7 +390,7 @@
      (cons 'MATCH (map pattern->sexpr pats))]
     [(pk/same pat inner)
      (list 'SAME (pattern->sexpr pat) (matrix->sexpr inner))]
-    [(pk/pair inner)
+    [(pk/pair proper? inner)
      (list 'PAIR (matrix->sexpr inner))]
     [(pk/and inner)
      (list 'AND (matrix->sexpr inner))]))
@@ -404,9 +408,14 @@
     [(? pat:literal?) `(quote ,(syntax->datum (pat:literal-id p)))]
     [(pat:datum _as datum) datum]
     [(? pat:action?) 'ACTION]
-    [(pat:pair _as _p? head tail)
+    [(pat:pair _as '#t head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
+    [(pat:pair _as '#f head tail)
+     (list '~pair (pattern->sexpr head) (pattern->sexpr tail))]
     [(pat:head _as head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
+    [(pat:dots _as (list eh) tail)
+     (list* (pattern->sexpr eh) '... (pattern->sexpr tail))]
+    [(ehpat _as hpat '#f)
+     (pattern->sexpr hpat)]
     [_ 'PATTERN]))
-|#
