@@ -668,7 +668,7 @@
               (trace-printf "newer src...")
               ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
               (maybe-compile-zo sha1-only? deps mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen)]
-             [(ormap
+             [(ormap-strict
                (lambda (p)
                  (define ext? (external-dep? p))
                  (define d (collects-relative*->path (dep->encoded-path p) collection-cache))
@@ -703,6 +703,14 @@
              v))
       (begin (trace-printf "checking: ~a" orig-path)
              (do-check))))
+
+(define (ormap-strict f l)
+  (cond
+    [(null? l) #f]
+    [else
+     (define a (f (car l)))
+     (define b (ormap-strict f (cdr l)))
+     (or a b)]))
 
 (define (managed-compile-zo zo [read-src-syntax read-syntax] #:security-guard [security-guard #f])
   ((make-caching-managed-compile-zo read-src-syntax #:security-guard security-guard) zo))
