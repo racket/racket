@@ -140,32 +140,44 @@ Interpretation: later frames are applied first.
 ;; == Expectations ==
 
 #|
+There are multiple types that use the same structures, optimized for
+different purposes.
+
+-- During parsing, the goal is to minimize/consolidate allocations.
+
 An ExpectStack (during parsing) is one of
-  - (make-expect:thing Progress string boolean string/#f ExpectStack)
-  * (make-expect:message string ExpectStack)
-  * (make-expect:atom atom ExpectStack)
-  * (make-expect:literal identifier ExpectStack)
-  * (make-expect:proper-pair FirstDesc ExpectStack)
+  - (expect:thing Progress String Boolean String/#f ExpectStack)
+  * (expect:message String ExpectStack)
+  * (expect:atom Datum ExpectStack)
+  * (expect:literal Identifier ExpectStack)
+  * (expect:proper-pair FirstDesc ExpectStack)
 
-The *-marked variants can only occur at the top of the stack.
+The *-marked variants can only occur at the top of the stack (ie, not
+in the next field of another Expect). The top of the stack contains
+the most specific information.
 
-Goal during parsing is to minimize/consolidate allocations.
+-- During reporting, the goal is ease of manipulation.
 
-During reporting, the representation changes somewhat:
+An ExpectList (during reporting) is (listof Expect).
 
-An ExpectStack (during reporting) is (listof Expect)
 An Expect is one of
-  - (expect:thing (cons syntax nat) string #t string/#f _)
-  * (expect:message string _)
-  * (expect:atom atom _)
-  * (expect:literal identifier _)
-  * (expect:proper-pair string/#f _)
-  - (expect:disj (non-empty-listof Expect) _)
+  - (expect:thing #f String #t String/#f StxIdx)
+  * (expect:message String StxIdx)
+  * (expect:atom Datum StxIdx)
+  * (expect:literal Identifier StxIdx)
+  * (expect:proper-pair FirstDesc StxIdx)
+  * (expect:disj (NEListof Expect) StxIdx)
+  - '...
 
-That is, next link always ignored (replace with #f for sake of equal? cmp)
-and expect:thing term represented as syntax with index.
+A StxIdx is (cons Syntax Nat)
 
-Goal during reporting is ease of manipulation.
+That is, the next link is replaced with the syntax+index of the term
+being complained about. An expect:thing's progress is replaced with #f.
+
+An expect:disj never contains a '... or another expect:disj.
+
+We write ExpectList when the most specific information comes first and
+RExpectList when the most specific information comes last.
 |#
 (struct expect:thing (term description transparent? role next) #:prefab)
 (struct expect:message (message next) #:prefab)
