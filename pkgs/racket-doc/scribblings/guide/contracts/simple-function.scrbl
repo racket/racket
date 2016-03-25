@@ -404,11 +404,14 @@ the contract so that error messages become intelligible:
 @interaction[#:eval 
              contract-eval
              (module improved-bank-server racket
-               (define (amount? x) (and (number? x) (integer? x) (>= x 0)))
-               (define amount (flat-named-contract 'amount amount?))
-  
-               (provide (contract-out [deposit (amount . -> . any)]))
-  
+               (provide
+                (contract-out
+                 [deposit (-> (flat-named-contract
+                               'amount
+                               (λ (x)
+                                 (and (number? x) (integer? x) (>= x 0))))
+                              any)]))
+
                (define total 0)
                (define (deposit a) (set! total (+ a total))))]
 
