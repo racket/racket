@@ -2088,6 +2088,18 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
 
     if (env->genv->stx_context)
       id = scheme_stx_introduce_to_module_context(id, env->genv->stx_context);
+    if (env->flags & SCHEME_TMP_TL_BIND_FRAME) {
+      /* When the lifetd definition is compiled, `tmp_bind_scope` will
+         be added to the defined name so that a fresh binding is not
+         created. We have added a fresh scope that would keep it
+         distinct, anyway, but add the tmp scope here to keep the
+         definition and reference in sync. */
+      if (!env->genv->tmp_bind_scope) {
+        id_sym = scheme_new_scope(SCHEME_STX_MODULE_SCOPE);
+        env->genv->tmp_bind_scope = id_sym;
+      }
+      id = scheme_stx_add_scope(id, env->genv->tmp_bind_scope, scheme_env_phase(env->genv));
+    }
 
     rev_ids = scheme_make_pair(id, rev_ids);
   }

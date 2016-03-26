@@ -1565,5 +1565,18 @@
                               (exn-message exn))))
 
 ;; ----------------------------------------
+;; Check that lifting works right at the top level:
+
+(module macro-that-introduces-a-lifted-one racket
+  (define-syntax (m stx)
+    (syntax-local-lift-expression #'1))
+  (m))
+(dynamic-require ''macro-that-introduces-a-lifted-one #f)
+
+(test 1 values (parameterize ([current-namespace
+                               (module->namespace ''macro-that-introduces-a-lifted-one)])
+                 (eval '(values m))))
+
+;; ----------------------------------------
 
 (report-errs)
