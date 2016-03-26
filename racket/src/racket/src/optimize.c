@@ -4547,7 +4547,6 @@ static void add_type(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pre
 static void add_type_no(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pred)
 /* Currently only check a few special cases for lists. */
 {
-  Scheme_Hash_Tree *new_types = info->types;
   Scheme_Object *old_pred;
   
   if (SCHEME_VAR(var)->mutated)
