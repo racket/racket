@@ -78,20 +78,22 @@ void fault_handler(int sn, siginfo_t *si, void *ctx)
       */
     }
     if (c == 0) {
-      /* I have no idea why this happens on linux */
-      /* supposedly its coming from the user via kill */
-      /* so just ignore it. It appears when */
-      /* running w/ places in GDB */
-      printf("SIGSEGV SI_USER SI_ERRNO %i fault on addr %p\n", si->si_errno, p);
-#ifdef MZ_USE_PLACES
-      printf("pid %i uid %i thread %lx\n", si->si_pid, si->si_uid, mz_proc_os_thread_self());
-#else
-      printf("pid %i uid %i\n", si->si_pid, si->si_uid);
-#endif      
+      /* When running w/ places in gdb, the debugger
+         sometimes propagates extra copies of signals
+         that crash the process. Ignore them (but they're
+         rare enough that it's worth reporting that the signal
+         was received). */
+      printf("Signal as SI_USER (from debugger?) - ignoring\n");
       return;
     }
     if (c == 128) {
-      printf("SIGSEGV SI_KERNEL SI_ERRNO %i fault on addr %p\n", si->si_errno, p);
+      /* A mysterious signal on Linux, probably the OS providing some
+         kind of alert. These can be frequent enough that printing
+         an alert is too noisy. */
+      if (0) {
+        printf("Signal as SI_KERNEL - ignoring\n");
+      }
+      return;
     }
 #if WAIT_FOR_GDB
     launchgdb();
