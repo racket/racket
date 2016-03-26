@@ -526,7 +526,7 @@ typedef intptr_t (*Scheme_Secondary_Hash_Proc)(Scheme_Object *obj, void *cycle_d
 #define SCHEME_PAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_pair_type)
 #define SCHEME_MPAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_mutable_pair_type)
 #define SCHEME_MUTABLE_PAIRP(obj)    SCHEME_MPAIRP(obj)
-#define SCHEME_LISTP(obj)    (SCHEME_NULLP(obj) || SCHEME_PAIRP(obj))
+#define SCHEME_LISTP(obj)    scheme_is_list(obj)
 
 #define SCHEME_RPAIRP(obj)    SAME_TYPE(SCHEME_TYPE(obj), scheme_raw_pair_type)
 
