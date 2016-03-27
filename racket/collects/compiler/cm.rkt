@@ -55,7 +55,7 @@
 
 (define manager-compile-notify-handler (make-parameter void))
 (define manager-trace-handler (make-parameter default-manager-trace-handler))
-(define indent (make-parameter ""))
+(define indent (make-parameter 0))
 (define trust-existing-zos (make-parameter #f))
 (define manager-skip-file-handler (make-parameter (λ (x) #f)))
 (define depth (make-parameter 0))
@@ -187,7 +187,12 @@
     (unless (or (eq? t void)
                 (and (equal? t default-manager-trace-handler)
                      (not (log-level? cm-logger 'debug))))
-      (t (string-append (indent) (apply format fmt args))))))
+      (t (string-append (build-string (indent)
+                                      (λ (x)
+                                        (if (= 2 (modulo x 3))
+                                            #\|
+                                            #\space)))
+                        (apply format fmt args))))))
 
 (define (get-deps code path)
   (define ht
@@ -226,7 +231,7 @@
 (define (try-delete-file path [noisy? #t])
   ;; Attempt to delete, but give up if it doesn't work:
   (with-handlers ([exn:fail:filesystem? void])
-    (when noisy? (trace-printf "deleting: ~a" path))
+    (when noisy? (trace-printf "deleting ~a" path))
     (with-compiler-security-guard (delete-file path))))
 
 (define (compilation-failure path->mode roots path zo-name date-path reason)
@@ -527,18 +532,14 @@
   (let ([actual-path (actual-source-path orig-path)])
     (unless sha1-only?
       ((manager-compile-notify-handler) actual-path)
-      (trace-printf "compiling: ~a" actual-path))
+      (trace-printf "maybe-compile-zo starting ~a" actual-path))
     (begin0
-     (parameterize ([indent (string-append "  " (indent))])
+     (parameterize ([indent (+ 2 (indent))])
        (let* ([zo-name (path-add-suffix (get-compilation-path path->mode roots path) #".zo")]
               [zo-exists? (file-exists? zo-name)])
          (if (and zo-exists? (trust-existing-zos))
              (begin
-               (log-info (format "cm: ~atrusting ~a" 
-                                 (build-string 
-                                  (depth)
-                                  (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
-                                 zo-name))
+               (trace-printf "trusting: ~a" zo-name)
                (touch zo-name)
                #f)
              (let ([src-sha1 (and zo-exists?
@@ -551,11 +552,7 @@
                         (equal? (get-dep-sha1s (cddr deps) up-to-date collection-cache read-src-syntax path->mode roots #f seen)
                                 (cdadr deps)))
                    (begin
-                     (log-info (format "cm: ~ahash-equivalent ~a" 
-                                       (build-string 
-                                        (depth)
-                                        (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
-                                       zo-name))
+                     (trace-printf "hash-equivalent: ~a" zo-name)
                      (touch zo-name)
                      #f)
                    ((if sha1-only? values (lambda (build) (build) #f))
@@ -570,11 +567,7 @@
                             (when ok-to-compile?
                               (log-compile-event path 'start-compile)
                               (when zo-exists? (try-delete-file zo-name #f))
-                              (log-info (format "cm: ~acompiling ~a" 
-                                                (build-string 
-                                                 (depth)
-                                                 (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
-                                                actual-path))
+                              (trace-printf (format "compiling ~a" actual-path))
                               (parameterize ([depth (+ (depth) 1)])
                                 (with-handlers
                                     ([exn:get-module-code?
@@ -584,18 +577,14 @@
                                                              (exn-message ex))
                                         (raise ex))])
                                   (compile-zo* path->mode roots path src-sha1 read-src-syntax zo-name up-to-date collection-cache)))
-                              (log-info (format "cm: ~acompiled  ~a" 
-                                                (build-string 
-                                                 (depth)
-                                                 (λ (x) (if (= 2 (modulo x 3)) #\| #\space)))
-                                                actual-path))))
+                              (trace-printf "compiled ~a" actual-path)))
                           (lambda ()
                             (when lc
                               (log-compile-event path (if locked? 'finish-compile 'already-done)))
                             (when locked?
                               (lc 'unlock zo-name))))))))))))
      (unless sha1-only?
-       (trace-printf "end compile: ~a" actual-path)))))
+       (trace-printf "maybe-compile-zo finished ~a" actual-path)))))
 
 (define (get-compiled-time path->mode roots path)
   (define-values (dir name) (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots roots))
