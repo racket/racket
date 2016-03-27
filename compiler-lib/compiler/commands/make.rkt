@@ -70,9 +70,9 @@
           [did-one? #f])
       (parameterize ([current-namespace n]
                      [manager-trace-handler
-                      (lambda (p)
-                        (when (very-verbose)
-                          (printf "  ~a\n" p)))]
+                      (if (very-verbose)
+                          (λ (p) (printf "  ~a\n" p))
+                          (manager-trace-handler))]
                      [manager-compile-notify-handler
                       (lambda (p)
                         (set! did-one? #t)
