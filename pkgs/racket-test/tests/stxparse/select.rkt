@@ -153,3 +153,82 @@
 (terx (1)
       (a (~describe "thing" b))
       #rx"expected more terms starting with thing$")
+
+;; ----------------------------------------
+;; See "Simplification" from syntax/parse/private/runtime-report
+
+(define-syntax-class X #:opaque (pattern 1))
+(define-syntax-class Y #:opaque (pattern 2))
+
+(let ()
+  ;; Case 1: [A B X], [A B Y]
+  (define-syntax-class A (pattern (b:B _)))
+  (define-syntax-class B (pattern (x:X _)) (pattern (y:Y _)))
+  (terx ((3 _) _)
+        a:A
+        #:term 3
+        #rx"expected X or expected Y"
+        #rx"while parsing B.*while parsing A"))
+
+(let ()
+  ;; Case 2: [A X], [A]
+  (terx 1
+        (~describe "A" (x:id ...))
+        #rx"expected A"))
+
+(let ()
+  ;; Case 3:  [t1:A t2:B t3:X], [t1:A t2:C t3:Y]
+  (define-syntax-class A (pattern (b:B _)) (pattern (c:C _)))
+  (define-syntax-class B (pattern (x:X _)))
+  (define-syntax-class C (pattern (y:Y _)))
+  (terx ((3 _) _)
+        a:A
+        #:term 3
+        #rx"expected X or expected Y"
+        (not #rx"while parsing [BC]")
+        #rx"while parsing A"))
+
+(let ()
+  ;; Case 4: [t1:A t2:B t4:X], [t1:A t3:C t4:Y]
+  (define-syntax-class A (pattern (b:B _)) (pattern (c:outerC _)))
+  (define-syntax-class B (pattern (b:innerB _)))
+  (define-syntax-class innerB #:description #f (pattern (x:X _)))
+  (define-syntax-class outerC #:description #f (pattern (c:C _)))
+  (define-syntax-class C (pattern (y:Y _)))
+  (terx (((3 _) _) _)
+        a:A
+        #:term 3
+        #rx"expected X or expected Y"
+        (not #rx"while parsing (B|C|innerB|outerC|X|Y)")
+        #rx"while parsing A"))
+
+(let ()
+  ;; Case 5: [t1:A t2:B t3:X], [t1:A t4:C t5:Y]
+  ;; Need to use ~parse to get t3 != t5
+  (define-syntax-class A (pattern (b:B)) (pattern (c:outerC)))
+  (define-syntax-class B (pattern (b:innerB)))
+  (define-syntax-class innerB #:description #f (pattern _ #:with x:X #'4))
+  (define-syntax-class outerC #:description #f (pattern (c:C)))
+  (define-syntax-class C (pattern _ #:with y:Y #'5))
+  (terx (((3)))
+        a:A
+        #:term (((3)))
+        #rx"expected A"
+        (not #rx"while parsing (A|B|C|innerB|outerC|X|Y)")))
+
+
+(let ()
+  ;; Case 7: [_ t2:B t3:C _], [_ t3:C t2:B _]
+  ;; Need to use ~parse; not sure if there's a realistic way for this to happen.
+  ;; We will find the common frame, either B or C
+  (define stxB #'4)
+  (define stxC #'5)
+  (define-syntax-class A
+    (pattern (~and _ (~parse (~describe "B" (~and _ (~parse (~describe "C" 1) stxC))) stxB)))
+    (pattern (~and _ (~parse (~describe "C" (~and _ (~parse (~describe "B" 2) stxB))) stxC))))
+  (terx 3
+        a:A
+        ;; #:term {4 or 5}
+        #rx"expected (B|C)"
+        #rx"while parsing A"
+        (not #rx"while parsing (B|C)")))
