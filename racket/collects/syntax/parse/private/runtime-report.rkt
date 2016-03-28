@@ -552,16 +552,40 @@ This suggests the following new algorithm based on (s):
                         context frame-stx within-stx)])]))
 
 ;; prose-for-expects : (listof Expect) -> string
-;; FIXME: partition by role first?
 (define (prose-for-expects expects)
-  (join-sep (append (for/list ([expect expects]
-                               #:when (not (expect:proper-pair? expect)))
-                      (prose-for-expect expect))
-                    (let ([proper-pair-expects (filter expect:proper-pair? expects)])
-                      (if (pair? proper-pair-expects)
-                          (list (prose-for-proper-pair-expects proper-pair-expects))
-                          null)))
-            ";" "or"))
+  (define msgs (filter expect:message? expects))
+  (define things (filter expect:thing? expects))
+  (define literal (filter expect:literal? expects))
+  (define atom/symbol
+    (filter (lambda (e) (and (expect:atom? e) (symbol? (expect:atom-atom e)))) expects))
+  (define atom/nonsym
+    (filter (lambda (e) (and (expect:atom? e) (not (symbol? (expect:atom-atom e))))) expects))
+  (define proper-pairs (filter expect:proper-pair? expects))
+  (join-sep
+   (append (map prose-for-expect (append msgs things))
+           (prose-for-expects/literals literal "identifiers")
+           (prose-for-expects/literals atom/symbol "literal symbols")
+           (prose-for-expects/literals atom/nonsym "literals")
+           (prose-for-expects/pairs proper-pairs))
+   ";" "or"))
+
+(define (prose-for-expects/literals expects whats)
+  (cond [(null? expects) null]
+        [(singleton? expects) (map prose-for-expect expects)]
+        [else
+         (define (prose e)
+           (match e
+             [(expect:atom (? symbol? atom) _)
+              (format "`~s'" atom)]
+             [(expect:atom atom _)
+              (format "~s" atom)]
+             [(expect:literal literal _)
+              (format "`~s'" (syntax-e literal))]))
+         (list (string-append "expected one of these " whats ": "
+                              (join-sep (map prose expects) "," "or")))]))
+
+(define (prose-for-expects/pairs expects)
+  (if (pair? expects) (list (prose-for-proper-pair-expects expects)) null))
 
 ;; prose-for-expect : Expect -> string
 (define (prose-for-expect e)
