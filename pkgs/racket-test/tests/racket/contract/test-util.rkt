@@ -20,7 +20,7 @@
          
          contract-eval
          contract-compile
-         contract-expand-once
+         contract-expand
          
          rewrite-to-add-opt/c
          rewrite-to-double-wrap
@@ -126,9 +126,9 @@
   (parameterize ([current-namespace (current-contract-namespace)])
     (compile x)))
 
-(define (contract-expand-once x)
+(define (contract-expand x)
   (parameterize ([current-namespace (current-contract-namespace)])
-    (expand-once x)))
+    (expand x)))
 
 (define-syntax (ctest stx)
   (syntax-case stx ()
