@@ -1,8 +1,10 @@
 #lang racket/base
 
-(require "private/arrow.rkt"
+(require "private/arrow-common.rkt"
          "private/case-arrow.rkt"
          "private/arr-i.rkt"
+         "private/arr-d.rkt"
+         "private/unconstrained-domain-arrow.rkt"
          "private/base.rkt"
          "private/box.rkt"
          "private/hash.rkt"
@@ -16,7 +18,7 @@
          "private/basic-opters.rkt" ;; required for effect to install the opters
          "private/opt.rkt"
          "private/out.rkt"
-         (except-in "private/arrow-val-first.rkt" base->?)
+         "private/arrow-val-first.rkt"
          "private/orc.rkt"
          "private/list.rkt"
          "private/and.rkt")
@@ -24,8 +26,7 @@
 (provide
  base->?
  ->d
- base->-rngs/c
- base->-doms/c
+ (rename-out [base->-rngs base->-rngs/c] [base->-doms base->-doms/c])
  unconstrained-domain->
  the-unsupplied-arg
  unsupplied-arg?
@@ -153,5 +154,5 @@
 ;; If the argument is a procedure, it must be a thunk, and it is applied. Otherwise
 ;; the argument is simply the value to return.
 (define failure-result/c
-  (if/c procedure? (-> any) any/c))
+  (if/c procedure? (->2 any) any/c))
 

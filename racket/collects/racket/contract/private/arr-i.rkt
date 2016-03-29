@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require "arrow.rkt"
+(require "arrow-common.rkt"
          "prop.rkt"
          "guts.rkt"
          "opt.rkt"

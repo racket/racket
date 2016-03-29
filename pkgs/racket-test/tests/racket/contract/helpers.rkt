@@ -1,6 +1,6 @@
 #lang racket
 (require rackunit
-         racket/contract/private/arrow
+         racket/contract/private/arrow-common
          
          (for-template racket/contract/private/arrow-val-first)
          racket/contract/private/application-arity-checking

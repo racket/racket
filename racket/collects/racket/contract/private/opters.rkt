@@ -3,7 +3,7 @@
          "opt.rkt"
          "guts.rkt"
          "blame.rkt"
-         (except-in "arrow.rkt" base->?)
+         "arrow-common.rkt"
          "arrow-val-first.rkt"
          "arrow-higher-order.rkt"
          "orc.rkt"

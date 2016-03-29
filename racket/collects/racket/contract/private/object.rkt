@@ -1,7 +1,8 @@
 #lang racket/base
 (require "arrow-val-first.rkt"
+         "arrow-common.rkt"
          "case-arrow.rkt"
-         (only-in "arrow.rkt" ->d base-->d? ->d-name making-a-method)
+         (only-in "arr-d.rkt" ->d base-->d? ->d-name)
          "arr-i.rkt"
          "guts.rkt"
          "prop.rkt"

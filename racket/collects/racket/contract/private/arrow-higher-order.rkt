@@ -9,7 +9,7 @@
          "prop.rkt"
          "guts.rkt"
          "list.rkt"
-         (prefix-in arrow: "arrow.rkt")
+         (prefix-in arrow: "arrow-common.rkt")
          (only-in racket/unsafe/ops
                   unsafe-chaperone-procedure
                   unsafe-impersonate-procedure))
@@ -20,7 +20,8 @@
          check-pre-cond
          check-post-cond
          pre-post/desc-result->string
-         raise-wrong-number-of-args-error)
+         raise-wrong-number-of-args-error
+         arity-checking-wrapper)
 
 (define-for-syntax (build-chaperone-constructor/real ;; (listof (or/c #f stx))
                                                      ;; #f => syntactically known to be any/c

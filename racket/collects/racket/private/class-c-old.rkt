@@ -8,7 +8,7 @@
          "class-internal.rkt"
          "../contract/base.rkt"
          "../contract/combinator.rkt"
-         (only-in "../contract/private/arrow.rkt" making-a-method method-contract?)
+         (only-in "../contract/private/arrow-common.rkt" making-a-method method-contract?)
          (only-in "../contract/private/arrow-val-first.rkt" ->2-internal ->*2-internal))
 
 (provide make-class/c class/c-late-neg-proj

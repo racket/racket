@@ -2,7 +2,7 @@
 (require "test-util.rkt")
 
 (parameterize ([current-contract-namespace (make-basic-contract-namespace 
-                                            'racket/contract/private/arrow)])
+                                            'racket/contract/private/arrow-common)])
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;

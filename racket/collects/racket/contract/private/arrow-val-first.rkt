@@ -11,12 +11,14 @@
          "arrow-higher-order.rkt"
          "list.rkt"
          racket/stxparam
-         (prefix-in arrow: "arrow.rkt"))
+         (prefix-in arrow: "arrow-common.rkt"))
 
 (provide ->2 ->*2
          ->2-internal ->*2-internal ; for ->m and ->*m
-         base->? base->-name ; for object-contract
+         base->? base->-name base->-rngs base->-doms
          dynamic->*
+         arity-checking-wrapper
+         (for-syntax parse-leftover->*)
          (for-syntax ->2-arity-check-only->?
                      ->2*-arity-check-only->?
                      ->-valid-app-shapes
@@ -742,7 +744,7 @@
     [(_ (raw-mandatory-dom ...) . other)
      (let ()
        (define-values (raw-optional-doms rest-ctc pre pre/desc rng-ctcs post post/desc)
-         (arrow:parse-leftover->* stx #'other))
+         (parse-leftover->* stx #'other))
        (with-syntax ([(man-dom
                        man-dom-kwds
                        man-lets)
@@ -759,6 +761,62 @@
           #'opt-dom-kwds
           #'opt-lets
           rest-ctc pre pre/desc rng-ctcs post post/desc)))]))
+
+;; -> (values raw-optional-doms rest-ctc pre rng-ctc post)
+;; rest-ctc (or/c #f syntax) -- #f means no rest contract, syntax is the contract
+;; rng-ctc (or/c #f syntax) -- #f means `any', syntax is a sequence of result values
+(define-for-syntax (parse-leftover->* stx leftover)
+  (let*-values ([(raw-optional-doms leftover)
+                 (syntax-case leftover ()
+                   [(kwd . rst)
+                    (keyword? (syntax-e #'kwd))
+                    (values #'() leftover)]
+                   [(rng #:post . rst)
+                    (values #'() leftover)]
+                   [(rng #:post/desc . rst)
+                    (values #'() leftover)]
+                   [(rng)
+                    (values #'() leftover)]
+                   [((raw-optional-dom ...) . leftover)
+                    (values #'(raw-optional-dom ...) #'leftover)]
+                   [_ 
+                    (values #'() leftover)])]
+                [(rst leftover)
+                 (syntax-case leftover ()
+                   [(#:rest rest-expr . leftover)
+                    (values #'rest-expr #'leftover)]
+                   [_ (values #f leftover)])]
+                [(pre pre/desc leftover)
+                 (syntax-case leftover ()
+                   [(#:pre pre-expr . leftover)
+                    (values #'pre-expr #f #'leftover)]
+                   [(#:pre/desc pre-expr . leftover)
+                    (values #f #'pre-expr #'leftover)]
+                   [_ (values #f #f leftover)])]
+                [(rng leftover)
+                 (syntax-case leftover (any values)
+                   [(any) (values #f #'())]
+                   [(any . more) (raise-syntax-error #f "expected nothing to follow any" stx #'any)]
+                   [((values ctc ...) . leftover)
+                    (values #'(ctc ...) #'leftover)]
+                   [(rng . leftover)
+                    (begin
+                      (when (keyword? (syntax-e #'rng))
+                        (raise-syntax-error #f "expected a range contract" stx #'rng))
+                      (values #'(rng) #'leftover))]
+                   [_
+                    (raise-syntax-error #f "expected a range contract" stx leftover)])]
+                [(post post/desc leftover)
+                 (syntax-case leftover ()
+                   [(#:post post-expr . leftover)
+                    (values #'post-expr #f #'leftover)]
+                   [(#:post/desc post-expr . leftover)
+                    (values #f #'post-expr #'leftover)]
+                   [else
+                    (values #f #f leftover)])])
+    (syntax-case leftover ()
+      [() (values raw-optional-doms rst pre pre/desc rng post post/desc)]
+      [x (raise-syntax-error #f "expected the end of the contract" stx #'x)])))
 
 (define-for-syntax (->*-valid-app-shapes stx)
   (define this->* (gensym 'this->*))
@@ -1100,11 +1158,11 @@
                     (cons result-checker args-dealt-with)
                     args-dealt-with)))))
           
-          (values (arrow:arity-checking-wrapper f blame neg-party blame+neg-party
-                                                interposition-proc #f interposition-proc #f #f #f
-                                                min-arity max-arity
-                                                min-arity max-arity 
-                                                mandatory-keywords optional-keywords)
+          (values (arity-checking-wrapper f blame neg-party blame+neg-party
+                                          interposition-proc #f interposition-proc #f #f #f
+                                          min-arity max-arity
+                                          mandatory-keywords optional-keywords
+                                          #f) ; not a method contract
                   #f))))
   
   (build--> 'dynamic->*

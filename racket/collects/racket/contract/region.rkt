@@ -17,7 +17,8 @@
          racket/splicing
          racket/stxparam
          syntax/location
-         "private/arrow.rkt"
+         "private/arrow-common.rkt"
+         "private/arrow-val-first.rkt"
          "private/base.rkt"
          "private/guts.rkt"
          "private/misc.rkt")
@@ -173,11 +174,11 @@
                   (for/list ([finfo field-infos])
                     (let ([field-ctc (field-info-ctc finfo)])
                       (cons (quasisyntax/loc stx
-                              (-> #,pred #,field-ctc))
+                              (->2 #,pred #,field-ctc))
                             (if (field-info-mutable? finfo)
                                 (list 
                                  (quasisyntax/loc stx
-                                   (-> #,pred #,field-ctc void?)))
+                                   (->2 #,pred #,field-ctc void?)))
                                 null)))))))
   
   (define (check-field f ctc)
@@ -433,7 +434,7 @@
                        (define-struct/derived orig name (field ...)
                          omit-stx-def ...
                          kwds ...
-                         #:guard (contract (-> super-contract ... non-auto-contracts ... symbol? any)
+                         #:guard (contract (->2 super-contract ... non-auto-contracts ... symbol? any)
                                            guard
                                            (current-contract-region) blame-id
                                            (quote maker)
