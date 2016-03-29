@@ -281,12 +281,10 @@
   (define-values (arrow? the-valid-app-shapes)
     (syntax-case ctrct (->2 ->*2 ->i)
       [(->2 . _) 
-       (and (->2-handled? ctrct)
-            (not (->2-arity-check-only->? ctrct)))
+       (not (->2-arity-check-only->? ctrct))
        (values #t (->-valid-app-shapes ctrct))]
       [(->*2 . _) 
-       (values (and (->*2-handled? ctrct)
-                    (not (->2*-arity-check-only->? ctrct)))
+       (values (not (->2*-arity-check-only->? ctrct))
                (->*-valid-app-shapes ctrct))]
       [(->i . _) (values #t (->i-valid-app-shapes ctrct))]
       [_ (values #f #f)]))

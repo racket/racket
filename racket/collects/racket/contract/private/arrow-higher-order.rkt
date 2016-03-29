@@ -19,11 +19,10 @@
          ->-proj
          check-pre-cond
          check-post-cond
-         pre-post/desc-result->string)
+         pre-post/desc-result->string
+         raise-wrong-number-of-args-error)
 
-(define-for-syntax (build-chaperone-constructor/real this-args
-
-                                                     ;; (listof (or/c #f stx))
+(define-for-syntax (build-chaperone-constructor/real ;; (listof (or/c #f stx))
                                                      ;; #f => syntactically known to be any/c
                                                      mandatory-dom-projs
                                                      
@@ -33,7 +32,8 @@
                                                      pre pre/desc
                                                      rest
                                                      rngs
-                                                     post post/desc)
+                                                     post post/desc
+                                                     method?)
   (define (nvars n sym) (generate-temporaries (for/list ([i (in-range n)]) sym)))
   (with-syntax ([(mandatory-dom-proj ...) (generate-temporaries mandatory-dom-projs)]
                 [(optional-dom-proj ...) (generate-temporaries optional-dom-projs)]
@@ -51,7 +51,6 @@
         (define blame+neg-party (cons blame neg-party))
         #,(create-chaperone
            #'blame #'neg-party #'blame+neg-party #'blame-party-info #'f #'rng-ctcs
-           this-args
            (for/list ([id (in-list (syntax->list #'(mandatory-dom-proj ...)))]
                       [mandatory-dom-proj (in-list mandatory-dom-projs)])
              (and mandatory-dom-proj id))
@@ -65,7 +64,8 @@
            pre pre/desc
            (if rest (car (syntax->list #'(rest-proj ...))) #f)
            (if rngs (syntax->list #'(rng-proj ...)) #f)
-           post post/desc))))
+           post post/desc
+           method?))))
 
 
 (define (check-pre-cond pre blame neg-party blame+neg-party val)
@@ -128,13 +128,13 @@
 
 (define-for-syntax (create-chaperone blame neg-party blame+neg-party blame-party-info
                                      val rng-ctcs
-                                     this-args
                                      doms opt-doms
                                      req-kwds opt-kwds
                                      pre pre/desc
                                      dom-rest
                                      rngs
-                                     post post/desc)
+                                     post post/desc
+                                     method?)
   (with-syntax ([blame blame]
                 [blame+neg-party blame+neg-party]
                 [val val])
@@ -152,8 +152,7 @@
                      [post/desc
                       (list #`(check-post-cond/desc #,post/desc blame neg-party val))]
                      [else null])])
-      (with-syntax ([(this-param ...) this-args]
-                    [(dom-x ...) (generate-temporaries doms)]
+      (with-syntax ([(dom-x ...) (generate-temporaries doms)]
                     [(opt-dom-ctc ...) opt-doms]
                     [(opt-dom-x ...) (generate-temporaries opt-doms)]
                     [(rest-ctc rest-x) (cons dom-rest (generate-temporaries '(rest)))]
@@ -194,9 +193,7 @@
                      #,rng-checker))
               stx))
 
-          (let* ([min-method-arity (length doms)]
-                 [max-method-arity (+ min-method-arity (length opt-doms))]
-                 [min-arity (+ (length this-args) min-method-arity)]
+          (let* ([min-arity (length doms)]
                  [max-arity (+ min-arity (length opt-doms))]
                  [req-keywords (map (λ (p) (syntax-e (car p))) req-kwds)]
                  [opt-keywords (map (λ (p) (syntax-e (car p))) opt-kwds)]
@@ -210,13 +207,12 @@
                           [basic-params
                            (cond
                              [dom-rest
-                              #'(this-param ... 
-                                 dom-x ...
+                              #'(dom-x ...
                                  [opt-dom-x arrow:unspecified-dom] ...
                                  . 
                                  rest-x)]
                              [else
-                              #'(this-param ... dom-x ... [opt-dom-x arrow:unspecified-dom] ...)])]
+                              #'(dom-x ... [opt-dom-x arrow:unspecified-dom] ...)])]
                           [opt+rest-uses
                            (for/fold ([i (if dom-rest #'(rest-ctc rest-x neg-party) #'null)])
                              ([o (in-list (reverse
@@ -252,24 +248,20 @@
               
               (with-syntax ([kwd-lam-params
                              (if dom-rest
-                                 #'(this-param ...
-                                    dom-x ... 
+                                 #'(dom-x ... 
                                     [opt-dom-x arrow:unspecified-dom] ...
                                     kwd-param ... . rest-x)
-                                 #'(this-param ...
-                                    dom-x ...
+                                 #'(dom-x ...
                                     [opt-dom-x arrow:unspecified-dom] ...
                                     kwd-param ...))]
                             [basic-return
                              (let ([inner-stx-gen
                                     (if need-apply?
                                         (λ (s) #`(apply values #,@s 
-                                                        this-param ... 
                                                         dom-projd-args ... 
                                                         opt+rest-uses))
                                         (λ (s) #`(values 
                                                   #,@s 
-                                                  this-param ...
                                                   dom-projd-args ...)))])
                                (if rngs
                                    (arrow:check-tail-contract rng-ctcs
@@ -286,8 +278,8 @@
                                (define (inner-stx-gen stuff assume-result-values? do-tail-check?)
                                  (define arg-checking-expressions
                                    (if need-apply?
-                                       #'(this-param ... dom-projd-args ... opt+rest-uses)
-                                       #'(this-param ... dom-projd-args ...)))
+                                       #'(dom-projd-args ... opt+rest-uses)
+                                       #'(dom-projd-args ...)))
                                  (define the-call/no-tail-mark
                                    (cond
                                      [(for/and ([dom (in-list doms)])
@@ -336,11 +328,9 @@
                                      (if need-apply?
                                          (λ (s k) #`(apply values 
                                                            #,@s #,@k 
-                                                           this-param ...
                                                            dom-projd-args ...
                                                            opt+rest-uses))
                                          (λ (s k) #`(values #,@s #,@k 
-                                                            this-param ...
                                                             dom-projd-args ...)))]
                                     [outer-stx-gen
                                      (if (null? req-keywords)
@@ -393,43 +383,163 @@
                                                (let ()
                                                  pre ... kwd-return)))])
                   (cond
-                    [(and (null? req-keywords) (null? opt-keywords))
-                     #`(arrow:arity-checking-wrapper val 
-                                                     blame neg-party blame+neg-party
-                                                     basic-lambda
-                                                     basic-unsafe-lambda
-                                                     basic-unsafe-lambda/result-values-assumed
-                                                     basic-unsafe-lambda/result-values-assumed/no-tail
-                                                     #,(and rngs (length rngs))
-                                                     void
-                                                     #,min-method-arity
-                                                     #,max-method-arity
-                                                     #,min-arity
-                                                     #,(if dom-rest #f max-arity)
-                                                     '(req-kwd ...)
-                                                     '(opt-kwd ...))]
-                    [(pair? req-keywords)
-                     #`(arrow:arity-checking-wrapper val
-                                                     blame neg-party blame+neg-party
-                                                     void #t #f #f #f
-                                                     kwd-lambda
-                                                     #,min-method-arity
-                                                     #,max-method-arity
-                                                     #,min-arity
-                                                     #,(if dom-rest #f max-arity)
-                                                     '(req-kwd ...)
-                                                     '(opt-kwd ...))]
-                    [else
-                     #`(arrow:arity-checking-wrapper val 
-                                                     blame neg-party blame+neg-party
-                                                     basic-lambda #t #f #f #f
-                                                     kwd-lambda
-                                                     #,min-method-arity
-                                                     #,max-method-arity
-                                                     #,min-arity
-                                                     #,(if dom-rest #f max-arity)
-                                                     '(req-kwd ...)
-                                                     '(opt-kwd ...))])))))))))
+                   [(and (null? req-keywords) (null? opt-keywords))
+                    #`(arity-checking-wrapper val
+                                              blame neg-party blame+neg-party
+                                              basic-lambda
+                                              basic-unsafe-lambda
+                                              basic-unsafe-lambda/result-values-assumed
+                                              basic-unsafe-lambda/result-values-assumed/no-tail
+                                              #,(and rngs (length rngs))
+                                              void
+                                              #,min-arity
+                                              #,(if dom-rest #f max-arity)
+                                              '(req-kwd ...)
+                                              '(opt-kwd ...)
+                                              #,method?)]
+                   [(pair? req-keywords)
+                    #`(arity-checking-wrapper val
+                                              blame neg-party blame+neg-party
+                                              void #t #f #f #f
+                                              kwd-lambda
+                                              #,min-arity
+                                              #,(if dom-rest #f max-arity)
+                                              '(req-kwd ...)
+                                              '(opt-kwd ...)
+                                              #,method?)]
+                   [else
+                    #`(arity-checking-wrapper val
+                                              blame neg-party blame+neg-party
+                                              basic-lambda #t #f #f #f
+                                              kwd-lambda
+                                              #,min-arity
+                                              #,(if dom-rest #f max-arity)
+                                              '(req-kwd ...)
+                                              '(opt-kwd ...)
+                                              #,method?)])))))))))
+
+;; should we pass both the basic-lambda and the kwd-lambda?
+;; if basic-unsafe-lambda is #f, returns only the one value,
+;; namely the chaperone wrapper. Otherwise, returns two values,
+;; a procedure and a boolean indicating it the procedure is the
+;; basic-unsafe-lambda or not; note that basic-unsafe-lambda might
+;; also be #t, but that happens only when we know that basic-lambda
+;; can't be chosen (because there are keywords involved)
+(define (arity-checking-wrapper val blame neg-party blame+neg-party basic-lambda
+                                basic-unsafe-lambda
+                                basic-unsafe-lambda/result-values-assumed
+                                basic-unsafe-lambda/result-values-assumed/no-tail
+                                contract-result-val-count
+                                kwd-lambda
+                                min-arity max-arity
+                                req-kwd opt-kwd
+                                method?)
+  ;; should not build this unless we are in the 'else' case (and maybe not at all)
+  (cond
+    [(arrow:matches-arity-exactly? val min-arity max-arity req-kwd opt-kwd)
+     (if (and (null? req-kwd) (null? opt-kwd))
+         (cond
+           [(impersonator? val)
+            (if basic-unsafe-lambda
+                (values basic-lambda #f)
+                basic-lambda)]
+           [(and basic-unsafe-lambda
+                 basic-unsafe-lambda/result-values-assumed
+                 (equal? contract-result-val-count
+                         (procedure-result-arity val)))
+            (if (simple-enough? val)
+                (values basic-unsafe-lambda/result-values-assumed/no-tail #t)
+                (values basic-unsafe-lambda/result-values-assumed #t))]
+           [basic-unsafe-lambda
+            (values basic-unsafe-lambda #t)]
+           [else basic-lambda])
+         (if basic-unsafe-lambda
+             (values kwd-lambda #f)
+             kwd-lambda))]
+    [else
+     (define-values (vr va) (procedure-keywords val))
+     (define all-kwds (append req-kwd opt-kwd))
+     (define (valid-number-of-args? args)
+       (if max-arity
+           (<= min-arity (length args) max-arity)
+           (<= min-arity (length args))))
+     (define kwd-checker
+       (if (and (null? req-kwd) (null? opt-kwd))
+           (λ (kwds kwd-args . args)
+             (arrow:raise-no-keywords-arg blame #:missing-party neg-party val kwds))
+           (λ (kwds kwd-args . args)
+             (with-contract-continuation-mark
+              blame+neg-party
+              (let ()
+             (define args-len (length args))
+             (unless (valid-number-of-args? args)
+               (raise-wrong-number-of-args-error
+                blame #:missing-party neg-party val
+                args-len min-arity max-arity method?))
+
+             ;; these two for loops are doing O(n^2) work that could be linear
+             ;; (since the keyword lists are sorted)
+             (for ([req-kwd (in-list req-kwd)])
+               (unless (memq req-kwd kwds)
+                 (raise-blame-error (blame-swap blame) #:missing-party neg-party
+                                    val
+                                    '(expected "keyword argument ~a")
+                                    req-kwd)))
+             (for ([k (in-list kwds)])
+               (unless (memq k all-kwds)
+                 (raise-blame-error (blame-swap blame) #:missing-party neg-party val
+                                    '(received: "unexpected keyword argument ~a")
+                                    k)))
+             (keyword-apply kwd-lambda kwds kwd-args args))))))
+     (define basic-checker-name
+       (if (null? req-kwd)
+           (λ args
+             (with-contract-continuation-mark
+              blame+neg-party
+              (let ()
+             (unless (valid-number-of-args? args)
+               (define args-len (length args))
+               (raise-wrong-number-of-args-error
+                blame #:missing-party neg-party val
+                args-len min-arity max-arity method?))
+             (apply basic-lambda args))))
+           (λ args
+             (raise-blame-error (blame-swap blame) #:missing-party neg-party val
+                                "expected required keyword ~a"
+                                (car req-kwd)))))
+     (define proc
+       (if (or (not va) (pair? vr) (pair? va))
+           (make-keyword-procedure kwd-checker basic-checker-name)
+           basic-checker-name))
+     (if basic-unsafe-lambda
+         (values proc #f)
+         proc)]))
+
+(define (simple-enough? f)
+  (or (struct-accessor-procedure? f)
+      (struct-constructor-procedure? f)
+      (struct-predicate-procedure? f)
+      (struct-mutator-procedure? f)))
+
+(define (raise-wrong-number-of-args-error
+         blame #:missing-party [missing-party #f] val
+         args-len pre-min-arity pre-max-arity method?)
+  (define min-arity ((if method? sub1 values) pre-min-arity))
+  (define max-arity ((if method? sub1 values) pre-max-arity))
+  (define arity-string
+    (if max-arity
+        (cond
+          [(= min-arity max-arity)
+           (format "~a non-keyword argument~a" min-arity (if (= min-arity 1) "" "s"))]
+          [(= (+ min-arity 1) max-arity)
+           (format "~a or ~a non-keyword arguments" min-arity max-arity)]
+          [else
+           (format "~a to ~a non-keyword arguments" min-arity max-arity)])
+        (format "at least ~a non-keyword argument~a" min-arity (if (= min-arity 1) "" "s"))))
+  (raise-blame-error (blame-swap blame) val
+                     #:missing-party missing-party
+                     '(received: "~a argument~a" expected: "~a")
+                     args-len (if (= args-len 1) "" "s") arity-string))
 
 (define (maybe-cons-kwd c x r neg-party)
   (if (eq? arrow:unspecified-dom x)
@@ -439,7 +549,7 @@
 (define (->-proj chaperone? ctc
                  ;; fields of the 'ctc' struct
                  min-arity doms kwd-infos rest pre? rngs post?
-                 plus-one-arity-function chaperone-constructor
+                 plus-one-arity-function chaperone-constructor method?
                  late-neg?)
   (define optionals-length (- (length doms) min-arity))
   (define mtd? #f) ;; not yet supported for the new contracts
@@ -460,7 +570,7 @@
                  [n (in-naturals 1)])
         ((get/build-late-neg-projection dom)
          (blame-add-context orig-blame 
-                            (format "the ~a argument of" (n->th n))
+                            (format "the ~a argument of" (n->th (if method? (sub1 n) n)))
                             #:swap? #t))))
     (define rest-blame
       (if (ellipsis-rest-arg-ctc? rest)
@@ -532,7 +642,7 @@
       [late-neg?
        (define (arrow-higher-order:lnp val neg-party)
          (cond
-           [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
+           [(do-arity-checking orig-blame val doms rest min-arity kwd-infos method?)
             =>
             (λ (f)
               (f neg-party))]
@@ -549,7 +659,7 @@
          (define-values (normal-proc proc-with-no-result-checking expected-number-of-results)
            (apply plus-one-arity-function orig-blame val plus-one-constructor-args))
          (cond
-           [(do-arity-checking orig-blame val doms rest min-arity kwd-infos)
+           [(do-arity-checking orig-blame val doms rest min-arity kwd-infos method?)
             =>
             (λ (neg-party-acceptor)
               ;; probably don't need to include the wrapped-extra-arrow wrapper

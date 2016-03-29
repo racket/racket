@@ -2615,4 +2615,33 @@
                       (init-field [x 0]))
                     'pos 'neg)])
       (equal? (new c%) (new c%)))
-   #f))
+   #f)
+
+  (contract-error-test
+   '->m-arity-error-1
+   '(contract (->m string? string?)
+              (lambda (y) y)
+              'pos
+              'neg)
+   (lambda (e)
+     (regexp-match? "a method that accepts 1 non-keyword argument"
+                    (exn-message e))))
+  (contract-error-test
+   '->m-arity-error-2
+   '(contract (->m string?)
+              (lambda () y)
+              'pos
+              'neg)
+   (lambda (e)
+     (regexp-match? "a method that accepts 0 non-keyword argument"
+                    (exn-message e))))
+  (contract-error-test
+   '->m-arity-error3
+   '(contract (->*m (any/c) (#:x any/c) any/c)
+              (lambda (x y) #t)
+              'pos
+              'neg)
+   (lambda (e)
+     (regexp-match? "a method that accepts the #:x keyword argument"
+                    (exn-message e))))
+  )

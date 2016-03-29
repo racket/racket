@@ -16,7 +16,7 @@
          "private/basic-opters.rkt" ;; required for effect to install the opters
          "private/opt.rkt"
          "private/out.rkt"
-         "private/arrow-val-first.rkt"
+         (except-in "private/arrow-val-first.rkt" base->?)
          "private/orc.rkt"
          "private/list.rkt"
          "private/and.rkt")

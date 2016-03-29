@@ -369,7 +369,7 @@
    '(let ()
       (define o
         (contract
-         (object-contract (field x pos-blame?) (f (->m neg-blame?)))
+         (object-contract (field x pos-blame?) (f (-> neg-blame?)))
          (new (class object% (init-field x) (define/public (f) x) (super-new)) [x 3])
          'pos 'neg))
       (get-field x o)
