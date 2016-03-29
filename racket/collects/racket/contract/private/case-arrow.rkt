@@ -8,7 +8,7 @@
          "blame.rkt"
          "prop.rkt"
          "misc.rkt"
-         "arrow.rkt"
+         (except-in "arrow.rkt" base->?)
          "arrow-val-first.rkt")
 
 (provide case->)
