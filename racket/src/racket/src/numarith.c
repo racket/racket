@@ -1094,7 +1094,7 @@ rem_mod (int argc, Scheme_Object *argv[], char *name, int first_sign)
     /* Easier if we can assume 'r' is positive: */
     if (SCHEME_INTP(r)) {
       if (SCHEME_INT_VAL(r) < 0)
-	r = scheme_make_integer(-SCHEME_INT_VAL(r));
+	r = scheme_make_integer_value(-SCHEME_INT_VAL(r));
     } else if (!SCHEME_BIGPOS(r))
       r = scheme_bignum_negate(r);
 
@@ -1118,9 +1118,9 @@ rem_mod (int argc, Scheme_Object *argv[], char *name, int first_sign)
     
     if (negate) {
       if (SCHEME_INTP(r))
-	r = scheme_make_integer(-SCHEME_INT_VAL(r));
+	r = scheme_make_integer_value(-SCHEME_INT_VAL(r));
       else
-	r = scheme_bignum_negate(r);
+	r = scheme_bignum_normalize(scheme_bignum_negate(r));
     }
   }
 

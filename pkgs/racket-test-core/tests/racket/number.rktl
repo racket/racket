@@ -1110,6 +1110,15 @@
 (err/rt-test (remainder 2 1+2i))
 (err/rt-test (modulo 2 1+2i))
 
+(test (- (expt 2 65) (expt 2 62))
+      modulo (- (+ (expt 2 62) (expt 2 65))) (expt 2 65))
+(test (- (expt 2 33) (expt 2 30))
+      modulo (- (+ (expt 2 30) (expt 2 33))) (expt 2 33))
+(test (- (expt 2 62))
+      remainder (- (+ (expt 2 62) (expt 2 65))) (expt 2 65))
+(test (- (expt 2 30))
+      remainder (- (+ (expt 2 30) (expt 2 33))) (expt 2 33))
+
 (test 10 bitwise-ior 10)
 (test 10 bitwise-and 10)
 (test 10 bitwise-xor 10)
