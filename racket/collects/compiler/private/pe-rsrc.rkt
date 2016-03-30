@@ -35,6 +35,8 @@
 
 (define-logger pe-rsrc)
 
+(define SECTION-HEADER-SIZE 40)
+
 (define (skip-to-image-headers-after-signature p)
   ;; p is expected to be a file port
   (define dos-sig (word->integer p))
@@ -50,8 +52,9 @@
       (error 'pe-rsrc "bad PE signature ~x" sig))
     pos))
 
-(struct pe (sections section-alignment file-alignment
-                     image-size-pos section-start-pos rsrc-offset rsrc-virtual-addr rsrc-size))
+(struct pe (sections section-count-pos section-alignment file-alignment
+                     image-size-pos section-start-pos
+		     rsrc-offset rsrc-virtual-addr rsrc-size))
 (struct section (name virtual-size virtual-addr
                       file-length file-position
                       characteristics)
@@ -60,6 +63,7 @@
 (define (read-pe p)
   (let ([pos (skip-to-image-headers-after-signature p)])
     (word->integer p) ; skip machine
+    (define section-count-pos (+ pos 6))
     (let ([num-sections (word->integer p)]
           [_ (begin (dword->integer p) ; date time stamp
                     (dword->integer p) ; symbol table - 0 for modern exes
@@ -108,7 +112,8 @@
                                    (z (word->integer p))  ; num relocations (zero)
                                    (z (word->integer p))  ; num line numbers (zero)
                                    (dword->integer p))) ; characteristics
-                        (sloop (add1 i) (+ section-pos 40))))))
+                        (sloop (add1 i) (+ section-pos SECTION-HEADER-SIZE))))))
+	  section-count-pos
           section-alignment
           file-alignment
           image-size-pos
@@ -370,7 +375,7 @@
   (log-pe-rsrc-debug "sections at ~x" (pe-section-start-pos pe))
   (show-sections (pe-sections pe))
   (log-pe-rsrc-debug "rsrc at ~x ~x" (pe-rsrc-virtual-addr pe) (pe-rsrc-size pe))
-  
+
   (unless (and (= (section-virtual-addr s) (pe-rsrc-virtual-addr pe))
                (>= (section-virtual-size s) (pe-rsrc-size pe)))
     (error 'pe-rsrc
@@ -395,6 +400,8 @@
                       1)]))
 
 (define (update-sections pe new-sections o)
+  (file-position o (pe-section-count-pos pe))
+  (integer->word (length new-sections) o)
   (file-position o (pe-section-start-pos pe))
   (for ([s (in-list new-sections)])
     (write-bytes (section-name s) o)
@@ -431,6 +438,17 @@
        (integer->dword len o)))]
    [else
     (log-pe-rsrc-debug "moving resources to end")
+
+    (define earliest-section-file-position
+      (for/fold ([p (section-file-position (car (pe-sections pe)))]) ([s (in-list (pe-sections pe))])
+		(min p (section-file-position s))))
+    (log-pe-rsrc-debug "earliest section at ~x" earliest-section-file-position)
+
+    (unless (> earliest-section-file-position
+	       (+ (* SECTION-HEADER-SIZE (length (pe-sections pe)))
+		  (pe-section-start-pos pe)))
+      (error 'update-resources "no room for a new section header"))
+
     (define new-virtual-addr
       (same-alignment
        (section-virtual-addr s)
@@ -462,13 +480,21 @@
                        new-position)
     
     (define new-sections
-      (sort (for/list ([s2 (in-list (pe-sections pe))])
-              (if (eq? s s2)
-                  (section (section-name s)
-                           new-virtual-size new-virtual-addr
-                           new-file-size new-position
-                           (section-characteristics s))
-                  s2))
+      (sort (cons
+	     (section
+	      #".DROPpe\0"
+	      (section-virtual-size s)
+	      (section-virtual-addr s)
+	      (section-file-length s)
+	      (section-file-position s)
+	      (section-characteristics s))
+	     (for/list ([s2 (in-list (pe-sections pe))])
+               (if (eq? s s2)
+                   (section (section-name s)
+                            new-virtual-size new-virtual-addr
+                            new-file-size new-position
+                            (section-characteristics s))
+                   s2)))
             <
             #:key section-virtual-addr))
 
