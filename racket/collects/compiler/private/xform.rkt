@@ -1758,13 +1758,16 @@
         (define (simple-unused-def? e)
           (and (not precompiling-header?)
                (andmap (lambda (x) (and (symbol? (tok-n x))
-                                        (not (eq? '|,| (tok-n x)))))
+                                   (not (eq? '|,| (tok-n x)))))
                        e)
                (= 1 (hash-ref used-symbols
-                                    (let loop ([e e])
-                                      (if (null? (cddr e))
-                                          (tok-n (car e))
-                                          (loop (cdr e))))))))
+			      (let loop ([e e])
+				(if (or (null? (cddr e))
+					(and (pair? (cdr e))
+					     (eq? '= (tok-n (cadr e)))
+					     (= (length e) 4)))
+				    (tok-n (car e))
+				    (loop (cdr e))))))))
         
         ;; See `simple-unused-def?'. The `struct' case is more
         ;; complex, because multiple names might be assigned

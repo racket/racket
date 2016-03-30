@@ -387,6 +387,7 @@ void scheme_init_parameterization();
 void scheme_init_getenv(void);
 void scheme_init_inspector(void);
 void scheme_init_compenv_symbol(void);
+void scheme_init_longdouble_fixup(void);
 
 #ifndef DONT_USE_FOREIGN
 void scheme_init_foreign_globals();

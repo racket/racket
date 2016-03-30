@@ -856,6 +856,8 @@ static void make_kernel_env(void)
   scheme_init_print_global_constants();
   scheme_init_variable_references_constants();
 
+  scheme_init_longdouble_fixup();
+
   scheme_defining_primitives = 0;
 }
 

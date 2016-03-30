@@ -1568,6 +1568,24 @@ void scheme_init_extfl_unsafe_number(Scheme_Env *env)
   scheme_add_global_constant("unsafe-f80vector-set!", p, env);
 }
 
+#ifdef _MSC_VER
+/* Something about loading "longdouble.dll" can interfere with
+   fmod() so that it fails on a first call, but works on subsequent
+   calls. The issue doesn't seem to be as simple as the floating-point
+   control state, it seems to affect mainly MSVC 2008 builds, only
+   the 3m build, etc. Using a non-static variable ensures that the
+   compiler doesn't optimize away the call to fmod(). */
+double scheme_longdouble_fixup_hack = 4;
+void scheme_init_longdouble_fixup(void)
+{
+  scheme_longdouble_fixup_hack = fmod(scheme_longdouble_fixup_hack, 2.0);
+}
+#else
+void scheme_init_longdouble_fixup(void)
+{
+}
+#endif
+
 Scheme_Object *
 scheme_make_integer_value(intptr_t i)
 {
