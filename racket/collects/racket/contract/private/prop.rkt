@@ -291,7 +291,7 @@
 
   (unless get-late-neg-projection
     (unless first-order?
-      (log-racket/contract-warning
+      (log-racket/contract-info
        "no late-neg-projection passed to ~s~a"
        proc-name
        (build-context))))
@@ -464,7 +464,7 @@
   
   (unless late-neg-projection
     (unless first-order?
-      (log-racket/contract-warning
+      (log-racket/contract-info
        "no late-neg-projection passed to ~s~a"
        proc-name
        (build-context))))

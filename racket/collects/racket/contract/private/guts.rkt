@@ -686,7 +686,7 @@
   (cond
     [(contract-struct-late-neg-projection ctc) => values]
     [else
-     (log-racket/contract-warning "no late-neg-projection for ~s" ctc)
+     (log-racket/contract-info "no late-neg-projection for ~s" ctc)
      (cond
        [(contract-struct-projection ctc)
         =>
@@ -723,7 +723,7 @@
 (define warn-about-val-first? (make-parameter #t))
 (define (maybe-warn-about-val-first ctc)
   (when (warn-about-val-first?)
-    (log-racket/contract-warning
+    (log-racket/contract-info
      "building val-first-projection of contract ~s for~a"
      ctc
      (build-context))))
