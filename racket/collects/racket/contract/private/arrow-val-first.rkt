@@ -14,7 +14,7 @@
          (prefix-in arrow: "arrow-common.rkt"))
 
 (provide (rename-out [->/c ->]) ->*
-         ->-internal ->*-internal ; for ->m and ->*m
+         (for-syntax ->-internal ->*-internal) ; for ->m and ->*m
          base->? base->-name base->-rngs base->-doms
          dynamic->*
          arity-checking-wrapper
@@ -644,17 +644,12 @@
 (define-syntax (->/c stx)
   (syntax-case stx ()
     [(_ . args)
-     (let ()
-       #`(syntax-parameterize
-          ((arrow:making-a-method #f))
-          #,(quasisyntax/loc stx
-              (->-internal -> . args))))]))
+     (->-internal (syntax/loc stx (-> . args)) #|method?|# #f)]))
 
-(define-syntax (->-internal stx*)
-  (syntax-case stx* ()
-    [(_ orig-> args ... rng)
+(define-for-syntax (->-internal stx method?)
+  (syntax-case stx ()
+    [(_ args ... rng)
      (let ()
-       (define stx (syntax/loc stx* (orig-> args ... rng)))
        (define this-> (gensym 'this->))
        (define-values (regular-args kwds kwd-args let-bindings ellipsis-info)
          (parse-arrow-args stx (syntax->list #'(args ...)) this->))
@@ -666,29 +661,26 @@
            [any #f]
            [(values rng ...) (add-pos-obligations (syntax->list #'(rng ...)))]
            [rng (add-pos-obligations (list #'rng))]))
-       (define method? (syntax-parameter-value #'arrow:making-a-method))
        (define-values (plus-one-arity-function chaperone-constructor)
          (build-plus-one-arity-function+chaperone-constructor 
           regular-args '() kwds '() #f #f (and ellipsis-info #t) rngs #f #f
           method?))
        (syntax-property
-        #`(syntax-parameterize
-           ([arrow:making-a-method #f]) ; subcontracts are not method contracts, even if we ourselves are one
-           (let #,let-bindings
-             #,(quasisyntax/loc stx
-                 (build-simple-->
-                  (list #,@regular-args)
-                  '(#,@kwds)
-                  (list #,@kwd-args)
-                  #,(if rngs
-                        #`(list #,@rngs)
-                        #'#f)
-                  #,plus-one-arity-function
-                  #,chaperone-constructor
-                  #,(if ellipsis-info
-                        #`(ellipsis-rest-arg #,(length regular-args) #,@ellipsis-info)
-                        #'#f)
-                  #,method?))))
+        #`(let #,let-bindings
+            #,(quasisyntax/loc stx
+                (build-simple-->
+                 (list #,@regular-args)
+                 '(#,@kwds)
+                 (list #,@kwd-args)
+                 #,(if rngs
+                       #`(list #,@rngs)
+                       #'#f)
+                 #,plus-one-arity-function
+                 #,chaperone-constructor
+                 #,(if ellipsis-info
+                       #`(ellipsis-rest-arg #,(length regular-args) #,@ellipsis-info)
+                       #'#f)
+                 #,method?)))
         'racket/contract:contract
         (vector this->
                 ;; the -> in the original input to this guy
@@ -835,13 +827,9 @@
 (define-syntax (->* stx)
   (syntax-case stx ()
     [(_ . args)
-     #`(syntax-parameterize
-        ((arrow:making-a-method #f))
-        #,(quasisyntax/loc stx
-            (->*-internal ->* . args)))]))
+     (->*-internal (syntax/loc stx (->* . args)) #|method?|# #f)]))
 
-(define-syntax (->*-internal stx*)
-  (define stx (syntax-case stx* () [(_ orig->* . args) (syntax/loc stx* (orig->* . args))]))
+(define-for-syntax (->*-internal stx method?)
   (define this->* (gensym 'this->*))
   (define-values (man-dom man-dom-kwds man-lets
                           opt-dom opt-dom-kwds opt-lets
@@ -862,7 +850,6 @@
                   [(post-let-binding ...) (if (or post post/desc)
                                               (list #`[post-x (λ () #,(or post post/desc))])
                                               (list))])
-      (define method? (syntax-parameter-value #'arrow:making-a-method))
       (define-values (plus-one-arity-function chaperone-constructor)
         (build-plus-one-arity-function+chaperone-constructor
          (syntax->list #'(mandatory-dom ...))
@@ -881,27 +868,25 @@
                                       optional-let-bindings ...
                                       pre-let-binding ...
                                       post-let-binding ...)
-           (syntax-parameterize
-            ([arrow:making-a-method #f]) ; subcontracts are not method contracts, even if we ourselves are one
-            (build--> '->*
-                      (list mandatory-dom ...)
-                      (list optional-dom ...)
-                      '(mandatory-dom-kwd ...)
-                      (list mandatory-dom-kwd-ctc ...)
-                      '(optional-dom-kwd ...)
-                      (list optional-dom-kwd-ctc ...)
-                      #,rest-ctc
-                      #,(and pre #t)
-                      #,(if rng-ctcs
-                            #`(list #,@(for/list ([rng-ctc (in-list (syntax->list rng-ctcs))])
-                                         (syntax-property rng-ctc
-                                                          'racket/contract:positive-position
-                                                          this->*)))
-                            #'#f)
-                      #,(and post #t)
-                      #,plus-one-arity-function 
-                      #,chaperone-constructor
-                      #,method?)))
+           (build--> '->*
+                     (list mandatory-dom ...)
+                     (list optional-dom ...)
+                     '(mandatory-dom-kwd ...)
+                     (list mandatory-dom-kwd-ctc ...)
+                     '(optional-dom-kwd ...)
+                     (list optional-dom-kwd-ctc ...)
+                     #,rest-ctc
+                     #,(and pre #t)
+                     #,(if rng-ctcs
+                           #`(list #,@(for/list ([rng-ctc (in-list (syntax->list rng-ctcs))])
+                                        (syntax-property rng-ctc
+                                                         'racket/contract:positive-position
+                                                         this->*)))
+                           #'#f)
+                     #,(and post #t)
+                     #,plus-one-arity-function 
+                     #,chaperone-constructor
+                     #,method?))
 
        'racket/contract:contract
        (vector this->*

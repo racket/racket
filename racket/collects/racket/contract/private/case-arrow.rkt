@@ -11,7 +11,9 @@
          "arrow-common.rkt"
          "arrow-val-first.rkt")
 
-(provide case->)
+(provide case->
+         (for-syntax case->-internal) ; for case->m
+         base-case->? case->-name) ; for object-contract
 
 
 ;                                               
@@ -48,7 +50,7 @@
     [_
      (raise-syntax-error #f "expected ->" stx case)]))
 
-(define-for-syntax (parse-out-case stx neg-party blame-party-info case n)
+(define-for-syntax (parse-out-case stx neg-party blame-party-info case n method?)
   (let-values ([(dom-ctc-exprs rst-ctc-expr rng-ctc-exprs) (separate-out-doms/rst/rng stx case)])
     (with-syntax ([(dom-proj-x  ...) (generate-temporaries dom-ctc-exprs)]
                   [(rst-proj-x) (generate-temporaries '(rest-proj-x))]
@@ -60,7 +62,9 @@
                                       (generate-temporaries rng-ctc-exprs)
                                       '())]
                     [(this-parameter ...)
-                     (make-this-parameters (car (generate-temporaries '(this))))])
+                     (if method?
+                         (generate-temporaries '(this))
+                         null)])
         #`(#,dom-ctc-exprs
            #,rst-ctc-expr
            #,(if rng-ctc-exprs #`(list #,@rng-ctc-exprs) #f)
@@ -105,6 +109,11 @@
 
 (define-syntax (case-> stx)
   (syntax-case stx ()
+    [(_ . args)
+     (case->-internal (syntax/loc stx (case-> . args)) #|method?|# #f)]))
+
+(define-for-syntax (case->-internal stx mctc?)
+  (syntax-case stx ()
     [(_ cases ...)
      (let ()
        (define name (syntax-local-infer-name stx))
@@ -119,34 +128,31 @@
                         body) ...)
                       (for/list ([x (in-list (syntax->list #'(cases ...)))]
                                  [n (in-naturals)])
-                        (parse-out-case stx #'neg-party #'blame-party-info x n))]
-                     [mctc? (and (syntax-parameter-value #'method-contract?) #t)])
-         #`(syntax-parameterize 
-            ((making-a-method #f)) 
-            (build-case-> 
-             (list (list dom-ctc-expr ...) ...)
-             (list rst-ctc-expr ...)
-             (list rng-ctc-exprs ...)
-             '(spec ...)
-             mctc?
-             (λ (chk
-                 wrapper
-                 blame
-                 blame-party-info
-                 ctc
-                 rng-ctcs-x ...
-                 #,@(apply append (map syntax->list (syntax->list #'((dom-proj-x ...) ...))))
-                 #,@(apply append (map syntax->list (syntax->list #'((rng-proj-x ...) ...)))))
-               (λ (f neg-party)
-                 (define blame+neg-party (cons blame neg-party))
-                 (put-it-together 
-                  #,(let ([case-lam (syntax/loc stx 
-                                      (case-lambda [formals body] ...))])
-                      (if name
-                          #`(let ([#,name #,case-lam]) #,name)
-                          case-lam))
-                  f blame neg-party blame+neg-party blame-party-info wrapper ctc
-                  chk #,(and (syntax-parameter-value #'making-a-method) #t))))))))]))
+                        (parse-out-case stx #'neg-party #'blame-party-info x n mctc?))])
+         #`(build-case->
+            (list (list dom-ctc-expr ...) ...)
+            (list rst-ctc-expr ...)
+            (list rng-ctc-exprs ...)
+            '(spec ...)
+            #,mctc?
+            (λ (chk
+                wrapper
+                blame
+                blame-party-info
+                ctc
+                rng-ctcs-x ...
+                #,@(apply append (map syntax->list (syntax->list #'((dom-proj-x ...) ...))))
+                #,@(apply append (map syntax->list (syntax->list #'((rng-proj-x ...) ...)))))
+              (λ (f neg-party)
+                (define blame+neg-party (cons blame neg-party))
+                (put-it-together
+                 #,(let ([case-lam (syntax/loc stx
+                                     (case-lambda [formals body] ...))])
+                     (if name
+                         #`(let ([#,name #,case-lam]) #,name)
+                         case-lam))
+                 f blame neg-party blame+neg-party blame-party-info wrapper ctc
+                 chk #,mctc?))))))]))
 
 (define (put-it-together the-case-lam f blame neg-party blame+neg-party blame-party-info wrapper ctc chk mtd?)
   (chk f mtd?)
@@ -183,7 +189,7 @@
 ;; rng-ctcs : (listof (listof contract))
 ;; specs : (listof (list boolean exact-positive-integer)) 
 ;;     indicates the required arities of the input functions
-;; mctc? : was created with case->m
+;; mctc? : was created with case->m or object-contract
 ;; wrapper : (->* () () (listof contract?) (-> procedure? procedure?)) 
 ;;     generates a wrapper from projections
 (define-struct base-case-> (dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper))
@@ -246,10 +252,11 @@
              ctc
              projs))))
 
-(define (case->-name ctc)
+;; Re `print-as-method-if-method?`: See comment before `base->-name` in arrow-val-first.rkt
+(define ((case->-name print-as-method-if-method?) ctc)
   (apply
    build-compound-type-name
-   (if (base-case->-mctc? ctc) 'case->m 'case->)
+   (if (and (base-case->-mctc? ctc) print-as-method-if-method?) 'case->m 'case->)
    (map (λ (dom rst range)
           (apply 
            build-compound-type-name 
@@ -277,7 +284,7 @@
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:late-neg-projection (case->-proj chaperone-procedure)
-   #:name case->-name
+   #:name (case->-name #|print-as-method-if-method?|# #t)
    #:first-order case->-first-order
    #:stronger case->-stronger?))
 
@@ -286,7 +293,7 @@
   #:property prop:contract
   (build-contract-property
    #:late-neg-projection (case->-proj impersonate-procedure)
-   #:name case->-name
+   #:name (case->-name #|print-as-method-if-method?|# #t)
    #:first-order case->-first-order
    #:stronger case->-stronger?))
 

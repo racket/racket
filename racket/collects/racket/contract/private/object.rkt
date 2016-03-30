@@ -45,9 +45,10 @@
 ;; similar to `build-compound-type-name`, but handles method contract names
 (define (object-contract-sub-name . fs)
   (for/list ([sub (in-list fs)])
-    (cond [(base->? sub)   ((base->-name #|print-as-method-if-method?|# #f) sub)] ; covers -> and ->*
-          [(base-->d? sub) ((->d-name #|print-as-method-if-method?|# #f) sub)]
-          ;; `->i` and `case->` will naturally print correctly, due to the way they handle methods
+    (cond [(base->? sub)      ((base->-name #|print-as-method-if-method?|# #f) sub)] ; covers -> and ->*
+          [(base-->d? sub)    ((->d-name #|print-as-method-if-method?|# #f) sub)]
+          [(base-case->? sub) ((case->-name #|print-as-method-if-method?|# #f) sub)]
+          ;; `->i` will naturally print correctly, due to the way it handles methods
           [(contract-struct? sub) (contract-struct-name sub)]
           [else sub])))
 
@@ -88,9 +89,7 @@
                       (map (λ (x) (string->symbol (format "~a method" (syntax-e x))))
                            (syntax->list #'(method-id ...)))])
          #'(build-object-contract '(method-id ...)
-                                  (syntax-parameterize
-                                   ((making-a-method #t))
-                                   (list (let ([method-name (fun->meth method-ctc)]) method-name) ...))
+                                  (list (let ([method-name (fun->meth method-ctc)]) method-name) ...)
                                   '(field-id ...)
                                   (list field-ctc ...))))]))
 (define-syntax (fun->meth stx)
@@ -100,8 +99,8 @@
        [(->  . args)      #'(->m  . args)]
        [(->* . args)      #'(->*m . args)]
        [(->d . args)      #'(->dm . args)]
-       [(->i . args)      #'ctc] ; ->i doesn't reset the `making-a-method` syntax parameter
-       [(case-> case ...) #'ctc])])) ; neither does case->
+       [(case-> case ...) #'(case->m case ...)]
+       [(->i . args)      (->i-internal #'ctc #|method?|# #t)])])) ; there's no ->im. could be, though, code is there
 
 (define (build-object-contract methods method-ctcs fields field-ctcs)
   (make-object-contract methods 

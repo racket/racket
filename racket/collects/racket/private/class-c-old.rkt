@@ -8,8 +8,9 @@
          "class-internal.rkt"
          "../contract/base.rkt"
          "../contract/combinator.rkt"
-         (only-in "../contract/private/arrow-common.rkt" making-a-method method-contract?)
-         (only-in "../contract/private/arrow-val-first.rkt" ->-internal ->*-internal))
+         (only-in "../contract/private/arrow-val-first.rkt" ->-internal ->*-internal)
+         (only-in "../contract/private/case-arrow.rkt" case->-internal)
+         (only-in "../contract/private/arr-d.rkt" ->d-internal))
 
 (provide make-class/c class/c-late-neg-proj
          blame-add-method-context blame-add-field-context blame-add-init-context
@@ -25,17 +26,29 @@
 
 ;; Shorthand contracts that treat the implicit object argument as if it were
 ;; contracted with any/c.
-(define-syntax-rule (->m . stx)
-  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (->-internal ->m . stx)))
+(define-syntax (->m stx)
+  (syntax-case stx ()
+    [(_ . args)
+     (->-internal (syntax/loc stx (->m . args))
+                  #|method?|# #t)]))
 
-(define-syntax-rule (->*m . stx)
-  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (->*-internal ->*m . stx)))
+(define-syntax (->*m stx)
+  (syntax-case stx ()
+    [(_ . args)
+     (->*-internal (syntax/loc stx (->*m . args))
+                   #|method?|# #t)]))
 
-(define-syntax-rule (case->m . stx)
-  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (case-> . stx)))
+(define-syntax (case->m stx)
+  (syntax-case stx ()
+    [(_ . args)
+     (case->-internal (syntax/loc stx (case->m . args))
+                      #|method?|# #t)]))
 
-(define-syntax-rule (->dm . stx)
-  (syntax-parameterize ([making-a-method #'this-param] [method-contract? #t]) (->d . stx)))
+(define-syntax (->dm stx)
+  (syntax-case stx ()
+    [(_ . args)
+     (->d-internal (syntax/loc stx (->dm . args))
+                   #|maybe-this-param|# #'#'this-param)]))
 
 (define (class/c-check-first-order ctc cls fail)
   (define opaque? (class/c-opaque? ctc))

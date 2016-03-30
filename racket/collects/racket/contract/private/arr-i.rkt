@@ -25,7 +25,8 @@
                       [module-identifier-mapping-put! free-identifier-mapping-put!]
                       [module-identifier-mapping-for-each free-identifier-mapping-for-each])))
 
-(provide (rename-out [->i/m ->i]))
+(provide (rename-out [->i/m ->i])
+         (for-syntax ->i-internal)) ; for method version of ->i
 
 (define (build-??-args c-or-i-procedure ctc blame)
   (define arg-ctc-projs (map (λ (x) (get/build-late-neg-projection (->i-arg-contract x)))
@@ -841,7 +842,7 @@ evaluted left-to-right.)
            body))]
     [else stx]))
 
-(define-for-syntax (mk-wrapper-func/blame-id-info stx an-istx used-indy-vars)
+(define-for-syntax (mk-wrapper-func/blame-id-info stx an-istx used-indy-vars method?)
   
   (define-values (wrapper-proc-arglist
                   blame-ids args+rst
@@ -864,8 +865,7 @@ evaluted left-to-right.)
     (generate-temporaries (map arg/res-var ordered-ress)))
 
   
-  (define this-param (and (syntax-parameter-value #'making-a-method)
-                          (car (generate-temporaries '(this)))))
+  (define this-param (and method? (car (generate-temporaries '(this)))))
   
   (define wrapper-body
     (add-wrapper-let 
@@ -899,7 +899,7 @@ evaluted left-to-right.)
      #`(λ #,wrapper-proc-arglist
          (λ (val neg-party)
            (define blame+neg-party (cons blame neg-party))
-           (chk val #,(and (syntax-parameter-value #'making-a-method) #t))
+           (chk val #,method?)
            (c-or-i-procedure
             val
             (let ([arg-checker
@@ -1026,7 +1026,7 @@ evaluted left-to-right.)
           arg-proj-vars indy-arg-proj-vars
           res-proj-vars indy-res-proj-vars))
 
-(define-for-syntax (mk-val-first-wrapper-func/blame-id-info an-istx used-indy-vars)
+(define-for-syntax (mk-val-first-wrapper-func/blame-id-info an-istx used-indy-vars method?)
   (define-values (wrapper-proc-arglist
                   blame-ids args+rst
                   ordered-args arg-indices
@@ -1048,8 +1048,7 @@ evaluted left-to-right.)
     (generate-temporaries (map arg/res-var ordered-ress)))
   
   
-  (define this-param (and (syntax-parameter-value #'making-a-method)
-                          (car (generate-temporaries '(this)))))
+  (define this-param (and method? (car (generate-temporaries '(this)))))
   
   #`(λ #,wrapper-proc-arglist
       (λ (f)
@@ -1138,10 +1137,15 @@ evaluted left-to-right.)
     vars))
 
 (define-syntax (->i/m stx)
+  (syntax-case stx ()
+    [(_ . args)
+     (->i-internal (syntax/loc stx (->i . args)) #|method?|# #f)]))
+
+(define-for-syntax (->i-internal stx method?)
   (define an-istx (parse-->i stx))
   (define used-indy-vars (mk-used-indy-vars an-istx))
-  (define-values (blame-ids wrapper-func) (mk-wrapper-func/blame-id-info stx an-istx used-indy-vars))
-  (define val-first-wrapper-func (mk-val-first-wrapper-func/blame-id-info an-istx used-indy-vars))
+  (define-values (blame-ids wrapper-func) (mk-wrapper-func/blame-id-info stx an-istx used-indy-vars method?))
+  (define val-first-wrapper-func (mk-val-first-wrapper-func/blame-id-info an-istx used-indy-vars method?))
   (define args+rst (append (istx-args an-istx)
                            (if (istx-rst an-istx)
                                (list (istx-rst an-istx))
@@ -1311,7 +1315,7 @@ evaluted left-to-right.)
                                            (istx-args an-istx))) 
                        keyword<?)
               '#,(and (istx-rst an-istx) (arg/res-var (istx-rst an-istx)))
-              #,(and (syntax-parameter-value #'making-a-method) #t)
+              #,method?
               (quote-module-name)
               #,wrapper-func
               #,val-first-wrapper-func

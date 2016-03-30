@@ -8,8 +8,7 @@
          racket/stxparam)
 (require (for-syntax racket/base))
 
-(provide making-a-method method-contract? (for-syntax make-this-parameters)
-         blame-add-range-context
+(provide blame-add-range-context
          blame-add-nth-arg-context
          check-procedure check-procedure/more
          procedure-accepts-and-more?
@@ -26,13 +25,6 @@
 
 (define-struct unsupplied-arg ())
 (define the-unsupplied-arg (make-unsupplied-arg))
-
-(define-syntax-parameter making-a-method #f)
-(define-syntax-parameter method-contract? #f)
-(define-for-syntax (make-this-parameters id)
-  (if (syntax-parameter-value #'making-a-method)
-      (list id)
-      null))
 
 (define (blame-add-range-context blame)
   (blame-add-context blame "the range of"))
