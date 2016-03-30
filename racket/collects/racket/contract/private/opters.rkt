@@ -2,9 +2,8 @@
 (require "misc.rkt"
          "opt.rkt"
          "guts.rkt"
-         "arrow.rkt"
          "blame.rkt"
-         "arrow.rkt"
+         (except-in "arrow.rkt" base->?)
          "arrow-val-first.rkt"
          "arrow-higher-order.rkt"
          "orc.rkt"

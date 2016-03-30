@@ -1,11 +1,12 @@
 #lang racket/base
-(require "test-util.rkt")
+(require "test-util.rkt"
+         racket/list)
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace)])
 (define (test-obligations quoted-expr expected-props)
   
-  (define (cleanup key obj stx)
+  (define ((cleanup key stx) obj)
     (case key
       [(racket/contract:contract)
        (define (cleanup-ent x)
@@ -21,21 +22,25 @@
        (error 'test-obligations "unknown property ~s" key)]))
   
   (let ([props '()])
-    (let ([stx (contract-expand-once quoted-expr)])
+    (let ([stx (contract-expand quoted-expr)])
       (let loop ([stx stx])
         (cond
           [(syntax? stx)
-           (for ([key (in-list (syntax-property-symbol-keys stx))])
-             (when (regexp-match #rx"^racket/contract:" (symbol->string key))
-               (set! props (cons (cleanup key (syntax-property stx key) stx)
-                                 props))))
+           (syntax-case stx (#%top)
+             [(#%top . x)
+              (void)]
+             [_
+              (for ([key (in-list (syntax-property-symbol-keys stx))])
+                (when (regexp-match #rx"^racket/contract:" (symbol->string key))
+                  (set! props (append (map (cleanup key stx) (flatten (syntax-property stx key)))
+                                      props))))])
            (loop (syntax-e stx))]
           [(pair? stx)
            (loop (car stx))
            (loop (cdr stx))])))
     (test expected-props
           `(obligations-for ,quoted-expr)
-          (sort props string<=? #:key (λ (x) (format "~s" x))))))
+          (remove-duplicates (sort props string<=? #:key (λ (x) (format "~s" x)))))))
 
   (test-obligations '(-> a b)
                     '((racket/contract:contract (->) ())

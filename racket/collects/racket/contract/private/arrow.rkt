@@ -42,7 +42,8 @@
          blame-add-range-context
          blame-add-nth-arg-context
          raise-no-keywords-arg
-         raise-wrong-number-of-args-error)
+         raise-wrong-number-of-args-error
+         base-->d? ->d-name) ; for object-contract
 
 (define-syntax-parameter making-a-method #f)
 (define-syntax-parameter method-contract? #f)
@@ -1602,8 +1603,9 @@
                            optional-kwds
                            name-wrapper)))
 
-(define (->d-name ctc) 
-  (let* ([name (if (base-->d-mctc? ctc) '->dm '->d)]
+;; Re `print-as-method-if-method?`: See comment before `base->-name` in arrow-val-first.rkt
+(define ((->d-name print-as-method-if-method?) ctc)
+  (let* ([name (if (and (base-->d-mctc? ctc) print-as-method-if-method?) '->dm '->d)]
          [counting-id 'x]
          [ids '(x y z w)]
          [next-id
@@ -1694,7 +1696,7 @@
   #:property prop:contract
   (build-contract-property
    #:late-neg-projection (late-neg-->d-proj impersonate-procedure)
-   #:name ->d-name
+   #:name (->d-name #|print-as-method-if-method?|# #t)
    #:first-order ->d-first-order
    #:stronger ->d-stronger?))
 

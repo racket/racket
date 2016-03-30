@@ -611,5 +611,33 @@
           (begin (set! l (cons 6 l)) #f))
       (reverse l))
    '(1 2 3 4 5 6))
-  
+
+  (contract-error-test
+   '->-arity-error1
+   '(contract
+     (-> any/c any/c)
+     (lambda (x y) #t)
+     'pos 'neg)
+   (lambda (e)
+     (regexp-match? "a procedure that accepts 1 non-keyword argument"
+                    (exn-message e))))
+  (contract-error-test
+   '->-arity-error2
+   '(contract
+     (-> any/c)
+     (lambda (x y) #t)
+     'pos 'neg)
+   (lambda (e)
+     (regexp-match? "a procedure that accepts 0 non-keyword argument"
+                    (exn-message e))))
+  (contract-error-test
+   '->-arity-error3
+   '(contract
+     (->* (any/c) (#:x any/c) any/c)
+     (lambda (x) #t)
+     'pos 'neg)
+   (lambda (e)
+     (regexp-match? "a procedure that accepts the #:x keyword argument"
+                    (exn-message e))))
+
   )

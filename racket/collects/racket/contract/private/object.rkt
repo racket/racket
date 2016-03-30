@@ -1,5 +1,7 @@
 #lang racket/base
-(require "arrow.rkt"
+(require "arrow-val-first.rkt"
+         "case-arrow.rkt"
+         (only-in "arrow.rkt" ->d base-->d? ->d-name making-a-method)
          "arr-i.rkt"
          "guts.rkt"
          "prop.rkt"
@@ -39,6 +41,15 @@
               [_ 
                (raise-syntax-error #f "malformed object-contract clause" stx (car args))])])))
 
+;; similar to `build-compound-type-name`, but handles method contract names
+(define (object-contract-sub-name . fs)
+  (for/list ([sub (in-list fs)])
+    (cond [(base->? sub)   ((base->-name #|print-as-method-if-method?|# #f) sub)] ; covers -> and ->*
+          [(base-->d? sub) ((->d-name #|print-as-method-if-method?|# #f) sub)]
+          ;; `->i` and `case->` will naturally print correctly, due to the way they handle methods
+          [(contract-struct? sub) (contract-struct-name sub)]
+          [else sub])))
+
 (define-struct object-contract (methods method-ctcs fields field-ctcs)
   #:property prop:custom-write custom-write-property-proc
   #:omit-define-syntaxes
@@ -55,7 +66,7 @@
    (λ (ctc) `(object-contract ,@(map (λ (fld ctc) (build-compound-type-name 'field fld ctc))
                                      (object-contract-fields ctc)
                                      (object-contract-field-ctcs ctc))
-                              ,@(map (λ (mtd ctc) (build-compound-type-name mtd ctc))
+                              ,@(map (λ (mtd ctc) (object-contract-sub-name mtd ctc))
                                      (object-contract-methods ctc)
                                      (object-contract-method-ctcs ctc))))
 
@@ -78,9 +89,18 @@
          #'(build-object-contract '(method-id ...)
                                   (syntax-parameterize
                                    ((making-a-method #t))
-                                   (list (let ([method-name method-ctc]) method-name) ...))
+                                   (list (let ([method-name (fun->meth method-ctc)]) method-name) ...))
                                   '(field-id ...)
                                   (list field-ctc ...))))]))
+(define-syntax (fun->meth stx)
+  (syntax-case stx ()
+    [(_ ctc)
+     (syntax-case #'ctc (->2 ->*2 ->d ->i case->)
+       [(->2  . args)     #'(->m  . args)]
+       [(->*2 . args)     #'(->*m . args)]
+       [(->d  . args)     #'(->dm . args)]
+       [(->i  . args)     #'ctc] ; ->i doesn't reset the `making-a-method` syntax parameter
+       [(case-> case ...) #'ctc])])) ; neither does case->
 
 (define (build-object-contract methods method-ctcs fields field-ctcs)
   (make-object-contract methods 
