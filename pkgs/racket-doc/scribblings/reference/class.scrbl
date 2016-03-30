@@ -2071,16 +2071,28 @@ domain, where the first (implicit) argument is contracted with
 @racket[any/c]. This contract is useful for writing simpler method
 contracts when no properties of @racket[this] need to be checked.}
 
+@deftogether[[
+@defform[(->im maybe-chaperone
+               (mandatory-dependent-dom ...)
+               (optional-dependent-dom ...)
+               dependent-rest
+               pre-cond
+               dep-range
+               post-condition)]
 @defform[(->dm (mandatory-dependent-dom ...)
                (optional-dependent-dom ...)
                dependent-rest
                pre-cond
-               dep-range)]{
-Similar to @racket[->d], except that the mandatory domain of the resulting contract
+               dep-range)]
+]]{
+Similar to @racket[->i] and @racket[->d], except that the mandatory domain of the resulting contract
 contains one more element than the stated domain, where the first (implicit) argument is contracted
 with @racket[any/c]. In addition, @racket[this] is appropriately bound in the body of the contract.
 This contract is useful for writing simpler method contracts when no properties
-of @racket[this] need to be checked.}
+of @racket[this] need to be checked.
+
+@history[#:changed "6.4.0.15" @elem{Added @racket[->im].}]
+}
 
 @defform/subs[
 #:literals (field)

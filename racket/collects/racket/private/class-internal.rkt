@@ -64,7 +64,7 @@
             method-in-interface? interface->method-names class->interface class-info
             (struct-out exn:fail:object)
             make-primitive-class
-            class/c ->m ->*m ->dm case->m object/c instanceof/c
+            class/c ->m ->*m ->im ->dm case->m object/c instanceof/c
             dynamic-object/c
             class-seal class-unseal
            

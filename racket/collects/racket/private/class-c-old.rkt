@@ -10,11 +10,12 @@
          "../contract/combinator.rkt"
          (only-in "../contract/private/arrow-val-first.rkt" ->-internal ->*-internal)
          (only-in "../contract/private/case-arrow.rkt" case->-internal)
+         (only-in "../contract/private/arr-i.rkt" ->i-internal)
          (only-in "../contract/private/arr-d.rkt" ->d-internal))
 
 (provide make-class/c class/c-late-neg-proj
          blame-add-method-context blame-add-field-context blame-add-init-context
-         class/c ->m ->*m ->dm case->m object/c instanceof/c
+         class/c ->m ->*m ->im ->dm case->m object/c instanceof/c
          make-wrapper-object
          check-object-contract
          (for-syntax parse-class/c-specs)
@@ -43,6 +44,12 @@
     [(_ . args)
      (case->-internal (syntax/loc stx (case->m . args))
                       #|method?|# #t)]))
+
+(define-syntax (->im stx)
+  (syntax-case stx ()
+    [(_ . args)
+     (->i-internal (syntax/loc stx (->im . args))
+                   #|method?|# #t)]))
 
 (define-syntax (->dm stx)
   (syntax-case stx ()
