@@ -59,5 +59,5 @@
                (with-handlers ([exn:fail:filesystem? void])
                  (delete-file temp-filename))))))
       (lambda () (close-input-port in)))
-     dest]))
+     (build-path dest)]))
 
