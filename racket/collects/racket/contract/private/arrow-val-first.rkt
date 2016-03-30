@@ -13,24 +13,24 @@
          racket/stxparam
          (prefix-in arrow: "arrow-common.rkt"))
 
-(provide ->2 ->*2
-         ->2-internal ->*2-internal ; for ->m and ->*m
+(provide (rename-out [->/c ->]) ->*
+         ->-internal ->*-internal ; for ->m and ->*m
          base->? base->-name base->-rngs base->-doms
          dynamic->*
          arity-checking-wrapper
          (for-syntax parse-leftover->*)
-         (for-syntax ->2-arity-check-only->?
-                     ->2*-arity-check-only->?
+         (for-syntax ->-arity-check-only->?
+                     ->*-arity-check-only->?
                      ->-valid-app-shapes
                      ->*-valid-app-shapes)
          (rename-out [-predicate/c predicate/c]))
 
-(define-for-syntax (->2-arity-check-only->? stx)
+(define-for-syntax (->-arity-check-only->? stx)
   (syntax-case stx (any any/c)
     [(_ any/c ... any) (- (length (syntax->list stx)) 2)]
     [_ #f]))
 
-(define-for-syntax (->2*-arity-check-only->? stx)
+(define-for-syntax (->*-arity-check-only->? stx)
   (syntax-case stx (any any/c)
     [(_ (any/c ...) any) (length (syntax->list (cadr (syntax->list stx))))]
     [(_ (any/c ...) () any) (length (syntax->list (cadr (syntax->list stx))))]
@@ -641,16 +641,16 @@
                          (map syntax->datum kwds)
                          '()))]))
 
-(define-syntax (->2 stx)
+(define-syntax (->/c stx)
   (syntax-case stx ()
     [(_ . args)
      (let ()
        #`(syntax-parameterize
           ((arrow:making-a-method #f))
           #,(quasisyntax/loc stx
-              (->2-internal -> . args))))]))
+              (->-internal -> . args))))]))
 
-(define-syntax (->2-internal stx*)
+(define-syntax (->-internal stx*)
   (syntax-case stx* ()
     [(_ orig-> args ... rng)
      (let ()
@@ -739,7 +739,7 @@
                                              this->*)]
                      let-bindings)))])))
 
-(define-for-syntax (parse->*2 stx this->*)
+(define-for-syntax (parse->* stx this->*)
   (syntax-case stx ()
     [(_ (raw-mandatory-dom ...) . other)
      (let ()
@@ -823,7 +823,7 @@
   (define-values (man-dom man-dom-kwds man-lets
                           opt-dom opt-dom-kwds opt-lets
                           rest-ctc pre pre/desc rng-ctcs post post/desc)
-    (parse->*2 stx this->*))
+    (parse->* stx this->*))
   (with-syntax ([((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
                 [((optional-dom-kwd optional-dom-kwd-ctc) ...) opt-dom-kwds])
     (valid-app-shapes-from-man/opts (length (syntax->list man-dom))
@@ -832,21 +832,21 @@
                                     (syntax->datum #'(mandatory-dom-kwd ...))
                                     (syntax->datum #'(optional-dom-kwd ...)))))
 
-(define-syntax (->*2 stx)
+(define-syntax (->* stx)
   (syntax-case stx ()
     [(_ . args)
      #`(syntax-parameterize
         ((arrow:making-a-method #f))
         #,(quasisyntax/loc stx
-            (->*2-internal ->* . args)))]))
+            (->*-internal ->* . args)))]))
 
-(define-syntax (->*2-internal stx*)
+(define-syntax (->*-internal stx*)
   (define stx (syntax-case stx* () [(_ orig->* . args) (syntax/loc stx* (orig->* . args))]))
   (define this->* (gensym 'this->*))
   (define-values (man-dom man-dom-kwds man-lets
                           opt-dom opt-dom-kwds opt-lets
                           rest-ctc pre pre/desc rng-ctcs post post/desc)
-    (parse->*2 stx this->*))
+    (parse->* stx this->*))
   (with-syntax ([(mandatory-dom ...) man-dom]
                 [((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
                 [(mandatory-let-bindings ...) man-lets]

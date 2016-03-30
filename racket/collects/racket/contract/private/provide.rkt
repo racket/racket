@@ -279,12 +279,12 @@
                                                         contract-error-name
                                                         pos-module-source)
   (define-values (arrow? the-valid-app-shapes)
-    (syntax-case ctrct (->2 ->*2 ->i)
-      [(->2 . _) 
-       (not (->2-arity-check-only->? ctrct))
+    (syntax-case ctrct (-> ->* ->i)
+      [(-> . _) 
+       (not (->-arity-check-only->? ctrct))
        (values #t (->-valid-app-shapes ctrct))]
-      [(->*2 . _) 
-       (values (not (->2*-arity-check-only->? ctrct))
+      [(->* . _) 
+       (values (not (->*-arity-check-only->? ctrct))
                (->*-valid-app-shapes ctrct))]
       [(->i . _) (values #t (->i-valid-app-shapes ctrct))]
       [_ (values #f #f)]))
@@ -990,24 +990,24 @@
          (with-syntax ([(field-contract-ids ...) field-contract-ids]
                        [predicate-id predicate-id])
            (syntax/loc stx
-             (->2 field-contract-ids ...
-                  predicate-id))))
+             (-> field-contract-ids ...
+                 predicate-id))))
 
        ;; build-selector-contract : syntax syntax -> syntax
        ;; constructs the contract for a selector
        (define (build-selector-contract struct-name predicate-id field-contract-id)
          (with-syntax ([field-contract-id field-contract-id]
                        [predicate-id predicate-id])
-           (syntax (->2 predicate-id field-contract-id))))
+           (syntax (-> predicate-id field-contract-id))))
 
        ;; build-mutator-contract : syntax syntax -> syntax
        ;; constructs the contract for a selector
        (define (build-mutator-contract struct-name predicate-id field-contract-id)
          (with-syntax ([field-contract-id field-contract-id]
                        [predicate-id predicate-id])
-           (syntax (->2 predicate-id
-                        field-contract-id
-                        void?))))
+           (syntax (-> predicate-id
+                       field-contract-id
+                       void?))))
 
        ;; code-for-one-poly-id : syntax -> syntax
        (define (code-for-one-poly-id x x-gen poly)

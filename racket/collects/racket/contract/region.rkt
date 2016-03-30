@@ -174,11 +174,11 @@
                   (for/list ([finfo field-infos])
                     (let ([field-ctc (field-info-ctc finfo)])
                       (cons (quasisyntax/loc stx
-                              (->2 #,pred #,field-ctc))
+                              (-> #,pred #,field-ctc))
                             (if (field-info-mutable? finfo)
                                 (list 
                                  (quasisyntax/loc stx
-                                   (->2 #,pred #,field-ctc void?)))
+                                   (-> #,pred #,field-ctc void?)))
                                 null)))))))
   
   (define (check-field f ctc)
@@ -434,7 +434,7 @@
                        (define-struct/derived orig name (field ...)
                          omit-stx-def ...
                          kwds ...
-                         #:guard (contract (->2 super-contract ... non-auto-contracts ... symbol? any)
+                         #:guard (contract (-> super-contract ... non-auto-contracts ... symbol? any)
                                            guard
                                            (current-contract-region) blame-id
                                            (quote maker)

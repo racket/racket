@@ -38,14 +38,10 @@
     [x #'(x)]))
 
 (define-for-syntax (separate-out-doms/rst/rng stx case)
-  (syntax-case case (-> ->2)
+  (syntax-case case (->)
     [(-> doms ... #:rest rst rng)
      (values #'(doms ...) #'rst (parse-rng stx #'rng))]
-    [(->2 doms ... #:rest rst rng)
-     (values #'(doms ...) #'rst (parse-rng stx #'rng))]
     [(-> doms ... rng)
-     (values #'(doms ...) #f (parse-rng stx #'rng))]
-    [(->2 doms ... rng)
      (values #'(doms ...) #f (parse-rng stx #'rng))]
     [(x y ...)
      (raise-syntax-error #f "expected ->" stx #'x)]

@@ -728,7 +728,6 @@
                (opt/unknown opt/i opt/info stx))))]))
 
 (define/opter (-> opt/i opt/info stx) (->-opter opt/i opt/info stx))
-(define/opter (->2 opt/i opt/info stx) (->-opter opt/i opt/info stx))
 
 (define opt->/c-cm-key (gensym 'opt->/c-cm-key))
 

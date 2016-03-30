@@ -96,11 +96,11 @@
 (define-syntax (fun->meth stx)
   (syntax-case stx ()
     [(_ ctc)
-     (syntax-case #'ctc (->2 ->*2 ->d ->i case->)
-       [(->2  . args)     #'(->m  . args)]
-       [(->*2 . args)     #'(->*m . args)]
-       [(->d  . args)     #'(->dm . args)]
-       [(->i  . args)     #'ctc] ; ->i doesn't reset the `making-a-method` syntax parameter
+     (syntax-case #'ctc (-> ->* ->d ->i case->)
+       [(->  . args)      #'(->m  . args)]
+       [(->* . args)      #'(->*m . args)]
+       [(->d . args)      #'(->dm . args)]
+       [(->i . args)      #'ctc] ; ->i doesn't reset the `making-a-method` syntax parameter
        [(case-> case ...) #'ctc])])) ; neither does case->
 
 (define (build-object-contract methods method-ctcs fields field-ctcs)

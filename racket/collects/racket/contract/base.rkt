@@ -44,7 +44,7 @@
  blame-add-range-context
  blame-add-nth-arg-context
  
- (rename-out [->2 ->] [->*2 ->*])
+ -> ->*
  dynamic->*
  predicate/c
 
@@ -154,5 +154,5 @@
 ;; If the argument is a procedure, it must be a thunk, and it is applied. Otherwise
 ;; the argument is simply the value to return.
 (define failure-result/c
-  (if/c procedure? (->2 any) any/c))
+  (if/c procedure? (-> any) any/c))
 

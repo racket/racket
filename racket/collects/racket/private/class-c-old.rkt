@@ -9,7 +9,7 @@
          "../contract/base.rkt"
          "../contract/combinator.rkt"
          (only-in "../contract/private/arrow-common.rkt" making-a-method method-contract?)
-         (only-in "../contract/private/arrow-val-first.rkt" ->2-internal ->*2-internal))
+         (only-in "../contract/private/arrow-val-first.rkt" ->-internal ->*-internal))
 
 (provide make-class/c class/c-late-neg-proj
          blame-add-method-context blame-add-field-context blame-add-init-context
@@ -26,10 +26,10 @@
 ;; Shorthand contracts that treat the implicit object argument as if it were
 ;; contracted with any/c.
 (define-syntax-rule (->m . stx)
-  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (->2-internal ->m . stx)))
+  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (->-internal ->m . stx)))
 
 (define-syntax-rule (->*m . stx)
-  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (->*2-internal ->*m . stx)))
+  (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (->*-internal ->*m . stx)))
 
 (define-syntax-rule (case->m . stx)
   (syntax-parameterize ([making-a-method #t] [method-contract? #t]) (case-> . stx)))
