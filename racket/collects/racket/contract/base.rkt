@@ -30,12 +30,10 @@
  unconstrained-domain->
  the-unsupplied-arg
  unsupplied-arg?
- method-contract?
  matches-arity-exactly?
  keywords-match
  bad-number-of-results
  (for-syntax check-tail-contract
-             make-this-parameters
              parse-leftover->*)
  tail-marks-match?
  values/drop
