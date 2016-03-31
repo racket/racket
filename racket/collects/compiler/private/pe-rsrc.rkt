@@ -384,7 +384,7 @@
   (define rsrcs (read-rsrcs i (section-file-position s) (section-virtual-addr s)))
   
   (show-resources rsrcs)
-  
+
   (values pe rsrcs))
 
 (define (same-alignment orig new)
@@ -439,15 +439,18 @@
    [else
     (log-pe-rsrc-debug "moving resources to end")
 
-    (define earliest-section-file-position
-      (for/fold ([p (section-file-position (car (pe-sections pe)))]) ([s (in-list (pe-sections pe))])
-		(min p (section-file-position s))))
-    (log-pe-rsrc-debug "earliest section at ~x" earliest-section-file-position)
+    (define (check-extra-header-ok)
+      (define earliest-section-file-position
+        (for/fold ([p (section-file-position (car (pe-sections pe)))]) ([s (in-list (pe-sections pe))])
+          (if (zero? (section-file-position s))
+              p
+              (min p (section-file-position s)))))
+      (log-pe-rsrc-debug "earliest section at ~x" earliest-section-file-position)
 
-    (unless (> earliest-section-file-position
-	       (+ (* SECTION-HEADER-SIZE (length (pe-sections pe)))
-		  (pe-section-start-pos pe)))
-      (error 'update-resources "no room for a new section header"))
+      (unless (> earliest-section-file-position
+                 (+ (* SECTION-HEADER-SIZE (length (pe-sections pe)))
+                    (pe-section-start-pos pe)))
+        (error 'update-resources "no room for a new section header")))
 
     (define new-virtual-addr
       (same-alignment
@@ -479,15 +482,22 @@
                        new-virtual-size
                        new-position)
     
+    (define need-new-section?
+      (for/or ([s2 (in-list (pe-sections pe))]
+               #:unless (eq? s s2))
+        ((section-virtual-addr s2) . > . (section-virtual-addr s))))
+    
     (define new-sections
-      (sort (cons
-	     (section
-	      #".DROPpe\0"
-	      (section-virtual-size s)
-	      (section-virtual-addr s)
-	      (section-file-length s)
-	      (section-file-position s)
-	      (section-characteristics s))
+      (sort (append
+             (if need-new-section?
+                 (list (section
+                        #".DROPpe\0"
+                        (section-virtual-size s)
+                        (section-virtual-addr s)
+                        (section-file-length s)
+                        (section-file-position s)
+                        (section-characteristics s)))
+                 null)
 	     (for/list ([s2 (in-list (pe-sections pe))])
                (if (eq? s s2)
                    (section (section-name s)
