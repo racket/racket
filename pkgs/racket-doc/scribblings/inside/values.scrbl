@@ -296,6 +296,9 @@ There are six global constants:
 
 ]
 
+In some embedding contexts, the function forms
+@cppi{scheme_make_null}, etc., must be used, instead.
+
 @; ----------------------------------------------------------------------
 
 @section[#:tag "im:strings"]{Strings}
@@ -324,6 +327,31 @@ For more fine-grained control over UTF-8 encoding, use the
 @; ----------------------------------------------------------------------
 
 @section{Value Functions}
+
+@function[(Scheme_Object* scheme_make_null)]{
+
+Returns @cppi{scheme_null}.
+}
+
+@function[(Scheme_Object* scheme_make_eof)]{
+
+Returns @cppi{scheme_eof}.
+}
+
+@function[(Scheme_Object* scheme_make_true)]{
+
+Returns @cppi{scheme_true}.
+}
+
+@function[(Scheme_Object* scheme_make_false)]{
+
+Returns @cppi{scheme_false}.
+}
+
+@function[(Scheme_Object* scheme_make_void)]{
+
+Returns @cppi{scheme_void}.
+}
 
 @function[(Scheme_Object* scheme_make_char
            [mzchar ch])]{

@@ -9,7 +9,8 @@ Racket thread; all other threads are created through calls to
 
 Information about each internal Racket thread is kept in a
 @cppi{Scheme_Thread} structure. A pointer to the current thread's
-structure is available as @cppi{scheme_current_thread}.  A
+structure is available as @cppdef{scheme_current_thread} or
+from @cppi{scheme_get_current_thread}.  A
 @cpp{Scheme_Thread} structure includes the following fields:
 
 @itemize[
@@ -377,6 +378,12 @@ The following function @cpp{mzsleep} is an appropriate
 @; ----------------------------------------------------------------------
 
 @section{Thread Functions}
+
+@function[(Scheme_Thread* scheme_get_current_thread)]{
+
+Returns the currently executing thread. The result is equivalent to
+@cppi{scheme_current_thread}, but the function form must be used in
+some embedding contexts.}
 
 @function[(Scheme_Object* scheme_thread
            [Scheme_Object* thunk])]{

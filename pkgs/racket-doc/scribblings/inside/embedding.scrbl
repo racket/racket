@@ -11,7 +11,8 @@
 The Racket run-time system can be embedded into a larger program.  The
 embedding process for Racket CGC or Racket 3m (see @secref[cgc-v-3m])
 is essentially the same, but the process for Racket 3m is most easily
-understood as a variant of the process for Racket CGC.
+understood as a variant of the process for Racket CGC (even though
+Racket 3m is the standard variant of Racket).
 
 @section{CGC Embedding}
 
@@ -181,6 +182,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
 {
   Scheme_Object *curout;
   int i;
+  Scheme_Thread *th;
   mz_jmp_buf * volatile save, fresh;
 
   /* Declare embedded modules in "base.c": */
@@ -191,11 +193,13 @@ static int run(Scheme_Env *e, int argc, char *argv[])
   curout = scheme_get_param(scheme_current_config(), 
                             MZCONFIG_OUTPUT_PORT);
 
+  th = scheme_get_current_thread();
+
   for (i = 1; i < argc; i++) {
-    save = scheme_current_thread->error_buf;
-    scheme_current_thread->error_buf = &fresh;
-    if (scheme_setjmp(scheme_error_buf)) {
-      scheme_current_thread->error_buf = save;
+    save = th->error_buf;
+    th->error_buf = &fresh;
+    if (scheme_setjmp(*th->error_buf)) {
+      th->error_buf = save;
       return -1; /* There was an error */
     } else {
       Scheme_Object *v, *a[2];
@@ -206,7 +210,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
       a[0] = scheme_intern_symbol("racket/base");
       a[1] = scheme_intern_symbol("read-eval-print-loop");
       scheme_apply(scheme_dynamic_require(2, a), 0, NULL);
-      scheme_current_thread->error_buf = save;
+      th->error_buf = save;
     }
   }
   return 0;
@@ -307,15 +311,17 @@ static int run(Scheme_Env *e, int argc, char *argv[])
   Scheme_Object *curout = NULL, *v = NULL, *a[2] = {NULL, NULL};
   Scheme_Config *config = NULL;
   int i;
+  Scheme_Thread *th = NULL;
   mz_jmp_buf * volatile save = NULL, fresh;
 
-  MZ_GC_DECL_REG(8);
+  MZ_GC_DECL_REG(9);
   MZ_GC_VAR_IN_REG(0, e);
   MZ_GC_VAR_IN_REG(1, curout);
   MZ_GC_VAR_IN_REG(2, save);
   MZ_GC_VAR_IN_REG(3, config);
   MZ_GC_VAR_IN_REG(4, v);
-  MZ_GC_ARRAY_VAR_IN_REG(5, a, 2);
+  MZ_GC_VAR_IN_REG(5, th);
+  MZ_GC_ARRAY_VAR_IN_REG(6, a, 2);
 
   MZ_GC_REG();
 
@@ -327,11 +333,13 @@ static int run(Scheme_Env *e, int argc, char *argv[])
   config = scheme_current_config();
   curout = scheme_get_param(config, MZCONFIG_OUTPUT_PORT);
 
+  th = scheme_get_current_thread();
+
   for (i = 1; i < argc; i++) {
-    save = scheme_current_thread->error_buf;
-    scheme_current_thread->error_buf = &fresh;
-    if (scheme_setjmp(scheme_error_buf)) {
-      scheme_current_thread->error_buf = save;
+    save = th->error_buf;
+    th->error_buf = &fresh;
+    if (scheme_setjmp(*th->error_buf)) {
+      th->error_buf = save;
       return -1; /* There was an error */
     } else {
       v = scheme_eval_string(argv[i], e);
@@ -343,7 +351,7 @@ static int run(Scheme_Env *e, int argc, char *argv[])
       a[1] = scheme_intern_symbol("read-eval-print-loop");
       v = scheme_dynamic_require(2, a);
       scheme_apply(v, 0, NULL);
-      scheme_current_thread->error_buf = save;
+      th->error_buf = save;
     }
   }
 
