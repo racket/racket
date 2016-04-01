@@ -343,6 +343,14 @@
              "exe"
 	     "-o" (path->string (mk-dest mred?))
 	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me29.rkt")))
+    (try-exe (mk-dest mred?) "'inside\n" mred?)
+
+    ;; raco exe on a module with a submodule that references another file's submodule
+    (system+ raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
 	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me22.rkt")))
     (try-exe (mk-dest mred?) "Configure!\nThis is 22.\n" mred?)
 
