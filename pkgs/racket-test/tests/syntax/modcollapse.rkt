@@ -10,7 +10,8 @@
 
 (define self (module-path-index-join #f #f))
 
-(define (check-collapse p expected [relative-expected expected])
+(define (check-collapse p expected [relative-expected expected]
+                        #:here [here here])
   (check (collapse-module-path p here)
          expected)
   
@@ -53,6 +54,14 @@
 (check-collapse '(submod "." test)
                 `(submod ,here test)
                 '(submod "." test))
+
+(check-collapse '(submod "local.rkt" test)
+                `(submod ,(build-path here-dir "local.rkt") test)
+                '(submod "local.rkt" test))
+(check-collapse '(submod "local.rkt" test)
+                `(submod ,(build-path here-dir "local.rkt") test)
+                `(submod "local.rkt" test)
+                #:here `(submod ,here other))
 
 (define rel-rel (module-path-index-join
                  "apple.rkt"
@@ -143,3 +152,4 @@
 (check (collapse-module-path-index rel-dirrel
                                    here)
        (build-path here-dir "x" "apple.rkt"))
+

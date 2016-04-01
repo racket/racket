@@ -327,7 +327,7 @@ Use syntax/modcollapse instead.
              (flatten-relto-mp!)
              (normalize-submod `(submod ,relto-mp ,@relto-submod ,@(cdr s)))]
             [else
-             (normalize-submod `(submod ,(normalize-recur (cadr s)) ,@relto-submod ,@(cddr s)))])]
+             (normalize-submod `(submod ,(normalize-recur (cadr s)) ,@(cddr s)))])]
           [else #f])))
 
 (define collapse-module-path-index
@@ -360,7 +360,8 @@ Use syntax/modcollapse instead.
            (let ([r (force-relto relto-mp)]
                  [sm (module-path-index-submodule mpi)])
              (if sm
-                 (if (and (pair? r) (eq? (car r) 'submod))
+                 (if (and (pair? r)
+                          (eq? (car r) 'submod))
                      (append r sm)
                      (list* 'submod r sm))
                  r))))]))
