@@ -5013,12 +5013,14 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       && scheme_ir_duplicate_ok(fb, 0)) {
     Scheme_Branch_Rec *b2 = (Scheme_Branch_Rec *)t;
     if (SCHEME_FALSEP(b2->fbranch)) {
+      Scheme_Object *fb3;
       Scheme_Branch_Rec *b3;
       b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
       b3->so.type = scheme_branch_type;
       b3->test = b2->tbranch;
       b3->tbranch = tb;
-      b3->fbranch = fb;
+      fb3 = optimize_clone(0, fb, info, empty_eq_hash_tree, 0);
+      b3->fbranch = fb3;
       t = b2->test;
       tb = (Scheme_Object *)b3;
     }
@@ -6725,20 +6727,14 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
             /* Although this variable's uses do not necessarily cross
                a continuation capture, the inference of its type
                depends on that crossing, so we treat as having a crossing.
-               This is an accomodation to the bytecode format and
+               This is an accommodation to the bytecode format and
                validator, which has no way to distinguish between
                a known type and unboxing capability for that type. */
             SCHEME_VAR(pre_body->vars[0])->escapes_after_k_tick = 1;
           }
         }
 
-        if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_local_type)) {
-          /* shouldn't get here, since scheme_ir_propagate_ok()
-             should have returned true, but just in case...
-             local is in unoptimized coordinates */
-          pred = NULL;
-        } else
-          pred = expr_implies_predicate(value, rhs_info);
+        pred = expr_implies_predicate(value, rhs_info);
 
         if (pred)
           add_type(body_info, (Scheme_Object *)pre_body->vars[0], pred);
