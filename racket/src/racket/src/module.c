@@ -127,6 +127,7 @@ typedef struct Module_Begin_Expand_State {
   Scheme_Object *redef_modname;
   Scheme_Object *end_statementss; /* list of lists */
   Scheme_Object *modsrc; /* source for top-level module */
+  Scheme_Object **sub_iidx_ptrs; /* contains `iidx`es for `(module* name #f ...)` submodules */
 } Module_Begin_Expand_State;
 
 static Scheme_Object *do_module_begin_at_phase(Scheme_Object *form, Scheme_Comp_Env *env, 
@@ -7122,7 +7123,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   Scheme_Comp_Env *benv;
   Scheme_Module *m;
   Scheme_Object *mbval, *orig_ii;
-  Scheme_Object *this_empty_self_modidx;
+  Scheme_Object *this_empty_self_modidx, **sub_iidx_ptrs;
   int saw_mb, check_mb = 0, shift_back = 0;
   Scheme_Object *restore_confusing_name = NULL;
   LOG_EXPAND_DECLS;
@@ -7278,6 +7279,9 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                               self_modidx,
                               scheme_false);
 
+    shift = scheme_make_pair(iidx, *super_bxs->sub_iidx_ptrs);
+    *super_bxs->sub_iidx_ptrs = shift;
+
     super_phase_shift = scheme_bin_minus(scheme_make_integer(0), super_phase_shift);
 
     shift = scheme_make_shift(super_phase_shift, 
@@ -7294,6 +7298,10 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     super_bxs_info[5] = super_phase_shift;
     m->super_bxs_info = super_bxs_info;
   }
+
+  sub_iidx_ptrs = MALLOC_N(Scheme_Object*, 1);
+  *sub_iidx_ptrs = scheme_null;
+  m->sub_iidx_ptrs = sub_iidx_ptrs;
 
   if (!rec[drec].comp) {
     SCHEME_EXPAND_OBSERVE_PREPARE_ENV(env->observer);
@@ -7463,6 +7471,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     m->ii_src = NULL;
     m->super_bxs_info = NULL;
+    m->sub_iidx_ptrs = NULL;
 
     pv = scheme_stx_property(form, scheme_intern_symbol("module-language"), NULL);
     if (pv && SCHEME_TRUEP(pv)) {
@@ -7487,6 +7496,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
     m->ii_src = NULL;
     m->super_bxs_info = NULL;
+    m->sub_iidx_ptrs = NULL;
 
     hints = m->hints;
     m->hints = NULL;
@@ -7572,11 +7582,20 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
                                scheme_stx_add_shift(stx, ps));
     }
 
-    /* make self_modidx like the empty modidx */
+    /* make self_modidx like the empty modidx; this update plays the
+       role of applying a shift to identifiers that are in syntax
+       properties, such as the 'origin property */
     if (SAME_OBJ(this_empty_self_modidx, empty_self_modidx))
       ((Scheme_Modidx *)self_modidx)->resolved = empty_self_modname;
     else
       ((Scheme_Modidx *)self_modidx)->resolved = ((Scheme_Modidx *)this_empty_self_modidx)->resolved;
+
+    while (SCHEME_PAIRP(*sub_iidx_ptrs)) {
+      /* Each in `*sub_iidx_ptrs` corresponds to the implicit `..` import for
+         a `(module* name #f ...)` submodule: */
+      ((Scheme_Modidx *)SCHEME_CAR(*sub_iidx_ptrs))->resolved = ((Scheme_Modidx *)self_modidx)->resolved;
+      *sub_iidx_ptrs = SCHEME_CDR(*sub_iidx_ptrs);
+    }
   }
 
   if (rec[drec].comp || (rec[drec].depth != -2)) {
@@ -8352,6 +8371,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
   bxs->redef_modname = redef_modname;
   bxs->end_statementss = scheme_null;
   bxs->modsrc = env->genv->module->modsrc;
+  bxs->sub_iidx_ptrs = env->genv->module->sub_iidx_ptrs;
 
   if (env->genv->module->super_bxs_info) {
     /* initialize imports that are available for export from the enclosing module's

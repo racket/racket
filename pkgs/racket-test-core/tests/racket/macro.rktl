@@ -1578,5 +1578,36 @@
                  (eval '(values m))))
 
 ;; ----------------------------------------
+;; Check that expanded references in submodule
+;; have the right binding info for 'origin
+
+(let ()
+  (define m
+    '(module m racket/base
+      (define-syntax-rule (m) 1)
+      (module+ main
+        (m))))
+
+  (define m-expanded
+    (parameterize ([current-namespace (make-base-namespace)])
+      (expand m)))
+
+  (define-values (bind-m ref-m)
+    (syntax-case m-expanded ()
+      [(module _ racket/base
+         (#%module-begin
+          _
+          (define-syntaxes
+            (m)
+            _)
+          (module* main #f
+            (#%module-begin-2
+             _
+             (#%app1 call-with-values (lambda () ONE) print-values)))))
+       (values #'m (car (syntax-property #'ONE 'origin)))]))
+
+  (test #t free-identifier=? bind-m ref-m))
+
+;; ----------------------------------------
 
 (report-errs)

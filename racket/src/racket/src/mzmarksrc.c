@@ -1115,6 +1115,7 @@ module_val {
   gcMARK2(m->hints, gc);
   gcMARK2(m->ii_src, gc);
   gcMARK2(m->super_bxs_info, gc);
+  gcMARK2(m->sub_iidx_ptrs, gc);
 
   gcMARK2(m->comp_prefix, gc);
   gcMARK2(m->prefix, gc);

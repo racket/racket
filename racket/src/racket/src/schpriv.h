@@ -3778,6 +3778,7 @@ typedef struct Scheme_Module
   Scheme_Object *ii_src; /* set by compile, temporary */
   Comp_Prefix *comp_prefix; /* set by body compile, temporary */
   void **super_bxs_info; /* set by expansion; temporary */
+  Scheme_Object **sub_iidx_ptrs; /* set by expansion; temporary */
 
   int max_let_depth;
   Resolve_Prefix *prefix;

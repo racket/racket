@@ -3838,6 +3838,7 @@ static int module_val_MARK(void *p, struct NewGC *gc) {
   gcMARK2(m->hints, gc);
   gcMARK2(m->ii_src, gc);
   gcMARK2(m->super_bxs_info, gc);
+  gcMARK2(m->sub_iidx_ptrs, gc);
 
   gcMARK2(m->comp_prefix, gc);
   gcMARK2(m->prefix, gc);
@@ -3898,6 +3899,7 @@ static int module_val_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(m->hints, gc);
   gcFIXUP2(m->ii_src, gc);
   gcFIXUP2(m->super_bxs_info, gc);
+  gcFIXUP2(m->sub_iidx_ptrs, gc);
 
   gcFIXUP2(m->comp_prefix, gc);
   gcFIXUP2(m->prefix, gc);
