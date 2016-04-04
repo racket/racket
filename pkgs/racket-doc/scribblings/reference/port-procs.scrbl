@@ -4,10 +4,10 @@
 @title[#:tag "port-ops"]{Managing Ports}
 
 @defproc[(input-port? [v any/c]) boolean?]{
-Returns @racket[#t] if @racket[v] is an input port, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an @tech{input port}, @racket[#f] otherwise.}
 
 @defproc[(output-port? [v any/c]) boolean?]{
-Returns @racket[#t] if @racket[v] is an output port, @racket[#f] otherwise.}
+Returns @racket[#t] if @racket[v] is an @tech{output port}, @racket[#f] otherwise.}
 
 @defproc[(port? [v any/c]) boolean?]{
 Returns @racket[#t] if either @racket[(input-port? v)] or
