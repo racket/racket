@@ -4793,6 +4793,8 @@ static Scheme_Saved_Stack *copy_out_runstack(Scheme_Thread *p,
     size = p->runstack_size - (runstack XFORM_OK_MINUS runstack_start);
   }
 
+  MZ_ASSERT(size <= p->runstack_size);
+
   saved->runstack_size = size;
   start = MALLOC_N(Scheme_Object*, size);
   saved->runstack_start = start;
@@ -5934,11 +5936,12 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
       Scheme_Cont *rs_cont = cont;
       Scheme_Saved_Stack *saved, *actual;
       int delta = 0;
-      while (rs_cont->buf_ptr->buf.cont) {
+      while (rs_cont->buf_ptr->buf.cont
+             && (rs_cont->buf_ptr->buf.cont->runstack_start == cont->runstack_start)) {
         delta += rs_cont->runstack_copied->runstack_size;
         rs_cont = rs_cont->buf_ptr->buf.cont;
-        if (rs_cont->runstack_copied->runstack_size) {
-          delta -= 1; /* overlap for not-saved call/cc argument */
+        if (rs_cont->runstack_copied->runstack_size > MAX_CALL_CC_ARG_COUNT) {
+          delta -= MAX_CALL_CC_ARG_COUNT; /* overlap for not-saved call/cc argument */
         }
       }
       actual = NULL;
@@ -5954,6 +5957,7 @@ static void restore_continuation(Scheme_Cont *cont, Scheme_Thread *p, int for_pr
       } else {
         meta_prompt->runstack_boundary_start = MZ_RUNSTACK_START;
         meta_prompt->runstack_boundary_offset = (MZ_RUNSTACK - MZ_RUNSTACK_START) + saved->runstack_size + delta;
+        MZ_ASSERT(meta_prompt->runstack_boundary_offset <= scheme_current_thread->runstack_size);
       }
     }
 

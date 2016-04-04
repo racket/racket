@@ -465,5 +465,41 @@
     (test #t < (hash-count ht) (* 1/4 (length l)))))
 
 ;;----------------------------------------
+;; Check that it works to apply a continuation that shares with
+;; an enclosing continuation, where a runstack overflow happens
+;; between the continuations
+
+(let ()
+  (define N 100)
+  (define N2 10)
+  (define M 10)
+
+  (define p (make-continuation-prompt-tag))
+
+  (define (grab n m k-prev q)
+    (cond
+     [(positive? n)
+      (let ([x (grab (sub1 n) m k-prev q)])
+        (lambda () x))]
+     [(positive? m)
+      ((call/cc
+        (lambda (k)
+          (grab N2 (sub1 m) k q))
+        p))]
+     [(positive? q)
+      (call-with-continuation-prompt
+       (lambda ()
+         (k-prev
+          (lambda ()
+            (grab N M void (sub1 q)))))
+       p)]
+     [else void]))
+
+  (call-with-continuation-prompt
+   (lambda ()
+     (grab N M void 10))
+   p))
+
+;;----------------------------------------
 
 (report-errs)
