@@ -16,8 +16,9 @@
 (provide define-forms)
 
 (define-syntax-rule (define-forms parse-id
-                      match match* match-lambda match-lambda*
-		      match-lambda** match-let match-let*
+                      match match* match-lambda match-λ 
+                      match-lambda* match-λ* match-lambda** match-λ** 
+                      match-let match-let* 
                       match-let-values match-let*-values
 		      match-define match-define-values
                       match-letrec match-letrec-values
@@ -25,7 +26,8 @@
                       define/match)
   (...
    (begin
-     (provide match match* match-lambda match-lambda* match-lambda**
+     (provide match match* match-lambda match-λ 
+              match-lambda* match-λ* match-lambda** match-λ**
 	      match-let match-let* match-let-values match-let*-values
               match-define match-define-values
               match-letrec match-letrec-values
@@ -59,27 +61,35 @@
               (let-values ([(ids ...) arg])
                 (match*/derived (ids ...) #,stx cl0 clauses ...))))]))
 
-     (define-syntax (match-lambda stx)
-       (syntax-parse stx
-         [(_ . clauses)
-          (with-syntax* ([arg (generate-temporary)]
-                         [body #`(match/derived arg #,stx . clauses)])
-            (syntax/loc stx (lambda (arg) body)))]))
+     (define-syntaxes (match-lambda match-λ)
+       (let [(match-lambda 
+               (lambda (stx)
+                 (syntax-parse stx
+                   [(_ . clauses)
+                    (with-syntax* ([arg (generate-temporary)]
+                                   [body #`(match/derived arg #,stx . clauses)])
+                      (syntax/loc stx (lambda (arg) body)))])))]
+         (values match-lambda match-lambda)))
 
-     (define-syntax (match-lambda* stx)
-       (syntax-parse stx
-         [(_ . clauses)
-          (with-syntax* ([arg (generate-temporary)]
-                         [body #`(match/derived arg #,stx . clauses)])
-            (syntax/loc stx (lambda arg body)))]))
+     (define-syntaxes (match-lambda* match-λ*)
+       (let ((match-lambda* 
+               (lambda (stx)
+                 (syntax-parse stx
+                   [(_ . clauses)
+                    (with-syntax* ([arg (generate-temporary)]
+                                   [body #`(match/derived arg #,stx . clauses)])
+                      (syntax/loc stx (lambda arg body)))]))))
+         (values match-lambda* match-lambda*)))
 
-     (define-syntax (match-lambda** stx)
-       (syntax-parse stx
-         [(_ (~and clauses [(pats ...) . rhs]) ...)
-          (with-syntax* ([vars (generate-temporaries (car (syntax-e #'((pats ...) ...))))]
-                         [body #`(match*/derived vars #,stx clauses ...)])
-            (syntax/loc stx (lambda vars body)))]))
-
+     (define-syntaxes (match-lambda** match-λ**)
+       (let ((match-lambda** 
+              (lambda (stx)
+                (syntax-parse stx
+                  [(_ (~and clauses [(pats ...) . rhs]) ...)
+                   (with-syntax* ([vars (generate-temporaries (car (syntax-e #'((pats ...) ...))))]
+                                  [body #`(match*/derived vars #,stx clauses ...)])
+                     (syntax/loc stx (lambda vars body)))]))))
+         (values match-lambda** match-lambda**)))
 
      (define-syntax (match-let-values stx)
        (syntax-parse stx
