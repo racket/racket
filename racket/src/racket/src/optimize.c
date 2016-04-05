@@ -4163,7 +4163,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     check_known_both_try(info, app_o, rator, rand1, rand2, ">=", scheme_fixnum_p_proc, scheme_unsafe_fx_gt_eq_proc);
     check_known_both_try(info, app_o, rator, rand1, rand2, "min", scheme_fixnum_p_proc, scheme_unsafe_fx_min_proc);
     check_known_both_try(info, app_o, rator, rand1, rand2, "max", scheme_fixnum_p_proc, scheme_unsafe_fx_max_proc);
-    rator = app->rator; /* in case it was updated */
 
     check_known_both_try(info, app_o, rator, rand1, rand2, "fx=", scheme_fixnum_p_proc, scheme_unsafe_fx_eq_proc);
     check_known_both_try(info, app_o, rator, rand1, rand2, "fx<", scheme_fixnum_p_proc, scheme_unsafe_fx_lt_proc);
@@ -4172,6 +4171,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     check_known_both_try(info, app_o, rator, rand1, rand2, "fx>=", scheme_fixnum_p_proc, scheme_unsafe_fx_gt_eq_proc);
     check_known_both_try(info, app_o, rator, rand1, rand2, "fxmin", scheme_fixnum_p_proc, scheme_unsafe_fx_min_proc);
     check_known_both_try(info, app_o, rator, rand1, rand2, "fxmax", scheme_fixnum_p_proc, scheme_unsafe_fx_max_proc);
+
+    rator = app->rator; /* in case it was updated */
 
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
       check_known_both(info, app_o, rator, rand1, rand2, NULL, scheme_real_p_proc,
@@ -4190,6 +4191,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     check_known(info, app_o, rator, rand1, "for-each", scheme_procedure_p_proc, NULL);
     check_known(info, app_o, rator, rand1, "andmap", scheme_procedure_p_proc, NULL);
     check_known(info, app_o, rator, rand1, "ormap", scheme_procedure_p_proc, NULL);
+
+    rator = app->rator; /* in case it was updated */
   }
   
   register_local_argument_types(NULL, NULL, app, info);
