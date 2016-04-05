@@ -3129,6 +3129,7 @@
   (test-use-unsafe 'mpair? 'mcdr 'unsafe-mcdr)
   (test-use-unsafe 'box? 'unbox 'unsafe-unbox)
   (test-use-unsafe 'vector? 'vector-length 'unsafe-vector-length)
+  (test-use-unsafe 'bytes? 'bytes-length 'unsafe-bytes-length)
   (test-use-unsafe/savetype 'fixnum? 'bitwise-not 'unsafe-fxnot #f)
   (test-use-unsafe/savetype 'fixnum? 'fxnot 'unsafe-fxnot #f))
 

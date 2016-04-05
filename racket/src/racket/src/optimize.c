@@ -2573,6 +2573,9 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
       return scheme_list_pair_p_proc;
     else if (SAME_OBJ(rator, scheme_mcons_proc))
       return scheme_mpair_p_proc;
+    // XXX This could be implemented
+    // else if (SAME_OBJ(rator, scheme_make_byte_string_p))
+    //  return scheme_byte_string_p_proc;
     else if (SAME_OBJ(rator, scheme_list_proc)) {
       if (argc >= 1)
         return scheme_list_pair_p_proc;
@@ -2817,6 +2820,8 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       return scheme_pair_p_proc;
     if (SCHEME_MPAIRP(expr))
       return scheme_mpair_p_proc;
+    if (SCHEME_BYTE_STRINGP(expr))
+      return scheme_byte_string_p_proc;
     if (SCHEME_VOIDP(expr))
       return scheme_void_p_proc;
     if (SCHEME_EOFP(expr))
@@ -3722,6 +3727,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known(info, app_o, rator, rand, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
       check_known(info, app_o, rator, rand, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
       check_known(info, app_o, rator, rand, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
+      check_known(info, app_o, rator, rand, "bytes-length", scheme_byte_string_p_proc, scheme_unsafe_bytes_len_proc);
       /* It's not clear that these are useful, since a chaperone check is needed anyway: */
       check_known(info, app_o, rator, rand, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
       check_known(info, app_o, rator, rand, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
@@ -4639,7 +4645,8 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_mpair_p_proc)
           || SAME_OBJ(pred, scheme_box_p_proc)
           || SAME_OBJ(pred, scheme_list_p_proc)
-          || SAME_OBJ(pred, scheme_list_pair_p_proc)      
+          || SAME_OBJ(pred, scheme_list_pair_p_proc)
+          || SAME_OBJ(pred, scheme_byte_string_p_proc)
           || SAME_OBJ(pred, scheme_vector_p_proc)
           || SAME_OBJ(pred, scheme_procedure_p_proc)
           || SAME_OBJ(pred, scheme_syntax_p_proc)

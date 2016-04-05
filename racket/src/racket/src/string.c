@@ -392,6 +392,8 @@ SHARED_OK static Scheme_Object *fs_change_props;
 
 READ_ONLY static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
 
+READ_ONLY Scheme_Object *scheme_byte_string_p_proc;
+
 void
 scheme_init_string (Scheme_Env *env)
 {
@@ -757,10 +759,12 @@ scheme_init_string (Scheme_Env *env)
 						      1, 1, 1),
 			     env);
 
+  REGISTER_SO(scheme_byte_string_p_proc);
   p = scheme_make_folding_prim(byte_string_p, "bytes?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("bytes?", p, env);
+  scheme_byte_string_p_proc = p;
 
   scheme_add_global_constant("make-bytes",
 			     scheme_make_immed_prim(make_byte_string,
