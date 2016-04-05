@@ -1078,9 +1078,9 @@
                               [y (random)])
                        (list x x y y))
                     #f))])
-  (test-equal? eq?)
-  (test-equal? eqv?)
-  (test-equal? equal?))
+  (test-equal? 'eq?)
+  (test-equal? 'eqv?)
+  (test-equal? 'equal?))
 
 (test-comp '(let ([x 3]) x)
 	   '((lambda (x) x) 3))
