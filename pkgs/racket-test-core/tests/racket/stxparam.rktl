@@ -155,5 +155,19 @@
 
 ;; ----------------------------------------
 
+(let ()
+  (define-syntax-rule (mac-zero) 0)
+  (define-syntax-parameter x (make-rename-transformer #'mac-zero))
+  (define-syntax-rule (mac-one) 1)
+  (define-syntax y (make-rename-transformer #'x))
+  (test #t = (mac-zero) 0)
+  (test #t = (mac-one) 1)
+  (test #t = (x) 0)
+  (test #t = (y) 0)
+  (test #t = (syntax-parameterize ([y (make-rename-transformer #'mac-one)]) (x)) 1)
+  (test #t = (syntax-parameterize ([y (make-rename-transformer #'mac-one)]) (y)) 1))
+
+;; ----------------------------------------
+
 (report-errs)
 

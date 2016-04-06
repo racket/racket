@@ -45,7 +45,10 @@
           (syntax-local-value/immediate id (lambda () #f))]
          [(rt) (if (syntax-parameter? rt*)
                    rt*
-                   (or rt-target rt*))]
+                   (or (and rt-target
+                            (syntax-local-value rt-target
+                                                (λ () rt-target)))
+                       rt*))]
          [(sp) (if (set!-transformer? rt)
                    (set!-transformer-procedure rt)
                    rt)])
