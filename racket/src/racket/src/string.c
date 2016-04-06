@@ -6063,6 +6063,19 @@ void machine_details(char *buff)
 {
   Scheme_Object *subprocess_proc;
   int i;
+  Scheme_Config *config;
+  Scheme_Security_Guard *sg;
+  Scheme_Cont_Frame_Data cframe;
+ 
+  /* Use the root security guard so we can test for and run
+     executables. */
+  config = scheme_current_config();
+  sg = (Scheme_Security_Guard *)scheme_get_param(config, MZCONFIG_SECURITY_GUARD);
+  while (sg->parent) { sg = sg->parent; }
+  config = scheme_extend_config(config, MZCONFIG_SECURITY_GUARD, (Scheme_Object *)sg);
+
+  scheme_push_continuation_frame(&cframe);
+  scheme_install_config(config);
 
   subprocess_proc = scheme_builtin_value("subprocess");
 
@@ -6092,12 +6105,16 @@ void machine_details(char *buff)
 	  buff[--c] = 0;
 	}
 
+        scheme_pop_continuation_frame(&cframe);
+
 	return;
       }
     }
   }
 
   strcpy(buff, "<unknown machine>");
+
+  scheme_pop_continuation_frame(&cframe);
 }
 #endif
 

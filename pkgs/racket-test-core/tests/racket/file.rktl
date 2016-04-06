@@ -1648,6 +1648,11 @@
     (err/rt-test (udp-connect! early-udp "localhost" 40000)  (net-reject? 'udp-connect! "localhost" 40000 'client))
     (err/rt-test (udp-send-to early-udp "localhost" 40000 #"hi")  (net-reject? 'udp-send-to "localhost" 40000 'client))))
 
+;; Interaction with `system-type` - - - - - - - - - - - - - - - - - - -
+
+(parameterize ([current-security-guard (make-file-sg '())])
+  (test #f regexp-match? "unknown machine" (system-type 'machine)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check `in-directory'
 
