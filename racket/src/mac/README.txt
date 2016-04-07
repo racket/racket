@@ -2,7 +2,19 @@ See "../native-libs/README.txt" for information about building most
 3rd-party native libraries that are needed for Racket libraries
 
 
-In addition, the `racket/gui' library uses PSMTabBarControl on Mac OS X.
+In addition, the `racket/gui' library uses MMTabBarView (64-bit OS X
+10.10 and later) and/or PSMTabBarControl (all other OS versions) on
+Mac OS X.
+
+MMTabBarView
+------------
+
+Download from
+
+  http://mimo42.github.io/MMTabBarView/
+
+PSMTabBarControl
+----------------
 
 Download:
 
