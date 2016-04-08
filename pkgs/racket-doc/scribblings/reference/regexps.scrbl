@@ -198,7 +198,9 @@ Returns @racket[#t] if @racket[v] is a @tech{regexp value} created by
 otherwise.}
 
 
-@defproc[(regexp [str string?]) regexp?]{
+@defproc[(regexp [str string?]
+                 [handler (-> any) (λ () (raise (exn:fail:contract ....)))])
+         regexp?]{
 
 Takes a string representation of a regular expression (using the
 syntax in @secref["regexp-syntax"]) and compiles it into a @tech{regexp
@@ -208,15 +210,21 @@ is used multiple times, it is faster to compile the string once to a
 @tech{regexp value} and use it for repeated matches instead of using the
 string each time.
 
+If @racket[handler] is provided, it is called and its result is returned
+if @racket[str] is not a valid representation of a regular expression.
+
 The @racket[object-name] procedure returns
 the source string for a @tech{regexp value}.
 
 @examples[
 (regexp "ap*le")
 (object-name #rx"ap*le")
+(regexp "+" (λ () #f))
 ]}
 
-@defproc[(pregexp [string string?]) pregexp?]{
+@defproc[(pregexp [string string?]
+                  [handler (-> any) (λ () (raise (exn:fail:contract ....)))])
+         pregexp?]{
 
 Like @racket[regexp], except that it uses a slightly different syntax
 (see @secref["regexp-syntax"]). The result can be used with
@@ -226,13 +234,19 @@ Like @racket[regexp], except that it uses a slightly different syntax
 @examples[
 (pregexp "ap*le")
 (regexp? #px"ap*le")
+(pregexp "+" (λ () #f))
 ]}
 
-@defproc[(byte-regexp [bstr bytes?]) byte-regexp?]{
+@defproc[(byte-regexp [bstr bytes?]
+                      [handler (-> any) (λ () (raise (exn:fail:contract ....)))])
+         byte-regexp?]{
 
 Takes a byte-string representation of a regular expression (using the
 syntax in @secref["regexp-syntax"]) and compiles it into a
 byte-@tech{regexp value}.
+
+If @racket[handler] is provided, it is called and its result is returned
+if @racket[str] is not a valid representation of a regular expression.
 
 The @racket[object-name] procedure
 returns the source byte string for a @tech{regexp value}.
@@ -241,9 +255,12 @@ returns the source byte string for a @tech{regexp value}.
 (byte-regexp #"ap*le")
 (object-name #rx#"ap*le")
 (eval:error (byte-regexp "ap*le"))
+(byte-regexp #"+" (λ () #f))
 ]}
 
-@defproc[(byte-pregexp [bstr bytes?]) byte-pregexp?]{
+@defproc[(byte-pregexp [bstr bytes?]
+                       [handler (-> any) (λ () (raise (exn:fail:contract ....)))])
+         byte-pregexp?]{
 
 Like @racket[byte-regexp], except that it uses a slightly different
 syntax (see @secref["regexp-syntax"]). The result can be used with
@@ -252,6 +269,7 @@ syntax (see @secref["regexp-syntax"]). The result can be used with
 
 @examples[
 (byte-pregexp #"ap*le")
+(byte-pregexp #"+" (λ () #f))
 ]}
 
 @defproc*[([(regexp-quote [str string?] [case-sensitive? any/c #t]) string?]
