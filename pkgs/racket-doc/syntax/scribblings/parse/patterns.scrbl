@@ -926,11 +926,13 @@ times in the entire repetition.
 
 If the pattern is matched too few times, then the ellipsis pattern
 fails with the message either @racket[too-few-message-expr] or
-@racketvalfont{"too few occurrences of @racket[name-expr]"}.
+@racketvalfont{"too few occurrences of @racket[name-expr]"}, when
+@racket[name-expr] is provided.
 
 If the pattern is chosen too many times, then the ellipsis pattern
 fails with the message either @racket[too-many-message-expr] or
-@racketvalfont{"too few occurrences of @racket[name-expr]"}.
+@racketvalfont{"too many occurrences of @racket[name-expr]"}, when
+@racket[name-expr] is provided.
 }
 
 

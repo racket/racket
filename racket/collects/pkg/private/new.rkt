@@ -87,7 +87,8 @@ EOS
 \#*
 .\#*
 .DS_Store
-compiled
+compiled/
+/doc/
 
 EOS
 )))
@@ -122,34 +123,33 @@ env:
     - RACKET_VERSION=6.1.1
     - RACKET_VERSION=6.2
     - RACKET_VERSION=6.3
+    - RACKET_VERSION=6.4
     - RACKET_VERSION=HEAD
 
 matrix:
   allow_failures:
-    env: RACKET_VERSION=HEAD
-    fast_finish: true
+#   - env: RACKET_VERSION=HEAD
+  fast_finish: true
 
 before_install:
-- git clone https://github.com/greghendershott/travis-racket.git
-- cat travis-racket/install-racket.sh | bash # pipe to bash not sh!
+- git clone https://github.com/greghendershott/travis-racket.git ~/travis-racket
+- cat ~/travis-racket/install-racket.sh | bash # pipe to bash not sh!
 - export PATH="${RACKET_DIR}/bin:${PATH}" #install-racket.sh can't set for us
 
 install:
+ - raco pkg install --deps search-auto
 
 before_script:
 
-# Here supply steps such as raco make, raco test, etc.  Note that you
-# need to supply /usr/racket/bin/ -- it's not in PATH. You can run
-# `raco pkg install --deps search-auto <<name>>` to install any required
+# Here supply steps such as raco make, raco test, etc.  You can run
+# `raco pkg install --deps search-auto` to install any required
 # packages without it getting stuck on a confirmation prompt.
 script:
- - raco pkg install --deps search-auto cover
  - raco test -x -p <<name>>
 
 after_success:
- - raco setup --check-deps <<name>>
- - raco pkg install --deps search-auto cover-coveralls
- - raco pkg install --deps search-auto
+ - raco setup --check-pkg-deps --pkgs <<name>>
+ - raco pkg install --deps search-auto cover cover-coveralls
  - raco cover -b -f coveralls -d $TRAVIS_BUILD_DIR/coverage .
 
 EOS
@@ -196,7 +196,7 @@ EOS
 ;; To uninstall:
 ;;   $ raco pkg remove <<name>>
 ;; To view documentation:
-;;   $ raco doc <<name>>
+;;   $ raco docs <<name>>
 ;;
 ;; For your convenience, we have included a LICENSE.txt file, which links to
 ;; the GNU Lesser General Public License.
