@@ -1639,21 +1639,22 @@ int scheme_ir_duplicate_ok(Scheme_Object *fb, int cross_module)
 /* Is the constant a value that we can "copy" in the code? */
 {
   return (SCHEME_VOIDP(fb)
-	  || SAME_OBJ(fb, scheme_true)
-	  || SCHEME_FALSEP(fb)
-	  || (SCHEME_SYMBOLP(fb) 
+          || SAME_OBJ(fb, scheme_true)
+          || SCHEME_FALSEP(fb)
+          || (SCHEME_SYMBOLP(fb) 
               && (!cross_module || (!SCHEME_SYM_WEIRDP(fb)
                                     && (SCHEME_SYM_LEN(fb) < STR_INLINE_LIMIT))))
-	  || (SCHEME_KEYWORDP(fb)
+          || (SCHEME_KEYWORDP(fb)
               && (!cross_module || (SCHEME_KEYWORD_LEN(fb) < STR_INLINE_LIMIT)))
-	  || SCHEME_EOFP(fb)
-	  || SCHEME_INTP(fb)
-	  || SCHEME_NULLP(fb)
-	  || (!cross_module && SAME_TYPE(SCHEME_TYPE(fb), scheme_ir_local_type))
+          || SCHEME_EOFP(fb)
+          || SCHEME_INTP(fb)
+          || SCHEME_NULLP(fb)
+          || (!cross_module && SAME_TYPE(SCHEME_TYPE(fb), scheme_ir_toplevel_type))
+          || (!cross_module && SAME_TYPE(SCHEME_TYPE(fb), scheme_ir_local_type))
           || SCHEME_PRIMP(fb)
           /* Values that are hashed by the printer and/or interned on 
              read to avoid duplication: */
-	  || SCHEME_CHARP(fb)
+          || SCHEME_CHARP(fb)
           || (SCHEME_CHAR_STRINGP(fb) 
               && (!cross_module || (SCHEME_CHAR_STRLEN_VAL(fb) < STR_INLINE_LIMIT)))
           || (SCHEME_BYTE_STRINGP(fb)
@@ -5773,9 +5774,6 @@ int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fue
 int scheme_ir_propagate_ok(Scheme_Object *value, Optimize_Info *info)
 /* Can we constant-propagate the expression `value`? */
 {
-  if (scheme_ir_duplicate_ok(value, 0))
-    return 1;
-
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_lambda_type)) {
     int sz;
     sz = lambda_body_size_plus_info((Scheme_Lambda *)value, 1, info, NULL);
@@ -5831,7 +5829,13 @@ int scheme_ir_propagate_ok(Scheme_Object *value, Optimize_Info *info)
       if (value)
         return 1;
     }
+    return 0;
   }
+
+  /* Test this after the specific cases, 
+     because it recognizes locals and toplevels. */
+  if (scheme_ir_duplicate_ok(value, 0))
+    return 1;
 
   return 0;
 }
@@ -8314,7 +8318,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
 
 	/* We can't inline, but mark the top level as a constant,
 	   so we can direct-jump and avoid null checks in JITed code: */
-	expr = scheme_toplevel_to_flagged_toplevel(expr, SCHEME_TOPLEVEL_CONST);
+        expr = scheme_toplevel_to_flagged_toplevel(expr, SCHEME_TOPLEVEL_CONST);
       } else {
 	/* false is mapped to a table of non-constant ready values: */
 	c = scheme_hash_get(info->top_level_consts, scheme_false);

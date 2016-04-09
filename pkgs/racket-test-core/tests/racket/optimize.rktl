@@ -1945,6 +1945,19 @@
                           (if r #t (something-else))))
            '(lambda (x) (if (something) #t (something-else))))
 
+(let ([test-if-if-reduction
+       (lambda (dup)
+         (test-comp `(lambda (x y z) (if (if x y #f) z ,dup))
+                    `(lambda (x y z) (if x (if y z ,dup) ,dup))))])
+  (test-if-if-reduction 1)
+  (test-if-if-reduction ''x)
+  (test-if-if-reduction "x")
+  (test-if-if-reduction #"x")
+  (test-if-if-reduction #t)
+  (test-if-if-reduction #f)
+  (test-if-if-reduction 'car)
+  (test-if-if-reduction 'map))
+
 (let ([test-pred-implies-val
        (lambda (pred? val)
          (test-comp `(lambda (x) (if (,pred? x) ,val 0))
