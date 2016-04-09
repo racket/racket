@@ -6,26 +6,34 @@
          racket/path
          "../path.rkt"
          "dirs.rkt"
-         "pkg-db.rkt")
+         "pkg-db.rkt"
+         "print.rkt")
 
 (provide pkg-show)
 
 (define (pkg-show indent only-pkgs
+                  #:prefix-line [prefix-line #f]
                   #:directory? [dir? #f]
                   #:auto? [show-auto? #f]
                   #:full-checksum? [full-checksum #f]
                   #:long? [long? #t]
-                  #:rx? [rx #f]
+                  #:rx? [rx? #f]
                   #:name [name 'pkg-show])
-  (when (and rx (not only-pkgs))
-    (raise-user-error name "regular expression flag does not make sense without package names"))
+  (when rx?
+    (when (not only-pkgs)
+      (pkg-error "regular-expression mode requires at least one pattern"))
+    (for ([str (in-list only-pkgs)])
+      (regexp str (lambda (s)
+                    (pkg-error (~a "bad regular-expression pattern;\n"
+                                   " " s "\n"
+                                   "  in: " str))))))
   (define db (read-pkg-db))
   (define pkgs (sort (hash-keys db) string-ci<=?))
   (define auto-shown? #f)
   (define to-show
     (for/list ([pkg (in-list pkgs)]
                #:unless (and only-pkgs
-                             (not (memf (λ (v) (if rx (regexp-match? v pkg) (equal? v pkg)))
+                             (not (memf (λ (v) (if rx? (regexp-match? v pkg) (equal? v pkg)))
                                         only-pkgs)))
                #:when (or show-auto? only-pkgs
                           (not (pkg-info-auto? (hash-ref db pkg)))))
@@ -59,6 +67,8 @@
                        (~s p)
                        (~a p))))
            empty))))
+  (when prefix-line
+    (printf "~a\n" prefix-line))
     (if (null? to-show)
         (printf " [none]\n")
         (let* ([col-headers (list* (format "~aPackage~a"

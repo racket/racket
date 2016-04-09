@@ -399,19 +399,32 @@ The @racket[name] parameter is the name of the new package.
 
 
 @defproc[(pkg-show [indent string?]
+                   [pkgs-or-patterns (or/c #f (listof string?))]
+                   [#:prefix-line prefix-line (or/c #f string?) #f]
                    [#:auto? auto? boolean? #f]
+                   [#:rx? rx? boolean? #f]
                    [#:long? long? boolean? #f]
+                   [#:full-checksum? full-checksum? boolean? #f]
                    [#:directory show-dir? boolean? #f])
          void?]{
 
 Implements @racket[pkg-show-command] for a single package scope,
-printing to the current output port. See also
+printing to the current output port. If @racket[prefix-line]s is not
+@racket[#f], it is printed before the output. See also
 @racket[installed-pkg-names] and @racket[installed-pkg-table].
+
+If @racket[pkgs-or-patterns] is @racket[#f], then information is shown
+for all installed packages, otherwise only matching packages are shown.
+In @racket[rx?] is true, then elements of @racket[pkgs-or-patterns]
+are treated as regular expression patterns, otherwise they are treated
+as package names.
 
 The package lock must be held to allow reads; see
 @racket[with-pkg-lock/read-only].
 
-@history[#:changed "6.1.1.5" @elem{Added the @racket[#:long?] argument.}]}
+@history[#:changed "6.1.1.5" @elem{Added the @racket[#:long?] argument.}
+         #:changed "6.1.1.6" @elem{Added the @racket[#:full-checksum?] and @racket[#:rx?] arguments.}
+         #:changed "6.5.0.1" @elem{Added the @racket[#:prefix-line] argument.}]}
 
 
 @defproc[(pkg-migrate      [from-version string?]

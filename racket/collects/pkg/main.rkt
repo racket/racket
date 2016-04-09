@@ -395,7 +395,7 @@
              [#:bool all ("-a") "Show auto-installed packages, too"]
              [#:bool long ("-l") "Show full column content"]
              [#:bool full-checksum () "Show the full checksum"]
-             [#:bool rx () "Treat <pkgs> as regular expressions"]
+             [#:bool rx () "Treat <pkg>s as regular expressions"]
              [#:bool dir ("-d") "Show the directory where the package is installed"]
              #:once-any
              scope-flags ...
@@ -420,17 +420,19 @@
                                               (simple-form-path d)))))
                                      '(user)))])
                (when (or (equal? mode only-mode) (not only-mode))
-                 (unless only-mode
-                   (printf "~a\n" (case mode
-                                    [(installation) "Installation-wide:"]
-                                    [(user) (format "User-specific for installation ~s:"
-                                                    (or version (get-installation-name)))]
-                                    [else (format "~a:" mode)])))
+                 (define prefix-line
+                   (and (not only-mode)
+                        (case mode
+                          [(installation) "Installation-wide:"]
+                          [(user) (format "User-specific for installation ~s:"
+                                          (or version (get-installation-name)))]
+                          [else (format "~a:" mode)])))
                  (parameterize ([current-pkg-scope mode]
                                 [current-pkg-error (pkg-error 'show)]
                                 [current-pkg-scope-version (or version (get-installation-name))])
                    (with-pkg-lock/read-only
                     (pkg-show (if only-mode "" " ") pkgs*
+                              #:prefix-line prefix-line
                               #:auto? all
                               #:long? long
                               #:rx? rx
