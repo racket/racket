@@ -198,9 +198,10 @@ Returns @racket[#t] if @racket[v] is a @tech{regexp value} created by
 otherwise.}
 
 
-@defproc[(regexp [str string?]
-                 [handler (-> any) (λ () (raise (exn:fail:contract ....)))])
-         regexp?]{
+@defproc*[([(regexp [str string?]) regexp?]
+           [(regexp [str string?]
+                    [handler (or/c #f (string? -> any))])
+            any])]{
 
 Takes a string representation of a regular expression (using the
 syntax in @secref["regexp-syntax"]) and compiles it into a @tech{regexp
@@ -210,8 +211,11 @@ is used multiple times, it is faster to compile the string once to a
 @tech{regexp value} and use it for repeated matches instead of using the
 string each time.
 
-If @racket[handler] is provided, it is called and its result is returned
-if @racket[str] is not a valid representation of a regular expression.
+If @racket[handler] is provided and not @racket[#f], it is called and
+its result is returned when @racket[str] is not a valid representation
+of a regular expression; the argument to @racket[handler] is a string
+that describes the problem with @racket[str]. If @racket[handler] is
+@racket[#f] or not provided, then @exnraise[exn:fail:contract].
 
 The @racket[object-name] procedure returns
 the source string for a @tech{regexp value}.
@@ -219,12 +223,15 @@ the source string for a @tech{regexp value}.
 @examples[
 (regexp "ap*le")
 (object-name #rx"ap*le")
-(regexp "+" (λ () #f))
-]}
+(regexp "+" (λ (s) (list s)))
+]
 
-@defproc[(pregexp [string string?]
-                  [handler (-> any) (λ () (raise (exn:fail:contract ....)))])
-         pregexp?]{
+@history[#:changed "6.5.0.1" @elem{Added the @racket[handler] argument.}]}
+
+@defproc*[([(pregexp [str string?]) regexp?]
+           [(pregexp [str string?]
+                     [handler (or/c #f (string? -> any))])
+            any])]{
 
 Like @racket[regexp], except that it uses a slightly different syntax
 (see @secref["regexp-syntax"]). The result can be used with
@@ -234,12 +241,15 @@ Like @racket[regexp], except that it uses a slightly different syntax
 @examples[
 (pregexp "ap*le")
 (regexp? #px"ap*le")
-(pregexp "+" (λ () #f))
-]}
+(pregexp "+" (λ (s) (vector s)))
+]
 
-@defproc[(byte-regexp [bstr bytes?]
-                      [handler (-> any) (λ () (raise (exn:fail:contract ....)))])
-         byte-regexp?]{
+@history[#:changed "6.5.0.1" @elem{Added the @racket[handler] argument.}]}
+
+@defproc*[([(byte-regexp [str string?]) regexp?]
+           [(byte-regexp [str string?]
+                         [handler (or/c #f (string? -> any))])
+            any])]{
 
 Takes a byte-string representation of a regular expression (using the
 syntax in @secref["regexp-syntax"]) and compiles it into a
@@ -255,12 +265,15 @@ returns the source byte string for a @tech{regexp value}.
 (byte-regexp #"ap*le")
 (object-name #rx#"ap*le")
 (eval:error (byte-regexp "ap*le"))
-(byte-regexp #"+" (λ () #f))
-]}
+(byte-regexp #"+" (λ (s) (list s)))
+]
 
-@defproc[(byte-pregexp [bstr bytes?]
-                       [handler (-> any) (λ () (raise (exn:fail:contract ....)))])
-         byte-pregexp?]{
+@history[#:changed "6.5.0.1" @elem{Added the @racket[handler] argument.}]}
+
+@defproc*[([(byte-pregexp [str string?]) regexp?]
+           [(byte-pregexp [str string?]
+                          [handler (or/c #f (string? -> any))])
+            any])]{
 
 Like @racket[byte-regexp], except that it uses a slightly different
 syntax (see @secref["regexp-syntax"]). The result can be used with
@@ -269,8 +282,10 @@ syntax (see @secref["regexp-syntax"]). The result can be used with
 
 @examples[
 (byte-pregexp #"ap*le")
-(byte-pregexp #"+" (λ () #f))
-]}
+(byte-pregexp #"+" (λ (s) (vector s)))
+]
+
+@history[#:changed "6.5.0.1" @elem{Added the @racket[handler] argument.}]}
 
 @defproc*[([(regexp-quote [str string?] [case-sensitive? any/c #t]) string?]
            [(regexp-quote [bstr bytes?] [case-sensitive? any/c #t]) bytes?])]{

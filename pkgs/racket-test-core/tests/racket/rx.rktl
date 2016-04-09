@@ -1787,14 +1787,18 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test failure handlers
 
-(test #f regexp "+" (λ () #f))
-(test #f pregexp "+" (λ () #f))
-(test #f byte-regexp #"+" (λ () #f))
-(test #f byte-pregexp #"+" (λ () #f))
-(test 3 regexp "+" (λ () (+ 1 2)))
-(test 3 pregexp "+" (λ () (+ 1 2)))
-(test 3 byte-regexp #"+" (λ () (+ 1 2)))
-(test 3 byte-pregexp #"+" (λ () (+ 1 2)))
+(test "`+' follows nothing in pattern" regexp "+" (λ (s) s))
+(test "`+' follows nothing in pattern" pregexp "+" (λ (s) s))
+(test "`+' follows nothing in pattern" byte-regexp #"+" (λ (s) s))
+(test "`+' follows nothing in pattern" byte-pregexp #"+" (λ (s) s))
+(test 3 regexp "+" (λ (s) (+ 1 2)))
+(test 3 pregexp "+" (λ (s) (+ 1 2)))
+(test 3 byte-regexp #"+" (λ (s) (+ 1 2)))
+(test 3 byte-pregexp #"+" (λ (s) (+ 1 2)))
+
+(test-values '(1 2 3) (lambda () (byte-pregexp #"+" (λ (s) (values 1 2 3)))))
+
+(err/rt-test (regexp "+" #f) (lambda (exn) (regexp-match? "`[+]' follows nothing in pattern" (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

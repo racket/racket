@@ -85,6 +85,7 @@ THREAD_LOCAL_DECL(static rxpos regcodesize);
 THREAD_LOCAL_DECL(static rxpos regcodemax);
 THREAD_LOCAL_DECL(static intptr_t regmaxlookback);
 
+THREAD_LOCAL_DECL(static char *regerrorwho);
 THREAD_LOCAL_DECL(static Scheme_Object *regerrorproc); /* error handler for regexp construction */
 THREAD_LOCAL_DECL(static Scheme_Object *regerrorval);  /* result of error handler for failed regexp construction */
 
@@ -129,11 +130,19 @@ READ_ONLY static Scheme_Object *empty_byte_string;
 static void
 regerror(char *s)
 {
-  if (SCHEME_FALSEP(regerrorproc)) {
-    scheme_raise_exn(MZEXN_FAIL_CONTRACT,
-                     "regexp: %s", s);
-  } else {
-    regerrorval = scheme_apply(regerrorproc, 0, NULL);
+  if (!regerrorval) {
+    if (SCHEME_FALSEP(regerrorproc)) {
+      const char *who = regerrorwho;
+      regerrorwho = NULL;
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT,
+                       "%s: %s",
+                       (who ? who : "regexp"),
+                       s);
+    } else {
+      Scheme_Object *a[1];
+      a[0] = scheme_make_utf8_string(s);
+      regerrorval = scheme_apply_multi(regerrorproc, 1, a);
+    }
   }
 }
 
@@ -191,6 +200,8 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre, Scheme_Object *handler)
   regerrorval = NULL;
   regc(MAGIC);
   if (reg(0, &flags, 0, 0, PARSE_CASE_SENS | PARSE_SINGLE_LINE | (pcre ? PARSE_PCRE : 0)) == 0) {
+    if (regerrorval)
+      return NULL;
     FAIL("unknown regexp failure");
   }
   
@@ -5050,7 +5061,7 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int pcre, int
 
   if (is_byte) {
     if (!SCHEME_BYTE_STRINGP(argv[0]))
-      scheme_wrong_contract(who, "byte?", 0, argc, argv);
+      scheme_wrong_contract(who, "bytes?", 0, argc, argv);
     bs = argv[0];
   } else {
     if (!SCHEME_CHAR_STRINGP(argv[0]))
@@ -5059,14 +5070,11 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int pcre, int
   }
 
   if (argc >= 2) {
-    if (!SCHEME_PROCP(argv[1])) {
-      scheme_wrong_contract(who, "(-> any)", 0, argc, argv);
-    }
-    scheme_check_proc_arity(who, 0, 1, argc, argv);
+    if (!scheme_check_proc_arity2(who, 1, 1, argc, argv, 1))
+      scheme_wrong_contract(who, "(or/c #f (string? -> any))", 1, argc, argv);
     handler = argv[1];
-  } else {
+  } else
     handler = scheme_false;
-  }
 
   s = SCHEME_BYTE_STR_VAL(bs);
   slen = SCHEME_BYTE_STRTAG_VAL(bs);
@@ -5088,8 +5096,10 @@ static Scheme_Object *do_make_regexp(const char *who, int is_byte, int pcre, int
 #endif
   }
 
+  regerrorwho = who;
   re = (Scheme_Object *)regcomp(s, 0, slen, pcre, handler);
-
+  regerrorwho = NULL;
+  
   /* passed a handler and regexp compilation failed */
   if (!re) {
     return regerrorval;
@@ -6050,4 +6060,6 @@ void scheme_init_regexp_places()
   REGISTER_SO(regstr);
   REGISTER_SO(regbackknown);
   REGISTER_SO(regbackdepends);
+  REGISTER_SO(regerrorproc);
+  REGISTER_SO(regerrorval);
 }
