@@ -3575,16 +3575,26 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     case scheme_application2_type:
       {
         Scheme_App2_Rec *app2 = (Scheme_App2_Rec *)rand;
-        if (IS_NAMED_PRIM(rator, "car")) {
+        if (IS_NAMED_PRIM(rator, "car")
+            || IS_NAMED_PRIM(rator, "unsafe-car")) {
           if (SAME_OBJ(scheme_list_proc, app2->rator)) {
             /* (car (list X)) */
             alt = ensure_single_value(app2->rand);
             return replace_tail_inside(alt, inside, app->rand);
           }
-        } else if (IS_NAMED_PRIM(rator, "cdr")) {
+        } else if (IS_NAMED_PRIM(rator, "cdr")
+                   || IS_NAMED_PRIM(rator, "unsafe-cdr")) {
           if (SAME_OBJ(scheme_list_proc, app2->rator)) {
             /* (cdr (list X)) */
             alt = make_discarding_sequence(app2->rand, scheme_null, info);
+            return replace_tail_inside(alt, inside, app->rand);
+          }
+        } else if (IS_NAMED_PRIM(rator, "unbox")
+                   || IS_NAMED_PRIM(rator, "unsafe-unbox")
+                   || IS_NAMED_PRIM(rator, "unsafe-unbox*")) {
+          if (SAME_OBJ(scheme_box_proc, app2->rator)) {
+            /* (unbox (box X)) */
+            alt = ensure_single_value(app2->rand);
             return replace_tail_inside(alt, inside, app->rand);
           }
         }
@@ -3593,7 +3603,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     case scheme_application3_type:
       {
         Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)rand;
-        if (IS_NAMED_PRIM(rator, "car")) {
+        if (IS_NAMED_PRIM(rator, "car")
+            || IS_NAMED_PRIM(rator, "unsafe-car")) {
           if (SAME_OBJ(scheme_cons_proc, app3->rator)
               || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
               || SAME_OBJ(scheme_list_proc, app3->rator)
@@ -3602,7 +3613,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             alt = make_discarding_reverse_sequence(app3->rand2, app3->rand1, info);
             return replace_tail_inside(alt, inside, app->rand);
           }
-        } else if (IS_NAMED_PRIM(rator, "cdr")) {
+        } else if (IS_NAMED_PRIM(rator, "cdr")
+                   || IS_NAMED_PRIM(rator, "unsafe-cdr")) {
           if (SAME_OBJ(scheme_cons_proc, app3->rator)
               || SAME_OBJ(scheme_unsafe_cons_list_proc, app3->rator)
               || SAME_OBJ(scheme_list_star_proc, app3->rator)) {
@@ -3629,7 +3641,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       {
         Scheme_App_Rec *appr = (Scheme_App_Rec *)rand;
         Scheme_Object *r = appr->args[0];
-        if (IS_NAMED_PRIM(rator, "car")) {
+        if (IS_NAMED_PRIM(rator, "car")
+            || IS_NAMED_PRIM(rator, "unsafe-car")) {
           if ((appr->args > 0)
               && (SAME_OBJ(scheme_list_proc, r)
                   || SAME_OBJ(scheme_list_star_proc, r))) {
@@ -3637,7 +3650,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
             alt = make_discarding_app_sequence(appr, 0, NULL, info);
             return replace_tail_inside(alt, inside, app->rand);
           }
-        } else if (IS_NAMED_PRIM(rator, "cdr")) {
+        } else if (IS_NAMED_PRIM(rator, "cdr")
+                   || IS_NAMED_PRIM(rator, "unsafe-cdr")) {
           /* (cdr ({list|list*} X Y ...)) */
           if ((appr->args > 0)
               && (SAME_OBJ(scheme_list_proc, r)
@@ -3716,12 +3730,18 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known_variant(info, app_o, rator, rand, "fxnot", scheme_fixnum_p_proc, scheme_unsafe_fxnot_proc, scheme_real_p_proc);
 
       check_known(info, app_o, rator, rand, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
+      check_known(info, app_o, rator, rand, "unsafe-car", scheme_pair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
+      check_known(info, app_o, rator, rand, "unsafe-cdr", scheme_pair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
+      check_known(info, app_o, rator, rand, "unsafe-mcar", scheme_mpair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
+      check_known(info, app_o, rator, rand, "unsafe-mcdr", scheme_mpair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "bytes-length", scheme_byte_string_p_proc, scheme_unsafe_bytes_len_proc);
       /* It's not clear that these are useful, since a chaperone check is needed anyway: */
       check_known(info, app_o, rator, rand, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
+      check_known(info, app_o, rator, rand, "unsafe-unbox", scheme_box_p_proc, NULL);
+      check_known(info, app_o, rator, rand, "unsafe-unbox*", scheme_box_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
 
       if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)

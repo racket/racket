@@ -1228,6 +1228,27 @@
            '(lambda (w z) (list w z))
            #f)
 
+(test-comp '(lambda (u v) (car (cons u v)))
+           '(lambda (u v) u))
+(test-comp '(lambda (u v) (unsafe-car (cons u v)))
+           '(lambda (u v) u))
+(test-comp '(lambda (u v) (car (unsafe-cons-list u v)))
+           '(lambda (u v) u))
+
+(test-comp '(lambda (u v) (cdr (cons u v)))
+           '(lambda (u v) v))
+(test-comp '(lambda (u v) (unsafe-cdr (cons u v)))
+           '(lambda (u v) v))
+(test-comp '(lambda (u v) (cdr (unsafe-cons-list u v)))
+           '(lambda (u v) v))
+
+(test-comp '(lambda (v) (unbox (box v)))
+           '(lambda (v) v))
+(test-comp '(lambda (v) (unsafe-unbox (box v)))
+           '(lambda (v) v))
+(test-comp '(lambda (v) (unsafe-unbox* (box v)))
+           '(lambda (v) v))
+
 (test-comp '(lambda (w z) (pair? (list)))
            '(lambda (w z) #f))
 (test-comp '(lambda (w z) (null? (list)))
@@ -2316,13 +2337,13 @@
              (+ (unsafe-car z) (car z)))
            #f)
 
-(test-comp '(lambda (z)
+(test-comp '(lambda (z v)
              ;; It's ok to move an unsafe operation past a
              ;; safe one:
-             (let ([x (unsafe-car void)])
+             (let ([x (unsafe-car v)])
                (+ (car z) x)))
-           '(lambda (z)
-             (+ (car z) (unsafe-car void))))
+           '(lambda (z v)
+             (+ (car z) (unsafe-car v))))
 
 ;; Ok to reorder arithmetic that will not raise an error:
 (test-comp '(lambda (x y)
@@ -2339,7 +2360,7 @@
 (parameterize ([compile-context-preservation-enabled
                 ;; Avoid different amounts of unrolling
                 #t])
-  ;; Inferece of loop variable as number should allow
+  ;; Inference of loop variable as number should allow
   ;; additions to be reordered:
   (test-comp '(lambda ()
                (let loop ([n 0] [m 9])
