@@ -641,6 +641,8 @@ static Scheme_Object *ensure_single_value(Scheme_Object *e)
 /* Wrap `e` so that it either produces a single value or fails */
 {
   Scheme_App2_Rec *app2;
+  if (single_valued_noncm_expression(e, 5))
+    return e;
 
   app2 = MALLOC_ONE_TAGGED(Scheme_App2_Rec);
   app2->iso.so.type = scheme_application2_type;
@@ -661,19 +663,17 @@ static Scheme_Object *do_make_discarding_sequence(Scheme_Object *e1, Scheme_Obje
 {
   int e2_omit;
 
-  e2_omit = scheme_omittable_expr(e2, 1, 5, 0, info, NULL);
-
-  if (!e2_omit && !single_valued_noncm_expression(e2, 5))
-    e2 = ensure_single_value(e2);
+  if (ignored)
+    e2 = optimize_ignored(e2, info, 1, 0, 5);
+    
+  e2 = ensure_single_value(e2);
   
   if (scheme_omittable_expr(e1, 1, 5, 0, info, NULL))
     return e2;
-  else if (single_valued_noncm_expression(e1, 5))
-    e1 = optimize_ignored(e1, info, 1, 0, 5);
-  else
-    e1 = ensure_single_value(optimize_ignored(e1, info, 1, 0, 5));
+    
+  e1 = ensure_single_value(optimize_ignored(e1, info, 1, 0, 5));
 
-  if (e2_omit && ignored)
+  if (ignored && scheme_omittable_expr(e2, 1, 5, 0, info, NULL))
     return e1;
 
   /* use `begin` instead of `begin0` if we can swap the order: */
@@ -713,27 +713,16 @@ static Scheme_Object *make_discarding_app_sequence(Scheme_App_Rec *appr, int res
    arguments are evaluated.*/
 {
   int i;
-  Scheme_Object *e, *l = scheme_null;
+  Scheme_Object *l = scheme_null;
 
   result_pos = result_pos + 1;
   if (result)
     l = scheme_make_pair(result, l);
 
   for (i = appr->num_args; i; i--) {
+    Scheme_Object *e;
     e = appr->args[i];
-    if (scheme_omittable_expr(e, 1, 5, 0, info, NULL)) {
-      /* drop if not result pos */
-    } else if (single_valued_noncm_expression(e, 5)) {
-      if (i != result_pos) {
-        l = scheme_make_pair(optimize_ignored(e, info, 1, 0, 5), l);
-      }
-    } else if (i == result_pos) {
-      e = ensure_single_value(e);
-    } else if (i != result_pos) {
-      e = ensure_single_value(optimize_ignored(e, info, 1, 0, 5));
-      l = scheme_make_pair(e, l);
-    }
-
+    e = ensure_single_value(e);
     if (i == result_pos) {
       if (SCHEME_NULLP(l)) {
         l = scheme_make_pair(e, scheme_null);
@@ -741,6 +730,10 @@ static Scheme_Object *make_discarding_app_sequence(Scheme_App_Rec *appr, int res
         l = scheme_make_sequence_compilation(scheme_make_pair(e, l), -1, 0);
         l = scheme_make_pair(l, scheme_null);
       }
+    } else {
+      e = optimize_ignored(e, info, 1, 1, 5);
+      if (e)
+        l = scheme_make_pair(e, l);
     }
   }
 
@@ -803,10 +796,9 @@ static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info,
             && (SCHEME_INTP(app->rand1) 
                 && (SCHEME_INT_VAL(app->rand1) >= 0))
                 && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand1))) {
-          if (single_valued_noncm_expression(app->rand2, 5))
-            return optimize_ignored(app->rand2, info, 1, maybe_omittable, 5);
-          else
-            return ensure_single_value(optimize_ignored(app->rand2, info, 1, 0, 5));
+          Scheme_Object *val;
+          val = ensure_single_value(app->rand2);
+          return optimize_ignored(val, info, 1, maybe_omittable, 5);
         }
       }
       break;
@@ -837,8 +829,7 @@ static Scheme_Object *make_discarding_first_sequence(Scheme_Object *e1, Scheme_O
   e1 = optimize_ignored(e1, info, 1, 1, 5);
   if (!e1)
     return e2;
-  if (!single_valued_noncm_expression(e1, 5))
-    e1 = ensure_single_value(e1);
+  e1 = ensure_single_value(e1);
   return make_sequence_2(e1, e2);
 }
 
@@ -3027,8 +3018,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
         e = app->args[j];
         e = optimize_ignored(e, info, 1, 1, 5);
         if (e) {
-          if (!single_valued_noncm_expression(e, 5))
-            e = ensure_single_value(e);
+          e = ensure_single_value(e);
           l = scheme_make_pair(e, l);
         }
       }
@@ -3585,12 +3575,14 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
     case scheme_application2_type:
       {
         Scheme_App2_Rec *app2 = (Scheme_App2_Rec *)rand;
-        if (SAME_OBJ(scheme_list_proc, app2->rator)) {
-          if (IS_NAMED_PRIM(rator, "car")) {
+        if (IS_NAMED_PRIM(rator, "car")) {
+          if (SAME_OBJ(scheme_list_proc, app2->rator)) {
             /* (car (list X)) */
-            alt = make_discarding_sequence(scheme_void, app2->rand, info);
+            alt = ensure_single_value(app2->rand);
             return replace_tail_inside(alt, inside, app->rand);
-          } else if (IS_NAMED_PRIM(rator, "cdr")) {
+          }
+        } else if (IS_NAMED_PRIM(rator, "cdr")) {
+          if (SAME_OBJ(scheme_list_proc, app2->rator)) {
             /* (cdr (list X)) */
             alt = make_discarding_sequence(app2->rand, scheme_null, info);
             return replace_tail_inside(alt, inside, app->rand);
@@ -6387,8 +6379,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     irlv = (Scheme_IR_Let_Value *)head->body;
     if (SAME_OBJ((Scheme_Object *)irlv->vars[0], irlv->body)) {
       body = irlv->value;
-      if (!single_valued_noncm_expression(body, 5))
-        body = ensure_single_value(body);
+      body = ensure_single_value(body);
       return scheme_optimize_expr(body, info, context);
     }
   }
@@ -7121,8 +7112,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
         /* Special case for (let ([x E]) x) and (let ([x <error>]) #f) */
         found_escapes = 0; /* Perhaps the error is moved to the body. */
         body = pre_body->value;
-        if (!single_valued_noncm_expression(body, 5))
-          body = ensure_single_value(body);
+        body = ensure_single_value(body);
       }
 
       if (head->num_clauses == 1)
@@ -7153,8 +7143,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
         seq->count = 2;
 
         rhs = pre_body->value;
-        if (!single_valued_noncm_expression(rhs, 5))
-          rhs = ensure_single_value(rhs);
+        rhs = ensure_single_value(rhs);
         seq->array[0] = rhs;
 
         head->count--;
