@@ -91,6 +91,12 @@
 			  (->* (integer?) () integer? #:post #f))
   (test-name '(->* (integer?) #:pre ... integer? #:post ...)
 			  (->* (integer?) () #:pre (= 1 2) integer? #:post #f))
+  (test-name '(->* (integer?) #:pre/desc ... integer?)
+			  (->* (integer?) () #:pre/desc (= 1 2) integer?))
+  (test-name '(->* (integer?) integer? #:post/desc ...)
+			  (->* (integer?) () integer? #:post/desc #f))
+  (test-name '(->* (integer?) #:pre/desc ... integer? #:post/desc ...)
+			  (->* (integer?) () #:pre/desc (= 1 2) integer? #:post/desc #f))
 
   (test-name '(->d () () any) (->d () () any))
   (test-name '(->d ([x ...] #:y [y ...]) ([z ...] #:w [w ...]) any)
