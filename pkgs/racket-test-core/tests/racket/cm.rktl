@@ -17,7 +17,7 @@
              )
   (delete-directory/files dir)
   (make-directory* dir)
-  (printf "wrorking in ~s\n" dir)
+  (printf "working in ~s\n" dir)
   (for-each (lambda (f)
               (printf "writing ~a\n" (car f))
               (with-output-to-file (build-path dir (car f))
