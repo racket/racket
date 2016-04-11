@@ -50,7 +50,7 @@
 (struct compile-event (timestamp path action) #:prefab)
 (define (log-compile-event path action)
   (when (log-level? cm-logger 'info 'compiler/cm)
-    (log-message cm-logger 'info (format "~a: ~a" action path)
+    (log-message cm-logger 'info (format "~a~a: ~a" (get-indent-string) action path)
                  (compile-event (current-inexact-milliseconds) path action))))
 
 (define manager-compile-notify-handler (make-parameter void))
@@ -187,12 +187,16 @@
     (unless (or (eq? t void)
                 (and (equal? t default-manager-trace-handler)
                      (not (log-level? cm-logger 'debug))))
-      (t (string-append (build-string (indent)
-                                      (λ (x)
-                                        (if (= 2 (modulo x 3))
-                                            #\|
-                                            #\space)))
+      (t (string-append (get-indent-string)
                         (apply format fmt args))))))
+
+(define (get-indent-string)
+  (build-string (indent)
+                (λ (x)
+                  (if (and (= 2 (modulo x 3))
+                           (not (= x (- (indent) 1))))
+                      #\|
+                      #\space))))
 
 (define (get-deps code path)
   (define ht
