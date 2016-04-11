@@ -155,19 +155,20 @@
                           (build-path "compiled")])]
                       [else (build-path "compiled")]))])
     (managed-compile-zo (build-path dir "cpm-a.rkt")))
-  (test (hash (build-path "cpm-a.rkt") #t
-              (build-path "cpm-b.rkt") #t
-              (build-path "cpm-c.rkt") #t
-              (build-path "compiled/cpm-a_rkt.zo") #t
-              (build-path "compiled/cpm-a_rkt.dep") #t
-              (build-path "compiled/subdir/cpm-b_rkt.zo") #t
-              (build-path "compiled/subdir/cpm-b_rkt.dep") #t
-              (build-path "compiled/cpm-c_rkt.zo") #t
-              (build-path "compiled/cpm-c_rkt.dep") #t)
+  (test (hash '("cpm-a.rkt") #t
+              '("cpm-b.rkt") #t
+              '("cpm-c.rkt") #t
+              '("compiled" "cpm-a_rkt.zo") #t
+              '("compiled" "cpm-a_rkt.dep") #t
+              '("compiled" "subdir" "cpm-b_rkt.zo") #t
+              '("compiled" "subdir" "cpm-b_rkt.dep") #t
+              '("compiled" "cpm-c_rkt.zo") #t
+              '("compiled" "cpm-c_rkt.dep") #t)
         'current-path->mode
         (for/hash ([x (in-directory dir)]
                    #:when (file-exists? x))
-          (values (find-relative-path dir x) #t))))
+          (values (map path->string (explode-path (find-relative-path dir x)))
+                  #t))))
 
 ;; ----------------------------------------
 
