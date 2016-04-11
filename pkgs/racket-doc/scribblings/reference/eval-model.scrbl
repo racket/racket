@@ -819,7 +819,7 @@ with @racket[module*] conceptually follows its enclosing module, so
 can @racket[require] from its enclosing module, but the enclosing
 module cannot @racket[require] the submodule. Unless a submodule
 imports from its enclosing module or vice-versa, then @tech{visits} or
-@tech{instantiations} of the two modules are independent, and thier
+@tech{instantiations} of the two modules are independent, and their
 implementations may even be loaded from bytecode at different times.
 
 A submodule declared with @racket[module] can import any preceding

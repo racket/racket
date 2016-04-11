@@ -185,7 +185,7 @@ The inferred package name is the directory name.
 When the package source is a @litchar{file://} URL with a
 @litchar{type} query value of @litchar{link} or @litchar{static-link},
 then the package is installed as directory link, the same as if
-@DFlag{--link} or @DFlag{--static-link} is supplied to
+@DFlag{link} or @DFlag{static-link} is supplied to
 @command-ref{install} or @command-ref{update}.
 
 @history[#:changed "6.1.1.5"
