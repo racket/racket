@@ -697,6 +697,22 @@
      (and (exn:fail:contract? x)
           (regexp-match #rx"\n *something horrible\n"
                         (exn-message x)))))
+
+  (test/neg-blame
+   '->*pre/post-18
+   '((contract (->* (any/c) #:pre/desc #f any)
+               (lambda (x) x)
+               'pos 'neg)
+     2))
+
+  (test/neg-blame
+   '->*pre/post-19
+   '(let ()
+      (struct posn (x y))
+      ((contract (->* (any/c) #:pre/desc #f boolean?)
+                 posn?
+                 'pos 'neg)
+     2)))
   
   (test/spec-passed
    '->*-opt-optional1

@@ -876,14 +876,14 @@
                      '(optional-dom-kwd ...)
                      (list optional-dom-kwd-ctc ...)
                      #,rest-ctc
-                     #,(and pre #t)
+                     #,(cond [pre #''pre] [pre/desc #''pre/desc] [else #'#f])
                      #,(if rng-ctcs
                            #`(list #,@(for/list ([rng-ctc (in-list (syntax->list rng-ctcs))])
                                         (syntax-property rng-ctc
                                                          'racket/contract:positive-position
                                                          this->*)))
                            #'#f)
-                     #,(and post #t)
+                     #,(cond [post #''post] [post/desc #''post/desc] [else #'#f])
                      #,plus-one-arity-function 
                      #,chaperone-constructor
                      #,method?))
@@ -1165,9 +1165,9 @@
 ;;        includes optional arguments in list @ end
 ;; kwd-infos : (listof kwd-info)
 ;; rest : (or/c #f contract?)
-;; pre? : boolean?
+;; pre? : (or/c #f 'pre 'pre/desc)
 ;; rngs : (listof contract?)
-;; post? : boolean?
+;; post? : (or/c #f 'post 'post/desc)
 ;; plus-one-arity-function : procedure? -- special, +1 argument wrapper that accepts neg-party
 ;; chaperone-constructor ; procedure? -- function that builds a projection tailored to this arrow
 ;; method? : boolean?
@@ -1346,13 +1346,15 @@
                 ,@(if (base->-rest ctc)
                       (list '#:rest (contract-name (base->-rest ctc)))
                       (list))
-                ,@(if (base->-pre? ctc)
-                      (list '#:pre '...)
-                      (list))
+                ,@(case (base->-pre? ctc)
+                    [(pre)      (list '#:pre '...)]
+                    [(pre/desc) (list '#:pre/desc '...)]
+                    [(#f)       (list)])
                 ,rng-sexp
-                ,@(if (base->-post? ctc)
-                      (list '#:post '...)
-                      (list)))])]))
+                ,@(case (base->-post? ctc)
+                    [(post)      (list '#:post '...)]
+                    [(post/desc) (list '#:post/desc '...)]
+                    [(#f)        (list)]))])]))
 
 (define ((->-first-order ctc) x)
   (define l (base->-min-arity ctc))
