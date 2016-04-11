@@ -134,6 +134,41 @@
          ("b.rkt" "(module b scheme/base)" #f))
        '([("b.rkt") ("a.rkt") ("a.rkt")])))
 
+;; test current-path->mode
+(let ()
+  (try '(("cpm-a.rkt" "#lang racket/base\n(require \"cpm-b.rkt\")\n" #f)
+         ("cpm-b.rkt" "#lang racket/base\n(require \"cpm-c.rkt\")\n" #f)
+         ("cpm-c.rkt" "#lang racket/base\n" #f))
+       '())
+  (parameterize ([current-path->mode
+                  (λ (x)
+                    (define-values (base name dir?) (split-path x))
+                    (define (same-path? p1 p2)
+                      (equal? (map path->string (explode-path p1))
+                              (map path->string (explode-path p2))))
+                    (cond
+                      [(same-path? base dir)
+                       (cond
+                         [(equal? (path->string name) "cpm-b.rkt")
+                          (build-path "compiled" "subdir")]
+                         [else
+                          (build-path "compiled")])]
+                      [else (build-path "compiled")]))])
+    (managed-compile-zo (build-path dir "cpm-a.rkt")))
+  (test (hash (build-path "cpm-a.rkt") #t
+              (build-path "cpm-b.rkt") #t
+              (build-path "cpm-c.rkt") #t
+              (build-path "compiled/cpm-a_rkt.zo") #t
+              (build-path "compiled/cpm-a_rkt.dep") #t
+              (build-path "compiled/subdir/cpm-b_rkt.zo") #t
+              (build-path "compiled/subdir/cpm-b_rkt.dep") #t
+              (build-path "compiled/cpm-c_rkt.zo") #t
+              (build-path "compiled/cpm-c_rkt.dep") #t)
+        'current-path->mode
+        (for/hash ([x (in-directory dir)]
+                   #:when (file-exists? x))
+          (values (find-relative-path dir x) #t))))
+
 ;; ----------------------------------------
 
 ;; test `file-stamp-in-paths'
