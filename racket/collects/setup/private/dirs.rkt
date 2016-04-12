@@ -58,6 +58,8 @@
 (define-config config:include-dir 'include-dir to-path)
 (define-config config:include-search-dirs 'include-search-dirs to-path)
 (define-config config:bin-dir 'bin-dir to-path)
+(define-config config:config-tethered-console-bin-dir 'config-tethered-console-bin-dir to-path)
+(define-config config:config-tethered-gui-bin-dir 'config-tethered-gui-bin-dir to-path)
 (define-config config:man-dir 'man-dir to-path)
 (define-config config:links-file 'links-file to-path)
 (define-config config:links-search-files 'links-search-files to-path)
@@ -268,7 +270,9 @@
 
 ;; `setup/dirs`
 
-(provide config:bin-dir)
+(provide config:bin-dir
+         config:config-tethered-console-bin-dir
+         config:config-tethered-gui-bin-dir)
 
 ;; ----------------------------------------
 ;; DLLs

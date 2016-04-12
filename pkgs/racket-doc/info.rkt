@@ -3,7 +3,7 @@
 (define collection 'multi)
 
 (define deps '("scheme-lib"
-               "base"
+               ["base" #:version "6.5.0.2"]
                "net-lib"
                "sandbox-lib"
                ["scribble-lib" #:version "1.14"]

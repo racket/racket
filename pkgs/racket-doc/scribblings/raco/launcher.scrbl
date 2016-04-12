@@ -28,7 +28,8 @@ creating @tech{launchers}.
 
 @defproc[(make-gracket-launcher [args (listof string?)]
                                 [dest path-string?]
-                                [aux (listof (cons/c symbol? any/c)) null])
+                                [aux (listof (cons/c symbol? any/c)) null]
+                                [#:tether-mode tether-mode (or/c 'addon 'config #f) 'addon])
          void?]{
 
 Creates the launcher @racket[dest], which starts GRacket with the
@@ -69,9 +70,13 @@ the following additional associations apply to launchers:
         base GRacket executable through a relative path.}
 
  @item{@racket['install-mode] (Windows, Unix) --- either
-       @racket['user] or @racket['main], indicates that the launcher
-       is being installed to a user-specific place or to an
-       installation-wide place, which in turn determines where to
+       @racket['main], @racket['user], @racket['config-tethered], or
+       @racket['addon-tethered], indicates that the launcher
+       is being installed to an
+       installation-wide place, a user-specific place, an installation-wide
+       place that embeds the configuration path, or a specific place that
+       embeds an addon-directory path;
+       the install mode, in turn, determines whether and where to
        record @racket['start-menu], @racket['extension-registry],
        and/or @racket['desktop] information.}
 
@@ -146,7 +151,17 @@ arguments to the script. Instead of appending these arguments to the
 end of @racket[args], they are spliced in after any X Windows flags
 already listed in @racket[args]. The remaining arguments (i.e.,
 all script flags and arguments after the last X Windows flag or
-argument) are then appended after the spliced @racket[args].}
+argument) are then appended after the spliced @racket[args].
+
+The @racket[tether-mode] argument indicates how much to preserve the
+current installation's tethering to a configuration directory and/or
+addon directory based on @racket[(find-addon-tether-console-bin-dir)]
+and @racket[(find-config-tether-console-bin-dir)]. The @racket['addon]
+mode allows full tethering, the @racket['config] mode allows only
+configuration-directory tethering, and the @racket[#f] mode disables
+tethering.
+
+@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tether-mode] argument.}]}
 
 
 @defproc[(make-racket-launcher [args (listof string?)]
@@ -251,27 +266,50 @@ arguments.}
 @section{Launcher Path and Platform Conventions}
 
 @defproc[(gracket-program-launcher-path [name string?]
-                                        [#:user? user? any/c #f]) 
+                                        [#:user? user? any/c #f]
+                                        [#:tethered? tethered? any/c #f]) 
          path?]{
 
 Returns a pathname for an executable called something like @racket[name]
-in the Racket installation (if @racket[user?] is @racket[#f]) or the
-user's Racket executable directory (if @racket[user?] is @racket[#t]).
+in
+
+@itemlist[
+
+ @item{the Racket installation --- when @racket[user?] is @racket[#f]
+       and @racket[tethered?] is @racket[#f];}
+
+ @item{the user's Racket executable directory --- when @racket[user?]
+       is @racket[#t] and @racket[tethered?] is @racket[#f];}
+
+ @item{an additional executable directory for executables tethered to a
+       particular configuration directory --- when @racket[user?] is
+       @racket[#f] and @racket[tethered?] is @racket[#t]; or}
+
+ @item{an additional executable directory for executables tethered to
+       a particular addon and configuration directory --- when
+       @racket[user?] is @racket[#t] and @racket[tethered?] is
+       @racket[#t].}
+
+]
+
 For Windows, the @filepath{.exe}
 suffix is automatically appended to @racket[name]. For Unix,
 @racket[name] is changed to lowercase, whitespace is changed to
 @litchar{-}, and the path includes the @filepath{bin} subdirectory of
 the Racket installation. For Mac OS X, the @filepath{.app} suffix
-is appended to @racket[name].}
+is appended to @racket[name].
+
+@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}]}
 
 
 @defproc[(racket-program-launcher-path [name string?]
-                                       [#:user? user? any/c #f])
+                                       [#:user? user? any/c #f]
+                                       [#:tethered? tethered? any/c #f])
          path?]{
 
-Returns the same path as @racket[(gracket-program-launcher-path name #:user? user?)]
-for Unix and Windows. For Mac OS X, the result is the same as for
-Unix.}
+Returns the same path as @racket[(gracket-program-launcher-path name #:user? user? #:tethered tethered?)].
+
+@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}]}
 
 
 @defproc[(gracket-launcher-is-directory?) boolean?]{
@@ -335,7 +373,7 @@ Like @racket[gracket-launcher-get-file-extension+style+filters], but for
 Racket launchers.}
 
 @deftogether[(
-@defproc[(mred-program-launcher-path [name string?] [#:user? user? any/c #f]) path?]
+@defproc[(mred-program-launcher-path [name string?] [#:user? user? any/c #f] [#:tethered? tethered? any/c #f]) path?]
 @defproc[(mred-launcher-is-directory?) boolean?]
 @defproc[(mred-launcher-is-actually-directory?) boolean?]
 @defproc[(mred-launcher-add-suffix [path-string? path]) path?]
@@ -346,10 +384,12 @@ Racket launchers.}
 )]{
 
 Backward-compatible aliases for
-@racket[gracket-program-launcher-path], etc.}
+@racket[gracket-program-launcher-path], etc.
+
+@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}]}
 
 @deftogether[(
-@defproc[(mzscheme-program-launcher-path [name string?] [#:user? user? any/c #f]) path?]
+@defproc[(mzscheme-program-launcher-path [name string?] [#:user? user? any/c #f] [#:tethered? tethered? any/c #f]) path?]
 @defproc[(mzscheme-launcher-is-directory?) boolean?]
 @defproc[(mzscheme-launcher-is-actually-directory?) boolean?]
 @defproc[(mzscheme-launcher-add-suffix [path-string? path]) path?]
@@ -360,7 +400,9 @@ Backward-compatible aliases for
 )]{
 
 Backward-compatible aliases for
-@racket[racket-program-launcher-path], etc.}
+@racket[racket-program-launcher-path], etc.
+
+@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}]}
 
 
 @defproc[(installed-executable-path->desktop-path [exec-path path-string?] [user? any/c])

@@ -8,6 +8,8 @@
 (provide (except-out (all-from-out "private/dirs.rkt")
                      config:dll-dir
                      config:bin-dir
+                     config:config-tethered-console-bin-dir
+                     config:config-tethered-gui-bin-dir
                      define-finder)
          find-dll-dir)
 
@@ -29,6 +31,49 @@
   (case (cross-system-type)
     [(windows macosx) 'same]
     [(unix) "bin"]))
+
+(provide find-config-tethered-console-bin-dir
+         find-config-tethered-gui-bin-dir)
+
+(define (find-config-tethered-console-bin-dir)
+  (force config:config-tethered-console-bin-dir))
+
+(define (find-config-tethered-gui-bin-dir)
+  (force config:config-tethered-gui-bin-dir))
+
+(provide find-addon-tethered-console-bin-dir
+         find-addon-tethered-gui-bin-dir)
+
+(define addon-bin-table
+  (delay/sync
+   (let ()
+     (define f (build-path (find-system-path 'addon-dir)
+                           "etc"
+                           "config.rktd"))
+     (and (file-exists? f)
+          (call-with-input-file* 
+           f
+           (lambda (in) 
+             (call-with-default-reading-parameterization
+              (lambda ()
+                (read in)))))))))
+
+(define (find-addon-bin-dir key)
+  (define t (force addon-bin-table))
+  (and (hash? t)
+       (let ([v (hash-ref t key #f)])
+         (and (path-string? v)
+              (simplify-path
+               (path->complete-path
+                v
+                (build-path (find-system-path 'addon-dir)
+                            "etc")))))))
+
+(define (find-addon-tethered-console-bin-dir)
+  (find-addon-bin-dir 'addon-tethered-console-bin-dir))
+
+(define (find-addon-tethered-gui-bin-dir)
+  (find-addon-bin-dir 'addon-tethered-gui-bin-dir))
 
 ;; ----------------------------------------
 ;; DLLs

@@ -319,7 +319,7 @@
     (setup-printf "WARNING" "~a" (exn->string exn))
     v)
 
-  ;; Maps a colletion name to a list of `cc's:
+  ;; Maps a collection name to a list of `cc's:
   (define collection-ccs-table (make-hash))
 
   ;; collection-cc! : listof-path .... -> cc
@@ -664,10 +664,7 @@
                                 x-specific-planet-dirs)))
       null))
 
-  (define top-level-plt-collects
-    ((if (avoid-main-installation)
-         (lambda (l) (filter (lambda (cc) (not (cc-main? cc))) l))
-         values)
+  (define all-top-level-plt-collects
      (if no-specific-collections?
          all-collections
          (check-against-all
@@ -690,7 +687,13 @@
                              (string-join sc "/")))
              ccs)
            x-specific-collections)
-          (null? planet-collects)))))
+          (null? planet-collects))))
+
+  (define top-level-plt-collects
+    (if (avoid-main-installation)
+        (filter (lambda (cc) (not (cc-main? cc)))
+                all-top-level-plt-collects)
+        all-top-level-plt-collects))
 
   (define planet-dirs-to-compile
     (sort-collections
@@ -699,12 +702,29 @@
         (lambda (cc subs)
           (map (lambda (p) (planet-cc->sub-cc cc (list (path->bytes p))))
                subs)))))
-
-  (define ccs-to-compile
+  
+  (define (combine-collections top-level-plt-collects)
     (append
      (sort-collections (lookup-collection-closure top-level-plt-collects))
      planet-dirs-to-compile))
+  
+  (define ccs-to-compile
+    (combine-collections top-level-plt-collects))
 
+  (define ccs-to-call-installers
+    (if (avoid-main-installation)
+        ;; Although we mostly avoid the main installation, we'll
+        ;; need to call main-installaiton launchers in case they
+        ;; support being called to perform only user-specific
+        ;; actions.
+        (combine-collections all-top-level-plt-collects)
+        ccs-to-compile))
+
+  (define ccs-to-make-launchers
+    (if (or (find-addon-tethered-console-bin-dir)
+            (find-addon-tethered-gui-bin-dir))
+        ccs-to-call-installers
+        ccs-to-compile))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;                  Clean                        ;;
@@ -839,7 +859,7 @@
                                  [(pre) "pre-"]
                                  [(general) ""]
                                  [(post) "post-"])))
-      (for ([cc ccs-to-compile])
+      (for ([cc ccs-to-call-installers])
         (let/ec k
           (begin-record-error cc (case part
                                    [(pre)     "early install"]
@@ -865,26 +885,36 @@
                                  (error name-sym
                                         "error loading installer: ~a"
                                         (exn->string exn)))])
-                (dynamic-require (build-path (cc-path cc) fn)
-                                 (case part
-                                   [(pre)     'pre-installer]
-                                   [(general) 'installer]
-                                   [(post)    'post-installer]))))
-            (setup-printf (format "~ainstalling"
-                                  (case part
-                                    [(pre) "pre-"]
-                                    [(post) "post-"]
-                                    [else ""]))
-                          "~a"
-                          (cc-name cc))
-            (define dir (build-path main-collects-dir 'up))
-            (cond
-             [(procedure-arity-includes? installer 3)
-              (installer dir (cc-path cc) (not (cc-main? cc)))]
-             [(procedure-arity-includes? installer 2)
-              (installer dir (cc-path cc))]
-             [else
-              (installer dir)]))))))
+                (define base-installer
+                  (dynamic-require (build-path (cc-path cc) fn)
+                                   (case part
+                                     [(pre)     'pre-installer]
+                                     [(general) 'installer]
+                                     [(post)    'post-installer])))
+                (if (and (cc-main? cc)
+                         (avoid-main-installation)
+                         (not (procedure-arity-includes? base-installer 4)))
+                    #f
+                    base-installer)))
+            (when installer
+              (setup-printf (format "~ainstalling"
+                                    (case part
+                                      [(pre) "pre-"]
+                                      [(post) "post-"]
+                                      [else ""]))
+                            "~a"
+                            (cc-name cc))
+              (define dir (build-path main-collects-dir 'up))
+              (cond
+               [(procedure-arity-includes? installer 4)
+                (installer dir (cc-path cc) (not (cc-main? cc)) (and (cc-main? cc)
+                                                                     (avoid-main-installation)))]
+               [(procedure-arity-includes? installer 3)
+                (installer dir (cc-path cc) (not (cc-main? cc)))]
+               [(procedure-arity-includes? installer 2)
+                (installer dir (cc-path cc))]
+               [else
+                (installer dir)])))))))
 
   (define (bytecode-file-exists? p)
     (parameterize ([use-compiled-file-paths (list mode-dir)])
@@ -1366,7 +1396,7 @@
         (error "result is not a list of strings:" l)))
     (define ((or-f f) x) (when x (f x)))
     (define created-launchers (make-hash))
-    (for ([cc ccs-to-compile])
+    (for ([cc ccs-to-make-launchers])
       (begin-record-error cc "launcher setup"
         (define info (cc-info cc))
         (define (make-launcher kind
@@ -1396,6 +1426,15 @@
                    [mzll (in-list (or mzlls (map (lambda (_) #f) mzlns)))]
                    [mzlf (in-list (or mzlfs (map (lambda (_) #f) mzlns)))])
                (define p (program-launcher-path mzln #:user? (not (cc-main? cc))))
+               (define addon-p (and (if (eq? kind 'gui)
+                                        (find-addon-tethered-gui-bin-dir)
+                                        (find-addon-tethered-console-bin-dir))
+                                    (program-launcher-path mzln #:user? #t #:tethered? #t)))
+               (define config-p (and (cc-main? cc)
+                                     (if (eq? kind 'gui)
+                                         (find-config-tethered-gui-bin-dir)
+                                         (find-config-tethered-console-bin-dir))
+                                     (program-launcher-path mzln #:user? #f #:tethered? #t)))
                (define receipt-path
                  (build-path (if (cc-main? cc)
                                  (find-lib-dir)
@@ -1404,42 +1443,65 @@
                (define (prep-dir p)
                  (define dir (path-only p))
                  (make-directory* dir))
-               (prep-dir p)
-               (prep-dir receipt-path)
+               (define skip-non-addon? (and (cc-main? cc)
+                                            (avoid-main-installation)))
+               (unless skip-non-addon?
+                 (prep-dir p)
+                 (prep-dir receipt-path)
+                 (when config-p
+                   (prep-dir config-p)))
+               (when addon-p
+                 (prep-dir addon-p))
                (hash-set! created-launchers
                           (record-launcher receipt-path mzln kind (current-launcher-variant) 
                                            (cc-collection cc) (cc-path cc))
                           #t)
-               (define aux
-                 (append
-                  `((exe-name . ,mzln)
-                    (relative? . ,(and (cc-main? cc)
-                                       (not (get-absolute-installation?))))
-                    (install-mode . ,(if (cc-main? cc) 'main 'user))
-                    ,@(build-aux-from-path
-                       (build-path (cc-path cc)
-                                   (path-replace-suffix (or mzll mzln) #""))))))
-               (unless (up-to-date? p aux)
-                 (setup-printf
-                  "launcher"
-                  "~a~a"
-                  (case kind
-                    [(gui)     (path->relative-string/gui-bin p)]
-                    [(console) (path->relative-string/console-bin p)]
-                    [else (error 'make-launcher "internal error (~s)" kind)])
-                  (let ([v (current-launcher-variant)])
-                    (if (eq? v (cross-system-type 'gc)) "" (format " [~a]" v))))
-                 (make-launcher
-                  (or mzlf
-                      (if (cc-collection cc)
-                          (list "-l-" (string-append
-                                       (string-append*
-                                        (map (lambda (s) (format "~a/" s))
-                                             (cc-collection cc)))
-                                       mzll))
-                          (list "-t-" (path->string (build-path (cc-path cc) mzll)))))
-                  p
-                  aux)))]
+               (define (create p user? tethered?)
+                 (define aux
+                   (append
+                    `((exe-name . ,mzln)
+                      (relative? . ,(and (cc-main? cc)
+                                         (not tethered?)
+                                         (not (get-absolute-installation?))))
+                      (install-mode . ,(if tethered?
+                                           (if user? 'addon-tethered 'config-tethered)
+                                           (if (cc-main? cc) 'main 'user)))
+                      ,@(build-aux-from-path
+                         (build-path (cc-path cc)
+                                     (path-replace-suffix (or mzll mzln) #""))))))
+                 (unless (up-to-date? p aux)
+                   (setup-printf
+                    "launcher"
+                    "~a~a"
+                    (case kind
+                      [(gui)     (path->relative-string/gui-bin p)]
+                      [(console) (path->relative-string/console-bin p)]
+                      [else (error 'make-launcher "internal error (~s)" kind)])
+                    (let ([v (current-launcher-variant)])
+                      (if (eq? v (cross-system-type 'gc)) "" (format " [~a]" v))))
+                   (make-launcher
+                    #:tether-mode (if tethered?
+                                      (if user?
+                                          'addon
+                                          'config)
+                                      #f)
+                    (append
+                     (or mzlf
+                         (if (cc-collection cc)
+                             (list "-l-" (string-append
+                                          (string-append*
+                                           (map (lambda (s) (format "~a/" s))
+                                                (cc-collection cc)))
+                                          mzll))
+                             (list "-t-" (path->string (build-path (cc-path cc) mzll))))))
+                    p
+                    aux)))
+               (unless skip-non-addon?
+                 (create p (not (cc-main? cc)) #f)
+                 (when config-p
+                   (create config-p #f #t)))
+               (when addon-p
+                 (create addon-p #t #t)))]
             [else
              (define fault
                (if (or (not mzlls) (= (length mzlns) (length mzlls))) 'f 'l))
@@ -1485,15 +1547,11 @@
               (make-tidy))
       (unless (avoid-main-installation)
         (tidy-launchers #f
-                        (find-console-bin-dir)
-                        (find-gui-bin-dir)
                         (find-lib-dir)
                         created-launchers
                         ccs-to-compile))
       (when (make-user)
         (tidy-launchers #t
-                        (find-user-console-bin-dir)
-                        (find-user-gui-bin-dir)
                         (find-user-lib-dir)
                         created-launchers
                         ccs-to-compile))))
@@ -1535,7 +1593,7 @@
           (write-receipt-hash receipt-path ht)))
       exe-key))
 
-  (define (tidy-launchers user? bin-dir gui-bin-dir lib-dir created ccs-to-compile)
+  (define (tidy-launchers user? lib-dir created ccs-to-compile)
     (define receipt-path (build-path lib-dir "launchers.rktd"))
     (define ht (read-receipt-hash receipt-path))
     (define ht2 (for/fold ([ht (hash)]) ([(k v) (in-hash ht)])
@@ -1562,27 +1620,36 @@
                     (define variant (vector-ref k 1))
                     (define name (vector-ref k 2))
                     (parameterize ([current-launcher-variant variant])
-                      (define exe-path ((if (eq? kind 'gui)
-                                            gracket-program-launcher-path
-                                            racket-program-launcher-path)
-                                        name
-                                        #:user? user?))
+                      (define (get-path user? tethered?)
+                        ((if (eq? kind 'gui)
+                             gracket-program-launcher-path
+                             racket-program-launcher-path)
+                         name
+                         #:user? user?
+                         #:tethered? tethered?))
+                      (define exe-path (get-path user? #f))
+                      (define config-exe-path (and (not user?) (get-path #f #t)))
+                      (define addon-exe-path (get-path #t #t))
                       (define is-dir?
                         (if (eq? kind 'gui)
                             (gracket-launcher-is-actually-directory?)
                             (racket-launcher-is-actually-directory?)))
-                      (define rel-exe-path
-                        ((if (eq? kind 'gui)
-                             path->relative-string/gui-bin 
-                             path->relative-string/console-bin)
-                         exe-path))
-                      (cond
-                       [(and (not is-dir?) (file-exists? exe-path))
-                        (setup-printf "deleting" "launcher ~a" rel-exe-path)
-                        (delete-file exe-path)]
-                       [(and is-dir? (directory-exists? exe-path))
-                        (setup-printf "deleting" "launcher ~a" rel-exe-path)
-                        (delete-directory/files exe-path)])
+                      (define (delete exe-path)
+                        (define rel-exe-path
+                          ((if (eq? kind 'gui)
+                               path->relative-string/gui-bin 
+                               path->relative-string/console-bin)
+                           exe-path))
+                        (cond
+                         [(and (not is-dir?) (file-exists? exe-path))
+                          (setup-printf "deleting" "launcher ~a" rel-exe-path)
+                          (delete-file exe-path)]
+                         [(and is-dir? (directory-exists? exe-path))
+                          (setup-printf "deleting" "launcher ~a" rel-exe-path)
+                          (delete-directory/files exe-path)]))
+                      (delete exe-path)
+                      (when config-exe-path (delete config-exe-path))
+                      (when addon-exe-path (delete addon-exe-path))
                       ;; Clean up any associated .desktop file and icon file:
                       (when (eq? 'unix (cross-system-type))
                         (let ([desktop (installed-executable-path->desktop-path

@@ -15,7 +15,8 @@
                      compiler/embed-unit
                      racket/runtime-path
                      launcher/launcher
-                     compiler/find-exe))
+                     compiler/find-exe
+                     setup/dirs))
 
 @title{API for Creating Executables}
 
@@ -474,6 +475,7 @@ A unit that imports nothing and exports @racket[compiler:embed^].}
 @defmodule[compiler/find-exe]
 
 @defproc[(find-exe [#:cross? cross? any/c #f]
+                   [#:untetherd? untethered? any/c #f]
                    [gracket? any/c #f]
                    [variant (or/c 'cgc '3m) (if cross?
                                                 (cross-system-type 'gc)
@@ -486,4 +488,10 @@ A unit that imports nothing and exports @racket[compiler:embed^].}
   If @racket[cross?] is true, the executable is found for the target
   platform in @seclink["cross-system"]{cross-installation mode}.
 
-  @history[#:changed "6.3" @elem{Added the @racket[#:cross?] argument.}]}
+  If @racket[untethered?] is true, then the original executable is
+  found, instead of an executable that is tethered to a configuration
+  or addon directory via @racket[(find-addon-tethered-console-bin-dir)]
+  and related functions.
+
+  @history[#:changed "6.3" @elem{Added the @racket[#:cross?] argument.}
+           #:changed "6.2.0.5" @elem{Added the @racket[#:untethered?] argument.}]}

@@ -8,3 +8,5 @@
                                ("Porting from v1xxx to v2xxx" "MzScheme_200.txt")))))
 
 (define copy-man-pages '("racket.1"))
+
+(define install-collection "private/tethered-installer.rkt")

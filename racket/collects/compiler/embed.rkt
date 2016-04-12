@@ -1436,7 +1436,7 @@
                            cmdline)) . < . 80))
     (error 'create-embedding-executable "command line too long: ~e" cmdline))
   (check-collects-path 'create-embedding-executable collects-path collects-path-bytes)
-  (let ([exe (find-exe #:cross? #t mred? variant)])
+  (let ([exe (find-exe #:cross? #t #:untethered? #t mred? variant)])
     (when verbose?
       (eprintf "Copying to ~s\n" dest))
     (let-values ([(dest-exe orig-exe osx?)
