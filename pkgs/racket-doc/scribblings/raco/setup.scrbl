@@ -1412,6 +1412,15 @@ function for installing a single @filepath{.plt} file.
   absolute path names for executable and library references, 
   @racket[#f] otherwise.}
 
+@defprof[(find-fallback-dir) (or/c path? #f)]{
+  Returns a path to the directory used to find a fallback @filepath{config.rktd}
+  file, used when the @filepath{config.rktd} file via @racket[(find-config-dir)]
+  does not specify a value for a given key. The result is @racket[#f] if no such
+  fallback directory is specified. 
+
+  @history[#:added "6.4.0.1"]
+}
+
 @; ------------------------------------------------------------------------
 
 @section[#:tag "getinfo"]{API for Reading @filepath{info.rkt} Files}
