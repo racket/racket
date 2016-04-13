@@ -661,8 +661,6 @@ static Scheme_Object *do_make_discarding_sequence(Scheme_Object *e1, Scheme_Obje
    result is `e2` --- except that `e2` is ignored, too, if
    `ignored`. */
 {
-  int e2_omit;
-
   if (ignored)
     e2 = optimize_ignored(e2, info, 1, 0, 5);
     
