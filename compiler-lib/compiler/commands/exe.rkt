@@ -3,7 +3,8 @@
          raco/command-name
          compiler/private/embed
          launcher/launcher
-         dynext/file)
+         dynext/file
+         setup/dirs)
 
 (define verbose (make-parameter #f))
 (define very-verbose (make-parameter #f))
@@ -29,6 +30,16 @@
    [("--gui") "Generate GUI executable"
     (gui #t)]
    [("-l" "--launcher") "Generate a launcher"
+    (when (or (find-addon-tethered-gui-bin-dir)
+              (find-addon-tethered-console-bin-dir))
+      ;; When an addon-executable directory is configured, treat the
+      ;; addon directory more like an installation directory, instead
+      ;; of a user-specific directory: record it, and remove the -U
+      ;; flag (if any)
+      (exe-embedded-flags
+       (append
+        (list "-A" (path->string (find-system-path 'addon-dir)))
+        (remove "-U" (exe-embedded-flags)))))
     (launcher #t)]
    [("--config-path") path "Set <path> as configuration directory for executable"
     (exe-embedded-config-path path)]
