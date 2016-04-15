@@ -1536,7 +1536,16 @@ function for installing a single @filepath{.plt} file.
    @racketmodname[info] and @racketmodname[setup/infotab] modules are
    attached to @racket[namespace] from the namespace of
    @racket[get-info/full] before attempting to load
-   @filepath{info.rkt} (or @filepath{info.ss}).}
+   @filepath{info.rkt} (or @filepath{info.ss}).
+
+   As the module is loaded, the @tech[#:doc reference-doc]{environment variable set}
+   is pruned to contain only environment variables that are listed in the
+   @envvar{PLT_INFO_ALLOW_VARS} environment variable, which contains a
+   @litchar{;}-separated list of names. By default, the list of allowed
+   variable names is empty.
+
+   @history[#:changed "6.5.0.2" @elem{Added environment-variable
+                                      pruning and @envvar{PLT_INFO_ALLOW_VARS} support.}]}
 
 @defproc[(find-relevant-directories
           (syms (listof symbol?))

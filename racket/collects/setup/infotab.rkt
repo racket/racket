@@ -60,12 +60,14 @@
 
   (provide (rename-out [info-module-begin #%module-begin])
            #%app #%datum #%top
-           define quote
+           define quote if
            list cons car cdr quasiquote unquote unquote-splicing
-           list* append reverse 
+           list* append reverse
+           equal?
            make-immutable-hash hash hash-set hash-set* hash-remove hash-clear hash-update
            string-append
            path->string build-path collection-path
            system-library-subpath
            (rename-out [limited-require require])
-           lib))
+           lib
+           getenv))

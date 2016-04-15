@@ -107,47 +107,61 @@
             ;; that is required).
             ;; We are, however, trusting that the bytecode form of the
             ;; file (if any) matches the source.
-            (let ([ns (or ns (info-namespace))])
-              (if (and bootstrap?
-                       (parameterize ([current-namespace ns])
-                         (not (module-declared? file))))
-                  ;; Attach `info' language modules to target namespace, and
-                  ;; disable the use of compiled bytecode if it fails; we
-                  ;; need a trial namespace to try loading bytecode, since
-                  ;; the use of bytecode "sticks" for later attempts.
-                  (let ([attach!
-                         (lambda (ns)
-                           (namespace-attach-module enclosing-ns 'setup/infotab ns)
-                           (namespace-attach-module enclosing-ns 'setup/infotab/lang/reader ns)
-                           (namespace-attach-module enclosing-ns 'info ns)
-                           (namespace-attach-module enclosing-ns '(submod info reader) ns))]
-                        [try
-                         (lambda (ns)
-                           (parameterize ([current-namespace ns])
-                             (dynamic-require file '#%info-lookup)))])
-                    (define ns-id (namespace-module-registry ns))
-                    ((with-handlers ([exn:fail? (lambda (exn)
-                                                  ;; Trial namespace is damaged, so uncache:
-                                                  (hash-set! trial-namespaces ns-id #f)
-                                                  ;; Try again from source:
-                                                  (lambda ()
-                                                    (attach! ns)
-                                                    (parameterize ([use-compiled-file-paths null])
-                                                      (try ns))))])
-                       ;; To reduce the cost of the trial namespace, try to used a cached
-                       ;; one previously generated for the `ns':
-                       (define try-ns (or (hash-ref trial-namespaces ns-id #f)
-                                          (let ([try-ns (make-base-empty-namespace)])
-                                            (attach! try-ns)
-                                            try-ns)))
-                       (define v (try try-ns))
-                       (hash-set! trial-namespaces ns-id try-ns)
-                       (namespace-attach-module try-ns file ns)
-                       (lambda () v))))
-                  ;; Can use compiled bytecode, etc.:
-                  (parameterize ([current-namespace ns])
-                    (dynamic-require file '#%info-lookup))))])]
+            (parameterize ([current-environment-variables
+                            (filter-environment-variables
+                             (current-environment-variables))])
+              (let ([ns (or ns (info-namespace))])
+                (if (and bootstrap?
+                         (parameterize ([current-namespace ns])
+                           (not (module-declared? file))))
+                    ;; Attach `info' language modules to target namespace, and
+                    ;; disable the use of compiled bytecode if it fails; we
+                    ;; need a trial namespace to try loading bytecode, since
+                    ;; the use of bytecode "sticks" for later attempts.
+                    (let ([attach!
+                           (lambda (ns)
+                             (namespace-attach-module enclosing-ns 'setup/infotab ns)
+                             (namespace-attach-module enclosing-ns 'setup/infotab/lang/reader ns)
+                             (namespace-attach-module enclosing-ns 'info ns)
+                             (namespace-attach-module enclosing-ns '(submod info reader) ns))]
+                          [try
+                           (lambda (ns)
+                             (parameterize ([current-namespace ns])
+                               (dynamic-require file '#%info-lookup)))])
+                      (define ns-id (namespace-module-registry ns))
+                      ((with-handlers ([exn:fail? (lambda (exn)
+                                                    ;; Trial namespace is damaged, so uncache:
+                                                    (hash-set! trial-namespaces ns-id #f)
+                                                    ;; Try again from source:
+                                                    (lambda ()
+                                                      (attach! ns)
+                                                      (parameterize ([use-compiled-file-paths null])
+                                                        (try ns))))])
+                         ;; To reduce the cost of the trial namespace, try to used a cached
+                         ;; one previously generated for the `ns':
+                         (define try-ns (or (hash-ref trial-namespaces ns-id #f)
+                                            (let ([try-ns (make-base-empty-namespace)])
+                                              (attach! try-ns)
+                                              try-ns)))
+                         (define v (try try-ns))
+                         (hash-set! trial-namespaces ns-id try-ns)
+                         (namespace-attach-module try-ns file ns)
+                         (lambda () v))))
+                    ;; Can use compiled bytecode, etc.:
+                    (parameterize ([current-namespace ns])
+                      (dynamic-require file '#%info-lookup)))))])]
          [else (err "does not contain a module of the right shape")])))
+
+(define (filter-environment-variables ev)
+  (let ([keep (environment-variables-ref ev #"PLT_INFO_ALLOW_VARS")]
+        [new-ev (make-environment-variables)])
+    (when keep
+      (for ([n (in-list (regexp-split #rx#";" keep))]
+            #:when (bytes-environment-variable-name? n))
+        (define v (environment-variables-ref ev n))
+        (when v
+          (environment-variables-set! new-ev n v))))
+    new-ev))
 
 (define info-namespace
   ;; To avoid loading modules into the current namespace
