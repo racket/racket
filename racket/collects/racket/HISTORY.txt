@@ -1,3 +1,6 @@
+Version 6.5, April 2016
+Bug repairs and other changes noted in the documentation
+
 Version 6.4, January 2016
 Changes noted in the documentation, including support for
  incremental garbage collection
