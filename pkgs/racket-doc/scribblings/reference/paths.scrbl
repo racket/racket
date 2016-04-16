@@ -546,8 +546,8 @@ path for any platform, and the result is for the same platform. If
          path-for-some-system?]{
 
 Similar to @racket[path-replace-suffix], but any existing suffix on
-@racket[path] is preserved by replacing every @litchar{.} in the last
-@tech{path element} with @litchar{_}, and then the @racket[suffix] is added
+@racket[path] is preserved by replacing the @litchar{.} before the suffix
+with @litchar{_}, and then the @racket[suffix] is added
 to the end.}
 
 
