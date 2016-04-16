@@ -12,5 +12,5 @@ command-line flags) to support various tasks involving C code.
 
 @include-section["cc.scrbl"]
 @include-section["c-mods.scrbl"]
-@include-section["api.scrbl"]
+
 

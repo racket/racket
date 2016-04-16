@@ -17,13 +17,18 @@
 
 @(define cm-eval (make-base-eval))
 @(interaction-eval #:eval cm-eval (require compiler/cm))
-@title[#:tag "make"]{@exec{raco make}: Compiling Source to Bytecode}
+@title[#:tag "make" #:style 'toc]{@exec{raco make}: Compiling Source to Bytecode}
 
 The @exec{raco make} command accept filenames for Racket modules to be
 compiled to bytecode format. Modules are re-compiled only if the
 source Racket file is newer than the bytecode file and has a different
 SHA-1 hash, or if any imported module is recompiled or has a different
 SHA-1 hash for its compiled form plus dependencies.
+
+@local-table-of-contents[]
+
+@; ------------------------------------------------------------------------
+@section{Running @exec{raco make}}
 
 The @exec{raco make} command accepts a few flags:
 
@@ -629,7 +634,7 @@ information, for example).
 
 @; ----------------------------------------------------------------------
 
-@section{Compilation Manager Hook for Syntax Transformers}
+@section[#:tag "cm-accomplice"]{Compilation Manager Hook for Syntax Transformers}
 
 @defmodule[compiler/cm-accomplice]
 
@@ -806,3 +811,6 @@ In general, a better solution is to put all code to compile into a
 module and use @exec{raco make} in its default mode.
 
 @(close-eval cm-eval)
+
+@; ----------------------------------------------------------------------
+@include-section["api.scrbl"]
