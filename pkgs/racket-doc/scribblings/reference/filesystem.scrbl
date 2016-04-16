@@ -1197,7 +1197,7 @@ needed.}
 
 Opens a temporary file for writing in the same directory as
 @racket[file], calls @racket[proc] to write to the temporary file, and
-then atomically moves the temporary file in place of @racket[proc].
+then atomically moves the temporary file in place of @racket[file].
 The atomic move simply uses @racket[rename-file-or-directory] on Unix
 and Mac OS X, but it uses an extra rename step (see below) on Windows
 to avoid problems due to concurrent readers of @racket[file].
