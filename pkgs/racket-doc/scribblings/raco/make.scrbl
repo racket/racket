@@ -9,7 +9,10 @@
                      compiler/cm
                      compiler/cm-accomplice
                      setup/parallel-build
-                     compiler/compilation-path))
+                     compiler/compilation-path
+                     compiler/compile-file
+                     syntax/modread
+                     (only-in compiler/compiler compile-zos)))
 
 
 @(define cm-eval (make-base-eval))
@@ -692,8 +695,13 @@ destination file's path.
 If the @racket[filter] procedure is provided, it is applied to each
 source expression, and the result is compiled. 
 
-The @racket[compile-file] procedure is designed for compiling modules
-files, in that each expression in @racket[src] is compiled
+Beware that @racket[compile-file] uses the current reader
+parameterization to read @racket[src]. Typically,
+@racket[compile-file] should be called from a thunk passed to
+@racket[with-module-reading-parameterization] so that the source
+program is parsed in a consistent way and allowing @hash-lang[].
+
+Each expression in @racket[src] is compiled
 independently. If @racket[src] does not contain a single
 @racket[module] expression, then earlier expressions can affect the
 compilation of later expressions when @racket[src] is loaded
