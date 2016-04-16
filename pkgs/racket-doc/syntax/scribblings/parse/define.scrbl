@@ -12,7 +12,7 @@
 
 @defmodule[syntax/parse/define]
 
-@defform[(define-simple-macro (macro-id . pattern) pattern-directive ...
+@defform[(define-syntax-parse-rule (macro-id . pattern) pattern-directive ...
            template)]{
 
 Defines a macro named @racket[macro-id]; equivalent to the following:
@@ -25,11 +25,11 @@ Defines a macro named @racket[macro-id]; equivalent to the following:
 
 @(the-eval '(require syntax/parse/define))
 @examples[#:eval the-eval
-(define-simple-macro (fn x:id rhs:expr) (lambda (x) rhs))
+(define-syntax-parse-rule (fn x:id rhs:expr) (lambda (x) rhs))
 ((fn x x) 17)
 (fn 1 2)
 
-(define-simple-macro (fn2 x y rhs)
+(define-syntax-parse-rule (fn2 x y rhs)
   #:declare x id
   #:declare y id
   #:declare rhs expr
@@ -38,7 +38,7 @@ Defines a macro named @racket[macro-id]; equivalent to the following:
 (fn2 a #:b 'c)
 ]
 
-}
+@history[#:added "6.6.0.2"]}
 
 @defform[(define-syntax-parser macro-id parse-option ... clause ...+)]{
 
@@ -60,5 +60,11 @@ Defines a macro named @racket[macro-id]; equivalent to:
 (fn3 1 2)
 (fn3 a #:b 'c)
 ]}
+
+@defform[(define-simple-macro (macro-id . pattern) pattern-directive ...
+           template)]{
+Re-exports @racket[define-syntax-parse-rule] for backwards compatibility.
+
+@history[#:changed "6.6.0.2" @elem{deprecated in favor of @racket[define-syntax-parse-rule].}]}
 
 @(close-eval the-eval)
