@@ -549,6 +549,8 @@
 ;; for/fold syntax checking
 (syntax-test #'(for/fold () bad 1) #rx".*bad sequence binding clauses.*")
 
+(syntax-test #'(for/vector ()) #rx".*missing body.*")
+
 ;; specific hash set iterators
 (err/rt-test (for/sum ([x (in-immutable-set '(1 2))]) x)
              exn:fail:contract?

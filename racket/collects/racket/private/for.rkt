@@ -1534,10 +1534,14 @@
             (cond
              [(null? exprs)
               (if (null? post-kw)
-                  (raise-syntax-error #f
-                                      (format "missing body form after ~a clause" (syntax-e (cadr pre-kw)))
-                                      stx
-                                      (cadr pre-kw))
+                  (if (null? pre-kw)
+                      (raise-syntax-error #f
+                                          "missing body"
+                                          stx)
+                      (raise-syntax-error #f
+                                          (format "missing body form after ~a clause" (syntax-e (cadr pre-kw)))
+                                          stx
+                                          (cadr pre-kw)))
                   (list (reverse pre-kw) (reverse post-kw)))]
              [(memq (syntax-e (car exprs)) '(#:break #:final))
               (if (pair? (cdr exprs))
