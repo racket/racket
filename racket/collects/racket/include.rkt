@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require (for-syntax racket/base
+                     racket/path
                      syntax/path-spec
                      "private/increader.rkt"
                      compiler/cm-accomplice))
@@ -20,10 +21,9 @@
            [reader (syntax reader)]
            [orig-stx (syntax orig-stx)]
            [rkt->ss (lambda (p)
-                      (let ([b (path->bytes p)])
-                        (if (regexp-match? #rx#"[.]rkt$" b)
-                            (path-replace-suffix p #".ss")
-                            p)))])
+                      (if (path-has-extension? p #".rkt")
+                          (path-replace-extension p #".ss")
+                          p))])
 
        (let ([c-file (if (file-exists? orig-c-file)
                          orig-c-file

@@ -202,7 +202,7 @@
            [name (if (path? p-name)
                    (let-values ([(base name dir?) (split-path p-name)])
                      (string->symbol
-                      (path->string (path-replace-suffix name #""))))
+                      (path->string (path-replace-extension name #""))))
                    'anonymous-module)]
            [tag-src (lambda (v)
                       (if stx?

@@ -307,7 +307,7 @@
                         'core))
     (when src-pkg
       (unless (check-dep! pkg src-pkg mode)
-        (define key (list pkg src-pkg (path-replace-suffix f #"") mod))
+        (define key (list pkg src-pkg (path-replace-extension f #"") mod))
         (unless (hash-ref reported key #f)
           (hash-set! reported key #t)
           (setup-fprintf* (current-error-port) #f 
@@ -360,7 +360,7 @@
 
   ;; ----------------------------------------
   (define (check-bytecode-deps f dir coll-path pkg)
-    (define zo-f (path-replace-suffix f #".zo"))
+    (define zo-f (path-replace-extension f #".zo"))
     (when (file-exists? (build-path dir zo-f))
       (define base (let ([m (regexp-match #rx#"^(.*)_[a-z]+[.]zo$"
                                           (path-element->bytes zo-f))])
@@ -426,7 +426,7 @@
           (define name (if ((length s) . > . 3)
                            (list-ref s 3)
                            (path-element->string
-                            (path-replace-suffix (file-name-from-path src) #""))))
+                            (path-replace-extension (file-name-from-path src) #""))))
           (define dest-dir (if main?
                                (build-path (find-doc-dir) name)
                                (build-path path "doc" name)))
@@ -477,11 +477,11 @@
                  (not (hash-ref skip-pkgs pkg #f)))
         (for ([f (directory-list dir)])
           ;; A ".dep" file triggers a check:
-          (when (regexp-match? #rx#"[.]dep$" (path-element->bytes f))
+          (when (path-has-extension? f #".dep")
             ;; Decide whether the file is inherently 'build or 'run mode:
             (define mode
               (if (or (eq? coll-mode 'build)
-                      (regexp-match? #rx#"_scrbl[.]dep$" (path-element->bytes f)))
+                      (path-has-extension? f #"_scrbl.dep"))
                   'build
                   'run))
             ;; Look at the actual module for 'run mode (dropping

@@ -11,7 +11,7 @@
             (cond
              [(regexp-match? #rx"[.][ch]$" path)
               (define-values (ts) (file-or-directory-modify-seconds path))
-              (define-values (sdep) (path-replace-suffix path ".sdep"))
+              (define-values (sdep) (path-replace-extension path ".sdep"))
               (call-with-escape-continuation
                (lambda (esc)
                  (with-continuation-mark

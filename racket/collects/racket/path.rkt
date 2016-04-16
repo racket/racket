@@ -3,6 +3,8 @@
 (provide find-relative-path
          simple-form-path
          normalize-path
+         path-has-extension?
+         path-extension
          filename-extension
          file-name-from-path
          path-only
@@ -163,7 +165,28 @@
           [(path-for-some-system? base) base]
           [else #f])))
 
-;; name can be any string; we just look for a dot
+(define (path-has-extension? name sfx)
+  (unless (path-string? name)
+    (raise-argument-error 'path-extension=? "path-string?" name))
+  (unless (or (bytes? sfx) (string? sfx))
+    (raise-argument-error 'path-extension=? "(or/c bytes? string?)" name))
+  (let-values ([(base file dir?) (split-path name)])
+    (and base
+         (path? file)
+         (let* ([bs (path-element->bytes file)]
+                [sfx (if (bytes? sfx) sfx (string->bytes/utf-8 sfx))]
+                [len (bytes-length bs)]
+                [slen (bytes-length sfx)])
+           (and (len . > . slen)
+                (bytes=? sfx (subbytes bs (- len slen))))))))
+
+(define (path-extension name)
+  (let* ([name (file-name 'filename-extension name)]
+         [name (and name (path->bytes name))])
+    (cond [(and name (regexp-match #rx#"(?<=.)([.][^.]+)$" name)) => cadr]
+          [else #f])))
+
+;; This old variant doesn't correctly handle filenames that start with ".":
 (define (filename-extension name)
   (let* ([name (file-name 'filename-extension name)]
          [name (and name (path->bytes name))])

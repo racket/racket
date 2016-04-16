@@ -731,7 +731,7 @@
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define (delete-file/record-dependency path dependencies)
-    (when (regexp-match-positions #rx"[.]dep$" (path->bytes path))
+    (when (path-has-extension? path #".dep")
       (define deps
         (with-handlers ([exn:fail? (lambda (x) null)])
           (with-input-from-file path read)))
@@ -828,8 +828,8 @@
          old-dependencies
          (lambda (file _)
            (define-values [dir name dir?] (split-path file))
-           (define zo  (build-path dir mode-dir (path-add-suffix name #".zo")))
-           (define dep (build-path dir mode-dir (path-add-suffix name #".dep")))
+           (define zo  (build-path dir mode-dir (path-add-extension name #".zo")))
+           (define dep (build-path dir mode-dir (path-add-extension name #".dep")))
            (when (and (file-exists? dep) (file-exists? zo))
              (set! did-something? #t)
              (setup-printf "deleting" "~a" (path->relative-string/setup zo #:cache pkg-path-cache))
@@ -991,13 +991,13 @@
                      ;; appear in a "compiled" directory:
                      (make-immutable-hash
                       (map (lambda (p)
-                             (cons (path-add-suffix p #".zo") #t))
+                             (cons (path-add-extension p #".zo") #t))
                            (append (directory-list dir)
                                    (info 'virtual-sources (lambda () null))))))])
             ;; Check each file in `c` to see whether it can stay:
             (for ([p (directory-list c)])
-              (when (and (regexp-match #rx#".(zo|dep)$" (path-element->bytes p))
-                         (not (hash-ref ok-zo-files (path-replace-suffix p #".zo") #f)))
+              (when (and (regexp-match? #rx#".[.](zo|dep)$" (path-element->bytes p))
+                         (not (hash-ref ok-zo-files (path-replace-extension p #".zo") #f)))
                 (setup-fprintf (current-error-port) #f " deleting ~a" (build-path c p))
                 (delete-file (build-path c p))))
             ok-zo-files)]
@@ -1371,7 +1371,7 @@
         (doc:setup-scribblings tmp-dir #f)
         (parameterize ([current-directory tmp-dir])
           (for ([f (directory-list)]
-                #:when (regexp-match? #rx#"[.]tex$" (path-element->bytes f)))
+                #:when (path-has-extension? f #".tex"))
             (define pdf (scr:call 'run-pdflatex f
                                   (lambda (fmt . xs)
                                     (apply setup-printf #f fmt xs))))
@@ -1468,7 +1468,7 @@
                                            (if (cc-main? cc) 'main 'user)))
                       ,@(build-aux-from-path
                          (build-path (cc-path cc)
-                                     (path-replace-suffix (or mzll mzln) #""))))))
+                                     (path-replace-extension (or mzll mzln) #""))))))
                  (unless (up-to-date? p aux)
                    (setup-printf
                     "launcher"

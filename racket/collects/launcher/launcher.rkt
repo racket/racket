@@ -174,13 +174,13 @@
               [(macosx) (and mred? (not (script-variant? variant)))]))])
     (if (string=? "" s)
       path
-      (path-replace-suffix
+      (path-replace-extension
        path
        (string->bytes/utf-8
         (if (and (eq? 'windows (cross-system-type))
-                 (regexp-match #rx#"[.]exe$" (path->bytes path)))
-          (format "~a.exe" s)
-          s))))))
+                 (path-has-extension? path #".exe"))
+            (format "~a.exe" s)
+            s))))))
 
 (define (string-append/spaces f flags)
   (string-append* (append-map (lambda (x) (list (f x) " ")) flags)))
@@ -515,8 +515,8 @@
   (define dir (if user?
                   (find-user-apps-dir)
                   (find-apps-dir)))
-  (path-replace-suffix (build-path dir (file-name-from-path dest))
-                       #".desktop"))
+  (path-replace-extension (build-path dir (file-name-from-path dest))
+                          #".desktop"))
 
 (define (installed-desktop-path->icon-path dest user? extension)
   ;; We put icons files in "share" so that `setup/unixstyle-install'
@@ -532,7 +532,7 @@
   (build-path (if user?
                   (find-user-share-dir)
                   (find-share-dir))
-              (path-replace-suffix
+              (path-replace-extension
                (file-name-from-path dest)
                (bytes-append
                 #"-exe-icon."
@@ -770,7 +770,7 @@
    [else flags]))
 
 (define (strip-suffix s)
-  (path-replace-suffix s #""))
+  (path-replace-extension s #""))
 
 (define (extract-aux-from-path path)
   (define path-bytes (path->bytes (if (string? path)
@@ -879,7 +879,7 @@
 (define (build-aux-from-path aux-root)
   (let ([aux-root (if (string? aux-root) (string->path aux-root) aux-root)])
     (define (try suffix)
-      (let ([p (path-replace-suffix aux-root suffix)])
+      (let ([p (path-replace-extension aux-root suffix)])
         (if (file-exists? p)
             (extract-aux-from-path p)
             null)))
@@ -950,7 +950,7 @@
               mred?)])
       (if (and (eq? (cross-system-type) 'macosx)
                (not (script-variant? variant)))
-          (path-replace-suffix p #".app")
+          (path-replace-extension p #".app")
           p))))
 
 (define (gracket-program-launcher-path name #:user? [user? #f] #:tethered? [tethered? #f])

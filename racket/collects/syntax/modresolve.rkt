@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/contract/base
+         racket/path
          "private/modhelp.rkt")
 
 (define (force-relto relto dir? #:path? [path? #t])
@@ -34,11 +35,9 @@
           [else (values (and path? (current-directory)) submod)])))
 
 (define (path-ss->rkt p)
-  (let-values ([(base name dir?) (split-path p)])
-    (if (and (path? name)
-             (regexp-match #rx"[.]ss$" (path->bytes name)))
-        (path-replace-suffix p #".rkt")
-        p)))
+  (if (path-has-extension? p #".ss")
+      (path-replace-extension p #".rkt")
+      p))
 
 (define (combine-submod v p)
   (if (null? p)

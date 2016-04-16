@@ -26,9 +26,9 @@
                                            #:deleted-result [deleted-result #f])
   (define v
     (or (file-exists? f)
-        (file-exists? (path-replace-suffix f #".ss"))
+        (file-exists? (path-replace-extension f #".ss"))
         (and (or (file-exists? (get-compilation-bytecode-file f))
-                 (file-exists? (get-compilation-bytecode-file (path-replace-suffix f #".ss"))))
+                 (file-exists? (get-compilation-bytecode-file (path-replace-extension f #".ss"))))
              ;; found bytecode; make sure it won't be deleted by `raco setup`
              (or (bytecode-will-stick-around? f mp metadata-ns)
                  deleted-result))))

@@ -195,8 +195,8 @@
 
   (#%provide path-string?
              normal-case-path
-             path-replace-suffix
-             path-add-suffix
+             path-replace-extension
+             path-add-extension
              reroot-path
              find-col-file
              collection-path
@@ -886,7 +886,7 @@
     (lambda (dir path check-compiled?)
       (or (file-exists? (build-path dir path))
           (and check-compiled?
-               (let ([try-path (path-add-suffix path #".zo")]
+               (let ([try-path (path-add-extension path #".zo")]
                      [modes (use-compiled-file-paths)]
                      [roots (current-compiled-file-roots)])
                  (ormap (lambda (d)
@@ -900,7 +900,7 @@
                                  modes))
                         roots))))))
 
-  (define-values (check-suffix-call)
+  (define-values (check-extension-call)
     (lambda (s sfx who)
       (unless (or (path-for-some-system? s)
                   (path-string? s))
@@ -909,28 +909,23 @@
         (raise-argument-error who "(or/c string? bytes?)" 1 s sfx))
       (let-values ([(base name dir?) (split-path s)])
         (when (not base)
-          (raise-mismatch-error who "cannot add a suffix to a root path: " s))
+          (raise-mismatch-error who "cannot add an extension to a root path: " s))
         (values base name))))
 
-  (define-values (path-adjust-suffix)
+  (define-values (path-adjust-extension)
     (lambda (name sep rest-bytes s sfx)
-      (let-values ([(base name) (check-suffix-call s sfx name)])
+      (let-values ([(base name) (check-extension-call s sfx name)])
         (define bs (path-element->bytes name))
         (define finish
           (lambda (i sep i2)
             (bytes->path-element
-             (let ([res (bytes-append
-                         (subbytes bs 0 i)
-                         sep
-                         (rest-bytes bs i2)
-                         (if (string? sfx)
-                             (string->bytes/locale sfx (char->integer #\?))
-                             sfx))])
-               (if (zero? (bytes-length res))
-                   (raise-arguments-error 'path-replace-suffix
-                                          "removing suffix makes path element empty"
-                                          "given path" s)
-                   res))
+             (bytes-append
+              (subbytes bs 0 i)
+              sep
+              (rest-bytes bs i2)
+              (if (string? sfx)
+                  (string->bytes/locale sfx (char->integer #\?))
+                  sfx))
              (if (path-for-some-system? s)
                  (path-convention-type s)
                  (system-path-convention-type)))))
@@ -939,7 +934,8 @@
                                            (if (zero? i)
                                                (finish (bytes-length bs) #"" (bytes-length bs))
                                                (let-values ([(i) (sub1 i)])
-                                                 (if (eq? (char->integer #\.) (bytes-ref bs i))
+                                                 (if (and (not (zero? i))
+                                                          (eq? (char->integer #\.) (bytes-ref bs i)))
                                                      (finish i sep (add1 i))
                                                      (loop i)))))])
                           (loop (bytes-length bs)))])
@@ -947,13 +943,13 @@
               (build-path base new-name)
               new-name)))))
 
-  (define-values (path-replace-suffix)
+  (define-values (path-replace-extension)
     (lambda (s sfx)
-      (path-adjust-suffix 'path-replace-suffix #"" (lambda (bs i) #"") s sfx)))
+      (path-adjust-extension 'path-replace-extension #"" (lambda (bs i) #"") s sfx)))
 
-  (define-values (path-add-suffix)
+  (define-values (path-add-extension)
     (lambda (s sfx)
-      (path-adjust-suffix 'path-replace-suffix #"_" subbytes s sfx)))
+      (path-adjust-extension 'path-add-extension #"_" subbytes s sfx)))
 
   (define-values (load/use-compiled)
     (lambda (f) ((current-load/use-compiled) f #f)))
@@ -1146,18 +1142,18 @@
                                              "native"
                                              (system-library-subpath)
                                              (if rep-sfx?
-                                                 (path-add-suffix
+                                                 (path-add-extension
                                                   file
                                                   dll-suffix)
                                                  file))))]
                      [zo (lambda (root-dir compiled-dir)
                            (build-path (reroot base root-dir)
                                        compiled-dir
-                                       (path-add-suffix file #".zo")))]
+                                       (path-add-extension file #".zo")))]
                      [alt-zo (lambda (root-dir compiled-dir)
                                (build-path (reroot base root-dir)
                                            compiled-dir
-                                           (path-add-suffix alt-file #".zo")))]
+                                           (path-add-extension alt-file #".zo")))]
                      [so (get-so file #t)]
                      [alt-so (get-so alt-file #t)]
                      [try-main? (or main-path-d (not alt-path-d))]
@@ -1427,7 +1423,7 @@
                   [path-ss->rkt (lambda (p)
                                   (let-values ([(base name dir?) (split-path p)])
                                     (if (regexp-match #rx"[.]ss$" (path->bytes name))
-                                        (path-replace-suffix p #".rkt")
+                                        (path-replace-extension p #".rkt")
                                         p)))]
                   [s (if (and (pair? s) (eq? 'submod (car s)))
                          (let ([v (cadr s)])
@@ -1559,7 +1555,7 @@
                                                      (split-path filename))])
                     (let* ([no-sfx (if (vector? s-parsed)
                                        (vector-ref s-parsed 3)
-                                       (path-replace-suffix name #""))])
+                                       (path-replace-extension name #""))])
                       (let* ([root-modname (if (vector? s-parsed)
                                                (vector-ref s-parsed 4)
                                                (make-resolved-module-path filename))]

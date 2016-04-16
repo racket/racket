@@ -3,6 +3,7 @@
          racket/contract
          racket/format
          racket/string
+         racket/path
          net/url)
 
 (provide
@@ -45,9 +46,9 @@
   (validate-name
    (and name+ext
         (path->string
-         (if (regexp-match #rx#"[.]tar[.]gz$" name+ext)
-             (path-replace-suffix (path-replace-suffix name+ext #"") #"")
-             (path-replace-suffix name+ext #""))))
+         (if (path-has-extension? name+ext #".tar.gz")
+             (path-replace-extension (path-replace-extension name+ext #"") #"")
+             (path-replace-extension name+ext #""))))
    complain
    #t))
 
@@ -102,7 +103,7 @@
         (and (cor (path-string? s)
                   (complain "ill-formed path"))
              (cor (regexp-match rx:archive s)
-                  (complain "path does not end with a recognized archive suffix"))
+                  (complain "path does not end with a recognized archive extension"))
              (let ()
                (define-values (base name+ext dir?) (if (path-string? s)
                                                        (split-path s)
@@ -231,7 +232,7 @@
                 (and (cor (pair? p)
                           (complain "URL path is empty"))
                      (cor (string-and-regexp-match? rx:archive (path/param-path (last p)))
-                          (complain "URL does not end with a recognized archive suffix"))
+                          (complain "URL does not end with a recognized archive extension"))
                      (extract-archive-name (last-non-empty p) complain-name)))
               (values name 'file-url)]
              [(if type

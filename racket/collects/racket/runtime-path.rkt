@@ -113,7 +113,7 @@
                                  (append (cddr p) (drop-right strs 1)))])
                    (let ([file (if (regexp-match? #rx#"[.]ss$" file)
                                    ;; normalize to ".rkt":
-                                   (path-replace-suffix file #".rkt")
+                                   (path-replace-extension file #".rkt")
                                    file)])
                      (let ([p (apply collection-file-path
                                      file
@@ -124,7 +124,7 @@
                          ;; Try ".ss":
                          (define p2 (apply collection-file-path
                                            #:check-compiled? #f
-                                           (path-replace-suffix file #".ss")
+                                           (path-replace-extension file #".ss")
                                            coll))
                          (if (file-exists? p2)
                              p2

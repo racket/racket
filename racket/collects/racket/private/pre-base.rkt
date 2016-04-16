@@ -159,7 +159,7 @@
                                              collection
                                              #:check-compiled? [check-compiled?
                                                                 (and (path-string? file-name)
-                                                                     (regexp-match? #rx"[.]rkt$" file-name))]
+                                                                     (regexp-match? #rx".[.]rkt$" file-name))]
                                              #:fail [fail (lambda (s)
                                                             (raise
                                                              (exn:fail:filesystem

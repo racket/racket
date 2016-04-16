@@ -146,7 +146,7 @@
                                                       ;; We do not currently support "external" dependencies
                                                       ;; (via cm-accomplice) during bootstrap.
                                                       (let ([deps (with-input-from-file 
-                                                                      (bytes->path (regexp-replace #"[.]zo$" (path->bytes path) #".dep"))
+                                                                      (path-replace-extension path #".dep")
                                                                     read)])
                                                         (for-each (lambda (dep)
                                                                     (let ([dep

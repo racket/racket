@@ -527,29 +527,73 @@ proportional to the length of @racket[path] (unlike a loop in that
 uses @racket[split-path], which must allocate intermediate paths).}
 
 
-@defproc[(path-replace-suffix [path (or/c path-string? path-for-some-system?)]
-                              [suffix (or/c string? bytes?)])
+@defproc[(path-replace-extension [path (or/c path-string? path-for-some-system?)]
+                                 [ext (or/c string? bytes?)])
          path-for-some-system?]{
 
 Returns a path that is the same as @racket[path], except that the
-suffix for the last element of the path is changed to
-@racket[suffix]. If the last element of @racket[path] has no suffix,
-then @racket[suffix] is added to the path. A suffix is defined as a
-@litchar{.} followed by any number of non-@litchar{.} characters/bytes
-at the end of the @tech{path element}, as long as the path element is not
-@racket[".."] or @racket["."]. The @racket[path] argument can be a
-path for any platform, and the result is for the same platform. If
-@racket[path] represents a root, the @exnraise[exn:fail:contract].}
+extension for the last element of the path (including the extension
+separator) is changed to @racket[ext]. If the last element of
+@racket[path] has no extension, then @racket[ext] is added to the
+path.
 
-@defproc[(path-add-suffix [path (or/c path-string? path-for-some-system?)]
-                          [suffix (or/c string? bytes?)])
+An extension is defined as a @litchar{.} that is not at the start of
+the path element followed by any number of non-@litchar{.}
+characters/bytes at the end of the @tech{path element}, as long as the
+path element is not a directory indicator like @racket[".."].
+
+The @racket[path] argument can be a path for any platform, and the
+result is for the same platform. If @racket[path] represents a root,
+the @exnraise[exn:fail:contract]. The given @racket[ext] typically
+starts with @litchar{.}, but it is not required to start with an
+extension separator.
+
+@examples[
+(path-replace-extension "x/y.ss" #".rkt")
+(path-replace-extension "x/y.ss" #"")
+(path-replace-extension "x/y" #".rkt")
+(path-replace-extension "x/y.tar.gz" #".rkt")
+(path-replace-extension "x/.racketrc" #".rkt")
+]
+
+@history[#:added "6.5.0.3"]}
+
+
+@defproc[(path-add-extension [path (or/c path-string? path-for-some-system?)]
+                             [ext (or/c string? bytes?)])
          path-for-some-system?]{
 
-Similar to @racket[path-replace-suffix], but any existing suffix on
-@racket[path] is preserved by replacing the @litchar{.} before the suffix
-with @litchar{_}, and then the @racket[suffix] is added
-to the end.}
+Similar to @racket[path-replace-extension], but any existing extension on
+@racket[path] is preserved by replacing the @litchar{.} before the extension
+with @litchar{_}, and then the @racket[ext] is added
+to the end.
 
+@examples[
+(path-add-extension "x/y.ss" #".rkt")
+(path-add-extension "x/y" #".rkt")
+(path-add-extension "x/y.tar.gz" #".rkt")
+(path-add-extension "x/.racketrc" #".rkt")
+]
+
+@history[#:added "6.5.0.3"]}
+
+
+@defproc[(path-replace-suffix [path (or/c path-string? path-for-some-system?)]
+                              [ext (or/c string? bytes?)])
+         path-for-some-system?]{
+@deprecated[#:what "function" @racket[path-replace-extension]]
+
+Like @racket[path-replace-extension], but treats a leading @litchar{.}
+in a path element as an extension separator.}
+
+@defproc[(path-add-suffix [path (or/c path-string? path-for-some-system?)]
+                          [ext (or/c string? bytes?)])
+         path-for-some-system?]{
+
+@deprecated[#:what "function" @racket[path-add-extension]]
+
+Like @racket[path-add-extension], but treats a leading @litchar{.}
+in a path element as an extension separator.}
 
 @defproc[(reroot-path [path (or/c path-string? path-for-some-system?)]
                       [root-path (or/c path-string? path-for-some-system?)])
@@ -590,13 +634,59 @@ Returns the last element of @racket[path]. If @racket[path] is
 syntactically a directory path (see @racket[split-path]), then the
 result is @racket[#f].}
 
+
+@defproc[(path-extension [path (or/c path-string? path-for-some-system?)])
+         (or/c bytes? #f)]{
+
+Returns a byte string that is the extension part of the filename in
+@racket[path], including the @litchar{.} separator. If the path has no
+extension, @racket[#f] is returned.
+
+See @racket[path-replace-extension] for the definition of a filename
+extension.
+
+@examples[#:eval path-eval
+(path-extension "x/y.rkt")
+(path-extension "x/y")
+(path-extension "x/y.tar.gz")
+(path-extension "x/.racketrc")
+]
+
+@history[#:added "6.5.0.3"]}
+
+
+@defproc[(path-has-extension? [path (or/c path-string? path-for-some-system?)]
+                              [ext (or/c bytes? string?)])
+         (or/c bytes? #f)]{
+
+Determines whether the last element of @racket[path] ends with
+@racket[ext] but is not exactly the same as @racket[ext].
+
+If @racket[ext] is a @tech{byte string} with the shape of an extension
+(i.e., starting with @litchar{.}), this check is equivalent to
+checking whether @racket[(path-extension path)] produces @racket[ext].
+
+@examples[#:eval path-eval
+(path-has-extension? "x/y.rkt" #".rkt")
+(path-has-extension? "x/y.ss" #".rkt")
+(path-has-extension? "x/y" #".rkt")
+(path-has-extension? "x/.racketrc" #".racketrc")
+(path-has-extension? "x/compiled/y_rkt.zo" #"_rkt.zo")
+]
+
+@history[#:added "6.5.0.3"]}
+
+
 @defproc[(filename-extension [path (or/c path-string? path-for-some-system?)])
          (or/c bytes? #f)]{
+
+@deprecated[#:what "function" @racket[path-extension]]
 
 Returns a byte string that is the extension part of the filename in
 @racket[path] without the @litchar{.} separator. If @racket[path] is
 syntactically a directory (see @racket[split-path]) or if the path has
 no extension, @racket[#f] is returned.}
+
 
 @defproc[(find-relative-path [base (or/c path-string? path-for-some-system?)]
                              [path (or/c path-string?  path-for-some-system?)]

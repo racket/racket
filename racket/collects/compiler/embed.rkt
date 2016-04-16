@@ -103,11 +103,11 @@
          [fixup (lambda (re sfx)
                   (if (regexp-match re (path->bytes path))
                       path
-                      (path-replace-suffix path sfx)))])
+                      (path-replace-extension path sfx)))])
     (case (cross-system-type)
-      [(windows) (fixup #rx#"[.][eE][xX][eE]$" #".exe")]
+      [(windows) (fixup #rx#".[.][eE][xX][eE]$" #".exe")]
       [(macosx) (if mred?
-                    (fixup #rx#"[.][aA][pP][pP]$" #".app")
+                    (fixup #rx#".[.][aA][pP][pP]$" #".app")
                     path)]
       [else path])))
 
@@ -116,7 +116,7 @@
       (let-values ([(base name dir?) (split-path dest)])
         (build-path dest
                     "Contents" "MacOS"
-                    (path-replace-suffix name #"")))
+                    (path-replace-extension name #"")))
       dest))
 
 (define exe-suffix?
@@ -149,7 +149,7 @@
 
 (define (prepare-macosx-mred exec-name dest aux variant)
   (let* ([name (let-values ([(base name dir?) (split-path dest)])
-                 (path-replace-suffix name #""))]
+                 (path-replace-extension name #""))]
          [src (build-path (find-lib-dir) "Starter.app")]
          [creator (let ([c (assq 'creator aux)])
                     (or (and c
@@ -383,16 +383,16 @@
         (values (reverse dirs) (car l))
         (loop (cdr l) (cons (car l) dirs)))))
 
-(define (adjust-ss/rkt-suffix path)
+(define (adjust-ss/rkt-extension path)
   (cond
    [(file-exists? path) path]
-   [(regexp-match? #rx"[.]ss$" path)
-    (define rkt-path (path-replace-suffix path #".rkt"))
+   [(path-has-extension? path #".ss")
+    (define rkt-path (path-replace-extension path #".rkt"))
     (if (file-exists? rkt-path)
         rkt-path
         path)]
-   [(regexp-match? #rx"[.]rkt$" path)
-    (define ss-path (path-replace-suffix path #".ss"))
+   [(path-has-extension? path #".rkt")
+    (define ss-path (path-replace-extension path #".ss"))
     (if (file-exists? ss-path)
         ss-path
         path)]
@@ -405,7 +405,7 @@
     (let ([p (build-path collects-dest
                          (apply build-path dir)
                          "compiled"
-                         (path-add-suffix file #".zo"))])
+                         (path-add-extension file #".zo"))])
       (let-values ([(base name dir?) (split-path p)])
         (make-directory* base)
         p))))
@@ -426,7 +426,7 @@
          ;; main module even if a submodule is include in `filename`.
          [use-source?
           (and (not a)
-               (src-filter (adjust-ss/rkt-suffix (strip-submod filename))))]
+               (src-filter (adjust-ss/rkt-extension (strip-submod filename))))]
          ;; When using source or writing to collects, keep full modules:
          [keep-full? (or use-source? collects-dest)]
          ;; When keeping a full module, strip away submodule paths:
@@ -467,9 +467,9 @@
                               null)]
              [just-filename (strip-submod filename)]
              [root-module-path (strip-submod module-path)]
-             [actual-filename just-filename] ; `set!'ed below to adjust file suffix
+             [actual-filename just-filename] ; `set!'ed below to adjust file extension
              [name (let-values ([(base name dir?) (split-path just-filename)])
-                     (path->string (path-replace-suffix name #"")))]
+                     (path->string (path-replace-extension name #"")))]
              [prefix (let ([a (assoc just-filename prefixes)])
                        (if a
                            (cdr a)
@@ -785,7 +785,7 @@
         (if (regexp-match #rx"^[^/.]*$" (cadr path))
             (string-append (cadr path) "/main.ss")
             (if (regexp-match #rx"^[^.]*$" (cadr path))
-                ;; need a suffix:
+                ;; need an extension:
                 (string-append (cadr path) ".ss")
                 (cadr path))))]
    [else
@@ -898,7 +898,7 @@
                                                                               (if (regexp-match #rx"^[^/.]*$" (cadr name))
                                                                                   (string-append (cadr name) "/main.rkt")
                                                                                   (if (regexp-match #rx"^[^.]*$" (cadr name))
-                                                                                      ;; need a suffix:
+                                                                                      ;; need an extension:
                                                                                       (string-append (cadr name) ".rkt")
                                                                                       (ss->rkt (cadr name)))))
                                                                           ;; old-style multi-string
@@ -909,7 +909,7 @@
                                                                                          (ss->rkt (cadr name))))
                                                                       (if (eq? 'planet (car name))
                                                                           (letrec-values ([(split)
-                                                                                           (lambda (s rx suffix-after)
+                                                                                           (lambda (s rx extension-after)
                                                                                              (let-values ([(m) (regexp-match-positions 
                                                                                                                 rx
                                                                                                                 s)])
@@ -917,9 +917,9 @@
                                                                                                    (cons (substring s 0 (caar m))
                                                                                                          (split (substring s (cdar m))
                                                                                                                 rx 
-                                                                                                                (- suffix-after 1)))
+                                                                                                                (- extension-after 1)))
                                                                                                    (list
-                                                                                                    (if (suffix-after . <= . 0)
+                                                                                                    (if (extension-after . <= . 0)
                                                                                                         (if (regexp-match? #rx"[.]" s)
                                                                                                             s
                                                                                                             (string-append s ".rkt"))
@@ -1098,13 +1098,13 @@
 
 (define (ss<->rkt path mk-full)
   (cond
-   [(regexp-match? #rx#"[.]ss$" path)
-    (ss<->rkt (path-replace-suffix path #".rkt") mk-full)]
-   [(regexp-match? #rx#"[.]rkt$" path)
+   [(path-has-extension? path #".ss")
+    (ss<->rkt (path-replace-extension path #".rkt") mk-full)]
+   [(path-has-extension? path #".rkt")
     (define full-path (mk-full path))
     (if (file-exists? full-path)
         full-path
-        (let ([p2 (mk-full (path-replace-suffix path #".ss"))])
+        (let ([p2 (mk-full (path-replace-extension path #".ss"))])
           (if (file-exists? p2)
               p2
               full-path)))]

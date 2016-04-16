@@ -66,7 +66,7 @@
                                       (and (= 1 (length l))
                                            (db:pkg-checksum (car l))))))
       (define pkg-file (build-path dest-dir "pkgs" (format "~a.zip" name)))
-      (define pkg-checksum-file (path-replace-suffix pkg-file #".zip.CHECKSUM"))
+      (define pkg-checksum-file (path-replace-extension pkg-file #".zip.CHECKSUM"))
       (unless (and current-checksum
                    (equal? current-checksum (db:pkg-checksum pkg))
                    (file-exists? pkg-file)

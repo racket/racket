@@ -9,7 +9,7 @@
     (lambda ()
       (let-values ([(p) (find-system-path 'run-file)])
         (let-values ([(p) (if (eq? (system-type) 'windows)
-                              (path-replace-suffix p #"")
+                              (path-replace-extension p #"")
                               p)])
           (let-values ([(base name dir?) (split-path p)])
             (if (current-command-name)

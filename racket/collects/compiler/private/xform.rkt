@@ -36,8 +36,8 @@
         
         (define source-is-c++? (regexp-match #rx"([.]cc$)|([.]cxx$)" file-in))
         
-        (define (change-suffix filename new)
-          (path-replace-suffix filename new))
+        (define (change-extension filename new)
+          (path-replace-extension filename new))
         
         ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         ;; "AST" structures
@@ -488,10 +488,10 @@
         
         (define recorded-cpp-out
           (and precompiling-header?
-               (open-output-file (change-suffix file-out #".e") #:exists 'truncate)))
+               (open-output-file (change-extension file-out #".e") #:exists 'truncate)))
         (define recorded-cpp-in
           (and precompiled-header
-               (open-input-file (change-suffix precompiled-header #".e"))))
+               (open-input-file (change-extension precompiled-header #".e"))))
         (define re:boring #rx#"^(?:(?:[ \t]*)|(?:# .*)|(?:#line .*)|(?:#pragma implementation.*)|(?:#pragma interface.*)|(?:#pragma once)|(?:#pragma warning.*)|(?:#ident.*))$")
         (define re:uninteresting #rx#"^(?:(?:[ \t]*)|(?:# .*)|(?:#line .*)|(?:#pragma implementation.*)|(?:#pragma interface.*)|(?:#pragma once)|(?:#pragma GCC diagnostic.*)|(?:#pragma warning.*)|(?:#ident.*))$")
         (define (skip-to-interesting-line p)
@@ -1111,7 +1111,7 @@
                                      (namespace-set-variable-value! (car v) (cdr v))))
               (namespace-set-variable-value! 'make-short-tok make-short-tok)
               ;; Load the pre-compiled-header-as-.zo:
-              (let ([l (load (change-suffix precompiled-header #".zo"))])
+              (let ([l (load (change-extension precompiled-header #".zo"))])
                 (for-each (lambda (x)
                             (hash-set! used-symbols (car x) 
                                              (+
@@ -4168,7 +4168,7 @@
 		    non-gcing-functions
 		    non-aliasing-functions
                     (list 'quote gc-var-stack-mode))])
-              (with-output-to-file (change-suffix file-out #".zo")
+              (with-output-to-file (change-extension file-out #".zo")
                 (lambda ()
                   (let ([orig (current-namespace)])
                     (parameterize ([current-namespace (make-base-namespace)])
@@ -4194,7 +4194,7 @@
           (error 'xform "Errors converting"))
         
         (when output-depends-info?
-          (with-output-to-file (change-suffix file-out #".sdep")
+          (with-output-to-file (change-extension file-out #".sdep")
             (lambda ()
               (write (hash-map depends-files (lambda (k v) k)))
               (newline))

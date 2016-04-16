@@ -21,7 +21,7 @@
          db-path?)
 
 (define (db-path? p)
-  (regexp-match? #rx"[.]sqlite$" (path->bytes p)))
+  (path-has-extension? p #".sqlite"))
 
 (define (catalog-dispatch i server db dir)
   (cond

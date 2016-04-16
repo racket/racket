@@ -123,7 +123,7 @@
     (match-define (pkg-info _ checksum _) pkg-i)
     (with-handlers ([exn:fail? (λ (exn) (package-exn-handler name exn))])
       (define pkg-file (build-path dest-dir "pkgs" (format "~a.zip" name)))
-      (define pkg-checksum-file (path-replace-suffix pkg-file #".zip.CHECKSUM"))
+      (define pkg-checksum-file (path-replace-extension pkg-file #".zip.CHECKSUM"))
       (define pkg-dir (pkg-directory name))
 
       (unless pkg-dir

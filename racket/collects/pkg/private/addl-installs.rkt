@@ -76,7 +76,7 @@
                 (string-foldcase
                  (if ((length doc) . < . 4)
                      (let-values ([(base name dir?) (split-path (car doc))])
-                       (path->string (path-replace-suffix name #"")))
+                       (path->string (path-replace-extension name #"")))
                      (list-ref doc 3))))]))))
   (define (extract-paths i tag keys)
     (define (get k)

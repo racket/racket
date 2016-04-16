@@ -74,7 +74,7 @@
       (error 'read-one "empty file; expected a module declaration in: ~a" path))
     (define sym
       (string->symbol
-        (bytes->string/utf-8 (path->bytes (path-replace-suffix name #"")) #\?)))
+        (bytes->string/utf-8 (path->bytes (path-replace-extension name #"")) #\?)))
     (define checked-v (check-module-form unchecked-v sym path))
     (unless (eof-object? (read p))
       (error 'read-one
@@ -156,18 +156,18 @@
                        sub-path
                        "native"
                        (system-library-subpath)
-                       (path-add-suffix file (system-type 'so-suffix))))
+                       (path-add-extension file (system-type 'so-suffix))))
   (define zo
     (get-metadata-path #:roots roots
                        path0-base
                        sub-path
-                       (path-add-suffix src-file #".zo")))
+                       (path-add-extension src-file #".zo")))
   (define alt-zo
     (and try-alt?
          (get-metadata-path #:roots roots
                             path0-base
                             sub-path
-                            (path-add-suffix alt-src-file #".zo"))))
+                            (path-add-extension alt-src-file #".zo"))))
   (define so (get-so src-file))
   (define alt-so (and try-alt? (get-so alt-src-file)))
   (define prefer (choose src-path zo so))

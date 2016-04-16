@@ -96,7 +96,7 @@
                                                 "generic"
                                                 (let-values ([(base name dir?) 
                                                               (split-path (car binaries))])
-                                                  (path-replace-suffix name #""))))]
+                                                  (path-replace-extension name #""))))]
                                [relative-collects-dir 
                                 (or collects-path
                                     (build-path specific-lib-dir
@@ -702,6 +702,6 @@
 					    b))))
 	(let ([no-app
 	       (let-values ([(base name dir?) (split-path b)])
-		 (path-replace-suffix name #""))])
+		 (path-replace-extension name #""))])
 	  (build-path b "Contents" "MacOS" no-app))
 	b)))

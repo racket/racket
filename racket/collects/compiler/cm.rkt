@@ -116,7 +116,7 @@
                                                            (build-path 
                                                             (reroot-path* base root)
                                                             mode
-                                                            (path-add-suffix name #".zo"))
+                                                            (path-add-extension name #".zo"))
                                                            #f
                                                            (lambda () #f))])
                                                    (and v (list* v mode root))))
@@ -134,10 +134,10 @@
                        [get-zo-path (lambda ()
                                       (let-values ([(name mode root)
                                                     (if main-zo-date+mode
-                                                        (values (path-add-suffix name #".zo")
+                                                        (values (path-add-extension name #".zo")
                                                                 (cadr main-zo-date+mode)
                                                                 (cddr main-zo-date+mode))
-                                                        (values (path-add-suffix (rkt->ss name) #".zo")
+                                                        (values (path-add-extension (rkt->ss name) #".zo")
                                                                 (cadr alt-zo-date+mode)
                                                                 (cddr alt-zo-date+mode)))])
                                         (build-path (reroot-path* base root) mode name)))])
@@ -262,8 +262,8 @@
 
 (define (get-source-sha1 p)
   (with-handlers ([exn:fail:filesystem? (lambda (exn)
-                                          (and (regexp-match? #rx#"[.]rkt$" p)
-                                               (get-source-sha1 (path-replace-suffix p #".ss"))))])
+                                          (and (path-has-extension? p #".rkt")
+                                               (get-source-sha1 (path-replace-extension p #".ss"))))])
     (call-with-input-file* p sha1)))
 
 (define (get-dep-sha1s deps up-to-date collection-cache read-src-syntax path->mode roots must-exist? seen)
@@ -304,7 +304,7 @@
 (define (write-deps code path->mode roots path src-sha1
                     external-deps external-module-deps reader-deps 
                     up-to-date collection-cache read-src-syntax)
-  (let ([dep-path (path-add-suffix (get-compilation-path path->mode roots path) #".dep")]
+  (let ([dep-path (path-add-extension (get-compilation-path path->mode roots path) #".dep")]
         [deps (remove-duplicates (append (get-deps code path)
                                          external-module-deps ; can create cycles if misused!
                                          reader-deps))]
@@ -539,7 +539,7 @@
       (trace-printf "maybe-compile-zo starting ~a" actual-path))
     (begin0
      (parameterize ([indent (+ 2 (indent))])
-       (let* ([zo-name (path-add-suffix (get-compilation-path path->mode roots path) #".zo")]
+       (let* ([zo-name (path-add-extension (get-compilation-path path->mode roots path) #".zo")]
               [zo-exists? (file-exists? zo-name)])
          (if (and zo-exists? (trust-existing-zos))
              (begin
@@ -593,9 +593,9 @@
 (define (get-compiled-time path->mode roots path)
   (define-values (dir name) (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots roots))
   (or (try-file-time (build-path dir "native" (system-library-subpath)
-                                 (path-add-suffix name (system-type
-                                                        'so-suffix))))
-      (try-file-time (build-path dir (path-add-suffix name #".zo")))))
+                                 (path-add-extension name (system-type
+                                                           'so-suffix))))
+      (try-file-time (build-path dir (path-add-extension name #".zo")))))
 
 (define (try-file-sha1 path dep-path)
   (with-module-reading-parameterization
@@ -608,18 +608,18 @@
 
 (define (get-compiled-sha1 path->mode roots path)
   (define-values (dir name) (get-compilation-dir+name path #:modes (list (path->mode path)) #:roots roots))
-  (let ([dep-path (build-path dir (path-add-suffix name #".dep"))])
+  (let ([dep-path (build-path dir (path-add-extension name #".dep"))])
     (or (try-file-sha1 (build-path dir "native" (system-library-subpath)
-                                   (path-add-suffix name (system-type
-                                                          'so-suffix)))
+                                   (path-add-extension name (system-type
+                                                             'so-suffix)))
                        dep-path)
-        (try-file-sha1 (build-path dir (path-add-suffix name #".zo"))
+        (try-file-sha1 (build-path dir (path-add-extension name #".zo"))
                        dep-path)
         "")))
 
 (define (rkt->ss p)
-  (if (regexp-match? #rx#"[.]rkt$" p)
-      (path-replace-suffix p #".ss")
+  (if (path-has-extension? p #".rkt")
+      (path-replace-extension p #".ss")
       p))
 
 (define (compile-root path->mode roots path0 up-to-date collection-cache read-src-syntax sha1-only? seen)
@@ -629,7 +629,7 @@
       (with-module-reading-parameterization
        (lambda ()
          (call-with-input-file
-             (path-add-suffix (get-compilation-path path->mode roots path) #".dep")
+             (path-add-extension (get-compilation-path path->mode roots path) #".dep")
            read)))))
   (define (do-check)
     (let* ([main-path orig-path]
@@ -776,7 +776,7 @@
                              (file-exists? p2)))))
              (trace-printf "skipping:  ~a file does not exist" path)
              (when delete-zos-when-rkt-file-does-not-exist?
-               (define to-delete (path-add-suffix (get-compilation-path path->mode roots path) #".zo"))
+               (define to-delete (path-add-extension (get-compilation-path path->mode roots path) #".zo"))
                (when (file-exists? to-delete)
                  (trace-printf "deleting:  ~s" to-delete)
                  (with-compiler-security-guard (delete-file to-delete))))]
@@ -827,7 +827,7 @@
 
 ;; Exported:
 (define (get-compiled-file-sha1 path)
-  (try-file-sha1 path (path-replace-suffix path #".dep")))
+  (try-file-sha1 path (path-replace-extension path #".dep")))
 
 (define (get-file-sha1 path)
   (get-source-sha1 path))

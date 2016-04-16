@@ -10,6 +10,7 @@ Use syntax/modcollapse instead.
 
 (require racket/string
          racket/list
+         racket/path
          "modhelp.rkt")
 
 (define (collapse-module-path s relto-mp)
@@ -54,16 +55,15 @@ Use syntax/modcollapse instead.
 
   (define (ss->rkt s)
     (let ([len (string-length s)])
-      (if (and (len . >= . 3)
+      (if (and (len . > . 3)
                (string=? ".ss" (substring s (- len 3))))
           (string-append (substring s 0 (- len 3)) ".rkt")
           s)))
   
   (define (path-ss->rkt p)
-    (let-values ([(base name dir?) (split-path p)])
-      (if (regexp-match #rx"[.]ss$" (path->bytes name))
-          (path-replace-suffix p #".rkt")
-          p)))
+    (if (path-has-extension? p #".ss")
+        (path-replace-extension p #".rkt")
+        p))
 
   (define (flatten-relto-mp!)
     (when (procedure? relto-mp) (set! relto-mp (relto-mp)))

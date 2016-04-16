@@ -1,6 +1,7 @@
 #lang racket/base
 
-(require syntax/modcode)
+(require syntax/modcode
+         racket/path)
 
 (provide dynamic-rerequire)
 
@@ -76,8 +77,8 @@
   (let ([ts (file-or-directory-modify-seconds path #f (lambda () #f))])
     (if ts
         (values ts path)
-        (if (regexp-match? #rx#"[.]rkt$" (path->bytes path))
-            (let* ([alt-path (path-replace-suffix path #".ss")]
+        (if (path-has-extension? path #".rkt")
+            (let* ([alt-path (path-replace-extension path #".ss")]
                    [ts (file-or-directory-modify-seconds alt-path #f (lambda () #f))])
               (if ts
                   (values ts alt-path)

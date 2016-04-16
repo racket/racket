@@ -52,10 +52,23 @@
 
 ;; ----------------------------------------
 
+(rtest path-extension "a" #f)
+(rtest path-extension "a.sls" #".sls")
+(rtest path-extension (bytes->path #"b/a.sls" 'unix) #".sls")
+(rtest path-extension (bytes->path #"b\\a.sls" 'windows) #".sls")
+(rtest path-extension ".sls" #f)
+
+(test #t path-has-extension? "a.sls" #".sls")
+(test #t path-has-extension? "a.sls" ".sls")
+(test #f path-has-extension? ".sls" #".sls")
+(test #t path-has-extension? "a_sls" #"_sls")
+(test #t path-has-extension? "x/a.sls/" #".sls")
+
 (rtest filename-extension "a" #f)
 (rtest filename-extension "a.sls" #"sls")
 (rtest filename-extension (bytes->path #"b/a.sls" 'unix) #"sls")
 (rtest filename-extension (bytes->path #"b\\a.sls" 'windows) #"sls")
+(rtest filename-extension ".sls" #"sls")
 
 ;; ----------------------------------------
 

@@ -15,21 +15,21 @@
 	 extract-base-filename/ext)
 
 (define (append-zo-suffix s)
-  (path-add-suffix s #".zo"))
+  (path-add-extension s #".zo"))
 
 (define (append-c-suffix s)
-  (path-add-suffix s #".c"))
+  (path-add-extension s #".c"))
 
 (define (append-constant-pool-suffix s)
-  (path-add-suffix s #".kp"))
+  (path-add-extension s #".kp"))
 
 (define (append-object-suffix s)
-  (path-add-suffix s (case (system-type)
-		       [(unix macosx) #".o"]
-		       [(windows) #".obj"])))
+  (path-add-extension s (case (system-type)
+                          [(unix macosx) #".o"]
+                          [(windows) #".obj"])))
 
 (define (append-extension-suffix s)
-  (path-add-suffix s (system-type 'so-suffix)))
+  (path-add-extension s (system-type 'so-suffix)))
 
 (define (extract-suffix appender)
   (subbytes (path->bytes (appender (bytes->path #"x"))) 1))
@@ -47,7 +47,7 @@
     (if simple
         (error program "not a ~a filename (doesn't end with ~a): ~a"
                kind simple s)
-        (path-replace-suffix s #""))]
+        (path-replace-extension s #""))]
    [else #f]))
 
 (define module-suffix-regexp
