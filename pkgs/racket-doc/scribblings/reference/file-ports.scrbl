@@ -95,8 +95,14 @@ to close it more automatically (see @secref["willexecutor"]).
 A @tech{path} value that is the @tech{cleanse}d version of
 @racket[path] is used as the name of the opened port.
 
-If opening the file fails, if @racket[for-module?] is true, and
+If opening the file fails due to an error in the filesystem,
+then @exnraise[exn:fail:filesystem:errno]---as long as
+@racket[for-module?] is @racket[#f],
+@racket[current-module-path-for-load] has a non-@racket[#f] value, or
+the filesystem error is not recognized as a file-not-found error. Otherwise,
+when @racket[for-module?] is true,
 @racket[current-module-path-for-load] has a non-@racket[#f] value,
+and the filesystem error is recognized as a file-not-found error, 
 then the raised exception is either
 @racket[exn:fail:syntax:missing-module] (if the value of
 @racket[current-module-path-for-load] is a @tech{syntax object}) or
@@ -193,6 +199,9 @@ to close it more automatically (see @secref["willexecutor"]).
 
 A @tech{path} value that is the @tech{cleanse}d version of
 @racket[path] is used as the name of the opened port.
+
+If opening the file fails due to an error in the underlying filesystem
+then @exnraise[exn:fail:filesystem:errno].
 
 @file-examples[
 (define out (open-output-file some-file))

@@ -4660,7 +4660,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
       for_module = 1;
     } else if (SAME_OBJ(argv[i], scheme_none_symbol)) {
       mm_set++;
-      for_module = 1;
+      for_module = 0;
     } else {
       char *astr;
       intptr_t alen;
