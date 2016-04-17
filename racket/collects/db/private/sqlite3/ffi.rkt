@@ -160,7 +160,14 @@
   (_fun _sqlite3_statement -> _int))
 
 (define-sqlite sqlite3_clear_bindings
-  (_fun _sqlite3_statement -> _int))
+  (_fun _sqlite3_statement -> _int)
+  #:fail (lambda ()
+           ;; Old versions of SQLite don't have sqlite3_clear_bindings().
+           ;; With this fallback, some SQLite internal parameter
+           ;; buffers won't get cleared at the end of statement
+           ;; execution; they'll get cleared when the statement is
+           ;; next executed or when the statement is closed instead.
+           (lambda (stmt) 0)))
 
 ;; ----------------------------------------
 
