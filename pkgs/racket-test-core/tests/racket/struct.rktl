@@ -1143,5 +1143,27 @@
 (test #t struct? (make-prefab-struct '(foo 5 (1 #f) #(1) bar 0 #()) 1 2 3 4 5 6))
 
 ;; ----------------------------------------
+;; Check `#:name` and `#:extra-name`:
+
+(let ()
+  (struct ghost (color name) #:extra-name GHOST)
+  (test 'blinky ghost-name (ghost 'red 'blinky))
+  (struct running-ghost GHOST (edible?))
+  (test 'blinky ghost-name (running-ghost 'red 'blinky #f)))
+
+(let ()
+  (struct ghost (color name) #:name GHOST)
+  (struct running-ghost GHOST (edible?))
+  (test 'blinky ghost-name (running-ghost 'red 'blinky #f)))
+
+(syntax-test #'(struct ghost (color name) #:name gHoSt #:extra-name GHOST))
+
+(struct ghost (color name) #:name GHOST)
+(test #t procedure? ghost)
+(test #t ghost? (ghost 'red 'blinky))
+(test 'blinky ghost-name (struct-copy GHOST (ghost 'red 'blinky)))
+(syntax-test #'GHOST)
+
+;; ----------------------------------------
 
 (report-errs)

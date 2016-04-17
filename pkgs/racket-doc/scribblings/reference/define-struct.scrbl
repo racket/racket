@@ -24,6 +24,8 @@
                               (code:line #:property prop-expr val-expr)
                               (code:line #:transparent)
                               (code:line #:prefab)
+                              (code:line #:name name-id)
+                              (code:line #:extra-name name-id)
                               (code:line #:constructor-name constructor-id)
                               (code:line #:extra-constructor-name constructor-id)
                               (code:line #:reflection-name symbol-expr)
@@ -54,23 +56,24 @@ to @math{4+2n} names:
        @math{m} is the number of @racket[field]s that do not include
        an @racket[#:auto] option.}
 
- @item{@racket[id], a @tech{transformer} binding that encapsulates
+ @item{@racket[name-id] (which defaults to @racket[id]),
+       a @tech{transformer} binding that encapsulates
        information about the structure type declaration. This binding
        is used to define subtypes, and it also works with the
        @racket[shared] and @racket[match] forms. For detailed
-       information about the binding of @racket[id], see
+       information about the binding of @racket[name-id], see
        @secref["structinfo"].
        
-       The @racket[constructor-id] and @racket[id] can be the same, in
-       which case @racket[id] performs both roles. In that case, the
-       expansion of @racket[id] as an expression produces an otherwise
+       The @racket[constructor-id] and @racket[name-id] can be the same, in
+       which case @racket[name-id] performs both roles. In that case, the
+       expansion of @racket[name-id] as an expression produces an otherwise
        inaccessible identifier that is bound to the constructor
        procedure; the expanded identifier has a
        @racket['constructor-for] property whose value is an identifier
-       that is @racket[free-identifier=?] to @racket[id] as well as 
+       that is @racket[free-identifier=?] to @racket[name-id] as well as 
        a syntax property accessible via 
        @racket[syntax-procedure-alias-property] with an identifier
-       that is @racket[free-identifier=?] to @racket[id].}
+       that is @racket[free-identifier=?] to @racket[name-id].}
 
  @item{@racket[id]@racketidfont{?}, a @deftech{predicate} procedure
        that returns @racket[#t] for instances of the @tech{structure
@@ -95,7 +98,7 @@ to @math{4+2n} names:
 ]
 
 If @racket[super-id] is provided, it must have a transformer binding
-of the same sort bound to @racket[id] (see @secref["structinfo"]),
+of the same sort bound to @racket[name-id] (see @secref["structinfo"]),
 and it specifies a supertype for the structure type. Alternately,
 the @racket[#:super] option can be used to specify an expression that
 must produce a @tech{structure type descriptor}. See
@@ -163,8 +166,20 @@ must also be a @tech{prefab} structure type.
   (prefab-point? #s(prefab-point 1 2))
 ]
 
+If @racket[name-id] is supplied via @racket[#:extra-name] and it is
+not @racket[id], then both @racket[name-id] and @racket[id] are bound
+to information about the structure type. Only one of
+@racket[#:extra-name] and @racket[#:name] can be provided within a
+@racket[struct] form.
+
+@examples[#:eval posn-eval
+  (struct ghost (color name) #:prefab #:extra-name GHOST)
+  (match (ghost 'red 'blinky)
+    [(GHOST c n) c])
+]
+
 If @racket[constructor-id] is supplied, then the @tech{transformer}
-binding of @racket[id] records @racket[constructor-id] as the
+binding of @racket[name-id] records @racket[constructor-id] as the
 constructor binding; as a result, for example, @racket[struct-out]
 includes @racket[constructor-id] as an export. If
 @racket[constructor-id] is supplied via
@@ -172,7 +187,7 @@ includes @racket[constructor-id] as an export. If
 @racket[object-name] on the constructor produces the symbolic form of
 @racket[id] rather than @racket[constructor-id]. If
 @racket[constructor-id] is supplied via @racket[#:constructor-name]
-and it is not the same as @racket[id], then @racket[id] does not serve
+and it is not the same as @racket[name-id], then @racket[name-id] does not serve
 as a constructor, and @racket[object-name] on the constructor produces
 the symbolic form of @racket[constructor-id]. Only one of 
 @racket[#:extra-constructor-name] and @racket[#:constructor-name]
@@ -217,7 +232,8 @@ and expressions may also appear in @racket[method-defs].
 ]
 
 If the @racket[#:omit-define-syntaxes] option is supplied, then
-@racket[id] is not bound as a transformer. If the
+@racket[name-id] (and @racket[id], if @racket[#:extra-name] is specified])
+is not bound as a transformer. If the
 @racket[#:omit-define-values] option is supplied, then none of the
 usual variables are bound, but @racket[id] is bound. If both are
 supplied, then the @racket[struct] form is equivalent to
