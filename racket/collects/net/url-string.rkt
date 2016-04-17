@@ -58,7 +58,11 @@
       (if (or user host port)
         (sa "//"
             (if user (sa (uri-userinfo-encode user) "@") null)
-            (if host host null)
+            (if host
+                (if (regexp-match? rx:ipv6-hex host)
+                    (sa "[" host "]")
+                    host)
+                null)
             (if port (sa ":" (number->string port)) null))
         (if (equal? "file" scheme) ; always need "//" for "file" URLs
           '("//")
@@ -161,8 +165,14 @@
                                  (if (char=? (string-ref string 0) #\/) "file" "http"))
                 url])))
 
+;; Approximation to IPv6 literal addresses, to be recognized
+;; in "[...]" when decoding and put back in "[...]" when encoding;
+;; having at least one ":" distinguishes from other address forms:
+(define ipv6-hex "[0-9a-fA-F:]*:[0-9a-fA-F:]*")
+(define rx:ipv6-hex (regexp (string-append "^" ipv6-hex "$")))
+
 ;; URL parsing regexp
-;; this is following the regexp in Appendix B of rfc 3986, except for using
+;; this is roughly following the regexp in Appendix B of rfc 3986, except for using
 ;; `*' instead of `+' for the scheme part (it is checked later anyway, and
 ;; we don't want to parse it as a path element), and the user@host:port is
 ;; parsed here.
@@ -176,17 +186,22 @@
            "(?:"              ; | / user-at-opt
            "([^/?#@]*)"       ; | | #2 = user-opt
            "@)?"              ; | \
-           "([^/?#:]*)?"      ; | #3 = host-opt
+           "(?:"              ;
+           "(?:\\["           ; | / #3 = ipv6-host-opt
+           "(" ipv6-hex ")"   ; | | hex-addresses
+           "\\])|"            ; | \
+           "([^/?#:]*)"       ; | #4 = host-opt
+           ")?"               ;
            "(?::"             ; | / colon-port-opt
-           "([0-9]*)"         ; | | #4 = port-opt
+           "([0-9]*)"         ; | | #5 = port-opt
            ")?"               ; | \
            ")?"               ; \
-           "([^?#]*)"         ; #5 = path
+           "([^?#]*)"         ; #6 = path
            "(?:\\?"           ; / question-query-opt
-           "([^#]*)"          ; | #6 = query-opt
+           "([^#]*)"          ; | #7 = query-opt
            ")?"               ; \
            "(?:#"             ; / hash-fragment-opt
-           "(.*)"             ; | #7 = fragment-opt
+           "(.*)"             ; | #8 = fragment-opt
            ")?"               ; \
            "$")))
 
@@ -194,7 +209,7 @@
 ;; Original version by Neil Van Dyke
 (define (string->url str)
   (apply
-   (lambda (scheme user host port path query fragment)
+   (lambda (scheme user ipv6host host port path query fragment)
      (when (and scheme (not (regexp-match? #rx"^[a-zA-Z][a-zA-Z0-9+.-]*$"
                                            scheme)))
        (url-error "Invalid URL string; bad scheme ~e: ~e" scheme str))
@@ -214,9 +229,9 @@
        (define win-file-url (and win-file?
                                  (path->url (bytes->path (string->bytes/utf-8 path) 'windows))))
        (let* ([scheme   (and scheme (string-downcase scheme))]
-              [host     (if win-file-url
-                            (url-host win-file-url)
-                            (and host (string-downcase host)))]
+              [host     (cond  [win-file-url (url-host win-file-url)]
+                               [ipv6host (and ipv6host (string-downcase ipv6host))]
+                               [else (and host (string-downcase host))])]
               [user     (uri-decode/maybe user)]
               [port     (and port (string->number port))]
               [abs?     (or (equal? "file" scheme)
