@@ -54,3 +54,12 @@ that match computed terms or @racket[~fail] (@racket[#:fail-when],
 etc) clauses that allow a computed term to be pinpointed.
 
 }
+
+@defproc[(debug-syntax-parse!) void?]{
+
+Installs a @racket[syntax-parse] reporting handler that prints
+debugging information to the current error port when a
+@racket[syntax-parse] error occurs.
+
+@history[#:added "6.5.0.3"]
+}
