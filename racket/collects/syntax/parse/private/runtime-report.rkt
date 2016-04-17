@@ -56,7 +56,7 @@ deals with the fact that they might not be talking about the same terms.
 
 ;; handle-failureset : (list Symbol/#f Syntax) FailureSet -> escapes
 (define (handle-failureset ctx fs)
-  (define inverted-fs (map invert-failure (flatten fs)))
+  (define inverted-fs (map invert-failure (reverse (flatten fs))))
   (define maximal-classes (maximal-failures inverted-fs))
   (define ess (map failure-expectstack (append* maximal-classes)))
   (define report (report/sync-shared ess))
@@ -199,18 +199,13 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
                   (loop (cdr items) best-items best-index)])])))
 
 ;; maximal/stx : (listof (cons A IPS)) -> (listof (listof A))
+;; PRE: Each IPS starts with a stx frame.
 (define (maximal/stx rSTX)
-  (let ([stxs null]
-        [table (make-hasheq)])
-    (for ([a+ips (in-list rSTX)])
-      (let* ([ips (cdr a+ips)]
-             [entry (hash-ref table (car ips) null)])
-        (when (null? entry)
-          (set! stxs (cons (car ips) stxs)))
-        (hash-set! table (car ips) (cons a+ips entry))))
-    (append*
-     (for/list ([key (in-list stxs)])
-       (maximal/progress (map pop-item-ips (hash-ref table key)))))))
+  ;; groups : (Listof (Listof (cons A IPS)))
+  (define groups (group-by (lambda (a+ips) (car (cdr a+ips))) rSTX))
+  (append*
+   (for/list ([group (in-list groups)])
+     (maximal/progress (map pop-item-ips group)))))
 
 ;; pop-item-ips : (cons A IPS) -> (cons A IPS)
 (define (pop-item-ips a+ips)
