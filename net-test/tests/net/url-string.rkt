@@ -91,6 +91,18 @@
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a" "x") #("b") #("c" "b")) () #f)
              "http://www.drscheme.org/a;x/b/c;b")
 
+  ;; Test IPv6 literal addresses, which are written with "[...]" around
+  ;; an address that contains ":"s:
+  (test-s->u #("http" #f "::1" #f #t (#("a") #("b") #("c")) () "joe")
+             "http://[::1]/a/b/c#joe")
+  ;; This random address came from the Wikipedia page in IPv6:
+  (test-s->u #("http" #f "2001:0db8:85a3:0000:0000:8a2e:0370:7334" #f #t (#("a") #("b") #("c")) () "joe")
+             "http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]/a/b/c#joe")
+  (test "http://[::1]/a/b/c#joe" url->string (string->url "http://[::1]/a/b/c#joe"))
+  (test "http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]/a/b/c#joe"
+        url->string
+        (string->url "http://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]/a/b/c#joe"))
+
   ;; test unquoting for %
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a") #("b") #("c")) ((ti#m . "")) "jo e")
              "http://www.drscheme.org/a/b/c?ti%23m=#jo%20e")
