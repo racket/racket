@@ -154,7 +154,9 @@
             (eq? type 'file-url)
             (eq? type 'dir-url))
         (regexp-match? #rx"^(https?|github|git)://" s))
-    (define url (with-handlers ([exn:fail? (lambda (exn) #f)])
+    (define url (with-handlers ([exn:fail? (lambda (exn)
+                                             (complain "cannot parse URL")
+                                             #f)])
                   (string->url s)))
     (define-values (name name-type)
       (if url
@@ -266,18 +268,23 @@
    [(and (not type)
          (regexp-match #rx"^file://" s))
     => (lambda (m)
-         (define u (string->url s))
+         (define u (with-handlers ([exn:fail? (lambda (exn)
+                                                (complain "cannot parse URL")
+                                                #f)])
+                     (string->url s)))
          (define query-type
-           (for/or ([q (in-list (url-query u))])
-             (and (eq? (car q) 'type)
-                  (cond
-                   [(equal? (cdr q) "link") 'link]
-                   [(equal? (cdr q) "static-link") 'static-link]
-                   [(equal? (cdr q) "file") 'file]
-                   [(equal? (cdr q) "dir") 'dir]
-                   [else
-                    (complain "URL contains an unrecognized `type' query")
-                    'error]))))
+           (if u
+               (for/or ([q (in-list (url-query u))])
+                 (and (eq? (car q) 'type)
+                      (cond
+                       [(equal? (cdr q) "link") 'link]
+                       [(equal? (cdr q) "static-link") 'static-link]
+                       [(equal? (cdr q) "file") 'file]
+                       [(equal? (cdr q) "dir") 'dir]
+                       [else
+                        (complain "URL contains an unrecognized `type' query")
+                        'error])))
+               'error))
          (if (eq? query-type 'error)
              (values #f 'dir)
              ;; Note that we're ignoring other query & fragment parts, if any:
