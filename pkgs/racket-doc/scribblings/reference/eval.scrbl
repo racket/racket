@@ -468,8 +468,9 @@ information.
 
 For internal testing purposes, when the
 @as-index{@envvar{PLT_VALIDATE_COMPILE}} environment variable is set,
-the default compilation handler runs a bytecode validator on its own
-compilation results.}
+the default compilation handler runs a bytecode validator immediately
+on its own compilation results (instead of relying only on validation
+when compiled bytecode is loaded).}
 
 
 @defproc[(compile [top-level-form any/c]) compiled-expression?]{
