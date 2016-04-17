@@ -10,6 +10,7 @@
          ps-add-unvector
          ps-add-unpstruct
          ps-add-opaque
+         (struct-out post)
 
          ps-pop-opaque
          ps-context-syntax
@@ -52,10 +53,10 @@ A FailFunction = (FailureSet -> Answer)
 Progress (PS) is a non-empty list of Progress Frames (PF).
 
 A Progress Frame (PF) is one of
-  - stx     ;; "Base" frame
+  - stx     ;; "Base" frame, or ~parse/#:with term
   - 'car    ;; car of pair; also vector->list, unbox, struct->list, etc
   - nat     ;; Represents that many repeated cdrs
-  - 'post
+  - #s(post group index) ;; late/post-traversal check, only comparable w/in group
   - 'opaque
 
 The error-reporting context (ie, syntax-parse #:context arg) is always
@@ -76,6 +77,7 @@ Interpretation: later frames are applied first.
       means ( car of ( cdr once of stx ) )
       NOT apply car, then apply cdr once, then stop
 |#
+(define-struct post (group index) #:prefab)
 
 (define (ps-empty stx ctx)
   (if (eq? stx ctx)
@@ -91,8 +93,8 @@ Interpretation: later frames are applied first.
          (cons (+ times n) (cdr parent))]
         [_
          (cons times parent)])))
-(define (ps-add-post parent)
-  (cons 'post parent))
+(define (ps-add-post parent [group #f] [index 0])
+  (cons (post group index) parent))
 (define (ps-add-stx parent stx)
   (cons stx parent))
 (define (ps-add-unbox parent)
