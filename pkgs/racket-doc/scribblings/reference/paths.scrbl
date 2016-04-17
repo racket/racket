@@ -742,10 +742,19 @@ result. Otherwise, the result is @racket[#f].}
 @defproc[(path-only [path (or/c path-string? path-for-some-system?)])
          (or/c #f path-for-some-system?)]{
 
-If @racket[path] is a filename, the file's path is returned. If
-@racket[path] is syntactically a directory, @racket[path] is returned
-(as a path, if it was a string). If @racket[path] has no directory part
-@racket[#f] is returned.}
+Returns @racket[path] without its final path element in the case that
+@racket[path] is not syntactically a directory; if @racket[path] has only
+a single, non-directory path element, @racket[#f] is returned. If
+@racket[path] is syntactically a directory, then @racket[path] is
+returned unchanged (but as a path, if it was a string).
+
+@examples[#:eval path-eval
+(path-only (build-path "a" "b"))
+(path-only (build-path "a"))
+(path-only (path->directory-path (build-path "a")))
+(path-only (build-path 'up 'up))
+]}
+
 
 @defproc[(simple-form-path [path path-string?]) path?]{
 
