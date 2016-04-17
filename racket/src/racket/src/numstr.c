@@ -383,7 +383,7 @@ static Scheme_Object *read_special_number(const mzchar *str, int pos)
 END_XFORM_ARITH;
 # endif
 
-static double STRTOD(const char *orig_c, char **f, int extfl)
+static double STRTOD(const char *orig_c, char **f)
 {
   int neg = 0;
   int found_dot = 0, is_infinity = 0, is_zero = 0, is_nonzero = 0;
@@ -431,7 +431,7 @@ static double STRTOD(const char *orig_c, char **f, int extfl)
 	  return 0; /* not a digit - bad! */
 	else {
 	  e = (e * 10) + (ch - '0');
-	  if (e > CHECK_INF_EXP_THRESHOLD(extfl)) {
+	  if (e > CHECK_INF_EXP_THRESHOLD(0)) {
 	    if (neg_exp || !is_nonzero)
 	      is_zero  = 1;
 	    else
@@ -451,24 +451,6 @@ static double STRTOD(const char *orig_c, char **f, int extfl)
   
   *f = (char *)c;
 
-#ifdef MZ_LONG_DOUBLE
-  if (is_infinity) {
-    if (neg)
-      return scheme_long_minus_infinity_val;
-    else
-      return scheme_long_infinity_val;
-  }
-
-  if (is_zero) {
-    if (neg)
-      return scheme_long_floating_point_nzero;
-    else
-      return scheme_long_floating_point_zero;
-  }
-
-  /* It's OK if c is ok: */
-  return strtold(orig_c, NULL);
-#else
   if (is_infinity) {
     if (neg)
       return scheme_minus_infinity_val;
@@ -485,14 +467,13 @@ static double STRTOD(const char *orig_c, char **f, int extfl)
 
   /* It's OK if c is ok: */
   return strtod(orig_c, NULL);
-#endif
 }
 
 # ifdef MZ_XFORM_GC
 START_XFORM_ARITH;
 # endif
 #else
-# define STRTOD(x, y, extfl) strtod(x, y)
+# define STRTOD(x, y) strtod(x, y)
 #endif
 
 #ifdef MZ_LONG_DOUBLE
@@ -1265,7 +1246,7 @@ Scheme_Object *scheme_read_number(const mzchar *str, intptr_t len,
         ld = long_double_from_string(ffl_buf, &ptr);
       else
 #endif
-        d = STRTOD(ffl_buf, &ptr, 0);
+        d = STRTOD(ffl_buf, &ptr);
 
       scheme_pop_c_numeric_locale(loc);
 
