@@ -30,8 +30,8 @@
    (lambda (in)
      (define-values (in2 wait)
        (cond
-        [(and (= (peek-byte in 0) #o037) 
-              (= (peek-byte in 1) #o213))
+        [(and (= (peek-byte/not-eof in 0) #o037) 
+              (= (peek-byte/not-eof in 1) #o213))
          (define-values (in2 out) (make-pipe 4096))
          (define t
            (thread
@@ -49,6 +49,8 @@
       (untar in2 #:dest dest #:strip-count strip-count #:permissive? permissive? #:filter filter)
       (wait)))))
 
-      
-       
-  
+(define (peek-byte/not-eof in at)
+  (define b (peek-byte in at))
+  (when (eof-object? b)
+    (error 'untgz "unexpected end-of-file\n  stream: ~e" in))
+  b)

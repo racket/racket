@@ -54,7 +54,7 @@
    used if the block codes up smaller that way (usually for quite small
    chunks), otherwise the dynamic method is used.  In the latter case, the
    codes are customized to the probabilities in the current block, and so
-   can code it much better than the pre-determined fixed codes.
+<   can code it much better than the pre-determined fixed codes.
  
    The Huffman codes themselves are decoded using a mutli-level table
    lookup, in order to maximize the speed of decoding plus the speed of
@@ -207,6 +207,12 @@
   ; /* If BMAX needs to be larger than 16, then h and x[] should be ulg. */
   (define-const BMAX 16) ; /* maximum bit length of any code (16 for explode) */
   (define-const N_MAX 288) ; /* maximum number of codes in any set */
+
+(define (read-byte/not-eof in)
+  (define b (read-byte in))
+  (when (eof-object? b)
+    (error 'inflate "unexpected end-of-file\n  stream: ~e" in))
+  b)
 
 (define (inflate input-port output-port)
 
@@ -864,14 +870,14 @@
 		   (arithmetic-shift d 24))]))
   
   (define (do-gunzip in out name-filter)
-    (let ([header1 (read-byte in)]
-	  [header2 (read-byte in)])
+    (let ([header1 (read-byte/not-eof in)]
+	  [header2 (read-byte/not-eof in)])
       (unless (and (= header1 #o037) (= header2 #o213))
 	(error 'gnu-unzip "bad header")))
-    (let ([compression-type (read-byte in)])
+    (let ([compression-type (read-byte/not-eof in)])
       (unless (= compression-type #o010)
 	(error 'gnu-unzip "unknown compression type")))
-    (let* ([flags (read-byte in)]
+    (let* ([flags (read-byte/not-eof in)]
 	   [ascii? (positive? (bitwise-and flags #b1))]
 	   [continuation? (positive? (bitwise-and flags #b10))]
 	   [has-extra-field? (positive? (bitwise-and flags #b100))]
@@ -882,23 +888,23 @@
 	(error 'gnu-unzip "cannot unzip encrypted file"))
       (when continuation?
 	(error 'gnu-unzip "cannot handle multi-part files"))
-      (let ([unix-mod-time (make-small-endian (read-byte in) (read-byte in)
-					      (read-byte in) (read-byte in))]
-	    [extra-flags (read-byte in)]
-	    [source-os (read-byte in)])
+      (let ([unix-mod-time (make-small-endian (read-byte/not-eof in) (read-byte/not-eof in)
+					      (read-byte/not-eof in) (read-byte/not-eof in))]
+	    [extra-flags (read-byte/not-eof in)]
+	    [source-os (read-byte/not-eof in)])
 	(when continuation?
-	  (let ([part-number (make-small-endian (read-byte in) (read-byte in))])
+	  (let ([part-number (make-small-endian (read-byte/not-eof in) (read-byte/not-eof in))])
 	    'ok))
 	(when has-extra-field?
-	  (let ([len (make-small-endian (read-byte in) (read-byte in))])
+	  (let ([len (make-small-endian (read-byte/not-eof in) (read-byte/not-eof in))])
 	    (let loop ([len len])
 	      (unless (zero? len)
-		(read-byte in)
+		(read-byte/not-eof in)
 		(loop (sub1 len))))))
 	(let* ([read-null-term-string
 		(lambda ()
 		  (let loop ([s null])
-		    (let ([r (read-byte in)])
+		    (let ([r (read-byte/not-eof in)])
 		      (if (zero? r)
 			  (list->bytes (reverse s))
 			  (loop (cons r s))))))]
@@ -908,7 +914,7 @@
 	  (when encrypted?
 	    (let loop ([n 12])
 	      (unless (zero? n)
-		(read-byte in)
+		(read-byte/not-eof in)
 		(loop (sub1 n)))))
 	  
 	  (let-values ([(out close?) (if out
