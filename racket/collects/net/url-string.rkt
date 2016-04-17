@@ -52,6 +52,12 @@
       (raise-mismatch-error 'url->string
                             "cannot convert relative file URL to a string: "
                             url))
+    (when (and (or user host port)
+               (pair? path)
+               (not (url-path-absolute? url)))
+      (raise-mismatch-error 'url->string
+                            "cannot convert relative URL with authority to a string: "
+                            url))
     (sa*
      (append
       (if scheme (sa scheme ":") null)
@@ -160,7 +166,7 @@
   (let ([url (string->url string)])
     (cond [(url-scheme url) url]
           [(string=? string "")
-           (url-error "Can't resolve empty string as URL")]
+           (url-error "can't resolve empty string as URL")]
           [else (set-url-scheme! url
                                  (if (char=? (string-ref string 0) #\/) "file" "http"))
                 url])))
@@ -212,7 +218,7 @@
    (lambda (scheme user ipv6host host port path query fragment)
      (when (and scheme (not (regexp-match? #rx"^[a-zA-Z][a-zA-Z0-9+.-]*$"
                                            scheme)))
-       (url-error "Invalid URL string; bad scheme ~e: ~e" scheme str))
+       (url-error "invalid URL string; bad scheme\n  scheme: ~e\n  in: ~e" scheme str))
      ;; Windows => "file://xxx:/...." specifies a "xxx:/..." path
      (let ([win-file? (and (or (equal? "" port) (not port))
                            (equal? "file" (and scheme (string-downcase scheme)))
@@ -241,6 +247,11 @@
                             (separate-path-strings path))]
               [query    (if query (form-urlencoded->alist query) '())]
               [fragment (uri-decode/maybe fragment)])
+         (when (and (not abs?) (pair? path) host)
+           (url-error (string-append "invalid URL string;\n"
+                                     " host provided with non-absolute path (i.e., missing a slash)\n"
+                                     "  in: ~e")
+                      str))
          (make-url scheme user host port abs? path query fragment))))
    (cdr (regexp-match url-regexp str))))
 
