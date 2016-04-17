@@ -5,6 +5,8 @@
                      "private/rep-data.rkt"
                      "private/rep.rkt"
                      "private/kws.rkt")
+         racket/list
+         racket/pretty
          "../parse.rkt"
          syntax/parse/private/residual
          "private/runtime.rkt"
@@ -21,7 +23,8 @@
 
          debug-rhs
          debug-pattern
-         debug-parse)
+         debug-parse
+         debug-syntax-parse!)
 
 (define-syntax (syntax-class-parse stx)
   (syntax-case stx ()
@@ -87,16 +90,35 @@
   (let/ec escape
     (parameterize ((current-failure-handler
                     (lambda (_ fs)
+                      (define-values (raw-fs-sexpr maximal-fs-sexpr) (fs->sexprs fs))
                       (escape
                        `(parse-failure
                          #:raw-failures
-                         ,(failureset->sexpr fs)
+                         ,raw-fs-sexpr
                          #:maximal-failures
-                         ,(let ([selected (map (lambda (fs)
-                                                 (cons 'equivalence-class
-                                                       (map failure->sexpr fs)))
-                                               (maximal-failures fs))])
-                            (if (= (length selected) 1)
-                                (car selected)
-                                (cons 'union selected))))))))
+                         ,maximal-fs-sexpr)))))
       (syntax-parse x [p 'success] ...))))
+
+(define (fs->sexprs fs)
+  (let* ([raw-fs (map invert-failure (reverse (flatten fs)))]
+         [selected-groups (maximal-failures raw-fs)])
+    (values (failureset->sexpr raw-fs)
+            (let ([selected (map (lambda (fs)
+                                   (cons 'progress-class
+                                         (map failure->sexpr fs)))
+                                 selected-groups)])
+              (if (= (length selected) 1)
+                  (car selected)
+                  (cons 'union selected))))))
+
+(define (debug-syntax-parse!)
+  (define old-failure-handler (current-failure-handler))
+  (current-failure-handler
+   (lambda (ctx fs)
+     (define-values (raw-fs-sexpr maximal-fs-sexpr) (fs->sexprs fs))
+     (eprintf "*** syntax-parse debug info ***\n")
+     (eprintf "Raw failures:\n")
+     (pretty-write raw-fs-sexpr (current-error-port))
+     (eprintf "Maximal failures:\n")
+     (pretty-write maximal-fs-sexpr (current-error-port))
+     (old-failure-handler ctx fs))))

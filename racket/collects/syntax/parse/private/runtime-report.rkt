@@ -9,6 +9,7 @@
          "kws.rkt")
 (provide call-current-failure-handler
          current-failure-handler
+         invert-failure
          maximal-failures
          invert-ps
          ps->stx+index)
@@ -758,12 +759,12 @@ This suggests the following new algorithm based on (s):
                #:expected ,(expectstack->sexpr expectstack))]))
 
 (define (expectstack->sexpr es)
-  (map expect->sexpr (normalize-expectstack es #f)))
+  (map expect->sexpr es))
 
 (define (expect->sexpr e) e)
 
 (define (progress->sexpr ps)
-  (for/list ([pf (in-list (reverse ps))])
+  (for/list ([pf (in-list ps)])
     (match pf
       [(? syntax? stx) 'stx]
       [_ pf])))
