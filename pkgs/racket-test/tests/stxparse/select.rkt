@@ -232,3 +232,35 @@
         #rx"expected (B|C)"
         #rx"while parsing A"
         (not #rx"while parsing (B|C)")))
+
+;; ------------------------------------------------------------
+;; Regression tests
+
+;; 4/16/2016, distilled from report by stchang
+;; Want error message in second side clause to take precedence over
+;; ellipsis-matching failures in first side clause.
+
+(test-case "side-clauses order 1"
+  (check-exn #rx"unhappy about last number"
+             (lambda ()
+               (syntax-parse #'(1 2 3 4)
+                 [(x:nat ...)
+                  #:with (y ... z) #'(x ...)
+                  #:fail-unless (>= (syntax->datum #'z) 10)
+                                "unhappy about last number"
+                  'ok]))))
+
+(test-case "side-clauses order 2"
+  (check-exn (lambda (exn)
+               (and (regexp-match? #rx"unhappy about last number" (exn-message exn))
+                    (exn:fail:syntax? exn)
+                    (let* ([terms (exn:fail:syntax-exprs exn)]
+                           [term (and (pair? terms) (syntax->datum (car terms)))])
+                      (check-equal? term '4))))
+             (lambda ()
+               (syntax-parse #'(1 2 3 4)
+                 [(x:nat ...)
+                  #:with (y ... z) #'(x ...)
+                  #:fail-when (and (< (syntax->datum #'z) 10) #'z)
+                              "unhappy about last number"
+                  'ok]))))

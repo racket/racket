@@ -93,6 +93,8 @@ Progress ordering
 
 Lexicographic generalization of partial order on frames
   CAR < CDR < POST, stx incomparable except to self
+  (post g i1) < (post g i2) if i1 < i2
+  (post g1 i1) incomp (post g2 i2) when g1 != g2
 
 Progress equality
 -----------------
@@ -148,7 +150,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
               [(exact-positive-integer? (car ips))
                (set! rCDR (cons a+ips rCDR))
                (set! leastCDR (if leastCDR (min leastCDR (car ips)) (car ips)))]
-              [(eq? (car ips) 'post)
+              [(post? (car ips))
                (set! rPOST (cons a+ips rPOST))]
               [(syntax? (car ips))
                (set! rSTX (cons a+ips rSTX))]
@@ -159,7 +161,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
 ;; maximal/pf : (listof (cons A IPS))^4 & nat/#f -> (listof (listof A))
 (define (maximal/pf rNULL rCAR rCDR rPOST leastCDR)
   (cond [(pair? rPOST)
-         (maximal/progress (rmap pop-item-ips rPOST))]
+         (maximal/post rPOST)]
         [(pair? rCDR)
          (maximal/progress (rmap (lambda (a+ips) (pop-item-ips-ncdrs a+ips leastCDR)) rCDR))]
         [(pair? rCAR)
@@ -168,6 +170,32 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
          (list (map car rNULL))]
         [else
          null]))
+
+;; maximal/post : (NEListof (cons A IPS)) -> (NEListof (NEListof A))
+;; PRE: Each IPS starts with a post frame.
+(define (maximal/post items)
+  ;; groups : (Listof (Listof (cons A IPS)))
+  (define groups (group-by (lambda (a+ips) (post-group (car (cdr a+ips)))) items))
+  (define groups* (map post-group-max-items groups))
+  (append*
+   (for/list ([group (in-list groups*)])
+     (maximal/progress (map pop-item-ips group)))))
+
+;; post-group-max-items : (NEListof (cons A IPS)) -> (Listof (cons A IPS))
+;; PRE: Each IPS starts with a post frame; all items have same post-group.
+;; Keep only items with max post-index.
+(define (post-group-max-items items)
+  (let loop ([items items] [best-items null] [best-index -inf.0])
+    (cond [(null? items) (reverse best-items)]
+          [else
+           (define item0 (car items))
+           (define index0 (post-index (car (cdr item0))))
+           (cond [(> index0 best-index)
+                  (loop (cdr items) (list item0) index0)]
+                 [(= index0 best-index)
+                  (loop (cdr items) (cons item0 best-items) best-index)]
+                 [else
+                  (loop (cdr items) best-items best-index)])])))
 
 ;; maximal/stx : (listof (cons A IPS)) -> (listof (listof A))
 (define (maximal/stx rSTX)
@@ -215,7 +243,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
       [(cons (? exact-positive-integer? n) parent)
        (for/fold ([stx (interp parent)]) ([i (in-range n)])
          (stx-cdr stx))]
-      [(cons 'post parent)
+      [(cons (? post?) parent)
        (interp parent)]))
   (let ([ps (ps-truncate-opaque ps)])
     (match ps
@@ -225,7 +253,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
        (cons (interp ps) 0)]
       [(cons (? exact-positive-integer? n) parent)
        (cons (interp parent) n)]
-      [(cons 'post parent)
+      [(cons (? post?) parent)
        (ps->stx+index parent)])))
 
 (define (rmap f xs)
@@ -738,7 +766,4 @@ This suggests the following new algorithm based on (s):
   (for/list ([pf (in-list (reverse ps))])
     (match pf
       [(? syntax? stx) 'stx]
-      ['car 'car]
-      ['post 'post]
-      [(? exact-positive-integer? n) n]
-      ['opaque 'opaque])))
+      [_ pf])))

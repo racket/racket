@@ -79,7 +79,7 @@ A ActionPattern is one of
 * (action:and Base (listof ActionPattern))
   (action:parse Base SinglePattern stx)
   (action:do Base (listof stx))
-  (action:post Base ActionPattern)
+  (action:post Base ActionPattern Quotable Nat)
 
 action:and is desugared below in create-* procedures
 |#
@@ -90,7 +90,7 @@ action:and is desugared below in create-* procedures
 (define-struct action:and (attrs patterns) #:prefab)
 (define-struct action:parse (attrs pattern expr) #:prefab)
 (define-struct action:do (attrs stmts) #:prefab)
-(define-struct action:post (attrs pattern) #:prefab)
+(define-struct action:post (attrs pattern group index) #:prefab)
 
 #|
 A HeadPattern is one of 
@@ -333,8 +333,8 @@ A SideClause is one of
 (define (create-action:do stmts)
   (make action:do null stmts))
 
-(define (create-action:post pattern)
-  (make action:post (pattern-attrs pattern) pattern))
+(define (create-action:post pattern group index)
+  (make action:post (pattern-attrs pattern) pattern group index))
 
 ;; ----
 

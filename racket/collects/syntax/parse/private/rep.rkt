@@ -399,16 +399,19 @@
 
 ;; combine-pattern+sides : Pattern (listof SideClause) -> Pattern
 (define (combine-pattern+sides pattern sides splicing?)
+  (define sides-group (gensym))
   (define actions-pattern
     (create-action:and
-     (for/list ([side (in-list sides)])
+     (for/list ([side (in-list sides)] [index (in-naturals)])
        (match side
          [(clause:fail condition message)
           (create-action:post
-           (create-action:fail condition message))]
+           (create-action:fail condition message)
+           sides-group index)]
          [(clause:with wpat expr defs)
           (let ([ap (create-action:post
-                     (create-action:parse wpat expr))])
+                     (create-action:parse wpat expr)
+                     sides-group index)])
             (if (pair? defs)
                 (create-action:and (list (create-action:do defs) ap))
                 ap))]
@@ -1042,7 +1045,7 @@
     [(_ pattern)
      (let ([p (parse-*-pattern #'pattern decls allow-head? allow-action?)])
        (cond [(action-pattern? p)
-              (cond [allow-action? (create-action:post p)]
+              (cond [allow-action? (create-action:post p #f 0)]
                     [(not allow-head?) (create-pat:post (action-pattern->single-pattern p))]
                     [else (wrong-syntax stx "action pattern not allowed here")])]
              [(head-pattern? p)
