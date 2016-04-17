@@ -171,7 +171,8 @@ scheme @racket["http"].}
 
 Generates a string corresponding to the contents of a @racket[url]
 struct.  For a @racket["file:"] URL, the URL must not be relative, and
-the result always starts @litchar{file://}.
+the result always starts @litchar{file://}. For a URL with a host,
+user, or port, its path must be either absolute or empty.
 
 The @racket[url->string] procedure uses
 @racket[alist->form-urlencoded] when formatting the query, so it is

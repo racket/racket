@@ -91,6 +91,11 @@
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("a" "x") #("b") #("c" "b")) () #f)
              "http://www.drscheme.org/a;x/b/c;b")
 
+  ;; Allow empty port spec
+  (test #("http" #f "www.drscheme.org" #f #t (#("a")) () #f)
+        url->vec
+        (string->url "http://www.drscheme.org:/a"))
+
   ;; Test IPv6 literal addresses, which are written with "[...]" around
   ;; an address that contains ":"s:
   (test-s->u #("http" #f "::1" #f #t (#("a") #("b") #("c")) () "joe")
@@ -157,6 +162,18 @@
    (string->url "9a://www.foo.com/")  =error> url-exception?
    (string->url "a*b://www.foo.com/") =error> url-exception?
    (string->url "a b://www.foo.com/") =error> url-exception?)
+
+  ;; test relatve path after host
+  (test
+   (string->url "http://www.foo.com:oops/") =error> url-exception?
+   (string->url "http://www.foo.com:0oops/") =error> url-exception?
+
+   ;; Empty "relative" path is ok with host:
+   (url->string (url "http" #f "www.drscheme.org" #f #f (list) (list) #f))
+   => "http://www.drscheme.org"
+   ;; Non-empty "relative" path is not ok with host:
+   (url->string (url "http" #f "www.drscheme.org" #f #f (list (path/param "a" (list))) (list) #f))
+   =error> exn:fail:contract?)
 
   ;; test file: urls
   (test-s->u #("file" #f "" #f #t (#("abc") #("def.html")) () #f)
