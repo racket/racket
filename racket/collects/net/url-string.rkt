@@ -242,6 +242,10 @@
               [port     (and port (string->number port))]
               [abs?     (or (equal? "file" scheme)
                             (regexp-match? #rx"^/" path))]
+              [use-abs? (or abs?
+                            ;; If an authority part is provided, the (empty) path must be
+                            ;; absolute, even if it isn't written with a "/":
+                            (and (or host user port) #t))]
               [path     (if win-file?
                             (url-path win-file-url)
                             (separate-path-strings path))]
@@ -252,7 +256,7 @@
                                      " host provided with non-absolute path (i.e., missing a slash)\n"
                                      "  in: ~e")
                       str))
-         (make-url scheme user host port abs? path query fragment))))
+         (make-url scheme user host port use-abs? path query fragment))))
    (cdr (regexp-match url-regexp str))))
 
 (define (uri-decode/maybe f) (friendly-decode/maybe f uri-decode))
@@ -287,7 +291,7 @@
 (define (combine-path-strings absolute? path/params)
   (cond [(null? path/params) null]
         [else (let ([p (add-between (map join-params path/params) "/")])
-                (if absolute? (cons "/" p) p))]))
+                (if (and absolute? (pair? p)) (cons "/" p) p))]))
 
 (define (join-params s)
   (if (null? (path/param-param s))
