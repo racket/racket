@@ -1662,10 +1662,11 @@
       (for ([m (in-list methods)]
             [c (in-list method-contracts)])
         (when c
-          (let ([i (hash-ref method-ht m)]
-                [p ((contract-late-neg-projection c)
-                    (blame-add-context blame (format "the ~a method in" m)
-                                       #:important m))])
+          (unless (just-check-existence? c)
+            (define i (hash-ref method-ht m))
+            (define p ((contract-late-neg-projection c)
+                       (blame-add-context blame (format "the ~a method in" m)
+                                          #:important m)))
             (vector-set! meths i (make-method (p (vector-ref meths i) neg-party) m))))))
     
     ;; Handle external field contracts

@@ -283,5 +283,21 @@
 
     (send x3 p)))
 
+  (test/spec-passed
+   'object/c-just-check-existence
+   '(contract (object/c m)
+              (new
+               (class object%
+                 (super-new)
+                 (define/public (m) 42)))
+              'pos 'neg))
+
+  (test/pos-blame
+   'object/c-just-check-existence
+   '(contract (object/c m)
+              (new
+               (class object% (super-new)))
+              'pos 'neg))
+
 
 )
