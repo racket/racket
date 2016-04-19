@@ -5883,6 +5883,8 @@ static void *trace_pointer_start(mpage *page, void *p) {
 # define TRACE_PAGE_ATOMIC PAGE_ATOMIC
 # define TRACE_PAGE_PAIR PAGE_PAIR
 # define TRACE_PAGE_MALLOCFREE PAGE_TYPES
+# define TRACE_PAGE_MED_ATOMIC PAGE_MED_ATOMIC
+# define TRACE_PAGE_MED_NONATOMIC PAGE_MED_NONATOMIC
 # define TRACE_PAGE_BAD PAGE_TYPES
 # define trace_page_is_big(page) ((page)->size_class >= SIZE_CLASS_BIG_PAGE)
 # define trace_backpointer get_backtrace

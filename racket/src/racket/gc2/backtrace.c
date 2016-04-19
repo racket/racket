@@ -50,6 +50,7 @@ static void *print_out_pointer(const char *prefix, void *p,
 			       GC_print_tagged_value_proc print_tagged_value,
                                int *_kind)
 {
+  void *orig_p;
   trace_page_t *page;
   const char *what;
 
@@ -58,10 +59,13 @@ static void *print_out_pointer(const char *prefix, void *p,
     GCPRINT(GCOUTF, "%s%s %p\n", prefix, trace_source_kind(*_kind), p);
     return NULL;
   }
+  orig_p = p;
   p = trace_pointer_start(page, p);
 
   if ((trace_page_type(page) == TRACE_PAGE_TAGGED)
-      || (trace_page_type(page) == TRACE_PAGE_PAIR)) {
+      || (trace_page_type(page) == TRACE_PAGE_PAIR)
+      || ((trace_page_type(page) == TRACE_PAGE_MED_NONATOMIC)
+          && (OBJPTR_TO_OBJHEAD(p)->type == PAGE_TAGGED))) {
     Type_Tag tag;
     tag = *(Type_Tag *)p;
     if ((tag >= 0) && get_type_name && get_type_name(tag)) {
@@ -72,8 +76,19 @@ static void *print_out_pointer(const char *prefix, void *p,
     what = NULL;
   } else if (trace_page_type(page) == TRACE_PAGE_ARRAY) {
     what = "ARRAY";
+  } else if ((trace_page_type(page) == TRACE_PAGE_MED_NONATOMIC)
+             && (OBJPTR_TO_OBJHEAD(p)->type == PAGE_ARRAY)) {
+    what = "MED_ARRAY";
+    if (p != orig_p) {
+      GCPRINT(GCOUTF, "%s%s %p as %p\n", prefix, what, p, orig_p);
+      what = NULL;
+    }
   } else if (trace_page_type(page) == TRACE_PAGE_ATOMIC) {
     what = "ATOMIC";
+  } else if (trace_page_type(page) == TRACE_PAGE_MED_ATOMIC) {
+    what = "MED_ATOMIC";
+  } else if (trace_page_type(page) == TRACE_PAGE_MED_NONATOMIC) {
+    what = "MED_NONATOMIC";
   } else if (trace_page_type(page) == TRACE_PAGE_MALLOCFREE) {
     what = "MALLOCED";
   } else {
