@@ -57,7 +57,7 @@
   (test-s->u #("http" #f "" #f #t (#("")) () #f)
              "http:///")
 
-  (test-s->u #("http" #f "www.drscheme.org" #f #f () () #f)
+  (test-s->u #("http" #f "www.drscheme.org" #f #t () () #f)
              "http://www.drscheme.org")
   (test-s->u #("http" #f "www.drscheme.org" #f #t (#("")) () #f)
              "http://www.drscheme.org/")
@@ -320,7 +320,7 @@
   (test (string->url/vec "http://www.drscheme.org?bar=馨慧")
         #("http" #f "www.drscheme.org" #f #f () ((bar . "馨慧")) #f))
   (test (string->url/vec "http://www.drscheme.org?bár=é")
-        => #("http" #f "www.drscheme.org" #f #f () ((bár . "é")) #f))
+        => #("http" #f "www.drscheme.org" #f #t () ((bár . "é")) #f))
 
   (test-c-u/r "http://www.drscheme.org"
               (make-url #f #f #f #f #f '() '() #f)
