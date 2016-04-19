@@ -5349,7 +5349,13 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full,
                      && !gc->started_incremental)
                  /* In incremental mode, GC earlier if we've done everything
                     that we can do incrementally. */
-                 || gc->accounted_incremental);
+                 || gc->accounted_incremental
+                 /* Give up on incremental mode if fragmentation is
+                    getting out of hand: */
+                 || (gc->started_incremental
+                     && (gc->memory_in_use > GEN0_MAX_SIZE)
+                     && (mmu_memory_allocated_and_used(gc->mmu)
+                         > (HIGH_FRAGMENTATION_RATIO * gc->memory_in_use))));
 
   if (gc->gc_full && no_full)
     return;
