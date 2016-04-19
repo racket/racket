@@ -2563,9 +2563,10 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
       return scheme_list_pair_p_proc;
     else if (SAME_OBJ(rator, scheme_mcons_proc))
       return scheme_mpair_p_proc;
-    // XXX This could be implemented
-    // else if (SAME_OBJ(rator, scheme_make_byte_string_p))
-    //  return scheme_byte_string_p_proc;
+    /* XXX This could be implemented
+    else if (SAME_OBJ(rator, scheme_make_byte_string_p))
+      return scheme_byte_string_p_proc;
+    */
     else if (SAME_OBJ(rator, scheme_list_proc)) {
       if (argc >= 1)
         return scheme_list_pair_p_proc;
