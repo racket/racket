@@ -3223,11 +3223,17 @@ static void promote_marked_gen0_big_page(NewGC *gc, mpage *page) {
 #endif
 }
 
+#ifdef MZ_GC_BACKTRACE
+# define BACKTRACE_DISABLES_RECUR 1
+#else
+# define BACKTRACE_DISABLES_RECUR 0
+#endif
+
 static void mark_recur_or_push_ptr(struct NewGC *gc, void *p, int is_a_master_page, int inc_gen1)
 {
   objhead *ohead = OBJPTR_TO_OBJHEAD(p);
 
-  if ((gc->mark_depth < MAX_RECUR_MARK_DEPTH) && !is_a_master_page && !inc_gen1) {
+  if ((gc->mark_depth < MAX_RECUR_MARK_DEPTH) && !is_a_master_page && !inc_gen1 && !BACKTRACE_DISABLES_RECUR) {
     switch (ohead->type) {
     case PAGE_TAGGED:
       {
