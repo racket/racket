@@ -283,6 +283,20 @@ Some optimizations:
 
 ;; ----
 
+(begin-for-syntax
+  ;; gensym=>var : Hash[(cons Symbol LiftTarget) => Syntax]
+  (define gensym=>var (make-hash))
+
+  ;; lift-gensym : Symbol -> Syntax
+  ;; For deterministic compilation. Maps compile-time gensyms used by
+  ;; action:post to expressions whose values preserve distinctness.
+  (define (lift-gensym g)
+    (define key (cons g (syntax-local-lift-context)))
+    (hash-ref! gensym=>var key
+               (lambda () (syntax-local-lift-expression #'(gensym))))))
+
+;; ----
+
 #|
 Conventions:
   - rhs : RHS
@@ -733,8 +747,10 @@ Conventions:
        [#s(action:do _ (stmt ...))
         #'(let () (no-shadow stmt) ... (#%expression k))]
        [#s(action:post _ pattern group index)
-        #'(let ([pr* (ps-add-post pr 'group 'index)])
-            (parse:A x cx pattern pr* es k))])]))
+        (with-syntax ([group* (let ([group (syntax->datum #'group)])
+                                (if group (lift-gensym group) #'#f))])
+          #'(let ([pr* (ps-add-post pr group* 'index)])
+              (parse:A x cx pattern pr* es k)))])]))
 
 ;; (bind/sides clauses k) : expr[Ans]
 ;; In k: attrs(clauses) are bound.

@@ -79,7 +79,7 @@ A ActionPattern is one of
 * (action:and Base (listof ActionPattern))
   (action:parse Base SinglePattern stx)
   (action:do Base (listof stx))
-  (action:post Base ActionPattern Quotable Nat)
+  (action:post Base ActionPattern (U UninternedSymbol #f) Nat)
 
 action:and is desugared below in create-* procedures
 |#
