@@ -154,6 +154,23 @@
       (a (~describe "thing" b))
       #rx"expected more terms starting with thing$")
 
+;; Post:
+
+(terx "hello"
+      (~or a:nat (~post a:id))
+      #rx"expected identifier"
+      (not #rx"exact-nonnegative-integer"))
+
+(terx "hello"
+      (~or a:nat (~and (~post (~fail "xyz")) _))
+      #rx"xyz"
+      (not #rx"exact-nonnegative-integer"))
+
+(terx ("x")
+      (~or (a:nat) (~post (a:id)))
+      #rx"expected identifier"
+      (not #rx"exact-nonnegative-integer"))
+
 ;; ----------------------------------------
 ;; See "Simplification" from syntax/parse/private/runtime-report
 
