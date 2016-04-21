@@ -1610,4 +1610,35 @@
 
 ;; ----------------------------------------
 
+(module check-lift-during-local-transformer-expand racket/base
+  (require (for-syntax racket/base))
+  
+  (begin-for-syntax
+    (require (for-syntax racket/base))
+    (define-syntax (check stx)
+      (unless (syntax-transforming-with-lifts?)
+        (error "expected lifts to be allowed"))
+      (syntax-local-lift-expression #'foo)
+      #'1)
+    (define-syntax (check2 stx)
+      (unless (syntax-transforming-with-lifts?)
+        (error "expected lifts to be allowed"))
+      #'2))
+
+  (define-syntax (m stx)
+    (syntax-case stx ()
+      [(_ e f)
+       (begin
+         (unless (eq? 'begin
+                      (syntax-e (car (syntax-e (local-transformer-expand #'e 'top-level null)))))
+           (error "lift failed"))
+         (when (eq? 'begin
+                    (syntax-e (car (syntax-e (local-transformer-expand #'f 'top-level null)))))
+           (error "lift introduced unexpected `begin`"))
+         #'(void))]))
+       
+  (m (check) (check2)))
+
+;; ----------------------------------------
+
 (report-errs)

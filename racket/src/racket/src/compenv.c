@@ -409,6 +409,15 @@ void scheme_propagate_require_lift_capture(Scheme_Comp_Env *orig_env, Scheme_Com
   }
 }
 
+Scheme_Comp_Env *scheme_get_env_for_lifts(Scheme_Comp_Env *env)
+{
+  while (env && !env->lifts) {
+    env = env->next;
+  }
+  
+  return env;
+}
+
 Scheme_Object *scheme_frame_get_lifts(Scheme_Comp_Env *env)
 {
   return scheme_reverse(SCHEME_VEC_ELS(env->lifts)[0]);
@@ -2058,9 +2067,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
                           "not currently transforming",
                           NULL);
 
-  while (env && !env->lifts) {
-    env = env->next;
-  }
+  env = scheme_get_env_for_lifts(env);
 
   if (env)
     if (SCHEME_FALSEP(SCHEME_VEC_ELS(env->lifts)[0]))
@@ -2133,9 +2140,7 @@ scheme_do_local_lift_expr(const char *who, int stx_pos, int argc, Scheme_Object 
 Scheme_Object *
 scheme_local_lift_context(Scheme_Comp_Env *env)
 {
-  while (env && !env->lifts) {
-    env = env->next;
-  }
+  env = scheme_get_env_for_lifts(env);
 
   if (!env)
     return scheme_false;

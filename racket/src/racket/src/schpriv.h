@@ -3170,6 +3170,7 @@ Scheme_Object *scheme_frame_get_require_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_frame_get_provide_lifts(Scheme_Comp_Env *env);
 Scheme_Object *scheme_generate_lifts_key(void);
 Scheme_Object *scheme_top_level_lifts_key(Scheme_Comp_Env *env);
+Scheme_Comp_Env *scheme_get_env_for_lifts(Scheme_Comp_Env *env);
 
 Scheme_Object *scheme_toplevel_require_for_expand(Scheme_Object *module_path, 
                                                   intptr_t phase,

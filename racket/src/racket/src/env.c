@@ -2256,9 +2256,7 @@ now_transforming_with_lifts(int argc, Scheme_Object *argv[])
 {
   Scheme_Comp_Env *env = scheme_current_thread->current_local_env;
 
-  while (env && !env->lifts) {
-    env = env->next;
-  }
+  env = scheme_get_env_for_lifts(env);
 
   if (env)
     if (SCHEME_FALSEP(SCHEME_VEC_ELS(env->lifts)[0]))

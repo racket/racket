@@ -365,11 +365,17 @@ avoids quadratic expansion times when local expansions are nested.
 
 Like @racket[local-expand], but @racket[stx] is expanded as a
 transformer expression instead of a run-time expression.
-For @racket['expression] expansion, any
-lifted expressions---from calls to
+
+Any lifted expressions---from calls to
 @racket[syntax-local-lift-expression] during the expansion of
-@racket[stx]---are captured into a @racket[let-values] form in the
-result.}
+@racket[stx]---are captured in the result. If @racket[context-v] is
+@racket['top-level], then lifts are captured in a @racket[begin] form,
+otherwise lifts are captured in @racket[let-values] forms. If no
+expressions are lifted during expansion, then no @racket[begin]
+or @racket[let-values] wrapper is added.
+
+@history[#:changed "6.5.0.3" @elem{Allow and capture lifts in a
+                                   @racket['top-level] context.}]}
 
 
 @defproc[(local-expand/capture-lifts [stx any/c]
@@ -887,11 +893,8 @@ Returns @racket[#t] if @racket[(syntax-transforming?)] produces
 @racket[#t] and a target context is available for lifting expressions
 (via @racket[syntax-local-lift-expression]), @racket[#f] otherwise.
 
-For example, during an immedate macro expansion triggered by
-@racket[local-expand], as opposed to
-@racket[local-expand/capture-lifts], @racket[(syntax-transforming?)]
-produces @racket[#t] while @racket[(syntax-transforming-with-lifts?)]
-produces @racket[#f].
+Currently, @racket[(syntax-transforming?)] implies
+@racket[(syntax-transforming-with-lifts?)].
 
 @history[#:added "6.3.0.9"]}
 

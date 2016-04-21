@@ -4640,7 +4640,7 @@ static void *expand_k(void)
   top_intro = p->ku.k.i2;
   just_to_top = p->ku.k.i3;
   catch_lifts_key = p->ku.k.p4;
-  as_local = p->ku.k.i4; /* < 0 => catch lifts to let */
+  as_local = p->ku.k.i4; /* < 0 => catch lifts to let; 2 => catch lifts to optional `begin` */
 
   p->ku.k.p1 = NULL;
   p->ku.k.p2 = NULL;
@@ -4725,7 +4725,7 @@ static void *expand_k(void)
 	if ((depth >= 0) || as_local)
 	  break;
       } else {
-        if (as_local > 0) {
+        if ((as_local > 0) && (as_local < 2)) {
           obj = add_lifts_as_begin(obj, scheme_null, env);
           SCHEME_EXPAND_OBSERVE_LIFT_LOOP(env->observer,obj);
         }
@@ -5096,6 +5096,9 @@ static void update_intdef_chain(Scheme_Object *intdef)
 
 static Scheme_Object *
 do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, int argc, Scheme_Object **argv)
+/* catch_lifts == -1 => wrap as `let-values`;
+   catch_lifts == 1 => `begin`;
+   catch_lifts == 2 => `begin`, if any */
 {
   Scheme_Comp_Env *env, *orig_env, *adjust_env = NULL, **ip;
   Scheme_Object *l, *local_scope, *renaming = NULL, *orig_l, *exp_expr = NULL;
@@ -5128,7 +5131,7 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     kind = SCHEME_MODULE_BEGIN_FRAME; /* just inside module for expanding to `#%module-begin` */
   else if (SAME_OBJ(argv[1], top_level_symbol)) {
     kind = SCHEME_TOPLEVEL_FRAME;
-    if (catch_lifts < 0) catch_lifts = 0;
+    if (catch_lifts < 0) catch_lifts = (for_stx ? 2 : 0);
     if (orig_env->flags & SCHEME_TOPLEVEL_FRAME)
       adjust_env = orig_env;
   } else if (SAME_OBJ(argv[1], expression_symbol))
@@ -5372,11 +5375,19 @@ do_local_expand(const char *name, int for_stx, int catch_lifts, int for_expr, in
     }
 
     if (catch_lifts_key) {
+      int observe = 1;
       if (catch_lifts < 0)
         xl = scheme_add_lifts_as_let(xl, scheme_frame_get_lifts(env), env, orig_l, 0);
-      else
-        xl = add_lifts_as_begin(xl, scheme_frame_get_lifts(env), env);
-      SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer,xl);
+      else {
+        l = scheme_frame_get_lifts(env);
+        if (SCHEME_PAIRP(l) || (catch_lifts < 2))
+          xl = add_lifts_as_begin(xl, l, env);
+        else
+          observe = 0;
+      }
+      if (observe) {
+        SCHEME_EXPAND_OBSERVE_LIFT_LOOP(observer,xl);
+      }
     }
 
     l = xl;
