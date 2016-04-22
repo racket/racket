@@ -281,3 +281,17 @@
                   #:fail-when (and (< (syntax->datum #'z) 10) #'z)
                               "unhappy about last number"
                   'ok]))))
+
+(test-case "side-clauses in different stxclasses don't compare"
+  (check-exn #rx"message1 or message2"
+             (lambda ()
+               (syntax-parse #'(1 2 3 4)
+                 [(x:nat ...)
+                  #:with (y ... z) #'(x ...)
+                  #:fail-unless #f "message1" ;; (post 'g1 2)
+                  'ok]
+                 [(x:nat ...)
+                  #:with (y ... z) #'(x ...)
+                  #:with w #'whatever
+                  #:fail-unless #f "message2" ;; (post 'g2 3), incomp w/ above
+                  'ok]))))
