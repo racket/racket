@@ -32,6 +32,9 @@
              (or/c (-> (>=/c 5) (>=/c 5)) boolean?))
   (test-name '(or/c boolean? (-> (>=/c 5) (>=/c 5)))
              (or/c boolean? (-> (>=/c 5) (>=/c 5))))
+  (test-name 'boolean? (or/c #f #t))
+  (test-name 'boolean? (or/c #t #f))
+  (test-name '(or/c #t #f 'x) (or/c #t #f 'x))
 
   (test-name '(if/c integer? odd? (-> integer? integer?))
              (if/c integer? odd? (-> integer? integer?)))

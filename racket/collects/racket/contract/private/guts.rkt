@@ -78,7 +78,10 @@
 
          raise-predicate-blame-error-failure
 
-         n->th)
+         n->th
+
+         false/c-contract
+         true/c-contract)
 
 (define (contract-custom-write-property-proc stct port mode)
   (define (write-prefix)
@@ -304,6 +307,7 @@
           (unless listof-any
             (error 'coerce-contract/f::listof-any "too soon!"))
           listof-any]
+         [(chaperone-of? x boolean?) boolean?/c]
          [(chaperone-of? x pair?)
           (unless consc-anyany
             (error 'coerce-contract/f::consc-anyany "too soon!"))
@@ -320,6 +324,7 @@
          (error 'coerce-contract/f::list/c-empty "too soon!"))
        list/c-empty]
       [(not x) false/c-contract]
+      [(equal? x #t) true/c-contract]
       [(or (symbol? x) (boolean? x) (keyword? x))
        (make-eq-contract x
                          (if (name-default? name)
@@ -496,6 +501,7 @@
    #:list-contract? (λ (c) (null? (eq-contract-val c)))))
 
 (define false/c-contract (make-eq-contract #f #f))
+(define true/c-contract (make-eq-contract #t #t))
 
 (define-struct equal-contract (val name)
   #:property prop:custom-write contract-custom-write-property-proc
@@ -664,7 +670,7 @@
 (define (build-flat-contract name pred [generate #f])
   (make-predicate-contract name pred generate #f))
 
-
+(define boolean?/c (make-predicate-contract 'boolean? boolean? #f #t))
 
 (define (contract-name ctc)
   (contract-struct-name

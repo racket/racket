@@ -144,10 +144,14 @@
        #:stronger-ribs stronger-ribs
        #:chaperone chaperone?
        #:no-negative-blame? no-negative-blame
-       #:name (or name-from-hos 
+       #:name (or name-from-hos
                   (if (= (length names) 1)
                       (car names)
-                      #`(list 'or/c #,@names))))))
+                      #`(let ([names (list #,@names)])
+                          (if (or (equal? names '(#f #t))
+                                  (equal? names '(#t #f)))
+                              'boolean?
+                              (cons 'or/c names))))))))
   
   (syntax-case stx (or/c)
     [(or/c p ...)

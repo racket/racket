@@ -34,7 +34,17 @@
      (define pred (make-flat-predicate flat-contracts))
      (cond
        [(null? ho-contracts)
-        (make-flat-or/c pred flat-contracts)]
+        (cond
+          [(and (pair? flat-contracts)
+                (pair? (cdr flat-contracts))
+                (null? (cddr flat-contracts))
+                (or (and (equal? false/c-contract (car flat-contracts))
+                         (equal? true/c-contract (cadr flat-contracts)))
+                    (and (equal? false/c-contract (cadr flat-contracts))
+                         (equal? true/c-contract (car flat-contracts)))))
+           (coerce-contract 'or/c boolean?)]
+          [else
+           (make-flat-or/c pred flat-contracts)])]
        [(null? (cdr ho-contracts))
         (define name (apply build-compound-type-name 'or/c args))
         (if (chaperone-contract? (car ho-contracts))
