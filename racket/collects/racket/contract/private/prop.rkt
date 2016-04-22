@@ -152,14 +152,18 @@
                                          ((prop:recursive-contract-unroll b) b)
                                          b)))]
        [else
-        (let loop ([b b])
+        ;; the 'later?' flag avoids checking
+        ;; (stronger? a b) in the first iteration,
+        ;; since it was checked in the "optimistically"
+        ;; branch above
+        (let loop ([b b] [later? #f])
           (cond
-            [(stronger? a b)
+            [(and later? (stronger? a b))
              #t]
             [(prop:orc-contract? b)
              (define sub-contracts ((prop:orc-contract-get-subcontracts b) b))
              (for/or ([sub-contract (in-list sub-contracts)])
-               (loop sub-contract))]
+               (loop sub-contract #t))]
             [else
              #f]))])]))
 
