@@ -6530,7 +6530,7 @@ static void unconvert_srcloc(Scheme_Object *srcloc_vec, Scheme_Stx *dest)
       if (SCHEME_PAIRP(p)
           && SCHEME_SYMBOLP(SCHEME_CAR(p))
           && !SCHEME_SYM_WEIRDP(SCHEME_CAR(p))) {
-        props = scheme_hash_tree_set(dest->props,
+        props = scheme_hash_tree_set((dest->props ? dest->props : empty_hash_tree),
                                      SCHEME_CAR(p),
                                      make_preserved_property_value(SCHEME_CDR(p)));
         dest->props = props;

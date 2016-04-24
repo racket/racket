@@ -2338,7 +2338,34 @@
   (test #t syntax-property-preserved? s0 'a-third-thing)
   
   ;; 'paren-shape has a special default:
-  (test #t syntax-property-preserved? (syntax-property #'#f 'paren-shape #\() 'paren-shape))
+  (test #t syntax-property-preserved? (syntax-property #'#f 'paren-shape #\() 'paren-shape)
+  
+  ;; Without 'paren-shape ------------------------------
+  
+  (define s2-0 (syntax-property
+                (syntax-property
+                 (syntax-property #'0 'something-else 1.0 #t)
+                 'something-not-saved 2.0)
+                'a-third-thing 3.0 #t))
+  (define s2 (zo-bounce s2-0))
+  
+  (test #f syntax-property s2 'paren-shape)
+  (test #f syntax-property s2-0 'paren-shape)
+  
+  (test 1.0 syntax-property s2 'something-else)
+  (test 1.0 syntax-property s2-0 'something-else)
+  (test #t syntax-property-preserved? s2 'something-else)
+  (test #t syntax-property-preserved? s2-0 'something-else)
+  
+  (test #f syntax-property s2 'something-not-saved)
+  (test 2.0 syntax-property s2-0 'something-not-saved)
+  (test #f syntax-property-preserved? s2 'something-not-saved)
+  (test #f syntax-property-preserved? s2-0 'something-not-saved)
+
+  (test 3.0 syntax-property s2 'a-third-thing)
+  (test 3.0 syntax-property s2-0 'a-third-thing)
+  (test #t syntax-property-preserved? s2 'a-third-thing)
+  (test #t syntax-property-preserved? s2-0 'a-third-thing))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
