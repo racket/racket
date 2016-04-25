@@ -635,7 +635,7 @@ syntactically a directory path (see @racket[split-path]), then the
 result is @racket[#f].}
 
 
-@defproc[(path-extension [path (or/c path-string? path-for-some-system?)])
+@defproc[(path-get-extension [path (or/c path-string? path-for-some-system?)])
          (or/c bytes? #f)]{
 
 Returns a byte string that is the extension part of the filename in
@@ -646,10 +646,10 @@ See @racket[path-replace-extension] for the definition of a filename
 extension.
 
 @examples[#:eval path-eval
-(path-extension "x/y.rkt")
-(path-extension "x/y")
-(path-extension "x/y.tar.gz")
-(path-extension "x/.racketrc")
+(path-get-extension "x/y.rkt")
+(path-get-extension "x/y")
+(path-get-extension "x/y.tar.gz")
+(path-get-extension "x/.racketrc")
 ]
 
 @history[#:added "6.5.0.3"]}
@@ -664,7 +664,7 @@ Determines whether the last element of @racket[path] ends with
 
 If @racket[ext] is a @tech{byte string} with the shape of an extension
 (i.e., starting with @litchar{.}), this check is equivalent to
-checking whether @racket[(path-extension path)] produces @racket[ext].
+checking whether @racket[(path-get-extension path)] produces @racket[ext].
 
 @examples[#:eval path-eval
 (path-has-extension? "x/y.rkt" #".rkt")
@@ -680,7 +680,7 @@ checking whether @racket[(path-extension path)] produces @racket[ext].
 @defproc[(filename-extension [path (or/c path-string? path-for-some-system?)])
          (or/c bytes? #f)]{
 
-@deprecated[#:what "function" @racket[path-extension]]
+@deprecated[#:what "function" @racket[path-get-extension]]
 
 Returns a byte string that is the extension part of the filename in
 @racket[path] without the @litchar{.} separator. If @racket[path] is

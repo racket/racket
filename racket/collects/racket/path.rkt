@@ -4,7 +4,7 @@
          simple-form-path
          normalize-path
          path-has-extension?
-         path-extension
+         path-get-extension
          filename-extension
          file-name-from-path
          path-only
@@ -146,15 +146,16 @@
                  (apply build-path (append (map (lambda (x) 'up) dir) file))]))
         filename)))
 
-(define (file-name who name)
+(define (file-name who name dir-ok?)
   (unless (or (path-string? name)
               (path-for-some-system? name))
     (raise-argument-error who "(or/c path-string? path-for-some-system?)" name))
   (let-values ([(base file dir?) (split-path name)])
-    (and (not dir?) (path-for-some-system? file) file)))
+    (and (or dir-ok? (not dir?))
+         (path-for-some-system? file) file)))
 
 (define (file-name-from-path name)
-  (file-name 'file-name-from-path name))
+  (file-name 'file-name-from-path name #f))
 
 (define (path-only name)
   (unless (or (path-string? name)
@@ -180,15 +181,15 @@
            (and (len . > . slen)
                 (bytes=? sfx (subbytes bs (- len slen))))))))
 
-(define (path-extension name)
-  (let* ([name (file-name 'filename-extension name)]
+(define (path-get-extension name)
+  (let* ([name (file-name 'path-get-extension name #t)]
          [name (and name (path->bytes name))])
     (cond [(and name (regexp-match #rx#"(?<=.)([.][^.]+)$" name)) => cadr]
           [else #f])))
 
 ;; This old variant doesn't correctly handle filenames that start with ".":
 (define (filename-extension name)
-  (let* ([name (file-name 'filename-extension name)]
+  (let* ([name (file-name 'filename-extension name #f)]
          [name (and name (path->bytes name))])
     (cond [(and name (regexp-match #rx#"[.]([^.]+)$" name)) => cadr]
           [else #f])))
