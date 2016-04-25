@@ -167,6 +167,11 @@ will be considered reachable as long as the result ephemeron is
 reachable in addition to any value that @racket[v] impersonates
 (including itself).}
 
+@defproc[(procedure-impersonator*? [v any/c]) boolean?]{
+
+Returns @racket[#t] if @racket[v] was produced by
+@racket[impersonate-procedure*] or @racket[chaperone-procedure*].}
+
 @; ------------------------------------------------------------
 @section{Impersonator Constructors}
 

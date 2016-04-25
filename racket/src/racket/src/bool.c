@@ -48,6 +48,7 @@ static Scheme_Object *equal_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *equalish_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonator_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *procedure_impersonator_star_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_of (int argc, Scheme_Object *argv[]);
 static Scheme_Object *impersonator_of (int argc, Scheme_Object *argv[]);
 
@@ -128,6 +129,9 @@ void scheme_init_bool (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("impersonator?", p, env);
+  p = scheme_make_immed_prim(procedure_impersonator_star_p, "procedure-impersonator*?", 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_OMITABLE);
+  scheme_add_global_constant("procedure-impersonator*?", p, env);
 
   scheme_add_global_constant("chaperone-of?",
                              scheme_make_prim_w_arity(chaperone_of, "chaperone-of?", 2, 2),
@@ -985,6 +989,21 @@ static Scheme_Object *chaperone_p(int argc, Scheme_Object *argv[])
 static Scheme_Object *impersonator_p(int argc, Scheme_Object *argv[])
 {
   return (SCHEME_CHAPERONEP(argv[0]) ? scheme_true : scheme_false);
+}
+
+/* Was this value created with `impersonate-procedure*` or `chaperone-procedure*`? */
+static Scheme_Object *procedure_impersonator_star_p(int argc, Scheme_Object *argv[])
+{
+  Scheme_Vector *redirects;
+  if (SCHEME_CHAPERONEP(argv[0])) {
+    redirects = (Scheme_Vector *)(((Scheme_Chaperone *)(argv[0]))->redirects);
+    if ((SCHEME_VEC_SIZE(redirects) % 2 == 1) /* odd size => procedure chaperone */
+        && ((SCHEME_VEC_SIZE(redirects) == 5) /* size 5 => we are a chap/imp* */
+            || SCHEME_IMMUTABLEP(redirects))) { /* immutable => chap/imp* in our ancestry */
+      return scheme_true;
+    }
+  }
+  return scheme_false;
 }
 
 static Scheme_Object *chaperone_of(int argc, Scheme_Object *argv[])
