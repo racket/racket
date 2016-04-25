@@ -889,7 +889,11 @@
           (test 'green green-ref p2)))
       
       (err/rt-test (chaperone-struct 10 struct-info void))
-      (err/rt-test (chaperone-struct 10 struct-info void prop:blue 'blue))))
+      (err/rt-test (chaperone-struct 10 struct-info void prop:blue 'blue))
+
+      ;; struct chaperones cannot be procedure-impersonator*?
+      (test #f procedure-impersonator*? (chaperone-struct (specific) struct:specific prop:blue 'blue))
+      ))
 
 ;; test to see if the guard is actually called even when impersonated
 (let ()
@@ -2526,6 +2530,20 @@
         add1)
   (test #t impersonator-of? (chaperone-procedure add1* (lambda (x) x))
         add1))
+
+;; ----------------------------------------
+
+(test #f procedure-impersonator*? 3)
+(test #f procedure-impersonator*? (impersonate-procedure values values))
+(test #t procedure-impersonator*? (impersonate-procedure* values values))
+(test #t procedure-impersonator*? (impersonate-procedure* (impersonate-procedure* values values) values))
+(test #t procedure-impersonator*? (impersonate-procedure* (impersonate-procedure values values) values))
+(test #f procedure-impersonator*? (impersonate-procedure (impersonate-procedure values values) values))
+(test #f procedure-impersonator*? (chaperone-procedure values values))
+(test #t procedure-impersonator*? (chaperone-procedure* values values))
+(test #t procedure-impersonator*? (chaperone-procedure* (chaperone-procedure* values values) values))
+(test #t procedure-impersonator*? (chaperone-procedure* (chaperone-procedure values values) values))
+(test #f procedure-impersonator*? (chaperone-procedure (chaperone-procedure values values) values))
 
 ;; ----------------------------------------
 
