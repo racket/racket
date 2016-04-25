@@ -645,10 +645,8 @@
           [(-#%app -chaperone-procedure expr . rst)
            (and (free-identifier=? (syntax -#%app)
                                    (quote-syntax #%plain-app))
-                (or (free-identifier=? (syntax -chaperone-procedure)
-                                       (quote-syntax chaperone-procedure))
-                    (free-identifier=? (syntax -chaperone-procedure)
-                                       (quote-syntax chaperone-procedure))))
+                (free-identifier=? (syntax -chaperone-procedure)
+                                   (quote-syntax chaperone-procedure)))
            (with-syntax ([expr (loop #'expr #t name locals)])
              (syntax-track-origin
               (rearm
