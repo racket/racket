@@ -104,27 +104,44 @@ A @tech{number} prints the same way in @racket[write], @racket[display], and
 datatypes, a number is @tech{quotable}.
 
 A @tech{complex number} that is not a @tech{real number} always prints
-as @nonterm{m}@litchar{+}@nonterm{n}@litchar{i}, where @nonterm{m} and
-@nonterm{n} are the printed forms of its real and imaginary parts,
-respectively.
+as @nonterm{m}@litchar{+}@nonterm{n}@litchar{i} or
+@nonterm{m}@litchar{-}@nonterm{n}@litchar{i}, where @nonterm{m} and
+@nonterm{n} (for a non-negative imaginary part) or
+@litchar{-}@nonterm{n} (for a negative imaginary part) are the printed
+forms of its real and imaginary parts, respectively.
 
-An inexact real number prints with either a @litchar{.} decimal
-point, an @litchar{e} exponent marker, or both.  The form is selected
-so that the output is as short as possible, with the constraint that
-reading the printed form back in produces an @racket[equal?] number.
-
-An exact @racket[0] prints as @litchar{0}.
-
-A positive, exact integer prints as a sequence of decimal digits that
-does not start with @racket[0].
-
-A positive, exact, real, non-integer number prints as
+An exact @racket[0] prints as @litchar{0}. A positive, exact
+@tech{integer} prints as a sequence of digits that does not start with
+@litchar{0}. A positive, exact, real, non-integer number prints as
 @nonterm{m}@litchar{/}@nonterm{n}, where @nonterm{m} and @nonterm{n}
 are the printed forms of the number's numerator and denominator (as
-determined by @racket[numerator] and @racket[denominator]).
+determined by @racket[numerator] and @racket[denominator]). A negative
+@tech{exact number} prints with a @litchar{-} prefix on the printed
+form of the number's exact negation. When printing a number as
+hexadecimal (e.g., via @racket[number->string]), digits @litchar{a}
+though @litchar{f} are printed in lowercase. A @litchar{#e} or radix
+marker such as @litchar{#d} @emph{does not} prefix the number.
 
-A negative @tech{exact number} prints with a @litchar{-} prefix on the
-printed form of the number's exact negation.
+A double-precision @tech{inexact number} (i.e., a @tech{flonum}) that
+is a @tech{rational number} prints with either a @litchar{.} decimal
+point, an @litchar{e} exponent marker and non-zero exponent, or both.
+The form is selected to keep the output short, with
+the constraint that reading the printed form back in produces an
+@racket[equal?] number. A @litchar{#i} @emph{does not} prefix the
+number, and @litchar{#} is never used in place of a digit. A
+@litchar{+} does not prefix a positive number, but a @litchar{+} or
+@litchar{-} is printed before the exponent if @litchar{e} is present.
+Positive infinity prints as @litchar{+inf.0}, negative infinity prints
+as @litchar{-inf.0}, and not-a-number prints as @litchar{+nan.0}.
+
+A single-precision @tech{inexact number} that is a @tech{rational
+number} prints like a double-precision number, but always with an
+exponent, using @litchar{f} in place of @litchar{e} to indicate the
+number's precision; if the number would otherwise print without an
+exponent, @litchar{0} (with no @litchar{+}) is printed as the exponent
+part. Single-precision positive infinity prints as
+@litchar{+inf.f}, negative infinity prints as @litchar{-inf.f}, and
+not-a-number prints as @litchar{+nan.f}.
 
 @section[#:tag "print-extflonum"]{Printing Extflonums}
 
@@ -132,9 +149,11 @@ An @tech{extflonum} prints the same way in @racket[write],
 @racket[display], and @racket[print] modes. For the purposes of
 printing enclosing datatypes, an extflonum is @tech{quotable}.
 
-An extflonum prints in the same way an inexact number, but
-always with a @litchar{t} or @litchar{T} exponent marker. When
-extflonum operations are supported, printing always uses
+An extflonum prints in the same way a single-precision inexact number
+(see @secref["print-number"]), but always with a @litchar{t} or
+@litchar{T} exponent marker or as a suffix for @litchar{+inf.t}, @litchar{-inf.t},
+or @litchar{+nan.t}. When
+extflonum operations are supported, printing always uses lowercase
 @litchar{t}; when extflonum operations are not supported, an
 extflonum prints the same as its reader (see @secref["reader"])
 source, since reading is the only way to produce an extflonum.

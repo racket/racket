@@ -999,7 +999,7 @@ evaluates the entire sequence.
 
 @defproc[(number->string [z number?] [radix (or/c 2 8 10 16) 10])
          string?]{
- Returns a string that is the printed form of @racket[z]
+ Returns a string that is the printed form of @racket[z] (see @secref["print-number"])
  in the base specified by @racket[radix]. If @racket[z] is inexact,
  @racket[radix] must be @racket[10], otherwise the
  @exnraise[exn:fail:contract].
