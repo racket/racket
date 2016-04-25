@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt" (for-label racket/struct-info))
 
 @title{Printer Extension}
 
@@ -77,6 +77,22 @@ so that graph and cycle structure can be represented.
   (vector-set! (tuple-ref t) 0 t)
   (write t))
 ]
+
+This function is often used in conjunction with @racket[make-constructor-style-printer].
+
+@examples[
+ (eval:no-prompt (require racket/struct))
+ (eval:no-prompt
+  (struct point (x y)
+    #:methods gen:custom-write
+    [(define write-proc
+       (make-constructor-style-printer
+        (lambda (obj) 'point)
+        (lambda (obj) (list (point-x obj) (point-y obj)))))]))
+ 
+  (print (point 1 2))
+
+  (write (point 1 2))]
 }
 
 @defthing[prop:custom-write struct-type-property?]{

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt" (for-label racket/struct-info))
+@(require "mz.rkt" (for-label racket/struct))
 
 @(define struct-eval (make-base-eval))
 @(define struct-copy-eval (make-base-eval))
@@ -616,24 +616,27 @@ See @racket[make-prefab-struct] for a description of valid key shapes.}
             [get-contents    (-> any/c sequence?)])
          (-> any/c output-port? (or/c #t #f 0 1) void?)]{
 
-Produces a function suitable as a value for @racket[prop:custom-write]. The
-function prints values in ``constructor style.'' When the value is
-@racket[print]ed as an expression, it is shown as an application of the
-constructor (as returned by @racket[get-constructor]) to the contents (as
-returned by @racket[get-contents]). When given to @racket[write], it is shown as
-an unreadable value with the constructor separated from the contents by a colon.
+ Produces a function suitable as a value for 
+ @racket[gen:custom-write] or @racket[prop:custom-write].
+ The function prints values in ``constructor style.'' When
+ the value is @racket[print]ed as an expression, it is shown
+ as an application of the constructor (as returned by 
+ @racket[get-constructor]) to the contents (as returned by 
+ @racket[get-contents]). When given to @racket[write], it is
+ shown as an unreadable value with the constructor separated
+ from the contents by a colon.
 
 @(struct-eval '(require racket/struct racket/pretty))
 
 @examples[#:eval struct-eval
-(struct point (x y)
-  #:property prop:custom-write
-  (make-constructor-style-printer
-   (lambda (obj) 'point)
-   (lambda (obj) (list (point-x obj) (point-y obj)))))
-(print (point 1 2))
-(write (point 1 2))
-]
+          (struct point (x y)
+            #:methods gen:custom-write
+            [(define write-proc
+               (make-constructor-style-printer
+                (lambda (obj) 'point)
+                (lambda (obj) (list (point-x obj) (point-y obj)))))])
+          (print (point 1 2))
+          (write (point 1 2))]
 
 The function also cooperates with @racket[pretty-print]:
 
