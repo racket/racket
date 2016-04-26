@@ -142,6 +142,13 @@
       (syntax-case #'#&(1 2 3) ()
                    [#&(x ...) #'(0 x ... 4)]))
 
+(syntax-test #'(syntax-case (syntax x) [x (define x 1)]))
+(syntax-test #'(syntax-case (syntax x) () [x (define x 1)])
+             #rx"stx.rktl:.*no expression after a sequence of internal definitions")
+(syntax-test #'(syntax-case* (syntax x) () eq? [x (define x 1)])
+             #rx"stx.rktl:.*no expression after a sequence of internal definitions")
+
+
 ;; ----------------------------------------
 
 (test #t syntax-original? #'here)

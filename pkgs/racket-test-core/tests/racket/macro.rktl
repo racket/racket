@@ -740,6 +740,9 @@
       (datum-case (dynamic-require ''check-transformer-lift 'd) (begin define-values ok)
         [(begin (define-values (lifted) 5) ok) #t]
         [x (datum x)]))
+(syntax-test #'(datum-case '(1 "x" -> y) (->) [(a b -> c) (define q 1)])
+             #rx"macro.rktl:.*no expression after a sequence of internal definitions")
+
 
 ;; ----------------------------------------
 ;; Check `#%variable-reference' expansion to make sure
