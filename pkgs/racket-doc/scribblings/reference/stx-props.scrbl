@@ -118,12 +118,38 @@ an arbitrary property value @racket[v] with the key @racket[key]; the
 result is a new syntax object with the association (while @racket[stx]
 itself is unchanged). The property is added as @tech{preserved} if
 @racket[preserved?] is true, in which case @racket[key] must be an
-@tech{interned} symbol, and @racket[v] should be a value can itself
-be saved in marshaled bytecode.
+@tech{interned} symbol, and @racket[v] should be a value as described
+below that can be saved in marshaled bytecode.
 
 The two-argument form returns an arbitrary property value associated
 to @racket[stx] with the key @racket[key], or @racket[#f] if no value
 is associated to @racket[stx] for @racket[key].
+
+To support marshaling to bytecode, a value for a preserved syntax
+property must be a non-cyclic value that is either
+
+@itemlist[
+
+ @item{a @tech{pair} containing allowed preserved-property values;}
+ 
+ @item{a @tech{vector} (unmarshaled as immutable) containing allowed preserved-property values;}
+
+ @item{a @tech{box} (unmarshaled as immutable) containing allowed preserved-property values;}
+
+ @item{an immutable @tech{prefab} structure containing allowed preserved-property values;}
+
+ @item{an immutable @tech{hash table} whose keys and values are allowed preserved-property values;}
+
+ @item{a @tech{syntax object}; or}
+
+ @item{an empty list, @tech{symbol}, @tech{number}, @tech{character},
+       @tech{string}, @tech{byte string}, or @tech{regexp
+       value}.}
+
+]
+
+Any other value for a preserved property triggers an exception at an
+attempt to marshal the owning syntax object to bytecode form.
 
 @history[#:changed "6.4.0.14" @elem{Added the @racket[preserved?] argument.}]}
 

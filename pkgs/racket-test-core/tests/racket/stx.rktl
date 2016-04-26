@@ -2365,7 +2365,36 @@
   (test 3.0 syntax-property s2 'a-third-thing)
   (test 3.0 syntax-property s2-0 'a-third-thing)
   (test #t syntax-property-preserved? s2 'a-third-thing)
-  (test #t syntax-property-preserved? s2-0 'a-third-thing))
+  (test #t syntax-property-preserved? s2-0 'a-third-thing)
+  
+  ;; Check value encoding and decoding:
+  (define prop-val (list 1
+                         1.0
+                         (vector-immutable 'a "apple" #"apple")
+                         (vector-immutable)
+                         (vector 7 8 9)
+                         (hash 'a 1 'b 2)
+                         (hasheq 'a 1 'b 2)
+                         (box-immutable 3/4)
+                         (box 'b)
+                         #rx"."))
+  (define s3 (syntax-property #'3 'saved prop-val #t))
+  (test prop-val syntax-property (zo-bounce s3) 'saved)
+  
+  (define s4 (syntax-property #'4 'saved-stx (vector-immutable s3 #'cons) #t))
+  (define p-v (syntax-property (zo-bounce s4) 'saved-stx))
+  (test #t vector? p-v)
+  (test prop-val syntax-property (vector-ref p-v 0) 'saved)
+  (test #t free-identifier=? #'cons (vector-ref p-v 1))
+  
+  (define (check-bad val)
+    (err/rt-test (zo-bounce (syntax-property #'#f 'saved val #t))
+                 (lambda (exn) (regexp-match #rx"write: disallowed" (exn-message exn)))))
+  
+  (check-bad (lambda (x) x))
+  (check-bad (mcons 1 2))
+  (check-bad (read (open-input-string "#0=(1 . #0#)")))
+  (check-bad void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

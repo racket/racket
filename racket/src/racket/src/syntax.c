@@ -181,6 +181,16 @@ static void sort_scope_array(Scheme_Object **a, intptr_t count);
 static void sort_symbol_array(Scheme_Object **a, intptr_t count);
 static void sort_number_array(Scheme_Object **a, intptr_t count);
 
+static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
+					    int with_scopes,
+					    Scheme_Marshal_Tables *mt);
+static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o, 
+					    Scheme_Unmarshal_Tables *ut,
+					    Scheme_Stx *stx_src,
+					    Scheme_Stx *stx_wraps,
+                                            Scheme_Hash_Table *ht,
+                                            int tainted);
+
 XFORM_NONGCING static void extract_module_binding_parts(Scheme_Object *l,
                                                         Scheme_Object *phase,
                                                         Scheme_Object **_insp_desc,
@@ -6400,6 +6410,176 @@ static Scheme_Object *srcloc_path_to_string(Scheme_Object *p)
     return scheme_false;
 }
 
+static Scheme_Object *convert_prop_val_k(void);
+
+static Scheme_Object *convert_prop_val(Scheme_Object *val, Scheme_Marshal_Tables *mt,
+                                       Scheme_Unmarshal_Tables *ut,
+                                       Scheme_Hash_Tree *seen)
+/* Encode or decode a property value to encode/decode syntax objects
+   contained in the value. In encode mode, an exception is raised if any
+   disallowed value is found. In decoding mode, the result is NULL
+   if decoding fails. */
+{
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+      
+      p->ku.k.p1 = (void *)val;
+      p->ku.k.p2 = (void *)mt;
+      p->ku.k.p3 = (void *)ut;
+      p->ku.k.p4 = (void *)seen;
+      
+      return scheme_handle_stack_overflow(convert_prop_val_k);
+    }
+  }
+#endif
+
+  if (scheme_hash_tree_get(seen, val)) {
+    if (mt)
+      scheme_raise_exn(MZEXN_FAIL,
+                       "write: disallowed cycle within preserved syntax property\n  value: %V",
+                       val);
+    return NULL;
+  }
+
+  if (SCHEME_PAIRP(val)) {
+    Scheme_Object *a, *d;
+    seen = scheme_hash_tree_set(seen, val, scheme_true);
+    a = convert_prop_val(SCHEME_CAR(val), mt, ut, seen);
+    d = convert_prop_val(SCHEME_CDR(val), mt, ut, seen);
+    if (a && d)
+      return CONS(a, d);
+    else
+      return NULL;
+  } else if (mt ? SCHEME_BOXP(val) : SCHEME_IMMUTABLE_BOXP(val)) {
+    Scheme_Object *c;
+    seen = scheme_hash_tree_set(seen, val, scheme_true);
+    c = convert_prop_val(SCHEME_BOX_VAL(val), mt, ut, seen);
+    if (c) {
+      c = scheme_box(c);
+      SCHEME_SET_IMMUTABLE(c);
+      return c;
+    } else
+      return NULL;
+  } else if (mt ? SCHEME_VECTORP(val) : SCHEME_IMMUTABLE_VECTORP(val)) {
+    intptr_t len = SCHEME_VEC_SIZE(val);
+    if (ut && (len == 2) && SCHEME_TRUEP(SCHEME_VEC_ELS(val)[0])) {
+      /* A vector that starts #t encodes a syntax object */
+      return datum_to_syntax_inner(SCHEME_VEC_ELS(val)[1], 
+                                   ut,
+                                   (Scheme_Stx *)scheme_false,
+                                   (Scheme_Stx *)scheme_false,
+                                   NULL,
+                                   0);
+    } else if (len) {
+      int start, offset;
+      Scheme_Object *vec, *v;
+      intptr_t i;
+      if (mt) {
+        /* Encode a vector in a vectot that starts #f */
+        vec = scheme_make_vector(len+1, scheme_false);
+        offset = 1;
+        start = 0;
+      } else {
+        /* Decode from a vector that starts #f */
+        if (len < 1) return NULL;
+        if (!SCHEME_FALSEP(SCHEME_VEC_ELS(val)[0])) return NULL;
+        vec = scheme_make_vector(len-1, scheme_false);
+        offset = -1;
+        start = 1;
+      }
+      seen = scheme_hash_tree_set(seen, val, scheme_true);
+      for (i = start; i < len; i++) {
+        v = convert_prop_val(SCHEME_VEC_ELS(val)[i], mt, ut, seen);
+        if (!v)
+          return NULL;
+        SCHEME_VEC_ELS(vec)[i+offset] = v;
+      }
+      SCHEME_SET_IMMUTABLE(vec);
+      return vec;
+    } else
+      return val;
+  } else if (prefab_p(val)) {
+    Scheme_Structure *s = (Scheme_Structure *)val;
+    Scheme_Object *a;
+    int size = s->stype->num_slots, i;
+
+    seen = scheme_hash_tree_set(seen, val, scheme_true);
+    
+    s = (Scheme_Structure *)scheme_clone_prefab_struct_instance(s);
+    for (i = 0; i < size; i++) {
+      a = convert_prop_val(s->slots[i], mt, ut, seen);
+      if (!a)
+        return NULL;
+      s->slots[i] = a;
+    }
+
+    return (Scheme_Object *)s;
+  } else if (SCHEME_HASHTRP(val)) {
+    Scheme_Hash_Tree *ht = (Scheme_Hash_Tree *)val, *ht2;
+    Scheme_Object *key, *tval;
+    mzlonglong i;
+
+    seen = scheme_hash_tree_set(seen, val, scheme_true);
+
+    ht2 = scheme_make_hash_tree_of_type(SCHEME_HASHTR_TYPE(ht));
+    
+    i = scheme_hash_tree_next(ht, -1);
+    while (i != -1) {
+      scheme_hash_tree_index(ht, i, &key, &tval);
+      tval = convert_prop_val(tval, mt, ut, seen);
+      if (!tval)
+        return NULL;
+      ht2 = scheme_hash_tree_set(ht2, key, tval);
+      i = scheme_hash_tree_next(ht, i);
+    }
+    
+    return (Scheme_Object *)ht2;
+  } else if (SCHEME_STXP(val)) {
+    /* Encode a syntax object in a vectot that starts #t */
+    Scheme_Object *v;
+    if (!mt)
+      return NULL;
+    v = syntax_to_datum_inner(val, 1, mt);
+    v = scheme_make_vector(2, v);
+    SCHEME_VEC_ELS(v)[0] = scheme_true;
+    return v;
+  } else if (SCHEME_BOOLP(val)
+             || SCHEME_NULLP(val)
+             || SCHEME_SYMBOLP(val)
+             || SCHEME_CHARP(val)
+             || SCHEME_NUMBERP(val)
+             || SCHEME_BYTE_STRINGP(val)
+             || SCHEME_CHAR_STRINGP(val)
+             || SAME_TYPE(SCHEME_TYPE(val), scheme_regexp_type)) {
+    return val;
+  } else {
+    if (mt)
+      scheme_raise_exn(MZEXN_FAIL,
+                       "write: disallowed value within preserved syntax property\n  value: %V",
+                       val);
+    return NULL;
+  }
+}
+
+static Scheme_Object *convert_prop_val_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *val = (Scheme_Object *)p->ku.k.p1;
+  Scheme_Marshal_Tables *mt = (Scheme_Marshal_Tables *)p->ku.k.p2;
+  Scheme_Unmarshal_Tables *ut = (Scheme_Unmarshal_Tables *)p->ku.k.p3;
+  Scheme_Hash_Tree *seen = (Scheme_Hash_Tree *)p->ku.k.p4;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+  p->ku.k.p3 = NULL;
+  p->ku.k.p4 = NULL;
+
+  return convert_prop_val(val, mt, ut, seen);
+}
+
 static Scheme_Object *convert_srcloc(Scheme_Stx_Srcloc *srcloc, Scheme_Hash_Tree *props, Scheme_Marshal_Tables *mt)
 {
   Scheme_Object *vec, *paren, *src, *dir, *preserved_properties;
@@ -6467,7 +6647,8 @@ static Scheme_Object *convert_srcloc(Scheme_Stx_Srcloc *srcloc, Scheme_Hash_Tree
       sort_symbol_array(a, count);
       for (i = count; i--; ) {
         val = scheme_hash_tree_get(props, a[i]);
-        preserved_properties = CONS(CONS(a[i], SCHEME_PTR_VAL(val)), preserved_properties);
+        val = convert_prop_val(SCHEME_PTR_VAL(val), mt, NULL, empty_hash_tree);
+        preserved_properties = CONS(CONS(a[i], val), preserved_properties);
       }
     }
   }
@@ -6491,7 +6672,7 @@ static Scheme_Object *convert_srcloc(Scheme_Stx_Srcloc *srcloc, Scheme_Hash_Tree
   return intern_one(vec, mt->intern_map);
 }
 
-static void unconvert_srcloc(Scheme_Object *srcloc_vec, Scheme_Stx *dest)
+static void unconvert_srcloc(Scheme_Object *srcloc_vec, Scheme_Stx *dest, Scheme_Unmarshal_Tables *ut)
 {
   Scheme_Stx_Srcloc *srcloc;
   
@@ -6523,17 +6704,20 @@ static void unconvert_srcloc(Scheme_Object *srcloc_vec, Scheme_Stx *dest)
 
   if (SCHEME_VEC_SIZE(srcloc_vec) > 6) {
     /* Restore preserved properties */
-    Scheme_Object *l = SCHEME_VEC_ELS(srcloc_vec)[6], *p;
+    Scheme_Object *l = SCHEME_VEC_ELS(srcloc_vec)[6], *p, *v;
     Scheme_Hash_Tree *props;
     while (SCHEME_PAIRP(l)) {
       p = SCHEME_CAR(l);
       if (SCHEME_PAIRP(p)
           && SCHEME_SYMBOLP(SCHEME_CAR(p))
           && !SCHEME_SYM_WEIRDP(SCHEME_CAR(p))) {
-        props = scheme_hash_tree_set((dest->props ? dest->props : empty_hash_tree),
-                                     SCHEME_CAR(p),
-                                     make_preserved_property_value(SCHEME_CDR(p)));
-        dest->props = props;
+        v = convert_prop_val(SCHEME_CDR(p), NULL, ut, empty_hash_tree);
+        if (v) {
+          props = scheme_hash_tree_set((dest->props ? dest->props : empty_hash_tree),
+                                       SCHEME_CAR(p),
+                                       make_preserved_property_value(v));
+          dest->props = props;
+        }
       }
       l = SCHEME_CDR(l);
     }
@@ -6541,10 +6725,6 @@ static void unconvert_srcloc(Scheme_Object *srcloc_vec, Scheme_Stx *dest)
 }
 
 #ifdef DO_STACK_CHECK
-static Scheme_Object *syntax_to_datum_inner(Scheme_Object *o, 
-					    int with_scopes,
-					    Scheme_Marshal_Tables *mt);
-
 static Scheme_Object *syntax_to_datum_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -6794,7 +6974,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_scopes,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-#define return_NULL return NULL
+#define return_NULL abort()
 
 Scheme_Object *scheme_hash_get_either(Scheme_Hash_Table *ht, Scheme_Hash_Table *ht2,
                                       Scheme_Object *key)
@@ -7244,13 +7424,6 @@ Scheme_Object *scope_unmarshal_content(Scheme_Object *box, Scheme_Unmarshal_Tabl
 
 
 #ifdef DO_STACK_CHECK
-static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o, 
-					    Scheme_Unmarshal_Tables *ut,
-					    Scheme_Stx *stx_src,
-					    Scheme_Stx *stx_wraps,
-                                            Scheme_Hash_Table *ht,
-                                            int tainted);
-
 static Scheme_Object *datum_to_syntax_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
@@ -7515,7 +7688,7 @@ static Scheme_Object *datum_to_syntax_inner(Scheme_Object *o,
   }
 
   if (SCHEME_TRUEP(srcloc_vec))
-    unconvert_srcloc(srcloc_vec, (Scheme_Stx *)result);
+    unconvert_srcloc(srcloc_vec, (Scheme_Stx *)result, ut);
 
   if (wraps) {
     if (!do_not_unpack_wraps) {
