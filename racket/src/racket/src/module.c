@@ -8697,7 +8697,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 static Scheme_Object *get_higher_phase_lifts(Module_Begin_Expand_State *bxs,
                                              Scheme_Object *begin_for_syntax_stx)
 {
-  Scheme_Object *p, *e, *fm = scheme_null;
+  Scheme_Object *p, *e, *fm = scheme_null, *bfs;
 
   if (SCHEME_PAIRP(bxs->end_statementss)) {
     /* No other ends, so start shitfing higher-phase ends into `b-f-s': */
@@ -8710,9 +8710,11 @@ static Scheme_Object *get_higher_phase_lifts(Module_Begin_Expand_State *bxs,
       /* wrap `depth' `begin-for-syntaxes' around SCHEME_CAR(p): */
       int di;
       e = scheme_reverse(SCHEME_CAR(p));
-      e = scheme_make_pair(begin_for_syntax_stx, e);
+      bfs = scheme_datum_to_syntax(SCHEME_STX_VAL(begin_for_syntax_stx), scheme_false, sys_wraps_phase(depth-1), 0, 0);
+      e = scheme_make_pair(bfs, e);
       for (di = 1; di < depth; di++) {
-        e = scheme_make_pair(begin_for_syntax_stx, scheme_make_pair(e, scheme_null));
+        bfs = scheme_datum_to_syntax(SCHEME_STX_VAL(begin_for_syntax_stx), scheme_false, sys_wraps_phase(depth-di-1), 0, 0);
+        e = scheme_make_pair(bfs, scheme_make_pair(e, scheme_null));
       }
       fm = scheme_make_pair(scheme_datum_to_syntax(e, scheme_false, scheme_false, 0, 0),
                             scheme_null);

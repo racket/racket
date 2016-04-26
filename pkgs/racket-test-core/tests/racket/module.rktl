@@ -1749,5 +1749,20 @@ case of module-leve bindings; it doesn't cover local bindings.
 (check-module-body-context-properties #t)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that nesting `module+` under multiple `begin-for-syntax`
+;; layers works
+
+(module module-with-nested-module+s racket/base
+  (require (for-syntax racket/base))
+  (begin-for-syntax
+    (require (for-syntax racket/base))
+    (module+ test 1)
+    (begin-for-syntax
+      (require (for-syntax racket/base))
+      (module+ test1 1)
+      (begin-for-syntax
+        (module+ test2 1)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
