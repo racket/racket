@@ -6974,7 +6974,7 @@ Scheme_Object *scheme_syntax_to_datum(Scheme_Object *stx, int with_scopes,
 /*                           datum->syntax                                */
 /*========================================================================*/
 
-#define return_NULL abort()
+#define return_NULL return NULL
 
 Scheme_Object *scheme_hash_get_either(Scheme_Hash_Table *ht, Scheme_Hash_Table *ht2,
                                       Scheme_Object *key)
