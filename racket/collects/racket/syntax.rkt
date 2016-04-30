@@ -62,10 +62,10 @@
 
 (define current-recorded-disappeared-uses (make-parameter #f))
 
-(define-syntax-rule (with-disappeared-uses stx-expr)
+(define-syntax-rule (with-disappeared-uses body-expr ... stx-expr)
   (let-values ([(stx disappeared-uses)
                 (parameterize ((current-recorded-disappeared-uses null))
-                  (let ([result stx-expr])
+                  (let ([result (let () body-expr ... stx-expr)])
                     (values result (current-recorded-disappeared-uses))))])
     (syntax-property stx
                      'disappeared-use
@@ -88,18 +88,20 @@
                 value))))
 
 (define (record-disappeared-uses ids)
-  (unless (and (list? ids) (andmap identifier? ids))
-    (raise-argument-error 'record-disappeared-uses
-                          "(listof identifier?)"
-                          ids))
-  (let ([uses (current-recorded-disappeared-uses)])
-    (when uses
-      (current-recorded-disappeared-uses 
-       (append
-        (if (syntax-transforming?)
-            (map syntax-local-introduce ids)
-            ids)
-        uses)))))
+  (cond
+    [(identifier? ids) (record-disappeared-uses (list ids))]
+    [(and (list? ids) (andmap identifier? ids))
+     (let ([uses (current-recorded-disappeared-uses)])
+       (when uses
+         (current-recorded-disappeared-uses 
+          (append
+           (if (syntax-transforming?)
+               (map syntax-local-introduce ids)
+               ids)
+           uses))))]
+    [else (raise-argument-error 'record-disappeared-uses
+                                "(or/c identifier? (listof identifier?))"
+                                ids)]))
 
 
 ;; == Identifier formatting ==

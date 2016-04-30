@@ -141,13 +141,15 @@ the parameter has a non-false value. This is done automatically by
 forms like @racket[with-disappeared-uses].
 }
 
-@defform[(with-disappeared-uses stx-expr)
+@defform[(with-disappeared-uses body-expr ... stx-expr)
          #:contracts ([stx-expr syntax?])]{
 
-Evaluates the @racket[stx-expr], catching identifiers looked up using
-@racket[syntax-local-value/record]. Adds the caught identifiers to the
-@racket['disappeared-uses] syntax property of the resulting syntax
-object.
+Evaluates the @racket[body-expr]s and @racket[stx-expr], catching identifiers
+looked up using @racket[syntax-local-value/record]. Adds the caught identifiers
+to the @racket['disappeared-uses] syntax property of the syntax object produced
+by @racket[stx-expr].
+
+@history[#:changed "6.5.0.7" @elem{Added the option to include @racket[body-expr]s.}]
 }
 
 @defproc[(syntax-local-value/record [id identifier?] [predicate (-> any/c boolean?)])
@@ -162,14 +164,19 @@ does not satisfy the predicate, @racket[#f] is returned and the
 identifier is not recorded as a disappeared use.
 }
 
-@defproc[(record-disappeared-uses [ids (listof identifier?)])
+@defproc[(record-disappeared-uses [id (or/c identifier? (listof identifier?))])
          void?]{
 
-Add @racket[ids] to @racket[(current-recorded-disappeared-uses)] after calling
-@racket[syntax-local-introduce] on each of the identifiers. 
+Add @racket[id] to @racket[(current-recorded-disappeared-uses)] after calling
+@racket[syntax-local-introduce] on the identifier. If @racket[id] is a list,
+perform the same operation on all the identifiers.
 
 If not used within the extent of a @racket[with-disappeared-uses] 
 form or similar, has no effect.
+
+@history[#:changed "6.5.0.7"
+         @elem{Added the option to pass a single identifier instead of
+               requiring a list.}]
 }
 
 
