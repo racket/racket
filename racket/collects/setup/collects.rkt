@@ -1,6 +1,7 @@
 #lang racket/base
 (require racket/list
          racket/string
+         setup/collection-name
          pkg/path)
 
 (provide path->module-path
@@ -28,6 +29,9 @@
                             (cons pkg-collect l)
                             l)))
       (define c-p (and (pair? new-c-l)
+                       (or (not (eq? mode 'module-path))
+                           (module-path? (car p-l)))
+                       (andmap collection-name-element? new-c-l)
                        (apply collection-file-path (car p-l) new-c-l
                               #:fail (lambda (msg) #f))))
       (and c-p
@@ -36,7 +40,8 @@
      [else #f]))
   (define p-l (reverse (explode-path simple-p)))
   (or (and ((length p-l) . > . 2)
-           (regexp-match? #rx#"^[-a-zA-Z0-9_+%.]*$" (path-element->bytes (car p-l)))
+           (or (not (eq? mode 'module-path))
+               (module-path? (path-element->string (car p-l))))
            ;; Try using path suffixes as library names, checking whether
            ;; `collection-file-path' locates the same path.
            (let ([file (path-element->string (car p-l))])
@@ -44,7 +49,7 @@
                (cond
                 [(null? p-l) #f]
                 [(null? (cdr p-l)) #f]
-                [(regexp-match? #rx#"^[-a-zA-Z0-9_+%]*$" (path-element->bytes (car p-l)))
+                [(collection-name-element? (path-element->string (car p-l)))
                  (define new-c-l (cons (path-element->string (car p-l)) c-l))
                  (define c-p (apply collection-file-path file new-c-l #:fail (lambda (msg) #f)))
                  (if (and c-p
