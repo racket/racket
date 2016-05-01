@@ -126,8 +126,8 @@ and how they can be used to implement contracts.
 @section[#:tag "data-structure-contracts"]{Data-structure Contracts}
 @declare-exporting-ctc[racket/contract/base]
 
-@defproc[(flat-contract-with-reason [get-reason (-> any/c (or/c boolean? (-> blame? any)))]
-                                    flat-contract?)]{
+@defproc[(flat-contract-with-reason [get-reason (-> any/c (or/c boolean? (-> blame? any)))])
+         flat-contract?]{
   Provides a way to use flat contracts that, when a contract fails,
   provide more information about the failure.
 
