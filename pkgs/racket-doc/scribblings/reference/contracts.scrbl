@@ -126,6 +126,30 @@ and how they can be used to implement contracts.
 @section[#:tag "data-structure-contracts"]{Data-structure Contracts}
 @declare-exporting-ctc[racket/contract/base]
 
+@defproc[(flat-contract-with-reason [get-reason (-> any/c (or/c boolean? (-> blame? any)))]
+                                    flat-contract?)]{
+  Provides a way to use flat contracts that, when a contract fails,
+  provide more information about the failure.
+
+  If @racket[get-reason] returns a boolean, then that boolean value is
+  treated as the predicate in a @tech{flat contract}. If it returns
+  a procedure, then it is treated similarly to returning @racket[#f],
+  except the result procedure is called to actually signal the contract
+  violation. 
+
+ @racketblock[(flat-contract-with-reason
+               (λ (val)
+                 (cond
+                   [(even? val) #t]
+                   [else
+                    (λ (blame)
+                      (define more-information ...do-some-complex-computation-here...)
+                      (raise-blame-error blame val
+                                         '(expected: "an even number" given: "~e"
+                                                     "and, here is more help: ~s")
+                                         val more-information))])))]
+}
+
 @defproc[(flat-named-contract [name any/c]
                               [flat-contract flat-contract?]
                               [generator (or/c #f (-> contract (-> int? any))) #f])
@@ -2025,9 +2049,10 @@ accepted by the third argument to @racket[datum->syntax].
          flat-contract?]
 )]{
 
-These functions build simple higher-order contracts, @tech{chaperone contracts}, and @tech{flat contracts},
-respectively.  They both take the same set of three optional arguments: a name,
-a first-order predicate, and a blame-tracking projection.
+These functions build simple higher-order contracts, @tech{chaperone contracts},
+and @tech{flat contracts}, respectively.  They both take the same set of three
+optional arguments: a name, a first-order predicate, and a blame-tracking projection.
+For @racket[make-flat-contract], see also @racket[flat-contract-with-reason].
 
 The @racket[name] argument is any value to be rendered using @racket[display] to
 describe the contract when a violation occurs.  The default name for simple
