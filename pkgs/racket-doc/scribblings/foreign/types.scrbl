@@ -1510,6 +1510,13 @@ Takes a list of symbols and generates an enumeration type.  The
 enumeration maps between a symbol in the given @racket[symbols] list and
 corresponding integers, counting from @racket[0].
 
+To call a foreign function that takes an enum as a parameter simply provide
+the symbol of the desiered enum as an argument.
+
+@racketblock[
+ (code:comment "example sdl call")
+ (sdl-create-window "title" ... 'SDL_WINDOW_OPENGL)]
+
 The list @racket[symbols] can also set the values of symbols by
 putting @racket['=] and an exact integer after the symbol.  For
 example, the list @racket['(x y = 10 z)] maps @racket['x] to
@@ -1538,6 +1545,14 @@ Similar to @racket[_enum], but the resulting mapping translates a list
 of symbols to a number and back, using @racket[bitwise-ior] on the
 values of individual symbols, where A single symbol is equivalent to a
 list containing just the symbol.
+
+In other words, to call a foreign function that uses bitmask parameters simply call the
+procedure with the list of wanted flags.
+
+@racketblock[
+ (code:comment "example call from curl_global_init in curl.h")
+ (curl-global-init '(CURL_GLOBAL_SSL CURL_GLOBAL_WIN32))]
+
 
 When a symbol does not have a given value (via @racket['=] after the
 symbol in @racket[symbols]), its value is the next power of 2 greater
