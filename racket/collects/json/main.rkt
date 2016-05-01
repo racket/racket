@@ -1,20 +1,50 @@
 #lang racket/base
 
-#| Roughly based on the PLaneT package by Dave Herman,
-   Originally released under MIT license.
-|#
+;; Roughly based on the PLaneT package by Dave Herman,
+;;   Originally released under MIT license.
 
-;; ----------------------------------------------------------------------------
-;; Customization
+;; edited: Matthias, organization in preparation for pretty-print
+
+;; -----------------------------------------------------------------------------
+;; SERVICES
+
+(provide
+ ;; Parameter 
+ json-null ;; Parameter 
+ 
+ ;; Any -> Boolean 
+ jsexpr?
+
+ #;
+ (->* (Output-Port) ([#:null Any][#:encode (U 'control 'all)]))
+ ;; #:null (json-null)
+ ;; #:encode 'control
+ write-json
+ 
+ #;
+ (->* (Input-Port) ([#:null Any]))
+ ;; #null: (json-null)
+ read-json
+ 
+ jsexpr->string
+ jsexpr->bytes
+ string->jsexpr
+ bytes->jsexpr)
+
+;; -----------------------------------------------------------------------------
+;; DEPENDENCIES
+
+(require syntax/readerr)
+
+;; -----------------------------------------------------------------------------
+;; CUSTOMIZATION
 
 ;; The default translation for a JSON `null' value
-(provide json-null)
 (define json-null (make-parameter 'null))
 
-;; ----------------------------------------------------------------------------
-;; Predicate
+;; -----------------------------------------------------------------------------
+;; PREDICATE
 
-(provide jsexpr?)
 (define (jsexpr? x #:null [jsnull (json-null)])
   (let loop ([x x])
     (or (exact-integer? x)
@@ -29,30 +59,34 @@
 (define (real-real? x) ; not nan or inf
   (and (inexact-real? x) (not (member x '(+nan.0 +inf.0 -inf.0)))))
 
-;; ----------------------------------------------------------------------------
-;; Generation: Racket -> JSON
+;; -----------------------------------------------------------------------------
+;; GENERATION  (from Racket to JSON)
+
+(define (write-json x [o (current-output-port)]
+                    #:null [jsnull (json-null)] #:encode [enc 'control])
+  (write-json* 'write-json x o jsnull enc))
 
 (define (write-json* who x o jsnull enc)
   (define (escape m)
     (define ch (string-ref m 0))
     (define r
       (assoc ch '([#\backspace . "\\b"] [#\newline . "\\n"] [#\return . "\\r"]
-                  [#\page . "\\f"] [#\tab . "\\t"]
-                  [#\\ . "\\\\"] [#\" . "\\\""])))
+                                        [#\page . "\\f"] [#\tab . "\\t"]
+                                        [#\\ . "\\\\"] [#\" . "\\\""])))
     (define (u-esc n)
       (define str (number->string n 16))
       (define pad (case (string-length str)
                     [(1) "000"] [(2) "00"] [(3) "0"] [else ""]))
       (string-append "\\u" pad str))
     (if r
-      (cdr r)
-      (let ([n (char->integer ch)])
-        (if (n . < . #x10000)
-          (u-esc n)
-          ;; use the (utf-16 surrogate pair) double \u-encoding
-          (let ([n (- n #x10000)])
-            (string-append (u-esc (+ #xD800 (arithmetic-shift n -10)))
-                           (u-esc (+ #xDC00 (bitwise-and n #x3FF)))))))))
+        (cdr r)
+        (let ([n (char->integer ch)])
+          (if (n . < . #x10000)
+              (u-esc n)
+              ;; use the (utf-16 surrogate pair) double \u-encoding
+              (let ([n (- n #x10000)])
+                (string-append (u-esc (+ #xD800 (arithmetic-shift n -10)))
+                               (u-esc (+ #xDC00 (bitwise-and n #x3FF)))))))))
   (define rx-to-encode
     (case enc
       ;; FIXME: This should also encode (always) anything that is represented
@@ -94,15 +128,11 @@
           [else (raise-type-error who "legal JSON value" x)]))
   (void))
 
-(provide write-json)
-(define (write-json x [o (current-output-port)]
-                    #:null [jsnull (json-null)] #:encode [enc 'control])
-  (write-json* 'write-json x o jsnull enc))
+;; -----------------------------------------------------------------------------
+;; PARSING (from JSON to Racket)
 
-;; ----------------------------------------------------------------------------
-;; Parsing: JSON -> Racket
-
-(require syntax/readerr)
+(define (read-json [i (current-input-port)] #:null [jsnull (json-null)])
+  (read-json* 'read-json i jsnull))
 
 (define (read-json* who i jsnull)
   ;; Follows the specification (eg, at json.org) -- no extensions.
@@ -129,8 +159,8 @@
       (cond
         [(not esc) (bytes->string/utf-8 (get-output-bytes result))]
         [(assoc esc '([#"b" . #"\b"] [#"n" . #"\n"] [#"r" . #"\r"]
-                      [#"f" . #"\f"] [#"t" . #"\t"]
-                      [#"\\" . #"\\"] [#"\"" . #"\""] [#"/" . #"/"]))
+                                     [#"f" . #"\f"] [#"t" . #"\t"]
+                                     [#"\\" . #"\\"] [#"\"" . #"\""] [#"/" . #"/"]))
          => (λ (m) (write-bytes (cdr m) result) (loop))]
         [(equal? esc #"u")
          (let* ([e (or (regexp-try-match #px#"^[a-fA-F0-9]{4}" i)
@@ -138,16 +168,16 @@
                 [e (string->number (bytes->string/utf-8 (car e)) 16)])
            (define e*
              (if (<= #xD800 e #xDFFF)
-               ;; it's the first part of a UTF-16 surrogate pair
-               (let* ([e2 (or (regexp-try-match #px#"^\\\\u([a-fA-F0-9]{4})" i)
-                              (err "bad string \\u escape, ~a"
-                                   "missing second half of a UTF16 pair"))]
-                      [e2 (string->number (bytes->string/utf-8 (cadr e2)) 16)])
-                 (if (<= #xDC00 e2 #xDFFF)
-                   (+ (arithmetic-shift (- e #xD800) 10) (- e2 #xDC00) #x10000)
-                   (err "bad string \\u escape, ~a"
-                        "bad second half of a UTF16 pair")))
-               e)) ; single \u escape
+                 ;; it's the first part of a UTF-16 surrogate pair
+                 (let* ([e2 (or (regexp-try-match #px#"^\\\\u([a-fA-F0-9]{4})" i)
+                                (err "bad string \\u escape, ~a"
+                                     "missing second half of a UTF16 pair"))]
+                        [e2 (string->number (bytes->string/utf-8 (cadr e2)) 16)])
+                   (if (<= #xDC00 e2 #xDFFF)
+                       (+ (arithmetic-shift (- e #xD800) 10) (- e2 #xDC00) #x10000)
+                       (err "bad string \\u escape, ~a"
+                            "bad second half of a UTF16 pair")))
+                 e)) ; single \u escape
            (write-string (string (integer->char e*)) result)
            (loop))]
         [else (err "bad string escape: \"~a\"" esc)])))
@@ -155,12 +185,12 @@
   (define (read-list what end-rx read-one)
     (skip-whitespace)
     (if (regexp-try-match end-rx i)
-      '()
-      (let loop ([l (list (read-one))])
-        (skip-whitespace)
-        (cond [(regexp-try-match end-rx i) (reverse l)]
-              [(regexp-try-match #rx#"^," i) (loop (cons (read-one) l))]
-              [else (err "error while parsing a json ~a" what)]))))
+        '()
+        (let loop ([l (list (read-one))])
+          (skip-whitespace)
+          (cond [(regexp-try-match end-rx i) (reverse l)]
+                [(regexp-try-match #rx#"^," i) (loop (cons (read-one) l))]
+                [else (err "error while parsing a json ~a" what)]))))
   ;;
   (define (read-hash)
     (define (read-pair)
@@ -192,27 +222,23 @@
   ;;
   (read-json #t))
 
-(provide read-json)
-(define (read-json [i (current-input-port)] #:null [jsnull (json-null)])
-  (read-json* 'read-json i jsnull))
+;; -----------------------------------------------------------------------------
+;; CONVENIENCE FUNCTIONS
 
-;; ----------------------------------------------------------------------------
-;; Convenience functions
-
-(provide jsexpr->string jsexpr->bytes)
 (define (jsexpr->string x #:null [jsnull (json-null)] #:encode [enc 'control])
   (define o (open-output-string))
   (write-json* 'jsexpr->string x o jsnull enc)
   (get-output-string o))
+
 (define (jsexpr->bytes x #:null [jsnull (json-null)] #:encode [enc 'control])
   (define o (open-output-bytes))
   (write-json* 'jsexpr->bytes x o jsnull enc)
   (get-output-bytes o))
 
-(provide string->jsexpr bytes->jsexpr)
 (define (string->jsexpr str #:null [jsnull (json-null)])
   (unless (string? str) (raise-type-error 'string->jsexpr "string" str))
   (read-json* 'string->jsexpr (open-input-string str) jsnull))
+
 (define (bytes->jsexpr str #:null [jsnull (json-null)])
   (unless (bytes? str) (raise-type-error 'bytes->jsexpr "bytes" str))
   (read-json* 'bytes->jsexpr (open-input-bytes str) jsnull))
