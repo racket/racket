@@ -51,7 +51,9 @@
          pairwise-stronger-contracts?
          check-two-args
 
-         suggest/c)
+         suggest/c
+
+         flat-contract-with-explanation)
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()
@@ -1037,3 +1039,34 @@
    #:late-neg-projection (λ (b) (ctc-lnp (blame-add-extra-field b field message)))
    #:stronger (λ (this that) (contract-stronger? ctc that))
    #:list-contract? (list-contract? ctc)))
+
+(define (flat-contract-with-explanation ?)
+  (define (call-? x)
+    (define reason (? x))
+    (unless (or (boolean? reason)
+                (and (procedure? reason)
+                     (procedure-arity-includes? reason 1)))
+      (raise-argument-error 'flat-contract-with-explanation
+                            (format "~s" '(or/c boolean? (-> blame? any)))))
+    reason)
+  (make-flat-contract
+   #:first-order (λ (x) (equal? #t (call-? x)))
+   #:late-neg-projection
+   (λ (b)
+     (λ (x neg-party)
+       (define accept-or-reason (call-? x))
+       (cond
+         [(equal? #t accept-or-reason)
+          x]
+         [(equal? #f accept-or-reason)
+          (raise-blame-error
+           b x
+           '(expected: "~a" given: "~e")
+           (object-name ?)
+           x)]
+         [else
+          (accept-or-reason (blame-add-missing-party b neg-party))
+          (error 'flat-contract-with-explanation
+                 "expected that result of the first argument, when it"
+                 " is a procedure, to always escape when called"
+                 " (by calling raise-blame-error with the arguments it was given")])))))

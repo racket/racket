@@ -96,6 +96,7 @@
  flat-contract
  flat-contract-predicate
  flat-named-contract
+ flat-contract-with-explanation
  
  blame-add-car-context
  blame-add-cdr-context
@@ -142,7 +143,7 @@
  get/build-val-first-projection
 
  suggest/c
- 
+
  ;; not documented.... (ie unintentional export)
  n->th)
 

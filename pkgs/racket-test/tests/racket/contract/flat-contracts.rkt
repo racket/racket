@@ -3,7 +3,8 @@
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace
-                 'racket/class)])
+                 'racket/class
+                 'racket/contract/combinator)])
 
   (define (test-flat-contract contract pass fail)
     (contract-eval `(,test #t flat-contract? ,contract))
@@ -220,4 +221,16 @@
   
   ;; test flat-contract-predicate
   (test #t (flat-contract-predicate integer?) 1)
-  (test #t (flat-contract-predicate #t) #t))
+  (test #t (flat-contract-predicate #t) #t)
+
+  (test-flat-contract '(flat-contract-with-explanation even?) 0 1)
+  (test-flat-contract '(flat-contract-with-explanation
+                        (λ (x)
+                          (cond
+                            [(even? x) #t]
+                            [else (λ (b)
+                                    (raise-blame-error b x
+                                                       '(expected: "an even number"
+                                                                   given:
+                                                                   "something else")))])))
+                      0 1))
