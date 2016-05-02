@@ -1235,10 +1235,10 @@ quoted @racket[raw-module-spec].}
 
 @defform/subs[(#%provide raw-provide-spec ...)
               ([raw-provide-spec phaseless-spec
-                                 (#,(racketidfont "for-meta") phase-level phaseless-spec)
-                                 (#,(racketidfont "for-syntax") phaseless-spec)
-                                 (#,(racketidfont "for-label") phaseless-spec)
-                                 (#,(racketidfont "protect") raw-provide-spec)]
+                                 (#,(racketidfont "for-meta") phase-level phaseless-spec ...)
+                                 (#,(racketidfont "for-syntax") phaseless-spec ...)
+                                 (#,(racketidfont "for-label") phaseless-spec ...)
+                                 (#,(racketidfont "protect") raw-provide-spec ...)]
                [phase-level exact-integer
                             #f]
                [phaseless-spec id 
