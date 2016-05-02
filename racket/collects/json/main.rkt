@@ -14,6 +14,12 @@
 (require syntax/readerr
          racket/contract)
 
+;; tests in: 
+;; ~plt/pkgs/racket-test/tests/json/
+
+;; docs in:
+;; ~plt/pkgs/racket-doc/json/
+
 ;; -----------------------------------------------------------------------------
 ;; SERVICES
 
