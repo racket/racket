@@ -2045,6 +2045,14 @@
 (test #\[ syntax-property (quasisyntax [x y]) 'paren-shape)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that quasisyntax in quasisyntax doesn't infinite loop
+
+(test #t syntax? (quasisyntax (quote-syntax quasisyntax)))
+(test #t syntax? (quasisyntax (quasisyntax . x)))
+(test #t syntax? (quasisyntax (list quasisyntax)))
+(test #t syntax? (quasisyntax (x . (quasisyntax . x))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check srcloc on result of `syntax-local-value/immediate':
 
 (let ()
