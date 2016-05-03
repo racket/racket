@@ -923,11 +923,41 @@ definition context.
 
 @defproc[(syntax-local-introduce [stx syntax?]) syntax?]{
 
-Produces a syntax object that is like @racket[stx], except that the
-presence of @tech{scopes} for the current expansion---both the
-macro-introduction scope and the use-site scope, if any---is flipped
-on all parts of the syntax object. See @secref["transformer-model"] for information
-on macro-introduction and use-site @tech{scopes}.
+Produces a syntax object that is like @racket[stx], but with a new @tech{scope} added that flips the apparent introduction site for all parts of the syntax object. Meaning, parts of the syntax object that start with a macro-introduction scope will end up with a use-site scope, and vice versa. (See @secref["transformer-model"] for information on macro-introduction and use-site @tech{scopes}.)
+
+Consistent with its name, this procedure is commonly used to introduce an unygienic binding at the use site, by making a macro-introduced binding appear as if it came from the use site. It is important, however, that the syntax object passed to @racket[syntax-local-introduce] be free of any extraneous scopes. Otherwise, the behavior of the introduced identifier can be unpredictable. Using @racket[(datum->syntax #f _id)] to prepare the input syntax is good policy.
+
+@examples[#:eval stx-eval
+
+(module sli racket
+  (provide sli-x)
+  (define-syntax (sli-x stx)
+    (syntax-case stx ()
+      [(_) (with-syntax ([x (syntax-local-introduce (datum->syntax #f 'x))])
+             #'(define x 'syntax-local-introduce-x))])))
+
+(require 'sli)
+(let ()
+  (sli-x)
+  x)
+
+(module sli-broken racket
+  (provide sli-x-broken)
+  (define-syntax (sli-x-broken stx)
+    (syntax-case stx ()
+      [(_) (with-syntax ([x (syntax-local-introduce #'x)])
+             #'(define x 'syntax-local-introduce-x))])))
+
+(require 'sli-broken)
+
+(eval:error (let ()
+              (sli-x-broken)
+              x))
+
+
+]
+
+
 
 @transform-time[]}
 
