@@ -399,7 +399,7 @@
 
 ;; combine-pattern+sides : Pattern (listof SideClause) -> Pattern
 (define (combine-pattern+sides pattern sides splicing?)
-  (define sides-group (gensym))
+  (define sides-group (gensym*))
   (define actions-pattern
     (create-action:and
      (for/list ([side (in-list sides)] [index (in-naturals)])
@@ -427,6 +427,13 @@
           (create-hpat:and pattern dummy-pattern)
           (create-pat:and (list pattern dummy-pattern)))
       pattern))
+
+;; gensym* : -> UninternedSymbol
+;; Like gensym, but with deterministic name from compilation-local counter.
+(define gensym*-counter 0)
+(define (gensym*)
+  (set! gensym*-counter (add1 gensym*-counter))
+  (string->uninterned-symbol (format "group~a" gensym*-counter)))
 
 ;; ----
 
