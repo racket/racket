@@ -545,10 +545,14 @@ Conventions:
                                   k))))
                           argu))))]
        [#s(pat:datum attrs datum)
-        #`(let ([d (if (syntax? x) (syntax-e x) x)])
-            (if (equal? d (quote datum))
-                k
-                (fail (failure pr (es-add-atom 'datum es)))))]
+        (with-syntax ([unwrap-x
+                       (if (atomic-datum-stx? #'datum)
+                           #'(if (syntax? x) (syntax-e x) x)
+                           #'(syntax->datum (datum->syntax #f x)))])
+          #`(let ([d unwrap-x])
+              (if (equal? d (quote datum))
+                  k
+                  (fail (failure pr (es-add-atom 'datum es))))))]
        [#s(pat:literal attrs literal input-phase lit-phase)
         #`(if (and (identifier? x)
                    (free-identifier=? x (quote-syntax literal) input-phase lit-phase))

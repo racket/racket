@@ -641,3 +641,7 @@
     (check-eq? (x) (void))
     ))
 
+;; from Jay McCarthy (4/2016)
+(tok (1 2 3) (~datum (1 2 3)) 'ok)
+(tok (1 2 . 3) (~datum (1 2 . 3)) 'ok)
+(tok (1 . (2 3)) (~datum (1 . (2 3))) 'ok)

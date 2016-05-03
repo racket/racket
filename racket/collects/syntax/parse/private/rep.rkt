@@ -26,6 +26,9 @@
 ;; (mandatory from outside, at least)
 
 (provide/contract
+ [atomic-datum-stx?
+  (-> syntax?
+      boolean?)]
  [parse-rhs
   (-> syntax? (or/c false/c (listof sattr?)) boolean?
       #:context (or/c false/c syntax?)
@@ -73,7 +76,7 @@
 
 ;; ----
 
-(define (atomic-datum? stx)
+(define (atomic-datum-stx? stx)
   (let ([datum (syntax-e stx)])
     (or (null? datum)
         (boolean? datum)
@@ -521,7 +524,7 @@
      (identifier? #'id)
      (parse-pat:id stx decls allow-head?)]
     [datum
-     (atomic-datum? #'datum)
+     (atomic-datum-stx? #'datum)
      (create-pat:datum (syntax->datum #'datum))]
     [(~var . rest)
      (disappeared! stx)
