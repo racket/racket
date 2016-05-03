@@ -200,6 +200,7 @@ static Scheme_Struct_Type *hash_prefab(Scheme_Struct_Type *type);
 
 static Scheme_Object *chaperone_struct(int argc, Scheme_Object **argv);
 static Scheme_Object *impersonate_struct(int argc, Scheme_Object **argv);
+static Scheme_Object *chaperone_opaque_struct(int argc, Scheme_Object **argv);
 static Scheme_Object *chaperone_struct_type(int argc, Scheme_Object **argv);
 static Scheme_Object *make_chaperone_property(int argc, Scheme_Object *argv[]);
 
@@ -865,6 +866,16 @@ scheme_init_struct (Scheme_Env *env)
                                scheme_app_mark_impersonator_property,
                                env);
   }
+}
+
+void
+scheme_init_unsafe_struct (Scheme_Env *env)
+{
+  scheme_add_global_constant("chaperone-opaque-struct",
+			     scheme_make_prim_w_arity(chaperone_opaque_struct,
+						      "chaperone-opaque-struct",
+						      1, -1),
+			     env);
 }
 
 void scheme_init_struct_wait()
@@ -6312,6 +6323,39 @@ static Scheme_Object *impersonate_struct(int argc, Scheme_Object **argv)
   return do_chaperone_struct("impersonate-struct", 1, argc, argv);
 }
 
+static Scheme_Object *chaperone_opaque_struct(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *val = argv[0];
+  Scheme_Struct_Type *stype;
+  Scheme_Object *redirects;
+  Scheme_Hash_Tree *props = NULL;
+  Scheme_Chaperone *px;
+
+  if (SCHEME_CHAPERONEP(val)) {
+    val = SCHEME_CHAPERONE_VAL(val);
+  }
+  
+  if (!SCHEME_STRUCTP(val)) {
+    scheme_wrong_contract("chaperone-opaque-struct", "struct?", 0, argc, argv);
+    return NULL;
+  }
+
+  stype = ((Scheme_Structure *)val)->stype;
+  redirects = scheme_make_vector(PRE_REDIRECTS + 2 * stype->num_slots, scheme_false);
+  props = scheme_parse_chaperone_props("chaperone-opaque-struct", 1, argc, argv);
+
+  px = (Scheme_Chaperone *)scheme_malloc_tagged(sizeof (Scheme_Chaperone));
+  if (SCHEME_PROCP(val))
+    px->iso.so.type = scheme_proc_chaperone_type;
+  else
+    px->iso.so.type = scheme_chaperone_type;
+  px->val = val;
+  px->prev = argv[0];
+  px->props = props;
+  px->redirects = redirects;
+
+  return (Scheme_Object *)px;
+}
 
 Scheme_Object *scheme_chaperone_not_undefined (Scheme_Object *orig_val)
 {

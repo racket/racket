@@ -203,6 +203,8 @@ static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Sch
 
 static Scheme_Object *chaperone_unsafe_undefined(int argc, Scheme_Object **argv);
 
+static Scheme_Object *remove_impersonators(int argc, Scheme_Object **argv);
+
 static Scheme_Object *
 scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
                                      Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
@@ -626,7 +628,7 @@ scheme_init_fun (Scheme_Env *env)
 						      "impersonate-procedure*",
 						      2, -1),
 			     env);
-
+  
   scheme_add_global_constant("primitive?",
 			     scheme_make_folding_prim(primitive_p,
 						      "primitive?",
@@ -764,6 +766,11 @@ scheme_init_unsafe_fun (Scheme_Env *env)
 			     scheme_make_prim_w_arity(unsafe_impersonate_procedure,
 						      "unsafe-impersonate-procedure",
 						      2, -1),
+			     env);
+  scheme_add_global_constant("remove-impersonators",
+			     scheme_make_prim_w_arity(remove_impersonators,
+						      "remove-impersonators",
+						      3, 3),
 			     env);
 }
 
@@ -3676,6 +3683,84 @@ static Scheme_Object *chaperone_procedure_star(int argc, Scheme_Object *argv[])
 static Scheme_Object *impersonate_procedure_star(int argc, Scheme_Object *argv[])
 {
   return do_chaperone_procedure("impersonate-procedure*", "impersonating", 1, 1, argc, argv, 0);
+}
+
+static Scheme_Object *remove_impersonators(int argc, Scheme_Object **argv)
+{
+  Scheme_Object *value = argv[0];
+  Scheme_Object *impersonator = argv[1];
+  Scheme_Object *orig = argv[2];
+  Scheme_Chaperone *imp = NULL;
+  Scheme_Object *outer = NULL;
+  Scheme_Chaperone *parent = NULL;
+  Scheme_Chaperone *child = NULL;
+  Scheme_Chaperone *newChaperone = NULL;
+
+  if (!SCHEME_CHAPERONEP(value)) {
+    scheme_wrong_contract("remove-impersonators", "impersonator?", 0, argc, argv);
+    return NULL;
+  }
+
+  if (!SCHEME_CHAPERONEP(impersonator)) {
+    scheme_wrong_contract("remove-impersonators", "impersonator?", 1, argc, argv);
+    return NULL;
+  }  
+
+  imp = (Scheme_Chaperone *)impersonator;
+  if (! scheme_impersonator_of(impersonator, orig)) {
+    scheme_contract_error("remove-impersonators",
+			  "impersonator must impersonate original value",
+			  "impersonator", 1, impersonator,
+			  "original", 1, orig,
+			  NULL);
+    return NULL;
+  }
+  if (impersonator == orig) {
+    scheme_contract_error("remove-impersonators",
+			  "cannot remove impersonator from itself",
+			  "impersonator", 1, impersonator,
+			  "original", 1, orig,
+			  NULL);
+    return NULL;
+  }
+
+  if (! scheme_impersonator_of(value, impersonator)) {
+    scheme_contract_error("remove-impersonators",
+			  "value must impersonate impersonator",
+			  "value", 1, value,
+			  "impersonator", 1, impersonator,
+			  NULL);
+    return NULL;
+  }
+
+  child = (Scheme_Chaperone *)value;
+  
+  while (child != imp) {
+    newChaperone = MALLOC_ONE_TAGGED(Scheme_Chaperone);
+    newChaperone->iso.so.type =
+      SCHEME_P_CHAPERONEP(child) ? scheme_proc_chaperone_type : scheme_chaperone_type;
+    newChaperone->val = child->val;
+    newChaperone->prev = NULL;
+    newChaperone->props = child->props;
+    newChaperone->redirects = child->redirects;
+
+    if (parent != NULL) {
+      parent->prev = (Scheme_Object *)newChaperone;
+    } else {
+      outer = (Scheme_Object *)newChaperone;
+    }
+
+    parent = newChaperone;
+    child = (Scheme_Chaperone *)child->prev;
+  }
+
+  if (parent != NULL) {
+    parent->prev = orig;
+  } else {
+    outer = orig;
+  }
+
+  return outer;
 }
 
 static Scheme_Object *apply_chaperone_k(void)

@@ -360,6 +360,7 @@ void scheme_init_struct(Scheme_Env *env);
 void scheme_init_reduced_proc_struct(Scheme_Env *env);
 void scheme_init_fun(Scheme_Env *env);
 void scheme_init_unsafe_fun(Scheme_Env *env);
+void scheme_init_unsafe_struct(Scheme_Env *env);
 void scheme_init_compile(Scheme_Env *env);
 void scheme_init_symbol(Scheme_Env *env);
 void scheme_init_char_constants(void);
