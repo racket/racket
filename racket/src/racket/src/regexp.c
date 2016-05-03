@@ -1968,7 +1968,7 @@ regranges(int parse_flags, int at_start)
 	}
       }
       for (c++; c < 256; c++) {
-	if (!accum_map[c] == on) {
+	if ((!accum_map[c]) == on) {
 	  re = c - 1;
 	  break;
 	}
