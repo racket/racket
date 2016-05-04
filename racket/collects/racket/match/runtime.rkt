@@ -17,7 +17,8 @@
 (define match-equality-test (make-parameter equal?))
 
 (define-struct (exn:misc:match exn:fail) (value srclocs)
- #:property prop:exn:srclocs (lambda (ex) (exn:misc:match-srclocs ex)))
+  #:property prop:exn:srclocs (lambda (ex) (exn:misc:match-srclocs ex))
+  #:transparent)
 
 
 (define (match:error val srclocs form-name)
