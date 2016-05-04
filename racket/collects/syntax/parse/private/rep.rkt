@@ -653,7 +653,7 @@
          (let* ([iattrs (id-pattern-attrs (eh-alternative-attrs alt) prefix)]
                 [attr-count (length iattrs)])
            (list (create-ehpat
-                  (create-hpat:var #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f #f)
+                  (create-hpat:var/p #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f #f)
                   (eh-alternative-repc alt))
                  (replace-eh-alternative-attrs
                   alt (iattrs->sattrs iattrs))))))]
@@ -700,19 +700,19 @@
         [else
          (let-values ([(name suffix) (split-id/get-stxclass id decls)])
            (cond [(stxclass? suffix)
-                  (parse-pat:var* id allow-head? name suffix no-arguments "." #f #f)]
+                  (parse-pat:var/sc id allow-head? name suffix no-arguments "." #f #f)]
                  [(or (den:lit? suffix) (den:datum-lit? suffix))
                   (create-pat:and
                    (list
-                    (create-pat:var name #f no-arguments null #f #t #f)
+                    (create-pat:svar name)
                     (parse-pat:id/entry id decls allow-head? suffix)))]
                  [(declenv-apply-conventions decls id)
-                  => (lambda (entry) (parse-pat:id/entry id decls allow-head? entry))]
-                 [else (create-pat:var name #f no-arguments null #f #t #f)]))]))
+                  => (lambda (entry) (parse-pat:id/entry id allow-head? entry))]
+                 [else (create-pat:svar name)]))]))
 
 ;; parse-pat:id/entry : Identifier .... DeclEntry -> SinglePattern
 ;; Handle when meaning of identifier pattern is given by declenv entry.
-(define (parse-pat:id/entry id decls allow-head? entry)
+(define (parse-pat:id/entry id allow-head? entry)
   (match entry
     [(den:lit internal literal input-phase lit-phase)
      (create-pat:literal literal input-phase lit-phase)]
@@ -722,7 +722,7 @@
      (let* ([pos-count (length (arguments-pargs argu))]
             [kws (arguments-kws argu)]
             [sc (get-stxclass/check-arity class class pos-count kws)])
-       (parse-pat:var* id allow-head? id sc argu "." role #f))]
+       (parse-pat:var/sc id allow-head? id sc argu "." role #f))]
     [(den:class _n _c _a)
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
@@ -737,8 +737,7 @@
             (parse-pat:id/s id parser no-arguments attrs commit? "." #f)])]
     [(den:delayed parser class)
      (let ([sc (get-stxclass class)])
-       (parse-pat:var* id allow-head? id sc no-arguments "." #f parser))]))
-
+       (parse-pat:var/sc id allow-head? id sc no-arguments "." #f parser))]))
 
 (define (parse-pat:var stx decls allow-head?)
   (define name0
@@ -775,11 +774,11 @@
          (let ([sc (get-stxclass/check-arity scname sc+args-stx
                                              (length (arguments-pargs argu))
                                              (arguments-kws argu))])
-           (parse-pat:var* stx allow-head? name0 sc argu pfx role #f))]
+           (parse-pat:var/sc stx allow-head? name0 sc argu pfx role #f))]
         [else ;; Just proper name
-         (create-pat:var name0 #f (arguments null null null) null #f #t #f)]))
+         (create-pat:svar name0)]))
 
-(define (parse-pat:var* stx allow-head? name sc argu pfx role parser*)
+(define (parse-pat:var/sc stx allow-head? name sc argu pfx role parser*)
   ;; if parser* not #f, overrides sc parser
   (check-no-delimit-cut-in-not stx (stxclass-delimit-cut? sc))
   (cond [(and (stxclass/s? sc)
@@ -808,7 +807,7 @@
 (define (parse-pat:id/s name parser argu attrs commit? pfx role)
   (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
-  (create-pat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
+  (create-pat:var/p bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
 
 (define (parse-pat:id/s/integrate name integrate role)
   (define bind (name->bind name))
@@ -819,7 +818,7 @@
 (define (parse-pat:id/h name parser argu attrs commit? pfx role)
   (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
-  (create-hpat:var bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
+  (create-hpat:var/p bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
 
 (define (name->prefix id pfx)
   (cond [(wildcard? id) #f]

@@ -176,7 +176,8 @@
   ;;  - if p can cut, then factoring changes which choice points are discarded (too few)
   (match p
     [(pat:any _as) #t]
-    [(pat:var _as _n _p _argu _na _ac commit? _r)
+    [(pat:svar _as _n) #t]
+    [(pat:var/p _as _n _p _argu _na _ac commit? _r)
      ;; commit? implies delimit-cut
      commit?]
     [(? pat:integrated?) #t]
@@ -215,7 +216,7 @@
     [(pat:post _as pattern)
      (pattern-factorable? pattern)]
     ;; ----
-    [(hpat:var _as _name _parser _argu _na _ac commit? _role)
+    [(hpat:var/p _as _name _parser _argu _na _ac commit? _role)
      commit?]
     [(hpat:seq _as inner)
      (pattern-factorable? inner)]
@@ -236,11 +237,13 @@
 (define (pattern-equal? a b)
   (define result
     (cond [(and (pat:any? a) (pat:any? b)) #t]
-          [(and (pat:var? a) (pat:var? b))
-           (and (free-id/f-equal? (pat:var-parser a) (pat:var-parser b))
-                (equal-iattrs? (pat:var-attrs a) (pat:var-attrs b))
-                (equal-argu? (pat:var-argu a) (pat:var-argu b))
-                (expr-equal? (pat:var-role a) (pat:var-role b)))]
+          [(and (pat:svar? a) (pat:svar? b))
+           (equal-iattrs? (pat:svar-attrs a) (pat:svar-attrs b))]
+          [(and (pat:var/p? a) (pat:var/p? b))
+           (and (free-id/f-equal? (pat:var/p-parser a) (pat:var/p-parser b))
+                (equal-iattrs? (pat:var/p-attrs a) (pat:var/p-attrs b))
+                (equal-argu? (pat:var/p-argu a) (pat:var/p-argu b))
+                (expr-equal? (pat:var/p-role a) (pat:var/p-role b)))]
           [(and (pat:integrated? a) (pat:integrated? b))
            (and (free-identifier=? (pat:integrated-predicate a)
                                    (pat:integrated-predicate b))
@@ -290,11 +293,11 @@
           [(and (pat:post? a) (pat:post? b))
            (pattern-equal? (pat:post-pattern a) (pat:post-pattern b))]
           ;; ---
-          [(and (hpat:var? a) (hpat:var? b))
-           (and (free-id/f-equal? (hpat:var-parser a) (hpat:var-parser b))
-                (equal-iattrs? (hpat:var-attrs a) (hpat:var-attrs b))
-                (equal-argu? (hpat:var-argu a) (hpat:var-argu b))
-                (expr-equal? (hpat:var-role a) (hpat:var-role b)))]
+          [(and (hpat:var/p? a) (hpat:var/p? b))
+           (and (free-id/f-equal? (hpat:var/p-parser a) (hpat:var/p-parser b))
+                (equal-iattrs? (hpat:var/p-attrs a) (hpat:var/p-attrs b))
+                (equal-argu? (hpat:var/p-argu a) (hpat:var/p-argu b))
+                (expr-equal? (hpat:var/p-role a) (hpat:var/p-role b)))]
           [(and (hpat:seq? a) (hpat:seq? b))
            (pattern-equal? (hpat:seq-inner a) (hpat:seq-inner b))]
           ;; ---
@@ -399,7 +402,9 @@
     [(pat:any _as) '_]
     [(pat:integrated _as name pred desc _)
      (format-symbol "~a:~a" (or name '_) desc)]
-    [(pat:var _as name parser _ _ _ _ _)
+    [(pat:svar _as name)
+     (syntax-e name)]
+    [(pat:var/p _as name parser _ _ _ _ _)
      (cond [(and parser (regexp-match #rx"^parse-(.*)$" (symbol->string (syntax-e parser))))
             => (lambda (m)
                  (format-symbol "~a:~a" (or name '_) (cadr m)))]

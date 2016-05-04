@@ -499,10 +499,10 @@ Conventions:
             k)]
        [#s(pat:any _attrs)
         #'k]
-       [#s(pat:var _attrs name #f _ () _ _ _)
+       [#s(pat:svar _attrs name)
         #'(let-attributes ([#s(attr name 0 #t) (datum->syntax cx x cx)])
             k)]
-       [#s(pat:var _attrs name parser argu (nested-a ...) attr-count commit? role)
+       [#s(pat:var/p _attrs name parser argu (nested-a ...) attr-count commit? role)
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)
                        (if (identifier? #'name)
@@ -668,9 +668,9 @@ Conventions:
      (syntax-case #'p ()
        [#s(pat:any _as)
         #''(any)]
-       [#s(pat:var _as name #f _ () _ _ _)
+       [#s(pat:svar _as name)
         #''(any)]
-       [#s(pat:var _ ...)
+       [#s(pat:var/p _ ...)
         #'#f] ;; FIXME: need access to (constant) description as field
        [#s(pat:datum _as d)
         #''(datum d)]
@@ -784,7 +784,7 @@ Conventions:
             (parse:H x cx rest-x rest-cx rest-pr pattern pr* es*
                      (let ([rest-pr (if 'transparent? rest-pr (ps-pop-opaque rest-pr))])
                        k)))]
-       [#s(hpat:var _attrs name parser argu (nested-a ...) attr-count commit? role)
+       [#s(hpat:var/p _attrs name parser argu (nested-a ...) attr-count commit? role)
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)
                        (if (identifier? #'name)
@@ -920,9 +920,7 @@ Conventions:
   (syntax-case stx ()
     ;; == Specialized cases
     ;; -- (x ... . ())
-    [(parse:dots x cx (#s(ehpat (attr0)
-                                #s(pat:var _attrs name #f _ () _ _ _)
-                                #f))
+    [(parse:dots x cx (#s(ehpat (attr0) #s(pat:svar _attrs name) #f))
                  #s(pat:datum () ()) pr es k)
      #'(let-values ([(status result) (predicate-ellipsis-parser x cx pr es void #f #f)])
          (case status

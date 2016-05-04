@@ -22,7 +22,8 @@ A Base is (listof IAttr)
 #|
 A SinglePattern is one of
   (pat:any Base)
-  (pat:var Base id id Arguments (listof IAttr) nat/#f bool stx)
+  (pat:svar Base id)  -- "simple" var, no stxclass
+  (pat:var/p Base id id Arguments (Listof IAttr) nat/#f bool stx) -- var with parser
   (pat:literal Base identifier ct-phase ct-phase)
   (pat:datum Base datum)
   (pat:action Base ActionPattern SinglePattern)
@@ -51,7 +52,8 @@ A ListPattern is a subtype of SinglePattern; one of
 |#
 
 (define-struct pat:any (attrs) #:prefab)
-(define-struct pat:var (attrs name parser argu nested-attrs attr-count commit? role) #:prefab)
+(define-struct pat:svar (attrs name) #:prefab)
+(define-struct pat:var/p (attrs name parser argu nested-attrs attr-count commit? role) #:prefab)
 (define-struct pat:literal (attrs id input-phase lit-phase) #:prefab)
 (define-struct pat:datum (attrs datum) #:prefab)
 (define-struct pat:action (attrs action inner) #:prefab)
@@ -94,7 +96,7 @@ action:and is desugared below in create-* procedures
 
 #|
 A HeadPattern is one of 
-  (hpat:var Base id id Arguments (listof IAttr) nat/#f bool stx)
+  (hpat:var/p Base id id Arguments (listof IAttr) nat/#f bool stx)
   (hpat:seq Base ListPattern)
   (hpat:action Base ActionPattern HeadPattern)
   (hpat:and Base HeadPattern SinglePattern)
@@ -109,7 +111,7 @@ A HeadPattern is one of
   (hpat:peek-not Base HeadPattern)
 |#
 
-(define-struct hpat:var (attrs name parser argu nested-attrs attr-count commit? role) #:prefab)
+(define-struct hpat:var/p (attrs name parser argu nested-attrs attr-count commit? role) #:prefab)
 (define-struct hpat:seq (attrs inner) #:prefab)
 (define-struct hpat:action (attrs action inner) #:prefab)
 (define-struct hpat:and (attrs head single) #:prefab)
@@ -154,7 +156,8 @@ A SideClause is one of
 
 (define (pattern? x)
   (or (pat:any? x)
-      (pat:var? x)
+      (pat:svar? x)
+      (pat:var/p? x)
       (pat:literal? x)
       (pat:datum? x)
       (pat:action? x)
@@ -184,7 +187,7 @@ A SideClause is one of
       (action:post? x)))
 
 (define (head-pattern? x)
-  (or (hpat:var? x)
+  (or (hpat:var/p? x)
       (hpat:seq? x)
       (hpat:action? x)
       (hpat:and? x)
@@ -220,13 +223,13 @@ A SideClause is one of
            #'(lambda (x)
                (cond [(pred x) (accessor x)] ...
                      [else (raise-type-error 'pattern-attrs "pattern" x)])))]))
-    (mk-get-attrs pat:any pat:var pat:datum pat:literal pat:action pat:head
+    (mk-get-attrs pat:any pat:svar pat:var/p pat:datum pat:literal pat:action pat:head
                   pat:dots pat:and pat:or pat:not pat:describe
                   pat:pair pat:vector pat:box pat:pstruct
                   pat:delimit pat:commit pat:reflect pat:post pat:integrated
                   action:cut action:bind action:fail action:and action:parse
                   action:do action:post
-                  hpat:var hpat:seq hpat:action hpat:and hpat:or hpat:describe
+                  hpat:var/p hpat:seq hpat:action hpat:and hpat:or hpat:describe
                   hpat:optional hpat:delimit hpat:commit hpat:reflect hpat:post
                   hpat:peek hpat:peek-not
                   ehpat)))
@@ -239,10 +242,13 @@ A SideClause is one of
 (define (create-pat:any)
   (make pat:any null))
 
-(define (create-pat:var name parser argu nested-attrs attr-count commit? role)
-  (let ([attrs
-         (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make pat:var attrs name parser argu nested-attrs attr-count commit? role)))
+(define (create-pat:svar name)
+  (let ([attrs (list (make attr name 0 #t))])
+    (make pat:svar attrs name)))
+
+(define (create-pat:var/p name parser argu nested-attrs attr-count commit? role)
+  (let ([attrs (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
+    (make pat:var/p attrs name parser argu nested-attrs attr-count commit? role)))
 
 (define (create-pat:reflect obj argu attr-decls name nested-attrs)
   (let ([attrs
@@ -338,10 +344,9 @@ A SideClause is one of
 
 ;; ----
 
-(define (create-hpat:var name parser argu nested-attrs attr-count commit? role)
-  (let ([attrs
-         (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make hpat:var attrs name parser argu nested-attrs attr-count commit? role)))
+(define (create-hpat:var/p name parser argu nested-attrs attr-count commit? role)
+  (let ([attrs (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
+    (make hpat:var/p attrs name parser argu nested-attrs attr-count commit? role)))
 
 (define (create-hpat:reflect obj argu attr-decls name nested-attrs)
   (let ([attrs
