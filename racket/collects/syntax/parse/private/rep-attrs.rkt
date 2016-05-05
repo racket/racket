@@ -48,9 +48,6 @@ of signatures easier for reified syntax-classes.
  [reorder-iattrs
   (-> (listof sattr?) (listof iattr?)
       (listof iattr?))]
- [rename-attr
-  (-> iattr? identifier?
-      iattr?)]
 
  ;; SAttr operations
  [iattr->sattr
@@ -135,9 +132,6 @@ of signatures easier for reified syntax-classes.
   (sort as string<?
         #:key (lambda (a) (symbol->string (attr-name a)))
         #:cache-keys? #t))
-
-(define (rename-attr a name)
-  (make attr name (attr-depth a) (attr-syntax? a)))
 
 ;; intersect-sattrss : (listof (listof SAttr)) -> (listof SAttr)
 ;; FIXME: rely on sorted inputs, simplify algorithm and avoid second sort?

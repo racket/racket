@@ -2,7 +2,7 @@
 (require syntax/parse/private/residual-ct ;; keep abs. path
          "rep-attrs.rkt"
          "kws.rkt"
-         "make.rkt"
+         "minimatch.rkt"
          (for-syntax racket/base
                      syntax/stx
                      racket/syntax))
@@ -13,117 +13,106 @@ Uses Arguments from kws.rkt
 |#
 
 #|
-A Base is (listof IAttr)
-  If P = (make-pattern Attrs ...) and A is in Attrs,
-  the depth of A is with respect to P,
-  not with respect to the entire enclosing pattern.
-|#
-
-#|
 A SinglePattern is one of
-  (pat:any Base)
-  (pat:svar Base id)  -- "simple" var, no stxclass
-  (pat:var/p Base id id Arguments (Listof IAttr) nat/#f bool stx) -- var with parser
-  (pat:literal Base identifier ct-phase ct-phase)
-  (pat:datum Base datum)
-  (pat:action Base ActionPattern SinglePattern)
-  (pat:head Base HeadPattern SinglePattern)
-  (pat:dots Base (listof EllipsisHeadPattern) SinglePattern)
-  (pat:and Base (listof SinglePattern))
-  (pat:or Base (listof SinglePattern))
-  (pat:not Base SinglePattern)
-  (pat:pair Base boolean SinglePattern SinglePattern)
-  (pat:vector Base SinglePattern)
-  (pat:box Base SinglePattern)
-  (pat:pstruct Base key SinglePattern)
-  (pat:describe Base SinglePattern stx boolean stx)
-  (pat:delimit Base SinglePattern)
-  (pat:commit Base SinglePattern)
-  (pat:reflect Base stx Arguments (listof SAttr) id (listof IAttr))
-  (pat:post Base SinglePattern)
-  (pat:integrated Base id/#f id string stx)
+  (pat:any)
+  (pat:svar id)  -- "simple" var, no stxclass
+  (pat:var/p id id Arguments (Listof IAttr) nat/#f bool stx) -- var with parser
+  (pat:literal identifier ct-phase ct-phase)
+  (pat:datum datum)
+  (pat:action ActionPattern SinglePattern)
+  (pat:head HeadPattern SinglePattern)
+  (pat:dots (listof EllipsisHeadPattern) SinglePattern)
+  (pat:and (listof SinglePattern))
+  (pat:or (listof IAttr) (listof SinglePattern) (listof (listof IAttr)))
+  (pat:not SinglePattern)
+  (pat:pair boolean SinglePattern SinglePattern)
+  (pat:vector SinglePattern)
+  (pat:box SinglePattern)
+  (pat:pstruct key SinglePattern)
+  (pat:describe SinglePattern stx boolean stx)
+  (pat:delimit SinglePattern)
+  (pat:commit SinglePattern)
+  (pat:reflect stx Arguments (listof SAttr) id (listof IAttr))
+  (pat:post SinglePattern)
+  (pat:integrated id/#f id string stx)
 
 A ListPattern is a subtype of SinglePattern; one of
-  (pat:datum Base '())
-  (pat:action Base ActionPattern ListPattern)
-  (pat:head Base HeadPattern ListPattern)
-  (pat:pair Base #t SinglePattern ListPattern)
-  (pat:dots Base EllipsisHeadPattern SinglePattern)
+  (pat:datum '())
+  (pat:action ActionPattern ListPattern)
+  (pat:head HeadPattern ListPattern)
+  (pat:pair #t SinglePattern ListPattern)
+  (pat:dots EllipsisHeadPattern SinglePattern)
 |#
 
-(define-struct pat:any (attrs) #:prefab)
-(define-struct pat:svar (attrs name) #:prefab)
-(define-struct pat:var/p (attrs name parser argu nested-attrs attr-count commit? role) #:prefab)
-(define-struct pat:literal (attrs id input-phase lit-phase) #:prefab)
-(define-struct pat:datum (attrs datum) #:prefab)
-(define-struct pat:action (attrs action inner) #:prefab)
-(define-struct pat:head (attrs head tail) #:prefab)
-(define-struct pat:dots (attrs heads tail) #:prefab)
-(define-struct pat:and (attrs patterns) #:prefab)
-(define-struct pat:or (attrs patterns) #:prefab)
-(define-struct pat:not (attrs pattern) #:prefab)
-(define-struct pat:pair (attrs proper? head tail) #:prefab)
-(define-struct pat:vector (attrs pattern) #:prefab)
-(define-struct pat:box (attrs pattern) #:prefab)
-(define-struct pat:pstruct (attrs key pattern) #:prefab)
-(define-struct pat:describe (attrs pattern description transparent? role) #:prefab)
-(define-struct pat:delimit (attrs pattern) #:prefab)
-(define-struct pat:commit (attrs pattern) #:prefab)
-(define-struct pat:reflect (attrs obj argu attr-decls name nested-attrs) #:prefab)
-(define-struct pat:post (attrs pattern) #:prefab)
-(define-struct pat:integrated (attrs name predicate description role) #:prefab)
+(define-struct pat:any () #:prefab)
+(define-struct pat:svar (name) #:prefab)
+(define-struct pat:var/p (name parser argu nested-attrs attr-count commit? role) #:prefab)
+(define-struct pat:literal (id input-phase lit-phase) #:prefab)
+(define-struct pat:datum (datum) #:prefab)
+(define-struct pat:action (action inner) #:prefab)
+(define-struct pat:head (head tail) #:prefab)
+(define-struct pat:dots (heads tail) #:prefab)
+(define-struct pat:and (patterns) #:prefab)
+(define-struct pat:or (attrs patterns attrss) #:prefab)
+(define-struct pat:not (pattern) #:prefab)
+(define-struct pat:pair (proper? head tail) #:prefab)
+(define-struct pat:vector (pattern) #:prefab)
+(define-struct pat:box (pattern) #:prefab)
+(define-struct pat:pstruct (key pattern) #:prefab)
+(define-struct pat:describe (pattern description transparent? role) #:prefab)
+(define-struct pat:delimit (pattern) #:prefab)
+(define-struct pat:commit (pattern) #:prefab)
+(define-struct pat:reflect (obj argu attr-decls name nested-attrs) #:prefab)
+(define-struct pat:post (pattern) #:prefab)
+(define-struct pat:integrated (name predicate description role) #:prefab)
 
 #|
 A ActionPattern is one of
-  (action:cut Base)
-  (action:fail Base stx stx)
-  (action:bind Base (listof clause:attr))
-* (action:and Base (listof ActionPattern))
-  (action:parse Base SinglePattern stx)
-  (action:do Base (listof stx))
-  (action:post Base ActionPattern Quotable Nat)
-
-action:and is desugared below in create-* procedures
+  (action:cut)
+  (action:fail stx stx)
+  (action:bind (listof clause:attr))
+  (action:and (listof ActionPattern))
+  (action:parse SinglePattern stx)
+  (action:do (listof stx))
+  (action:post ActionPattern Quotable Nat)
 |#
 
-(define-struct action:cut (attrs) #:prefab)
-(define-struct action:fail (attrs when message) #:prefab)
-(define-struct action:bind (attrs clauses) #:prefab)
-(define-struct action:and (attrs patterns) #:prefab)
-(define-struct action:parse (attrs pattern expr) #:prefab)
-(define-struct action:do (attrs stmts) #:prefab)
-(define-struct action:post (attrs pattern group index) #:prefab)
+(define-struct action:cut () #:prefab)
+(define-struct action:fail (when message) #:prefab)
+(define-struct action:bind (clauses) #:prefab)
+(define-struct action:and (patterns) #:prefab)
+(define-struct action:parse (pattern expr) #:prefab)
+(define-struct action:do (stmts) #:prefab)
+(define-struct action:post (pattern group index) #:prefab)
 
 #|
 A HeadPattern is one of 
-  (hpat:var/p Base id id Arguments (listof IAttr) nat/#f bool stx)
-  (hpat:seq Base ListPattern)
-  (hpat:action Base ActionPattern HeadPattern)
-  (hpat:and Base HeadPattern SinglePattern)
-  (hpat:or Base (listof HeadPattern))
-  (hpat:optional Base HeadPattern (listof clause:attr))
-  (hpat:describe Base HeadPattern stx/#f boolean stx)
-  (hpat:delimit Base HeadPattern)
-  (hpat:commit Base HeadPattern)
-  (hpat:reflect Base stx Arguments (listof SAttr) id (listof IAttr))
-  (hpat:post Base HeadPattern)
-  (hpat:peek Base HeadPattern)
-  (hpat:peek-not Base HeadPattern)
+  (hpat:var/p id id Arguments (listof IAttr) nat/#f bool stx)
+  (hpat:seq ListPattern)
+  (hpat:action ActionPattern HeadPattern)
+  (hpat:and HeadPattern SinglePattern)
+  (hpat:or (listof IAttr) (listof HeadPattern) (listof (listof IAttr)))
+  (hpat:describe HeadPattern stx/#f boolean stx)
+  (hpat:delimit HeadPattern)
+  (hpat:commit HeadPattern)
+  (hpat:reflect stx Arguments (listof SAttr) id (listof IAttr))
+  (hpat:post HeadPattern)
+  (hpat:peek HeadPattern)
+  (hpat:peek-not HeadPattern)
 |#
 
-(define-struct hpat:var/p (attrs name parser argu nested-attrs attr-count commit? role) #:prefab)
-(define-struct hpat:seq (attrs inner) #:prefab)
-(define-struct hpat:action (attrs action inner) #:prefab)
-(define-struct hpat:and (attrs head single) #:prefab)
-(define-struct hpat:or (attrs patterns) #:prefab)
-(define-struct hpat:optional (attrs inner defaults) #:prefab)
-(define-struct hpat:describe (attrs pattern description transparent? role) #:prefab)
-(define-struct hpat:delimit (attrs pattern) #:prefab)
-(define-struct hpat:commit (attrs pattern) #:prefab)
-(define-struct hpat:reflect (attrs obj argu attr-decls name nested-attrs) #:prefab)
-(define-struct hpat:post (attrs pattern) #:prefab)
-(define-struct hpat:peek (attrs pattern) #:prefab)
-(define-struct hpat:peek-not (attrs pattern) #:prefab)
+(define-struct hpat:var/p (name parser argu nested-attrs attr-count commit? role) #:prefab)
+(define-struct hpat:seq (inner) #:prefab)
+(define-struct hpat:action (action inner) #:prefab)
+(define-struct hpat:and (head single) #:prefab)
+(define-struct hpat:or (attrs patterns attrss) #:prefab)
+(define-struct hpat:describe (pattern description transparent? role) #:prefab)
+(define-struct hpat:delimit (pattern) #:prefab)
+(define-struct hpat:commit (pattern) #:prefab)
+(define-struct hpat:reflect (obj argu attr-decls name nested-attrs) #:prefab)
+(define-struct hpat:post (pattern) #:prefab)
+(define-struct hpat:peek (pattern) #:prefab)
+(define-struct hpat:peek-not (pattern) #:prefab)
 
 #|
 An EllipsisHeadPattern is
@@ -192,7 +181,6 @@ A SideClause is one of
       (hpat:action? x)
       (hpat:and? x)
       (hpat:or? x)
-      (hpat:optional? x)
       (hpat:describe? x)
       (hpat:delimit? x)
       (hpat:commit? x)
@@ -210,186 +198,121 @@ A SideClause is one of
   (or (single-pattern? x)
       (head-pattern? x)))
 
-(define pattern-attrs
-  (let ()
-    (define-syntax (mk-get-attrs stx)
-      (syntax-case stx ()
-        [(_ struct ...)
-         (with-syntax
-             ([([pred accessor] ...)
-               (for/list ([s (in-list (stx->list #'(struct ...)))])
-                 (list (format-id s "~a?" (syntax-e s))
-                       (format-id s "~a-attrs" (syntax-e s))))])
-           #'(lambda (x)
-               (cond [(pred x) (accessor x)] ...
-                     [else (raise-type-error 'pattern-attrs "pattern" x)])))]))
-    (mk-get-attrs pat:any pat:svar pat:var/p pat:datum pat:literal pat:action pat:head
-                  pat:dots pat:and pat:or pat:not pat:describe
-                  pat:pair pat:vector pat:box pat:pstruct
-                  pat:delimit pat:commit pat:reflect pat:post pat:integrated
-                  action:cut action:bind action:fail action:and action:parse
-                  action:do action:post
-                  hpat:var/p hpat:seq hpat:action hpat:and hpat:or hpat:describe
-                  hpat:optional hpat:delimit hpat:commit hpat:reflect hpat:post
-                  hpat:peek hpat:peek-not
-                  ehpat)))
+;; check-pattern : *Pattern -> *Pattern
+;; Does attr computation to catch errors, but returns same pattern.
+(define (check-pattern p)
+  (void (pattern-attrs p))
+  p)
+
+;; pattern-attrs-table : Hasheq[*Pattern => (Listof IAttr)]
+(define pattern-attrs-table (make-weak-hasheq))
+
+;; pattern-attrs : *Pattern -> (Listof IAttr)
+(define (pattern-attrs p)
+  (hash-ref! pattern-attrs-table p (lambda () (pattern-attrs* p))))
+
+(define (pattern-attrs* p)
+  (match p
+    ;; -- S patterns
+    [(pat:any)
+     null]
+    [(pat:svar name)
+     (list (attr name 0 #t))]
+    [(pat:var/p name _ _ nested-attrs _ _ _)
+     (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
+    [(pat:reflect _ _ _ name nested-attrs)
+     (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
+    [(pat:datum _)
+     null]
+    [(pat:literal _ _ _)
+     null]
+    [(pat:action a sp)
+     (append-iattrs (map pattern-attrs (list a sp)))]
+    [(pat:head headp tailp)
+     (append-iattrs (map pattern-attrs (list headp tailp)))]
+    [(pat:pair _proper? headp tailp)
+     (append-iattrs (map pattern-attrs (list headp tailp)))]
+    [(pat:vector sp)
+     (pattern-attrs sp)]
+    [(pat:box sp)
+     (pattern-attrs sp)]
+    [(pat:pstruct key sp)
+     (pattern-attrs sp)]
+    [(pat:describe sp _ _ _)
+     (pattern-attrs sp)]
+    [(pat:and ps)
+     (append-iattrs (map pattern-attrs ps))]
+    [(pat:or _ ps _)
+     (union-iattrs (map pattern-attrs ps))]
+    [(pat:not _)
+     null]
+    [(pat:dots headps tailp)
+     (append-iattrs (map pattern-attrs (append headps (list tailp))))]
+    [(pat:delimit sp)
+     (pattern-attrs sp)]
+    [(pat:commit sp)
+     (pattern-attrs sp)]
+    [(pat:post sp)
+     (pattern-attrs sp)]
+    [(pat:integrated name _ _ _)
+     (if name (list (attr name 0 #t)) null)]
+
+    ;; -- A patterns
+    [(action:cut)
+     null]
+    [(action:fail _ _)
+     null]
+    [(action:bind clauses)
+     (map clause:attr-attr clauses)]
+    [(action:and ps)
+     (append-iattrs (map pattern-attrs ps))]
+    [(action:parse sp _)
+     (pattern-attrs sp)]
+    [(action:do _)
+     null]
+    [(action:post sp _ _)
+     (pattern-attrs sp)]
+
+    ;; -- H patterns
+    [(hpat:var/p name _ _ nested-attrs _ _ _)
+     (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
+    [(hpat:reflect _ _ _ name nested-attrs)
+     (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
+    [(hpat:seq lp)
+     (pattern-attrs lp)]
+    [(hpat:action a hp)
+     (append-iattrs (map pattern-attrs (list a hp)))]
+    [(hpat:describe hp _ _ _)
+     (pattern-attrs hp)]
+    [(hpat:and hp sp)
+     (append-iattrs (map pattern-attrs (list hp sp)))]
+    [(hpat:or _ ps _)
+     (union-iattrs (map pattern-attrs ps))]
+    [(hpat:delimit hp)
+     (pattern-attrs hp)]
+    [(hpat:commit hp)
+     (pattern-attrs hp)]
+    [(hpat:post hp)
+     (pattern-attrs hp)]
+    [(hpat:peek hp)
+     (pattern-attrs hp)]
+    [(hpat:peek-not hp)
+     null]
+
+    ;; EH patterns
+    [(ehpat iattrs _ _)
+     iattrs]
+    ))
 
 ;; ----
 
-;; Helpers to handle attribute calculations
-;; Too complicated for a few pattern forms; those are handled in rep.rkt
+(define (create-pat:or ps)
+  (define attrss (map pattern-attrs ps))
+  (pat:or (union-iattrs attrss) ps attrss))
 
-(define (create-pat:any)
-  (make pat:any null))
-
-(define (create-pat:svar name)
-  (let ([attrs (list (make attr name 0 #t))])
-    (make pat:svar attrs name)))
-
-(define (create-pat:var/p name parser argu nested-attrs attr-count commit? role)
-  (let ([attrs (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make pat:var/p attrs name parser argu nested-attrs attr-count commit? role)))
-
-(define (create-pat:reflect obj argu attr-decls name nested-attrs)
-  (let ([attrs
-         (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make pat:reflect attrs obj argu attr-decls name nested-attrs)))
-
-(define (create-pat:datum datum)
-  (make pat:datum null datum))
-
-(define (create-pat:literal literal input-phase lit-phase)
-  (make pat:literal null literal input-phase lit-phase))
-
-(define (create-pat:action g sp)
-  (cond [(action:and? g)
-         (for/fold ([sp sp]) ([g (in-list (reverse (action:and-patterns g)))])
-           (create-pat:action g sp))]
-        [else
-         (let ([attrs (append-iattrs (map pattern-attrs (list g sp)))])
-           (make pat:action attrs g sp))]))
-
-(define (create-pat:head headp tailp)
-  (let ([attrs (append-iattrs (map pattern-attrs (list headp tailp)))])
-    (make pat:head attrs headp tailp)))
-
-(define (create-pat:pair headp tailp)
-  (let ([attrs (append-iattrs (map pattern-attrs (list headp tailp)))]
-        [proper? (proper-list-pattern? tailp #t)])
-    (make pat:pair attrs proper? headp tailp)))
-
-(define (create-pat:vector pattern)
-  (make pat:vector (pattern-attrs pattern) pattern))
-
-(define (create-pat:box pattern)
-  (make pat:box (pattern-attrs pattern) pattern))
-
-(define (create-pat:pstruct key pattern)
-  (make pat:pstruct (pattern-attrs pattern) key pattern))
-
-(define (create-pat:describe p description transparent? role)
-  (make pat:describe (pattern-attrs p) p description transparent? role))
-
-(define (create-pat:and patterns)
-  (let ([attrs (append-iattrs (map pattern-attrs patterns))])
-    (make pat:and attrs patterns)))
-
-(define (create-pat:or patterns)
-  (let ([attrs (union-iattrs (map pattern-attrs patterns))])
-    (make pat:or attrs patterns)))
-
-(define (create-pat:not pattern)
-  (make pat:not null pattern))
-
-(define (create-pat:dots headps tailp)
-  (let ([attrs (append-iattrs (map pattern-attrs (cons tailp headps)))])
-    (make pat:dots attrs headps tailp)))
-
-(define (create-pat:delimit pattern)
-  (make pat:delimit (pattern-attrs pattern) pattern))
-
-(define (create-pat:commit pattern)
-  (make pat:commit (pattern-attrs pattern) pattern))
-
-(define (create-pat:post pattern)
-  (make pat:post (pattern-attrs pattern) pattern))
-
-(define (create-pat:integrated name predicate description role)
-  (let ([attrs (if name (list (make attr name 0 #t)) null)])
-    (make pat:integrated attrs name predicate description role)))
-
-;; ----
-
-(define (create-action:cut)
-  (make action:cut null))
-
-(define (create-action:fail condition message)
-  (make action:fail null condition message))
-
-(define (create-action:bind clauses)
-  (make action:bind (map clause:attr-attr clauses) clauses))
-
-(define (create-action:and patterns)
-  (let ([attrs (append-iattrs (map pattern-attrs patterns))])
-    (make action:and attrs patterns)))
-
-(define (create-action:parse pattern expr)
-  (make action:parse (pattern-attrs pattern) pattern expr))
-
-(define (create-action:do stmts)
-  (make action:do null stmts))
-
-(define (create-action:post pattern group index)
-  (make action:post (pattern-attrs pattern) pattern group index))
-
-;; ----
-
-(define (create-hpat:var/p name parser argu nested-attrs attr-count commit? role)
-  (let ([attrs (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make hpat:var/p attrs name parser argu nested-attrs attr-count commit? role)))
-
-(define (create-hpat:reflect obj argu attr-decls name nested-attrs)
-  (let ([attrs
-         (if name (cons (make attr name 0 #t) nested-attrs) nested-attrs)])
-    (make hpat:reflect attrs obj argu attr-decls name nested-attrs)))
-
-(define (create-hpat:seq lp)
-  (make hpat:seq (pattern-attrs lp) lp))
-
-(define (create-hpat:action g hp)
-  (cond [(action:and? g)
-         (for/fold ([hp hp]) ([g (in-list (reverse (action:and-patterns g)))])
-           (create-hpat:action g hp))]
-        [else
-         (let ([attrs (append-iattrs (map pattern-attrs (list g hp)))])
-           (make hpat:action attrs g hp))]))
-
-(define (create-hpat:describe p description transparent? role)
-  (make hpat:describe (pattern-attrs p) p description transparent? role))
-
-(define (create-hpat:and hp sp)
-  (make hpat:and (append-iattrs (map pattern-attrs (list hp sp))) hp sp))
-
-(define (create-hpat:or patterns)
-  (let ([attrs (union-iattrs (map pattern-attrs patterns))])
-    (make hpat:or attrs patterns)))
-
-(define (create-hpat:delimit pattern)
-  (make hpat:delimit (pattern-attrs pattern) pattern))
-
-(define (create-hpat:commit pattern)
-  (make hpat:commit (pattern-attrs pattern) pattern))
-
-(define (create-hpat:post pattern)
-  (make hpat:post (pattern-attrs pattern) pattern))
-
-(define (create-hpat:peek pattern)
-  (make hpat:peek (pattern-attrs pattern) pattern))
-
-(define (create-hpat:peek-not pattern)
-  (make hpat:peek-not null pattern))
-
-;; ----
+(define (create-hpat:or ps)
+  (define attrss (map pattern-attrs ps))
+  (hpat:or (union-iattrs attrss) ps attrss))
 
 (define (create-ehpat head repc)
   (let* ([iattrs0 (pattern-attrs head)]
@@ -410,22 +333,22 @@ A SideClause is one of
 
 (define (action/head-pattern->list-pattern p)
   (cond [(action-pattern? p)
-         (create-pat:action p (create-pat:any))]
+         (pat:action p (pat:any))]
         [(hpat:seq? p)
          ;; simplification: just extract list pattern from hpat:seq
          (hpat:seq-inner p)]
         [else
-         (create-pat:head p (create-pat:datum '()))]))
+         (pat:head p (pat:datum '()))]))
 
-(define (action-pattern->single-pattern gp)
-  (create-pat:action gp (create-pat:any)))
+(define (action-pattern->single-pattern a)
+  (pat:action a (pat:any)))
 
 (define (proper-list-pattern? p trust-pair?)
   (or (and (pat:datum? p) (eq? (pat:datum-datum p) '()))
       (and (pat:pair? p)
            (if trust-pair?
                (pat:pair-proper? p)
-               (proper-list-pattern? (pat:pair-tail p))))
+               (proper-list-pattern? (pat:pair-tail p) trust-pair?)))
       (and (pat:head? p) (proper-list-pattern? (pat:head-tail p) trust-pair?))
       (and (pat:dots? p) (proper-list-pattern? (pat:dots-tail p) trust-pair?))
       (and (pat:action? p) (proper-list-pattern? (pat:action-inner p) trust-pair?))))
