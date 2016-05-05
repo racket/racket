@@ -953,9 +953,9 @@ locally defined @racket[foo], but as written, it will not:
 
 This macro can be fixed by applying
 @racket[syntax-local-introduce] to the result of
-@racket[(syntax-local-value #'id)], which cancels the macro-introduction
-scope on the @racket[old-id] identifier, allowing it
-to refer to a binding outside of the macro’s expansion.
+@racket[(syntax-local-value #'id)], which cancels 
+the macro-introduction scope on @racket[old-id], 
+so it can refer to a binding outside of the macro’s expansion.
 
 @examples[#:eval stx-eval
 (define foo 'locally-defined-foo)
@@ -974,27 +974,23 @@ to refer to a binding outside of the macro’s expansion.
 ]
 
 Along these lines, @racket[syntax-local-introduce] can also be used
-to introduce an unhygienic binding at the use site,
-by making a macro-introduced binding appear as if it originated at the
+to create an unhygienic binding at the use site, by making a 
+macro-introduced identifier appear as if it originated at the
 use site. It is important, however, that the syntax object passed
 to @racket[syntax-local-introduce] be free of any extraneous scopes.
-Using @racket[(datum->syntax #f _id)] 
-to prepare the input syntax is good policy.
+
+For instance, the @racket[sli-x-broken] macro below won't work because we're 
+using @racket[#'x] as an identifier. The @racket[#'] prefix creates a syntax
+object that has the scopes of the current context (in this case, inside the 
+macro). Even though this identifier's macro-introduction scope is canceled by 
+@racket[syntax-local-introduce], these other scopes prevent it 
+from binding the @racket[x] at the use site.
+
+But in the @racket[sli-x] macro, we use @racket[(datum->syntax #f _id)] to 
+produce an identifier with no scopes, which will make the unhygienic 
+binding work.
 
 @examples[#:eval stx-eval
-
-(module sli racket
-  (provide sli-x)
-  (define-syntax (sli-x stx)
-    (syntax-case stx ()
-      [(_) (with-syntax ([x (syntax-local-introduce 
-                              (datum->syntax #f 'x))])
-             #'(define x 'syntax-local-introduce-x))])))
-
-(require 'sli)
-(let ()
-  (sli-x)
-  x)
 
 (module sli-broken racket
   (provide sli-x-broken)
@@ -1008,6 +1004,19 @@ to prepare the input syntax is good policy.
 (eval:error (let ()
               (sli-x-broken)
               x))
+
+(module sli racket
+  (provide sli-x)
+  (define-syntax (sli-x stx)
+    (syntax-case stx ()
+      [(_) (with-syntax ([x (syntax-local-introduce 
+                              (datum->syntax #f 'x))])
+             #'(define x 'syntax-local-introduce-x))])))
+
+(require 'sli)
+(let ()
+  (sli-x)
+  x)
 ]
 
 @transform-time[]}
