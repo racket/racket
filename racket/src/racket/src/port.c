@@ -8318,7 +8318,7 @@ fd_write_string(Scheme_Output_Port *port,
 
   fop = (Scheme_FD *)port->port_data;
 
-  if (!flush && !fop->flushing && (fop->flush != MZ_FLUSH_ALWAYS)) {
+  if (!flush && !fop->flushing && (fop->flush == MZ_FLUSH_NEVER)) {
     l = MZPORT_FD_BUFFSIZE - fop->bufcount;
     if (len <= l) {
       memcpy(fop->buffer + fop->bufcount, str + d, len);
