@@ -11,9 +11,12 @@
 (define-syntax-rule (terx s p stuff ...)
   (terx* s [p] stuff ...))
 
-(define-syntax terx*
+(define-syntax-rule (terx* s [p ...] stuff ...)
+  (terx** s [[p] ...] stuff ...))
+
+(define-syntax terx**
   (syntax-parser
-    [(terx s [p ...] (~optional (~seq #:term term) #:defaults ([term #'#f])) rx ...)
+    [(terx s [[p c ...] ...] (~optional (~seq #:term term) #:defaults ([term #'#f])) rx ...)
      #`(test-case (format "line ~s: ~a match ~s for error"
                           '#,(syntax-line #'s)
                           's '(p ...))
@@ -22,7 +25,7 @@
                                    (escape exn))
                                  (lambda ()
                                    (syntax-parse (quote-syntax s)
-                                     [p (void)] ...))))])
+                                     [p c ... (void)] ...))))])
            (let ([msg (exn-message exn)]
                  [stxs (and (exn:fail:syntax? exn)
                             (exn:fail:syntax-exprs exn))])
@@ -170,6 +173,27 @@
       (~or (a:nat) (~post (a:id)))
       #rx"expected identifier"
       (not #rx"exact-nonnegative-integer"))
+
+;; sequential ~and
+
+(terx 1
+      (~and (~or x:nat x:id) (~fail "never happy"))
+      #rx"never happy"
+      (not #rx"expected identifier"))
+
+(terx** 1
+        ([(~post (~or x:nat x:id)) #:fail-when #t "never happy"])
+        #rx"never happy"
+        (not #rx"expected identifier"))
+
+;; indexes only compared within same ~and pattern
+(terx** 1
+        ([(~and (~fail "banana") _)]
+         [(~and x:nat (~fail "apple"))]
+         [(~and x:nat y:nat (~fail "orange"))])
+        #rx"apple"
+        #rx"orange"
+        #rx"banana")
 
 ;; ----------------------------------------
 ;; See "Simplification" from syntax/parse/private/runtime-report

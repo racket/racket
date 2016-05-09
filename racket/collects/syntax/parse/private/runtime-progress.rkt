@@ -4,15 +4,18 @@
 (provide ps-empty
          ps-add-car
          ps-add-cdr
-         ps-add-post
          ps-add-stx
          ps-add-unbox
          ps-add-unvector
          ps-add-unpstruct
          ps-add-opaque
-         (struct-out post)
+         ps-add-post
+         ps-add
+         (struct-out ord)
 
          ps-pop-opaque
+         ps-pop-ord
+         ps-pop-post
          ps-context-syntax
          ps-difference
 
@@ -56,7 +59,8 @@ A Progress Frame (PF) is one of
   - stx     ;; "Base" frame, or ~parse/#:with term
   - 'car    ;; car of pair; also vector->list, unbox, struct->list, etc
   - nat     ;; Represents that many repeated cdrs
-  - #s(post group index) ;; late/post-traversal check, only comparable w/in group
+  - 'post   ;; late/post-traversal check
+  - #s(ord group index) ;; ~and subpattern, only comparable w/in group
   - 'opaque
 
 The error-reporting context (ie, syntax-parse #:context arg) is always
@@ -77,7 +81,7 @@ Interpretation: later frames are applied first.
       means ( car of ( cdr once of stx ) )
       NOT apply car, then apply cdr once, then stop
 |#
-(define-struct post (group index) #:prefab)
+(define-struct ord (group index) #:prefab)
 
 (define (ps-empty stx ctx)
   (if (eq? stx ctx)
@@ -93,8 +97,6 @@ Interpretation: later frames are applied first.
          (cons (+ times n) (cdr parent))]
         [_
          (cons times parent)])))
-(define (ps-add-post parent [group #f] [index 0])
-  (cons (post group index) parent))
 (define (ps-add-stx parent stx)
   (cons stx parent))
 (define (ps-add-unbox parent)
@@ -105,6 +107,10 @@ Interpretation: later frames are applied first.
   (ps-add-car parent))
 (define (ps-add-opaque parent)
   (cons 'opaque parent))
+(define (ps-add parent frame)
+  (cons frame parent))
+(define (ps-add-post parent)
+  (cons 'post parent))
 
 ;; ps-context-syntax : Progress -> syntax
 (define (ps-context-syntax ps)
@@ -114,29 +120,47 @@ Interpretation: later frames are applied first.
 ;; ps-difference : PS PS -> nat
 ;; Returns N s.t. B = (ps-add-cdr^N A)
 (define (ps-difference a b)
-  (define (whoops)
-    (error 'ps-difference "~e is not an extension of ~e" a b))
-  (match (list a b)
-    [(list (cons (? exact-positive-integer? na) pa)
-           (cons (? exact-positive-integer? nb) pb))
-     (unless (equal? pa pb) (whoops))
-     (- nb na)]
-    [(list pa (cons (? exact-positive-integer? nb) pb))
-     (unless (equal? pa pb) (whoops))
-     nb]
-    [_
-     (unless (equal? a b) (whoops))
-     0]))
+  (define-values (a-cdrs a-base)
+    (match a
+      [(cons (? exact-positive-integer? a-cdrs) a-base)
+       (values a-cdrs a-base)]
+      [_ (values 0 a)]))
+  (define-values (b-cdrs b-base)
+    (match b
+      [(cons (? exact-positive-integer? b-cdrs) b-base)
+       (values b-cdrs b-base)]
+      [_ (values 0 b)]))
+  (unless (eq? a-base b-base)
+    (error 'ps-difference "INTERNAL ERROR: ~e does not extend ~e" b a))
+  (- b-cdrs a-cdrs))
 
 ;; ps-pop-opaque : PS -> PS
 ;; Used to continue with progress from opaque head pattern.
 (define (ps-pop-opaque ps)
   (match ps
     [(cons (? exact-positive-integer? n) (cons 'opaque ps*))
-     (cons n ps*)]
+     (ps-add-cdr ps* n)]
     [(cons 'opaque ps*)
      ps*]
-    [_ (error 'ps-pop-opaque "opaque marker not found: ~e" ps)]))
+    [_ (error 'ps-pop-opaque "INTERNAL ERROR: opaque frame not found: ~e" ps)]))
+
+;; ps-pop-ord : PS -> PS
+(define (ps-pop-ord ps)
+  (match ps
+    [(cons (? exact-positive-integer? n) (cons (? ord?) ps*))
+     (ps-add-cdr ps* n)]
+    [(cons (? ord?) ps*)
+     ps*]
+    [_ (error 'ps-pop-ord "INTERNAL ERROR: ord frame not found: ~e" ps)]))
+
+;; ps-pop-post : PS -> PS
+(define (ps-pop-post ps)
+  (match ps
+    [(cons (? exact-positive-integer? n) (cons 'post ps*))
+     (ps-add-cdr ps* n)]
+    [(cons 'post ps*)
+     ps*]
+    [_ (error 'ps-pop-post "INTERNAL ERROR: post frame not found: ~e" ps)]))
 
 
 ;; == Expectations ==

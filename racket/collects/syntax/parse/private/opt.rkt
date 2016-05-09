@@ -213,6 +213,8 @@
      (pattern-factorable? pattern)]
     [(pat:commit pattern) #t]
     [(? pat:reflect?) #f]
+    [(pat:ord pattern _ _)
+     (pattern-factorable? pattern)]
     [(pat:post pattern)
      (pattern-factorable? pattern)]
     ;; ----
@@ -290,6 +292,10 @@
           [(and (pat:commit? a) (pat:commit? b))
            (pattern-equal? (pat:commit-pattern a) (pat:commit-pattern b))]
           [(and (pat:reflect? a) (pat:reflect? b)) #f] ;; FIXME: ?
+          [(and (pat:ord? a) (pat:ord? b))
+           (and (pattern-equal? (pat:ord-pattern a) (pat:ord-pattern b))
+                (equal? (pat:ord-group a) (pat:ord-group b))
+                (equal? (pat:ord-index a) (pat:ord-index b)))]
           [(and (pat:post? a) (pat:post? b))
            (pattern-equal? (pat:post-pattern a) (pat:post-pattern b))]
           ;; ---

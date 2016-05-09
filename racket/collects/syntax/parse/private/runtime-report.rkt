@@ -86,16 +86,21 @@ deals with the fact that they might not be talking about the same terms.
 (define (maximal-failures fs)
   (maximal/progress
    (for/list ([f (in-list fs)])
-     (cons f (failure-progress f)))))
+     (cons (failure-progress f) f))))
 
 #|
 Progress ordering
 -----------------
 
-Lexicographic generalization of partial order on frames
-  CAR < CDR < POST, stx incomparable except to self
-  (post g i1) < (post g i2) if i1 < i2
-  (post g1 i1) incomp (post g2 i2) when g1 != g2
+Nearly a lexicographic generalization of partial order on frames.
+  (( CAR < CDR ) || stx ) < POST )
+  - stx incomparable except with self
+
+But ORD prefixes are sorted out (and discarded) before comparison with 
+rest of progress. Like post, ord comparable only w/in same group:
+  - (ord g n1) < (ord g n2) if n1 < n2
+  - (ord g1 n1) || (ord g2 n2) when g1 != g2
+
 
 Progress equality
 -----------------
@@ -122,104 +127,114 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
            (loop (cdr ps) (cdr ps))]
           [else (loop (cdr ps) acc)])))
 
-;; maximal/progress : (listof (cons A IPS)) -> (listof (listof A))
+;; maximal/progress : (listof (cons IPS A)) -> (listof (listof A))
 ;; Eliminates As with non-maximal progress, then groups As into
 ;; equivalence classes according to progress.
 (define (maximal/progress items)
   (cond [(null? items)
          null]
         [(null? (cdr items))
-         (list (list (car (car items))))]
+         (list (list (cdr (car items))))]
         [else
-         (let-values ([(rNULL rCAR rCDR rPOST rSTX leastCDR)
-                       (partition/pf items)])
-           (append (maximal/pf rNULL rCAR rCDR rPOST leastCDR)
-                   (if (pair? rSTX)
-                       (maximal/stx rSTX)
-                       null)))]))
-
-;; partition/pf : (listof (cons A IPS)) -> (listof (cons A IPS))^5 & nat/#f
-;; Partition by progress first frame (or lack thereof). leastCDR is #f iff rCDR is null
-(define (partition/pf items)
-  (let ([rNULL null] [rCAR null] [rCDR null] [rPOST null] [rSTX null] [leastCDR #f])
-    (for ([a+ips (in-list items)])
-      (let ([ips (cdr a+ips)])
-        (cond [(null? ips)
-               (set! rNULL (cons a+ips rNULL))]
-              [(eq? (car ips) 'car)
-               (set! rCAR (cons a+ips rCAR))]
-              [(exact-positive-integer? (car ips))
-               (set! rCDR (cons a+ips rCDR))
-               (set! leastCDR (if leastCDR (min leastCDR (car ips)) (car ips)))]
-              [(post? (car ips))
-               (set! rPOST (cons a+ips rPOST))]
-              [(syntax? (car ips))
-               (set! rSTX (cons a+ips rSTX))]
-              [else
-               (error 'syntax-parse "INTERNAL ERROR in partition/pf: ~e" ips)])))
-    (values rNULL rCAR rCDR rPOST rSTX leastCDR)))
-
-;; maximal/pf : (listof (cons A IPS))^4 & nat/#f -> (listof (listof A))
-(define (maximal/pf rNULL rCAR rCDR rPOST leastCDR)
-  (cond [(pair? rPOST)
-         (maximal/post rPOST)]
-        [(pair? rCDR)
-         (maximal/progress (rmap (lambda (a+ips) (pop-item-ips-ncdrs a+ips leastCDR)) rCDR))]
-        [(pair? rCAR)
-         (maximal/progress (rmap pop-item-ips rCAR))]
-        [(pair? rNULL)
-         (list (map car rNULL))]
-        [else
-         null]))
-
-;; maximal/post : (NEListof (cons A IPS)) -> (NEListof (NEListof A))
-;; PRE: Each IPS starts with a post frame.
-(define (maximal/post items)
-  ;; groups : (Listof (Listof (cons A IPS)))
-  (define groups (group-by (lambda (a+ips) (post-group (car (cdr a+ips)))) items))
-  (define groups* (map post-group-max-items groups))
-  (append*
-   (for/list ([group (in-list groups*)])
-     (maximal/progress (map pop-item-ips group)))))
-
-;; post-group-max-items : (NEListof (cons A IPS)) -> (Listof (cons A IPS))
-;; PRE: Each IPS starts with a post frame; all items have same post-group.
-;; Keep only items with max post-index.
-(define (post-group-max-items items)
-  (let loop ([items items] [best-items null] [best-index -inf.0])
-    (cond [(null? items) (reverse best-items)]
-          [else
-           (define item0 (car items))
-           (define index0 (post-index (car (cdr item0))))
-           (cond [(> index0 best-index)
-                  (loop (cdr items) (list item0) index0)]
-                 [(= index0 best-index)
-                  (loop (cdr items) (cons item0 best-items) best-index)]
+         (let loop ([items items] [non-ORD-items null])
+           (define-values (ORD non-ORD)
+             (partition (lambda (item) (ord? (item-first-prf item))) items))
+           (cond [(pair? ORD)
+                  (loop (maximal-prf1/ord ORD) (append non-ORD non-ORD-items))]
                  [else
-                  (loop (cdr items) best-items best-index)])])))
+                  (maximal/prf1 (append non-ORD non-ORD-items))]))]))
 
-;; maximal/stx : (listof (cons A IPS)) -> (listof (listof A))
-;; PRE: Each IPS starts with a stx frame.
-(define (maximal/stx rSTX)
-  ;; groups : (Listof (Listof (cons A IPS)))
-  (define groups (group-by (lambda (a+ips) (car (cdr a+ips))) rSTX))
+;; maximal/prf1 : (Listof (Cons IPS A) -> (Listof (Listof A))
+(define (maximal/prf1 items)
+  (define-values (POST rest1)
+    (partition (lambda (item) (eq? 'post (item-first-prf item))) items))
+  (cond [(pair? POST)
+         (maximal/progress (map item-pop-prf POST))]
+        [else
+         (define-values (STX rest2)
+           (partition (lambda (item) (syntax? (item-first-prf item))) rest1))
+         (define-values (CDR rest3)
+           (partition (lambda (item) (exact-integer? (item-first-prf item))) rest2))
+         (define-values (CAR rest4)
+           (partition (lambda (item) (eq? 'car (item-first-prf item))) rest3))
+         (define-values (NULL rest5)
+           (partition (lambda (item) (eq? '#f (item-first-prf item))) rest4))
+         (unless (null? rest5)
+           (error 'syntax-parse "INTERNAL ERROR: bad progress: ~e\n" rest5))
+         (append
+          (maximal/stx STX)
+          (cond [(pair? CDR)
+                 (define leastCDR (apply min (map item-first-prf CDR)))
+                 (maximal/progress (map (lambda (item) (item-pop-prf-ncdrs item leastCDR)) CDR))]
+                [(pair? CAR)
+                 (maximal/progress (map item-pop-prf CAR))]
+                [(pair? NULL)
+                 (list (map cdr NULL))]
+                [else null]))]))
+
+;; maximal-prf1/ord : (NEListof (Cons IPS A)) -> (NEListof (Cons IPS A))
+;; PRE: each item has ORD first frame
+;; Keep only maximal by first frame and pop first frame from each item.
+(define (maximal-prf1/ord items)
+  ;; groups : (NEListof (NEListof (cons A IPS)))
+  (define groups (group-by (lambda (item) (ord-group (item-first-prf item))) items))
   (append*
    (for/list ([group (in-list groups)])
-     (maximal/progress (map pop-item-ips group)))))
+     (define group* (filter-max group (lambda (item) (ord-index (item-first-prf item)))))
+     (map item-pop-prf group*))))
 
-;; pop-item-ips : (cons A IPS) -> (cons A IPS)
-(define (pop-item-ips a+ips)
-  (let ([a (car a+ips)]
-        [ips (cdr a+ips)])
-    (cons a (cdr ips))))
+;; maximal/stx : (NEListof (cons IPS A)) -> (NEListof (NEListof A))
+;; PRE: Each IPS starts with a stx frame.
+(define (maximal/stx items)
+  ;; groups : (Listof (Listof (cons IPS A)))
+  (define groups (group-by item-first-prf items))
+  (append*
+   (for/list ([group (in-list groups)])
+     (maximal/progress (map item-pop-prf group)))))
 
-;; pop-item-ips-ncdrs : (cons A IPS) -> (cons A IPS)
+;; filter-max : (Listof X) (X -> Nat) -> (Listof X)
+(define (filter-max xs x->nat)
+  (let loop ([xs xs] [nmax -inf.0] [r-keep null])
+    (cond [(null? xs)
+           (reverse r-keep)]
+          [else
+           (define n0 (x->nat (car xs)))
+           (cond [(> n0 nmax)
+                  (loop (cdr xs) n0 (list (car xs)))]
+                 [(= n0 nmax)
+                  (loop (cdr xs) nmax (cons (car xs) r-keep))]
+                 [else
+                  (loop (cdr xs) nmax r-keep)])])))
+
+;; item-first-prf : (cons IPS A) -> prframe/#f
+(define (item-first-prf item)
+  (define ips (car item))
+  (and (pair? ips) (car ips)))
+
+;; item-split-ord : (cons IPS A) -> (cons IPS (cons IPS A))
+(define (item-split-ord item)
+  (define ips (car item))
+  (define a (cdr item))
+  (define-values (rest-ips r-ord)
+    (let loop ([ips ips] [r-ord null])
+      (cond [(and (pair? ips) (ord? (car ips)))
+             (loop (cdr ips) (cons (car ips) r-ord))]
+            [else (values ips r-ord)])))
+  (list* (reverse r-ord) rest-ips a))
+
+;; item-pop-prf : (cons IPS A) -> (cons IPS A)
+(define (item-pop-prf item)
+  (let ([ips (car item)]
+        [a (cdr item)])
+    (cons (cdr ips) a)))
+
+;; item-pop-prf-ncdrs : (cons IPS A) -> (cons IPS A)
 ;; Assumes first frame is nat > ncdrs.
-(define (pop-item-ips-ncdrs a+ips ncdrs)
-  (let ([a (car a+ips)]
-        [ips (cdr a+ips)])
-    (cond [(= (car ips) ncdrs) (cons a (cdr ips))]
-          [else (cons a (cons (- (car ips) ncdrs) (cdr ips)))])))
+(define (item-pop-prf-ncdrs item ncdrs)
+  (let ([ips (car item)]
+        [a (cdr item)])
+    (cond [(= (car ips) ncdrs) (cons (cdr ips) a)]
+          [else (cons (cons (- (car ips) ncdrs) (cdr ips)) a)])))
 
 ;; ps->stx+index : Progress -> (cons Syntax Nat)
 ;; Gets the innermost stx that should have a real srcloc, and the offset
@@ -239,7 +254,9 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
       [(cons (? exact-positive-integer? n) parent)
        (for/fold ([stx (interp parent)]) ([i (in-range n)])
          (stx-cdr stx))]
-      [(cons (? post?) parent)
+      [(cons (? ord?) parent)
+       (interp parent)]
+      [(cons 'post parent)
        (interp parent)]))
   (let ([ps (ps-truncate-opaque ps)])
     (match ps
@@ -249,13 +266,10 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
        (cons (interp ps) 0)]
       [(cons (? exact-positive-integer? n) parent)
        (cons (interp parent) n)]
-      [(cons (? post?) parent)
+      [(cons (? ord?) parent)
+       (ps->stx+index parent)]
+      [(cons 'post parent)
        (ps->stx+index parent)])))
-
-(define (rmap f xs)
-  (let loop ([xs xs] [acc null])
-    (cond [(pair? xs) (loop (cdr xs) (cons (f (car xs)) acc))]
-          [else acc])))
 
 
 ;; ============================================================

@@ -644,7 +644,10 @@ Conventions:
               (parse:S x cx pattern pr es
                        (with ([cut-prompt cp0]
                               [fail-handler fh0])
-                         k))))]
+                             k))))]
+       [#s(pat:ord pattern group index)
+        #`(let ([pr* (ps-add pr '#s(ord group index))])
+            (parse:S x cx pattern pr* es k))]
        [#s(pat:post pattern)
         #`(let ([pr* (ps-add-post pr)])
             (parse:S x cx pattern pr* es k))]
@@ -679,6 +682,8 @@ Conventions:
        [#s(pat:delimit pattern)
         #'(first-desc:S pattern)]
        [#s(pat:commit pattern)
+        #'(first-desc:S pattern)]
+       [#s(pat:ord pattern _ _)
         #'(first-desc:S pattern)]
        [#s(pat:post pattern)
         #'(first-desc:S pattern)]
@@ -723,8 +728,11 @@ Conventions:
             (parse:S y cy pattern pr* es k))]
        [#s(action:do (stmt ...))
         #'(let () (no-shadow stmt) ... (#%expression k))]
-       [#s(action:post pattern group index)
-        #'(let ([pr* (ps-add-post pr 'group 'index)])
+       [#s(action:ord pattern group index)
+        #'(let ([pr* (ps-add pr '#s(ord group index))])
+            (parse:A x cx pattern pr* es k))]
+       [#s(action:post pattern)
+        #'(let ([pr* (ps-add-post pr)])
             (parse:A x cx pattern pr* es k))])]))
 
 ;; (bind/sides clauses k) : expr[Ans]
@@ -851,10 +859,15 @@ Conventions:
               (parse:H x cx rest-x rest-cx rest-pr pattern pr es
                        (with ([cut-prompt cp0]
                               [fail-handler fh0])
-                         k))))]
+                             k))))]
+       [#s(hpat:ord pattern group index)
+        #`(let ([pr* (ps-add pr '#s(ord group index))])
+            (parse:H x cx rest-x rest-cx rest-pr pattern pr* es
+                     (let ([rest-pr (ps-pop-ord rest-pr)]) k)))]
        [#s(hpat:post pattern)
-        #'(let ([pr (ps-add-post pr)])
-            (parse:H x cx rest-x rest-cx rest-pr pattern pr es k))]
+        #'(let ([pr* (ps-add-post pr)])
+            (parse:H x cx rest-x rest-cx rest-pr pattern pr* es
+                     (let ([rest-pr (ps-pop-post rest-pr)]) k)))]
        [#s(hpat:peek pattern)
         #`(let ([saved-x x] [saved-cx cx] [saved-pr pr])
             (parse:H x cx dummy-x dummy-cx dummy-pr pattern pr es

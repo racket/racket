@@ -406,20 +406,24 @@
    (cond [(pair? sides)
           (define group (gensym*))
           (define actions-pattern
-            (action:and
-             (for/list ([side (in-list sides)] [index (in-naturals)])
-               (side-clause->pattern side group index))))
-          (cond [splicing? (hpat:and pattern (pat:action actions-pattern (pat:any)))]
-                [else (pat:and (list pattern (pat:action actions-pattern (pat:any))))])]
+            (create-post-pattern
+             (action:and
+              (for/list ([side (in-list sides)] [index (in-naturals)])
+                (create-ord-pattern (side-clause->pattern side) group index)))))
+          (define and-patterns
+            (ord-and-patterns (list pattern (pat:action actions-pattern (pat:any)))
+                              (gensym*)))
+          (cond [splicing? (apply hpat:and and-patterns)]
+                [else (pat:and and-patterns)])]
          [else pattern])))
 
-;; side-clause->pattern : SideClause UninternedSymbol Nat -> ActionPattern
-(define (side-clause->pattern side group index)
+;; side-clause->pattern : SideClause -> ActionPattern
+(define (side-clause->pattern side)
   (match side
     [(clause:fail condition message)
-     (action:post (action:fail condition message) group index)]
+     (action:fail condition message)]
     [(clause:with wpat expr defs)
-     (let ([ap (action:post (action:parse wpat expr) group index)])
+     (let ([ap (action:parse wpat expr)])
        (if (pair? defs) (action:and (list (action:do defs) ap)) ap))]
     [(clause:attr attr expr)
      (action:bind (list side))]
@@ -927,7 +931,8 @@
   ;; allow-action? = allowed to *return* pure action pattern;
   ;; all ~and patterns are allowed to *contain* action patterns
   (define patterns0 (parse-cdr-patterns stx decls allow-head? #t))
-  (define-values (actions patterns) (split-prefix patterns0 action-pattern?))
+  (define patterns1 (ord-and-patterns patterns0 (gensym*)))
+  (define-values (actions patterns) (split-prefix patterns1 action-pattern?))
   (cond [(null? patterns)
          (cond [allow-action?
                 (action:and actions)]
@@ -1047,7 +1052,7 @@
     [(_ pattern)
      (let ([p (parse-*-pattern #'pattern decls allow-head? allow-action?)])
        (cond [(action-pattern? p)
-              (cond [allow-action? (action:post p #f 0)]
+              (cond [allow-action? (action:post p)]
                     [(not allow-head?) (pat:post (action-pattern->single-pattern p))]
                     [else (wrong-syntax stx "action pattern not allowed here")])]
              [(head-pattern? p)

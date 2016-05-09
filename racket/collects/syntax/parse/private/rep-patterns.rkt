@@ -33,6 +33,7 @@ A SinglePattern is one of
   (pat:delimit SinglePattern)
   (pat:commit SinglePattern)
   (pat:reflect stx Arguments (listof SAttr) id (listof IAttr))
+  (pat:ord SinglePattern UninternedSymbol Nat)
   (pat:post SinglePattern)
   (pat:integrated id/#f id string stx)
 
@@ -63,6 +64,7 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:delimit (pattern) #:prefab)
 (define-struct pat:commit (pattern) #:prefab)
 (define-struct pat:reflect (obj argu attr-decls name nested-attrs) #:prefab)
+(define-struct pat:ord (pattern group index) #:prefab)
 (define-struct pat:post (pattern) #:prefab)
 (define-struct pat:integrated (name predicate description role) #:prefab)
 
@@ -74,7 +76,8 @@ A ActionPattern is one of
   (action:and (listof ActionPattern))
   (action:parse SinglePattern stx)
   (action:do (listof stx))
-  (action:post ActionPattern Quotable Nat)
+  (action:ord ActionPattern UninternedSymbol Nat)
+  (action:post ActionPattern)
 |#
 
 (define-struct action:cut () #:prefab)
@@ -83,7 +86,8 @@ A ActionPattern is one of
 (define-struct action:and (patterns) #:prefab)
 (define-struct action:parse (pattern expr) #:prefab)
 (define-struct action:do (stmts) #:prefab)
-(define-struct action:post (pattern group index) #:prefab)
+(define-struct action:ord (pattern group index) #:prefab)
+(define-struct action:post (pattern) #:prefab)
 
 #|
 A HeadPattern is one of 
@@ -96,6 +100,7 @@ A HeadPattern is one of
   (hpat:delimit HeadPattern)
   (hpat:commit HeadPattern)
   (hpat:reflect stx Arguments (listof SAttr) id (listof IAttr))
+  (hpat:ord HeadPattern UninternedSymbol Nat)
   (hpat:post HeadPattern)
   (hpat:peek HeadPattern)
   (hpat:peek-not HeadPattern)
@@ -110,6 +115,7 @@ A HeadPattern is one of
 (define-struct hpat:delimit (pattern) #:prefab)
 (define-struct hpat:commit (pattern) #:prefab)
 (define-struct hpat:reflect (obj argu attr-decls name nested-attrs) #:prefab)
+(define-struct hpat:ord (pattern group index) #:prefab)
 (define-struct hpat:post (pattern) #:prefab)
 (define-struct hpat:peek (pattern) #:prefab)
 (define-struct hpat:peek-not (pattern) #:prefab)
@@ -163,6 +169,7 @@ A SideClause is one of
       (pat:delimit? x)
       (pat:commit? x)
       (pat:reflect? x)
+      (pat:ord? x)
       (pat:post? x)
       (pat:integrated? x)))
 
@@ -173,6 +180,7 @@ A SideClause is one of
       (action:and? x)
       (action:parse? x)
       (action:do? x)
+      (action:ord? x)
       (action:post? x)))
 
 (define (head-pattern? x)
@@ -185,6 +193,7 @@ A SideClause is one of
       (hpat:delimit? x)
       (hpat:commit? x)
       (hpat:reflect? x)
+      (hpat:ord? x)
       (hpat:post? x)
       (hpat:peek? x)
       (hpat:peek-not? x)))
@@ -252,6 +261,8 @@ A SideClause is one of
      (pattern-attrs sp)]
     [(pat:commit sp)
      (pattern-attrs sp)]
+    [(pat:ord sp _ _)
+     (pattern-attrs sp)]
     [(pat:post sp)
      (pattern-attrs sp)]
     [(pat:integrated name _ _ _)
@@ -270,7 +281,9 @@ A SideClause is one of
      (pattern-attrs sp)]
     [(action:do _)
      null]
-    [(action:post sp _ _)
+    [(action:ord sp _ _)
+     (pattern-attrs sp)]
+    [(action:post sp)
      (pattern-attrs sp)]
 
     ;; -- H patterns
@@ -291,6 +304,8 @@ A SideClause is one of
     [(hpat:delimit hp)
      (pattern-attrs hp)]
     [(hpat:commit hp)
+     (pattern-attrs hp)]
+    [(hpat:ord hp _ _)
      (pattern-attrs hp)]
     [(hpat:post hp)
      (pattern-attrs hp)]
@@ -352,3 +367,121 @@ A SideClause is one of
       (and (pat:head? p) (proper-list-pattern? (pat:head-tail p) trust-pair?))
       (and (pat:dots? p) (proper-list-pattern? (pat:dots-tail p) trust-pair?))
       (and (pat:action? p) (proper-list-pattern? (pat:action-inner p) trust-pair?))))
+
+;; ----
+
+(define-syntax-rule (define/memo (f x) body ...)
+  (define f
+    (let ([memo-table (make-weak-hasheq)])
+      (lambda (x)
+        (hash-ref! memo-table x (lambda () body ...))))))
+
+;; ----
+
+;; An AbsFail is a Nat encoding the bitvector { sub? : 1, post? : 1 }
+;; Finite abstraction of failuresets based on progress bins. That is:
+(define AF-NONE 0)  ;; cannot fail
+(define AF-SUB  1)  ;; can fail with progress < POST
+(define AF-POST 2)  ;; can fail with progress >= POST
+(define AF-ANY  3)  ;; can fail with progress either < or >= POST
+
+;; AF-nz? : AbsFail -> {0, 1}
+(define (AF-nz? af) (if (= af AF-NONE) 0 1))
+
+;; AF<? : AbsFail AbsFail -> Boolean
+;; True if every failure in af1 has strictly less progress than any failure in af2.
+;; Note: trivially satisfied if either side cannot fail.
+(define (AF<? af1 af2)
+  ;; (0, *), (*, 0), (1, 2)
+  (or (= af1 AF-NONE)
+      (= af2 AF-NONE)
+      (and (= af1 AF-SUB) (= af2 AF-POST))))
+
+;; pattern-absfail : *Pattern -> AbsFail
+(define/memo (pattern-AF p)
+  (define (patterns-AF ps)
+    (for/fold ([af 0]) ([p (in-list ps)]) (bitwise-ior af (pattern-AF p))))
+  (cond [(pat:any? p) AF-NONE]
+        [(pat:svar? p) AF-NONE]
+        [(pat:var/p? p) AF-ANY]
+        [(pat:literal? p) AF-SUB]
+        [(pat:datum? p) AF-SUB]
+        [(pat:action? p) (bitwise-ior (pattern-AF (pat:action-action p))
+                                      (pattern-AF (pat:action-inner p)))]
+        [(pat:head? p) AF-ANY]
+        [(pat:dots? p) AF-ANY]
+        [(pat:and? p) (patterns-AF (pat:and-patterns p))]
+        [(pat:or? p) (patterns-AF (pat:or-patterns p))]
+        [(pat:not? p) AF-SUB]
+        [(pat:pair? p) AF-SUB]
+        [(pat:vector? p) AF-SUB]
+        [(pat:box? p) AF-SUB]
+        [(pat:pstruct? p) AF-SUB]
+        [(pat:describe? p) (pattern-AF (pat:describe-pattern p))]
+        [(pat:delimit? p) (pattern-AF (pat:delimit-pattern p))]
+        [(pat:commit? p) (pattern-AF (pat:commit-pattern p))]
+        [(pat:reflect? p) AF-ANY]
+        [(pat:ord? p) (pattern-AF (pat:ord-pattern p))]
+        [(pat:post? p) (if (AF-nz? (pattern-AF (pat:post-pattern p))) AF-POST AF-NONE)]
+        [(pat:integrated? p) AF-SUB]
+        ;; Action patterns
+        [(action:cut? p) AF-NONE]
+        [(action:fail? p) AF-SUB]
+        [(action:bind? p) AF-NONE]
+        [(action:and? p) (patterns-AF (action:and-patterns p))]
+        [(action:parse? p) (if (AF-nz? (pattern-AF (action:parse-pattern p))) AF-SUB AF-NONE)]
+        [(action:do? p) AF-NONE]
+        [(action:ord? p) (pattern-AF (action:ord-pattern p))]
+        [(action:post? p) (if (AF-nz? (pattern-AF (action:post-pattern p))) AF-POST AF-NONE)]
+        ;; Head patterns, eh patterns, etc
+        [else AF-ANY]))
+
+;; pattern-cannot-fail? : *Pattern -> Boolean
+(define (pattern-cannot-fail? p)
+  (= (pattern-AF p) AF-NONE))
+
+;; pattern-can-fail? : *Pattern -> Boolean
+(define (pattern-can-fail? p)
+  (not (pattern-cannot-fail? p)))
+
+;; patterns-AF-sorted? : (Listof *Pattern) -> AF/#f
+;; Returns AbsFail (true) if any failure from pattern N+1 has strictly
+;; greater progress than any failure from patterns 0 through N.
+(define (patterns-AF-sorted? ps)
+  (for/fold ([af AF-NONE]) ([p (in-list ps)])
+    (define afp (pattern-AF p))
+    (and af (AF<? af afp) (bitwise-ior af afp))))
+
+;; create-post-pattern : *Pattern -> *Pattern
+(define (create-post-pattern p)
+  (cond [(pattern-cannot-fail? p)
+         p]
+        [(pattern? p)
+         (pat:post p)]
+        [(head-pattern? p)
+         (hpat:post p)]
+        [(action-pattern? p)
+         (action:post p)]
+        [else (error 'syntax-parse "INTERNAL ERROR: create-post-pattern ~e" p)]))
+
+;; create-ord-pattern : *Pattern UninternedSymbol Nat -> *Pattern
+(define (create-ord-pattern p group index)
+  (cond [(pattern-cannot-fail? p)
+         p]
+        [(pattern? p)
+         (pat:ord p group index)]
+        [(head-pattern? p)
+         (hpat:ord p group index)]
+        [(action-pattern? p)
+         (action:ord p group index)]
+        [else (error 'syntax-parse "INTERNAL ERROR: create-ord-pattern ~e" p)]))
+
+;; ord-and-patterns : (Listof *Pattern) UninternedSymbol -> (Listof *Pattern)
+;; If at most one subpattern can fail, no need to wrap.  More
+;; generally, if possible failures are already consistent with and
+;; ordering, no need to wrap.
+(define (ord-and-patterns patterns group)
+  (cond [(patterns-AF-sorted? patterns) patterns]
+        [else
+         (for/list ([p (in-list patterns)] [index (in-naturals)])
+           (create-ord-pattern p group index))]))
