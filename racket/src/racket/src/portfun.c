@@ -3112,9 +3112,24 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
     return _scheme_make_char(ch);
 }
 
-static Scheme_Object *
-read_char (int argc, Scheme_Object *argv[])
+static Scheme_Object *read_char_fast(Scheme_Object *port) XFORM_ASSERT_NO_CONVERSION
 {
+  int ch;
+  
+  ch = scheme_getc(port);
+  
+  if (ch == EOF)
+    return scheme_eof;
+  else
+    return _scheme_make_char(ch);
+}
+
+static Scheme_Object *
+read_char (int argc, Scheme_Object *argv[]) XFORM_ASSERT_NO_CONVERSION
+{
+  if (argc && SCHEME_INPUT_PORTP(argv[0]))
+    return read_char_fast(argv[0]);
+
   return do_read_char("read-char", argc, argv, 0, 0, 0);
 }
 
@@ -3136,9 +3151,24 @@ peek_char_spec (int argc, Scheme_Object *argv[])
   return do_read_char("peek-char-or-special", argc, argv, 1, 1, 0);
 }
 
-static Scheme_Object *
-read_byte (int argc, Scheme_Object *argv[])
+static Scheme_Object *read_byte_fast(Scheme_Object *port) XFORM_ASSERT_NO_CONVERSION
 {
+  int ch;
+  
+  ch = scheme_get_byte(port);
+  
+  if (ch == EOF)
+    return scheme_eof;
+  else
+    return scheme_make_integer(ch);
+}
+
+static Scheme_Object *
+read_byte (int argc, Scheme_Object *argv[]) XFORM_ASSERT_NO_CONVERSION
+{
+  if (argc && SCHEME_INPUT_PORTP(argv[0]))
+    return read_byte_fast(argv[0]);
+  
   return do_read_char("read-byte", argc, argv, 0, 0, 1);
 }
 
@@ -4107,13 +4137,13 @@ newline (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-write_byte (int argc, Scheme_Object *argv[])
+write_byte_slow (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *port;
   int v;
   unsigned char buffer[1];
 
-  if (argc && !SCHEME_INTP(argv[0]))
+  if (!SCHEME_INTP(argv[0]))
     scheme_wrong_contract("write-byte", "byte?", 0, argc, argv);
   v = SCHEME_INT_VAL(argv[0]);
   if ((v < 0) || (v > 255))
@@ -4136,14 +4166,31 @@ write_byte (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-write_char (int argc, Scheme_Object *argv[])
+write_byte (int argc, GC_CAN_IGNORE Scheme_Object *argv[]) XFORM_ASSERT_NO_CONVERSION
+{
+  if (SCHEME_INTP(argv[0])
+      && (SCHEME_INT_VAL(argv[0]) >= 0)
+      && (SCHEME_INT_VAL(argv[0]) <= 255)
+      && SCHEME_OUTPUT_PORTP(argv[1])) {
+    char buffer[1];
+    buffer[0] = SCHEME_INT_VAL(argv[0]);
+    scheme_put_byte_string("write-byte", argv[1],
+                           buffer, 0, 1,
+                           0);
+    return scheme_void;
+  } else
+    return write_byte_slow(argc, argv);
+}
+
+static Scheme_Object *
+write_char_slow (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *port;
   unsigned char buffer[MAX_UTF8_CHAR_BYTES];
   unsigned int ubuffer[1];
   int len;
 
-  if (argc && !SCHEME_CHARP(argv[0]))
+  if (!SCHEME_CHARP(argv[0]))
     scheme_wrong_contract("write-char", "char?", 0, argc, argv);
   if (argc > 1) {
     if (!SCHEME_OUTPUT_PORTP(argv[1]))
@@ -4160,6 +4207,23 @@ write_char (int argc, Scheme_Object *argv[])
 			 0);
 
   return scheme_void;
+}
+
+static Scheme_Object *
+write_char (int argc, GC_CAN_IGNORE Scheme_Object *argv[]) XFORM_ASSERT_NO_CONVERSION
+{
+  if (argc
+      && SCHEME_CHARP(argv[0])
+      && (SCHEME_CHAR_VAL(argv[0]) < 128)
+      && SCHEME_OUTPUT_PORTP(argv[1])) {
+    char buffer[1];
+    buffer[0] = SCHEME_CHAR_VAL(argv[0]);
+    scheme_put_byte_string("write-char", argv[1],
+                           buffer, 0, 1,
+                           0);
+    return scheme_void;
+  } else
+    return write_char_slow(argc, argv);
 }
 
 static Scheme_Object *port_read_handler(int argc, Scheme_Object *argv[])

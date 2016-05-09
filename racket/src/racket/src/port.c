@@ -3312,8 +3312,7 @@ static MZ_INLINE intptr_t get_one_byte(GC_CAN_IGNORE const char *who,
   return get_one_byte_slow(who, port, buffer, 0, 0);
 }
 
-int
-scheme_getc(Scheme_Object *port)
+int scheme_getc(Scheme_Object *port)
 {
   char s[MAX_UTF8_CHAR_BYTES];
   unsigned int r[1];
@@ -3362,7 +3361,7 @@ scheme_getc(Scheme_Object *port)
 }
 
 int
-scheme_get_byte(Scheme_Object *port)
+scheme_get_byte(Scheme_Object *port) XFORM_ASSERT_NO_CONVERSION
 {
   char s[1];
   int v;
@@ -4194,10 +4193,10 @@ int scheme_close_should_force_port_closed()
 
 /****************************** main output writer ******************************/
 
-intptr_t
-scheme_put_byte_string(const char *who, Scheme_Object *port,
-		       const char *str, intptr_t d, intptr_t len,
-		       int rarely_block)
+static intptr_t
+put_byte_string_slow(const char *who, Scheme_Object *port,
+                     const char *str, intptr_t d, intptr_t len,
+                     int rarely_block)
 {
   /* Unlike the main reader, the main writer is simple. It doesn't
      have to deal with peeks and specials, so it's a thin wrapper on
@@ -4260,6 +4259,32 @@ scheme_put_byte_string(const char *who, Scheme_Object *port,
   mzAssert((oout < 0) ? (rarely_block == 2) : 1);
 
   return oout;
+}
+
+intptr_t
+scheme_put_byte_string(GC_CAN_IGNORE const char *who, Scheme_Object *port,
+		       GC_CAN_IGNORE const char *str, intptr_t d, intptr_t len,
+		       int rarely_block)
+{
+  intptr_t out;
+
+  if (SCHEME_OUTPORTP(port)
+      && !((Scheme_Output_Port *)port)->closed
+      && (rarely_block != -1)
+      && (len == 1)
+      && !((Scheme_Output_Port *)port)->p.count_lines) {
+    Scheme_Output_Port *op = (Scheme_Output_Port *)port;
+    Scheme_Write_String_Fun ws;
+    ws = op->write_string_fun;
+    out = ws(op, str, d, 1, rarely_block, 0);
+    if (out) {
+      op->p.position += out;
+      return out;
+    } else if (rarely_block)
+      return 0;
+  }
+
+  return put_byte_string_slow(who, port, str, d, len, rarely_block);
 }
 
 void scheme_write_byte_string(const char *str, intptr_t len, Scheme_Object *port)
@@ -6923,9 +6948,10 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
 }
 
 static intptr_t fd_get_string(Scheme_Input_Port *port,
-			  char *buffer, intptr_t offset, intptr_t size,
-			  int nonblock,
-			  Scheme_Object *unless)
+                              char *buffer, intptr_t offset, intptr_t size,
+                              int nonblock,
+                              Scheme_Object *unless)
+  XFORM_ASSERT_NO_CONVERSION
 {
   Scheme_FD *fip;
   intptr_t bc;
@@ -8206,9 +8232,9 @@ static intptr_t flush_fd(Scheme_Output_Port *op,
 }
 
 static intptr_t
-fd_write_string(Scheme_Output_Port *port,
-		const char *str, intptr_t d, intptr_t len,
-		int rarely_block, int enable_break)
+fd_write_string_slow(Scheme_Output_Port *port,
+                     const char *str, intptr_t d, intptr_t len,
+                     int rarely_block, int enable_break)
 {
   /* Note: !flush => !rarely_block, !len => flush */
 
@@ -8278,6 +8304,30 @@ fd_write_string(Scheme_Output_Port *port,
   }
 
   return len;
+}
+
+static intptr_t
+fd_write_string(Scheme_Output_Port *port,
+		const char *str, intptr_t d, intptr_t len,
+		int rarely_block, int enable_break)
+  XFORM_ASSERT_NO_CONVERSION
+{
+  Scheme_FD *fop;
+  intptr_t l;
+  int flush = (!len || rarely_block);
+
+  fop = (Scheme_FD *)port->port_data;
+
+  if (!flush && !fop->flushing && (fop->flush != MZ_FLUSH_ALWAYS)) {
+    l = MZPORT_FD_BUFFSIZE - fop->bufcount;
+    if (len <= l) {
+      memcpy(fop->buffer + fop->bufcount, str + d, len);
+      fop->bufcount += len;
+      return len;
+    }
+  }
+
+  return fd_write_string_slow(port, str, d, len, rarely_block, enable_break);
 }
 
 static void
