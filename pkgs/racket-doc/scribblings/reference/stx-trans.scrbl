@@ -6,6 +6,7 @@
                      racket/provide-transform
                      racket/provide-syntax
                      racket/keyword-transform
+                     racket/stxparam
                      syntax/intdef))
 
 @(define stx-eval (make-base-eval))
