@@ -1067,7 +1067,22 @@
   (case-lambda
    [(t n)
     (make-ctype (make-array-type t n)
-                (lambda (v) (array-ptr v))
+                (lambda (v)
+                  (unless (array? v)
+                    (raise-argument-error '_array "array?" v))
+                  (unless (or (eq? (array-type v) t) ; common case
+                              ;; For the more general case, we'd like to make sure the
+                              ;; types match, but the ctype API isn't reflective enough;
+                              ;; we approximate by checking representations:
+                              (equal? (ctype->layout (array-type v)) (ctype->layout t)))
+                    (raise-arguments-error '_array "array element type is incompatible"
+                                           "expected element representation" (ctype->layout t)
+                                           "given value's element representation" (ctype->layout (array-type v))))
+                  (unless ((array-length v) . >= . n)
+                    (raise-arguments-error '_array "array length does not match"
+                                           "expected minimum length" n
+                                           "given value's length" (array-length v)))
+                  (array-ptr v))
                 (lambda (v) (make-array v t n)))]
    [(t n . ns)
     (_array (apply _array t ns) n)]))
@@ -1321,9 +1336,12 @@
 
 (define (ctype-coretype c)
   (let loop ([c (ctype-basetype c)])
-    (if (symbol? c)
-        c
-        (loop (ctype-basetype c)))))
+    (cond
+     [(symbol? c) c]
+     [(vector? c) 'array]
+     [(list? c) 'struct]
+     [else
+      (loop (ctype-basetype c))])))
 
 ;; A macro version of the above two functions, using the defined name for a tag
 ;; string, and defining a predicate too.  The name should look like `_foo', the

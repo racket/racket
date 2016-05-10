@@ -331,7 +331,15 @@
       (test 7 array-length a)
       (test 12 array-ref a 1)
       (ptr-set! p _byte 1 17)
-      (test 17 array-ref a 1)))
+      (test 17 array-ref a 1)
+      (test #t array? (cast a (_array _byte 7) (_array _ubyte 7)))
+      (test #t array? (cast a (_array _byte 6) (_array _ubyte 6))) ; smaller is ok
+      (err/rt-test (cast a (_array _byte 8) (_array _ubyte 8))
+                   (lambda (exn) (regexp-match? "array length does not match" (exn-message exn))))))
+  (let ([a (ptr-ref (malloc (_array (_array _int 2) 3)) (_array (_array _int 2) 3))])
+    (test #t array? (cast a (_array (_array _int 2) 2) (_array (_array _uint 2) 2))) ; smaller outside is ok
+    (err/rt-test (cast a (_array (_array _int 1) 3) (_array (_array _uint 1) 3)) ; smaller inside is not ok
+                 (lambda (exn) (regexp-match? "array element type is incompatible" (exn-message exn)))))
   ;; Disable these tests on Windows/i386 where they fail (and crash the process
   ;; killing all other tests).  Matthew said: There's no consistent spec for
   ;; functions that return structures in i386 Windows.  Historically, gcc does

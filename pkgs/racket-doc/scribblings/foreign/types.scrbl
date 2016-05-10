@@ -1375,7 +1375,14 @@ representation.
 Supply multiple @racket[count]s for a multidimensional array. Since C
 uses row-major order for arrays, @racket[(_array _t _n _m)] is
 equivalent to @racket[(_array (_array _t _m) _n)], which is different
-from an array of pointers to arrays.}
+from an array of pointers to arrays.
+
+When a value is used as an instance of an array type (e.g., as passed
+to a foreign function), checking ensures that the given value is an
+array of at least the expected length and whose elements have the same
+representation according to @racket[ctype->layout]; the array can have
+additional elements, and it can have a different element type as long
+as that type matches the layout of the expected type.}
 
 
 @defproc[(array? [v any/c]) boolean?]{
