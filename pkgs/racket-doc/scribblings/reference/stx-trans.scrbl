@@ -987,7 +987,8 @@ macro). Even though this identifier's macro-introduction scope is canceled by
 from binding the @racket[x] at the use site.
 
 But in the @racket[sli-x] macro, we use @racket[(datum->syntax #f _id)] to 
-produce an identifier with no scopes, which will make the unhygienic 
+produce an identifier with no scopes. Starting from this clean slate, the
+scopes added by @racket[syntax-local-introduce] will make the unhygienic 
 binding work.
 
 @examples[#:eval stx-eval
