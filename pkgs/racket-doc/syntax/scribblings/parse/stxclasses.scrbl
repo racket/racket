@@ -399,7 +399,7 @@ Consider the following code:
 The syntax class @racket[quark] exports two attributes: @racket[a] at
 depth 0 and @racket[b] at depth 1. The @racket[syntax-parse] pattern
 has three pattern variables: @racket[x] at depth 0, @racket[y] at
-depth 2, and @racket[z] at depth 0. Since @racket[x] and @racket[y]
+depth 2, and @racket[z] at depth 0. Since @racket[y] and @racket[z]
 are annotated with the @racket[quark] syntax class, the pattern also
 binds the following nested attributes: @racket[y.a] at depth 2,
 @racket[y.b] at depth 3, @racket[z.a] at depth 0, and @racket[z.b] at
