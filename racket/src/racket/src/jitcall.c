@@ -2252,12 +2252,17 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
     /* if unboxed_non_tail_args, then we'll also use index 4 in place of dp */
 
     if (is_tail) {
-      if (!sjc.shared_tail_code[dp][num_rands]) {
-	code = scheme_generate_shared_call(num_rands, jitter, multi_ok, result_ignored, is_tail, 
-                                           direct_prim, direct_native, 0, 0);
-	sjc.shared_tail_code[dp][num_rands] = code;
+      if (num_rands < MAX_SHARED_CALL_RANDS) {
+        if (!sjc.shared_tail_code[dp][num_rands]) {
+          code = scheme_generate_shared_call(num_rands, jitter, multi_ok, result_ignored, is_tail, 
+                                             direct_prim, direct_native, 0, 0);
+          sjc.shared_tail_code[dp][num_rands] = code;
+        }
+        code = sjc.shared_tail_code[dp][num_rands];
+      } else {
+        /* We won't use this code pointer, because `direct_self` or similar. */
+        code = NULL;
       }
-      code = sjc.shared_tail_code[dp][num_rands];
       CHECK_NESTED_GENERATE();
       if (direct_self) {
         LOG_IT(("<-self\n"));
@@ -2329,14 +2334,19 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
         unboxed_code = NULL;
 #endif
 
-      if (!sjc.shared_non_tail_code[dp][num_rands][mo]) {
-        scheme_ensure_retry_available(jitter, multi_ok, result_ignored);
-	code = scheme_generate_shared_call(num_rands, jitter, multi_ok, result_ignored, is_tail, 
-                                           direct_prim, direct_native, nontail_self, 0);
-	sjc.shared_non_tail_code[dp][num_rands][mo] = code;
+      if (num_rands < MAX_SHARED_CALL_RANDS) {
+        if (!sjc.shared_non_tail_code[dp][num_rands][mo]) {
+          scheme_ensure_retry_available(jitter, multi_ok, result_ignored);
+          code = scheme_generate_shared_call(num_rands, jitter, multi_ok, result_ignored, is_tail, 
+                                             direct_prim, direct_native, nontail_self, 0);
+          sjc.shared_non_tail_code[dp][num_rands][mo] = code;
+        }
+        code = sjc.shared_non_tail_code[dp][num_rands][mo];
+      } else {
+        /* Not used, due to `apply_to_list` */
+        code = NULL;
       }
       LOG_IT(("<-non-tail %d %d %d\n", dp, num_rands, mo));
-      code = sjc.shared_non_tail_code[dp][num_rands][mo];
       CHECK_NESTED_GENERATE();
 
       if (nontail_self) {
