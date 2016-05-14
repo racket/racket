@@ -372,13 +372,6 @@
            [pattern (combine-pattern+sides pattern0 sides splicing?)])
       (values rest pattern defs))))
 
-(define (side-clauses-attrss clauses)
-  (for/list ([c (in-list clauses)]
-             #:when (or (clause:with? c) (clause:attr? c)))
-    (if (clause:with? c)
-        (pattern-attrs (clause:with-pattern c))
-        (list (clause:attr-attr c)))))
-
 ;; parse-whole-pattern : stx DeclEnv boolean -> Pattern
 ;; kind is either 'main or 'with, indicates what kind of pattern declare affects
 (define (parse-whole-pattern stx decls [splicing? #f]
@@ -404,31 +397,15 @@
 (define (combine-pattern+sides pattern sides splicing?)
   (check-pattern
    (cond [(pair? sides)
-          (define group (gensym*))
           (define actions-pattern
             (create-post-pattern
-             (action:and
-              (for/list ([side (in-list sides)] [index (in-naturals)])
-                (create-ord-pattern (side-clause->pattern side) group index)))))
+             (create-action:and (ord-and-patterns sides (gensym*)))))
           (define and-patterns
             (ord-and-patterns (list pattern (pat:action actions-pattern (pat:any)))
                               (gensym*)))
           (cond [splicing? (apply hpat:and and-patterns)]
                 [else (pat:and and-patterns)])]
          [else pattern])))
-
-;; side-clause->pattern : SideClause -> ActionPattern
-(define (side-clause->pattern side)
-  (match side
-    [(clause:fail condition message)
-     (action:fail condition message)]
-    [(clause:with wpat expr defs)
-     (let ([ap (action:parse wpat expr)])
-       (if (pair? defs) (action:and (list (action:do defs) ap)) ap))]
-    [(clause:attr attr expr)
-     (action:bind (list side))]
-    [(clause:do stmts)
-     (action:do stmts)]))
 
 ;; gensym* : -> UninternedSymbol
 ;; Like gensym, but with deterministic name from compilation-local counter.
@@ -1022,7 +999,7 @@
   (syntax-case stx ()
     [(_ clause ...)
      (let ([clauses (check-bind-clause-list #'(clause ...) stx)])
-       (action:bind clauses))]))
+       (create-action:and clauses))]))
 
 (define (parse-pat:fail stx decls)
   (syntax-case stx ()
@@ -1097,11 +1074,11 @@
     (parse*-optional-pattern stx decls h-optional-directive-table))
   (create-hpat:or
    (list head
-         (hpat:action (action:bind defaults)
+         (hpat:action (create-action:and defaults)
                       (hpat:seq (pat:datum '()))))))
 
 ;; parse*-optional-pattern : stx DeclEnv table
-;;                        -> (values Syntax HeadPattern IAttrs Stx Stx Defaults)
+;;                        -> (values Syntax HeadPattern IAttrs Stx Stx (Listof BindClause))
 (define (parse*-optional-pattern stx decls optional-directive-table)
   (syntax-case stx ()
     [(_ p . options)
@@ -1118,7 +1095,7 @@
               (options-select-value chunks '#:defaults #:default '())]
             [pattern-iattrs (pattern-attrs head)]
             [defaults-iattrs
-             (append-iattrs (side-clauses-attrss defaults))]
+             (append-iattrs (map pattern-attrs defaults))]
             [all-iattrs
              (union-iattrs (list pattern-iattrs defaults-iattrs))])
        (when (eq? (stxclass-lookup-config) 'yes)
@@ -1212,10 +1189,9 @@
       (parse-pattern-sides chunks2 decls))
     (define-values (decls3 defs)
       (decls-create-defs decls2))
-    (values rest decls3 defs (parse-pattern-sides chunks2 decls))))
+    (values rest decls3 defs sides)))
 
-;; parse-pattern-sides : (listof chunk) DeclEnv
-;;                    -> (listof SideClause/c)
+;; parse-pattern-sides : (listof chunk) DeclEnv -> (listof SideClause)
 ;; Invariant: decls contains only literals bindings
 (define (parse-pattern-sides chunks decls)
   (match chunks
@@ -1223,28 +1199,28 @@
      (wrong-syntax declare-stx
                    "#:declare can only appear immediately after pattern or #:with clause")]
     [(cons (list '#:role role-stx _) rest)
-     (wrong-syntax role-stx
-                   "#:role can only appear immediately after #:declare clause")]
-    [(cons (list '#:fail-when fw-stx when-condition expr) rest)
-     (cons (make clause:fail when-condition expr)
+     (wrong-syntax role-stx "#:role can only appear immediately after #:declare clause")]
+    [(cons (list '#:fail-when fw-stx when-expr msg-expr) rest)
+     (cons (action:fail when-expr msg-expr)
            (parse-pattern-sides rest decls))]
-    [(cons (list '#:fail-unless fu-stx unless-condition expr) rest)
-     (cons (make clause:fail #`(not #,unless-condition) expr)
+    [(cons (list '#:fail-unless fu-stx unless-expr msg-expr) rest)
+     (cons (action:fail #`(not #,unless-expr) msg-expr)
            (parse-pattern-sides rest decls))]
-    [(cons (list '#:when w-stx unless-condition) rest)
-     ;; Bleh: when is basically fail-unless without the msg argument
-     (cons (make clause:fail #`(not #,unless-condition) #'#f)
+    [(cons (list '#:when w-stx unless-expr) rest)
+     (cons (action:fail #`(not #,unless-expr) #'#f)
            (parse-pattern-sides rest decls))]
     [(cons (list '#:with with-stx pattern expr) rest)
      (let-values ([(decls2 rest) (grab-decls rest decls)])
        (let-values ([(decls2a defs) (decls-create-defs decls2)])
-         (cons (make clause:with (parse-whole-pattern pattern decls2a #:kind 'with) expr defs)
+         (cons (create-action:and
+                (list (action:do defs)
+                      (action:parse (parse-whole-pattern pattern decls2a #:kind 'with) expr)))
                (parse-pattern-sides rest decls))))]
     [(cons (list '#:attr attr-stx a expr) rest)
-     (cons (make clause:attr a expr)
+     (cons (action:bind a expr)
            (parse-pattern-sides rest decls))]
     [(cons (list '#:do do-stx stmts) rest)
-     (cons (make clause:do stmts)
+     (cons (action:do stmts)
            (parse-pattern-sides rest decls))]
     ['()
      '()]))
@@ -1470,7 +1446,7 @@
 (define (check-bind-clause clause ctx)
   (syntax-case clause ()
     [(attr-decl expr)
-     (make clause:attr (check-attr-arity #'attr-decl ctx) #'expr)]
+     (action:bind (check-attr-arity #'attr-decl ctx) #'expr)]
     [_ (raise-syntax-error #f "expected bind clause" ctx clause)]))
 
 (define (check-stmt-list stx ctx)

@@ -72,17 +72,20 @@ A ListPattern is a subtype of SinglePattern; one of
 A ActionPattern is one of
   (action:cut)
   (action:fail stx stx)
-  (action:bind (listof clause:attr))
+  (action:bind IAttr Stx)
   (action:and (listof ActionPattern))
   (action:parse SinglePattern stx)
   (action:do (listof stx))
   (action:ord ActionPattern UninternedSymbol Nat)
   (action:post ActionPattern)
+
+A BindAction is (action:bind IAttr Stx)
+A SideClause is just an ActionPattern
 |#
 
 (define-struct action:cut () #:prefab)
 (define-struct action:fail (when message) #:prefab)
-(define-struct action:bind (clauses) #:prefab)
+(define-struct action:bind (attr expr) #:prefab)
 (define-struct action:and (patterns) #:prefab)
 (define-struct action:parse (pattern expr) #:prefab)
 (define-struct action:do (stmts) #:prefab)
@@ -122,11 +125,11 @@ A HeadPattern is one of
 
 #|
 An EllipsisHeadPattern is
-  (ehpat Base HeadPattern RepConstraint)
+  (ehpat (Listof IAttr) HeadPattern RepConstraint)
 
 A RepConstraint is one of
   (rep:once stx stx stx)
-  (rep:optional stx stx (listof clause:attr))
+  (rep:optional stx stx (listof BindAction))
   (rep:bounds nat/#f nat/#f stx stx stx)
   #f
 |#
@@ -135,19 +138,6 @@ A RepConstraint is one of
 (define-struct rep:once (name under-message over-message) #:prefab)
 (define-struct rep:optional (name over-message defaults) #:prefab)
 (define-struct rep:bounds (min max name under-message over-message) #:prefab)
-
-
-#|
-A SideClause is one of
-  (clause:fail stx stx)
-  (clause:with pattern stx (listof stx))
-  (clause:attr IAttr stx)
-  (clause:do (listof stx))
-|#
-(define-struct clause:fail (condition message) #:prefab)
-(define-struct clause:with (pattern expr definitions) #:prefab)
-(define-struct clause:attr (attr expr) #:prefab)
-(define-struct clause:do (stmts) #:prefab)
 
 (define (pattern? x)
   (or (pat:any? x)
@@ -273,8 +263,8 @@ A SideClause is one of
      null]
     [(action:fail _ _)
      null]
-    [(action:bind clauses)
-     (map clause:attr-attr clauses)]
+    [(action:bind attr expr)
+     (list attr)]
     [(action:and ps)
      (append-iattrs (map pattern-attrs ps))]
     [(action:parse sp _)
@@ -485,3 +475,9 @@ A SideClause is one of
         [else
          (for/list ([p (in-list patterns)] [index (in-naturals)])
            (create-ord-pattern p group index))]))
+
+;; create-action:and : (Listof ActionPattern) -> ActionPattern
+(define (create-action:and actions)
+  (match actions
+    [(list action) action]
+    [_ (action:and actions)]))

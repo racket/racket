@@ -24,11 +24,7 @@
          stxclass-commit?
          stxclass-delimit-cut?
          (struct-out rhs)
-         (struct-out variant)
-         (struct-out clause:fail)
-         (struct-out clause:with)
-         (struct-out clause:attr)
-         (struct-out clause:do))
+         (struct-out variant))
 
 (define (stxclass/s? x)
   (and (stxclass? x) (not (stxclass-splicing? x))))
@@ -53,10 +49,6 @@ A Variant is
   (make-variant stx (listof SAttr) Pattern (listof stx))
 |#
 (define-struct variant (ostx attrs pattern definitions) #:prefab)
-
-#|
-SideClause is defined in rep-patterns
-|#
 
 ;; make-dummy-stxclass : identifier -> SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
@@ -200,9 +192,6 @@ expressions are duplicated, and may be evaluated in different scopes.
 (define DeclEntry/c 
   (or/c den:lit? den:datum-lit? den:class? den:magic-class? den:parser? den:delayed?))
 
-(define SideClause/c
-  (or/c clause:fail? clause:with? clause:attr? clause:do?))
-
 ;; ct-phase = syntax, expr that computes absolute phase
 ;;   usually = #'(syntax-local-phase-level)
 (define ct-phase/c syntax?)
@@ -218,7 +207,6 @@ expressions are duplicated, and may be evaluated in different scopes.
 (provide/contract
  [DeclEnv/c contract?]
  [DeclEntry/c contract?]
- [SideClause/c contract?]
  [ct-phase/c contract?]
 
  [make-dummy-stxclass (-> identifier? stxclass?)]

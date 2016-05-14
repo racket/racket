@@ -712,8 +712,8 @@ Conventions:
           #`(parse:A x cx #,action pr es #,k))]
        [#s(action:cut)
         #'(with ([fail-handler cut-prompt]) k)]
-       [#s(action:bind (side ...))
-        #'(bind/sides (side ...) k)]
+       [#s(action:bind a expr)
+        #'(let-attributes ([a (wrap-user-code expr)]) k)]
        [#s(action:fail condition message)
         #`(let ([c (wrap-user-code condition)])
             (if c
@@ -734,17 +734,6 @@ Conventions:
        [#s(action:post pattern)
         #'(let ([pr* (ps-add-post pr)])
             (parse:A x cx pattern pr* es k))])]))
-
-;; (bind/sides clauses k) : expr[Ans]
-;; In k: attrs(clauses) are bound.
-(define-syntax (bind/sides stx)
-  (syntax-case stx ()
-    [(_ (side ...) k)
-     (for/fold ([k #'k]) ([side (in-list (reverse (syntax->list #'(side ...))))])
-       (syntax-case side ()
-         [#s(clause:attr a expr)
-            #`(let-attributes ([a (wrap-user-code expr)])
-                #,k)]))]))
 
 (begin-for-syntax
  ;; convert-list-pattern : ListPattern id -> SinglePattern
@@ -1017,7 +1006,7 @@ Conventions:
   (syntax-case stx ()
     [(_ a #s(rep:optional _ _ defaults) v)
      (with-syntax ([#s(attr name _ _) #'a]
-                   [(#s(clause:attr da de) ...) #'defaults])
+                   [(#s(action:bind da de) ...) #'defaults])
        (let ([default
               (for/or ([da (in-list (syntax->list #'(da ...)))]
                        [de (in-list (syntax->list #'(de ...)))])
