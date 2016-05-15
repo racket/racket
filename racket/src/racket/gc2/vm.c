@@ -34,6 +34,10 @@ enum {
 #endif
 #define QUEUED_MPROTECT_INFECTS_MED 0
 
+/* How many non-forcing calls to flush will be ignored by a cached,
+   free object? */
+# define FREE_UNMAP_AGE 1
+
 /* Either USE_ALLOC_CACHE or OS_ALLOCATOR_NEEDS_ALIGNMENT must be
    enabled, unless the lower-level allocator's alignment matches
    APAGE_SIZE. */
@@ -182,12 +186,12 @@ static void mmu_free_page(MMU* mmu, void *p, size_t len, int type, int expect_mp
 #endif
 }
 
-static void mmu_flush_freed_pages(MMU *mmu) {
+static void mmu_flush_freed_pages(MMU *mmu, int force) {
 #ifdef USE_BLOCK_CACHE
-  mmu->memory_allocated += block_cache_flush_freed_pages(mmu->block_cache);
+  mmu->memory_allocated += block_cache_flush_freed_pages(mmu->block_cache, force);
 #elif defined(USE_ALLOC_CACHE)
-  mmu->memory_allocated += alloc_cache_flush_freed_pages(mmu->alloc_caches[0]);
-  mmu->memory_allocated += alloc_cache_flush_freed_pages(mmu->alloc_caches[1]);
+  mmu->memory_allocated += alloc_cache_flush_freed_pages(mmu->alloc_caches[0], force);
+  mmu->memory_allocated += alloc_cache_flush_freed_pages(mmu->alloc_caches[1], force);
 #endif  
 }
 

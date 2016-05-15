@@ -12,7 +12,7 @@
 */
 
 /* Controls how often freed pages are actually returned to OS: */
-#define BLOCKFREE_UNMAP_AGE 3
+#define BLOCKFREE_UNMAP_AGE FREE_UNMAP_AGE
 
 /* Controls size of the cache */
 #define BLOCKFREE_CACHE_SIZE 96
@@ -171,7 +171,7 @@ static intptr_t alloc_cache_free_page(AllocCacheBlock *blockfree, char *p, size_
   return (originated_here ? -len : 0);
 }
 
-static intptr_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
+static intptr_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree, int force)
 {
   int i;
   intptr_t freed = 0;
@@ -179,7 +179,7 @@ static intptr_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
 
   for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
     if (blockfree[i].start) {
-      if (blockfree[i].age == BLOCKFREE_UNMAP_AGE) {
+      if (force || (blockfree[i].age == BLOCKFREE_UNMAP_AGE)) {
         os_free_pages(blockfree[i].start, blockfree[i].len);
         freed -= blockfree[i].len;
         blockfree[i].start = NULL;

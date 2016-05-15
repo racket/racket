@@ -10,12 +10,14 @@ static void   os_protect_pages(void *p, size_t len, int writable);
 #define BC_STARTING_BLOCK_SIZE (1 << 21)  /* 2 MB */
 #define BC_MAX_BLOCK_SIZE (1 << 24)  /* 16 MB */
 
+#define STDBLOCKFREE_UNMAP_AGE FREE_UNMAP_AGE
+
 struct block_desc;
 struct AllocCacheBlock;
 static struct AllocCacheBlock *alloc_cache_create();
 static ssize_t alloc_cache_free(struct AllocCacheBlock *);
 static ssize_t alloc_cache_free_page(struct AllocCacheBlock *blockfree, char *p, size_t len, int dirty, int originated_here);
-static ssize_t alloc_cache_flush_freed_pages(struct AllocCacheBlock *blockfree);
+static ssize_t alloc_cache_flush_freed_pages(struct AllocCacheBlock *blockfree, int force);
 static void *alloc_cache_alloc_page(struct AllocCacheBlock *blockfree,  size_t len, size_t alignment, int dirty_ok, ssize_t *size_diff);
 
 static Page_Range *page_range_create();
@@ -40,6 +42,7 @@ typedef struct block_desc {
   intptr_t used;
   intptr_t totalcnt;
   intptr_t freecnt;
+  int free_age;
   struct block_group *group;
   char in_queue, want_compact;
 } block_desc;
@@ -197,6 +200,7 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
     
     bd->free = fl->next;
     bd->freecnt--;
+    bd->free_age = 0;
 
     *src_block = bd;
 
@@ -257,8 +261,14 @@ static void *bc_alloc_std_page(BlockCache *bc, int dirty_ok, int expect_mprotect
   }
 }
 
-static ssize_t bc_free_std_block(block_desc *b, int expect_mprotect) {
+static ssize_t bc_free_std_block(block_desc *b, int expect_mprotect, int force) {
   ssize_t size_diff = 0;
+
+  if (!force && (b->free_age < STDBLOCKFREE_UNMAP_AGE)) {
+    b->free_age++;
+    return 0;
+  }
+  
   /* printf("BLOCK FREE %d %ld\n", expect_mprotect, b->size); */
   gclist_del(&b->gclist);
   os_free_pages(b->block, b->size);
@@ -401,19 +411,19 @@ static int block_cache_compact(void **src_block) {
   return b->want_compact;
 }
 
-static ssize_t block_cache_flush_freed_pages(BlockCache* bc) {
+static ssize_t block_cache_flush_freed_pages(BlockCache* bc, int force) {
   block_desc *b;
   block_desc *bn;
   ssize_t size_diff = 0;
   ssize_t alloc_cache_size_diff = 0;
   
   gclist_each_item_safe(b, bn, &bc->atomic.free, block_desc, gclist) {
-    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b, 0); }
+    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b, 0, force); }
   }
   gclist_each_item_safe(b, bn, &bc->non_atomic.free, block_desc, gclist) {
-    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b, 1); }
+    if (b->freecnt == b->totalcnt) { size_diff += bc_free_std_block(b, 1, force); }
   }
-  alloc_cache_size_diff = alloc_cache_flush_freed_pages(bc->bigBlockCache);
+  alloc_cache_size_diff = alloc_cache_flush_freed_pages(bc->bigBlockCache, force);
 
   return size_diff + alloc_cache_size_diff;
 }

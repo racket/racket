@@ -1014,6 +1014,7 @@ static void *ofm_malloc_zero(size_t len)
 
 # define APAGE_SIZE SECTOR_SEGMENT_SIZE
 # define NO_ALLOC_CACHE_FREE
+# define FREE_UNMAP_AGE 1
 # include "../gc2/my_qsort.c"
 # include "../gc2/alloc_cache.c"
 static AllocCacheBlock *alloc_cache;
@@ -1045,7 +1046,7 @@ static void free_plain_sector(void *p, int count, int executable)
 static void flush_freed_sectors()
 {
   if (alloc_cache)
-    alloc_cache_flush_freed_pages(alloc_cache);
+    alloc_cache_flush_freed_pages(alloc_cache, 0);
 }
 
 #endif

@@ -368,7 +368,7 @@ static void check_excessive_free_pages(NewGC *gc) {
      We choose 4 instead of 2 for "excessive" because a block cache (when
      available) has a fill factor of 2, and flushing will not reduce that. */
   if (mmu_memory_allocated(gc->mmu) > ((gc->used_pages << (LOG_APAGE_SIZE + 2)))) {
-    mmu_flush_freed_pages(gc->mmu);
+    mmu_flush_freed_pages(gc->mmu, 1);
   }
 }
 
@@ -5602,11 +5602,12 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full,
   TIME_STEP("protect");
 
   if (gc->gc_full) {
-    mmu_flush_freed_pages(gc->mmu);
+    mmu_flush_freed_pages(gc->mmu, 0);
     gc->high_fragmentation = (mmu_memory_allocated_and_used(gc->mmu)
                               > (HIGH_FRAGMENTATION_RATIO
                                  * (gc->memory_in_use + gen_half_size_in_use(gc) + GEN0_MAX_SIZE)));
   }
+  TIME_STEP("flush");
   reset_finalizer_tree(gc);
 
   if (gc->gc_full || !gc->started_incremental)
@@ -5833,7 +5834,7 @@ static void free_gc(NewGC *gc)
   free_all_stack_pages(gc);
   free_incremental_admin_pages(gc);
 
-  mmu_flush_freed_pages(gc->mmu);
+  mmu_flush_freed_pages(gc->mmu, 1);
   mmu_free(gc->mmu);
 
   ofm_free(gc->mark_table, gc->number_of_tags * sizeof(Mark2_Proc));
