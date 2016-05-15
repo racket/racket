@@ -56,8 +56,16 @@ static void alloc_cache_collapse_pages(AllocCacheBlock *blockfree)
   int i;
   int j;
 
-  /* sort by AllocCacheBlock->start */
-  my_qsort(blockfree, BLOCKFREE_CACHE_SIZE, sizeof(AllocCacheBlock), alloc_cache_block_compare);
+  /* Sorted already? */
+  for (i = 1; i < BLOCKFREE_CACHE_SIZE; i++) {
+    if (blockfree[i-1].start > blockfree[i].start)
+      break;
+  }
+
+  if (i < BLOCKFREE_CACHE_SIZE) {
+    /* sort by AllocCacheBlock->start */
+    my_qsort(blockfree, BLOCKFREE_CACHE_SIZE, sizeof(AllocCacheBlock), alloc_cache_block_compare);
+  }
 
   /* collapse adjacent: */
   j = 0;
@@ -183,6 +191,18 @@ static intptr_t alloc_cache_flush_freed_pages(AllocCacheBlock *blockfree)
   return freed;
 }
 
+static int alloc_cache_is_full(AllocCacheBlock *blockfree)
+{
+  int i;
+
+  for (i = 0; i < BLOCKFREE_CACHE_SIZE; i++) {
+    if (!blockfree[i].start)
+      return 0;
+  }
+
+  return 1;
+}
+
 #ifndef NO_ALLOC_CACHE_FREE
 static intptr_t alloc_cache_free_all_pages(AllocCacheBlock *blockfree)
 {
@@ -220,7 +240,13 @@ static void *alloc_cache_alloc_page(AllocCacheBlock *blockfree,  size_t len, siz
   r = alloc_cache_find_pages(blockfree, len, alignment, dirty_ok);
   if(!r) {
     /* attempt to allocate from OS */
-    size_t extra = (alignment ? (alignment + CACHE_SEED_PAGES * APAGE_SIZE) : 0);
+    size_t extra;
+
+    if (alloc_cache_is_full(blockfree))
+      extra = alignment;
+    else
+      extra = (alignment ? (alignment + CACHE_SEED_PAGES * APAGE_SIZE) : 0);
+
     r = os_alloc_pages(len + extra);
     if(!r) { return NULL; }
 
