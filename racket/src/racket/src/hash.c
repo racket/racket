@@ -2419,6 +2419,15 @@ intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
 #define mzHAMT_LOG_WORD_SIZE 5
 #define mzHAMT_WORD_SIZE (1 << mzHAMT_LOG_WORD_SIZE)
 
+/* Reorder bits to make the HAMT more bushy in the case that sequential
+   hash code are added: */
+#define HAMT_REORDER(h) (((h) & (HIGH_PART | LOW_LOW_PARTS | (LOW_LOW_PARTS << PART_BIT_COUNT))) \
+                         | (((h) & HIGH_LOW_PARTS) << PART_BIT_COUNT)    \
+                         | (((h) & (HIGH_LOW_PARTS << PART_BIT_COUNT)) >> PART_BIT_COUNT))
+#define HIGH_PART (~((uintptr_t)0x0) - (uintptr_t)0xFFFFFFFF)
+#define LOW_LOW_PARTS 0x3333
+#define HIGH_LOW_PARTS 0xCCCC
+#define PART_BIT_COUNT 16
 
 XFORM_NONGCING static Scheme_Hash_Tree *resolve_placeholder(Scheme_Hash_Tree *ht)
 {
@@ -2474,8 +2483,11 @@ XFORM_NONGCING uintptr_t mzHAMT_KEY_CODE(Scheme_Object *o)
   while (1) {
     if (HASHTR_COLLISIONP(o))
       o = ((Scheme_Hash_Tree *)o)->els[0];
-    else
-      return PTR_TO_LONG(o);
+    else {
+      uintptr_t h;
+      h = PTR_TO_LONG(o);
+      return HAMT_REORDER(h);
+    }
   }
 }
 
@@ -3152,6 +3164,7 @@ Scheme_Object *scheme_eq_hash_tree_get(Scheme_Hash_Tree *tree, Scheme_Object *ke
   int pos;
 
   h = PTR_TO_LONG((Scheme_Object *)key);
+  h = HAMT_REORDER(h);
 
   tree = hamt_assoc(resolve_placeholder(tree), h, &pos, 0);
   if (!tree)
@@ -3185,6 +3198,7 @@ Scheme_Object *scheme_hash_tree_get_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_O
     h = to_unsigned_hash(scheme_equal_hash_key(key));
   } else
     h = to_unsigned_hash(scheme_eqv_hash_key(key));
+  h = HAMT_REORDER(h);
 
   tree = hamt_assoc(tree, h, &pos, 0);
   if (!tree)
@@ -3231,6 +3245,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Schem
     h = to_unsigned_hash(scheme_equal_hash_key(ekey));
   } else
     h = to_unsigned_hash(scheme_eqv_hash_key(key));
+  h = HAMT_REORDER(h);
   
   in_tree = hamt_assoc(resolve_placeholder(tree), h, &pos, 0);
   if (!in_tree) {
