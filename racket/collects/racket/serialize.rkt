@@ -176,12 +176,12 @@
                        (lambda (s)
                          #,@(if super-info
                                 (map (lambda (set get)
-                                       #`(#,set s0 (#,get s)))
+                                       #`((or #,set void) s0 (#,get s)))
                                      (list-ref super-info 4)
                                      (list-ref super-info 3))
                                 null)
                          #,@(map (lambda (getter setter)
-                                   #`(#,setter s0 (#,getter s)))
+                                   #`((or #,setter void) s0 (#,getter s)))
                                  getters
                                  setters)
                          (void))))))))

@@ -42,8 +42,8 @@ The following kinds of values are serializable:
        or @racket[define-serializable-class*];}
 
  @item{@tech{booleans}, @tech{numbers}, @tech{characters}, @tech{interned} symbols,
-       @tech{unreadable symbols}, @tech{strings}, @tech{byte strings}, @tech{paths} (for a
-       specific convention), @|void-const|, and the empty list;}
+       @tech{unreadable symbols}, @tech{keywords}, @tech{strings}, @tech{byte strings}, @tech{paths} (for a
+       specific convention), @tech{regexp values}, @|void-const|, and the empty list;}
 
  @item{@tech{pairs}, @tech{mutable pairs}, @tech{vectors}, @tech{flvectors}, @tech{fxvectors},
        @tech{box}es, @tech{hash tables}, and @tech{sets};}
@@ -70,7 +70,9 @@ currently do not handle certain cyclic values that @racket[read] and
 @racket[write] can handle, such as @racket['@#,read[(open-input-string "#0=(#0#)")]].}
 
 See @racket[deserialize] for information on the format of serialized
-data.}
+data.
+
+@history[#:changed "6.5.0.4" @elem{Added keywords and regexp values as serializable}]}
 
 @; ----------------------------------------------------------------------
 

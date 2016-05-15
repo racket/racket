@@ -41,6 +41,9 @@
 	(and (symbol? v)
              (or (symbol-interned? v)
                  (eq? v (string->unreadable-symbol (symbol->string v)))))
+        (keyword? v)
+        (regexp? v)
+        (byte-regexp? v)
 	(string? v)
 	(path-for-some-system? v)
 	(bytes? v)
@@ -201,6 +204,7 @@
 	      (number? v)
 	      (char? v)
 	      (symbol? v)
+	      (keyword? v)
 	      (null? v)
 	      (void? v)
               (srcloc? v))
@@ -239,6 +243,8 @@
             (for-each loop (struct->list v))]
 	   [(or (string? v)
 		(bytes? v)
+                (regexp? v)
+                (byte-regexp? v)
 		(path-for-some-system? v))
 	    ;; No sub-structure
 	    (void)]
@@ -286,6 +292,9 @@
             (null? v)
             (string? v)
             (symbol? v)
+            (keyword? v)
+            (regexp? v)
+            (byte-regexp? v)
             (bytes? v))))
 
   (define (serialize-one v share check-share? mod-map mod-map-cache)
@@ -294,7 +303,8 @@
        [(or (boolean? v)
 	    (number? v)
 	    (char? v)
-	    (null? v))
+	    (null? v)
+            (keyword? v))
 	v]
        [(symbol? v)
         (if (symbol-interned? v)
@@ -309,6 +319,9 @@
 		 (bytes? v))
 	     (immutable? v))
 	v]
+       [(or (regexp? v)
+            (byte-regexp? v))
+        v]
        [(serializable-struct? v)
 	(let ([info (serializable-info v)])
 	  (cons (mod-to-id info mod-map mod-map-cache) 
@@ -492,6 +505,9 @@
 	    (number? v)
 	    (char? v)
 	    (symbol? v)
+            (keyword? v)
+            (regexp? v)
+            (byte-regexp? v)
 	    (null? v))
 	v]
        [(string? v)
