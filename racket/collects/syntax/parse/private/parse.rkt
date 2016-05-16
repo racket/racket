@@ -945,7 +945,7 @@ Conventions:
                      [(a ...) attrs]
                      [(attr-repc ...) attr-repcs]
                      [tail-pattern-is-null?
-                      (equal? (syntax->datum #'tail) '#s(pat:datum () ()))])
+                      (equal? (syntax->datum #'tail) '#s(pat:datum ()))])
          (define/with-syntax alt-map #'((id . alt-id) ...))
          (define/with-syntax loop-k
            #'(dots-loop dx* dcx* loop-pr* fail-handler rel-rep ... alt-id ...))
