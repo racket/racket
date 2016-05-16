@@ -21,8 +21,6 @@
          "kws.rkt"
          "pattern-expander-prop.rkt")
 
-(define-logger syntax-parse)
-
 ;; Error reporting
 ;; All entry points should have explicit, mandatory #:context arg
 ;; (mandatory from outside, at least)
@@ -633,7 +631,8 @@
                 [attr-count (length iattrs)])
            (list (create-ehpat
                   (hpat:var/p #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f #f)
-                  (eh-alternative-repc alt))
+                  (eh-alternative-repc alt)
+                  #f)
                  (replace-eh-alternative-attrs
                   alt (iattrs->sattrs iattrs))))))]
     [(~or . _)
@@ -656,11 +655,7 @@
      (list (parse*-ehpat/bounds stx decls))]
     [_
      (let ([head (parse-head-pattern stx decls)])
-       ;; FIXME: if 'no, can omit null-eh-match check in parse.rkt
-       (when (eq? (hpat-nullable head) 'yes)
-         (when #f (wrong-syntax stx "nullable ellipsis-head pattern"))
-         (when #t (log-syntax-parse-error "nullable ellipsis-head pattern: ~e" stx)))
-       (list (list (create-ehpat head #f) stx)))]))
+       (list (list (create-ehpat head #f stx) stx)))]))
 
 (define (replace-eh-alternative-attrs alt sattrs)
   (match alt
@@ -998,7 +993,7 @@
 (define (parse-pat:plus-dots stx head tail decls)
   (define headp (parse-head-pattern head decls))
   (define tailp (parse-single-pattern tail decls))
-  (define head/rep (create-ehpat headp (make-rep:bounds 1 +inf.0 #f #f #f)))
+  (define head/rep (create-ehpat headp (make-rep:bounds 1 +inf.0 #f #f #f) head))
   (pat:dots (list head/rep) tailp))
 
 (define (parse-pat:bind stx decls)
@@ -1118,7 +1113,7 @@
 (define (parse*-ehpat/optional stx decls)
   (define-values (head-stx head iattrs name too-many-msg defaults)
     (parse*-optional-pattern stx decls eh-optional-directive-table))
-  (list (create-ehpat head (make rep:optional name too-many-msg defaults))
+  (list (create-ehpat head (make rep:optional name too-many-msg defaults) head-stx)
         head-stx))
 
 ;; parse*-ehpat/once : stx DeclEnv -> (list EllipsisHeadPattern stx)
@@ -1138,7 +1133,7 @@
              (options-select-value chunks '#:too-many #:default #'#f)]
             [name
              (options-select-value chunks '#:name #:default #'#f)])
-       (list (create-ehpat head (make rep:once name too-few-msg too-many-msg))
+       (list (create-ehpat head (make rep:once name too-few-msg too-many-msg) #'p)
              #'p))]))
 
 ;; parse*-ehpat/bounds : stx DeclEnv -> (list EllipsisHeadPattern stx)
@@ -1171,7 +1166,8 @@
                (options-select-value chunks '#:name #:default #'#f)])
          (list (create-ehpat head
                              (make rep:bounds #'min #'max
-                                   name too-few-msg too-many-msg))
+                                   name too-few-msg too-many-msg)
+                             #'p)
                #'p)))]))
 
 ;; -----

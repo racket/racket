@@ -11,7 +11,13 @@
          (struct-out eh-alternative)
          (struct-out den:lit)
          (struct-out den:datum-lit)
-         (struct-out den:delayed))
+         (struct-out den:delayed)
+         log-syntax-parse-error
+         log-syntax-parse-warning
+         log-syntax-parse-info
+         log-syntax-parse-debug)
+
+(define-logger syntax-parse)
 
 ;; == from rep-attr.rkt
 (define-struct attr (name depth syntax?) #:prefab)

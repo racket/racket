@@ -3,9 +3,7 @@
          "rep-attrs.rkt"
          "kws.rkt"
          "minimatch.rkt"
-         (for-syntax racket/base
-                     syntax/stx
-                     racket/syntax))
+         racket/syntax)
 (provide (all-defined-out))
 
 #|
@@ -125,7 +123,7 @@ A HeadPattern is one of
 
 #|
 An EllipsisHeadPattern is
-  (ehpat (Listof IAttr) HeadPattern RepConstraint)
+  (ehpat (Listof IAttr) HeadPattern RepConstraint Boolean)
 
 A RepConstraint is one of
   (rep:once stx stx stx)
@@ -134,7 +132,7 @@ A RepConstraint is one of
   #f
 |#
 
-(define-struct ehpat (attrs head repc) #:prefab)
+(define-struct ehpat (attrs head repc nullable?) #:prefab)
 (define-struct rep:once (name under-message over-message) #:prefab)
 (define-struct rep:optional (name over-message defaults) #:prefab)
 (define-struct rep:bounds (min max name under-message over-message) #:prefab)
@@ -305,7 +303,7 @@ A RepConstraint is one of
      null]
 
     ;; EH patterns
-    [(ehpat iattrs _ _)
+    [(ehpat iattrs _ _ _)
      iattrs]
     ))
 
@@ -319,10 +317,15 @@ A RepConstraint is one of
   (define attrss (map pattern-attrs ps))
   (hpat:or (union-iattrs attrss) ps attrss))
 
-(define (create-ehpat head repc)
+;; create-ehpat : HeadPattern RepConstraint Syntax -> EllipsisHeadPattern
+(define (create-ehpat head repc head-stx)
   (let* ([iattrs0 (pattern-attrs head)]
          [iattrs (repc-adjust-attrs iattrs0 repc)])
-    (ehpat iattrs head repc)))
+    (define nullable (hpat-nullable head))
+    (when (eq? nullable 'yes)
+      (when #f (wrong-syntax head-stx "nullable ellipsis-head pattern"))
+      (when #t (log-syntax-parse-error "nullable ellipsis-head pattern: ~e" head-stx)))
+    (ehpat iattrs head repc (case nullable [(yes unknown) #t] [(no) #f]))))
 
 (define (repc-adjust-attrs iattrs repc)
   (cond [(rep:once? repc)
