@@ -171,6 +171,11 @@
          [_ body]))]))
 
 (begin-for-syntax
+  (define-for-syntax ((maybe unintro) form)
+    (if (syntax-property form 'definition-intended-as-local)
+        form
+        (unintro form)))
+
   (define-syntax (splicing-let-body/et stx)
     (syntax-case stx ()
       [(_ marked-id markless-id body)

@@ -1634,6 +1634,15 @@
          (define-syntax outer-x (make-rename-transformer #'x)))
         outer-x))
 
+(test 10 'splicing+begin-for-syntax
+      (eval
+       '(begin
+         (splicing-let ([x 10])
+                       (begin-for-syntax
+                         (define id #'x)))
+         (define-syntax (m stx) id)
+         (m))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check keyword & optionals for define-syntax 
 ;; and define-syntax-for-values:
