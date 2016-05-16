@@ -535,6 +535,13 @@
     (test s read (open-input-string (get-output-string o))))
   (delete-file fn))
 
+;; ----------------------------------------
+
+(define-serializable-struct immutable-a (b))
+
+(let ([a (immutable-a (box #f))])
+  (set-box! (immutable-a-b a) a)
+  (deserialize (serialize a)))
 
 ;; ----------------------------------------
 

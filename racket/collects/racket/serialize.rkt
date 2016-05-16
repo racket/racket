@@ -112,6 +112,11 @@
               #'orig-stx
               (syntax-case #'id/sup ()
                 [(_ sup) #'sup]))))
+         (define can-handle-cycles?
+           ;;  Yes, as long as we have mutators here and for the superclass
+           (and (andmap values setters)
+                (or (not super-info)
+                    (andmap values (list-ref super-info 4)))))
          #`(begin
              ;; =============== struct with serialize property ================
              (define-struct/derived orig-stx
@@ -139,11 +144,7 @@
                 ;; The serializer id: --------------------
                 (quote-syntax #,deserialize-id)
                 ;; Can handle cycles? --------------------
-                ;;  Yes, as long as we have mutators for the
-                ;;  superclass.
-                #,(and (andmap values setters)
-                       (or (not super-info)
-                           (andmap values (list-ref super-info 4))))
+                '#,can-handle-cycles?
                 ;; Directory for last-ditch resolution --------------------
                 (or (current-load-relative-directory) 
                     (current-directory))))
@@ -174,16 +175,19 @@
                       (values
                        s0
                        (lambda (s)
-                         #,@(if super-info
-                                (map (lambda (set get)
-                                       #`((or #,set void) s0 (#,get s)))
-                                     (list-ref super-info 4)
-                                     (list-ref super-info 3))
-                                null)
-                         #,@(map (lambda (getter setter)
-                                   #`((or #,setter void) s0 (#,getter s)))
-                                 getters
-                                 setters)
+                         #,(if can-handle-cycles?
+                               #`(begin
+                                   #,@(if super-info
+                                          (map (lambda (set get)
+                                                 #`(#,set s0 (#,get s)))
+                                               (list-ref super-info 4)
+                                               (list-ref super-info 3))
+                                          null)
+                                   #,@(map (lambda (getter setter)
+                                             #`(#,setter s0 (#,getter s)))
+                                           getters
+                                           setters))
+                               #`(error "cannot mutate to complete a cycle"))
                          (void))))))))
              #,@(map (lambda (other-deserialize-id proc-expr cycle-proc-expr)
                        #`(define #,other-deserialize-id

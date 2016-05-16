@@ -2459,9 +2459,7 @@ last few projections.
                                                               (lambda (obj) 
                                                                 ((class-serializer c) obj))
                                                               deserialize-id
-                                                              (and (not inspector)
-                                                                   (not (interface-extension? i externalizable<%>))
-                                                                   (eq? #t (class-serializer super)))
+                                                              (not (interface-extension? i externalizable<%>))
                                                               (or (current-load-relative-directory) 
                                                                   (current-directory)))))
                                                       null))
