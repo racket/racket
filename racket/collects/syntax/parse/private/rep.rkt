@@ -21,6 +21,8 @@
          "kws.rkt"
          "pattern-expander-prop.rkt")
 
+(define-logger syntax-parse)
+
 ;; Error reporting
 ;; All entry points should have explicit, mandatory #:context arg
 ;; (mandatory from outside, at least)
@@ -654,6 +656,10 @@
      (list (parse*-ehpat/bounds stx decls))]
     [_
      (let ([head (parse-head-pattern stx decls)])
+       ;; FIXME: if 'no, can omit null-eh-match check in parse.rkt
+       (when (eq? (hpat-nullable head) 'yes)
+         (when #f (wrong-syntax stx "nullable ellipsis-head pattern"))
+         (when #t (log-syntax-parse-error "nullable ellipsis-head pattern: ~e" stx)))
        (list (list (create-ehpat head #f) stx)))]))
 
 (define (replace-eh-alternative-attrs alt sattrs)

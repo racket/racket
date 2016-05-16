@@ -42,7 +42,7 @@ A ListPattern is a subtype of SinglePattern; one of
   (pat:action ActionPattern ListPattern)
   (pat:head HeadPattern ListPattern)
   (pat:pair #t SinglePattern ListPattern)
-  (pat:dots EllipsisHeadPattern SinglePattern)
+  (pat:dots EllipsisHeadPattern ListPattern)
 |#
 
 (define-struct pat:any () #:prefab)
@@ -441,6 +441,47 @@ A RepConstraint is one of
   (for/fold ([af AF-NONE]) ([p (in-list ps)])
     (define afp (pattern-AF p))
     (and af (AF<? af afp) (bitwise-ior af afp))))
+
+;; ----
+
+;; An AbsNullable is 'yes | 'no | 'unknown (3-valued logic)
+
+(define (3and a b)
+  (case a
+    [(yes) b]
+    [(no) 'no]
+    [(unknown) (case b [(yes unknown) 'unknown] [(no) 'no])]))
+
+(define (3or a b)
+  (case a
+    [(yes) 'yes]
+    [(no) b]
+    [(unknown) (case b [(yes) 'yes] [(no unknown) 'unknown])]))
+
+;; lpat-nullable : ListPattern -> AbsNullable
+(define/memo (lpat-nullable lp)
+  (match lp
+    [(pat:datum '()) 'yes]
+    [(pat:action ap lp) (lpat-nullable lp)]
+    [(pat:head hp lp) (3and (hpat-nullable hp) (lpat-nullable lp))]
+    [(pat:pair '#t sp lp) 'no]
+    [(pat:dots ehp lp) (lpat-nullable lp)]))
+
+;; hpat-nullable : HeadPattern -> AbsNullable
+(define/memo (hpat-nullable hp)
+  (match hp
+    [(hpat:seq lp) (lpat-nullable lp)]
+    [(hpat:action ap hp) (hpat-nullable hp)]
+    [(hpat:and hp sp) (hpat-nullable hp)]
+    [(hpat:or _attrs hps _attrss) (foldl 3or 'no (map hpat-nullable hps))]
+    [(hpat:describe hp _ _ _) (hpat-nullable hp)]
+    [(hpat:delimit hp) (hpat-nullable hp)]
+    [(hpat:commit hp) (hpat-nullable hp)]
+    [(hpat:ord hp _ _) (hpat-nullable hp)]
+    [(hpat:post hp) (hpat-nullable hp)]
+    [_ 'unknown]))
+
+;; ----
 
 ;; create-post-pattern : *Pattern -> *Pattern
 (define (create-post-pattern p)
