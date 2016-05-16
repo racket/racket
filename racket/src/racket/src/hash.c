@@ -2425,8 +2425,8 @@ intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
                          | (((h) & HIGH_LOW_PARTS) << PART_BIT_COUNT)    \
                          | (((h) & (HIGH_LOW_PARTS << PART_BIT_COUNT)) >> PART_BIT_COUNT))
 #define HIGH_PART (~((uintptr_t)0x0) - (uintptr_t)0xFFFFFFFF)
-#define LOW_LOW_PARTS 0x3333
-#define HIGH_LOW_PARTS 0xCCCC
+#define LOW_LOW_PARTS ((uintptr_t)0x3333)
+#define HIGH_LOW_PARTS ((uintptr_t)0xCCCC)
 #define PART_BIT_COUNT 16
 
 XFORM_NONGCING static Scheme_Hash_Tree *resolve_placeholder(Scheme_Hash_Tree *ht)
