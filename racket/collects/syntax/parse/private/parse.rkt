@@ -984,8 +984,9 @@ Conventions:
                    (for/list ([id (in-list ids)]) (bound-id-table-ref table id)))])
            (with-syntax ([(id ...) ids]
                          [(alt-id ...) alt-ids])
-             #`(let ([alt-id (rep:combine repc (attribute id) alt-id)] ...)
-                 k))))
+             #`(let ([alt-id (rep:combine repc (attribute id) alt-id)] ...
+                     [diff (ps-difference pr pr*)])
+                 (if (zero? diff) (error/null-eh-match) k)))))
        (syntax-case #'repc ()
          [#f #`(parse:H x cx x* cx* pr* head pr es k*)]
          [_  #`(parse:H x cx x* cx* pr* head pr es

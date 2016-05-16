@@ -60,6 +60,7 @@
          datum->syntax/with-clause
          check/force-syntax-list^depth
          check-literal*
+         error/null-eh-match
          begin-for-syntax/once
 
          name->too-few/once
@@ -215,6 +216,10 @@
              used-phase
              (and used-phase (- used-phase mod-phase)))
      ctx id)))
+
+;; error/null-eh-match : -> (escapes)
+(define (error/null-eh-match)
+  (error 'syntax-parse "an ellipsis-head pattern matched an empty sequence"))
 
 ;; (begin-for-syntax/once expr/phase1 ...)
 ;; evaluates in pass 2 of module/intdefs expansion
