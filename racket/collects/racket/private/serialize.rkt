@@ -171,18 +171,24 @@
 
   ;; Finds a mutable object among those that make the
   ;;  current cycle.
-  (define (find-mutable v cycle-stack) 
+  (define (find-mutable v cycle-stack share cycle)
     ;; Walk back through cycle-stack to find something
     ;;  mutable. If we get to v without anything being
     ;;  mutable, then we're stuck.
-    (let ([o (car cycle-stack)])
+    (define (potentially-shared! v)
+      (unless (hash-ref share v #f)
+        (hash-set! share v (share-id share cycle))))
+    (potentially-shared! v)
+    (let loop ([cycle-stack cycle-stack])
+      (define o (car cycle-stack))
       (cond
        [(eq? o v)
 	(error 'serialize "cannot serialize cycle of immutable values: ~e" v)]
        [(is-mutable? o)
 	o]
        [else
-	(find-mutable v (cdr cycle-stack))])))
+        (potentially-shared! o)
+	(loop (cdr cycle-stack))])))
 
 
   (define (share-id share cycle)
@@ -219,11 +225,9 @@
 	  ;;  part of a cycle.
 	  (let ([mut-v (if (is-mutable? v)
 			   v
-			   (find-mutable v cycle-stack))])
-	    (hash-set! cycle mut-v (share-id share cycle))
-	    (unless (eq? mut-v v)
-	      ;; This value is potentially shared
-	      (hash-set! share v (share-id share cycle))))]
+			   (find-mutable v cycle-stack share cycle))])
+            (unless (hash-ref cycle mut-v #f)
+              (hash-set! cycle mut-v (share-id share cycle))))]
 	 [(hash-ref share v #f)
 	  ;; We already know that this value is shared
 	  (void)]
@@ -266,9 +270,9 @@
 	   [(date? v)
 	    (for-each loop (take (struct->list v) 10))]
 	   [(hash? v)
-	    (hash-for-each v (lambda (k v)
-                               (loop k)
-                               (loop v)))]
+            (for ([(k v) (in-hash v)])
+              (loop k)
+              (loop v))]
 	   [(arity-at-least? v)
 	    (loop (arity-at-least-value v))]
 	   [(module-path-index? v)
@@ -376,9 +380,9 @@
 		(if (hash-eqv? v) '(eqv) null)
 		(if (hash-weak? v) '(weak) null))
 	       (let ([loop (serial #t)])
-		 (hash-map v (lambda (k v)
-                               (cons (loop k)
-                                     (loop v))))))]
+                 (for/list ([(k v) (in-hash v)])
+                   (cons (loop k)
+                         (loop v)))))]
        [(date*? v)
 	(cons 'date*
 	      (map (serial #t) (take (struct->list v) 12)))]
@@ -589,10 +593,8 @@
 	 ;; Hash table
 	 (let ([ht0 (make-hash/flags (cdr v))])
 	   (vector-set! fixup n (lambda (ht)
-				  (hash-for-each 
-				   ht
-				   (lambda (k v)
-				     (hash-set! ht0 k v)))))
+                                  (for ([(k v) (in-hash ht)])
+                                    (hash-set! ht0 k v))))
 	   ht0)]
         [(pf)
          ;; Prefab
