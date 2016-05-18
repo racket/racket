@@ -420,6 +420,20 @@ explicitly the import, the import @tech{phase level} shift (where
 name of the re-exported binding, and the @tech{phase level} of the
 import.}
 
+
+
+@defproc[(module-compiled-indirect-exports [compiled-module-code compiled-module-expression?])
+         (listof (cons/c exact-integer? (listof symbol?)))]{
+
+Returns an association list mapping @tech{phase level} values to
+symbols that represent variables within the module. These definitions
+are not directly accessible from source, but they are accessible from
+bytecode, and the order of the symbols in each list corresponds to an
+order for bytecode access.
+
+@history[#:added "6.5.0.5"]}
+
+
 @defproc[(module-compiled-language-info [compiled-module-code compiled-module-expression?])
          (or/c #f (vector/c module-path? symbol? any/c))]{
 
@@ -584,6 +598,16 @@ Like @racket[module-compiled-imports], but produces the imports of
 Like @racket[module-compiled-exports], but produces the exports of
 @racket[mod], which must be declared (but not necessarily
 @tech{instantiate}d or @tech{visit}ed) in the current namespace.}
+
+@defproc[(module->indirect-exports
+          [mod (or/c module-path? resolved-module-path?)])
+         (listof (cons/c exact-integer? (listof symbol?)))]{
+
+Like @racket[module-compiled-exports], but produces the exports of
+@racket[mod], which must be declared (but not necessarily
+@tech{instantiate}d or @tech{visit}ed) in the current namespace.
+
+@history[#:added "6.5.0.5"]}
 
 @defproc[(module-predefined?
           [mod (or/c module-path? resolved-module-path?)])

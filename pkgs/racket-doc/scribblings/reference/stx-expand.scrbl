@@ -144,7 +144,16 @@ to the syntax object:
  @item{@indexed-racket['module-indirect-provides] --- a list of symbols for
  variables that are defined in the module but not exported; they may
  be exported indirectly through macro expansions.  Definitions of
- macro-generated identifiers create uninterned symbols in this list.}
+ macro-generated identifiers create uninterned symbols in this list.
+ The order of identifiers in the list corresponds to an order for
+ access from bytecode.}
+
+ @item{@indexed-racket['module-indirect-for-meta-provides] --- similar
+ to @racket['module-indirect-provides]: an association list from a
+ phase level to a list of symbols for variables that are defined in
+ the module at phases higher than @racket[0] and not exported.
+
+ @history[#:added "6.5.0.5"]}
 
  @item{@indexed-racket['module-body-context] --- a syntax
  object whose @tech{lexical information} corresponds to the inside of

@@ -280,7 +280,8 @@ form. See also @racket[module-compiled-language-info],
 @racket[module->language-info], and
 @racketmodname[racket/language-info].
 
-See also @secref["module-eval-model"] and @secref["mod-parse"].
+See also @secref["module-eval-model"], @secref["mod-parse"], and
+@secref["modinfo"].
 
 @examples[#:eval (syntax-eval) #:once
 (module duck racket/base
