@@ -98,7 +98,12 @@ structures that are produced by @racket[zo-parse] and consumed by
   granted access capabilities through that inspector.}
 
 @defstruct+[(global-bucket zo) ([name symbol?])]{
-  Represents a top-level variable, and used only in a @racket[prefix].}
+ Represents a top-level variable, and used only in a 
+ @racket[prefix]. Because modules cannot require top-level
+ variables, these will only appear in the top level 
+ @racket[prefix]. Additionally, symbols in the top-level
+ prefix are an alias for @racket[global-bucket] structs,
+ making them redundant.}
 
 @defstruct+[(module-variable zo)
             ([modidx module-path-index?]
