@@ -626,6 +626,39 @@ fixnum).}
  @history[#:added "6.4.0.4"]
 }
 
+@defmodule[racket/unsafe/chaperones]
+
+@defproc[(remove-impersonators [value impersonator?]
+                               [impersonator impersonator?]
+			       [original any/c])
+         any/c]{
+Returns @racket[value] with all impersonators between
+@racket[impersonator] and @racket[original] removed from the chain of
+impersonators wrapping @racket[value]. @racket[value] must be an
+impersonator of (or equal to) @racket[impersonator]. @racket[impersonator]
+must also impersonate @racket[original]. The value @racket[original]
+both delimits the set of impersonators that should be removed, and
+acts as a witness that the caller has access to the underlying value
+without the impersonators.
+
+@history[#:added "6.5.0.5"]
+}
+
+@defproc[(chaperone-opaque-struct [v any/c]
+                                  [prop impersonator-property?]
+                                  [prop-val any] ... ...)
+          any/c]{
+Returns a chaperone of @racket[v] with the specified impersonator
+properties. Unlike @racket[chaperone-struct],
+@racket[chaperone-opaque-struct] can be used to chaperone opaque
+structs and does not require a @racket[struct-type?] value. No
+operations on the struct can be redirected.
+
+@history[#:added "6.5.0.5"]
+}
+
 @; ------------------------------------------------------------------------
 
 @include-section["unsafe-undefined.scrbl"]
+
+
