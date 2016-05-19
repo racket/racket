@@ -81,11 +81,15 @@
 
 (err/rt-test (resolve-module-path "apple.ss" 'no))
 (err/rt-test (resolve-module-path "/apple.ss" #f))
+(err/rt-test (resolve-module-path "/apple.ss"))
 (err/rt-test (resolve-module-path "apple.ss/" #f))
+(err/rt-test (resolve-module-path "apple.ss/"))
 (err/rt-test (resolve-module-path "app\u00E9le.ss" #f))
 
 (err/rt-test (resolve-module-path-index "apple.ss" #f))
+(err/rt-test (resolve-module-path-index "apple.ss"))
 (err/rt-test (resolve-module-path-index (module-path-index-join #f #f) #f) exn:fail?)
+(err/rt-test (resolve-module-path-index (module-path-index-join #f #f)) exn:fail?)
 
 (when (eq? (system-path-convention-type) 'unix)
   (test (expand-user-path "~/x.rkt") resolve-module-path '(file "~/x.rkt") #f))
