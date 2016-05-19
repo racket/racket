@@ -429,7 +429,7 @@
                                       (syntax->list #'(margs (... ...))))]
                                 [app (datum->syntax stx '#%app)])
                     (syntax-property
-                     #'(app ctc/proc margs (... ...))
+                     (syntax/loc stx (app ctc/proc margs (... ...)))
                      'racket/contract:contract
                      (vector this-one
                              (list (car (syntax-e stx)))
