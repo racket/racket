@@ -324,7 +324,7 @@ result is always @racket[#f] if either result of
          module-path-index?]{
 
 Combines @racket[path], @racket[base], and @racket[submod] to create a
-new @tech{module path index}. The @racket[path] argument can
+new @tech{module path index}. The @racket[path] argument can be
 @racket[#f] only if @racket[base] is also @racket[#f]. The
 @racket[submod] argument can be a list only when @racket[path] and
 @racket[base] are both @racket[#f].}
