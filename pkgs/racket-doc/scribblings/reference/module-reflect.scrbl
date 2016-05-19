@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt"
-          (for-label compiler/embed))
+          (for-label compiler/embed
+                     syntax/modresolve))
 
 @title{Module Names and Loading}
 
@@ -284,7 +285,9 @@ name resolver} (see @racket[current-module-name-resolver]). Depending
 on the kind of module paths encapsulated by @racket[mpi], the computed
 resolved name can depend on the value of
 @racket[current-load-relative-directory] or
-@racket[current-directory].}
+@racket[current-directory].
+
+See @racket[resolve-module-path-index].}
 
 
 @defproc[(module-path-index-split [mpi module-path-index?])

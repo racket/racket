@@ -25,4 +25,6 @@ refman]{module path index}; in this case, the @racket[rel-to-path-v]
 base is used where the module path index contains the ``self'' index.
 If @racket[module-path-index] depends on the ``self'' module path
 index, then an exception is raised unless @racket[rel-to-path-v] is a
-path string.}
+path string.
+
+See @racket[module-path-index-resolve].}
