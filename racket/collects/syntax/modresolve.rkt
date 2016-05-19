@@ -106,7 +106,7 @@
                                (if (equal? (cadr s) "..") (cdr s) (cddr s))))]
         [else #f]))
 
-(define (resolve-module-path-index mpi relto)
+(define (resolve-module-path-index mpi [relto #f])
   ;; relto must be a complete path
   (let-values ([(path base) (module-path-index-split mpi)])
     (if path
@@ -118,7 +118,7 @@
                                                  (append submod sm)
                                                  (or sm submod)))))))
 
-(define (resolve-possible-module-path-index base relto)
+(define (resolve-possible-module-path-index base [relto #f])
   (cond [(module-path-index? base)
          (resolve-module-path-index base relto)]
         [(and (resolved-module-path? base)

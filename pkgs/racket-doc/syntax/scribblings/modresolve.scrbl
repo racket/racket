@@ -6,7 +6,7 @@
 @defmodule[syntax/modresolve]
 
 @defproc[(resolve-module-path [module-path-v module-path?] 
-                              [rel-to-path-v (or/c path-string? (-> any) false/c)])
+                              [rel-to-path-v (or/c #f path-string? (-> any)) #f])
          (or/c path? symbol?
                (cons/c 'submod (cons/c (or/c path? symbol?) (listof symbol?))))]{
 
@@ -16,7 +16,7 @@ be for a file), to the directory result of calling the thunk if it is
 a thunk, or to the current directory otherwise.}
 
 @defproc[(resolve-module-path-index [module-path-index module-path-index?] 
-                                    [rel-to-path-v (or/c path-string? (-> any) false/c)])
+                                    [rel-to-path-v (or/c #f path-string? (-> any)) #f])
          (or/c path? symbol?
                (cons/c 'submod (cons/c (or/c path? symbol?) (listof symbol?))))]{
 
