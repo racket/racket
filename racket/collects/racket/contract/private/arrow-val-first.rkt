@@ -8,10 +8,10 @@
          "prop.rkt"
          "guts.rkt"
          "generate.rkt"
+         "arrow-common.rkt"
          "arrow-higher-order.rkt"
          "list.rkt"
-         racket/stxparam
-         (prefix-in arrow: "arrow-common.rkt"))
+         racket/stxparam)
 
 (provide (rename-out [->/c ->]) ->*
          (for-syntax ->-internal ->*-internal) ; for ->m and ->*m
@@ -454,7 +454,7 @@
         (define results (call-with-values mk-call list))
         (define rng-len (length rngs))
         (unless (= (length results) rng-len)
-          (arrow:bad-number-of-results complete-blame f rng-len results))
+          (bad-number-of-results complete-blame f rng-len results))
         (when post (check-post-cond post blame neg-party complete-blame f))
         (apply
          values
@@ -1126,7 +1126,7 @@
                                  (loop (cdr args) (cdr projs)))])))
                (define (result-checker . results)
                  (unless (= rng-len (length results))
-                   (arrow:bad-number-of-results (blame-add-missing-party blame neg-party)
+                   (bad-number-of-results (blame-add-missing-party blame neg-party)
                                                 f rng-len results))
                  (apply 
                   values
@@ -1159,22 +1159,6 @@
             plus-one-arity-function
             build-chaperone-constructor
             #f)) ; not a method contract
-
-;; min-arity : nat
-;; doms : (listof contract?)[len >= min-arity]
-;;        includes optional arguments in list @ end
-;; kwd-infos : (listof kwd-info)
-;; rest : (or/c #f contract?)
-;; pre? : (or/c #f 'pre 'pre/desc)
-;; rngs : (listof contract?)
-;; post? : (or/c #f 'post 'post/desc)
-;; plus-one-arity-function : procedure? -- special, +1 argument wrapper that accepts neg-party
-;; chaperone-constructor ; procedure? -- function that builds a projection tailored to this arrow
-;; method? : boolean?
-(define-struct base-> (min-arity doms kwd-infos rest pre? rngs post?
-                                 plus-one-arity-function chaperone-constructor
-                                 method?)
-  #:property prop:custom-write custom-write-property-proc)
 
 (define (->-generate ctc)
   (cond
@@ -1366,9 +1350,9 @@
                      (kwd-info-kwd kwd-info)))
   (and (procedure? x) 
        (if (base->-rest ctc)
-           (arrow:procedure-accepts-and-more? x l)
+           (procedure-accepts-and-more? x l)
            (procedure-arity-includes? x l #t))
-       (arrow:keywords-match man-kwds opt-kwds x)
+       (keywords-match man-kwds opt-kwds x)
        #t))
 
 (define (make-property chaperone?)
@@ -1547,7 +1531,7 @@
                             (make-keyword-procedure
                              (λ (kwds kwd-args . other)
                                (unless (null? kwds)
-                                 (arrow:raise-no-keywords-arg blame #:missing-party neg-party f kwds))
+                                 (raise-no-keywords-arg blame #:missing-party neg-party f kwds))
                                (unless (= 1 (length other))
                                  (raise-wrong-number-of-args-error
                                   #:missing-party neg-party

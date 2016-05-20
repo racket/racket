@@ -12,6 +12,7 @@
          blame-add-nth-arg-context
          check-procedure check-procedure/more
          procedure-accepts-and-more?
+         procedure-arity-exactly/no-kwds
          keywords-match
          (for-syntax check-tail-contract)
          matches-arity-exactly?
@@ -21,7 +22,25 @@
          tail-contract-key tail-marks-match?
          bad-number-of-results
          the-unsupplied-arg unsupplied-arg?
-         values/drop)
+         values/drop
+         (struct-out base->)
+         raise-wrong-number-of-args-error)
+
+;; min-arity : nat
+;; doms : (listof contract?)[len >= min-arity]
+;;        includes optional arguments in list @ end
+;; kwd-infos : (listof kwd-info)
+;; rest : (or/c #f contract?)
+;; pre? : (or/c #f 'pre 'pre/desc)
+;; rngs : (listof contract?)
+;; post? : (or/c #f 'post 'post/desc)
+;; plus-one-arity-function : procedure? -- special, +1 argument wrapper that accepts neg-party
+;; chaperone-constructor ; procedure? -- function that builds a projection tailored to this arrow
+;; method? : boolean?
+(define-struct base-> (min-arity doms kwd-infos rest pre? rngs post?
+                                 plus-one-arity-function chaperone-constructor
+                                 method?)
+  #:property prop:custom-write custom-write-property-proc)
 
 (define-struct unsupplied-arg ())
 (define the-unsupplied-arg (make-unsupplied-arg))
@@ -243,6 +262,13 @@
     [else
      passes?]))
 
+(define (procedure-arity-exactly/no-kwds val min-arity)
+  (and (procedure? val)
+       (equal? (procedure-arity val) min-arity)
+       (let-values ([(man opt) (procedure-keywords val)])
+         (and (null? man)
+              (null? opt)))))
+
 (define (procedure-arity-includes?/optionals f base optionals)
   (cond
     [(zero? optionals) (procedure-arity-includes? f base #t)]
@@ -332,6 +358,26 @@
 (define (blame-add-nth-arg-context blame n)
   (blame-add-context blame
                      (format "the ~a argument of" (n->th n))))
+
+(define (raise-wrong-number-of-args-error
+         blame #:missing-party [missing-party #f] val
+         args-len pre-min-arity pre-max-arity method?)
+  (define min-arity ((if method? sub1 values) pre-min-arity))
+  (define max-arity ((if method? sub1 values) pre-max-arity))
+  (define arity-string
+    (if max-arity
+        (cond
+          [(= min-arity max-arity)
+           (format "~a non-keyword argument~a" min-arity (if (= min-arity 1) "" "s"))]
+          [(= (+ min-arity 1) max-arity)
+           (format "~a or ~a non-keyword arguments" min-arity max-arity)]
+          [else
+           (format "~a to ~a non-keyword arguments" min-arity max-arity)])
+        (format "at least ~a non-keyword argument~a" min-arity (if (= min-arity 1) "" "s"))))
+  (raise-blame-error (blame-swap blame) val
+                     #:missing-party missing-party
+                     '(received: "~a argument~a" expected: "~a")
+                     args-len (if (= args-len 1) "" "s") arity-string))
 
 ;; timing & size tests
 

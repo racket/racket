@@ -15,12 +15,10 @@
                   unsafe-impersonate-procedure))
 
 (provide (for-syntax build-chaperone-constructor/real)
-         procedure-arity-exactly/no-kwds
          ->-proj
          check-pre-cond
          check-post-cond
          pre-post/desc-result->string
-         raise-wrong-number-of-args-error
          arity-checking-wrapper)
 
 (define-for-syntax (build-chaperone-constructor/real ;; (listof (or/c #f stx))
@@ -474,7 +472,7 @@
               (let ()
              (define args-len (length args))
              (unless (valid-number-of-args? args)
-               (raise-wrong-number-of-args-error
+               (arrow:raise-wrong-number-of-args-error
                 blame #:missing-party neg-party val
                 args-len min-arity max-arity method?))
 
@@ -500,7 +498,7 @@
               (let ()
              (unless (valid-number-of-args? args)
                (define args-len (length args))
-               (raise-wrong-number-of-args-error
+               (arrow:raise-wrong-number-of-args-error
                 blame #:missing-party neg-party val
                 args-len min-arity max-arity method?))
              (apply basic-lambda args))))
@@ -521,26 +519,6 @@
       (struct-constructor-procedure? f)
       (struct-predicate-procedure? f)
       (struct-mutator-procedure? f)))
-
-(define (raise-wrong-number-of-args-error
-         blame #:missing-party [missing-party #f] val
-         args-len pre-min-arity pre-max-arity method?)
-  (define min-arity ((if method? sub1 values) pre-min-arity))
-  (define max-arity ((if method? sub1 values) pre-max-arity))
-  (define arity-string
-    (if max-arity
-        (cond
-          [(= min-arity max-arity)
-           (format "~a non-keyword argument~a" min-arity (if (= min-arity 1) "" "s"))]
-          [(= (+ min-arity 1) max-arity)
-           (format "~a or ~a non-keyword arguments" min-arity max-arity)]
-          [else
-           (format "~a to ~a non-keyword arguments" min-arity max-arity)])
-        (format "at least ~a non-keyword argument~a" min-arity (if (= min-arity 1) "" "s"))))
-  (raise-blame-error (blame-swap blame) val
-                     #:missing-party missing-party
-                     '(received: "~a argument~a" expected: "~a")
-                     args-len (if (= args-len 1) "" "s") arity-string))
 
 (define (maybe-cons-kwd c x r neg-party)
   (if (eq? arrow:unspecified-dom x)
@@ -652,7 +630,7 @@
        (if okay-to-do-only-arity-check?
            (λ (val neg-party)
              (cond
-               [(procedure-arity-exactly/no-kwds val min-arity) val]
+               [(arrow:procedure-arity-exactly/no-kwds val min-arity) val]
                [else (arrow-higher-order:lnp val neg-party)]))
            arrow-higher-order:lnp)]
       [else
@@ -677,7 +655,7 @@
        (if okay-to-do-only-arity-check?
            (λ (val)
              (cond
-               [(procedure-arity-exactly/no-kwds val min-arity)
+               [(arrow:procedure-arity-exactly/no-kwds val min-arity)
                 (define-values (normal-proc proc-with-no-result-checking expected-number-of-results)
                   (apply plus-one-arity-function orig-blame val plus-one-constructor-args))
                 (wrapped-extra-arg-arrow 
@@ -685,10 +663,3 @@
                  normal-proc)]
                [else (arrow-higher-order:vfp val)]))
            arrow-higher-order:vfp)])))
-
-(define (procedure-arity-exactly/no-kwds val min-arity)
-  (and (procedure? val)
-       (equal? (procedure-arity val) min-arity)
-       (let-values ([(man opt) (procedure-keywords val)])
-         (and (null? man)
-              (null? opt)))))
