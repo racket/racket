@@ -1705,12 +1705,12 @@ static char *regrange(int parse_flags, char *map)
 	map['-'] = 1;
       } else {
 	if (!can_range) {
-	  FAIL("misplaced hypen within square brackets in pattern");
+	  FAIL("misplaced hyphen within square brackets in pattern");
 	} else {
 	  xclass = UCHAR(regparsestr[regparse-2])+1;
 	  classend = UCHAR(regparsestr[regparse]);
 	  if (classend == '-') {
-	    FAIL("misplaced hypen within square brackets in pattern");
+	    FAIL("misplaced hyphen within square brackets in pattern");
 	  }
 	  if ((classend == '\\') && (parse_flags & PARSE_PCRE)) {
 	    if (regparse+1 == regparse_end) {
@@ -1720,7 +1720,7 @@ static char *regrange(int parse_flags, char *map)
 	    classend = UCHAR(regparsestr[regparse]);
 	    if (((classend >= 'a') && (classend <= 'z'))
 		|| ((classend >= 'A') && (classend <= 'Z'))) {
-	      FAIL("misplaced hypen within square brackets in pattern");
+	      FAIL("misplaced hyphen within square brackets in pattern");
 	    }
 	  }
 	  if (xclass > classend+1)
@@ -4604,7 +4604,7 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
 	      && (!pcre || ((us[p] != '\\') && (us[p+2] != '\\')))) {
 	    int beg = us[p], end = us[p+2];
 	    if (end == '-') {
-	      FAIL("misplaced hypen within square brackets in pattern");
+	      FAIL("misplaced hyphen within square brackets in pattern");
 	    }
 	    if (end < beg) {
 	      /* Bad regexp */
@@ -4734,7 +4734,7 @@ static int translate(unsigned char *s, int len, char **result, int pcre)
             p++;
 	  } else {
 	    if (((p + 1) < ulen) && (us[p] == '-')) {
-	      FAIL("misplaced hypen within square brackets in pattern");
+	      FAIL("misplaced hyphen within square brackets in pattern");
 	      return 0;
 	    }
 	    simple_on[us[p]] = 1;
