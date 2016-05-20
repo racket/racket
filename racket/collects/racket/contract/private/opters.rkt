@@ -607,7 +607,8 @@
                         (null? b)))
                  (chaperone-procedure val exact-proc
                                       impersonator-prop:application-mark 
-                                      (cons opt->/c-cm-key cont-mark-value))
+                                      (cons opt->/c-cm-key cont-mark-value)
+                                      impersonator-prop:blame blame)
                  (handle-non-exact-procedure val dom-len blame exact-proc))))
        (append lifts-doms lifts-rngs)
        (append superlifts-doms superlifts-rngs)
@@ -678,7 +679,8 @@
                 (case-lambda
                   [(dom-arg ...)  (values next-dom ...)]
                   [args
-                   (bad-number-of-arguments blame val args dom-len)]))))
+                   (bad-number-of-arguments blame val args dom-len)])
+                impersonator-prop:blame blame)))
          (if all-anys?
              #`(if (procedure-arity-exactly/no-kwds val #,(length doms))
                    val
