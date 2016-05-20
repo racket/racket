@@ -295,4 +295,29 @@
                 'pos 'neg))
    "suggestion: try zero?\n")
 
+  (contract-eval '(define (has-complete-blame? v)
+                    (and (value-blame v)
+                         (not (blame-missing-party? (value-blame v))))))
+  (contract-eval '(require racket/class))
+  (test/spec-passed/result
+   'complete-prop-blame1
+   '(has-complete-blame? (contract (-> integer? integer?) add1 'pos 'neg))
+   #t)
+  (test/spec-passed/result
+   'complete-prop-blame2
+   '(has-complete-blame? (contract (-> integer? any) add1 'pos 'neg))
+   #t)
+  (test/spec-passed/result
+   'complete-prop-blame3
+   '(has-complete-blame? (contract (->m integer?) add1 'pos 'neg))
+   #t)
+  (test/spec-passed/result
+   'complete-prop-blame4
+   '(has-complete-blame? (contract (->i ([x integer?]) [res integer?]) add1 'pos 'neg))
+   #t)
+  (test/spec-passed/result
+   'complete-prop-blame5
+   '(has-complete-blame? (contract (vectorof integer?) (vector 1 2 3) 'pos 'neg))
+   #t)
+
   )
