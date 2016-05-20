@@ -53,8 +53,7 @@
               ((if method? sub1 values) expected-number-of-non-keyword-args))
             (raise-blame-error blame #:missing-party neg-party val
                                `(expected:
-                                 ,(string-append "a "
-                                                 proc/meth
+                                 ,(string-append proc/meth
                                                  " that accepts ~a non-keyword argument~a~a")
                                  given: "~e"
                                  "\n  ~a")
