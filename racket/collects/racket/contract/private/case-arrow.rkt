@@ -200,6 +200,17 @@
 ;;     generates a wrapper from projections
 (define-struct base-case-> (dom-ctcs rst-ctcs rng-ctcs specs mctc? wrapper))
 
+(define (can-cache-case->? c)
+  (and
+   (for/and ([ctcs (in-list (base-case->-dom-ctcs c))])
+     (for/and ([ctc (in-list ctcs)])
+       (can-cache-contract? ctc)))
+   (for/and ([ctc (in-list (base-case->-rst-ctcs c))])
+     (can-cache-contract? ctc))
+   (for/and ([ctcs (in-list (base-case->-rng-ctcs c))])
+     (for/and ([ctc (in-list ctcs)])
+       (can-cache-contract? ctc)))))
+
 (define (case->-proj wrapper)
   (λ (ctc)
     (define dom-ctcs+case-nums (get-case->-dom-ctcs+case-nums ctc))
@@ -291,6 +302,7 @@
   (build-chaperone-contract-property
    #:late-neg-projection (case->-proj chaperone-procedure)
    #:name (case->-name #|print-as-method-if-method?|# #t)
+   #:can-cache? can-cache-case->?
    #:first-order case->-first-order
    #:stronger case->-stronger?))
 
@@ -300,6 +312,7 @@
   (build-contract-property
    #:late-neg-projection (case->-proj impersonate-procedure)
    #:name (case->-name #|print-as-method-if-method?|# #t)
+   #:can-cache? can-cache-case->?
    #:first-order case->-first-order
    #:stronger case->-stronger?))
 

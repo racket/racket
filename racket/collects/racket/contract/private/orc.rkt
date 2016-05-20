@@ -219,6 +219,11 @@
        (for/and ([c (in-list (single-or/c-flat-ctcs c))])
          (list-contract? c))))
 
+(define (single-or/c-can-cache? c)
+  (and (can-cache-contract? (single-or/c-ho-ctc c))
+       (for/and ([c (in-list (single-or/c-flat-ctcs c))])
+         (can-cache-contract? c))))
+
 (define-struct single-or/c (name pred flat-ctcs ho-ctc)
   #:property prop:orc-contract
   (λ (this) (cons (single-or/c-ho-ctc this) 
@@ -237,7 +242,8 @@
                                       (cons (single-or/c-ho-ctc ctc)
                                             (single-or/c-flat-ctcs ctc))))
    #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))
-   #:list-contract? single-or/c-list-contract?))
+   #:list-contract? single-or/c-list-contract?
+   #:can-cache? single-or/c-can-cache?))
 
 (define-struct (impersonator-single-or/c single-or/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -252,7 +258,8 @@
                                       (cons (single-or/c-ho-ctc ctc)
                                             (single-or/c-flat-ctcs ctc))))
    #:exercise (λ (ctc) (or/c-exercise (list (single-or/c-ho-ctc ctc))))
-   #:list-contract? single-or/c-list-contract?))
+   #:list-contract? single-or/c-list-contract?
+   #:can-cache? single-or/c-can-cache?))
 
 (define (multi-or/c-late-neg-proj ctc)  
   (define ho-contracts (multi-or/c-ho-ctcs ctc))
@@ -349,6 +356,12 @@
        (for/and ([c (in-list (multi-or/c-ho-ctcs c))])
          (list-contract? c))))
 
+(define (mult-or/c-can-cache? c)
+  (and (for/and ([c (in-list (multi-or/c-flat-ctcs c))])
+         (can-cache-contract? c))
+       (for/and ([c (in-list (multi-or/c-ho-ctcs c))])
+         (can-cache-contract? c))))
+
 (define-struct multi-or/c (name flat-ctcs ho-ctcs)
   #:property prop:orc-contract
   (λ (this) (append (multi-or/c-ho-ctcs this) 
@@ -367,7 +380,8 @@
                                       (append (multi-or/c-ho-ctcs ctc)
                                               (multi-or/c-flat-ctcs ctc))))
    #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc)))
-   #:list-contract? mult-or/c-list-contract?))
+   #:list-contract? mult-or/c-list-contract?
+   #:can-cache? mult-or/c-can-cache?))
 
 (define-struct (impersonator-multi-or/c multi-or/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -382,7 +396,8 @@
                                       (append (multi-or/c-ho-ctcs ctc)
                                               (multi-or/c-flat-ctcs ctc))))
    #:exercise (λ (ctc) (or/c-exercise (multi-or/c-ho-ctcs ctc)))
-   #:list-contract? mult-or/c-list-contract?))
+   #:list-contract? mult-or/c-list-contract?
+   #:can-cache? mult-or/c-can-cache?))
 
 (define-struct flat-or/c (pred flat-ctcs)
   #:property prop:custom-write custom-write-property-proc
@@ -431,7 +446,11 @@
    #:list-contract? 
    (λ (ctc)
      (for/and ([c (in-list (flat-or/c-flat-ctcs ctc))])
-       (list-contract? c)))))
+       (list-contract? c)))
+   #:can-cache?
+   (λ (ctc)
+     (for/and ([c (in-list (flat-or/c-flat-ctcs ctc))])
+       (can-cache-contract? c)))))
 
 (define-struct (flat-first-or/c flat-or/c) ())
 
@@ -476,6 +495,10 @@
   (for/and ([c (in-list (base-first-or/c-ctcs c))])
     (list-contract? c)))
 
+(define (first-or/c-can-cache? c)
+  (for/and ([c (in-list (base-first-or/c-ctcs c))])
+    (can-cache-contract? c)))
+
 (define/final-prop (symbols s1 . s2s)
   (define ss (cons s1 s2s))
   (for ([arg (in-list ss)]
@@ -502,7 +525,8 @@
    #:equivalent multi-or/c-equivalent?
    #:generate (λ (ctc) (or/c-generate ctc (base-first-or/c-ctcs ctc)))
    #:exercise (λ (ctc) (or/c-exercise (base-first-or/c-ctcs ctc)))
-   #:list-contract? first-or/c-list-contract?))
+   #:list-contract? first-or/c-list-contract?
+   #:can-cache? first-or/c-can-cache?))
 (define-struct (impersonator-first-or/c base-first-or/c) ()
   #:property prop:contract
   (build-contract-property
@@ -513,7 +537,8 @@
    #:equivalent generic-or/c-equivalent?
    #:generate (λ (ctc) (or/c-generate ctc (base-first-or/c-ctcs ctc)))
    #:exercise (λ (ctc) (or/c-exercise (base-first-or/c-ctcs ctc)))
-   #:list-contract? first-or/c-list-contract?))
+   #:list-contract? first-or/c-list-contract?
+   #:can-cache? first-or/c-can-cache?))
 
 (define/final-prop (one-of/c . elems)
   (for ([arg (in-list elems)]
@@ -542,7 +567,13 @@
   (unless ans (error 'flat-rec-contract "attempted to access the contract too early"))
   ans)
 
-(struct flat-rec-contract ([me #:mutable] name)
+(define (can-cache-flat-rec-contract? c)
+  (or (flat-rec-contract-can-cache? c)
+      (let ()
+        (set-flat-rec-contract-can-cache?! c #t)
+        (can-cache-contract? (get-flat-rec-me c)))))
+
+(struct flat-rec-contract ([me #:mutable] name [can-cache? #:mutable])
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
@@ -575,14 +606,15 @@
      (λ (fuel)
        (if (zero? fuel)
            #f
-           (contract-random-generate/choose (get-flat-rec-me ctc) (- fuel 1)))))))
+           (contract-random-generate/choose (get-flat-rec-me ctc) (- fuel 1)))))
+   #:can-cache? can-cache-flat-rec-contract?))
 
 (define-syntax (_flat-rec-contract stx)
   (syntax-case stx  ()
     [(_ name ctc ...)
      (identifier? (syntax name))
      (syntax
-      (let ([name (flat-rec-contract #f 'name)])
+      (let ([name (flat-rec-contract #f 'name #f)])
         (set-flat-rec-contract-me!
          name
          (or/c (coerce-flat-contract 'flat-rec-contract ctc) 

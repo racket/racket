@@ -313,4 +313,24 @@ so that propagation occurs.
   (ctest #t couple? (make-couple 1 2))
   (ctest #t couple? (contract (couple/dc [hd any/c] [tl (hd) any/c]) (make-couple 1 2) 'pos 'neg))
   (ctest #f couple? 1)
-  (ctest #f couple? #f))
+  (ctest #f couple? #f)
+
+  (test/spec-passed/result
+   "chaperone-contracts-stay-chaperones"
+   '(let ([ctc (-> integer?)]
+          [opt-ctc (opt/c (-> integer?))])
+      (and (chaperone-contract? ctc)
+           (not (impersonator-contract? ctc))
+           (chaperone-contract? opt-ctc)
+           (not (impersonator-contract? ctc))))
+   #t)
+
+  (test/spec-passed/result
+   "impersonators-stay-impersonators"
+   '(let ([ctc (->i () [_ any/c])]
+          [opt-ctc (opt/c (->i () [_ any/c]))])
+      (and (impersonator-contract? ctc)
+           (not (chaperone-contract? ctc))
+           (impersonator-contract? opt-ctc)
+           (not (chaperone-contract? opt-ctc))))
+   #t))

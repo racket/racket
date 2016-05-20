@@ -1464,19 +1464,20 @@
 
 (let ([c% (parameterize ([current-inspector (make-inspector)])
             (contract-eval '(class object% (super-new))))])
-  (test (list c% #f)
+  (test #:test-case-name 'object-info
+        (list c% #f)
         'object-info
         (contract-eval
          `(call-with-values
            (lambda () (object-info (contract (object-contract) (new ,c%) 'pos 'neg)))
            list))))
 
-;; object->vector tests
 (let* ([obj
         (parameterize ([current-inspector (make-inspector)])
           (contract-eval '(new (class object% (field [x 1] [y 2]) (super-new)))))]
        [vec (contract-eval `(object->vector ,obj))])
-  (test vec
+  (test #:test-case-name 'object->vector
+        vec
         (contract-eval 'object->vector)
         (contract-eval
          `(contract (object-contract (field x integer?) (field y integer?))

@@ -1261,12 +1261,14 @@ symbols, and that return a symbol.
 
 @defform*/subs[#:literals (any values)
 [(->i maybe-chaperone
+      maybe-can-cache
       (mandatory-dependent-dom ...)
       dependent-rest
       pre-condition
       dependent-range
       post-condition)
  (->i maybe-chaperone
+      maybe-can-cache
       (mandatory-dependent-dom ...)
       (optional-dependent-dom ...)
       dependent-rest
@@ -1274,6 +1276,7 @@ symbols, and that return a symbol.
       dependent-range
       post-condition)]
 ([maybe-chaperone #:chaperone (code:line)]
+ [maybe-chaperone #:can-cache (code:line)]
  [mandatory-dependent-dom id+ctc
                           (code:line keyword id+ctc)]
  [optional-dependent-dom id+ctc
@@ -1314,6 +1317,10 @@ contract will be a chaperone. If it is @racket[#:chaperone], all of the contract
 and results must be @tech{chaperone contracts} and the result of @racket[->i] will be
 a @tech{chaperone contract}. If it is not present, then the result
 contract will not be a @tech{chaperone contract}.
+
+The @racket[#:can-cache] keyword is like that of @racket[recursive-contract]. If present,
+all of the subcontracts must be cachable; if it is absent, there is no constraint
+placed on subcontracts.
 
 The first sub-form of a @racket[->i] contract covers the mandatory and the
 second sub-form covers the optional arguments. Following that is an optional
@@ -2012,14 +2019,15 @@ The @racket[define-struct/contract] form only allows a subset of the
            pos-blame-party
            source-loc
            name-for-blame
-           no-context)
+           context-limit)
          #:grammar ([pos-blame-party (code:line)
                                      (code:line #:pos-source pos-source-expr)]
                     [source-loc (code:line)
                                 (code:line #:srcloc srcloc-expr)]
-                    [name-for-blame (code:line)
-                     (code:line #:name-for-blame blame-id)]
-                    [name-for-blame (code:line)
+                    [name-for-blame
+                     (code:line)
+                     #:name-for-blame blame-id]
+                    [context-limit (code:line)
                      (code:line #:context-limit limit-expr)])]{
   Defines @racket[id] to be @racket[orig-id], but with the contract
   @racket[contract-expr].
@@ -2426,6 +2434,13 @@ of the @tech{blame object} and the missing party should be used instead.
 @history[#:added "6.4.0.4"]
 }
 
+@defform[(with-space-efficient-contract-continuation-mark body ...)]{
+Inserts a continuation mark that informs the contract profiler that the current contract
+is space-efficient.
+
+@history[#:added "7.0.0.20"]
+}
+
 @defform[(contract-pos/neg-doubling e1 e2)]{
 
  Some contract combinators need to build projections for
@@ -2561,7 +2576,6 @@ when @racket[context] is @racket[#f].
   Returns the context information that would be supplied in
   an error message, if @racket[blame] is passed to @racket[raise-blame-error].
 }
-
 
 @deftogether[(
 @defproc[(blame-positive [b blame?]) any/c]
@@ -3356,6 +3370,15 @@ and fix at some point, but have no concrete plans currently.
 Key used by continuation marks that are present during contract checking.
 The value of these marks are the @|blame-objects| that correspond to the contract
 currently being checked.
+
+@history[#:added "6.4.0.4"]
+}
+
+@defthing[space-efficient-contract-continuation-mark-key continuation-mark-key?]{
+Key used by continuation marks that are present during space-efficient contract checking.
+The value of these marks are @racket[#t] if the current contract is space-efficient.
+
+@history[#:added "6.9.0.2"]
 }
 
 @defproc[(contract-custom-write-property-proc [c contract?] 

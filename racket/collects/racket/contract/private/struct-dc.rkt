@@ -717,6 +717,15 @@
            #:when (invariant? sub))
     sub))
 
+;; Return #t for non-dependent structure contracts that contain only
+;; subcontracts which are safe to cache, in the future it might make sense
+;; to allow caching of some dependent struct contracts based on a keyword
+;; argument to the constructor
+(define (can-cache-struct/dc? c)
+  (for/and ([sc (in-list (base-struct/dc-subcontracts c))])
+    (and (indep? sc)
+         (can-cache-contract? (indep-ctc sc)))))
+
 (define-struct base-struct/dc (subcontracts constructor pred struct-name here name-info struct/c?))
 
 (define (struct/dc-exercise stct)
@@ -737,6 +746,7 @@
    #:first-order struct/dc-first-order
    #:late-neg-projection struct/dc-late-neg-proj
    #:stronger struct/dc-stronger?
+   #:can-cache? can-cache-struct/dc?
    #:equivalent struct/dc-equivalent?
    #:generate struct/dc-generate
    #:exercise struct/dc-exercise))
@@ -748,6 +758,7 @@
    #:first-order struct/dc-flat-first-order
    #:late-neg-projection struct/dc-late-neg-proj
    #:stronger struct/dc-stronger?
+   #:can-cache? can-cache-struct/dc?
    #:equivalent struct/dc-equivalent?
    #:generate struct/dc-generate
    #:exercise struct/dc-exercise))
@@ -759,6 +770,7 @@
    #:first-order struct/dc-first-order
    #:late-neg-projection struct/dc-late-neg-proj
    #:stronger struct/dc-stronger?
+   #:can-cache? can-cache-struct/dc?
    #:equivalent struct/dc-equivalent?
    #:generate struct/dc-generate
    #:exercise struct/dc-exercise))

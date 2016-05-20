@@ -143,6 +143,10 @@
          (abs (go fuel))))]
     [else #f]))
 
+(define (and/c-can-cache? ctc)
+  (for/and ([c (in-list (base-and/c-ctcs ctc))])
+    (can-cache-contract? c)))
+
 (define-struct base-and/c (ctcs))
 (define-struct (first-order-and/c base-and/c) (predicates)
   #:property prop:custom-write custom-write-property-proc
@@ -152,8 +156,9 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
+   #:generate and/c-generate?
    #:equivalent and-equivalent?
-   #:generate and/c-generate?))
+   #:can-cache? and/c-can-cache?))
 (define-struct (chaperone-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:chaperone-contract
@@ -162,8 +167,9 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
+   #:generate and/c-generate?
    #:equivalent and-equivalent?
-   #:generate and/c-generate?))
+   #:can-cache? and/c-can-cache?))
 (define-struct (impersonator-and/c base-and/c) ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:contract
@@ -172,8 +178,9 @@
    #:name and-name
    #:first-order and-first-order
    #:stronger and-stronger?
+   #:generate and/c-generate?
    #:equivalent and-equivalent?
-   #:generate and/c-generate?))
+   #:can-cache? and/c-can-cache?))
 
 (define-syntax (and/c stx)
   (syntax-case stx (pair? listof)
@@ -359,8 +366,9 @@
    #:name integer-in-name
    #:first-order integer-in-first-order
    #:stronger integer-in-stronger
+   #:generate integer-in-generate
    #:equivalent integer-in-equivalent
-   #:generate integer-in-generate))
+   #:can-cache? (λ (ctc) #t)))
 
 (struct renamed-integer-in integer-in-ctc (name)
   #:property prop:flat-contract
@@ -369,7 +377,8 @@
    #:first-order integer-in-first-order
    #:stronger integer-in-stronger
    #:equivalent integer-in-equivalent
-   #:generate integer-in-generate))
+   #:generate integer-in-generate
+   #:can-cache? (λ (ctc) #t)))
 
 (define (geo-dist p)
   (let loop ([n 0])

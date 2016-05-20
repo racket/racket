@@ -11,11 +11,13 @@
          contract-struct-projection
          contract-struct-val-first-projection
          contract-struct-late-neg-projection
+         contract-struct-space-efficient-late-neg-projection
          contract-struct-stronger?
          contract-struct-equivalent?
          contract-struct-generate
          contract-struct-exercise
          contract-struct-list-contract?
+         contract-struct-can-cache?
          
          prop:flat-contract
          flat-contract-struct?
@@ -68,7 +70,9 @@
                                    exercise
                                    val-first-projection
                                    late-neg-projection
-                                   list-contract? ]
+                                   space-efficient-late-neg-projection
+                                   list-contract?
+                                   can-cache? ]
   #:omit-define-syntaxes)
 
 (define (contract-property-guard prop info)
@@ -112,6 +116,12 @@
   (define get-projection (contract-property-late-neg-projection prop))
   (and get-projection
        (get-projection c)))
+
+(define (contract-struct-space-efficient-late-neg-projection c)
+  (define prop (contract-struct-property c))
+  (define get-space-efficient-projection (contract-property-space-efficient-late-neg-projection prop))
+  (and get-space-efficient-projection
+       (get-space-efficient-projection c)))
 
 (define (contract-struct-stronger/equivalent?
          a b
@@ -212,6 +222,10 @@
   (define prop (contract-struct-property c))
   ((contract-property-list-contract? prop) c))
 
+(define (contract-struct-can-cache? c)
+  (define prop (contract-struct-property c))
+  ((contract-property-can-cache? prop) c))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;  Chaperone Contract Property
@@ -296,11 +310,13 @@
          #:projection [get-projection #f]
          #:val-first-projection [get-val-first-projection #f]
          #:late-neg-projection [get-late-neg-projection #f]
+         #:space-efficient-late-neg-projection [get-space-efficient-late-neg-projection #f]
          #:stronger [stronger #f]
          #:equivalent [equivalent #f]
          #:generate [generate (λ (ctc) (λ (fuel) #f))]
          #:exercise [exercise (λ (ctc) (λ (fuel) (values void '())))]
-         #:list-contract? [list-contract? (λ (c) #f)])
+         #:list-contract? [list-contract? (λ (c) #f)]
+         #:can-cache? [can-cache? (λ (c) #f)])
   (unless (or get-first-order
               get-projection
               get-val-first-projection
@@ -312,12 +328,14 @@
       " #:projection, #:val-first-projection, #:late-neg-projection, or #:first-order"
       " argument to not be #f, but all four were #f")))
 
+  ;; TODO: update for space-efficient late-neg-projection
   (unless get-late-neg-projection
-    (unless first-order?
-      (log-racket/contract-info
-       "no late-neg-projection passed to ~s~a"
-       proc-name
-       (build-context))))
+    (unless get-space-efficient-late-neg-projection
+      (unless first-order?
+        (log-racket/contract-info
+         "no late-neg-projection passed to ~s~a"
+         proc-name
+         (build-context)))))
 
   (unless (and (procedure? list-contract?)
                (procedure-arity-includes? list-contract? 1))
@@ -328,6 +346,16 @@
             "  given: ~e\n"
             "  in the #:list-contract? argument")
            list-contract?))
+
+  (unless (and (procedure? can-cache?)
+               (procedure-arity-includes? can-cache? 1))
+    (error proc-name
+           (string-append
+            "contract violation\n"
+            "  expected: (procedure-arity-includes/c 1)\n"
+            "  given: ~e\n"
+            "  in the #:can-cache? argument")
+           can-cache?))
 
   (mk (or get-name (λ (c) default-name))
       (or get-first-order get-any?)
@@ -344,7 +372,9 @@
             (λ (c) (late-neg-first-order-projection (get-name c) (get-first-order c)))]
            [else #f])]
         [else get-late-neg-projection])
-      list-contract?))
+      get-space-efficient-late-neg-projection
+      list-contract?
+      can-cache?))
 
 (define (build-context)
   (apply
@@ -406,8 +436,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-struct make-contract [ name first-order projection
-                                    val-first-projection late-neg-projection 
-                                    stronger equivalent generate exercise list-contract? ]
+                                    val-first-projection late-neg-projection
+                                    space-efficient-late-neg-projection
+                                    stronger equivalent generate exercise list-contract?
+                                    can-cache? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -421,14 +453,18 @@
    #:projection (lambda (c) (make-contract-projection c))
    #:val-first-projection (lambda (c) (make-contract-val-first-projection c))
    #:late-neg-projection (lambda (c) (make-contract-late-neg-projection c))
+   #:space-efficient-late-neg-projection (lambda (c) (make-contract-space-efficient-late-neg-projection c))
    #:stronger (lambda (a b) ((make-contract-stronger a) a b))
    #:generate (lambda (c) (make-contract-generate c))
    #:exercise (lambda (c) (make-contract-exercise c))
-   #:list-contract? (λ (c) (make-contract-list-contract? c))))
+   #:list-contract? (λ (c) (make-contract-list-contract? c))
+   #:can-cache? (λ (c) (make-contract-can-cache? c))))
 
 (define-struct make-chaperone-contract [ name first-order projection
                                               val-first-projection late-neg-projection
-                                              stronger equivalent generate exercise list-contract? ]
+                                              space-efficient-late-neg-projection
+                                              stronger equivalent generate exercise list-contract?
+                                              can-cache? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -442,14 +478,18 @@
    #:projection (lambda (c) (make-chaperone-contract-projection c))
    #:val-first-projection (lambda (c) (make-chaperone-contract-val-first-projection c))
    #:late-neg-projection (lambda (c) (make-chaperone-contract-late-neg-projection c))
+   #:space-efficient-late-neg-projection (lambda (c) (make-chaperone-contract-space-efficient-late-neg-projection c))
    #:stronger (lambda (a b) ((make-chaperone-contract-stronger a) a b))
    #:generate (lambda (c) (make-chaperone-contract-generate c))
    #:exercise (lambda (c) (make-chaperone-contract-exercise c))
-   #:list-contract? (λ (c) (make-chaperone-contract-list-contract? c))))
+   #:list-contract? (λ (c) (make-chaperone-contract-list-contract? c))
+   #:can-cache? (λ (c) (make-chaperone-contract-can-cache? c))))
 
 (define-struct make-flat-contract [ name first-order projection
                                          val-first-projection late-neg-projection
-                                         stronger equivalent generate exercise list-contract? ]
+                                         space-efficient-late-neg-projection
+                                         stronger equivalent generate exercise list-contract?
+                                         can-cache? ]
   #:omit-define-syntaxes
   #:property prop:custom-write
   (λ (stct port display?)
@@ -462,11 +502,13 @@
    #:first-order (lambda (c) (make-flat-contract-first-order c))
    #:val-first-projection (λ (c) (make-flat-contract-val-first-projection c))
    #:late-neg-projection (λ (c) (make-flat-contract-late-neg-projection c))
+   #:space-efficient-late-neg-projection (lambda (c) (make-flat-contract-space-efficient-late-neg-projection c))
    #:projection (lambda (c) (make-flat-contract-projection c))
    #:stronger (lambda (a b) ((make-flat-contract-stronger a) a b))
    #:generate (lambda (c) (make-flat-contract-generate c))
    #:exercise (lambda (c) (make-flat-contract-exercise c))
-   #:list-contract? (λ (c) (make-flat-contract-list-contract? c))))
+   #:list-contract? (λ (c) (make-flat-contract-list-contract? c))
+   #:can-cache? (λ (c) (make-flat-contract-can-cache? c))))
 
 (define ((build-contract mk default-name proc-name first-order? equivalent-equal?)
          #:name [name #f]
@@ -474,11 +516,13 @@
          #:projection [projection #f]
          #:val-first-projection [val-first-projection #f]
          #:late-neg-projection [late-neg-projection #f]
+         #:space-efficient-late-neg-projection [space-efficient-late-neg-projection #f]
          #:stronger [stronger #f]
          #:equivalent [equivalent #f]
          #:generate [generate (λ (fuel) #f)]
          #:exercise [exercise (λ (fuel) (values void '()))]
-         #:list-contract? [list-contract? #f])
+         #:list-contract? [list-contract? #f]
+         #:can-cache? [can-cache? #f])
 
   (unless (or first-order
               projection
@@ -491,12 +535,14 @@
       " #:projection, #:val-first-projection, #:late-neg-projection, or #:first-order"
       " argument to not be #f, but all four were #f")))
   
+  ;; TODO: handle the addition of the space-efficient-late-neg-projection
   (unless late-neg-projection
-    (unless first-order?
-      (log-racket/contract-info
-       "no late-neg-projection passed to ~s~a"
-       proc-name
-       (build-context))))
+    (unless space-efficient-late-neg-projection
+      (unless first-order?
+        (log-racket/contract-info
+         "no late-neg-projection passed to ~s~a"
+         proc-name
+         (build-context)))))
 
   (mk (or name default-name)
       (or first-order any?) 
@@ -509,10 +555,12 @@
             (late-neg-first-order-projection name first-order)]
            [else #f])]
         [else late-neg-projection])
+      space-efficient-late-neg-projection
       (or stronger weakest)
       (or equivalent (if equivalent-equal? equal? weakest))
       generate exercise
-      (and list-contract? #t)))
+      (and list-contract? #t)
+      (and can-cache? #t)))
 
 (define (late-neg-first-order-projection name p?)
   (λ (b)

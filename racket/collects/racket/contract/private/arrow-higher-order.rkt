@@ -10,6 +10,9 @@
          "guts.rkt"
          "list.rkt"
          (prefix-in arrow: "arrow-common.rkt")
+         "arrow-space-efficient.rkt"
+         "space-efficient-common.rkt"
+         (submod "space-efficient-common.rkt" properties)
          (only-in racket/unsafe/ops
                   unsafe-chaperone-procedure
                   unsafe-impersonate-procedure))
@@ -541,6 +544,9 @@
                  min-arity doms kwd-infos rest pre? rngs post?
                  plus-one-arity-function chaperone-constructor method?
                  late-neg?)
+  (define has-s-e-support?
+    (->-contract-has-space-efficient-support? ctc))
+  (define chaperone? (not is-impersonator?))
   (define optionals-length (- (length doms) min-arity))
   (define mtd? #f) ;; not yet supported for the new contracts
   (define okay-to-do-only-arity-check?
@@ -555,13 +561,18 @@
     (define rng-blame (arrow:blame-add-range-context orig-blame))
     (define swapped-domain (blame-add-context orig-blame "the domain of" #:swap? #t))
 
-    (define partial-doms
-      (for/list ([dom (in-list doms)]
-                 [n (in-naturals 1)])
-        ((get/build-late-neg-projection dom)
-         (blame-add-context orig-blame 
-                            (nth-argument-of (if method? (sub1 n) n))
-                            #:swap? #t))))
+    ;; if the ctc supports s-e mode, there are only positional args
+    (define-values (partial-doms s-e-doms)
+      (for/lists (projs ses)
+                 ([dom (in-list doms)]
+                  [n (in-naturals 1)])
+        (define dom-blame
+          (blame-add-context orig-blame
+                             (nth-argument-of (if method? (sub1 n) n))
+                             #:swap? #t))
+        (define prepared (get/build-space-efficient-late-neg-projection dom))
+        (prepared dom-blame)))
+
     (define rest-blame
       (if (ellipsis-rest-arg-ctc? rest)
           (blame-swap orig-blame)
@@ -570,11 +581,14 @@
     (define partial-rest (and rest
                               ((get/build-late-neg-projection rest)
                                rest-blame)))
-    (define partial-ranges
-      (if rngs
-          (for/list ([rng (in-list rngs)])
-            ((get/build-late-neg-projection rng) rng-blame))
-          '()))
+    (define-values (partial-ranges maybe-s-e-ranges)
+      (cond
+        [rngs
+         (for/lists (proj s-e)
+                    ([rng (in-list rngs)])
+           (define prepared (get/build-space-efficient-late-neg-projection rng))
+           (prepared rng-blame))]
+        [else (values '() #f)]))
     (define partial-kwds 
       (for/list ([kwd-info (in-list kwd-infos)]
                  [kwd (in-list kwd-infos)])
@@ -591,7 +605,9 @@
                          [kwd-info (in-list kwd-infos)]
                          #:unless (kwd-info-mandatory? kwd-info))
                 partial-kwd)))
-    
+    (define s-e-mergable
+      (and has-s-e-support?
+           (build-s-e-arrow (car maybe-s-e-ranges) s-e-doms ctc orig-blame chaperone?)))
     (define the-args (append partial-doms
                              (if partial-rest (list partial-rest) '())
                              man-then-opt-partial-kwds
@@ -603,6 +619,17 @@
               (if partial-rest (list partial-rest) '())))
     (define blame-party-info (arrow:get-blame-party-info orig-blame))
     (define (successfully-got-the-right-kind-of-function val neg-party)
+      (define old-s-e-prop (get-impersonator-prop:space-efficient val #f))
+      (define safe-for-s-e?
+        (and has-s-e-support?
+             (if old-s-e-prop
+                 (and (space-efficient-property? old-s-e-prop)
+                      (eq? (space-efficient-property-ref old-s-e-prop) val))
+                 (val-has-arrow-space-efficient-support? val))))
+      (define wrapper-count
+        (if (space-efficient-count-property? old-s-e-prop)
+            (space-efficient-count-property-count old-s-e-prop)
+            0))
       (define-values (chap/imp-func use-unsafe-chaperone-procedure?)
         (apply chaperone-constructor
                orig-blame val
@@ -613,21 +640,60 @@
             (if is-impersonator? unsafe-impersonate-procedure unsafe-chaperone-procedure)
             (if is-impersonator? impersonate-procedure chaperone-procedure)))
       (cond
-        [chap/imp-func
+        [(not chap/imp-func)
+         val]
+        [(not safe-for-s-e?)
          (if (or post? (not rngs))
              (chaperone-or-impersonate-procedure
               val
               chap/imp-func
               impersonator-prop:contracted ctc
-              impersonator-prop:blame (blame-add-missing-party orig-blame neg-party))
+              impersonator-prop:blame (cons orig-blame neg-party))
              (chaperone-or-impersonate-procedure
               val
               chap/imp-func
               impersonator-prop:contracted ctc
-              impersonator-prop:blame (blame-add-missing-party orig-blame neg-party)
+              impersonator-prop:blame (cons orig-blame neg-party)
               impersonator-prop:application-mark
               (cons arrow:tail-contract-key (list* neg-party blame-party-info rngs))))]
-        [else val]))
+        [(wrapper-count . >= . SPACE-EFFICIENT-LIMIT)
+         (arrow-enter-space-efficient-mode/collapse
+          s-e-mergable
+          val
+          neg-party
+          old-s-e-prop
+          chaperone?)]
+        [(space-efficient-wrapper-property? old-s-e-prop)
+         (arrow-enter-space-efficient-mode/continue
+          s-e-mergable
+          val
+          neg-party
+          (space-efficient-property-s-e old-s-e-prop)
+          (space-efficient-property-neg-party old-s-e-prop)
+          (space-efficient-wrapper-property-checking-wrapper old-s-e-prop)
+          chaperone?)]
+        [else
+         (define s-e-prop
+           (space-efficient-count-property
+            s-e-mergable
+            neg-party
+            #f
+            (add1 wrapper-count)
+            (or old-s-e-prop val)))
+         (define wrapped
+           (if (or post? (not rngs))
+             (chaperone-or-impersonate-procedure
+              val
+              chap/imp-func
+              impersonator-prop:space-efficient s-e-prop)
+             (chaperone-or-impersonate-procedure
+              val
+              chap/imp-func
+              impersonator-prop:space-efficient s-e-prop
+              impersonator-prop:application-mark
+              (cons arrow:tail-contract-key (list* neg-party blame-party-info rngs)))))
+         (set-space-efficient-property-ref! s-e-prop wrapped)
+         wrapped]))
     (cond
       [late-neg?
        (define (arrow-higher-order:lnp val neg-party)
@@ -638,12 +704,18 @@
               (f neg-party))]
            [else
             (successfully-got-the-right-kind-of-function val neg-party)]))
-       (if okay-to-do-only-arity-check?
-           (λ (val neg-party)
-             (cond
-               [(arrow:procedure-arity-exactly/no-kwds val min-arity) val]
-               [else (arrow-higher-order:lnp val neg-party)]))
-           arrow-higher-order:lnp)]
+       (cond
+         [okay-to-do-only-arity-check?
+          (define lnp
+            (λ (val neg-party)
+              (cond
+                [(arrow:procedure-arity-exactly/no-kwds val min-arity) val]
+                [else (arrow-higher-order:lnp val neg-party)])))
+          (values lnp (or s-e-mergable (build-space-efficient-leaf lnp ctc orig-blame)))]
+         [else
+          (values
+           arrow-higher-order:lnp
+           (or s-e-mergable (build-space-efficient-leaf arrow-higher-order:lnp ctc orig-blame)))])]
       [else
        (define (arrow-higher-order:vfp val)
          (define-values (normal-proc proc-with-no-result-checking expected-number-of-results)

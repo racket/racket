@@ -5,6 +5,8 @@
          "prop.rkt"
          "rand.rkt"
          "generate-base.rkt"
+         "space-efficient-common.rkt"
+         (submod "space-efficient-common.rkt" properties)
          "../../private/math-predicates.rkt"
          racket/pretty
          racket/list
@@ -24,12 +26,15 @@
          contract-stronger?
          contract-equivalent?
          list-contract?
+         can-cache-contract?
          
          contract-first-order
          contract-first-order-passes?
          
          prop:contracted prop:blame
-         impersonator-prop:contracted impersonator-prop:blame
+         impersonator-prop:contracted
+         impersonator-prop:blame
+
          has-contract? value-contract
          has-blame? value-blame
          
@@ -57,6 +62,8 @@
          
          contract-continuation-mark-key
          with-contract-continuation-mark
+         space-efficient-contract-continuation-mark-key
+         with-space-efficient-contract-continuation-mark
          
          (struct-out wrapped-extra-arg-arrow)
          contract-custom-write-property-proc
@@ -67,6 +74,7 @@
          contract-late-neg-projection   ;; might return #f (if none)
          get/build-val-first-projection ;; builds one if necc., using contract-projection
          get/build-late-neg-projection
+         get/build-space-efficient-late-neg-projection
          warn-about-val-first?
 
          contract-name
@@ -90,7 +98,8 @@
          false/c-contract
          true/c-contract
 
-         contract-pos/neg-doubling)
+         contract-pos/neg-doubling
+         contract-pos/neg-doubling.2)
 
 (define (contract-custom-write-property-proc stct port mode)
   (define (write-prefix)
@@ -153,7 +162,9 @@
 
 (define (has-contract? v)
   (or (has-prop:contracted? v)
-      (has-impersonator-prop:contracted? v)))
+      (has-impersonator-prop:contracted? v)
+      ;; TODO: I think this is the right check, but I'm not positive
+      (has-impersonator-prop:space-efficient? v)))
 
 (define (value-contract v)
   (cond
@@ -161,11 +172,17 @@
      (get-prop:contracted v)]
     [(has-impersonator-prop:contracted? v)
      (get-impersonator-prop:contracted v)]
+    [(get-impersonator-prop:space-efficient v #f)
+     =>
+     (λ (p)
+       (multi-ho/c-latest-ctc (space-efficient-property-s-e p)))]
     [else #f]))
 
 (define (has-blame? v)
   (or (has-prop:blame? v)
-      (has-impersonator-prop:blame? v)))
+      (has-impersonator-prop:blame? v)
+      ;; TODO: I think this check is ok, but I'm not sure ...
+      (has-impersonator-prop:space-efficient? v)))
 
 (define (value-blame v)
   (define bv
@@ -174,6 +191,13 @@
        (get-prop:blame v)]
       [(has-impersonator-prop:blame? v)
        (get-impersonator-prop:blame v)]
+      [(get-impersonator-prop:space-efficient v #f)
+       =>
+       (λ (p)
+         (define s-e (space-efficient-property-s-e p))
+         (cons
+          (multi-ho/c-latest-blame s-e)
+          (or (multi-ho/c-missing-party s-e) (space-efficient-property-neg-party p))))]
       [else #f]))
   (cond
     [(and (pair? bv) (blame? (car bv)))
@@ -225,6 +249,10 @@
 (define (list-contract? raw-c)
   (define c (coerce-contract/f raw-c))
   (and c (contract-struct-list-contract? c)))
+
+(define (can-cache-contract? raw-c)
+  (define c (coerce-contract/f raw-c))
+  (and (or c (eq? c false/c-contract)) (contract-struct-can-cache? c) #t))
 
 ;; contract-stronger? : contract contract -> boolean
 ;; indicates if one contract is stronger (ie, likes fewer values) than another
@@ -397,7 +425,8 @@
                                      name)
                                  x
                                  #f
-                                 (memq x the-known-good-contracts))])]
+                                 (or (struct-predicate-procedure? x)
+                                     (memq x the-known-good-contracts)))])]
     [(null? x)
      (unless list/c-empty
        (error 'coerce-contract/f::list/c-empty "too soon!"))
@@ -567,6 +596,7 @@
          (and (predicate-contract? that)
               (predicate-contract-sane? that)
               ((predicate-contract-pred that) this-val))))
+   #:can-cache? (λ (c) #t)
    #:equivalent
    (λ (this that)
      (define this-val (eq-contract-val this))
@@ -599,7 +629,8 @@
    #:generate
    (λ (ctc) 
      (define v (equal-contract-val ctc))
-     (λ (fuel) (λ () v)))))
+     (λ (fuel) (λ () v)))
+   #:can-cache? (λ (c) #t)))
 
 (define-struct =-contract (val name)
   #:property prop:custom-write contract-custom-write-property-proc
@@ -656,7 +687,8 @@
                (if (= c v) c v)]
               [else
                ;; otherwise, just stick with the original number (80% of the time)
-               v]))])))))
+               v]))])))
+   #:can-cache? (λ (c) #t)))
 
 (define-struct char-in/c (low high)
   #:property prop:custom-write contract-custom-write-property-proc
@@ -704,7 +736,8 @@
      (define delta (+ (- high low) 1))
      (λ (fuel)
        (λ ()
-         (integer->char (+ low (random delta))))))))
+         (integer->char (+ low (random delta))))))
+   #:can-cache? (λ (c) #t)))
 
 (define (regexp/c-equivalent this that)
   (and (regexp/c? that)
@@ -721,6 +754,7 @@
          (and (or (string? x) (bytes? x))
               (regexp-match? reg x))))
    #:name (λ (ctc) (regexp/c-reg ctc))
+   #:can-cache? (λ (c) #t)
    #:stronger regexp/c-equivalent
    #:equivalent regexp/c-equivalent))
 
@@ -761,7 +795,8 @@
                         (and built-in-generator
                              (λ () (built-in-generator fuel))))])))
    #:list-contract? (λ (ctc) (or (equal? (predicate-contract-pred ctc) null?)
-                                 (equal? (predicate-contract-pred ctc) empty?)))))
+                                 (equal? (predicate-contract-pred ctc) empty?)))
+   #:can-cache? (λ (ctc) (and (predicate-contract-sane? ctc) #t))))
 
 (define (raise-predicate-blame-error-failure blame v neg-party predicate-name)
   (raise-blame-error blame v #:missing-party neg-party
@@ -792,12 +827,27 @@
 
 (define-logger racket/contract)
 
+(define (get/build-space-efficient-late-neg-projection ctc)
+  (cond
+    [(contract-struct-space-efficient-late-neg-projection ctc) => values]
+    [else
+     (define lnp (get/build-late-neg-projection ctc))
+     (λ (blame)
+       (define proj (lnp blame))
+       (values proj
+               (build-space-efficient-leaf proj ctc blame)))]))
+
 (define (get/build-late-neg-projection ctc)
   (cond
     [(contract-struct-late-neg-projection ctc) => values]
     [else
      (log-racket/contract-info "no late-neg-projection for ~s" ctc)
      (cond
+       [(contract-struct-space-efficient-late-neg-projection ctc) =>
+        (lambda (f)
+          (lambda (blame)
+            (define-values (proj _) (f blame))
+            proj))]
        [(contract-struct-projection ctc)
         =>
         (λ (projection)
@@ -809,7 +859,7 @@
        [else
         (first-order->late-neg-projection (contract-struct-first-order ctc)
                                           (contract-struct-name ctc))])]))
-
+     
 (define (projection->late-neg-projection proj)
   (λ (b)
     (λ (x neg-party)
@@ -914,6 +964,13 @@
     (with-continuation-mark contract-continuation-mark-key payload
                             (let () code ...))))
 
+(define space-efficient-contract-continuation-mark-key
+  (make-continuation-mark-key 'space-efficient-contract))
+
+(define-syntax-rule (with-space-efficient-contract-continuation-mark code ...)
+  (with-continuation-mark space-efficient-contract-continuation-mark-key #t
+    (let () code ...)))
+  
 (define (n->th n)
   (string-append 
    (number->string n)
@@ -954,6 +1011,9 @@
 (define-syntax-rule
   (contract-pos/neg-doubling e1 e2)
   (contract-pos/neg-doubling/proc (λ () e1) (λ () e2)))
+(define-syntax-rule
+  (contract-pos/neg-doubling.2 e1 e2)
+  (contract-pos/neg-doubling.2/proc (λ () e1) (λ () e2)))
 (define doubling-cm-key (gensym 'racket/contract-doubling-mark))
 (define (contract-pos/neg-doubling/proc t1 t2)
   (define depth
@@ -966,3 +1026,17 @@
     [else
      (with-continuation-mark doubling-cm-key (+ depth 1)
        (values #t (t1) (t2)))]))
+(define (contract-pos/neg-doubling.2/proc t1 t2)
+  (define depth
+    (or (continuation-mark-set-first (current-continuation-marks)
+                                     doubling-cm-key)
+        0))
+  (cond
+    [(> depth 5)
+     (values #f t1 #f t2 #f)]
+    [else
+     (with-continuation-mark doubling-cm-key (+ depth 1)
+       (let ()
+         (define-values (t11 t12) (t1))
+         (define-values (t21 t22) (t2))
+         (values #t t11 t12 t21 t22)))]))

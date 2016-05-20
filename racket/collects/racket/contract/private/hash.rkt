@@ -154,6 +154,10 @@
       [(#f)
        (list '#:immutable #f)]))))
 
+(define (can-cache-hash/c? c)
+  (and (can-cache-contract? (base-hash/c-dom c))
+       (can-cache-contract? (base-hash/c-rng c))))
+
 (define-struct base-hash/c (dom rng immutable))
 
 (define (hash/c-stronger this that)
@@ -246,6 +250,7 @@
    #:generate hash/c-generate
    #:exercise hash/c-exercise
    #:stronger hash/c-stronger
+   #:can-cache? can-cache-hash/c?
    #:equivalent hash/c-equivalent
    #:late-neg-projection
    (λ (ctc)
@@ -332,25 +337,25 @@
        val
        (λ (h k)
          (values (with-contract-continuation-mark
-                  blame+neg-party
-                  (neg-dom-proj k neg-party))
+                   blame+neg-party
+                   (neg-dom-proj k neg-party))
                  (λ (h k v)
                    (with-contract-continuation-mark
-                    blame+neg-party
-                    ((mk-pos-rng-proj k) v neg-party)))))
+                     blame+neg-party
+                     ((mk-pos-rng-proj k) v neg-party)))))
        (λ (h k v)
          (with-contract-continuation-mark
-          blame+neg-party
-          (values (neg-dom-proj k neg-party)
-                  ((mk-neg-rng-proj k) v neg-party))))
+           blame+neg-party
+           (values (neg-dom-proj k neg-party)
+                   ((mk-neg-rng-proj k) v neg-party))))
        (λ (h k)
          (with-contract-continuation-mark
-          blame+neg-party
-          (neg-dom-proj k neg-party)))
+           blame+neg-party
+           (neg-dom-proj k neg-party)))
        (λ (h k)
          (with-contract-continuation-mark
-          blame+neg-party
-          (pos-dom-proj k neg-party)))
+           blame+neg-party
+           (pos-dom-proj k neg-party)))
        impersonator-prop:contracted ctc
        impersonator-prop:blame blame)))
 
@@ -360,6 +365,7 @@
   #:property prop:chaperone-contract
   (build-chaperone-contract-property
    #:name hash/c-name
+   #:can-cache? can-cache-hash/c?
    #:first-order hash/c-first-order
    #:generate hash/c-generate
    #:exercise hash/c-exercise
@@ -373,6 +379,7 @@
   #:property prop:contract
   (build-contract-property
    #:name hash/c-name
+   #:can-cache? can-cache-hash/c?
    #:first-order hash/c-first-order
    #:stronger hash/c-stronger
    #:equivalent hash/c-equivalent

@@ -233,6 +233,12 @@
                   (elem-proj+blame x neg-party))
                 (raise-listof-blame-error blame val (pe-listof-ctc? ctc) neg-party)))])])))
 
+(define (can-cache-listof? c)
+  (and
+   (can-cache-contract? (listof-ctc-elem-c c))
+   (or (not (im-listof-ctc? c))
+       (can-cache-contract? (im-listof-ctc-last-c c)))))
+
 (define flat-prop
   (build-flat-contract-property
    #:name list-name
@@ -241,6 +247,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
+   #:can-cache? can-cache-listof?
    #:equivalent listof-equivalent
    #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 (define chap-prop
@@ -251,6 +258,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
+   #:can-cache? can-cache-listof?
    #:equivalent listof-equivalent
    #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 (define full-prop
@@ -261,6 +269,7 @@
    #:generate listof-generate
    #:exercise listof-exercise
    #:stronger listof-stronger
+   #:can-cache? can-cache-listof?
    #:equivalent listof-equivalent
    #:list-contract? (λ (c) (not (im-listof-ctc? c)))))
 
@@ -435,6 +444,10 @@
 (define (cons/c-list-contract? c)
   (list-contract? (the-cons/c-tl-ctc c)))
 
+(define (can-cache-cons/c? c)
+  (and (can-cache-contract? (the-cons/c-hd-ctc c))
+       (can-cache-contract? (the-cons/c-tl-ctc c))))
+
 (define-struct the-cons/c (hd-ctc tl-ctc))
 (define-struct (flat-cons/c the-cons/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -446,6 +459,7 @@
    #:stronger cons/c-stronger?
    #:equivalent cons/c-equivalent?
    #:generate cons/c-generate
+   #:can-cache? can-cache-cons/c?
    #:list-contract? cons/c-list-contract?))
 (define-struct (chaperone-cons/c the-cons/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -457,6 +471,7 @@
    #:stronger cons/c-stronger?
    #:equivalent cons/c-equivalent?
    #:generate cons/c-generate
+   #:can-cache? can-cache-cons/c?
    #:list-contract? cons/c-list-contract?))
 (define-struct (impersonator-cons/c the-cons/c) ()
   #:property prop:custom-write custom-write-property-proc
@@ -468,6 +483,7 @@
    #:stronger cons/c-stronger?
    #:equivalent cons/c-equivalent?
    #:generate cons/c-generate
+   #:can-cache? can-cache-cons/c?
    #:list-contract? cons/c-list-contract?))
 
 (define/subexpression-pos-prop (cons/c a b)
@@ -724,6 +740,10 @@
 
 (struct generic-list/c (args))
 
+(define (can-cache-list/c? c)
+  (for/and ([ctc (in-list (generic-list/c-args c))])
+    (can-cache-contract? ctc)))
+
 (struct flat-list/c generic-list/c ()
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
@@ -762,7 +782,8 @@
                                val
                                '(expected "a list" given: "~e") 
                                val)]))))
-   #:list-contract? (λ (c) #t)))
+   #:list-contract? (λ (c) #t)
+   #:can-cache? can-cache-list/c?))
 
 (define (expected-a-list x blame #:missing-party [missing-party #f])
   (raise-blame-error blame #:missing-party missing-party
@@ -824,7 +845,8 @@
    #:stronger list/c-stronger
    #:equivalent list/c-equivalent
    #:late-neg-projection list/c-chaperone/other-late-neg-projection
-   #:list-contract? (λ (c) #t)))
+   #:list-contract? (λ (c) #t)
+   #:can-cache? can-cache-list/c?))
 
 (struct higher-order-list/c generic-list/c ()
   #:property prop:custom-write custom-write-property-proc
@@ -837,7 +859,8 @@
    #:stronger list/c-stronger
    #:equivalent list/c-equivalent
    #:late-neg-projection list/c-chaperone/other-late-neg-projection
-   #:list-contract? (λ (c) #t)))
+   #:list-contract? (λ (c) #t)
+   #:can-cache? can-cache-list/c?))
 
 (define (*list/c-name-proc ctc)
   `(*list/c ,(contract-name (*list-ctc-prefix ctc))
@@ -1006,6 +1029,11 @@
                blame
                val
                '(expected: "list?" given: "~e") val)]))))
+
+(define (can-cache-*list/c? c)
+  (and (can-cache-contract? (*list-ctc-prefix c))
+       (for/and ([ctc (in-list (*list-ctc-suffix c))])
+         (can-cache-contract? ctc))))
   
 ;; prefix : contract
 ;; suffix : (listof contract)
@@ -1022,6 +1050,7 @@
    #:stronger *list/c-stronger
    #:equivalent *list/c-equivalent
    #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #t))
+   #:can-cache? can-cache-*list/c?
    #:list-contract? (λ (c) #t)))
 (struct chaperone-*list/c *list-ctc ()
   #:property prop:contract
@@ -1033,6 +1062,7 @@
    #:stronger *list/c-stronger
    #:equivalent *list/c-equivalent
    #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #f))
+   #:can-cache? can-cache-*list/c?
    #:list-contract? (λ (c) #t)))
 (struct impersonator-*list/c *list-ctc ()
   #:property prop:contract
@@ -1044,6 +1074,7 @@
    #:stronger *list/c-stronger
    #:equivalent *list/c-equivalent
    #:late-neg-projection (λ (ctc) (*list/c-late-neg-projection ctc #f #f))
+   #:can-cache? can-cache-*list/c?
    #:list-contract? (λ (c) #t)))
 
 (define (*list/c ele . rest)

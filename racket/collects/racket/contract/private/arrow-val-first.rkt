@@ -10,6 +10,8 @@
          "generate.rkt"
          "arrow-common.rkt"
          "arrow-higher-order.rkt"
+         "arrow-space-efficient.rkt"
+         "space-efficient-common.rkt"
          "list.rkt"
          racket/stxparam)
 
@@ -1543,7 +1545,7 @@
                (base->-chaperone-constructor ->stct)
                (base->-method? ->stct)
                #f)))
-  (define late-neg-proj
+  (define space-efficient-late-neg-proj
     (λ (->stct)
       (->-proj is-impersonator? ->stct
                (base->-min-arity ->stct)
@@ -1572,7 +1574,17 @@
    #:generate ->-generate
    #:exercise ->-exercise
    #:val-first-projection val-first-proj
-   #:late-neg-projection late-neg-proj))
+   #:space-efficient-late-neg-projection space-efficient-late-neg-proj
+   #:can-cache? ->-can-cache?))
+
+(define (->-can-cache? ctc)
+  (and (not (base->-pre? ctc))
+       (not (base->-post? ctc))
+       (for/and ([c (in-list (base->-doms ctc))])
+         (can-cache-contract? c))
+       (for/and ([c (in-list (or (base->-rngs ctc) '()))])
+         (can-cache-contract? c))
+       (can-cache-contract? (base->-rest ctc))))
 
 (define (->-stronger this that)
   (and (base->? that)
