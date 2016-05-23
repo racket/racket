@@ -563,7 +563,7 @@ has no bindings at phase -1.
 (define x 3)
 (define y 4)
 (define z 5)
-(eval:error (shell-game x y z))
+(shell-game x y z)
 }|
 
 To repair this example, we add @racket[(require (for-template racket/base))]
