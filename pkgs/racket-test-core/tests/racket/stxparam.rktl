@@ -169,5 +169,13 @@
 
 ;; ----------------------------------------
 
+(let ([msg "syntax-parameterize: not bound as a syntax parameter"])
+  (test (list msg) regexp-match
+        (regexp-quote msg)
+        (with-handlers ([exn:fail? (λ (x) (exn-message x))])
+          (eval #'(syntax-parameterize ([x (make-rename-transformer #'f)]) 1)))))
+
+;; ----------------------------------------
+
 (report-errs)
 

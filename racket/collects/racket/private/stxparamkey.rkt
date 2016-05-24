@@ -42,7 +42,7 @@
   (define (syntax-parameter-local-value id)
     (let*-values
         ([(rt* rt-target)
-          (syntax-local-value/immediate id (lambda () #f))]
+          (syntax-local-value/immediate id (lambda () (values #f #f)))]
          [(rt) (if (syntax-parameter? rt*)
                    rt*
                    (or (and rt-target
@@ -55,7 +55,8 @@
       sp))
 
   (define (syntax-parameter-local-value-pre id)
-    (define-values (rt* rt-target) (syntax-local-value/immediate id (λ () #f)))
+    (define-values (rt* rt-target)
+      (syntax-local-value/immediate id (λ () (values #f #f))))
     (cond
       [(not rt-target)
        rt*]
