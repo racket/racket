@@ -523,7 +523,7 @@ binding at the run-time phase level relative to the module that
 defines the macro.
 
 For instance, the @racket[swap-stx] helper function in the example below
-is not a syntax transformer — it's just an ordinary function — but it 
+is not a syntax transformer --- it's just an ordinary function --- but it 
 produces syntax objects that get spliced into the result of 
 @racket[shell-game]. Therefore, its containing @racket[helper] submodule 
 needs to be imported at @racket[shell-game]'s phase 1 with 
@@ -535,7 +535,7 @@ returned by @racket[shell-game] is evaluated. In other words, a negative phase
 level is a positive phase level from the opposite direction: 
 @racket[shell-game]'s phase 1 is @racket[swap-stx]'s phase 0, so 
 @racket[shell-game]'s phase 0 is @racket[swap-stx]'s phase -1. 
-And that's why this example won't work -- the @racket['helper] submodule 
+And that's why this example won't work --- the @racket['helper] submodule 
 has no bindings at phase -1.
 
 @codeblock|{
