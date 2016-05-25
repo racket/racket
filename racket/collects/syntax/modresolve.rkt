@@ -55,7 +55,7 @@
           (loop (cdr accum) (cdr p)))]
      [else (loop (cons (car p) accum) (cdr p))])))
 
-(define (resolve-module-path s relto)
+(define (resolve-module-path s [relto #f])
   ;; relto should be a complete path, #f, or procedure that returns a
   ;; complete path
   (define (get-dir) (force-relto relto #t))
@@ -135,13 +135,13 @@
   (or/c rel-to-path-string/c (-> rel-to-path-string/c) false/c))
 
 (provide/contract
- [resolve-module-path (module-path?
-                       rel-to-path-string/thunk/#f
-                       . -> . (or/c path? symbol? 
-                                    (cons/c 'submod (cons/c (or/c path? symbol?) 
-                                                            (listof symbol?)))))]
- [resolve-module-path-index ((or/c symbol? module-path-index?)
-                             rel-to-path-string/thunk/#f
-                             . -> . (or/c path? symbol? 
-                                          (cons/c 'submod (cons/c (or/c path? symbol?)
-                                                                  (listof symbol?)))))])
+ [resolve-module-path (->* (module-path?)
+                           (rel-to-path-string/thunk/#f)
+                           (or/c path? symbol? 
+                                 (cons/c 'submod (cons/c (or/c path? symbol?) 
+                                                         (listof symbol?)))))]
+ [resolve-module-path-index (->* ((or/c symbol? module-path-index?))
+                                 (rel-to-path-string/thunk/#f)
+                                 (or/c path? symbol? 
+                                       (cons/c 'submod (cons/c (or/c path? symbol?)
+                                                               (listof symbol?)))))])
