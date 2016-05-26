@@ -3,8 +3,9 @@
 ;; #%misc : file utilities, etc. - remaining functions
 
 (module misc '#%kernel
-  (#%require '#%utils ; built into racket
-             "small-scheme.rkt" "define.rkt" "path.rkt"
+  (#%require "small-scheme.rkt" "define.rkt" "path.rkt" "old-path.rkt"
+             "path-list.rkt" "executable-path.rkt" "collect.rkt"
+             "reading-param.rkt" "load.rkt"
              (for-syntax '#%kernel "qq-and-or.rkt" "stx.rkt" "stxcase-scheme.rkt" "stxcase.rkt"))
   
   ;; -------------------------------------------------------------------------
