@@ -2147,7 +2147,7 @@ static Scheme_Object *variable_phase(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *variable_base_phase(int argc, Scheme_Object *argv[])
 {
-  return do_variable_namespace("variable-reference->phase", 3, argc, argv);
+  return do_variable_namespace("variable-reference->base-phase", 3, argc, argv);
 }
 
 static Scheme_Object *variable_inspector(int argc, Scheme_Object *argv[])
