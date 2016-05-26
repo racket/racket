@@ -3,8 +3,7 @@
 ;;  but the JIT generates faster code, especially for the common cases.
 
 (module map '#%kernel
-  (#%require '#%utils ; built into racket
-             "small-scheme.rkt" "define.rkt"
+  (#%require "small-scheme.rkt" "define.rkt"
              "performance-hint.rkt")
 
   (#%provide (rename map2 map)
