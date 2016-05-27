@@ -631,7 +631,7 @@ A module can be @tech{declare}d by using @racket[dynamic-require].
           [mod (or/c module-path? resolved-module-path?)])
          (listof (cons/c exact-integer? (listof symbol?)))]{
 
- Like @racket[module-compiled-exports], but produces the
+ Like @racket[module-compiled-indirect-exports], but produces the
  exports of @racket[mod], which must be @tech{declare}d (but
  not necessarily @tech{instantiate}d or @tech{visit}ed) in
  the current namespace. See @racket[module->language-info] for
