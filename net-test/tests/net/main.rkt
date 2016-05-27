@@ -1,0 +1,32 @@
+#lang racket/base
+
+(module test racket/base
+  (displayln "run as program for tests"))
+
+(require tests/eli-tester
+         (prefix-in ip:        "ip.rkt")
+         (prefix-in dns:       "dns.rkt")
+         (prefix-in ucodec:    "uri-codec.rkt")
+         (prefix-in url:       "url.rkt")
+         (prefix-in cgi:       "cgi.rkt")
+         (prefix-in ftp:       "ftp.rkt")
+         (prefix-in head:      "head.rkt")
+         (prefix-in cookie:    "cookie.rkt")
+         (prefix-in encoders:  "encoders.rkt")
+         (prefix-in mime:      "mime.rkt")
+         (prefix-in url-port:  "url-port.rkt"))
+
+(define (tests)
+  (test do (ip:tests)
+        do (dns:tests)
+        do (url:tests)
+        do (ucodec:tests)
+        do (cgi:tests)
+        do (ftp:tests)
+        do (head:tests)
+        do (cookie:tests)
+        do (encoders:tests)
+        do (mime:tests)
+        do (url-port:tests)))
+
+(tests)
