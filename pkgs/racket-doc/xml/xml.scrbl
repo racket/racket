@@ -168,7 +168,7 @@ A @racket[_symbol] represents a symbolic entity. For example,
 @racket['nbsp] represents @litchar{&nbsp;}.
 
 An @racket[valid-char?] represents a numeric entity. For example,
-@racketvalfont{#x20} represents @litchar{&#20;}.
+@racketvalfont{#x20} represents @litchar{&#x20;}.
 
 A @racket[_cdata] is an instance of the @racket[cdata] structure type,
 and a @racket[_misc] is an instance of the @racket[comment] or
