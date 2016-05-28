@@ -399,7 +399,7 @@ GitHub-based @tech{package source}.
 
 Other Git repository services@margin-note*{Support for services other
 than GitHub requires Racket version 6.1.1.1 or later.} can work
-just as well as GitHub---including Gitorious or BitBucket---as long as
+just as well as GitHub---including GitLab or BitBucket---as long as
 the server supports either the HTTP(S) protocol or the
 native Git protocol (but use a @exec{git://} path for the latter).
 
