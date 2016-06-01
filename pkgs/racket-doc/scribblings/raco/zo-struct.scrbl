@@ -273,8 +273,10 @@ binding, constructor, etc.}
 
   The @racket[max-let-depth] field indicates the maximum stack depth
   created by @racket[body] forms (not counting the @racket[prefix]
-  array).  The @racket[dummy] variable is used to access to the
-  top-level namespace.
+  array).
+  
+  The @racket[dummy] variable is used to access to the top-level
+  namespace.
 
   The @racket[lang-info] value specifies an optional module path that
   provides information about the module's implementation language.
