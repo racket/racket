@@ -1009,12 +1009,50 @@ that it is used for converting lists to/from C vectors.  The optional
 the post code, and in the pre code of an output mode to allocate the
 block.  (If the length is 0, then NULL is passed in and an empty list is
 returned.)  In either case, it can refer to a previous binding for the
-length of the list which the C function will most likely require.}
+length of the list which the C function will most likely require.
+
+For example, the following type corresponds to a function that takes
+a vector argument of type @tt{*float} (from a Racket list input)
+and a length argument of type @tt{int} for the vector:
+
+@racketblock[
+(_fun [vec : (_list i _float)]
+      (code:comment "this argument is implicitly provided")
+      [_int = (length vec)]
+      -> _void)
+]
+
+In this next example, the type specifies a function that provides
+output through a given output vector (represented as a list on the
+Racket side) and through a boolean return value. The FFI-bound
+function will take an integer argument and
+return two values, the vector and the boolean.
+
+@racketblock[
+(_fun [len : _int]
+      [vec : (_list o _float len)]
+      -> [res : _bool]
+      -> (values vec res))
+]}
 
 @defform[(_vector mode type maybe-len)]{
 
 A @tech{custom function type} like @racket[_list], except that it uses
-Racket vectors instead of lists.}
+Racket vectors instead of lists.
+
+Examples:
+
+@racketblock[
+(_fun [vec : (_vector i _float)]
+      [_int = (length vec)]
+      -> _void)
+(_fun [len : _int]
+      [vec : (_vector o _float len)]
+      -> [res : _bool]
+      -> (values vec res))
+]
+
+See @racket[_list] for more explanation about the examples.}
 
 
 @defform*[#:id _bytes
