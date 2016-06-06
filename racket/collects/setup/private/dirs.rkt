@@ -1,6 +1,6 @@
 #lang racket/base
 (require racket/promise
-         '#%utils
+         racket/private/config
          (for-syntax racket/base))
 
 ;; ----------------------------------------
