@@ -321,7 +321,9 @@
                               (when (member 'very-verbose options)
                                 (printf "  ~a\n" p)))]
                           [current-namespace (make-base-empty-namespace)]
-                          [current-directory dir]
+                          [current-directory (if (memq 'set-directory options)
+                                                 dir
+                                                 (current-directory))]
                           [current-load-relative-directory dir]
                           [current-input-port (open-input-string "")]
                           [current-output-port out-str-port]
@@ -359,7 +361,7 @@
 
 (define (parallel-compile worker-count setup-fprintf append-error collects-tree)
   (setup-fprintf (current-output-port) #f "--- parallel build using ~a jobs ---" worker-count)
-  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error '()))
+  (define collects-queue (make-object collects-queue% collects-tree setup-fprintf append-error '(set-directory)))
   (parallel-build collects-queue worker-count))
 
 (define (start-prefetch-thread send/add)
