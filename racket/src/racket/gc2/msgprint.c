@@ -80,7 +80,7 @@ void gc_fprintf(int ignored, const char *c, ...)
   while (*c) {
     if (*c == '%') {
       int len = -1, slen;
-      int islong = 0;
+      int islong = 0, isintptr = 0;
       char *s;
 
       if (pos) {
@@ -97,6 +97,10 @@ void gc_fprintf(int ignored, const char *c, ...)
 	}
       }
 
+      if (*c == 'I') {
+	isintptr = 1;
+	c++;
+      }
       if (*c == 'l') {
 	islong = 1;
 	c++;
@@ -117,10 +121,15 @@ void gc_fprintf(int ignored, const char *c, ...)
       case 'i':
       case 'p':
 	{
-	  long v;
+	  intptr_t v;
 	  int d, i;
 
-	  if (islong) {
+	  if (*c == 'p')
+	    isintptr = 1;
+
+	  if (isintptr) {
+	    v = va_arg(args, intptr_t);
+	  } else if (islong) {
 	    v = va_arg(args, long);
 	  } else {
 	    v = va_arg(args, int);
