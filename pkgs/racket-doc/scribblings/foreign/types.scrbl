@@ -991,12 +991,21 @@ integer pointer, and use the value that is placed there as a second
 return value.}
 
 
-@defidform[_box]{
+@defform[(_box type)]{
 
 A @tech{custom function type} similar to a @racket[(_ptr io _type)]
 argument, where the input is expected to be a box holding an
 appropriate value, which is unboxed on entry and modified accordingly
-on exit.}
+on exit.
+
+Example:
+
+@racketblock[
+(_fun (_box _int) -> _void)
+(_fun [boxed : (_box _int) = (box 0)]
+      -> [res : _int]
+      -> (values res (unbox boxed)))
+]}
 
 @defform/subs[(_list mode type maybe-len)
               ([mode i o io]
