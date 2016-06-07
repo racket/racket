@@ -938,7 +938,21 @@ A @tech{custom function type} that is a marker for expressions that
 should not be sent to the foreign function.  Use this to bind local
 values in a computation that is part of an ffi wrapper interface, or
 to specify wrapper arguments that are not sent to the foreign function
-(e.g., an argument that is used for processing the foreign output).}
+(e.g., an argument that is used for processing the foreign output).
+
+Examples:
+
+@racketblock[
+(_fun _? (code:comment "not sent to foreign function")
+      _int -> _int)
+(_fun [init : _?] (code:comment "init is used for pre-processing")
+      [boxed : (_box _int) = (box init)]
+      -> _void)
+(_fun [offset : _?] (code:comment "offset is used for post-processing")
+      -> [res : _int]
+      -> (+ res offset))
+]
+}
 
 
 @defform/subs[#:literals (i o io)
