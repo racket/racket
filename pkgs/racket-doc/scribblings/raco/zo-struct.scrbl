@@ -594,7 +594,7 @@ binding, constructor, etc.}
 
 @defstruct+[(with-immed-mark expr)
             ([key (or/c expr? seq? any/c)]
-             [val (or/c expr? seq? any/c)]
+             [def-val (or/c expr? seq? any/c)]
              [body (or/c expr? seq? any/c)])]{
 
   Represents a @racket[(call-with-immediate-continuation-mark key
