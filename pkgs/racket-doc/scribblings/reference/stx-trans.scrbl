@@ -969,7 +969,8 @@ and different result procedures use distinct scopes.
 
 Produces a procedure that behaves like the result of
 @racket[make-syntax-introducer], but using the @tech{scopes} of
-@racket[ext-stx] that are not shared with @racket[base-stx].
+@racket[ext-stx] that are not shared with @racket[base-stx], and with
+a default action of @racket['remove].
 A @racket[#f] value for @racket[base-stx] is equivalent to a syntax
 object with no @tech{scopes}.
 
