@@ -1,5 +1,13 @@
 #lang scribble/doc
-@(require "common.rkt" (for-label syntax/modresolve))
+@(require "common.rkt" scribble/eval
+          (for-label syntax/modresolve))
+
+@(define (new-evaluator)
+   (let* ([e (make-base-eval)])
+     (e '(require (for-syntax racket/base) syntax/modresolve))
+     e))
+
+@(define evaluator (new-evaluator))
 
 @title{Resolving Module Paths to File Paths}
 
@@ -27,4 +35,14 @@ If @racket[module-path-index] depends on the ``self'' module path
 index, then an exception is raised unless @racket[rel-to-path-v] is a
 path string.
 
-See @racket[module-path-index-resolve].}
+See @racket[module-path-index-resolve].
+
+@examples[#:eval evaluator
+          (resolve-module-path-index
+           (module-path-index-join 'racket #f))
+          (resolve-module-path-index
+           (module-path-index-join "apple.rkt" #f))
+          (resolve-module-path-index
+           (module-path-index-join '(submod "." test) #f)
+           (string->path "banana.rkt"))]
+}
