@@ -24,7 +24,8 @@
          the-unsupplied-arg unsupplied-arg?
          values/drop
          (struct-out base->)
-         raise-wrong-number-of-args-error)
+         raise-wrong-number-of-args-error
+         pre-post/desc-result->string)
 
 ;; min-arity : nat
 ;; doms : (listof contract?)[len >= min-arity]
@@ -378,6 +379,32 @@
                      #:missing-party missing-party
                      '(received: "~a argument~a" expected: "~a")
                      args-len (if (= args-len 1) "" "s") arity-string))
+
+(define (pre-post/desc-result->string condition-result pre? who)
+  (cond
+    [(equal? condition-result #f)
+     (if pre?
+         "#:pre condition"
+         "#:post condition")]
+    [(string? condition-result)
+     condition-result]
+    [(and (list? condition-result)
+          (andmap string? condition-result))
+     (apply
+      string-append
+      (let loop ([s condition-result])
+        (cond
+          [(null? s) '()]
+          [(null? (cdr s)) s]
+          [else (list* (car s)
+                       "\n " 
+                       (loop (cdr s)))])))]
+    [else
+     (error
+      who
+      "expected #:~a/desc to produce (or/c boolean? string? (listof string?)), got ~e"
+      (if pre? "pre" "post")
+      condition-result)]))
 
 ;; timing & size tests
 

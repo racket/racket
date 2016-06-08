@@ -7,7 +7,6 @@
          "misc.rkt"
          "blame.rkt"
          "generate.rkt"
-         "arrow-higher-order.rkt"
          syntax/location
          racket/private/performance-hint
          (for-syntax racket/base
