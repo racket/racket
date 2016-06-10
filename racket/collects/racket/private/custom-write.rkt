@@ -1,6 +1,11 @@
 #lang racket/base
 (require racket/pretty)
-(provide make-constructor-style-printer)
+(provide make-constructor-style-printer
+         prop:constructor-style-printer
+         constructor-style-printer?
+         constructor-style-printer-constructor
+         constructor-style-printer-contents
+         )
 
 ;; make-constructor-style-printer : (Any -> (U String Symbol))
 ;;                                  (Any -> (Sequenceof Any))
@@ -73,3 +78,42 @@
           [else
            (print/one-line port)])
     (void)))
+
+(define (prop-constructor-style-printer-guard v info)
+  (unless (and (list? v) (= (length v) 2)
+               (procedure? (car v))
+               (procedure? (cadr v))
+               (procedure-arity-includes? (car v) 1)
+               (procedure-arity-includes? (cadr v) 1))
+    (error 'prop:constructor-style-printer
+           "expected a list of two one-argument functions, given ~v"
+           v))
+  v)
+
+;; prop:constructor-style-printer : (Struct-Type-Propertyof
+;;                                   (List (Constructor-Style-Printer . -> . (U String Symbol))
+;;                                         (Constructor-Style-Printer . -> . (Sequenceof Any))))
+;; constructor-style-printer? : Any -> Boolean : Constructor-Style-Printer
+;; constructor-style-printer-accessor : Constructor-Style-Printer
+;;                                      ->
+;;                                      (List (Constructor-Style-Printer . -> . (U String Symbol))
+;;                                            (Constructor-Style-Printer . -> . (Sequenceof Any)))
+(define-values [prop:constructor-style-printer
+                constructor-style-printer?
+                constructor-style-printer-accessor]
+  (make-struct-type-property 'constructor-style-printer
+                             prop-constructor-style-printer-guard
+                             (list (cons prop:custom-write
+                                         (λ (v)
+                                           (make-constructor-style-printer
+                                            (car v)
+                                            (cadr v)))))))
+
+;; constructor-style-printer-constructor : Constructor-Style-Printer -> (U String Symbol)
+(define (constructor-style-printer-constructor s)
+  ((car (constructor-style-printer-accessor s)) s))
+
+;; constructor-style-printer-contents : Constructor-Style-Printer -> (Sequenceof Any)
+(define (constructor-style-printer-contents s)
+  ((cadr (constructor-style-printer-accessor s)) s))
+
