@@ -232,8 +232,7 @@
                               assq assv assoc
                               prop:incomplete-arity prop:method-arity-error
                               list-pair?
-                              random
-                              mcons mpair? mcar mcdr set-mcar! set-mcdr!)
+                              random)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
                               define-in-vector-like

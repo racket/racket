@@ -6,6 +6,7 @@
              "letstx-scheme.rkt"
              "member.rkt"
              "reverse.rkt"
+             "mpair.rkt"
              '#%unsafe
              '#%flfxnum
              (for-syntax '#%kernel
