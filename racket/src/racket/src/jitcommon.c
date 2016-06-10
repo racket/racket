@@ -349,12 +349,7 @@ static int common1(mz_jit_state *jitter, void *_data)
     case 5:
       sjc.bad_cddr_code = code;      
       break;
-    case 6:
-      sjc.bad_mcar_code = code;
-      break;
-    case 7:
-      sjc.bad_mcdr_code = code;
-      break;
+    /* 6,7 for mpairs */
     case 8:
       sjc.real_part_code = code;
       break;
@@ -409,12 +404,7 @@ static int common1(mz_jit_state *jitter, void *_data)
     case 5:
       (void)mz_finish_lwe(ts_scheme_checked_cddr, ref);
       break;
-    case 6:
-      (void)mz_finish_lwe(ts_scheme_checked_mcar, ref);
-      break;
-    case 7:
-      (void)mz_finish_lwe(ts_scheme_checked_mcdr, ref);
-      break;
+    /* 6,7 for mpairs */
     case 8:
       (void)mz_finish_lwe(ts_scheme_checked_real_part, ref);
       break;
@@ -463,12 +453,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
     void *code;
     code = jit_get_ip();
     switch (i) {
-    case 0:
-      sjc.bad_set_mcar_code = code;
-      break;
-    case 1:
-      sjc.bad_set_mcdr_code = code;
-      break;
+    /* 0,1 for mpairs */
     case 2:
       sjc.make_rectangular_code = code;
       break;
@@ -488,12 +473,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
     jit_pusharg_p(JIT_RUNSTACK);
     jit_pusharg_i(JIT_R1);
     switch (i) {
-    case 0:
-      (void)mz_finish_lwe(ts_scheme_checked_set_mcar, ref);
-      break;
-    case 1:
-      (void)mz_finish_lwe(ts_scheme_checked_set_mcdr, ref);
-      break;
+    /* 0,1 for mpairs */
     case 2:
       (void)mz_finish_lwe(ts_scheme_checked_make_rectangular, ref);
       jit_retval(JIT_R0);

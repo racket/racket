@@ -1304,49 +1304,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
       __END_TINY_JUMPS__(1);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "mcar")
-               || IS_NAMED_PRIM(rator, "mcdr")) {
-      GC_CAN_IGNORE jit_insn *reffail = NULL, *ref;
-      const char *name = ((Scheme_Primitive_Proc *)rator)->name;
-
-      LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
-
-      mz_runstack_skipped(jitter, 1);
-
-      scheme_generate_non_tail(app->rand, jitter, 0, 1, 0);
-      CHECK_LIMIT();
-
-      mz_runstack_unskipped(jitter, 1);
-
-      mz_rs_sync_fail_branch();
-
-      __START_TINY_JUMPS__(1);
-
-      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-      reffail = jit_get_ip();
-      __END_TINY_JUMPS__(1);
-      if (name[2] == 'a') {
-        (void)jit_calli(sjc.bad_mcar_code);
-      } else {
-        (void)jit_calli(sjc.bad_mcdr_code);
-      }
-      __START_TINY_JUMPS__(1);
-      mz_patch_branch(ref);
-      (void)mz_bnei_t(reffail, JIT_R0, scheme_mutable_pair_type, JIT_R1);
-      if (name[2] == 'a') {
-        (void)jit_ldxi_p(dest, JIT_R0, &((Scheme_Simple_Object *)0x0)->u.pair_val.car);
-      } else {
-        (void)jit_ldxi_p(dest, JIT_R0, &((Scheme_Simple_Object *)0x0)->u.pair_val.cdr);
-      }
-      VALIDATE_RESULT(dest);
-      CHECK_LIMIT();
-      __END_TINY_JUMPS__(1);
-
-      return 1;
     } else if (IS_NAMED_PRIM(rator, "unsafe-car")
-               || IS_NAMED_PRIM(rator, "unsafe-mcar")
-               || IS_NAMED_PRIM(rator, "unsafe-cdr")
-               || IS_NAMED_PRIM(rator, "unsafe-mcdr")) {
+               || IS_NAMED_PRIM(rator, "unsafe-cdr")) {
       const char *name = ((Scheme_Primitive_Proc *)rator)->name;
 
       LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)rator)->name));
@@ -1358,7 +1317,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
 
       mz_runstack_unskipped(jitter, 1);
 
-      if (!strcmp(name, "unsafe-car") || !strcmp(name, "unsafe-mcar")) {
+      if (!strcmp(name, "unsafe-car")) {
         (void)jit_ldxi_p(dest, JIT_R0, &((Scheme_Simple_Object *)0x0)->u.pair_val.car);
       } else {
         (void)jit_ldxi_p(dest, JIT_R0, &((Scheme_Simple_Object *)0x0)->u.pair_val.cdr);
@@ -3554,61 +3513,6 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       jit_movr_p(dest, JIT_R0);
 
       return 1;
-    } else if (IS_NAMED_PRIM(rator, "set-mcar!")
-               || IS_NAMED_PRIM(rator, "set-mcdr!")) {
-      GC_CAN_IGNORE jit_insn *reffail, *ref;
-      int set_mcar;
-
-      set_mcar = IS_NAMED_PRIM(rator, "set-mcar!");
-
-      LOG_IT(("inlined set-mcar!\n"));
-
-      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
-      CHECK_LIMIT();
-      mz_rs_sync_fail_branch();
-
-      __START_TINY_JUMPS__(1);
-      ref = jit_bmci_ul(jit_forward(), JIT_R0, 0x1);
-      reffail = jit_get_ip();
-      __END_TINY_JUMPS__(1);
-      if (set_mcar)
-        (void)jit_calli(sjc.bad_set_mcar_code);
-      else
-        (void)jit_calli(sjc.bad_set_mcdr_code);
-      __START_TINY_JUMPS__(1);
-      mz_patch_branch(ref);
-      (void)mz_bnei_t(reffail, JIT_R0, scheme_mutable_pair_type, JIT_R2);
-      __END_TINY_JUMPS__(1);
-      CHECK_LIMIT();
-
-      if (set_mcar)
-        (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.car, JIT_R0, JIT_R1);
-      else
-        (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.cdr, JIT_R0, JIT_R1);
-      
-      if (!result_ignored)
-        (void)jit_movi_p(dest, scheme_void);
-
-      return 1;
-    } else if (IS_NAMED_PRIM(rator, "unsafe-set-mcar!")
-               || IS_NAMED_PRIM(rator, "unsafe-set-mcdr!")) {
-      int set_mcar;
-
-      set_mcar = IS_NAMED_PRIM(rator, "unsafe-set-mcar!");
-
-      LOG_IT(("inlined unsafe-set-mcar!\n"));
-
-      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
-      CHECK_LIMIT();
-      if (set_mcar)
-        (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.car, JIT_R0, JIT_R1);
-      else
-        (void)jit_stxi_p(&((Scheme_Simple_Object *)0x0)->u.pair_val.cdr, JIT_R0, JIT_R1);
-      
-      if (!result_ignored)
-        (void)jit_movi_p(dest, scheme_void);
-
-      return 1;
     } else if (IS_NAMED_PRIM(rator, "set-box!")
                || IS_NAMED_PRIM(rator, "unsafe-set-box!")) {
       GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *reffail;
@@ -3684,35 +3588,6 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       mz_rs_sync();
 
       return scheme_generate_cons_alloc(jitter, dir == -1, 0, 1, dest);
-    } else if (IS_NAMED_PRIM(rator, "mcons")) {
-      LOG_IT(("inlined mcons\n"));
-
-      scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
-      CHECK_LIMIT();
-      mz_rs_sync();
-
-#ifdef CAN_INLINE_ALLOC
-      /* Inlined alloc */
-      scheme_inline_alloc(jitter, sizeof(Scheme_Simple_Object), scheme_mutable_pair_type, 0, 1, 0, 0, 0);
-      CHECK_LIMIT();
-
-      jit_stxi_p((intptr_t)&SCHEME_MCAR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R0);
-      jit_stxi_p((intptr_t)&SCHEME_MCDR(0x0) + OBJHEAD_SIZE, JIT_V1, JIT_R1);
-      jit_addi_p(dest, JIT_V1, OBJHEAD_SIZE);
-#else
-      /* Non-inlined alloc */
-      JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
-      mz_prepare(2);
-      jit_pusharg_p(JIT_R1);
-      jit_pusharg_p(JIT_R0);
-      {
-        GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
-        (void)mz_finish_lwe(ts_scheme_make_mutable_pair, refr);
-      }
-      jit_retval(dest);
-#endif
-
-      return 1;
     } else if (IS_NAMED_PRIM(rator, "list")) {
       LOG_IT(("inlined list\n"));
 

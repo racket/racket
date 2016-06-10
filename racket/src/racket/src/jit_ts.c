@@ -58,10 +58,6 @@ define_ts_iS_s(scheme_checked_cdar, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_cddr, FSRC_MARKS)
 define_ts_iSp_v(apply_prim_to_fail, FSRC_OTHER)
 define_ts_s_s(scheme_checked_length, FSRC_MARKS)
-define_ts_iS_s(scheme_checked_mcar, FSRC_MARKS)
-define_ts_iS_s(scheme_checked_mcdr, FSRC_MARKS)
-define_ts_iS_s(scheme_checked_set_mcar, FSRC_MARKS)
-define_ts_iS_s(scheme_checked_set_mcdr, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_imag_part, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_real_part, FSRC_MARKS)
 define_ts_iS_s(scheme_checked_make_rectangular, FSRC_MARKS)
@@ -193,10 +189,6 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_checked_cddr scheme_checked_cddr
 # define ts_apply_prim_to_fail apply_prim_to_fail
 # define ts_scheme_checked_length scheme_checked_length
-# define ts_scheme_checked_mcar scheme_checked_mcar
-# define ts_scheme_checked_mcdr scheme_checked_mcdr
-# define ts_scheme_checked_set_mcar scheme_checked_set_mcar
-# define ts_scheme_checked_set_mcdr scheme_checked_set_mcdr
 # define ts_scheme_checked_imag_part scheme_checked_imag_part
 # define ts_scheme_checked_real_part scheme_checked_real_part
 # define ts_scheme_checked_make_rectangular scheme_checked_make_rectangular
