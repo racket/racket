@@ -1091,6 +1091,7 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
   Scheme_Module *m, *srcm;
   Scheme_Env *menv, *lookup_env = NULL;
   int i, count, protected = 0, check_protected_at_source = 0;
+
   const char *errname;
   intptr_t base_phase;
 
@@ -1186,37 +1187,44 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                                                  srcm->self_modidx);
                   srcmname = scheme_module_resolve(srcmname, 1);
                   srcname = srcm->me->rt->provide_src_names[i];
-
-                  srcm2 = module_load(srcmname, env, errname);
-
-                  for (j = srcm2->me->rt->num_var_provides; j--; ) {
-                    if (SCHEME_FALSEP(srcm2->me->rt->provide_srcs[j])
-                        && SAME_OBJ(srcname, srcm2->me->rt->provide_src_names[j])) {
-                      /* simple re-export applies: */
-                      srcm = srcm2;
-                      count = srcm->me->rt->num_provides;
-                      name = srcm2->me->rt->provides[j];
-                      i = j;
-                      break;
-                    }
+                  if (srcm->me->rt->provide_src_phases
+                      && (srcm->me->rt->provide_src_phases[i] != 0)) {
+                    /* shortcut only checks phase 0, so use the long way */
+                    srcmname = NULL;
                   }
-                  if (j < 0) {
-                    /* Try indirect: */
-                    Scheme_Module_Export_Info *exp_info = srcm2->exp_infos[0];
-                    for (j = exp_info->num_indirect_provides; j--; ) {
-                      if (SAME_OBJ(srcname, exp_info->indirect_provides[j])) {
+
+                  if (srcmname) {
+                    srcm2 = module_load(srcmname, env, errname);
+
+                    for (j = srcm2->me->rt->num_var_provides; j--; ) {
+                      if (SCHEME_FALSEP(srcm2->me->rt->provide_srcs[j])
+                          && SAME_OBJ(srcname, srcm2->me->rt->provide_src_names[j])) {
+                        /* simple re-export applies: */
                         srcm = srcm2;
-                        name = srcname;
                         count = srcm->me->rt->num_provides;
-                        i = count;
-                        position = j;
-                        indirect_ok = 1;
+                        name = srcm2->me->rt->provides[j];
+                        i = j;
                         break;
                       }
                     }
                     if (j < 0) {
-                      /* simple re-exporting doesn't work */
-                      srcmname = NULL;
+                      /* Try indirect: */
+                      Scheme_Module_Export_Info *exp_info = srcm2->exp_infos[0];
+                      for (j = exp_info->num_indirect_provides; j--; ) {
+                        if (SAME_OBJ(srcname, exp_info->indirect_provides[j])) {
+                          srcm = srcm2;
+                          name = srcname;
+                          count = srcm->me->rt->num_provides;
+                          i = count;
+                          position = j;
+                          indirect_ok = 1;
+                          break;
+                        }
+                      }
+                      if (j < 0) {
+                        /* simple re-exporting doesn't work */
+                        srcmname = NULL;
+                      }
                     }
                   }
                 }
@@ -1273,12 +1281,14 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
 	if (srcm->exp_infos[0]->provide_protects)
 	  protected = srcm->exp_infos[0]->provide_protects[i];
 	srcmname = (srcm->me->rt->provide_srcs ? srcm->me->rt->provide_srcs[i] : scheme_false);
-	if (SCHEME_FALSEP(srcmname))
+	if (SCHEME_FALSEP(srcmname)) {
 	  srcmname = srcm->modname;
-	else {
+	} else {
 	  srcmname = scheme_modidx_shift(srcmname, srcm->me->src_modidx, srcm->self_modidx);
 	  srcmname = scheme_module_resolve(srcmname, 1);
           check_protected_at_source = 1;
+          if (srcm->me->rt->provide_src_phases)
+            mod_phase += srcm->me->rt->provide_src_phases[i];
 	}
 	srcname = srcm->me->rt->provide_src_names[i];
       }
@@ -4547,7 +4557,7 @@ Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, intptr_t 
     while (ph && chain) {
       chain = (SCHEME_VEC_ELS(chain))[2];
       if (SCHEME_FALSEP(chain))
-	return NULL;
+        return NULL;
       ph--;
     }
 
@@ -4557,7 +4567,7 @@ Scheme_Env *scheme_module_access(Scheme_Object *name, Scheme_Env *env, intptr_t 
     }
 
     menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(chain), name);
-    
+
     while ((ph < rev_mod_phase) && menv) {
       menv = menv->exp_env;
       ph++;

@@ -1764,5 +1764,22 @@ case of module-leve bindings; it doesn't cover local bindings.
         (module+ test2 1)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check phase shifting in `dynamic-require`
+
+(module module-with-phase-2-definition-of-x racket/base
+  (require (for-syntax racket/base))
+  (begin-for-syntax
+    (require (for-syntax racket/base))
+    (begin-for-syntax
+      (provide x)
+      (define x 5))))
+
+(module module-that-exports-phase-2-x-at-phase-0 racket/base
+  (require (for-meta -2 (file "/tmp/lib.rkt")))
+  (provide (for-meta -2 (all-from-out (file "/tmp/lib.rkt")))))
+
+(test 5 dynamic-require ''module-that-exports-phase-2-x-at-phase-0 'x)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
