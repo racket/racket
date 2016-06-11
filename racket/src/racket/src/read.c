@@ -3114,10 +3114,8 @@ static Scheme_Object *read_flonum(Scheme_Object *port,
   n = read_number_literal(port, stxsrc, 1, 0, ht, indentation, params, comment_mode);
   if (SCHEME_DBLP(n))
     return n;
-  else {
-    scheme_tell_all(port, &line2, &col2, &pos2);
-    scheme_read_err(port, stxsrc, line, col, pos, pos2-pos, -1, indentation, "read: expected flonum, got %V", n);
-  }
+  scheme_tell_all(port, &line2, &col2, &pos2);
+  scheme_read_err(port, stxsrc, line, col, pos, pos2-pos, -1, indentation, "read: expected flonum, got %V", n);
   return NULL;
 }
 
@@ -3135,9 +3133,8 @@ static Scheme_Object *read_fixnum(Scheme_Object *port,
   n = read_number_literal(port, stxsrc, 0, 1, ht, indentation, params, comment_mode);
   if (SCHEME_INTP(n))
     return n;
-  else
-    scheme_tell_all(port, &line2, &col2, &pos2);
-    scheme_read_err(port, stxsrc, line, col, pos, pos2-pos, -1, indentation, "read: expected fixnum, got %V", n);
+  scheme_tell_all(port, &line2, &col2, &pos2);
+  scheme_read_err(port, stxsrc, line, col, pos, pos2-pos, -1, indentation, "read: expected fixnum, got %V", n);
   return NULL;
 }
 
