@@ -1775,8 +1775,8 @@ case of module-leve bindings; it doesn't cover local bindings.
       (define x 5))))
 
 (module module-that-exports-phase-2-x-at-phase-0 racket/base
-  (require (for-meta -2 (file "/tmp/lib.rkt")))
-  (provide (for-meta -2 (all-from-out (file "/tmp/lib.rkt")))))
+  (require (for-meta -2 'module-with-phase-2-definition-of-x))
+  (provide (for-meta -2 (all-from-out 'module-with-phase-2-definition-of-x))))
 
 (test 5 dynamic-require ''module-that-exports-phase-2-x-at-phase-0 'x)
 
