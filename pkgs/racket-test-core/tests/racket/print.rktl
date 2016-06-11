@@ -87,6 +87,7 @@
   (ptest "'#hasheqv((1 . 2))" (make-hasheqv (list (cons 1 2))))
 
   (ptest "(mcons 1 2)" (mcons 1 2))
+  (ptest "(mcons 1 '())" (mcons 1 null))
 
   (ptest "#<a>" (a 1 2))
   (ptest "(b 1 2)" (b 1 2))

@@ -3946,7 +3946,7 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
     cdr = SCHEME_CDR(cdr);
   }
 
-  if (!SCHEME_NULLP(cdr)) {
+  if (!SCHEME_NULLP(cdr) || (pair_type == -1)) {
     if (!compact) {
       if (notdisplay == 3)
         print_utf8_string(pp, " ", 0, 1);
