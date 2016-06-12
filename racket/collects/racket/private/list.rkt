@@ -1,5 +1,6 @@
 (module list "pre-base.rkt"
-  (require (rename-in "reverse.rkt" [alt-reverse reverse]))
+  (require (rename-in "reverse.rkt" [alt-reverse reverse])
+           (only-in "immutable.rkt" create-immutable-string? create-immutable-vector?))
 
   (provide foldl
            foldr
@@ -269,7 +270,7 @@
   ;; (build-vector n f) returns a vector 0..n-1 where the ith element is (f i).
   ;; The eval order is guaranteed to be: 0, 1, 2, ..., n-1.
   ;; eg: (build-vector 4 (lambda (i) i)) ==> #4(0 1 2 3)
-  (define (build-vector n fcn)
+  (define (build-vector n fcn #:immutable? [immutable? (create-immutable-vector?)])
     (unless (exact-nonnegative-integer? n)
       (raise-argument-error 'build-vector "exact-nonnegative-integer?" n))
     (unless (and (procedure? fcn)
@@ -278,10 +279,12 @@
     (let ([vec (make-vector n)])
       (let loop ((i 0))
         (if (= i n)
-          vec
+          (if immutable?
+              (vector->immutable-vector vec)
+              vec)
           (begin (vector-set! vec i (fcn i)) (loop (add1 i)))))))
 
-  (define (build-string n fcn)
+  (define (build-string n fcn #:immutable? [immutable? (create-immutable-string?)])
     (unless (exact-nonnegative-integer? n)
       (raise-argument-error 'build-string "exact-nonnegative-integer?" n))
     (unless (and (procedure? fcn)
@@ -290,7 +293,9 @@
     (let ([str (make-string n)])
       (let loop ((i 0))
         (if (= i n)
-            str
+            (if immutable?
+                (string->immutable-string str)
+                str)
             (begin (string-set! str i (fcn i)) (loop (add1 i)))))))
 
   (define (build-list n fcn)
