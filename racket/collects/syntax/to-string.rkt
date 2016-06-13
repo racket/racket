@@ -56,7 +56,7 @@
               [(pair? (syntax-e c))
                (advance c init-line!)
                (define c-paren-shape (syntax-property c 'paren-shape))
-               (printf (format "~a" (or c-paren-shape #\()))
+               (printf "~a" (or c-paren-shape #\())
                (set! col (+ col 1))
                (map (loop init-line!) (syntax->list c))
                (printf (case c-paren-shape
