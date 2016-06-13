@@ -96,12 +96,12 @@ typedef uintptr_t hash_v_t;
 
 static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
                                            GC_CAN_IGNORE const char *key, uintptr_t length,
-                                           Scheme_Object *naya);
+                                           Scheme_Object *naya, int sym_type);
 
 /* Special hashing for symbols: */
 static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
 				    GC_CAN_IGNORE const char *key, uintptr_t length,
-				    Scheme_Object *naya)
+				    Scheme_Object *naya, int sym_type)
   XFORM_ASSERT_NO_CONVERSION
 {
   hash_v_t h, h2;
@@ -117,7 +117,7 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
   {
     uintptr_t i;
     i = 0;
-    h = HASH_SEED;
+    h = HASH_SEED + sym_type;
     h2 = 0;
 
     while (i < length) {
@@ -161,7 +161,7 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
     return NULL;
 
   if (table->count * FILL_FACTOR >= table->size) {
-    return rehash_symbol_bucket(table, key, length, naya);
+    return rehash_symbol_bucket(table, key, length, naya, sym_type);
   }
 
   table->keys[WEAK_ARRAY_HEADSIZE + h] = naya;
@@ -173,7 +173,7 @@ static Scheme_Object *symbol_bucket(Scheme_Hash_Table *table,
 
 static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
                                            GC_CAN_IGNORE const char *key, uintptr_t length,
-                                           Scheme_Object *naya)
+                                           Scheme_Object *naya, int sym_type)
 {
   int i, oldsize = table->size, newsize, lostc;
   size_t asize;
@@ -213,13 +213,13 @@ static Scheme_Object *rehash_symbol_bucket(Scheme_Hash_Table *table,
   for (i = 0; i < oldsize; i++) {
     cb = old[WEAK_ARRAY_HEADSIZE + i] ;
     if (cb && (cb != SYMTAB_LOST_CELL))
-      symbol_bucket(table, SCHEME_SYM_VAL(cb), SCHEME_SYM_LEN(cb), cb);
+      symbol_bucket(table, SCHEME_SYM_VAL(cb), SCHEME_SYM_LEN(cb), cb, sym_type);
   }
 
   /* Restore GC-misaligned key: */
   key = SCHEME_SYM_VAL(naya);
 
-  return symbol_bucket(table, key, length, naya);
+  return symbol_bucket(table, key, length, naya, sym_type);
 }
 
 #ifndef MZ_PRECISE_GC
@@ -457,11 +457,11 @@ intern_exact_symbol_in_table_worker(enum_symbol_table_type type, int kind, const
 
 #if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
   if (place_local_table) {
-    sym = symbol_bucket(place_local_table, name, len, NULL);
+    sym = symbol_bucket(place_local_table, name, len, NULL, type);
   }
 #endif
   if (!sym && table) {
-    sym = symbol_bucket(table, name, len, NULL);
+    sym = symbol_bucket(table, name, len, NULL, type);
   }
   if (!sym) {
     /* create symbol in symbol table unless a place local symbol table has been created */
@@ -480,7 +480,7 @@ intern_exact_symbol_in_table_worker(enum_symbol_table_type type, int kind, const
     /* we must return the result of this symbol bucket call because another
      * thread could have inserted the same symbol between the first
      * symbol_bucket call above and this one */
-    sym = symbol_bucket(create_table, name, len, newsymbol);
+    sym = symbol_bucket(create_table, name, len, newsymbol, type);
   }
 
   return sym;
