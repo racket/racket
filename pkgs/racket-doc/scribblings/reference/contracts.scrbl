@@ -52,13 +52,13 @@ constraints.
 various operations listed in this section of the manual, and various
 ordinary Racket values that double as contracts, including
 @itemize[
-@item{@tech{symbols}, @tech{booleans}, @tech{characters}, @tech{keywords}, and
+@item{@tech{symbols}, @tech{booleans}, @tech{keywords}, and
 @racket[null], which are treated as contracts that recognize
 themselves, using @racket[eq?], }
 
-@item{@tech{strings}, @tech{byte strings}, @racket[+nan.0], and
-       @racket[+nan.f], which are treated as contracts
-that recognize themselves using @racket[equal?], }
+@item{@tech{strings}, @tech{byte strings}, @tech{characters}, 
+      @racket[+nan.0], and @racket[+nan.f], which are treated
+      as contracts that recognize themselves using @racket[equal?], }
 
 @item{@tech{numbers} (except @racket[+nan.0] and
        @racket[+nan.f]), which are treated as contracts

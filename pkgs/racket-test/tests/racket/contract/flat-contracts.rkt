@@ -59,6 +59,8 @@
   (test-flat-contract #\a #\a #\b)
   (test-flat-contract #\a #\a 'a)
   (test-flat-contract ''a 'a 'b)
+  (let ([a #\⊢])
+    (test-flat-contract a (integer->char (char->integer a)) #\a))
   (test-flat-contract ''a 'a #\a)
   (test-flat-contract "x" "x" "y")
   (test-flat-contract "x" "x" 'x)
