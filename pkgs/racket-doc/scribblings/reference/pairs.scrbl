@@ -1273,7 +1273,7 @@ If @racket[size] is given, limit results to combinations of @racket[size] elemen
   (combinations '(1 2 3) 2)]}
 
 
-@defproc*[([(in-combinations [lst list?]) list?]
+@defproc*[([(in-combinations [lst list?]) sequence?]
            [(in-combinations [lst list?] [size exact-nonnegative-integer?]) sequence?])]{
 @index["in-powerset"]{Returns} a sequence of all combinations of elements in the input list,
  or all combinations of length @racket[size] if @racket[size] is given.
