@@ -161,16 +161,20 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
            (partition (lambda (item) (eq? '#f (item-first-prf item))) rest4))
          (unless (null? rest5)
            (error 'syntax-parse "INTERNAL ERROR: bad progress: ~e\n" rest5))
-         (append
-          (maximal/stx STX)
-          (cond [(pair? CDR)
-                 (define leastCDR (apply min (map item-first-prf CDR)))
-                 (maximal/progress (map (lambda (item) (item-pop-prf-ncdrs item leastCDR)) CDR))]
-                [(pair? CAR)
-                 (maximal/progress (map item-pop-prf CAR))]
-                [(pair? NULL)
-                 (list (map cdr NULL))]
-                [else null]))]))
+         (cond [(pair? CDR)
+                (define leastCDR (apply min (map item-first-prf CDR)))
+                (append
+                 (maximal/stx STX)
+                 (maximal/progress (map (lambda (item) (item-pop-prf-ncdrs item leastCDR)) CDR)))]
+               [(pair? CAR)
+                (append
+                 (maximal/stx STX)
+                 (maximal/progress (map item-pop-prf CAR)))]
+               [(pair? STX)
+                (maximal/stx STX)]
+               [(pair? NULL)
+                (list (map cdr NULL))]
+               [else null])]))
 
 ;; maximal-prf1/ord : (NEListof (Cons IPS A)) -> (NEListof (Cons IPS A))
 ;; PRE: each item has ORD first frame
