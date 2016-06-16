@@ -398,7 +398,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
       only_var = NULL;
   }
 
-  if (scheme_is_simple_make_struct_type(val, size-1, 1, 1, NULL,
+  if (scheme_is_simple_make_struct_type(val, size-1, 1, 0, 1, NULL,
                                         &stinfo,
                                         NULL, (_st_ht ? *_st_ht : NULL), 
                                         NULL, 0, NULL, NULL, 5)) {

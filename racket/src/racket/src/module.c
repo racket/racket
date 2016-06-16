@@ -4512,7 +4512,7 @@ static void setup_accessible_table(Scheme_Module *m)
                           if (!checked_st) {
                             is_st = !!scheme_is_simple_make_struct_type(SCHEME_VEC_ELS(form)[0],
                                                                         SCHEME_VEC_SIZE(form)-1,
-                                                                        1, 1, NULL, &stinfo,
+                                                                        1, 0, 1, NULL, &stinfo,
                                                                         NULL, NULL, NULL, 0,
                                                                         m->prefix->toplevels, ht,
                                                                         5);

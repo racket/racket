@@ -3841,6 +3841,32 @@
                      (b? (b-z (b 1 2 3))))
                5)))
 
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes
+                      #:property prop:custom-write (lambda (v port mode)
+                                                     (write-string "#<a>" port))
+                      #:property prop:equal+hash (list (lambda (a b eql?) (eq? a b))
+                                                       (lambda (a hash-code) 0)
+                                                       (lambda (a hash-code) 1)))
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes
+                      #:property prop:custom-write (lambda (v port mode)
+                                                     (write-string "#<a>" port))
+                      #:property prop:equal+hash (list (lambda (a b eql?) (eq? a b))
+                                                       (lambda (a hash-code) 0)
+                                                       (lambda (a hash-code) 1)))
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
 (module struct-a-for-optimize racket/base
   (provide (struct-out a)
            (struct-out b))

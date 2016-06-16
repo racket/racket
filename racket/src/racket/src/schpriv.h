@@ -3485,7 +3485,8 @@ typedef struct {
   int normal_ops, indexed_ops, num_gets, num_sets;
 } Simple_Stuct_Type_Info;
 
-Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int resolved, 
+Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int resolved,
+                                                 int must_always_succeed,
                                                  int check_auto, int *_auto_e_depth, 
                                                  Simple_Stuct_Type_Info *_stinfo,
                                                  Scheme_Hash_Table *top_level_consts, 
