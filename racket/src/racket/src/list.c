@@ -30,11 +30,9 @@
 READ_ONLY Scheme_Object scheme_null[1];
 READ_ONLY Scheme_Object *scheme_null_p_proc;
 READ_ONLY Scheme_Object *scheme_pair_p_proc;
-READ_ONLY Scheme_Object *scheme_mpair_p_proc;
 READ_ONLY Scheme_Object *scheme_car_proc;
 READ_ONLY Scheme_Object *scheme_cdr_proc;
 READ_ONLY Scheme_Object *scheme_cons_proc;
-READ_ONLY Scheme_Object *scheme_mcons_proc;
 READ_ONLY Scheme_Object *scheme_list_p_proc;
 READ_ONLY Scheme_Object *scheme_list_proc;
 READ_ONLY Scheme_Object *scheme_list_star_proc;
@@ -46,8 +44,6 @@ READ_ONLY Scheme_Object *scheme_hash_ref_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_cons_list_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_car_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_cdr_proc;
-READ_ONLY Scheme_Object *scheme_unsafe_mcar_proc;
-READ_ONLY Scheme_Object *scheme_unsafe_mcdr_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_unbox_proc;
 /* read only locals */
 ROSYM static Scheme_Object *weak_symbol;
@@ -55,9 +51,7 @@ ROSYM static Scheme_Object *equal_symbol;
 
 /* locals */
 static Scheme_Object *pair_p_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *mpair_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cons_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *mcons_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *null_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *list_prim (int argc, Scheme_Object *argv[]);
@@ -170,10 +164,6 @@ static Scheme_Object *unsafe_car (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_cdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_list_ref (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_list_tail (int argc, Scheme_Object *argv[]);
-static Scheme_Object *unsafe_mcar (int argc, Scheme_Object *argv[]);
-static Scheme_Object *unsafe_mcdr (int argc, Scheme_Object *argv[]);
-static Scheme_Object *unsafe_set_mcar (int argc, Scheme_Object *argv[]);
-static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_unbox (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_set_box (int argc, Scheme_Object *argv[]);
@@ -229,13 +219,6 @@ scheme_init_list (Scheme_Env *env)
   scheme_add_global_constant ("pair?", p, env);
   scheme_pair_p_proc = p;
 
-  REGISTER_SO(scheme_mpair_p_proc);
-  p = scheme_make_folding_prim(mpair_p_prim, "mpair?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant ("mpair?", p, env);
-  scheme_mpair_p_proc = p;
-
   REGISTER_SO(scheme_cons_proc);
   p = scheme_make_immed_prim(cons_prim, "cons", 2, 2);
   scheme_cons_proc = p;
@@ -254,29 +237,6 @@ scheme_init_list (Scheme_Env *env)
   scheme_cdr_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
   scheme_add_global_constant ("cdr", p, env);
-
-  REGISTER_SO(scheme_mcons_proc);
-  p = scheme_make_immed_prim(mcons_prim, "mcons", 2, 2);
-  scheme_mcons_proc = p;
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
-                                                            | SCHEME_PRIM_IS_OMITABLE_ALLOCATION);
-  scheme_add_global_constant ("mcons", p, env);
-
-  p = scheme_make_immed_prim(scheme_checked_mcar, "mcar", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
-  scheme_add_global_constant ("mcar", p, env);
-
-  p = scheme_make_immed_prim(scheme_checked_mcdr, "mcdr", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED);
-  scheme_add_global_constant ("mcdr", p, env);
-
-  p = scheme_make_immed_prim(scheme_checked_set_mcar, "set-mcar!", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant ("set-mcar!", p, env);
-
-  p = scheme_make_immed_prim(scheme_checked_set_mcdr, "set-mcdr!", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant ("set-mcdr!", p, env);
 
   REGISTER_SO(scheme_null_p_proc);
   p = scheme_make_folding_prim(null_p_prim, "null?", 1, 1, 1);
@@ -849,30 +809,6 @@ scheme_init_unsafe_list (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_UNSAFE_NONALLOCATE);
   scheme_add_global_constant ("unsafe-list-tail", p, env);
 
-  REGISTER_SO(scheme_unsafe_mcar_proc);
-  p = scheme_make_immed_prim(unsafe_mcar, "unsafe-mcar", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_UNSAFE_OMITABLE
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant ("unsafe-mcar", p, env);
-  scheme_unsafe_mcar_proc = p;
-
-  REGISTER_SO(scheme_unsafe_mcdr_proc);
-  p = scheme_make_immed_prim(unsafe_mcdr, "unsafe-mcdr", 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
-                                                            | SCHEME_PRIM_IS_UNSAFE_OMITABLE
-                                                            | SCHEME_PRIM_IS_OMITABLE);
-  scheme_add_global_constant ("unsafe-mcdr", p, env);
-  scheme_unsafe_mcdr_proc = p;
-
-  p = scheme_make_immed_prim(unsafe_set_mcar, "unsafe-set-mcar!", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant ("unsafe-set-mcar!", p, env);
-
-  p = scheme_make_immed_prim(unsafe_set_mcdr, "unsafe-set-mcdr!", 2, 2);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
-  scheme_add_global_constant ("unsafe-set-mcdr!", p, env);
-  
   REGISTER_SO(scheme_unsafe_unbox_proc);
   p = scheme_make_immed_prim(unsafe_unbox, "unsafe-unbox", 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -1249,21 +1185,9 @@ pair_p_prim (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-mpair_p_prim (int argc, Scheme_Object *argv[])
-{
-  return (SCHEME_MUTABLE_PAIRP(argv[0]) ? scheme_true : scheme_false);
-}
-
-static Scheme_Object *
 cons_prim (int argc, Scheme_Object *argv[])
 {
   return cons(argv[0], argv[1]);
-}
-
-static Scheme_Object *
-mcons_prim (int argc, Scheme_Object *argv[])
-{
-  return scheme_make_mutable_pair(argv[0], argv[1]);
 }
 
 Scheme_Object *
@@ -1281,43 +1205,6 @@ scheme_checked_cdr (int argc, Scheme_Object *argv[])
     scheme_wrong_contract("cdr", "pair?", 0, argc, argv);
 
   return (SCHEME_CDR (argv[0]));
-}
-
-Scheme_Object *
-scheme_checked_mcar (int argc, Scheme_Object *argv[])
-{
-  if (!SCHEME_MPAIRP(argv[0]))
-    scheme_wrong_contract("mcar", "mpair?", 0, argc, argv);
-  return (SCHEME_MCAR (argv[0]));
-}
-
-Scheme_Object *
-scheme_checked_mcdr (int argc, Scheme_Object *argv[])
-{
-  if (!SCHEME_MUTABLE_PAIRP(argv[0]))
-    scheme_wrong_contract("mcdr", "mpair?", 0, argc, argv);
-
-  return (SCHEME_MCDR (argv[0]));
-}
-
-Scheme_Object *
-scheme_checked_set_mcar (int argc, Scheme_Object *argv[])
-{
-  if (!SCHEME_MPAIRP(argv[0]))
-    scheme_wrong_contract("set-mcar!", "mpair?", 0, argc, argv);
-
-  SCHEME_MCAR(argv[0]) = argv[1];
-  return scheme_void;
-}
-
-Scheme_Object *
-scheme_checked_set_mcdr (int argc, Scheme_Object *argv[])
-{
-  if (!SCHEME_MPAIRP(argv[0]))
-    scheme_wrong_contract("set-mcdr!", "mpair?", 0, argc, argv);
-
-  SCHEME_MCDR(argv[0]) = argv[1];
-  return scheme_void;
 }
 
 static Scheme_Object *
@@ -3969,28 +3856,6 @@ static Scheme_Object *unsafe_list_tail (int argc, Scheme_Object *argv[])
   }
   
   return v;
-}
-
-static Scheme_Object *unsafe_mcar (int argc, Scheme_Object *argv[])
-{
-  return SCHEME_CAR(argv[0]);
-}
-
-static Scheme_Object *unsafe_mcdr (int argc, Scheme_Object *argv[])
-{
-  return SCHEME_CDR(argv[0]);
-}
-
-static Scheme_Object *unsafe_set_mcar (int argc, Scheme_Object *argv[])
-{
-  SCHEME_CAR(argv[0]) = argv[1];
-  return scheme_void;
-}
-
-static Scheme_Object *unsafe_set_mcdr (int argc, Scheme_Object *argv[])
-{
-  SCHEME_CDR(argv[0]) = argv[1];
-  return scheme_void;
 }
 
 static Scheme_Object *unsafe_unbox_star (int argc, Scheme_Object *argv[])

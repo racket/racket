@@ -1543,7 +1543,6 @@ static int is_movable_prim(Scheme_Object *rator, int n, int cross_lambda, int cr
          return values that contain all arguments: */
       && (SAME_OBJ(scheme_list_proc, rator)
           || (SAME_OBJ(scheme_cons_proc, rator) && (n == 2))
-          || (SAME_OBJ(scheme_mcons_proc, rator) && (n == 2))
           || (SAME_OBJ(scheme_unsafe_cons_list_proc, rator) && (n == 2))
           || SAME_OBJ(scheme_list_star_proc, rator)
           || SAME_OBJ(scheme_vector_proc, rator)
@@ -2615,8 +2614,6 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
       return scheme_pair_p_proc;
     else if (SAME_OBJ(rator, scheme_unsafe_cons_list_proc))
       return scheme_list_pair_p_proc;
-    else if (SAME_OBJ(rator, scheme_mcons_proc))
-      return scheme_mpair_p_proc;
     // XXX This could be implemented
     // else if (SAME_OBJ(rator, scheme_make_byte_string_p))
     //  return scheme_byte_string_p_proc;
@@ -2862,8 +2859,6 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       return scheme_list_pair_p_proc;
     if (SCHEME_PAIRP(expr))
       return scheme_pair_p_proc;
-    if (SCHEME_MPAIRP(expr))
-      return scheme_mpair_p_proc;
     if (SCHEME_BYTE_STRINGP(expr))
       return scheme_byte_string_p_proc;
     if (SCHEME_VOIDP(expr))
@@ -3786,10 +3781,6 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known(info, app_o, rator, rand, "unsafe-car", scheme_pair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "cdr", scheme_pair_p_proc, scheme_unsafe_cdr_proc);
       check_known(info, app_o, rator, rand, "unsafe-cdr", scheme_pair_p_proc, NULL);
-      check_known(info, app_o, rator, rand, "mcar", scheme_mpair_p_proc, scheme_unsafe_mcar_proc);
-      check_known(info, app_o, rator, rand, "unsafe-mcar", scheme_mpair_p_proc, NULL);
-      check_known(info, app_o, rator, rand, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
-      check_known(info, app_o, rator, rand, "unsafe-mcdr", scheme_mpair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "bytes-length", scheme_byte_string_p_proc, scheme_unsafe_bytes_len_proc);
       /* It's not clear that these are useful, since a chaperone check is needed anyway: */
       check_known(info, app_o, rator, rand, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
@@ -4710,7 +4701,6 @@ static int relevant_predicate(Scheme_Object *pred)
 
   return (SAME_OBJ(pred, scheme_pair_p_proc)
           || SAME_OBJ(pred, scheme_null_p_proc)
-          || SAME_OBJ(pred, scheme_mpair_p_proc)
           || SAME_OBJ(pred, scheme_box_p_proc)
           || SAME_OBJ(pred, scheme_list_p_proc)
           || SAME_OBJ(pred, scheme_list_pair_p_proc)

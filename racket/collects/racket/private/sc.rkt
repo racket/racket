@@ -3,7 +3,7 @@
 ;; based on Shriram's pattern matcher for Zodiac
 
 (module sc '#%kernel
-  (#%require "stx.rkt" "small-scheme.rkt"
+  (#%require "stx.rkt" "small-scheme.rkt" "mpair.rkt"
              (for-template (only '#%kernel set!)
                            "ellipses.rkt"))
 

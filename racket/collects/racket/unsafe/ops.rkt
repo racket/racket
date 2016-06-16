@@ -2,7 +2,8 @@
 (require '#%unsafe
          '#%flfxnum
          '#%extfl
-         "../private/kw.rkt")
+         "../private/kw.rkt"
+         (submod "../private/mpair.rkt" unsafe))
 
 (provide (except-out (all-from-out '#%unsafe)
                      unsafe-undefined
@@ -12,6 +13,7 @@
                      chaperone-struct-unsafe-undefined
                      unsafe-chaperone-procedure
                      unsafe-impersonate-procedure)
+         (all-from-out (submod "../private/mpair.rkt" unsafe))
          (rename-out [new:unsafe-impersonate-procedure unsafe-impersonate-procedure]
                      [new:unsafe-chaperone-procedure unsafe-chaperone-procedure])
          (prefix-out unsafe-
