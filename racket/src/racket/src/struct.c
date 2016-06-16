@@ -98,6 +98,7 @@ typedef struct {
 static Scheme_Object *make_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *make_sibling_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *inspector_p(int argc, Scheme_Object *argv[]);
+static Scheme_Object *inspector_superior_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_inspector(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_code_inspector(int argc, Scheme_Object *argv[]);
 
@@ -744,6 +745,11 @@ scheme_init_struct (Scheme_Env *env)
 						      "inspector?",
 						      1, 1, 1),
 			     env);
+  scheme_add_global_constant("inspector-superior?",
+			     scheme_make_folding_prim(inspector_superior_p,
+						      "inspector-superior?",
+						      2, 2, 1),
+			     env);
   
   REGISTER_SO(scheme_current_inspector_proc);
   scheme_current_inspector_proc = scheme_register_parameter(current_inspector,
@@ -977,6 +983,18 @@ static Scheme_Object *inspector_p(int argc, Scheme_Object **argv)
   return (SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_inspector_type)
 	  ? scheme_true
 	  : scheme_false);
+}
+
+static Scheme_Object *inspector_superior_p(int argc, Scheme_Object *argv[])
+{
+  if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_inspector_type))
+      scheme_wrong_contract("inspector-superior?", "inspector?", 0, argc, argv);
+  if (!SAME_TYPE(SCHEME_TYPE(argv[1]), scheme_inspector_type))
+      scheme_wrong_contract("inspector-superior?", "inspector?", 1, argc, argv);
+
+  return ((!SAME_OBJ(argv[1], argv[0]) && scheme_is_subinspector(argv[1], argv[0]))
+          ? scheme_true
+          : scheme_false);
 }
 
 int scheme_is_subinspector(Scheme_Object *i, Scheme_Object *sup)

@@ -44,6 +44,15 @@ as @racket[inspector]. That is, @racket[inspector] and the result
 inspector control mutually disjoint sets of structure types.}
 
 
+@defproc[(inspector-superior? [inspector inspector?]
+                              [maybe-subinspector inspector?])
+         boolean?]{
+Returns @racket[#t] if @racket[inspector] is an ancestor of
+@racket[maybe-subinspector] (and not equal to
+@racket[maybe-subinspector]), @racket[#f] otherwise.
+
+@history[#:added "6.5.0.6"]}
+
 @defparam[current-inspector insp inspector?]{
 
 A @tech{parameter} that determines the default inspector for newly created

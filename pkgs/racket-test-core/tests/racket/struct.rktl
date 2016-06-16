@@ -636,6 +636,18 @@
 		one32-y x132 4))))
 
 ;; ------------------------------------------------------------
+;; Inspectors
+
+(test #t inspector? (make-inspector))
+(test #t inspector? (current-inspector))
+(test #f inspector? (list (make-inspector)))
+
+(test #f inspector-superior? (current-inspector) (current-inspector))
+(test #t inspector-superior? (current-inspector) (make-inspector))
+(test #f inspector-superior? (make-inspector) (make-inspector))
+(test #t inspector-superior? (current-inspector) (make-inspector (make-inspector (make-inspector))))
+
+;; ------------------------------------------------------------
 ;; Property accessor errors
 
 (let-values ([(prop:p p? p-ref) (make-struct-type-property 'prop1 #f '() #t)])
