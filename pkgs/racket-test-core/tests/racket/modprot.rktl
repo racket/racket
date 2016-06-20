@@ -368,28 +368,28 @@
 (define unsafe-zo (parameterize ([read-accept-compiled #t])
                     (read (open-input-bytes unsafe-zo-bytes))))
 
-;; source, no inspector change:
+(displayln "source, no inspector change:")
 (mp-try-all zero one two/no-protect two/protect 
             three/nabbed three/pnabbed three/snabbed three/nfnabbed three/nfpnabbed three/nfsnabbed
             three/normal
             current-code-inspector current-code-inspector #f #f #f #f #f)
 (unsafe-try unsafe current-code-inspector #f #f #f)
 
-;; zo, no inspector change:
+(displayln "zo, no inspector change:")
 (mp-try-all zero-zo one-zo two/no-protect-zo two/protect-zo 
             three/nabbed-zo three/pnabbed-zo three/snabbed-zo three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
             three/normal-zo
             current-code-inspector current-code-inspector #f #f #f #f #f)
 (unsafe-try unsafe-zo current-code-inspector #f #f #f)
 
-;; compiled, no inspector change:
+(displayln "compiled, no inspector change:")
 (mp-try-all zero-c one-c two/no-protect-c two/protect-c 
             three/nabbed-c three/pnabbed-c three/snabbed-c three/nfnabbed-c three/nfpnabbed-c three/nfsnabbed-c 
             three/normal-c
             current-code-inspector current-code-inspector #f #f #f #f #f)
 (unsafe-try unsafe-c current-code-inspector #f #f #f)
 
-;; compiled; changing inspectors does not affect access:
+(displayln "compiled; changing inspectors does not affect access:")
 (mp-try-all zero one two/no-protect-c two/protect-c 
             three/nabbed-c three/pnabbed-c three/snabbed-c three/nfnabbed-c three/nfpnabbed-c three/nfsnabbed-c 
             three/normal-c
@@ -402,6 +402,7 @@
 
 ;; zo and source; changing inspector affects access in various ways-----------------
 
+(displayln "zo and source:")
 (mp-try-all zero-zo one-zo two/no-protect-zo two/protect-zo 
             three/nabbed-zo three/pnabbed-zo three/snabbed-zo three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
             three/normal-zo
@@ -409,17 +410,20 @@
 (unsafe-try unsafe-zo make-inspector #f #f #t)
 (unsafe-try unsafe-synth-zo make-inspector #f #t #f)
 
+(displayln "zo and source, second:")
 (mp-try-all zero one two/no-protect two/protect 
             three/nabbed three/pnabbed three/snabbed-zo three/nfnabbed three/nfpnabbed three/nfsnabbed-zo 
             three/normal
             make-inspector current-code-inspector #t #f #t #f #t)
 (unsafe-try unsafe make-inspector #t #t #f)
 
+(displayln "zo and source, third:")
 (mp-try-all zero-zo one-zo two/no-protect-zo two/protect-zo 
             three/nabbed-zo three/pnabbed-zo three/snabbed-zo three/nfnabbed-zo three/nfpnabbed-zo three/nfsnabbed-zo 
             three/normal-zo
             current-code-inspector make-inspector #t #t #f #f #f)
 
+(displayln "just source, weaken inspector:")
 (mp-try-all zero one two/no-protect two/protect 
             three/nabbed three/pnabbed three/snabbed three/nfnabbed three/nfpnabbed three/nfsnabbed 
             three/normal
