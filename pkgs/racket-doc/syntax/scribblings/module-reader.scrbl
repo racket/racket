@@ -409,7 +409,8 @@ a vector of module paths, they are tried in order using
 @racket[#f], a reader exception is raised in the same way as when
 @racket[read-spec] produces a @racket[#f]. The @racketmodname[planet]
 languages supply a @racket[module-path-parser] that converts a byte
-string to a module path.
+string to a module path. Lang-extensions like @racketmodname[at-exp]
+use @racket[lang-reader-module-paths] as this argument.
 
 If loading the module produced by @racket[module-path-parser]
 succeeds, then the loaded module's @racketidfont{read},

@@ -16,15 +16,7 @@
     (make-meta-reader
      'at-exp
      "language path"
-     (lambda (bstr)
-       (let* ([str (bytes->string/latin-1 bstr)]
-              [sym (string->symbol str)])
-         (and (module-path? sym)
-              (vector
-               ;; try submod first:
-               `(submod ,sym reader)
-               ;; fall back to /lang/reader:
-               (string->symbol (string-append str "/lang/reader"))))))
+     lang-reader-module-paths
      wrap-reader
      (lambda (orig-read-syntax)
        (define read-syntax (wrap-reader orig-read-syntax))
