@@ -128,7 +128,7 @@
              [r r]
              [accum null]
              [eol-k (lambda (accum) (reverse accum))]
-             [eop-k (lambda (s accum) (error 'imap-read "unxpected close parenthesis"))])
+             [eop-k (lambda (s accum) (error 'imap-read "unexpected close parenthesis"))])
     (cond
       [(bytes=? #"" s)
        (eol-k accum)]
