@@ -5,6 +5,7 @@
   (provide (rename-out [provide-module-reader #%module-begin]
                        [wrap wrap-read-all])
            make-meta-reader
+           lang-reader-module-paths
            (except-out (all-from-out racket/private/base) #%module-begin))
 
   (define ar? procedure-arity-includes?)
@@ -296,4 +297,20 @@
       (read-fn inp 'read-syntax (list src) src mod line col pos
                convert-read-syntax))
 
-    (values -read -read-syntax -get-info)))
+    (values -read -read-syntax -get-info))
+
+  ;; lang-reader-module-paths : Byte-String -> (U False (Vectorof Module-Path))
+  ;; To be used as the third argument to make-meta-reader in lang-extensions
+  ;; like at-exp. On success, returns a vector of module paths, one of which
+  ;; should point to the reader module for the #lang bstr language.
+  (define (lang-reader-module-paths bstr)
+    (let* ([str (bytes->string/latin-1 bstr)]
+           [sym (string->symbol str)])
+      (and (module-path? sym)
+           (vector
+            ;; try submod first:
+            `(submod ,sym reader)
+            ;; fall back to /lang/reader:
+            (string->symbol (string-append str "/lang/reader"))))))
+
+  )
