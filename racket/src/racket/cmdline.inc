@@ -755,6 +755,10 @@ static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *e
   l =  scheme_make_null();
 
   while (1) {
+    while (*str && *str == ' ') {
+      str++;
+    }
+
     if (!*str) {
       if (default_lvl == -1) default_lvl = 0;
       if (last)
