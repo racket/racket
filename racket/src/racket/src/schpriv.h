@@ -399,7 +399,8 @@ void scheme_init_futures(Scheme_Env *env);
 void scheme_init_futures_once();
 void scheme_init_futures_per_place();
 void scheme_end_futures_per_place();
-
+void scheme_init_linklet(Scheme_Env *env);
+ 
 void scheme_init_print_buffers_places(void);
 void scheme_init_string_places(void);
 void scheme_init_thread_places(void);

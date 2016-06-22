@@ -1485,5 +1485,6 @@
 " '#%network"
 " '#%utils"
 "(only '#%place)"
-"(only '#%futures)))"
+"(only '#%futures)"
+"(only '#%linklet)))"
 );

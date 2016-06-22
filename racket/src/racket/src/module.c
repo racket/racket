@@ -945,6 +945,85 @@ static Scheme_Module *registry_get_loaded(Scheme_Env *env, Scheme_Object *name)
 }
 
 /**********************************************************************/
+/*                      linklets and instances                        */
+/**********************************************************************/
+
+/* A minimal linklet API to support bootstrapping. */
+
+static Scheme_Object *get_primitive_instance(int argc, Scheme_Object *argv[]);
+static Scheme_Object *instance_variable_value(int argc, Scheme_Object *argv[]);
+static Scheme_Object *instance_set_variable_value(int argc, Scheme_Object *argv[]);
+
+void scheme_init_linklet(Scheme_Env *env)
+{
+  Scheme_Env *newenv;
+  Scheme_Object *modname;
+
+  modname = scheme_intern_symbol("#%linklet");
+  newenv = scheme_primitive_module(modname, env);
+
+  GLOBAL_PRIM_W_ARITY("get-primitive-instance", get_primitive_instance, 1, 2, newenv);
+  GLOBAL_PRIM_W_ARITY("instance-variable-value", instance_variable_value, 2, 2, newenv);
+  GLOBAL_PRIM_W_ARITY("instance-set-variable-value!", instance_set_variable_value, 3, 3, newenv);
+  
+  scheme_finish_primitive_module(newenv);
+  scheme_protect_primitive_provide(newenv, NULL);
+}
+
+static Scheme_Object *get_primitive_instance(int argc, Scheme_Object *argv[])
+{
+  Scheme_Env *env, *menv;
+  Scheme_Object *name;
+
+  if (!SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("get-primitive-instance", "symbol?", 0, argc, argv);
+
+  name = scheme_intern_resolved_module_path(argv[0]);
+
+  env = scheme_get_env(NULL);
+  menv = get_special_modenv(name);
+  if (!menv)
+    menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), name);
+  if (!menv && (argc > 1) && SCHEME_TRUEP(argv[1])) {
+    menv = scheme_primitive_module(argv[0], env);
+    scheme_finish_primitive_module(menv);
+
+    start_module(menv->module, env, 0, name, 0, 1, 0, scheme_null, 0);
+  }
+
+  return (menv ? (Scheme_Object *)menv : scheme_false);
+}
+
+static Scheme_Object *instance_variable_value(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v;
+
+  if (!SCHEME_NAMESPACEP(argv[0]))
+    scheme_wrong_contract("instance-variable-value", "namespace?", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("instance-variable-value", "symbol?", 1, argc, argv);
+
+  v = scheme_lookup_global(argv[1], (Scheme_Env *)argv[0]);
+
+  return (v ? v : scheme_false);
+}
+
+static Scheme_Object *instance_set_variable_value(int argc, Scheme_Object *argv[])
+{
+  Scheme_Bucket *bucket;
+
+  if (!SCHEME_NAMESPACEP(argv[0]))
+    scheme_wrong_contract("instance-set-variable-value!", "namespace?", 0, argc, argv);
+  if (!SCHEME_SYMBOLP(argv[1]))
+    scheme_wrong_contract("instance-set-variable-value!", "symbol?", 1, argc, argv);
+
+  bucket = scheme_global_bucket(argv[1], (Scheme_Env *)argv[0]);
+  scheme_set_global_bucket("instance-set-variable-value!", bucket, argv[2], 1);
+
+  return scheme_void;
+}
+
+/**********************************************************************/
 /*                             parameters                             */
 /**********************************************************************/
 
