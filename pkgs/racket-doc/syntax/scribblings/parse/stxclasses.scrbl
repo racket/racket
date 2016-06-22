@@ -424,4 +424,13 @@ Returns the value associated with the @tech{attribute} named
 error is raised.
 }
 
+@defidform[this-syntax]{
+
+When used as an expression within a @tech{syntax class}’s
+@racket[pattern] clause, refers to the syntax object being matched
+by the syntax class. When the the syntax class is
+@tech[#:key "splicing syntax class"]{splicing}, @racket[this-syntax]
+is a list containing the sequence of elements being matched against.
+}
+
 @(close-eval the-eval)
