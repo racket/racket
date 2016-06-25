@@ -561,7 +561,7 @@ In your @racket[info.rkt], you should:
 ]
 
 Finally, when listing your package on
-@url{https://pkgs.racket-lang-org}, you should supply a GitHub source
+@url{https://pkgs.racket-lang.org}, you should supply a GitHub source
 using the URL format
 @tt{github://github.com/@nonterm{user}/@nonterm{repo}/@nonterm{rev}@optional{/@nonterm{path}}} (not
 the @tt{git://} or @exec{http://} format).
