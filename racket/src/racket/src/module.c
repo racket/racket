@@ -950,9 +950,7 @@ static Scheme_Module *registry_get_loaded(Scheme_Env *env, Scheme_Object *name)
 
 /* A minimal linklet API to support bootstrapping. */
 
-static Scheme_Object *get_primitive_instance(int argc, Scheme_Object *argv[]);
-static Scheme_Object *instance_variable_value(int argc, Scheme_Object *argv[]);
-static Scheme_Object *instance_set_variable_value(int argc, Scheme_Object *argv[]);
+static Scheme_Object *primitive_table(int argc, Scheme_Object *argv[]);
 
 void scheme_init_linklet(Scheme_Env *env)
 {
@@ -962,21 +960,22 @@ void scheme_init_linklet(Scheme_Env *env)
   modname = scheme_intern_symbol("#%linklet");
   newenv = scheme_primitive_module(modname, env);
 
-  GLOBAL_PRIM_W_ARITY("get-primitive-instance", get_primitive_instance, 1, 2, newenv);
-  GLOBAL_PRIM_W_ARITY("instance-variable-value", instance_variable_value, 2, 2, newenv);
-  GLOBAL_PRIM_W_ARITY("instance-set-variable-value!", instance_set_variable_value, 3, 3, newenv);
+  GLOBAL_PRIM_W_ARITY("primitive-table", primitive_table, 1, 2, newenv);
   
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
 }
 
-static Scheme_Object *get_primitive_instance(int argc, Scheme_Object *argv[])
+static Scheme_Object *primitive_table(int argc, Scheme_Object *argv[])
 {
   Scheme_Env *env, *menv;
   Scheme_Object *name;
+  Scheme_Hash_Tree *ht;
 
   if (!SCHEME_SYMBOLP(argv[0]))
-    scheme_wrong_contract("get-primitive-instance", "symbol?", 0, argc, argv);
+    scheme_wrong_contract("primitive-table", "symbol?", 0, argc, argv);
+  if ((argc > 1) && !SCHEME_HASHTRP(argv[1]))
+    scheme_wrong_contract("primitive-table", "(and/c hash? immutable?)", 1, argc, argv);
 
   name = scheme_intern_resolved_module_path(argv[0]);
 
@@ -984,43 +983,48 @@ static Scheme_Object *get_primitive_instance(int argc, Scheme_Object *argv[])
   menv = get_special_modenv(name);
   if (!menv)
     menv = (Scheme_Env *)scheme_hash_get(MODCHAIN_TABLE(env->modchain), name);
-  if (!menv && (argc > 1) && SCHEME_TRUEP(argv[1])) {
-    menv = scheme_primitive_module(argv[0], env);
-    scheme_finish_primitive_module(menv);
+  
+  if (!menv) {
+    if (argc > 1) {
+      Scheme_Object *k, *v;
+      mzlonglong pos;
 
-    start_module(menv->module, env, 0, name, 0, 1, 0, scheme_null, 0);
+      menv = scheme_primitive_module(argv[0], env);
+
+      ht = (Scheme_Hash_Tree *)argv[1];
+      pos = scheme_hash_tree_next(ht, -1);
+      while (pos != -1) {
+        scheme_hash_tree_index(ht, pos, &k, &v);
+        if (SCHEME_SYMBOLP(k)) {
+          scheme_add_global_symbol(k, v, menv);
+        }
+        pos = scheme_hash_tree_next(ht, pos);
+      }
+    
+      scheme_finish_primitive_module(menv);
+      
+      start_module(menv->module, env, 0, name, 0, 1, 0, scheme_null, 0);
+    } else
+      return scheme_false;
   }
 
-  return (menv ? (Scheme_Object *)menv : scheme_false);
-}
+  if (argc < 2) {
+    Scheme_Bucket **bs, *b;
+    intptr_t i;
 
-static Scheme_Object *instance_variable_value(int argc, Scheme_Object *argv[])
-{
-  Scheme_Object *v;
+    ht = scheme_make_hash_tree(0);
 
-  if (!SCHEME_NAMESPACEP(argv[0]))
-    scheme_wrong_contract("instance-variable-value", "namespace?", 0, argc, argv);
-  if (!SCHEME_SYMBOLP(argv[1]))
-    scheme_wrong_contract("instance-variable-value", "symbol?", 1, argc, argv);
+    bs = menv->toplevel->buckets;
+    for (i = menv->toplevel->size; i--; ) {
+      b = bs[i];
+      if (b && b->val) {
+        ht = scheme_hash_tree_set(ht, (Scheme_Object *)b->key, b->val);
+      }
+    }
 
-  v = scheme_lookup_global(argv[1], (Scheme_Env *)argv[0]);
-
-  return (v ? v : scheme_false);
-}
-
-static Scheme_Object *instance_set_variable_value(int argc, Scheme_Object *argv[])
-{
-  Scheme_Bucket *bucket;
-
-  if (!SCHEME_NAMESPACEP(argv[0]))
-    scheme_wrong_contract("instance-set-variable-value!", "namespace?", 0, argc, argv);
-  if (!SCHEME_SYMBOLP(argv[1]))
-    scheme_wrong_contract("instance-set-variable-value!", "symbol?", 1, argc, argv);
-
-  bucket = scheme_global_bucket(argv[1], (Scheme_Env *)argv[0]);
-  scheme_set_global_bucket("instance-set-variable-value!", bucket, argv[2], 1);
-
-  return scheme_void;
+    return (Scheme_Object *)ht;
+  } else
+    return scheme_void;
 }
 
 /**********************************************************************/
