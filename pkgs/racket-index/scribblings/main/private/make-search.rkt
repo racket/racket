@@ -168,7 +168,14 @@
           [(exported-index-desc? desc)
            (let ([libs (map lib->name (exported-index-desc-from-libs desc))])
              (string-append* `("[" ,@(add-between libs ",") "]")))]
-          [(module-path-index-desc? desc) "\"module\""]
+          [(module-path-index-desc? desc)
+            (cond
+             [(language-index-desc? desc)
+              "\"language\""]
+             [(reader-index-desc? desc)
+              "\"reader\""]
+             [else
+              "\"module\""])]
           [else "false"]))
       (and href
            (string-append "[" (quote-string text) ","

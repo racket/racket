@@ -119,10 +119,17 @@ function InitializeSearch() {
            +' identifiers from modules that (partially) match'
            +' &ldquo;<tt><i>str</i></tt>&rdquo;; &ldquo;<tt>M:</tt>&rdquo; by'
            +' itself will restrict results to bound names only.</li>'
+        +'<li>Use &ldquo;<tt>H:<i>str</i></tt>&rdquo; to match only'
+           +' modules that implement a language'
+           +' &ldquo;<tt>#lang <i>str</i></tt>&rdquo;.</li>'
+        +'<li>Use &ldquo;<tt>R:<i>str</i></tt>&rdquo; to match only'
+           +' modules that implement a reader module'
+           +' &ldquo;<tt>#reader <i>str</i></tt>&rdquo;.</li>'
         +'<li>&ldquo;<tt>L:<i>str</i></tt>&rdquo; is similar to'
            +' &ldquo;<tt>M:<i>str</i></tt>&rdquo;, but'
            +' &ldquo;<tt><i>str</i></tt>&rdquo; should match the module name'
-           +' exactly.</li>'
+           +' exactly; &ldquo;<tt>M:</tt>&rdquo; by'
+           +' itself will restrict results to module names only.</li>'
         +'<li>&ldquo;<tt>T:<i>str</i></tt>&rdquo; restricts results to ones in'
            +' the &ldquo;<tt><i>str</i></tt>&rdquo; manual (naming the'
            +' directory where the manual is found).</li>'
@@ -193,6 +200,8 @@ function InitializeSearch() {
         +' few common choices:'
         +'<ul style="padding: 0em; margin: 0.5em 1.5em;">'
         +MakeContextQueryItem("M:", "Bindings")
+        +MakeContextQueryItem("H:", "Languages")
+        +MakeContextQueryItem("R:", "Reader modules")
         +MakeContextQueryItem("T:reference", "Reference manual")
         +MakeContextQueryItem("M:racket", "{{racket}} bindings")
         +MakeContextQueryItem("M:racket/base", "{{racket/base}} bindings")
@@ -402,7 +411,7 @@ function UrlToManual(url) {
 // mostly for context queries.
 
 function CompileTerm(term) {
-  var op = ((term.search(/^[NLMTQ]:/) == 0) && term.substring(0,1));
+  var op = ((term.search(/^[NLMHRTQ]:/) == 0) && term.substring(0,1));
   if (op) term = term.substring(2);
   term = term.toLowerCase();
   switch (op) {
@@ -413,15 +422,27 @@ function CompileTerm(term) {
   case "L":
     return function(x) {
       if (!x[3]) return C_fail;
-      if (x[3] == "module") // rexact allowed, show partial module matches
+      if (x[3] == "module" || x[3] == "language" || x[3] == "reader") // rexact allowed, show partial module matches
         return Compare(term,x[0]);
       return (MaxCompares(term,x[3]) >= C_exact) ? C_exact : C_fail;
     };
   case "M":
     return function(x) {
       if (!x[3]) return C_fail;
-      if (x[3] == "module") return Compare(term,x[0]); // rexact allowed
+      if (x[3] == "module" || x[3] == "language" || x[3] == "reader") return Compare(term,x[0]); // rexact allowed
       return (MaxCompares(term,x[3]) >= C_match) ? C_exact : C_fail;
+    };
+  case "H":
+    return function(x) {
+      if (!x[3]) return C_fail;
+      if (x[3] == "language") return Compare(term,x[0]);
+      return (MaxCompares(term,x[3]) >= C_exact) ? C_exact : C_fail;
+    };
+  case "R":
+    return function(x) {
+      if (!x[3]) return C_fail;
+      if (x[3] == "reader") return Compare(term,x[0]);
+      return (MaxCompares(term,x[3]) >= C_exact) ? C_exact : C_fail;
     };
   case "T":
     return function(x) {
@@ -680,6 +701,8 @@ function UpdateResults() {
             + desc[j] + '</a>';
       } else if (desc == "module") {
         note = '<span class="smaller">module</span>';
+      } else if (desc == "language") {
+        note = '<span class="smaller">language</span>';
       }
       if (show_manuals == 2 || (show_manuals == 1 && !desc)) {
         var manual = UrlToManual(res[1]),
