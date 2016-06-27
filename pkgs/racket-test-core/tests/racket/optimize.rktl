@@ -1518,6 +1518,20 @@
                       #f
                       v v v2 v2))))
 
+(test-comp '(lambda (x) (vector x x x) (void))
+           '(lambda (x) (void)))
+(test-comp '(lambda (x) (vector-immutable x x x) (void))
+           '(lambda (x) (void)))
+(test-comp '(lambda (x) (vector->immutable-vector (vector x x x)) (void))
+           '(lambda (x) (void)))
+; v may be a chaperone 
+(test-comp '(lambda (v) (when (vector? v)
+                          (vector->immutable-vector v)
+                          (display v)))
+           '(lambda (v) (when (vector? v)
+                          (display v)))
+           #f)
+
 (test-comp '(lambda (w z)
               (if (list w z (random 7))
                   (let ([l (list (random))])

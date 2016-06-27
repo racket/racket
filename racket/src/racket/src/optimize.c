@@ -128,9 +128,11 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, Scheme_Has
 static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand);
 
 static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info);
+static Scheme_Object *expr_implies_predicate_no_chap(Scheme_Object *expr, Optimize_Info *info, int no_chap);
 static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info,
                                                 int *_involves_k_cross, int fuel,
-                                                Scheme_Hash_Tree *ignore_vars);
+                                                Scheme_Hash_Tree *ignore_vars,
+                                                int no_chap);
 static int produces_local_type(Scheme_Object *rator, int argc);
 static int optimize_any_uses(Optimize_Info *info, Scheme_IR_Let_Value *at_irlv, int n);
 static void propagate_used_variables(Optimize_Info *info);
@@ -155,6 +157,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
 static Scheme_Object *optimize_clone(int single_use, Scheme_Object *obj, Optimize_Info *info, Scheme_Hash_Tree *var_map, int as_rator);
 
 XFORM_NONGCING static int relevant_predicate(Scheme_Object *pred);
+XFORM_NONGCING static Scheme_Object *ensure_no_chap(Scheme_Object *pred, int no_chap);
 XFORM_NONGCING static int predicate_implies(Scheme_Object *pred1, Scheme_Object *pred2);
 XFORM_NONGCING static int predicate_implies_not(Scheme_Object *pred1, Scheme_Object *pred2);
 static int single_valued_noncm_expression(Scheme_Object *expr, int fuel);
@@ -2620,10 +2623,10 @@ int scheme_expr_produces_local_type(Scheme_Object *expr, int *_involves_k_cross)
 {
   if (_involves_k_cross) *_involves_k_cross = 0;
   return scheme_predicate_to_local_type(do_expr_implies_predicate(expr, NULL, _involves_k_cross,
-                                                                  10, empty_eq_hash_tree));
+                                                                  10, empty_eq_hash_tree, 0));
 }
 
-static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
+static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc, int no_chap)
 {
   if (SCHEME_PRIMP(rator)) {
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_PRODUCES_REAL)
@@ -2665,7 +2668,7 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
     else if (SAME_OBJ(rator, scheme_void_proc))
       return scheme_void_p_proc;
     else if (SAME_OBJ(rator, scheme_procedure_specialize_proc))
-      return scheme_procedure_p_proc;
+      return no_chap ? NULL : scheme_procedure_p_proc;
 
     {
       Scheme_Object *p;
@@ -2680,7 +2683,8 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
 
 static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info,
                                                 int *_involves_k_cross, int fuel,
-                                                Scheme_Hash_Tree *ignore_vars)
+                                                Scheme_Hash_Tree *ignore_vars,
+                                                int no_chap)
 /* can be called by the JIT with info = NULL;
    in that case, beware that the validator must be
    able to reconstruct the result in a shallow way, so don't 
@@ -2701,7 +2705,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
         if (info) {
           p = optimize_get_predicate(info, expr, 0);
           if (p)
-            return p;
+            return ensure_no_chap(p, no_chap);
         }
 
         p = local_type_to_predicate(SCHEME_VAR(expr)->val_type);
@@ -2715,7 +2719,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
         if ((SCHEME_VAR(expr)->mode == SCHEME_VAR_MODE_OPTIMIZE)
             && SCHEME_VAR(expr)->optimize.known_val)
           return do_expr_implies_predicate(SCHEME_VAR(expr)->optimize.known_val, info, _involves_k_cross,
-                                           fuel-1, ignore_vars);
+                                           fuel-1, ignore_vars, no_chap);
       }
     }
     break;
@@ -2726,7 +2730,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       if (SCHEME_PRIMP(app->rator)
           && SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_CLOSED_ON_REALS) {
         Scheme_Object *p;
-        p = do_expr_implies_predicate(app->rand, info, NULL, fuel-1, ignore_vars);
+        p = do_expr_implies_predicate(app->rand, info, NULL, fuel-1, ignore_vars, 0);
         if (p && predicate_implies(p, scheme_real_p_proc))
           return scheme_real_p_proc;
       }
@@ -2734,12 +2738,12 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       if (SAME_OBJ(app->rator, scheme_cdr_proc)
           || SAME_OBJ(app->rator, scheme_unsafe_cdr_proc)) {
         Scheme_Object *p;
-        p = do_expr_implies_predicate(app->rand, info, NULL, fuel-1, ignore_vars);
+        p = do_expr_implies_predicate(app->rand, info, NULL, fuel-1, ignore_vars, 0);
         if (SAME_OBJ(p, scheme_list_pair_p_proc))
           return scheme_list_p_proc;
       }
       
-      return rator_implies_predicate(app->rator, 1);
+      return rator_implies_predicate(app->rator, 1, no_chap);
     }
     break;
   case scheme_application3_type:
@@ -2761,9 +2765,9 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       if (SCHEME_PRIMP(app->rator)
           && SCHEME_PRIM_PROC_OPT_FLAGS(app->rator) & SCHEME_PRIM_CLOSED_ON_REALS) {
         Scheme_Object *p;
-        p = do_expr_implies_predicate(app->rand1, info, NULL, fuel-1, ignore_vars);
+        p = do_expr_implies_predicate(app->rand1, info, NULL, fuel-1, ignore_vars, 0);
         if (p && predicate_implies(p, scheme_real_p_proc)) {
-          p = do_expr_implies_predicate(app->rand2, info, NULL, fuel-1, ignore_vars);
+          p = do_expr_implies_predicate(app->rand2, info, NULL, fuel-1, ignore_vars, 0);
           if (p && predicate_implies(p, scheme_real_p_proc)) {
             return scheme_real_p_proc;
           }
@@ -2772,14 +2776,14 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
 
       if (SAME_OBJ(app->rator, scheme_cons_proc)) {
         Scheme_Object *p;
-        p = do_expr_implies_predicate(app->rand2, info, NULL, fuel-1, ignore_vars);
+        p = do_expr_implies_predicate(app->rand2, info, NULL, fuel-1, ignore_vars, 0);
         if (SAME_OBJ(p, scheme_list_pair_p_proc)
             || SAME_OBJ(p, scheme_list_p_proc)
             || SAME_OBJ(p, scheme_null_p_proc))
           return scheme_list_pair_p_proc;
       }
 
-      return rator_implies_predicate(app->rator, 2);
+      return rator_implies_predicate(app->rator, 2, no_chap);
     }
     break;
   case scheme_application_type:
@@ -2791,7 +2795,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
         Scheme_Object *p;
         int i;
         for (i = 0; i < app->num_args; i++) {
-          p = do_expr_implies_predicate(app->args[i+1], info, NULL, fuel-1, ignore_vars);
+          p = do_expr_implies_predicate(app->args[i+1], info, NULL, fuel-1, ignore_vars, 0);
           if (!p || !predicate_implies(p, scheme_real_p_proc))
             break;
         }
@@ -2799,7 +2803,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
           return scheme_real_p_proc;
       }
       
-      return rator_implies_predicate(app->args[0], app->num_args);
+      return rator_implies_predicate(app->args[0], app->num_args, no_chap);
     }
     break;
   case scheme_ir_lambda_type:
@@ -2815,9 +2819,9 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
     {
       Scheme_Object *l, *r;
       Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
-      l = do_expr_implies_predicate(b->tbranch, info, _involves_k_cross, fuel-1, ignore_vars);
+      l = do_expr_implies_predicate(b->tbranch, info, _involves_k_cross, fuel-1, ignore_vars, no_chap);
       if (l) {
-        r = do_expr_implies_predicate(b->fbranch, info, _involves_k_cross, fuel-1, ignore_vars);
+        r = do_expr_implies_predicate(b->fbranch, info, _involves_k_cross, fuel-1, ignore_vars, no_chap);
         if (predicate_implies(l, r))
           return r;
         else if (predicate_implies(r, l))
@@ -2831,13 +2835,13 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
     {
       Scheme_Sequence *seq = (Scheme_Sequence *)expr;
 
-      return do_expr_implies_predicate(seq->array[seq->count-1], info, _involves_k_cross, fuel-1, ignore_vars);
+      return do_expr_implies_predicate(seq->array[seq->count-1], info, _involves_k_cross, fuel-1, ignore_vars, no_chap);
     }
   case scheme_with_cont_mark_type:
     {
       Scheme_With_Continuation_Mark *wcm = (Scheme_With_Continuation_Mark *)expr;
 
-      return do_expr_implies_predicate(wcm->body, info, _involves_k_cross, fuel-1, ignore_vars);
+      return do_expr_implies_predicate(wcm->body, info, _involves_k_cross, fuel-1, ignore_vars, no_chap);
     }
   case scheme_ir_let_header_type:
     {
@@ -2853,14 +2857,14 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
         }
         expr = irlv->body;
       }
-      return do_expr_implies_predicate(expr, info, _involves_k_cross, fuel-1, ignore_vars);
+      return do_expr_implies_predicate(expr, info, _involves_k_cross, fuel-1, ignore_vars, no_chap);
     }
     break;
   case scheme_begin0_sequence_type:
     {
       Scheme_Sequence *seq = (Scheme_Sequence *)expr;
 
-      return do_expr_implies_predicate(seq->array[0], info, _involves_k_cross, fuel-1, ignore_vars);
+      return do_expr_implies_predicate(seq->array[0], info, _involves_k_cross, fuel-1, ignore_vars, no_chap);
     }
   case scheme_vector_type:
     return scheme_vector_p_proc;
@@ -2919,7 +2923,12 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
 
 static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info)
 {
-  return do_expr_implies_predicate(expr, info, NULL, 5, empty_eq_hash_tree);
+  return do_expr_implies_predicate(expr, info, NULL, 5, empty_eq_hash_tree, 0);
+}
+
+static Scheme_Object *expr_implies_predicate_no_chap(Scheme_Object *expr, Optimize_Info *info, int no_chap)
+{
+  return do_expr_implies_predicate(expr, info, NULL, 5, empty_eq_hash_tree, no_chap);
 }
 
 static Scheme_Object *finish_optimize_app(Scheme_Object *o, Optimize_Info *info, int context, int rator_flags)
@@ -3182,7 +3191,7 @@ static int appn_flags(Scheme_Object *rator, Optimize_Info *info)
 static int check_known_variant(Optimize_Info *info, Scheme_Object *app,
                                Scheme_Object *rator, Scheme_Object *rand,
                                const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe,
-                               Scheme_Object *implies_pred)
+                               Scheme_Object *implies_pred, int no_chap)
 /* Replace the rator with an unsafe version if we know that it's ok:
    if the argument is consistent with `expect_pred`; if `unsafe` is
    #t, then just mark the application as omittable. Alternatively, the
@@ -3196,7 +3205,7 @@ static int check_known_variant(Optimize_Info *info, Scheme_Object *app,
   if (SCHEME_PRIMP(rator) && (!who || IS_NAMED_PRIM(rator, who))) {
     Scheme_Object *pred;
 
-    pred = expr_implies_predicate(rand, info);
+    pred = expr_implies_predicate_no_chap(rand, info, no_chap);
     if (pred) {
       if (predicate_implies(pred, expect_pred)) {
         if (unsafe) {
@@ -3223,7 +3232,14 @@ static void check_known(Optimize_Info *info, Scheme_Object *app,
                         const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe)
 /* When the expected predicate for unsafe substitution is the same as the implied predicate. */
 {
-  (void)check_known_variant(info, app, rator, rand, who, expect_pred, unsafe, expect_pred);
+  check_known_variant(info, app, rator, rand, who, expect_pred, unsafe, expect_pred, 0);
+}
+
+static void check_known_no_chap(Optimize_Info *info, Scheme_Object *app,
+                                Scheme_Object *rator, Scheme_Object *rand,
+                                const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe)
+{
+  check_known_variant(info, app, rator, rand, who, expect_pred, unsafe, expect_pred, 1);
 }
 
 static void check_known_rator(Optimize_Info *info, Scheme_Object *rator)
@@ -3267,8 +3283,8 @@ static void check_known_both_variant(Optimize_Info *info, Scheme_Object *app,
 {
   if (SCHEME_PRIMP(rator) && (!who || IS_NAMED_PRIM(rator, who))) {
     int ok1;
-    ok1 = check_known_variant(info, app, rator, rand1, who, expect_pred, NULL, implies_pred);
-    check_known_variant(info, app, rator, rand2, who, expect_pred, (ok1 ? unsafe : NULL), implies_pred);
+    ok1 = check_known_variant(info, app, rator, rand1, who, expect_pred, NULL, implies_pred, 0);
+    check_known_variant(info, app, rator, rand2, who, expect_pred, (ok1 ? unsafe : NULL), implies_pred, 0);
   }
 }
 
@@ -3290,7 +3306,7 @@ static void check_known_all(Optimize_Info *info, Scheme_Object *_app,
     for (i = 0; i < app->num_args; i++) {
       if (!check_known_variant(info, (Scheme_Object *)app, app->args[0], app->args[i+1], who, expect_pred,
                                ((i == app->num_args - 1) && ok_so_far) ? unsafe : NULL,
-                               expect_pred))
+                               expect_pred, 0))
         ok_so_far = 0;
     }
   }
@@ -3303,7 +3319,7 @@ static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme
 
   if ((context & OPT_CONTEXT_BOOLEAN) && !info->escapes) {
     Scheme_Object *pred;
-    pred = rator_implies_predicate(rator, argc);
+    pred = rator_implies_predicate(rator, argc, 0);
     if (pred && predicate_implies_not(rator, scheme_not_proc))
       return make_discarding_sequence(app, scheme_true, info);
     else if (pred && predicate_implies(rator, scheme_not_proc))
@@ -3811,8 +3827,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       /* Try to check the argument's type, and use the unsafe versions if possible. */ 
       Scheme_Object *app_o = (Scheme_Object *)app;
 
-      check_known_variant(info, app_o, rator, rand, "bitwise-not", scheme_fixnum_p_proc, scheme_unsafe_fxnot_proc, scheme_real_p_proc);
-      check_known_variant(info, app_o, rator, rand, "fxnot", scheme_fixnum_p_proc, scheme_unsafe_fxnot_proc, scheme_real_p_proc);
+      check_known_variant(info, app_o, rator, rand, "bitwise-not", scheme_fixnum_p_proc, scheme_unsafe_fxnot_proc, scheme_real_p_proc, 0);
+      check_known_variant(info, app_o, rator, rand, "fxnot", scheme_fixnum_p_proc, scheme_unsafe_fxnot_proc, scheme_real_p_proc, 0);
 
       check_known(info, app_o, rator, rand, "car", scheme_pair_p_proc, scheme_unsafe_car_proc);
       check_known(info, app_o, rator, rand, "unsafe-car", scheme_pair_p_proc, NULL);
@@ -3857,6 +3873,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known(info, app_o, rator, rand, "vector->list", scheme_vector_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector->values", scheme_vector_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector->immutable-vector", scheme_vector_p_proc, NULL);
+      check_known_no_chap(info, app_o, rator, rand, "vector->immutable-vector", scheme_vector_p_proc, scheme_true);
       
       /* Some of these may have changed app->rator. */
       rator = app->rator; 
@@ -4773,6 +4790,19 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_eof_object_p_proc)
           || SAME_OBJ(pred, scheme_not_proc)
           );
+}
+
+static Scheme_Object *ensure_no_chap(Scheme_Object *pred, int no_chap)
+{
+  /* These predicates recognizes chaperone versions */
+
+  if (no_chap
+      && (SAME_OBJ(pred, scheme_box_p_proc)
+          || SAME_OBJ(pred, scheme_vector_p_proc)
+          || SAME_OBJ(pred, scheme_procedure_p_proc))) {
+    return NULL;
+  }
+  return pred;
 }
 
 static int predicate_implies(Scheme_Object *pred1, Scheme_Object *pred2)
