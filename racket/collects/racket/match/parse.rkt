@@ -1,6 +1,7 @@
 #lang racket/base
 
 (require racket/struct-info
+         racket/syntax
          "patterns.rkt"
          "parse-helper.rkt"
          "parse-quasi.rkt"
@@ -29,8 +30,7 @@
                 (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
     [(expander args ...)
      (and (identifier? #'expander)
-          (match-expander? (syntax-local-value #'expander
-                                               (lambda () #f))))
+          (syntax-local-value/record #'expander match-expander?))
      (match-expander-transform
       rearm+parse #'expander disarmed-stx match-expander-proc
       "This expander only works with the legacy match syntax")]
