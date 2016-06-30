@@ -2126,7 +2126,8 @@
                     hash-iterate-value hash-iterate-key
                     hash-copy
                     hash-clear! hash-clear
-                    hash-empty?)
+                    hash-empty?
+                    hash-keys-subset?)
   (define-struct ax (b c)) ; opaque
   (define-struct a (b c) #:inspector (make-inspector))
 
@@ -2271,6 +2272,7 @@
 
   (define (check-tables-equal mode t1 t2 weak?)
     (test #t equal? t1 t2)
+    (test #t hash-keys-subset? t1 t2)
     (test (equal-hash-code t1) equal-hash-code t2)
     (test #t equal? t1 (hash-copy t1))
     (let ([again (if weak? (make-weak-hash) (make-hash))])
@@ -2338,7 +2340,8 @@
             hash-iterate-value hash-iterate-key
             hash-copy
             hash-clear! hash-clear
-            hash-empty?)
+            hash-empty?
+            hash-keys-subset?)
 (let ([ub-wrap (lambda (proc)
                  (lambda (ht . args)
                    (apply proc (unbox ht) args)))])
@@ -2364,7 +2367,9 @@
               (lambda (ht) (box (unbox ht)))
               (lambda (ht) (set-box! ht (hash-clear (unbox ht))))
               #f
-              (ub-wrap hash-empty?)))
+              (ub-wrap hash-empty?)
+              (lambda (ht1 ht2)
+                (hash-keys-subset? (unbox ht1) (unbox ht2)))))
 
 (test #f hash? 5)
 (test #t hash? (make-hasheq))
@@ -2464,6 +2469,48 @@
   (test #f equal? (mk make-immutable-hash) (mk make-immutable-hasheq))
   (test #f equal? (mk make-immutable-hash) (mk make-immutable-hasheqv))
   (test #f equal? (mk make-immutable-hasheq) (mk make-immutable-hasheqv)))
+
+(let ([check-subset (lambda (mk1 mk2 [v2 2] #:k1 [k1 'a] #:k2 [k2 'a])
+                      (define h1 (mk1 k1 #t 'b v2))
+                      (define h2 (mk2 k2 #t))
+                      (test #t hash-keys-subset? h2 h1)
+                      (test #f hash-keys-subset? h1 h2)
+                      (define h3 (mk2 k2 'something-else))
+                      (test #t hash-keys-subset? h3 h1)
+                      (test #t hash-keys-subset? h3 h2))]
+      [make-make-hash (lambda (mk)
+                        (lambda args
+                          (define ht (mk))
+                          (let loop ([args args])
+                            (cond
+                             [(null? args) (void)]
+                             [else
+                              (hash-set! ht (car args) (cadr args))
+                              (loop (cddr args))]))
+                          ht))])
+                        
+  (check-subset hasheq hasheq #t)
+  (check-subset hasheq hasheq)
+  (check-subset hasheqv hasheqv)
+  (check-subset hasheqv hasheqv #:k1 (expt 2 70) #:k2 (expt 2 70))
+  (check-subset hash hash)
+  (check-subset hash hash #:k1 (cons 1 2) #:k2 (cons 1 2))
+  (check-subset hasheq (make-make-hash make-hasheq))
+  (check-subset hasheq (make-make-hash make-weak-hasheq))
+  (check-subset hasheqv (make-make-hash make-hasheqv))
+  (check-subset hasheqv (make-make-hash make-weak-hasheqv))
+  (check-subset hash (make-make-hash make-hash))
+  (check-subset hash (make-make-hash make-weak-hash))
+  (check-subset (make-make-hash make-hash) (make-make-hash make-weak-hash))
+  (check-subset hash (make-make-hash make-hash) #:k1 (expt 2 70) #:k2 (expt 2 70)))
+
+(let ([not-same-comparison? (lambda (x)
+                              (regexp-match? #rx"do not use the same key comparison" (exn-message x)))])
+  (err/rt-test (hash-keys-subset? #hash() #hasheq()) not-same-comparison?)
+  (err/rt-test (hash-keys-subset? #hash() #hasheqv()) not-same-comparison?)
+  (err/rt-test (hash-keys-subset? #hasheq() #hasheqv()) not-same-comparison?)
+  (err/rt-test (hash-keys-subset? (make-hasheq #hasheqv()) not-same-comparison?))
+  (err/rt-test (hash-keys-subset? (make-weak-hasheq #hasheqv()) not-same-comparison?)))
 
 (define im-t (make-immutable-hasheq null))
 (test #t hash? im-t)

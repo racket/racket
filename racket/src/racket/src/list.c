@@ -139,6 +139,7 @@ Scheme_Object *scheme_hash_table_iterate_key(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_value(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_pair(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_hash_table_iterate_key_value(int argc, Scheme_Object *argv[]);
+static Scheme_Object *hash_keys_subset_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *eq_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash_code(int argc, Scheme_Object *argv[]);
 static Scheme_Object *equal_hash2_code(int argc, Scheme_Object *argv[]);
@@ -685,6 +686,12 @@ scheme_init_list (Scheme_Env *env)
                                                     2, 2, 2, 2),
 			     env);
 
+  scheme_add_global_constant("hash-keys-subset?",
+			     scheme_make_immed_prim(hash_keys_subset_p,
+                                                    "hash-keys-subset?",
+                                                    2, 2),
+			     env);
+  
   scheme_add_global_constant("chaperone-hash",
                              scheme_make_prim_w_arity(chaperone_hash,
                                                       "chaperone-hash",
@@ -3086,6 +3093,82 @@ Scheme_Object *scheme_hash_table_iterate_key_value(int argc, Scheme_Object *argv
   }
   return NULL;
 }
+
+static Scheme_Object *hash_keys_subset_p_slow(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *b[2], *i1, *c2;
+  int kind1, kind2;
+  
+  if (SCHEME_HASHTRP(argv[0]) && SCHEME_HASHTRP(argv[1])) {
+    if (SAME_TYPE(SCHEME_HASHTR_TYPE(argv[0]), SCHEME_HASHTR_TYPE(argv[1])))
+      return (scheme_hash_tree_subset_of((Scheme_Hash_Tree *)argv[0], (Scheme_Hash_Tree *)argv[1])
+              ? scheme_true
+              : scheme_false);
+  }
+
+  b[0] = argv[1];
+  if (!SCHEME_TRUEP(hash_p(1, argv)))
+    scheme_wrong_type("hash-keys-subset?", "hash?", 0 , argc, argv);
+  if (!SCHEME_TRUEP(hash_p(1, b)))
+    scheme_wrong_type("hash-keys-subset?", "hash?", 1, argc, argv);
+
+  if (SCHEME_TRUEP(scheme_hash_eq_p(1, argv)))
+    kind1 = 0;
+  else if (SCHEME_TRUEP(scheme_hash_equal_p(1, argv)))
+    kind1 = 1;
+  else
+    kind1 = 2;
+  
+  if (SCHEME_TRUEP(scheme_hash_eq_p(1, b)))
+    kind2 = 0;
+  else if (SCHEME_TRUEP(scheme_hash_equal_p(1, b)))
+    kind2 = 1;
+  else
+    kind2 = 2;
+
+  if (kind1 != kind2) {
+    scheme_contract_error("hash-keys-subset?",
+                          "given hash tables do not use the same key comparison",
+                          "first table", 1, argv[0],
+                          "second table", 1, argv[1],
+                          NULL);
+    return NULL;
+  }
+
+  i1 = hash_table_count(1, argv);
+  c2 = hash_table_count(1, b);
+  if (SCHEME_INT_VAL(i1) > SCHEME_INT_VAL(c2))
+    return scheme_false;
+
+  i1 = scheme_hash_table_iterate_start(1, argv);
+  b[0] = argv[0];
+  while (!SCHEME_FALSEP(i1)) {
+    b[1] = i1;
+    c2 = scheme_hash_table_iterate_key(2, b);
+
+    if (!scheme_chaperone_hash_get(argv[1], c2))
+        return scheme_false;
+    
+    i1 = scheme_hash_table_iterate_next(2, b);
+  }
+
+  return scheme_true;
+}
+
+static Scheme_Object *hash_keys_subset_p(int argc, Scheme_Object *argv[]) XFORM_ASSERT_NO_CONVERSION
+{
+  if (SCHEME_HASHTRP(argv[0])
+      && SCHEME_HASHTRP(argv[1])
+      && SAME_TYPE(scheme_eq_hash_tree_type, SCHEME_HASHTR_TYPE(argv[0]))
+      && SAME_TYPE(scheme_eq_hash_tree_type, SCHEME_HASHTR_TYPE(argv[1]))) {
+    if (scheme_eq_hash_tree_subset_of((Scheme_Hash_Tree *)argv[0], (Scheme_Hash_Tree *)argv[1]))
+      return scheme_true;
+    else
+      return scheme_false;
+  } else
+    return hash_keys_subset_p_slow(argc, argv);
+}
+
 
 static Scheme_Object *do_chaperone_hash(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
 {

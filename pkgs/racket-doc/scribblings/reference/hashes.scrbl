@@ -414,6 +414,19 @@ Returns a list of the key--value pairs of @racket[hash] in an unspecified order.
 See @racket[hash-map] for information about modifying @racket[hash]
 during @racket[hash->list]. @see-also-concurrency-caveat[]}
 
+@defproc[(hash-keys-subset? [hash1 hash?] [hash2 hash?])
+         boolean?]{
+Returns @racket[#t] if the keys of @racket[hash1] are a subset of or
+the same as the keys of @racket[hash2]. The hash tables must both use
+the same key-comparison function (@racket[equal?], @racket[eqv?], or
+@racket[eq?]), otherwise the @exnraise[exn:fail:contract].
+
+Using @racket[hash-keys-subset?] on immutable hash tables can be much
+faster than iterating through the keys of @racket[hash1] to make sure
+that each is in @racket[hash2].
+
+@history[#:added "6.5.0.8"]}
+
 @defproc[(hash-for-each [hash hash?]
                         [proc (any/c any/c . -> . any)]
                         [try-order? any/c #f])

@@ -312,7 +312,7 @@ void scheme_init_stx(Scheme_Env *env)
   REGISTER_SO(empty_propagate_table);
   REGISTER_SO(empty_scope_set);
   empty_hash_tree = scheme_make_hash_tree(0);
-  empty_scope_set = (Scheme_Scope_Set *)scheme_make_hash_tree_set(0);
+  empty_scope_set = (Scheme_Scope_Set *)scheme_make_hash_tree(0);
   empty_scope_table = MALLOC_ONE_TAGGED(Scheme_Scope_Table);
   empty_scope_table->so.type = scheme_scope_table_type;
   empty_scope_table->simple_scopes = empty_scope_set;
