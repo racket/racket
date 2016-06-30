@@ -808,6 +808,25 @@ static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info,
           return make_discarding_app_sequence(app, -1, NULL, info);
       }
       break;
+    case scheme_branch_type:
+      {
+        Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)e;
+        Scheme_Object *tb, *fb;
+        
+        tb = optimize_ignored(b->tbranch, info, expected_vals, 1, fuel - 1);
+        fb = optimize_ignored(b->fbranch, info, expected_vals, 1, fuel - 1);
+        
+        if (tb || fb) {
+          b->tbranch = tb ? tb : scheme_false;
+          b->fbranch = fb ? fb : scheme_false;
+          return (Scheme_Object*)b;
+        } else {
+          Scheme_Object *val;
+          val = ensure_single_value(b->test);
+          return optimize_ignored(val, info, 1, maybe_omittable, 5);
+        }
+      }
+      break;
     }
   }
 
