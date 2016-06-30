@@ -217,6 +217,7 @@ to @racket[current-load-relative-directory] or
 current namespace corresponds to a module body.}
 
 
+
 @defproc[(namespace-require/copy [quoted-raw-require-spec any/c])
          void?]{
 
@@ -252,39 +253,61 @@ undefined.}
                                   [dest-namespace namespace? (current-namespace)])
          void?]{
 
-Attaches the instantiated module named by @racket[modname] in
-@racket[src-namespace] (at its @tech{base phase}) to the @tech{module
-registry} of @racket[dest-namespace].
+ Attaches the instantiated module named by @racket[modname]
+ in @racket[src-namespace] (at its @tech{base phase}) to the
+ @tech{module registry} of @racket[dest-namespace].
 
-In addition to @racket[modname], every module that it imports
-(directly or indirectly) is also recorded in the current namespace's
-@tech{module registry}, and instances at the same @tech{phase}
-are also attached to @racket[dest-namespace] (while
-@tech{visits} at the module's phase and instances at higher or lower phases are
-not attached, nor even made @tech{available} for on-demand
-@tech{visits}). The inspector of the module invocation in
-@racket[dest-namespace] is the same as inspector of the invocation in
-@racket[src-namespace].
+ In addition to @racket[modname], every module that it
+ imports (directly or indirectly) is also recorded in the
+ current namespace's @tech{module registry}, and instances
+ at the same @tech{phase} are also attached to 
+ @racket[dest-namespace] (while @tech{visits} at the
+ module's phase and instances at higher or lower phases are
+ not attached, nor even made @tech{available} for on-demand
+ @tech{visits}). The inspector of the module invocation in 
+ @racket[dest-namespace] is the same as inspector of the
+ invocation in @racket[src-namespace].
 
-If @racket[modname] is not a symbol, the current module name resolver
-is called to resolve the path, but no module is loaded; the resolved
-form of @racket[modname] is used as the module name in
-@racket[dest-namespace].
+ If @racket[modname] is not a symbol, the current module
+ name resolver is called to resolve the path, but no module
+ is loaded; the resolved form of @racket[modname] is used as
+ the module name in @racket[dest-namespace].
 
-If @racket[modname] refers to a submodule or a module with submodules,
-unless the module was loaded from bytecode (i.e., a @filepath{.zo}
-file) independently from submodules within the same top-level module,
-then declarations for all submodules within the module's top-level
-module are also attached to @racket[dest-namespace].
+ If @racket[modname] refers to a submodule or a module with
+ submodules, unless the module was loaded from bytecode
+ (i.e., a @filepath{.zo} file) independently from submodules
+ within the same top-level module, then declarations for all
+ submodules within the module's top-level module are also
+ attached to @racket[dest-namespace].
 
-If @racket[modname] does not refer to an @tech{instantiate}d module in
-@racket[src-namespace], or if the name of any module to be attached
-already has a different declaration or same-@tech{phase} instance in
-@racket[dest-namespace], then the @exnraise[exn:fail:contract].
+ If @racket[modname] does not refer to an 
+ @tech{instantiate}d module in @racket[src-namespace], or if
+ the name of any module to be attached already has a
+ different declaration or same-@tech{phase} instance in 
+ @racket[dest-namespace], then the 
+ @exnraise[exn:fail:contract].
 
-If @racket[src-namespace] and @racket[dest-namespace] do not have the
-same @tech{base phase}, then the @exnraise[exn:fail:contract].}
+ If @racket[src-namespace] and @racket[dest-namespace] do
+ not have the same @tech{base phase}, then the 
+ @exnraise[exn:fail:contract].
 
+ Unlike @racket[namespace-require], 
+ @racket[namespace-attach-module] does not
+ @tech{instantiate} the module, but copies the module
+ instance from the source namesapce to the target namespace.
+
+@examples[
+ (module food racket/base
+   (provide apple)
+   (define apple "pie"))
+ (namespace-require ''food)
+ (eval:error
+  (parameterize ([current-namespace (make-base-namespace)])
+    (namespace-require ''food)))
+ (define ns (current-namespace))
+ (parameterize ([current-namespace (make-base-namespace)])
+   (namespace-attach-module ns ''food)
+   apple)]}
 
 @defproc[(namespace-attach-module-declaration [src-namespace namespace?]
                                               [modname module-path?]
