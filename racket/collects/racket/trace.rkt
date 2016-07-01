@@ -274,19 +274,25 @@
                   (with-syntax ([(tid ...)
                                 (for/list ([id (in-list (syntax->list #'(id ...)))])
                                   (let ([tid (format "traced-~a" (syntax-e id))])
-                                    (datum->syntax id (string->symbol tid) #f)))])
-                    #'(do-trace
-                        '(id ...)
-                        (list id ...)
-                        (list (lambda (v) (set! id v)) ...)
-                        (list (let* ([real-value id]
-                                    [tid (make-keyword-procedure
-                                            (lambda (kws vals . args)
-                                              (do-traced 'id args kws vals real-value))
-                                            (lambda args
-                                              (do-traced 'id args null null real-value)))])
-                                tid)
-                              ...)))]))
+                                    (datum->syntax id (string->symbol tid) #f)))]
+                                [(kw-proc ...)
+                                 (for/list ([id (in-list (syntax->list #'(id ...)))])
+                                   (quasisyntax/loc id
+                                     (lambda (kws vals . args)
+                                       (do-traced '#,id args kws vals real-value))))]
+                                [(plain-proc ...)
+                                 (for/list ([id (in-list (syntax->list #'(id ...)))])
+                                   (quasisyntax/loc id
+                                     (lambda args
+                                       (do-traced '#,id args null null real-value))))])
+                    #`(do-trace
+                       '(id ...)
+                       (list id ...)
+                       (list (lambda (v) (set! id v)) ...)
+                       (list (let* ([real-value id]
+                                    [tid (make-keyword-procedure kw-proc plain-proc)])
+                               tid)
+                             ...)))]))
 
   (define-syntax (untrace stx)
     (syntax-case stx ()
@@ -311,7 +317,7 @@
     (syntax-case stx ()
       [(_ e ...)
       (let-values ([(name def) (normalize-definition stx #'lambda)])
-        #`(begin (define #,name #,def) (trace #,name)))]))
+        #`(begin #,(quasisyntax/loc stx (define #,name #,def)) (trace #,name)))]))
 
   (define-syntax trace-let
     (syntax-rules ()
@@ -327,15 +333,18 @@
           "Could not infer name; give a name explicitly using #:name"
           stx)))
     (syntax-parse stx
-      [(_ (~optional (~seq #:name name:id) #:defaults ([name #`#,(infer-name-or-error)])) args body:expr ...)
-      #'(let ([name (lambda args body ...)]) (trace name) name)]))
+      [(_ (~optional (~seq #:name name:id) #:defaults ([name (datum->syntax stx (infer-name-or-error)
+                                                                            stx)]))
+          args body:expr ...)
+      #`(let ([name #,(quasisyntax/loc stx (lambda args body ...))]) (trace name) name)]))
 
   (define-syntax (trace-define-syntax stx)
     (syntax-case stx ()
       [(_ e ...)
       (let-values ([(name def) (normalize-definition stx #'lambda)])
-        #`(define-syntax #,name
-            (let ([#,name #,def]) (trace #,name) #,name)))])))
+        (quasisyntax/loc stx
+          (define-syntax #,name
+            (let ([#,name #,def]) (trace #,name) #,name))))])))
 
 (require 'trace-et-al 'chez-like)
 (provide trace untrace
