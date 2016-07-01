@@ -23,6 +23,8 @@
       ...)
      ...))))
 
+@(define (linklink url) (link url url))
+
 @title[#:tag "mime"]{MIME: Decoding Internet Data}
 
 @defmodule[net/mime]{The @racketmodname[net/mime] library provides
@@ -80,6 +82,10 @@ Standard values for the @racket[subtype] field depend on the
 @racket[type] field, and include the following, but any
 @racket[subtype] is allowed as a downcased version of the
 specification from the header.
+
+Please note that RFC 3232 specifies that this list (taken from RFC
+1700) is out-of-date, and that the IANA maintains a complete list,
+ currently available at @(linklink "http://www.iana.org/assignments/media-types/media-types.xhtml")
 
 @mime-table[
 (
