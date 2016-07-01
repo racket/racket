@@ -42,6 +42,7 @@
 							 procedure? symbol? keyword?
 							 string? bytes?
 							 vector? box?
+                                                         immutable?
 							 eof-object?
                                                          exact-integer?
                                                          exact-nonnegative-integer?
@@ -229,6 +230,19 @@
     (un #t 'thing? a-rock)
     (un #t 'thing? chap-rock)
     (un #t 'thing? struct:rock)
+    (un #f 'immutable? (vector 1 2 3))
+    (un #t 'immutable? (vector-immutable 1 2 3))
+    (un #f 'immutable? (box 1))
+    (un #t 'immutable? (box-immutable 1))
+    (un #f 'immutable? (bytes 1 2 3))
+    (un #t 'immutable? (bytes->immutable-bytes (bytes 1 2 3)))
+    (un #f 'immutable? (string #\1 #\2 #\3))
+    (un #f 'immutable? (make-hash))
+    (un #f 'immutable? (make-hasheq))
+    (un #f 'immutable? (make-weak-hasheq))
+    (un #t 'immutable? #hash())
+    (un #t 'immutable? #hasheq())
+    (un #t 'immutable? #hasheqv())
 
     (bin #f 'eq? 0 10)
     (bin-exact #t 'eq? 10 10)
