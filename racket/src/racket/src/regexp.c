@@ -85,7 +85,7 @@ THREAD_LOCAL_DECL(static rxpos regcodesize);
 THREAD_LOCAL_DECL(static rxpos regcodemax);
 THREAD_LOCAL_DECL(static intptr_t regmaxlookback);
 
-THREAD_LOCAL_DECL(static char *regerrorwho);
+THREAD_LOCAL_DECL(static const char *regerrorwho);
 THREAD_LOCAL_DECL(static Scheme_Object *regerrorproc); /* error handler for regexp construction */
 THREAD_LOCAL_DECL(static Scheme_Object *regerrorval);  /* result of error handler for failed regexp construction */
 
