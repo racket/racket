@@ -1021,6 +1021,13 @@
 (define-cpointer-type _foo)
 (test 'foo? object-name foo?)
 
+(define-cpointer-type _also_foo #f #f (lambda (ptr)
+                                        (cpointer-push-tag! ptr 'extra)
+                                        ptr))
+(let ([p (cast (malloc 16) _pointer _also_foo)])
+  (test #t also_foo? p)
+  (test #t cpointer-has-tag? p 'extra))
+
 ;; ----------------------------------------
 ;; Test JIT inlining
 

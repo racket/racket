@@ -1356,7 +1356,7 @@
     [(_ _TYPE #:tag the-tag) #'(define-cpointer-type _TYPE #f #f #f #:tag the-tag)]
     [(_ _TYPE ptr-type) #'(define-cpointer-type _TYPE ptr-type #f #f #:tag #f)]
     [(_ _TYPE ptr-type #:tag the-tag) #'(define-cpointer-type _TYPE ptr-type #f #f #:tag the-tag)]
-    [(_ _TYPE ptr-type scheme->c c->scheme) #'(define-cpointer-type _TYPE ptr-type #f #f #:tag #f)]
+    [(_ _TYPE ptr-type scheme->c c->scheme) #'(define-cpointer-type _TYPE ptr-type scheme->c c->scheme #:tag #f)]
     [(_ _TYPE ptr-type scheme->c c->scheme #:tag the-tag)
      (and (identifier? #'_TYPE)
           (regexp-match #rx"^_.+" (symbol->string (syntax-e #'_TYPE))))
