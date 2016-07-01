@@ -139,7 +139,9 @@ When it finds a @litchar{#lang} or @litchar{#!} specification, instead
 of dispatching to a @racketidfont{read} or @racketidfont{read-syntax}
 function as @racket[read] and @racket[read-syntax] do,
 @racket[read-language] dispatches to the @racketidfont{get-info}
-function (if any) exported by the same module. The result of the
+function (if any) exported by the same module. The arguments to
+@racketidfont{get-info} are the same as for @racketidfont{read}
+as described in @secref["parse-reader"]. The result of the
 @racketidfont{get-info} function is the result of
 @racket[read-language] if it is a function of two arguments; if
 @racketidfont{get-info} produces any other kind of result, the
