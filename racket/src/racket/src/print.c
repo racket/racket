@@ -2380,7 +2380,7 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
       } else {
         notdisplay = to_quoted(obj, pp, notdisplay);
         if (notdisplay == 3)
-          print_utf8_string(pp, "(hash ", 0, 6);
+          print_utf8_string(pp, "(hash", 0, 5);
         else
           print_utf8_string(pp, "#hash", 0, 5);
         if (SCHEME_HASHTP(obj)) {
@@ -2398,6 +2398,8 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
               print_utf8_string(pp, "eq", 0, 2);
           }
         }
+        if (notdisplay == 3)
+          print_utf8_string(pp, " ", 0, 1);
         if (notdisplay != 3)
           print_utf8_string(pp, "(", 0, 1);
       }
