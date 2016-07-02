@@ -2644,15 +2644,20 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
     } else if (SAME_OBJ(rator, scheme_list_star_proc)) {
       if (argc > 2)
         return scheme_pair_p_proc;
-    } else if (IS_NAMED_PRIM(rator, "string-append")) {
+    } else if (IS_NAMED_PRIM(rator, "vector->list")) {
+      return scheme_list_p_proc;
+    } else if (IS_NAMED_PRIM(rator, "string-append")
+               || IS_NAMED_PRIM(rator, "string->immutable-string")) {
         return scheme_string_p_proc;
-    } else if (IS_NAMED_PRIM(rator, "bytes-append")) {
+    } else if (IS_NAMED_PRIM(rator, "bytes-append")
+               || IS_NAMED_PRIM(rator, "bytes->immutable-bytes")) {
         return scheme_byte_string_p_proc;
     } else if (SAME_OBJ(rator, scheme_vector_proc)
                || SAME_OBJ(rator, scheme_vector_immutable_proc)
                || SAME_OBJ(rator, scheme_make_vector_proc)
                || SAME_OBJ(rator, scheme_list_to_vector_proc)
-               || SAME_OBJ(rator, scheme_struct_to_vector_proc))
+               || SAME_OBJ(rator, scheme_struct_to_vector_proc)
+               || IS_NAMED_PRIM(rator, "vector->immutable-vector"))
       return scheme_vector_p_proc;
     else if (SAME_OBJ(rator, scheme_box_proc)
              || SAME_OBJ(rator, scheme_box_immutable_proc))
@@ -3184,7 +3189,7 @@ static int check_known_variant(Optimize_Info *info, Scheme_Object *app,
    rator implies a check, so add type information for subsequent
    expressions: the argument is consistent with `implies_pred` (which
    must be itself implied by `expected_pred`, but might be weaker). If
-   the rand has alredy an incompatible type, mark that this will
+   the rand has already an incompatible type, mark that this will
    generate an error. If unsafe is NULL then rator has no unsafe
    version, so only check the type. */
 {
@@ -3827,6 +3832,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
       check_known(info, app_o, rator, rand, "string-append", scheme_string_p_proc, scheme_true);
       check_known(info, app_o, rator, rand, "bytes-append", scheme_byte_string_p_proc, scheme_true);
+      check_known(info, app_o, rator, rand, "string->immutable-string", scheme_string_p_proc, scheme_true);
+      check_known(info, app_o, rator, rand, "bytes->immutable-bytes", scheme_byte_string_p_proc, scheme_true);
 
       if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
         check_known(info, app_o, rator, rand, NULL, scheme_real_p_proc,
@@ -3846,8 +3853,10 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known(info, app_o, rator, rand, "cadddr", scheme_pair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "cddddr", scheme_pair_p_proc, NULL);
 
+      check_known(info, app_o, rator, rand, "list->vector", scheme_list_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector->list", scheme_vector_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector->values", scheme_vector_p_proc, NULL);
+      check_known(info, app_o, rator, rand, "vector->immutable-vector", scheme_vector_p_proc, NULL);
       
       /* Some of these may have changed app->rator. */
       rator = app->rator; 
