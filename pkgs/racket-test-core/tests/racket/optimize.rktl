@@ -243,6 +243,8 @@
     (un #t 'immutable? #hash())
     (un #t 'immutable? #hasheq())
     (un #t 'immutable? #hasheqv())
+    (un #t 'immutable? (chaperone-vector '#(1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))
+    (un #f 'immutable? (chaperone-vector (vector 1 2 3) (lambda (vec i val) val) (lambda (vec i val) val)))
 
     (bin #f 'eq? 0 10)
     (bin-exact #t 'eq? 10 10)

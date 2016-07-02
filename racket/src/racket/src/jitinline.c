@@ -376,7 +376,6 @@ static int generate_inlined_immutable_test(mz_jit_state *jitter, Scheme_App2_Rec
 {
   GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *ref5;
   GC_CAN_IGNORE jit_insn *ref6, *ref7, *ref8, *ref9;
-  int reg_valid;
 
   LOG_IT(("inlined %s\n", ((Scheme_Primitive_Proc *)app->rator)->name));
 
@@ -391,9 +390,10 @@ static int generate_inlined_immutable_test(mz_jit_state *jitter, Scheme_App2_Rec
 
   __START_SHORT_JUMPS__(branch_short);
 
-  reg_valid = 0;
+  /* Note that we distrurb R0 in the case of a chaperone, so don't try
+     to save its status for a branch. */
+
   if (for_branch) {
-    reg_valid = mz_CURRENT_REG_STATUS_VALID();
     scheme_prepare_branch_jump(jitter, for_branch);
     CHECK_LIMIT();
   }
@@ -402,8 +402,8 @@ static int generate_inlined_immutable_test(mz_jit_state *jitter, Scheme_App2_Rec
   jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
   __START_INNER_TINY__(branch_short);
   ref3 = jit_bnei_i(jit_forward(), JIT_R1, scheme_chaperone_type);
-  jit_ldxi_p(JIT_R1, JIT_R0, (intptr_t)&((Scheme_Chaperone *)0x0)->val);
-  jit_ldxi_s(JIT_R1, JIT_R1, &((Scheme_Object *)0x0)->type);
+  jit_ldxi_p(JIT_R0, JIT_R0, (intptr_t)&((Scheme_Chaperone *)0x0)->val);
+  jit_ldxi_s(JIT_R1, JIT_R0, &((Scheme_Object *)0x0)->type);
   mz_patch_branch(ref3);
   __END_INNER_TINY__(branch_short);
   CHECK_LIMIT();
@@ -437,10 +437,6 @@ static int generate_inlined_immutable_test(mz_jit_state *jitter, Scheme_App2_Rec
     scheme_add_branch_false(for_branch, ref);
     scheme_add_branch_false(for_branch, ref8);
     scheme_add_branch_false(for_branch, ref9);
-
-    /* In case true is a fall-through, note that the test 
-       didn't disturb R0: */
-    mz_SET_R0_STATUS_VALID(reg_valid);
 
     scheme_branch_for_true(jitter, for_branch);
   } else {
