@@ -243,6 +243,11 @@ TO DO:
 (define-ssl TLSv1_2_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
 (define-ssl TLSv1_2_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () #f))
 
+;; OpenSSL 1.1 defines TLS_client_method(), instead of making SSLv23_client_method()
+;; actually select the the latest
+(define-ssl TLS_client_method (_fun -> _SSL_METHOD*) #:fail (lambda () SSLv23_client_method))
+(define-ssl TLS_server_method (_fun -> _SSL_METHOD*) #:fail (lambda () SSLv23_server_method))
+
 (define-crypto DH_free (_fun _DH* -> _void) #:wrap (deallocator))
 (define-crypto EC_KEY_free (_fun _EC_KEY* -> _void) #:wrap (deallocator))
 
@@ -291,6 +296,7 @@ TO DO:
 (define-ssl SSL_connect (_fun _SSL* -> _int))
 (define-ssl SSL_accept (_fun _SSL* -> _int))
 (define-ssl SSL_read (_fun _SSL* _bytes _int -> _int))
+(define-ssl SSL_peek (_fun _SSL* _bytes _int -> _int))
 (define-ssl SSL_write (_fun _SSL* _bytes _int -> _int))
 (define-ssl SSL_shutdown (_fun _SSL* -> _int))
 (define-ssl SSL_get_verify_result (_fun _SSL* -> _long))
@@ -317,8 +323,12 @@ TO DO:
 (define-crypto ERR_get_error (_fun -> _long))
 (define-crypto ERR_error_string_n (_fun _long _bytes _long -> _void))
 
-(define-ssl SSL_library_init (_fun -> _void))
-(define-ssl SSL_load_error_strings (_fun -> _void))
+(define-ssl SSL_library_init (_fun -> _void)
+  ;; No SSL_library_init for 1.1 or later:
+  #:fail (lambda () void))
+(define-ssl SSL_load_error_strings (_fun -> _void)
+  ;; No SSL_load_error_strings for 1.1 or later:
+  #:fail (lambda () void))
 
 (define-crypto GENERAL_NAME_free _fpointer)
 (define-crypto PEM_read_bio_DHparams (_fun _BIO* _pointer _pointer _pointer -> _DH*) #:wrap (allocator DH_free))
@@ -431,7 +441,7 @@ TO DO:
 ;; has an implicitation for clients as noted at the top of this file.
 (define enforce-retry? #f)
 
-;; Needed for `renegotiate':
+;; Needed for `renegotiate' prior to v1.1:
 (define-cstruct _ssl_struct ([version _int]
                              [type _int]
                              [method _pointer]
@@ -499,7 +509,8 @@ TO DO:
                     flushing? must-write must-read
                     refcount 
                     close-original? shutdown-on-close?
-                          error)
+                          error
+                          server?)
   #:mutable)
 
 (define (make-immobile-bytes n)
@@ -546,7 +557,7 @@ TO DO:
   (define f
     (case e
       [(secure auto sslv2-or-v3)
-       (if client? SSLv23_client_method SSLv23_server_method)]
+       (if client? TLS_client_method TLS_server_method)]
       [(sslv2)
        (if client? SSLv2_client_method SSLv2_server_method)]
       [(sslv3)
@@ -579,9 +590,9 @@ TO DO:
 ;; Keep symbols in best-last order for ssl-max-{client,server}-protocol.
 (define (supported-client-protocols)
   (filter-available
-   (list 'secure SSLv23_client_method
-         'auto SSLv23_client_method
-         'sslv2-or-v3 SSLv23_client_method
+   (list 'secure TLS_client_method
+         'auto TLS_client_method
+         'sslv2-or-v3 TLS_client_method
          'sslv2 SSLv2_client_method
          'sslv3 SSLv3_client_method
          'tls TLSv1_client_method
@@ -589,9 +600,9 @@ TO DO:
          'tls12 TLSv1_2_client_method)))
 (define (supported-server-protocols)
   (filter-available
-   (list 'secure SSLv23_server_method
-         'auto SSLv23_server_method
-         'sslv2-or-v3 SSLv23_server_method
+   (list 'secure TLS_server_method
+         'auto TLS_server_method
+         'sslv2-or-v3 TLS_server_method
          'sslv2 SSLv2_server_method
          'sslv3 SSLv3_server_method
          'tls TLSv1_server_method
@@ -873,13 +884,30 @@ TO DO:
           (error who "failed: ~a" estr)]))))
   (check-err (lambda () (SSL_renegotiate (mzssl-ssl mzssl))))
   (check-err (lambda () (SSL_do_handshake (mzssl-ssl mzssl))))
-  ;; Really demanding a negotiation from the server side
-  ;; requires a hacky little dance:
-  (when (positive? (ssl_struct-server
-                    (cast (mzssl-ssl mzssl) _pointer _ssl_struct-pointer)))
-    (set-ssl_struct-state! (cast (mzssl-ssl mzssl) _pointer _ssl_struct-pointer)
-                           SSL_ST_ACCEPT)
-    (check-err (lambda () (SSL_do_handshake (mzssl-ssl mzssl))))))
+  (when (mzssl-server? mzssl)
+    ;; Really demanding a negotiation from the server
+    ;; side requires a hacky little dance
+    (cond
+     [SSLv23_client_method
+      ;; OpenSSL 1.0 (could be replaced with 1.1 version?)
+      (when (positive? (ssl_struct-server
+                        (cast (mzssl-ssl mzssl) _pointer _ssl_struct-pointer)))
+        (set-ssl_struct-state! (cast (mzssl-ssl mzssl) _pointer _ssl_struct-pointer)
+                               SSL_ST_ACCEPT)
+        (check-err (lambda () (SSL_do_handshake (mzssl-ssl mzssl)))))]
+     [else
+      ;; OpenSSL 1.1:
+      ;; The thread
+      ;;  https://groups.google.com/forum/#!topic/mailing.openssl.dev/Dzuwxgq19Ew
+      ;; concludes that using SSL_peek with 0 is good enough to trigger renegotiation.
+      ;; The peek might not actually return 0, but the pending-renegotiation state
+      ;; should end.
+      (check-err (lambda () 
+                   (define v (SSL_peek (mzssl-ssl mzssl) (make-bytes 1) 0))
+                   (if (and (negative? v)
+                            (zero? (SSL_renegotiate_pending (mzssl-ssl mzssl))))
+                       0
+                       v)))])))
 
 ;; ----
 
@@ -1409,7 +1437,8 @@ TO DO:
                          #f #f
                          #f #f #f 2 
                          close? shutdown-on-close?
-                               error/ssl)])
+                               error/ssl
+                               (eq? connect/accept 'accept))])
         (let loop ()
           (let-values ([(status err estr) (save-errors (if connect?
                                                            (SSL_connect ssl)
