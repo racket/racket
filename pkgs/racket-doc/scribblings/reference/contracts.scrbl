@@ -274,7 +274,39 @@ If all of the arguments are procedures or @tech{flat contracts},
 the result is a @tech{flat contract}.
 
 The contract produced by @racket[and/c] tests any value by applying
-the contracts in order, from left to right.}
+the contracts in order, from left to right. If more than one of the
+contracts are not @tech{flat contracts}, then the order in which the
+higher-order parts of the contract are tested can be counter-intuitive.
+For example, consider this function that uses @racket[or/c] in a higher-order
+manner.
+ @examples[#:eval (contract-eval) #:once
+           (define/contract (f g)
+             (-> (and/c (-> (or/c 0 1 2 3) (or/c 0 1 2))
+                        (-> (or/c 0 1 2 3 4) (or/c 0 1)))
+                 any)
+             g)
+           
+           (define g (f (λ (x) x)))
+           
+           (eval:error (g 5))
+
+           (eval:error (g 4))
+
+           (eval:error (g 3))
+
+           (eval:error (g 2))]
+
+ The function @racket[g] is the identity function, but with the contract given
+ in the domain position of @racket[f]. As you can see from looking at the contract,
+ the positions inside the contract on @racket[g] are ordered; none of them accept
+ @racket[5], three accept @racket[4], two accept @racket[3], and only one
+ accepts @racket[2]. This ordering reveals the order in which the contracts
+ are checked. This order is just like the usual ordering when a contract
+ is double-wrapped. The contract that is first put on has its domain checked
+ second but its range checked first and we see a similar pattern here in
+ this example, because @racket[and/c] simply applies the contracts in order.
+
+}
 
 
 @defproc[(not/c [flat-contract flat-contract?]) flat-contract?]{
