@@ -8,7 +8,7 @@
          "syntax-local-match-introduce.rkt")
 
 (provide ddk? parse-literal all-vars pattern-var? match:syntax-err
-         match-expander-transform trans-match parse-struct
+         match-expander-transform trans-match trans-match* parse-struct
          dd-parse parse-quote parse-id in-splicing?)
 
 (define in-splicing? (make-parameter #f))
@@ -154,6 +154,10 @@
 
 (define (trans-match pred transformer pat)
   (make-OrderedAnd (list (make-Pred pred) (make-App transformer (list pat)))))
+
+(define (trans-match* preds transformers pats)
+  (make-OrderedAnd (append (map make-Pred preds)
+                           (map (λ (t p) (make-App t (list p))) transformers pats))))
 
 ;; transform a match-expander application
 ;; parse : stx -> pattern

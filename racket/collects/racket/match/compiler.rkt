@@ -55,11 +55,15 @@
                                                   (Row-vars-seen row)))
                                       rows)
                                  esc)])
-      #`[(#,predicate-stx #,x) rhs]))
+      (if (procedure? predicate-stx)
+          #`[#,(predicate-stx x) rhs]
+          #`[(#,predicate-stx #,x) rhs])))
   (define (compile-con-pat accs pred pat-acc)
     (with-syntax* ([(tmps ...) (generate-temporaries accs)]
                    [(accs ...) accs]
-                   [pred pred]
+                   [question (if (procedure? pred)
+                                 (pred x)
+                                 #`(#,pred #,x))]
                    [body (compile*
                           (append (syntax->list #'(tmps ...)) xs)
                           (map (lambda (row)
@@ -70,7 +74,7 @@
                                             (Row-vars-seen row)))
                                 rows)
                            esc)])
-      #`[(pred #,x) (let ([tmps (accs #,x)] ...) body)]))
+      #`[question (let ([tmps (accs #,x)] ...) body)]))
   (cond
     [(eq? 'box k)
      (compile-con-pat (list #'unsafe-unbox*) #'box? (compose list Box-p))]
@@ -123,6 +127,7 @@
             [pred (Struct-pred s)])
        (compile-con-pat accs pred Struct-ps))]
     [(syntax? k) (constant-pat k)]
+    [(procedure? k) (constant-pat k)]
     [else (error 'match-compile "bad key: ~a" k)]))
 
 
@@ -256,7 +261,10 @@
             [pats (Row-pats row)]
             [app-pats (App-ps first)])
        (with-syntax ([(t ...) (generate-temporaries app-pats)])
-         #`(let-values ([(t ...) (#,(App-expr first) #,x)])
+         #`(let-values ([(t ...)
+                         #,(if (procedure? (App-expr first))
+                             ((App-expr first) x)
+                             #`(#,(App-expr first) #,x))])
              #,(compile* (append (syntax->list #'(t ...)) xs)
                          (list (make-Row (append app-pats (cdr pats))
                                          (Row-rhs row)

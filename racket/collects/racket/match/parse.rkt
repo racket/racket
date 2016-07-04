@@ -18,6 +18,13 @@
 (define orig-insp (variable-reference->module-declaration-inspector
                    (#%variable-reference)))
 
+(define (literal-pat? p)
+  (syntax-case p ()
+    [(_quote e)
+     (eq? 'quote (syntax-e #'_quote))
+     (parse-literal (syntax-e #'e))]
+    [_ (parse-literal (syntax-e p))]))
+
 ;; parse : syntax -> Pat
 ;; compile stx into a pattern, using the new syntax
 (define (parse stx)
@@ -88,6 +95,13 @@
      (raise-syntax-error
       'match "dot dot k can only appear at the end of hash-table patterns" stx
       (ormap (lambda (e) (and (ddk? e) e)) (syntax->list #'(p ...))))]
+    [(hash-table (k v) ...)
+     (andmap (λ (p) (and (literal-pat? p) (not (identifier? p)))) (syntax->list #'(k ...)))
+     (let ([keys (map Exact-v (map literal-pat? (syntax->list #'(k ...))))])
+       (trans-match*
+        (cons #'hash? (for/list ([k (in-list keys)]) (λ (e) #`(hash-has-key? #,e '#,k))))
+        (for/list ([k (in-list keys)]) (λ (e) #`(hash-ref #,e '#,k)))
+        (map parse (syntax->list #'(v ...)))))]
     [(hash-table p ...)
      (trans-match #'hash?
                   #'(lambda (e) (hash-map e list))

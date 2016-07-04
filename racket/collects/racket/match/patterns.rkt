@@ -49,16 +49,17 @@
 ;; (define-struct (Boolean Atom) () #:transparent)
 (define-struct (Null CPat) (p) #:transparent)
 
-;; expr is an expression
+;; expr is an expression or an (expression -> expression) procedure
 ;; ps is a list of patterns
 (define-struct (App Pat) (expr ps) #:transparent)
 
-;; pred is an expression
+;; pred is an expression, or an Expr -> Expr procedure
 (define-struct (Pred Pat) (pred) #:transparent
   #:property prop:equal+hash
   (list (lambda (a b e?)
-          (and (identifier? (Pred-pred a)) (identifier? (Pred-pred b))
-               (free-identifier=? (Pred-pred a) (Pred-pred b))))
+          (or (eq? (Pred-pred a) (Pred-pred b))
+              (and (identifier? (Pred-pred a)) (identifier? (Pred-pred b))
+                   (free-identifier=? (Pred-pred a) (Pred-pred b)))))
         (lambda (v r)
           (if (identifier? (Pred-pred v))
               (r (syntax-e (Pred-pred v)))
@@ -74,9 +75,6 @@
 ;; accessors is a listof identifiers (NB in reverse order from the struct info)
 ;; ps is a listof patterns
 (define-struct (Struct CPat) (id pred super complete? accessors ps) #:transparent)
-
-;; both fields are lists of pats
-(define-struct (HashTable CPat) (key-pats val-pats) #:transparent)
 
 ;; ps are patterns
 (define-struct (Or Pat) (ps) #:transparent)
