@@ -422,10 +422,48 @@
                 (map
                  (lambda (line) (cons 'final line))
                  (cdr spec))])))]
+         [check-invalid-flag
+          (lambda (table orig-multi flag)
+            (when (mpair? (caar table))
+              (let ([set (caar table)])
+                (if (mcar set)
+                    (let ([flags (mcdr set)])
+                      (raise-user-error
+                       (program-name program)
+                       (let ([s (if (= 1 (length flags))
+                                    (format "the ~a option can only be specified once" (car flags))
+                                    (format "only one instance of one option from ~a is allowed" flags))])
+                         (if (and orig-multi
+                                  (not (equal? flag orig-multi)))
+                             (format "~a; note that ~s is shorthand for ~s, in contrast to ~s"
+                                     s
+                                     orig-multi
+                                     (let loop ([prefix (string-ref orig-multi 0)]
+                                                [flags (string->list (substring orig-multi 1 (string-length orig-multi)))]
+                                                [sep ""])
+                                       (if (null? flags)
+                                           ""
+                                           (format "~a~a~a~a" sep prefix (car flags)
+                                                   (loop prefix (cdr flags) " "))))
+                                     (string-append (substring orig-multi 0 1) orig-multi))
+                             s))))
+                    (set-mcar! set #t)))))]
          [done
           (lambda (args r-acc)
             (let ([options (reverse r-acc)]
                   [c (length args)])
+              ;; scan for leftover "flags" that need to be error checked
+              (let loop ([args args])
+                (unless (null? args)
+                  (define arg (car args))
+                  (define rest (cdr args))
+                  (let t-loop ([table table])
+                    (unless (null? table)
+                      (if (and (regexp-match "^[-+]." arg)
+                               (member arg (cadar table)))
+                          (check-invalid-flag table #f arg)
+                          (t-loop (cdr table)))))
+                  (loop rest)))
               (if (procedure-arity-includes? finish (add1 c))
                 (apply finish options args)
                 (raise-user-error
@@ -480,30 +518,7 @@
                 [(member flag (cadar table))
                  (when (eq? 'final (caar table))
                    (set! finalled? #t))
-                 (when (mpair? (caar table))
-                   (let ([set (caar table)])
-                     (if (mcar set)
-                       (let ([flags (mcdr set)])
-                         (raise-user-error
-                          (program-name program)
-                          (let ([s (if (= 1 (length flags))
-                                     (format "the ~a option can only be specified once" (car flags))
-                                     (format "only one instance of one option from ~a is allowed" flags))])
-                            (if (and orig-multi
-                                     (not (equal? flag orig-multi)))
-                              (format "~a; note that ~s is shorthand for ~s, in contrast to ~s"
-                                      s
-                                      orig-multi
-                                      (let loop ([prefix (string-ref orig-multi 0)]
-                                                 [flags (string->list (substring orig-multi 1 (string-length orig-multi)))]
-                                                 [sep ""])
-                                        (if (null? flags)
-                                          ""
-                                          (format "~a~a~a~a" sep prefix (car flags)
-                                                  (loop prefix (cdr flags) " "))))
-                                      (string-append (substring orig-multi 0 1) orig-multi))
-                              s))))
-                       (set-mcar! set #t))))
+                 (check-invalid-flag table orig-multi flag)
                  (call-handler (caddar table) flag args r-acc k)]
                 [else (loop (cdr table))])))])
     (let loop ([args arguments][r-acc null])
@@ -517,7 +532,7 @@
             [(regexp-match #rx"^[-+][0-9]*(|[.][0-9]*)$" arg)
              (done args r-acc)]
             [(regexp-match "^--$" arg)
-             (done (cdr args) r-acc)]
+             (done rest r-acc)]
             [(regexp-match "^[-+][-+]" arg)
              (handle-flag arg rest r-acc #f loop)]
             [(regexp-match "^[-+]." arg)
