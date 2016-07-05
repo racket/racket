@@ -95,16 +95,16 @@
                                             #'()
                                             (with-syntax ([looped (slloop (cdr sublines))]
                                                           [subline
-                                                           (with-syntax 
-                                                               ([flags 
+                                                           (with-syntax
+                                                               ([flags
                                                                  (syntax-case (car sublines) ()
                                                                    [((flag ...) . rest)
                                                                     (begin
-                                                                      (unless (andmap 
+                                                                      (unless (andmap
                                                                                (lambda (x) (string? (syntax-e x)))
                                                                                (syntax->list #'(flag ...)))
-                                                                        (serror 
-                                                                         "flag specification is not a string or sequence of strings" 
+                                                                        (serror
+                                                                         "flag specification is not a string or sequence of strings"
                                                                          #'(flag ...)))
                                                                       #'(flag ...))]
                                                                    [(flag . rest)
@@ -281,7 +281,7 @@
             (cond
               [(number? a)
                (unless (>= a 1)
-                 (bad-table "flag handler procedure must take at least 1 argument: ~e" 
+                 (bad-table "flag handler procedure must take at least 1 argument: ~e"
                             (cadr line)))]
               [(not (arity-at-least? a))
                (bad-table "flag handler procedure cannot have multiple cases: ~e"
@@ -308,7 +308,7 @@
     (raise-type-error 'parse-command-line "unknown-flag procedure of simple arity, accepting 1 argument (an perhaps more)" unknown-flag))
 
   (unless (procedure-arity-includes? finish (add1 (length finish-help)))
-    (raise-arguments-error 'parse-command-line 
+    (raise-arguments-error 'parse-command-line
                            "mismatch in length of argument help string and finish procedure arity"
                            "argument help string" finish-help
                            "finish procedure" finish))
@@ -541,7 +541,7 @@
                           [r-acc r-acc])
                (if (null? s)
                  (loop rest r-acc)
-                 (handle-flag (string (string-ref arg 0) (car s)) 
+                 (handle-flag (string (string-ref arg 0) (car s))
                               rest r-acc
                               arg
                               (lambda (args r-acc)
