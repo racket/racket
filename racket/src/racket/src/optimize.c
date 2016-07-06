@@ -2617,9 +2617,6 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
       return scheme_list_pair_p_proc;
     else if (SAME_OBJ(rator, scheme_mcons_proc))
       return scheme_mpair_p_proc;
-    // XXX This could be implemented
-    // else if (SAME_OBJ(rator, scheme_make_byte_string_p))
-    //  return scheme_byte_string_p_proc;
     else if (SAME_OBJ(rator, scheme_list_proc)) {
       if (argc >= 1)
         return scheme_list_pair_p_proc;
@@ -2628,6 +2625,10 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
     } else if (SAME_OBJ(rator, scheme_list_star_proc)) {
       if (argc > 2)
         return scheme_pair_p_proc;
+    } else if (IS_NAMED_PRIM(rator, "string-append")) {
+        return scheme_string_p_proc;
+    } else if (IS_NAMED_PRIM(rator, "bytes-append")) {
+        return scheme_byte_string_p_proc;
     } else if (SAME_OBJ(rator, scheme_vector_proc)
                || SAME_OBJ(rator, scheme_vector_immutable_proc)
                || SAME_OBJ(rator, scheme_make_vector_proc)
@@ -2864,6 +2865,8 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       return scheme_pair_p_proc;
     if (SCHEME_MPAIRP(expr))
       return scheme_mpair_p_proc;
+    if (SCHEME_CHAR_STRINGP(expr))
+      return scheme_string_p_proc;
     if (SCHEME_BYTE_STRINGP(expr))
       return scheme_byte_string_p_proc;
     if (SCHEME_VOIDP(expr))
@@ -3375,6 +3378,11 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
       check_known(info, app_o, rator, rand1, "andmap", scheme_procedure_p_proc, NULL);
       check_known(info, app_o, rator, rand1, "ormap", scheme_procedure_p_proc, NULL);
 
+      check_known_all(info, app_o, "string-append", scheme_string_p_proc, scheme_true);
+      check_known_all(info, app_o, "bytes-append", scheme_byte_string_p_proc, scheme_true);
+      check_known(info, app_o, rator, rand1, "string-set!", scheme_string_p_proc, NULL);
+      check_known(info, app_o, rator, rand1, "bytes-set!", scheme_byte_string_p_proc, NULL);
+
       if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
         check_known_all(info, app_o, NULL, scheme_real_p_proc,
                         (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS) ? scheme_true : NULL);
@@ -3790,12 +3798,16 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known(info, app_o, rator, rand, "unsafe-mcar", scheme_mpair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "mcdr", scheme_mpair_p_proc, scheme_unsafe_mcdr_proc);
       check_known(info, app_o, rator, rand, "unsafe-mcdr", scheme_mpair_p_proc, NULL);
-      check_known(info, app_o, rator, rand, "bytes-length", scheme_byte_string_p_proc, scheme_unsafe_bytes_len_proc);
+      check_known(info, app_o, rator, rand, "string-length", scheme_string_p_proc, scheme_unsafe_string_length_proc);
+      check_known(info, app_o, rator, rand, "bytes-length", scheme_byte_string_p_proc, scheme_unsafe_byte_string_length_proc);
       /* It's not clear that these are useful, since a chaperone check is needed anyway: */
       check_known(info, app_o, rator, rand, "unbox", scheme_box_p_proc, scheme_unsafe_unbox_proc);
       check_known(info, app_o, rator, rand, "unsafe-unbox", scheme_box_p_proc, NULL);
       check_known(info, app_o, rator, rand, "unsafe-unbox*", scheme_box_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
+
+      check_known(info, app_o, rator, rand, "string-append", scheme_string_p_proc, scheme_true);
+      check_known(info, app_o, rator, rand, "bytes-append", scheme_byte_string_p_proc, scheme_true);
 
       if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
         check_known(info, app_o, rator, rand, NULL, scheme_real_p_proc,
@@ -4238,6 +4250,11 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     check_known_both_try(info, app_o, rator, rand1, rand2, "fxmax", scheme_fixnum_p_proc, scheme_unsafe_fx_max_proc);
 
     rator = app->rator; /* in case it was updated */
+
+    check_known_both(info, app_o, rator, rand1, rand2, "string-append", scheme_string_p_proc, scheme_true);
+    check_known_both(info, app_o, rator, rand1, rand2, "bytes-append", scheme_byte_string_p_proc, scheme_true);
+    check_known(info, app_o, rator, rand1, "string-ref", scheme_string_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "bytes-ref", scheme_byte_string_p_proc, NULL);
 
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
       check_known_both(info, app_o, rator, rand1, rand2, NULL, scheme_real_p_proc,
@@ -4714,6 +4731,7 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_box_p_proc)
           || SAME_OBJ(pred, scheme_list_p_proc)
           || SAME_OBJ(pred, scheme_list_pair_p_proc)
+          || SAME_OBJ(pred, scheme_string_p_proc)
           || SAME_OBJ(pred, scheme_byte_string_p_proc)
           || SAME_OBJ(pred, scheme_vector_p_proc)
           || SAME_OBJ(pred, scheme_procedure_p_proc)

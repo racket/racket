@@ -392,6 +392,7 @@ SHARED_OK static Scheme_Object *fs_change_props;
 
 READ_ONLY static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
 
+READ_ONLY Scheme_Object *scheme_string_p_proc;
 READ_ONLY Scheme_Object *scheme_byte_string_p_proc;
 
 void
@@ -484,10 +485,12 @@ scheme_init_string (Scheme_Env *env)
   banner_str = scheme_make_utf8_string(scheme_banner());
   SCHEME_SET_CHAR_STRING_IMMUTABLE(banner_str);
 
+  REGISTER_SO(scheme_string_p_proc);
   p = scheme_make_folding_prim(string_p, "string?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("string?", p, env);
+  scheme_string_p_proc = p;
 
   scheme_add_global_constant("make-string",
 			     scheme_make_immed_prim(make_string,
@@ -761,7 +764,7 @@ scheme_init_string (Scheme_Env *env)
 
   REGISTER_SO(scheme_byte_string_p_proc);
   p = scheme_make_folding_prim(byte_string_p, "bytes?", 1, 1, 1);
-  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("bytes?", p, env);
   scheme_byte_string_p_proc = p;
