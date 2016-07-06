@@ -10439,6 +10439,8 @@ static void close_fds_after_fork(int skip1, int skip2, int skip3)
 
 # ifdef USE_ULIMIT
   i = ulimit(4, 0);
+# elif defined(__ANDROID__)
+  i = sysconf(_SC_OPEN_MAX);
 # else
   i = getdtablesize();
 # endif
