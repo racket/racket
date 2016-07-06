@@ -34,7 +34,8 @@
      [(file-exists? orig-file)
       (unless (is-bytecode-file? orig-file)
         (raise-user-error (get-name)
-                          (~a "not a bytecode file, and no associated \".zo\" file\n"
+                          (~a "not a bytecode file, and no associated \".zo\" file;\n"
+                              " consider using `raco make` to compile the source file to bytecode\n"
                               "  path: ~a\n"
                               "  tried associated path: ~a")
                           orig-file
