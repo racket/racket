@@ -108,4 +108,24 @@
           [(list (pregexp #px">\\(.+\\.rktl?:\\d+:\\d+[|]? 120\\)") "<120") #t]
           [_ #f])))
 
+(let* ([file-name (lambda (x)
+                   (last (string-split
+                         (car (string-split x ":"))
+                         "/")))]
+      [proc-file-name (compose file-name symbol->string object-name)])
+  (local-require syntax/location)
+  (let ([current-file-name (file-name (quote-source-file))]
+         [f1 (trace-lambda (x) x)])
+    (trace-define f2 (lambda (x) x))
+    (test current-file-name
+          'trace-lambda-source
+          (proc-file-name f1))
+    (test current-file-name
+          'trace-lambda-source
+          (proc-file-name f2))
+    (trace-let f3 ([x 1])
+      (test current-file-name
+            'trace-lambda-source
+            (proc-file-name f3)))))
+
 (report-errs)
