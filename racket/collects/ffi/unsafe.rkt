@@ -1343,6 +1343,25 @@
      [else
       (loop (ctype-basetype c))])))
 
+;; a way to recognize predicates for cpointer types
+;; similar to `struct-predicate-procedure?`
+(struct cpointer-pred (f)
+  #:property prop:procedure 0)
+
+(define-syntax (define-cpointer-pred stx)
+  (syntax-case stx ()
+    [(_ id tag)
+     (syntax/loc stx
+       (define id
+         (cpointer-pred
+          ;; make sure it has the right inferred name
+          (let ([id (lambda (x) (and (cpointer? x) (cpointer-has-tag? x tag)))])
+            id))))]))
+
+(define cpointer-predicate-procedure? (procedure-rename cpointer-pred? 'cpointer-predicate-procedure?))
+
+(provide cpointer-predicate-procedure?)
+
 ;; A macro version of the above two functions, using the defined name for a tag
 ;; string, and defining a predicate too.  The name should look like `_foo', the
 ;; predicate will be `foo?', and the tag will be "foo".  In addition, `foo-tag'
@@ -1375,9 +1394,7 @@
                (_cpointer      TYPE-tag ptr-type scheme->c c->scheme))
              (define _TYPE/null
                (_cpointer/null TYPE-tag ptr-type scheme->c c->scheme))
-             ;; Make the predicate function have the right inferred name
-             (define (TYPE? x)
-               (and (cpointer? x) (cpointer-has-tag? x TYPE-tag))))))]))
+             (define-cpointer-pred TYPE? TYPE-tag))))]))
 
 ;; ----------------------------------------------------------------------------
 ;; Struct wrappers

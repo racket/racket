@@ -1020,6 +1020,8 @@
 
 (define-cpointer-type _foo)
 (test 'foo? object-name foo?)
+(test #t cpointer-predicate-procedure? foo?)
+(test #f cpointer-predicate-procedure? (λ (x) (foo? x)))
 
 (define-cpointer-type _also_foo #f #f (lambda (ptr)
                                         (cpointer-push-tag! ptr 'extra)
@@ -1027,6 +1029,7 @@
 (let ([p (cast (malloc 16) _pointer _also_foo)])
   (test #t also_foo? p)
   (test #t cpointer-has-tag? p 'extra))
+(test #t cpointer-predicate-procedure? foo?)
 
 ;; ----------------------------------------
 ;; Test JIT inlining
@@ -1161,6 +1164,7 @@
                          [non4 _intptr])
   #:define-unsafe
   #:malloc-mode 'tagged)
+(test #t cpointer-predicate-procedure? tagged?)
 
 (define t (scheme_make_type "new-type"))
 (scheme_register_type_gc_shape t (list SHAPE_STR_PTR_OFFSET tagged-obj1-offset
