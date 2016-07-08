@@ -44,7 +44,13 @@
     [(-> doms ... #:rest rst rng)
      (values #'(doms ...) #'rst (parse-rng stx #'rng))]
     [(-> doms ... rng)
-     (values #'(doms ...) #f (parse-rng stx #'rng))]
+     (begin
+       (for ([x (in-list (append (syntax->list #'(doms ...))
+                                 (list #'rng)))])
+         (when (keyword? (syntax-e x))
+           (raise-syntax-error 'case-> "does not accept keywords"
+                               stx x)))
+       (values #'(doms ...) #f (parse-rng stx #'rng)))]
     [(x y ...)
      (raise-syntax-error #f "expected ->" stx #'x)]
     [_
