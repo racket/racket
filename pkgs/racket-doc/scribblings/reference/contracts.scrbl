@@ -274,34 +274,48 @@ If all of the arguments are procedures or @tech{flat contracts},
 the result is a @tech{flat contract}.
 
 The contract produced by @racket[and/c] tests any value by applying
-the contracts in order, from left to right. If more than one of the
-contracts are not @tech{flat contracts}, then the order in which the
-higher-order parts of the contract are tested can be counter-intuitive.
-For example, consider this function that uses @racket[or/c] in a higher-order
-manner.
+the contracts in order, from left to right.
+
+This means that @racket[and/c] can be used to guard predicates that are not
+total in contracts. For example, this contract is well-behaved, correctly
+blaming the definition of @racket[whoops-not-a-number] for not being
+a number:
+
  @examples[#:eval (contract-eval) #:once
-           (define/contract (f g)
-             (-> (and/c (-> (or/c 0 1 2 3) (or/c 0 1 2))
-                        (-> (or/c 0 1 2 3 4) (or/c 0 1)))
-                 any)
-             g)
+           (eval:error
+            (define/contract whoops-not-a-number
+              (and/c real? even?)
+              "four"))]
+ but if the arguments to @racket[and/c] are reversed, then the contract itself raises
+ an error:
+ @examples[#:eval (contract-eval) #:once
+           (eval:error
+            (define/contract whoops-not-a-number
+              (and/c even? real?)
+              "four"))]
+
+ If more than one of the contracts are not @tech{flat contracts},
+ then the order in which the higher-order parts of the contract are tested
+ can be counter-intuitive. As an example, consider this function that
+ uses @racket[and/c] in a higher-order manner with contracts that
+ always succeed, but that print when they are called, in order for us
+ to see the order in which they are called.
+
+ @examples[#:eval (contract-eval) #:once
+           (define ((show-me n) x)
+             (printf "show-me ~a\n" n)
+             #t)
            
-           (define g (f (λ (x) x)))
+           (define/contract identity-with-complex-printing-contract
+             (and/c (-> (show-me 4) (show-me 5))
+                    (-> (show-me 3) (show-me 6))
+                    (-> (show-me 2) (show-me 7))
+                    (-> (show-me 1) (show-me 8)))
+             (λ (x) x))
            
-           (eval:error (g 5))
+           (identity-with-complex-printing-contract 101)]
 
-           (eval:error (g 4))
-
-           (eval:error (g 3))
-
-           (eval:error (g 2))]
-
- The function @racket[g] is the identity function, but with the contract given
- in the domain position of @racket[f]. As you can see from looking at the contract,
- the positions inside the contract on @racket[g] are ordered; none of them accept
- @racket[5], three accept @racket[4], two accept @racket[3], and only one
- accepts @racket[2]. This ordering reveals the order in which the contracts
- are checked. This order is just like the usual ordering when a contract
+ The checking order is just like the usual ordering when a contract
  is double-wrapped. The contract that is first put on has its domain checked
  second but its range checked first and we see a similar pattern here in
  this example, because @racket[and/c] simply applies the contracts in order.
