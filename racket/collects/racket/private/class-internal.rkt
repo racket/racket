@@ -65,6 +65,8 @@
             (struct-out exn:fail:object)
             make-primitive-class
             class/c ->m ->*m ->dm case->m object/c instanceof/c
+            base-object/c? build-object/c-type-name object/c-width-subtype?
+            object/c-common-methods-stronger? object/c-common-fields-stronger?
             dynamic-object/c
             class-seal class-unseal
            

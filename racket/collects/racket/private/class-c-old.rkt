@@ -22,6 +22,8 @@
          just-check-existence just-check-existence?
          build-internal-class/c internal-class/c-late-neg-proj
          class/c-internal-name-clauses
+         base-object/c? build-object/c-type-name object/c-width-subtype?
+         object/c-common-methods-stronger? object/c-common-fields-stronger?
          dynamic-object/c)
 
 ;; Shorthand contracts that treat the implicit object argument as if it were
@@ -1487,18 +1489,27 @@
     [(base-object/c? that)
      (and
       ;; methods
-      (check-one-object base-object/c-methods base-object/c-method-contracts this that)
-
-      ;; check both ways for fields (since mutable)
-      (check-one-object base-object/c-fields base-object/c-field-contracts this that)
-      (check-one-object base-object/c-fields base-object/c-field-contracts that this)
-
-      ;; width subtyping
-      (all-included? (base-object/c-methods that)
-                     (base-object/c-methods this))
-      (all-included? (base-object/c-fields that)
-                     (base-object/c-fields this)))]
+      (object/c-common-methods-stronger? this that)
+      (object/c-common-fields-stronger? this that)
+      (object/c-width-subtype? this that))]
     [else #f]))
+
+(define (object/c-common-methods-stronger? this that)
+  (check-one-object base-object/c-methods base-object/c-method-contracts this that))
+
+(define (object/c-common-fields-stronger? this that)
+  ;; check both ways for fields (since mutable)
+  (and
+    (check-one-object base-object/c-fields base-object/c-field-contracts this that)
+    (check-one-object base-object/c-fields base-object/c-field-contracts that this)))
+
+;; True if `this` has at least as many field / method names as `that`
+(define (object/c-width-subtype? this that)
+  (and
+    (all-included? (base-object/c-methods that)
+                   (base-object/c-methods this))
+    (all-included? (base-object/c-fields that)
+                   (base-object/c-fields this))))
 
 ;; See `check-one-stronger`. The difference is that this one only checks the
 ;; names that are in both this and that.
@@ -1518,25 +1529,30 @@
    #:late-neg-projection instanceof/c-late-neg-proj
    #:name
    (λ (ctc)
-     (let* ([pair-ids-ctcs
-             (λ (is ctcs)
-               (map (λ (i ctc)
-                      (build-compound-type-name i ctc))
-                    is ctcs))]
-            [handle-optional
-             (λ (name is ctcs)
-               (if (null? is)
-                   null
-                   (list (cons name (pair-ids-ctcs is ctcs)))))])
-       (apply build-compound-type-name
-              'object/c
-              (append
-               (pair-ids-ctcs (base-object/c-methods ctc) (base-object/c-method-contracts ctc))
-               (handle-optional 'field
-                                (base-object/c-fields ctc)
-                                (base-object/c-field-contracts ctc))))))
+     (build-object/c-type-name 'object/c
+                               (base-object/c-methods ctc)
+                               (base-object/c-method-contracts ctc)
+                               (base-object/c-fields ctc)
+                               (base-object/c-field-contracts ctc)))
    #:first-order object/c-first-order
    #:stronger object/c-stronger))
+
+(define (build-object/c-type-name name method-names method-ctcs field-names field-ctcs)
+  (let* ([pair-ids-ctcs
+          (λ (is ctcs)
+            (map (λ (i ctc)
+                   (build-compound-type-name i ctc))
+                 is ctcs))]
+         [handle-optional
+          (λ (name is ctcs)
+            (if (null? is)
+                null
+                (list (cons name (pair-ids-ctcs is ctcs)))))])
+    (apply build-compound-type-name
+           name
+           (append
+            (pair-ids-ctcs method-names method-ctcs)
+            (handle-optional 'field field-names field-ctcs)))))
 
 (define-syntax (object/c stx)
   (syntax-case stx ()
