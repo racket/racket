@@ -2414,7 +2414,7 @@ intptr_t scheme_eqv_hash_key2(Scheme_Object *o)
 
 /* In a hash tree without HASHTR_HAS_VAL, all values are `#t`; we nodes without
   HASHTR_HAS_VAL to nodes with it on demand, but we don't go the other way */
-#define NOT_IMPLICIT_VALUE(v) (!SAME_OBJ(v, scheme_true))
+#define NOT_IMPLICIT_VALUE(v) ((v) && !SAME_OBJ(v, scheme_true))
 
 #define HASHTR_SUBTREEP(o) SAME_TYPE(SCHEME_TYPE(o), scheme_hash_tree_subtree_type)
 #define HASHTR_COLLISIONP(o) SAME_TYPE(SCHEME_TYPE(o), scheme_hash_tree_collision_type)
@@ -3340,7 +3340,7 @@ Scheme_Hash_Tree *scheme_hash_tree_set_w_key_wraps(Scheme_Hash_Tree *tree, Schem
         return tree;
       else {
         /* new hash collision */
-        in_tree = hamt_make2(SCHEME_HASHTR_KIND(in_tree) | HASHTR_HAS_CODE, 0,
+        in_tree = hamt_make2(SCHEME_HASHTR_KIND(in_tree) | HASHTR_HAS_VAL | HASHTR_HAS_CODE, 0,
                              0, in_tree->els[pos], mzHAMT_VAL(in_tree, pos),
                              1, key, val);
         in_tree->iso.so.type = scheme_hash_tree_collision_type;
