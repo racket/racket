@@ -1368,9 +1368,14 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
 
  top:
   t = SCHEME_TYPE(o);
-  k += t;
   
   switch(t) {
+  case scheme_true_type:
+    return k + PTR_TO_LONG(o);
+    break;
+  case scheme_false_type:
+    return k + PTR_TO_LONG(o);
+    break;
   case scheme_integer_type:
     {
       uintptr_t iv = to_unsigned_hash(SCHEME_INT_VAL(o));
@@ -1484,7 +1489,7 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key(Scheme_Object *o, uintptr_t 
 # else
   case scheme_keyword_type:
   case scheme_symbol_type:
-    return PTR_TO_LONG(o);
+    return k + PTR_TO_LONG(o);
 # endif
   default:
     {
@@ -1889,7 +1894,7 @@ intptr_t scheme_equal_hash_key(Scheme_Object *o)
   uintptr_t k;
   int done = 1;
 
-  k = fast_equal_hash_key(o, 0, &done);
+  k = fast_equal_hash_key(o, SCHEME_TYPE(o), &done);
   if (done)
     return to_signed_hash(k);
   else
@@ -1917,6 +1922,10 @@ XFORM_NONGCING static uintptr_t fast_equal_hash_key2(Scheme_Object *o, int *_don
   *_done = 1;
 
   switch(t) {
+  case scheme_true_type:
+    return 1;
+  case scheme_false_type:
+    return 2;
   case scheme_integer_type:
     return t - SCHEME_INT_VAL(o);
 #ifdef MZ_USE_SINGLE_FLOATS
@@ -3202,6 +3211,9 @@ Scheme_Object *scheme_hash_tree_get_w_key_wraps(Scheme_Hash_Tree *tree, Scheme_O
   int stype, pos;
 
   tree = resolve_placeholder(tree);
+  if (!tree->count)
+    return NULL;
+
   stype = SCHEME_TYPE(tree);
   
   if (stype == scheme_eq_hash_tree_type)
