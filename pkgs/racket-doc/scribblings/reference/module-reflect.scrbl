@@ -362,7 +362,7 @@ the module starting with the top-level module's declared name.}
 Takes a module declaration in compiled form and either gets the
 module's @tech{submodules} (when @racket[submodules] is not provided) or
 returns a revised module declaration with the given
-@racket[submodules]. The @racket[pre-module?] argument determines
+@racket[submodules]. The @racket[non-star?] argument determines
 whether the result or new submodule list corresponds to
 @racket[module] declarations (when @racket[non-star?] is true)
 or @racket[module*] declarations (when @racket[non-star?] is @racket[#f]).}
