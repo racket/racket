@@ -128,11 +128,11 @@ An EllipsisHeadPattern is
 A RepConstraint is one of
   (rep:once stx stx stx)
   (rep:optional stx stx (listof BindAction))
-  (rep:bounds nat/#f nat/#f stx stx stx)
+  (rep:bounds nat posint/+inf.0 stx stx stx)
   #f
 |#
 
-(define-struct ehpat (attrs head repc nullable?) #:prefab)
+(define-struct ehpat (attrs head repc check-null?) #:prefab)
 (define-struct rep:once (name under-message over-message) #:prefab)
 (define-struct rep:optional (name over-message defaults) #:prefab)
 (define-struct rep:bounds (min max name under-message over-message) #:prefab)
@@ -322,10 +322,15 @@ A RepConstraint is one of
   (let* ([iattrs0 (pattern-attrs head)]
          [iattrs (repc-adjust-attrs iattrs0 repc)])
     (define nullable (hpat-nullable head))
-    (when (eq? nullable 'yes)
+    (define unbounded-iterations?
+      (cond [(rep:once? repc) #f]
+            [(rep:optional? repc) #f]
+            [(rep:bounds? repc) (eq? (rep:bounds-max repc) +inf.0)]
+            [else #t]))
+    (when (and (eq? nullable 'yes) unbounded-iterations?)
       (when #f (wrong-syntax head-stx "nullable ellipsis-head pattern"))
       (when #t (log-syntax-parse-error "nullable ellipsis-head pattern: ~e" head-stx)))
-    (ehpat iattrs head repc (case nullable [(yes unknown) #t] [(no) #f]))))
+    (ehpat iattrs head repc (case nullable [(yes unknown) unbounded-iterations?] [(no) #f]))))
 
 (define (repc-adjust-attrs iattrs repc)
   (cond [(rep:once? repc)
@@ -461,6 +466,9 @@ A RepConstraint is one of
     [(no) b]
     [(unknown) (case b [(yes) 'yes] [(no unknown) 'unknown])]))
 
+(define (3andmap f xs) (foldl 3and 'yes (map f xs)))
+(define (3ormap f xs) (foldl 3or 'no (map f xs)))
+
 ;; lpat-nullable : ListPattern -> AbsNullable
 (define/memo (lpat-nullable lp)
   (match lp
@@ -468,21 +476,37 @@ A RepConstraint is one of
     [(pat:action ap lp) (lpat-nullable lp)]
     [(pat:head hp lp) (3and (hpat-nullable hp) (lpat-nullable lp))]
     [(pat:pair '#t sp lp) 'no]
-    [(pat:dots ehp lp) (lpat-nullable lp)]))
+    [(pat:dots ehps lp) (3and (3andmap ehpat-nullable ehps) (lpat-nullable lp))]
+    ;; For hpat:and, handle the following which are not ListPatterns
+    [(pat:and lps) (3andmap lpat-nullable lps)]
+    [(pat:any) #t]
+    [_ 'unknown]))
 
 ;; hpat-nullable : HeadPattern -> AbsNullable
 (define/memo (hpat-nullable hp)
   (match hp
     [(hpat:seq lp) (lpat-nullable lp)]
     [(hpat:action ap hp) (hpat-nullable hp)]
-    [(hpat:and hp sp) (hpat-nullable hp)]
-    [(hpat:or _attrs hps _attrss) (foldl 3or 'no (map hpat-nullable hps))]
+    [(hpat:and hp sp) (3and (hpat-nullable hp) (lpat-nullable sp))]
+    [(hpat:or _attrs hps _attrss) (3ormap hpat-nullable hps)]
     [(hpat:describe hp _ _ _) (hpat-nullable hp)]
     [(hpat:delimit hp) (hpat-nullable hp)]
     [(hpat:commit hp) (hpat-nullable hp)]
     [(hpat:ord hp _ _) (hpat-nullable hp)]
     [(hpat:post hp) (hpat-nullable hp)]
     [_ 'unknown]))
+
+;; ehpat-nullable : EllipsisHeadPattern -> AbsNullable
+(define (ehpat-nullable ehp)
+  (match ehp
+    [(ehpat _ hp repc _)
+     (3or (repc-nullable repc) (hpat-nullable hp))]))
+
+;; repc-nullable : RepConstraint -> AbsNullable
+(define (repc-nullable repc)
+  (cond [(rep:once? repc) 'no]
+        [(and (rep:bounds? repc) (> (rep:bounds-min repc) 0)) 'no]
+        [else 'yes]))
 
 ;; ----
 

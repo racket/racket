@@ -909,7 +909,7 @@ Conventions:
     ;; Microbenchmark suggests this isn't a useful specialization
     ;; (probably try-or-pair/null-check already does the useful part)
     ;; == General case
-    [(parse:dots x cx (#s(ehpat head-attrs head head-repc nullable?) ...) tail pr es k)
+    [(parse:dots x cx (#s(ehpat head-attrs head head-repc check-null?) ...) tail pr es k)
      (let ()
        (define repcs (wash-list wash #'(head-repc ...)))
        (define rep-ids (for/list ([repc (in-list repcs)])
@@ -946,7 +946,7 @@ Conventions:
              (define (dots-loop dx dcx loop-pr fh rel-rep ... alt-id ...)
                (with ([fail-handler fh])
                  (try-or-pair/null-check do-pair/null? dx dcx loop-pr es
-                   (try (parse:EH dx dcx loop-pr head-attrs nullable? head-repc dx* dcx* loop-pr* 
+                   (try (parse:EH dx dcx loop-pr head-attrs check-null? head-repc dx* dcx* loop-pr* 
                                   alt-map head-rep head es loop-k)
                         ...)
                    (cond [(< rel-rep (rep:min-number rel-repc))
@@ -974,7 +974,7 @@ Conventions:
 ;; In k: x*, cx*, pr*, alts`attrs(H-pattern) are bound and rep is shadowed.
 (define-syntax (parse:EH stx)
   (syntax-case stx ()
-    [(parse:EH x cx pr attrs nullable? repc x* cx* pr* alts rep head es k)
+    [(parse:EH x cx pr attrs check-null? repc x* cx* pr* alts rep head es k)
      (let ()
        (define/with-syntax k*
          (let* ([main-attrs (wash-iattrs #'attrs)]
@@ -988,7 +988,7 @@ Conventions:
            (with-syntax ([(id ...) ids]
                          [(alt-id ...) alt-ids])
              #`(let ([alt-id (rep:combine repc (attribute id) alt-id)] ...)
-                 #,(if (syntax->datum #'nullable?)
+                 #,(if (syntax->datum #'check-null?)
                        #'(if (zero? (ps-difference pr pr*)) (error/null-eh-match) k)
                        #'k)))))
        (syntax-case #'repc ()
