@@ -346,8 +346,8 @@ Takes a module declaration in compiled form and either gets the
 module's declared name (when @racket[name] is not provided) or returns
 a revised module declaration with the given @racket[name].
 
-The name is a symbol for a top-level module, and it list of symbols
-for a @tech{submodule}, where a list reflects the submodule path to
+The name is a symbol for a top-level module, or a symbol paired with a list of symbols
+where the list reflects the @tech{submodule} path to
 the module starting with the top-level module's declared name.}
 
 
