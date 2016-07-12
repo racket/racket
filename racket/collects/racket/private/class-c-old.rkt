@@ -22,9 +22,10 @@
          just-check-existence just-check-existence?
          build-internal-class/c internal-class/c-late-neg-proj
          class/c-internal-name-clauses
+         dynamic-object/c
+         ;; needed by TR
          base-object/c? build-object/c-type-name object/c-width-subtype?
-         object/c-common-methods-stronger? object/c-common-fields-stronger?
-         dynamic-object/c)
+         object/c-common-methods-stronger? object/c-common-fields-stronger?)
 
 ;; Shorthand contracts that treat the implicit object argument as if it were
 ;; contracted with any/c.
