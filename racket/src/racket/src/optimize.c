@@ -539,7 +539,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
     
     if (scheme_is_functional_nonfailing_primitive(app->args[0], app->num_args, vals)
         || scheme_is_struct_functional(app->args[0], app->num_args, opt_info, vals)
-        || (SCHEME_APPN_FLAGS(app) & APPN_FLAG_OMITTABLE)) {
+        || ((SCHEME_APPN_FLAGS(app) & APPN_FLAG_OMITTABLE) && !(flags & OMITTABLE_IGNORE_APPN_OMIT))) {
       int i;
       for (i = app->num_args; i--; ) {
         if (!scheme_omittable_expr(app->args[i + 1], 1, fuel - 1, flags, opt_info, warn_info))
@@ -561,7 +561,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
     Scheme_App2_Rec *app = (Scheme_App2_Rec *)o;
     if (scheme_is_functional_nonfailing_primitive(app->rator, 1, vals)
         || scheme_is_struct_functional(app->rator, 1, opt_info, vals)
-        || (SCHEME_APPN_FLAGS(app) & APPN_FLAG_OMITTABLE)) {
+        || ((SCHEME_APPN_FLAGS(app) & APPN_FLAG_OMITTABLE) && !(flags & OMITTABLE_IGNORE_APPN_OMIT))) {
       if (scheme_omittable_expr(app->rand, 1, fuel - 1, flags, opt_info, warn_info))
         return 1;
     } else if (SAME_OBJ(app->rator, scheme_make_vector_proc)
@@ -586,7 +586,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)o;
     if (scheme_is_functional_nonfailing_primitive(app->rator, 2, vals)
         || scheme_is_struct_functional(app->rator, 2, opt_info, vals)
-        || (SCHEME_APPN_FLAGS(app) & APPN_FLAG_OMITTABLE)) {
+        || ((SCHEME_APPN_FLAGS(app) & APPN_FLAG_OMITTABLE) && !(flags & OMITTABLE_IGNORE_APPN_OMIT))) {
       if (scheme_omittable_expr(app->rand1, 1, fuel - 1, flags, opt_info, warn_info)
           && scheme_omittable_expr(app->rand2, 1, fuel - 1, flags, opt_info, warn_info))
         return 1;
@@ -7920,8 +7920,12 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	e = SCHEME_VEC_ELS(e)[1];
 
 	n = scheme_list_length(vars);
-	cont = scheme_omittable_expr(e, n, -1, 0, 
-                                     /* no `info' here, because the decision
+	cont = scheme_omittable_expr(e, n, -1,
+                                     /* ignore APPN_FLAG_OMITTABLE, because the
+                                        validator won't be able to reconstruct it
+                                        in general */
+                                     OMITTABLE_IGNORE_APPN_OMIT, 
+                                     /* similarly, no `info' here, because the decision
                                         of omittable should not depend on
                                         information that's only available at
                                         optimization time: */

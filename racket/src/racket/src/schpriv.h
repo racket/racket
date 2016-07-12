@@ -3477,6 +3477,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
 #define OMITTABLE_RESOLVED          0x1
 #define OMITTABLE_KEEP_VARS         0x2
 #define OMITTABLE_KEEP_MUTABLE_VARS 0x4
+#define OMITTABLE_IGNORE_APPN_OMIT  0x8
 
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fuel, int as_rator, int or_escape);
