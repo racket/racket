@@ -55,6 +55,8 @@ Here's the idea:
                  (output-file (string->path dest-filename))]
                 [("-g" "--garbage-collect") "Garbage-collect final module (unsound)"
                  (garbage-collect-toplevels-enabled #t)]                         
+                [("-r" "--recompile") "Recompile final module to re-run optimizations"
+                 (recompile-enabled #t)]                         
                 #:args (filename) 
                 (demodularize filename (output-file))))
 
