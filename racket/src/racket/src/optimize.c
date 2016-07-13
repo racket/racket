@@ -626,6 +626,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
     auto_e = scheme_is_simple_make_struct_type(o, vals, flags, 1, 0, &auto_e_depth, 
                                                NULL, NULL,
                                                (opt_info ? opt_info->top_level_consts : NULL),
+                                               ((opt_info && opt_info->cp) ? opt_info->cp->inline_variants : NULL),
                                                NULL, NULL, 0, NULL, NULL, NULL,
                                                5);
     if (auto_e) {
@@ -1123,6 +1124,7 @@ static Scheme_Object *skip_clears(Scheme_Object *body)
 
 static int is_constant_super(Scheme_Object *arg, 
                              Scheme_Hash_Table *top_level_consts, 
+                             Scheme_Hash_Table *inline_variants, 
                              Scheme_Hash_Table *top_level_table,
                              Scheme_Object **runstack, int rs_delta,
                              Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
@@ -1137,6 +1139,8 @@ static int is_constant_super(Scheme_Object *arg,
     if (top_level_consts) {
       /* This is optimize mode */
       v = scheme_hash_get(top_level_consts, scheme_make_integer(pos));
+      if (!v && inline_variants)
+        v = scheme_hash_get(inline_variants, scheme_make_integer(pos));
       if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_struct_proc_shape_type)) {
         int mode = (SCHEME_PROC_SHAPE_MODE(v) & STRUCT_PROC_SHAPE_MASK);
         int field_count = (SCHEME_PROC_SHAPE_MODE(v) >> STRUCT_PROC_SHAPE_SHIFT);
@@ -1212,6 +1216,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                                                  Simple_Stuct_Type_Info *_stinfo,
                                                  Scheme_Object **_parent_identity,
                                                  Scheme_Hash_Table *top_level_consts, 
+                                                 Scheme_Hash_Table *inline_variants, 
                                                  Scheme_Hash_Table *top_level_table,
                                                  Scheme_Object **runstack, int rs_delta,
                                                  Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
@@ -1238,7 +1243,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
           *_parent_identity = scheme_null;
         if (!SCHEME_FALSEP(app->args[2]))
           super_count_plus_one = is_constant_super(app->args[2], 
-                                                   top_level_consts, top_level_table, runstack,
+                                                   top_level_consts, inline_variants, top_level_table, runstack,
                                                    rs_delta + app->num_args,
                                                    symbols, symbol_table, _parent_identity);
         else
@@ -1326,7 +1331,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
           auto_e = scheme_is_simple_make_struct_type(lv->value, 5, resolved,
                                                      must_always_succeed, check_auto, 
                                                      _auto_e_depth, _stinfo, _parent_identity,
-                                                     top_level_consts, top_level_table, 
+                                                     top_level_consts, inline_variants, top_level_table, 
                                                      runstack, rs_delta,
                                                      symbols, symbol_table,
                                                      _name,
@@ -1359,7 +1364,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
             auto_e = scheme_is_simple_make_struct_type(e2, 5, resolved,
                                                        must_always_succeed, check_auto,
                                                        _auto_e_depth, _stinfo, _parent_identity,
-                                                       top_level_consts, top_level_table,
+                                                       top_level_consts, inline_variants, top_level_table,
                                                        runstack, rs_delta + lvd->count,
                                                        symbols, symbol_table,
                                                        _name,
@@ -8009,6 +8014,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
         } else if (scheme_is_simple_make_struct_type(e, n, 0, 0, 1, NULL, 
                                                      &stinfo, &parent_identity,
                                                      info->top_level_consts, 
+                                                     info->cp->inline_variants, 
                                                      NULL, NULL, 0, NULL, NULL,
                                                      &sstruct,
                                                      5)) {

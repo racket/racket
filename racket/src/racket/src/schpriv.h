@@ -3500,6 +3500,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, i
                                                  Simple_Stuct_Type_Info *_stinfo,
                                                  Scheme_Object **_parent_identity,
                                                  Scheme_Hash_Table *top_level_consts, 
+                                                 Scheme_Hash_Table *inline_variants,
                                                  Scheme_Hash_Table *top_level_table,
                                                  Scheme_Object **runstack, int rs_delta,
                                                  Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,

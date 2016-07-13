@@ -4091,6 +4091,19 @@
              (define (f v)
                (list (b-z v) #t))))
 
+(test-comp '(module m racket/base
+             (require 'struct-a-for-optimize
+                      racket/unsafe/ops)
+             (struct c b (m))
+             (define (f v)
+               (and (c? v) (c-m v))))
+           '(module m racket/base
+             (require 'struct-a-for-optimize
+                      racket/unsafe/ops)
+             (struct c b (m))
+             (define (f v)
+               (and (c? v) (unsafe-struct-ref v 3)))))
+
 (test-comp `(lambda (b)
               (let ([v (unbox b)])
                 (with-continuation-mark 'x 'y (unbox v))))

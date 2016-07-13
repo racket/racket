@@ -400,7 +400,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
 
   if (scheme_is_simple_make_struct_type(val, size-1, 1, 0, 1, NULL,
                                         &stinfo, NULL,
-                                        NULL, (_st_ht ? *_st_ht : NULL), 
+                                        NULL, NULL, (_st_ht ? *_st_ht : NULL), 
                                         NULL, 0, NULL, NULL, NULL, 5)) {
     /* This set of bindings is constant across invocations, but
        if `uses_super', we need to increment tl_timestamp for

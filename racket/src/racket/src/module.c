@@ -4598,7 +4598,7 @@ static void setup_accessible_table(Scheme_Module *m)
                             if (scheme_is_simple_make_struct_type(SCHEME_VEC_ELS(form)[0],
                                                                   SCHEME_VEC_SIZE(form)-1,
                                                                   1, 0, 1, NULL, &stinfo, &parent_identity,
-                                                                  NULL, NULL, NULL, 0,
+                                                                  NULL, NULL, NULL, NULL, 0,
                                                                   m->prefix->toplevels, ht,
                                                                   &is_st,
                                                                   5)) {
@@ -4610,7 +4610,7 @@ static void setup_accessible_table(Scheme_Module *m)
                           if (is_st) {
                             intptr_t shape;
                             shape = scheme_get_struct_proc_shape(k-1, &stinfo);
-                            /* Vector of size 3 => struct procedure */
+                            /* Vector of size 3 => struct shape */
                             v = scheme_make_vector(3, v);
                             SCHEME_VEC_ELS(v)[1] = scheme_make_integer(shape);
                             SCHEME_VEC_ELS(v)[2] = is_st;
@@ -4847,7 +4847,7 @@ static Scheme_Object *check_accessible_in_module(Scheme_Module *module, intptr_t
             /* vector of size 3 => struct proc */
             if (_is_constant) {
               Scheme_Object *ps;
-              
+
               ps = scheme_make_struct_proc_shape(SCHEME_INT_VAL(SCHEME_VEC_ELS(pos)[1]),
                                                  SCHEME_VEC_ELS(pos)[2]);
 
