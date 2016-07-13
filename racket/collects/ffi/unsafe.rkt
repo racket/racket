@@ -1162,6 +1162,8 @@
          (protect-out union-ref union-set!))
 
 (define (_union t . ts)
+  (unless (and (ctype? t) (map ctype? ts))
+    (raise-argument-error '_union "list of c types" (cons t ts)))
   (let ([ts (cons t ts)])
     (make-ctype (apply make-union-type ts)
                 (lambda (v) (union-ptr v))
@@ -1169,8 +1171,26 @@
 
 (define-struct union (ptr types))
 (define (union-ref u i)
+  (unless (union? u)
+    (raise-argument-error 'union-ref "union value" 0 u i))
+  (unless (exact-nonnegative-integer? i)
+    (raise-argument-error 'union-ref "exact-nonnegative-integer?" 1 u i))
+  (unless (< i (length (union-types u)))
+    (raise-arguments-error 'union-ref
+                           "index too large for union"
+                           "index"
+                           i))
   (ptr-ref (union-ptr u) (list-ref (union-types u) i)))
 (define (union-set! u i v)
+  (unless (union? u)
+    (raise-argument-error 'union-ref "union value" 0 u i))
+  (unless (exact-nonnegative-integer? i)
+    (raise-argument-error 'union-ref "exact-nonnegative-integer?" 1 u i))
+  (unless (< i (length (union-types u)))
+    (raise-arguments-error 'union-ref
+                           "index too large for union"
+                           "index"
+                           i))
   (ptr-set! (union-ptr u) (list-ref (union-types u) i) v))
 
 ;; ----------------------------------------------------------------------------
