@@ -4408,3 +4408,41 @@ static int mark_log_reader_FIXUP(void *p, struct NewGC *gc) {
 #define mark_log_reader_IS_CONST_SIZE 1
 
 
+static int struct_proc_shape_SIZE(void *p, struct NewGC *gc) {
+#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
+  gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Proc_Shape));
+#else
+  return 0;
+#endif
+}
+
+static int struct_proc_shape_MARK(void *p, struct NewGC *gc) {
+#ifndef GC_NO_MARK_PROCEDURE_NEEDED
+  Scheme_Struct_Proc_Shape *s = (Scheme_Struct_Proc_Shape *)p;
+  gcMARK2(s->identity, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Proc_Shape));
+# endif
+#endif
+}
+
+static int struct_proc_shape_FIXUP(void *p, struct NewGC *gc) {
+#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
+  Scheme_Struct_Proc_Shape *s = (Scheme_Struct_Proc_Shape *)p;
+  gcFIXUP2(s->identity, gc);
+# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
+  return 0;
+# else
+  return
+  gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Proc_Shape));
+# endif
+#endif
+}
+
+#define struct_proc_shape_IS_ATOMIC 0
+#define struct_proc_shape_IS_CONST_SIZE 1
+
+

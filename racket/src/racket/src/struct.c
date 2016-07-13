@@ -3596,11 +3596,12 @@ int scheme_check_structure_shape(Scheme_Object *e, Scheme_Object *expected)
     return (v == STRUCT_PROC_SHAPE_PRED);
   } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_SETTER) {
     st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
-    return (v == ((st->num_slots << STRUCT_PROC_SHAPE_SHIFT) 
+    return (v == ((st->num_islots << STRUCT_PROC_SHAPE_SHIFT)
                   | STRUCT_PROC_SHAPE_SETTER));
   } else if (i == SCHEME_PRIM_STRUCT_TYPE_INDEXED_GETTER) {
+    int pos = SCHEME_INT_VAL(SCHEME_PRIM_CLOSURE_ELS(e)[1]);
     st = (Scheme_Struct_Type *)SCHEME_PRIM_CLOSURE_ELS(e)[0];
-    return (v == ((st->num_slots << STRUCT_PROC_SHAPE_SHIFT) 
+    return (v == ((pos << STRUCT_PROC_SHAPE_SHIFT) 
                   | STRUCT_PROC_SHAPE_GETTER));
   } else if ((i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_SETTER)
              || (i == SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER)

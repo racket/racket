@@ -4558,8 +4558,10 @@ static void setup_accessible_table(Scheme_Module *m)
           for (i = 0; i < cnt; i++) {
             form = SCHEME_VEC_ELS(m->bodies[0])[i];
             if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
-              int checked_st = 0, is_st = 0;
+              int checked_st = 0;
+              Scheme_Object *is_st = NULL;
               Simple_Stuct_Type_Info stinfo;
+              Scheme_Object *parent_identity;
               for (k = SCHEME_VEC_SIZE(form); k-- > 1; ) {
                 tl = SCHEME_VEC_ELS(form)[k];
                 if (SCHEME_TOPLEVEL_FLAGS(tl) & SCHEME_TOPLEVEL_SEAL) {
@@ -4593,19 +4595,25 @@ static void setup_accessible_table(Scheme_Module *m)
                           }
                         } else {
                           if (!checked_st) {
-                            is_st = !!scheme_is_simple_make_struct_type(SCHEME_VEC_ELS(form)[0],
-                                                                        SCHEME_VEC_SIZE(form)-1,
-                                                                        1, 0, 1, NULL, &stinfo,
-                                                                        NULL, NULL, NULL, 0,
-                                                                        m->prefix->toplevels, ht,
-                                                                        5);
+                            if (scheme_is_simple_make_struct_type(SCHEME_VEC_ELS(form)[0],
+                                                                  SCHEME_VEC_SIZE(form)-1,
+                                                                  1, 0, 1, NULL, &stinfo, &parent_identity,
+                                                                  NULL, NULL, NULL, 0,
+                                                                  m->prefix->toplevels, ht,
+                                                                  &is_st,
+                                                                  5)) {
+                              is_st = scheme_make_pair(is_st, parent_identity);
+                            } else
+                              is_st = NULL;
                             checked_st = 1;
                           }
                           if (is_st) {
                             intptr_t shape;
                             shape = scheme_get_struct_proc_shape(k-1, &stinfo);
+                            /* Vector of size 3 => struct procedure */
                             v = scheme_make_vector(3, v);
                             SCHEME_VEC_ELS(v)[1] = scheme_make_integer(shape);
+                            SCHEME_VEC_ELS(v)[2] = is_st;
                           }
                         }
                         scheme_hash_set(ht, tl, v);
@@ -4836,10 +4844,12 @@ static Scheme_Object *check_accessible_in_module(Scheme_Module *module, intptr_t
             if (_is_constant)
               get_procedure_shape(SCHEME_VEC_ELS(pos)[1], _is_constant);
           } else {
+            /* vector of size 3 => struct proc */
             if (_is_constant) {
               Scheme_Object *ps;
               
-              ps = scheme_make_struct_proc_shape(SCHEME_INT_VAL(SCHEME_VEC_ELS(pos)[1]));
+              ps = scheme_make_struct_proc_shape(SCHEME_INT_VAL(SCHEME_VEC_ELS(pos)[1]),
+                                                 SCHEME_VEC_ELS(pos)[2]);
 
               *_is_constant = ps;
             }

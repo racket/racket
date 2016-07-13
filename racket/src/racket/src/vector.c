@@ -37,6 +37,7 @@ READ_ONLY Scheme_Object *scheme_list_to_vector_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_vector_length_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_string_length_proc;
 READ_ONLY Scheme_Object *scheme_unsafe_byte_string_length_proc;
+READ_ONLY Scheme_Object *scheme_unsafe_struct_ref_proc;
 
 /* locals */
 static Scheme_Object *vector_p (int argc, Scheme_Object *argv[]);
@@ -212,7 +213,9 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("unsafe-vector*-set!", p, env);  
 
+  REGISTER_SO(scheme_unsafe_struct_ref_proc);
   p = scheme_make_immed_prim(unsafe_struct_ref, "unsafe-struct-ref", 2, 2);
+  scheme_unsafe_struct_ref_proc = p;
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED
                                                             | SCHEME_PRIM_IS_UNSAFE_OMITABLE
                                                             | SCHEME_PRIM_IS_OMITABLE);

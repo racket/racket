@@ -1265,6 +1265,14 @@ mark_log_reader {
   gcBYTES_TO_WORDS(sizeof(Scheme_Log_Reader));
 }
 
+struct_proc_shape {
+ mark:
+  Scheme_Struct_Proc_Shape *s = (Scheme_Struct_Proc_Shape *)p;
+  gcMARK2(s->identity, gc);
+ size:
+  gcBYTES_TO_WORDS(sizeof(Scheme_Struct_Proc_Shape));
+}
+
 END type;
 
 /**********************************************************************/

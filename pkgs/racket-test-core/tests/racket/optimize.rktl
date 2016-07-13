@@ -4026,6 +4026,71 @@
                (list (c? (c-q (c 1 2 3))))
                5)))
 
+(test-comp '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (define (f v)
+               (if (a? v)
+                   (list (a-x v) (a-y v))
+                   (void))))
+           '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (define (f v)
+               (if (a? v)
+                   (list (unsafe-struct-ref v 0)
+                         (unsafe-struct-ref v 1))
+                   (void)))))
+
+(test-comp '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (define (f v)
+               (list (a-x v) (a-y v))))
+           '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (define (f v)
+               (list (a-x v)
+                     (unsafe-struct-ref v 1)))))
+
+(test-comp '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (define (f v)
+               (list (a-x v) (a? v))))
+           '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (define (f v)
+               (list (a-x v) #t))))
+
+(test-comp '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (struct b a (z))
+             (define (f v)
+               (and (b? v) (b-z v))))
+           '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (struct b a (z))
+             (define (f v)
+               (and (b? v) (unsafe-struct-ref v 2)))))
+
+(test-comp '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (struct b a (z))
+             (define (f v)
+               (list (b-z v) (a? v))))
+           '(module m racket/base
+             (require racket/unsafe/ops)
+             (struct a (x y))
+             (struct b a (z))
+             (define (f v)
+               (list (b-z v) #t))))
+
 (test-comp `(lambda (b)
               (let ([v (unbox b)])
                 (with-continuation-mark 'x 'y (unbox v))))
