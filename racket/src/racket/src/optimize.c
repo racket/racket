@@ -1189,53 +1189,6 @@ static int is_constant_super(Scheme_Object *arg,
   return 0;
 }
 
-static int is_simple_property_list(Scheme_Object *a, int resolved)
-/* Does `a` produce a property list with no effect on the constructor? */
-{
-  Scheme_Object *arg;
-  int i, count;
-  
-  if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type))
-    count = ((Scheme_App_Rec *)a)->num_args;
-  else if (SAME_TYPE(SCHEME_TYPE(a), scheme_application2_type))
-    count = 1;
-  else if (SAME_TYPE(SCHEME_TYPE(a), scheme_application3_type))
-    count = 2;
-  else
-    return 0;
-
-  for (i = 0; i < count; i++) {
-    if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type))
-      arg = ((Scheme_App_Rec *)a)->args[i+1];
-    else if (SAME_TYPE(SCHEME_TYPE(a), scheme_application2_type))
-      arg = ((Scheme_App2_Rec *)a)->rator;
-    else {
-      if (i == 0)
-        arg = ((Scheme_App3_Rec *)a)->rand1;
-      else
-        arg = ((Scheme_App3_Rec *)a)->rand2;
-    }
-
-    if (SAME_TYPE(SCHEME_TYPE(arg), scheme_application3_type)) {
-      Scheme_App3_Rec *a3 = (Scheme_App3_Rec *)arg;
-
-      if (!SAME_OBJ(a3->rator, scheme_cons_proc))
-        return 0;
-      if (SAME_TYPE(SCHEME_TYPE(a3->rand1), scheme_struct_property_type)
-          /* `prop:chaperone-unsafe-undefined` affects the constructor */
-          && !SAME_OBJ(a3->rand1, scheme_chaperone_undefined_property)) {
-        if (!scheme_omittable_expr(a3->rand2, 1, 3, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
-          return 0;
-      } else
-        return 0;
-    } else
-      return 0;
-  }
-  
-  return 1;
-}
-
-
 Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int resolved, 
                                                  int must_always_succeed, int check_auto, 
                                                  GC_CAN_IGNORE int *_auto_e_depth, 
@@ -1248,10 +1201,9 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
 /* Checks whether it's a `make-struct-type' call --- that, if `must_always_succeed` is 
    true, certainly succeeds (i.e., no exception) --- pending a check of the auto-value
    argument if !check_auto. The resulting constructor must always succeed (i.e., no
-   guards) and not involve chaperones (i.e., no `prop:chaperone-unsafe-undefined`).
-   The result is the auto-value argument or scheme_true if it's simple, NULL if not. 
-   The first result is a struct type, the second a constructor, and the thrd a predicate;
-   the rest are an unspecified mixture of selectors and mutators. */
+   guards). The result is the auto-value argument or scheme_true if it's simple, NULL if not. 
+   The first result of `e` will be a struct type, the second a constructor, and the third a predicate;
+   the rest are selectors and mutators. */
 {
   if (!fuel) return NULL;
 
@@ -1285,9 +1237,13 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
             && ((app->num_args < 6)
                 /* no properties... */
                 || SCHEME_NULLP(app->args[6])
-                /* ... or properties that don't affect the constructor ... */
+                /* ... or properties that might make the `make-struct-type`
+                   call itself fail, but otherwise don't affect the constructor
+                   or selectors in a way that matters (although supplying the
+                   `prop:chaperone-unsafe-undefined` property can affect the
+                   constructor in an optimizer-irrelevant way) */
                 || (!must_always_succeed
-                    && is_simple_property_list(app->args[6], resolved)))
+                    && scheme_omittable_expr(app->args[6], 1, 4, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL)))
             && ((app->num_args < 7)
                 /* inspector: */
                 || SCHEME_FALSEP(app->args[7])

@@ -3978,18 +3978,6 @@
                (a? (a-x (a 1 2)))
                5)))
 
-(test-comp '(module m racket/base
-              (require racket/unsafe/undefined)
-              (struct a (x y) #:omit-define-syntaxes
-                      #:property prop:chaperone-unsafe-undefined '(y x))
-              (list (begin (a? 1) 2)))
-           '(module m racket/base
-              (require racket/unsafe/undefined)
-              (struct a (x y) #:omit-define-syntaxes
-                      #:property prop:chaperone-unsafe-undefined '(y x))
-              (list 2))
-           #f)
-
 (module struct-a-for-optimize racket/base
   (provide (struct-out a)
            (struct-out b))
