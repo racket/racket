@@ -1524,7 +1524,12 @@ and from an underlying C array.}
 
 The primitive type constructor for creating new C union types. Like C
 struct types, union types are new primitive types with no conversion
-functions associated. Unions are always treated like structs.}
+functions associated. Unions are always treated like structs.
+
+@examples[#:eval ffi-eval
+(make-union-type (_list-struct _int _int)
+                 (_list-struct _double _double))
+]}
 
 
 @defproc[(_union [type ctype?] ...+)
@@ -1533,19 +1538,42 @@ functions associated. Unions are always treated like structs.}
 Creates a union type whose Racket representation is a union that
 works with @racket[union-ref] and @racket[union-set!]. The union is
 not copied; the Racket representation is backed by the underlying C
-representation.}
+representation.
+
+@examples[#:eval ffi-eval
+(_union (_list-struct _int _int)
+        (_list-struct _double _double))
+]}
 
 
 @defproc[(union? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is a Racket representation of a C
-value via @racket[_union], @racket[#f] otherwise.}
+value via @racket[_union], @racket[#f] otherwise.
+
+@examples[#:eval ffi-eval
+(define a-union-type
+  (_union (_list-struct _int _int)
+          (_list-struct _double _double)))
+(define a-union-val
+  (cast (list 3.14 2.71)
+        (_list-struct _double _double)
+        a-union-type))
+(union? a-union-val)
+(union? 3)
+]}
 
 
 @defproc[(union-ref [u union?] [i exact-nonnegative-integer?])
          any/c]{
 
-Extracts a variant from a union.}
+Extracts a variant from a union. The variants are indexed starting
+at @racket[0].
+
+@examples[#:eval ffi-eval
+(code:comment "see examples for union? for definitions")
+(union-ref a-union-val 1)
+]}
 
 
 @defproc[(union-set! [u union?] 
@@ -1553,12 +1581,23 @@ Extracts a variant from a union.}
                      [v any/c])
          void?]{
 
-Sets a variant in a union..}
+Sets a variant in a union.
+
+@examples[#:eval ffi-eval
+(code:comment "see examples for union? for definitions")
+(union-set! a-union-val 0 (list 4 5))
+a-union-val
+(union-ref a-union-val 0)
+]}
 
 
 @defproc[(union-ptr [u array?]) cpointer?]{
 
-Extracts the pointer for a union's storage.}
+Extracts the pointer for a union's storage.
+
+@examples[#:eval ffi-eval
+(union-ptr a-union-val)
+]}
 
 
 @; ------------------------------------------------------------
