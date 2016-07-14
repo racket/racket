@@ -19,6 +19,8 @@
 (check-equal? (car (union-ref val-2 0)) 5)
 
 (check-exn #rx"expected: list of c types" (λ () (_union 3)))
+(check-exn #rx"expected: list of c types" (λ () (_union _int 4)))
+(check-not-exn (λ () (_union _int _int)))
 
 (check-exn #rx"too large" (λ () (union-ref val 1)))
 (check-exn #rx"nonnegative-integer" (λ () (union-ref val -1)))

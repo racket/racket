@@ -1162,7 +1162,7 @@
          (protect-out union-ref union-set!))
 
 (define (_union t . ts)
-  (unless (and (ctype? t) (map ctype? ts))
+  (unless (and (ctype? t) (andmap ctype? ts))
     (raise-argument-error '_union "list of c types" (cons t ts)))
   (let ([ts (cons t ts)])
     (make-ctype (apply make-union-type ts)
