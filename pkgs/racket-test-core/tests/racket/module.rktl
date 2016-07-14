@@ -1780,6 +1780,21 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (test 5 dynamic-require ''module-that-exports-phase-2-x-at-phase-0 'x)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Check that
+;; `namespace-anchor->namespace` internally enables top-level mode for
+;; binding handling:
+
+;; Example from Alex Knauth:
+(module module-that-uses-eval-to-define-a-macro-in-its-own-namespace racket/base
+  (require (for-syntax racket/base))
+  (define-namespace-anchor a)
+  (define ns (namespace-anchor->namespace a))
+  (eval '(define-syntax x (λ (stx) #'333)) ns)
+  (define result (eval 'x ns))
+  (provide result))
+
+(test 333 dynamic-require ''module-that-uses-eval-to-define-a-macro-in-its-own-namespace 'result)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
