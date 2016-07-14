@@ -647,17 +647,25 @@
 (tok (1 . (2 3)) (~datum (1 . (2 3))) 'ok)
 
 ;; nullable EH pattern raises error on match (rather than diverging) (7/2016)
-(tcerr "nullable"
-  (syntax-parse #'(1 2 3)
-    [((~seq) ... n:nat ...) 'ok])
-  #rx"nullable ellipsis-head pattern|ellipsis-head pattern matched an empty sequence")
-(tcerr "nullable (dynamic)"
-  (let ()
-    (define-splicing-syntax-class empty
-      (pattern (~seq)))
-    (syntax-parse #'(1 2 3)
-      [((~seq e:empty) ... n:nat ...) 'ok]))
-  #rx"ellipsis-head pattern matched an empty sequence")
+(let ()
+  ;; to make drdr happy: use eval because compiling this code currently logs an error
+  (define ns (make-base-namespace))
+  (eval '(require syntax/parse) ns)
+  (tcerr "nullable"
+    (eval
+     '(syntax-parse #'(1 2 3)
+        [((~seq) ... n:nat ...) 'ok])
+     ns)
+    #rx"nullable ellipsis-head pattern|ellipsis-head pattern matched an empty sequence")
+  (tcerr "nullable (dynamic)"
+    (eval
+     '(let ()
+        (define-splicing-syntax-class empty
+          (pattern (~seq)))
+        (syntax-parse #'(1 2 3)
+          [((~seq e:empty) ... n:nat ...) 'ok]))
+     ns)
+    #rx"ellipsis-head pattern matched an empty sequence"))
 
 ;; nullable but bounded EH pattern ok (thanks Alex Knauth) (7/2016)
 (tok (1 2 3) ((~once (~seq)) ... n:nat ...) 'ok)
