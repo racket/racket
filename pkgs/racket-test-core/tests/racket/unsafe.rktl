@@ -679,4 +679,18 @@
     (err/rt-test
         (unsafe-weak-hash-iterate-next ht i) exn:fail:contract? err-msg)))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Check that `unsafe-immutable-hash-...` proplerly handles an
+;; indirection created by `read`:
+
+(test '((a . 1) (b . 2))
+      sort
+      (for/list (((k v) (in-immutable-hash (read (open-input-string "#hash((a . 1) (b . 2))")))))
+        (cons k v))
+      <
+      #:key cdr)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (report-errs)
