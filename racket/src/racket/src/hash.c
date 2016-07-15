@@ -2885,6 +2885,7 @@ XFORM_NONGCING void scheme_unsafe_hash_tree_subtree(Scheme_Object *obj, Scheme_O
       subtree = (Scheme_Hash_Tree *)SCHEME_CHAPERONE_VAL(obj);
     else
       subtree = (Scheme_Hash_Tree *)obj;
+    subtree = resolve_placeholder(subtree);
     i = SCHEME_INT_VAL(args);
     while (i >= (1<<(2*mzHAMT_LOG_WORD_SIZE))) {
       subtree = (Scheme_Hash_Tree *)subtree->els[i & ((1<<mzHAMT_LOG_WORD_SIZE)-1)];
@@ -2916,6 +2917,7 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Hash_Tree *ht, Scheme_Object 
     stack = SCHEME_CDDR(args);
     level = -1; /* -1 = too big */
   } else {
+    ht = resolve_placeholder(ht);
     i = SCHEME_INT_VAL(args);
     level = 0;
     while (i >= (1<<(2*mzHAMT_LOG_WORD_SIZE))) {
@@ -2927,8 +2929,6 @@ Scheme_Object *scheme_unsafe_hash_tree_next(Scheme_Hash_Tree *ht, Scheme_Object 
     }
     i = i & ((1<<mzHAMT_LOG_WORD_SIZE)-1);
   }
-
-  /* ht = resolve_placeholder(ht); /\* only check this in iterate-first *\/ */
 
   while (1) {
     if (!i) { /* pop up the tree */
