@@ -10,22 +10,23 @@
          racket/unsafe/ops
          compiler/zo-parse
          compiler/zo-marshal
-         ;; `random` from `racket/base is a Racket function, which makes
-         ;; compilation less predictable than a primitive
-         (only-in '#%kernel random
-                            (list-pair? k:list-pair?)))
+         (prefix-in k: '#%kernel))
+         ;; Some primitives like `random` are shadowed by Racket functions in
+         ;; `racket/base` and other modules. Using the primitive makes the
+         ;; compilation more predictable and removes the reference to the
+         ;; external modules in the functions.
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check JIT inlining of primitives:
 (parameterize ([current-namespace (make-base-namespace)]
-	       [eval-jit-enabled #t])
+               [eval-jit-enabled #t])
   (namespace-require 'racket/flonum)
   (namespace-require 'racket/extflonum)
   (namespace-require 'racket/fixnum)
   (namespace-require 'racket/unsafe/ops)
   (namespace-require 'racket/unsafe/undefined)
-  (namespace-require '(rename '#%kernel k:list-pair? list-pair?))
+  (namespace-require '(prefix k: '#%kernel))
   (eval '(define-values (prop:thing thing? thing-ref) 
            (make-struct-type-property 'thing)))
   (eval '(struct rock (x) #:property prop:thing 'yes))
@@ -944,7 +945,7 @@
 (test-comp 5 '(begin0 (begin0 5 'hi "apple" 1.5)))
 (test-comp 5 '(begin0 (begin0 5 'hi "apple") 1.5))
 
-; Can't drop `begin0' if the first expresson is may change cotinuation marks:
+; Can't drop `begin0' if the first expression may change a continuation marks:
 (test-comp '(lambda () 3)
            '(lambda () (begin0 (begin0 (+ 1 2) 'hi "apple") 1.5)))
 (test-comp '(lambda () (let ([sum +]) (begin0 (begin0 (+ 1 2) 'hi "apple") 1.5)))
@@ -1028,8 +1029,6 @@
 
 (test-comp (normalize-depth '(let* ([i (display 0 1)][g i][h (car g)][m h]) m))
 	   (normalize-depth '(let* ([i (display 0 1)][h (car i)]) h)))
-
-; (require #%kernel) ; 
 
 (test-comp (void) '(void))
 (test-comp 3 '(+ 1 2))
@@ -1355,23 +1354,43 @@
 (test-comp '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) #t)
            '(lambda (z) (let ([f (lambda (i) (car i))]) (f z)) (pair? z)))
 
-; Test the map primitive instead of the redefined version in private/map.rkt 
-(test-comp '(module ? '#%kernel
-              (display #t)
-              (display (lambda (f l) (map f l) #t)))
-           '(module ? '#%kernel
-              (display (primitive? map))
-              (display (lambda (f l) (map f l) (procedure? f)))))
+; Test that the optimizer infers correctly the type of all the arguments
+; and the type of the return value. Use #f in case the type is unknown.
+(define (test-arg-types proc/args? val? 
+                        (omit-on-good-args? #f)
+                        (dont-infer-type-for-args? #f))
+  (define proc (car proc/args?))
+  (define args? (cdr proc/args?))
+  (define vars (for/list ([i (in-range (length args?))])
+                 (string->symbol (string-append "arg" (number->string i)))))
+  (define vars/true (for/list ([i (in-list args?)]) #t))
+  (define test/vars (for/list ([test? (in-list args?)]
+                               [var (in-list vars)])
+                      (if test? `(,test? ,var) #t)))
+  (when val?
+    (test-comp `(lambda ,vars (when (and ,@test/vars) (,val? (,proc ,@vars))))
+               `(lambda ,vars (when (and ,@test/vars) (,proc ,@vars) #t))))
+  (when omit-on-good-args?
+    (test-comp `(lambda ,vars (when (and ,@test/vars) (,proc ,@vars)) (void))
+               `(lambda ,vars (void))))
+  (when (not dont-infer-type-for-args?)
+    (test-comp `(lambda ,vars (,proc ,@vars) (list ,@test/vars))
+               `(lambda ,vars (,proc ,@vars) (list ,@vars/true)))))
 
-; Test the map version in private/map.rkt
-(test-comp '(module ? racket/base
-              #;(display #f)
-              (display (lambda (f l) (map f l) #t)))
-           '(module ? racket/base
-              #;(display (primitive? map))
-              (display (lambda (f l) (map f l) (procedure? f)))))
+;Test types inference for vector?
+(test-arg-types '(vector-length vector?) 'fixnum? 'may-omit)
+(test-arg-types '(vector->values vector?) #f)
+(test-arg-types '(vector-ref vector? fixnum?) #f)
+(test-arg-types '(vector-set! vector? fixnum? #f) #f)
+(test-arg-types '(vector->list vector?) 'list?)
+(test-arg-types '(list->vector list?) 'vector?)
+(test-arg-types '(struct->vector #f) 'vector?)
+(test-arg-types '(struct->vector #f #f) 'vector?)
+(test-arg-types '(vector->immutable-vector vector?) 'vector?)
 
 ;Test special cases of make-vector
+(test-arg-types '(make-vector fixnum?) 'vector?)
+(test-arg-types '(make-vector fixnum? #f) 'vector?)
 (test-comp '(lambda (w z) (vector? (make-vector (w) (z))))
            '(lambda (w z) (make-vector (w) (z)) #t))
 (test-comp '(lambda (w z) (vector? (make-vector (w))))
@@ -1389,85 +1408,47 @@
            '(lambda (w z) #t)
            #f)
 
-;Test types inference for vector?
-(test-comp '(lambda (v) (fixnum? (vector-length v)))
-           '(lambda (v) (vector-length v) #t))
-(test-comp '(lambda (v) (vector-length v) (vector? v))
-           '(lambda (v) (vector-length v) #t))
-(test-comp '(lambda (v) (vector->values v) (vector? v))
-           '(lambda (v) (vector->values v) #t))
-(test-comp '(lambda (v x) (vector-ref v x) #t)
-           '(lambda (v x) (vector-ref v x) (vector? v)))
-(test-comp '(lambda (v x) (vector-set! v x #t) #t)
-           '(lambda (v x) (vector-set! v x #t) (vector? v)))
-(test-comp '(lambda (l) (vector? (list->vector l)))
-           '(lambda (l) (list->vector l) #t))
-(test-comp '(lambda (l) (list->vector l) (list? l))
-           '(lambda (l) (list->vector l) #t))
-(test-comp '(lambda (v) (list? (vector->list v)))
-           '(lambda (v) (vector->list v) #t))
-(test-comp '(lambda (v) (vector->list v) (vector? v))
-           '(lambda (v) (vector->list v) #t))
-(test-comp '(lambda (s) (vector? (struct->vector s)))
-           '(lambda (s) (struct->vector s) #t))
-(test-comp '(lambda (s x) (vector? (struct->vector s x)))
-           '(lambda (s x) (struct->vector s x) #t))
-(test-comp '(lambda (v) (vector? (vector->immutable-vector v)))
-           '(lambda (v) (vector->immutable-vector v) #t))
-(test-comp '(lambda (v) (vector->immutable-vector v) (vector? v))
-           '(lambda (v) (vector->immutable-vector v) #t))
-
 ;Test types inference for string?
-(test-comp '(lambda (s) (fixnum? (string-length s)))
-           '(lambda (s) (string-length s) #t))
-(test-comp '(lambda (s) (string-length s) (string? s))
-           '(lambda (s) (string-length s) #t))
-(test-comp '(lambda (s p) (string-ref s p) (string? s))
-           '(lambda (s p) (string-ref s p) #t))
-(test-comp '(lambda (s p v) (string-set! s p v) (string? s))
-           '(lambda (s p v) (string-set! s p v) #t))
-(test-comp '(lambda (s1) (string-append s1) (string? s1))
-           '(lambda (s1) (string-append s1) #t))
-(test-comp '(lambda (s1 s2) (string-append s1 s2) (list (string? s1) (string? s2)))
-           '(lambda (s1 s2) (string-append s1 s2) (list #t #t)))
-(test-comp '(lambda (s1 s2 s3) (string-append s1 s2 s3) (list (string? s1) (string? s2) (string? s3)))
-           '(lambda (s1 s2 s3) (string-append s1 s2 s3) (list #t #t #t)))
-(test-comp '(lambda (s1) (string? (string-append s1)))
-           '(lambda (s1) (string-append s1) #t))
-(test-comp '(lambda (s1 s2) (string? (string-append s1 s2)))
-           '(lambda (s1 s2) (string-append s1 s2) #t))
-(test-comp '(lambda (s1 s2 s3) (string? (string-append s1 s2 s3)))
-           '(lambda (s1 s2 s3) (string-append s1 s2 s3) #t))
-(test-comp '(lambda (s) (string? (string->immutable-string s)))
-           '(lambda (s) (string->immutable-string s) #t))
-(test-comp '(lambda (s) (string->immutable-string s) (string? s))
-           '(lambda (s) (string->immutable-string s) #t))
+(test-arg-types '(string-length string?) 'fixnum? 'may-omit)
+(test-arg-types '(string-ref string? fixnum?) #f)
+(test-arg-types '(string-set! string? fixnum? #f) #f)
+(test-arg-types '(string->immutable-string string?) 'string? 'may-omit)
+(test-arg-types '(string-append) string? 'may-omit)
+(test-arg-types '(string-append string?) 'string? 'may-omit)
+(test-arg-types '(string-append string? string?) 'string? 'may-omit)
+(test-arg-types '(string-append string? string? string?) 'string? 'may-omit)
+(test-arg-types '(string-append string? string? string? string?) 'string? 'may-omit)
 
 ;Test types inference for bytes?
-(test-comp '(lambda (s) (fixnum? (bytes-length s)))
-           '(lambda (s) (bytes-length s) #t))
-(test-comp '(lambda (s) (bytes-length s) (bytes? s))
-           '(lambda (s) (bytes-length s) #t))
-(test-comp '(lambda (s p) (bytes-ref s p) (bytes? s))
-           '(lambda (s p) (bytes-ref s p) #t))
-(test-comp '(lambda (s p v) (bytes-set! s p v) (bytes? s))
-           '(lambda (s p v) (bytes-set! s p v) #t))
-(test-comp '(lambda (s1) (bytes-append s1) (bytes? s1))
-           '(lambda (s1) (bytes-append s1) #t))
-(test-comp '(lambda (s1 s2) (bytes-append s1 s2) (list (bytes? s1) (bytes? s2)))
-           '(lambda (s1 s2) (bytes-append s1 s2) (list #t #t)))
-(test-comp '(lambda (s1 s2 s3) (bytes-append s1 s2 s3) (list (bytes? s1) (bytes? s2) (bytes? s3)))
-           '(lambda (s1 s2 s3) (bytes-append s1 s2 s3) (list #t #t #t)))
-(test-comp '(lambda (s1) (bytes? (bytes-append s1)))
-           '(lambda (s1) (bytes-append s1) #t))
-(test-comp '(lambda (s1 s2) (bytes? (bytes-append s1 s2)))
-           '(lambda (s1 s2) (bytes-append s1 s2) #t))
-(test-comp '(lambda (s1 s2 s3) (bytes? (bytes-append s1 s2 s3)))
-           '(lambda (s1 s2 s3) (bytes-append s1 s2 s3) #t))
-(test-comp '(lambda (s) (bytes? (bytes->immutable-bytes s)))
-           '(lambda (s) (bytes->immutable-bytes s) #t))
-(test-comp '(lambda (s) (bytes->immutable-bytes s) (bytes? s))
-           '(lambda (s) (bytes->immutable-bytes s) #t))
+(test-arg-types '(bytes-length bytes?) 'fixnum? 'may-omit)
+(test-arg-types '(bytes-ref bytes? fixnum?) #f)
+(test-arg-types '(bytes-set! bytes? fixnum? #f) #f)
+(test-arg-types '(bytes->immutable-bytes bytes?) 'bytes? 'may-omit)
+(test-arg-types '(bytes-append) bytes? 'may-omit)
+(test-arg-types '(bytes-append bytes?) 'bytes? 'may-omit)
+(test-arg-types '(bytes-append bytes? bytes?) 'bytes? 'may-omit)
+(test-arg-types '(bytes-append bytes? bytes? bytes?) 'bytes? 'may-omit)
+(test-arg-types '(bytes-append bytes? bytes? bytes? bytes?) 'bytes? 'may-omit)
+
+;Test types inference for list?
+(test-arg-types '(length list?) 'fixnum? 'may-omit)
+(test-arg-types '(list-ref pair? fixnum?) #f)
+(test-arg-types '(append) #f 'may-omit)
+(test-arg-types '(append #f) #f 'may-omit)
+(test-arg-types '(append list? #f) #f 'may-omit)
+(test-arg-types '(append list? list? #f) #f 'may-omit)
+(test-arg-types '(append list? list? list? #f) #f 'may-omit)
+(test-arg-types '(append list?) list? 'may-omit 'dont-infer)
+(test-arg-types '(append list? list?) list? 'may-omit 'dont-infer)
+(test-arg-types '(append list? list? list?) list? 'may-omit 'dont-infer)
+(test-arg-types '(append list? list? list? list?) list? 'may-omit 'dont-infer)
+
+;Test the map primitive and the map version defined in private/map.rkt
+;The optimizer is not capable of figuring out that the result of map is a list?
+(test-arg-types '(k:map procedure? list?) 'list?)
+(test-arg-types '(k:map procedure? list? list?) 'list?)
+(test-arg-types '(map procedure? list?) #f) ;should be list?
+(test-arg-types '(map procedure? list? list?) #f) ;should be list? 
 
 (test-comp '(lambda (w z)
               (let ([x (list* w z)]
@@ -1478,6 +1459,9 @@
               (error "bad")
               (equal? (list* w z) (list* z w))))
 
+(test-comp '(lambda (x) (when (list x) (append x (values 1 2))) (void))
+           '(lambda (x) (void))
+           #f)
 (err/rt-test (pair? (list (values 1 2) 0)) exn:fail:contract:arity?)
 (test-comp '(lambda (w z)
               (pair? (list (values 1 2) 0)))
@@ -1645,17 +1629,23 @@
 (test-comp '(lambda () (begin (newline) 7))
            '(lambda () (eq? (box 0) (begin (newline) 7)))
            #f)
+(test-comp '(lambda () (begin (newline) 7))
+           '(lambda () (eq? (begin (newline) 7) (box 0)))
+           #f)
 
+; It's necessary to use the random from #%kernel because otherwise
+; the function will keep an unnecessary reference for the module that
+; defines the random visible from racket/base.
 (test-comp '(lambda (w) (car w) (mcar w))
-           '(lambda (w) (car w) (mcar w) (random)))
+           '(lambda (w) (car w) (mcar w) (k:random)))
 (test-comp '(lambda (w) (car w w))
-           '(lambda (w) (car w w) (random)))
+           '(lambda (w) (car w w) (k:random)))
 (test-comp '(lambda (w) (car w w w))
-           '(lambda (w) (car w w w) (random)))
+           '(lambda (w) (car w w w) (k:random)))
 (test-comp '(lambda (w) (cons w))
-           '(lambda (w) (cons w) (random)))
+           '(lambda (w) (cons w) (k:random)))
 (test-comp '(lambda (w) (cons))
-           '(lambda (w) (cons) (random)))
+           '(lambda (w) (cons) (k:random)))
 
 ; test for unary aplications
 (test-comp -1
@@ -3749,71 +3739,73 @@
     ;; can omit:
     (test-comp `(module m racket/base
                   (require racket/unsafe/ops)
-                  (define (f x)
-                    (f x)))
+                  (define (f x y z)
+                    (f x y z)))
                `(module m racket/base
                   (require racket/unsafe/ops)
-                  (define (f x)
+                  (define (f x y z)
                     ,expr
-                    (f x)))
+                    (f x y z)))
                yes?)
     (displayln (list expr 2 '!))
     ;; cannot reorder:
     (test-comp `(module m racket/base
                   (require racket/unsafe/ops)
-                  (define (f x)
-                    (let ([y ,expr])
-                      (vector-ref x x)
-                      (f x y))))
+                  (define (f x y z w)
+                    (display w)
+                    (let ([temp ,expr])
+                      (vector-ref x y)
+                      (f x temp))))
                `(module m racket/base
                   (require racket/unsafe/ops)
-                  (define (f x)
-                    (vector-ref x x)
-                    (f x ,expr)))
+                  (define (f x y z w)
+                    (display w)
+                    (vector-ref x y)
+                    (f x y z ,expr)))
                #f)
      (displayln (list expr 3 '!))
   )
   (map check-omit-ok
-       '((unsafe-vector-ref x x)
-         (unsafe-vector*-ref x x)
-         (unsafe-struct-ref x x)
-         (unsafe-struct*-ref x x)
+       '((unsafe-vector-ref x y)
+         (unsafe-vector*-ref x y)
+         (unsafe-struct-ref x y)
+         (unsafe-struct*-ref x y)
          (unsafe-mcar x)
          (unsafe-mcdr x)
-         (unsafe-unbox x)
+         (unsafe-unbox y)
          (unsafe-unbox* x)
-         (unsafe-bytes-ref x x)
-         (unsafe-string-ref x x)
-         (unsafe-flvector-ref x x)
-         (unsafe-fxvector-ref x x)
-         (unsafe-f64vector-ref x x)
-         (unsafe-s16vector-ref x x)
-         (unsafe-u16vector-ref x x)))
+         (unsafe-bytes-ref x y)
+         (unsafe-string-ref x y)
+         (unsafe-flvector-ref x y)
+         (unsafe-fxvector-ref x y)
+         (unsafe-f64vector-ref x y)
+         (unsafe-s16vector-ref x y)
+         (unsafe-u16vector-ref x y)))
   (map (lambda (x) (check-omit-ok x #f))
-       '((unsafe-vector-set! x x x)
-         (unsafe-vector*-set! x x x)
-         (unsafe-struct-set! x x x)
-         (unsafe-struct*-set! x x x)
-         (unsafe-set-mcar! x x)
-         (unsafe-set-mcdr! x x)
-         (unsafe-set-box! x x)
-         (unsafe-set-box*! x x)
-         (unsafe-bytes-set! x x x)
-         (unsafe-string-set! x x x)
-         (unsafe-flvector-set! x x x)
-         (unsafe-fxvector-set! x x x)
-         (unsafe-f64vector-set! x x x)
-         (unsafe-s16vector-set! x x x)
-         (unsafe-u16vector-set! x x x)))
+       '((unsafe-vector-set! x y z)
+         (unsafe-vector*-set! x y z)
+         (unsafe-struct-set! x y z)
+         (unsafe-struct*-set! x y z)
+         (unsafe-set-mcar! x y)
+         (unsafe-set-mcdr! x y)
+         (unsafe-set-box! x y)
+         (unsafe-set-box*! x y)
+         (unsafe-bytes-set! x y z)
+         (unsafe-string-set! x y z)
+         (unsafe-flvector-set! x y z)
+         (unsafe-fxvector-set! x y z)
+         (unsafe-f64vector-set! x y z)
+         (unsafe-s16vector-set! x y z)
+         (unsafe-u16vector-set! x y z)))
 
   (when (extflonum-available?)
     (map check-omit-ok
-         '((unsafe-extflvector-ref x x)
-           (unsafe-f80vector-ref x x)))
+         '((unsafe-extflvector-ref x y)
+           (unsafe-f80vector-ref x y)))
 
     (map (lambda (x) (check-omit-ok x #f))
-         '((unsafe-extflvector-set! x x x)
-           (unsafe-f80vector-set! x x x)
+         '((unsafe-extflvector-set! x y z)
+           (unsafe-f80vector-set! x y z)
            ))
     ))
 
@@ -4328,22 +4320,22 @@
   (check-number-op-unary 'abs))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Check remotion of dead code after error
+;; Check elimination of dead code after error
 (test-comp '(lambda () (random) (error 'error))
            '(lambda () (random) (error 'error) 5))
 (test-comp '(lambda () (random) (error 'error))
-           '(lambda () (random) (error 'error) (random) 5))
+           '(lambda () (random) (error 'error) (k:random) 5))
 (test-comp '(lambda () (error 'error))
            '(lambda () 5 (error 'error) 5))
 (test-comp '(lambda (f) (f) (f) (error 'error))
            '(lambda (f) (f) (f) (error 'error) (f)))
 
 (test-comp '(lambda (f) (begin0 (f) (random) (error 'error)))
-           '(lambda (f) (begin0 (f) (random) (error 'error) (random) (f))))
+           '(lambda (f) (begin0 (f) (random) (error 'error) (k:random) (f))))
 (test-comp '(lambda (f) (error 'error))
-           '(lambda (f) (begin0 (error 'error) (random) (f))))
+           '(lambda (f) (begin0 (error 'error) (k:random) (f))))
 (test-comp '(lambda (f) (error 'error))
-           '(lambda (f) (begin0 7 (error 'error) (random) (f))))
+           '(lambda (f) (begin0 7 (error 'error) (k:random) (f))))
 
 (test-comp '(lambda (n)
               (let ([p (begin (error 'error) (fl+ n n))])
@@ -4440,13 +4432,13 @@
 (test-comp '(lambda (f) (let ([x (error 'error)]) #f))
            '(lambda (f) (let ([x (error 'error)]) (f x x)) 5))
 (test-comp '(lambda (f) (let ([x (error 'error)] [y #f]) #f))
-           '(lambda (f) (let ([x (error 'error)] [y (random)]) (f x x y y)) 5))
+           '(lambda (f) (let ([x (error 'error)] [y (k:random)]) (f x x y y)) 5))
 (test-comp '(lambda (f) (let ([x (random)] [y (random)]) (f x x y y) (error 'error)))
            '(lambda (f) (let ([x (random)] [y (random)]) (f x x y y) (error 'error)) 5))
 (test-comp '(lambda (f) (let-values ([(x) (error 'error)] [(y) #f] [(z) #f] ) #f))
            '(lambda (f) (let-values ([(x) (error 'error)] [(y z) (f)]) (f x x y y z z)) 5))
 (test-comp '(lambda (f) (let-values ([(x) (error 'error)] [(y) #f] [(z) #f]) #f))
-           '(lambda (f) (let-values ([(x y) (values (error 'error) (random))] [(z) (f)]) (f x x y y z z)) 5))
+           '(lambda (f) (let-values ([(x y) (values (error 'error) (k:random))] [(z) (f)]) (f x x y y z z)) 5))
 (test-comp '(lambda (f) (let-values ([(x) (begin (random) (error 'error))] [(y) #f] [(z) #f]) #f))
            '(lambda (f) (let-values ([(x y) (values (random) (error 'error))] [(z) (f)]) (f x x y y z z)) 5))
 ;alternative reduction:

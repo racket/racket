@@ -2648,7 +2648,8 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
     } else if (SAME_OBJ(rator, scheme_list_star_proc)) {
       if (argc > 2)
         return scheme_pair_p_proc;
-    } else if (IS_NAMED_PRIM(rator, "vector->list")) {
+    } else if (IS_NAMED_PRIM(rator, "vector->list")
+               || IS_NAMED_PRIM(rator, "map")) {
       return scheme_list_p_proc;
     } else if (IS_NAMED_PRIM(rator, "string-append")
                || IS_NAMED_PRIM(rator, "string->immutable-string")) {
@@ -2742,7 +2743,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
         if (SAME_OBJ(p, scheme_list_pair_p_proc))
           return scheme_list_p_proc;
       }
-      
+
       return rator_implies_predicate(app->rator, 1);
     }
     break;
@@ -2783,6 +2784,17 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
           return scheme_list_pair_p_proc;
       }
 
+      if (SCHEME_PRIMP(app->rator)
+          && IS_NAMED_PRIM(app->rator, "append")) {
+        Scheme_Object *p;
+        p = do_expr_implies_predicate(app->rand2, info, NULL, fuel-1, ignore_vars);
+        if (SAME_OBJ(p, scheme_list_pair_p_proc))
+          return scheme_list_pair_p_proc;
+        if (SAME_OBJ(p, scheme_list_p_proc)
+            || SAME_OBJ(p, scheme_null_p_proc))
+          return scheme_list_p_proc;
+      }
+
       return rator_implies_predicate(app->rator, 2);
     }
     break;
@@ -2803,6 +2815,17 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
           return scheme_real_p_proc;
       }
       
+      if (SCHEME_PRIMP(app->args[0])
+          && IS_NAMED_PRIM(app->args[0], "append")) {
+        Scheme_Object *p;
+        p = do_expr_implies_predicate(app->args[app->num_args], info, NULL, fuel-1, ignore_vars);
+        if (SAME_OBJ(p, scheme_list_pair_p_proc))
+          return scheme_list_pair_p_proc;
+        if (SAME_OBJ(p, scheme_list_p_proc)
+            || SAME_OBJ(p, scheme_null_p_proc))
+          return scheme_list_p_proc;
+      }
+
       return rator_implies_predicate(app->args[0], app->num_args);
     }
     break;
@@ -3284,18 +3307,24 @@ static void check_known_both(Optimize_Info *info, Scheme_Object *app,
 }
 
 
-static void check_known_all(Optimize_Info *info, Scheme_Object *_app,
+static void check_known_all(Optimize_Info *info, Scheme_Object *_app, int skip_head, int skip_tail,
                             const char *who, Scheme_Object *expect_pred, Scheme_Object *unsafe)
 {
   Scheme_App_Rec *app = (Scheme_App_Rec *)_app;
   if (SCHEME_PRIMP(app->args[0]) && (!who || IS_NAMED_PRIM(app->args[0], who))) {
     int ok_so_far = 1, i;
 
-    for (i = 0; i < app->num_args; i++) {
-      if (!check_known_variant(info, (Scheme_Object *)app, app->args[0], app->args[i+1], who, expect_pred,
-                               ((i == app->num_args - 1) && ok_so_far) ? unsafe : NULL,
-                               expect_pred))
+    for (i = skip_head; i < app->num_args - skip_tail; i++) {
+      if (!check_known_variant(info, _app, app->args[0], app->args[i+1], who, expect_pred,
+                               NULL, expect_pred))
         ok_so_far = 0;
+    }
+    
+    if (ok_so_far && unsafe) {
+      if (SAME_OBJ(unsafe, scheme_true))
+        set_application_omittable(_app, unsafe);
+      else
+        reset_rator(_app, unsafe);
     }
   }
 }
@@ -3365,6 +3394,7 @@ static void increment_clocks_for_application(Optimize_Info *info,
 static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context, int rator_flags)
 {
   Scheme_Object *le;
+  Scheme_Object *rator =  app->args[0];
   int all_vals = 1, i, flags;
 
   for (i = app->num_args; i--; ) {
@@ -3373,12 +3403,20 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
   }
 
   info->size += 1;
-  increment_clocks_for_application(info, app->args[0], app->num_args);
+  increment_clocks_for_application(info, rator, app->num_args);
   
   if (all_vals) {
-    le = try_optimize_fold(app->args[0], NULL, (Scheme_Object *)app, info);
+    le = try_optimize_fold(rator, NULL, (Scheme_Object *)app, info);
     if (le)
       return le;
+  }
+
+  if (!app->num_args  
+      && (SAME_OBJ(rator, scheme_list_proc)
+          || (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "append")))) {
+    info->preserves_marks = 1;
+    info->single_result = 1;
+    return scheme_null;
   }
 
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
@@ -3387,37 +3425,47 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
     info->preserves_marks = -info->preserves_marks;
     info->single_result = -info->single_result;
   }
-
-  if (!app->num_args && SAME_OBJ(app->args[0], scheme_list_proc))
-    return scheme_null;
     
   if (SCHEME_PRIMP(app->args[0])) {
     Scheme_Object *app_o = (Scheme_Object *)app, *rator = app->args[0];
+    Scheme_Object *rand1 = NULL, *rand2 = NULL;
 
-    if (app->num_args >= 1) {
-      Scheme_Object *rand1 = app->args[1];
+    if (app->num_args >= 1)
+      rand1 = app->args[1];
 
-      check_known(info, app_o, rator, rand1, "vector-set!", scheme_vector_p_proc, NULL);
+    if (app->num_args >= 2)
+      rand2 = app->args[2];
 
-      check_known(info, app_o, rator, rand1, "procedure-arity-includes?", scheme_procedure_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "vector-set!", scheme_vector_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "vector-set!", scheme_fixnum_p_proc, NULL);
 
-      check_known(info, app_o, rator, rand1, "map", scheme_procedure_p_proc, NULL);
-      check_known(info, app_o, rator, rand1, "for-each", scheme_procedure_p_proc, NULL);
-      check_known(info, app_o, rator, rand1, "andmap", scheme_procedure_p_proc, NULL);
-      check_known(info, app_o, rator, rand1, "ormap", scheme_procedure_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "procedure-arity-includes?", scheme_procedure_p_proc, NULL);
 
-      check_known_all(info, app_o, "string-append", scheme_string_p_proc, scheme_true);
-      check_known_all(info, app_o, "bytes-append", scheme_byte_string_p_proc, scheme_true);
-      check_known(info, app_o, rator, rand1, "string-set!", scheme_string_p_proc, NULL);
-      check_known(info, app_o, rator, rand1, "bytes-set!", scheme_byte_string_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "map", scheme_procedure_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "for-each", scheme_procedure_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "andmap", scheme_procedure_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "ormap", scheme_procedure_p_proc, NULL);
+    check_known_all(info, app_o, 1, 0, "map", scheme_list_p_proc, NULL);
+    check_known_all(info, app_o, 1, 0, "for-each", scheme_list_p_proc, NULL);
+    check_known_all(info, app_o, 1, 0, "andmap", scheme_list_p_proc, NULL);
+    check_known_all(info, app_o, 1, 0, "ormap", scheme_list_p_proc, NULL);
 
-      if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
-        check_known_all(info, app_o, NULL, scheme_real_p_proc,
-                        (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS) ? scheme_true : NULL);
-      if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_NUMBER)
-        check_known_all(info, app_o, NULL, scheme_number_p_proc,
-                        (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS) ? scheme_true : NULL);
-    }
+    check_known(info, app_o, rator, rand1, "string-set!", scheme_string_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "string-set!", scheme_fixnum_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "bytes-set!", scheme_byte_string_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "bytes-set!", scheme_fixnum_p_proc, NULL);
+    
+    check_known_all(info, app_o, 0, 0, "string-append", scheme_string_p_proc, scheme_true);
+    check_known_all(info, app_o, 0, 0, "bytes-append", scheme_byte_string_p_proc, scheme_true);
+
+    check_known_all(info, app_o, 0, 1, "append", scheme_list_p_proc, scheme_true);
+
+    if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
+      check_known_all(info, app_o, 0, 0, NULL, scheme_real_p_proc,
+                      (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS) ? scheme_true : NULL);
+    if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_NUMBER)
+      check_known_all(info, app_o, 0, 0, NULL, scheme_number_p_proc,
+                      (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS) ? scheme_true : NULL);
   }
 
   register_local_argument_types(app, NULL, NULL, info);
@@ -3647,7 +3695,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
   }
 
   if (SAME_OBJ(scheme_values_proc, rator)
-      || SAME_OBJ(scheme_list_star_proc, rator)) {
+      || SAME_OBJ(scheme_list_star_proc, rator)
+      || (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "append"))) {
     SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
     info->preserves_marks = 1;
     info->single_result = 1;
@@ -3656,6 +3705,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         || single_valued_noncm_expression(rand, 5)) {
       return replace_tail_inside(rand, inside, app->rand);
     }
+    app->rator = scheme_values_proc;
+    rator = scheme_values_proc;
   }
 
   if (SCHEME_PRIMP(rator)) {
@@ -3834,6 +3885,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known(info, app_o, rator, rand, "unsafe-unbox*", scheme_box_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector-length", scheme_vector_p_proc, scheme_unsafe_vector_length_proc);
 
+      check_known(info, app_o, rator, rand, "length", scheme_list_p_proc, scheme_true);
+
       check_known(info, app_o, rator, rand, "string-append", scheme_string_p_proc, scheme_true);
       check_known(info, app_o, rator, rand, "bytes-append", scheme_byte_string_p_proc, scheme_true);
       check_known(info, app_o, rator, rand, "string->immutable-string", scheme_string_p_proc, scheme_true);
@@ -3857,10 +3910,11 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known(info, app_o, rator, rand, "cadddr", scheme_pair_p_proc, NULL);
       check_known(info, app_o, rator, rand, "cddddr", scheme_pair_p_proc, NULL);
 
-      check_known(info, app_o, rator, rand, "list->vector", scheme_list_p_proc, NULL);
+      check_known(info, app_o, rator, rand, "list->vector", scheme_list_p_proc, scheme_true);
       check_known(info, app_o, rator, rand, "vector->list", scheme_vector_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector->values", scheme_vector_p_proc, NULL);
       check_known(info, app_o, rator, rand, "vector->immutable-vector", scheme_vector_p_proc, NULL);
+      check_known(info, app_o, rator, rand, "make-vector", scheme_fixnum_p_proc, NULL);
       
       /* Some of these may have changed app->rator. */
       rator = app->rator; 
@@ -4327,7 +4381,13 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     check_known_both(info, app_o, rator, rand1, rand2, "string-append", scheme_string_p_proc, scheme_true);
     check_known_both(info, app_o, rator, rand1, rand2, "bytes-append", scheme_byte_string_p_proc, scheme_true);
     check_known(info, app_o, rator, rand1, "string-ref", scheme_string_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "string-ref", scheme_fixnum_p_proc, NULL);
     check_known(info, app_o, rator, rand1, "bytes-ref", scheme_byte_string_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "bytes-ref", scheme_fixnum_p_proc, NULL);
+
+    check_known(info, app_o, rator, rand1, "append", scheme_list_p_proc, scheme_true);
+    check_known(info, app_o, rator, rand1, "list-ref", scheme_pair_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "list-ref", scheme_fixnum_p_proc, NULL);
 
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
       check_known_both(info, app_o, rator, rand1, rand2, NULL, scheme_real_p_proc,
@@ -4337,6 +4397,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
                        (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS) ? scheme_true : NULL);
 
     check_known(info, app_o, rator, rand1, "vector-ref", scheme_vector_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "vector-ref", scheme_fixnum_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "make-vector", scheme_fixnum_p_proc, NULL);
 
     check_known(info, app_o, rator, rand1, "procedure-closure-contents-eq?", scheme_procedure_p_proc, NULL);
     check_known(info, app_o, rator, rand2, "procedure-closure-contents-eq?", scheme_procedure_p_proc, NULL);
@@ -4346,6 +4408,10 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     check_known(info, app_o, rator, rand1, "for-each", scheme_procedure_p_proc, NULL);
     check_known(info, app_o, rator, rand1, "andmap", scheme_procedure_p_proc, NULL);
     check_known(info, app_o, rator, rand1, "ormap", scheme_procedure_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "map", scheme_list_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "for-each", scheme_list_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "andmap", scheme_list_p_proc, NULL);
+    check_known(info, app_o, rator, rand2, "ormap", scheme_list_p_proc, NULL);
 
     rator = app->rator; /* in case it was updated */
   }
