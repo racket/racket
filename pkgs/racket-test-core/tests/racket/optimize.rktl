@@ -4339,6 +4339,13 @@
   (check-number-op-unary 'sub1)
   (check-number-op-unary 'abs))
 
+(test-comp '(lambda () (-) (void))
+           '(lambda () (void))
+           #f)
+(test-comp '(lambda () (/) (void))
+           '(lambda () (void))
+           #f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check elimination of dead code after error
 (test-comp '(lambda () (random) (error 'error))

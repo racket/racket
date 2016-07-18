@@ -3431,7 +3431,9 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
     info->single_result = -info->single_result;
   }
     
-  if (SCHEME_PRIMP(app->args[0])) {
+  if (SCHEME_PRIMP(app->args[0])
+      && (app->num_args >= ((Scheme_Primitive_Proc *)app->args[0])->mina)
+      && (app->num_args <= ((Scheme_Primitive_Proc *)app->args[0])->mu.maxa)) {
     Scheme_Object *app_o = (Scheme_Object *)app, *rator = app->args[0];
     Scheme_Object *rand1 = NULL, *rand2 = NULL;
 
