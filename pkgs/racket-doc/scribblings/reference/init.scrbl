@@ -1,13 +1,18 @@
 #lang scribble/doc
-@(require "mz.rkt" (for-label racket/pretty racket/gui/base))
+@(require "mz.rkt"
+          (for-label racket/pretty racket/gui/base))
 
 @title{Init Libraries}
 
-@defmodule*/no-declare[(racket/init)]{The @racketmodname[racket/init]
-library is the default start-up library for Racket. It re-exports
-the @racketmodname[racket], @racketmodname[racket/enter] and
-@racketmodname[racket/help] libraries, and it sets
-@racket[current-print] to use @racket[pretty-print].}
+@defmodule*/no-declare[(racket/init)]{The 
+ @racketmodname[racket/init] library is the default start-up
+ library for Racket. It re-exports the 
+ @racketmodname[racket], @racketmodname[racket/enter] and 
+ @racketmodname[racket/help] libraries, and it sets 
+ @racket[current-print] to use @racket[pretty-print].
+ Additionally, if the @racket[xrepl] collection is present,
+ it requires @racket[xrepl].
+ @history[#:changed"6.7" "Use XREPL by default if it is installed."]}
 
 @defmodule*/no-declare[(racket/gui/init)]{The
 @racketmodname[racket/gui/init] library is the default start-up
