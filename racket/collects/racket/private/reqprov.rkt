@@ -736,8 +736,9 @@
                                    (if (eq? (syntax-e (export-local-id export))
                                             (export-out-sym export))
                                        (export-local-id export)
-                                       #`(rename #,(export-local-id export)
-                                                 #,(export-out-sym export)))]
+                                       (quasisyntax/loc out
+                                         (rename #,(export-local-id export)
+                                                 #,(export-out-sym export))))]
                                   [mode (export-mode export)])
                               (let ([phased
                                      (cond
