@@ -110,7 +110,7 @@ provide submodules.
 }
 
 @defproc[(get-metadata-path [path path-string?]
-                            [#:roots roots (listof (or/c path? 'same)) 
+                            [#:roots roots (listof (or/c path-string? 'same))
                                            (current-compiled-file-roots)]
                             [sub-path (or/c path-string? 'same)]
                             ...+)

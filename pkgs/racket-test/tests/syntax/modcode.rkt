@@ -89,6 +89,22 @@
                                   (test zo? file-exists? zo)
                                   (test so? file-exists? so)
                                   #f)))
+     ;; test calling functions with path-strings instead of paths
+     (let ([== (lambda (x) x)]
+           [roots '("compiled" same)]
+           [to-list (lambda (thunk) (call-with-values thunk list))])
+       (test
+        (module-compiled-name (get-module-code file.sfx #:roots roots))
+        module-compiled-name
+        (get-module-code (path->string file.sfx)))
+       (test
+        (to-list (lambda () (get-module-path file.sfx #:roots roots)))
+        ==
+        (to-list (lambda () (get-module-path (path->string file.sfx) #:roots roots))))
+       (test
+        (get-metadata-path file.sfx #:roots roots)
+        ==
+        (get-metadata-path (path->string file.sfx) #:roots roots)))
      (void))
    (lambda ()
      (when src? (delete-file file.sfx))

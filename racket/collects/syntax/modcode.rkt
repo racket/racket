@@ -12,8 +12,8 @@
 
 (provide/contract
  [get-module-code
-  (->* (path?)
-       (#:roots (listof (or/c path? 'same))
+  (->* (path-string?)
+       (#:roots (listof (or/c path-string? 'same))
         #:submodule-path (listof symbol?)
         #:sub-path (and/c path-string? relative-path?)
         (and/c path-string? relative-path?)
@@ -27,8 +27,8 @@
         #:rkt-try-ss? boolean?)
        any)]
  [get-module-path
-  (->* (path?)
-       (#:roots (listof (or/c path? 'same))
+  (->* (path-string?)
+       (#:roots (listof (or/c path-string? 'same))
         #:submodule? boolean?
         #:sub-path (and/c path-string? relative-path?)
         (and/c path-string? relative-path?)
@@ -36,8 +36,8 @@
         #:rkt-try-ss? boolean?)
        (values path? (or/c 'src 'zo 'so)))]
  [get-metadata-path
-  (->* (path?)
-       (#:roots (listof (or/c path? 'same)))
+  (->* (path-string?)
+       (#:roots (listof (or/c path-string? 'same)))
        #:rest (listof (or/c path-string? 'same))
        path?)])
 
@@ -94,9 +94,20 @@
     [(relative-path? root) (build-path base root)]
     [else (reroot-path base root)]))
 
+;; : (or/c path-string? 'same) -> (or/c path? 'same)
+(define (path-string->path ps)
+  (if (string? ps) (string->path ps) ps))
+
+;; : (listof (or/c path-string? 'same)) -> (listof (or/c path? 'same))
+(define (root-strs->roots root-strs)
+  (map path-string->path root-strs))
+
 (define (get-metadata-path
-          #:roots [roots (current-compiled-file-roots)]
-          base . args)
+          #:roots [root-strs (current-compiled-file-roots)]
+          base-str . arg-strs)
+  (define base (path-string->path base-str))
+  (define roots (root-strs->roots root-strs))
+  (define args (root-strs->roots arg-strs))
   (cond
     [(or (equal? roots '(same)) (null? roots))
      (apply build-path base args)]
@@ -107,13 +118,15 @@
        (apply build-path (reroot-path* base (car roots)) args))]))
 
 (define (get-module-path
-          path0
-          #:roots [roots (current-compiled-file-roots)]
+          path0-str
+          #:roots [root-strs (current-compiled-file-roots)]
           #:submodule? [submodule? #f]
           #:sub-path [sub-path/kw "compiled"]
           [sub-path sub-path/kw]
           #:choose [choose (lambda (src zo so) #f)]
           #:rkt-try-ss? [rkt-try-ss? #t])
+  (define path0 (path-string->path path0-str))
+  (define roots (root-strs->roots root-strs))
   (define resolved-path (resolve path0))
   (define-values (path0-rel path0-file path0-dir?) (split-path path0))
   (define-values (main-src-file alt-src-file)
@@ -210,8 +223,8 @@
                    #f))]))
 
 (define (get-module-code
-          path0
-          #:roots [roots (current-compiled-file-roots)]
+          path0-str
+          #:roots [root-strs (current-compiled-file-roots)]
           #:submodule-path [submodule-path '()]
           #:sub-path [sub-path/kw "compiled"]
           [sub-path sub-path/kw]
@@ -223,6 +236,8 @@
           #:notify [notify void]
           #:source-reader [read-src-syntax read-syntax]
           #:rkt-try-ss? [rkt-try-ss? #t])
+  (define path0 (path-string->path path0-str))
+  (define roots (root-strs->roots root-strs))
   (define-values (path type)
     (get-module-path
       path0
