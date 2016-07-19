@@ -12,3 +12,7 @@
 (provide (all-from-out racket
                        racket/enter
                        racket/help))
+
+;; Set the default replt to XREPL
+(with-handlers ([exn:fail? void])
+  (dynamic-require 'xrepl #f))
