@@ -21,7 +21,7 @@
 (define (non-empty-queue? v) (and (queue? v) (queue-head v) #t))
 
 (define (enqueue! q v)
-  (unless (queue? q) (raise-type-error enqueue! "queue" 0 q))
+  (unless (queue? q) (raise-type-error 'enqueue! "queue" 0 q))
   (let ([new (link v #f)])
     (if (queue-head q)
       (set-link-tail! (queue-tail q) new)
@@ -30,7 +30,7 @@
     (set-queue-length! q (+ (queue-length q) 1))))
 
 (define (enqueue-front! q v)
-  (unless (queue? q) (raise-type-error enqueue! "enqueue-front!" 0 q))
+  (unless (queue? q) (raise-type-error 'enqueue-front! "queue" 0 q))
   (define fr (queue-head q))
   (cond
     [fr
@@ -42,7 +42,7 @@
   (set-queue-length! q (+ (queue-length q) 1)))
 
 (define (dequeue! q)
-  (unless (queue? q) (raise-type-error dequeue! "queue" 0 q))
+  (unless (queue? q) (raise-type-error 'dequeue! "queue" 0 q))
   (let ([old (queue-head q)])
     (unless old (raise-type-error 'dequeue! "non-empty queue" 0 q))
     (cond
