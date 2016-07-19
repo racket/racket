@@ -14,5 +14,6 @@
                        racket/help))
 
 ;; Set the default replt to XREPL
-(with-handlers ([exn:fail? void])
+(when (collection-file-path "main.rkt" "xrepl"
+                            #:fail (lambda _ #f))
   (dynamic-require 'xrepl #f))
