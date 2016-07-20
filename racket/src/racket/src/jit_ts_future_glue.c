@@ -644,7 +644,6 @@
   fts->thread = scheme_current_thread;
   future = fts->thread->current_ft;
   retval = future->retval_i;
-  printf("!retval %d\n", retval);
   future->retval_i = 0;
   
   return retval;
