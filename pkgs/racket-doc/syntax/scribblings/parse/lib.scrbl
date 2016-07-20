@@ -144,3 +144,16 @@ Literal set containing the identifiers for fully-expanded code
 Note that the literal-set uses the names @racket[#%plain-lambda] and
 @racket[#%plain-app], not @racket[lambda] and @racket[#%app].
 }
+
+@section{Function Headers}
+@defmodule[syntax/parse/lib/function-header]
+
+@defstxclass[function-header]{
+ Matches a the formals found in function headers. Including
+ keyword and rest arguments.}
+@defstxclass[formal]{
+ Matches a single formal that can be used in a function
+ header.}
+@defstxclass[formals]{
+ Matches a list of formals that would be used in a function
+ header.}
