@@ -639,8 +639,6 @@
   future->source_type = src_type;
       future->arg_s0 = g282;
     future->arg_s1 = g283;
-
-    printf("go _ss_i...\n");
   
   future_do_runtimecall(fts, (void*)f, 0, 1, 0);
   fts->thread = scheme_current_thread;
