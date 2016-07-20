@@ -138,7 +138,7 @@ define_ts_ss_s(scheme_jit_make_two_element_vector, FSRC_OTHER)
 define_ts_l_s(scheme_jit_make_ivector, FSRC_OTHER)
 define_ts_l_s(scheme_jit_make_vector, FSRC_OTHER)
 # endif
-define_ts_ss_i(scheme_equal, FSRC_MARKS)
+define_ts_ss_s(equal_as_bool, FSRC_MARKS)
 define_ts_sss_s(extract_one_cc_mark_to_tag, FSRC_MARKS)
 #endif
 
@@ -219,7 +219,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_byte_string_length scheme_byte_string_length
 # define ts_scheme_struct_ref scheme_struct_ref
 # define ts_scheme_struct_set scheme_struct_set
-# define ts_scheme_equal scheme_equal
+# define ts_equal_as_bool equal_as_bool
 # define ts_scheme_string_eq_2 scheme_string_eq_2
 # define ts_scheme_byte_string_eq_2 scheme_byte_string_eq_2
 # define ts_extract_one_cc_mark_to_tag extract_one_cc_mark_to_tag
