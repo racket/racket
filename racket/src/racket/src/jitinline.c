@@ -28,12 +28,21 @@
 #include "jit.h"
 
 static Scheme_Object *extract_one_cc_mark_to_tag(Scheme_Object *, Scheme_Object *, Scheme_Object *);
+static Scheme_Object *equal_as_bool(Scheme_Object *a, Scheme_Object *b);
 
 #define JITINLINE_TS_PROCS
 #ifndef CAN_INLINE_ALLOC
 # define JIT_BOX_TS_PROCS
 #endif
 #include "jit_ts.c"
+
+static Scheme_Object *equal_as_bool(Scheme_Object *a, Scheme_Object *b)
+{
+  if (scheme_equal(a, b))
+    return scheme_true;
+  else
+    return scheme_false;
+}
 
 #ifdef MZ_USE_FUTURES
 static Scheme_Object *ts_scheme_make_fsemaphore(int argc, Scheme_Object **argv) 
@@ -2723,7 +2732,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     
     return 1;
   }  else if (IS_NAMED_PRIM(rator, "equal?")) {
-    GC_CAN_IGNORE jit_insn *ref_f, *ref_d;
+    GC_CAN_IGNORE jit_insn *ref_f;
     GC_CAN_IGNORE jit_insn *refr USED_ONLY_FOR_FUTURES;
 
     scheme_generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
@@ -2735,7 +2744,7 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     jit_prepare(2);
     jit_pusharg_p(JIT_R0);
     jit_pusharg_p(JIT_R1);
-    mz_finish_prim_lwe(ts_scheme_equal, refr);
+    mz_finish_prim_lwe(ts_equal_as_bool, refr);
     jit_retval(dest);
     CHECK_LIMIT();
 
@@ -2746,19 +2755,10 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       CHECK_LIMIT();
     }
     
-    ref_f = jit_beqi_i(jit_forward(), JIT_R0, 0);
-
     if (for_branch) {
+      ref_f = jit_beqi_p(jit_forward(), dest, scheme_false);
       scheme_add_branch_false(for_branch, ref_f);
       scheme_branch_for_true(jitter, for_branch);
-    } else {
-      (void)jit_movi_p(dest, scheme_true);
-      ref_d = jit_jmpi(jit_forward());
-      
-      mz_patch_branch(ref_f);
-      (void)jit_movi_p(dest, scheme_false);
-
-      mz_patch_ucbranch(ref_d);
     }
 
     __END_SHORT_JUMPS__(branch_short);

@@ -255,7 +255,7 @@ We should also test deep continuations.
                (with-continuation-mark
                    x (+ 1000 x)
                  (nt-loop (sub1 x))))))))))
-
+  
 ;; ----------------------------------------
   
   (check-equal? 2 
@@ -345,6 +345,13 @@ We should also test deep continuations.
                                 (touch f1))))] 
            [f3 (func (λ () (< (touch f2) 1)))]) 
      (touch f3)))
+
+  (check-equal?
+   '((#f) (#t) (#f))
+   (map
+    touch
+    (for/list ([s (in-list '("a" "b" "c"))])
+      (future (λ () (list (equal? s "b")))))))
   
   (check-equal?
    '((1) (1))
