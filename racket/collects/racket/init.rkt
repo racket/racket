@@ -12,8 +12,3 @@
 (provide (all-from-out racket
                        racket/enter
                        racket/help))
-
-;; Set the default replt to XREPL
-(when (collection-file-path "main.rkt" "xrepl"
-                            #:fail (lambda _ #f))
-  (dynamic-require 'xrepl #f))
