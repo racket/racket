@@ -4192,13 +4192,29 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     }
   }
 
-  if ((SAME_OBJ(app->rator, scheme_equal_proc)
+  if (SAME_OBJ(app->rator, scheme_equal_proc)
        || SAME_OBJ(app->rator, scheme_eqv_proc)
-       || SAME_OBJ(app->rator, scheme_eq_proc))
-      && equivalent_exprs(app->rand1, app->rand2, NULL, NULL, 0)) {
-    info->preserves_marks = 1;
-    info->single_result = 1;
-    return make_discarding_sequence_3(app->rand1, app->rand2, scheme_true, info);
+       || SAME_OBJ(app->rator, scheme_eq_proc)) {
+    if (equivalent_exprs(app->rand1, app->rand2, NULL, NULL, 0)) {
+      info->preserves_marks = 1;
+      info->single_result = 1;
+      return make_discarding_sequence_3(app->rand1, app->rand2, scheme_true, info);
+    }
+    {
+      Scheme_Object *pred1, *pred2;
+      pred1 = expr_implies_predicate(app->rand1, info);
+      if (pred1) {
+        pred2 = expr_implies_predicate(app->rand2, info);
+        if (pred2) {
+          if (predicate_implies_not(pred1, pred2)
+              || predicate_implies_not(pred2, pred1)) {
+            info->preserves_marks = 1;
+            info->single_result = 1;
+            return make_discarding_sequence_3(app->rand1, app->rand2, scheme_false, info);
+          }
+        }
+      }
+    }
   }
 
   /* Optimize `equal?' or `eqv?' test on certain types
@@ -4216,21 +4232,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       le = try_optimize_fold(app->rator, NULL, (Scheme_Object *)app, info);
       if (le)
         return le;
-    }
-  }
-
-  if (SAME_OBJ(app->rator, scheme_eq_proc)) {
-    Scheme_Object *pred1, *pred2;
-    pred1 = expr_implies_predicate(app->rand1, info);
-    if (pred1) {
-      pred2 = expr_implies_predicate(app->rand2, info);
-      if (pred2) {
-        if (predicate_implies_not(pred1, pred2) || predicate_implies_not(pred2, pred1)) {
-          info->preserves_marks = 1;
-          info->single_result = 1;
-          return make_discarding_sequence_3(app->rand1, app->rand2, scheme_false, info);
-        }
-      }
     }
   }
 
@@ -4988,7 +4989,9 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
   } else if (SAME_TYPE(SCHEME_TYPE(t), scheme_application3_type)) {
     Scheme_App3_Rec *app = (Scheme_App3_Rec *)t;
     Scheme_Object *pred1, *pred2;
-    if (SAME_OBJ(app->rator, scheme_eq_proc)) {
+    if (SAME_OBJ(app->rator, scheme_eq_proc)
+        || SAME_OBJ(app->rator, scheme_eqv_proc)
+        || SAME_OBJ(app->rator, scheme_equal_proc)) {
       if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_ir_local_type)) {
         pred1 = expr_implies_predicate(app->rand1, info);
         if (!pred1) {
