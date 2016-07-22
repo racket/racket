@@ -97,9 +97,15 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 /*========================================================================*/
 
 #ifndef DONT_LOAD_INIT_FILE
-static char * get_config_init_filename(Scheme_Env *env)
+/*
+ * Get the init filename for the system
+ * * First look to see if <addon-dir>/interactive.rkt exists
+ * * Otherwise check config file for location
+ */
+static Scheme_Object *get_init_filename(Scheme_Env *env,
+                                        char *init_filename_sym)
 {
-  Scheme_Object *f, *a[2];
+  Scheme_Object *f, *a[2], *build_path;
   Scheme_Thread * volatile p;
   mz_jmp_buf * volatile save, newbuf;
 
@@ -108,46 +114,44 @@ static char * get_config_init_filename(Scheme_Env *env)
   p->error_buf = &newbuf;
 
   if(!scheme_setjmp(newbuf)) {
+    build_path = scheme_builtin_value("build-path");
+
+    /* First test to see if user init file exists */
+    f = scheme_builtin_value("find-system-path");
+    a[0] = scheme_intern_symbol("addon-dir");
+    a[0] = _scheme_apply(f, 1, a);
+    a[1] = scheme_make_path("interactive.rkt");
+    f = _scheme_apply(build_path, 2, a);
+    if (SCHEME_PATHP(f)) {
+      char *filename;
+      filename = SCHEME_PATH_VAL(f);
+      filename = scheme_expand_filename(filename, -1, "startup", NULL, SCHEME_GUARD_FILE_EXISTS);
+      if(scheme_file_exists(f)) {
+        p->error_buf = save;
+        return f;
+      }
+    }
+
+    /* Failed, next check config.rkt fo system init file */
     f = scheme_builtin_value("find-main-config");
     a[0] = _scheme_apply(f, 0, NULL);
-    a[1] = scheme_make_path("racketrc");
-    f = scheme_builtin_value("build-path");
-    f = _scheme_apply(f, 2, a);
+    a[1] = scheme_make_path("config.rktd");
+    f = _scheme_apply(build_path, 2, a);
     if (SCHEME_PATHP(f)) {
-      p->error_buf = save;
-      return SCHEME_PATH_VAL(f);
-    }
-  }
-  p->error_buf = save;
-
-  return NULL;
-}
-
-static char *get_init_filename(Scheme_Env *env)
-{
-  Scheme_Object *f;
-  Scheme_Thread * volatile p;
-  mz_jmp_buf * volatile save, newbuf;
-
-  p = scheme_get_current_thread();
-  save = p->error_buf;
-  p->error_buf = &newbuf;
-
-  if (!scheme_setjmp(newbuf)) {
-    f = scheme_builtin_value("find-system-path");
-    if (f) {
-      Scheme_Object *a[1];
-
-      a[0] = scheme_intern_symbol("init-file");
-
-      f = _scheme_apply(f, 1, a);
-
-      if (SCHEME_PATHP(f)) {
-	p->error_buf = save;
-	return SCHEME_PATH_VAL(f);
+      Scheme_Object * port;
+      port = scheme_open_input_file(SCHEME_PATH_VAL(f), "get-init-filename");
+      f = scheme_read(port);
+      scheme_close_input_port(port);
+      if(SCHEME_HASHTRP(f)) {
+        f = scheme_hash_tree_get(f, scheme_intern_symbol(init_filename_sym));
+        if(f) {
+          p->error_buf = save;
+          return f;
+        }
       }
     }
   }
+
   p->error_buf = save;
 
   return NULL;
@@ -162,8 +166,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 # define UNIX_INIT_FILENAME "~/.racketrc"
 # define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\racketrc.rktl"
 # define MACOS9_INIT_FILENAME "PREFERENCES:racketrc.rktl"
-# define GET_CONFIG_INIT_FILENAME get_config_init_filename
-# define GET_INIT_FILENAME get_init_filename
+# define INIT_FILENAME_CONF_SYM "interactive-file"
 # define PRINTF printf
 # define PROGRAM "Racket"
 # define PROGRAM_LC "racket"
