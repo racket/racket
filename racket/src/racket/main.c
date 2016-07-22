@@ -97,6 +97,32 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
 /*========================================================================*/
 
 #ifndef DONT_LOAD_INIT_FILE
+static char * get_config_init_filename(Scheme_Env *env)
+{
+  Scheme_Object *f, *a[2];
+  Scheme_Thread * volatile p;
+  mz_jmp_buf * volatile save, newbuf;
+
+  p = scheme_get_current_thread();
+  save = p->error_buf;
+  p->error_buf = &newbuf;
+
+  if(!scheme_setjmp(newbuf)) {
+    f = scheme_builtin_value("find-main-config");
+    a[0] = _scheme_apply(f, 0, NULL);
+    a[1] = scheme_make_path("racketrc");
+    f = scheme_builtin_value("build-path");
+    f = _scheme_apply(f, 2, a);
+    if (SCHEME_PATHP(f)) {
+      p->error_buf = save;
+      return SCHEME_PATH_VAL(f);
+    }
+  }
+  p->error_buf = save;
+
+  return NULL;
+}
+
 static char *get_init_filename(Scheme_Env *env)
 {
   Scheme_Object *f;
@@ -136,6 +162,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 # define UNIX_INIT_FILENAME "~/.racketrc"
 # define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\racketrc.rktl"
 # define MACOS9_INIT_FILENAME "PREFERENCES:racketrc.rktl"
+# define GET_CONFIG_INIT_FILENAME get_config_init_filename
 # define GET_INIT_FILENAME get_init_filename
 # define PRINTF printf
 # define PROGRAM "Racket"
