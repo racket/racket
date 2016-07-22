@@ -669,21 +669,11 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 
 #ifndef DONT_LOAD_INIT_FILE
   if (fa->a->use_repl && !fa->a->no_init_file) {
-    char *filename;
-
-    filename = GET_CONFIG_INIT_FILENAME(fa->global_env);
-    if (filename) {
-      filename = scheme_expand_filename(filename, -1, "startup", NULL, SCHEME_GUARD_FILE_EXISTS);
-      if (scheme_file_exists(filename)) {
-        scheme_load(filename);
-      }
-    }
-
-    filename = GET_INIT_FILENAME(fa->global_env);
-    if (filename) {
-      filename = scheme_expand_filename(filename, -1, "startup", NULL, SCHEME_GUARD_FILE_EXISTS);
-      if (scheme_file_exists(filename))
-	scheme_load(filename);
+    Scheme_Object *a[2];
+    a[0] = get_init_filename(fa->global_env, INIT_FILENAME_CONF_SYM);
+    if (a[0]) {
+      a[1] = scheme_false;
+      scheme_dynamic_require(2, a);
     }
   }
 #endif /* DONT_LOAD_INIT_FILE */
