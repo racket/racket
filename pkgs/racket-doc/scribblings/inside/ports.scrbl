@@ -697,7 +697,7 @@ Creates a Scheme input file port from an ANSI C file pointer. The file
            [const-char* filename]
            [const-char* who])]{
 
-Opens @var{filename} for reading. In an exception is raised, the
+Opens @var{filename} for reading. If an exception is raised, the
  exception message uses @var{who} as the name of procedure that raised
  the exception.}
 
