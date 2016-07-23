@@ -126,9 +126,9 @@ static Scheme_Object *get_init_filename(Scheme_Env *env,
       char *filename;
       filename = SCHEME_PATH_VAL(f);
       filename = scheme_expand_filename(filename, -1, "startup", NULL, SCHEME_GUARD_FILE_EXISTS);
-      if(scheme_file_exists(f)) {
+      if(scheme_file_exists(filename)) {
         p->error_buf = save;
-        return f;
+        return scheme_make_path(filename);
       }
     }
 
