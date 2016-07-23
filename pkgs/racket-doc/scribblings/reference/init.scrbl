@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require "mz.rkt"
-          (for-label racket/pretty racket/gui/base))
+          (for-label racket/pretty racket/gui/base setup/dirs))
 
 @title{Init Libraries}
 
@@ -9,16 +9,46 @@
  library for Racket. It re-exports the 
  @racketmodname[racket], @racketmodname[racket/enter] and 
  @racketmodname[racket/help] libraries, and it sets 
- @racket[current-print] to use @racket[pretty-print].
- Additionally, if the @racket[xrepl] collection is present,
- it requires @racket[xrepl].
- @history[#:changed"6.7" "Use XREPL by default if it is installed."]}
+ @racket[current-print] to use @racket[pretty-print].}
 
 @defmodule*/no-declare[(racket/gui/init)]{The
 @racketmodname[racket/gui/init] library is the default start-up
 library for GRacket. It re-exports the @racketmodname[racket/init] and
 @racketmodname[racket/gui/base] libraries, and it sets
 @racket[current-load] to use @racket[text-editor-load-handler].}
+
+@defmodule*/no-declare[(racket/interactive)]{
+ The @racketmodname[racket/interactive] is the default start
+ up library when the REPL begins. It is not run if the 
+ @Flag{q}/@DFlag{no-init-file} is specified. The interactive
+ file can be changed by modifying @racket['interactive-file] in the 
+ @filepath{config.rktd} file found in 
+ @racket[(find-config-dir)]. Alternative, if the file
+ @filepath{interactive.rkt} exists in 
+ @racket[(find-system-path 'addon-dir)] it is run rather
+ than the installation wide interactive module.
+
+ The default interactive module starts @racketmodname[xrepl] and
+ runs the @racket[(find-system-path 'init-file)] file in the users home directory. A
+ different interactive file can keep this behavior by
+ requiring @racketmodname[racket/interactive].
+ 
+ @history[#:added "6.7"]}
+
+@defmodule*/no-declare[(racket/gui/interactive)]{
+ Similar to @racketmodname[racket/gui/interactive], but for
+ GRacket. This library can be changed by modifying 
+ @racket['gui-interactive-file] in the @filepath{config.rktd}
+ file in @racket[(find-config-dir)].
+
+ This library runs the 
+ @racket[(find-graphical-system-path 'init-file)] file in
+ the users home directory if it exists, rather than their 
+ @racket[(find-system-path 'init-file)]. Unlike 
+ @racketmodname[racket/interactive], this library does not
+ start @racketmodname[xrepl].
+
+ @history[#:added "6.7"]}
 
 @defmodule*/no-declare[(racket/language-info)]{The
 @racketmodname[racket/language-info] library provides a
