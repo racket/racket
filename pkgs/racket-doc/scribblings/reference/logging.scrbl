@@ -54,12 +54,12 @@ through environment variables:
 
        In versions of Racket up to and including 6.6, parsing of
        @indexed-envvar{PLTSTDERR} and similar log-level specifications
-       was very strict. Leading and trailing spaces were forbidden,
-       and anything other than exactly one space separating two
-       specifications was rejected. This has since been relaxed,
+       was very strict. Leading and trailing whitespace was forbidden,
+       and anything other than exactly one space character separating
+       two specifications was rejected. This has since been relaxed,
        starting with version 6.6.0.2. The new behaviour is to ignore
-       leading and trailing spaces, and to accept any non-zero number
-       of spaces between specifications.
+       leading and trailing whitespace, and to accept any non-zero
+       number of whitespace characters between specifications.
 
        The default is @racket["error"].}
 
