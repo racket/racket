@@ -52,6 +52,15 @@ through environment variables:
        topic @racket['GC] at the @racket['debug] level and
        higher (which includes all levels).
 
+       In versions of Racket up to and including 6.6, parsing of
+       @indexed-envvar{PLTSTDERR} and similar log-level specifications
+       was very strict. Leading and trailing spaces were forbidden,
+       and anything other than exactly one space separating two
+       specifications was rejected. This has since been relaxed,
+       starting with version 6.6.0.2. The new behaviour is to ignore
+       leading and trailing spaces, and to accept any non-zero number
+       of spaces between specifications.
+
        The default is @racket["error"].}
 
  @item{If the @indexed-envvar{PLTSYSLOG} environment variable is
