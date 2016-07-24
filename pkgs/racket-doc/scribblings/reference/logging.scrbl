@@ -48,7 +48,7 @@ through environment variables:
        @nonterm{level} or higher (where a @nonterm{topic} contains any
        character other than a space or @litchar["@"]). For example,
        the value @racket["error debug@GC"] prints all events at the
-       @racket['error] level and higher, but prints events for the topic
+       @racket['error] level and higher, but prints events for the
        topic @racket['GC] at the @racket['debug] level and
        higher (which includes all levels).
 
