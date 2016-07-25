@@ -127,7 +127,7 @@ instead, to support cross-installation.}
 
 @defproc[(version) (and/c string? immutable?)]{
 
-Returns an string indicating the currently executing version of
+Returns an immutable string indicating the currently executing version of
 Racket.}
 
 
