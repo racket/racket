@@ -41,16 +41,17 @@ through environment variables:
        @litchar{none}, @litchar{fatal}, @litchar{error},
        @litchar{warning}, @litchar{info}, or @litchar{debug}; all
        events the corresponding level of higher are printed. After an
-       initial @nonterm{level}, the value can contain space-separated
-       specifications of the form
-       @nonterm{level}@litchar["@"]@nonterm{topic}, which prints events
-       whose topics match @nonterm{topic} only at the given
+       initial @nonterm{level}, the value can contain
+       whitespace-separated specifications of the form
+       @nonterm{level}@litchar["@"]@nonterm{topic}, which prints
+       events whose topics match @nonterm{topic} only at the given
        @nonterm{level} or higher (where a @nonterm{topic} contains any
-       character other than a space or @litchar["@"]). For example,
-       the value @racket["error debug@GC"] prints all events at the
-       @racket['error] level and higher, but prints events for the topic
-       topic @racket['GC] at the @racket['debug] level and
-       higher (which includes all levels).
+       character other than whitespace or @litchar["@"]). Leading and
+       trailing whitespace is ignored. For example, the value
+       @racket["error debug@GC"] prints all events at the
+       @racket['error] level and higher, but prints events for the
+       topic @racket['GC] at the @racket['debug] level and higher
+       (which includes all levels).
 
        The default is @racket["error"].}
 
@@ -72,6 +73,12 @@ is the initial logger. The run-time system sometimes uses the current
 logger to report events. For example, the bytecode compiler sometimes
 reports @racket['warning] events when it detects an expression that
 would produce a run-time error if evaluated.
+
+@history[#:changed "6.6.0.2" @elem{Prior to version 6.6.0.2, parsing
+    of @envvar{PLTSTDERR} and @envvar{PLTSYSLOG} was very strict.
+    Leading and trailing whitespace was forbidden, and anything other
+    than exactly one space character separating two specifications was
+    rejected.}]
 
 @; ----------------------------------------
 @section{Creating Loggers}

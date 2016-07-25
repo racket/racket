@@ -746,6 +746,8 @@ static Scheme_Object *reverse_path_list(Scheme_Object *l, int rel_to_cwd)
 # define GC_CAN_IGNORE /**/
 #endif
 
+#include <ctype.h>
+
 static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *envvar, const char *what, GC_CAN_IGNORE char *str)
 {
   int k, len, default_lvl = -1;
@@ -755,6 +757,10 @@ static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *e
   l =  scheme_make_null();
 
   while (1) {
+    while (*str && isspace(*str)) {
+      str++;
+    }
+
     if (!*str) {
       if (default_lvl == -1) default_lvl = 0;
       if (last)
@@ -792,13 +798,13 @@ static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *e
     if (k != -1) {
       if (*str == '@') {
         str++;
-        for (s = str; *s && *s != ' '; s++) {
+        for (s = str; *s && !isspace(*s); s++) {
         }
         l = scheme_make_pair(scheme_make_sized_byte_string(str, s - str, 1), l);
         if (!last) last = l;
         l = scheme_make_pair(scheme_make_integer(k), l);
         str = s;
-      } else if ((*str == ' ') || !*str) {
+      } else if (isspace(*str) || !*str) {
         if (default_lvl == -1)
           default_lvl = k;
         else
