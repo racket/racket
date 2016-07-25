@@ -57,6 +57,9 @@ values would be equal. See also @racket[gen:equal+hash] and @racket[prop:imperso
 (equal? 'yes 'no)
 (equal? (expt 2 100) (expt 2 100))
 (equal? 2 2.0)
+(let ([v (mcons 1 2)]) (equal? v v))
+(equal? (mcons 1 2) (mcons 1 2))
+(equal? (integer->char 955) (integer->char 955))
 (equal? (make-string 3 #\z) (make-string 3 #\z))
 ]}
 
@@ -80,7 +83,9 @@ in the case of @tech{complex numbers}. Two characters are
 (eqv? 'yes 'no)
 (eqv? (expt 2 100) (expt 2 100))
 (eqv? 2 2.0)
-(eqv? (integer->char #x3BB) (integer->char #x3BB))
+(let ([v (mcons 1 2)]) (eqv? v v))
+(eqv? (mcons 1 2) (mcons 1 2))
+(eqv? (integer->char 955) (integer->char 955))
 (eqv? (make-string 3 #\z) (make-string 3 #\z))
 ]}
 
@@ -93,8 +98,11 @@ object, @racket[#f] otherwise. See also @secref["model-eq"].
 @examples[
 (eq? 'yes 'yes)
 (eq? 'yes 'no)
+(eq? (expt 2 100) (expt 2 100))
+(eq? 2 2.0)
 (let ([v (mcons 1 2)]) (eq? v v))
 (eq? (mcons 1 2) (mcons 1 2))
+(eq? (integer->char 955) (integer->char 955))
 (eq? (make-string 3 #\z) (make-string 3 #\z))
 ]}
 
