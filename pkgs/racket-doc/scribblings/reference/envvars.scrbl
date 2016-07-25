@@ -4,7 +4,7 @@
 @title[#:tag "envvars"]{Environment Variables}
 
 An @deftech{environment variable set} encapsulates a partial mapping
-from byte strings to bytes strings. A Racket process's initial
+from byte strings to byte strings. A Racket process's initial
 @tech{environment variable set} is connected to the operating system's
 environment variables: accesses or changes to the set read or change
 operating-system environment variables for the Racket process.
@@ -79,7 +79,7 @@ for @racket[name] is removed.
 
 Normally, @racket[name] and @racket[maybe-bstr] should be a
 byte-string encoding of a string using the default encoding of the
-current @tech{locale}. On Windows, @racket[name] is 
+current @tech{locale}. On Windows, @racket[name] is
 coerced to a UTF-8 encoding and case-normalized, and
 @racket[maybe-bstr] is coerced to a UTF-8 encoding if @racket[env] is
 the initial @tech{environment variable set} of the Racket process.
@@ -108,7 +108,7 @@ the same mappings as @racket[env].}
 
 
 @deftogether[(
-@defproc[(getenv [name string-environment-variable-name?]) 
+@defproc[(getenv [name string-environment-variable-name?])
                  (or/c string-no-nuls? #f)]
 @defproc[(putenv [name string-environment-variable-name?]
                  [value string-no-nuls?]) boolean?]
