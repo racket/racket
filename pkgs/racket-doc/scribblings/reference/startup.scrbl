@@ -103,7 +103,7 @@ specified. Requiring @racketmodname[racket/gui/base] sets this parameter call
 @racket[(racket 'yield)].
 
 @history[#:changed "6.7" @elem{Run @racketmodname[racket/interactive] file
-         rather than directly running @racket[(find-system-path 'init-file)]}]
+         rather than directly running @racket[(find-system-path 'init-file)].}]
 
 @; ----------------------------------------------------------------------
 
