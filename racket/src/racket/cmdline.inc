@@ -672,7 +672,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     Scheme_Object *a[2];
     a[0] = get_init_filename(fa->global_env, INIT_FILENAME_CONF_SYM, DEFAULT_INIT_MODULE);
     if (a[0]) {
-      a[1] = scheme_false;
+      a[1] = scheme_make_integer(0);
       scheme_dynamic_require(2, a);
     }
   }
