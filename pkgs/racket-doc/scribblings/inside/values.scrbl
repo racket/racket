@@ -203,6 +203,9 @@ types:
  @item{@cppdef{scheme_hash_table_type} --- test for this type with
  @cppdef{SCHEME_HASHTP}}
 
+ @item{@cppdef{scheme_hash_tree_type} --- test for this type
+ with @cppdef{SCHEME_HASHTRP}}
+
  @item{@cppdef{scheme_bucket_table_type} --- test for this type with
  @cppdef{SCHEME_BUCKTP}}
 

@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt" scribble/bnf (for-label racket/pretty racket/gui/base))
+@(require "mz.rkt" scribble/bnf (for-label racket/pretty racket/gui/base setup/dirs))
 
 @(define (FlagFirst n) (as-index (Flag n)))
 @(define (DFlagFirst n) (as-index (DFlag n)))
@@ -88,16 +88,22 @@ provided that is not a @tech{configuration option}, then the
 read-eval-print-loop is not started, unless the @Flag{i}/@DFlag{repl}
 flag is provided on the command line to
 specifically re-enable it. In addition, just before the command line
-is started, Racket loads the file @racket[(find-system-path
-'init-file)] and GRacket loads the file
-@racket[(find-graphical-system-path 'init-file)] is loaded, unless the
-@Flag{q}/@DFlag{no-init-file} flag is specified on the command line.
+is started, Racket runs @racketmodname[racket/interactive]
+and GRacket runs @racketmodname[racket/gui/interactive], unless a different
+interactive file is specified in the the installation's @filepath{config.rktd}
+file found in @racket[(find-config-dir)], or the file @filepath{interactive.rkt}
+is found in @racket[(find-system-path 'addon-dir)]. If the
+@Flag{q}/@DFlag{no-init-file} flag is specified on the command line
+then no interactive file is run.
 
 Finally, before Racket or GRacket exits, it calls the procedure that
 is the current value of @racket[executable-yield-handler] in the main
 thread, unless the @Flag{V}/@DFlag{no-yield} command-line flag is
 specified. Requiring @racketmodname[racket/gui/base] sets this parameter call
 @racket[(racket 'yield)].
+
+@history[#:changed "6.7" @elem{Run @racketmodname[racket/interactive] file
+         rather than directly running @racket[(find-system-path 'init-file)].}]
 
 @; ----------------------------------------------------------------------
 

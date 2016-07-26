@@ -71,6 +71,10 @@
                   'installation-name
                   "development"
                   'default-scope
-                  "installation")
+                  "installation"
+                  'interactive-file
+                  'racket/interactive
+                  'gui-interactive-file
+                  'racket/gui/interactive)
             o)
      (newline o))))

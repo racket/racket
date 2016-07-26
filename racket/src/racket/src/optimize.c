@@ -200,7 +200,7 @@ static void register_traversers(void);
 void scheme_init_optimize()
 {
   REGISTER_SO(empty_eq_hash_tree);
-  empty_eq_hash_tree = scheme_make_hash_tree(0);
+  empty_eq_hash_tree = scheme_make_hash_tree(SCHEME_hashtr_eq);
 
 #ifdef MZ_PRECISE_GC
   register_traversers();
@@ -4769,7 +4769,7 @@ static void add_type(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pre
   }
 
   if (!new_types)
-    new_types = scheme_make_hash_tree(0);
+    new_types = scheme_make_hash_tree(SCHEME_hashtr_eq);
   new_types = scheme_hash_tree_set(new_types, var, pred);
   info->types = new_types;
 }
@@ -6685,7 +6685,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
   body_info = optimize_info_add_frame(info, head->count, head->count, 0);
   rhs_info = body_info;
 
-  merge_skip_vars = scheme_make_hash_tree(0);
+  merge_skip_vars = scheme_make_hash_tree(SCHEME_hashtr_eq);
   body = head->body;
   for (i = head->num_clauses; i--; ) {
     pre_body = (Scheme_IR_Let_Value *)body;

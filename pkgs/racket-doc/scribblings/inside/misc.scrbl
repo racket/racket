@@ -309,6 +309,26 @@ can be @cpp{NULL} in that case as well.  If the table holds keys
 weakly, then @var{key} points to a (weak) pointer to the actual key,
 and the weak pointer's value can be @cpp{NULL}.}
 
+@function[(Scheme_Hash_Tree* scheme_make_hash_tree
+                             [int type])]{
+ Similar to @cpp{scheme_make_hash_table}, but creates a hash
+ tree. A hash tree is equivalent to an immutable hash table
+ created by @racket[hash]. The @var{type} argument must be
+ either @cpp{SCHEME_hashtr_eq}, @cpp{SCHEME_hashtr_equal}, or @cpp{SCHEME_hashtr_eqv},
+ which determines how keys are compared.}
+
+@function[(void scheme_hash_tree_set
+                [Scheme_Hash_Tree* table]
+                [Scheme_Object* key]
+                [Scheme_Object* val])]{
+Like @cpp{scheme_hash_set}, but operates on @cpp{Scheme_Hash_Tree}.
+}
+
+@function[(Scheme_Object* scheme_hash_tree_get
+                          [Scheme_Hash_Tree* table]
+                          [Scheme_Object* key])]{
+Like @cpp{scheme_hash_get}, but operates on @cpp{Scheme_Hash_Tree}.
+}
 
 @function[(intptr_t scheme_double_to_int
            [char* where]

@@ -3145,11 +3145,11 @@ Scheme_Hash_Tree *scheme_make_hash_tree(int eql_kind)
 Scheme_Hash_Tree *scheme_make_hash_tree_of_type(Scheme_Type stype)
 {
   if (stype == scheme_eq_hash_tree_type)
-    return scheme_make_hash_tree(0);
+    return scheme_make_hash_tree(SCHEME_hashtr_eq);
   else if (stype == scheme_hash_tree_type)
-    return scheme_make_hash_tree(1);
+    return scheme_make_hash_tree(SCHEME_hashtr_equal);
   else
-    return scheme_make_hash_tree(2);
+    return scheme_make_hash_tree(SCHEME_hashtr_eqv);
 }
 
 Scheme_Hash_Tree *scheme_make_hash_tree_placeholder(int eql_kind)

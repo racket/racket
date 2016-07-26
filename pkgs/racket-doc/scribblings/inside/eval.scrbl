@@ -192,6 +192,8 @@ Applies the procedure @var{f} to the given arguments.
 Beware that the procedure can mutate @var{args} if it is the same as
 the result of @cpp{scheme_current_argument_stack}.}
 
+If @var{c} is @cpp{0}, then @var{args} can be @cpp{NULL}.
+
 @function[(Scheme_Object* scheme_apply_multi
            [Scheme_Object* f]
            [int c]

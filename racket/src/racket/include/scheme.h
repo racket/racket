@@ -956,6 +956,12 @@ enum {
   SCHEME_hash_late_weak_ptr
 };
 
+enum {
+  SCHEME_hashtr_eq,
+  SCHEME_hashtr_equal,
+  SCHEME_hashtr_eqv
+};
+
 typedef struct Scheme_Env Scheme_Env;
 
 #define SCHEME_VAR_BUCKET(obj) ((Scheme_Bucket *)(obj))

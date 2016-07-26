@@ -20,7 +20,6 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 #endif
 
 struct Scheme_Env;
-static char *get_gr_init_filename(struct Scheme_Env *env);
 
 #ifdef wx_xt
 # define PRE_FILTER_CMDLINE_ARGUMENTS
@@ -35,7 +34,8 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 #define UNIX_INIT_FILENAME "~/.gracketrc"
 #define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\gracketrc.rktl"
 #define MACOS9_INIT_FILENAME "PREFERENCES:gracketrc.rktl"
-#define GET_INIT_FILENAME get_gr_init_filename
+#define INIT_FILENAME_CONF_SYM "gui-interactive-file"
+#define DEFAULT_INIT_MODULE "racket/gui/interactive"
 #if WIN32
 # define NEED_CONSOLE_PRINTF
 # define DEFER_EXPLICIT_EXIT
@@ -62,29 +62,6 @@ static void pre_filter_cmdline_arguments(int *argc, char ***argv);
 #endif
 
 # include "../racket/main.c"
-
-static char *get_gr_init_filename(Scheme_Env *env)
-{
-  char *s, *s2;
-  int len, i;
-
-  s = get_init_filename(env);
-  if (s) {
-    len = strlen(s);
-    for (i = len - 8; i; i--) {
-      if (!strncmp(s XFORM_OK_PLUS i, "racketrc", 8)) {
-        s2 = (char *)malloc(len + 2);
-        memcpy(s2, s, i);
-        memcpy(s2 + i + 1, s + i, len - i + 1);
-        s2[i] = 'g';
-        s = s2;
-        break;
-      }
-    }
-  }
-
-  return s;
-}
 
 /***********************************************************************/
 /*                        Win32 handling                               */

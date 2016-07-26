@@ -1334,7 +1334,7 @@ Scheme_Object *scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
   /* Find body and make a set of local bindings: */
   body = head->body;
   pre_body = NULL;
-  binding_vars = scheme_make_hash_tree(0);
+  binding_vars = scheme_make_hash_tree(SCHEME_hashtr_eq);
   for (i = head->num_clauses; i--; ) {
     pre_body = (Scheme_IR_Let_Value *)body;
     for (j = 0; j < pre_body->count; j++) {
@@ -2150,7 +2150,7 @@ module_expr_resolve(Scheme_Object *data, Resolve_Info *old_rslv)
       Scheme_Object *k, *val;
       Scheme_Hash_Tree *ht;
 
-      ht = scheme_make_hash_tree(1);
+      ht = scheme_make_hash_tree(SCHEME_hashtr_equal);
 
       if (SCHEME_HASHTRP(m->other_binding_names)) {
         Scheme_Hash_Tree *t = (Scheme_Hash_Tree *)m->other_binding_names;
@@ -2706,7 +2706,7 @@ static void resolve_info_add_mapping(Resolve_Info *info, Scheme_IR_Local *var, S
   Scheme_Hash_Tree *ht;
 
   if (!info->redirects) {
-    ht = scheme_make_hash_tree(0);
+    ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
     info->redirects = ht;
   }
 

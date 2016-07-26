@@ -1100,7 +1100,7 @@ void create_skip_table(Scheme_Comp_Env *start_frame)
   }
 
   if (!table) {
-    table = scheme_make_hash_tree(0);
+    table = scheme_make_hash_tree(SCHEME_hashtr_eq);
     table = scheme_hash_tree_set(table, scheme_make_integer(0), (Scheme_Object *)end_frame);
   }
 

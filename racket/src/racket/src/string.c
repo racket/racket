@@ -2540,7 +2540,7 @@ static Scheme_Object *env_copy(int argc, Scheme_Object *argv[])
     return scheme_make_environment_variables(ht);
   
   /* copy system environment variables into a hash table: */
-  ht = scheme_make_hash_tree(1);
+  ht = scheme_make_hash_tree(SCHEME_hashtr_equal);
 
 #ifdef DOS_FILE_SYSTEM
   {
@@ -2598,7 +2598,7 @@ static Scheme_Object *env_make(int argc, Scheme_Object *argv[])
   Scheme_Object *varbs, *valbs;
   int i;
 
-  ht = scheme_make_hash_tree(1);
+  ht = scheme_make_hash_tree(SCHEME_hashtr_equal);
 
   for (i = 0; i < argc; i += 2) {
     varbs = argv[i];

@@ -6875,7 +6875,7 @@ static Scheme_Object *get_members(Scheme_Object *skip_nacks)
     return scheme_null;
   else if (scheme_list_length(skip_nacks) > 5) {
     Scheme_Hash_Tree *ht;
-    ht = scheme_make_hash_tree(0);
+    ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
     for (; SCHEME_PAIRP(skip_nacks); skip_nacks = SCHEME_CDR(skip_nacks)) {
       ht = scheme_hash_tree_set(ht, SCHEME_CAR(skip_nacks), scheme_true);
     }
@@ -7666,7 +7666,7 @@ static Scheme_Object *reparameterize(int argc, Scheme_Object **argv)
 
   naya = MALLOC_ONE_TAGGED(Scheme_Config);
   naya->so.type = scheme_config_type;
-  ht = scheme_make_hash_tree(0);
+  ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
   naya->ht = ht;
   naya->root = npz;
 
@@ -7891,7 +7891,7 @@ static void make_initial_config(Scheme_Thread *p)
   config->root = paramz;
   {
     Scheme_Hash_Tree *ht;
-    ht = scheme_make_hash_tree(0);
+    ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
     config->ht = ht;
   }
 
