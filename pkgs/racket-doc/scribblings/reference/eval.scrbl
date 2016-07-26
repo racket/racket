@@ -273,7 +273,10 @@ or a @filepath{.so}/@filepath{.dll}/@filepath{.dylib} version of the
 file is loaded if it exists within a @filepath{native} subdirectory of
 a @racket[use-compiled-file-paths] directory, in an even deeper
 subdirectory as named by @racket[system-library-subpath]. A compiled
-file is loaded only if its modification date is not older than the
+file is loaded only if it checks out according to
+@racket[(use-compiled-file-check)]; with the default parameter value
+of @racket['modify-seconds], a compiled file is used only if its
+modification date is not older than the
 date for @racket[_file]. If both @filepath{.zo} and
 @filepath{.so}/@filepath{.dll}/@filepath{.dylib} files are available,
 the @filepath{.so}/@filepath{.dll}/@filepath{.dylib} file is used.  If
@@ -356,6 +359,23 @@ command-line flag, it is parsed by first replacing any
 @racket[path-list-string->path-list] with a default path list
 @racket[(list (build-path 'same))] to arrive at the parameter's
 initial value.}
+
+
+@defparam[use-compiled-file-check check (or/c 'modify-seconds 'exists)]{
+
+A @tech{parameter} that determines how a compiled file is checked
+against its source to enable use of the compiled file. By default, the
+file-check mode is @racket['modify-seconds], which uses a compiled
+file when its filesystem modification date is at least as new as the
+source file's. The @racket['exists] mode causes a compiled file to be
+used in place of its source as long as the compiled file exists.
+
+If the @indexed-envvar{PLT_COMPILE_FILE_CHECK} environment variable is
+set to @litchar{modify-seconds} or @litchar{check}, then the
+environment variable's value configures the parameter when Racket
+starts.
+
+@history[#:added "6.6.0.3"]}
 
 
 @defproc[(read-eval-print-loop) any]{

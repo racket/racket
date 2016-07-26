@@ -120,7 +120,10 @@ A subsequent
 
 loads bytecode from the generated @filepath{.zo} files, paying
 attention to the @filepath{.rkt} sources only to confirm that each
-@filepath{.zo} file has a later timestamp.
+@filepath{.zo} file has a later timestamp (unless the
+@envvar{PLT_COMPILED_FILE_CHECK} environment variable is set to
+@litchar{exists}, in which case the compiled file is used without
+a timestamp check).
 
 In contrast,
 
@@ -151,7 +154,7 @@ section, the @exec{raco make} command creates
 files. The @filepath{compiled/a_rkt.dep} file records the dependency
 of @filepath{a.rkt} on @filepath{b.rkt}, @filepath{c.rkt} and the
 @racketmodname[racket] library. If the @filepath{b.rkt} file is
-modified (so that its timestamp and SHA-1 hash changes), then running
+modified (so that its SHA-1 hash changes), then running
 
 @commandline{raco make a.rkt}
 
@@ -161,6 +164,11 @@ again rebuilds @filepath{compiled/a_rkt.zo} and
 For module files that are within library collections, @exec{raco
 setup} uses the same @filepath{.zo} and @filepath{.dep} conventions
 and files as @exec{raco make}, so the two tools can be used together.
+
+As long as the @envvar{PLT_COMPILED_FILE_CHECK} environment variable
+is not set or is set to @litchar{modify}, then @exec{raco make}
+updates the timestamp on a compiled bytecode file if it is older than
+the source, even if the file does not need to be recompiled.
 
 @; ----------------------------------------------------------------------
 
@@ -220,9 +228,15 @@ file if
   @item{the version recorded in the @filepath{.dep} file does not
         match the result of @racket[(version)];}
 
+  @item{the source hash recorded in the @filepath{.dep} file does not
+        match the current source hash;}
+
   @item{one of the files listed in the @filepath{.dep} file has a
-        @filepath{.zo} timestamp newer than the target @filepath{.zo},
-        and the combined hashes of the dependencies recorded in the
+        @filepath{.zo} timestamp newer than the target @filepath{.zo}
+        and @racket[use-compiled-file-check] is set to
+        @racket['modify-seconds];}
+        
+  @item{the combined hashes of the dependencies recorded in the
         @filepath{.dep} file does not match the combined hash recorded
         in the @filepath{.dep} file.}
 
@@ -232,7 +246,8 @@ file if
 
 If SHA-1 hashes override a timestamp-based decision to recompile the
 file, then the target @filepath{.zo} file's timestamp is updated to
-the current time.
+the current time, unless the @racket[use-compiled-file-check]
+parameter is not set to @racket['modify-seconds].
 
 After the handler procedure compiles a @filepath{.zo} file, it creates
 a corresponding @filepath{.dep} file that lists the current version
@@ -294,7 +309,10 @@ are @racket['locking], @racket['start-compile], @racket['finish-compile], and
 @racket['already-done].
 
 @history[#:changed "6.1.1.8" @elem{Added identification of the compilation
-                                    context via @racket[managed-compiled-context-key].}]}
+                                    context via @racket[managed-compiled-context-key].}
+         #:changed "6.6.0.3" @elem{added check on a source's SHA1 hash to complement the
+                                   timestamp check, where the altter can be disabled
+                                   via @racket[use-compile-file-check].}]}
 
 
 @defproc[(managed-compile-zo [file path-string?]

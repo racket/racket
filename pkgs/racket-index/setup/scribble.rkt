@@ -1042,11 +1042,15 @@
          [info-out-time (for/fold ([t +inf.0]) ([info-out-file info-out-files])
                           (and t
                                (let ([t2 (file-or-directory-modify-seconds info-out-file #f (lambda () #f))])
-                                 (and t2 (min t t2)))))]
+                                 (and t2 (if (not (eq? 'modify-seconds (use-compiled-file-check)))
+                                             0
+                                             (min t t2))))))]
          [provides-time (for/fold ([t +inf.0]) ([info-out-file info-out-files])
                           (and t
                                (let ([t2 (and (file-exists? db-file)
-                                              (doc-db-get-provides-timestamp db-file info-out-file))])
+                                              (if (not (eq? 'modify-seconds (use-compiled-file-check)))
+                                                  (doc-db-get-provides-timestamp db-file info-out-file)
+                                                  0))])
                                  (and t2 (min t t2)))))]
          [info-in-exists? (file-exists? info-in-file)]
          [vers (send renderer get-serialize-version)]

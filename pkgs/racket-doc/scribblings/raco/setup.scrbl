@@ -154,7 +154,9 @@ flags:
    files to @filepath{.zo} files.}
 
  @item{@DFlag{trust-zos} --- fix timestamps on @filepath{.zo} files on
-   the assumption that they are already up-to-date.}
+   the assumption that they are already up-to-date (unless the
+   @envvar{PLT_COMPILED_FILE_CHECK} environment variable is set to
+   @litchar{exists}, in which case timestamps are ignored).}
 
  @item{@DFlag{no-launcher} or @Flag{x} --- refrain from creating
    executables or installing @tt{man} pages (as specified in
@@ -292,11 +294,18 @@ collections during an install:
 
    @commandline{env PLT_SETUP_OPTIONS="-j 1" make install}
 
+Running @exec{raco setup} is sensitive to the
+@envvar{PLT_COMPILED_FILE_CHECK} environment variable in the same way
+as @exec{raco make}. Specifically, if @envvar{PLT_COMPILED_FILE_CHECK}
+is set to @litchar{exists}, then @exec{raco make} does not attempt to
+update a compiled file's timestamp if the file is not recompiled.
+
 @history[#:changed "6.1" @elem{Added the @DFlag{pkgs},
                                @DFlag{check-pkg-deps}, and
                                @DFlag{fail-fast} flags.}
          #:changed "6.1.1" @elem{Added the @DFlag{force-user-docs} flag.}
-         #:changed "6.1.1.6" @elem{Added the @DFlag{only-foreign-libs} flag.}]
+         #:changed "6.1.1.6" @elem{Added the @DFlag{only-foreign-libs} flag.}
+         #:changed "6.6.0.3" @elem{Added support for @envvar{PLT_COMPILED_FILE_CHECK}.}]
 
 @; ------------------------------------------------------------------------
 
@@ -946,6 +955,9 @@ Runs @exec{raco setup} with various options:
 
 The result is @racket[#t] if @exec{raco setup} completes without error,
 @racket[#f] otherwise.
+
+Instead of using @envvar{PLT_COMPILED_FILE_CHECK}, @racket[setup] is
+sensitive to the @racket[use-compiled-file-check] parameter.
 
 @history[#:changed "6.1" @elem{Added the @racket[fail-fast?] argument.}
          #:changed "6.1.1" @elem{Added the @racket[force-user-docs?] argument.}]}

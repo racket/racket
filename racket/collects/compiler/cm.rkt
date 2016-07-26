@@ -80,6 +80,13 @@
 (define (file-stamp-in-collection p)
   (file-stamp-in-paths p (current-library-collection-paths)))
 
+(define (try-file-time p)
+  (let ([s (file-or-directory-modify-seconds p #f (lambda () #f))])
+    (and s
+         (if (eq? (use-compiled-file-check) 'modify-seconds)
+             s
+             0))))
+
 (define (file-stamp-in-paths p paths)
   (let ([p-eles (explode-path (simple-form-path p))])
     (let c-loop ([paths paths])
@@ -94,12 +101,9 @@
               ;; use the date of the original file (or the zo, whichever
               ;; is newer).
               (let-values ([(base name dir) (split-path p)])
-                (let* ([p-date (file-or-directory-modify-seconds p #f (lambda () #f))]
+                (let* ([p-date (try-file-time p)]
                        [alt-date (and (not p-date)
-                                      (file-or-directory-modify-seconds 
-                                       (rkt->ss p) 
-                                       #f 
-                                       (lambda () #f)))]
+                                      (try-file-time (rkt->ss p)))]
                        [date (or p-date alt-date)]
                        [get-path (lambda ()
                                    (if p-date
@@ -112,13 +116,11 @@
                                             (lambda (root)
                                               (ormap
                                                (lambda (mode)
-                                                 (let ([v (file-or-directory-modify-seconds
+                                                 (let ([v (try-file-time
                                                            (build-path 
                                                             (reroot-path* base root)
                                                             mode
-                                                            (path-add-extension name #".zo"))
-                                                           #f
-                                                           (lambda () #f))])
+                                                            (path-add-extension name #".zo")))])
                                                    (and v (list* v mode root))))
                                                modes))
                                             roots))]
@@ -222,15 +224,13 @@
     (build-path dir name)))
 
 (define (touch path)
-  (with-compiler-security-guard
-   (file-or-directory-modify-seconds 
-    path
-    (current-seconds)
-    (lambda ()
-      (close-output-port (open-output-file path #:exists 'append))))))
-
-(define (try-file-time path)
-  (file-or-directory-modify-seconds path #f (lambda () #f)))
+  (when (eq? 'modify-seconds (use-compiled-file-check))
+    (with-compiler-security-guard
+     (file-or-directory-modify-seconds 
+      path
+      (current-seconds)
+      (lambda ()
+        (close-output-port (open-output-file path #:exists 'append)))))))
 
 (define (try-delete-file path [noisy? #t])
   ;; Attempt to delete, but give up if it doesn't work:
@@ -340,19 +340,20 @@
             (date-hour d) (date-minute d) (date-second d))))
 
 (define (verify-times ss-name zo-name)
-  (define ss-sec (file-or-directory-modify-seconds ss-name))
-  (define zo-sec (try-file-time zo-name))
-  (cond [(not ss-sec) (error 'compile-zo "internal error")]
-        [(not zo-sec) (error 'compile-zo "failed to create .zo file (~a) for ~a"
-                             zo-name ss-name)]
-        [(< zo-sec ss-sec) (error 'compile-zo
-                                  "date for newly created .zo file (~a @ ~a) ~
-                                   is before source-file date (~a @ ~a)~a"
-                                  zo-name (format-time zo-sec)
-                                  ss-name (format-time ss-sec)
-                                  (if (> ss-sec (current-seconds))
-                                    ", which appears to be in the future"
-                                    ""))]))
+  (when (eq? 'modify-seconds (use-compiled-file-check))
+    (define ss-sec (file-or-directory-modify-seconds ss-name))
+    (define zo-sec (try-file-time zo-name))
+    (cond [(not ss-sec) (error 'compile-zo "internal error")]
+          [(not zo-sec) (error 'compile-zo "failed to create .zo file (~a) for ~a"
+                               zo-name ss-name)]
+          [(< zo-sec ss-sec) (error 'compile-zo
+                                    "date for newly created .zo file (~a @ ~a) ~
+                                     is before source-file date (~a @ ~a)~a"
+                                    zo-name (format-time zo-sec)
+                                    ss-name (format-time ss-sec)
+                                    (if (> ss-sec (current-seconds))
+                                        ", which appears to be in the future"
+                                        ""))])))
 
 (define-struct ext-reader-guard (proc top)
   #:property prop:procedure (struct-field-index proc))
@@ -617,6 +618,13 @@
                        dep-path)
         "")))
 
+(define (different-source-sha1-and-dep-recorded path deps)
+  (define src-hash (get-source-sha1 path))
+  (define recorded-hash (caadr deps))
+  (if (equal? src-hash recorded-hash)
+      #f
+      (list src-hash recorded-hash)))
+
 (define (rkt->ss p)
   (if (path-has-extension? p #".rkt")
       (path-replace-extension p #".ss")
@@ -669,6 +677,11 @@
               (trace-printf "newer src... ~a > ~a" path-time path-zo-time)
               ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
               (maybe-compile-zo sha1-only? deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen)]
+             [(different-source-sha1-and-dep-recorded path deps)
+              => (lambda (difference)
+                   (trace-printf "different src hash... ~a" difference)
+                   ;; If `sha1-only?', then `maybe-compile-zo' returns a #f or thunk:
+                   (maybe-compile-zo sha1-only? deps path->mode roots path orig-path read-src-syntax up-to-date collection-cache new-seen))]
              [(ormap-strict
                (lambda (p)
                  (define ext? (external-dep? p))

@@ -299,6 +299,7 @@ Scheme_Env *scheme_engine_instance_init()
   scheme_init_logging_once();
 
   scheme_init_compenv_symbol();
+  scheme_init_param_symbol();
 
 #if defined(MZ_PLACES_WAITPID)
   scheme_places_start_child_signal_handler();

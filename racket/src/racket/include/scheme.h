@@ -1407,6 +1407,7 @@ enum {
   MZCONFIG_USE_COMPILED_ROOTS,
   MZCONFIG_USE_USER_PATHS,
   MZCONFIG_USE_LINK_PATHS,
+  MZCONFIG_USE_COMPILED_FILE_CHECK,
 
   MZCONFIG_LOAD_DIRECTORY,
   MZCONFIG_WRITE_DIRECTORY,
@@ -1905,6 +1906,10 @@ MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
 MZ_EXTERN void scheme_set_logging_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level);
 
 MZ_EXTERN int scheme_get_allow_set_undefined();
+
+MZ_EXTERN void scheme_set_compiled_file_check(int);
+#define SCHEME_COMPILED_FILE_CHECK_MODIFY_SECONDS 0  
+#define SCHEME_COMPILED_FILE_CHECK_EXISTS         1
 
 #ifdef MZ_CAN_ACCESS_THREAD_LOCAL_DIRECTLY
 THREAD_LOCAL_DECL(MZ_EXTERN Scheme_Thread *scheme_current_thread);

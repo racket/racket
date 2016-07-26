@@ -1556,10 +1556,26 @@ static int run_from_cmd_line(int argc, char *_argv[],
       else if ((s[0] == '1') || (s[0] == 'y') || (s[0] == 'Y'))
         scheme_incremental_garbage_collection(1);
       else {
-         PRINTF("%s: unrecognized value for PLT_INCREMENTAL_GC;\n"
+        PRINTF("%s: unrecognized value for PLT_INCREMENTAL_GC;\n"
                 " a value that starts \"1\", \"y\", or \"Y\" permanently enables incremental mode,\n"
                 " and a value that starts \"0\", \"n\", or \"N\" disables incremental mode,\n"
                 " and the default enables incremental mode as requested via `collect-garbage'\n"
+                "  unrecognized value: %s\n",
+                prog, s);
+      }
+    }
+  }
+  {
+    char *s;
+    s = getenv("PLT_COMPILED_FILE_CHECK");
+    if (s) {
+      if (!strcmp(s, "modify-seconds"))
+        scheme_set_compiled_file_check(SCHEME_COMPILED_FILE_CHECK_MODIFY_SECONDS);
+      else if (!strcmp(s, "exists"))
+        scheme_set_compiled_file_check(SCHEME_COMPILED_FILE_CHECK_EXISTS);
+      else {
+        PRINTF("%s: unrecognized value for PLT_COMPILED_FILE_CHECK;\n"
+                " recognized values are \"modify-seconds\" and \"exists\"\n"
                 "  unrecognized value: %s\n",
                 prog, s);
       }

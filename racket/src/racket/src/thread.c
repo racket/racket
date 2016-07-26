@@ -180,6 +180,7 @@ THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
 
 SHARED_OK static int init_load_on_demand = 1;
+SHARED_OK static int compiled_file_check = SCHEME_COMPILED_FILE_CHECK_MODIFY_SECONDS;
 
 #ifdef RUNSTACK_IS_GLOBAL
 THREAD_LOCAL_DECL(Scheme_Object **scheme_current_runstack_start);
@@ -243,6 +244,8 @@ THREAD_LOCAL_DECL(struct Scheme_GC_Pre_Post_Callback_Desc *gc_prepost_callback_d
 ROSYM static Scheme_Object *read_symbol, *write_symbol, *execute_symbol, *delete_symbol, *exists_symbol;
 ROSYM static Scheme_Object *client_symbol, *server_symbol;
 ROSYM static Scheme_Object *major_symbol, *minor_symbol, *incremental_symbol;
+
+ROSYM static Scheme_Object *initial_compiled_file_check_symbol;
 
 THREAD_LOCAL_DECL(static int do_atomic = 0);
 THREAD_LOCAL_DECL(static int missed_context_switch = 0);
@@ -645,6 +648,11 @@ void scheme_init_inspector() {
      instances. */
 }
 
+void scheme_set_compiled_file_check(int c)
+{
+  compiled_file_check = c;
+}
+
 Scheme_Object *scheme_get_current_inspector()
   XFORM_SKIP_PROC
 {
@@ -670,6 +678,15 @@ void scheme_init_parameterization()
   scheme_exn_handler_key = scheme_make_symbol("exnh");
   scheme_parameterization_key = scheme_make_symbol("paramz");
   scheme_break_enabled_key = scheme_make_symbol("break-on?");
+}
+
+void scheme_init_param_symbol()
+{
+  REGISTER_SO(initial_compiled_file_check_symbol);
+  if (compiled_file_check == SCHEME_COMPILED_FILE_CHECK_MODIFY_SECONDS)
+    initial_compiled_file_check_symbol = scheme_intern_symbol("modify-seconds");
+  else
+    initial_compiled_file_check_symbol = scheme_intern_symbol("exists");
 }
 
 void scheme_init_paramz(Scheme_Env *env)
@@ -7967,6 +7984,8 @@ static void make_initial_config(Scheme_Thread *p)
   init_param(cells, paramz, MZCONFIG_COLLECTION_PATHS,  scheme_null);
   init_param(cells, paramz, MZCONFIG_COLLECTION_LINKS,  scheme_null);
 
+  init_param(cells, paramz, MZCONFIG_USE_COMPILED_FILE_CHECK, initial_compiled_file_check_symbol);
+  
   {
     Scheme_Security_Guard *sg;
 

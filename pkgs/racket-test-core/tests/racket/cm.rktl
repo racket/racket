@@ -37,46 +37,60 @@
                      (build-path dir "compiled" (path-add-suffix (car f) #".zo"))
                      #f
                      (lambda () -inf.0)))))])
-    (for-each (lambda (recomp)
-                (printf "pausing...\n")
-                (sleep 1) ;; timestamps have a 1-second granularity on most filesystems
-                (let ([to-touch (list-ref recomp 0)]
-                      [to-make (list-ref recomp 1)])
-                  (for-each (lambda (f)
-                              (printf "touching ~a\n" f)
-                              (with-output-to-file (build-path dir f)
-                                #:exists 'append
-                                (lambda () (display " "))))
-                            to-touch)
-                  (for-each (lambda (f)
-                              (let* ([d (build-path dir "compiled" (path-add-suffix f #".zo"))]
-                                     [ts (file-or-directory-modify-seconds d #f (lambda () #f))])
-                                (when ts
-                                  (printf "mangling .zo for ~a\n" f)
-                                  (with-output-to-file d
-                                    #:exists 'truncate
-                                    (lambda () (display "#~bad")))
-                                  (file-or-directory-modify-seconds d ts))))
-                            (caddr recomp))
-                  (for-each (lambda (f)
-                              (printf "re-making ~a\n" f)
-                              (managed-compile-zo (build-path dir f)))
-                            to-make)
-                  (for-each (lambda (f)
-                              (let ([ts (hash-ref timestamps f)]
-                                    [new-ts
-                                     (file-or-directory-modify-seconds
-                                      (build-path dir "compiled" (path-add-suffix f #".zo"))
-                                      #f
-                                      (lambda () -inf.0))]
-                                    [updated? (lambda (a b) a)])
-                                (test (and (member f (caddr recomp)) #t)
-                                      updated?
-                                      (new-ts . > . ts)
-                                      f)
-                                (hash-set! timestamps f new-ts)))
-                            (map car files))))
-              recomps)))
+    (for ([touch-mode '(touch-zo normal)])
+      (for-each (lambda (recomp)
+                  (define (pause)
+                    (printf "pausing...\n")
+                    (sleep 1)) ;; timestamps have a 1-second granularity on most filesystems
+                  (pause)
+                  (let ([to-touch (list-ref recomp 0)]
+                        [to-make (list-ref recomp 1)])
+                    (for-each (lambda (f)
+                                (printf "touching ~a\n" f)
+                                (with-output-to-file (build-path dir f)
+                                  #:exists 'append
+                                  (lambda () (display " ")))
+                                (when (eq? touch-mode 'touch-zo)
+                                  ;; Make sure a new typestamp on the bytecode file doesn't
+                                  ;; prevent a recompile
+                                  (define d (build-path dir "compiled" (path-add-suffix f #".zo")))
+                                  (when (file-exists? d)
+                                    (printf "touching .zo for ~a\n" f)
+                                    (file-or-directory-modify-seconds d (current-seconds))
+                                    (hash-set! timestamps f (file-or-directory-modify-seconds d)))))
+                              to-touch)
+                    (for-each (lambda (f)
+                                (let* ([d (build-path dir "compiled" (path-add-suffix f #".zo"))]
+                                       [ts (file-or-directory-modify-seconds d #f (lambda () #f))])
+                                  (when ts
+                                    (printf "mangling .zo for ~a\n" f)
+                                    (with-output-to-file d
+                                      #:exists 'truncate
+                                      (lambda () (display "#~bad")))
+                                    (file-or-directory-modify-seconds d ts))))
+                              (caddr recomp))
+                    (when (eq? touch-mode 'touch-zo)
+                      (pause))
+                    (for-each (lambda (f)
+                                (printf "re-making ~a\n" f)
+                                (managed-compile-zo (build-path dir f)))
+                              to-make)
+                    (for-each (lambda (f)
+                                (let* ([d (build-path dir "compiled" (path-add-suffix f #".zo"))]
+                                       [ts (hash-ref timestamps f)]
+                                       [new-ts
+                                        (file-or-directory-modify-seconds
+                                         d
+                                         #f
+                                         (lambda () -inf.0))]
+                                       [updated? (lambda (a b) a)])
+                                  (test (and (member f (caddr recomp)) #t)
+                                        updated?
+                                        (new-ts . > . ts)
+                                        f)
+                                  (hash-set! timestamps f new-ts)))
+                              (map car files))))
+                recomps))))
 
 (try '(("a.rkt" "(module a scheme/base (require \"b.rkt\" \"d.rkt\" \"g.rkt\"))" #t)
        ("b.rkt" "(module b scheme/base (require scheme/include) (include \"c.sch\"))" #t)
