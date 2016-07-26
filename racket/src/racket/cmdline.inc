@@ -756,7 +756,7 @@ static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *e
   l =  scheme_make_null();
 
   while (1) {
-    while (*str && isspace(*str)) {
+    while (*str && isspace(*((unsigned char *)str))) {
       str++;
     }
 
@@ -797,13 +797,13 @@ static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *e
     if (k != -1) {
       if (*str == '@') {
         str++;
-        for (s = str; *s && !isspace(*s); s++) {
+        for (s = str; *s && !isspace(*((unsigned char *)s)); s++) {
         }
         l = scheme_make_pair(scheme_make_sized_byte_string(str, s - str, 1), l);
         if (!last) last = l;
         l = scheme_make_pair(scheme_make_integer(k), l);
         str = s;
-      } else if (isspace(*str) || !*str) {
+      } else if (isspace(*((unsigned char *)str)) || !*str) {
         if (default_lvl == -1)
           default_lvl = k;
         else
@@ -817,7 +817,7 @@ static Scheme_Object *get_log_level(char *prog, char *real_switch, const char *e
       PRINTF("%s: %s <levels> %s%s%s must be one of the following\n"
              " <level>s:\n"
              "   none fatal error warning info debug\n"
-             " or up to one such <level> in space-separated sequence of\n"
+             " or up to one such <level> in whitespace-separated sequence of\n"
              "   <level>@<name>\n"
              " given: %s\n",
              prog, what, 
