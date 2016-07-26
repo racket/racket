@@ -672,8 +672,19 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
     Scheme_Object *a[2];
     a[0] = get_init_filename(fa->global_env, INIT_FILENAME_CONF_SYM, DEFAULT_INIT_MODULE);
     if (a[0]) {
-      a[1] = scheme_make_integer(0);
-      scheme_dynamic_require(2, a);
+        mz_jmp_buf * volatile save, newbuf;
+        Scheme_Thread * volatile p;
+        p = scheme_get_current_thread();
+        save = p->error_buf;
+        p->error_buf = &newbuf;
+        if (!scheme_setjmp(newbuf)) {
+          a[1] = scheme_make_integer(0);
+          scheme_dynamic_require(2, a);
+        } else {
+          scheme_clear_escape();
+          exit_val = 1;
+        }
+        p->error_buf = save;
     }
   }
 #endif /* DONT_LOAD_INIT_FILE */
