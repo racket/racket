@@ -125,8 +125,7 @@ static Scheme_Object *get_init_filename(Scheme_Env *env,
     f = _scheme_apply(build_path, 2, a);
     if (SCHEME_PATHP(f)) {
       char *filename;
-      filename = SCHEME_PATH_VAL(f);
-      filename = scheme_expand_filename(filename, -1, "startup", NULL, SCHEME_GUARD_FILE_EXISTS);
+      filename = scheme_expand_filename(SCHEME_PATH_VAL(f), -1, "startup", NULL, SCHEME_GUARD_FILE_EXISTS);
       if(scheme_file_exists(filename)) {
         p->error_buf = save;
         return scheme_make_path(filename);
@@ -139,15 +138,20 @@ static Scheme_Object *get_init_filename(Scheme_Env *env,
     a[1] = scheme_make_path("config.rktd");
     f = _scheme_apply(build_path, 2, a);
     if (SCHEME_PATHP(f)) {
-      Scheme_Object * port;
-      port = scheme_open_input_file(SCHEME_PATH_VAL(f), "get-init-filename");
-      f = scheme_read(port);
-      scheme_close_input_port(port);
-      if(SCHEME_HASHTRP(f)) {
-        f = scheme_hash_tree_get((Scheme_Hash_Tree *)f, scheme_intern_symbol(init_filename_sym));
-        if(f) {
-          p->error_buf = save;
-          return f;
+      char *filename;
+      filename = scheme_expand_filename(SCHEME_PATH_VAL(f), -1, "startup", NULL,
+                                        SCHEME_GUARD_FILE_EXISTS | SCHEME_GUARD_FILE_READ);
+      if(scheme_file_exists(filename)) {
+        Scheme_Object * port;
+        port = scheme_open_input_file(SCHEME_PATH_VAL(f), "get-init-filename");
+        f = scheme_read(port);
+        scheme_close_input_port(port);
+        if(SCHEME_HASHTRP(f)) {
+          f = scheme_hash_tree_get((Scheme_Hash_Tree *)f, scheme_intern_symbol(init_filename_sym));
+          if(f) {
+            p->error_buf = save;
+            return f;
+          }
         }
       }
     }
