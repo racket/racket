@@ -314,9 +314,8 @@ and the weak pointer's value can be @cpp{NULL}.}
  Similar to @cpp{scheme_make_hash_table}, but creates a hash
  tree. A hash tree is equivalent to an immutable hash table
  created by @racket[hash]. The @var{type} argument must be
- either either @cpp{SCHEME_hash_ptr} or
- @cpp{SCHEME_hash_string}, which determines how keys are
- compared.}
+ either @cpp{SCHEME_hashtr_eq}, @cpp{SCHEME_hashtr_equal}, or @cpp{SCHEME_hashtr_eqv},
+ which determines how keys are compared.}
 
 @function[(void scheme_hash_tree_set
                 [Scheme_Hash_Tree* table]

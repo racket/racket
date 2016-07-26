@@ -6479,7 +6479,7 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel_ok
       Scheme_Hash_Tree *new_ht;
       Scheme_Object *key, *val, *idx, *a[2];
 
-      new_ht = scheme_make_hash_tree(0);
+      new_ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
 
       a[0] = s;
       idx = scheme_hash_table_iterate_start(1, a);

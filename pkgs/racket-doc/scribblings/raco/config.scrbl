@@ -178,4 +178,11 @@ directory}:
        @racket[find-config-tethered-console-bin-dir] and
        @racket[find-config-tethered-gui-bin-dir].}
 
+  @item{@indexed-racket['interactive-file] and
+        @indexed-racket['gui-interactive-file] --- a path to the interactive module
+        that runs when the REPL runs on startup, unless the
+        @Flag{q}/@DFlag{no-init-file} is provided. Defaults to
+        @racketmodname[racket/interactive] and
+        @racketmodname[racket/gui/interactive].}
+
   ]
