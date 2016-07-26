@@ -1012,7 +1012,7 @@ static Scheme_Object *primitive_table(int argc, Scheme_Object *argv[])
     Scheme_Bucket **bs, *b;
     intptr_t i;
 
-    ht = scheme_make_hash_tree(0);
+    ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
 
     bs = menv->toplevel->buckets;
     for (i = menv->toplevel->size; i--; ) {
@@ -5197,7 +5197,7 @@ static Scheme_Object *add_start(Scheme_Object *v, int base_phase, int eval_exp, 
   Scheme_Bucket *b;
 
   if (!ht)
-    ht = scheme_make_hash_tree(0);
+    ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
 
   key = make_key(base_phase, eval_exp, eval_run);
 
@@ -7820,7 +7820,7 @@ Scheme_Object *scheme_prune_bindings_table(Scheme_Object *binding_names, Scheme_
   Scheme_Object *k, *val, *base_stx;
   Scheme_Hash_Tree *ht;
 
-  ht = scheme_make_hash_tree(0);
+  ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
 
   base_stx = scheme_stx_add_module_context(scheme_datum_to_syntax(scheme_false, scheme_false, scheme_false, 0, 0),
                                            scheme_module_context_at_phase(scheme_stx_to_module_context(rn_stx),
@@ -8480,7 +8480,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
 
   all_provided = scheme_make_hash_table_eqv();
   all_reprovided = scheme_make_hash_table_eqv();
-  all_defs = scheme_make_hash_tree(2);
+  all_defs = scheme_make_hash_tree(SCHEME_hashtr_eqv);
   all_defs_out = scheme_make_hash_table_eqv();
 
   rn_set = env->genv->stx_context;
@@ -12291,7 +12291,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
         
         if (exns) {
           Scheme_Object *l, *a;
-          excepts = scheme_make_hash_tree(0);
+          excepts = scheme_make_hash_tree(SCHEME_hashtr_eq);
           for (l = exns; SCHEME_STX_PAIRP(l); l = SCHEME_STX_CDR(l)) {
             a = SCHEME_STX_CAR(l);
             if (SCHEME_STXP(a)) 

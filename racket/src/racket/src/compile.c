@@ -862,7 +862,7 @@ static Scheme_Object *global_binding(Scheme_Object *id, Scheme_Comp_Env *env)
     Scheme_Hash_Tree *binds;
     binds = (Scheme_Hash_Tree *)scheme_hash_get(env->binding_namess, scheme_env_phase(env->genv));
     if (!binds)
-      binds = scheme_make_hash_tree(0);
+      binds = scheme_make_hash_tree(SCHEME_hashtr_eq);
     binds = scheme_hash_tree_set(binds, sym, id);
     scheme_hash_set(env->binding_namess, scheme_env_phase(env->genv), (Scheme_Object *)binds);
   }

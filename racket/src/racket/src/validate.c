@@ -982,7 +982,7 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
 static Scheme_Hash_Tree *as_nonempty_procs(Scheme_Hash_Tree *procs)
 {
   if (!procs)
-    procs = scheme_make_hash_tree(0);
+    procs = scheme_make_hash_tree(SCHEME_hashtr_eq);
   return procs;
 }
 

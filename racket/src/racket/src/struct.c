@@ -6170,7 +6170,7 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
           } else {
             if (!scheme_inspector_sees_part(argv[0], inspector, field_pos)) {
               if (!setter_positions)
-                setter_positions = scheme_make_hash_tree(0);
+                setter_positions = scheme_make_hash_tree(SCHEME_hashtr_eq);
               setter_positions = scheme_hash_tree_set(setter_positions, scheme_make_integer(field_pos), scheme_true);
             }
           }
@@ -6234,12 +6234,12 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
     if (prop) {
       if (SCHEME_TRUEP(proc)) {
         if (!red_props)
-          red_props = scheme_make_hash_tree(0);
+          red_props = scheme_make_hash_tree(SCHEME_hashtr_eq);
         red_props = scheme_hash_tree_set(red_props, prop, proc);
         has_redirect = 1;
       } else {
         if (!empty_red_props)
-          empty_red_props = scheme_make_hash_tree(0);
+          empty_red_props = scheme_make_hash_tree(SCHEME_hashtr_eq);
         empty_red_props = scheme_hash_tree_set(empty_red_props, prop, proc);
       }
     } else if (st) {
@@ -6438,7 +6438,7 @@ Scheme_Hash_Tree *scheme_parse_chaperone_props(const char *who, int start_at, in
                             NULL);
 
     if (!ht)
-      ht = scheme_make_hash_tree(0);
+      ht = scheme_make_hash_tree(SCHEME_hashtr_eq);
     ht = scheme_hash_tree_set(ht, v, argv[start_at + 1]);
 
     start_at += 2;

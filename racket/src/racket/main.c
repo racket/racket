@@ -103,7 +103,8 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
  * * Otherwise check config file for location
  */
 static Scheme_Object *get_init_filename(Scheme_Env *env,
-                                        char *init_filename_sym)
+                                        char *init_filename_sym,
+                                        char *default_init_module)
 {
   Scheme_Object *f, *a[2], *build_path;
   Scheme_Thread * volatile p;
@@ -143,13 +144,18 @@ static Scheme_Object *get_init_filename(Scheme_Env *env,
       f = scheme_read(port);
       scheme_close_input_port(port);
       if(SCHEME_HASHTRP(f)) {
-        f = scheme_hash_tree_get(f, scheme_intern_symbol(init_filename_sym));
+        f = scheme_hash_tree_get((Scheme_Hash_Tree *)f, scheme_intern_symbol(init_filename_sym));
         if(f) {
           p->error_buf = save;
           return f;
         }
       }
     }
+
+    /* Failed to load custom init file, load racket/interactive */
+    f = scheme_intern_symbol(default_init_module);
+    p->error_buf = save;
+    return f;
   }
 
   p->error_buf = save;
@@ -167,6 +173,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 # define WINDOWS_INIT_FILENAME "%%HOMEDIRVE%%\\%%HOMEPATH%%\\racketrc.rktl"
 # define MACOS9_INIT_FILENAME "PREFERENCES:racketrc.rktl"
 # define INIT_FILENAME_CONF_SYM "interactive-file"
+# define DEFAULT_INIT_MODULE "racket/interactive"
 # define PRINTF printf
 # define PROGRAM "Racket"
 # define PROGRAM_LC "racket"

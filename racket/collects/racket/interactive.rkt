@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 (when (collection-file-path "main.rkt" "xrepl"
                             #:fail (lambda _ #f))
   (dynamic-require 'xrepl #f))

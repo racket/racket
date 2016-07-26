@@ -670,7 +670,7 @@ static int finish_cmd_line_run(FinishArgs *fa, Repl_Proc repl)
 #ifndef DONT_LOAD_INIT_FILE
   if (fa->a->use_repl && !fa->a->no_init_file) {
     Scheme_Object *a[2];
-    a[0] = get_init_filename(fa->global_env, INIT_FILENAME_CONF_SYM);
+    a[0] = get_init_filename(fa->global_env, INIT_FILENAME_CONF_SYM, DEFAULT_INIT_MODULE);
     if (a[0]) {
       a[1] = scheme_false;
       scheme_dynamic_require(2, a);
