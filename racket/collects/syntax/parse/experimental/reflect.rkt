@@ -1,6 +1,7 @@
 #lang racket/base
 (require (for-syntax racket/base
                      racket/lazy-require
+                     racket/syntax
                      syntax/parse/private/residual-ct) ;; keep abs.path
          racket/contract/base
          racket/contract/combinator
@@ -22,20 +23,21 @@
   (if (eq? (syntax-local-context) 'expression)
       (syntax-case stx ()
         [(rsc sc)
-         (let* ([stxclass (get-stxclass #'sc)]
-                [splicing? (stxclass-splicing? stxclass)])
-           (unless (stxclass-delimit-cut? stxclass)
-             (raise-syntax-error #f "cannot reify syntax class with #:no-delimit-cut option"
-                                 stx #'sc))
-           (with-syntax ([name (stxclass-name stxclass)]
-                         [parser (stxclass-parser stxclass)]
-                         [arity (stxclass-arity stxclass)]
-                         [(#s(attr aname adepth _) ...) (stxclass-attrs stxclass)]
-                         [ctor
-                          (if splicing?
-                              #'reified-splicing-syntax-class
-                              #'reified-syntax-class)])
-             #'(ctor 'name parser 'arity '((aname adepth) ...))))])
+         (with-disappeared-uses
+          (let* ([stxclass (get-stxclass #'sc)]
+                 [splicing? (stxclass-splicing? stxclass)])
+            (unless (stxclass-delimit-cut? stxclass)
+              (raise-syntax-error #f "cannot reify syntax class with #:no-delimit-cut option"
+                                  stx #'sc))
+            (with-syntax ([name (stxclass-name stxclass)]
+                          [parser (stxclass-parser stxclass)]
+                          [arity (stxclass-arity stxclass)]
+                          [(#s(attr aname adepth _) ...) (stxclass-attrs stxclass)]
+                          [ctor
+                           (if splicing?
+                               #'reified-splicing-syntax-class
+                               #'reified-syntax-class)])
+              #'(ctor 'name parser 'arity '((aname adepth) ...)))))])
       #`(#%expression #,stx)))
 
 (define (reified-syntax-class-arity r)
