@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt" (for-label racket/struct-info))
+@(require "mz.rkt" (for-label racket/struct))
 
 @title{Printer Extension}
 
