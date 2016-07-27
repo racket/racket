@@ -1101,7 +1101,7 @@ Scheme_Object *scheme_letrec_check_expr(Scheme_Object *expr)
      positions. We use a list of numbers for the RHS of a
      `let[rec]-values` form with multiple variables. */
 
-  val = letrec_check_expr(expr, NULL, init_pos);
+  val = letrec_check_expr(expr, frame, init_pos);
 
   clean_dead_deferred_expr(*frame->deferred_chain);
 

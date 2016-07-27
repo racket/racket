@@ -4450,7 +4450,8 @@
 (test-comp '(lambda (f) (letrec ([x (lambda() y)] [y (lambda () x)] [z (error 'error)]) #f))
            '(lambda (f) (letrec ([x (lambda() y)] [y (lambda () x)] [z (error 'error)]) (f x y z)) 5))
 (test-comp '(lambda (f) (letrec ([x (lambda() y)] [z (error 'error)] [y #f]) #f))
-           '(lambda (f) (letrec ([x (lambda() y)] [z (error 'error)] [y (lambda () x)]) (f x y z)) 5))
+           '(lambda (f) (letrec ([x (lambda() y)] [z (error 'error)] [y (lambda () x)]) (f x y z)) 5)
+           #f) ; letrec-check pass determines that the body of `x` is dead
 (test-comp '(lambda (f) (letrec ([z (error 'error)] [x #f] [y #f]) #f))
            '(lambda (f) (letrec ([z (error 'error)] [x (lambda() y)] [y (lambda () x)]) (f x y z)) 5))
 
