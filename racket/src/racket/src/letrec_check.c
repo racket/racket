@@ -161,8 +161,9 @@ typedef struct Scheme_Deferred_Expr {
      only need to process it once */
   int done;
 
-  /* the expression that has been deferred */
-  Scheme_Lambda *expr;
+  /* the expression that has been deferred -- usally a Scheme_Lambda,
+     but can be a Scheme_IR_Local for propagation */
+  Scheme_Object *expr;
 
   /* the frame that existed when the expr was deferred */
   Letrec_Check_Frame *frame;
@@ -288,6 +289,9 @@ static void update_frame(Letrec_Check_Frame *outer, Letrec_Check_Frame *inner,
 
   SCHEME_ASSERT(position < outer->count, "update_frame: position exceeds binding count");
 
+  if (SCHEME_VOIDP(outer->def[position]))
+    scheme_signal_error("oops\n");
+    
   /* put the deferred expression in the right place */
   prev_def = outer->def[position];
   prev_def = scheme_make_pair((Scheme_Object *)clos, prev_def); 
@@ -298,7 +302,7 @@ static void update_frame(Letrec_Check_Frame *outer, Letrec_Check_Frame *inner,
 }
 
 /* creates a deferred expression "closure" by closing over the frame */
-static Scheme_Deferred_Expr *make_deferred_expr_closure(Scheme_Lambda *expr, Letrec_Check_Frame *frame)
+static Scheme_Deferred_Expr *make_deferred_expr_closure(Scheme_Object *expr, Letrec_Check_Frame *frame)
 {
   Scheme_Deferred_Expr *clos;
 
@@ -365,14 +369,12 @@ static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *f
 
   if (SCHEME_FALSEP(pos)) {
     /* mark as potentially applied (i.e., in an "unsafe" context)
-       for deferred closures (gre "EXPL-4" for information): */
+       for deferred closures (grep "EXPL-4" for information): */
     if (in_frame->ref)
       in_frame->ref[in_position] |= LET_APPLY_USE;
   } else {
     /* propagate any deferred expressions (grep "EXPL-2" for information): */
-    if (in_frame->def
-        && !SCHEME_NULLP(in_frame->def[in_position])
-        && !SCHEME_NULLP(pos)) {
+    if (!SCHEME_NULLP(pos)) {
       Letrec_Check_Frame *outer_frame;
       Scheme_Object *ls;
       outer_frame = get_nearest_rhs(frame);
@@ -387,8 +389,8 @@ static Scheme_Object *letrec_check_local(Scheme_Object *o, Letrec_Check_Frame *f
           pos = SCHEME_CDR(pos);
         }
 
-        ls = scheme_append(in_frame->def[in_position],
-                           outer_frame->def[dpos]);
+        ls = (Scheme_Object *)make_deferred_expr_closure(o, frame);
+        ls = scheme_make_pair(ls, outer_frame->def[dpos]);
         outer_frame->def[dpos] = ls;
       }
     }
@@ -585,30 +587,28 @@ static Scheme_Object *letrec_check_lambda(Scheme_Object *o, Letrec_Check_Frame *
     Scheme_Deferred_Expr *clos;
     Letrec_Check_Frame *outer_frame = NULL;
 
-    if (!SCHEME_NULLP(pos)) {
-      /* pos is either a single integer or a list of integers */
+    /* pos is either a single integer or a list of integers */
 
-      /* create a deferred expression that closes over the frame it
-         appeared in, and update the frame where the binding lives
-         (which may be an enclosing frame) */
-      outer_frame = get_nearest_rhs(frame);
-      clos = make_deferred_expr_closure(lam, frame);
+    /* create a deferred expression that closes over the frame it
+       appeared in, and update the frame where the binding lives
+       (which may be an enclosing frame) */
+    outer_frame = get_nearest_rhs(frame);
+    clos = make_deferred_expr_closure((Scheme_Object *)lam, frame);
 
-      while (SCHEME_INTP(pos) || SCHEME_PAIRP(pos)) {
-        int position;
+    while (SCHEME_INTP(pos) || SCHEME_PAIRP(pos)) {
+      int position;
 
-        if (SCHEME_INTP(pos)) {
-          position = SCHEME_INT_VAL(pos);
-          pos = scheme_null;
-        } else {
-          position = SCHEME_INT_VAL(SCHEME_CAR(pos));
-          pos = SCHEME_CDR(pos);
-        }
-
-        /* attach the deferred_expr_closure to the right position 
-           in the correct frame */
-        update_frame(outer_frame, frame, position, clos);
+      if (SCHEME_INTP(pos)) {
+        position = SCHEME_INT_VAL(pos);
+        pos = scheme_null;
+      } else {
+        position = SCHEME_INT_VAL(SCHEME_CAR(pos));
+        pos = SCHEME_CDR(pos);
       }
+
+      /* attach the deferred_expr_closure to the right position 
+         in the correct frame */
+      update_frame(outer_frame, frame, position, clos);
     }
   }
 
@@ -634,20 +634,22 @@ static void letrec_check_deferred_expr(Scheme_Object *o)
   SCHEME_ASSERT(SAME_TYPE(SCHEME_TYPE(clos), scheme_deferred_expr_type),
                 "letrec_check_deferred_expr: clos is not a scheme_deferred_expr");
 
-  lam = (Scheme_Lambda *)clos->expr;
-  SCHEME_ASSERT(SAME_TYPE(SCHEME_TYPE(lam), scheme_ir_lambda_type),
-                "deferred expression does not contain a lambda");
+  if (SAME_TYPE(SCHEME_TYPE(clos->expr), scheme_ir_lambda_type)) {
+    lam = (Scheme_Lambda *)clos->expr;
 
-  inner = clos->frame;
-
-  num_params = lam->num_params;
-
-  new_frame = init_letrec_check_frame(FRAME_TYPE_CLOSURE, LET_BODY_EXPR,
-                                      num_params, inner, NULL, 
-                                      NULL, lam);
-
-  val = letrec_check_expr(lam->body, new_frame, scheme_false);
-  lam->body = val;
+    inner = clos->frame;
+    
+    num_params = lam->num_params;
+    
+    new_frame = init_letrec_check_frame(FRAME_TYPE_CLOSURE, LET_BODY_EXPR,
+                                        num_params, inner, NULL, 
+                                        NULL, lam);
+    
+    val = letrec_check_expr(lam->body, new_frame, scheme_false);
+    lam->body = val;
+  } else {
+    letrec_check_expr(clos->expr, clos->frame, scheme_false);
+  }
 }
 
 static void clean_dead_deferred_expr(Scheme_Deferred_Expr *clos)
@@ -664,12 +666,14 @@ static void clean_dead_deferred_expr(Scheme_Deferred_Expr *clos)
                   "letrec_check_deferred_expr: clos is not a scheme_deferred_expr");
 
     if (!clos->done) {
-      lam = (Scheme_Lambda *)clos->expr;
-      SCHEME_ASSERT(SAME_TYPE(SCHEME_TYPE(lam), scheme_ir_lambda_type),
-                    "deferred expression does not contain a lambda");
+      if (SAME_TYPE(SCHEME_TYPE(clos->expr), scheme_ir_lambda_type)) {
+        lam = (Scheme_Lambda *)clos->expr;
+        SCHEME_ASSERT(SAME_TYPE(SCHEME_TYPE(lam), scheme_ir_lambda_type),
+                      "deferred expression does not contain a lambda");
       
-      /* Since this deferral was never done, it's dead code. */
-      lam->body = scheme_void;
+        /* Since this deferral was never done, it's dead code. */
+        lam->body = scheme_void;
+      }
 
       clos->done = 1;
     }
