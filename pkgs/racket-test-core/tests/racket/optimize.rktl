@@ -4096,6 +4096,24 @@
              (define (f v)
                (and (c? v) (unsafe-struct-ref v 3)))))
 
+(test-comp '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes
+                      #:property prop:procedure 0)
+              (begin0
+               (a? (a-x (a 1 2)))
+               a?
+               a
+               a-x
+               (a? 7)
+               (a 1 2)
+               5))
+           '(module m racket/base
+              (struct a (x y) #:omit-define-syntaxes
+                      #:property prop:procedure 0)
+              (begin0
+               (a? (a-x (a 1 2)))
+               5)))
+
 (test-comp `(lambda (b)
               (let ([v (unbox b)])
                 (with-continuation-mark 'x 'y (unbox v))))
@@ -5488,6 +5506,46 @@
          [l (closure-code c)]
          [ts (lam-param-types l)])
     (test 'flonum cadr ts)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the compiler doesn't add a check for whether
+;; `later` is defined in the body of `kw-proc`:
+
+(let ()
+  (define l '(module m racket/base
+               (define (kw-proc x #:optional [optional 0])
+                 (later))
+              (define (later) '(1 2 3))))
+  (define b
+    (let ([o (open-output-bytes)])
+      (write (compile l) o)
+      (parameterize ([read-accept-compiled #t])
+        (zo-parse (open-input-bytes (get-output-bytes o))))))
+  (let* ([m (compilation-top-code b)]
+         [d (car (mod-body m))]
+         [rhs (def-values-rhs d)]
+         [b (inline-variant-direct rhs)]
+         [v (application-rator (lam-body b))])
+    (test #t toplevel-const? v)))
+
+(let ()
+  (define l '(module m racket/base
+              (struct s (x))
+              (define (kw-proc x #:optional [optional 0])
+                (later))
+              (define an-s (s 10))
+              (define (later) '(1 2 3))))
+  (define b
+    (let ([o (open-output-bytes)])
+      (write (compile l) o)
+      (parameterize ([read-accept-compiled #t])
+        (zo-parse (open-input-bytes (get-output-bytes o))))))
+  (let* ([m (compilation-top-code b)]
+         [d (cadr (mod-body m))]
+         [rhs (def-values-rhs d)]
+         [b (inline-variant-direct rhs)]
+         [v (application-rator (lam-body b))])
+    (test #t toplevel-const? v)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; The validator should understand that a structure

@@ -939,10 +939,15 @@ static int is_inspector_call(Scheme_Object *a)
   return 0;
 }
 
-static int is_proc_spec_proc(Scheme_Object *p)
+static int is_proc_spec_proc(Scheme_Object *p, int init_field_count)
 /* Does `p` produce a good `prop:procedure` value? */
 {
   Scheme_Type vtype;
+
+  if (SCHEME_INTP(p)
+      && (SCHEME_INT_VAL(p) >= 0)
+      && (SCHEME_INT_VAL(p) < init_field_count))
+    return 1;
 
   if (SCHEME_PROCP(p)) {
     p = scheme_get_or_check_arity(p, -1);
@@ -1280,7 +1285,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
             && ((app->num_args < 8)
                 /* procedure property: */
                 || SCHEME_FALSEP(app->args[8])
-                || is_proc_spec_proc(app->args[8]))
+                || is_proc_spec_proc(app->args[8], SCHEME_INT_VAL(app->args[3])))
             && ((app->num_args < 9)
                 /* immutables: */
                 || is_int_list(app->args[9],
@@ -7909,6 +7914,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   Scheme_Hash_Table *originals = NULL;
   int cont, next_pos_ready = -1, inline_fuel, is_proc_def;
   Comp_Prefix *prev_cp;
+  Optimize_Info *limited_info;
   Optimize_Info_Sequence info_seq;
 
   if (!m->comp_prefix) {
@@ -7931,6 +7937,16 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   prev_cp = info->cp;
   info->cp = m->comp_prefix;
+
+  /* Use `limited_info` for optimization decisions that need to be
+     rediscovered by the validator. The validator knows shape
+     information for imported variables, and it know about structure
+     bindings for later forms. */
+  limited_info = MALLOC_ONE_RT(Optimize_Info);
+#ifdef MZTAG_REQUIRED
+  limited_info->type = scheme_rt_optimize_info;
+#endif
+  limited_info->cp = info->cp;
 
   cnt = SCHEME_VEC_SIZE(m->bodies[0]);
 
@@ -8063,11 +8079,12 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                                         validator won't be able to reconstruct it
                                         in general */
                                      OMITTABLE_IGNORE_APPN_OMIT, 
-                                     /* similarly, no `info' here, because the decision
+                                     /* similarly, use `limited_info` instead of `info'
+                                        here, because the decision
                                         of omittable should not depend on
                                         information that's only available at
                                         optimization time: */
-                                     NULL, 
+                                     limited_info, 
                                      info);
 
         if (n == 1) {
@@ -8130,6 +8147,16 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                   info->top_level_consts = consts;
                 }
                 scheme_hash_set(consts, scheme_make_integer(pos), e2);
+
+                if (sstruct) {
+                  /* include in `limited_info` */
+                  Scheme_Hash_Table *limited_consts = limited_info->top_level_consts;
+                  if (!limited_consts) {
+                    limited_consts = scheme_make_hash_table(SCHEME_hash_ptr);
+                    limited_info->top_level_consts = limited_consts;
+                  }
+                  scheme_hash_set(limited_consts, scheme_make_integer(pos), e2);
+                }
 
                 if (sstruct || (SCHEME_TYPE(e2) > _scheme_ir_values_types_)) {
                   /* No use re-optimizing */
