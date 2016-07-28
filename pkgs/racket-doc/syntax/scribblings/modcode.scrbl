@@ -5,11 +5,11 @@
 
 @defmodule[syntax/modcode]
 
-@defproc[(get-module-code [path path-string?]
+@defproc[(get-module-code [path path?]
                           [#:submodule-path submodule-path (listof symbol?) '()]
                           [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) "compiled"]
                           [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
-                          [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
+                          [#:roots roots (listof (or/c path? 'same)) (current-compiled-file-roots)]
                           [#:compile compile-proc0 (any/c . -> . any) compile] 
                           [compile-proc (any/c . -> . any) compile-proc0] 
                           [#:extension-handler ext-proc0 (or/c false/c (path? boolean? . -> . any)) #f]
@@ -79,11 +79,11 @@ If @racket[notify-proc] is supplied, it is called for the file
 If @racket[read-syntax-proc] is provided, it is used to read the
 module from a source file (but not from a bytecode file).}
 
-@defproc[(get-module-path [path path-string?]
+@defproc[(get-module-path [path path?]
                           [#:submodule? submodule? boolean?]
                           [#:sub-path compiled-subdir0 (and/c path-string? relative-path?) "compiled"]
                           [compiled-subdir (and/c path-string? relative-path?) compiled-subdir0]
-                          [#:roots roots (listof (or/c path-string? 'same)) (current-compiled-file-roots)]
+                          [#:roots roots (listof (or/c path? 'same)) (current-compiled-file-roots)]
                           [#:choose choose-proc 
                            (path? path? path? 
                             . -> . 
@@ -109,7 +109,7 @@ true, the result is never a @racket['so] path, as native libraries cannot
 provide submodules.
 }
 
-@defproc[(get-metadata-path [path path-string?]
+@defproc[(get-metadata-path [path path?]
                             [#:roots roots (listof (or/c path? 'same)) 
                                            (current-compiled-file-roots)]
                             [sub-path (or/c path-string? 'same)]
