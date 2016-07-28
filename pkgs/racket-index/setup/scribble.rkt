@@ -1049,8 +1049,8 @@
                           (and t
                                (let ([t2 (and (file-exists? db-file)
                                               (if (not (eq? 'modify-seconds (use-compiled-file-check)))
-                                                  (doc-db-get-provides-timestamp db-file info-out-file)
-                                                  0))])
+                                                  0
+                                                  (doc-db-get-provides-timestamp db-file info-out-file)))])
                                  (and t2 (min t t2)))))]
          [info-in-exists? (file-exists? info-in-file)]
          [vers (send renderer get-serialize-version)]
