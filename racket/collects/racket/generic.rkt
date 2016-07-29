@@ -152,7 +152,7 @@
          (if table
              (with-syntax ([table-name table])
                #'(define (table-name name)
-                   (for/hasheq ([sym (in-list '(method ...))])
+                   (for/hasheq ([sym (in-list '(method-name ...))])
                      (values sym (support-name name sym)))))
              #'(begin)))
        #'(begin
