@@ -27,6 +27,7 @@ structures can share syntax class definitions.
           #:grammar
           ([stxclass-option
             (code:line #:attributes (attr-arity-decl ...))
+            (code:line #:auto-nested-attributes)
             (code:line #:description description-expr)
             (code:line #:opaque)
             (code:line #:commit)
@@ -69,6 +70,42 @@ set of all @tech{pattern variables} occurring in every variant of the
 syntax class. Pattern variables that occur at different ellipsis
 depths are not included, nor are nested attributes from
 @tech{annotated pattern variables}.
+
+This option may not be combined with @racket[#:auto-nested-attributes].
+}
+
+@specsubform[#:auto-nested-attributes]{
+
+Automatically generates attributes based on the attributes of all
+@tech{annotated pattern variables} occurring in every variant of the
+syntax class. For example, if a syntax class @racket[id+str] is defined
+as a pair of an identifier and a string:
+
+@interaction[#:eval the-eval
+(define-syntax-class id+str
+  [pattern (id:id . str:str)])
+]
+
+then a new syntax class is defined that uses the @racket[id+str] syntax
+class with @racket[#:auto-nested-attributes]:
+
+@interaction[#:eval the-eval
+(define-syntax-class pair-keyed-clause
+  #:auto-nested-attributes
+  [pattern [clause:id+str body:expr]])
+]
+
+Then the @racket[pair-keyed-clause] will automatically include
+@racket[clause.id] and @racket[clause.str] attributes, in addition to
+the usual @racket[clause] and @racket[body] attributes:
+
+@interaction[#:eval the-eval
+(syntax-parse #'[(foo . "bar") 0]
+  [stx:pair-keyed-clause
+   #'((id . stx.clause.id) (str . stx.clause.str))])
+]
+
+This option may not be combined with @racket[#:attributes].
 }
 
 @specsubform[(code:line #:description description-expr)
@@ -422,6 +459,15 @@ expected levels of list nesting, and @racket[#:attr] and
 Returns the value associated with the @tech{attribute} named
 @racket[attr-id]. If @racket[attr-id] is not bound as an attribute, an
 error is raised.
+}
+
+@defidform[this-syntax]{
+
+When used as an expression within a @tech{syntax class}’s
+@racket[pattern] clause, refers to the syntax object being matched
+by the syntax class. When the the syntax class is
+@tech[#:key "splicing syntax class"]{splicing}, @racket[this-syntax]
+is a list containing the sequence of elements being matched against.
 }
 
 @(close-eval the-eval)
