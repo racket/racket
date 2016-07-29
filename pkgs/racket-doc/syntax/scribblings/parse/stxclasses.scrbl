@@ -27,6 +27,7 @@ structures can share syntax class definitions.
           #:grammar
           ([stxclass-option
             (code:line #:attributes (attr-arity-decl ...))
+            (code:line #:auto-nested-attributes)
             (code:line #:description description-expr)
             (code:line #:opaque)
             (code:line #:commit)
@@ -69,6 +70,20 @@ set of all @tech{pattern variables} occurring in every variant of the
 syntax class. Pattern variables that occur at different ellipsis
 depths are not included, nor are nested attributes from
 @tech{annotated pattern variables}.
+}
+
+@specsubform[#:auto-nested-attributes]{
+
+@bold{Deprecated.} This option cannot be combined with @racket[#:attributes].
+
+Declares the attributes of the syntax class as the set of all
+@tech{pattern variables} and nested attributes from @tech{annotated
+pattern variables} occurring in every variant of the syntax
+class. Only syntax classes defined strictly before the enclosing
+syntax class are used to compute the nested attributes; pattern
+variables annotated with not-yet-defined syntax classes contribute no
+nested attributes for export. Note that with this option, reordering
+syntax-class definitions may change the attributes they export.
 }
 
 @specsubform[(code:line #:description description-expr)
@@ -423,5 +438,24 @@ Returns the value associated with the @tech{attribute} named
 @racket[attr-id]. If @racket[attr-id] is not bound as an attribute, an
 error is raised.
 }
+
+@defidform[this-syntax]{
+
+When used as an expression within a syntax-class definition or
+@racket[syntax-parse] expression, evaluates to the syntax object or
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{syntax
+pair} being matched.
+
+@examples[#:eval the-eval
+(define-syntax-class one (pattern _ #:attr s this-syntax))
+(syntax-parse #'(1 2 3) [(1 o:one _) (attribute o.s)])
+(syntax-parse #'(1 2 3) [(1 . o:one) (attribute o.s)])
+(define-splicing-syntax-class two (pattern (~seq _ _) #:attr s this-syntax))
+(syntax-parse #'(1 2 3) [(t:two 3) (attribute t.s)])
+(syntax-parse #'(1 2 3) [(1 t:two) (attribute t.s)])
+]}
+
+Raises an error when used as an expression outside of a syntax-class
+definition or @racket[syntax-parse] expression.
 
 @(close-eval the-eval)
