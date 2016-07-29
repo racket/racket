@@ -3585,7 +3585,8 @@ void scheme_validate_closure(Mz_CPort *port, Scheme_Object *expr,
                              char *closure_stack, Validate_TLS tls,
                              int num_toplevels, int num_stxes, int num_lifts, void *tl_use_map,
                              mzshort *tl_state, mzshort tl_timestamp,
-                             int self_pos_in_closure, Scheme_Hash_Tree *procs);
+                             int self_pos_in_closure, Scheme_Hash_Tree *procs,
+                             Scheme_Hash_Table **_st_ht);
 
 #define TRACK_ILL_FORMED_CATCH_LINES 1
 #if TRACK_ILL_FORMED_CATCH_LINES

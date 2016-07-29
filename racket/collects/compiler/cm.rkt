@@ -553,7 +553,8 @@
                                   (get-source-sha1 path))])
                (if (and zo-exists?
                         src-sha1
-                        (equal? src-sha1 (caadr deps))
+                        (equal? src-sha1 (and (pair? (cadr deps))
+                                              (caadr deps)))
                         (equal? (get-dep-sha1s (cddr deps) up-to-date collection-cache read-src-syntax path->mode roots #f seen)
                                 (cdadr deps)))
                    (begin
@@ -636,7 +637,7 @@
     (with-handlers ([exn:fail:filesystem? (lambda (ex) (list (version) '#f))])
       (with-module-reading-parameterization
        (lambda ()
-         (call-with-input-file
+         (call-with-input-file*
              (path-add-extension (get-compilation-path path->mode roots path) #".dep")
            read)))))
   (define (do-check)
