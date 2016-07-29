@@ -30,21 +30,22 @@
   (syntax-case stx ()
     [(_ s x arg ...)
      (parameterize ((current-syntax-context stx))
-       (let* ([argu (parse-argu (syntax->list #'(arg ...)) #:context stx)]
-              [stxclass
-               (get-stxclass/check-arity #'s stx
-                                         (length (arguments-pargs argu))
-                                         (arguments-kws argu))]
-              [attrs (stxclass-attrs stxclass)])
-         (with-syntax ([parser (stxclass-parser stxclass)]
-                       [argu argu]
-                       [(name ...) (map attr-name attrs)]
-                       [(depth ...) (map attr-depth attrs)])
-           #'(let ([fh (lambda (fs) fs)])
-               (app-argu parser x x (ps-empty x x) #f fh fh #f
-                         (lambda (fh . attr-values)
-                           (map vector '(name ...) '(depth ...) attr-values))
-                         argu)))))]))
+       (with-disappeared-uses
+        (let* ([argu (parse-argu (syntax->list #'(arg ...)) #:context stx)]
+               [stxclass
+                (get-stxclass/check-arity #'s stx
+                                          (length (arguments-pargs argu))
+                                          (arguments-kws argu))]
+               [attrs (stxclass-attrs stxclass)])
+          (with-syntax ([parser (stxclass-parser stxclass)]
+                        [argu argu]
+                        [(name ...) (map attr-name attrs)]
+                        [(depth ...) (map attr-depth attrs)])
+            #'(let ([fh (lambda (fs) fs)])
+                (app-argu parser x x (ps-empty x x) #f fh fh #f
+                          (lambda (fh . attr-values)
+                            (map vector '(name ...) '(depth ...) attr-values))
+                          argu))))))]))
 
 (define-syntaxes (syntax-class-attributes
                   syntax-class-arity
@@ -54,7 +55,8 @@
       (syntax-case stx ()
         [(_ s)
          (parameterize ((current-syntax-context stx))
-           (handler (get-stxclass #'s)))]))
+           (with-disappeared-uses
+            (handler (get-stxclass #'s))))]))
     (values (mk (lambda (s)
                   (let ([attrs (stxclass-attrs s)])
                     (with-syntax ([(a ...) (map attr-name attrs)]

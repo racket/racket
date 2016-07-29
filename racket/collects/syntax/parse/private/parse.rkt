@@ -185,35 +185,36 @@
 (define-syntax (define/syntax-parse stx)
   (syntax-case stx ()
     [(define/syntax-parse pattern . rest)
-     (let-values ([(rest pattern defs)
-                   (parse-pattern+sides #'pattern
-                                        #'rest
-                                        #:splicing? #f
-                                        #:decls (new-declenv null)
-                                        #:context stx)])
-       (let ([expr
-              (syntax-case rest ()
-                [( expr ) #'expr]
-                [_ (raise-syntax-error #f "bad syntax" stx)])]
-             [attrs (pattern-attrs pattern)])
-         (with-syntax ([(a ...) attrs]
-                       [(#s(attr name _ _) ...) attrs]
-                       [pattern pattern]
-                       [(def ...) defs]
-                       [expr expr])
-           #'(defattrs/unpack (a ...)
-               (let* ([x (datum->syntax #f expr)]
-                      [cx x]
-                      [pr (ps-empty x x)]
-                      [es #f]
-                      [fh0 (syntax-patterns-fail x)])
-                 (parameterize ((current-syntax-context x))
-                   def ...
-                   (#%expression
-                    (with ([fail-handler fh0]
-                           [cut-prompt fh0])
-                          (parse:S x cx pattern pr es
-                                   (list (attribute name) ...))))))))))]))
+     (with-disappeared-uses
+      (let-values ([(rest pattern defs)
+                    (parse-pattern+sides #'pattern
+                                         #'rest
+                                         #:splicing? #f
+                                         #:decls (new-declenv null)
+                                         #:context stx)])
+        (let ([expr
+               (syntax-case rest ()
+                 [( expr ) #'expr]
+                 [_ (raise-syntax-error #f "bad syntax" stx)])]
+              [attrs (pattern-attrs pattern)])
+          (with-syntax ([(a ...) attrs]
+                        [(#s(attr name _ _) ...) attrs]
+                        [pattern pattern]
+                        [(def ...) defs]
+                        [expr expr])
+            #'(defattrs/unpack (a ...)
+                (let* ([x (datum->syntax #f expr)]
+                       [cx x]
+                       [pr (ps-empty x x)]
+                       [es #f]
+                       [fh0 (syntax-patterns-fail x)])
+                  (parameterize ((current-syntax-context x))
+                    def ...
+                    (#%expression
+                     (with ([fail-handler fh0]
+                            [cut-prompt fh0])
+                           (parse:S x cx pattern pr es
+                                    (list (attribute name) ...)))))))))))]))
 
 ;; ============================================================
 
