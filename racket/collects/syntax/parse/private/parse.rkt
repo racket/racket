@@ -34,6 +34,18 @@
          (for-syntax rhs->parser))
 
 (begin-for-syntax
+ ;; constant-desc : Syntax -> String/#f
+ (define (constant-desc stx)
+   (syntax-case stx (quote)
+     [(quote datum)
+      (let ([d (syntax-e #'datum)])
+        (and (string? d) d))]
+     [expr
+      (let ([d (syntax-e #'expr)])
+        (and (string? d)
+             (free-identifier=? #'#%datum (datum->syntax #'expr '#%datum))
+             d))]))
+
  (define (tx:define-*-syntax-class stx splicing?)
    (syntax-case stx ()
      [(_ header . rhss)
@@ -44,17 +56,22 @@
           (let ([the-rhs (parse-rhs #'rhss #f splicing? #:context stx)])
             (with-syntax ([name name]
                           [formals formals]
+                          [desc (cond [(rhs-description the-rhs) => constant-desc]
+                                      [else (symbol->string (syntax-e name))])]
                           [parser (generate-temporary (format-symbol "parse-~a" name))]
                           [arity arity]
                           [attrs (rhs-attrs the-rhs)]
-                          [options (rhs-options the-rhs)])
+                          [commit? (rhs-commit? the-rhs)]
+                          [delimit-cut? (rhs-delimit-cut? the-rhs)])
               #`(begin (define-syntax name
                          (stxclass 'name 'arity
                                    'attrs
                                    (quote-syntax parser)
                                    '#,splicing?
-                                   options
-                                   #f))
+                                   'commit?
+                                   'delimit-cut?
+                                   #f
+                                   'desc))
                        (define-values (parser)
                          (parser/rhs name formals attrs rhss #,splicing? #,stx)))))))])))
 
@@ -72,8 +89,10 @@
                   (stxclass 'name no-arity '()
                             (quote-syntax parser)
                             #f
-                            '#s(options #t #t)
-                            (integrate (quote-syntax predicate) 'description)))
+                            #t
+                            #t
+                            (quote-syntax predicate)
+                            'description))
                 (define (parser x cx pr es fh0 cp0 rl success)
                   (if (predicate x)
                       (success fh0)
@@ -95,7 +114,7 @@
  (define (rhs->parser name formals relsattrs the-rhs splicing?)
    (define-values (transparent? description variants defs commit? delimit-cut?)
      (match the-rhs
-       [(rhs _ _ transparent? description variants defs (options commit? delimit-cut?) _)
+       [(rhs _ transparent? description variants defs commit? delimit-cut? _)
         (values transparent? description variants defs commit? delimit-cut?)]))
    (define vdefss (map variant-definitions variants))
    (define formals* (rewrite-formals formals #'x #'rl))

@@ -9,8 +9,6 @@
          "kws.rkt")
 ;; from residual.rkt
 (provide (struct-out stxclass)
-         (struct-out options)
-         (struct-out integrate)
          (struct-out conventions)
          (struct-out literalset)
          (struct-out eh-alternative-set)
@@ -18,8 +16,6 @@
 ;; from here
 (provide stxclass/s?
          stxclass/h?
-         stxclass-commit?
-         stxclass-delimit-cut?
          (struct-out rhs)
          (struct-out variant))
 
@@ -28,18 +24,17 @@
 (define (stxclass/h? x)
   (and (stxclass? x) (stxclass-splicing? x)))
 
-(define (stxclass-commit? x)
-  (options-commit? (stxclass-options x)))
-(define (stxclass-delimit-cut? x)
-  (options-delimit-cut? (stxclass-options x)))
-
-#|
-An RHS is
-  #s(rhs stx (listof SAttr) bool stx/#f (listof Variant) (listof stx) Options Integrate/#f)
-definitions: auxiliary definitions from #:declare
-|#
-(define-struct rhs (ostx attrs transparent? description variants definitions options integrate)
-  #:prefab)
+;; An RHS is #s(rhs SAttrs Bool Stx/#f Variants Stxs Bool Bool Id/#f)
+(define-struct rhs
+  (attrs        ;; (Listof Sattr)
+   transparent? ;; Bool
+   description  ;; Syntax/#f
+   variants     ;; (Listof Variant)
+   definitions  ;; (Listof Stx), aux definitions from txlifts, local conventions?, etc
+   commit?      ;; Bool
+   delimit-cut? ;; Bool
+   pred         ;; ???
+   ) #:prefab)
 
 #|
 A Variant is
@@ -50,7 +45,7 @@ A Variant is
 ;; make-dummy-stxclass : identifier -> SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
 (define (make-dummy-stxclass name)
-  (make stxclass (syntax-e name) #f null #f #f #s(options #f #t) #f))
+  (make stxclass (syntax-e name) #f null #f #f #f #t #f #f))
 
 ;; Environments
 

@@ -1,8 +1,6 @@
 #lang racket/base
 (provide (struct-out attr)
          (struct-out stxclass)
-         (struct-out options)
-         (struct-out integrate)
          (struct-out conventions)
          (struct-out literalset)
          (struct-out lse:lit)
@@ -29,20 +27,18 @@
 
 ;; == from rep-data.rkt
 
-#|
-A stxclass is
-  #s(stxclass symbol (listof symbol) (list-of SAttr) identifier bool Options Integrate/#f)
-where Options = #s(options boolean boolean)
-      Integrate = #s(integrate id string)
-Arity is defined in kws.rkt
-|#
-(define-struct stxclass (name arity attrs parser splicing? options integrate)
-  #:prefab)
-
-(define-struct options (commit? delimit-cut?)
-  #:prefab)
-(define-struct integrate (predicate description)
-  #:prefab)
+;; A stxclass is #s(stxclass Symbol Symbols SAttrs Id Bool Bool BoolOptions Id/#f String/#f)
+(define-struct stxclass
+  (name         ;; Symbol
+   arity        ;; Arity (defined in kws.rkt)
+   attrs        ;; (Listof SAttr)
+   parser       ;; Id, reference to parser (see parse.rkt for parser signature)
+   splicing?    ;; Bool
+   commit?      ;; Bool
+   delimit-cut? ;; Bool
+   inline       ;; Id/#f, reference to a predicate
+   desc         ;; String/#f, String = known constant description
+   ) #:prefab)
 
 #|
 A Conventions is

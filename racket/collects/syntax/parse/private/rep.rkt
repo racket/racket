@@ -164,7 +164,7 @@
    (lambda ()
      (parameterize ((current-syntax-context ctx))
        (define-values (rest description transp? attributes auto-nested? colon-notation?
-                            decls defs options)
+                            decls defs commit? delimit-cut?)
          (parse-rhs/part1 stx splicing? (and expected-attrs #t)))
        (define variants
          (parameterize ((stxclass-lookup-config
@@ -176,9 +176,9 @@
        (let ([sattrs
               (or attributes
                   (intersect-sattrss (map variant-attrs variants)))])
-         (make rhs stx sattrs transp? description variants 
+         (make rhs sattrs transp? description variants 
                (append (get-txlifts-as-definitions) defs)
-               options #f))))))
+               commit? delimit-cut? #f))))))
 
 (define (parse-rhs/part1 stx splicing? strict?)
   (define-values (chunks rest)
@@ -199,7 +199,7 @@
   (define attributes (options-select-value chunks '#:attributes #:default #f))
   (define-values (decls defs) (get-decls+defs chunks strict?))
   (values rest description transparent? attributes auto-nested? colon-notation?
-          decls defs (options commit? delimit-cut?)))
+          decls defs commit? delimit-cut?))
 
 ;; ----
 
@@ -757,9 +757,9 @@
   ;; if parser* not #f, overrides sc parser
   (check-no-delimit-cut-in-not stx (stxclass-delimit-cut? sc))
   (cond [(and (stxclass/s? sc)
-              (stxclass-integrate sc)
+              (stxclass-inline sc)
               (equal? argu no-arguments))
-         (parse-pat:id/s/integrate name (stxclass-integrate sc) role)]
+         (parse-pat:id/s/integrate name (stxclass-inline sc) (stxclass-desc sc) role)]
         [(stxclass/s? sc)
          (parse-pat:id/s name
                          (or parser* (stxclass-parser sc))
@@ -784,11 +784,9 @@
   (define bind (name->bind name))
   (pat:var/p bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
 
-(define (parse-pat:id/s/integrate name integrate role)
+(define (parse-pat:id/s/integrate name predicate description role)
   (define bind (name->bind name))
-  (let ([predicate (integrate-predicate integrate)]
-        [description (integrate-description integrate)])
-    (pat:integrated bind predicate description role)))
+  (pat:integrated bind predicate description role))
 
 (define (parse-pat:id/h name parser argu attrs commit? pfx role)
   (define prefix (name->prefix name pfx))
