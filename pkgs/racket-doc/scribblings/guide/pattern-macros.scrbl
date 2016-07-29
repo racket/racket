@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require scribble/manual scribble/eval "guide-utils.rkt")
+@(require scribble/manual scribble/eval scribble/racket "guide-utils.rkt"
+          (for-syntax racket/base))
 
 @(define swap-eval (make-base-eval))
 
@@ -252,77 +253,105 @@ error is reported:
 @interaction[#:eval swap-eval (+ swap 3)]
 
 An @deftech{identifier macro} is a pattern-matching macro that
-works in any expression. For example, we
-can define @racket[clock] as an identifier macro that expands to
-@racket[(get-clock)], so @racket[(+ clock 3)] would expand to
-@racket[(+ (get-clock) 3)]. An identifier macro also cooperates with
-@racket[set!], and we can define @racket[clock] so that @racket[(set!
-clock 3)] expands to @racket[(put-clock! 3)].
+works when used by itself without parentheses. For example, we
+can define @racket[val] as an identifier macro that expands to
+@racket[(get-val)], so @racket[(+ val 3)] would expand to
+@racket[(+ (get-val) 3)].
 
-The @racket[syntax-id-rules] form is like @racket[syntax-rules], but
-it creates a transformer that acts as an identifier macro:
+@interaction-eval[#:eval swap-eval (require (for-syntax racket/base))]
+@(define-syntax (with-syntax-as-syntax stx)
+   (syntax-case stx ()
+     [(_ e)
+      (with-syntax ([s (datum->syntax #'e 'syntax)])
+        #'(let-syntax ([s (make-element-id-transformer
+                           (lambda (stx)
+                             #'@racket[syntax]))]) ;print as syntax not #'
+            e))]))
 
-@specform[#:literals (syntax-id-rules)
-          (define-syntax id
-            (syntax-id-rules (literal-id ...)
-              [pattern template]
-              ...))]
+@(with-syntax-as-syntax
+  @interaction[#:eval swap-eval
+               (define-syntax val
+                 (lambda (stx)
+                   (syntax-case stx ()
+                     [val (identifier? (syntax val)) (syntax (get-val))])))
+               (define-values (get-val put-val!)
+                 (let ([private-val 0])
+                   (values (lambda () private-val)
+                           (lambda (v) (set! private-val v)))))
+               val
+               (+ val 3)])
 
-Unlike a @racket[syntax-rules] form, the @racket[_pattern]s are not
-required to start with an open parenthesis. In addition,
-@racket[syntax-id-rules] cooperates specially with @racket[set!], so
-that @racket[set!] invokes the macro when @racket[_id] is the target
-of an assignment; consequently, @racket[set!] is typically used as a
-literal with @racket[syntax-id-rules] to match such uses of @racket[set!].
+The @racket[val] macro uses @racket[syntax-case], which enables defining more
+powerful macros and will be explained in the @secref["syntax-case"] section.
+For now it is sufficient to know that to define a macro, @racket[syntax-case]
+is used in a @racket[lambda], and its templates must be wrapped with an explicit
+@racket[syntax] constructor. Finally, @racket[syntax-case] clauses
+may specify additional guard conditions after the pattern.
 
-@racketblock[
-(define-syntax clock
-  (syntax-id-rules (set!)
-    [(set! clock e) (put-clock! e)]
-    [(clock a ...) ((get-clock) a ...)]
-    [clock (get-clock)]))
+Our @racket[val] macro uses an @racket[identifier?] condition to ensure that
+@racket[val] @emph{must not} be used with parentheses. Instead, the macro raises
+a syntax error:
 
-(define-values (get-clock put-clock!)
-  (let ([private-clock 0])
-    (values (lambda () private-clock)
-            (lambda (v) (set! private-clock v)))))
-]
+@interaction[#:eval swap-eval
+             (val)]
 
-The @racket[(clock a ...)] pattern is needed because, when an
-identifier macro is used after an open parenthesis, the macro
-transformer is given the whole form, like with a non-identifier macro.
-Put another way, the @racket[syntax-rules] form is essentially a
-special case of the @racket[syntax-id-rules] form with errors in the
-@racket[set!] and lone-identifier cases.
+@; ----------------------------------------
+
+@section{@racket[set!] Transformers}
+
+With the above @racket[val] macro, we still must call @racket[put-val!] to
+change the stored value. It would be more convenient, however, to use 
+@racket[set!] directly on @racket[val]. To invoke the macro when @racket[val] is
+used with @racket[set!], we create an
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{assignment transformer}
+with @racket[make-set!-transformer].
+We must also declare @racket[set!] as a literal in the @racket[syntax-case]
+literal list.
+
+@(with-syntax-as-syntax
+  @interaction[#:eval swap-eval
+               (define-syntax val2
+                 (make-set!-transformer
+                  (lambda (stx)
+                    (syntax-case stx (set!)
+                      [val2 (identifier? (syntax val2)) (syntax (get-val))]
+                      [(set! val2 e) (syntax (put-val! e))]))))
+               val2
+               (+ val2 3)
+               (set! val2 10)
+               val2])
+
 
 @; ----------------------------------------
 
 @section{Macro-Generating Macros}
 
-Suppose that we have many identifiers like @racket[clock] that we'd
-like to redirect to accessor and mutator functions like
-@racket[get-clock] and @racket[put-clock!]. We'd like to be able to
-just write
+Suppose that we have many identifiers like @racket[val] and @racket[val2]
+that we'd like to redirect to accessor and mutator functions like
+@racket[get-val] and @racket[put-val!]. We'd like to be able to
+just write:
 
 @racketblock[
-(define-get/put-id clock get-clock put-clock!)
+(define-get/put-id val get-val put-val!)
 ]
 
 Naturally, we can implement @racket[define-get/put-id] as a macro:
 
-@racketblock[
-(define-syntax-rule (define-get/put-id id get put!)
-  (define-syntax id
-    (syntax-id-rules (set!)
-      [(set! id e) (put! e)]
-      [(id a (... ...)) ((get) a (... ...))]
-      [id (get)])))
-]
+@(with-syntax-as-syntax
+  @interaction[#:eval swap-eval
+ (define-syntax-rule (define-get/put-id id get put!)
+   (define-syntax id
+     (make-set!-transformer
+      (lambda (stx)
+        (syntax-case stx (set!)
+          [id (identifier? (syntax id)) (syntax (get))]
+          [(set! id e) (syntax (put! e))])))))
+ (define-get/put-id val3 get-val put-val!)
+ (set! val3 11)
+ val3])
 
 The @racket[define-get/put-id] macro is a @deftech{macro-generating
-macro}.  The only non-obvious part of its definition is the
-@racket[(... ...)], which ``quotes'' @racket[...] so that it takes its
-usual role in the generated macro, instead of the generating macro.
+macro}.
 
 @; ----------------------------------------
 
