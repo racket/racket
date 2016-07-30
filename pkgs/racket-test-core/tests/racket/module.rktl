@@ -1795,6 +1795,27 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (test 333 dynamic-require ''module-that-uses-eval-to-define-a-macro-in-its-own-namespace 'result)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that multiple imports of a name are disallowed
+;; when they're from the from the same module but different
+;; phases of that module
+
+(module defines-a-at-two-phase-levels racket/base
+  (require (for-syntax racket/base))
+  
+  (provide a (for-syntax a))
+  
+  (define a 0)
+  (begin-for-syntax
+    (define a 1)))
+
+(err/rt-test (eval #'(module b racket/base
+                       (require 'defines-a-at-two-phase-levels
+                                (for-syntax racket/base
+                                            'defines-a-at-two-phase-levels))))
+             (lambda (exn)
+               (regexp-match? #rx" already" (exn-message exn))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

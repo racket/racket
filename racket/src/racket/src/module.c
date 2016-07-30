@@ -7954,9 +7954,10 @@ static void check_require_name(Scheme_Object *id, Scheme_Object *self_modidx,
     Scheme_Object *srcs;
     char *fromsrc = NULL, *fromsrc_colon = "", *phase_expl;
     intptr_t fromsrclen = 0;
-    
+
     if (same_resolved_modidx(SCHEME_VEC_ELS(vec)[1], modidx)
-	&& SAME_OBJ(SCHEME_VEC_ELS(vec)[2], exname)) {
+	&& SAME_OBJ(SCHEME_VEC_ELS(vec)[2], exname)
+        && SAME_OBJ(SCHEME_VEC_ELS(vec)[8], scheme_make_integer(exet))) {
       /* already required, same source; add redundant nominal (for re-provides),
          and also add source phase for re-provides. */
       nml = scheme_make_pair(nominal_modidx, SCHEME_VEC_ELS(vec)[0]);
