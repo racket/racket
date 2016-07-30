@@ -2111,6 +2111,18 @@
            '(lambda (z) (lambda ()
                           (lambda () z)))
            #f)
+;; Don't move omittable expressions that keep a reference:
+(test-comp '(lambda (z) (let ([r (pair? z)])
+                          (lambda () r)))
+           '(lambda (z) (lambda ()
+                          (lambda () (pair? z))))
+           #f)
+(test-comp '(lambda (z) (when (list? z)
+                          (let ([r (list->vector z)])
+                            (lambda () r))))
+           '(lambda (z) (when (list? z)
+                          (lambda () (list->vector z))))
+           #f)
 
 
 (test-comp '(if (let ([z (random)]) null) 1 2)

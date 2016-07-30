@@ -1616,8 +1616,10 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
     }
     break;
   case scheme_application_type:
-    if (SCHEME_APPN_FLAGS((Scheme_App_Rec *)expr) & APPN_FLAG_OMITTABLE)
-      can_move = 1;
+    if (!cross_lambda
+        && !cross_k
+        && (SCHEME_APPN_FLAGS((Scheme_App_Rec *)expr) & APPN_FLAG_OMITTABLE))
+      can_move = -1;
     else
       can_move = is_movable_prim(((Scheme_App_Rec *)expr)->args[0], ((Scheme_App_Rec *)expr)->num_args,
                                  cross_lambda, cross_k, info);
@@ -1633,8 +1635,10 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
     }
     break;
   case scheme_application2_type:
-    if (SCHEME_APPN_FLAGS((Scheme_App2_Rec *)expr) & APPN_FLAG_OMITTABLE)
-      can_move = 1;
+    if (!cross_lambda
+        && !cross_k
+        && (SCHEME_APPN_FLAGS((Scheme_App2_Rec *)expr) & APPN_FLAG_OMITTABLE))
+      can_move = -1;
     else
       can_move = is_movable_prim(((Scheme_App2_Rec *)expr)->rator, 1, cross_lambda, cross_k, info);
     if (can_move) {
@@ -1645,8 +1649,10 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
     }
     break;
   case scheme_application3_type:
-    if (SCHEME_APPN_FLAGS((Scheme_App3_Rec *)expr) & APPN_FLAG_OMITTABLE)
-      can_move = 1;
+    if (!cross_lambda
+        && !cross_k
+        && (SCHEME_APPN_FLAGS((Scheme_App3_Rec *)expr) & APPN_FLAG_OMITTABLE))
+      can_move = -1;
     else
       can_move = is_movable_prim(((Scheme_App3_Rec *)expr)->rator, 2, cross_lambda, cross_k, info);
     if (can_move) {
