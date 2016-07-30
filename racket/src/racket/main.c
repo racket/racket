@@ -104,7 +104,8 @@ extern BOOL WINAPI DllMain(HINSTANCE inst, ULONG reason, LPVOID reserved);
  */
 static Scheme_Object *get_init_filename(Scheme_Env *env,
                                         char *init_filename_sym,
-                                        char *default_init_module)
+                                        char *default_init_module,
+                                        char *user_init_module)
 {
   Scheme_Object *f, *a[2], *build_path;
   Scheme_Thread * volatile p;
@@ -121,7 +122,7 @@ static Scheme_Object *get_init_filename(Scheme_Env *env,
     f = scheme_builtin_value("find-system-path");
     a[0] = scheme_intern_symbol("addon-dir");
     a[0] = _scheme_apply(f, 1, a);
-    a[1] = scheme_make_path("interactive.rkt");
+    a[1] = scheme_make_path(user_init_module);
     f = _scheme_apply(build_path, 2, a);
     if (SCHEME_PATHP(f)) {
       char *filename;
@@ -178,6 +179,7 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 # define MACOS9_INIT_FILENAME "PREFERENCES:racketrc.rktl"
 # define INIT_FILENAME_CONF_SYM "interactive-file"
 # define DEFAULT_INIT_MODULE "racket/interactive"
+# define USER_INIT_MODULE "interactive.rkt"
 # define PRINTF printf
 # define PROGRAM "Racket"
 # define PROGRAM_LC "racket"
