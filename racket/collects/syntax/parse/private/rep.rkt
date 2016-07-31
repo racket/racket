@@ -176,9 +176,9 @@
        (let ([sattrs
               (or attributes
                   (intersect-sattrss (map variant-attrs variants)))])
-         (make rhs sattrs transp? description variants 
+         (make rhs sattrs transp? description variants
                (append (get-txlifts-as-definitions) defs)
-               commit? delimit-cut? #f))))))
+               commit? delimit-cut?))))))
 
 (define (parse-rhs/part1 stx splicing? strict?)
   (define-values (chunks rest)

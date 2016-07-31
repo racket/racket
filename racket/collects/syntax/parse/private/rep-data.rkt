@@ -24,7 +24,7 @@
 (define (stxclass/h? x)
   (and (stxclass? x) (stxclass-splicing? x)))
 
-;; An RHS is #s(rhs SAttrs Bool Stx/#f Variants Stxs Bool Bool Id/#f)
+;; An RHS is #s(rhs SAttrs Bool Stx/#f Variants Stxs Bool Bool)
 (define-struct rhs
   (attrs        ;; (Listof Sattr)
    transparent? ;; Bool
@@ -33,7 +33,6 @@
    definitions  ;; (Listof Stx), aux definitions from txlifts, local conventions?, etc
    commit?      ;; Bool
    delimit-cut? ;; Bool
-   pred         ;; ???
    ) #:prefab)
 
 #|

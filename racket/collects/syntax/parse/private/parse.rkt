@@ -114,7 +114,7 @@
  (define (rhs->parser name formals relsattrs the-rhs splicing?)
    (define-values (transparent? description variants defs commit? delimit-cut?)
      (match the-rhs
-       [(rhs _ transparent? description variants defs commit? delimit-cut? _)
+       [(rhs _ transparent? description variants defs commit? delimit-cut?)
         (values transparent? description variants defs commit? delimit-cut?)]))
    (define vdefss (map variant-definitions variants))
    (define formals* (rewrite-formals formals #'x #'rl))
