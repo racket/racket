@@ -283,7 +283,8 @@
                 (with-syntax ([parser (generate-temporary class)])
                   (values (make den:parser #'parser
                                 (stxclass-attrs sc) (stxclass/h? sc)
-                                (stxclass-commit? sc) (stxclass-delimit-cut? sc))
+                                (stxclass-commit? sc) (stxclass-delimit-cut? sc)
+                                (stxclass-desc sc))
                           (list #`(define-values (parser)
                                     (curried-stxclass-parser #,class #,argu)))))))]
            [(regexp? name)
@@ -294,7 +295,7 @@
               (values (make den:delayed #'parser class)
                       (list #`(define-values (parser)
                                 (curried-stxclass-parser #,class #,argu)))))])]
-    [(den:parser _p _a _sp _c _dc?)
+    [(den:parser _p _a _sp _c _dc? _desc)
      (values entry null)]
     [(den:delayed _p _c)
      (values entry null)]))
@@ -628,7 +629,7 @@
          (let* ([iattrs (id-pattern-attrs (eh-alternative-attrs alt) prefix)]
                 [attr-count (length iattrs)])
            (list (create-ehpat
-                  (hpat:var/p #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f #f)
+                  (hpat:var/p #f (eh-alternative-parser alt) no-arguments iattrs attr-count #f #f #f)
                   (eh-alternative-repc alt)
                   #f)
                  (replace-eh-alternative-attrs
@@ -702,14 +703,14 @@
      (error 'parse-pat:id
             "(internal error) decls had leftover stxclass entry: ~s"
             entry)]
-    [(den:parser parser attrs splicing? commit? delimit-cut?)
+    [(den:parser parser attrs splicing? commit? delimit-cut? desc)
      (check-no-delimit-cut-in-not id delimit-cut?)
      (cond [splicing?
             (unless allow-head?
               (wrong-syntax id "splicing syntax class not allowed here"))
-            (parse-pat:id/h id parser no-arguments attrs commit? "." #f)]
+            (parse-pat:id/h id parser no-arguments attrs commit? "." #f desc)]
            [else
-            (parse-pat:id/s id parser no-arguments attrs commit? "." #f)])]
+            (parse-pat:id/s id parser no-arguments attrs commit? "." #f desc)])]
     [(den:delayed parser class)
      (let ([sc (get-stxclass class)])
        (parse-pat:var/sc id allow-head? id sc no-arguments "." #f parser))]))
@@ -767,7 +768,8 @@
                          (stxclass-attrs sc)
                          (stxclass-commit? sc)
                          pfx
-                         role)]
+                         role
+                         (stxclass-desc sc))]
         [(stxclass/h? sc)
          (unless allow-head?
            (wrong-syntax stx "splicing syntax class not allowed here"))
@@ -777,21 +779,22 @@
                          (stxclass-attrs sc)
                          (stxclass-commit? sc)
                          pfx
-                         role)]))
+                         role
+                         (stxclass-desc sc))]))
 
-(define (parse-pat:id/s name parser argu attrs commit? pfx role)
+(define (parse-pat:id/s name parser argu attrs commit? pfx role desc)
   (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
-  (pat:var/p bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
+  (pat:var/p bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role desc))
 
 (define (parse-pat:id/s/integrate name predicate description role)
   (define bind (name->bind name))
   (pat:integrated bind predicate description role))
 
-(define (parse-pat:id/h name parser argu attrs commit? pfx role)
+(define (parse-pat:id/h name parser argu attrs commit? pfx role desc)
   (define prefix (name->prefix name pfx))
   (define bind (name->bind name))
-  (hpat:var/p bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role))
+  (hpat:var/p bind parser argu (id-pattern-attrs attrs prefix) (length attrs) commit? role desc))
 
 (define (name->prefix id pfx)
   (cond [(wildcard? id) #f]

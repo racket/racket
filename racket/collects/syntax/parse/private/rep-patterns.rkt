@@ -13,8 +13,8 @@ Uses Arguments from kws.rkt
 A SinglePattern is one of
   (pat:any)
   (pat:svar id)  -- "simple" var, no stxclass
-  (pat:var/p id id Arguments (Listof IAttr) nat/#f bool stx) -- var with parser
-  (pat:literal identifier ct-phase ct-phase)
+  (pat:var/p Id Id Arguments (Listof IAttr) Nat/#f Bool Stx String/#f) -- var with parser
+  (pat:literal identifier Stx Stx)
   (pat:datum datum)
   (pat:action ActionPattern SinglePattern)
   (pat:head HeadPattern SinglePattern)
@@ -44,7 +44,7 @@ A ListPattern is a subtype of SinglePattern; one of
 
 (define-struct pat:any () #:prefab)
 (define-struct pat:svar (name) #:prefab)
-(define-struct pat:var/p (name parser argu nested-attrs attr-count commit? role) #:prefab)
+(define-struct pat:var/p (name parser argu nested-attrs attr-count commit? role desc) #:prefab)
 (define-struct pat:literal (id input-phase lit-phase) #:prefab)
 (define-struct pat:datum (datum) #:prefab)
 (define-struct pat:action (action inner) #:prefab)
@@ -91,7 +91,7 @@ A SideClause is just an ActionPattern
 
 #|
 A HeadPattern is one of 
-  (hpat:var/p id id Arguments (listof IAttr) nat/#f bool stx)
+  (hpat:var/p Id Id Arguments (Listof IAttr) Nat/#f Bool Stx String/#f)
   (hpat:seq ListPattern)
   (hpat:action ActionPattern HeadPattern)
   (hpat:and HeadPattern SinglePattern)
@@ -106,7 +106,7 @@ A HeadPattern is one of
   (hpat:peek-not HeadPattern)
 |#
 
-(define-struct hpat:var/p (name parser argu nested-attrs attr-count commit? role) #:prefab)
+(define-struct hpat:var/p (name parser argu nested-attrs attr-count commit? role desc) #:prefab)
 (define-struct hpat:seq (inner) #:prefab)
 (define-struct hpat:action (action inner) #:prefab)
 (define-struct hpat:and (head single) #:prefab)
@@ -214,7 +214,7 @@ A RepConstraint is one of
      null]
     [(pat:svar name)
      (list (attr name 0 #t))]
-    [(pat:var/p name _ _ nested-attrs _ _ _)
+    [(pat:var/p name _ _ nested-attrs _ _ _ _)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
     [(pat:reflect _ _ _ name nested-attrs)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
@@ -274,7 +274,7 @@ A RepConstraint is one of
      (pattern-attrs sp)]
 
     ;; -- H patterns
-    [(hpat:var/p name _ _ nested-attrs _ _ _)
+    [(hpat:var/p name _ _ nested-attrs _ _ _ _)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
     [(hpat:reflect _ _ _ name nested-attrs)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]

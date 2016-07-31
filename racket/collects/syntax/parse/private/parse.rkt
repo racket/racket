@@ -521,7 +521,7 @@ Conventions:
        [#s(pat:svar name)
         #'(let-attributes ([#s(attr name 0 #t) (datum->syntax cx x cx)])
             k)]
-       [#s(pat:var/p name parser argu (nested-a ...) attr-count commit? role)
+       [#s(pat:var/p name parser argu (nested-a ...) attr-count commit? role _desc)
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)
                        (if (identifier? #'name)
@@ -691,7 +691,7 @@ Conventions:
        [#s(pat:svar name)
         #''(any)]
        [#s(pat:var/p _ ...)
-        #'#f] ;; FIXME: need access to (constant) description as field
+        #`(quote #,(pat:var/p-desc (syntax-e #'p)))]
        [#s(pat:datum d)
         #''(datum d)]
        [#s(pat:literal id _ip _lp)
@@ -787,7 +787,7 @@ Conventions:
             (parse:H x cx rest-x rest-cx rest-pr pattern pr* es*
                      (let ([rest-pr (if 'transparent? rest-pr (ps-pop-opaque rest-pr))])
                        k)))]
-       [#s(hpat:var/p name parser argu (nested-a ...) attr-count commit? role)
+       [#s(hpat:var/p name parser argu (nested-a ...) attr-count commit? role _desc)
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)
                        (if (identifier? #'name)

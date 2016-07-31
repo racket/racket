@@ -51,8 +51,8 @@ A ConventionRule is (list regexp DeclEntry)
 A LiteralSet is
  (make-literalset (listof LiteralSetEntry))
 An LiteralSetEntry is one of
- - (make-lse:lit symbol id ct-phase)
- - (make-lse:datum-lit symbol symbol)
+ - (make-lse:lit Symbol Id Stx)
+ - (make-lse:datum-lit Symbol Symbol)
 |#
 (define-struct literalset (literals) #:transparent)
 (define-struct lse:lit (internal external phase) #:transparent)

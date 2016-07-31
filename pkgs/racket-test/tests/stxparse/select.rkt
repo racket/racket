@@ -157,6 +157,16 @@
       (a (~describe "thing" b))
       #rx"expected more terms starting with thing$")
 
+(let ()
+  (define-syntax-class B1 #:description "B1" (pattern _:id))
+  (define-syntax-class B2 (pattern _:id))
+  (terx (1)
+        (a b:B1)
+        #rx"expected more terms starting with B1")
+  (terx (1)
+        (a b:B2)
+        #rx"expected more terms starting with B2"))
+
 ;; Post:
 
 (terx "hello"
