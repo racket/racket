@@ -647,7 +647,7 @@
 (tok (1 . (2 3)) (~datum (1 . (2 3))) 'ok)
 
 ;; nullable EH pattern raises error on match (rather than diverging) (7/2016)
-(let ()
+(parameterize ((current-logger (make-logger #f #f))) ;; suppress logged "nullable" msg
   ;; to make drdr happy: use eval because compiling this code currently logs an error
   (define ns (make-base-namespace))
   (eval '(require syntax/parse) ns)
