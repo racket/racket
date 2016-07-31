@@ -1,15 +1,12 @@
 #lang racket/base
 (require racket/contract/base
          racket/dict
-         racket/list
          syntax/private/id-table
          racket/syntax
          syntax/parse/private/residual-ct ;; keep abs. path
          "make.rkt"
          "minimatch.rkt"
-         "kws.rkt"
-         "rep-attrs.rkt"
-         "rep-patterns.rkt")
+         "kws.rkt")
 ;; from residual.rkt
 (provide (struct-out stxclass)
          (struct-out options)

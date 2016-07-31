@@ -1,6 +1,5 @@
 #lang racket/base
 (require (for-template racket/base
-                       racket/stxparam
                        syntax/parse/private/keywords
                        syntax/parse/private/residual ;; keep abs. path
                        syntax/parse/private/runtime)

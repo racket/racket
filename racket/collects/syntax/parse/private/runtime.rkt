@@ -7,7 +7,6 @@
                      syntax/strip-context
                      racket/private/sc
                      racket/syntax
-                     "rep-attrs.rkt"
                      "rep-data.rkt"))
 
 (provide with

@@ -1,15 +1,9 @@
 #lang racket/base
-(require syntax/stx
-         syntax/private/id-table
-         syntax/keyword
-         racket/syntax
+(require racket/syntax
          racket/pretty
          syntax/parse/private/residual-ct ;; keep abs. path
          "minimatch.rkt"
-         "rep-attrs.rkt"
-         "rep-data.rkt"
          "rep-patterns.rkt"
-         "rep.rkt"
          "kws.rkt")
 (provide (struct-out pk1)
          (rename-out [optimize-matrix0 optimize-matrix]))
