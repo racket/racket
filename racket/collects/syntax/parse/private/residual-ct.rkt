@@ -15,7 +15,12 @@
          log-syntax-parse-error
          log-syntax-parse-warning
          log-syntax-parse-info
-         log-syntax-parse-debug)
+         log-syntax-parse-debug
+         prop:pattern-expander
+         pattern-expander?
+         pattern-expander-proc
+         current-syntax-parse-pattern-introducer
+         syntax-local-syntax-parse-pattern-introduce)
 
 (define-logger syntax-parse)
 
@@ -69,3 +74,20 @@ An EH-alternative is
 (define-struct den:lit (internal external input-phase lit-phase) #:transparent)
 (define-struct den:datum-lit (internal external) #:transparent)
 (define-struct den:delayed (parser class))
+
+;; == Pattern expanders
+
+(define-values (prop:pattern-expander pattern-expander? get-proc-getter)
+  (make-struct-type-property 'pattern-expander))
+
+(define (pattern-expander-proc pat-expander)
+  (define get-proc (get-proc-getter pat-expander))
+  (get-proc pat-expander))
+
+(define current-syntax-parse-pattern-introducer
+  (make-parameter
+   (lambda (stx)
+     (error 'syntax-local-syntax-parse-pattern-introduce "not expanding syntax-parse pattern"))))
+
+(define (syntax-local-syntax-parse-pattern-introduce stx)
+  ((current-syntax-parse-pattern-introducer) stx))

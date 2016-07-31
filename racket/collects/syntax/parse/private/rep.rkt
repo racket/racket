@@ -18,8 +18,7 @@
          "rep-data.rkt"
          "rep-patterns.rkt"
          syntax/parse/private/residual-ct ;; keep abs. path
-         "kws.rkt"
-         "pattern-expander-prop.rkt")
+         "kws.rkt")
 
 ;; Error reporting
 ;; All entry points should have explicit, mandatory #:context arg

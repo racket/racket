@@ -12,8 +12,7 @@
 
 (begin-for-syntax
   (require racket/contract/base
-           "parse/private/pattern-expander-prop.rkt"
-           "parse/private/pattern-expander.rkt")
+           syntax/parse/private/residual-ct)
   (provide pattern-expander?
            (contract-out
             [pattern-expander
@@ -21,4 +20,11 @@
             [prop:pattern-expander
              (struct-type-property/c (-> pattern-expander? (-> syntax? syntax?)))]
             [syntax-local-syntax-parse-pattern-introduce
-             (-> syntax? syntax?)])))
+             (-> syntax? syntax?)]))
+
+  (define pattern-expander
+    (let ()
+      (struct pattern-expander (proc) #:transparent
+        #:omit-define-syntaxes
+        #:property prop:pattern-expander (λ (this) (pattern-expander-proc this)))
+      pattern-expander)))

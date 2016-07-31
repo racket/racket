@@ -8,7 +8,8 @@
          racket/list
          racket/pretty
          "../parse.rkt"
-         syntax/parse/private/residual
+         (except-in syntax/parse/private/residual
+                    prop:pattern-expander syntax-local-syntax-parse-pattern-introduce)
          "private/runtime.rkt"
          "private/runtime-progress.rkt"
          "private/runtime-report.rkt"
