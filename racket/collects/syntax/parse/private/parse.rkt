@@ -16,7 +16,6 @@
          racket/syntax
          racket/stxparam
          syntax/stx
-         racket/struct
          syntax/parse/private/residual ;; keep abs. path
          syntax/parse/private/runtime  ;; keep abs.path 
          syntax/parse/private/runtime-reflect) ;; keep abs. path
@@ -625,7 +624,7 @@ Conventions:
         #`(let ([datum (if (syntax? x) (syntax-e x) x)])
             (if (let ([xkey (prefab-struct-key datum)])
                   (and xkey (equal? xkey 'key)))
-                (let ([datum (struct->list datum)]
+                (let ([datum (cdr (vector->list (struct->vector datum)))]
                       [scx (if (syntax? x) x cx)] ;; FIXME: (struct? datum) => (syntax? x) ???
                       [pr* (ps-add-unpstruct pr)])
                   (parse:S datum scx subpattern pr* es k))

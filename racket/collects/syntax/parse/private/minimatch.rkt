@@ -1,6 +1,5 @@
 #lang racket/base
-(require racket/struct
-         (for-syntax racket/base racket/struct-info racket/struct))
+(require (for-syntax racket/base racket/struct-info))
 (provide match ?)
 
 (define-syntax (match stx)
@@ -82,10 +81,10 @@
     [(match-p x s success failure)
      (prefab-struct-key (syntax-e #'s))
      (with-syntax ([key (prefab-struct-key (syntax-e #'s))]
-                   [(p ...) (struct->list (syntax-e #'s))])
+                   [(p ...) (cdr (vector->list (struct->vector (syntax-e #'s))))])
        #'(let ([xkey (prefab-struct-key x)])
            (if (equal? xkey 'key)
-               (let ([xps (struct->list x)])
+               (let ([xps (cdr (vector->list (struct->vector x)))])
                  (match-p xps (list p ...) success failure))
                failure)))]
     ))

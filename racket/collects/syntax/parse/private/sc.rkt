@@ -6,7 +6,10 @@
 ;; keep and keep as abs. path -- lazy-loaded macros produce references to this
 ;; must be required via *absolute module path* from any disappearing module
 ;; (so for consistency etc, require absolutely from all modules)
-(require syntax/parse/private/residual)
+(require syntax/parse/private/residual
+         racket/syntax
+         racket/stxparam
+         syntax/stx)
 
 (begin-for-syntax
  (lazy-require
