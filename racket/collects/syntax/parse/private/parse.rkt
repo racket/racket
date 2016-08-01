@@ -694,8 +694,8 @@ Conventions:
         #''(datum d)]
        [#s(pat:literal id _ip _lp)
         #''(literal id)]
-       [#s(pat:describe _p description _t? _role)
-        #'description] ;; FIXME??? only constants?
+       [#s(pat:describe _p desc _t? _role)
+        #`(quote #,(or (constant-desc #'desc) #'#f))]
        [#s(pat:delimit pattern)
         #'(first-desc:S pattern)]
        [#s(pat:commit pattern)
@@ -706,6 +706,28 @@ Conventions:
         #'(first-desc:S pattern)]
        [#s(pat:integrated _name _pred description _role)
         #''description]
+       [_ #'#f])]))
+
+;; (first-desc:H HeadPattern) : Expr
+(define-syntax (first-desc:H stx)
+  (syntax-case stx ()
+    [(fdh hpat)
+     (syntax-case #'hpat ()
+       [#s(hpat:var/p _n _p _a _na _ac _c? _r desc) #'desc]
+       [#s(hpat:seq lp) #'(first-desc:L lp)]
+       [#s(hpat:describe _hp desc _t? _r)
+        #`(quote #,(or (constant-desc #'desc) #'#f))]
+       [#s(hpat:delimit hp) #'(first-desc:H hp)]
+       [#s(hpat:commit hp) #'(first-desc:H hp)]
+       [#s(hpat:ord hp _ _) #'(first-desc:H hp)]
+       [#s(hpat:post hp) #'(first-desc:H hp)]
+       [_ #'(first-desc:S hpat)])]))
+
+(define-syntax (first-desc:L stx)
+  (syntax-case stx ()
+    [(fdl lpat)
+     (syntax-case #'lpat ()
+       [#s(pat:pair sp lp) #'(first-desc:S sp)]
        [_ #'#f])]))
 
 ;; (disjunct (iattr ...) success (pre:expr ...) (id:id ...)) : expr[Ans]
@@ -933,6 +955,10 @@ Conventions:
                          (and repc (generate-temporary 'rep))))
        (define rel-repcs (filter values repcs))
        (define rel-rep-ids (filter values rep-ids))
+       (define rel-heads (for/list ([head (in-list (syntax->list #'(head ...)))]
+                                    [repc (in-list repcs)]
+                                    #:when repc)
+                           head))
        (define aattrs
          (for/list ([head-attrs (in-list (syntax->list #'(head-attrs ...)))]
                     [repc (in-list repcs)]
@@ -949,6 +975,7 @@ Conventions:
                      [(head-rep ...) rep-ids]
                      [(rel-rep ...) rel-rep-ids]
                      [(rel-repc ...) rel-repcs]
+                     [(rel-head ...) rel-heads]
                      [(a ...) attrs]
                      [(attr-repc ...) attr-repcs]
                      [do-pair/null?
@@ -967,7 +994,7 @@ Conventions:
                                   alt-map head-rep head es loop-k)
                         ...)
                    (cond [(< rel-rep (rep:min-number rel-repc))
-                          (let ([es (expectation-of-reps/too-few es rel-rep rel-repc)])
+                          (let ([es (expectation-of-reps/too-few es rel-rep rel-repc rel-head)])
                             (fail (failure loop-pr es)))]
                          ...
                          [else
@@ -1065,12 +1092,18 @@ Conventions:
 
 (define-syntax expectation-of-reps/too-few
   (syntax-rules ()
-    [(_ es rep #s(rep:once name too-few-msg too-many-msg))
-     (es-add-message (or too-few-msg (name->too-few/once name)) es)]
-    [(_ es rep #s(rep:optional name too-many-msg _))
+    [(_ es rep #s(rep:once name too-few-msg too-many-msg) hpat)
+     (cond [(or too-few-msg (name->too-few/once name))
+            => (lambda (msg) (es-add-message msg es))]
+           [(first-desc:H hpat) => (lambda (fd) (es-add-proper-pair fd es))]
+           [else es])]
+    [(_ es rep #s(rep:optional name too-many-msg _) hpat)
      (error 'syntax-parse "INTERNAL ERROR: impossible (too-few)")]
-    [(_ es rep #s(rep:bounds min max name too-few-msg too-many-msg))
-     (es-add-message (or too-few-msg (name->too-few name)) es)]))
+    [(_ es rep #s(rep:bounds min max name too-few-msg too-many-msg) hpat)
+     (cond [(or too-few-msg (name->too-few name))
+            => (lambda (msg) (es-add-message msg es))]
+           [(first-desc:H hpat) => (lambda (fd) (es-add-proper-pair fd es))]
+           [else es])]))
 
 (define-syntax expectation-of-reps/too-many
   (syntax-rules ()

@@ -205,6 +205,18 @@
         #rx"orange"
         #rx"banana")
 
+;; default for min rep constraint
+
+(terx ()
+      (x:id ...+)
+      #rx"expected more terms starting with identifier")
+
+(let ()
+  (define-syntax-class thing (pattern _))
+  (terx ()
+        (x:thing ...+)
+        #rx"expected more terms starting with thing"))
+
 ;; ----------------------------------------
 ;; See "Simplification" from syntax/parse/private/runtime-report
 
