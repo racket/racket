@@ -295,7 +295,7 @@ and the collection is not found, then the
 
 @examples[(eval:alts (collection-file-path "main.rkt" "racket" "base")
                      (build-path "path" "to" "collects" "racket" "base" "main.rkt"))
-          (eval:error (collection-file-path "sandwitch.rkt" "bologna"))]
+          (eval:error (collection-file-path "sandwich.rkt" "bologna"))]
 
 @history[#:changed "6.0.1.12" @elem{Added the @racket[check-compiled?] argument.}]}
 
