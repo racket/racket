@@ -475,7 +475,7 @@ Conventions:
      #'(parse:S x cx pat1 pr es (parse:pk ins #s(pk1 pats k)))]
     [(parse:pk ((x cx pr es) . ins) #s(pk/same pat1 inner))
      #'(parse:S x cx pat1 pr es (parse:matrix ins inner))]
-    [(parse:pk ((x cx pr es) . ins) #s(pk/pair proper? inner))
+    [(parse:pk ((x cx pr es) . ins) #s(pk/pair inner))
      #'(let-values ([(datum tcx)
                      (if (syntax? x)
                          (values (syntax-e x) x)
@@ -487,9 +487,7 @@ Conventions:
                    [tx (cdr datum)]
                    [tpr (ps-add-cdr pr)])
                (parse:matrix ((hx hcx hpr es) (tx tcx tpr es) . ins) inner))
-             (let ([es* (if (and 'proper? (null? datum))
-                            (es-add-proper-pair (first-desc:matrix inner) es)
-                            es)])
+             (let ([es* (if (null? datum) (es-add-proper-pair (first-desc:matrix inner) es) es)])
                (fail (failure pr es*)))))]
     [(parse:pk (in1 . ins) #s(pk/and inner))
      #'(parse:matrix (in1 in1 . ins) inner)]))
@@ -610,7 +608,7 @@ Conventions:
                    [cut-prompt fail-to-succeed]) ;; to be safe
               (parse:S x cx subpattern pr es
                        (fh0 (failure pr0 es0)))))]
-       [#s(pat:pair proper? head tail)
+       [#s(pat:pair head tail)
         #`(let ([datum (if (syntax? x) (syntax-e x) x)]
                 [cx (if (syntax? x) x cx)])  ;; FIXME: shadowing cx?!
             (if (pair? datum)
@@ -621,7 +619,7 @@ Conventions:
                       [tpr (ps-add-cdr pr)])
                   (parse:S hx hcx head hpr es
                            (parse:S tx cx tail tpr es k)))
-                (let ([es* (if (and 'proper? (null? datum)) (es-add-proper-pair (first-desc:S head) es) es)])
+                (let ([es* (if (null? datum) (es-add-proper-pair (first-desc:S head) es) es)])
                   (fail (failure pr es*)))))]
        [#s(pat:vector subpattern)
         #`(let ([datum (if (syntax? x) (syntax-e x) x)])
@@ -771,9 +769,9 @@ Conventions:
      [#s(pat:dots head tail)
       (with-syntax ([tail (convert-list-pattern #'tail end-pattern)])
         #'#s(pat:dots head tail))]
-     [#s(pat:pair proper? head-part tail-part)
+     [#s(pat:pair head-part tail-part)
       (with-syntax ([tail-part (convert-list-pattern #'tail-part end-pattern)])
-        #'#s(pat:pair proper? head-part tail-part))])))
+        #'#s(pat:pair head-part tail-part))])))
 
 ;; (parse:H x cx rest-x rest-cx rest-pr H-pattern pr es k)
 ;; In k: rest, rest-pr, attrs(H-pattern) are bound.
@@ -901,7 +899,7 @@ Conventions:
        [_
         #'(parse:S x cx
                    ;; FIXME: consider proper-list-pattern? (yes is consistent with ~seq)
-                   #s(pat:pair #t head #s(internal-rest-pattern rest-x rest-cx rest-pr))
+                   #s(pat:pair head #s(internal-rest-pattern rest-x rest-cx rest-pr))
                    pr es k)])]))
 
 ;; (parse:dots x cx EH-pattern S-pattern pr es k) : expr[Ans]

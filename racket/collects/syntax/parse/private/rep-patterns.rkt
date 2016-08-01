@@ -22,7 +22,7 @@ A SinglePattern is one of
   (pat:and (listof SinglePattern))
   (pat:or (listof IAttr) (listof SinglePattern) (listof (listof IAttr)))
   (pat:not SinglePattern)
-  (pat:pair boolean SinglePattern SinglePattern)
+  (pat:pair SinglePattern SinglePattern)
   (pat:vector SinglePattern)
   (pat:box SinglePattern)
   (pat:pstruct key SinglePattern)
@@ -38,7 +38,7 @@ A ListPattern is a subtype of SinglePattern; one of
   (pat:datum '())
   (pat:action ActionPattern ListPattern)
   (pat:head HeadPattern ListPattern)
-  (pat:pair #t SinglePattern ListPattern)
+  (pat:pair SinglePattern ListPattern)
   (pat:dots EllipsisHeadPattern ListPattern)
 |#
 
@@ -53,7 +53,7 @@ A ListPattern is a subtype of SinglePattern; one of
 (define-struct pat:and (patterns) #:prefab)
 (define-struct pat:or (attrs patterns attrss) #:prefab)
 (define-struct pat:not (pattern) #:prefab)
-(define-struct pat:pair (proper? head tail) #:prefab)
+(define-struct pat:pair (head tail) #:prefab)
 (define-struct pat:vector (pattern) #:prefab)
 (define-struct pat:box (pattern) #:prefab)
 (define-struct pat:pstruct (key pattern) #:prefab)
@@ -226,7 +226,7 @@ A RepConstraint is one of
      (append-iattrs (map pattern-attrs (list a sp)))]
     [(pat:head headp tailp)
      (append-iattrs (map pattern-attrs (list headp tailp)))]
-    [(pat:pair _proper? headp tailp)
+    [(pat:pair headp tailp)
      (append-iattrs (map pattern-attrs (list headp tailp)))]
     [(pat:vector sp)
      (pattern-attrs sp)]
@@ -355,15 +355,12 @@ A RepConstraint is one of
 (define (action-pattern->single-pattern a)
   (pat:action a (pat:any)))
 
-(define (proper-list-pattern? p trust-pair?)
+(define (proper-list-pattern? p)
   (or (and (pat:datum? p) (eq? (pat:datum-datum p) '()))
-      (and (pat:pair? p)
-           (if trust-pair?
-               (pat:pair-proper? p)
-               (proper-list-pattern? (pat:pair-tail p) trust-pair?)))
-      (and (pat:head? p) (proper-list-pattern? (pat:head-tail p) trust-pair?))
-      (and (pat:dots? p) (proper-list-pattern? (pat:dots-tail p) trust-pair?))
-      (and (pat:action? p) (proper-list-pattern? (pat:action-inner p) trust-pair?))))
+      (and (pat:pair? p) (proper-list-pattern? (pat:pair-tail p)))
+      (and (pat:head? p) (proper-list-pattern? (pat:head-tail p)))
+      (and (pat:dots? p) (proper-list-pattern? (pat:dots-tail p)))
+      (and (pat:action? p) (proper-list-pattern? (pat:action-inner p)))))
 
 ;; ----
 
@@ -474,7 +471,7 @@ A RepConstraint is one of
     [(pat:datum '()) 'yes]
     [(pat:action ap lp) (lpat-nullable lp)]
     [(pat:head hp lp) (3and (hpat-nullable hp) (lpat-nullable lp))]
-    [(pat:pair '#t sp lp) 'no]
+    [(pat:pair sp lp) 'no]
     [(pat:dots ehps lp) (3and (3andmap ehpat-nullable ehps) (lpat-nullable lp))]
     ;; For hpat:and, handle the following which are not ListPatterns
     [(pat:and lps) (3andmap lpat-nullable lps)]

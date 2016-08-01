@@ -18,18 +18,18 @@
 ;; A PK is one of
 ;;  - (pk1 (listof pattern) expr) -- a simple row in a parsing matrix
 ;;  - (pk/same pattern Matrix)    -- a submatrix with a common first column factored out
-;;  - (pk/pair boolean Matrix)    -- a submatrix with pair patterns in the first column unfolded
+;;  - (pk/pair Matrix)            -- a submatrix with pair patterns in the first column unfolded
 ;;  - (pk/and Matrix)             -- a submatrix with and patterns in the first column unfolded
 (struct pk1 (patterns k) #:prefab)
 (struct pk/same (pattern inner) #:prefab)
-(struct pk/pair (proper? inner) #:prefab)
+(struct pk/pair (inner) #:prefab)
 (struct pk/and (inner) #:prefab)
 
 (define (pk-columns pk)
   (match pk
     [(pk1 patterns k) (length patterns)]
     [(pk/same p inner) (add1 (pk-columns inner))]
-    [(pk/pair proper? inner) (sub1 (pk-columns inner))]
+    [(pk/pair inner) (sub1 (pk-columns inner))]
     [(pk/and inner) (sub1 (pk-columns inner))]))
 
 ;; Can factor pattern P given clauses like
@@ -112,14 +112,13 @@
 ;; pattern->partitioner : pattern -> (values (pattern -> boolean) ((listof pk1) -> PK))
 (define (pattern->partitioner pat1)
   (match pat1
-    [(pat:pair proper? head tail)
-     (values (lambda (p) (and (pat:pair? p) (eq? (pat:pair-proper? p) proper?)))
+    [(pat:pair head tail)
+     (values (lambda (p) (pat:pair? p))
              (lambda (rows)
                (when DEBUG-OPT-SUCCEED
                  (eprintf "-- accumulated ~s rows like ~e\n" (length rows) (pattern->sexpr pat1)))
                (cond [(> (length rows) 1)
-                      (pk/pair proper?
-                               (optimize-matrix
+                      (pk/pair (optimize-matrix
                                 (for/list ([row (in-list rows)])
                                   (let* ([patterns (pk1-patterns row)]
                                          [pat1 (car patterns)])
@@ -192,7 +191,7 @@
      (andmap pattern-factorable? patterns)]
     [(pat:or patterns) #f]
     [(pat:not pattern) #f] ;; FIXME: ?
-    [(pat:pair _p? head tail)
+    [(pat:pair head tail)
      (and (pattern-factorable? head)
           (pattern-factorable? tail))]
     [(pat:vector pattern)
@@ -268,8 +267,7 @@
           [(and (pat:not? a) (pat:not? b))
            (pattern-equal? (pat:not-pattern a) (pat:not-pattern b))]
           [(and (pat:pair? a) (pat:pair? b))
-           (and (eq? (pat:pair-proper? a) (pat:pair-proper? b))
-                (pattern-equal? (pat:pair-head a) (pat:pair-head b))
+           (and (pattern-equal? (pat:pair-head a) (pat:pair-head b))
                 (pattern-equal? (pat:pair-tail a) (pat:pair-tail b)))]
           [(and (pat:vector? a) (pat:vector? b))
            (pattern-equal? (pat:vector-pattern a) (pat:vector-pattern b))]
@@ -401,7 +399,7 @@
      (cons 'MATCH (map pattern->sexpr pats))]
     [(pk/same pat inner)
      (list 'SAME (pattern->sexpr pat) (matrix->sexpr inner))]
-    [(pk/pair proper? inner)
+    [(pk/pair inner)
      (list 'PAIR (matrix->sexpr inner))]
     [(pk/and inner)
      (list 'AND (matrix->sexpr inner))]))
@@ -421,10 +419,8 @@
     [(? pat:literal?) `(quote ,(syntax->datum (pat:literal-id p)))]
     [(pat:datum _as datum) datum]
     [(? pat:action?) 'ACTION]
-    [(pat:pair _as '#t head tail)
+    [(pat:pair _as head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
-    [(pat:pair _as '#f head tail)
-     (list '~pair (pattern->sexpr head) (pattern->sexpr tail))]
     [(pat:head _as head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
     [(pat:dots _as (list eh) tail)

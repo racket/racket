@@ -592,8 +592,7 @@
               (pat:action headp tailp)]
              [(head-pattern? headp)
               (pat:head headp tailp)]
-             [else
-              (pat:pair (proper-list-pattern? tailp #t) headp tailp)]))]
+             [else (pat:pair headp tailp)]))]
     [#(a ...)
      (let ([lp (parse-single-pattern (syntax/loc stx (a ...)) decls)])
        (pat:vector lp))]
@@ -968,7 +967,7 @@
 
 (define (parse-hpat:seq stx list-stx decls)
   (define pattern (parse-single-pattern list-stx decls))
-  (unless (proper-list-pattern? pattern #t)
+  (unless (proper-list-pattern? pattern)
     (wrong-syntax stx "expected proper list pattern"))
   (hpat:seq pattern))
 
