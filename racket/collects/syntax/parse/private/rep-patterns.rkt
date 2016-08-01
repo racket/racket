@@ -490,6 +490,7 @@ A RepConstraint is one of
     [(hpat:commit hp) (hpat-nullable hp)]
     [(hpat:ord hp _ _) (hpat-nullable hp)]
     [(hpat:post hp) (hpat-nullable hp)]
+    [(? pattern? hp) 'no]
     [_ 'unknown]))
 
 ;; ehpat-nullable : EllipsisHeadPattern -> AbsNullable
