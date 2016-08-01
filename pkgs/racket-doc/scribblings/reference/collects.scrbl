@@ -293,6 +293,9 @@ source), and its result is the result of
 and the collection is not found, then the
 @exnraise[exn:fail:filesystem].
 
+@examples[(collection-file-path "main.rkt" "racket" "base")
+          (eval:error (collection-file-path "sandwitch.rkt" "bologna"))]
+
 @history[#:changed "6.0.1.12" @elem{Added the @racket[check-compiled?] argument.}]}
 
 
