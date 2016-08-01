@@ -405,26 +405,26 @@
      (list 'AND (matrix->sexpr inner))]))
 (define (pattern->sexpr p)
   (match p
-    [(pat:any _as) '_]
-    [(pat:integrated _as name pred desc _)
+    [(pat:any) '_]
+    [(pat:integrated name pred desc _)
      (format-symbol "~a:~a" (or name '_) desc)]
-    [(pat:svar _as name)
+    [(pat:svar name)
      (syntax-e name)]
-    [(pat:var/p _as name parser _ _ _ _ _)
+    [(pat:var/p name parser _ _ _ _ _)
      (cond [(and parser (regexp-match #rx"^parse-(.*)$" (symbol->string (syntax-e parser))))
             => (lambda (m)
                  (format-symbol "~a:~a" (or name '_) (cadr m)))]
            [else
             (if name (syntax-e name) '_)])]
     [(? pat:literal?) `(quote ,(syntax->datum (pat:literal-id p)))]
-    [(pat:datum _as datum) datum]
+    [(pat:datum datum) datum]
     [(? pat:action?) 'ACTION]
-    [(pat:pair _as head tail)
+    [(pat:pair head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
-    [(pat:head _as head tail)
+    [(pat:head head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
-    [(pat:dots _as (list eh) tail)
+    [(pat:dots (list eh) tail)
      (list* (pattern->sexpr eh) '... (pattern->sexpr tail))]
-    [(ehpat _as hpat '#f)
+    [(ehpat _as hpat '#f _cn)
      (pattern->sexpr hpat)]
     [_ 'PATTERN]))
