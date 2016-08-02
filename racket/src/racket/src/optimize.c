@@ -1428,7 +1428,7 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k, Scheme_Object *identity
 {
   Scheme_Object *ps;
 
-  ps = scheme_malloc_small_atomic_tagged(sizeof(Scheme_Simple_Object));
+  ps = scheme_malloc_small_tagged(sizeof(Scheme_Simple_Object));
   ps->type = scheme_struct_proc_shape_type;
   SCHEME_PROC_SHAPE_MODE(ps) = k;
   SCHEME_PROC_SHAPE_IDENTITY(ps) = identity;
