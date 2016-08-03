@@ -139,6 +139,9 @@
       'set-symmetric-difference/list
       '(1 3))
 
+(test #t equal? (set) (let ([a (set 1 2 3)]) (set-symmetric-difference a a)))
+(test #t equal? (set) (let ([a (set 1 2 3)] [b (set 1 2 3)]) (set-symmetric-difference a b)))
+
 (let ([s (set 1 2 3)])
   (test #t equal? s (set-add (set-add (set-add (set) 1) 2) 3))
   (test #t equal? (seteq 1 2 3) (seteq 1 2 3))

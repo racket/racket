@@ -186,8 +186,7 @@
    s
    (for/fold
        ([table (custom-set-table largest-immutable)])
-       ([s2 (in-list (cons s sets))]
-        #:unless (eq? s2 largest-immutable))
+       ([s2 (in-list (remove largest-immutable (cons s sets)))])
      (for/fold ([table table]) ([x (in-hash-keys (custom-set-table s2))])
        (if (hash-ref table x #f)
            (hash-remove table x)
