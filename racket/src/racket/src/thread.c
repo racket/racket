@@ -5010,7 +5010,7 @@ void scheme_thread_block(float sleep_time)
   if (!do_atomic)
     scheme_check_future_work();
 #endif
-#if defined(MZ_USE_MZRT) && !defined(DONT_USE_FOREIGN)
+#if defined(MZ_USE_MZRT) && !defined(DONT_USE_FOREIGN) && !defined(MZ_USE_FFIPOLL)
   if (!do_atomic)
     scheme_check_foreign_work();
 #endif

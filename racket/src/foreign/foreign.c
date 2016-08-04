@@ -12,6 +12,12 @@
 
 #include <errno.h>
 
+#ifdef MZ_USE_FFIPOLL
+# define MZ_USE_FFIPOLL_COND 1
+#else
+# define MZ_USE_FFIPOLL_COND 0
+#endif
+
 #ifndef SIZEOF_BOOL
 # define SIZEOF_BOOL 0
 #endif /* SIZEOF_BOOL */
@@ -3505,7 +3511,10 @@ static void ffi_call_in_orig_place(ffi_cif *cif, void *c_func, intptr_t cfoff,
          to handle those anyway, since the call in the original
          place may lead to a callback that should run in
          this place. */
+#     ifdef MZ_USE_FFIPOLL
+#     else
       check_foreign_work(0);
+#     endif
     }
   }
 }
@@ -3580,7 +3589,7 @@ static Scheme_Object *ffi_do_call(int argc, Scheme_Object *argv[], Scheme_Object
   int i;
   intptr_t basetype, offset, *offsets;
 #ifdef MZ_USE_PLACES
-  if (orig_place && (scheme_current_place_id == 0))
+  if (orig_place && ((scheme_current_place_id == 0) && !MZ_USE_FFIPOLL_COND))
     orig_place = 0;
 #endif
   if (!cif) {
@@ -3722,7 +3731,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
   int i, nargs, save_errno;
   Scheme_Object *lock = scheme_false;
 # ifdef MZ_USE_PLACES
-  int orig_place;
+  int orig_place = MZ_USE_FFIPOLL_COND;
 # define FFI_CALL_VEC_SIZE 9
 # else /* MZ_USE_PLACES undefined */
 # define FFI_CALL_VEC_SIZE 8
@@ -3757,7 +3766,7 @@ static Scheme_Object *foreign_ffi_call(int argc, Scheme_Object *argv[])
     }
   } else
     save_errno = 0;
-# ifdef MZ_USE_PLACES
+# if defined(MZ_USE_PLACES) && !defined(MZ_USE_FFIPOLL)
   if (argc > 5) orig_place = SCHEME_TRUEP(argv[5]);
   else orig_place = 0;
 # endif /* MZ_USE_PLACES */
@@ -3899,6 +3908,9 @@ static Scheme_Object *callback_thunk(void *_qc, int argc, Scheme_Object *argv[])
 }
 
 static void check_foreign_work(int check_for_in_original)
+#ifdef MZ_USE_FFIPOLL
+XFORM_SKIP_PROC
+#endif
 {
   GC_CAN_IGNORE Queued_Callback *qc;
   ffi_callback_struct *data;
@@ -3933,7 +3945,7 @@ static void check_foreign_work(int check_for_in_original)
   }
 
 #ifdef MZ_USE_PLACES
-  if (check_for_in_original && (scheme_current_place_id == 0) && orig_place_mutex) {
+  if (check_for_in_original && ((scheme_current_place_id == 0) || MZ_USE_FFIPOLL_COND) && orig_place_mutex) {
     FFI_Orig_Place_Call *todo;
     void *sh;
 
@@ -3967,6 +3979,9 @@ static void check_foreign_work(int check_for_in_original)
 }
 
 void scheme_check_foreign_work(void)
+#ifdef MZ_USE_FFIPOLL
+XFORM_SKIP_PROC
+#endif
 {
   check_foreign_work(1);
 }

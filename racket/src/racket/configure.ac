@@ -76,6 +76,7 @@ AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dum
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
 AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness cannot be determined])
+AC_ARG_ENABLE(ffipoll, [  --enable-ffipoll        only make FFI calls if embedding program explicitly polls])
 
 # AC_ARG_ENABLE(oskit,   [  --enable-oskit          compile OSKit-based Racket kernel])
 # AC_ARG_ENABLE(smalloskit, [  --enable-smalloskit     compile small OSKit-based Racket kernel])
@@ -328,6 +329,7 @@ show_explicitly_enabled "${enable_extflonum}" "Extflonums"
 show_explicitly_disabled "${enable_extflonum}" "Extflonums"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
+show_explicitly_enabled "${enable_ffipoll}" "ffipoll"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
 show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
 
@@ -1425,6 +1427,12 @@ fi
 if test "${enable_futures}" = "yes" ; then
   AC_DEFINE(MZ_USE_FUTURES,1,[Futures enabled])
   enable_mzrt=yes
+fi
+
+############### ffipoll ###################
+
+if test "${enable_ffipoll}" = "yes" ; then
+  AC_DEFINE(MZ_USE_FFIPOLL,1,[FFIPoll enabled])
 fi
 
 ############## compare-and-swap ################

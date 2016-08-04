@@ -82,6 +82,9 @@ typedef unsigned long uintptr_t;
 #undef MZ_USE_PLACES
 #endif
 
+/* Enable FFI polling: */
+#undef MZ_USE_FFIPOLL
+
 /* Whether __sync_bool_compare_and_swap() works: */
 #undef MZ_CAS_AVAILABLE
 
