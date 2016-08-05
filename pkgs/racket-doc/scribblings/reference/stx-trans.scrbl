@@ -569,7 +569,7 @@ the binding creates a binding alias that effectively routes around the
 @history[#:added "6.3"]}
 
 
-@defproc[(syntax-local-value [id-stx syntax?]
+@defproc[(syntax-local-value [id-stx identifier?]
                              [failure-thunk (or/c (-> any) #f)
                                             #f]
                              [intdef-ctx (or/c internal-definition-context?
@@ -577,12 +577,12 @@ the binding creates a binding alias that effectively routes around the
                                          #f])
          any]{
 
-Returns the @tech{transformer} binding value of @racket[id-stx] in
-either the context associated with @racket[intdef-ctx] (if not
-@racket[#f]) or the context of the expression being expanded (if
-@racket[intdef-ctx] is @racket[#f]).  If @racket[intdef-ctx] is
-provided, it must be an extension of the context of the expression
-being expanded.
+Returns the @tech{transformer} binding value of the identifier
+@racket[id-stx] in either the context associated with
+@racket[intdef-ctx] (if not @racket[#f]) or the context of the
+expression being expanded (if @racket[intdef-ctx] is @racket[#f]). If
+@racket[intdef-ctx] is provided, it must be an extension of the
+context of the expression being expanded.
 
 If @racket[id-stx] is bound to a @tech{rename transformer} created
 with @racket[make-rename-transformer], @racket[syntax-local-value]
@@ -1107,7 +1107,7 @@ import sources.
 See also @racket[define-require-syntax], which supports macro-style
 @racket[require] transformers.
 
-@defproc[(expand-import [stx syntax?])
+@defproc[(expand-import [require-spec syntax?])
          (values (listof import?)
                  (listof import-source?))]{
 
@@ -1307,7 +1307,7 @@ See also @racket[define-provide-syntax], which supports macro-style
 @tech{provide transformers}.
 
 
-@defproc[(expand-export [stx syntax?] [modes (listof (or/c exact-integer? #f))])
+@defproc[(expand-export [provide-spec syntax?] [modes (listof (or/c exact-integer? #f))])
          (listof export?)]{
 
 Expands the given @racket[_provide-spec] to a list of exports. The
@@ -1318,7 +1318,7 @@ form, unless the @racket[modes] list specifies otherwise. Normally,
 @racket[modes] is either empty or contains a single element.}
 
 
-@defproc[(pre-expand-export [stx syntax?] [modes (listof (or/c exact-integer? #f))])
+@defproc[(pre-expand-export [provide-spec syntax?] [modes (listof (or/c exact-integer? #f))])
          syntax?]{
 
 Expands the given @racket[_provide-spec] at the level of @tech{provide
