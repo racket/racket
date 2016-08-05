@@ -366,5 +366,56 @@ Like @racket[vector-member], but finds an element using @racket[eq?].
 (vector-memq 9 (vector 1 2 3 4))
 ]}
 
+@defproc[(vector-sort [vec vector?]
+                      [less-than? (any/c any/c . -> . any/c)]
+                      [start exact-nonnegative-integer? 0]
+                      [end exact-nonnegative-integer? (vector-length vec)]
+                      [#:key key (any/c . -> . any/c) (λ (x) x)]
+                      [#:cache-keys? cache-keys? boolean? #f])
+         vector?]{
+
+ Like @racket[sort], but operates on vectors; a 
+ @emph{fresh} vector of length @racket[(- end start)] is
+ returned containing the elements from indices 
+ @racket[start] (inclusive) through @racket[end] (exclusive)
+ of @racket[vec], but in sorted order (i.e., @racket[vec] is
+ not modified). This sort is stable (i.e., the order of ``equal''
+ elements is preserved).
+ 
+@mz-examples[#:eval vec-eval
+(define v1 (vector 4 3 2 1))
+(vector-sort v1 <)
+v1
+(define v2 (vector '(4) '(3) '(2) '(1)))
+(vector-sort v2 < 1 3 #:key car)
+v2]
+
+@history[#:added "6.6.0.5"]{}
+}
+
+@defproc[(vector-sort! [vec (and/c vector? (not/c immutable?))]
+                       [less-than? (any/c any/c . -> . any/c)]
+                       [start exact-nonnegative-integer? 0]
+                       [end exact-nonnegative-integer? (vector-length vec)]
+                       [#:key key (any/c . -> . any/c) (λ (x) x)]
+                       [#:cache-keys? cache-keys? boolean? #f])
+         void?]{
+
+ Like @racket[vector-sort], but @emph{updates} indices
+ @racket[start] (inclusive) through @racket[end] (exclusive)
+ of @racket[vec] by sorting them according to the @racket[less-than?]
+ procedure.
+
+@mz-examples[#:eval vec-eval
+(define v1 (vector 4 3 2 1))
+(vector-sort! v1 <)
+v1
+(define v2 (vector '(4) '(3) '(2) '(1)))
+(vector-sort! v2 < 1 3 #:key car)
+v2]
+
+@history[#:added "6.6.0.5"]{}
+}
+
 
 @close-eval[vec-eval]
