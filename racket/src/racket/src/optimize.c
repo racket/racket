@@ -4622,6 +4622,16 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         info->size -= 1;
         return make_optimize_prim_application2(scheme_null_p_proc, app->rand1, info, context);
       }
+    } else if (IS_NAMED_PRIM(app->rator, "string=?")) {
+      if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_char_string_type)
+          && SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_char_string_type)) {
+        return scheme_string_eq_2(app->rand1, app->rand2);
+      }
+    } else if (IS_NAMED_PRIM(app->rator, "bytes=?")) {
+      if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_byte_string_type)
+          && SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_byte_string_type)) {
+        return scheme_byte_string_eq_2(app->rand1, app->rand2);
+      }
     }
   }
 

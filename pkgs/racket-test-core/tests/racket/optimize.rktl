@@ -4650,6 +4650,22 @@
            #f)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Special case of folding for string=? and bytes=?
+
+(test-comp '(lambda () (string=? "123" "123"))
+           '(lambda () #t))
+(test-comp '(lambda () (string=? "123" "123456"))
+           '(lambda () #f))
+(test-comp '(lambda () (string=? "123" "456"))
+           '(lambda () #f))
+(test-comp '(lambda () (bytes=? #"123" #"123"))
+           '(lambda () #t))
+(test-comp '(lambda () (bytes=? #"123" #"123456"))
+           '(lambda () #f))
+(test-comp '(lambda () (bytes=? #"123" #"456"))
+           '(lambda () #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check that the type information is shifted in the
 ;; right direction while inlining.
 ;; The first example triggered a bug in 6.3.

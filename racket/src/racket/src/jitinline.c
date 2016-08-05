@@ -2205,7 +2205,7 @@ int scheme_generate_two_args(Scheme_Object *rand1, Scheme_Object *rand2, mz_jit_
 /* de-sync's rs.
    Results go into R0 and R1. If !order_matters, and if only the
    second is simple, then the arguments will be in reverse order. 
-   Return is 1 if thr arguments are in order, -1 if reversed. */
+   Return is 1 if the arguments are in order, -1 if reversed. */
 {
   int simple1, simple2, direction = 1;
 
@@ -2837,49 +2837,62 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     return 1;
   } else if (IS_NAMED_PRIM(rator, "string=?")
              || IS_NAMED_PRIM(rator, "bytes=?")) {
-    GC_CAN_IGNORE jit_insn *ref_fx1, *ref_fx2, *ref_fail1, *ref_fail2, *ref_ucnofail;
+    GC_CAN_IGNORE jit_insn *ref_fx1 = NULL, *ref_fx2 = NULL, *ref_fail1 = NULL, *ref_fail2 = NULL;
+    GC_CAN_IGNORE jit_insn *ref_ucnofail;
     GC_CAN_IGNORE jit_insn *ref_false1, *ref_false2 = NULL;
-    GC_CAN_IGNORE jit_insn *ref_true1, *ref_true2, *ref_ucfinish;
+    GC_CAN_IGNORE jit_insn *ref_true1 = NULL, *ref_true2, *ref_ucfinish;
     GC_CAN_IGNORE jit_insn *ref_loop;
-    int is_str1, is_str2, len = 0;
+    Scheme_Object *rand1, *rand2;
+    int is_str1, is_str2, len = 0, direction = 0;
     int string, string_type;
-    void * sjc_bad_code;
+    void *sjc_bad_code, *sjc_bad_rev_code;
     intptr_t string_len_val, string_val;
 
     if ((IS_NAMED_PRIM(rator, "string=?"))) {
       string = 1;
       string_type = scheme_char_string_type;
       sjc_bad_code = sjc.bad_string_eq_2_code;
+      sjc_bad_rev_code = sjc.bad_string_rev_eq_2_code;
       string_len_val = (intptr_t)&SCHEME_CHAR_STRLEN_VAL(0x0);
       string_val = (intptr_t)&SCHEME_CHAR_STR_VAL(0x0);
     } else { /* IS_NAMED_PRIM(rator, "bytes=?") */
       string = 0;
       string_type = scheme_byte_string_type;
       sjc_bad_code = sjc.bad_bytes_eq_2_code;
+      sjc_bad_rev_code = sjc.bad_bytes_rev_eq_2_code;
       string_len_val = (intptr_t)&SCHEME_BYTE_STRLEN_VAL(0x0);
       string_val = (intptr_t)&SCHEME_BYTE_STR_VAL(0x0);
     }
 
-    is_str1 = (SAME_TYPE(SCHEME_TYPE(app->rand1), string_type));
-    is_str2 = (SAME_TYPE(SCHEME_TYPE(app->rand2), string_type));
-    if (string) {
-      if (is_str1) {
-        len = SCHEME_CHAR_STRLEN_VAL(app->rand1);
-      } else if (is_str2) {
-        len = SCHEME_CHAR_STRLEN_VAL(app->rand2);
-      }
-    } else {
-      if (is_str1) {
-        len = SCHEME_BYTE_STRLEN_VAL(app->rand1);
-      } else if (is_str2) {
-        len = SCHEME_BYTE_STRLEN_VAL(app->rand2);
-      }
-    }
-
-    scheme_generate_two_args(app->rand1, app->rand2, jitter, 1, 2);
+    direction = scheme_generate_two_args(app->rand1, app->rand2, jitter, 0, 2);
     CHECK_LIMIT();
 
     mz_rs_sync();
+    
+    if (direction == -1) {
+      rand1 = app->rand2;
+      rand2 = app->rand1;
+    } else {
+      rand1 = app->rand1;
+      rand2 = app->rand2;
+    }
+
+    is_str1 = (SAME_TYPE(SCHEME_TYPE(rand1), string_type));
+    is_str2 = (SAME_TYPE(SCHEME_TYPE(rand2), string_type));
+    if (string) {
+      if (is_str1) {
+        len = SCHEME_CHAR_STRLEN_VAL(rand1);
+      } else if (is_str2) {
+        len = SCHEME_CHAR_STRLEN_VAL(rand2);
+      }
+    } else {
+      if (is_str1) {
+        len = SCHEME_BYTE_STRLEN_VAL(rand1);
+      } else if (is_str2) {
+        len = SCHEME_BYTE_STRLEN_VAL(rand2);
+      }
+    }
+
 
     if (for_branch) {
       __START_SHORT_JUMPS__(branch_short);
@@ -2894,17 +2907,11 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       ref_fx1 = jit_bmsi_ul(jit_forward(), JIT_R0, 0x1);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
       ref_fail1 = jit_bnei_i(jit_forward(), JIT_R2, string_type);
-    } else {
-      ref_fx1 = NULL;
-      ref_fail1 = NULL;
     }
     if (!is_str2) {
       ref_fx2 = jit_bmsi_ul(jit_forward(), JIT_R1, 0x1);
       jit_ldxi_s(JIT_V1, JIT_R1, &((Scheme_Object *)0x0)->type);
       ref_fail2 = jit_bnei_i(jit_forward(), JIT_V1, string_type);
-    } else {
-      ref_fx2 = NULL;
-      ref_fail2 = NULL;
     }
     ref_ucnofail = jit_jmpi(jit_forward());
     CHECK_LIMIT();
@@ -2920,7 +2927,10 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     }
     __END_TINY_JUMPS__(1);
 
-    (void)jit_calli(sjc_bad_code);
+    if (direction == 1)
+      (void)jit_calli(sjc_bad_code);
+    else
+      (void)jit_calli(sjc_bad_rev_code);
     CHECK_LIMIT();
 
     /* main */
@@ -2949,7 +2959,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     if ((!is_str1 && !is_str2) || len) {
       __START_TINY_JUMPS__(1);
       /* true if both have length zero or are eq?*/
-      ref_true1 = jit_beqi_l(jit_forward(), JIT_R2, 0);
+      if (!len)
+        ref_true1 = jit_beqi_l(jit_forward(), JIT_R2, 0);
       ref_true2 = jit_beqr_p(jit_forward(), JIT_R0, JIT_R1);
 
       /* initialize loop*/
@@ -2994,7 +3005,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
       CHECK_LIMIT();
 
       /* true */
-      mz_patch_branch(ref_true1);
+      if (ref_true1)
+        mz_patch_branch(ref_true1);
       mz_patch_branch(ref_true2);
       __END_TINY_JUMPS__(1);
     }
