@@ -545,7 +545,7 @@ Supported for any @racket[st] that @impl{implements} @racket[set-remove!] and @s
 @defproc[(set-subtract [st0 generic-set?] [st generic-set?] ...) generic-set?]{
 
 Produces a set of the same type as @racket[st0] that includes the elements from
-@racket[st0] that not contained by any of the @racket[st]s.
+@racket[st0] that are not contained by any of the @racket[st]s.
 
 If @racket[st0] is a list, each @racket[st] must also be a list.  This
 operation runs on lists in time proportional to the total size of the
