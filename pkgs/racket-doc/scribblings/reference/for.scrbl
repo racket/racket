@@ -29,7 +29,7 @@ Iteratively evaluates @racket[body]s. The @racket[for-clause]s
 introduce bindings whose scope includes @racket[body] and that
 determine the number of times that @racket[body] is evaluated.
 A @racket[break-clause] either among the @racket[for-clause]s
-of @racket[body]s stops further iteration.
+or @racket[body]s stops further iteration.
 
 In the simple case, each @racket[for-clause] has one of its first two
 forms, where @racket[[id seq-expr]] is a shorthand for @racket[[(id)

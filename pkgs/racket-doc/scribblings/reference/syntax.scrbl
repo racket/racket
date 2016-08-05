@@ -1563,7 +1563,7 @@ used in the expression match those given in the earlier definition:
           (λ () 
             (raise-syntax-error 
              'sym-case
-             "expected an identifier bound via def-sym-case"
+             "expected an identifier bound via define-sym-case"
              stx
              #'id))))
        (define actual-ids (syntax->datum #'(sym ...)))

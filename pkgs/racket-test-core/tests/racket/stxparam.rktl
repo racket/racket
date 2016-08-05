@@ -177,7 +177,7 @@
 
 ;; ----------------------------------------
 ;; Check rename-transformer stx-param when used as an expression,
-;; which involves calling the `prop:rename-transformer` is a
+;; which involves calling the `prop:rename-transformer` in a
 ;; `syntax-transforming?` mode
 
 (begin
