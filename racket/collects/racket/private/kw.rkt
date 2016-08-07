@@ -142,31 +142,6 @@
   (define-values (prop:named-keyword-procedure named-keyword-procedure? keyword-procedure-name+fail)
     (make-struct-type-property 'named-keyword-procedure))
 
-  ;; Constructor generator for a procedure with a required keyword.
-  ;; (This is used with lift-expression, so that the same constructor
-  ;;  is used for each evaluation of a keyword lambda.)
-  ;; The `procedure' property is a per-type method that has exactly
-  ;;  the right arity, and that sends all arguments to `missing-kw'.
-  (define (make-required name fail-proc method? impersonator?)
-    (let-values ([(s: mk ? -ref -set!)
-                  (make-struct-type (or name 'unknown)
-                                    (if impersonator?
-                                        (if method?
-                                            struct:keyword-method-impersonator
-                                            struct:keyword-procedure-impersonator)
-                                        (if method?
-                                            struct:keyword-method
-                                            struct:keyword-procedure))
-                                    0 0 #f
-                                    (list (cons prop:arity-string 
-                                                generate-arity-string)
-                                          (cons prop:named-keyword-procedure 
-                                                (cons name fail-proc))
-                                          (cons prop:incomplete-arity
-                                                #t))
-                                    (current-inspector) fail-proc)])
-      mk))
-
   ;; Allows support for new-prop:procedure to extract a field (i.e., this property
   ;; makes it possible to extract a field for an integer `new-prop:procedure` value):
   (define-values (prop:procedure-accessor procedure-accessor? procedure-accessor-ref)
@@ -187,8 +162,9 @@
                                 ;; value is an integer:
                                 (cons prop:procedure-accessor values))))
 
-  
+  ;; ----------------------------------------
   ;; Proxies
+
   (define-values (struct:keyword-procedure-impersonator make-kpp keyword-procedure-impersonator? kpp-ref kpp-set!)
     (make-struct-type 'procedure
                       struct:keyword-procedure
@@ -209,6 +185,74 @@
                       struct:okp
                       1 0 #f
                       (list (cons prop:keyword-impersonator (lambda (v) (okmp-ref v 0))))))
+
+  ;; ----------------------------------------
+  ;; Functions and proxies with required keyword arguments
+  
+  (define-values (struct:keyword-procedure/arity-error make-kp/ae kp/ae? kp/ae-ref kp/ae-set!)
+    (make-struct-type 'procedure
+                      struct:keyword-procedure
+                      0 0 #f
+                      (list (cons prop:arity-string generate-arity-string)
+                            (cons prop:incomplete-arity #t))))
+  (define-values (struct:keyword-method/arity-error make-km/ae km/ae? km/ae-ref km/ae-set!)
+    (make-struct-type 'procedure
+                      struct:keyword-method
+                      0 0 #f
+                      (list (cons prop:arity-string generate-arity-string)
+                            (cons prop:incomplete-arity #t))))
+  (define-values (struct:keyword-procedure-impersonator/arity-error make-kpi/ae kpi/ae? kpi/ae-ref kpi/ae-set!)
+    (make-struct-type 'procedure
+                      struct:keyword-procedure-impersonator
+                      0 0 #f
+                      (list (cons prop:arity-string generate-arity-string)
+                            (cons prop:incomplete-arity #t))))
+  (define-values (struct:keyword-method-impersonator/arity-error make-kmi/ae kmi/ae? kmi/ae-ref kmi/ae-set!)
+    (make-struct-type 'procedure
+                      struct:keyword-method-impersonator
+                      0 0 #f
+                      (list (cons prop:arity-string generate-arity-string)
+                            (cons prop:incomplete-arity #t))))
+
+  ;; Constructor generator for a wrapper on a procedure with a required keyword.
+  ;; The `procedure' property is a per-type method that has exactly
+  ;;  the right arity, and that sends all arguments to `missing-kw'.
+  (define (make-required name fail-proc method? impersonator?)
+    (let-values ([(s: mk ? -ref -set!)
+                  (make-struct-type (or name 'unknown)
+                                    (if impersonator?
+                                        (if method?
+                                            struct:keyword-method-impersonator/arity-error
+                                            struct:keyword-procedure-impersonator/arity-error)
+                                        (if method?
+                                            struct:keyword-method/arity-error
+                                            struct:keyword-procedure/arity-error))
+                                    0 0 #f
+                                    (list (cons prop:named-keyword-procedure
+                                                (cons name fail-proc)))
+                                    (current-inspector)
+                                    fail-proc)])
+      mk))
+  
+  ;; Macro variant of `make-required`, used for lambda form with a required
+  ;; keyword.  We use a macro so that the `make-struct-type` is visible
+  ;; to the optimizer, which in turn allows it to determine that the first
+  ;; result is a constructor that always succeeds.
+  ;; >> Beware that `name` and `fail-proc` are duplicated in the macro expansion. <<
+  ;; The `name` expresison is expected to be a quoted symbol, and `fail-proc` is
+  ;; expected to be a small procedure, so that duplication is ok.
+  ;; (This macro is used with lift-values-expression, so that the same constructor
+  ;;  is used for each evaluation of a keyword lambda.)
+  (define-syntax (make-required* stx)
+    (syntax-case stx ()
+      [(_ struct:km/ae name fail-proc)
+       #'(make-struct-type name
+                           struct:km/ae
+                           0 0 #f
+                           (list (cons prop:named-keyword-procedure
+                                       (cons name fail-proc)))
+                           (current-inspector)
+                           fail-proc)]))
 
   ;; ----------------------------------------
 
@@ -467,7 +511,9 @@
                              [make-okp (if method?
                                            #'make-optional-keyword-method
                                            #'make-optional-keyword-procedure)]
-                             [method? method?]
+                             [struct:kp/ae (if method?
+                                               #'struct:keyword-method/arity-error
+                                               #'struct:keyword-procedure/arity-error)]
                              [with-kw-min-args (+ 2 (length plain-ids))]
                              [with-kw-max-arg (if (null? (syntax-e #'rest))
                                                   (+ 2 (length plain-ids) (length opts))
@@ -609,11 +655,12 @@
                                     [needed-kws needed-kws]
                                     [no-kws (mk-no-kws #t)]
                                     [with-kws (mk-with-kws)]
-                                    [mk-id (with-syntax ([n (or local-name
-                                                                (syntax-local-infer-name stx))]
-                                                         [call-fail (mk-kw-arity-stub)])
-                                             (syntax-local-lift-expression
-                                              #'(make-required 'n call-fail method? #f)))])
+                                    [(_ mk-id . _) (with-syntax ([n (or local-name
+                                                                        (syntax-local-infer-name stx))]
+                                                                 [call-fail (mk-kw-arity-stub)])
+                                                     (syntax-local-lift-values-expression
+                                                      5
+                                                      #'(make-required* struct:kp/ae 'n call-fail)))])
                         (quasisyntax/loc stx
                           (mk-id
                            (lambda (given-kws given-argc)
@@ -1323,9 +1370,9 @@
                                     (format "\n   ~a ~e" kw kw-arg))
                                   kws kw-args))))]
                       [proc-name (lambda (p) (or (and (named-keyword-procedure? p)
-                                                      (car (keyword-procedure-name+fail p)))
-                                                 (object-name p)
-                                                 p))])
+                                                 (car (keyword-procedure-name+fail p)))
+                                            (object-name p)
+                                            p))])
                   (raise
                    (exn:fail:contract
                     (if extra-kw
