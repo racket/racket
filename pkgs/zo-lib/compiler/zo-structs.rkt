@@ -46,6 +46,9 @@
 (define-form-struct (accessor-shape struct-shape) ([field-count exact-nonnegative-integer?]))
 (define-form-struct (mutator-shape struct-shape) ([field-count exact-nonnegative-integer?]))
 (define-form-struct (struct-type-shape struct-shape) ([field-count exact-nonnegative-integer?]))
+(define-form-struct (struct-type-property-shape struct-shape) ([has-guard? boolean?]))
+(define-form-struct (property-predicate-shape struct-shape) ())
+(define-form-struct (property-accessor-shape struct-shape) ())
 (define-form-struct (struct-other-shape struct-shape) ())
 
 ;; In toplevels of resove prefix:

@@ -123,13 +123,19 @@ static void noclear_stack_push(struct Validate_Clearing *vc, int pos)
 }
 
 
-static void add_struct_mapping(Scheme_Hash_Table **_st_ht, int pos, int shape)
+static void add_struct_mapping(Scheme_Hash_Table **_st_ht, int pos, int shape, int for_property)
 {
   if (!*_st_ht) {
     Scheme_Hash_Table *ht;
     ht = scheme_make_hash_table_eqv();
     *_st_ht = ht;
   }
+
+  if (for_property) {
+    /* negative value is for a structure type property: */
+    shape = -(shape+1);
+  }
+  
   scheme_hash_set(*_st_ht, 
                   scheme_make_integer(pos),
                   scheme_make_integer(shape));
@@ -185,7 +191,9 @@ void scheme_validate_code(Mz_CPort *port, Scheme_Object *code,
           intptr_t k;
           tl_state[i] = SCHEME_TOPLEVEL_CONST;
           if (scheme_decode_struct_shape(((Module_Variable *)toplevels[i])->shape, &k))
-            add_struct_mapping(_st_ht, i, k);
+            add_struct_mapping(_st_ht, i, k, 0);
+          else if (scheme_decode_struct_prop_shape(((Module_Variable *)toplevels[i])->shape, &k))
+            add_struct_mapping(_st_ht, i, k, 1);
         } else if (mv_flags & SCHEME_MODVAR_FIXED)
           tl_state[i] = SCHEME_TOPLEVEL_FIXED;
         else
@@ -295,7 +303,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
                                   Scheme_Hash_Tree *procs,
                                   Scheme_Hash_Table **_st_ht)
 {
-  int i, size, flags, result, is_struct;
+  int i, size, flags, result, is_struct, is_struct_prop, has_guard;
   Simple_Stuct_Type_Info stinfo;
   Scheme_Object *val, *only_var;
 
@@ -399,7 +407,8 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
       only_var = NULL;
   }
 
-  if (scheme_is_simple_make_struct_type(val, size-1, 1, 0, 1, NULL,
+  if (scheme_is_simple_make_struct_type(val, size-1, CHECK_STRUCT_TYPE_RESOLVED,
+                                        NULL,
                                         &stinfo, NULL,
                                         NULL, NULL, (_st_ht ? *_st_ht : NULL), 
                                         NULL, 0, NULL, NULL, NULL, 5)) {
@@ -409,6 +418,16 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
     is_struct = 1;
   } else {
     is_struct = 0;
+  }
+
+  has_guard = 0;
+  if (scheme_is_simple_make_struct_type_property(val, size-1, CHECK_STRUCT_TYPE_RESOLVED,
+                                                 &has_guard,
+                                                 NULL, NULL, (_st_ht ? *_st_ht : NULL), 
+                                                 NULL, 0, NULL, NULL, 5)) {
+    is_struct_prop = 1;
+  } else {
+    is_struct_prop = 0;
   }
 
   result = validate_expr(port, val, stack, tls, 
@@ -430,7 +449,22 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
             || (stinfo.field_count == stinfo.init_field_count))
           add_struct_mapping(_st_ht, 
                              SCHEME_TOPLEVEL_POS(SCHEME_VEC_ELS(data)[i]),
-                             scheme_get_struct_proc_shape(i-1, &stinfo));
+                             scheme_get_struct_proc_shape(i-1, &stinfo),
+                             0);
+      }
+    }
+    /* In any case, treat the bindings as constant */
+    result = 2;
+  } else if (is_struct_prop) {
+    if (_st_ht) {
+      /* Record `prop:' binding as constant across invocations,
+         so that it can be recognized for struct declarations,
+         and so on: */
+      for (i = 1; i < size; i++) {
+        add_struct_mapping(_st_ht, 
+                           SCHEME_TOPLEVEL_POS(SCHEME_VEC_ELS(data)[i]),
+                           scheme_get_struct_property_proc_shape(i-1, has_guard),
+                           1);
       }
     }
     /* In any case, treat the bindings as constant */
@@ -1385,8 +1419,10 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
         } else {
           /* check expectation */
           if (((tl_state[p] & SCHEME_TOPLEVEL_FLAGS_MASK) < flags)
-              || ((tl_state[p] >> 2) > tl_timestamp))
+              || ((tl_state[p] >> 2) > tl_timestamp)) {
+            printf("?? %d\n", p);
             scheme_ill_formed_code(port);
+          }
         }
       }
 

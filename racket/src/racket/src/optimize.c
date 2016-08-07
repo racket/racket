@@ -349,7 +349,7 @@ int scheme_is_functional_nonfailing_primitive(Scheme_Object *rator, int num_args
     return 0;
 }
 
-static Scheme_Object *get_struct_proc_shape(Scheme_Object *rator, Optimize_Info *info)
+static Scheme_Object *get_struct_proc_shape(Scheme_Object *rator, Optimize_Info *info, int prop_ok)
 /* Determines whether `rator` is known to be a struct accessor, etc. */
 {
   Scheme_Object *c;
@@ -364,7 +364,8 @@ static Scheme_Object *get_struct_proc_shape(Scheme_Object *rator, Optimize_Info 
       c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
     if (!c && info->cp->inline_variants)
       c = scheme_hash_get(info->cp->inline_variants, scheme_make_integer(pos));
-    if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_struct_proc_shape_type)) {
+    if (c && (SAME_TYPE(SCHEME_TYPE(c), scheme_struct_proc_shape_type)
+              || (prop_ok && SAME_TYPE(SCHEME_TYPE(c), scheme_struct_prop_proc_shape_type)))) {
       return c;
     }
   }
@@ -378,13 +379,19 @@ int scheme_is_struct_functional(Scheme_Object *rator, int num_args, Optimize_Inf
   Scheme_Object *c;
 
   if ((vals == 1) || (vals == -1)) {
-    c = get_struct_proc_shape(rator, info);
+    c = get_struct_proc_shape(rator, info, 1);
     if (c) {
-      int mode = (SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK);
-      int field_count = (SCHEME_PROC_SHAPE_MODE(c) >> STRUCT_PROC_SHAPE_SHIFT);
-      if (((num_args == 1) && (mode == STRUCT_PROC_SHAPE_PRED))
-          || ((num_args == field_count) && (mode == STRUCT_PROC_SHAPE_CONSTR))) {
-        return 1;
+      if (SAME_TYPE(SCHEME_TYPE(c), scheme_struct_proc_shape_type)) {
+        int mode = (SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK);
+        int field_count = (SCHEME_PROC_SHAPE_MODE(c) >> STRUCT_PROC_SHAPE_SHIFT);
+        if (((num_args == 1) && (mode == STRUCT_PROC_SHAPE_PRED))
+            || ((num_args == field_count) && (mode == STRUCT_PROC_SHAPE_CONSTR))) {
+          return 1;
+        }
+      } else if (SAME_TYPE(SCHEME_TYPE(c), scheme_struct_prop_proc_shape_type)) {
+        if ((SCHEME_PROP_PROC_SHAPE_MODE(c) == STRUCT_PROP_PROC_SHAPE_PRED)
+            && (num_args == 1))
+          return 1;
       }
     }
   }
@@ -553,8 +560,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
         note_match(app->num_args, vals, warn_info);
       }
     }
-  
-    return 0;
+
+    if (!SAME_OBJ(scheme_make_struct_type_proc, app->args[0]))
+      return 0;
   }
 
   if (vtype == scheme_application2_type) {
@@ -579,7 +587,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
         note_match(1, vals, warn_info);
       }
     }
-    return 0;
+
+    if (!SAME_OBJ(scheme_make_struct_type_property_proc, app->rator))
+      return 0;
   }
 
   if (vtype == scheme_application3_type) {
@@ -604,7 +614,9 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
         note_match(2, vals, warn_info);
       }
     }
-    return 0;
+
+    if (!SAME_OBJ(scheme_make_struct_type_property_proc, app->rator))
+      return 0;
   }
 
   /* check for (set! x x) */
@@ -620,10 +632,14 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
   }
 
   /* check for struct-type declaration: */
-  {
+  if (!(flags & OMITTABLE_IGNORE_MAKE_STRUCT_TYPE)) {
     Scheme_Object *auto_e;
     int auto_e_depth;
-    auto_e = scheme_is_simple_make_struct_type(o, vals, flags, 1, 0, &auto_e_depth, 
+    auto_e = scheme_is_simple_make_struct_type(o, vals,
+                                               (((flags & OMITTABLE_RESOLVED) ? CHECK_STRUCT_TYPE_RESOLVED : 0)
+                                                | CHECK_STRUCT_TYPE_ALWAYS_SUCCEED
+                                                | CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK),
+                                               &auto_e_depth, 
                                                NULL, NULL,
                                                (opt_info ? opt_info->top_level_consts : NULL),
                                                ((opt_info && opt_info->cp) ? opt_info->cp->inline_variants : NULL),
@@ -633,6 +649,19 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
       if (scheme_omittable_expr(auto_e, 1, fuel - 1, flags, opt_info, warn_info))
         return 1;
     }
+  }
+
+  /* check for struct-type property declaration: */
+  if (!(flags & OMITTABLE_IGNORE_MAKE_STRUCT_TYPE)) {
+    if (scheme_is_simple_make_struct_type_property(o, vals,
+                                                   (((flags & OMITTABLE_RESOLVED) ? CHECK_STRUCT_TYPE_RESOLVED : 0)
+                                                    | CHECK_STRUCT_TYPE_ALWAYS_SUCCEED),
+                                                   NULL,
+                                                   (opt_info ? opt_info->top_level_consts : NULL),
+                                                   ((opt_info && opt_info->cp) ? opt_info->cp->inline_variants : NULL),
+                                                   NULL, NULL, 0, NULL, NULL,
+                                                   5))
+      return 1;
   }
 
   return 0;
@@ -964,7 +993,7 @@ static int is_proc_spec_proc(Scheme_Object *p, int init_field_count)
 
   vtype = SCHEME_TYPE(p);
 
-  if (vtype == scheme_lambda_type) {
+  if ((vtype == scheme_lambda_type) || (vtype == scheme_ir_lambda_type)) {
     if (((Scheme_Lambda *)p)->num_params >= 1)
       return 1;
   }
@@ -1127,34 +1156,36 @@ static Scheme_Object *skip_clears(Scheme_Object *body)
   return body;
 }
 
-static int is_constant_super(Scheme_Object *arg, 
-                             Scheme_Hash_Table *top_level_consts, 
-                             Scheme_Hash_Table *inline_variants, 
-                             Scheme_Hash_Table *top_level_table,
-                             Scheme_Object **runstack, int rs_delta,
-                             Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
-                             Scheme_Object **_parent_identity)
-/* Does `arg` produce another structure type (which can serve as a supertype)? */
+typedef int (*Ok_Value_Callback)(void *data, Scheme_Object *v, int mode);
+#define OK_CONSTANT_SHAPE          1
+#define OK_CONSTANT_ENCODED_SHAPE  2
+#define OK_CONSTANT_VALIDATE_SHAPE 3
+#define OK_CONSTANT_VARIANT        4
+#define OK_CONSTANT_VALUE          5
+
+static int is_ok_value(Ok_Value_Callback ok_value, void *data,
+                       Scheme_Object *arg, 
+                       Scheme_Hash_Table *top_level_consts, 
+                       Scheme_Hash_Table *inline_variants, 
+                       Scheme_Hash_Table *top_level_table,
+                       Scheme_Object **runstack, int rs_delta,
+                       Scheme_Object **symbols, Scheme_Hash_Table *symbol_table)
+/* Does `arg` produce a value that satisfies `ok_value`? */
 {
   int pos;
   Scheme_Object *v;
 
   if (SAME_TYPE(SCHEME_TYPE(arg), scheme_ir_toplevel_type)) {
     pos = SCHEME_TOPLEVEL_POS(arg);
-    if (top_level_consts) {
+    if (top_level_consts || inline_variants) {
       /* This is optimize mode */
-      v = scheme_hash_get(top_level_consts, scheme_make_integer(pos));
+      v = NULL;
+      if (top_level_consts)
+        v = scheme_hash_get(top_level_consts, scheme_make_integer(pos));
       if (!v && inline_variants)
         v = scheme_hash_get(inline_variants, scheme_make_integer(pos));
-      if (v && SAME_TYPE(SCHEME_TYPE(v), scheme_struct_proc_shape_type)) {
-        int mode = (SCHEME_PROC_SHAPE_MODE(v) & STRUCT_PROC_SHAPE_MASK);
-        int field_count = (SCHEME_PROC_SHAPE_MODE(v) >> STRUCT_PROC_SHAPE_SHIFT);
-        if (mode == STRUCT_PROC_SHAPE_STRUCT) {
-          if (_parent_identity)
-            *_parent_identity = SCHEME_PROC_SHAPE_IDENTITY(v);
-          return field_count + 1;
-        }
-      }
+      if (v)
+        return ok_value(data, v, OK_CONSTANT_SHAPE);
     }
   } else if (SAME_TYPE(SCHEME_TYPE(arg), scheme_toplevel_type)) {
     pos = SCHEME_TOPLEVEL_POS(arg);
@@ -1165,14 +1196,8 @@ static int is_constant_super(Scheme_Object *arg,
       Scheme_Prefix *toplevels;
       toplevels = (Scheme_Prefix *)runstack[SCHEME_TOPLEVEL_DEPTH(arg) - rs_delta];
       b = (Scheme_Bucket *)toplevels->a[pos];
-      if (b->val) {
-        if (SCHEME_STRUCT_TYPEP(b->val)
-            && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONSISTENT)) {
-          Scheme_Struct_Type *st = (Scheme_Struct_Type *)b->val;
-          if (st->num_slots == st->num_islots)
-            return st->num_slots + 1;
-        }
-      }
+      if (b->val && (((Scheme_Bucket_With_Flags *)b)->flags & GLOB_IS_CONSISTENT))
+        return ok_value(data, b->val, OK_CONSTANT_VALUE);
     }
     if (symbols) {
       /* This is module-export mode; conceptually, this code belongs in 
@@ -1181,23 +1206,11 @@ static int is_constant_super(Scheme_Object *arg,
       name = symbols[pos];
       if (SCHEME_SYMBOLP(name)) {
         v = scheme_hash_get(symbol_table, name);
-        if (v && SCHEME_VECTORP(v) && (SCHEME_VEC_SIZE(v) == 3)) {
-          if (_parent_identity)
-            *_parent_identity = SCHEME_VEC_ELS(v)[2];
-          v = SCHEME_VEC_ELS(v)[1];
-          if (v && SCHEME_INTP(v)) {
-            int mode = (SCHEME_INT_VAL(v) & STRUCT_PROC_SHAPE_MASK);
-            int field_count = (SCHEME_INT_VAL(v) >> STRUCT_PROC_SHAPE_SHIFT);
-            if (mode == STRUCT_PROC_SHAPE_STRUCT)
-              return field_count + 1;
-          }
-        }
+        if (v)
+          return ok_value(data, v, OK_CONSTANT_VARIANT);
       } else if (SAME_TYPE(SCHEME_TYPE(name), scheme_module_variable_type)) {
-        intptr_t k;
-        if (scheme_decode_struct_shape(((Module_Variable *)name)->shape, &k)) {
-          if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
-            return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
-        }
+        if (((Module_Variable *)name)->shape)
+          return ok_value(data, ((Module_Variable *)name)->shape, OK_CONSTANT_ENCODED_SHAPE);
       }
     }
     if (top_level_table) {
@@ -1205,9 +1218,7 @@ static int is_constant_super(Scheme_Object *arg,
          define_values_validate() */
       v = scheme_hash_get(top_level_table, scheme_make_integer(pos));
       if (v) {
-        int k = SCHEME_INT_VAL(v);
-        if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
-          return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
+        return ok_value(data, v, OK_CONSTANT_VALIDATE_SHAPE);
       }
     }
   }
@@ -1215,8 +1226,181 @@ static int is_constant_super(Scheme_Object *arg,
   return 0;
 }
 
-Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int resolved, 
-                                                 int must_always_succeed, int check_auto, 
+static int ok_constant_super_value(void *data, Scheme_Object *v, int mode)
+/* Is `v` a structure type (which can serve as a supertype)? */
+{
+  Scheme_Object **_parent_identity = (Scheme_Object **)data;
+
+  if (mode == OK_CONSTANT_SHAPE) {
+    if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_proc_shape_type)) {
+      int mode = (SCHEME_PROC_SHAPE_MODE(v) & STRUCT_PROC_SHAPE_MASK);
+      int field_count = (SCHEME_PROC_SHAPE_MODE(v) >> STRUCT_PROC_SHAPE_SHIFT);
+      if (mode == STRUCT_PROC_SHAPE_STRUCT) {
+        if (_parent_identity)
+          *_parent_identity = SCHEME_PROC_SHAPE_IDENTITY(v);
+        return field_count + 1;
+      }
+    }
+  } else if (mode == OK_CONSTANT_ENCODED_SHAPE) {
+    intptr_t k;
+    if (scheme_decode_struct_shape(v, &k)) {
+      if ((k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
+        return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
+    }
+  } else if (mode == OK_CONSTANT_VALIDATE_SHAPE) {
+    int k = SCHEME_INT_VAL(v);
+    if ((k >= 0)
+        && (k & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_STRUCT)
+      return (k >> STRUCT_PROC_SHAPE_SHIFT) + 1;
+  } else if (mode == OK_CONSTANT_VARIANT) {
+    if (SCHEME_VECTORP(v) && (SCHEME_VEC_SIZE(v) == 3)) {
+      if (_parent_identity)
+        *_parent_identity = SCHEME_VEC_ELS(v)[2];
+      v = SCHEME_VEC_ELS(v)[1];
+      if (v && SCHEME_INTP(v)) {
+        int mode = (SCHEME_INT_VAL(v) & STRUCT_PROC_SHAPE_MASK);
+        int field_count = (SCHEME_INT_VAL(v) >> STRUCT_PROC_SHAPE_SHIFT);
+        if (mode == STRUCT_PROC_SHAPE_STRUCT)
+          return field_count + 1;
+      }
+    }
+  } else if (mode == OK_CONSTANT_VALUE) {
+    if (SCHEME_STRUCT_TYPEP(v)) {
+      Scheme_Struct_Type *st = (Scheme_Struct_Type *)v;
+      if (st->num_slots == st->num_islots)
+        return st->num_slots + 1;
+    }
+  }
+
+  return 0;
+}
+
+static int is_constant_super(Scheme_Object *arg, 
+                             Scheme_Hash_Table *top_level_consts, 
+                             Scheme_Hash_Table *inline_variants, 
+                             Scheme_Hash_Table *top_level_table,
+                             Scheme_Object **runstack, int rs_delta,
+                             Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
+                             Scheme_Object **_parent_identity)
+/* Does `arg` produce another structure type (which can serve as a supertype)? */
+{
+  return is_ok_value(ok_constant_super_value, _parent_identity,
+                     arg,
+                     top_level_consts,
+                     inline_variants, top_level_table,
+                     runstack, rs_delta,
+                     symbols, symbol_table);
+}
+
+static int ok_constant_property_with_guard(void *data, Scheme_Object *v, int mode)
+{
+  intptr_t k = 0;
+
+  if (mode == OK_CONSTANT_SHAPE) {
+    if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_prop_proc_shape_type)) {
+      k = SCHEME_PROC_SHAPE_MODE(v);
+    }
+  } else if (mode == OK_CONSTANT_ENCODED_SHAPE) {
+    if (!scheme_decode_struct_prop_shape(v, &k))
+      k = 0;
+  } else if (mode == OK_CONSTANT_VALIDATE_SHAPE) {
+    int k = SCHEME_INT_VAL(v);
+    if (k < 0)
+      k = -(k+1);
+    else
+      k = 0;
+  } else if (mode == OK_CONSTANT_VARIANT) {
+    if (SCHEME_VECTORP(v) && (SCHEME_VEC_SIZE(v) == 4)) {
+      v = SCHEME_VEC_ELS(v)[1];
+      if (v && SCHEME_INTP(v))
+        k = SCHEME_INT_VAL(v);
+    }
+  } else if (mode == OK_CONSTANT_VALUE) {
+    if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_property_type)) {
+      if (!((Scheme_Struct_Property *)v)->guard)
+        return 1;
+    }
+  }
+
+  return (k == STRUCT_PROP_PROC_SHAPE_PROP);
+}
+
+static int is_struct_type_property_without_guard(Scheme_Object *arg, 
+                                                 Scheme_Hash_Table *top_level_consts, 
+                                                 Scheme_Hash_Table *inline_variants, 
+                                                 Scheme_Hash_Table *top_level_table,
+                                                 Scheme_Object **runstack, int rs_delta,
+                                                 Scheme_Object **symbols, Scheme_Hash_Table *symbol_table)
+/* Does `arg` produce a structure type property that has no guard (so that any value is ok)? */
+{
+  return is_ok_value(ok_constant_property_with_guard, NULL,
+                     arg,
+                     top_level_consts,
+                     inline_variants, top_level_table,
+                     runstack, rs_delta,
+                     symbols, symbol_table);
+}
+
+static int is_simple_property_list(Scheme_Object *a, int resolved,
+                                   Scheme_Hash_Table *top_level_consts, 
+                                   Scheme_Hash_Table *inline_variants, 
+                                   Scheme_Hash_Table *top_level_table,
+                                   Scheme_Object **runstack, int rs_delta,
+                                   Scheme_Object **symbols, Scheme_Hash_Table *symbol_table)
+/* Does `a` produce a property list that always lets `make-struct-type` succeed? */
+{
+  Scheme_Object *arg;
+  int i, count;
+  
+  if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type)) {
+    if (!SAME_OBJ(((Scheme_App_Rec *)a)->args[0], scheme_list_proc))
+      return 0;
+    count = ((Scheme_App_Rec *)a)->num_args;
+  } else if (SAME_TYPE(SCHEME_TYPE(a), scheme_application2_type)) {
+    if (!SAME_OBJ(((Scheme_App2_Rec *)a)->rator, scheme_list_proc))
+      return 0;
+    count = 1;
+  } else if (SAME_TYPE(SCHEME_TYPE(a), scheme_application3_type)) {
+    if (!SAME_OBJ(((Scheme_App3_Rec *)a)->rator, scheme_list_proc))
+      return 0;
+    count = 2;
+  } else
+    return 0;
+
+  for (i = 0; i < count; i++) {
+    if (SAME_TYPE(SCHEME_TYPE(a), scheme_application_type))
+      arg = ((Scheme_App_Rec *)a)->args[i+1];
+    else if (SAME_TYPE(SCHEME_TYPE(a), scheme_application2_type))
+      arg = ((Scheme_App2_Rec *)a)->rand;
+    else {
+      if (i == 0)
+        arg = ((Scheme_App3_Rec *)a)->rand1;
+      else
+        arg = ((Scheme_App3_Rec *)a)->rand2;
+    }
+
+    if (SAME_TYPE(SCHEME_TYPE(arg), scheme_application3_type)) {
+      Scheme_App3_Rec *a3 = (Scheme_App3_Rec *)arg;
+
+      if (!SAME_OBJ(a3->rator, scheme_cons_proc))
+        return 0;
+      if (is_struct_type_property_without_guard(a3->rand1,
+                                                top_level_consts,
+                                                inline_variants, top_level_table,
+                                                runstack, rs_delta,
+                                                symbols, symbol_table)) {
+        if (!scheme_omittable_expr(a3->rand2, 1, 3, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
+          return 0;
+      } else
+        return 0;
+    } else
+      return 0;
+  }
+  
+  return 1;
+}
+
+Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals,  int flags, 
                                                  GC_CAN_IGNORE int *_auto_e_depth, 
                                                  Simple_Stuct_Type_Info *_stinfo,
                                                  Scheme_Object **_parent_identity,
@@ -1227,13 +1411,18 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                                                  Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
                                                  Scheme_Object **_name,
                                                  int fuel)
-/* Checks whether it's a `make-struct-type' call --- that, if `must_always_succeed` is 
-   true, certainly succeeds (i.e., no exception) --- pending a check of the auto-value
-   argument if !check_auto. The resulting constructor must always succeed (i.e., no
-   guards). The result is the auto-value argument or scheme_true if it's simple, NULL if not. 
+/* Checks whether it's a `make-struct-type' call --- that, if `flags` includes
+   `CHECK_STRUCT_TYPE_ALWAYS_SUCCEED`, certainly succeeds (i.e., no exception) ---
+   pending a check of the auto-value argument if `flags` includes `CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK`.
+   The expression itself must have no side-effects except for errors (but the possibility
+   of errors means that the expression is not necessarily omittable).
+   The resulting *constructor* must always succeed (i.e., no guards).
+   The result is the auto-value argument or scheme_true if it's simple, NULL if not. 
    The first result of `e` will be a struct type, the second a constructor, and the third a predicate;
    the rest are selectors and mutators. */
 {
+  int resolved = (flags & CHECK_STRUCT_TYPE_RESOLVED);
+  
   if (!fuel) return NULL;
 
   if (SAME_TYPE(SCHEME_TYPE(e), scheme_application_type)) {
@@ -1263,7 +1452,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
             && (SCHEME_INT_VAL(app->args[4]) >= 0)
             && ((app->num_args < 5)
                 /* auto-field value: */
-                || !check_auto
+                || (flags & CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK)
                 || scheme_omittable_expr(app->args[5], 1, 3, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
             && ((app->num_args < 6)
                 /* no properties... */
@@ -1273,8 +1462,14 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
                    or selectors in a way that matters (although supplying the
                    `prop:chaperone-unsafe-undefined` property can affect the
                    constructor in an optimizer-irrelevant way) */
-                || (!must_always_succeed
-                    && scheme_omittable_expr(app->args[6], 1, 4, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL)))
+                || (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
+                    && scheme_omittable_expr(app->args[6], 1, 4, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
+                || ((flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
+                    && is_simple_property_list(app->args[6], resolved,
+                                               top_level_consts, inline_variants,
+                                               top_level_table,
+                                               runstack, rs_delta,
+                                               symbols, symbol_table)))
             && ((app->num_args < 7)
                 /* inspector: */
                 || SCHEME_FALSEP(app->args[7])
@@ -1333,8 +1528,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
           Scheme_Object *auto_e;
           Simple_Stuct_Type_Info stinfo;
           if (!_stinfo) _stinfo = &stinfo;
-          auto_e = scheme_is_simple_make_struct_type(lv->value, 5, resolved,
-                                                     must_always_succeed, check_auto, 
+          auto_e = scheme_is_simple_make_struct_type(lv->value, 5, flags, 
                                                      _auto_e_depth, _stinfo, _parent_identity,
                                                      top_level_consts, inline_variants, top_level_table, 
                                                      runstack, rs_delta,
@@ -1366,8 +1560,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
             Scheme_Object *auto_e;
             Simple_Stuct_Type_Info stinfo;
             if (!_stinfo) _stinfo = &stinfo;
-            auto_e = scheme_is_simple_make_struct_type(e2, 5, resolved,
-                                                       must_always_succeed, check_auto,
+            auto_e = scheme_is_simple_make_struct_type(e2, 5, flags,
                                                        _auto_e_depth, _stinfo, _parent_identity,
                                                        top_level_consts, inline_variants, top_level_table,
                                                        runstack, rs_delta + lvd->count,
@@ -1391,6 +1584,48 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals, int
 
   return NULL;
 }
+
+int scheme_is_simple_make_struct_type_property(Scheme_Object *e, int vals, int flags,
+                                               int *_has_guard,
+                                               Scheme_Hash_Table *top_level_consts, 
+                                               Scheme_Hash_Table *inline_variants,
+                                               Scheme_Hash_Table *top_level_table,
+                                               Scheme_Object **runstack, int rs_delta,
+                                               Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
+                                               int fuel)
+/* Reports whether `app` is a call to `make-struct-type-property` to
+   produce a propert with no guard. */
+{
+  int resolved = (flags & CHECK_STRUCT_TYPE_RESOLVED);
+
+  if ((vals != 3) && (vals >= 0)) return 0;
+
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_application2_type)) {
+    Scheme_App2_Rec *app = (Scheme_App2_Rec *)e;
+    if (SAME_OBJ(app->rator, scheme_make_struct_type_property_proc)) {
+      if (SCHEME_SYMBOLP(app->rand)) {
+        if (_has_guard) *_has_guard = 0;
+        return 1;
+      }
+    }
+  }
+  
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_application3_type)) {
+    Scheme_App3_Rec *app = (Scheme_App3_Rec *)e;
+    if (SAME_OBJ(app->rator, scheme_make_struct_type_property_proc)) {
+      if (SCHEME_SYMBOLP(app->rand1)
+          && (!(flags & CHECK_STRUCT_TYPE_ALWAYS_SUCCEED)
+              || SCHEME_LAMBDAP(app->rand2))
+          && (scheme_omittable_expr(app->rator, 1, 4, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))) {
+        if (_has_guard) *_has_guard = 1;
+        return 1;
+      }
+    }
+  }
+  
+  return 0;
+}
+
 /*========================================================================*/
 /*                             more utils                                 */
 /*========================================================================*/
@@ -1432,6 +1667,33 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k, Scheme_Object *identity
   ps->type = scheme_struct_proc_shape_type;
   SCHEME_PROC_SHAPE_MODE(ps) = k;
   SCHEME_PROC_SHAPE_IDENTITY(ps) = identity;
+
+  return ps;
+}
+
+intptr_t scheme_get_struct_property_proc_shape(int k, int has_guard)
+{
+  switch (k) {
+  case 0:
+    if (has_guard)
+      return STRUCT_PROP_PROC_SHAPE_GUARDED_PROP;
+    else
+      return STRUCT_PROP_PROC_SHAPE_PROP;
+  case 1:
+    return STRUCT_PROP_PROC_SHAPE_PRED;
+  case 2:
+  default:
+    return STRUCT_PROP_PROC_SHAPE_GETTER;
+  }
+}
+
+Scheme_Object *scheme_make_struct_property_proc_shape(intptr_t k)
+{
+  Scheme_Object *ps;
+
+  ps = scheme_alloc_small_object();
+  ps->type = scheme_struct_prop_proc_shape_type;
+  SCHEME_PROP_PROC_SHAPE_MODE(ps) = k;
 
   return ps;
 }
@@ -3831,7 +4093,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
     if (SAME_OBJ(scheme_struct_type_p_proc, rator)) {
       Scheme_Object *c;
-      c = get_struct_proc_shape(rand, info);
+      c = get_struct_proc_shape(rand, info, 0);
       if (c && ((SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK)
                 == STRUCT_PROC_SHAPE_STRUCT)) {
         info->preserves_marks = 1;
@@ -3935,7 +4197,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
   }
 
   /* Using a struct getter or predicate? */
-  alt = get_struct_proc_shape(rator, info);
+  alt = get_struct_proc_shape(rator, info, 0);
   if (alt) {
     int mode = (SCHEME_PROC_SHAPE_MODE(alt) & STRUCT_PROC_SHAPE_MASK);
 
@@ -4987,7 +5249,7 @@ static void add_types_for_t_branch(Scheme_Object *t, Optimize_Info *info, int fu
 
     if (SAME_TYPE(SCHEME_TYPE(app->rand), scheme_ir_local_type)) {
       Scheme_Object *shape;
-      shape = get_struct_proc_shape(app->rator, info);
+      shape = get_struct_proc_shape(app->rator, info, 0);
       if (shape
           && ((SCHEME_PROC_SHAPE_MODE(shape) & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_PRED)
           && SCHEME_PAIRP(SCHEME_PROC_SHAPE_IDENTITY(shape))) {
@@ -7914,6 +8176,23 @@ int split_define_values(Scheme_Object *e, int n, Scheme_Object *vars, Scheme_Obj
   return 0;
 }
 
+static Scheme_Hash_Table *set_as_fixed(Scheme_Hash_Table *fixed_table, Optimize_Info *info, int pos)
+{
+  if (!fixed_table) {
+    fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
+    if (!info->top_level_consts) {
+      Scheme_Hash_Table *consts;
+      consts = scheme_make_hash_table(SCHEME_hash_ptr);
+      info->top_level_consts = consts;
+    }
+    scheme_hash_set(info->top_level_consts, scheme_false, (Scheme_Object *)fixed_table);
+  }
+  
+  scheme_hash_set(fixed_table, scheme_make_integer(pos), scheme_true);
+
+  return fixed_table;
+}
+
 static Scheme_Object *
 module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 {
@@ -7951,7 +8230,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 
   /* Use `limited_info` for optimization decisions that need to be
      rediscovered by the validator. The validator knows shape
-     information for imported variables, and it know about structure
+     information for imported variables, and it knows about structure
      bindings for later forms. */
   limited_info = MALLOC_ONE_RT(Optimize_Info);
 #ifdef MZTAG_REQUIRED
@@ -8076,8 +8355,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       /* If this expression/definition can't have any side effect
 	 (including raising an exception), then continue the group of
 	 simultaneous definitions: */
-      if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type))  {
-	int n, cnst = 0, sproc = 0;
+      if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
+	int n, cnst = 0, sproc = 0, sprop = 0, has_guard = 0;
         Scheme_Object *sstruct = NULL, *parent_identity = NULL;
         Simple_Stuct_Type_Info stinfo;
 
@@ -8088,8 +8367,11 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	cont = scheme_omittable_expr(e, n, -1,
                                      /* ignore APPN_FLAG_OMITTABLE, because the
                                         validator won't be able to reconstruct it
-                                        in general */
-                                     OMITTABLE_IGNORE_APPN_OMIT, 
+                                        in general; also, don't recognize struct-type
+                                        functions, since they weren't recognized
+                                        as immediate calls */
+                                     (OMITTABLE_IGNORE_APPN_OMIT
+                                      | OMITTABLE_IGNORE_MAKE_STRUCT_TYPE),
                                      /* similarly, use `limited_info` instead of `info'
                                         here, because the decision
                                         of omittable should not depend on
@@ -8105,7 +8387,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
             cnst = 1;
             sproc = 1;
           }
-        } else if (scheme_is_simple_make_struct_type(e, n, 0, 0, 1, NULL, 
+        } else if (scheme_is_simple_make_struct_type(e, n, 0, NULL, 
                                                      &stinfo, &parent_identity,
                                                      info->top_level_consts, 
                                                      info->cp->inline_variants, 
@@ -8114,8 +8396,23 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                                                      5)) {
           sstruct = scheme_make_pair(sstruct, parent_identity);
           cnst = 1;
+        } else if (scheme_is_simple_make_struct_type_property(e, n, 0,
+                                                              &has_guard, 
+                                                              info->top_level_consts, 
+                                                              info->cp->inline_variants, 
+                                                              NULL, NULL, 0, NULL, NULL,
+                                                              5)) {
+          sprop = 1;
+          cnst = 1;
         } else
           sstruct = NULL;
+
+        if ((sstruct || sprop) && !cont) {
+          /* Since the `make-struct-type` or `make-struct-tye-property` form is immediate
+             enough that the validator can see it, re-check whether we can continue
+             a group of simultaneously defined variables. */
+          cont = scheme_omittable_expr(e, n, 5, OMITTABLE_IGNORE_APPN_OMIT, limited_info, NULL);
+        }
 
 	if (cnst) {
 	  Scheme_Toplevel *tl;
@@ -8130,6 +8427,8 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
               if (sstruct) {
                 e2 = scheme_make_struct_proc_shape(scheme_get_struct_proc_shape(i, &stinfo),
                                                    sstruct);
+              } else if (sprop) {
+                e2 = scheme_make_struct_property_proc_shape(scheme_get_struct_property_proc_shape(i, has_guard));
               } else if (sproc) {
                 e2 = scheme_make_noninline_proc(e);
               } else if (SCHEME_LAMBDAP(e)) {
@@ -8159,7 +8458,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                 }
                 scheme_hash_set(consts, scheme_make_integer(pos), e2);
 
-                if (sstruct) {
+                if (sstruct || sprop) {
                   /* include in `limited_info` */
                   Scheme_Hash_Table *limited_consts = limited_info->top_level_consts;
                   if (!limited_consts) {
@@ -8179,23 +8478,15 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                 }
               } else {
                 /* At least mark it as fixed */
-                if (!fixed_table) {
-                  fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
-                  if (!info->top_level_consts) {
-                    consts = scheme_make_hash_table(SCHEME_hash_ptr);
-                    info->top_level_consts = consts;
-                    consts = NULL;
-                  }
-                  scheme_hash_set(info->top_level_consts, scheme_false, (Scheme_Object *)fixed_table);
-                }
-                scheme_hash_set(fixed_table, scheme_make_integer(tl->position), scheme_true);
+                fixed_table = set_as_fixed(fixed_table, info, tl->position);
               }
             }
           }
 	} else {
 	  /* The binding is not inlinable/propagatable, but unless it's
 	     set!ed, it is constant after evaluating the definition. We
-	     map the top-level position to indicate constantness. */
+	     map the top-level position to indicate constantness --- immediately
+             if `cont`, and later if not. */
 	  Scheme_Object *l, *a;
 	  int pos;
 
@@ -8206,7 +8497,10 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
 	    if (!(SCHEME_TOPLEVEL_FLAGS(a) & SCHEME_TOPLEVEL_MUTATED)) {
 	      pos = SCHEME_TOPLEVEL_POS(a);
 
-              next_pos_ready = pos;
+              if (cont)
+                fixed_table = set_as_fixed(fixed_table, info, pos);
+              else
+                next_pos_ready = pos;
 	    }
 	  }
 	}
@@ -8321,16 +8615,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
     }
 
     if (next_pos_ready > -1) {
-      if (!fixed_table) {
-        fixed_table = scheme_make_hash_table(SCHEME_hash_ptr);
-        if (!info->top_level_consts) {
-          consts = scheme_make_hash_table(SCHEME_hash_ptr);
-          info->top_level_consts = consts;
-          consts = NULL;
-        }
-        scheme_hash_set(info->top_level_consts, scheme_false, (Scheme_Object *)fixed_table);
-      }
-      scheme_hash_set(fixed_table, scheme_make_integer(next_pos_ready), scheme_true);
+      fixed_table = set_as_fixed(fixed_table, info, next_pos_ready);
       next_pos_ready = -1;
     }
   }

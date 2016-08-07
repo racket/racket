@@ -627,7 +627,8 @@
        [(? (lambda (s) (and (scope? s) (eq? (scope-name s) 'root))))
         (out-byte CPT_ROOT_SCOPE out)]
        [(struct module-variable (modidx sym pos phase constantness))
-        (define (to-sym n) (string->symbol (format "struct~a" n)))
+        (define (to-sym #:prefix [prefix "struct"] n)
+          (string->symbol (format "~a~a" prefix n)))
         (out-byte CPT_MODULE_VAR out)
         (out-anything modidx out)
         (out-anything sym out)
@@ -664,6 +665,15 @@
                        [(mutator-shape? constantness)
                         (to-sym (bitwise-ior 4 (arithmetic-shift (mutator-shape-field-count constantness)
                                                                  4)))]
+                       [(struct-type-property-shape? constantness)
+                        (to-sym #:prefix "prop" 
+                                (if (struct-type-property-shape-has-guard? constantness)
+                                    1
+                                    0))]
+                       [(property-predicate-shape? constantness)
+                        (to-sym #:prefix "prop" 2)]
+                       [(property-accessor-shape? constantness)
+                        (to-sym #:prefix "prop" 3)]
                        [(struct-other-shape? constantness)
                         (to-sym 5)]
                        [else #f])

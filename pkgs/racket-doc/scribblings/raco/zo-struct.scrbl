@@ -142,6 +142,9 @@ returns.}
 @defstruct+[(predicate-shape struct-shape) ()]
 @defstruct+[(accessor-shape struct-shape) ([field-count exact-nonnegative-integer?])]
 @defstruct+[(mutator-shape struct-shape) ([field-count exact-nonnegative-integer?])]
+@defstruct+[(struct-type-property-shape struct-shape) ([has-guard? boolean?])]
+@defstruct+[(property-predicate-shape struct-shape) ()]
+@defstruct+[(property-accessor-shape struct-shape) ()]
 @defstruct+[(struct-other-shape struct-shape) ()]
 )]{
 
