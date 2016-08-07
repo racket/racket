@@ -978,7 +978,7 @@ void scheme_set_compilation_variables(Scheme_Comp_Env *frame, Scheme_IR_Local **
 
   for (i = 0; i < count; i++) {
     MZ_ASSERT(!frame->vars[i+pos]);
-    frame->vars[i+pos] = vars[i];
+    frame->vars[i+pos] = vars[count - i - 1];
   }
 }
 

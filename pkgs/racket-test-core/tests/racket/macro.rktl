@@ -1642,6 +1642,29 @@
        
   (m (check) (check2)))
 
+
+;; ----------------------------------------
+;; Check that `syntax-local-lift-values-expression` works rigth when lifts
+;; are converted to `let`; in particular, make sure the order is
+;; right
+
+(module uses-local-lift-values-at-expansion-time racket/base
+  (require (for-syntax racket/base))
+  (begin-for-syntax
+    (require (for-syntax racket/base))
+    
+    (define-syntax (m stx)
+      #`(values #,@(syntax-local-lift-values-expression 3 #'(values 1 2 3)))))
+  
+  (define-syntax (n stx)
+    (define-values (a b c) (m))
+    #`(list #,a #,b #,c))
+  
+  (provide l)
+  (define l (n)))
+
+(test '(1 2 3) dynamic-require ''uses-local-lift-values-at-expansion-time 'l)
+
 ;; ----------------------------------------
 
 (report-errs)
