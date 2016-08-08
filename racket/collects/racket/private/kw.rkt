@@ -656,7 +656,8 @@
                                     [no-kws (mk-no-kws #t)]
                                     [with-kws (mk-with-kws)]
                                     [(_ mk-id . _) (with-syntax ([n (or local-name
-                                                                        (syntax-local-infer-name stx))]
+                                                                        (syntax-local-infer-name stx)
+                                                                        'unknown)]
                                                                  [call-fail (mk-kw-arity-stub)])
                                                      (syntax-local-lift-values-expression
                                                       5
