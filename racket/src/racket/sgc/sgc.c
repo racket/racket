@@ -799,7 +799,7 @@ static intptr_t mem_use, mem_limit = FIRST_GC_LIMIT;
 int GC_free_space_divisor = 4;
 #endif
 
-static intptr_t mem_real_use, mem_uncollectable_use;
+static intptr_t mem_real_use, mem_uncollectable_use, mem_cumulative_use;
 
 static intptr_t sector_mem_use, sector_admin_mem_use, sector_free_mem_use;
 static intptr_t manage_mem_use, manage_real_mem_use;
@@ -2230,11 +2230,14 @@ void GC_dump(void)
   FPRINTF(STDERR, "End Map\n");
 }
 
-long GC_get_memory_use()
+size_t GC_get_memory_use()
 {
-  /* returns a `long' instead of `intptr_t' for compatibility
-     with the Boehm GC */
-  return (long)mem_real_use;
+  return (size_t)mem_real_use;
+}
+
+size_t GC_get_total_bytes()
+{
+  return (size_t)mem_cumulative_use;
 }
 
 void GC_end_stubborn_change(void *p)
@@ -2504,6 +2507,7 @@ static void *do_malloc(SET_NO_BACKINFO
     else
       mem_use += size;
     mem_real_use += (size + sizeof(MemoryChunk));
+    mem_cumulative_use += (size + sizeof(MemoryChunk));
     num_chunks++;
 
     if (!low_plausible || (c->start < low_plausible))
@@ -2642,6 +2646,7 @@ static void *do_malloc(SET_NO_BACKINFO
     high_plausible = block->end;	
 
   mem_real_use += SECTOR_SEGMENT_SIZE;
+  mem_cumulative_use += SECTOR_SEGMENT_SIZE;
 
  block_top:
 
@@ -2950,6 +2955,7 @@ static void register_finalizer(void *p, void (*f)(void *p, void *data),
       if (!fn) {
 	fn = (Finalizer *)malloc_managed(sizeof(Finalizer));
 	mem_real_use += sizeof(Finalizer);
+	mem_cumulative_use += sizeof(Finalizer);
 	GC_fo_entries++;
       }
 

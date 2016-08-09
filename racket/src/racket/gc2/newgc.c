@@ -41,6 +41,9 @@
 /* Avoid incremental GC if the heap seems to be getting too fragmented: */
 #define HIGH_FRAGMENTATION_RATIO 2
 
+/* Initial and minimum value to treat as previous use after a full GC: */
+#define INITIAL_FULL_MEMORY_USE (20 * 1024 * 1024)
+
 /* Whether to use a little aging, moving gen-0 objects to a
    gen-1/2 space:  */
 #define AGE_GEN_0_TO_GEN_HALF(gc) ((gc)->started_incremental)
@@ -745,7 +748,7 @@ static void NewGC_initialize(NewGC *newgc, NewGC *inheritgc, NewGC *parentgc) {
   newgc->mmu = mmu_create(newgc);
   
   newgc->generations_available = 1;
-  newgc->last_full_mem_use = (20 * 1024 * 1024);
+  newgc->last_full_mem_use = INITIAL_FULL_MEMORY_USE;
   newgc->new_btc_mark = 1;
 
   newgc->place_memory_limit = (uintptr_t)(intptr_t)-1;
@@ -969,6 +972,16 @@ intptr_t GC_get_memory_use(void *o)
   amt = add_no_overflow(amt, gc->child_gc_total);
   mzrt_mutex_unlock(gc->child_total_lock);
 #endif
+  
+  return (intptr_t)amt;
+}
+
+intptr_t GC_get_memory_ever_allocated()
+{
+  NewGC *gc = GC_get_GC();
+  uintptr_t amt;
+  
+  amt = add_no_overflow(gen0_size_in_use(gc), gc->total_memory_allocated);
   
   return (intptr_t)amt;
 }
@@ -5314,6 +5327,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full,
   old_gen0    = gen0_size_in_use(gc) + gc->gen0_phantom_count;
   old_mem_allocated = mmu_memory_allocated(gc->mmu) + gc->phantom_count + gc->gen0_phantom_count;
 
+  gc->total_memory_allocated += old_gen0;
+
   TIME_DECLS();
 
   dump_page_map(gc, "pre");
@@ -5334,7 +5349,9 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full,
                     This approach makes total memory use roughly a constant
                     fraction of the actual use by live data: */
                  || (gc->memory_in_use > (FULL_COLLECTION_SIZE_RATIO
-                                          * gc->last_full_mem_use
+                                          * ((gc->last_full_mem_use < INITIAL_FULL_MEMORY_USE)
+                                             ? INITIAL_FULL_MEMORY_USE
+                                             : gc->last_full_mem_use)
                                           * (gc->incremental_requested
                                              ? INCREMENTAL_EXTRA_SIZE_RATIO
                                              : 1)))

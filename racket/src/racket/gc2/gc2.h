@@ -145,6 +145,11 @@ GC2_EXTERN intptr_t GC_get_memory_use(void *c);
    Returns the number of currently-allocated bytes (speficilly for
    custodian c, as much as the GC's accounting makes possible). */
 
+GC2_EXTERN intptr_t GC_get_memory_ever_allocated();
+/*
+   Returns the number of total number of allocated bytes, including
+   bytes that have since been reclaimed. */
+
 GC2_EXTERN int GC_accouting_enabled();
 /* 
    Reports whether memory accounting is enabled. */
