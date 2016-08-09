@@ -38,7 +38,9 @@
          (let loop ([stx (true-provide/contract #'orig-stx #f 'contract-out)])
            (syntax-case stx (begin provide)
              [(begin args ...)
-              #`(begin #,@(map loop (syntax->list #'(args ...))))]
+              (syntax-property #`(begin #,@(map loop (syntax->list #'(args ...))))
+                               'provide/contract-original-contract
+                               (syntax-property stx 'provide/contract-original-contract))]
              [(provide clause ...)
               (identifier? #'x)
               (begin (set! provide-clauses (append (syntax->list #'(clause ...))
