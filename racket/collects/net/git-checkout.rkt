@@ -203,15 +203,7 @@
 (define (initial-connect transport host verify? port repo status)
   (case transport
     [(git)
-     (define-values (i o)
-       (let ((proxy (proxy-server-for "git" host)))
-         (if proxy
-           (let ((proxy-host (cadr proxy))
-                 (proxy-port (caddr proxy)))
-             (let-values (([t:ssl-ctx t:from t:to t:abandon-p]
-                           (http-conn-CONNECT-tunnel proxy-host proxy-port host port #:ssl? #f)))
-               (values t:from t:to)))
-           (tcp-connect host port))))
+     (define-values (i o) (tcp-or-tunnel-connect "git" host port))
      (values i o #f)]
     [(http https)
      (define url-str

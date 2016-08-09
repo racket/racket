@@ -66,11 +66,11 @@
     (cond [(list? ssl?)
            ;; At this point, we have a tunneled socket to the remote host/port: we do not need to
            ;; address it; ignore host-bs, only use port for conn-port-usual?
-           (match-let (((list ssl? (? input-port? t:from) (? output-port? t:to) abandon-p) ssl?))
-             (set-http-conn-abandon-p! hc abandon-p)
-             (set-http-conn-port-usual?! hc (or (and ssl? (= 443 port))
-                                                (and (not ssl?) (= 80 port))))
-             (values t:from t:to))]
+           (match-define (list ssl-ctx? (? input-port? t:from) (? output-port? t:to) abandon-p) ssl?)
+           (set-http-conn-abandon-p! hc abandon-p)
+           (set-http-conn-port-usual?! hc (or (and ssl-ctx? (= 443 port))
+                                              (and (not ssl-ctx?) (= 80 port))))
+           (values t:from t:to)]
           [ssl?
            (set-http-conn-port-usual?! hc (= 443 port))
            (cond
@@ -129,37 +129,34 @@
                          #:headers [headers-bs empty]
                          #:content-decode [decodes '(gzip)]
                          #:data [data #f])
-  (define (print-to fmt . args)
-    ;; (eprintf "print-to: ~a~%" (apply format fmt args))
-    (apply fprintf to fmt args))
   (match-define (http-conn host port port-usual? to from _) hc)
-  (print-to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
+  (fprintf to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
   (unless (regexp-member #rx"^(?i:Host:) +.+$" headers-bs)
-    (print-to "Host: ~a\r\n" 
+    (fprintf to "Host: ~a\r\n" 
              (if port-usual?
                host
                (format "~a:~a" host port))))
   (unless (regexp-member #rx"^(?i:User-Agent:) +.+$" headers-bs)
-    (print-to "User-Agent: Racket/~a (net/http-client)\r\n" 
+    (fprintf to "User-Agent: Racket/~a (net/http-client)\r\n" 
              (version)))
   (unless (or (not (memq 'gzip decodes))
               (regexp-member #rx"^(?i:Accept-Encoding:) +.+$" headers-bs))
-    (print-to "Accept-Encoding: gzip\r\n"))
+    (fprintf to "Accept-Encoding: gzip\r\n"))
   (define body (->bytes data))
   (cond [(procedure? body)
-         (print-to "Transfer-Encoding: chunked\r\n")]
+         (fprintf to "Transfer-Encoding: chunked\r\n")]
         [(and body
               (not (regexp-member #rx"^(?i:Content-Length:) +.+$" headers-bs)))
-         (print-to "Content-Length: ~a\r\n" (bytes-length body))])
+         (fprintf to "Content-Length: ~a\r\n" (bytes-length body))])
   (when close?
     (unless (regexp-member #rx"^(?i:Connection:) +.+$" headers-bs)
-      (print-to "Connection: close\r\n")))
+      (fprintf to "Connection: close\r\n")))
   (for ([h (in-list headers-bs)])
-    (print-to "~a\r\n" h))
-  (print-to "\r\n")
+    (fprintf to "~a\r\n" h))
+  (fprintf to "\r\n")
   (cond [(procedure? body)
          (body (λ (data) (write-chunk to data)))
-         (print-to "0\r\n\r\n")]
+         (fprintf to "0\r\n\r\n")]
         [body (display body to)])
   (flush-output to))
 
@@ -267,11 +264,6 @@
   (cond [(not ssl?) ; it's just a tunnel... no ssl
          (define abandon-p (lambda (p) ((http-conn-abandon-p hc) p)))
          (values ssl? t:from t:to abandon-p)]
-
-        [(osx-old-openssl?)
-         (http-conn-close! hc)
-         ;; osx-old-openssl? doesn't support ports->...ssl-ports
-         (error 'http-conn-open! "osx-old-openssl? does not support a ports->...ssl-ports function")]
 
         [else ; ssl
           (define ssl-version (if (boolean? ssl?) 'auto ssl?))

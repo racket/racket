@@ -5,6 +5,7 @@
          racket/list
          racket/match
          racket/promise
+         racket/tcp
          (prefix-in hc: "http-client.rkt")
          (only-in "url-connect.rkt" current-https-protocol)
          "uri-codec.rkt"
@@ -547,3 +548,18 @@
                   #:data (or/c false/c bytes? string? hc:data-procedure/c)
                   #:content-decode (listof symbol?))
         (values bytes? (listof bytes?) input-port?))]))
+
+;; tcp-or-tunnel-connect : string string number -> (values input-port? output-port?)
+(define (tcp-or-tunnel-connect scheme host port)
+  (match (proxy-server-for scheme host)
+         [(list _ proxy-host proxy-port)
+          (define-values (t:ssl-ctx t:from t:to t:abandon-p)
+            (hc:http-conn-CONNECT-tunnel proxy-host proxy-port host port #:ssl? #f))
+          (values t:from t:to)]
+         [_ (tcp-connect host port)]))
+
+(provide
+ (contract-out
+  [tcp-or-tunnel-connect
+   (-> string? string? (between/c 1 65535)
+       (values input-port? output-port?))]))

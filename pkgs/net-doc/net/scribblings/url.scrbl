@@ -2,6 +2,7 @@
 @(require "common.rkt" scribble/bnf
           (for-label net/url net/url-unit net/url-sig 
                      racket/list
+                     racket/tcp
                      net/head net/uri-codec net/tcp-sig
                      net/http-client
                      (only-in net/url-connect current-https-protocol)
@@ -590,6 +591,15 @@ Calls @racket[http-sendrecv] using @racket[u] to populate the host, URI, port, a
 This function does not support proxies.
                                                       
 }
+
+@defproc[(tcp-or-tunnel-connect [scheme string?]
+                                [host string?]
+                                [port (between/c 1 65535)])
+         (values input-port? output-port?)]{
+ If @racket[(proxy-server-for scheme host)], then the proxy is used to
+ @racket[http-conn-CONNECT-tunnel] to @racket[host] (on port @racket[port]).
+ 
+ Otherwise the call is equivalent to @racket[(tcp-connect host port)].}
 
 @section{URL HTTPS mode}
 
