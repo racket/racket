@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/bnf
           (for-label net/http-client
+                     net/win32-ssl
+                     racket/tcp
                      racket/list
                      openssl))
 
@@ -172,14 +174,14 @@ Creates an HTTP connection to @racket[proxy-host] (on port @racket[proxy-port])
 
  The function returns four values:
  @itemize[
- @item{If @racket[ssl?] was not provided then @racket[#f].
-
-   If it was a protocol symbol, then a new @racket[ssl-client-context] is created, otherwise the
-   current value of @racket[ssl?] is used as the @racket[ssl-client-context] to use. This client
-   context is negotiated with the SSL server and returned as the first value}
- @item{An @racket[input-port?], which is connected to read from the tunnelled service}
- @item{An @racket[output-port?], which is connected to write to the tunnelled service}
- @item{An abandon function, which when applied either returned, port will abandon it, in a manner
+ @item{If @racket[ssl?] was @racket[#f] then @racket[#f]. Otherwise an @racket[ssl-client-context?]
+       that has been negotiated with the target.
+       
+   If @racket[ssl?] was a protocol symbol, then a new @racket[ssl-client-context?] is created,
+   otherwise the current value of @racket[ssl?] is used}
+ @item{An @racket[input-port?] from the tunnelled service}
+ @item{An @racket[output-port?] to the tunnelled service}
+ @item{An abandon function, which when applied either returned port, will abandon it, in a manner
    similar to @racket[tcp-abandon-port]}
  ]
  The SSL context or symbol, if any, provided in @racket[ssl?]
@@ -197,7 +199,8 @@ argument, which is a string or byte string:
 
 @defthing[base-ssl?/c contract?]{
  Base contract for the definition of the SSL context (passed in @racket[ssl?]) of an
- @racket[http-conn-CONNECT-tunnel]:                                                         
+ @racket[http-conn-CONNECT-tunnel]:
+ 
  @racket[(or/c boolean? ssl-client-context? symbol?)].
 
  If @racket[ssl?] is not @racket[#f] then @racket[ssl?] is used as an argument to
@@ -209,6 +212,7 @@ argument, which is a string or byte string:
  It is either a @racket[base-ssl?/c], or a @racket[base-ssl?/c] consed onto a list of an
  @racket[input-port?], @racket[output-port?], and an abandon function
  (e.g. @racket[tcp-abandon-port]):
+ 
  @racket[(or/c base-ssl?/c (list/c base-ssl?/c input-port? output-port? (-> port? void?)))]
 }
 
