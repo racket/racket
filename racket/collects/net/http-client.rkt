@@ -288,10 +288,7 @@
           ;; The user of the tunnel relies on ports->ssl-ports' #:close-original? to close/abandon the
           ;; underlying ports of the tunnel itself. Therefore the abandon-p sent back to caller is the
           ;; ssl-abandon of the wrapped ports.
-          (define abandon-p (lambda (p)
-                              ;; which should abandon the original ports, too
-                              (ssl-abndn-p p)))
-
+          (define abandon-p ssl-abndn-p)
           (values clt-ctx r:from r:to abandon-p)]))
 
 (define (http-conn-recv! hc

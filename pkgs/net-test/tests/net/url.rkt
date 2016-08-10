@@ -2,6 +2,9 @@
 (require net/url
          tests/eli-tester)
 
+(require (prefix-in ss: "http-proxy/https-non-server.rkt")
+         (prefix-in ps: "http-proxy/proxy-server.rkt"))
+
 (provide tests)
 (module+ main (test do (tests)))
 (define (tests)
@@ -14,6 +17,10 @@
                                  (host #f)
                                  #:plt-http-proxy (plt-http-proxy #f)
                                  #:http-proxy (http-proxy #f)
+                                 #:plt-https-proxy (plt-https-proxy #f)
+                                 #:https-proxy (https-proxy #f)
+                                 #:plt-git-proxy (plt-git-proxy #f)
+                                 #:git-proxy (git-proxy #f)
                                  #:plt-no-proxy (plt-no-proxy #f)
                                  #:no-proxy (no-proxy #f))
     (parameterize ([current-environment-variables envar-stash]
@@ -22,10 +29,16 @@
         (environment-variables-set! envar-stash
                                     (string->bytes/locale name)
                                     (and val (string->bytes/locale val))))
-      (put! "plt_http_proxy" plt-http-proxy)
-      (put! "http_proxy" http-proxy)
-      (put! "plt_no_proxy" plt-no-proxy)
-      (put! "no_proxy" no-proxy)
+      (for ((var.val (in-list `(("plt_http_proxy"  . ,plt-http-proxy)
+                                ("plt_https_proxy" . ,plt-https-proxy)
+                                ("plt_git_proxy"   . ,plt-git-proxy)
+                                ("http_proxy"      . ,http-proxy)
+                                ("https_proxy"     . ,https-proxy)
+                                ("git_proxy"       . ,git-proxy)
+                                ("plt_no_proxy"    . ,plt-no-proxy)
+                                ("no_proxy"        . ,no-proxy)))))
+           (put! (car var.val) (cdr var.val)))
+
       (eval '(require net/url))
       (eval `(parameterize (,@(if current-proxy-servers-val
                                   `([current-proxy-servers (quote ,current-proxy-servers-val)])
@@ -34,18 +47,22 @@
                                   `([current-no-proxy-servers (quote ,current-no-proxy-servers-val)])
                                   null))
               (proxy-server-for ,schema ,host)))))
-    
+  
   (test
    ;; Test the current-proxy-servers parameter can be set
    (parameterize ([current-proxy-servers '(("http" "proxy.com" 3128))])
      (current-proxy-servers))
    => '(("http" "proxy.com" 3128))
 
-   ;; we have at least http
+   ;; we have at least http, https, git
    (member "http" proxiable-url-schemes)
+   (member "https" proxiable-url-schemes)
+   (member "git" proxiable-url-schemes)
 
    ;; by default, there are no proxy servers
    (test-proxy-server-for "http") => #f
+   (test-proxy-server-for "https") => #f
+   (test-proxy-server-for "git") => #f
 
    ;; current-no-proxy-servers converts incoming strings to anchored regexps
    (parameterize ([current-no-proxy-servers (list "test.racket-lang.org"
@@ -55,7 +72,7 @@
         #rx".*\\.racket-lang\\.org")
 
    ;; ------------------------------------------------------------------
-   ;; Test Proxy Servers (loading from environment and proxy-server-for)
+   ;; HTTP: Test Proxy Servers (loading from environment and proxy-server-for)
    
    ;; proxy servers set in current-proxy-servers are not overridden by environment
    (test-proxy-server-for #:current-proxy-servers '(("http" "proxy.com" 3128))
@@ -74,6 +91,48 @@
    (test-proxy-server-for #:http-proxy "http://proxy.net:3228"
                           "http" "test.racket-lang.org")
    => '("http" "proxy.net" 3228)
+
+   ;; ------------------------------------------------------------------
+   ;; HTTPS: Test Proxy Servers (loading from environment and proxy-server-for)
+   
+   ;; proxy servers set in current-proxy-servers are not overridden by environment
+   (test-proxy-server-for #:current-proxy-servers '(("https" "proxy.com" 3128))
+                          #:plt-https-proxy "http://proxy.net:1234"
+                          #:https-proxy "http://proxy.net:1234"
+                          "https" "test.racket-lang.org")
+   => '("https" "proxy.com" 3128)
+
+   ;; plt_https_proxy is is prioritised over https_proxy
+   (test-proxy-server-for #:plt-https-proxy "http://proxy.net:3128"
+                          #:https-proxy "http://proxy.net:3228"
+                          "https" "test.racket-lang.org")
+   => '("https" "proxy.net" 3128)
+
+   ;; otherwise fall back to https_proxy
+   (test-proxy-server-for #:https-proxy "http://proxy.net:3228"
+                          "https" "test.racket-lang.org")
+   => '("https" "proxy.net" 3228)
+
+   ;; ------------------------------------------------------------------
+   ;; GIT: Test Proxy Servers (loading from environment and proxy-server-for)
+   
+   ;; proxy servers set in current-proxy-servers are not overridden by environment
+   (test-proxy-server-for #:current-proxy-servers '(("git" "proxy.com" 3128))
+                          #:plt-git-proxy "http://proxy.net:1234"
+                          #:git-proxy "http://proxy.net:1234"
+                          "git" "test.racket-lang.org")
+   => '("git" "proxy.com" 3128)
+
+   ;; plt_git_proxy is is prioritised over git_proxy
+   (test-proxy-server-for #:plt-git-proxy "http://proxy.net:3128"
+                          #:git-proxy "http://proxy.net:3228"
+                          "git" "test.racket-lang.org")
+   => '("git" "proxy.net" 3128)
+
+   ;; otherwise fall back to git_proxy
+   (test-proxy-server-for #:git-proxy "http://proxy.net:3228"
+                          "git" "test.racket-lang.org")
+   => '("git" "proxy.net" 3228)
 
    ;; ---------------------------------------------------------------------
    ;; Test NO Proxy Servers (loading from environment and proxy-server-for)
@@ -134,6 +193,21 @@
                              #:current-no-proxy-servers '(#rx".racket-lang.org")
                              "http" "test.bracket-lang.org")
    => #f
-  ))
+  )
+
+  (define-values (ss:server-thread ss:shutdown-server)
+    (parameterize ([ss:current-listen-port 12345]) (ss:server)))
+
+  (define-values (ps:server-thread ps:shutdown-server)
+    (parameterize ([ps:current-listen-port 12380]) (ps:server)))
+
+  (test (parameterize ([current-proxy-servers '(("https" "localhost" 12380))])
+          (port->string (get-pure-port (string->url "https://localhost:12345/woo/yay"))))
+        => "\"/woo/yay\" (but at least it's secure)")
+
+  (ps:shutdown-server)
+  (ss:shutdown-server)
+
+)
 
 (module+ test (require (submod ".." main))) ; for raco test & drdr

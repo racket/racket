@@ -295,4 +295,27 @@
     #"HEAD / HTTP/1.1\r\nHost: localhost:REDACTED\r\nUser-Agent: Racket/REDACTED (net/http-client)\r\nAccept-Encoding: gzip\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     #"HTTP/1.1 200 OK"
     '()
-    #""]))
+    #""])
+
+
+  (require (prefix-in es: "http-proxy/echo-server.rkt")
+           (prefix-in ps: "http-proxy/proxy-server.rkt"))
+
+  (define-values (es:server-thread es:shutdown-server)
+    (parameterize ([es:current-listen-port 12345]) (es:server)))
+
+  (define-values (ps:server-thread ps:shutdown-server)
+    (parameterize ([ps:current-listen-port 12380]) (ps:server)))
+
+  (check-equal?
+    (let-values (([ssl-ctx from to abandon-p]
+                  (hc:http-conn-CONNECT-tunnel "localhost" 12380 "localhost" 12345 #:ssl? #f)))
+      (fprintf to "MONKEYS\n")
+      (abandon-p to)
+      (begin0
+        (read-line from)
+        (abandon-p from)))
+    "MONKEYS")
+
+  (ps:shutdown-server)
+  (es:shutdown-server))
