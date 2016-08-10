@@ -1643,6 +1643,23 @@
          (define-syntax (m stx) id)
          (m))))
 
+(test 'prop-value 'splicing+syntax-property
+      (eval
+       '(begin
+          (define-syntax (define-syntaxes/prop stx)
+            (syntax-case stx ()
+              [(_ . body)
+               (syntax-property #'(define-syntaxes . body) 'some-prop 'prop-value)]))
+          (define-syntax (inspect-prop stx)
+            (syntax-case stx ()
+              [(_ form)
+               (syntax-case (local-expand #'form (syntax-local-context) '()) ()
+                 [(_ definition)
+                  (with-syntax ([prop-value (syntax-property #'definition 'some-prop)])
+                    #''prop-value)])]))
+          (inspect-prop (splicing-let ()
+                          (define-syntaxes/prop [] (values)))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check keyword & optionals for define-syntax 
 ;; and define-syntax-for-values:
