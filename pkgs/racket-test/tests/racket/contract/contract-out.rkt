@@ -3,7 +3,7 @@
          (for-syntax racket/base))
 
 (parameterize ([current-contract-namespace
-                (make-basic-contract-namespace 'racket/contract)])
+                (make-basic-contract-namespace 'racket/contract 'racket/list)])
   
   (define exn:fail:contract:blame-object 
     (contract-eval 'exn:fail:contract:blame-object))
@@ -1457,5 +1457,45 @@
    (λ (x)
      (and (exn:fail:contract:blame? x)
           (regexp-match? #rx"blaming: bad1-client" (exn-message x)))))
+
+  (contract-eval
+   '(define (find-p/c-prop stx)
+      (define the-props
+        (flatten
+         (let loop ([stx stx])
+           (cond
+             [(syntax? stx)
+              (cons (syntax-property stx 'provide/contract-original-contract)
+                    (loop (syntax-e stx)))]
+             [(pair? stx)
+              (cons (loop (car stx)) (loop (cdr stx)))]
+             [else '()]))))
+      (remove-duplicates
+       (for/list ([e (in-list the-props)]
+                  #:when e)
+         (syntax->datum (vector-ref e 1))))))
+  
+  (test/spec-passed/result
+   'provide/contract.prop1
+   '(let ()
+      (find-p/c-prop
+       (expand
+        '(module test racket
+            (provide/contract
+             [x (>/c 5)])
+            (define x 6)))))
+   (list '(>/c 5)))
+
+  (test/spec-passed/result
+   'provide/contract.prop2
+   '(let ()
+      (find-p/c-prop
+       (expand
+        '(module test racket
+            (provide
+             (contract-out
+              [x (>/c 5)]))
+            (define x 6)))))
+   (list '(>/c 5)))
   
   )

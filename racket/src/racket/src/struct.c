@@ -39,6 +39,7 @@ READ_ONLY Scheme_Object *scheme_impersonator_of_property;
 READ_ONLY Scheme_Object *scheme_make_struct_type_proc;
 READ_ONLY Scheme_Object *scheme_make_struct_field_accessor_proc;
 READ_ONLY Scheme_Object *scheme_make_struct_field_mutator_proc;
+READ_ONLY Scheme_Object *scheme_make_struct_type_property_proc;
 READ_ONLY Scheme_Object *scheme_struct_type_p_proc;
 READ_ONLY Scheme_Object *scheme_current_inspector_proc;
 READ_ONLY Scheme_Object *scheme_make_inspector_proc;
@@ -557,11 +558,13 @@ scheme_init_struct (Scheme_Env *env)
                              scheme_make_struct_type_proc,
                              env);
 
-  scheme_add_global_constant("make-struct-type-property", 
-                             scheme_make_prim_w_arity2(make_struct_type_property,
-                                                       "make-struct-type-property",
-                                                       1, 4,
-                                                       3, 3),
+  REGISTER_SO(scheme_make_struct_type_property_proc);
+  scheme_make_struct_type_property_proc = scheme_make_prim_w_arity2(make_struct_type_property,
+                                                                    "make-struct-type-property",
+                                                                    1, 4,
+                                                                    3, 3);
+  scheme_add_global_constant("make-struct-type-property",
+                             scheme_make_struct_type_property_proc,
                              env);
 
   REGISTER_SO(scheme_make_struct_field_accessor_proc);
@@ -3555,7 +3558,8 @@ int scheme_decode_struct_shape(Scheme_Object *expected, intptr_t *_v)
   if (!expected || !SCHEME_SYMBOLP(expected))
     return 0;
 
-  if (SCHEME_SYM_VAL(expected)[0] != 's')
+  if ((SCHEME_SYM_VAL(expected)[0] != 's')
+      || (SCHEME_SYM_LEN(expected)  < 6))
     return 0;
   
   for (i = 6, v = 0; SCHEME_SYM_VAL(expected)[i]; i++) {
@@ -3607,6 +3611,53 @@ int scheme_check_structure_shape(Scheme_Object *e, Scheme_Object *expected)
              || (i == SCHEME_PRIM_STRUCT_TYPE_BROKEN_INDEXED_SETTER)
              || (i == SCHEME_PRIM_STRUCT_TYPE_INDEXLESS_GETTER))
     return (v == STRUCT_PROC_SHAPE_OTHER);
+
+  return 0;
+}
+
+int scheme_decode_struct_prop_shape(Scheme_Object *expected, intptr_t *_v)
+{
+  intptr_t v;
+  int i;
+
+  if (!expected || !SCHEME_SYMBOLP(expected))
+    return 0;
+
+  if ((SCHEME_SYM_VAL(expected)[0] != 'p')
+      || (SCHEME_SYM_LEN(expected)  < 4))
+    return 0;
+  
+  for (i = 4, v = 0; SCHEME_SYM_VAL(expected)[i]; i++) {
+    v = (v * 10) + (SCHEME_SYM_VAL(expected)[i] - '0');
+  }
+
+  *_v = v;
+  
+  return 1;
+}
+
+int scheme_check_structure_property_shape(Scheme_Object *e, Scheme_Object *expected)
+{
+  intptr_t _v, v;
+  int i;
+
+  if (!scheme_decode_struct_prop_shape(expected, &_v))
+    return 0;
+  v = _v;
+
+  if (SAME_TYPE(SCHEME_TYPE(e), scheme_struct_property_type)) {
+    if (((Scheme_Struct_Property *)e)->guard)
+      return (v == STRUCT_PROP_PROC_SHAPE_GUARDED_PROP);
+    return ((v == STRUCT_PROP_PROC_SHAPE_PROP)
+            || (v == STRUCT_PROP_PROC_SHAPE_GUARDED_PROP));
+  } else if (!SCHEME_PRIMP(e))
+    return 0;
+
+  i = (((Scheme_Primitive_Proc *)e)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
+  if (i == SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED)
+    return (v == STRUCT_PROP_PROC_SHAPE_PRED);
+  else if (i == SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER)
+    return (v == STRUCT_PROP_PROC_SHAPE_GETTER);
 
   return 0;
 }

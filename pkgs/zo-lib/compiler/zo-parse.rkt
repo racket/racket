@@ -780,7 +780,7 @@
                                    (cond
                                     [shape
                                      (cond
-                                      [(number? shape) 
+                                      [(number? shape)
                                        (define n (arithmetic-shift shape -1))
                                        (make-function-shape (if (negative? n)
                                                                 (make-arity-at-least (sub1 (- n)))
@@ -796,6 +796,13 @@
                                          [(3) (make-accessor-shape (arithmetic-shift n -3))]
                                          [(4) (make-mutator-shape (arithmetic-shift n -3))]
                                          [else (make-struct-other-shape)])]
+                                      [(and (symbol? shape)
+                                            (regexp-match? #rx"^prop" (symbol->string shape)))
+                                       (define n (string->number (substring (symbol->string shape) 4)))
+                                       (case n
+                                         [(0 1) (make-struct-type-property-shape (= n 1))]
+                                         [(3) (make-property-predicate-shape)]
+                                         [else (make-property-accessor-shape)])]
                                       [else
                                        ;; parse symbol as ":"-separated sequence of arities
                                        (make-function-shape

@@ -4558,7 +4558,7 @@ static void setup_accessible_table(Scheme_Module *m)
           for (i = 0; i < cnt; i++) {
             form = SCHEME_VEC_ELS(m->bodies[0])[i];
             if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
-              int checked_st = 0;
+              int checked_st = 0, is_st_prop = 0, has_guard = 0;
               Scheme_Object *is_st = NULL;
               Simple_Stuct_Type_Info stinfo;
               Scheme_Object *parent_identity;
@@ -4597,14 +4597,24 @@ static void setup_accessible_table(Scheme_Module *m)
                           if (!checked_st) {
                             if (scheme_is_simple_make_struct_type(SCHEME_VEC_ELS(form)[0],
                                                                   SCHEME_VEC_SIZE(form)-1,
-                                                                  1, 0, 1, NULL, &stinfo, &parent_identity,
+                                                                  CHECK_STRUCT_TYPE_RESOLVED,
+                                                                  NULL, &stinfo, &parent_identity,
                                                                   NULL, NULL, NULL, NULL, 0,
                                                                   m->prefix->toplevels, ht,
                                                                   &is_st,
                                                                   5)) {
                               is_st = scheme_make_pair(is_st, parent_identity);
-                            } else
+                            } else {
                               is_st = NULL;
+                              if (scheme_is_simple_make_struct_type_property(SCHEME_VEC_ELS(form)[0],
+                                                                             SCHEME_VEC_SIZE(form)-1,
+                                                                             CHECK_STRUCT_TYPE_RESOLVED,
+                                                                             &has_guard,
+                                                                             NULL, NULL, NULL, NULL, 0,
+                                                                             m->prefix->toplevels, ht,
+                                                                             5))
+                                is_st_prop = 1;
+                            }
                             checked_st = 1;
                           }
                           if (is_st) {
@@ -4614,6 +4624,14 @@ static void setup_accessible_table(Scheme_Module *m)
                             v = scheme_make_vector(3, v);
                             SCHEME_VEC_ELS(v)[1] = scheme_make_integer(shape);
                             SCHEME_VEC_ELS(v)[2] = is_st;
+                          } else if (is_st_prop) {
+                            intptr_t shape;
+                            shape = scheme_get_struct_property_proc_shape(k-1, has_guard);
+                            /* Vector of size 4 => struct property shape */
+                            v = scheme_make_vector(4, v);
+                            SCHEME_VEC_ELS(v)[1] = scheme_make_integer(shape);
+                            SCHEME_VEC_ELS(v)[2] = scheme_false;
+                            SCHEME_VEC_ELS(v)[3] = scheme_false;
                           }
                         }
                         scheme_hash_set(ht, tl, v);
@@ -4843,13 +4861,23 @@ static Scheme_Object *check_accessible_in_module(Scheme_Module *module, intptr_t
           if (SCHEME_VEC_SIZE(pos) == 2) {
             if (_is_constant)
               get_procedure_shape(SCHEME_VEC_ELS(pos)[1], _is_constant);
-          } else {
+          } else if (SCHEME_VEC_SIZE(pos) == 3) {
             /* vector of size 3 => struct proc */
             if (_is_constant) {
               Scheme_Object *ps;
 
               ps = scheme_make_struct_proc_shape(SCHEME_INT_VAL(SCHEME_VEC_ELS(pos)[1]),
                                                  SCHEME_VEC_ELS(pos)[2]);
+
+              *_is_constant = ps;
+            }
+          } else {
+            MZ_ASSERT(SCHEME_VEC_SIZE(pos) == 4);
+            /* vector of size 4 => struct property proc */
+            if (_is_constant) {
+              Scheme_Object *ps;
+
+              ps = scheme_make_struct_property_proc_shape(SCHEME_INT_VAL(SCHEME_VEC_ELS(pos)[1]));
 
               *_is_constant = ps;
             }

@@ -978,7 +978,7 @@ void scheme_set_compilation_variables(Scheme_Comp_Env *frame, Scheme_IR_Local **
 
   for (i = 0; i < count; i++) {
     MZ_ASSERT(!frame->vars[i+pos]);
-    frame->vars[i+pos] = vars[i];
+    frame->vars[i+pos] = vars[count - i - 1];
   }
 }
 
@@ -1141,6 +1141,13 @@ Scheme_Object *scheme_intern_struct_proc_shape(int shape)
 {
   char buf[20];
   sprintf(buf, "struct%d", shape);
+  return scheme_intern_symbol(buf);
+}
+
+Scheme_Object *scheme_intern_struct_prop_proc_shape(int shape)
+{
+  char buf[20];
+  sprintf(buf, "prop%d", shape);
   return scheme_intern_symbol(buf);
 }
 
@@ -1588,6 +1595,11 @@ scheme_compile_lookup(Scheme_Object *find_id, Scheme_Comp_Env *env, int flags,
         *_inline_variant = mod_constant;
       is_constant = 2;
       shape = scheme_intern_struct_proc_shape(SCHEME_PROC_SHAPE_MODE(mod_constant));
+    } else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_struct_prop_proc_shape_type)) {
+      if (_inline_variant)
+        *_inline_variant = mod_constant;
+      is_constant = 2;
+      shape = scheme_intern_struct_prop_proc_shape(SCHEME_PROC_SHAPE_MODE(mod_constant));
     } else if (SAME_TYPE(SCHEME_TYPE(mod_constant), scheme_inline_variant_type)) {
       if (_inline_variant) {
         /* In case the inline variant includes references to module

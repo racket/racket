@@ -4128,6 +4128,97 @@
                (a? (a-x (a 1 2)))
                5)))
 
+(test-comp '(lambda ()
+             (make-struct-type 'a #f 0 0 #f)
+             10)
+           '(lambda ()
+             10))
+
+(test-comp '(lambda ()
+             (make-struct-type-property 'a)
+             10)
+           '(lambda ()
+             10))
+
+(test-comp '(module m racket/base
+             (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+             (lambda (x)
+               (a? x)
+               (if a? (if a-ref x 11) 10)))
+           '(module m racket/base
+             (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+             (lambda (x)
+               x)))
+
+(test-comp '(module m racket/base
+             (define (f x) (list (g x) g))
+             ;; Defining and using a property doesn't interrupt a sequence
+             ;; of simultaneous definitions, so `g` above can be inlined
+             (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+             (struct b () #:property prop:a 'a)
+             (define (g y) (list y)))
+           '(module m racket/base
+             (define (f x) (list (list x) g))
+             (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+             (struct b () #:property prop:a 'a)
+             (define (g y) (list y))))
+
+(test-comp '(module m racket/base
+             (define (f x) (list (g x) g))
+             ;; A property type with a guard inhibits inlining, because the
+             ;; guard might raise an error
+             (define-values (prop:a a? a-ref) (make-struct-type-property 'a error))
+             (struct b () #:property prop:a 'a)
+             (define (g y) (list y)))
+           '(module m racket/base
+             (define (f x) (list (list x) g))
+             (define-values (prop:a a? a-ref) (make-struct-type-property 'a error))
+             (struct b () #:property prop:a 'a)
+             (define (g y) (list y)))
+           #f)
+
+(module struct-type-property-a racket/base
+  (provide prop:a)
+  (define-values (prop:a a? a-ref) (make-struct-type-property 'a)))
+
+(test-comp '(module m racket/base
+             (require 'struct-type-property-a)
+             (define (f x) (list (g x) g))
+             (struct b () #:property prop:a 'a)
+             (define (g y) (list y)))
+           '(module m racket/base
+             (require 'struct-type-property-a)
+             (define (f x) (list (list x) g))
+             (struct b () #:property prop:a 'a)
+             (define (g y) (list y))))
+
+(module struct-type-property-a-with-guard racket/base
+  (provide prop:a)
+  (define-values (prop:a a? a-ref) (make-struct-type-property 'a error)))
+
+(test-comp '(module m racket/base
+             (require 'struct-type-property-a-with-guard)
+             (define (f x) (list (g x) g))
+             (struct b () #:property prop:a 'a)
+             (define (g y) (list y)))
+           '(module m racket/base
+             (require 'struct-type-property-a-with-guard)
+             (define (f x) (list (list x) g))
+             (struct b () #:property prop:a 'a)
+             (define (g y) (list y)))
+           #f)
+
+;; A function with a required optional argument creates a pattern like
+;; the ones above, but intermediate points include extra references
+;; that make it difficult to check with `test-comp`
+#;
+(test-comp '(module m racket/base
+             (define (f x) (list (g #:x x)))
+             (define (g #:x y) (list y)))
+           '(module m racket/base
+             (define (f x) (list (list x)))
+             (define (g #:x y) (list y))))
+
 (test-comp `(lambda (b)
               (let ([v (unbox b)])
                 (with-continuation-mark 'x 'y (unbox v))))

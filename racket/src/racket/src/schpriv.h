@@ -538,6 +538,7 @@ extern Scheme_Object *scheme_call_with_immed_mark_proc;
 extern Scheme_Object *scheme_make_struct_type_proc;
 extern Scheme_Object *scheme_make_struct_field_accessor_proc;
 extern Scheme_Object *scheme_make_struct_field_mutator_proc;
+extern Scheme_Object *scheme_make_struct_type_property_proc;
 extern Scheme_Object *scheme_struct_to_vector_proc;
 extern Scheme_Object *scheme_struct_type_p_proc;
 extern Scheme_Object *scheme_current_inspector_proc;
@@ -3480,6 +3481,7 @@ int scheme_omittable_expr(Scheme_Object *o, int vals, int fuel, int flags,
 #define OMITTABLE_KEEP_VARS         0x2
 #define OMITTABLE_KEEP_MUTABLE_VARS 0x4
 #define OMITTABLE_IGNORE_APPN_OMIT  0x8
+#define OMITTABLE_IGNORE_MAKE_STRUCT_TYPE 0x10
 
 int scheme_might_invoke_call_cc(Scheme_Object *value);
 int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fuel, int as_rator, int or_escape);
@@ -3495,9 +3497,8 @@ typedef struct {
   int num_gets, num_sets;
 } Simple_Stuct_Type_Info;
 
-Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int resolved,
-                                                 int must_always_succeed,
-                                                 int check_auto, int *_auto_e_depth, 
+Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int flags,
+                                                 int *_auto_e_depth, 
                                                  Simple_Stuct_Type_Info *_stinfo,
                                                  Scheme_Object **_parent_identity,
                                                  Scheme_Hash_Table *top_level_consts, 
@@ -3507,6 +3508,17 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, i
                                                  Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
                                                  Scheme_Object **_name,
                                                  int fuel);
+int scheme_is_simple_make_struct_type_property(Scheme_Object *app, int vals, int flags,
+                                               int *_has_guard,
+                                               Scheme_Hash_Table *top_level_consts, 
+                                               Scheme_Hash_Table *inline_variants,
+                                               Scheme_Hash_Table *top_level_table,
+                                               Scheme_Object **runstack, int rs_delta,
+                                               Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
+                                               int fuel);
+#define CHECK_STRUCT_TYPE_RESOLVED         0x1
+#define CHECK_STRUCT_TYPE_ALWAYS_SUCCEED   0x2
+#define CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK 0x4
 
 Scheme_Object *scheme_intern_struct_proc_shape(int shape);
 intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *sinfo);
@@ -3528,9 +3540,20 @@ typedef struct Scheme_Struct_Proc_Shape {
 #define SCHEME_PROC_SHAPE_MODE(obj)     ((Scheme_Struct_Proc_Shape *)obj)->mode
 #define SCHEME_PROC_SHAPE_IDENTITY(obj) ((Scheme_Struct_Proc_Shape *)obj)->identity
 
+Scheme_Object *scheme_intern_struct_prop_proc_shape(int shape);
+intptr_t scheme_get_struct_property_proc_shape(int k, int has_guard);
+Scheme_Object *scheme_make_struct_property_proc_shape(intptr_t k);
+#define STRUCT_PROP_PROC_SHAPE_PROP          0
+#define STRUCT_PROP_PROC_SHAPE_GUARDED_PROP  1
+#define STRUCT_PROP_PROC_SHAPE_PRED          2
+#define STRUCT_PROP_PROC_SHAPE_GETTER        3
+#define SCHEME_PROP_PROC_SHAPE_MODE(obj) ((Scheme_Small_Object *)obj)->u.int_val
+
 Scheme_Object *scheme_get_or_check_procedure_shape(Scheme_Object *e, Scheme_Object *expected);
 int scheme_check_structure_shape(Scheme_Object *e, Scheme_Object *expected);
 int scheme_decode_struct_shape(Scheme_Object *shape, intptr_t *_v);
+int scheme_check_structure_property_shape(Scheme_Object *e, Scheme_Object *expected);
+int scheme_decode_struct_prop_shape(Scheme_Object *shape, intptr_t *_v);
 int scheme_closure_preserves_marks(Scheme_Object *p);
 int scheme_native_closure_preserves_marks(Scheme_Object *p);
 int scheme_native_closure_is_single_result(Scheme_Object *rator);
