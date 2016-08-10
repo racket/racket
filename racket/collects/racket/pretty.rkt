@@ -209,19 +209,20 @@
 (define make-pretty-print
   (lambda (name display? as-qq?)
     (letrec ([pretty-print
-              (case-lambda 
-               [(obj port qq-depth)
+              (lambda (obj [port (current-output-port)] [qq-depth 0] #:newline? [newline? #t])
                 (unless (output-port? port)
                   (raise-argument-error name "output-port?" port))
                 (unless (or (equal? qq-depth 0)
                             (equal? qq-depth 1))
                   (raise-argument-error name "(or/c 0 1)" qq-depth))
+                (unless (boolean? newline?)
+                  (raise-argument-error name "boolean?" newline?))
                 (let ([width (pretty-print-columns)]
                       [size-hook (pretty-print-size-hook)]
                       [print-hook (pretty-print-print-hook)]
                       [pre-hook (pretty-print-pre-print-hook)]
                       [post-hook (pretty-print-post-print-hook)])
-                  (generic-write obj display?
+                  (generic-write obj display? #:newline? newline?
                                  width
                                  (make-printing-port port 
                                                      pre-hook
@@ -229,25 +230,21 @@
                                                      print-hook
                                                      (pretty-print-print-line))
                                  (print-graph) (print-struct) (print-hash-table)
-                                 (and (not display?) (print-vector-length)) (print-box) 
+                                 (and (not display?) (print-vector-length)) (print-box)
                                  (and (not display?) as-qq? (print-as-expression)) qq-depth
                                  (pretty-print-depth)
                                  (lambda (o display?)
                                    (size-hook o display? port)))
-                  (void))]
-               [(obj port) (pretty-print obj port 0)]
-               [(obj) (pretty-print obj (current-output-port))])])
+                  (void)))])
       pretty-print)))
 
 (define pretty-print (make-pretty-print 'pretty-print #f #t))
 (define pretty-display (let ([pp (make-pretty-print 'pretty-display #t #f)])
-                         (case-lambda
-                          [(v) (pp v)]
-                          [(v o) (pp v o)])))
-(define pretty-write (let ([pp (make-pretty-print 'pretty-write #f #f)])
-                       (case-lambda
-                        [(v) (pp v)]
-                        [(v o) (pp v o)])))
+                         (lambda (v [o (current-output-port)] #:newline? [n? #t])
+                           (pp v o #:newline? n?))))
+(define pretty-write   (let ([pp (make-pretty-print 'pretty-write #f #f)])
+                         (lambda (v [o (current-output-port)] #:newline? [n? #t])
+                           (pp v o #:newline? n?))))
 
 (define-struct mark (str def) #:mutable)
 (define-struct hide (val))
@@ -417,7 +414,7 @@
 (define (generic-write obj display? width pport
                        print-graph? print-struct? print-hash-table? print-vec-length? 
                        print-box? print-as-qq? qq-depth
-                       depth size-hook)
+                       depth size-hook #:newline? newline?)
 
   (define pair-open (if (print-pair-curly-braces) "{" "("))
   (define pair-close (if (print-pair-curly-braces) "}" ")"))
@@ -1524,8 +1521,9 @@
       (if (and width (not (eq? width 'infinity)))
           (pp* pport obj depth display? qd)
           (wr* pport obj depth display? qd))))
-  (let-values ([(l col p) (port-next-location pport)])
-    ((printing-port-print-line pport) #f col width)))
+  (when newline?
+    (let-values ([(l col p) (port-next-location pport)])
+      ((printing-port-print-line pport) #f col width))))
 
 (define (look-in-style-table raw-head)
   (let ([head (do-remap raw-head)])
@@ -1629,12 +1627,9 @@
          [(print)   pretty-print]
          [(write)   pretty-write]
          [(display) pretty-display]
-         [else (raise-argument-error 'pretty-format "(or/c 'print 'write display)" mode)])
-       t op)
-      (let ([s (get-output-string op)])
-        (if (eq? w 'infinity)
-            s
-            (substring s 0 (- (string-length s) 1)))))))
+         [else (raise-argument-error 'pretty-format "(or/c 'print 'write 'display)" mode)])
+       t op #:newline? #f)
+      (get-output-string op))))
 
 
 

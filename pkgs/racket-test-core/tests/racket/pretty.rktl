@@ -476,6 +476,42 @@
   (test "#false" pretty-format #f))
 
 ;; ----------------------------------------
+;; check that pretty-print follows the
+;; #:newline? argument
+
+;; no #:newline? argument, tests the default
+(let ([p (open-output-string)])
+  (parameterize ([current-output-port p]
+                 [pretty-print-columns 40])
+    (pretty-print '(define (f xs)
+                     (for/list ([x (in-list xs)])
+                       (+ x 1)))))
+  (test "'(define (f xs)\n   (for/list\n    ((x (in-list xs)))\n    (+ x 1)))\n"
+        get-output-string p))
+
+;; #:newline? #t, same as the default
+(let ([p (open-output-string)])
+  (parameterize ([current-output-port p]
+                 [pretty-print-columns 40])
+    (pretty-print '(define (f xs)
+                     (for/list ([x (in-list xs)])
+                       (+ x 1)))
+                  #:newline? #t))
+  (test "'(define (f xs)\n   (for/list\n    ((x (in-list xs)))\n    (+ x 1)))\n"
+        get-output-string p))
+
+;; #:newline? #f
+(let ([p (open-output-string)])
+  (parameterize ([current-output-port p]
+                 [pretty-print-columns 40])
+    (pretty-print '(define (f xs)
+                     (for/list ([x (in-list xs)])
+                       (+ x 1)))
+                  #:newline? #f))
+  (test "'(define (f xs)\n   (for/list\n    ((x (in-list xs)))\n    (+ x 1)))"
+        get-output-string p))
+
+;; ----------------------------------------
 ;; check that an all-powerful inspector doesn't break the pretty printer internally
 
 (let-values ([(pp v)
