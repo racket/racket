@@ -266,7 +266,7 @@ TO DO:
 
 (define-ssl SSL_CTX_free (_fun _SSL_CTX* -> _void)
   #:wrap (deallocator))
-(define-ssl SSL_CTX_new (_fun _SSL_METHOD* -> _SSL_CTX*)
+(define-ssl SSL_CTX_new (_fun _SSL_METHOD* -> _SSL_CTX*/null)
   #:wrap (allocator SSL_CTX_free))
 (define-ssl SSL_CTX_callback_ctrl
   (_fun _SSL_CTX* _int
