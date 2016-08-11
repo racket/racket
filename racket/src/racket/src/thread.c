@@ -178,6 +178,8 @@ THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
+THREAD_LOCAL_DECL(static intptr_t num_major_garbage_collections);
+THREAD_LOCAL_DECL(static intptr_t num_minor_garbage_collections);
 
 SHARED_OK static int init_load_on_demand = 1;
 SHARED_OK static int compiled_file_check = SCHEME_COMPILED_FILE_CHECK_MODIFY_SECONDS;
@@ -9271,6 +9273,11 @@ static void inform_GC(int master_gc, int major_gc, int inc_gc,
       && (max_gc_pre_used_bytes >= 0))
     max_gc_pre_used_bytes = pre_used;
 
+  if (major_gc)
+    num_major_garbage_collections++;
+  else
+    num_minor_garbage_collections++;
+
   logger = scheme_get_gc_logger();
   if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
     /* Don't use scheme_log(), because it wants to allocate a buffer
@@ -9346,17 +9353,26 @@ static void log_peak_memory_use()
   if (max_gc_pre_used_bytes > 0) {
     logger = scheme_get_gc_logger();
     if (logger && scheme_log_level_p(logger, SCHEME_LOG_DEBUG)) {
-      char buf[256], nums[128], *num, *num2;
-      intptr_t buflen;
+      char buf[256], nums[128], *num, *numt, *num2;
+      intptr_t buflen, allocated_bytes;
+#ifdef MZ_PRECISE_GC
+      allocated_bytes = GC_get_memory_ever_allocated();
+#else
+      allocated_bytes = GC_get_total_bytes();
+#endif
       memset(nums, 0, sizeof(nums));
-      num = gc_num(nums, max_gc_pre_used_bytes);
+      num = gc_num(nums, max_gc_pre_used_bytes);     
+      numt = gc_num(nums, allocated_bytes);
       num2 = gc_unscaled_num(nums, scheme_total_gc_time);
       sprintf(buf,
-              "" PLACE_ID_FORMAT "atexit peak was %sK; total %sms",
+              "" PLACE_ID_FORMAT "atexit peak %sK; alloc %sK; major %d; minor %d; %sms",
 #ifdef MZ_USE_PLACES
               scheme_current_place_id,
 #endif
               num,
+              numt,
+              num_major_garbage_collections,
+              num_minor_garbage_collections,
               num2);
       buflen = strlen(buf);
       scheme_log_message(logger, SCHEME_LOG_DEBUG, buf, buflen, scheme_false);
