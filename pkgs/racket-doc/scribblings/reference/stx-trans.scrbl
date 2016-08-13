@@ -968,9 +968,26 @@ and different result procedures use distinct scopes.
          ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
 
 Produces a procedure that behaves like the result of
-@racket[make-syntax-introducer], but using the @tech{scopes} of
-@racket[ext-stx] that are not shared with @racket[base-stx], and with
-a default action of @racket['remove].
+@racket[make-syntax-introducer], but using a set of @tech{scopes} from
+@racket[ext-stx] and with a default action of @racket['remove].
+
+@itemlist[
+
+ @item{If the scopes of @racket[base-stx] are a subset of the scopes
+       of @racket[ext-stx], then the result of
+       @racket[make-syntax-delta-introducer] adds, removes, or flips
+       scopes that are in the set for @racket[ext-stx] and not in the
+       set for @racket[base-stx].}
+
+ @item{If the scopes of @racket[base-stx] are not a subset of the
+       scopes of @racket[ext-stx], but if it has a binding, then the
+       set of scopes associated with the binding id subtracted from
+       the set of scopes for @racket[ext-stx], and the result of
+       @racket[make-syntax-delta-introducer] adds, removes, or flips
+       that difference.}
+
+]
+
 A @racket[#f] value for @racket[base-stx] is equivalent to a syntax
 object with no @tech{scopes}.
 
