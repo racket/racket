@@ -969,7 +969,7 @@ and different result procedures use distinct scopes.
 
 Produces a procedure that behaves like the result of
 @racket[make-syntax-introducer], but using a set of @tech{scopes} from
-@racket[ext-stx] and with a default action of @racket['remove].
+@racket[ext-stx] and with a default action of @racket['add].
 
 @itemlist[
 
@@ -1029,8 +1029,9 @@ level as reported by @racket[syntax-local-phase-level].}
 @defproc[(syntax-local-module-required-identifiers
           [mod-path (or/c module-path? #f)]
           [phase-level (or/c exact-integer? #f #t)])
-         (listof (cons/c (or/c exact-integer? #f)
-                         (listof identifier?)))]{
+         (or/c (listof (cons/c (or/c exact-integer? #f)
+                               (listof identifier?)))
+               #f)]{
 
 Can be called only while
 @racket[syntax-local-transforming-module-provides?] returns
@@ -1042,7 +1043,9 @@ identifiers.  Each list of identifiers includes all bindings imported
 @racket[mod-path], or all modules if @racket[mod-path] is
 @racket[#f]. The association list includes all identifiers imported
 with a @racket[phase-level] shift, or all shifts if
-@racket[phase-level] is @racket[#t].
+@racket[phase-level] is @racket[#t]. If @racket[phase-level] is
+not @racket[#t], the result can be @racket[#f] if no identifiers
+are exported at that phase.
 
 When an identifier is renamed on import, the result association list
 includes the identifier by its internal name. Use

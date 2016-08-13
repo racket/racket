@@ -22,7 +22,8 @@ otherwise.}
 @defproc[(make-empty-namespace) namespace?]{
 
 Creates a new @tech{namespace} that is empty, and whose @tech{module
-registry} contains no mappings. The namespace's @tech{base phase} is
+registry} contains only mappings for some internal, predefined modules,
+such as @racket['#%kernel]. The namespace's @tech{base phase} is
 the same as the @tech{base phase} of the @tech{current
 namespace}. Attach modules from an existing namespace to the new one
 with @racket[namespace-attach-module].
@@ -207,9 +208,9 @@ corresponding to the @tech{namespace}'s @tech{base phase}.}
 Performs the import corresponding to @racket[quoted-raw-require-spec]
 in the top-level environment of the current namespace, like a
 top-level @racket[#%require]. The @racket[quoted-raw-require-spec]
-argument must be a datum that corresponds to a quoted
+argument must be either a datum that corresponds to a quoted
 @racket[_raw-require-spec] for @racket[#%require], which includes
-module paths.
+module paths, or it can be a @tech{resolved module path}.
 
 Module paths in @racket[quoted-raw-require-spec] are resolved with respect
 to @racket[current-load-relative-directory] or
@@ -249,7 +250,7 @@ undefined.}
 
 
 @defproc[(namespace-attach-module [src-namespace namespace?]
-                                  [modname module-path?]
+                                  [modname (or module-path? resolved-module-path?)]
                                   [dest-namespace namespace? (current-namespace)])
          void?]{
 
@@ -330,7 +331,7 @@ Changes the inspector for the instance of the module referenced by
 that it is controlled by the current code inspector. The given
 @racket[inspector] must currently control the invocation of the module
 in @racket[namespace]'s @tech{module registry}, otherwise the
-@exnraise[exn:fail:contract]. See also @secref["modprotect"].}
+inspector is not changed. See also @secref["modprotect"].}
 
 
 @defproc[(namespace-module-registry [namespace namespace?])
