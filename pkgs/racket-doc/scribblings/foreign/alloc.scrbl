@@ -13,7 +13,7 @@ deallocated.}
 
 Produces a procedure that behaves like @racket[alloc], but the result
 of @racket[alloc] is given a finalizer that calls @racket[dealloc] on
-the result if it is not otherwise freed through a deallocator (as
+a non-@racket[#f] result if it is not otherwise freed through a deallocator (as
 designated with @racket[deallocator]). In addition, @racket[alloc] is
 called in @tech{atomic mode} (see @racket[call-as-atomic]); its result is
 received and registered in atomic mode, so that the result is reliably
