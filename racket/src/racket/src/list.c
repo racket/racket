@@ -1049,11 +1049,12 @@ scheme_init_unsafe_hash (Scheme_Env *env)
 
 Scheme_Object *scheme_make_pair(Scheme_Object *car, Scheme_Object *cdr)
 {
-  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_pair_type));
 #ifdef MZ_PRECISE_GC
+  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_pair_type));
   return GC_malloc_pair(car, cdr);
 #else
   Scheme_Object *cons;
+  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_pair_type));
   cons = scheme_alloc_object();
   cons->type = scheme_pair_type;
   SCHEME_CAR(cons) = car;
