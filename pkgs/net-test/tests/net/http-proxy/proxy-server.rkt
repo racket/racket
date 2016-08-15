@@ -3,9 +3,9 @@
 ;; oozes security leaks and I wouldn’t be surprised if it leaked fids too.
 (require racket/port racket/match racket/tcp "generic-server.rkt")
 
-(provide server current-listen-port)
-
-(define serving-sem (make-semaphore))
+(provide server
+         current-listen-port
+         current-conn-timeout)
 
 (define (http-tunnel-serve in out)
   (let/ec
