@@ -3649,15 +3649,15 @@ static Scheme_Object *eqv_hash_code(int argc, Scheme_Object *argv[])
 
 Scheme_Object *scheme_make_weak_box(Scheme_Object *v)
 {
-  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_weak_box_type));
-
 #ifdef MZ_PRECISE_GC
+  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_weak_box_type));
   return (Scheme_Object *)GC_malloc_weak_box(v, NULL, 0, 0);
 #else
   Scheme_Small_Object *obj;
 
+  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_weak_box_type));
+  
   obj = MALLOC_ONE_TAGGED_WEAK(Scheme_Small_Object);
-
   obj->iso.so.type = scheme_weak_box_type;
 
   obj->u.ptr_val = v;
