@@ -56,12 +56,13 @@
                           #:source [source #f])
   (let ([expr-name (or expr-name #'#f)]
         [source (or source #'#f)])
-    #`(contract #,ctc-expr
+    (quasisyntax/loc expr
+      (contract #,ctc-expr
                 #,expr
                 #,positive
                 #,negative
                 #,expr-name
-                #,source)))
+                #,source))))
 
 (define (get-source-expr source ctx)
   (cond [(eq? source 'use-site)
