@@ -164,7 +164,7 @@ For example,
                2)]
 
 The generator argument adds a generator for the flat-named-contract. See
-@racket[contract-generate] for more information.
+@racket[contract-random-generate] for more information.
 }
 
 @defthing[any/c flat-contract?]{
