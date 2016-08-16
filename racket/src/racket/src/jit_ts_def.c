@@ -187,59 +187,68 @@ static void ts_ ## id(Scheme_Object* g216, int g217, Scheme_Object** g218) \
   else \
      id(g216, g217, g218); \
 }
-#define define_ts_z_p(id, src_type) \
-static void* ts_ ## id(size_t g219) \
+#define define_ts_Sii_s(id, src_type) \
+static Scheme_Object* ts_ ## id(Scheme_Object** g219, int g220, int g221) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
-    return scheme_rtcall_z_p("[" #id "]", src_type, id, g219); \
+    return scheme_rtcall_Sii_s("[" #id "]", src_type, id, g219, g220, g221); \
   else \
-    return id(g219); \
+    return id(g219, g220, g221); \
+}
+#define define_ts_z_p(id, src_type) \
+static void* ts_ ## id(size_t g222) \
+   XFORM_SKIP_PROC \
+{ \
+  if (scheme_use_rtcall) \
+    return scheme_rtcall_z_p("[" #id "]", src_type, id, g222); \
+  else \
+    return id(g222); \
 }
 #define define_ts_si_s(id, src_type) \
-static Scheme_Object* ts_ ## id(Scheme_Object* g220, int g221) \
+static Scheme_Object* ts_ ## id(Scheme_Object* g223, int g224) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
-    return scheme_rtcall_si_s("[" #id "]", src_type, id, g220, g221); \
+    return scheme_rtcall_si_s("[" #id "]", src_type, id, g223, g224); \
   else \
-    return id(g220, g221); \
+    return id(g223, g224); \
 }
 #define define_ts_sis_v(id, src_type) \
-static void ts_ ## id(Scheme_Object* g222, int g223, Scheme_Object* g224) \
+static void ts_ ## id(Scheme_Object* g225, int g226, Scheme_Object* g227) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
-     scheme_rtcall_sis_v("[" #id "]", src_type, id, g222, g223, g224); \
+     scheme_rtcall_sis_v("[" #id "]", src_type, id, g225, g226, g227); \
   else \
-     id(g222, g223, g224); \
+     id(g225, g226, g227); \
 }
 #define define_ts_ss_i(id, src_type) \
-static int ts_ ## id(Scheme_Object* g225, Scheme_Object* g226) \
+static int ts_ ## id(Scheme_Object* g228, Scheme_Object* g229) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
-    return scheme_rtcall_ss_i("[" #id "]", src_type, id, g225, g226); \
+    return scheme_rtcall_ss_i("[" #id "]", src_type, id, g228, g229); \
   else \
-    return id(g225, g226); \
+    return id(g228, g229); \
 }
 #define define_ts_iSp_v(id, src_type) \
-static void ts_ ## id(int g227, Scheme_Object** g228, void* g229) \
+static void ts_ ## id(int g230, Scheme_Object** g231, void* g232) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
-     scheme_rtcall_iSp_v("[" #id "]", src_type, id, g227, g228, g229); \
+     scheme_rtcall_iSp_v("[" #id "]", src_type, id, g230, g231, g232); \
   else \
-     id(g227, g228, g229); \
+     id(g230, g231, g232); \
 }
 #define define_ts_sss_s(id, src_type) \
-static Scheme_Object* ts_ ## id(Scheme_Object* g230, Scheme_Object* g231, Scheme_Object* g232) \
+static Scheme_Object* ts_ ## id(Scheme_Object* g233, Scheme_Object* g234, Scheme_Object* g235) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
-    return scheme_rtcall_sss_s("[" #id "]", src_type, id, g230, g231, g232); \
+    return scheme_rtcall_sss_s("[" #id "]", src_type, id, g233, g234, g235); \
   else \
-    return id(g230, g231, g232); \
+    return id(g233, g234, g235); \
 }
 #define define_ts__v(id, src_type) \
 static void ts_ ## id() \
@@ -251,11 +260,11 @@ static void ts_ ## id() \
      id(); \
 }
 #define define_ts_iS_v(id, src_type) \
-static void ts_ ## id(int g233, Scheme_Object** g234) \
+static void ts_ ## id(int g236, Scheme_Object** g237) \
    XFORM_SKIP_PROC \
 { \
   if (scheme_use_rtcall) \
-     scheme_rtcall_iS_v("[" #id "]", src_type, id, g233, g234); \
+     scheme_rtcall_iS_v("[" #id "]", src_type, id, g236, g237); \
   else \
-     id(g233, g234); \
+     id(g236, g237); \
 }
