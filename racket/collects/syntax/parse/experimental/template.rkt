@@ -42,6 +42,7 @@ A HeadTemplate (H) is one of:
 
 (begin-for-syntax
  (define (do-template ctx tstx quasi? loc-id)
+   (with-disappeared-uses
    (parameterize ((current-syntax-context ctx)
                   (quasi (and quasi? (box null))))
      (let*-values ([(guide deps props-guide) (parse-template tstx loc-id)]
@@ -74,7 +75,7 @@ A HeadTemplate (H) is one of:
                        (substitute (quote-syntax t)
                                    'props-guide
                                    'guide
-                                   vars-vector)))])))))))
+                                   vars-vector)))]))))))))
 
 (define-syntax (template stx)
   (syntax-case stx ()
@@ -599,7 +600,8 @@ instead of integers and integer vectors.
         (values drivers #f guide props-guide))]))
 
  (define (lookup id depth)
-   (let ([v (syntax-local-value id (lambda () #f))])
+   (let ([v (syntax-local-value/record id (lambda (v) (or (syntax-pattern-variable? v)
+                                                          (template-metafunction? v))))])
      (cond [(syntax-pattern-variable? v)
             (let* ([pvar-depth (syntax-mapping-depth v)]
                    [attr (syntax-local-value (syntax-mapping-valvar v) (lambda () #f))]
