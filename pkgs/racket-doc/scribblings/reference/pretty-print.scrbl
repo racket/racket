@@ -48,6 +48,8 @@ the @racket[pretty-print-print-line] callback is called with false as
 the first argument to print the last newline after the printed value.
 If it is supplied with false, the @racket[pretty-print-print-line]
 callback is not called after the printed value.
+
+@history[#:changed "6.6.0.3" @elem{Added @racket[newline?] argument.}]
 }
 
 @defproc[(pretty-write [v any/c] [port output-port? (current-output-port)]
@@ -55,14 +57,20 @@ callback is not called after the printed value.
          void?]{
 
 Same as @racket[pretty-print], but @racket[v] is printed like
-@racket[write] instead of like @racket[print].}
+@racket[write] instead of like @racket[print].
+
+@history[#:changed "6.6.0.3" @elem{Added @racket[newline?] argument.}]
+}
 
 @defproc[(pretty-display [v any/c] [port output-port? (current-output-port)]
                          [#:newline? newline? boolean? #t])
          void?]{
 
 Same as @racket[pretty-print], but @racket[v] is printed like
-@racket[display] instead of like @racket[print].}
+@racket[display] instead of like @racket[print].
+
+@history[#:changed "6.6.0.3" @elem{Added @racket[newline?] argument.}]
+}
 
 
 @defproc[(pretty-format [v any/c] [columns exact-nonnegative-integer? (pretty-print-columns)]
@@ -261,8 +269,8 @@ The destination-columns argument to @racket[proc] is always
 the total width of the destination printing area, or
 @racket['infinity] if pretty-printed values are not broken into lines.
 
-If the @racket[#:newline?] argument was ommitted or supplied with
-true, @racket[proc] is also called after the last character of the
+If the @racket[#:newline?] argument was omitted or supplied with
+a true value, @racket[proc] is also called after the last character of the
 value has been printed, with @racket[#f] as the line number and with
 the length of the last line.
 
