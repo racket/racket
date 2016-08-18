@@ -791,9 +791,10 @@ binding is not included in the @tech{lexical information} for the
 module body. If a new variable definition has a counterpart in the old
 declaration, it effectively assigns to the old variable.
 
-If a module is @tech{instantiate}d in any @tech{phase}s before it is
-redeclared, each redeclaration of the module is immediately
-@tech{instantiate}d in the same @tech{phase}s.
+If a module is @tech{instantiate}d in the current namespace's
+@tech{base phase} before the module is redeclared, the redeclaration
+of the module is immediately @tech{instantiate}d in that
+@tech{phase}.
 
 If the current @tech{inspector} does not manage a module's declaration
 inspector (see @secref["modprotect"]), then the module cannot be

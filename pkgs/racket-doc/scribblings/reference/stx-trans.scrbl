@@ -968,9 +968,26 @@ and different result procedures use distinct scopes.
          ((syntax?) ((or/c 'flip 'add 'remove)) . ->* . syntax?)]{
 
 Produces a procedure that behaves like the result of
-@racket[make-syntax-introducer], but using the @tech{scopes} of
-@racket[ext-stx] that are not shared with @racket[base-stx], and with
-a default action of @racket['remove].
+@racket[make-syntax-introducer], but using a set of @tech{scopes} from
+@racket[ext-stx] and with a default action of @racket['add].
+
+@itemlist[
+
+ @item{If the scopes of @racket[base-stx] are a subset of the scopes
+       of @racket[ext-stx], then the result of
+       @racket[make-syntax-delta-introducer] adds, removes, or flips
+       scopes that are in the set for @racket[ext-stx] and not in the
+       set for @racket[base-stx].}
+
+ @item{If the scopes of @racket[base-stx] are not a subset of the
+       scopes of @racket[ext-stx], but if it has a binding, then the
+       set of scopes associated with the binding id subtracted from
+       the set of scopes for @racket[ext-stx], and the result of
+       @racket[make-syntax-delta-introducer] adds, removes, or flips
+       that difference.}
+
+]
+
 A @racket[#f] value for @racket[base-stx] is equivalent to a syntax
 object with no @tech{scopes}.
 
@@ -1012,8 +1029,9 @@ level as reported by @racket[syntax-local-phase-level].}
 @defproc[(syntax-local-module-required-identifiers
           [mod-path (or/c module-path? #f)]
           [phase-level (or/c exact-integer? #f #t)])
-         (listof (cons/c (or/c exact-integer? #f)
-                         (listof identifier?)))]{
+         (or/c (listof (cons/c (or/c exact-integer? #f)
+                               (listof identifier?)))
+               #f)]{
 
 Can be called only while
 @racket[syntax-local-transforming-module-provides?] returns
@@ -1025,7 +1043,9 @@ identifiers.  Each list of identifiers includes all bindings imported
 @racket[mod-path], or all modules if @racket[mod-path] is
 @racket[#f]. The association list includes all identifiers imported
 with a @racket[phase-level] shift, or all shifts if
-@racket[phase-level] is @racket[#t].
+@racket[phase-level] is @racket[#t]. If @racket[phase-level] is
+not @racket[#t], the result can be @racket[#f] if no identifiers
+are exported at that phase.
 
 When an identifier is renamed on import, the result association list
 includes the identifier by its internal name. Use

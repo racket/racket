@@ -2808,9 +2808,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
 	print_utf8_string(pp, "#<", 0, 2);
-	print_string_in_angle(pp, scheme_symbol_val(((Scheme_Struct_Type *)obj)->name),
-			      "struct-type:",
-			      SCHEME_SYM_LEN(((Scheme_Struct_Type *)obj)->name));
+        if (((Scheme_Struct_Type *)obj)->name) {
+          print_string_in_angle(pp, scheme_symbol_val(((Scheme_Struct_Type *)obj)->name),
+                                "struct-type:",
+                                SCHEME_SYM_LEN(((Scheme_Struct_Type *)obj)->name));
+        } else {
+          print_utf8_string(pp, "struct-type", 0, 11);
+        }
 	PRINTADDRESS(pp, obj);
 	print_utf8_string(pp, ">", 0, 1);
       }
@@ -2821,9 +2825,13 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	cannot_print(pp, notdisplay, obj, ht, compact);
       } else {
 	print_utf8_string(pp, "#<", 0, 2);
-	print_string_in_angle(pp, scheme_symbol_val(((Scheme_Struct_Property *)obj)->name),
-			      "struct-type-property:", 
-			      SCHEME_SYM_LEN(((Scheme_Struct_Property *)obj)->name));
+        if (((Scheme_Struct_Property *)obj)->name) {
+          print_string_in_angle(pp, scheme_symbol_val(((Scheme_Struct_Property *)obj)->name),
+                                "struct-type-property:", 
+                                SCHEME_SYM_LEN(((Scheme_Struct_Property *)obj)->name));
+        } else {
+          print_utf8_string(pp, "struct-type-property", 0, 21);
+        }
 	PRINTADDRESS(pp, obj);
 	print_utf8_string(pp, ">", 0, 1);
       }

@@ -1543,6 +1543,8 @@ struct Scheme_Input_Port
 #endif
 };
 
+#define SCHEME_INPORT_VAL(i) (((Scheme_Input_Port *)i)->port_data)
+
 struct Scheme_Output_Port
 {
   struct Scheme_Port p;
@@ -1565,6 +1567,8 @@ struct Scheme_Output_Port
   Scheme_Object *print_handler;
   struct Scheme_Input_Port *input_half;
 };
+
+#define SCHEME_OUTPORT_VAL(o) (((Scheme_Output_Port *)o)->port_data)
 
 #define SCHEME_SPECIAL (-2)
 #define SCHEME_UNLESS_READY (-3)

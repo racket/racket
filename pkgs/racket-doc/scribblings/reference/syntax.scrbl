@@ -236,7 +236,8 @@ A @racket[module*] form in which the enclosing module's bindings are visible
 can define or import bindings that @tech{shadow} the enclosing module's bindings.
 
 The evaluation of a @racket[module] form does not evaluate the
-expressions in the body of the module. Evaluation merely declares a
+expressions in the body of the module (except sometimes for redeclarations;
+see @secref["module-redeclare"]). Evaluation merely declares a
 module, whose full name depends both on @racket[id] or
 @racket[(current-module-declare-name)].
 
@@ -682,7 +683,7 @@ corresponds to the default @tech{module name resolver}.
  @racket[current-directory]).  Regardless of the current platform,
  @racket[rel-string] is always parsed as a Unix-format relative path:
  @litchar{/} is the path delimiter (multiple adjacent @litchar{/}s are
- treated as a single delimiter), @litchar{..} accesses the parent
+ not allowed), @litchar{..} accesses the parent
  directory, and @litchar{.} accesses the current directory. The path
  cannot be empty or contain a leading or trailing slash, path elements
  before than the last one cannot include a file suffix (i.e., a
@@ -1215,7 +1216,8 @@ composable, and not extensible. Also, sub-form names like
 @racketidfont{for-syntax} and @racketidfont{lib} are recognized
 symbolically, instead of via bindings. Although not formalized in the
 grammar above, a @racketidfont{just-meta} form cannot appear within a
-@racketidfont{just-meta} form.
+@racketidfont{just-meta} form, but it can appear under @racketidfont{for-meta},
+ @racketidfont{for-syntax}, @racketidfont{for-template}, or @racketidfont{for-label}.
 
 Each @racket[raw-require-spec] corresponds to the obvious
 @racket[_require-spec], but the @racketidfont{rename} sub-form has the

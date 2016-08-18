@@ -350,24 +350,42 @@ garbage-collection mode, depending on @racket[request]:
          #:changed "6.3.0.2" @elem{Added @racket['incremental] mode.}]}
 
 
-@defproc[(current-memory-use [cust custodian? #f]) exact-nonnegative-integer?]{
+@defproc[(current-memory-use [mode (or/c #f 'cumulative custodian?) #f])
+         exact-nonnegative-integer?]{
 
-Returns an estimate of the number of bytes of memory occupied by
-reachable data from @racket[cust].  This estimate is calculated by the
-last garbage collection, and can be 0 if none occurred (or if none occurred
-since the given custodian was created).  The @racket[current-memory-use]
-function does @italic{not} perform a collection by itself; doing one
-before the call will generally decrease the result (or increase it from
-0 if no collections happened yet).
+Returns information about memory use:
 
-If @racket[cust] is not provided, the estimate is a total reachable from
-any custodians.
+@itemlist[
 
-When Racket is compiled without support for memory accounting, the
-estimate is the same (i.e., all memory) for any individual custodian;
-see also @racket[custodian-memory-accounting-available?].
+ @item{If @racket[mode] is @racket[#f] (the default), the result is an
+       estimate of the number of bytes reachable from any custodian.}
 
-See also @racket[vector-set-performance-stats!].}
+ @item{If @racket[mode] is @racket['cumulative], returns an estimate
+       of the total number of bytes allocated since start up,
+       including bytes that have since been reclaimed by garbage
+       collection.}
+
+ @item{If @racket[mode] is a custodian, returns an estimate of the
+       number of bytes of memory occupied by reachable data from
+       @racket[mode]. This estimate is calculated by the last garbage
+       collection, and can be 0 if none occurred (or if none occurred
+       since the given custodian was created). The
+       @racket[current-memory-use] function does @italic{not} perform
+       a collection by itself; doing one before the call will
+       generally decrease the result (or increase it from 0 if no
+       collections happened yet).
+
+       When Racket is compiled without support for memory accounting,
+       the estimate is the same as when @racket[mode] is @racket[#f]
+       (i.e., all memory) for any individual custodian. See also
+       @racket[custodian-memory-accounting-available?].}
+
+]
+
+See also @racket[vector-set-performance-stats!].
+
+@history[#:changed "6.6.0.3" @elem{Added @racket['cumulative] mode.}]}
+
 
 @defproc[(dump-memory-stats [v any/c] ...) any]{
 

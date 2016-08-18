@@ -6,14 +6,16 @@
 @note-lib[racket/pretty]
 
 @defproc[(pretty-print [v any/c] [port output-port? (current-output-port)]
-                       [quote-depth (or/c 0 1) 0])
+                       [quote-depth (or/c 0 1) 0]
+                       [#:newline? newline? boolean? #t])
          void?]{
 
 Pretty-prints the value @racket[v] using the same printed form as the
 default @racket[print] mode, but with newlines and whitespace inserted
 to avoid lines longer than @racket[(pretty-print-columns)], as
 controlled by @racket[(pretty-print-current-style-table)]. The printed
-form ends in a newline, unless the @racket[pretty-print-columns]
+form ends in a newline by default, unless the @racket[newline?]
+argument is supplied with false or the @racket[pretty-print-columns]
 parameter is set to @racket['infinity]. When @racket[port] has line
 counting enabled (see @secref["linecol"]), then printing is sensitive
 to the column when printing starts---both for determining an initial
@@ -39,19 +41,36 @@ to determine the target printing width, and use
 function in the @racket[pretty-print-print-line] parameter can be
 called appropriately). Use
 @racket[make-tentative-pretty-print-output-port] to obtain a port for
-tentative recursive prints (e.g., to check the length of the output).}
+tentative recursive prints (e.g., to check the length of the output).
 
-@defproc[(pretty-write [v any/c] [port output-port? (current-output-port)])
+If the @racket[newline?] argument is ommitted or supplied with true,
+the @racket[pretty-print-print-line] callback is called with false as
+the first argument to print the last newline after the printed value.
+If it is supplied with false, the @racket[pretty-print-print-line]
+callback is not called after the printed value.
+
+@history[#:changed "6.6.0.3" @elem{Added @racket[newline?] argument.}]
+}
+
+@defproc[(pretty-write [v any/c] [port output-port? (current-output-port)]
+                       [#:newline? newline? boolean? #t])
          void?]{
 
 Same as @racket[pretty-print], but @racket[v] is printed like
-@racket[write] instead of like @racket[print].}
+@racket[write] instead of like @racket[print].
 
-@defproc[(pretty-display [v any/c] [port output-port? (current-output-port)])
+@history[#:changed "6.6.0.3" @elem{Added @racket[newline?] argument.}]
+}
+
+@defproc[(pretty-display [v any/c] [port output-port? (current-output-port)]
+                         [#:newline? newline? boolean? #t])
          void?]{
 
 Same as @racket[pretty-print], but @racket[v] is printed like
-@racket[display] instead of like @racket[print].}
+@racket[display] instead of like @racket[print].
+
+@history[#:changed "6.6.0.3" @elem{Added @racket[newline?] argument.}]
+}
 
 
 @defproc[(pretty-format [v any/c] [columns exact-nonnegative-integer? (pretty-print-columns)]
@@ -243,14 +262,17 @@ beginning of the new line.
 
 The @racket[proc] procedure is called before any characters are
 printed with @racket[0] as the line number and @racket[0] as the old
-line length; @racket[proc] is called after the last character of a
-value has been printed with @racket[#f] as the line number and with the
-length of the last line. Whenever the pretty-printer starts a new
-line, @racket[proc] is called with the new line's number (where the
-first new line is numbered @racket[1]) and the just-finished line's
-length. The destination-columns argument to @racket[proc] is always
+line length. Whenever the pretty-printer starts a new line,
+@racket[proc] is called with the new line's number (where the first
+new line is numbered @racket[1]) and the just-finished line's length.
+The destination-columns argument to @racket[proc] is always
 the total width of the destination printing area, or
 @racket['infinity] if pretty-printed values are not broken into lines.
+
+If the @racket[#:newline?] argument was omitted or supplied with
+a true value, @racket[proc] is also called after the last character of the
+value has been printed, with @racket[#f] as the line number and with
+the length of the last line.
 
 The default @racket[proc] procedure prints a newline whenever the line
 number is not @racket[0] and the column count is not

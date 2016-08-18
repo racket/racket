@@ -2251,6 +2251,8 @@ scheme_case_lambda_execute(Scheme_Object *expr)
   int i, cnt;
   Scheme_Thread *p = scheme_current_thread;
 
+  DEBUG_COUNT_ALLOCATION(expr);
+
   seqin = (Scheme_Case_Lambda *)expr;
 
 #ifdef MZ_USE_JIT
@@ -2501,6 +2503,8 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   GC_CAN_IGNORE Scheme_Object **dest;
   GC_CAN_IGNORE mzshort *map;
   int i;
+
+  DEBUG_COUNT_ALLOCATION(code);
 
   data = (Scheme_Lambda *)code;
   

@@ -36,6 +36,11 @@ static int generate_argument_boxing(mz_jit_state *jitter, Scheme_Lambda *lam,
                                     Scheme_App_Rec *app, Scheme_Object **alt_rands);
 #endif
 
+static int detect_unsafe_struct_refs(Scheme_Object *arg, Scheme_Object **alt_rands, Scheme_App_Rec *app,
+                                     int i, int num_rands, int shift);
+static int generate_unsafe_struct_ref_sequence(mz_jit_state *jitter, Scheme_Object *arg, Scheme_Object *last_arg,
+                                               int count, int stack_pos);
+
 int scheme_direct_call_count, scheme_indirect_call_count;
 
 struct jit_direct_arg {
@@ -1783,7 +1788,7 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
    If no_call is 2, then rator is not necssarily evaluated. 
    If no_call is 1, then rator is left in V1 and arguments are on runstack. */
 {
-  int i, offset, need_safety = 0, apply_to_list = 0;
+  int i, offset, need_safety = 0, apply_to_list = 0, num_unsafe_struct_refs;
   int direct_prim = 0, need_non_tail = 0, direct_native = 0, direct_self = 0, nontail_self = 0;
   Scheme_Native_Closure *inline_direct_native = NULL;
   int almost_inline_direct_native = 0;
@@ -2113,10 +2118,26 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       need_safety = 0;
     }
 #ifdef USE_FLONUM_UNBOXING
-    if (direct_lam
-        && (SCHEME_LAMBDA_FLAGS(direct_lam) & LAMBDA_HAS_TYPED_ARGS)
-        && (CLOSURE_ARGUMENT_IS_FLONUM(direct_lam, i+args_already_in_place)
-            || CLOSURE_ARGUMENT_IS_EXTFLONUM(direct_lam, i+args_already_in_place))) {
+    if (direct_lam)
+      num_unsafe_struct_refs = 0;
+    else
+#endif
+      num_unsafe_struct_refs = detect_unsafe_struct_refs(arg, alt_rands, app, i, num_rands, 1+args_already_in_place);
+    if (num_unsafe_struct_refs > 1) {
+      /* Found a sequence of `(unsafed-struct-ref id 'number)` with
+         sequential `number`s, so extract the whole group at once */
+      v = (alt_rands 
+           ? alt_rands[i+1+args_already_in_place+num_unsafe_struct_refs-1]
+           : app->args[i+1+args_already_in_place+num_unsafe_struct_refs-1]);
+      mz_rs_sync();
+      generate_unsafe_struct_ref_sequence(jitter, arg, v, num_unsafe_struct_refs, i + offset);
+      CHECK_LIMIT();
+      i += (num_unsafe_struct_refs - 1);
+#ifdef USE_FLONUM_UNBOXING
+    } else if (direct_lam
+               && (SCHEME_LAMBDA_FLAGS(direct_lam) & LAMBDA_HAS_TYPED_ARGS)
+               && (CLOSURE_ARGUMENT_IS_FLONUM(direct_lam, i+args_already_in_place)
+                   || CLOSURE_ARGUMENT_IS_EXTFLONUM(direct_lam, i+args_already_in_place))) {
       int directly;
       int extfl;
       extfl = CLOSURE_ARGUMENT_IS_EXTFLONUM(direct_lam, i+args_already_in_place);
@@ -2149,13 +2170,12 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
       } else {
         (void)jit_movi_p(JIT_R0, NULL);
       }
-    } else
 #endif
-      if (inline_direct_args) {
-        if (inline_direct_args[i].gen)
+    } else if (inline_direct_args) {
+      if (inline_direct_args[i].gen)
           scheme_generate(arg, jitter, 0, 0, 0, inline_direct_args[i].reg, NULL, NULL);
-      } else
-        scheme_generate_non_tail(arg, jitter, 0, !need_non_tail, 0); /* sync'd below */
+    } else
+      scheme_generate_non_tail(arg, jitter, 0, !need_non_tail, 0); /* sync'd below */
     RESUME_JIT_DATA();
     CHECK_LIMIT();
 
@@ -2395,6 +2415,93 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
   END_JIT_DATA(need_non_tail ? 22 : 4);
     
   return is_tail ? 2 : 1;
+}
+
+
+static int detect_unsafe_struct_refs(Scheme_Object *arg, Scheme_Object **alt_rands, Scheme_App_Rec *app,
+                                     int i, int num_rands, int shift)
+/* Look for `(unsafe-struct-ref id 'num)` ... as a sequence of
+   arguments, which shows up as a result of `struct-copy`, and return
+   the length of the sequence. Instead of performing each
+   `unsafe-struct-ref` separately, which involves a chaperone test
+   each time, we'll test once and extract all. */
+{
+  Scheme_App3_Rec *app3, *next_app3;
+  Scheme_Object *next_arg;
+
+  if (SAME_TYPE(SCHEME_TYPE(arg), scheme_application3_type)) {
+    app3 = (Scheme_App3_Rec *)arg;
+    if (SAME_OBJ(app3->rator, scheme_unsafe_struct_ref_proc)
+        && SAME_TYPE(SCHEME_TYPE(app3->rand1), scheme_local_type)
+        && SCHEME_INTP(app3->rand2)) {
+      int seq = 1, delta = SCHEME_INT_VAL(app3->rand2) - i;
+      i++;
+      while (i < num_rands) {
+        next_arg = (alt_rands ? alt_rands[i+shift] : app->args[i+shift]);
+        if (SAME_TYPE(SCHEME_TYPE(next_arg), scheme_application3_type)) {
+          next_app3 = (Scheme_App3_Rec *)next_arg;
+          if (SAME_OBJ(next_app3->rator, scheme_unsafe_struct_ref_proc)
+              && SAME_TYPE(SCHEME_TYPE(next_app3->rand1), scheme_local_type)
+              && SCHEME_INTP(next_app3->rand2)
+              && (SCHEME_INT_VAL(next_app3->rand2) == i + delta)
+              && (SCHEME_LOCAL_POS(next_app3->rand1) == SCHEME_LOCAL_POS(app3->rand1))) {
+            seq++;
+            i++;
+          } else
+            break;
+        } else
+          break;
+      }
+      return seq;
+    }
+  }
+  
+  return 0;
+}
+
+static int generate_unsafe_struct_ref_sequence(mz_jit_state *jitter, Scheme_Object *arg, Scheme_Object *last_arg,
+                                               int count, int stack_pos)
+/* Implement a sequence discovered by `detect_unsafe_struct_refs()`. */
+{
+  Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)arg;
+  int i, base = SCHEME_INT_VAL(app3->rand2);
+  GC_CAN_IGNORE jit_insn *ref, *refslow, *ref2;
+
+  /* Using `last_arg` ensures that we clear the local, if needed */
+  mz_runstack_skipped(jitter, 2);
+  scheme_generate(((Scheme_App3_Rec *)last_arg)->rand1, jitter, 0, 0, 0, JIT_R0, NULL, NULL);
+  CHECK_LIMIT();
+  mz_runstack_unskipped(jitter, 2);
+
+  /* Check for chaperones, and take slow path if found */
+  __START_SHORT_JUMPS__(1);
+  jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+  ref = jit_bnei_i(jit_forward(), JIT_R2, scheme_chaperone_type);
+  refslow = jit_get_ip();
+  jit_addi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(stack_pos));
+  jit_str_p(JIT_R1, JIT_R0);
+  jit_movi_i(JIT_V1, base);
+  jit_movi_p(JIT_R0, count);
+  (void)jit_calli(sjc.struct_raw_refs_code);
+  ref2 = jit_jmpi(jit_forward());
+  mz_patch_branch(ref);
+  (void)jit_beqi_i(refslow, JIT_R2, scheme_proc_chaperone_type);
+  CHECK_LIMIT();
+
+  /* This is the fast path: */
+  for (i = 0; i < count; i++) {
+    jit_ldxi_p(JIT_R1, JIT_R0, (intptr_t)&(((Scheme_Structure *)0x0)->slots[i+base]));
+    if (i != count - 1)
+      mz_rs_stxi(stack_pos+i, JIT_R1);
+    else
+      jit_movr_p(JIT_R0, JIT_R1);
+    CHECK_LIMIT();
+  }
+
+  mz_patch_branch(ref2);
+  __END_SHORT_JUMPS__(1);
+
+  return 1;
 }
 
 #endif

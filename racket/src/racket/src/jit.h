@@ -319,7 +319,7 @@ struct scheme_jit_common_record {
   void *flvector_ref_check_index_code[JIT_NUM_FL_KINDS];
   void *flvector_set_check_index_code[JIT_NUM_FL_KINDS], *flvector_set_flonum_check_index_code[JIT_NUM_FL_KINDS];
   void *fxvector_ref_code, *fxvector_ref_check_index_code, *fxvector_set_code, *fxvector_set_check_index_code;
-  void *struct_raw_ref_code, *struct_raw_set_code;
+  void *struct_raw_ref_code, *struct_raw_set_code, *struct_raw_refs_code;
   void *syntax_e_code;
   void *on_demand_jit_arity_code, *in_progress_on_demand_jit_arity_code;
   void *get_stack_pointer_code;

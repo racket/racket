@@ -287,6 +287,8 @@ scheme_make_vector (intptr_t size, Scheme_Object *fill)
     scheme_wrong_contract("make-vector", "exact-nonnegative-integer?", -1, 0, &vec);
   }
 
+  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_vector_type));
+
   if (size < 1024) {
     vec = (Scheme_Object *)scheme_malloc_tagged(VECTOR_BYTES(size));
   } else {

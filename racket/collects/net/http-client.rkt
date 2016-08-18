@@ -291,6 +291,11 @@
           (define abandon-p ssl-abndn-p)
           (values clt-ctx r:from r:to abandon-p)]))
 
+(define (head? method-bss)
+  (or (equal? method-bss #"HEAD")
+      (equal? method-bss "HEAD")
+      (equal? method-bss 'HEAD)))
+
 (define (http-conn-recv! hc
                          #:method [method-bss #"GET"]
                          #:content-decode [decodes '(gzip)]
@@ -302,13 +307,9 @@
         (regexp-member #rx#"^(?i:Connection: +close)$" headers)))
   (when close?
     (http-conn-abandon! hc))
-  (define head?
-    (or (equal? method-bss #"HEAD")
-        (equal? method-bss "HEAD")
-        (equal? method-bss 'HEAD)))
   (define-values (raw-response-port wait-for-close?)
     (cond
-      [head? (values (open-input-bytes #"") #f)]
+      [(head? method-bss) (values (open-input-bytes #"") #f)]
       [(regexp-member #rx#"^(?i:Transfer-Encoding: +chunked)$" headers)
        (values (http-conn-response-port/chunked! hc #:close? #t)
                #t)]
@@ -327,7 +328,7 @@
        (values (http-conn-response-port/rest! hc) #t)]))
   (define decoded-response-port
     (cond
-      [head? raw-response-port]
+      [(head? method-bss) raw-response-port]
       [(and (memq 'gzip decodes)
             (regexp-member #rx#"^(?i:Content-Encoding: +gzip)$" headers)
             (not (eof-object? (peek-byte raw-response-port))))
@@ -377,13 +378,15 @@
                        #:data [data #f]
                        #:content-decode [decodes '(gzip)])
   (define hc (http-conn-open host-bs #:ssl? ssl? #:port port))
-  (http-conn-sendrecv! hc url-bs
-                       #:version version-bs
-                       #:method method-bss
-                       #:headers headers-bs
-                       #:data data
-                       #:content-decode decodes
-                       #:close? #t))
+  (begin0 (http-conn-sendrecv! hc url-bs
+                               #:version version-bs
+                               #:method method-bss
+                               #:headers headers-bs
+                               #:data data
+                               #:content-decode decodes
+                               #:close? #t)
+    (when (head? method-bss)
+      (http-conn-close! hc))))
 
 (define data-procedure/c
   (-> (-> (or/c bytes? string?) void?) any))

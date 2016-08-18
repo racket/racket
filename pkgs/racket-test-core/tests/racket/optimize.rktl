@@ -904,6 +904,32 @@
 
     ))
 
+;; Check JIT handling of structure-reference sequencese
+(parameterize ([current-namespace (make-base-namespace)]
+               [eval-jit-enabled #t])
+  (eval '(module paper racket/base
+          (provide (all-defined-out))
+          (struct paper (width height folds) #:transparent)
+          (define (fold-letter l)
+            (for/fold ([l l]) ([i (in-range 100)])
+              (and (paper? l)
+                   (struct-copy paper l [folds i]))))
+          (define (refine-letter l)
+            (for/fold ([l l]) ([i (in-range 100)]) 
+              (and (paper? l)
+                   (struct-copy paper l [width i]))))))
+  (eval '(require 'paper))
+  (eval '(define letter (paper 8.5 11 0)))
+  (eval '(define formal-letter (chaperone-struct letter paper-height
+                                                 (lambda (s v)
+                                                   (unless (equal? v 11)
+                                                     (error "wrong"))
+                                                   v))))
+  (test #t eval '(equal? (fold-letter letter) (paper 8.5 11 99)))
+  (test #t eval '(equal? (fold-letter formal-letter) (paper 8.5 11 99)))
+  (test #t eval '(equal? (refine-letter letter) (paper 99 11 0)))
+  (test #t eval '(equal? (refine-letter formal-letter) (paper 99 11 0))))
+
 (define (comp=? c1 c2 want-same?)
   (let ([s1 (open-output-bytes)]
 	[s2 (open-output-bytes)])

@@ -292,6 +292,20 @@ case SIG_siS_v:
      
      break;
   }
+case SIG_Sii_s:
+  {
+     prim_Sii_s f = (prim_Sii_s)future->prim_func;
+     GC_CAN_IGNORE Scheme_Object* retval;
+     JIT_TS_LOCALIZE(Scheme_Object**, arg_S0); JIT_TS_LOCALIZE(int, arg_i1); JIT_TS_LOCALIZE(int, arg_i2);
+     
+     future->arg_S0 = NULL;
+     ADJUST_RS_ARG(future, arg_S0);
+     retval = 
+     f(arg_S0, arg_i1, arg_i2);
+     future->retval_s = retval;
+     send_special_result(future, retval);
+     break;
+  }
 case SIG_z_p:
   {
      prim_z_p f = (prim_z_p)future->prim_func;

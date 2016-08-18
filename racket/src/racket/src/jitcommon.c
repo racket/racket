@@ -182,6 +182,21 @@ static void chaperone_set_mark()
   MZ_RUNSTACK[1] = SCHEME_CHAPERONE_VAL(MZ_RUNSTACK[1]);
 }
 
+static Scheme_Object *unsafe_struct_refs(Scheme_Object **rs, int offset, int count)
+{
+  int i;
+  Scheme_Object *v, *s = rs[0];
+
+  for (i = 0; i < count; i++) {
+    v = scheme_struct_ref(s, offset + i);
+    if (i == count-1)
+      return v;
+    rs[i] = v;
+  }
+
+  return NULL;
+}
+
 #define JITCOMMON_TS_PROCS
 #include "jit_ts.c"
 
@@ -1818,6 +1833,29 @@ static int common4(mz_jit_state *jitter, void *_data)
     } else
       (void)mz_finish_lwe(ts_scheme_struct_set, ref);
     CHECK_LIMIT();
+    jit_retval(JIT_R0);
+    mz_epilog(JIT_R2);
+
+    scheme_jit_register_sub_func(jitter, code, scheme_false);
+  }
+
+  /* *** struct_raw_refs_code *** */
+  /* R1 points into the runstack, *R1 is struct, R0 is
+     count >= 2, and V1 is a starting slot in the structure */
+  {
+    void *code;
+
+    code = jit_get_ip();
+    
+    sjc.struct_raw_refs_code = code;
+
+    mz_prolog(JIT_R2);
+    JIT_UPDATE_THREAD_RSPTR();
+    jit_prepare(3);
+    jit_pusharg_p(JIT_R0);
+    jit_pusharg_p(JIT_V1);
+    jit_pusharg_p(JIT_R1);
+    (void)mz_finish_lwe(ts_unsafe_struct_refs, ref);
     jit_retval(JIT_R0);
     mz_epilog(JIT_R2);
 

@@ -186,13 +186,15 @@ types:
  extracts/sets the user data pointer; test for just this type with
  @cppdef{SCHEME_INPORTP}, but use @cppdef{SCHEME_INPUT_PORTP} to recognize
  all input ports (including structures with the
- @racket[prop:input-port] property)}
+ @racket[prop:input-port] property), and use @cppi{scheme_input_port_record}
+ to extract a @cppi{scheme_input_port_type} value from a general input port}
 
  @item{@cppdef{scheme_output_port_type} --- @cppdef{SCHEME_OUTPORT_VAL}
  extracts/sets the user data pointer; test for just this type with
  @cppdef{SCHEME_OUTPORTP}, but use @cppdef{SCHEME_OUTPUT_PORTP} to
  recognize all output ports (including structures with the
- @racket[prop:output-port] property)}
+ @racket[prop:output-port] property), and use @cppi{scheme_output_port_record}
+ to extract a @cppi{scheme_output_port_type} value from a general input port}
 
  @item{@cppdef{scheme_thread_type} --- thread descriptors; test for
  this type with @cppdef{SCHEME_THREADP}}

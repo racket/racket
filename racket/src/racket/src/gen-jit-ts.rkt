@@ -191,6 +191,7 @@
     s_v
     iSi_s
     siS_v
+    Sii_s
     z_p
     si_s
     sis_v

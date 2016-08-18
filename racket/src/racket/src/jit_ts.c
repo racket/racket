@@ -96,6 +96,7 @@ define_ts_ss_s(scheme_byte_string_eq_2, FSRC_MARKS)
 define_ts_s_s(scheme_unbox, FSRC_MARKS)
 define_ts_si_s(scheme_struct_ref, FSRC_MARKS)
 define_ts_sis_v(scheme_struct_set, FSRC_MARKS)
+define_ts_Sii_s(unsafe_struct_refs, FSRC_MARKS)
 define_ts_iS_s(scheme_extract_checked_procedure, FSRC_MARKS)
 define_ts_iS_s(scheme_procedure_arity_includes, FSRC_MARKS)
 define_ts_ssi_s(vector_check_chaperone_of, FSRC_MARKS)
@@ -219,6 +220,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_byte_string_length scheme_byte_string_length
 # define ts_scheme_struct_ref scheme_struct_ref
 # define ts_scheme_struct_set scheme_struct_set
+# define ts_unsafe_struct_refs unsafe_struct_refs
 # define ts_equal_as_bool equal_as_bool
 # define ts_scheme_string_eq_2 scheme_string_eq_2
 # define ts_scheme_byte_string_eq_2 scheme_byte_string_eq_2

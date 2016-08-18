@@ -312,6 +312,8 @@ typedef struct NewGC {
   uintptr_t minor_old_skipped;
   uintptr_t modified_unprotects;
   
+  uintptr_t total_memory_allocated; /* doesn't include current gen0 */
+  
   /* THREAD_LOCAL variables that need to be saved off */
   void         *saved_GC_variable_stack;
   uintptr_t saved_GC_gen0_alloc_page_ptr;
