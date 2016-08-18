@@ -485,6 +485,36 @@
                 ((impersonate-procedure s? (λ (x) (values (λ (r) "") x))) 11))
               'pos 'neg))
 
+  (test/spec-passed/result
+   '->void.1
+   '(void? ((contract (-> void?) void 'pos 'neg)))
+   #t)
+  (test/spec-passed/result
+   '->void.2
+   '(void? ((contract (-> void?) (λ () (void)) 'pos 'neg)))
+   #t)
+  (test/spec-passed/result
+   '->void.3
+   '(void? ((contract (-> void?) (λ args void) 'pos 'neg)))
+   #t)
+  (test/pos-blame
+   '->void.4
+   '((contract (-> void?) (λ args 11) 'pos 'neg))
+   #t)
+  (test/pos-blame
+   '->void.5
+   '((contract (-> void?) (λ args (values (void) (void))) 'pos 'neg))
+   #t)
+  (test/pos-blame
+   '->void.6
+   '(contract (-> void?) 'not-a-function 'pos 'neg)
+   #t)
+  (test/pos-blame
+   '->void.7
+   '(contract (-> void?) (λ (x) 1) 'pos 'neg)
+   #t)
+   
+  
   (test/spec-passed
    'any/c-in-domain1
    '((contract (-> any/c real?)

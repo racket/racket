@@ -1080,6 +1080,122 @@
                (define f 1)))
       (eval '(dynamic-require ''provide/contract56-m1 #f)))
    "provide/contract56-m1")
+
+  (test/spec-failed
+   'provide/contract57
+   '(let ()
+      (eval '(module provide/contract57-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> any/c boolean?)]))
+               (define f 1)))
+      (eval '(dynamic-require ''provide/contract57-m1 #f)))
+   "provide/contract57-m1")
+
+  (test/spec-passed/result
+   'provide/contract58
+   '(let ()
+      (eval '(module provide/contract58-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> any/c boolean?)]))
+               (define (f x) #t)))
+      (eval '(module provide/contract58-m2 racket/base
+               (require 'provide/contract58-m1)
+               (provide a)
+               (define a (f 1))))
+      (eval '(dynamic-require ''provide/contract58-m2 'a)))
+   #t)
+
+  (test/spec-failed
+   'provide/contract59
+   '(let ()
+      (eval '(module provide/contract59-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> any/c boolean?)]))
+               (define (f x) 11)))
+      (eval '(module provide/contract59-m2 racket/base
+               (require 'provide/contract59-m1)
+               (f 1)))
+      (eval '(dynamic-require ''provide/contract59-m2 #f)))
+   "provide/contract59-m1")
+
+  (test/spec-failed
+   'provide/contract60
+   '(let ()
+      (eval '(module provide/contract60-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> any/c boolean?)]))
+               (define (f x) (values #t #t))))
+      (eval '(module provide/contract60-m2 racket/base
+               (require 'provide/contract60-m1)
+               (f 1)))
+      (eval '(dynamic-require ''provide/contract60-m2 #f)))
+   "provide/contract60-m1")
+
+  (test/spec-passed/result
+   'provide/contract61
+   '(let ()
+      (eval '(module provide/contract61-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> void?)]))
+               (define (f) (void))))
+      (eval '(module provide/contract61-m2 racket/base
+               (require 'provide/contract61-m1)
+               (provide a)
+               (define a (f))))
+      (eval '(void? (dynamic-require ''provide/contract61-m2 'a))))
+   #t)
+
+  (test/spec-failed
+   'provide/contract62
+   '(let ()
+      (eval '(module provide/contract62-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> void?)]))
+               (define f 1)))
+      (eval '(dynamic-require ''provide/contract62-m1 #f)))
+   "provide/contract62-m1")
+
+  (test/spec-failed
+   'provide/contract63
+   '(let ()
+      (eval '(module provide/contract63-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> void?)]))
+               (define (f) 11)))
+      (eval '(module provide/contract63-m2 racket/base
+               (require 'provide/contract63-m1)
+               (f)))
+      (eval '(dynamic-require ''provide/contract63-m2 #f)))
+   "provide/contract63-m1")
+
+  (test/spec-failed
+   'provide/contract64
+   '(let ()
+      (eval '(module provide/contract64-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (-> void?)]))
+               (define (f) (values #t #t))))
+      (eval '(module provide/contract64-m2 racket/base
+               (require 'provide/contract64-m1)
+               (f)))
+      (eval '(dynamic-require ''provide/contract64-m2 #f)))
+   "provide/contract64-m1")
    
   
   (contract-error-test

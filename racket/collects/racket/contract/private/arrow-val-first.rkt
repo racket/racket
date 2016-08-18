@@ -954,10 +954,6 @@
          (for/list ([rng (in-list raw-rngs)])
            (coerce-contract who rng))))
   (cond
-    ;; uncomment this to specialize (-> void) contract to a
-    ;; more efficient wrapper (but there are no test cases for
-    ;; that code, so add them before pushing this)
-    #;
     [(and (null? regular-doms)
           (null? kwd-infos)
           (not rest-ctc)
@@ -1447,7 +1443,7 @@
     (make--> 0 '() '() #f #f
              (list (coerce-contract 'whatever void?))
              #f
-             (λ (blame f _ignored-rng-ctcs _ignored-rng-proj)
+             (λ (blame f _ignored)
                (values
                 (λ (neg-party)
                   (call-with-values/check-range
