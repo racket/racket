@@ -233,7 +233,7 @@ _i)] is the character produced by @racket[(proc _i)].
 
 
 @defproc[(string-ci=? [str1 string?] [str2 string?] ...+) boolean?]{
- Returns @racket[#t] if all of the arguments are @racket[eqv?] after
+ Returns @racket[#t] if all of the arguments are @racket[equal?] after
  locale-insensitive case-folding via @racket[string-foldcase].
 
 @mz-examples[(string-ci=? "Apple" "apple")
