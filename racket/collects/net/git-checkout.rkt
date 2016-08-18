@@ -203,7 +203,7 @@
 (define (initial-connect transport host verify? port repo status)
   (case transport
     [(git)
-     (define-values (i o) (tcp-connect host port))
+     (define-values (i o) (tcp-or-tunnel-connect "git" host port))
      (values i o #f)]
     [(http https)
      (define url-str

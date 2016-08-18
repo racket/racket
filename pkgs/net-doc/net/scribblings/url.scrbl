@@ -2,6 +2,7 @@
 @(require "common.rkt" scribble/bnf
           (for-label net/url net/url-unit net/url-sig 
                      racket/list
+                     racket/tcp
                      net/head net/uri-codec net/tcp-sig
                      net/http-client
                      (only-in net/url-connect current-https-protocol)
@@ -478,12 +479,12 @@ When a @racket[header] argument is supplied, it is passed along to the
 The connection is made in such a way that the port is closed before
 @racket[call/input-url] returns, no matter how it returns. In
 particular, it is closed if @racket[handle] raises an exception, or if
-the connection process is interruped by an asynchronous break
+the connection process is interrupted by an asynchronous break
 exception.}
 
 @deftogether[(
 @defparam[current-proxy-servers mapping (listof (list/c string? string? (integer-in 0 65535)))]
-@defthing[proxiable-url-schemes (listof string?) #:value '("http")]
+@defthing[proxiable-url-schemes (listof string?) #:value '("http" "https" "git")]
  )]{
 
 The @racket[current-proxy-servers] parameter determines a mapping of proxy servers used for
@@ -492,7 +493,7 @@ connections. Each mapping is a list of three elements:
 @itemize[
 
  @item{the URL scheme, such as @racket["http"], where @racket[proxiable-url-schemes] lists the URL schemes
-  that can be proxied; currently, the only proxiable scheme is @racket["http"];}
+  that can be proxied}
 
  @item{the proxy server address; and}
 
@@ -500,15 +501,27 @@ connections. Each mapping is a list of three elements:
 
 ]
 
-The initial value of @racket[current-proxy-servers] is configured on demand from the
-environment variables @indexed-envvar{plt_http_proxy} and @indexed-envvar{http_proxy},
-where the former takes precedence over the latter.
+The initial value of @racket[current-proxy-servers] is configured on demand from environment
+variables. Proxies for each URL scheme are configured from two variables each:
+
+@itemize[
+ @item{@indexed-envvar{plt_http_proxy} and @indexed-envvar{http_proxy}, configure the HTTP
+   proxy, where the former takes precedence over the latter. HTTP requests will be proxied using an
+   HTTP proxy server connection}
+ @item{@indexed-envvar{plt_https_proxy} and @indexed-envvar{https_proxy}, configure the HTTPS
+   proxy, where the former takes precedence over the latter. HTTPS connections are proxied using an
+  HTTP ``CONNECT'' tunnel}
+ @item{@indexed-envvar{plt_git_proxy} and @indexed-envvar{git_proxy}, configure the GIT
+   proxy, where the former takes precedence over the latter. GIT connections are proxied using an
+  HTTP ``CONNECT'' tunnel}
+]
+ 
 Each environment variable contains a single URL of the form
-@litchar{http://}@nonterm{hostname}@litchar{:}@nonterm{portno}. If any other components of the URL are provided,
-an error will be logged to a @racket[net/url] logger.
+@litchar{http://}@nonterm{hostname}@litchar{:}@nonterm{portno}.
+If any other components of the URL are provided, a warning will be logged to a @racket[net/url]
+logger.
 
 The default mapping is the empty list (i.e., no proxies).}
-
 
 @defparam[current-no-proxy-servers dest-hosts-list (listof (or/c string? regexp?))]{
 
@@ -578,6 +591,15 @@ Calls @racket[http-sendrecv] using @racket[u] to populate the host, URI, port, a
 This function does not support proxies.
                                                       
 }
+
+@defproc[(tcp-or-tunnel-connect [scheme string?]
+                                [host string?]
+                                [port (between/c 1 65535)])
+         (values input-port? output-port?)]{
+ If @racket[(proxy-server-for scheme host)], then the proxy is used to
+ @racket[http-conn-CONNECT-tunnel] to @racket[host] (on port @racket[port]).
+ 
+ Otherwise the call is equivalent to @racket[(tcp-connect host port)].}
 
 @section{URL HTTPS mode}
 

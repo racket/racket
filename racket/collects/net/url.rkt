@@ -5,6 +5,7 @@
          racket/list
          racket/match
          racket/promise
+         racket/tcp
          (prefix-in hc: "http-client.rkt")
          (only-in "url-connect.rkt" current-https-protocol)
          "uri-codec.rkt"
@@ -24,36 +25,51 @@
 ;;   "impure" = they have text waiting
 ;;   "pure" = the MIME headers have been read
 
-(define proxiable-url-schemes '("http"))
+(define proxiable-url-schemes '("http"
+                                "https"
+                                "git"))
 
-(define (env->c-p-s-entries envars)
-  (if (null? envars)
+;; env->c-p-s-entries: (listof (listof string)) -> (listof (list string string num))
+;;
+;; "http" protocol is proxied by http proxy
+;; other ("https" and "git") protocols are proxied by http CONNECT tunneling
+;;
+;; proxying-scheme is therefore always "http" (no "s") -- although the meaning thereof depends on the
+;; proxied-scheme
+(define (env->c-p-s-entries . envarses)
+  (define (inr envars)
+    (if (null? envars)
       null
+      (let ((proxied-scheme (match (car envars)
+                             [(regexp #rx"plt_(.*)_proxy" (list _ scm)) scm]
+                             [(regexp #rx"(.*)_proxy" (list _ scm)) scm])))
       (match (getenv (car envars))
-        [#f (env->c-p-s-entries (cdr envars))]
-        ["" null]
-        [(app string->url
-              (url (and scheme "http") #f (? string? host) (? integer? port)
-                   _ (list) (list) #f))
-         (list (list scheme host port))]
-        [(app string->url
-              (url (and scheme "http") _ (? string? host) (? integer? port)
-                   _ _ _ _))
-         (log-net/url-error "~s contains somewhat invalid proxy URL format" (car envars))
-         (list (list scheme host port))]
-        [inv (log-net/url-error "~s contained invalid proxy URL format: ~s"
-                                (car envars) inv)
-             null])))
+             [#f (env->c-p-s-entries (cdr envars))]
+             ["" null]
+             [(app string->url
+                   (url (and proxying-scheme "http") #f (? string? host) (? integer? port)
+                        _ (list) (list) #f))
+              (list (list proxied-scheme host port))]
+             [(app string->url
+                   (url (and proxying-scheme "http") _ (? string? host) (? integer? port)
+                        _ _ _ _))
+              (log-net/url-warning "~s contains somewhat invalid proxy URL format" (car envars))
+              (list (list proxied-scheme host port))]
+             [inv (log-net/url-error "~s contained invalid proxy URL format: ~s" (car envars) inv)
+                  null]))))
+  (apply append (map inr envarses)))
 
 (define current-proxy-servers-promise
-  (make-parameter (delay/sync (env->c-p-s-entries '("plt_http_proxy" "http_proxy")))))
+  (make-parameter (delay/sync (env->c-p-s-entries '("plt_http_proxy" "http_proxy")
+                                                  '("plt_https_proxy" "https_proxy")
+                                                  '("plt_git_proxy" "git_proxy")))))
 
 (define (proxy-servers-guard v)
   (unless (and (list? v)
                (andmap (lambda (v)
                          (and (list? v)
                               (= 3 (length v))
-                              (equal? (car v) "http")
+                              (member (car v) proxiable-url-schemes)
                               (string? (car v))
                               (exact-integer? (caddr v))
                               (<= 1 (caddr v) 65535)))
@@ -82,7 +98,8 @@
         [hostnames (string-split hostnames ",")])))
   
 (define current-no-proxy-servers-promise
-  (make-parameter (delay/sync (no-proxy-servers-guard (env->n-p-s-entries '("plt_no_proxy" "no_proxy"))))))
+  (make-parameter (delay/sync (no-proxy-servers-guard
+                                (env->n-p-s-entries '("plt_no_proxy" "no_proxy"))))))
 
 (define (no-proxy-servers-guard v)
   (unless (and (list? v)
@@ -111,6 +128,10 @@
           [(memf (lambda (np) (regexp-match np dest-host-name)) (current-no-proxy-servers)) #f]
           [else rv])))
 
+;; proxy-tunneled? : url -> boolean
+(define (proxy-tunneled? url)
+  (not (string=? (url-scheme url) "http")))
+
 (define (url-error fmt . args)
   (raise (make-url-exception
           (apply format fmt
@@ -129,15 +150,37 @@
 
 ;; make-ports : url -> hc
 (define (make-ports url proxy)
-  (let ([port-number (if proxy
-                       (caddr proxy)
-                       (or (url-port url) (url->default-port url)))]
-        [host (if proxy (cadr proxy) (url-host url))])
-    (hc:http-conn-open host
-                       #:port port-number
-                       #:ssl? (if (equal? "https" (url-scheme url))
-                                (current-https-protocol)
-                                #f))))
+  (cond
+    [(not proxy)
+     (let ([target-port-number (or (url-port url) (url->default-port url))]
+           [target-host (url-host url)])
+       (hc:http-conn-open target-host
+                          #:port target-port-number
+                          #:ssl? (if (equal? "https" (url-scheme url))
+                                   (current-https-protocol)
+                                   #f)))]
+    [(proxy-tunneled? url)
+     (let ([proxy-port-number (caddr proxy)]
+           [proxy-host (cadr proxy)])
+       (define-values (tnl:ssl? tnl:from-port tnl:to-port tnl:abandon-p)
+         (hc:http-conn-CONNECT-tunnel proxy-host
+                                      proxy-port-number
+                                      (url-host url)
+                                      (or (url-port url) (url->default-port url))
+                                      #:ssl? (if (equal? "https" (url-scheme url))
+                                               (current-https-protocol)
+                                               #f)))
+       (hc:http-conn-open (url-host url)
+                          #:port (or (url-port url) (url->default-port url))
+                          #:ssl? (list tnl:ssl? tnl:from-port tnl:to-port tnl:abandon-p)))]
+    [else 
+      (let ([proxy-port-number (caddr proxy)]
+            [proxy-host (cadr proxy)])
+        (hc:http-conn-open proxy-host
+                           #:port proxy-port-number
+                           #:ssl? (if (equal? "https" (url-scheme url))
+                                    (current-https-protocol)
+                                    #f)))]))
 
 ;; http://getpost-impure-port : bool x url x union (str, #f) x list (str)
 ;;                               -> hc
@@ -148,7 +191,7 @@
   (define access-string
     (ensure-non-empty
      (url->string
-      (if proxy
+      (if (and proxy (not (proxy-tunneled? url)))
           url
           ;; RFCs 1945 and 2616 say:
           ;;   Note that the absolute path cannot be empty; if none is present in
@@ -398,7 +441,7 @@
          [access-string
           (ensure-non-empty
            (url->string
-            (if proxy
+            (if (and proxy (not (proxy-tunneled? url)))
                 url
                 (make-url #f #f #f #f
                           (url-path-absolute? url)
@@ -505,3 +548,18 @@
                   #:data (or/c false/c bytes? string? hc:data-procedure/c)
                   #:content-decode (listof symbol?))
         (values bytes? (listof bytes?) input-port?))]))
+
+;; tcp-or-tunnel-connect : string string number -> (values input-port? output-port?)
+(define (tcp-or-tunnel-connect scheme host port)
+  (match (proxy-server-for scheme host)
+         [(list _ proxy-host proxy-port)
+          (define-values (t:ssl-ctx t:from t:to t:abandon-p)
+            (hc:http-conn-CONNECT-tunnel proxy-host proxy-port host port #:ssl? #f))
+          (values t:from t:to)]
+         [_ (tcp-connect host port)]))
+
+(provide
+ (contract-out
+  [tcp-or-tunnel-connect
+   (-> string? string? (between/c 1 65535)
+       (values input-port? output-port?))]))

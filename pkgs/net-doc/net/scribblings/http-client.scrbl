@@ -1,6 +1,8 @@
 #lang scribble/doc
 @(require "common.rkt" scribble/bnf
           (for-label net/http-client
+                     net/win32-ssl
+                     racket/tcp
                      racket/list
                      openssl))
 
@@ -32,7 +34,7 @@ Returns a fresh HTTP connection.
 }
 
 @defproc[(http-conn-open! [hc http-conn?] [host (or/c bytes? string?)]
-                          [#:ssl? ssl? (or/c boolean? ssl-client-context? symbol?) #f]
+                          [#:ssl? ssl?  base-ssl?-tnl/c #f]
                           [#:port port (between/c 1 65535) (if ssl? 443 80)])
          void?]{
 
@@ -46,7 +48,7 @@ If @racket[hc] is live, the connection is closed.
 }
 
 @defproc[(http-conn-open [host (or/c bytes? string?)]
-                         [#:ssl? ssl? (or/c boolean? ssl-client-context? symbol?) #f]
+                         [#:ssl? ssl?  base-ssl?-tnl/c #f]
                          [#:port port (between/c 1 65535) (if ssl? 443 80)])
          http-conn?]{
 
@@ -138,7 +140,7 @@ Calls @racket[http-conn-send!] and @racket[http-conn-recv!] in sequence.
 }
 
 @defproc[(http-sendrecv [host (or/c bytes? string?)] [uri (or/c bytes? string?)]
-                        [#:ssl? ssl? (or/c boolean? ssl-client-context? symbol?) #f]
+                        [#:ssl? ssl? base-ssl?-tnl/c #f]
                         [#:port port (between/c 1 65535) (if ssl? 443 80)]
                         [#:version version (or/c bytes? string?) #"1.1"]                          
                         [#:method method (or/c bytes? string? symbol?) #"GET"]
@@ -157,12 +159,61 @@ response, which is why there is no @racket[#:closed?] argument like
 
 }
 
+@defproc[(http-conn-CONNECT-tunnel [proxy-host (or/c bytes? string?)]
+                                   [proxy-port (between/c 1 65535)]
+                                   [target-host (or/c bytes? string?)]
+                                   [target-port (between/c 1 65535)]
+                                   [#:ssl? ssl? base-ssl?/c #f])
+         (values base-ssl?/c input-port? output-port? (-> port? void?))]{
+Creates an HTTP connection to @racket[proxy-host] (on port @racket[proxy-port])
+ and invokes the HTTP ``CONNECT'' method to provide a tunnel to
+ @racket[target-host] (on port @racket[target-port]).
+
+ The SSL context or symbol, if any, provided in @racket[ssl?]
+ is applied to the gateway ports using @racket[ports->ssl-ports] (or @racket[ports->win32-ssl-ports]).
+
+ The function returns four values:
+ @itemize[
+ @item{If @racket[ssl?] was @racket[#f] then @racket[#f]. Otherwise an @racket[ssl-client-context?]
+       that has been negotiated with the target.
+       
+   If @racket[ssl?] was a protocol symbol, then a new @racket[ssl-client-context?] is created,
+   otherwise the current value of @racket[ssl?] is used}
+ @item{An @racket[input-port?] from the tunnelled service}
+ @item{An @racket[output-port?] to the tunnelled service}
+ @item{An abandon function, which when applied either returned port, will abandon it, in a manner
+   similar to @racket[tcp-abandon-port]}
+ ]
+ The SSL context or symbol, if any, provided in @racket[ssl?]
+ is applied to the gateway ports using @racket[ports->ssl-ports] (or @racket[ports->win32-ssl-ports])
+ and the negotiated client context is returned
+}
+
 @defthing[data-procedure/c chaperone-contract?]{
 
 Contract for a procedure that accepts a procedure of one
 argument, which is a string or byte string:
 @racket[(-> (-> (or/c bytes? string?) void?) any)].
 
+}
+
+@defthing[base-ssl?/c contract?]{
+ Base contract for the definition of the SSL context (passed in @racket[ssl?]) of an
+ @racket[http-conn-CONNECT-tunnel]:
+ 
+ @racket[(or/c boolean? ssl-client-context? symbol?)].
+
+ If @racket[ssl?] is not @racket[#f] then @racket[ssl?] is used as an argument to
+ @racket[ssl-connect] to, for example, check certificates.
+}
+
+@defthing[base-ssl?-tnl/c contract?]{
+ Contract for a @racket[base-ssl?/c] that might have been applied to a tunnel.
+ It is either a @racket[base-ssl?/c], or a @racket[base-ssl?/c] consed onto a list of an
+ @racket[input-port?], @racket[output-port?], and an abandon function
+ (e.g. @racket[tcp-abandon-port]):
+ 
+ @racket[(or/c base-ssl?/c (list/c base-ssl?/c input-port? output-port? (-> port? void?)))]
 }
 
 @section[#:tag "faq"]{Troubleshooting and Tips}
