@@ -5,8 +5,7 @@
          "blame.rkt"
          "guts.rkt")
 
-(provide box-immutable/c 
-         (rename-out [wrap-box/c box/c]))
+(provide box-immutable/c box/c)
 
 (define/subexpression-pos-prop (box-immutable/c elem)
   (box/c elem #:immutable #t))
@@ -180,7 +179,7 @@
    #:stronger box/c-stronger
    #:late-neg-projection (ho-late-neg-projection impersonate-box)))
 
-(define-syntax (wrap-box/c stx)
+(define-syntax (box/c stx)
   (syntax-case stx ()
     [x
      (identifier? #'x)
@@ -189,50 +188,47 @@
       'racket/contract:contract
       (vector (gensym 'ctc) (list #'x) null))]
     [(b/c arg ...)
-     (let ([args (syntax->list #'(arg ...))]
-           [this-one (gensym 'ctc)])
-       (define (convert-args args)
-         (let loop ([args args]
-                    [new-args null])
-           (cond
-             [(null? args) (reverse new-args)]
-             [(keyword? (syntax-e (car args)))
-              (if (null? (cdr args))
-                  (reverse (cons (car args) new-args))
-                  (loop (cddr args)
-                        (list* (cadr args) (car args) new-args)))]
-             [else (append (reverse new-args)
-                           (cons (syntax-property
-                                  (syntax-property
-                                   (car args)
-                                   'racket/contract:negative-position
-                                   this-one)
-                                  'racket/contract:positive-position
-                                  this-one)
-                                 (cdr args)))])))
-       (with-syntax ([(new-arg ...) (convert-args args)]
-                     [app (datum->syntax stx '#%app)])
+     (let ([this-one (gensym 'ctc)])
+       (define (add-properties args)
+         (let loop ([args args])
+           (syntax-case args ()
+             [() '()]
+             [(kwd arg . more)
+              (keyword? (syntax-e #'kwd))
+              (list* #'kwd (add-property #'arg) (loop #'more))]
+             [(arg . more)
+              (cons (add-property #'arg) (loop #'more))])))
+       (define (add-property arg)
          (syntax-property
-          (syntax/loc stx
-            (app box/c new-arg ...))
+          (syntax-property
+           arg
+           'racket/contract:negative-position
+           this-one)
+          'racket/contract:positive-position
+          this-one))
+       (with-syntax ([app (datum->syntax stx '#%app)])
+         (syntax-property
+          (quasisyntax/loc stx
+            (app box/c/proc #,@(add-properties #'(arg ...))))
           'racket/contract:contract
           (vector this-one (list #'b/c) null))))]))
 
-(define (box/c elem-w [elem-r elem-w] #:immutable [immutable 'dont-care] #:flat? [flat? #f])
-  (let ([ctc-w (if flat?
-                   (coerce-flat-contract 'box/c elem-w)
-                   (coerce-contract 'box/c elem-w))]
-        [ctc-r (if flat?
-                   (coerce-flat-contract 'box/c elem-r)
-                   (coerce-contract 'box/c elem-w))])
-    (cond
-      [(or flat?
-           (and (eq? immutable #t)
-                (flat-contract? ctc-r)))
-       (make-flat-box/c ctc-w ctc-r immutable)]
-      [(and (chaperone-contract? ctc-w)
-            (chaperone-contract? ctc-r))
-       (make-chaperone-box/c ctc-w ctc-r immutable)]
-      [else
-       (make-impersonator-box/c ctc-w ctc-r immutable)])))
-
+(define (box/c/proc elem-w [elem-r elem-w] #:immutable [immutable 'dont-care] #:flat? [flat? #f])
+  (define ctc-w
+    (if flat?
+        (coerce-flat-contract 'box/c elem-w)
+        (coerce-contract 'box/c elem-w)))
+  (define ctc-r
+    (if flat?
+        (coerce-flat-contract 'box/c elem-r)
+        (coerce-contract 'box/c elem-w)))
+  (cond
+    [(or flat?
+         (and (equal? immutable #t)
+              (flat-contract? ctc-r)))
+     (make-flat-box/c ctc-w ctc-r immutable)]
+    [(and (chaperone-contract? ctc-w)
+          (chaperone-contract? ctc-r))
+     (make-chaperone-box/c ctc-w ctc-r immutable)]
+    [else
+     (make-impersonator-box/c ctc-w ctc-r immutable)]))
