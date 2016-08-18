@@ -1713,7 +1713,7 @@ on how the clauses hide the values.
 The implementation of @racket[contract-out] uses
 @racket[syntax-property] to attach properties to the code it generates
 that records the syntax of the contracts in the fully expanded program.
-Specifically, the symbol @racket['provide/contract-original-contract]
+Specifically, the symbol @indexed-racket['provide/contract-original-contract]
 is bound to vectors of two elements, the exported identifier and a
 syntax object for the expression that produces the contract controlling
 the export.
@@ -2793,8 +2793,8 @@ To make Check Syntax show obligation information for your new contract
 combinators, use the following properties (some helper macros and functions
 are below):
 
-@itemize[@item{@racketblock0['racket/contract:contract :
-                             (vector/c symbol? (listof syntax?) (listof syntax?))]
+@itemize[@item{@index["racket/contract:contract"]
+ @racketblock0['racket/contract:contract : (vector/c symbol? (listof syntax?) (listof syntax?))]
                 This property should be attached to the result of a transformer
                 that implements a contract combinator. It signals to Check Syntax
                 that this is where a contract begins.
@@ -2815,7 +2815,8 @@ are below):
                 the @racket[->*] and the @racket[#:post] should be in the first
                 list and @racket[#:pre] in the second list.}
 
-          @item{@racketblock0['racket/contract:negative-position : symbol?]
+          @item{@index["racket/contract:negative-position"]
+                @racketblock0['racket/contract:negative-position : symbol?]
                  This property should be attached to sub-expressions of
                  a contract combinator that are expected to be other contracts.
                  The value of the property should be the key (the first element from
@@ -2825,13 +2826,15 @@ are below):
                  This property should be used when the expression's value is a contract
                  that clients are responsible for. }
 
-          @item{@racketblock0['racket/contract:positive-position : symbol?]
+          @item{@index["racket/contract:positive-position"]
+                @racketblock0['racket/contract:positive-position : symbol?]
                  This form is just like @racket['racket/contract:negative-position],
                  except that it should be used when the expression's value is
                  a contract that the original party should be responsible for.
                  }
 
-          @item{@racketblock0['racket/contract:contract-on-boundary : symbol?]
+          @item{@index["racket/contract:contract-on-boundary"]
+                @racketblock0['racket/contract:contract-on-boundary : symbol?]
                  The presence of this property tells Check Syntax that it
                  should start coloring from this point. It expects the expression
                  to be a contract
@@ -2841,9 +2844,9 @@ are below):
                  (The value of the property is not used.)
                  }
 
-          @item{@racketblock0['racket/contract:internal-contract : symbol?]
-
-                 Like @racket['racket/contract:contract-on-boundary], the presence
+          @item{@index["racket/contract:internal-contract"]
+                @racketblock0['racket/contract:internal-contract : symbol?]
+                Like @racket['racket/contract:contract-on-boundary], the presence
                  of this property triggers coloring, but this is meant for use
                  when the party (module) containing the contract (regardless of whether
                  or not this module exports anything matching the contract)
