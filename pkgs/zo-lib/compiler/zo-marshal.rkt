@@ -654,17 +654,17 @@
                                          (if (function-shape-preserves-marks? constantness) 1 0))]))]
                        [(struct-type-shape? constantness)
                         (to-sym (arithmetic-shift (struct-type-shape-field-count constantness)
-                                                  4))]
+                                                  3))]
                        [(constructor-shape? constantness)
                         (to-sym (bitwise-ior 1 (arithmetic-shift (constructor-shape-arity constantness)
-                                                                 4)))]
+                                                                 3)))]
                        [(predicate-shape? constantness) (to-sym 2)]
                        [(accessor-shape? constantness)
                         (to-sym (bitwise-ior 3 (arithmetic-shift (accessor-shape-field-count constantness)
-                                                                 4)))]
+                                                                 3)))]
                        [(mutator-shape? constantness)
                         (to-sym (bitwise-ior 4 (arithmetic-shift (mutator-shape-field-count constantness)
-                                                                 4)))]
+                                                                 3)))]
                        [(struct-type-property-shape? constantness)
                         (to-sym #:prefix "prop" 
                                 (if (struct-type-property-shape-has-guard? constantness)
@@ -1197,7 +1197,7 @@
                                         (append
                                          (vector->list closure-map)
                                          (let* ([v (make-vector (ceiling 
-                                                                 (/ (* BITS_PER_ARG (+ num-params (vector-length closure-map)))
+                                                                 (/ (* BITS_PER_ARG (+ num-all-params (vector-length closure-map)))
                                                                     BITS_PER_MZSHORT)))]
                                                 [set-bit! (lambda (i bit)
                                                             (let ([pos (quotient (* BITS_PER_ARG i) BITS_PER_MZSHORT)])

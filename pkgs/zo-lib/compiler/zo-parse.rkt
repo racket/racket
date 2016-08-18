@@ -801,7 +801,7 @@
                                        (define n (string->number (substring (symbol->string shape) 4)))
                                        (case n
                                          [(0 1) (make-struct-type-property-shape (= n 1))]
-                                         [(3) (make-property-predicate-shape)]
+                                         [(2) (make-property-predicate-shape)]
                                          [else (make-property-accessor-shape)])]
                                       [else
                                        ;; parse symbol as ":"-separated sequence of arities
