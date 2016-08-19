@@ -21,6 +21,24 @@
          splicing-local
          splicing-syntax-parameterize)
 
+(module syntax/loc/props racket/base
+  (require (for-syntax racket/base))
+  (provide syntax/loc/props quasisyntax/loc/props)
+
+  (define-syntaxes [syntax/loc/props quasisyntax/loc/props]
+    (let ()
+      (define (mk-syntax/loc/props syntax-id)
+        (λ (stx)
+          (syntax-case stx ()
+            [(_ src-expr template)
+             #`(let ([src src-expr])
+                 (datum->syntax (quote-syntax #,stx) (syntax-e (#,syntax-id template)) src src))])))
+      (values (mk-syntax/loc/props #'syntax)
+              (mk-syntax/loc/props #'quasisyntax)))))
+
+(require (for-syntax 'syntax/loc/props)
+         (for-meta 2 'syntax/loc/props))
+
 (define-syntax (splicing-local stx)
   (do-local stx (lambda (def-ctx expand-context sbindings vbindings bodys)
                   (if (eq? 'expression (syntax-local-context))
@@ -31,7 +49,7 @@
                          #,@bodys))
                       ;; Since we alerady have bindings for the current scopes,
                       ;; add an extra scope for re-binding:
-                      (let ([i (make-syntax-introducer)])
+                      (let ([i (make-syntax-introducer #t)])
                         (with-syntax ([([s-ids s-rhs] ...) (i sbindings)]
                                       [([(v-id ...) v-rhs] ...) (i vbindings)]
                                       [(body ...) (i bodys)]
@@ -98,7 +116,7 @@
                          [rec? rec?]
                          [(marked-id markless-id)
                           (let ([id #'id])
-                            (list ((make-syntax-introducer) id)
+                            (list ((make-syntax-introducer #t) id)
                                   id))])
              (with-syntax ([(top-decl ...)
                             (if (and need-top-decl? (equal? 'top-level (syntax-local-context)))
@@ -152,16 +170,16 @@
                            #%provide
                            #%declare)
          [(begin form ...)
-          (syntax/loc body
+          (syntax/loc/props body
             (begin (splicing-let-body marked-id markless-id form) ...))]
          [(define-values ids rhs)
-          (quasisyntax/loc body
+          (quasisyntax/loc/props body
             (define-values #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
          [(define-syntaxes ids rhs)
-          (quasisyntax/loc body
+          (quasisyntax/loc/props body
             (define-syntaxes #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
          [(begin-for-syntax e ...)
-          (syntax/loc body
+          (syntax/loc/props body
             (begin-for-syntax (splicing-let-body/et marked-id markless-id e) ...))]
          [(module . _) (unintro body)]
          [(module* . _) body]
@@ -192,13 +210,13 @@
                              #%provide
                              #%declare)
            [(begin form ...)
-            (syntax/loc body
+            (syntax/loc/props body
               (begin (splicing-let-body/et marked-id markless-id form) ...))]
            [(define-values ids rhs)
-            (quasisyntax/loc body
+            (quasisyntax/loc/props body
               (define-values #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
            [(define-syntaxes ids rhs)
-            (quasisyntax/loc body
+            (quasisyntax/loc/props body
               (define-syntaxes #,(map (maybe unintro) (syntax->list #'ids)) rhs))]
            [(begin-for-syntax . es)
             ;; Give up on splicing definitions at phase level 2 and deeper:
@@ -249,7 +267,7 @@
            (with-syntax ([((vid ...) ...) all-vids]
                          [(marked-id markless-id)
                           (let ([id #'id])
-                            (list ((make-syntax-introducer) id)
+                            (list ((make-syntax-introducer #t) id)
                                   id))])
              (with-syntax ([(top-decl ...)
                             (if (equal? 'top-level (syntax-local-context))
@@ -311,18 +329,18 @@
                                #%provide
                                #%declare )
               [(begin expr ...)
-               (syntax/loc body
+               (syntax/loc/props body
                  (begin (expand-ssp-body (sp-id ...) (temp-id ...) (orig-id ...) expr) ...))]
               [(define-values (id ...) rhs)
-               (syntax/loc body
+               (syntax/loc/props body
                  (define-values (id ...)
                    (letrec-syntaxes ([(sp-id) (syntax-local-value (quote-syntax temp-id))] ...)
                      rhs)))]
               [(define-syntaxes ids rhs)
-               (syntax/loc body
+               (syntax/loc/props body
                  (define-syntaxes ids (wrap-param-et rhs (orig-id ...) (temp-id ...))))]
               [(begin-for-syntax e ...)
-               (syntax/loc body
+               (syntax/loc/props body
                  (begin-for-syntax (wrap-param-et e (orig-id ...) (temp-id ...)) ...))]
               [(module . _) body]
               [(module* . _) body]
@@ -382,12 +400,12 @@
                                #%require #%provide #%declare
                                quote-syntax)
                 [(begin form ...)
-                 (syntax/loc e
+                 (syntax/loc/props e
                    (begin (wrap-param-et form (orig-id ...) (temp-id ...)) ...))]
                 [(define-syntaxes . _) e]
                 [(begin-for-syntax . _) e]
                 [(define-values ids rhs)
-                 (syntax/loc e
+                 (syntax/loc/props e
                    (define-values ids (wrap-param-et rhs (orig-id ...) (temp-id ...))))]
                 [(module . _) e]
                 [(module* . _) e]
