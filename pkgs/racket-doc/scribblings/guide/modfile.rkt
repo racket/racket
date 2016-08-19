@@ -10,7 +10,7 @@
 
 (define-syntax (racketmodfile stx)
   (syntax-case stx ()
-    [(_ file)
+    [(_ file displayed-name)
      (let ([f (path->complete-path (syntax-e #'file)
                                    (or (current-load-relative-directory)
                                        (current-directory)))])
@@ -27,4 +27,8 @@
                                  null 
                                  (cons (replace-context #'file v) 
                                        (loop)))))))])
-         #'(racketmod #:file file content ...)))]))
+         #'(racketmod #:file displayed-name content ...)))]
+    [(_ file)
+     #'(racketmodfile file file)]))
+
+
