@@ -522,6 +522,85 @@ identifiers in the syntax will need bindings at @deftech{phase level
 binding at the run-time phase level relative to the module that
 defines the macro.
 
+For instance, the @racket[swap-stx] helper function in the example below
+is not a syntax transformer --- it's just an ordinary function --- but it 
+produces syntax objects that get spliced into the result of 
+@racket[shell-game]. Therefore, its containing @racket[helper] submodule 
+needs to be imported at @racket[shell-game]'s phase 1 with 
+@racket[(require (for-syntax 'helper))]. 
+
+But from the perspective of @racket[swap-stx], its results will ultimately
+be evaluated at phase level -1, when the syntax 
+returned by @racket[shell-game] is evaluated. In other words, a negative phase
+level is a positive phase level from the opposite direction: 
+@racket[shell-game]'s phase 1 is @racket[swap-stx]'s phase 0, so 
+@racket[shell-game]'s phase 0 is @racket[swap-stx]'s phase -1. 
+And that's why this example won't work --- the @racket['helper] submodule 
+has no bindings at phase -1.
+
+@codeblock|{
+#lang racket/base
+(require (for-syntax racket/base))
+
+(module helper racket/base
+  (provide swap-stx)
+  (define (swap-stx a-stx b-stx)
+    #`(let ([tmp #,a-stx])
+          (set! #,a-stx #,b-stx)
+          (set! #,b-stx tmp))))
+
+(require (for-syntax 'helper))
+
+(define-syntax (shell-game stx)
+  (syntax-case stx ()
+    [(_ a b c)
+     #`(begin
+         #,(swap-stx #'a #'b)
+         #,(swap-stx #'b #'c)
+         #,(swap-stx #'a #'c)
+         (list a b c))]))
+
+(define x 3)
+(define y 4)
+(define z 5)
+(shell-game x y z)
+}|
+
+To repair this example, we add @racket[(require (for-template racket/base))]
+to the @racket['helper] submodule.
+
+@codeblock|{
+#lang racket/base
+(require (for-syntax racket/base))
+
+(module helper racket/base
+  (require (for-template racket/base)) ; binds `let` and `set!` at phase -1
+  (provide swap-stx)
+  (define (swap-stx a-stx b-stx)
+    #`(let ([tmp #,a-stx])
+          (set! #,a-stx #,b-stx)
+          (set! #,b-stx tmp))))
+
+(require (for-syntax 'helper))
+
+(define-syntax (shell-game stx)
+  (syntax-case stx ()
+    [(_ a b c)
+     #`(begin
+         #,(swap-stx #'a #'b)
+         #,(swap-stx #'b #'c)
+         #,(swap-stx #'a #'c)
+         (list a b c))]))
+
+(define x 3)
+(define y 4)
+(define z 5)
+(shell-game x y z)
+(shell-game x y z)
+(shell-game x y z)}|
+
+
+
 @; ----------------------------------------
 
 @include-section["phases.scrbl"]
