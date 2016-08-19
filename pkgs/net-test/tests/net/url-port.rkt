@@ -161,4 +161,7 @@
                             (ports->ssl-ports in out #:mode 'accept #:context ctx)))
                 #t))))
 
-(module+ test (require (submod ".." main))) ; for raco test & drdr
+(module+ test
+  (module config info
+    (define timeout 300))
+  (require (submod ".." main))) ; for raco test & drdr
