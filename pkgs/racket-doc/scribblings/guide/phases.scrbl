@@ -303,12 +303,12 @@ it doesn't:
 
 The @racket[see-button] inside macro @racket[m] comes from the
 @racket[(for-syntax 'a)] import.  For macro @racket[m] to work, it needs to 
-have @racket[button] bound at phase 0. That binding exists --- it's implied by
+have @racket[button] bound at phase 0. That binding exists---it's implied by
 @racket[(require 'a)].  However, @racket[(require 'a)] and
 @racket[(require (for-syntax 'a))] are @emph{different instantiations}
 of the same module.  The @racket[see-button] at phase 1 only refers to
 the @racket[button] at phase 1, not the @racket[button] bound at
-phase 0 from a different instantiation --- even from the same source
+phase 0 from a different instantiation---even from the same source
 module.
 
 This kind of phase-level mismatch between instantiations can be repaired 
@@ -329,8 +329,8 @@ Note that @racket[syntax-shift-phase-level] merely creates a reference
 across phases. To make that reference work, we still need to instantiate our 
 module at both phases so the reference and its target have their bindings 
 available. Thus, in module @racket['b],
-we still import module @racket['a] at both phase 0 and phase 1
---- using @racket[(require 'a (for-syntax 'a))] --- so we have a phase-1 
+we still import module @racket['a] at both phase 0 and phase
+1---using @racket[(require 'a (for-syntax 'a))]---so we have a phase-1 
 binding for @racket[see-button] and a phase-0 binding for @racket[button].
 Now macro @racket[m] will work.
 
@@ -353,7 +353,7 @@ By the way, what happens to the @racket[see-button] that's bound at phase 0?
 Its @racket[#'button] binding has likewise been shifted, but to phase -1. Since 
 @racket[button] itself isn't bound at phase -1, if we try to evaluate 
 @racket[see-button] at phase 0, we get an error. In other words, we haven't permanently 
-cured our mismatch problem --- we've just shifted it to a less bothersome location.
+cured our mismatch problem---we've just shifted it to a less bothersome location.
 
 @interaction[
 (module a racket
