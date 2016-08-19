@@ -53,6 +53,7 @@
     $ "raco pkg install -u --copy test-pkgs/pkg-test1"
     $ "racket -l pkg-test1"  =stdout> #rx"main loaded"
     $ "raco pkg install -i --copy test-pkgs/pkg-test1"
+    $ "raco pkg install --skip-installed -u --copy test-pkgs/pkg-test1"
     $ "raco pkg remove -i --no-trash pkg-test1" =stdout> "Removing pkg-test1\n"
     $ "raco pkg remove --no-trash pkg-test1" =stdout> "Removing pkg-test1\n")
 

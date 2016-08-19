@@ -877,9 +877,8 @@
                                                    download-printf)
          given-descs))
 
-  (define db (and (or check-pkg-early?
-                      skip-installed?)
-                  (read-pkg-db)))
+  (define all-scope-dbs (and skip-installed? (merge-pkg-dbs)))
+  (define db (and check-pkg-early? (read-pkg-db)))
 
   (define filtered-descs
     (remove-duplicates
@@ -887,7 +886,7 @@
          descs
          (filter (lambda (d)
                    (define pkg-name (desc->name d))
-                   (define i (hash-ref db pkg-name #f))
+                   (define i (hash-ref all-scope-dbs pkg-name #f))
                    (or (not i) (pkg-info-auto? i)))
                  descs))
      pkg-desc=?))
