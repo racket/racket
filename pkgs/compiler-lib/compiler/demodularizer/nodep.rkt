@@ -102,7 +102,12 @@
           (make-module-code modvar-rewrite lang-info ctop))))))
 
 (define (nodep/dir top pth phase)
-  (parameterize ([current-module-path pth])
+  (define pth*
+    (cond 
+      [(string? pth) (string->path pth)]
+      [(list? pth) (cadr pth)]
+      [else pth]))
+  (parameterize ([current-module-path pth*])
     (nodep top phase)))
 
 (define (nodep top phase)

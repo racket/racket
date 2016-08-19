@@ -11,9 +11,11 @@
 
 (provide current-excluded-modules
          garbage-collect-toplevels-enabled
+         recompile-enabled
          demodularize)
 
 (define garbage-collect-toplevels-enabled (make-parameter #f))
+(define recompile-enabled (make-parameter #f))
 
 (define logger (make-logger 'demodularizer (current-logger)))
 
@@ -74,4 +76,16 @@
          merged-zo-path
        (lambda ()
          (zo-marshal-to batch-mod (current-output-port)))
-       #:exists 'replace))))
+       #:exists 'replace))
+  
+    (void
+      (when (recompile-enabled)
+        (define recomp
+          (compiled-expression-recompile 
+            (parameterize ([read-accept-compiled #t])
+              (call-with-input-file merged-zo-path read))))
+        (call-with-output-file merged-zo-path
+          (lambda (out)
+            (write recomp out))
+          #:exists 'replace)))))
+
