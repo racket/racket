@@ -37,9 +37,11 @@ struct SFS_Info {
   int tail_pos; /* in tail position? */
   int depth, stackpos, tlpos; /* stack shape */
   int selfpos, selfstart, selflen; /* tracks self calls */
-  int ip; /* "instruction pointer" --- counts up during traversal of expressions */
+  int ip; /* "instruction pointer" --- counts up during traversal of expressions, but special in `if` */
+  int abs_ip; /* like `ip`, but no special `if` adjustment */
   int seqn; /* tracks nesting */
-  int max_nontail; /* ip of last non-tail call in the body */
+  int max_nontail; /* ip of last non-tail call in the body w.r.t. the most recent binding */
+  int abs_max_nontail; /* ip of last non-tail call in the body */
   int min_touch, max_touch; /* tracks range of `macx_used' values changed */
   int *max_used; /* maps stack position (i.e., variable) to ip of the variable's last use */
   int *max_calls; /* maps stack position to ip of last non-tail call in variable's scope */
@@ -76,6 +78,7 @@ Scheme_Object *scheme_sfs(Scheme_Object *o, SFS_Info *info, int max_let_depth)
 
   info->pass = 0;
   info->ip = 1;
+  info->abs_ip = 1;
   info->saved = scheme_null;
   info->min_touch = -1;
   info->max_touch = -1;
@@ -88,6 +91,7 @@ Scheme_Object *scheme_sfs(Scheme_Object *o, SFS_Info *info, int max_let_depth)
 
 # if MAX_SFS_CLEARING
   info->max_nontail = info->ip;
+  info->abs_max_nontail = info->abs_ip;
 # endif
 
   for (i = info->depth; i-- > init; ) {
@@ -103,6 +107,7 @@ Scheme_Object *scheme_sfs(Scheme_Object *o, SFS_Info *info, int max_let_depth)
   info->pass = 1;
   info->seqn = 0;
   info->ip = 1;
+  info->abs_ip = 1;
   info->tail_pos = 1;
   info->stackpos = init;
   o = scheme_sfs_expr(o, info, -1);
@@ -164,6 +169,8 @@ void scheme_sfs_start_sequence(SFS_Info *info, int cnt, int last_is_tail)
 void scheme_sfs_push(SFS_Info *info, int cnt, int track)
 {
   info->stackpos -= cnt;
+
+  SFS_LOG(printf("push %d [%d]: %d\n", cnt, track, info->stackpos));
 
   if (info->stackpos < 0)
     scheme_signal_error("internal error: pushed too deep");
@@ -249,6 +256,7 @@ static void sfs_note_app(SFS_Info *info, Scheme_Object *rator, int flags)
           return;
       }
       info->max_nontail = info->ip;
+      info->abs_max_nontail = info->abs_ip;
     } else {
       int tail_ok = (flags & APPN_FLAG_SFS_TAIL);      
       if (!MAX_SFS_CLEARING && (info->selfpos >= 0)) {
@@ -264,8 +272,10 @@ static void sfs_note_app(SFS_Info *info, Scheme_Object *rator, int flags)
           tail_ok = 1;
         }
       }
-      if (!tail_ok)
+      if (!tail_ok) {
         info->max_nontail = info->ip;
+        info->abs_max_nontail = info->abs_ip;
+      }
     }
   }
 }
@@ -403,13 +413,13 @@ static Scheme_Object *sfs_sequence(Scheme_Object *o, SFS_Info *info, int can_fla
   return o;
 }
 
-#define SFS_BRANCH_W 4
+#define SFS_BRANCH_W 5
 
 static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip, 
                                      Scheme_Object *vec, int delta,
                                      Scheme_Object *tbranch)
 {
-  int t_min_t, t_max_t, t_cnt, n, stackpos, i, save_nt, b_end, nt;
+  int t_min_t, t_max_t, t_cnt, n, stackpos, i, save_nt, b_end, nt, else_end_abs;
   Scheme_Object *t_vec, *o;
   Scheme_Object *clears = scheme_null;
 
@@ -452,9 +462,11 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
        in this branch). */
     o = SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 3];
     b_end = SCHEME_INT_VAL(o);
-    SFS_LOG(printf(" %d %d %d %d\n", nt, ip, b_end, save_nt));
+    o = SCHEME_VEC_ELS(vec)[SFS_BRANCH_W + 4];
+    else_end_abs = SCHEME_INT_VAL(o);
+    SFS_LOG(printf(" %d %d %d %d %d\n", nt, ip, b_end, else_end_abs, info->abs_max_nontail));
     if (((nt > (ip + 1)) && (nt < b_end)) /* => non-tail call in branch */
-        || ((ip + 1) < save_nt)) { /* => non-tail call after branches */
+        || (else_end_abs < info->abs_max_nontail)) { /* => non-tail call after branches */
       SFS_LOG(printf(" other\n"));
       o = SCHEME_VEC_ELS(vec)[(1 - delta) * SFS_BRANCH_W];
       t_min_t = SCHEME_INT_VAL(o);
@@ -474,8 +486,10 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
             at_ip = info->max_used[pos];
             SFS_LOG(printf(" ?%d[%d] %d %d\n", pos, i, n, at_ip));
             /* is last use in other branch? */
-            if (((!delta && (at_ip == ip))
-                 || (delta && (at_ip == n)))) {
+            if ((((!delta && (at_ip == ip))
+                  || (delta && (at_ip == n))))
+                /* and a relevant non-tail call happens after uses */
+                && (info->max_calls[pos] > info->max_used[pos])) {
               /* Yes, so add clear */
               SFS_LOG(printf(" !%d %d %d\n", pos, n, at_ip));
               pos -= info->stackpos;
@@ -495,8 +509,10 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
   if (info->pass)
     info->max_nontail = save_nt;
 # if MAX_SFS_CLEARING
-  else
+  else {
     info->max_nontail = info->ip;
+    info->abs_max_nontail = info->abs_ip;
+  }
 # endif
 
   tbranch = scheme_sfs_add_clears(tbranch, clears, 1);
@@ -532,6 +548,7 @@ static Scheme_Object *sfs_one_branch(SFS_Info *info, int ip,
     SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 1] = t_vec;
     SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 2] = scheme_make_integer(info->max_nontail);
     SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 3] = scheme_make_integer(info->ip);
+    SCHEME_VEC_ELS(vec)[(delta * SFS_BRANCH_W) + 4] = scheme_make_integer(info->abs_ip);
   }
 
   memset(info->max_used + info->stackpos, 0, (stackpos - info->stackpos) * sizeof(int));
@@ -1357,6 +1374,7 @@ Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_
     info->tail_pos = 0;
   }
   info->ip++;
+  info->abs_ip++;
 
   switch (type) {
   case scheme_local_type:

@@ -313,5 +313,49 @@
     (test #t < (f #f #f values 100) 33)))
 
 ;; ----------------------------------------
+;; Check space safety related to `if` under a more nested `let` than
+;; a relevant binding
+
+(module allocates-many-vectors racket/base
+  (provide go)
+  
+  (define (f x y)
+    (let ([z (make-vector 1024 x)]) ; problem if `z` is retained during non-tail `(y)`
+      (let ([w (cons x x)])
+        (if (pair? x)
+            'ok ; SFS pass should clear `z` in or after this branch
+            (error "done" x z z w w)))
+      (box (y))))
+
+  (set! f f)
+  
+  (define (go)
+    (let loop ([n 100000])
+      (f '(1 2) (lambda ()
+                  (if (zero? n)
+                      'done
+                      (unbox (loop (sub1 n)))))))))
+
+(let ([init-memory-use (current-memory-use)])
+  (define done? #f)
+  (define t (thread (lambda ()
+                      ((dynamic-require ''allocates-many-vectors 'go))
+                      (set! done? #t))))
+  (define watcher-t (thread
+                     (lambda ()
+                       (let loop ()
+                         (sleep 0.1)
+                         (define mu (current-memory-use))
+                         (printf "~s\n" mu)
+                         (cond
+                          [(mu . < . (+ init-memory-use (* 100 1024 1024)))
+                           (loop)]
+                          [else
+                           (kill-thread t)])))))
+  (sync t)
+  (kill-thread watcher-t)
+  (test #t 'many-vectors-in-reasonable-space? done?))
+
+;; ----------------------------------------
 
 (report-errs)
