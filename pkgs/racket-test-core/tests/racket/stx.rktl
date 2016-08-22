@@ -578,6 +578,21 @@
   (test 'x cadddr b)
   (test #t equal? (car b) (caddr b)))
 
+;; Top-level bindings:
+(test #f identifier-binding #'test 0)
+(test #f identifier-binding #'test 0 #f)
+(test '(test) identifier-binding #'test 0 #t)
+(test '#f identifier-binding #'this-identifier-is-never-defined 0 #t)
+
+(define-syntax-rule (introduce-a-definition-of-x bind-id)
+  (begin
+    (define x 10)
+    (define bind-id (identifier-binding #'x 0 #t))))
+(introduce-a-definition-of-x sym-list-for-x)
+(test #t pair? sym-list-for-x)
+(test #t symbol? (car sym-list-for-x))
+(test #f eq? 'x (car sym-list-for-x)) ; since macro-introduced
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; identifier-binding and (nominal) phase reporting
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

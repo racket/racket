@@ -358,7 +358,7 @@ void scheme_init_stx(Scheme_Env *env)
   GLOBAL_IMMED_PRIM("free-template-identifier=?"       , free_templ_eq           , 2, 2, env);
   GLOBAL_IMMED_PRIM("free-label-identifier=?"          , free_label_eq           , 2, 2, env);
 
-  GLOBAL_IMMED_PRIM("identifier-binding"               , free_binding            , 1, 2, env);
+  GLOBAL_IMMED_PRIM("identifier-binding"               , free_binding            , 1, 3, env);
   GLOBAL_IMMED_PRIM("identifier-transformer-binding"   , free_trans_binding      , 1, 2, env);
   GLOBAL_IMMED_PRIM("identifier-template-binding"      , free_templ_binding      , 1, 1, env);
   GLOBAL_IMMED_PRIM("identifier-label-binding"         , free_label_binding      , 1, 1, env);
@@ -8481,6 +8481,7 @@ static Scheme_Object *do_free_binding(char *name, int argc, Scheme_Object **argv
 {
   Scheme_Object *a, *m, *nom_mod, *nom_a, *phase;
   Scheme_Object *src_phase_index, *mod_phase, *nominal_src_phase;
+  int top_level_as_symbol = 0;
 
   a = argv[0];
 
@@ -8506,6 +8507,9 @@ static Scheme_Object *do_free_binding(char *name, int argc, Scheme_Object **argv
       phase = scheme_bin_plus(dphase, phase);
   }
 
+  if (argc > 2)
+    top_level_as_symbol = SCHEME_TRUEP(argv[2]);
+
   m = scheme_stx_lookup_w_nominal(a, phase, 0,
                                   NULL, NULL, NULL, NULL,
                                   &nom_mod, &nom_a,
@@ -8529,8 +8533,10 @@ static Scheme_Object *do_free_binding(char *name, int argc, Scheme_Object **argv
     m = SCHEME_VEC_ELS(m)[0];
 
     if (SCHEME_FALSEP(m)) {
-      /* loses information; improve API in the future? */
-      return scheme_false;
+      if (top_level_as_symbol)
+        return CONS(a, scheme_null);
+      else 
+        return scheme_false;
     }
 
     return CONS(m, CONS(a, CONS(nom_mod, 

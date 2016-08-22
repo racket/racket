@@ -95,18 +95,21 @@ is @racket[#f].}
 
 @defproc[(identifier-binding [id-stx identifier?]
                              [phase-level (or/c exact-integer? #f)
-                                          (syntax-local-phase-level)])
+                                          (syntax-local-phase-level)]
+                             [top-level-symbol? any/c #f])
          (or/c 'lexical
                #f
-               (listof module-path-index?
+               (list/c module-path-index?
                        symbol?
                        module-path-index?
                        symbol?
                        exact-nonnegative-integer?
                        (or/c exact-integer? #f)
-                       (or/c exact-integer? #f)))]{
+                       (or/c exact-integer? #f))
+               (list/c symbol?))]{
 
-Returns one of three kinds of values, depending on the binding of
+Returns one of three (if @racket[top-level-symbol?] is @racket[#f])
+or four (if @racket[top-level-symbol?] is true) kinds of values, depending on the binding of
 @racket[id-stx] at the @tech{phase level} indicated by
 @racket[phase-level] (where a @racket[#f] value for
 @racket[phase-level] corresponds to the @tech{label phase level}):
@@ -166,19 +169,29 @@ Returns one of three kinds of values, depending on the binding of
 
         ]}
 
+      @item{The result is @racket[(list _source-id)] if @racket[id-stx] has a
+            @tech{top-level binding} and @racket[top-level-symbol?] is true.}
+
       @item{The result is @racket[#f] if @racket[id-stx] has a
-            @tech{top-level binding} (or, equivalently, if it is
-            @tech{unbound}).}
+            @tech{top-level binding} and @racket[top-level-symbol?] is
+            @racket[#f] or if @racket[id-stx] is @tech{unbound}. An
+            unbound identifier is typically treated the same as an
+            identifier whose top-level binding is a variable.}
 
       ]
 
 If @racket[id-stx] is bound to a @tech{rename-transformer}, the result
 from @racket[identifier-binding] is for the identifier in the
 transformer, so that @racket[identifier-binding] is consistent with
-@racket[free-identifier=?].}
+@racket[free-identifier=?].
+
+@history[#:changed "6.6.0.4" @elem{Added the @racket[top-level-symbol?] argument to report
+                                   information on top-level bindings.}]}
 
 
-@defproc[(identifier-transformer-binding [id-stx identifier?])
+@defproc[(identifier-transformer-binding [id-stx identifier?]
+                                         [rt-phase-level (or/c exact-integer? #f)
+                                                         (syntax-local-phase-level)])
          (or/c 'lexical
                #f
                (listof module-path-index?
@@ -189,7 +202,7 @@ transformer, so that @racket[identifier-binding] is consistent with
                        (or/c exact-integer? #f)
                        (or/c exact-integer? #f)))]{
 
-Same as @racket[(identifier-binding id-stx (add1 (syntax-local-phase-level)))].}
+Same as @racket[(identifier-binding id-stx (and rt-phase-level (add1 rt-phase-level)))].}
 
 
 @defproc[(identifier-template-binding [id-stx identifier?])
