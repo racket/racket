@@ -4,7 +4,7 @@
          syntax/parse/debug
          syntax/parse/define
          "setup.rkt"
-         (for-syntax syntax/parse))
+         (for-syntax syntax/parse racket/syntax))
 
 ;; Main syntax class and pattern tests
 
@@ -619,6 +619,21 @@
                   (syntax->datum #'(let ([x 1] [y 2] [z 3])
                                      (+ x y z))))
     ))
+
+(test-case "eh pattern-expander"
+  (define-syntax ~oncekw
+    (pattern-expander
+     (λ (stx)
+       (syntax-case stx ()
+         [(_ kw pat ...)
+          (keyword? (syntax-e #'kw))
+          (with-syntax ([name (format-id #'kw "~a-kw" (keyword->string (syntax-e #'kw)))])
+            #'(~once (~seq (~and kw name) pat ...)
+                     #:name (format "the ~a keyword" 'kw)))]))))
+  (check-equal? (syntax-parse #'(m #:a #:b 1 #:a)
+                  [(_ (~or #:a (~oncekw #:b b)) ...)
+                   (syntax->datum #'(b-kw b))])
+                '(#:b 1)))
 
 (test-case "this-syntax"
   (let ()

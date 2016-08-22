@@ -459,26 +459,14 @@
      (and (identifier? #'id)
           (not-shadowed? #'id)
           (pattern-expander? (syntax-local-value #'id (λ () #f))))
-     (let* ([proc (pattern-expander-proc (syntax-local-value #'id))]
-            [introducer (make-syntax-introducer)]
-            [mstx (introducer (syntax-local-introduce stx))]
-            [mresult (parameterize ([current-syntax-parse-pattern-introducer introducer])
-                       (proc mstx))]
-            [result (syntax-local-introduce (introducer mresult))])
-       (disappeared! #'id)
-       (recur result))]
+     (begin (disappeared! #'id)
+            (recur (expand-pattern (syntax-local-value #'id) stx)))]
     [(id . rst)
      (and (identifier? #'id)
           (not-shadowed? #'id)
           (pattern-expander? (syntax-local-value #'id (λ () #f))))
-     (let* ([proc (pattern-expander-proc (syntax-local-value #'id))]
-            [introducer (make-syntax-introducer)]
-            [mstx (introducer (syntax-local-introduce stx))]
-            [mresult (parameterize ([current-syntax-parse-pattern-introducer introducer])
-                       (proc mstx))]
-            [result (syntax-local-introduce (introducer mresult))])
-       (disappeared! #'id)
-       (recur result))]
+     (begin (disappeared! #'id)
+            (recur (expand-pattern (syntax-local-value #'id) stx)))]
     [wildcard
      (and (wildcard? #'wildcard)
           (not-shadowed? #'wildcard))
@@ -608,6 +596,16 @@
        (let ([lp (parse-single-pattern (datum->syntax #f contents #'s) decls)])
          (pat:pstruct key lp)))])))
 
+;; expand-pattern : pattern-expander Syntax -> Syntax
+(define (expand-pattern pe stx)
+  (let* ([proc (pattern-expander-proc pe)]
+         [introducer (make-syntax-introducer)]
+         [mstx (introducer (syntax-local-introduce stx))]
+         [mresult (parameterize ([current-syntax-parse-pattern-introducer introducer])
+                    (proc mstx))]
+         [result (syntax-local-introduce (introducer mresult))])
+    result))
+
 ;; parse-ellipsis-head-pattern : stx DeclEnv -> (listof EllipsisHeadPattern)
 (define (parse-ellipsis-head-pattern stx decls)
   (for/list ([ehpat+hstx (in-list (parse*-ellipsis-head-pattern stx decls #t))])
@@ -617,8 +615,22 @@
 ;;                             -> (listof (list EllipsisHeadPattern stx/eh-alternative))
 (define (parse*-ellipsis-head-pattern stx decls allow-or?
                                       #:context [ctx (current-syntax-context)])
+  (define (recur stx) (parse*-ellipsis-head-pattern stx decls allow-or? #:context ctx))
+  (define not-shadowed? (make-not-shadowed? decls))
   (syntax-case* stx (~eh-var ~or ~between ~optional ~once)
                 (make-not-shadowed-id=? decls)
+    [id
+     (and (identifier? #'id)
+          (not-shadowed? #'id)
+          (pattern-expander? (syntax-local-value #'id (lambda () #f))))
+     (begin (disappeared! #'id)
+            (recur (expand-pattern (syntax-local-value #'id) stx)))]
+    [(id . rst)
+     (and (identifier? #'id)
+          (not-shadowed? #'id)
+          (pattern-expander? (syntax-local-value #'id (lambda () #f))))
+     (begin (disappeared! #'id)
+            (recur (expand-pattern (syntax-local-value #'id) stx)))]
     [(~eh-var name eh-alt-set-id)
      (disappeared! stx)
      (let ()
