@@ -824,7 +824,8 @@ evaluted left-to-right.)
                                   indy-arg-vars ordered-args indy-res-vars ordered-ress 
                                   stx)
   (cond
-    [(and (istx-ress an-istx)
+    [(and (positive? (vector-length res-proj-vars))
+          (istx-ress an-istx)
           (andmap eres? (istx-ress an-istx)))
      (for/fold ([body stx])
        ([an-arg/res (in-list (reverse (istx-ress an-istx)))]
