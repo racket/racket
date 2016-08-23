@@ -140,10 +140,6 @@
   (contract-syntax-error-test
    '->i-stx23
    #'(->i ([f (f x) any/c]) (#:x [x any/c]) [res any/c]))
-
-  (test/spec-passed
-   '->i-stx24
-   '(->i () (values)))
   
   (test/spec-passed
    '->i1
@@ -292,6 +288,18 @@
      1
      -2
      -3))
+
+  (test/pos-blame
+   '->i30
+   '((contract (->i () (values))
+               (λ () 1)
+               'pos 'neg)))
+
+  (test/spec-passed
+   '->i31
+   '((contract (->i () (values))
+               values
+               'pos 'neg)))
   
   (test/spec-passed
    '->i-any1
