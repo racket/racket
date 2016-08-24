@@ -55,6 +55,9 @@
    'box/c7
    '(set-box! (contract (box/c boolean? any/c) (box 12) 'pos 'neg) 11))
   
+  (test/pos-blame
+   'box/c8
+   '(contract ((values box/c) any/c) #f 'pos 'neg))
   
   (test/neg-blame
    'box/c-with-cons/c-inside

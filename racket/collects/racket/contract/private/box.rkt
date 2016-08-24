@@ -184,7 +184,7 @@
     [x
      (identifier? #'x)
      (syntax-property
-      (syntax/loc stx box/c)
+      (syntax/loc stx box/c/proc)
       'racket/contract:contract
       (vector (gensym 'ctc) (list #'x) null))]
     [(b/c arg ...)
