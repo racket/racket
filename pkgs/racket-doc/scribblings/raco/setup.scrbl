@@ -49,8 +49,6 @@
 @(define ref-src
    '(lib "scribblings/reference/reference.scrbl"))
 
-@(define setup-plt @exec{setup-plt})
-
 @(define (defaults v) 
    @elem{The default is @|v|.})
 

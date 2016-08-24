@@ -51,7 +51,7 @@ the following additional associations apply to launchers:
 
  @item{@racket['independent?] (Windows) --- a boolean; @racket[#t]
        creates an old-style launcher that work with any
-       Racket or GRacket binary, like @exec{setup-plt.exe}. No other
+       Racket or GRacket binary, like @exec{raco.exe}. No other
        @racket[aux] associations are used for an old-style launcher.}
 
  @item{@racket['exe-name] (Mac OS X, @racket['script-3m] or

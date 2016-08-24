@@ -374,7 +374,7 @@ marks include @racket[managed-compiled-context-key] keys.
 
 @defboolparam[trust-existing-zos trust?]{
 
-A parameter that is intended for use by @exec{setup-plt} when
+A parameter that is intended for use by @exec{raco setup} when
 installing with pre-built @filepath{.zo} files. It causes a
 compilation-manager @racket[load/use-compiled] handler to ``touch''
 out-of-date @filepath{.zo} files instead of re-compiling from source.}

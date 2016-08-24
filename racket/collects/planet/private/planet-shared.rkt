@@ -131,7 +131,7 @@ Various common pieces of code that both the client and server need to access
   ;; lookup-package-by-keys : string string nat nat nat -> (list path string string (listof string) nat nat) | #f
   ;; looks up and returns a list representation of the package named by the given owner,
   ;; package name, major and (exact) minor version.
-  ;; this function is intended to be useful for setup-plt and other applications that need to know where planet
+  ;; this function is intended to be useful for raco setup and other applications that need to know where planet
   ;; packages live
   (define (lookup-package-by-keys owner name maj min-lo min-hi)
     (let ([result

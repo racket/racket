@@ -4,7 +4,7 @@
 ;; given directory, or 'all if the directory is completely omitted.  Considers
 ;; the local info.rkt as well as info.rkt in parent directories all the way to a
 ;; collection root.  (Could be a bit easier using `find-relevant-directories',
-;; but it needs to be available for setup-plt, before the "info-domain" caches
+;; but it needs to be available for raco setup, before the "info-domain" caches
 ;; are created.)
 
 (provide omitted-paths)
