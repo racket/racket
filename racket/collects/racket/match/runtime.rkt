@@ -22,10 +22,13 @@
 
 
 (define (match:error val srclocs form-name)
-  (raise (make-exn:misc:match (format "~a: no matching clause for ~e" form-name val)
-                              (current-continuation-marks)
-                              val
-                              srclocs)))
+  (raise (make-exn:misc:match
+          (format "~a: no matching clause for ~e\n  location: ~a"
+                  form-name val
+                  (srcloc->string (car srclocs)))
+          (current-continuation-marks)
+          val
+          srclocs)))
 
 (define-syntax-parameter fail
   (lambda (stx)
