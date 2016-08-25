@@ -241,8 +241,8 @@ In more detail, patterns match as follows:
 
        @examples[
        #:eval match-eval
-       (eval:no-prompt (define-struct tree (val left right)))
-       (match (make-tree 0 (make-tree 1 #f #f) #f)
+       (eval:no-prompt (struct tree (val left right)))
+       (match (tree 0 (tree 1 #f #f) #f)
          [(tree a (tree b  _ _) _) (list a b)])
        ]}
 
@@ -735,8 +735,8 @@ not provided, it defaults to @racket[equal?].
  @examples[
   #:eval match-eval
   (eval:no-prompt
-   (define-struct tree (val left right)))
-  (match (make-tree 0 (make-tree 1 #f #f) #f)
+   (struct tree (val left right)))
+  (match (tree 0 (tree 1 #f #f) #f)
     [(struct* tree ([val a]
                     [left (struct* tree ([right #f] [val b]))]))
      (list a b)])
