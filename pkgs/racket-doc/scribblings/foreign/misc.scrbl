@@ -37,12 +37,23 @@ to create mock foreign functions for testing).
 
 @history[#:changed "6.4.0.9"]{Added the one-argument variant.}}
 
-@defproc[(lookup-errno [sym (or/c 'EINTR 'EEXIST 'EAGAIN)])
-         exact-integer?]{
+@defproc[(lookup-errno [sym symbol?])
+         (or/c exact-integer? #f)]{
 
-Returns a platform-specific value corresponding to a Posix @tt{errno}
-symbol. The set of supported symbols is likely to expand in the
-future.}
+Returns a platform-specific positive integer corresponding to a POSIX
+@tt{errno} code, or @racket[#f] if the code is unknown. A code's value
+is known if the code is one of the recognized symbols described below
+@emph{and} the code was defined by the @tt{"errno.h"} header used to
+compile Racket. Note that the contents of @tt{"errno.h"} vary based on
+platform and compiler.
+
+The recognized symbols currently consist of the 81 codes defined by
+@hyperlink["http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html"]{IEEE
+Std 1003.1, 2013 Edition} (also known as POSIX.1), including
+@racket['EINTR], @racket['EEXIST], and @racket['EAGAIN].
+
+@history[#:changed "6.6.0.5" @elem{Relaxed the contract and added
+support for more symbols.}]}
 
 
 @defproc[(cast [v any/c] [from-type ctype?] [to-type ctype?]) any/c]{
