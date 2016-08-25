@@ -3158,8 +3158,8 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
   s = scheme_char_string_to_byte_string(argv[0]);
 
   scheme_write_byte_string(SCHEME_BYTE_STR_VAL(s),
-			   SCHEME_BYTE_STRTAG_VAL(s),
-			   port);
+                           SCHEME_BYTE_STRTAG_VAL(s),
+                           port);
 
   /* Print context, if available */
   if (SCHEME_CHAPERONE_STRUCTP(argv[1])
@@ -3178,26 +3178,54 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
       int orig_max_cnt = max_cnt;
       w = scheme_get_param(config, MZCONFIG_ERROR_PRINT_WIDTH);
       if (SCHEME_INTP(w))
-	print_width = SCHEME_INT_VAL(w);
+        print_width = SCHEME_INT_VAL(w);
       else
-	print_width = 0x7FFFFFFF;
+        print_width = 0x7FFFFFFF;
+
+      /* Print srcloc(s) if present */
+      l = scheme_struct_type_property_ref(scheme_source_property, argv[1]);
+      if (l)
+        l = _scheme_apply(l, 1, &(argv[1]));
+
+
+      if (l && !SCHEME_NULLP(l)) {
+        /* Some exns include srcloc in the msg, so skip the first srcloc of those when needed */
+        if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_ERROR_PRINT_SRCLOC))
+            && (scheme_is_struct_instance(exn_table[MZEXN_FAIL_READ].type, argv[1])
+                || scheme_is_struct_instance(exn_table[MZEXN_FAIL_SYNTAX].type, argv[1])
+                || scheme_is_struct_instance(exn_table[MZEXN_FAIL_CONTRACT_VARIABLE].type, argv[1])))
+          l = SCHEME_CDR(l);
+
+        if (!SCHEME_NULLP(l))
+          scheme_write_byte_string("\n  location...:", 15, port);
+
+        while (!SCHEME_NULLP(l)) {
+          scheme_write_byte_string("\n   ", 4, port);
+          w = SCHEME_CAR(l);
+          w = srcloc_to_string(1, &w);
+          scheme_display_w_max(w, port, print_width);
+          l = SCHEME_CDR(l);
+        }
+      }
+
       l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1));
       while (!SCHEME_NULLP(l)) {
-	if (!max_cnt) {
-	  scheme_write_byte_string("\n   ...", 7, port);
-	  break;
-	} else {
-	  Scheme_Object *name, *loc;
+        if (!max_cnt) {
+          scheme_write_byte_string("\n   ...", 7, port);
+          break;
+        } else {
+          Scheme_Object *name, *loc;
 	  
-	  if (max_cnt == orig_max_cnt) {
-	    /* Starting label: */
-	    scheme_write_byte_string("\n  context...:\n", 15, port);
-	  } else
+          if (max_cnt == orig_max_cnt) {
+            /* Starting label: */
+            scheme_write_byte_string("\n  context...:\n", 15, port);
+          } else {
             scheme_write_byte_string("\n", 1, port);
+          }
 
-	  name = SCHEME_CAR(l);
-	  loc = SCHEME_CDR(name);
-	  name = SCHEME_CAR(name);
+          name = SCHEME_CAR(l);
+          loc = SCHEME_CDR(name);
+          name = SCHEME_CAR(name);
 
           scheme_write_byte_string("   ", 3, port);
 
@@ -3215,9 +3243,9 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
                                       0);
           }
 
-	  l = SCHEME_CDR(l);
-	  --max_cnt;
-	}
+          l = SCHEME_CDR(l);
+          --max_cnt;
+        }
       }
     }
   }
