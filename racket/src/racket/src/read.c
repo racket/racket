@@ -2056,7 +2056,11 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
       dot = scheme_make_stx_w_offset(dot, dline, dcol, dpos, SPAN(port,dpos), stxsrc, STX_SRCTAG);
     }
     next = read_inner_inner(port, stxsrc, ht, indentation, params, comment_mode, pre_char, table, get_info);
-    ret = scheme_make_pair( dot, scheme_make_pair( ret, scheme_make_pair( next, scheme_null ) ) );
+    if (SCHEME_EOFP(next)) {
+      ret = scheme_make_pair( dot, scheme_make_pair( ret, scheme_null ) );
+    } else {
+      ret = scheme_make_pair( dot, scheme_make_pair( ret, scheme_make_pair( next, scheme_null ) ) );
+    }
     if (stxsrc) {
       ret = scheme_make_stx_w_offset(ret, rline, rcol, rpos, SPAN(port,rpos), stxsrc, STX_SRCTAG);
     }
