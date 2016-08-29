@@ -349,7 +349,7 @@ not provided, an error raises @racket[exn:fail:filesystem].}
            [(file-or-directory-permissions [path path-string?] [mode 'bits]) (integer-in 0 #xFFFF)]
            [(file-or-directory-permissions [path path-string?] [mode (integer-in 0 #xFFFF)]) void])]{
 
-When given one argument or @racket[#f] as the second argument, returns
+@index["chmod"]{When} given one argument or @racket[#f] as the second argument, returns
 a list containing @indexed-racket['read], @indexed-racket['write],
 and/or @indexed-racket['execute] to indicate permission the given file
 or directory path by the current user and group. On @|AllUnix|,
