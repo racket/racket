@@ -343,9 +343,9 @@
     [else
      passes?]))
 
-(define (bad-number-of-results blame val rng-len args [case-context #f]
+(define (bad-number-of-results blame val rng-len results [case-context #f]
                                #:missing-party [missing-party #f])
-  (define num-values (length args))
+  (define num-values (length results))
   (define blame-case (if case-context 
                          (blame-add-context blame (format "the ~a case of" (n->th (+ case-context 1))))
                          blame))
