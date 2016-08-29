@@ -2057,7 +2057,9 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
     }
     next = read_inner_inner(port, stxsrc, ht, indentation, params, comment_mode, pre_char, table, get_info);
     if (SCHEME_EOFP(next)) {
-      ret = scheme_make_pair( dot, scheme_make_pair( ret, scheme_null ) );
+      scheme_read_err(port, stxsrc, dline, dcol, dpos, 1, EOF, indentation, 
+                      "read: expected a datum after cdot, found end-of-file");
+      return NULL;
     } else {
       ret = scheme_make_pair( dot, scheme_make_pair( ret, scheme_make_pair( next, scheme_null ) ) );
     }
