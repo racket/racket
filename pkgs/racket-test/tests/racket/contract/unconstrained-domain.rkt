@@ -45,4 +45,27 @@
   
   (test/pos-blame
    'unconstrained-domain->7
-   '((contract (unconstrained-domain-> number?) (λ (#:x x) x) 'pos 'neg) #:x #f)))
+   '((contract (unconstrained-domain-> number?) (λ (#:x x) x) 'pos 'neg) #:x #f))
+
+  (test/spec-passed/result
+   'unconstrained-domain->8
+   '(let ([f (λ (x) 0)])
+      (eq? (contract (unconstrained-domain-> any/c)
+                     f
+                     'pos
+                     'neg)
+           f))
+   #t)
+
+  (test/pos-blame
+   'unconstrained-domain->9
+   '((contract (unconstrained-domain-> number? number?) (λ () (values #f 0)) 'pos 'neg)))
+
+  (test/pos-blame
+   'unconstrained-domain->10
+   '((contract (unconstrained-domain-> number? number?) (λ () (values 0 #f)) 'pos 'neg)))
+
+  (test/pos-blame
+   'unconstrained-domain->11
+   '((contract (unconstrained-domain-> number? number?) (λ () 1) 'pos 'neg)))
+  )
