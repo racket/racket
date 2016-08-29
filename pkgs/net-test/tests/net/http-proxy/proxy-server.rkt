@@ -1,10 +1,10 @@
 #lang racket/base
-;; A proxy HTTP server -- don’t get your hopes up it’s for testing and only proxies ports, probably
-;; oozes security leaks and I wouldn’t be surprised if it leaked fids too.
+;; A proxy HTTP server -- don’t get your hopes up it’s for testing and
+;; only proxies ports, probably oozes security leaks and I wouldn’t be
+;; surprised if it leaked fids too.
 (require racket/port racket/match racket/tcp "generic-server.rkt")
 
 (provide server
-         current-listen-port
          current-conn-timeout)
 
 (define (http-tunnel-serve in out)
@@ -52,8 +52,8 @@
 
 (module+
   main
-  (define-values (server-thread shutdown-server)
-    (parameterize ([current-listen-port 12380]) (server)))
+  (define-values (the-port server-thread shutdown-server)
+    (server))
   (thread-wait server-thread))
 
 (module+
@@ -62,12 +62,10 @@
 
   (require (prefix-in es: "echo-server.rkt"))
 
-  (define proxy-listen-port 12380)
+  (define-values (proxy-listen-port server-thread shutdown-server)
+    (server))
 
-  (define-values (server-thread shutdown-server)
-    (parameterize ([current-listen-port proxy-listen-port]) (server)))
-
-  (define-values (es:server-thread es:shutdown-server) (es:server))
+  (define-values (echo-port es:server-thread es:shutdown-server) (es:server))
   
   (let ((old-exit-handler (exit-handler)))
     (exit-handler (lambda (exit-code)
@@ -102,7 +100,8 @@
   (check-match (connect/test "GET" "/" #f) (regexp #px"^HTTP/\\S+\\s+405"))
   (check-match (connect/test "A B" "/" #f) (regexp #px"^HTTP/\\S+\\s+400"))
   (check-match (connect/test "CONNECT" "q.com:9887" #f) (regexp #px"^HTTP/\\S+\\s+410"))
-  (check-match (connect/test "CONNECT" "localhost:12345" #f #:body "blah blah blah!")
+  (check-match (connect/test "CONNECT" (format "localhost:~a" echo-port)
+                             #f #:body "blah blah blah!")
                (regexp #px"^HTTP/\\S+\\s+200.*blah!$"))
 
   )

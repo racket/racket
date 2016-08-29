@@ -301,15 +301,16 @@
   (require (prefix-in es: "http-proxy/echo-server.rkt")
            (prefix-in ps: "http-proxy/proxy-server.rkt"))
 
-  (define-values (es:server-thread es:shutdown-server)
-    (parameterize ([es:current-listen-port 12345]) (es:server)))
+  (define-values (es:port es:server-thread es:shutdown-server)
+    (es:server))
 
-  (define-values (ps:server-thread ps:shutdown-server)
-    (parameterize ([ps:current-listen-port 12380]) (ps:server)))
+  (define-values (ps:port ps:server-thread ps:shutdown-server)
+    (ps:server))
 
   (check-equal?
     (let-values (([ssl-ctx from to abandon-p]
-                  (hc:http-conn-CONNECT-tunnel "localhost" 12380 "localhost" 12345 #:ssl? #f)))
+                  (hc:http-conn-CONNECT-tunnel "localhost" ps:port
+                                               "localhost" es:port #:ssl? #f)))
       (fprintf to "MONKEYS\n")
       (abandon-p to)
       (begin0

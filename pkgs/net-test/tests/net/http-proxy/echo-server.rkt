@@ -1,5 +1,5 @@
 #lang racket/base
-(provide server current-listen-port current-conn-timeout)
+(provide server current-conn-timeout)
 
 (require racket/port "generic-server.rkt")
 
@@ -10,7 +10,7 @@
 
 (module+
   main
-  (define-values (server-thread shutdown-server) (server))
+  (define-values (the-port server-thread shutdown-server) (server))
   (dynamic-wind
    void
    (λ () (thread-wait server-thread))
@@ -19,12 +19,12 @@
 (module+
     test
   (require rackunit racket/tcp)
-  (define-values (server-thread shutdown-server) (server))  
+  (define-values (the-port server-thread shutdown-server) (server))  
   (dynamic-wind
    void
    (λ ()
      (define-values (cl:from cl:to)
-       (tcp-connect "localhost" (current-listen-port)))
+       (tcp-connect "localhost" the-port))
      (file-stream-buffer-mode cl:to 'none)
      (file-stream-buffer-mode cl:from 'none)
      (fprintf cl:to "Monkeys!")

@@ -195,19 +195,21 @@
    => #f
   )
 
-  (define-values (ss:server-thread ss:shutdown-server)
-    (parameterize ([ss:current-listen-port 12345]) (ss:server)))
+  (define-values (ss:port ss:server-thread ss:shutdown-server)
+    (ss:server))
 
-  (define-values (ps:server-thread ps:shutdown-server)
-    (parameterize ([ps:current-listen-port 12380]) (ps:server)))
+  (define-values (ps:port ps:server-thread ps:shutdown-server)
+    (ps:server))
 
-  (test (parameterize ([current-proxy-servers '(("https" "localhost" 12380))])
-          (port->string (get-pure-port (string->url "https://localhost:12345/woo/yay"))))
+  (test (parameterize ([current-proxy-servers `(("https" "localhost" ,ps:port))])
+          (port->string
+           (get-pure-port
+            (string->url
+             (format "https://localhost:~a/woo/yay"
+                     ss:port)))))
         => "\"/woo/yay\" (but at least it's secure)")
 
   (ps:shutdown-server)
-  (ss:shutdown-server)
-
-)
+  (ss:shutdown-server))
 
 (module+ test (require (submod ".." main))) ; for raco test & drdr

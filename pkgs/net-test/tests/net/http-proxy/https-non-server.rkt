@@ -1,7 +1,6 @@
 #lang racket/base
 ; It may look like an HTTPS server, but it very isn’t
 (provide server
-         current-listen-port
          current-conn-timeout)
 
 (require racket/match
@@ -43,7 +42,7 @@
 
 (module+
   main
-  (define-values (server-thread shutdown-server) (server))
+  (define-values (the-port server-thread shutdown-server) (server))
   (dynamic-wind void (λ () (thread-wait server-thread)) shutdown-server))
 
 (module+ test)
