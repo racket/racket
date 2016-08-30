@@ -6211,5 +6211,25 @@
     (void proc proc)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure validation doesn't fail for importing a setter of a
+;; structure type that has auto fields:
+
+(module provides-a-mutator-for-a-struct-with-an-auto-field racket/base
+  (provide foo set-foo-y!)
+  (struct foo (x [y #:mutable] [z #:auto])))
+
+(let ([e `(module uses-mutator-with-an-auto-field racket/base
+           (require 'provides-a-mutator-for-a-struct-with-an-auto-field)
+           (provide f)
+           (define (f x)
+             (and x
+                  (set-foo-y! x 1))))]
+      [o (open-output-bytes)])
+  (write (compile e) o)
+  (parameterize ([read-accept-compiled #t])
+    (eval (read (open-input-bytes (get-output-bytes o)))))
+  ((dynamic-require ''uses-mutator-with-an-auto-field 'f) #f)) 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
