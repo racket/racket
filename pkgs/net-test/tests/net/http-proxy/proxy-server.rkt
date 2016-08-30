@@ -58,6 +58,8 @@
 
 (module+
   test
+  (module config info
+    (define timeout 300))
   (require rackunit)
 
   (require (prefix-in es: "echo-server.rkt"))
