@@ -719,7 +719,7 @@ Like @racket[regexp-match-peek-positions], but returns multiple matches like
                        [end-pos (or/c exact-nonnegative-integer? #f) #f]
                        [output-port (or/c output-port? #f) #f]
                        [input-prefix bytes? #""]
-                       [count nonnegative-exact-integer? 1])
+                       [count exact-nonnegative-integer? 1])
          (values
           (if (and (or (string? pattern) (regexp? pattern))
                    (or/c (string? input) (path? input)))
