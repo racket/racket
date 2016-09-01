@@ -955,13 +955,19 @@ equivalent prefix as discussed in @secref["parse-number"]. If these
 numbers are followed by a @litchar{.} intended to be read as a C-style
 infix dot, then there must be separating whitespace.
 
-Finally, after reading any value, @racket[_x], the reader will seek
-over whitespace until it reaches a non-whitespace character. If the
-character is not @litchar{.}, then the value, @racket[_x], is returned
-as usual. If the character is @litchar{.}, then another value,
-@racket[_y], is read and the result @racket[(list '#%dot _x _y)] is
-returned. In @racket[read-syntax] mode, the @racket['#%dot] symbol has
-the source location information of the @litchar{.} character and the
+Finally, after reading any datum @racket[_x], the reader will seek
+through whitespace and look for zero or more sequences of a
+@litchar{.} followed by another datum @racket[_y]. It will then group
+@racket[_x] and @racket[_y] together in a @racket[#%dot] form so that
+@racket[_x.y] reads equal to @racket[(#%dot _x _y)].
+
+If @racket[_x.y] has another @litchar{.} after it, the reader will
+accumulate more @litchar{.}-separated datums, grouping them from
+left-to-right. For example, @racket[_x.y.z] reads equal to
+@racket[(#%dot (#%dot _x _y) _z)].
+
+In @racket[read-syntax] mode, the @racket[#%dot] symbol has the
+source location information of the @litchar{.} character and the
 entire list has the source location information spanning from the
 start of @racket[_x] to the end of @racket[_y].
 
