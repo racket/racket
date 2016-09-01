@@ -2035,40 +2035,49 @@ read_inner_inner(Scheme_Object *port, Scheme_Object *stxsrc, Scheme_Hash_Table *
 
   if (!read_cdot) { return ret; }
 
-  found_dot = 0;
-  while ( 1 ) {    
-    next = scheme_peekc_special_ok(port);
-    if ( next == EOF ) { break; }
-    if ( (table && readtable_kind(table, next, params) & READTABLE_WHITESPACE)
-         || (!table && scheme_isspace(next)) ) {
-      scheme_getc_special_ok(port); continue; }
-    if ( (table && readtable_effective_char(table, next) == '.')
-         || (!table && next == '.') ) {
-      scheme_getc_special_ok(port); found_dot = 1; break; }
-    break;
-  }
+  // read in zero or more . sequences in a left-associative way
+  // X.Y should be read as (#%dot X Y)
+  // X.Y.Z should be read as (#%dot (#%dot X Y) Z)
+  while ( 1 ) {
+    found_dot = 0;
+    while ( 1 ) {    
+      next = scheme_peekc_special_ok(port);
+      if ( next == EOF ) { break; }
+      if ( (table && readtable_kind(table, next, params) & READTABLE_WHITESPACE)
+           || (!table && scheme_isspace(next)) ) {
+        scheme_getc_special_ok(port); continue; }
+      if ( (table && readtable_effective_char(table, next) == '.')
+           || (!table && next == '.') ) {
+        scheme_getc_special_ok(port); found_dot = 1; break; }
+      break;
+    }
 
-  if ( found_dot ) {
-    Scheme_Object *dot, *next;
-    scheme_tell_all(port, &dline, &dcol, &dpos);
-    dot = dot_symbol;
-    if (stxsrc) {
-      dot = scheme_make_stx_w_offset(dot, dline, dcol, dpos, SPAN(port,dpos), stxsrc, STX_SRCTAG);
-    }
-    next = read_inner_inner(port, stxsrc, ht, indentation, params, comment_mode, pre_char, table, get_info);
-    if (SCHEME_EOFP(next)) {
-      scheme_read_err(port, stxsrc, dline, dcol, dpos, 1, EOF, indentation, 
-                      "read: expected a datum after cdot, found end-of-file");
-      return NULL;
+    if ( !found_dot ) {
+      return ret;
     } else {
-      ret = scheme_make_pair( dot, scheme_make_pair( ret, scheme_make_pair( next, scheme_null ) ) );
+      Scheme_Object *dot, *next;
+      
+      scheme_tell_all(port, &dline, &dcol, &dpos);
+      dot = dot_symbol;
+      if (stxsrc) {
+        dot = scheme_make_stx_w_offset(dot, dline, dcol, dpos, SPAN(port,dpos), stxsrc, STX_SRCTAG);
+      }
+      next = read_inner_inner_inner(port, stxsrc, ht, indentation, params, comment_mode, pre_char, table, get_info);
+      if (SCHEME_EOFP(next)) {
+        scheme_read_err(port, stxsrc, dline, dcol, dpos, 1, EOF, indentation, 
+                        "read: expected a datum after cdot, found end-of-file");
+        return NULL;
+      } else {
+        ret = scheme_make_pair( dot, scheme_make_pair( ret, scheme_make_pair( next, scheme_null ) ) );
+      }
+      if (stxsrc) {
+        ret = scheme_make_stx_w_offset(ret, rline, rcol, rpos, SPAN(port,rpos), stxsrc, STX_SRCTAG);
+      }
     }
-    if (stxsrc) {
-      ret = scheme_make_stx_w_offset(ret, rline, rcol, rpos, SPAN(port,rpos), stxsrc, STX_SRCTAG);
-    }
+    
+    // look for more dots after this
+    continue;
   }
-  
-  return ret;
 }
 
 static Scheme_Object *
