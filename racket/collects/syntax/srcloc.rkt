@@ -143,11 +143,17 @@
 
 (define (rebuild x src line col pos span)
   (cond
-   [(syntax? x) (datum->syntax x (syntax-e x) (list src line col pos span) x x)]
+   [(syntax? x) (rebuild-syntax x src line col pos span)]
    [(srcloc? x) (make-srcloc src line col pos span)]
    [(vector? x) (vector src line col pos span)]
    [(or (list? x) src line col pos span) (list src line col pos span)]
    [else #f]))
+
+(define (rebuild-syntax stx src line col pos span)
+  (define stx* (syntax-disarm stx #f))
+  (syntax-rearm
+   (datum->syntax stx* (syntax-e stx*) (list src line col pos span) stx* stx*)
+   stx))
 
 (define (good-srcloc x src line col pos span)
   (if (srcloc? x) x (make-srcloc src line col pos span)))
