@@ -1280,7 +1280,8 @@ static Scheme_Object *_dynamic_require(int argc, Scheme_Object *argv[],
                     srcm2 = module_load(srcmname, env, errname);
 
                     for (j = srcm2->me->rt->num_var_provides; j--; ) {
-                      if (SCHEME_FALSEP(srcm2->me->rt->provide_srcs[j])
+                      if ((!srcm2->me->rt->provide_srcs
+                           || SCHEME_FALSEP(srcm2->me->rt->provide_srcs[j]))
                           && SAME_OBJ(srcname, srcm2->me->rt->provide_src_names[j])) {
                         /* simple re-export applies: */
                         srcm = srcm2;

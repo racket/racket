@@ -1816,6 +1816,17 @@ case of module-leve bindings; it doesn't cover local bindings.
              (lambda (exn)
                (regexp-match? #rx" already" (exn-message exn))))
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check re-export of an identifier from `#%kernel`
+;; through a rename transformer:
+
+(module rexports-values-from-kernel racket/base
+  (require (for-syntax racket/base))
+  (provide f)
+  (define-syntax f (make-rename-transformer #'values)))
+
+(dynamic-require ''rexports-values-from-kernel 'f)
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
