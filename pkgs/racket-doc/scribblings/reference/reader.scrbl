@@ -955,6 +955,9 @@ equivalent prefix as discussed in @secref["parse-number"]. If these
 numbers are followed by a @litchar{.} intended to be read as a C-style
 infix dot, then there must be separating whitespace.
 
+@margin-note{Unlike C, Racket's dot notation is right associative.
+ Reading @racket[x.y.z] gives @racket[(list '#%dot _x (list '#%dot _y _z))].}
+
 Finally, after reading any value, @racket[_x], the reader will seek
 over whitespace until it reaches a non-whitespace character. If the
 character is not @litchar{.}, then the value, @racket[_x], is returned
