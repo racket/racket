@@ -1242,6 +1242,27 @@
   (test 17t0 readstr "#x11.0t0"))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; read-cdot
+
+(parameterize ([read-cdot #true])
+  (test '(#%dot a b)                     readstr "a.b")
+  (test '(#%dot (#%dot a b) c)           readstr "a.b.c")
+  (test '(#%dot (#%dot (#%dot a b) c) d) readstr "a.b.c.d")
+  (test '(#%dot a (#%dot b c))           readstr "a.(#%dot b c)")
+  (test '(#%dot a (m b c))               readstr "a.(m b c)")
+  (test '(#%dot (#%dot a (m b c)) (n d e)) readstr "a.(m b c).(n d e)")
+  (test '(#%dot (#%dot (#%dot (#%dot (#%dot a (m b c)) x) (n d e)) y) z)
+        readstr "a.(m b c).x.(n d e).y.z")
+  (test '(#%dot (f a) b)                     readstr "(f a).b")
+  (test '(#%dot (#%dot (f a) b) c)           readstr "(f a).b.c")
+  (test '(#%dot (#%dot (#%dot (f a) b) c) d) readstr "(f a).b.c.d")
+  (test '(#%dot (f a) (#%dot b c))           readstr "(f a).(#%dot b c)")
+  (test '(#%dot (f a) (m b c))               readstr "(f a).(m b c)")
+  (test '(#%dot (#%dot (f a) (m b c)) (n d e)) readstr "(f a).(m b c).(n d e)")
+  (test '(#%dot (#%dot (#%dot (#%dot (#%dot (f a) (m b c)) x) (n d e)) y) z)
+        readstr "(f a).(m b c).x.(n d e).y.z"))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; srcloc->string
 
 (test "x.rkt:10:11" srcloc->string (make-srcloc "x.rkt" 10 11 100 8))
