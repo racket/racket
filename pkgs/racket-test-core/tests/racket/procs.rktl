@@ -363,8 +363,8 @@
 
 ;; ----------------------------------------
 ;; Check error for non-procedures
-(err/rt-test (1 2 3) (lambda (x) (regexp-match? "not a procedure" (exn-message))))
-(err/rt-test (1 #:x 2 #:y 3) (lambda (x) (regexp-match? "not a procedure" (exn-message))))
+(err/rt-test (1 2 3) (lambda (x) (regexp-match? "not a procedure" (exn-message x))))
+(err/rt-test (1 #:x 2 #:y 3) (lambda (x) (regexp-match? "not a procedure" (exn-message x))))
 
 ;; ----------------------------------------
 ;; Check error reporting of `procedure-reduce-keyword-arity'
@@ -455,6 +455,36 @@
                      'bind-accum))
 
   (test 8 (lambda () (ba))))
+
+;; ----------------------------------------
+;; Test that procedure-rename doesn't accidentally convert procedures
+;; into methods or methods into procedures.
+
+(let ()
+  (define (f a b c d e #:x [x 5]) a)
+  (err/rt-test (f)
+               (lambda (exn)
+                 (regexp-match? #rx"expected: 5 plus an optional argument with keyword #:x"
+                                (exn-message exn))))
+
+  ;; procedure-rename shouldn't change this arity string
+  (define f* (procedure-rename f 'f))
+  (err/rt-test (f*)
+               (lambda (exn)
+                 (regexp-match? #rx"expected: 5 plus an optional argument with keyword #:x"
+                                (exn-message exn))))
+
+  ;; but procedure->method should
+  (define fm (procedure->method f))
+  (define fm* (procedure-rename fm 'fm))
+  (err/rt-test (fm)
+               (lambda (exn)
+                 (regexp-match? #rx"expected: 4 plus an optional argument with keyword #:x"
+                                (exn-message exn))))
+  (err/rt-test (fm*)
+               (lambda (exn)
+                 (regexp-match? #rx"expected: 4 plus an optional argument with keyword #:x"
+                                (exn-message exn)))))
 
 ;; ----------------------------------------
 

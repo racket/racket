@@ -1559,8 +1559,8 @@
                  (cond
                   [(okp? proc)
                    ((if (okm? proc)
-                        make-optional-keyword-procedure
-                        make-optional-keyword-method)
+                        make-optional-keyword-method
+                        make-optional-keyword-procedure)
                     (keyword-procedure-checker proc)
                     (keyword-procedure-proc proc)
                     (keyword-procedure-required proc)
