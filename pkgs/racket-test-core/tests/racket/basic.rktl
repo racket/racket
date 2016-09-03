@@ -5,7 +5,8 @@
 
 (require racket/flonum
          racket/function
-         (only-in '#%kernel (list-pair? k:list-pair?)))
+         (only-in '#%kernel (list-pair? k:list-pair?)
+                            (strict-true? k:strict-true?)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,6 +57,15 @@
 (test #f not (list))
 (test #f not 'nil)
 (arity-test not 1 1)
+
+(test #t k:strict-true? #t)
+(test #f k:strict-true? 3)
+(test #f k:strict-true? (list 3))
+(test #f k:strict-true? #f)
+(test #f k:strict-true? '())
+(test #f k:strict-true? (list))
+(test #f k:strict-true? 'nil)
+(arity-test k:strict-true? 1 1)
 
 (test #t boolean? #f)
 (test #t boolean? #t)

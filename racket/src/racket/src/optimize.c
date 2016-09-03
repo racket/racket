@@ -3204,6 +3204,8 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
     if (SCHEME_EOFP(expr))
       return scheme_eof_object_p_proc;
 
+    if (SAME_OBJ(expr, scheme_true))
+      return scheme_strict_true_p_proc;
     if (SCHEME_FALSEP(expr))
       return scheme_not_proc;
   }
@@ -4983,6 +4985,8 @@ static Scheme_Object *collapse_local(Scheme_Object *var, Optimize_Info *info, in
           return scheme_true;
       }
 
+      if (SAME_OBJ(pred, scheme_strict_true_p_proc))
+        return scheme_true;
       if (SAME_OBJ(pred, scheme_null_p_proc))
         return scheme_null;
       if (SAME_OBJ(pred, scheme_void_p_proc))
@@ -5174,6 +5178,7 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_real_p_proc)
           || SAME_OBJ(pred, scheme_void_p_proc)
           || SAME_OBJ(pred, scheme_eof_object_p_proc)
+          || SAME_OBJ(pred, scheme_strict_true_p_proc)
           || SAME_OBJ(pred, scheme_not_proc)
           );
 }

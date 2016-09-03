@@ -38,7 +38,7 @@
                                             #:first-arg [first-arg #f]
                                             #:second-arg [second-arg #f])
 				(unless (memq name '(eq? eqv? equal? 
-                                                         not null? pair? list? k:list-pair?
+                                                         not k:strict-true? null? pair? list? k:list-pair?
 							 real? number? boolean?
 							 procedure? symbol? keyword?
 							 string? bytes?
@@ -328,6 +328,10 @@
     (un #t 'not #f)
     (un #f 'not #t)
     (un #f 'not 10)
+
+    (un #f 'k:strict-true? #f)
+    (un #t 'k:strict-true? #t)
+    (un #f 'k:strict-true? 10)
 
     (bin #t '< 100 200)
     (bin #f '< 200 100)
@@ -2098,6 +2102,7 @@
   (test-pred-implies-val 'null? 'null)
   (test-pred-implies-val 'void? '(void))
   (test-pred-implies-val 'eof-object? 'eof)
+  (test-pred-implies-val 'k:strict-true? '#t)  
   (test-pred-implies-val 'not '#f))
 (test-comp '(lambda (x) (if (null? x) 1 0) null)
            '(lambda (x) (if (null? x) 1 0) x)
@@ -3061,7 +3066,8 @@
   (test-pred 'procedure?)
   (test-pred 'eof-object?)
   (test-pred 'immutable?)
-  (test-pred 'not))
+  (test-pred 'not)
+  (test-pred 'k:strict-true?))
 
 (let ([test-implies
        (lambda (pred1 pred2 [val '=>])
