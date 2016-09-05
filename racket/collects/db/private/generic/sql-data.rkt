@@ -10,7 +10,7 @@
 
 ;; NULL
 
-(define sql-null
+(define-values (sql-null sql-null?)
   (let ()
     (struct sql-null ()
             ;; must deserialize to singleton, so can't just use serializable-struct
@@ -20,10 +20,7 @@
                                  #f
                                  (or (current-load-relative-directory)
                                      (current-directory))))
-    (sql-null)))
-
-(define (sql-null? x)
-  (eq? x sql-null))
+    (values (sql-null) sql-null?)))
 
 (define (sql-null->false x)
   (if (eq? x sql-null)
