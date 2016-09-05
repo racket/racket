@@ -3616,9 +3616,9 @@ static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme
   if ((context & OPT_CONTEXT_BOOLEAN) && !info->escapes) {
     Scheme_Object *pred;
     pred = rator_implies_predicate(rator, argc);
-    if (pred && predicate_implies_not(rator, scheme_not_proc))
+    if (pred && predicate_implies_not(pred, scheme_not_proc))
       return make_discarding_sequence(app, scheme_true, info);
-    else if (pred && predicate_implies(rator, scheme_not_proc))
+    else if (pred && predicate_implies(pred, scheme_not_proc))
       return make_discarding_sequence(app, scheme_false, info);
   }
 
@@ -5418,18 +5418,25 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
       pred = expr_implies_predicate(t2, info); 
       if (pred) {
-        Scheme_Object *test_val = SAME_OBJ(pred, scheme_not_proc) ? scheme_false : scheme_true;
+        Scheme_Object *test_val = NULL;
+        
+        if (predicate_implies(pred, scheme_not_proc))
+          test_val = scheme_false;
+        else if (predicate_implies_not(pred, scheme_not_proc))
+          test_val = scheme_true;
 
-        t2 = optimize_ignored(t2, info, 1, 0, 5);
-        t = replace_tail_inside(t2, inside, t);
+        if (test_val) {
+          t2 = optimize_ignored(t2, info, 1, 0, 5);
+          t = replace_tail_inside(t2, inside, t);
 
-        t2 = test_val;
-        if (scheme_omittable_expr(t, 1, 5, 0, info, NULL)) {
-          t = test_val;
-          inside = NULL;
-        } else {
-          t = make_sequence_2(t, test_val);
-          inside = t;
+          t2 = test_val;
+          if (scheme_omittable_expr(t, 1, 5, 0, info, NULL)) {
+            t = test_val;
+            inside = NULL;
+          } else {
+            t = make_sequence_2(t, test_val);
+            inside = t;
+          }
         }
       }
     }
