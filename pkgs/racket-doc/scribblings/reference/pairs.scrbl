@@ -528,7 +528,7 @@ which takes two elements of @racket[lst] and returns a true value if the
 first is less (i.e., should be sorted earlier) than the second.
 
 The sort is stable; if two elements of @racket[lst] are ``equal''
-(i.e., @racket[proc] does not return a true value when given the pair in
+(i.e., @racket[less-than?] does not return a true value when given the pair in
 either order), then the elements preserve their relative order from
 @racket[lst] in the output list.  To preserve this guarantee, use
 @racket[sort] with a strict comparison functions (e.g., @racket[<] or

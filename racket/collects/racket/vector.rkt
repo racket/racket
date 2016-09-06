@@ -5,8 +5,13 @@
          vector-take-right vector-drop-right vector-split-at-right
          vector-filter vector-filter-not
          vector-count vector-argmin vector-argmax
-         vector-member vector-memq vector-memv)
-(require racket/unsafe/ops)
+         vector-member vector-memq vector-memv
+         vector-sort vector-sort!)
+(require racket/unsafe/ops
+         (for-syntax racket/base)
+         (rename-in (except-in "private/sort.rkt" sort)
+                    [vector-sort! raw-vector-sort!]
+                    [vector-sort raw-vector-sort])) 
 
 (define (vector-set*! v . pairs)
   (unless (even? (length pairs))
@@ -23,11 +28,14 @@
   (vector-copy! new-v 0 v start end)
   new-v)
 
+
 (define (vector-copy v [start 0] [end (and (vector? v) (vector-length v))])
   (unless (vector? v)
     (raise-argument-error 'vector-copy "vector?" v))
   (unless (exact-nonnegative-integer? start)
     (raise-argument-error 'vector-copy "exact-nonnegative-integer?" start))
+  (unless (exact-nonnegative-integer? end)
+    (raise-argument-error 'vector-copy "exact-nonnegative-integer?" end))
   (let ([len (vector-length v)])
     (cond
       [(= len 0)
@@ -231,3 +239,54 @@
 (vm-mk vector-member equal?)
 (vm-mk vector-memq eq?)
 (vm-mk vector-memv eqv?)
+
+(define-syntax-rule (perform-common-sort-arg-checks name vec less? start end getkey)
+  (let ()
+    ;; check other args are valid
+    (unless (exact-nonnegative-integer? start)
+      (raise-argument-error 'name "exact-nonnegative-integer?" start))
+    (unless (exact-nonnegative-integer? end)
+      (raise-argument-error 'name "exact-nonnegative-integer?" end))
+    (unless (and (procedure? less?) (procedure-arity-includes? less? 2))
+      (raise-argument-error 'name "(any/c any/c . -> . any/c)" less?))
+    (when (and getkey (not (and (procedure? getkey)
+                                (procedure-arity-includes? getkey 1))))
+      (raise-argument-error 'name "(any/c . -> . any/c)" getkey))
+    (let ([len (vector-length vec)])
+      (unless (and (<= 0 start len))
+        (raise-range-error 'name "vector" "starting " start vec 0 len))
+      (unless (and (<= start end len))
+        (raise-range-error 'name "vector" "ending " end vec start len 0)))))
+
+
+
+;; vector sort
+(define (vector-sort vec less? [start 0] [end #f]
+                     #:key [getkey #f] #:cache-keys? [cache-keys? #f])
+  ;; is the input vector the right kind? (mutable vs immutable allowed?)
+  (unless (vector? vec)
+    (raise-argument-error 'vector-sort "vector?" vec))
+  
+  ;; calulate end if not provided
+  (let ([end (or end (vector-length vec))])
+    (perform-common-sort-arg-checks vector-sort vec less? start end getkey)
+    (if getkey
+        (raw-vector-sort vec less? start end getkey cache-keys?)
+        (raw-vector-sort vec less? start end))))
+
+;; vector sort
+(define (vector-sort! vec less? [start 0] [end #f]
+                      #:key [getkey #f]
+                      #:cache-keys? [cache-keys? #f])
+  ;; is the input vector the right kind? (mutable vs immutable allowed?)
+  (unless (and (vector? vec) (not (immutable? vec)))
+    (raise-argument-error 'vector-sort!
+                          "(and/c vector? (not/c immutable?))"
+                          vec))
+  
+  ;; calulate end if not provided
+  (let ([end (or end (vector-length vec))])
+    (perform-common-sort-arg-checks vector-sort! vec less? start end getkey)
+    (if getkey
+        (raw-vector-sort! vec less? start end getkey cache-keys?)
+        (raw-vector-sort! vec less? start end))))

@@ -229,4 +229,197 @@
   (err/rt-test (vector-map (lambda (x) x) #() #() #()) (check-regs #rx"vector-map" #rx"mismatch between procedure arity")))
 
 
+;; ---------- vector-sort basic ----------
+(test #("a" "b" "c" "c" "d" "e" "f")
+      vector-sort
+      #("d" "f" "e" "c" "a" "c" "b")
+      string<?)
+(test #("a" "c" "e")
+      vector-sort
+      #("d" "f" "e" "c" "a" "c" "b")
+      string<?
+      2
+      5)
+(test #(("a") ("c") ("e"))
+      vector-sort
+      #(("d") ("f") ("e") ("c") ("a") ("c") ("b"))
+      string<?
+      2
+      5
+      #:key car)
+(test #(("a") ("c") ("e"))
+      vector-sort
+      #(("d") ("f") ("e") ("c") ("a") ("c") ("b"))
+      string<?
+      2
+      5
+      #:key car
+      #:cache-keys? #t)
+
+(let ()
+  (define (car< x y) (< (car x) (car y)))
+  (define (random-vec n range)
+    (build-vector n (λ _ (list (random range)))))
+  ;; sort a vector, then sort it with a #:key and with #:cache-keys?
+  ;; and make sure they're all doing the same thing
+  (define (vector-sort* v [start 0] [end (vector-length v)])
+    (let ([v1 (vector-sort v car< start end)]
+          [v2 (vector-sort v < start end #:key car)]
+          [v3 (vector-sort v < start end #:key car #:cache-keys? #t)])
+      (test #t equal? v1 v2)
+      (test #t equal? v1 v3)
+      v1))
+  (define (test-sort len times)
+    (or (zero? times)
+        ;; build a random vector, sort it, check that it's sorted
+        (and (let* ([rand (random-vec len (if (even? times) 1000000 10))]
+                    [sorted (vector-sort* rand)])
+               (and (= len (vector-length sorted))
+                    (or (<= len 1)
+                        (let loop ([i 0] [i+1 1])
+                          (or (= i+1 len)
+                              (and (let ([ival   (car (vector-ref sorted i))]
+                                         [i+1val (car (vector-ref sorted i+1))])
+                                     (<= ival i+1val))
+                                   (loop (add1 i) (add1 i+1))))))))
+             (test-sort len (sub1 times)))))
+  (test #t test-sort    1  10)
+  (test #t test-sort    2  20)
+  (test #t test-sort    3  60)
+  (test #t test-sort    4 100)
+  (test #t test-sort    5 100)
+  (test #t test-sort   10 100)
+  (test #t test-sort  100 100)
+  (test #t test-sort 1000 100)
+  ;; test stability for vector-sort
+  (test #((1) (2) (3 a) (3 b) (3 c)) vector-sort* #((3 a) (1) (3 b) (2) (3 c)))
+  ;; test short lists (+ stable)
+  (test #() vector-sort* #())
+  (test #((1 1)) vector-sort* #((1 1)))
+  (test #((1 2) (1 1)) vector-sort* #((1 2) (1 1)))
+  (test #((1) (2)) vector-sort* #((2) (1)))
+  (for-each (λ (v) (test #((0 3) (1 1) (1 2)) vector-sort* v))
+            '(#((1 1) (1 2) (0 3))
+              #((1 1) (0 3) (1 2))
+              #((0 3) (1 1) (1 2))))
+  (for-each (λ (v) (test #((0 2) (0 3) (1 1)) vector-sort* v))
+            '(#((1 1) (0 2) (0 3))
+              #((0 2) (1 1) (0 3))
+              #((0 2) (0 3) (1 1))))
+  ;; exhaustive tests for 2 and 3 item lists
+  (for-each (λ (v) (test #((1 x) (2 y)) vector-sort* v))
+            '(#((1 x) (2 y))
+              #((2 y) (1 x))))
+  (for-each (λ (v) (test #((1 x) (2 y) (3 z)) vector-sort* v))
+            '(#((1 x) (2 y) (3 z))
+              #((2 y) (1 x) (3 z))
+              #((2 y) (3 z) (1 x))
+              #((3 z) (2 y) (1 x))
+              #((3 z) (1 x) (2 y))
+              #((1 x) (3 z) (2 y))))
+  (test #((2)) vector-sort* #((4) (2) (1) (3)) 1 2)
+  (test #((1) (2)) vector-sort* #((4) (2) (1) (3)) 1 3)
+  (test #((1) (2) (3)) vector-sort* #((4) (2) (1) (3)) 1 4)
+  (test #((1) (2) (4)) vector-sort* #((4) (2) (1) (3)) 0 3)
+  (test #((1) (2) (3) (4) (5) (6) (7) (8)) vector-sort*
+        #((4) (2) (1) (3) (6) (5) (8) (7) (10) (9))
+        0 8)
+  (test #((1) (3) (5) (6) (7) (8) (9) (10)) vector-sort*
+        #((4) (2) (1) (3) (6) (5) (8) (7) (10) (9))
+        2 10)
+
+  (define ((check-regs . regexps) exn)
+    (and (exn:fail? exn)
+         (andmap (λ (reg) (regexp-match reg (exn-message exn)))
+                 regexps)))
+
+  (err/rt-test (vector-sort! (list 1) <) (check-regs #rx"vector-sort!" #rx"vector" #rx"immutable"))
+  (err/rt-test (vector-sort! #(1) <) (check-regs #rx"vector-sort!" #rx"vector" #rx"immutable"))
+  (err/rt-test (vector-sort (list 1) <) (check-regs #rx"vector-sort" #rx"vector"))
+  (err/rt-test (vector-sort! (vector 1) 1) (check-regs #rx"vector-sort!" #rx"any/c any/c . -> . any/c"))
+  (err/rt-test (vector-sort (vector 1) 1) (check-regs #rx"vector-sort" #rx"any/c any/c . -> . any/c"))
+  (err/rt-test (vector-sort! (vector 1) (λ (x) x)) (check-regs #rx"vector-sort!" #rx"any/c any/c . -> . any/c"))
+  (err/rt-test (vector-sort (vector 1) (λ (x) x)) (check-regs #rx"vector-sort" #rx"any/c any/c . -> . any/c"))
+  (err/rt-test (vector-sort! (vector 1) < #:key 42) (check-regs #rx"vector-sort!" #rx"any/c . -> . any/c"))
+  (err/rt-test (vector-sort! (vector 1) < #:key <) (check-regs #rx"vector-sort!" #rx"any/c . -> . any/c"))
+  (err/rt-test (vector-sort (vector 1) < #:key 42) (check-regs #rx"vector-sort" #rx"any/c . -> . any/c"))
+  (err/rt-test (vector-sort (vector 1) < #:key <) (check-regs #rx"vector-sort" #rx"any/c . -> . any/c")))
+
+;; ---------- vector-sort! actually mutates arg, and vector-sort does not  ----------
+;; verify underlying vector is sorted
+(let ([v (vector 3 2 1)])
+  (vector-sort! v <)
+  (test #t
+        equal?
+        v
+        (vector 1 2 3)))
+(let ([v (vector "d" "f" "e" "c" "a" "c" "b")])
+  (vector-sort! v string<? 2 5)
+  (test #t
+        equal?
+        v
+        (vector "d" "f" "a" "c" "e" "c" "b")))
+;; verify underlying vector is unchanged
+(let ([v (vector 3 2 1)])
+  (vector-sort v <)
+  (test #t
+        equal?
+        v
+        (vector 3 2 1)))
+(let ([v (vector "d" "f" "e" "c" "a" "c" "b")])
+  (vector-sort v string<? 2 5)
+  (test #t
+        equal?
+        v
+        (vector "d" "f" "e" "c" "a" "c" "b")))
+
+;; test #:key and #:cache-keys?
+(let ()
+  (define v #((0) (9) (1) (8) (2) (7) (3) (6) (4) (5)))
+  (define sorted #((0) (1) (2) (3) (4) (5) (6) (7) (8) (9)))
+  (test sorted vector-sort v < #:key car)
+  (let ([c1 0] [c2 0] [touched '()])
+    (test sorted
+          vector-sort v (λ (x y) (set! c1 (add1 c1)) (< x y))
+          #:key (λ (x)
+                  (set! c2 (add1 c2))
+                  (set! touched (cons x touched))
+                  (car x)))
+    ;; test that the number of key uses is half the number of comparisons
+    (test #t = (* 2 c1) c2)
+    ;; and that this is larger than the number of items in the list
+    (test #t < (vector-length v) c2)
+    ;; and that every item was touched
+    (test null remove* touched (vector->list v)))
+  (let ([c 0] [touched '()])
+    ;; now cache the keys
+    (test sorted
+          vector-sort v <
+          #:key (λ (x)
+                  (set! c (add1 c))
+                  (set! touched (cons x touched))
+                  (car x))
+          #:cache-keys? #t)
+    ;; test that the number of key uses is the same as the list length
+    (test #t = c (vector-length v))
+    ;; and that every item was touched
+    (test null remove* touched (vector->list v)))
+  (let* ([c 0] [getkey (λ (x) (set! c (add1 c)) x)])
+    ;; either way, we never use the key proc on no arguments
+    (test #() vector-sort #() < #:key getkey #:cache-keys? #f)
+    (test #() vector-sort #() < #:key getkey #:cache-keys? #t)
+    (test #t = c 0)
+    ;; we also don't use it for 1-arg lists
+    (test #(1) vector-sort #(1) < #:key getkey #:cache-keys? #f)
+    (test #t = c 0)
+    ;; but we do use it once if caching happens (it's a consistent interface)
+    (test #(1) vector-sort #(1) < #:key getkey #:cache-keys? #t)
+    (test #t = c 1)
+    ;; check a few other short lists
+    (test #(1 2) vector-sort #(2 1) < #:key getkey #:cache-keys? #t)
+    (test #(1 2 3) vector-sort #(2 3 1) < #:key getkey #:cache-keys? #t)
+    (test #(1 2 3 4) vector-sort #(4 2 3 1) < #:key getkey #:cache-keys? #t)
+    (test #t = c 10)))
+
+
 (report-errs)
