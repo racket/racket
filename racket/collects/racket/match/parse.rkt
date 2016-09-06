@@ -35,7 +35,7 @@
                                   regexp pregexp list-rest list-no-order hash-table
                                   quasiquote mcons list* mlist)
                 (lambda (x y) (eq? (syntax-e x) (syntax-e y)))
-    [(expander args ...)
+    [(expander . args)
      (and (identifier? #'expander)
           (syntax-local-value/record #'expander match-expander?))
      (match-expander-transform
