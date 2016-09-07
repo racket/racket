@@ -168,8 +168,12 @@
 
 (define (disappeared! x)
   (cond [(identifier? x)
+         (when (syntax-property x 'disappeared-uses)
+           (record-disappeared-uses (syntax-property x 'disappeared-uses)))
          (record-disappeared-uses (list x))]
         [(and (stx-pair? x) (identifier? (stx-car x)))
+         (when (syntax-property (stx-car x) 'disappeared-uses)
+           (record-disappeared-uses (syntax-property (stx-car x) 'disappeared-uses)))
          (record-disappeared-uses (list (stx-car x)))]
         [else
          (raise-type-error 'disappeared!
@@ -252,7 +256,7 @@
     (append/check-lits+litsets lits datum-lits litsets))
   (define-values (convs-rules convs-defs)
     (for/fold ([convs-rules null] [convs-defs null])
-        ([conv-entry (in-list convs)])
+              ([conv-entry (in-list convs)])
       (let* ([c (car conv-entry)]
              [argu (cdr conv-entry)]
              [get-parser-id (conventions-get-procedures c)]
