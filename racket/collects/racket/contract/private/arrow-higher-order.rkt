@@ -290,10 +290,12 @@
                                           blame-party-info
                                           neg-party
                                           #'not-a-null
-                                          (λ (x) (inner-stx-gen x assume-result-values? do-tail-check?))
+                                          (λ (x)
+                                            (inner-stx-gen x assume-result-values? do-tail-check?))
                                           #'(cons blame neg-party))
                                          (inner-stx-gen #'() assume-result-values? do-tail-check?))
-                                     (inner-stx-gen #'not-a-null assume-result-values? do-tail-check?)))
+                                     (inner-stx-gen #'not-a-null assume-result-values?
+                                                    do-tail-check?)))
                                (list (mk-return #f #t) (mk-return #t #t) (mk-return #t #f)))]
                             [kwd-return
                              (let* ([inner-stx-gen

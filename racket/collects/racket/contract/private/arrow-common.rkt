@@ -51,7 +51,8 @@
 
 (define tail-contract-key (gensym 'tail-contract-key))
 
-(define-for-syntax (check-tail-contract rng-ctcs blame-party-info neg-party rng-checkers call-gen blame+neg-party)
+(define-for-syntax (check-tail-contract rng-ctcs blame-party-info neg-party
+                                        rng-checkers call-gen blame+neg-party)
   (unless (identifier? rng-ctcs)
     (raise-argument-error 'check-tail-contract
                           "identifier?"
@@ -64,7 +65,8 @@
            #,(call-gen #'())
            #,(call-gen rng-checkers)))))
 
-;; matches-arity-exactly? : procedure number (or/c number #f) (listof keyword?) (listof keyword?) -> boolean
+;; matches-arity-exactly? : procedure number (or/c number #f) (listof keyword?) (listof keyword?)
+;;                       -> boolean
 (define (matches-arity-exactly? val min-arity max-arity contract-req-kwds contract-opt-kwds)
   (define proc-arity (procedure-arity val)) 
   (and (let-values ([(vr va) (procedure-keywords val)])
@@ -347,7 +349,8 @@
                                #:missing-party [missing-party #f])
   (define num-values (length results))
   (define blame-case (if case-context 
-                         (blame-add-context blame (format "the ~a case of" (n->th (+ case-context 1))))
+                         (blame-add-context blame (format "the ~a case of"
+                                                          (n->th (+ case-context 1))))
                          blame))
   (raise-blame-error (blame-add-range-context blame-case)
                      #:missing-party missing-party
