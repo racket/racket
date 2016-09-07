@@ -6971,16 +6971,20 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
   int pre_vclock, pre_aclock, pre_kclock, pre_sclock, increments_kclock = 0;
   int once_vclock, once_aclock, once_kclock, once_sclock, once_increments_kclock = 0;
 
-  if (context & OPT_CONTEXT_BOOLEAN) {
-    /* Special case: (let ([x M]) (if x x N)), where x is not in N,
-       to (if M #t N), since we're in a test position. */
-    if (!(SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) && (head->count == 1) && (head->num_clauses == 1)) {
-      irlv = (Scheme_IR_Let_Value *)head->body;
-      if (SAME_TYPE(SCHEME_TYPE(irlv->body), scheme_branch_type)
-          && (irlv->vars[0]->use_count == 2)) {
-        Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)irlv->body;
-        if (SAME_OBJ(b->test, (Scheme_Object *)irlv->vars[0])
-            && SAME_OBJ(b->tbranch, (Scheme_Object *)irlv->vars[0])) {
+  /* Special case: (let ([x M]) (if x x N)), where x is not in N,
+     to (if M #t N), when the expression is in a test position
+     or the result of M is a boolean?. */
+  if (!(SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE)
+      && (head->count == 1)
+      && (head->num_clauses == 1)) {
+    irlv = (Scheme_IR_Let_Value *)head->body;
+    if (SAME_TYPE(SCHEME_TYPE(irlv->body), scheme_branch_type)
+        && (irlv->vars[0]->use_count == 2)) {
+      Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)irlv->body;
+      if (SAME_OBJ(b->test, (Scheme_Object *)irlv->vars[0])
+          && SAME_OBJ(b->tbranch, (Scheme_Object *)irlv->vars[0])) {
+        if ((context & OPT_CONTEXT_BOOLEAN)
+            || SAME_OBJ(expr_implies_predicate(irlv->value, info), scheme_boolean_p_proc)) { 
           Scheme_Branch_Rec *b3;
 
           b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
