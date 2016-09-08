@@ -5,9 +5,9 @@
 @(define website @link["http://json.org"]{JSON web site})
 @(define rfc @link["http://www.ietf.org/rfc/rfc4627.txt"]{JSON RFC})
 
-@; @(begin (require scribble/eval)
-@;         (define ev (make-base-eval))
-@;         (ev '(require json)))
+@(begin (require scribble/eval)
+        (define ev (make-base-eval))
+        (ev '(require json racket/port)))
 
 @title{JSON}
 
@@ -35,7 +35,19 @@ the @rfc for more information about JSON.
     @item{@racket[string?]}
     @item{@racket[(or exact-integer? inexact-real?)]}
     @item{@racket[(listof jsexpr?)]}
-    @item{@racket[(hasheqof symbol? jsexpr?)]}]}
+    @item{@racket[(hasheqof symbol? jsexpr?)]}]
+
+@examples[#:eval ev
+  (jsexpr? 'null)
+  (jsexpr? #t)
+  (jsexpr? "cheesecake")
+  (jsexpr? 3.5)
+  (jsexpr? (list 18 'null #f))
+  (jsexpr? #hasheq((turnip . 82)))
+  (jsexpr? (vector 1 2 3 4))
+  (jsexpr? #hasheq(("turnip" . 82)))
+]
+}
 
 @defparam[json-null jsnull any?]{
   This parameter determines the default Racket value that corresponds to
@@ -60,20 +72,39 @@ the @rfc for more information about JSON.
   encoded as well.  This can be useful if you need to transport the text
   via channels that might not support UTF-8.  Note that characters in
   the range of @tt{U+10000} and above are encoded as two @tt{\uHHHH}
-  escapes, see Section 2.5 of the @|rfc|.}
+  escapes, see Section 2.5 of the @|rfc|.
+
+@examples[#:eval ev
+  (with-output-to-string
+    (λ () (write-json #hasheq((waffle . (1 2 3))))))
+  (with-output-to-string
+    (λ () (write-json #hasheq((와플 . (1 2 3)))
+                      #:encode 'all)))
+]
+}
 
 @defproc[(jsexpr->string [x jsexpr?]
                          [#:null jsnull any? (json-null)]
                          [#:encode encode (or/c 'control 'all) 'control])
          string?]{
-  Generates a JSON source string for the @tech{jsexpr} @racket[x].}
+  Generates a JSON source string for the @tech{jsexpr} @racket[x].
+
+@examples[#:eval ev
+  (jsexpr->string #hasheq((waffle . (1 2 3))))
+]
+}
 
 @defproc[(jsexpr->bytes [x jsexpr?]
                         [#:null jsnull any? (json-null)]
                         [#:encode encode (or/c 'control 'all) 'control])
          bytes?]{
   Generates a JSON source byte string for the @tech{jsexpr} @racket[x].
-  (The byte string is encoded in UTF-8.)}
+  (The byte string is encoded in UTF-8.)
+
+@examples[#:eval ev
+  (jsexpr->bytes #hasheq((waffle . (1 2 3))))
+]
+}
 
 @section{Parsing JSON Text into JS-Expressions}
 
@@ -82,15 +113,36 @@ the @rfc for more information about JSON.
          (or/c jsexpr? eof-object?)]{
   Reads a @tech{jsexpr} from a JSON-encoded input port @racket[in] as a
   Racket (immutable) value, or produces @racket[eof] if only whitespace
-  remains.}
+  remains.
+
+@examples[#:eval ev
+  (with-input-from-string
+    "{\"arr\" : [1, 2, 3, 4]}"
+    (λ () (read-json)))
+  (eval:error
+    (with-input-from-string
+      "sandwich sandwich" (code:comment "invalid JSON")
+      (λ () (read-json))))
+]
+}
 
 @defproc[(string->jsexpr [str string?] [#:null jsnull any? (json-null)])
          jsexpr?]{
-  Parses the JSON string @racket[str] as an immutable @tech{jsexpr}.}
+  Parses the JSON string @racket[str] as an immutable @tech{jsexpr}.
+
+@examples[#:eval ev
+  (string->jsexpr "{\"pancake\" : 5, \"waffle\" : 7}")
+]
+}
 
 @defproc[(bytes->jsexpr [str bytes?] [#:null jsnull any? (json-null)])
          jsexpr?]{
-  Parses the JSON bytes string @racket[str] as an immutable @tech{jsexpr}.}
+  Parses the JSON bytes string @racket[str] as an immutable @tech{jsexpr}.
+
+@examples[#:eval ev
+  (bytes->jsexpr #"{\"pancake\" : 5, \"waffle\" : 7}")
+]
+}
 
 @section{A Word About Design}
 
@@ -139,3 +191,5 @@ Some names in this library use ``jsexpr'' and some use ``json''.  The
 rationale that the first is used for our representation, and the second
 is used as information that is received from or sent to the outside
 world.
+
+@close-eval[ev]
