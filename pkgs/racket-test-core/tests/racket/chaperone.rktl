@@ -2546,5 +2546,35 @@
 (test #f procedure-impersonator*? (chaperone-procedure (chaperone-procedure values values) values))
 
 ;; ----------------------------------------
+;; Make sure chaperone-of works with a wrapper that appears with 
+;; hash tables read from bytecode
+
+(let ([o (open-output-bytes)])
+  (write (compile '#hash(("a" . "b"))) o)
+  (define h (eval (parameterize ([read-accept-compiled #t])
+                    (read (open-input-bytes (get-output-bytes o))))))
+  (define h2 #hash(("a" . "b")))
+  (test #t equal? h h2)
+    (test #t chaperone-of? h h2)
+  (test #t chaperone-of? h2 h)
+  (test #t impersonator-of? h h2)
+  (test #t impersonator-of? h2 h)
+  (define (check-combo h h2)
+    (define ch (chaperone-hash h
+                               (lambda (h k) (values k (lambda (h k v) v)))
+                               (lambda (h k v) (values k v))
+                               (lambda (h k) k) (lambda (h k) k)))
+    (test #t chaperone-of? ch h)
+    (test #t chaperone-of? ch h2)
+    (test #f chaperone-of? h ch)
+    (test #f chaperone-of? h2 ch)
+    (test #t impersonator-of? ch h)
+    (test #t impersonator-of? ch h2)
+    (test #f impersonator-of? h ch)
+    (test #f impersonator-of? h2 ch))
+  (check-combo h h2)
+  (check-combo h2 h))
+
+;; ----------------------------------------
 
 (report-errs)
