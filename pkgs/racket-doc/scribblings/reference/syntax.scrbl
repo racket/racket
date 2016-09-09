@@ -17,6 +17,8 @@
                      (only-in compiler/cm-accomplice
                               register-external-module)
                      racket/performance-hint
+                     (only-in syntax/module-reader
+                              make-meta-reader)
                      syntax/parse))
 
 @(define require-eval (make-base-eval))
@@ -1753,6 +1755,36 @@ expander introduces @racketidfont{#%app} identifiers.
 
 Like @racket[#%app], but without support for keyword arguments.
 As a special case, @racket[(#%plain-app)] produces @racket['()].}
+
+@;------------------------------------------------------------------------
+@section[#:tag "namespaced-transformer"]{Explicitly Namespaced Identifiers: @racket[#%namespaced]}
+
+The @racket[#%namespaced] form adds a form of explicit identifier namespacing, designed to be used in
+contexts where syntax objects must be created without lexical scope, such as when implementing
+@racket[read-syntax] for a language. This is especially useful for “language extensions”, also known
+as “meta languages”, such as languages created using @racket[make-meta-reader]. Since language
+extensions do not have control over the lexical environment that the produced syntax objects will be
+evaluated in, it is difficult to create hygienic extensions that adjust semantics. If the “host”
+language provides @racket[#%namespaced], then language extensions can use it to safely hook into
+the result by defining ordinary syntax transformers.
+
+For other use cases, @racket[#%namespaced] is usually the wrong choice. See @racket[local-require] for
+a more flexible, alternative way to scope imported identifiers without the need for explicit
+namespacing.
+
+@defform[(#%namespaced module-path form)
+         #:grammar ([form id (id . args)])]{
+Equivalent to @racket[form], except that @racket[id]’s lexical context is adjusted to refer to an
+identifier imported from @racket[module-path]. All source locations and syntax properties in
+@racket[form] are preserved, and if @racket[form] is a pair, then @racket[args] are passed through
+entirely unmodified.
+
+@mz-examples[
+(#%namespaced racket/math pi)
+(#%namespaced racket/list (take '(1 2 3) 2))
+(#%namespaced racket/match (match '(1 2 3)
+                             [(list _ x _) x]))
+]}
 
 @;------------------------------------------------------------------------
 @section[#:tag "lambda"]{Procedure Expressions: @racket[lambda] and @racket[case-lambda]}
