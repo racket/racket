@@ -2902,7 +2902,7 @@ int scheme_expr_produces_local_type(Scheme_Object *expr, int *_involves_k_cross)
                                                                   10, empty_eq_hash_tree));
 }
 
-static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
+static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Info *info, int argc)
 {
   if (SCHEME_PRIMP(rator)) {
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_PRODUCES_REAL)
@@ -2991,6 +2991,24 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, int argc)
     }
   }
 
+  {
+    Scheme_Object *shape;
+    shape = get_struct_proc_shape(rator, info, 1);
+    if (shape) {
+      if (SAME_TYPE(SCHEME_TYPE(shape), scheme_struct_proc_shape_type)) {
+        if (((SCHEME_PROC_SHAPE_MODE(shape) & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_PRED)
+            // && SCHEME_PAIRP(SCHEME_PROC_SHAPE_IDENTITY(shape))
+            ) {
+          return scheme_boolean_p_proc;
+        }
+      } else if (SAME_TYPE(SCHEME_TYPE(shape), scheme_struct_prop_proc_shape_type)) {
+        if (SCHEME_PROP_PROC_SHAPE_MODE(shape) == STRUCT_PROP_PROC_SHAPE_PRED) {
+          return scheme_boolean_p_proc;
+        }
+      }
+    }
+  }
+
   return NULL;
 }
 
@@ -3055,7 +3073,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
           return scheme_list_p_proc;
       }
 
-      return rator_implies_predicate(app->rator, 1);
+      return rator_implies_predicate(app->rator, info, 1);
     }
     break;
   case scheme_application3_type:
@@ -3110,7 +3128,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
           return scheme_list_p_proc;
       }
 
-      return rator_implies_predicate(app->rator, 2);
+      return rator_implies_predicate(app->rator, info, 2);
     }
     break;
   case scheme_application_type:
@@ -3141,7 +3159,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
           return scheme_list_p_proc;
       }
 
-      return rator_implies_predicate(app->args[0], app->num_args);
+      return rator_implies_predicate(app->args[0], info, app->num_args);
     }
     break;
   case scheme_ir_lambda_type:
@@ -3653,7 +3671,7 @@ static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme
 
   if ((context & OPT_CONTEXT_BOOLEAN) && !info->escapes) {
     Scheme_Object *pred;
-    pred = rator_implies_predicate(rator, argc);
+    pred = rator_implies_predicate(rator, info, argc);
     if (pred && predicate_implies_not(pred, scheme_not_proc))
       return make_discarding_sequence(app, scheme_true, info);
     else if (pred && predicate_implies(pred, scheme_not_proc))
