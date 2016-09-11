@@ -443,6 +443,10 @@ each element in the sequence.
   content of a directory, use the result of @racket[directory-list] as
   a sequence.
 
+  The immediate content of each directory is reported as sorted by
+  @racket[path<?], and the content of a subdirectory is reported
+  before subsequent paths within the directory.
+
 @examples[
     (code:comment @#,t{Given a directory tree:})
     (code:comment @#,t{})
@@ -485,7 +489,8 @@ each element in the sequence.
                           "/example/c"))])
         (printf "~a\n" p)))]
 
-@history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}]}
+@history[#:changed "6.0.0.1" @elem{Added @racket[use-dir?] argument.}
+         #:changed "6.6.0.4" @elem{Added guarantee of sorted results.}]}
 
 
 @defproc*[([(in-producer [producer procedure?])

@@ -6,6 +6,7 @@
              "letstx-scheme.rkt"
              "member.rkt"
              "reverse.rkt"
+             "sort.rkt"
              '#%unsafe
              '#%flfxnum
              (for-syntax '#%kernel
@@ -2076,7 +2077,7 @@
                   eof)]])))
 
   (define (dir-list full-d d acc)
-    (for/fold ([acc acc]) ([f (in-list (reverse (directory-list full-d)))])
+    (for/fold ([acc acc]) ([f (in-list (reverse (sort (directory-list full-d) path<?)))])
 	      (cons (build-path d f) acc)))
 
   (define (next-body l d init-dir use-dir?)
