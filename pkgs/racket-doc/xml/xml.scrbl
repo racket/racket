@@ -300,6 +300,23 @@ Converts an @tech{X-expression} into a string containing XML.}
 
 Converts XML represented with a string into an @tech{X-expression}.}
 
+@defproc[(xml-encode-attribute [str string?]) string?]{
+
+Escapes a string as required for XML attributes.
+
+The escaping performed for attribute strings is slightly
+different from that performed for body strings, in that
+double-quotes must be escaped, as they would otherwise
+terminate the enclosing string.
+
+Note that this conversion is performed automatically in attribute
+positions by @racket[xexpr->string], and you are therefore unlikely to
+need this function unless you are using @racket[include-template] to
+insert strings directly into attribute positions of HTML.
+
+@history[#:added "6.6.0.7"]
+}
+
 @defproc[((eliminate-whitespace [tags (listof symbol?) empty]
                                 [choose (boolean? . -> . boolean?) (λ (x) x)])
           [elem element?])
