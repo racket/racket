@@ -166,7 +166,7 @@
     [(#\") "&quot;"]
     [else c]))
 
-;; escape : String -> String
+;; escape : String Regexp -> String
 (define (escape x table)
   (regexp-replace* table x replace-escaped))
 

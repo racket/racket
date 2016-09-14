@@ -101,6 +101,7 @@
  [xml->xexpr (content/c . -> . xexpr/c)]
  [xexpr->xml (xexpr/c . -> . content/c)]
  [xexpr-drop-empty-attributes (parameter/c boolean?)]
+ [xml-attribute-encode (string? . -> . string?)]
  [write-xexpr (->* (xexpr/c)
                    (output-port?
                     #:insert-newlines? any/c)
@@ -168,3 +169,9 @@
       [(p-i? x)
        (write-xml-p-i x 0 void out)]))
   (void))
+
+;; given a string, encode it in the style required for attributes. Specifically,
+;; double-quote must be encoded as well as <, >, and &, because the double-quote
+;; would otherwise end the attribute.
+(define (xml-attribute-encode str)
+  (escape str escape-attribute-table))

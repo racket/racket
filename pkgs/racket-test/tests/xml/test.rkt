@@ -540,6 +540,10 @@ END
       
       (test-suite
        "xml->xexpr"
+
+       (test-equal? "xml-attribute-encode"
+                    (xml-attribute-encode "ab\"cd?e;;<i> %&quot;f")
+                    "ab&quot;cd?e;;&lt;i&gt; %&amp;quot;f")
        (test-xml->xexpr    
         "<doc><bold>hi</bold> there!</doc>"
         '(doc () (bold () "hi") " there!"))
