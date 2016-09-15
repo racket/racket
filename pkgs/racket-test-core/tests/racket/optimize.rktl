@@ -6228,7 +6228,17 @@
   (write (compile e) o)
   (parameterize ([read-accept-compiled #t])
     (eval (read (open-input-bytes (get-output-bytes o)))))
-  ((dynamic-require ''uses-mutator-with-an-auto-field 'f) #f)) 
+  ((dynamic-require ''uses-mutator-with-an-auto-field 'f) #f))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that the optimizer doesn't discard a known error on the
+;; right-hand side of a `letrec`
+
+(err/rt-test
+ (letrec-values ([() (list (3) the-val)]
+                 [(the-val) 42])
+                777)
+ exn:fail:contract?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

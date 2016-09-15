@@ -7136,7 +7136,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
        (values (if id e1 e2) ...) and then split the values call, since
        duplicating the id use and test is likely to pay off. */
     if ((pre_body->count != 1)
-        && (found_escapes
+        && ((!is_rec && found_escapes)
             || (is_values_apply(value, pre_body->count, rhs_info, merge_skip_vars, 1)
                 && ((!is_rec && no_mutable_bindings(pre_body))
                     /* If the right-hand side is omittable, then there are
