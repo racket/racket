@@ -6241,5 +6241,26 @@
  exn:fail:contract?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The `let` and `with-continuation-mark` wrappers for `b`
+;; delay the optimizer's detection of the right-hand side as
+;; a closure enough that the resolve pass gets a `letrec`
+;; that is being reinterpreted as a `let*`. But make sure 
+;; that the location of `a` is allocated before the closure
+;; for `b`.
+
+(test (void)
+      'call
+      (let ([f (letrec ([a 0]
+                        [b (let ([t 0])
+                             (with-continuation-mark
+                                 'x
+                               'y
+                               (lambda () (set! a 1))))])
+                 (list b b))])
+        (set! f f)
+        ((car f))))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -1501,7 +1501,8 @@ Scheme_Object *scheme_resolve_lets(Scheme_Object *form, Resolve_Info *info)
             if (!recbox && irlv->vars[j]->mutated) {
               GC_CAN_IGNORE Scheme_Object *pos;
               pos = scheme_make_integer(lv->position + j);
-              if (SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE) {
+              if ((SCHEME_LET_FLAGS(head) & SCHEME_LET_RECURSIVE)
+                  || irlv->vars[j]->must_allocate_immediately) {
                 /* For let* or a let*-like letrec, we need to insert the boxes after each evaluation. */
                 Scheme_Object *boxenv;
                 

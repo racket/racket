@@ -1538,6 +1538,10 @@ typedef struct Scheme_IR_Local
   unsigned int optimize_outside_binding : 1;
   /* Records an anlaysis during the resolve pass: */
   unsigned int resolve_omittable : 1;
+  /* Records whether the variable is mutated and used before
+     the body of its binding, so that itmust be allocated at latest
+     after it's RHS expression is evaluated: */
+  unsigned int must_allocate_immediately : 1;
   /* The type desired by use positions for unboxing purposes;
      set by the optimizer: */
   unsigned int arg_type : SCHEME_MAX_LOCAL_TYPE_BITS;

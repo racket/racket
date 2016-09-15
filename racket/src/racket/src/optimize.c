@@ -133,6 +133,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
                                                 Scheme_Hash_Tree *ignore_vars);
 static int produces_local_type(Scheme_Object *rator, int argc);
 static int optimize_any_uses(Optimize_Info *info, Scheme_IR_Let_Value *at_irlv, int n);
+static void optimize_uses_of_mutable_imply_early_alloc(Scheme_IR_Let_Value *at_irlv, int n);
 static void propagate_used_variables(Optimize_Info *info);
 static int env_uses_toplevel(Optimize_Info *frame);
 static Scheme_IR_Local *clone_variable(Scheme_IR_Local *var);
@@ -7628,6 +7629,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     /* We can simplify letrec to let* */
     SCHEME_LET_FLAGS(head) -= SCHEME_LET_RECURSIVE;
     is_rec = 0;
+    optimize_uses_of_mutable_imply_early_alloc((Scheme_IR_Let_Value *)head->body, head->num_clauses);
   }
 
   /* Optimized away all clauses? */
@@ -9369,6 +9371,40 @@ static int optimize_any_uses(Optimize_Info *info, Scheme_IR_Let_Value *at_irlv, 
   }
 
   return 0;
+}
+
+static void optimize_uses_of_mutable_imply_early_alloc(Scheme_IR_Let_Value *at_irlv, int n)
+{
+  int i, j;
+  Scheme_IR_Let_Value *irlv = at_irlv;
+
+  /* We we're reinterpreting a `letrec` as `let*`, and when it realy
+     must be `let*` instead of `let`, and when a mutable variable is
+     involved, then we need to tell the `resolve` pass that the
+     mutable varaiable's value must be boxed immediately, instead of
+     delaying to the body of the `let*`. */
+
+  while (n--) {
+    for (i = irlv->count; i--; ) {
+      if (irlv->vars[i]->mutated) {
+        int used = 0;
+        if (irlv->vars[i]->optimize_used)
+          used = 1;
+        else {
+          for (j = at_irlv->count; j--; ) {
+            if (at_irlv->vars[j]->optimize.transitive_uses) {
+              if (scheme_hash_get(at_irlv->vars[j]->optimize.transitive_uses,
+                                  (Scheme_Object *)irlv->vars[i]))
+                used = 1;
+            }
+          }
+        }
+        if (used)
+          irlv->vars[i]->must_allocate_immediately = 1;
+      }
+    }
+    irlv = (Scheme_IR_Let_Value *)irlv->body;
+  }
 }
 
 static void register_use(Scheme_IR_Local *var, Optimize_Info *info)
