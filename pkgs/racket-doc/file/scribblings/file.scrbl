@@ -19,6 +19,7 @@
 @include-section["ico.scrbl"]
 @include-section["resource.scrbl"]
 @include-section["cache.scrbl"]
+@include-section["glob.scrbl"]
 
 @(bibliography
   (bib-entry #:key "Gervautz1990"
