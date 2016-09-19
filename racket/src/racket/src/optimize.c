@@ -2979,7 +2979,18 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
              || IS_NAMED_PRIM(rator, "eof-object?")
              || IS_NAMED_PRIM(rator, "immutable?")
              || IS_NAMED_PRIM(rator, "not")
-             || IS_NAMED_PRIM(rator, "strict-true?")) {
+             || IS_NAMED_PRIM(rator, "strict-true?")
+             || IS_NAMED_PRIM(rator, "zero?")
+             || IS_NAMED_PRIM(rator, "procedure-arity-includes?")
+             || IS_NAMED_PRIM(rator, "variable-reference-constant?")
+             || IS_NAMED_PRIM(rator, "eq?")
+             || IS_NAMED_PRIM(rator, "eqv?")
+             || IS_NAMED_PRIM(rator, "equal?")
+             || IS_NAMED_PRIM(rator, "string=?")
+             || IS_NAMED_PRIM(rator, "bytes=?")
+             || IS_NAMED_PRIM(rator, "free-identifier=?")
+             || IS_NAMED_PRIM(rator, "bound-identifier=?")
+             || IS_NAMED_PRIM(rator, "procedure-closure-contents-eq?")) {
       return scheme_boolean_p_proc;
     }
 
