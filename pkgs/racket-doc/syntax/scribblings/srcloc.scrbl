@@ -289,6 +289,14 @@ or the PLaneT cache.
 @defform*[[(quote-character-span) (quote-character-span form)]]
 )]{
 
+@margin-note{@index['("__FILE__" "__file__")]{You can achieve an
+effect similar to @tt{__FILE__} from
+@hyperlink["http://perldoc.perl.org/functions/__FILE__.html"]{Perl} or
+@hyperlink["http://ruby-doc.org/docs/keywords/1.9/Object.html#method-i-__FILE__"]{Ruby}
+and @tt{__file__} from
+@hyperlink["https://docs.python.org/3/reference/import.html#__file__"]{Python}
+by using @racket[quote-source-file].}}
+
 Quote various fields of the source location of @racket[form], or of
 the whole macro application if no @racket[form] is given.
 
