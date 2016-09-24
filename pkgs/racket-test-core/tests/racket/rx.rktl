@@ -1801,5 +1801,19 @@
 (err/rt-test (regexp "+" #f) (lambda (exn) (regexp-match? "`[+]' follows nothing in pattern" (exn-message exn))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that negated patterns as literal strings are not recorded
+;; as "must include this literal string" requirements
+
+(test '("aaa") regexp-match #rx"a*(?!b)" "aaaxy")
+(test '("aaa") regexp-match #rx"a*(?<!b)" "aaaxy")
+
+;; Make sure "must match" strings are preserved for non-negated
+;; lookahead and lookbehind; the following examples take
+;; quadratic time without the "must match" optimization,
+;; and return return away with #f for with the optimization
+(test #f 'optimized (regexp-match #px"a*(?=bc)" (make-bytes 100024 (char->integer #\a))))
+(test #f 'optimized (regexp-match #px"a*(?<=bc)" (make-bytes 100024 (char->integer #\a))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

@@ -281,12 +281,16 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre, Scheme_Object *handler)
       longest = 0;
       longest_is_ci = 0;
       len = 0;
-      for (; scan != 0; scan = regnext(scan)) {
+      for (; scan != 0; ) {
         int mscan = scan;
         while (1) {
           int mop;
           mop = rOP(mscan);
-          if (((mop == EXACTLY) || (mop == EXACTLY_CI))
+          if ((mop == LOOKF) || (mop == LOOKBF)) {
+            /* skip over part that we don't want to match */
+            mscan = mscan + rOPLEN(OPERAND(mscan));
+            mscan = NEXT_OP(mscan);
+          } else if (((mop == EXACTLY) || (mop == EXACTLY_CI))
               && rOPLEN(OPERAND(mscan)) >= len) {
             /* Skip regmust if it contains a null character: */
             rxpos ls = OPSTR(OPERAND(mscan));
@@ -321,6 +325,13 @@ regcomp(char *expstr, rxpos exp, int explen, int pcre, Scheme_Object *handler)
             break;
         }
         prev_op = rOP(scan);
+        if ((prev_op == LOOKF) || (prev_op == LOOKBF)) {
+          /* skip over part that we don't want to match */
+          scan = scan + rOPLEN(OPERAND(scan));
+          scan = NEXT_OP(scan);
+        } else {
+          scan = regnext(scan);
+        }
       }
       if (longest) {
 	r->regmust = longest;
