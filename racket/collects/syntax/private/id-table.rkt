@@ -161,7 +161,7 @@ The {key,value}-{in-out} functions should all return a chaperone of their argume
   (define entry (id-table-ref who d id missing identifier->symbol identifier=?))
   (cond [(eq? entry missing)
          (id-table-set! who d id default identifier->symbol identifier=?)
-         default]
+         (if (procedure? default) (default) default)]
         [else entry]))
 
 (define (id-table-update/constructor who d id updater default constructor identifier->symbol identifier=?)
