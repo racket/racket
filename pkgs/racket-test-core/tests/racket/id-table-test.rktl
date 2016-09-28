@@ -400,6 +400,8 @@
 
   (test 0 bound-id-table-ref! table x0 0)
   (test 1 bound-id-table-ref! table x1 1)
+  (test 0 bound-id-table-ref! table x0 (lambda () 0))
+  (test 1 bound-id-table-ref! table x1 (lambda () 1))
   (test 0 bound-id-table-ref table x0)
   (test 1 bound-id-table-ref (bound-id-table-update table2 y0 add1 0) y0)
   (test 1 bound-id-table-ref (bound-id-table-set* table2 y0 0 y1 1) y1)
@@ -417,6 +419,8 @@
 
   (test 0 free-id-table-ref! table x0 0)
   (test 1 free-id-table-ref! table x1 1)
+  (test 0 free-id-table-ref! table x0 (lambda () 0))
+  (test 1 free-id-table-ref! table x1 (lambda () 1))
   (test 0 free-id-table-ref table x0)
   (test 1 free-id-table-ref (free-id-table-update table2 y0 add1 0) y0)
   (test 1 free-id-table-ref (free-id-table-set* table2 y0 0 y1 1) y1)
