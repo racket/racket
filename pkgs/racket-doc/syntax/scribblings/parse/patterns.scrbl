@@ -34,7 +34,7 @@ means specifically @tech{@Spattern}.
 
 @racketgrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
                             ~describe ~seq ~optional ~rep ~once ~between
-                            ~! ~bind ~fail ~parse ~peek ~peek-not ~do)
+                            ~! ~bind ~fail ~parse ~peek ~peek-not ~do ~post)
                 [S-pattern
                  pvar-id
                  pvar-id:syntax-class-id
@@ -60,6 +60,7 @@ means specifically @tech{@Spattern}.
                  (@#,ref[~describe s] maybe-opaque maybe-role expr S-pattern)
                  (@#,ref[~commit s] S-pattern)
                  (@#,ref[~delimit-cut s] S-pattern)
+                 (@#,ref[~post s] S-pattern)
                  A-pattern]
                 [L-pattern
                  ()
@@ -80,6 +81,7 @@ means specifically @tech{@Spattern}.
                  (@#,ref[~describe h] maybe-opaque maybe-role expr H-pattern)
                  (@#,ref[~commit h] H-pattern)
                  (@#,ref[~delimit-cut h] H-pattern)
+                 (@#,ref[~post h] H-patter)
                  (~peek H-pattern)
                  (~peek-not H-pattern)
                  proper-S-pattern]
@@ -95,6 +97,7 @@ means specifically @tech{@Spattern}.
                  (~fail maybe-fail-condition maybe-message-expr)
                  (~parse S-pattern stx-expr)
                  (@#,ref[~and a] A-pattern ...+)
+                 (@#,ref[~post a] A-pattern)
                  (~do defn-or-expr ...)]
                 [proper-S-pattern
                  #, @elem{a @svar{S-pattern} that is not a @svar{A-pattern}}]
@@ -155,6 +158,16 @@ One of @ref[~delimit-cut s] or @ref[~delimit-cut h]:
 @itemize[
 @item{@ref[~delimit-cut h] if the subpattern is a @tech{proper @Hpattern}}
 @item{@ref[~delimit-cut s] otherwise}
+]
+}
+
+@defidform[~post]{
+
+One of @ref[~post s], @ref[~post h], or @ref[~post a]:
+@itemize[
+@item{@ref[~post a] if the subpattern is a @tech{proper @Apattern}}
+@item{@ref[~post h] if the subpattern is a @tech{proper @Hpattern}}
+@item{@ref[~post s] otherwise}
 ]
 }
 
@@ -640,6 +653,14 @@ pattern.}
 ]
 }
 
+@specsubform[(@#,def[~post s] S-pattern)]{
+
+Marks failures within the subpattern as occurring in a ``post-order
+check''; that is, they are considered to have made greater progress
+than a normal failure.
+}
+
+
 @specsubform[A-pattern]{
 
 An @tech{@Apattern} is considered a @Spattern when there is no
@@ -786,6 +807,12 @@ pattern instead.
 @specsubform[(@#,def[~delimit-cut h] H-pattern)]{
 
 Like the @Spattern version, @ref[~delimit-cut s], but matches a head
+pattern instead.
+}
+
+@specsubform[(@#,def[~post h] H-pattern)]{
+
+Like the @Spattern version, @ref[~post s], but matches a head
 pattern instead.
 }
 
@@ -1051,6 +1078,11 @@ definition in a @racket[~do] block.
 ]
 }
 
+@specsubform[(@#,def[~post a] A-pattern)]{
+
+Like the @Spattern version, @ref[~post s], but matches a head
+pattern instead.
+}
 
 
 @;{--------}
