@@ -106,12 +106,19 @@ Authentication.
 @history[#:added "6.1.1.1"
          #:changed "6.3" @elem{Added the @racket[initial-error] argument.}
          #:changed "6.2.900.17" @elem{Added the @racket[strict-links?] argument.}
-         #:changed "6.6.0.5" @elem{Added the @racket[username] and @racket[password] arguments.}]}
+         #:changed "6.6.0.5" @elem{Added the @racket[username] and @racket[password] arguments.}
+         #:changed "6.6.0.5" @elem{Changed to raise @racket[exn:fail:git] exceptions
+                                   instead of @racket[exn:fail].}]}
 
 @deftogether[(@defparam[current-git-username username (or/c string? #f)]
               @defparam[current-git-password password (or/c string? #f)])]{
 Parameters used by @racket[git-checkout] as the default values of the
 @racket[_username] and @racket[_password] arguments to control
 authentication with the remote server.
+
+@history[#:added "6.6.0.5"]}
+
+@defstruct[(exn:fail:git exn:fail) () #:transparent]{
+Raised by @racket[git-checkout] due to errors parsing or communicating with the git protocol.
 
 @history[#:added "6.6.0.5"]}
