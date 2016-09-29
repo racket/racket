@@ -416,6 +416,23 @@
        (check-equal? counter 5)
        (void)])))
 
+;; #:and, #:post side-clauses
+
+(test-case "#:and side-clause"
+  (check-exn #rx"non-decreasing"
+             (lambda ()
+               (syntax-parse #'(1 2)
+                 [(a b)
+                  #:and (~fail #:unless (> (syntax-e #'a) (syntax-e #'b)) "non-decreasing")
+                  (void)]))))
+(test-case "#:post side-clause"
+  (check-exn #rx"non-decreasing"
+             (lambda ()
+               (syntax-parse #'(1 2)
+                 [(a b)
+                  #:post (~fail #:unless (> (syntax-e #'a) (syntax-e #'b)) "non-decreasing")
+                  (void)]))))
+
 ;; == Lib tests
 
 ;; static

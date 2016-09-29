@@ -165,7 +165,7 @@ One of @ref[~delimit-cut s] or @ref[~delimit-cut h]:
 
 One of @ref[~post s], @ref[~post h], or @ref[~post a]:
 @itemize[
-@item{@ref[~post a] if the subpattern is a @tech{proper @Apattern}}
+@item{@ref[~post a] if the subpattern is an @tech{@Apattern}}
 @item{@ref[~post h] if the subpattern is a @tech{proper @Hpattern}}
 @item{@ref[~post s] otherwise}
 ]

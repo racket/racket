@@ -193,6 +193,8 @@ follows:
 
 @racketgrammar[pattern-directive
                (code:line #:declare pattern-id stxclass maybe-role)
+               (code:line #:post action-pattern)
+               (code:line #:and action-pattern)
                (code:line #:with syntax-pattern expr)
                (code:line #:attr attr-arity-decl expr)
                (code:line #:fail-when condition-expr message-expr)
@@ -239,6 +241,27 @@ pattern may be declared.
 ]
 }
 
+@specsubform[(code:line #:post action-pattern)]{
+
+Executes the given @tech{@Apattern} as a ``post-traversal check''
+after matching the main pattern. That is, the following are
+equivalent:
+@racketblock[
+_main-pattern #:post action-pattern
+_main-pattern #:and (~post action-pattern)
+(~and _main-pattern (~post action-pattern))
+]
+}
+
+@specsubform[(code:line #:and action-pattern)]{
+
+Like @racket[#:post] except that no @racket[~post] wrapper is
+added. That is, the following are equivalent:
+@racketblock[
+_main-pattern #:and action-pattern
+(~and _main-pattern action-pattern)
+]}
+
 @specsubform[(code:line #:with syntax-pattern stx-expr)]{
 
 Evaluates the @racket[stx-expr] in the context of all previous
@@ -254,6 +277,8 @@ implicitly converted to a syntax object. If the the conversion would
 produce @deftech{3D syntax}---that is, syntax that contains unwritable
 values such as procedures, non-prefab structures, etc---then an
 exception is raised instead.
+
+Equivalent to @racket[#:post (~parse syntax-pattern stx-expr)].
 }
 
 @specsubform[(code:line #:attr attr-arity-decl expr)]{
@@ -262,6 +287,8 @@ Evaluates the @racket[expr] in the context of all previous attribute
 bindings and binds it to the given attribute. The value of
 @racket[expr] need not be, or even contain, syntax---see
 @racket[attribute] for details.
+
+Equivalent to @racket[#:and (~bind attr-arity-decl expr)].
 }
 
 @specsubform[(code:line #:fail-when condition-expr message-expr)
@@ -276,12 +303,16 @@ object, it is indicated as the cause of the error.
 If the @racket[message-expr] produces a string it is used as the
 failure message; otherwise the failure is reported in terms of the
 enclosing descriptions.
+
+Equivalent to @racket[#:post (~fail #:when condition-expr message-expr)].
 }
 
 @specsubform[(code:line #:fail-unless condition-expr message-expr)
              #:contracts ([message-expr (or/c string? #f)])]{
 
 Like @racket[#:fail-when] with the condition negated.
+
+Equivalent to @racket[#:post (~fail #:unless condition-expr message-expr)].
 }
 
 @specsubform[(code:line #:when condition-expr)]{
@@ -290,6 +321,8 @@ Evaluates the @racket[condition-expr] in the context of all previous
 attribute bindings. If the value is @racket[#f], the matching process
 backtracks. In other words, @racket[#:when] is like
 @racket[#:fail-unless] without the message argument.
+
+Equivalent to @racket[#:post (~fail #:unless condition-expr #f)].
 }
 
 @specsubform[(code:line #:do [def-or-expr ...])]{
@@ -302,6 +335,8 @@ the expressions of subsequent patterns and clauses.
 There is currently no way to bind attributes using a @racket[#:do]
 block. It is an error to shadow an attribute binding with a definition
 in a @racket[#:do] block.
+
+Equivalent to @racket[#:and (~do def-or-expr ...)].
 }
 
 
