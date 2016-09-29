@@ -7,6 +7,7 @@
          file/gunzip
          file/private/check-path
          openssl/sha1
+         net/base64
          net/url
          net/head
          net/http-client
@@ -16,9 +17,14 @@
 ;;  http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/
 ;; provided many helpful hints for this implementation.
 
-(provide git-checkout)
+(provide git-checkout
+         current-git-username
+         current-git-password)
 
 (define-logger git-checkout)
+
+(define current-git-username (make-parameter #f))
+(define current-git-password (make-parameter #f))
 
 ;; Like `git clone`, but producing just the checkout
 (define (git-checkout host
@@ -35,7 +41,9 @@
                       #:clean-tmp-dir? [clean-tmp-dir? (not given-tmp-dir)]
                       #:verify-server? [verify? #t]
                       #:port [given-port #f]
-                      #:strict-links? [strict-links? #f])
+                      #:strict-links? [strict-links? #f]
+                      #:username [username (current-git-username)]
+                      #:password [password (current-git-password)])
   (let retry-loop ([given-depth given-depth])
     (define tmp-dir (or given-tmp-dir
                         (make-temporary-file "git~a" 'directory)))
@@ -51,7 +59,7 @@
     
     (status "Contacting ~a" host)
     (define-values (i o dumb-protocol?)
-      (initial-connect transport host verify? port repo status))
+      (initial-connect transport host verify? port repo status username password))
     ((let/ec esc
        (dynamic-wind
         void
@@ -106,7 +114,7 @@
 
             ;; Tell the server that we're ready for the objects
             (write-pkt o "done\n")
-            (set!-values (i o) (done-step transport host verify? port repo i o))
+            (set!-values (i o) (done-step transport host verify? port repo username password i o))
 
             (when depth
               ;; If we wrote `deepen`, then the server replies with `shallow`s.
@@ -189,18 +197,23 @@
 ;; ----------------------------------------
 ;; Transports: git, http, and https
 
-(define http-request-headers
+(define (http-request-headers username password)
   ;; bitbucket.org seems to require a "git" value for "User-Agent",
   ;; otherwise it returns a "broken link" web page
-  '("User-Agent: git/1.9"))
+  (define base-headers '("User-Agent: git/1.9"))
+  ;; include an Authorization header if credentials are provided
+  (if (and username password)
+      (cons (~a "Authorization: Basic " (base64-encode (string->bytes/utf-8 (~a username ":" password)) #""))
+            base-headers)
+      base-headers))
 
-;; initial-connect: transport-sym string bool natural string status-proc
+;; initial-connect: transport-sym string bool natural string status-proc string string
 ;;                  -> (values input-port output-port boolean)
 ;;  Contacts the server and returns an output port for writing
 ;;  the request (ignored if not needed for the the transport)
 ;;  and an input port from reading the available references. The
 ;;  boolean result indicates whether the protocol is "dumb".
-(define (initial-connect transport host verify? port repo status)
+(define (initial-connect transport host verify? port repo status username password)
   (case transport
     [(git)
      (define-values (i o) (tcp-or-tunnel-connect "git" host port))
@@ -212,7 +225,7 @@
      (define-values (i headers)
        (parameterize ([current-https-protocol (ssl-context verify?)])
          (get-pure-port/headers (string->url url-str)
-                                http-request-headers
+                                (http-request-headers username password)
                                 #:redirections 5)))
      (define ok? #f)
      (dynamic-wind
@@ -256,12 +269,12 @@
      (close-input-port i)
      (values (open-input-bytes #"") (open-output-bytes))]))
 
-;; done-step: transport-sym string bool natural string input-port output-port
+;; done-step: transport-sym string bool natural string string string input-port output-port
 ;;            -> (values input-port output-port)
 ;;  Replaces the connection, if appropriate to the transport, after
 ;;  writing the wanted references and before reading the server's
 ;;  response.
-(define (done-step transport host verify? port repo i o)
+(define (done-step transport host verify? port repo username password i o)
   (case transport
     [(git) (values i o)]
     [(http https)
@@ -274,7 +287,7 @@
                "/git-upload-pack"))
           s
           (append
-           http-request-headers
+           (http-request-headers username password)
            (list "Content-Type: application/x-git-upload-pack-request")))))
      (values i (open-output-nowhere))]))
 
@@ -1109,6 +1122,10 @@
       (set! ref branch/tag/commit)]
      [("--tmp") dir "Write temporary files to <dir>"
       (set! tmp-dir dir)]
+     [("-u" "--username") username "Username used to authenticate over HTTP(S)"
+      (current-git-username username)]
+     [("-p" "--password") password "Password used to authenticate over HTTP(S)"
+      (current-git-password password)]
      [("--quiet") "Suppress status printouts"
       (set! status-printf void)]
      #:args (host repo dest)
