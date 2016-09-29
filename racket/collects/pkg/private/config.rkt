@@ -38,6 +38,10 @@
   (or (current-pkg-network-retries)
       (read-pkg-cfg/def 'network-retries)))
 
+(define (get-git-checkout-credentials)
+  (or (current-pkg-git-checkout-credentials)
+      (read-pkg-cfg/def 'git-checkout-credentials)))
+
 (define (read-pkg-cfg/def k)
   ;; Lock is held for the current scope, but if
   ;; the key is not found in the current scope,
