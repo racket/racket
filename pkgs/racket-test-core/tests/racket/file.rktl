@@ -1850,5 +1850,19 @@
            "C://testing-root////testing-dir\\\\testing-file")]))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure `write-byte` and `write-char` don't try to test
+;; a non-supplied argument:
+
+(parameterize ([current-output-port (open-output-string)])
+  (let ([s (if (zero? (random 1)) "a" "b")])
+    (string-append s s) ; causes a clear operation on the runstack for second argument
+    (write-byte 65)))
+
+(parameterize ([current-output-port (open-output-string)])
+  (let ([s (if (zero? (random 1)) "a" "b")])
+    (string-append s s) ; causes a clear operation on the runstack for second argument
+    (write-char #\A)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
