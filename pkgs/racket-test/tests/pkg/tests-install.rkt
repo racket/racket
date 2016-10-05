@@ -251,4 +251,14 @@
      $ "racket -e '(require pkg/lib)' -e '(path->pkg (build-path (pkg-directory \"pkg-test1\") \"pkg-test2\"))'"
      =stdout> "\"pkg-test1\"\n"
      $ "raco pkg remove pkg-test2-snd pkg-test1"
-     $ "racket -e '(require pkg-test1)'" =exit> 1)))))
+     $ "racket -e '(require pkg-test1)'" =exit> 1))
+
+   (with-fake-root
+    (shelly-case
+     "git package that requires authentication"
+     $ "raco pkg config --set catalogs http://localhost:9990"
+     $ "raco pkg install pkg-git" =exit> 1
+     $ "raco pkg config --set git-checkout-credentials user:bad-password"
+     $ "raco pkg install pkg-git" =exit> 1
+     $ "raco pkg config --set git-checkout-credentials user:password"
+     $ "raco pkg install pkg-git")))))

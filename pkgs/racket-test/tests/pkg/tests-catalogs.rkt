@@ -14,6 +14,7 @@
   (initialize-catalogs)
 
   $ "raco pkg config --set catalogs http://localhost:9990"
+  $ "raco pkg config --set git-checkout-credentials user:password"
 
   $ "racket -l racket/base -l pkg/lib -e '(pkg-config-catalogs)'"
   =stdout> "'(\"http://localhost:9990\")\n"
