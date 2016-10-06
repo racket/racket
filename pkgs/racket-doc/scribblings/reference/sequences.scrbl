@@ -854,7 +854,7 @@ each element in the sequence.
          contract?]{
 
 Wraps a @tech{sequence},
-obligating it to produce as many values as there are @racket[elem/c] contracts,
+obligating it to produce elements with as many values as there are @racket[elem/c] contracts,
 and obligating each value to satisfy the corresponding @racket[elem/c].  The
 result is not guaranteed to be the same kind of sequence as the original value;
 for instance, a wrapped list is not guaranteed to satisfy @racket[list?].
