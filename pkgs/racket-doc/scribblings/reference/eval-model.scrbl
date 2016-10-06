@@ -799,7 +799,7 @@ of the module is immediately @tech{instantiate}d in that
 If the current @tech{inspector} does not manage a module's declaration
 inspector (see @secref["modprotect"]), then the module cannot be
 redeclared. Similarly, a @tech{cross-phase persistent} module cannot be redeclared.
-Even if redeclrection succeeds, instantiation of a module that is
+Even if redeclaration succeeds, instantiation of a module that is
 previously instantiated may fail if instantiation for the
 redeclaration attempts to modify variables that are constant (see
 @racket[compile-enforce-module-constants]).
