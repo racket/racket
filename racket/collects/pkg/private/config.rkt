@@ -230,7 +230,8 @@
                              [(list _)
                               (credentials-format-error
                                "not enough elements for git checkout credentials"
-                               val)])))]
+                               val)])))
+        (displayln "WARNING: checkout credentials are stored UNENCRYPTED" (current-error-port))]
        [(list* key args)
         (pkg-error "unsupported config key\n  key: ~a" key)])]
     [else
