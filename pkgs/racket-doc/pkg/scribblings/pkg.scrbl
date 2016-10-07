@@ -944,10 +944,12 @@ for @nonterm{key}.
         documentation; an empty string, which is the default, disables
         the URL so that the local filesystem is used. This key can be
         set only in @exec{installation} scope.}
-  @item{@exec{git-checkout-credentials} --- A list of git credentials in the form
-        @nonterm{username}@litchar{:}@nonterm{password} that are tried when downloading
-        packages with git sources using the HTTP or HTTPS protocols. The credentials are
-        currently stored @bold{unencrypted} on the filesystem.}
+  @item{@exec{git-checkout-credentials} --- A list that starts with a format
+        specification (currently only @racket['basic] is supported), followed
+        by git credentials in the form @nonterm{username}@litchar{:}@nonterm{password}
+        that are tried when downloading packages with git sources using the
+        HTTP or HTTPS protocols. The credentials are currently stored
+        @bold{unencrypted} on the filesystem.}
   @item{@exec{trash-max-packages} --- A limit on the number of package implementations
         that are kept in a trash folder when the package is removed or updated.}
   @item{@exec{trash-max-seconds} --- A limit on the time since a package is removed or

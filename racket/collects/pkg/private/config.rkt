@@ -39,8 +39,13 @@
       (read-pkg-cfg/def 'network-retries)))
 
 (define (get-git-checkout-credentials)
-  (or (current-pkg-git-checkout-credentials)
-      (read-pkg-cfg/def 'git-checkout-credentials)))
+  (define format+creds
+    (or (current-pkg-git-checkout-credentials)
+        (read-pkg-cfg/def 'git-checkout-credentials)))
+  (define format-spec (car format+creds))
+  (unless (eq? format-spec 'basic)
+    (pkg-error "only 'basic credentials are supported"))
+  (cdr format+creds))
 
 (define (read-pkg-cfg/def k)
   ;; Lock is held for the current scope, but if
@@ -61,7 +66,7 @@
       ['trash-max-packages 512]
       ['trash-max-seconds (* 60 60 24 2)] ; 2 days
       ['network-retries 5]
-      ['git-checkout-credentials '()]
+      ['git-checkout-credentials '(basic)]
       [_ #f]))
   (define c (read-pkg-file-hash (pkg-config-file)))
   (define v (hash-ref c k 'none))
@@ -210,27 +215,28 @@
                          "  expected: value in the form <username>:<password>")
                      val))
         (update-pkg-cfg! 'git-checkout-credentials
-                         (for/list ([val (in-list vals)])
-                           (match (string-split val ":" #:trim? #f)
-                             [(list "" _)
-                              (credentials-format-error
-                               "invalid empty username in git checkout credentials"
-                               val)]
-                             [(list _ "")
-                              (credentials-format-error
-                               "invalid empty password in git checkout credentials"
-                               val)]
-                             [(list username password)
-                              `#hasheq((username . ,username)
-                                       (password . ,password))]
-                             [(list* _ _ _)
-                              (credentials-format-error
-                               "too many elements for git checkout credentials"
-                               val)]
-                             [(list _)
-                              (credentials-format-error
-                               "not enough elements for git checkout credentials"
-                               val)])))
+                         (cons 'basic
+                               (for/list ([val (in-list vals)])
+                                 (match (string-split val ":" #:trim? #f)
+                                   [(list "" _)
+                                    (credentials-format-error
+                                     "invalid empty username in git checkout credentials"
+                                     val)]
+                                   [(list _ "")
+                                    (credentials-format-error
+                                     "invalid empty password in git checkout credentials"
+                                     val)]
+                                   [(list username password)
+                                    `#hasheq((username . ,username)
+                                             (password . ,password))]
+                                   [(list* _ _ _)
+                                    (credentials-format-error
+                                     "too many elements for git checkout credentials"
+                                     val)]
+                                   [(list _)
+                                    (credentials-format-error
+                                     "not enough elements for git checkout credentials"
+                                     val)]))))
         (displayln "WARNING: checkout credentials are stored UNENCRYPTED" (current-error-port))]
        [(list* key args)
         (pkg-error "unsupported config key\n  key: ~a" key)])]
@@ -256,7 +262,7 @@
             ["doc-open-url"
              (printf "~a~a\n" indent (or (read-pkg-cfg/def 'doc-open-url) ""))]
             ["git-checkout-credentials"
-             (for ([creds (in-list (read-pkg-cfg/def 'git-checkout-credentials))])
+             (for ([creds (in-list (cdr (read-pkg-cfg/def 'git-checkout-credentials)))])
                (printf "~a~a:~a\n" indent (hash-ref creds 'username) (hash-ref creds 'password)))]
             [_
              (pkg-error "unsupported config key\n  key: ~e" key)])]
