@@ -36,7 +36,9 @@ for information on command-line arguments and flags.
                                                                      [(git) 9418]
                                                                      [(http) 80]
                                                                      [(https) 443])]
-                       [#:strict-links? strict-links? any/c #f])
+                       [#:strict-links? strict-links? any/c #f]
+                       [#:username username (or/c string? #f) (current-git-username)]
+                       [#:password password (or/c string? #f) (current-git-password)])
          string?]{
 
 Contacts the server at @racket[hostname] and @racket[port]
@@ -96,6 +98,27 @@ If @racket[strict-links?] is true, then the checkout fails with an
 error if it would produce a symbolic link that refers to an absolute path
 or to a relative path that contains up-directory elements.
 
+If both @racket[username] and @racket[password] are non-@racket[#f]
+@emph{and} @racket[transport] is @racket['http] or @racket['https], then
+the provided credentials are passed to the remote server using HTTP Basic
+Authentication.
+
 @history[#:added "6.1.1.1"
          #:changed "6.3" @elem{Added the @racket[initial-error] argument.}
-         #:changed "6.2.900.17" @elem{Added the @racket[strict-links?] argument.}]}
+         #:changed "6.2.900.17" @elem{Added the @racket[strict-links?] argument.}
+         #:changed "6.6.0.5" @elem{Added the @racket[username] and @racket[password] arguments.}
+         #:changed "6.6.0.5" @elem{Changed to raise @racket[exn:fail:git] exceptions
+                                   instead of @racket[exn:fail].}]}
+
+@deftogether[(@defparam[current-git-username username (or/c string? #f)]
+              @defparam[current-git-password password (or/c string? #f)])]{
+Parameters used by @racket[git-checkout] as the default values of the
+@racket[_username] and @racket[_password] arguments to control
+authentication with the remote server.
+
+@history[#:added "6.6.0.5"]}
+
+@defstruct[(exn:fail:git exn:fail) () #:transparent]{
+Raised by @racket[git-checkout] due to errors parsing or communicating with the git protocol.
+
+@history[#:added "6.6.0.5"]}

@@ -11,6 +11,7 @@
          "path.rkt"
          "print.rkt"
          "config.rkt"
+         "checkout-credentials.rkt"
          "network.rkt")
 
 (provide download-file!
@@ -101,18 +102,21 @@
   (define (download!)
     (when download-printf
       (download-printf "Downloading repository ~a\n" (url->string url)))
-    (call-with-network-retries
+    (call-with-git-checkout-credentials
      (lambda ()
-       (git-checkout host #:port port repo
-                     #:dest-dir dest-dir
-                     #:ref checksum
-                     #:status-printf (lambda (fmt . args)
-                                       (define (strip-ending-newline s)
-                                         (regexp-replace #rx"\n$" s ""))
-                                       (log-pkg-debug (strip-ending-newline (apply format fmt args))))
-                     #:transport transport
-                     #:strict-links? #t
-                     #:depth 1)))
+       (call-with-network-retries
+        (lambda ()
+          (git-checkout host #:port port repo
+                        #:dest-dir dest-dir
+                        #:ref checksum
+                        #:status-printf (lambda (fmt . args)
+                                          (define (strip-ending-newline s)
+                                            (regexp-replace #rx"\n$" s ""))
+                                          (log-pkg-debug (strip-ending-newline
+                                                          (apply format fmt args))))
+                        #:transport transport
+                        #:strict-links? #t
+                        #:depth 1)))))
     (set! unpacked? #t)
     ;; package directory as ".tgz" so it can be cached:
     (parameterize ([current-directory dest-dir])

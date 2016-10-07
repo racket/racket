@@ -7,6 +7,7 @@
          file/gunzip
          file/private/check-path
          openssl/sha1
+         net/base64
          net/url
          net/head
          net/http-client
@@ -16,9 +17,21 @@
 ;;  http://stefan.saasen.me/articles/git-clone-in-haskell-from-the-bottom-up/
 ;; provided many helpful hints for this implementation.
 
-(provide git-checkout)
+(provide git-checkout
+         current-git-username
+         current-git-password
+         (struct-out exn:fail:git))
 
 (define-logger git-checkout)
+
+(define current-git-username (make-parameter #f))
+(define current-git-password (make-parameter #f))
+
+(struct exn:fail:git exn:fail () #:transparent)
+
+(define (raise-git-error name fmt . vals)
+  (raise (exn:fail:git (apply format (string-append "~s: " fmt) name vals)
+                       (current-continuation-marks))))
 
 ;; Like `git clone`, but producing just the checkout
 (define (git-checkout host
@@ -35,7 +48,9 @@
                       #:clean-tmp-dir? [clean-tmp-dir? (not given-tmp-dir)]
                       #:verify-server? [verify? #t]
                       #:port [given-port #f]
-                      #:strict-links? [strict-links? #f])
+                      #:strict-links? [strict-links? #f]
+                      #:username [username (current-git-username)]
+                      #:password [password (current-git-password)])
   (let retry-loop ([given-depth given-depth])
     (define tmp-dir (or given-tmp-dir
                         (make-temporary-file "git~a" 'directory)))
@@ -51,7 +66,7 @@
     
     (status "Contacting ~a" host)
     (define-values (i o dumb-protocol?)
-      (initial-connect transport host verify? port repo status))
+      (initial-connect transport host verify? port repo status username password))
     ((let/ec esc
        (dynamic-wind
         void
@@ -66,7 +81,7 @@
                            ;; smart protocol provides packets:
                            (read-pkts i)))
           (unless (pair? pkts)
-            (error 'git-checkout "no initial pkts from the server"))
+            (raise-git-error 'git-checkout "no initial pkts from the server"))
 
           ;; Parse server's initial reply
           (define server-capabilities (parse-server-capabilities (car pkts)))
@@ -106,7 +121,7 @@
 
             ;; Tell the server that we're ready for the objects
             (write-pkt o "done\n")
-            (set!-values (i o) (done-step transport host verify? port repo i o))
+            (set!-values (i o) (done-step transport host verify? port repo username password i o))
 
             (when depth
               ;; If we wrote `deepen`, then the server replies with `shallow`s.
@@ -120,12 +135,12 @@
                  [(regexp-match? #rx"^shallow " r)
                   (loop)]
                  [else
-                  (error 'git-checkout "expected shallow, got ~s" r)])))
+                  (raise-git-error 'git-checkout "expected shallow, got ~s" r)])))
 
             ;; Tell the server that we're ready for the objects
             (define nak (read-pkt i))
             (unless (equal? #"NAK\n" nak)
-              (error 'git-checkout "expected NAK, got ~s" nak)))
+              (raise-git-error 'git-checkout "expected NAK, got ~s" nak)))
 
           (make-directory* tmp-dir)
           (define tmp (make-tmp-info tmp-dir #:fresh? #t))
@@ -189,18 +204,23 @@
 ;; ----------------------------------------
 ;; Transports: git, http, and https
 
-(define http-request-headers
+(define (http-request-headers username password)
   ;; bitbucket.org seems to require a "git" value for "User-Agent",
   ;; otherwise it returns a "broken link" web page
-  '("User-Agent: git/1.9"))
+  (define base-headers '("User-Agent: git/1.9"))
+  ;; include an Authorization header if credentials are provided
+  (if (and username password)
+      (cons (~a "Authorization: Basic " (base64-encode (string->bytes/utf-8 (~a username ":" password)) #""))
+            base-headers)
+      base-headers))
 
-;; initial-connect: transport-sym string bool natural string status-proc
+;; initial-connect: transport-sym string bool natural string status-proc string string
 ;;                  -> (values input-port output-port boolean)
 ;;  Contacts the server and returns an output port for writing
 ;;  the request (ignored if not needed for the the transport)
 ;;  and an input port from reading the available references. The
 ;;  boolean result indicates whether the protocol is "dumb".
-(define (initial-connect transport host verify? port repo status)
+(define (initial-connect transport host verify? port repo status username password)
   (case transport
     [(git)
      (define-values (i o) (tcp-or-tunnel-connect "git" host port))
@@ -212,7 +232,7 @@
      (define-values (i headers)
        (parameterize ([current-https-protocol (ssl-context verify?)])
          (get-pure-port/headers (string->url url-str)
-                                http-request-headers
+                                (http-request-headers username password)
                                 #:redirections 5)))
      (define ok? #f)
      (dynamic-wind
@@ -224,16 +244,16 @@
                     "application/x-git-upload-pack-advertisement")
             ;; "smart" protocol
             (unless (regexp-match-peek #px#"^[0-9a-f]{4}#" i)
-              (error 'git-checkout (~a "error reading repository content;\n"
-                                       " response is not consistent with the Git protocol\n"
-                                       "  initial portion: ~s")
-                     (read-bytes 640 i)))
+              (raise-git-error 'git-checkout (~a "error reading repository content;\n"
+                                                 " response is not consistent with the Git protocol\n"
+                                                 "  initial portion: ~s")
+                               (read-bytes 640 i)))
             (define pkt (read-pkt i))
             (define term-pkt (read-pkt i))
             (unless (eof-object? term-pkt)
-              (error 'git-checkout (~a "expected a null packet, received something else\n"
-                                       "  packet: ~s")
-                     term-pkt))
+              (raise-git-error 'git-checkout (~a "expected a null packet, received something else\n"
+                                                 "  packet: ~s")
+                               term-pkt))
             #f]
            [else
             ;; "dumb" protocol
@@ -243,7 +263,7 @@
       (lambda ()
         (unless ok? (close-input-port i))))]
     [else
-     (error 'git-checkout "unrecognized transport\n  given: ~e" transport)]))
+     (raise-git-error 'git-checkout "unrecognized transport\n  given: ~e" transport)]))
 
 ;; want-step: transport-sym string natural string input-port output-port
 ;;            -> (values input-port output-port)
@@ -256,12 +276,12 @@
      (close-input-port i)
      (values (open-input-bytes #"") (open-output-bytes))]))
 
-;; done-step: transport-sym string bool natural string input-port output-port
+;; done-step: transport-sym string bool natural string string string input-port output-port
 ;;            -> (values input-port output-port)
 ;;  Replaces the connection, if appropriate to the transport, after
 ;;  writing the wanted references and before reading the server's
 ;;  response.
-(define (done-step transport host verify? port repo i o)
+(define (done-step transport host verify? port repo username password i o)
   (case transport
     [(git) (values i o)]
     [(http https)
@@ -274,7 +294,7 @@
                "/git-upload-pack"))
           s
           (append
-           http-request-headers
+           (http-request-headers username password)
            (list "Content-Type: application/x-git-upload-pack-request")))))
      (values i (open-output-nowhere))]))
 
@@ -305,8 +325,7 @@
      (define m (regexp-match #px#"^([0-9a-fA-F]{40})[ \t]([^\0\n]+)[\0\n]" pkt))
      (unless m 
        (when initial-error (initial-error))
-       (error 'git-checkout "could not parse ref pkt\n  pkt: ~s"
-              pkt))
+       (raise-git-error 'git-checkout "could not parse ref pkt\n  pkt: ~s" pkt))
      (define name (caddr m))
      (define id (bytes->string/utf-8 (cadr m)))
      (cond
@@ -351,7 +370,7 @@
       (for/list ([ref (in-list refs)])
         (cadr ref))]
      [else
-      (error 'git "could not find requested reference\n  reference: ~a" ref)]))
+      (raise-git-error 'git "could not find requested reference\n  reference: ~a" ref)]))
   
   (values ref-commit want-commits))
 
@@ -389,16 +408,16 @@
    [else
     (unless (and (bytes? len-bstr)
                  (= 4 (bytes-length len-bstr)))
-      (error 'git-checkout "error getting pkt length"))
+      (raise-git-error 'git-checkout "error getting pkt length"))
     (define len (string->number (bytes->string/utf-8 len-bstr #\?) 16))
     (unless len
-      (error 'git-checkout "error getting pkt length\n  length string: ~e" len-bstr))
+      (raise-git-error 'git-checkout "error getting pkt length\n  length string: ~e" len-bstr))
     (cond
      [(= len 0) eof] ; flush pkt
      [else
       (define payload-len (- len 4))
       (unless (payload-len . >= . 0)
-        (error 'git-checkout "pkt length makes no sense\n  length: ~a" len))
+        (raise-git-error 'git-checkout "pkt length makes no sense\n  length: ~a" len))
       (read-bytes-exactly 'payload payload-len i)])]))
 
 ;; read a list of pkts until an empty packet is found
@@ -427,10 +446,10 @@
     (when (and (eof-object? pack-bstr)
                initial-eof-handler)
       (initial-eof-handler))
-    (error 'git-checkout "header error\n  bytes: ~s" pack-bstr))
+    (raise-git-error 'git-checkout "header error\n  bytes: ~s" pack-bstr))
   (define vers (read-bytes 4 i))
   (unless (equal? vers #"\0\0\0\2")
-    (error 'git-checkout "only version 2 supported"))
+    (raise-git-error 'git-checkout "only version 2 supported"))
   (define count-bstr (read-bytes-exactly 'count 4 i))
   (define count (integer-bytes->integer count-bstr #t #t))
   (define obj-stream-poses (make-hash)) ; for OBJ_OFS_DELTA references
@@ -458,7 +477,7 @@
   (define obj-stream-pos (file-position i))
   (define c (read-byte-only 'type-and-size i))
   (define type (bitwise-and (arithmetic-shift c -4) #x7))
-  (when (zero? type) (error 'git-checkout "bad packfile type"))
+  (when (zero? type) (raise-git-error 'git-checkout "bad packfile type"))
   (define init-len (bitwise-and c #xF))
   (define len
     (if (msb-set? c)
@@ -472,7 +491,7 @@
      [(ofs-delta)
       (define delta (read-offset-integer i))
       (hash-ref obj-stream-poses (- obj-stream-pos delta)
-                (lambda () (error 'git-checkout "OBJ_OFS_DELTA object not found")))]
+                (lambda () (raise-git-error 'git-checkout "OBJ_OFS_DELTA object not found")))]
      [else #f]))
   (define obj
     (save-object (lambda (o) (zlib-inflate i o)) len type-sym type-info tmp))
@@ -592,9 +611,9 @@
   (cond
    [(= 1 (length matches)) (car matches)]
    [(null? matches)
-    (error 'git-checkout "no commit found matching id: ~a" ref)]
+    (raise-git-error 'git-checkout "no commit found matching id: ~a" ref)]
    [else
-    (error 'git-checkout "found multiple commits matching id: ~a" ref)]))
+    (raise-git-error 'git-checkout "found multiple commits matching id: ~a" ref)]))
 
 (define (id-ref->regexp ref)
   (regexp (~a "^" (regexp-quote (string-downcase ref)))))
@@ -624,17 +643,17 @@
         (lambda (i)
           (define m (regexp-try-match #px"^object ([0-9a-fA-F]{40})" i))
           (unless m
-            (error 'git-checkout "cannot extract commit from tag file for ~s"
-                   (bytes->hex-string obj-id)))
+            (raise-git-error 'git-checkout "cannot extract commit from tag file for ~s"
+                             (bytes->hex-string obj-id)))
           (cadr m))))
      (define commit-id (hex-string->bytes (bytes->string/utf-8 commit-id-bstr)))
      (extract-commit-tree commit-id obj-ids tmp dest-dir strict-links?)]
     [(tree)
      (extract-tree obj-id obj-ids tmp dest-dir strict-links?)]
     [else
-     (error 'git-checkout "cannot extract tree from ~a: ~s"
-            (object-type obj)
-            (bytes->hex-string obj-id))]))
+     (raise-git-error 'git-checkout "cannot extract tree from ~a: ~s"
+                      (object-type obj)
+                      (bytes->hex-string obj-id))]))
 
 ;; extract-commit-info: input-port bytes -> string (listof string)
 ;;  Returns the commit's tree and parent ids.
@@ -642,11 +661,11 @@
 (define (extract-commit-info i obj-id)
   (define m (regexp-try-match #px"^tree ([0-9a-fA-F]{40})" i))
   (unless m
-    (error 'git-checkout
-           (~a "cannot extract tree from commit file for ~s\n"
-               "  content starts: ~s")
-           (bytes->hex-string obj-id)
-           (peek-bytes 64 0 i)))
+    (raise-git-error 'git-checkout
+                     (~a "cannot extract tree from commit file for ~s\n"
+                         "  content starts: ~s")
+                     (bytes->hex-string obj-id)
+                     (peek-bytes 64 0 i)))
   (values
    ;; tree id string:
    (bytes->string/utf-8 (cadr m))
@@ -693,7 +712,7 @@
            ;; submodule; just make a directory placeholder
            (make-directory* (build-path dest-dir fn))]
           [else
-           (error 'extract-tree "unknown mode: ~s" mode)])
+           (raise-git-error 'extract-tree "unknown mode: ~s" mode)])
          (loop))))))
 
 ;; extract-tree-entry: input-port -> bytes-or-#f bytes-or-#f path-or-#f
@@ -758,7 +777,7 @@
   (for/list ([l (in-lines i)]
              #:unless (equal? l ""))
     (define m (regexp-match #rx"^P (.*)" l))
-    (unless m (error 'git-checkout "error parsing packfile list line\n  line: ~e" l))
+    (unless m (raise-git-error 'git-checkout "error parsing packfile list line\n  line: ~e" l))
     (cadr m)))
 
 ;; read-dumb-packfile : string (hashof string object) tmp conn strung status
@@ -818,7 +837,7 @@
           ;; Parse the object description:
           (define header-m (regexp-try-match #rx#"^[^\0]*\0" i))
           (unless header-m
-            (error 'git-checkout "bad initial line for object content"))
+            (raise-git-error 'git-checkout "bad initial line for object content"))
           (define header (car header-m))
           (define header-len (bytes-length header))
           (define type-sym (string->symbol
@@ -827,7 +846,7 @@
                             (bytes->string/utf-8 (cadr (or (regexp-match #rx"[^ ]* ([0-9]+)" header)
                                                            '(#"" #""))))))        
           (unless (memq type-sym valid-types)
-            (error 'git-checkout "bad type: ~e" type-sym))
+            (raise-git-error 'git-checkout "bad type: ~e" type-sym))
           
           (define obj
             (save-object (lambda (o) (copy-port i o))
@@ -882,9 +901,9 @@
   (define status (let ([m (regexp-match #rx"^[^ ]* ([0-9]+)" status-line)])
                    (and m (string->number (bytes->string/utf-8 (cadr m))))))
   (unless (memv status '(200))
-    (error 'git-checkout "~a\n  server respone: ~a"
-           msg
-           status-line)))
+    (raise-git-error 'git-checkout "~a\n  server respone: ~a"
+                     msg
+                     status-line)))
 
 ;; ----------------------------------------
 ;; Temporary directory & database
@@ -914,9 +933,9 @@
 (define (call-with-output-object tmp filename len proc)
   (define (check-len got-len)
     (unless (= len got-len)
-      (error 'git-checkout "size mismatch\n  expected: ~a\n  received: ~a"
-             len
-             got-len)))
+      (raise-git-error 'git-checkout "size mismatch\n  expected: ~a\n  received: ~a"
+                       len
+                       got-len)))
   (cond
    [(len . < . 256)
     (define location (tmp-info-pos tmp))
@@ -981,21 +1000,20 @@
   (define bstr (read-bytes len i))
   (unless (and (bytes? bstr)
                (= (bytes-length bstr) len))
-    (error 'git-checkout (~a "error getting bytes for ~a\n"
-                             "  expected length: ~a\n"
-                             "  got length: ~a")
-           what
-           len
-           (if (eof-object? bstr)
-               eof
-               (bytes-length bstr))))
+    (raise-git-error 'git-checkout (~a "error getting bytes for ~a\n"
+                                       "  expected length: ~a\n"
+                                       "  got length: ~a")
+                     what
+                     len
+                     (if (eof-object? bstr)
+                         eof
+                         (bytes-length bstr))))
   bstr)
 
 (define (read-byte-only what i)
   (define c (read-byte i))
   (unless (byte? c)
-    (error 'git-checkout "expected to get a byte for ~a, got enf-of-file"
-           what))
+    (raise-git-error 'git-checkout "expected to get a byte for ~a, got enf-of-file" what))
   c)
 
 ;; copy-port-n : input-port output-port natural -> void
@@ -1005,7 +1023,7 @@
     (define bstr (read-bytes n i))
     (unless (and (bytes? bstr)
                  (= (bytes-length bstr) n))
-      (error 'git-checkout "not enough bytes during copy"))
+      (raise-git-error 'git-checkout "not enough bytes during copy"))
     (write-bytes bstr o)]
    [else
     (copy-port-n i o 4096)
@@ -1068,7 +1086,7 @@
   (define cmf (read-byte-only 'zlib-cmf i))
   (define flg (read-byte-only 'zlib-flag i))
   (unless (= 8 (bitwise-and cmf #xF))
-    (error 'git-checkout "compression is not `deflate`"))
+    (raise-git-error 'git-checkout "compression is not `deflate`"))
   (when (bitwise-bit-set? flg 5)
     ;; read dictid
     (read-bytes-exactly 'dictid 4 i))
@@ -1109,6 +1127,10 @@
       (set! ref branch/tag/commit)]
      [("--tmp") dir "Write temporary files to <dir>"
       (set! tmp-dir dir)]
+     [("-u" "--username") username "Username used to authenticate over HTTP(S)"
+      (current-git-username username)]
+     [("-p" "--password") password "Password used to authenticate over HTTP(S)"
+      (current-git-password password)]
      [("--quiet") "Suppress status printouts"
       (set! status-printf void)]
      #:args (host repo dest)

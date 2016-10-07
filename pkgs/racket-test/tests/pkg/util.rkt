@@ -10,8 +10,10 @@
          racket/list
          racket/format
          racket/port
+         racket/string
          setup/dirs
-         "shelly.rkt")
+         "shelly.rkt"
+         "git-http-proxy.rkt")
 
 (define-runtime-path test-source-directory ".")
 
@@ -167,8 +169,11 @@
         (with-thread
          (λ () (start-pkg-server *index-ht-2* 9991))
          (λ ()
-           (with-thread (λ () (start-file-server))
-                        t)))))]))
+           (with-thread
+            (λ () (start-file-server))
+            (λ ()
+              (with-thread (λ () (serve-git-http-proxy! #:port 9996))
+                           t)))))))]))
 (define-syntax-rule (with-servers e ...)
   (with-servers* (λ () e ...)))
 
@@ -246,7 +251,28 @@
                      'source
                      "http://localhost:9997/pkg-test2.zip"
                      'dependencies
-                     '("pkg-test1"))))
+                     '("pkg-test1")))
+
+  (initialize-catalogs/git))
+
+(define (initialize-catalogs/git)
+  (define pkg-git.git (make-temporary-file "pkg-git-~a.git"))
+  (delete-file pkg-git.git)
+  (parameterize ([current-directory (build-path test-source-directory "test-pkgs")])
+    (copy-directory/files (build-path test-source-directory "test-pkgs" "pkg-git") pkg-git.git))
+  (define checksum
+    (parameterize ([current-directory pkg-git.git])
+      (system "git init")
+      (system "git add -A")
+      (system "git commit -m 'initial commit'")
+      (string-trim
+       (with-output-to-string
+         (λ () (system "git rev-parse HEAD"))))))
+
+  (match-define-values [_ pkg-git.git-filename _] (split-path pkg-git.git))
+  (hash-set! *index-ht-1* "pkg-git"
+             (hasheq 'checksum checksum
+                     'source (~a "http://localhost:9996/" (path->string pkg-git.git-filename)))))
 
 (define (set-file path content)
   (make-parent-directory* path)

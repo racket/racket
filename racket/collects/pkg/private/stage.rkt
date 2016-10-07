@@ -31,6 +31,7 @@
          "orig-pkg.rkt"
          "git.rkt"
          "prefetch.rkt"
+         "checkout-credentials.rkt"
          "network.rkt")
 
 (provide (struct-out install-info)
@@ -735,23 +736,25 @@
      (define-values (transport host port repo branch path)
        (split-git-or-hub-url pkg-url #:type type))
      (download-printf "Querying Git references for ~a at ~a\n" pkg-name pkg-url-str)
-     (call-with-network-retries
+     (call-with-git-checkout-credentials
       (lambda ()
-        ;; Supplying `#:dest-dir #f` means that we just resolve `branch`
-        ;; to an ID:
-        (git-checkout host #:port port repo
-                      #:dest-dir #f
-                      #:ref branch
-                      #:status-printf (lambda (fmt . args)
-                                        (define (strip-ending-newline s)
-                                          (regexp-replace #rx"\n$" s ""))
-                                        (log-pkg-debug (strip-ending-newline (apply format fmt args))))
-                      #:initial-error (lambda ()
-                                        (pkg-error (~a "Git checkout initial protocol failed;\n"
-                                                       " the given URL might not refer to a Git repository\n"
-                                                       "  given URL: ~a")
-                                                   pkg-url-str))
-                      #:transport transport)))]
+        (call-with-network-retries
+         (lambda ()
+           ;; Supplying `#:dest-dir #f` means that we just resolve `branch`
+           ;; to an ID:
+           (git-checkout host #:port port repo
+                         #:dest-dir #f
+                         #:ref branch
+                         #:status-printf (lambda (fmt . args)
+                                           (define (strip-ending-newline s)
+                                             (regexp-replace #rx"\n$" s ""))
+                                           (log-pkg-debug (strip-ending-newline (apply format fmt args))))
+                         #:initial-error (lambda ()
+                                           (pkg-error (~a "Git checkout initial protocol failed;\n"
+                                                          " the given URL might not refer to a Git repository\n"
+                                                          "  given URL: ~a")
+                                                      pkg-url-str))
+                         #:transport transport)))))]
     [(github)
      (match-define (list* user repo branch path)
                    (split-github-url pkg-url))

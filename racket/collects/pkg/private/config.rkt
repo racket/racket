@@ -4,6 +4,7 @@
          racket/path
          racket/match
          racket/format
+         racket/string
          net/url
          "../path.rkt"
          "dirs.rkt"
@@ -37,6 +38,10 @@
   (or (current-pkg-network-retries)
       (read-pkg-cfg/def 'network-retries)))
 
+(define (get-git-checkout-credentials)
+  (or (current-pkg-git-checkout-credentials)
+      (read-pkg-cfg/def 'git-checkout-credentials)))
+
 (define (read-pkg-cfg/def k)
   ;; Lock is held for the current scope, but if
   ;; the key is not found in the current scope,
@@ -56,6 +61,7 @@
       ['trash-max-packages 512]
       ['trash-max-seconds (* 60 60 24 2)] ; 2 days
       ['network-retries 5]
+      ['git-checkout-credentials '()]
       [_ #f]))
   (define c (read-pkg-file-hash (pkg-config-file)))
   (define v (hash-ref c k 'none))
@@ -197,6 +203,35 @@
                          "  current package scope: ~a")
                      (current-pkg-scope)))
         (update-pkg-cfg! 'doc-open-url (if (equal? val "") #f val))]
+       [(list* "git-checkout-credentials" vals)
+        (define (credentials-format-error msg val)
+          (pkg-error (~a msg "\n"
+                         "  given: ~a\n"
+                         "  expected: value in the form <username>:<password>")
+                     val))
+        (update-pkg-cfg! 'git-checkout-credentials
+                         (for/list ([val (in-list vals)])
+                           (match (string-split val ":" #:trim? #f)
+                             [(list "" _)
+                              (credentials-format-error
+                               "invalid empty username in git checkout credentials"
+                               val)]
+                             [(list _ "")
+                              (credentials-format-error
+                               "invalid empty password in git checkout credentials"
+                               val)]
+                             [(list username password)
+                              `#hasheq((username . ,username)
+                                       (password . ,password))]
+                             [(list* _ _ _)
+                              (credentials-format-error
+                               "too many elements for git checkout credentials"
+                               val)]
+                             [(list _)
+                              (credentials-format-error
+                               "not enough elements for git checkout credentials"
+                               val)])))
+        (displayln "WARNING: checkout credentials are stored UNENCRYPTED" (current-error-port))]
        [(list* key args)
         (pkg-error "unsupported config key\n  key: ~a" key)])]
     [else
@@ -220,6 +255,9 @@
              (printf "~a~a\n" indent (read-pkg-cfg/def (string->symbol key)))]
             ["doc-open-url"
              (printf "~a~a\n" indent (or (read-pkg-cfg/def 'doc-open-url) ""))]
+            ["git-checkout-credentials"
+             (for ([creds (in-list (read-pkg-cfg/def 'git-checkout-credentials))])
+               (printf "~a~a:~a\n" indent (hash-ref creds 'username) (hash-ref creds 'password)))]
             [_
              (pkg-error "unsupported config key\n  key: ~e" key)])]
          [(list)
@@ -237,6 +275,7 @@
                               "download-cache-dir"
                               "download-cache-max-files"
                               "download-cache-max-bytes"
+                              "git-checkout-credentials"
                               "trash-max-packages"
                               "trash-max-seconds"
                               "network-retries"))])

@@ -34,3 +34,6 @@
 
 (define current-pkg-network-retries
   (make-parameter #f))
+
+(define current-pkg-git-checkout-credentials
+  (make-parameter #f))
