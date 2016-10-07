@@ -1623,7 +1623,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as
   /* If the binding is a rename transformer, also install 
      a mapping */
   if (scheme_is_binding_rename_transformer(val))
-    scheme_add_binding_copy(id, scheme_rename_transformer_id(val), scheme_env_phase(env));
+    scheme_add_binding_copy(id, scheme_rename_transformer_id(val, NULL), scheme_env_phase(env));
 }
 
 static void install_one_binding_name(Scheme_Hash_Table *bt, Scheme_Object *name, Scheme_Object *id, Scheme_Env *benv)
@@ -2361,7 +2361,7 @@ do_local_exp_time_value(const char *name, int argc, Scheme_Object *argv[], int r
     
     v = SCHEME_PTR_VAL(v);
     if (scheme_is_rename_transformer(v)) {
-      sym = scheme_transfer_srcloc(scheme_rename_transformer_id(v), sym);
+      sym = scheme_transfer_srcloc(scheme_rename_transformer_id(v, NULL), sym);
       renamed = 1;
       menv = NULL;
       SCHEME_USE_FUEL(1);
@@ -2984,7 +2984,7 @@ rename_transformer_target(int argc, Scheme_Object *argv[])
   if (!scheme_is_rename_transformer(argv[0]))
     scheme_wrong_contract("rename-transformer-target", "rename-transformer?", 0, argc, argv);
 
-  return scheme_rename_transformer_id(argv[0]);
+  return scheme_rename_transformer_id(argv[0], NULL);
 }
 
 static Scheme_Object *

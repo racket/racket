@@ -1666,5 +1666,37 @@
 (test '(1 2 3) dynamic-require ''uses-local-lift-values-at-expansion-time 'l)
 
 ;; ----------------------------------------
+;; Check that a `prop:rename-transformer` procedure is called in a
+;; `syntax-transforming?` mode when used as an expression
+
+(let ([x 'one]
+      [bad 'bad])
+  (let-syntax ([also-x (let ()
+                         (struct ax ()
+                                 #:property
+                                 prop:rename-transformer
+                                 (lambda (an-ax)
+                                   (make-will-executor)
+                                   (if (syntax-transforming?)
+                                       #'x
+                                       #'bad)))
+                         (ax))])
+    (test 'one values also-x)))
+
+(let ([x 'two]
+      [bad 'bad])
+  (let-syntax ([also-x (let ()
+                         (struct ax ()
+                                 #:property
+                                 prop:rename-transformer
+                                 (lambda (an-ax)
+                                   (make-will-executor)
+                                   (if (syntax-transforming?)
+                                       (syntax-property #'x 'not-free-identifier=? #t)
+                                       #'bad)))
+                         (ax))])
+    (test 'two values also-x)))
+
+;; ----------------------------------------
 
 (report-errs)

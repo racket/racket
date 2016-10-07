@@ -1885,7 +1885,7 @@ int scheme_is_rename_transformer(Scheme_Object *o)
 int scheme_is_binding_rename_transformer(Scheme_Object *o)
 {
   if (scheme_is_rename_transformer(o)) {
-    o = scheme_rename_transformer_id(o);
+    o = scheme_rename_transformer_id(o, NULL);
     o = scheme_stx_property(o, not_free_id_symbol, NULL);
     if (o && SCHEME_TRUEP(o))
       return 0;
@@ -1898,7 +1898,7 @@ static int is_stx_id(Scheme_Object *o) { return (SCHEME_STXP(o) && SCHEME_SYMBOL
 
 static int is_stx_id_or_proc_1(Scheme_Object *o) { return (is_stx_id(o) || is_proc_1(o)); }
 
-Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
+Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o, Scheme_Comp_Env *comp_env)
 {
   Scheme_Object *a[1];
 
@@ -1911,7 +1911,18 @@ Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o)
       a[0] = o;
       /* apply a continuation barrier here to prevent a capture in
        * the property access */
-      v = scheme_apply(v, 1, a);
+      if (comp_env && (scheme_current_thread->current_local_env != comp_env)) {
+        /* Getting identifier during an expansion context */
+        Scheme_Dynamic_State dyn_state;
+        Scheme_Env *genv = comp_env->genv;
+        scheme_set_dynamic_state(&dyn_state, comp_env, NULL, NULL, scheme_false,
+                                 genv, (genv->module
+                                        ? (genv->link_midx ? genv->link_midx : genv->module->me->src_modidx)
+                                        : NULL));
+        v = scheme_apply_with_dynamic_state(v, 1, a, &dyn_state);
+      } else {
+        v = scheme_apply(v, 1, a);
+      }
       if (!is_stx_id(v)) {
         scheme_contract_error("prop:rename-transformer",
                               "contract violation for given value",

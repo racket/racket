@@ -1924,7 +1924,7 @@ scheme_apply_macro(Scheme_Object *name, Scheme_Env *menv,
   if (scheme_is_rename_transformer(rator)) {
     Scheme_Object *scope;
    
-    rator = scheme_rename_transformer_id(rator);
+    rator = scheme_rename_transformer_id(rator, env);
     /* rator is now an identifier */
 
     /* and it's introduced by this expression: */

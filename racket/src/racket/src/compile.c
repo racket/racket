@@ -1339,7 +1339,7 @@ set_compile (Scheme_Object *form, Scheme_Comp_Env *env, Scheme_Compile_Info *rec
 	
 	return scheme_compile_expr(form, env, rec, drec);
       } else if (scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
-	find_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
+	find_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var), env);
 	SCHEME_USE_FUEL(1);
 	menv = NULL;
       } else
@@ -1435,7 +1435,7 @@ set_expand(Scheme_Object *orig_form, Scheme_Comp_Env *env, Scheme_Expand_Info *e
 	return scheme_expand_expr(form, env, erec, drec);
       } else if (scheme_is_rename_transformer(SCHEME_PTR_VAL(var))) {
 	Scheme_Object *new_name;
-	new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
+	new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var), env);
 	new_name = scheme_stx_track(new_name, find_name, find_name);
 	find_name = new_name;
 	menv = NULL;
@@ -3602,7 +3602,7 @@ void scheme_bind_syntaxes(const char *where, Scheme_Object *names, Scheme_Object
     if (scheme_is_binding_rename_transformer(SCHEME_PTR_VAL(macro))) {
       /* Rebind to the target identifier's binding */
       scheme_add_binding_copy(name,
-                              scheme_rename_transformer_id(SCHEME_PTR_VAL(macro)),
+                              scheme_rename_transformer_id(SCHEME_PTR_VAL(macro), rhs_env),
                               scheme_make_integer(stx_env->genv->phase));
     }
   }
@@ -4363,7 +4363,7 @@ Scheme_Object *scheme_check_immediate_macro(Scheme_Object *first,
           if (scheme_is_rename_transformer(SCHEME_PTR_VAL(val))) {
             /* It's a rename. Look up the target name and try again. */
             Scheme_Object *new_name;
-            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(val));
+            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(val), env);
             if (!rec[drec].comp)
               new_name = scheme_stx_track(new_name, name, name);
             name = scheme_transfer_srcloc(new_name, name);
@@ -4570,7 +4570,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                                 scheme_frame_to_expansion_context_symbol(env->flags))) {
             /* It's a rename. Look up the target name and try again. */
             Scheme_Object *new_name;
-            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
+            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var), env);
             if (!rec[drec].comp) {
               new_name = scheme_stx_track(new_name, find_name, find_name);
             }
@@ -4701,7 +4701,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
                                                 scheme_frame_to_expansion_context_symbol(env->flags))) {
             /* It's a rename. Look up the target name and try again. */
             Scheme_Object *new_name;
-            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
+            new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var), env);
             if (!rec[drec].comp) {
               new_name = scheme_stx_track(new_name, find_name, find_name);
             }
@@ -4800,7 +4800,7 @@ compile_expand_expr(Scheme_Object *form, Scheme_Comp_Env *env,
         if (scheme_expansion_contexts_include(SCHEME_PTR_VAL(var),
                                               scheme_frame_to_expansion_context_symbol(env->flags))) {
           Scheme_Object *new_name;
-          new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var));
+          new_name = scheme_rename_transformer_id(SCHEME_PTR_VAL(var), env);
           if (!rec[drec].comp) {
             new_name = scheme_stx_track(new_name, find_name, find_name);
           }

@@ -2149,6 +2149,7 @@ Scheme_Object *scheme_all_current_continuation_marks(void);
 
 void scheme_about_to_move_C_stack(void);
 
+Scheme_Object *scheme_apply_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state);
 Scheme_Object *scheme_apply_multi_with_dynamic_state(Scheme_Object *rator, int num_rands, Scheme_Object **rands, Scheme_Dynamic_State *dyn_state);
 
 Scheme_Object *scheme_jump_to_continuation(Scheme_Object *obj, int num_rands, Scheme_Object **rands, 
@@ -3681,7 +3682,7 @@ Scheme_Object *scheme_make_marshal_shared(Scheme_Object *v);
 
 int scheme_is_rename_transformer(Scheme_Object *o);
 int scheme_is_binding_rename_transformer(Scheme_Object *o);
-Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o);
+Scheme_Object *scheme_rename_transformer_id(Scheme_Object *o, Scheme_Comp_Env *env);
 int scheme_is_set_transformer(Scheme_Object *o);
 Scheme_Object *scheme_set_transformer_proc(Scheme_Object *o);
 

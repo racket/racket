@@ -176,6 +176,36 @@
           (eval #'(syntax-parameterize ([x (make-rename-transformer #'f)]) 1)))))
 
 ;; ----------------------------------------
+;; Check rename-transformer stx-param when used as an expression,
+;; which involves calling the `prop:rename-transformer` is a
+;; `syntax-transforming?` mode
+
+(begin
+  (define-syntax (slv stx)
+    (syntax-case stx ()
+      [(_ t)
+       #`'#,(object-name (syntax-local-value #'t))]))
+
+  (define-syntax one (procedure-rename (λ (stx) #'1) 'one))
+  (define-syntax two (procedure-rename (λ (stx) #'2) 'two))
+
+  (define-syntax-parameter normal
+    (make-rename-transformer #'one))
+  (test #f eq? (slv normal) 'one)
+  (test #t = normal 1)
+  (syntax-parameterize ([normal (make-rename-transformer #'two)])
+    (test #f eq? (slv normal) 'two)
+    (test #t = normal 2))
+
+  (define-rename-transformer-parameter rt
+    (make-rename-transformer #'one))
+  (test #t eq? (slv rt) 'one)
+  (test #t = rt 1)
+  (syntax-parameterize ([rt (make-rename-transformer #'two)])
+    (test #t eq? (slv rt) 'two)
+    (test #t = rt 2)))
+
+;; ----------------------------------------
 
 (report-errs)
 

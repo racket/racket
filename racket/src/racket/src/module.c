@@ -6693,7 +6693,7 @@ static void eval_exptime(Scheme_Object *names, int count,
           if (SCHEME_TRUEP(ids_for_rename_trans)
               && scheme_is_binding_rename_transformer(values[i])) {
             scheme_add_binding_copy(SCHEME_CAR(ids_for_rename_trans),
-                                    scheme_rename_transformer_id(values[i]),
+                                    scheme_rename_transformer_id(values[i], NULL),
                                     scheme_make_integer(at_phase-1));
           }
           scheme_add_to_table(syntax, (const char *)name, macro, 0);
@@ -6714,7 +6714,7 @@ static void eval_exptime(Scheme_Object *names, int count,
       if (SCHEME_TRUEP(ids_for_rename_trans)
           && scheme_is_binding_rename_transformer(vals)) {
         scheme_add_binding_copy(SCHEME_CAR(ids_for_rename_trans),
-                                scheme_rename_transformer_id(vals),
+                                scheme_rename_transformer_id(vals, NULL),
                                 scheme_make_integer(at_phase-1));
       }
       scheme_add_to_table(syntax, (const char *)name, macro, 0);
