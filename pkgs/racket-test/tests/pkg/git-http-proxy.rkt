@@ -49,9 +49,8 @@
                                        #"CONTENT_TYPE" (header-value content-type))))
 
        ; run git-http-backend
-       (match-define (list git-response-port git-body-port _ _ _)
-         (process*/ports #f #f (current-error-port)
-                         (find-executable-path "git") "http-backend"))
+       (match-define (list git-response-port git-body-port _ git-info-port _)
+         (process* (find-executable-path "git") "http-backend"))
 
        ; pass POST body to git-http-backend
        (when (request-post-data/raw req)
@@ -68,7 +67,8 @@
        (response 200 #"OK" (current-seconds) #f headers
                  (λ (out)
                    (copy-port git-response-port out)
-                   (close-input-port git-response-port))))]
+                   (close-input-port git-response-port)
+                   (close-input-port git-info-port))))]
     ; if authorization fails, return a WWW-Authenticate header
     [else (response/full 401 #"Authorization Required" (current-seconds)
                          #"text/plain; charset=utf-8"
