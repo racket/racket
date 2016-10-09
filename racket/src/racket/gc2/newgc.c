@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include "platforms.h"
 #include "../src/schpriv.h"
 #include "gc2.h"
@@ -1004,6 +1005,7 @@ static void set_has_back_pointers(NewGC *gc, mpage *page)
 
 static int designate_modified_gc(NewGC *gc, void *p)
 {
+  int saved_errno = errno; /* in case signal happens between set and use of errno */
   mpage *page = pagemap_find_page(gc->page_maps, p);
 
   if (gc->no_further_modifications) {
@@ -1019,6 +1021,7 @@ static int designate_modified_gc(NewGC *gc, void *p)
             || (gc->doing_memory_accounting && gc->finished_incremental))) {
       check_incremental_unprotect(gc, page);
       gc->unprotected_page = 1; /* for using fuel */
+      errno = saved_errno;
       return 1;
     }
     GCPRINT(GCOUTF, "Seg fault (internal error during gc) at %p\n", p);
@@ -1031,6 +1034,7 @@ static int designate_modified_gc(NewGC *gc, void *p)
     if (!page->back_pointers)
       set_has_back_pointers(gc, page);
     gc->modified_unprotects++;
+    errno = saved_errno;
     return 1;
   } else {
     if (gc->primoridal_gc)
