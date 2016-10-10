@@ -351,13 +351,17 @@ Returns @racket[#t] if @racket[v] is a valid logging level (@racket['none],
                               (or/c symbol? #f))
                              any)]
            [proc (-> any)]
+           [#:logger logger logger? #f]
            [level log-level/c]
            [topic (or/c #f symbol?) #f]
            ... ...)
          any]{
 
-Runs @racket[proc], calling @racket[interceptor] on any log event that would
-be received by @racket[(make-log-receiver (current-logger) level topic ... ...)].
+Runs @racket[proc], calling @racket[interceptor] on any log event that the
+execution of @racket[proc] emits to @racket[current-logger] at the specified
+levels and topics.
+If @racket[#:logger] is specified, intercepts events sent to that logger,
+otherwise uses a new child logger of the current logger.
 Returns whatever @racket[proc] returns.
 
 @examples[
@@ -375,17 +379,20 @@ Returns whatever @racket[proc] returns.
     'warning)
   warning-counter)]
 
-@history[#:added "6.3"]{}}
+@history[#:added "6.3" #:changed "6.7.0.1" @elem{Added @racket[#:logger] argument.}]{}}
 
 @defproc[(with-logging-to-port
            [port output-port?] [proc (-> any)]
+           [#:logger logger logger? #f]
            [level log-level/c]
            [topic (or/c #f symbol?) #f]
            ... ...)
          any]{
 
-Runs @racket[proc], outputting any logging that would be received by
-@racket[(make-log-receiver (current-logger) level topic ... ...)] to @racket[port].
+Runs @racket[proc], outputting any logging that the execution of @racket[proc]
+emits to @racket[current-logger] at the specified levels and topics.
+If @racket[#:logger] is specified, intercepts events sent to that logger,
+otherwise uses a new child logger of the current logger.
 Returns whatever @racket[proc] returns.
 
 @examples[
@@ -398,4 +405,4 @@ Returns whatever @racket[proc] returns.
     'warning)
   (get-output-string my-log))]
 
-@history[#:added "6.3"]{}}
+@history[#:added "6.3" #:changed "6.7.0.1" @elem{Added @racket[#:logger] argument.}]{}}

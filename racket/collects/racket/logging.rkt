@@ -11,10 +11,12 @@
 (provide/contract [with-intercepted-logging
                    (->* ((-> log-event? any)
                          (-> any))
+                        (#:logger logger?)
                         #:rest log-spec?
                         any)]
                   [with-logging-to-port
                    (->* (output-port? (-> any))
+                        (#:logger logger?)
                         #:rest log-spec?
                         any)])
 
@@ -37,12 +39,14 @@
                 (intercept l)
                 (loop)]))))))
 
-(define (with-intercepted-logging interceptor proc . log-spec)
+(define (with-intercepted-logging interceptor proc #:logger [logger #f]
+                                  . log-spec)
   (let* ([orig-logger (current-logger)]
-         ;; We use a local logger to avoid getting messages that didn't
+         ;; Unless we're provided with an explicit logger to monitor we
+         ;; use a local logger to avoid getting messages that didn't
          ;; originate from proc. Since it's a child of the original logger,
          ;; the rest of the program still sees the log entries.
-         [logger      (make-logger #f orig-logger)]
+         [logger      (or logger (make-logger #f orig-logger))]
          [receiver    (apply make-log-receiver logger log-spec)]
          [stop-chan   (make-channel)]
          [t           (receiver-thread receiver stop-chan interceptor)])
@@ -52,8 +56,9 @@
       (channel-put stop-chan 'stop) ; stop the receiver thread
       (thread-wait t))))
 
-(define (with-logging-to-port port proc . log-spec)
+(define (with-logging-to-port port proc #:logger [logger #f] . log-spec)
   (apply with-intercepted-logging
+         #:logger logger
          (lambda (l) (displayln (vector-ref l 1) ; actual message
                                 port))
          proc
