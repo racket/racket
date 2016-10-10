@@ -256,6 +256,24 @@
         log))
 (test '(#t "3" "2" "1") test-intercepted-logging)
 
+;; From issue #1486
+(define (test-intercepted-logging2)
+  (let ([warning-counter 0]
+        [l (current-logger)])
+    (with-intercepted-logging
+        #:logger l
+        (lambda (l)
+          (when (eq? (vector-ref l 0)
+                     'warning)
+            (set! warning-counter (add1 warning-counter))))
+      (lambda ()
+        (log-message l 'warning "Warning!" (current-continuation-marks))
+        (log-message l 'warning "Warning again!" (current-continuation-marks))
+        (+ 2 2))
+      'warning)
+    warning-counter))
+(test 2 test-intercepted-logging2)
+
 ; --------------------
 
 (report-errs)
