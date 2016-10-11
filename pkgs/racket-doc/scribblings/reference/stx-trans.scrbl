@@ -1338,7 +1338,9 @@ pre-transformers}. The @racket[modes] argument is the same as for
 Creates a @tech{provide transformer} (i.e., a structure with the
 @racket[prop:provide-transformer] property) using the given procedure
 as the transformer. If a @racket[pre-proc] is provided, then the result is also a
-@tech{provide pre-transformer}.}
+@tech{provide pre-transformer}.
+Often used in combination with @racket[expand-export] and/or
+@racket[pre-expand-export].}
 
 
 @defproc[(make-provide-pre-transformer [pre-proc (syntax? (listof (or/c exact-integer? #f))
@@ -1346,7 +1348,33 @@ as the transformer. If a @racket[pre-proc] is provided, then the result is also 
          provide-pre-transformer?]{
 
 Like @racket[make-provide-transformer], but for a value that is a
-@tech{provide pre-transformer}, only.}
+@tech{provide pre-transformer}, only.
+Often used in combination with @racket[pre-expand-export].
+
+@examples[
+#:eval stx-eval
+(module m racket
+  (require
+    (for-syntax racket/provide-transform syntax/parse syntax/stx))
+
+  (define-syntax wrapped-out
+    (make-provide-pre-transformer
+     (lambda (stx modes)
+       (syntax-parse stx
+         [(_ f ...)
+          #:with (wrapped-f ...)
+                 (stx-map
+                  syntax-local-lift-expression
+                  #'((lambda args
+                       (printf "applying ~a, args: ~a\n" 'f args)
+                       (apply f args)) ...))
+          (pre-expand-export
+           #'(rename-out [wrapped-f f] ...) modes)]))))
+
+  (provide (wrapped-out + -)))
+(require 'm)
+(- 1 (+ 2 3))
+]}
 
 
 @defthing[prop:provide-transformer struct-type-property?]{
