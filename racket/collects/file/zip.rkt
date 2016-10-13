@@ -289,7 +289,7 @@
                     files))])
         (when (zip-verbose)
           (eprintf "zip: writing headers...\n"))
-        (write-central-directory headers get-timestamp))
+        (write-central-directory headers sys-type))
       (when (zip-verbose)
         (eprintf "zip: done.\n"))))
 
