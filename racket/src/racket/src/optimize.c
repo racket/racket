@@ -3029,12 +3029,16 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
           && IS_NAMED_PRIM(app->rator, "bitwise-and")) {
          /* Assume that a fixnum argument to bitwise-and will never get lost,
             and so the validator will be able to confirm that a `bitwise-and`
-            combination produces a fixnum. */
+            combination produces a fixnum if either argument is a literal,
+            nonnegative fixnum. */
          if ((SCHEME_INTP(app->rand1)
+              && (SCHEME_INT_VAL(app->rand1) >= 0)
               && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand1)))
              || (SCHEME_INTP(app->rand2)
-                 && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand2))))
+                 && (SCHEME_INT_VAL(app->rand2) >= 0)
+                 && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(app->rand2)))) {
            return scheme_fixnum_p_proc;
+         }
       }
 
       if (SCHEME_PRIMP(app->rator)

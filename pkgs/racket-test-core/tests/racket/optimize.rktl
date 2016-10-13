@@ -3387,6 +3387,20 @@
                 #t))
            #f)
 
+;; Make sure that `bitwise-and` is known to return a fixnum for non-negative
+;; fixnum arguments but not for a negative one
+
+(test-comp '(lambda (x)
+             (bitwise-ior (bitwise-and x 7) 1))
+           '(lambda (x)
+             (unsafe-fxior (bitwise-and x 7) 1)))
+(test-comp '(lambda (x)
+             (bitwise-ior (bitwise-and x -7) 1))
+           '(lambda (x)
+             (unsafe-fxior (bitwise-and x -7) 1))
+           #f)
+
+
 (test-comp `(lambda (x)
               (thread (lambda () (set! x 5)))
               (if (pair? x)
@@ -6259,7 +6273,6 @@
                  (list b b))])
         (set! f f)
         ((car f))))
-
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
