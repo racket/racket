@@ -10917,12 +10917,14 @@ void scheme_signal_received_at(void *h)
 {
 #if defined(FILES_HAVE_FDS)
   int put_ext_event_fd = *(int *)h;
+  int saved_errno = errno;
   if (put_ext_event_fd) {
     int v;
     do {
       v = write(put_ext_event_fd, "!", 1);
     } while ((v == -1) && (errno == EINTR));
   }
+  errno = saved_errno;
 #endif
 #if defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES)
   ReleaseSemaphore(*(OS_SEMAPHORE_TYPE *)h, 1, NULL);
