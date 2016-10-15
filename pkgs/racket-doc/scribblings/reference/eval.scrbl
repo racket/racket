@@ -370,8 +370,8 @@ file when its filesystem modification date is at least as new as the
 source file's. The @racket['exists] mode causes a compiled file to be
 used in place of its source as long as the compiled file exists.
 
-If the @indexed-envvar{PLT_COMPILE_FILE_CHECK} environment variable is
-set to @litchar{modify-seconds} or @litchar{check}, then the
+If the @indexed-envvar{PLT_COMPILED_FILE_CHECK} environment variable is
+set to @litchar{modify-seconds} or @litchar{exists}, then the
 environment variable's value configures the parameter when Racket
 starts.
 
