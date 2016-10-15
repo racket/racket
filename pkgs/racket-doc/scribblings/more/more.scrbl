@@ -95,38 +95,12 @@ start @exec{racket} with no command-line arguments:
   > 
 }
 
-For extra read-eval-print loop support, evaluate @REQ[xrepl]
-to enable Readline-based input---assuming that you have GNU Readline
-installed on your system---and comma-prefixed meta-commands that
-support exploration and development. To have @racketmodname[xrepl]
-loaded by default, use the @xreplcmd{install!} command, which updates
-your @filepath{~/.racketrc} to load @racketmodname[xrepl] whenever you
-start @exec{racket} for interactive evaluation.
-
-@margin-note{Unfortunately, for legal reasons related to GPL vs. LGPL,
-  @exec{racket} cannot provide Readline automatically.}
-
-@interaction[
-(eval:alts @#,REQ[xrepl] (void))
-(eval:alts @#,xreplcmd{install!} (void))
-]
-
-@; FIXME: probably needs revisions, and questionable whether readline
-@; should be mentioned by itself.  One thing to consider is that with
-@; readline it's possible to pretend that the whole thing is one
-@; session, whereas xrepl changes the prompt.
-
-If you want @emph{just} readline support in @exec{racket}, evaluate
-@REQ[readline], instead, and then use @racket[(install-readline!)]  to
-adjust @filepath{~/.racketrc} to load @racketmodname[readline].
-Readline is not needed if you're using @racketmodname[xrepl], if
-you're running a shell inside Emacs, or if you're on Windows and use a
-@exec{cmd} window.
-
-@interaction[
-(eval:alts @#,REQ[readline] (void))
-(eval:alts (install-readline!) (void))
-]
+Assuming that you have Editline installed,@margin-note*{To use GNU
+Readline instead of Editline, set the @envvar{PLT_READLINE_LIB}
+environment variable or install the @filepath{readline-gpl} package.}
+@exec{racket} by default supports line editing and comma-prefixed
+meta-commands that support exploration and development. See
+@racketmodname[xrepl] for more information.
 
 @; ----------------------------------------------------------------------
 @section[#:tag "set"]{Set...}
