@@ -1248,7 +1248,7 @@ int scheme_generate_flonum_local_unboxing(mz_jit_state *jitter, int push, int no
 /*========================================================================*/
 
 #ifdef JIT_PRECISE_GC
-static Scheme_Object example_so = { scheme_native_closure_type, 0 };
+static struct { Scheme_Object so; int filler; } example_so = { { scheme_native_closure_type, 0}, 0 };
 #endif
 
 static Scheme_Native_Lambda *create_native_lambda(Scheme_Lambda *lam, int clear_code_after_jit,

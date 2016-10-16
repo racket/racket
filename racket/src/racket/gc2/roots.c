@@ -17,7 +17,8 @@ static void grow_roots(Roots *roots) {
   roots->size = roots->size ? ( 2 * roots->size ) : 500;
   new_roots   = (uintptr_t *)ofm_malloc(sizeof(uintptr_t) * (roots->size + 1));
 
-  memcpy((void *)new_roots, (void *)roots->roots, sizeof(uintptr_t) * roots->count);
+  if (roots->count)
+    memcpy((void *)new_roots, (void *)roots->roots, sizeof(uintptr_t) * roots->count);
 
   if (roots->roots)
     free(roots->roots);

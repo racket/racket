@@ -86,6 +86,7 @@ AC_ARG_ENABLE(gcov,    [  --enable-gcov           compile to gather gcov statist
 
 AC_ARG_ENABLE(noopt,   [  --enable-strip          strip debug on install (usually enabled by default)])
 AC_ARG_ENABLE(noopt,   [  --enable-noopt          drop -O C flags (useful for low-level debugging)])
+AC_ARG_ENABLE(ubsan,   [  --enable-ubsan          compile with -fsanitize=undefined)])
 
 ###### Some flags imply other flags #######
 
@@ -1627,6 +1628,16 @@ if test "${enable_noopt}" = "yes" ; then
   CFLAGS=`echo "$CFLAGS" | awk "$AWKPRG"`
   CPPFLAGS=`echo "$CPPFLAGS" | awk "$AWKPRG"`
   PREFLAGS=`echo "$PREFLAGS" | awk "$AWKPRG"`
+fi
+
+############## ubsan ################
+
+if test "${enable_ubsan}" = "yes" ; then
+   UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
+   CFLAGS="$CFLAGS $UBSAN"
+   CPPFLAGS="$CPPFLAGS $UBSAN"
+   PREFLAGS="$PREFLAGS $UBSAN"
+   LDFLAGS="$LDFLAGS $UBSAN"
 fi
 
 ############## usersetup ################

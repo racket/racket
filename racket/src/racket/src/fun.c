@@ -5308,7 +5308,8 @@ static Scheme_Meta_Continuation *clone_meta_cont(Scheme_Meta_Continuation *mc,
       } else {
         Scheme_Cont_Mark *cp;
         cp = MALLOC_N(Scheme_Cont_Mark, naya->cont_mark_total);
-        memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_total * sizeof(Scheme_Cont_Mark));
+        if (naya->cont_mark_total)
+          memcpy(cp, mc->cont_mark_stack_copied, naya->cont_mark_total * sizeof(Scheme_Cont_Mark));
         clear_cm_copy_caches(cp, naya->cont_mark_total);
         naya->cont_mark_stack_copied = cp;
         naya->cm_caches = 0;

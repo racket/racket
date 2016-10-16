@@ -362,6 +362,10 @@ void exception_thread(void *shared_thread_state)
     /* block until we get an exception message */
     retval = mach_msg(message, MACH_RCV_MSG, 0, sizeof(mach_exc_msg_t), 
 		      exc_port, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+    if(retval != KERN_SUCCESS) {
+      GCPRINT(GCOUTF, "Message receive failed: %s\n", mach_error_string(retval));
+      abort();
+    }
     /* forward off the handling of this message */
     if(!exc_server(message, reply)) {
       GCPRINT(GCOUTF, "INTERNAL ERROR: exc_server() didn't like something\n");
@@ -370,6 +374,10 @@ void exception_thread(void *shared_thread_state)
     /* send the message back out to the thread */
     retval = mach_msg(reply, MACH_SEND_MSG, sizeof(mach_reply_msg_t), 0, 
 		      MACH_PORT_NULL, MACH_MSG_TIMEOUT_NONE, MACH_PORT_NULL);
+    if(retval != KERN_SUCCESS) {
+      GCPRINT(GCOUTF, "Message send failed: %s\n", mach_error_string(retval));
+      abort();
+    }
   }
 }
 

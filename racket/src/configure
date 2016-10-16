@@ -827,6 +827,7 @@ enable_ffipoll
 enable_gprof
 enable_gcov
 enable_noopt
+enable_ubsan
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1481,6 +1482,7 @@ Optional Features:
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
   --enable-strip          strip debug on install (usually enabled by default)
   --enable-noopt          drop -O C flags (useful for low-level debugging)
+  --enable-ubsan          compile with -fsanitize=undefined)
 
 Some influential environment variables:
   CC          C compiler command
@@ -2822,6 +2824,11 @@ fi
 # Check whether --enable-noopt was given.
 if test "${enable_noopt+set}" = set; then :
   enableval=$enable_noopt;
+fi
+
+# Check whether --enable-ubsan was given.
+if test "${enable_ubsan+set}" = set; then :
+  enableval=$enable_ubsan;
 fi
 
 
@@ -6789,6 +6796,16 @@ if test "${enable_noopt}" = "yes" ; then
   CFLAGS=`echo "$CFLAGS" | awk "$AWKPRG"`
   CPPFLAGS=`echo "$CPPFLAGS" | awk "$AWKPRG"`
   PREFLAGS=`echo "$PREFLAGS" | awk "$AWKPRG"`
+fi
+
+############## ubsan ################
+
+if test "${enable_ubsan}" = "yes" ; then
+   UBSAN="-fsanitize=undefined -fno-sanitize=alignment -fno-sanitize=float-divide-by-zero"
+   CFLAGS="$CFLAGS $UBSAN"
+   CPPFLAGS="$CPPFLAGS $UBSAN"
+   PREFLAGS="$PREFLAGS $UBSAN"
+   LDFLAGS="$LDFLAGS $UBSAN"
 fi
 
 ############## usersetup ################

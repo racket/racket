@@ -665,7 +665,8 @@ string_write_bytes(Scheme_Output_Port *port,
     memcpy(is->string, old, is->index);
   }
 
-  memcpy(is->string + is->index, str + d, len);
+  if (len)
+    memcpy(is->string + is->index, str + d, len);
   is->index += len;
 
   return len;

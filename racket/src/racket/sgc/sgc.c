@@ -1372,7 +1372,8 @@ static void *realloc_collect_temp(void *v, intptr_t oldsize, intptr_t newsize)
   void *naya;
   
   naya = platform_plain_sector((newsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE, 0);
-  memcpy(naya, v, oldsize);
+  if (oldsize)
+    memcpy(naya, v, oldsize);
   if (v)
     munmap(v, (oldsize + SECTOR_SEGMENT_SIZE - 1) >> LOG_SECTOR_SEGMENT_SIZE);
 

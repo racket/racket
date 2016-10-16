@@ -136,7 +136,8 @@ inline static int create_blank_owner_set(NewGC *gc)
   gc->owner_table_size = curr_size;
 
   naya = (OTEntry **)ofm_malloc(curr_size * sizeof(OTEntry*));
-  memcpy(naya, owner_table, old_size*sizeof(OTEntry*));
+  if (old_size)
+    memcpy(naya, owner_table, old_size*sizeof(OTEntry*));
   gc->owner_table = owner_table = naya;
   bzero(((char*)owner_table) + (sizeof(OTEntry*) * old_size),
         (curr_size - old_size) * sizeof(OTEntry*));

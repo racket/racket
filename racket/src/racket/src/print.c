@@ -1235,7 +1235,8 @@ static void print_this_string(PrintParams *pp, const char *str, int offset, int 
     memcpy(pp->print_buffer, oldstr, pp->print_position);
   }
 
-  memcpy(pp->print_buffer + pp->print_position, str + offset, len);
+  if (len)
+    memcpy(pp->print_buffer + pp->print_position, str + offset, len);
   pp->print_position += len;
   pp->print_offset += len;
 
@@ -4144,7 +4145,8 @@ void scheme_set_type_printer(Scheme_Type stype, Scheme_Type_Printer printer)
     Scheme_Type_Printer *naya;
     naya = MALLOC_N(Scheme_Type_Printer, stype + 10);
     memset(naya, 0, sizeof(Scheme_Type_Printer) * (stype + 10));
-    memcpy(naya, printers, sizeof(Scheme_Type_Printer) * printers_count);
+    if (printers_count)
+      memcpy(naya, printers, sizeof(Scheme_Type_Printer) * printers_count);
     printers_count = stype + 10;
     printers = naya;
   }

@@ -1125,7 +1125,8 @@ void scheme_new_mark_segment(Scheme_Thread *p)
   seg = scheme_malloc_allow_interior(sizeof(Scheme_Cont_Mark) * SCHEME_MARK_SEGMENT_SIZE);
   segs[c] = seg;
 
-  memcpy(segs, p->cont_mark_stack_segments, c * sizeof(Scheme_Cont_Mark *));
+  if (c)
+    memcpy(segs, p->cont_mark_stack_segments, c * sizeof(Scheme_Cont_Mark *));
   
   p->cont_mark_seg_count++;
   p->cont_mark_stack_segments = segs;

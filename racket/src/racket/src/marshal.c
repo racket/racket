@@ -852,7 +852,8 @@ static Scheme_Object *write_lambda(Scheme_Object *obj)
           /* Need to grow the array */
           Scheme_Object **a;
           a = MALLOC_N(Scheme_Object *, (pos ? 2 * pos : 32));
-          memcpy(a, mt->cdata_map, pos * sizeof(Scheme_Object *));
+          if (pos)
+            memcpy(a, mt->cdata_map, pos * sizeof(Scheme_Object *));
           mt->cdata_map = a;
         }
         mt->cdata_counter++;

@@ -99,7 +99,8 @@ static void clearing_stack_push(struct Validate_Clearing *vc, int pos, int val)
     int *a, sz;
     sz = (vc->stacksize ? 2 * vc->stacksize : 32);
     a = (int *)scheme_malloc_atomic(sizeof(int) * sz);
-    memcpy(a, vc->stack, vc->stacksize * sizeof(int));
+    if (vc->stacksize)
+      memcpy(a, vc->stack, vc->stacksize * sizeof(int));
     vc->stacksize = sz;
     vc->stack = a;
   }
@@ -114,7 +115,8 @@ static void noclear_stack_push(struct Validate_Clearing *vc, int pos)
     int *a, sz;
     sz = (vc->ncstacksize ? 2 * vc->ncstacksize : 32);
     a = (int *)scheme_malloc_atomic(sizeof(int) * sz);
-    memcpy(a, vc->ncstack, vc->ncstacksize * sizeof(int));
+    if (vc->ncstacksize)
+      memcpy(a, vc->ncstack, vc->ncstacksize * sizeof(int));
     vc->ncstacksize = sz;
     vc->ncstack = a;
   }

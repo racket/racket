@@ -2677,7 +2677,8 @@ static void register_local_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec *
               } else if (predicate_implies(lam->ir_info->arg_types[i], pred)) {
                 /* widen */
                 lam->ir_info->arg_types[i] = pred;
-                lam->ir_info->arg_type_contributors[i] |= (1 << (nth_app-1));
+                if (nth_app)
+                  lam->ir_info->arg_type_contributors[i] |= (1 << (nth_app-1));
               } else
                 widen_to_top = 1;
             } else

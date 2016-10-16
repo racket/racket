@@ -1720,7 +1720,8 @@ static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[])
       cust_box_alloc = 2 * cust_box_alloc;
     }
     cbs = (Scheme_Custodian_Box **)scheme_malloc_atomic(cust_box_alloc * sizeof(Scheme_Custodian_Box *));
-    memcpy(cbs, cust_boxes, cust_box_count * sizeof(Scheme_Custodian_Box *));
+    if (cust_box_count)
+      memcpy(cbs, cust_boxes, cust_box_count * sizeof(Scheme_Custodian_Box *));
     cust_boxes = cbs;
   }
   cust_boxes[cust_box_count++] = cb;
@@ -6284,7 +6285,8 @@ void scheme_add_evt_worker(Evt ***evt_array,
     if (new_size < _scheme_last_type_)
       new_size = _scheme_last_type_;
     nevts = MALLOC_N(Evt*, new_size);
-    memcpy(nevts, (*evt_array), (*evt_size) * sizeof(Evt*));
+    if (*evt_size)
+      memcpy(nevts, (*evt_array), (*evt_size) * sizeof(Evt*));
     (*evt_array) = nevts;
     (*evt_size) = new_size;
   }
