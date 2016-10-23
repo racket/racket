@@ -1439,14 +1439,25 @@ If package is available in the form of a @tech{built package}, then
 you can use @exec{raco pkg install --binary-lib} to strip source,
 tests, and documentation from a package before installing it.
 
-@tech{Built packages} are typically provided by a snapshot or release
-site (where a Racket distribution downloaded from the site is
-configured to consult the site for packages), at least for packages
-associated with the distribution. Beware that
-@url{https://pkgs.racket-lang.org/} generally refers to @tech{source
-packages}, not @tech{built packages}. In the near future, built
-variants of the @url{https://pkgs.racket-lang.org/} packages will be
-provided at @url{https://pkg-build.racket-lang.org/catalog/}.
+The main package catalog at @url{https://pkgs.racket-lang.org/} refers
+to @tech{source packages}, not @tech{built packages}. Other catalogs
+provide @tech{built packages}:
+
+@itemlist[
+
+ @item{For packages associated with a Racket distribution (such as the
+       current release), the site that hosts the distribution will
+       normally also host @tech{built packages}---but only for packages
+       that are already included in the distribution.}
+
+ @item{Built variants of the @url{https://pkgs.racket-lang.org/}
+       packages are currently provided by the catalog
+       @url{https://pkg-build.racket-lang.org/server/built/catalog/}
+       (for the current release only). See
+       @hyperlink["https://pkg-build.racket-lang.org/about.html"]{the
+       package-build service} for more information.}
+
+]
 
 Some packages have been split at the source level into separate
 library, test, and documentation packages. For example,
