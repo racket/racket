@@ -7010,8 +7010,15 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
       Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)irlv->body;
       if (SAME_OBJ(b->test, (Scheme_Object *)irlv->vars[0])
           && SAME_OBJ(b->tbranch, (Scheme_Object *)irlv->vars[0])) {
-        if ((context & OPT_CONTEXT_BOOLEAN)
-            || SAME_OBJ(expr_implies_predicate(irlv->value, info), scheme_boolean_p_proc)) { 
+        Scheme_Object *pred;
+         
+        if (context & OPT_CONTEXT_BOOLEAN)
+          /* In a boolean context, any expression can be moved. */
+          pred = scheme_boolean_p_proc;
+        else
+          pred = expr_implies_predicate(irlv->value, info);
+        
+        if (pred && predicate_implies(pred, scheme_boolean_p_proc)) { 
           Scheme_Branch_Rec *b3;
 
           b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
