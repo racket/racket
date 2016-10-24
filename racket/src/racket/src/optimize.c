@@ -3007,9 +3007,7 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
     shape = get_struct_proc_shape(rator, info, 1);
     if (shape) {
       if (SAME_TYPE(SCHEME_TYPE(shape), scheme_struct_proc_shape_type)) {
-        if (((SCHEME_PROC_SHAPE_MODE(shape) & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_PRED)
-            // && SCHEME_PAIRP(SCHEME_PROC_SHAPE_IDENTITY(shape))
-            ) {
+        if (((SCHEME_PROC_SHAPE_MODE(shape) & STRUCT_PROC_SHAPE_MASK) == STRUCT_PROC_SHAPE_PRED)) {
           return scheme_boolean_p_proc;
         }
       } else if (SAME_TYPE(SCHEME_TYPE(shape), scheme_struct_prop_proc_shape_type)) {
