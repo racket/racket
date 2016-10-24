@@ -123,7 +123,7 @@ void scheme_init_bool (Scheme_Env *env)
   scheme_eqv_proc = p;
   scheme_add_global_constant("eqv?", scheme_eqv_proc, env);
   
-  p = scheme_make_prim_w_arity(equal_prim, "equal?", 2, 2);
+  p = scheme_make_noncm_prim(equal_prim, "equal?", 2, 2);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_equal_proc = p;
   scheme_add_global_constant("equal?", scheme_equal_proc, env);
