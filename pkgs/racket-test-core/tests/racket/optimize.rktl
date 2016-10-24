@@ -2092,6 +2092,9 @@
                             (a1)
                             (a2))))
 
+(test-comp '(lambda (x) (if (pair? x) #t #f))
+           '(lambda (x) (pair? x)))
+
 (test-comp '(lambda (x) (let ([r (something)])
                           (if r #t (something-else))))
            '(lambda (x) (if (something) #t (something-else))))

@@ -5632,11 +5632,21 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
     return make_optimize_prim_application2(scheme_not_proc, t, info, context);
   }
 
-  /* For test position, convert (if <expr> #t #f) to <expr> */
-  if ((context & OPT_CONTEXT_BOOLEAN)
-      && SAME_OBJ(tb, scheme_true) && SAME_OBJ(fb, scheme_false)) {
+  /* Convert (if <boolean> #t #f) to <boolean>
+     and, for test position, convert (if <expr> #t #f) to <expr> */
+  if (SAME_OBJ(tb, scheme_true) && SAME_OBJ(fb, scheme_false)) {
+    Scheme_Object *pred;
+
+    if (context & OPT_CONTEXT_BOOLEAN)
+      /* In a boolean context, any expression can be extrated. */
+      pred = scheme_boolean_p_proc;
+    else
+      pred = expr_implies_predicate(t, info);
+
+    if (pred && predicate_implies(pred, scheme_boolean_p_proc)) {
       info->size -= 2;
       return t;
+    }
   }
 
   /* Try optimize: (if <expr> v v) => (begin <expr> v) */
