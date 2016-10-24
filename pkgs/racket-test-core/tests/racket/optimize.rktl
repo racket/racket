@@ -38,7 +38,7 @@
                                             #:first-arg [first-arg #f]
                                             #:second-arg [second-arg #f])
 				(unless (memq name '(eq? eqv? equal? 
-                                                         not k:strict-true? null? pair? list? k:list-pair?
+                                                         not k:true-object? null? pair? list? k:list-pair?
 							 real? number? boolean?
 							 procedure? symbol? keyword?
 							 string? bytes?
@@ -329,9 +329,9 @@
     (un #f 'not #t)
     (un #f 'not 10)
 
-    (un #f 'k:strict-true? #f)
-    (un #t 'k:strict-true? #t)
-    (un #f 'k:strict-true? 10)
+    (un #f 'k:true-object? #f)
+    (un #t 'k:true-object? #t)
+    (un #f 'k:true-object? 10)
 
     (bin #t '< 100 200)
     (bin #f '< 200 100)
@@ -2116,7 +2116,7 @@
   (test-pred-implies-val 'null? 'null)
   (test-pred-implies-val 'void? '(void))
   (test-pred-implies-val 'eof-object? 'eof)
-  (test-pred-implies-val 'k:strict-true? '#t)  
+  (test-pred-implies-val 'k:true-object? '#t)  
   (test-pred-implies-val 'not '#f))
 (test-comp '(lambda (x) (if (null? x) 1 0) null)
            '(lambda (x) (if (null? x) 1 0) x)
@@ -3084,7 +3084,7 @@
   (test-pred 'eof-object?)
   (test-pred 'immutable?)
   (test-pred 'not)
-  (test-pred 'k:strict-true?))
+  (test-pred 'k:true-object?))
 
 (let ([test-implies
        (lambda (pred1 pred2 [val '=>])
@@ -3126,7 +3126,7 @@
   (test-implies 'k:list-pair? 'list?)
   (test-implies 'list? 'pair? '?)
   (test-implies 'not 'boolean?)
-  (test-implies 'k:strict-true? 'boolean?)
+  (test-implies 'k:true-object? 'boolean?)
 )
 
 (test-comp '(lambda (z)
@@ -3163,16 +3163,16 @@
                 #t)))
 (test-comp '(lambda (z)
               (when (and (boolean? z)
-                         (not (k:strict-true? z)))
+                         (not (k:true-object? z)))
                 (not z)))
            '(lambda (z)
               (when (and (boolean? z)
-                         (not (k:strict-true? z)))
+                         (not (k:true-object? z)))
                 #t)))
 (test-comp '(lambda (z)
               (when (and (boolean? z)
                          (not (not z)))
-                (k:strict-true? z)))
+                (k:true-object? z)))
            '(lambda (z)
               (when (and (boolean? z)
                          (not (not z)))

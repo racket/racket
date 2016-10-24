@@ -587,7 +587,7 @@ extern Scheme_Object *scheme_lambda_syntax;
 extern Scheme_Object *scheme_begin_syntax;
 
 extern Scheme_Object *scheme_not_proc;
-extern Scheme_Object *scheme_strict_true_p_proc;
+extern Scheme_Object *scheme_true_object_p_proc;
 extern Scheme_Object *scheme_boolean_p_proc;
 extern Scheme_Object *scheme_eq_proc;
 extern Scheme_Object *scheme_eqv_proc;

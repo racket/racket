@@ -2979,7 +2979,7 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
              || IS_NAMED_PRIM(rator, "eof-object?")
              || IS_NAMED_PRIM(rator, "immutable?")
              || IS_NAMED_PRIM(rator, "not")
-             || IS_NAMED_PRIM(rator, "strict-true?")
+             || IS_NAMED_PRIM(rator, "true-object?")
              || IS_NAMED_PRIM(rator, "zero?")
              || IS_NAMED_PRIM(rator, "procedure-arity-includes?")
              || IS_NAMED_PRIM(rator, "variable-reference-constant?")
@@ -3270,7 +3270,7 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       return scheme_eof_object_p_proc;
 
     if (SAME_OBJ(expr, scheme_true))
-      return scheme_strict_true_p_proc;
+      return scheme_true_object_p_proc;
     if (SCHEME_FALSEP(expr))
       return scheme_not_proc;
   }
@@ -5050,7 +5050,7 @@ static Scheme_Object *collapse_local(Scheme_Object *var, Optimize_Info *info, in
           return scheme_true;
       }
 
-      if (SAME_OBJ(pred, scheme_strict_true_p_proc))
+      if (SAME_OBJ(pred, scheme_true_object_p_proc))
         return scheme_true;
       if (SAME_OBJ(pred, scheme_null_p_proc))
         return scheme_null;
@@ -5158,12 +5158,12 @@ static void add_type_no(Optimize_Info *info, Scheme_Object *var, Scheme_Object *
   }
 
   if (old_pred && SAME_OBJ(old_pred, scheme_boolean_p_proc)) {
-    /* boolean? but not `not` => strict-true? */
+    /* boolean? but not `not` => true-object? */
     if (SAME_OBJ(pred, scheme_not_proc))
-      add_type(info, var, scheme_strict_true_p_proc);
+      add_type(info, var, scheme_true_object_p_proc);
 
-    /* boolean? but not strict-true? => `not` */
-    if (SAME_OBJ(pred, scheme_strict_true_p_proc))
+    /* boolean? but not true-object? => `not` */
+    if (SAME_OBJ(pred, scheme_true_object_p_proc))
       add_type(info, var, scheme_not_proc);
   }
 }
@@ -5222,10 +5222,10 @@ static void merge_branchs_types(Optimize_Info *t_info, Optimize_Info *f_info,
             && (SAME_OBJ(f_pred, scheme_null_p_proc)))) {
         add_type(base_info, var, scheme_list_p_proc);
        }
-        /* special case: strict-true? or `not` => boolean? */
+        /* special case: true-object? or `not` => boolean? */
        if ((SAME_OBJ(t_pred, scheme_not_proc)
-         && (SAME_OBJ(f_pred, scheme_strict_true_p_proc)))
-        || (SAME_OBJ(t_pred, scheme_strict_true_p_proc)
+         && (SAME_OBJ(f_pred, scheme_true_object_p_proc)))
+        || (SAME_OBJ(t_pred, scheme_true_object_p_proc)
             && (SAME_OBJ(f_pred, scheme_not_proc)))) {
         add_type(base_info, var, scheme_boolean_p_proc);
        }
@@ -5261,7 +5261,7 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_void_p_proc)
           || SAME_OBJ(pred, scheme_eof_object_p_proc)
           || SAME_OBJ(pred, scheme_boolean_p_proc)
-          || SAME_OBJ(pred, scheme_strict_true_p_proc)
+          || SAME_OBJ(pred, scheme_true_object_p_proc)
           || SAME_OBJ(pred, scheme_not_proc)
           );
 }
@@ -5290,10 +5290,10 @@ static int predicate_implies(Scheme_Object *pred1, Scheme_Object *pred2)
       && SAME_OBJ(pred1, scheme_list_pair_p_proc))
     return 1;
 
-  /* not, strict-true? => boolean? */
+  /* not, true-object? => boolean? */
   if (SAME_OBJ(pred2, scheme_boolean_p_proc)
       && (SAME_OBJ(pred1, scheme_not_proc)
-          || SAME_OBJ(pred1, scheme_strict_true_p_proc)))
+          || SAME_OBJ(pred1, scheme_true_object_p_proc)))
     return 1;
 
   /* real?, fixnum?, or flonum? => number? */

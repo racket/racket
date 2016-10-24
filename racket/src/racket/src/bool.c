@@ -35,7 +35,7 @@ READ_ONLY Scheme_Object scheme_true[1];
 READ_ONLY Scheme_Object scheme_false[1];
 
 READ_ONLY Scheme_Object *scheme_not_proc;
-READ_ONLY Scheme_Object *scheme_strict_true_p_proc;
+READ_ONLY Scheme_Object *scheme_true_object_p_proc;
 READ_ONLY Scheme_Object *scheme_boolean_p_proc;
 READ_ONLY Scheme_Object *scheme_eq_proc;
 READ_ONLY Scheme_Object *scheme_eqv_proc;
@@ -43,7 +43,7 @@ READ_ONLY Scheme_Object *scheme_equal_proc;
 
 /* locals */
 static Scheme_Object *not_prim (int argc, Scheme_Object *argv[]);
-static Scheme_Object *strict_true_p_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *true_object_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *boolean_p_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *eq_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *eqv_prim (int argc, Scheme_Object *argv[]);
@@ -87,7 +87,7 @@ void scheme_init_bool (Scheme_Env *env)
   Scheme_Object *p;
 
   REGISTER_SO(scheme_not_proc);
-  REGISTER_SO(scheme_strict_true_p_proc);
+  REGISTER_SO(scheme_true_object_p_proc);
   REGISTER_SO(scheme_boolean_p_proc);
   REGISTER_SO(scheme_eq_proc);
   REGISTER_SO(scheme_eqv_proc);
@@ -99,11 +99,11 @@ void scheme_init_bool (Scheme_Env *env)
                                                             | SCHEME_PRIM_IS_OMITABLE);
   scheme_add_global_constant("not", p, env);
 
-  p = scheme_make_folding_prim(strict_true_p_prim, "strict-true?", 1, 1, 1);
+  p = scheme_make_folding_prim(true_object_p_prim, "true-object?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
-  scheme_strict_true_p_proc = p;
-  scheme_add_global_constant("strict-true?", p, env);
+  scheme_true_object_p_proc = p;
+  scheme_add_global_constant("true-object?", p, env);
 
   p = scheme_make_folding_prim(boolean_p_prim, "boolean?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
@@ -160,7 +160,7 @@ not_prim (int argc, Scheme_Object *argv[])
 }
 
 static Scheme_Object *
-strict_true_p_prim (int argc, Scheme_Object *argv[])
+true_object_p_prim (int argc, Scheme_Object *argv[])
 {
   return (SAME_OBJ(argv[0], scheme_true) ? scheme_true : scheme_false);
 }

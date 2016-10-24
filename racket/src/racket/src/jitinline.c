@@ -1089,7 +1089,7 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
   if (IS_NAMED_PRIM(rator, "not")) {
     generate_inlined_constant_test(jitter, app, scheme_false, NULL, for_branch, branch_short, dest);
     return 1;
-  } else if (IS_NAMED_PRIM(rator, "strict-true?")) {
+  } else if (IS_NAMED_PRIM(rator, "true-object?")) {
     generate_inlined_constant_test(jitter, app, scheme_true, NULL, for_branch, branch_short, dest);
     return 1;
   } else if (IS_NAMED_PRIM(rator, "null?")) {

@@ -232,7 +232,7 @@
                               assq assv assoc
                               prop:incomplete-arity prop:method-arity-error
                               list-pair?
-                              strict-true?
+                              true-object?
                               random)
              (all-from "reqprov.rkt")
              (all-from-except "for.rkt"
