@@ -38,7 +38,7 @@
                                             #:first-arg [first-arg #f]
                                             #:second-arg [second-arg #f])
 				(unless (memq name '(eq? eqv? equal? 
-                                                         not null? pair? list? k:list-pair?
+                                                         not k:true-object? null? pair? list? k:list-pair?
 							 real? number? boolean?
 							 procedure? symbol? keyword?
 							 string? bytes?
@@ -328,6 +328,10 @@
     (un #t 'not #f)
     (un #f 'not #t)
     (un #f 'not 10)
+
+    (un #f 'k:true-object? #f)
+    (un #t 'k:true-object? #t)
+    (un #f 'k:true-object? 10)
 
     (bin #t '< 100 200)
     (bin #f '< 200 100)
@@ -1144,7 +1148,9 @@
          (test-comp `(lambda (x) (if (,e? x (list 0)) (pair? x) 0))
                     `(lambda (x) (if (,e? x (list 0)) #t 0)))
          (test-comp `(lambda (x y) (car y) (if (,e? x y) (pair? x) 0))
-                    `(lambda (x y) (car y) (if (,e? x y) #t 0))))])
+                    `(lambda (x y) (car y) (if (,e? x y) #t 0)))
+         (test-comp `(lambda (x y) (boolean? (,e? x y)))
+                    `(lambda (x y) (,e? x y) #t)))])
   (test-equal? 'eq?)
   (test-equal? 'eqv?)
   (test-equal? 'equal?))
@@ -2042,6 +2048,18 @@
            '(lambda (x) (let ([n (if (zero? (random 2)) 1 -1)])
                           (list n n #f))))
 
+; Test reductions in expressions that are similar to the expansion of `or`
+(test-comp '(lambda (z)
+              (when (boolean? z)
+                (if z z 0)))
+           '(lambda (z)
+              (when (boolean? z)
+                (if z #t 0))))
+(test-comp '(lambda (z)
+              (let ([r (boolean? z)])
+                (if r r 0)))
+           '(lambda (z)
+              (if (boolean? z) #t 0)))
 (test-comp '(lambda (x) (if (let ([r (something)])
                               (if r r (something-else)))
                             (a1)
@@ -2074,6 +2092,9 @@
                             (a1)
                             (a2))))
 
+(test-comp '(lambda (x) (if (pair? x) #t #f))
+           '(lambda (x) (pair? x)))
+
 (test-comp '(lambda (x) (let ([r (something)])
                           (if r #t (something-else))))
            '(lambda (x) (if (something) #t (something-else))))
@@ -2098,6 +2119,7 @@
   (test-pred-implies-val 'null? 'null)
   (test-pred-implies-val 'void? '(void))
   (test-pred-implies-val 'eof-object? 'eof)
+  (test-pred-implies-val 'k:true-object? '#t)  
   (test-pred-implies-val 'not '#f))
 (test-comp '(lambda (x) (if (null? x) 1 0) null)
            '(lambda (x) (if (null? x) 1 0) x)
@@ -3028,7 +3050,10 @@
                        (let ([x ',pred-name])
                          (let ([y (,pred-name z)])
                            x)))
-                    `(lambda (z) ',pred-name)))])
+                    `(lambda (z) ',pred-name))
+         (test-comp `(lambda (z)
+                       (boolean? (,pred-name z)))
+                    `(lambda (z) (,pred-name z) #t)))])
   (test-pred 'pair?)
   (test-pred 'mpair?)
   (test-pred 'list?)
@@ -3061,7 +3086,8 @@
   (test-pred 'procedure?)
   (test-pred 'eof-object?)
   (test-pred 'immutable?)
-  (test-pred 'not))
+  (test-pred 'not)
+  (test-pred 'k:true-object?))
 
 (let ([test-implies
        (lambda (pred1 pred2 [val '=>])
@@ -3102,6 +3128,8 @@
   (test-implies 'k:list-pair? 'pair?)
   (test-implies 'k:list-pair? 'list?)
   (test-implies 'list? 'pair? '?)
+  (test-implies 'not 'boolean?)
+  (test-implies 'k:true-object? 'boolean?)
 )
 
 (test-comp '(lambda (z)
@@ -3136,7 +3164,23 @@
               (when (and (list? z)
                          (not (k:list-pair? z)))
                 #t)))
-                      
+(test-comp '(lambda (z)
+              (when (and (boolean? z)
+                         (not (k:true-object? z)))
+                (not z)))
+           '(lambda (z)
+              (when (and (boolean? z)
+                         (not (k:true-object? z)))
+                #t)))
+(test-comp '(lambda (z)
+              (when (and (boolean? z)
+                         (not (not z)))
+                (k:true-object? z)))
+           '(lambda (z)
+              (when (and (boolean? z)
+                         (not (not z)))
+                #t)))
+
 
 (let ([test-reduce
        (lambda (pred-name expr [val #t])
@@ -4661,6 +4705,22 @@
               (define f 5)
               (error 'error)
               (set! f 0))
+           #f)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Test that the `if` is not confused by the
+;; predicates that recognize #f.
+
+(test-comp '(lambda (x) (when (boolean? x)
+                          (if x 1 2)))
+           '(lambda (x) (when (boolean? x)
+                          1))
+           #f)
+
+(test-comp '(lambda (x) (when (not x)
+                          (if x 1 2)))
+           '(lambda (x) (when (not x)
+                          1))
            #f)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
