@@ -1,7 +1,7 @@
 #lang scribble/doc
 @require["common.rkt"
          scribble/examples
-         (for-label racket/sequence)]
+         (for-label file/glob racket/sequence)]
 
 @title[#:tag "glob"]{Globbing}
 
