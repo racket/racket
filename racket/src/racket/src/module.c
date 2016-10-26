@@ -7601,6 +7601,12 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
   /* phase shift to replace self_modidx of previous expansion: */
   fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL,
                         m->insp, m->insp);
+  if (m->ii_src) {
+    /* shift the initial import to record the chain for rn_stx */
+    ii = scheme_stx_shift(m->ii_src, NULL, this_empty_self_modidx, self_modidx, NULL,
+                          m->insp, m->insp);
+    m->ii_src = ii;
+  }
 
   fm = scheme_stx_add_module_frame_context(fm, rn_set);
 

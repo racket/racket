@@ -1827,6 +1827,33 @@ case of module-leve bindings; it doesn't cover local bindings.
 
 (dynamic-require ''rexports-values-from-kernel 'f)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that shifts associated with re-expansion are
+;; properly tracked for `module->namespace`
+
+(parameterize ([current-load-relative-directory
+                (let-values ([(b n dir?)
+                              (split-path
+                               (collection-file-path "promise.rkt" "racket"))])
+                  b)])
+  (let* ([e (expand (namespace-syntax-introduce
+                     (datum->syntax #f '(module m racket/base
+                                         ;; A prefixed import forces saving of the
+                                         ;; context as a syntax object in marshaled
+                                         ;; form:
+                                         (require (prefix-in p: "promise.rkt"))))))]
+         [c (compile e)]
+         [o (open-output-bytes)]
+         [_ (write c o)]
+         [r (parameterize ([read-accept-compiled #t])
+              (read (open-input-bytes (get-output-bytes o))))])
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval r)
+      (dynamic-require ''m #f)
+      (parameterize ([current-namespace (module->namespace ''m)])
+        (and (memq 'p:force (namespace-mapped-symbols))
+             #t)))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
