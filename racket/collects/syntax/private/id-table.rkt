@@ -160,8 +160,9 @@ The {key,value}-{in-out} functions should all return a chaperone of their argume
 (define (id-table-ref! who d id default identifier->symbol identifier=?)
   (define entry (id-table-ref who d id missing identifier->symbol identifier=?))
   (cond [(eq? entry missing)
-         (id-table-set! who d id default identifier->symbol identifier=?)
-         (if (procedure? default) (default) default)]
+         (let ([called-default (if (procedure? default) (default) default)])
+           (id-table-set! who d id called-default identifier->symbol identifier=?)
+           called-default)]
         [else entry]))
 
 (define (id-table-update/constructor who d id updater default constructor identifier->symbol identifier=?)
