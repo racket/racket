@@ -385,7 +385,7 @@ if test "${enable_sysroot}" != "" ; then
 fi
 
 if test "${enable_racket}" != "" ; then
-  if test "${enable_racket}" == "auto" ; then
+  if test "${enable_racket}" = "auto" ; then
      echo "=== Creating and using local Racket executable"
   else
      echo "=== Using Racket executable ${enable_racket}"
@@ -802,7 +802,7 @@ case "$host_os" in
     skip_iconv_check=yes
     check_for_mprotect=no
     # ".a" is typically not useful, since we always build a DLL:
-    if test "${enable_libs}" == "" ; then
+    if test "${enable_libs}" = "" ; then
       INSTALL_LIBS_ENABLE=no-install
     fi
     AC_DEFINE(HAVE_STDINT_H,1,[Have stdint.h])
@@ -814,7 +814,7 @@ case "$host_os" in
     fi
 
     AC_CHECK_LIB(winpthread, pthread_create, has_winpthread=yes, has_winpthread=no)
-    if test "${has_winpthread}" == "yes" ; then
+    if test "${has_winpthread}" = "yes" ; then
       LIBS="${LIBS} -Wl,-Bstatic -lwinpthread"
     fi
     case "$build_os" in
@@ -895,7 +895,7 @@ case "$host_os" in
     try_poll_syscall=yes
 
     # ".a" is typically not useful, since we always build a ".dylib":
-    if test "${enable_libs}" == "" ; then
+    if test "${enable_libs}" = "" ; then
       INSTALL_LIBS_ENABLE=no-install
     fi
 
