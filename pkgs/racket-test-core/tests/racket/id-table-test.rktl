@@ -397,11 +397,19 @@
   (define x1 ((make-syntax-introducer) x0))
   (define y0 #'y)
   (define y1 ((make-syntax-introducer) y0))
+  (define z0 #'z)
+  (define z1 ((make-syntax-introducer) z0))
 
   (test 0 bound-id-table-ref! table x0 0)
   (test 1 bound-id-table-ref! table x1 1)
-  (test 0 bound-id-table-ref! table x0 (lambda () 0))
-  (test 1 bound-id-table-ref! table x1 (lambda () 1))
+  ;; Check that the lambda is immediately called
+  (begin
+    (test 0 bound-id-table-ref! table z0 (lambda () 0))
+    (test 1 bound-id-table-ref! table z1 (lambda () 1)))
+  ;; Check that the result of the call was inserted
+  (begin
+    (test 0 bound-id-table-ref table z0)
+    (test 1 bound-id-table-ref table z1))
   (test 0 bound-id-table-ref table x0)
   (test 1 bound-id-table-ref (bound-id-table-update table2 y0 add1 0) y0)
   (test 1 bound-id-table-ref (bound-id-table-set* table2 y0 0 y1 1) y1)
@@ -416,11 +424,19 @@
   (define x1 #'x1)
   (define y0 #'y)
   (define y1 #'y1)
+  (define z0 #'z)
+  (define z1 #'z1)
 
   (test 0 free-id-table-ref! table x0 0)
   (test 1 free-id-table-ref! table x1 1)
-  (test 0 free-id-table-ref! table x0 (lambda () 0))
-  (test 1 free-id-table-ref! table x1 (lambda () 1))
+  ;; Check that the lambda is immediately called
+  (begin
+    (test 0 free-id-table-ref! table z0 (lambda () 0))
+    (test 1 free-id-table-ref! table z1 (lambda () 1)))
+  ;; Check that the result of the call was inserted
+  (begin
+    (test 0 free-id-table-ref table z0)
+    (test 1 free-id-table-ref table z1))
   (test 0 free-id-table-ref table x0)
   (test 1 free-id-table-ref (free-id-table-update table2 y0 add1 0) y0)
   (test 1 free-id-table-ref (free-id-table-set* table2 y0 0 y1 1) y1)
