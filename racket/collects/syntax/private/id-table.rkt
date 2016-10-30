@@ -270,7 +270,82 @@ Notes (FIXME?):
         (cons (id-table-iterate-value who d pos identifier->symbol identifier=?)
               (do-values (id-table-iterate-next who d pos))))))
 
-(define (in-id-table who d identifier->symbol identifier=?)
+;; rebase-for-loop
+;;
+;; if the bucket of an id-table is altered between
+;; for-loop iterations within that bucket, this function
+;; attempts to reorient in the new bucket
+;; returns (key val idx cur-hd next-bucket)
+(define (rebase-for-loop h idx cur-hd id)
+  ;; hash entry has changed to cur-hd, so find id in cur-hd
+  (let loop ([bucket cur-hd])
+    (cond [(null? bucket)
+           (let ([idx (hash-iterate-next h idx)])
+             (if (not idx)
+                 ;; we ran out of things to iterate over, we're done!
+                 (values #f #f #f #f #f)
+                 (let* ([bucket (hash-iterate-value h idx)]
+                        [key (caar bucket)] ;; NOTE: hash buckets must never be completely empty!
+                        [val (cdar bucket)])
+                   (values key val idx bucket (cdr bucket)))))]
+          [(eq? (caar bucket) id) ;; relies on id staying same; see alist-set
+           (values id (cdar bucket) idx cur-hd (cdr bucket))]
+          [else (loop (cdr bucket))])))
+
+(begin-for-syntax
+  ;; make-in-table-transformer : Indentifier Indentifier -> Syntax -> Syntax/#f
+  (define ((make-in-table-transformer in-tbl-id pred?-id) stx)
+    (with-syntax ([in-tbl in-tbl-id]
+                  [pred? pred?-id]
+                  [pred?-str (format "~a" (syntax-e pred?-id))])
+      (syntax-case stx ()
+        [[(key val) (_ table)]
+         #'[(key val)
+            (:do-in
+             ;; outer-id bindings
+             ([(h) (id-table-hash (let ([t table])
+                                    (unless (pred? t)
+                                      (raise-argument-error 'in-tbl pred?-str t))
+                                    t))]
+              [(init-idx) (hash-iterate-first (id-table-hash table))])
+             #true ;; outer-check
+             ;; loop-id's and initial values
+             ([idx init-idx]
+              ;; we keep track of the root of the current bucket
+              ;; so we can detect if this entry in the hash table
+              ;; was mutated between iterations
+              [hd (and init-idx (hash-iterate-value h init-idx))]
+              [bucket (and init-idx (hash-iterate-value h init-idx))])
+             ;; pos-guard
+             idx
+             ;; inner-ids
+             ([(key val idx cur-hd next-bucket)
+               (cond
+                 ;; we need to go to the next hash index
+                 [(null? bucket)
+                  (let ([idx (hash-iterate-next h idx)])
+                    (if (not idx)
+                        (values #f #f #f #f #f)
+                        (let* ([hd (hash-iterate-value h idx)])
+                          (values (caar hd) (cdar hd) idx hd (cdr hd)))))]
+                 [else
+                  ;; check if our bucket changed since out last iteration in it
+                  (let ([hd* (hash-iterate-value h idx)])
+                    (cond [(eq? hd hd*)
+                           ;; no change, just go to the next entry in this bucket
+                           (let* ([next-bucket (cdr bucket)])
+                             (values (caar bucket) (cdar bucket) idx hd next-bucket))]
+                          [else
+                           ;; things have been swapped up! resituate ourselves
+                           (rebase-for-loop h idx hd* (caar bucket))]))])])
+             key ;; pre-guard (key is #f if we suddenly ran out of key/vals due to mutation
+             #true ;; post-guard
+             ;; recursive call args
+             [idx hd next-bucket])]]
+        [_ #f]))))
+
+
+(define (in-id-table-do-seq who d identifier->symbol identifier=?)
   (make-do-sequence
    (λ ()
      (values
@@ -404,9 +479,9 @@ Notes (FIXME?):
            (define (idtbl-count d)
              (id-table-count d))
            (define (idtbl-for-each d p)
-             (dict-for-each d p))
+             (for ([(id val) (in-idtbl d)]) (p id val)))
            (define (idtbl-map d f)
-             (dict-map d f))
+             (for/list ([(id val) (in-idtbl d)]) (f id val)))
            (define (idtbl-iterate-first d)
              (id-table-iterate-first d))
            (define (idtbl-iterate-next d pos)
@@ -419,8 +494,13 @@ Notes (FIXME?):
              (id-table-keys 'idtbl-keys d))
            (define (idtbl-values d)
              (id-table-values 'idtbl-values d identifier->symbol identifier=?))
-           (define (in-idtbl d)
-             (in-id-table 'in-idtbl d identifier->symbol identifier=?))
+           (define (in-idtbl* d)
+             (if (idtbl? d)
+                 (in-id-table-do-seq 'in-idtbl d identifier->symbol identifier=?)
+                 (raise-argument-error 'in-idtbl (format "~a" 'idtbl?) d)))
+           (define-sequence-syntax in-idtbl
+             (lambda () #'in-idtbl*)
+             (make-in-table-transformer #'in-idtbl #'idtbl?))
 
            (define idtbl-mutable-methods
              (vector-immutable idtbl-ref
