@@ -47,7 +47,10 @@
     (test 2 bound-id-table-ref d3 a)
     (test 3 bound-id-table-ref d3 b)
     (test 4 bound-id-table-ref d3 b2)
-    (test 5 bound-id-table-ref d3 b3))
+    (test 5 bound-id-table-ref d3 b3)
+    (test 4 sequence-length (in-bound-id-table d1))
+    (test (for/list ([(k v) (in-bound-id-table d1)]) (cons k v))
+          (λ () (for/list ([(k v) (values (in-bound-id-table d1))]) (cons k v)))) )
 
   (let ()
     ;; Test in-dict, iteration methods for mutable id-tables

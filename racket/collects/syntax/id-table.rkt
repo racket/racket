@@ -341,8 +341,6 @@
              (-> idtbl? (listof identifier?))]
             [idtbl-values
              (-> idtbl? list?)]
-            [in-idtbl
-             (-> idtbl? sequence?)]
             [idtbl-map
              (-> idtbl? (-> identifier? any/c any) list?)]
             [idtbl-for-each
@@ -350,7 +348,12 @@
             [idtbl/c
              (->* (flat-contract? chaperone-contract?)
                   (#:immutable (or/c 'dont-care #t #f))
-                  contract?)])))]))
+                  contract?)])
+
+           ;; 'in-idtbl' is defined via 'define-sequence-syntax'
+           ;; and thus reports contract failures internally
+           ;; using 'raise-argument-error'
+           (provide in-idtbl)))]))
 
 (make-code bound-id-table)
 (make-code free-id-table)
