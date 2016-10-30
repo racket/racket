@@ -234,8 +234,10 @@
         
         (define symbol-complex (trans (seqs L (arbno (alt L D)))))
 
-        ;; Accomodate things like 10_1 in `availability` attributes:
-        (define pseudo-symbol-complex (trans (seqs (arbno D) "_" (arbno D))))
+        ;; Accomodate things like 10_1 and 10.12.1 in `availability` attributes:
+        (define pseudo-symbol-complex (trans (alt*
+                                              (seqs (arbno D) "_" (arbno D))
+                                              (seqs (one+ D) "[.]" (one+ D) "[.]" (one+ D)))))
         
         (define number-complex
           (trans (alt*
