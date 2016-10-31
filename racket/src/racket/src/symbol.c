@@ -65,6 +65,9 @@ THREAD_LOCAL_DECL(static int gensym_counter);
 
 void scheme_set_case_sensitive(int v) { scheme_case_sensitive =  v; }
 
+READ_ONLY Scheme_Object *scheme_symbol_p_proc;
+READ_ONLY Scheme_Object *scheme_keyword_p_proc;
+
 /* locals */
 static Scheme_Object *symbol_lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *symbol_p_prim (int argc, Scheme_Object *argv[]);
@@ -330,9 +333,11 @@ scheme_init_symbol (Scheme_Env *env)
 {
   Scheme_Object *p;
 
+  REGISTER_SO(scheme_symbol_p_proc);
   p = scheme_make_folding_prim(symbol_p_prim, "symbol?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
+  scheme_symbol_p_proc = p;
   scheme_add_global_constant("symbol?", p, env);
 
   p = scheme_make_folding_prim(symbol_unreadable_p_prim, "symbol-unreadable?", 1, 1, 1);
@@ -347,9 +352,11 @@ scheme_init_symbol (Scheme_Env *env)
   GLOBAL_IMMED_PRIM("string->unreadable-symbol",  string_to_unreadable_symbol_prim, 1, 1, env);
   GLOBAL_IMMED_PRIM("symbol->string",             symbol_to_string_prim,            1, 1, env);
 
+  REGISTER_SO(scheme_keyword_p_proc);
   p = scheme_make_folding_prim(keyword_p_prim, "keyword?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
+  scheme_keyword_p_proc = p;
   scheme_add_global_constant("keyword?", p, env);
 
   GLOBAL_FOLDING_PRIM("keyword<?",                keyword_lt,                       2, -1, 1, env);

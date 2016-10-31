@@ -31,8 +31,12 @@
 READ_ONLY Scheme_Object **scheme_char_constants;
 READ_ONLY static Scheme_Object *general_category_symbols[NUM_GENERAL_CATEGORIES];
 
+READ_ONLY Scheme_Object *scheme_char_p_proc;
+READ_ONLY Scheme_Object *scheme_interned_char_p_proc;
+
 /* locals */
 static Scheme_Object *char_p (int argc, Scheme_Object *argv[]);
+static Scheme_Object *interned_char_p (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_eq (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_lt (int argc, Scheme_Object *argv[]);
 static Scheme_Object *char_gt (int argc, Scheme_Object *argv[]);
@@ -98,10 +102,19 @@ void scheme_init_char (Scheme_Env *env)
 {
   Scheme_Object *p;
 
+  REGISTER_SO(scheme_char_p_proc);
   p = scheme_make_folding_prim(char_p, "char?", 1, 1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
                                                             | SCHEME_PRIM_IS_OMITABLE);
+  scheme_char_p_proc = p;
   scheme_add_global_constant("char?", p, env);
+
+  REGISTER_SO(scheme_interned_char_p_proc);
+  p = scheme_make_folding_prim(interned_char_p, "interned-char?", 1, 1, 1);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_OMITABLE);
+  scheme_interned_char_p_proc = p;
+  scheme_add_global_constant("interned-char?", p, env);
 
   p = scheme_make_folding_prim(char_eq, "char=?", 2, -1, 1);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_BINARY_INLINED);
@@ -125,7 +138,6 @@ void scheme_init_char (Scheme_Env *env)
   GLOBAL_FOLDING_PRIM("char-iso-control?",     char_control,          1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("char-punctuation?",     char_punctuation,      1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("char-upper-case?",      char_upper_case,       1, 1, 1, env);
-  GLOBAL_FOLDING_PRIM("char-title-case?",      char_title_case,       1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("char-lower-case?",      char_lower_case,       1, 1, 1, env);
   GLOBAL_FOLDING_PRIM("char-title-case?",      char_title_case,       1, 1, 1, env);
 
@@ -175,6 +187,12 @@ static Scheme_Object *
 char_p (int argc, Scheme_Object *argv[])
 {
   return (SCHEME_CHARP(argv[0]) ? scheme_true : scheme_false);
+}
+
+static Scheme_Object *
+interned_char_p (int argc, Scheme_Object *argv[])
+{
+  return (SCHEME_CHARP(argv[0]) && SCHEME_CHAR_VAL(argv[0]) < 256) ? scheme_true : scheme_false;
 }
 
 #define charSTD_FOLDCASE(nl) nl;

@@ -1438,7 +1438,7 @@
 (test-arg-types '(vector-length vector?) 'fixnum? 'may-omit)
 (test-arg-types '(vector->values vector?) #f)
 (test-arg-types '(vector-ref vector? fixnum?) #f)
-(test-arg-types '(vector-set! vector? fixnum? #f) #f)
+(test-arg-types '(vector-set! vector? fixnum? #f) 'void?)
 (test-arg-types '(vector->list vector?) 'list?)
 (test-arg-types '(list->vector list?) 'vector?)
 (test-arg-types '(struct->vector #f) 'vector?)
@@ -1465,10 +1465,16 @@
            '(lambda (w z) #t)
            #f)
 
+;Test types inference for box?
+(test-arg-types '(box #f) 'box?)
+(test-arg-types '(box-immutable #f) 'box?)
+(test-arg-types '(unbox box?) #f)
+(test-arg-types '(set-box! box? #f) 'void?)
+
 ;Test types inference for string?
 (test-arg-types '(string-length string?) 'fixnum? 'may-omit)
-(test-arg-types '(string-ref string? fixnum?) #f)
-(test-arg-types '(string-set! string? fixnum? #f) #f)
+(test-arg-types '(string-ref string? fixnum?) 'char?)
+(test-arg-types '(string-set! string? fixnum? char?) 'void?)
 (test-arg-types '(string->immutable-string string?) 'string? 'may-omit)
 (test-arg-types '(string-append) string? 'may-omit)
 (test-arg-types '(string-append string?) 'string? 'may-omit)
@@ -1478,8 +1484,8 @@
 
 ;Test types inference for bytes?
 (test-arg-types '(bytes-length bytes?) 'fixnum? 'may-omit)
-(test-arg-types '(bytes-ref bytes? fixnum?) #f)
-(test-arg-types '(bytes-set! bytes? fixnum? #f) #f)
+(test-arg-types '(bytes-ref bytes? fixnum?) 'fixnum?)
+(test-arg-types '(bytes-set! bytes? fixnum? fixnum?) 'void?)
 (test-arg-types '(bytes->immutable-bytes bytes?) 'bytes? 'may-omit)
 (test-arg-types '(bytes-append) bytes? 'may-omit)
 (test-arg-types '(bytes-append bytes?) 'bytes? 'may-omit)
@@ -1499,6 +1505,14 @@
 (test-arg-types '(append list? list?) list? 'may-omit 'dont-infer)
 (test-arg-types '(append list? list? list?) list? 'may-omit 'dont-infer)
 (test-arg-types '(append list? list? list? list?) list? 'may-omit 'dont-infer)
+
+;Test types inference for symbol? and keyword?
+(test-arg-types '(symbol->string symbol?) 'string? 'may-omit)
+(test-arg-types '(string->symbol string?) 'symbol? 'may-omit)
+(test-arg-types '(keyword->string keyword?) 'string? 'may-omit)
+(test-arg-types '(string->keyword string?) 'keyword? 'may-omit)
+(test-arg-types '(gensym) 'symbol?)
+(test-arg-types '(gensym #f) 'symbol?)
 
 ;Test the map primitive and the map version defined in private/map.rkt
 ;The optimizer is not capable of figuring out that the result of map is a list?
@@ -3080,6 +3094,7 @@
   (test-pred 'bytes?)
   (test-pred 'path?)
   (test-pred 'char?)
+  (test-pred 'k:interned-char?)
   (test-pred 'boolean?)
   (test-pred 'chaperone?)
   (test-pred 'impersonator?)
@@ -3128,6 +3143,7 @@
   (test-implies 'k:list-pair? 'pair?)
   (test-implies 'k:list-pair? 'list?)
   (test-implies 'list? 'pair? '?)
+  (test-implies 'k:interned-char? 'char?)
   (test-implies 'not 'boolean?)
   (test-implies 'k:true-object? 'boolean?)
 )

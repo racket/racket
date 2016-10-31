@@ -5,8 +5,7 @@
 
 (require racket/flonum
          racket/function
-         (only-in '#%kernel (list-pair? k:list-pair?)
-                            (true-object? k:true-object?)))
+         (prefix-in k: '#%kernel))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -457,7 +456,21 @@
   (test #t char? #\()
   (test #t char? #\ )
   (test #t char? '#\newline)
+  (test #t char? #\u100)
+  (test #f char? 7)
+  (test #f char? #t)
+  (test #f char? 'x)
   (arity-test char? 1 1)
+  (test #t k:interned-char? #\a)
+  (test #t k:interned-char? #\()
+  (test #t k:interned-char? #\ )
+  (test #t k:interned-char? '#\newline)
+  (test #f k:interned-char? #\u100)
+  (test #f k:interned-char? 7)
+  (test #f k:interned-char? #t)
+  (test #f k:interned-char? #t)
+  (test #f k:interned-char? 'x)
+  (arity-test k:interned-char? 1 1)
 
   (test #f char=? #\A #\B)
   (test #f char=? #\A #\A #\B)

@@ -488,6 +488,10 @@ void scheme_done_os_thread();
 /*                                constants                               */
 /*========================================================================*/
 
+extern Scheme_Object *scheme_symbol_p_proc;
+extern Scheme_Object *scheme_keyword_p_proc;
+extern Scheme_Object *scheme_char_p_proc;
+extern Scheme_Object *scheme_interned_char_p_proc;
 extern Scheme_Object *scheme_fixnum_p_proc;
 extern Scheme_Object *scheme_flonum_p_proc;
 extern Scheme_Object *scheme_extflonum_p_proc;
@@ -3570,7 +3574,6 @@ int scheme_get_eval_type(Scheme_Object *obj);
 Scheme_Object *scheme_make_application(Scheme_Object *v, Optimize_Info *info);
 Scheme_Object *scheme_try_apply(Scheme_Object *f, Scheme_Object *args, Optimize_Info *info);
 int scheme_is_foldable_prim(Scheme_Object *f);
-int scheme_eq_testable_constant(Scheme_Object *v);
 
 Scheme_Object *scheme_get_stop_expander(void);
 

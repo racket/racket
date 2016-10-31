@@ -2926,8 +2926,12 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
     } else if (IS_NAMED_PRIM(rator, "vector->list")
                || IS_NAMED_PRIM(rator, "map")) {
       return scheme_list_p_proc;
+    } else if (IS_NAMED_PRIM(rator, "string-ref")) {
+      return scheme_char_p_proc;
     } else if (IS_NAMED_PRIM(rator, "string-append")
-               || IS_NAMED_PRIM(rator, "string->immutable-string")) {
+               || IS_NAMED_PRIM(rator, "string->immutable-string")
+               || IS_NAMED_PRIM(rator, "symbol->string")
+               || IS_NAMED_PRIM(rator, "keyword->string")) {
         return scheme_string_p_proc;
     } else if (IS_NAMED_PRIM(rator, "bytes-append")
                || IS_NAMED_PRIM(rator, "bytes->immutable-bytes")) {
@@ -2946,6 +2950,20 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
       return scheme_void_p_proc;
     else if (SAME_OBJ(rator, scheme_procedure_specialize_proc))
       return scheme_procedure_p_proc;
+    else if (IS_NAMED_PRIM(rator, "vector-set!")
+             || IS_NAMED_PRIM(rator, "string-set!")
+             || IS_NAMED_PRIM(rator, "bytes-set!")
+             || IS_NAMED_PRIM(rator, "set-box!"))
+      return scheme_void_p_proc;
+    else if (IS_NAMED_PRIM(rator, "vector-set!")
+             || IS_NAMED_PRIM(rator, "string-set!")
+             || IS_NAMED_PRIM(rator, "bytes-set!"))
+      return scheme_void_p_proc;
+    else if (IS_NAMED_PRIM(rator, "string->symbol")
+             || IS_NAMED_PRIM(rator, "gensym"))
+      return scheme_symbol_p_proc;
+    else if (IS_NAMED_PRIM(rator, "string->keyword"))
+      return scheme_keyword_p_proc;
     else if (IS_NAMED_PRIM(rator, "pair?")
              || IS_NAMED_PRIM(rator, "mpair?")
              || IS_NAMED_PRIM(rator, "list?")
@@ -2972,6 +2990,7 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
              || IS_NAMED_PRIM(rator, "bytes?")
              || IS_NAMED_PRIM(rator, "path?")
              || IS_NAMED_PRIM(rator, "char?")
+             || IS_NAMED_PRIM(rator, "interned-char?")
              || IS_NAMED_PRIM(rator, "boolean?")
              || IS_NAMED_PRIM(rator, "chaperone?")
              || IS_NAMED_PRIM(rator, "impersonator?")
@@ -2988,6 +3007,7 @@ static Scheme_Object *rator_implies_predicate(Scheme_Object *rator, Optimize_Inf
              || IS_NAMED_PRIM(rator, "equal?")
              || IS_NAMED_PRIM(rator, "string=?")
              || IS_NAMED_PRIM(rator, "bytes=?")
+             || IS_NAMED_PRIM(rator, "char=?")
              || IS_NAMED_PRIM(rator, "free-identifier=?")
              || IS_NAMED_PRIM(rator, "bound-identifier=?")
              || IS_NAMED_PRIM(rator, "procedure-closure-contents-eq?")) {
@@ -3266,7 +3286,14 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       return scheme_void_p_proc;
     if (SCHEME_EOFP(expr))
       return scheme_eof_object_p_proc;
-
+    if (SCHEME_KEYWORDP(expr))
+      return scheme_keyword_p_proc;
+    if (SCHEME_SYMBOLP(expr))
+      return scheme_symbol_p_proc;
+    if (SCHEME_CHARP(expr) && SCHEME_CHAR_VAL(expr) < 256)
+      return scheme_interned_char_p_proc;
+    if (SCHEME_CHARP(expr))
+      return scheme_char_p_proc;
     if (SAME_OBJ(expr, scheme_true))
       return scheme_true_object_p_proc;
     if (SCHEME_FALSEP(expr))
@@ -3774,13 +3801,16 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
       && (app->num_args >= ((Scheme_Primitive_Proc *)app->args[0])->mina)
       && (app->num_args <= ((Scheme_Primitive_Proc *)app->args[0])->mu.maxa)) {
     Scheme_Object *app_o = (Scheme_Object *)app, *rator = app->args[0];
-    Scheme_Object *rand1 = NULL, *rand2 = NULL;
+    Scheme_Object *rand1 = NULL, *rand2 = NULL, *rand3 = NULL;
 
     if (app->num_args >= 1)
       rand1 = app->args[1];
 
     if (app->num_args >= 2)
       rand2 = app->args[2];
+
+    if (app->num_args >= 3)
+      rand3 = app->args[3];
 
     check_known(info, app_o, rator, rand1, "vector-set!", scheme_vector_p_proc, NULL);
     check_known(info, app_o, rator, rand2, "vector-set!", scheme_fixnum_p_proc, NULL);
@@ -3798,8 +3828,10 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
 
     check_known(info, app_o, rator, rand1, "string-set!", scheme_string_p_proc, NULL);
     check_known(info, app_o, rator, rand2, "string-set!", scheme_fixnum_p_proc, NULL);
+    check_known(info, app_o, rator, rand3, "string-set!", scheme_char_p_proc, NULL);
     check_known(info, app_o, rator, rand1, "bytes-set!", scheme_byte_string_p_proc, NULL);
     check_known(info, app_o, rator, rand2, "bytes-set!", scheme_fixnum_p_proc, NULL);
+    check_known(info, app_o, rator, rand3, "bytes-set!", scheme_fixnum_p_proc, NULL);
     
     check_known_all(info, app_o, 0, 0, "string-append", scheme_string_p_proc, scheme_true);
     check_known_all(info, app_o, 0, 0, "bytes-append", scheme_byte_string_p_proc, scheme_true);
@@ -4237,6 +4269,11 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       check_known(info, app_o, rator, rand, "bytes-append", scheme_byte_string_p_proc, scheme_true);
       check_known(info, app_o, rator, rand, "string->immutable-string", scheme_string_p_proc, scheme_true);
       check_known(info, app_o, rator, rand, "bytes->immutable-bytes", scheme_byte_string_p_proc, scheme_true);
+
+      check_known(info, app_o, rator, rand, "string->symbol", scheme_string_p_proc, scheme_true);
+      check_known(info, app_o, rator, rand, "symbol->string", scheme_symbol_p_proc, scheme_true);
+      check_known(info, app_o, rator, rand, "string->keyword", scheme_string_p_proc, scheme_true);
+      check_known(info, app_o, rator, rand, "keyword->string", scheme_keyword_p_proc, scheme_true);
 
       if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_REAL)
         check_known(info, app_o, rator, rand, NULL, scheme_real_p_proc,
@@ -4703,6 +4740,11 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
           && SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_byte_string_type)) {
         return scheme_byte_string_eq_2(app->rand1, app->rand2);
       }
+    } else if (IS_NAMED_PRIM(app->rator, "char=?")) {
+      if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_char_type)
+          && SAME_TYPE(SCHEME_TYPE(app->rand2), scheme_char_type)) {
+        return (SCHEME_CHAR_VAL(app->rand1) == SCHEME_CHAR_VAL(app->rand2)) ? scheme_true : scheme_false;
+      }
     }
   }
 
@@ -4756,6 +4798,10 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     check_known(info, app_o, rator, rand1, "vector-ref", scheme_vector_p_proc, NULL);
     check_known(info, app_o, rator, rand2, "vector-ref", scheme_fixnum_p_proc, NULL);
     check_known(info, app_o, rator, rand1, "make-vector", scheme_fixnum_p_proc, NULL);
+
+    check_known(info, app_o, rator, rand1, "set-box!", scheme_box_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "unsafe-set-box!", scheme_box_p_proc, NULL);
+    check_known(info, app_o, rator, rand1, "unsafe-set-box*!", scheme_box_p_proc, NULL);
 
     check_known(info, app_o, rator, rand1, "procedure-closure-contents-eq?", scheme_procedure_p_proc, NULL);
     check_known(info, app_o, rator, rand2, "procedure-closure-contents-eq?", scheme_procedure_p_proc, NULL);
@@ -5249,6 +5295,8 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_string_p_proc)
           || SAME_OBJ(pred, scheme_byte_string_p_proc)
           || SAME_OBJ(pred, scheme_vector_p_proc)
+          || SAME_OBJ(pred, scheme_symbol_p_proc)
+          || SAME_OBJ(pred, scheme_keyword_p_proc)
           || SAME_OBJ(pred, scheme_procedure_p_proc)
           || SAME_OBJ(pred, scheme_syntax_p_proc)
           || SAME_OBJ(pred, scheme_fixnum_p_proc)
@@ -5256,6 +5304,8 @@ static int relevant_predicate(Scheme_Object *pred)
           || SAME_OBJ(pred, scheme_extflonum_p_proc)
           || SAME_OBJ(pred, scheme_number_p_proc)
           || SAME_OBJ(pred, scheme_real_p_proc)
+          || SAME_OBJ(pred, scheme_char_p_proc)
+          || SAME_OBJ(pred, scheme_interned_char_p_proc)
           || SAME_OBJ(pred, scheme_void_p_proc)
           || SAME_OBJ(pred, scheme_eof_object_p_proc)
           || SAME_OBJ(pred, scheme_boolean_p_proc)
@@ -5286,6 +5336,11 @@ static int predicate_implies(Scheme_Object *pred1, Scheme_Object *pred2)
   /* list-pair? => pair? */
   if (SAME_OBJ(pred2, scheme_pair_p_proc)
       && SAME_OBJ(pred1, scheme_list_pair_p_proc))
+    return 1;
+
+  /* interned-char? => char? */
+  if (SAME_OBJ(pred2, scheme_char_p_proc)
+      && SAME_OBJ(pred1, scheme_interned_char_p_proc))
     return 1;
 
   /* not, true-object? => boolean? */
