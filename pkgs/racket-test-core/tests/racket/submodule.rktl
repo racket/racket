@@ -477,7 +477,7 @@
 (test 'b dynamic-require '(submod 'subm-example-12 b) 'b)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; The `section' form:
+;; The `module+' form:
 
 (module module+-example-1 racket/base
   (module+ alpha (define a root) (provide a))
@@ -518,6 +518,18 @@
     3 4))
 
 (test 3 dynamic-require '(submod 'module+-example-2 a b) 'x)
+
+;; Check that module+ propagates properties
+(let* ([stx-1 (syntax-property #'(module+ plus) 'foo 'bar)]
+       [stx-2 (syntax-property #'(module+ plus) 'baz 'qux)]
+       [expanded-stx (expand #`(module m racket/base
+                                 #,stx-1
+                                 #,stx-2))])
+  (syntax-case expanded-stx (module #%plain-module-begin)
+    [(module _ _ (#%plain-module-begin _ submodule))
+     (begin
+       (test 'bar syntax-property #'submodule 'foo)
+       (test 'qux syntax-property #'submodule 'baz))]))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check module-source for submodule:
