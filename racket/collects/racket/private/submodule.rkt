@@ -27,8 +27,9 @@
               ;; list and lift a module-end declaration if necessary:
               (let ([stxs-box (get-stxs-box stx #'the-submodule #t)])
                 (set-box! stxs-box
-                          (append (reverse (syntax->list (syntax-local-introduce #'(e ...))))
-                                  (unbox stxs-box))))
+                          (cons (append (reverse (syntax->list (syntax-local-introduce #'(e ...))))
+                                        (car (unbox stxs-box)))
+                                (cons stx (cdr (unbox stxs-box))))))
               (syntax/loc stx (begin)))])]
         [else
          (raise-syntax-error #f
@@ -52,7 +53,7 @@
                         form-stx
                         (list #'define-module the-submodule-stx)
                         form-stx)))
-                    (box null))))))
+                    (box (cons null null)))))))
 
   ;; A use of this form is lifted to the end of the enclosing module
   ;; for each submodule created by `module+':
@@ -60,14 +61,24 @@
     (lambda (stx)
       (syntax-case stx ()
         [(_ the-submodule)
-         (let ([stxs-box (get-stxs-box #f #'the-submodule #f)])
-           ;; Propagate the lexical context of the first `module+'
-           ;; for the implicit `#%module-begin':
-           (datum->syntax
-            stx
-            (list*
-             #'module* 
-             #'the-submodule 
-             #f ; namespace context is the original context
-             (map syntax-local-introduce (reverse (unbox stxs-box))))
-            stx))]))))
+         (let* ([stxs-box (get-stxs-box #f #'the-submodule #f)]
+                ;; Propagate the lexical context of the first `module+'
+                ;; for the implicit `#%module-begin':
+                [module-decl
+                 (datum->syntax
+                  stx
+                  (list*
+                   #'module* 
+                   #'the-submodule 
+                   #f ; namespace context is the original context
+                   (map syntax-local-introduce (reverse (car (unbox stxs-box)))))
+                  stx)])
+           ;; Add 'origin and copy properties for every original declaration
+           (let loop ([stx module-decl]
+                      [origs (cdr (unbox stxs-box))])
+             (if (null? origs) stx
+                 (let* ([orig (car origs)]
+                        [id-stx (if (symbol? (syntax-e orig)) orig
+                                    (car (syntax-e orig)))])
+                   (loop (syntax-track-origin stx orig id-stx)
+                         (cdr origs))))))]))))
