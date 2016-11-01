@@ -808,7 +808,7 @@
                     (values #f #f leftover)])])
     (syntax-case leftover ()
       [() (values raw-optional-doms rst pre pre/desc rng post post/desc)]
-      [x (raise-syntax-error #f "expected the end of the contract" stx #'x)])))
+      [(x . y) (raise-syntax-error #f "expected the contract to end, but found an extra sub-piece" stx #'x)])))
 
 (define-for-syntax (->*-valid-app-shapes stx)
   (define this->* (gensym 'this->*))
