@@ -340,6 +340,27 @@ static Scheme_Object *resolve_application2(Scheme_Object *o, Resolve_Info *orig_
   return (Scheme_Object *)app;
 }
 
+int eq_testable_constant(Scheme_Object *v)
+{
+  if (SCHEME_SYMBOLP(v)
+      || SCHEME_KEYWORDP(v)
+      || SCHEME_FALSEP(v)
+      || SAME_OBJ(v, scheme_true)
+      || SCHEME_NULLP(v)
+      || SCHEME_VOIDP(v)
+      || SCHEME_EOFP(v))
+    return 1;
+
+  if (SCHEME_CHARP(v) && (SCHEME_CHAR_VAL(v) < 256))
+    return 1;
+
+  if (SCHEME_INTP(v) 
+      && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(v)))
+    return 1;
+
+  return 0;
+}
+
 static void set_app3_eval_type(Scheme_App3_Rec *app)
 /* set flags used for a shortcut in the interpreter */
 {
@@ -425,8 +446,8 @@ static Scheme_Object *resolve_application3(Scheme_Object *o, Resolve_Info *orig_
      optimization layer, and we keep it just in case.*/
   if ((SAME_OBJ(app->rator, scheme_equal_proc)
        || SAME_OBJ(app->rator, scheme_eqv_proc))
-      && (scheme_eq_testable_constant(app->rand1)
-         || scheme_eq_testable_constant(app->rand2))) {
+      && (eq_testable_constant(app->rand1)
+          || eq_testable_constant(app->rand2))) {
     app->rator = scheme_eq_proc;
   }
 

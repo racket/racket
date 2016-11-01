@@ -48,6 +48,13 @@
 #define INITIAL_INLINING_FUEL   32
 #define INITIAL_FLATTENING_FUEL 16
 
+/* Clasification for predicates. 
+   Each one implies the smaller.  */
+#define RLV_IS_RELEVANT   1 /* The predicate is remembered by the optimizer */
+#define RLV_EQV_TESTEABLE 2 /* (equal? x <pred>) can be replaced by (eqv? x <pred>) */
+#define RLV_EQ_TESTEABLE  3 /* (equal? x <pred>) can be replaced by (eq? x <pred>) */
+#define RLV_SINGLETON     4 /* Recognizes a single value */
+
 struct Optimize_Info
 {
   MZTAG_IF_REQUIRED
@@ -4353,27 +4360,6 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
   return finish_optimize_any_application((Scheme_Object *)app, rator, 1, info, context);
 }
 
-int scheme_eq_testable_constant(Scheme_Object *v)
-{
-  if (SCHEME_SYMBOLP(v)
-      || SCHEME_KEYWORDP(v)
-      || SCHEME_FALSEP(v)
-      || SAME_OBJ(v, scheme_true)
-      || SCHEME_NULLP(v)
-      || SCHEME_VOIDP(v)
-      || SCHEME_EOFP(v))
-    return 1;
-
-  if (SCHEME_CHARP(v) && (SCHEME_CHAR_VAL(v) < 256))
-    return 1;
-
-  if (SCHEME_INTP(v) 
-      && IN_FIXNUM_RANGE_ON_ALL_PLATFORMS(SCHEME_INT_VAL(v)))
-    return 1;
-
-  return 0;
-}
-
 static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *info, int context)
 {
   Scheme_App3_Rec *app;
@@ -4579,37 +4565,58 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       return make_discarding_sequence_3(app->rand1, app->rand2, scheme_true, info);
     }
     {
-      Scheme_Object *pred1, *pred2;
+      Scheme_Object *pred1, *pred2, *pred_new = NULL;
+      int rel1=0, rel2=0, rel_max, eq_type=0;
+       
       pred1 = expr_implies_predicate(app->rand1, info);
-      if (pred1) {
-        pred2 = expr_implies_predicate(app->rand2, info);
-        if (pred2) {
-          if (predicate_implies_not(pred1, pred2)
-              || predicate_implies_not(pred2, pred1)) {
-            info->preserves_marks = 1;
-            info->single_result = 1;
-            return make_discarding_sequence_3(app->rand1, app->rand2, scheme_false, info);
-          }
+      pred2 = expr_implies_predicate(app->rand2, info);
+      rel1 = relevant_predicate(pred1);
+      rel2 = relevant_predicate(pred2);
+      if ((pred1 && pred2)
+          && (predicate_implies_not(pred1, pred2)
+              || predicate_implies_not(pred2, pred1))) {
+        info->preserves_marks = 1;
+        info->single_result = 1;
+        return make_discarding_sequence_3(app->rand1, app->rand2, scheme_false, info);
+      }
+
+      /* Try to transform it into a predicate */
+      if (rel1 >= RLV_SINGLETON) {
+        Scheme_Object *new_app;
+        new_app = make_optimize_prim_application2(pred1, app->rand2, info, context);
+        return make_discarding_sequence(app->rand1, new_app, info);
+      }
+      if (rel2 >= RLV_SINGLETON) {
+        Scheme_Object *new_app;
+        new_app = make_optimize_prim_application2(pred2, app->rand1, info, context);
+        return make_discarding_reverse_sequence(app->rand2, new_app, info);
+      }
+
+      /* Optimize `equal?' or `eqv?' test on certain types
+         to `eqv?` or `eq?'. This is especially helpful for the JIT. */
+      if (SAME_OBJ(app->rator, scheme_eqv_proc))
+        eq_type = RLV_EQV_TESTEABLE;
+      if (SAME_OBJ(app->rator, scheme_eq_proc))
+        eq_type = RLV_EQ_TESTEABLE;
+
+      rel_max = (rel1 >= rel2) ? rel1 : rel2;
+      if (rel_max >= RLV_EQ_TESTEABLE && eq_type < RLV_EQ_TESTEABLE)
+        pred_new = scheme_eq_proc;
+      else if (rel_max >= RLV_EQV_TESTEABLE && eq_type < RLV_EQV_TESTEABLE)
+        pred_new = scheme_eqv_proc;
+      
+      if (pred_new) {
+        app->rator = pred_new;
+        SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
+        scheme_check_leaf_rator(pred_new, &rator_flags);
+
+        /* eq? and eqv? are foldable */
+        if (all_vals) {
+          le = try_optimize_fold(app->rator, NULL, (Scheme_Object *)app, info);
+          if (le)
+            return le;
         }
       }
-    }
-  }
-
-  /* Optimize `equal?' or `eqv?' test on certain types
-     to `eq?'. This is especially helpful for the JIT. */
-  if ((SAME_OBJ(app->rator, scheme_equal_proc)
-       || SAME_OBJ(app->rator, scheme_eqv_proc))
-      && (scheme_eq_testable_constant(app->rand1)
-         || scheme_eq_testable_constant(app->rand2))) {
-    app->rator = scheme_eq_proc;
-    SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
-    scheme_check_leaf_rator(scheme_eq_proc, &rator_flags);
-
-    /* eq? is foldable */
-    if (all_vals) {
-      le = try_optimize_fold(app->rator, NULL, (Scheme_Object *)app, info);
-      if (le)
-        return le;
     }
   }
 
@@ -4713,22 +4720,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
           && (is_local_type_expression(app->rand1, info) == SCHEME_LOCAL_TYPE_FIXNUM)) {
         app->rator = scheme_unsafe_fxrshift_proc;
         app->rand2 = scheme_make_integer(-(SCHEME_INT_VAL(app->rand2)));
-      }
-    } else if (SAME_OBJ(app->rator, scheme_eq_proc)) {
-      /* Try optimize: (eq? x #f) => (not x) and (eq? x '()) => (null? x) */
-      if (SCHEME_FALSEP(app->rand1)) {
-        info->size -= 1;
-        return make_optimize_prim_application2(scheme_not_proc, app->rand2, info, context);
-      } else if (SCHEME_FALSEP(app->rand2)) {
-        info->size -= 1;
-        return make_optimize_prim_application2(scheme_not_proc, app->rand1, info, context);
-      }
-      if (SCHEME_NULLP(app->rand1)) {
-        info->size -= 1;
-        return make_optimize_prim_application2(scheme_null_p_proc, app->rand2, info, context);
-      } else if (SCHEME_NULLP(app->rand2)) {
-        info->size -= 1;
-        return make_optimize_prim_application2(scheme_null_p_proc, app->rand1, info, context);
       }
     } else if (IS_NAMED_PRIM(app->rator, "string=?")) {
       if (SAME_TYPE(SCHEME_TYPE(app->rand1), scheme_char_string_type)
@@ -5286,32 +5277,37 @@ static int relevant_predicate(Scheme_Object *pred)
      The predicate_implies() and predicate_implies_not() functions must
      be kept in sync with this list. */
 
-  return (SAME_OBJ(pred, scheme_pair_p_proc)
-          || SAME_OBJ(pred, scheme_null_p_proc)
-          || SAME_OBJ(pred, scheme_mpair_p_proc)
-          || SAME_OBJ(pred, scheme_box_p_proc)
-          || SAME_OBJ(pred, scheme_list_p_proc)
-          || SAME_OBJ(pred, scheme_list_pair_p_proc)
-          || SAME_OBJ(pred, scheme_string_p_proc)
-          || SAME_OBJ(pred, scheme_byte_string_p_proc)
-          || SAME_OBJ(pred, scheme_vector_p_proc)
-          || SAME_OBJ(pred, scheme_symbol_p_proc)
-          || SAME_OBJ(pred, scheme_keyword_p_proc)
-          || SAME_OBJ(pred, scheme_procedure_p_proc)
-          || SAME_OBJ(pred, scheme_syntax_p_proc)
-          || SAME_OBJ(pred, scheme_fixnum_p_proc)
-          || SAME_OBJ(pred, scheme_flonum_p_proc)
-          || SAME_OBJ(pred, scheme_extflonum_p_proc)
-          || SAME_OBJ(pred, scheme_number_p_proc)
-          || SAME_OBJ(pred, scheme_real_p_proc)
-          || SAME_OBJ(pred, scheme_char_p_proc)
-          || SAME_OBJ(pred, scheme_interned_char_p_proc)
-          || SAME_OBJ(pred, scheme_void_p_proc)
-          || SAME_OBJ(pred, scheme_eof_object_p_proc)
-          || SAME_OBJ(pred, scheme_boolean_p_proc)
-          || SAME_OBJ(pred, scheme_true_object_p_proc)
-          || SAME_OBJ(pred, scheme_not_proc)
-          );
+  if (SAME_OBJ(pred, scheme_pair_p_proc)
+      || SAME_OBJ(pred, scheme_list_p_proc)
+      || SAME_OBJ(pred, scheme_list_pair_p_proc)
+      || SAME_OBJ(pred, scheme_mpair_p_proc)
+      || SAME_OBJ(pred, scheme_box_p_proc)
+      || SAME_OBJ(pred, scheme_string_p_proc)
+      || SAME_OBJ(pred, scheme_byte_string_p_proc)
+      || SAME_OBJ(pred, scheme_vector_p_proc)
+      || SAME_OBJ(pred, scheme_procedure_p_proc)
+      || SAME_OBJ(pred, scheme_syntax_p_proc)
+      || SAME_OBJ(pred, scheme_extflonum_p_proc))
+    return RLV_IS_RELEVANT;
+  if (SAME_OBJ(pred, scheme_char_p_proc)
+      || SAME_OBJ(pred, scheme_flonum_p_proc)
+      || SAME_OBJ(pred, scheme_number_p_proc)
+      || SAME_OBJ(pred, scheme_real_p_proc))
+    return RLV_EQV_TESTEABLE;
+  if (SAME_OBJ(pred, scheme_symbol_p_proc)
+      || SAME_OBJ(pred, scheme_keyword_p_proc)
+      || SAME_OBJ(pred, scheme_fixnum_p_proc)
+      || SAME_OBJ(pred, scheme_interned_char_p_proc)
+      || SAME_OBJ(pred, scheme_boolean_p_proc))
+    return RLV_EQ_TESTEABLE;
+  if (SAME_OBJ(pred, scheme_null_p_proc)
+      || SAME_OBJ(pred, scheme_void_p_proc)
+      || SAME_OBJ(pred, scheme_eof_object_p_proc)
+      || SAME_OBJ(pred, scheme_true_object_p_proc)
+      || SAME_OBJ(pred, scheme_not_proc))
+    return RLV_SINGLETON;
+
+  return 0;
 }
 
 static int predicate_implies(Scheme_Object *pred1, Scheme_Object *pred2)
