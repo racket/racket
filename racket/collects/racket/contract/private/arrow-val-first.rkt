@@ -775,6 +775,13 @@
                     (values #'() leftover)])]
                 [(rst leftover)
                  (syntax-case leftover ()
+                   [(#:rest rest-expr one-thing another-thing)
+                    (and (not (keyword? #'one-thing))
+                         (not (keyword? #'another-thing)))
+                    (raise-syntax-error
+                     #f
+                     "expected the #:rest keyword to be followed only by the range (possibly with pre- and post-conditions)"
+                     stx #'another-thing)]
                    [(#:rest rest-expr . leftover)
                     (values #'rest-expr #'leftover)]
                    [_ (values #f leftover)])]

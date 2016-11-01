@@ -748,4 +748,9 @@
                 y)
               'pos
               'neg))
+
+  (contract-syntax-error-test
+   '->*-too-much-stuff
+   #'(->* () #:rest (listof procedure?) () any)
+   #rx"expected the #:rest keyword to be followed only by the range")
   )
