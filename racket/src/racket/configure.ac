@@ -474,6 +474,7 @@ use_flag_pthread=yes
 use_flag_posix_pthread=no
 skip_iconv_check=no
 check_page_size=yes
+try_no_nullability_completeness=no
 
 MAKE_LOCAL_RACKET=no-local-racket
 
@@ -893,6 +894,12 @@ case "$host_os" in
     # getdtablesize() appears not to be constant within a process,
     # and that breaks static allocation of fd_sets
     try_poll_syscall=yes
+
+    # -pthread is not needed and triggers a warning
+    use_flag_pthread=no
+
+    # Use -Wno-nullability-completeness if supported
+    try_no_nullability_completeness=yes
 
     # ".a" is typically not useful, since we always build a ".dylib":
     if test "${enable_libs}" == "" ; then
@@ -1321,6 +1328,19 @@ LFS_CFLAGS=`getconf LFS_CFLAGS 2> /dev/null`
 if test "${LFS_CFLAGS}" != "" && test "${LFS_CFLAGS}" != "undefined"; then
   echo "Large-file support: ${LFS_CFLAGS}"
   MZOPTIONS="${MZOPTIONS} ${LFS_CFLAGS}"  
+fi
+
+if test "${try_no_nullability_completeness}" = "yes" ; then
+  [ msg="for -Wno-nullability-completeness" ]
+  AC_MSG_CHECKING($msg)
+  OLD_CFLAGS="${CFLAGS}"
+  CFLAGS="${CFLAGS}  -Wno-nullability-completeness"
+  AC_COMPILE_IFELSE([AC_LANG_SOURCE([int main() { return 0; }])], nonullcomp=yes, nonullcomp=no)
+  if test "$nonullcomp" = "yes" ; then
+    GC2OPTIONS="$GC2OPTIONS -Wno-nullability-completeness"
+  fi
+  AC_MSG_RESULT($nonullcomp)  
+  CFLAGS="${OLD_CFLAGS}"
 fi
 
 ###### Get data sizes, stack direction, and endianness #######
