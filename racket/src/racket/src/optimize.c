@@ -158,7 +158,7 @@ static void optimize_info_seq_done(Optimize_Info *info, Optimize_Info_Sequence *
 static Scheme_Object *estimate_closure_size(Scheme_Object *e);
 static Scheme_Object *no_potential_size(Scheme_Object *value);
 
-static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context);
+static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, int context);
 
 static Scheme_Object *optimize_clone(int single_use, Scheme_Object *obj, Optimize_Info *info, Scheme_Hash_Tree *var_map, int as_rator);
 
@@ -2298,7 +2298,7 @@ static Scheme_Object *apply_inlined(Scheme_Lambda *lam, Optimize_Info *info,
   if (!single_use || lam->ir_info->is_dup)
     sub_info->inline_fuel >>= 1;
 
-  p = optimize_lets((Scheme_Object *)lh, sub_info, 1, context);
+  p = optimize_lets((Scheme_Object *)lh, sub_info, context);
 
   info->single_result = sub_info->single_result;
   info->preserves_marks = sub_info->preserves_marks;
@@ -7043,7 +7043,7 @@ static void end_transitive_use_record(Optimize_Info *info)
   }
 }
 
-static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, int for_inline, int context)
+static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, int context)
 /* This is the main entry point for optimizing a `let[rec]-values` form. */
 {
   Optimize_Info *body_info, *rhs_info;
@@ -7116,7 +7116,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
       try_again = 0;
       /* (let ([x (let ([y M]) N)]) P) => (let ([y M]) (let ([x N]) P))
          or (let ([x (begin M ... N)]) P) => (begin M ... (let ([x N]) P)) */
-      if (head->num_clauses == 1) {
+      if (head->num_clauses) {
         irlv = (Scheme_IR_Let_Value *)head->body; /* ([x ...]) */
         if (SAME_TYPE(SCHEME_TYPE(irlv->value), scheme_ir_let_header_type)) {
           Scheme_IR_Let_Header *lh = (Scheme_IR_Let_Header *)irlv->value; /* (let ([y ...]) ...) */
@@ -9049,7 +9049,7 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *expr, Optimize_Info *info, in
     else
       return optimize_lambda(expr, info, context);
   case scheme_ir_let_header_type:
-    return optimize_lets(expr, info, 0, context);
+    return optimize_lets(expr, info, context);
   case scheme_ir_toplevel_type:
     info->size += 1;
     if (info->top_level_consts) {
