@@ -11,11 +11,17 @@
   (string->symbol (short-program+command-name)))
 
 (define force? #f)
+(define omit-syntax? #f)
+(define omit-submodules? #f)
 
 (define source-files
   (command-line
    #:program (short-program+command-name)
    #:once-each
+   [("--omit-syntax") "Skip printing syntax object content"
+    (set! omit-syntax? #t)]
+   [("--omit-submodules") "Skip printing submodule content"
+    (set! omit-submodules? #t)]
    [("--force") "Ignore timestamp mimatch on associated \".zo\""
     (set! force? #t)]
    [("--columns" "-n") n "Format for <n> columns"
@@ -85,6 +91,8 @@
                        [print-graph #t])
           (pretty-write
            (decompile
+            #:omit-syntax? omit-syntax?
+            #:omit-submodules? omit-submodules?
             (call-with-input-file*
              (if (file-exists? alt-file) alt-file zo-file)
              (lambda (in)
