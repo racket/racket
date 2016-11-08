@@ -85,6 +85,10 @@ popular among Racketeers as well.
        Debian and Ubuntu packages for Paredit are available under the
        name @tt{paredit-el}.}
 
+ @item{@hyperlink["https://github.com/Fuco1/smartparens"]{Smartparens}
+       is a minor mode for editing s-expressions, keeping parentheses
+       balanced, etc.  Similar to Paredit.}
+
  @item{Alex Shinn's
        @hyperlink["http://synthcode.com/wiki/scheme-complete"]{scheme-complete}
        provides intelligent, context-sensitive code completion. It
@@ -108,9 +112,11 @@ popular among Racketeers as well.
        should be displayed. Choosing an alternate face makes it
        possible to make ``tone down'' parentheses.}
 
- @item{@hyperlink["https://github.com/Fuco1/smartparens"]{Smartparens}
-       is a minor mode for editing s-expressions, keeping parentheses
-       balanced, etc.  Similar to Paredit.}
+]
+
+@subsection{Packages specific to Evil Mode}
+
+@itemlist[
 
  @item{@hyperlink["https://github.com/willghatch/emacs-on-parens"]{on-parens}
        is a wrapper for smartparens motions to work better with
@@ -118,10 +124,10 @@ popular among Racketeers as well.
 
  @item{@hyperlink["https://github.com/timcharper/evil-surround"]{evil-surround}
        provides commands to add, remove, and change parentheses and
-       other delimiters in evil-mode.}
+       other delimiters.}
 
  @item{@hyperlink["https://github.com/noctuid/evil-textobj-anyblock"]{evil-textobj-anyblock}
-       adds an evil-mode text-object that matches the closest of any
+       adds a text-object that matches the closest of any
        parenthesis or other delimiter pair.}
 
 ]
