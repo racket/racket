@@ -9875,6 +9875,8 @@ static int is_day_before(SYSTEMTIME *a, SYSTEMTIME *b)
 
   if (a->wDay < doc)
     return 1;
+  if (a->wDay > doc)
+    return 0;
 
   dtxCOMP(wHour);
   dtxCOMP(wMinute);
