@@ -23,22 +23,17 @@
 ;; all possible unix browsers, filtered later to just existing executables
 ;; order matters: the default will be the first of these that is found
 (define all-unix-browsers
-  '(;; common browsers
-    ;; xdg-open
-    firefox google-chrome galeon opera mozilla konqueror seamonkey epiphany
+  '(;; default browser launchers
+    sensible-browser x-www-browser
+    ;; common browsers
+    firefox chromium-browser google-chrome galeon opera mozilla konqueror seamonkey epiphany
     ;; known browsers
     camino skipstone
     ;; broken browsers (broken in that they won't work with plt-help)
-    ;; this is a configurable thing that is deprecated, but better
-    ;; than gnome-open (because it works)
+    ;; this is a configurable thing that is deprecated
     htmlview
-    ;; gnome-open could be high, but the problem is that it doesn't
-    ;; handle file:// URLs with a query string.
-    gnome-open
     ;; dillo does not have javascript
     dillo
-    ;; ancient browsers
-    netscape mosaic
     ))
 
 ;; : any -> bool
@@ -205,14 +200,14 @@
     ;; finally, deal with the actual browser process
     [else
      (case browser
-       [(xdg-open gnome-open firefox konqueror dillo htmlview google-chrome)
+       [(sensible-browser x-www-browser firefox konqueror dillo htmlview google-chrome chromium-browser)
         (simple)]
        ;; don't really know how to run these
-       [(camino skipstone mosaic) (simple)]
+       [(camino skipstone) (simple)]
        [(galeon) (if (eq? 'browser-default separate-window?)
                    (simple) (w/arg (if separate-window? "-w" "-x")))]
        [(epiphany) (if separate-window? (w/arg "--new-window") (simple))]
-       [(mozilla seamonkey netscape) (try-remote)]
+       [(mozilla seamonkey) (try-remote)]
        [(opera)
         ;; opera starts a new browser automatically
         (browser-run exe "-remote"
