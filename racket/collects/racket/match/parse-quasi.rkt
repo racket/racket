@@ -25,12 +25,22 @@
         [(Null? p1) p2]
         [else (error 'match "illegal input to append-pats")]))
 
+(define hard-case?
+  (lambda (p)
+    (or (ddk? p)
+        (syntax-case p (unquote-splicing)
+          [(unquote-splicing . _) #t]
+          [_ #f]))))
+
 ;; parse stx as a quasi-pattern
 ;; parse parses unquote
 (define (parse-quasi stx parse)
   (define (pq s) (parse-quasi s parse))
   (syntax-case stx (quasiquote unquote quote unquote-splicing)
     [(unquote p) (parse #'p)]
+    [((unquote-splicing p))
+     (let ([pat (parameterize ([in-splicing? #t]) (parse #'p))])
+       pat)]
     [((unquote-splicing p) . rest)
      (let ([pat (parameterize ([in-splicing? #t]) (parse #'p))]
            [rpat (pq #'rest)])
@@ -60,18 +70,16 @@
      (let ([key (prefab-struct-key (syntax-e #'struct))]
            [pats (cdr (vector->list (struct->vector (syntax-e #'struct))))])
        (make-And (list (make-Pred #`(struct-type-make-predicate (prefab-key->struct-type '#,key #,(length pats))))
-                       (make-App #'struct->vector
-                                 (list (make-Vector (cons (make-Dummy #f) (map pq pats)))))))
-       #;
-       (make-PrefabStruct key (map pq pats)))]
+                       (if (ormap hard-case? pats)
+                           ;; hard cases
+                           (make-App #'(λ (v) (vector->list (struct->vector v)))
+                                     (list (make-Pair (make-Dummy #f) (pq pats))))
+                           ;; no hard cases, avoid creating a list
+                           (make-App #'struct->vector
+                                     (list (make-Vector (cons (make-Dummy #f) (map pq pats)))))))))]
     ;; the hard cases
     [#(p ...)
-     (ormap (lambda (p)
-              (or (ddk? p)
-                  (syntax-case p (unquote-splicing)
-                    [(unquote-splicing . _) #t]
-                    [_ #f])))
-            (syntax->list #'(p ...)))
+     (ormap hard-case? (syntax->list #'(p ...)))
      (make-And (list (make-Pred #'vector?)
                      (make-App #'vector->list
                                (list (pq (quasisyntax/loc stx (p ...)))))))]

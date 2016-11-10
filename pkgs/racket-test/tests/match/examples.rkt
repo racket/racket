@@ -747,6 +747,12 @@
            [(cons a b) #:when (= a b) 1]
            [_ 0]))
 
+   (test-case "prefab structs and list-rest"
+              (match #s(meow 1)
+                [`#s(meow ,@(list-rest a))
+                 a])
+              (list 1))
+
    (test-case
     "robby's slow example"
     (define v
