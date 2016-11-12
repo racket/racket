@@ -5720,23 +5720,45 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
       return t;
   }
 
-  /* Convert: (if (if M N #f) M2 K) => (if M (if N M2 K) K)
+  /* Convert: expressions like
+     (if (if M N #f) P K) => (if M (if N P K) K)
      for simple constants K. This is useful to expose simple
      tests to the JIT. */
-  if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)
-      && scheme_ir_duplicate_ok(fb, 0)) {
+  if (SAME_TYPE(SCHEME_TYPE(t), scheme_branch_type)) {
     Scheme_Branch_Rec *b2 = (Scheme_Branch_Rec *)t;
-    if (SCHEME_FALSEP(b2->fbranch)) {
-      Scheme_Object *fb3;
-      Scheme_Branch_Rec *b3;
-      b3 = MALLOC_ONE_TAGGED(Scheme_Branch_Rec);
-      b3->so.type = scheme_branch_type;
-      b3->test = b2->tbranch;
-      b3->tbranch = tb;
-      fb3 = optimize_clone(0, fb, info, empty_eq_hash_tree, 0);
-      b3->fbranch = fb3;
+    Scheme_Object *ntb, *nfb, *nt2 = NULL;
+    if (SCHEME_FALSEP(b2->fbranch)
+        && scheme_ir_duplicate_ok(fb, 0)) {
+      /* (if (if M N #f) P K) => (if M (if N P K) K) */
+      ntb = (Scheme_Object *)b2;
+      nfb = optimize_clone(0, fb, info, empty_eq_hash_tree, 0);
+      nt2 = b2->tbranch;
+    } else if (SCHEME_FALSEP(b2->tbranch)
+               && scheme_ir_duplicate_ok(fb, 0)) {
+      /* (if (if M #f N) P K) => (if M K (if N P K)) */
+      ntb = optimize_clone(0, fb, info, empty_eq_hash_tree, 0);
+      nfb = (Scheme_Object *)b2;
+      nt2 = b2->fbranch;
+    } else if (SAME_OBJ(b2->fbranch, scheme_true)
+               && scheme_ir_duplicate_ok(tb, 0)) {
+      /* (if (if M N #t) K P) => (if M (if N K P) K) */
+      ntb = (Scheme_Object *)b2;
+      nfb = optimize_clone(0, tb, info, empty_eq_hash_tree, 0);
+      nt2 = b2->tbranch;
+    } else if (SAME_OBJ(b2->tbranch, scheme_true) 
+               && scheme_ir_duplicate_ok(tb, 0)) {
+      /* (if (if M #t N) K P) => (if M K (if N K P)) */
+      ntb = optimize_clone(0, tb, info, empty_eq_hash_tree, 0);
+      nfb = (Scheme_Object *)b2;
+      nt2 = b2->fbranch;
+    }
+    if (nt2) {
       t = b2->test;
-      tb = (Scheme_Object *)b3;
+      b2->test = nt2;
+      b2->tbranch = tb;
+      b2->fbranch = fb;
+      tb = ntb;
+      fb = nfb;
     }
   }
 
