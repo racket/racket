@@ -3310,7 +3310,7 @@ Scheme_Object *scheme_unresolve(Scheme_Object *, int argv, int *_has_cases,
                                 Scheme_Object *from_modidx, Scheme_Object *to_modidx);
 Scheme_Object *scheme_unresolve_top(Scheme_Object *, Comp_Prefix **, int comp_flags);
 
-int scheme_check_leaf_rator(Scheme_Object *le, int *_flags);
+int scheme_check_leaf_rator(Scheme_Object *le);
 
 int scheme_is_ir_lambda(Scheme_Object *o, int can_be_closed, int can_be_liftable);
 

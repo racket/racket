@@ -2025,9 +2025,9 @@ int scheme_ir_duplicate_ok(Scheme_Object *fb, int cross_module)
 /*                   applications, branches, sequences                    */
 /*========================================================================*/
 
-static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context, int rator_flags);
-static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context, int rator_flags);
-static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context, int rator_flags);
+static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context);
+static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context);
+static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context);
 
 static Scheme_Object *try_optimize_fold(Scheme_Object *f, Scheme_Object *args, Scheme_Object *o, Optimize_Info *info)
 /* If `args` is NULL, extract arguments from `o` */
@@ -2308,20 +2308,29 @@ static Scheme_Object *apply_inlined(Scheme_Lambda *lam, Optimize_Info *info,
   return replace_tail_inside(p, le_prev, orig);
 }
 
-int scheme_check_leaf_rator(Scheme_Object *le, int *_flags)
+int scheme_check_leaf_rator(Scheme_Object *le)
 {
   if (le && SCHEME_PRIMP(le)) {
     int opt;
     opt = ((Scheme_Prim_Proc_Header *)le)->flags & SCHEME_PRIM_OPT_MASK;
-    if (opt >= SCHEME_PRIM_OPT_NONCM) {
-      if (_flags)
-        *_flags = (LAMBDA_PRESERVES_MARKS | LAMBDA_SINGLE_RESULT);
-      if (opt >= SCHEME_PRIM_OPT_IMMEDIATE) {
-        return 1;
-      }
-    }
+    if (opt >= SCHEME_PRIM_OPT_IMMEDIATE)
+      return 1;
   }
+  return 0;
+}
 
+int scheme_get_rator_flags(Scheme_Object *le)
+{
+  if (SCHEME_PRIMP(le)) {
+    int opt;
+    opt = ((Scheme_Prim_Proc_Header *)le)->flags & SCHEME_PRIM_OPT_MASK;
+    if (opt >= SCHEME_PRIM_OPT_NONCM) {
+      return (LAMBDA_PRESERVES_MARKS | LAMBDA_SINGLE_RESULT);
+    }
+  } else if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type)) {
+    Scheme_Lambda *lam = (Scheme_Lambda *)le;
+    return SCHEME_LAMBDA_FLAGS(lam);
+  }
   return 0;
 }
 
@@ -2358,7 +2367,7 @@ int check_potential_size(Scheme_Object *var)
 
 Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
                                    Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
-                                   int *_flags, int context, int optimized_rator)
+                                   int context, int optimized_rator)
 /* Zero or one of app, app2 and app3 should be non-NULL.
    If app, we're inlining a general application. If app2, we're inlining an
    application with a single argument and if app3, we're inlining an
@@ -2484,8 +2493,6 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     if (noapp)
       return le;
 
-    *_flags = SCHEME_LAMBDA_FLAGS(lam);
-
     if ((lam->num_params == argc)
         || ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST)
             && (argc + 1 >= lam->num_params))) {
@@ -2557,7 +2564,7 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     }
   }
 
-  if (scheme_check_leaf_rator(le, _flags))
+  if (scheme_check_leaf_rator(le))
     nonleaf = 0;
 
   if (le && SCHEME_PROCP(le)) {
@@ -3309,12 +3316,12 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
 
   {
     /* These tests are slower, so put them at the end */  
-    int flags, sub_context = 0;
+    int sub_context = 0;
     if (!info)
       return NULL;
 
     if (lookup_constant_proc(info, expr)
-        || optimize_for_inline(info, expr, 1, NULL, NULL, NULL, &flags, sub_context, 1)){
+        || optimize_for_inline(info, expr, 1, NULL, NULL, NULL, sub_context, 1)){
       return scheme_procedure_p_proc;
     }
   }
@@ -3327,15 +3334,15 @@ static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info 
   return do_expr_implies_predicate(expr, info, NULL, 5, empty_eq_hash_tree);
 }
 
-static Scheme_Object *finish_optimize_app(Scheme_Object *o, Optimize_Info *info, int context, int rator_flags)
+static Scheme_Object *finish_optimize_app(Scheme_Object *o, Optimize_Info *info, int context)
 {
   switch(SCHEME_TYPE(o)) {
   case scheme_application_type:
-    return finish_optimize_application((Scheme_App_Rec *)o, info, context, rator_flags);
+    return finish_optimize_application((Scheme_App_Rec *)o, info, context);
   case scheme_application2_type:
-    return finish_optimize_application2((Scheme_App2_Rec *)o, info, context, rator_flags);
+    return finish_optimize_application2((Scheme_App2_Rec *)o, info, context);
   case scheme_application3_type:
-    return finish_optimize_application3((Scheme_App3_Rec *)o, info, context, rator_flags);
+    return finish_optimize_application3((Scheme_App3_Rec *)o, info, context);
   default:
     return o; /* may be a constant due to constant-folding */
   }
@@ -3450,7 +3457,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 {
   Scheme_Object *le;
   Scheme_App_Rec *app;
-  int i, n, rator_apply_escapes = 0, rator_flags = 0, sub_context = 0;
+  int i, n, rator_apply_escapes = 0, sub_context = 0;
   Optimize_Info_Sequence info_seq;
 
   app = (Scheme_App_Rec *)o;
@@ -3476,7 +3483,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 
   for (i = 0; i < n; i++) {
     if (!i) {
-      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 0);
+      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, context, 0);
       if (le)
         return le;
     }
@@ -3512,7 +3519,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 
     if (!i) {
       /* Maybe found "((lambda" after optimizing; try again */
-      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, &rator_flags, context, 1);
+      le = optimize_for_inline(info, app->args[i], n - 1, app, NULL, NULL, context, 1);
       if (le)
         return le;
       if (SAME_OBJ(app->args[0], scheme_values_proc)
@@ -3526,7 +3533,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
 
   /* Check for (apply ... (list ...)) after some optimizations: */
   le = direct_apply((Scheme_Object *)app, app->args[0], app->args[app->num_args], info);
-  if (le) return finish_optimize_app(le, info, context, rator_flags);
+  if (le) return finish_optimize_app(le, info, context);
 
   /* Convert (hash-ref '#hash... key (lambda () literal))
      to (hash-ref '#hash... key literal) */
@@ -3544,7 +3551,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
    SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
   }
 
-  return finish_optimize_application(app, info, context, rator_flags);
+  return finish_optimize_application(app, info, context);
 }
 
 static int appn_flags(Scheme_Object *rator, Optimize_Info *info)
@@ -3769,11 +3776,11 @@ static void increment_clocks_for_application(Optimize_Info *info,
   info->sclock = s;
 }
 
-static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context, int rator_flags)
+static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context)
 {
   Scheme_Object *le;
   Scheme_Object *rator =  app->args[0];
-  int all_vals = 1, i, flags;
+  int all_vals = 1, i, flags, rator_flags;
 
   for (i = app->num_args; i--; ) {
     if (SCHEME_TYPE(app->args[i+1]) < _scheme_ir_values_types_)
@@ -3797,6 +3804,7 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
     return scheme_null;
   }
 
+  rator_flags = scheme_get_rator_flags(rator);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
   if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
@@ -3927,11 +3935,10 @@ static Scheme_Object *check_ignored_call_cc(Scheme_Object *rator, Scheme_Object 
       && (IS_NAMED_PRIM(rator, "call-with-current-continuation")
           || IS_NAMED_PRIM(rator, "call-with-composable-continuation")
           || IS_NAMED_PRIM(rator, "call-with-escape-continuation"))) {
-      int rand_flags;
       Scheme_Object *proc;
       proc = lookup_constant_proc(info, rand);
       if (!proc)
-        proc = optimize_for_inline(info, rand, 1, NULL, NULL, NULL, &rand_flags, context, 0);
+        proc = optimize_for_inline(info, rand, 1, NULL, NULL, NULL, context, 0);
 
       if (proc && SAME_TYPE(SCHEME_TYPE(proc), scheme_ir_lambda_type)) {
           Scheme_Lambda *lam = (Scheme_Lambda *)proc;
@@ -3967,9 +3974,7 @@ static Scheme_Object *make_optimize_prim_application2(Scheme_Object *prim, Schem
   alt = make_application_2(prim, rand, info);
   /* scheme_make_application may use constant folding, check that alt is not a constant */
   if (SAME_TYPE(SCHEME_TYPE(alt), scheme_application2_type)) {
-    int rator_flags = 0;
-    scheme_check_leaf_rator(prim, &rator_flags);
-    return finish_optimize_application2((Scheme_App2_Rec *)alt, info, context, rator_flags);
+    return finish_optimize_application2((Scheme_App2_Rec *)alt, info, context);
   } else
     return alt;
 }
@@ -3979,7 +3984,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 {
   Scheme_App2_Rec *app;
   Scheme_Object *le;
-  int rator_flags = 0, rator_apply_escapes, sub_context, ty;
+  int rator_apply_escapes, sub_context, ty;
   Optimize_Info_Sequence info_seq;
 
   app = (Scheme_App2_Rec *)o;
@@ -3992,7 +3997,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
   if (le)
     return le;
 
-  le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 0);
+  le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, context, 0);
   if (le)
     return le;
 
@@ -4009,7 +4014,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 
   {
     /* Maybe found "((lambda" after optimizing; try again */
-    le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, &rator_flags, context, 1);
+    le = optimize_for_inline(info, app->rator, 1, NULL, app, NULL, context, 1);
     if (le)
       return le;
     rator_apply_escapes = info->escapes;
@@ -4038,12 +4043,12 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
    SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
   }
 
-  return finish_optimize_application2(app, info, context, rator_flags);
+  return finish_optimize_application2(app, info, context);
 }
 
-static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context, int rator_flags)
+static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context)
 {
-  int flags;
+  int flags, rator_flags;
   Scheme_Object *rator =  app->rator;
   Scheme_Object *rand, *inside = NULL, *alt;
 
@@ -4072,6 +4077,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   increment_clocks_for_application(info, rator, 1);
 
+  rator_flags = scheme_get_rator_flags(rator);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
   if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
@@ -4242,8 +4248,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       if (pred && SAME_OBJ(pred, scheme_fixnum_p_proc)) {
         new = (Scheme_App3_Rec *)make_application_3(scheme_unsafe_fx_eq_proc, app->rand, scheme_make_integer(0), info);
         SCHEME_APPN_FLAGS(new) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
-        scheme_check_leaf_rator(scheme_unsafe_fx_eq_proc, &rator_flags);
-        return finish_optimize_application3(new, info, context, rator_flags);
+        return finish_optimize_application3(new, info, context);
       }
     }
 
@@ -4338,8 +4343,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
                                                       scheme_make_integer(SCHEME_PROC_SHAPE_MODE(alt) >> STRUCT_PROC_SHAPE_SHIFT),
                                                       info);
           SCHEME_APPN_FLAGS(new) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
-          scheme_check_leaf_rator(scheme_unsafe_struct_ref_proc, &rator_flags);
-          return finish_optimize_application3(new, info, context, rator_flags);
+          return finish_optimize_application3(new, info, context);
         }
       }
 
@@ -4364,7 +4368,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 {
   Scheme_App3_Rec *app;
   Scheme_Object *le;
-  int rator_flags = 0, rator_apply_escapes, sub_context, ty, flags;
+  int rator_apply_escapes, sub_context, ty, flags;
   Optimize_Info_Sequence info_seq;
 
   app = (Scheme_App3_Rec *)o;
@@ -4392,7 +4396,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
   if (le) 
     return le;
 
-  le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 0);
+  le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, context, 0);
   if (le)
     return le;
 
@@ -4409,7 +4413,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   {
     /* Maybe found "((lambda" after optimizing; try again */
-    le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, &rator_flags, context, 1);
+    le = optimize_for_inline(info, app->rator, 2, NULL, NULL, app, context, 1);
     if (le)
       return le;
     rator_apply_escapes = info->escapes;
@@ -4457,7 +4461,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 
   /* Check for (apply ... (list ...)) after some optimizations: */
   le = direct_apply((Scheme_Object *)app, app->rator, app->rand2, info);
-  if (le) return finish_optimize_app(le, info, context, rator_flags);
+  if (le) return finish_optimize_app(le, info, context);
 
   flags = appn_flags(app->rator, info);
   SCHEME_APPN_FLAGS(app) |= flags;
@@ -4467,12 +4471,12 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
    SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
   }
 
-  return finish_optimize_application3(app, info, context, rator_flags);
+  return finish_optimize_application3(app, info, context);
 }
 
-static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context, int rator_flags)
+static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context)
 {
-  int flags;
+  int flags, rator_flags;
   Scheme_Object *le;
   int all_vals = 1;
 
@@ -4608,7 +4612,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
       if (pred_new) {
         app->rator = pred_new;
         SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
-        scheme_check_leaf_rator(pred_new, &rator_flags);
 
         /* eq? and eqv? are foldable */
         if (all_vals) {
@@ -4620,6 +4623,7 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     }
   }
 
+  rator_flags = scheme_get_rator_flags(app->rator);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
   if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
@@ -4838,11 +4842,10 @@ Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
     Scheme_Object *rev = f;
 
     if (rev) {
-      int rator2_flags;
       Scheme_Object *o_f;
       o_f = lookup_constant_proc(info, rev);
       if (!o_f)
-        o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, &rator2_flags, context, 0);
+        o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, context, 0);
 
       if (o_f) {
         f_is_proc = rev;

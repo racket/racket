@@ -3117,7 +3117,7 @@ static Scheme_Object *unresolve_lambda(Scheme_Lambda *rlam, Unresolve_Info *ui)
 
 static void check_nonleaf_rator(Scheme_Object *rator, Unresolve_Info *ui)
 {
-  if (!scheme_check_leaf_rator(rator, NULL))
+  if (!scheme_check_leaf_rator(rator))
     ui->has_non_leaf = 1;
 }
 
