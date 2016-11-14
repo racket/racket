@@ -1440,5 +1440,24 @@
        'ok-channel+alarm))
 
 ;; ----------------------------------------
+;; Make sure that suspending a thread that's blocked on a
+;; semaphore works right when the semaphore becomes available
+;; before the thread is resumed
+
+(let ()
+  (define s (make-semaphore))
+  (define v #f)
+  (define t (thread
+             (lambda ()
+               (set! v (sync (wrap-evt s (lambda (v) 'ok)))))))
+  (sync (system-idle-evt))
+  (thread-suspend t)
+  (sync (system-idle-evt))
+  (semaphore-post s)
+  (thread-resume t)
+  (void (sync t))
+  (test 'ok values v))
+
+;; ----------------------------------------
 
 (report-errs)
