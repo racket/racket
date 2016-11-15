@@ -2,7 +2,7 @@
 @(require "mz.rkt" (for-label racket/generic))
 
 @(define dict-eval (make-base-eval))
-@examples[#:hidden #:eval dict-eval (require racket/dict racket/generic)]
+@examples[#:hidden #:eval dict-eval (require racket/dict racket/generic racket/contract)]
 
 @title[#:tag "dicts"]{Dictionaries}
 
@@ -66,7 +66,19 @@ given methods via fallback implementations yet produce @racket[#f].
 @defproc[(dict-implements/c [sym symbol?] ...) flat-contract?]{
 
 Recognizes dictionaries that support all of the methods from @racket[gen:dict]
-named by the @racket[sym]s.
+named by the @racket[sym]s. Note that the generated contract is not similar to
+@racket[hash/c], but closer to @racket[dict-implements?].
+@examples[
+ #:eval dict-eval
+ (struct deformed-dict ()
+   #:methods gen:dict [])
+ (define/contract good-dict
+   (dict-implements/c)
+   (deformed-dict))
+ (eval:error
+  (define/contract bad-dict
+    (dict-implements/c 'dict-ref)
+    (deformed-dict)))]
 
 }
 
