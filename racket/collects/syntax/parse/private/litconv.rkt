@@ -240,15 +240,21 @@ cause an error, so don't worry about that case.)
          (with-syntax ([((lit phase-var) ...)
                         (for/list ([lit (in-list lits)]
                                    #:when (lse:lit? lit))
-                          (list (lse:lit-external lit) (lse:lit-phase lit)))])
-           #'(make-literal-set-predicate (list (list (quote-syntax lit) phase-var) ...)))))]))
+                          (list (lse:lit-external lit) (lse:lit-phase lit)))]
+                       [(datum-lit ...)
+                        (for/list ([lit (in-list lits)]
+                                   #:when (lse:datum-lit? lit))
+                          (lse:datum-lit-external lit))])
+           #'(make-literal-set-predicate (list (list (quote-syntax lit) phase-var) ...)
+                                         '(datum-lit ...)))))]))
 
-(define (make-literal-set-predicate lits)
+(define (make-literal-set-predicate lits datum-lits)
   (lambda (x [phase (syntax-local-phase-level)])
-    (for/or ([lit (in-list lits)])
-      (let ([lit-id (car lit)]
-            [lit-phase (cadr lit)])
-        (free-identifier=? x lit-id phase lit-phase)))))
+    (or (for/or ([lit (in-list lits)])
+          (let ([lit-id (car lit)]
+                [lit-phase (cadr lit)])
+            (free-identifier=? x lit-id phase lit-phase)))
+        (and (memq (syntax-e x) datum-lits) #t))))
 
 ;; Literal sets
 

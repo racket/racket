@@ -99,13 +99,19 @@
 
 ;; Litsets with datum-lits
 
-(test-case "litset, datum-lits"
-  (let ([one 1])
-    (define-literal-set lits-d #:datum-literals (one two) ())
+(let ([one 1])
+  (define-literal-set lits-d #:datum-literals (one two) ())
+
+  (test-case "litset, datum-lits"
     (syntax-parse #'one #:literal-sets (lits-d)
                   [one (void)])
     (let ([one 2])
-      (syntax-parse #'one #:literal-sets (lits-d) [one (void)]))))
+      (syntax-parse #'one #:literal-sets (lits-d) [one (void)])))
+  (test-case "litset->predicate, datum-lits"
+    (define lit? (literal-set->predicate lits-d))
+    (check-equal? (lit? #'one) #t)
+    (check-equal? (lit? #'one 1) #t)
+    (check-equal? (lit? #'apple) #f)))
 
 ;; literal-set->predicate
 
