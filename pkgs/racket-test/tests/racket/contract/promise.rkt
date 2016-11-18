@@ -69,4 +69,13 @@
                         a
                         'pos
                         'neg)))
+   #t)
+
+  (test/spec-passed/result
+   'promise/c7
+   '(and (value-contract (contract (promise/c integer?)
+                                   (delay y)
+                                   'pos
+                                   'neg))
+         #t)
    #t))
