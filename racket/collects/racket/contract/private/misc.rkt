@@ -349,7 +349,11 @@
                 (values (λ (val) (with-contract-continuation-mark
                                   blame+neg-party
                                   (p-app val neg-party)))
-                        promise)))))
+                        promise))
+              impersonator-prop:contracted ctc
+              impersonator-prop:blame blame))
+           impersonator-prop:contracted ctc
+           impersonator-prop:blame blame)
           (raise-blame-error
            blame #:missing-party neg-party
            val
