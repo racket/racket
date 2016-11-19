@@ -92,8 +92,9 @@
                    '#,(build-source-location-vector #'ctc))))]))
 
 (define-syntax (-recursive-contract stx)
-  (define (do-recursive-contract arg type name list-contract?)
-    (define local-name (syntax-local-infer-name stx))
+  (define (parse-type/kwds arg type kwds)
+    (define list-contract? #f)
+    (define extra-delay? #f)
     (define maker
       (case (syntax-e type)
         [(#:impersonator) #'impersonator-recursive-contract]
@@ -104,19 +105,76 @@
                "type must be one of #:impersonator, #:chaperone, or #:flat"
                stx
                type)]))
-    #`(#,maker '#,name (λ () #,arg) '#,local-name #,list-contract?))
+    (let loop ([kwds kwds])
+      (syntax-case kwds ()
+        [() (void)]
+        [(kwd . rest)
+         (unless (keyword? (syntax-e #'kwd))
+           (raise-syntax-error 'recursive-contract
+                               "expected either #:list-contract? or #:extra-delay"
+                               stx
+                               (car kwds)))
+         (case (syntax-e #'kwd)
+           [(#:list-contract?)
+            (when list-contract?
+              (raise-syntax-error 'recursive-contract
+                                  "#:list-contract? keyword appeared twice"
+                                  stx
+                                  list-contract?
+                                  (list #'kwd)))
+            (set! list-contract? #'kwd)
+            (loop #'rest)]
+           [(#:extra-delay)
+            (when extra-delay?
+              (raise-syntax-error 'recursive-contract
+                                  "#:extra-delay keyword appeared twice"
+                                  stx
+                                  extra-delay?
+                                  (list #'kwd)))
+            (set! extra-delay? #'kwd)
+            (loop #'rest)]
+           [(#:impersonator)
+            (raise-syntax-error 'recursive-contract
+                                "#:impersonator keyword must appear right after the expression (if at all)"
+                                stx
+                                (list #'kwd))]
+           [(#:chaperone)
+            (raise-syntax-error 'recursive-contract
+                                "#:chaperone keyword must appear right after the expression"
+                                stx
+                                (list #'kwd))]
+           [(#:flat)
+            (raise-syntax-error 'recursive-contract
+                                "#:impersonator keyword must appear right after the expression"
+                                stx
+                                (list #'kwd))]
+           [else
+            (raise-syntax-error 
+             'recursive-contract
+             "type must be one of #:impersonator, #:chaperone, or #:flat"
+             stx
+             type)])]))
+    #`(#,maker '#,stx
+               (λ () #,arg)
+               '#,(syntax-local-infer-name stx)
+               #,(if list-contract? #'#t #'#f)
+               #,@(if (equal? (syntax-e type) '#:flat)
+                      (list (if extra-delay? #'#t #'#f))
+                      '())))
   (syntax-case stx ()
-    [(_ arg type #:list-contract?)
-     (keyword? (syntax-e #'type))
-     (do-recursive-contract #'arg #'type #'(recursive-contract arg type) #t)]
-    [(_ arg #:list-contract?)
-     (do-recursive-contract #'arg #'#:impersonator #'(recursive-contract arg) #t)]
-    [(_ arg type)
-     (keyword? (syntax-e #'type))
-     (do-recursive-contract #'arg #'type #'(recursive-contract arg type) #f)]
-    [(_ arg)
-     (do-recursive-contract #'arg #'#:impersonator #'(recursive-contract arg) #f)]))
-
+    [(_ arg) (parse-type/kwds #'arg #'#:impersonator '())]
+    [(_ arg #:list-contract? . more)
+     (parse-type/kwds #'arg
+                      #'#:impersonator
+                      (syntax-case stx ()
+                        [(_ arg . more) #'more]))]
+    [(_ arg #:extra-delay . more)
+     (parse-type/kwds #'arg
+                      #'#:impersonator
+                      (syntax-case stx ()
+                        [(_ arg . more) #'more]))]
+    [(_ arg type . more) (parse-type/kwds #'arg #'type #'more)]))
+    
 (define (force-recursive-contract ctc)
   (define current (recursive-contract-ctc ctc))
   (cond
@@ -162,6 +220,31 @@
        (define blame-known (blame-add-context blame #f))
        (λ (val neg-party)
          ((f blame-known) val neg-party)))]))
+
+(define (flat-recursive-contract-late-neg-projection ctc)
+  (cond
+    [(flat-recursive-contract-extra-delay? ctc)
+     (cond
+       [(recursive-contract-list-contract? ctc)
+        (λ (blame)
+          (λ (val neg-party)
+            (define r-ctc (force-recursive-contract ctc))
+            (define f (get/build-late-neg-projection r-ctc))
+            (define blame-known (blame-add-context blame #f))
+            (unless (list? val)
+              (raise-blame-error blame-known #:missing-party neg-party
+                                 val
+                                 '(expected: "list?" given: "~e")
+                                 val))
+            ((f blame-known) val neg-party)))]
+       [else
+        (λ (blame)
+          (λ (val neg-party)
+            (define r-ctc (force-recursive-contract ctc))
+            (define f (get/build-late-neg-projection r-ctc))
+            (define blame-known (blame-add-context blame #f))
+            ((f blame-known) val neg-party)))])]
+    [else (recursive-contract-late-neg-projection ctc)]))
   
 (define (recursive-contract-stronger this that) (equal? this that))
 
@@ -185,13 +268,13 @@
                                        (force-recursive-contract this)
                                        (recursive-contract-ctc this)))
 
-(struct flat-recursive-contract recursive-contract ()
+(struct flat-recursive-contract recursive-contract (extra-delay?)
   #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name recursive-contract-name
    #:first-order recursive-contract-first-order
-   #:late-neg-projection recursive-contract-late-neg-projection
+   #:late-neg-projection flat-recursive-contract-late-neg-projection
    #:stronger recursive-contract-stronger
    #:generate recursive-contract-generate
    #:list-contract? recursive-contract-list-contract?))

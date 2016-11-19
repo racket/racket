@@ -3036,10 +3036,11 @@ Produces the name used to describe the contract in error messages.
 Makes a contract that accepts no values, and reports the
 name @racket[sexp-name] when signaling a contract violation.}
 
-@defform*[[(recursive-contract contract-expr)
-           (recursive-contract contract-expr #:list-contract?)
-           (recursive-contract contract-expr type)
-           (recursive-contract contract-expr type #:list-contract?)]]{
+@defform*[[(recursive-contract contract-expr recursive-contract-option ...)
+           (recursive-contract contract-expr type recursive-contract-option ...)]
+          #:grammar ([recursive-contract-option
+                      #:list-contract?
+                      #:extra-delay])]{
 
 Delays the evaluation of its argument until the contract is checked,
 making recursive contracts possible.  If @racket[type] is given, it
@@ -3047,11 +3048,19 @@ describes the expected type of contract and must be one of the keywords
 @racket[#:impersonator], @racket[#:chaperone], or @racket[#:flat].  If
 @racket[type] is not given, an impersonator contract is created.
 
-If @racket[#:list-contract?] is returned, then the result is a
-@racket[list-contract?] and the @racket[contract-expr] must evaluate
-to a @racket[list-contract?].
+If the @racket[recursive-contract-option]
+@racket[#:list-contract?] is given, then the result is a
+@racket[list-contract?] and the @racket[contract-expr] must
+evaluate to a @racket[list-contract?].
 
-@history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}]
+If the @racket[recursive-contract-option] @racket[#:extra-delay] is given,
+then the @racket[contract-expr] expression is evaluated only when the first
+value to be checked against the contract is supplied to the contract.
+Without it, the @racket[contract-expr] is evaluated earlier. This option
+is supported only when @racket[type] is @racket[#:flat].
+
+ @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] option.}
+          #:changed "6.7.0.3" @list{Added the @racket[#:extra-delay] option.}]
 }
 
 

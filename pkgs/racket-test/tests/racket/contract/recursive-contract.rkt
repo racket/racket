@@ -74,6 +74,15 @@
       (letrec ([doll-ctc2 (or/c 'center (struct/c doll (recursive-contract doll-ctc2 #:flat)))])
         (contract doll-ctc2 (doll 4) 'pos 'neg))))
 
+  (test/spec-passed
+   'recursive-contract12
+   '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat #:extra-delay)))])
+      (contract ctc (cons 1 (cons 2 3)) 'pos 'neg)))
+
+  (test/pos-blame
+   'recursive-contract13
+   '(letrec ([ctc (or/c number? (cons/c number? (recursive-contract ctc #:flat #:extra-delay)))])
+      (contract ctc (cons 1 (cons 2 'not-a-number)) 'pos 'neg)))
 
   (test/spec-passed/result
    'recursive-contract-not-too-slow
