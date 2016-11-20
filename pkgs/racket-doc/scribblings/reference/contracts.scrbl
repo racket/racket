@@ -420,7 +420,8 @@ passes its arguments to @racket[or/c].
 
 @defproc[(vectorof [c contract?]
                    [#:immutable immutable (or/c #t #f 'dont-care) 'dont-care]
-                   [#:flat? flat? boolean? #f])
+                   [#:flat? flat? boolean? #f]
+                   [#:eager eager (or/c #t #f exact-nonnegative-integer?) #t])
          contract?]{
 Returns a @tech{contract} that recognizes vectors. The elements of the vector must
 match @racket[c].
@@ -431,8 +432,15 @@ a @tech{flat contract}, and the @racket[c] argument must also be a @tech{flat co
 check future operations on the vector.
 
 If the @racket[immutable] argument is @racket[#t] and the @racket[c] argument is
-a @tech{flat contract}, the result will be a @tech{flat contract}.  If the @racket[c] argument
+a @tech{flat contract} and the @racket[eager] argument is @racket[#t],
+the result will be a @tech{flat contract}.  If the @racket[c] argument
 is a @tech{chaperone contract}, then the result will be a @tech{chaperone contract}.
+
+If the @racket[eager] argument is @racket[#t], then immutable vectors are
+checked eagerly when @racket[c] is a @tech{flat contract}. If the
+@racket[eager] argument is a number @racket[n], then immutable vectors are checked
+eagerly when @racket[c] is a @tech{flat contract} and the length of the vector
+is less than or equal to @racket[n].}.
 
 When a higher-order @racket[vectorof] contract is applied to a vector, the result
 is not @racket[eq?] to the input.  The result will be a copy for immutable vectors
@@ -441,7 +449,8 @@ unless the @racket[c] argument is a @tech{flat contract} and the vector is immut
 in which case the result is the original vector.
 
 @history[#:changed "6.3.0.5" @list{Changed flat vector contracts to not copy
-           immutable vectors.}]}
+           immutable vectors.}
+         #:changed "6.7.0.3" @list{Added the @racket[#:eager] option.}]}
 
 
 @defproc[(vector-immutableof [c contract?]) contract?]{

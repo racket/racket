@@ -148,5 +148,24 @@
                 0)
    1
    2)
-  
+
+  (test/spec-passed/result
+   'vectorof-eager
+   '(vector-ref (contract (vectorof integer? #:eager #f) (vector-immutable 0 "") 'pos 'neg) 0)
+   0)
+
+  (test/spec-passed/result
+   'vectorof-eager-1
+   '(vector-ref (contract (vectorof integer? #:eager 1) (vector-immutable 0 "") 'pos 'neg) 0)
+   0)
+
+
+  (test/pos-blame
+   'vectorof-eager-1-fail
+   '(vector-ref (contract (vectorof integer? #:eager 2) (vector-immutable 0 "") 'pos 'neg) 1))
+
+  (test/pos-blame
+   'vectorof-eager-fail
+   '(contract (vectorof integer? #:eager 5) (vector-immutable 0 "") 'pos 'neg))
+
   )

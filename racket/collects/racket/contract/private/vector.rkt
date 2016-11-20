@@ -10,7 +10,11 @@
                      [wrap-vector/c vector/c])
          vector-immutable/c vector-immutableof)
 
-(define-struct base-vectorof (elem immutable))
+;; eager is one of:
+;; - #t: always perform an eager check of the elements of an immutable vector
+;; - #f: never  perform an eager check of the elements of an immutable vector
+;; - N (for N>=0): perform an eager check of immutable vectors size <= N
+(define-struct base-vectorof (elem immutable eager))
 
 (define-for-syntax (convert-args args this-one)
   (let loop ([args args]
@@ -148,6 +152,7 @@
   (λ (ctc)
     (define elem-ctc (base-vectorof-elem ctc))
     (define immutable (base-vectorof-immutable ctc))
+    (define eager (base-vectorof-eager ctc))
     (define check (check-vectorof ctc))
     (λ (blame)
       (define pos-blame (blame-add-element-of-context blame))
@@ -174,7 +179,12 @@
            (define (raise-blame val . args) 
              (apply raise-blame-error blame #:missing-party neg-party val args))
            (check val raise-blame #f)
-           (if (and (immutable? val) (not (chaperone? val)))
+           ;; avoid traversing large vectors
+           ;; unless `eager` is specified
+           (if (and (or (equal? eager #t)
+                        (and eager (<= (vector-length val) eager)))
+                    (immutable? val)
+                    (not (chaperone? val)))
                (begin (for ([e (in-vector val)])
                         (unless (p? e)
                           (elem-pos-proj e neg-party)))
@@ -240,20 +250,30 @@
           'racket/contract:contract
           (vector this-one (list #'vecof) null))))]))
 
-(define/subexpression-pos-prop (vectorof c #:immutable [immutable 'dont-care] #:flat? [flat? #f])
+(define/subexpression-pos-prop (vectorof c #:immutable [immutable 'dont-care] #:flat? [flat? #f] #:eager [eager #t])
   (define ctc
     (if flat?
         (coerce-flat-contract 'vectorof c)
         (coerce-contract 'vectorof c)))
+  (unless (or (boolean? eager)
+              (exact-nonnegative-integer? eager))
+    (raise-argument-error 'vectorof
+                          "(or/c #t #f exact-nonnegative-integer?)"
+                          eager))
   (cond
-    [(or flat?
+    [(and flat? (not (equal? eager #t)))
+     (raise-arguments-error 'vectorof "flat? cannot be true unless eager is true"
+                            "flat?" flat?
+                            "eager" eager)]
+    [(or (and flat? (equal? eager #t))
          (and (equal? immutable #t)
+              (equal? eager #t)
               (flat-contract? ctc)))
-     (make-flat-vectorof ctc immutable)]
+     (make-flat-vectorof ctc immutable eager)]
     [(chaperone-contract? ctc)
-     (make-chaperone-vectorof ctc immutable)]
+     (make-chaperone-vectorof ctc immutable eager)]
     [else
-     (make-impersonator-vectorof ctc immutable)]))
+     (make-impersonator-vectorof ctc immutable eager)]))
 
 (define/subexpression-pos-prop (vector-immutableof c)
   (vectorof c #:immutable #t))
