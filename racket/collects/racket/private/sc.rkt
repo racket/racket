@@ -762,7 +762,7 @@
                                                          dest))])
                                          `(datum->syntax/shape (quote-syntax ,small-dest)
 							       ,build))))])
-                       (if (multiple-ellipsis-vars? proto-r)
+                       (if (multiple-ellipsis-vars? p proto-r)
                            `(catch-ellipsis-error
                              (lambda () ,main)
                              (quote ,p)
@@ -1067,18 +1067,76 @@
                            (loop (cdr nestings)))
                      (loop (cdr nestings))))))
 
-  (-define (multiple-ellipsis-vars? proto-r)
-           (let loop ([proto-r proto-r])
-             (cond
-              [(null? proto-r) #f]
-              [(pair? (car proto-r))
-               (let loop ([proto-r (cdr proto-r)])
-                 (cond
-                  [(null? proto-r) #f]
-                  [(pair? (car proto-r))
-                   #t]
-                  [else (loop (cdr proto-r))]))]
-              [else (loop (cdr proto-r))])))
+  ;; Determines whether any ellipsis has multiple pattern
+  ;; variables so that a run-time check on the pattern-variable
+  ;; matching length will be needed
+  (-define (multiple-ellipsis-vars? p proto-r)
+           (let loop ([p p])
+             (cond 
+              [(ellipsis? p)
+               (or (eq? 'multi (multiple-pattern-vars (stx-car p) proto-r))
+                   (loop (stx-cdr (stx-cdr p))))]
+              [(stx-pair? p) 
+               (let ([hd (stx-car p)])
+                 (if (and (identifier? hd)
+                          (...? hd))
+                     #f
+                     (or (loop hd)
+                         (loop (stx-cdr p)))))]
+              [(stx-vector? p #f)
+               (loop (vector->list (syntax-e p)))]
+              [(stx-box? p)
+               (loop (unbox (syntax-e p)))]
+              [(and (syntax? p)
+                    (prefab-struct-key (syntax-e p)))
+               (loop (cdr (vector->list (struct->vector (syntax-e p)))))]
+              [else #f])))
+
+  ;; Determines whether a given expression, which is under ellipses,
+  ;; has multiple pattern variables or the same variable at different
+  ;; depths; returns 'multi if so, some other internal accumulator otherwise
+  (-define (multiple-pattern-vars p proto-r)
+           (let loop ([p p] [use-ellipsis? #t] [depth 0] [found #f])
+             (cond 
+              [(identifier? p)
+               (if (ormap (lambda (l)
+                            (and
+                             (pair? l) ;; only need to track repeats
+                             (let loop ([l l])
+                               (cond
+                                [(syntax? l)
+                                 (bound-identifier=? l p)]
+                                [else (loop (car l))]))))
+                          proto-r)
+                   (cond
+                    [(not found) (cons p depth)]
+                    [(and (bound-identifier=? p (car found))
+                          (= depth (cdr found)))
+                     found]
+                    [else 'multi])
+                   found)]
+              [(and use-ellipsis? (ellipsis? p))
+               (let ([new-found (loop (stx-car p) #t (add1 depth) found)])
+                 (if (eq? new-found 'multi)
+                     new-found
+                     (loop (stx-cdr (stx-cdr p)) #t depth new-found)))]
+              [(stx-pair? p) 
+               (let ([hd (stx-car p)])
+                 (if (and (identifier? hd)
+                          (...? hd))
+                     (loop (stx-cdr p) #f depth found)
+                     (let ([new-found (loop (stx-car p) #t depth found)])
+                       (if (eq? new-found 'multi)
+                           new-found
+                           (loop (stx-cdr p) #t depth new-found)))))]
+              [(stx-vector? p #f)
+               (loop (vector->list (syntax-e p)) use-ellipsis? depth found)]
+              [(stx-box? p)
+               (loop (unbox (syntax-e p)) use-ellipsis? depth found)]
+              [(and (syntax? p)
+                    (prefab-struct-key (syntax-e p)))
+               (loop (cdr (vector->list (struct->vector (syntax-e p)))) use-ellipsis? depth found)]
+              [else #f])))
 
   (-define (no-ellipses? stx)
            (cond

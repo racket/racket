@@ -1698,5 +1698,14 @@
     (test 'two values also-x)))
 
 ;; ----------------------------------------
+;; Check that ellipsis-counts errors are reported when a single
+;; pattern variable is used at different depths
+
+(err/rt-test (syntax->datum
+              (with-syntax ([((b ...) ...) #'((1 2) (3) ())])
+                #'([(b (b ...)) ...] ...)))
+             (lambda (exn) (regexp-match? #rx"incompatible ellipsis" (exn-message exn))))
+
+;; ----------------------------------------
 
 (report-errs)
