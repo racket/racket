@@ -1246,7 +1246,16 @@
         (when (or (verbose) main?)
           (setup-printf "installing" "~a" dest))
         (make-directory* dest-dir)
-        (copy-file src dest #t)))
+        ;; Copy new file into place, and if that fails,
+        ;; try deleting the old file first (because it might
+        ;; exist and not have write permission, while the
+        ;; encloding directory might allow file deletes)
+        (with-handlers ([exn:fail:filesystem?
+                         (lambda (exn)
+                           (when (file-exists? dest)
+                             (delete-file dest)
+                             (copy-file src dest)))])
+          (copy-file src dest #t))))
     (for ([f (in-list (append shared-empty-style-files
                               shared-empty-script-files))])
       (define dest (build-path dest-dir f))
