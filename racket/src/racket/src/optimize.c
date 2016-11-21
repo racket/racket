@@ -2815,7 +2815,7 @@ static int is_noncapturing_primitive(Scheme_Object *rator, int n)
     t = (((Scheme_Primitive_Proc *)rator)->pp.flags & SCHEME_PRIM_OTHER_TYPE_MASK);
     if (!n && (t == SCHEME_PRIM_TYPE_PARAMETER))
       return 1;
-    if (SAME_TYPE(rator, scheme_values_proc))
+    if (SAME_OBJ(rator, scheme_values_proc))
       return 1;
   }
   
@@ -2829,7 +2829,7 @@ static int is_nonsaving_primitive(Scheme_Object *rator, int n)
     opt = ((Scheme_Prim_Proc_Header *)rator)->flags & SCHEME_PRIM_OPT_MASK;
     if (opt >= SCHEME_PRIM_OPT_IMMEDIATE)
       return 1;
-    if (SAME_TYPE(rator, scheme_values_proc))
+    if (SAME_OBJ(rator, scheme_values_proc))
       return 1;
   }
 

@@ -6394,32 +6394,15 @@
 ;; Regression test to check that `values` is
 ;; handled correctly for estimating clock advances
 
-(module triggers-optimizer-clock-estimation racket/base
-  (require (for-syntax racket/base))
+(module triggers-optimizer-clock-estimation '#%kernel
   
-  (define (in-naturals0 n)
-    (in-naturals n))
+  (define-values (make-sequence) (lambda (_) 3))
   
-  ;; restrict for/xyz to simple form and name it for/xyz0
-  (define-syntax (define-for stx)
-    (syntax-case stx ()
-      [(_ for/xyz0 for/xyz cleanup)
-       #'(define-syntax (for/xyz0 stx)
-           (syntax-case stx ()
-             [(_ ((clause0.x clause0.range)) body)
-              #`(cleanup
-                 (for/xyz ((clause0.x (string> clause0.range)))
-                          ;; the following line exists only so that coverage doesn't hilite x0 x ...
-                          clause0.x
-                          body))]))]))
+  (define-values (string>) (lambda (s) s))
   
-  (define-for for/list0 for/list values)
-  
-  (define (string> s)
-    (if (string? s) (string->list s) s))
-  
-  (void
-   (for/list0 ((dropping-which-one (in-naturals0))) 1)))
+  (values
+   (let-values (((_1 _2) (make-sequence (string>))))
+     (void))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
