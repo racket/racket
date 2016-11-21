@@ -1319,14 +1319,16 @@ Scheme_Object *scheme_add_frame_intdef_scope(Scheme_Object *frame_scopes, Scheme
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
                                  Scheme_Hash_Table *export_registry,
-                                 Scheme_Object *src_insp_desc, Scheme_Object *insp);
+                                 Scheme_Object *src_insp_desc, Scheme_Object *insp,
+                                 int counts_as_source);
 Scheme_Object *scheme_stx_add_shift(Scheme_Object *o, Scheme_Object *shift);
 Scheme_Object *scheme_stx_add_shifts(Scheme_Object *o, Scheme_Object *shift);
 Scheme_Object *scheme_stx_shift(Scheme_Object *stx,
                                 Scheme_Object *phase_delta,
                                 Scheme_Object *old_midx, Scheme_Object *new_midx,
                                 Scheme_Hash_Table *export_registry,
-                                Scheme_Object *src_insp_desc, Scheme_Object *insp);
+                                Scheme_Object *src_insp_desc, Scheme_Object *insp,
+                                int counts_as_source);
 
 Scheme_Object *scheme_syntax_make_transfer_intro(int argc, Scheme_Object **argv);
 int scheme_get_introducer_mode(const char *who, int which, int argc, Scheme_Object **argv);

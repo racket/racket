@@ -4620,7 +4620,8 @@ Scheme_Object *scheme_eval_compiled_stx_string(Scheme_Object *expr, Scheme_Env *
                            scheme_make_integer(shift),
                            orig, modidx, 
                            env->module_registry->exports,
-                           NULL, NULL);
+                           NULL, NULL,
+                           1);
       SCHEME_VEC_ELS(result)[i] = s;
     }
     
@@ -6051,7 +6052,8 @@ Scheme_Object **scheme_push_prefix(Scheme_Env *genv, int already_linked, Resolve
       v = scheme_make_shift(scheme_make_integer(now_phase - src_phase), 
                             src_modidx, now_modidx, 
                             !already_linked ? genv->module_registry->exports : NULL,
-                            rp->src_insp_desc, insp);
+                            rp->src_insp_desc, insp,
+                            1);
       if (v || (rp->delay_info_rpair && SCHEME_CDR(rp->delay_info_rpair))) {
 	/* Put lazy-shift info in pf->a[i]: */
         Scheme_Object **ls;

@@ -1854,6 +1854,57 @@ case of module-leve bindings; it doesn't cover local bindings.
         (and (memq 'p:force (namespace-mapped-symbols))
              #t)))))
 
+;; ----------------------------------------
+;; Check that `syntax-source-module` is #f for a top-level evaluation
+;; that starts outside of a module:
+
+(define my-very-own-x 'x)
+
+(define (make-module-that-has-a-complex-renaming v)
+  `(module module-that-has-a-complex-renaming racket
+    ;; this line is necessary, but you can require anything
+    (require (rename-in racket/base [car prefix:car]))
+    (module+ sub)
+  
+    (define my-very-own-x ,v)))
+
+(eval (make-module-that-has-a-complex-renaming 10))
+(parameterize ([current-module-declare-name
+                (make-resolved-module-path 'module-that-has-a-complex-renaming2)])
+  (eval (make-module-that-has-a-complex-renaming 11)))
+
+(require 'module-that-has-a-complex-renaming)
+(require 'module-that-has-a-complex-renaming2)
+(require (submod 'module-that-has-a-complex-renaming sub))
+(require (submod 'module-that-has-a-complex-renaming2 sub))
+
+(parameterize ([current-namespace (module->namespace ''module-that-has-a-complex-renaming)])
+  (test #f syntax-source-module (namespace-syntax-introduce #'my-very-own-x))
+  (test 10 eval #'my-very-own-x))
+
+(parameterize ([current-namespace (module->namespace ''module-that-has-a-complex-renaming2)])
+  (test #f syntax-source-module (namespace-syntax-introduce #'my-very-own-x))
+  (test 11 eval #'my-very-own-x))
+
+(parameterize ([current-namespace (module->namespace '(submod 'module-that-has-a-complex-renaming sub))])
+  (test #f syntax-source-module (namespace-syntax-introduce #'my-very-own-x))
+  (test 10 eval 'my-very-own-x))
+
+(parameterize ([current-namespace (module->namespace '(submod 'module-that-has-a-complex-renaming2 sub))])
+  (test #f syntax-source-module (namespace-syntax-introduce #'my-very-own-x))
+  (test 11 eval 'my-very-own-x))
+
+(module provide-the-x-identifier racket/base
+  (define x-id #'my-very-own-x)
+  (provide x-id))
+
+(parameterize ([current-namespace (module->namespace ''module-that-has-a-complex-renaming)])
+  (test 'provide-the-x-identifier
+        resolved-module-path-name
+        (module-path-index-resolve (syntax-source-module
+                                    (namespace-syntax-introduce 
+                                     (dynamic-require ''provide-the-x-identifier 'x-id))))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

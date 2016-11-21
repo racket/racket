@@ -3248,7 +3248,8 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
         rn_stx = scheme_stx_force_delayed(rn_stx);
         
         rn_stx = scheme_stx_shift(rn_stx, scheme_make_integer(0), midx, m->self_modidx,
-                                  NULL, m->prefix->src_insp_desc, menv->access_insp);
+                                  NULL, m->prefix->src_insp_desc, menv->access_insp,
+                                  0);
 
 	m->rn_stx = rn_stx;
       } else {
@@ -6848,6 +6849,15 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
 
   if (!prefix)
     prefix = scheme_get_param(config, MZCONFIG_CURRENT_MODULE_NAME);
+
+  if (!SCHEME_MODNAMEP(prefix)
+      && m->rn_stx
+      && !SAME_OBJ(scheme_true, m->rn_stx)
+      && (!m->submodule_path || SCHEME_NULLP(m->submodule_path))) {
+    /* Need a shift to indicate top-levelness in rn_stx (i.e., not a
+       module source) */
+    prefix = m->modname;
+  }
   
   if (SCHEME_MODNAMEP(prefix)) {
     if (m->submodule_path && !SCHEME_NULLP(m->submodule_path)) {
@@ -6857,7 +6867,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
     }
 
     m->modname = prefix;
-    
+
     if (m->self_modidx) {
       if (!SCHEME_SYMBOLP(m->self_modidx)) {
 	Scheme_Modidx *midx = (Scheme_Modidx *)m->self_modidx;
@@ -6875,7 +6885,7 @@ static Scheme_Object *do_module_execute(Scheme_Object *data, Scheme_Env *genv,
 	}
       }
     }
-  } else
+  } else 
     prefix = m->modname; /* used for submodules */
 
   /* printf("declare %s\n", scheme_write_to_string(m->modname, NULL)); */
@@ -7467,7 +7477,8 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     shift = scheme_make_shift(super_phase_shift, 
                               top_env->module->self_modidx, iidx, 
                               menv->module_registry->exports,
-                              m->insp, m->insp);
+                              m->insp, m->insp,
+                              1);
     
     super_bxs_info = MALLOC_N(void*, 6);
     super_bxs_info[0] = super_bxs;
@@ -7600,11 +7611,11 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
 
   /* phase shift to replace self_modidx of previous expansion: */
   fm = scheme_stx_shift(fm, NULL, this_empty_self_modidx, self_modidx, NULL,
-                        m->insp, m->insp);
+                        m->insp, m->insp, 1);
   if (m->ii_src) {
     /* shift the initial import to record the chain for rn_stx */
     ii = scheme_stx_shift(m->ii_src, NULL, this_empty_self_modidx, self_modidx, NULL,
-                          m->insp, m->insp);
+                          m->insp, m->insp, 1);
     m->ii_src = ii;
   }
 
@@ -7696,7 +7707,7 @@ static Scheme_Object *do_module(Scheme_Object *form, Scheme_Comp_Env *env,
     fm = scheme_datum_to_syntax(fm, form, ctx_form, 0, 2);
 
     /* for future expansion, shift away from self_modidx: */
-    ps = scheme_make_shift(NULL, self_modidx, this_empty_self_modidx, NULL, NULL, NULL);
+    ps = scheme_make_shift(NULL, self_modidx, this_empty_self_modidx, NULL, NULL, NULL, 1);
     fm = scheme_stx_add_shift(fm, ps);
     
     if (hints) {

@@ -1791,7 +1791,8 @@ Scheme_Hash_Table *scheme_get_binding_names_table(Scheme_Env *env)
             id = scheme_stx_shift(id, scheme_make_integer(env->phase - env->mod_phase),
                                   env->module->self_modidx, env->link_midx,
                                   env->module_registry->exports,
-                                  env->module->prefix->src_insp_desc, env->access_insp);
+                                  env->module->prefix->src_insp_desc, env->access_insp,
+                                  1);
           binding_names->vals[i] = id;
         }
       }
