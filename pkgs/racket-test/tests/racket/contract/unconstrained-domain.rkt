@@ -68,4 +68,21 @@
   (test/pos-blame
    'unconstrained-domain->11
    '((contract (unconstrained-domain-> number? number?) (λ () 1) 'pos 'neg)))
+
+  (test/spec-passed/result
+   'unconstrained-domain->12
+   '(and (value-contract (contract (unconstrained-domain-> number?)
+                                   (lambda (x) 1)
+                                   'pos
+                                   'neg))
+         #t)
+   #t)
+  (test/spec-passed/result
+   'unconstrained-domain->13
+   '(and (value-blame (contract (unconstrained-domain-> number?)
+                                (lambda (x) 1)
+                                'pos
+                                'neg))
+         #t)
+   #t)
   )

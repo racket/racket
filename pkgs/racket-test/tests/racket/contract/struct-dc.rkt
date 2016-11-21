@@ -15,6 +15,28 @@
                 'pos
                 'neg)))
   
+  (test/spec-passed/result
+   'struct/c1a
+   '(let ()
+      (define-struct s (a))
+      (and (value-contract (contract (struct/c s (or/c number? (-> void?))) ; want non-flat
+                                     (make-s 1)
+                                     'pos
+                                     'neg))
+           #t))
+   #t)
+  
+  (test/spec-passed/result
+   'struct/c1b
+   '(let ()
+      (define-struct s (a))
+      (and (value-blame (contract (struct/c s (or/c number? (-> void?))) ; want non-flat
+                                  (make-s 1)
+                                  'pos
+                                  'neg))
+           #t))
+   #t)
+  
   (test/pos-blame
    'struct/c2
    '(let ()
@@ -240,6 +262,32 @@
                 (s 1 #f)
                 'pos
                 'neg)))
+
+  (test/spec-passed/result
+   'struct/dc-1a
+   '(let ()
+      (struct s (a b))
+      (and (value-contract (contract (struct/dc s
+                                                [a () (or/c number? (-> void?))] ; want non-flat
+                                                [b (a) boolean?])
+                                     (s 1 #f)
+                                     'pos
+                                     'neg))
+           #t))
+   #t)
+
+  (test/spec-passed/result
+   'struct/dc-1b
+   '(let ()
+      (struct s (a b))
+      (and (value-blame (contract (struct/dc s
+                                             [a () (or/c number? (-> void?))] ; want non-flat
+                                             [b (a) boolean?])
+                                  (s 1 #f)
+                                  'pos
+                                  'neg))
+           #t))
+   #t)
   
   (test/spec-passed
    'struct/dc-1a

@@ -412,7 +412,8 @@
                                                   dom-blame neg-party)
                                   (loop (cdr args)
                                         (cdr non-kwd-ctcs)))]))))))))
-         impersonator-prop:contracted ->d-stct)))))
+         impersonator-prop:contracted ->d-stct
+         impersonator-prop:blame (blame-add-missing-party blame neg-party))))))
 
 (define (build-values-string desc dep-pre-args)
   (cond

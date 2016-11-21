@@ -88,6 +88,7 @@
                   neg-party
                   projs)
            impersonator-prop:contracted ctc
+           impersonator-prop:blame (blame-add-missing-party orig-blame neg-party)
            impersonator-prop:application-mark
            (cons tail-contract-key (list* neg-party blame-party-info range-contracts)))))))
 

@@ -314,7 +314,11 @@
                     [dep-args '()])
            (cond
              [(null? subcontracts)
-              (define (app* f v l) (if (null? l) v (apply f v l)))
+              (define (app* f v l)
+                (if (null? l)
+                    v
+                    (apply f v (append l (list impersonator-prop:contracted ctc
+                                               impersonator-prop:blame (blame-add-missing-party blame neg-party))))))
               (app* chaperone-struct
                     (app* impersonate-struct
                           v
@@ -1439,7 +1443,9 @@
                                #,(opt/info-val opt/info)
                                #,@(reverse s-chap-code) ;; built the last backwards, so reverse it here
                                stronger-prop-desc
-                               (vector free-var ...)))
+                               (vector free-var ...)
+                               impersonator-prop:contracted #,(opt/info-contract opt/info)
+                               impersonator-prop:blame #,(opt/info-blame opt/info)))
                             (struct/dc-error #,(opt/info-blame opt/info) #,(opt/info-val opt/info) 'struct-name)))))
              #:lifts
              s-lifts

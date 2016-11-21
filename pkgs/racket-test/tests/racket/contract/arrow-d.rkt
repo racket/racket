@@ -17,7 +17,19 @@
   (test/spec-passed
    '->d1
    '((contract (->d () () [x number?]) (lambda () 1) 'pos 'neg)))
-  
+
+  (test/spec-passed/result
+   '->d1a
+   '(and (value-contract (contract (->d () () [x number?]) (lambda () 1) 'pos 'neg))
+         #t)
+   #t)
+
+  (test/spec-passed/result
+   '->d1b
+   '(and (value-blame (contract (->d () () [x number?]) (lambda () 1) 'pos 'neg))
+         #t)
+   #t)
+
   (test/spec-passed
    '->d2
    '((contract (->d ([x number?]) () (values [r number?])) (lambda (x) (+ x 1)) 'pos 'neg) 1))

@@ -250,6 +250,12 @@
                   integer?)
               (lambda (x1 x2 x3 x4 x5 x6 x7 x8 x9 x10) x1) 'pos 'neg))
   
+  (test/spec-passed/result
+   'contract-arrow1c
+   '(and (value-contract (contract (integer? . -> . integer?) (lambda (x) x) 'pos 'neg))
+         #t)
+   #t)
+
   (test/pos-blame
    'contract-arrow2
    '(contract (integer? . -> . integer?) (lambda (x y) x) 'pos 'neg))
@@ -286,6 +292,12 @@
   (test/neg-blame
    'contract-arrow-any3
    '((contract (integer? . -> . any) (lambda (x) #f) 'pos 'neg) #t))
+
+  (test/spec-passed/result
+   'contract-arrow-any4
+   '(and (value-contract (contract (-> integer? any) (lambda (x) x) 'pos 'neg))
+         #t)
+   #t)
   
   (test/spec-passed
    'contract-arrow-all-anys1
@@ -484,6 +496,11 @@
                 (struct s ())
                 ((impersonate-procedure s? (λ (x) (values (λ (r) "") x))) 11))
               'pos 'neg))
+  (test/spec-passed/result
+   'predicate/c15
+   '(and (value-contract (contract predicate/c boolean? 'pos 'neg))
+         #t)
+   #t)
 
   (test/spec-passed/result
    '->void.1

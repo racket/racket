@@ -464,9 +464,11 @@
                        (if (and (equal? (procedure-arity val) 1)
                                 (let-values ([(a b) (procedure-keywords val)])
                                   (null? b)))
-                           (chaperone-procedure val exact-proc)
+                           (chaperone-procedure val exact-proc
+                                                impersonator-prop:contracted ctc
+                                                impersonator-prop:blame blame)
                            (if (procedure-arity-includes? val 1)
-                               (handle-non-exact-procedure val 1 blame exact-proc)
+                               (handle-non-exact-procedure val 1 blame exact-proc ctc)
                                (raise-flat-arrow-err blame val 1))))
                      (raise-flat-arrow-err blame val 1)))))
    #:lifts null
@@ -567,6 +569,7 @@
                               (cons (optres-name optres-rng) rng-names))]))])
       (values
        (with-syntax ((val (opt/info-val opt/info))
+                     (ctc (opt/info-contract opt/info))
                      (blame (opt/info-blame opt/info))
                      ((dom-arg ...) dom-vars)
                      ((rng-arg ...) rng-vars)
@@ -608,8 +611,9 @@
                  (chaperone-procedure val exact-proc
                                       impersonator-prop:application-mark 
                                       (cons opt->/c-cm-key cont-mark-value)
+                                      impersonator-prop:contracted ctc
                                       impersonator-prop:blame blame)
-                 (handle-non-exact-procedure val dom-len blame exact-proc))))
+                 (handle-non-exact-procedure val dom-len blame exact-proc ctc))))
        (append lifts-doms lifts-rngs)
        (append superlifts-doms superlifts-rngs)
        (append partials-doms partials-rngs)
@@ -668,6 +672,7 @@
       (values
        (with-syntax ((blame (opt/info-blame opt/info))
                      (val (opt/info-val opt/info))
+                     (ctc (opt/info-contract opt/info))
                      ((dom-arg ...) dom-vars)
                      ((next-dom ...) next-doms)
                      (dom-len (length dom-vars)))
@@ -680,6 +685,7 @@
                   [(dom-arg ...)  (values next-dom ...)]
                   [args
                    (bad-number-of-arguments blame val args dom-len)])
+                impersonator-prop:contracted ctc
                 impersonator-prop:blame blame)))
          (if all-anys?
              #`(if (procedure-arity-exactly/no-kwds val #,(length doms))
@@ -739,7 +745,7 @@
 
 (define/opter (predicate/c opt/i opt/info stx) (predicate/c-optres opt/info #t))
 
-(define (handle-non-exact-procedure val dom-len blame exact-proc)
+(define (handle-non-exact-procedure val dom-len blame exact-proc ctc)
   (check-procedure val #f dom-len 0 '() '() blame #f)
   (chaperone-procedure
    val
@@ -755,7 +761,9 @@
                                    (cond
                                      [(null? (cdr kwds)) '()]
                                      [else (cons " " (loop (cdr kwds)))]))))))
-    exact-proc)))
+    exact-proc)
+   impersonator-prop:contracted ctc
+   impersonator-prop:blame blame))
 
 (define (raise-flat-arrow-err blame val n)
   (raise-blame-error blame val

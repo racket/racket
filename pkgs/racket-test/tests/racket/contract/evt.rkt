@@ -11,6 +11,12 @@
    'evt/c-first-order-2
    '(contract (evt/c) always-evt 'pos 'neg))
 
+  (test/spec-passed/result
+   'evt/c-first-order-3
+   '(and (value-contract (contract (evt/c) always-evt 'pos 'neg))
+         #t)
+   #t)
+
   (test/pos-blame
    'evt/c-higher-order-1
    '(let ([evt (contract (evt/c symbol?)
