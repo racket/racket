@@ -1691,8 +1691,7 @@ Scheme_Object *scheme_stx_add_shifts(Scheme_Object *o, Scheme_Object *l)
 Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
                                  Scheme_Object *old_midx, Scheme_Object *new_midx,
                                  Scheme_Hash_Table *export_registry,
-                                 Scheme_Object *src_insp_desc, Scheme_Object *insp,
-                                 int count_as_source)
+                                 Scheme_Object *src_insp_desc, Scheme_Object *insp)
 {
   Scheme_Object *exr;
   
@@ -1718,8 +1717,7 @@ Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
     vec = last_phase_shift;
     
     if (vec
-	&& (SCHEME_BOXP(SCHEME_VEC_ELS(vec)[0]) == !count_as_source)
-	&& ((count_as_source ? SCHEME_VEC_ELS(vec)[0] : SCHEME_BOX_VAL(SCHEME_VEC_ELS(vec)[0])) == old_midx)
+	&& (SCHEME_VEC_ELS(vec)[0] == old_midx)
         && (SCHEME_VEC_ELS(vec)[1] == new_midx)
         && (SCHEME_VEC_ELS(vec)[2] == src_insp_desc)
         && (SCHEME_VEC_ELS(vec)[3] == insp)
@@ -1728,8 +1726,6 @@ Scheme_Object *scheme_make_shift(Scheme_Object *phase_delta,
       /* use the old one */
     } else {
       vec = scheme_make_vector(6, NULL);
-      if (!count_as_source)
-        old_midx = scheme_box(old_midx);
       SCHEME_VEC_ELS(vec)[0] = old_midx;
       SCHEME_VEC_ELS(vec)[1] = new_midx;
       SCHEME_VEC_ELS(vec)[2] = src_insp_desc;
@@ -1768,28 +1764,64 @@ Scheme_Object *scheme_stx_shift(Scheme_Object *stx,
                                 Scheme_Object *phase_delta,
                                 Scheme_Object *old_midx, Scheme_Object *new_midx,
                                 Scheme_Hash_Table *export_registry,
-                                Scheme_Object *src_insp_desc, Scheme_Object *insp,
-                                int counts_as_source)
+                                Scheme_Object *src_insp_desc, Scheme_Object *insp)
 /* Shifts the modidx on a syntax object in a module as well as the phase of scopes. */
 {
   Scheme_Object *s;
 
-  s = scheme_make_shift(phase_delta, old_midx, new_midx, export_registry, src_insp_desc, insp, counts_as_source);
+  s = scheme_make_shift(phase_delta, old_midx, new_midx, export_registry, src_insp_desc, insp);
   if (s)
     stx = scheme_stx_add_shift(stx, s);
 
   return stx;
 }
 
+static Scheme_Object *shifts_to_non_source(Scheme_Object *shifts) {
+  Scheme_Object *l, *p, *last, *first, *vec, *vec2;
+  int i;
+
+  for (l = shifts; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    if (!non_source_shift(SCHEME_CAR(l)))
+      break;
+  }
+
+  if (SCHEME_NULLP(l))
+    return shifts;
+
+  last = NULL;
+  first = NULL;
+
+  for (l = shifts; !SCHEME_NULLP(l); l = SCHEME_CDR(l)) {
+    vec = SCHEME_CAR(l);
+    if (!non_source_shift(vec)) {
+      i = SCHEME_VEC_SIZE(vec);
+      vec2 = scheme_make_vector(i, NULL);
+      while (i--) {
+        SCHEME_VEC_ELS(vec2)[i] = SCHEME_VEC_ELS(vec)[i];
+      }
+      vec = vec2;
+      vec2 = scheme_box(SCHEME_VEC_ELS(vec)[0]);
+      SCHEME_VEC_ELS(vec)[0] = vec2;
+    }
+
+    p = scheme_make_pair(vec, scheme_null);
+    if (!first)
+      first = p;
+    else
+      SCHEME_CDR(last) = p;
+    last = p;
+  }
+
+  return first;
+}
+
 static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *modidx,
-                                          Scheme_Object **_insp, Scheme_Hash_Table **_export_registry,
-                                          int *_any_non_source)
+                                          Scheme_Object **_insp, Scheme_Hash_Table **_export_registry)
 {
 #define QUICK_SHIFT_LEN 5
-  Scheme_Object *vec, *dest, *src, *insp_desc, *new_modidx;
+  Scheme_Object *vec, *dest, *src, *insp_desc;
   Scheme_Object *quick_a[QUICK_SHIFT_LEN], **a;
   intptr_t i, len;
-  int was_boxed;
 
   /* Strip away propagation layer, if any: */
   if (SCHEME_VECTORP(shifts))
@@ -1808,9 +1840,6 @@ static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *
   else
     a = MALLOC_N(Scheme_Object *, len);
 
-  if (_any_non_source)
-    *_any_non_source = 0;
-
   i = len;
   while (!SCHEME_NULLP(shifts)) {
     a[--i] = SCHEME_CAR(shifts);
@@ -1826,18 +1855,10 @@ static Scheme_Object *apply_modidx_shifts(Scheme_Object *shifts, Scheme_Object *
     src = SCHEME_VEC_ELS(vec)[0];
     dest = SCHEME_VEC_ELS(vec)[1];
 
-    if (SCHEME_BOXP(src)) {
+    if (SCHEME_BOXP(src))
       src = SCHEME_BOX_VAL(src);
-      was_boxed = 1;
-    } else
-      was_boxed = 0;
-
-    new_modidx = scheme_modidx_shift(modidx, src, dest);
-    if (_any_non_source
-        && !SAME_OBJ(new_modidx, modidx)
-        && was_boxed)
-      *_any_non_source = 1;
-    modidx = new_modidx;
+    
+    modidx = scheme_modidx_shift(modidx, src, dest);
 
     if (SCHEME_VEC_SIZE(vec) > 2) {
       if (SCHEME_SYMBOLP(insp_desc)
@@ -3192,7 +3213,7 @@ Scheme_Object *add_bindings_info(Scheme_Object *bindings, Scheme_Object *key, Sc
           val = SCHEME_CAR(val);
         }
         if (SCHEME_MODIDXP(val))
-          val = apply_modidx_shifts(stx->shifts, val, NULL, NULL, NULL);
+          val = apply_modidx_shifts(stx->shifts, val, NULL, NULL);
         bind_desc = scheme_hash_tree_set(bind_desc, module_symbol, val);
       }
 
@@ -3321,7 +3342,7 @@ static Scheme_Object *stx_debug_info(Scheme_Stx *stx, Scheme_Object *phase, Sche
           pes = SCHEME_BINDING_VAL(SCHEME_CAR(l));
           val = SCHEME_VEC_ELS(pes)[0];
           if (SCHEME_MODIDXP(val))
-            val = apply_modidx_shifts(stx->shifts, val, NULL, NULL, NULL);
+            val = apply_modidx_shifts(stx->shifts, val, NULL, NULL);
           bind_desc = scheme_hash_tree_set(bind_desc, module_symbol, val);
 
           if (PES_UNMARSHAL_DESCP(pes)) {
@@ -3876,10 +3897,10 @@ static Scheme_Object *apply_accumulated_shifts(Scheme_Object *result, Scheme_Obj
         SCHEME_VEC_ELS(result)[1] = stx->val;
     
       for (; !SCHEME_NULLP(prev_shifts); prev_shifts = SCHEME_CDR(prev_shifts)) {
-        o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), SCHEME_VEC_ELS(result)[0], _insp, NULL, NULL);
+        o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), SCHEME_VEC_ELS(result)[0], _insp, NULL);
         SCHEME_VEC_ELS(result)[0] = o;
         if (nominal_modidx) {
-          o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), *nominal_modidx, NULL, NULL, NULL);
+          o = apply_modidx_shifts(SCHEME_CAR(prev_shifts), *nominal_modidx, NULL, NULL);
           *nominal_modidx = o;
         }
       }
@@ -4171,11 +4192,11 @@ Scheme_Object *scheme_stx_lookup_w_nominal(Scheme_Object *o, Scheme_Object *phas
       if (nominal_src_phase && !*nominal_src_phase)
         *nominal_src_phase = SCHEME_VEC_ELS(result)[2];
       
-      l = apply_modidx_shifts(stx->shifts, SCHEME_VEC_ELS(result)[0], &insp_desc, NULL, NULL);
+      l = apply_modidx_shifts(stx->shifts, SCHEME_VEC_ELS(result)[0], &insp_desc, NULL);
       SCHEME_VEC_ELS(result)[0] = l;
 
       if (nominal_modidx) {
-        l = apply_modidx_shifts(stx->shifts, *nominal_modidx, NULL, NULL, NULL);
+        l = apply_modidx_shifts(stx->shifts, *nominal_modidx, NULL, NULL);
         *nominal_modidx = l;
       }
     } else
@@ -4847,9 +4868,9 @@ static void unmarshal_module_context_additions(Scheme_Stx *stx, Scheme_Object *s
   req_insp = insp;
 
   if (stx)
-    modidx = apply_modidx_shifts(stx->shifts, req_modidx, &insp, &export_registry, NULL);
+    modidx = apply_modidx_shifts(stx->shifts, req_modidx, &insp, &export_registry);
   else
-    modidx = apply_modidx_shifts(shifts, req_modidx, &insp, &export_registry, NULL);
+    modidx = apply_modidx_shifts(shifts, req_modidx, &insp, &export_registry);
 
   src_phase = SCHEME_VEC_ELS(vec)[1];
   unmarshal_info = SCHEME_VEC_ELS(vec)[2];
@@ -4909,6 +4930,7 @@ Scheme_Object *scheme_stx_to_module_context(Scheme_Object *_stx)
   shifts = stx->shifts;
   if (SCHEME_VECTORP(shifts))
     shifts = SCHEME_VEC_ELS(shifts)[0];
+  shifts = shifts_to_non_source(shifts);
 
   phase = scheme_make_integer(0);
 
@@ -5159,7 +5181,6 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int sou
   /* Look for the oldest "self" modidx that has a resolution: */
   Scheme_Object *l = ((Scheme_Stx *)stx)->shifts, *a, *src;
   Scheme_Hash_Table *export_registry;
-  int any_non_source;
 
   if (SCHEME_VECTORP(l))
     l = SCHEME_VEC_ELS(l)[0];
@@ -5174,22 +5195,19 @@ Scheme_Object *scheme_stx_source_module(Scheme_Object *stx, int resolve, int sou
       if (SCHEME_MODIDXP(src)) {
         if (SCHEME_FALSEP(((Scheme_Modidx *)src)->path)) {
           src = apply_modidx_shifts(((Scheme_Stx *)stx)->shifts, src,
-                                    NULL, &export_registry,
-                                    &any_non_source);
-          if (!any_non_source) {
-            if (!SCHEME_FALSEP(((Scheme_Modidx *)src)->path)
-                || !SCHEME_FALSEP(((Scheme_Modidx *)src)->resolved)) {
-              if (resolve) {
-                src = scheme_module_resolve(src, 0);
-                if (export_registry && source) {
-                  a = scheme_hash_get(export_registry, src);
-                  if (a)
-                    src = ((Scheme_Module_Exports *)a)->modsrc;
-                }
-                src = SCHEME_PTR_VAL(src);
+                                    NULL, &export_registry);
+          if (!SCHEME_FALSEP(((Scheme_Modidx *)src)->path)
+              || !SCHEME_FALSEP(((Scheme_Modidx *)src)->resolved)) {
+            if (resolve) {
+              src = scheme_module_resolve(src, 0);
+              if (export_registry && source) {
+                a = scheme_hash_get(export_registry, src);
+                if (a)
+                  src = ((Scheme_Module_Exports *)a)->modsrc;
               }
-              return src;
+              src = SCHEME_PTR_VAL(src);
             }
+            return src;
           }
         }
       }

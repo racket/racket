@@ -905,8 +905,7 @@ void scheme_prepare_env_stx_context(Scheme_Env *env)
                               (env->module->prefix
                                ? env->module->prefix->src_insp_desc
                                : env->module->insp),
-                              insp,
-                              1);
+                              insp);
 
     mc = scheme_make_module_context(insp, shift, env->module->modname);
   } else
@@ -1608,8 +1607,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as
     id = scheme_stx_shift(id, scheme_make_integer(env->phase - env->mod_phase),
                           env->module->self_modidx, env->link_midx,
                           env->module_registry->exports,
-                          env->module->prefix->src_insp_desc, env->access_insp,
-                          1);
+                          env->module->prefix->src_insp_desc, env->access_insp);
   }
 
   scheme_add_module_binding(id, scheme_env_phase(env),
