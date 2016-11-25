@@ -458,7 +458,10 @@ generated evaluator goes to the calling context's error port.}
 
 A @tech{parameter} that controls whether syntactic coverage information is
 collected by sandbox evaluators.  Use
-@racket[get-uncovered-expressions] to retrieve coverage information.}
+@racket[get-uncovered-expressions] to retrieve coverage information.
+
+The default value is @racket[#f].
+}
 
 
 @defboolparam[sandbox-propagate-breaks propagate?]{
