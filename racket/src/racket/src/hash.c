@@ -246,8 +246,6 @@ Scheme_Hash_Table *scheme_make_hash_table(int type)
 {
   Scheme_Hash_Table *table;
 
-  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_hash_table_type));
-
   table = MALLOC_ONE_TAGGED(Scheme_Hash_Table);
 
   table->size = 0;
@@ -642,8 +640,6 @@ Scheme_Hash_Table *scheme_clone_hash_table(Scheme_Hash_Table *ht)
   Scheme_Hash_Table *table;
   Scheme_Object **ba;
 
-  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_hash_table_type));
-
   table = MALLOC_ONE_TAGGED(Scheme_Hash_Table);
   memcpy(table, ht, sizeof(Scheme_Hash_Table));
   MZ_OPT_HASH_KEY(&(table->iso)) = 0;
@@ -726,8 +722,6 @@ scheme_make_bucket_table (intptr_t size, int type)
 {
   Scheme_Bucket_Table *table;
   size_t asize;
-
-  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_bucket_table_type));
 
   table = MALLOC_ONE_TAGGED(Scheme_Bucket_Table);
 
@@ -1124,8 +1118,6 @@ Scheme_Bucket_Table *scheme_clone_bucket_table(Scheme_Bucket_Table *bt)
 {
   Scheme_Bucket_Table *table;
   size_t asize;
-
-  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_bucket_table_type));
 
   table = MALLOC_ONE_TAGGED(Scheme_Bucket_Table);
   table->so.type = scheme_bucket_table_type;
@@ -2570,7 +2562,6 @@ XFORM_NONGCING static Scheme_Hash_Tree *hamt_assoc(Scheme_Hash_Tree *ht, uintptr
 static Scheme_Hash_Tree *hamt_alloc(int kind, int popcount)
 /* be sure to set `bitmap` field before a GC becomes possible */
 {
-  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_hash_tree_type));
   return (Scheme_Hash_Tree *)scheme_malloc_small_tagged(HASH_TREE_RECORD_SIZE(kind, popcount));
 }
 

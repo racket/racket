@@ -2252,8 +2252,6 @@ scheme_case_lambda_execute(Scheme_Object *expr)
   int i, cnt;
   Scheme_Thread *p = scheme_current_thread;
 
-  DEBUG_COUNT_ALLOCATION(expr);
-
   seqin = (Scheme_Case_Lambda *)expr;
 
 #ifdef MZ_USE_JIT
@@ -2505,10 +2503,8 @@ scheme_make_closure(Scheme_Thread *p, Scheme_Object *code, int close)
   GC_CAN_IGNORE mzshort *map;
   int i;
 
-  DEBUG_COUNT_ALLOCATION(code);
-
   data = (Scheme_Lambda *)code;
-  
+
 #ifdef MZ_USE_JIT
   if (data->u.native_code
       /* If the union points to a another Scheme_Lambda*, then it's not actually

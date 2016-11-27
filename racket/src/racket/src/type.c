@@ -328,7 +328,25 @@ scheme_init_type ()
   set_name(scheme_environment_variables_type, "<environment-variables>");
 
 #ifdef MZ_GC_BACKTRACE
+  set_name(scheme_rt_runstack, "<runstack>");
   set_name(scheme_rt_meta_cont, "<meta-continuation>");
+  set_name(scheme_rt_weak_array, "<weak-array>");
+  set_name(scheme_syntax_property_preserve_type, "<syntax-property-preserve-wrapper>");
+  set_name(scheme_rt_resolve_info, "<compile-resolve-frame>");
+  set_name(scheme_rt_unresolve_info, "<compile-unresolve-frame>");
+  set_name(scheme_rt_optimize_info, "<compile-optimize-frame>");
+  set_name(scheme_rt_ir_lambda_info, "<compile-lambda-info>");
+  set_name(scheme_deferred_expr_type, "<compile-letrec-check-deferred>");
+  set_name(scheme_will_be_lambda_type, "<compile-letrec-check-lambda>");
+  set_name(scheme_rt_indexed_string, "<string-port-data>");
+  set_name(scheme_rt_srcloc, "<srcloc>");
+  set_name(scheme_rt_comp_prefix, "<compile-prefix>");
+  set_name(scheme_rt_native_code, "<native-code>");
+  set_name(scheme_rt_native_code_plus_case, "<native-code+case>");
+  set_name(scheme_rt_sfs_info, "<compile-safe-for-space-frame>");
+  set_name(scheme_rt_letrec_check_frame, "<compile-letrec-check-frame>");
+  set_name(scheme_rt_module_exports, "<module-export-set>");
+  set_name(scheme_rt_export_info, "<module-export-info>");
 #endif
 }
 

@@ -6,7 +6,7 @@
 
 typedef char *(*GC_get_type_name_proc)(short t);
 typedef void (*GC_for_each_found_proc)(void *p);
-typedef void (*GC_for_each_struct_proc)(void *p);
+typedef void (*GC_for_each_struct_proc)(void *p, int sz);
 
 typedef void (*GC_print_tagged_value_proc)(const char *prefix, 
 					   void *v, uintptr_t diff, int max_w,
@@ -37,5 +37,9 @@ GC2_EXTERN void GC_dump_variable_stack(void **var_stack,
 GC2_EXTERN int GC_is_tagged(void *p);
 GC2_EXTERN int GC_is_tagged_start(void *p);
 GC2_EXTERN void *GC_next_tagged_start(void *p);
+
+typedef void (*GC_allocated_object_callback_proc)(void *, intptr_t size, int tagged, int atomic);
+
+GC2_EXTERN void GC_set_allocated_object_callback(GC_allocated_object_callback_proc proc);
 
 #endif

@@ -465,8 +465,6 @@ Scheme_Object *scheme_make_stx(Scheme_Object *val,
 {
   Scheme_Stx *stx;
 
-  DEBUG_COUNT_ALLOCATION(scheme_make_integer(scheme_stx_type));
-
   stx = MALLOC_ONE_TAGGED(Scheme_Stx);
   stx->iso.so.type = scheme_stx_type;
   STX_KEY(stx) = HAS_SUBSTX(val) ? STX_SUBSTX_FLAG : 0;
