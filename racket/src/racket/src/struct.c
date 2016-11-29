@@ -2619,7 +2619,8 @@ Scheme_Object *scheme_make_serialized_struct_instance(Scheme_Object *prefab_key,
   Scheme_Serialized_Structure *inst;
 
   inst = (Scheme_Serialized_Structure *)
-    scheme_malloc_tagged(STRUCT_BYTES(num_slots));
+    scheme_malloc_tagged(sizeof(Scheme_Serialized_Structure)
+			 + ((num_slots - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
   
   inst->so.type = scheme_serialized_structure_type;
   inst->num_slots = num_slots;
