@@ -259,9 +259,6 @@
 #endif
 # if defined(__arm__)
 # define MZ_USE_JIT_ARM
-# ifndef __ANDROID__
-#  define MZ_USE_DWARF_LIBUNWIND
-# endif
 #endif
 
 #endif
