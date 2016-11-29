@@ -3568,12 +3568,10 @@ static void save_errno_values(int kind)
         return scheme_false;
       @(add-newlines
         (for/list ([e standard-errnos])
-          @string-append{
-            #ifdef @symbol->string[e]
+            @@IFDEF{@symbol->string[e]}{
             if (!strcmp("@symbol->string[e]", SCHEME_SYM_VAL(v)))
               return scheme_make_integer(@symbol->string[e]);
-            #endif
-          }))
+            }))
       return scheme_false;
     })
 }

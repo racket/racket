@@ -4332,330 +4332,330 @@ static Scheme_Object *foreign_lookup_errno(int argc, Scheme_Object *argv[])
   }
   if (SCHEME_SYM_WEIRDP(v))
     return scheme_false;
-  #ifdef E2BIG
+# ifdef E2BIG
   if (!strcmp("E2BIG", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(E2BIG);
-  #endif
-  #ifdef EACCES
+# endif /* E2BIG */
+# ifdef EACCES
   if (!strcmp("EACCES", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EACCES);
-  #endif
-  #ifdef EADDRINUSE
+# endif /* EACCES */
+# ifdef EADDRINUSE
   if (!strcmp("EADDRINUSE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EADDRINUSE);
-  #endif
-  #ifdef EADDRNOTAVAIL
+# endif /* EADDRINUSE */
+# ifdef EADDRNOTAVAIL
   if (!strcmp("EADDRNOTAVAIL", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EADDRNOTAVAIL);
-  #endif
-  #ifdef EAFNOSUPPORT
+# endif /* EADDRNOTAVAIL */
+# ifdef EAFNOSUPPORT
   if (!strcmp("EAFNOSUPPORT", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EAFNOSUPPORT);
-  #endif
-  #ifdef EAGAIN
+# endif /* EAFNOSUPPORT */
+# ifdef EAGAIN
   if (!strcmp("EAGAIN", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EAGAIN);
-  #endif
-  #ifdef EALREADY
+# endif /* EAGAIN */
+# ifdef EALREADY
   if (!strcmp("EALREADY", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EALREADY);
-  #endif
-  #ifdef EBADF
+# endif /* EALREADY */
+# ifdef EBADF
   if (!strcmp("EBADF", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EBADF);
-  #endif
-  #ifdef EBADMSG
+# endif /* EBADF */
+# ifdef EBADMSG
   if (!strcmp("EBADMSG", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EBADMSG);
-  #endif
-  #ifdef EBUSY
+# endif /* EBADMSG */
+# ifdef EBUSY
   if (!strcmp("EBUSY", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EBUSY);
-  #endif
-  #ifdef ECANCELED
+# endif /* EBUSY */
+# ifdef ECANCELED
   if (!strcmp("ECANCELED", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ECANCELED);
-  #endif
-  #ifdef ECHILD
+# endif /* ECANCELED */
+# ifdef ECHILD
   if (!strcmp("ECHILD", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ECHILD);
-  #endif
-  #ifdef ECONNABORTED
+# endif /* ECHILD */
+# ifdef ECONNABORTED
   if (!strcmp("ECONNABORTED", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ECONNABORTED);
-  #endif
-  #ifdef ECONNREFUSED
+# endif /* ECONNABORTED */
+# ifdef ECONNREFUSED
   if (!strcmp("ECONNREFUSED", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ECONNREFUSED);
-  #endif
-  #ifdef ECONNRESET
+# endif /* ECONNREFUSED */
+# ifdef ECONNRESET
   if (!strcmp("ECONNRESET", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ECONNRESET);
-  #endif
-  #ifdef EDEADLK
+# endif /* ECONNRESET */
+# ifdef EDEADLK
   if (!strcmp("EDEADLK", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EDEADLK);
-  #endif
-  #ifdef EDESTADDRREQ
+# endif /* EDEADLK */
+# ifdef EDESTADDRREQ
   if (!strcmp("EDESTADDRREQ", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EDESTADDRREQ);
-  #endif
-  #ifdef EDOM
+# endif /* EDESTADDRREQ */
+# ifdef EDOM
   if (!strcmp("EDOM", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EDOM);
-  #endif
-  #ifdef EDQUOT
+# endif /* EDOM */
+# ifdef EDQUOT
   if (!strcmp("EDQUOT", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EDQUOT);
-  #endif
-  #ifdef EEXIST
+# endif /* EDQUOT */
+# ifdef EEXIST
   if (!strcmp("EEXIST", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EEXIST);
-  #endif
-  #ifdef EFAULT
+# endif /* EEXIST */
+# ifdef EFAULT
   if (!strcmp("EFAULT", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EFAULT);
-  #endif
-  #ifdef EFBIG
+# endif /* EFAULT */
+# ifdef EFBIG
   if (!strcmp("EFBIG", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EFBIG);
-  #endif
-  #ifdef EHOSTUNREACH
+# endif /* EFBIG */
+# ifdef EHOSTUNREACH
   if (!strcmp("EHOSTUNREACH", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EHOSTUNREACH);
-  #endif
-  #ifdef EIDRM
+# endif /* EHOSTUNREACH */
+# ifdef EIDRM
   if (!strcmp("EIDRM", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EIDRM);
-  #endif
-  #ifdef EILSEQ
+# endif /* EIDRM */
+# ifdef EILSEQ
   if (!strcmp("EILSEQ", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EILSEQ);
-  #endif
-  #ifdef EINPROGRESS
+# endif /* EILSEQ */
+# ifdef EINPROGRESS
   if (!strcmp("EINPROGRESS", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EINPROGRESS);
-  #endif
-  #ifdef EINTR
+# endif /* EINPROGRESS */
+# ifdef EINTR
   if (!strcmp("EINTR", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EINTR);
-  #endif
-  #ifdef EINVAL
+# endif /* EINTR */
+# ifdef EINVAL
   if (!strcmp("EINVAL", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EINVAL);
-  #endif
-  #ifdef EIO
+# endif /* EINVAL */
+# ifdef EIO
   if (!strcmp("EIO", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EIO);
-  #endif
-  #ifdef EISCONN
+# endif /* EIO */
+# ifdef EISCONN
   if (!strcmp("EISCONN", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EISCONN);
-  #endif
-  #ifdef EISDIR
+# endif /* EISCONN */
+# ifdef EISDIR
   if (!strcmp("EISDIR", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EISDIR);
-  #endif
-  #ifdef ELOOP
+# endif /* EISDIR */
+# ifdef ELOOP
   if (!strcmp("ELOOP", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ELOOP);
-  #endif
-  #ifdef EMFILE
+# endif /* ELOOP */
+# ifdef EMFILE
   if (!strcmp("EMFILE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EMFILE);
-  #endif
-  #ifdef EMLINK
+# endif /* EMFILE */
+# ifdef EMLINK
   if (!strcmp("EMLINK", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EMLINK);
-  #endif
-  #ifdef EMSGSIZE
+# endif /* EMLINK */
+# ifdef EMSGSIZE
   if (!strcmp("EMSGSIZE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EMSGSIZE);
-  #endif
-  #ifdef EMULTIHOP
+# endif /* EMSGSIZE */
+# ifdef EMULTIHOP
   if (!strcmp("EMULTIHOP", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EMULTIHOP);
-  #endif
-  #ifdef ENAMETOOLONG
+# endif /* EMULTIHOP */
+# ifdef ENAMETOOLONG
   if (!strcmp("ENAMETOOLONG", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENAMETOOLONG);
-  #endif
-  #ifdef ENETDOWN
+# endif /* ENAMETOOLONG */
+# ifdef ENETDOWN
   if (!strcmp("ENETDOWN", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENETDOWN);
-  #endif
-  #ifdef ENETRESET
+# endif /* ENETDOWN */
+# ifdef ENETRESET
   if (!strcmp("ENETRESET", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENETRESET);
-  #endif
-  #ifdef ENETUNREACH
+# endif /* ENETRESET */
+# ifdef ENETUNREACH
   if (!strcmp("ENETUNREACH", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENETUNREACH);
-  #endif
-  #ifdef ENFILE
+# endif /* ENETUNREACH */
+# ifdef ENFILE
   if (!strcmp("ENFILE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENFILE);
-  #endif
-  #ifdef ENOBUFS
+# endif /* ENFILE */
+# ifdef ENOBUFS
   if (!strcmp("ENOBUFS", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOBUFS);
-  #endif
-  #ifdef ENODATA
+# endif /* ENOBUFS */
+# ifdef ENODATA
   if (!strcmp("ENODATA", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENODATA);
-  #endif
-  #ifdef ENODEV
+# endif /* ENODATA */
+# ifdef ENODEV
   if (!strcmp("ENODEV", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENODEV);
-  #endif
-  #ifdef ENOENT
+# endif /* ENODEV */
+# ifdef ENOENT
   if (!strcmp("ENOENT", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOENT);
-  #endif
-  #ifdef ENOEXEC
+# endif /* ENOENT */
+# ifdef ENOEXEC
   if (!strcmp("ENOEXEC", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOEXEC);
-  #endif
-  #ifdef ENOLCK
+# endif /* ENOEXEC */
+# ifdef ENOLCK
   if (!strcmp("ENOLCK", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOLCK);
-  #endif
-  #ifdef ENOLINK
+# endif /* ENOLCK */
+# ifdef ENOLINK
   if (!strcmp("ENOLINK", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOLINK);
-  #endif
-  #ifdef ENOMEM
+# endif /* ENOLINK */
+# ifdef ENOMEM
   if (!strcmp("ENOMEM", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOMEM);
-  #endif
-  #ifdef ENOMSG
+# endif /* ENOMEM */
+# ifdef ENOMSG
   if (!strcmp("ENOMSG", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOMSG);
-  #endif
-  #ifdef ENOPROTOOPT
+# endif /* ENOMSG */
+# ifdef ENOPROTOOPT
   if (!strcmp("ENOPROTOOPT", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOPROTOOPT);
-  #endif
-  #ifdef ENOSPC
+# endif /* ENOPROTOOPT */
+# ifdef ENOSPC
   if (!strcmp("ENOSPC", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOSPC);
-  #endif
-  #ifdef ENOSR
+# endif /* ENOSPC */
+# ifdef ENOSR
   if (!strcmp("ENOSR", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOSR);
-  #endif
-  #ifdef ENOSTR
+# endif /* ENOSR */
+# ifdef ENOSTR
   if (!strcmp("ENOSTR", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOSTR);
-  #endif
-  #ifdef ENOSYS
+# endif /* ENOSTR */
+# ifdef ENOSYS
   if (!strcmp("ENOSYS", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOSYS);
-  #endif
-  #ifdef ENOTCONN
+# endif /* ENOSYS */
+# ifdef ENOTCONN
   if (!strcmp("ENOTCONN", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOTCONN);
-  #endif
-  #ifdef ENOTDIR
+# endif /* ENOTCONN */
+# ifdef ENOTDIR
   if (!strcmp("ENOTDIR", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOTDIR);
-  #endif
-  #ifdef ENOTEMPTY
+# endif /* ENOTDIR */
+# ifdef ENOTEMPTY
   if (!strcmp("ENOTEMPTY", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOTEMPTY);
-  #endif
-  #ifdef ENOTRECOVERABLE
+# endif /* ENOTEMPTY */
+# ifdef ENOTRECOVERABLE
   if (!strcmp("ENOTRECOVERABLE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOTRECOVERABLE);
-  #endif
-  #ifdef ENOTSOCK
+# endif /* ENOTRECOVERABLE */
+# ifdef ENOTSOCK
   if (!strcmp("ENOTSOCK", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOTSOCK);
-  #endif
-  #ifdef ENOTSUP
+# endif /* ENOTSOCK */
+# ifdef ENOTSUP
   if (!strcmp("ENOTSUP", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOTSUP);
-  #endif
-  #ifdef ENOTTY
+# endif /* ENOTSUP */
+# ifdef ENOTTY
   if (!strcmp("ENOTTY", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENOTTY);
-  #endif
-  #ifdef ENXIO
+# endif /* ENOTTY */
+# ifdef ENXIO
   if (!strcmp("ENXIO", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ENXIO);
-  #endif
-  #ifdef EOPNOTSUPP
+# endif /* ENXIO */
+# ifdef EOPNOTSUPP
   if (!strcmp("EOPNOTSUPP", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EOPNOTSUPP);
-  #endif
-  #ifdef EOVERFLOW
+# endif /* EOPNOTSUPP */
+# ifdef EOVERFLOW
   if (!strcmp("EOVERFLOW", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EOVERFLOW);
-  #endif
-  #ifdef EOWNERDEAD
+# endif /* EOVERFLOW */
+# ifdef EOWNERDEAD
   if (!strcmp("EOWNERDEAD", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EOWNERDEAD);
-  #endif
-  #ifdef EPERM
+# endif /* EOWNERDEAD */
+# ifdef EPERM
   if (!strcmp("EPERM", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EPERM);
-  #endif
-  #ifdef EPIPE
+# endif /* EPERM */
+# ifdef EPIPE
   if (!strcmp("EPIPE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EPIPE);
-  #endif
-  #ifdef EPROTO
+# endif /* EPIPE */
+# ifdef EPROTO
   if (!strcmp("EPROTO", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EPROTO);
-  #endif
-  #ifdef EPROTONOSUPPORT
+# endif /* EPROTO */
+# ifdef EPROTONOSUPPORT
   if (!strcmp("EPROTONOSUPPORT", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EPROTONOSUPPORT);
-  #endif
-  #ifdef EPROTOTYPE
+# endif /* EPROTONOSUPPORT */
+# ifdef EPROTOTYPE
   if (!strcmp("EPROTOTYPE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EPROTOTYPE);
-  #endif
-  #ifdef ERANGE
+# endif /* EPROTOTYPE */
+# ifdef ERANGE
   if (!strcmp("ERANGE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ERANGE);
-  #endif
-  #ifdef EROFS
+# endif /* ERANGE */
+# ifdef EROFS
   if (!strcmp("EROFS", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EROFS);
-  #endif
-  #ifdef ESPIPE
+# endif /* EROFS */
+# ifdef ESPIPE
   if (!strcmp("ESPIPE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ESPIPE);
-  #endif
-  #ifdef ESRCH
+# endif /* ESPIPE */
+# ifdef ESRCH
   if (!strcmp("ESRCH", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ESRCH);
-  #endif
-  #ifdef ESTALE
+# endif /* ESRCH */
+# ifdef ESTALE
   if (!strcmp("ESTALE", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ESTALE);
-  #endif
-  #ifdef ETIME
+# endif /* ESTALE */
+# ifdef ETIME
   if (!strcmp("ETIME", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ETIME);
-  #endif
-  #ifdef ETIMEDOUT
+# endif /* ETIME */
+# ifdef ETIMEDOUT
   if (!strcmp("ETIMEDOUT", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ETIMEDOUT);
-  #endif
-  #ifdef ETXTBSY
+# endif /* ETIMEDOUT */
+# ifdef ETXTBSY
   if (!strcmp("ETXTBSY", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(ETXTBSY);
-  #endif
-  #ifdef EWOULDBLOCK
+# endif /* ETXTBSY */
+# ifdef EWOULDBLOCK
   if (!strcmp("EWOULDBLOCK", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EWOULDBLOCK);
-  #endif
-  #ifdef EXDEV
+# endif /* EWOULDBLOCK */
+# ifdef EXDEV
   if (!strcmp("EXDEV", SCHEME_SYM_VAL(v)))
     return scheme_make_integer(EXDEV);
-  #endif
+# endif /* EXDEV */
   return scheme_false;
 }
 #undef MYNAME
