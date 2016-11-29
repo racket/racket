@@ -4300,7 +4300,7 @@ static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
     /* We use a specialized error message here, because it's not
        a system error (e.g., setting `errno` to `EEXIST` would
        be a lie). */
-    scheme_raise_exn((exists_ok < 0) ? MZEXN_FAIL_FILESYSTEM_EXISTS : MZEXN_FAIL_FILESYSTEM, 
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_EXISTS,
                      "rename-file-or-directory: cannot rename file or directory;\n"
                      " the destination path already exists\n"
                      "  source path: %q\n"

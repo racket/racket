@@ -64,6 +64,7 @@
 (define delete-file/tf (lambda (x) ((make-/tf delete-file exn:fail:filesystem?) x)))
 (define delete-directory/tf (lambda (x) ((make-/tf delete-directory exn:fail:filesystem?) x)))
 (define rename-file-or-directory/tf (lambda (x y) ((make-/tf rename-file-or-directory exn:fail:filesystem?) x y)))
+(define rename-file-or-directory/exists/tf (lambda (x y) ((make-/tf rename-file-or-directory exn:fail:filesystem:exists?) x y)))
 (define make-directory/tf (lambda (x) ((make-/tf make-directory exn:fail:filesystem?) x)))
 (define copy-file/tf (lambda (x y) ((make-/tf copy-file exn:fail:filesystem?) x y)))
 
@@ -191,8 +192,8 @@
 (close-output-port (open-output-file "tmp5"))
 (test #t file-exists? "tmp5")
 (test #t file-exists? "tmp5x")
-(test #f rename-file-or-directory/tf "tmp5" "tmp5x")
-(test #f rename-file-or-directory/tf "tmp5" "down")
+(test #f rename-file-or-directory/exists/tf "tmp5" "tmp5x")
+(test #f rename-file-or-directory/exists/tf "tmp5" "down")
 (delete-file "tmp5")
 (test #f file-exists? "tmp5")
 (test #t rename-file-or-directory/tf (build-path "down" "tmp8") (build-path "down" "tmp8x"))
@@ -201,7 +202,7 @@
 (test #f rename-file-or-directory/tf (build-path deepdir "tmp7") (build-path deepdir "tmp7x"))
 
 (test #t make-directory/tf "downx")
-(test #f rename-file-or-directory/tf "down" "downx")
+(test #f rename-file-or-directory/exists/tf "down" "downx")
 (test #t delete-directory/tf "downx")
 
 (test #t rename-file-or-directory/tf "down" "downx")
