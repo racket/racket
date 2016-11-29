@@ -268,6 +268,26 @@
           (loop (sub1 i))))))
 
 ;; ----------------------------------------
+;; Check that printing a hash table doesn't crash
+;; if the table changes while it's being printed
+;; (or checked for cycles):
 
+(let ()
+  (define ht (make-hash))
+
+  (struct trouble (t)
+          #:property prop:custom-write
+          (lambda (s p mode)
+            (hash-set! ht (random) 'ok)
+            (fprintf p "trouble")))
+
+  (for ([i (in-range 100)])
+    (hash-set! ht (trouble i) i))
+
+  (for ([i 20])
+    (define o (open-output-bytes))
+    (print ht o)))
+
+;; ----------------------------------------
 
 (report-errs)
