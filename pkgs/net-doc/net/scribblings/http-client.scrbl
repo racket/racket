@@ -227,7 +227,7 @@ formatted by @racketmodname[net/uri-codec]'s
 
 @(require (for-label net/uri-codec))
 @racketblock[
-(http-send!
+(http-conn-send!
    hc "/login"
    #:method "POST"
    #:data
