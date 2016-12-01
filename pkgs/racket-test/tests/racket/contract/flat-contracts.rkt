@@ -235,4 +235,48 @@
                                                        '(expected: "an even number"
                                                                    given:
                                                                    "something else")))])))
-                      0 1))
+                      0 1)
+
+
+  ;; test that anonymous procedures passed to
+  ;; various combinators don't get strange names
+  (define (test-anon-name name exp)
+    (define (anonymous-name-preserved? exn)
+      (define m
+        (regexp-match
+         #rx"\n *((expected)|(promised)): ([^\n]*)\n"
+         (exn-message exn)))
+      (define procs-name (and m (list-ref m 4)))
+      (define passed?
+        (and m (equal? "flat-contracts:1:0" procs-name)))
+      (unless passed?
+        (printf "~a: procs-name is ~s\n" name procs-name))
+      passed?)
+    (contract-error-test name
+                         (datum->syntax #f exp
+                                        (vector "flat-contracts" 1 0 1 0))
+                         anonymous-name-preserved?))
+  (test-anon-name 'anon-name->dom
+                  '((contract (-> (λ (x) (even? x)) any) values 'pos 'neg) 1))
+  (test-anon-name 'anon-name->dom-kwd
+                  '((contract (-> #:x (λ (x) (even? x)) any) (λ (#:x x) x) 'pos 'neg) #:x 1))
+  (test-anon-name 'anon-name->after-...
+                  '((contract (-> any/c ... (λ (x) (even? x)) any) values 'pos 'neg) 1 3 5))
+  (test-anon-name 'anon-name->before-...
+                  '((contract (-> (λ (x) (even? x)) ... any/c any) values 'pos 'neg) 1 3 5))
+  (test-anon-name 'anon-name->rng
+                  '((contract (-> any/c (λ (x) (even? x))) values 'pos 'neg) 1))
+  (test-anon-name 'anon-name->values-rng
+                  '((contract (-> any/c any/c (values (λ (x) (even? x)) (λ (x) (even? x)))) values 'pos 'neg) 1 3))
+  (test-anon-name 'anon-name->i-dom
+                  '((contract (->i ([x (λ (x) (even? x))]) any) values 'pos 'neg) 1))
+  (test-anon-name 'anon-name->*-dom
+                  '((contract (->* ((λ (x) (even? x))) any) values 'pos 'neg) 1))
+  (test-anon-name 'anon-name->*-dom
+                  '((contract (->* (#:x (λ (x) (even? x))) any) (λ (#:x x) x) 'pos 'neg) #:x 1))
+  (test-anon-name 'anon-name-list/c
+                  '(contract (listof (λ (x) (even? x))) '(1) 'pos 'neg))
+  (test-anon-name 'anon-name-and
+                  '(contract (and/c real? (λ (x) (even? x))) 1 'pos 'neg))
+
+  )

@@ -589,9 +589,10 @@
                   (append (reverse let-bindings)
                           (for/list ([arg-exp (cdr args)]
                                      [arg-x (in-list arg-xes)])
-                            #`[#,arg-x #,(syntax-property arg-exp 
-                                                          'racket/contract:negative-position 
-                                                          this->)]))
+                            #`[#,arg-x #,(syntax-property
+                                          (syntax-property arg-exp 'inferred-name (void))
+                                          'racket/contract:negative-position
+                                          this->)]))
                   (cons (car regular-args) arg-xes))]
          [(keyword? (syntax-e (car args)))
           (when (null? (cdr args))
@@ -610,7 +611,9 @@
                   regular-args
                   (cons (car args) kwds)
                   (cons #'arg-x kwd-args)
-                  (cons #`[arg-x #,(syntax-property (cadr args) 
+                  (cons #`[arg-x #,(syntax-property (syntax-property
+                                                     (cadr args)
+                                                     'inferred-name (void))
                                                     'racket/contract:negative-position 
                                                     this->)]
                         let-bindings)
@@ -621,7 +624,9 @@
                   (cons #'arg-x regular-args)
                   kwds
                   kwd-args
-                  (cons #`[arg-x #,(syntax-property (car args) 
+                  (cons #`[arg-x #,(syntax-property (syntax-property
+                                                     (car args)
+                                                     'inferred-name (void))
                                                     'racket/contract:negative-position 
                                                     this->)]
                         let-bindings)
@@ -704,7 +709,7 @@
          (loop #'rest
                doms
                (cons #'(kwd x) kwd-doms)
-               (cons #`[x #,(syntax-property #'arg 
+               (cons #`[x #,(syntax-property (syntax-property #'arg 'inferred-name (void))
                                              'racket/contract:negative-position 
                                              this->*)]
                      let-bindings)))]
@@ -726,7 +731,7 @@
          (loop #'rest 
                (cons #'t doms) 
                kwd-doms
-               (cons #`[t #,(syntax-property #'x
+               (cons #`[t #,(syntax-property (syntax-property #'x 'inferred-name (void))
                                              'racket/contract:negative-position 
                                              this->*)]
                      let-bindings)))])))
