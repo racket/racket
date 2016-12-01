@@ -18,10 +18,9 @@ The core Racket run-time system is available in two main variants:
 @itemize[
 
  @item{Racket, which provides the primitives libraries on which
-       @racketmodname[racket/base] is implemented. On Unix and Mac
-       macOS, the executable is called
-       @as-index{@exec{racket}}. On Windows, the executable is
-       called @as-index{@exec{Racket.exe}}.}
+       @racketmodname[racket/base] is implemented. On Unix and macOS, 
+       the executable is called @as-index{@exec{racket}}. On Windows, 
+       the executable is called @as-index{@exec{Racket.exe}}.}
 
  @item{GRacket, which is a GUI variant of @exec{racket} to the degree
        that the system distinguishes them. On Unix, the executable

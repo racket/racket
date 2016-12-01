@@ -169,8 +169,8 @@ tethering.
                                [aux (listof (cons/c symbol? any/c)) null])
          void?]{
 
-Like @racket[make-gracket-launcher], but for starting Racket. On Mac
-macOS, the @racket['exe-name] @racket[aux] association is ignored.}
+Like @racket[make-gracket-launcher], but for starting Racket. On macOS, 
+the @racket['exe-name] @racket[aux] association is ignored.}
 
 
 @defproc[(make-gracket-program-launcher [file string?]
@@ -470,8 +470,7 @@ are as follows:
 
 @itemize[
 
- @item{@filepath{.icns} @'rarr @racket['icns] file for use on Mac
-       macOS}
+ @item{@filepath{.icns} @'rarr @racket['icns] file for use on macOS}
 
  @item{@filepath{.ico} @'rarr @racket['ico] file for use on
        Windows or Unix}

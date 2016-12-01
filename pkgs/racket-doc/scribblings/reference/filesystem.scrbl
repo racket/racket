@@ -114,9 +114,8 @@ by @racket[kind], which must be one of the following:
  overridden by the @DFlag{addon} or @Flag{A} command-line flag.  If no
  environment variable or flag is specified, or if the value is not a
  legal path name, then this directory defaults to
- @filepath{Library/Racket} in the @tech{user's home directory} on Mac
- macOS and @racket['pref-dir] otherwise.  The directory might not
- exist.}
+ @filepath{Library/Racket} in the @tech{user's home directory} on macOS 
+ and @racket['pref-dir] otherwise.  The directory might not exist.}
 
  @item{@indexed-racket['doc-dir] --- the standard directory for
  storing the current user's documents. On Unix, it's
@@ -404,8 +403,7 @@ identity of the referenced file or directory (if any).}
 
 @defproc[(file-size [path path-string?]) exact-nonnegative-integer?]{
 
-Returns the (logical) size of the specified file in bytes. On Mac
-macOS, this size excludes the resource-fork size. On error (e.g., if no
+Returns the (logical) size of the specified file in bytes. On macOS, this size excludes the resource-fork size. On error (e.g., if no
 such file exists), the @exnraise[exn:fail:filesystem].}
 
 
