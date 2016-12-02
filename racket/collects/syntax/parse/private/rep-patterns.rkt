@@ -308,6 +308,69 @@ A RepConstraint is one of
 
 ;; ----
 
+;; pattern-has-cut? : *Pattern -> Boolean
+;; Returns #t if p *might* cut (~!, not within ~delimit-cut).
+(define (pattern-has-cut? p)
+  (match p
+    ;; -- S patterns
+    [(pat:any) #f]
+    [(pat:svar name) #f]
+    [(pat:var/p name _ _ _ _ _ _ _)
+     ;; FIXME: need delimit-cut? info from stxclass
+     #f]
+    [(pat:reflect _ _ _ name nested-attrs) #f]
+    [(pat:datum _) #f]
+    [(pat:literal _ _ _) #f]
+    [(pat:action a sp) (or (pattern-has-cut? a) (pattern-has-cut? sp))]
+    [(pat:head headp tailp) (or (pattern-has-cut? headp) (pattern-has-cut? tailp))]
+    [(pat:pair headp tailp) (or (pattern-has-cut? headp) (pattern-has-cut? tailp))]
+    [(pat:vector sp) (pattern-has-cut? sp)]
+    [(pat:box sp) (pattern-has-cut? sp)]
+    [(pat:pstruct key sp) (pattern-has-cut? sp)]
+    [(pat:describe sp _ _ _) (pattern-has-cut? sp)]
+    [(pat:and ps) (ormap pattern-has-cut? ps)]
+    [(pat:or _ ps _) (ormap pattern-has-cut? ps)]
+    [(pat:not _) #f]
+    [(pat:dots headps tailp) (or (ormap pattern-has-cut? headps) (pattern-has-cut? tailp))]
+    [(pat:delimit sp) #f]
+    [(pat:commit sp) #f]
+    [(pat:ord sp _ _) (pattern-has-cut? sp)]
+    [(pat:post sp) (pattern-has-cut? sp)]
+    [(pat:integrated name _ _ _) #f]
+
+    ;; -- A patterns
+    [(action:cut) #t]
+    [(action:fail _ _) #f]
+    [(action:bind attr expr) #f]
+    [(action:and ps) (ormap pattern-has-cut? ps)]
+    [(action:parse sp _) (pattern-has-cut? sp)]
+    [(action:do _) #f]
+    [(action:ord sp _ _) (pattern-has-cut? sp)]
+    [(action:post sp) (pattern-has-cut? sp)]
+
+    ;; -- H patterns
+    [(hpat:var/p name _ _ _ _ _ _ _)
+     ;; FIXME: need delimit-cut?
+     #f]
+    [(hpat:reflect _ _ _ name nested-attrs) #f]
+    [(hpat:seq lp) (pattern-has-cut? lp)]
+    [(hpat:action a hp) (or (pattern-has-cut? a) (pattern-has-cut? hp))]
+    [(hpat:describe hp _ _ _) (pattern-has-cut? hp)]
+    [(hpat:and hp sp) (or (pattern-has-cut? hp) (pattern-has-cut? sp))]
+    [(hpat:or _ ps _) (ormap pattern-has-cut? ps)]
+    [(hpat:delimit hp) #f]
+    [(hpat:commit hp) #f]
+    [(hpat:ord hp _ _) (pattern-has-cut? hp)]
+    [(hpat:post hp) (pattern-has-cut? hp)]
+    [(hpat:peek hp) (pattern-has-cut? hp)]
+    [(hpat:peek-not hp) (pattern-has-cut? hp)]
+
+    ;; EH patterns
+    [(ehpat _ hp _ _) (pattern-has-cut? hp)]
+    ))
+
+;; ----
+
 (define (create-pat:or ps)
   (define attrss (map pattern-attrs ps))
   (pat:or (union-iattrs attrss) ps attrss))
