@@ -292,6 +292,7 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
   (let loop ([es es] [acc null])
     (match es
       ['#f acc]
+      ['#t acc]
       [(expect:thing ps desc tr? role rest-es)
        (cond [(and truncate-opaque? (not tr?))
               (loop rest-es (cons (expect:thing #f desc #t role (ps->stx+index ps)) null))]

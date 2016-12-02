@@ -20,6 +20,8 @@
          ps-difference
 
          (struct-out failure)
+         failure*
+
          expect?
          (struct-out expect:thing)
          (struct-out expect:atom)
@@ -49,6 +51,8 @@ A FailFunction = (FailureSet -> Answer)
 |#
 (define-struct failure (progress expectstack) #:prefab)
 
+;; failure* : PS ExpectStack/#f -> Failure/#t
+(define (failure* ps es) (if es (failure ps es) #t))
 
 ;; == Progress ==
 
@@ -177,10 +181,14 @@ An ExpectStack (during parsing) is one of
   * (expect:atom Datum ExpectStack)
   * (expect:literal Identifier ExpectStack)
   * (expect:proper-pair FirstDesc ExpectStack)
+  * #t
 
 The *-marked variants can only occur at the top of the stack (ie, not
 in the next field of another Expect). The top of the stack contains
 the most specific information.
+
+An ExpectStack can also be #f, which means no failure tracking is
+requested (and thus no more ExpectStacks should be allocated).
 
 -- During reporting, the goal is ease of manipulation.
 
@@ -221,23 +229,23 @@ RExpectList when the most specific information comes last.
       (expect:proper-pair? x)))
 
 (define (es-add-thing ps description transparent? role next)
-  (if description
+  (if (and next description)
       (expect:thing ps description transparent? role next)
       next))
 
 (define (es-add-message message next)
-  (if message
+  (if (and next message)
       (expect:message message next)
       next))
 
 (define (es-add-atom atom next)
-  (expect:atom atom next))
+  (and next (expect:atom atom next)))
 
 (define (es-add-literal literal next)
-  (expect:literal literal next))
+  (and next (expect:literal literal next)))
 
 (define (es-add-proper-pair first-desc next)
-  (expect:proper-pair first-desc next))
+  (and next (expect:proper-pair first-desc next)))
 
 #|
 A FirstDesc is one of

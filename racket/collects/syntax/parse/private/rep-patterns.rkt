@@ -511,6 +511,15 @@ A RepConstraint is one of
 
 ;; ----
 
+;; patterns-cannot-fail? : (Listof SinglePattern) -> Boolean
+;; Returns true if the disjunction of the patterns always succeeds---and thus no
+;; failure-tracking needed. Note: beware cut!
+(define (patterns-cannot-fail? patterns)
+  (and (not (ormap pattern-has-cut? patterns))
+       (ormap pattern-cannot-fail? patterns)))
+
+;; ----
+
 ;; An AbsNullable is 'yes | 'no | 'unknown (3-valued logic)
 
 (define (3and a b)
