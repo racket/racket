@@ -121,6 +121,8 @@ static int lambda_body_size_plus_info(Scheme_Lambda *lam, int check_assign,
                                       Optimize_Info *info, int *is_leaf);
 static int lambda_has_top_level(Scheme_Lambda *lam);
 
+static Scheme_Object *make_sequence_2(Scheme_Object *a, Scheme_Object *b);
+
 static int wants_local_type_arguments(Scheme_Object *rator, int argpos);
 
 static void add_types_for_f_branch(Scheme_Object *t, Optimize_Info *info, int fuel);
@@ -716,6 +718,15 @@ static Scheme_Object *do_make_discarding_sequence(Scheme_Object *e1, Scheme_Obje
   if (rev && movable_expression(e2, info, 0, 1, 1, 0, 50))
     rev = 0;
 
+  if (!rev && SAME_TYPE(SCHEME_TYPE(e1), scheme_sequence_type)) {
+    Scheme_Sequence *seq = (Scheme_Sequence *)e1;
+
+    if (SCHEME_TYPE(seq->array[seq->count - 1]) > _scheme_ir_values_types_) {
+      seq->array[seq->count - 1] = e2;
+      return e1;
+    }
+  }
+
   return scheme_make_sequence_compilation(scheme_make_pair((rev ? e2 : e1),
                                                            scheme_make_pair((rev ? e1 : e2), scheme_null)),
                                           rev ? -1 : 1,
@@ -789,10 +800,8 @@ static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info,
    `expected_vals` is 1 or -1. If `maybe_omittable`, the result can be
    NULL to indicate that it can be omitted. */
 {
-  if (maybe_omittable) {
-    if (scheme_omittable_expr(e, expected_vals, 5, 0, info, NULL))
-      return NULL;
-  }
+  if (scheme_omittable_expr(e, expected_vals, 5, 0, info, NULL))
+    return maybe_omittable? NULL : scheme_false;
 
   if (fuel) {
     /* We could do a lot more here, but for now, we just avoid purely
@@ -863,6 +872,62 @@ static Scheme_Object *optimize_ignored(Scheme_Object *e, Optimize_Info *info,
           val = ensure_single_value(b->test);
           return optimize_ignored(val, info, 1, maybe_omittable, 5);
         }
+      }
+      break;
+    case scheme_sequence_type:
+      {
+        Scheme_Sequence *seq = (Scheme_Sequence *)e;
+        Scheme_Object *last;
+        
+        last = optimize_ignored(seq->array[seq->count - 1], info, expected_vals, 1, fuel - 1);
+        
+        if (last) {
+          seq->array[seq->count - 1] = last;
+          return (Scheme_Object*)seq;
+        } else if (seq->count == 2
+                   && (expected_vals == -1
+                       || single_valued_noncm_expression(seq->array[0], 5))) {
+          return seq->array[0];
+        } else {
+          seq->array[seq->count - 1] = scheme_false;
+          return (Scheme_Object*)seq;
+        }
+      }
+    case scheme_begin0_sequence_type:
+      {
+        Scheme_Sequence *seq = (Scheme_Sequence *)e;
+        Scheme_Object *first;
+        
+        first = optimize_ignored(seq->array[0], info, expected_vals, 1, fuel - 1);
+        
+        if (first) {
+          seq->array[0] = first;
+          return (Scheme_Object*)seq;
+        } else if (seq->count == 2
+                   && (expected_vals == -1
+                       || single_valued_noncm_expression(seq->array[1], 5))) {
+          return seq->array[1];
+        } else {
+          seq->array[0] = scheme_false;
+          return (Scheme_Object*)seq;
+        }
+      }
+      break;
+    case scheme_ir_let_header_type:
+      {
+        Scheme_IR_Let_Header *head = (Scheme_IR_Let_Header *)e;
+        Scheme_IR_Let_Value *lv;
+        Scheme_Object *body;
+        int i;
+
+        body = head->body;
+        for (i = head->num_clauses; i--; ) {
+          lv = (Scheme_IR_Let_Value *)body;
+          body = lv->body;
+        }
+        body = optimize_ignored(body, info, expected_vals, 0, fuel - 1);
+        lv->body = body;
+        return (Scheme_Object*)head;
       }
       break;
     }

@@ -1349,6 +1349,17 @@
 (test-comp '(lambda (v) (unsafe-unbox* (box v)))
            '(lambda (v) v))
 
+(test-comp '(lambda () (car (cons (random 2) (random 3))))
+           '(lambda () (begin0 (random 2) (random 3))))
+(test-comp '(lambda () (car (cons (random 2) (begin (random 3) (lambda (x) x)))))
+           '(lambda () (begin0 (random 2) (random 3))))
+(test-comp '(lambda () (cdr (cons (random 2) (random 3))))
+           '(lambda () (begin (random 2) (random 3))))
+(test-comp '(lambda () (cdr (cons (begin (random 2) (lambda (x) x)) (random 3))))
+           '(lambda () (begin (random 2) (random 3))))
+(test-comp '(lambda () (cdr (cons (begin (random 1) (random 2) (lambda (x) x)) (random 3))))
+           '(lambda () (begin (random 1) (random 2) (random 3))))
+
 (test-comp '(lambda (w z) (pair? (list)))
            '(lambda (w z) #f))
 (test-comp '(lambda (w z) (null? (list)))
