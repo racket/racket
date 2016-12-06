@@ -773,11 +773,11 @@ static Scheme_Object *alloc_structure(Scheme_Object *_stype, int argc)
   return (Scheme_Object *)inst;
 }
 
-#ifdef MZ_USE_FUTURES
 static Scheme_Object *checked_make_vector(int argc)
   XFORM_SKIP_PROC
 /* Arguments on runstack */
 {
+#ifdef MZ_USE_FUTURES
   Scheme_Object *vec, *val, *c = MZ_RUNSTACK[0];
 
   if (SCHEME_INTP(c)
@@ -812,11 +812,9 @@ static Scheme_Object *checked_make_vector(int argc)
 
     return vec;
   } else
+#endif
     return ts_scheme_checked_make_vector(argc, MZ_RUNSTACK);
 }
-#else
-# define checked_make_vector ts_scheme_checked_make_vector
-#endif
 
 Scheme_Structure *scheme_jit_allocate_structure(int argc, Scheme_Struct_Type *stype)
 {
