@@ -178,8 +178,10 @@ THREAD_LOCAL_DECL(int scheme_did_gc_count);
 THREAD_LOCAL_DECL(static intptr_t process_time_at_swap);
 
 THREAD_LOCAL_DECL(static intptr_t max_gc_pre_used_bytes);
-THREAD_LOCAL_DECL(static intptr_t num_major_garbage_collections);
-THREAD_LOCAL_DECL(static intptr_t num_minor_garbage_collections);
+#ifdef MZ_PRECISE_GC
+THREAD_LOCAL_DECL(static int num_major_garbage_collections);
+THREAD_LOCAL_DECL(static int num_minor_garbage_collections);
+#endif
 
 SHARED_OK static int init_load_on_demand = 1;
 SHARED_OK static int compiled_file_check = SCHEME_COMPILED_FILE_CHECK_MODIFY_SECONDS;
