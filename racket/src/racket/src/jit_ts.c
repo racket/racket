@@ -141,6 +141,7 @@ define_ts_l_s(scheme_jit_make_vector, FSRC_OTHER)
 # endif
 define_ts_ss_s(equal_as_bool, FSRC_MARKS)
 define_ts_sss_s(extract_one_cc_mark_to_tag, FSRC_MARKS)
+define_ts_iS_s(scheme_checked_make_vector, FSRC_MARKS)
 #endif
 
 #ifdef JIT_APPLY_TS_PROCS
@@ -225,6 +226,7 @@ define_ts_s_s(scheme_box, FSRC_OTHER)
 # define ts_scheme_string_eq_2 scheme_string_eq_2
 # define ts_scheme_byte_string_eq_2 scheme_byte_string_eq_2
 # define ts_extract_one_cc_mark_to_tag extract_one_cc_mark_to_tag
+# define ts_scheme_checked_make_vector scheme_checked_make_vector
 # define ts_tail_call_with_values_from_multiple_result tail_call_with_values_from_multiple_result
 # define ts_raise_bad_call_with_values raise_bad_call_with_values
 # define ts_call_with_values_from_multiple_result_multi call_with_values_from_multiple_result_multi

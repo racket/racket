@@ -230,6 +230,11 @@ inline static void out_of_memory_gc(NewGC* gc) {
   out_of_memory();
 }
 
+void GC_set_accounting_custodian(void *c) {
+  NewGC *gc = GC_get_GC();
+  gc->alternate_accounting_custodian = c;
+}
+
 /*****************************************************************************/
 /* OS-level memory management                                                */
 /*                                                                           */
@@ -1289,11 +1294,13 @@ static void *allocate_big(const size_t request_size_bytes, int type)
   if (GC_gen0_alloc_only) return NULL;
 
 #ifdef NEWGC_BTC_ACCOUNT
-  if(GC_out_of_memory) {
+  if (GC_out_of_memory || gc->alternate_accounting_custodian) {
     if (premaster_or_place_gc(gc)) {
       if (BTC_single_allocation_limit(gc, request_size_bytes)) {
         /* We're allowed to fail. Check for allocations that exceed a single-time
            limit. See BTC_single_allocation_limit() for more information. */
+        if (gc->alternate_accounting_custodian)
+          return NULL;
         GC_out_of_memory();
       }
     }
@@ -5501,6 +5508,8 @@ static void garbage_collect(NewGC *gc, int force_full, int no_full,
   
   gc->mark_gen1 = (gc->gc_full || gc->started_incremental) && !gc->all_marked_incremental;
   gc->check_gen1 = gc->gc_full && !gc->all_marked_incremental;
+
+  gc->alternate_accounting_custodian = NULL;
 
   /* ------------------------------------------------------------ */
   /* Prepare                                                      */

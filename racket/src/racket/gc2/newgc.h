@@ -337,6 +337,7 @@ typedef struct NewGC {
   GC_Post_Propagate_Hook_Proc GC_post_propagate_hook;
   GC_Treat_As_Incremental_Mark_Proc treat_as_incremental_mark_hook;
   short treat_as_incremental_mark_tag;
+  void *alternate_accounting_custodian;
 
   GC_Immobile_Box *immobile_boxes;
 

@@ -773,6 +773,51 @@ static Scheme_Object *alloc_structure(Scheme_Object *_stype, int argc)
   return (Scheme_Object *)inst;
 }
 
+#ifdef MZ_USE_FUTURES
+static Scheme_Object *checked_make_vector(int argc)
+  XFORM_SKIP_PROC
+/* Arguments on runstack */
+{
+  Scheme_Object *vec, *val, *c = MZ_RUNSTACK[0];
+
+  if (SCHEME_INTP(c)
+      && (SCHEME_INT_VAL(c) >= 0)
+      /* Upper bound ensures that we don't have to deal with overflow: */
+      && (SCHEME_INT_VAL(c) < 0x1000000)) {
+    /* In a future thread, we can try to call scheme_malloc_tagged() directory,
+       but it might fail and return NULL */
+    intptr_t count = SCHEME_INT_VAL(c), i, size;
+    size = (sizeof(Scheme_Vector)
+            + ((count - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+    if ((count < 1024) || scheme_use_rtcall)
+      vec = scheme_malloc_tagged(size);
+    else
+      vec = scheme_malloc_fail_ok(scheme_malloc_tagged, size);
+    if (vec) {
+      vec->type = scheme_vector_type;
+      SCHEME_VEC_SIZE(vec) = count;
+    } else {
+      /* Must be in a future thread */
+      vec = scheme_rtcall_allocate_vector(count);
+      if (!vec) {
+        /* Unusual failure --- maybe "out of memory" */
+        return ts_scheme_checked_make_vector(argc, MZ_RUNSTACK);
+      }
+    }
+
+    val = ((argc > 1) ? MZ_RUNSTACK[1] : scheme_make_integer(0));
+    for (i = 0; i < count; i++) {
+      SCHEME_VEC_ELS(vec)[i] = val;
+    }
+
+    return vec;
+  } else
+    return ts_scheme_checked_make_vector(argc, MZ_RUNSTACK);
+}
+#else
+# define checked_make_vector ts_scheme_checked_make_vector
+#endif
+
 Scheme_Structure *scheme_jit_allocate_structure(int argc, Scheme_Struct_Type *stype)
 {
   Scheme_Structure *inst;
@@ -1108,6 +1153,10 @@ static int generate_inlined_constant_varref_test(mz_jit_state *jitter, Scheme_Ob
 static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
                                  Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
                                  int dest);
+static int generate_make_vector_alloc(mz_jit_state *jitter,
+                                      Scheme_Object *rator,
+                                      Scheme_Object *rand1, Scheme_Object *rand2,
+                                      int dest);
 
 int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, int is_tail, int multi_ok, 
 				  Branch_Info *for_branch, int branch_short, int result_ignored,
@@ -2063,6 +2112,8 @@ int scheme_generate_inlined_unary(mz_jit_state *jitter, Scheme_App2_Rec *app, in
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, NULL, app, NULL, dest);
+    } else if (IS_NAMED_PRIM(rator, "make-vector")) {
+      return generate_make_vector_alloc(jitter, rator, app->rand, NULL, dest);
     } else if (IS_NAMED_PRIM(rator, "list*")
                || IS_NAMED_PRIM(rator, "values")) {
       /* on a single argument, `list*' or `values' is identity */
@@ -3916,6 +3967,8 @@ int scheme_generate_inlined_binary(mz_jit_state *jitter, Scheme_App3_Rec *app, i
     } else if (IS_NAMED_PRIM(rator, "vector-immutable")
                || IS_NAMED_PRIM(rator, "vector")) {
       return generate_vector_alloc(jitter, rator, NULL, NULL, app, dest);
+    } else if (IS_NAMED_PRIM(rator, "make-vector")) {
+      return generate_make_vector_alloc(jitter, rator, app->rand1, app->rand2, dest);
     } else if (IS_NAMED_PRIM(rator, "make-rectangular")) {
       GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *ref4, *refslow, *refdone;
 
@@ -5272,6 +5325,38 @@ static int generate_vector_alloc(mz_jit_state *jitter, Scheme_Object *rator,
       mz_runstack_popped(jitter, c);
     }
   }
+
+  return 1;
+}
+
+int generate_make_vector_alloc(mz_jit_state *jitter,
+                               Scheme_Object *rator,
+                               Scheme_Object *rand1, Scheme_Object *rand2,
+                               int dest)
+/* de-sync'd ok */
+{
+  GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
+  Scheme_Object *args[3];
+  int argc = (rand2 ? 2 : 1);
+
+  args[0] = rator;
+  args[1] = rand1;
+  args[2] = rand2;
+
+  scheme_generate_app(NULL, args, argc, argc, jitter, 0, 0, 0, 2);
+
+  mz_rs_sync();
+  JIT_UPDATE_THREAD_RSPTR_IF_NEEDED();
+
+  jit_movi_i(JIT_R1, argc);
+
+  jit_prepare(1);
+  jit_pusharg_i(JIT_R1);
+  (void)mz_finish_lwe(checked_make_vector, refrts);
+  jit_retval(dest);
+
+  jit_addi_l(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(argc));
+  mz_runstack_popped(jitter, argc);
 
   return 1;
 }

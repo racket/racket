@@ -153,7 +153,7 @@
    })
    (newline))
 
-(define proto-counter 11)
+(define proto-counter 20)
 
 (define (gen-protos t)
   (define-values (arg-types result-type) (parse-type t))

@@ -432,6 +432,10 @@ static void init_cpucount(void);
 # define scheme_future_longjmp(newbuf, v) scheme_longjmp(newbuf, v)
 #endif
 
+#ifndef MZ_PRECISE_GC
+# define GC_set_accounting_custodian(c) /* nothing */
+#endif
+
 /**********************************************************************/
 /* Arguments for a newly created future thread                        */
 /**********************************************************************/
@@ -3145,6 +3149,35 @@ Scheme_Structure *scheme_rtcall_allocate_structure(int count, Scheme_Struct_Type
   return (Scheme_Structure *)retval;
 }
 
+Scheme_Object *scheme_rtcall_allocate_vector(int count)
+  XFORM_SKIP_PROC
+/* Called in future thread */
+{
+  Scheme_Future_Thread_State *fts = scheme_future_thread_state;
+  future_t *future = fts->thread->current_ft;
+  Scheme_Object *retval;
+
+  future->prim_protocol = SIG_ALLOC_VECTOR;
+
+  future->arg_i0 = count;
+
+  future->time_of_request = get_future_timestamp();
+  future->source_of_request = "[allocate_structure]";
+  future->source_type = FSRC_OTHER;
+
+  future_do_runtimecall(fts, NULL, 1, 0, 0);
+
+  /* Fetch the future again, in case moved by a GC */
+  future = fts->thread->current_ft;
+
+  future->arg_s0 = NULL;
+
+  retval = future->retval_s;
+  future->retval_s = NULL;
+
+  return retval;
+}
+
 Scheme_Object *scheme_rtcall_tail_apply(Scheme_Object *rator, int argc, Scheme_Object **argv)
   XFORM_SKIP_PROC
 /* Called in future thread */
@@ -3534,6 +3567,28 @@ static void do_invoke_rtcall(Scheme_Future_State *fs, future_t *future)
         res = scheme_jit_allocate_structure(future->arg_i0, (Scheme_Struct_Type *)arg_s0);
 
         future->retval_s = (Scheme_Object *)res;
+
+        break;
+      }
+    case SIG_ALLOC_VECTOR:
+      {
+        GC_CAN_IGNORE Scheme_Object *res;
+        intptr_t count = future->arg_i0;
+
+        future->arg_s0 = NULL;
+
+        GC_set_accounting_custodian(future->cust);
+
+        res = scheme_malloc_tagged(sizeof(Scheme_Vector)
+                                   + ((count - mzFLEX_DELTA) * sizeof(Scheme_Object *)));
+        if (res) {
+          res->type = scheme_vector_type;
+          SCHEME_VEC_SIZE(res) = count;
+        }
+
+        GC_set_accounting_custodian(NULL);
+
+        future->retval_s = res;
 
         break;
       }

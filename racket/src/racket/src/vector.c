@@ -41,7 +41,6 @@ READ_ONLY Scheme_Object *scheme_unsafe_struct_ref_proc;
 
 /* locals */
 static Scheme_Object *vector_p (int argc, Scheme_Object *argv[]);
-static Scheme_Object *make_vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_length (int argc, Scheme_Object *argv[]);
@@ -84,7 +83,9 @@ scheme_init_vector (Scheme_Env *env)
   scheme_vector_p_proc = p;
 
   REGISTER_SO(scheme_make_vector_proc);
-  p = scheme_make_immed_prim(make_vector, "make-vector", 1, 2);
+  p = scheme_make_immed_prim(scheme_checked_make_vector, "make-vector", 1, 2);
+  SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_UNARY_INLINED
+                                                            | SCHEME_PRIM_IS_BINARY_INLINED);
   scheme_add_global_constant("make-vector", p, env);
   scheme_make_vector_proc = p;
 
@@ -319,8 +320,8 @@ vector_p (int argc, Scheme_Object *argv[])
   return (SCHEME_CHAPERONE_VECTORP(argv[0]) ? scheme_true : scheme_false);
 }
 
-static Scheme_Object *
-make_vector (int argc, Scheme_Object *argv[])
+Scheme_Object *
+scheme_checked_make_vector (int argc, Scheme_Object *argv[])
 {
   Scheme_Object *vec, *fill;
   intptr_t len;

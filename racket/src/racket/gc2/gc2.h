@@ -163,8 +163,14 @@ GC2_EXTERN int GC_set_account_hook(int type, void *c1, uintptr_t b, void *c2);
 
 GC2_EXTERN uintptr_t GC_get_account_memory_limit(void *c1);
 /*
-  Returns a moemory accounting limit for c1 (or any ancestor),
+  Returns a memory accounting limit for c1 (or any ancestor),
   or 0 if none is set. */
+
+GC2_EXTERN void GC_set_accounting_custodian(void *c);
+/*
+  Sets a custodian for checking memory limits for the next allocation.
+  This custodian should be cleared when allocation returns, but it
+  will be reset to NULL if a GC is triggered. */
 
 GC2_EXTERN void GC_gcollect(void);
 GC2_EXTERN void GC_gcollect_minor(void);
