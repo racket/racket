@@ -320,6 +320,14 @@
      (mytest (match (hash-table)
                ((hash-table) 5))
              5)
+     (mytest (match #hash((1 . 2))
+           [(hash-table) "empty"]
+           [_ "non-empty"])
+             "non-empty")
+     (mytest (match #hash()
+           [(hash-table) "empty"]
+           [_ "non-empty"])
+             "empty")
      
      ; These cases work but I need a better way of testing them.
      ; (mytest (match (hash-table ('a "hey") ('b "sup") ('c "sup") ('d "sup") ('e "down") ('f "dat"))

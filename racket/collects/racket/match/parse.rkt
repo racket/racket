@@ -95,13 +95,15 @@
      (raise-syntax-error
       'match "dot dot k can only appear at the end of hash-table patterns" stx
       (ormap (lambda (e) (and (ddk? e) e)) (syntax->list #'(p ...))))]
-    [(hash-table (k v) ...)
-     (andmap (λ (p) (and (literal-pat? p) (not (identifier? p)))) (syntax->list #'(k ...)))
-     (let ([keys (map Exact-v (map literal-pat? (syntax->list #'(k ...))))])
-       (trans-match*
-        (cons #'hash? (for/list ([k (in-list keys)]) (λ (e) #`(hash-has-key? #,e '#,k))))
-        (for/list ([k (in-list keys)]) (λ (e) #`(hash-ref #,e '#,k)))
-        (map parse (syntax->list #'(v ...)))))]
+    [(hash-table (k0 v0) (k1 v1) ...)
+     (andmap (λ (p) (and (literal-pat? p) (not (identifier? p)))) (syntax->list #'(k0 k1 ...)))
+     (with-syntax ([(k ...) #'(k0 k1 ...)]
+                   [(v ...) #'(v0 v1 ...)])
+       (let ([keys (map Exact-v (map literal-pat? (syntax->list #'(k ...))))])
+         (trans-match*
+          (cons #'hash? (for/list ([k (in-list keys)]) (λ (e) #`(hash-has-key? #,e '#,k))))
+          (for/list ([k (in-list keys)]) (λ (e) #`(hash-ref #,e '#,k)))
+          (map parse (syntax->list #'(v ...))))))]
     [(hash-table p ...)
      (trans-match #'hash?
                   #'(lambda (e) (hash-map e list))
