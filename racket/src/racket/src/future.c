@@ -434,6 +434,8 @@ static void init_cpucount(void);
 
 #ifndef MZ_PRECISE_GC
 # define GC_set_accounting_custodian(c) /* nothing */
+# define GC_register_thread(t, c) /* nothing */
+# define GC_register_new_thread(t, c) /* nothing */
 #endif
 
 /**********************************************************************/
@@ -674,9 +676,12 @@ static void init_future_thread(Scheme_Future_State *fs, int i)
   params.fts = fts;
   params.fs = fs;
 
-  /* Make enough of a thread record to deal with multiple values. */
+  /* Make enough of a thread record to deal with multiple values
+     and to support GC and memory accounting. */
   skeleton = MALLOC_ONE_TAGGED(Scheme_Thread);
   skeleton->so.type = scheme_thread_type;
+  GC_register_new_thread(skeleton, main_custodian);
+  skeleton->running = MZTHREAD_RUNNING;
 
   fts->thread = skeleton;
 
@@ -791,6 +796,8 @@ static void check_future_thread_creation(Scheme_Future_State *fs)
 static void start_gc_not_ok(Scheme_Future_State *fs)
 /* must have mutex_lock */
 {
+  Scheme_Thread *p;
+
   while (fs->wait_for_gc) {
     int quit = fs->abort_all_futures;
     fs->need_gc_done_post++;
@@ -815,6 +822,10 @@ static void start_gc_not_ok(Scheme_Future_State *fs)
     }
   }
 #endif
+
+  p = scheme_current_thread;
+  MZ_RUNSTACK = p->runstack;
+  MZ_RUNSTACK_START = p->runstack_start;
 }
 
 static void end_gc_not_ok(Scheme_Future_Thread_State *fts, 
@@ -835,6 +846,11 @@ static void end_gc_not_ok(Scheme_Future_Thread_State *fts,
   p->runstack_start = MZ_RUNSTACK_START;
   p->cont_mark_stack = MZ_CONT_MARK_STACK;
   p->cont_mark_pos = MZ_CONT_MARK_POS;
+
+  /* To ensure that memory accounting goes through the thread
+     record, clear these roots: */
+  MZ_RUNSTACK = NULL;
+  MZ_RUNSTACK_START = NULL;
 
   /* FIXME: clear scheme_current_thread->ku.multiple.array ? */
 
@@ -2289,6 +2305,9 @@ void *worker_thread_future_loop(void *arg)
 
   mzrt_sema_post(params->ready_sema);
 
+  scheme_current_thread->runstack = MZ_RUNSTACK;
+  scheme_current_thread->runstack_start = MZ_RUNSTACK_START;
+
   while (1) {
     mzrt_sema_wait(fs->future_pending_sema);
     mzrt_mutex_lock(fs->future_mutex);
@@ -2317,6 +2336,7 @@ void *worker_thread_future_loop(void *arg)
       scheme_jit_fill_threadlocal_table();
 
       fts->thread->current_ft = ft;
+      GC_register_thread(fts->thread, ft->cust);
 
       MZ_RUNSTACK = MZ_RUNSTACK_START + fts->runstack_size;
       MZ_CONT_MARK_STACK = 0;
@@ -2416,6 +2436,7 @@ void *worker_thread_future_loop(void *arg)
         }
 
         fts->thread->current_ft = NULL;
+        GC_register_thread(fts->thread, main_custodian);
       }
 
       /* Clear stacks */
@@ -2538,6 +2559,7 @@ static int capture_future_continuation(Scheme_Future_State *fs, future_t *ft, vo
    
   ft->fts->thread->current_ft = NULL; /* tells worker thread that it no longer
                                          needs to handle the future */
+  GC_register_thread(ft->fts->thread, main_custodian);
   
   ft->suspended_lw = lw;
   ft->maybe_suspended_lw = 1;

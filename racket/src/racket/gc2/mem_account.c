@@ -38,6 +38,8 @@ inline static void BTC_register_new_thread(void *t, void *c)
 }
 
 inline static void BTC_register_thread(void *t, void *c)
+/* Might be called in a future thread to change to a custodian that
+   has a set number */
 {
   NewGC *gc = GC_get_GC();
   GC_Thread_Info *work;
