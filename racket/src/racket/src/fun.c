@@ -1889,7 +1889,16 @@ cert_with_specials(Scheme_Object *code,
     if (SCHEME_PAIRP(code))
       return v;
 
-    return scheme_datum_to_syntax(v, code, scheme_false, 0, 1);
+    v = scheme_datum_to_syntax(v, code, scheme_false, 0, 1);
+
+    if (scheme_syntax_is_original(v)
+        && !scheme_syntax_is_original(code)) {
+      /* Since we copied properties without scopes, we need to
+         explicitly remove originalness */
+      v = scheme_syntax_remove_original(v);
+    }
+
+    return v;
   } else if (SCHEME_STX_NULLP(code))
     return code;
 

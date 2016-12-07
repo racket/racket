@@ -201,6 +201,33 @@
 
 (test #f syntax-property s 'testing)
 
+
+(define-syntax mcr0
+  (lambda (stx)
+    (syntax-case stx ()
+      [(_) (syntax (begin 0))])))
+
+(define s (quote-syntax (mcr0)))
+(define se (expand-once s))
+
+(test #t syntax-original? s)
+(test #f syntax-original? se)
+
+;; Check that a property in a template is preserved by #'
+
+(define-syntax (define-define-stx stx)
+  (syntax-case stx ()
+    [(_ stx)
+     (with-syntax ([template (syntax-property #'(x)
+                                              'x
+                                              'y)])
+       #'(define stx
+           (with-syntax ([x #'hi])
+             #'template)))]))
+
+(define-define-stx stx-with-property)
+(test 'y syntax-property stx-with-property 'x)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Plain s, se derived from part of s
 
@@ -252,7 +279,7 @@
 (test '(12 . 10) syntax-property se 'testing)
 (test '(mcr2) (tree-map syntax-e) (syntax-property se 'origin))
 
-(test #f syntax-original? s)
+(test #t syntax-original? s)
 (test #t syntax-original? se)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

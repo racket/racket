@@ -1281,6 +1281,9 @@ Scheme_Object *scheme_stx_track(Scheme_Object *naya,
 
 int scheme_stx_has_empty_wraps(Scheme_Object *stx, Scheme_Object *phase);
 
+int scheme_syntax_is_original(Scheme_Object *_stx);
+Scheme_Object *scheme_syntax_remove_original(Scheme_Object *_stx);
+
 XFORM_NONGCING Scheme_Object *scheme_stx_root_scope();
 Scheme_Object *scheme_new_scope(int kind);
 Scheme_Object *scheme_scope_printed_form(Scheme_Object *m);

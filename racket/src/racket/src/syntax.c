@@ -8122,20 +8122,26 @@ static Scheme_Object *syntax_tainted_p(int argc, Scheme_Object **argv)
 
 static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
 {
-  Scheme_Stx *stx;
-  Scheme_Object *key, *val;
-  intptr_t i;
-
   if (!SCHEME_STXP(argv[0]))
     scheme_wrong_contract("syntax-original?", "syntax?", 0, argc, argv);
 
-  stx = (Scheme_Stx *)argv[0];
+  if (scheme_syntax_is_original(argv[0]))
+    return scheme_true;
+  else
+    return scheme_false;
+}
+
+int scheme_syntax_is_original(Scheme_Object *_stx)
+{
+  Scheme_Stx *stx = (Scheme_Stx *)_stx;
+  Scheme_Object *key, *val;
+  intptr_t i;
 
   if (stx->props) {
     if (!scheme_hash_tree_get(stx->props, source_symbol))
-      return scheme_false;
+      return 0;
   } else
-    return scheme_false;
+    return 0;
 
   /* Look for any non-original scope: */
   i = scope_set_next(stx->scopes->simple_scopes, -1);
@@ -8143,12 +8149,27 @@ static Scheme_Object *syntax_original_p(int argc, Scheme_Object **argv)
     scope_set_index(stx->scopes->simple_scopes, i, &key, &val);
 
     if (SCHEME_SCOPE_KIND(key) == SCHEME_STX_MACRO_SCOPE)
-      return scheme_false;
+      return 0;
     
     i = scope_set_next(stx->scopes->simple_scopes, i);
   }
 
-  return scheme_true;
+  return 1;
+}
+
+Scheme_Object *scheme_syntax_remove_original(Scheme_Object *_stx)
+{
+  Scheme_Stx *stx = (Scheme_Stx *)_stx;
+  Scheme_Hash_Tree *props = stx->props;
+
+  if (!props)
+    return (Scheme_Object *)stx;
+
+  props = scheme_hash_tree_set(props, source_symbol, NULL);
+  stx = (Scheme_Stx *)clone_stx((Scheme_Object *)stx, NULL);
+  stx->props = props;
+  
+  return (Scheme_Object *)stx;
 }
 
 Scheme_Object *scheme_stx_property2(Scheme_Object *_stx,
