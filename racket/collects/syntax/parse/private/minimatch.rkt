@@ -87,6 +87,8 @@
                (let ([xps (cdr (vector->list (struct->vector x)))])
                  (match-p xps (list p ...) success failure))
                failure)))]
+    [(match-p x pattern success failure)
+     (raise-syntax-error 'minimatch "bad pattern" #'pattern)]
     ))
 
 (define-syntax match-p*
