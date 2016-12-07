@@ -673,4 +673,33 @@
 (test '(1 3 -5) remf* even? '(1 -2 3 4 -5))
 (test '(1 -2 3 4 -5) remf* (λ (x) #f) '(1 -2 3 4 -5))
 
+;; ---------- index(es)-of / index(es)-where ----------
+
+(test #f index-of '() 'a)
+(test #f index-of '(a b) 'c)
+(test 0 index-of '(a b c) 'a)
+(test 1 index-of '(a b c) 'b)
+(test 0 index-of (list #'a #'b #'c) #'a free-identifier=?)
+(test 1 index-of (list #'a #'b #'c) #'b free-identifier=?)
+
+(test #f index-where '() even?)
+(test #f index-where '(1 3 5) even?)
+(test 0 index-where '(1 2 3 4 5) odd?)
+(test 1 index-where '(1 2 3 4 5) even?)
+
+(test '() indexes-of '() 'a)
+(test '() indexes-of '(a b) 'c)
+(test '(0) indexes-of '(a b c) 'a)
+(test '(1) indexes-of '(a b c) 'b)
+(test '(0 1) indexes-of '(a a b) 'a)
+(test '(1 2) indexes-of '(a b b) 'b)
+(test '(0 1 2) indexes-of '(a a a) 'a)
+(test '(0 1) indexes-of (list #'a #'a #'b) #'a free-identifier=?)
+(test '(1 2) indexes-of (list #'a #'b #'b) #'b free-identifier=?)
+
+(test '() indexes-where '() even?)
+(test '() indexes-where '(1 3 5) even?)
+(test '(1 3) indexes-where '(1 2 3 4 5) even?)
+(test '(0 2 4) indexes-where '(1 2 3 4 5) odd?)
+
 (report-errs)

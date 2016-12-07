@@ -13,6 +13,11 @@
          list-update
          list-set
 
+         index-of
+         index-where
+         indexes-of
+         indexes-where
+
          drop
          take
          split-at
@@ -828,3 +833,51 @@
         [else
          (cons (car ls)
                (remf* f (cdr ls)))]))
+
+(define (index-of ls v [=? equal?])
+  (unless (list? ls)
+    (raise-argument-error 'index-of "list?" ls))
+  (unless (and (procedure? =?)
+               (procedure-arity-includes? =? 2))
+    (raise-argument-error 'index-of "(-> any/c any/c any/c)" =?))
+  (let loop ([ls ls]
+             [i 0])
+    (cond [(null? ls) #f]
+          [(=? (car ls) v) i]
+          [else (loop (cdr ls) (add1 i))])))
+
+(define (index-where ls f)
+  (unless (list? ls)
+    (raise-argument-error 'index-where "list?" ls))
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-argument-error 'index-where "(-> any/c any/c)" f))
+  (let loop ([ls ls]
+             [i 0])
+    (cond [(null? ls) #f]
+          [(f (car ls)) i]
+          [else (loop (cdr ls) (add1 i))])))
+
+(define (indexes-of ls v [=? equal?])
+  (unless (list? ls)
+    (raise-argument-error 'indexes-of "list?" ls))
+  (unless (and (procedure? =?)
+               (procedure-arity-includes? =? 2))
+    (raise-argument-error 'indexes-of "(-> any/c any/c any/c)" =?))
+  (let loop ([ls ls]
+             [i 0])
+    (cond [(null? ls) '()]
+          [(=? (car ls) v) (cons i (loop (cdr ls) (add1 i)))]
+          [else (loop (cdr ls) (add1 i))])))
+
+(define (indexes-where ls f)
+  (unless (list? ls)
+    (raise-argument-error 'indexes-where "list?" ls))
+  (unless (and (procedure? f)
+               (procedure-arity-includes? f 1))
+    (raise-argument-error 'indexes-where "(-> any/c any/c)" f))
+  (let loop ([ls ls]
+             [i 0])
+    (cond [(null? ls) '()]
+          [(f (car ls)) (cons i (loop (cdr ls) (add1 i)))]
+          [else (loop (cdr ls) (add1 i))])))

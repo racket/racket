@@ -898,6 +898,48 @@ The element at the specified index is @racket[value].
 @history[#:added "6.3"]{}
 }
 
+@defproc[(index-of [lst list?] [v any/c]
+                   [is-equal? (any/c any/c . -> . any/c) equal?])
+         (or/c exact-nonnegative-integer? #f)]{
+Like @racket[member], but returns the index of the first element found
+instead of the tail of the list.
+                          
+@mz-examples[#:eval list-eval
+  (index-of '(1 2 3 4) 3)]
+
+@history[#:added "6.7.0.3"]}
+
+@defproc[(index-where [lst list?] [proc (any/c . -> . any/c)])
+         (or/c exact-nonnegative-integer? #f)]{
+Like @racket[index-of] but with the predicate-searching behavior of
+@racket[memf].
+
+@mz-examples[#:eval list-eval
+  (index-where '(1 2 3 4) even?)]
+
+@history[#:added "6.7.0.3"]}
+
+@defproc[(indexes-of [lst list?] [v any/c]
+                     [is-equal? (any/c any/c . -> . any/c) equal?])
+         (listof exact-nonnegative-integer?)]{
+Like @racket[index-of], but returns the a list of all the indexes
+where the element occurs in the list instead of just the first one.
+                          
+@mz-examples[#:eval list-eval
+  (indexes-of '(1 2 1 2 1) 2)]
+
+@history[#:added "6.7.0.3"]}
+
+@defproc[(indexes-where [lst list?] [proc (any/c . -> . any/c)])
+         (listof exact-nonnegative-integer?)]{
+Like @racket[indexes-of] but with the predicate-searching behavior of
+@racket[index-where].
+
+@mz-examples[#:eval list-eval
+  (indexes-where '(1 2 3 4) even?)]
+
+@history[#:added "6.7.0.3"]}
+
 @defproc[(take [lst any/c] [pos exact-nonnegative-integer?])
          list?]{
 
