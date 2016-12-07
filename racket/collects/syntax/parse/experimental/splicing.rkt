@@ -58,8 +58,8 @@
                      (sort-sattrs '(#s(attr a.name a.depth #f) ...))
                      (quote-syntax parser)
                      #t
-                     #t #t
-                     #f #f)))]))
+                     (scopts (length '(a.name ...)) #t #t #f)
+                     #f)))]))
 
 (define (mk-permute unsorted-attrs)
   (let ([sorted-attrs

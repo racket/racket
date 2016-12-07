@@ -68,10 +68,8 @@
                                    'attrs
                                    (quote-syntax parser)
                                    '#,splicing?
-                                   'commit?
-                                   'delimit-cut?
-                                   #f
-                                   'desc))
+                                   (scopts (length 'attrs) 'commit? 'delimit-cut? desc)
+                                   #f))
                        (define-values (parser)
                          (parser/rhs name formals attrs rhss #,splicing? #,stx)))))))])))
 
@@ -89,10 +87,8 @@
                   (stxclass 'name no-arity '()
                             (quote-syntax parser)
                             #f
-                            #t
-                            #t
-                            (quote-syntax predicate)
-                            'description))
+                            (scopts 0 #t #t 'description)
+                            (quote-syntax predicate)))
                 (define (parser x cx pr es fh0 cp0 rl success)
                   (if (predicate x)
                       (success fh0)
@@ -526,7 +522,8 @@ Conventions:
        [#s(pat:svar name)
         #'(let-attributes ([#s(attr name 0 #t) (datum->syntax cx x cx)])
             k)]
-       [#s(pat:var/p name parser argu (nested-a ...) attr-count commit? role _desc)
+       [#s(pat:var/p name parser argu (nested-a ...) role
+                     #s(scopts attr-count commit? _delimit? _desc))
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)
                        (if (identifier? #'name)
@@ -695,8 +692,8 @@ Conventions:
         #''(any)]
        [#s(pat:svar name)
         #''(any)]
-       [#s(pat:var/p _ ...)
-        #`(quote #,(pat:var/p-desc (syntax-e #'p)))]
+       [#s(pat:var/p _ _ _ _ _ #s(scopts _ _ _ desc))
+        #'(quote desc)]
        [#s(pat:datum d)
         #''(datum d)]
        [#s(pat:literal id _ip _lp)
@@ -720,7 +717,7 @@ Conventions:
   (syntax-case stx ()
     [(fdh hpat)
      (syntax-case #'hpat ()
-       [#s(hpat:var/p _n _p _a _na _ac _c? _r desc) #'desc]
+       [#s(hpat:var/p _ _ _ _ _ #s(scopts _ _ _ desc)) #'(quote desc)]
        [#s(hpat:seq lp) #'(first-desc:L lp)]
        [#s(hpat:describe _hp desc _t? _r)
         #`(quote #,(or (constant-desc #'desc) #'#f))]
@@ -814,7 +811,8 @@ Conventions:
             (parse:H x cx rest-x rest-cx rest-pr pattern pr* es*
                      (let ([rest-pr (if 'transparent? rest-pr (ps-pop-opaque rest-pr))])
                        k)))]
-       [#s(hpat:var/p name parser argu (nested-a ...) attr-count commit? role _desc)
+       [#s(hpat:var/p name parser argu (nested-a ...) role
+                      #s(scopts attr-count commit? _delimit? _desc))
         (with-syntax ([(av ...) (generate-n-temporaries (syntax-e #'attr-count))]
                       [(name-attr ...)
                        (if (identifier? #'name)

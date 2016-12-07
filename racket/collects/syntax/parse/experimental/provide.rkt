@@ -61,7 +61,7 @@
                (join-sep (map kw->string maxkws*) "," "and")
                (join-sep (map kw->string maxkws) "," "and")))
         (with-syntax ([scname scname]
-                      [#s(stxclass name arity attrs parser splicing? commit? delimit? inline desc)
+                      [#s(stxclass name arity attrs parser splicing? opts inline)
                        stxclass]
                       [#s(ctcrec (mpc ...) (mkw ...) (mkwc ...)
                                  (opc ...) (okw ...) (okwc ...))
@@ -100,8 +100,7 @@
                      'attrs
                      (quote-syntax contracted-parser)
                      'splicing?
-                     'commit? 'delimit?
-                     #f 'desc)) ;; must disable integration
+                     'opts #f)) ;; must disable inlining
                   (provide (rename-out [contracted-scname scname])))))))])))
 
 (define-syntax (provide-syntax-class/contract stx)

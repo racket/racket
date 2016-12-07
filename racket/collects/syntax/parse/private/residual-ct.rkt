@@ -1,6 +1,7 @@
 #lang racket/base
 (provide (struct-out attr)
          (struct-out stxclass)
+         (struct-out scopts)
          (struct-out conventions)
          (struct-out literalset)
          (struct-out lse:lit)
@@ -27,16 +28,23 @@
 
 ;; == from rep-data.rkt
 
-;; A stxclass is #s(stxclass Symbol Symbols SAttrs Id Bool Bool BoolOptions Id/#f String/#f)
+;; A stxclass is #s(stxclass Symbol Arity SAttrs Id Bool scopts Id/#f)
 (define-struct stxclass
   (name         ;; Symbol
    arity        ;; Arity (defined in kws.rkt)
    attrs        ;; (Listof SAttr)
    parser       ;; Id, reference to parser (see parse.rkt for parser signature)
    splicing?    ;; Bool
+   opts         ;; scopts
+   inline       ;; Id/#f, reference to a predicate
+   ) #:prefab)
+
+;; A scopts is #s(scopts Nat Bool Bool String/#f)
+;; These are passed on to var patterns.
+(define-struct scopts
+  (attr-count   ;; Nat
    commit?      ;; Bool
    delimit-cut? ;; Bool
-   inline       ;; Id/#f, reference to a predicate
    desc         ;; String/#f, String = known constant description
    ) #:prefab)
 

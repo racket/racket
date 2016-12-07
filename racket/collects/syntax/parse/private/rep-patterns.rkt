@@ -13,7 +13,7 @@ Uses Arguments from kws.rkt
 A SinglePattern is one of
   (pat:any)
   (pat:svar id)  -- "simple" var, no stxclass
-  (pat:var/p Id Id Arguments (Listof IAttr) Nat/#f Bool Stx String/#f) -- var with parser
+  (pat:var/p Id Id Arguments (Listof IAttr) Stx scopts) -- var with parser
   (pat:literal identifier Stx Stx)
   (pat:datum datum)
   (pat:action ActionPattern SinglePattern)
@@ -44,7 +44,7 @@ A ListPattern is a subtype of SinglePattern; one of
 
 (define-struct pat:any () #:prefab)
 (define-struct pat:svar (name) #:prefab)
-(define-struct pat:var/p (name parser argu nested-attrs attr-count commit? role desc) #:prefab)
+(define-struct pat:var/p (name parser argu nested-attrs role opts) #:prefab)
 (define-struct pat:literal (id input-phase lit-phase) #:prefab)
 (define-struct pat:datum (datum) #:prefab)
 (define-struct pat:action (action inner) #:prefab)
@@ -91,7 +91,7 @@ A SideClause is just an ActionPattern
 
 #|
 A HeadPattern is one of 
-  (hpat:var/p Id Id Arguments (Listof IAttr) Nat/#f Bool Stx String/#f)
+  (hpat:var/p Id Id Arguments (Listof IAttr) Stx scopts)
   (hpat:seq ListPattern)
   (hpat:action ActionPattern HeadPattern)
   (hpat:and HeadPattern SinglePattern)
@@ -106,7 +106,7 @@ A HeadPattern is one of
   (hpat:peek-not HeadPattern)
 |#
 
-(define-struct hpat:var/p (name parser argu nested-attrs attr-count commit? role desc) #:prefab)
+(define-struct hpat:var/p (name parser argu nested-attrs role scopts) #:prefab)
 (define-struct hpat:seq (inner) #:prefab)
 (define-struct hpat:action (action inner) #:prefab)
 (define-struct hpat:and (head single) #:prefab)
@@ -214,7 +214,7 @@ A RepConstraint is one of
      null]
     [(pat:svar name)
      (list (attr name 0 #t))]
-    [(pat:var/p name _ _ nested-attrs _ _ _ _)
+    [(pat:var/p name _ _ nested-attrs _ _)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
     [(pat:reflect _ _ _ name nested-attrs)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
@@ -274,7 +274,7 @@ A RepConstraint is one of
      (pattern-attrs sp)]
 
     ;; -- H patterns
-    [(hpat:var/p name _ _ nested-attrs _ _ _ _)
+    [(hpat:var/p name _ _ nested-attrs _ _)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
     [(hpat:reflect _ _ _ name nested-attrs)
      (if name (cons (attr name 0 #t) nested-attrs) nested-attrs)]
@@ -315,9 +315,7 @@ A RepConstraint is one of
     ;; -- S patterns
     [(pat:any) #f]
     [(pat:svar name) #f]
-    [(pat:var/p name _ _ _ _ _ _ _)
-     ;; FIXME: need delimit-cut? info from stxclass
-     #f]
+    [(pat:var/p _ _ _ _ _ opts) (not (scopts-delimit-cut? opts))]
     [(pat:reflect _ _ _ name nested-attrs) #f]
     [(pat:datum _) #f]
     [(pat:literal _ _ _) #f]
@@ -349,9 +347,7 @@ A RepConstraint is one of
     [(action:post sp) (pattern-has-cut? sp)]
 
     ;; -- H patterns
-    [(hpat:var/p name _ _ _ _ _ _ _)
-     ;; FIXME: need delimit-cut?
-     #f]
+    [(hpat:var/p _ _ _ _ _ opts) (not (scopts-delimit-cut? opts))]
     [(hpat:reflect _ _ _ name nested-attrs) #f]
     [(hpat:seq lp) (pattern-has-cut? lp)]
     [(hpat:action a hp) (or (pattern-has-cut? a) (pattern-has-cut? hp))]

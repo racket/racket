@@ -4,7 +4,6 @@
          syntax/private/id-table
          racket/syntax
          syntax/parse/private/residual-ct ;; keep abs. path
-         "make.rkt"
          "minimatch.rkt"
          "kws.rkt")
 ;; from residual.rkt
@@ -46,7 +45,7 @@
 ;; make-dummy-stxclass : identifier -> SC
 ;; Dummy stxclass for calculating attributes of recursive stxclasses.
 (define (make-dummy-stxclass name)
-  (make stxclass (syntax-e name) #f null #f #f #f #t #f #f))
+  (stxclass (syntax-e name) #f null #f #f (scopts 0 #t #t #f) #f))
 
 ;; Environments
 
@@ -60,7 +59,7 @@ DeclEntry =
 - (den:datum-lit Id Symbol)
 - (den:class Id Id Arguments)
 - (den:magic-class Id Id Arguments Stx)
-- (den:parser Id (Listof SAttr) Bool Bool Bool String/#f)
+- (den:parser Id (Listof SAttr) Bool scopts)
 - (den:delayed Id Id)
 
 Arguments is defined in rep-patterns.rkt
@@ -90,7 +89,7 @@ expressions are duplicated, and may be evaluated in different scopes.
 
 (define-struct den:class (name class argu))
 (define-struct den:magic-class (name class argu role))
-(define-struct den:parser (parser attrs splicing? commit? delimit-cut? desc))
+(define-struct den:parser (parser attrs splicing? opts))
 ;; and from residual.rkt:
 ;;  (define-struct den:lit (internal external input-phase lit-phase))
 ;;  (define-struct den:datum-lit (internal external))
@@ -135,7 +134,7 @@ expressions are duplicated, and may be evaluated in different scopes.
                          stxclass-name)
            (wrong-syntax (if blame-declare? name id)
                          "identifier previously declared"))]
-      [(den:parser _p _a _sp _c _dc? _desc)
+      [(den:parser _p _a _sp _opts)
        (wrong-syntax id "(internal error) late unbound check")]
       ['#f (void)])))
 
@@ -143,7 +142,7 @@ expressions are duplicated, and may be evaluated in different scopes.
   (declenv-check-unbound env id)
   (make-declenv
    (bound-id-table-set (declenv-table env) id
-                       (make den:magic-class id stxclass-name argu role))
+                       (den:magic-class id stxclass-name argu role))
    (declenv-conventions env)))
 
 ;; declenv-update/fold : DeclEnv (Id/Regexp DeclEntry a -> DeclEntry a) a

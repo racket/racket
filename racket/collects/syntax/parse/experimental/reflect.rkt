@@ -12,8 +12,7 @@
 (begin-for-syntax
  (lazy-require
   [syntax/parse/private/rep-data ;; keep abs. path
-   (get-stxclass
-    stxclass-delimit-cut?)]))
+   (get-stxclass)]))
 ;; FIXME: workaround for phase>0 bug in racket/runtime-path (and thus lazy-require)
 ;; Without this, dependencies don't get collected.
 (require racket/runtime-path (for-meta 2 '#%kernel))
@@ -26,7 +25,7 @@
          (with-disappeared-uses
           (let* ([stxclass (get-stxclass #'sc)]
                  [splicing? (stxclass-splicing? stxclass)])
-            (unless (stxclass-delimit-cut? stxclass)
+            (unless (scopts-delimit-cut? (stxclass-opts stxclass))
               (raise-syntax-error #f "cannot reify syntax class with #:no-delimit-cut option"
                                   stx #'sc))
             (with-syntax ([name (stxclass-name stxclass)]

@@ -27,17 +27,14 @@
                           [splicing? (stxclass-splicing? target)]
                           [arity arity]
                           [attrs (stxclass-attrs target)]
-                          [commit? (stxclass-commit? target)]
-                          [delimit-cut? (stxclass-delimit-cut? target)]
+                          [opts (stxclass-opts target)]
                           [target-parser (stxclass-parser target)]
-                          [desc (stxclass-desc target)]
                           [argu argu])
               #`(begin (define-syntax name
                          (stxclass 'name 'arity 'attrs
                                    (quote-syntax parser)
                                    'splicing?
-                                   'commit? 'delimit-cut?
-                                   #f 'desc))
+                                   'opts #f))
                        (define-values (parser)
                          (lambda (x cx pr es fh0 cp0 rl success . formals)
                            (app-argu target-parser x cx pr es fh0 cp0 rl success argu))))))))])))

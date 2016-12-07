@@ -170,7 +170,7 @@
   (match p
     [(pat:any) #t]
     [(pat:svar _n) #t]
-    [(pat:var/p _n _p _argu _na _ac commit? _r)
+    [(pat:var/p _ _ _ _ _ (scopts _ commit? _ _))
      ;; commit? implies delimit-cut
      commit?]
     [(? pat:integrated?) #t]
@@ -211,7 +211,7 @@
     [(pat:post pattern)
      (pattern-factorable? pattern)]
     ;; ----
-    [(hpat:var/p _name _parser _argu _na _ac commit? _role)
+    [(hpat:var/p _ _ _ _ _ (scopts _ commit? _ _))
      commit?]
     [(hpat:seq inner)
      (pattern-factorable? inner)]
@@ -410,7 +410,7 @@
      (format-symbol "~a:~a" (or name '_) desc)]
     [(pat:svar name)
      (syntax-e name)]
-    [(pat:var/p name parser _ _ _ _ _)
+    [(pat:var/p name parser _ _ _ _)
      (cond [(and parser (regexp-match #rx"^parse-(.*)$" (symbol->string (syntax-e parser))))
             => (lambda (m)
                  (format-symbol "~a:~a" (or name '_) (cadr m)))]
