@@ -621,7 +621,8 @@
 
 (define (different-source-sha1-and-dep-recorded path deps)
   (define src-hash (get-source-sha1 path))
-  (define recorded-hash (caadr deps))
+  (define recorded-hash (and (pair? (cadr deps))
+                             (caadr deps)))
   (if (equal? src-hash recorded-hash)
       #f
       (list src-hash recorded-hash)))
