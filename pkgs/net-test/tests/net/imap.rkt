@@ -10,6 +10,49 @@
   (unless (equal? expect got)
     (error 'test "failed: ~s vs. ~s" expect got)))
 
+;; ----------------------------------------
+
+(define (try-connect username password expected-login)
+  
+  (define-values (ci so) (make-pipe))
+  (define-values (si co) (make-pipe))
+  
+  (define got-login #f)
+  
+  (define t
+    (thread (lambda ()
+              (let loop ()
+                (define l (read-line si))
+                (define m (regexp-match #rx"^([a-z0-9]*) ([A-Z]+)(.*)\r$" l))
+                (unless m (log-error "?? ~s" l))
+                (define (reply s)
+                  (fprintf so "~a ~a\r\n" (cadr m) s)
+                  (flush-output so))
+                (case (caddr m)
+                  [("NOOP") (reply "OK NOOP completed")]
+                  [("CAPABILITY") (reply "OK CAPABILITY completed")]
+                  [("LOGIN") 
+                   (set! got-login (cadddr m))
+                   (reply "OK LOGIN completed")]
+                  [("SELECT")
+                   (reply "OK SELECT completed")]
+                  [else
+                   (log-error "?? ~s" l)])
+                (loop)))))
+
+  (imap-connect* ci co username password "INBOX")
+  
+  (test expected-login 'login got-login))
+
+
+(try-connect "user" "password" " user password")
+(for ([special-char (in-string "](){}\\%")])
+  (try-connect "user"
+               (format "pass~aword" special-char)
+               (format " user \"pass~aword\"" special-char)))
+  
+;; ----------------------------------------
+
 (define imap-config-file
   (build-path (find-system-path 'home-dir) ".imap-test-config"))
 

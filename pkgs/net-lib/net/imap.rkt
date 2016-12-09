@@ -217,8 +217,11 @@
         [(box? cmd) (fprintf w "~a" (unbox cmd))]
         [(string? cmd) (loop (string->bytes/utf-8 cmd))]
         [(bytes? cmd)
-         (if (or (regexp-match #rx#"[ *\"\r\n]" cmd)
-                 (equal? cmd #""))
+         (if (or
+              ;; Check for anything in `atom-specials` from the IMAP RFC:
+              (regexp-match #px#"[] *%\"\r\n(){}\\\\[:cntrl:]]" cmd)
+              ;; The empty string is also a special case:
+              (equal? cmd #""))
            (if (regexp-match #rx#"[\"\r\n]" cmd)
              (begin
                ;; Have to send size, then continue if the
