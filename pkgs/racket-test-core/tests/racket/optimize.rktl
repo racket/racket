@@ -4774,6 +4774,48 @@
               (set! f 0))
            #f)
 
+;; Error simplifications must not break `with-continuation-mark`:
+(let ([f (lambda ()
+           (with-continuation-mark
+               'contrast-dye 1
+               (begin
+                 (with-continuation-mark
+                     'contrast-dye 2
+                     (+ 1 #f))
+                 (void))))])
+  (set! f f)
+  (test '(2 1)
+        'contrast-dye
+        (with-handlers ([exn:fail? (lambda (exn)
+                                     (continuation-mark-set->list (exn-continuation-marks exn)
+                                                                  'contrast-dye))])
+          (f))))
+(let ([check-escape-position
+       (lambda (nontail-wrap)
+         (test-comp `(lambda ()
+                      (with-continuation-mark
+                          'contrast-dye 1
+                          ,(nontail-wrap `(with-continuation-mark
+                                           'contrast-dye 2
+                                           (+ 1 #f)))))
+                    `(lambda ()
+                      (with-continuation-mark
+                          'contrast-dye 1
+                          (begin
+                            (with-continuation-mark
+                                'contrast-dye 2
+                                (+ 1 #f))
+                            (void))))))])
+  (check-escape-position (lambda (e)
+                           `(+ 1 ,e)))
+  (check-escape-position (lambda (e)
+                           `(let ([x ,e])
+                             x)))
+  (check-escape-position (lambda (e)
+                           `(if ,e 1 2)))
+  (check-escape-position (lambda (e)
+                           `(begin0 ,e 1))))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test that the `if` is not confused by the
 ;; predicates that recognize #f.
