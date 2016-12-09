@@ -1461,7 +1461,8 @@ typedef struct {
 static void jit_register_sub_func(mz_jit_state *jitter, void *code, Scheme_Object *protocol, int gcable)
 /* protocol: #f => normal lightweight call protocol
              void => next return address is in LOCAL2
-             eof => name to use is in LOCAL2 */
+             eof => name to use is in LOCAL2
+             null => no name, but usual frame */
 {
   void *code_end;
 
@@ -1482,7 +1483,7 @@ void scheme_jit_register_helper_func(mz_jit_state *jitter, void *code, int gcabl
 {
 #if defined(MZ_USE_DWARF_LIBUNWIND) || defined(_WIN64)
   /* Null indicates that there's no function name to report, but the
-     stack should be unwound manually using the JJIT-generated convention. */
+     stack should be unwound manually using the JIT-generated convention. */
   jit_register_sub_func(jitter, code, scheme_null, gcable);
 #endif  
 }

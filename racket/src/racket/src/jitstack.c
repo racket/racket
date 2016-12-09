@@ -161,9 +161,9 @@ static void set_cache(void *p, Scheme_Object *last)
 
 Scheme_Object *scheme_native_stack_trace(void)
 {
-  void *p, *q, *cache_frame_p;
+  void *p, *q, *cache_frame_p, *set_cache_sp = NULL;
   uintptr_t stack_end, real_stack_end, stack_start, halfway;
-  Scheme_Object *name, *last = NULL, *first = NULL, *tail;
+  Scheme_Object *name, *last = NULL, *first = NULL, *tail, *set_cache_last = NULL;
   int cache_had_name = 0;
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_context_t cx;
@@ -200,7 +200,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_getcontext(&cx);
   unw_init_local(&c, &cx);
-  unw_set_safe_pointer_range(&c, stack_start, stack_end);
+  unw_set_safe_pointer_range(&c, stack_start, real_stack_end);
   use_unw = 1;
   p = NULL;
 #else
@@ -296,7 +296,8 @@ Scheme_Object *scheme_native_stack_trace(void)
 
       if (cache_sp) {
 	if (STK_COMP((uintptr_t)halfway, (uintptr_t)cache_sp)) {
-	  set_cache(cache_sp, last);
+          set_cache_sp = cache_sp;
+          set_cache_last = last;
 	  if (!name)
 	    shift_cache_to_next = 1;
 	  halfway = stack_end;
@@ -313,7 +314,10 @@ Scheme_Object *scheme_native_stack_trace(void)
     }
 
     if (shift_cache_to_next)
-      stack_cache_stack[stack_cache_stack_pos].cache = tail;
+      set_cache_last = tail;
+
+    if (set_cache_sp)
+      set_cache(set_cache_sp, set_cache_last);
 
     if (last)
       SCHEME_CDR(last) = tail;
@@ -438,7 +442,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 	first = name;
       last = name;
       if (shift_cache_to_next) {
-        stack_cache_stack[stack_cache_stack_pos].cache = last;
+        set_cache_last = last;
         shift_cache_to_next = 0;
       }
       added_list_elem = 1;
@@ -458,7 +462,8 @@ Scheme_Object *scheme_native_stack_trace(void)
        it will use the return address from the stack. */
     if (STK_COMP((uintptr_t)halfway, (uintptr_t)cache_frame_p)
 	&& cache_had_name) {
-      set_cache(cache_frame_p, last);
+      set_cache_sp = cache_frame_p;
+      set_cache_last = last;
       if (!added_list_elem)
 	shift_cache_to_next = 1;
       halfway = stack_end;
@@ -509,7 +514,10 @@ Scheme_Object *scheme_native_stack_trace(void)
   }
 
   if (shift_cache_to_next)
-    stack_cache_stack[stack_cache_stack_pos].cache = tail;
+    set_cache_last = tail;
+
+  if (set_cache_sp)
+    set_cache(set_cache_sp, set_cache_last);
 
 #ifdef MZ_USE_DWARF_LIBUNWIND
   unw_destroy_local(&c);
