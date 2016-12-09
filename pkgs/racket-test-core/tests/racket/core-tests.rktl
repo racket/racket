@@ -37,6 +37,7 @@
 (load-relative "udp.rktl")
 (load-relative "path.rktl")
 (unless (or building-flat-tests? in-drscheme?)
+  (load-relative "jitinline.rktl")
   (load-relative "optimize.rktl"))
 (unless building-flat-tests?
   (load-relative "name.rktl"))
