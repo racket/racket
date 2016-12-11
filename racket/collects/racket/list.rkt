@@ -115,27 +115,27 @@
 
 (define (make-list n x)
   (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'make-list "exact-nonnegative-integer?" n))
+    (raise-argument-error 'make-list "exact-nonnegative-integer?" 0 n x))
   (let loop ([n n] [r '()])
     (if (zero? n) r (loop (sub1 n) (cons x r)))))
 
 (define (list-update l i f)
   (unless (list? l)
-    (raise-argument-error 'list-update "list?" l))
+    (raise-argument-error 'list-update "list?" 0 l i f))
   (unless (exact-nonnegative-integer? i)
-    (raise-argument-error 'list-update "exact-nonnegative-integer?" i))
+    (raise-argument-error 'list-update "exact-nonnegative-integer?" 1 l i f))
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
-    (raise-argument-error 'list-update "(-> any/c any/c)" f))
+    (raise-argument-error 'list-update "(-> any/c any/c)" 2 l i f))
   (cond
    [(zero? i) (cons (f (car l)) (cdr l))]
    [else (cons (car l) (list-update (cdr l) (sub1 i) f))]))
 
 (define (list-set l k v)
   (unless (list? l)
-    (raise-argument-error 'list-update "list?" l))
+    (raise-argument-error 'list-set "list?" 0 l k v))
   (unless (exact-nonnegative-integer? k)
-    (raise-argument-error 'list-update "exact-nonnegative-integer?" k))
+    (raise-argument-error 'list-set "exact-nonnegative-integer?" 1 l k v))
   (list-update l k (lambda (_) v)))
 
 ;; internal use below
@@ -219,7 +219,7 @@
 
 (define (drop-right list n)
   (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'drop-right "exact-nonnegative-integer?" n))
+    (raise-argument-error 'drop-right "exact-nonnegative-integer?" 1 list n))
   (let loop ([list list]
              [lead (or (drop* list n) (too-large 'drop-right list n))])
     ;; could throw an error for non-lists, but be more like `drop'
@@ -229,7 +229,7 @@
 
 (define (split-at-right list n)
   (unless (exact-nonnegative-integer? n)
-    (raise-argument-error 'split-at-right "exact-nonnegative-integer?" n))
+    (raise-argument-error 'split-at-right "exact-nonnegative-integer?" 1 list n))
   (let loop ([list list]
              [lead (or (drop* list n) (too-large 'split-at-right list n))]
              [pfx '()])
@@ -275,12 +275,12 @@
 ; Is l a prefix or r?
 (define (list-prefix? ls rs [same? equal?])
   (unless (list? ls)
-    (raise-argument-error 'list-prefix? "list?" ls))
+    (raise-argument-error 'list-prefix? "list?" 0 ls rs))
   (unless (list? rs)
-    (raise-argument-error 'list-prefix? "list?" rs))
+    (raise-argument-error 'list-prefix? "list?" 1 ls rs))
   (unless (and (procedure? same?)
                (procedure-arity-includes? same? 2))
-    (raise-argument-error 'list-prefix? "(any/c any/c . -> . any/c)" same?))
+    (raise-argument-error 'list-prefix? "(any/c any/c . -> . any/c)" 2 ls rs same?))
   (or (null? ls)
       (and (pair? rs)
            (same? (car ls) (car rs))
@@ -295,12 +295,12 @@
 
 (define (internal-split-common-prefix as bs same? keep-prefix? name)
   (unless (list? as)
-    (raise-argument-error name "list?" as))
+    (raise-argument-error name "list?" 0 as bs))
   (unless (list? bs)
-    (raise-argument-error name "list?" bs))
+    (raise-argument-error name "list?" 1 as bs))
   (unless (and (procedure? same?)
                (procedure-arity-includes? same? 2))
-    (raise-argument-error name "(any/c any/c . -> . any/c)" same?))
+    (raise-argument-error name "(any/c any/c . -> . any/c)" 2 as bs same?))
   (let loop ([as as] [bs bs])
     (if (and (pair? as) (pair? bs) (same? (car as) (car bs)))
         (let-values ([(prefix atail btail) (loop (cdr as) (cdr bs))])
@@ -443,7 +443,7 @@
                           [same? equal?]
                           #:key [key values])
   (unless (list? items)
-    (raise-argument-error 'check-duplicates "list?" items))
+    (raise-argument-error 'check-duplicates "list?" 0 items))
   (unless (and (procedure? key)
                (procedure-arity-includes? key 1))
     (raise-argument-error 'check-duplicates "(-> any/c any/c)" key))
@@ -458,7 +458,7 @@
                       (procedure-arity-includes? same? 2))
            (raise-argument-error 'check-duplicates
                                  "(any/c any/c . -> . any/c)"
-                                 same?))
+                                 1 items same?))
          (check-duplicates/list items key same?)]))
 (define (check-duplicates/t items key table)
   (let loop ([items items])
@@ -490,15 +490,16 @@
 
 (define (check-filter-arguments who f l ls)
   (unless (procedure? f)
-    (raise-argument-error who "procedure?" f))
+    (apply raise-argument-error who "procedure?" 0 f l ls))
   (unless (procedure-arity-includes? f (add1 (length ls)))
     (raise-arguments-error
      who "mismatch between procedure arity and argument count"
      "procedure" f
      "expected arity" (add1 (length ls))))
   (unless (and (list? l) (andmap list? ls))
-    (for ([x (in-list (cons l ls))])
-      (unless (list? x) (raise-argument-error who "list?" x)))))
+    (for ([(x i) (in-indexed (cons l ls))])
+      (unless (list? x)
+        (apply raise-argument-error who "list?" (add1 i) f l ls)))))
 
 (define (filter-map f l . ls)
   (check-filter-arguments 'filter-map f l ls)
@@ -605,7 +606,7 @@
   (unless (list? l)
     (raise-argument-error 'in-combinations "list?" 0 l))
   (when (and k (not (exact-nonnegative-integer? k)))
-    (raise-argument-error 'in-combinations "exact-nonnegative-integer?" 1 k))
+    (raise-argument-error 'in-combinations "exact-nonnegative-integer?" 1 l k))
   (define v (list->vector l))
   (define N (vector-length v))
   (define N-1 (- N 1))
@@ -755,12 +756,12 @@
 
   (unless (and (procedure? key)
                (procedure-arity-includes? key 1))
-    (raise-argument-error 'group-by "(-> any/c any/c)" key))
+    (raise-argument-error 'group-by "(-> any/c any/c)" 0 key l))
   (unless (and (procedure? =?)
                (procedure-arity-includes? =? 2))
-    (raise-argument-error 'group-by "(any/c any/c . -> . any/c)" =?))
+    (raise-argument-error 'group-by "(any/c any/c . -> . any/c)" 2 key l =?))
   (unless (list? l)
-    (raise-argument-error 'group-by "list?" l))
+    (raise-argument-error 'group-by "list?" 1 key l))
 
   ;; like hash-update, but for alists
   (define (alist-update al k up fail)
@@ -803,19 +804,19 @@
 
 ;; (listof x) ... -> (listof (listof x))
 (define (cartesian-product . ls)
-  (for ([l (in-list ls)])
+  (for ([(l i) (in-indexed ls)])
     (unless (list? l)
-      (raise-argument-error 'cartesian-product "list?" l)))
+      (apply raise-argument-error 'cartesian-product "list?" i ls)))
   (define (cp-2 as bs)
     (for*/list ([i (in-list as)] [j (in-list bs)]) (cons i j)))
   (foldr cp-2 (list (list)) ls))
 
 (define (remf f ls)
   (unless (list? ls)
-    (raise-argument-error 'remf "list?" ls))
+    (raise-argument-error 'remf "list?" 1 f ls))
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
-    (raise-argument-error 'remf "(-> any/c any/c)" f))
+    (raise-argument-error 'remf "(-> any/c any/c)" 0 f ls))
   (cond [(null? ls) '()]
         [(f (car ls)) (cdr ls)]
         [else
@@ -824,10 +825,10 @@
 
 (define (remf* f ls)
   (unless (list? ls)
-    (raise-argument-error 'remf* "list?" ls))
+    (raise-argument-error 'remf* "list?" 1 f ls))
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
-    (raise-argument-error 'remf* "(-> any/c any/c)" f))
+    (raise-argument-error 'remf* "(-> any/c any/c)" 0 f ls))
   (cond [(null? ls) '()]
         [(f (car ls)) (remf* f (cdr ls))]
         [else
@@ -836,10 +837,10 @@
 
 (define (index-of ls v [=? equal?])
   (unless (list? ls)
-    (raise-argument-error 'index-of "list?" ls))
+    (raise-argument-error 'index-of "list?" 0 ls v))
   (unless (and (procedure? =?)
                (procedure-arity-includes? =? 2))
-    (raise-argument-error 'index-of "(-> any/c any/c any/c)" =?))
+    (raise-argument-error 'index-of "(-> any/c any/c any/c)" 2 ls v =?))
   (let loop ([ls ls]
              [i 0])
     (cond [(null? ls) #f]
@@ -848,10 +849,10 @@
 
 (define (index-where ls f)
   (unless (list? ls)
-    (raise-argument-error 'index-where "list?" ls))
+    (raise-argument-error 'index-where "list?" 0 ls f))
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
-    (raise-argument-error 'index-where "(-> any/c any/c)" f))
+    (raise-argument-error 'index-where "(-> any/c any/c)" 1 ls f))
   (let loop ([ls ls]
              [i 0])
     (cond [(null? ls) #f]
@@ -860,10 +861,10 @@
 
 (define (indexes-of ls v [=? equal?])
   (unless (list? ls)
-    (raise-argument-error 'indexes-of "list?" ls))
+    (raise-argument-error 'indexes-of "list?" 0 ls v))
   (unless (and (procedure? =?)
                (procedure-arity-includes? =? 2))
-    (raise-argument-error 'indexes-of "(-> any/c any/c any/c)" =?))
+    (raise-argument-error 'indexes-of "(-> any/c any/c any/c)" 2 ls v =?))
   (let loop ([ls ls]
              [i 0])
     (cond [(null? ls) '()]
@@ -872,10 +873,10 @@
 
 (define (indexes-where ls f)
   (unless (list? ls)
-    (raise-argument-error 'indexes-where "list?" ls))
+    (raise-argument-error 'indexes-where "list?" 0 ls f))
   (unless (and (procedure? f)
                (procedure-arity-includes? f 1))
-    (raise-argument-error 'indexes-where "(-> any/c any/c)" f))
+    (raise-argument-error 'indexes-where "(-> any/c any/c)" 1 ls f))
   (let loop ([ls ls]
              [i 0])
     (cond [(null? ls) '()]
