@@ -4804,12 +4804,12 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     z2 = SAME_OBJ(app->rand2, scheme_make_integer(0));
     if (IS_NAMED_PRIM(app->rator, "unsafe-fx+")) {
       if (z1)
-        return app->rand2;
+        return ensure_single_value(app->rand2);
       else if (z2)
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx-")) {
       if (z2)
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fx*")) {
       if (z1 || z2) {
         if (z1 && z2)
@@ -4820,14 +4820,14 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
           return make_discarding_sequence(app->rand2, scheme_make_integer(0), info);
       }
       if (SAME_OBJ(app->rand1, scheme_make_integer(1)))
-        return app->rand2;
+        return ensure_single_value(app->rand2);
       if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fxquotient")) {
       if (z1)
         return make_discarding_sequence(app->rand2, scheme_make_integer(0), info);
       if (SAME_OBJ(app->rand2, scheme_make_integer(1)))
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fxremainder")
                || IS_NAMED_PRIM(app->rator, "unsafe-fxmodulo")) {
       if (z1)
@@ -4841,20 +4841,20 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
     if (IS_NAMED_PRIM(app->rator, "unsafe-fl+")) {
       if (z1)
-        return app->rand2;
+        return ensure_single_value(app->rand2);
       else if (z2)
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl-")) {
       if (z2)
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl*")) {
       if (SCHEME_FLOATP(app->rand1) && (SCHEME_FLOAT_VAL(app->rand1) == 1.0))
-        return app->rand2;
+        return ensure_single_value(app->rand2);
       if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-fl/")) {
       if (SCHEME_FLOATP(app->rand2) && (SCHEME_FLOAT_VAL(app->rand2) == 1.0))
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     }
 
     /* Possible improvement: detect 0 and 1 constants even when general
@@ -4865,20 +4865,20 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
     if (IS_NAMED_PRIM(app->rator, "unsafe-extfl+")) {
       if (z1)
-        return app->rand2;
+        return ensure_single_value(app->rand2);
       else if (z2)
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl-")) {
       if (z2)
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl*")) {
       if (SCHEME_LONG_DBLP(app->rand1) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand1)))
-        return app->rand2;
+        return ensure_single_value(app->rand2);
       if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     } else if (IS_NAMED_PRIM(app->rator, "unsafe-extfl/")) {
       if (SCHEME_LONG_DBLP(app->rand2) && long_double_is_1(SCHEME_LONG_DBL_VAL(app->rand2)))
-        return app->rand1;
+        return ensure_single_value(app->rand1);
     }
 #endif
   } else if (SCHEME_PRIMP(app->rator)
@@ -5867,7 +5867,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
 
     if (pred && predicate_implies(pred, scheme_boolean_p_proc)) {
       info->size -= 2;
-      return t;
+      return ensure_single_value(t);
     }
   }
 
@@ -5888,7 +5888,7 @@ static Scheme_Object *optimize_branch(Scheme_Object *o, Optimize_Info *info, int
   if (SCHEME_FALSEP(fb)
       && equivalent_exprs(t, tb, NULL, NULL, 0)) {
       info->size -= 2;
-      return t;
+      return ensure_single_value(t);
   }
 
   /* Convert: expressions like

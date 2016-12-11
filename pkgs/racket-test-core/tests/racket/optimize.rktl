@@ -3910,6 +3910,88 @@
   (check-escape-position (lambda (e)
                            `(begin0 ,e 1))))
 
+;; Aritmethic simplifications must not break `with-continuation-mark`:
+(let ([f (lambda ()
+           (define retval #f)
+           (with-continuation-mark
+               'contrast-dye 1
+               (unsafe-fx+
+                 0
+                 (with-continuation-mark
+                     'contrast-dye 2
+                     (begin
+                       (set! retval (continuation-mark-set->list
+                                     (current-continuation-marks)
+                                     'contrast-dye))
+                       7))))
+           retval)])
+  (set! f f)
+  (test '(2 1)
+        'contrast-dye
+        (f)))
+
+(let ([check-wcm-wrap
+       (lambda (nontail-wrap)
+         (test-comp `(lambda (p)
+                      (with-continuation-mark
+                          'contrast-dye 1
+                          ,(nontail-wrap `(with-continuation-mark
+                                              'contrast-dye 2
+                                              (p)))))
+                    `(lambda (p)
+                      (with-continuation-mark
+                          'contrast-dye 1
+                          (unsafe-fx+
+                            0
+                            (with-continuation-mark
+                                'contrast-dye 2
+                                (p)))))))])
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fx+ 0 ,e)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fx+ ,e 0)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fx- ,e 0)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fx* 1 ,e)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fx* ,e 1)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fxquotient ,e 1)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fl+ 0.0 ,e)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fl+ ,e 0.0)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fl- ,e 0.0)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fl* 1.0 ,e)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fl* ,e 1.0)))
+  (check-wcm-wrap (lambda (e)
+                    `(unsafe-fl/ ,e 1.0))))
+
+;; Check `if` reduction in a boolen context:
+(let ([f (lambda (x)
+           (define retval #f)
+           (not 
+            (with-continuation-mark
+                'contrast-dye 1
+                (if (with-continuation-mark
+                        'contrast-dye 2
+                        (begin
+                          (set! retval (continuation-mark-set->list
+                                        (current-continuation-marks)
+                                        'contrast-dye))
+                           x))
+                  #t
+                  #f)))
+           retval)])
+  (set! f f)
+  (test '(2 1)
+        'contrast-dye
+        (f 'x)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Test that the `if` is not confused by the
 ;; predicates that recognize #f.
