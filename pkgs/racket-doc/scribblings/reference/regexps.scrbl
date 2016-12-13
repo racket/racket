@@ -228,7 +228,7 @@ the source string for a @tech{regexp value}.
 
 @history[#:changed "6.5.0.1" @elem{Added the @racket[handler] argument.}]}
 
-@defproc*[([(pregexp [str string?]) regexp?]
+@defproc*[([(pregexp [str string?]) pregexp?]
            [(pregexp [str string?]
                      [handler (or/c #f (string? -> any))])
             any])]{
@@ -246,9 +246,9 @@ Like @racket[regexp], except that it uses a slightly different syntax
 
 @history[#:changed "6.5.0.1" @elem{Added the @racket[handler] argument.}]}
 
-@defproc*[([(byte-regexp [str string?]) regexp?]
-           [(byte-regexp [str string?]
-                         [handler (or/c #f (string? -> any))])
+@defproc*[([(byte-regexp [bstr bytes?]) byte-regexp?]
+           [(byte-regexp [bstr bytes?]
+                         [handler (or/c #f (bytes? -> any))])
             any])]{
 
 Takes a byte-string representation of a regular expression (using the
@@ -270,9 +270,9 @@ returns the source byte string for a @tech{regexp value}.
 
 @history[#:changed "6.5.0.1" @elem{Added the @racket[handler] argument.}]}
 
-@defproc*[([(byte-pregexp [str string?]) regexp?]
-           [(byte-pregexp [str string?]
-                          [handler (or/c #f (string? -> any))])
+@defproc*[([(byte-pregexp [bstr bytes?]) byte-pregexp?]
+           [(byte-pregexp [bstr bytes?]
+                          [handler (or/c #f (bytes? -> any))])
             any])]{
 
 Like @racket[byte-regexp], except that it uses a slightly different
