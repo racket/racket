@@ -2097,8 +2097,9 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
     {
       Scheme_Branch_Rec *b = (Scheme_Branch_Rec *)expr;
       if (movable_expression(b->test, info, cross_lambda, cross_k, cross_s, check_space, fuel-1)
-          && movable_expression(b->tbranch, info, cross_lambda, cross_k, cross_s, check_space, fuel-1)
-          && movable_expression(b->fbranch, info, cross_lambda, cross_k, cross_s, check_space, fuel-1))
+          /* Check space for branches if cross_s, because evaluating `if` eliminates one of them */
+          && movable_expression(b->tbranch, info, cross_lambda, cross_k, cross_s, check_space || cross_s, fuel-1)
+          && movable_expression(b->fbranch, info, cross_lambda, cross_k, cross_s, check_space || cross_s, fuel-1))
         return 1;
     }
     break;

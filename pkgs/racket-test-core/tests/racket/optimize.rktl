@@ -27,9 +27,8 @@
 	  [t2 (get-output-bytes s2)])
       (define same? (bytes=? t1 t2))
       (when (and (not same?) want-same?)
-        (printf "~s\n~s\n" 
-                (zo-parse (open-input-bytes t1))
-                (zo-parse (open-input-bytes t2))))
+        (pretty-write (zo-parse (open-input-bytes t1)))
+        (pretty-write (zo-parse (open-input-bytes t2))))
       (unless (equal? same? want-same?)
         ;; Unquote to cause a failure to stop
         'stop)
@@ -1730,6 +1729,17 @@
                       (if b c (if (= f 90000)
                                   #f
                                   (add1 c))))))
+
+;; Don't move a branch that selects a variable past an
+;; expression that can inspect space consumption:
+(test-comp '(lambda (a b c f)
+              (let ((d (if a b c)))
+                (f)
+                d))
+           '(lambda (a b c f)
+             (f)
+             (if a b c))
+           #f)
 
 (test-comp '(lambda (x y q)
               (let ([z (+ x y)])

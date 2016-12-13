@@ -25,7 +25,9 @@
                    (let loop ([l l])
                      (cond
                       [(null? l) null]
-                      [else (cons (f (car l)) (loop (cdr l)))]))
+                      [else
+                       (let ([r (cdr l)]) ; so `l` is not necessarily retained during `f`
+                         (cons (f (car l)) (loop r)))]))
                    (map f l))]
               [(f l1 l2)
                (if (and (procedure? f)
@@ -33,11 +35,14 @@
                         (list? l1)
                         (list? l2)
                         (= (length l1) (length l2)))
-                   (let loop ([l1 l1][l2 l2])
+                   (let loop ([l1 l1] [l2 l2])
                      (cond
                       [(null? l1) null]
-                      [else (cons (f (car l1) (car l2)) 
-                                  (loop (cdr l1) (cdr l2)))]))
+                      [else 
+                       (let ([r1 (cdr l1)]
+                             [r2 (cdr l2)])
+                         (cons (f (car l1) (car l2)) 
+                               (loop r1 r2)))]))
                    (map f l1 l2))]
               [(f l . args) (apply map f l args)])])
         map))
@@ -52,7 +57,9 @@
                    (let loop ([l l])
                      (cond
                       [(null? l) (void)]
-                      [else (begin (f (car l)) (loop (cdr l)))]))
+                      [else
+                       (let ([r (cdr l)])
+                         (begin (f (car l)) (loop r)))]))
                    (for-each f l))]
               [(f l1 l2)
                (if (and (procedure? f)
@@ -60,11 +67,14 @@
                         (list? l1)
                         (list? l2)
                         (= (length l1) (length l2)))
-                   (let loop ([l1 l1][l2 l2])
+                   (let loop ([l1 l1] [l2 l2])
                      (cond
                       [(null? l1) (void)]
-                      [else (begin (f (car l1) (car l2)) 
-                                   (loop (cdr l1) (cdr l2)))]))
+                      [else
+                       (let ([r1 (cdr l1)]
+                             [r2 (cdr l2)])
+                         (begin (f (car l1) (car l2)) 
+                                (loop r1 r2)))]))
                    (for-each f l1 l2))]
               [(f l . args) (apply for-each f l args)])])
         for-each))
@@ -81,7 +91,10 @@
                        (let loop ([l l])
                          (cond
                           [(null? (cdr l)) (f (car l))]
-                          [else (and (f (car l)) (loop (cdr l)))])))
+                          [else
+                           (let ([r (cdr l)])
+                             (and (f (car l))
+                                  (loop r)))])))
                    (andmap f l))]
               [(f l1 l2)
                (if (and (procedure? f)
@@ -91,11 +104,14 @@
                         (= (length l1) (length l2)))
                    (if (null? l1)
                        #t
-                       (let loop ([l1 l1][l2 l2])
+                       (let loop ([l1 l1] [l2 l2])
                          (cond
                           [(null? (cdr l1)) (f (car l1) (car l2))]
-                          [else (and (f (car l1) (car l2)) 
-                                     (loop (cdr l1) (cdr l2)))])))
+                          [else
+                           (let ([r1 (cdr l1)]
+                                 [r2 (cdr l2)])
+                             (and (f (car l1) (car l2)) 
+                                  (loop r1 r2)))])))
                    (andmap f l1 l2))]
               [(f l . args) (apply andmap f l args)])])
         andmap))
@@ -112,7 +128,9 @@
                        (let loop ([l l])
                          (cond
                           [(null? (cdr l)) (f (car l))]
-                          [else (or (f (car l)) (loop (cdr l)))])))
+                          [else
+                           (let ([r (cdr l)])
+                             (or (f (car l)) (loop r)))])))
                    (ormap f l))]
               [(f l1 l2)
                (if (and (procedure? f)
@@ -122,11 +140,14 @@
                         (= (length l1) (length l2)))
                    (if (null? l1)
                        #f
-                       (let loop ([l1 l1][l2 l2])
+                       (let loop ([l1 l1] [l2 l2])
                          (cond
                           [(null? (cdr l1)) (f (car l1) (car l2))]
-                          [else (or (f (car l1) (car l2)) 
-                                    (loop (cdr l1) (cdr l2)))])))
+                          [else 
+                           (let ([r1 (cdr l1)]
+                                 [r2 (cdr l2)])
+                             (or (f (car l1) (car l2)) 
+                                 (loop r1 r2)))])))
                    (ormap f l1 l2))]
               [(f l . args) (apply ormap f l args)])])
         ormap))))

@@ -2654,6 +2654,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
   Scheme_Type type;
   Scheme_Object *v;
   GC_CAN_IGNORE Scheme_Object *tmpv; /* safe-for-space relies on GC_CAN_IGNORE */
+  GC_CAN_IGNORE Scheme_Object **tmprands; /* safe-for-space relies on GC_CAN_IGNORE */
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **old_runstack;
   GC_MAYBE_IGNORE_INTERIOR MZ_MARK_STACK_TYPE old_cont_mark_stack;
 #if USE_LOCAL_RUNSTACK
@@ -2788,8 +2789,9 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
 
       f = prim->prim_val;
-
-      v = f(num_rands, rands, (Scheme_Object *)prim);
+      tmprands = rands;
+      rands = NULL; /* safe for space, since tmprands is ignored by the GC */
+      v = f(num_rands, tmprands, (Scheme_Object *)prim);
 
       DEBUG_CHECK_TYPE(v);
     } else if (type == scheme_closure_type) {
@@ -3043,8 +3045,11 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       }
 
       tmpv = obj;
-      obj = NULL; /* save for space, since tmpv is ignored by the GC */
-      v = data->start_code(tmpv, num_rands, rands EXTRA_NATIVE_ARGUMENT);
+      obj = NULL; /* safe for space, since tmpv is ignored by the GC */
+      tmprands = rands;
+      if (rands != old_runstack)
+        rands = NULL; /* safe for space, since tmprands is ignored by the GC */
+      v = data->start_code(tmpv, num_rands, tmprands EXTRA_NATIVE_ARGUMENT);
 
       if (v == SCHEME_TAIL_CALL_WAITING) {
         /* [TC-SFS]; see schnapp.inc */
@@ -3150,7 +3155,9 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
             /* Chaperone is for function arguments */
             VACATE_TAIL_BUFFER_USE_RUNSTACK();
             UPDATE_THREAD_RSPTR();
-            v = scheme_apply_chaperone(scheme_make_raw_pair(obj, orig_obj), num_rands, rands, NULL, 0);
+            tmprands = rands;
+            rands = NULL; /* safe for space, since tmprands is ignored by the GC */
+            v = scheme_apply_chaperone(scheme_make_raw_pair(obj, orig_obj), num_rands, tmprands, NULL, 0);
             
             if (SAME_OBJ(v, SCHEME_TAIL_CALL_WAITING)) {
               /* Need to stay in this loop, because a tail-call result must
@@ -3179,7 +3186,9 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
         /* Chaperone is for function arguments */
         VACATE_TAIL_BUFFER_USE_RUNSTACK();
         UPDATE_THREAD_RSPTR();
-        v = scheme_apply_chaperone(obj, num_rands, rands, NULL, 0);
+        tmprands = rands;
+        rands = NULL; /* safe for space, since tmprands is ignored by the GC */
+        v = scheme_apply_chaperone(obj, num_rands, tmprands, NULL, 0);
       }
     } else if (type == scheme_closed_prim_type) {
       GC_CAN_IGNORE Scheme_Closed_Primitive_Proc *prim;
@@ -3199,8 +3208,11 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 			     0);
 	return NULL; /* Shouldn't get here */
       }
-      
-      v = prim->prim_val(prim->data, num_rands, rands);
+
+      tmprands = rands;
+      if (rands != old_runstack)
+        rands = NULL; /* safe for space, since tmprands is ignored by the GC */
+      v = prim->prim_val(prim->data, num_rands, tmprands);
 
       if (v == SCHEME_TAIL_CALL_WAITING) {
         /* [TC-SFS]; see schnapp.inc */

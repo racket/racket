@@ -15,7 +15,7 @@ DO_MAP(int argc, Scheme_Object *argv[])
 {
 # define NUM_QUICK_ARGS 3
 # define NUM_QUICK_RES  5
-  int i, size = 0, l, pos;
+  int i, size = 0, l, pos, pop_runstack = 0;
   Scheme_Object *quick1[NUM_QUICK_ARGS], *quick2[NUM_QUICK_ARGS];
   Scheme_Object **working, **args;
 # ifdef MAP_MODE
@@ -24,6 +24,7 @@ DO_MAP(int argc, Scheme_Object *argv[])
 # ifndef FOR_EACH_MODE
   Scheme_Object *v;
 # endif
+  Scheme_Object *proc;
   int cc;
 
   if (!SCHEME_PROCP(argv[0]))
@@ -62,11 +63,25 @@ DO_MAP(int argc, Scheme_Object *argv[])
     return NULL;
   }
 
-  if (argc <= (NUM_QUICK_ARGS + 1)) {
+  if (argv == MZ_RUNSTACK) {
+    /* Reusing the runstack has good safe-for-space
+       properties, where a called function will clear
+       arguments after they become unused when the arguments
+       are on the runstack */
+    args = MZ_RUNSTACK;
+  } else if (MZ_RUNSTACK - (argc - 1) >= (MZ_RUNSTACK_START + SCHEME_TAIL_COPY_THRESHOLD)) {
+    MZ_RUNSTACK -= (argc - 1);
+    pop_runstack = 1;
+    args = MZ_RUNSTACK;
+  } else if (argc <= (NUM_QUICK_ARGS + 1)) {
     args = quick1;
-    working = quick2;
   } else {
     args = MALLOC_N(Scheme_Object *, argc - 1);
+  }
+
+  if (argc <= (NUM_QUICK_ARGS + 1)) {
+    working = quick2;
+  } else {
     working = MALLOC_N(Scheme_Object *, argc - 1);
   }
 
@@ -80,9 +95,17 @@ DO_MAP(int argc, Scheme_Object *argv[])
   /* Copy argc into working array */
   for (i = 1; i < argc; i++) {
     working[i-1] = argv[i];
+    if (argv == MZ_RUNSTACK) {
+      /* space safety */
+      argv[i] = NULL;
+    }
   }
 
   --argc;
+  proc = argv[0];
+  if (argv == MZ_RUNSTACK)
+    argv[0] = NULL;
+  argv = NULL;
 
   pos = 0;
   while (pos < size) {
@@ -99,21 +122,26 @@ DO_MAP(int argc, Scheme_Object *argv[])
       }
 #endif
       args[i] = SCHEME_CAR(working[i]);
+      /* space safety: we'll take the `cdr` of each list
+         in `working` before calling `proc` */
       working[i] = SCHEME_CDR(working[i]);
     }
 
     cc = scheme_cont_capture_count;
 
 #ifdef MAP_MODE
-    v = _scheme_apply(argv[0], argc, args);
+    v = _scheme_apply(proc, argc, args);
 #else
 # ifdef FOR_EACH_MODE
-    _scheme_apply_multi(argv[0], argc, args);
+    _scheme_apply_multi(proc, argc, args);
 # else
     if (pos + 1 == size) {
-      return _scheme_tail_apply(argv[0], argc, args);
+      v = _scheme_tail_apply(proc, argc, args);
+      if (pop_runstack)
+        MZ_RUNSTACK += argc;
+      return v;
     } else {
-      v = _scheme_apply(argv[0], argc, args);
+      v = _scheme_apply(proc, argc, args);
     }
 # endif
 #endif
@@ -141,15 +169,24 @@ DO_MAP(int argc, Scheme_Object *argv[])
     resarray[pos] = v;
 #endif
 #ifdef AND_MODE
-    if (SCHEME_FALSEP(v))
+    if (SCHEME_FALSEP(v)) {
+      if (pop_runstack)
+        MZ_RUNSTACK += argc;
       return scheme_false;
+    }
 #endif
 #ifdef OR_MODE
-    if (SCHEME_TRUEP(v))
+    if (SCHEME_TRUEP(v)) {
+      if (pop_runstack)
+        MZ_RUNSTACK += argc;
       return v;
+    }
 #endif
     pos++;
   }
+
+  if (pop_runstack)
+    MZ_RUNSTACK += argc;
 
 #ifdef MAP_MODE
   return scheme_build_list(size, resarray);

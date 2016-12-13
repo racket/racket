@@ -81,6 +81,15 @@ iteration and preventing later @racket[body] evaluations, a
 @racket[#:break guard-expr] or @racket[#:final guard-expr]
 clause starts a new internal-definition context.
 
+In the case of @tech{list} and @tech{stream} sequences, the
+@racket[for] form itself does not keep each element reachable. If a
+list or stream produced by a @racket[seq-expr] is otherwise
+unreachable, and if the @racket[for] body can no longer reference an
+@racket[id] for a list element, then the element is subject to
+@tech{garbage collection}. The @racket[make-do-sequence] sequence
+constructor supports additional sequences that behave like lists and
+streams in this way.
+
 @examples[
 (for ([i '(1 2 3)]
       [j "abc"]
@@ -108,7 +117,9 @@ clause starts a new internal-definition context.
   (display "here"))
 (for ([i '()])
   (error "doesn't get here"))
-]}
+]
+
+@history[#:changed "6.7.0.4" @elem{Added support for the optional second result.}]}
 
 @defform[(for/list (for-clause ...) body-or-break ... body)]{ Iterates like
 @racket[for], but that the last expression in the @racket[body]s must

@@ -339,31 +339,43 @@
                                     (syntax-column #'rhs))
                             #'rhs))
              (with-syntax ([[(id ...) rhs] (introducer (syntax-local-introduce clause))])
-               (arm-for-clause
-                (syntax-local-introduce
-                 (introducer
-                  #`(([(pos->vals pos-next init pos-cont? val-cont? all-cont?)
+               (with-syntax ([(post-id ...) (generate-temporaries #'(id ...))])
+                 (arm-for-clause
+                  (syntax-local-introduce
+                   (introducer
+                    #`(([(pos->vals pos-pre-inc pos-next init pos-cont? val-cont? all-cont?)
+                         #,(syntax-property
+                            (syntax/loc #'rhs (make-sequence '(id ...) rhs))
+                            'feature-profile:generic-sequence #t)])
+                       (void)
+                       ([pos init])
                        #,(syntax-property
-                          (syntax/loc #'rhs (make-sequence '(id ...) rhs))
-                          'feature-profile:generic-sequence #t)])
-                     (void)
-                     ([pos init])
-                     #,(syntax-property
-                        (syntax/loc #'rhs (if pos-cont? (pos-cont? pos) #t))
-                        'feature-profile:generic-sequence #t)
-                     ([(id ...) #,(syntax-property
-                                   (syntax/loc #'rhs (pos->vals pos))
-                                   'feature-profile:generic-sequence #t)])
-                     #,(syntax-property
-                        (syntax/loc #'rhs (if val-cont? (val-cont? id ...) #t))
-                        'feature-profile:generic-sequence #t)
-                     #,(syntax-property
-                        (syntax/loc #'rhs (if all-cont? (all-cont? pos id ...) #t))
-                        'feature-profile:generic-sequence #t)
-                     #,(syntax-property
-                        (syntax/loc #'rhs ((pos-next pos)))
-                        'feature-profile:generic-sequence #t))))
-                (make-rearm))))]
+                          (syntax/loc #'rhs (if pos-cont? (pos-cont? pos) #t))
+                          'feature-profile:generic-sequence #t)
+                       ([(id ... all-cont?/pos)
+                         (let-values ([(id ...) #,(syntax-property
+                                                   (syntax/loc #'rhs (pos->vals pos))
+                                                   'feature-profile:generic-sequence #t)])
+                           (values id ...
+                                   ;; If we need to call `all-cont?`, close over
+                                   ;; `id`s here, so `id`s are not implicitly
+                                   ;; retained while the body runs:
+                                   (and all-cont?
+                                        (lambda (pos)
+                                          (all-cont? pos id ...)))))]
+                        [(pos) #,(syntax-property
+                                  (syntax/loc #'rhs (if pos-pre-inc (pos-pre-inc pos) pos))
+                                  'feature-profile:generic-sequence #t)])
+                       #,(syntax-property
+                          (syntax/loc #'rhs (if val-cont? (val-cont? id ...) #t))
+                          'feature-profile:generic-sequence #t)
+                       #,(syntax-property
+                          (syntax/loc #'rhs (if all-cont?/pos (all-cont?/pos pos) #t))
+                          'feature-profile:generic-sequence #t)
+                       #,(syntax-property
+                          (syntax/loc #'rhs ((pos-next pos)))
+                          'feature-profile:generic-sequence #t))))
+                  (make-rearm)))))]
           [_
            (raise-syntax-error #f
                                "bad sequence binding clause" orig-stx clause)]))))
@@ -509,7 +521,13 @@
   (define (make-sequence who v)
     (cond
       [(exact-nonnegative-integer? v) (:integer-gen v)]
-      [(do-sequence? v) ((do-sequence-ref v 0))]
+      [(do-sequence? v)
+       (call-with-values (lambda () ((do-sequence-ref v 0)))
+         (case-lambda
+           [(pos->vals pos-next init pos-cont? val-cont? all-cont?)
+            (values pos->vals #f pos-next init pos-cont? val-cont? all-cont?)]
+           [(pos->vals pre-pos-next pos-next init pos-cont? val-cont? all-cont?)
+            (values pos->vals pre-pos-next pos-next init pos-cont? val-cont? all-cont?)]))]
       [(mpair? v) (:mlist-gen v)]
       [(list? v) (:list-gen v)]
       [(vector? v) (:vector-gen v 0 (vector-length v) 1)]
@@ -554,6 +572,7 @@
                                   (lambda (v)
                                     (values
                                      values
+                                     #f
                                      (range-ref v 1)
                                      (range-ref v 0)
                                      (range-ref v 2)
@@ -575,7 +594,7 @@
          (make-range a inc cont?))]))
 
   (define (:integer-gen v)
-    (values values add1 0 (lambda (i) (i . < . v)) #f #f))
+    (values values #f add1 0 (lambda (i) (i . < . v)) #f #f))
 
   (define in-naturals
     (case-lambda
@@ -605,6 +624,7 @@
                                     (values
                                      car
                                      cdr
+                                     values
                                      (list-stream-ref v 0)
                                      pair?
                                      #f
@@ -615,14 +635,14 @@
     (make-list-stream l))
 
   (define (:list-gen l)
-    (values car cdr l pair? #f #f))
+    (values car cdr values l pair? #f #f))
 
   (define (in-mlist l)
     (unless (mpair? l) (raise-argument-error 'in-mlist "mpair?" l))
     (make-do-sequence (lambda () (:mlist-gen l))))
 
   (define (:mlist-gen l)
-    (values mcar mcdr l mpair? #f #f))
+    (values mcar #f mcdr l mpair? #f #f))
 
   (define (in-input-port-bytes p)
     (unless (input-port? p)
@@ -630,7 +650,7 @@
     (make-do-sequence (lambda () (:input-port-gen p))))
 
   (define (:input-port-gen p)
-    (values read-byte values p #f
+    (values read-byte #f values p #f
             (lambda (x) (not (eof-object? x)))
             #f))
 
@@ -690,7 +710,7 @@
   
   (define (:stream-gen l)
     (values 
-     unsafe-stream-first unsafe-stream-rest l unsafe-stream-not-empty? #f #f))
+     unsafe-stream-first unsafe-stream-rest values l unsafe-stream-not-empty? #f #f))
 
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -700,6 +720,7 @@
   ;; assembles hash iterator functions to give to make-do-sequence
   (define (:hash-gen ht -get -first -next)
     (values (lambda (pos) (-get ht pos))
+            #f
             (lambda (pos) (-next ht pos))
             (-first ht)
             (lambda (pos) pos) ; #f position means stop
@@ -857,6 +878,8 @@
          (values
           ;; pos->element
           (lambda (i) (unsafe-vector-ref-id v i))
+          ;; pre-pos-inc
+          #f
           ;; next-pos
           ;; Minor optimisation.  I assume add1 is faster than \x.x+1
           (if (= step 1) add1 (lambda (i) (+ i step)))
@@ -1008,9 +1031,10 @@
                  (procedure-arity-includes? pred 1))
       (raise-argument-error 'stop-before "(procedure-arity-includes/c 1)" pred))
     (make-do-sequence (lambda ()
-                        (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+                        (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
                           (values pos->val
+                                  pre-pos-next
                                   pos-next
                                   init
                                   pos-cont?
@@ -1027,9 +1051,10 @@
                  (procedure-arity-includes? pred 1))
       (raise-argument-error 'stop-after "(procedure-arity-includes/c 1)" pred))
     (make-do-sequence (lambda ()
-                        (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+                        (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
                           (values pos->val
+                                  pre-pos-next
                                   pos-next
                                   init
                                   pos-cont?
@@ -1043,9 +1068,11 @@
   (define (in-indexed g)
     (unless (sequence? g) (raise-argument-error 'in-indexed "sequence?" g))
     (make-do-sequence (lambda ()
-                        (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+                        (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
                           (values (lambda (pos) (values (pos->val (car pos)) (cdr pos)))
+                                  (and pre-pos-next
+                                       (lambda (pos) (cons (pre-pos-next (car pos)) (cdr pos))))
                                   (lambda (pos) (cons (pos-next (car pos)) (add1 (cdr pos))))
                                   (cons init 0)
                                   (and pos-cont?
@@ -1061,16 +1088,17 @@
                                 (lambda (pos) #f)
                                 #t
                                 (lambda (pos) pos)
-                                void
-                                void))))
+                                #f
+                                #f))))
 
   (define (in-values-sequence g)
     (unless (sequence? g) (raise-argument-error 'in-values-sequence "sequence?" g))
     (make-do-sequence (lambda ()
-                        (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+                        (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
                           (values (lambda (pos) (call-with-values (lambda () (pos->val pos))
                                                   list))
+                                  pre-pos-next
                                   pos-next
                                   init
                                   pos-cont?
@@ -1082,12 +1110,13 @@
   (define (in-values*-sequence g)
     (unless (sequence? g) (raise-argument-error 'in-values-sequence "sequence?" g))
     (make-do-sequence (lambda ()
-                        (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+                        (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                                       (make-sequence #f g)])
                           (values (lambda (pos) (call-with-values (lambda () (pos->val pos))
                                                   (case-lambda
                                                     [(v) (if (list? v) (list v) v)]
                                                     [vs vs])))
+                                  pre-pos-next
                                   pos-next
                                   init
                                   pos-cont?
@@ -1121,8 +1150,8 @@
                    m+g+r))
                (seqs->m+g+r sequences)
                values
-               void
-               void))))
+               #f
+               #f))))
 
   (define (check-sequences who sequences)
     (for-each (lambda (g)
@@ -1144,16 +1173,20 @@
         (car sequences)
         (make-do-sequence
          (lambda ()
-           (let-values ([(pos->vals pos-nexts inits pos-cont?s pre-cont?s post-cont?s)
-                         (for/lists (p->v p-s i ps? pr? po?) ([g sequences])
+           (let-values ([(pos->vals pre-pos-nexts pos-nexts inits pos-cont?s pre-cont?s post-cont?s)
+                         (for/lists (p->v p-p-n p-n i ps? pr? po?) ([g sequences])
                            (make-sequence #f g))])
              (values
               (lambda (poses) (apply values (map (lambda (pos->val pos) (pos->val pos))
-                                                 pos->vals
-                                                 poses)))
+                                            pos->vals
+                                            poses)))
+              (and (ormap values pre-pos-nexts)
+                   (lambda (poses) (map (lambda (pre-pos-next pos) (if pre-pos-next (pre-pos-next pos) pos))
+                                   pre-pos-nexts
+                                   poses)))
               (lambda (poses) (map (lambda (pos-next pos) (pos-next pos))
-                                   pos-nexts
-                                   poses))
+                              pos-nexts
+                              poses))
               inits
               (and (ormap values pos-cont?s)
                    (lambda (poses) (andmap (lambda (pos-cont? pos)
@@ -1216,7 +1249,7 @@
     (cond
       [(stream? s) s]
       [else
-       (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+       (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                      (make-sequence #f s)])
          (define (gen-stream pos)
            (let ([done? #f]
@@ -1228,6 +1261,7 @@
                  (if (if pos-cont? (pos-cont? pos) #t)
                      (begin
                        (set! vals (call-with-values (lambda () (pos->val pos)) list))
+                       (when pre-pos-next (set! pos (pre-pos-next pos)))
                        (unless (if pre-cont? (apply pre-cont? vals) #t)
                          (set! vals #f)
                          (set! empty? #t)))
@@ -1253,7 +1287,7 @@
   (define (sequence-generate g)
     (unless (sequence? g)
       (raise-argument-error 'sequence-generate "sequence?" g))
-    (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+    (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                   (make-sequence #f g)])
       (let ([pos init])
         (letrec ([more? #f]
@@ -1267,7 +1301,11 @@
                     (lambda ()
                       (if (if pos-cont? (pos-cont? pos) #t)
                           (call-with-values
-                           (lambda () (pos->val pos))
+                           (lambda ()
+                             (begin0
+                              (pos->val pos)
+                              (when pre-pos-next
+                                (set! pos (pre-pos-next pos)))))
                            (lambda vals
                              (if (if pre-cont? (apply pre-cont? vals) #t)
                                  (begin
@@ -1309,13 +1347,16 @@
   (define (sequence-generate* g)
     (unless (sequence? g)
       (raise-argument-error 'sequence-generate* "sequence?" g))
-    (let-values ([(pos->val pos-next init pos-cont? pre-cont? post-cont?)
+    (let-values ([(pos->val pre-pos-next pos-next init pos-cont? pre-cont? post-cont?)
                   (make-sequence #f g)])
       (letrec ([next!
                 (lambda (pos)
                   (if (if pos-cont? (pos-cont? pos) #t)
                       (call-with-values
-                        (lambda () (pos->val pos))
+                        (lambda () (begin0
+                               (pos->val pos)
+                               (when pre-pos-next
+                                 (set! pos (pre-pos-next pos)))))
                         (lambda vals
                           (if (if pre-cont? (apply pre-cont? vals) #t)
                               (values vals
@@ -1891,13 +1932,14 @@
               ;; pos check
               (pair? lst)
               ;; inner bindings
-              ([(id) (unsafe-car lst)])
+              ([(id) (unsafe-car lst)]
+               [(rest) (unsafe-cdr lst)]) ; so `lst` is not necessarily retained during body
               ;; pre guard
               #t
               ;; post guard
               #t
               ;; loop args
-              ((unsafe-cdr lst)))])]
+              (rest))])]
         [_ #f])))
 
   (define-sequence-syntax *in-mlist
@@ -1944,13 +1986,14 @@
               ;; pos check
               (unsafe-stream-not-empty? lst)
               ;; inner bindings
-              ([(id) (unsafe-stream-first lst)])
+              ([(id) (unsafe-stream-first lst)]
+               [(rest) (unsafe-stream-rest lst)])  ; so `lst` is not necessarily retained during body
               ;; pre guard
               #t
               ;; post guard
               #t
               ;; loop args
-              ((unsafe-stream-rest lst)))])]
+              (rest))])]
         [_ #f])))
 
   (define-sequence-syntax *in-indexed

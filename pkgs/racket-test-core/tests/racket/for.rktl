@@ -142,6 +142,27 @@
             #f
             (lambda (pos val) (val . < . 5))))
 
+(let ([five-odd-seq
+       (lambda (pos pre post)
+         (test-sequence [(1 3 5)]
+                        (make-do-sequence (lambda ()
+                                            (values add1
+                                                    add1 ; "pre" next
+                                                    add1
+                                                    0
+                                                    pos 
+                                                    pre 
+                                                    post)))))])
+  (five-odd-seq (lambda (pos) (pos . < . 5))
+                #f
+                #f)
+  (five-odd-seq #f
+                (lambda (val) (val . < . 6))
+                #f)
+  (five-odd-seq #f
+                #f
+                (lambda (pos val) (val . < . 5))))
+
 (let ([fives-seq
        (lambda (pos pre post)
          (test-sequence [(1 2 3 4 5) ("0" "1" "2" "3" "4")]
@@ -688,5 +709,46 @@
     (for ([p (in-weak-hash-pairs (make-hash '((1 . 2))))]) p)
   exn:fail:contract?
   #rx"expected:.*and/c hash\\? hash-weak\\?")
+
+;; ----------------------------------------
+;; Check that iteration over a list or stream doesn't implicitly
+;; retain the head while the body is running
+
+(when (custodian-memory-accounting-available?)
+  (define-syntax-rule (check for/... in-... proc extra ...)
+    (let* ([N 10]
+           [vals (for/... ([i N]) (gensym))]
+           [bs (for/list ([val vals]) (make-weak-box val))]
+           [retained 0])
+      (if proc
+          (proc (lambda (i b extra ...)
+                  (collect-garbage)
+                  (when (weak-box-value b)
+                    (set! retained (add1 retained))))
+                vals bs (for/list ([val vals]) 'extra) ...)
+          (for ([i (in-... vals)]
+                [b (in-list bs)])
+            (collect-garbage)
+            (when (weak-box-value b)
+              (set! retained (add1 retained)))))
+      (test #t `(in-... ,retained) (< retained (/ N 2)))))
+  (check for/list in-list #f)
+  (check for/list values #f)
+  (check for/stream in-stream #f)
+  (check for/stream values #f)
+  (define-syntax-rule (stop-before-in-list e)
+    (values (stop-before (in-list e) (lambda (v) #f))))
+  (check for/list stop-before-in-list #f)
+  (define-syntax-rule (values-stop-before e)
+    (values (values (stop-before e (lambda (v) #f)))))
+  (check for/list values-stop-before #f)
+  
+  ;; Check `map`, etc., too
+  (check for/list values map)
+  (check for/list values map extra) ; 1 and 2 arguments are special-cased
+  (check for/list values for-each)
+  (check for/list values andmap))
+
+;; ----------------------------------------
 
 (report-errs)
