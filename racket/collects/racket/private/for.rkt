@@ -1336,21 +1336,57 @@
     (syntax-rules ()
       [(_ x) x]
       [(_ x ...) (values x ...)]))
+  
+  (define-syntax-rule (inner-recur/fold (fold-var ...) (let () expr ...) next-k)
+    (let-values ([(fold-var ...) (let () expr ...)])
+      next-k))
+
+  (define-syntax-rule (inner-recur/list (fold-var ...) (let () expr ...) next-k)
+    (let-values ([(fold-var ... elem) (let () expr ...)])
+      (let-values ([(fold-var ... result) next-k])
+        (values* fold-var ... (cons elem result)))))
+  
+  (define-syntax (push-under-break stx)
+    (syntax-case stx ()
+      [(_ inner-recur fold-vars [expr ...] next-k break-k final?-id)
+       (let loop ([l (syntax->list #'(expr ...))] [pre-accum null])
+         (cond
+          [(null? l) 
+           ;; No #:break form
+           #'(inner-recur fold-vars (let-values () expr ...) (if final?-id break-k next-k))]
+          [(eq? '#:break (syntax-e (car l)))
+           ;; Found a #:break form
+           #`(let-values ()
+               #,@(reverse pre-accum)
+               (if #,(cadr l)
+                   break-k
+                   (push-under-break inner-recur fold-vars #,(cddr l) next-k break-k final?-id)))]
+          [(eq? '#:final (syntax-e (car l)))
+           ;; Found a #:final form
+           #`(let-values ()
+               #,@(reverse pre-accum)
+               (let ([final? (or #,(cadr l) final?-id)])
+                 (push-under-break inner-recur fold-vars #,(cddr l) next-k break-k final?)))]
+          [else (loop (cdr l) (cons (car l) pre-accum))]))]))
 
   (define-syntax (for/foldX/derived stx)
     (syntax-case stx ()
       ;; Done case (no more clauses, and no generated clauses to emit):
-      [(_ [orig-stx nested? emit? ()] ([fold-var fold-init] ...) ()
+      [(_ [orig-stx inner-recur nested? emit? ()] ([fold-var fold-init] ...) next-k break-k final?-id ()
           expr1 expr ...)
-       #`(let ([fold-var fold-init] ...)
-           (let-values ([(fold-var ...) (let () expr1 expr ...)])
-             (values fold-var ...)))]
+       (if (syntax-e #'inner-recur)
+           ;; General, non-nested-loop approach:
+           #`(let ([fold-var fold-init] ...)
+               (push-under-break inner-recur (fold-var ...) [expr1 expr ...] next-k break-k final?-id))
+           ;; Nested-loop approach (which is slightly faster when it works):
+           #`(let ([fold-var fold-init] ...)
+               (let-values ([(fold-var ...) (let () expr1 expr ...)])
+                 (values fold-var ...))))]
       ;; Switch-to-emit case (no more clauses to generate):
-      [(_ [orig-stx nested? #f binds] ([fold-var fold-init] ...) () . body)
-       #`(for/foldX/derived [orig-stx nested? #t binds]
-                            ([fold-var fold-init] ...) () . body)]
+      [(_ [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id () . body)
+       #`(for/foldX/derived [orig-stx inner-recur nested? #t binds] fold-bind next-k break-k final?-id () . body)]
       ;; Emit case:
-      [(_ [orig-stx nested? #t binds] ([fold-var fold-init] ...) rest expr1 . body)
+      [(_ [orig-stx inner-recur nested? #t binds] ([fold-var fold-init] ...) next-k break-k final?-id rest expr1 . body)
        (with-syntax ([(([outer-binding ...]
                         outer-check
                         [loop-binding ...]
@@ -1362,168 +1398,130 @@
          (quasisyntax/loc #'orig-stx
            (let-values (outer-binding ... ...)
              outer-check ...
-             #,(syntax/loc #'orig-stx
+             #,(quasisyntax/loc #'orig-stx
                  (let for-loop ([fold-var fold-init] ...
                                 loop-binding ... ...)
                    (if (and pos-guard ...)
                        (let-values (inner-binding ... ...)
                          (if (and pre-guard ...)
-                             (let-values ([(fold-var ...)
-                                           (for/foldX/derived [orig-stx nested? #f ()]
-                                                              ([fold-var fold-var] ...)
-                                                              rest expr1 . body)])
-                               (if (and post-guard ...)
-                                   (for-loop fold-var ... loop-arg ... ...)
-                                   (values* fold-var ...)))
-                             (values* fold-var ...)))
-                       (values* fold-var ...)))))))]
+                             #,(if (syntax-e #'inner-recur)
+                                   ;; The general non-nested-loop approach:
+                                   #'(let ([post-guard-var (lambda (fold-var ...) (and post-guard ...))])
+                                       (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                                                          ([fold-var fold-var] ...)
+                                                          (if (post-guard-var fold-var ...)
+                                                              (for-loop fold-var ... loop-arg ... ...)
+                                                              next-k)
+                                                          break-k final?-id
+                                                          rest expr1 . body))
+                                   ;; The specialized nested-loop approach, which is
+                                   ;; slightly faster when it works:
+                                   #'(let-values ([(fold-var ...)
+                                                   (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                                                                      ([fold-var fold-var] ...)
+                                                                      next-k break-k final?-id
+                                                                      rest expr1 . body)])
+                                       (if (and post-guard ... (not final?-id))
+                                           (for-loop fold-var ... loop-arg ... ...)
+                                           next-k)))
+                             next-k))
+                       next-k))))))]
       ;; Bad body cases:
-      [(_ [orig-stx . _] fold-bind ())
+      [(_ [orig-stx . _] fold-bind next-k break-k final?-id ())
        (raise-syntax-error
         #f "missing body expression after sequence bindings" #'orig-stx)]
-      [(_ [orig-stx . _] fold-bind () . rest)
+      [(_ [orig-stx . _] fold-bind next-k break-k final?-id () . rest)
        (raise-syntax-error
         #f "bad syntax (illegal use of `.') after sequence bindings" #'orig-stx)]
       ;; Guard case, no pending emits:
-      [(_ [orig-stx nested? #f ()] ([fold-var fold-init] ...) (#:when expr . rest) . body)
+      [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:when expr . rest) . body)
        #'(let ([fold-var fold-init] ...)
            (if expr
-             (for/foldX/derived [orig-stx nested? #f ()]
-                                ([fold-var fold-var] ...) rest . body)
-             (values* fold-var ...)))]
-      ;; Guard case, pending emits need to be flushed first
-      [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...)
-            (#:when expr . rest) . body)
-       #'(frm [orig-stx nested? #t binds] ([fold-var fold-init] ...)
-              (#:when expr . rest) . body)]
+               (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                                  ([fold-var fold-var] ...) next-k break-k final?-id rest . body)
+               next-k))]
       ;; Negative guard case, no pending emits:
-      [(_ [orig-stx nested? #f ()] ([fold-var fold-init] ...) (#:unless expr . rest) . body)
+      [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:unless expr . rest) . body)
        #'(let ([fold-var fold-init] ...)
            (if expr
-             (values* fold-var ...)
-             (for/foldX/derived [orig-stx nested? #f ()]
-                                ([fold-var fold-var] ...) rest . body)))]
-      ;; Negative guard case, pending emits need to be flushed first
-      [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...)
-            (#:unless expr . rest) . body)
-       #'(frm [orig-stx nested? #t binds] ([fold-var fold-init] ...)
-              (#:unless expr . rest) . body)]
+               (if final?-id break-k next-k)
+               (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                                  ([fold-var fold-var] ...) next-k break-k final?-id rest . body)))]
+      ;; Break case, no pending emits:
+      [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:break expr . rest) . body)
+       #'(let ([fold-var fold-init] ...)
+           (if expr
+               break-k
+               (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                                  ([fold-var fold-var] ...) next-k break-k final?-id rest . body)))]
+      ;; Final case, no pending emits:
+      [(_ [orig-stx inner-recur nested? #f ()] ([fold-var fold-init] ...) next-k break-k final?-id (#:final expr . rest) . body)
+       #'(let ([fold-var fold-init] ...)
+           (let ([final? (or expr final?-id)])
+             (for/foldX/derived [orig-stx inner-recur nested? #f ()]
+                                ([fold-var fold-var] ...) next-k break-k final? rest . body)))]
+      ;; Keyword case, pending emits need to be flushed first
+      [(frm [orig-stx inner-recur nested? #f binds] ([fold-var fold-init] ...) next-k break-k final?-id (kw expr . rest) . body)
+       (or (eq? (syntax-e #'kw) '#:when)
+           (eq? (syntax-e #'kw) '#:unless)
+           (eq? (syntax-e #'kw) '#:break)
+           (eq? (syntax-e #'kw) '#:final))
+       #'(frm [orig-stx inner-recur nested? #t binds] ([fold-var fold-init] ...) next-k break-k final?-id (kw expr . rest) . body)]
       ;; Convert single-value form to multi-value form:
-      [(_ [orig-stx nested? #f binds] fold-bind ([id rhs] . rest) . body)
+      [(_ [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id ([id rhs] . rest) . body)
        (identifier? #'id)
-       #'(for/foldX/derived [orig-stx nested? #f binds] fold-bind
+       #'(for/foldX/derived [orig-stx inner-recur nested? #f binds] fold-bind next-k break-k final?-id
                             ([(id) rhs] . rest) . body)]
       ;; If we get here in single-value mode, then it's a bad clause:
-      [(_ [orig-stx #f #f nested? #f binds] fold-bind (clause . rest) . body)
+      [(_ [orig-stx inner-recur #f #f nested? #f binds] fold-bind next-k break-k final?-id (clause . rest) . body)
        (raise-syntax-error
         #f "bad sequence binding clause" #'orig-stx #'clause)]
       ;; Expand one multi-value clause, and push it into the results to emit:
-      [(frm [orig-stx nested? #f binds] ([fold-var fold-init] ...)
-            (clause . rest) . body)
+      [(frm [orig-stx inner-recur nested? #f binds] ([fold-var fold-init] ...) next-k break-k final?-id (clause . rest) . body)
        (with-syntax ([bind (expand-clause #'orig-stx #'clause)])
-         (let ([r #`(frm [orig-stx nested? nested? (bind . binds)]
-                         ([fold-var fold-init] ...) rest . body)]
+         (let ([r #`(frm [orig-stx inner-recur nested? nested? (bind . binds)]
+                         ([fold-var fold-init] ...) next-k break-k final?-id rest . body)]
                [d (syntax-property #'bind 'disappeared-use)])
            (if d
                (syntax-property r 'disappeared-use d)
                r)))]
-      [(_ [orig-stx . _] for-bind clauses . _)
+      [(_ [orig-stx . _] for-bind next-k break-k final?-id clauses . _)
        (not (syntax->list #'clauses))
        (raise-syntax-error #f "bad sequence binding clauses" #'orig-stx #'clauses)]
       [(_ [orig-stx . _] . _)
        (raise-syntax-error #f "bad syntax" #'orig-stx)]))
 
-  (define-syntax (for/foldX/derived/break stx)
+  (define-syntax (for/foldX/derived/final stx)
     (syntax-case stx ()
-      [(_ [orig-stx nested? emit? ()] ([id init] ...) (clause ...) body ...)
-       (ormap (lambda (form)
-                (or (eq? (syntax-e form) '#:break)
-                    (eq? (syntax-e form) '#:final)))
-              (syntax->list #'(clause ... body ...)))
-       ;; Add an accumulator for short-circuiting
-       (with-syntax ([body
-                      (let loop ([bodys (syntax->list #'(body ...))] [accum null])
-                        (cond
-                         [(null? bodys)
-                          (if (null? accum)
-                              (raise-syntax-error #f "missing final body expression" #'orig-stx)
-                              #`(let-values ([(id ...) (let () #,@(reverse accum))])
-                                  (values stop-after? id ...)))]
-                         [(or (eq? '#:break (syntax-e (car bodys)))
-                              (eq? '#:final (syntax-e (car bodys))))
-                          (let ([break? (eq? '#:break (syntax-e (car bodys)))])
-                            (if (null? (cdr bodys))
-                                (raise-syntax-error #f 
-                                                    (format "missing expression after ~a" (syntax-e (car bodys)))
-                                                    #'orig-stx (car bodys))
-                                #`(let ()
-                                    #,@(reverse accum)
-                                    #,(if break?
-                                          #`(if #,(cadr bodys)
-                                                (values #t id ...)
-                                                (let () #,(loop (cddr bodys) null)))
-                                          #`(let ([stop-after? (or #,(cadr bodys) stop-after?)])
-                                              #,(loop (cddr bodys) null))))))]
-                         [else (loop (cdr bodys) (cons (car bodys) accum))]))]
-                     [(limited-for-clause ...)
-                      ;; If nested, wrap all binding clauses. Otherwise, wrap
-                      ;; only the first and the first after each keyword clause:
-                      (let loop ([fcs (syntax->list #'(clause ...))] [wrap? #t])
-                        (cond
-                         [(null? fcs) null]
-                         [(eq? '#:break (syntax-e (car fcs)))
-                          (when (null? (cdr fcs))
-                            (raise-syntax-error #f "no expression after #:break" #'orig-stx (car fcs)))
-                          (list* #'#:when #'#t
-                                 #`[stop? (*in-value #,(cadr fcs))]
-                                 #'#:when #'#t
-                                 #`[stop-after? (*in-value (or stop-after? stop?))]
-                                 #'#:unless #'stop?
-                                 (loop (cddr fcs) #t))]
-                         [(eq? '#:final (syntax-e (car fcs)))
-                          (when (null? (cdr fcs))
-                            (raise-syntax-error #f "no expression after #:break" #'orig-stx (car fcs)))
-                          (list* #'#:when #'#t
-                                 #`[stop-after? (*in-value (or #,(cadr fcs) stop-after?))]
-                                 #'#:when #'#t
-                                 (loop (cddr fcs) #t))]
-                         [(keyword? (syntax-e (car fcs)))
-                          (if (null? (cdr fcs))
-                              fcs
-                              (list* (car fcs) (cadr fcs) (loop (cddr fcs) #t)))]
-                         [(not wrap?)
-                          (cons (car fcs) (loop (cdr fcs) #f))]
-                         [else
-                          (define fc (car fcs))
-                          (define wrapped-fc
-                            (syntax-case fc ()
-                              [[ids rhs]
-                               (or (identifier? #'ids)
-                                   (let ([l (syntax->list #'ids)])
-                                     (and l (andmap identifier? l))))
-                               (syntax/loc fc [ids (stop-after
-                                                    rhs
-                                                    (lambda x stop-after?))])]
-                              [_ fc]))
-                          (cons wrapped-fc
-                                (loop (cdr fcs) (syntax-e #'nested?)))]))])
-         #'(let-values ([(stop? id ...) 
-                         (for/foldX/derived [orig-stx nested? emit? ()] ([stop-after? #f] [id init] ...) 
-                                            (limited-for-clause ...) 
-                                            body)])
-             (values id ...)))]
-      [(_ . rest)
-       #'(for/foldX/derived . rest)]))
+      [(_ [orig-stx nested?] fold-bind done-k (clause ...) expr ...)
+       ;; If there's a `#:break` or `#:final`, then we need to use the
+       ;; non-nested loop approach to implement them:
+       (ormap (lambda (s) (or (eq? '#:break (syntax-e s)) (eq? '#:final (syntax-e s))))
+              (syntax->list #'(clause ... expr ...)))
+       #'(for/foldX/derived [orig-stx inner-recur/fold nested? #f ()] fold-bind done-k done-k #f (clause ...) expr ...)]
+      [(_ [orig-stx nested?] fold-bind done-k . rest)
+       ;; Otherwise, allow compilation as nested loops, which can be slightly faster:
+       #'(for/foldX/derived [orig-stx #f nested? #f ()] fold-bind done-k done-k #f . rest)]))
 
   (define-syntax for/fold/derived
     (syntax-rules ()
-      [(_ orig-stx . rest)
-       (for/foldX/derived/break [orig-stx #f #f ()] . rest)]))
+      [(_ orig-stx ([fold-var finid-init] ...) . rest)
+       (for/foldX/derived/final [orig-stx #f] ([fold-var finid-init] ...) (values* fold-var ...) . rest)]))
 
   (define-syntax for*/fold/derived
     (syntax-rules ()
-      [(_ orig-stx . rest)
-       (for/foldX/derived/break [orig-stx #t #f ()] . rest)]))
+      [(_ orig-stx ([fold-var finid-init] ...) . rest)
+       (for/foldX/derived/final [orig-stx #t] ([fold-var finid-init] ...) (values* fold-var ...) . rest)]))
+
+  (define-syntax for/list/derived
+    (syntax-rules ()
+      [(_ orig-stx () . rest)
+       (for/foldX/derived [orig-stx inner-recur/list #f #f ()] () null null #f . rest)]))
+
+  (define-syntax for*/list/derived
+    (syntax-rules ()
+      [(_ orig-stx () . rest)
+       (for/foldX/derived [orig-stx inner-recur/list #t #f ()] () null null #f . rest)]))
 
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  derived `for' syntax
@@ -1621,11 +1619,8 @@
     (lambda (x) x)
     (lambda (x) `(,#'begin ,x ,#'(void))))
 
-  (define-for-variants (for/list for*/list)
-    ([fold-var null])
-    (lambda (x) `(,#'alt-reverse ,x))
-    (lambda (x) x)
-    (lambda (x) `(,#'cons ,x ,#'fold-var)))
+  (define-syntax-via-derived for/list for/list/derived () (lambda (x) x) (lambda (x) x) (lambda (x) x))
+  (define-syntax-via-derived for*/list for*/list/derived () (lambda (x) x) (lambda (x) x) (lambda (x) x))
 
   (define (grow-vector vec)
     (define n (vector-length vec))

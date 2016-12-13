@@ -32,21 +32,39 @@
                          (car (member (list id ...) `((v2 ...) ...)))))
            (void)))]))
 
+;; Tests use `for/list`, but plain `for` may compile differently:
+(define-syntax-rule (for/list~ binds expr)
+  (let ([l null])
+    (for binds (set! l (cons expr l)))
+    (reverse l)))
+(define-syntax-rule (for*/list~ binds expr)
+  (let ([l null])
+    (for* binds (set! l (cons expr l)))
+    (reverse l)))
+
 (define-syntax test-sequence
   (syntax-rules ()
     [(_ [seq] gen) ; we assume that seq has at least 2 elements, and all are unique
      (begin
        ;; Some tests specific to single-values:
        (test `seq 'gen (for/list ([i gen]) i))
+       (test `seq 'gen (for/list~ ([i gen]) i))
        (test `seq 'gen (for/list ([i gen][b gen]) i))
+       (test `seq 'gen (for/list~ ([i gen][b gen]) i))
        (test `seq 'gen (for/list ([i gen][b gen]) b))
+       (test `seq 'gen (for/list~ ([i gen][b gen]) b))
        (test `seq 'gen (for*/list ([i gen][b '(#t)]) i))
        (test (map (lambda (x) #t) `seq) 'gen (for*/list ([i gen][b '(#t)]) b))
        (test (append `seq `seq) 'gen (for*/list ([b '(#f #t)][i gen]) i))
+       (test (append `seq `seq) 'gen (for*/list~ ([b '(#f #t)][i gen]) i))
        (test (append `seq `seq) 'gen (for/list ([b '(#f #t)] #:when #t [i gen]) i))
+       (test (append `seq `seq) 'gen (for/list~ ([b '(#f #t)] #:when #t [i gen]) i))
        (test (append `seq `seq) 'gen (for/list ([b '(#t #t #f)] #:when b [i gen]) i))
+       (test (append `seq `seq) 'gen (for/list~ ([b '(#t #t #f)] #:when b [i gen]) i))
        (test (append `seq `seq) 'gen (for/list ([b '(#f #t)] #:unless #f [i gen]) i))
+       (test (append `seq `seq) 'gen (for/list~ ([b '(#f #t)] #:unless #f [i gen]) i))
        (test (append `seq `seq) 'gen (for/list ([b '(#f #f #t)] #:unless b [i gen]) i))
+       (test (append `seq `seq) 'gen (for/list~ ([b '(#f #f #t)] #:unless b [i gen]) i))
        (test `seq 'gen (let ([g gen]) (for/list ([i g]) i)))
        (test `seq 'gen (let ([r null])
                          (for ([i gen]) (set! r (cons i r)))
