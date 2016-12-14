@@ -731,7 +731,7 @@
             (collect-garbage)
             (when (weak-box-value b)
               (set! retained (add1 retained)))))
-      (test #t `(in-... ,retained) (< retained (/ N 2)))))
+      (test #t `(for/... in-... proc extra ... ,N ,retained) (< retained (/ N 2)))))
   (check for/list in-list #f)
   (check for/list values #f)
   (check for/stream in-stream #f)
@@ -747,6 +747,7 @@
   (check for/list values map)
   (check for/list values map extra) ; 1 and 2 arguments are special-cased
   (check for/list values for-each)
+  (check for/list values ormap)
   (check for/list values andmap))
 
 ;; ----------------------------------------
