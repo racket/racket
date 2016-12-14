@@ -6640,38 +6640,6 @@ static Scheme_Object *convert_srcloc(Scheme_Stx_Srcloc *srcloc, Scheme_Hash_Tree
   } else
     paren = NULL;
 
-  if ((!srcloc || (SCHEME_FALSEP(srcloc->src)
-                   && (srcloc->line < 0)
-                   && (srcloc->col < 0)
-                   && (srcloc->pos < 0)))
-      && !paren)
-    return scheme_false;
-
-  if (!srcloc)
-    srcloc = empty_srcloc;
-
-  src = srcloc->src;
-  if (SCHEME_PATHP(src)) {
-    /* To make paths portable and to avoid full paths, check whether the
-       path can be made relative (in which case it is turned into a list
-       of byte strings). If not, convert to a string using only the
-       last couple of path elements. */
-    dir = scheme_get_param(scheme_current_config(),
-                           MZCONFIG_WRITE_DIRECTORY);
-    if (SCHEME_TRUEP(dir))
-      src = scheme_extract_relative_to(src, dir, mt->path_cache);
-    if (SCHEME_PATHP(src)) {
-      src = scheme_hash_get(mt->path_cache, scheme_box(srcloc->src));
-      if (!src) {
-        src = srcloc_path_to_string(srcloc->src);
-        scheme_hash_set(mt->path_cache, scheme_box(srcloc->src), src);
-      }
-    } else {
-      /* use the path directly and let the printer make it relative */
-      src = srcloc->src;
-    }
-  }
-
   preserved_properties = scheme_null;
   if (props) {
     Scheme_Object *key, *val, **a = NULL;
@@ -6698,6 +6666,39 @@ static Scheme_Object *convert_srcloc(Scheme_Stx_Srcloc *srcloc, Scheme_Hash_Tree
         val = convert_prop_val(SCHEME_PTR_VAL(val), mt, NULL, empty_hash_tree);
         preserved_properties = CONS(CONS(a[i], val), preserved_properties);
       }
+    }
+  }
+
+  if ((!srcloc || (SCHEME_FALSEP(srcloc->src)
+                   && (srcloc->line < 0)
+                   && (srcloc->col < 0)
+                   && (srcloc->pos < 0)))
+      && !paren
+      && SCHEME_NULLP(preserved_properties))
+    return scheme_false;
+
+  if (!srcloc)
+    srcloc = empty_srcloc;
+
+  src = srcloc->src;
+  if (SCHEME_PATHP(src)) {
+    /* To make paths portable and to avoid full paths, check whether the
+       path can be made relative (in which case it is turned into a list
+       of byte strings). If not, convert to a string using only the
+       last couple of path elements. */
+    dir = scheme_get_param(scheme_current_config(),
+                           MZCONFIG_WRITE_DIRECTORY);
+    if (SCHEME_TRUEP(dir))
+      src = scheme_extract_relative_to(src, dir, mt->path_cache);
+    if (SCHEME_PATHP(src)) {
+      src = scheme_hash_get(mt->path_cache, scheme_box(srcloc->src));
+      if (!src) {
+        src = srcloc_path_to_string(srcloc->src);
+        scheme_hash_set(mt->path_cache, scheme_box(srcloc->src), src);
+      }
+    } else {
+      /* use the path directly and let the printer make it relative */
+      src = srcloc->src;
     }
   }
 

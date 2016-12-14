@@ -2374,14 +2374,27 @@
                'something-not-saved 2)
               'a-third-thing 3 #t))
   (define s (zo-bounce s0))
+  ;; Like `s`, but without source locations or paren shape:
+  (define sx (zo-bounce
+              (syntax-property
+               (syntax-property
+                (syntax-property (datum->syntax #f '[0])
+                                 'something-else 1 #t)
+                'something-not-saved 2)
+               'a-third-thing 3 #t)))
+
   (test #\[ syntax-property s 'paren-shape)
+  (test #f syntax-property sx 'paren-shape)
   (test #\[ syntax-property s0 'paren-shape)
   (test #t syntax-property-preserved? s 'paren-shape)
+  (test #f syntax-property-preserved? sx 'paren-shape)
   (test #t syntax-property-preserved? s0 'paren-shape)
   
   (test 1 syntax-property s 'something-else)
+  (test 1 syntax-property sx 'something-else)
   (test 1 syntax-property s0 'something-else)
   (test #t syntax-property-preserved? s 'something-else)
+  (test #t syntax-property-preserved? sx 'something-else)
   (test #t syntax-property-preserved? s0 'something-else)
   
   (test #f syntax-property s 'something-not-saved)
@@ -2390,8 +2403,10 @@
   (test #f syntax-property-preserved? s0 'something-not-saved)
 
   (test 3 syntax-property s 'a-third-thing)
+  (test 3 syntax-property sx 'a-third-thing)
   (test 3 syntax-property s0 'a-third-thing)
   (test #t syntax-property-preserved? s 'a-third-thing)
+  (test #t syntax-property-preserved? sx 'a-third-thing)
   (test #t syntax-property-preserved? s0 'a-third-thing)
   
   ;; 'paren-shape has a special default:
