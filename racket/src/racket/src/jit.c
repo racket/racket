@@ -2253,7 +2253,7 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
     {
       Scheme_Sequence *seq;
       GC_CAN_IGNORE jit_insn *ref, *ref2;
-      int i;
+      int i, count;
       START_JIT_DATA();
 
       LOG_IT(("begin0\n"));
@@ -2264,8 +2264,13 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
       scheme_generate_non_tail(seq->array[0], jitter, multi_ok, 1, result_ignored);
       CHECK_LIMIT();
 
+      count = seq->count;
+      /* Ignore an obviously useless expression: */
+      if ((count == 2) && (SCHEME_TYPE(seq->array[1]) > _scheme_values_types_))
+        count = 1;
+
       /* Save value(s) */
-      if (!result_ignored) {
+      if (!result_ignored && (count > 1)) {
         mz_pushr_p(JIT_R0);
         if (multi_ok) {
           mz_pushr_p(JIT_R0);
@@ -2310,23 +2315,25 @@ int scheme_generate(Scheme_Object *obj, mz_jit_state *jitter, int is_tail, int w
 
       /* Restore values, if necessary */
       if (!result_ignored) {
-        mz_popr_p(JIT_R0);
-        if (multi_ok) {
-          mz_popr_p(JIT_R1);
-          mz_popr_p(JIT_R2);
-          mz_rs_sync();
-          CHECK_LIMIT();
-          __START_TINY_JUMPS__(1);
-          ref = jit_bnei_p(jit_forward(), JIT_R0, 0x0);
-          CHECK_LIMIT();
-          mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
-          jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
-          jit_rshi_ul(JIT_R2, JIT_R2, 0x1);
-          jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
-          (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
+        if (count > 1) {
+          mz_popr_p(JIT_R0);
+          if (multi_ok) {
+            mz_popr_p(JIT_R1);
+            mz_popr_p(JIT_R2);
+            mz_rs_sync();
+            CHECK_LIMIT();
+            __START_TINY_JUMPS__(1);
+            ref = jit_bnei_p(jit_forward(), JIT_R0, 0x0);
+            CHECK_LIMIT();
+            mz_tl_ldi_p(JIT_R0, tl_scheme_current_thread);
+            jit_stxi_p(&((Scheme_Thread *)0x0)->ku.multiple.array, JIT_R0, JIT_R1);
+            jit_rshi_ul(JIT_R2, JIT_R2, 0x1);
+            jit_stxi_l(&((Scheme_Thread *)0x0)->ku.multiple.count, JIT_R0, JIT_R2);
+            (void)jit_movi_p(JIT_R0, SCHEME_MULTIPLE_VALUES);
 
-          mz_patch_branch(ref);
-          __END_TINY_JUMPS__(1);
+            mz_patch_branch(ref);
+            __END_TINY_JUMPS__(1);
+          }
         }
 
         if (target != JIT_R0)
