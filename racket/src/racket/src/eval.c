@@ -2655,7 +2655,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
   Scheme_Object *v;
   GC_CAN_IGNORE Scheme_Object *tmpv; /* safe-for-space relies on GC_CAN_IGNORE */
   GC_CAN_IGNORE Scheme_Object **tmprands; /* safe-for-space relies on GC_CAN_IGNORE */
-  GC_MAYBE_IGNORE_INTERIOR Scheme_Object **old_runstack;
+  GC_MAYBE_IGNORE_INTERIOR Scheme_Object **old_runstack, **runstack_base;
   GC_MAYBE_IGNORE_INTERIOR MZ_MARK_STACK_TYPE old_cont_mark_stack;
 #if USE_LOCAL_RUNSTACK
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **runstack;
@@ -2721,6 +2721,17 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
   MZ_CONT_MARK_POS += 2;
   old_runstack = RUNSTACK;
+  if (num_rands >= 0) {
+    /* If we have a call with arguments at runstack, then we're
+       allowed to recycle the argument part of the runstack. In fact,
+       space safety may relies on reusing that space to clear argument
+       values. */
+    if (rands == RUNSTACK)
+      runstack_base = RUNSTACK + num_rands;
+    else
+      runstack_base = RUNSTACK;
+  } else
+    runstack_base = RUNSTACK;
   old_cont_mark_stack = MZ_CONT_MARK_STACK;
 
   if (num_rands >= 0) {
@@ -2803,7 +2814,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
       data = SCHEME_CLOSURE_CODE(obj);
 
-      if ((RUNSTACK - RUNSTACK_START) < data->max_let_depth) {
+      if ((runstack_base - RUNSTACK_START) < data->max_let_depth) {
         rands = evacuate_runstack(num_rands, rands, RUNSTACK);
 
 	if (rands == p->tail_buffer) {
@@ -2842,7 +2853,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
 	  n = num_params - has_rest;
 	  
-	  RUNSTACK = old_runstack - num_params;
+	  RUNSTACK = runstack_base - num_params;
 	  CHECK_RUNSTACK(p, RUNSTACK);
 	  RUNSTACK_CHANGED();
 
@@ -2903,7 +2914,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    return NULL; /* Doesn't get here */
 	  }
 	
-          stack = RUNSTACK = old_runstack - num_params;
+          stack = RUNSTACK = runstack_base - num_params;
           CHECK_RUNSTACK(p, RUNSTACK);
           RUNSTACK_CHANGED();
           
@@ -2927,7 +2938,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    return NULL; /* Doesn't get here */
 	  }
 	}
-	RUNSTACK = old_runstack;
+	RUNSTACK = runstack_base;
 	RUNSTACK_CHANGED();
       }
       
@@ -3169,7 +3180,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
               rands = p->ku.apply.tail_rands;
               p->ku.apply.tail_rator = NULL;
               p->ku.apply.tail_rands = NULL;
-              RUNSTACK = old_runstack;
+              RUNSTACK = runstack_base;
               RUNSTACK_CHANGED();
             } else {
               break;
@@ -3943,7 +3954,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
     rands = p->ku.apply.tail_rands;
     p->ku.apply.tail_rator = NULL;
     p->ku.apply.tail_rands = NULL;
-    RUNSTACK = old_runstack;
+    RUNSTACK = runstack_base;
     RUNSTACK_CHANGED();
     goto apply_top;
   }
@@ -3967,6 +3978,13 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
  returnv_never_multi:
 
+  /* If resetting RUNSTACK to old_runstack makes the stack larger, we
+     need to clear extra slots to avoid making an old value on the
+     runstack suddenly live again */
+  while ((uintptr_t)RUNSTACK > (uintptr_t)old_runstack) {
+    RUNSTACK--;
+    *RUNSTACK = NULL;
+  }
   MZ_RUNSTACK = old_runstack;
   MZ_CONT_MARK_STACK = old_cont_mark_stack;
   MZ_CONT_MARK_POS -= 2;
