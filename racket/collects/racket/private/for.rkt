@@ -1655,10 +1655,10 @@
       [(_ . rest) (quasisyntax/loc stx (for*/fold/derived #,stx . rest))]))
 
   (define-for-variants (for for*)
-    ([fold-var (void)])
+    ()
+    (lambda (x) `(,#'begin ,x ,#'(void)))
     (lambda (x) x)
-    (lambda (x) x)
-    (lambda (x) `(,#'begin ,x ,#'(void))))
+    (lambda (x) `(,#'begin ,x ,#'(values))))
 
   (define-syntax-via-derived for/list for/list/derived () (lambda (x) x) (lambda (x) x) (lambda (x) x))
   (define-syntax-via-derived for*/list for*/list/derived () (lambda (x) x) (lambda (x) x) (lambda (x) x))
