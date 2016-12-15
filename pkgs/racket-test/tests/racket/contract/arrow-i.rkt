@@ -980,6 +980,27 @@
 
    ;; this is probably right (but not what we really really want, of course)
    '(5 4 5 4 3 2 1 2 1))
+
+  (test/spec-passed/result
+   '->i57
+   '(let ([b '()])
+      ((contract (->i ([y () (begin (set! b (cons 1 b))
+                                    (λ (y) (set! b (cons 2 b)) #t))]
+                       [z (y) (begin (set! b (cons 3 b))
+                                     (λ (y) (set! b (cons 4 b)) #t))])
+                      (values
+                       [a () (begin (set! b (cons 6 b))
+                                    (λ (a) (set! b (cons 7 b)) #t))]
+                       [b (a) (begin (set! b (cons 8 b))
+                                     (λ (a) (set! b (cons 9 b)) #t))]))
+                 (λ args (set! b (cons 5 b)) (values 0 0))
+                 'pos 'neg)
+       1 2)
+      b)
+   '(9 8 7 6 5 4 3 2 1)
+
+   ;; this is probably right (but not what we really really want, of course)
+   '(9 8 7 6 9 8 7 6 5 4 3 2 1 4 3 2 1))
   
   (test/pos-blame
    '->i-arity1

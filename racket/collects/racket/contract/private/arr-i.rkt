@@ -693,7 +693,9 @@ evaluted left-to-right.)
           [indy-arg/res-proj-var (vector-ref indy-arg/res-proj-vars index)])
 
       ;; bound to the result of calling the dependent function
-      ;; (so computes what the contract will be for the given argument/res value)
+      ;; (which isn't a contract directly, but is a function that returns
+      ;; the projection for a contract)
+      ;; the result computes what the contract will be for the given argument/res value.
       (define contract-identifier (car (generate-temporaries (list indy-arg/res-var))))
 
       (define indy-binding
@@ -708,7 +710,8 @@ evaluted left-to-right.)
                        #`(#,contract-identifier
                           #,wrapper-arg
                           #,(build-blame-identifier #t swapped-blame? (arg/res-var an-arg/res))
-                          neg-party)
+                          neg-party
+                          #t)
                        #`(#,indy-arg/res-proj-var #,wrapper-arg neg-party)))])
             (list)))
       
@@ -735,12 +738,14 @@ evaluted left-to-right.)
                           #,(build-blame-identifier #f 
                                                     swapped-blame? 
                                                     (arg/res-var an-arg/res))
-                          neg-party)]
+                          neg-party
+                          #f)]
                       [(arg/res-vars an-arg/res)
                        #`(#,contract-identifier
                           #,wrapper-arg
                           #,(build-blame-identifier #f swapped-blame? (arg/res-var an-arg/res))
-                          neg-party)]
+                          neg-party
+                          #f)]
                       [else
                        #`(#,arg/res-proj-var #,wrapper-arg neg-party)]))]
                 #,@indy-binding)
@@ -1085,24 +1090,26 @@ evaluted left-to-right.)
       #`(f #,@argument-list)))
 
 (begin-encourage-inline
-  (define (un-dep/maybe-chaperone orig-ctc obj blame neg-party chaperone?)
+  (define (un-dep/maybe-chaperone orig-ctc obj blame neg-party chaperone? indy-blame?)
     (cond
       [(and (procedure? orig-ctc)
             (procedure-arity-includes? orig-ctc 1))
-       (if (orig-ctc obj)
+       (if (or indy-blame? (orig-ctc obj))
            obj
            (raise-predicate-blame-error-failure blame obj neg-party
                                                 (contract-name orig-ctc)))]
+      [(and indy-blame? (flat-contract? orig-ctc))
+       obj]
       [else
        (define ctc (if chaperone?
                        (coerce-chaperone-contract '->i orig-ctc)
                        (coerce-contract '->i orig-ctc)))
        (((get/build-late-neg-projection ctc) blame) obj neg-party)]))
-  (define (un-dep/chaperone orig-ctc obj blame neg-party)
-    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #t))
+  (define (un-dep/chaperone orig-ctc obj blame neg-party indy-blame?)
+    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #t indy-blame?))
   
-  (define (un-dep orig-ctc obj blame neg-party)
-    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #f)))
+  (define (un-dep orig-ctc obj blame neg-party indy-blame?)
+    (un-dep/maybe-chaperone orig-ctc obj blame neg-party #f indy-blame?)))
 
 (define-for-syntax (mk-used-indy-vars an-istx)
   (let ([vars (make-free-identifier-mapping)])
@@ -1237,11 +1244,11 @@ evaluted left-to-right.)
                             (gensym '->i-indy-boundary)))
                          #`(λ (#,@orig-vars)
                              (define the-contract #,ctc-stx)
-                             (λ (val blame neg-party)
+                             (λ (val blame neg-party indy-blame?)
                                ;; this used to use opt/direct, but
                                ;; opt/direct duplicates code (bad!)
                                (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
-                                the-contract val blame neg-party)))))
+                                the-contract val blame neg-party indy-blame?)))))
               ;; then the non-dependent argument contracts that are themselves dependend on
               (list #,@(filter values
                                (map (λ (arg/res indy-id) 
@@ -1272,15 +1279,17 @@ evaluted left-to-right.)
                                     (gensym '->i-indy-boundary)))
                                  (if (eres? arg)
                                      #`(λ #,orig-vars
-                                         #,@(arg/res-vars arg)
                                          (opt/c #,arg-stx))
                                      #`(λ (#,@orig-vars)
                                          (define the-contract #,arg-stx)
-                                         (λ (val blame neg-party)
+                                         (λ (val blame neg-party indy-blame?)
                                            ;; this used to use opt/direct, but
                                            ;; opt/direct duplicates code (bad!)
-                                           (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
-                                            the-contract val blame neg-party))))))
+                                           (#,(if is-chaperone-contract?
+                                                  #'un-dep/chaperone
+                                                  #'un-dep)
+                                            the-contract val blame neg-party
+                                            indy-blame?))))))
                     #''())
               #,(if (istx-ress an-istx)
                     #`(list #,@(filter values
