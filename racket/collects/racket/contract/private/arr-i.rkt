@@ -691,31 +691,39 @@ evaluted left-to-right.)
     (let ([wrapper-arg (vector-ref wrapper-arg/ress index)]
           [arg/res-proj-var (vector-ref arg/res-proj-vars index)]
           [indy-arg/res-proj-var (vector-ref indy-arg/res-proj-vars index)])
+
+      ;; bound to the result of calling the dependent function
+      ;; (so computes what the contract will be for the given argument/res value)
+      (define contract-identifier (car (generate-temporaries (list indy-arg/res-var))))
+
+      (define indy-binding
+        ;; if indy-arg/res-proj-var is #f, that means that we don't need that binding, so skip it
+        (if indy-arg/res-proj-var
+            (list
+             #`[#,indy-arg/res-var
+                #,(add-unsupplied-check
+                   an-arg/res
+                   wrapper-arg
+                   (if (arg/res-vars an-arg/res)
+                       #`(#,contract-identifier
+                          #,wrapper-arg
+                          #,(build-blame-identifier #t swapped-blame? (arg/res-var an-arg/res))
+                          neg-party)
+                       #`(#,indy-arg/res-proj-var #,wrapper-arg neg-party)))])
+            (list)))
       
-      (let ([indy-binding
-             ;; if indy-arg/res-proj-var is #f, that means that we don't need that binding, so skip it
-             (if indy-arg/res-proj-var
-                 (list 
-                  #`[#,indy-arg/res-var 
-                     #,(add-unsupplied-check
-                        an-arg/res
-                        wrapper-arg
-                        (if (arg/res-vars an-arg/res)
-                            #`(#,arg/res-proj-var
-                               #,@(map (λ (var) 
+      #`(let (#,@(if (and (arg/res-vars an-arg/res) (not (eres? an-arg/res)))
+                     (list #`[#,contract-identifier
+                              (#,arg/res-proj-var
+                               #,@(map (λ (var)
                                          (arg/res-to-indy-var indy-arg-vars
                                                               ordered-args
                                                               indy-res-vars
                                                               ordered-ress
                                                               var))
-                                       (arg/res-vars an-arg/res))
-                               #,wrapper-arg
-                               #,(build-blame-identifier #t swapped-blame? (arg/res-var an-arg/res))
-                               neg-party)
-                            #`(#,indy-arg/res-proj-var #,wrapper-arg neg-party)))])
-                 (list))])
-        #`(let (#,@indy-binding
-                [#,wrapper-arg 
+                                       (arg/res-vars an-arg/res)))])
+                     (list)))
+          (let ([#,wrapper-arg
                  #,(add-unsupplied-check
                     an-arg/res
                     wrapper-arg
@@ -729,18 +737,13 @@ evaluted left-to-right.)
                                                     (arg/res-var an-arg/res))
                           neg-party)]
                       [(arg/res-vars an-arg/res)
-                       #`(#,arg/res-proj-var 
-                          #,@(map (λ (var) (arg/res-to-indy-var indy-arg-vars 
-                                                                ordered-args 
-                                                                indy-res-vars 
-                                                                ordered-ress 
-                                                                var))
-                                  (arg/res-vars an-arg/res))
+                       #`(#,contract-identifier
                           #,wrapper-arg
                           #,(build-blame-identifier #f swapped-blame? (arg/res-var an-arg/res))
                           neg-party)]
                       [else
-                       #`(#,arg/res-proj-var #,wrapper-arg neg-party)]))])
+                       #`(#,arg/res-proj-var #,wrapper-arg neg-party)]))]
+                #,@indy-binding)
             #,body)))))
 
 
@@ -1232,12 +1235,13 @@ evaluted left-to-right.)
                              this->i)
                             'racket/contract:contract-on-boundary
                             (gensym '->i-indy-boundary)))
-                         #`(λ (#,@orig-vars val blame neg-party)
-                             #,@(arg/res-vars arg)
-                             ;; this used to use opt/direct, but 
-                             ;; opt/direct duplicates code (bad!)
-                             (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
-                              #,ctc-stx val blame neg-party))))
+                         #`(λ (#,@orig-vars)
+                             (define the-contract #,ctc-stx)
+                             (λ (val blame neg-party)
+                               ;; this used to use opt/direct, but
+                               ;; opt/direct duplicates code (bad!)
+                               (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
+                                the-contract val blame neg-party)))))
               ;; then the non-dependent argument contracts that are themselves dependend on
               (list #,@(filter values
                                (map (λ (arg/res indy-id) 
@@ -1270,12 +1274,13 @@ evaluted left-to-right.)
                                      #`(λ #,orig-vars
                                          #,@(arg/res-vars arg)
                                          (opt/c #,arg-stx))
-                                     #`(λ (#,@orig-vars val blame neg-party)
-                                         ;; this used to use opt/direct, but 
-                                         ;; opt/direct duplicates code (bad!)
-                                         #,@(arg/res-vars arg)
-                                         (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
-                                          #,arg-stx val blame neg-party)))))
+                                     #`(λ (#,@orig-vars)
+                                         (define the-contract #,arg-stx)
+                                         (λ (val blame neg-party)
+                                           ;; this used to use opt/direct, but
+                                           ;; opt/direct duplicates code (bad!)
+                                           (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
+                                            the-contract val blame neg-party))))))
                     #''())
               #,(if (istx-ress an-istx)
                     #`(list #,@(filter values
