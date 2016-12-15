@@ -8778,7 +8778,7 @@ static Scheme_Object *do_module_begin(Scheme_Object *orig_form, Scheme_Comp_Env 
       }
     }
 
-    if (*all_simple_bindings && env->genv->module->rn_stx) {
+    if (*all_simple_bindings && env->genv->module->rn_stx && rec[drec].comp) {
       /* We will be able to reconstruct binding for `module->namespace`: */
       env->genv->module->rn_stx = scheme_true;
     } else {

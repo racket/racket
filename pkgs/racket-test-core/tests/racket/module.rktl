@@ -1906,5 +1906,37 @@ case of module-leve bindings; it doesn't cover local bindings.
                                      (dynamic-require ''provide-the-x-identifier 'x-id))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that re-expansion of a simple (in the sense of `require`
+;; information kept for `module->namspace`) module body is ok
+
+(module m racket/base
+  (module mylang racket/base
+    (require (for-syntax racket/base))
+    (provide (rename-out [-#%module-begin #%module-begin]))
+    (define-syntax (-#%module-begin stx)
+      (syntax-case stx ()
+        [(_ lng . rest)
+         (with-syntax ([#%module-begin (datum->syntax #'lng '#%module-begin)])
+           #`(#%plain-module-begin
+              (require lng)
+              (continue #%module-begin . rest)))]))
+    (define-syntax (continue stx)
+      (syntax-case stx ()
+        [(_ lang-module-begin . rest)
+         (let ([body-stx (local-expand
+                          #'(lang-module-begin . rest)
+                          'module-begin
+                          (list))])
+           (syntax-case body-stx (#%plain-module-begin)
+             [(#%plain-module-begin . mod-body)
+              #`(begin . mod-body)]))])))
+
+  (module foo (submod ".." mylang) racket/base
+          (module a-submod racket/base
+            (define x 1)
+            (provide x))
+          (require 'a-submod)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
