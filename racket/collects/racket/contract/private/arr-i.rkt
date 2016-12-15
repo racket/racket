@@ -1244,6 +1244,7 @@ evaluted left-to-right.)
                             (gensym '->i-indy-boundary)))
                          #`(λ (#,@orig-vars)
                              (define the-contract #,ctc-stx)
+                             #,@(arg/res-vars arg) ;; needed for check syntax arrows
                              (λ (val blame neg-party indy-blame?)
                                ;; this used to use opt/direct, but
                                ;; opt/direct duplicates code (bad!)
@@ -1282,6 +1283,7 @@ evaluted left-to-right.)
                                          (opt/c #,arg-stx))
                                      #`(λ (#,@orig-vars)
                                          (define the-contract #,arg-stx)
+                                         #,@(arg/res-vars arg) ;; needed for check syntax arrows
                                          (λ (val blame neg-party indy-blame?)
                                            ;; this used to use opt/direct, but
                                            ;; opt/direct duplicates code (bad!)
