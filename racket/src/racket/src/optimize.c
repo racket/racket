@@ -1922,7 +1922,7 @@ static int do_single_valued_noncm_expression(Scheme_Object *expr, int fuel, int 
         if (non_cm) {
           /* To avoid being sensitive to tail position, the body must not inspect
              the continuation at all. */
-          return scheme_omittable_expr(wcm->body, 1, fuel, 0, NULL, NULL);
+          return scheme_omittable_expr(wcm->body, s_v ? 1 : -1, 5, 0, NULL, NULL);
         } else {
           expr = wcm->body;
         }
