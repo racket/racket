@@ -108,10 +108,21 @@
 
 (define (contract? x) (and (coerce-contract/f x) #t))
 
-(define (flat-contract? x) 
-  (let ([c (coerce-contract/f x)])
-    (and c
-         (flat-contract-struct? c))))
+(define (flat-contract? x)
+  (or (and (procedure? x) (procedure-arity-includes? x 1))
+      (null? x)
+      (boolean? x)
+      (symbol? x)
+      (keyword? x)
+      (char? x)
+      (bytes? x)
+      (string? x)
+      (number? x)
+      (regexp? x)
+      (byte-regexp? x)
+      (let ([c (coerce-contract/f x)])
+        (and c
+             (flat-contract-struct? c)))))
 
 (define (chaperone-contract? x)
   (let ([c (coerce-contract/f x)])
