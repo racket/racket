@@ -13,9 +13,9 @@ its surrogate object. Each host has a dynamically assigned surrogate,
 so an object can completely change its behavior merely by changing the
 surrogate.
 
-@defform/subs[#:literals (override override-final)
+@defform/subs[#:literals (augment override override-final)
               (surrogate method-spec ...)
-              ([method-spec (method-id arg-spec ...)
+              ([method-spec (augment method-id arg-spec ...)
                             (override method-id arg-spec ...)               
                             (override-final method-id (lambda () default-expr) 
                                             arg-spec ...)]
@@ -40,7 +40,8 @@ new value of the field. The @racket[get-surrogate] method returns the
 current value of the field.
 
 The host mixin has a single overriding method for each
-@racket[method-id] in the @racket[surrogate] form. Each of these
+@racket[method-id] in the @racket[surrogate] form (even the ones
+specified with @racket[augment]. Each of these
 methods is defined with a @racket[case-lambda] with one arm for each
 @racket[arg-spec]. Each arm has the variables as arguments in the
 @racket[arg-spec]. The body of each method tests the

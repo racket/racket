@@ -87,11 +87,31 @@
       [(augment result-expr name argspec ...)
        (identifier? #'name)
        (syntax name)]
-      [else (raise-syntax-error 
-             #f
-             "bad method specification"
-             stx
-             method-spec)]))
+      [(override . whatever)
+       (raise-syntax-error
+        #f
+        "bad override method specification"
+        stx
+        method-spec)]
+      [(augment . whatever)
+       (raise-syntax-error
+        #f
+        "bad augment method specification"
+        stx
+        method-spec)]
+      [(id . whatever)
+       (identifier? #'id)
+       (raise-syntax-error
+        #f
+        "bad method specification, expected either override or augment"
+        stx
+        #'id)]
+      [whatever
+       (raise-syntax-error
+        #f
+        "bad method specification"
+        stx
+        method-spec)]))
   
   (define (make-super-proc-case name def-expr)
     (lambda (spec)
@@ -120,15 +140,15 @@
         (syntax-case spec ()
           ;; Not a rest arg: normal mode for super-call
           [(id ...) (syntax [(id ...)
-                             (if surrogate
-                                 (send surrogate name this super-call id ...)
+                             (if the-surrogate
+                                 (send the-surrogate name this super-call id ...)
                                  (super-call id ...))])]
           ;; A rest arg: super-class takes args as a list
           [id
            (identifier? (syntax id))
            (syntax [name 
-                    (if surrogate
-                        (send surrogate name this (lambda args (super-call args)) . id)
+                    (if the-surrogate
+                        (send the-surrogate name this (lambda args (super-call args)) . id)
                         (super-call id))])]))))
   
   (syntax-case stx ()
@@ -142,7 +162,7 @@
                     (map make-empty-method
                          (syntax->list
                           (syntax (method-spec ...))))])
-       (syntax/loc stx
+       (quasisyntax/loc stx
          (let ([surrogate<%>
                 (interface ()
                   on-disable-surrogate
@@ -154,37 +174,47 @@
                   get-surrogate
                   ids ...)])
            (values
-            (lambda (super%)
+            (λ (super%)
               (class* super% (host<%>)
-                (field [surrogate #f])
-                (define/public (set-surrogate d)
-                  (when surrogate
-                    (send surrogate on-disable-surrogate this))
-                  
-                  ;; error checking
-                  (when d
-                    (unless (object? d)
-                      (error 'set-surrogate "expected an object, got: ~e" d))
-                    (let ([methods-to-impl '(on-enable-surrogate on-disable-surrogate ids ...)]
-                          [i (object-interface d)])
-                      (for-each (lambda (x) 
-                                  (unless (method-in-interface? x i)
-                                    (error 'set-surrogate "expected object to implement an ~s method" x)))
-                                methods-to-impl)))
-                  
-                  (set! surrogate d)
-                  (when surrogate
-                    (send surrogate on-enable-surrogate this)))
-                (define/public (get-surrogate) surrogate)
+                (define the-surrogate #f)
+                (define/public-final (set-surrogate new-surrogate)
+                  (do-set-surrogate (λ (s) (set! the-surrogate s))
+                                    the-surrogate
+                                    this
+                                    new-surrogate
+                                    '(ids ...)))
+                (define/public-final (get-surrogate) the-surrogate)
                 
                 overriding-methods ...
                 
                 (super-new)))
+
             host<%>
-            
-            (class* object% (surrogate<%>)
-              (define/public (on-enable-surrogate x) (void))
-              (define/public (on-disable-surrogate x) (void))
-              empty-methods ...
-              (super-new))
+
+            #,(syntax/loc stx
+                (class* object% (surrogate<%>)
+                  (define/public (on-enable-surrogate x) (void))
+                  (define/public (on-disable-surrogate x) (void))
+                  empty-methods ...
+                  (super-new)))
             surrogate<%>))))]))
+
+(define (do-set-surrogate set-the-surrogate the-surrogate this new-surrogate ids)
+  (when the-surrogate
+    (send the-surrogate on-disable-surrogate this))
+
+  ;; error checking
+  (when new-surrogate
+    (unless (object? new-surrogate)
+      (raise-argument-error 'set-surrogate "object?" new-surrogate))
+    (let ([methods-to-impl (list* 'on-enable-surrogate 'on-disable-surrogate ids)]
+          [i (object-interface new-surrogate)])
+      (for ([x (in-list methods-to-impl)])
+        (unless (method-in-interface? x i)
+          (raise-argument-error 'set-surrogate
+                                (format "object with method ~s" x)
+                                new-surrogate)))))
+
+  (set-the-surrogate new-surrogate)
+  (when new-surrogate
+    (send new-surrogate on-enable-surrogate this)))
