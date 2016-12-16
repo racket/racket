@@ -174,6 +174,11 @@
    '->i8
    '((contract (->i ([x number?] [y (x) (<=/c x)]) () [r (x) (<=/c x)]) 
                (lambda (x y) (+ x 1)) 'pos 'neg) 1 2))
+
+  (test/neg-blame
+   '->i8b
+   '((contract (->i ([x number?] [y (x) number?]) any)
+               (lambda (x y) y) 'pos 'neg) "1" 2))
   
   (test/spec-passed
    '->i9
