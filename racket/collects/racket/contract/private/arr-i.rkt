@@ -1253,7 +1253,7 @@ evaluted left-to-right.)
                                ;; opt/direct duplicates code (bad!)
                                (#,(if is-chaperone-contract? #'un-dep/chaperone #'un-dep)
                                 the-contract val blame neg-party indy-blame?)))))
-              ;; then the non-dependent argument contracts that are themselves dependend on
+              ;; then the non-dependent argument contracts that are themselves depended on
               (list #,@(filter values
                                (map (λ (arg/res indy-id) 
                                       (and (free-identifier-mapping-get used-indy-vars
@@ -1267,7 +1267,7 @@ evaluted left-to-right.)
               #,(if (istx-ress an-istx)
                     #`(list (cons 'res-names res-exp-xs) ...)
                     #''())
-              #,(if (istx-ress an-istx) 
+              #,(if (istx-ress an-istx)
                     #`(list #,@(for/list ([arg (in-list 
                                                 (istx-ress an-istx))]
                                           #:when (arg/res-vars arg))
@@ -1283,6 +1283,7 @@ evaluted left-to-right.)
                                     (gensym '->i-indy-boundary)))
                                  (if (eres? arg)
                                      #`(λ #,orig-vars
+                                         #,@(arg/res-vars arg) ;; needed for check syntax arrows
                                          (opt/c #,arg-stx))
                                      #`(λ (#,@orig-vars)
                                          (define the-contract #,arg-stx)
