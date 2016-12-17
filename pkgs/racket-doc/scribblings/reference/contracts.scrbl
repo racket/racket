@@ -1346,16 +1346,41 @@ there is no dependency between two arguments (or the result and an
 argument), then the contract that appears earlier in the source text is
 evaluated first.
 
-Finally, if all of the identifier positions of the range
+ If all of the identifier positions of the range
 contract are @racket[_]s (underscores), then the range contract expressions
-are evaluated when the function is called and the underscore is not bound
-in the range, after the argument contracts are evaluated and
-checked. Otherwise, the range expressions are evaluated when the function
-returns.
+are evaluated when the function is called instead of when it returns.
+Otherwise, dependent range expressions are evaluated when the function
+ returns.
 
-If there are optional arguments that are not supplied, then
-the corresponding variables will be bound to a special value
-called @racket[the-unsupplied-arg] value.
+ If there are optional arguments that are not supplied, then
+ the corresponding variables will be bound to a special value
+ called @racket[the-unsupplied-arg] value. For example, in
+ this contract:
+ @racketblock[(->i ([x (y) (if (unsupplied-arg? y)
+                               real?
+                               (>=/c y))])
+                   ([y real?])
+                   any)]
+ the contract on @racket[x] depends on @racket[_y], but
+ @racket[_y] might not be supplied at the call site. In that
+ case, the value of @racket[_y] in the contract on
+ @racket[_x] is @racket[the-unsupplied-arg]
+ and the @racket[->i] contract must check for it and tailor
+ the contract on @racket[_x] to
+ account for @racket[_y] not being supplied.
+
+When the contract expressions for unsupplied arguments are dependent,
+and the argument is not supplied at the call site, the contract
+expressions are not evaluated at all. For example, in this contract,
+@racket[_y]'s contract expression is evaluated only when @racket[_y]
+is supplied:
+@racketblock[(->i ()
+                  ([x real?]
+                   [y (x) (>=/c x)])
+                  any)]
+In contrast, @racket[_x]'s expression is always evaluated (indeed,
+it is evaluated when the @racket[->i] expression is evaluated because
+it does not have any dependencies).
 }
 
 @defform*/subs[#:literals (any values)
