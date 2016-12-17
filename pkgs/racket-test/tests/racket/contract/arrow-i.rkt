@@ -1006,6 +1006,29 @@
 
    ;; this is probably right (but not what we really really want, of course)
    '(9 8 7 6 9 8 7 6 5 4 3 2 1 4 3 2 1))
+
+  (test/spec-passed/result
+   '->i58
+   '((contract (->i ()
+                    ([x integer?]
+                     [y (x) (>=/c x)])
+                    [result any/c])
+               (λ ([x 0] [y 1]) 2)
+               'pos 'neg))
+   2)
+
+  (test/spec-passed/result
+   '->i59
+   '(let ([b '()])
+      ((contract (->i ()
+                      ([x (begin (set! b (cons 1 b)) integer?)]
+                       [y (x) (begin (set! b (cons 'nope b)) (>=/c x))])
+                      [result (begin (set! b (cons 2 b)) any/c)])
+                 (λ ([x #f] [y #f]) (set! b (cons 3 b)) 0)
+                 'pos 'neg))
+      b)
+   '(3 2 1)
+   '(3 2 1 2 1))
   
   (test/pos-blame
    '->i-arity1

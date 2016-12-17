@@ -717,14 +717,17 @@ evaluted left-to-right.)
       
       #`(let (#,@(if (and (arg/res-vars an-arg/res) (not (eres? an-arg/res)))
                      (list #`[#,contract-identifier
-                              (#,arg/res-proj-var
-                               #,@(map (λ (var)
-                                         (arg/res-to-indy-var indy-arg-vars
-                                                              ordered-args
-                                                              indy-res-vars
-                                                              ordered-ress
-                                                              var))
-                                       (arg/res-vars an-arg/res)))])
+                              #,(add-unsupplied-check
+                                 an-arg/res
+                                 wrapper-arg
+                                 #`(#,arg/res-proj-var
+                                    #,@(map (λ (var)
+                                              (arg/res-to-indy-var indy-arg-vars
+                                                                   ordered-args
+                                                                   indy-res-vars
+                                                                   ordered-ress
+                                                                   var))
+                                            (arg/res-vars an-arg/res))))])
                      (list)))
           (let ([#,wrapper-arg
                  #,(add-unsupplied-check
