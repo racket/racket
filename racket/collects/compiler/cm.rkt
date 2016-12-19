@@ -573,7 +573,7 @@
                             (when ok-to-compile?
                               (log-compile-event path 'start-compile)
                               (when zo-exists? (try-delete-file zo-name #f))
-                              (trace-printf (format "compiling ~a" actual-path))
+                              (trace-printf "compiling ~a" actual-path)
                               (parameterize ([depth (+ (depth) 1)])
                                 (with-handlers
                                     ([exn:get-module-code?
