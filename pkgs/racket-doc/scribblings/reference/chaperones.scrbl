@@ -232,7 +232,7 @@ order of the supplied arguments' keywords.
 If @racket[wrapper] is @racket[#f], then applying the resulting
 impersonator is the same as applying @racket[proc]. If
 @racket[wrapper] is @racket[#f] and no @racket[prop] is provided, then
-the result is @racket[proc] unimpersonated.
+@racket[proc] is returned and is not impersonated.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[procedure-impersonator] must be even) add impersonator properties
@@ -380,7 +380,7 @@ Each @racket[orig-proc] must indicate a distinct operation. If no
 @racket[struct-type] and no @racket[orig-proc]s are supplied, then no @racket[prop]s must be
 supplied. If @racket[orig-proc]s are supplied only with @racket[#f]
 @racket[redirect-proc]s and no @racket[prop]s are supplied, then
-@racket[v] is returned unimpersonated.
+@racket[v] is returned and is not impersonated.
 
 If any @racket[orig-proc] is itself an impersonator, then a use of the
 accessor or mutator that @racket[orig-proc] impersonates is redirected
