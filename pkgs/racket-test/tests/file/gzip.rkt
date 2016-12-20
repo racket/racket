@@ -77,6 +77,26 @@
   ;; should be around 6 times smaller
   (id* (file->bytes big-file) 4))
 
+(define (test-hang-on-long-filename)
+  ;; `tar-gzip` was crashing in a background thread due to a very long
+  ;; filename, leading to a hang in the main thread. Trigger the bug
+  ;; with a long filename, and check that progress is made in a
+  ;; reasonable length of time.
+  (local-require file/tar)
+  (define long-filename
+    "extremely-long-file-name-that-exceeds-the-internal-length-limits-on-USTAR-because-of-arcane-decisions-and-bad-choices-of-fixed-width-records-and-so-on-and-so-on")
+  (define temp-dir (find-system-path 'temp-dir))
+  (define long-path (build-path temp-dir long-filename))
+  (with-output-to-file long-path (lambda () (write long-filename)) #:exists 'replace)
+  (define tgz-file (build-path temp-dir "long-filename-test.tgz"))
+  (when (file-exists? tgz-file) (delete-file tgz-file))
+  (define ch (make-channel))
+  (thread (lambda ()
+            (with-handlers [(exn:fail? (lambda (_exn) (channel-put ch 'success)))]
+              (tar-gzip tgz-file long-path)
+              (channel-put ch 'didnt-fail-in-tar-gzip))))
+  (test (sync/timeout 10 ch) => 'success))
+
 (define (run-tests)
   (define (rand-bytes)
     (list->bytes (for/list ([j (in-range (random 1000))]) (random 256))))
@@ -84,7 +104,8 @@
   (test-degenerate-input-1)
   (test-degenerate-input-2)
   (for ([i (in-range 100)]) (id* (rand-bytes)))
-  (regression-test))
+  (regression-test)
+  (test-hang-on-long-filename))
 
 (define (regression-test)
   ;; check for an out-of-range buffer access:

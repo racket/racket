@@ -180,14 +180,16 @@
     #:exists (if exists-ok? 'truncate/replace 'error)
     (lambda ()
       (let-values ([(i o) (make-pipe (* 1024 1024 32))])
+        (define tar-exn #f)
         (thread (lambda ()
-                  (tar->output (pathlist-closure paths
-                                                 #:follow-links? follow-links?
-                                                 #:path-filter path-filter)
-                               o
-                               #:path-prefix prefix
-                               #:follow-links? follow-links?
-                               #:get-timestamp get-timestamp)
+                  (with-handlers [((lambda (exn) #t) (lambda (exn) (set! tar-exn exn)))]
+                    (tar->output (pathlist-closure paths
+                                                   #:follow-links? follow-links?
+                                                   #:path-filter path-filter)
+                                 o
+                                 #:path-prefix prefix
+                                 #:follow-links? follow-links?
+                                 #:get-timestamp get-timestamp))
                   (close-output-port o)))
         (gzip-through-ports
          i (current-output-port)
@@ -196,4 +198,5 @@
                                 (path->string tgz-file) tgz-file))
                 => (lambda (m) (string-append (car m) "tar"))]
                [else #f])
-         (current-seconds))))))
+         (current-seconds))
+        (when tar-exn (raise tar-exn))))))
