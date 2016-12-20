@@ -1599,6 +1599,7 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as
   if (!id) {
     if (env->module)
       return;
+    scheme_prepare_env_stx_context(env);
     id = scheme_datum_to_syntax(n, scheme_false, scheme_false, 0, 0);
     id = scheme_stx_add_module_context(id, env->stx_context);
   }
@@ -1866,6 +1867,7 @@ namespace_identifier(int argc, Scheme_Object *argv[])
   obj = argv[0];
   obj = scheme_datum_to_syntax(obj, scheme_false, scheme_false, 1, 0);
 
+  scheme_prepare_env_stx_context(genv);
   obj = scheme_stx_add_module_context(obj, genv->stx_context);
 
   return obj;
