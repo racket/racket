@@ -7,7 +7,7 @@
 
 @defmodule[net/osx-ssl]{The @racketmodname[net/osx-ssl] module
 offers a fraction of the functionality of @racketmodname[openssl] and
-works only on OS X, but it has the advantage that it works before
+works only on macOS, but it has the advantage that it works before
 OpenSSL libraries are installed.}
 
 @history[#:added "6.3.0.12"]
