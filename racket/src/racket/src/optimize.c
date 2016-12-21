@@ -128,13 +128,12 @@ static int wants_local_type_arguments(Scheme_Object *rator, int argpos);
 static void add_types_for_f_branch(Scheme_Object *t, Optimize_Info *info, int fuel);
 
 static void register_use(Scheme_IR_Local *var, Optimize_Info *info);
-static Scheme_Object *optimize_info_lookup_lambda(Scheme_Object *var);
+static Scheme_Object *optimize_info_lookup(Scheme_Object *var);
 static Scheme_Object *optimize_info_propagate_local(Scheme_Object *var);
 static void optimize_info_used_top(Optimize_Info *info);
 static Scheme_Object *optimize_get_predicate(Optimize_Info *info, Scheme_Object *var, int ignore_no_types);
 static void add_type(Optimize_Info *info, Scheme_Object *var, Scheme_Object *pred);
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, Scheme_Hash_Tree *skip_vars);
-static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand);
 
 static Scheme_Object *expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info);
 static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_Info *info,
@@ -178,6 +177,10 @@ static Scheme_Object *equivalent_exprs(Scheme_Object *a, Scheme_Object *b,
 static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
                               int cross_lambda, int cross_k, int cross_s,
                               int check_space, int fuel);
+Scheme_Object *optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
+                                     Optimize_Info *info,
+                                     int e_single_result,
+                                     int context);
 
 #define SCHEME_LAMBDAP(vals_expr) (SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_ir_lambda_type) \
                                    || SAME_TYPE(SCHEME_TYPE(vals_expr), scheme_case_lambda_sequence_type))
@@ -2501,10 +2504,173 @@ int check_potential_size(Scheme_Object *var)
 
   n = SCHEME_VAR(var)->optimize.known_val;
   if (n && SCHEME_WILL_BE_LAMBDAP(n)) {
-    return SCHEME_PINT_VAL(n);
+    return SCHEME_WILL_BE_LAMBDA_SIZE(n);
   }
 
   return 0;
+}
+
+Scheme_Object *do_lookup_constant_proc(Optimize_Info *info, Scheme_Object *le,
+                                       int argc, int for_inline, int *_single_use)
+/* Return a known procedure, if any.
+   When argc == -1 it may return a case-lambda. Else, it will check the arity
+   and split a case-lambda to extact the relevant lambda. If the arity is
+   wrong the result is scheme_true.
+   If for_inline, it may return a potential size. Else, itwill go inside
+   potecial sizes, noinline procedures, lets, begins and other construction,
+   so the result can't be inlined and must be used only to get the properties
+   of the actual procedure.*/
+    
+{
+  Scheme_Object *prev = NULL;
+  
+  *_single_use = 0;
+
+  /* Move inside `let' bindings to get the inner procedure */
+  if (!for_inline)
+    extract_tail_inside(&le, &prev);
+
+  le = extract_specialized_proc(le, le);
+
+  if (SCHEME_LAMBDAP(le)) {
+    /* Found a `((lambda' */
+    *_single_use = 1;
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_local_type)) {
+    int tmp;
+    tmp = check_single_use(le);
+    *_single_use = tmp;
+    if ((SCHEME_VAR(le)->mode != SCHEME_VAR_MODE_OPTIMIZE)) {
+      /* We got a local that is bound in a let that is not yet optimized. */
+      return NULL;
+    }
+    le = SCHEME_VAR(le)->optimize.known_val;
+    if (!le)
+      return NULL;
+  }
+
+  while (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_toplevel_type)) {
+    int pos;
+    pos = SCHEME_TOPLEVEL_POS(le);
+    *_single_use = 0;
+    if (info->cp->inline_variants) {
+      Scheme_Object *iv;
+      iv = scheme_hash_get(info->cp->inline_variants, scheme_make_integer(pos));
+      if (iv && SCHEME_TRUEP(iv)) {
+        Scheme_Hash_Table *iv_ht = NULL;
+        if (SCHEME_HASHTP(iv)) {
+          iv_ht = (Scheme_Hash_Table *)iv;
+          iv = scheme_hash_get(iv_ht, scheme_make_integer(argc));
+          if (!iv)
+            iv = scheme_hash_get(iv_ht, scheme_false);
+        }
+        if (SAME_TYPE(SCHEME_TYPE(iv), scheme_vector_type)) { /* inline variant + shift info */
+          int has_cases = 0;
+          Scheme_Object *orig_iv = iv;
+          MZ_ASSERT(SAME_TYPE(scheme_inline_variant_type, SCHEME_TYPE(SCHEME_VEC_ELS(iv)[0])));
+          /* unresolving may add new top-levels to `info->cp`: */
+          iv = scheme_unresolve(SCHEME_VEC_ELS(iv)[0], argc, &has_cases,
+                                info->cp, info->env, info->insp, SCHEME_INT_VAL(SCHEME_VEC_ELS(iv)[3]),
+                                SCHEME_VEC_ELS(iv)[1], SCHEME_VEC_ELS(iv)[2]);
+          if (has_cases) {
+            if (!iv_ht) {
+              iv_ht = scheme_make_hash_table(SCHEME_hash_ptr);
+              scheme_hash_set(iv_ht, scheme_false, orig_iv);
+              scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), (Scheme_Object *)iv_ht);
+            }
+            scheme_hash_set(iv_ht, scheme_make_integer(argc), iv ? iv : scheme_false);
+          } else
+            scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), iv ? iv : scheme_false);
+        }
+        if (iv && SCHEME_TRUEP(iv)) {
+          le = iv;
+          break;
+        }
+      }
+    }
+    if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_toplevel_type) && info->top_level_consts) {
+      le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
+      if (!le)
+        return NULL;
+    } else
+      break;
+  }
+
+  if (SCHEME_WILL_BE_LAMBDAP(le)) {
+    if (for_inline)
+      return le;
+    else
+      le = SCHEME_WILL_BE_LAMBDA(le);
+  }
+
+  if (!for_inline && SAME_TYPE(scheme_noninline_proc_type, SCHEME_TYPE(le))) {
+    le = SCHEME_BOX_VAL(le);
+  }
+
+
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_case_lambda_sequence_type)) {
+    Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)le;
+    Scheme_Object *cp;
+    int i, count;
+
+    if (argc == -1)
+      return le;
+
+    count = cl->count;
+    for (i = 0; i < count; i++) {
+      cp = cl->array[i];
+      if (SAME_TYPE(SCHEME_TYPE(cp), scheme_ir_lambda_type)) {
+        Scheme_Lambda *lam = (Scheme_Lambda *)cp;
+        if ((lam->num_params == argc)
+            || ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST)
+                && (argc + 1 >= lam->num_params))) {
+          return cp;
+        }
+      } else {
+        scheme_signal_error("internal error: strange case-lambda");
+      }
+    }
+    if (i >= count) {
+      return scheme_true;
+    }
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type)) {
+    Scheme_Lambda *lam = (Scheme_Lambda *)le;
+
+    if (argc == -1)
+      return le;
+
+    if ((lam->num_params == argc)
+        || ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST)
+            && (argc + 1 >= lam->num_params))) {
+      return le;
+    } else {
+      return scheme_true;
+    }
+  }
+
+  if (SCHEME_PROCP(le)) {
+    Scheme_Object *a[1];
+
+    if (argc == -1)
+      return le;
+
+    a[0] = le;
+    if (scheme_check_proc_arity(NULL, argc, 0, 1, a))
+      return le;
+    else 
+      return scheme_true;
+  }
+
+  return NULL;
+}
+
+Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *le, int argc)
+{
+  int single_use = 0;
+  return do_lookup_constant_proc(info, le, argc, 0, &single_use);
 }
 
 #if 0
@@ -2516,19 +2682,16 @@ int check_potential_size(Scheme_Object *var)
 Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int argc,
                                    Scheme_App_Rec *app, Scheme_App2_Rec *app2, Scheme_App3_Rec *app3,
                                    int context, int optimized_rator)
-/* Zero or one of app, app2 and app3 should be non-NULL.
+/* One of app, app2 and app3 should be non-NULL.
    If app, we're inlining a general application. If app2, we're inlining an
    application with a single argument and if app3, we're inlining an
-   application with two arguments.
-   If not app, app2, or app3, just return a known procedure, if any,
-   and do not check arity. */
+   application with two arguments. */
 {
   int single_use = 0, psize = 0;
-  Scheme_Object *bad_app = NULL, *prev = NULL, *orig_le = le;
-  int already_opt = optimized_rator, nonleaf, noapp;
+  Scheme_Object *prev = NULL, *orig_le = le, *le2;
+  int already_opt = optimized_rator;
 
-  noapp = !app && !app2 && !app3;
-  if ((info->inline_fuel < 0) && info->has_nonleaf && !noapp)
+  if ((info->inline_fuel < 0) && info->has_nonleaf)
     return NULL;
 
   /* Move inside `let' bindings, so we can convert ((let (....) proc) arg ...)
@@ -2537,213 +2700,40 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
     extract_tail_inside(&le, &prev);
 
   le = extract_specialized_proc(le, le);
-
-  if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type)) {
-    /* Found a `((lambda' */
-    single_use = 1;
+  
+  if (!already_opt 
+      && SCHEME_LAMBDAP(le)) {
+    /* We have an immediate `lambda' that wasn't optimized, yet.
+       Go optimize it, first. */
+    return NULL;
   }
 
-  if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_local_type)) {
-    /* Check for inlining: */
-    single_use = check_single_use(le);
-    psize = check_potential_size(le);
-    le = optimize_info_lookup_lambda(le);
-    already_opt = 1;
+  le2 = le;
+  le = do_lookup_constant_proc(info, le, argc, 1, &single_use);
+  
+  if (!le) {
+    info->has_nonleaf = 1;
+    return NULL;
   }
 
-  if (le) {
-    while (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_toplevel_type)) {
-      int pos;
-      pos = SCHEME_TOPLEVEL_POS(le);
-      single_use = 0;
-      if (info->cp->inline_variants) {
-        Scheme_Object *iv;
-        iv = scheme_hash_get(info->cp->inline_variants, scheme_make_integer(pos));
-        if (iv && SCHEME_TRUEP(iv)) {
-          Scheme_Hash_Table *iv_ht = NULL;
-          if (SCHEME_HASHTP(iv)) {
-            iv_ht = (Scheme_Hash_Table *)iv;
-            iv = scheme_hash_get(iv_ht, scheme_make_integer(argc));
-            if (!iv)
-              iv = scheme_hash_get(iv_ht, scheme_false);
-          }
-          if (SAME_TYPE(SCHEME_TYPE(iv), scheme_vector_type)) { /* inline variant + shift info */
-            int has_cases = 0;
-            Scheme_Object *orig_iv = iv;
-            MZ_ASSERT(SAME_TYPE(scheme_inline_variant_type, SCHEME_TYPE(SCHEME_VEC_ELS(iv)[0])));
-            /* unresolving may add new top-levels to `info->cp`: */
-            iv = scheme_unresolve(SCHEME_VEC_ELS(iv)[0], argc, &has_cases,
-                                  info->cp, info->env, info->insp, SCHEME_INT_VAL(SCHEME_VEC_ELS(iv)[3]),
-                                  SCHEME_VEC_ELS(iv)[1], SCHEME_VEC_ELS(iv)[2]);
-            if (has_cases) {
-              if (!iv_ht) {
-                iv_ht = scheme_make_hash_table(SCHEME_hash_ptr);
-                scheme_hash_set(iv_ht, scheme_false, orig_iv);
-                scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), (Scheme_Object *)iv_ht);
-              }
-              scheme_hash_set(iv_ht, scheme_make_integer(argc), iv ? iv : scheme_false);
-            } else
-              scheme_hash_set(info->cp->inline_variants, scheme_make_integer(pos), iv ? iv : scheme_false);
-          }
-          if (iv && SCHEME_TRUEP(iv)) {
-            le = iv;
-            break;
-          }
-        }
-      }
-      if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_toplevel_type) && info->top_level_consts) {
-        le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
-        if (le && SCHEME_WILL_BE_LAMBDAP(le)) {
-          psize = SCHEME_WILL_BE_LAMBDA_SIZE(le);
-          le = NULL;
-        }
-        if (!le)
-          break;
-        already_opt = 1;
-      } else
-        break;
-    }
-  }
-
-  if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_case_lambda_sequence_type)) {
-    Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)le;
-    Scheme_Object *cp;
-    int i, count;
-
-    if (noapp)
-      return le;
-
-    count = cl->count;
-    for (i = 0; i < count; i++) {
-      cp = cl->array[i];
-      if (SAME_TYPE(SCHEME_TYPE(cp), scheme_ir_lambda_type)) {
-        Scheme_Lambda *lam = (Scheme_Lambda *)cp;
-        if ((lam->num_params == argc)
-            || ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST)
-                && (argc + 1 >= lam->num_params))) {
-          le = cp;
-          break;
-        }
-      } else {
-        scheme_signal_error("internal error: strange case-lambda");
-      }
-    }
-    if (i >= count)
-      bad_app = le;
-  }
-
-  nonleaf = 1;
-
-  if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type) && (info->inline_fuel >= 0)) {
-    Scheme_Lambda *lam = (Scheme_Lambda *)le;
-    int sz;
-
-    if (noapp)
-      return le;
-
-    if ((lam->num_params == argc)
-        || ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST)
-            && (argc + 1 >= lam->num_params))) {
-      int threshold, is_leaf = 0;
-
-      if (!already_opt) {
-        /* We have an immediate `lambda' that wasn't optimized, yet.
-           Go optimize it, first. */
-        return NULL;
-      }
-
-      sz = lambda_body_size_plus_info(lam, 1, info, &is_leaf);
-      if (is_leaf) {
-        /* encourage inlining of leaves: */
-        sz >>= 2;
-      }
-      threshold = info->inline_fuel * (2 + argc);
-
-      /* Do we have enough fuel? */
-      if ((sz >= 0) && (single_use || (sz <= threshold))) {
-        Optimize_Info *sub_info;
-        sub_info = info;
-
-	/* If optimize_clone succeeds, inlining succeeds. */
-        le = optimize_clone(single_use, (Scheme_Object *)lam, sub_info, empty_eq_hash_tree, 0);
-
-	if (le) {
-	  LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
-                             single_use, scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL)));
-	  scheme_log(info->logger,
-		     SCHEME_LOG_DEBUG,
-		     0,
-		     "inlining %s size: %d threshold: %d#<separator>%s",
-		     scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
-		     sz,
-		     threshold,
-		     scheme_optimize_context_to_string(info->context));
-          le = apply_inlined((Scheme_Lambda *)le, sub_info, argc, app, app2, app3, context,
-                             orig_le, prev, single_use);
-          return le;
-	} else {
-          LOG_INLINE(fprintf(stderr, "No inline %s\n", scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL)));
-	  scheme_log(info->logger,
-		     SCHEME_LOG_DEBUG,
-		     0,
-		     "no-inlining %s size: %d threshold: %d#<separator>%s",
-		     scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
-		     sz,
-		     threshold,
-		     scheme_optimize_context_to_string(info->context));
-        }
-      } else {
-        LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
-                           sz, is_leaf, threshold,
-                           info->inline_fuel, info->use_psize));
-	scheme_log(info->logger,
-		   SCHEME_LOG_DEBUG,
-		   0,
-		   "out-of-fuel %s size: %d threshold: %d#<separator>%s",
-		   scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
-		   sz,
-		   threshold,
-		   scheme_optimize_context_to_string(info->context));
-      }
-    } else {
-      /* Issue warning below */
-      bad_app = (Scheme_Object *)lam;
-      nonleaf = 0;
-    }
-  }
-
-  if (scheme_check_leaf_rator(le))
-    nonleaf = 0;
-
-  if (le && SCHEME_PROCP(le)) {
-    Scheme_Object *a[1];
-
-    if (noapp)
-      return le;
-
-    a[0] = le;
-    if (!scheme_check_proc_arity(NULL, argc, 0, 1, a))  {
-      bad_app = le;
-      nonleaf = 0;
-    }
-  }
-
-  if (psize) {
+  if (SCHEME_WILL_BE_LAMBDAP(le)) {
+    psize = SCHEME_WILL_BE_LAMBDA_SIZE(le);
     LOG_INLINE(fprintf(stderr, "Potential inline %d %d\n", psize, info->inline_fuel * (argc + 2)));
     /* If we inline, the enclosing function will get larger, so we increase
        its potential size. */
     if (psize <= (info->inline_fuel * (argc + 2)))
       info->psize += psize;
+    info->has_nonleaf = 1;
+    return NULL;
   }
 
-  if (nonleaf)
-    info->has_nonleaf = 1;
-
-  if (bad_app) {
+  if (SAME_OBJ(le, scheme_true)) {
+    /* wrong arity */
     int len;
     const char *pname, *context;
     info->escapes = 1;
-    pname = scheme_get_proc_name(bad_app, &len, 0);
+    le2 = lookup_constant_proc(info, le2, -1);
+    pname = scheme_get_proc_name(le2, &len, 0);
     context = scheme_optimize_context_to_string(info->context);
     scheme_log(info->logger,
                SCHEME_LOG_WARNING,
@@ -2753,7 +2743,70 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
                argc,
                pname ? ": " : "",
                pname ? pname : "");
+    return NULL;
   }
+
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type) && (info->inline_fuel >= 0)) {
+    Scheme_Lambda *lam = (Scheme_Lambda *)le;
+    int sz, threshold, is_leaf = 0;
+
+    sz = lambda_body_size_plus_info(lam, 1, info, &is_leaf);
+    if (is_leaf) {
+      /* encourage inlining of leaves: */
+      sz >>= 2;
+    }
+    threshold = info->inline_fuel * (2 + argc);
+
+    /* Do we have enough fuel? */
+    if ((sz >= 0) && (single_use || (sz <= threshold))) {
+      Optimize_Info *sub_info;
+      sub_info = info;
+
+      /* If optimize_clone succeeds, inlining succeeds. */
+      le = optimize_clone(single_use, (Scheme_Object *)lam, sub_info, empty_eq_hash_tree, 0);
+
+      if (le) {
+        LOG_INLINE(fprintf(stderr, "Inline %d[%d]<=%d@%d %d %s\n", sz, is_leaf, threshold, info->inline_fuel,
+                           single_use, scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL)));
+        scheme_log(info->logger,
+                   SCHEME_LOG_DEBUG,
+                   0,
+                   "inlining %s size: %d threshold: %d#<separator>%s",
+                   scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
+                   sz,
+                   threshold,
+                   scheme_optimize_context_to_string(info->context));
+        le = apply_inlined((Scheme_Lambda *)le, sub_info, argc, app, app2, app3, context,
+                           orig_le, prev, single_use);
+        return le;
+      } else {
+        LOG_INLINE(fprintf(stderr, "No inline %s\n", scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL)));
+        scheme_log(info->logger,
+                   SCHEME_LOG_DEBUG,
+                   0,
+                   "no-inlining %s size: %d threshold: %d#<separator>%s",
+                   scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
+                   sz,
+                   threshold,
+                   scheme_optimize_context_to_string(info->context));
+      }
+    } else {
+      LOG_INLINE(fprintf(stderr, "No fuel %s %d[%d]>%d@%d %d\n", scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
+                         sz, is_leaf, threshold,
+                         info->inline_fuel, info->use_psize));
+      scheme_log(info->logger,
+                 SCHEME_LOG_DEBUG,
+                 0,
+                 "out-of-fuel %s size: %d threshold: %d#<separator>%s",
+                 scheme_write_to_string(lam->name ? lam->name : scheme_false, NULL),
+                 sz,
+                 threshold,
+                 scheme_optimize_context_to_string(info->context));
+    }
+  }
+
+  if (!scheme_check_leaf_rator(le))
+    info->has_nonleaf = 1;
 
   return NULL;
 }
@@ -2788,10 +2841,9 @@ static void register_local_argument_types(Scheme_App_Rec *app, Scheme_App2_Rec *
   }
 
   if (SAME_TYPE(SCHEME_TYPE(rator), scheme_ir_local_type)) {
-    le = optimize_info_lookup_lambda(rator);
-    if (SCHEME_VAR(rator)->optimize.known_val
-        && SCHEME_WILL_BE_LAMBDAP(SCHEME_VAR(rator)->optimize.known_val))
-      le = SCHEME_WILL_BE_LAMBDA(SCHEME_VAR(rator)->optimize.known_val);
+    le = optimize_info_lookup(rator);
+    if (le && SCHEME_WILL_BE_LAMBDAP(le))
+      le = SCHEME_WILL_BE_LAMBDA(le);
 
     if (le && SAME_TYPE(SCHEME_TYPE(le), scheme_ir_lambda_type)) {
       Scheme_Lambda *lam = (Scheme_Lambda *)le;
@@ -3464,18 +3516,14 @@ static Scheme_Object *do_expr_implies_predicate(Scheme_Object *expr, Optimize_In
       return scheme_true_object_p_proc;
     if (SCHEME_FALSEP(expr))
       return scheme_not_proc;
+    if (SCHEME_PROCP(expr))
+      return scheme_procedure_p_proc;
   }
 
-  {
-    /* These tests are slower, so put them at the end */  
-    int sub_context = 0;
-    if (!info)
-      return NULL;
-
-    if (lookup_constant_proc(info, expr)
-        || optimize_for_inline(info, expr, 1, NULL, NULL, NULL, sub_context, 1)){
-      return scheme_procedure_p_proc;
-    }
+  /* This test is slower, so put it at the end */  
+  if (info
+      && lookup_constant_proc(info, expr, -1)) {
+    return scheme_procedure_p_proc;
   }
 
   return NULL;
@@ -4022,40 +4070,6 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
                                          info, context);
 }
 
-static Scheme_Object *lookup_constant_proc(Optimize_Info *info, Scheme_Object *rand)
-{
-  Scheme_Object *c = NULL;
-
-  if (SCHEME_LAMBDAP(rand))
-    c = rand;
-  else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_ir_local_type))
-    c = optimize_info_lookup_lambda(rand);
-  else if (SAME_TYPE(SCHEME_TYPE(rand), scheme_ir_toplevel_type)) {
-    if (info->top_level_consts) {
-      int pos;
-
-      while (1) {
-        pos = SCHEME_TOPLEVEL_POS(rand);
-        c = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
-        c = no_potential_size(c);
-        if (c && SAME_TYPE(SCHEME_TYPE(c), scheme_ir_toplevel_type))
-          rand = c;
-        else
-          break;
-      }
-    }
-  }
-
-  if (c && SAME_TYPE(scheme_noninline_proc_type, SCHEME_TYPE(c))) {
-    c = SCHEME_BOX_VAL(c);
-  }
-
-  if (c && (SCHEME_LAMBDAP(c)))
-    return c;
-
-  return NULL;
-}
-
 static Scheme_Object *try_reduce_predicate(Scheme_Object *rator, Scheme_Object *rand,
                                            Optimize_Info *info)
 /* Change (pair? (list X complex-Y Z)) => (begin complex-Y #t), etc.
@@ -4088,9 +4102,8 @@ static Scheme_Object *check_ignored_call_cc(Scheme_Object *rator, Scheme_Object 
           || IS_NAMED_PRIM(rator, "call-with-composable-continuation")
           || IS_NAMED_PRIM(rator, "call-with-escape-continuation"))) {
       Scheme_Object *proc;
-      proc = lookup_constant_proc(info, rand);
-      if (!proc)
-        proc = optimize_for_inline(info, rand, 1, NULL, NULL, NULL, context, 0);
+
+      proc = lookup_constant_proc(info, rand, 1);
 
       if (proc && SAME_TYPE(SCHEME_TYPE(proc), scheme_ir_lambda_type)) {
           Scheme_Lambda *lam = (Scheme_Lambda *)proc;
@@ -4656,59 +4669,28 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 
       if (!lam->num_params) {
         /* Convert to apply-values form: */
-        return scheme_optimize_apply_values(app->rand2, lam->body, info,
-                                            ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_SINGLE_RESULT)
-                                             ? ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_RESULT_TENTATIVE)
-                                                ? -1
-                                                : 1)
-                                             : 0),
-                                            context);
+        return optimize_apply_values(app->rand2, lam->body, info,
+                                     ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_SINGLE_RESULT)
+                                       ? ((SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_RESULT_TENTATIVE)
+                                          ? -1
+                                          : 1)
+                                       : 0),
+                                     context);
       }
     }
   }
 
   if (SAME_OBJ(scheme_procedure_arity_includes_proc, app->rator)) {
-    if (SCHEME_INTP(app->rand2)) {
+    if (SCHEME_INTP(app->rand2) && SCHEME_INT_VAL(app->rand2) >= 0) {
       Scheme_Object *proc;
-      Scheme_Case_Lambda *cl;
-      int i, cnt;
 
-      proc = lookup_constant_proc(info, app->rand1);
+      proc = lookup_constant_proc(info, app->rand1, SCHEME_INT_VAL(app->rand2));
       if (proc) {
-        if (SAME_TYPE(SCHEME_TYPE(proc), scheme_ir_lambda_type)) {
-          cnt = 1;
-          cl = NULL;
-        } else {
-          cl = (Scheme_Case_Lambda *)proc;
-          cnt = cl->count;
-        }
-
-        for (i = 0; i < cnt; i++) {
-          if (cl) proc = cl->array[i];
-
-          if (SAME_TYPE(SCHEME_TYPE(proc), scheme_ir_lambda_type)) {
-            Scheme_Lambda *lam = (Scheme_Lambda *)proc;
-            int n = SCHEME_INT_VAL(app->rand2), ok;
-            if (SCHEME_LAMBDA_FLAGS(lam) & LAMBDA_HAS_REST) {
-              ok = ((lam->num_params - 1) <= n);
-            } else {
-              ok = (lam->num_params == n);
-            }
-            if (ok) {
-              info->preserves_marks = 1;
-              info->single_result = 1;
-              return scheme_true;
-            }
-          } else {
-            break;
-          }
-        }
-
-        if (i == cnt) {
-          info->preserves_marks = 1;
-          info->single_result = 1;
-          return scheme_false;
-        }
+        info->preserves_marks = 1;
+        info->single_result = 1;
+        return make_discarding_sequence(app->rand1,
+                                        SAME_OBJ(proc, scheme_true) ? scheme_false : scheme_true,
+                                        info);
       }
     }
   }
@@ -4980,65 +4962,53 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
 /*                   the apply-values bytecode form                       */
 /*========================================================================*/
 
-Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
-                                            Optimize_Info *info,
-                                            int e_single_result,
-                                            int context)
+Scheme_Object *optimize_apply_values(Scheme_Object *f, Scheme_Object *e,
+                                     Optimize_Info *info,
+                                     int e_single_result,
+                                     int context)
 /* f and e are already optimized */
 {
-  Scheme_Object *f_is_proc = NULL;
+  Scheme_Object *o_f;
 
   info->preserves_marks = 0;
   info->single_result = 0;
 
-  {
-    Scheme_Object *rev = f;
-
-    if (rev) {
-      Scheme_Object *o_f;
-      o_f = lookup_constant_proc(info, rev);
-      if (!o_f)
-        o_f = optimize_for_inline(info, rev, 1, NULL, NULL, NULL, context, 0);
-
-      if (o_f) {
-        f_is_proc = rev;
-
-        if (SAME_TYPE(SCHEME_TYPE(o_f), scheme_ir_lambda_type)) {
-          Scheme_Lambda *lam2 = (Scheme_Lambda *)o_f;
-          int flags = SCHEME_LAMBDA_FLAGS(lam2);
-          info->preserves_marks = !!(flags & LAMBDA_PRESERVES_MARKS);
-          info->single_result = !!(flags & LAMBDA_SINGLE_RESULT);
-          if (flags & LAMBDA_RESULT_TENTATIVE) {
-            info->preserves_marks = -info->preserves_marks;
-            info->single_result = -info->single_result;
-          }
-        }
+  o_f = lookup_constant_proc(info, f, (e_single_result > 0) ? 1 : -1);
+  if (o_f) {
+    if (SAME_TYPE(SCHEME_TYPE(o_f), scheme_ir_lambda_type)) {
+      Scheme_Lambda *lam = (Scheme_Lambda *)o_f;
+      int flags = SCHEME_LAMBDA_FLAGS(lam);
+      info->preserves_marks = !!(flags & LAMBDA_PRESERVES_MARKS);
+      info->single_result = !!(flags & LAMBDA_SINGLE_RESULT);
+      if (flags & LAMBDA_RESULT_TENTATIVE) {
+        info->preserves_marks = -info->preserves_marks;
+        info->single_result = -info->single_result;
       }
     }
   }
 
-  if (f_is_proc && (e_single_result > 0)) {
+  if (o_f && (e_single_result > 0)) {
     /* Just make it an application (N M): */
     Scheme_App2_Rec *app2;
-    Scheme_Object *cloned, *f_cloned;
+    Scheme_Object *e_cloned, *f_cloned;
 
     app2 = MALLOC_ONE_TAGGED(Scheme_App2_Rec);
     app2->iso.so.type = scheme_application2_type;
 
     /* Try to inline... */
 
-    cloned = optimize_clone(1, e, info, empty_eq_hash_tree, 0);
-    if (cloned) {
-      if (SAME_TYPE(SCHEME_TYPE(f_is_proc), scheme_ir_lambda_type))
-        f_cloned = optimize_clone(1, f_is_proc, info, empty_eq_hash_tree, 0);
+    e_cloned = optimize_clone(1, e, info, empty_eq_hash_tree, 0);
+    if (e_cloned) {
+      if (SAME_TYPE(SCHEME_TYPE(f), scheme_ir_lambda_type))
+        f_cloned = optimize_clone(1, f, info, empty_eq_hash_tree, 0);
       else {
         /* Otherwise, no clone is needed. */
-        f_cloned = f_is_proc;
+        f_cloned = f;
       }
 
       if (f_cloned) {
         app2->rator = f_cloned;
-        app2->rand = cloned;
+        app2->rand = e_cloned;
         info->inline_fuel >>= 1; /* because we've already optimized the rand */
         return optimize_application2((Scheme_Object *)app2, info, context);
       }
@@ -6193,7 +6163,7 @@ apply_values_optimize(Scheme_Object *data, Optimize_Info *info, int context)
   info->kclock += 1;
   info->sclock += 1;
 
-  return scheme_optimize_apply_values(f, e, info, info->single_result, context);
+  return optimize_apply_values(f, e, info, info->single_result, context);
 }
 
 static Scheme_Object *
@@ -9811,21 +9781,12 @@ static void register_transitive_uses(Scheme_IR_Local *var, Optimize_Info *info)
   }
 }
 
-static Scheme_Object *optimize_info_lookup_lambda(Scheme_Object *var)
+static Scheme_Object *optimize_info_lookup(Scheme_Object *var)
 {
-  Scheme_Object *n;
-
   MZ_ASSERT(SCHEME_VAR(var)->mode == SCHEME_VAR_MODE_OPTIMIZE);
   MZ_ASSERT(SCHEME_VAR(var)->use_count);
 
-  n = SCHEME_VAR(var)->optimize.known_val;
-  if (n
-      && (SCHEME_LAMBDAP(n)
-          || SAME_TYPE(SCHEME_TYPE(n), scheme_ir_toplevel_type))) {
-    return n;
-  }
-
-  return NULL;
+  return SCHEME_VAR(var)->optimize.known_val;
 }
 
 static Scheme_Object *optimize_info_propagate_local(Scheme_Object *var)

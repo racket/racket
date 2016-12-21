@@ -3298,11 +3298,6 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int contex
 #define scheme_optimize_result_context(c) (c & (~(OPT_CONTEXT_TYPE_MASK | OPT_CONTEXT_NO_SINGLE | OPT_CONTEXT_SINGLED)))
 #define scheme_optimize_tail_context(c)   scheme_optimize_result_context(c) 
 
-Scheme_Object *scheme_optimize_apply_values(Scheme_Object *f, Scheme_Object *e, 
-                                            Optimize_Info *info,
-                                            int e_single_result,
-                                            int context);
-
 int scheme_ir_duplicate_ok(Scheme_Object *o, int cross_mod);
 int scheme_ir_propagate_ok(Scheme_Object *o, Optimize_Info *info);
 int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info, int flags);
