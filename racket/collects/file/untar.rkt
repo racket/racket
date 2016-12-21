@@ -37,7 +37,9 @@
              (delay))
            (loop (untar-one-from-port in delays
                                       dest strip-count filter
-                                      permissive?)))))))
+                                      permissive?
+                                      #f
+                                      #f)))))))
 
 (define (read-bytes* n in)
   (define s (read-bytes n in))
@@ -48,7 +50,9 @@
 
 (define (untar-one-from-port in delays
                              dest strip-count filter
-                             permissive?)
+                             permissive?
+                             path-from-extended-attributes
+                             link-target-from-extended-attributes)
   (define name-bytes (read-bytes* 100 in))
   (define mode (tar-bytes->number (read-bytes* 8 in) in))
   (define owner (tar-bytes->number (read-bytes* 8 in) in))
@@ -56,7 +60,8 @@
   (define size (tar-bytes->number (read-bytes* 12 in) in))
   (define mod-time (tar-bytes->number (read-bytes* 12 in) in))
   (define checksum-bytes (read-bytes* 8 in))
-  (define type (case (integer->char (read-byte in))
+  (define type-byte (integer->char (read-byte in)))
+  (define type (case type-byte
                  [(#\0) 'file]
                  [(#\1) 'hard-link]
                  [(#\2) 'link]
@@ -67,6 +72,8 @@
                  [(#\7) 'contiguous-file]
                  [(#\g) 'extended-header]
                  [(#\x) 'extended-header-for-next]
+                 [(#\L) 'gnu-long-name]
+                 [(#\K) 'gnu-long-link]
                  [else 'unknown]))
   (define link-target-bytes (read-bytes* 100 in))
   (define ustar? (bytes=? #"ustar\00000" (read-bytes* 8 in)))
@@ -75,14 +82,15 @@
   (define device-major-bytes (read-bytes* 8 in))
   (define device-minor-bytes (read-bytes* 8 in))
   (define filename-prefix-bytes (read-bytes* 155 in))
-  (define base-filename (bytes->path
-                         (let ([name (nul-terminated name-bytes)])
-                           (if ustar?
-                               (let ([prefix (nul-terminated filename-prefix-bytes)])
-                                 (if (zero? (bytes-length prefix))
-                                     name
-                                     (bytes-append prefix #"/" name)))
-                               name))))
+  (define base-filename (or path-from-extended-attributes
+                            (bytes->path
+                             (let ([name (nul-terminated name-bytes)])
+                               (if ustar?
+                                   (let ([prefix (nul-terminated filename-prefix-bytes)])
+                                     (if (zero? (bytes-length prefix))
+                                         name
+                                         (bytes-append prefix #"/" name)))
+                                   name)))))
   (check-unpack-path 'untar base-filename #:allow-up? permissive?)
   (define stripped-filename (strip-prefix base-filename strip-count))
   (define filename (and stripped-filename
@@ -90,7 +98,8 @@
                             (build-path dest stripped-filename)
                             stripped-filename)))
   (define link-target (and (eq? type 'link)
-                           (bytes->path (nul-terminated link-target-bytes))))
+                           (or link-target-from-extended-attributes
+                               (bytes->path (nul-terminated link-target-bytes)))))
   (when (and link-target (not permissive?))
     (check-unpack-path 'untar link-target))
   (read-bytes* 12 in) ; padding
@@ -138,8 +147,41 @@
        (when (file-exists? filename) (delete-file filename))
        (make-file-or-directory-link link-target filename)
        delays]
+      [(extended-header-for-next)
+       ;; pax record to support long namesand other attributes
+       (define extended-header (read-pax in total-len))
+       ;; Recur to use given paths, if any:
+       (untar-one-from-port in delays
+                            dest strip-count filter
+                            permissive?
+                            (or (let ([v (hash-ref extended-header 'path #f)])
+                                  (and v (bytes->path v)))
+                                path-from-extended-attributes)
+                            (or (let ([v (hash-ref extended-header 'linkpath #f)])
+                                  (and v (bytes->path v)))
+                                link-target-from-extended-attributes))]
+      [(gnu-long-name)
+       ;; GNU record to support long names
+       (define o (open-output-bytes))
+       (copy-bytes total-len in o)
+       ;; Recur to use given path:
+       (untar-one-from-port in delays
+                            dest strip-count filter
+                            permissive?
+                            (bytes->path (nul-terminated (get-output-bytes o)))
+                            link-target-from-extended-attributes)]
+      [(gnu-long-link)
+       ;; GNU record to support long link targets
+       (define o (open-output-bytes))
+       (copy-bytes total-len in o)
+       ;; Recur to use given link target:
+       (untar-one-from-port in delays
+                            dest strip-count filter
+                            permissive?
+                            path-from-extended-attributes
+                            (bytes->path (nul-terminated (get-output-bytes o))))]
       [else
-       (log-untar-info "ignored ~a: ~a" type filename)
+       (log-untar-info "ignored ~a[~a]: ~a" type type-byte filename)
        (copy-bytes total-len in #f)
        delays])]
    [else
@@ -209,3 +251,44 @@
                                                  (arithmetic-shift user-perms -6))]
                                    [else perms])))
 
+(define (read-pax in len)
+  ;; Format of pax entries is sequence of "<num><space><key>=<value>\n"
+  ;; where <num> is the length of that whole line, and the key and value
+  ;; are UTF-8 encoded
+  (define (finish len accum)
+    (when (positive? len)
+      (copy-bytes (sub1 len) in #f))
+    accum)
+  (let loop ([len len] [num-base 0] [digits 0] [accum #hash()])
+    (define c (if (positive? len)
+                  (read-byte in)
+                  0))
+    (cond
+     [(eof-object? c) (finish len accum)]
+     [(zero? c) (finish len accum)]
+     [(char-numeric? (integer->char c))
+      (loop (sub1 len) (+ (- c (char->integer #\0)) (* num-base 10)) (add1 digits) accum)]
+     [(= c (char->integer #\space))
+      (cond
+       [((- num-base digits 1) . > . (sub1 len))
+        ;; Can't read that far, so something has gone wrong
+        accum]
+       [else
+        (define s (read-bytes (- num-base digits 1) in))
+        (define m (regexp-match #rx#"^([^=]*)=(.*)\n$" s))
+        (loop (- len (- num-base digits))
+              0
+              0
+              (cond
+               [(not m) accum]
+               [else
+                (hash-set accum
+                          (string->symbol (bytes->string/utf-8 (cadr m) #\?))
+                          ;; pax values are supposed to be UTF-8, but we'll
+                          ;; convert raw bytes to a path; that arguably doesn't do
+                          ;; the right thing if the source and destination
+                          ;; systems use different path encodings, but it makes
+                          ;; things work on systems where a path doesn't have to
+                          ;; have a string encoding.
+                          (caddr m))]))])]
+     [else (finish len accum)])))

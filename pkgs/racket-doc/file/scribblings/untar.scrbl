@@ -4,7 +4,8 @@
 @title[#:tag "untar"]{@exec{tar} File Extraction}
 
 @defmodule[file/untar]{The @racketmodname[file/untar] library provides
-a function to extract items from a TAR/USTAR archive.}
+a function to extract items from a TAR/USTAR archive using GNU and/or
+pax extensions to support long pathnames.}
 
 @defproc[(untar           [in (or/c path-string? input-port?)]
                           [#:dest dest-path (or/c path-string? #f) #f]
@@ -19,7 +20,9 @@ a function to extract items from a TAR/USTAR archive.}
                                     (lambda args #t)])
          void?]{
 
-Extracts TAR/USTAR content from @racket[in].
+Extracts TAR/USTAR content from @racket[in], recognizing
+POSIX.1-2001/pax and GNU extensions for long paths and long
+symbolic-link targets.
 
 If @racket[dest-path] is not @racket[#f], every path in the archive is
 prefixed to determine the destination path of the extracted item.
@@ -69,4 +72,7 @@ For each item in the archive, @racket[filter-proc] is applied to
 If the result of @racket[filter-proc] is @racket[#f], then the item is
 not unpacked.
 
-@history[#:changed "6.3" @elem{Added the @racket[#:permissive?] argument.}]}
+@history[#:changed "6.3" @elem{Added the @racket[#:permissive?] argument.}
+         #:changed "6.7.0.4" @elem{Support long paths and long symbolic-link
+                                   targets using POSIX.1-2001/pax and GNU
+                                   extensions.}]}

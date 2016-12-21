@@ -5,20 +5,20 @@
 
 @defmodule[file/tar]{The @racketmodname[file/tar] library provides
 utilities to create archive files in USTAR format, like the archive
-that the Unix utility @exec{pax} generates.  The USTAR format imposes
-limits on path lengths.  The resulting archives contain only
-directories, files, and symbolic links, and owner
-information is not preserved; the owner that is stored in the archive
-is always ``root.''
+that the Unix utility @exec{pax} generates. Long paths are supported
+using either the POSIX.1-2001/pax or GNU format for long paths. The
+resulting archives contain only directories, files, and symbolic
+links, and owner information is not preserved; the owner that is
+stored in the archive is always ``root.''
 
-Symbolic links (on Unix and Mac OS X) are not followed by default, and the path
-in a link must be less than 100 bytes.}
+Symbolic links (on Unix and Mac OS X) are not followed by default.}
 
 
 @defproc[(tar [tar-file path-string?]
               [path path-string?] ...
               [#:follow-links? follow-links? any/c #f]
               [#:exists-ok? exists-ok? any/c #f]
+              [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
               [#:path-prefix path-prefix (or/c #f path-string?) #f]
               [#:path-filter path-filter (or/c #f (path? . -> . any/c)) #f]
               [#:get-timestamp get-timestamp
@@ -41,6 +41,13 @@ If @racket[exists-ok?] is @racket[#f], then an exception is raised if
 @racket[tar-file] exists already. If @racket[exists-ok?] is true, then
 @racket[tar-file] is truncated or replaced if it exists already.
 
+The @racket[format] argument determines the handling of long paths and
+long symbolic-link targets. If @racket[format] is @racket['pax], then
+POSIX.1-2001/pax extensions are used. If @racket[format] is
+@racket['gnu], then GNU extensions are used. If @racket[format] is
+@racket['ustar], then @racket[tar] raises an error for too-long paths
+or symbolic-link targets.
+
 If @racket[path-prefix] is not @racket[#f], then it is prefixed to
 each path in the archive.
 
@@ -50,12 +57,16 @@ date to record in the archive for each file or directory.
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
          #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}
          #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}
-         #:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}]}
+         #:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}
+         #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
+                                   effectively changed its default from @racket['ustar]
+                                   to @racket['pax].}]}
 
 
 @defproc[(tar->output [paths (listof path?)]
                       [out output-port? (current-output-port)]
                       [#:follow-links? follow-links? any/c #f]
+                      [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
                       [#:path-prefix path-prefix (or/c #f path-string?) #f]
                       [#:path-filter path-filter (or/c #f (path? . -> . any/c)) #f]
                       [#:get-timestamp get-timestamp
@@ -65,7 +76,7 @@ date to record in the archive for each file or directory.
                                            file-or-directory-modify-seconds)])
          exact-nonnegative-integer?]{
 
-Packages each of the given @racket[paths] in a @exec{tar} format
+Like @racket[tar], but packages each of the given @racket[paths] in a @exec{tar} format
 archive that is written directly to the @racket[out].  The specified
 @racket[paths] are included as-is (except for adding @racket[path-prefix], if any); if a directory is specified, its
 content is not automatically added, and nested directories are added
@@ -73,13 +84,17 @@ without parent directories.
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
          #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}
-         #:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}]}
+         #:changed "6.3.0.11" @elem{Added the @racket[#:path-filter] argument.}
+         #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
+                                   effectively changed its default from @racket['ustar]
+                                   to @racket['pax].}]}
 
 
 @defproc[(tar-gzip [tar-file path-string?]
                    [paths path-string?] ...
                    [#:follow-links? follow-links? any/c #f]
                    [#:exists-ok? exists-ok? any/c #f]
+                   [#:format format (or/c 'pax 'gnu 'ustar) 'pax]
                    [#:path-prefix path-prefix (or/c #f path-string?) #f]
                    [#:get-timestamp get-timestamp
                                     (path? . -> . exact-integer?)
@@ -92,4 +107,7 @@ Like @racket[tar], but compresses the resulting file with @racket[gzip].
 
 @history[#:changed "6.0.0.3" @elem{Added the @racket[#:get-timestamp] argument.}
          #:changed "6.1.1.1" @elem{Added the @racket[#:exists-ok?] argument.}
-         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}]}
+         #:changed "6.3.0.3" @elem{Added the @racket[#:follow-links?] argument.}
+         #:changed "6.7.0.4" @elem{Added the @racket[#:format] argument and
+                                   effectively changed its default from @racket['ustar]
+                                   to @racket['pax].}]}
