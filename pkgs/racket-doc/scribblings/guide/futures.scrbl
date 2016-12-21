@@ -13,7 +13,9 @@ The @racketmodname[racket/future] library provides support for
 performance improvement through parallelism with @deftech{futures} and the @racket[future]
 and @racket[touch] functions. The level of parallelism available from
 those constructs, however, is limited by several factors, and the
-current implementation is best suited to numerical tasks.
+current implementation is best suited to numerical tasks. The caveats
+in @secref["DrRacket-perf"] also apply to futures; notably,
+the debugging instrumentation currently defeats futures.
 
 @margin-note{Other functions, such as @racket[thread], support the
 creation of reliably concurrent tasks. However, threads never run truly

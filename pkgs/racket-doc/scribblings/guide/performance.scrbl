@@ -28,7 +28,9 @@ and memory performance of Racket code.
 @section[#:tag "DrRacket-perf"]{Performance in DrRacket}
 
 By default, DrRacket instruments programs for debugging, and
-debugging instrumentation can significantly degrade performance for
+debugging instrumentation (provided by the
+@other-doc['(lib "errortrace/scribblings/errortrace.scrbl")]
+library) can significantly degrade performance for
 some programs. Even when debugging is disabled through the
 @onscreen{Choose Language...} dialog's @onscreen{Show Details} panel,
 the @onscreen{Preserve stacktrace} checkbox is clicked by default,
