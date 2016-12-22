@@ -87,9 +87,20 @@ ROSYM static Scheme_Object *def_exe_yield_proc;
 READ_ONLY Scheme_Object *scheme_def_exit_proc;
 READ_ONLY Scheme_Object *scheme_raise_arity_error_proc;
 
-
 #ifdef MEMORY_COUNTING_ON
 intptr_t scheme_misc_count;
+#endif
+
+#ifdef MZ_USE_MZRT
+static mzrt_mutex *glib_log_queue_lock;
+typedef struct glib_log_queue_entry {
+  const char *log_domain;
+  int log_level;
+  const char *message;
+  struct glib_log_queue_entry *next;
+} glib_log_queue_entry;
+static glib_log_queue_entry *glib_log_queue;
+static void *glib_log_signal_handle;
 #endif
 
 /* locals */
@@ -3916,14 +3927,11 @@ void scheme_log_warning(char *buffer)
   scheme_log_message(scheme_main_logger, SCHEME_LOG_WARNING, buffer, strlen(buffer), scheme_false);
 }
 
-void scheme_glib_log_message(const char *log_domain,
+static void glib_log_message(const char *log_domain,
                              int log_level,
                              const char *message,
                              void *user_data)
-/* This handler is suitable for use as a glib logging handler.
-   Although a handler can be implemented with the FFI,
-   we build one into Racket to avoid potential problems of
-   handlers getting GCed or retaining a namespace. */
+/* in the main thread for some place */
 {
 #define mzG_LOG_LEVEL_ERROR    (1 << 2)
 #define mzG_LOG_LEVEL_CRITICAL (1 << 3)
@@ -3958,6 +3966,97 @@ void scheme_glib_log_message(const char *log_domain,
   
   scheme_log_message(scheme_main_logger, level, together, len2, scheme_false);
 }
+
+void scheme_glib_log_message(const char *log_domain,
+                             int log_level,
+                             const char *message,
+                             void *user_data)
+  XFORM_SKIP_PROC
+/* This handler is suitable for use as a glib logging handler.
+   Although a handler can be implemented with the FFI,
+   we build one into Racket to avoid potential problems of
+   handlers getting GCed or retaining a namespace. */
+{
+  if (scheme_is_place_main_os_thread())
+    glib_log_message(log_domain, log_level, message, user_data);
+  else {
+    /* We're in an unknown thread. Queue the message for the main Racket place's thread. */
+#ifdef MZ_USE_MZRT
+    glib_log_queue_entry *e = malloc(sizeof(glib_log_queue_entry));
+    e->log_domain = strdup(log_domain);
+    e->log_level = log_level;
+    e->message = strdup(message);
+    
+    mzrt_mutex_lock(glib_log_queue_lock);
+    e->next = glib_log_queue;
+    glib_log_queue = e;
+    mzrt_mutex_unlock(glib_log_queue_lock);
+
+    scheme_signal_received_at(glib_log_signal_handle);
+#else
+    /* We shouldn't get here, but just in case: */
+    fprintf(stderr, "%s: %s\n", log_domain, message);
+#endif
+  }
+}
+
+/* For use by testing, suitable for use with pthread_create, logs a
+   warning for ";"-separated messages in `str` */
+void *scheme_glib_log_message_test(char *str)
+  XFORM_SKIP_PROC
+{
+  int i;
+  for (i = 0; str[i]; i++) {
+    if (str[i] == ';') {
+      str[i] = 0;
+      scheme_glib_log_message("test", mzG_LOG_LEVEL_WARNING, str, NULL);
+      str[i] = ';';
+      str = str + i + 1;
+      i = 0;
+    }
+  }
+  scheme_glib_log_message("test", mzG_LOG_LEVEL_WARNING, str, NULL);
+  return NULL;
+}
+
+#ifdef MZ_USE_MZRT
+void scheme_init_glib_log_queue(void)
+{
+  mzrt_mutex_create(&glib_log_queue_lock);
+  glib_log_signal_handle = scheme_get_signal_handle();
+}
+
+void scheme_check_glib_log_messages(void)
+{
+  if (scheme_current_place_id == 0) {
+    glib_log_queue_entry *e, *prev = NULL, *next;
+    
+    mzrt_mutex_lock(glib_log_queue_lock);
+    e = glib_log_queue;
+    glib_log_queue = NULL;
+    mzrt_mutex_unlock(glib_log_queue_lock);
+
+    if (e) {
+      /* Reverse list */
+      while (e->next) {
+        next = e->next;
+        e->next = prev;
+        prev = e;
+        e = next;
+      }
+      e->next = prev;
+
+      /* Process messages */
+      for (; e; e = e->next) {
+        glib_log_message(e->log_domain, e->log_level, e->message, NULL);
+      }
+
+      /* In case a thread is blocked waiting for a log event */
+      scheme_signal_received_at(glib_log_signal_handle);
+    }
+  }
+}
+#endif
 
 static int extract_level(const char *who, int none_ok, int which, int argc, Scheme_Object **argv)
 {

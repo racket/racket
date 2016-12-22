@@ -142,6 +142,7 @@ typedef struct Thread_Local_Variables {
   uintptr_t GC_gen0_alloc_page_end_;
   int GC_gen0_alloc_only_;
   uintptr_t force_gc_for_place_accounting_;
+  uintptr_t scheme_os_thread_id_;
   int scheme_starting_up_;
   void *bignum_cache_[BIGNUM_CACHE_SIZE];
   int cache_count_;
@@ -546,6 +547,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define GC_gen0_alloc_only XOA (scheme_get_thread_local_variables()->GC_gen0_alloc_only_)
 #define GC_variable_stack XOA (scheme_get_thread_local_variables()->GC_variable_stack_)
 #define force_gc_for_place_accounting XOA (scheme_get_thread_local_variables()->force_gc_for_place_accounting_)
+#define scheme_os_thread_id XOA (scheme_get_thread_local_variables()->scheme_os_thread_id_)
 #define scheme_starting_up XOA (scheme_get_thread_local_variables()->scheme_starting_up_)
 #define bignum_cache XOA (scheme_get_thread_local_variables()->bignum_cache_)
 #define cache_count XOA (scheme_get_thread_local_variables()->cache_count_)

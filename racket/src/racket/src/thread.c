@@ -5035,6 +5035,10 @@ void scheme_thread_block(float sleep_time)
   if (!do_atomic)
     scheme_check_foreign_work();
 #endif
+#if defined(MZ_USE_MZRT)
+  if (!do_atomic)
+    scheme_check_glib_log_messages();
+#endif
 
   skip_sleep = 0;
   if (check_fd_semaphores()) {

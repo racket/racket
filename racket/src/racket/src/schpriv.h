@@ -483,6 +483,7 @@ void scheme_do_add_global_symbol(Scheme_Env *env, Scheme_Object *sym,
 void *scheme_get_os_thread_like();
 void scheme_init_os_thread_like(void *);
 void scheme_done_os_thread();
+int scheme_is_place_main_os_thread();
 
 /*========================================================================*/
 /*                                constants                               */
@@ -4179,6 +4180,11 @@ void scheme_write_proc_context(Scheme_Object *port, int print_width,
                                Scheme_Object *src, Scheme_Object *line, 
                                Scheme_Object *col, Scheme_Object *pos,
                                int generated);
+
+#ifdef MZ_USE_MZRT
+void scheme_init_glib_log_queue(void);
+void scheme_check_glib_log_messages(void);
+#endif
 
 /*========================================================================*/
 /*                         filesystem utilities                           */
