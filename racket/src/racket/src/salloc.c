@@ -54,6 +54,8 @@
 # include <windows.h>
 #endif
 
+THREAD_LOCAL_DECL(uintptr_t scheme_os_thread_id);
+
 THREAD_LOCAL_DECL(static void **dgc_array);
 THREAD_LOCAL_DECL(static int *dgc_count);
 THREAD_LOCAL_DECL(static int dgc_size);
