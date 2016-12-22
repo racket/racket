@@ -143,7 +143,12 @@
 
 ; (define logo-bm (render-icon (go 2)))
 ; (define logo-bm (go))
-(define logo-bm (read-bitmap (collection-file-path "plt-logo-red-diffuse.png" "icons")))
+(define logo-bm-0 (read-bitmap "logo.png")) ; 512x512
+(define logo-bm (make-bitmap 256 256))
+(let ([dc (send logo-bm make-dc)])
+  (send dc scale 0.5 0.5)
+  (send dc set-smoothing 'smoothed)
+  (send dc draw-bitmap logo-bm-0 0 0))
 
 (define cmdline-bm
   (let ([bm (make-platform-bitmap 256 256)])
