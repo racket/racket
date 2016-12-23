@@ -6158,7 +6158,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
          X, at least, such a failure seems to mean that the file is
          not writable. (We assume it's not a directory-access issue,
          since the read test succeeded.) */
-      if (ok && (errno != EACCES) && (errno != EPERM))
+      if (ok && (errno != EACCES) && (errno != EPERM) && (errno != EROFS))
 	l = NULL;
       else {
 	do {
