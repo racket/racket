@@ -121,7 +121,7 @@ GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@: $(MZFW) $(MRAPPSKEL) grmain.@LTO@
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@ grmain.@LTO@ -Wl,-headerpad_max_install_names -F../racket -framework Racket -framework CoreFoundation @PROFFLAGS@
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)/Racket" "@executable_path/../../../../racket/Racket.framework/Versions/$(FWVERSION)/Racket" GRacket@CGC@.app/Contents/MacOS/GRacket@CGC@
 
-$(MRAPPSKEL): $(srcdir)/../mac/osx_appl.rkt $(srcdir)/../racket/src/schvers.h
+$(MRAPPSKEL): $(srcdir)/../mac/osx_appl.rkt $(srcdir)/../racket/src/schvers.h $(srcdir)/../mac/icon/GRacket.icns
 	env BUILDBASE=.. @RUN_RACKET_CGC@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/../mac/osx_appl.rkt $(srcdir)/.. "@CGC@"
 
 ee-app: gracket grmain_ee.@LTO@

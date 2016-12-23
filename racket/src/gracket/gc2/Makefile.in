@@ -111,7 +111,7 @@ MRAPPSKEL = ../GRacket@MMM@.app/Contents/Info.plist
 $(MRFW) : $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ wx_font.o wx_file_dialog.o $(MRFWRES)
 	$(GRACKETLINKER) $(LDFLAGS) -dynamiclib -o $(MRFW) -Wl,-headerpad_max_install_names $(XOBJS) $(@WXVARIANT@_PLAIN_OBJS) ../../racket/libracket3m.@LIBSFX@ $(@WXVARIANT@_LIBS) @X_EXTRA_LIBS@ wx_font.o wx_file_dialog.o
 
-$(MRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../racket/src/schvers.h
+$(MRAPPSKEL): $(srcdir)/../../mac/osx_appl.rkt  $(srcdir)/../../racket/src/schvers.h $(srcdir)/../../mac/icon/GRacket.icns
 	env BUILDBASE=../.. BUILDING_3M=yes @RUN_RACKET_MMM@ $(SELF_RACKET_FLAGS) -cqu $(srcdir)/../../mac/osx_appl.rkt $(srcdir)/../.. "@MMM@"
 
 ../gracket@MMM@@OSX@ :
