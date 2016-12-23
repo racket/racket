@@ -1026,6 +1026,15 @@
                       (set! x x))))
             #f)
 
+;; Don't move a side-effecting experssion past an unsafe operation
+;; that observes effects:
+(test-comp '(lambda (b f)
+             (let* ([x (f (lambda () b))])
+               (cons (unsafe-unbox b) x)))
+           '(lambda (b f)
+             (cons (unsafe-unbox b) (f (lambda () b))))
+           #f)
+
 (test-comp '(module m racket/base
              (define (true) #t)
              (define no (if (true) (lambda (x) (cons x 'no)) display))

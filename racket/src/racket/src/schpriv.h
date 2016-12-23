@@ -81,7 +81,8 @@
 #define SCHEME_PRIM_IS_NARY_INLINED        (1 << 2)
 /* indicates that a primitive call can be dropped if it's result is not used;
    although the function never raises an exception, it should not be reordered
-   past a test that might be a guard: */
+   past a test that might be a guard or past an expression that might
+   have a side effect: */
 #define SCHEME_PRIM_IS_UNSAFE_OMITABLE     (1 << 3)
 /* indicates that a primitive call can be dropped if it's result is not used,
    because it has no side-effect and never raises an exception: */

@@ -72,7 +72,8 @@ struct Optimize_Info
   /* Propagated up and down the chain: */
   int size;
   int vclock; /* virtual clock that ticks for a side effect, a branch,
-                 or a dependency on an earlier side-effect (such as a
+                 observation of a side effect (such as an unbox),
+                 or a dependency on an earlier side effect (such as a
                  previous guard on an unsafe operation's argument);
                  the clock is only compared between binding sites and
                  uses, so we can rewind the clock at a join after an
@@ -2983,7 +2984,8 @@ static int is_nonmutating_nondependant_primitive(Scheme_Object *rator, int n)
    unsafe operation is defined */
 {
   if (SCHEME_PRIMP(rator)
-      && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_OMITABLE_ALLOCATION))
+      && ((SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_OMITABLE_ALLOCATION))
+          && !(SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_UNSAFE_OMITABLE)))
       && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
     return 1;
