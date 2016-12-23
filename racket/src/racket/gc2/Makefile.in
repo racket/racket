@@ -66,6 +66,7 @@ OBJS =  salloc.@LTO@ \
 	file.@LTO@ \
 	fun.@LTO@ \
 	future.@LTO@ \
+        gmp.@LTO@ \
 	hash.@LTO@ \
 	jit.@LTO@ \
 	jitalloc.@LTO@ \
@@ -346,6 +347,9 @@ fun.@LTO@: $(XSRCDIR)/fun.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/fun.c -o fun.@LTO@
 future.@LTO@: $(XSRCDIR)/future.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/future.c -o future.@LTO@
+gmp.@LTO@: $(srcdir)/../src/gmp/gmp.c $(srcdir)/../src/gmp/gmplonglong.h \
+           $(srcdir)/../include/schthread.h $(srcdir)/../sconfig.h
+	$(CC) $(ALL_CFLAGS) -DMZ_PRECISE_GC -c $(srcdir)/../src/gmp/gmp.c -o gmp.@LTO@
 hash.@LTO@: $(XSRCDIR)/hash.c
 	$(CC) $(ALL_CFLAGS) -c $(XSRCDIR)/hash.c -o hash.@LTO@
 jit.@LTO@: $(XSRCDIR)/jit.c
@@ -497,8 +501,8 @@ FOREIGN_NOT_USED_OBJSLIB =
 EXTRA_GMP_DEP_FILE = ../src/@EXTRA_GMP_OBJ@
 EXTRA_GMP = @EXTRA_GMP_DEP@
 
-EXTRA_OBJS_T = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB)
-EXTRA_OBJS_L = ../src/gmp.@LTO@ $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
+EXTRA_OBJS_T = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB)
+EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
 ../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
 	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
