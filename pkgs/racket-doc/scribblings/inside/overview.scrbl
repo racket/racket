@@ -130,7 +130,7 @@ for the original place.
 Racket implements threads for Racket programs without aid from the
 operating system, so that Racket threads are cooperative from the
 perspective of C code. On Unix, stand-alone Racket uses a single
-OS-implemented thread. On Windows and Mac OS X, stand-alone
+OS-implemented thread. On Windows and Mac OS, stand-alone
 Racket uses a few private OS-implemented threads for background
 tasks, but these OS-implemented threads are never exposed by the
 Racket API.

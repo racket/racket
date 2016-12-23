@@ -98,7 +98,7 @@ win32-as-is:
 	$(WIN32_RUN_RACO) setup $(ALL_PLT_SETUP_OPTIONS)
 
 # ------------------------------------------------------------
-# Unix-style build (Unix and Mac OS X, only)
+# Unix-style build (Unix and Mac OS, only)
 
 PREFIX = 
 
@@ -234,7 +234,7 @@ SOURCE_MODE =
 # name or installation path:
 VERSIONLESS_MODE =
 
-# Set to "--mac-pkg" to create ".pkg"-based installers for Mac OS X,
+# Set to "--mac-pkg" to create ".pkg"-based installers for Mac OS,
 # instead of a ".dmg" for drag-and-drop installation:
 MAC_PKG_MODE =
 
@@ -271,7 +271,7 @@ BUILD_STAMP =
 # the default as the version number:
 INSTALL_NAME =
 
-# For Mac OS X, a signing identity (spaces allowed) for binaries in an
+# For Mac OS, a signing identity (spaces allowed) for binaries in an
 # installer:
 SIGN_IDENTITY = 
 

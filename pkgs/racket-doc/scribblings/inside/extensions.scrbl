@@ -80,17 +80,17 @@ steps:
  but it locates a C compiler on the system and launches it with the
  appropriate compilation flags.  If the platform is a relatively
  standard Unix system, a Windows system with either Microsoft's C
- compiler or @exec{gcc} in the path, or a Mac OS X system with Apple's
+ compiler or @exec{gcc} in the path, or a Mac OS system with Apple's
  developer tools installed, then using @|mzc| is typically easier than
  working with the C compiler directly. Use the @as-index{@DFlag{cgc}}
  flag to indicate that the build is for use with Racket CGC.}
 
 
  @item{Link the extension C/C++ files with
- @as-index{@filepath{mzdyn.o}} (Unix, Mac OS X) or
+ @as-index{@filepath{mzdyn.o}} (Unix, Mac OS) or
  @as-index{@filepath{mzdyn.obj}} (Windows) to create a shared object. The
  resulting shared object should use the extension @filepath{.so} (Unix),
- @filepath{.dll} (Windows), or @filepath{.dylib} (Mac OS X).
+ @filepath{.dll} (Windows), or @filepath{.dylib} (Mac OS).
 
  The @filepath{mzdyn} object file is distributed in the installation's
  @filepath{lib} directory. For Windows, the object file is in a
@@ -184,7 +184,7 @@ must be extended as follows:
  @as-index{@DFlag{3m}} flags, @cpp{MZ_PRECISE_GC} is automatically
  defined.}
 
- @item{Link with @as-index{@filepath{mzdyn3m.o}} (Unix, Mac OS X) or
+ @item{Link with @as-index{@filepath{mzdyn3m.o}} (Unix, Mac OS) or
  @as-index{@filepath{mzdyn3m.obj}} (Windows) to create a shared
  object.  When using @|mzc|, use the @DFlag{ld} and @DFlag{3m} flags
  to link to these libraries.}

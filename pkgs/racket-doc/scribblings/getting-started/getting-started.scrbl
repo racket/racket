@@ -15,7 +15,7 @@ Start menu. In Windows Vista or newer, you can just type @exec{DrRacket}.  You c
 also run it from its folder, which you can find in @onscreen{Program Files} →
 @onscreen{Racket} → @onscreen{DrRacket}.
 
-On Mac OS X, double click on the @onscreen{DrRacket} icon. It is probably in a
+On Mac OS, double click on the @onscreen{DrRacket} icon. It is probably in a
 @onscreen{Racket} folder that you dragged into your
 @onscreen{Applications} folder. If you want to use command-line tools, instead,
 Racket executables are in the @filepath{bin} directory of the @onscreen{Racket}

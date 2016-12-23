@@ -19,7 +19,7 @@ The core Racket run-time system is available in two main variants:
 
  @item{Racket, which provides the primitives libraries on which
        @racketmodname[racket/base] is implemented. On Unix and Mac
-       OS X, the executable is called
+       OS, the executable is called
        @as-index{@exec{racket}}. On Windows, the executable is
        called @as-index{@exec{Racket.exe}}.}
 
@@ -30,7 +30,7 @@ The core Racket run-time system is available in two main variants:
        the @racket[racket/gui/base] library. On Windows, the
        executable is called @as-index{@exec{GRacket.exe}}, and it is a
        GUI application (as opposed to a console application) that
-       implements single-instance support. On Mac OS X, the
+       implements single-instance support. On Mac OS, the
        @exec{gracket} script launches @as-index{@exec{GRacket.app}}.}
 
 ]
@@ -181,7 +181,7 @@ flags:
 
   @item{@FlagFirst{k} @nonterm{n} @nonterm{m} @nonterm{p} : Loads code
         embedded in the executable from file position @nonterm{n} to
-        @nonterm{m} and from @nonterm{m} to @nonterm{p}. (On Mac OS X,
+        @nonterm{m} and from @nonterm{m} to @nonterm{p}. (On Mac OS,
         @nonterm{n}, @nonterm{m}, and @nonterm{p} are relative to a
         @tt{__PLTSCHEME} segment in the executable. On Windows,
         they are relative to a resource of type 257 and ID 1.) The first range
@@ -228,7 +228,7 @@ flags:
   @item{@FlagFirst{v} or @DFlagFirst{version} : Shows
         @racket[(banner)].}
 
-  @item{@FlagFirst{K} or @DFlagFirst{back} : GRacket, Mac OS X only;
+  @item{@FlagFirst{K} or @DFlagFirst{back} : GRacket, Mac OS only;
         leave application in the background.}
 
   @item{@FlagFirst{V} @DFlagFirst{no-yield} : Skips final
@@ -401,7 +401,7 @@ the insertion of @Flag{u}/@DFlag{require-script}):
 
 ]
 
-Similarly, on Mac OS X, a leading switch starting with
+Similarly, on Mac OS, a leading switch starting with
 @FlagFirst{psn_} is treated as a special configuration option. It
 indicates that Finder started the application, so the current input,
 output, and error output are redirected to a GUI window.

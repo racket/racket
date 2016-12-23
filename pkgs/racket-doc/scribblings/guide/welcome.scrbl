@@ -181,7 +181,7 @@ To package the program as an executable, you have a few options:
        the program. See @secref[#:doc '(lib
        "scribblings/raco/raco.scrbl") "exe"] for more information.}
 
- @item{With Unix or Mac OS X, you can turn the program file into an
+ @item{With Unix or Mac OS, you can turn the program file into an
        executable script by inserting the line
 
        @margin-note{See @secref["scripts"] for more information on

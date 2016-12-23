@@ -994,7 +994,7 @@ from position @var{d} in @var{bytes}. If @var{d} is non-zero, then
            [FSSpec* spec]
            [int isdir])]{
 
-Mac OS X only: Converts an @cppi{FSSpec} record (defined by Mac OS X)
+Mac OS only: Converts an @cppi{FSSpec} record (defined by Mac OS)
 into a pathname string. If @var{spec} contains only directory
 information (via the @cpp{vRefNum} and @cpp{parID} fields),
 @var{isdir} should be @cpp{1}, otherwise it should be @cpp{0}.}
@@ -1004,11 +1004,11 @@ information (via the @cpp{vRefNum} and @cpp{parID} fields),
            [FSSpec* spec]
            [intptr_t* type])]{
 
-Mac OS X only: Converts a pathname into an @cppi{FSSpec} record
-(defined by Mac OS X), returning @cpp{1} if successful and @cpp{0}
+Mac OS only: Converts a pathname into an @cppi{FSSpec} record
+(defined by Mac OS), returning @cpp{1} if successful and @cpp{0}
 otherwise. If @var{type} is not @cpp{NULL} and @var{filename} is a
 file that exists, @var{type} is filled with the file's four-character
-Mac OS X type. If @var{type} is not @cpp{NULL} and @var{filename} is
+Mac OS type. If @var{type} is not @cpp{NULL} and @var{filename} is
 not a file that exists, @var{type} is filled with @cpp{0}.}
 
 @function[(char* scheme_os_getcwd

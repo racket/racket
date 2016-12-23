@@ -21207,19 +21207,19 @@ need_locks=$lt_need_locks
 # Manifest tool.
 MANIFEST_TOOL=$lt_MANIFEST_TOOL
 
-# Tool to manipulate archived DWARF debug symbol files on Mac OS X.
+# Tool to manipulate archived DWARF debug symbol files on Mac OS.
 DSYMUTIL=$lt_DSYMUTIL
 
-# Tool to change global to local symbols on Mac OS X.
+# Tool to change global to local symbols on Mac OS.
 NMEDIT=$lt_NMEDIT
 
-# Tool to manipulate fat objects and archives on Mac OS X.
+# Tool to manipulate fat objects and archives on Mac OS.
 LIPO=$lt_LIPO
 
-# ldd/readelf like tool for Mach-O binaries on Mac OS X.
+# ldd/readelf like tool for Mach-O binaries on Mac OS.
 OTOOL=$lt_OTOOL
 
-# ldd/readelf like tool for 64 bit Mach-O binaries on Mac OS X 10.4.
+# ldd/readelf like tool for 64 bit Mach-O binaries on Mac OS 10.4.
 OTOOL64=$lt_OTOOL64
 
 # Old archive suffix (normally "a").

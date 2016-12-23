@@ -13,7 +13,7 @@
 @note-lib[racket/future]
 
 @margin-note{Currently, parallel support for @racket[future] is enabled
-  by default for Windows, Linux x86/x86_64, and Mac OS X x86/x86_64. To
+  by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
   enable support for other platforms, use @DFlag{enable-futures} with
   @exec{configure} when building Racket.}
 

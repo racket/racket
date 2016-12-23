@@ -60,7 +60,7 @@ To use the FFI, you must have in mind
 The library corresponds to a file with a suffix such as
 @filepath{.dll}, @filepath{.so}, or @filepath{.dylib} (depending on
 the platform), or it might be a library within a @filepath{.framework}
-directory on Mac OS X.
+directory on Mac OS.
 
 Knowing the library's name and/or path is often the trickiest part of
 using the FFI.  Sometimes, when using a library name without a path

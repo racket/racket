@@ -57,16 +57,16 @@ AC_ARG_ENABLE(libs,    [  --enable-libs           install static libraries (enab
 
 AC_ARG_ENABLE(libffi,  [  --enable-libffi         use installed libffi (enabled by default for Unix)], , enable_libffi=default)
 
-AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS X 10.4 SDK directory])
-AC_ARG_ENABLE(sdk,     [  --enable-sdk5=<path>    use Mac OS X 10.5 SDK directory])
-AC_ARG_ENABLE(sdk,     [  --enable-sdk6=<path>    use Mac OS X 10.6 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-sdk=<path>     use Mac OS 10.4 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-sdk5=<path>    use Mac OS 10.5 SDK directory])
+AC_ARG_ENABLE(sdk,     [  --enable-sdk6=<path>    use Mac OS 10.6 SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-ios=<path>     use iOS SDK directory])
 AC_ARG_ENABLE(sdk,     [  --enable-sysroot=<path> use sysroot directory (e.g., for Android)])
-AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS X])
-AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS X frameworks to /Library/Frameworks])
-AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS X frameworks to ~/Library/Frameworks])
-AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS X install])
-AC_ARG_ENABLE(mac64,   [  --enable-mac64          allow 64-bit Mac OS X build (enabled by default)], , enable_mac64=yes)
+AC_ARG_ENABLE(xonx,    [  --enable-xonx           use Unix style (e.g., use Gtk) for Mac OS])
+AC_ARG_ENABLE(libfw,   [  --enable-libfw          install Mac OS frameworks to /Library/Frameworks])
+AC_ARG_ENABLE(libfw,   [  --enable-userfw         install Mac OS frameworks to ~/Library/Frameworks])
+AC_ARG_ENABLE(macprefix, [  --enable-macprefix      allow --prefix with a Mac OS install])
+AC_ARG_ENABLE(mac64,   [  --enable-mac64          allow 64-bit Mac OS build (enabled by default)], , enable_mac64=yes)
 
 AC_ARG_ENABLE(cgcdefault, [  --enable-cgcdefault     use CGC as default build (NOT RECOMMENDED)])
 AC_ARG_ENABLE(sgc,     [  --enable-sgc            use Senora GC instead of Boehm GC (enabled by default)], , enable_sgc=yes)
@@ -126,7 +126,7 @@ if test "${enable_shared}" = "yes" ; then
   case "$host_os" in
   darwin*)
     if test "${enable_xonx}" != "yes" ; then
-       echo "ERROR: don't use --enable-shared or --enable-dynlib under Mac OS X,"
+       echo "ERROR: don't use --enable-shared or --enable-dynlib under Mac OS,"
        echo "       unless you also use --enable-xonx"
        exit 1
     fi
@@ -150,7 +150,7 @@ else
     fi
     if test "${prefix}" != "NONE" ; then
       if test "${enable_macprefix}" != "yes" ; then
-        echo "ERROR: --prefix not allowed for a Mac OS X build, unless either"
+        echo "ERROR: --prefix not allowed for a Mac OS build, unless either"
         echo "         --enable-xonx is supplied (to create a Unix-style"
         echo "           build), or "
         echo "         --enable-macprefix is supplied (to allow a Mac-style"
@@ -344,7 +344,7 @@ show_explicitly_disabled "${enable_strip}" "Debug-symbol stripping"
 show_explicitly_enabled "${enable_libs}" "Installation of static libraries (if any)"
 show_explicitly_disabled "${enable_libs}" "Installation of static libraries (if any)"
 
-show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS X"
+show_explicitly_disabled "${enable_mac64}" "64-bit Mac OS"
 
 show_explicitly_enabled "${enable_libfw}" "Frameworks-to-system"
 show_explicitly_enabled "${enable_userfw}" "Frameworks-to-user"
@@ -359,7 +359,7 @@ if test "${enable_sdk}" != "" ; then
    if test "${enable_ios}" != "" ; then
      echo "ERROR: cannot specify both --enable-sdk and --enable-ios"
    fi
-   echo "=== Using Mac OS X 10.4 SDK directory ${enable_sdk}"
+   echo "=== Using Mac OS 10.4 SDK directory ${enable_sdk}"
 fi
 if test "${enable_sdk5}" != "" ; then
    if test "${enable_sdk6}" != "" ; then
@@ -368,13 +368,13 @@ if test "${enable_sdk5}" != "" ; then
    if test "${enable_ios}" != "" ; then
      echo "ERROR: cannot specify both --enable-sdk5 and --enable-ios"
    fi
-   echo "=== Using Mac OS X 10.5 SDK directory ${enable_sdk}"
+   echo "=== Using Mac OS 10.5 SDK directory ${enable_sdk}"
 fi
 if test "${enable_sdk6}" != "" ; then
    if test "${enable_ios}" != "" ; then
      echo "ERROR: cannot specify both --enable-sdk6 and --enable-ios"
    fi
-   echo "=== Using Mac OS X 10.6 SDK directory ${enable_sdk6}"
+   echo "=== Using Mac OS 10.6 SDK directory ${enable_sdk6}"
 fi
 if test "${enable_ios}" != "" ; then
    echo "=== Using ios SDK directory ${enable_ios}"

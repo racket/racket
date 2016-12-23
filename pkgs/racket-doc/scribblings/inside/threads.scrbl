@@ -604,7 +604,7 @@ The @cpp{scheme_add_fd_handle} function is useful for implementing
  the second procedure passed to @cpp{scheme_wait_until}, or for
  implementing a custom input port.
 
-On Unix and Mac OS X, this function has no effect.}
+On Unix and Mac OS, this function has no effect.}
 
 
 @function[(void scheme_add_fd_eventmask
@@ -621,7 +621,7 @@ The event mask is only used when some handle is installed with
  @cpp{scheme_add_fd_handle}. This awkward restriction may force you
  to create a dummy semaphore that is never posted.
 
-On Unix, and Mac OS X, this function has no effect.}
+On Unix, and Mac OS, this function has no effect.}
 
 @function[(void scheme_add_evt
            [Scheme_Type type]

@@ -247,7 +247,7 @@ installation or one of the directories reported by
 the list of searched directories by setting the @envvar{PLTCOLLECTS}
 environment variable.@margin-note*{If you set @envvar{PLTCOLLECTS},
 include an empty path in by starting the value with a colon (Unix and
-Mac OS X) or semicolon (Windows) so that the original search paths are
+Mac OS) or semicolon (Windows) so that the original search paths are
 preserved.} The best option, however, is to add a @tech{package}.
 
 Creating a package @emph{does not} mean that you have to register with

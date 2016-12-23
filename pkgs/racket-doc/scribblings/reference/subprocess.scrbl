@@ -29,7 +29,7 @@ environment variables @racket[current-environment-variables]. See also
 @racket[system] and @racket[process] from
 @racketmodname[racket/system].
 
-@margin-note{On Unix and Mac OS X, subprocess creation is separate
+@margin-note{On Unix and Mac OS, subprocess creation is separate
 from starting the program indicated by @racket[command]. In
 particular, if @racket[command] refers to a non-existent or
 non-executable file, an error will be reported (via standard error and
@@ -40,7 +40,7 @@ The @racket[command] argument is a path to a program executable, and
 the @racket[arg]s are command-line arguments for the program. See
 @racket[find-executable-path] for locating an executable based on
 the @envvar{PATH} environment variable. On
-Unix and Mac OS X, command-line arguments are passed as byte strings,
+Unix and Mac OS, command-line arguments are passed as byte strings,
 and string @racket[arg]s are converted using the current locale's
 encoding (see @secref["encodings"]). On Windows, command-line
 arguments are passed as strings, and bytes strings are converted using
@@ -155,14 +155,14 @@ current platform:
  @item{@racket[force?] is true, not a group, all platforms: Terminates
        the process if the process still running.}
 
- @item{@racket[force?] is false, not a group, on Unix or Mac OS X:
+ @item{@racket[force?] is false, not a group, on Unix or Mac OS:
        Sends the process an interrupt signal instead of a kill
        signal.}
 
  @item{@racket[force?] is false, not a group, on Windows: No action
        is taken.}
 
- @item{@racket[force?] is true, a group, on Unix or Mac OS X:
+ @item{@racket[force?] is true, a group, on Unix or Mac OS:
        Terminates all processes in the group, but only if
        @racket[subprocess-status] has never produced a
        non-@racket['running] result for the subprocess and only if
@@ -175,7 +175,7 @@ current platform:
  @item{@racket[force?] is true, a group, on Windows: Terminates
        the process if the process still running.}
 
- @item{@racket[force?] is false, a group, on Unix or Mac OS X: The
+ @item{@racket[force?] is false, a group, on Unix or Mac OS: The
        same as when @racket[force?] is @racket[#t], but when the group
        is sent a signal, it is an interrupt signal instead of a kill
        signal.}
@@ -344,7 +344,7 @@ real process ID).}
                  [#:set-pwd? set-pwd? any/c (member (system-type) '(unix macosx))])
          boolean?]{
 
-Executes a Unix, Mac OS X, or Windows shell command synchronously
+Executes a Unix, Mac OS, or Windows shell command synchronously
 (i.e., the call to @racket[system] does not return until the
 subprocess has ended). The @racket[command] argument is a string or
 byte string containing no nul characters. If the command succeeds, the
@@ -424,7 +424,7 @@ Like @racket[system*], but returns the exit code like
                ((or/c 'status 'wait 'interrupt 'kill) . -> . any))]{
 
 Executes a shell command asynchronously (using @exec{sh} on Unix
-and Mac OS X, @exec{cmd} on Windows). The result is a list of five
+and Mac OS, @exec{cmd} on Windows). The result is a list of five
 values:
 
 @margin-note{See also @racket[subprocess] for notes about error
@@ -460,7 +460,7 @@ handling and the limited buffer capacity of subprocess pipes.}
     on @|AllUnix|, and takes no action on Windows. The result is
     @|void-const|.
 
-     @margin-note{On Unix and Mac OS X, if @racket[command] runs a
+     @margin-note{On Unix and Mac OS, if @racket[command] runs a
      single program, then @exec{sh} typically runs the program in
      such a way that it replaces @exec{sh} in the same process. For
      reliable and precise control over process creation, however, use

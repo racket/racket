@@ -5,7 +5,7 @@
 
 @defmodule[file/zip]{The @racketmodname[file/zip] library provides
 utilities to create @exec{zip} archive files, which are compatible
-with both Windows and Unix (including Mac OS X) unpacking. The actual
+with both Windows and Unix (including Mac OS) unpacking. The actual
 compression is implemented by @racket[deflate].}
 
 @defproc[(zip [zip-file path-string?] [path path-string?] ...
@@ -33,7 +33,7 @@ resulting @exec{zip} file, up to the current directory (using
 
 Files are packaged as usual for
 @exec{zip} files, including permission bits for both Windows and Unix
-(including Mac OS X).  The permission bits are determined by
+(including Mac OS).  The permission bits are determined by
 @racket[file-or-directory-permissions], which does not preserve the
 distinction between owner/group/other permissions. Also, symbolic
 links are always followed.

@@ -477,7 +477,7 @@ the custodian is shut down. A converter is not registered with a
 custodian (and does not need to be closed) if it is one of the
 guaranteed combinations not involving @racket[""] on Unix, or if it
 is any of the guaranteed combinations (including @racket[""]) on
-Windows and Mac OS X.
+Windows and Mac OS.
 
 @margin-note{In the Racket software distributions for Windows, a suitable
 @filepath{iconv.dll} is included with @filepath{libmzsch@italic{VERS}.dll}.}

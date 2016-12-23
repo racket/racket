@@ -199,7 +199,7 @@ or @racket[move-man-pages] definitions in an @filepath{info.rkt} file,
 retrieving them if they are not present at referenced location but are
 present in a user-specific target directory (i.e., the directory
 reported by @racket[find-user-lib-dir], @racket[find-user-share-dir],
-or @racket[find-user-man-dir], respectively). On Mac OS X, when an
+or @racket[find-user-man-dir], respectively). On Mac OS, when an
 unmoved file for @racket[move-foreign-libs] is a Mach-O file that
 includes a reference to another library in one of the directories reported by
 @racket[(get-lib-search-dirs)], then the reference is changed to a

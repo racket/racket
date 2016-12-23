@@ -31,7 +31,7 @@ by @racket[kind], which must be one of the following:
  variable is defined as a @tech{complete} path, then the path is used
  as the user's home directory.
 
- On Unix and Mac OS X, when @envvar{PLTUSERHOME} does not apply,
+ On Unix and Mac OS, when @envvar{PLTUSERHOME} does not apply,
  the user's home directory is determined by
  expanding the path @filepath{~}, which is expanded by first checking
  for a @indexed-envvar{HOME} environment variable. If none is defined,
@@ -58,7 +58,7 @@ by @racket[kind], which must be one of the following:
  determined by @envvar{PLTUSERHOME}, otherwise in the user's
  application-data folder as specified by the Windows registry; the
  application-data folder is usually @filepath{Application Data} in the
- user's profile directory. On Mac OS X, the preferences directory
+ user's profile directory. On Mac OS, the preferences directory
  is @filepath{Library/Preferences} in the
  @tech{user's home directory}. The preferences directory might not exist.}
 
@@ -66,8 +66,7 @@ by @racket[kind], which must be one of the following:
  symbol-keyed association list of preference values. The file's
  directory path always matches the result returned for
  @racket['pref-dir]. The file name is @filepath{racket-prefs.rktd} on Unix
- and Windows, and it is @filepath{org.racket-lang.prefs.rktd} on Mac OS
- X. The file's directory might not exist. See also
+ and Windows, and it is @filepath{org.racket-lang.prefs.rktd} on Mac OS. The file's directory might not exist. See also
  @racket[get-preference].}
 
  @item{@indexed-racket['temp-dir] --- the standard directory for
@@ -115,7 +114,7 @@ by @racket[kind], which must be one of the following:
  environment variable or flag is specified, or if the value is not a
  legal path name, then this directory defaults to
  @filepath{Library/Racket} in the @tech{user's home directory} on Mac
- OS X and @racket['pref-dir] otherwise.  The directory might not
+ OS and @racket['pref-dir] otherwise.  The directory might not
  exist.}
 
  @item{@indexed-racket['doc-dir] --- the standard directory for
@@ -124,7 +123,7 @@ by @racket[kind], which must be one of the following:
  home directory} if determined by @envvar{PLTUSERHOME}, otherwise it
  is the user's documents folder as specified by the Windows registry;
  the documents folder is usually @filepath{My Documents} in the user's
- home directory.  On Mac OS X, it's the @filepath{Documents} directory
+ home directory.  On Mac OS, it's the @filepath{Documents} directory
  in the @tech{user's home directory}.}
 
  @item{@indexed-racket['desk-dir] --- the directory for the current user's
@@ -132,7 +131,7 @@ by @racket[kind], which must be one of the following:
  Windows, it is the @tech{user's home directory} if determined by
  @envvar{PLTUSERHOME}, otherwise it is the user's desktop folder as
  specified by the Windows registry; the desktop folder is usually
- @filepath{Desktop} in the user's home directory. On Mac OS X, it is
+ @filepath{Desktop} in the user's home directory. On Mac OS, it is
  @filepath{Desktop} in the @tech{user's home directory}}
 
  @item{@indexed-racket['sys-dir] --- the directory containing the
@@ -301,12 +300,12 @@ This procedure can be used to move a file/directory to a different
 directory (on the same filesystem) as well as rename a file/directory within
 a directory. Unless @racket[exists-ok?]  is provided as a true value,
 @racket[new] cannot refer to an existing file or directory, but the
-check is not atomic with the rename operation on Unix and Mac OS X. Even if
+check is not atomic with the rename operation on Unix and Mac OS. Even if
 @racket[exists-ok?] is true, @racket[new] cannot refer to an existing
 file when @racket[old] is a directory, and vice versa.
 
 If @racket[new] exists and is replaced, the replacement is atomic
-on Unix and Mac OS X, but it is not guaranteed to be atomic on
+on Unix and Mac OS, but it is not guaranteed to be atomic on
 Windows. Furthermore, if @racket[new] exists and is opened by any
 process for reading or writing, then attempting to replace it will
 typically fail on Windows. See also @racket[call-with-atomic-output-file].
@@ -405,7 +404,7 @@ identity of the referenced file or directory (if any).}
 @defproc[(file-size [path path-string?]) exact-nonnegative-integer?]{
 
 Returns the (logical) size of the specified file in bytes. On Mac
-OS X, this size excludes the resource-fork size. On error (e.g., if no
+OS, this size excludes the resource-fork size. On error (e.g., if no
 such file exists), the @exnraise[exn:fail:filesystem].}
 
 
@@ -471,7 +470,7 @@ simplified, complete, directory path.
 
 The path is not checked for existence when the parameter is set.
 
-On Unix and Mac OS X, the initial value of the parameter for a Racket
+On Unix and Mac OS, the initial value of the parameter for a Racket
 process is taken from the @indexed-envvar{PWD} environment
 variable---if the value of the environment variable identifies the
 same directory as the operating system's report of the current
@@ -1199,7 +1198,7 @@ Opens a temporary file for writing in the same directory as
 @racket[file], calls @racket[proc] to write to the temporary file, and
 then atomically moves the temporary file in place of @racket[file].
 The atomic move simply uses @racket[rename-file-or-directory] on Unix
-and Mac OS X, but it uses an extra rename step (see below) on Windows
+and Mac OS, but it uses an extra rename step (see below) on Windows
 to avoid problems due to concurrent readers of @racket[file].
 
 The @racket[proc] function is called with an output port for the
@@ -1288,7 +1287,7 @@ paths are checked for compatibility with old versions of Racket:
 
  @item{Windows: @racket[(build-path (find-system-path 'pref-dir) 'up "PLT Scheme" "plt-prefs.ss")]}
 
- @item{Mac OS X: @racket[(build-path (find-system-path 'pref-dir) "org.plt-scheme.prefs.ss")]}
+ @item{Mac OS: @racket[(build-path (find-system-path 'pref-dir) "org.plt-scheme.prefs.ss")]}
 
  @item{Unix: @racket[(expand-user-path "~/.plt-scheme/plt-prefs.ss")]}
 

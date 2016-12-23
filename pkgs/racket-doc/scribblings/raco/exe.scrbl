@@ -39,7 +39,7 @@ For example, the command
 @commandline{raco exe --gui hello.rkt}
 
 produces either @filepath{hello.exe} (Windows), @filepath{hello.app}
-(Mac OS X), or @filepath{hello} (Unix), which runs the same as running
+(Mac OS), or @filepath{hello} (Unix), which runs the same as running
 the @filepath{hello.rkt} module in @exec{gracket}.
 
 Library modules or other files that are referenced
@@ -80,7 +80,7 @@ The @exec{raco exe} command accepts the following command-line flags:
 
  @item{@Flag{o} @nonterm{file} --- create the executable as
    @nonterm{file}, adding a suffix to @nonterm{file} as appropriate
-   for the platform and executable type. On Mac OS X in @DFlag{gui}
+   for the platform and executable type. On Mac OS in @DFlag{gui}
    mode, @nonterm{file} is actually a bundle directory, but it appears
    as a file within Finder.}
 
@@ -127,7 +127,7 @@ The @exec{raco exe} command accepts the following command-line flags:
    use of the @racket['ico] auxiliary association for more information
    about expected icon sizes and transformations.}
 
- @item{@DFlag{icns} @nonterm{.icns-path} --- on Mac OS X, set the icons
+ @item{@DFlag{icns} @nonterm{.icns-path} --- on Mac OS, set the icons
    for the generated executable to be the content of
    @nonterm{.icns-path}.}
 

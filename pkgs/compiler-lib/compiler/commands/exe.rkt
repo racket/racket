@@ -49,7 +49,7 @@
     (exe-embedded-collects-dest dir)]
    [("--ico") .ico-file "Set Windows icon for executable"
     (exe-aux (cons (cons 'ico .ico-file) (exe-aux)))]
-   [("--icns") .icns-file "Set Mac OS X icon for executable"
+   [("--icns") .icns-file "Set Mac OS icon for executable"
     (exe-aux (cons (cons 'icns .icns-file) (exe-aux)))]
    [("--orig-exe") "Use original executable instead of stub"
     (exe-aux (cons (cons 'original-exe? #t) (exe-aux)))]

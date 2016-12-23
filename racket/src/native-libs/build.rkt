@@ -119,7 +119,7 @@
 ;; Patch to avoid writing to a global constant:
 (define-runtime-path cairo-allclipmodifybug-patch "patches/allclipmodifybug.patch")
 
-;; Hack to workaround broken Courier New in Mac OS X 10.{7.8}:
+;; Hack to workaround broken Courier New in Mac OS 10.{7.8}:
 (define-runtime-path courier-new-patch "patches/courier-new.patch")
 
 ;; Enable kerning and set DPI to 72:

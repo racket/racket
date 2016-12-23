@@ -4,7 +4,7 @@
 
 @title{Subprocesses}
 
-On Unix and Mac OS X, subprocess handling involves
+On Unix and Mac OS, subprocess handling involves
 @as-index[@cpp{fork}], @as-index[@cpp{waitpid}], and
 @as-index[@cpp{SIGCHLD}], which creates a variety of issues within an
 embedding application. On Windows, subprocess handling is more

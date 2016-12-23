@@ -71,7 +71,7 @@
       ;; Create directories for libs, collects, and extensions:
       (let-values ([(lib-dir collects-dir relative-collects-dir exts-dir relative-exts-dir)
 		    (if single-mac-app?
-			;; Special case: single Mac OS X GRacket app:
+			;; Special case: single Mac OS GRacket app:
 			(let-values ([(base name dir?)
 				      (split-path (car binaries))])
 			  (values

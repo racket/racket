@@ -26,7 +26,7 @@
       #:once-any
       [("--win") "build Windows via MinGW"
        (set! win? #t)]
-      [("--mac") "build for/on Mac OS X"
+      [("--mac") "build for/on Mac OS"
        (set! win? #f)]
       [("--linux") "build for/on Linux"
        (set! win? #f)

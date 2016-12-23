@@ -212,7 +212,7 @@ An @tech{extension-load handler} takes the same arguments as a
 @tech{load handler}, but the file should be a platform-specific
 @deftech{dynamic extension}, typically with the file suffix
 @filepath{.so} (Unix), @filepath{.dll} (Windows), or @filepath{.dylib}
-(Mac OS X).  The file is loaded using internal, OS-specific
+(Mac OS).  The file is loaded using internal, OS-specific
 primitives. See @other-manual['(lib
 "scribblings/inside/inside.scrbl")] for more information on
 @tech{dynamic extensions}.}
@@ -249,8 +249,7 @@ file when the given path ends with @filepath{.rkt}, no @filepath{.rkt}
 file exists, and when the handler's second argument is a symbol. In
 addition, the default @tech{compiled-load handler} checks for
 @filepath{.zo} (bytecode) files and @filepath{.so} (native Unix),
-@filepath{.dll} (native Windows), or @filepath{.dylib} (native Mac OS
-X) files.
+@filepath{.dll} (native Windows), or @filepath{.dylib} (native Mac OS) files.
 
 The check for a compiled file occurs whenever the given path
 @racket[_file] ends with any extension (e.g., @filepath{.rkt} or

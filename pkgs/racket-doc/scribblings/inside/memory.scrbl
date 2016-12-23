@@ -882,7 +882,7 @@ requires a few frames.
 
 If @var{stack_end} is @cpp{NULL}, then the stack end is computed
 automatically: the stack size assumed to be the limit reported by
-@cpp{getrlimit} on Unix and Mac OS X, or it is assumed to be the
+@cpp{getrlimit} on Unix and Mac OS, or it is assumed to be the
 stack reservation of the executable (or 1 MB if parsing the
 executable fails) on Windows; if this size is greater than 8 MB, then 8 MB is
 assumed, instead; the size is decremented by 50000 bytes

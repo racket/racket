@@ -1464,7 +1464,7 @@
                        ;; Delete-file isn't enough if the target
                        ;;  is supposed to be a directory. But
                        ;;  currently, that happens only for GRacket 
-                       ;;  on Mac OS X, which is handled above.
+                       ;;  on Mac OS, which is handled above.
                        (delete-file dest))
                      (copy-file exe dest)
                      (values dest exe #f)])])
@@ -1800,7 +1800,7 @@
                          (set-subsystem dest-exe (cdr m)))))]))))
           (done-writable dest-exe old-perms))))))
 
-;; For Mac OS X GRacket, the actual executable is deep inside the
+;; For Mac OS GRacket, the actual executable is deep inside the
 ;;  nominal executable bundle
 (define (mac-mred-collects-path-adjust p)
   (cond

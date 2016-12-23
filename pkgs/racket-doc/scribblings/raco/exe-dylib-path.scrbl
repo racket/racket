@@ -4,11 +4,11 @@
                      racket/contract
                      compiler/exe-dylib-path))
 
-@title[#:tag "exe-dylib-path"]{Mac OS X Dynamic Library Paths}
+@title[#:tag "exe-dylib-path"]{Mac OS Dynamic Library Paths}
 
 @defmodule[compiler/exe-dylib-path]{The
 @racketmodname[compiler/exe-dylib-path] library provides functions for
-reading and adjusting dynamic-library references in a Mac OS X
+reading and adjusting dynamic-library references in a Mac OS
 executable.}
 
 @history[#:added "6.3"]

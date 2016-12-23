@@ -51,7 +51,7 @@ To embed Racket CGC in a program, follow these steps:
   use. (@filepath{Racket.exe} and @filepath{GRacket.exe} use the latter
   strategy.)
 
-  On Mac OS X, dynamic libraries are provided by the
+  On Mac OS, dynamic libraries are provided by the
   @filepath{Racket} framework, which is typically installed in
   @filepath{lib} sub-directory of the installation. Supply
   @exec{-framework Racket} to @exec{gcc} when linking, along
@@ -160,7 +160,7 @@ to Racket objects can be kept in registers, stack variables, or
 structures allocated with @cppi{scheme_malloc}. In an embedding
 application on some platforms, static variables are also automatically
 registered as roots for garbage collection (but see notes below
-specific to Mac OS X and Windows).
+specific to Mac OS and Windows).
 
 For example, the following is a simple embedding program which
 evaluates all expressions provided on the command line and displays
@@ -232,7 +232,7 @@ executable, but the embedding application must call
 @cppi{scheme_set_exec_cmd} to set the executable path (typically
 @cpp{argv[0]}) before declaring modules.
 
-On Mac OS X, or on Windows when Racket is compiled to a DLL
+On Mac OS, or on Windows when Racket is compiled to a DLL
 using Cygwin, the garbage collector cannot find static variables
 automatically. In that case, @cppi{scheme_main_setup} must be called with a
 non-zero first argument.
@@ -286,7 +286,7 @@ In addition, some library details are different:
   separate library for 3m analogous to CGC's
   @filepath{libmzgc@italic{x}.lib}.}
 
-  @item{On Mac OS X, 3m dynamic libraries are provided by the
+  @item{On Mac OS, 3m dynamic libraries are provided by the
   @filepath{Racket} framework, just as for CGC, but as a version
   suffixed with @filepath{_3m}.}
 

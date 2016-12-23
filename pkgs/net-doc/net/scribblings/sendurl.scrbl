@@ -24,7 +24,7 @@ On Windows, @racket[send-url] normally uses @racket[shell-execute]
 to launch a browser. (If the URL appears to contain a fragment, it may
 use an intermediate redirecting file due to a bug in IE7.)
 
-On Mac OS X, @racket[send-url] runs @exec{osascript} to start the
+On Mac OS, @racket[send-url] runs @exec{osascript} to start the
 user's chosen browser.
 
 On Unix, @racket[send-url] uses a user-preference, or when none is
@@ -80,7 +80,7 @@ above.}
 @defproc[(send-url/mac [url string?]
                        [#:browser browser (or/c string? #f) #f])
          void?]{
- Like @racket[send-url], but only for use on a Mac OS X machine.
+ Like @racket[send-url], but only for use on a Mac OS machine.
 
  The optional @racket[browser] argument, if present, should be the name
  of a browser installed on the system. For example,

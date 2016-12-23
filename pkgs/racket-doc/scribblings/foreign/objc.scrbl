@@ -111,7 +111,7 @@ Defines each @racket[class-id] to the class (a value with FFI type
 
 A class accessed by @racket[import-class] is normally declared as a
 side effect of loading a foreign library. For example, if you want to
-import the class @tt{NSString} on Mac OS X, the @filepath{Foundation}
+import the class @tt{NSString} on Mac OS, the @filepath{Foundation}
 framework must be loaded, first. Beware that if you use
 @racket[import-class] in DrRacket or a module that @racket[require]s
 @racketmodname[racket/gui/base], then @filepath{Foundation} will have

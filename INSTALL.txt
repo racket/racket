@@ -53,7 +53,7 @@ If you stick with this repository, then you have several options:
 Quick Instructions: In-place Build
 ==================================
 
-On Unix (including Linux) and Mac OS X, `make' (or `make in-place')
+On Unix (including Linux) and Mac OS, `make' (or `make in-place')
 creates a build in the "racket" directory.
 
 On Windows with Microsoft Visual Studio (any version between 2008/9.0
@@ -81,7 +81,7 @@ installs into "<dir>" (which must be an absolute path) with binaries
 in "<dir>/bin", packages in "<dir>/share/racket/pkgs", documentation
 in "<dir>/share/racket/doc", etc.
 
-On Mac OS X, `make unix-style PREFIX=<dir>' builds and installs into
+On Mac OS, `make unix-style PREFIX=<dir>' builds and installs into
 "<dir>" (which must be an absolute path) with binaries in "<dir>/bin",
 packages in "<dir>/share/pkgs", documentation in "<dir>/doc", etc.
 
@@ -321,7 +321,7 @@ normalizing the Windows results to "i386-win32" and "x86_63-win32",
 -<dist-suffix> is omitted unless a `#:dist-suffix' string is specified
 for the client in the site configuration, and <ext> is
 platform-specific: ".sh" for Unix (including Linux), ".dmg" or ".pkg"
-for Mac OS X, and ".exe" for Windows.
+for Mac OS, and ".exe" for Windows.
 
 Generating Installer Web Sites
 ------------------------------
@@ -517,7 +517,7 @@ In more detail:
      To create a ".tgz" archive instead of an installer (or any
      platform), set `TGZ_MODE' to "--tgz".
 
-     For a Mac OS X installer, set `SIGN_IDENTITY' as the name to
+     For a Mac OS installer, set `SIGN_IDENTITY' as the name to
      which the signing certificate is associated. Set `MAC_PKG_MODE'
      to "--mac-pkg" to create a ".pkg" installer instead of a ".dmg"
      image.

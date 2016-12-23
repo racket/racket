@@ -62,7 +62,7 @@ through environment variables:
        same as for @envvar{PLTSTDERR}.
 
        The default is @racket["none"] for Unix or @racket["error"] for
-       Windows and Mac OS X.}
+       Windows and Mac OS.}
 
 ]
 

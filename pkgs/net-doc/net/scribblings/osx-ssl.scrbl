@@ -3,11 +3,11 @@
           (for-label net/osx-ssl
                      openssl))
 
-@title[#:tag "osx-ssl"]{OS X Native SSL: Secure Communication}
+@title[#:tag "osx-ssl"]{Mac OS Native SSL: Secure Communication}
 
 @defmodule[net/osx-ssl]{The @racketmodname[net/osx-ssl] module
 offers a fraction of the functionality of @racketmodname[openssl] and
-works only on OS X, but it has the advantage that it works before
+works only on Mac OS, but it has the advantage that it works before
 OpenSSL libraries are installed.}
 
 @history[#:added "6.3.0.12"]

@@ -4,14 +4,13 @@ contrast, libraries implemented in various packages, such as the
 such as Cairo, GMP, etc., all of which are loaded dynamically. On Unix
 variants, we expect users to install C-implemented libraries (usually
 through the operating system's package manager). For Windows and Mac
-OS X, we supply pre-built libraries in platform-specific packages; the
+OS, we supply pre-built libraries in platform-specific packages; the
 corresponding Racket packages include platform-specific dependencies
 on those packages. The "x86_64-linux-natipkg" variant of Racket
-is like Windows and Mac OS X, expecting packages to supply native
+is like Windows and Mac OS, expecting packages to supply native
 libraries for 64-bit Linux.
 
-This directory contains scripts and patches to build Windows, Mac OS
-X, and Linux libraries in a consistent and portable way. Naturally,
+This directory contains scripts and patches to build Windows, Mac OS, and Linux libraries in a consistent and portable way. Naturally,
 the script and patches are fragile, so we upgrade libraries
 infrequently. Currently, we use the following external packages and
 versions:
@@ -58,12 +57,12 @@ versions:
  gtk+-2.24.24
 
 See "../mac/README.txt" for information about an additional
-library on Mac OS X.
+library on Mac OS.
 
 Preliminiaries
 --------------
 
-For Windows (cross-compile from Mac OS X or Linux):
+For Windows (cross-compile from Mac OS or Linux):
 
 The build scripts assume a MinGW cross compiler installed in
 "/usr/mw32" (for 32-bit builds) and "/usr/mw64" (for 64-bit builds).
@@ -74,7 +73,7 @@ Beware that the "libdir" configuration in
   /usr/mw{32,64}/{i686,x86_64}-w64-mingw32/lib/libstdc++.la
 may be wrong, in which case you'll need to fix it by hand.
 
-For Mac OS X (i386 and x86_64 on Intel, ppc on PowerPC):
+For Mac OS (i386 and x86_64 on Intel, ppc on PowerPC):
 
 The script assumes that "/Developer/SDKs/MacOSX10.5.sdk" (for 32-bit
 builds) and "/Developer/SDKs/MacOSX10.6.sdk" (for 64-bit builds) are
@@ -111,7 +110,7 @@ Build Steps (assuming no version changes)
         --archives <archive-dir>
 
     where <here-dir> is the deirectory containing this file,
-    `--win' versus `--mac' selects a Windows versus Mac OS X build,
+    `--win' versus `--mac' selects a Windows versus Mac OS build,
     and `--m32' versus `--m64' selects a 32-bit versus 64-bit build.
 
  * Run
@@ -144,7 +143,7 @@ confusing at best.
 More details for Windows:
 
  * GNU `sed' is built to run on the build platform, just in case the
-   build platform's `sed' is BSD-style (as on Mac OS X).
+   build platform's `sed' is BSD-style (as on Mac OS).
 
  * The generated ".dll"s go to "dest/bin".
 
@@ -155,7 +154,7 @@ More details for Windows:
    uses `-static-libgcc' and `-static-libstdc++' to statically link
    those libraries. Use "depends.exe" to check DLL dependencies.
 
-More details for Mac OS X:
+More details for Mac OS:
 
  * 32-bit binaries are built for 10.5 and up. 64-bit binaries are
    built for 10.6 and up.

@@ -8,7 +8,7 @@
 
 The @racketmodname[ffi/unsafe/nsalloc] and
 @racketmodname[ffi/unsafe/nsstring] libraries provide basic
-facilities for working with Cocoa and/or Mac OS X Foundation
+facilities for working with Cocoa and/or Mac OS Foundation
 libraries (usually along with @racket[ffi/objc]).
 
 @; ----------------------------------------

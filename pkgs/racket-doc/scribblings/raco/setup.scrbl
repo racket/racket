@@ -649,7 +649,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
    If @racket[install-platform] is defined, then the files are copied
    only if the current platform matches the definition.
 
-   On Mac OS X, when a Mach-O file is copied, if the copied file
+   On Mac OS, when a Mach-O file is copied, if the copied file
    includes a library reference that starts @litchar{@"@"loader_path/},
    and if the referenced library exists in a different location among
    the paths listed by @racket[(get-lib-search-dirs)], then the

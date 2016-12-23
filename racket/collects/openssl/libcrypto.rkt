@@ -24,7 +24,7 @@
 ;;   - Fedora 21: lib{crypto,ssl}.so.1.0.1j, also lib{crypto,ssl}.so.10
 ;;   - Fedora 22: lib{crypto,ssl}.so.1.0.1k, also lib{crypto,ssl}.so.10
 ;;   - Fedora also provides a versionless library in pkg "openssl-devel"
-;; - Mac OS X includes 0.9.8, 0.9.7, and versionless
+;; - Mac OS includes 0.9.8, 0.9.7, and versionless
 
 (define openssl-lib-versions
   '(;; Versionless (eg from devel pkg)

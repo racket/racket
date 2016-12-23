@@ -29,7 +29,7 @@
     ;; Must finalize all stmts before closing db, but also want stmts to be
     ;; independently finalizable. So db needs strong refs to stmts (but no
     ;; strong refs to prepared-statement% wrappers). Actually, sqlite3 maintains
-    ;; stmt list internally, but sqlite3_next_stmt is not available on Mac OS X
+    ;; stmt list internally, but sqlite3_next_stmt is not available on Mac OS
     ;; 10.5.* versions of libsqlite3.
     (define stmt-table (make-hasheq)) ;; hasheq[_sqlite3_statement => #t]
 

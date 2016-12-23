@@ -6,7 +6,7 @@ available at http://racket-lang.org/; pre-compiled nightly builds are
 available at http://pre.racket-lang.org/installers/.
 
 The Racket and GRacket source code should compile and execute on
-Windows, Mac OS X, or any Unix/X platform (including Linux).
+Windows, Mac OS, or any Unix/X platform (including Linux).
 
 Per-platform instructions are below.
 
@@ -37,7 +37,7 @@ Racket's `system-type' procedure returns 'unix, not 'windows, and
 `racket/gui' uses Gtk instead of Win32).
 
 ========================================================================
- Compiling for Mac OS X
+ Compiling for Mac OS
 ========================================================================
 
 First, install developer command-line tools from Apple. As of this
@@ -78,7 +78,7 @@ but note the following:
    directory structure on top of an existing Unix-style directory
    structure.)
 
- * Under Mac OS X 10.6 and later, to build Racket in 32-bit mode,
+ * Under Mac OS 10.6 and later, to build Racket in 32-bit mode,
    use `--disable-mac64'.
 
 ========================================================================

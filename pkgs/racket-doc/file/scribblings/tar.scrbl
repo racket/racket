@@ -11,7 +11,7 @@ resulting archives contain only directories, files, and symbolic
 links, and owner information is not preserved; the owner that is
 stored in the archive is always ``root.''
 
-Symbolic links (on Unix and Mac OS X) are not followed by default.}
+Symbolic links (on Unix and Mac OS) are not followed by default.}
 
 
 @defproc[(tar [tar-file path-string?]

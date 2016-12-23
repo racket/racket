@@ -23,7 +23,7 @@
     [(_ . rest)
      (examples #:eval mz-eval . rest)]))
 
-(define AllUnix "Unix and Mac OS X")
+(define AllUnix "Unix and Mac OS")
 (provide AllUnix)
 
 (provide note-lib)

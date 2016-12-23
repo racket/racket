@@ -1,4 +1,4 @@
-;; Support for loading root cerficates from Mac OS X keychains.
+;; Support for loading root cerficates from Mac OS keychains.
 
 #lang racket/base
 (require ffi/unsafe

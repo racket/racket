@@ -33,7 +33,7 @@ platform-specific:
       distribution directory, and DLLs and other run-time files go
       into a @filepath{lib} sub-directory.}
 
-@item{On Mac OS X, GUI executables go into the distribution
+@item{On Mac OS, GUI executables go into the distribution
       directory, other executables go into a @filepath{bin}
       subdirectory, and frameworks (i.e., shared libraries) go into a
       @filepath{lib} sub-directory along with other run-time files. As

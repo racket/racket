@@ -40,7 +40,7 @@ In @indexed-racket['link] mode, the possible symbol results are:
 @item{@indexed-racket['static] (Unix)}
 @item{@indexed-racket['shared] (Unix)}
 @item{@indexed-racket['dll] (Windows)}
-@item{@indexed-racket['framework] (Mac OS X)}
+@item{@indexed-racket['framework] (Mac OS)}
 ]
 
 Future ports of Racket may expand the list of @racket['os],
@@ -74,7 +74,7 @@ are:
 @item{@indexed-racket['scalable] --- resources consumed by a
  @tech{filesystem change event} are effectively limited only by
  available memory, as opposed to file-descriptor limits; this property
- is @racket[#f] on Mac OS X and BSD variants of Unix}
+ is @racket[#f] on Mac OS and BSD variants of Unix}
 @item{@indexed-racket['low-latency] --- creation and checking of a
  @tech{filesystem change event} is practically instantaneous; this
  property is @racket[#f] on Linux}
@@ -90,7 +90,7 @@ are:
 Returns a string to identify the current user's language and
 country.
 
-On Unix and Mac OS X, the string is five characters: two lowercase
+On Unix and Mac OS, the string is five characters: two lowercase
 ASCII letters for the language, an underscore, and two uppercase ASCII
 letters for the country. On Windows, the string can be arbitrarily
 long, but the language and country are in English (all ASCII letters
@@ -102,7 +102,7 @@ On Unix, the result is determined by checking the
 result is used if the environment variable's value starts with two
 lowercase ASCII letters, an underscore, and two uppercase ASCII
 letters, followed by either nothing or a period). On Windows and
-Mac OS X, the result is determined by system calls.}
+Mac OS, the result is determined by system calls.}
 
 
 @defproc[(system-library-subpath [mode (or/c 'cgc '3m #f)

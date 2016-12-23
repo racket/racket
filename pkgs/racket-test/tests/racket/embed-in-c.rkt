@@ -1,7 +1,7 @@
 #lang racket
 
 ;; Works for Linux when the build is configured `--enable-libs`.
-;; Almost works for Mac OS X.
+;; Almost works for Mac OS.
 ;; Assumes 3m.
 
 ;; Since `--enable-libs` is not the default, disable test for now:

@@ -432,7 +432,7 @@ elements have an attributes list (even if it's empty).}
 The @racketmodname[xml/plist] library provides the ability to read and
 write XML documents that conform to the @defterm{plist} DTD, which is
 used to store dictionaries of string--value associations.  This format
-is used by Mac OS X (both the operating system and its applications)
+is used by Mac OS (both the operating system and its applications)
 to store all kinds of data.
 
 A @deftech{plist value} is a value that could be created by an

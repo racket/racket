@@ -26,7 +26,7 @@ hardware threads.
 
 @margin-note{Currently, parallel support for places is enabled
   only for Racket 3m (which is the main variant of Racket), and only
-  by default for Windows, Linux x86/x86_64, and Mac OS X x86/x86_64. To
+  by default for Windows, Linux x86/x86_64, and Mac OS x86/x86_64. To
   enable support for other platforms, use @DFlag{enable-places} with
   @exec{configure} when building Racket. The @racket[place-enabled?]
   function reports whether places run in parallel.}

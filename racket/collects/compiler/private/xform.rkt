@@ -985,7 +985,7 @@
         (define non-pointer-typedef-names
           ;; Under Windows, things like HANDLE and HWND, are not
           ;; malloced and could overlap with GCed areas.
-          ;; Mac OS X has similar things.
+          ;; Mac OS has similar things.
           #cs
           '(HANDLE
             HWND HDC HMENU
