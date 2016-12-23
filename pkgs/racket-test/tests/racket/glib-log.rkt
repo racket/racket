@@ -25,7 +25,7 @@
   
   (define (make s)
     (define p (malloc (add1 (bytes-length s)) 'raw))
-    (memcpy p s (bytes-length s))
+    (memcpy p s (add1 (bytes-length s)))
     p)
   
   (define hello (make #"hello"))
