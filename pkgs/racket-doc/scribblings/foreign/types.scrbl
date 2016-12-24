@@ -1604,7 +1604,7 @@ Extracts the pointer for a union's storage.
 
 @section{Enumerations and Masks}
 
-Although the constructors below are describes as procedures, they are
+Although the constructors below are described as procedures, they are
 implemented as syntax, so that error messages can report a type name
 where the syntactic context implies one.
 
