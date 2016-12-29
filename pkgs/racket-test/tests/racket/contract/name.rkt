@@ -236,7 +236,7 @@
   (test-name '(</c 5) (</c 5))
   (test-name '(>/c 5) (>/c 5))
   (test-name '(between/c 5 6) (between/c 5 6))
-  (test-name '(between/c -inf.0 +inf.0) (between/c -inf.0 +inf.0))
+  (test-name 'real? (between/c -inf.0 +inf.0))
   (test-name '5 (between/c 5 5))
   (test-name '(integer-in 0 10) (integer-in 0 10))
   (test-name '(char-in #\a #\z) (char-in #\a #\z))

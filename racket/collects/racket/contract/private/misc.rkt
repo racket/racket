@@ -179,7 +179,7 @@
      (define name (if (real-in-s? ctc) 'real-in 'between/c))
      (cond
        [(and (= n -inf.0) (= m +inf.0))
-        `(,name ,n ,m)]
+        'real?]
        [(= n -inf.0) `(<=/c ,m)]
        [(= m +inf.0) `(>=/c ,n)]
        [(= n m) `(=/c ,n)]
@@ -285,6 +285,11 @@
                           (format "~a" (object-name pred2?))
                           1
                           arg1 arg2)))
+
+(set-some-basic-misc-contracts! (between/c -inf.0 +inf.0)
+                                between/c-s?
+                                between/c-s-low
+                                between/c-s-high)
 
 (define (char-in a b)
   (check-two-args 'char-in a b char? char?)

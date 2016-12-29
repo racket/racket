@@ -987,8 +987,8 @@
      (impersonator-*list/c (car ctcs) (cdr ctcs))]))
      
 ;; this is a hack to work around cyclic linking issues;
-;; see definition of set-some-basic-contracts!
-(set-some-basic-contracts!
+;; see definition of set-some-basic-list-contracts!
+(set-some-basic-list-contracts!
  (listof any/c)
  (cons/c any/c any/c)
  (list/c))

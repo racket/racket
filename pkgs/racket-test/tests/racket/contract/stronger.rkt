@@ -20,6 +20,8 @@
   (ctest #f contract-stronger? (char-in #\a #\z) (char-in #\f #\q))
   (ctest #t contract-stronger? (between/c 1 3) (between/c 0 4))
   (ctest #f contract-stronger? (between/c 0 4) (between/c 1 3))
+  (ctest #t contract-stronger? (between/c -inf.0 +inf.0) real?)
+  (ctest #t contract-stronger? real? (between/c -inf.0 +inf.0))
   (ctest #t contract-stronger? (>=/c 3) (>=/c 2))
   (ctest #f contract-stronger? (>=/c 2) (>=/c 3))
   (ctest #f contract-stronger? (<=/c 3) (<=/c 2))
@@ -280,6 +282,7 @@
   (ctest #f contract-stronger? string? "x")
 
   (ctest #t contract-stronger? 1 real?)
+  (ctest #t contract-stronger? 1 (between/c -10 10))
   (ctest #f contract-stronger? real? 1)
 
   (ctest #t contract-stronger? 'x symbol?)

@@ -82,8 +82,6 @@
  contract-custom-write-property-proc
  (rename-out [contract-custom-write-property-proc custom-write-property-proc])
  
- set-some-basic-contracts!
- 
  blame?
  blame-source
  blame-positive

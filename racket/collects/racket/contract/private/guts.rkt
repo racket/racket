@@ -70,7 +70,8 @@
          contract-name
          maybe-warn-about-val-first
          
-         set-some-basic-contracts!
+         set-some-basic-list-contracts!
+         set-some-basic-misc-contracts!
 
          contract-first-order-okay-to-give-up?
          contract-first-order-try-less-hard
@@ -294,18 +295,30 @@
     (struct name-default ())
     (values (name-default) name-default?)))
 
-;; these two definitions work around a cyclic
+;; these definitions work around a cyclic
 ;; dependency. When we coerce a value to a contract,
 ;; we want to use (listof any/c) for list?, but
 ;; the files are not set up for that, so we just
 ;; bang it in here and use it only after it's been banged in.
+;; ditto for: (cons/c any/c any/c), (list/c), and (between/c -inf.0 +inf.0)
+;; the selectors and predicate for `between/c-s` are used
+;; to get contract-stronger right for numeric constants
 (define listof-any #f)
 (define consc-anyany #f)
 (define list/c-empty #f)
-(define (set-some-basic-contracts! l p mt)
+(define (set-some-basic-list-contracts! l p mt)
   (set! listof-any l)
   (set! consc-anyany p)
   (set! list/c-empty mt))
+(define between/c-inf+inf #f)
+(define between/c-s? #f)
+(define between/c-s-low #f)
+(define between/c-s-high #f)
+(define (set-some-basic-misc-contracts! b b/c-s? b/c-s-l b/c-s-h)
+  (set! between/c-inf+inf b)
+  (set! between/c-s? b/c-s?)
+  (set! between/c-s-low b/c-s-l)
+  (set! between/c-s-high b/c-s-h))
 
 (define (coerce-contract/f x [name name-default])
   (define (coerce-simple-value x)
@@ -323,6 +336,10 @@
           (unless consc-anyany
             (error 'coerce-contract/f::consc-anyany "too soon!"))
           consc-anyany]
+         [(chaperone-of? x real?)
+          (unless between/c-inf+inf
+            (error 'coerce-contract/f::between/c-inf+inf "too soon!"))
+          between/c-inf+inf]
          [else
           (make-predicate-contract (if (name-default? name)
                                        (or (object-name x) '???)
@@ -544,6 +561,8 @@
      (define this-val (=-contract-val this))
      (or (and (=-contract? that)
               (= this-val (=-contract-val that)))
+         (and (between/c-s? that)
+              (<= (between/c-s-low that) this-val (between/c-s-high that)))
          (and (predicate-contract? that)
               (predicate-contract-sane? that)
               ((predicate-contract-pred that) this-val))))
