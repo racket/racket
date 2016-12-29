@@ -183,8 +183,28 @@
     (cond
       [(null? contracts) any/c]
       [(andmap flat-contract? contracts)
-       (let ([preds (map flat-contract-predicate contracts)])
-         (make-first-order-and/c contracts preds))]
+       (define preds (map flat-contract-predicate contracts))
+       (cond
+         [(and (chaperone-of? (car preds) real?)
+               (pair? (cdr preds))
+               (null? (cddr preds)))
+          (define second-pred (cadr preds))
+          (cond
+            [(chaperone-of? second-pred negative?)
+             (</c 0)]
+            [(chaperone-of? second-pred positive?)
+             (>/c 0)]
+            [else
+             (define second-contract (cadr contracts))
+             (cond
+               [(equal? (contract-name second-contract) '(not/c positive?))
+                (<=/c 0)]
+               [(equal? (contract-name second-contract) '(not/c negative?))
+                (>=/c 0)]
+               [else
+                (make-first-order-and/c contracts preds)])])]
+         [else
+          (make-first-order-and/c contracts preds)])]
       [(andmap chaperone-contract? contracts)
        (make-chaperone-and/c contracts)]
       [else (make-impersonator-and/c contracts)])))

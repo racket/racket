@@ -42,6 +42,16 @@
   (ctest #f contract-stronger? (<=/c 2) (>/c 2))
   (ctest #f contract-stronger? (>=/c 2) (>/c 2))
   (ctest #t contract-stronger? (>=/c 3) (>/c 2))
+
+  (ctest #t contract-stronger? (>/c 0) (and/c real? positive?))
+  (ctest #t contract-stronger? (and/c real? positive?) (>/c 0))
+  (ctest #t contract-stronger? (</c 0) (and/c real? negative?))
+  (ctest #t contract-stronger? (and/c real? negative?) (</c 0))
+  (ctest #t contract-stronger? (<=/c 0) (and/c real? (not/c positive?)))
+  (ctest #t contract-stronger? (and/c real? (not/c positive?)) (<=/c 0))
+  (ctest #t contract-stronger? (>=/c 0) (and/c real? (not/c negative?)))
+  (ctest #t contract-stronger? (and/c real? (not/c negative?)) (>=/c 0))
+
   (ctest #t contract-stronger? (recursive-contract (<=/c 2)) (recursive-contract (<=/c 3)))
   (ctest #f contract-stronger? (recursive-contract (<=/c 3)) (recursive-contract (<=/c 2)))
   (let ([f (contract-eval '(λ (x) (recursive-contract (<=/c x))))])

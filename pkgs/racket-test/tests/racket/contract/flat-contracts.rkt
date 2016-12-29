@@ -53,6 +53,11 @@
   (test-flat-contract 'natural-number/c 0 -1)
   (test-flat-contract 'false/c #f #t)
   (test-flat-contract 'contract? #f (λ (x y) 'whatever))
+
+  (test-flat-contract '(and/c real? negative?) -1 0)
+  (test-flat-contract '(and/c real? positive?) 1 0)
+  (test-flat-contract '(and/c real? (not/c positive?)) 0 1)
+  (test-flat-contract '(and/c real? (not/c negative?)) 0 -1)
   
   (test-flat-contract #t #t "x")
   (test-flat-contract #f #f "x")

@@ -118,9 +118,11 @@
 (define (between/c-first-order ctc)
   (define n (between/c-s-low ctc))
   (define m (between/c-s-high ctc))
-  (λ (x) 
-    (and (real? x)
-         (<= n x m))))
+  (cond
+    [(and (= n -inf.0) (= m +inf.0))
+     real?]
+    [else
+     (λ (x) (and (real? x) (<= n x m)))]))
 
 (define ((between/c-generate ctc) fuel)
   (define n (between/c-s-low ctc))
@@ -180,8 +182,8 @@
      (cond
        [(and (= n -inf.0) (= m +inf.0))
         'real?]
-       [(= n -inf.0) `(<=/c ,m)]
-       [(= m +inf.0) `(>=/c ,n)]
+       [(= n -inf.0) (if (= m 0) `(and/c real? (not/c positive?)) `(<=/c ,m))]
+       [(= m +inf.0) (if (= n 0) `(and/c real? (not/c negative?)) `(>=/c ,n))]
        [(= n m) `(=/c ,n)]
        [else `(,name ,n ,m)]))
    #:stronger between/c-stronger
@@ -214,7 +216,12 @@
 
 (define (make-</c->/c-contract-property name </> -/+ less/greater)
   (build-flat-contract-property
-   #:name (λ (c) `(,name ,(</>-ctc-x c)))
+   #:name (λ (c)
+            (cond
+              [(= (</>-ctc-x c) 0)
+               `(and/c real? ,(if (equal? name '>/c) 'positive? 'negative?))]
+              [else
+               `(,name ,(</>-ctc-x c))]))
    #:first-order (λ (ctc) (define x (</>-ctc-x ctc)) (λ (y) (and (real? y) (</> y x))))
    #:late-neg-projection
    (λ (ctc)
