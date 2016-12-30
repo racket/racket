@@ -633,7 +633,7 @@ in the first position of pattern sequence.
      (λ (stx) #''()))
    (define (len l)
      (match l
-       [nil 0]
+       [(nil) 0]
        [(cons hd tl) (+ 1 (len tl))])))
   (len nil)
   (len (cons 1 nil))
