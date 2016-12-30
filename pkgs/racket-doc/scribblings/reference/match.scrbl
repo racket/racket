@@ -623,8 +623,9 @@ For example, to extend the pattern matcher and destructure syntax lists,
 
 And here is an example showing how 
 @racket[define-match-expander]-bound identifiers are
-not treated specially unless they appear
-in the first position of pattern sequence.
+@emph{not} treated specially unless they appear
+in the first position of pattern sequence. Consider
+this (incorrect) definition of a length function:
 @examples[#:label #f
   #:eval match-eval
   (eval:no-prompt
@@ -634,11 +635,17 @@ in the first position of pattern sequence.
    (define (len l)
      (match l
        [nil 0]
-       [(cons hd tl) (+ 1 (len tl))])))
+       [(cons hd tl) (+ 1 (len tl))])))]
+
+Because there are no parenthesis around @racket[nil],
+@racket[match] treats the first case as an identifier
+(which matches everything) instead of a use of the match
+expander and @racket[len] always returns @racket[0].
+
+@examples[#:label #f #:eval match-eval
   (len nil)
   (len (cons 1 nil))
   (len (cons 1 (cons 2 nil)))]
-
 }
 
 @defthing[prop:match-expander struct-type-property?]{
