@@ -3153,6 +3153,13 @@ void scheme_write_proc_context(Scheme_Object *port, int print_width,
   }
 }
 
+static void write_context_repeats(int repeats, Scheme_Object *port)
+{
+  char buf[64];
+  sprintf(buf, "[repeats %d more time%s]", repeats, (repeats == 1) ? "" : "s");
+  scheme_write_byte_string(buf, strlen(buf), port);
+}
+
 static Scheme_Object *
 def_error_display_proc(int argc, Scheme_Object *argv[])
 {
@@ -3186,7 +3193,8 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
       max_cnt = 0x7FFFFFFF;
 
     if (max_cnt) {
-      int orig_max_cnt = max_cnt;
+      Scheme_Object *prev_name;
+      int orig_max_cnt = max_cnt, repeats;
       w = scheme_get_param(config, MZCONFIG_ERROR_PRINT_WIDTH);
       if (SCHEME_INTP(w))
         print_width = SCHEME_INT_VAL(w);
@@ -3219,6 +3227,9 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
         }
       }
 
+      prev_name = NULL;
+      repeats = 0;
+
       l = scheme_get_stack_trace(scheme_struct_ref(argv[1], 1));
       while (!SCHEME_NULLP(l)) {
         if (!max_cnt) {
@@ -3226,37 +3237,60 @@ def_error_display_proc(int argc, Scheme_Object *argv[])
           break;
         } else {
           Scheme_Object *name, *loc;
-	  
-          if (max_cnt == orig_max_cnt) {
-            /* Starting label: */
-            scheme_write_byte_string("\n  context...:\n", 15, port);
-          } else {
-            scheme_write_byte_string("\n", 1, port);
-          }
 
           name = SCHEME_CAR(l);
-          loc = SCHEME_CDR(name);
-          name = SCHEME_CAR(name);
-
-          scheme_write_byte_string("   ", 3, port);
-
-          if (SCHEME_TRUEP(loc)) {
-            Scheme_Structure *sloc = (Scheme_Structure *)loc;
-            scheme_write_proc_context(port, print_width, 
-                                      name, 
-                                      sloc->slots[0], sloc->slots[1],
-                                      sloc->slots[2], sloc->slots[3],
-                                      0);
+          if (prev_name && scheme_equal(name, prev_name)) {
+            repeats++;
           } else {
-            scheme_write_proc_context(port, print_width, 
-                                      name, 
-                                      NULL, NULL, NULL, NULL, 
-                                      0);
+            if (max_cnt == orig_max_cnt) {
+              /* Starting label: */
+              scheme_write_byte_string("\n  context...:\n", 15, port);
+            } else {
+              scheme_write_byte_string("\n", 1, port);
+            }
+
+            if (repeats) {
+              scheme_write_byte_string("   ", 3, port);
+              write_context_repeats(repeats, port);
+              repeats = 0;
+              --max_cnt;
+              if (max_cnt)
+                scheme_write_byte_string("\n", 1, port);
+            }
+
+            prev_name = name;
+
+            if (max_cnt) {
+              loc = SCHEME_CDR(name);
+              name = SCHEME_CAR(name);
+
+              scheme_write_byte_string("   ", 3, port);
+
+              if (SCHEME_TRUEP(loc)) {
+                Scheme_Structure *sloc = (Scheme_Structure *)loc;
+                scheme_write_proc_context(port, print_width, 
+                                          name, 
+                                          sloc->slots[0], sloc->slots[1],
+                                          sloc->slots[2], sloc->slots[3],
+                                          0);
+              } else {
+                scheme_write_proc_context(port, print_width, 
+                                          name, 
+                                          NULL, NULL, NULL, NULL, 
+                                          0);
+              }
+              --max_cnt;
+            }
           }
 
           l = SCHEME_CDR(l);
-          --max_cnt;
         }
+      }
+
+      if (repeats) {
+        scheme_write_byte_string("\n", 1, port);
+        scheme_write_byte_string("   ", 3, port);
+        write_context_repeats(repeats, port);
       }
     }
   }
