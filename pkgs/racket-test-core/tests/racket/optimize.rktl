@@ -5692,5 +5692,19 @@
      (void))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that optimizer-clock tracking is ok
+;; when a `let-values` split is allowed due to
+;; a detected error condition
+
+(let ()
+  (define (binop a b)
+    'binop)
+  (define (bar p)
+    (let ([a (car p)])
+      (let-values ([(val1 val2) (binop a)])
+        'bar)))
+  bar)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
