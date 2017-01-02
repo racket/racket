@@ -289,7 +289,7 @@ Scheme_Object *scheme_native_stack_trace(void)
 	  first = name;
 	last = name;
 	if (shift_cache_to_next) {
-	  stack_cache_stack[stack_cache_stack_pos].cache = last;
+          set_cache_last = last;
 	  shift_cache_to_next = 0;
 	}
       }
