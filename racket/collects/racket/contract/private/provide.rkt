@@ -342,13 +342,15 @@
             (raise-syntax-error #f "expected an identifier" stx #'new-id))
           (unless (identifier? #'orig-id)
             (raise-syntax-error #f "expected an identifier" stx #'orig-id))
-          (define-values (pos-blame-party-expr srcloc-expr)
+          (define-values (pos-blame-party-expr srcloc-expr name-for-blame)
             (let loop ([kwd-args (syntax->list #'(kwd-args ...))]
                        [pos-blame-party-expr #'(quote-module-path)]
-                       [srcloc-expr #f])
+                       [srcloc-expr #f]
+                       [name-for-blame #f])
               (cond
                 [(null? kwd-args) (values pos-blame-party-expr
-                                          (or srcloc-expr (stx->srcloc-expr stx)))]
+                                          (or srcloc-expr (stx->srcloc-expr stx))
+                                          (or name-for-blame #'new-id))]
                 [else
                  (define kwd (car kwd-args))
                  (cond 
@@ -358,22 +360,39 @@
                                           stx))
                     (loop (cddr kwd-args)
                           (cadr kwd-args)
-                          srcloc-expr)]
+                          srcloc-expr
+                          name-for-blame)]
                    [(equal? (syntax-e kwd) '#:srcloc)
                     (when (null? (cdr kwd-args))
                       (raise-syntax-error #f "expected a keyword argument to follow #:srcloc"
                                           stx))
                     (loop (cddr kwd-args)
                           pos-blame-party-expr
-                          (cadr kwd-args))]
+                          (cadr kwd-args)
+                          name-for-blame)]
+                   [(equal? (syntax-e kwd) '#:name-for-blame)
+                    (when (null? (cdr kwd-args))
+                      (raise-syntax-error #f "expected a keyword argument to follow #:name-for-blame"
+                                          stx))
+                    (define name-for-blame (cadr kwd-args))
+                    (unless (identifier? name-for-blame)
+                      (raise-syntax-error #f "expected an identifier to follow #:name-for-blame"
+                                          stx
+                                          name-for-blame))
+                    (loop (cddr kwd-args)
+                          pos-blame-party-expr
+                          srcloc-expr
+                          name-for-blame)]
                    [else
-                    (raise-syntax-error #f "expected either the keyword #:pos-source of #:srcloc"
-                                        stx
-                                        (car kwd-args))])])))
+                    (raise-syntax-error
+                     #f
+                     "expected one of the keywords #:pos-source, #:srcloc, or #:name-for-blame"
+                     stx
+                     (car kwd-args))])])))
           (internal-function-to-be-figured-out #'ctrct
                                                #'orig-id
                                                #'orig-id
-                                               #'new-id
+                                               name-for-blame
                                                #'new-id
                                                srcloc-expr
                                                'define-module-boundary-contract

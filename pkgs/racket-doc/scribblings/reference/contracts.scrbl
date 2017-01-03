@@ -1963,11 +1963,14 @@ The @racket[define-struct/contract] form only allows a subset of the
            orig-id 
            contract-expr
            pos-blame-party
-           source-loc)
+           source-loc
+           name-for-blame)
          #:grammar ([pos-blame-party (code:line)
                                      (code:line #:pos-source pos-source-expr)]
                     [source-loc (code:line)
-                                (code:line #:srcloc srcloc-expr)])]{
+                                (code:line #:srcloc srcloc-expr)]
+                    [name-for-blame (code:line)
+                     (code:line #:name-for-blame blame-id)])]{
   Defines @racket[id] to be @racket[orig-id], but with the contract
   @racket[contract-expr].
   
@@ -1986,6 +1989,10 @@ The @racket[define-struct/contract] form only allows a subset of the
   but can be specified via the @racket[#:srcloc] argument, in which case
   it can be any of the things that the third argument to @racket[datum->syntax]
   can be.
+
+  The name used in the error messages will be @racket[orig-id], unless
+  @racket[#:name-for-blame] is supplied, in which case the identifier
+  following it is used as the name in the error messages.
   
   @examples[#:eval (contract-eval) #:once
             (module server racket/base
@@ -2001,6 +2008,8 @@ The @racket[define-struct/contract] form only allows a subset of the
             (require 'client)
             (eval:error (clients-fault))
             (eval:error (servers-fault))]
+
+  @history[#:changed "6.7.0.4" @elem{Added the @racket[#:name-for-blame] argument.}]
 
 }
 

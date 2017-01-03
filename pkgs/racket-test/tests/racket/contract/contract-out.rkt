@@ -1555,6 +1555,25 @@
    (λ (x)
      (and (exn:fail:contract:blame? x)
           (regexp-match? #rx"^external-name: " (exn-message x)))))
+
+  (contract-error-test
+   'define-module-boundary-contract5
+   '(begin
+      (eval '(module define-module-boundary-contract5-m racket/base
+               (require racket/contract/base)
+               (define (internal-name x) #f)
+               (define-module-boundary-contract external-name
+                 internal-name (-> integer? integer?) 
+                 #:pos-source 'pos
+                 #:name-for-blame my-favorite-name)
+               (provide external-name)))
+      (eval '(module define-module-boundary-contract5-n racket/base
+               (require 'define-module-boundary-contract5-m)
+               (external-name #f)))
+      (eval '(require 'define-module-boundary-contract5-n)))
+   (λ (x)
+     (and (exn:fail:contract:blame? x)
+          (regexp-match? #rx"^my-favorite-name: " (exn-message x)))))
   
   
   (contract-error-test
