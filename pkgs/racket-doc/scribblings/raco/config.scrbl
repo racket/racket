@@ -166,7 +166,7 @@ directory}:
        is @racket[""], otherwise it is @racket["CGC"].}
 
  @item{@indexed-racket['3m-suffix] --- analogous to @racket['cgc-suffix], but
-       for 3m. A @racket[#f] value means that if the @filepath{racket}
+       for 3m. A @racket[#f] value means that if the @exec{racket}
        binary identifies itself as CGC, then the suffix is
        @racket["3m"], otherwise it is @racket[""].}
 

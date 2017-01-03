@@ -25,7 +25,7 @@ Command-line flags:
        before unpacking or listing the archive content.}
 
  @item{@Flag{f} or @DFlag{force} --- replace files that exist already;
-       fails that the archive says should be replaced will be replaced
+       files that the archive says should be replaced will be replaced
        without this flag.}
 
 ]
@@ -103,7 +103,7 @@ while the second will refer to the main installation.}
 Traverses the content of @racket[archive], which must be a
 @filepath{.plt} archive that is created with the default unpacking
 unit and configuration expression. The configuration expression is not
-evaluated, the unpacking unit is not invoked, and not files are
+evaluated, the unpacking unit is not invoked, and files are not
 unpacked to the filesystem. Instead, the information in the archive is
 reported back through @racket[on-config], @racket[on-setup-unit],
 @racket[on-directory], and @racket[on-file], each of which can build on
@@ -113,7 +113,7 @@ final value is returned.
 The @racket[on-config-fn] function is called once with an S-expression
 that represents a function to implement configuration information.
 The second argument to @racket[on-config] is @racket[initial-value],
-and the function's result is passes on as the last argument to @racket[on-setup-unit].
+and the function's result is passed on as the last argument to @racket[on-setup-unit].
 
 The @racket[on-setup-unit] function is called with the S-expression
 representation of the installation unit, an input port that points to

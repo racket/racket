@@ -107,7 +107,7 @@ The @exec{raco exe} command accepts the following command-line flags:
    to the executable. The default is to have no path, which means that
    the @racket[current-library-collection-paths] and
    @racket[current-library-collection-links] parameters are
-   initialized at empty when the executable starts. Beware that
+   initialized as @racket[null] when the executable starts. Beware that
    various other directories are located relative to the @tech{main
    collection directory} by default (see @secref["config-file"]), so
    that installing @nonterm{path} may allow other directories to be

@@ -90,7 +90,7 @@ structures that are produced by @racket[zo-parse] and consumed by
   
   When an element of @racket[stxs] is @racket[#f], it coresponds to a
   syntax object that was optimized away at the last minute. The slot
-  must not be referenced vt a @racket[topsyntax] form.
+  must not be referenced by a @racket[topsyntax] form.
 
   The @racket[src-inspector-desc] field provides an inspector name that
   is used within syntax-object bindings. At run time, the prefix gets
@@ -278,7 +278,7 @@ binding, constructor, etc.}
   created by @racket[body] forms (not counting the @racket[prefix]
   array).
   
-  The @racket[dummy] variable is used to access to the top-level
+  The @racket[dummy] variable is used to access the top-level
   namespace.
 
   The @racket[lang-info] value specifies an optional module path that
@@ -643,7 +643,7 @@ binding, constructor, etc.}
   run-time path. The @racket[simple-scopes] field records scopes that
   are attached to the syntax object at all phases, and @racket[multi-scopes]
   records phase-specific scopes (which are always attached as a group)
-  along with a phase shift for every scope within the group).}
+  along with a phase shift for every scope within the group.}
 
 @defstruct+[(module-shift zo) ([from (or/c #f module-path-index?)]
                                [to (or/c #f module-path-index?)]

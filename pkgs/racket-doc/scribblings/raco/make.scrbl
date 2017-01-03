@@ -12,6 +12,7 @@
                      compiler/compilation-path
                      compiler/compile-file
                      syntax/modread
+                     (only-in racket/unit define-signature)
                      (only-in compiler/compiler compile-zos)))
 
 
@@ -268,7 +269,7 @@ consistent with the caching of the default module name resolver (see
 
 If @racket[use-compiled-file-paths] contains an empty list when
 @racket[make-compilation-manager-load/use-compiled-handler] is called,
-then @racket[exn:fail:contract] exception is raised.
+then an @racket[exn:fail:contract] exception is raised.
 
 If the @racket[delete-zos-when-rkt-file-does-not-exist?] argument is a true
 value, then the returned handler will delete @filepath{.zo} files
@@ -282,7 +283,7 @@ the security guard in the @racket[current-security-guard] when
 the files are created is used (not the security guard at the point 
 @racket[make-compilation-manager-load/use-compiled-handler] is called).
 
-The continuation the compilation of a module is marked with a
+The continuation of the compilation of a module is marked with a
 @racket[managed-compiled-context-key] and the module's source path.
 
 @emph{Do not} install the result of
@@ -300,7 +301,6 @@ structure:
 @racketblock[
   (struct compile-event (timestamp path type) #:prefab)
 ]
-
 The @racket[timestamp] field is the time at which the event occured in
 milliseconds since the epoch.  The @racket[path] field is the path of a file
 being compiled for which the event is about. The @racket[type] field is a symbol
@@ -311,7 +311,7 @@ are @racket['locking], @racket['start-compile], @racket['finish-compile], and
 @history[#:changed "6.1.1.8" @elem{Added identification of the compilation
                                     context via @racket[managed-compiled-context-key].}
          #:changed "6.6.0.3" @elem{added check on a source's SHA1 hash to complement the
-                                   timestamp check, where the altter can be disabled
+                                   timestamp check, where the latter can be disabled
                                    via @racket[use-compile-file-check].}]}
 
 
@@ -363,7 +363,7 @@ to the module's source.
           [orig-handlers (string? any/c . -> . void?)])
          (string? any/c . -> . void?)]{
 
-Produces a handler suitable for use as a
+Produces a handler suitable for use as an
 @racket[error-display-handler] value, given an existing such value.
 The generated handler shows information about the compilation context
 when the handler's second argument is an exception whose continuation
@@ -402,7 +402,7 @@ A parameter for a procedure of one argument that is called to report
  the procedure is a string.
  
  The default value of the parameter logs the argument, along with 
- @racket[current-inexact-milliseconds] to, a logger named @racket['compiler/cm]
+ @racket[current-inexact-milliseconds], to a logger named @racket['compiler/cm]
  at the @racket['debug] level.
  }
 
@@ -529,7 +529,7 @@ result will not call @racket[proc] with @racket['unlock].)
          (-> (or/c 'lock 'unlock) bytes? boolean?)]{
 
   Returns a function that follows the @racket[parallel-lock-client]
-  by communicating over @racket[pc]. The argument must have 
+  by communicating over @racket[pc]. The argument must
   be the result of @racket[make-compile-lock].
   
   This communication protocol implementation is not kill safe. To make it kill safe,
@@ -544,7 +544,7 @@ result will not call @racket[proc] with @racket['unlock].)
 @defproc[(make-compile-lock) place-channel?]{
   Creates a @racket[place-channel?] that can be used with
             @racket[compile-lock->parallel-lock-client] to avoid concurrent
-            compilations of the same racket source files in multiple places.
+            compilations of the same Racket source files in multiple places.
 }
 
 @defproc[(install-module-hashes! [bstr btyes?]
@@ -576,9 +576,8 @@ messages are instances of a @racket[parallel-compile-event] prefab structure:
 @racketblock[
   (struct parallel-compile-event (worker event) #:prefab)
 ]
-
 The worker field is the index of the worker that the created the event. The event
-field is a @racket[compile-event] as document in
+field is a @racket[compile-event] as documented in
 @racket[make-compilation-manager-load/use-compiled-handler].
 
 
@@ -629,7 +628,7 @@ The return value is @racket[(void)] if it was successful, or @racket[#f] if ther
                       [_prefix string?] 
                       [_exn (or/c exn? (cons/c string? string?) #f)]
                       [_out string?]
-                      [_err srtring?]
+                      [_err string?]
                       [_message string?])
                      void?)]
   [collects-tree (listof any/c)])  (void)]{
@@ -639,10 +638,10 @@ compile collections in parallel. The @racket[worker-count] argument
 specifies the number of compilation workers to spawn during parallel
 compilation. The @racket[setup-fprintf] and @racket[append-error]
 functions communicate intermediate compilation results and errors. The
-@racket[collects-tree] argument is a compound datastructure containing
+@racket[collects-tree] argument is a compound data structure containing
 an in-memory tree representation of the collects directory.
 
-When the @racket[_exn] argument to @racket[append-error] is a part of
+When the @racket[_exn] argument to @racket[append-error] is a pair of
 strings, the first string is a long form of the error message, and the
 second string is a short form (omitting evaluation context
 information, for example).
@@ -748,7 +747,7 @@ See also @racket[managed-compile-zo].}
          (values path? path?)]{
 
 Determines the directory that holds the bytecode form of @racket[path]
-plus base name of @racket[path].
+plus the base name of @racket[path].
 
 The directory is determined by checking @racket[roots] in order, and
 for each element of @racket[roots] checking @racket[modes] in order.
@@ -781,7 +780,7 @@ path.}
 The @DFlag{no-deps} mode for @exec{raco make} is an improverished
 form of the compilation, because it does not track import
 dependencies. It does, however, support compilation of non-module
-source in an namespace that initially imports @racketmodname[scheme].
+source in a namespace that initially imports @racketmodname[scheme].
 
 Outside of a module, top-level @racket[define-syntaxes],
 @racket[module], @racket[#%require],

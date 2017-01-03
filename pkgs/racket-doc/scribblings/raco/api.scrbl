@@ -106,7 +106,7 @@ collection.  The following fields are used:
 
  @item{@indexed-racket[compile-omit-paths] : A list of immediate file
        and directory paths that should not be compiled. Alternatively,
-       this field's value @racket['all], which is equivalent to
+       this field's value is @racket['all], which is equivalent to
        specifying all files and directories in the collection (to
        effectively ignore the collection for
        compilation). Automatically omitted files and directories are
@@ -123,8 +123,9 @@ collection.  The following fields are used:
        contents of @racket[compile-omit-paths].  Do not use this
        field; it is for backward compatibility.}
 
- @item{@indexed-racket[scribblings] : A list of pairs, each of which
-       starts with a path for documentation source. The sources (and
+ @item{@indexed-racket[scribblings] : A list of lists, each of which
+       starts with a path for documentation source.  See @secref["setup-info"]
+       for more information.  The sources (and
        the files that they require) are compiled in the same way as
        other module files, unless @racket[skip-docs?] is a true value.}
 
@@ -133,7 +134,7 @@ collection.  The following fields are used:
        are compiled based on the file's extension, being in @racket[scribblings],
        or being @racket[require]d by other compiled files.}
 
- @item{@racket[module-suffixes] and @racket[doc-module-suffixes] ---
+ @item{@racket[module-suffixes] and @racket[doc-module-suffixes] :
        Used indirectly via @racket[get-module-suffixes].}
 
 ]
@@ -142,7 +143,7 @@ collection.  The following fields are used:
 
 
 @defproc[(compile-directory-zos [path path-string?]
-                                [info ()]
+                                [info procedure?]
                                 [#:verbose verbose? any/c #f]
                                 [#:skip-path skip-path (or/c path-string? #f) #f]
                                 [#:skip-paths skip-paths (listof path-string?) null]
@@ -167,7 +168,7 @@ recognizing file suffixes that correspond to Racket modules for the
 purposes of compiling files in a directory, running tests for files in
 a directory, and so on. The set of suffixes always includes
 @filepath{.rkt}, @filepath{.ss}, and @filepath{.scm}, but it can be
-extended globally by @filepath{info.rkt} configuration in collections.}
+extended globally by @filepath{info.rkt} configurations in collections.}
 
 @history[#:added "6.3"]
 

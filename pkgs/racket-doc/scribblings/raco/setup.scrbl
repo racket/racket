@@ -221,7 +221,7 @@ flags:
   (as opposed to installation-specific) setup actions.}
 
  @item{@DFlag{no-planet} --- refrain from any setup actions for
-  @|PLaneT| actions; this flags is implied by @DFlag{no-user}.}
+  @|PLaneT| actions; this flag is implied by @DFlag{no-user}.}
 
  @item{@DFlag{avoid-main} --- refrain from any setup actions that
   affect the installation, as opposed to user-specific actions.}
@@ -316,7 +316,7 @@ installed as a package using @exec{raco pkg} (see @other-manual['(lib
 facilities for uninstalling the package and managing dependencies.
 
 An older approach is to supply a @filepath{.plt} file to @exec{raco
-setup} with the @Flag{A} flag, the files contained in the
+setup} with the @Flag{A} flag; the files contained in the
 @filepath{.plt} archive are unpacked (according to specifications
 embedded in the @filepath{.plt} file) and only collections specified
 by the @filepath{.plt} file are compiled and setup. Archives processed
@@ -361,7 +361,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
    More precisely a @racketidfont{scribblings} entry must be a value
    that can be generated from an expression matching the following
-   @racket[entry] grammar:
+   @racket[_entry] grammar:
 
    @racketgrammar*[
      #:literals (list)
@@ -417,16 +417,16 @@ Optional @filepath{info.rkt} fields trigger additional actions by
            is not itself located in the main installation.}
 
      @item{@racket['depends-all] : Indicates that the document should
-           be re-built if any other document is rebuilt---except for
+           be rebuilt if any other document is rebuilt---except for
            documents that have the @racket['no-depend-on] flag.}
 
      @item{@racket['depends-all-main] : Indicates that the document
-           should be re-built if any other document is rebuilt that is
+           should be rebuilt if any other document is rebuilt that is
            installed into the main installation---except for documents
            that have the @racket['no-depend-on] flag.}
 
      @item{@racket['depends-all-user] : Indicates that the document
-           should be re-built if any other document is rebuilt that is
+           should be rebuilt if any other document is rebuilt that is
            installed into the user's space---except for documents
            that have the @racket['no-depend-on] flag.}
 
@@ -561,7 +561,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 
    A @racketidfont{release-note-files} entry must be a value
    that can be generated from an expression matching the following
-   @racket[entry] grammar:
+   @racket[_entry] grammar:
 
    @racketgrammar*[
      #:literals (list)
@@ -814,7 +814,7 @@ Optional @filepath{info.rkt} fields trigger additional actions by
 When @exec{raco setup} is run with no arguments,@margin-note*{Unless
 @DFlag{check-pkg-deps} is specified, dependency checking is disabled
 if any collection is specified for @exec{raco setup}.} after building
-all collections and documentation, @exec{raco setup} check package
+all collections and documentation, @exec{raco setup} checks package
 dependencies. Specifically, it inspects compiled files and
 documentation to check that references across package boundaries are
 reflected by dependency declarations in each package-level
@@ -874,7 +874,7 @@ cooperate with @racket[raco make] are visible for dependency checking.
 
 Dependency checking is sensitive to whether a dependency is needed
 only as a build-time dependency. If @exec{raco setup} detects that a
-missing dependency could be added as a built-time dependency, it will
+missing dependency could be added as a build-time dependency, it will
 suggest the addition, but @exec{raco setup} will not suggest
 converting a normal dependency to a build-time dependency (since every
 normal dependency counts as a build-time dependency, too).
@@ -931,7 +931,7 @@ Runs @exec{raco setup} with various options:
        assuming that documentation is built}
 
  @item{@racket[force-user-docs?] --- if true, then when building
-       documentation, create a user-specific documentation entry point
+       documentation, creates a user-specific documentation entry point
        even if it has the same content as the installation}
 
  @item{@racket[clean?] --- if true, enables cleaning mode instead of setup mode}
@@ -1030,7 +1030,7 @@ form.}
   }
   
 @defboolparam[verbose on?]{
-  If on, prints message from @exec{make} to @envvar{stderr}.
+  If on, prints messages from @exec{make} to @envvar{stderr}.
   @defaults[@racket[#f]]}
 
 @defboolparam[make-verbose on?]{
@@ -1141,7 +1141,7 @@ form.}
 @defboolparam[archive-implies-reindex on?]{
   If on, when @racket[archives] has a non-empty list of packages, if any
   documentation is built, then suitable documentation start pages, search pages,
-  and master index pages are re-built. @defaults[@racket[#t]]}
+  and master index pages are rebuilt. @defaults[@racket[#t]]}
 
 @defparam[current-target-directory-getter thunk (-> path-string?)]{
   A thunk that returns the target directory for unpacking a relative
@@ -1280,7 +1280,7 @@ function for installing a single @filepath{.plt} file.
 
 @defproc[(get-links-search-files) path?]{
   Returns a list of paths to installation @tech[#:doc
-  reference-doc]{collection links files} that are search in
+  reference-doc]{collection links files} to search in
   order. (Normally, the result includes the result of
   @racket[(find-links-file)], which is where new installation-wide
   links are installed by @exec{raco link} or @racket[links].) The
@@ -1512,7 +1512,7 @@ function for installing a single @filepath{.plt} file.
                #f)]{
 
    Accepts a path to a directory. If it finds either a well-formed
-   an @filepath{info.rkt} file or an @filepath{info.ss} file (with
+   @filepath{info.rkt} file or an @filepath{info.ss} file (with
    preference for the @filepath{info.rkt} file), 
    it returns an info procedure that accepts either one
    or two arguments. The first argument to the info procedure is
@@ -1532,8 +1532,8 @@ function for installing a single @filepath{.plt} file.
    is raised. If the @filepath{info.rkt} file loaded, @racket[get-info/full]
    returns the @racket[get-info] file. If the @filepath{info.rkt} file does not exist, 
    then @racket[get-info/full] does
-   the same checks for the @filepath{info.rkt} file, either raising an exception
-   or returning the @racket[get-info] function from the @filepath{info.rkt} file.
+   the same checks for the @filepath{info.ss} file, either raising an exception
+   or returning the @racket[get-info] function from the @filepath{info.ss} file.
 
    The @filepath{info.rkt} (or @filepath{info.ss}) module is loaded
    into @racket[namespace] if it is not @racket[#f], or a private,
@@ -1580,7 +1580,7 @@ function for installing a single @filepath{.plt} file.
    If @racket[mode] is specified, it must be either
    @racket['preferred] (the default), @racket['all-available],
    @racket['no-planet], or @racket['no-user]. If @racket[mode] is
-   @racket['all-available], @racket[find-relevant-collections] returns
+   @racket['all-available], @racket[find-relevant-directories] returns
    all installed directories whose info files contain the specified
    symbols---for instance, all versions of all installed PLaneT
    packages will be searched if @racket['all-available] is
@@ -1590,7 +1590,7 @@ function for installing a single @filepath{.plt} file.
    will be returned. If @racket[mode] is @racket['no-planet], then
    PLaneT packages are not included in the search. If @racket[mode] is
    @racket['no-user], then only installation-wide directories are
-   search, which means omitting @|PLaneT| package directories.
+   searched, which means omitting @|PLaneT| package directories.
 
    Collection links from the installation-wide @tech[#:doc
    reference-doc]{collection links file} or packages with installation
@@ -1604,7 +1604,7 @@ function for installing a single @filepath{.plt} file.
 
 @defproc[(find-relevant-directory-records
           [syms (listof symbol?)]
-          [key (or/c 'preferred 'all-available)])
+          [key (or/c 'preferred 'all-available 'no-planet 'no-user)])
          (listof directory-record?)]{
   Like @racket[find-relevant-directories], but returns @racket[directory-record] structs
   instead of @racket[path?]s.
@@ -1618,7 +1618,7 @@ function for installing a single @filepath{.plt} file.
   A struct that records information about a collection or a @PLaneT package that has been installed.
   Collections will have the major version being @racket[1] and the minor version being @racket[0].
   The @racket[spec] field is a quoted module spec; the @racket[path] field is where the @tt{info.rkt}
-  file for this collection or @PLaneT package exists on the filesystem the @racket[syms] field holds the 
+  file for this collection or @PLaneT package exists on the filesystem; the @racket[syms] field holds the
   identifiers defined in that file.
 }
 

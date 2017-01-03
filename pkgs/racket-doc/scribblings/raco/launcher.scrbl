@@ -50,7 +50,7 @@ the following additional associations apply to launchers:
 @itemize[
 
  @item{@racket['independent?] (Windows) --- a boolean; @racket[#t]
-       creates an old-style launcher that work with any
+       creates an old-style launcher that works with any
        Racket or GRacket binary, like @exec{raco.exe}. No other
        @racket[aux] associations are used for an old-style launcher.}
 
@@ -335,7 +335,7 @@ platforms.}
 
 @defproc[(racket-launcher-is-actually-directory?) boolean?]{
 
-Like @racket[gracket-launcher-is-actuall-directory?], but for Racket
+Like @racket[gracket-launcher-is-actually-directory?], but for Racket
 launchers. The result is @racket[#f] for all platforms.}
 
 
@@ -358,7 +358,7 @@ Returns three values suitable for use as the @racket[extension],
 @racket[style], and @racket[filters] arguments to @racket[put-file],
 respectively.
 
-If GRacket launchers for the current platform were directories form the
+If GRacket launchers for the current platform were directories from the
 user's perspective, the @racket[style] result is suitable for use with
 @racket[get-directory], and the @racket[extension] result may be a
 string indicating a required extension for the directory name. }
@@ -508,7 +508,7 @@ are as follows:
  @item{@filepath{.extreg} @'rarr @racket['extension-register] as
        @racket[read] content (a single S-expression), but with
        relative (to the @filepath{.extreg} file) paths converted
-       absolute; for use on Windows}
+       to absolute paths; for use on Windows}
 
 ]}
 

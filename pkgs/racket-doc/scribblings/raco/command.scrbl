@@ -1,6 +1,6 @@
 #lang scribble/doc
 @(require scribble/manual "common.rkt"
-          (for-label racket/base raco/command-name racket/cmdline))
+          (for-label racket/base raco/all-tools raco/command-name racket/contract/base racket/cmdline))
 
 @title[#:tag "command"]{Adding a @exec{raco} Command}
 
@@ -11,8 +11,8 @@ command is added by defining @indexed-racket[raco-commands] in the
 and then @exec{raco setup} (as called directly or as part of a package
 or @|PLaneT| installation) must index the @filepath{info.rkt} file.
 
-The value bound to @racket[raco-commands] must be a list of command
-specifications, where each specification is a list of four values:
+The value bound to @racket[raco-commands] must be a list of @deftech{command
+specifications}, where each specification is a list of four values:
 
 @racketblock[
    (list _command-string
@@ -40,7 +40,7 @@ The @racket[_description-string] is a short string used to describe the
 command in response to @exec{raco help}. The description should not be
 capitalized or end with a period.
 
-The @racket[_prominence] value should be a read number or
+The @racket[_prominence] value should be a real number or
 @racket[#f]. A @racket[#f] value means that the command should not be
 included in the short list of ``frequently used commands.'' A number
 indicates the relative prominence of the command; the @exec{help}
@@ -113,3 +113,23 @@ so that @exec{raco decompile --help} prints
 
 Like @racket[short-program+command-name], but the path (if any) is not
 stripped from the current executable's name.}
+
+@section{Accessing @exec{raco} Commands}
+
+@defmodule[raco/all-tools]{The @racketmodname[raco/all-tools]
+library collects the @indexed-racket[raco-commands] specifications for
+installed packages, @|PLaneT| packages, and other collections.}
+
+@defproc[(all-tools) (hash/c string? (list/c string? module-path? string? (or/c real? #f)))]{
+Returns a hashtable with collection names as keys and @tech{command specifications} as values.
+For example, the following program invokes @exec{raco make file.rkt}:
+@racketblock[
+  (require raco/all-tools)
+
+  (define raco-make-spec (hash-ref (all-tools) "make"))
+
+  (parameterize ([current-command-line-arguments (vector "file.rkt")])
+    (dynamic-require (second raco-make-spec) #f))
+]
+}
+

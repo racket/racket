@@ -23,7 +23,7 @@ archive.}
          void?]{
 
 Packages @racket[dir] into @racket[dist-file]. If @racket[dist-file]
-has no extension, a file extension is added automatcially (using the
+has no extension, a file extension is added automatically (using the
 first result of @racket[bundle-put-file-extension+style+filters]).
 
 The created archive contains a directory with the same name as

@@ -161,7 +161,7 @@ embeds the module @racket[m] from the file @filepath{m.rkt}, without
 prefixing the name of the module; the @racket[literal-sexpr] argument
 to go with the above might be @racket['(require m)]. When submodules
 are available and included, the submodule is given a name by
-symbol-appending the @racket[write] form of submodule path to the
+symbol-appending the @racket[write] form of the submodule path to the
 enclosing module's name.
 
 Modules are normally compiled before they are embedded into the target
@@ -233,7 +233,7 @@ currently supported keys are as follows:
   @item{@racket['framework-root] (Mac OS) : A string to prefix the
         executable's path to the Racket and GRacket frameworks
         (including a separating slash); note that when the prefix
-        starts @filepath{@"@"executable_path/} works for a
+        start @filepath{@"@"executable_path/} works for a
         Racket-based application, the corresponding prefix start for
         a GRacket-based application is
         @filepath{@"@"executable_path/../../../}; if @racket[#f] is
@@ -297,7 +297,7 @@ created executable maintains its built-in (relative) path to the main
 @racket[(find-system-path 'collects-dir)] when the executable is
 run---plus a potential list of other directories for finding library
 collections---which are used to initialize the
-@racket[current-library-collection-paths] list in combination with
+@racket[current-library-collection-paths] list in combination with the
 @envvar{PLTCOLLECTS} environment variable.  Otherwise, the argument
 specifies a replacement; it must be either a path, string, or
 list of paths and strings. In the last case, the first path
@@ -313,7 +313,7 @@ is initialized to an empty list, and
 use of @tech[#:doc reference-doc]{collection links files}.
 
 If the @racket[#:launcher?] argument is @racket[#t], then
-@racket[lid-list] should be null, @racket[literal-files] should be
+@racket[mod-list] should be null, @racket[literal-files] should be
 null, @racket[literal-sexp] should be @racket[#f], and the platform
 should be Windows or Mac OS. The embedding executable is created in
 such a way that @racket[(find-system-path 'exec-file)] produces the
@@ -439,7 +439,7 @@ Returns three values suitable for use as the @racket[extension],
 respectively.
 
 If Racket/GRacket launchers for the current platform were directories
-form the user's perspective, the @racket[style] result is suitable for
+from the user's perspective, the @racket[style] result is suitable for
 use with @racket[get-directory], and the @racket[extension] result may
 be a string indicating a required extension for the directory name. }
 

@@ -18,7 +18,7 @@ program can embed Racket with a set of modules so that it does not
 need a @filepath{collects} directory to load modules at run time.
 
 If the embedded modules refer to runtime files, the files can be
-gathers by supplying the @DFlag{runtime} argument to @exec{raco ctool
+gathered by supplying the @DFlag{runtime} argument to @exec{raco ctool
 --cmods}, specifying a directory @nonterm{dir} to hold the files.
 Normally, @nonterm{dir} is a relative path, and files are found at run
 time in @nonterm{dir} relative to the executable, but a separate path
