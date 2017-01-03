@@ -178,10 +178,12 @@
    (λ (ctc)
      (define n (between/c-s-low ctc))
      (define m (between/c-s-high ctc))
-     (define name (if (real-in-s? ctc) 'real-in 'between/c))
+     (define name (if (renamed-between/c? ctc) (renamed-between/c-name ctc) 'between/c))
      (cond
        [(and (= n -inf.0) (= m +inf.0))
-        'real?]
+        (if (renamed-between/c? ctc)
+            (renamed-between/c-name ctc)
+            'real?)]
        [(= n -inf.0) (if (= m 0) `(and/c real? (not/c positive?)) `(<=/c ,m))]
        [(= m +inf.0) (if (= n 0) `(and/c real? (not/c negative?)) `(>=/c ,n))]
        [(= n m) `(=/c ,n)]
@@ -189,7 +191,7 @@
    #:stronger between/c-stronger
    #:first-order between/c-first-order
    #:generate between/c-generate))
-(define-struct (real-in-s between/c-s) ())
+(define-struct (renamed-between/c between/c-s) (name))
 
 (define (maybe-neg n) (rand-choice [1/2 n] [else (- n)]))
 
@@ -294,6 +296,7 @@
                           arg1 arg2)))
 
 (set-some-basic-misc-contracts! (between/c -inf.0 +inf.0)
+                                renamed-between/c
                                 between/c-s?
                                 between/c-s-low
                                 between/c-s-high)
@@ -304,7 +307,7 @@
 
 (define/final-prop (real-in start end)
   (check-two-args 'real-in start end real? real?)
-  (make-real-in-s start end))
+  (make-renamed-between/c start end 'real-in))
 
 (define/final-prop (not/c f)
   (let* ([ctc (coerce-flat-contract 'not/c f)]

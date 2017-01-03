@@ -58,6 +58,11 @@
   (test-flat-contract '(and/c real? positive?) 1 0)
   (test-flat-contract '(and/c real? (not/c positive?)) 0 1)
   (test-flat-contract '(and/c real? (not/c negative?)) 0 -1)
+
+  (test-flat-contract '(and/c (flat-named-contract 'Real real?) negative?) -1 0)
+  (test-flat-contract '(and/c (flat-named-contract 'Real real?) positive?) 1 0)
+  (test-flat-contract '(and/c (flat-named-contract 'Real real?) (not/c positive?)) 0 1)
+  (test-flat-contract '(and/c (flat-named-contract 'Real real?) (not/c negative?)) 0 -1)
   
   (test-flat-contract #t #t "x")
   (test-flat-contract #f #f "x")

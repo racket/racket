@@ -56,6 +56,7 @@
                        (flat-named-contract 'mumble
                                             (and/c frotz/c
                                                    (not/c bazzle/c)))))
+  (test-name 'Real (flat-named-contract 'Real real?))
 
   
   (test-name '(-> integer? integer?) (-> integer? integer?))

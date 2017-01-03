@@ -34,11 +34,11 @@
 ;;
 ;; flat-contract helper
 ;;
-(define-for-syntax (opt/flat-ctc opt/info pred checker)
+(define-for-syntax (opt/flat-ctc opt/info pred checker name)
   (syntax-case pred (null? number? integer? boolean? string? pair? not)
     ;; Better way of doing this?
     [pred
-     (let* ((lift-vars (generate-temporaries (syntax (pred error-check))))
+     (let* ((lift-vars (generate-temporaries (syntax (pred error-check the-name))))
             (lift-pred (car lift-vars)))
        (with-syntax ((val (opt/info-val opt/info))
                      (ctc (opt/info-contract opt/info))
@@ -56,22 +56,25 @@
           #:lifts
           (interleave-lifts
            lift-vars
-           (list #'pred (cond [(eq? checker 'check-flat-contract) #'(check-flat-contract lift-pred)]
-                              [(eq? checker 'check-flat-named-contract) #'(check-flat-named-contract lift-pred)])))
+           (list #'pred
+                 (cond [(eq? checker 'check-flat-contract) #'(check-flat-contract lift-pred)]
+                       [(eq? checker 'check-flat-named-contract) #'(check-flat-named-contract lift-pred)])
+                 (or name #'(object-name lift-pred))))
           #:superlifts null
           #:partials null
           #:flat (syntax (lift-pred val))
           #:opt #f
           #:stronger-ribs null
           #:chaperone #t
-          #:name #'(object-name lift-pred))))]))
+          #:name (list-ref lift-vars 2))))]))
 
 ;;
 ;; flat-contract and flat-named-contract
 ;;
 (define/opter (flat-contract opt/i opt/info stx)
   (syntax-case stx (flat-contract)
-    [(flat-contract pred) (opt/flat-ctc opt/info #'pred 'check-flat-contract)]))
+    [(flat-contract pred) (opt/flat-ctc opt/info #'pred 'check-flat-contract #f)]))
 (define/opter (flat-named-contract opt/i opt/info stx)
   (syntax-case stx (flat-named-contract)
-    [(flat-named-contract name pred) (opt/flat-ctc opt/info #'pred 'check-flat-named-contract)]))
+    [(flat-named-contract name pred)
+     (opt/flat-ctc opt/info #'pred 'check-flat-named-contract #'name)]))

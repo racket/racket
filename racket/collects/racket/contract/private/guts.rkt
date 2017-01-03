@@ -311,11 +311,13 @@
   (set! consc-anyany p)
   (set! list/c-empty mt))
 (define between/c-inf+inf #f)
+(define renamed-between/c #f)
 (define between/c-s? #f)
 (define between/c-s-low #f)
 (define between/c-s-high #f)
-(define (set-some-basic-misc-contracts! b b/c-s? b/c-s-l b/c-s-h)
+(define (set-some-basic-misc-contracts! b r-b b/c-s? b/c-s-l b/c-s-h)
   (set! between/c-inf+inf b)
+  (set! renamed-between/c r-b)
   (set! between/c-s? b/c-s?)
   (set! between/c-s-low b/c-s-l)
   (set! between/c-s-high b/c-s-h))
@@ -339,7 +341,9 @@
          [(chaperone-of? x real?)
           (unless between/c-inf+inf
             (error 'coerce-contract/f::between/c-inf+inf "too soon!"))
-          between/c-inf+inf]
+          (if (name-default? name)
+              between/c-inf+inf
+              (renamed-between/c -inf.0 +inf.0 name))]
          [else
           (make-predicate-contract (if (name-default? name)
                                        (or (object-name x) '???)
