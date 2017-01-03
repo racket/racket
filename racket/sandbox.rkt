@@ -190,6 +190,24 @@
   (define perms (compressed-path-permissions))
   (ormap (lambda (rx) (regexp-match? rx bpath)) (cdr (assq needed perms))))
 
+(define (call-and-accumulate-captured-filesystem-accesses saw-accesses thunk)
+  ;; Capture any filesystem accesses needed during the evaluation of `thunk`,
+  ;; so that the same evaluation can work in a nested sandbox.
+  (parameterize ([current-security-guard (make-security-guard
+                                          (current-security-guard)
+                                          (lambda (who path perms)
+                                            (define old-perm (hash-ref saw-accesses path #f))
+                                            (define new-perm
+                                              (for/fold ([perm old-perm]) ([a-perm (in-list perms)])
+                                                (cond
+                                                 [(not perm) a-perm]
+                                                 [(perm<=? a-perm perm) perm]
+                                                 [else a-perm])))
+                                            (unless (eq? old-perm new-perm)
+                                              (hash-set! saw-accesses path new-perm)))
+                                          void)])
+    (thunk)))
+
 (define sandbox-network-guard
   (make-parameter (lambda (what . xs)
                     (error what "network access denied: ~e" xs))))
@@ -982,6 +1000,7 @@
      memory-cust
      (inexact->exact (round (* (sandbox-memory-limit) 1024 1024)))
      memory-cust))
+  (define saw-accesses (make-hash))
   (parameterize* ; the order in these matters
    (;; create a sandbox context first
     [sandbox-gui-available (and (sandbox-gui-available)
@@ -1006,13 +1025,18 @@
                    (hash-values l)]
                   [else
                    (if (file-exists? l)
-                       (append
-                        (links #:root? #t #:file l)
-                        (map cdr (links #:file l #:with-path? #t)))
+                       (call-and-accumulate-captured-filesystem-accesses
+                        saw-accesses
+                        (lambda ()
+                          (append
+                           (links #:root? #t #:file l)
+                           (map cdr (links #:file l #:with-path? #t)))))
                        null)]))))
        ,@(for/list ([l (current-library-collection-links)]
                     #:when (path? l))
            `(read ,l))
+       ,@(for/list ([(k v) (in-hash saw-accesses)])
+           `(,v ,k))
        ,@(for*/list ([l (get-pkgs-search-dirs)]
                      [f (in-list (list "pkgs.rktd" (make-lock-file-name "pkgs.rktd")))])
            `(read ,(build-path l f)))
