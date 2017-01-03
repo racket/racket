@@ -706,4 +706,11 @@
 
 ;; ----------------------------------------
 
+;; Check that a sandbox can host a sandbox:
+(let ([e (make-module-evaluator (string-append "#lang racket/base\n"))])
+  (e '(require racket/sandbox))
+  (e '(make-module-evaluator (string-append "#lang racket/base\n"))))
+
+;; ----------------------------------------
+
 (report-errs)
