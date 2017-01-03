@@ -1264,12 +1264,19 @@ predecessor until @racket[end] (excluded) is reached.  If no starting
 point is provided, @racket[0] is used. If no @racket[step] argument is
 provided, @racket[1] is used.
 
+Like @racket[in-range], a @racket[range] application can provide better
+performance when it appears directly in a @racket[for] clause.
+
 @mz-examples[#:eval list-eval
   (range 10)
   (range 10 20)
   (range 20 40 2)
   (range 20 10 -1)
-  (range 10 15 1.5)]}
+  (range 10 15 1.5)]
+
+@history[#:changed "6.7.0.4"
+         @elem{Adjusted to cooperate with @racket[for] in the same
+               way that @racket[in-range] does.}]}
 
 
 @defproc[(append-map [proc procedure?] [lst list?] ...+)

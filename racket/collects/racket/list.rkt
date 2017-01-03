@@ -61,6 +61,8 @@
          remf
          remf*)
 
+(require (for-syntax racket/base))
+
 (define (first x)
   (if (and (pair? x) (list? x))
     (car x)
@@ -561,11 +563,24 @@
         (if (pred x) (loop l (cons x i) o) (loop l i (cons x o)))))))
 
 ;; similar to in-range, but returns a list
-(define range
-  (case-lambda
-    [(end)            (for/list ([i (in-range end)])            i)]
-    [(start end)      (for/list ([i (in-range start end)])      i)]
-    [(start end step) (for/list ([i (in-range start end step)]) i)]))
+(define range-proc
+  (let ()
+    ; make sure range has the right runtime name
+    (define range
+      (case-lambda
+        [(end)            (for/list ([i (in-range end)])            i)]
+        [(start end)      (for/list ([i (in-range start end)])      i)]
+        [(start end step) (for/list ([i (in-range start end step)]) i)]))
+    range))
+
+(define-sequence-syntax range
+  (λ () #'range-proc)
+  (λ (stx)
+    (syntax-case stx ()
+      [[(n) (_ end)]            #'[(n) (in-range end)]]
+      [[(n) (_ start end)]      #'[(n) (in-range start end)]]
+      [[(n) (_ start end step)] #'[(n) (in-range start end step)]]
+      [[ids range-expr]         #'[ids (#%expression range-expr)]])))
 
 (define append-map
   (case-lambda [(f l)      (apply append (map f l))]
