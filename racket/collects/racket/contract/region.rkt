@@ -91,7 +91,9 @@
     [(_ name:id contract fv:fvs body0 body ...)
      (raise-syntax-error 'define/contract
                          "multiple expressions after identifier and contract"
-                         #'(body ...))]
+                         define-stx
+                         #'body0
+                         (syntax->list #'(body ...)))]
     [(_ name+arg-list contract fv:fvs body0 body ...)
      (let-values ([(name body-expr)
                    (normalize-definition
