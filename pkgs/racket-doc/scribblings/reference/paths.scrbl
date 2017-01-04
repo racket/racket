@@ -49,10 +49,11 @@ platform (not a string, and not a path for a different platform),
 @racket[#f] otherwise.}
 
 @defproc[(path-string? [v any/c]) boolean?]{
-
-Return @racket[#t] if @racket[v] is either a path value for the
-current platform or a non-empty string without nul characters,
-@racket[#f] otherwise.}
+ Returns @racket[#t] if @racket[v] is either a @deftech{path
+  or string}: either a path for the current platform or a
+ non-empty string without nul characters. Returns @racket[#f]
+ otherwise.
+}
 
 @defproc[(path-for-some-system? [v any/c]) boolean?]{
 
