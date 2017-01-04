@@ -1217,6 +1217,15 @@
    (λ (x)
      (and (exn:fail? x)
           (regexp-match #rx"chaperone-contract[?]" (exn-message x)))))
+
+  (contract-error-test
+   'struct/c-non-chaperone-runtime-error
+   '(let ()
+      (struct s (x))
+      (struct/c s (new-∀/c 'α)))
+   (λ (x)
+     (and (exn:fail? x)
+          (regexp-match #rx"^struct/c" (exn-message x)))))
   
   (contract-error-test
    'struct/dc-not-a-field

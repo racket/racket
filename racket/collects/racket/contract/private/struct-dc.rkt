@@ -225,6 +225,7 @@
 
 (define (struct/dc-late-neg-proj ctc)
   (define pred? (base-struct/dc-pred ctc))
+  (define struct/c? (base-struct/dc-struct/c? ctc))
   (λ (blame)
     (define orig-blames
       (for/list ([subcontract (in-list (base-struct/dc-subcontracts ctc))])
@@ -343,7 +344,7 @@
                      (coerce-contract 
                       'struct/dc 
                       (apply (dep-dep-proc subcontract) dep-args))))
-              (when dep-ctc (check-flat/chaperone dep-ctc subcontract))
+              (when dep-ctc (check-flat/chaperone dep-ctc subcontract struct/c?))
               (define dep-ctc-blame-proj (and dep-ctc (get/build-late-neg-projection dep-ctc)))
               (define-values (new-chaperone-args new-impersonate-args)
                 (cond
@@ -453,7 +454,8 @@
                                         blame+neg-party
                                         (build-dep-on-state-proj
                                          (base-struct/dc-subcontracts ctc) subcontract strct
-                                         orig-indy-projs orig-indy-blames blame neg-party val)))
+                                         orig-indy-projs orig-indy-blames blame neg-party val
+                                         struct/c?)))
                                      chaperone-args)
                               impersonate-args)]
                      [(dep-on-state-mutable? subcontract)
@@ -463,13 +465,14 @@
                          blame+neg-party
                          (build-dep-on-state-proj (base-struct/dc-subcontracts ctc) subcontract strct
                                                   orig-indy-projs orig-indy-blames blame neg-party
-                                                  val)))
+                                                  val struct/c?)))
                       (define (set-chap-proc strct val)
                         (with-contract-continuation-mark
                          blame+neg-party
                          (build-dep-on-state-proj
                           (base-struct/dc-subcontracts ctc) subcontract strct
-                          orig-mut-indy-projs orig-mut-indy-blames mut-blame neg-party val)))
+                          orig-mut-indy-projs orig-mut-indy-blames mut-blame neg-party val
+                          struct/c?)))
                       (if (eq? (dep-type subcontract) '#:impersonator)
                           (values chaperone-args
                                   (list* sel
@@ -577,7 +580,7 @@
          (cons (car l) (remove-ith (cdr l) (- i 1))))]))
 
 (define (build-dep-on-state-proj orig-subcontracts this-subcontract strct projs
-                                 blames blame neg-party val)
+                                 blames blame neg-party val struct/c?)
   (let loop ([subcontracts orig-subcontracts]
              [blames blames]
              [projs projs]
@@ -593,7 +596,7 @@
          [(eq? subcontract this-subcontract)
           (define the-ctc 
             (coerce-contract 'struct/dc (apply (dep-dep-proc this-subcontract) dep-args)))
-          (check-flat/chaperone the-ctc subcontract)
+          (check-flat/chaperone the-ctc subcontract struct/c?)
           (((get/build-late-neg-projection the-ctc) blame) val neg-party)]
          [else
           (define indy-blame (car blames))
@@ -606,7 +609,7 @@
           (define dep-ctc-blame-proj (and dep-ctc (get/build-late-neg-projection dep-ctc)))
           
           (when (dep? subcontract)
-            (check-flat/chaperone dep-ctc subcontract))
+            (check-flat/chaperone dep-ctc subcontract struct/c?))
           
           (define new-dep-args
             (if (and (subcontract? subcontract) (subcontract-depended-on? subcontract))
@@ -622,18 +625,18 @@
                 (cdr projs)
                 new-dep-args)])])))
 
-(define (check-flat/chaperone dep-ctc subcontract)
+(define (check-flat/chaperone dep-ctc subcontract struct/c?)
   (case (dep-type subcontract)
     [(#:flat)
      (unless (flat-contract? dep-ctc)
        (raise-argument-error
-        'struct/dc
+        (if struct/c? 'struct/c 'struct/dc)
         (format "a flat-contract? for field ~a" (subcontract-field-name subcontract))
         dep-ctc))]
     [(#:chaperone)
      (unless (chaperone-contract? dep-ctc)
        (raise-argument-error
-        'struct/dc
+        (if struct/c? 'struct/c 'struct/dc)
         (format "a chaperone-contract? for field ~a" (subcontract-field-name subcontract))
         dep-ctc))]))
 
@@ -726,7 +729,7 @@
                (not (mutable? subcontract)))
       (unless (chaperone-contract? (indep-ctc subcontract))
         (raise-argument-error
-         'struct/dc
+         (if struct/c? 'struct/c 'struct/dc)
          (format "a chaperone-contract? for field ~a" (subcontract-field-name subcontract))
          (indep-ctc subcontract)))))
   (define (flat-subcontract? subcontract)
