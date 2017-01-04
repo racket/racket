@@ -64,6 +64,17 @@ or ``the X11 windowing system'' would be more precisely correct, but
 use ``X11'' as adjective when necessary, such as ``X11 display.''
 Racket runs ``on'' a platform, as opposed to ``under'' a platform.
 
+Avoid using a predicate as a noun that stands for a value
+satisfying the predicate. Instead, use @racket[tech] and
+@racket[deftech] to establish a connection between an
+English word or phrase that describes the class of values
+and the predicate (or
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{
+ contract}). For example, avoid ``supply a
+@racket[path-string?]''; prefer ``supply a
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{
+ path or string}.''
+
 
 @section{Typesetting Code}
 
