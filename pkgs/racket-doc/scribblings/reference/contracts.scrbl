@@ -1017,8 +1017,8 @@ For example, the contract
 ]
 
 is a @tech{flat contract} that checks for (a limited form of)
-S-expressions. It says that a @racket[sexp] is either two
-@racket[sexp]s combined with @racket[cons], or a number, or a symbol.
+S-expressions. It says that a @racket[_sexp] is either two
+@racket[_sexp]s combined with @racket[cons], or a number, or a symbol.
 
 Note that if the contract is applied to a circular value, contract
 checking will not terminate.}
@@ -1512,7 +1512,7 @@ be blamed using the above contract:
   This contract also includes an optimization so that functions returning
   @racket[#t] from @racket[struct-predicate-procedure?] are just returned directly, without
   being wrapped. This contract is used by @racket[provide/contract]'s
-  @racket[struct] subform so that struct predicates end up not being wrapped.
+  @racket[struct] sub-form so that struct predicates end up not being wrapped.
 }
 
 @defthing[the-unsupplied-arg unsupplied-arg?]{
@@ -2250,45 +2250,45 @@ for a contract. The arguments should be either contracts or
 symbols. It wraps parentheses around its arguments and
 extracts the names from any contracts it is supplied with.}
 
-@defproc[(coerce-contract [id symbol?] [x any/c]) contract?]{
+@defproc[(coerce-contract [id symbol?] [v any/c]) contract?]{
 
 Converts a regular Racket value into an instance of a contract struct,
 converting it according to the description of @tech{contracts}.
 
-If @racket[x] is not one of the coercible values,
+If @racket[v] is not one of the coercible values,
 @racket[coerce-contract] signals an error, using the first argument in
 the error message.}
 
-@defproc[(coerce-contracts [id symbol?] [xs (listof any/c)]) (listof contract?)]{
+@defproc[(coerce-contracts [id symbol?] [vs (listof any/c)]) (listof contract?)]{
 
-Coerces all of the arguments in 'xs' into contracts (via
+Coerces all of the arguments in @racket[vs] into contracts (via
 @racket[coerce-contract/f]) and signals an error if any of them are not
 contracts.  The error messages assume that the function named by
-@racket[id] got @racket[xs] as its entire argument list.
+@racket[id] got @racket[vs] as its entire argument list.
 }
 
-@defproc[(coerce-chaperone-contract [id symbol?] [x any/c]) chaperone-contract?]{
+@defproc[(coerce-chaperone-contract [id symbol?] [v any/c]) chaperone-contract?]{
   Like @racket[coerce-contract], but requires the result
   to be a @tech{chaperone contract}, not an arbitrary contract.
 }
 
-@defproc[(coerce-chaperone-contracts [id symbol?] [x (listof any/c)])
+@defproc[(coerce-chaperone-contracts [id symbol?] [vs (listof any/c)])
          (listof chaperone-contract?)]{
   Like @racket[coerce-contracts], but requires the results
   to be @tech{chaperone contracts}, not arbitrary contracts.
 }
 
-@defproc[(coerce-flat-contract [id symbol?] [x any/c]) flat-contract?]{
+@defproc[(coerce-flat-contract [id symbol?] [v any/c]) flat-contract?]{
   Like @racket[coerce-contract], but requires the result
   to be a @tech{flat contract}, not an arbitrary contract.
 }
 
-@defproc[(coerce-flat-contracts [id symbol?] [x (listof any/c)]) (listof flat-contract?)]{
+@defproc[(coerce-flat-contracts [id symbol?] [v (listof any/c)]) (listof flat-contract?)]{
   Like @racket[coerce-contracts], but requires the results
   to be @tech{flat contracts}, not arbitrary contracts.
 }
 
-@defproc[(coerce-contract/f [x any/c]) (or/c contract? #f)]{
+@defproc[(coerce-contract/f [v any/c]) (or/c contract? #f)]{
   Like @racket[coerce-contract], but returns @racket[#f] if
   the value cannot be coerced to a contract.
 }
@@ -2346,27 +2346,27 @@ of the blame object and the negative party should be used instead.
 
 @subsection{Blame Objects}
 
-@defproc[(blame? [x any/c]) boolean?]{
+@defproc[(blame? [v any/c]) boolean?]{
  This predicate recognizes @|blame-objects|.
 }
 
 @defproc[(raise-blame-error [b blame?]
-                            [x any/c]
+                            [v any/c]
                             [fmt (or/c string?
                                        (listof (or/c string?
                                                      'given 'given:
                                                      'expected 'expected:)))]
-                            [v any/c] ...)
+                            [v-fmt any/c] ...)
          none/c]{
 
 Signals a contract violation.  The first argument, @racket[b], records the
 current blame information, including positive and negative parties, the name of
 the contract, the name of the value, and the source location of the contract
-application.  The second argument, @racket[x], is the value that failed to
+application.  The second argument, @racket[v], is the value that failed to
 satisfy the contract.
 
 The remaining arguments are a format string,
-@racket[fmt], and its arguments, @racket[v ...], specifying an error message
+@racket[fmt], and its arguments, @racket[v-fmt ...], specifying an error message
 specific to the precise violation.
 
 If @racket[fmt] is a list, then the elements are concatenated together
@@ -2814,9 +2814,9 @@ fashion, analogous to the constraint on projections in
 }
 
 @deftogether[(
-@defproc[(contract-property? [x any/c]) boolean?]
-@defproc[(chaperone-contract-property? [x any/c]) boolean?]
-@defproc[(flat-contract-property? [x any/c]) boolean?]
+@defproc[(contract-property? [v any/c]) boolean?]
+@defproc[(chaperone-contract-property? [v any/c]) boolean?]
+@defproc[(flat-contract-property? [v any/c]) boolean?]
 )]{
 These predicates detect whether a value is a @tech{contract property},
 @tech{chaperone contract property}, or a
@@ -2925,15 +2925,15 @@ are below):
 
 @subsection{Utilities for Building New Combinators}
 
-@defproc[(contract-stronger? [x contract?] [y contract?]) boolean?]{
-  Returns @racket[#t] if the contract @racket[x] accepts either fewer
-  or the same number of values as @racket[y] does.
+@defproc[(contract-stronger? [c1 contract?] [c2 contract?]) boolean?]{
+  Returns @racket[#t] if the contract @racket[c1] accepts either fewer
+  or the same number of values as @racket[c2] does.
 
-  Contracts that are the same (i.e., where @racket[x] is @racket[equal?]
-  to @racket[y]) are considered to always be stronger than each other.
+  Contracts that are the same (i.e., where @racket[c1] is @racket[equal?]
+  to @racket[c2]) are considered to always be stronger than each other.
   
   This function is conservative, so it may return @racket[#f] when
-  @racket[x] does, in fact, accept fewer values.
+  @racket[c1] does, in fact, accept fewer values.
 
 @examples[#:eval (contract-eval) #:once
                  (contract-stronger? integer? integer?)
