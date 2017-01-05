@@ -8,10 +8,6 @@
 (provide (struct-out pk1)
          (rename-out [optimize-matrix0 optimize-matrix]))
 
-;; controls debugging output for optimization successes and failures
-(define DEBUG-OPT-SUCCEED #f)
-(define DEBUG-OPT-FAIL #f)
-
 ;; ----
 
 ;; A Matrix is a (listof PK) where each PK has same number of columns
@@ -75,18 +71,17 @@
 
 (define (optimize-matrix0 rows)
   (define now (current-inexact-milliseconds))
-  (when (and DEBUG-OPT-SUCCEED (> (length rows) 1))
-    (eprintf "\n%% optimizing (~s):\n" (length rows))
-    (pretty-write (matrix->sexpr rows) (current-error-port)))
+  (when (and (> (length rows) 1))
+    (log-syntax-parse-debug "OPT matrix (~s rows)\n~a" (length rows)
+                            (pretty-format (matrix->sexpr rows) #:mode 'print)))
   (define result (optimize-matrix rows))
   (define then (current-inexact-milliseconds))
-  (when (and DEBUG-OPT-SUCCEED (> (length rows) 1))
+  (when (and (> (length rows) 1))
     (cond [(= (length result) (length rows))
-           (eprintf "%% !! FAILED !! (~s ms)\n\n" (floor (- then now)))]
+           (log-syntax-parse-debug "OPT FAILED (~s ms)" (floor (- then now)))]
           [else
-           (eprintf "==> (~s ms)\n" (floor (- then now)))
-           (pretty-write (matrix->sexpr result) (current-error-port))
-           (eprintf "\n")]))
+           (log-syntax-parse-debug "OPT ==> (~s ms)\n~a" (floor (- then now))
+                                   (pretty-format (matrix->sexpr result) #:mode 'print))]))
   result)
 
 ;; optimize-matrix : (listof pk1) -> Matrix
@@ -140,8 +135,7 @@
     [(pat:pair head tail)
      (values (lambda (p) (pat:pair? p))
              (lambda (rows)
-               (when DEBUG-OPT-SUCCEED
-                 (eprintf "-- accumulated ~s rows like ~e\n" (length rows) (pattern->sexpr pat1)))
+               (log-syntax-parse-debug "-- got ~s pair rows like ~e" (length rows) (pattern->sexpr pat1))
                (cond [(> (length rows) 1)
                       (pk/pair (optimize-matrix
                                 (for/list ([row (in-list rows)])
@@ -155,8 +149,7 @@
     [(? pattern-factorable?)
      (values (lambda (pat2) (pattern-equal? pat1 pat2))
              (lambda (rows)
-               (when DEBUG-OPT-SUCCEED
-                 (eprintf "-- accumulated ~s rows like ~e\n" (length rows) (pattern->sexpr pat1)))
+               (log-syntax-parse-debug "-- got ~s factorable like ~e" (length rows) (pattern->sexpr pat1))
                (cond [(> (length rows) 1)
                       (pk/same pat1
                                (optimize-matrix
@@ -164,11 +157,7 @@
                                   (pk1 (cdr (pk1-patterns row)) (pk1-k row)))))]
                      [else (car rows)])))]
     [_
-     (values (lambda (pat2)
-               (when DEBUG-OPT-FAIL
-                 (when (pattern-equal? pat1 pat2)
-                   (eprintf "** cannot factor: ~e\n" (syntax->datum #`#,pat2))))
-               #f)
+     (values (lambda (pat2) #f)
              (lambda (rows)
                ;; (length rows) = 1
                (car rows)))]))
@@ -182,8 +171,6 @@
      (let* ([first-sub (car subpatterns)]
             [rest-subs (cdr subpatterns)])
        (cond [(not (pat:action? first-sub))
-              (when #f ;; DEBUG-OPT-SUCCEED
-                (eprintf ">> unfolding: ~e\n" p))
               (unfold-and first-sub (*append rest-subs onto))]
              [else (values p onto)]))]
     [_ (values p onto)]))
@@ -331,10 +318,10 @@
                 (pattern-equal? (ehpat-head a) (ehpat-head b)))]
           ;; FIXME: more?
           [else #f]))
-  (when DEBUG-OPT-FAIL
-    (when (and (eq? result #f)
-               (equal? (syntax->datum #`#,a) (syntax->datum #`#,b)))
-      (eprintf "** pattern-equal? failed on ~e\n" a)))
+  (when (and (log-level? syntax-parse-logger 'debug)
+             (eq? result #f)
+             (equal? (syntax->datum #`#,a) (syntax->datum #`#,b)))
+    (log-syntax-parse-debug "** pattern-equal? failed on ~e" a))
   result)
 
 (define (equal-iattrs? as bs)
@@ -441,15 +428,53 @@
                  (format-symbol "~a:~a" (or name '_) (cadr m)))]
            [else
             (if name (syntax-e name) '_)])]
-    [(? pat:literal?) `(quote ,(syntax->datum (pat:literal-id p)))]
-    [(pat:datum datum) datum]
-    [(? pat:action?) 'ACTION]
+    [(? pat:literal?) `(syntax ,(syntax->datum (pat:literal-id p)))]
+    [(pat:datum datum)
+     (cond [(or (symbol? datum) (pair? datum))
+            `(quote ,datum)]
+           [else datum])]
+    [(pat:action action (pat:any)) (pattern->sexpr action)]
+    [(pat:action action inner) (list '~AAND (pattern->sexpr action) (pattern->sexpr inner))]
+    [(pat:and patterns) (cons '~and (map pattern->sexpr patterns))]
+    [(pat:or _ patterns _) (cons '~or (map pattern->sexpr patterns))]
+    [(pat:not pattern) (list '~not (pattern->sexpr pattern))]
     [(pat:pair head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
     [(pat:head head tail)
      (cons (pattern->sexpr head) (pattern->sexpr tail))]
     [(pat:dots (list eh) tail)
      (list* (pattern->sexpr eh) '... (pattern->sexpr tail))]
-    [(ehpat _as hpat '#f _cn)
-     (pattern->sexpr hpat)]
-    [_ 'PATTERN]))
+    [(pat:dots ehs tail)
+     (list* (cons '~alt (map pattern->sexpr ehs)) '... (pattern->sexpr tail))]
+    [(pat:describe sp _ _ _) (list '~describe (pattern->sexpr sp))]
+    [(pat:delimit sp) (list '~delimit-cut (pattern->sexpr sp))]
+    [(pat:commit sp) (list '~commit (pattern->sexpr sp))]
+    [(pat:ord pattern _ _) (list '~ord (pattern->sexpr pattern))]
+    [(pat:post sp) (list '~post (pattern->sexpr sp))]
+    [(action:cut) '~!]
+    [(action:fail cnd msg) (list '~fail)]
+    [(action:bind attr expr) (list '~bind)]
+    [(action:and as) (cons '~and (map pattern->sexpr as))]
+    [(action:parse sp expr) (list '~parse (pattern->sexpr sp))]
+    [(action:do stmts) (list '~do)]
+    [(action:undo stmts) (list '~undo)]
+    [(action:ord ap _ _) (list '~ord (pattern->sexpr ap))]
+    [(action:post ap) (list '~post (pattern->sexpr ap))]
+    [(hpat:var/p name parser _ _ _ _)
+     (cond [(and parser (regexp-match #rx"^parser-(.*)$" (symbol->string (syntax-e parser))))
+            => (lambda (m) (format-symbol "~a:~a" (or name '_) (cadr m)))]
+           [else (if name (syntax-e name) '_)])]
+    [(hpat:seq lp) (cons '~seq (pattern->sexpr lp))]
+    [(hpat:action ap hp) (list '~AAND (pattern->sexpr ap) (pattern->sexpr hp))]
+    [(hpat:and hp sp) (list '~and (pattern->sexpr hp) (pattern->sexpr sp))]
+    [(hpat:or _ hps _) (cons '~or (map pattern->sexpr hps))]
+    [(hpat:describe hp _ _ _) (list '~describe (pattern->sexpr hp))]
+    [(hpat:delimit hp) (list '~delimit-cut (pattern->sexpr hp))]
+    [(hpat:commit hp) (list '~commit (pattern->sexpr hp))]
+    [(hpat:ord hp _ _) (list '~ord (pattern->sexpr hp))]
+    [(hpat:post hp) (list '~post (pattern->sexpr hp))]
+    [(hpat:peek hp) (list '~peek (pattern->sexpr hp))]
+    [(hpat:peek-not hp) (list '~peek-not (pattern->sexpr hp))]
+    [(ehpat _as hpat repc _cn)
+     (if (eq? repc #f) (pattern->sexpr hpat) (list '~REPC (pattern->sexpr hpat)))]
+    [_ '<Pattern>]))

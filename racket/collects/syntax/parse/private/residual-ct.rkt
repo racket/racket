@@ -19,6 +19,7 @@
          log-syntax-parse-warning
          log-syntax-parse-info
          log-syntax-parse-debug
+         syntax-parse-logger
          prop:pattern-expander
          pattern-expander?
          pattern-expander-proc
