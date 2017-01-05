@@ -61,6 +61,7 @@ Also, look over the commit messages. If you see problems with the code
 @include-section["testing.scrbl"]
 @include-section["unit.scrbl"]
 @include-section["constructs.scrbl"]
+@include-section["scribble.scrbl"]
 @include-section["textual.scrbl"]
 @include-section["some-performance.scrbl"]
 @include-section["branch-and-commit.scrbl"]
