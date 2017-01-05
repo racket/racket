@@ -114,9 +114,9 @@ rules, we need to use the @emph{default} settings of DrRacket's indentation
 for this rule to make sense. If you add new constructs, say a for loop,
 please contact Robby for advice on how to add a default setting for the
 indentation functionality. If you add entire languages, say something on
-the order of Typed Racket, we will need to wait for Matthew and Robby to
-provide an indentation protocol on the @verbatim{#lang} line; please be
-patient and use the existing indentation tool anyway.
+the order of Typed Racket, see
+@secref[#:doc '(lib "scribblings/tools/tools.scrbl") "lang-languages-customization"]
+for how to implement tabbing.
 
 @bold{Caveat 2}: This rule does not apply to scribble code.
 
@@ -127,8 +127,8 @@ Do not use tab characters in your code.  Tabs make it hard to use textual
  tools like git or diff effectively.  To disable tabs,
 @itemlist[
 @item{in DrRacket: you are all set. It doesn't insert tabs.}
-@item{in Emacs: add (setq indent-tabs-mode nil) to your emacs initialization file.}
-@item{in vi: set expandtab.}
+@item{in Emacs: add @tt{(setq indent-tabs-mode nil)} to your emacs initialization file.}
+@item{in vi: @tt{:set expandtab}1.}
 ]
 
 @; -----------------------------------------------------------------------------
@@ -149,9 +149,10 @@ read code on monitors that accommodate close to 250 columns, and on
 occasion, our monitors are even wider. It is time to allow for somewhat
 more width in exchange for meaningful identifiers.
 
-So, when you create a file, add a line with ";; " followed by ctrl-U 99 and
-"-". When you separate "sections" of code in a file, insert the same line.
+So, when you create a file, add a line with @litchar{;; } followed by ctrl-U 99 and
+@litchar{-}. When you separate "sections" of code in a file, insert the same line.
 These lines help both writers and readers to orient themselves in a file.
+In scribble use @litchar|{@; }| as the prefix.
 
 @; -----------------------------------------------------------------------------
 @section{Line Breaks}
@@ -336,7 +337,7 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
  something about the name:
 
 @row-table[
- @row[symbol kind example]
+ @row[Character Kind Example]
  @row[?    "predicates and boolean-valued functions" boolean?]
  @row[!    "setters and field mutators"              set!]
  @row[%    "classes"                                 game-state%]
@@ -346,10 +347,10 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
  @row["#%" "kernel identifiers"                      #%app]
 ]
  @margin-note*{Identifiers with this prefix are mostly used in modules that
- define new languages.}  The use of ``#%'' to prefix names from the kernel
+ define new languages.}  The use of @litchar{#%} to prefix names from the kernel
  language warns readers that these identifiers are extremely special and
  they need to watch out for subtleties. No other identifiers start with
- ``#'' and, in particular, all tokens starting with ``#:'' are keywords.
+ @litchar{#} and, in particular, all tokens starting with @litchar{#:} are keywords.
 
 @; -----------------------------------------------------------------------------
 @section{Graphical Syntax}

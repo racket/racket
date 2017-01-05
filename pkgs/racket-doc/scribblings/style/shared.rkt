@@ -7,7 +7,8 @@
          scribble/base
          scribble/manual
          scribble/struct
-         (only-in scribble/core table-columns style plain)
+         (only-in scribble/core table-columns table-cells style plain
+                  color-property)
          scribble/html-properties
          racket/list)
 
@@ -57,20 +58,28 @@
 
 (define-syntax (row-table stx)
   (syntax-case stx (row)
-    [(_ (row x ...) ...)
-     #`(begin
-	 (define stuff (list (list (paragraph plain (format "~a" 'x)) ...) ...))
-	 (table (sty (length (first stuff)) 200)
-	        (map make-flow stuff)))]))
+    [(row-table (row titles ...) (row char x ...) ...)
+     #`(row-table/proc
+        (list
+         (list (paragraph plain (format "~a" 'titles)) ...)
+         (list (paragraph plain (litchar (~a 'char)))
+               (paragraph plain (format "~a" 'x)) ...) ...))]))
 
-(define (sty columns width)
+(define (row-table/proc stuff)
+  (table (sty (length (car stuff)) 200 #:valign? #f)
+         stuff))
+
+(define (sty columns width #:valign? [valign? #t])
   (define space
-    (style #f `(,(attributes `((width . ,(format "~a" width)) (align . "left") (valign . "top"))))))
+    (style #f `(,(attributes `((width . ,(format "~a" width)) (align . "left")
+                                                              ,@(if valign?
+                                                                    (list '(valign . "top"))
+                                                                    (list)))))))
   ;; -- in --
   (style #f
     (list
-      (attributes '((border . "1") (cellpadding . "1")))
-      (table-columns (make-list columns space)))))
+     (attributes '((border . "1") (cellpadding . "1")))
+     (table-columns (make-list columns space)))))
 
 ;; ===================================================================================================
 ;; the following doesn't work

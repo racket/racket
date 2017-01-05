@@ -2,7 +2,7 @@
 
 @(require "shared.rkt")
 
-@title{How to Program Racket}
+@title{How to Program Racket: a Style Guide}
 @author{Matthias Felleisen, Matthew Flatt, Robby Findler, Jay McCarthy}
 
 @section-index{Style Guide}
@@ -57,13 +57,13 @@ Also, look over the commit messages. If you see problems with the code
 
 @; -----------------------------------------------------------------------------
 
-@include-section{correct-maintain-speed.scrbl}
-@include-section{testing.scrbl}
-@include-section{unit.scrbl}
-@include-section{constructs.scrbl}
-@include-section{textual.scrbl}
-@include-section{some-performance.scrbl}
-@include-section{branch-and-commit.scrbl}
-@include-section{acknowledgment.scrbl}
+@include-section["correct-maintain-speed.scrbl"]
+@include-section["testing.scrbl"]
+@include-section["unit.scrbl"]
+@include-section["constructs.scrbl"]
+@include-section["textual.scrbl"]
+@include-section["some-performance.scrbl"]
+@include-section["branch-and-commit.scrbl"]
+@include-section["acknowledgment.scrbl"]
 
 @include-section{todo.scrbl}

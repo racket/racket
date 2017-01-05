@@ -1,6 +1,6 @@
 #lang scribble/base
 
-@(require "shared.rkt")
+@(require "shared.rkt" scribble/core)
 
 @title[#:tag "branch-and-commit"]{Retiquette: Branch and Commit}
 
@@ -51,14 +51,15 @@ Write meaningful commit messages. The first line (say 72 chars) should
  more blah blah blah, with more
  details about the actual change
 }
- The advantage of a blank line is that ``git log'' and other tools display
- the commit messages properly. If you prefer the ``-m'' command line flag
+ The advantage of a blank line is that @tt{git log} and other tools display
+ the commit messages properly. If you prefer the @tt{-m} command line flag
  over an editor, you can use several of them in a row.
 
 The message for bug report fixes should contain ``Close PR NNNNN'' so that
  bug reports are automatically closed.
 
-To avoid 'merge commits', update your repository with @tt{git --rebase pull}.
+To avoid `merge commits', update your repository with
+@element['tt @list{git --rebase pull}].
 
 @; -----------------------------------------------------------------------------
 @section{No Commit ``Bombs,'' Please}
