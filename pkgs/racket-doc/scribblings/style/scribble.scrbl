@@ -1,19 +1,12 @@
 #lang scribble/doc
-@(require scribble/manual scribble/eval "utils.rkt"
-          (for-label scribble/manual scribble/eval))
+@(require scribble/eval
+          "shared.rkt"
+          (for-label (except-in scribble/manual link)
+                     scribble/eval))
 
-@title[#:tag "reference-style"]{Style Guide}
+@title[#:tag "reference-style"]{Scribbling Documentation}
 
-Consistent style---for terms, typesetting, and prose---makes
-documentation clearer. As much as possible, follow the rules listed in
-this section. Many of the rules are arbitrary in the sense that a
-different choice of rule could work fine, but the only way to make our
-documentation consistent is to pick one of the choices.
-
-There are too many rules to absorb easily on a first reading. Re-read
-this section after writing documentation for a library or two, and
-revisit the section periodically to refresh your memory and check for
-new rules.
+This section describes good style for Racket documentation writing.
 
 @section{Prose and Terminology}
 
@@ -147,14 +140,13 @@ syntactic constraint, such as requiring a sub-form to be an identifier.
 Use @racket[defform/subs] for syntactic constraints.
 
 When showing example evaluations, use the REPL-snapshot style:
-
 @verbatim[#:indent 2]|{
-  @interaction[
-  (+ 1 2)
+  @examples[
+   (+ 1 2)
   ]
 }|
 
-See also the @racket[scribble/eval] library and @secref["examples-style"].
+See also the @racketmodname[scribble/example] library and @secref["examples-style"].
 
 Use four dots, @litchar{....}, in place of omitted code, since
 @litchar{...} means repetition.
@@ -210,7 +202,7 @@ are terms defined with @racket[deftech].
 Symbols are not indexed automatically.  Use @racket[indexed-racket]
 instead of @racket[racket] for the instance of a symbol that roughly
 defines the use. For an example, try searching for ``truncate'' to
-find @racket['truncate] as used with @racket[open-output-file]. Do no
+find @racket['truncate] as used with @racket[open-output-file]. Do not
 use something like @racket[(index "'truncate")] to index a symbol,
 because it will not typeset correctly (i.e., in a fixed-width font
 with the color of a literal).
