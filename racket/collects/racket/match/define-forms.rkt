@@ -170,7 +170,7 @@
      (define-syntax (define/match stx)
        (syntax-parse stx
          [(_ ?header:function-header ?clause ...)
-          (template
+          (quasitemplate
            (define ?header
-             (match* (?? ?header.params)
+             (match*/derived (?? ?header.params) #,stx
                ?clause ...)))])))))

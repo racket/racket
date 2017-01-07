@@ -55,3 +55,9 @@
 
 (check-equal? (list-fun '(1 2 3)) #t)
 (check-equal? (list-fun '(4 5 6)) #f)
+
+(check-exn
+ #px"^define/match: no matching clause for #f$"
+ (λ ()
+   (define/match (f x))
+   (f #f)))
