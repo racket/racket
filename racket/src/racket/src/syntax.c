@@ -6445,6 +6445,10 @@ static Scheme_Object *srcloc_path_to_string(Scheme_Object *p)
   name = scheme_split_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
   if (SCHEME_PATHP(name) && SCHEME_PATHP(base)) {
     dir_name = scheme_split_path(SCHEME_PATH_VAL(base), SCHEME_PATH_LEN(base), &base, &isdir, SCHEME_PLATFORM_PATH_KIND);
+    if (SCHEME_FALSEP(base)) {
+      /* Path is file at root, so just keep the whole path */
+      return scheme_path_to_char_string(p);
+    }
     if (SCHEME_PATHP(dir_name))
       name = scheme_append_strings(scheme_path_to_char_string(dir_name),
                                    scheme_append_strings(scheme_make_utf8_string("/"),

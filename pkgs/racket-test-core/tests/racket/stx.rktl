@@ -2469,5 +2469,22 @@
   (check-bad void))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the srcloc encoding doesn't do something strange
+;; with a path in a root directory:
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (define path (build-path (car (filesystem-root-list)) "x.rkt"))
+  (parameterize ([current-module-declare-name (make-resolved-module-path path)]
+                 [read-accept-reader #t]
+                 [read-accept-compiled #t])
+    (define p (open-input-string "#lang racket/base (provide f) (define (f) #'a)"))
+    (port-count-lines! p)
+    (define-values (in out) (make-pipe))
+    (write (compile (read-syntax path p)) out)
+    (eval (read in))
+    (define src (syntax-source ((dynamic-require path 'f))))
+    (test (path->string path) values src)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
