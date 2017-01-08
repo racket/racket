@@ -2473,7 +2473,9 @@ int scheme_check_leaf_rator(Scheme_Object *le)
 
 int scheme_get_rator_flags(Scheme_Object *le)
 {
-  if (SCHEME_PRIMP(le)) {
+  if (!le) {
+    return 0;
+  } else if (SCHEME_PRIMP(le)) {
     int opt;
     opt = ((Scheme_Prim_Proc_Header *)le)->flags & SCHEME_PRIM_OPT_MASK;
     if (opt >= SCHEME_PRIM_OPT_NONCM) {
@@ -3981,7 +3983,7 @@ static void increment_clocks_for_application(Optimize_Info *info,
 static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_Info *info, int context)
 {
   Scheme_Object *le;
-  Scheme_Object *rator =  app->args[0];
+  Scheme_Object *rator =  app->args[0], *rator_for_flags;
   int all_vals = 1, i, flags, rator_flags;
 
   for (i = app->num_args; i--; ) {
@@ -4006,7 +4008,8 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
     return scheme_null;
   }
 
-  rator_flags = scheme_get_rator_flags(rator);
+  rator_for_flags = lookup_constant_proc(info, rator, app->num_args);
+  rator_flags = scheme_get_rator_flags(rator_for_flags);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
   if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
@@ -4216,7 +4219,7 @@ static Scheme_Object *optimize_application2(Scheme_Object *o, Optimize_Info *inf
 static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimize_Info *info, int context)
 {
   int flags, rator_flags;
-  Scheme_Object *rator =  app->rator;
+  Scheme_Object *rator =  app->rator, *rator_for_flags;
   Scheme_Object *rand, *inside = NULL, *alt;
 
   info->size += 1;
@@ -4244,7 +4247,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
 
   increment_clocks_for_application(info, rator, 1);
 
-  rator_flags = scheme_get_rator_flags(rator);
+  rator_for_flags = lookup_constant_proc(info, rator, 1);
+  rator_flags = scheme_get_rator_flags(rator_for_flags);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
   if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
@@ -4645,7 +4649,7 @@ static Scheme_Object *optimize_application3(Scheme_Object *o, Optimize_Info *inf
 static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimize_Info *info, int context)
 {
   int flags, rator_flags;
-  Scheme_Object *le;
+  Scheme_Object *le, *rator_for_flags;
   int all_vals = 1;
 
   info->size += 1;
@@ -4760,7 +4764,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     }
   }
 
-  rator_flags = scheme_get_rator_flags(app->rator);
+  rator_for_flags = lookup_constant_proc(info, app->rator, 2);
+  rator_flags = scheme_get_rator_flags(rator_for_flags);
   info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
   info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
   if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
