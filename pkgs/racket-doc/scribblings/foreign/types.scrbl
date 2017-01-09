@@ -1126,7 +1126,7 @@ members.}
 A type constructor that builds a struct type using
 @racket[make-cstruct-type] function and wraps it in a type that
 marshals a struct as a list of its components.  Note that space for
-structs must to be allocated using @racket[malloc] with @racket[malloc-mode]; the converter for a
+structs must be allocated using @racket[malloc] with @racket[malloc-mode]; the converter for a
 @racket[_list-struct] type immediately allocates and uses a list from
 the allocated space, so it is inefficient. Use @racket[define-cstruct]
 below for a more efficient approach.
