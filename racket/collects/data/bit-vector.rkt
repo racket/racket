@@ -11,9 +11,15 @@
          "private/count-bits-in-fixnum.rkt")
 
 (define bits-in-a-word 8)
+(define bits-in-a-word-log2 3)
 
 (define largest-word
   (- (expt 2 bits-in-a-word) 1))
+  
+(define (word-index n)
+  (arithmetic-shift n (- bits-in-a-word-log2)))
+(define (bit-index n)
+  (bitwise-and n (sub1 bits-in-a-word)))
 
 (define (make-bit-vector size [fill #f])
   (define-values (q r) (quotient/remainder size bits-in-a-word))
@@ -46,7 +52,8 @@
                [else default])]))
 
 (define (unsafe-bit-vector-ref bv n)
-  (define-values (wi bi) (quotient/remainder n bits-in-a-word))
+  (define wi (word-index n))
+  (define bi (bit-index n))
   (match bv
     [(struct bit-vector (words size))
      (define word (bytes-ref words wi))
@@ -68,13 +75,15 @@
   (bit-vector-ref bv key))
 
 (define (bit-vector-set! bv n b)
-  (define-values (wi bi) (quotient/remainder n bits-in-a-word))
+  (define wi (word-index n))
+  (define bi (bit-index n))
   (match bv
     [(struct bit-vector (words size))
      (define word (bytes-ref words wi))
      (define bit  (bitwise-bit-set? word bi))
      (unless (eq? bit b)
-       (bytes-set! words wi (bitwise-xor word (expt 2 bi))))]))
+       (define new-word (bitwise-xor word (arithmetic-shift 1 bi)))
+       (bytes-set! words wi new-word))]))
 
 (define (bit-vector-length bv)
   (bit-vector-size bv))
