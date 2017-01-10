@@ -672,20 +672,50 @@
           method?))
        (syntax-property
         #`(let #,let-bindings
-            #,(quasisyntax/loc stx
-                (build-simple-->
-                 (list #,@regular-args)
-                 '(#,@kwds)
-                 (list #,@kwd-args)
-                 #,(if rngs
-                       #`(list #,@rngs)
-                       #'#f)
-                 #,plus-one-arity-function
-                 #,chaperone-constructor
-                 #,(if ellipsis-info
-                       #`(ellipsis-rest-arg #,(length regular-args) #,@ellipsis-info)
-                       #'#f)
-                 #,method?)))
+            #,(cond
+                [(and (not method?)
+                      (null? kwd-args)
+                      (not ellipsis-info))
+                 (define rng-count (and rngs (length rngs)))
+                 (define doms-count (length regular-args))
+                 (cond
+                   [(and (equal? rng-count 1) (= doms-count 0))
+                    (quasisyntax/loc stx
+                      (build-nullary-very-simple-->
+                       #,(car rngs)
+                       #,plus-one-arity-function
+                       #,chaperone-constructor))]
+                   [(and (equal? rng-count 1) (= doms-count 1))
+                    (quasisyntax/loc stx
+                      (build-unary-very-simple-->
+                       #,(car regular-args)
+                       #,(car rngs)
+                       #,plus-one-arity-function
+                       #,chaperone-constructor))]
+                   [else
+                    (quasisyntax/loc stx
+                      (build-very-simple-->
+                       (list #,@regular-args)
+                       #,(if rngs
+                             #`(list #,@rngs)
+                             #'#f)
+                       #,plus-one-arity-function
+                       #,chaperone-constructor))])]
+                [else
+                 (quasisyntax/loc stx
+                   (build-simple-->
+                    (list #,@regular-args)
+                    '(#,@kwds)
+                    (list #,@kwd-args)
+                    #,(if rngs
+                          #`(list #,@rngs)
+                          #'#f)
+                    #,plus-one-arity-function
+                    #,chaperone-constructor
+                    #,(if ellipsis-info
+                          #`(ellipsis-rest-arg #,(length regular-args) #,@ellipsis-info)
+                          #'#f)
+                    #,method?))]))
         'racket/contract:contract
         (vector this->
                 ;; the -> in the original input to this guy
@@ -918,6 +948,83 @@
    (if (= 1 length-reses) "" "s")
    expected-values
    (if (= 1 expected-values) "" "s")))
+
+(define (build-nullary-very-simple--> _rng
+                                      plus-one-arity-function
+                                      chaperone-constructor)
+  (define rng (coerce-contract '-> _rng))
+  (cond
+    [(and (flat-contract? rng)
+          (eq? void? (flat-contract-predicate rng)))
+     ->void-contract]
+    [(chaperone-contract? rng)
+     (make--> 0
+              '() '() #f #f
+              (list rng) #f
+              plus-one-arity-function
+              chaperone-constructor
+              #f)]
+    [else
+     (make-impersonator-> 0 '() '() #f #f
+                          (list rng) #f
+                          plus-one-arity-function
+                          chaperone-constructor
+                          #f)]))
+
+(define (build-unary-very-simple--> _dom _rng
+                                    plus-one-arity-function
+                                    chaperone-constructor)
+  (define dom (coerce-contract '-> _dom))
+  (define rng (coerce-contract '-> _rng))
+  (cond
+    [(and (any/c? dom)
+          (flat-contract? rng)
+          (eq? boolean? (flat-contract-predicate rng)))
+     any/c->boolean-contract]
+    [(and (chaperone-contract? dom)
+          (chaperone-contract? rng))
+     (make--> 1
+              (list dom) '() #f #f
+              (list rng) #f
+              plus-one-arity-function
+              chaperone-constructor
+              #f)]
+    [else
+     (make-impersonator-> 1
+                          (list dom) '() #f #f
+                          (list rng) #f
+                          plus-one-arity-function
+                          chaperone-constructor
+                          #f)]))
+
+;; INVARIANT: this is not called when `build-unary-very-simple-->`
+;; or `build-nullary-very-simple-->` could have been
+(define (build-very-simple--> raw-regular-doms raw-rngs
+                              plus-one-arity-function
+                              chaperone-constructor)
+  (define regular-doms
+    (for/list ([dom (in-list raw-regular-doms)])
+      (coerce-contract '-> dom)))
+  (define rngs
+    (and raw-rngs
+         (for/list ([rng (in-list raw-rngs)])
+           (coerce-contract '-> rng))))
+  (cond
+    [(and (andmap chaperone-contract? regular-doms)
+          (andmap chaperone-contract? (or rngs '())))
+     (make--> (length raw-regular-doms)
+              regular-doms '() #f #f
+              rngs #f
+              plus-one-arity-function
+              chaperone-constructor
+              #f)]
+    [else
+     (make-impersonator-> (length raw-regular-doms)
+                          regular-doms '() #f #f
+                          rngs #f
+                          plus-one-arity-function
+                          chaperone-constructor
+                          #f)]))
 
 (define (build-simple--> raw-regular-doms
                          mandatory-kwds mandatory-raw-kwd-doms
