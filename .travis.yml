@@ -56,3 +56,5 @@ notifications:
     on_success: change
   slack:
     secure: A19kphrabQHO8TU6qZcBaLQxdSNpm1ypEtbQsh8Ucg6HYPP7y1q7O7JZEndoMRHE9CNKZ9oXQzqR8H1IFVTlnjFFIJfkZzZ1YSNk4abSomhpWCq9daKMfwlcuTtY6PeI1nDVpka4/hiJGn9qzmaKYXle9Sl4CX2VEYp8o8PgMEs=
+    rooms:
+      secure: FsKzp4ItmOqd/YxqgsElgfjGW2/TU03p2p3ss+PQl/pKDQNnR/2b4pWCQ7GuqYibkmtiH1jYwrnuaLN4Cc+JyN7Z+zUtO4VSORsh3zt/gTsfgphMpCP6cB4sTqUh6AWsZOgzikj+fh7ORHEXVswQwlRHErTgZVEdEkWHBh4UWzc=
