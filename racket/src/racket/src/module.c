@@ -12117,6 +12117,7 @@ void add_single_require(Scheme_Module_Exports *me, /* from module */
     if (all_simple
         && *all_simple
         && rn_stx
+        && SCHEME_STXP(rn_stx)
         && !scheme_stx_equal_module_context(scope_src, rn_stx))
       *all_simple = 0;
   }
