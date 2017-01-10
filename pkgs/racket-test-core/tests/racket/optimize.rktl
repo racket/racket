@@ -357,6 +357,58 @@
 (test #t (lambda () (let ([f (case-lambda [(x) '(1)] [(x y) 0])])
                       (eq? (f 5) (f 5)))))
 
+;; Check that lambdas are marked as single valed and mark preserving
+(test-comp '(let ([f (lambda () '(1))])
+              (display (list f f))
+              (values (f))) 
+           '(let ([f (lambda () '(1))])
+              (display (list f f))
+              (f)))
+(test-comp '(let ([f (lambda (x) '(1))])
+              (display (list f f))
+              (values (f 0))) 
+           '(let ([f (lambda (x) '(1))])
+              (display (list f f))
+              (f 0)))
+(test-comp '(let ([f (lambda (x y) '(1))])
+              (display (list f f))
+              (values (f 0 0))) 
+           '(let ([f (lambda (x y) '(1))])
+              (display (list f f))
+              (f 0 0)))
+(test-comp '(let ([f (lambda (x y z) '(1))])
+              (display (list f f))
+              (values (f 0 0 0))) 
+           '(let ([f (lambda (x y z) '(1))])
+              (display (list f f))
+              (f 0 0 0)))
+(test-comp '(letrec ([even (lambda (x) (if (= x 0) #t (not (odd (sub1 x)))))]
+                     [odd (lambda (x) (if (= x 1) #t (not (even (sub1 x)))))])
+              (display (list even even odd odd))
+              (values (even 1000))) 
+           '(letrec ([even (lambda (x) (if (= x 0) #t (not (odd (sub1 x)))))]
+                     [odd (lambda (x) (if (= x 1) #t (not (even (sub1 x)))))])
+              (display (list even even odd odd))
+              (even 1000))) 
+(test-comp '(letrec ([f (lambda (x) (g '(1)))]
+                     [g (lambda (x) (display x) (if (zero? (random 2)) '(1 2) (values 1 2)))])
+              (display (list f f g g))
+              (values (f 0))) 
+           '(letrec ([f (lambda (x) (g '(1)))]
+                     [g (lambda (x) (display x) (if (zero? (random 2)) '(1 2) (values 1 2)))])
+              (display (list f f g g))
+              (f 0))
+           #f)
+(test-comp '(letrec ([g (lambda (x) (display x) (if (zero? (random 2)) '(1 2) (values 1 2)))]
+                     [f (lambda (x) (g '(1)))])
+              (display (list f f g g))
+              (values (f 0))) 
+           '(letrec ([g (lambda (x) (display x) (if (zero? (random 2)) '(1 2) (values 1 2)))]
+                     [f (lambda (x) (g '(1)))])
+              (display (list f f g g))
+              (f 0))
+           #f)
+
 
 (test-comp '(lambda (w z)
               (let ([x (cons w z)])
