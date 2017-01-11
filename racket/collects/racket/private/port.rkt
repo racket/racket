@@ -105,7 +105,7 @@
            p
            (lambda ()
              (define v (file-position* p))
-             (and v (+ delta v)))))
+             (and v (max 1 (+ delta v))))))
      (case-lambda
       [(mode) (file-stream-buffer-mode p mode)]
       [() (file-stream-buffer-mode p)]))))

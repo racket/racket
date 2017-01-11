@@ -898,6 +898,28 @@
   (test-values '(2 2 4) (lambda () (port-next-location i2)))
   (test (file-stream-buffer-mode i) file-stream-buffer-mode i2))
 
+
+;; Check `transplant-output-port` on an uncooperative output port
+;; whose positions count down
+(let* ([pos 100]
+       [o (make-output-port
+           'demo
+           always-evt
+           (lambda (bstr start end buffer? block?)
+             (define len (- end start))
+             (set! pos (- pos len))
+             len)
+           void
+           #f #f #f #f
+           void
+           (lambda () pos))])
+  (define o2 (transplant-output-port o #f 50))
+  (test 49 file-position o2)
+  (write-bytes #"hello" o2)
+  (test 44 file-position o2)
+  (write-bytes (make-bytes 80) o2)
+  (test 0 file-position o2))
+
 ;; --------------------------------------------------
 
 (let-values ([(in out) (make-pipe)])
