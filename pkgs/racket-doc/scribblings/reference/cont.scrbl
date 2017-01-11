@@ -54,8 +54,9 @@ Applies @racket[proc] to the given @racket[arg]s with the current
 continuation extended by a prompt. The prompt is tagged by
 @racket[prompt-tag], which must be a result from either
 @racket[default-continuation-prompt-tag] (the default) or
-@racket[make-continuation-prompt-tag]. The result of @racket[proc] is
-the result of the @racket[call-with-continuation-prompt] call.
+@racket[make-continuation-prompt-tag]. The call to
+@racket[call-with-continuation-prompt] returns the result of
+@racket[proc].
 
 The @racket[handler] argument specifies a handler procedure to be
 called in tail position with respect to the
