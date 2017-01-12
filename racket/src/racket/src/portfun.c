@@ -275,9 +275,9 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("read-syntax/recursive",          read_syntax_recur_f,            0, 5, env);
   GLOBAL_PRIM_W_ARITY2("read-language",               read_language,                  0, 2, 0, -1, env);
   GLOBAL_NONCM_PRIM("read-char",                      read_char,                      0, 1, env);
-  GLOBAL_NONCM_PRIM("read-char-or-special",           read_char_spec,                 0, 1, env);
+  GLOBAL_NONCM_PRIM("read-char-or-special",           read_char_spec,                 0, 3, env);
   GLOBAL_NONCM_PRIM("read-byte",                      read_byte,                      0, 1, env);
-  GLOBAL_NONCM_PRIM("read-byte-or-special",           read_byte_spec,                 0, 1, env);
+  GLOBAL_NONCM_PRIM("read-byte-or-special",           read_byte_spec,                 0, 3, env);
   GLOBAL_NONCM_PRIM("read-bytes-line",                read_byte_line,                 0, 2, env);
   GLOBAL_NONCM_PRIM("read-line",                      read_line,                      0, 2, env);
   GLOBAL_NONCM_PRIM("read-string",                    sch_read_string,                1, 2, env);
@@ -305,9 +305,9 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("write-special",                  scheme_write_special,           1, 2, env);
   GLOBAL_NONCM_PRIM("write-special-avail*",           scheme_write_special_nonblock,  1, 2, env);
   GLOBAL_NONCM_PRIM("peek-char",                      peek_char,                      0, 2, env);
-  GLOBAL_NONCM_PRIM("peek-char-or-special",           peek_char_spec,                 0, 2, env);
+  GLOBAL_NONCM_PRIM("peek-char-or-special",           peek_char_spec,                 0, 4, env);
   GLOBAL_NONCM_PRIM("peek-byte",                      peek_byte,                      0, 2, env);
-  GLOBAL_NONCM_PRIM("peek-byte-or-special",           peek_byte_spec,                 0, 3, env);
+  GLOBAL_NONCM_PRIM("peek-byte-or-special",           peek_byte_spec,                 0, 5, env);
   GLOBAL_NONCM_PRIM("byte-ready?",                    byte_ready_p,                   0, 1, env);
   GLOBAL_NONCM_PRIM("char-ready?",                    char_ready_p,                   0, 1, env);
   GLOBAL_NONCM_PRIM("newline",                        newline,                        0, 1, env);
@@ -3038,7 +3038,8 @@ static Scheme_Object *
 do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, int is_byte)
 {
   Scheme_Object *port;
-  int ch;
+  Scheme_Object *skip, *unless_evt, *src, *spec_wrap;
+  int ch, pos;
 
   if (argc && !SCHEME_INPUT_PORTP(argv[0]))
     scheme_wrong_contract(name, "input-port?", 0, argc, argv);
@@ -3049,8 +3050,7 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
     port = CURRENT_INPUT_PORT(scheme_current_config());
 
   if (peek) {
-    Scheme_Object *skip, *unless_evt = NULL;
-
+    unless_evt = NULL;
     if (argc > 1) {
       skip = argv[1];
       if (!(SCHEME_INTP(skip) && (SCHEME_INT_VAL(skip) >= 0))
@@ -3058,7 +3058,7 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
 	scheme_wrong_contract(name, "exact-nonnegative-integer?", 1, argc, argv);
 	return NULL;
       }
-      if (argc > 2) {
+      if (is_byte && (argc > 2)) {
 	if (SCHEME_TRUEP(argv[2])) {
 	  unless_evt = argv[2];
 	  if (!SAME_TYPE(SCHEME_TYPE(unless_evt), scheme_progress_evt_type)) {
@@ -3077,7 +3077,31 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
       }
     } else
       skip = NULL;
+  } else {
+    unless_evt = NULL;
+    skip = NULL;
+  }
 
+  pos = (peek ? (is_byte ? 3 : 2) : 1);
+  if (argc > pos) {
+    spec_wrap = argv[pos];
+    if (SCHEME_FALSEP(spec_wrap))
+      spec_wrap = NULL;
+    else
+      scheme_check_proc_arity2(name, 1, pos, argc, argv, 1);
+    pos++;
+    if (argc > pos) {
+      src = argv[pos++];
+      if (SCHEME_FALSEP(src))
+        src = NULL;
+    } else
+      src = NULL;
+  } else {
+    src = NULL;
+    spec_wrap = NULL;
+  }
+
+  if (peek) {
     if (spec) {
       if (is_byte) {
 	ch = scheme_peek_byte_special_ok_skip(port, skip, unless_evt);
@@ -3104,7 +3128,13 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
   }
 
   if (ch == SCHEME_SPECIAL) {
-    return scheme_get_ready_special(port, NULL, peek);
+    src = scheme_get_ready_special(port, src, peek);
+    if (spec_wrap) {
+      Scheme_Object *a[1];
+      a[0] = src;
+      return _scheme_tail_apply(spec_wrap, 1, a);
+    } else
+      return src;
   } else if (ch == EOF)
     return scheme_eof;
   else if (is_byte)
