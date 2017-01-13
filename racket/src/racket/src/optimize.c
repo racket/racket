@@ -4002,7 +4002,8 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
   }
 
   info->size += 1;
-  increment_clocks_for_application(info, rator, app->num_args);
+  info->preserves_marks = 1;
+  info->single_result = 1;
   
   if (all_vals) {
     le = try_optimize_fold(rator, NULL, (Scheme_Object *)app, info);
@@ -4013,23 +4014,13 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
   if (!app->num_args  
       && (SAME_OBJ(rator, scheme_list_proc)
           || (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "append")))) {
-    info->preserves_marks = 1;
-    info->single_result = 1;
     return scheme_null;
   }
-
-  rator_flags = get_rator_flags(rator, app->num_args, info);
-  info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
-  info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
-  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
-    info->preserves_marks = -info->preserves_marks;
-    info->single_result = -info->single_result;
-  }
-    
-  if (SCHEME_PRIMP(app->args[0])
-      && (app->num_args >= ((Scheme_Primitive_Proc *)app->args[0])->mina)
-      && (app->num_args <= ((Scheme_Primitive_Proc *)app->args[0])->mu.maxa)) {
-    Scheme_Object *app_o = (Scheme_Object *)app, *rator = app->args[0];
+   
+  if (SCHEME_PRIMP(rator)
+      && (app->num_args >= ((Scheme_Primitive_Proc *)rator)->mina)
+      && (app->num_args <= ((Scheme_Primitive_Proc *)rator)->mu.maxa)) {
+    Scheme_Object *app_o = (Scheme_Object *)app;
     Scheme_Object *rand1 = NULL, *rand2 = NULL, *rand3 = NULL;
 
     if (app->num_args >= 1)
@@ -4073,6 +4064,19 @@ static Scheme_Object *finish_optimize_application(Scheme_App_Rec *app, Optimize_
     if (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_WANTS_NUMBER)
       check_known_all(info, app_o, 0, 0, NULL, scheme_number_p_proc,
                       (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_OMITTABLE_ON_GOOD_ARGS) ? scheme_true : NULL);
+
+      /* Some of these may have changed app->rator. */
+    rator = app->args[0];
+  }
+
+  increment_clocks_for_application(info, rator, app->num_args);
+
+  rator_flags = get_rator_flags(rator, app->num_args, info);
+  info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
+  info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
+  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
+    info->preserves_marks = -info->preserves_marks;
+    info->single_result = -info->single_result;
   }
 
   register_local_argument_types(app, NULL, NULL, info);
@@ -4232,6 +4236,8 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
   Scheme_Object *rand, *inside = NULL, *alt;
 
   info->size += 1;
+  info->preserves_marks = 1;
+  info->single_result = 1;
 
   /* Path for direct constant folding */
   if (SCHEME_TYPE(app->rand) > _scheme_ir_values_types_) {
@@ -4254,22 +4260,10 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       return replace_tail_inside(le, inside, app->rand);
   }
 
-  increment_clocks_for_application(info, rator, 1);
-
-  rator_flags = get_rator_flags(rator, 1, info);
-  info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
-  info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
-  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
-    info->preserves_marks = -info->preserves_marks;
-    info->single_result = -info->single_result;
-  }
-
   if (SAME_OBJ(scheme_values_proc, rator)
       || SAME_OBJ(scheme_list_star_proc, rator)
       || (SCHEME_PRIMP(rator) && IS_NAMED_PRIM(rator, "append"))) {
     SCHEME_APPN_FLAGS(app) |= (APPN_FLAG_IMMED | APPN_FLAG_SFS_TAIL);
-    info->preserves_marks = 1;
-    info->single_result = 1;
     if ((context & OPT_CONTEXT_SINGLED)
         || scheme_omittable_expr(rand, 1, -1, 0, info, info)
         || single_valued_noncm_expression(rand, info, 5)) {
@@ -4391,8 +4385,6 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       c = get_struct_proc_shape(rand, info, 0);
       if (c && ((SCHEME_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK)
                 == STRUCT_PROC_SHAPE_STRUCT)) {
-        info->preserves_marks = 1;
-        info->single_result = 1;
         return replace_tail_inside(scheme_true, inside, app->rand);
       }
     }
@@ -4401,18 +4393,12 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         && SAME_TYPE(SCHEME_TYPE(rand), scheme_varref_form_type)) {
       Scheme_Object *var = SCHEME_PTR1_VAL(rand);
       if (SAME_OBJ(var, scheme_true)) {
-        info->preserves_marks = 1;
-        info->single_result = 1;
         return replace_tail_inside(scheme_true, inside, app->rand);
       } else if (SAME_OBJ(var, scheme_false)) {
-        info->preserves_marks = 1;
-        info->single_result = 1;
         return replace_tail_inside(scheme_false, inside, app->rand);
       } else {
         if (var && scheme_ir_propagate_ok(var, info)) {
           /* can propagate => is a constant */
-          info->preserves_marks = 1;
-          info->single_result = 1;
           return replace_tail_inside(scheme_true, inside, app->rand);
         }
       }
@@ -4533,6 +4519,16 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         add_type(info, rand, scheme_make_struct_proc_shape(STRUCT_PROC_SHAPE_PRED,
                                                            SCHEME_PROC_SHAPE_IDENTITY(alt)));
     }
+  }
+
+  increment_clocks_for_application(info, rator, 1);
+
+  rator_flags = get_rator_flags(rator, 1, info);
+  info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
+  info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
+  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
+    info->preserves_marks = -info->preserves_marks;
+    info->single_result = -info->single_result;
   }
 
   register_local_argument_types(NULL, app, NULL, info);
@@ -4661,6 +4657,8 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
   int all_vals = 1;
 
   info->size += 1;
+  info->preserves_marks = 1;
+  info->single_result = 1;
 
   if (SCHEME_TYPE(app->rand1) < _scheme_ir_values_types_)
     all_vals = 0;
@@ -4673,8 +4671,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     if (le)
       return le;
   }
-
-  increment_clocks_for_application(info, app->rator, 2);
 
   /* Check for (call-with-values (lambda () M) N): */
   if (SAME_OBJ(app->rator, scheme_call_with_values_proc)) {
@@ -4713,8 +4709,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
        || SAME_OBJ(app->rator, scheme_eqv_proc)
        || SAME_OBJ(app->rator, scheme_eq_proc)) {
     if (equivalent_exprs(app->rand1, app->rand2, NULL, NULL, 0)) {
-      info->preserves_marks = 1;
-      info->single_result = 1;
       return make_discarding_sequence_3(app->rand1, app->rand2, scheme_true, info);
     }
     {
@@ -4770,14 +4764,6 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
         }
       }
     }
-  }
-
-  rator_flags = get_rator_flags(app->rator, 2, info);
-  info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
-  info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
-  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
-    info->preserves_marks = -info->preserves_marks;
-    info->single_result = -info->single_result;
   }
 
   /* Ad hoc optimization of (unsafe-+ <x> 0), etc. */
@@ -4963,6 +4949,16 @@ static Scheme_Object *finish_optimize_application3(Scheme_App3_Rec *app, Optimiz
     rator = app->rator; /* in case it was updated */
   }
   
+  increment_clocks_for_application(info, app->rator, 2);
+
+  rator_flags = get_rator_flags(app->rator, 2, info);
+  info->preserves_marks = !!(rator_flags & LAMBDA_PRESERVES_MARKS);
+  info->single_result = !!(rator_flags & LAMBDA_SINGLE_RESULT);
+  if (rator_flags & LAMBDA_RESULT_TENTATIVE) {
+    info->preserves_marks = -info->preserves_marks;
+    info->single_result = -info->single_result;
+  }
+
   register_local_argument_types(NULL, NULL, app, info);
 
   flags = appn_flags(app->rator, info);

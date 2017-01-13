@@ -5827,5 +5827,15 @@
              exn:fail?)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that optimizer-clock are updated 
+;; after the equal? is reduced to eq?
+
+(test-comp '(lambda (x)
+              (let ([m (box 5)])
+                (list (equal? x 7) m)))
+           '(lambda (x)
+              (list (eq? x 7) (box 5))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
