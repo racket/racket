@@ -18,7 +18,7 @@
     may open a different page with local and user-specific
     documentation, including documentation for installed packages.
     @elem[#:style path-info-style]{Searching or following a
-     ``top'' link will use go to a different starting point that
+     ``top'' link will go to a different starting point that
      includes user-specific information.
      @hyperlink["#"]{@elem[#:style go-style]{[Go to user-specific start]}}
      @hyperlink["#"]{@elem[#:style disable-style]{[Forget user-specific start]}}}}
