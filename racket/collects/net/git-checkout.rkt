@@ -1081,6 +1081,20 @@
        (arithmetic-shift (read-number-by-bits i (arithmetic-shift n -1))
                          8))]))
 
+;; ADLER32 implementation
+;; https://www.ietf.org/rfc/rfc1950.txt
+(define (bytes-adler32 bstr)
+  (define ADLER 65521)
+  (define-values (s1 s2)
+    (for/fold ([s1 1]
+               [s2 0])
+              ([bits (in-bytes bstr)])
+      (define a (modulo (+ s1 bits) ADLER))
+      (define b (modulo (+ s2 a) ADLER))
+      (values a b)))
+  ; (s2 << 16) | s1
+  (bitwise-ior (arithmetic-shift s2 16) s1))
+
 ;; zlib-inflate : input-port output-port
 ;;  Reads compressed data from `i`, writes uncompressed to `o`
 (define (zlib-inflate i o)
@@ -1093,7 +1107,10 @@
     (read-bytes-exactly 'dictid 4 i))
   (inflate i o)
   ;; Verify checksum?
-  (read-bytes-exactly 'adler-checksum 4 i)
+  (define adler (read-bytes-exactly 'adler-checksum 4 i))
+  (unless (= (integer-bytes->integer adler #f #t)
+             (bytes-adler32 (get-output-bytes o)))
+    (raise-git-error 'git-checkout "adler32 checksum failed"))
   (void))
 
 ;; ----------------------------------------
