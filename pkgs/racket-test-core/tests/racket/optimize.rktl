@@ -3488,6 +3488,45 @@
                (a? (a-x (a 1 2)))
                5)))
 
+(test-comp '(module m racket/base
+              (struct a (x) #:omit-define-syntaxes #:mutable)
+
+              (procedure? a)
+              (lambda (x) (values (a x)))
+              (lambda (x) (void (a x)))
+
+              (procedure? a?)
+              (lambda (x) (values (a? x)))
+              (lambda (x) (void (a? x)))
+              (lambda (x) (boolean? (a? x)))
+              (lambda (x) (when (a? x) (a? x)))
+
+              (procedure? a-x)
+              (lambda (x) (values (a-x x)))
+              (lambda (x) (when (a? x) (void (a-x x))))
+
+              (procedure? set-a-x!)
+              (lambda (x) (values (set-a-x! x 5))))
+           '(module m racket/base
+              (struct a (x) #:omit-define-syntaxes #:mutable)
+
+              #t
+              (lambda (x) (a x))
+              (lambda (x) a (void))
+
+              #t
+              (lambda (x) (a? x))
+              (lambda (x) a (void))
+              (lambda (x) a #t)
+              (lambda (x) (when (a? x) #t))
+
+              #t
+              (lambda (x) (a-x x))
+              (lambda (x) (when (a? x) (void)))
+
+              #t
+              (lambda (x) (set-a-x! x 5))))
+
 (test-comp '(lambda ()
              (make-struct-type 'a #f 0 0 #f)
              10)
@@ -3509,6 +3548,30 @@
              (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
              (lambda (x)
                x)))
+(test-comp '(module m racket/base
+              (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+
+              (procedure? a?)
+              (lambda (x) (values (a? x)))
+              (lambda (x) (void (a? x)))
+              (lambda (x) (boolean? (a? x)))
+              #;(lambda (x) (when (a? x) (a? x)))
+
+              (procedure? a-ref)
+              (lambda (x) (values (a-ref x)))
+              #;(lambda (x) (when (a? x) (void (a-ref x)))))
+           '(module m racket/base
+              (define-values (prop:a a? a-ref) (make-struct-type-property 'a))
+
+              #t
+              (lambda (x) (a? x))
+              (lambda (x) a? (void))
+              (lambda (x) a? #t)
+              #;(lambda (x) (when (a? x) #t))
+
+              #t
+              (lambda (x) (a-ref x))
+              #;(lambda (x) (when (a? x) (void)))))
 
 (test-comp '(module m racket/base
              (define (f x) (list (g x) g))

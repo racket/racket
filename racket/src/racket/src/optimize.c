@@ -2469,14 +2469,22 @@ int scheme_check_leaf_rator(Scheme_Object *le)
 
 static int get_rator_flags(Scheme_Object *rator, int num_args, Optimize_Info *info)
 {
-  if (!rator)
-    return 0;
   rator = lookup_constant_proc(info, rator, num_args);
   if (!rator) {
     return 0;
   } else if (SAME_OBJ(rator, scheme_true)) {
     /* wrong arity */
     return (LAMBDA_PRESERVES_MARKS | LAMBDA_SINGLE_RESULT);
+  } else if (SAME_TYPE(SCHEME_TYPE(rator), scheme_struct_proc_shape_type)) {
+    return (LAMBDA_PRESERVES_MARKS | LAMBDA_SINGLE_RESULT);
+  } else if (SAME_TYPE(SCHEME_TYPE(rator), scheme_struct_prop_proc_shape_type)) {
+    switch (SCHEME_PROP_PROC_SHAPE_MODE(rator)) {
+    case STRUCT_PROP_PROC_SHAPE_PRED:
+      return (LAMBDA_PRESERVES_MARKS | LAMBDA_SINGLE_RESULT);
+    case STRUCT_PROP_PROC_SHAPE_GETTER:
+      if (num_args == 1)
+        return (LAMBDA_PRESERVES_MARKS | LAMBDA_SINGLE_RESULT);
+    }
   } else if (SCHEME_PRIMP(rator)) {
     int opt;
     /* special cases for values */
@@ -2528,10 +2536,10 @@ Scheme_Object *do_lookup_constant_proc(Optimize_Info *info, Scheme_Object *le,
    When argc == -1 it may return a case-lambda. Else, it will check the arity
    and split a case-lambda to extact the relevant lambda. If the arity is
    wrong the result is scheme_true.
-   If for_inline, it may return a potential size. Else, itwill go inside
-   potecial sizes, noinline procedures, lets, begins and other construction,
+   If for_inline, it may return a potential size. Else, it will go inside
+   potential sizes, noinline procedures, lets, begins and other construction,
    so the result can't be inlined and must be used only to get the properties
-   of the actual procedure.*/
+   of the actual procedure. It may also return a struct_(prop_)proc_shape.*/
     
 {
   Scheme_Object *prev = NULL;
@@ -2601,7 +2609,7 @@ Scheme_Object *do_lookup_constant_proc(Optimize_Info *info, Scheme_Object *le,
         }
       }
     }
-    if (SAME_TYPE(SCHEME_TYPE(le), scheme_ir_toplevel_type) && info->top_level_consts) {
+    if (info->top_level_consts) {
       le = scheme_hash_get(info->top_level_consts, scheme_make_integer(pos));
       if (!le)
         return NULL;
@@ -2620,6 +2628,49 @@ Scheme_Object *do_lookup_constant_proc(Optimize_Info *info, Scheme_Object *le,
     le = SCHEME_BOX_VAL(le);
   }
 
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_struct_proc_shape_type)) {
+    int ok_arity;
+    switch (SCHEME_PROC_SHAPE_MODE(le) & STRUCT_PROC_SHAPE_MASK) {
+    case STRUCT_PROC_SHAPE_CONSTR:
+      ok_arity = (argc == (SCHEME_PROC_SHAPE_MODE(le) >> STRUCT_PROC_SHAPE_SHIFT));
+      break;
+    case STRUCT_PROC_SHAPE_PRED:
+      ok_arity = (argc == 1);
+      break;
+    case STRUCT_PROC_SHAPE_GETTER:
+      ok_arity = (argc == 1);
+      break;
+    case STRUCT_PROC_SHAPE_SETTER:
+      ok_arity = (argc == 2);
+      break;
+    default:
+      return NULL;
+    }
+    if (ok_arity || (argc == -1)) {
+      return for_inline ? NULL : le;
+    } else {
+      return scheme_true;
+    }
+  }
+
+  if (SAME_TYPE(SCHEME_TYPE(le), scheme_struct_prop_proc_shape_type)) {
+    int ok_arity;
+    switch (SCHEME_PROP_PROC_SHAPE_MODE(le)) {
+    case STRUCT_PROP_PROC_SHAPE_PRED:
+      ok_arity = (argc == 1);
+      break;
+    case STRUCT_PROP_PROC_SHAPE_GETTER:
+      ok_arity = (argc == 1) || (argc == 2);
+      break;
+    default:
+      return NULL;
+    }
+    if (ok_arity || (argc == -1)) {
+      return for_inline ? NULL : le;
+    } else {
+      return scheme_true;
+    }
+  }
 
   if (SAME_TYPE(SCHEME_TYPE(le), scheme_case_lambda_sequence_type)) {
     Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)le;
@@ -2742,10 +2793,13 @@ Scheme_Object *optimize_for_inline(Optimize_Info *info, Scheme_Object *le, int a
   if (SAME_OBJ(le, scheme_true)) {
     /* wrong arity */
     int len;
-    const char *pname, *context;
+    const char *pname = NULL, *context;
     info->escapes = 1;
     le2 = lookup_constant_proc(info, le2, -1);
-    pname = scheme_get_proc_name(le2, &len, 0);
+    if (!SAME_TYPE(SCHEME_TYPE(le2), scheme_struct_proc_shape_type)
+        && !SAME_TYPE(SCHEME_TYPE(le2), scheme_struct_prop_proc_shape_type)){
+      pname = scheme_get_proc_name(le2, &len, 0);
+    }
     context = scheme_optimize_context_to_string(info->context);
     scheme_log(info->logger,
                SCHEME_LOG_WARNING,
