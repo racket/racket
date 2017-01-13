@@ -4054,6 +4054,11 @@ void scheme_read_err(Scheme_Object *port,
 		     intptr_t line, intptr_t column, intptr_t pos, intptr_t span,
 		     int is_eof, Scheme_Object *indentation,
 		     const char *detail, ...);
+Scheme_Object *scheme_numr_err(Scheme_Object *complain,
+                               Scheme_Object *stxsrc,
+                               intptr_t line, intptr_t column, intptr_t pos, intptr_t span,
+                               Scheme_Object *indentation,
+                               const char *detail, ...);
 char *scheme_extract_indentation_suggestions(Scheme_Object *indentation);
 
 void scheme_wrong_syntax(const char *where,

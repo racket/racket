@@ -1007,20 +1007,43 @@ evaluates the entire sequence.
 @mz-examples[(number->string 3.0) (number->string 255 8)]}
 
 
-@defproc[(string->number [s string?] [radix (integer-in 2 16) 10])
-         (or/c number? #f)]{
+@defproc[(string->number [s string?]
+                         [radix (integer-in 2 16) 10]
+                         [convert-mode (or/c 'number-or-false 'read) 'number-or-false]
+                         [decimal-mode (or/c 'decimal-as-inexact 'decimal-as-exact)
+                                       (if (read-decimal-as-inexact)
+                                           'decimal-as-inexact
+                                           'decimal-as-exact)])
+         (or/c number? #f string? extflonum?)]{
 
 Reads and returns a number datum from @racket[s] (see
-@secref["parse-number"]), returning @racket[#f] if @racket[s] does not
-parse exactly as a number datum (with no whitespace). The optional
-@racket[radix] argument specifies the default base for the number,
-which can be overridden by @litchar{#b}, @litchar{#o}, @litchar{#d}, or
-@litchar{#x} in the string. The @racket[read-decimal-as-inexact]
-parameter affects @racket[string->number] in the same as way as @racket[read].
+@secref["parse-number"]). The optional @racket[radix] argument
+specifies the default base for the number, which can be overridden by
+@litchar{#b}, @litchar{#o}, @litchar{#d}, or @litchar{#x} in the
+string.
 
-@mz-examples[(string->number "3.0+2.5i") (string->number "hello")
-          (string->number "111" 7)  (string->number "#b111" 7)]
-}
+If @racket[convert-mode] is @racket['number-or-false], the result is
+@racket[#f] if @racket[s] does not parse exactly as a number datum
+(with no whitespace). If @racket[convert-mode] is @racket['read], the
+result can be an @tech{extflonum}, and it can be a string that
+contains an error message if @racket[read] of @racket[s] would report
+a reader exception (but the result can still be @racket[#f] if
+@racket[read] would report a symbol).
+
+The @racket[decimal-mode] argument controls number parsing the same
+way that the @racket[read-decimal-as-inexact] parameter affects
+@racket[read].
+
+@mz-examples[(string->number "3.0+2.5i")
+             (string->number "hello")
+             (string->number "111" 7)
+             (string->number "#b111" 7)
+             (string->number "#e+inf.0" 10 'read)
+             (string->number "10.3" 10 'read 'decimal-as-exact)]
+
+@history[#:changed "6.8.0.2" @elem{Added the @racket[convert-mode] and
+                                   @racket[decimal-mode] arguments.}]}
+
 
 @defproc[(real->decimal-string [n real?] [decimal-digits exact-nonnegative-integer? 2])
          string?]{

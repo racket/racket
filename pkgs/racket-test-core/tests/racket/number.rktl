@@ -2411,7 +2411,7 @@
 (test #f inexact? (string->number "#e4@5"))
 (test #f inexact? (string->number "#e4.0@5.0"))
 
-(arity-test string->number 1 2)
+(arity-test string->number 1 4)
 (arity-test number->string 1 2)
 
 (err/rt-test (number->string 'a))

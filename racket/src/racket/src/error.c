@@ -2239,6 +2239,31 @@ void scheme_read_err(Scheme_Object *port,
                    (*suggests ? "\n  possible cause: " : ""), suggests);
 }
 
+Scheme_Object *scheme_numr_err(Scheme_Object *complain,
+                               Scheme_Object *stxsrc,
+                               intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
+                               Scheme_Object *indentation,
+                               const char *detail, ...)
+{
+  GC_CAN_IGNORE va_list args;
+  char *s;
+  intptr_t slen;
+
+  HIDE_FROM_XFORM(va_start(args, detail));
+  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
+  HIDE_FROM_XFORM(va_end(args));
+
+  if (SCHEME_FALSEP(complain))
+    return scheme_make_sized_utf8_string(s, slen);
+
+  scheme_read_err(complain,
+                  stxsrc,
+                  line, col, pos, span,
+                  0, indentation,
+                  "read: %s", s);
+  ESCAPED_BEFORE_HERE;
+}
+
 static void do_wrong_syntax(const char *where,
                             Scheme_Object *detail_form,
                             Scheme_Object *form,
