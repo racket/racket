@@ -1098,6 +1098,8 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(parameterize ([read-accept-dot #f])
+  (err/rt-test (read (open-input-string ".")) exn:fail:read?))
 (parameterize ([current-readtable (make-readtable (current-readtable) #\. #\a #f)])
   (test '|.| read (open-input-string ".")))
 (parameterize ([current-readtable (make-readtable (current-readtable) #\. #\a #f)]

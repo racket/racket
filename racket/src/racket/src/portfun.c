@@ -275,9 +275,9 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("read-syntax/recursive",          read_syntax_recur_f,            0, 5, env);
   GLOBAL_PRIM_W_ARITY2("read-language",               read_language,                  0, 2, 0, -1, env);
   GLOBAL_NONCM_PRIM("read-char",                      read_char,                      0, 1, env);
-  GLOBAL_NONCM_PRIM("read-char-or-special",           read_char_spec,                 0, 3, env);
+  GLOBAL_PRIM_W_ARITY2("read-char-or-special",        read_char_spec,                 0, 3, 0, -1, env);
   GLOBAL_NONCM_PRIM("read-byte",                      read_byte,                      0, 1, env);
-  GLOBAL_NONCM_PRIM("read-byte-or-special",           read_byte_spec,                 0, 3, env);
+  GLOBAL_PRIM_W_ARITY2("read-byte-or-special",        read_byte_spec,                 0, 3, 0, -1, env);
   GLOBAL_NONCM_PRIM("read-bytes-line",                read_byte_line,                 0, 2, env);
   GLOBAL_NONCM_PRIM("read-line",                      read_line,                      0, 2, env);
   GLOBAL_NONCM_PRIM("read-string",                    sch_read_string,                1, 2, env);
@@ -305,9 +305,9 @@ scheme_init_port_fun(Scheme_Env *env)
   GLOBAL_NONCM_PRIM("write-special",                  scheme_write_special,           1, 2, env);
   GLOBAL_NONCM_PRIM("write-special-avail*",           scheme_write_special_nonblock,  1, 2, env);
   GLOBAL_NONCM_PRIM("peek-char",                      peek_char,                      0, 2, env);
-  GLOBAL_NONCM_PRIM("peek-char-or-special",           peek_char_spec,                 0, 4, env);
+  GLOBAL_PRIM_W_ARITY2("peek-char-or-special",           peek_char_spec,              0, 4, 0, -1, env);
   GLOBAL_NONCM_PRIM("peek-byte",                      peek_byte,                      0, 2, env);
-  GLOBAL_NONCM_PRIM("peek-byte-or-special",           peek_byte_spec,                 0, 5, env);
+  GLOBAL_PRIM_W_ARITY2("peek-byte-or-special",           peek_byte_spec,              0, 5, 0, -1, env);
   GLOBAL_NONCM_PRIM("byte-ready?",                    byte_ready_p,                   0, 1, env);
   GLOBAL_NONCM_PRIM("char-ready?",                    char_ready_p,                   0, 1, env);
   GLOBAL_NONCM_PRIM("newline",                        newline,                        0, 1, env);
@@ -3087,7 +3087,7 @@ do_read_char(char *name, int argc, Scheme_Object *argv[], int peek, int spec, in
     spec_wrap = argv[pos];
     if (SCHEME_FALSEP(spec_wrap))
       spec_wrap = NULL;
-    else
+    else if (!scheme_fast_check_arity(spec_wrap, 1))
       scheme_check_proc_arity2(name, 1, pos, argc, argv, 1);
     pos++;
     if (argc > pos) {

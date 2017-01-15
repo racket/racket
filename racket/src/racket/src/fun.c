@@ -2139,6 +2139,37 @@ static Scheme_Object *clone_arity(Scheme_Object *a, int delta, int mode)
     return a;
 }
 
+int scheme_fast_check_arity(Scheme_Object *p, int a)
+/* Faster version of get_or_check_arity() in check mode;
+   a 0 result means "maybe" */
+{
+  Scheme_Type type;
+  int mina, maxa;
+
+  type = SCHEME_TYPE(p);
+  if (type == scheme_prim_type) {
+    mina = ((Scheme_Primitive_Proc *)p)->mina;
+    maxa = ((Scheme_Primitive_Proc *)p)->mu.maxa;
+    if (mina < 0)
+      return 0;
+    else {
+      if (maxa > SCHEME_MAX_ARGS)
+	maxa = -1;
+    }
+  } else if (type == scheme_closed_prim_type) {
+    mina = ((Scheme_Closed_Primitive_Proc *)p)->mina;
+    maxa = ((Scheme_Closed_Primitive_Proc *)p)->maxa;
+    if (mina == -2)
+      return 0;
+  } else
+    return 0;
+
+  if (a >= mina && (maxa < 0 || a <= maxa))
+    return 1;
+  
+  return 0;
+}
+
 static Scheme_Object *get_or_check_arity(Scheme_Object *p, intptr_t a, Scheme_Object *bign, int inc_ok)
 /* a == -1 => get arity
    a == -2 => check for allowing bignum

@@ -4147,6 +4147,7 @@ Scheme_Object *scheme_special_comment_value(Scheme_Object *o);
 
 Scheme_Object *scheme_get_stack_trace(Scheme_Object *mark_set);
 
+XFORM_NONGCING int scheme_fast_check_arity(Scheme_Object *v, int a);
 Scheme_Object *scheme_get_or_check_arity(Scheme_Object *p, intptr_t a);
 int scheme_native_arity_check(Scheme_Object *closure, int argc);
 Scheme_Object *scheme_get_native_arity(Scheme_Object *closure, int mode);
