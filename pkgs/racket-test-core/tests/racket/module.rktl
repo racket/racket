@@ -1938,5 +1938,73 @@ case of module-leve bindings; it doesn't cover local bindings.
           (require 'a-submod)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure that `variable-reference->namespace` works
+;; with phase shifts
+
+(module evaluate-using-module-namespace racket/base
+  (provide go)
+
+  (define x 'x)
+
+  (define (go)
+    (define ns (variable-reference->namespace (#%variable-reference)))
+    (list (namespace-base-phase ns)
+          (eval '(list x) ns))))
+
+(test '(0 (x)) (dynamic-require ''evaluate-using-module-namespace 'go))
+
+(module evaluate-using-module-namespace-at-phase-1 racket/base
+  (require (for-syntax 'evaluate-using-module-namespace
+                       racket/base))
+  (provide went)
+  (define-syntax (m stx)
+    #`(quote #,(go)))
+  (define (went) (m)))
+
+(test '(1 (x)) (dynamic-require ''evaluate-using-module-namespace-at-phase-1 'went))
+
+(module evaluate-using-module-namespace/saved-context racket/base
+  (provide go)
+
+  (define x 'x/sc)
+
+  ;; Macro-introduced definition triggers saving the module's bindings
+  (define-syntax-rule (force-save-context) (define x 1))
+  (force-save-context)
+
+  (define (go)
+    (define ns (variable-reference->namespace (#%variable-reference)))
+    (list (namespace-base-phase ns)
+          (eval '(list x) ns))))
+
+(test '(0 (x/sc)) (dynamic-require ''evaluate-using-module-namespace/saved-context 'go))
+
+(module evaluate-using-module-namespace-at-phase-1/saved-context racket/base
+  (require (for-syntax 'evaluate-using-module-namespace/saved-context
+                       racket/base))
+  (provide went)
+  (define-syntax (m stx)
+    #`(quote #,(go)))
+  (define (went) (m)))
+
+(test '(1 (x/sc)) (dynamic-require ''evaluate-using-module-namespace-at-phase-1/saved-context 'went))
+
+
+(module defines-a-variable-x-in-its-body racket/base
+  (define x 'defined))
+
+(module uses-defines-a-variable-x-in-its-body-at-phase-1 racket/base
+  (require (for-syntax racket/base))
+  (provide out)
+  
+  (define-syntax (m stx)
+    (dynamic-require ''defines-a-variable-x-in-its-body #f)
+    #`(quote #,(eval 'x (module->namespace ''defines-a-variable-x-in-its-body))))
+  
+  (define out (m)))
+
+(test 'defined dynamic-require ''uses-defines-a-variable-x-in-its-body-at-phase-1 'out)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

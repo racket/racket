@@ -3237,6 +3237,7 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
         }
 	
 	rns = scheme_module_context_to_stx(rns, NULL);
+
 	m->rn_stx = rns;
       } else if (SCHEME_PAIRP(m->rn_stx)) {
 	/* Delayed shift: */
@@ -3257,7 +3258,11 @@ void scheme_prep_namespace_rename(Scheme_Env *menv)
         m->rn_stx = rn_stx;
       }
 
-      rns = scheme_stx_to_module_context(m->rn_stx);
+      rns = m->rn_stx;
+      if (menv->phase)
+        rns = scheme_stx_shift(rns, scheme_make_integer(menv->phase), NULL, NULL, NULL, NULL, NULL);
+
+      rns = scheme_stx_to_module_context(rns);
       menv->stx_context = rns;
 
       menv->rename_set_ready = 1;
