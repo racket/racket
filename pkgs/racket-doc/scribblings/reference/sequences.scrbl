@@ -1088,7 +1088,8 @@ stream, but plain lists can be used as streams, and functions such as
          any/c]{
   Folds @racket[f] over each element of @racket[s] with @racket[i] as
   the initial accumulator.  If @racket[s] is infinite, this function
-  does not terminate.
+  does not terminate. The @racket[f] function takes the accumulator as
+  its first argument and the next stream element as its second.
 }
 
 @defproc[(stream-count [f procedure?] [s stream?])
