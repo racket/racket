@@ -144,16 +144,13 @@
 (define (drop* list n) ; no error checking, returns #f if index is too large
   (if (zero? n) list (and (pair? list) (drop* (cdr list) (sub1 n)))))
 (define (too-large who list n)
-  (raise-arguments-error
-   who
-   (if (list? list)
-       "index is too large for list"
-       "index reaches a non-pair")
-   "index" n
-   (if (list? list)
-       "list"
-       "in")
-   list))
+  (define proper? (list? list))
+  (raise-argument-error who
+                        (format "a ~alist with at least ~a ~a"
+                                (if proper? "" "(possibly improper) ")
+                                n
+                                (if proper? "elements" "pairs"))
+                        list))
 
 (define (take list0 n0)
   (unless (exact-nonnegative-integer? n0)
