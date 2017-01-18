@@ -8737,7 +8737,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
         if (n == 1) {
           if (scheme_ir_propagate_ok(e, info))
             cnst = 1;
-          else if (scheme_is_statically_proc(e, info, 0)) {
+          else if (scheme_is_statically_proc(e, info, OMITTABLE_IGNORE_APPN_OMIT)) {
             cnst = 1;
             sproc = 1;
           }

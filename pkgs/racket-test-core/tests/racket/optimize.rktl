@@ -5706,5 +5706,21 @@
   bar)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that `string-append` on a known-string argument
+;; is not treated consistently by the optimzier and
+;; validator
+
+(let ([c (compile
+          '(module m racket/base
+            (define ill
+              (let ((base (string-append "a")))
+                (λ (x) (string-append base x))))
+            (ill "b")))])
+  (define o (open-output-bytes))
+  (write c o)
+  (parameterize ([read-accept-compiled #t])
+    (void (read (open-input-bytes (get-output-bytes o))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
