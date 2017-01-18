@@ -360,150 +360,77 @@ The @filepath{kiddo.rkt} example illustrates how the format for
 printing a result value can depend on the main module of a program
 instead of the language that is used to implement it.
 
+More broadly, certain features of a language are only invoked when
+a module written in that language is run directly with @exec{racket}
+(as opposed to being imported into another module). One example is
+result-printing style (as shown above). Another example is REPL
+behavior. These features are part of what's called the
+@emph{run-time configuration} of a language.
+
 Unlike the syntax-coloring property of a language (as described in
-@secref["language-get-info"]), the result-value format is a property of a
-@emph{module} (via its language) as opposed to a property of the
-module's @emph{source text}. That is, the run-time configuration for a
-module should be available even if the module is compiled
-to bytecode form and the source is unavailable. Due to this difference,
-language properties such as run-time configuration are not reported
-via a @racketidfont{get-info} function that exported from the language's
-parser module, but instead through a separate module whose name is
-attached to the syntax object for a parsed @racket[module] form.
+@secref["language-get-info"]), the run-time configuration is a
+property of a @emph{module} per se as opposed to a property of
+the @emph{source text} representing the module.
+For that reason, the run-time configuration for a
+module needs to be available even if the module is compiled
+to bytecode form and the source is unavailable. Therefore,
+run-time configuration cannot be handled by the
+@racketidfont{get-info} function we're exporting from the language's
+parser module.
+
+Instead, it will be handled by a new
+@racket['configure-runtime] submodule that we'll add inside
+the parsed @racket[module] form. When a module is run directly
+with @exec{racket}, @exec{racket} looks for a
+@racket['configure-runtime] submodule. If it exists, @exec{racket}
+runs it. But if the module is imported into another module,
+the @racket['configure-runtime] submodule is ignored. (And if the
+@racket['configure-runtime] submodule doesn't exist, @exec{racket}
+just evaluates the module as usual.) That means that the
+@racket['configure-runtime] submodule can be used for any special
+setup tasks that need to happen when the module is run directly.
 
 Going back to the @racket[literal] language (see
 @secref["language-get-info"]), we can adjust the language so that
 directly running a @racket[literal] module causes it to print out its
 string, while using a @racket[literal] module in a larger program
 simply provides @racketidfont{data} without printing. To make this
-work, we will need three modules. (For clarity here, we will implement 
-these modules as separate files. But they could equally well be 
-submodules of a single file.)
+work, we will need an extra module. (For clarity here, we will implement 
+this module as a separate file. But it could equally well be 
+a submodule of an existing file.)
 
 @racketblock[
 .... @#,elem{(the main installation or the user's space)}
 !- @#,filepath{literal}
    !- @#,filepath{main.rkt}            @#,elem{(with reader submodule)}
-   !- @#,filepath{language-info.rkt}   @#,elem{(new)}
-   !- @#,filepath{runtime-config.rkt}  @#,elem{(new)}
    !- @#,filepath{show.rkt}            @#,elem{(new)}
 ]
 
 @itemlist[
 
- @item{The @filepath{literal/language-info.rkt} module provides
-       reflective information about the language of modules written in
-       the @racket[literal] language. The name of this module is not
-       special; it will be connected to the @racket[literal] language
-       through a change to the @racketidfont{reader} submodule of 
-       @filepath{literal/main.rkt}.}
-
- @item{The @filepath{literal/runtime-config.rkt} module will be
-       identified by @filepath{literal/language-info.rkt} as the
-       run-time configuration code for a main module that uses the
-       @racket[literal] language.}
-
  @item{The @filepath{literal/show.rkt} module will provide a
        @racketidfont{show} function to be applied to the string
-       content of a @racket[literal] module. The run-time
-       configuration action in @filepath{literal/runtime-config.rkt}
-       will instruct @racketidfont{show} to print the strings that it
-       is given, but only when a module using the @racket[literal]
-       language is run directly.}
+       content of a @racket[literal] module, and also provide a
+       @racketidfont{show-enabled} parameter that controls whether
+       @racketidfont{show} actually prints the result.}
+
+ @item{The new @racket['configure-runtime] submodule in
+       @filepath{literal/main.rkt} will set the
+       @racketidfont{show-enabled} parameter to @racket[#t]. The
+       net effect is that @racketidfont{show} will print the strings
+       that it's given, but only when a module using the @racket[literal]
+       language is run directly (because only then will the
+       @racket['configure-runtime] submodule be invoked).}
 
 ]
 
-Multiple modules are needed to implement the printing change, because
-the different modules must run at different times. For example, the
-code needed to parse a @racket[literal] module is not needed after the
-module has been compiled, while the run-time configuration code is
-needed only when the module is run as the main module of a
-program. Similarly, when creating a stand-alone executable with
-@exec{raco exe}, the main module (in compiled form) must be queried
-for its run-time configuration, but the module and its configuration
-action should not run until the executable is started. By using
-different modules for these different tasks, we avoid loading code at
-times when it is not needed.
-
-The three new files are connected to the @racket[literal] language by
-changes to the @racketidfont{reader} submodule of @filepath{literal/main.rkt}:
-
-@itemlist[
-
- @item{The @racket[module] form generated by the
-       @racketidfont{read-syntax} function must import the
-       @racket[literal/show] module and call its @racketidfont{show}
-       function.}
-
- @item{The @racket[module] form must be annotated with a
-       @racket['language-info] syntax property, whose value points to
-       a @racketidfont{get-language-info} function exported by a
-       @racket[literal/language-info] module. The
-       @racketidfont{get-language-info} function will be responsible
-       for reporting the @racket[literal/runtime-config] as the
-       run-time configuration action of the language.
-
-       The @racket['language-info] syntax property value is a vector
-       that contains a module (in this case
-       @racket[literal/language-info]), a symbol for one of the
-       module's exports (@racketidfont{get-language-info} in this
-       case), and an data value (which is not needed in this
-       case). The data component allows information to be propagated
-       from the source to the module's language information.}
-
-]
 
 These changes are implemented in the following revised
 @filepath{literal/main.rkt}:
 
 @racketmodfile["literal-main-language-info.rkt" "literal/main.rkt"]
 
-When a @racket[module] form with a @racket['module-language] property
-is compiled, the property value is preserved with the compiled module,
-and it is accessible via reflective functions like
-@racket[module->language-info]. When @exec{racket} or DrRacket runs a
-module, it uses @racket[module->language-info] to obtain a vector that
-contains a module name, export name, and data value. The result of the
-function applied to the data should be another function that answers
-queries, much like the @racketidfont{get-info} function in a language
-reader.
-
-For @racket[literal], @filepath{literal/language-info.rkt} is
-implemented as:
-
-@racketmod[
-#:file "literal/language-info.rkt"
-racket
-
-(provide get-language-info)
-
-(define (get-language-info data)
-  (lambda (key default)
-    (case key
-      [(configure-runtime)
-       '(#(literal/runtime-config configure #f))]
-      [else default])))
-]
-
-The function returned by @racketidfont{get-language-info} answers a
-@racket['configure-runtime] query with a list of yet more vectors,
-where each vector contains a module name, an exported name, and a data
-value. For the @racket[literal] language, the run-time configuration
-action implemented in @filepath{literal/runtime-config.rkt} is to
-enable printing of strings that are sent to @racketidfont{show}:
-
-@racketmod[
-#:file "literal/runtime-config.rkt"
-racket
-(require "show.rkt")
-
-(provide configure)
-
-(define (configure data)
-  (show-enabled #t))
-]
-
-Finally, the @filepath{literal/show.rkt} module must provide
+Then the @filepath{literal/show.rkt} module must provide
 the @racketidfont{show-enabled} parameter and @racketidfont{show}
 function:
 
@@ -532,8 +459,17 @@ System!
 Perfect!
 ]
 
-When using @racketmodname[syntax/module-reader] to implement a
-language, specify a module's language information through the
-@racket[#:language-info] optional specification. The value provided
-through @racket[#:language-info] is attached to a @racket[module] form
-directly as a syntax property.
+When run directly, we'll see the result printed like so, because
+our @racket['configure-runtime] submodule will have set the
+@racketidfont{show-enabled} parameter to @racket[#t]:
+
+@racketblock[
+@#,racketoutput{Technology!
+@(linebreak)System!
+@(linebreak)Perfect!}
+]
+
+But when imported into another module, printing will be suppressed,
+because the @racket['configure-runtime] submodule will not be invoked,
+and therefore the @racketidfont{show-enabled} parameter will remain
+at its default value of @racket[#f].
