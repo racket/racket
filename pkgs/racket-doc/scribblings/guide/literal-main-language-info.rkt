@@ -2,7 +2,7 @@
 
 (module reader racket
   (require syntax/strip-context)
- 
+  
   (provide (rename-out [literal-read read]
                        [literal-read-syntax read-syntax])
            get-info)
@@ -13,15 +13,15 @@
  
   (define (literal-read-syntax src in)
     (with-syntax ([str (port->string in)])
-      (syntax-property
-       (strip-context
-        #'(module anything racket
-            (require literal/show)
-            (provide data)
-            (define data 'str)
-            (show data)))
-       'module-language
-       '#(literal/language-info get-language-info #f))))
+      (strip-context
+       #'(module anything racket
+           (module configure-runtime racket
+             (require literal/show)
+             (show-enabled #t))
+           (require literal/show)
+           (provide data)
+           (define data 'str)
+           (show data)))))
  
   (define (get-info in mod line col pos)
     (lambda (key default)
