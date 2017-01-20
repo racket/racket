@@ -1185,7 +1185,7 @@ static Scheme_Object *begin_for_syntax_sfs(Scheme_Object *data, SFS_Info *info)
 /*                             closures                                   */
 /*========================================================================*/
 
-static Scheme_Object *sfs_closure(Scheme_Object *expr, SFS_Info *info, int self_pos)
+static Scheme_Object *sfs_lambda(Scheme_Object *expr, SFS_Info *info, int self_pos)
 {
   Scheme_Lambda *data = (Scheme_Lambda *)expr;
   Scheme_Object *code;
@@ -1422,7 +1422,7 @@ Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_
     expr = sfs_wcm(expr, info);
     break;
   case scheme_lambda_type:
-    expr = sfs_closure(expr, info, closure_self_pos);
+    expr = sfs_lambda(expr, info, closure_self_pos);
     break;
   case scheme_let_value_type:
     expr = sfs_let_value(expr, info);
@@ -1441,7 +1441,7 @@ Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_
       Scheme_Closure *c = (Scheme_Closure *)expr;
       if (ZERO_SIZED_CLOSUREP(c)) {
         Scheme_Object *code;
-	code = sfs_closure((Scheme_Object *)c->code, info, closure_self_pos);
+	code = sfs_lambda((Scheme_Object *)c->code, info, closure_self_pos);
         if (SAME_TYPE(SCHEME_TYPE(code), scheme_begin0_sequence_type))  {
           Scheme_Sequence *seq = (Scheme_Sequence *)code;
           c->code = (Scheme_Lambda *)seq->array[0];

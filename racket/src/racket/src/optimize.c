@@ -3040,11 +3040,11 @@ static int is_nonsaving_primitive(Scheme_Object *rator, int n)
   return 0;
 }
 
-static int is_allways_escaping_primitive(Scheme_Object *rator)
+static int is_always_escaping_primitive(Scheme_Object *rator)
 {
   if (SCHEME_PRIMP(rator)
       && (SCHEME_PRIM_PROC_OPT_FLAGS(rator) & SCHEME_PRIM_ALWAYS_ESCAPES)) {
-        return 1;
+    return 1;
   }
   return 0;
 }
@@ -3935,7 +3935,7 @@ static Scheme_Object *finish_optimize_any_application(Scheme_Object *app, Scheme
   if (SAME_OBJ(rator, scheme_void_proc))
     return make_discarding_sequence(app, scheme_void, info);
   
-  if (is_allways_escaping_primitive(rator)) {
+  if (is_always_escaping_primitive(rator)) {
     info->escapes = 1;
   }
 
