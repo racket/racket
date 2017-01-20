@@ -7850,7 +7850,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
   if (!found_escapes) {
     body = scheme_optimize_expr(body, body_info, scheme_optimize_tail_context(context));
   } else {
-    body = escape_body;
+    body = ensure_noncm(escape_body);
     body_info->single_result = 1;
     body_info->preserves_marks = 1;
     body_info->escapes = 1;
