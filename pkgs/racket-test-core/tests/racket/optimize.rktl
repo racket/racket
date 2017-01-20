@@ -3893,6 +3893,20 @@
 (test-comp '(letrec-values ([(x y) (error "oops")]) 11)
            '(error "oops"))
 
+(test-comp '(with-continuation-mark
+             'x 'y
+             (let-values ([() (with-continuation-mark
+                                  'x 'z
+                                  (error "oops"))])
+               11))
+           '(with-continuation-mark
+             'x 'y
+             (begin0
+              (with-continuation-mark
+                  'x 'z
+                  (error "oops"))
+              (void))))
+
 (test-comp `(module m racket/base
               (define x 5)
               (set! x 3)
