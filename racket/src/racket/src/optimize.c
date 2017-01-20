@@ -7210,6 +7210,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
   Scheme_IR_Let_Header *head = (Scheme_IR_Let_Header *)form;
   Scheme_IR_Let_Value *irlv, *pre_body, *retry_start, *prev_body;
   Scheme_Object *body, *value, *ready_pairs = NULL, *rp_last = NULL, *ready_pairs_start;
+  Scheme_Object *escape_body = scheme_false;
   Scheme_Once_Used *once_used;
   Scheme_Hash_Tree *merge_skip_vars;
   int i, j, is_rec, not_simply_let_star = 0, undiscourage, skip_opts = 0;
@@ -7486,6 +7487,13 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
            here messes up the loop for letrec. So wait and
            remove it at the end. */
         remove_last_one = 1;
+        /* If `found_escapes`, either this expression is the
+           one that escaped, or `value` should have been simplified
+           to `#f`. So, if it's not `#f`, we'll need to keep
+           the expression part */
+        if (!found_escapes)
+          value = scheme_false;
+        pre_body->value = value;
       } else {
         Scheme_IR_Let_Value *naya;
         Scheme_Object *rest = pre_body->body;
@@ -7804,6 +7812,13 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
     if (remove_last_one) {
       head->num_clauses -= 1;
       body = (Scheme_Object *)pre_body->body;
+
+      if (found_escapes && !SCHEME_FALSEP(pre_body->value)) {
+        /* Since `pre_body->value` wasn't simplified to #f,
+           keep this as the new body */
+        escape_body = pre_body->value;
+      }
+
       if (prev_body) {
         prev_body->body = body;
         pre_body = prev_body;
@@ -7835,7 +7850,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
   if (!found_escapes) {
     body = scheme_optimize_expr(body, body_info, scheme_optimize_tail_context(context));
   } else {
-    body = scheme_false;
+    body = escape_body;
     body_info->single_result = 1;
     body_info->preserves_marks = 1;
     body_info->escapes = 1;
