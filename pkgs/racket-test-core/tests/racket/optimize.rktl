@@ -3884,6 +3884,15 @@
 (test-comp '(lambda (f) (letrec ([z (error 'error)] [x #f] [y #f]) #f))
            '(lambda (f) (letrec ([z (error 'error)] [x (lambda() y)] [y (lambda () x)]) (f x y z)) 5))
 
+(test-comp '(let-values ([() (error "oops")]) 11)
+           '(error "oops"))
+(test-comp '(let-values ([(x y) (error "oops")]) 11)
+           '(error "oops"))
+(test-comp '(letrec-values ([() (error "oops")]) 11)
+           '(error "oops"))
+(test-comp '(letrec-values ([(x y) (error "oops")]) 11)
+           '(error "oops"))
+
 (test-comp `(module m racket/base
               (define x 5)
               (set! x 3)
