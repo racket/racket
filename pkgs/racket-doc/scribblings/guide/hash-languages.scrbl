@@ -381,15 +381,15 @@ run-time configuration cannot be handled by the
 parser module.
 
 Instead, it will be handled by a new
-@racket['configure-runtime] submodule that we'll add inside
+@racket[configure-runtime] submodule that we'll add inside
 the parsed @racket[module] form. When a module is run directly
 with @exec{racket}, @exec{racket} looks for a
-@racket['configure-runtime] submodule. If it exists, @exec{racket}
+@racket[configure-runtime] submodule. If it exists, @exec{racket}
 runs it. But if the module is imported into another module,
 the @racket['configure-runtime] submodule is ignored. (And if the
-@racket['configure-runtime] submodule doesn't exist, @exec{racket}
+@racket[configure-runtime] submodule doesn't exist, @exec{racket}
 just evaluates the module as usual.) That means that the
-@racket['configure-runtime] submodule can be used for any special
+@racket[configure-runtime] submodule can be used for any special
 setup tasks that need to happen when the module is run directly.
 
 Going back to the @racket[literal] language (see
@@ -416,13 +416,13 @@ a submodule of an existing file.)
        @racketidfont{show-enabled} parameter that controls whether
        @racketidfont{show} actually prints the result.}
 
- @item{The new @racket['configure-runtime] submodule in
+ @item{The new @racket[configure-runtime] submodule in
        @filepath{literal/main.rkt} will set the
        @racketidfont{show-enabled} parameter to @racket[#t]. The
        net effect is that @racketidfont{show} will print the strings
        that it's given, but only when a module using the @racket[literal]
        language is run directly (because only then will the
-       @racket['configure-runtime] submodule be invoked).}
+       @racket[configure-runtime] submodule be invoked).}
 
 ]
 
@@ -462,7 +462,7 @@ Perfect!
 ]
 
 When run directly, we'll see the result printed like so, because
-our @racket['configure-runtime] submodule will have set the
+our @racket[configure-runtime] submodule will have set the
 @racketidfont{show-enabled} parameter to @racket[#t]:
 
 @racketblock[
@@ -472,6 +472,6 @@ our @racket['configure-runtime] submodule will have set the
 ]
 
 But when imported into another module, printing will be suppressed,
-because the @racket['configure-runtime] submodule will not be invoked,
+because the @racket[configure-runtime] submodule will not be invoked,
 and therefore the @racketidfont{show-enabled} parameter will remain
 at its default value of @racket[#f].
