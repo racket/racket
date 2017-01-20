@@ -367,7 +367,7 @@ a module written in that language is run directly with @exec{racket}
 (as opposed to being imported into another module). One example is
 result-printing style (as shown above). Another example is REPL
 behavior. These features are part of what's called the
-@emph{run-time configuration} of a language.
+@deftech{run-time configuration} of a language.
 
 Unlike the syntax-coloring property of a language (as described in
 @secref["language-get-info"]), the run-time configuration is a
