@@ -4,7 +4,8 @@
                      racket/syntax
                      syntax/parse/private/minimatch
                      racket/private/stx ;; syntax/stx
-                     racket/private/sc)
+                     racket/private/sc
+                     racket/struct)
          syntax/parse/private/residual
          "private/substitute.rkt")
 (provide template
@@ -403,11 +404,13 @@ instead of integers and integer vectors.
        (char? v)
        (keyword? v)
        (regexp? v)
+       (byte-regexp? v)
        (and (box? v) (quotable? (unbox v)))
        (and (symbol? v) (symbol-interned? v))
        (and (pair? v) (quotable? (car v)) (quotable? (cdr v)))
        (and (vector? v) (andmap quotable? (vector->list v)))
-       (and (prefab-struct-key v) (andmap quotable? (struct->vector v)))))
+       (and (hash? v) (andmap quotable? (hash->list v)))
+       (and (prefab-struct-key v) (andmap quotable? (struct->list v)))))
 
  (define (cons-guide g1 g2)
    (if (and (eq? g1 '_) (eq? g2 '_)) '_ (cons g1 g2)))
