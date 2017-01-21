@@ -83,7 +83,8 @@
         (keyword? datum)
         (bytes? datum)
         (char? datum)
-        (regexp? datum))))
+        (regexp? datum)
+        (byte-regexp? datum))))
 
 (define (id-predicate kw)
   (lambda (stx)

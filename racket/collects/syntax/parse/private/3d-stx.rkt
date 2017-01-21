@@ -174,6 +174,7 @@ period.
           (char? x)
           (keyword? x)
           (regexp? x)
+          (byte-regexp? x)
           (extflonum? x))
       fuel]
      [(symbol? x)

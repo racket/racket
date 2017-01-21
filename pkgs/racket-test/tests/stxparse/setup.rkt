@@ -8,6 +8,7 @@
          (for-syntax racket/base))
 
 (provide tok
+         t3d
          terx
          terx*
          tcerr
@@ -63,6 +64,35 @@ Auxiliaries
      #'(tok s p expr #:pre () #:post ())]
     [(tok s p)
      #'(tok s p 'ok)]))
+
+(define-syntax (t3d stx)
+  (syntax-case stx ()
+    [(_ #:pass [pass ...] #:fail [fail ...])
+     (with-syntax ([(pass-line ...) (map syntax-line
+                                         (syntax->list #'(pass ...)))]
+                   [(fail-line ...) (map syntax-line
+                                         (syntax->list #'(fail ...)))])
+     #`(begin
+         (test-case (format "line ~s: ~a should not be 3D syntax"
+                            'pass-line
+                            'pass)
+                    (check-not-exn
+                     (λ ()
+                       (syntax-parse (quote-syntax ())
+                         [_
+                          #:with _ pass
+                          'ok]))))
+         ...
+         (test-case (format "line ~s: ~a should be rejected 3D syntax"
+                            'fail-line
+                            'fail)
+                    (check-exn #px"implicit conversion to 3D syntax"
+                     (λ ()
+                       (syntax-parse (quote-syntax ())
+                         [_
+                          #:with _ fail
+                          'ok]))))
+         ...))]))
 
 (define-syntax-rule (bound b ...)
   (begin (bound1 b) ...))
