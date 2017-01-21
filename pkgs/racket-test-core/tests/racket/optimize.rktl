@@ -5760,5 +5760,11 @@
     (void (read (open-input-bytes (get-output-bytes o))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check for an optimizer regresssion
+
+(err/rt-test (+ (let-values (((x y) (let-values ((() 9)) 2))) x) (error))
+             exn:fail?)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
