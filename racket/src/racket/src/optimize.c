@@ -7523,6 +7523,14 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
               naya2->value = scheme_false;
             naya2 = (Scheme_IR_Let_Value *)naya2->body;
           }
+
+          if (!pre_body->count && !SCHEME_FALSEP(value)) {
+            /* Since `value` is not false, this clause must be the one
+               that is escaping. We'll end up dropping the remaining
+               clauses and the original body, but we need to keep the
+               erroring expression. */
+            escape_body = value;
+          }
         }
 
         if (prev_body)
@@ -8060,8 +8068,8 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
 
         if (head->num_clauses)
           seq->array[1] = (Scheme_Object *)head;
-        else if (found_escapes) {
-          /* don't need the body, because some RHS escapes */
+        else if (found_escapes && SCHEME_FALSEP(head->body)) {
+          /* don't need the `#f` for the body, because some RHS escapes */
           new_body = ensure_noncm(rhs);
         } else
           seq->array[1] = head->body;

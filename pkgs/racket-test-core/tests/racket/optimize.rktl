@@ -3892,6 +3892,21 @@
            '(error "oops"))
 (test-comp '(letrec-values ([(x y) (error "oops")]) 11)
            '(error "oops"))
+(test-comp '(let-values (((y) (read)) (() (error "oops"))) 11)
+           '(let () (begin (read) (error "oops"))))
+(test-comp '(let-values (((y) (read)) (() (error "oops"))) 11)
+           '(let () (begin (read) (error "oops"))))
+(test-comp '(let-values ((() (error "oops")) ((x) 9)) 11)
+           '(error "oops"))
+(test-comp '(let-values ((() (error "oops")) (() (values))) 11)
+           '(error "oops"))
+(test-comp '(let-values (((y) (read)) (() (error "oops")) ((x) 9)) 11)
+           '(let () (begin (read) (error "oops"))))
+(test-comp '(let-values (((y) (read)) (() (error "oops")) (() (values))) 11)
+           '(let () (begin (read) (error "oops"))))
+(test-comp '(error "oops")
+           '(let () (begin (read) (error "oops")))
+           #f)
 
 (test-comp '(with-continuation-mark
              'x 'y
