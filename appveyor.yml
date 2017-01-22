@@ -27,7 +27,7 @@ test_script:
 - racket\raco.exe test -l tests/match/main
 - racket\raco.exe test -l tests/zo-path
 - racket\raco.exe test -l tests/xml/test
-
+- racket\raco.exe test -c tests/stxparse
 
 notifications:
  - provider: Email
