@@ -46,6 +46,7 @@ script:
 - raco test -l tests/zo-path
 - raco test -l tests/xml/test
 - raco test -l tests/db/all-tests
+- raco test -c tests/stxparse
 notifications:
   irc: chat.freenode.net#racket-dev
   email:
