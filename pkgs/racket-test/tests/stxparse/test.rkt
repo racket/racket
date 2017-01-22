@@ -50,92 +50,92 @@
 (terx (1 (2 3)) (_:one _:two) "expected one")
 (terx ((1) 2) (_:one _:two) "expected two")
 
-(test-case "datum patterns"
-  (tok () ()
-       'ok
-       #:pre [(_) 0] #:post [])
-  (tok "here" "here"
-       'ok
-       #:pre ["there" #"here" 0] #:post [])
-  (tok #"byte" #"byte"
-       'ok
-       #:pre [#"other" "byte" 0] #:post [])
-  (tok 1 1
-       'ok)
-  (tok 1 _
-       #t
-       #:pre [2] #:post [])
-  (tok #f #f
-       'ok
-       #:pre [#t 0] #:post [_])
-  (tok #\c #\c
-       'ok
-       #:pre [#\d "c" 0] #:post [_])
-  (tok #:kw #:kw
-       'ok
-       #:pre [#:other {~datum kw} "kw" 0] #:post [_])
-  (tok #rx".*" #rx".*"
-       'ok
-       #:pre [#rx"." #px".*" #rx#".*" #px#".*"] #:post [_])
-  (tok #px".*" #px".*"
-       'ok
-       #:pre [#px"." #rx".*" #rx#".*" #px#".*"] #:post [_])
-  (tok #rx#".*" #rx#".*"
-       'ok
-       #:pre [#rx#"." #px#".*" #rx".*" #px".*"] #:post [_])
-  (tok #px#".*" #px#".*"
-       'ok
-       #:pre [#px#"." #rx#".*" #rx".*" #px".*"] #:post [_])
-  (tok #&"box" #&"box"
-       'ok
-       #:pre [#&"other" {~datum #&_} 0] #:post [_])
-  (tok #&_ #&_
-       'ok
-       #:pre [{~datum #&other}] #:post [_])
-  (tok #&xyz {~datum #&xyz}
-       'ok)
-  (tok xyz {~datum xyz}
-       'ok)
-  (tok (a . b) {~datum (a . b)}
-       'ok
-       #:pre [{~datum (_ . _)}] #:post [_])
-  (tok (a b c) {~datum (a b c)}
-       'ok
-       #:pre [{~datum (_ _ _)} {~datum (_ . _)}] #:post [_])
+;; datum patterns
+(tok () ()
+     'ok
+     #:pre [(_) 0] #:post [])
+(tok "here" "here"
+     'ok
+     #:pre ["there" #"here" 0] #:post [])
+(tok #"byte" #"byte"
+     'ok
+     #:pre [#"other" "byte" 0] #:post [])
+(tok 1 1
+     'ok)
+(tok 1 _
+     #t
+     #:pre [2] #:post [])
+(tok #f #f
+     'ok
+     #:pre [#t 0] #:post [_])
+(tok #\c #\c
+     'ok
+     #:pre [#\d "c" 0] #:post [_])
+(tok #:kw #:kw
+     'ok
+     #:pre [#:other {~datum kw} "kw" 0] #:post [_])
+(tok #rx".*" #rx".*"
+     'ok
+     #:pre [#rx"." #px".*" #rx#".*" #px#".*"] #:post [_])
+(tok #px".*" #px".*"
+     'ok
+     #:pre [#px"." #rx".*" #rx#".*" #px#".*"] #:post [_])
+(tok #rx#".*" #rx#".*"
+     'ok
+     #:pre [#rx#"." #px#".*" #rx".*" #px".*"] #:post [_])
+(tok #px#".*" #px#".*"
+     'ok
+     #:pre [#px#"." #rx#".*" #rx".*" #px".*"] #:post [_])
+(tok #&"box" #&"box"
+     'ok
+     #:pre [#&"other" {~datum #&_} 0] #:post [_])
+(tok #&_ #&_
+     'ok
+     #:pre [{~datum #&other}] #:post [_])
+(tok #&xyz {~datum #&xyz}
+     'ok)
+(tok xyz {~datum xyz}
+     'ok)
+(tok (a . b) {~datum (a . b)}
+     'ok
+     #:pre [{~datum (_ . _)}] #:post [_])
+(tok (a b c) {~datum (a b c)}
+     'ok
+     #:pre [{~datum (_ _ _)} {~datum (_ . _)}] #:post [_])
 
-  (tok #(1 2 3) {~datum #(1 2 3)}
-       'ok
-       #:pre [{~datum #(_ _ _)}] #:post [_])
-  (tok #hash([a . 1] [b . 2]) {~datum #hash([b . 2] [a . 1])}
-       'ok
-       #:pre [{~datum #hash([_ . 1] [_ . 2])}
-              {~datum #hash([a . _] [b . _])}
-              {~datum #hasheq([a . 1] [b . 2])}
-              {~datum #hasheqv([a . 1] [b . 2])}]
-       #:post [_])
-  (tok #hasheq([a . 1] [b . 2]) {~datum #hasheq([b . 2] [a . 1])}
-       'ok
-       #:pre [{~datum #hasheq([_ . 1] [_ . 2])}
-              {~datum #hasheq([a . _] [b . _])}
-              {~datum #hash([a . 1] [b . 2])}
-              {~datum #hasheqv([a . 1] [b . 2])}]
-       #:post [_])
-  (tok #hasheqv([a . 1] [b . 2]) {~datum #hasheqv([b . 2] [a . 1])}
-       'ok
-       #:pre [{~datum #hasheqv([_ . 1] [_ . 2])}
-              {~datum #hasheqv([a . _] [b . _])}
-              {~datum #hasheq([a . 1] [b . 2])}
-              {~datum #hash([a . 1] [b . 2])}]
-       #:post [_])
-  (tok #s(prefab-st x y z) {~datum #s(prefab-st x y z)}
-       'ok
-       #:pre [{~datum #s(prefab-st _ _ _)}] #:post [_])
-  (tok #s(prefab-st x y z) #s(prefab-st _ _ _)
-       'ok)
+(tok #(1 2 3) {~datum #(1 2 3)}
+     'ok
+     #:pre [{~datum #(_ _ _)}] #:post [_])
+(tok #hash([a . 1] [b . 2]) {~datum #hash([b . 2] [a . 1])}
+     'ok
+     #:pre [{~datum #hash([_ . 1] [_ . 2])}
+            {~datum #hash([a . _] [b . _])}
+            {~datum #hasheq([a . 1] [b . 2])}
+            {~datum #hasheqv([a . 1] [b . 2])}]
+     #:post [_])
+(tok #hasheq([a . 1] [b . 2]) {~datum #hasheq([b . 2] [a . 1])}
+     'ok
+     #:pre [{~datum #hasheq([_ . 1] [_ . 2])}
+            {~datum #hasheq([a . _] [b . _])}
+            {~datum #hash([a . 1] [b . 2])}
+            {~datum #hasheqv([a . 1] [b . 2])}]
+     #:post [_])
+(tok #hasheqv([a . 1] [b . 2]) {~datum #hasheqv([b . 2] [a . 1])}
+     'ok
+     #:pre [{~datum #hasheqv([_ . 1] [_ . 2])}
+            {~datum #hasheqv([a . _] [b . _])}
+            {~datum #hasheq([a . 1] [b . 2])}
+            {~datum #hash([a . 1] [b . 2])}]
+     #:post [_])
+(tok #s(prefab-st x y z) {~datum #s(prefab-st x y z)}
+     'ok
+     #:pre [{~datum #s(prefab-st _ _ _)}] #:post [_])
+(tok #s(prefab-st x y z) #s(prefab-st _ _ _)
+     'ok)
 
-  (terx 1 2 "literal 2")
-  (terx (1 2) 1 "literal 1")
-  (terx (1 2) (1 1) "literal 1"))
+(terx 1 2 "literal 2")
+(terx (1 2) 1 "literal 1")
+(terx (1 2) (1 1) "literal 1")
 
 ;; literal patterns
 (test-case "literals: +"
