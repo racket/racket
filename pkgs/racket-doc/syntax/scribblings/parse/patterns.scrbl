@@ -1080,8 +1080,8 @@ definition in a @racket[~do] block.
 
 @specsubform[(@#,def[~post a] A-pattern)]{
 
-Like the @Spattern version, @ref[~post s], but matches a head
-pattern instead.
+Like the @Spattern version, @ref[~post s], but contains only
+@tech{@Apatterns}.
 }
 
 

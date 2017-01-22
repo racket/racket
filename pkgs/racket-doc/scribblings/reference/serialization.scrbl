@@ -408,7 +408,7 @@ information bound to
 
 The @racket[-v0] suffix on the deserialization enables future
 versioning on the structure type through
-@racket[serializable-struct/version].
+@racket[serializable-struct/versions].
 
 When a supertype is supplied as @racket[maybe-super],
 compile-time information bound to the supertype identifier must

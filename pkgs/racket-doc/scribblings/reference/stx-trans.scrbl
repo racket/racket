@@ -1183,9 +1183,6 @@ A structure representing a single imported identifier:
  @item{@racket[src-mod-path] --- a @tech{module path} (relative to the
        importing module) for the source of the imported binding.}
 
- @item{@racket[orig-stx] --- a @tech{syntax object} for the source of
-       the import, used for error reporting.}
-
  @item{@racket[mode] --- the @tech{phase level} of the binding in the
        importing module.}
 
@@ -1194,6 +1191,9 @@ A structure representing a single imported identifier:
 
  @item{@racket[orig-mode] --- the @tech{phase level} of the
        binding as exported by the exporting module.}
+
+ @item{@racket[orig-stx] --- a @tech{syntax object} for the source of
+       the import, used for error reporting.}
 
 ]}
 
@@ -1420,14 +1420,14 @@ A structure representing a single imported identifier:
 
  @item{@racket[out-sym] --- the external name of the binding.}
 
- @item{@racket[orig-stx] --- a @tech{syntax object} for the source of
-       the export, used for error reporting.}
+ @item{@racket[mode] --- the @tech{phase level} of the binding in the
+       exporting module.}
 
  @item{@racket[protect?] --- indicates whether the identifier should
        be protected (see @secref["modprotect"]).}
 
- @item{@racket[mode] --- the @tech{phase level} of the binding in the
-       exporting module.}
+ @item{@racket[orig-stx] --- a @tech{syntax object} for the source of
+       the export, used for error reporting.}
 
 ]}
 
