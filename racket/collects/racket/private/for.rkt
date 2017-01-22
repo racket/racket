@@ -1000,7 +1000,7 @@
     (make-in-vector-like 'in-string
                          "string"
                          #'string?
-                         #'string-length
+                         #'unsafe-string-length
                          #'in-string
                          #'string-ref))
 
@@ -1014,9 +1014,9 @@
     (make-in-vector-like 'in-bytes
                          "bytes"
                          #'bytes?
-                         #'bytes-length
+                         #'unsafe-bytes-length
                          #'in-bytes
-                         #'bytes-ref))
+                         #'unsafe-bytes-ref))
 
   (define-:vector-like-gen :flvector-gen unsafe-flvector-ref)
   ;; in-flvector is defined in racket/flonum
