@@ -1,4 +1,4 @@
-(module reader racket/base
+#lang racket/base
   (require syntax/module-reader
            (only-in scribble/reader make-at-readtable))
 
@@ -35,8 +35,8 @@
          (case key
            [(color-lexer)
             (try-dynamic-require 'syntax-color/scribble-lexer 'scribble-lexer)]
-           [(definitions-text-surrogate)
-            'scribble/private/indentation]
            [(drracket:indentation)
             (dynamic-require 'scribble/private/indentation 'determine-spaces)]
-           [else (fallback)]))))))
+           [(drracket:keystrokes)
+            (dynamic-require 'scribble/private/indentation 'keystrokes)]
+           [else (fallback)])))))
