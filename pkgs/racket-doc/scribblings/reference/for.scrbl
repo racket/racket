@@ -379,13 +379,15 @@ source for all syntax errors.
 @mz-examples[#:eval for-eval
 (define-syntax (for/digits stx)
   (syntax-case stx ()
-    [(_ clauses . defs+exprs)
+    [(_ clauses body ... tail-expr)
      (with-syntax ([original stx])
        #'(let-values
-           ([(n k)
-             (for/fold/derived original ([n 0] [k 1]) clauses
-               (define d (let () . defs+exprs))
-               (values (+ n (* d k)) (* k 10)))])
+             ([(n k)
+               (for/fold/derived
+                   original ([n 0] [k 1])
+                 clauses
+                 body ...
+                 (values (+ n (* tail-expr k)) (* k 10)))])
            n))]))
 
 @code:comment{If we misuse for/digits, we can get good error reporting}
@@ -405,16 +407,16 @@ source for all syntax errors.
 @code:comment{Another example: compute the max during iteration:}
 (define-syntax (for/max stx)
   (syntax-case stx ()
-     [(_ clauses . defs+exprs)
-      (with-syntax ([original stx])
-        #'(for/fold/derived original
-                            ([current-max -inf.0])
-                            clauses
-            (define maybe-new-max
-              (let () . defs+exprs))
-            (if (> maybe-new-max current-max)
-                maybe-new-max
-                current-max)))]))
+    [(_ clauses body ... tail-expr)
+     (with-syntax ([original stx])
+       #'(for/fold/derived original
+           ([current-max -inf.0])
+           clauses
+           body ...
+           (define maybe-new-max tail-expr)
+           (if (> maybe-new-max current-max)
+               maybe-new-max
+               current-max)))]))
 (for/max ([n '(3.14159 2.71828 1.61803)]
           [s '(-1      1       1)])
   (* n s))
@@ -429,13 +431,14 @@ Like @racket[for*/fold], but the extra @racket[orig-datum] is used as the source
 @mz-examples[#:eval for-eval
 (define-syntax (for*/digits stx)
   (syntax-case stx ()
-    [(_ clauses . defs+exprs)
+    [(_ clauses body ... tail-expr)
      (with-syntax ([original stx])
        #'(let-values
-           ([(n k)
-             (for*/fold/derived original ([n 0] [k 1]) clauses
-               (define d (let () . defs+exprs))
-               (values (+ n (* d k)) (* k 10)))])
+             ([(n k)
+               (for*/fold/derived original ([n 0] [k 1])
+                 clauses
+                 body ...
+                 (values (+ n (* tail-expr k)) (* k 10)))])
            n))]))
 
 (eval:error
