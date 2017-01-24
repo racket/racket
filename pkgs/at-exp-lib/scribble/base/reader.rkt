@@ -26,10 +26,10 @@
     (case key
       [(color-lexer)
        (dynamic-require 'syntax-color/scribble-lexer 'scribble-inside-lexer)]
-      [(definitions-text-surrogate)
-       'scribble/private/indentation]
       [(drracket:indentation)
        (dynamic-require 'scribble/private/indentation 'determine-spaces)]
+      [(drracket:keystrokes)
+       (dynamic-require 'scribble/private/indentation 'keystrokes)]
       [(drracket:default-extension) "scrbl"]
       [else (default key defval)])))
 
