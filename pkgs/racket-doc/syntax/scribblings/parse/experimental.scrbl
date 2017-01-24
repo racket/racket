@@ -347,4 +347,37 @@ the context above; instead, @racket[let-values] would report an
 invalid binding list.
 }
 
+@deftogether[
+ ((defthing prop:template-metafunction struct-type-property?)
+  (defthing template-metafunction? (-> any/c boolean?))
+  (defthing template-metafunction-accessor (-> template-metafunction? identifier?)))]{
+
+ A structure type property, and the associated predicate and accessor. The
+ property value is either an identifier, or the index of a field containing an
+ identifier. The identifier should be bound to the run-time metafunction. The
+ run-time metafunction should accept a syntax object representing its use, and
+ produce a new syntax object as a result.
+
+ When an identifier is bound as syntax to a structure instance with this
+ property, it is treated as a template metafunction as if the identifier had
+ been declared with define-template-metafunction.
+
+ @examples[#:eval the-eval
+           (define (my-metafunction-proc stx)
+             (syntax-case stx ()
+               [(_ n) (datum->syntax #'n (add1 (syntax-e #'n)))]))
+
+           (begin-for-syntax
+             (struct mf-struct (proc-id)
+               #:property prop:template-metafunction
+                          (struct-field-index proc-id)))
+
+           (define-syntax mf (mf-struct #'my-metafunction-proc))
+
+           (template (mf 3))
+           (with-syntax ([(x ...) #'(1 2 3)])
+             (template ((mf x) ...)))]
+ 
+ @history[#:added 6.9]}
+
 @(close-eval the-eval)
