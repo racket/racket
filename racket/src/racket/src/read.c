@@ -2633,7 +2633,7 @@ static Scheme_Object *attach_shape_tag(Scheme_Object *list,
                         intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
 					    Scheme_Object *stxsrc, 
 					    ReadParams *params, 
-					    int closer);
+                        int closer, int shape);
 
 static int next_is_delim(Scheme_Object *port,
 			 ReadParams *params,
@@ -2848,7 +2848,7 @@ read_list(Scheme_Object *port,
       }
       if (!list) list = scheme_null;
       pop_indentation(indentation);
-      list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer);
+      list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer, shape);
       list = (stxsrc
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
@@ -2945,7 +2945,7 @@ read_list(Scheme_Object *port,
       }
 
       pop_indentation(indentation);
-      list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer);
+      list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer, shape);
       list = (stxsrc
 	      ? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 	      : list);
@@ -3027,7 +3027,7 @@ read_list(Scheme_Object *port,
 	/* Assert: infixed is NULL (otherwise we raised an exception above) */
 
 	pop_indentation(indentation);
-      list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer);
+    list = attach_shape_tag(list, line, col, pos, SPAN(port, pos), stxsrc, params, closer, shape);
         list = (stxsrc
 		? scheme_make_stx_w_offset(list, line, col, pos, SPAN(port, pos), stxsrc, STX_SRCTAG)
 		: list);
@@ -3094,7 +3094,7 @@ static Scheme_Object *attach_shape_tag(Scheme_Object *list,
                         intptr_t line, intptr_t col, intptr_t pos, intptr_t span,
 					    Scheme_Object *stxsrc, 
 					    ReadParams *params, 
-					    int closer)
+                        int closer, int shape)
 {
   Scheme_Object *tag;
   tag = NULL;
@@ -3105,7 +3105,7 @@ static Scheme_Object *attach_shape_tag(Scheme_Object *list,
     tag = braces_symbol;
   }
   
-  if (tag) {
+  if (tag && shape == mz_shape_cons) {
     if (stxsrc) {
       tag = scheme_make_stx_w_offset(tag, line, col, pos, span, stxsrc, STX_SRCTAG);
     }
