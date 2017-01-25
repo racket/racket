@@ -204,7 +204,7 @@ exec racket -qu "$0" ${1+"$@"}
   (define forever 1000000000)
 
   (define (ntime v)
-    (and (caadr v) (- (caaadr v) (or (caaddr (cadr v)) 0))))
+    (and (caadr v) (- (caaadr v) (or (and (caddr (cadr v)) (caaddr (cadr v))) 0))))
 
   (define (grouping->suffix grouping)
     (if (eq? grouping 'impl)
@@ -426,7 +426,8 @@ exec racket -qu "$0" ${1+"$@"}
                                         (let* ([a (assq impl (cdr bm-run))]
                                                [n (and a (caadr a) (caaadr a))]
                                                [coeff-var (and a (caadr a) (cadr (caadr a)))]
-                                               [n2 (and a (ntime a))])
+                                               [n2 (and a (ntime a))]
+                                               [base (if (pair? base) (car base) base)])
                                           `(,@(if (no-compile-time)
                                                   null
                                                   (list
