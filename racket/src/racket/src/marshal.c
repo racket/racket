@@ -1352,6 +1352,40 @@ static Scheme_Object *ht_to_vector(Scheme_Object *ht, int delay)
   return vec;
 }
 
+static Scheme_Object *protect_expr_quotes(Scheme_Object *body)
+/* protect each expression in a phase-1-or-higher module-body vector */
+{
+  Scheme_Object *e, *v, *v2, *body2 = NULL;
+  int i, j;
+
+  for (j = SCHEME_VEC_SIZE(body); j--; ) {
+    v = SCHEME_VEC_ELS(body)[j];
+    e = scheme_protect_quote(SCHEME_VEC_ELS(v)[1]);
+    if (!SAME_OBJ(e, SCHEME_VEC_ELS(v)[1])) {
+      i = SCHEME_VEC_SIZE(v);
+      v2 = scheme_make_vector(i, NULL);
+      while (i--) {
+        SCHEME_VEC_ELS(v2)[i] = SCHEME_VEC_ELS(v)[i];
+      }
+      SCHEME_VEC_ELS(v2)[1] = e;
+      v = v2;
+
+      if (!body2) {
+        i = SCHEME_VEC_SIZE(body);
+        body2 = scheme_make_vector(i, NULL);
+        while (--i > j) {
+          SCHEME_VEC_ELS(body2)[i] = SCHEME_VEC_ELS(body)[i];
+        } 
+      }
+    }
+
+    if (body2)
+      SCHEME_VEC_ELS(body2)[j] = v;
+  }
+
+  return (body2 ? body2 : body);
+}
+
 static Scheme_Object *write_module(Scheme_Object *obj)
 {
   Scheme_Module *m = (Scheme_Module *)obj;
@@ -1380,7 +1414,10 @@ static Scheme_Object *write_module(Scheme_Object *obj)
   l = cons(m->requires, l);
 
   for (j = 0; j < m->num_phases; j++) {
-    l = cons(m->bodies[j], l);
+    v = m->bodies[j];
+    if (j > 0)
+      v = protect_expr_quotes(v);
+    l = cons(v, l);
   }
 
   cnt = 0;

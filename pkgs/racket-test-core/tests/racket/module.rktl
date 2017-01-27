@@ -2006,5 +2006,17 @@ case of module-leve bindings; it doesn't cover local bindings.
 (test 'defined dynamic-require ''uses-defines-a-variable-x-in-its-body-at-phase-1 'out)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure a hash-table constant is allowed as a compile-time RHS:
+
+(let ()
+  (define o (open-output-bytes))
+  (write (compile '(module m racket/base
+                    (require (for-syntax racket/base))
+                    (define-syntax something #hash((1 . 2)))))
+         o)
+  (parameterize ([read-accept-compiled #t])
+    (read (open-input-bytes (get-output-bytes o)))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
