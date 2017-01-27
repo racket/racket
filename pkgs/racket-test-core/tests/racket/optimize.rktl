@@ -1724,6 +1724,15 @@
                (let loop ([n 0] [m 9])
                  (loop (+ m 10) (+ n 9))))))
 
+;; Don't reorder pass a `values` with the wrong nunmber of arguments.
+;; `values` is the only primitive that is omitable and may return multiple values.
+(test-comp '(lambda (b)
+              (let ([x (unbox b)])
+                (+ (values 2 2) x)))
+           '(lambda (b)
+              (+ (values 2 2) (unbox b)))
+           #f)
+
 (test-comp '(lambda (z)
               (let-values ([(x y)
                             (if z

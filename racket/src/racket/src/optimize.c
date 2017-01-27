@@ -2987,7 +2987,8 @@ static int is_nonmutating_nondependant_primitive(Scheme_Object *rator, int n)
 {
   if (SCHEME_PRIMP(rator)
       && ((SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_OMITABLE | SCHEME_PRIM_IS_OMITABLE_ALLOCATION))
-          && !(SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_UNSAFE_OMITABLE)))
+          && !(SCHEME_PRIM_PROC_OPT_FLAGS(rator) & (SCHEME_PRIM_IS_UNSAFE_OMITABLE))
+          && !((SAME_OBJ(scheme_values_proc, rator) && (n != 1))))
       && (n >= ((Scheme_Primitive_Proc *)rator)->mina)
       && (n <= ((Scheme_Primitive_Proc *)rator)->mu.maxa))
     return 1;
