@@ -23,13 +23,17 @@
 ;; Settings that apply just to the surface syntax:
 (define (scribble-base-reader-info)
   (lambda (key defval default)
+    (define (try-dynamic-require lib export)
+      (with-handlers ([exn:missing-module?
+                       (λ (x) (default key defval))])
+        (dynamic-require lib export)))
     (case key
       [(color-lexer)
-       (dynamic-require 'syntax-color/scribble-lexer 'scribble-inside-lexer)]
+       (try-dynamic-require 'syntax-color/scribble-lexer 'scribble-inside-lexer)]
       [(drracket:indentation)
-       (dynamic-require 'scribble/private/indentation 'determine-spaces)]
+       (try-dynamic-require 'scribble/private/indentation 'determine-spaces)]
       [(drracket:keystrokes)
-       (dynamic-require 'scribble/private/indentation 'keystrokes)]
+       (try-dynamic-require 'scribble/private/indentation 'keystrokes)]
       [(drracket:default-extension) "scrbl"]
       [else (default key defval)])))
 

@@ -28,15 +28,15 @@
      (lambda (proc)
        (lambda (key defval)
          (define (fallback) (if proc (proc key defval) defval))
-         (define (try-dynamic-require mod export)
-           (or (with-handlers ([exn:fail? (λ (x) #f)])
-                 (dynamic-require mod export))
-               (fallback)))
+         (define (try-dynamic-require lib export)
+           (with-handlers ([exn:missing-module?
+                            (λ (x) (fallback))])
+             (dynamic-require lib export)))
          (case key
            [(color-lexer)
             (try-dynamic-require 'syntax-color/scribble-lexer 'scribble-lexer)]
            [(drracket:indentation)
-            (dynamic-require 'scribble/private/indentation 'determine-spaces)]
+            (try-dynamic-require 'scribble/private/indentation 'determine-spaces)]
            [(drracket:keystrokes)
-            (dynamic-require 'scribble/private/indentation 'keystrokes)]
+            (try-dynamic-require 'scribble/private/indentation 'keystrokes)]
            [else (fallback)])))))
