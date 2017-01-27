@@ -928,5 +928,45 @@
   (test #t eval '(equal? (refine-letter formal-letter) (paper 99 11 0))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the JIT handles struct-type property predicates and
+;; accessors correctly, including distinguishing them from structure
+;; predicates
+
+(define (apply-a-predicate x pred)
+  (if (pred x)
+      '(1)
+      '(2)))
+
+(define (apply-an-accessor x acc)
+  (cons (acc x) '(=)))
+
+(let ()
+  (define-values (prop:x x? x-ref) (make-struct-type-property 'x))
+  (struct chi ()
+          #:property prop:x 3)
+  
+  (test '(1) apply-a-predicate (chi) x?)
+  (test '(3 =) apply-an-accessor (chi) x-ref)
+  
+  (struct alpha (a))
+  (struct beta (b)
+          #:property prop:procedure (lambda (v) #t))
+  
+  (test '(1) apply-a-predicate (alpha 'a) alpha?)
+  (test '(1) apply-a-predicate (beta 'b) beta?)
+  
+  (test '(a =) apply-an-accessor (alpha 'a) alpha-a)
+  (test '(b =) apply-an-accessor (beta 'b) beta-b)
+  (test '(#t =) apply-an-accessor (alpha 'a) alpha?)
+  (test '(#t =) apply-an-accessor (beta 'b) beta?)
+  (test '(#f =) apply-an-accessor (alpha 'a) beta?)
+  (test '(#f =) apply-an-accessor (beta 'b) alpha?)
+
+  (test '(2) apply-a-predicate (alpha 'a) x?)
+  (test '(2) apply-a-predicate (beta 'b) x?)
+  (test '(#f =) apply-an-accessor (alpha 'a) x?)
+  (test '(#f =) apply-an-accessor (beta 'b) x?))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

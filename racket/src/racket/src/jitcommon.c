@@ -2027,6 +2027,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
     for (ii = 0; ii < 3; ii++) { /* single, multi, or tail */
       void *code;
       GC_CAN_IGNORE jit_insn *ref, *ref2, *ref3, *refno, *refslow, *refloop;
+      int prim_other_type;
 
       code = jit_get_ip();
       
@@ -2037,6 +2038,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
           sjc.struct_prop_get_multi_code = code;
         else
           sjc.struct_prop_get_code = code;
+        prim_other_type = SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER;
       } else if (i == 1) {
         if (ii == 2) 
           sjc.struct_prop_get_defl_tail_code = code;
@@ -2044,6 +2046,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
           sjc.struct_prop_get_defl_multi_code = code;
         else
           sjc.struct_prop_get_defl_code = code;
+        prim_other_type = SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER;
       } else if (i == 2) {
         if (ii == 2) 
           sjc.struct_prop_pred_tail_code = code;
@@ -2051,6 +2054,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
           sjc.struct_prop_pred_multi_code = code;
         else
           sjc.struct_prop_pred_code = code;
+        prim_other_type = SCHEME_PRIM_STRUCT_TYPE_STRUCT_PROP_PRED;
       }
     
       mz_prolog(JIT_R2);
@@ -2110,8 +2114,11 @@ static int common4b(mz_jit_state *jitter, void *_data)
       mz_patch_branch(ref);
       (void)mz_bnei_t(refslow, JIT_R0, scheme_prim_type, JIT_R2);
       jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Primitive_Proc *)0x0)->pp.flags);
-      (void)jit_bmci_i(refslow, JIT_R2, SCHEME_PRIM_TYPE_STRUCT_PROP_GETTER);
+      jit_andi_i(JIT_R2, JIT_R2, SCHEME_PRIM_OTHER_TYPE_MASK);
+      (void)jit_bnei_i(refslow, JIT_R2, prim_other_type);
       CHECK_LIMIT();
+
+      jit_jmpi(refslow);
 
       /* Check argument: */
       (void)jit_bmsi_ul(refno, JIT_R1, 0x1);
