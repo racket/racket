@@ -1613,7 +1613,9 @@ void scheme_shadow(Scheme_Env *env, Scheme_Object *n, Scheme_Object *val, int as
 
   scheme_add_module_binding(id, scheme_env_phase(env),
                             (env->module
-                             ? env->module->self_modidx
+                             ? (env->link_midx
+                                ? env->link_midx
+                                : env->module->self_modidx)
                              : scheme_false),
                             ((env->module && env->module->prefix)
                              ? env->module->prefix->src_insp_desc
