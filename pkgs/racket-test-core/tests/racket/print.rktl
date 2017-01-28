@@ -289,5 +289,19 @@
     (print ht o)))
 
 ;; ----------------------------------------
+;; Check that recursive printing accepts a structure
+;; with the `prop:output-port` property
+
+(let ()
+  (struct p (out) #:property prop:output-port 0)
+  (struct s ()
+          #:property prop:custom-write
+          (lambda (v out mode)
+            (display "ok" (p out))))
+  (define o (open-output-bytes))
+  (write (s) (p o))
+  (test "ok" get-output-string o))
+
+;; ----------------------------------------
 
 (report-errs)

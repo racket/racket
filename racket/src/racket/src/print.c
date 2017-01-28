@@ -4235,7 +4235,7 @@ static Scheme_Object *custom_recur(int notdisplay, void *_vec, int argc, Scheme_
   mz_jmp_buf escape, * volatile save;
   volatile intptr_t save_max;
 
-  if (!SCHEME_OUTPORTP(argv[1])) {
+  if (!SCHEME_OUTPUT_PORTP(argv[1])) {
     scheme_wrong_contract((notdisplay > 1)
                           ? "print/recursive"
                           : (notdisplay ? "write/recursive" : "display/recursive"),
