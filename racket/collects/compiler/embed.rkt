@@ -1486,9 +1486,8 @@
                                            (mac-dest->executable dest mred?)
                                            mred?)
                     (when mred?
-                      ;; adjust relative path (since GRacket is normally off by one):
-                      (define rel (find-relative-path (find-gui-bin-dir)
-                                                      (find-lib-dir)))
+                      ;; adjust relative path, since exe may change directory :
+                      (define rel (find-relative-path* dest (find-lib-dir)))
                       (update-framework-path (format "@executable_path/../../../~a"
                                                      (path->directory-path rel))
                                              (mac-dest->executable dest mred?)
@@ -1508,8 +1507,8 @@
             (if m
                 (if (cdr m)
                     (update-dll-dir dest (cdr m))
-                    ;; adjust relative path (since GRacket is off by one):
-                    (update-dll-dir dest "lib"))
+                    ;; adjust relative path, since exe directory can change:
+		    (update-dll-dir dest (find-relative-path* dest (find-dll-dir))))
                 ;; Check whether we need an absolute path to DLLs:
                 (let ([dir (get-current-dll-dir dest)])
                   (when (relative-path? dir)
@@ -1523,19 +1522,29 @@
                                     (if osx?
                                         (mac-dest->executable dest mred?)
                                         dest))])
+            (define (gui-bin->config rel)
+              ;; Find the path to config-dir relative to the executable
+              (define p (find-relative-path* dest (find-config-dir)))
+              (simplify-path
+               (if (eq? rel 'same)
+                   p
+                   (build-path rel p))
+               #f))
             (if m
                 (if (cdr m)
                     (update-config-dir (dest->executable dest) (cdr m))
                     (when mred?
                       (cond
                        [osx?
-                        ;; adjust relative path (since GRacket is off by one):
+                        ;; adjust relative path (since GRacket is likely off by one):
                         (update-config-dir (mac-dest->executable dest mred?)
-                                           "../../../etc/")]
+                                           (gui-bin->config "../../.."))]
                        [(eq? 'windows (cross-system-type))
                         (unless keep-exe?
-                          ;; adjust relative path (since GRacket is off by one):
-                          (update-config-dir dest "etc/"))])))
+                          ;; adjust relative path (since GRacket is likely off by one):
+                          (update-config-dir dest (gui-bin->config 'same)))]
+                       [else
+                        (update-config-dir dest (gui-bin->config 'same))])))
                 ;; Check whether we need an absolute path to config:
                 (let ([dir (get-current-config-dir (dest->executable dest))])
                   (when (relative-path? dir)
@@ -1695,11 +1704,14 @@
                   (cond
                    [osx?
                     ;; default path in `gracket' is off by one:
-                    (set-collects-path dest-exe #"../../../collects")]
+                    (set-collects-path dest-exe (path->bytes
+						 (build-path 'up 'up 'up
+                                                             (find-relative-path* dest (find-collects-dir)))))]
                    [(eq? 'windows (cross-system-type))
                     (unless keep-exe?
                       ;; off by one in this case, too:
-                      (set-collects-path dest-exe #"collects"))])])
+                      (set-collects-path dest-exe (path->bytes
+						   (find-relative-path* dest (find-collects-dir)))))])])
                 (cond
                   [(and use-starter-info? osx?)
                    (finish-osx-mred dest full-cmdline exe keep-exe? relative?)]
@@ -1808,3 +1820,7 @@
     [(list? p) (map mac-mred-collects-path-adjust p)]
     [(relative-path? p) (build-path 'up 'up 'up p)]
     [else p]))
+
+(define (find-relative-path* wrt-exe p)
+  (define-values (wrt base name) (split-path (path->complete-path wrt-exe)))
+  (find-relative-path (simplify-path wrt) (simplify-path p)))

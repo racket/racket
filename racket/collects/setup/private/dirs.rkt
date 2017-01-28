@@ -58,6 +58,8 @@
 (define-config config:include-dir 'include-dir to-path)
 (define-config config:include-search-dirs 'include-search-dirs to-path)
 (define-config config:bin-dir 'bin-dir to-path)
+(define-config config:gui-bin-dir/raw 'gui-bin-dir to-path)
+(define config:gui-bin-dir (delay/sync (or (force config:gui-bin-dir/raw) (force config:bin-dir))))
 (define-config config:config-tethered-console-bin-dir 'config-tethered-console-bin-dir to-path)
 (define-config config:config-tethered-gui-bin-dir 'config-tethered-gui-bin-dir to-path)
 (define-config config:man-dir 'man-dir to-path)
@@ -271,6 +273,7 @@
 ;; `setup/dirs`
 
 (provide config:bin-dir
+         config:gui-bin-dir
          config:config-tethered-console-bin-dir
          config:config-tethered-gui-bin-dir)
 

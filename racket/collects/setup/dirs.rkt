@@ -25,7 +25,7 @@
     [(macosx unix) "bin"]))
 
 (define-finder provide
-  config:bin-dir
+  config:gui-bin-dir
   find-gui-bin-dir
   find-user-gui-bin-dir
   (case (cross-system-type)

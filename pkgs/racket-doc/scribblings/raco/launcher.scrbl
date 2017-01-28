@@ -6,7 +6,8 @@
                      launcher/launcher-sig
                      launcher/launcher-unit
                      compiler/embed
-                     racket/gui/base))
+                     racket/gui/base
+                     setup/dirs))
 
 @title[#:tag "launcher"]{Installation-Specific Launchers}
 
@@ -267,7 +268,8 @@ arguments.}
 
 @defproc[(gracket-program-launcher-path [name string?]
                                         [#:user? user? any/c #f]
-                                        [#:tethered? tethered? any/c #f]) 
+                                        [#:tethered? tethered? any/c #f]
+                                        [#:console? console? any/c #f])
          path?]{
 
 Returns a pathname for an executable called something like @racket[name]
@@ -299,17 +301,25 @@ suffix is automatically appended to @racket[name]. For Unix,
 the Racket installation. For Mac OS, the @filepath{.app} suffix
 is appended to @racket[name].
 
-@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}]}
+If @racket[console?] is true, then the path is in the console
+executable directory, such as the one reported by
+@racket[(find-console-bin-dir)], instead of the GUI executable
+directory, such as the one reported by @racket[(find-gui-bin-dir)].
+
+@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}
+         #:changed "6.8.0.2"  @elem{Added the @racket[#:console?] argument.}]}
 
 
 @defproc[(racket-program-launcher-path [name string?]
                                        [#:user? user? any/c #f]
-                                       [#:tethered? tethered? any/c #f])
+                                       [#:tethered? tethered? any/c #f]
+                                        [#:console? console? any/c #f])
          path?]{
 
-Returns the same path as @racket[(gracket-program-launcher-path name #:user? user? #:tethered tethered?)].
+Returns the same path as @racket[(gracket-program-launcher-path name #:user? user? #:tethered tethered? #:console? console?)].
 
-@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}]}
+@history[#:changed "6.5.0.2" @elem{Added the @racket[#:tethered?] argument.}
+         #:changed "6.8.0.2"  @elem{Added the @racket[#:console?] argument.}]}
 
 
 @defproc[(gracket-launcher-is-directory?) boolean?]{

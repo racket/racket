@@ -88,6 +88,16 @@ directory}:
        @filepath{bin} sibling directory of the @tech{main collection
        directory}.}
 
+ @item{@indexed-racket['gui-bin-dir] --- a path, string, or byte
+       string for the installation's directory containing GUI
+       executables. It defaults to a the @racket['bin-dir] value, if
+       configured, or otherwise defaults in a platform-specific way:
+       to the @filepath{bin} sibling directory of the @tech{main
+       collection directory} on Unix, and to the parent of the
+       @tech{main collection directory} on Windows and Mac OS.
+
+       @history[#:added "6.8.0.2"]}
+
  @item{@indexed-racket['apps-dir] --- a path, string, or byte string
        for the installation's directory for @filepath{.desktop} files.
        It defaults to a @filepath{applications} subdirectory of the
