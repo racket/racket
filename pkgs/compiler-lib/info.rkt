@@ -13,4 +13,4 @@
 
 (define pkg-authors '(mflatt))
 
-(define version "1.4")
+(define version "1.5")

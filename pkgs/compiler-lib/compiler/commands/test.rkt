@@ -121,6 +121,7 @@
                                                         'direct
                                                         'process))]
                                    #:timeout timeout
+                                   #:ignore-stderr ignore-stderr
                                    #:responsible responsible
                                    #:lock-name lock-name
                                    #:random? random?)
@@ -271,7 +272,9 @@
         (unless (let ([s (get-output-bytes e)])
                   (or (equal? #"" s)
                       (ormap (lambda (p) (regexp-match? p s))
-                             ignore-stderr-patterns)))
+                             ignore-stderr-patterns)
+                      (and ignore-stderr
+                           (regexp-match? ignore-stderr s))))
           (parameterize ([error-print-width 16384])
             (error test-exe-name "non-empty stderr: ~e" (get-output-bytes e)))))
       (unless (zero? result-code)
@@ -331,6 +334,7 @@
                           #:try-config? try-config?
                           #:args args
                           #:timeout timeout
+                          #:ignore-stderr ignore-stderr
                           #:responsible responsible
                           #:lock-name lock-name
                           #:random? random?)
@@ -350,6 +354,8 @@
                  (lookup 'timeout
                          (lambda () timeout))
                  +inf.0)
+   #:ignore-stderr (lookup 'ignore-stderr
+                           (lambda () ignore-stderr))
    #:lock-name (lookup 'lock-name
                        (lambda () lock-name))
    #:random? (lookup 'random?
@@ -473,6 +479,7 @@
                      #:try-config? try-config?
                      #:args [args '()]
                      #:timeout [timeout +inf.0]
+                     #:ignore-stderr [ignore-stderr #f]
                      #:responsible [responsible #f]
                      #:lock-name [lock-name #f]
                      #:random? [random? #f])
@@ -527,6 +534,7 @@
                         #:try-config? try-config?
                         #:args args
                         #:timeout timeout
+                        #:ignore-stderr ignore-stderr
                         #:responsible responsible
                         #:lock-name lock-name
                         #:random? random?)
@@ -577,6 +585,7 @@
         (define norm-p (normalize-info-path p))
         (define args (get-cmdline norm-p))
         (define timeout (get-timeout norm-p))
+        (define ignore-stderr (get-ignore-stderr norm-p))
         (define lock-name (get-lock-name norm-p))
         (define responsible (get-responsible norm-p))
         (define random? (get-random norm-p))
@@ -591,6 +600,7 @@
                          #:sema continue-sema
                          #:args args
                          #:timeout timeout
+                         #:ignore-stderr ignore-stderr
                          #:responsible responsible
                          #:lock-name lock-name
                          #:random? random?))
@@ -765,6 +775,7 @@
 (define command-line-arguments (make-hash))
 (define timeouts (make-hash))
 (define lock-names (make-hash))
+(define ignore-stderrs (make-hash))
 (define responsibles (make-hash))
 (define randoms (make-hash))
 
@@ -849,7 +860,14 @@
                  #:ok-all? #t)
       (get-keyed randoms
                  'test-random
-                 (lambda (v) (string? v))))))
+                 (lambda (v) (string? v)))
+      (get-keyed ignore-stderrs
+                 'test-ignore-stderrs
+                 (lambda (v) (or (string? v)
+                            (bytes? v)
+                            (regexp? v)
+                            (byte-regexp? v)))
+                 #:ok-all? #t))))
 
 (define (check-info/parents dir subpath)
   (let loop ([dir dir] [subpath subpath])
@@ -902,13 +920,13 @@
   ;; assumes `(check-info p)` has been called and `p` is normalized
   (hash-ref lock-names p #f))
 
+(define (get-ignore-stderr p)
+  ;; assumes `(check-info p)` has been called and `p` is normalized
+  (hash-ref/check-parents ignore-stderrs p))
+
 (define (get-responsible p)
   ;; assumes `(check-info p)` has been called and `p` is normalized
-  (or (let loop ([p p])
-        (or (hash-ref responsibles p #f)
-            (let-values ([(base name dir?) (split-path p)])
-              (and (path? base)
-                   (loop base)))))
+  (or (hash-ref/check-parents responsibles p)
       ;; Check package authors:
       (let-values ([(pkg subpath) (path->pkg+subpath p #:cache pkg-cache)])
         (and pkg
@@ -922,6 +940,13 @@
                     (let ([v (info 'pkg-authors (lambda () #f))])
                       (and (ok-responsible? v)
                            v))))))))
+
+(define (hash-ref/check-parents ht p)
+  (let loop ([p p])
+    (or (hash-ref ht p #f)
+        (let-values ([(base name dir?) (split-path p)])
+          (and (path? base)
+               (loop base))))))
 
 (define (get-random p)
   ;; assumes `(check-info p)` has been called and `p` is normalized

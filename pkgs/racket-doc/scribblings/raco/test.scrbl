@@ -10,6 +10,9 @@
 
 @title[#:tag "test"]{@exec{raco test}: Run tests}
 
+@; For `history` to connect to the "compiler-lib" package:
+@declare-exporting[compiler/commands/test]
+
 The @exec{raco test} command requires and runs the (by default)
 @racket[test] submodule associated with each path given on the command
 line. Command-line flags can control which submodule is run, whether to
@@ -193,6 +196,11 @@ identifiers:
        @envvar{PLTLOCKTIME} environment variable or defaults to 4
        hours.}
 
+ @item{@racket[ignore-stderr] --- a string, byte string, or
+       @tech[#:doc reference-doc]{regexp value}, as a pattern that
+       causes error output to not be treated as a failure if the
+       output matches the pattern.}
+
  @item{@racket[random?] --- if true, indicates that the test's output
        is expected to vary. See @secref["test-responsible"].}
 
@@ -212,6 +220,8 @@ instance, a file might look like this:
   ;; don't run this file for testing:
   (module test racket/base)
  )
+
+@history[#:changed "1.5" @elem{Added @racket[ignore-stderr] support.}]
 
 @section[#:tag "test-config-info"]{Test Configuration by @filepath{info.rkt}}
 
@@ -272,6 +282,14 @@ The following @filepath{info.rkt} fields are recognized:
        for @racket[_module-path-string]. See @racket[lock-name] in
        @secref["test-config"].}
 
+ @item{@racket[test-ignore-stderrs] --- a list of @racket[(list
+       _module-path-string _pattern)] or @racket[(list 'all _pattern)]
+       to declare patterns of standard error output that are allowed a
+       non-failures for @racket[_module-path-string] or all files
+       within the directory. Each @racket[_pattern] must be a string,
+       byte string, or @tech[#:doc reference-doc]{regexp value}. See
+       @racket[ignore-stderr] in @secref["test-config"].}
+
  @item{@racket[test-randoms] --- a list of path strings (relative to
        the enclosing directory) for modules whose output varies.
        See @secref["test-responsible"].}
@@ -280,6 +298,8 @@ The following @filepath{info.rkt} fields are recognized:
        Used indirectly via @racket[get-module-suffixes].}
 
 ]
+
+@history[#:changed "1.5" @elem{Added @racket[test-ignore-stderrs] support.}]
 
 @section[#:tag "test-responsible"]{Responsible-Party and Varying-Output Logging}
 
