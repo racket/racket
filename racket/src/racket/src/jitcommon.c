@@ -2118,7 +2118,7 @@ static int common4b(mz_jit_state *jitter, void *_data)
       (void)jit_bnei_i(refslow, JIT_R2, prim_other_type);
       CHECK_LIMIT();
 
-      jit_jmpi(refslow);
+      (void)jit_jmpi(refslow);
 
       /* Check argument: */
       (void)jit_bmsi_ul(refno, JIT_R1, 0x1);
