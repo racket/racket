@@ -526,5 +526,12 @@
   (test "(a 1)\n" get-output-string o))
 
 ;; ----------------------------------------
+;; check that `pretty-print-newline` works on any output port
+
+(let ([o (open-output-bytes)])
+  (pretty-print-newline o 17)
+  (test "\n" get-output-string o))
+
+;; ----------------------------------------
 
 (report-errs)

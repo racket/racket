@@ -373,8 +373,14 @@
 (define orig-write (port-write-handler (open-output-string)))
 
 (define (pretty-print-newline pport width)
-  (let-values ([(l col p) (port-next-location pport)])
-    ((printing-port-print-line pport) #t (or col 0) width)))
+  (cond
+   [(printing-port? pport)
+    (let-values ([(l col p) (port-next-location pport)])
+      ((printing-port-print-line pport) #t (or col 0) width))]
+   [(output-port? pport)
+    (newline pport)]
+   [else
+    (raise-argument-error 'pretty-print-newline "output-port?" pport)]))
 
 (define (tentative-pretty-print-port-transfer a-pport pport)
   (let ([content ((get a-pport print-port-info-get-content))])
