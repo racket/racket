@@ -446,7 +446,15 @@
     (test #f file-stream-buffer-mode an-original-port)
     (test buffer-mode file-stream-buffer-mode a-peeking-port)
     (test (void) file-stream-buffer-mode a-peeking-port 'none)
-    (test 'none file-stream-buffer-mode a-peeking-port))
+    (test 'none file-stream-buffer-mode a-peeking-port)
+
+    (let* ([a-string-port-2 (open-input-bytes
+                             (string->bytes/utf-8 "(…)abcdef"))]
+           [a-peeking-port-2 (peeking-input-port a-string-port-2)])
+      (read a-peeking-port-2)
+      (let ([pos (file-position a-peeking-port-2)])
+        (read-bytes pos a-string-port-2) ;; discard pos bytes
+        (test "abcdef" port->string a-string-port-2))))
 
   (try-peeking 'none)
   (try-peeking 'block))
