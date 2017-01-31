@@ -3662,6 +3662,9 @@ scheme_ungetc (int ch, Scheme_Object *port)
     us[0] = ch;
     len = scheme_utf8_encode_all(us, 1, e);
 
+    if (ip->p.position > (len - 1))
+      ip->p.position -= (len - 1);
+
     if (ip->ungotten_count + len >= 24)
       scheme_signal_error("ungetc overflow");
     while (len) {

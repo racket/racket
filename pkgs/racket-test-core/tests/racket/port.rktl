@@ -921,5 +921,30 @@
    exn:fail:read?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check whether `read` counts correctly
+;; (because `read` may cheat internally with a private "unget")
+
+(let ()
+  (define p 
+    (let ([in (open-input-string "(…)abcdef")])
+      (make-input-port
+       "unicode"
+       (lambda (s)
+         (read-bytes-avail!* s in))
+       (lambda (s skip default)
+         (peek-bytes-avail!* s skip #f in))
+       void
+       #f
+       #f
+       #f
+       void
+       1)))
+
+  (test 0 file-position p)
+  (void (read p))
+  (test 5 file-position p)
+  (test  "abcde" read-string 5 p))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
