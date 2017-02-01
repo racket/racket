@@ -8229,7 +8229,7 @@ static Scheme_Object *syntax_property(int argc, Scheme_Object **argv)
   if ((argc > 3) && SCHEME_TRUEP(argv[3])) {
     if (!SCHEME_SYMBOLP(argv[1]) || SCHEME_SYM_WEIRDP(argv[1]))
       scheme_contract_error("syntax-property",
-                            "expected an interned symbol key for a preserved property"
+                            "expected an interned symbol key for a preserved property",
                             "given", 1, argv[1],
                             NULL);
   }
