@@ -244,32 +244,23 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
 ;; Gets the innermost stx that should have a real srcloc, and the offset
 ;; (number of cdrs) within that where the progress ends.
 (define (ps->stx+index ps)
-  (define (interp ps)
-    (match ps
-      [(cons (? syntax? stx) _) stx]
-      [(cons 'car parent)
-       (let* ([d (interp parent)]
-              [d (if (syntax? d) (syntax-e d) d)])
-         (cond [(pair? d) (car d)]
-               [(vector? d) (vector->list d)]
-               [(box? d) (unbox d)]
-               [(prefab-struct-key d) (struct->list d)]
-               [else (error 'ps->stx+index "INTERNAL ERROR: unexpected: ~e" d)]))]
-      [(cons (? exact-positive-integer? n) parent)
-       (for/fold ([stx (interp parent)]) ([i (in-range n)])
-         (stx-cdr stx))]
-      [(cons (? ord?) parent)
-       (interp parent)]
-      [(cons 'post parent)
-       (interp parent)]))
+  ;; stx-list-ref : (StxListof Syntax) Nat -> Syntax
+  (define (stx-list-ref stx i)
+    (unless (stx-pair? stx)
+      (error 'ps->stx+index "INTERNAL ERROR: unexpected: ~e" stx))
+    (cond
+      [(zero? i) (stx-car stx)]
+      [else (stx-list-ref (stx-cdr stx) (sub1 i))]))
   (let ([ps (ps-truncate-opaque ps)])
     (match ps
       [(cons (? syntax? stx) _)
        (cons stx 0)]
       [(cons 'car parent)
-       (cons (interp ps) 0)]
+       (define p (ps->stx+index parent))
+       (cons (stx-list-ref (car p) (cdr p)) 0)]
       [(cons (? exact-positive-integer? n) parent)
-       (cons (interp parent) n)]
+       (define p (ps->stx+index parent))
+       (cons (car p) (+ n (cdr p)))]
       [(cons (? ord?) parent)
        (ps->stx+index parent)]
       [(cons 'post parent)
@@ -686,6 +677,7 @@ This suggests the following new algorithm based on (s):
                            (or (source-location->string stx) "not available")))
                  null)))]))
 
+;; stx+index->stx : (cons Syntax Nat) -> Syntax
 (define (stx+index->stx stx+index)
   (let*-values ([(stx) (car stx+index)]
                 [(index) (cdr stx+index)]
