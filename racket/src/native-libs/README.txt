@@ -18,7 +18,7 @@ versions:
  pkg-config-0.28
  sed-4.2 (Windows only, to avoid non-GNU `sed')
  sqlite[-autoconf]-3080600 (Windows and Linux only)
- openssl-1.0.1g (Windows and Linux only)
+ openssl-1.0.2k (current PPC binaries are 1.0.1g)
  libiconv-1.14 (Windows only)
  zlib-1.2.8 (Windows and Linux only)
  libffi-3.0.13
