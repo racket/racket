@@ -262,18 +262,19 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
        (interp parent)]
       [(cons 'post parent)
        (interp parent)]))
-  (let ([ps (ps-truncate-opaque ps)])
+  (let loop ([ps (ps-truncate-opaque ps)])
     (match ps
       [(cons (? syntax? stx) _)
        (cons stx 0)]
-      [(cons 'car parent)
+      [(cons 'car _)
        (cons (interp ps) 0)]
       [(cons (? exact-positive-integer? n) parent)
-       (cons (interp parent) n)]
+       (match (loop parent)
+         [(cons stx m) (cons stx (+ m n))])]
       [(cons (? ord?) parent)
-       (ps->stx+index parent)]
+       (loop parent)]
       [(cons 'post parent)
-       (ps->stx+index parent)])))
+       (loop parent)])))
 
 
 ;; ============================================================
