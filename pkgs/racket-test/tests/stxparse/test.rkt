@@ -803,30 +803,30 @@
                         (vector-immutable 1 (s-3d) 3)
                         (list 'a (s-3d) 'c)]))
 
-(test-case "Regression test for Github issue #1602"
-  (define-syntax-class stuff
-    [pattern (2 :three)])
-
-  ;; a splicing syntax class for just 3
+;; from Alex Knauth, issue #1602 (2/2017)
+(let ()
   (define-splicing-syntax-class three
     [pattern 3])
-  
-  ;; like stuff, but with an extra attribute
+  (define-syntax-class stuff
+    [pattern (2 :three)])
+  ;; like stuff, but with an extra attribute (adds ORD progress frame)
   (define-syntax-class stuff*
     [pattern :stuff #:with random-attr 'whocares])
-  
-  (define wrong* #'wrong)
+  (terx (1 2 wrong)
+        (1 . :stuff*)
+        #rx"expected the literal 3"
+        #rx"at: wrong"))
 
-  (define (exn:expected-literal-3-at-wrong? e)
-    (match e
-      [(exn:fail:syntax (regexp #rx".*expected the literal 3.*")
-                        _
-                        (list (== wrong* bound-identifier=?)))
-       #true]
-      [_ (println e) #false]))
-  
-  (check-exn exn:expected-literal-3-at-wrong?
-             (λ ()
-               (syntax-parse #`(1 2 #,wrong*)
-                 [(1 . :stuff*)
-                  'body]))))
+;; more #1602 tests
+(terx (1 2)
+      (a . (~post (b c)))
+      #rx"expected more terms starting with any term")
+(terx (1 2)
+      (a . (~and (_ . _) (b c)))
+      #rx"expected more terms starting with any term")
+(terx #(1 2)
+      #(a b c)
+      #rx"expected more terms starting with any term")
+(terx #s(point 1)
+      #s(point a b)
+      #rx"expected more terms starting with any term")
