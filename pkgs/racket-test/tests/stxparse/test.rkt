@@ -802,3 +802,31 @@
                 #:fail [(s-3d)
                         (vector-immutable 1 (s-3d) 3)
                         (list 'a (s-3d) 'c)]))
+
+(test-case "Regression test for Github issue #1602"
+  (define-syntax-class stuff
+    [pattern (2 :three)])
+
+  ;; a splicing syntax class for just 3
+  (define-splicing-syntax-class three
+    [pattern 3])
+  
+  ;; like stuff, but with an extra attribute
+  (define-syntax-class stuff*
+    [pattern :stuff #:with random-attr 'whocares])
+  
+  (define wrong* #'wrong)
+
+  (define (exn:expected-literal-3-at-wrong? e)
+    (match e
+      [(exn:fail:syntax (regexp #rx".*expected the literal 3.*")
+                        _
+                        (list (== wrong* bound-identifier=?)))
+       #true]
+      [_ (println e) #false]))
+  
+  (check-exn exn:expected-literal-3-at-wrong?
+             (λ ()
+               (syntax-parse #`(1 2 #,wrong*)
+                 [(1 . :stuff*)
+                  'body]))))
