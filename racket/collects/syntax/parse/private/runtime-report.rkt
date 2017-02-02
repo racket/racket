@@ -78,6 +78,23 @@ deals with the fact that they might not be talking about the same terms.
 ;; A Report is (report String (Listof String) Syntax/#f Syntax/#f)
 (define-struct report (message context stx within-stx) #:prefab)
 
+;; Sometimes the point where an error occurred does not correspond to
+;; a syntax object within the original term being matched. We use one
+;; or two syntax objects to identify where an error occurred:
+;; - the "at" term is the specific point of error, coerced to a syntax
+;;   object if it isn't already
+;; - the "within" term is the closest enclosing original syntax object,
+;;   dropped (#f) if same as "at" term
+
+;; Examples (AT is pre-coercion):
+;; TERM        PATTERN     =>  AT      WITHIN
+;; #'(1)       (a:id)          #'1     --            ;; the happy case
+;; #'(1)       (a b)           ()      #'(1)         ;; tail of syntax list, too short
+;; #'(1 . ())  (a b)           #'()    --            ;; tail is already syntax
+;; #'#(1)      #(a b)          ()      #'#(1)        ;; "tail" of syntax vector
+;; #'#s(X 1)   #s(X a b)       ()      #'#s(X 1)     ;; "tail" of syntax prefab
+;; #'(1 2)     (a)             (#'2)   #'(1 2)       ;; tail of syntax list, too long
+
 
 ;; ============================================================
 ;; Progress
@@ -240,34 +257,39 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
     (cond [(= (car ips) ncdrs) (cons (cdr ips) a)]
           [else (cons (cons (- (car ips) ncdrs) (cdr ips)) a)])))
 
-;; ps->stx+index : Progress -> (cons Syntax Nat)
+;; StxIdx = (cons Syntax Nat), the "within" term and offset (#cdrs) of "at" subterm
+
+;; ps->stx+index : Progress -> StxIdx
 ;; Gets the innermost stx that should have a real srcloc, and the offset
 ;; (number of cdrs) within that where the progress ends.
 (define (ps->stx+index ps)
-  (define (interp ps)
+  (define (interp ps top?)
+    ;; if top?: first frame is 'car, must return Syntax, don't unwrap vector/struct
     (match ps
       [(cons (? syntax? stx) _) stx]
       [(cons 'car parent)
-       (let* ([d (interp parent)]
-              [d (if (syntax? d) (syntax-e d) d)])
+       (let* ([x (interp parent #f)]
+              [d (if (syntax? x) (syntax-e x) x)])
          (cond [(pair? d) (car d)]
-               [(vector? d) (vector->list d)]
+               [(vector? d)
+                (if top? x (vector->list d))]
                [(box? d) (unbox d)]
-               [(prefab-struct-key d) (struct->list d)]
+               [(prefab-struct-key d)
+                (if top? x (struct->list d))]
                [else (error 'ps->stx+index "INTERNAL ERROR: unexpected: ~e" d)]))]
       [(cons (? exact-positive-integer? n) parent)
-       (for/fold ([stx (interp parent)]) ([i (in-range n)])
+       (for/fold ([stx (interp parent #f)]) ([i (in-range n)])
          (stx-cdr stx))]
       [(cons (? ord?) parent)
-       (interp parent)]
+       (interp parent top?)]
       [(cons 'post parent)
-       (interp parent)]))
+       (interp parent top?)]))
   (let loop ([ps (ps-truncate-opaque ps)])
     (match ps
       [(cons (? syntax? stx) _)
        (cons stx 0)]
       [(cons 'car _)
-       (cons (interp ps) 0)]
+       (cons (interp ps #t) 0)]
       [(cons (? exact-positive-integer? n) parent)
        (match (loop parent)
          [(cons stx m) (cons stx (+ m n))])]
@@ -276,6 +298,22 @@ ie (ps->stx+index ps1) = (ps->stx+index ps2).
       [(cons 'post parent)
        (loop parent)])))
 
+;; stx+index->at+within : StxIdx -> (values Syntax Syntax/#f)
+(define (stx+index->at+within stx+index)
+  (define within-stx (car stx+index))
+  (define index (cdr stx+index))
+  (cond [(zero? index)
+         (values within-stx #f)]
+        [else
+         (define d (syntax-e within-stx))
+         (define stx*
+           (cond [(vector? d) (vector->list d)]
+                 [(prefab-struct-key d) (struct->list d)]
+                 [else within-stx]))
+         (define at-stx*
+           (for/fold ([x stx*]) ([_i (in-range index)]) (stx-cdr x)))
+         (values (datum->syntax within-stx at-stx* within-stx)
+                 within-stx)]))
 
 ;; ============================================================
 ;; Expectation simplification
@@ -420,7 +458,7 @@ This suggests the following new algorithm based on (s):
                    [else ;; found point of divergence
                     (append (handle-divergence groups) acc)])])))
   (define stx+index (if (pair? es) (expect->stxidx (car es)) (cons #f 0)))
-  (report/expectstack (clean-up es) (car stx+index) (cdr stx+index)))
+  (report/expectstack (clean-up es) stx+index))
 
 ;; clean-up : ExpectList -> ExpectList
 ;; Remove leading and collapse adjacent '... markers
@@ -574,17 +612,15 @@ This suggests the following new algorithm based on (s):
 ;; ============================================================
 ;; Reporting
 
-;; report/expectstack : ExpectList Syntax Nat -> Report
-(define (report/expectstack es stx index)
+;; report/expectstack : ExpectList StxIdx -> Report
+(define (report/expectstack es stx+index)
   (define frame-expect (and (pair? es) (car es)))
   (define context-frames (if (pair? es) (cdr es) null))
   (define context (append* (map context-prose-for-expect context-frames)))
   (cond [(not frame-expect)
          (report "bad syntax" context #f #f)]
         [else
-         (define-values (x cx) (stx-list-drop/cx stx stx index))
-         (define frame-stx (datum->syntax cx x cx))
-         (define within-stx (if (syntax? x) #f cx))
+         (define-values (frame-stx within-stx) (stx+index->at+within stx+index))
          (cond [(and (match frame-expect [(expect:atom '() _) #t] [_ #f])
                      (stx-pair? frame-stx))
                 (report "unexpected term" context (stx-car frame-stx) #f)]
@@ -675,7 +711,7 @@ This suggests the following new algorithm based on (s):
     ['...
      (list "while parsing different things...")]
     [(expect:thing '#f description transparent? role stx+index)
-     (let ([stx (stx+index->stx stx+index)])
+     (let-values ([(stx _within-stx) (stx+index->at+within stx+index)])
        (cons (~a "while parsing " description
                  (if role (~a " for " role) ""))
              (if (error-print-source-location)
@@ -686,12 +722,6 @@ This suggests the following new algorithm based on (s):
                        (~a " location: "
                            (or (source-location->string stx) "not available")))
                  null)))]))
-
-(define (stx+index->stx stx+index)
-  (let*-values ([(stx) (car stx+index)]
-                [(index) (cdr stx+index)]
-                [(x cx) (stx-list-drop/cx stx stx index)])
-    (datum->syntax cx x cx)))
 
 
 ;; ============================================================
