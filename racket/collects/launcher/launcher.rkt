@@ -399,37 +399,37 @@
                    (and im (eq? (cdr im) 'addon-tethered)))]
          [config? (let ([im (assoc 'install-mode aux)])
                     (and im (eq? (cdr im) 'config-tethered)))]
+         [bindir (if alt-exe
+                     (let ([m (assq 'exe-is-gracket aux)])
+                       (if (and m (cdr m))
+                           (find-lib-dir)
+                           (let ([p (path-only dest)])
+                             (if (eq? 'macosx (cross-system-type))
+                                 (let* ([cdir (or (and addon?
+                                                       (find-addon-tethered-console-bin-dir))
+                                                  (and config?
+                                                       (find-config-tethered-console-bin-dir))
+                                                  (find-console-bin-dir))]
+                                        [gdir (or (and addon?
+                                                       (find-addon-tethered-gui-bin-dir))
+                                                  (and config?
+                                                       (find-config-tethered-gui-bin-dir))
+                                                  (find-gui-bin-dir))]
+                                        [rel (find-relative-path cdir gdir)])
+                                   (cond
+                                     [(relative-path? rel)
+                                      (build-path p rel)]
+                                     [(equal? cdir gdir) p]
+                                     [else rel]))
+                                 p))))
+                     (if (eq? kind 'mred)
+                         (find-gui-bin-dir)
+                         (find-console-bin-dir)))]
          [dir-finder
-          (let ([bindir (if alt-exe
-                            (let ([m (assq 'exe-is-gracket aux)])
-                              (if (and m (cdr m))
-                                  (find-lib-dir)
-                                  (let ([p (path-only dest)])
-                                    (if (eq? 'macosx (cross-system-type))
-                                        (let* ([cdir (or (and addon?
-                                                              (find-addon-tethered-console-bin-dir))
-                                                         (and config?
-                                                              (find-config-tethered-console-bin-dir))
-                                                         (find-console-bin-dir))]
-                                               [gdir (or (and addon?
-                                                              (find-addon-tethered-gui-bin-dir))
-                                                         (and config?
-                                                              (find-config-tethered-gui-bin-dir))
-                                                         (find-gui-bin-dir))]
-                                               [rel (find-relative-path cdir gdir)])
-                                          (cond
-                                           [(relative-path? rel)
-                                            (build-path p rel)]
-                                           [(equal? cdir gdir) p]
-                                           [else rel]))
-                                        p))))
-			    (if (eq? kind 'mred)
-				(find-gui-bin-dir)
-				(find-console-bin-dir)))])
-            (if (let ([a (assq 'relative? aux)])
-                  (and a (cdr a)))
-                (make-relative-path-header dest bindir use-librktdir?)
-                (make-absolute-path-header bindir)))]
+          (if (let ([a (assq 'relative? aux)])
+                (and a (cdr a)))
+              (make-relative-path-header dest bindir use-librktdir?)
+              (make-absolute-path-header bindir))]
          [exec (format
                 "exec \"${~a}/~a~a\" ~a"
                 (if use-librktdir?
@@ -470,9 +470,7 @@
         (when use-librktdir?
           (display "# {{{ librktdir\n")
           (display "librktdir=\"$bindir/")
-          (display (find-relative-path (simplify-path
-                                        (let-values ([(base name dir?) (split-path (path->complete-path dest))])
-                                          base))
+          (display (find-relative-path bindir
                                        (simplify-path
                                         (find-lib-dir))))
           (display "\"\n")
