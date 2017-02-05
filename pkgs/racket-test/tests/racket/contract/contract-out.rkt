@@ -1196,8 +1196,22 @@
                (f)))
       (eval '(dynamic-require ''provide/contract64-m2 #f)))
    "provide/contract64-m1")
-   
-  
+
+  (test/spec-failed
+   'provide/contract65
+   '(let ()
+      (eval '(module provide/contract65-m1 racket/base
+               (require racket/contract/base)
+               (provide
+                (contract-out
+                 [f (->* () () #:pre/desc "get-apples not allowed" any)]))
+               (define (f) (values #t #t))))
+      (eval '(module provide/contract65-m2 racket/base
+               (require 'provide/contract65-m1)
+               (f)))
+      (eval '(dynamic-require ''provide/contract65-m2 #f)))
+   "provide/contract65-m2")
+
   (contract-error-test
    'contract-error-test8
    #'(begin

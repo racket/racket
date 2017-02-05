@@ -283,9 +283,14 @@
       [(-> . _) 
        (not (->-arity-check-only->? ctrct))
        (values #t (->-valid-app-shapes ctrct))]
-      [(->* . _) 
-       (values (not (->*-arity-check-only->? ctrct))
-               (->*-valid-app-shapes ctrct))]
+      [(->* . _)
+       (cond
+         [(->*-arity-check-only->? ctrct) (values #f #f)]
+         [else
+          (define shapes (->*-valid-app-shapes ctrct))
+          (if shapes
+              (values #t shapes)
+              (values #f #f))])]
       [(->i . _) (values #t (->i-valid-app-shapes ctrct))]
       [_ (values #f #f)]))
   (with-syntax ([id id]

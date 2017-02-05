@@ -830,11 +830,14 @@
     (parse->* stx this->*))
   (with-syntax ([((mandatory-dom-kwd mandatory-dom-kwd-ctc) ...) man-dom-kwds]
                 [((optional-dom-kwd optional-dom-kwd-ctc) ...) opt-dom-kwds])
-    (valid-app-shapes-from-man/opts (length (syntax->list man-dom))
-                                    (length (syntax->list opt-dom))
-                                    rest-ctc
-                                    (syntax->datum #'(mandatory-dom-kwd ...))
-                                    (syntax->datum #'(optional-dom-kwd ...)))))
+    (cond
+      [(or pre pre/desc post post/desc) #f]
+      [else
+       (valid-app-shapes-from-man/opts (length (syntax->list man-dom))
+                                       (length (syntax->list opt-dom))
+                                       rest-ctc
+                                       (syntax->datum #'(mandatory-dom-kwd ...))
+                                       (syntax->datum #'(optional-dom-kwd ...)))])))
 
 (define-syntax (->* stx)
   (syntax-case stx ()
