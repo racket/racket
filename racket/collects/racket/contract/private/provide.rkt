@@ -314,7 +314,9 @@
     #`(begin
         (define contract-id
           ;; let is here to give the right name.
-          (let ([#,ex-id (coerce-contract '#,contract-error-name ctrct)
+          (let ([#,ex-id #,(if arrow?
+                               #'ctrct
+                               #`(coerce-contract '#,contract-error-name ctrct))
                          #;(opt/c ctrct #:error-name #,contract-error-name)])
             #,ex-id))
         
