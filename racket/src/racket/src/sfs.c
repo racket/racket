@@ -29,6 +29,7 @@
 
 #include "schpriv.h"
 #include "schrunst.h"
+#include "schmach.h"
 #include "schexpobs.h"
 
 struct SFS_Info {
@@ -1360,11 +1361,39 @@ top_level_require_sfs(Scheme_Object *data, SFS_Info *rslv)
 /*                            expressions                                 */
 /*========================================================================*/
 
+static Scheme_Object *sfs_expr_k(void)
+{
+  Scheme_Thread *p = scheme_current_thread;
+  Scheme_Object *e = (Scheme_Object *)p->ku.k.p1;
+  SFS_Info *info = (SFS_Info *)p->ku.k.p2;
+
+  p->ku.k.p1 = NULL;
+  p->ku.k.p2 = NULL;
+
+  return scheme_sfs_expr(e, info, p->ku.k.i1);
+}
+
 Scheme_Object *scheme_sfs_expr(Scheme_Object *expr, SFS_Info *info, int closure_self_pos)
 /* closure_self_pos == -2 => immediately in sequence */
 {
   Scheme_Type type = SCHEME_TYPE(expr);
   int seqn, stackpos, tp;
+
+#ifdef DO_STACK_CHECK
+  {
+# include "mzstkchk.h"
+    {
+      Scheme_Thread *p = scheme_current_thread;
+
+      p->ku.k.p1 = (void *)expr;
+      p->ku.k.p2 = (void *)info;
+      p->ku.k.i1 = closure_self_pos;
+
+      return scheme_handle_stack_overflow(sfs_expr_k);
+    }
+  }
+#endif
+
 
   seqn = info->seqn;
   stackpos = info->stackpos;
