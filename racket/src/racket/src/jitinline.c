@@ -4432,7 +4432,7 @@ int scheme_generate_inlined_nary(mz_jit_state *jitter, Scheme_App_Rec *app, int 
 
       simple = (SCHEME_INTP(app->args[2])
 		&& (SCHEME_INT_VAL(app->args[2]) >= 0));
-      if (simple || scheme_can_delay_and_avoids_r1(app->args[2]))
+      if (simple || scheme_can_delay_and_avoids_r1_r2(app->args[2]))
         can_delay_index = 1;
       else
         can_delay_index = 0;

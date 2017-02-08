@@ -968,5 +968,19 @@
   (test '(#f =) apply-an-accessor (beta 'b) x?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check case of an index that's a module-level variable that is definitely
+;; defined but not a known constant
+
+(module assign-to-bytes-array-with-non-constant-offset racket/base
+  (provide out)
+  (define buf (make-bytes 4 7))
+  (define offset (if (even? (random 1)) 2 2))
+  (define f (lambda () (bytes-set! buf offset 9) (bytes-ref buf offset)))
+  (set! f f)
+  (define out (f)))
+
+(test 9 dynamic-require ''assign-to-bytes-array-with-non-constant-offset 'out)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
