@@ -141,8 +141,8 @@ Using `make' (or `make in-place') sets the installation's name to
 (i.e., unless the "racket/etc/config.rktd" file exists). The
 installation name affects, for example, the directory where
 user-specific documentation is installed. Using `make' also sets the
-default package scope is set to `installation', which means that
-package are installed by default into the installation's space instead
+default package scope to `installation', which means that
+packages are installed by default into the installation's space instead
 of user-specific space. The name and/or default-scope configuration
 can be changed through `raco pkg config'.
 
