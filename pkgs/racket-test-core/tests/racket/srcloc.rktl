@@ -1,4 +1,3 @@
-
 (load-relative "../racket/loadtest.rktl")
 
 (Section 'srcloc)
@@ -301,5 +300,12 @@
 (test ":1.2: " source-location->prefix (datum->syntax #f null (list #f 1 2 3 #f)))
 (test "::3: " source-location->prefix (datum->syntax #f null (list #f #f #f 3 #f)))
 (test "::3-7: " source-location->prefix (datum->syntax #f null (list #f #f #f 3 4)))
+
+(test (srcloc 'm #f #f #f #f)
+      build-source-location (srcloc 'm #f #f #f 0) (srcloc 'm #f #f #f 0))
+(test (srcloc 'm 1 2 3 0)
+      build-source-location (srcloc 'm 1 2 3 0) (srcloc 'm #f #f #f 0))
+(test (srcloc 'm 1 2 3 0)
+      build-source-location (srcloc 'm #f #f #f 0) (srcloc 'm 1 2 3 0))
 
 (report-errs)

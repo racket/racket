@@ -243,7 +243,10 @@
                   (values pos (- end pos)))]
                [span1 (values pos (- (+ pos1 span1) pos))]
                [span2 (values pos (- (+ pos2 span2) pos))]
-               [else (values pos #f)]))])])
+               [else (values pos #f)]))]
+           [pos1 (values pos1 span1)]
+           [pos2 (values pos2 span2)]
+           [else (values #f #f)])])
       (good #f src line col pos span))
     (good #f #f #f #f #f #f)))
 
