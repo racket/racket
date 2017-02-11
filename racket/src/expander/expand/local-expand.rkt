@@ -93,7 +93,7 @@
                (internal-definition-context? intdefs)
                (and (list? intdefs) (andmap internal-definition-context? intdefs)))
      (raise-argument-error who
-                           "(or/c #f internal-definitionc-context? (listof internal-definitionc-context?))" 
+                           "(or/c #f internal-definition-context? (listof internal-definition-context?))"
                            intdefs))
 
    (define ctx (get-current-expand-context who))
