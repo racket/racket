@@ -103,6 +103,7 @@
                                                      #:port the-port
                                                      #:ssl? #f)])
                            (check-equal? #t (hc:http-conn-live? c))
+                           (check-equal? #t (hc:http-conn-liveable? c))
                            (hc:http-conn-send! c
                                                "/"
                                                #:method method
@@ -113,17 +114,20 @@
                             (hc:http-conn-recv! c
                                                 #:method method
                                                 #:close? #t)
-                            (check-equal? #f (hc:http-conn-live? c)))))
+                            (check-equal? #f (hc:http-conn-live? c))
+                            (check-equal? #f (hc:http-conn-liveable? c)))))
                        raw ereq estatus eheaders econtent))
            #,(syntax/loc stx
                (test-e the-port
                        3 (hc:http-conn)
                        (lambda (c)
                          (check-equal? #f (hc:http-conn-live? c))
+                         (check-equal? #f (hc:http-conn-liveable? c))
                          (hc:http-conn-open! c "localhost"
                                              #:port the-port
                                              #:ssl? #f)
                          (check-equal? #t (hc:http-conn-live? c))
+                         (check-equal? #t (hc:http-conn-liveable? c))
                          (hc:http-conn-send! c
                                              "/"
                                              #:method method
@@ -134,7 +138,8 @@
                           (hc:http-conn-recv! c
                                               #:method method
                                               #:close? #t)
-                          (check-equal? #f (hc:http-conn-live? c))))
+                          (check-equal? #f (hc:http-conn-live? c))
+                          (check-equal? #f (hc:http-conn-liveable? c))))
                        raw ereq estatus eheaders econtent))
            #,(syntax/loc stx
                (test-e the-port
@@ -317,6 +322,35 @@
         (read-line from)
         (abandon-p from)))
     "MONKEYS")
+
+  (let ([c (hc:http-conn)])
+    (check-equal? #f (hc:http-conn-live? c))
+    (check-equal? #f (hc:http-conn-liveable? c))
+
+    (hc:http-conn-open! c "localhost"
+                        #:port es:port
+                        #:ssl? #f
+                        #:auto-reconnect? #t)
+    (check-equal? #t (hc:http-conn-live? c))
+    (check-equal? #t (hc:http-conn-liveable? c))
+
+    (let-values ([(status headers content-port)
+                  (hc:http-conn-sendrecv! c
+                                          "/"
+                                          #:close? #t
+                                          #:data #"BANANAS")])
+      (check-equal? #f (hc:http-conn-live? c))
+      (check-equal? #t (hc:http-conn-liveable? c))
+      (check-equal? (port->bytes content-port) #"BANANAS"))
+
+    (let-values ([(status headers content-port)
+                  (hc:http-conn-sendrecv! c
+                                          "/"
+                                          #:close? #t
+                                          #:data #"MONKEYS")])
+      (check-equal? #f (hc:http-conn-live? c))
+      (check-equal? #t (hc:http-conn-liveable? c))
+      (check-equal? (port->bytes content-port) #"MONKEYS")))
 
   (ps:shutdown-server)
   (es:shutdown-server))

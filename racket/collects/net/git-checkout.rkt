@@ -745,7 +745,8 @@
                    #:ssl? (if (eq? transport 'https)
                               (ssl-context verify?)
                               #f)
-                   #:port port)
+                   #:port port
+                   #:auto-reconnect? #t)
   
   (define packfiles
     (get-packfile-list conn repo))

@@ -47,17 +47,23 @@
 
 ;; Core
 
-(struct http-conn (host port port-usual? to from abandon-p) #:mutable)
+(struct http-conn (host port port-usual? to from abandon-p
+                        auto-reconnect? auto-reconnect-host auto-reconnect-ssl?) #:mutable)
 
 (define (make-http-conn)
-  (http-conn #f #f #f #f #f #f))
+  (http-conn #f #f #f #f #f #f #f #f #f))
 
 (define (http-conn-live? hc)
   (and (http-conn-to hc)
        (http-conn-from hc)
        #t))
 
-(define (http-conn-open! hc host-bs #:ssl? [ssl? #f] #:port [port (if ssl? 443 80)])
+(define (http-conn-liveable? hc)
+  (or (http-conn-live? hc)
+      (http-conn-auto-reconnect? hc)))
+
+(define (http-conn-open! hc host-bs #:ssl? [ssl? #f] #:port [port (if ssl? 443 80)]
+                         #:auto-reconnect? [auto-reconnect? #f])
   (http-conn-close! hc)
   (define host (->string host-bs))
   (define ssl-version (if (boolean? ssl?) 'auto ssl?))
@@ -97,10 +103,15 @@
   ;; (thread (λ () (copy-port log-i to (current-error-port))))
 
   (set-http-conn-to! hc to)
-  (set-http-conn-from! hc from))
+  (set-http-conn-from! hc from)
+
+  (set-http-conn-auto-reconnect?! hc auto-reconnect?)
+  (set-http-conn-auto-reconnect-host! hc host-bs)
+  (set-http-conn-auto-reconnect-ssl?! hc ssl?))
 
 (define (http-conn-close! hc)
-  (match-define (http-conn host port port-usual? to from abandon) hc)
+  (match-define (http-conn host port port-usual? to from abandon
+                           auto-reconnect? auto-reconnect-host auto-reconnect-ssl?) hc)
   (set-http-conn-host! hc #f)
   (when to
     (close-output-port to)
@@ -111,10 +122,16 @@
   (set-http-conn-abandon-p! hc #f))
 
 (define (http-conn-abandon! hc)
-  (match-define (http-conn host port port-usual? to from abandon) hc)
+  (match-define (http-conn host port port-usual? to from abandon
+                           auto-reconnect? auto-reconnect-host auto-reconnect-ssl?) hc)
   (when to
     (abandon to)
     (set-http-conn-to! hc #f)))
+
+(define (http-conn-enliven! hc)
+  (when (and (not (http-conn-live? hc)) (http-conn-auto-reconnect? hc))
+    (http-conn-open! hc (http-conn-auto-reconnect-host hc) #:ssl? (http-conn-auto-reconnect-ssl? hc)
+                     #:port (http-conn-port hc) #:auto-reconnect? (http-conn-auto-reconnect? hc))))
 
 (define (write-chunk out data)
   (let ([bytes (->bytes data)])
@@ -129,7 +146,9 @@
                          #:headers [headers-bs empty]
                          #:content-decode [decodes '(gzip)]
                          #:data [data #f])
-  (match-define (http-conn host port port-usual? to from _) hc)
+  (http-conn-enliven! hc)
+  (match-define (http-conn host port port-usual? to from _
+                           auto-reconnect? auto-reconnect-host auto-reconnect-ssl?) hc)
   (fprintf to "~a ~a HTTP/~a\r\n" method-bss url-bs version-bs)
   (unless (regexp-member #rx"^(?i:Host:) +.+$" headers-bs)
     (fprintf to "Host: ~a\r\n" 
@@ -240,9 +259,10 @@
 
 ;; Derived
 
-(define (http-conn-open host-bs #:ssl? [ssl? #f] #:port [port (if ssl? 443 80)])
+(define (http-conn-open host-bs #:ssl? [ssl? #f] #:port [port (if ssl? 443 80)]
+                        #:auto-reconnect? [auto-reconnect? #f])
   (define hc (make-http-conn))
-  (http-conn-open! hc host-bs #:ssl? ssl? #:port port)
+  (http-conn-open! hc host-bs #:ssl? ssl? #:port port #:auto-reconnect? auto-reconnect?)
   hc)
 
 (define (http-conn-CONNECT-tunnel proxy-host proxy-port target-host target-port #:ssl? [ssl? #f])
@@ -260,7 +280,8 @@
       (error 'make-ports "HTTP CONNECT failed: ~a" tunnel-status)))
 
   ;; SSL secure the ports
-  (match-define (http-conn _ _ _ t:to t:from _) hc)
+  (match-define (http-conn _ _ _ t:to t:from _
+                           auto-reconnect? auto-reconnect-host auto-reconnect-ssl?) hc)
   (cond [(not ssl?) ; it's just a tunnel... no ssl
          (define abandon-p (lambda (p) ((http-conn-abandon-p hc) p)))
          (values ssl? t:from t:to abandon-p)]
@@ -300,6 +321,7 @@
                          #:method [method-bss #"GET"]
                          #:content-decode [decodes '(gzip)]
                          #:close? [iclose? #f])
+  (http-conn-enliven! hc)
   (define status (http-conn-status! hc))
   (define headers (http-conn-headers! hc))
   (define close?
@@ -409,21 +431,27 @@
   [http-conn-live?
    (-> any/c
        boolean?)]
+  [http-conn-liveable?
+   (-> any/c
+       boolean?)]
   [rename
    make-http-conn http-conn
    (-> http-conn?)]
   [http-conn-open!
    (->* (http-conn? (or/c bytes? string?))
         (#:ssl? base-ssl?-tnl/c
-                #:port (between/c 1 65535))
+                #:port (between/c 1 65535)
+                #:auto-reconnect? boolean?)
         void?)]
   [http-conn-close!
    (-> http-conn? void?)]
   [http-conn-abandon!
    (-> http-conn? void?)]
+  [http-conn-enliven!
+   (-> http-conn-liveable? void?)]
   [http-conn-send!
    (->*
-    (http-conn-live? (or/c bytes? string?))
+    (http-conn-liveable? (or/c bytes? string?))
     (#:version (or/c bytes? string?)
                #:method (or/c bytes? string? symbol?)
                #:close? boolean?
@@ -435,7 +463,8 @@
   [http-conn-open
    (->* ((or/c bytes? string?))
         (#:ssl? base-ssl?-tnl/c
-                #:port (between/c 1 65535))
+                #:port (between/c 1 65535)
+                #:auto-reconnect? boolean?)
         http-conn?)]
   [http-conn-CONNECT-tunnel
     (->* ((or/c bytes? string?)
@@ -445,13 +474,13 @@
          (#:ssl? base-ssl?/c)
          (values base-ssl?/c input-port? output-port? (-> port? void?)))]
   [http-conn-recv!
-   (->* (http-conn-live?)
+   (->* (http-conn-liveable?)
         (#:content-decode (listof symbol?)
                           #:method (or/c bytes? string? symbol?)
                           #:close? boolean?)
         (values bytes? (listof bytes?) input-port?))]
   [http-conn-sendrecv!
-   (->* (http-conn-live? (or/c bytes? string?))
+   (->* (http-conn-liveable? (or/c bytes? string?))
         (#:version (or/c bytes? string?)
                    #:method (or/c bytes? string? symbol?)
                    #:headers (listof (or/c bytes? string?))

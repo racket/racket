@@ -21,8 +21,17 @@ Identifies an HTTP connection.
 @defproc[(http-conn-live? [x any/c])
          boolean?]{
 
-Identifies an HTTP connection that is "live", i.e. one for which
-@racket[http-conn-send!] is valid.
+Identifies an HTTP connection that is "live", i.e. one that is still
+connected to the server.
+
+}
+
+@defproc[(http-conn-liveable? [x any/c])
+         boolean?]{
+
+Identifies an HTTP connection that can be made "live", i.e. one for which
+@racket[http-conn-send!] is valid. Either the HTTP connection is already
+@racket[http-conn-live?], or it can @tech{auto-reconnect}.
 
 }
 
@@ -35,13 +44,18 @@ Returns a fresh HTTP connection.
 
 @defproc[(http-conn-open! [hc http-conn?] [host (or/c bytes? string?)]
                           [#:ssl? ssl?  base-ssl?-tnl/c #f]
-                          [#:port port (between/c 1 65535) (if ssl? 443 80)])
+                          [#:port port (between/c 1 65535) (if ssl? 443 80)]
+                          [#:auto-reconnect? auto-reconnect? boolean? #f])
          void?]{
 
 Uses @racket[hc] to connect to @racket[host] on port @racket[port]
 using SSL if @racket[ssl?] is not @racket[#f] (using @racket[ssl?] as
 an argument to @racket[ssl-connect] to, for example, check
-certificates.)
+certificates.) If @racket[auto-reconnect?] is @racket[#t], then the HTTP
+connection is going to try to @deftech{auto-reconnect} for subsequent requests.
+I.e., if the connection is closed when performing @racket[http-conn-send!] or
+@racket[http-conn-recv!], then @racket[http-conn-enliven!] is going to be
+called on it.
 
 If @racket[hc] is live, the connection is closed.
 
@@ -49,7 +63,8 @@ If @racket[hc] is live, the connection is closed.
 
 @defproc[(http-conn-open [host (or/c bytes? string?)]
                          [#:ssl? ssl?  base-ssl?-tnl/c #f]
-                         [#:port port (between/c 1 65535) (if ssl? 443 80)])
+                         [#:port port (between/c 1 65535) (if ssl? 443 80)]
+                         [#:auto-reconnect? auto-reconnect? boolean? #f])
          http-conn?]{
 
 Calls @racket[http-conn-open!] with a fresh connection, which is returned.
@@ -70,7 +85,15 @@ Closes the output side of @racket[hc], if it is live.
 
 }
 
-@defproc[(http-conn-send! [hc http-conn-live?] [uri (or/c bytes? string?)]
+@defproc[(http-conn-enliven! [hc http-conn?])
+         void?]{
+
+Reconnects @racket[hc] to the server, if it is @emph{not} live but it is
+configured to @tech{auto-reconnect}.
+
+}
+
+@defproc[(http-conn-send! [hc http-conn-liveable?] [uri (or/c bytes? string?)]
                           [#:version version (or/c bytes? string?) #"1.1"]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:close? close? boolean? #f]
@@ -104,7 +127,7 @@ This function does not support requests that expect
 
 }
 
-@defproc[(http-conn-recv! [hc http-conn-live?]
+@defproc[(http-conn-recv! [hc http-conn-liveable?]
                           [#:content-decode decodes (listof symbol?) '(gzip)]
                           [#:method method (or/c bytes? string? symbol?) #"GET"]
                           [#:close? close? boolean? #f])
@@ -126,7 +149,7 @@ to do so.
 @history[#:changed "6.1.1.6" @elem{Added the @racket[#:method] argument.}]}
 
 
-@defproc[(http-conn-sendrecv! [hc http-conn-live?] [uri (or/c bytes? string?)]
+@defproc[(http-conn-sendrecv! [hc http-conn-liveable?] [uri (or/c bytes? string?)]
                               [#:version version (or/c bytes? string?) #"1.1"]
                               [#:method method (or/c bytes? string? symbol?) #"GET"]
                               [#:headers headers (listof (or/c bytes? string?)) empty]
