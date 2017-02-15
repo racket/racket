@@ -283,9 +283,7 @@ DrRacket. Instead, the implementation of the
 @racketmodname[scribble/base] language provides button and
 syntax-coloring information in response to a query from DrRacket.
 
-For security reasons, only languages that have been specifically
-installed by a user can respond to language-information queries.  If
-you have installed the @racket[literal] language as described in
+If you have installed the @racket[literal] language as described in
 @secref["language-collection"], then you can adjust
 @filepath{literal/main.rkt} so that DrRacket treats the content
 of a module in the @racket[literal] language as plain text instead of
