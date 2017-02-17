@@ -294,7 +294,7 @@ verify that the named-@racket[let] syntax is working, that
 How does @racket[syntax-parse] decide which clause the programmer was
 attempting, so it can use it as a basis for error reporting? After
 all, each of the bad uses of the named-@racket[let] syntax are also
-bad uses of the normal syntax, and vice versa. And yet the macro doen
+bad uses of the normal syntax, and vice versa. And yet the macro does
 not produce errors like ``@racket[mylet]: expected sequence of
 distinct binding pairs at: @racket[loop].''
 
