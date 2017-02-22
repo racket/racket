@@ -2576,5 +2576,13 @@
   (check-combo h2 h))
 
 ;; ----------------------------------------
+;; Make sure field mutability is checked at the right level
+
+(let ()
+  (struct a (x [y #:mutable]))
+  (struct b a (z w))
+  (test #t impersonator? (impersonate-struct (b 1 2 3 4) set-a-y! void)))
+
+;; ----------------------------------------
 
 (report-errs)

@@ -6213,8 +6213,8 @@ static Scheme_Object *do_chaperone_struct(const char *name, int is_impersonator,
                                        ? st->parent_types[st->name_pos - 1]->num_slots 
                                        : 0);
           /* Must not be an immutable field. */
-          if (stype->immutables) {
-            if (stype->immutables[loc_field_pos])
+          if (st->immutables) {
+            if (st->immutables[loc_field_pos])
               scheme_contract_error(name,
                                     "cannot replace operation for an immutable field",
                                     "operation kind", 0, kind,
