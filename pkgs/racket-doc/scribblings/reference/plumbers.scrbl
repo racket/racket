@@ -25,7 +25,7 @@ Returns @racket[#t] if @racket[v] is a @tech{plumber} value,
 @history[#:added "6.0.1.8"]}
 
 
-@defproc[(make-plumber) pluber?]{
+@defproc[(make-plumber) plumber?]{
 
 Creates a new @tech{plumber}.
 
