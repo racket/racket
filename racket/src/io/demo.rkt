@@ -153,12 +153,23 @@
       (with-handlers ([exn:fail? exn-message])
         (error 'no "hi ~s" 10)))
 
-(test "error: format string requires 1 arguments, given 3"
+(test "error: format string requires 1 arguments, given 3; arguments were: 1 2 3"
       (with-handlers ([exn:fail? exn-message])
         (error 'no "hi ~s" 1 2 3)))
-(test "error: format string requires 2 arguments, given 1"
+(test "error: format string requires 2 arguments, given 1; arguments were: 8"
       (with-handlers ([exn:fail? exn-message])
         (error 'no "hi ~s ~s" 8)))
+(test "error: format string requires 2 arguments, given 100"
+      (with-handlers ([exn:fail? exn-message])
+        (apply error 'no "hi ~s ~s" (for/list ([i 100]) i))))
+(test "error: format string requires 2 arguments, given 51"
+      (with-handlers ([exn:fail? exn-message])
+        (apply error 'no "hi ~s ~s" (for/list ([i 51]) i))))
+(test (apply string-append
+             "error: format string requires 2 arguments, given 50; arguments were:"
+             (for/list ([i 50]) (string-append " " (number->string i))))
+      (with-handlers ([exn:fail? exn-message])
+        (apply error 'no "hi ~s ~s" (for/list ([i 50]) i))))
 
 (define infinite-ones 
   (make-input-port 'ones
