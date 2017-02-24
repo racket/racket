@@ -3002,11 +3002,12 @@ print(Scheme_Object *obj, int notdisplay, int compact, Scheme_Hash_Table *ht,
 	    print_utf8_string(pp, SCHEME_BYTE_STR_VAL(stx->srcloc->src), 0, SCHEME_BYTE_STRLEN_VAL(stx->srcloc->src));
 	    print_utf8_string(pp, ":", 0, 1);
 	  }
-	  if (stx->srcloc->line >= 0)
+	  if ((stx->srcloc->line >= 0)
+              && (stx->srcloc->col >= 0))
 	    sprintf(quick_buffer, 
 		    "%" PRIdPTR ":%" PRIdPTR "", 
 		    stx->srcloc->line, stx->srcloc->col-1);
-	  else
+	  else if (stx->srcloc->pos >= 0)
 	    sprintf(quick_buffer, ":%" PRIdPTR "", 
 		    stx->srcloc->pos);
 	  print_utf8_string(pp, quick_buffer, 0, -1);

@@ -2048,8 +2048,10 @@ static void post_progress(Scheme_Input_Port *ip)
 
 XFORM_NONGCING static void inc_pos(Scheme_Port *ip, int a)
 {
-  ip->column += a;
-  ip->readpos += a;
+  if (ip->column >= 0)
+    ip->column += a;
+  if (ip->readpos >= 0)
+    ip->readpos += a;
   ip->charsSinceNewline += a;
   ip->utf8state = 0;
 }
@@ -2081,13 +2083,10 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
   intptr_t i;
   int c, degot = 0;
 
-  mzAssert(ip->lineNumber >= 0);
-  mzAssert(ip->column >= 0);
-  mzAssert(ip->position >= 0);
-
   ip->oldColumn = ip->column; /* works for a single-char read, like `read' */
 
-  ip->readpos += got; /* add for CR LF below */
+  if (ip->readpos >= 0)
+    ip->readpos += got; /* add for CR LF below */
 
   /* Find start of last line: */
   for (i = got, c = 0; i--; c++) {
@@ -2125,10 +2124,12 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
     }
 	 	  
     mzAssert(n > 0);
-    ip->lineNumber += n;
+    if (ip->lineNumber >= 0)
+      ip->lineNumber += n;
     ip->was_cr = (buffer[offset + got - 1] == '\r');
     /* Now reset column to 0: */
-    ip->column = 0;
+    if (ip->column >= 0)
+      ip->column = 0;
   } else {
     ip->charsSinceNewline += c;
   }
@@ -2157,15 +2158,13 @@ XFORM_NONGCING static void do_count_lines(Scheme_Port *ip, const char *buffer, i
       col += n;
       degot += ((i - prev_i) - n);
     }
-    ip->column = col;
+    if (ip->column >= 0)
+      ip->column = col;
     ip->utf8state = state;
   }
 
-  ip->readpos -= degot;
-
-  mzAssert(ip->lineNumber >= 0);
-  mzAssert(ip->column >= 0);
-  mzAssert(ip->position >= 0);
+  if (ip->readpos >= 0)
+    ip->readpos -= degot;
 }
 
 void scheme_port_count_lines(Scheme_Port *ip, const char *buffer, intptr_t offset, intptr_t got)
