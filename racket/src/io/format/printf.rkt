@@ -195,5 +195,16 @@
 (define (value->string v)
   ((error-value->string-handler) v (error-print-width)))
 
-(define (arguments->string args)
-  "")
+(define (arguments->string fmt+args)
+  (define args (cdr fmt+args))
+  (if (or (null? args) (<= (length args) 50))
+      (parameterize ([error-print-width
+                      (max 2 (round (/ (error-print-width) (length args))))])
+        (apply string-append
+               "; "
+               "arguments were: "
+               (let loop ([ss (map value->string args)])
+                 (if (or (null? ss) (null? (cdr ss)))
+                     ss
+                     (cons (car ss) (cons " " (loop (cdr ss))))))))
+      ""))
