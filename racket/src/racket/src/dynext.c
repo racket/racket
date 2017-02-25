@@ -47,7 +47,9 @@ static Boolean get_ext_file_spec(FSSpec *spec, const char *filename );
 static Boolean load_ext_file_spec(FSSpec *spec, CFragConnectionID *connID);
 #endif
 
-#if defined(RTLD_NOW)
+#if defined(OS_X)
+# define DLOPEN_MODE (RTLD_NOW | RTLD_LOCAL)
+#elif defined(RTLD_NOW)
 # define DLOPEN_MODE (RTLD_NOW)
 #elif defined(RTLD_LAZY)
 # define DLOPEN_MODE (RTLD_LAZY)
