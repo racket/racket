@@ -3302,8 +3302,12 @@ Scheme_Object *scheme_struct_to_vector(Scheme_Object *_s, Scheme_Object *unknown
         --i;
         if (SAME_OBJ((Scheme_Object *)s, _s))
           elem = s->slots[i];
-        else
+        else {
+          /* scheme_struct_ref() may trigger a GC; see "BEWARE" above */
+          array = NULL;
           elem = scheme_struct_ref(_s, i);
+          array = SCHEME_VEC_ELS(v);
+        }
 	array[1 + (--m)] = elem;
       }
     }
