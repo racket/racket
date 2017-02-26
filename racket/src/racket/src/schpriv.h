@@ -1583,6 +1583,9 @@ typedef struct Scheme_IR_Local
     struct {
       /* Constant- and copy-propagation information: */
       Scheme_Object *known_val;
+      /* Whether `known_val` must be cleared when the variable's
+         only use is duplicated: */
+      int clear_known_on_multi_use;
       /* Number of `lambda` wrappers, which is relevant for
          accumulating closures, etc.: */
       int lambda_depth;
@@ -3300,7 +3303,6 @@ Scheme_Object *scheme_optimize_expr(Scheme_Object *, Optimize_Info *, int contex
 #define scheme_optimize_tail_context(c)   scheme_optimize_result_context(c) 
 
 int scheme_ir_duplicate_ok(Scheme_Object *o, int cross_mod);
-int scheme_ir_propagate_ok(Scheme_Object *o, Optimize_Info *info);
 int scheme_is_statically_proc(Scheme_Object *value, Optimize_Info *info, int flags);
 XFORM_NONGCING int scheme_predicate_to_local_type(Scheme_Object *pred);
 Scheme_Object *scheme_make_noninline_proc(Scheme_Object *e);

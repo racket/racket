@@ -5899,6 +5899,61 @@
            '(lambda (x)
               (list (eq? x 7) (box 5))))
 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Regression test to check that the optimizer doesn't
+;; get confused in handling a single-use function that
+;; is too large to be inlined into multiple uses.
+
+;; The optimizer had a bad interaction between delayed
+;; use marking of functions and moving single-use
+;; expressions, which somehow is relevant in this
+;; module. The fact that the code is at compile time
+;; may have been relevant for limiting cross-module inlining.
+
+(module optimizer-single-use-function-test racket/base
+  (require (for-syntax racket/base
+                       syntax/parse
+                       racket/list
+                       syntax/stx
+                       racket/syntax))
+  
+  (define-syntax (define-mongo-struct-field stx)
+    (syntax-parse stx
+      [#:ref
+       (list 'x
+             'mongo-dict-ref)]
+      [#:set!
+       (list 'x
+             'mongo-dict-set!)]
+      [#:inc
+       (list (format-id 'struct "inc-~a-~a!" 'struct 'field)
+             'mongo-dict-inc!)]
+      [#:null
+       (list (format-id 'struct "null-~a-~a!" 'struct 'field)
+             'mongo-dict-remove!)]
+      [#:push
+       (list (format-id 'struct "push-~a-~a!" 'struct 'field)
+             'mongo-dict-push!)]
+      [#:append
+       (list (format-id 'struct "append-~a-~a!" 'struct 'field)
+             'mongo-dict-append!)]
+      [#:set-add
+       (format-id 'struct "set-add-~a-~a!" 'struct 'field)]
+      [#:set-add*
+       (format-id 'struct "set-add*-~a-~a!" 'struct 'field)]
+      [#:pop
+       (list (format-id 'struct "pop-~a-~a!" 'struct 'field)
+             'mongo-dict-pop!)]
+      [#:shift
+       (list (format-id 'struct "shift-~a-~a!" 'struct 'field)
+             'mongo-dict-shift!)]
+      [#:pull
+       (list (format-id 'struct "pull-~a-~a!" 'struct 'field)
+             'mongo-dict-pull!)]
+      [#:pull* 'pull]
+      [_ 'err])))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

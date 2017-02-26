@@ -159,6 +159,8 @@ static void optimize_info_seq_init(Optimize_Info *info, Optimize_Info_Sequence *
 static void optimize_info_seq_step(Optimize_Info *info, Optimize_Info_Sequence *info_seq);
 static void optimize_info_seq_done(Optimize_Info *info, Optimize_Info_Sequence *info_seq);
 
+static int ir_propagate_ok(Scheme_Object *o, Optimize_Info *info, int used_once, Scheme_IR_Local *once_var);
+
 static Scheme_Object *estimate_closure_size(Scheme_Object *e);
 static Scheme_Object *no_potential_size(Scheme_Object *value);
 
@@ -2095,7 +2097,8 @@ static int movable_expression(Scheme_Object *expr, Optimize_Info *info,
   case scheme_ir_lambda_type:
   case scheme_case_lambda_sequence_type:
     /* Can't move across lambda or continuation if not closed, since
-       that changes allocation of a closure. */
+       that changes allocation of a closure (i.e., might allocate the
+       closure multiple times). */
     return !cross_lambda && !cross_k;
   default:
     if (SCHEME_TYPE(expr) > _scheme_ir_values_types_)
@@ -4451,7 +4454,7 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
       } else if (SAME_OBJ(var, scheme_false)) {
         return replace_tail_inside(scheme_false, inside, app->rand);
       } else {
-        if (var && scheme_ir_propagate_ok(var, info)) {
+        if (var && ir_propagate_ok(var, info, 1, NULL)) {
           /* can propagate => is a constant */
           return replace_tail_inside(scheme_true, inside, app->rand);
         }
@@ -6678,15 +6681,27 @@ int scheme_is_liftable(Scheme_Object *o, Scheme_Hash_Tree *exclude_vars, int fue
   return 0;
 }
 
-int scheme_ir_propagate_ok(Scheme_Object *value, Optimize_Info *info)
-/* Can we constant-propagate the expression `value`? */
+int ir_propagate_ok(Scheme_Object *value, Optimize_Info *info, int used_once, Scheme_IR_Local *once_var)
+/* Can we constant-propagate the expression `value`?
+   If `used_once` is true, the value is known to be used once,
+   but if `once_var` is provided, record when the result
+   relies on that once-usedness. */
 {
   if (SAME_TYPE(SCHEME_TYPE(value), scheme_ir_lambda_type)) {
     int sz;
     sz = lambda_body_size_plus_info((Scheme_Lambda *)value, 1, info, NULL);
     if ((sz >= 0) && (sz <= MAX_PROC_INLINE_SIZE))
       return 1;
-    else {
+    else if (used_once) {
+      if (once_var) {
+        /* Mark the variable as having a known value only as long as it's used just
+           once. In case the one reference is duplicated --- perhaps because it is
+           used in a non-application position in a function that is itself inlined
+           --- then the known value should be cleared. */
+        once_var->optimize.clear_known_on_multi_use = 1;
+      }
+      return 1;
+    } else {
       Scheme_Lambda *lam = (Scheme_Lambda *)value;
       if (sz < 0)
         scheme_log(info->logger,
@@ -6716,7 +6731,7 @@ int scheme_ir_propagate_ok(Scheme_Object *value, Optimize_Info *info)
     Scheme_Case_Lambda *cl = (Scheme_Case_Lambda *)value;
     int i;
     for (i = cl->count; i--; ) {
-      if (!scheme_ir_propagate_ok(cl->array[i], info))
+      if (!ir_propagate_ok(cl->array[i], info, used_once, once_var))
         return 0;
     }
     return 1;
@@ -7674,7 +7689,10 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
       if (value)
         value = extract_specialized_proc(value, value);
 
-      if (value && (scheme_ir_propagate_ok(value, body_info))) {
+      if (value && ir_propagate_ok(value,
+                                   body_info,
+                                   (!indirect && (pre_body->vars[0]->use_count == 1)),
+                                   pre_body->vars[0])) {
         pre_body->vars[0]->optimize.known_val = value;
         did_set_value = 1;
       } else if (value && !is_rec) {
@@ -7709,6 +7727,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
                                        once_vclock, once_aclock, once_kclock, once_sclock,
                                        once_increments_kclock);
             pre_body->vars[0]->optimize.known_val = (Scheme_Object *)once_used;
+            pre_body->vars[0]->optimize.clear_known_on_multi_use = 1;
           }
         }
       }
@@ -7805,7 +7824,7 @@ static Scheme_Object *optimize_lets(Scheme_Object *form, Optimize_Info *info, in
             irlv->value = value;
 
             if (!irlv->vars[0]->mutated) {
-              if (scheme_ir_propagate_ok(value, rhs_info)) {
+              if (ir_propagate_ok(value, rhs_info, irlv->vars[0]->use_count == 1, irlv->vars[0])) {
                 /* Register re-optimized as the value for the binding, but
                    maybe only if it didn't grow too much: */
                 int new_sz;
@@ -8815,7 +8834,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                                      info);
 
         if (n == 1) {
-          if (scheme_ir_propagate_ok(e, info))
+          if (ir_propagate_ok(e, info, 0, NULL))
             cnst = 1;
           else if (scheme_is_statically_proc(e, info, OMITTABLE_IGNORE_APPN_OMIT)) {
             cnst = 1;
@@ -8997,7 +9016,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
                 scheme_hash_set(originals, scheme_make_integer(start_simultaneous), old_e);
               }
 
-              if (!scheme_ir_propagate_ok(e, info)
+              if (!ir_propagate_ok(e, info, 0, NULL)
                   && scheme_is_statically_proc(e, info, 0)) {
                 /* If we previously installed a procedure for inlining,
                    don't replace that with a worse approximation. */
@@ -9396,7 +9415,7 @@ static void increment_use_count(Scheme_IR_Local *var, int as_rator)
     var->non_app_count++;
   
   if (var->optimize.known_val
-      && SAME_TYPE(SCHEME_TYPE(var->optimize.known_val), scheme_once_used_type))
+      && var->optimize.clear_known_on_multi_use)
     var->optimize.known_val = NULL;
 }
 
@@ -9758,6 +9777,12 @@ static Scheme_Once_Used *make_once_used(Scheme_Object *val, Scheme_IR_Local *var
 {
   Scheme_Once_Used *o;
 
+  /* Procedures should be handled more specifically, because there are
+     issues with transitive delayed-use registration to handle
+     `letrec`, where a value that has already been moved can be
+     marked later as used. */
+  MZ_ASSERT(!SCHEME_LAMBDAP(val));
+
   o = MALLOC_ONE_TAGGED(Scheme_Once_Used);
   o->so.type = scheme_once_used_type;
 
@@ -9865,7 +9890,15 @@ static void register_transitive_uses(Scheme_IR_Local *var, Optimize_Info *info)
   for (j = 0; j < ht->size; j++) {
     if (ht->vals[j]) {
       tvar = SCHEME_VAR(ht->keys[j]);
-      register_use(tvar, info);
+
+      if (tvar->optimize.known_val
+          && SAME_TYPE(SCHEME_TYPE(tvar->optimize.known_val), scheme_once_used_type)
+          && ((Scheme_Once_Used *)tvar->optimize.known_val)->moved) {
+        /* variable no longer used, and any transitive uses were
+           covered by re-optimizing in its use context */
+        MZ_ASSERT(!tvar->optimize_used);
+      } else
+        register_use(tvar, info);
     }
   }
 }
