@@ -1000,7 +1000,7 @@ static Scheme_Object *letrec_check_k(void)
 {
   Scheme_Thread *p = scheme_current_thread;
   Scheme_Object *expr = (Scheme_Object *)p->ku.k.p1;
-  Letrec_Check_Frame *frame = (Letrec_Check_Frame *)p->ku.k.p3;
+  Letrec_Check_Frame *frame = (Letrec_Check_Frame *)p->ku.k.p2;
   Scheme_Object *pos = (Scheme_Object *)p->ku.k.p3;
 
   p->ku.k.p1 = NULL;
