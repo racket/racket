@@ -9,6 +9,10 @@
 
 (provide pi pi.f
          nan? infinite?
+         positive-integer?
+         negative-integer?
+         nonpositive-integer?
+         nonnegative-integer?
          sqr
          sgn conjugate
          sinh cosh tanh
@@ -29,6 +33,18 @@
   (define (infinite? x)
     (unless (real? x) (raise-argument-error 'infinite? "real?" x))
     (or (= x +inf.0) (= x -inf.0)))
+
+  (define (positive-integer? x)
+    (and (integer? x) (positive? x)))
+
+  (define (negative-integer? x)
+    (and (integer? x) (negative? x)))
+
+  (define (nonpositive-integer? x)
+    (and (integer? x) (not (positive? x))))
+
+  (define (nonnegative-integer? x)
+    (and (integer? x) (not (negative? x))))
 
   ;; z^2
   (define (sqr z)
