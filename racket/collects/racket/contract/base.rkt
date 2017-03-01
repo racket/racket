@@ -145,10 +145,10 @@
 
  suggest/c
 
- negative-integer?
- positive-integer?
- nonnegative-integer?
- nonpositive-integer?
+ negative-integer/c
+ positive-integer/c
+ nonnegative-integer/c
+ nonpositive-integer/c
 
  ;; not documented.... (ie unintentional export)
  n->th)

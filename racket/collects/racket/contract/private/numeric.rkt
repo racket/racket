@@ -1,21 +1,21 @@
 #lang racket/base
 
-(provide nonpositive-integer?
-         negative-integer?
-         nonnegative-integer?
-         positive-integer?)
+(provide nonpositive-integer/c
+         negative-integer/c
+         nonnegative-integer/c
+         positive-integer/c)
 
 (require "misc.rkt"
          "and.rkt")
 
-(define nonpositive-integer?
+(define nonpositive-integer/c
   (and/c integer? (>=/c 0)))
 
-(define negative-integer?
+(define negative-integer/c
   (and/c integer? (</c 0)))
 
-(define nonnegative-integer?
+(define nonnegative-integer/c
   (and/c integer? (>=/c 0)))
 
-(define positive-integer?
+(define positive-integer/c
   (and/c integer? (>/c 0)))
