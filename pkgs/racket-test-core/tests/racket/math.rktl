@@ -123,6 +123,58 @@
 (test #t infinite? +inf.0)
 
 ;; =========================================================================
+;; positive-integer?
+
+(test #t positive-integer? 1)
+(test #t positive-integer? 1.0)
+(test #t positive-integer? 3/3)
+(test #f positive-integer? 3/2)
+(test #f positive-integer? 0)
+(test #f positive-integer? 0.0)
+(test #f positive-integer? -1)
+(test #f positive-integer? 1.3)
+
+;; =========================================================================
+;; negative-integer?
+
+(test #t negative-integer? -1)
+(test #t negative-integer? -1.0)
+(test #t negative-integer? -3/3)
+(test #f negative-integer? -3/2)
+(test #f negative-integer? 0)
+(test #f negative-integer? -0)
+(test #f negative-integer? 1)
+(test #f negative-integer? -1.3)
+
+;; =========================================================================
+;; nonpositive-integer?
+
+(test #t nonpositive-integer? -1)
+(test #t nonpositive-integer? -1.0)
+(test #t nonpositive-integer? -3/3)
+(test #t nonpositive-integer? 0)
+(test #t nonpositive-integer? -0)
+(test #t nonpositive-integer? 0.0)
+(test #t nonpositive-integer? -0.0)
+(test #f nonpositive-integer? -3/2)
+(test #f nonpositive-integer? 1)
+(test #f nonpositive-integer? -1.3)
+
+;; =========================================================================
+;; nonnegative-integer? 
+
+(test #t nonnegative-integer? 1)
+(test #t nonnegative-integer? 1.0)
+(test #t nonnegative-integer? 3/3)
+(test #t nonnegative-integer? 0)
+(test #t nonnegative-integer? -0)
+(test #t nonnegative-integer? 0.0)
+(test #t nonnegative-integer? -0.0)
+(test #f nonnegative-integer? 3/2)
+(test #f nonnegative-integer? 0.5)
+(test #f nonnegative-integer? -5)
+
+;; =========================================================================
 ;; sqr
 
 (test 4 sqr -2)
