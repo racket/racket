@@ -47,7 +47,7 @@
   (define (nonnegative-integer? x)
     (and (integer? x) (not (negative? x))))
 
-  (define natural? nonnegative-integer?)
+  (define natural? exact-nonnegative-integer?)
 
   ;; z^2
   (define (sqr z)

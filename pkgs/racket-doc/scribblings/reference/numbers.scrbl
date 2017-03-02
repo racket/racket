@@ -1299,7 +1299,7 @@ Returns @racket[#t] if @racket[x] is @racket[+inf.0], @racket[-inf.0], @racket[+
  @racket[#t] for non-negative @racket[inexact?] integers.}
 
 @defproc[(natural? [x any/c]) boolean?]{
- An alias for @racket[nonnegative-integer?].}
+ An alias for @racket[exact-nonnegative-integer?].}
 
 @; ----------------------------------------------------------------------
 @close-eval[math-eval]
