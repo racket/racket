@@ -178,12 +178,12 @@
 ;; natural?
 
 (test #t natural? 1)
-(test #t natural? 1.0)
 (test #t natural? 3/3)
 (test #t natural? 0)
 (test #t natural? -0)
-(test #t natural? 0.0)
-(test #t natural? -0.0)
+(test #f natural? 1.0)
+(test #f natural? 0.0)
+(test #f natural? -0.0)
 (test #f natural? 3/2)
 (test #f natural? 0.5)
 (test #f natural? -5)
