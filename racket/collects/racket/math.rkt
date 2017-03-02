@@ -13,6 +13,7 @@
          negative-integer?
          nonpositive-integer?
          nonnegative-integer?
+         natural?
          sqr
          sgn conjugate
          sinh cosh tanh
@@ -45,6 +46,8 @@
 
   (define (nonnegative-integer? x)
     (and (integer? x) (not (negative? x))))
+
+  (define natural? nonnegative-integer?)
 
   ;; z^2
   (define (sqr z)
