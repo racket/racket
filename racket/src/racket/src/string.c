@@ -375,9 +375,10 @@ static char *string_to_from_locale(int to_bytes,
 #define portable_isspace(x) (((x) < 128) && isspace(x))
 
 ROSYM static Scheme_Object *sys_symbol;
-ROSYM static Scheme_Object *link_symbol, *machine_symbol, *gc_symbol;
+ROSYM static Scheme_Object *link_symbol, *machine_symbol, *vm_symbol, *gc_symbol;
 ROSYM static Scheme_Object *so_suffix_symbol, *so_mode_symbol, *word_symbol;
 ROSYM static Scheme_Object *os_symbol, *fs_change_symbol;
+ROSYM static Scheme_Object *racket_symbol, *cgc_symbol, *_3m_symbol;
 ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path;
 READ_ONLY static Scheme_Object *zero_length_char_string;
 READ_ONLY static Scheme_Object *zero_length_byte_string;
@@ -406,6 +407,7 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(link_symbol);
   REGISTER_SO(machine_symbol);
   REGISTER_SO(gc_symbol);
+  REGISTER_SO(vm_symbol);
   REGISTER_SO(so_suffix_symbol);
   REGISTER_SO(so_mode_symbol);
   REGISTER_SO(word_symbol);
@@ -413,12 +415,20 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(fs_change_symbol);
   link_symbol = scheme_intern_symbol("link");
   machine_symbol = scheme_intern_symbol("machine");
+  vm_symbol = scheme_intern_symbol("vm");
   gc_symbol = scheme_intern_symbol("gc");
   so_suffix_symbol = scheme_intern_symbol("so-suffix");
   so_mode_symbol = scheme_intern_symbol("so-mode");
   word_symbol = scheme_intern_symbol("word");
   os_symbol = scheme_intern_symbol("os");
   fs_change_symbol = scheme_intern_symbol("fs-change");
+
+  REGISTER_SO(racket_symbol);
+  REGISTER_SO(cgc_symbol);
+  REGISTER_SO(_3m_symbol);
+  racket_symbol = scheme_intern_symbol("racket");
+  cgc_symbol = scheme_intern_symbol("cgc");
+  _3m_symbol = scheme_intern_symbol("3m");
 
   REGISTER_SO(zero_length_char_string);
   REGISTER_SO(zero_length_byte_string);
@@ -2774,10 +2784,14 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 
     if (SAME_OBJ(argv[0], gc_symbol)) {
 #ifdef MZ_PRECISE_GC
-      return scheme_intern_symbol("3m");
+      return _3m_symbol;
 #else
-      return scheme_intern_symbol("cgc");
+      return cgc_symbol;
 #endif
+    }
+
+    if (SAME_OBJ(argv[0], vm_symbol)) {
+      return racket_symbol;
     }
 
     if (SAME_OBJ(argv[0], so_suffix_symbol)) {
@@ -2798,7 +2812,7 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
     }
 
     if (!SAME_OBJ(argv[0], os_symbol)) {
-      scheme_wrong_contract("system-type", "(or/c 'os 'word 'link 'machine 'gc 'so-suffix 'so-mode 'word 'fs-change)", 0, argc, argv);
+      scheme_wrong_contract("system-type", "(or/c 'os 'word 'link 'machine 'vm 'gc 'so-suffix 'so-mode 'word 'fs-change)", 0, argc, argv);
       return NULL;
     }
   }
@@ -2809,17 +2823,13 @@ static Scheme_Object *system_type(int argc, Scheme_Object *argv[])
 static Scheme_Object *system_library_subpath(int argc, Scheme_Object *argv[])
 {
   if (argc > 0) {
-    Scheme_Object *sym;
-
     if (SCHEME_FALSEP(argv[0]))
       return platform_cgc_path;
     
-    sym = scheme_intern_symbol("cgc");
-    if (SAME_OBJ(sym, argv[0]))
+    if (SAME_OBJ(cgc_symbol, argv[0]))
       return platform_cgc_path;
 
-    sym = scheme_intern_symbol("3m");
-    if (SAME_OBJ(sym, argv[0]))
+    if (SAME_OBJ(_3m_symbol, argv[0]))
       return platform_3m_path;
 
     scheme_wrong_contract("system-library-subpath", "(or/c 'cgc '3m #f)", 0, argc, argv);

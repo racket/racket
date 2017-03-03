@@ -4,7 +4,7 @@
 
 @title[#:tag "runtime"]{Environment and Runtime Information}
 
-@defproc[(system-type [mode (or/c 'os 'word 'gc 'link 'machine
+@defproc[(system-type [mode (or/c 'os 'word 'vm 'gc 'link 'machine
                                   'so-suffix 'so-mode 'fs-change)
                             'os])
          (or/c symbol? string? bytes? exact-positive-integer? vector?)]{
@@ -25,6 +25,13 @@ In @indexed-racket['os] mode,
 In @indexed-racket['word] mode, the result is either @racket[32] or
 @racket[64] to indicate whether Racket is running as a 32-bit program
 or 64-bit program.
+
+In @indexed-racket['vm] mode,
+the only possible symbol result is:
+
+@itemize[
+@item{@indexed-racket['racket]}
+]
 
 In @indexed-racket['gc] mode,
 the possible symbol results are:
@@ -82,7 +89,8 @@ are:
  event} can track changes at the level of a file, as opposed to the
  file's directory; this property is @racket[#f] on Windows}
 ]
-}
+
+@history[#:changed "6.8.0.2" @elem{Added @racket['vm] mode.}]}
 
 
 @defproc[(system-language+country) string?]{
