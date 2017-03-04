@@ -2462,9 +2462,15 @@
 (test (begin (random-seed 23) (list (random 10) (random 20) (random 30)))
       'random-seed-same
       (begin (random-seed 23) (list (random 10) (random 20) (random 30))))
-(test (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40)))
+(test (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40)
+                                    (random 0 5) (random -10 10) (random -9 -3)
+                                    (random big-num (+ 10 big-num))
+                                    (random (- -3 big-num) (- big-num))))
       'random-seed-same2
-      (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40))))
+      (begin (random-seed 23) (list (random 10 20) (random 20 30) (random 30 40)
+                                    (random 0 5) (random -10 10) (random -9 -3)
+                                    (random big-num (+ 10 big-num))
+                                    (random (- -3 big-num) (- big-num)))))
 (test (begin (random-seed 23) (list (random-ref '(1 2 3)) (random-ref '(4 5 6)) (random-ref '(7 8 9))))
       'random-seed-same3
       (begin (random-seed 23) (list (random-ref '#(1 2 3)) (random-ref '#(4 5 6)) (random-ref '#(7 8 9)))))
@@ -2484,7 +2490,11 @@
 (err/rt-test (random 4294967088))
 (err/rt-test (random (expt 2 32)))
 (err/rt-test (random big-num))
+(err/rt-test (random big-num))
 (err/rt-test (random 10 5))
+(err/rt-test (random -2 -3))
+(err/rt-test (random 0 big-num))
+(err/rt-test (random -big-num 0))
 
 (random-seed 101)
 (define x (list (random 10) (random 20) (random 30)))
