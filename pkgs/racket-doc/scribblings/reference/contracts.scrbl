@@ -450,7 +450,7 @@ in which case the result is the original vector.
 
 @history[#:changed "6.3.0.5" @list{Changed flat vector contracts to not copy
            immutable vectors.}
-         #:changed "6.7.0.3" @list{Added the @racket[#:eager] option.}]}
+         #:changed "6.7.0.3" @list{Added the @racket[#:eager] option.}]
 
 
 @defproc[(vector-immutableof [c contract?]) contract?]{
