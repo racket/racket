@@ -3,6 +3,7 @@
 (require racket/contract
          racket/contract/private/generate-base
          rackunit
+         racket/math
          (for-syntax racket/base))
 
 ;; this is expected to never have a generator.
@@ -41,6 +42,8 @@
 (check-not-exn (λ () (test-contract-generation (listof number?))))
 
 (check-not-exn (λ () (test-contract-generation (integer-in 0 100))))
+(check-not-exn (λ () (test-contract-generation exact-nonnegative-integer?)))
+(check-not-exn (λ () (test-contract-generation natural?)))
 (check-not-exn (λ () (test-contract-generation (integer-in 0 (expt 2 1000)))))
 (check-not-exn (λ () (test-contract-generation (char-in #\a #\z))))
 (check-not-exn (λ () (test-contract-generation #\a)))

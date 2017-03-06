@@ -1,5 +1,6 @@
 #lang racket/base
-(require "rand.rkt")
+(require "rand.rkt"
+         "../../private/math-predicates.rkt")
 
 (provide
   contract-random-generate-fail
@@ -71,6 +72,9 @@
    exact-integer?
    exact-integer-gen
    
+   natural?
+   exact-nonnegative-integer-gen
+
    exact-nonnegative-integer?
    exact-nonnegative-integer-gen
    
