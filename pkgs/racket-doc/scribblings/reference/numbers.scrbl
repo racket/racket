@@ -842,8 +842,8 @@ both in binary and as integers.
                     [rand-gen pseudo-random-generator?
                                (current-pseudo-random-generator)])
             exact-nonnegative-integer?]
-           [(random [min (integer-in 1 4294967087)]
-                    [max (integer-in 1 4294967087)]
+           [(random [min exact-integer?]
+                    [max (integer-in (+ 1 min) (+ 4294967087 min))]
                     [rand-gen pseudo-random-generator?
                               (current-pseudo-random-generator)])
             exact-nonnegative-integer?]

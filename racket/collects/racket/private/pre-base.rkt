@@ -98,18 +98,6 @@
   (define-values (double-flonum?) ; for symmetry with single-flonum?
     (lambda (x) (flonum? x)))
 
-  (define-values (enforce-random-int-range)
-    (lambda (x)
-      (unless (and (exact-positive-integer? x)
-                   (<= x 4294967087))
-        (raise-argument-error 'random "(integer-in 1 4294967087)" x))))
-  (define-values (enforce-greater)
-    (lambda (x y)
-      (unless (> y x)
-        (raise-argument-error
-         'random
-         (string-append "integer greater than " (number->string x))
-         y))))
   (begin-encourage-inline
    (define-values (-random) ; more featureful than #%kernel's `random`
      (let ([random ; to get the right name
@@ -121,26 +109,54 @@
                (random x)]
               [(x y)
                ;; two args, either max and prng, or min and max
-               (cond [(exact-positive-integer? y) ; min and max case
-                      (enforce-random-int-range x)
-                      (enforce-random-int-range y)
-                      (enforce-greater x y)
-                      (+ x (random (- y x)))]
+               (cond [(exact-integer? y) ; min and max case
+                      (unless (exact-integer? x)
+                        (raise-argument-error 'random "exact-integer?" 0 x y))
+                      (unless (< x y)
+                        (raise-argument-error
+                         'random
+                         (string-append "(>/c " (number->string x) ")")
+                         1 x y))
+                      (let ([d (- y x)])
+                        (unless (<= d 4294967087)
+                          (raise-arguments-error
+                           'random
+                           "difference between arguments is greater than 4294967087"
+                           "min" x "max" y))
+                        (+ x (random d)))]
                      [(pseudo-random-generator? y) ; int and prng case
-                      (enforce-random-int-range x)
+                      (unless (and (exact-integer? x)
+                                   (<= 1 x 4294967087))
+                        (raise-argument-error
+                         'random "(integer-in 1 4294967087)" 0 x y))
                       (random x y)]
                      [else
+                      (unless (exact-integer? x)
+                        (raise-argument-error 'random "exact-integer?" 0 x y))
                       (raise-argument-error
                        'random
-                       "(or/c (integer-in 1 4294967087) pseudo-random-generator?)"
-                       y)])]
+                       "(or/c exact-integer? pseudo-random-generator?)"
+                       1 x y)])]
               [(min max prng) ; three args: min, max, and prng
-               (enforce-random-int-range min)
-               (enforce-random-int-range max)
-               (enforce-greater min max)
-               (unless (pseudo-random-generator? prng)
-                 (raise-argument-error 'random "pseudo-random-generator?" prng))
-               (+ min (random (- max min) prng))])])
+               (unless (exact-integer? min)
+                 (raise-argument-error 'random "exact-integer?" 0 min max prng))
+               (unless (exact-integer? max)
+                 (raise-argument-error 'random "exact-integer?" 1 min max prng))
+               (unless (< min max)
+                 (raise-argument-error
+                  'random
+                  (string-append "(>/c " (number->string min) ")")
+                  1 min max prng))
+               (let ([d (- max min)])
+                 (unless (<= d 4294967087)
+                   (raise-arguments-error
+                    'random
+                    "difference between first and second arguments is greater than 4294967087"
+                    "min" min "max" max "rand-gen" prng))
+                 (unless (pseudo-random-generator? prng)
+                   (raise-argument-error
+                    'random "pseudo-random-generator?" 2 min max prng))
+                 (+ min (random d prng)))])])
        random)))
 
   (define-values (new:collection-path)
