@@ -360,10 +360,32 @@ one of them.}
 @defproc[(real-in [n real?] [m real?]) flat-contract?]{
 An alias for @racket[between/c].}
 
-@defproc[(integer-in [j exact-integer?] [k exact-integer?]) flat-contract?]{
+@defproc[(integer-in [j (or/c exact-integer? #f)] [k (or/c exact-integer? #f)]) flat-contract?]{
 
 Returns a @tech{flat contract} that requires the input to be an exact integer
-between @racket[j] and @racket[k], inclusive.}
+between @racket[j] and @racket[k], inclusive. If either @racket[j] or @racket[k]
+is @racket[#f], then the range is unbounded on that end.
+
+@examples[#:eval (contract-eval) #:once
+          (define/contract two-digit-number
+            (integer-in 10 99)
+            23)
+
+          (define/contract not-a-two-digit-number
+            (integer-in 10 99)
+            124)
+
+          (define/contract negative-number
+            (integer-in #f -1)
+            -4)
+
+          (define/contract not-a-negative-number
+            (integer-in #f -1)
+            4)]
+
+@history[#:changed "6.8.0.2" @elem{Allow #@racket[j] and @racket[k] to be @racket[#f]}]
+
+}
 
 @defproc[(char-in [a char?] [b char?]) flat-contract?]{
 

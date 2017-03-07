@@ -1,24 +1,30 @@
 #lang racket/base
-(require "test-util.rkt")
+(require "test-util.rkt"
+         (for-syntax racket/base))
 
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace
                  'racket/class
                  'racket/contract/combinator)])
 
-  (define (test-flat-contract contract pass fail)
+  (define-syntax (test-flat-contract stx)
+    (syntax-case stx ()
+      [(_ contract pass fail)
+       #`(test-flat-contract/proc contract pass fail #,(syntax-line stx))]))
+
+  (define (test-flat-contract/proc contract pass fail line)
     (contract-eval `(,test #t flat-contract? ,contract))
     (define (run-two-tests maybe-rewrite)
       (let ([name (if (pair? contract)
                       (car contract)
                       contract)])
         (let/ec k
-          (test/spec-failed (format "~a fail" name)
+          (test/spec-failed (format "~a fail, line ~a" name line)
                             (maybe-rewrite `(contract ,contract ',fail 'pos 'neg) k)
                             'pos))
         (let/ec k
           (test/spec-passed/result
-           (format "~a pass" name)
+           (format "~a pass, line ~a" name line)
            (maybe-rewrite `(contract ,contract ',pass 'pos 'neg) k)
            pass))))
     (run-two-tests (λ (x k) x))
@@ -42,6 +48,9 @@
   (test-flat-contract '(integer-in 0 10) 10 3/2)
   (test-flat-contract '(integer-in 0 10) 1 1.0)
   (test-flat-contract '(integer-in 1 1) 1 1.0)
+  (test-flat-contract '(integer-in 1 #f) 1 -1)
+  (test-flat-contract '(integer-in #f 1) -1 2)
+  (test-flat-contract '(integer-in #f #f) -1 "x")
   (test-flat-contract '(char-in #\a #\z) #\a #\Z)
   (test-flat-contract '(char-in #\a #\z) #\z #\A)
   (test-flat-contract '(char-in #\a #\z) #\b "b")

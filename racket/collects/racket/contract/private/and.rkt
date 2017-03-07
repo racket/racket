@@ -214,32 +214,63 @@
 (struct integer-in-ctc (start end)
   #:property prop:flat-contract
   (build-flat-contract-property
-   #:name (λ (ctc) 
-            `(integer-in ,(integer-in-ctc-start ctc)
-                         ,(integer-in-ctc-end ctc)))
+   #:name (λ (ctc)
+            (define start (integer-in-ctc-start ctc))
+            (define end (integer-in-ctc-end ctc))
+            (cond
+              [(or start end)
+               `(integer-in ,(integer-in-ctc-start ctc)
+                            ,(integer-in-ctc-end ctc))]
+              [else 'exact-integer?]))
    #:first-order (λ (ctc)
                    (define start (integer-in-ctc-start ctc))
                    (define end (integer-in-ctc-end ctc))
-                   (λ (x) (and (exact-integer? x)
-                               (<= start x end))))
+                   (cond
+                     [(and start end) (λ (x) (and (exact-integer? x) (<= start x end)))]
+                     [start (λ (x) (and (exact-integer? x) (<= start x)))]
+                     [end (λ (x) (and (exact-integer? x) (<= x end)))]
+                     [else exact-integer?]))
    #:stronger (λ (this that)
-                (define this-start (integer-in-ctc-start this))
-                (define this-end (integer-in-ctc-end that))
+                (define this-start (or (integer-in-ctc-start this) -inf.0))
+                (define this-end (or (integer-in-ctc-end this) +inf.0))
                 (cond
                   [(integer-in-ctc? that)
-                   (define that-start (integer-in-ctc-start that))
-                   (define that-end (integer-in-ctc-end that))
+                   (define that-start (or (integer-in-ctc-start that) -inf.0))
+                   (define that-end (or (integer-in-ctc-end that) +inf.0))
                    (<= that-start this-start this-end that-end)]
                   [else #f]))
    #:generate (λ (ctc)
                 (define start (integer-in-ctc-start ctc))
                 (define end (integer-in-ctc-end ctc))
-                (λ (fuel)
-                  (λ ()
-                    (+ start (random (min 4294967087 (+ (- end start) 1)))))))))
+                (define max-random-range 4294967087)
+                (cond
+                  [(or start end)
+                   (define _start (or start (- end max-random-range)))
+                   (define _end (or end (+ start max-random-range)))
+                   (λ (fuel)
+                     (λ ()
+                       (+ _start (random (min 4294967087 (+ (- _end _start) 1))))))]
+                  [else
+                   (λ (fuel)
+                     (λ ()
+                       (cond
+                         [(zero? (random 20)) 0]
+                         [else
+                          (* (if (zero? (random 2)) -1 1)
+                             (+ (expt 2 (geo-dist 1/2))
+                                (geo-dist 1/2)))])))]))))
+
+(define (geo-dist p)
+  (let loop ([n 0])
+    (cond
+      [(< (random) p) (loop (+ n 1))]
+      [else n])))
 
 (define/final-prop (integer-in start end)
-  (check-two-args 'integer-in start end exact-integer? exact-integer?)
-  (if (= start end)
-      (and/c start exact?)
-      (integer-in-ctc start end)))
+  (define (|(or/c #f exact-integer?)| x) (or (not x) (exact-integer? x)))
+  (check-two-args 'integer-in start end |(or/c #f exact-integer?)| |(or/c #f exact-integer?)|)
+  (cond
+    [(and start end (= start end))
+     (and/c start exact?)]
+    [else
+     (integer-in-ctc start end)]))
