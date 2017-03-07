@@ -107,9 +107,25 @@
         (print (contract-struct-name stct) port 1)
         (write-suffix)])]))
 
-(define (contract? x) (and (coerce-contract/f x) #t))
+(define (contract? x)
+  (or (simple-flat-contract? x)
+      (and (coerce-contract/f x) #t)))
 
 (define (flat-contract? x)
+  (or (simple-flat-contract? x)
+      (let ([c (coerce-contract/f x)])
+        (and c
+             (flat-contract-struct? c)))))
+
+(define (chaperone-contract? x)
+  (or (simple-flat-contract? x)
+      (let ([c (coerce-contract/f x)])
+        (and c
+             (or (chaperone-contract-struct? c)
+                 (and (prop:opt-chaperone-contract? c)
+                      ((prop:opt-chaperone-contract-get-test c) c)))))))
+  
+(define (simple-flat-contract? x)
   (or (and (procedure? x) (procedure-arity-includes? x 1))
       (null? x)
       (boolean? x)
@@ -120,17 +136,7 @@
       (string? x)
       (number? x)
       (regexp? x)
-      (byte-regexp? x)
-      (let ([c (coerce-contract/f x)])
-        (and c
-             (flat-contract-struct? c)))))
-
-(define (chaperone-contract? x)
-  (let ([c (coerce-contract/f x)])
-    (and c
-         (or (chaperone-contract-struct? c)
-             (and (prop:opt-chaperone-contract? c)
-                  ((prop:opt-chaperone-contract-get-test c) c))))))
+      (byte-regexp? x)))
 
 (define (impersonator-contract? x)
   (let ([c (coerce-contract/f x)])
@@ -323,57 +329,8 @@
   (set! between/c-s-high b/c-s-h))
 
 (define (coerce-contract/f x [name name-default])
-  (define (coerce-simple-value x)
-    (cond
-      [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
-      [(and (procedure? x) (procedure-arity-includes? x 1))
-       (cond
-         [(chaperone-of? x null?) list/c-empty]
-         [(chaperone-of? x list?)
-          (unless listof-any
-            (error 'coerce-contract/f::listof-any "too soon!"))
-          listof-any]
-         [(chaperone-of? x boolean?) boolean?/c]
-         [(chaperone-of? x pair?)
-          (unless consc-anyany
-            (error 'coerce-contract/f::consc-anyany "too soon!"))
-          consc-anyany]
-         [(chaperone-of? x real?)
-          (unless between/c-inf+inf
-            (error 'coerce-contract/f::between/c-inf+inf "too soon!"))
-          (if (name-default? name)
-              between/c-inf+inf
-              (renamed-between/c -inf.0 +inf.0 name))]
-         [else
-          (make-predicate-contract (if (name-default? name)
-                                       (or (object-name x) '???)
-                                       name)
-                                   x
-                                   #f
-                                   (memq x the-known-good-contracts))])]
-      [(null? x)
-       (unless list/c-empty
-         (error 'coerce-contract/f::list/c-empty "too soon!"))
-       list/c-empty]
-      [(not x) false/c-contract]
-      [(equal? x #t) true/c-contract]
-      [(or (symbol? x) (boolean? x) (keyword? x))
-       (make-eq-contract x
-                         (if (name-default? name)
-                             (if (or (null? x)
-                                     (symbol? x))
-                                 `',x
-                                 x)
-                             name))]
-      [(char? x) (make-char-in/c x x)]
-      [(or (bytes? x) (string? x) (equal? +nan.0 x) (equal? +nan.f x))
-       (make-equal-contract x (if (name-default? name) x name))]
-      [(number? x)
-       (make-=-contract x (if (name-default? name) x name))]
-      [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x (if (name-default? name) x name))]
-      [else #f]))
   (cond
-    [(coerce-simple-value x) => values]
+    [(coerce-simple-value name x) => values]
     [(name-default? name) (and (contract-struct? x) x)]
     [(predicate-contract? x)
      (struct-copy predicate-contract x [name name])]
@@ -381,6 +338,57 @@
     [(equal-contract? x) (make-eq-contract (equal-contract-val x) name)]
     [(=-contract? x) (make-=-contract (=-contract-val x) name)]
     [(regexp/c? x) (make-regexp/c (regexp/c-reg x) name)]
+    [else #f]))
+
+
+(define (coerce-simple-value name x)
+  (cond
+    [(contract-struct? x) #f] ;; this has to come first, since some of these are procedure?.
+    [(and (procedure? x) (procedure-arity-includes? x 1))
+     (cond
+       [(chaperone-of? x null?) list/c-empty]
+       [(chaperone-of? x list?)
+        (unless listof-any
+          (error 'coerce-contract/f::listof-any "too soon!"))
+        listof-any]
+       [(chaperone-of? x boolean?) boolean?/c]
+       [(chaperone-of? x pair?)
+        (unless consc-anyany
+          (error 'coerce-contract/f::consc-anyany "too soon!"))
+        consc-anyany]
+       [(chaperone-of? x real?)
+        (unless between/c-inf+inf
+          (error 'coerce-contract/f::between/c-inf+inf "too soon!"))
+        (if (name-default? name)
+            between/c-inf+inf
+            (renamed-between/c -inf.0 +inf.0 name))]
+       [else
+        (make-predicate-contract (if (name-default? name)
+                                     (or (object-name x) '???)
+                                     name)
+                                 x
+                                 #f
+                                 (memq x the-known-good-contracts))])]
+    [(null? x)
+     (unless list/c-empty
+       (error 'coerce-contract/f::list/c-empty "too soon!"))
+     list/c-empty]
+    [(not x) false/c-contract]
+    [(equal? x #t) true/c-contract]
+    [(or (symbol? x) (boolean? x) (keyword? x))
+     (make-eq-contract x
+                       (if (name-default? name)
+                           (if (or (null? x)
+                                   (symbol? x))
+                               `',x
+                               x)
+                           name))]
+    [(char? x) (make-char-in/c x x)]
+    [(or (bytes? x) (string? x) (equal? +nan.0 x) (equal? +nan.f x))
+     (make-equal-contract x (if (name-default? name) x name))]
+    [(number? x)
+     (make-=-contract x (if (name-default? name) x name))]
+    [(or (regexp? x) (byte-regexp? x)) (make-regexp/c x (if (name-default? name) x name))]
     [else #f]))
 
 (define the-known-good-contracts
