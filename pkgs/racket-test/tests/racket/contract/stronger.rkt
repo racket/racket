@@ -4,22 +4,43 @@
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace 'racket/contract
                                                'racket/list
-                                               'racket/class)])
+                                               'racket/class
+                                               'racket/math)])
   
   (contract-eval '(define-contract-struct couple (hd tl)))
   (contract-eval '(define-contract-struct triple (a b c)))
-  
+
   (ctest #t contract-stronger? any/c any/c)
   (ctest #t contract-stronger? integer? any/c)
+
   (ctest #t contract-stronger? (integer-in 0 4) (integer-in 0 4))
   (ctest #t contract-stronger? (integer-in 1 3) (integer-in 0 4))
   (ctest #f contract-stronger? (integer-in 0 4) (integer-in 1 3))
   (ctest #f contract-stronger? (integer-in 0 4) (integer-in 1 #f))
-  (ctest #t contract-stronger? (integer-in 0 4) (integer-in #f 3))
+  (ctest #f contract-stronger? (integer-in 0 4) (integer-in #f 3))
+  (ctest #t contract-stronger? (integer-in 0 4) (integer-in #f 4))
   (ctest #t contract-stronger? (integer-in 0 #f) (integer-in #f #f))
   (ctest #t contract-stronger? (integer-in #f 0) (integer-in #f #f))
   (ctest #t contract-stronger? (integer-in 0 0) (and/c 0 exact?))
   (ctest #t contract-stronger? (and/c 0 exact?) (integer-in 0 0))
+  (ctest #t contract-stronger? exact-integer? (integer-in #f #f))
+  (ctest #t contract-stronger? (integer-in #f #f) exact-integer?)
+  (ctest #t contract-stronger? (integer-in 0 #f) exact-nonnegative-integer?)
+  (ctest #t contract-stronger? (integer-in 0 #f) natural?)
+  (ctest #t contract-stronger? natural? (integer-in 0 #f))
+  (ctest #t contract-stronger? (integer-in 1 #f) exact-positive-integer?)
+  (ctest #t contract-stronger? exact-positive-integer? (integer-in 1 #f))
+  (ctest #t contract-stronger? natural? exact-integer?) ;; this actually is `integer-in`
+
+  (ctest #t contract-stronger? (integer-in 0 5) (and/c natural? (<=/c 5)))
+  (ctest #t contract-stronger? (and/c natural? (<=/c 5)) (integer-in 0 5))
+  (ctest #t contract-stronger? (integer-in 0 5) (and/c exact-nonnegative-integer? (<=/c 5)))
+  (ctest #t contract-stronger? (and/c exact-nonnegative-integer? (<=/c 5)) (integer-in 0 5))
+  (ctest #t contract-stronger? (integer-in 5 #f) (and/c natural? (>=/c 5)))
+  (ctest #t contract-stronger? (and/c natural? (>=/c 5)) (integer-in 5 #f))
+  (ctest #t contract-stronger? (integer-in 0 #f) (and/c exact-nonnegative-integer? (>=/c -4)))
+  (ctest #t contract-stronger? (and/c exact-nonnegative-integer? (>=/c -4)) (integer-in 0 #f))
+
   (ctest #t contract-stronger? #\a (char-in #\a #\c))
   (ctest #f contract-stronger? #\a (char-in #\b #\c))
   (ctest #t contract-stronger? (char-in #\f #\q) (char-in #\a #\z))

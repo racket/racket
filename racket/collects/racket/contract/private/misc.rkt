@@ -53,7 +53,9 @@
 
          suggest/c
 
-         flat-contract-with-explanation)
+         flat-contract-with-explanation
+
+         (struct-out between/c-s))
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()

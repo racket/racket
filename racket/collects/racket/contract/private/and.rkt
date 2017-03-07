@@ -4,6 +4,7 @@
                      "arr-util.rkt")
          racket/promise
          (only-in "../../private/promise.rkt" prop:force promise-forcer)
+         "../../private/math-predicates.rkt"
          "prop.rkt"
          "blame.rkt"
          "guts.rkt"
@@ -185,31 +186,67 @@
       [(andmap flat-contract? contracts)
        (define preds (map flat-contract-predicate contracts))
        (cond
-         [(and (chaperone-of? (car preds) real?)
-               (pair? (cdr preds))
+         [(and (pair? (cdr preds))
                (null? (cddr preds)))
-          (define second-pred (cadr preds))
           (cond
-            [(chaperone-of? second-pred negative?)
-             (</c 0)]
-            [(chaperone-of? second-pred positive?)
-             (>/c 0)]
-            [else
-             (define second-contract (cadr contracts))
+            [(chaperone-of? (car preds) real?)
+             (define second-pred (cadr preds))
              (cond
-               [(equal? (contract-name second-contract) '(not/c positive?))
-                (<=/c 0)]
-               [(equal? (contract-name second-contract) '(not/c negative?))
-                (>=/c 0)]
+               [(chaperone-of? second-pred negative?)
+                (</c 0)]
+               [(chaperone-of? second-pred positive?)
+                (>/c 0)]
                [else
-                (make-first-order-and/c contracts preds)])])]
+                (define second-contract (cadr contracts))
+                (cond
+                  [(equal? (contract-name second-contract) '(not/c positive?))
+                   (<=/c 0)]
+                  [(equal? (contract-name second-contract) '(not/c negative?))
+                   (>=/c 0)]
+                  [else
+                   (make-first-order-and/c contracts preds)])])]
+            [(or (chaperone-of? (car preds) exact-nonnegative-integer?)
+                 (chaperone-of? (car preds) natural?)
+                 (chaperone-of? (cadr preds) exact-nonnegative-integer?)
+                 (chaperone-of? (cadr preds) natural?))
+             (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
+             (cond
+               [(between/c-s? other)
+                (define other-low (between/c-s-low other))
+                (define other-high (between/c-s-high other))
+                (integer-in (exact-ceiling (max 0 (if (= other-low -inf.0) 0 other-low)))
+                            (if (= other-high +inf.0) #f (exact-floor other-high)))]
+               [else (make-first-order-and/c contracts preds)])]
+            [(or (chaperone-of? (car preds) exact-positive-integer?)
+                 (chaperone-of? (cadr preds) exact-positive-integer?))
+             (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
+             (cond
+               [(between/c-s? other)
+                (define other-low (between/c-s-low other))
+                (define other-high (between/c-s-high other))
+                (integer-in (exact-ceiling (max 1 (if (= other-low -inf.0) 1 other-low)))
+                            (if (= other-high +inf.0) #f (exact-floor other-high)))]
+               [else (make-first-order-and/c contracts preds)])]
+            [(or (chaperone-of? (car preds) exact-integer?)
+                 (chaperone-of? (cadr preds) exact-integer?))
+             (define other (if (procedure? (car preds)) (cadr contracts) (car contracts)))
+             (cond
+               [(between/c-s? other)
+                (define other-low (between/c-s-low other))
+                (define other-high (between/c-s-high other))
+                (integer-in (exact-ceiling (if (= other-low -inf.0) #f other-low))
+                            (if (= other-high +inf.0) #f (exact-floor other-high)))]
+               [else (make-first-order-and/c contracts preds)])]
+            [else
+             (make-first-order-and/c contracts preds)])]
          [else
           (make-first-order-and/c contracts preds)])]
       [(andmap chaperone-contract? contracts)
        (make-chaperone-and/c contracts)]
       [else (make-impersonator-and/c contracts)])))
 
-
+(define (exact-floor x) (floor (inexact->exact x)))
+(define (exact-ceiling x) (ceiling (inexact->exact x)))
 
 (struct integer-in-ctc (start end)
   #:property prop:flat-contract
@@ -218,6 +255,8 @@
             (define start (integer-in-ctc-start ctc))
             (define end (integer-in-ctc-end ctc))
             (cond
+              [(and (not end) (equal? start 0)) 'natural?]
+              [(and (not end) (equal? start 1)) 'exact-positive-integer?]
               [(or start end)
                `(integer-in ,(integer-in-ctc-start ctc)
                             ,(integer-in-ctc-end ctc))]
@@ -227,7 +266,12 @@
                    (define end (integer-in-ctc-end ctc))
                    (cond
                      [(and start end) (λ (x) (and (exact-integer? x) (<= start x end)))]
-                     [start (λ (x) (and (exact-integer? x) (<= start x)))]
+                     [start
+                      (case start
+                        [(0) exact-nonnegative-integer?]
+                        [(1) exact-positive-integer?]
+                        [else
+                         (λ (x) (and (exact-integer? x) (<= start x)))])]
                      [end (λ (x) (and (exact-integer? x) (<= x end)))]
                      [else exact-integer?]))
    #:stronger (λ (this that)
@@ -274,3 +318,7 @@
      (and/c start exact?)]
     [else
      (integer-in-ctc start end)]))
+
+(set-some-basic-integer-in-contracts! (integer-in #f #f)
+                                      (integer-in 0 #f)
+                                      (integer-in 1 #f))

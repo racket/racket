@@ -5,7 +5,8 @@
 (parameterize ([current-contract-namespace
                 (make-basic-contract-namespace
                  'racket/class
-                 'racket/contract/combinator)])
+                 'racket/contract/combinator
+                 'racket/math)])
 
   (define-syntax (test-flat-contract stx)
     (syntax-case stx ()
@@ -51,6 +52,12 @@
   (test-flat-contract '(integer-in 1 #f) 1 -1)
   (test-flat-contract '(integer-in #f 1) -1 2)
   (test-flat-contract '(integer-in #f #f) -1 "x")
+  (test-flat-contract '(and/c natural? (between/c -10 10)) 0 -1)
+  (test-flat-contract '(and/c exact-positive-integer? (between/c -10 10)) 1 0)
+  (test-flat-contract '(and/c exact-integer? (between/c -10 10)) 1 11)
+  (test-flat-contract '(and/c exact-integer? (between/c -10 10)) -1 -11)
+  (test-flat-contract '(and/c exact-integer? (between/c -10.5 10.5)) -10 -11)
+  (test-flat-contract '(and/c exact-integer? (between/c -10.5 10.5)) 10 11)
   (test-flat-contract '(char-in #\a #\z) #\a #\Z)
   (test-flat-contract '(char-in #\a #\z) #\z #\A)
   (test-flat-contract '(char-in #\a #\z) #\b "b")

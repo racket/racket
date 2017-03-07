@@ -5,6 +5,7 @@
          "prop.rkt"
          "rand.rkt"
          "generate-base.rkt"
+         "../../private/math-predicates.rkt"
          racket/pretty
          racket/list
          (for-syntax racket/base
@@ -72,6 +73,7 @@
          
          set-some-basic-list-contracts!
          set-some-basic-misc-contracts!
+         set-some-basic-integer-in-contracts!
 
          contract-first-order-okay-to-give-up?
          contract-first-order-try-less-hard
@@ -327,6 +329,13 @@
   (set! between/c-s? b/c-s?)
   (set! between/c-s-low b/c-s-l)
   (set! between/c-s-high b/c-s-h))
+(define integer-in-ff #f)
+(define integer-in-0f #f)
+(define integer-in-1f #f)
+(define (set-some-basic-integer-in-contracts! ff 0f 1f)
+  (set! integer-in-ff ff)
+  (set! integer-in-0f 0f)
+  (set! integer-in-1f 1f))
 
 (define (coerce-contract/f x [name name-default])
   (cond
@@ -362,6 +371,10 @@
         (if (name-default? name)
             between/c-inf+inf
             (renamed-between/c -inf.0 +inf.0 name))]
+       [(chaperone-of? x exact-positive-integer?) integer-in-1f]
+       [(chaperone-of? x exact-nonnegative-integer?) integer-in-0f]
+       [(chaperone-of? x natural?) integer-in-0f]
+       [(chaperone-of? x exact-integer?) integer-in-ff]
        [else
         (make-predicate-contract (if (name-default? name)
                                      (or (object-name x) '???)

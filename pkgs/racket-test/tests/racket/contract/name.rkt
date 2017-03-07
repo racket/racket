@@ -252,6 +252,8 @@
   (test-name '(integer-in 10 #f) (integer-in 10 #f))
   (test-name '(integer-in #f 10) (integer-in #f 10))
   (test-name 'exact-integer? (integer-in #f #f))
+  (test-name 'natural? (integer-in 0 #f))
+  (test-name 'exact-positive-integer? (integer-in 1 #f))
   (test-name '(char-in #\a #\z) (char-in #\a #\z))
   (test-name '(and/c 0 exact?) (integer-in 0 0))
   (test-name '(real-in 1 10) (real-in 1 10))
