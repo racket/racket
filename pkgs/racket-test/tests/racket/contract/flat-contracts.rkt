@@ -58,6 +58,7 @@
   (test-flat-contract '(and/c exact-integer? (between/c -10 10)) -1 -11)
   (test-flat-contract '(and/c exact-integer? (between/c -10.5 10.5)) -10 -11)
   (test-flat-contract '(and/c exact-integer? (between/c -10.5 10.5)) 10 11)
+  (test-flat-contract '(and/c exact-integer? (<=/c 0)) -1 -3/2)
   (test-flat-contract '(char-in #\a #\z) #\a #\Z)
   (test-flat-contract '(char-in #\a #\z) #\z #\A)
   (test-flat-contract '(char-in #\a #\z) #\b "b")

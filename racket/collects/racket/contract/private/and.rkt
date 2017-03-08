@@ -234,7 +234,7 @@
                [(between/c-s? other)
                 (define other-low (between/c-s-low other))
                 (define other-high (between/c-s-high other))
-                (integer-in (exact-ceiling (if (= other-low -inf.0) #f other-low))
+                (integer-in (if (= other-low -inf.0) #f (exact-ceiling other-low))
                             (if (= other-high +inf.0) #f (exact-floor other-high)))]
                [else (make-first-order-and/c contracts preds)])]
             [else
@@ -249,6 +249,7 @@
 (define (exact-ceiling x) (ceiling (inexact->exact x)))
 
 (struct integer-in-ctc (start end)
+  #:property prop:custom-write custom-write-property-proc
   #:property prop:flat-contract
   (build-flat-contract-property
    #:name (λ (ctc)
