@@ -943,7 +943,7 @@ value for the current thread.
 
 In a non-empty continuation, a parameter's value is determined through
 a @deftech{parameterization} that is associated with the nearest
-enclosing continuation frame though a continuation mark (whose key is
+enclosing continuation frame through a continuation mark (whose key is
 not directly accessible). A parameterization maps each parameter to a
 preserved thread cell, and the combination of thread cell and current
 thread yields the parameter's value. A parameter procedure sets or
