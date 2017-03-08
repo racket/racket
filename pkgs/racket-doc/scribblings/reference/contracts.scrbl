@@ -371,17 +371,19 @@ is @racket[#f], then the range is unbounded on that end.
             (integer-in 10 99)
             23)
 
-          (define/contract not-a-two-digit-number
-            (integer-in 10 99)
-            124)
+          (eval:error
+           (define/contract not-a-two-digit-number
+             (integer-in 10 99)
+             124))
 
           (define/contract negative-number
             (integer-in #f -1)
             -4)
 
-          (define/contract not-a-negative-number
-            (integer-in #f -1)
-            4)]
+          (eval:error
+           (define/contract not-a-negative-number
+             (integer-in #f -1)
+             4))]
 
 @history[#:changed "6.8.0.2" @elem{Allow #@racket[j] and @racket[k] to be @racket[#f]}]
 
