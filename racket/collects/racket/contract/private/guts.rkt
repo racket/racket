@@ -332,7 +332,9 @@
 (define integer-in-ff #f)
 (define integer-in-0f #f)
 (define integer-in-1f #f)
-(define (set-some-basic-integer-in-contracts! ff 0f 1f)
+(define renamed-integer-in #f)
+(define (set-some-basic-integer-in-contracts! r-ii ff 0f 1f)
+  (set! renamed-integer-in r-ii)
   (set! integer-in-ff ff)
   (set! integer-in-0f 0f)
   (set! integer-in-1f 1f))
@@ -371,10 +373,14 @@
         (if (name-default? name)
             between/c-inf+inf
             (renamed-between/c -inf.0 +inf.0 name))]
-       [(chaperone-of? x exact-positive-integer?) integer-in-1f]
-       [(chaperone-of? x exact-nonnegative-integer?) integer-in-0f]
-       [(chaperone-of? x natural?) integer-in-0f]
-       [(chaperone-of? x exact-integer?) integer-in-ff]
+       [(chaperone-of? x exact-positive-integer?)
+        (if (name-default? name) integer-in-1f (renamed-integer-in 1 #f name))]
+       [(chaperone-of? x exact-nonnegative-integer?)
+        (if (name-default? name) integer-in-0f (renamed-integer-in 0 #f name))]
+       [(chaperone-of? x natural?)
+        (if (name-default? name) integer-in-0f (renamed-integer-in 0 #f name))]
+       [(chaperone-of? x exact-integer?)
+        (if (name-default? name) integer-in-ff (renamed-integer-in #f #f name))]
        [else
         (make-predicate-contract (if (name-default? name)
                                      (or (object-name x) '???)
