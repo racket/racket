@@ -385,7 +385,7 @@ is @racket[#f], then the range is unbounded on that end.
              (integer-in #f -1)
              4))]
 
-@history[#:changed "6.8.0.2" @elem{Allow #@racket[j] and @racket[k] to be @racket[#f]}]
+@history[#:changed "6.8.0.2" @elem{Allow @racket[j] and @racket[k] to be @racket[#f]}]
 
 }
 
