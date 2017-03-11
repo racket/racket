@@ -787,7 +787,7 @@ but it is faster and runs in constant time when @racket[n] is positive.
 @defproc[(bitwise-bit-field [n exact-integer?] 
                             [start exact-nonnegative-integer?] 
                             [end (and/c exact-nonnegative-integer?
-                                        (start . <= . end))])
+                                        (>=/c start))])
          exact-integer?]{
 
 Extracts the bits between position @racket[start] and @racket[(- end 1)] (inclusive)
