@@ -5,7 +5,8 @@
                      racket/fixnum
                      racket/unsafe/ops
                      racket/require
-                     racket/random))
+                     racket/random
+                     racket/list))
 
 @(define math-eval (make-base-eval))
 @examples[#:hidden #:eval math-eval (require racket/math)]
@@ -352,7 +353,7 @@ If @racket[m] is exact @racket[0], the
 
 Returns the largest of the @racket[x]s, or @racket[+nan.0] if any
  @racket[x] is @racket[+nan.0].  If any @racket[x] is inexact, the
- result is coerced to inexact.
+ result is coerced to inexact.  See also @racket[argmax].
 
 @mz-examples[(max 1 3 2) (max 1 3 2.0)]}
 
@@ -361,7 +362,7 @@ Returns the largest of the @racket[x]s, or @racket[+nan.0] if any
 
 Returns the smallest of the @racket[x]s, or @racket[+nan.0] if any
  @racket[x] is @racket[+nan.0].  If any @racket[x] is inexact, the
- result is coerced to inexact.
+ result is coerced to inexact.  See also @racket[argmin].
 
 @mz-examples[(min 1 3 2) (min 1 3 2.0)]}
 

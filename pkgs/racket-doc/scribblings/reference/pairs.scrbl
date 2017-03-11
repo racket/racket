@@ -1,6 +1,7 @@
 #lang scribble/doc
 @(require "mz.rkt" scribble/scheme racket/generator racket/list
-          (for-syntax racket/base))
+          (for-syntax racket/base)
+          (for-label racket/list))
 
 @(define (generate-c_r-example proc)
   (define (make-it start n)
@@ -1358,6 +1359,7 @@ it builds the permutations one-by-one on each iteration}
 
 Returns the first element in the list @racket[lst] that minimizes the
 result of @racket[proc].  Signals an error on an empty list.
+See also @racket[min].
 
 @mz-examples[#:eval list-eval
   (argmin car '((3 pears) (1 banana) (2 apples)))
@@ -1369,11 +1371,11 @@ result of @racket[proc].  Signals an error on an empty list.
 
 Returns the first element in the list @racket[lst] that maximizes the
 result of @racket[proc].  Signals an error on an empty list.
+See also @racket[max].
 
 @mz-examples[#:eval list-eval
   (argmax car '((3 pears) (1 banana) (2 apples)))
   (argmax car '((3 pears) (3 oranges)))]}
-
 
 @defproc[(group-by [key (-> any/c any/c)]
                    [lst list?]
