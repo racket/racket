@@ -25,29 +25,38 @@ on @racket[in] until it produces @racket[eof].
 (port->list read-number (open-input-string "12345"))
 ]}
 
-@defproc[(port->string [in input-port? (current-input-port)]) string?]{
+@defproc[(port->string [in input-port? (current-input-port)]
+                       [#:close? close? any/c #f])
+         string?]{
 
 Reads all characters from @racket[in] and returns them as a string.
+The input port is closed unless @racket[close?] is @racket[#f].
+
 @examples[#:eval port-eval
 (port->string (open-input-string "hello world"))
 ]}
 
-@defproc[(port->bytes [in input-port? (current-input-port)]) bytes?]{
+@defproc[(port->bytes [in input-port? (current-input-port)]
+                      [#:close? close? any/c #f])
+         bytes?]{
 
 Reads all bytes from @racket[in] and returns them as a @tech{byte string}.
+The input port is closed unless @racket[close?] is @racket[#f].
 
 @examples[#:eval port-eval
 (port->bytes (open-input-string "hello world"))
 ]}
 
 @defproc[(port->lines [in input-port? (current-input-port)]
-                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+                      [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any]
+                      [#:close? close? any/c #f])
          (listof string?)]{
 
 Read all characters from @racket[in], breaking them into lines. The
 @racket[line-mode] argument is the same as the second argument to
 @racket[read-line], but the default is @racket['any] instead of
 @racket['linefeed].
+The input port is closed unless @racket[close?] is @racket[#f].
 
 @examples[#:eval port-eval
 (port->lines
@@ -55,11 +64,13 @@ Read all characters from @racket[in], breaking them into lines. The
 ]}
 
 @defproc[(port->bytes-lines [in input-port? (current-input-port)]
-                            [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any])
+                            [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any]
+                            [#:close? close? any/c #f])
          (listof bytes?)]{
 
 Like @racket[port->lines], but reading bytes and collecting them into
 lines like @racket[read-bytes-line].
+The input port is closed unless @racket[close?] is @racket[#f].
 
 @examples[#:eval port-eval
 (port->bytes-lines 

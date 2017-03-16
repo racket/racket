@@ -22,6 +22,17 @@
   (test '("hello" "" "there") port->lines (p) #:line-mode 'any-one)
   (test '(#"hello" #"" #"there") port->bytes-lines (p) #:line-mode 'any-one))
 
+(let* ([p (lambda () (open-input-string "nothing\r\nwill come of nothing"))]
+       [closes? (lambda (f) (let ([port (p)]) (f port) (port-closed? port)))])
+  (test #t closes? (curryr port->string #:close? #t))
+  (test #f closes? port->string)
+  (test #t closes? (curryr port->bytes #:close? #t))
+  (test #f closes? port->bytes)
+  (test #t closes? (curryr port->lines #:close? #t))
+  (test #f closes? port->lines)
+  (test #t closes? (curryr port->bytes-lines #:close? #t))
+  (test #f closes? port->bytes-lines))
+
 (let* ([x (make-string 50000 #\x)]
        [p (lambda () (open-input-string x))])
   (test (string-length x) 'long-string (string-length (port->string (p))))

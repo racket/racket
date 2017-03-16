@@ -87,16 +87,23 @@
   (unless (input-port? p) (raise-argument-error who "input-port?" p))
   (let ([s (open-output-string)]) (copy-port p s) s))
 
-(define (port->string [p (current-input-port)])
+(define-syntax-rule (define-port->X (name port-arg rest-args ...) body)
+  (define (name [port-arg (current-input-port)] rest-args ... #:close? [close? #f])
+    (begin0
+      body
+      (when close?
+        (close-input-port port-arg)))))
+
+(define-port->X (port->string p)
   (get-output-string (port->string-port 'port->string p)))
 
-(define (port->bytes [p (current-input-port)])
+(define-port->X (port->bytes p)
   (get-output-bytes (port->string-port 'port->bytes p) #t))
 
-(define (port->lines [p (current-input-port)] #:line-mode [mode 'any])
+(define-port->X (port->lines p #:line-mode [mode 'any])
   (port->x-lines 'port->lines p mode read-line))
 
-(define (port->bytes-lines [p (current-input-port)] #:line-mode [mode 'any])
+(define-port->X (port->bytes-lines p #:line-mode [mode 'any])
   (port->x-lines 'port->bytes-lines p mode read-bytes-line))
 
 (define (port->list [r read] [p (current-input-port)])
