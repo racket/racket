@@ -34,7 +34,9 @@ The input port is closed unless @racket[close?] is @racket[#f].
 
 @examples[#:eval port-eval
 (port->string (open-input-string "hello world"))
-]}
+    ]
+
+@history[#:changed "6.8.0.2" @elem{Added the @racket[#:close?] argument.}]}
 
 @defproc[(port->bytes [in input-port? (current-input-port)]
                       [#:close? close? any/c #f])
@@ -45,7 +47,9 @@ The input port is closed unless @racket[close?] is @racket[#f].
 
 @examples[#:eval port-eval
 (port->bytes (open-input-string "hello world"))
-]}
+]
+
+@history[#:changed "6.8.0.2" @elem{Added the @racket[#:close?] argument.}]}
 
 @defproc[(port->lines [in input-port? (current-input-port)]
                       [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any]
@@ -61,7 +65,9 @@ The input port is closed unless @racket[close?] is @racket[#f].
 @examples[#:eval port-eval
 (port->lines
  (open-input-string "line 1\nline 2\n  line 3\nline 4"))
-]}
+]
+
+@history[#:changed "6.8.0.2" @elem{Added the @racket[#:close?] argument.}]}
 
 @defproc[(port->bytes-lines [in input-port? (current-input-port)]
                             [#:line-mode line-mode (or/c 'linefeed 'return 'return-linefeed 'any 'any-one) 'any]
@@ -75,7 +81,9 @@ The input port is closed unless @racket[close?] is @racket[#f].
 @examples[#:eval port-eval
 (port->bytes-lines 
  (open-input-string "line 1\nline 2\n  line 3\nline 4"))
-]}
+]
+
+@history[#:changed "6.8.0.2" @elem{Added the @racket[#:close?] argument.}]}
 
 @defproc[(display-lines [lst list?]
                         [out output-port? (current-output-port)]
