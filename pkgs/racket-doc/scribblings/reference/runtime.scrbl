@@ -152,7 +152,12 @@ ends with a newline.}
 
 A @tech{parameter} that is initialized with command-line arguments when
 Racket starts (not including any command-line arguments that were
-treated as flags for the system).}
+treated as flags for the system).
+
+On Unix and Mac OS, command-line arguments are provided to the
+Racket process as @tech{byte strings}. The arguments are converted to
+@tech{strings} using @racket[bytes->string/locale] and
+@racketvalfont{#\uFFFD} as the encoding-error character.}
 
 
 @defparam[current-thread-initial-stack-size size exact-positive-integer?]{
