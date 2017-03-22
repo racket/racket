@@ -1485,7 +1485,7 @@
 
 (define (unsigned-int? v n)
   (and (exact-integer? v)
-       (positive? v)
+       (not (negative? v))
        (zero? (arithmetic-shift v (- n)))))
 
 (define (signed-int? v n)
@@ -2334,3 +2334,19 @@
   (unless inited?
     (CoInitialize)
     (set! inited? #t)))
+
+;; ----------------------------------------
+;; Basic tests
+
+(module+ test
+  (define-syntax-rule (check-true e)
+    (unless e
+      (error "test failed" 'e)))
+  (check-true (unsigned-int? 0 32))
+  (check-true (not (unsigned-int? -1 32)))
+  (check-true (unsigned-int? (sub1 (expt 2 32)) 32))
+  (check-true (not (unsigned-int? (expt 2 32) 32)))
+  (check-true (not (unsigned-int? (sub1 (expt 2 33)) 32)))
+  (check-true (signed-int? 0 32))
+  (check-true (signed-int? -1 32))
+  (check-true (not (signed-int? (sub1 (expt 2 32)) 32))))
