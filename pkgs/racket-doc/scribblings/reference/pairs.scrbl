@@ -664,7 +664,7 @@ Like @racket[assoc], but finds an element using @racket[eqv?].
 Like @racket[assoc], but finds an element using @racket[eq?].
 
 @mz-examples[
-  (assq 3 (list (list 1 2) (list 3 4) (list 5 6)))]}
+  (assq 'c (list (list 'a 'b) (list 'c 'd) (list 'e 'f)))]}
 
 
 @defproc[(assf [proc procedure?] [lst list?])
