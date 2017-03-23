@@ -2208,7 +2208,7 @@
 
 (define gzip
   (case-lambda
-   [(infile) (gzip infile (string-append infile ".gz"))]
+   [(infile) (gzip infile (path-add-extension infile ".gz" #"."))]
    [(infile outfile) ((car (code)) infile outfile)]))
 
 (define (gzip-through-ports in out origname time_stamp)

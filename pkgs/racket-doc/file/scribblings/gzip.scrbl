@@ -8,13 +8,17 @@ utilities to create archive files in @exec{gzip} format, or simply to
 compress data using the @exec{pkzip} ``deflate'' method.}
 
 @defproc[(gzip [in-file path-string?]
-               [out-file path-string? (string-append in-file ".gz")])
+               [out-file path-string? (path-add-extension in-file ".gz" #".")])
          void?]{
 
 Compresses data to the same format as the @exec{gzip} utility, writing
 the compressed data directly to a file. The @racket[in-file] argument
 is the name of the file to compress. If the file named by
-@racket[out-file] exists, it will be overwritten.}
+@racket[out-file] exists, it will be overwritten.
+
+@history[#:changed "6.8.0.2"
+         @elem{Changed default expression of @racket[out-file] to use
+               @racket[path-add-extension] instead of @racket[string-append].}]}
 
 
 @defproc[(gzip-through-ports [in input-port?]
