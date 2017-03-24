@@ -335,7 +335,7 @@ REMOTE_USER_AUTO = --catalog $(SVR_CAT) $(USER_AUTO_OPTIONS)
 REMOTE_INST_AUTO = --catalog $(SVR_CAT) --scope installation $(X_AUTO_OPTIONS)
 CONFIG_MODE_q = "$(CONFIG)" "$(CONFIG_MODE)"
 BUNDLE_CONFIG = bundle/racket/etc/config.rktd
-BUNDLE_RACO_FLAGS = -G bundle/racket/config -X bundle/racket/collects -A bundle/user -l raco
+BUNDLE_RACO_FLAGS = -G bundle/racket/etc -X bundle/racket/collects -A bundle/user -l raco
 BUNDLE_RACO = $(PLAIN_RACKET) $(BUNDLE_RACO_FLAGS)
 WIN32_BUNDLE_RACO = $(WIN32_PLAIN_RACKET) $(BUNDLE_RACO_FLAGS)
 
