@@ -123,15 +123,21 @@
   l)
 
 ;; Arguments must be in simple form
-(define (find-relative-path directory filename #:more-than-root? [more-than-root? #f])
+(define (find-relative-path directory filename
+                            #:more-than-root? [more-than-root? #f]
+                            #:normalize-case? [normalize-case? #t])
   (let ([dir (do-explode-path 'find-relative-path directory)]
-        [file (do-explode-path 'find-relative-path filename)])
-    (if (and (equal? (car dir) (car file))
+        [file (do-explode-path 'find-relative-path filename)]
+        [normalize (lambda (p)
+                     (if normalize-case?
+                         (normal-case-path p)
+                         p))])
+    (if (and (equal? (normalize (car dir)) (normalize (car file)))
              (or (not more-than-root?)
                  (not (eq? 'unix (path-convention-type directory)))
                  (null? (cdr dir))
                  (null? (cdr file))
-                 (equal? (cadr dir) (cadr file))))
+                 (equal? (normalize (cadr dir)) (normalize (cadr file)))))
         (let loop ([dir (cdr dir)]
                    [file (cdr file)])
           (cond [(null? dir) (if (null? file) filename (apply build-path file))]
@@ -140,7 +146,7 @@
                                          (system-path-convention-type)
                                          (path-convention-type filename))
 				     (map (lambda (x) 'up) dir))]
-                [(equal? (car dir) (car file))
+                [(equal? (normalize (car dir)) (normalize (car file)))
                  (loop (cdr dir) (cdr file))]
                 [else
                  (apply build-path (append (map (lambda (x) 'up) dir) file))]))

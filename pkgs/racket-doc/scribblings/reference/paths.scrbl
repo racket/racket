@@ -691,7 +691,8 @@ no extension, @racket[#f] is returned.}
 
 @defproc[(find-relative-path [base (or/c path-string? path-for-some-system?)]
                              [path (or/c path-string?  path-for-some-system?)]
-                             [#:more-than-root? more-than-root? any/c #f])
+                             [#:more-than-root? more-than-root? any/c #f]
+                             [#:normalize-case? normalize-case? any/c #t])
          path-for-some-system?]{
 
 Finds a relative pathname with respect to @racket[base] that names the
@@ -703,7 +704,19 @@ common with @racket[base], @racket[path] is returned.
 If @racket[more-than-root?] is true, if @racket[base] and
 @racket[path] share only a Unix root in common, and if neither
 @racket[base] nor @racket[path] is just a root path, then
-@racket[path] is returned.}
+@racket[path] is returned.
+
+If @racket[normalize-case?] is true (the default), then pairs of path
+elements to be compared are first converted via
+@racket[normal-case-path], which means that path elements are
+comparsed case-insentively on Windows. If @racket[normalize-case?] is
+@racket[#f], then path elements and the path roots match only if they
+have the same case.
+
+@history[#:changed "6.8.0.3" @elem{Made path elements case-normalized
+                                   for comparison by default, and
+                                   added the @racket[#:normalize-case?]
+                                   argument.}]}
 
 @defproc[(normalize-path [path path-string?]
                          [wrt (and/c path-string? complete-path?)

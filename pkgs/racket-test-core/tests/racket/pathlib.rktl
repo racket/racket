@@ -87,6 +87,14 @@
 (test (bytes->path #"../.." 'unix) 'find-relative-path (find-relative-path (bytes->path #"/r/c" 'unix) (bytes->path #"/" 'unix) 
                                                                            #:more-than-root? #t))
 
+(test (bytes->path #"..\\b\\a" 'windows) find-relative-path (bytes->path #"C:/r/c" 'windows) (bytes->path #"c:/R/b/a" 'windows))
+(test (bytes->path #"..\\b\\a" 'windows) find-relative-path (bytes->path #"C:/r/c" 'windows) (bytes->path #"c:/r/b/a" 'windows))
+(test (bytes->path #"c:/R/b/a" 'windows) find-relative-path (bytes->path #"D:/r/c" 'windows) (bytes->path #"c:/R/b/a" 'windows))
+(test (bytes->path #"c:/R/b/a" 'windows) 'no-normalize
+      (find-relative-path (bytes->path #"C:/r/c" 'windows) (bytes->path #"c:/R/b/a" 'windows) #:normalize-case? #f))
+(test (bytes->path #"c:/r/b/a" 'windows) 'no-normalize
+      (find-relative-path (bytes->path #"C:/r/c" 'windows) (bytes->path #"c:/r/b/a" 'windows) #:normalize-case? #f))
+
 ;; ----------------------------------------
 
 ;; normalize-path needs tests
