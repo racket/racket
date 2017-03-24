@@ -173,11 +173,11 @@
 
   (define-syntax (generic-methods stx)
     (syntax-case stx ()
-      [(_ gen def ...)
+      [(_ gen #:scope scope def ...)
        (let ()
          (define info (get-info 'generic-methods stx #'gen))
          (define orig-id (generic-info-name info))
-         (define methods (map (make-method-delta #'gen orig-id)
+         (define methods (map (make-method-delta #'scope orig-id)
                               (generic-info-method-names info)))
          (with-syntax ([(method ...) methods])
            (syntax/loc stx
@@ -187,12 +187,16 @@
                 ()
                 (syntax-parameterize ([generic-method-inner-context #'gen])
                   def ...
-                  (values (implementation method) ...)))))))]))
+                  (values (implementation method) ...)))))))]
+      [(_ gen def ...)
+       #'(generic-methods gen #:scope gen def ...)]))
 
   (define-syntax (generic-method-table stx)
     (syntax-case stx ()
+      [(_ gen #:scope scope def ...)
+       #'(call-with-values (lambda () (generic-methods gen #:scope scope def ...)) vector)]
       [(_ gen def ...)
-       #'(call-with-values (lambda () (generic-methods gen def ...)) vector)]))
+       #'(generic-method-table gen #:scope gen def ...)]))
 
   (define-syntax (define/generic stx)
     (define gen-id (syntax-parameter-value #'generic-method-outer-context))
