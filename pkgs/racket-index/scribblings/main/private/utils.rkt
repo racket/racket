@@ -49,6 +49,7 @@
   (define path (caddr info))
   (define user-doc? (eq? installation-specific? #f))
   (define inst-doc? (eq? installation-specific? #t))
+  (define as-plt-rel? (eq? root 'plt))
   (define up-path
     ;; massage the current path to an up string
     (regexp-replace* #rx"[^/]*/" (regexp-replace #rx"[^/]+$" path "") "../"))
@@ -78,7 +79,7 @@
     (map (lambda (item)
            (let ([link-id (if (pair? item) (car item) item)])
              ((if (eq? id link-id) caddr cadr) item)))
-         (front-toc-items up-path)))
+         (front-toc-items up-path as-plt-rel?)))
   (make-splice `(,page-title
                  ,@toc
                  ,@(if show-root-info?
@@ -95,7 +96,7 @@
     (module-path-index-join `(lib ,(format "scribblings/~a/~a.scrbl" s f))
                             #f))))
 
-(define (front-toc-items up)
+(define (front-toc-items up as-plt-rel?)
   (map (lambda (item)
          (if (eq? item '---)
            (list '--- (make-toc-element #f null '(nbsp)))
@@ -108,7 +109,15 @@
              (define text  (make-element "tocsubseclink" (list label)))
              (define dest
                (case root
-                 [(plt)  (build-path (find-doc-dir) path)]
+                 [(plt)  (if as-plt-rel?
+                             ;; Things that are normally installed in 'plt
+                             ;; should reference by relative paths other things
+                             ;; installed in 'plt, even if those things are together
+                             ;; installed in user space:
+                             (string-append up path)
+                             ;; Otherwise, if we're installing a user space copy,
+                             ;; to this target as 'plt space:
+                             (build-path (find-doc-dir) path))]
                  [(user) (string-append up path)]
                  [(#f)   path]
                  [else (error "internal error (main-page)")]))
