@@ -215,4 +215,12 @@
 (test 'ok parse-command-line "test" #("x") null (case-lambda [(x) 'none] [(x . ys) 'ok]) '("arg"))
 (test 'ok parse-command-line "test" #("x") null (case-lambda [(x) 'none] [(x y . z) 'ok]) '("arg"))
 
+;; test that `#:ps` doesn't mess up error reporting
+(err/rt-test (let ([args "args"])
+               (command-line
+                #:program "something"
+                #:argv #("-x")
+                #:ps "Stuff"))
+             (lambda (x) (regexp-match? #rx"unknown switch" (exn-message x))))
+
 (report-errs)

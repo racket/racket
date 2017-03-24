@@ -414,6 +414,8 @@
                 null]
                [(eq? (car spec) 'help-labels)
                 null]
+               [(eq? (car spec) 'ps)
+                null]
                [(eq? (car spec) 'multi)
                 (map
                  (lambda (line) (cons #f line))
