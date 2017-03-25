@@ -44,6 +44,11 @@
 (test (string->path ".zo.y") path-add-extension ".zo" #".y")
 (test (string->path ".tar_gz.y") path-add-extension ".tar.gz" ".y")
 (test (string->path ".tar_gz.y") path-add-extension ".tar.gz" #".y")
+(test (string->some-system-path "p/x.tar.gz" 'unix)
+      path-add-extension (string->some-system-path "p/x.tar" 'unix) ".gz" #".")
+(test (string->some-system-path "p/x.tar.gz" 'windows)
+      path-add-extension (string->some-system-path "p/x.tar" 'windows) ".gz" ".")
+(err/rt-test (path-add-extension "x" ".zip" #f))
 
 (test (string->path ".y") path-replace-suffix ".zo" ".y")
 (test (string->path ".y") path-replace-suffix ".zo" #".y")

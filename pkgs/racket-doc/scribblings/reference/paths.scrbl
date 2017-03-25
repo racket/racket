@@ -561,22 +561,25 @@ extension separator.
 
 
 @defproc[(path-add-extension [path (or/c path-string? path-for-some-system?)]
-                             [ext (or/c string? bytes?)])
+                             [ext (or/c string? bytes?)]
+                             [sep (or/c string? bytes?) #"_"])
          path-for-some-system?]{
 
 Similar to @racket[path-replace-extension], but any existing extension on
 @racket[path] is preserved by replacing the @litchar{.} before the extension
-with @litchar{_}, and then the @racket[ext] is added
+with @racket[sep], and then the @racket[ext] is added
 to the end.
 
 @examples[
 (path-add-extension "x/y.ss" #".rkt")
 (path-add-extension "x/y" #".rkt")
 (path-add-extension "x/y.tar.gz" #".rkt")
+(path-add-extension "x/y.tar.gz" #".rkt" #".")
 (path-add-extension "x/.racketrc" #".rkt")
 ]
 
-@history[#:added "6.5.0.3"]}
+@history[#:changed "6.8.0.2" @elem{Added the @racket[sep] optional argument.}
+         #:added "6.5.0.3"]}
 
 
 @defproc[(path-replace-suffix [path (or/c path-string? path-for-some-system?)]
