@@ -46,27 +46,38 @@
   ;; ----------------------------------------
   
   (define-values (check-extension-call)
-    (lambda (s sfx who)
-      (unless (or (path-for-some-system? s)
-                  (path-string? s))
-        (raise-argument-error who "(or/c path-for-some-system? path-string?)" 0 s sfx))
-      (unless (or (string? sfx) (bytes? sfx))
-        (raise-argument-error who "(or/c string? bytes?)" 1 s sfx))
+    (lambda (s sfx who sep trust-sep?)
+      (let-values ([(err-msg err-index)
+                    (cond
+                     [(not (or (path-for-some-system? s) (path-string? s)))
+                      (values "(or/c path-for-some-system? path-string?)" 0)]
+                     [(not (or (string? sfx) (bytes? sfx)))
+                      (values "(or/c string? bytes?)" 1)]
+                     [(not (or trust-sep? (string? sep) (bytes? sep)))
+                      (values "(or/c string? bytes?)" 2)]
+                     [else
+                      (values #f #f)])])
+        (when err-msg
+          (if trust-sep?
+            (raise-argument-error who err-msg err-index s sfx)
+            (raise-argument-error who err-msg err-index s sfx sep))))
       (let-values ([(base name dir?) (split-path s)])
         (when (not base)
           (raise-mismatch-error who "cannot add an extension to a root path: " s))
         (values base name))))
 
   (define-values (path-adjust-extension)
-    (lambda (name sep rest-bytes s sfx)
-      (let-values ([(base name) (check-extension-call s sfx name)])
+    (lambda (name sep rest-bytes s sfx trust-sep?)
+      (let-values ([(base name) (check-extension-call s sfx name sep trust-sep?)])
         (-define bs (path-element->bytes name))
         (-define finish
           (lambda (i sep i2)
             (bytes->path-element
              (bytes-append
               (subbytes bs 0 i)
-              sep
+              (if (string? sep)
+                  (string->bytes/locale sep (char->integer #\?))
+                  sep)
               (rest-bytes bs i2)
               (if (string? sfx)
                   (string->bytes/locale sfx (char->integer #\?))
@@ -90,11 +101,14 @@
 
   (define-values (path-replace-extension)
     (lambda (s sfx)
-      (path-adjust-extension 'path-replace-extension #"" (lambda (bs i) #"") s sfx)))
+      (path-adjust-extension 'path-replace-extension #"" (lambda (bs i) #"") s sfx #t)))
 
   (define-values (path-add-extension)
-    (lambda (s sfx)
-      (path-adjust-extension 'path-add-extension #"_" subbytes s sfx)))
+    (case-lambda
+     [(s sfx)
+      (path-adjust-extension 'path-add-extension #"_" subbytes s sfx #t)]
+     [(s sfx sep)
+      (path-adjust-extension 'path-add-extension sep subbytes s sfx #f)]))
 
   ;; ----------------------------------------
   
