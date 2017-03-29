@@ -2653,6 +2653,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 {
   Scheme_Type type;
   Scheme_Object *v;
+  int check_rands;
   GC_CAN_IGNORE Scheme_Object *tmpv; /* safe-for-space relies on GC_CAN_IGNORE */
   GC_CAN_IGNORE Scheme_Object **tmprands; /* safe-for-space relies on GC_CAN_IGNORE */
   GC_MAYBE_IGNORE_INTERIOR Scheme_Object **old_runstack, **runstack_base;
@@ -2752,6 +2753,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       MZ_CONT_MARK_POS -= 2;
       return scheme_enlarge_runstack(SCHEME_TAIL_COPY_THRESHOLD, (void *(*)(void))do_eval_k);
     }
+
+    check_rands = num_rands;
 
   apply_top:
 
@@ -3091,68 +3094,63 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
                   original object for an applicable structure. */
                || (type == scheme_raw_pair_type)) {
       int is_method;
-      int check_rands = num_rands;
       Scheme_Object *orig_obj;
 
-      if (SCHEME_RPAIRP(obj)) {
-        orig_obj = SCHEME_CDR(obj);
-        obj = SCHEME_CAR(obj);
-      } else {
-        orig_obj = obj;
-      }
+      orig_obj = obj;
 
       while (1) {
         /* Like the apply loop around this one, but we need
            to keep track of orig_obj until we get down to the
            structure. */
 
+        if (SCHEME_RPAIRP(obj)) {
+          orig_obj = SCHEME_CDR(obj);
+          obj = SCHEME_CAR(obj);
+        }
+
         type = SCHEME_TYPE(obj);
         if (type == scheme_proc_struct_type) {
-          do {
-            VACATE_TAIL_BUFFER_USE_RUNSTACK();
+          VACATE_TAIL_BUFFER_USE_RUNSTACK();
 
-            UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
+          UPDATE_THREAD_RSPTR_FOR_ERROR(); /* in case */
 
-            v = obj;
-            obj = scheme_extract_struct_procedure(orig_obj, check_rands, rands, &is_method);
-            if (is_method) {
-              /* Have to add an extra argument to the front of rands */
-              if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
-                /* Common case: we can just push self onto the front: */
-                rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
-                rands[0] = v;
+          v = obj;
+          obj = scheme_extract_struct_procedure(orig_obj, check_rands, rands, &is_method);
+          if (is_method) {
+            /* Have to add an extra argument to the front of rands */
+            if ((rands == RUNSTACK) && (RUNSTACK != RUNSTACK_START)){
+              /* Common case: we can just push self onto the front: */
+              rands = PUSH_RUNSTACK(p, RUNSTACK, 1);
+              rands[0] = v;
+            } else {
+              int i;
+              Scheme_Object **a;
+
+              if (p->tail_buffer && (num_rands < p->tail_buffer_size)) {
+                /* Use tail-call buffer. Shift in such a way that this works if
+                   rands == p->tail_buffer */
+                a = p->tail_buffer;
               } else {
-                int i;
-                Scheme_Object **a;
-
-                if (p->tail_buffer && (num_rands < p->tail_buffer_size)) {
-                  /* Use tail-call buffer. Shift in such a way that this works if
-                     rands == p->tail_buffer */
-                  a = p->tail_buffer;
-                } else {
-                  /* Uncommon general case --- allocate an array */
-                  UPDATE_THREAD_RSPTR_FOR_GC();
-                  a = MALLOC_N(Scheme_Object *, num_rands + 1);
-                }
-
-                for (i = num_rands; i--; ) {
-                  a[i + 1] = rands[i];
-                }
-                a[0] = v;
-                rands = a;
+                /* Uncommon general case --- allocate an array */
+                UPDATE_THREAD_RSPTR_FOR_GC();
+                a = MALLOC_N(Scheme_Object *, num_rands + 1);
               }
-              num_rands++;
+
+              for (i = num_rands; i--; ) {
+                a[i + 1] = rands[i];
+              }
+              a[0] = v;
+              rands = a;
             }
+            num_rands++;
+          }
 
-            /* After we check arity once, no need to check again
-               (which would lead to O(n^2) checking for nested
-               struct procs): */
-            check_rands = -1;
+          DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
 
-            DO_CHECK_FOR_BREAK(p, UPDATE_THREAD_RSPTR_FOR_GC(); if (rands == p->tail_buffer) make_tail_buffer_safe(););
-
-            break;
-          } while (SAME_TYPE(scheme_proc_struct_type, SCHEME_TYPE(obj)));
+          /* After we check arity once, no need to check again
+             (which would lead to O(n^2) checking for nested
+             struct procs): */
+          check_rands = -1;
 
           goto apply_top;
         } else {
@@ -3192,6 +3190,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
       if (SAME_TYPE(SCHEME_TYPE(((Scheme_Chaperone *)obj)->redirects), scheme_nack_guard_evt_type)) {
         /* Chaperone is for evt, not function arguments */
         obj = ((Scheme_Chaperone *)obj)->prev;
+        check_rands = num_rands;
         goto apply_top;
       } else {
         /* Chaperone is for function arguments */
@@ -3387,7 +3386,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	    }
 	  } else
 	    rands = &zero_rands_ptr;
-      
+
+          check_rands = num_rands;
 	  goto apply_top;
 	}
 
@@ -3466,7 +3466,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 
 	  rands[0] = arg;
 	  num_rands = 1;
-      
+
+          check_rands = num_rands;
 	  goto apply_top;
 	}
 	
@@ -3560,7 +3561,8 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
 	  rands[1] = arg;
 
 	  num_rands = 2;
-      
+
+          check_rands = num_rands;
 	  goto apply_top;
 	}
       
@@ -3956,6 +3958,7 @@ scheme_do_eval(Scheme_Object *obj, int num_rands, Scheme_Object **rands,
     p->ku.apply.tail_rands = NULL;
     RUNSTACK = runstack_base;
     RUNSTACK_CHANGED();
+    check_rands = num_rands;
     goto apply_top;
   }
 

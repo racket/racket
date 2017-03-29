@@ -160,7 +160,9 @@
                                 (cons prop:procedure values)
                                 ;; Also imply `prop:procedure-accessor`, in case property
                                 ;; value is an integer:
-                                (cons prop:procedure-accessor values))))
+                                (cons prop:procedure-accessor values))
+                               ;; Can impersonate:
+                               #t))
 
   ;; ----------------------------------------
   ;; Proxies
@@ -1669,6 +1671,7 @@
                                                 kws
                                                 new-args
                                                 args))
+                                             ;; Add back `kws` in the right place among the results:
                                              (case num-extra
                                                [(0) (apply values kws results)]
                                                [(1) (apply values (car results) kws (cdr results))]
@@ -1704,34 +1707,53 @@
                                      f))
                                   acc)]
                                 [else
-                                 (values
-                                  (chaperone-struct
-                                   proc
-                                   new-procedure-ref
-                                   (lambda (self proc)
-                                     ;; This `proc` takes an extra argument, which is `self`:
-                                     (chaperone-procedure
-                                      proc
-                                      (make-keyword-procedure 
-                                       (let ()
-                                         ;; `extra-arg ...` will be `self-proc` if `self-arg?`:
-                                         (define-syntax gen-proc
-                                           (syntax-rules ()
-                                             [(_ extra-arg ...)
-                                              (lambda (extra-arg ... kws kw-args self . args)
-                                                ;; Chain to `kw-chaperone', pulling out the self
-                                                ;; argument, and then putting it back:
-                                                (define len (length args))
-                                                (call-with-values
-                                                    (lambda () (apply kw-chaperone extra-arg ... kws kw-args args))
-                                                  (lambda results
-                                                    (if (= (length results) (add1 len))
-                                                        (apply values (car results) self (cdr results))
-                                                        (apply values (car results) (cadr results) self (cddr results))))))]))
-                                         (if self-arg?
-                                             (gen-proc proc-self)
-                                             (gen-proc)))))))
-                                  new-procedure-ref)])]
+                                 (let ([new-kw-proc
+                                        ((if is-impersonator?
+                                             impersonate-struct
+                                             chaperone-struct)
+                                         (if (okp? n-proc)
+                                             ;; All keyword arguments are optional, so need to
+                                             ;; chaperone as a plain procedure, too:
+                                             (chaperone-procedure proc wrap-proc)
+                                             ;; Some keyword is required:
+                                             proc)
+                                         new-procedure-ref
+                                         (lambda (self proc)
+                                           ;; This `proc` takes an extra argument, which is `self`:
+                                           ((if is-impersonator?
+                                                new:impersonate-procedure
+                                                new:chaperone-procedure)
+                                            proc
+                                            (make-keyword-procedure
+                                             (let ()
+                                               ;; `extra-arg ...` will be `self-proc` if `self-arg?`:
+                                               (define-syntax gen-proc
+                                                 (syntax-rules ()
+                                                   [(_ extra-arg ...)
+                                                    (lambda (extra-arg ... kws kw-args self . args)
+                                                      ;; Chain to `kw-chaperone', pulling out the self
+                                                      ;; argument, and then putting it back:
+                                                      (define len (length args))
+                                                      (call-with-values
+                                                          (lambda () (apply kw-chaperone extra-arg ... kws kw-args args))
+                                                        (lambda results
+                                                          (define r-len (length results))
+                                                          (define (list-take l n)
+                                                            (if (zero? n) null (cons (car l) (list-take (cdr l) (sub1 n)))))
+                                                          ;; Drop out `kws` result, add in `self`:
+                                                          (if (and (null? '(extra-arg ...))
+                                                                   (= r-len (+ 2 len)))
+                                                              (apply values (cadr results) self (cddr results))
+                                                              (apply values (let ([skip (- r-len len)])
+                                                                              (append (list-take results (- skip 2))
+                                                                                      (list (list-ref results (sub1 skip))
+                                                                                            self)
+                                                                                      (list-tail results skip))))))))]))
+                                               (if self-arg?
+                                                   (gen-proc proc-self)
+                                                   (gen-proc)))))))])
+                                   (values new-kw-proc
+                                           new-procedure-ref))])]
                               [(okp? n-proc)
                                (values
                                 (if is-impersonator?

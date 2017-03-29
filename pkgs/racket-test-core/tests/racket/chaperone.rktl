@@ -2316,6 +2316,51 @@
   (go (add-prop chaperone-procedure)
       (add-prop impersonate-procedure)))
 
+(let ()
+  (struct the-struct ()
+          #:property prop:procedure
+          (make-keyword-procedure (lambda (kws kw-values _ i) "result")))
+  (define struct-as-keyword-proc
+    (the-struct))
+
+  (define (check chaperone-procedure mangle?)
+    (define in-checked 0)
+    (define out-checked 0)
+    (define wrapped
+      (chaperone-procedure struct-as-keyword-proc
+                           (make-keyword-procedure
+                            (lambda (kws vals . args)
+                              (set! in-checked (add1 in-checked))
+                              (apply
+                               values
+                               (lambda (r)
+                                 (set! out-checked (add1 out-checked))
+                                 r)
+                               vals
+                               (if mangle?
+                                   ;; Check that an impersonator doesn't have to act
+                                   ;; like a chaperone:
+                                   (map list args)
+                                   args)))
+                            (lambda args
+                              (set! in-checked (add1 in-checked))
+                              (apply
+                               values
+                               (lambda (r)
+                                 (set! out-checked (add1 out-checked))
+                                 r)
+                               (if mangle?
+                                   (map list args)
+                                   args))))))
+
+    (wrapped "arg")
+    (test '(1 1) list in-checked out-checked)
+    (wrapped "arg" #:z 10)
+    (test '(2 2) list in-checked out-checked))
+
+  (check chaperone-procedure #f)
+  (check impersonate-procedure #t))
+
 ;; ----------------------------------------
 
 (let ()
