@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
 
 If modules embedded in the executable need to access runtime files
 (via @racketmodname[racket/runtime-path] forms), supply the
-@DFlag{runtime} flag to @exec{raco ctool}, specifying a directory
+@DFlag{runtime} flag to @seclink["ctool" #:doc raco-doc]{@exec{raco ctool}}, specifying a directory
 where the runtime files are to be gathered. The modules in the
 generated @filepath{.c} file will then refer to the files in that
 directory; the directory is normally specified relative to the
@@ -296,10 +296,10 @@ For Racket 3m, an embedding application must call @cpp{scheme_main_setup}
 with a non-zero first argument.
 
 The simple embedding program from the previous section can be
-processed by @exec{raco ctool --xform}, then compiled and linked with
-Racket 3m.  Alternately, the source code can be extended to work with
-either CGC or 3m depending on whether @cpp{MZ_PRECISE_GC} is defined
-on the compiler's command line:
+processed by  @seclink["cc" #:doc raco-doc]{@exec{raco ctool --xform}}, then compiled
+and linked with Racket 3m. Alternately, the source code can be
+extended to work with either CGC or 3m depending on whether
+@cpp{MZ_PRECISE_GC} is defined on the compiler's command line:
 
 @verbatim[#:indent 2]{
 #include "scheme.h"

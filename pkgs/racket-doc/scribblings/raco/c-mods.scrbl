@@ -5,6 +5,9 @@
 
 @title[#:tag "c-mods"]{Embedding Modules via C}
 
+@margin-note{@exec{raco ctool} is provided by the @filepath{cext-lib}
+                package.}
+
 The @DFlag{c-mods} mode for @exec{raco ctool} takes a set of Racket
 modules and generates a C source file that can be used as part of
 program that embeds the Racket run-time system. See @secref[#:doc

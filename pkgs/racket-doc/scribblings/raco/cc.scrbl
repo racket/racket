@@ -22,6 +22,9 @@ relative to @racket[_file].
 
 For information on writing extensions, see @other-manual[inside-doc].
 
+@margin-note{@exec{raco ctool} is provided by the @filepath{cext-lib}
+              package.}
+    
 Three @exec{raco ctool} modes help for building extensions:
 
 @itemize[
