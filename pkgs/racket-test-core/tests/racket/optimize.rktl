@@ -3198,6 +3198,26 @@
               (hash-ref '#hash((x . y)) x add1))
            #f)
 
+(test-comp '(lambda ()
+             (hash-ref #hash()
+                       'missing
+                       (λ ()
+                         'UNEXPECTED!)))
+           '(lambda ()
+             (hash-ref #hash()
+                       'missing
+                       'UNEXPECTED!)))
+(test-comp '(lambda ()
+             (hash-ref #hash()
+                       'missing
+                       (λ (required-arg)
+                         'UNEXPECTED!)))
+           '(lambda ()
+             (hash-ref #hash()
+                       'missing
+                       'UNEXPECTED!))
+           #f)
+
 ;; Check elimination of ignored structure predicate
 ;; and constructor applications:
 

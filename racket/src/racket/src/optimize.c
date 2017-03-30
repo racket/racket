@@ -3812,6 +3812,7 @@ static Scheme_Object *optimize_application(Scheme_Object *o, Optimize_Info *info
       && SAME_OBJ(scheme_hash_ref_proc, app->args[0])
       && SCHEME_HASHTRP(app->args[1])
       && SAME_TYPE(scheme_ir_lambda_type, SCHEME_TYPE(app->args[3]))
+      && (((Scheme_Lambda *)(app->args[3]))->num_params == 0)
       && (SCHEME_TYPE(((Scheme_Lambda *)app->args[3])->body) > _scheme_ir_values_types_)
       && !SCHEME_PROCP(((Scheme_Lambda *)app->args[3])->body)) {
     app->args[3] = ((Scheme_Lambda *)app->args[3])->body;
