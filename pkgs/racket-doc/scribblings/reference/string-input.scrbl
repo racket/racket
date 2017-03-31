@@ -417,7 +417,7 @@ character.}
 Like @racket[peek-char], but if the input port returns a non-byte
 value after @racket[skip-bytes-amt] byte positions, then it is returned.
 
-@history[#:changed "6.8.0.2" @elem{Added the @racket[sourve-name] and
+@history[#:changed "6.8.0.2" @elem{Added the @racket[source-name] and
                                    @racket[special-wrap] arguments.}]}
 
 @defproc[(peek-byte-or-special [in input-port? (current-input-port)]
@@ -431,7 +431,7 @@ Like @racket[peek-char-or-special], but @tech{peeks} and returns a byte
 instead of a character, and it supports a @racket[progress] argument
 like @racket[peek-bytes-avail!].
 
-@history[#:changed "6.8.0.2" @elem{Added the @racket[sourve-name] and
+@history[#:changed "6.8.0.2" @elem{Added the @racket[source-name] and
                                    @racket[special-wrap] arguments.}]}
 
 
