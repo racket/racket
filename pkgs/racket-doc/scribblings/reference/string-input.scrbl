@@ -379,7 +379,7 @@ then the result of applying @racket[special-wrap] to the
 @tech{special} value is returned. A @racket[#f] value for
 @racket[special-wrap] is treated the same as the identity function.
 
-@history[#:changed "6.8.0.2" @elem{Added the @racket[sourve-name] and
+@history[#:changed "6.8.0.2" @elem{Added the @racket[source-name] and
                                    @racket[special-wrap] arguments.}]}
 
 @defproc[(read-byte-or-special [in input-port? (current-input-port)]
@@ -390,7 +390,7 @@ then the result of applying @racket[special-wrap] to the
 Like @racket[read-char-or-special], but reads and returns a byte
 instead of a character.
 
-@history[#:changed "6.8.0.2" @elem{Added the @racket[sourve-name] and
+@history[#:changed "6.8.0.2" @elem{Added the @racket[source-name] and
                                    @racket[special-wrap] arguments.}]}
 
 @defproc[(peek-char [in input-port? (current-input-port)]
