@@ -364,3 +364,49 @@
            (λ (x) (if x 'fail 11))
            'pos
            'neg))
+
+(let () ;; test generate / exercise for `build-flat-contract-property contracts
+  (define even-list/c
+    (let ()
+      (struct ctc ()
+        #:property
+        prop:flat-contract
+        (build-flat-contract-property
+         #:name (λ (c) 'even-list/c)
+         #:first-order (λ (c) (λ (v) (and (list? v) (andmap even? v))))
+         #:late-neg-projection
+         (λ (c)
+           (λ (b)
+             (λ (v neg-party)
+               (unless (and (list? v) (andmap even? v))
+                 (raise-blame-error b v
+                                    #:missing-party neg-party
+                                    "expected even list, got ~v" v))
+               (map values v))))))
+      (ctc)))
+  (define even-list/c/generate
+    (let ()
+      (struct ctc ()
+        #:property
+        prop:flat-contract
+        (build-flat-contract-property
+         #:name (λ (c) 'even-list/c)
+         #:first-order (λ (c) (λ (v) (and (list? v) (andmap even? v))))
+         #:late-neg-projection
+         (λ (c)
+           (λ (b)
+             (λ (v neg-party)
+               (unless (and (list? v) (andmap even? v))
+                 (raise-blame-error b v
+                                    #:missing-party neg-party
+                                    "expected even list, got ~v" v))
+               (map values v))))
+         #:generate
+         (λ (c)
+           (λ (fuel)
+             (λ () '(2))))))
+      (ctc)))
+  (check-exn cannot-generate-exn? (λ () (test-contract-generation even-list/c)))
+  (check-not-exn (λ () (test-contract-generation even-list/c/generate)))
+  (check-exercise 2 void? even-list/c)
+  (check-exercise 2 void? even-list/c/generate))
