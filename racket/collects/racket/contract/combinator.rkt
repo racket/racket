@@ -238,6 +238,7 @@
                     #:val-first-projection [val-first-projection #f]
                     #:projection [projection #f]
                     #:stronger [stronger #f]
+                    #:generate [generate (λ (ctc) (λ (fuel) #f))]
                     #:list-contract? [is-list-contract #f])
            (:build-flat-contract-property
             #:name name
@@ -249,6 +250,7 @@
             #:projection
             (and projection (λ (c) (force-projection-eq (projection c))))
             #:stronger stronger
+            #:generate generate
             #:list-contract? is-list-contract))])
     build-flat-contract-property))
 
