@@ -2660,16 +2660,6 @@ returns @racket[#f] but @racket[value-blame] returns @racket[#f].
                       (or/c (-> (or/c contract-random-generate-fail? c))
                             #f))]))
            (λ (c) (λ (fuel) #f))]
-          [#:exercise
-           exercise
-           (->i ([c contract?])
-                ([result
-                  (c)
-                  (-> (and/c positive? real?)
-                      (values
-                       (-> c void?)
-                       (listof contract?)))]))
-           (λ (c) (λ (fuel) (values void '())))]
           [#:list-contract? is-list-contract? (-> contract? boolean?) (λ (c) #f)])
          flat-contract-property?]
 @defproc[(build-chaperone-contract-property
@@ -2826,15 +2816,21 @@ compared with the original, uncontracted value.
 
 A @deftech{flat contract property} specifies the behavior of a structure when
 used as a @tech{flat contract}.  It is specified using
-@racket[build-flat-contract-property], and accepts exactly the same set of
-arguments as @racket[build-contract-property].  The only difference is that the
-projection accessor is expected not to wrap its argument in a higher-order
-fashion, analogous to the constraint on projections in
-@racket[make-flat-contract].
+@racket[build-flat-contract-property], and accepts similar
+arguments as @racket[build-contract-property].  The differences are:
+@itemlist[
+@item{the projection accessor is expected not to wrap its argument in a
+      higher-order fashion, analogous to the constraint on projections in
+      @racket[make-flat-contract];}
+@item{the @racket[#:exercise] keyword argument is omitted because it is not
+      relevant for flat contracts.}]
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}
-         #:changed "6.1.1.4" 
-         @list{Allow @racket[generate] to return @racket[contract-random-generate-fail]}]
+         #:changed "6.1.1.4"
+         @list{Allow @racket[generate] to return @racket[contract-random-generate-fail].}
+         #:changed "6.8.0.2"
+         @list{Removed the @racket[#:exercise] keyword argument from
+         @racket[build-flat-contract-property].}]
 }
 
 @deftogether[(
