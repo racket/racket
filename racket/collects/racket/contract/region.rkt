@@ -98,7 +98,8 @@
      (let-values ([(name body-expr)
                    (normalize-definition
                     (datum->syntax #'define-stx (list* 'define/contract #'name+arg-list
-                                                       #'body0 #'(body ...)))
+                                                       #'body0 #'(body ...))
+                                   define-stx define-stx)
                     #'lambda #t #t)])
        (with-syntax ([name name]
                      [body-expr body-expr])
