@@ -347,3 +347,14 @@
         x)
       (f 3 #:y #f))
    "top-level"))
+
+
+(parameterize ([current-namespace (make-base-namespace)])
+  (namespace-require 'racket/base)
+  (namespace-require 'racket/contract)
+  (eval (datum->syntax #f
+                       '(define/contract ((f x) y) any/c (+ x y))
+                       (vector "x.rkt" 1 0 1 0)))
+  (test 'x.rkt:1:0 object-name (eval '(f 1)))
+  (eval (datum->syntax #f '(define ((g x) y) y) (vector "x.rkt" 1 0 1 0)))
+  (test 'x.rkt:1:0 object-name (eval '(f 1))))
