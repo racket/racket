@@ -15,6 +15,7 @@
 (define (disconnect x)
   (send x disconnect))
 
+
 ;; == Statements
 
 (define (statement? x)
@@ -54,116 +55,106 @@
 
 ;; == Query helper procedures
 
-;; query1 : connection symbol Statement -> QueryResult
-(define (query1 c fsym stmt)
-  (send c query fsym stmt #f))
+;; ResultCheck = #f | 'rows | exact-positive-integer
+;;   #f = no check, 'rows = want rows-result, n = want rows-result w/ n cols
 
-;; query/rows : connection symbol Statement nat/#f -> rows-result
-(define (query/rows c fsym sql want-columns)
-  (let [(result (query1 c fsym sql))]
-    (unless (rows-result? result)
-      (error/want-rows fsym sql #t))
-    (let ([got-columns (length (rows-result-headers result))])
-      (when (and want-columns (not (= got-columns want-columns)))
-        (error/column-count fsym sql want-columns got-columns #t)))
-    result))
+;; query1 : Connection Symbol Statement -> QueryResult
+(define (query1 c who stmt)
+  (send c query who stmt #f))
 
-(define (query/cursor c fsym sql want-columns)
-  (let ([result (send c query fsym sql #t)])
-    (unless (cursor-result? result)
-      (error/want-cursor fsym sql))
-    (let ([got-columns (length (cursor-result-headers result))])
-      (when (and want-columns (not (= got-columns want-columns)))
-        (error/column-count fsym sql want-columns got-columns #t)))
-    result))
+;; query/rows : Connection Symbol Statement Nat/#f -> Rows-Result
+(define (query/rows c who stmt want-columns)
+  (check-rows-result who stmt want-columns (query1 c who stmt)))
 
-(define (rows-result->row fsym rs sql maybe-row? one-column?)
-  (define rows (rows-result-rows rs))
+;; check-rows-result : Symbol Statement ResultCheck Query-Result -> Rows-Result
+(define (check-rows-result who sql want-columns result)
+  (unless (rows-result? result)
+    (error/want-rows who sql #t))
+  (let ([got-columns (length (rows-result-headers result))])
+    (when (and (exact-integer? want-columns) (not (= got-columns want-columns)))
+      (error/column-count who sql want-columns got-columns #t)))
+  result)
+
+;; rows-result->row : Symbol Rows-Result Statement Boolean Boolean -> Vector/Any
+(define (rows-result->row who result sql maybe-row? one-column?)
+  (define rows (rows-result-rows result))
   (cond [(null? rows)
-         (cond [maybe-row? #f]
-               [else (error/row-count fsym sql 1 0)])]
+         (if maybe-row? #f (error/row-count who sql 1 0))]
         [(null? (cdr rows))
          (let ([row (car rows)])
-           (cond [one-column? (vector-ref row 0)]
-                 [else row]))]
-        [else (error/row-count fsym sql 1 (length rows))]))
+           (if one-column? (vector-ref row 0) row))]
+        [else (error/row-count who sql 1 (length rows))]))
 
-(define (compose-statement fsym c stmt args checktype)
+;; compose-statement : Symbol Connection Statement List ResultCheck -> Statement
+;; Returns self-contained statement: either string or statement-binding.
+(define (compose-statement who c stmt args checktype)
   (cond [(prop:statement? stmt)
          (let ([stmt* ((prop:statement-ref stmt) stmt c)])
-           (compose-statement fsym c stmt* args checktype))]
-        [(or (pair? args)
-             (prepared-statement? stmt))
-         (let ([pst
-                (cond [(string? stmt)
-                       (prepare1 fsym c stmt #t)]
-                      [(prepared-statement? stmt)
-                       ;; Ownership check done later, by query method.
-                       stmt]
-                      [(statement-binding? stmt)
-                       (error/statement-binding-args fsym stmt args)])])
-           (send pst check-results fsym checktype stmt)
-           (send pst bind fsym args))]
+           (compose-statement who c stmt* args checktype))]
+        [(or (pair? args) (prepared-statement? stmt))
+         (define pst
+           (cond [(string? stmt)
+                  (prepare1 who c stmt #t)]
+                 [(prepared-statement? stmt)
+                  ;; Ownership check done later, by query method.
+                  stmt]
+                 [(statement-binding? stmt)
+                  (error/statement-binding-args who stmt args)]))
+         (send pst check-results who checktype stmt)
+         (send pst bind who args)]
         [else ;; no args, and stmt is either string or statement-binding
          stmt]))
+
+;; query-row* : Symbol Connection Statement List Nat/#f Boolean Boolean -> (varies)
+;; Helper for all query operations that expect at most one row returned.
+(define (query-row* who c sql args want-columns maybe-row? one-column?)
+  (let* ([sql (compose-statement who c sql args (or want-columns 'rows))]
+         [result (query/rows c who sql want-columns)])
+    (rows-result->row who result sql maybe-row? one-column?)))
+
 
 ;; == Query API procedures
 
 ;; query-rows0 : connection Statement arg ... -> (listof (vectorof 'a))
 (define (query-rows0 c sql . args)
   (let* ([sql (compose-statement 'query-rows c sql args 'rows)]
-         [result (query/rows c 'query-rows sql #f)])
+         [result (query/rows c 'query-rows0 sql #f)])
     (rows-result-rows result)))
 
 ;; query-list : connection Statement arg ... -> (listof 'a)
 ;; Expects to get back a rows-result with one field per row.
 (define (query-list c sql . args)
-  (let ([sql (compose-statement 'query-list c sql args 1)])
-    (map (lambda (v) (vector-ref v 0))
-         (rows-result-rows (query/rows c 'query-list sql 1)))))
+  (let* ([sql (compose-statement 'query-list c sql args 1)]
+         [result (query/rows c 'query-list sql 1)])
+    (map (lambda (v) (vector-ref v 0)) (rows-result-rows result))))
 
-;; query-row : connection Statement arg ... -> (vector-of 'a)
-;; Expects to get back a rows-result of zero or one rows.
+;; query-row : Connection Statement SqlDatum ... -> (Vectorof SqlDatum)
 (define (query-row c sql . args)
-  (let ([sql (compose-statement 'query-row c sql args 'rows)])
-    (rows-result->row 'query-row
-                    (query/rows c 'query-row sql #f)
-                    sql #f #f)))
+  (query-row* 'query-row c sql args #f #f #f))
 
-;; query-maybe-row : connection Statement arg ... -> (vector-of 'a) or #f
-;; Expects to get back a rows-result of zero or one rows.
+;; query-maybe-row : Connection Statement SqlDatum ... -> (Vectorof SqlDatum) or #f
 (define (query-maybe-row c sql . args)
-  (let ([sql (compose-statement 'query-maybe-row c sql args 'rows)])
-    (rows-result->row 'query-maybe-row
-                    (query/rows c 'query-maybe-row sql #f)
-                    sql #t #f)))
+  (query-row* 'query-maybe-row c sql args #f #t #f))
 
-;; query-value : connection string arg ... -> value | raises error
-;; Expects to get back a rows-result of exactly one row, exactly one column.
+;; query-value : Connection Statement SqlDatum ... -> SqlDatum | raises error
 (define (query-value c sql . args)
-  (let ([sql (compose-statement 'query-value c sql args 1)])
-    (rows-result->row 'query-value
-                    (query/rows c 'query-value sql 1)
-                    sql #f #t)))
+  (query-row* 'query-value c sql args 1 #f #t))
 
-;; query-maybe-value : connection Statement arg ... -> value/#f
-;; Expects to get back a rows-result of zero or one rows, exactly one column.
+;; query-maybe-value : Connection Statement SqlDatum ... -> SqlDatum or #f
 (define (query-maybe-value c sql . args)
-  (let ([sql (compose-statement 'query-maybe-value c sql args 1)])
-    (rows-result->row 'query-maybe-value
-                    (query/rows c 'query-maybe-value sql 1)
-                    sql #t #t)))
+  (query-row* 'query-maybe-value c sql args 1 #t #t))
 
-;; query-exec : connection Statement arg ... -> void
+;; query-exec : Connection Statement SqlDatum ... -> void
 (define (query-exec c sql . args)
   (let ([sql (compose-statement 'query-exec c sql args #f)])
     (query1 c 'query-exec sql)
     (void)))
 
-;; query : connection Statement arg ... -> QueryResult
+;; query : Connection Statement SqlDatum ... -> QueryResult
 (define (query c sql . args)
   (let ([sql (compose-statement 'query c sql args #f)])
     (query1 c 'query sql)))
+
 
 ;; == Prepare
 
@@ -174,6 +165,7 @@
 (define (prepare1 fsym c stmt close-on-exec?)
   ;; stmt is string
   (send c prepare fsym stmt close-on-exec?))
+
 
 ;; == Transactions
 
