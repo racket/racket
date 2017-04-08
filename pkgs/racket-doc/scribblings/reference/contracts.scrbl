@@ -2376,6 +2376,7 @@ of the blame object and the negative party should be used instead.
 
 @defproc[(raise-blame-error [b blame?]
                             [v any/c]
+                            [#:missing-party missing-party any/c #f]
                             [fmt (or/c string?
                                        (listof (or/c string?
                                                      'given 'given:
@@ -2387,7 +2388,8 @@ Signals a contract violation.  The first argument, @racket[b], records the
 current blame information, including positive and negative parties, the name of
 the contract, the name of the value, and the source location of the contract
 application.  The second argument, @racket[v], is the value that failed to
-satisfy the contract.
+satisfy the contract.  The optional argument @racket[missing-party] is used to
+add a missing (negative) party to @racket[b].
 
 The remaining arguments are a format string,
 @racket[fmt], and its arguments, @racket[v-fmt ...], specifying an error message
