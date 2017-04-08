@@ -7,6 +7,7 @@
          dbsystem-base%
          locking%
          debugging%
+         disconnect%
          transactions%
          statement-cache%
          isolation-symbol->string
@@ -428,7 +429,6 @@
 
 (define statement-cache%
   (class transactions%
-    (init-field [cache-statements 'in-transaction])
     (inherit call-with-lock
              get-tx-status
              check-valid-tx-status

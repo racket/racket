@@ -1,6 +1,6 @@
 #lang racket/base
 
-;; Most of db/base and db/sqlite3, used by core Racket (pre-pkg)
+;; Minimal db/base and db/sqlite3, used by core Racket (pre-pkg)
 
 (require "generic/interfaces.rkt")
 (provide (struct-out simple-result)
@@ -16,8 +16,23 @@
          sql-null?)
 
 (require "generic/functions.rkt")
-(provide (except-out (all-from-out "generic/functions.rkt")
-                     in-query-helper))
+(provide connected?
+         disconnect
+         virtual-statement
+         (rename-out [query-rows0 query-rows])
+         query-list
+         query-row
+         query-maybe-row
+         query-value
+         query-maybe-value
+         query-exec
+         query
+         start-transaction
+         commit-transaction
+         rollback-transaction
+         call-with-transaction
+         in-transaction?
+         needs-rollback?)
 
 (require "sqlite3/main.rkt")
 (provide sqlite3-connect
