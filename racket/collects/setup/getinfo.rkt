@@ -5,7 +5,8 @@
          planet/cachepath 
          syntax/modread
          "dirs.rkt"
-         "path-relativize.rkt")
+         "path-relativize.rkt"
+         "private/encode-relative.rkt")
 
 ;; in addition to infodomain/compiled/cache.rktd, getinfo will look in this 
 ;; file to find mappings. PLaneT uses this to put info about installed
@@ -243,7 +244,9 @@
                            [else (error 'find-relevant-directories
                                         "bad info-domain cache file: ~a" f)]))])
             (match i
-              [(list (and pathbytes (or (? bytes?) (list (or 'info 'share) (? bytes?) ...)))
+              [(list (and pathbytes (or (? bytes?)
+                                        (list (or 'info 'share) (? bytes?) ...)
+                                        (list 'rel (or 'up (? bytes?)) ...)))
                      (list (? symbol? fields) ...)
                      key ;; anything is okay here
                      (? integer? maj)
@@ -259,9 +262,10 @@
                                  ;; but it's ok to support them:
                                  (simplify-path (build-path root-dir p))
                                  p))
-                           (if (eq? (car pathbytes) 'info)
-                               (info-relative->path pathbytes)
-                               (main-share-relative->path pathbytes)))
+                           (case (car pathbytes)
+                             [(rel) (simplify-path (build-path root-dir (decode-relative-path pathbytes)))]
+                             [(info) (info-relative->path pathbytes)]
+                             [(lib) (main-share-relative->path pathbytes)]))
                        fields)])
                  (hash-set! colls key
                             ((table-insert t) root-dir new-item old-items)))]
