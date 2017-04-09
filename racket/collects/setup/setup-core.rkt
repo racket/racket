@@ -1278,10 +1278,12 @@
                       (let ([p (path->main-lib-relative (cc-path cc))])
                         (if (path? p)
                             ;; Fall back to relative (with ".."s) to info root:
-                            (encode-relative-path
-                             (find-relative-path (cc-info-root cc)
-                                                 p
-                                                 #:more-than-root? #t))
+                            (let ([rp (find-relative-path (cc-info-root cc)
+                                                          p
+                                                          #:more-than-root? #t)])
+                              (if (relative-path? rp)
+                                  (encode-relative-path rp)
+                                  (path->bytes rp)))
                             p))]
                      [else (path->bytes (cc-path cc))])
                    (cons (domain) (cc-shadowing-policy cc)))))
