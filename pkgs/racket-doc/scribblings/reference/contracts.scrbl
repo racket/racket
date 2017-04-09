@@ -2827,10 +2827,7 @@ arguments as @racket[build-contract-property].  The differences are:
 
 @history[#:changed "6.0.1.13" @list{Added the @racket[#:list-contract?] argument.}
          #:changed "6.1.1.4"
-         @list{Allow @racket[generate] to return @racket[contract-random-generate-fail].}
-         #:changed "6.8.0.2"
-         @list{Removed the @racket[#:exercise] keyword argument from
-         @racket[build-flat-contract-property].}]
+         @list{Allow @racket[generate] to return @racket[contract-random-generate-fail].}]
 }
 
 @deftogether[(
