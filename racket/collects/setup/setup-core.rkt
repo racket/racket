@@ -39,6 +39,7 @@
          "private/pkg-deps.rkt"
          "collection-name.rkt"
          "private/format-error.rkt"
+         "private/encode-relative.rkt"
          compiler/private/dep
          (only-in pkg/lib pkg-directory
                   pkg-single-collection))
@@ -1160,9 +1161,23 @@
                     (set! all-ok? #t)
                     (for ([i l])
                       (match i
-                        [(list (and a (or (? bytes?) (list (or 'info 'lib) (? bytes?) ...)))
+                        [(list (and a (or (? bytes?)
+                                          (list (or 'info 'lib) (? bytes?) ...)
+                                          (list 'rel (or 'up (? bytes?)) ...)))
                                (list (? symbol? b) ...) c (? integer? d) (? integer? e))
-                         (define p (if (bytes? a) (bytes->path a) a))
+                         (define p
+                           (cond
+                            [(bytes? a) (bytes->path a)]
+                            [(and (pair? a) (eq? 'rel (car a)))
+                             (decode-relative-path a)]
+                            [else a]))
+                         (define (normalize-relative-encoding a p)
+                           (if (and (bytes? a) (relative-path? p))
+                               ;; Convert to encoded form, since new entries will
+                               ;; use encoding to avoid path-convention problems
+                               ;; with cross-compilation:
+                               (encode-relative-path p)
+                               a))
                          ;; Check that the path is suitably absolute or relative:
                          (define dir
                            (case info-path-mode
@@ -1219,7 +1234,7 @@
                                          (not (eq? 'all (omitted-paths dir getinfo/log-failure omit-root)))))
                                   (or (file-exists? (build-path dir "info.rkt"))
                                       (file-exists? (build-path dir "info.ss"))))
-                             (hash-set! t a (list b c d e))
+                             (hash-set! t (normalize-relative-encoding a p) (list b c d e))
                              (begin (when (verbose) (printf " drop entry: ~s\n" i))
                                     (set! all-ok? #f)))]
                         [_ (when (verbose) (printf " bad entry: ~s\n" i))
@@ -1263,9 +1278,10 @@
                       (let ([p (path->main-lib-relative (cc-path cc))])
                         (if (path? p)
                             ;; Fall back to relative (with ".."s) to info root:
-                            (path->bytes (find-relative-path (cc-info-root cc)
-                                                             p
-                                                             #:more-than-root? #t))
+                            (encode-relative-path
+                             (find-relative-path (cc-info-root cc)
+                                                 p
+                                                 #:more-than-root? #t))
                             p))]
                      [else (path->bytes (cc-path cc))])
                    (cons (domain) (cc-shadowing-policy cc)))))
