@@ -52,7 +52,7 @@
        [tool (and (pair? cmdline)
                   (or (hash-ref tools (car cmdline) #f)
                       (and (= (hash-count prefix-tools) 1)
-                           (hash-ref tools (car cmdline) #f))))]
+                           (car (hash-values prefix-tools)))))]
        [ambiguous? (> (hash-count prefix-tools) 1)]
        [show-all?
         (cond
