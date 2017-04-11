@@ -10,7 +10,9 @@
 Contracts are represented internally as functions that
 accept information about the contract (who is to blame,
 source locations, @|etc|) and produce projections (in the
-spirit of Dana Scott) that enforce the contract. A
+spirit of Dana Scott) that enforce the contract.
+
+In a general sense, a
 projection is a function that accepts an arbitrary value,
 and returns a value that satisfies the corresponding
 contract. For example, a projection that accepts only
@@ -160,11 +162,12 @@ when a contract violation is detected.
 While these projections are supported by the contract library
 and can be used to build new contracts, the contract library
 also supports a different API for projections that can be more
-efficient. Specifically, a @deftech{val first projection} accepts
+efficient. Specifically, a @deftech{late neg projection} accepts
 a blame object without the negative blame information and then
-returns a function that accepts the value to be contracted, and
-then finally accepts the name of the negative party to the contract
-before returning the value with the contract. Rewriting @racket[int->int-proj]
+returns a function that accepts both the value to be contracted and
+the name of the negative party, in that order.
+The returned function then in turn
+returns the value with the contract. Rewriting @racket[int->int-proj]
 to use this API looks like this:
 @interaction/no-prompt[#:eval ex-eval
 (define (int->int-proj blame)
@@ -179,23 +182,21 @@ to use this API looks like this:
        v
        '(expected "an integer" given: "~e")
        v)))
-  (λ (f)
+  (λ (f neg-party)
     (if (and (procedure? f)
              (procedure-arity-includes? f 1))
-        (λ (neg-party)
-          (λ (x)
-            (check-int x dom-blame neg-party)
-            (define ans (f x))
-            (check-int ans rng-blame neg-party)
-            ans))
-        (λ (neg-party)
-          (raise-blame-error
-           blame #:missing-party neg-party
-           f
-           '(expected "a procedure of one argument" given: "~e")
-           f)))))]
+        (λ (x)
+          (check-int x dom-blame neg-party)
+          (define ans (f x))
+          (check-int ans rng-blame neg-party)
+          ans)
+        (raise-blame-error
+         blame #:missing-party neg-party
+         f
+         '(expected "a procedure of one argument" given: "~e")
+         f))))]
 The advantage of this style of contract is that the @racket[_blame]
-and @racket[_v] arguments can be supplied on the server side of the
+and @racket[_f] arguments can be supplied on the server side of the
 contract boundary and the result can be used for every different
 client. With the simpler situation, a new blame object has to be
 created for each client.
@@ -208,7 +209,7 @@ the contract library primitives. Specifically, we can use
  (define int->int-contract
    (make-contract
     #:name 'int->int
-    #:val-first-projection int->int-proj))]
+    #:late-neg-projection int->int-proj))]
 and then combine it with a value and get some contract
 checking.
 @def+int[#:eval 
@@ -238,8 +239,8 @@ property we need.
                                 (build-chaperone-contract-property
                                  #:name
                                  (λ (arr) (simple-arrow-name arr))
-                                 #:val-first-projection
-                                 (λ (arr) (simple-arrow-val-first-proj arr))))]
+                                 #:late-neg-projection
+                                 (λ (arr) (simple-arrow-late-neg-proj arr))))]
 
 To do the automatic coercion of values like @racket[integer?] and @racket[#f]
 into contracts, we need to call @racket[coerce-chaperone-contract]
@@ -262,30 +263,28 @@ projection we defined earlier, this time using
 @tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{chaperones}:
 @interaction/no-prompt[#:eval
                        ex-eval
-                       (define (simple-arrow-val-first-proj arr)
-                         (define dom-ctc (get/build-val-first-projection (simple-arrow-dom arr)))
-                         (define rng-ctc (get/build-val-first-projection (simple-arrow-rng arr)))
+                       (define (simple-arrow-late-neg-proj arr)
+                         (define dom-ctc (get/build-late-neg-projection (simple-arrow-dom arr)))
+                         (define rng-ctc (get/build-late-neg-projection (simple-arrow-rng arr)))
                          (λ (blame)
                            (define dom+blame (dom-ctc (blame-add-context blame
                                                                          "the argument of"
                                                                          #:swap? #t)))
                            (define rng+blame (rng-ctc (blame-add-context blame "the range of")))
-                           (λ (f)
+                           (λ (f neg-party)
                              (if (and (procedure? f)
                                       (procedure-arity-includes? f 1))
-                                 (λ (neg-party)
-                                   (chaperone-procedure
-                                    f
-                                    (λ (arg) 
-                                      (values 
-                                       (λ (result) ((rng+blame result) neg-party))
-                                       ((dom+blame arg) neg-party)))))
-                                 (λ (neg-party)
-                                   (raise-blame-error
-                                    blame #:missing-party neg-party
-                                    f
-                                    '(expected "a procedure of one argument" given: "~e")
-                                    f))))))]
+                                 (chaperone-procedure
+                                  f
+                                  (λ (arg) 
+                                    (values 
+                                     (λ (result) (rng+blame result neg-party))
+                                     (dom+blame arg neg-party))))
+                                 (raise-blame-error
+                                  blame #:missing-party neg-party
+                                  f
+                                  '(expected "a procedure of one argument" given: "~e")
+                                  f)))))]
 
 @def+int[#:eval 
          ex-eval
@@ -417,8 +416,8 @@ starts using them:
                                 (build-chaperone-contract-property
                                  #:name
                                  (λ (arr) (simple-arrow-name arr))
-                                 #:val-first-projection
-                                 (λ (arr) (simple-arrow-val-first-proj arr))
+                                 #:late-neg-projection
+                                 (λ (arr) (simple-arrow-late-neg-proj arr))
                                  #:first-order simple-arrow-first-order
                                  #:stronger simple-arrow-first-stronger?
                                  #:generate simple-arrow-contract-generate
