@@ -3042,7 +3042,15 @@ log_prim (int argc, Scheme_Object *argv[])
   if (argc == 1) {
     return log_e_prim(argc, argv);
   } else {
-    scheme_bin_div(un_log(argv[0]), un_log(argv[1]));
+    Scheme_Object *a, *b;
+    a = argv[0];
+    b = argv[1];
+    if(SAME_OBJ(b, scheme_make_integer(1))){
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
+                       "log: undefined for base 1");
+      ESCAPED_BEFORE_HERE;
+    }
+    return scheme_bin_div(un_log(a), un_log(b));
   }
 }
 
