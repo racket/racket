@@ -44,7 +44,7 @@ they are not quite ready for use as contracts, because they
 do not accommodate blame and do not provide good error
 messages. In order to accommodate these, contracts do not
 just use simple projections, but use functions that accept a
-@deftech{blame object} encapsulating
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{blame object} encapsulating
 the names of two parties that are the candidates for blame,
 as well as a record of the source location where the
 contract was established and the name of the contract. They
@@ -109,7 +109,8 @@ arguments in the first two lines of
 the @racket[int->int-proj] function. The trick here is that,
 even though the @racket[int->int-proj] function always
 blames what it sees as positive, we can swap the blame parties by
-calling @racket[blame-swap] on the given @tech{blame object}, replacing
+calling @racket[blame-swap] on the given
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{blame object}, replacing
 the positive party with the negative party and vice versa.
 
 This technique is not merely a cheap trick to get the example to work,
@@ -162,7 +163,8 @@ when a contract violation is detected.
 While these projections are supported by the contract library
 and can be used to build new contracts, the contract library
 also supports a different API for projections that can be more
-efficient. Specifically, a @deftech{late neg projection} accepts
+efficient. Specifically, a
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{late neg projection} accepts
 a blame object without the negative blame information and then
 returns a function that accepts both the value to be contracted and
 the name of the negative party, in that order.
@@ -196,10 +198,54 @@ to use this API looks like this:
          '(expected "a procedure of one argument" given: "~e")
          f))))]
 The advantage of this style of contract is that the @racket[_blame]
-and @racket[_f] arguments can be supplied on the server side of the
-contract boundary and the result can be used for every different
+argument can be supplied on the server side of the
+contract boundary and the result can be used for each different
 client. With the simpler situation, a new blame object has to be
 created for each client.
+
+One final problem remains before this contract can be used with the
+rest of the contract system. In the function above,
+the contract is implemented by creating a wrapper function for
+@racket[f], but this wrapper function does not cooperate with
+@racket[equal?], nor does it let the runtime system know that there
+is a relationship between the result function and @racket[f], the input
+function.
+
+To remedy these two problems, we should use
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{chaperones} instead
+of just using @racket[λ] to create the wrapper function. Here is the
+@racket[int->int-proj] function rewritten to use a
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{chaperone}:
+
+@interaction/no-prompt[#:eval ex-eval
+(define (int->int-proj blame)
+  (define dom-blame (blame-add-context blame
+                                       "the argument of"
+                                       #:swap? #t))
+  (define rng-blame (blame-add-context blame "the range of"))
+  (define (check-int v to-blame neg-party)
+    (unless (integer? v)
+      (raise-blame-error
+       to-blame #:missing-party neg-party
+       v
+       '(expected "an integer" given: "~e")
+       v)))
+  (λ (f neg-party)
+    (if (and (procedure? f)
+             (procedure-arity-includes? f 1))
+        (chaperone-procedure
+         f
+         (λ (x)
+           (check-int x dom-blame neg-party)
+           (values (λ (ans)
+                     (check-int ans rng-blame neg-party)
+                     ans)
+                   x)))
+        (raise-blame-error
+         blame #:missing-party neg-party
+         f
+         '(expected "a procedure of one argument" given: "~e")
+         f))))]
 
 Projections like the ones described above, but suited to
 other, new kinds of value you might make, can be used with
@@ -469,6 +515,5 @@ to use in this program:
                f))
          (maybe-accepts-a-function sqrt)
          (maybe-accepts-a-function 123)]
-
 
 @(close-eval ex-eval)

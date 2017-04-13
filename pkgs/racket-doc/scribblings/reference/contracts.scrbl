@@ -9,10 +9,8 @@
        (the-eval '(require racket/contract racket/contract/parametric racket/list))
        the-eval)))
 
-@(define blame-object
-   @tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{blame object})
-@(define blame-objects
-   @tech[#:doc '(lib "scribblings/guide/guide.scrbl")]{blame objects})
+@(define blame-object @tech{blame object})
+@(define blame-objects @tech{blame objects})
 
 @title[#:tag "contracts" #:style 'toc]{Contracts}
 
@@ -2182,8 +2180,9 @@ The default test accepts any value. The predicate should be influenced by
 the value of @racket[(contract-first-order-okay-to-give-up?)] (see it's documentation
 for more explanation).
 
-The @racket[late-neg-proj] defines the behavior of applying the contract. If it is
-supplied, it accepts a blame object that does not have a value for
+The @racket[late-neg-proj] argument defines the behavior of applying
+ the contract via a @deftech{late neg projection}. If it is
+ supplied, it accepts a @tech{blame object} that does not have a value for
  the @racket[blame-negative] field. Then it must return a function that accepts
  both the value that is getting the contract and the name of the blame party, in
  that order. The result must either be the value (perhaps suitably wrapped
@@ -2360,15 +2359,17 @@ For the costs from checking your new combinator to be included, you should wrap
 any deferred, higher-order checks with this form. First-order checks are
 recognized automatically and do not require this form.
 
-If your combinator's projections operate on complete blame objects (i.e., no
-missing blame parties), the blame object should be the first argument to this
+If your combinator's projections operate on complete @tech{blame objects} (i.e., no
+missing blame parties), the @tech{blame object} should be the first argument to this
 form. Otherwise (e.g., in the case of @racket[_late-neg] projections), a pair
-of the blame object and the negative party should be used instead.
+of the @tech{blame object} and the negative party should be used instead.
 
 @history[#:added "6.4.0.4"]
 }
 
 @subsection{Blame Objects}
+
+This section describes @deftech{blame objects} and operations on them.
 
 @defproc[(blame? [v any/c]) boolean?]{
  This predicate recognizes @|blame-objects|.
@@ -2520,7 +2521,7 @@ the other; both are provided for convenience and clarity.
 @defproc[(blame-add-missing-party [b (and/c blame? blame-missing-party?)]
                                   [missing-party any/c])
          (and/c blame? (not/c blame-missing-party?))]{
- Produces a new blame object like @racket[b], except that the missing
+ Produces a new @tech{blame object} like @racket[b], except that the missing
  party is replaced with @racket[missing-party].
 }
 
@@ -2619,8 +2620,8 @@ The value is expected to be the blame record for the contract on the value or
 a @racket[cons]-pair of a blame record with a missing party and the missing
 party. The @racket[value-blame] function reassembles the arguments of the pair
 into a complete blame record using @racket[blame-add-missing-party]. If
-the value has one of the properties, but the value is not a blame object
-or a pair whose @racket[car] position is a blame object, then @racket[has-blame?]
+the value has one of the properties, but the value is not a @tech{blame object}
+or a pair whose @racket[car] position is a @tech{blame object}, then @racket[has-blame?]
 returns @racket[#f] but @racket[value-blame] returns @racket[#f].
 }
 
@@ -3080,7 +3081,7 @@ Produces the name used to describe the contract in error messages.
   the contract checking, mostly used to create a meaningful error message if
   a contract violation is detected. The resulting function's first argument
   is the value that should have the contract and its second argument is
-  a ``missing party'' from the blame object, to be passed to @racket[raise-contract-error].
+  a ``missing party'' from the @tech{blame object}, to be passed to @racket[raise-contract-error].
 
   If possible, use this function instead of @racket[contract-val-first-projection] or
   @racket[contract-projection].
