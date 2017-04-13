@@ -248,44 +248,30 @@ caller of the evaluation receives @|void-const|.
 
 Finally, the fact that a sandboxed evaluator accept syntax objects
 makes it usable as the value for @racket[current-eval], which means
-that you can easily start a sandboxed read-eval-print-loop.  For
-example, here is a quick implementation of a networked REPL:
+that you can easily start a sandboxed read-eval-print-loop:
 
 @racketblock[
 (define e (make-evaluator 'racket/base))
-(let-values ([(i o) (tcp-accept (tcp-listen 9999))])
-  (parameterize ([current-input-port  i]
-                 [current-output-port o]
-                 [current-error-port  o]
-                 [current-eval e])
-    (read-eval-print-loop)
-    (fprintf o "\nBye...\n")
-    (close-output-port o)))
+(parameterize ([current-eval e])
+  (read-eval-print-loop))
 ]
 
-Note that in this code it is only the REPL interactions that are going
-over the network connection; using I/O operations inside the REPL will
+Note that in this code only the REPL interactions will be printed to
+the current output ports; using I/O operations inside the REPL will
 still use the usual sandbox parameters (defaulting to no I/O).  In
 addition, the code works only from an existing toplevel REPL ---
 specifically, @racket[read-eval-print-loop] reads a syntax value and
 gives it the lexical context of the current namespace.  Here is a
-variation that uses the networked ports for user I/O, and works when
-used from a module (by using a new namespace):
+variation that also allows I/O over the current input and output
+ports, and works when used from a module (by using a new namespace):
 
 @racketblock[
-(let-values ([(i o) (tcp-accept (tcp-listen 9999))])
-  (parameterize ([current-input-port   i]
-                 [current-output-port  o]
-                 [current-error-port   o]
-                 [sandbox-input        i]
-                 [sandbox-output       o]
-                 [sandbox-error-output o]
-                 [current-namespace (make-empty-namespace)])
-    (parameterize ([current-eval
-                    (make-evaluator 'racket/base)])
-      (read-eval-print-loop))
-    (fprintf o "\nBye...\n")
-    (close-output-port o)))
+(parameterize ([sandbox-input        current-input-port]
+               [sandbox-output       current-output-port]
+               [sandbox-error-output current-error-port]
+               [current-namespace (make-empty-namespace)])
+  (parameterize ([current-eval (make-evaluator 'racket/base)])
+    (read-eval-print-loop)))
 ]
 
 }
@@ -300,6 +286,30 @@ is terminated.  Once a sandbox raises such an exception, it will
 continue to raise it on further evaluation attempts.
 }
 
+@; ----------------------------------------------------------------------
+
+@section{Security Considerations}
+
+Although the sandbox is designed to provide a safe environment for executing
+Racket programs with restricted access to system resources, executing untrusted
+programs in a sandbox still carries some risk. Because a malicious program can
+exercise arbitrary functionality from the Racket runtime and installed collections,
+an attacker who identifies a vulnerability in Racket or an installed collection
+may be able to escape the sandbox.
+
+To mitigate this risk, programs that use the sandbox should employ additional
+precautions when possible. Suggested measures include:
+@itemlist[
+@item{Supplying a custom module language to @racket[make-evaluator] or
+@racket[make-module-evaluator] that gives untrusted code access to only
+the language constructs it absolutely requires.}
+@item{If untrusted code needs access to installed collections, installing only
+the collections required by your program.}
+@item{Using operating-system-level security features to provide defense-in-depth
+in case the process running the sandbox is compromised.}
+@item{Making sure your Racket installation and installed packages are up-to-date
+with the latest release.}
+]
 
 @; ----------------------------------------------------------------------
 
