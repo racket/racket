@@ -363,7 +363,7 @@ on a value other than an integer, then the server is to blame.
 
 @; ----------------------------------------------------------------------
 
-@ctc-section[#:tag "flat-named-contracts"]{Contract Messages with ``tempN''}
+@ctc-section[#:tag "flat-named-contracts"]{Contract Messages with ``???''}
 
 You wrote your module. You added contracts. You put them into the interface
 so that client programmers have all the information from interfaces. It's a
@@ -389,7 +389,7 @@ message:
              (require 'bank-server)
              (deposit -10)]
 
-What is the @racketerror{temp7} doing there?  Wouldn't it be nice if
+What is the @racketerror{???} doing there?  Wouldn't it be nice if
 we had a name for this class of data much like we have string, number,
 and so on?
 
