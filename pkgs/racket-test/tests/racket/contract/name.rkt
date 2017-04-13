@@ -64,6 +64,7 @@
   (test-name 'kalidoscope (flat-named-contract 'kalidoscope exact-positive-integer?))
   (test-name 'brick (flat-named-contract 'brick (integer-in 11 22)))
 
+  (test-name 'brick (flat-contract-with-explanation (let ([brick (λ (x) #t)]) brick)))
   
   (test-name '(-> integer? integer?) (-> integer? integer?))
   (test-name '(-> integer? any) (-> integer? any))

@@ -1062,7 +1062,7 @@
    #:stronger (λ (this that) (contract-stronger? ctc that))
    #:list-contract? (list-contract? ctc)))
 
-(define (flat-contract-with-explanation ?)
+(define (flat-contract-with-explanation ? #:name [name (object-name ?)])
   (define (call-? x)
     (define reason (? x))
     (unless (or (boolean? reason)
@@ -1072,6 +1072,7 @@
                             (format "~s" '(or/c boolean? (-> blame? any)))))
     reason)
   (make-flat-contract
+   #:name name
    #:first-order (λ (x) (equal? #t (call-? x)))
    #:late-neg-projection
    (λ (b)

@@ -124,7 +124,8 @@ and how they can be used to implement contracts.
 @section[#:tag "data-structure-contracts"]{Data-structure Contracts}
 @declare-exporting-ctc[racket/contract/base]
 
-@defproc[(flat-contract-with-explanation [get-explanation (-> any/c (or/c boolean? (-> blame? any)))])
+@defproc[(flat-contract-with-explanation [get-explanation (-> any/c (or/c boolean? (-> blame? any)))]
+                                         [#:name name any/c (object-name get-explanation)])
          flat-contract?]{
   Provides a way to use flat contracts that, when a contract fails,
   provide more information about the failure.
@@ -133,7 +134,10 @@ and how they can be used to implement contracts.
   treated as the predicate in a @tech{flat contract}. If it returns
   a procedure, then it is treated similarly to returning @racket[#f],
   except the result procedure is called to actually signal the contract
-  violation. 
+  violation.
+
+  The @racket[name] argument is used as the name of the contract; it defaults
+  to the name of the @racket[get-explanation] function.
 
  @racketblock[(flat-contract-with-explanation
                (λ (val)
