@@ -6,7 +6,8 @@
                      racket/unsafe/ops
                      racket/require
                      racket/random
-                     racket/list))
+                     racket/list
+                     math/flonum))
 
 @(define math-eval (make-base-eval))
 @examples[#:hidden #:eval math-eval (require racket/math)]
@@ -606,7 +607,7 @@ integer.}
 
 Returns Euler's number raised to the power of @racket[z]. The result
  is normally inexact, but it is exact @racket[1] when @racket[z] is an
- exact @racket[0].
+ exact @racket[0]. See also @racket[expt].
 
 @mz-examples[(exp 1) (exp 2+3i) (exp 0)]}
 
@@ -622,6 +623,8 @@ Returns the natural logarithm of @racket[z].  The result is normally
  base. It is equivalent to @racket[(/ (log z) (log b))], but
  can potentially run faster. If @racket[b] is exact
  @racket[1], @exnraise[exn:fail:contract:divide-by-zero].
+
+ See also @racket[fllogb].
 
 @mz-examples[(log (exp 1)) (log 2+3i) (log 1) (log 100 10) (log 8 2) (log 5 5)]
 
