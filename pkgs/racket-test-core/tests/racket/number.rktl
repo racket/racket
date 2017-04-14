@@ -2119,7 +2119,11 @@
 (test +inf.0 real-part (log -inf.0))
 (test +3142.0 round (* 1000 (imag-part (log -inf.0))))
 (test +nan.0 log +nan.0)
+(test 2.0 log 100 10)
+(test 3.0 log 8 2)
+(test 1.0 log 5 5)
 (err/rt-test (log 0) exn:fail:contract:divide-by-zero?)
+(err/rt-test (log 5 1) exn:fail:contract:divide-by-zero?)
 
 (test 1 cos 0)
 (test 1.0 cos 0.0)
@@ -3385,6 +3389,12 @@
 ;; Cases that real->double-flonum used to get wrong
 (test -4882.526517254422 real->double-flonum -13737024017780747/2813507303900)
 (test -9.792844933246106e-14 real->double-flonum -1656/16910305547451097)
+
+;; Arbitrary base log
+(test (/ (log 5) (log 20)) log 5 20)
+(test (/ (log 5) (log -8)) log 5 -8)
+(test (/ (log 7) (log 3+5i)) log 7 3+5i)
+(test (/ (log -5+2i) (log 12)) log -5+2i 12)
 
 ;; Hack to use the "math" package when it's available:
 (when (collection-file-path "base.rkt" "math" #:fail (lambda (x) #f))
