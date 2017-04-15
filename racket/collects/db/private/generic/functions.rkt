@@ -247,18 +247,17 @@
   (let* ([check
           ;; If grouping, can't check expected arity.
           ;; FIXME: should check header includes named fields
-          (cond [(null? grouping-fields) (or vars 'rows)]
-                [else 'rows])]
-         [stmt (compose-statement 'in-query c stmt args check)])
+          (if (null? grouping-fields) vars #f)]
+         [stmt (compose-statement 'in-query c stmt args (or check 'rows))])
     (cond [(eqv? fetch-size +inf.0)
            (in-list/vector->values
             (rows-result-rows
-             (let ([result (query/rows c 'in-query stmt vars)])
+             (let ([result (query/rows c 'in-query stmt check)])
                (if (null? grouping-fields)
                    result
                    (group-rows-result* 'in-query result grouping-fields group-mode)))))]
           [else
-           (let ([cursor (query/cursor c 'in-query stmt vars)])
+           (let ([cursor (query/cursor c 'in-query stmt check)])
              (in-list-generator/vector->values
               (lambda () (send c fetch/cursor 'in-query cursor fetch-size))))])))
 
