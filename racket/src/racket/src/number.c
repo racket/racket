@@ -101,6 +101,7 @@ static Scheme_Object *numerator (int argc, Scheme_Object *argv[]);
 static Scheme_Object *denominator (int argc, Scheme_Object *argv[]);
 static Scheme_Object *exp_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *log_prim (int argc, Scheme_Object *argv[]);
+static Scheme_Object *log_e_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *sin_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *cos_prim (int argc, Scheme_Object *argv[]);
 static Scheme_Object *tan_prim (int argc, Scheme_Object *argv[]);
@@ -649,12 +650,12 @@ scheme_init_number (Scheme_Env *env)
   scheme_add_global_constant("exp", 
 			     scheme_make_folding_prim(exp_prim,
 						      "exp",
-						      1, 1, 1),
+                                                      1, 1, 1),
 			     env);
   scheme_add_global_constant("log", 
-			     scheme_make_folding_prim(log_prim,
+                             scheme_make_folding_prim(log_prim,
 						      "log",
-						      1, 1, 1),
+                                                      1, 2, 1),
 			     env);
   scheme_add_global_constant("sin", 
 			     scheme_make_folding_prim(sin_prim,
@@ -2754,7 +2755,7 @@ static Scheme_Object *un_exp(Scheme_Object *o)
 
 static Scheme_Object *un_log(Scheme_Object *o)
 {
-  return log_prim(1, &o);
+  return log_e_prim(1, &o);
 }
 
 static Scheme_Object *numerator(int argc, Scheme_Object *argv[])
@@ -2791,7 +2792,8 @@ static Scheme_Object *complex_log(Scheme_Object *c)
   m = magnitude(1, &c);
   theta = angle(1, &c);
 
-  return scheme_bin_plus(log_prim(1, &m), scheme_bin_mult(scheme_plus_i, theta));
+  return scheme_bin_plus(log_e_prim(1, &m),
+                         scheme_bin_mult(scheme_plus_i, theta));
 }
 
 static Scheme_Object *bignum_log(Scheme_Object *b)
@@ -3027,12 +3029,30 @@ static Scheme_Object *scheme_single_inf_plus_pi()
 #endif
 
 GEN_UNARY_OP(exp_prim, exp, exp, scheme_inf_object, scheme_single_inf_object, scheme_zerod, scheme_zerof, scheme_nan_object, scheme_single_nan_object, complex_exp, GEN_ZERO_IS_ONE, NEVER_RESORT_TO_COMPLEX, BIGNUMS_AS_DOUBLES)
-GEN_UNARY_OP(log_prim, log, SCH_LOG, scheme_inf_object, scheme_single_inf_object, scheme_inf_plus_pi(), scheme_single_inf_plus_pi(), scheme_nan_object, scheme_single_nan_object, complex_log, GEN_ONE_IS_ZERO_AND_ZERO_IS_ERR, NEGATIVE_USES_COMPLEX, BIGNUM_LOG)
+GEN_UNARY_OP(log_e_prim, log, SCH_LOG, scheme_inf_object, scheme_single_inf_object, scheme_inf_plus_pi(), scheme_single_inf_plus_pi(), scheme_nan_object, scheme_single_nan_object, complex_log, GEN_ONE_IS_ZERO_AND_ZERO_IS_ERR, NEGATIVE_USES_COMPLEX, BIGNUM_LOG)
 GEN_UNARY_OP(sin_prim, sin, SCH_SIN, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_sin, GEN_ZERO_IS_ZERO, NEVER_RESORT_TO_COMPLEX, BIGNUMS_AS_DOUBLES)
 GEN_UNARY_OP(cos_prim, cos, SCH_COS, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_cos, GEN_ZERO_IS_ONE, NEVER_RESORT_TO_COMPLEX, BIGNUMS_AS_DOUBLES)
 GEN_UNARY_OP(tan_prim, tan, SCH_TAN, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_tan, GEN_ZERO_IS_ZERO, NEVER_RESORT_TO_COMPLEX, BIGNUMS_AS_DOUBLES)
 GEN_UNARY_OP(asin_prim, asin, SCH_ASIN, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_asin, GEN_ZERO_IS_ZERO, OVER_ONE_MAG_USES_COMPLEX, BIGNUMS_AS_DOUBLES)
 GEN_UNARY_OP(acos_prim, acos, acos, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, scheme_nan_object, scheme_single_nan_object, complex_acos, GEN_ONE_IS_ZERO, OVER_ONE_MAG_USES_COMPLEX, BIGNUMS_AS_DOUBLES)
+
+static Scheme_Object *
+log_prim (int argc, Scheme_Object *argv[])
+{
+  if (argc == 1) {
+    return log_e_prim(argc, argv);
+  } else {
+    Scheme_Object *a, *b;
+    a = argv[0];
+    b = argv[1];
+    if(SAME_OBJ(b, scheme_make_integer(1))){
+      scheme_raise_exn(MZEXN_FAIL_CONTRACT_DIVIDE_BY_ZERO,
+                       "log: undefined for base 1");
+      ESCAPED_BEFORE_HERE;
+    }
+    return scheme_bin_div(un_log(a), un_log(b));
+  }
+}
 
 static Scheme_Object *
 atan_prim (int argc, Scheme_Object *argv[])

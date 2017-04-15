@@ -35,7 +35,9 @@
                      "planet-doc"
                      "mzscheme-doc"
                      "compiler-lib"
-                     "drracket"))
+                     "drracket"
+                     "math-doc"
+                     "math-lib"))
 
 (define pkg-desc "Base Racket documentation")
 

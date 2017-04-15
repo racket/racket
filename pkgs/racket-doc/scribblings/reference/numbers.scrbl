@@ -6,7 +6,8 @@
                      racket/unsafe/ops
                      racket/require
                      racket/random
-                     racket/list))
+                     racket/list
+                     math/flonum))
 
 @(define math-eval (make-base-eval))
 @examples[#:hidden #:eval math-eval (require racket/math)]
@@ -606,19 +607,29 @@ integer.}
 
 Returns Euler's number raised to the power of @racket[z]. The result
  is normally inexact, but it is exact @racket[1] when @racket[z] is an
- exact @racket[0].
+ exact @racket[0]. See also @racket[expt].
 
 @mz-examples[(exp 1) (exp 2+3i) (exp 0)]}
 
 
-@defproc[(log [z number?]) number?]{
+@defproc[(log [z number?] [b number? (exp 1)]) number?]{
 
 Returns the natural logarithm of @racket[z].  The result is normally
  inexact, but it is exact @racket[0] when @racket[z] is an exact
  @racket[1]. When @racket[z] is exact @racket[0],
  @exnraise[exn:fail:contract:divide-by-zero].
 
-@mz-examples[(log (exp 1)) (log 2+3i) (log 1)]}
+ If @racket[b] is provided, it serves as an alternative
+ base. It is equivalent to @racket[(/ (log z) (log b))], but
+ can potentially run faster. If @racket[b] is exact
+ @racket[1], @exnraise[exn:fail:contract:divide-by-zero].
+
+ Consider using @racket[fllogb] instead when accuracy is
+ important.
+
+@mz-examples[(log (exp 1)) (log 2+3i) (log 1) (log 100 10) (log 8 2) (log 5 5)]
+
+@history[#:changed "6.9.0.1" @elem{Added second argument for arbitrary bases.}]}
 
 
 @; ------------------------------------------------------------------------
