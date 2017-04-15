@@ -624,7 +624,8 @@ Returns the natural logarithm of @racket[z].  The result is normally
  can potentially run faster. If @racket[b] is exact
  @racket[1], @exnraise[exn:fail:contract:divide-by-zero].
 
- See also @racket[fllogb].
+ Consider using @racket[fllogb] instead when accuracy is
+ important.
 
 @mz-examples[(log (exp 1)) (log 2+3i) (log 1) (log 100 10) (log 8 2) (log 5 5)]
 
