@@ -513,11 +513,11 @@
                 (cons x (loop (cdr l) (map cdr ls)))
                 (loop (cdr l) (map cdr ls))))))
         (raise-arguments-error 'filter-map "all lists must have same size")))
-    (let loop ([l l])
+    (let loop ([l l] [acc null])
       (if (null? l)
-        null
+        (reverse acc)
         (let ([x (f (car l))])
-          (if x (cons x (loop (cdr l))) (loop (cdr l))))))))
+          (if x (loop (cdr l) (cons x acc)) (loop (cdr l) acc)))))))
 
 ;; very similar to `filter-map', one more such function will justify some macro
 (define (count f l . ls)
