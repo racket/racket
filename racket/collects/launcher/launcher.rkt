@@ -425,9 +425,10 @@
                      (if (eq? kind 'mred)
                          (find-gui-bin-dir)
                          (find-console-bin-dir)))]
+         [as-relative? (let ([a (assq 'relative? aux)])
+                         (and a (cdr a)))]
          [dir-finder
-          (if (let ([a (assq 'relative? aux)])
-                (and a (cdr a)))
+          (if as-relative?
               (make-relative-path-header dest bindir use-librktdir?)
               (make-absolute-path-header bindir))]
          [exec (format
@@ -470,7 +471,11 @@
         (when use-librktdir?
           (display "# {{{ librktdir\n")
           (display "librktdir=\"$bindir/")
-          (display (find-relative-path bindir
+          (display (find-relative-path (if as-relative?
+                                           (simplify-path
+                                            (let-values ([(base name dir?) (split-path (path->complete-path dest))])
+                                              base))
+                                           bindir)
                                        (simplify-path
                                         (find-lib-dir))))
           (display "\"\n")
