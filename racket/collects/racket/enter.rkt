@@ -58,30 +58,48 @@
     (raise-argument-error 'dynamic-enter! "(or/c module-path? #f)" mod))
   (unless (memq verbosity '(all reload none))
     (raise-argument-error 'dynamic-enter! "(or/c 'all 'reload 'none)" verbosity))
-    (if mod
-      (let* ([none (gensym)]
-             [exn (with-handlers ([void (lambda (exn) exn)])
-                    (if (module-path? mod)
-                        (dynamic-rerequire
-                         mod
-                         #:verbosity verbosity)
-                        (raise-argument-error 'dynamic-enter! "module-path?" mod))
-                    none)])
-        ;; Try to switch to the module namespace,
-        ;; even if there was an exception, because the
-        ;; idea is to allow debugging from inside the
-        ;; module. If any excepiton happens in trying to
-        ;; switch to the declared module, log that as
-        ;; an internal exception.
-        (with-handlers ([void (lambda (exn)
-                                (if (exn? exn)
-                                    (log-enter!-error (exn-message exn))
-                                    (log-enter!-error "~s" exn)))])
-          (when (and (module-path? mod)
-                     (module-declared? mod #f))
-            (let ([ns (module->namespace mod)])
-              (current-namespace ns)
-              (when re-require-enter?
-                (namespace-require 'racket/enter)))))
-        (unless (eq? none exn) (raise exn)))
-      (current-namespace orig-namespace)))
+  (cond [mod
+         (define none (gensym))
+         (define exn
+           (with-handlers ([void (lambda (exn) exn)])
+             (cond [(module-path? mod)
+                    (module-language-configure-runtime mod)
+                    (dynamic-rerequire mod #:verbosity verbosity)]
+                   [else
+                    (raise-argument-error 'dynamic-enter! "module-path?" mod)])
+             none))
+         ;; Try to switch to the module namespace,
+         ;; even if there was an exception, because the
+         ;; idea is to allow debugging from inside the
+         ;; module. If any exception happens in trying to
+         ;; switch to the declared module, log that as
+         ;; an internal exception.
+         (with-handlers ([void (lambda (exn)
+                                 (if (exn? exn)
+                                     (log-enter!-error (exn-message exn))
+                                     (log-enter!-error "~s" exn)))])
+           (when (and (module-path? mod)
+                      (module-declared? mod #f))
+             (define ns (module->namespace mod))
+             (current-namespace ns)
+             (when re-require-enter?
+               (namespace-require 'racket/enter))))
+         (unless (eq? none exn) (raise exn))]
+        [else (current-namespace orig-namespace)]))
+
+(define (module-language-configure-runtime mod)
+  ;; Load language-info (if any) and do configure-runtime.
+  ;; Important for langs like Typed Racket.
+  (define info (module->language-info mod #t))
+  (when info
+    (define get-info ((dynamic-require (vector-ref info 0)
+                                       (vector-ref info 1))
+                      (vector-ref info 2)))
+    (define configs (get-info 'configure-runtime '()))
+    (for ([config (in-list configs)])
+      ((dynamic-require (vector-ref config 0)
+                        (vector-ref config 1))
+       (vector-ref config 2)))
+    (define cr-submod `(submod ,mod configure-runtime))
+    (when (module-declared? cr-submod)
+      (dynamic-require cr-submod #f))))
