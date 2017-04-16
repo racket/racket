@@ -1,0 +1,25 @@
+Data Structures used in Typechecking.
+The main data structure used in typechecking is a tc-results/c.
+This currently has two variants
+(struct/c tc-results ((listof (struct/c tc-result (Type/c FilterSet? Object?)))
+                      (or/c #f (cons/c Type/c symbol?))))
+(struct/c tc-any-results (or/c Filter/c NoFilter?))
+
+The first represents a fixed number of values with optional dotted return values.
+The second represents an unknown number of values.
+
+A value has three main parts: a Type, a FilterSet, and an Object. For dotted values we do no store a 
+FilterSet or an Object because they would almost never be useful. They are thus implicitly -top-filter
+and -empty-obj. In the tc-any-results case since we don't know the number of values, we do not store
+the Type or the Object, but we do store a filter. This is useful in cases like
+(let ((x (read)))
+  (unless (number? x) (error 'bad-input))
+  (do-stuff x))
+
+
+Inference and Sequences
+Typed racket has many types which can have a subpart which is a sequence of different types, for
+example heterogenous lists or arguments to a function. We assume such sequences take one of three forms.
+A fixed prefix followed by either a dotted tail, a uniform tail, or no more types. The subtyping
+relationship has 9 different cases corresponding to the product of the cases. This is implemented once
+for a generic sequence, and each other type converts itself to a sequence to implement inference.
