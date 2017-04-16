@@ -2209,7 +2209,9 @@
 (map (lambda (f) 
        (err/rt-test (f "a"))
        (arity-test f 1 1))
-     (list log exp asin acos tan))
+     (list exp asin acos tan))
+(arity-test log 1 2)
+(err/rt-test (log "a"))
 (err/rt-test (atan "a" 1))
 (err/rt-test (atan 2+i 1))
 (err/rt-test (atan "a"))
@@ -3178,7 +3180,8 @@
 
 (define ((check-single-flonum #:real-only? [real-only? #f]
                               #:integer-only? [integer-only? #f]
-                              #:two-arg-real-only? [two-arg-real-only? real-only?])
+                              #:two-arg-real-only? [two-arg-real-only? real-only?]
+                              #:arity-one-only? [arity-one-only? #f])
          op)
   (define (single-flonum-ish? op . args)
     (define v (apply op args))
@@ -3191,7 +3194,7 @@
     (unless real-only?
       (test #t single-flonum-ish? op 2.0f0+4.0f0i)
       (test #t single-flonum-ish? op 0+4.0f0i)))
-  (when (procedure-arity-includes? op 2)
+  (when (and (procedure-arity-includes? op 2) (not arity-one-only?))
     (test #t single-flonum-ish? op 2.0f0 4.0f0)
     (test #f single-flonum-ish? op 2.0 4.0f0)
     (test #f single-flonum-ish? op 2.0f0 4.0)
@@ -3219,12 +3222,14 @@
            sqrt
            expt
            exp
-           log
            sin
            cos
            tan
            asin
            acos))
+
+(map (check-single-flonum #:arity-one-only? #t)
+     (list log))
 
 (map (check-single-flonum #:two-arg-real-only? #t)
      (list atan))
