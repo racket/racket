@@ -212,21 +212,6 @@ word GC_adj_bytes_allocd(void)
     }
 }
 
-
-/* Clear up a few frames worth of garbage left at the top of the stack.	*/
-/* This is used to prevent us from accidentally treating garbade left	*/
-/* on the stack by other parts of the collector as roots.  This 	*/
-/* differs from the code in misc.c, which actually tries to keep the	*/
-/* stack clear of long-lived, client-generated garbage.			*/
-void GC_clear_a_few_frames()
-{
-#   define NWORDS 64
-    word frames[NWORDS];
-    int i;
-    
-    for (i = 0; i < NWORDS; i++) frames[i] = 0;
-}
-
 /* Heap size at which we need a collection to avoid expanding past	*/
 /* limits used by blacklisting.						*/
 static word GC_collect_at_heapsize = (word)(-1);
@@ -510,7 +495,6 @@ GC_bool GC_stopped_mark(GC_stop_func stop_func)
 
     /* Mark from all roots.  */
         /* Minimize junk left in my registers and on the stack */
-            GC_clear_a_few_frames();
             GC_noop(0,0,0,0,0,0);
 	GC_initiate_gc();
 	for(i = 0;;i++) {
