@@ -425,7 +425,9 @@ when the x87 floating-point processor needs to be configured for
 double-precision mode, when JIT can use SSE2 instructions, and when
 extflonums can be supported because both the JIT and C code use SSE2
 for double-precision floating-point while `long double' is available
-for extflonums.
+for extflonums. However, due to the lack of SSE instructions support
+in GNU Lightning (the library behind of part of the Racket JIT code),
+Racket requires a CPU with SSE2 instructions.
 
 In particular, "scheme.h" looks for __SSE2_MATH__ to indicate that gcc
 is compiling floating-point operations as SSE2, so be sure to include
