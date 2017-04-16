@@ -250,3 +250,19 @@ vector:
  ]
 
 @history[#:changed "6.1.1.8" @elem{Added vector position @racket[11] for global statistics.}]}
+
+@section{OS information}
+
+@defmodule[racket/os]{
+  Provides additional functions for querying the operating system.
+
+  @history[#:added "6.2.0.3"]
+}
+
+@defproc[(gethostname) string?]{
+  Returns a string for the current machine's hostname (including its domain).
+}
+
+@defproc[(getpid) exact-integer?]{
+  Returns an integer identifying the current process within the operating system.
+}
