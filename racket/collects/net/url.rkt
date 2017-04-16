@@ -202,6 +202,9 @@
                             (values (url-path-absolute? url) (url-path url)))])
             (make-url #f #f #f #f abs? path (url-query url) (url-fragment url)))))))
 
+  (log-net/url-debug "creating connection for ~a to ~a"
+                     (if get? "GET" "POST") (url->string url))
+
   (hc:http-conn-send! hc access-string
                       #:method (if get? #"GET" #"POST")
                       #:headers strings
@@ -303,6 +306,8 @@
                                   (and conn #t)))
     (define-values (status headers response-port)
       (hc:http-conn-recv! hc #:method #"GET" #:close? (not conn) #:content-decode '()))
+
+    (log-net/url-debug "received data from ~a over connection ~a" url hc)
 
     (define new-url
       (ormap (λ (h)
