@@ -1,3 +1,6 @@
+Version 6.9, April 2017
+Bug repairs and other changes noted in the documentation
+
 Version 6.8, January 2017
 Bug repairs and other changes noted in the documentation
 
