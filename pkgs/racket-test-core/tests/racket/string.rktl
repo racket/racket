@@ -492,23 +492,23 @@
 
 ;; ---------- string-prefix?/suffix? ----------
 (let ()
-  (test #t string-prefix? "racket" "")
-  (test #t string-prefix? "racket" "r")
-  (test #t string-prefix? "racket" "rack")
+  (test #t string-prefix? ""       "racket")
+  (test #t string-prefix? "r"      "racket")
+  (test #t string-prefix? "rack"   "racket")
   (test #t string-prefix? "racket" "racket")
-  (test #t string-suffix? "racket" "")
-  (test #t string-suffix? "racket" "t")
-  (test #t string-suffix? "racket" "cket")
+  (test #t string-suffix? ""       "racket")
+  (test #t string-suffix? "t"      "racket")
+  (test #t string-suffix? "cket"   "racket")
   (test #t string-suffix? "racket" "racket")
   ;; --------------------
-  (test #f string-prefix? ""       "racket")
-  (test #f string-prefix? "racket" "R")
-  (test #f string-prefix? "racket" "rak")
-  (test #f string-prefix? "racket" "racket2")
-  (test #f string-suffix? ""       "racket")
-  (test #f string-suffix? "racket" "T")
-  (test #f string-suffix? "racket" "r")
-  (test #f string-suffix? "racket" "kat"))
+  (test #f string-prefix? "racket"  "")
+  (test #f string-prefix? "R"       "racket")
+  (test #f string-prefix? "rak"     "racket")
+  (test #f string-prefix? "racket2" "racket")
+  (test #f string-suffix? "racket"  "")
+  (test #f string-suffix? "T"       "racket")
+  (test #f string-suffix? "r"       "racket")
+  (test #f string-suffix? "kat"     "racket"))
 
 ;; ---------- string-contains? ----------
 
