@@ -4447,6 +4447,11 @@ static Scheme_Object *unresolve_expr(Scheme_Object *e, Unresolve_Info *ui, int a
     }
   case scheme_closure_type:
     {
+      if (!ui->closures) {
+        Scheme_Hash_Table *ht;
+        ht = scheme_make_hash_table(SCHEME_hash_ptr);
+        ui->closures = ht;
+      }
       return unresolve_closure(e, ui);
     }
   case scheme_lambda_type:
