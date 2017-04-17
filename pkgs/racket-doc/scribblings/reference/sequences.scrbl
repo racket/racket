@@ -180,6 +180,11 @@ each element in the sequence.
   
   @examples[#:label "Example: sum of even numbers" #:eval sequence-evaluator
     (for/sum ([x (in-range 0 100 2)]) x)]
+
+  When given zero as @racket[step], @racket[in-range] returns an infinite
+  sequence. It may also return infinite sequences when @racket[step] is a very
+  small number, and either @racket[step] or the sequence elements are
+  floating-point numbers.
 }
 
 
