@@ -481,7 +481,7 @@
              #rx"expected\\: real\\?")
 (err/rt-test (for ([x (in-range 1 2 (sqrt -1))]) x)
              exn:fail:contract?
-             #rx"expected\\: real\\?")
+             #rx"expected\\: \\(and/c real\\? \\(not/c \\(=/c 0\\)\\)\\)")
 (test (* 10 pi) 'in-range-with-reals
       (for/sum ([x (in-range 0 (+ (* 4 pi) .1) pi)]) x))
 (err/rt-test (for ([x (in-naturals 1.1)]) x)
