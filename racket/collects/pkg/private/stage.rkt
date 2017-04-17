@@ -761,7 +761,7 @@
      (or
       (for/or ([kind '("branches" "tags")])
         (define api-u
-          (url "https" #f "api.github.com" #f #t
+          (url "https" (getenv "PLT_GITHUB_API_KEY") "api.github.com" #f #t
                (map (λ (x) (path/param x empty))
                     (list "repos" user repo kind))
                (append query
