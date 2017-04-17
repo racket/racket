@@ -1103,9 +1103,10 @@ Returns a @tech{pattern expander} that uses @racket[proc] to transform the patte
 @examples[#:eval the-eval
 (define-syntax ~maybe
   (pattern-expander
-   (syntax-rules ()
-    [(~maybe pat ...)
-     (~optional (~seq pat ...))])))
+   (lambda (stx)
+     (syntax-case stx ()
+       [(~maybe pat ...)
+        #'(~optional (~seq pat ...))]))))
 ]}
 
 @defthing[prop:pattern-expander (struct-type-property/c (-> pattern-expander? (-> syntax? syntax?)))]{
