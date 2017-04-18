@@ -162,7 +162,7 @@ EXTRA_DIST += README.QUICK
 # other makefiles
 # :GOTCHA: deliberately we do not include 'Makefile'
 EXTRA_DIST += BCC_MAKEFILE NT_MAKEFILE NT_THREADS_MAKEFILE \
-    OS2_MAKEFILE PCR-Makefile digimars.mak EMX_MAKEFILE	\
+    PCR-Makefile digimars.mak EMX_MAKEFILE	\
     Makefile.direct Makefile.dj	Makefile.DLLs SMakefile.amiga \
     WCC_MAKEFILE configure_atomic_ops.sh \
     NT_STATIC_THREADS_MAKEFILE NT_X64_STATIC_THREADS_MAKEFILE \
