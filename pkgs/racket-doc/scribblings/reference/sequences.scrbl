@@ -180,6 +180,12 @@ each element in the sequence.
   
   @examples[#:label "Example: sum of even numbers" #:eval sequence-evaluator
     (for/sum ([x (in-range 0 100 2)]) x)]
+
+  Note that @racket[in-range] accepts floating-point numbers, in which case
+  the usual caveats for floating-point addition apply. For example, the sequence
+  @racket[(range (- 1 1e-16) 1.0 1e-17)] reaches a point where adding
+  @racket[1e-17] to the previous element of the sequence results in the same
+  floating-point number, which results in an infinite loop.
 }
 
 

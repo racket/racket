@@ -586,7 +586,8 @@
       [(a b step)
        (unless (real? a) (raise-argument-error 'in-range "real?" a))
        (unless (real? b) (raise-argument-error 'in-range "real?" b))
-       (unless (real? step) (raise-argument-error 'in-range "real?" step))
+       (unless (and (real? step) (not (= 0 step)))
+         (raise-argument-error 'in-range "(and/c real? (not/c (=/c 0)))" step))
        (let* ([cont? (if (step . >= . 0)
                          (lambda (x) (< x b))
                          (lambda (x) (> x b)))]
