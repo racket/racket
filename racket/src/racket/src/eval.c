@@ -1472,7 +1472,7 @@ static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_
 {
   int alen = 0, blen = 0;
   int a_has_tag = 0, a_prompt_delta = 0, b_prompt_delta = 0;
-  Scheme_Dynamic_Wind *dw;
+  Scheme_Dynamic_Wind *dw, *match_a, *match_b;
 
   for (dw = a; dw && (dw->prompt_tag != prompt_tag); dw = dw->prev) {
   }
@@ -1504,18 +1504,32 @@ static Scheme_Dynamic_Wind *intersect_dw(Scheme_Dynamic_Wind *a, Scheme_Dynamic_
   }
 
   /* At this point, we have chains that are the same length. */
+  match_a = NULL;
+  match_b = NULL;
   while (blen) {
     if (SAME_OBJ(a->id ? a->id : (Scheme_Object *)a, 
-                 b->id ? b->id : (Scheme_Object *)b))
-      break;
+                 b->id ? b->id : (Scheme_Object *)b)) {
+      if (!match_a) {
+        match_a = a;
+        match_b = b;
+      }
+    } else {
+      match_a = NULL;
+      match_b = NULL;
+    }
     a = a->prev;
     b = b->prev;
     blen--;
   }
 
-  *_common_depth = (b ? b->depth : -1);
+  if (!match_a) {
+    match_a = a;
+    match_b = b;
+  }
 
-  return a;
+  *_common_depth = (match_b ? match_b->depth : -1);
+
+  return match_a;
 }
 
 static Scheme_Prompt *lookup_cont_prompt(Scheme_Cont *c, 
