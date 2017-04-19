@@ -3,7 +3,7 @@
            syntax/stx)
   
   (require racket/list)
-
+  
   (define (syntax->string c)
     (let* ([s (open-output-string)]
            [l (syntax->list c)]
