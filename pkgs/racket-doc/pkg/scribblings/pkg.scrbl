@@ -367,7 +367,8 @@ of the base Racket implementation. For example, any package that
 contains @filepath{racket/list.rkt} is in conflict with Racket.
 
 For the purposes of conflicts, a module is a file that ends in
-@filepath{.rkt}, @filepath{.ss}, or @filepath{.scrbl}.
+@filepath{.rkt}, @filepath{.ss}, or @filepath{.scrbl}, with the
+exception of files named @filepath{info.rkt}.
 
 @subsection[#:tag "concept:updates"]{Package Updates}
 
