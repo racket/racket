@@ -68,6 +68,7 @@ typedef struct mpage {
 #ifdef MZ_USE_PLACES
   uintptr_t page_lock; /* for master GC pages during marking */
 #endif
+  GC_Ephemeron *triggers; /* reschedule ephemerons for checking if object on page is marked */
   /* The `size` field is overleaded for related meanings:
        - big page => the size of the allocated object
        - small page, nursery, gen-1/2 => offset for next allocate = allocated bytes + PREFIX_SIZE
@@ -230,7 +231,7 @@ typedef struct NewGC {
   struct mpage *reprotect_next;
 
   MarkSegment *mark_stack, *inc_mark_stack, *acct_mark_stack;
-
+  
   /* Finalization */
   Fnl *run_queue, *last_in_queue;
   Fnl *inc_run_queue, *inc_last_in_queue;
@@ -375,7 +376,7 @@ typedef struct NewGC {
      marked. */
   GC_Weak_Array *weak_arrays, *inc_weak_arrays, *bp_weak_arrays;
   GC_Weak_Box   *weak_boxes[2], *inc_weak_boxes[2], *bp_weak_boxes[2];
-  GC_Ephemeron  *ephemerons, *inc_ephemerons, *bp_ephemerons;
+  GC_Ephemeron  *ephemerons, *inc_ephemerons, *bp_ephemerons, *triggered_ephemerons;
   int num_last_seen_ephemerons;
 
   void *weak_incremental_done;

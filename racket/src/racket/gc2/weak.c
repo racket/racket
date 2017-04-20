@@ -546,32 +546,82 @@ void init_ephemerons(GCTYPE *gc) {
   gc->num_last_seen_ephemerons = 0;
 }
 
+#define EPHEMERON_COMPLETED ((GC_Ephemeron *)0x1)
+
+static void add_ephemeron_trigger(GCTYPE *gc, GC_Ephemeron *eph)
+{
+  mpage *page = pagemap_find_page(gc->page_maps, eph->key);
+  if (page) {
+    GC_ASSERT(!page->triggers || (page->triggers->type == scheme_ephemeron_type));
+    eph->trigger_next = page->triggers;
+    page->triggers = eph;
+  }
+}
+
+static GC_Ephemeron *remove_ephemeron_trigger(GCTYPE *gc, GC_Ephemeron *eph, GC_Ephemeron *waiting)
+{
+  if (eph->trigger_next == EPHEMERON_COMPLETED) {
+    /* drop from waiting list; there are no triggers on the key's
+       page, because the ephemeron was triggered that way */
+    eph->trigger_next = NULL;
+    return waiting;
+  } else {
+    mpage *page = pagemap_find_page(gc->page_maps, eph->key);
+    if (page)
+      page->triggers = NULL;
+    eph->trigger_next = NULL;
+    eph->next = waiting;
+    return eph;
+  }
+}
+
+static void trigger_ephemerons(GCTYPE *gc, mpage *page)
+{
+  GC_Ephemeron *eph = page->triggers, *next;
+  if (eph) {
+    page->triggers = NULL;
+    while (eph) {
+      GC_ASSERT(eph->type == scheme_ephemeron_type);
+      next = eph->trigger_next;
+      eph->trigger_next = gc->triggered_ephemerons;
+      gc->triggered_ephemerons = eph;
+      eph = next;
+    }
+  }
+}
+
 static int mark_ready_ephemerons(GCTYPE *gc, int inc_gen1)
 {
   GC_Ephemeron *waiting, *next, *eph;
-  int did_one = 0, j;
+  int did_one = 0, j, follow_triggers;
 
   GC_mark_no_recur(gc, 1);
 
   for (j = 0; j < (inc_gen1 ? 1 : (gc->gc_full ? 3 : 2)); j++) {
+    follow_triggers = 0;
     waiting = NULL;
 
     if (inc_gen1)
       eph = gc->inc_ephemerons;
-    else if (j == 0)
+    else if (j == 0) {
       eph = gc->ephemerons;
-    else if (j == 1)
+      gc->ephemerons = NULL; /* more may be added here */
+    } else if (j == 1)
       eph = gc->bp_ephemerons;
     else {
       eph = gc->inc_ephemerons;
       gc->inc_ephemerons = NULL;
       waiting = gc->ephemerons;
     }
-    
+
     for (; eph; eph = next) {
+      GC_ASSERT(eph->type == scheme_ephemeron_type);
       if (inc_gen1 || (j == 2))
         next = eph->inc_next;
-      else
+      else if (follow_triggers) {
+        next = eph->trigger_next;
+        eph->trigger_next = NULL;
+      } else
         next = eph->next;
       if (is_marked(gc, eph->key)) {
         if (!inc_gen1)
@@ -589,17 +639,66 @@ static int mark_ready_ephemerons(GCTYPE *gc, int inc_gen1)
             gc->inc_ephemerons = eph;
           }
         }
+        if (follow_triggers)
+          eph->trigger_next = EPHEMERON_COMPLETED; /* => don't move back to waiting */
       } else {
         if (inc_gen1) {
-          /* Ensure that we can write to the page containing the emphemeron: */
+          /* Ensure that we can write to the page containing the ephemeron: */
           check_incremental_unprotect(gc, pagemap_find_page(gc->page_maps, eph));
           eph->inc_next = waiting;
-        } else
-          eph->next = waiting;
-        waiting = eph;
+          waiting = eph;
+        } else {
+          if (j == 0) {
+            /* Add a trigger to make GC_mark2() notify us if this
+               ephemeron shoud be checked again: */
+            add_ephemeron_trigger(gc, eph);
+            if (!follow_triggers) {
+              eph->next = waiting;
+              waiting = eph;
+            }
+          } else {
+            eph->next = waiting;
+            waiting = eph;
+          }
+        }
+      }
+
+      if (!next && !inc_gen1 && (j == 0)) {
+        /* Propagate newly discovered marks, and triggers can
+           reschedule some ephemerons for checking again. Otherwise, a
+           chain of ephemerons can make our loop discover only one
+           ephemeron each time around, leading to O(N^2) time to
+           handle a chain of N ephemersons. */
+        GC_mark_no_recur(gc, 0);
+        propagate_marks(gc);
+        GC_mark_no_recur(gc, 1);
+        next = gc->triggered_ephemerons;
+        GC_ASSERT(!next || (next->type == scheme_ephemeron_type));
+        gc->triggered_ephemerons = NULL;
+        follow_triggers = 1;
+        /* If no triggers, double-check for newly discovered ephemerons
+           on the plain waiting list, since we propagated marks */
+        if (!next) {
+          follow_triggers = 0;
+          next = gc->ephemerons;
+          gc->ephemerons = NULL;
+        }
       }
     }
 
+    GC_ASSERT(!gc->triggered_ephemerons);
+
+    if (!inc_gen1 && (j == 0)) {
+      /* Remove any triggers, and remove any completed-via-trigger
+         ephemerons from the waiting list */
+      eph = waiting;
+      waiting = gc->ephemerons;
+      for (; eph; eph = next) {
+        next = eph->next;
+        waiting = remove_ephemeron_trigger(gc, eph, waiting);
+      }
+    }
+    
     if (inc_gen1)
       gc->inc_ephemerons = waiting;
     else if ((j == 0)|| (j == 2))

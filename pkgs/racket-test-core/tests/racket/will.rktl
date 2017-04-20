@@ -357,5 +357,69 @@
   (test #t 'many-vectors-in-reasonable-space? done?))
 
 ;; ----------------------------------------
+;; Check that ephemeron chains do not lead
+;; to O(N^2) behavior with 3m
+
+(when (eq? '3m (system-type 'gc))
+  (define (wrapper v) (list 1 2 3 4 5 v))
+
+  ;; Create a chain of ephemerons where we have all
+  ;; the the ephemerons immediately in a list,
+  ;; but we discover the keys one at a time
+  (define (mk n prev-key es)
+    (cond
+     [(zero? n)
+      (values prev-key es)]
+     [else
+      (define key (gensym))
+      (mk (sub1 n)
+          key
+          (cons (make-ephemeron key (wrapper prev-key))
+                es))]))
+
+  ;; Create a chain of ephemerons where we have all
+  ;; of the keys immediately in a list,
+  ;; but we discover the ephemerons one at a time
+  (define (mk* n prev-e keys)
+    (cond
+     [(zero? n)
+      (values prev-e keys)]
+     [else
+      (define key (gensym))
+      (mk* (sub1 n)
+           (make-ephemeron key (wrapper prev-e))
+           (cons key
+                 keys))]))
+
+  (define (measure-time n)
+    ;; Hang the discover-keys-one-at-a-time chain
+    ;; off the end of the discover-ephemerons-one-at-a-time
+    ;; chain, which is the most complex case for avoiding
+    ;; quadratic GC times
+    (define-values (key es) (mk n (gensym) null))
+    (define-values (root holds) (mk* n key es))
+
+    (define ITERS 5)
+    (define msecs
+      (/ (for/fold ([t 0]) ([i (in-range ITERS)])
+           (define start (current-inexact-milliseconds))
+           (collect-garbage)
+           (+ t (- (current-inexact-milliseconds) start)))
+         ITERS))
+    ;; Keep `key` and `es` live:
+    (if (zero? (random 1))
+        msecs
+        (list root holds)))
+
+  ;; Making a chain 10 times as long should not increase GC time by more
+  ;; than a factor of 10:
+  (test #t
+        'ephemeron-chain
+        (let loop ([attempts 5])
+          (or ((/ (measure-time 10000) (measure-time 1000)) . < . 11)
+              (and (attempts . > . 1)
+                   (loop (sub1 attempts)))))))
+
+;; ----------------------------------------
 
 (report-errs)

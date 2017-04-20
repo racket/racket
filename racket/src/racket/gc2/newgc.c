@@ -127,6 +127,7 @@ inline static int marked(NewGC *gc, const void *p);
 static int inc_marked_gen1(NewGC *gc, void *p);
 static void garbage_collect(NewGC*, int, int, int, Log_Master_Info*);
 static void collect_now(NewGC*, int, int);
+static void propagate_marks(NewGC *gc);
 inline static void resize_gen0(NewGC *gc, uintptr_t new_size);
 inline static void gen0_sync_page_size_from_globals(NewGC *gc);
 inline static void gen0_allocate_and_setup_new_page(NewGC *gc);
@@ -1930,6 +1931,7 @@ inline static void resize_gen0(NewGC *gc, uintptr_t new_size)
 
   /* reset any parts of gen0 we're keeping */
   while(work && (alloced_size < new_size)) {
+    GC_ASSERT(!work->triggers);
     alloced_size += gc->gen0.page_alloc_size;
     work->size = PREFIX_SIZE;
     prev = work;
@@ -1955,6 +1957,7 @@ inline static void resize_gen0(NewGC *gc, uintptr_t new_size)
     /* remove the excess pages */
     while(work) {
       mpage *next = work->next;
+      GC_ASSERT(!work->triggers);
       gen0_free_mpage(gc, work);
       work = next;
     }
@@ -3427,7 +3430,8 @@ void GC_mark2(void *pp, struct NewGC *gc)
         inc_gen1 = 1;
 
       page_newly_marked_on(gc, page, is_a_master_page, inc_gen1);
-
+      trigger_ephemerons(gc, page);
+ 
       record_backtrace(gc, page, BIG_PAGE_TO_OBJECT(page));
       GCDEBUG((DEBUGOUTF, "Marking %p on big page %p\n", p, page));
       /* Finally, we want to add this to our mark queue, so we can 
@@ -3467,6 +3471,7 @@ void GC_mark2(void *pp, struct NewGC *gc)
       }
       info->mark = 1;
       page_marked_on(gc, page, is_a_master_page, inc_gen1);
+      trigger_ephemerons(gc, page);
       p = OBJHEAD_TO_OBJPTR(info);
       backtrace_new_page_if_needed(gc, page);
       record_backtrace(gc, page, p);
@@ -3523,6 +3528,7 @@ void GC_mark2(void *pp, struct NewGC *gc)
       }
       ohead->mark = 1;
       page_marked_on(gc, page, is_a_master_page, inc_gen1);
+      trigger_ephemerons(gc, page);
       record_backtrace(gc, page, p);
       mark_recur_or_push_ptr(gc, p, is_a_master_page, inc_gen1);
     } else {
@@ -3535,6 +3541,8 @@ void GC_mark2(void *pp, struct NewGC *gc)
       int new_type;
 
       GC_ASSERT(!gc->inc_gen1);
+
+      trigger_ephemerons(gc, page);
 
       /* first check to see if this is an atomic object masquerading
          as a tagged object; if it is, then convert it */
@@ -4898,6 +4906,7 @@ static void clean_up_heap(NewGC *gc)
       mpage *prev = NULL;
       while(work) {
         mpage *next = work->next;
+        GC_ASSERT(!work->triggers);
         if (!work->marked_on) {
           /* remove work from list */
           if(prev) prev->next = next; else gc->gen1_pages[i] = next;
@@ -4929,6 +4938,7 @@ static void clean_up_heap(NewGC *gc)
       mpage *prev = NULL, *next;
 
       for (work = gc->med_pages[ty][i]; work; work = next) {
+        GC_ASSERT(!work->triggers);
         next = work->next;
         if (work->marked_on) {
           work->marked_on = 0;

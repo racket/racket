@@ -46,6 +46,7 @@ typedef struct GC_Ephemeron {
   /* The rest is up to us: */
   struct GC_Ephemeron *next;
   struct GC_Ephemeron *inc_next;
+  struct GC_Ephemeron *trigger_next;
 } GC_Ephemeron;
 
 typedef struct GC_Immobile_Box {
