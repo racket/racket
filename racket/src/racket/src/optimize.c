@@ -7229,13 +7229,14 @@ static void flip_transitive(Scheme_Hash_Table *ht, int on)
       tvar = SCHEME_VAR(ht->keys[j]);
       if (on) {
         if (tvar->optimize_used) {
-          /* use of `tvar` is no longer dependent on anohter variable */
+          /* use of `tvar` is no longer dependent on another variable */
           to_remove = scheme_make_pair((Scheme_Object *)tvar,
                                        to_remove);
         } else
           tvar->optimize_used = 1;
       } else {
-        MZ_ASSERT(tvar->optimize_used);
+        /* It's possible that `tvar->optimize_used` is already 0; a variable
+           is sometimes tenatively marked as used, and then unmarked */
         tvar->optimize_used = 0;
       }
     }
