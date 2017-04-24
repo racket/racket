@@ -4,7 +4,13 @@ REM  Expects something like "x86", "amd64", or "x86_amd64" as an argument.
 
 set VCMODE=%1
 
-set VCVARBAT=C:\Program Files\Microsoft Visual Studio 12.0\vc\vcvarsall.bat
+set VCVARBAT=C:\Program Files\Microsoft Visual Studio 14.0\vc\vcvarsall.bat
+if not exist "%VCVARBAT%" set VCVARBAT=C:\Program Files (x86)\Microsoft Visual Studio 14.0\vc\vcvarsall.bat
+
+if not exist "%VCVARBAT%" set VCVARBAT=C:\Program Files\Microsoft Visual Studio 13.0\vc\vcvarsall.bat
+if not exist "%VCVARBAT%" set VCVARBAT=C:\Program Files (x86)\Microsoft Visual Studio 13.0\vc\vcvarsall.bat
+
+if not exist "%VCVARBAT%" set VCVARBAT=C:\Program Files\Microsoft Visual Studio 12.0\vc\vcvarsall.bat
 if not exist "%VCVARBAT%" set VCVARBAT=C:\Program Files (x86)\Microsoft Visual Studio 12.0\vc\vcvarsall.bat
 
 if not exist "%VCVARBAT%" set VCVARBAT=C:\Program Files\Microsoft Visual Studio 11.0\vc\vcvarsall.bat
