@@ -1166,6 +1166,13 @@ typedef struct Scheme_Chaperone {
 #define SCHEME_CHAPERONE_FLAGS(c) MZ_OPT_HASH_KEY(&(c)->iso)
 #define SCHEME_CHAPERONE_IS_IMPERSONATOR 0x1
 #define SCHEME_PROC_CHAPERONE_CALL_DIRECT 0x2
+/*
+We use the same bit to indicate either chaperone-vector* as well as
+procedure chaperones which do not call interposition procedures.
+This is ok because no value is simultaneously a vector and a procedure,
+so we can safely reuse the bit.
+ */
+#define SCHEME_VEC_CHAPERONE_STAR 0x2
 
 #define SCHEME_CHAPERONE_VAL(obj) (((Scheme_Chaperone *)obj)->val)
 
