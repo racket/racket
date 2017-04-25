@@ -626,6 +626,28 @@ fixnum).}
  @history[#:added "6.4.0.4"]
 }
 
+@defproc[(unsafe-impersonate-vector [vec vector?]
+                                    [replacement-vec (and/c vector? (not/c impersonator?))]
+                                    [prop impersonator-property?]
+                                    [prop-val any/c] ... ...)
+         (and/c vector? impersonator?)]{
+ Like @racket[impersonate-vector], but instead of going through interposition procedures, all
+ accesses to the impersonator are dispatched to @racket[replacement-vec].
+
+ The result of @racket[unsafe-impersonate-vector] is an impersonator of @racket[vec].
+
+ @history[#:added "6.9.0.2"]
+}
+@defproc[(unsafe-chaperone-vector [vec vector?]
+                                  [replacement-vec (and/c vector? (not/c impersonator?))]
+                                  [prop impersonator-property?]
+                                  [prop-val any/c] ... ...)
+         (and/c vector? chaperone?)]{
+ Like @racket[unsafe-impersonate-vector], but the result of @racket[unsafe-chaperone-vector] is a
+ chaperone of @racket[vec].
+
+ @history[#:added "6.9.0.2"]
+}
 @; ------------------------------------------------------------------------
 
 @include-section["unsafe-undefined.scrbl"]

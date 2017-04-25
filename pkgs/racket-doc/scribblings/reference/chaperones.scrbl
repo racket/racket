@@ -397,8 +397,8 @@ after @racket[redirect-proc] (in the case of a mutator).
 
 
 @defproc[(impersonate-vector [vec (and/c vector? (not/c immutable?))]
-                             [ref-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
-                             [set-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
+                             [ref-proc (or/c (vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
+                             [set-proc (or/c (vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
                              [prop impersonator-property?]
                              [prop-val any] ... ...)
           (and/c vector? impersonator?)]{
@@ -406,13 +406,17 @@ after @racket[redirect-proc] (in the case of a mutator).
 Returns an impersonator of @racket[vec], which redirects the
 @racket[vector-ref] and @racket[vector-set!] operations.
 
-The @racket[ref-proc] must accept @racket[vec], an index passed to
+The @racket[ref-proc] and @racket[set-proc] arguments must either both be procedures
+or both be @racket[#f]. If they are @racket[#f] then @racket[impersonate-vector] does not interpose
+on @racket[vec], but still allows attaching impersonator properties.
+
+If @racket[ref-proc] is a procedure it must accept @racket[vec], an index passed to
 @racket[vector-ref], and the value that @racket[vector-ref] on
 @racket[vec] produces for the given index; it must produce a
 replacement for the value, which is the result of @racket[vector-ref]
 on the impersonator.
 
-The @racket[set-proc] must accept @racket[vec], an index passed to
+If @racket[set-proc] is a procedure it must accept @racket[vec], an index passed to
 @racket[vector-set!], and the value passed to @racket[vector-set!]; it
 must produce a replacement for the value, which is used
 with @racket[vector-set!] on the original @racket[vec] to install the
@@ -420,7 +424,26 @@ value.
 
 Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-vector] must be odd) add impersonator properties
-or override impersonator-property values of @racket[vec].}
+or override impersonator-property values of @racket[vec].
+
+@history[#:changed "6.9.0.2"]{Added non-interposing vector impersonators.}
+}
+
+@defproc[(impersonate-vector* [vec (and/c vector? (not/c immutable?))]
+                              [ref-proc (or/c (vector? vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
+                              [set-proc (or/c (vector? vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
+                              [prop impersonator-property?]
+                              [prop-val any] ... ...)
+          (and/c vector? impersonator?)]{
+ Like @racket[impersonate-vector], except that @racket[ref-proc] and @racket[set-proc] each receive
+ an additional vector as argument before other arguments. The additional argument is the original
+ impersonated vector, access to which triggered interposition in the first place.
+
+ The additional vector argument might be useful so that @racket[ref-proc] or @racket[set-proc]
+ can extract impersonator properties that are overridden by further impersonators, for example.
+
+ @history[#:added "6.9.0.2"]
+}
 
 @defproc[(impersonate-box [box (and/c box? (not/c immutable?))]
                           [unbox-proc (box? any/c . -> . any/c)]
@@ -792,8 +815,8 @@ or structure type.
                                    argument.}]}
 
 @defproc[(chaperone-vector [vec vector?]
-                           [ref-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
-                           [set-proc (vector? exact-nonnegative-integer? any/c . -> . any/c)]
+                           [ref-proc (or/c (vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
+                           [set-proc (or/c (vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
                            [prop impersonator-property?]
                            [prop-val any] ... ...)
           (and/c vector? chaperone?)]{
@@ -803,6 +826,18 @@ Like @racket[impersonate-vector], but with support for immutable vectors. The
 of the original value, and @racket[set-proc] must produce the value
 that is given or a chaperone of the value. The @racket[set-proc] will
 not be used if @racket[vec] is immutable.}
+
+@defproc[(chaperone-vector* [vec (and/c vector? (not/c immutable?))]
+                            [ref-proc (or/c (vector? vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
+                            [set-proc (or/c (vector? vector? exact-nonnegative-integer? any/c . -> . any/c) #f)]
+                            [prop impersonator-property?]
+                            [prop-val any] ... ...)
+         (and/c vector? chaperone?)]{
+ Like @racket[chaperone-vector], but @racket[ref-proc] and @racket[set-proc] receive an extra argument
+ as with @racket[impersonate-vector*].
+
+ @history[#:added "6.9.0.2"]
+}
 
 @defproc[(chaperone-box [box box?]
                         [unbox-proc (box? any/c . -> . any/c)]

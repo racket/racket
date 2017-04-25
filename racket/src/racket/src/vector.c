@@ -51,7 +51,11 @@ static Scheme_Object *vector_copy_bang(int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_immutable (int argc, Scheme_Object *argv[]);
 static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[]);
 static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv);
+static Scheme_Object *chaperone_vector_star(int argc, Scheme_Object **argv);
 static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv);
+static Scheme_Object *impersonate_vector_star(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_chaperone_vector(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_impersonate_vector(int argc, Scheme_Object **argv);
 
 static Scheme_Object *unsafe_vector_len (int argc, Scheme_Object *argv[]);
 static Scheme_Object *unsafe_vector_ref (int argc, Scheme_Object *argv[]);
@@ -168,11 +172,24 @@ scheme_init_vector (Scheme_Env *env)
                                                       "chaperone-vector",
                                                       3, -1),
                              env);
+
+  scheme_add_global_constant("chaperone-vector*",
+			     scheme_make_prim_w_arity(chaperone_vector_star,
+						      "chaperone-vector*",
+						      3, -1),
+			     env);
+
   scheme_add_global_constant("impersonate-vector",
                              scheme_make_prim_w_arity(impersonate_vector,
                                                       "impersonate-vector",
                                                       3, -1),
                              env);
+
+  scheme_add_global_constant("impersonate-vector*",
+			     scheme_make_prim_w_arity(impersonate_vector_star,
+						      "impersonate-vector*",
+						      3, -1),
+			     env);
 }
 
 void
@@ -272,6 +289,18 @@ scheme_init_unsafe_vector (Scheme_Env *env)
   p = scheme_make_immed_prim(unsafe_bytes_set, "unsafe-bytes-set!", 3, 3);
   SCHEME_PRIM_PROC_FLAGS(p) |= scheme_intern_prim_opt_flags(SCHEME_PRIM_IS_NARY_INLINED);
   scheme_add_global_constant("unsafe-bytes-set!", p, env);
+
+  scheme_add_global_constant("unsafe-impersonate-vector",
+			     scheme_make_prim_w_arity(unsafe_impersonate_vector,
+						      "unsafe-impersonate-vector",
+						      2, -1),
+			     env);
+
+  scheme_add_global_constant("unsafe-chaperone-vector",
+			     scheme_make_prim_w_arity(unsafe_chaperone_vector,
+						      "unsafe-chaperone-vector",
+						      2, -1),
+			     env);
 }
 
 #define VECTOR_BYTES(size) (sizeof(Scheme_Vector) + ((size) - mzFLEX_DELTA) * sizeof(Scheme_Object *))
@@ -445,13 +474,13 @@ static Scheme_Object *chaperone_vector_ref_overflow(Scheme_Object *o, int i)
   return scheme_handle_stack_overflow(chaperone_vector_ref_k);
 }
 
-Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i)
+Scheme_Object *scheme_chaperone_vector_ref2(Scheme_Object *o, int i, Scheme_Object *outermost)
 {
   if (!SCHEME_NP_CHAPERONEP(o)) {
     return SCHEME_VEC_ELS(o)[i];
   } else {
     Scheme_Chaperone *px = (Scheme_Chaperone *)o;
-    Scheme_Object *a[3], *red, *orig;
+    Scheme_Object *a[4], *red, *orig;
 
 #ifdef DO_STACK_CHECK
     {
@@ -460,18 +489,33 @@ Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i)
     }
 #endif
 
-    orig = scheme_chaperone_vector_ref(px->prev, i);
+    if(SCHEME_FALSEP(px->redirects)) {
+      /* unsafe chaperones */
+      return scheme_chaperone_vector_ref2(px->val, i, outermost);
+    }
+
+    orig = scheme_chaperone_vector_ref2(px->prev, i, outermost);
 
     if (SCHEME_VECTORP(px->redirects)) {
       /* chaperone was on property accessors */
+      /* or vector chaperone is property only */
       return orig;
     }
-
-    a[0] = px->prev;
-    a[1] = scheme_make_integer(i);
-    a[2] = orig;
     red = SCHEME_CAR(px->redirects);
-    o = _scheme_apply(red, 3, a);
+
+    if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_VEC_CHAPERONE_STAR) {
+      a[0] = outermost;
+      a[1] = px->prev;
+      a[2] = scheme_make_integer(i);
+      a[3] = orig;
+      o = _scheme_apply(red, 4, a);
+    }
+    else {
+      a[0] = px->prev;
+      a[1] = scheme_make_integer(i);
+      a[2] = orig;
+      o = _scheme_apply(red, 3, a);
+    }
 
     if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
       if (!scheme_chaperone_of(o, orig))
@@ -479,6 +523,11 @@ Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i)
 
     return o;
   }
+}
+
+Scheme_Object *scheme_chaperone_vector_ref(Scheme_Object *o, int i)
+{
+  return scheme_chaperone_vector_ref2(o, i, o);
 }
 
 Scheme_Object *
@@ -510,24 +559,46 @@ scheme_checked_vector_ref (int argc, Scheme_Object *argv[])
 
 void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v)
 {
+  Scheme_Object *outermost = o;
   while (1) {
     if (!SCHEME_NP_CHAPERONEP(o)) {
       SCHEME_VEC_ELS(o)[i] = v;
       return;
     } else {
       Scheme_Chaperone *px = (Scheme_Chaperone *)o;
-      Scheme_Object *a[3], *red;
-      
-      o = px->prev;
-      a[0] = o;
-      a[1] = scheme_make_integer(i);
-      a[2] = v;
-      red = SCHEME_CDR(px->redirects);
-      v = _scheme_apply(red, 3, a);
+      Scheme_Object *a[4], *red;
+      int chap_star = SCHEME_CHAPERONE_FLAGS(px) & SCHEME_VEC_CHAPERONE_STAR ? 1 : 0;
 
-      if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
-        if (!scheme_chaperone_of(v, a[2]))
-          scheme_wrong_chaperoned("vector-set!", "value", a[2], v);
+      red = px->redirects;
+      if (SCHEME_FALSEP(red)) {
+	o = px->val;
+	continue;
+      }
+
+      o = px->prev;
+
+      if (!SCHEME_VECTORP(red)) {
+	/* not a property only chaperone */
+	red = SCHEME_CDR(px->redirects);
+
+	if (chap_star) {
+	  a[0] = outermost;
+	  a[1] = o;
+	  a[2] = scheme_make_integer(i);
+	  a[3] = v;
+	  v = _scheme_apply(red, 4, a);
+	}
+	else {
+	  a[0] = o;
+	  a[1] = scheme_make_integer(i);
+	  a[2] = v;
+	  v = _scheme_apply(red, 3, a);
+	}
+
+	if (!(SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR))
+	  if (!scheme_chaperone_of(v, a[2 + chap_star]))
+	    scheme_wrong_chaperoned("vector-set!", "value", a[2 + chap_star], v);
+      }
     }
   }
 }
@@ -850,26 +921,59 @@ static Scheme_Object *vector_to_values (int argc, Scheme_Object *argv[])
   return SCHEME_MULTIPLE_VALUES;
 }
 
-static Scheme_Object *do_chaperone_vector(const char *name, int is_impersonator, int argc, Scheme_Object **argv)
+static Scheme_Object *do_chaperone_vector(const char *name, int is_impersonator, int pass_self, int unsafe, int argc, Scheme_Object **argv)
 {
   Scheme_Chaperone *px;
   Scheme_Object *val = argv[0];
   Scheme_Object *redirects;
   Scheme_Hash_Tree *props;
 
-  if (SCHEME_CHAPERONEP(val))
+  if (SCHEME_CHAPERONEP(val)) {
     val = SCHEME_CHAPERONE_VAL(val);
+  }
 
   if (!SCHEME_VECTORP(val)
       || (is_impersonator && !SCHEME_MUTABLEP(val)))
     scheme_wrong_contract(name, is_impersonator ? "(and/c vector? (not/c immutable?))" : "vector?", 0, argc, argv);
-  scheme_check_proc_arity(name, 3, 1, argc, argv);
-  scheme_check_proc_arity(name, 3, 2, argc, argv);
 
-  props = scheme_parse_chaperone_props(name, 3, argc, argv);
+  if (unsafe) {
+    /* We cannot dispatch the operations on an unsafe vector chaperone to a chaperoned vector because of the invariant
+       that the val field of a vector chaperone must point to a non-chaperoned vector.
+       To ensure this we error if the second argument passed to `unsafe-chaperone-vector` is not a unchaperoned vector */
+    if (!SCHEME_VECTORP(argv[1])) {
+      scheme_wrong_contract(name, "(and/c vector? (not/c impersonator?))", 1, argc, argv);
+    }
+    val = argv[1];
+  }
+  else {
+    /* allow false for interposition procedures */
+    scheme_check_proc_arity2(name, 3 + (pass_self ? 1 : 0), 1, argc, argv,1);
 
-  redirects = scheme_make_pair(argv[1], argv[2]);
-  
+    if (SCHEME_PROCP(argv[1])) {
+      scheme_check_proc_arity(name, 3 + (pass_self ? 1 : 0), 2, argc, argv);
+    }
+    else if (!SCHEME_FALSEP(argv[2])) {
+      scheme_wrong_contract(name, "#f", 2, argc, argv);
+    }
+  }
+
+  props = scheme_parse_chaperone_props(name, unsafe ? 2 : 3, argc, argv);
+
+  /*
+     Regular vector chaperones store redirect procedures in a pair, (cons getter setter).
+     Property only vector chaperones have no redirection procedures, and redirects is assigned an empty vector.
+     Unsafe vector chaperones dispatch operations to another vector stored in a box in redirects.
+   */
+  if (SCHEME_FALSEP(argv[1])) {
+    redirects = scheme_make_vector(0, NULL);
+  }
+  else if (unsafe) {
+    redirects = scheme_false;
+  }
+  else {
+    redirects = scheme_make_pair(argv[1], argv[2]);
+  }
+
   px = MALLOC_ONE_TAGGED(Scheme_Chaperone);
   px->iso.so.type = scheme_chaperone_type;
   px->props = props;
@@ -880,17 +984,41 @@ static Scheme_Object *do_chaperone_vector(const char *name, int is_impersonator,
   if (is_impersonator)
     SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_CHAPERONE_IS_IMPERSONATOR;
 
+  /* Use flag to tell if the chaperone is a chaperone* */
+  if (pass_self) {
+    SCHEME_CHAPERONE_FLAGS(px) |= SCHEME_VEC_CHAPERONE_STAR;
+  }
   return (Scheme_Object *)px;
 }
 
 static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv)
 {
-  return do_chaperone_vector("chaperone-vector", 0, argc, argv);
+  return do_chaperone_vector("chaperone-vector", 0, 0, 0, argc, argv);
+}
+
+static Scheme_Object *chaperone_vector_star(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_vector("chaperone-vector", 0, 1, 0, argc, argv);
 }
 
 static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv)
 {
-  return do_chaperone_vector("impersonate-vector", 1, argc, argv);
+  return do_chaperone_vector("impersonate-vector", 1, 0, 0, argc, argv);
+}
+
+static Scheme_Object *impersonate_vector_star(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_vector("impersonate-vector", 1, 1, 0, argc, argv);
+}
+
+static Scheme_Object *unsafe_chaperone_vector(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_vector("unsafe-chaperone-vector", 0, 0, 1, argc, argv);
+}
+
+static Scheme_Object *unsafe_impersonate_vector(int argc, Scheme_Object **argv)
+{
+  return do_chaperone_vector("unsafe-impersonate-vector", 1, 0, 1, argc, argv);
 }
 
 /************************************************************/

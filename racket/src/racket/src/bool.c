@@ -639,7 +639,8 @@ int is_equal (Scheme_Object *obj1, Scheme_Object *obj2, Equal_Info *eql)
     }
     if (!eql->for_chaperone) {
       if (SCHEME_CHAPERONEP(obj1)) {
-        obj1 = ((Scheme_Chaperone *)obj1)->val;
+	/* OPT only use prev for unsafe-chaperone-vector, use val otherwise */
+        obj1 = ((Scheme_Chaperone *)obj1)->prev;
         goto top_after_next;
       }
       if (SCHEME_CHAPERONEP(obj2)) {

@@ -3649,7 +3649,8 @@ static Scheme_Object *do_chaperone_procedure(const char *name, const char *whati
      initialized to -1) in a vector. 
 
      Vector of odd size for redirects means a procedure chaperone,
-     vector with even slots means a structure chaperone.
+     vector with non-zero even slots means a structure chaperone,
+     vector with zero slots means a property-only vector chaperone.
      A size of 5 (instead of 3) indicates that the wrapper
      procedure accepts a "self" argument. An immutable vector
      means that it wraps a chaperone that wants the "self" 
