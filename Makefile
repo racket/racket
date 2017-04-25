@@ -338,6 +338,8 @@ BUNDLE_CONFIG = bundle/racket/etc/config.rktd
 BUNDLE_RACO_FLAGS = -C -G bundle/racket/etc -X bundle/racket/collects -A bundle/user -l raco
 BUNDLE_RACO = $(PLAIN_RACKET) $(BUNDLE_RACO_FLAGS)
 WIN32_BUNDLE_RACO = $(WIN32_PLAIN_RACKET) $(BUNDLE_RACO_FLAGS)
+IN_BUNDLE_RACO = bundle/racket/bin/raco
+WIN32_IN_BUNDLE_RACO = bundle\racket\raco
 
 # ------------------------------------------------------------
 # Linking all packages (development mode; not an installer build)
@@ -404,7 +406,7 @@ build-from-catalog:
 	$(RACO) pkg install --all-platforms $(SOURCE_USER_AUTO_q) $(REQUIRED_PKGS) $(DISTRO_BUILD_PKGS)
 	$(MAKE) set-server-config
 	$(RACKET) -l- distro-build/pkg-info -o build/pkgs.rktd build/catalog-copy
-	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
+	$(RACKET) -l distro-build/install-pkgs $(CONFIG_MODE_q) "$(PKGS) $(TEST_PKGS)" $(SOURCE_USER_AUTO_q) --all-platforms
 	$(RACO) setup --avoid-main $(JOB_OPTIONS)
 
 server-cache-config:
@@ -461,7 +463,7 @@ PROP_ARGS = SERVER=$(SERVER) SERVER_PORT=$(SERVER_PORT) SERVER_HOSTS="$(SERVER_H
             DIST_DIR=$(DIST_DIR) DIST_SUFFIX=$(DIST_SUFFIX) UPLOAD="$(UPLOAD)" \
             DIST_DESC="$(DIST_DESC)" README="$(README)" SIGN_IDENTITY="$(SIGN_IDENTITY)" \
             OSSLSIGNCODE_ARGS_BASE64="$(OSSLSIGNCODE_ARGS_BASE64)" JOB_OPTIONS="$(JOB_OPTIONS)" \
-            TGZ_MODE=$(TGZ_MODE)
+            TGZ_MODE=$(TGZ_MODE) TEST_PKGS="$(TEST_PKGS)"
 
 COPY_ARGS = $(PROP_ARGS) \
             SERVER_CATALOG_PATH=$(SERVER_CATALOG_PATH) SERVER_COLLECTS_PATH=$(SERVER_COLLECTS_PATH)
@@ -538,6 +540,20 @@ win32-bundle-from-server:
 
 win32-installer-from-bundle:
 	$(WIN32_RACKET) -l- distro-build/installer $(DIST_ARGS_q)
+
+# The `test-client` and `win32-test-client` targets are optional test
+# step for an installer build, were `TEST_PKGS` names extra packages
+# to install, and `TEST_ARGS_q` is a set of arguments to `raco test`.
+# This step will not make sense for some kinds of builds, such as
+# source builds or cross-platform builds.
+
+test-client:
+	$(BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(TEST_PKGS)
+	$(IN_BUNDLE_RACO) test $(TEST_ARGS_q)
+
+win32-test-client:
+	$(WIN32_BUNDLE_RACO) pkg install $(REMOTE_INST_AUTO) $(PKG_SOURCE_MODE) $(TEST_PKGS)
+	$(WIN32_IN_BUNDLE_RACO) test $(TEST_ARGS_q)
 
 # ------------------------------------------------------------
 # On a supported platform (for an installer build) after a `make site'
