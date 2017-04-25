@@ -401,7 +401,8 @@
 
 (system- (format "~a /MT /O2 /DMZ_PRECISE_GC /I../../racket/include /I.. /c ../../racket/dynsrc/mzdyn.c /Fomzdyn3m.obj"
 		 cl.exe))
-(system- "lib.exe -def:../../racket/dynsrc/mzdyn.def -out:mzdyn3m.lib")
+(system- (format "lib.exe -machine:~a -def:../../racket/dynsrc/mzdyn.def -out:mzdyn3m.lib"
+		 (if win64? "x64" "X86")))
 
 (define (copy-file/diff src dest)
   (unless (and (file-exists? dest)

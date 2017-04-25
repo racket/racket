@@ -44,10 +44,23 @@
                          [else "bin"])
                        (mk-dest-bin #t)))
 
+(define (call-with-retries thunk)
+  (let loop ([sleep-time 0.01])
+    (with-handlers ([exn:fail:filesystem? (lambda (exn)
+					    ;; Accommodate Windows background tasks,
+					    ;; like anti-virus software and indexing,
+					    ;; that can prevent an ".exe" from being deleted
+					    (if (= sleep-time 1.0)
+						(raise exn)
+						(begin
+						  (sleep sleep-time)
+						  (loop (* 2 sleep-time)))))])
+       (thunk))))
+
 (define (prepare exe src)
   (printf "Making ~a with ~a...\n" exe src)
   (when (file-exists? exe)
-    (delete-file exe)))
+	(call-with-retries (lambda () (delete-file exe)))))
 
 (define (try-one-exe exe expect mred?)
   (printf "Running ~a\n" exe)
@@ -76,8 +89,10 @@
           (test #t
                 path
                 (parameterize ([current-output-port out])
-                  (system* path))))))
-    (delete-directory/files temp-home-dir)
+			      (system* path))))))
+    (call-with-retries
+     (lambda ()
+       (delete-directory/files temp-home-dir)))
     (let ([stdout-file (build-path (find-system-path 'temp-dir) "stdout")])
       (if (file-exists? stdout-file)
           (test expect with-input-from-file stdout-file
@@ -90,7 +105,9 @@
     ;; Build a distribution directory, and try that, too:
     (printf " ... from distribution ...\n")
     (when (directory-exists? dist-dir)
-      (delete-directory/files dist-dir))
+      (call-with-retries
+       (lambda ()
+	 (delete-directory/files dist-dir))))
     (assemble-distribution dist-dir (list exe) #:copy-collects collects)
     (dist-hook)
     (try-one-exe (build-path dist-dir
@@ -98,7 +115,10 @@
                                  dist-mred-exe
                                  dist-mz-exe))
                  expect mred?)
-    (delete-directory/files dist-dir)))
+    (when (directory-exists? dist-dir)
+      (call-with-retries
+       (lambda ()
+         (delete-directory/files dist-dir))))))
 
 (define (base-compile e)
   (parameterize ([current-namespace (make-base-namespace)])

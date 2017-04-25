@@ -95,7 +95,7 @@ exit 1
 "$(TargetPath)" -cu ..\..\racket\mkincludes.rkt "$(TargetDir)/include/" ..\..\racket ..
 if errorlevel 1 exit 1
 cd ..\..\racket\dynsrc
-call mkmzdyn.bat $(Configuration)
+call mkmzdyn.bat $(Configuration) $(Platform)
 cd ..\..\worksp\racket
 addman.bat
 </Command>
