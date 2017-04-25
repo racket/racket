@@ -2185,14 +2185,14 @@ the value of @racket[(contract-first-order-okay-to-give-up?)] (see it's document
 for more explanation).
 
 The @racket[late-neg-proj] argument defines the behavior of applying
- the contract via a @deftech{late neg projection}. If it is
- supplied, it accepts a @tech{blame object} that does not have a value for
- the @racket[blame-negative] field. Then it must return a function that accepts
- both the value that is getting the contract and the name of the blame party, in
- that order. The result must either be the value (perhaps suitably wrapped
- with a @tech{chaperone} or @tech{impersonator} to enforce the contract), or
- signal a contract violation using @racket[raise-blame-error]. The default is
- @racket[#f].
+ the contract via a @deftech{late neg projection}. If it is supplied, this
+ argument accepts a @tech{blame object} that is missing one party (see also
+ @racket[blame-missing-party?]).  Then it must return a function that accepts
+ both the value that is getting the contract and the name of the missing blame
+ party, in that order. The result must either be the value (perhaps suitably
+ wrapped with a @tech{chaperone} or @tech{impersonator} to enforce the
+ contract), or signal a contract violation using @racket[raise-blame-error].
+ The default is @racket[#f].
  
 The projection @racket[proj] and @racket[val-first-proj] are older mechanisms for
  defining the behavior of applying the contract.  The @racket[proj] argument
@@ -2366,7 +2366,7 @@ recognized automatically and do not require this form.
 If your combinator's projections operate on complete @tech{blame objects} (i.e., no
 missing blame parties), the @tech{blame object} should be the first argument to this
 form. Otherwise (e.g., in the case of @racket[_late-neg] projections), a pair
-of the @tech{blame object} and the negative party should be used instead.
+of the @tech{blame object} and the missing party should be used instead.
 
 @history[#:added "6.4.0.4"]
 }
@@ -3085,7 +3085,7 @@ Produces the name used to describe the contract in error messages.
   the contract checking, mostly used to create a meaningful error message if
   a contract violation is detected. The resulting function's first argument
   is the value that should have the contract and its second argument is
-  a ``missing party'' from the @tech{blame object}, to be passed to @racket[raise-contract-error].
+  a missing party for the @tech{blame object}, to be passed to @racket[raise-contract-error].
 
   If possible, use this function instead of @racket[contract-val-first-projection] or
   @racket[contract-projection].
