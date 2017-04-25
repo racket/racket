@@ -106,6 +106,13 @@ by @racket[kind], which must be one of the following:
  relative path, it is relative to the current executable.
  The directory might not exist.}
 
+ @item{@indexed-racket['host-config-dir] --- like
+ @racket['config-dir], but when cross-platform build mode has been
+ selected (through the @Flag{C} or @DFlag{cross} argument to
+ @exec{racket}; see @secref["mz-cmdline"]), the result refers to a
+ directory for the current system's installation, instead of for the
+ target system.}
+ 
  @item{@indexed-racket['addon-dir] --- a directory for
  user-specific Racket configuration, packages, and extension.
  This directory is specified by the
@@ -164,6 +171,17 @@ by @racket[kind], which must be one of the following:
  normally embedded in the Racket executable, but it can be
  overridden by the @DFlag{collects} or @Flag{X} command-line flag.}
 
+ @item{@indexed-racket['host-collects-dir] --- like
+ @racket['collects-dir], but when cross-platform build mode has been
+ selected (through the @Flag{C} or @DFlag{cross} argument to
+ @exec{racket}; see @secref["mz-cmdline"]), the result refers to a
+ directory for the current system's installation, instead of for the
+ target system. In cross-platform build mode, collection
+ files are normally read from the target system's installation,
+ but some tasks require current-system directories (such as
+ the one that holds foreign libraries) that are configured relative
+ to the main library-collection path.}
+ 
  @item{@indexed-racket['orig-dir] --- the current directory at
  start-up, which can be useful in converting a relative-path result
  from @racket[(find-system-path 'exec-file)] or
@@ -171,7 +189,9 @@ by @racket[kind], which must be one of the following:
 
  ]
 
-@history[#:changed "6.0.0.3" @elem{Added @envvar{PLTUSERHOME}.}]}
+@history[#:changed "6.0.0.3" @elem{Added @envvar{PLTUSERHOME}.}
+         #:changed "6.9.0.1" @elem{Added @racket['host-config-dir]
+                                   and @racket['host-collects-dir].}]}
 
 @defproc[(path-list-string->path-list [str (or/c string? bytes?)]
                                       [default-path-list (listof path?)])

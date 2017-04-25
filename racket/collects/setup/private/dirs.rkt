@@ -14,7 +14,10 @@
 ;; ----------------------------------------
 ;; config: definitions
 
-(define config-table
+(provide get-config-table
+         to-path)
+
+(define (get-config-table find-config-dir)
   (delay/sync
    (let ([d (find-config-dir)])
      (if d
@@ -28,6 +31,9 @@
                      (read in)))))
                #hash()))
          #hash()))))
+
+(define config-table
+  (get-config-table find-config-dir))
 
 (define (to-path l)
   (cond [(string? l) (simplify-path (complete-path (string->path l)))]
@@ -237,7 +243,7 @@
   find-lib-dir
   find-user-lib-dir
   config:lib-search-dirs
-  get-lib-search-dirs
+  get-cross-lib-search-dirs
   "lib")
 
 ;; ----------------------------------------

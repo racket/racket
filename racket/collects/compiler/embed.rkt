@@ -1508,7 +1508,7 @@
                 (if (cdr m)
                     (update-dll-dir dest (cdr m))
                     ;; adjust relative path, since exe directory can change:
-		    (update-dll-dir dest (find-relative-path* dest (find-dll-dir))))
+		    (update-dll-dir dest (find-relative-path* dest (find-cross-dll-dir))))
                 ;; Check whether we need an absolute path to DLLs:
                 (let ([dir (get-current-dll-dir dest)])
                   (when (relative-path? dir)
@@ -1599,7 +1599,7 @@
 				  (list (if relative?
 					    (relativize exe dest-exe values)
 					    exe)
-					(let ([dir (find-dll-dir)])
+					(let ([dir (find-cross-dll-dir)])
 					  (if dir
 					      (if relative?
 						  (relativize dir dest-exe values)

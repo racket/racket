@@ -165,10 +165,10 @@
     (case (cross-system-type)
       [(windows)
        (let ([copy-dll (lambda (name)
-			 (copy-file* (search-dll (find-dll-dir) name)
+			 (copy-file* (search-dll (find-cross-dll-dir) name)
 				     (build-path lib-dir name)))]
 	     [versionize (lambda (template)
-			   (let ([f (search-dll (find-dll-dir)
+			   (let ([f (search-dll (find-cross-dll-dir)
 						(format template filename-version-part))])
 			     (if (file-exists? f)
 				 (format template filename-version-part)
@@ -266,7 +266,7 @@
 	     (build-path lib-dir sub-dir "Resources")))))))
 
   (define (find-framework fw-name)
-    (let ([dll-dir (find-dll-dir)])
+    (let ([dll-dir (find-cross-dll-dir)])
       (or dll-dir
 	  (ormap (lambda (p)
 		   (let ([f (build-path p fw-name)])
@@ -283,7 +283,7 @@
 
   (define (copy-shared-lib name lib-dir)
     (unless avail-lib-files
-      (set! avail-lib-files (directory-list (find-dll-dir))))
+      (set! avail-lib-files (directory-list (find-cross-dll-dir))))
     (let* ([rx (byte-regexp (string->bytes/latin-1
 			     (format "lib~a-~a.*[.](?:so|dylib)$" name (version))))]
 	   [files (filter (lambda (f)
@@ -297,7 +297,7 @@
 	       "found multiple shared-library candidates for ~a: ~e"
 	       name
 	       files))
-      (copy-file* (build-path (find-dll-dir) (car files))
+      (copy-file* (build-path (find-cross-dll-dir) (car files))
 		  (build-path lib-dir (car files)))))
 
   (define (patch-binaries binaries types)
@@ -537,7 +537,7 @@
                                (map normal-case-path
                                     (list* (find-system-path 'addon-dir)
                                            (find-share-dir)
-                                           (append (get-lib-search-dirs)
+                                           (append (get-cross-lib-search-dirs)
                                                    (get-include-search-dirs)))))]
                [explode (lambda (src)
                           ;; Sort the path into a root, and keep the root plus

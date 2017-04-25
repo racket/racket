@@ -76,4 +76,5 @@
 
 (define (cross-installation?)
   (compute-cross!)
-  (positive? (hash-count cross-system-table)))
+  (or (eq? (system-type 'cross) 'force)
+      (positive? (hash-count cross-system-table))))

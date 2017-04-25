@@ -1906,6 +1906,7 @@ MZ_EXTERN void scheme_set_startup_use_jit(int);
 MZ_EXTERN void scheme_set_startup_load_on_demand(int);
 MZ_EXTERN void scheme_set_ignore_user_paths(int);
 MZ_EXTERN void scheme_set_ignore_link_paths(int);
+MZ_EXTERN void scheme_set_cross_compile_mode(int);
 MZ_EXTERN void scheme_set_logging(int syslog_level, int stderr_level);
 MZ_EXTERN void scheme_set_logging_spec(Scheme_Object *syslog_level, Scheme_Object *stderr_level);
 
@@ -1974,6 +1975,8 @@ MZ_EXTERN Scheme_Object *scheme_set_exec_cmd(char *s);
 MZ_EXTERN Scheme_Object *scheme_set_run_cmd(char *s);
 MZ_EXTERN void scheme_set_collects_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_config_path(Scheme_Object *p);
+MZ_EXTERN void scheme_set_host_collects_path(Scheme_Object *p);
+MZ_EXTERN void scheme_set_host_config_path(Scheme_Object *p);
 MZ_EXTERN void scheme_set_original_dir(Scheme_Object *d);
 MZ_EXTERN void scheme_set_addon_dir(Scheme_Object *p);
 MZ_EXTERN void scheme_set_command_line_arguments(Scheme_Object *vec);

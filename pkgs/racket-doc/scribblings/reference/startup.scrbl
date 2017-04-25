@@ -282,13 +282,6 @@ flags:
         the @Flag{S}/@DFlag{dir} flag is supplied multiple times, the
         search order is as supplied.}
 
-  @item{@FlagFirst{R} @nonterm{paths} or @DFlagFirst{compiled}
-        @nonterm{paths} : Sets the initial value of the
-        @racket[current-compiled-file-roots] parameter, overriding
-        any @envvar{PLTCOMPILEDROOTS} setting. The @nonterm{paths}
-        argument is parsed in the same way as @envvar{PLTCOMPILEDROOTS}
-        (see @racket[current-compiled-file-roots]).}
-
   @item{@FlagFirst{G} @nonterm{dir} or @DFlagFirst{config}
         @nonterm{dir} : Sets the directory that is returned by
         @racket[(find-system-path 'config-dir)].}
@@ -303,6 +296,25 @@ flags:
         @racket[use-user-specific-search-paths] parameter to
         @racket[#f].}
 
+  @item{@FlagFirst{A} @nonterm{dir} or @DFlagFirst{addon}
+        @nonterm{dir} : Sets the directory that is returned by
+        @racket[(find-system-path 'addon-dir)].}
+
+  @item{@FlagFirst{R} @nonterm{paths} or @DFlagFirst{compiled}
+        @nonterm{paths} : Sets the initial value of the
+        @racket[current-compiled-file-roots] parameter, overriding
+        any @envvar{PLTCOMPILEDROOTS} setting. The @nonterm{paths}
+        argument is parsed in the same way as @envvar{PLTCOMPILEDROOTS}
+        (see @racket[current-compiled-file-roots]).}
+
+  @item{@FlagFirst{C} or @DFlagFirst{cross} : Select cross-platform
+        build mode, causing @racket[(system-type 'cross)] to report
+        @racket['force], and sets the current configuration of
+        @racket[(find-system-path 'config-dir)] and
+        @racket[(find-system-path 'collects-dir)] to be the results of
+        @racket[(find-system-path 'host-config-dir)] and
+        @racket[(find-system-path 'host-collects-dir)], respectively.}
+  
   @item{@FlagFirst{N} @nonterm{file} or @DFlagFirst{name}
         @nonterm{file} : sets the name of the executable as reported
         by @racket[(find-system-path 'run-file)] to

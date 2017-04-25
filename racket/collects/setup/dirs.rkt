@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/promise
+         racket/private/config
          compiler/private/winutf16
          compiler/private/mach-o
          setup/cross-system
@@ -10,8 +11,12 @@
                      config:bin-dir
                      config:config-tethered-console-bin-dir
                      config:config-tethered-gui-bin-dir
-                     define-finder)
-         find-dll-dir)
+                     define-finder
+                     get-config-table
+                     to-path)
+         find-cross-dll-dir
+         find-dll-dir
+         get-lib-search-dirs)
 
 ;; ----------------------------------------
 ;; Executables
@@ -78,12 +83,12 @@
 ;; ----------------------------------------
 ;; DLLs
 
-(provide find-dll-dir)
-(define dll-dir
+(define (get-dll-dir get-system-type force-cross?)
   (delay/sync
-    (case (cross-system-type)
+    (case (get-system-type)
       [(windows)
-       (if (eq? (system-type) 'windows)
+       (if (and (eq? (system-type) 'windows)
+                (not force-cross?))
            ;; Extract "lib" location from binary:
            (let ([exe (parameterize ([current-directory (find-system-path 'orig-dir)])
                         (find-executable-path (find-system-path 'exec-file)))])
@@ -108,7 +113,8 @@
            ;; Cross-compile: assume it's "lib"
            (find-lib-dir))]
       [(macosx)
-       (if (eq? (system-type) 'macosx)
+       (if (and (eq? (system-type) 'macosx)
+                (not force-cross?))
            (let* ([exe (parameterize ([current-directory (find-system-path 'orig-dir)])
                          (let loop ([p (find-executable-path
                                         (find-system-path 'exec-file))])
@@ -152,6 +158,38 @@
        (if (eq? 'shared (cross-system-type 'link))
            (or (force config:dll-dir) (find-lib-dir))
            #f)])))
-(define (find-dll-dir)
-  (force dll-dir))
 
+(define cross-dll-dir
+  (get-dll-dir cross-system-type
+               (eq? (system-type 'cross) 'force)))
+(define host-dll-dir
+  (get-dll-dir system-type
+               #f))
+
+(define (find-cross-dll-dir)
+  (force cross-dll-dir))
+
+(define (find-dll-dir)
+  (force host-dll-dir))
+
+;; ----------------------------------------
+
+(define (get-lib-search-dirs)
+  (cond
+   [(and (eq? (cross-system-type) (system-type))
+         (eq? (system-type 'cross) 'infer))
+    (get-cross-lib-search-dirs)]
+   [else
+    (force host-lib-search-dirs)]))
+
+(define host-config
+  (get-config-table
+   (lambda () (exe-relative-path->complete-path (find-system-path 'host-config-dir)))))
+
+(define host-lib-search-dirs
+  (delay/sync
+   (or (to-path (hash-ref (force host-config) 'lib-search-dirs #f))
+       (list (build-path
+              (exe-relative-path->complete-path (find-system-path 'host-collects-dir))
+              'up
+              "lib")))))

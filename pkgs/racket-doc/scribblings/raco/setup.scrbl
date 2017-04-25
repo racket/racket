@@ -1237,6 +1237,13 @@ function for installing a single @filepath{.plt} file.
   Many of these paths can be configured through the
   @tech{configuration directory} (see @secref["config-file"]).}
 
+In cross-platform build mode (see @secref["cross-system"]), the
+functions provided by @racketmodname[setup/dirs] generally report
+target-system paths, instead of current-system paths. The exceptions are
+@racket[get-lib-search-dirs] and @racket[find-dll-dir], which report
+current-system paths while @racket[get-cross-lib-search-dirs] and
+@racket[find-cross-dll-dir] report target-system paths.
+
 @(define-syntax-rule (see-config id)
    @elem{See also @racket['id] in @secref["config-file"].})
 
@@ -1347,26 +1354,55 @@ function for installing a single @filepath{.plt} file.
   indicated by the returned path may or may not exist.}
 
 @defproc[(get-lib-search-dirs) (listof path?)]{
-  Returns a list of paths to search for foreign libraries. Unless it is
-  configured otherwise, the result includes any non-@racket[#f] result of
-  @racket[(find-lib-dir)]
-  and @racket[(find-user-lib-dir)]---but the latter is included only if the
-  value of the @racket[use-user-specific-search-paths] parameter
-  is @racket[#t].
+  Returns a list of paths to search for foreign libraries.
+
+  Unless it is configured otherwise, and except in cross-platform
+  build mode, the result includes any non-@racket[#f] result of
+  @racket[(find-lib-dir)] and @racket[(find-user-lib-dir)]---but the
+  latter is included only if the value of the
+  @racket[use-user-specific-search-paths] parameter is @racket[#t].
+
+  In cross-platform build mode (see @secref["cross-system"]),
+  @racket[get-lib-search-dirs] reports a result suitable for the
+  current system, instead of the target system. See also
+  @racket[get-cross-lib-search-dirs].
 
   @see-config[lib-search-dirs]
 
   @history[#:changed "6.1.1.4" @elem{Dropped @racket[(find-dll-dir)]
                                      from the set of paths to
                                      explicitly include in the
-                                     default.}]}
+                                     default.}
+           #:changed "6.9.0.1" @elem{Changed behavior in cross-platform build mode.}]}
+
+@defproc[(get-cross-lib-search-dirs) (listof path?)]{
+  Like @racket[get-lib-search-dirs], but in cross-platform build mode,
+  reports directories for the target system (including any
+  non-@racket[#f] result of @racket[(find-lib-dir)], etc.)
+  instead of the current system.
+
+  @history[#:added "6.9.0.1"]}
 
 @defproc[(find-dll-dir) (or/c path? #f)]{
   Returns a path to the directory that contains DLLs for use with the
   current executable (e.g., @filepath{libracket.dll} on Windows).
   The result is @racket[#f] if no such directory is available, or if no
   specific directory is available (i.e., other than the platform's normal
-  search path).}
+  search path).
+
+  In cross-platform build mode (see @secref["cross-system"]),
+  @racket[find-dll-dir] reports a result suitable for the current
+  system, instead of the target system. See also
+  @racket[find-cross-dll-dir].
+
+  @history[#:changed "6.9.0.1" @elem{Changed behavior in cross-platform build mode.}]}
+
+@defproc[(find-cross-dll-dir) (or/c path? #f)]{
+  Like @racket[find-dll-dir], but in cross-platform build mode,
+  reports a directory for the target system
+  instead of the current system.
+
+  @history[#:added "6.9.0.1"]}
 
 @defproc[(find-share-dir) (or/c path? #f)]{ Returns a path to the
   installation's @filepath{share} directory, which contains installed
@@ -1958,14 +1994,15 @@ run in cross-installation mode.
 For example, if an in-place Racket installation for a different
 platform resides at @nonterm{cross-dir}, then
 
-@commandline{racket -G @nonterm{cross-dir}/etc -X @nonterm{cross-dir}/collects -l- raco pkg}
+@commandline{racket -C -G @nonterm{cross-dir}/etc -X @nonterm{cross-dir}/collects -l- raco pkg}
 
 runs @exec{raco pkg} using the current platform's @exec{racket}
 executable, but using the collections and other configuration
 information of @nonterm{cross-dir}, as well as modifying the packages
 of @nonterm{cross-dir}. That can work as long as no platform-specific
 libraries need to run to perform the requested @exec{raco pkg} action
-(e.g., when installing built packages).
+(e.g., when installing built packages), or as long as the current
+platform's installation already includes those libraries.
 
 
 @history[#:added "6.3"]
@@ -1978,7 +2015,9 @@ libraries need to run to perform the requested @exec{raco pkg} action
 Like @racket[system-type], but for the target platform instead of the
 current platform in cross-installation mode. When not in
 cross-installation mode, the results are the same as for
-@racket[system-type].}
+@racket[system-type].
+
+See also @racket['cross] mode for @racket[system-type].}
 
 
 @defproc[(cross-system-library-subpath [mode (or/c 'cgc '3m #f)

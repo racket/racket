@@ -244,10 +244,12 @@ READ_ONLY static Scheme_Object *init_dir_symbol, *init_file_symbol, *sys_dir_sym
 READ_ONLY static Scheme_Object *exec_file_symbol, *run_file_symbol, *collects_dir_symbol;
 READ_ONLY static Scheme_Object *pref_file_symbol, *orig_dir_symbol, *addon_dir_symbol;
 READ_ONLY static Scheme_Object *config_dir_symbol;
+READ_ONLY static Scheme_Object *host_collects_dir_symbol, *host_config_dir_symbol;
 
 SHARED_OK static Scheme_Object *exec_cmd;
 SHARED_OK static Scheme_Object *run_cmd;
 SHARED_OK static Scheme_Object *collects_path, *config_path;
+SHARED_OK static Scheme_Object *host_collects_path, *host_config_path;
 THREAD_LOCAL_DECL(static Scheme_Object *original_pwd);
 SHARED_OK static Scheme_Object *addon_dir;
 
@@ -301,6 +303,8 @@ void scheme_init_file(Scheme_Env *env)
   REGISTER_SO(run_file_symbol);
   REGISTER_SO(collects_dir_symbol);
   REGISTER_SO(config_dir_symbol);
+  REGISTER_SO(host_collects_dir_symbol);
+  REGISTER_SO(host_config_dir_symbol);
   REGISTER_SO(orig_dir_symbol);
   REGISTER_SO(addon_dir_symbol);
 #endif
@@ -329,6 +333,8 @@ void scheme_init_file(Scheme_Env *env)
   run_file_symbol = scheme_intern_symbol("run-file");
   collects_dir_symbol = scheme_intern_symbol("collects-dir");
   config_dir_symbol = scheme_intern_symbol("config-dir");
+  host_collects_dir_symbol = scheme_intern_symbol("host-collects-dir");
+  host_config_dir_symbol = scheme_intern_symbol("host-config-dir");
   orig_dir_symbol = scheme_intern_symbol("orig-dir");
   addon_dir_symbol = scheme_intern_symbol("addon-dir");
 #endif
@@ -6726,12 +6732,16 @@ find_system_path(int argc, Scheme_Object **argv)
     return exec_cmd;
   } else if (argv[0] == run_file_symbol) {
     return scheme_get_run_cmd();
-  } else if (argv[0] == collects_dir_symbol) {
+  } else if ((argv[0] == host_collects_dir_symbol) && host_collects_path)
+    return host_collects_path;
+  else if ((argv[0] == collects_dir_symbol) || (argv[0] == host_collects_dir_symbol)) {
     if (!collects_path) {
       return scheme_make_path("collects");
     }
     return collects_path;
-  } else if (argv[0] == config_dir_symbol) {
+  } else if ((argv[0] == host_config_dir_symbol) && host_config_path)
+    return host_config_path;
+  else if ((argv[0] == config_dir_symbol) || (argv[0] == host_config_dir_symbol)) {
     if (!config_path) {
       return scheme_make_path("lib");
     }
@@ -6746,7 +6756,8 @@ find_system_path(int argc, Scheme_Object **argv)
                           "(or/c 'home-dir 'pref-dir 'pref-file 'temp-dir\n"
                           "       'init-dir 'init-file 'addon-dir\n"
                           "       'doc-dir 'desk-dir 'sys-dir 'exec-file 'run-file\n"
-                          "       'collects-dir 'config-dir 'orig-dir)",
+                          "       'collects-dir 'config-dir 'orig-dir\n"
+                          "       'host-collects-dir 'host-config-fir)",
                           0, argc, argv);
     return NULL;
   }
@@ -7055,6 +7066,24 @@ void scheme_set_config_path(Scheme_Object *p)
     REGISTER_SO(config_path);
   }
   config_path = p;
+}
+
+/* should only called from main */
+void scheme_set_host_collects_path(Scheme_Object *p)
+{
+  if (!host_collects_path) {
+    REGISTER_SO(host_collects_path);
+  }
+  host_collects_path = p;
+}
+
+/* should only called from main */
+void scheme_set_host_config_path(Scheme_Object *p)
+{
+  if (!host_config_path) {
+    REGISTER_SO(host_config_path);
+  }
+  host_config_path = p;
 }
 
 
