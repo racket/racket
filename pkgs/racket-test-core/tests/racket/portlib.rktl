@@ -1201,4 +1201,43 @@
 
 ;; --------------------------------------------------
 
+(let ()
+  ;; Check `special-filter-input-port`
+  (define-values (i o) (make-pipe-with-specials))
+  (define fi (special-filter-input-port
+              i
+              (lambda (proc bstr)
+                (bytes-set! bstr 0 (char->integer #\z))
+                1)))
+  (write-bytes #"abc" o)
+  (test #"abc" read-bytes 3 fi)
+  (write-special 'hello o)
+  (test #"z" read-bytes 1 fi)
+  (write-bytes #"ab" o)
+  (write-bytes #"c" o)
+  (write-special 'ok o)
+  (write-special 'bye o)
+  (test #"abczz" peek-bytes 5 0 fi)
+  (test #"abczz" peek-bytes 5 0 fi)
+  (test #"abcz" read-bytes 4 fi)
+  (define bstr (make-bytes 5))
+  (test 1 peek-bytes-avail! bstr 0 #f fi)
+  (test #"z" subbytes bstr 0 1))
+
+(let ()
+  ;; Check `special-filter-input-port` with `peeking-input-port`
+  (define-values (i o) (make-pipe-with-specials))
+  (define fi (special-filter-input-port
+              i
+              (lambda (proc bstr)
+                (bytes-set! bstr 0 (char->integer #\z))
+                1)))
+  (define pi (peeking-input-port fi))
+  (write-bytes #"abc" o)
+  (write-special 'hello o)
+  (write-special 'again o)
+  (test #"abczz" peek-bytes 5 0 pi))
+
+;; --------------------------------------------------
+
 (report-errs)

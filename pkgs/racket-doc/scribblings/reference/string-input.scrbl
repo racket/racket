@@ -235,9 +235,9 @@ arguments. The four arguments correspond to the location of the
 special value within the port, as described in
 @secref["customport"]. If the procedure is called more than once
 with valid arguments, the @exnraise[exn:fail:contract]. If
-@racket[read-bytes-avail] returns a special-producing procedure, then
+@racket[read-bytes-avail!] returns a special-producing procedure, then
 it does not place characters in @racket[bstr]. Similarly,
-@racket[read-bytes-avail] places only as many bytes into @racket[bstr]
+@racket[read-bytes-avail!] places only as many bytes into @racket[bstr]
 as are available before a special value in the port's stream.}
 
 @defproc[(read-bytes-avail!* [bstr bytes?]
@@ -351,7 +351,7 @@ case that @racket[progress] becomes ready before bytes are peeked.}
 Like @racket[read-bytes-avail!*], but for @tech{peek}ing, and with
 @racket[skip-bytes-amt] and @racket[progress] arguments like
 @racket[peek-bytes-avail!]. Since this procedure never blocks, it may
-return before even @racket[skip-amt] bytes are available from the
+return before even @racket[skip-bytes-amt] bytes are available from the
 port.}
 
 @defproc[(peek-bytes-avail!/enable-break [bstr (and/c bytes? (not/c immutable?))]
