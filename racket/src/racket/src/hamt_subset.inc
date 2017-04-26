@@ -89,9 +89,10 @@ HAMT_NONGCING int HAMT_SUBSET_OF(Scheme_Hash_Tree *t1, Scheme_Hash_Tree *t2, int
         
         if (HASHTR_SUBTREEP(k2)) {
           /* check each element of collision */
+          uintptr_t code;
+          code = _mzHAMT_CODE(t1, pos1, popcount1);
           for (i = ((Scheme_Hash_Tree *)k1)->count; i--; ) {
-            uintptr_t code;
-            hamt_at_index(((Scheme_Hash_Tree *)k1), i, &key, HAMT_IF_VAL(&val, NULL), &code);
+            hamt_at_index(((Scheme_Hash_Tree *)k1), i, &key, HAMT_IF_VAL(&val, NULL), NULL);
             if (!HAMT_ELEMENT_OF(key, HAMT_IF_VAL(val, NULL), code,
                                  (Scheme_Hash_Tree *)k2,
                                  shift + mzHAMT_LOG_WORD_SIZE,

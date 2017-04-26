@@ -36,6 +36,44 @@
         h))
 
 (let ()
+  (struct a (n m)
+          #:property
+          prop:equal+hash
+          (list (lambda (a b eql) (and (= (a-n a) (a-n b))
+                                  (= (a-m a) (a-m b))))
+                (lambda (a hc) (a-n a))
+                (lambda (a hc) (a-n a))))
+
+  (define ht0 (hash (a 1 0) #t))
+  ;; A hash table with two keys that have the same hash code
+  (define ht1 (hash (a 1 0) #t
+                    (a 1 2) #t))
+  ;; Another hash table with the same two keys, plus another
+  ;; with an extra key whose hash code is different but the
+  ;; same in the last 5 bits:
+  (define ht2 (hash (a 1 0) #t
+                    (a 1 2) #t
+                    (a 33 0) #t))
+  ;; A hash table with no collision, but the same last
+  ;; 5 bits for both keys:
+  (define ht3 (hash (a 1 0) #t
+                    (a 33 0) #t))
+
+  ;; Subset must compare a collision node with a subtree node (that
+  ;; contains a collision node):
+  (test #t hash-keys-subset? ht1 ht2)
+
+  (test #t hash-keys-subset? ht3 ht2)
+  (test #t hash-keys-subset? ht0 ht3)
+
+  (test #t hash-keys-subset? ht0 ht2)
+  (test #t hash-keys-subset? ht0 ht1)
+  (test #f hash-keys-subset? ht2 ht1)
+  (test #f hash-keys-subset? ht2 ht0)
+  (test #f hash-keys-subset? ht1 ht0)
+  (test #f hash-keys-subset? ht1 ht3))
+
+(let ()
   (define-syntax (define-hash-iterations-tester stx)
     (syntax-case stx ()
      [(_ tag -in-hash -in-pairs -in-keys -in-values)
