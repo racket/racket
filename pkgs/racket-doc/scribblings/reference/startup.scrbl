@@ -313,7 +313,9 @@ flags:
         @racket[(find-system-path 'config-dir)] and
         @racket[(find-system-path 'collects-dir)] to be the results of
         @racket[(find-system-path 'host-config-dir)] and
-        @racket[(find-system-path 'host-collects-dir)], respectively.}
+        @racket[(find-system-path 'host-collects-dir)], respectively.
+        If @FlagFirst{C} or @DFlagFirst{cross} is provided multiple
+        times, only the first instance has an effect.}
   
   @item{@FlagFirst{N} @nonterm{file} or @DFlagFirst{name}
         @nonterm{file} : sets the name of the executable as reported

@@ -1311,11 +1311,13 @@ static int run_from_cmd_line(int argc, char *_argv[],
           was_config_flag = 1;
             break;
         case 'C':
-          cross_compile = 1;
-          scheme_set_cross_compile_mode(1);
-          was_config_flag = 1;
-          host_config_path = config_path;
-          host_collects_path = collects_path;
+          if (!cross_compile) {
+            cross_compile = 1;
+            scheme_set_cross_compile_mode(1);
+            was_config_flag = 1;
+            host_config_path = config_path;
+            host_collects_path = collects_path;
+          }
 	  break;
 	case 'U':
 	  scheme_set_ignore_user_paths(1);

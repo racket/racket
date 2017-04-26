@@ -196,10 +196,14 @@ libraries. See the documentation for `raco setup' for information on
 the options.
 
 For cross compilation, add configuration options to
-`CONFIGURE_ARGS_qq="..."' as described in the "README" of "racket/src",
-but also add a `PLAIN_RACKET=...' argument for the top-level makefile
-to specify the same executable as in an `--enable-racket=...' for
-`configure'.
+`CONFIGURE_ARGS_qq="..."' as described in the "README" of
+"racket/src", but also add a `PLAIN_RACKET=...' argument for the
+top-level makefile to specify the same executable as in an
+`--enable-racket=...' for `configure'. In general, the `PLAIN_RACKET`
+setting should have the form `PLAIN_RACKET="... -C"` to ensure that
+cross-compilation mode is used and that any foreign libraries needed
+for build time can be found, but many cross-compilation scenarios work
+without `-C`.
 
 Installing Packages
 -------------------
