@@ -4,6 +4,8 @@
 (Section 'chaperones)
 
 (require (only-in racket/unsafe/ops
+                  unsafe-chaperone-vector
+                  unsafe-impersonate-vector
                   unsafe-impersonate-procedure
                   unsafe-chaperone-procedure))
 
@@ -220,6 +222,566 @@
                                 (lambda (b i v) #f))])
     (define-values (a b c) (vector->values b2))
     (test '(1 2 3) list a b c)))
+
+;; check property-only chaperones
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector chaperone-vector* impersonate-vector*]
+  [chaperone-of? impersonator-of? chaperone-of? impersonator-of?])
+ (let ()
+   (define v (vector 1 2 3))
+   (test #t chaperone-of? (chaperone-vector v #f #f) v)
+   (test #t chaperone-of? v (chaperone-vector v #f #f))
+   (define v2 (chaperone-vector v #f #f))
+   (define v3 (chaperone-vector v2 #f #f))
+   (test #t chaperone-of? v v2)
+   (test #t chaperone-of? v2 v)
+   (test #t chaperone-of? v v3)
+   (test #t chaperone-of? v3 v)
+   (test #t chaperone-of? v3 v2)
+   (test #t chaperone-of? v2 v3)
+   (define vc1 (chaperone-vector v (lambda args (last args)) (lambda args (last args))))
+   (define vc2 (chaperone-vector vc1 #f #f))
+   (define v2c1 (chaperone-vector v2 (lambda args (last args)) (lambda args (last args))))
+   (define v2c2 (chaperone-vector v2c1 #f #f))
+   (test #t chaperone-of? vc1 v)
+   (test #t chaperone-of? vc2 v)
+   (test #t chaperone-of? v2c1 v)
+   (test #t chaperone-of? v2c2 v)
+   (test #t chaperone-of? v2c2 v2c1)
+   (test #t chaperone-of? v2c1 v2c2)
+   (test #t chaperone-of? vc2 vc1)
+   (test #t chaperone-of? vc1 vc2)
+   (test #f chaperone-of? vc1 v2c1)
+   (test #f chaperone-of? v2c1 vc1)
+   (test #f chaperone-of? vc2 v2c2)
+   (test #f chaperone-of? v2c2 vc2)
+
+   (test #t chaperone-of? vc1 v2)
+   (test #t chaperone-of? vc1 v3)
+   (test #f chaperone-of? v2 vc1)
+   (test #f chaperone-of? v3 vc1)
+   (test #t chaperone-of? vc2 v2)
+   (test #t chaperone-of? vc2 v3)
+   (test #f chaperone-of? v2 vc2)
+   (test #f chaperone-of? v3 vc2)
+
+   (test #t chaperone-of? v2c1 v2)
+   (test #t chaperone-of? v2c1 v3)
+   (test #f chaperone-of? v2 v2c1)
+   (test #f chaperone-of? v3 v2c1)
+   (test #t chaperone-of? v2c2 v2)
+   (test #t chaperone-of? v2c2 v3)
+   (test #f chaperone-of? v2 v2c2)
+   (test #f chaperone-of? v3 v2c2)
+
+   (err/rt-test (chaperone-vector v #f (lambda args (last args))))
+   (err/rt-test (chaperone-vector v (lambda args (last args)) #f))))
+
+;; unsafe-chaperone/impersonate-vector
+(as-chaperone-or-impersonator
+ ([unsafe-chaperone-vector unsafe-impersonate-vector]
+  [chaperone-of? impersonator-of?])
+ (let ()
+   (define v1 (vector 0))
+   (define v2 (vector 7))
+   (define v (unsafe-chaperone-vector v1 v2))
+   (test #t chaperone-of? v v1)
+   #;(void
+      (let* ([v1 (vector 0)]
+            [v (unsafe-chaperone-vector v1 (vector 7))])
+        (equal? v v1)))
+   (test #t equal? v v1)
+   (test #t equal? v v2)
+   (test 7 vector-ref v 0)
+   ))
+
+;; unsafe-impersonate-vector
+(let ()
+  (define v1 (vector 0))
+  (define v2 (vector 7))
+  (define vc (unsafe-chaperone-vector v1 v2))
+  (define vi (unsafe-impersonate-vector v1 v2))
+  (test #t chaperone-of? vc v1)
+  (test #f chaperone-of? vc v2)
+  (test #t impersonator-of? vi v1)
+  (test #t impersonator-of? vi v2))
+
+;; Properties on vector chaperones and chaperone*
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-vector* impersonate-vector*]
+  [chaperone-of? impersonator-of?])
+ (let ()
+   (define b (box #f))
+   
+   (define-values (p1 p1? get-p1)
+     (make-impersonator-property 'p1))
+   (define-values (p2 p2? get-p2)
+     (make-impersonator-property 'p2))
+
+   (define v (vector 1 2 3))
+
+   (define v* (chaperone-vector*
+               v
+               (λ (c v i x)
+                 (set-box! b (list 'ref (and (p1? c) (get-p1 c))))
+                 x)
+               (λ (c v i x)
+                 (set-box! b (list 'set (and (p1? c) (get-p1 c))))
+                 x)))
+
+   (define vc1 (chaperone-vector v* #f #f p1 'vc1))
+   (define w (chaperone-vector* (vector 1)
+                                (λ (c v i x)
+                                  (set-box! b (list 'ref (and (p1? c) (get-p1 c))))
+                                  x)
+                                (λ (c v i x)
+                                  (set-box! b (list 'set (and (p1? c) (get-p1 c))))
+                                  x)
+                                p1 'working))
+   (test #t equal? (unbox b) #f)
+   (vector-ref w 0)
+   (test #t equal? (unbox b) '(ref working))
+   (vector-ref vc1 0)
+   (test #t equal? (unbox b) '(ref vc1))
+   (vector-set! vc1 0 2)
+   (test #t equal? (unbox b) '(set vc1))
+   ))
+
+(define (tails lst)
+  (let loop ([lst lst] [tails null])
+    (cond
+      [(null? lst) (reverse tails)]
+      [else (loop (cdr lst) (cons lst tails))])))
+
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-vector* impersonate-vector*]
+  [chaperone-of? impersonator-of?])
+ (let ()
+   (define b-regular (box #f))
+   (define b-star (box #f))
+   (define b-top (box #f))
+   (define (reset-and-test-boxes)
+     (for-each
+      (λ (b) (set-box! b #f))
+      (list b-regular b-star b-top))
+     (for-each
+      (λ (b)
+        (test #t equal? (unbox b) #f))
+      (list b-regular b-star b-top)))
+
+   (define-values (p1 p1? get-p1)
+     (make-impersonator-property 'p1))
+   (define-values (p2 p2? get-p2)
+     (make-impersonator-property 'p2))
+
+   (define v (vector 1 2 3))
+   (define prop-only (chaperone-vector v #f #f p1 'prop-only))
+   (define regular
+     (chaperone-vector
+      prop-only
+      (λ (v i x)
+        (set-box! b-regular (list 'ref (and (p1? v) (get-p1 v))))
+        x)
+      (λ (v i x)
+        (set-box! b-regular (list 'set (and (p1? v) (get-p1 v))))
+        x)))
+   (define star
+     (chaperone-vector*
+      regular
+      (λ (c v i x)
+        (set-box! b-star (list 'ref (and (p2? c) (get-p2 c))))
+        x)
+      (λ (c v i x)
+        (set-box! b-star (list 'set (and (p2? c) (get-p2 c))))
+        x)))
+   (define top
+     (chaperone-vector
+      star
+      (λ (v i x)
+        (set-box! b-top (list 'ref (and (p1? v) (not (p2? v)) (get-p1 v))))
+        x)
+      (λ (v i x)
+        (set-box! b-top (list 'set (and (p1? v) (not (p2? v)) (get-p1 v))))
+        x)
+      p2 'top))
+   (reset-and-test-boxes)
+   (vector-ref top 1)
+   (test #t equal? (unbox b-regular) '(ref prop-only))
+   (test #t equal? (unbox b-star) '(ref top))
+   (test #t equal? (unbox b-top) '(ref prop-only))
+   (reset-and-test-boxes)
+   (vector-set! top 1 4)
+   (test #t equal? (unbox b-regular) '(set prop-only))
+   (test #t equal? (unbox b-star) '(set top))
+   (test #t equal? (unbox b-top) '(set prop-only))
+
+   (define chaps
+     (list top
+           star
+           regular
+           prop-only
+           v))
+   (for ([chap (in-list chaps)]
+         [vecs (in-list (tails chaps))])
+     (for ([vec (in-list vecs)])
+       (test #t chaperone-of? chap vec)))))
+
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-vector* impersonate-vector*]
+  [chaperone-of? impersonator-of?])
+ (define b-regular (box #f))
+ (define b-star (box #f))
+ (define b-top (box #f))
+ (define (reset-and-test-boxes)
+   (for-each
+    (λ (b) (set-box! b #f))
+    (list b-regular b-star b-top))
+   (for-each
+    (λ (b)
+      (test #t equal? (unbox b) #f))
+    (list b-regular b-star b-top)))
+
+ (define-values (p1 p1? get-p1)
+   (make-impersonator-property 'p1))
+ (define-values (p2 p2? get-p2)
+   (make-impersonator-property 'p2))
+
+ (define v (vector 1 2 3))
+ (define prop-only (chaperone-vector v #f #f p1 'prop-only))
+ (define regular
+   (chaperone-vector
+    prop-only
+    (λ (v i x)
+      (set-box! b-regular (list 'ref (and (p1? v) (get-p1 v))))
+      x)
+    (λ (v i x)
+      (set-box! b-regular (list 'set (and (p1? v) (get-p1 v))))
+      x)))
+ (define star
+   (chaperone-vector*
+    regular
+    (λ (c v i x)
+      (set-box! b-star (list 'ref (and (p2? c) (get-p2 c))))
+      x)
+    (λ (c v i x)
+      (set-box! b-star (list 'set (and (p2? c) (get-p2 c))))
+      x)))
+ (define prop-only2
+   (chaperone-vector star #f #f p1 'prop-only2))
+ (define top
+   (chaperone-vector
+    prop-only2
+    (λ (v i x)
+      (set-box! b-top (list 'ref (and (p1? v) (not (p2? v)) (get-p1 v))))
+      x)
+    (λ (v i x)
+      (set-box! b-top (list 'set (and (p1? v) (not (p2? v)) (get-p1 v))))
+      x)
+    p2 'top))
+ (reset-and-test-boxes)
+ (vector-ref top 1)
+ (test #t equal? (unbox b-regular) '(ref prop-only))
+ (test #t equal? (unbox b-star) '(ref top))
+ (test #t equal? (unbox b-top) '(ref prop-only2))
+ (reset-and-test-boxes)
+ (vector-set! top 1 4)
+ (test #t equal? (unbox b-regular) '(set prop-only))
+ (test #t equal? (unbox b-star) '(set top))
+ (test #t equal? (unbox b-top) '(set prop-only2))
+
+ (define chaps
+   (list top
+         prop-only2
+         star
+         regular
+         prop-only
+         v))
+ (for ([chap (in-list chaps)]
+       [vecs (in-list (tails chaps))])
+   (for ([vec (in-list vecs)])
+     (test #t chaperone-of? chap vec))))
+
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-vector* impersonate-vector*]
+  [chaperone-of? impersonator-of?])
+
+ (define b (box #f))
+ (define (clear) (set-box! b #f))
+ (define-values (p1 p1? get-p1)
+   (make-impersonator-property 'p1))
+ (define-values (p2 p2? get-p2)
+   (make-impersonator-property 'p2))
+ (define-values (p3 p3? get-p3)
+   (make-impersonator-property 'p3))
+
+ (define v (vector 1 2 3))
+ (define c
+   (chaperone-vector*
+    v
+    (λ (c v i x)
+      (define props
+        (list 'ref
+              (and (p1? c) (get-p1 c))
+              (and (p2? c) (get-p2 c))
+              (and (p3? c) (get-p3 c))))
+      (set-box! b props)
+      x)
+    (λ (c v i x)
+      (define props
+        (list 'set
+              (and (p1? c) (get-p1 c))
+              (and (p2? c) (get-p2 c))
+              (and (p3? c) (get-p3 c))))
+      (set-box! b props)
+      x)))
+
+ (define (add-chap v . props)
+   (apply chaperone-vector v #f #f props))
+
+ (clear)
+ (test #f unbox b)
+ 
+ (define c1 (add-chap c p1 'p1))
+ (vector-ref c1 0)
+ (test '(ref p1 #f #f) unbox b)
+ (clear)
+ (vector-set! c1 0 1)
+ (test '(set p1 #f #f) unbox b)
+ (clear)
+ (test #t p1? c1)
+ (test #f p2? c1)
+ (test #f p3? c1)
+
+ (define c2 (add-chap c1 p2 'p2))
+ (clear)
+ (vector-ref c2 0)
+ (test '(ref p1 p2 #f) unbox b)
+ (clear)
+ (vector-set! c2 0 1)
+ (test '(set p1 p2 #f) unbox b)
+ (clear)
+ (test #t p1? c2)
+ (test #t p2? c2)
+ (test #f p3? c2)
+
+ (define c3 (add-chap c2 p3 'p3))
+ (clear)
+ (vector-ref c3 0)
+ (test '(ref p1 p2 p3) unbox b)
+ (clear)
+ (vector-set! c3 0 1)
+ (test '(set p1 p2 p3) unbox b)
+ (clear)
+ (test #t p1? c3)
+ (test #t p2? c3)
+ (test #t p3? c3)
+
+ (define c4 (add-chap c3 p3 'p3-new p1 'p1-new))
+ (clear)
+ (vector-ref c4 0)
+ (test '(ref p1-new p2 p3-new) unbox b)
+ (clear)
+ (vector-set! c4 0 1)
+ (test '(set p1-new p2 p3-new) unbox b)
+ (clear)
+ (test #t p1? c4)
+ (test #t p2? c4)
+ (test #t p3? c4))
+
+;; Properties on unsafe ...
+(as-chaperone-or-impersonator
+ ([unsafe-chaperone-vector unsafe-impersonate-vector])
+ (define-values (p1 p1? get-p1)
+   (make-impersonator-property 'p1))
+ (define-values (p2 p2? get-p2)
+   (make-impersonator-property 'p2))
+ (define v1 (vector 1 2 3))
+ (define v2 (vector 2 4 6))
+ (define uc (unsafe-chaperone-vector v1 v2 p1 'has-p1))
+ (test #f p1? v1)
+ (test #f p1? v2)
+ (test #t p1? uc)
+ (test 'has-p1 get-p1 uc)
+ (define v3 (vector 3 6 9))
+ (define uc2 (unsafe-chaperone-vector uc v3 p2 'has-p2))
+ (test #t p1? uc2)
+ (test #t p2? uc2)
+ (test 'has-p1 get-p1 uc2)
+ (test 'has-p2 get-p2 uc2))
+
+(as-chaperone-or-impersonator
+ ([unsafe-chaperone-vector unsafe-impersonate-vector])
+ (define v (unsafe-chaperone-vector (vector 1) (vector 2 3)))
+ (test 2 vector-length v)
+ (test "'#(2 3)" (λ (v) (with-output-to-string (λ () (print v)))) v))
+
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-vector* impersonate-vector*]
+  [chaperone-of? impersonator-of?])
+ (define u (unsafe-chaperone-vector (vector 1) (vector 2 3)))
+ (test #t vector? u)
+ (test 2 vector-length u)
+ (define po (chaperone-vector (vector 1) #f #f))
+ (test #t vector? po)
+ (test 1 vector-length po)
+ (define po2 (chaperone-vector* (vector 1) #f #f))
+ (test #t vector? po2)
+ (test 1 vector-length po2)
+ (define c (chaperone-vector (vector 1) (λ (v i x) x) (λ (v i x) x)))
+ (test #t vector? c)
+ (test 1 vector-length c)
+ (define c* (chaperone-vector* (vector 1) (λ (c v i x) x) (λ (c v i x) x)))
+ (test #t vector? c*)
+ (test 1 vector-length c*))
+
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-vector* impersonate-vector*]
+  [chaperone-of? impersonator-of?])
+ (define v (vector 1 2 3))
+ (define ov (vector 4 8 12))
+ (define-values (p1 p1? get-p1)
+   (make-impersonator-property 'p1))
+ (define-values (p2 p2? get-p2)
+   (make-impersonator-property 'p2))
+ (define b (box #f))
+ (define (clear) (set-box! b #f))
+ (define uc (unsafe-chaperone-vector v ov))
+ (define c*
+   (chaperone-vector*
+    uc
+    (λ (c v i x)
+      (define props
+        (list 'ref
+              (and (p1? c) (get-p1 c))
+              (and (p2? c) (get-p2 c))))
+      (set-box! b props)
+      x)
+    (λ (c v i x)
+      (define props
+        (list 'set
+              (and (p1? c) (get-p1 c))
+              (and (p2? c) (get-p2 c))))
+      (set-box! b props)
+      x)))
+ (define c1 (chaperone-vector c* #f #f p1 'p1-prop))
+ (test 8 vector-ref c1 1)
+ (test '(ref p1-prop #f) unbox b)
+ (clear)
+ (vector-set! c1 1 11)
+ (test '(set p1-prop #f) unbox b)
+ (test 11 vector-ref c1 1)
+ (clear)
+ (test #f unbox b)
+ (define c2 (chaperone-vector c1 #f #f p2 'p2-prop))
+ (test 11 vector-ref c2 1)
+ (test '(ref p1-prop p2-prop) unbox b)
+ (clear)
+ (vector-set! c2 1 17)
+ (test '(set p1-prop p2-prop) unbox b)
+ (test 17 vector-ref c2 1))
+
+(define unsafe-chaperone-vector-name "unsafe-chaperone-vector")
+(define unsafe-impersonate-vector-name "unsafe-impersonate-vector")
+
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-vector* impersonate-vector*]
+  [unsafe-chaperone-vector unsafe-impersonate-vector]
+  [chaperone-of? impersonator-of?]
+  [unsafe-chaperone-vector-name unsafe-impersonate-vector-name])
+ (define v1 (vector 1 2 3))
+ (define v2 (vector 7 11 13))
+ (define-values (p1 p1? get-p1)
+   (make-impersonator-property 'p1))
+ (define-values (p2 p2? get-p2)
+   (make-impersonator-property 'p2))
+ (define-values (p3 p3? get-p3)
+   (make-impersonator-property 'p3))
+ (define-values (p4 p4? get-p4)
+   (make-impersonator-property 'p4))
+ (define b (box '()))
+ (define (clear) (set-box! b '()))
+
+ (define (do-chap v tag . rst)
+   (apply
+    chaperone-vector*
+    v
+    (λ (c v i x)
+      (define props
+        (list 'ref tag
+              (and (p1? c) (get-p1 c))
+              (and (p2? c) (get-p2 c))
+              (and (p3? c) (get-p3 c))
+              (and (p4? c) (get-p4 c))))
+      (set-box! b (cons props (unbox b)))
+      x)
+    (λ (c v i x)
+      (define props
+        (list 'set tag
+              (and (p1? c) (get-p1 c))
+              (and (p2? c) (get-p2 c))
+              (and (p3? c) (get-p3 c))
+              (and (p4? c) (get-p4 c))))
+      (set-box! b (cons props (unbox b)))
+      x)
+    rst))
+ (define c1 (do-chap v1 'c1 p1 'p1-c1))
+ (define c2 (do-chap c1 'c2 p2 'p2-c2))
+ (define t (vector-ref c2 1))
+ (test #t equal? 2 t)
+ (test '((ref c2 p1-c1 p2-c2 #f #f) (ref c1 p1-c1 p2-c2 #f #f)) unbox b)
+ (clear)
+ (define (add-prop v #:redirect [redirect #f] . rst)
+   (define interposition (and redirect (λ (v i x) x)))
+   (apply chaperone-vector v interposition interposition rst))
+ (define c*1 (do-chap v2 'c*1))
+ (define pc*1 (add-prop c*1 p1 'p1-pc*1))
+ (define pc*2 (add-prop pc*1 p2 'p2-pc*2))
+ (define c*2 (do-chap pc*2 'c*2 p3 'p3-pc*2))
+ (define pc*3 (add-prop c*2 p4 'p4-pc*3))
+ (define r (vector-ref pc*3 1))
+ (test #t equal? 11 r)
+ (test '((ref c*2 p1-pc*1 p2-pc*2 p3-pc*2 p4-pc*3) (ref c*1 p1-pc*1 p2-pc*2 p3-pc*2 p4-pc*3)) unbox b)
+ (clear)
+ (define np1 (add-prop pc*3 p1 'p1-np1))
+ (define np3 (add-prop np1 p3 'p3-np3))
+ (vector-set! np3 2 17)
+ (test '((set c*1 p1-np1 p2-pc*2 p3-np3 p4-pc*3) (set c*2 p1-np1 p2-pc*2 p3-np3 p4-pc*3))
+       unbox
+       b)
+ (define a (vector-ref np3 2))
+ (test #t equal? 17 a)
+ (clear)
+ (define v3 (vector 12 16 20))
+ (define u3 (do-chap (vector -3 -5) 'u3))
+ (err/rt-test (unsafe-chaperone-vector v3 u3)
+              (λ (exn)
+                (test #t
+                      regexp-match?
+                      (string-append
+                       unsafe-chaperone-vector-name
+                       ": contract violation")
+                      (exn-message exn))
+                (test #t
+                      (regexp-match?
+                       "(and/c vector? (not/c impersonator?))"
+                       (exn-message exn)))))
+ (clear)
+ (define vc*1 (do-chap (vector 93 77 26) 'vc*1))
+ (define cvc*1 (add-prop vc*1 p1 'p1-cvc*1 #:redirect #t))
+ (define cvc*2 (add-prop cvc*1 p2 'p2-cvc*2 #:redirect #t))
+ (define vc*2 (do-chap cvc*2 'vc*2 p3 'p3-vc*2))
+ (define cvc*3 (add-prop vc*2 p4 'p4-cvc*3 #:redirect #t))
+ (define cvc*3-ref (vector-ref cvc*3 1))
+ (test #t equal? 77 cvc*3-ref)
+ (test '((ref vc*2 p1-cvc*1 p2-cvc*2 p3-vc*2 p4-cvc*3) (ref vc*1 p1-cvc*1 p2-cvc*2 p3-vc*2 p4-cvc*3)) unbox b)
+ )
 
 ;; ----------------------------------------
 

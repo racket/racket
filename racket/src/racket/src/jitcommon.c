@@ -1049,7 +1049,7 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
    original chaperone and index on runstack;
    for setter, put back result in R2, vec in R0, and index in V1 */
 {
-  GC_CAN_IGNORE jit_insn *ref, *ref1, *ref2;
+  GC_CAN_IGNORE jit_insn *ref, *ref1, *ref2, *ref3, *ref_chaperone_of_check, *ref_not_star;
   GC_CAN_IGNORE jit_insn *refrts USED_ONLY_FOR_FUTURES;
 
   CHECK_LIMIT();
@@ -1058,12 +1058,13 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
 
   /* if chaperone was for properties, only, then we're done */
   ref = mz_beqi_t(jit_forward(), JIT_R1, scheme_vector_type, JIT_V1);
+  /* unsafe vector chaperones also don't have any interposition */
+  ref1 = mz_beqi_t(jit_forward(), JIT_R1, scheme_false_type, JIT_V1);
 
   if (setter)
     jit_ldxi_p(JIT_V1, JIT_R1, &SCHEME_CDR(0x0)); /* rator */
   else
     jit_ldxi_p(JIT_V1, JIT_R1, &SCHEME_CAR(0x0)); /* rator */
-  jit_ldxi_p(JIT_R2, JIT_R2, &((Scheme_Chaperone *)0x0)->prev); /* vec */
   jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(1)); /* index */
   if (setter) {
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(4));
@@ -1073,9 +1074,37 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
     jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R0); /* save value */
     jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
   }
-  jit_str_p(JIT_RUNSTACK, JIT_R2);
-  jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+
   jit_stxi_p(WORDS_TO_BYTES(2), JIT_RUNSTACK, JIT_R0);
+  jit_stxi_p(WORDS_TO_BYTES(1), JIT_RUNSTACK, JIT_R1);
+  jit_ldxi_p(JIT_R0, JIT_R2, &((Scheme_Chaperone *)0x0)->prev); /* vec */
+  jit_str_p(JIT_RUNSTACK, JIT_R0);
+
+  /* if we have a chaperone-vector*, fall through and use extra arg */
+  jit_ldxi_s(JIT_R2, JIT_R2, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
+  ref_not_star = jit_bmci_ul(jit_forward(), JIT_R2, SCHEME_VEC_CHAPERONE_STAR);
+  /* get outermost from further down the stack */
+  jit_subi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(1));
+  if (setter){
+    jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(5));
+  } else {
+    jit_ldxi_p(JIT_R0, JIT_RUNSTACK, WORDS_TO_BYTES(4));
+  }
+  jit_str_p(JIT_RUNSTACK, JIT_R0);
+  CHECK_LIMIT();
+  JIT_UPDATE_THREAD_RSPTR();
+  __END_SHORT_JUMPS__(1);
+  scheme_generate_non_tail_call(jitter, 4, 0, 0, 0, 0, 0, 0, 1, 0, NULL);
+  __START_SHORT_JUMPS__(1);
+  CHECK_LIMIT();
+  if (setter) {
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(5));
+  } else {
+    jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(4));
+  }
+  ref_chaperone_of_check = jit_jmpi(jit_forward());
+
+  mz_patch_branch(ref_not_star);
   CHECK_LIMIT();
   JIT_UPDATE_THREAD_RSPTR();
   __END_SHORT_JUMPS__(1);
@@ -1087,17 +1116,18 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
   } else {
     jit_addi_p(JIT_RUNSTACK, JIT_RUNSTACK, WORDS_TO_BYTES(3));
   }
-            
+
+  mz_patch_branch(ref_chaperone_of_check);
   jit_ldr_p(JIT_R1, JIT_RUNSTACK);
   jit_ldxi_s(JIT_R2, JIT_R1, &MZ_OPT_HASH_KEY(&((Scheme_Stx *)0x0)->iso));
   /* if impersonator, no chaperone-of check needed */
-  ref1 = jit_bmsi_ul(jit_forward(), JIT_R2, SCHEME_CHAPERONE_IS_IMPERSONATOR);
+  ref2 = jit_bmsi_ul(jit_forward(), JIT_R2, SCHEME_CHAPERONE_IS_IMPERSONATOR);
 
   if (setter)
     jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(-1)); /* saved value */
   else
     jit_ldxi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(1)); /* saved value */
-  ref2 = jit_beqr_p(jit_forward(), JIT_R1, JIT_R0);
+  ref3 = jit_beqr_p(jit_forward(), JIT_R1, JIT_R0);
   CHECK_LIMIT();
   jit_prepare(3);
   jit_movi_i(JIT_R2, setter);
@@ -1108,10 +1138,11 @@ static int generate_apply_proxy(mz_jit_state *jitter, int setter)
   (void)mz_finish_lwe(ts_vector_check_chaperone_of, refrts);
   jit_retval(JIT_R0);
   CHECK_LIMIT();
-            
+
   mz_patch_branch(ref);
   mz_patch_branch(ref1);
   mz_patch_branch(ref2);
+  mz_patch_branch(ref3);
   if (setter) {
     jit_movr_p(JIT_R2, JIT_R0); /* result needed in R2 for setter */
     jit_ldxi_p(JIT_V1, JIT_RUNSTACK, WORDS_TO_BYTES(1)); /* saved index */
