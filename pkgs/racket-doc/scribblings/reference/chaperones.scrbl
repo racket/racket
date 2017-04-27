@@ -106,6 +106,24 @@ an impersonator as one of its elements), then @racket[(impersonator-of? v1 v2)]
 proceeds by comparing @racket[v1] and @racket[v2] recursively (as with
 @racket[equal?]), returning true if all subparts are @racket[impersonator-of?].
 
+@examples[
+(impersonator-of? (impersonate-procedure add1 (λ (x) x))
+                  add1)
+(impersonator-of? (impersonate-procedure add1 (λ (x) x))
+                  sub1)
+(impersonator-of? (impersonate-procedure
+                    (impersonate-procedure add1 (λ (x) x)) (λ (x) x))
+                  add1)
+(impersonator-of? (impersonate-procedure add1 (λ (x) x))
+                  (impersonate-procedure add1 #f))
+(impersonator-of? (impersonate-procedure add1 (λ (x) x))
+                  (impersonate-procedure add1 (λ (x) x)))
+(impersonator-of? (list 1 2)
+                  (list 1 2))
+(impersonator-of? (list (impersonate-procedure add1 (λ (x) x)) sub1)
+                  (list add1 sub1))
+]
+
 @defproc[(chaperone-of? [v1 any/c] [v2 any/c]) boolean?]{
 
 Indicates whether @racket[v1] can be considered equivalent modulo
