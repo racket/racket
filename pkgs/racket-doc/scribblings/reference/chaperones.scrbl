@@ -87,10 +87,10 @@ Indicates whether @racket[v1] can be considered equivalent modulo
 impersonators to @racket[v2].
 
 Any two values that are @racket[eq?] to one another are also @racket[impersonator-of?].
-For values that include no impersonators, @racket[v1] and @racket[v2] can
-be considered impersonators of each other if they are @racket[equal?].
+For values that include no impersonators, @racket[v1] and @racket[v2] are
+considered impersonators of each other if they are @racket[equal?].
 
-Otherwise at least one of @racket[v1] or @racket[v2] is an impersonator.
+If at least one of @racket[v1] or @racket[v2] is an impersonator:
 @itemlist[
           @item{If @racket[v1] impersonates @racket[_v1*] then @racket[(impersonator-of? v1 v2)]
                    is @racket[#t] if and only if @racket[(impersonator-of? _v1* v2)] is @racket[#t].}
@@ -100,6 +100,11 @@ Otherwise at least one of @racket[v1] or @racket[v2] is an impersonator.
           @item{When @racket[v2] is an impersonator constructed with at least one non-@racket[#f] interposition procedure,
                      but @racket[v1] is not an impersonator then @racket[(impersonator-of? v1 v2)] is @racket[#f].}]}
 
+Otherwise, if neither @racket[v1] or @racket[v2] is an impersonator, but either
+of them contains an impersonator as a subpart (e.g., @racket[v1] is a list with
+an impersonator as one of its elements), then @racket[(impersonator-of? v1 v2)]
+proceeds by comparing @racket[v1] and @racket[v2] recursively (as with
+@racket[equal?]), returning true if all subparts are @racket[impersonator-of?].
 
 @defproc[(chaperone-of? [v1 any/c] [v2 any/c]) boolean?]{
 
