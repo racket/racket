@@ -537,6 +537,14 @@ Pairs of @racket[prop] and @racket[prop-val] (the number of arguments
 to @racket[impersonate-hash] must be odd) add impersonator properties
 or override impersonator-property values of @racket[hash].
 
+In the case of an immutable hash table, two impersonated hash tables count as
+``the same value'' (for purposes of @racket[impersonator-of?]) when their
+redirection procedures were originally attached to a hash table by the same
+call to @racket[impersonate-hash] or @racket[chaperone-hash] (and potentially
+propagated by @racket[hash-set], @racket[hash-remove], or @racket[hash-clear]),
+as long as the content of the first hash table is @racket[impersonator-of?] of
+the second hash table.
+
 @history[#:changed "6.3.0.11" @elem{Added the @racket[equal-key-proc]
                                     argument.}]}
 
