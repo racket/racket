@@ -322,6 +322,12 @@ those values become the current accumulator values. When iteration
 terminates, the results of the @racket[for/fold] expression are the
 accumulator values.
 
+An @racket[accum-id] and a binding from a @racket[for-clause] can be
+the same identifier. In that case, the @racket[accum-id] binding
+shadows the one in a @racket[for-clause] within the
+@racket[body-or-break] and @racket[body] forms (even though,
+syntactically, a @racket[for-clause] is closer to to the body).
+
 @examples[
 (for/fold ([sum 0]
            [rev-roots null])
