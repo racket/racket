@@ -17,8 +17,13 @@
 (define-serializable-struct (c a) (z) #:inspector insp #:mutable)
 (define-serializable-struct (d b) (w) #:inspector insp #:mutable)
 
+(serializable-struct a/auto ([v #:auto]) #:auto-value 10 #:inspector insp)
+(serializable-struct b/auto ([v #:auto #:mutable]) #:auto-value 11 #:inspector insp)
+(serializable-struct c/auto b/auto (v) #:inspector insp)
+(serializable-struct d/auto b/auto ([v #:auto #:mutable]) #:inspector insp)
+
 (define (same? v1 v2)
-  ;; This is not quite the same as `equal?', veuase it knows
+  ;; This is not quite the same as `equal?', becuase it knows
   ;; about the structure types a, b, etc.
   (define ht (make-hasheq))
   (let loop ([v1 v1][v2 v2])
@@ -40,6 +45,24 @@
      [(and (c? v1) (c? v2))
       (hash-set! ht v1 v2)
       (loop (c-z v1) (c-z v2))]
+     [(and (a/auto? v1)
+           (a/auto? v2))
+      (same? (a/auto-v v1) (a/auto-v v2))]
+     [(and (b/auto? v1)
+           (b/auto? v2)
+           (not (c/auto? v1))
+           (not (c/auto? v2))
+           (not (d/auto? v1))
+           (not (d/auto? v2)))
+      (same? (b/auto-v v1) (b/auto-v v2))]
+     [(and (c/auto? v1)
+           (c/auto? v2))
+      (and (same? (b/auto-v v1) (b/auto-v v2))
+           (same? (c/auto-v v1) (c/auto-v v2)))]
+     [(and (d/auto? v1)
+           (d/auto? v2))
+      (and (same? (b/auto-v v1) (b/auto-v v2))
+           (same? (d/auto-v v1) (d/auto-v v2)))]
      [(and (d? v1) (d? v2))
       (hash-set! ht v1 v2)
       (and (loop (b-x v1) (b-x v2))
@@ -162,6 +185,17 @@
 (test-ser (make-b 1 2))
 (test-ser (make-c 30))
 (test-ser (make-d 100 200 300))
+(test-ser (a/auto))
+(test-ser (let ([s (b/auto)])
+            (set-b/auto-v! s 'changed)
+            s))
+(test-ser (let ([s (c/auto 'two)])
+            (set-b/auto-v! s 'changed)
+            s))
+(test-ser (let ([s (d/auto)])
+            (set-b/auto-v! s 'changed)
+            (set-d/auto-v! s 'also-new)
+            s))
 
 (test-ser (make-srcloc 1 2 3 4 5))
 (test-ser (make-srcloc (string->path "/tmp/test.rkt") 2 3 4 5))
