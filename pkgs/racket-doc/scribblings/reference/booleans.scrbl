@@ -273,6 +273,9 @@ Returns @racket[(equal? a b)] (if @racket[a] and @racket[b] are symbols).}
 
 Returns @racket[(equal? a b)] (if @racket[a] and @racket[b] are booleans).}
 
+@defproc[(true? [v any/c]) boolean?]{
+Returns @racket[#f] if @racket[v] is @racket[#f], @racket[#t] otherwise.}
+
 @defproc[(false? [v any/c]) boolean?]{
 
 Returns @racket[(not v)].}
