@@ -201,7 +201,7 @@ Returns a @tech{synchronizable event} (see @secref["sync"]) that is
 @tech{ready for synchronization} when @racket[tcp-accept] on @racket[listener] would
 not block. The @tech{synchronization result} is a
 list of two items, which correspond to the two results of
-@racket[tcp-accept]. (If the event is not chosen in a @racket[syntax], no connections are
+@racket[tcp-accept]. (If the event is not chosen in a @racket[sync], no connections are
 accepted.) The ports are placed into the management of the custodian
 that is the current custodian (see @secref["custodians"]) at the time that
 @racket[tcp-accept-evt] is called.}
@@ -229,7 +229,7 @@ connections, so @racket[tcp-abandon-port] is equivalent to
 
 Returns two strings when @racket[port-numbers?] is @racket[#f] (the
 default). The first string is the Internet address for the local
-machine a viewed by the given @tech{TCP port}'s connection or for the
+machine as viewed by the given @tech{TCP port}'s connection or for the
 TCP listener. (For most machines, the answer corresponds to the
 current machine's only Internet address, but when a machine serves
 multiple addresses, the result is connection-specific or
