@@ -2,7 +2,7 @@
 
 (define collection 'multi)
 
-(define deps '("base"))
+(define deps '("base" "icons"))
 
 (define pkg-desc "tests for \"compiler-lib\"")
 
