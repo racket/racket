@@ -21,7 +21,8 @@
          "private/arrow-val-first.rkt"
          "private/orc.rkt"
          "private/list.rkt"
-         "private/and.rkt")
+         "private/and.rkt"
+         "private/numeric.rkt")
 
 (provide
  base->?
@@ -143,6 +144,11 @@
  get/build-val-first-projection
 
  suggest/c
+
+ negative-integer/c
+ positive-integer/c
+ nonnegative-integer/c
+ nonpositive-integer/c
 
  ;; not documented.... (ie unintentional export)
  n->th)

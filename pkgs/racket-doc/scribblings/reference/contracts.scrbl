@@ -354,6 +354,22 @@ Like @racket[</c], but for @racket[<=].}
 @defproc[(>=/c [n real?]) flat-contract?]{
 Like @racket[</c], but for @racket[>=].}
 
+@defthing[positive-integer/c flat-contract?]{
+ Like @racket[exact-positive-integer?], but also operates over
+ @racket[inexact?] numbers.}
+
+@defthing[negative-integer/c flat-contract?]{
+ Like @racket[exact-negative-integer?], but also operates over
+ @racket[inexact?] numbers.}
+
+@defthing[nonpositive-integer/c flat-contract?]{
+ Like @racket[exact-nonpositive-integer?], but also operates over
+ @racket[inexact?] numbers.}
+
+@defthing[nonnegative-integer/c flat-contract?]{
+ Like @racket[exact-nonnegative-integer?], but also operates over
+ @racket[inexact?] numbers.}
+
 @defproc[(between/c [n real?] [m real?])
 flat-contract?]{ Returns a @tech{flat contract} that requires the
 input to be a real number between @racket[n] and @racket[m] or equal to
