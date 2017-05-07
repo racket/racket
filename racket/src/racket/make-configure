@@ -51,8 +51,8 @@ exit 0
         (cond
          [(equal? l "dvidir='${docdir}'")
           (displayln "collectsdir='${exec_prefix}/share/${PACKAGE}/collects'")]
-         [(equal? l "  --dvidir=DIR           dvi documentation [DOCDIR]")
-          (displayln "  --collectsdir=DIR      base collections [EPREFIX/share/PACKAGE/collects]")]
+         [(equal? l "  --dvidir=DIR            dvi documentation [DOCDIR]")
+          (displayln "  --collectsdir=DIR       base collections [EPREFIX/share/PACKAGE/collects]")]
          [else
           (displayln (regexp-replace* "pdf" (regexp-replace* #rx"dvi" l "collects") "apps"))])
         (loop)]
@@ -61,8 +61,8 @@ exit 0
         (cond
          [(equal? l "pdfdir='${docdir}'")
           (displayln "appsdir='${exec_prefix}/share/applications'")]
-         [(equal? l "  --pdfdir=DIR           pdf documentation [DOCDIR]")
-          (displayln "  --appsdir=DIR          .desktop files [EPREFIX/share/applications]")]
+         [(equal? l "  --pdfdir=DIR            pdf documentation [DOCDIR]")
+          (displayln "  --appsdir=DIR           .desktop files [EPREFIX/share/applications]")]
          [else
           (displayln (regexp-replace* #rx"pdf" l "apps"))])
         (loop)]

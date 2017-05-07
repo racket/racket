@@ -76,7 +76,7 @@ AC_ARG_ENABLE(backtrace, [  --enable-backtrace      3m: support GC backtrace dum
 AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
 AC_ARG_ENABLE(stackup, [  --enable-stackup        assume "up" if stack direction cannot be determined])
 AC_ARG_ENABLE(bigendian, [  --enable-bigendian      assume "big" if endianness cannot be determined])
-AC_ARG_ENABLE(ffipoll, [  --enable-ffipoll        only make FFI calls if embedding program explicitly polls])
+AC_ARG_ENABLE(ffipoll, [  --enable-ffipoll        FFI calls only when embedding program explicitly polls])
 
 # AC_ARG_ENABLE(oskit,   [  --enable-oskit          compile OSKit-based Racket kernel])
 # AC_ARG_ENABLE(smalloskit, [  --enable-smalloskit     compile small OSKit-based Racket kernel])

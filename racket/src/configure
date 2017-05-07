@@ -1420,8 +1420,8 @@ Fine tuning of the installation directories:
   --datadir=DIR           read-only architecture-independent data [DATAROOTDIR]
   --mandir=DIR            man documentation [DATAROOTDIR/man]
   --docdir=DIR            documentation root [DATAROOTDIR/doc/PACKAGE]
-  --collectsdir=DIR            collects documentation [DOCDIR]
-  --appsdir=DIR            apps documentation [DOCDIR]
+  --collectsdir=DIR       base collections [EPREFIX/share/PACKAGE/collects]
+  --appsdir=DIR           .desktop files [EPREFIX/share/applications]
 _ACEOF
 
   cat <<\_ACEOF
@@ -1477,7 +1477,7 @@ Optional Features:
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-stackup        assume "up" if stack direction cannot be determined
   --enable-bigendian      assume "big" if endianness cannot be determined
-  --enable-ffipoll        only make FFI calls if embedding program explicitly polls
+  --enable-ffipoll        FFI calls only when embedding program explicitly polls
   --enable-gprof          compile for profiling with gprof (gcc only)
   --enable-gcov           compile to gather gcov statistics (gcc3 only)
   --enable-strip          strip debug on install (usually enabled by default)
