@@ -318,13 +318,13 @@
   (set! listof-any l)
   (set! consc-anyany p)
   (set! list/c-empty mt))
-(define between/c-inf+inf #f)
+(define between/c-inf+inf-as-real? #f)
 (define renamed-between/c #f)
 (define between/c-s? #f)
 (define between/c-s-low #f)
 (define between/c-s-high #f)
 (define (set-some-basic-misc-contracts! b r-b b/c-s? b/c-s-l b/c-s-h)
-  (set! between/c-inf+inf b)
+  (set! between/c-inf+inf-as-real? b)
   (set! renamed-between/c r-b)
   (set! between/c-s? b/c-s?)
   (set! between/c-s-low b/c-s-l)
@@ -368,10 +368,10 @@
           (error 'coerce-contract/f::consc-anyany "too soon!"))
         consc-anyany]
        [(chaperone-of? x real?)
-        (unless between/c-inf+inf
+        (unless between/c-inf+inf-as-real?
           (error 'coerce-contract/f::between/c-inf+inf "too soon!"))
         (if (name-default? name)
-            between/c-inf+inf
+            between/c-inf+inf-as-real?
             (renamed-between/c -inf.0 +inf.0 name))]
        [(chaperone-of? x exact-positive-integer?)
         (if (name-default? name) integer-in-1f (renamed-integer-in 1 #f name))]

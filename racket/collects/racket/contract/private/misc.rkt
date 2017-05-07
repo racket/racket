@@ -14,6 +14,7 @@
 (provide flat-murec-contract
          not/c
          =/c >=/c <=/c </c >/c between/c
+         renamed->-ctc renamed-<-ctc
          char-in
          real-in
          natural-number/c
@@ -28,7 +29,7 @@
          parameter/c
          procedure-arity-includes/c
          
-         any/c  any/c?
+         any/c any/c?
          any
          none/c
          make-none/c
@@ -55,7 +56,8 @@
 
          flat-contract-with-explanation
 
-         (struct-out between/c-s))
+         (struct-out between/c-s)
+         renamed-between/c)
 
 (define-syntax (flat-murec-contract stx)
   (syntax-case stx  ()
@@ -178,18 +180,18 @@
   (build-flat-contract-property
    #:name
    (λ (ctc)
-     (define n (between/c-s-low ctc))
-     (define m (between/c-s-high ctc))
-     (define name (if (renamed-between/c? ctc) (renamed-between/c-name ctc) 'between/c))
      (cond
-       [(and (= n -inf.0) (= m +inf.0))
-        (if (renamed-between/c? ctc)
-            (renamed-between/c-name ctc)
-            'real?)]
-       [(= n -inf.0) (if (= m 0) `(and/c real? (not/c positive?)) `(<=/c ,m))]
-       [(= m +inf.0) (if (= n 0) `(and/c real? (not/c negative?)) `(>=/c ,n))]
-       [(= n m) `(=/c ,n)]
-       [else `(,name ,n ,m)]))
+       [(renamed-between/c? ctc) (renamed-between/c-name ctc)]
+       [else
+        `(between/c ,(between/c-s-low ctc) ,(between/c-s-high ctc))
+        #;
+        (cond
+          [(and (= n -inf.0) (= m +inf.0))
+           'real?]
+          [(= n -inf.0) (if (= m 0) `(and/c real? (not/c positive?)) `(<=/c ,m))]
+          [(= m +inf.0) (if (= n 0) `(and/c real? (not/c negative?)) `(>=/c ,n))]
+          [(= n m) `(=/c ,n)]
+          [else ])]))
    #:stronger between/c-stronger
    #:first-order between/c-first-order
    #:generate between/c-generate))
@@ -203,29 +205,28 @@
 
 (define/final-prop (=/c x) 
   (check-unary-between/c '=/c x)
-  (make-between/c-s x x))
+  (make-renamed-between/c x x `(=/c ,x)))
 (define/final-prop (<=/c x) 
   (check-unary-between/c '<=/c x)
-  (make-between/c-s -inf.0 x))
+  (make-renamed-between/c -inf.0 x `(<=/c ,x)))
 (define/final-prop (>=/c x)
   (check-unary-between/c '>=/c x)
-  (make-between/c-s x +inf.0))
+  (make-renamed-between/c x +inf.0 `(>=/c ,x)))
 (define (check-between/c x y)
   (check-two-args 'between/c x y real? real?))
 (define/final-prop (between/c x y)
   (check-between/c x y)
   (if (= x y)
-      (coerce-contract 'between/c x)
+      (make-renamed-between/c x x `(between/c ,x ,y))
       (make-between/c-s x y)))
 
 (define (make-</c->/c-contract-property name </> -/+ less/greater)
   (build-flat-contract-property
    #:name (λ (c)
             (cond
-              [(= (</>-ctc-x c) 0)
-               `(and/c real? ,(if (equal? name '>/c) 'positive? 'negative?))]
-              [else
-               `(,name ,(</>-ctc-x c))]))
+              [(renamed-<-ctc? c) (renamed-<-ctc-name c)]
+              [(renamed->-ctc? c) (renamed->-ctc-name c)]
+              [else `(,name ,(</>-ctc-x c))]))
    #:first-order (λ (ctc) (define x (</>-ctc-x ctc)) (λ (y) (and (real? y) (</> y x))))
    #:late-neg-projection
    (λ (ctc)
@@ -278,11 +279,13 @@
   #:property prop:flat-contract
   (make-</c->/c-contract-property '</c < - "less")
   #:property prop:custom-write custom-write-property-proc)
+(struct renamed-<-ctc <-ctc (name))
 (define (</c x) (<-ctc x))
 (struct >-ctc </>-ctc ()
   #:property prop:flat-contract
   (make-</c->/c-contract-property '>/c > + "greater")
   #:property prop:custom-write custom-write-property-proc)
+(struct renamed->-ctc >-ctc (name))
 (define (>/c x) (>-ctc x))
 
 (define (check-two-args name arg1 arg2 pred1? pred2?)
@@ -297,7 +300,7 @@
                           1
                           arg1 arg2)))
 
-(set-some-basic-misc-contracts! (between/c -inf.0 +inf.0)
+(set-some-basic-misc-contracts! (renamed-between/c -inf.0 +inf.0 'real?)
                                 renamed-between/c
                                 between/c-s?
                                 between/c-s-low
@@ -309,7 +312,7 @@
 
 (define/final-prop (real-in start end)
   (check-two-args 'real-in start end real? real?)
-  (make-renamed-between/c start end 'real-in))
+  (make-renamed-between/c start end `(real-in ,start ,end)))
 
 (define/final-prop (not/c f)
   (let* ([ctc (coerce-flat-contract 'not/c f)]

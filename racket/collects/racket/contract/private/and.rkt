@@ -193,16 +193,16 @@
              (define second-pred (cadr preds))
              (cond
                [(chaperone-of? second-pred negative?)
-                (</c 0)]
+                (renamed-<-ctc 0 `(and/c real? negative?))]
                [(chaperone-of? second-pred positive?)
-                (>/c 0)]
+                (renamed->-ctc 0 `(and/c real? positive?))]
                [else
                 (define second-contract (cadr contracts))
                 (cond
                   [(equal? (contract-name second-contract) '(not/c positive?))
-                   (<=/c 0)]
+                   (renamed-between/c -inf.0 0 `(and/c real? (not/c positive?)))]
                   [(equal? (contract-name second-contract) '(not/c negative?))
-                   (>=/c 0)]
+                   (renamed-between/c 0 +inf.0 `(and/c real? (not/c negative?)))]
                   [else
                    (make-first-order-and/c contracts preds)])])]
             [(or (chaperone-of? (car preds) exact-nonnegative-integer?)

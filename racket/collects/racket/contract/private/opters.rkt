@@ -204,11 +204,7 @@
               #:name #'(between/c-opt-name n m))))))]
     [_ (opt/unknown opt/i opt/info stx)]))
 
-(define (between/c-opt-name n m)
-  (cond
-    [(= n m) n]
-    [(and (= n -inf.0) (= m +inf.0)) 'real?]
-    [else `(between/c ,n ,m)]))
+(define (between/c-opt-name n m) `(between/c ,n ,m))
 
 (define (raise-opt-between/c-error blame val lo hi)
   (raise-blame-error
@@ -248,9 +244,7 @@
                                     [that that])
                         (syntax (comparison this that))))))
              #:chaperone #t
-             #:name #`(if (= m 0)
-                          '#,special-name
-                          '(#,name m)))))))))
+             #:name #`'(#,name m))))))))
 
 (define (raise-opt-single-comparison-opter-error blame val comparison m predicate?)
   (raise-blame-error
