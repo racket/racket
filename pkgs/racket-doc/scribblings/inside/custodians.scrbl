@@ -62,7 +62,7 @@ to the value's custodian later in a call to
 @cpp{scheme_remove_managed}. A value can be registered with at
 most one custodian.
 
-If @var{m} (or the current custodian if @var{m} is @cpp{NULL})is shut
+If @var{m} (or the current custodian if @var{m} is @cpp{NULL}) is shut
 down, then @var{f} is called immediately, and the result is
 @cpp{NULL}.}
 
