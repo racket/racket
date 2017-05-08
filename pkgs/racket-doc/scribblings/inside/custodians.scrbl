@@ -52,7 +52,8 @@ zero, the value is allowed to be garbage collected (and automatically
 removed from the custodian).
 
 Independent of whether @var{strong} is zero, the value @var{o} is
-initially weakly held. A value associated with a custodian can
+initially weakly held, until the garbage collector would have otherwise
+collected it. A value associated with a custodian can
 therefore be finalized via will executors.
 
 The return value from @cpp{scheme_add_managed} can be used to refer
