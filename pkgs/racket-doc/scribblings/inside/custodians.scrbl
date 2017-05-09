@@ -52,7 +52,7 @@ zero, the value is allowed to be garbage collected (and automatically
 removed from the custodian).
 
 Independent of whether @var{strong} is zero, the value @var{o}
-is initially weakly held, but becomes strongly held when
+is initially weakly held and becomes strongly held when
 the garbage collector attempts to collect it. A value
 associated with a custodian can therefore be finalized via
 will executors.
