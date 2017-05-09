@@ -11,7 +11,10 @@
                      prop:chaperone-unsafe-undefined
                      chaperone-struct-unsafe-undefined
                      unsafe-chaperone-procedure
-                     unsafe-impersonate-procedure)
+                     unsafe-impersonate-procedure
+                     unsafe-start-atomic unsafe-end-atomic
+                     unsafe-start-breakable-atomic unsafe-end-breakable-atomic
+                     unsafe-in-atomic?)
          (rename-out [new:unsafe-impersonate-procedure unsafe-impersonate-procedure]
                      [new:unsafe-chaperone-procedure unsafe-chaperone-procedure])
          (prefix-out unsafe-

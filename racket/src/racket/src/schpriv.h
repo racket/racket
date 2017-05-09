@@ -374,6 +374,7 @@ void scheme_init_exn(Scheme_Env *env);
 #endif
 void scheme_init_debug(Scheme_Env *env);
 void scheme_init_thread(Scheme_Env *env);
+void scheme_init_unsafe_thread(Scheme_Env *env);
 void scheme_init_read(Scheme_Env *env);
 void scheme_init_print(Scheme_Env *env);
 #ifndef NO_SCHEME_THREADS

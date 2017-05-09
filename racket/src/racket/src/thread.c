@@ -433,6 +433,12 @@ static Scheme_Object *will_executor_sema(Scheme_Object *w, int *repost);
 
 static Scheme_Object *check_break_now(int argc, Scheme_Object *args[]);
 
+static Scheme_Object *unsafe_start_atomic(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_end_atomic(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_start_breakable_atomic(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_end_breakable_atomic(int argc, Scheme_Object **argv);
+static Scheme_Object *unsafe_in_atomic_p(int argc, Scheme_Object **argv);
+
 static void make_initial_config(Scheme_Thread *p);
 
 static int do_kill_thread(Scheme_Thread *p);
@@ -635,6 +641,36 @@ void scheme_init_thread(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("phantom-bytes?", phantom_bytes_p, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("make-phantom-bytes", make_phantom_bytes, 1, 1, env);
   GLOBAL_PRIM_W_ARITY("set-phantom-bytes!", set_phantom_bytes, 2, 2, env);
+}
+
+void
+scheme_init_unsafe_thread (Scheme_Env *env)
+{
+  scheme_add_global_constant("unsafe-start-atomic",
+			     scheme_make_prim_w_arity(unsafe_start_atomic,
+						      "unsafe-start-atomic",
+						      0, 0),
+			     env);
+  scheme_add_global_constant("unsafe-end-atomic",
+			     scheme_make_prim_w_arity(unsafe_end_atomic,
+						      "unsafe-end-atomic",
+						      0, 0),
+			     env);
+  scheme_add_global_constant("unsafe-start-breakable-atomic",
+			     scheme_make_prim_w_arity(unsafe_start_breakable_atomic,
+						      "unsafe-start-breakable-atomic",
+						      0, 0),
+			     env);
+  scheme_add_global_constant("unsafe-end-breakable-atomic",
+			     scheme_make_prim_w_arity(unsafe_end_breakable_atomic,
+						      "unsafe-end-breakable-atomic",
+						      0, 0),
+			     env);
+  scheme_add_global_constant("unsafe-in-atomic?",
+			     scheme_make_prim_w_arity(unsafe_in_atomic_p,
+						      "unsafe-in-atomic?",
+						      0, 0),
+			     env);
 }
 
 void scheme_init_thread_places(void) {
@@ -5466,6 +5502,37 @@ Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Time
 
   return old;
 }
+
+
+static Scheme_Object *unsafe_start_atomic(int argc, Scheme_Object **argv)
+{
+  scheme_start_atomic_no_break();
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_end_atomic(int argc, Scheme_Object **argv)
+{
+  scheme_end_atomic_can_break();
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_start_breakable_atomic(int argc, Scheme_Object **argv)
+{
+  scheme_start_atomic();
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_end_breakable_atomic(int argc, Scheme_Object **argv)
+{
+  scheme_end_atomic();
+  return scheme_void;
+}
+
+static Scheme_Object *unsafe_in_atomic_p(int argc, Scheme_Object **argv)
+{
+  return (scheme_is_atomic() ? scheme_true : scheme_false);
+}
+
 
 void scheme_weak_suspend_thread(Scheme_Thread *r)
 {

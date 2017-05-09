@@ -1,5 +1,5 @@
 #lang racket/base
-(require ffi/unsafe
+(require '#%unsafe
          (for-syntax racket/base))
 
 (provide (protect-out in-atomic-mode?
@@ -10,20 +10,20 @@
                       call-as-atomic
                       call-as-nonatomic))
 
-(define start-atomic
-  (get-ffi-obj 'scheme_start_atomic_no_break #f (_fun -> _void)))
+(define (start-atomic)
+  (unsafe-start-atomic))
 
-(define end-atomic
-  (get-ffi-obj 'scheme_end_atomic_can_break #f (_fun -> _void)))
+(define (end-atomic)
+  (unsafe-end-atomic))
 
-(define start-breakable-atomic
-  (get-ffi-obj 'scheme_start_atomic #f (_fun -> _void)))
+(define (start-breakable-atomic)
+  (unsafe-start-breakable-atomic))
 
-(define end-breakable-atomic
-  (get-ffi-obj 'scheme_end_atomic #f (_fun -> _void)))
+(define (end-breakable-atomic)
+  (unsafe-end-breakable-atomic))
 
-(define in-atomic-mode?
-  (get-ffi-obj 'scheme_is_atomic #f (_fun -> (r : _int) -> (positive? r))))
+(define (in-atomic-mode?)
+  (unsafe-in-atomic?))
 
 ;; ----------------------------------------
 
