@@ -16,8 +16,8 @@
   `((start   "Racket Documentation" user "index.html")
     (search  "Search Manuals"   user "search/index.html")
     ---
-    (license "License"          plt  "license/index.html")
-    (acks    "Acknowledgements" plt  "acks/index.html")
+    (license "License"          user  "license/index.html")
+    (acks    "Acknowledgements" user  "acks/index.html")
     (release "Release Notes"    user  "release/index.html")
     ---
     (bugreport "Report a Bug"   #f ,(format "~a?v=~a" bug-url (version)))))
