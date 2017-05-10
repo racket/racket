@@ -2225,9 +2225,17 @@ static Scheme_Object *variable_modidx(int argc, Scheme_Object *argv[])
     scheme_wrong_contract("variable-reference->module-path-index", "variable-reference?", 0, argc, argv);
 
   if (env->module) {
-    if (!env->link_midx) 
-      return env->module->self_modidx;
-    else
+    if (!env->link_midx) {
+      if (env->module->self_modidx
+          && SCHEME_TRUEP(((Scheme_Modidx *)env->module->self_modidx)->path))
+        return env->module->self_modidx;
+      else
+        return scheme_make_modidx(scheme_make_pair(scheme_intern_symbol("quote"),
+                                                   scheme_make_pair(scheme_resolved_module_path_value(env->module->modname),
+                                                                    scheme_null)),
+                                  scheme_false,
+                                  scheme_false);
+    } else
       return env->link_midx;
   } else
     return scheme_false;

@@ -145,6 +145,17 @@
 
 ;; ----------------------------------------
 
+(test #f
+      variable-reference->module-path-index (#%variable-reference test))
+(test (module-path-index-join ''#%kernel #f)
+      variable-reference->module-path-index (#%variable-reference +))
+(require (only-in racket/unsafe/ops
+                  [unsafe-fx+ $$unsafe-fx+]))
+(test (module-path-index-join ''#%unsafe #f)
+      variable-reference->module-path-index (#%variable-reference $$unsafe-fx+))
+
+;; ----------------------------------------
+
 (module phaser scheme/base 
   (define x (variable-reference->phase
              (#%variable-reference x)))
