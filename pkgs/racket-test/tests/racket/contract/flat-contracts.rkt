@@ -200,6 +200,9 @@
                       (list #t 1)
                       #f)
 
+  (test-flat-contract '(cons/dc [hd 1] [tl (hd) 3] #:flat) (cons 1 3) (cons 1 4))
+  (test-flat-contract '(cons/dc [hd (tl) 1] [tl 3] #:flat) (cons 1 3) (cons 1 4))
+  
   (test-flat-contract '(box/c boolean? #:flat? #t) (box #f) (box 1))
   (test-flat-contract '(box/c (flat-contract boolean?) #:flat? #t) (box #t) #f)
   (test-flat-contract '(box-immutable/c boolean?) (box-immutable #f) (box-immutable 1))

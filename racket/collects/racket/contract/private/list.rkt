@@ -484,9 +484,16 @@
 (define (cons/dc-first-order ctc)
   (λ (val)
     (and (pair? val)
-         (contract-first-order-passes?
-          (the-cons/dc-undep ctc)
-          (if (the-cons/dc-forwards? ctc) (car val) (cdr val))))))
+         (let-values ([(undep-val dep-val)
+                       (if (the-cons/dc-forwards? ctc)
+                           (values (car val) (cdr val))
+                           (values (cdr val) (car val)))])
+           (and (contract-first-order-passes?
+                 (the-cons/dc-undep ctc)
+                 undep-val)
+                (contract-first-order-passes?
+                 ((the-cons/dc-dep ctc) undep-val)
+                 dep-val))))))
 
 (define (cons/dc-stronger? this that) #f)
 
