@@ -536,6 +536,7 @@ extern Scheme_Object *scheme_vector_set_proc;
 extern Scheme_Object *scheme_list_to_vector_proc;
 extern Scheme_Object *scheme_unsafe_vector_length_proc;
 extern Scheme_Object *scheme_unsafe_struct_ref_proc;
+extern Scheme_Object *scheme_unsafe_struct_star_ref_proc;
 extern Scheme_Object *scheme_hash_ref_proc;
 extern Scheme_Object *scheme_box_p_proc;
 extern Scheme_Object *scheme_box_proc;
@@ -650,6 +651,8 @@ extern Scheme_Object *scheme_impersonator_of_property;
 extern Scheme_Object *scheme_app_mark_impersonator_property;
 
 extern Scheme_Object *scheme_no_arity_property;
+
+extern Scheme_Object *scheme_authentic_property;
 
 extern Scheme_Object *scheme_chaperone_undefined_property;
 
@@ -1045,6 +1048,7 @@ typedef struct Scheme_Struct_Type {
   mzshort num_slots;   /* initialized + auto + parent-initialized + parent-auto */
   mzshort num_islots; /* initialized + parent-initialized */
   mzshort name_pos;
+  char authentic; /* 1 => chaperones/impersonators disallowed */
 
   Scheme_Object *name;
 
@@ -3518,12 +3522,13 @@ typedef struct {
   int init_field_count;  /* number of fields supplied to the constructor; usually == field_count */
   int normal_ops;  /* are selectors and predicates in the usual order? */
   int indexed_ops; /* do selectors have the index built in (as opposed to taking an index argument)? */
+  int authentic; /* conservatively 0 is ok */
   int num_gets, num_sets;
-} Simple_Stuct_Type_Info;
+} Simple_Struct_Type_Info;
 
 Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *app, int vals, int flags,
                                                  int *_auto_e_depth, 
-                                                 Simple_Stuct_Type_Info *_stinfo,
+                                                 Simple_Struct_Type_Info *_stinfo,
                                                  Scheme_Object **_parent_identity,
                                                  Scheme_Hash_Table *top_level_consts, 
                                                  Scheme_Hash_Table *inline_variants,
@@ -3545,7 +3550,7 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *app, int vals, int
 #define CHECK_STRUCT_TYPE_DELAY_AUTO_CHECK 0x4
 
 Scheme_Object *scheme_intern_struct_proc_shape(int shape);
-intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *sinfo);
+intptr_t scheme_get_struct_proc_shape(int k, Simple_Struct_Type_Info *sinfo);
 Scheme_Object *scheme_make_struct_proc_shape(intptr_t k, Scheme_Object *identity);
 #define STRUCT_PROC_SHAPE_STRUCT  0
 #define STRUCT_PROC_SHAPE_CONSTR  1
@@ -3554,7 +3559,8 @@ Scheme_Object *scheme_make_struct_proc_shape(intptr_t k, Scheme_Object *identity
 #define STRUCT_PROC_SHAPE_SETTER  4
 #define STRUCT_PROC_SHAPE_OTHER   5
 #define STRUCT_PROC_SHAPE_MASK    0xF
-#define STRUCT_PROC_SHAPE_SHIFT   4
+#define STRUCT_PROC_SHAPE_AUTHENTIC 0x10
+#define STRUCT_PROC_SHAPE_SHIFT   5
 
 typedef struct Scheme_Struct_Proc_Shape {
   Scheme_Object so;

@@ -11,18 +11,23 @@
 
 ;; Check JIT inlining of primitives:
 (parameterize ([current-namespace (make-base-namespace)]
-               [eval-jit-enabled #t])
+	       [eval-jit-enabled #t])
   (namespace-require 'racket/flonum)
   (namespace-require 'racket/extflonum)
   (namespace-require 'racket/fixnum)
   (namespace-require 'racket/unsafe/ops)
   (namespace-require 'racket/unsafe/undefined)
   (namespace-require '(prefix k: '#%kernel))
-  (eval '(define-values (prop:thing thing? thing-ref) 
-           (make-struct-type-property 'thing)))
-  (eval '(struct rock (x) #:property prop:thing 'yes))
+  (eval '(module rock racket/base
+           (provide (all-defined-out))
+           (define-values (prop:thing thing? thing-ref)
+             (make-struct-type-property 'thing))
+           (struct rock (x) #:property prop:thing 'yes)
+           (struct stone (x) #:authentic)))
+  (eval '(require 'rock))
   (let* ([struct:rock (eval 'struct:rock)]
          [a-rock (eval '(rock 0))]
+         [a-stone (eval '(stone 0))]
          [chap-rock (eval '(chaperone-struct (rock 0) rock-x (lambda (r v) (add1 v))))]
          [check-error-message (lambda (name proc [fixnum? #f]
                                             #:bad-value [bad-value (if fixnum? 10 'bad)]
@@ -39,7 +44,7 @@
                                                          exact-integer?
                                                          exact-nonnegative-integer?
                                                          exact-positive-integer?
-                                                         thing?
+                                                         thing? rock? stone?
                                                          continuation-mark-set-first))
 				  (let ([s (with-handlers ([exn? exn-message])
                                              (let ([bad bad-value])
@@ -221,8 +226,18 @@
     (un #t 'bytes? #"apple")
     (un #f 'thing? 10)
     (un #t 'thing? a-rock)
+    (un #f 'thing? a-stone)
     (un #t 'thing? chap-rock)
     (un #t 'thing? struct:rock)
+    (un #f 'rock? 10)
+    (un #t 'rock? a-rock)
+    (un #f 'rock? a-stone)
+    (un #t 'rock? chap-rock)
+    (un #f 'rock? struct:rock)
+    (un #f 'stone? 10)
+    (un #f 'stone? a-rock)
+    (un #t 'stone? a-stone)
+    (un #f 'stone? chap-rock)
     (un #f 'immutable? (vector 1 2 3))
     (un #t 'immutable? (vector-immutable 1 2 3))
     (un #f 'immutable? (box 1))
@@ -901,31 +916,34 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Check JIT handling of structure-reference sequencese
-(parameterize ([current-namespace (make-base-namespace)]
-               [eval-jit-enabled #t])
-  (eval '(module paper racket/base
-          (provide (all-defined-out))
-          (struct paper (width height folds) #:transparent)
-          (define (fold-letter l)
-            (for/fold ([l l]) ([i (in-range 100)])
-              (and (paper? l)
-                   (struct-copy paper l [folds i]))))
-          (define (refine-letter l)
-            (for/fold ([l l]) ([i (in-range 100)]) 
-              (and (paper? l)
-                   (struct-copy paper l [width i]))))))
-  (eval '(require 'paper))
-  (eval '(define letter (paper 8.5 11 0)))
-  (eval '(define formal-letter (chaperone-struct letter paper-height
-                                                 (lambda (s v)
-                                                   (unless (equal? v 11)
-                                                     (error "wrong"))
-                                                   v))))
-  (test #t eval '(equal? (fold-letter letter) (paper 8.5 11 99)))
-  (test #t eval '(equal? (fold-letter formal-letter) (paper 8.5 11 99)))
-  (test #t eval '(equal? (refine-letter letter) (paper 99 11 0)))
-  (test #t eval '(equal? (refine-letter formal-letter) (paper 99 11 0))))
+;; Check JIT handling of structure-reference sequences
+(for ([options '(() (#:authentic))])
+  (parameterize ([current-namespace (make-base-namespace)]
+                 [eval-jit-enabled #t])
+    (eval `(module paper racket/base
+             (provide (all-defined-out))
+             (struct paper (width height folds) #:transparent ,@options)
+             (define (fold-letter l)
+               (for/fold ([l l]) ([i (in-range 100)])
+                 (and (paper? l)
+                      (struct-copy paper l [folds i]))))
+             (define (refine-letter l)
+               (for/fold ([l l]) ([i (in-range 100)]) 
+                 (and (paper? l)
+                      (struct-copy paper l [width i]))))))
+    (eval '(require 'paper))
+    (eval '(define letter (paper 8.5 11 0)))
+    (unless (equal? options '(#:authentic))
+      (eval '(define formal-letter (chaperone-struct letter paper-height
+                                                     (lambda (s v)
+                                                       (unless (equal? v 11)
+                                                         (error "wrong"))
+                                                       v)))))
+    (test #t eval '(equal? (fold-letter letter) (paper 8.5 11 99)))
+    (test #t eval '(equal? (refine-letter letter) (paper 99 11 0)))
+    (unless (equal? options '(#:authentic))
+      (test #t eval '(equal? (fold-letter formal-letter) (paper 8.5 11 99)))
+      (test #t eval '(equal? (refine-letter formal-letter) (paper 99 11 0))))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Make sure the JIT handles struct-type property predicates and

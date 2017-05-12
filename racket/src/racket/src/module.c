@@ -4566,7 +4566,7 @@ static void setup_accessible_table(Scheme_Module *m)
             if (SAME_TYPE(SCHEME_TYPE(form), scheme_define_values_type)) {
               int checked_st = 0, is_st_prop = 0, has_guard = 0;
               Scheme_Object *is_st = NULL;
-              Simple_Stuct_Type_Info stinfo;
+              Simple_Struct_Type_Info stinfo;
               Scheme_Object *parent_identity;
               for (k = SCHEME_VEC_SIZE(form); k-- > 1; ) {
                 tl = SCHEME_VEC_ELS(form)[k];
