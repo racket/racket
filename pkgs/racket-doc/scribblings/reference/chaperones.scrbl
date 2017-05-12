@@ -707,6 +707,30 @@ checked (recursively).
                                    predicates and accessors sensitive
                                    to @racket[prop:impersonator-of].}]}
 
+
+@defthing[prop:authentic struct-type-property?]{
+
+A @tech{structure type property} that declares a structure type as
+@deftech{authentic}. The value associated with the property is ignored;
+the presence of the property itself makes the structure type
+authentic.
+
+Instances of an @tech{authentic} structure type cannot be impersonated
+via @racket[impersonate-struct] or chaperoned via
+@racket[chaperone-struct]. As a consequence, an instance of an
+@tech{authentic} structure type can be given a contract (see
+@racket[struct/c]) only if it is a @tech{flat contract}.
+
+Declaring a structure type as @tech{authentic} can prevent unwanted
+structure impersonation, but exposed structure types normally should
+support impersonators or chaperones to facilitate contracts. Declaring
+a structure type as @tech{authentic} can also slightly improve the
+performance of structure predicates, selectors, and mutators, which
+can be appropriate for data structures that are private
+and frequently used within a library.
+
+@history[#:added "6.9.0.4"]}
+
 @; ------------------------------------------------------------
 @section{Chaperone Constructors}
 

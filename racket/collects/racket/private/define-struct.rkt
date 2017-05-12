@@ -240,6 +240,7 @@
                            (#:reflection-name . #f)
                            (#:name . #f)
                            (#:only-name? . #f)
+                           (#:authentic . #f)
                            (#:omit-define-values . #f)
                            (#:omit-define-syntaxes . #f))]
                  [nongen? #f])
@@ -318,6 +319,12 @@
             (bad "multiple" insp-keys "s" (car p)))
           (loop (cdr p)
                 (extend-config config '#:inspector #'#f)
+                nongen?)]
+         [(eq? '#:authentic (syntax-e (car p)))
+          (when (lookup config '#:authentic)
+            (bad "multiple" "#:authentic" "s" (car p)))
+          (loop (cdr p)
+                (extend-config config '#:authentic #'#t)
                 nongen?)]
          [(or (eq? '#:constructor-name (syntax-e (car p)))
               (eq? '#:extra-constructor-name (syntax-e (car p))))
@@ -452,7 +459,12 @@
                               (let ([config (parse-props #'fm (syntax->list #'(prop ...)) super-id)])
                                 (values (lookup config '#:inspector)
                                         (lookup config '#:super)
-                                        (lookup config '#:props)
+                                        (let ([l (lookup config '#:props)]
+                                              [a (lookup config '#:authentic)])
+                                          (if a
+                                              (cons (cons #'prop:authentic #'#t)
+                                                    l)
+                                              l))
                                         (lookup config '#:auto-value)
                                         (lookup config '#:guard)
                                         (lookup config '#:constructor-name)

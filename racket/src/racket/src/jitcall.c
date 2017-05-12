@@ -2421,10 +2421,10 @@ int scheme_generate_app(Scheme_App_Rec *app, Scheme_Object **alt_rands, int num_
 
 static int detect_unsafe_struct_refs(Scheme_Object *arg, Scheme_Object **alt_rands, Scheme_App_Rec *app,
                                      int i, int num_rands, int shift)
-/* Look for `(unsafe-struct-ref id 'num)` ... as a sequence of
+/* Look for `(unsafe-struct[*]-ref id 'num)` ... as a sequence of
    arguments, which shows up as a result of `struct-copy`, and return
    the length of the sequence. Instead of performing each
-   `unsafe-struct-ref` separately, which involves a chaperone test
+   `unsafe-struct[*]-ref` separately, which can involve a chaperone test
    each time, we'll test once and extract all. */
 {
   Scheme_App3_Rec *app3, *next_app3;
@@ -2432,7 +2432,8 @@ static int detect_unsafe_struct_refs(Scheme_Object *arg, Scheme_Object **alt_ran
 
   if (SAME_TYPE(SCHEME_TYPE(arg), scheme_application3_type)) {
     app3 = (Scheme_App3_Rec *)arg;
-    if (SAME_OBJ(app3->rator, scheme_unsafe_struct_ref_proc)
+    if ((SAME_OBJ(app3->rator, scheme_unsafe_struct_ref_proc)
+         || SAME_OBJ(app3->rator, scheme_unsafe_struct_star_ref_proc))
         && SAME_TYPE(SCHEME_TYPE(app3->rand1), scheme_local_type)
         && SCHEME_INTP(app3->rand2)) {
       int seq = 1, delta = SCHEME_INT_VAL(app3->rand2) - i;
@@ -2441,7 +2442,8 @@ static int detect_unsafe_struct_refs(Scheme_Object *arg, Scheme_Object **alt_ran
         next_arg = (alt_rands ? alt_rands[i+shift] : app->args[i+shift]);
         if (SAME_TYPE(SCHEME_TYPE(next_arg), scheme_application3_type)) {
           next_app3 = (Scheme_App3_Rec *)next_arg;
-          if (SAME_OBJ(next_app3->rator, scheme_unsafe_struct_ref_proc)
+          if ((SAME_OBJ(next_app3->rator, scheme_unsafe_struct_ref_proc)
+               || SAME_OBJ(next_app3->rator, scheme_unsafe_struct_star_ref_proc))
               && SAME_TYPE(SCHEME_TYPE(next_app3->rand1), scheme_local_type)
               && SCHEME_INTP(next_app3->rand2)
               && (SCHEME_INT_VAL(next_app3->rand2) == i + delta)
@@ -2466,7 +2468,7 @@ static int generate_unsafe_struct_ref_sequence(mz_jit_state *jitter, Scheme_Obje
 {
   Scheme_App3_Rec *app3 = (Scheme_App3_Rec *)arg;
   int i, base = SCHEME_INT_VAL(app3->rand2);
-  GC_CAN_IGNORE jit_insn *ref, *refslow, *ref2;
+  GC_CAN_IGNORE jit_insn *ref2;
 
   /* Using `last_arg` ensures that we clear the local, if needed */
   mz_runstack_skipped(jitter, 2);
@@ -2476,18 +2478,22 @@ static int generate_unsafe_struct_ref_sequence(mz_jit_state *jitter, Scheme_Obje
 
   /* Check for chaperones, and take slow path if found */
   __START_SHORT_JUMPS__(1);
-  jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
-  ref = jit_bnei_i(jit_forward(), JIT_R2, scheme_chaperone_type);
-  refslow = jit_get_ip();
-  jit_addi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(stack_pos));
-  jit_str_p(JIT_R1, JIT_R0);
-  jit_movi_i(JIT_V1, base);
-  jit_movi_p(JIT_R0, count);
-  (void)jit_calli(sjc.struct_raw_refs_code);
-  ref2 = jit_jmpi(jit_forward());
-  mz_patch_branch(ref);
-  (void)jit_beqi_i(refslow, JIT_R2, scheme_proc_chaperone_type);
-  CHECK_LIMIT();
+  if (SAME_OBJ(app3->rator, scheme_unsafe_struct_ref_proc)) {
+    GC_CAN_IGNORE jit_insn *ref, *refslow;
+    jit_ldxi_s(JIT_R2, JIT_R0, &((Scheme_Object *)0x0)->type);
+    ref = jit_bnei_i(jit_forward(), JIT_R2, scheme_chaperone_type);
+    refslow = jit_get_ip();
+    jit_addi_p(JIT_R1, JIT_RUNSTACK, WORDS_TO_BYTES(stack_pos));
+    jit_str_p(JIT_R1, JIT_R0);
+    jit_movi_i(JIT_V1, base);
+    jit_movi_p(JIT_R0, count);
+    (void)jit_calli(sjc.struct_raw_refs_code);
+    ref2 = jit_jmpi(jit_forward());
+    mz_patch_branch(ref);
+    (void)jit_beqi_i(refslow, JIT_R2, scheme_proc_chaperone_type);
+    CHECK_LIMIT();
+  } else
+    ref2 = NULL;
 
   /* This is the fast path: */
   for (i = 0; i < count; i++) {
@@ -2499,7 +2505,8 @@ static int generate_unsafe_struct_ref_sequence(mz_jit_state *jitter, Scheme_Obje
     CHECK_LIMIT();
   }
 
-  mz_patch_branch(ref2);
+  if (ref2)
+    mz_patch_branch(ref2);
   __END_SHORT_JUMPS__(1);
 
   return 1;

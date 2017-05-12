@@ -409,7 +409,8 @@ int scheme_is_struct_functional(Scheme_Object *rator, int num_args, Optimize_Inf
           return 1;
         }
       } else if (SAME_TYPE(SCHEME_TYPE(c), scheme_struct_prop_proc_shape_type)) {
-        if ((SCHEME_PROP_PROC_SHAPE_MODE(c) == STRUCT_PROP_PROC_SHAPE_PRED)
+        int mode = (SCHEME_PROP_PROC_SHAPE_MODE(c) & STRUCT_PROC_SHAPE_MASK);
+        if ((mode == STRUCT_PROP_PROC_SHAPE_PRED)
             && (num_args == 1))
           return 1;
       }
@@ -1190,7 +1191,7 @@ static int ok_proc_creator_args(Scheme_Object *rator, Scheme_Object *rand1, Sche
 }
 
 static int is_values_with_accessors_and_mutators(Scheme_Object *e, int vals, int resolved,
-                                                 Simple_Stuct_Type_Info *_stinfo,
+                                                 Simple_Struct_Type_Info *_stinfo,
                                                  Scheme_IR_Local **vars)
 /* Does `e` produce values for a structure type, mutators, and accessors in the
    usual order? */
@@ -1421,7 +1422,7 @@ static int ok_constant_property_with_guard(void *data, Scheme_Object *v, int mod
 
   if (mode == OK_CONSTANT_SHAPE) {
     if (SAME_TYPE(SCHEME_TYPE(v), scheme_struct_prop_proc_shape_type)) {
-      k = SCHEME_PROC_SHAPE_MODE(v);
+      k = SCHEME_PROP_PROC_SHAPE_MODE(v);
     }
   } else if (mode == OK_CONSTANT_ENCODED_SHAPE) {
     if (!scheme_decode_struct_prop_shape(v, &k))
@@ -1469,7 +1470,8 @@ static int is_simple_property_list(Scheme_Object *a, int resolved,
                                    Scheme_Hash_Table *inline_variants, 
                                    Scheme_Hash_Table *top_level_table,
                                    Scheme_Object **runstack, int rs_delta,
-                                   Scheme_Object **symbols, Scheme_Hash_Table *symbol_table)
+                                   Scheme_Object **symbols, Scheme_Hash_Table *symbol_table,
+                                   int just_for_authentic, int *_authentic)
 /* Does `a` produce a property list that always lets `make-struct-type` succeed? */
 {
   Scheme_Object *arg;
@@ -1505,19 +1507,28 @@ static int is_simple_property_list(Scheme_Object *a, int resolved,
     if (SAME_TYPE(SCHEME_TYPE(arg), scheme_application3_type)) {
       Scheme_App3_Rec *a3 = (Scheme_App3_Rec *)arg;
 
-      if (!SAME_OBJ(a3->rator, scheme_cons_proc))
-        return 0;
-      if (is_struct_type_property_without_guard(a3->rand1,
-                                                top_level_consts,
-                                                inline_variants, top_level_table,
-                                                runstack, rs_delta,
-                                                symbols, symbol_table)) {
-        if (!scheme_omittable_expr(a3->rand2, 1, 3, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
+      if (!SAME_OBJ(a3->rator, scheme_cons_proc)) {
+        if (!just_for_authentic)
           return 0;
-      } else
+      } else {
+        if (_authentic && SAME_OBJ(a3->rand1, scheme_authentic_property))
+          *_authentic = 1;
+        if (!just_for_authentic) {
+          if (is_struct_type_property_without_guard(a3->rand1,
+                                                    top_level_consts,
+                                                    inline_variants, top_level_table,
+                                                    runstack, rs_delta,
+                                                    symbols, symbol_table)) {
+            if (!scheme_omittable_expr(a3->rand2, 1, 3, (resolved ? OMITTABLE_RESOLVED : 0), NULL, NULL))
+              return 0;
+          } else
+            return 0;
+        }
+      }
+    } else {
+      if (!just_for_authentic)
         return 0;
-    } else
-      return 0;
+    }
   }
   
   return 1;
@@ -1525,7 +1536,7 @@ static int is_simple_property_list(Scheme_Object *a, int resolved,
 
 Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals,  int flags, 
                                                  GC_CAN_IGNORE int *_auto_e_depth, 
-                                                 Simple_Stuct_Type_Info *_stinfo,
+                                                 Simple_Struct_Type_Info *_stinfo,
                                                  Scheme_Object **_parent_identity,
                                                  Scheme_Hash_Table *top_level_consts, 
                                                  Scheme_Hash_Table *inline_variants, 
@@ -1592,7 +1603,8 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals,  in
                                                top_level_consts, inline_variants,
                                                top_level_table,
                                                runstack, rs_delta,
-                                               symbols, symbol_table)))
+                                               symbols, symbol_table,
+                                               0, NULL)))
             && ((app->num_args < 7)
                 /* inspector: */
                 || SCHEME_FALSEP(app->args[7])
@@ -1620,6 +1632,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals,  in
           if (_name)
             *_name = app->args[1];
           if (_stinfo) {
+            int authentic = 0;
             int super_count = (super_count_plus_one 
                                ? (super_count_plus_one - 1)
                                : 0);
@@ -1631,6 +1644,15 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals,  in
             _stinfo->super_field_count = (super_count_plus_one ? (super_count_plus_one - 1) : 0);
             _stinfo->normal_ops = 1;
             _stinfo->indexed_ops = 0;
+            _stinfo->authentic = 0;
+            if ((app->num_args > 6)
+                && is_simple_property_list(app->args[6], resolved,
+                                           top_level_consts, inline_variants,
+                                           top_level_table,
+                                           runstack, rs_delta,
+                                           symbols, symbol_table,
+                                           1, &authentic))
+              _stinfo->authentic = authentic;
             _stinfo->num_gets = 1;
             _stinfo->num_sets = 1;
           }
@@ -1649,7 +1671,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals,  in
         Scheme_IR_Let_Value *lv = (Scheme_IR_Let_Value *)lh->body;
         if (SAME_TYPE(SCHEME_TYPE(lv->value), scheme_application_type)) {
           Scheme_Object *auto_e;
-          Simple_Stuct_Type_Info stinfo;
+          Simple_Struct_Type_Info stinfo;
           if (!_stinfo) _stinfo = &stinfo;
           auto_e = scheme_is_simple_make_struct_type(lv->value, 5, flags, 
                                                      _auto_e_depth, _stinfo, _parent_identity,
@@ -1681,7 +1703,7 @@ Scheme_Object *scheme_is_simple_make_struct_type(Scheme_Object *e, int vals,  in
           e2 = skip_clears(lv->value);
           if (SAME_TYPE(SCHEME_TYPE(e2), scheme_application_type)) {
             Scheme_Object *auto_e;
-            Simple_Stuct_Type_Info stinfo;
+            Simple_Struct_Type_Info stinfo;
             if (!_stinfo) _stinfo = &stinfo;
             auto_e = scheme_is_simple_make_struct_type(e2, 5, flags,
                                                        _auto_e_depth, _stinfo, _parent_identity,
@@ -1753,12 +1775,14 @@ int scheme_is_simple_make_struct_type_property(Scheme_Object *e, int vals, int f
 /*                             more utils                                 */
 /*========================================================================*/
 
-intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *stinfo)
+intptr_t scheme_get_struct_proc_shape(int k, Simple_Struct_Type_Info *stinfo)
 {
   switch (k) {
   case 0:
     if (stinfo->field_count == stinfo->init_field_count)
-      return STRUCT_PROC_SHAPE_STRUCT | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT);
+      return (STRUCT_PROC_SHAPE_STRUCT
+              | (stinfo->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)
+              | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT));
     else
       return STRUCT_PROC_SHAPE_OTHER;
     break;
@@ -1766,16 +1790,20 @@ intptr_t scheme_get_struct_proc_shape(int k, Simple_Stuct_Type_Info *stinfo)
     return STRUCT_PROC_SHAPE_CONSTR | (stinfo->init_field_count << STRUCT_PROC_SHAPE_SHIFT);
     break;
   case 2:
-    return STRUCT_PROC_SHAPE_PRED;
+    return (STRUCT_PROC_SHAPE_PRED
+            | (stinfo->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0));
     break;
   default:
     if (stinfo && stinfo->normal_ops && stinfo->indexed_ops) {
       if (k - 3 < stinfo->num_gets) {
         /* record index of field */
         return (STRUCT_PROC_SHAPE_GETTER
+                | (stinfo->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)
                 | ((stinfo->super_field_count + (k - 3)) << STRUCT_PROC_SHAPE_SHIFT));
       } else
-        return (STRUCT_PROC_SHAPE_SETTER | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT));
+        return (STRUCT_PROC_SHAPE_SETTER
+                | (stinfo->authentic ? STRUCT_PROC_SHAPE_AUTHENTIC : 0)
+                | (stinfo->field_count << STRUCT_PROC_SHAPE_SHIFT));
     }
   }
 
@@ -4561,7 +4589,9 @@ static Scheme_Object *finish_optimize_application2(Scheme_App2_Rec *app, Optimiz
         } else {
           /* Struct type matches, so use `unsafe-struct-ref` */
           Scheme_App3_Rec *new;
-          new = (Scheme_App3_Rec *)make_application_3(scheme_unsafe_struct_ref_proc,
+          new = (Scheme_App3_Rec *)make_application_3(((SCHEME_PROC_SHAPE_MODE(alt) & STRUCT_PROC_SHAPE_AUTHENTIC)
+                                                       ? scheme_unsafe_struct_star_ref_proc
+                                                       : scheme_unsafe_struct_ref_proc),
                                                       app->rand,
                                                       scheme_make_integer(SCHEME_PROC_SHAPE_MODE(alt) >> STRUCT_PROC_SHAPE_SHIFT),
                                                       info);
@@ -8813,7 +8843,7 @@ module_optimize(Scheme_Object *data, Optimize_Info *info, int context)
       if (SAME_TYPE(SCHEME_TYPE(e), scheme_define_values_type)) {
 	int n, cnst = 0, sproc = 0, sprop = 0, has_guard = 0;
         Scheme_Object *sstruct = NULL, *parent_identity = NULL;
-        Simple_Stuct_Type_Info stinfo;
+        Simple_Struct_Type_Info stinfo;
 
 	vars = SCHEME_VEC_ELS(e)[0];
 	e = SCHEME_VEC_ELS(e)[1];

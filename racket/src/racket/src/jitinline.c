@@ -678,9 +678,11 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
   }
 
   if (inline_rator) {
-    int pos, tpos, jkind;
+    int pos, tpos, jkind, authentic;
 
     tpos = ((Scheme_Struct_Type *)((Scheme_Primitive_Closure *)inline_rator)->val[0])->name_pos;
+    authentic = ((Scheme_Struct_Type *)((Scheme_Primitive_Closure *)inline_rator)->val[0])->authentic;
+
     if (kind == INLINE_STRUCT_PROC_PRED) {
       pos = 0;
     } else {
@@ -708,7 +710,8 @@ static int generate_inlined_struct_op(int kind, mz_jit_state *jitter,
                               for_branch, branch_short,
                               result_ignored,
                               0, 0,
-                              tpos, pos, 
+                              tpos, pos,
+                              authentic,
                               0, refslow, refslow, NULL, NULL);
     CHECK_LIMIT();
 

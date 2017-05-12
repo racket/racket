@@ -1177,5 +1177,27 @@
 (syntax-test #'GHOST)
 
 ;; ----------------------------------------
+;; Check `#:authentic`:
+
+(let ()
+  (struct posn (x y) #:authentic)
+  (test 1 posn-x (posn 1 2))
+  (err/rt-test (chaperone-struct (posn 1 2) posn-x (lambda (p x) x)))
+
+  ;; Subtype must be consistent:
+  (err/rt-test (let ()
+                 (struct posn3D posn (z))
+                 'ok)))
+
+(let ()
+  (struct posn (x y))
+
+  ;; Subtype must be consistent:
+  (err/rt-test (let ()
+                 (struct posn3D posn (z)
+                   #:authentic)
+                 'ok)))
+
+;; ----------------------------------------
 
 (report-errs)

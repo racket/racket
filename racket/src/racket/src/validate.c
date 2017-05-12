@@ -306,7 +306,7 @@ static int define_values_validate(Scheme_Object *data, Mz_CPort *port,
                                   Scheme_Hash_Table **_st_ht)
 {
   int i, size, flags, result, is_struct, is_struct_prop, has_guard;
-  Simple_Stuct_Type_Info stinfo;
+  Simple_Struct_Type_Info stinfo;
   Scheme_Object *val, *only_var;
 
   val = SCHEME_VEC_ELS(data)[0];
@@ -1422,7 +1422,6 @@ static int validate_expr(Mz_CPort *port, Scheme_Object *expr,
           /* check expectation */
           if (((tl_state[p] & SCHEME_TOPLEVEL_FLAGS_MASK) < flags)
               || ((tl_state[p] >> 2) > tl_timestamp)) {
-            printf("?? %d\n", p);
             scheme_ill_formed_code(port);
           }
         }
