@@ -51,16 +51,18 @@ be remembered until either the custodian shuts it down or
 zero, the value is allowed to be garbage collected (and automatically
 removed from the custodian).
 
-Independent of whether @var{strong} is zero, the value @var{o} is
-initially weakly held. A value associated with a custodian can
-therefore be finalized via will executors.
+Independent of whether @var{strong} is zero, the value @var{o}
+is initially weakly held and becomes strongly held when
+the garbage collector attempts to collect it. A value
+associated with a custodian can therefore be finalized via
+will executors.
 
 The return value from @cpp{scheme_add_managed} can be used to refer
 to the value's custodian later in a call to
 @cpp{scheme_remove_managed}. A value can be registered with at
 most one custodian.
 
-If @var{m} (or the current custodian if @var{m} is @cpp{NULL})is shut
+If @var{m} (or the current custodian if @var{m} is @cpp{NULL}) is shut
 down, then @var{f} is called immediately, and the result is
 @cpp{NULL}.}
 
