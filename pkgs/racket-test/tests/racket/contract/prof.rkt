@@ -263,9 +263,13 @@
   (test/spec-passed/result
    'contract-marks29
    '(let ()
-      (eval '(define f (invariant-assertion (-> (λ _ (named-blame? 'top-level))
-                                                (λ _ (named-blame? 'top-level)))
-                                            (λ (x) 3))))
+      (eval '(define f
+               (let ([nb
+                      (λ _ (named-blame?
+                            (dynamic-require 'racket/contract/private/blame
+                                             'invariant-assertion-party)))])
+                 (invariant-assertion (-> nb nb)
+                                      (λ (x) 3)))))
       (eval '(f 2)))
    3)
 

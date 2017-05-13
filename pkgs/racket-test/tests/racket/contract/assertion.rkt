@@ -16,7 +16,7 @@
        (eval '(require 'contract-test-suite1)))
    (λ (x)
      (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"contract from: contract-test-suite1" (exn-message x)))))
+          (regexp-match #rx"at: contract-test-suite1" (exn-message x)))))
   
   (contract-error-test
    'assertion2
@@ -27,7 +27,7 @@
        (eval '(require 'contract-test-suite2)))
    (λ (x)
      (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"blaming: contract-test-suite2" (exn-message x)))))
+          (regexp-match #rx"^[^\n]*assertion violation\n" (exn-message x)))))
   
   (contract-error-test
    'assertion3
@@ -38,4 +38,4 @@
        (eval '(require 'contract-test-suite3)))
    (λ (x)
      (and (exn:fail:contract:blame? x)
-          (regexp-match #rx"blaming: contract-test-suite3" (exn-message x))))))
+          (not (regexp-match #rx"blaming" (exn-message x)))))))

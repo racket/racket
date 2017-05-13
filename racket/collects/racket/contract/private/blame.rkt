@@ -24,7 +24,11 @@
          raise-blame-error
          current-blame-format
          (struct-out exn:fail:contract:blame)
-         blame-fmt->-string)
+         blame-fmt->-string
+
+         invariant-assertion-party)
+
+(define invariant-assertion-party (string->uninterned-symbol "invariant-assertion"))
 
 (define (blame=? a b equal?/recur)
   (and (equal?/recur (blame-source a) (blame-source b))
@@ -289,11 +293,17 @@
   (define at-line (if (string=? source-message "")
                       #f
                       (format "  at: ~a" source-message)))
+
+  (define blame-parties (blame-positive blme))
+  (define invariant-assertion-failure? (equal? blame-parties (list invariant-assertion-party)))
   
   (define self-or-not
-    (if (blame/important-original? blme)
-        "broke its own contract"
-        "contract violation"))
+    (cond
+      [invariant-assertion-failure?
+       "assertion violation"]
+      [(blame/important-original? blme)
+       "broke its own contract"]
+      [else "contract violation"]))
   
   (define start-of-message
     (cond
@@ -304,9 +314,11 @@
       [else
        (format "~a" self-or-not)]))
   
-  (define blame-parties (blame-positive blme))
   (define blaming-line
     (cond
+      [invariant-assertion-failure?
+       ;; cause the blaming-line to be skipped
+       '()]
       [(null? (cdr blame-parties))
        (format "  blaming: ~a" (convert-blame-singleton (car blame-parties)))]
       [else
@@ -315,6 +327,12 @@
         "  blaming multiple parties:"
         (for/list ([party (in-list blame-parties)])
           (format "\n  ~a" (convert-blame-singleton party))))]))
+
+  (define assumption-line
+    (cond
+      [invariant-assertion-failure?
+       '()]
+      [else "   (assuming the contract is correct)"]))
   
   (define on-line
     (and (blame-important blme)
@@ -355,7 +373,7 @@
    from-line
    on-line
    blaming-line
-   "   (assuming the contract is correct)"
+   assumption-line
    at-line))
 
 (define (blame-add-extra-field b name field)

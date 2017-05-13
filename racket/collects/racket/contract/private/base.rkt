@@ -85,11 +85,10 @@
   (syntax-case stx ()
     [(_ ctc e)
      (quasisyntax/loc stx
-       (let ([me (quote-module-name)])
-         (contract ctc e
-                   me me
-                   '#,(syntax-local-infer-name stx)
-                   '#,(build-source-location-vector #'ctc))))]))
+       (contract ctc e
+                 invariant-assertion-party invariant-assertion-party
+                 '#,(syntax-local-infer-name stx)
+                 '#,(build-source-location-vector #'ctc)))]))
 
 (define-syntax (-recursive-contract stx)
   (define (parse-type/kwds arg type kwds)
