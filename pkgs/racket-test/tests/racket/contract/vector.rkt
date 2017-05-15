@@ -167,5 +167,10 @@
   (test/pos-blame
    'vectorof-eager-fail
    '(contract (vectorof integer? #:eager 5) (vector-immutable 0 "") 'pos 'neg))
-
+  (test/pos-blame
+   'vectorof/mutable-flat
+   '(contract (vectorof integer? #:immutable #f #:flat? #t) (vector-immutable 3) 'pos 'neg))
+  (test/pos-blame
+   'vectorof/mutable-higher-order
+   '(contract (vectorof (-> integer? integer?) #:immutable #f) (vector-immutable add1) 'pos 'neg))
   )
