@@ -100,10 +100,10 @@ If at least one of @racket[v1] or @racket[v2] is an impersonator:
           @item{When @racket[v2] is an impersonator constructed with at least one non-@racket[#f] interposition procedure,
                      but @racket[v1] is not an impersonator then @racket[(impersonator-of? v1 v2)] is @racket[#f].}]}
 
-Otherwise, if neither @racket[v1] or @racket[v2] is an impersonator, but either
-of them contains an impersonator as a subpart (e.g., @racket[v1] is a list with
-an impersonator as one of its elements), then @racket[(impersonator-of? v1 v2)]
-proceeds by comparing @racket[v1] and @racket[v2] recursively (as with
+Otherwise, if neither @racket[_v1] or @racket[_v2] is an impersonator, but either
+of them contains an impersonator as a subpart (e.g., @racket[_v1] is a list with
+an impersonator as one of its elements), then @racket[(impersonator-of? _v1 _v2)]
+proceeds by comparing @racket[_v1] and @racket[_v2] recursively (as with
 @racket[equal?]), returning true if all subparts are @racket[impersonator-of?].
 
 @examples[
