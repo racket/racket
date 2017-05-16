@@ -173,4 +173,13 @@
   (test/pos-blame
    'vectorof/mutable-higher-order
    '(contract (vectorof (-> integer? integer?) #:immutable #f) (vector-immutable add1) 'pos 'neg))
+
+  (test/pos-blame
+   'vectorof-or/c-first-order-fail
+   '(contract (or/c (vectorof integer?) (vectorof string?)) (vector 'bad) 'pos 'neg))
+
+  (test/spec-passed
+   'vectorof-or/c-first-order-pass
+   '(contract (or/c (vectorof integer?) (vectorof string?)) (vector 1) 'pos 'neg))
+
   )
