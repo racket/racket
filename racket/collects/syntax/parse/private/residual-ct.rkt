@@ -11,6 +11,7 @@
          (struct-out den:lit)
          (struct-out den:datum-lit)
          (struct-out den:delayed)
+         alt-stxclass-mapping
          log-syntax-parse-error
          log-syntax-parse-warning
          log-syntax-parse-info
@@ -38,6 +39,11 @@
    opts         ;; scopts
    inline       ;; Id/#f, reference to a predicate
    ) #:prefab)
+
+;; alt-stxclass-mapping : (boxof (listof (pair Identifier Stxclass)))
+;; Maps existing bindings (can't use syntax-local-value mechanism) to stxclasses.
+;; Uses alist to avoid residual dependence on syntax/id-table.
+(define alt-stxclass-mapping (box null))
 
 ;; A scopts is #s(scopts Nat Bool Bool String/#f)
 ;; These are passed on to var patterns.

@@ -240,11 +240,17 @@ expressions are duplicated, and may be evaluated in different scopes.
 ;;   otherwise, just a var
 (define stxclass-colon-notation? (make-parameter #t))
 
+;; get-stxclass : Identifier -> Stxclass
+;; Stxclasses are primarily bound by env / syntax-local-value, but a few
+;; are attached to existing bindings via alt-stxclass-mapping.
+
 (define (get-stxclass id)
   (define config (stxclass-lookup-config))
   (if (eq? config 'no)
       (make-dummy-stxclass id)
       (cond [(syntax-local-value/record id stxclass?) => values]
+            [(assoc id (unbox alt-stxclass-mapping) free-identifier=?)
+             => cdr]
             [(eq? config 'try)
              (make-dummy-stxclass id)]
             [else (wrong-syntax id "not defined as syntax class")])))

@@ -31,7 +31,6 @@ actually a valid expression.
 @deftogether[(
 @defstxclass[identifier]
 @defstxclass[boolean]
-@defstxclass[str]
 @defstxclass[char]
 @defstxclass[keyword]
 @defstxclass[number]
@@ -43,8 +42,23 @@ actually a valid expression.
 Match syntax satisfying the corresponding predicates.
 }
 
+@deftogether[[
+@defidform[#:kind "syntax class" #:link-target? #f
+           string]
+@defidform[#:kind "syntax class" #:link-target? #f
+           bytes]
+]]{
+
+As special cases, Racket's @racket[string] and @racket[bytes] bindings
+are also interpreted as syntax classes that recognize literal strings
+and bytes, respectively.
+
+@history[#:added "6.9.0.4"]
+}
+
 @defstxclass[id]{ Alias for @racket[identifier]. }
 @defstxclass[nat]{ Alias for @racket[exact-nonnegative-integer]. }
+@defstxclass[str]{ Alias for @racket[string]. }
 
 @defstxclass[(static [predicate (-> any/c any/c)]
                      [description (or/c string? #f)])]{

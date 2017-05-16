@@ -1,6 +1,7 @@
 #lang racket/base
 (require "sc.rkt"
          "keywords.rkt"
+         (for-syntax syntax/parse/private/residual-ct)
          (for-syntax racket/base))
 
 (provide identifier
@@ -29,12 +30,14 @@
 (define keyword-stx? (stxof keyword?))
 (define boolean-stx? (stxof boolean?))
 (define string-stx? (stxof string?))
+(define bytes-stx? (stxof bytes?))
 (define char-stx? (stxof char?))
 (define number-stx? (stxof number?))
 (define integer-stx? (stxof integer?))
 (define exact-integer-stx? (stxof exact-integer?))
 (define exact-nonnegative-integer-stx? (stxof exact-nonnegative-integer?))
 (define exact-positive-integer-stx? (stxof exact-positive-integer?))
+
 
 ;; == Integrable syntax classes ==
 
@@ -43,7 +46,6 @@
 (define-integrable-syntax-class keyword (quote "keyword") keyword-stx?)
 (define-integrable-syntax-class boolean (quote "boolean") boolean-stx?)
 (define-integrable-syntax-class character (quote "character") char-stx?)
-(define-integrable-syntax-class str (quote "string") string-stx?)
 (define-integrable-syntax-class number (quote "number") number-stx?)
 (define-integrable-syntax-class integer (quote "integer") integer-stx?)
 (define-integrable-syntax-class exact-integer (quote "exact-integer") exact-integer-stx?)
@@ -54,10 +56,19 @@
   (quote "exact-positive-integer")
   exact-positive-integer-stx?)
 
+(define-integrable-syntax-class -string (quote "string") string-stx?)
+(define-integrable-syntax-class -bytes (quote "bytes") bytes-stx?)
+(begin-for-syntax
+  (set-box! alt-stxclass-mapping
+            (list (cons #'string (syntax-local-value #'-string))
+                  (cons #'bytes  (syntax-local-value #'-bytes)))))
+
 ;; Aliases
 (define-syntax id (make-rename-transformer #'identifier))
 (define-syntax nat (make-rename-transformer #'exact-nonnegative-integer))
 (define-syntax char (make-rename-transformer #'character))
+(define-syntax str (make-rename-transformer #'-string))
+
 
 ;; == Normal syntax classes ==
 

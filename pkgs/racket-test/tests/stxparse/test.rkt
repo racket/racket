@@ -505,6 +505,15 @@
 
 ;; == Lib tests
 
+;; test string, bytes act as stxclasses
+
+(test-case "string, bytes act as stxclasses"
+  (check-equal? (syntax->datum
+                 (syntax-parse #'(#"a" #"b" "c" "d")
+                   [(b:bytes ... s:string ...)
+                    #'((b ...) (s ...))]))
+                '((#"a" #"b") ("c" "d"))))
+
 ;; static
 
 (tcerr "static: correct error"
