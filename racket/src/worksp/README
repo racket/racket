@@ -33,7 +33,7 @@ MSVC-based build to support Cygwin-built extensions.
 
 As always, please report bugs via one of the following:
   - DrRacket's "submit bug report" menu          (preferred)
-  - http://bugs.racket-lang.org/
+  - https://github.com/racket/racket/issues
   - the mailing list (users@racket-lang.org)     (last resort)
 
 -PLT
