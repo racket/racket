@@ -1001,7 +1001,7 @@ static Scheme_Object *chaperone_vector(int argc, Scheme_Object **argv)
 
 static Scheme_Object *chaperone_vector_star(int argc, Scheme_Object **argv)
 {
-  return do_chaperone_vector("chaperone-vector", 0, 1, 0, argc, argv);
+  return do_chaperone_vector("chaperone-vector*", 0, 1, 0, argc, argv);
 }
 
 static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv)
@@ -1011,7 +1011,7 @@ static Scheme_Object *impersonate_vector(int argc, Scheme_Object **argv)
 
 static Scheme_Object *impersonate_vector_star(int argc, Scheme_Object **argv)
 {
-  return do_chaperone_vector("impersonate-vector", 1, 1, 0, argc, argv);
+  return do_chaperone_vector("impersonate-vector*", 1, 1, 0, argc, argv);
 }
 
 static Scheme_Object *unsafe_chaperone_vector(int argc, Scheme_Object **argv)
