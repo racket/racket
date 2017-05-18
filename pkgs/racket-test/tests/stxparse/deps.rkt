@@ -34,3 +34,5 @@
     (check-no-dep 'syntax/parse/private/rep)
     (check-no-dep 'syntax/parse/private/parse))
   )
+
+;; Note: this test fails if syntax/parse has out-of-date .zo files.
