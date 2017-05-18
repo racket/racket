@@ -1,20 +1,24 @@
 #lang scribble/doc
-@(require scribble/manual
+@(require (for-syntax racket/base)
+          scribble/manual
           scribble/struct
           scribble/decode
           scribble/eval
           "parse-common.rkt"
-          (for-label syntax/kerncase))
+          (for-label racket/base racket/contract syntax/kerncase))
 
 @title{Library Syntax Classes and Literal Sets}
 
 @section{Syntax Classes}
 
 @(begin
-   (define-syntax-rule (defstxclass name . pre-flows)
-     (defidform name . pre-flows))
-   (define-syntax-rule (defstxclass* (name arg ...) . pre-flows)
-     (defform (name arg ...) . pre-flows)))
+   (define-syntax (defstxclass stx)
+     (syntax-case stx ()
+       [(defstxclass name . pre-flows)
+        (identifier? #'name)
+        #'(defidform #:kind "syntax class" name . pre-flows)]
+       [(defstxclass datum . pre-flows)
+        #'(defproc #:kind "syntax class" datum @#,tech{syntax class} . pre-flows)])))
 
 @defstxclass[expr]{
 
@@ -42,9 +46,8 @@ Match syntax satisfying the corresponding predicates.
 @defstxclass[id]{ Alias for @racket[identifier]. }
 @defstxclass[nat]{ Alias for @racket[exact-nonnegative-integer]. }
 
-@defproc[(static [predicate (-> any/c any/c)]
-                 [description (or/c string? #f)])
-         (attributes value)]{
+@defstxclass[(static [predicate (-> any/c any/c)]
+                     [description (or/c string? #f)])]{
 
 The @racket[static] syntax class matches an
 identifier that is bound in the syntactic environment to static
@@ -58,17 +61,16 @@ When used outside of the dynamic extent of a macro transformer (see
 The attribute @var[value] contains the value the name is bound to.
 }
 
-@defproc[(expr/c [contract-expr syntax?]
-                 [#:positive pos-blame
-                  (or/c syntax? string? module-path-index? 'from-macro 'use-site 'unknown)
-                  'use-site]
-                 [#:negative neg-blame
-                  (or/c syntax? string? module-path-index? 'from-macro 'use-site 'unknown)
-                  'from-macro]
-                 [#:name expr-name (or/c identifier? string? symbol?) #f]
-                 [#:macro macro-name (or/c identifier? string? symbol?) #f]
-                 [#:context ctx (or/c syntax? #f) #, @elem{determined automatically}])
-         (attributes c)]{
+@defstxclass[(expr/c [contract-expr syntax?]
+                     [#:positive pos-blame
+                      (or/c syntax? string? module-path-index? 'from-macro 'use-site 'unknown)
+                      'use-site]
+                     [#:negative neg-blame
+                      (or/c syntax? string? module-path-index? 'from-macro 'use-site 'unknown)
+                      'from-macro]
+                     [#:name expr-name (or/c identifier? string? symbol?) #f]
+                     [#:macro macro-name (or/c identifier? string? symbol?) #f]
+                     [#:context ctx (or/c syntax? #f) #, @elem{determined automatically}])]{
 
 Accepts an expression (@racket[expr]) and computes an attribute
 @racket[c] that represents the expression wrapped with the contract
