@@ -1070,7 +1070,7 @@
   (define set-indirect-label! (lambda (x v) (set-indirect-label-label! x v))))
 
 (define gen-label
-  (let ([n 0]) (lambda () (set! n (+ 1 n)) n))) ; <<changed from (string #\i)>>
+  (let ((n 0)) (lambda () (set! n (+ 1 n)) n))) ; <<changed from (string #\i)>>
 (define label?
   (lambda (x)
     (or (number? x) ; normal lexical labels <<changed to number>>
