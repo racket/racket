@@ -37,7 +37,9 @@ actually a valid expression.
 @defstxclass[integer]
 @defstxclass[exact-integer]
 @defstxclass[exact-nonnegative-integer]
-@defstxclass[exact-positive-integer])]{
+@defstxclass[exact-positive-integer]
+@defstxclass[regexp]
+@defstxclass[byte-regexp])]{
 
 Match syntax satisfying the corresponding predicates.
 }
@@ -59,6 +61,7 @@ and bytes, respectively.
 @defstxclass[id]{ Alias for @racket[identifier]. }
 @defstxclass[nat]{ Alias for @racket[exact-nonnegative-integer]. }
 @defstxclass[str]{ Alias for @racket[string]. }
+@defstxclass[character]{ Alias for @racket[char]. }
 
 @defstxclass[(static [predicate (-> any/c any/c)]
                      [description (or/c string? #f)])]{
