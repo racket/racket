@@ -24,8 +24,7 @@ On Windows, @racket[send-url] normally uses @racket[shell-execute]
 to launch a browser. (If the URL appears to contain a fragment, it may
 use an intermediate redirecting file due to a bug in IE7.)
 
-On Mac OS, @racket[send-url] runs @exec{osascript} to start the
-user's chosen browser.
+On Mac OS, @racket[send-url] calls @racket[send-url/mac].
 
 On Unix, @racket[send-url] uses a user-preference, or when none is
 set, it will look for a known browser.  See the description of
@@ -87,6 +86,17 @@ above.}
  @racketblock[(send-url/mac "http://www.google.com/" #:browser "Firefox")]
  would open the url in Firefox, even if that's not the default browser.
  Passing @racket[#f] means to use the default browser.
+
+ This function looks in
+ @filepath{com.apple.launchservices.secure.plist} in the
+ user's home directory for a @tt{LSHandlerURLScheme} key for
+ either @tt{http} or @tt{https} and then, looks for a
+ @tt{LSHandlerRoleAll} key that is one of a list of known
+ browsers. If it finds such a browser, it uses the
+ AppleScript command @tt{tell
+  application ... to open location} to send the url to the
+ browser. Otherwise, it uses just @tt{open location} to send
+ the url to the browser.
 }
 
 @defparam[external-browser cmd browser-preference?]{

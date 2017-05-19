@@ -4,7 +4,7 @@
 #lang racket/base
 
 (require racket/system racket/file racket/promise racket/port
-         racket/contract racket/promise)
+         racket/contract racket/promise json)
 
 (provide send-url send-url/file send-url/contents
          unix-browser-list browser-preference? external-browser
@@ -158,12 +158,69 @@
     (send-url/file temp)))
 
 (define osascript (delay/sync (find-executable-path "osascript" #f)))
-(define (send-url/mac url #:browser [browser #f])
+(define (send-url/mac url #:browser [_browser #f])
+  (define browser
+    (or _browser
+        (try-to-find-macosx-users-browser)))
   (browser-run (force osascript) "-e"
                (if browser
-                   (format "tell application \"~a\" to open location \"~a\""
+                   (format "tell application \"~a\" to open location \"~a\" activate"
                            browser url)
                    (format "open location \"~a\"" url))))
+
+(define (try-to-find-macosx-users-browser)
+  (define default-browser (hash-ref known-uri->macosx-browser-app "com.apple.safari"))
+  (let/ec k
+    (define (fail fmt . more)
+      (log-warning (string-append
+                    "tried to find user's browser choice, but: "
+                    (apply format fmt more)))
+      (k default-browser))
+    (define plist-file
+      (build-path (find-system-path 'home-dir)
+                  "Library" "Preferences"
+                  "com.apple.LaunchServices"
+                  "com.apple.launchservices.secure.plist"))
+    (unless (file-exists? plist-file) (fail "didn't find plist file"))
+    (define plutil (find-executable-path "plutil" #f))
+    (unless plutil (fail "didn't find plutil"))
+    (define-values (in out) (make-pipe))
+    (thread
+     (λ ()
+       (define-values (_1 _2 _3 _4 proc)
+         (apply
+          values
+          (process*/ports
+           out
+           (open-input-string "")
+           (current-error-port)
+           plutil
+           "-convert" "json"
+           "-o" "-"
+           plist-file)))
+       (proc 'wait)
+       (close-output-port out)))
+    (define json
+      (with-handlers ([exn:fail? (λ (exn) (fail (exn-message exn)))])
+        (read-json in)))
+    (define handlers (hash-ref json 'LSHandlers (λ () (fail "didn't find LSHandlers key in json"))))
+    (unless ((listof hash?) handlers) (fail "confusing LSHandlers ~s" handlers))
+    (define uri
+      (for/or ([table (in-list (hash-ref json 'LSHandlers))]
+               #:when
+               (member (hash-ref table 'LSHandlerURLScheme #f) '("http" "https")))
+        (hash-ref table 'LSHandlerRoleAll #f)))
+    (cond
+      [uri (hash-ref known-uri->macosx-browser-app uri #f)]
+      [else
+       ;; no preference set
+       default-browser])))
+
+(define known-uri->macosx-browser-app
+  (hash "com.google.chrome" "Google Chrome"
+        "com.apple.safari" "Safari"
+        "org.mozilla.firefox" "Firefox"
+        "com.operasoftware.opera" "Opera"))
 
 (define (send-url/unix url separate-window?)
   ;; in cases where a browser was uninstalled, we might get a preference that
