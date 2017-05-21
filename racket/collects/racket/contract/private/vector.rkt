@@ -63,7 +63,7 @@
            (fail val '(expected "an immutable vector" given: "~e") val))]
         [(eq? immutable #f)
          (when (immutable? val)
-           (fail val '(expected "an mutable vector" given: "~e") val))]
+           (fail val '(expected "a mutable vector" given: "~e") val))]
         [else (void)])
       (when first-order?
         (let loop ([n 0])
@@ -93,7 +93,7 @@
           (cond
             [(immutable? val) 
              (raise-blame-error blame #:missing-party neg-party
-                                val '(expected "an mutable vector" given: "~e") val)]
+                                val '(expected "a mutable vector" given: "~e") val)]
             [else #f])]
          [else #f])]
       [else
