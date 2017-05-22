@@ -24,5 +24,5 @@
               [else
                (raise-syntax-error #f "cannot mutate identifier" stx #'id)])]
        [(id . args)
-        (let ([stx* (cons #'(#%expression id) (cdr (syntax-e stx)))])
-          (datum->syntax stx stx* stx))]))))
+        (with-syntax ([app (datum->syntax stx '#%app)])
+          (syntax/loc stx (app id . args)))]))))
