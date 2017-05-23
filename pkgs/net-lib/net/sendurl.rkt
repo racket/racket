@@ -302,9 +302,10 @@
 
 ;; Process helper
 (define (browser-run #:shell [shell? #f] . args)
-  (define-values (stdout stdin pid stderr control)
+  (define stderr (open-output-string))
+  (define-values (stdout stdin pid _stderr control)
     (apply values (apply (if shell? process/ports process*/ports)
-                         (open-output-nowhere) #f (current-error-port)
+                         (open-output-nowhere) #f stderr
                          args)))
   (close-output-port stdin)
   ;; this is called from plt-help which will immediately exit when we
@@ -314,5 +315,7 @@
     (thread (lambda ()
               (control 'wait)
               (when (eq? 'done-error (control 'status))
-                (error 'browser-run "process execute failed: ~e" args)))))
+                (error 'browser-run "process execute failed: ~e\n~a"
+                       args
+                       (get-output-string stderr))))))
   (void))
