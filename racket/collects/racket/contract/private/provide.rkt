@@ -146,7 +146,8 @@
                                                      #'extra-neg-party-argument-fn))
                                    lifted-neg-party
                                    more ...)))
-                         #`(app #,(gen-slow-path-code) more ...)))]))
+                         (adjust-location
+                          #`(app #,(gen-slow-path-code) more ...))))]))
               ;; In case of partial expansion for module-level and internal-defn
               ;; contexts, delay expansion until it's a good time to lift
               ;; expressions:
