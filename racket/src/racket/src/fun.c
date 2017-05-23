@@ -3862,15 +3862,14 @@ Scheme_Object *extract_impersonator_results(int c, int argc, Scheme_Object **arg
     scheme_raise_exn(MZEXN_FAIL_CONTRACT,
                      "procedure %s: wrapper's %s result is not valid;\n"
                      " %s extra result (before original argument count) should be\n"
-                     " 'mark%s'parameter%s\n"
+                     " 'mark%s\n"
                      "  original: %V\n"
                      "  wrapper: %V\n"
                      "  received: %V",
                      what,
                      nth,
                      nth,
-                     (i ? " or " : ", "),
-                     (i ? "" : ", or a wrapper for the original procedure's result"),
+                     (i ? "" : " or a wrapper for the original procedure's result"),
                      o,
                      SCHEME_VEC_ELS(px->redirects)[0],
                      argv2[i]);
