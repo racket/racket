@@ -212,10 +212,16 @@
                       ;; entry of stmt in table.
                       (A (let-values ([(prep-status stmt tail?)
                                        (sqlite3_prepare_v2 db sql)])
-                           (when tail?
-                             (when stmt (sqlite3_finalize stmt))
-                             (error* fsym "multiple statements given"
-                                     '("given" value) sql))
+                           (cond
+                             [(not (= 0 prep-status))
+                              (when stmt (sqlite3_finalize stmt))
+                              (error* fsym (get-error-message)
+                                      '("given" value) sql)]
+                             [else
+                              (when tail?
+                                (when stmt (sqlite3_finalize stmt))
+                                (error* fsym "multiple statements given"
+                                        '("given" value) sql))])
                            (when stmt (hash-set! stmt-table stmt #t))
                            (values prep-status stmt))))])
         (when DEBUG?
