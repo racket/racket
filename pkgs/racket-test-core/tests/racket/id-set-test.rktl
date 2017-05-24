@@ -322,6 +322,10 @@
                     (define ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
                     (define ABCDE/IMMUTABLE (mk-immutable-id-set ABCDE-LIST))
                     
+                    (test 0 SET-COUNT
+                          (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE ABCDE/IMMUTABLE))
+                    (test 0 SET-COUNT
+                          (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE (mk-immutable-id-set ABCDE-LIST)))
                     (test 5 SET-COUNT (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE))
                     (test #t SET-EMPTY? (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE))
                     (test 4 SET-COUNT (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE ABCD))
