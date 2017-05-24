@@ -24,16 +24,16 @@
   (id-set/c elem/c #:idsettype 'bound #:mutability mutability))
 
 (define (id-set/c elem/c
-                  #:idsettype [idsettype 'dont-care]
+                  #:idsettype [id-set-type 'dont-care]
                   #:mutability [mutability 'immutable])
   (define idsettype/c
-    (case idsettype
+    (case id-set-type
       [(dont-care) any/c]
       [(free) free-id-set?]
       [(bound) bound-id-set?]
       [else (raise-arguments-error 'id-set/c
                                   "invalid #:idsettype argument"
-                                  "#:idsettype argument" idsettype)]))
+                                  "#:idsettype argument" id-set-type)]))
   (define mutability/c
     (case mutability
       [(dont-care) any/c]
@@ -48,8 +48,8 @@
         "element contract must be a flat contract"
         "element contract" (contract-name elem/c)))
   (case mutability
-    [(immutable) (flat-id-set-contract elem/c idsettype mutability)]
-    [else (chaperone-id-set-contract elem/c idsettype mutability)]))
+    [(immutable) (flat-id-set-contract elem/c id-set-type mutability)]
+    [else (chaperone-id-set-contract elem/c id-set-type mutability)]))
 
 (struct id-set-contract [elem/c idsettype mutability])
 
