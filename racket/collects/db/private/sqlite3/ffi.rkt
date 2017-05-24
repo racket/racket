@@ -2,6 +2,7 @@
 (require (for-syntax racket/base
                      setup/cross-system)
          racket/runtime-path
+         racket/string
          ffi/unsafe
          ffi/unsafe/define
          setup/cross-system)
@@ -60,7 +61,7 @@
 ;; -- Stmt --
 
 (define (copy-buffer buffer)
-  (let* ([buffer (string->bytes/utf-8 buffer)]
+  (let* ([buffer (string->bytes/utf-8 (string-trim buffer))]
          [n (bytes-length buffer)]
          [rawcopy (malloc (add1 n) 'atomic-interior)]
          [copy (make-sized-byte-string rawcopy n)])
