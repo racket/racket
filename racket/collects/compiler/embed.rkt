@@ -271,12 +271,13 @@
           #:exists 'truncate
           (lambda (port)
             (write-plist new-plist port)))))
-    (call-with-output-file (build-path dest 
-                                       "Contents" 
-                                       "PkgInfo")
-      #:exists 'truncate
-      (lambda (port)
-        (fprintf port "APPL~a" creator)))
+    (let* ([pkginfo-path (build-path dest "Contents" "PkgInfo")]
+           [old-perms (ensure-writable pkginfo-path)])
+      (call-with-output-file pkginfo-path
+        #:exists 'truncate
+        (lambda (port)
+          (fprintf port "APPL~a" creator)))
+      (done-writable pkginfo-path old-perms))
     (when resource-files
       (for-each (lambda (p)
                   (let-values ([(base name dir?) (split-path p)])
