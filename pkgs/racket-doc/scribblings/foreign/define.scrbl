@@ -53,7 +53,7 @@ If @racket[provide-id] is provided to @racket[define-ffi-definer], then
 good choice for @racket[provide-id].
 
 If @racket[core-define-id] is provided to @racket[define-ffi-definer],
-then @racket[code-define-id] is used in place of @racket[define] in
+then @racket[core-define-id] is used in place of @racket[define] in
 the expansion of @racket[define-id] for each binding.
 
 If @racket[default-make-fail-expr] is provided to
