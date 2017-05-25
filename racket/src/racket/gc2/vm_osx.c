@@ -219,6 +219,7 @@ static void os_protect_pages(void *p, size_t len, int writeable)
   if(retval != KERN_SUCCESS) {
     GCPRINT(GCOUTF, "WARNING: couldn't protect %li bytes of page %p%s\n",
 	   len, p, mach_error_string(retval));
+    abort();
   }
 }
 
