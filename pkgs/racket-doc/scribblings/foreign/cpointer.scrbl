@@ -10,12 +10,12 @@ operations manage tags to distinguish pointer types.
                        [ptr-type (or/c ctype? #f) _pointer]
                        [racket-to-c (or/c (any/c . -> . any/c) #f) values]
                        [c-to-racket (or/c (any/c . -> . any/c) #f) values])
-            ctype]
+            ctype?]
            [(_cpointer/null [tag any/c]
                             [ptr-type (or/c ctype? #f) _pointer]
                             [racket-to-c (or/c (any/c . -> . any/c) #f) values]
                             [c-to-racket (or/c (any/c . -> . any/c) #f) values])
-            ctype])]{
+            ctype?])]{
 
 Constructs a C pointer type, @racket[__tag], that gets a specific tag
 when converted to Racket, and accept only such tagged pointers when
@@ -83,7 +83,7 @@ obtain a tag. The tag is the symbol form of @racketvarfont{id}.}
 }
 
 @defproc*[([(cpointer-has-tag? [cptr cpointer?] [tag any/c]) boolean?]
-           [(cpointer-push-tag! [cptr cpointer?] [tag any/c]) void])]{
+           [(cpointer-push-tag! [cptr cpointer?] [tag any/c]) void?])]{
 
 These two functions treat pointer tags as lists of tags.  As described
 in @secref["foreign:pointer-funcs"], a pointer tag does not have any
