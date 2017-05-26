@@ -64,3 +64,15 @@ about to be collected by the garbage collector, whichever happens
 first. The @racket[callback] is only applied to @racket[v] once.
 
 @history[#:added "6.1.1.6"]}
+
+
+@defproc[(make-custodian-at-root) custodian?]{
+
+Creates a custodian that is a child of the root custodian, bypassing
+the @racket[current-custodian] setting.
+
+Creating a child of the root custodian is useful for registering a
+shutdown function that will be triggered only when the current place
+terminates.
+
+@history[#:added "6.9.0.5"]}

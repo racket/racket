@@ -29,6 +29,7 @@ TO DO:
          ffi/unsafe/atomic
          ffi/unsafe/alloc
          ffi/file
+         ffi/unsafe/custodian
          racket/list
          racket/port
          racket/tcp
@@ -423,8 +424,6 @@ TO DO:
 
 (define SSL_TLSEXT_ERR_OK 0)
 (define SSL_TLSEXT_ERR_NOACK 3)
-
-(define-mzscheme scheme_make_custodian (_fun _pointer -> _scheme))
 
 (define-runtime-path ssl-dh4096-param-path "dh4096.pem")
 
@@ -1147,9 +1146,8 @@ TO DO:
         (loop)))))))
 
 (define (kernel-thread thunk)
-  ;; Since we provide #f to scheme_make_custodian,
-  ;;  the custodian is managed directly by the root:
-  (parameterize ([current-custodian (scheme_make_custodian #f)])
+  ;; Run with a custodian that is managed directly by the root custodian:
+  (parameterize ([current-custodian (make-custodian-at-root)])
     (thread thunk)))
 
 (define (make-ssl-output-port mzssl)

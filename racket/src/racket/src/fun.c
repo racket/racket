@@ -203,6 +203,9 @@ static Scheme_Object *do_cc_guard(Scheme_Object *v, Scheme_Object *cc_guard, Sch
 
 static Scheme_Object *chaperone_unsafe_undefined(int argc, Scheme_Object **argv);
 
+static Scheme_Object *unsafe_abort_continuation_no_dws(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_call_with_control_no_dws(int argc, Scheme_Object *argv[]);
+
 static Scheme_Object *
 scheme_extract_one_cc_mark_with_meta(Scheme_Object *mark_set, Scheme_Object *key, 
                                      Scheme_Object *prompt_tag, Scheme_Meta_Continuation **_meta,
@@ -765,6 +768,9 @@ scheme_init_unsafe_fun (Scheme_Env *env)
 						      "unsafe-impersonate-procedure",
 						      2, -1),
 			     env);
+
+  GLOBAL_PRIM_W_ARITY("unsafe-abort-current-continuation/no-wind", unsafe_abort_continuation_no_dws, 2, 2, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-call-with-composable-continuation/no-wind", unsafe_call_with_control_no_dws, 2, 2, env);
 }
 
 void
@@ -7723,6 +7729,12 @@ Scheme_Object *scheme_abort_continuation_no_dws (Scheme_Object *pt, Scheme_Objec
   return do_abort_continuation(2, a, 1);
 }
 
+static Scheme_Object *unsafe_abort_continuation_no_dws(int argc, Scheme_Object *argv[])
+{
+  /* See scheme_abort_continuation_no_dws() */
+  return do_abort_continuation(argc, argv, 1);
+}
+
 static Scheme_Object *do_call_with_control (int argc, Scheme_Object *argv[], int no_dws)
 {
   Scheme_Object *prompt_tag;
@@ -7767,6 +7779,12 @@ Scheme_Object *scheme_call_with_composable_no_dws (Scheme_Object *proc, Scheme_O
   a[1] = pt;
 
   return do_call_with_control(2, a, 1);
+}
+
+static Scheme_Object *unsafe_call_with_control_no_dws(int argc, Scheme_Object *argv[])
+{
+  /* See scheme_call_with_composable_no_dws() */
+  return do_call_with_control(argc, argv, 1);
 }
 
 static Scheme_Cont_Mark *copy_cm_shared_on_write(Scheme_Meta_Continuation *mc)

@@ -362,7 +362,7 @@ For communication among @tech{places}, the new byte string is allocated in the
                           [err-char (or/c #f char?) #f]
                           [start exact-nonnegative-integer? 0]
                           [end exact-nonnegative-integer? (bytes-length bstr)])
-         char?]{
+         (or/c char? #f)]{
  Returns the @racket[skip]th character in the UTF-8 decoding of
  @racket[bstr]'s substring from @racket[start] to @racket[end], but without
  actually generating the other decoded characters. If the substring is
@@ -386,7 +386,7 @@ For communication among @tech{places}, the new byte string is allocated in the
                             [err-char (or/c #f char?) #f]
                             [start exact-nonnegative-integer? 0]
                             [end exact-nonnegative-integer? (bytes-length bstr)])
-         exact-nonnegative-integer?]{
+         (or/c exact-nonnegative-integer? #f)]{
  Returns the offset in bytes into @racket[bstr] at which the @racket[skip]th
  character's encoding starts in the UTF-8 decoding of @racket[bstr]'s
  substring from @racket[start] to @racket[end] (but without actually

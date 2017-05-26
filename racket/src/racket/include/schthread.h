@@ -122,7 +122,7 @@ typedef intptr_t objhead;
 
 typedef void (*Scheme_Sleep_Proc)(float seconds, void *fds);
 
-typedef void (*Scheme_On_Atomic_Timeout_Proc)(int must_give_up);
+typedef void (*Scheme_On_Atomic_Timeout_Proc)(void *data, int must_give_up);
 
 /* **************************************** */
 
@@ -376,6 +376,7 @@ typedef struct Thread_Local_Variables {
   Scheme_Sleep_Proc scheme_place_sleep_;
   struct GHBN_Thread_Data *ghbn_thread_data_;
   Scheme_On_Atomic_Timeout_Proc on_atomic_timeout_;
+  void *on_atomic_timeout_data_;
   int atomic_timeout_auto_suspend_;
   int atomic_timeout_atomic_level_;
   void *scheme_inotify_server_;
@@ -778,6 +779,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_place_sleep XOA (scheme_get_thread_local_variables()->scheme_place_sleep_)
 #define ghbn_thread_data XOA (scheme_get_thread_local_variables()->ghbn_thread_data_)
 #define on_atomic_timeout XOA (scheme_get_thread_local_variables()->on_atomic_timeout_)
+#define on_atomic_timeout_data XOA (scheme_get_thread_local_variables()->on_atomic_timeout_data_)
 #define atomic_timeout_auto_suspend XOA (scheme_get_thread_local_variables()->atomic_timeout_auto_suspend_)
 #define atomic_timeout_atomic_level XOA (scheme_get_thread_local_variables()->atomic_timeout_atomic_level_)
 #define scheme_inotify_server XOA (scheme_get_thread_local_variables()->scheme_inotify_server_)

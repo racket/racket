@@ -240,6 +240,7 @@ HOOK_SHARED_OK void (*scheme_notify_multithread)(int on);
 HOOK_SHARED_OK void (*scheme_wakeup_on_input)(void *fds);
 HOOK_SHARED_OK int (*scheme_check_for_break)(void);
 THREAD_LOCAL_DECL(static Scheme_On_Atomic_Timeout_Proc on_atomic_timeout);
+THREAD_LOCAL_DECL(static void *on_atomic_timeout_data);
 THREAD_LOCAL_DECL(static int atomic_timeout_auto_suspend);
 THREAD_LOCAL_DECL(static int atomic_timeout_atomic_level);
 
@@ -371,7 +372,6 @@ static Scheme_Object *evt_p(int argc, Scheme_Object *args[]);
 static Scheme_Object *evts_to_evt(int argc, Scheme_Object *args[]);
 
 static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[]);
-static Scheme_Object *make_custodian_from_main(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_close_all(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_to_list(int argc, Scheme_Object *argv[]);
@@ -380,6 +380,15 @@ static Scheme_Object *make_custodian_box(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_box_value(int argc, Scheme_Object *argv[]);
 static Scheme_Object *custodian_box_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *unsafe_thread_at_root(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *unsafe_make_custodian_at_root(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_custodian_register(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_custodian_unregister(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *argv[]);
+static Scheme_Object *unsafe_set_on_atomic_timeout(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *make_plumber(int argc, Scheme_Object *argv[]);
 static Scheme_Object *plumber_p(int argc, Scheme_Object *argv[]);
@@ -409,6 +418,10 @@ static Scheme_Object *is_thread_cell_values(int argc, Scheme_Object *args[]);
 static Scheme_Object *make_security_guard(int argc, Scheme_Object *argv[]);
 static Scheme_Object *security_guard_p(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_security_guard(int argc, Scheme_Object *argv[]);
+
+static Scheme_Object *security_guard_check_file(int argc, Scheme_Object *argv[]);
+static Scheme_Object *security_guard_check_file_link(int argc, Scheme_Object *argv[]);
+static Scheme_Object *security_guard_check_network(int argc, Scheme_Object *argv[]);
 
 static Scheme_Object *cache_configuration(int argc, Scheme_Object **argv);
 
@@ -671,6 +684,16 @@ scheme_init_unsafe_thread (Scheme_Env *env)
 						      "unsafe-in-atomic?",
 						      0, 0),
 			     env);
+
+  GLOBAL_PRIM_W_ARITY("unsafe-thread-at-root", unsafe_thread_at_root, 1, 1, env);
+ 
+  GLOBAL_PRIM_W_ARITY("unsafe-make-custodian-at-root", unsafe_make_custodian_at_root, 0, 0, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-custodian-register", unsafe_custodian_register, 5, 5, env);
+  GLOBAL_PRIM_W_ARITY("unsafe-custodian-unregister", unsafe_custodian_unregister, 2, 2, env);
+
+  GLOBAL_PRIM_W_ARITY("unsafe-register-process-global", unsafe_register_process_global, 2, 2, env);
+
+  GLOBAL_PRIM_W_ARITY("unsafe-set-on-atomic-timeout!", unsafe_set_on_atomic_timeout, 1, 1, env);
 }
 
 void scheme_init_thread_places(void) {
@@ -680,6 +703,7 @@ void scheme_init_thread_places(void) {
   REGISTER_SO(gc_prepost_callback_descs);
   REGISTER_SO(place_local_misc_table);
   REGISTER_SO(gc_info_prefab);
+  REGISTER_SO(on_atomic_timeout_data);
   gc_info_prefab = scheme_lookup_prefab_type(scheme_intern_symbol("gc-info"), 10);
 }
 
@@ -748,9 +772,12 @@ void scheme_init_paramz(Scheme_Env *env)
   GLOBAL_PRIM_W_ARITY("extend-parameterization" , scheme_extend_parameterization , 1, -1, newenv);
   GLOBAL_PRIM_W_ARITY("check-for-break"         , check_break_now         , 0,  0, newenv);
   GLOBAL_PRIM_W_ARITY("reparameterize"          , reparameterize          , 1,  1, newenv);
-  GLOBAL_PRIM_W_ARITY("make-custodian-from-main", make_custodian_from_main, 0,  0, newenv);
 
   GLOBAL_PRIM_W_ARITY("cache-configuration"     , cache_configuration, 2,  2, newenv);
+
+  GLOBAL_PRIM_W_ARITY("security-guard-check-file", security_guard_check_file, 3,  3, newenv);
+  GLOBAL_PRIM_W_ARITY("security-guard-check-file-link", security_guard_check_file_link, 3,  3, newenv);
+  GLOBAL_PRIM_W_ARITY("security-guard-check-network", security_guard_check_network, 4,  4, newenv);
 
   scheme_finish_primitive_module(newenv);
   scheme_protect_primitive_provide(newenv, NULL);
@@ -1377,6 +1404,50 @@ void scheme_remove_managed(Scheme_Custodian_Reference *mr, Scheme_Object *o)
   remove_managed(mr, o, NULL, NULL);
 }
 
+static void call_registered_callback(Scheme_Object *v, void *callback)
+{
+  Scheme_Object *argv[1];
+
+  argv[0] = v;
+
+  scheme_start_in_scheduler();
+  _scheme_apply_multi(callback, 1, argv);
+  scheme_end_in_scheduler();
+}
+
+static Scheme_Object *unsafe_custodian_register(int argc, Scheme_Object *argv[])
+{
+  Scheme_Custodian_Reference *mr;
+  Scheme_Custodian *custodian = (Scheme_Custodian *)argv[0];
+  Scheme_Object *v = argv[1];
+  Scheme_Object *callback = argv[2];
+  int at_exit = SCHEME_TRUEP(argv[3]);
+  int init_weak = SCHEME_TRUEP(argv[4]);
+
+  /* Some checks, just to be polite */
+  if (!SCHEME_CUSTODIANP(argv[0]))
+    scheme_wrong_contract("unsafe-custodian-register", "custodian?", 0, argc, argv);
+  if (!SCHEME_PROCP(callback))
+    scheme_wrong_contract("unsafe-custodian-register", "procedure?", 2, argc, argv);
+
+  if (at_exit)
+    mr = scheme_add_managed_close_on_exit(custodian, v, call_registered_callback, callback);
+  else
+    mr = scheme_add_managed(custodian, v, call_registered_callback, callback, !init_weak);
+
+  return scheme_make_cptr(mr, NULL);
+}
+
+static Scheme_Object *unsafe_custodian_unregister(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *v = argv[0];
+  Scheme_Custodian_Reference *mr = (Scheme_Custodian_Reference *)SCHEME_CPTR_VAL(argv[1]);
+
+  scheme_remove_managed(mr, v);
+
+  return scheme_void;
+}
+
 Scheme_Thread *scheme_do_close_managed(Scheme_Custodian *m, Scheme_Exit_Closer_Func cf)
 {
   Scheme_Thread *kill_self = NULL;
@@ -1567,7 +1638,7 @@ static Scheme_Object *make_custodian(int argc, Scheme_Object *argv[])
   return (Scheme_Object *)scheme_make_custodian(m);
 }
 
-static Scheme_Object *make_custodian_from_main(int argc, Scheme_Object *argv[])
+static Scheme_Object *unsafe_make_custodian_at_root(int argc, Scheme_Object *argv[])
 {
   return (Scheme_Object *)scheme_make_custodian(NULL);
 }
@@ -2714,6 +2785,24 @@ void *scheme_register_process_global(const char *key, void *val)
   return old_val;
 }
 
+static Scheme_Object *unsafe_register_process_global(int argc, Scheme_Object *argv[])
+{
+  void *val;
+  
+  if (!SCHEME_BYTE_STRINGP(argv[0]))
+    scheme_wrong_contract("unsafe-register-process-global", "bytes?", 0, argc, argv);
+  if (!scheme_is_cpointer(argv[0]))
+    scheme_wrong_contract("unsafe-register-process-global", "cpointer?", 1, argc, argv);
+  
+  val = scheme_register_process_global(SCHEME_BYTE_STR_VAL(argv[0]),
+                                       scheme_extract_pointer(argv[1]));
+
+  if (val)
+    return scheme_make_cptr(val, NULL);
+  else
+    return scheme_false;
+}
+
 void scheme_init_process_globals(void)
 {
 #if defined(MZ_USE_MZRT)
@@ -3292,6 +3381,18 @@ static Scheme_Object *sch_thread(int argc, Scheme_Object *args[])
   scheme_custodian_check_available(NULL, "thread", "thread");
 
   return scheme_thread(args[0]);
+}
+
+static Scheme_Object *unsafe_thread_at_root(int argc, Scheme_Object *args[])
+{
+  scheme_check_proc_arity("unsafe-thread-at-root", 0, 0, argc, args);
+
+  return scheme_thread_w_details(args[0],
+                                 scheme_minimal_config(),
+                                 scheme_empty_cell_table(),
+                                 NULL, /* default break cell */
+                                 main_custodian,
+                                 0);
 }
 
 static Scheme_Object *sch_thread_nokill(int argc, Scheme_Object *args[])
@@ -4816,7 +4917,7 @@ static void call_on_atomic_timeout(int must)
      local variable so that the function call isn't
      obscured to xform: */
   oat = on_atomic_timeout;
-  oat(must);
+  oat(on_atomic_timeout_data, must);
 
   restore_thread_schedule_state(p, &ssr, 1);
 }
@@ -5487,12 +5588,13 @@ int scheme_wait_until_suspend_ok(void)
   return did;
 }
 
-Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Timeout_Proc p)
+Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Timeout_Proc p, void *data)
 {
   Scheme_On_Atomic_Timeout_Proc old;
 
   old = on_atomic_timeout;
   on_atomic_timeout = p;
+  on_atomic_timeout_data = data;
   if (p) {
     atomic_timeout_auto_suspend = 1;
     atomic_timeout_atomic_level = do_atomic;
@@ -5503,6 +5605,27 @@ Scheme_On_Atomic_Timeout_Proc scheme_set_on_atomic_timeout(Scheme_On_Atomic_Time
   return old;
 }
 
+static void call_timeout_callback(void *data, int must_give_up)
+{
+  Scheme_Object *a[1];
+  a[0] = (must_give_up ? scheme_true : scheme_false);
+
+  scheme_start_in_scheduler();
+  _scheme_apply_multi((Scheme_Object *)data, 1, a);
+  scheme_end_in_scheduler(); 
+}
+
+static Scheme_Object *unsafe_set_on_atomic_timeout(int argc, Scheme_Object *argv[])
+{
+  Scheme_On_Atomic_Timeout_Proc r;
+  
+  if (SCHEME_FALSEP(argv[0]))
+    r = scheme_set_on_atomic_timeout(NULL, NULL);
+  else
+    r = scheme_set_on_atomic_timeout(call_timeout_callback, argv[0]);
+
+  return (r ? scheme_true : scheme_false);
+}
 
 static Scheme_Object *unsafe_start_atomic(int argc, Scheme_Object **argv)
 {
@@ -8526,6 +8649,102 @@ static Scheme_Object *current_security_guard(int argc, Scheme_Object *argv[])
                               -1, security_guard_p, "security-guard?", 0);
 }
 
+static Scheme_Object *security_guard_check_file(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *l, *a;
+  int guards = 0;
+  
+  if (!SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("security-guard-check-file", "symbol?", 0, argc, argv);
+  
+  if (!SCHEME_PATH_STRINGP(argv[1]))
+    scheme_wrong_contract("security-guard-check-file", "path-string?", 1, argc, argv);
+
+  l = argv[2];
+  while (SCHEME_PAIRP(l)) {
+    a = SCHEME_CAR(l);
+    if (SAME_OBJ(a, exists_symbol))
+      guards |= SCHEME_GUARD_FILE_EXISTS;
+    else if (SAME_OBJ(a, delete_symbol))
+      guards |= SCHEME_GUARD_FILE_DELETE;
+    else if (SAME_OBJ(a, execute_symbol))
+      guards |= SCHEME_GUARD_FILE_EXECUTE;
+    else if (SAME_OBJ(a, write_symbol))
+      guards |= SCHEME_GUARD_FILE_WRITE;
+    else if (SAME_OBJ(a, read_symbol))
+      guards |= SCHEME_GUARD_FILE_READ;
+    else
+      break;
+    
+    l = SCHEME_CDR(l);
+  }
+
+  if (!SCHEME_NULLP(l))
+    scheme_wrong_contract("security-guard-check-file",
+                          "(listof (or/c 'read 'write 'execute 'delete 'exists))",
+                          2, argc, argv);
+
+  a = argv[1];
+  if (!SCHEME_PATHP(a))
+    a = scheme_char_string_to_path(a);
+
+  scheme_security_check_file(scheme_symbol_val(argv[0]),
+                             SCHEME_PATH_VAL(a),
+                             guards);
+
+  return scheme_void;
+}
+  
+static Scheme_Object *security_guard_check_file_link(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a, *b;
+  
+  if (!SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("security-guard-check-file-link", "symbol?", 0, argc, argv);
+  
+  if (!SCHEME_PATH_STRINGP(argv[1]))
+    scheme_wrong_contract("security-guard-check-file-link", "path-string?", 1, argc, argv);
+
+  if (!SCHEME_PATH_STRINGP(argv[2]))
+    scheme_wrong_contract("security-guard-check-file-link", "path-string?", 2, argc, argv);
+
+  a = argv[1];
+  if (!SCHEME_PATHP(a))
+    a = scheme_char_string_to_path(a);
+
+  b = argv[2];
+  if (!SCHEME_PATHP(b))
+    b = scheme_char_string_to_path(b);
+
+  scheme_security_check_file_link(scheme_symbol_val(argv[0]), SCHEME_PATH_VAL(a), SCHEME_PATH_VAL(b));
+
+  return scheme_void;
+}
+
+static Scheme_Object *security_guard_check_network(int argc, Scheme_Object *argv[])
+{
+  Scheme_Object *a;
+  
+  if (!SCHEME_SYMBOLP(argv[0]))
+    scheme_wrong_contract("security-guard-check-network", "symbol?", 0, argc, argv);
+
+  if (!SCHEME_CHAR_STRINGP(argv[1]))
+    scheme_wrong_contract("security-guard-check-network", "string?", 1, argc, argv);
+
+  if (!SCHEME_INTP(argv[2])
+      || (SCHEME_INT_VAL(argv[2]) < 1)
+      || (SCHEME_INT_VAL(argv[2]) > 65535))
+    scheme_wrong_contract("security-guard-check-network", "(integer-in 1 65535)", 2, argc, argv);
+
+  a = scheme_char_string_to_byte_string(argv[1]);
+  
+  scheme_security_check_network(scheme_symbol_val(argv[0]),
+                                SCHEME_BYTE_STR_VAL(a),
+                                SCHEME_INT_VAL(argv[2]),
+                                SCHEME_TRUEP(argv[3]));
+
+  return scheme_void;
+}
 
 void scheme_security_check_file(const char *who, const char *filename, int guards)
 {
