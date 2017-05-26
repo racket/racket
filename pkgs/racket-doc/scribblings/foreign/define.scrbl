@@ -9,7 +9,8 @@
                 option ...)
               ([option (code:line #:provide provide-id)
                        (code:line #:define core-define-id)
-                       (code:line #:default-make-fail default-make-fail-expr)])]{
+                       (code:line #:default-make-fail default-make-fail-expr)
+                       (code:line #:make-c-id make-c-id)])]{
 
 Binds @racket[define-id] as a definition form to extract bindings from
 the library produced by @racket[ffi-lib-expr]. The syntax of
@@ -45,6 +46,13 @@ The other options support further wrapping and configuration:
        @racket[_id] to report an error when it is applied if
        @racket[_c-id] was not found in the foreign library.}
 
+ @item{If provided, the @racket[#:make-c-id] option changes
+       the default behavior of @racket[_c-id] following a
+       convention, such as converting hyphens to underscores or
+       camel case. Convention are syntax functions that convert a
+       given identifier to a new one following the convention.
+       Several conventions are provided by
+       @racketmod[ffi/unsafe/define/conventions].}
 ]
 
 If @racket[provide-id] is provided to @racket[define-ffi-definer], then
@@ -97,3 +105,23 @@ with @racket[#:make-fail] or @racket[#:default-make-fail] in
 Equivalent to @racket[(provide (protect-out provide-spec ...))]. The
 @racket[provide-protected] identifier is useful with
 @racket[#:provide] in @racket[define-ffi-definer].}
+
+@defmodule[ffi/unsafe/define/conventions]
+
+This module provides several conventions for use with
+@racket[#:make-c-id] in @racket[define-ffi-definer].
+
+@defidform[convention:hyphen->underscore]
+
+A convention that converts hyphens in an identifier to
+underscores.
+
+@racketblock[
+  (define-ffi-definer define-gtk gtk-lib
+    #:make-c-id hyphen->underline)
+ (define-gtk gtk-rc-parse (_fun _path -> _void))]
+
+@defidform[convention:hyphen->camelcase]
+
+Similar to @racket[convention:hyphen->underscore], but
+converts the identifier to camel case instead.
