@@ -8735,13 +8735,16 @@ static Scheme_Object *security_guard_check_network(int argc, Scheme_Object *argv
       || (SCHEME_INT_VAL(argv[2]) < 1)
       || (SCHEME_INT_VAL(argv[2]) > 65535))
     scheme_wrong_contract("security-guard-check-network", "(integer-in 1 65535)", 2, argc, argv);
+  
+  if (!SAME_OBJ(argv[3], client_symbol) && !SAME_OBJ(argv[3], server_symbol))
+    scheme_wrong_contract("security-guard-check-network", "(or/c 'client'server)", 3, argc, argv);
 
   a = scheme_char_string_to_byte_string(argv[1]);
   
   scheme_security_check_network(scheme_symbol_val(argv[0]),
                                 SCHEME_BYTE_STR_VAL(a),
                                 SCHEME_INT_VAL(argv[2]),
-                                SCHEME_TRUEP(argv[3]));
+                                SAME_OBJ(argv[3], client_symbol));
 
   return scheme_void;
 }
