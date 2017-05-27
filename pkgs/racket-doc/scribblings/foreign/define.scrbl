@@ -106,7 +106,7 @@ Equivalent to @racket[(provide (protect-out provide-spec ...))]. The
 @racket[provide-protected] identifier is useful with
 @racket[#:provide] in @racket[define-ffi-definer].}
 
-@subsection{FFI Symbol Conventions}
+@section{FFI Symbol Conventions}
 
 @defmodule[ffi/unsafe/define/conventions]
 
