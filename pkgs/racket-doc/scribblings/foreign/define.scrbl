@@ -113,8 +113,9 @@ Equivalent to @racket[(provide (protect-out provide-spec ...))]. The
 This module provides several
 @deftech{FFI identifier conventions} for use with
 @racket[#:make-c-id] in @racket[define-ffi-definer]. A
-@tech{FFI identifier convention} is any @tech{syntax
- transformer} that converts one identifier to another.
+@tech{FFI identifier convention} is any
+@tech[#:doc '(lib "scribblings/reference/reference.scrbl")]{syntax transformer}
+that converts one identifier to another.
 
 @history[#:added "6.9.0.5"]
 
