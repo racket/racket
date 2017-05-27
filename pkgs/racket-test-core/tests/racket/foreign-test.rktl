@@ -5,6 +5,8 @@
 
 (require ffi/unsafe
          ffi/unsafe/cvector
+         ffi/unsafe/define
+         ffi/unsafe/define/conventions
          ffi/vector
          racket/extflonum
          racket/place
@@ -1187,6 +1189,20 @@
 (eq? (tagged-obj3 o) obj3)
 (= (tagged-non2 o) obj2-addr)
 (= (tagged-non4 o) obj4-addr)
+
+;; ----------------------------------------
+
+(let ()
+  (unless (eq? (system-type) 'windows)
+    (define-ffi-definer define-test-lib test-lib
+      #:make-c-id convention:hyphen->underscore)
+    (define-test-lib check-multiple-of-ten
+      (_fun #:save-errno 'posix _int -> _int))
+    (test 0 check-multiple-of-ten 40)
+    (test -1 check-multiple-of-ten 42)
+    (test 2 saved-errno)
+    (saved-errno 5)
+    (test 5 saved-errno)))
 
 ;; ----------------------------------------
 
