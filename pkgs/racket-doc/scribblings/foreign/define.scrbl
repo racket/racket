@@ -51,7 +51,7 @@ The other options support further wrapping and configuration:
        identifier convention}, such as converting hyphens to
       underscores or camel case.
       Several conventions are provided by
-      @racketmod[ffi/unsafe/define/conventions].}
+      @racketmodname[ffi/unsafe/define/conventions].}
 ]
 
 If @racket[provide-id] is provided to @racket[define-ffi-definer], then
