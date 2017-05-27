@@ -91,6 +91,7 @@ error immediately. If @racket[define-gtk] is instead defined with
 then if @tt{gtk_rc_parse} is not found in @racket[gtk-lib], an error
 is reported only when @racket[gtk_rc_parse] is called.}
 
+@history[#:changed "6.9.0.5" @elem{Added @racket[#:make-c-id] parameter.}]
 
 @defproc[(make-not-available [name symbol?]) (#:rest list? -> any/c)]{
 
@@ -112,6 +113,8 @@ This module provides several
 @racket[#:make-c-id] in @racket[define-ffi-definer]. A
 @tech{FFI identifier convention} is any @tech{syntax
  transformer} that converts one identifier to another.
+
+@history[#:added "6.9.0.5"]
 
 @defidform[convention:hyphen->underscore]
 
