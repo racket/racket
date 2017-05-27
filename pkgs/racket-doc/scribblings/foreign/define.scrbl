@@ -47,12 +47,11 @@ The other options support further wrapping and configuration:
        @racket[_c-id] was not found in the foreign library.}
 
  @item{If provided, the @racket[#:make-c-id] option changes
-       the default behavior of @racket[_c-id] following a
-       convention, such as converting hyphens to underscores or
-       camel case. Convention are syntax functions that convert a
-       given identifier to a new one following the convention.
-       Several conventions are provided by
-       @racketmod[ffi/unsafe/define/conventions].}
+      the default behavior of @racket[_c-id] using an @tech{ffi
+       identifier convention}, such as converting hyphens to
+      underscores or camel case.
+      Several conventions are provided by
+      @racketmod[ffi/unsafe/define/conventions].}
 ]
 
 If @racket[provide-id] is provided to @racket[define-ffi-definer], then
@@ -108,8 +107,11 @@ Equivalent to @racket[(provide (protect-out provide-spec ...))]. The
 
 @defmodule[ffi/unsafe/define/conventions]
 
-This module provides several conventions for use with
-@racket[#:make-c-id] in @racket[define-ffi-definer].
+This module provides several
+@deftech{FFI identifier conventions} for use with
+@racket[#:make-c-id] in @racket[define-ffi-definer]. A
+@tech{FFI identifier convention} is any @tech{syntax
+ transformer} that converts one identifier to another.
 
 @defidform[convention:hyphen->underscore]
 
