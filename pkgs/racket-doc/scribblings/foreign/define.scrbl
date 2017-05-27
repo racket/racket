@@ -118,17 +118,19 @@ This module provides several
 
 @history[#:added "6.9.0.5"]
 
-@defidform[convention:hyphen->underscore]
+@defidform[convention:hyphen->underscore]{
 
 A convention that converts hyphens in an identifier to
 underscores.
+}
 
 @racketblock[
   (define-ffi-definer define-gtk gtk-lib
     #:make-c-id hyphen->underline)
  (define-gtk gtk-rc-parse (_fun _path -> _void))]
 
-@defidform[convention:hyphen->camelcase]
-
+@defidform[convention:hyphen->camelcase]{
+                                         
 Similar to @racket[convention:hyphen->underscore], but
 converts the identifier to camel case instead.
+}
