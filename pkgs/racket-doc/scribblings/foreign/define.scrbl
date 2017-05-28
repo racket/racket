@@ -106,7 +106,7 @@ Equivalent to @racket[(provide (protect-out provide-spec ...))]. The
 @racket[provide-protected] identifier is useful with
 @racket[#:provide] in @racket[define-ffi-definer].}
 
-@section{FFI Symbol Conventions}
+@section{FFI Identifier Conventions}
 
 @defmodule[ffi/unsafe/define/conventions]
 
@@ -123,15 +123,16 @@ that converts one identifier to another.
 
 A convention that converts hyphens in an identifier to
 underscores.
-}
 
 @racketblock[
   (define-ffi-definer define-gtk gtk-lib
-    #:make-c-id hyphen->underline)
+    #:make-c-id convention:hyphen->underscore)
  (define-gtk gtk-rc-parse (_fun _path -> _void))]
+}
 
 @defidform[convention:hyphen->camelcase]{
                                          
-Similar to @racket[convention:hyphen->underscore], but
-converts the identifier to camel case instead.
+ Similar to @racket[convention:hyphen->underscore], but
+ converts the identifier to camel case instead, following the
+ @racket[string-titlecase] function.
 }
