@@ -547,7 +547,7 @@
         ;; disappear from the inputs.
         (unless use-expr?
           (if (and (pair? no-expr?) (car no-expr?) expr)
-            (err "got an expression for a custom type that do not use it"
+            (err "got an expression for a custom type that does not use it"
                  clause)
             (set! expr (void))))
         (when use-expr?
