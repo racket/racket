@@ -652,11 +652,11 @@ Supported for any @racket[st] and @racket[st2] that both @supp{support}
 Returns @racket[#t] if @racket[st2] contains every member of @racket[st];
 returns @racket[#f] otherwise.
 
-If @racket[st0] is a list, each @racket[st] must also be a list.  This
+If @racket[st] is a list, then @racket[st2] must also be a list.  This
 operation runs on lists in time proportional to the size of @racket[st] times
 the size of @racket[st2].
 
-If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
+If @racket[st] is a @tech{hash set}, then @racket[st2] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
 @racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
@@ -677,11 +677,11 @@ Supported for any @racket[st] that @supp{supports} @racket[set->stream].
 Returns @racket[#t] if @racket[st2] contains every member of @racket[st] and at
 least one additional element; returns @racket[#f] otherwise.
 
-If @racket[st0] is a list, each @racket[st] must also be a list.  This
+If @racket[st] is a list, then @racket[st2] must also be a list.  This
 operation runs on lists in time proportional to the size of @racket[st] times
 the size of @racket[st2].
 
-If @racket[st0] is a @tech{hash set}, each @racket[st] must also be a
+If @racket[st] is a @tech{hash set}, then @racket[st2] must also be a
 @tech{hash set} that uses the same comparison function (@racket[equal?],
 @racket[eqv?], or @racket[eq?]).  The mutability and key strength of the hash
 sets may differ.  This operation runs on hash sets in time proportional to the
