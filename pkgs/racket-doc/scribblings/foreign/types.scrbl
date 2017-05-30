@@ -800,8 +800,8 @@ specifications:
               _string _int ->> (r : _int)
               ->> (if (and (= r ERR_BUSY)
                            (< count 5))
-                      (retry (add1 count))
-                      r))
+                     (again (add1 count))
+                     r))
        ]
 
        produces a wrapper that calls the foreign function up to five
