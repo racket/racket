@@ -121,8 +121,9 @@ that converts one identifier to another.
 
 @defidform[convention:hyphen->underscore]{
 
-A convention that converts hyphens in an identifier to
-underscores.
+ A convention that converts hyphens in an identifier to
+ underscores. For example, the identifier
+ @racket[gtk-rc-parse] will transform to @racket[gkt_rc_parse].
 
 @racketblock[
   (define-ffi-definer define-gtk gtk-lib
@@ -134,5 +135,12 @@ underscores.
                                          
  Similar to @racket[convention:hyphen->underscore], but
  converts the identifier to camel case instead, following the
- @racket[string-titlecase] function.
+ @racket[string-titlecase] function. For example, the
+ identifier @racket[camelCaseVariable] will transform to
+ @racket[came-case-variable].
+ 
+ @racketblock[
+ (define-ffi-definer define-calib camel-lib
+   #:make-c-id conventon:hyphen->camelcase)
+ (define-calib camel-case-variable (_fun -> _void))]
 }
