@@ -1,7 +1,7 @@
 #lang scribble/doc
 @(require scribble/manual scribble/eval racket/sandbox
           "utils.rkt"
-          (for-label racket/contract))
+          (for-label racket/base racket/contract))
 
 @title[#:tag "contracts-gotchas"]{Gotchas}
 
