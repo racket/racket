@@ -96,4 +96,4 @@ there is no way to know where the block ends.}
 @defproc[(cblock->vector [cblock any/c] [type ctype?] [length exact-nonnegative-integer?])
          vector?]{
 
-Like @racket[cblock->vector], but for Racket vectors.}
+Like @racket[cblock->list], but for Racket vectors.}
