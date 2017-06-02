@@ -54,20 +54,26 @@ base.
                                                                     (-> module-path?))])
             module-path?]
            [(collapse-module-path-index [module-path-index module-path-index?])
-            module-path?])]{
+            (or/c module-path? #f)])]{
 
 Like @racket[collapse-module-path] when given two arguments, but the
 input is a @techlink[#:doc refman]{module path index}; in this case,
 the @racket[rel-to-module-path-v] base is used where the module path
-index contains the ``self'' index.
+index contains the ``self'' index (see @racket[module-path-index-split]).
 
 When given a single argument, @racket[collapse-module-path-index]
 returns a module path that is relative if the given module path index
-is relative. The resulting module path is not necessarily normalized.
+is relative, except that it returns @racket[#f] if its argument is the
+``self'' module path index. A resulting module path is
+not necessarily normalized.
 
 @history[#:changed "6.1.1.8" @elem{Added the one-argument variant for
                                    collapsing a relative module path
-                                   index.}]}
+                                   index.}
+         #:changed "6.9.0.5" @elem{Added support for the ``self'' module
+                                   path index as the only argument, which
+                                   meant extending the result contract to
+                                   include @scheme[#f]}]}
 
 
 @close-eval[evaluator]

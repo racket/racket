@@ -10,6 +10,11 @@
 
 (define self (module-path-index-join #f #f))
 
+(check (collapse-module-path-index self)
+       #f)
+(check (collapse-module-path-index self here)
+       here)
+
 (define (check-collapse p expected [relative-expected expected]
                         #:here [here here])
   (check (collapse-module-path p here)
