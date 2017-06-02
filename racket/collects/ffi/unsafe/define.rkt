@@ -69,7 +69,7 @@
                                              (... ...)))
                   (unless (identifier? #'c-id)
                     (raise-syntax-error #f
-                                        "Invalid make-c-id expression"
+                                        "invalid make-c-id expression"
                                         #'make-c-id))
                   (with-syntax ([fail (if (attribute fail)
                                           #'fail
