@@ -86,6 +86,7 @@
 #define scheme_add_flush (scheme_extension_table->scheme_add_flush)
 #define scheme_remove_flush (scheme_extension_table->scheme_remove_flush)
 #define scheme_add_atexit_closer (scheme_extension_table->scheme_add_atexit_closer)
+#define scheme_atexit (scheme_extension_table->scheme_atexit)
 #define scheme_add_evt (scheme_extension_table->scheme_add_evt)
 #define scheme_add_evt_through_sema (scheme_extension_table->scheme_add_evt_through_sema)
 #define scheme_is_evt (scheme_extension_table->scheme_is_evt)

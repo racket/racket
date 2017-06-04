@@ -86,6 +86,7 @@
   scheme_extension_table->scheme_add_flush = scheme_add_flush;
   scheme_extension_table->scheme_remove_flush = scheme_remove_flush;
   scheme_extension_table->scheme_add_atexit_closer = scheme_add_atexit_closer;
+  scheme_extension_table->scheme_atexit = scheme_atexit
   scheme_extension_table->scheme_add_evt = scheme_add_evt;
   scheme_extension_table->scheme_add_evt_through_sema = scheme_add_evt_through_sema;
   scheme_extension_table->scheme_is_evt = scheme_is_evt;

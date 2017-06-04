@@ -123,6 +123,7 @@ int (*scheme_flush_managed)(Scheme_Plumber *p, int catch_errors);
 Scheme_Object *(*scheme_add_flush)(Scheme_Plumber *p, Scheme_Object *proc_or_port, int weak_flush);
 void (*scheme_remove_flush)(Scheme_Object *h);
 void (*scheme_add_atexit_closer)(Scheme_Exit_Closer_Func f);
+int (*scheme_atexit)(void (*func)());
 void (*scheme_add_evt)(Scheme_Type type,
 				   Scheme_Ready_Fun ready,
 				   Scheme_Needs_Wakeup_Fun wakeup,

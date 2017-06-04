@@ -1966,15 +1966,7 @@ void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
 
   if (!cust_closers) {
     if (RUNNING_IN_ORIGINAL_PLACE) {
-      if (replacement_at_exit) {
-        replacement_at_exit(do_run_atexit_closers_on_all);
-      } else {
-#ifdef USE_ON_EXIT_FOR_ATEXIT
-        on_exit(do_run_atexit_closers_on_all, NULL);
-#else
-        atexit(do_run_atexit_closers_on_all);
-#endif
-      }
+      scheme_atexit(do_run_atexit_closers_on_all);
     }
 
     REGISTER_SO(cust_closers);
@@ -1982,6 +1974,19 @@ void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
   }
 
   cust_closers = scheme_make_raw_pair((Scheme_Object *)f, cust_closers);
+}
+
+int scheme_atexit(void (*func)(void))
+{
+      if (replacement_at_exit) {
+        return replacement_at_exit(func);
+      } else {
+#ifdef USE_ON_EXIT_FOR_ATEXIT
+        return on_exit(func, NULL);
+#else
+        return atexit(func);
+#endif
+      }
 }
 
 void scheme_schedule_custodian_close(Scheme_Custodian *c)
