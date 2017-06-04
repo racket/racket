@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "utils.rkt")
+@(require "utils.rkt"
+          (for-label ffi/unsafe/custodian))
 
 @title{Custodians}
 
@@ -64,7 +65,10 @@ most one custodian.
 
 If @var{m} (or the current custodian if @var{m} is @cpp{NULL}) is shut
 down, then @var{f} is called immediately, and the result is
-@cpp{NULL}.}
+@cpp{NULL}.
+
+See also @racket[register-custodian-shutdown] from
+@racketmodname[ffi/unsafe/custodian].}
 
 @function[(Scheme_Custodian_Reference* scheme_add_managed_close_on_exit
            [Scheme_Custodian* m]
@@ -94,7 +98,10 @@ Checks whether @var{m} is already shut down, and raises an error if
 
 Removes @var{o} from the management of its custodian. The @var{mref}
  argument must be a value returned by @cpp{scheme_add_managed} or
- @cpp{NULL}.}
+ @cpp{NULL}.
+
+See also @racket[unregister-custodian-shutdown] from
+@racketmodname[ffi/unsafe/custodian].}
 
 @function[(void scheme_close_managed
            [Scheme_Custodian* m])]{

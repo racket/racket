@@ -1,19 +1,14 @@
 #lang racket/base
 (require ffi/unsafe
-         ffi/unsafe/atomic)
+         ffi/unsafe/atomic
+         (only-in '#%unsafe
+                  unsafe-abort-current-continuation/no-wind
+                  unsafe-call-with-composable-continuation/no-wind
+                  unsafe-set-on-atomic-timeout!))
 
 (provide call-as-nonatomic-retry-point
          can-try-atomic?
          try-atomic)
-
-(define scheme_abort_continuation_no_dws
-  (get-ffi-obj 'scheme_abort_continuation_no_dws #f (_fun _scheme _scheme -> _scheme)))
-(define scheme_call_with_composable_no_dws
-  (get-ffi-obj 'scheme_call_with_composable_no_dws #f (_fun _scheme _scheme -> _scheme)))
-(define scheme_set_on_atomic_timeout
-  (get-ffi-obj 'scheme_set_on_atomic_timeout #f (_fun (_fun _int -> _void) -> _pointer)))
-(define scheme_restore_on_atomic_timeout 
-  (get-ffi-obj 'scheme_set_on_atomic_timeout #f (_fun _pointer -> _pointer)))
 
 (define freezer-tag (make-continuation-prompt-tag))
 (define freezer-box-key (gensym))
@@ -66,9 +61,6 @@
 
 (define (can-try-atomic?) (and (freezer-box) (not (in-try-atomic?))))
 
-;; prevent GC of handler while it's installed:
-(define saved-ptrs (make-hasheq))
-
 (define (try-atomic thunk default 
                     #:should-give-up? [should-give-up?
                                        (let ([now (current-inexact-milliseconds)])
@@ -87,22 +79,21 @@
       ;; try to do some work:
       (let* ([ready? #f]
              [done? #f]
-             [handler (lambda (must-give-up)
+             [handler (lambda (must-give-up?)
                         (when (and ready? 
                                    (not done?)
-                                   (or (positive? must-give-up)
+                                   (or must-give-up?
                                        (force-timeout)
                                        (should-give-up?)))
-                          (scheme_call_with_composable_no_dws
+                          (unsafe-call-with-composable-continuation/no-wind
                            (lambda (proc)
                              (set-box! b (cons proc (unbox b)))
-                             (scheme_restore_on_atomic_timeout #f)
-                             (scheme_abort_continuation_no_dws
+                             (unsafe-set-on-atomic-timeout! #f)
+                             (unsafe-abort-current-continuation/no-wind
                               freeze-tag
                               (lambda () default)))
                            freeze-tag)
                           (void)))])
-        (hash-set! saved-ptrs handler #t)
         (with-continuation-mark in-try-atomic-key #t
           (let/ec esc ;; esc + dynamic-wind prevents escape via alternate prompt tags
             (dynamic-wind
@@ -112,7 +103,7 @@
                 (lambda ()
                   (call-with-continuation-prompt ; to catch aborts
                    (lambda ()
-                     (when (scheme_set_on_atomic_timeout handler)
+                     (when (unsafe-set-on-atomic-timeout! handler)
                        (error 'try-atomic "nested atomic timeout"))
                      (set! ready? #t)
                      (begin0
@@ -132,7 +123,6 @@
                   (set! done? #t)
                   (thunk))))
              (lambda ()
-               (hash-remove! saved-ptrs handler)
-               (scheme_restore_on_atomic_timeout #f)
+               (unsafe-set-on-atomic-timeout! #f)
                (unless done? (esc (void))))))))])))
 

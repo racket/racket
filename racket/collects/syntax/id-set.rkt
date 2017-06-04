@@ -24,16 +24,16 @@
   (id-set/c elem/c #:idsettype 'bound #:mutability mutability))
 
 (define (id-set/c elem/c
-                  #:idsettype [idsettype 'dont-care]
+                  #:idsettype [id-set-type 'dont-care]
                   #:mutability [mutability 'immutable])
   (define idsettype/c
-    (case idsettype
+    (case id-set-type
       [(dont-care) any/c]
       [(free) free-id-set?]
       [(bound) bound-id-set?]
       [else (raise-arguments-error 'id-set/c
                                   "invalid #:idsettype argument"
-                                  "#:idsettype argument" idsettype)]))
+                                  "#:idsettype argument" id-set-type)]))
   (define mutability/c
     (case mutability
       [(dont-care) any/c]
@@ -48,8 +48,8 @@
         "element contract must be a flat contract"
         "element contract" (contract-name elem/c)))
   (case mutability
-    [(immutable) (flat-id-set-contract elem/c idsettype mutability)]
-    [else (chaperone-id-set-contract elem/c idsettype mutability)]))
+    [(immutable) (flat-id-set-contract elem/c id-set-type mutability)]
+    [else (chaperone-id-set-contract elem/c id-set-type mutability)]))
 
 (struct id-set-contract [elem/c idsettype mutability])
 
@@ -81,23 +81,23 @@
   (lambda (s)
     (and (id-set? s) (idsettype? s) (mutability? s))))
 
-(define (id-set-contract-check idsettype mutability b s)
+(define (id-set-contract-check idsettype mutability b s neg-party)
   (unless (id-set? s)
-    (raise-blame-error b s "expected either a free or bound identifier set"))
+    (raise-blame-error b #:missing-party neg-party s "expected either a free or bound identifier set"))
   (case idsettype
     [(free)
      (unless (free-id-set? s)
-       (raise-blame-error b s "expected a free-identifier set"))]
+       (raise-blame-error b #:missing-party neg-party s "expected a free-identifier set"))]
     [(bound)
      (unless (bound-id-set? s)
-       (raise-blame-error b s "expected a bound-identifier set"))])
+       (raise-blame-error b #:missing-party neg-party s "expected a bound-identifier set"))])
   (case mutability
     [(mutable)
      (unless (mutable-id-set? s)
-       (raise-blame-error b s "expected a mutable id set"))]
+       (raise-blame-error b #:missing-party neg-party s "expected a mutable id set"))]
     [(immutable)
      (unless (immutable-id-set? s)
-       (raise-blame-error b s "expected an immutable id set"))]))
+       (raise-blame-error b #:missing-party neg-party s "expected an immutable id set"))]))
 
 (define (flat-id-set-contract-first-order ctc)
   (define set-passes? (id-set-contract-first-order ctc))

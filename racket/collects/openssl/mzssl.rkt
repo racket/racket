@@ -28,7 +28,9 @@ TO DO:
          ffi/unsafe/define
          ffi/unsafe/atomic
          ffi/unsafe/alloc
+         ffi/unsafe/global
          ffi/file
+         ffi/unsafe/custodian
          racket/list
          racket/port
          racket/tcp
@@ -423,8 +425,6 @@ TO DO:
 
 (define SSL_TLSEXT_ERR_OK 0)
 (define SSL_TLSEXT_ERR_NOACK 3)
-
-(define-mzscheme scheme_make_custodian (_fun _pointer -> _scheme))
 
 (define-runtime-path ssl-dh4096-param-path "dh4096.pem")
 
@@ -1147,9 +1147,8 @@ TO DO:
         (loop)))))))
 
 (define (kernel-thread thunk)
-  ;; Since we provide #f to scheme_make_custodian,
-  ;;  the custodian is managed directly by the root:
-  (parameterize ([current-custodian (scheme_make_custodian #f)])
+  ;; Run with a custodian that is managed directly by the root custodian:
+  (parameterize ([current-custodian (make-custodian-at-root)])
     (thread thunk)))
 
 (define (make-ssl-output-port mzssl)
@@ -1689,10 +1688,6 @@ TO DO:
 (define ssl-available? (and libssl #t))
 
 
-(define scheme_register_process_global
-  (and ssl-available?
-       (get-ffi-obj 'scheme_register_process_global #f (_fun _string _pointer -> _pointer))))
-
 (when ssl-available?
   ;; Make sure only one place tries to initialize OpenSSL,
   ;; and wait in case some other place is currently initializing
@@ -1700,18 +1695,18 @@ TO DO:
   (begin
     (start-atomic)
     (let* ([done (cast 1 _scheme _pointer)]
-           [v (scheme_register_process_global "OpenSSL-support-initializing" done)])
+           [v (register-process-global #"OpenSSL-support-initializing" done)])
       (if v
           ;; Some other place is initializing:
           (begin
             (end-atomic)
             (let loop ()
-              (unless (scheme_register_process_global "OpenSSL-support-initialized" #f)
+              (unless (register-process-global #"OpenSSL-support-initialized" #f)
                 (sleep 0.01) ;; busy wait! --- this should be rare
                 (loop))))
           ;; This place must initialize:
           (begin
             (SSL_library_init)
             (SSL_load_error_strings)
-            (scheme_register_process_global "OpenSSL-support-initialized" done)
+            (register-process-global #"OpenSSL-support-initialized" done)
             (end-atomic))))))

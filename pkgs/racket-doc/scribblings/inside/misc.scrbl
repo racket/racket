@@ -1,5 +1,6 @@
 #lang scribble/doc
-@(require "utils.rkt")
+@(require "utils.rkt"
+          (for-label ffi/unsafe/global))
 
 @title{Miscellaneous Utilities}
 
@@ -392,7 +393,10 @@ value is returned. The given @var{val} must not refer to garbage-collected
 memory.
 
 This function is intended for infrequent use with a small number of
-keys.}
+keys.
+
+See also @racket[register-process-global] from
+@racketmodname[ffi/unsafe/global].}
 
 @function[(void* scheme_jit_find_code_end
                  [void* p])]{

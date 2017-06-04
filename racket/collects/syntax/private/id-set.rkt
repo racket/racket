@@ -277,7 +277,7 @@
            (immutable-id-set
             (for/fold 
              ([table (id-set-get-table largest-immutable)])
-             ([s (in-list (cons set0 ss))] #:unless (eq? s largest-immutable))
+             ([s (in-list (remq largest-immutable (cons set0 ss)))])
               (for/fold ([table table]) 
                         ([id (in-dict-keys (id-set-get-table s))])
                 (if (id-table-ref table id #f)

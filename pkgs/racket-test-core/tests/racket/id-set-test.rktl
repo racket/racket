@@ -1,7 +1,7 @@
 (load-relative "loadtest.rktl")
 
 (require (for-syntax syntax/parse racket/syntax syntax/stx)
-         syntax/id-set
+         syntax/parse syntax/id-set
          (prefix-in gen:set- racket/set))
   
 (Section 'id-set)
@@ -94,9 +94,10 @@
                   (test #t SET-MEMBER? ABCD #'c)
                   (test #t SET-MEMBER? ABCD #'d)
                   (test #t SET-MEMBER? (mk-id-set (list #'x)) #'x)
-                  (test #f SET-MEMBER? (let ([x 1]) (mk-id-set (list #'x))) #'x)
-                  (test #f SET-MEMBER? (let ([x 1]) (mk-id-set (list #'x))) 
-                           (let ([x 1]) #'x))
+                  (test #f SET-MEMBER?
+                           (syntax-parse #'y [x (mk-id-set (list #'x))]) #'x)
+                  (test #t SET-MEMBER?
+                           (syntax-parse #'y [x (mk-id-set (list #'x))]) #'y)
          
                   ;; explicit in-*-id-set sequence iterator
                   (test #t SET=? (mk-id-set (SET->LIST ABC))
@@ -321,6 +322,10 @@
                     (define ABCDE/MUTABLE (mk-mutable-id-set ABCDE-LIST))
                     (define ABCDE/IMMUTABLE (mk-immutable-id-set ABCDE-LIST))
                     
+                    (test 0 SET-COUNT
+                          (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE ABCDE/IMMUTABLE))
+                    (test 0 SET-COUNT
+                          (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE (mk-immutable-id-set ABCDE-LIST)))
                     (test 5 SET-COUNT (SET-SYMMETRIC-DIFFERENCE ABCDE/IMMUTABLE))
                     (test #t SET-EMPTY? (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE))
                     (test 4 SET-COUNT (SET-SYMMETRIC-DIFFERENCE EMPTY/IMMUTABLE ABCD))
@@ -502,20 +507,23 @@
                    (SET-ADD (mk-immutable-id-set) #'b) #'a) #'c))
            (test #f SET=?
                  s
-                 (let ([a 1])
-                   (SET-ADD 
-                    (SET-ADD 
-                     (SET-ADD (mk-immutable-id-set) #'b) #'a) #'c)))
+                 (syntax-parse #'d
+                   [a (SET-ADD 
+                       (SET-ADD 
+                        (SET-ADD (mk-immutable-id-set) #'b) #'a) #'c)]))
 
            (test #t SET-MEMBER? (SET-ADD s #'d) #'c)
            (test #t SET-MEMBER? (SET-ADD s #'d) #'d)
            (test #f SET-MEMBER? (SET-ADD s #'d) #'e)
-           (test #f SET-MEMBER? (SET-ADD s (let ([d 1]) #'d)) #'d)
-           (test #f SET-MEMBER? (SET-ADD s #'d) (let ([d 1]) #'d))
+           (test #f SET-MEMBER?
+                    (syntax-parse #'e [d (SET-ADD s #'d)]) #'d)
+           (test #f SET-MEMBER?
+                    (SET-ADD s #'d) (syntax-parse #'e [d #'d]))
            
            (test #t SET-MEMBER? (SET-REMOVE s #'a) #'b)
            (test #f SET-MEMBER? (SET-REMOVE s #'b) #'b)
-           (test #t SET-MEMBER? (SET-REMOVE s (let ([c 1]) #'c)) #'c)
+           (test #t SET-MEMBER?
+                    (SET-REMOVE s (syntax-parse #'d [c #'c])) #'c)
            
            (test #t identifier=? (SET-FIRST s) (SET-FIRST s))
            (test #t SET=? (SET-REMOVE s (SET-FIRST s)) 
@@ -557,10 +565,11 @@
            (SET-ADD! ms2 #'c)
            (test #t SET=? ms1 ms2)
            (define ms3 (mk-mutable-id-set))
-           (let ([a 1])
-             (SET-ADD! ms3 #'b)
-             (SET-ADD! ms3 #'a)
-             (SET-ADD! ms3 #'c))
+           (syntax-parse #'d
+             [a
+              (SET-ADD! ms3 #'b)
+              (SET-ADD! ms3 #'a)
+              (SET-ADD! ms3 #'c)])
            (test #f SET=? ms1 ms3)
 
            (define ms4 (mk-mutable-id-set (list #'a #'b #'c)))
@@ -571,15 +580,15 @@
            (SET-ADD! ms4 #'d)
            (test #t SET-MEMBER? ms4 #'d)
            (test #f SET-MEMBER? ms4 #'e)
-           (SET-ADD! ms4 (let ([e 1]) #'e))
+           (SET-ADD! ms4 (syntax-parse #'f [e #'e]))
            (test #f SET-MEMBER? ms4 #'e)
-           (test #f SET-MEMBER? ms4 (let ([d 1]) #'d))
+           (test #f SET-MEMBER? ms4 (syntax-parse #'e [d #'d]))
   
            (SET-REMOVE! ms4 #'a)
            (test #t SET-MEMBER? ms4 #'b)
            (SET-REMOVE! ms4 #'b)
            (test #f SET-MEMBER? ms4 #'b)
-           (SET-REMOVE! ms4 (let ([c 1]) #'c))
+           (SET-REMOVE! ms4 (syntax-parse #'d [c #'c]))
            (test #t SET-MEMBER? ms4 #'c)
            
            (test #t free-identifier=? (SET-FIRST ms1) (SET-FIRST ms1))
@@ -653,6 +662,9 @@
   (test/blame-pos (app-ctc (bound-id-set/c any/c #:mutability 'mutable)
                            EMPTY/BOUND/IMMUTABLE))
   (test/blame-pos (app-ctc (free-id-set/c any/c) EMPTY/BOUND/IMMUTABLE))
+  (test/blame-pos (app-ctc (id-set/c integer?) 5))
+  (test/blame-pos (app-ctc (id-set/c integer?) EMPTY/FREE/MUTABLE))
+  (test/blame-pos (app-ctc (id-set/c integer?) EMPTY/BOUND/MUTABLE))
   
   (define (not-free-a? id) (not (free-identifier=? id #'a)))
   (define (not-bound-b? id) (not (bound-identifier=? id #'b)))

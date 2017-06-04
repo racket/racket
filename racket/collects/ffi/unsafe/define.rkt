@@ -1,4 +1,5 @@
 #lang racket/base
+
 (require (for-syntax syntax/parse
                      racket/base)
          ffi/unsafe)
@@ -37,7 +38,10 @@
                               #:name "#:define keyword")
                    (~optional (~seq #:default-make-fail default-make-fail:expr)
                               #:defaults ([default-make-fail #'(lambda (id) #f)])
-                              #:name "#:default-make-fail keyword"))
+                              #:name "#:default-make-fail keyword")
+                   (~optional (~seq #:make-c-id make-c-id:id)
+                              #:defaults ([make-c-id #'#f])
+                              #:name "#:make-c-id"))
               ...))
      #`(begin
          (define the-ffi-lib
@@ -52,7 +56,9 @@
              (lambda (stx)
                (syntax-parse stx
                  [(_ s-id:id type:expr (~seq (~or (~optional (~seq #:c-id c-id:id)
-                                                             #:defaults ([c-id #'s-id])
+                                                             #:defaults ([c-id #,(if (identifier? (attribute make-c-id))
+                                                                                     #'((syntax-local-value #'make-c-id) #'s-id)
+                                                                                     #'#'s-id)])
                                                              #:name "#:c-id keyword")
                                                   (~optional (~seq #:wrap wrapper:expr)
                                                              #:defaults ([wrapper #'values])
@@ -61,6 +67,10 @@
                                                                   (~seq #:fail fail:expr))
                                                              #:defaults ([make-fail #'default-make-fail])))
                                              (... ...)))
+                  (unless (identifier? #'c-id)
+                    (raise-syntax-error #f
+                                        "invalid make-c-id expression"
+                                        #'make-c-id))
                   (with-syntax ([fail (if (attribute fail)
                                           #'fail
                                           #'(make-fail 's-id))])
@@ -72,3 +82,4 @@
                               (provide s-id)
                               def))
                           #'def)))])))))]))
+

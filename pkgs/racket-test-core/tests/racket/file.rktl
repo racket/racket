@@ -1,5 +1,7 @@
 
 (load-relative "loadtest.rktl")
+(require ffi/file
+         ffi/unsafe)
 
 (Section 'file)
 
@@ -1652,6 +1654,101 @@
 
 (parameterize ([current-security-guard (make-file-sg '())])
   (test #f regexp-match? "unknown machine" (system-type 'machine)))
+
+
+;; The `ffi/file` library - - - - - - - - - - - - - - - - - - -
+
+(let ()
+  (define pub-mod (collection-file-path "list.rkt" "racket"))
+  (define priv-mod (collection-file-path "stx.rkt" "racket/private"))
+
+  (define sg0 (current-security-guard))
+
+  (define sg-ro
+    (make-security-guard
+     sg0
+     (lambda (who path modes)
+       (when (or (memq 'write modes) (memq 'delete modes))
+         (error who "write/delete not allowed")))
+     (lambda (who host port mode)
+       (unless (eq? mode 'client)
+         (error who "servers not allowed")))
+     (lambda (who path to)
+       (unless (equal? (path->string to) "chain")
+         (error who "only chain links allowed")))))
+
+  (define sg-priv
+    (make-security-guard
+     sg0
+     (lambda (who path modes)
+       (when (and path (regexp-match #rx"private" (path->string path)))
+         (error who "no access to private paths: ~e" path)))
+     void void))
+
+  (define (mk-fun modes)
+    ;; receives path pointer, casts as int, who cares
+    (get-ffi-obj "scheme_make_integer_value" (ffi-lib #f)
+                 (_fun (path) ::
+                       (path : (_file/guard modes 'me))
+                       -> _scheme)))
+  
+  (define (fun path modes)
+    ((mk-fun modes) path))
+
+  (define ok-exn? 
+    (lambda (x)
+      (and (exn:fail? x)
+           (regexp-match #rx"^me: " (exn-message x)))))
+
+  (define (sc-run #:check [security-guard-check security-guard-check-file]
+                  ok? . args)
+    (if ok?
+        (begin
+          (apply test (void) security-guard-check 'me args)
+          (when (eq? security-guard-check security-guard-check-file)
+            (test (void) void (apply fun args))))
+        (begin
+          (err/rt-test (apply security-guard-check 'me args) ok-exn?)
+          (when (eq? security-guard-check security-guard-check-file)
+            (err/rt-test (apply fun args) ok-exn?)))))
+
+  (parameterize ((current-security-guard sg0))
+    (sc-run #t "foo.txt" '(read))
+    (sc-run #t "bar.txt" '(write delete))
+    (sc-run #t pub-mod '(read))
+    (sc-run #t pub-mod '(write))
+    (sc-run #t priv-mod '(read))
+    (sc-run #t priv-mod '(read write delete))
+    (sc-run #t #:check security-guard-check-file-link
+            priv-mod "chain")
+    (sc-run #t #:check security-guard-check-file-link
+            priv-mod "other")
+    (sc-run #t #:check security-guard-check-network
+            "localhost" 500 'client)
+    (sc-run #t #:check security-guard-check-network
+            "localhost" 500 'server))
+
+  (parameterize ((current-security-guard sg-ro))
+    (sc-run #t "foo.txt" '(read))
+    (sc-run #f "bar.txt" '(write delete))
+    (sc-run #t pub-mod '(read))
+    (sc-run #f pub-mod '(write))
+    (sc-run #t priv-mod '(read))
+    (sc-run #f priv-mod '(read write delete))
+    (sc-run #t #:check security-guard-check-file-link
+            priv-mod "chain")
+    (sc-run #f #:check security-guard-check-file-link
+            priv-mod "other")
+    (sc-run #t #:check security-guard-check-network
+            "localhost" 500 'client)
+    (sc-run #f #:check security-guard-check-network
+            "localhost" 500 'server))
+
+  (parameterize ((current-security-guard sg-priv))
+    (sc-run #t pub-mod '(read))
+    (sc-run #t pub-mod '(write))
+    (sc-run #f priv-mod '(read))
+    (sc-run #f priv-mod '(read write delete))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check `in-directory'

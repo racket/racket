@@ -2,6 +2,7 @@
 
 ;; Foreign Racket interface
 (require '#%foreign setup/dirs racket/unsafe/ops racket/private/for
+         (only-in '#%unsafe unsafe-thread-at-root)
          (for-syntax racket/base racket/list syntax/stx racket/syntax
                      racket/struct-info))
 
@@ -546,7 +547,7 @@
         ;; disappear from the inputs.
         (unless use-expr?
           (if (and (pair? no-expr?) (car no-expr?) expr)
-            (err "got an expression for a custom type that do not use it"
+            (err "got an expression for a custom type that does not use it"
                  clause)
             (set! expr (void))))
         (when use-expr?
@@ -1951,39 +1952,25 @@
         ;; We need to make a thread that runs in a privildged custodian and
         ;; that doesn't retain the current namespace --- either directly
         ;; or indirectly through some parameter setting in the current thread.
-        (let ([priviledged-custodian ((get-ffi-obj 'scheme_make_custodian #f (_fun _pointer -> _scheme)) #f)]
-              [no-cells ((get-ffi-obj 'scheme_empty_cell_table #f (_fun -> _gcpointer)))]
-              [min-config ((get-ffi-obj 'scheme_minimal_config #f (_fun -> _gcpointer)))]
-              [thread/details (get-ffi-obj 'scheme_thread_w_details #f (_fun _scheme 
-                                                                             _gcpointer ; config
-                                                                             _gcpointer ; cells
-                                                                             _pointer ; break_cell
-                                                                             _scheme ; custodian
-                                                                             _int ; suspend-to-kill?
-                                                                             -> _scheme))]
-              [logger (current-logger)]
+        (let ([logger (current-logger)]
               [cweh #f]) ; <- avoids a reference to a module-level binding
           (set! cweh call-with-exception-handler)
           (set! killer-thread
-                (thread/details (lambda ()
-                                  (let retry-loop ()
-                                    (call-with-continuation-prompt
-                                     (lambda ()
-                                       (cweh
-                                        (lambda (exn)
-                                          (log-message logger
-                                                       'error
-                                                       (if (exn? exn)
-                                                           (exn-message exn)
-                                                           (format "~s" exn))
-                                                       #f)
-                                          (abort-current-continuation void))
-                                        (lambda ()
-                                          (let loop () (will-execute killer-executor) (loop))))))
-                                    (retry-loop)))
-                                min-config
-                                no-cells
-                                #f ; default break cell
-                                priviledged-custodian
-                                0))))
+                (unsafe-thread-at-root
+                 (lambda ()
+                   (let retry-loop ()
+                     (call-with-continuation-prompt
+                      (lambda ()
+                        (cweh
+                         (lambda (exn)
+                           (log-message logger
+                                        'error
+                                        (if (exn? exn)
+                                            (exn-message exn)
+                                            (format "~s" exn))
+                                        #f)
+                           (abort-current-continuation void))
+                         (lambda ()
+                           (let loop () (will-execute killer-executor) (loop))))))
+                     (retry-loop)))))))
       (will-register killer-executor obj finalizer))))

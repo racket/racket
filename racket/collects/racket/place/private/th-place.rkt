@@ -1,7 +1,8 @@
 #lang racket/base
 (require (prefix-in pl- '#%place)
          '#%boot
-         (only-in '#%paramz parameterization-key make-custodian-from-main)
+         (only-in '#%paramz parameterization-key)
+         (only-in '#%unsafe unsafe-make-custodian-at-root)
          '#%place-struct
          racket/fixnum
          racket/flonum
@@ -48,7 +49,7 @@
   (unless (symbol? funcname)
     (raise-argument-error 'dynamic-place "symbol?" 1 mod funcname))
   (define-values (pch cch) (th-place-channel))
-  (define cust (make-custodian-from-main))
+  (define cust (unsafe-make-custodian-at-root))
   (define cust-box (make-custodian-box cust #t))
   (define result-box (box 0))
   (define plumber (make-plumber))

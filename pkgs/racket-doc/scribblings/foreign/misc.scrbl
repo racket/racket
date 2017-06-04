@@ -11,7 +11,7 @@ using values from @racket[lst] and the given @racket[type].  The
 according to the given @racket[type].}
 
 
-@defproc[(vector->cblock [vec vector?] [type type?]) any]{
+@defproc[(vector->cblock [vec vector?] [type ctype?]) any]{
 
 Like @racket[list->cblock], but for Racket vectors.}
 
@@ -96,4 +96,4 @@ there is no way to know where the block ends.}
 @defproc[(cblock->vector [cblock any/c] [type ctype?] [length exact-nonnegative-integer?])
          vector?]{
 
-Like @racket[cblock->vector], but for Racket vectors.}
+Like @racket[cblock->list], but for Racket vectors.}

@@ -1,6 +1,6 @@
 #lang racket/base
 (require (prefix-in pl- '#%place)
-         (only-in '#%paramz parameterization-key make-custodian-from-main)
+         (only-in '#%paramz parameterization-key)
          (only-in '#%futures processor-count)
          '#%place-struct
          racket/fixnum
