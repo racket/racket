@@ -172,6 +172,7 @@ MZ_EXTERN Scheme_Object *scheme_add_flush(Scheme_Plumber *p, Scheme_Object *proc
 MZ_EXTERN void scheme_remove_flush(Scheme_Object *h);
 
 MZ_EXTERN void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f);
+MZ_EXTERN int scheme_atexit(void (*func)(void));
 
 MZ_EXTERN void scheme_add_evt(Scheme_Type type,
 				   Scheme_Ready_Fun ready,

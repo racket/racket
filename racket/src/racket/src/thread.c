@@ -1984,6 +1984,11 @@ void scheme_add_atexit_closer(Scheme_Exit_Closer_Func f)
   cust_closers = scheme_make_raw_pair((Scheme_Object *)f, cust_closers);
 }
 
+int scheme_atexit(void (*func)(void))
+{
+  return atexit(func);
+}
+
 void scheme_schedule_custodian_close(Scheme_Custodian *c)
 {
   /* This procedure might be called by a garbage collector to register

@@ -63,6 +63,7 @@ scheme_close_managed
 scheme_schedule_custodian_close
 scheme_add_custodian_extractor
 scheme_add_atexit_closer
+scheme_add_atexit
 scheme_add_evt
 scheme_add_evt_through_sema
 scheme_is_evt
