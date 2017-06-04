@@ -584,9 +584,8 @@
           (check-info p))
         (define norm-p (normalize-info-path p))
         (define more-cmd
-          (match (vector->list (current-command-line-arguments))
-            [(list files ..1 "--" more ...) more]
-            [else empty]))
+          (takef-right (vector->list (current-command-line-arguments))
+                       (λ (a) (not (equal? a "--")))))
         (define args (append (get-cmdline norm-p) more-cmd))
         (define timeout (get-timeout norm-p))
         (define ignore-stderr (get-ignore-stderr norm-p))
@@ -1071,9 +1070,7 @@
   (set! table? #t)]
  #:args file-or-directory
  (begin (define file-or-dir-args
-          (match file-or-directory
-            [(list files ..1 "--" more ...) files]
-            [else file-or-directory]))
+          (takef file-or-directory (lambda (f) (not (equal? f "--")))))
         (unless (= 1 (length file-or-dir-args))
           (set! single-file? #f))
         (when (and (eq? configure-runtime 'default)
