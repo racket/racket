@@ -135,3 +135,15 @@ file-stream output port would disable the flushing action of the final
 at-exit function. Typically, an at-exit function ignores most objects
 while handling a specific type of object that requires a specific
 clean-up action before the OS-level process terminates.}
+
+@function[(int scheme_atexit
+               [Exit_Func func])]{
+                              
+ Identical to calling the system's @cpp{atexit} function.
+ Provided to give programs a common interface, different
+ systems link to @cpp{atexit} in different ways. The type of
+ @var{func} must be:
+
+ @verbatim[#:indent 2]{
+  typedef void (*func)(void);
+}}
