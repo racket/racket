@@ -598,6 +598,18 @@ int mzrt_sema_wait(mzrt_sema *s)
   return 0;
 }
 
+int mzrt_sema_trywait(mzrt_sema *s)
+{
+  int locked = 1;
+  pthread_mutex_lock(&s->m);
+  if(s->ready) {
+    --s->ready;
+    locked = 0;
+  }
+  pthread_mutex_unlock(&s->m);
+  return locked;
+}
+
 int mzrt_sema_post(mzrt_sema *s)
 {
   pthread_mutex_lock(&s->m);
@@ -808,6 +820,11 @@ int mzrt_sema_wait(mzrt_sema *s)
 {
   WaitForSingleObject(s->ws, INFINITE);
   return 0;
+}
+
+int mzrt_sema_trywait(mzrt_sema *s)
+{
+  return WaitForSingleObject(s->ws, 0);
 }
 
 int mzrt_sema_post(mzrt_sema *s)

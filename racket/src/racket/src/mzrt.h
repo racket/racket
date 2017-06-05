@@ -86,6 +86,7 @@ typedef struct mzrt_sema mzrt_sema; /* OPAQUE DEFINITION */
 int mzrt_sema_create(mzrt_sema **sema, int init);
 int mzrt_sema_post(mzrt_sema *sema);
 int mzrt_sema_wait(mzrt_sema *sema);
+int mzrt_sema_trywait(mzrt_sema *sema);
 int mzrt_sema_destroy(mzrt_sema *sema);
 
 /****************** Compare and Swap *******************************/
