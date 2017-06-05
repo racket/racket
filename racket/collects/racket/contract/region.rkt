@@ -4,7 +4,8 @@
          define/contract
          with-contract
          current-contract-region
-         invariant-assertion)
+         invariant-assertion
+         read/contract)
 
 (require (for-syntax racket/base
                      racket/struct-info

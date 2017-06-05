@@ -62,6 +62,7 @@
  contract
  recursive-contract
  invariant-assertion
+ read/contract
  
  flat-murec-contract
  and/c
