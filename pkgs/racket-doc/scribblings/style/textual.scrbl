@@ -345,8 +345,9 @@ Finally, in addition to regular alphanumeric characters, Racketeers use a
  @row[^    "unit signatures"                         game-context^]
  @row["@"  "units"                                   testing-context@]
  @row["#%" "kernel identifiers"                      #%app]
+ @row["/"  "\"with\" (a preposition)"                call/cc]
 ]
- @margin-note*{Identifiers with this prefix are mostly used in modules that
+ @margin-note*{Identifiers with the @litchar{#%} prefix are mostly used in modules that
  define new languages.}  The use of @litchar{#%} to prefix names from the kernel
  language warns readers that these identifiers are extremely special and
  they need to watch out for subtleties. No other identifiers start with
