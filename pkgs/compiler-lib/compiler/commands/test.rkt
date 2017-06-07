@@ -584,8 +584,9 @@
           (check-info p))
         (define norm-p (normalize-info-path p))
         (define more-cmd
-          (takef-right (vector->list (current-command-line-arguments))
-                       (λ (a) (not (equal? a "--")))))
+          (match (vector->list (current-command-line-arguments))
+            [(list _ ... "--" more ...) more]
+            [else empty]))
         (define args (append (get-cmdline norm-p) more-cmd))
         (define timeout (get-timeout norm-p))
         (define ignore-stderr (get-ignore-stderr norm-p))
