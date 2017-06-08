@@ -5431,6 +5431,8 @@ static void add_type_no(Optimize_Info *info, Scheme_Object *var, Scheme_Object *
   }
 }
 
+
+
 static void merge_types(Optimize_Info *src_info, Optimize_Info *info, Scheme_Hash_Tree *skip_vars)
 {
   Scheme_Hash_Tree *types = src_info->types;
@@ -5439,12 +5441,30 @@ static void merge_types(Optimize_Info *src_info, Optimize_Info *info, Scheme_Has
 
   if (!types)
     return;
+
+  if (skip_vars) {
+    /* Remove variables from `types` that we're supposed to skip */
+    i = scheme_hash_tree_next(skip_vars, -1);
+    while (i != -1) {
+      scheme_hash_tree_index(types, i, &var, NULL);
+      scheme_hash_tree_set(types, var, NULL);
+      i = scheme_hash_tree_next(skip_vars, i);
+    }
+  }
+
+  if (!info->types || (types->count > info->types->count)) {
+    /* It will be faster to merge the old table into the new one: */
+    Scheme_Hash_Tree *old_types = info->types;
+    info->types = types;
+    if (!old_types)
+      return;
+    types = old_types;
+  }
   
   i = scheme_hash_tree_next(types, -1);
   while (i != -1) {
     scheme_hash_tree_index(types, i, &var, &pred);
-    if (!skip_vars || !scheme_hash_tree_get(skip_vars, var))
-      add_type(info, var, pred);
+    add_type(info, var, pred);
     i = scheme_hash_tree_next(types, i);
   }
 }

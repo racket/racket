@@ -148,7 +148,7 @@ void (*scheme_push_break_enable)(Scheme_Cont_Frame_Data *cframe, int on, int pre
 void (*scheme_pop_break_enable)(Scheme_Cont_Frame_Data *cframe, int post_check);
 Scheme_Object *(*scheme_abort_continuation_no_dws)(Scheme_Object *pt, Scheme_Object *v);
 Scheme_Object *(*scheme_call_with_composable_no_dws)(Scheme_Object *proc, Scheme_Object *pt);
-Scheme_On_Atomic_Timeout_Proc (*scheme_set_on_atomic_timeout)(Scheme_On_Atomic_Timeout_Proc p);
+Scheme_On_Atomic_Timeout_Proc (*scheme_set_on_atomic_timeout)(Scheme_On_Atomic_Timeout_Proc p, void *data);
 /*========================================================================*/
 /*                              error handling                            */
 /*========================================================================*/
