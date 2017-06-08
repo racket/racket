@@ -2881,6 +2881,7 @@ typedef struct Scheme_Comp_Env
   Scheme_Object *expand_result_adjust_arg;
 
   struct Scheme_Comp_Env *next;
+  struct Scheme_Comp_Env *use_scopes_next; /* fast-forward for use-site scope revert */
 } Scheme_Comp_Env;
 
 #define LAMBDA_HAS_REST 1

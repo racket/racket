@@ -792,9 +792,13 @@ Scheme_Object *scheme_revert_use_site_scopes(Scheme_Object *o, Scheme_Comp_Env *
                                                   SCHEME_STX_REMOVE);
     }
     if (env->flags & (SCHEME_FOR_INTDEF | SCHEME_INTDEF_FRAME | SCHEME_INTDEF_SHADOW)) {
-      env = env->next;
-      if (!env)
-        break;
+      if (env->use_scopes_next)
+        env = env->use_scopes_next;
+      else {
+        env = env->next;
+        if (!env)
+          break;
+      }
     } else
       break;
   }

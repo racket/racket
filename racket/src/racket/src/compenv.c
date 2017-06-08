@@ -262,6 +262,13 @@ Scheme_Comp_Env *scheme_new_compilation_frame(int num_bindings, int flags, Schem
 
   init_compile_data(frame);
 
+  if (flags & SCHEME_USE_SCOPES_TO_NEXT) {
+    if (base->use_scopes_next)
+      frame->use_scopes_next = base->use_scopes_next;
+    else
+      frame->use_scopes_next = base;
+  }
+
   return frame;
 }
 

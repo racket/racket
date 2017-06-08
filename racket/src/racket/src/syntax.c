@@ -1284,7 +1284,7 @@ Scheme_Object *scheme_stx_adjust_scopes(Scheme_Object *o, Scheme_Scope_Set *scop
   return stx_adjust_scopes(o, scopes, phase, mode, &mutate);
 }
 
-/* For each continuation frame, we need to keep track of various sets of scopes:
+/* For each environment frame, we need to keep track of various sets of scopes:
     - bind scopes (normally 0 or 1) are created for the binding context
     - use-site scopes are created for macro expansions that need them
     - intdef scopes are for immediately nested internal-definition contexts;

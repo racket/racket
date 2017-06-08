@@ -6009,5 +6009,36 @@
         (unknown random-configuration)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Make sure the expander and compiler don't go quadratic
+;; for
+;;  (lambda (arg-id ...) (define def-id _rhs) ... (arg-id def-id) ...)
+
+(let ()
+  (define (gensym-n n)
+    (let loop ([i n])
+      (if (zero? i)
+          '()
+          (cons (gensym) (loop (sub1 i))))))
+
+  (define (time-it n)
+    (let ([start (current-process-milliseconds)])
+      (let* ([args (gensym-n n)]
+             [defns (gensym-n n)])
+        (eval
+         `(lambda ,args
+            ,@(map (lambda (defn) `(define ,defn ',defn)) defns)
+            ,@(map (lambda (arg defn) `(,arg ,defn)) args defns))))
+      (- (current-process-milliseconds) start)))
+
+  (let loop ([tries 3])
+    (let ([a (time-it 100)]
+          [b (time-it 1000)])
+      ;; n lg(n) is ok, n^2 is not
+      (when (b . > . (* 50 a))
+        (if (zero? tries)
+            (test 'fail "compilation took too long" (/ b a 1.0))
+            (loop (sub1 tries)))))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)

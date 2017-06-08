@@ -16,6 +16,7 @@ static int mark_comp_env_MARK(void *p, struct NewGC *gc) {
   gcMARK2(e->insp, gc);
   gcMARK2(e->prefix, gc);
   gcMARK2(e->next, gc);
+  gcMARK2(e->use_scopes_next, gc);
   gcMARK2(e->scopes, gc);
   gcMARK2(e->value_name, gc);
   gcMARK2(e->observer, gc);
@@ -54,6 +55,7 @@ static int mark_comp_env_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(e->insp, gc);
   gcFIXUP2(e->prefix, gc);
   gcFIXUP2(e->next, gc);
+  gcFIXUP2(e->use_scopes_next, gc);
   gcFIXUP2(e->scopes, gc);
   gcFIXUP2(e->value_name, gc);
   gcFIXUP2(e->observer, gc);
