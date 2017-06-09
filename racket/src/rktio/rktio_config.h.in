@@ -1,0 +1,21 @@
+/* Whether `intptr_t' is available. */
+#undef HAVE_INTPTR_T
+
+/* Whether `uintptr_t' is available. */
+#undef HAVE_UINTPTR_T
+
+#ifdef HAVE_INTPTR_T
+# include <inttypes.h>
+#endif
+#ifndef HAVE_INTPTR_T
+typedef long intptr_t;
+#endif
+#ifndef HAVE_UINTPTR_T
+typedef unsigned long uintptr_t;
+#endif
+
+/* When poll(), epoll(), kqueue(), etc. is available: */
+#undef HAVE_POLL_SYSCALL
+#undef HAVE_EPOLL_SYSCALL
+#undef HAVE_INOTIFY_SYSCALL
+#undef HAVE_KQUEUE_SYSCALL

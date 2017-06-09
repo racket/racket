@@ -1,0 +1,21 @@
+
+srcdir = @srcdir@
+
+CC = @CC@
+CFLAGS = @CFLAGS@ @CPPFLAGS@
+
+RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h rktio_config.h
+
+all: rktio_filesystem.o rktio_read_write.o rktio_poll_set.o rktio_error.o
+
+rktio_filesystem.o: $(srcdir)/rktio_filesystem.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_filesystem.o -c $(srcdir)/rktio_filesystem.c
+
+rktio_read_write.o: $(srcdir)/rktio_read_write.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_read_write.o -c $(srcdir)/rktio_read_write.c
+
+rktio_poll_set.o: $(srcdir)/rktio_poll_set.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_poll_set.o -c $(srcdir)/rktio_poll_set.c
+
+rktio_error.o: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_error.o -c $(srcdir)/rktio_error.c

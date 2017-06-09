@@ -10,6 +10,11 @@ if [ -e "$tgt" ]; then
 fi
 autoconf "$src" | racket "$0" > "$tgt"
 chmod +x "$tgt"
+src="../rktio/configure.ac"
+tgt="../rktio/configure"
+echo "Creating $tgt from $src"
+autoconf "$src" > "$tgt"
+chmod +x "$tgt"
 exit 0
 |#
 #lang racket/base

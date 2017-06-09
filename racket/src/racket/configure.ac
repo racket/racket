@@ -1,7 +1,7 @@
 
 #################################################################
 # This is the source for the `configure' script, to be compiled #
-# by autoconf (use make-configure in this directory).           #
+# by autoconf (use `make-configure` in this directory).         #
 #################################################################
 
 # Remember:
@@ -1937,6 +1937,8 @@ else
   MZOPTIONS="$MZOPTIONS -DDONT_USE_FOREIGN"
 fi
 makefiles="$makefiles foreign/Makefile"
+
+AC_CONFIG_SUBDIRS( rktio )
 
 # Remove any --enable or --disable arguments from `ac_configure_args':
 new_configure_args=
