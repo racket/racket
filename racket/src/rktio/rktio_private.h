@@ -24,8 +24,6 @@ void rktio_get_windows_error(void);
 # define get_windows_error() rktio_get_windows_error()
 #endif
 
-intptr_t rktio_fd_value(rktio_fd_t *fd);
-
 /*******************************************************************/
 
 typedef struct rktio_poll_set_t rktio_poll_set_t;

@@ -769,7 +769,7 @@ int rktio_delete_file(char *fn, int enable_write_on_fail)
 
 int rktio_rename_file(char *dest, char *src, int exists_ok)
 {
-# ifdef RKTIO_SYSTEM_WINDOWS
+#ifdef RKTIO_SYSTEM_WINDOWS
   int errid;
   wchar_t *src_w = WIDE_PATH_copy(src);
   
@@ -797,7 +797,7 @@ int rktio_rename_file(char *dest, char *src, int exists_ok)
   
   free(src_w);
   return 0;
-# else
+#else
   if (!exists_ok && (rktio_file_exists(dest) || rktio_directory_exists(dest))) {
     /* We use a specialized error here, because it's not
        a system error (e.g., setting `errval` to `EEXIST` would
@@ -815,7 +815,7 @@ int rktio_rename_file(char *dest, char *src, int exists_ok)
 
   get_posix_error();  
   return 0;
-# endif
+#endif
 }
 
 char *rktio_readlink(char *fullfilename)
@@ -1474,7 +1474,7 @@ rktio_file_copy_t *rktio_copy_file_start(char *dest, char *src, int exists_ok)
       return NULL;
 
     do {
-      ok = fstat(rktio_fd_value(src_fd), &buf);
+      ok = fstat(rktio_fd_system_fd(src_fd), &buf);
     } while ((ok == -1) && (errno == EINTR));
 
     if (ok || S_ISDIR(buf.st_mode)) {

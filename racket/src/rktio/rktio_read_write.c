@@ -97,7 +97,7 @@ static void init_read_fd(rktio_fd_t *rfd)
 #endif
 }
 
-rktio_fd_t *rktio_fd(intptr_t system_fd, int modes)
+rktio_fd_t *rktio_system_fd(intptr_t system_fd, int modes)
 {
   rktio_fd_t *rfd;
 
@@ -126,6 +126,11 @@ rktio_fd_t *rktio_fd(intptr_t system_fd, int modes)
     init_read_fd(rfd);
   
   return rfd;
+}
+
+intptr_t rktio_fd_system_fd(rktio_fd_t *rfd)
+{
+  return rfd->fd;
 }
 
 /*************************************************************/

@@ -16,7 +16,8 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_MUST_EXIST  (1<<5)
 #define RKTIO_OPEN_CAN_EXIST   (1<<6)
 
-rktio_fd_t *rktio_fd(intptr_t system_fd, int modes);
+rktio_fd_t *rktio_system_fd(intptr_t system_fd, int modes);
+intptr_t rktio_fd_system_fd(rktio_fd_t *rfd);
 
 rktio_fd_t *rktio_open(char *src, int modes);
 int rktio_close(rktio_fd_t *fd);
