@@ -3,6 +3,9 @@
 #ifdef RKTIO_SYSTEM_UNIX
 # include <sys/select.h>
 # include <unistd.h>
+# include <fcntl.h>
+# include <errno.h>
+# include <math.h>
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <windows.h>
@@ -13,13 +16,9 @@
    special hooks for Windows "descriptors" like even queues and
    semaphores, etc. */
 
+void rktio_alloc_global_poll_set(rktio_t *rktio) {
 #ifdef USE_FAR_RKTIO_FDCALLS
-THREAD_LOCAL_DECL(rktio_poll_set_t *rktio_global_poll_set);
-#endif
-
-void rktio_alloc_global_poll_set() {
-#ifdef USE_FAR_RKTIO_FDCALLS
-  rktio_global_poll_set = rktio_alloc_fdset_array(3);
+  rktio->rktio_global_poll_set = rktio_alloc_fdset_array(3);
 #endif
 }
 
@@ -777,3 +776,362 @@ int rktio_get_fd_limit(rktio_poll_set_t *fds)
 }
 
 #endif
+
+/************************************************************/
+/* Sleeping as a generalized select()                       */
+/************************************************************/
+
+int rktio_initialize_signal(rktio_t *rktio)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  /* Set up a pipe for signaling external events: */
+  int fds[2];
+  if (!pipe(fds)) {
+    rktio->external_event_fd = fds[0];
+    rktio->put_external_event_fd = fds[1];
+    fcntl(rktio->external_event_fd, F_SETFL, RKTIO_NONBLOCKING);
+    fcntl(rktio->put_external_event_fd, F_SETFL, RKTIO_NONBLOCKING);
+    return 1;
+  } else {
+    set_racket_error(RKTIO_ERROR_INIT_FAILED);
+    return 0;
+  }
+#endif
+
+#ifdef WIN32_FD_HANDLES
+  break_semaphore = (void*)CreateSemaphore(NULL, 0, 1, NULL);
+#endif
+}
+
+rktio_signal_handle_t *rktio_get_signal_handle(rktio_t *rktio)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  return (rktio_signal_handle_t *)&rktio->put_external_event_fd;
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  return (rktio_signal_handle_t *)rktio->break_semaphore;
+#endif
+}
+
+void rktio_signal_received(rktio_t *rktio)
+{
+  rktio_signal_received_at(rktio_get_signal_handle(rktio));
+}
+
+void rktio_signal_received_at(rktio_signal_handle_t *h)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  int put_ext_event_fd = *(int *)h;
+  int saved_errno = errno;
+  if (put_ext_event_fd) {
+    int v;
+    do {
+      v = write(put_ext_event_fd, "!", 1);
+    } while ((v == -1) && (errno == EINTR));
+  }
+  errno = saved_errno;
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  ReleaseSemaphore(*(HANDLE *)h, 1, NULL);
+#endif
+}
+
+static void clear_signal(rktio_t *rktio)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  /* Clear external event flag */
+  if (rktio->external_event_fd) {
+    int rc;
+    char buf[10];
+    do {
+      rc = read(rktio->external_event_fd, buf, 10);
+    } while ((rc == -1) && errno == EINTR);
+  }
+#endif
+}
+
+void rktio_wait_until_signal_received(rktio_t *rktio)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  int r;
+# ifdef HAVE_POLL_SYSCALL
+  GC_CAN_IGNORE struct pollfd pfd[1];
+  pfd[0].fd = rktio->external_event_fd;
+  pfd[0].events = POLLIN;
+  do {
+    r = poll(pfd, 1, -1);
+  } while ((r == -1) && (errno == EINTR));
+# else
+  DECL_FDSET(readfds, 1);
+  
+  INIT_DECL_RD_FDSET(readfds);
+  
+  RKTIO_FD_ZERO(readfds);
+  RKTIO_FD_SET(rktio->external_event_fd, readfds);
+  
+  do {
+    r = select(rktio->external_event_fd + 1, RKTIO_FDS(readfds), NULL, NULL, NULL);
+  } while ((r == -1) && (errno == EINTR));
+# endif
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS  
+  WaitForSingleObject(rktio->break_semaphore, INFINITE);
+#endif
+  
+  clear_signal(rktio);
+}
+
+/****************** Windows cleanup  *****************/
+
+#if RKTIO_SYSTEM_WINDOWS
+
+static void clean_up_wait(intptr_t result, OS_SEMAPHORE_TYPE *array,
+			  int *rps, int count)
+{
+  if ((result >= (intptr_t)WAIT_OBJECT_0) && (result < (intptr_t)WAIT_OBJECT_0 + count)) {
+    result -= WAIT_OBJECT_0;
+    if (rps[result])
+      ReleaseSemaphore(array[result], 1, NULL);
+  }
+
+  /* Clear out break semaphore */  
+  WaitForSingleObject((HANDLE)scheme_break_semaphore, 0);
+}
+
+static int made_progress;
+static DWORD max_sleep_time;
+
+void rkio_notify_sleep_progress(void)
+{
+  made_progress = 1;
+}
+
+#else
+
+void rkio_notify_sleep_progress(void)
+{
+}
+
+#endif
+
+/******************** Main sleep function  *****************/
+/* The simple select() stuff is buried in various kinds of complexity. */
+
+/* FIXME: don't forget SIGCHILD_DOESNT_INTERRUPT_SELECT handling in Racket */
+
+void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds)
+{
+  if (!fds) {
+    /* Nothing to block on - just sleep for some amount of time. */
+#ifdef RKTIO_SYSTEM_UNIX
+# ifdef HAVE_POLL_SYSCALL
+    int timeout;
+    if (nsecs <= 0.0)
+      timeout = -1;
+    else {
+      timeout = (int)(nsecs * 1000.0);
+      if (timeout < 0) 
+        timeout = 0;
+    }
+    if (external_event_fd) {
+      GC_CAN_IGNORE struct pollfd pfd[1];
+      pfd[0].fd = external_event_fd;
+      pfd[0].events = POLLIN;
+      poll(pfd, 1, timeout);
+    } else {
+      poll(NULL, 0, timeout);
+    }
+# else
+    /* Sleep by selecting on the external event fd */
+    struct timeval time;
+    intptr_t secs = (intptr_t)nsecs;
+    intptr_t usecs = (intptr_t)(fmod(nsecs, 1.0) * 1000000);
+
+    if (nsecs && (nsecs > 100000))
+      secs = 100000;
+    if (usecs < 0)
+      usecs = 0;
+    if (usecs >= 1000000)
+      usecs = 999999;
+
+    time.tv_sec = secs;
+    time.tv_usec = usecs;
+
+    if (rktio->external_event_fd) {
+      DECL_FDSET(readfds, 1);
+
+      INIT_DECL_RD_FDSET(readfds);
+
+      RKTIO_FD_ZERO(readfds);
+      RKTIO_FD_SET(rktio->external_event_fd, readfds);
+
+      select(rktio->external_event_fd + 1, RKTIO_FDS(readfds), NULL, NULL, &time);
+    } else {
+      select(0, NULL, NULL, NULL, &time);
+    }
+# endif
+#else
+# ifndef NO_SLEEP
+#  ifndef NO_USLEEP
+   usleep((unsigned)(nsecs * 1000));
+#   else
+   sleep(nsecs);
+#  endif
+# endif
+#endif
+  } else {
+    /* Something to block on.... */
+    
+#ifdef HAVE_POLL_SYSCALL
+
+    /******* poll() variant *******/
+    
+    {
+      struct mz_fd_set_data_t *data = fds->data;
+      intptr_t count = data->count;
+      int timeout;
+
+      if (v <= 0.0)
+        timeout = -1;
+      else if (v > 100000)
+        timeout = 100000000;
+      else {
+        timeout = (int)(v * 1000.0);
+        if (timeout < 0) 
+          timeout = 0;
+      }
+      
+      if (external_event_fd) {
+        data->pfd[count].fd = external_event_fd;
+        data->pfd[count].events = POLLIN;
+        count++;
+      }
+
+      poll(data->pfd, count, timeout);
+    }
+#elif !defined(RKTIO_SYSTEM_WINDOWS)
+
+    /******* select() variant *******/
+    
+    {
+      int actual_limit;
+      fd_set *rd, *wr, *ex;
+      struct timeval time;
+      intptr_t secs = (intptr_t)nsecs;
+      intptr_t usecs = (intptr_t)(fmod(nsecs, 1.0) * 1000000);
+
+      if (nsecs && (nsecs > 100000))
+	secs = 100000;
+      if (usecs < 0)
+	usecs = 0;
+      if (usecs >= 1000000)
+	usecs = 999999;
+
+      time.tv_sec = secs;
+      time.tv_usec = usecs;
+
+      rd = RKTIO_FDS(fds);
+      wr = RKTIO_FDS(RKTIO_GET_FDSET(fds, 1));
+      ex = RKTIO_FDS(RKTIO_GET_FDSET(fds, 2));
+      
+      actual_limit = rktio_get_fd_limit(fds);
+      
+      /* Watch for external events, too: */
+      if (rktio->external_event_fd) {
+        FD_SET(rktio->external_event_fd, rd);
+        if (rktio->external_event_fd >= actual_limit)
+          actual_limit = rktio->external_event_fd + 1;
+      }
+      
+      select(actual_limit, rd, wr, ex, nsecs ? &time : NULL);
+    }
+    
+#else
+
+    /******* Windows variant *******/
+    
+    {
+      intptr_t result;
+      HANDLE *array, just_two_array[2], break_sema;
+      int count, rcount, *rps;
+
+      if (fds->no_sleep)
+	return;
+
+      scheme_collapse_win_fd(fds); /* merges */
+
+      rcount = fds->num_handles;
+      count = fds->combined_len;
+      array = fds->combined_wait_array;
+      rps = fds->repost_sema;
+
+      /* add break semaphore: */
+      if (!count)
+	array = just_two_array;
+      break_sema = (HANDLE)scheme_break_semaphore;
+      array[count++] = break_sema;
+
+      /* Extensions may handle events.
+	 If the event queue is empty (as reported by GetQueueStatus),
+	 everything's ok.
+
+	 Otherwise, we have trouble sleeping until an event is ready. We
+	 sometimes leave events on th queue because, say, an eventspace is
+	 not ready. The problem is that MsgWait... only unblocks when a new
+	 event appears. Since extensions may check the queue using a sequence of
+	 PeekMessages, it's possible that an event is added during the
+	 middle of the sequence, but doesn't get handled.
+
+	 To avoid this problem, we don't actually sleep indefinitely if an event
+	 is pending. Instead, we slep 10 ms, then 20 ms, etc. This exponential 
+	 backoff ensures that we eventually handle a pending event, but we don't 
+	 spin and eat CPU cycles. The back-off is reset whenever a thread makes
+	 progress. */
+
+      if (SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask)
+	  && GetQueueStatus(SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask))) {
+	if (!made_progress) {
+	  /* Ok, we've gone around at least once. */
+	  if (max_sleep_time < 0x20000000)
+	    max_sleep_time *= 2;
+	} else {
+	  /* Starting back-off mode */
+	  made_progress = 0;
+	  max_sleep_time = 5;
+	}
+      } else {
+	/* Disable back-off mode */
+	made_progress = 1;
+	max_sleep_time = 0;
+      }
+
+      /* Wait for HANDLE-based input: */
+      {
+	DWORD msec;
+	if (nsecs) {
+	  if (nsecs > 100000)
+	    msec = 100000000;
+	  else
+	    msec = (DWORD)(nsecs * 1000);
+	  if (max_sleep_time && (msec > max_sleep_time))
+	    msec = max_sleep_time;
+	} else {
+	  if (max_sleep_time)
+	    msec = max_sleep_time;
+	  else
+	    msec = INFINITE;
+	}
+
+	result = MsgWaitForMultipleObjects(count, array, FALSE, msec,
+					   SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask));
+      }
+      clean_up_wait(result, array, rps, rcount);
+      scheme_collapse_win_fd(fds); /* cleans up */
+
+      return;
+    }
+#endif
+  }
+
+  clear_signal(rktio);
+}

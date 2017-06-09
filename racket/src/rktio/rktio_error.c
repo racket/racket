@@ -4,41 +4,43 @@
 # include <windows.h>
 #endif
 #include <errno.h>
+#include <string.h>
 
-THREAD_LOCAL_DECL(static intptr_t errid);
-THREAD_LOCAL_DECL(static int errkind);
-
-void rktio_get_posix_error(void)
+void rktio_get_posix_error(rktio_t *rktio)
 {
-  errid = errno;
-  errkind = RKTIO_ERROR_KIND_POSIX;
+  rktio->errid = errno;
+  rktio->errkind = RKTIO_ERROR_KIND_POSIX;
 }
 
-void rktio_set_racket_error(int new_errid)
+void rktio_set_racket_error(rktio_t *rktio, int new_errid)
 {
-  errid = new_errid;
-  errkind = RKTIO_ERROR_KIND_RACKET;
+  rktio->errid = new_errid;
+  rktio->errkind = RKTIO_ERROR_KIND_RACKET;
 }
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-void rktio_get_windows_error(void)
+void rktio_get_windows_error(rktio_t *rktio)
 {
-  errid = GetLastError();
-  errkind = RKTIO_ERROR_KIND_WINDOWS;
+  rktio->errid = GetLastError();
+  rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
 }
 #endif
 
-int rktio_get_last_error(void)
+int rktio_get_last_error(rktio_t *rktio)
 {
-  return errid;
+  return rktio->errid;
 }
 
-int rktio_get_last_error_kind(void)
+int rktio_get_last_error_kind(rktio_t *rktio)
 {
-  return errkind;
+  return rktio->errkind;
 }
 
-char *rktio_get_error_string(int kind, int errid)
+char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
 {
+  char *s = NULL;
+  if (kind == RKTIO_ERROR_KIND_POSIX)
+    s = strerror(errid);
+  if (s) return s;
   return "???";
 }

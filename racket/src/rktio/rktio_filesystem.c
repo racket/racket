@@ -14,9 +14,6 @@
 #include <uuid/uuid.h>
 #include <dirent.h>
 #endif
-#ifdef RKTIO_SYSTEM_WINDOWS
-# include <windows.h>
-#endif
 
 #ifdef RKTIO_SYSTEM_UNIX
 # define A_PATH_SEP '/'
@@ -43,12 +40,11 @@ static gid_t egid;
 #define GROUP_MEMBER_CACHE_STATE_UNUSED 0
 #define GROUP_MEMBER_CACHE_STATE_IN     1
 #define GROUP_MEMBER_CACHE_STATE_NOT_IN 2
-typedef struct {
+typedef struct group_member_cache_entry_t {
   int state;
   gid_t gid;
   uid_t uid;
 } group_member_cache_entry_t;
-THREAD_LOCAL_DECL(static group_member_cache_entry_t *group_member_cache);
 # define GROUP_CACHE_SIZE 10
 #endif
 
@@ -307,7 +303,7 @@ static char *UNC_readlink(const char *fn)
   return buffer;
 }
 
-static int UNC_stat(const char *dirname, int *flags, int *isdir, int *islink, 
+static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir, int *islink, 
 		    rktio_timestamp_t **date, rktio_file_size_t *filesize,
 		    const char **resolved_path, int set_flags)
 /* dirname must be absolute */
@@ -337,7 +333,7 @@ static int UNC_stat(const char *dirname, int *flags, int *isdir, int *islink,
   copy = malloc(len+1);
   memcpy(copy, dirname, len+1);
 
-  if (!rktio_windows_nt_or_later()
+  if (!rktio->windows_nt_or_later
       || ((len >= 4)
           && (copy[0] == '\\')
           && (copy[1] == '\\')
@@ -478,7 +474,7 @@ static int UNC_stat(const char *dirname, int *flags, int *isdir, int *islink,
 }
 #endif
 
-int rktio_file_exists(char *filename)
+int rktio_file_exists(rktio_t *rktio, char *filename)
 /* Windows: check for special filenames before calling */
 {
 # ifdef NO_STAT_PROC
@@ -494,7 +490,7 @@ int rktio_file_exists(char *filename)
 #  ifdef RKTIO_SYSTEM_WINDOWS
   {
     int isdir;
-    return (UNC_stat(filename, NULL, &isdir, NULL, NULL, NULL, NULL, -1)
+    return (UNC_stat(rktio, filename, NULL, &isdir, NULL, NULL, NULL, NULL, -1)
 	    && !isdir);
   }
 #  else
@@ -510,7 +506,7 @@ int rktio_file_exists(char *filename)
 # endif
 }
 
-int rktio_directory_exists(char *dirname)
+int rktio_directory_exists(rktio_t *rktio, char *dirname)
 {
 # ifdef NO_STAT_PROC
   return 0;
@@ -518,7 +514,7 @@ int rktio_directory_exists(char *dirname)
 #  ifdef RKTIO_SYSTEM_WINDOWS
   int isdir;
 
-  return (UNC_stat(dirname, NULL, &isdir, NULL, NULL, NULL, NULL, -1)
+  return (UNC_stat(rktio, dirname, NULL, &isdir, NULL, NULL, NULL, NULL, -1)
 	  && isdir);
 #  else
   struct MSC_IZE(stat) buf;
@@ -535,7 +531,7 @@ int rktio_directory_exists(char *dirname)
 # endif
 }
 
-int rktio_is_regular_file(char *filename)
+int rktio_is_regular_file(rktio_t *rktio, char *filename)
 /* Windows: check for special filenames before calling */
 {
 # ifdef NO_STAT_PROC
@@ -554,12 +550,12 @@ int rktio_is_regular_file(char *filename)
 # endif  
 }
 
-int rktio_link_exists(char *filename)
+int rktio_link_exists(rktio_t *rktio, char *filename)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   {
     int islink;
-    if (UNC_stat(filename, NULL, NULL, &islink, NULL, NULL, NULL, -1)
+    if (UNC_stat(rktio, filename, NULL, NULL, &islink, NULL, NULL, NULL, -1)
 	&& islink)
       return 1;
     else
@@ -583,7 +579,7 @@ int rktio_link_exists(char *filename)
 #endif
 }
 
-char *rktio_get_current_directory()
+char *rktio_get_current_directory(rktio_t *rktio)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
  int need_l, bl = 256;
@@ -631,7 +627,7 @@ char *rktio_get_current_directory()
 #endif
 }
 
-int rktio_set_current_directory(char *expanded)
+int rktio_set_current_directory(rktio_t *rktio, char *expanded)
 {
   int err;
 
@@ -646,8 +642,7 @@ int rktio_set_current_directory(char *expanded)
   return !err;
 }
 
-rktio_identity_t *rktio_get_fd_identity(intptr_t fd, char *path)
-/* If path is supplied, then fd is 0 for stat, 1 for lstat */
+static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, char *path, int follow_links)
 {
   uintptr_t devi = 0, inoi = 0, inoi2 = 0;
 
@@ -656,11 +651,11 @@ rktio_identity_t *rktio_get_fd_identity(intptr_t fd, char *path)
   struct MSC_IZE(stat) buf;
 
   while (1) {
-    if (!path && !MSC_IZE(fstat)(fd, &buf))
+    if (!path && !MSC_IZE(fstat)(rktio_fd_system_fd(rktio, fd), &buf))
       break;
-    else if (path && !fd && !MSC_IZE(stat)(path, &buf))
+    else if (path && follow_links && !MSC_IZE(stat)(path, &buf))
       break;
-    else if (path && fd && !MSC_IZE(lstat)(path, &buf))
+    else if (path && !follow_links && !MSC_IZE(lstat)(path, &buf))
       break;
     else if (errno != EINTR) {
       errid = errno;
@@ -679,7 +674,7 @@ rktio_identity_t *rktio_get_fd_identity(intptr_t fd, char *path)
 #endif
 #ifdef WINDOWS_FILE_HANDLES
   BY_HANDLE_FILE_INFORMATION info;
-  HANDLE fdh = (HANDLE)fd;
+  HANDLE fdh;
 
   init_procs();
 
@@ -698,7 +693,8 @@ rktio_identity_t *rktio_get_fd_identity(intptr_t fd, char *path)
       get_windows_error();
       return NULL;
     }
-  }
+  } else
+    fdh = (HANDLE)rktio_fd_system_fd(rktio, fd);
 
   if (!GetFileInformationByHandle(fdh, &info)) {
     get_windows_error();
@@ -726,16 +722,26 @@ rktio_identity_t *rktio_get_fd_identity(intptr_t fd, char *path)
   }
 }
 
+rktio_identity_t *rktio_fd_identity(rktio_t *rktio, rktio_fd_t *fd)
+{
+  return get_identity(rktio, fd, NULL, 0);
+}
+
+rktio_identity_t *rktio_path_identity(rktio_t *rktio, char *path, int follow_links)
+{
+  return get_identity(rktio, NULL, path, follow_links);
+}
+
 #ifdef RKTIO_SYSTEM_WINDOWS
 static int enable_write_permission(const char *fn)
 {
   int flags;
 
-  return UNC_stat(fn, &flags, NULL, NULL, NULL, NULL, NULL, MZ_UNC_WRITE);
+  return UNC_stat(rktio, fn, &flags, NULL, NULL, NULL, NULL, NULL, MZ_UNC_WRITE);
 }
 #endif
 
-int rktio_delete_file(char *fn, int enable_write_on_fail)
+int rktio_delete_file(rktio_t *rktio, char *fn, int enable_write_on_fail)
 {
   int errid;
 
@@ -767,7 +773,7 @@ int rktio_delete_file(char *fn, int enable_write_on_fail)
 #endif
 }
 
-int rktio_rename_file(char *dest, char *src, int exists_ok)
+int rktio_rename_file(rktio_t *rktio, char *dest, char *src, int exists_ok)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int errid;
@@ -798,7 +804,7 @@ int rktio_rename_file(char *dest, char *src, int exists_ok)
   free(src_w);
   return 0;
 #else
-  if (!exists_ok && (rktio_file_exists(dest) || rktio_directory_exists(dest))) {
+  if (!exists_ok && (rktio_file_exists(rktio, dest) || rktio_directory_exists(rktio, dest))) {
     /* We use a specialized error here, because it's not
        a system error (e.g., setting `errval` to `EEXIST` would
        be a lie). */
@@ -818,10 +824,10 @@ int rktio_rename_file(char *dest, char *src, int exists_ok)
 #endif
 }
 
-char *rktio_readlink(char *fullfilename)
+char *rktio_readlink(rktio_t *rktio, char *fullfilename)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (UNC_stat(fullfilename, NULL, NULL, &is_link, NULL, NULL, NULL, -1)
+  if (UNC_stat(rktio, fullfilename, NULL, NULL, &is_link, NULL, NULL, NULL, -1)
       && is_link) {
     return UNC_readlink(fullfilename);
   } else {
@@ -852,7 +858,7 @@ char *rktio_readlink(char *fullfilename)
 #endif
 }
 
-int rktio_make_directory(char *filename)
+int rktio_make_directory(rktio_t *rktio, char *filename)
 {
 #ifdef NO_MKDIR
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
@@ -893,7 +899,7 @@ int rktio_make_directory(char *filename)
   return 0;
 }
 
-int rktio_delete_directory(char *filename, char *current_directory, int enable_write_on_fail)
+int rktio_delete_directory(rktio_t *rktio, char *filename, char *current_directory, int enable_write_on_fail)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int tried_cwd = 0, tried_perm = 0;
@@ -922,7 +928,7 @@ int rktio_delete_directory(char *filename, char *current_directory, int enable_w
 #endif
 }
 
-int rktio_make_link(char *src, char *dest, int dest_is_directory)
+int rktio_make_link(rktio_t *rktio, char *src, char *dest, int dest_is_directory)
 /* `src` is the file that is written, and `dest` is written to that
    file */
 {
@@ -960,12 +966,12 @@ int rktio_make_link(char *src, char *dest, int dest_is_directory)
 #endif
 }
 
-rktio_timestamp_t *rktio_get_file_modify_seconds(char *file)
+rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, char *file)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   rktio_timestamp_t *secs;
   
-  if (UNC_stat(file, NULL, NULL, NULL, &secs, NULL, NULL, -1))
+  if (UNC_stat(rktio, file, NULL, NULL, NULL, &secs, NULL, NULL, -1))
     return secs;
   return NULL;
 #else
@@ -986,7 +992,7 @@ rktio_timestamp_t *rktio_get_file_modify_seconds(char *file)
 #endif
 }
 
-int rktio_set_file_modify_seconds(char *file, rktio_timestamp_t secs)
+int rktio_set_file_modify_seconds(rktio_t *rktio, char *file, rktio_timestamp_t secs)
 {
   while (1) {
     struct MSC_IZE(utimbuf) ut;
@@ -1003,20 +1009,20 @@ int rktio_set_file_modify_seconds(char *file, rktio_timestamp_t secs)
 }
 
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(NO_UNIX_USERS)
-static int user_in_group(uid_t uid, gid_t gid)
+static int user_in_group(rktio_t *rktio, uid_t uid, gid_t gid)
 {
   struct group *g;
   struct passwd *pw;
   int i, in;
 
-  if (!group_member_cache)
-    group_member_cache = calloc(GROUP_CACHE_SIZE, sizeof(group_member_cache_entry_t));
+  if (!rktio->group_member_cache)
+    rktio->group_member_cache = calloc(GROUP_CACHE_SIZE, sizeof(group_member_cache_entry_t));
 
   for (i = 0; i < GROUP_CACHE_SIZE; i++) {
-    if ((group_member_cache[i].state != GROUP_MEMBER_CACHE_STATE_UNUSED)
-        && (group_member_cache[i].gid == gid)
-        && (group_member_cache[i].uid == uid))
-      return (group_member_cache[i].state == GROUP_MEMBER_CACHE_STATE_IN);
+    if ((rktio->group_member_cache[i].state != GROUP_MEMBER_CACHE_STATE_UNUSED)
+        && (rktio->group_member_cache[i].gid == gid)
+        && (rktio->group_member_cache[i].uid == uid))
+      return (rktio->group_member_cache[i].state == GROUP_MEMBER_CACHE_STATE_IN);
   }
 
   pw = getpwuid(uid);
@@ -1035,10 +1041,10 @@ static int user_in_group(uid_t uid, gid_t gid)
   in = !!(g->gr_mem[i]);
 
   for (i = 0; i < GROUP_CACHE_SIZE; i++) {
-    if (group_member_cache[i].state == GROUP_MEMBER_CACHE_STATE_UNUSED) {
-      group_member_cache[i].gid = gid;
-      group_member_cache[i].uid = uid;
-      group_member_cache[i].state = (in
+    if (rktio->group_member_cache[i].state == GROUP_MEMBER_CACHE_STATE_UNUSED) {
+      rktio->group_member_cache[i].gid = gid;
+      rktio->group_member_cache[i].uid = uid;
+      rktio->group_member_cache[i].state = (in
                                      ? GROUP_MEMBER_CACHE_STATE_IN
                                      : GROUP_MEMBER_CACHE_STATE_NOT_IN);
       break;
@@ -1049,7 +1055,7 @@ static int user_in_group(uid_t uid, gid_t gid)
 }
 #endif
 
-int rktio_get_file_or_directory_permissions(char *filename, int all_bits)
+int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int all_bits)
 /* -1 result indicates an error */
 {
 # ifdef NO_STAT_PROC
@@ -1117,13 +1123,13 @@ int rktio_get_file_or_directory_permissions(char *filename, int all_bits)
   {
     /* Use stat, because setuid, or because or no user info available */
     struct stat buf;
-    int ok, read, write, execute;
+    int cr, read, write, execute;
 
     do {
-      ok = stat(filename, &buf);
-    } while ((ok == -1) && (errno == EINTR));
+      cr = stat(filename, &buf);
+    } while ((cr == -1) && (errno == EINTR));
 
-    if (ok) {
+    if (cr) {
       get_posix_error();
       return -1;
     } else {
@@ -1145,7 +1151,7 @@ int rktio_get_file_or_directory_permissions(char *filename, int all_bits)
           read = !!(buf.st_mode & S_IRUSR);
           write = !!(buf.st_mode & S_IWUSR);
           execute = !!(buf.st_mode & S_IXUSR);
-        } else if ((egid == buf.st_gid) || user_in_group(euid, buf.st_gid)) {
+        } else if ((egid == buf.st_gid) || user_in_group(rktio, euid, buf.st_gid)) {
           read = !!(buf.st_mode & S_IRGRP);
           write = !!(buf.st_mode & S_IWGRP);
           execute = !!(buf.st_mode & S_IXGRP);
@@ -1171,7 +1177,7 @@ int rktio_get_file_or_directory_permissions(char *filename, int all_bits)
   {
     int flags;
 
-    if (UNC_stat(filename, &flags, NULL, NULL, NULL, NULL, NULL, -1)) {
+    if (UNC_stat(rktio, filename, &flags, NULL, NULL, NULL, NULL, NULL, -1)) {
       if (as_bits)
         return (flags | (flags << 3) | (flags << 6));
       else {
@@ -1187,7 +1193,7 @@ int rktio_get_file_or_directory_permissions(char *filename, int all_bits)
 # endif
 }
 
-int rktio_set_file_or_directory_permissions(char *filename, int new_bits)
+int rktio_set_file_or_directory_permissions(rktio_t *rktio, char *filename, int new_bits)
 {
 # ifdef NO_STAT_PROC
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
@@ -1221,7 +1227,7 @@ int rktio_set_file_or_directory_permissions(char *filename, int new_bits)
       return 0;
     }
     
-    if (UNC_stat(filename, NULL, NULL, NULL, NULL, NULL, NULL, new_bits))
+    if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, NULL, NULL, new_bits))
       return 1;
     
     return 0;
@@ -1230,12 +1236,12 @@ int rktio_set_file_or_directory_permissions(char *filename, int new_bits)
 # endif
 }
 
-rktio_size_t *rktio_file_size(char *filename)
+rktio_size_t *rktio_file_size(rktio_t *rktio, char *filename)
 {
   rktio_size_t *sz = NULL;
 #ifdef RKTIO_SYSTEM_WINDOWS
  {
-   if (UNC_stat(filename, NULL, NULL, NULL, NULL, &sz, NULL, -1)) {
+   if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, &sz, NULL, -1)) {
      return sz;
    }
    return NULL;
@@ -1281,7 +1287,7 @@ struct rktio_directory_list_t {
   FF_TYPE info;
 };
 
-rktio_directory_list_t *rktio_directory_list_start(char *filename, int is_drive)
+rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename, int is_drive)
 /* path must be normalized */
 {
   char *pattern;
@@ -1340,7 +1346,7 @@ rktio_directory_list_t *rktio_directory_list_start(char *filename, int is_drive)
     if ((err_val == ERROR_DIRECTORY) && CreateSymbolicLinkProc) {
       /* check for symbolic link */
       const char *resolved;
-      if (UNC_stat(filename, NULL, NULL, NULL, NULL, NULL, &resolved, -1)) {
+      if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, NULL, &resolved, -1)) {
 	if (resolved) {
 	  filename = (char *)resolved;
 	  goto retry;
@@ -1358,7 +1364,7 @@ rktio_directory_list_t *rktio_directory_list_start(char *filename, int is_drive)
   return dl;
 }
 
-char *rktio_directory_list_step(rktio_directory_list_t *dl)
+char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl)
 /* empty-strng result (don't deallocate) means done */
 {
   while (dl->first_ready || FIND_NEXT(dl->hfile, &dl->info)) {
@@ -1385,7 +1391,7 @@ struct rktio_directory_list_t {
   DIR *dir;
 };
 
-rktio_directory_list_t *rktio_directory_list_start(char *filename, int is_drive)
+rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename, int is_drive)
 {
   rktio_directory_list_t *dl;
   DIR *dir;
@@ -1403,7 +1409,7 @@ rktio_directory_list_t *rktio_directory_list_start(char *filename, int is_drive)
   return dl;
 }
 
-char *rktio_directory_list_step(rktio_directory_list_t *dl)
+char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl)
 /* empty-strng result (don't deallocate) means done */
 {
   struct dirent *e;  
@@ -1437,13 +1443,13 @@ char *rktio_directory_list_step(rktio_directory_list_t *dl)
 
 #else
 
-rktio_directory_list_t *rktio_directory_list_start(char *filename, int is_drive)
+rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename, int is_drive)
 {
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
   return NULL;
 }
 
-char *rktio_directory_list_step(rktio_directory_list_t *dl)
+char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl)
 {
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
   return NULL;
@@ -1460,7 +1466,7 @@ struct rktio_file_copy_t {
   rktio_fd_t *src_fd, *dest_fd;
 };
 
-rktio_file_copy_t *rktio_copy_file_start(char *dest, char *src, int exists_ok)
+rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, char *dest, char *src, int exists_ok)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   {
@@ -1469,12 +1475,12 @@ rktio_file_copy_t *rktio_copy_file_start(char *dest, char *src, int exists_ok)
     struct stat buf;
     rktio_fd_t *src_fd, *dest_fd;
 
-    src_fd = rktio_open(src, RKTIO_OPEN_READ);
+    src_fd = rktio_open(rktio, src, RKTIO_OPEN_READ);
     if (!src_fd)
       return NULL;
 
     do {
-      ok = fstat(rktio_fd_system_fd(src_fd), &buf);
+      ok = fstat(rktio_fd_system_fd(rktio, src_fd), &buf);
     } while ((ok == -1) && (errno == EINTR));
 
     if (ok || S_ISDIR(buf.st_mode)) {
@@ -1482,14 +1488,14 @@ rktio_file_copy_t *rktio_copy_file_start(char *dest, char *src, int exists_ok)
         get_posix_error();
       else
         set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
-      rktio_close(src_fd);
+      rktio_close(rktio, src_fd);
       return NULL;
     }
 
-    dest_fd = rktio_open(dest, (RKTIO_OPEN_WRITE
-                                    | (exists_ok ? RKTIO_OPEN_TRUNCATE : 0)));
+    dest_fd = rktio_open(rktio, dest, (RKTIO_OPEN_WRITE
+                                       | (exists_ok ? RKTIO_OPEN_TRUNCATE : 0)));
     if (!dest_fd) {
-      rktio_close(src_fd);
+      rktio_close(rktio, src_fd);
       return NULL;
     }
 
@@ -1532,12 +1538,12 @@ rktio_file_copy_t *rktio_copy_file_start(char *dest, char *src, int exists_ok)
 #endif
 }
 
-int rktio_copy_file_is_done(rktio_file_copy_t *fc)
+int rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc)
 {
   return fc->done;
 }
 
-int rktio_copy_file_step(rktio_file_copy_t *fc)
+int rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   char buffer[4096];
@@ -1546,7 +1552,7 @@ int rktio_copy_file_step(rktio_file_copy_t *fc)
   if (fc->done)
     return 1;
 
-  len = rktio_read(fc->src_fd, buffer, sizeof(buffer));
+  len = rktio_read(rktio, fc->src_fd, buffer, sizeof(buffer));
   if (len == RKTIO_READ_EOF) {
     fc->done = 1;
     return 1;
@@ -1556,7 +1562,7 @@ int rktio_copy_file_step(rktio_file_copy_t *fc)
     intptr_t done = 0, amt;
     
     while (done < len) {
-      amt = rktio_write(fc->dest_fd, buffer + done, len - done);
+      amt = rktio_write(rktio, fc->dest_fd, buffer + done, len - done);
       if (amt < 0)
         return 0;
       done += amt;
@@ -1569,11 +1575,11 @@ int rktio_copy_file_step(rktio_file_copy_t *fc)
 #endif
 }
 
-void rktio_copy_file_stop(rktio_file_copy_t *fc)
+void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc)
 {
 #ifdef RKTIO_SYSTEM_UNIX
-  rktio_close(fc->src_fd);
-  rktio_close(fc->dest_fd);
+  rktio_close(rktio, fc->src_fd);
+  rktio_close(rktio, fc->dest_fd);
 #endif
   free(fc);
 }
@@ -1582,7 +1588,7 @@ void rktio_copy_file_stop(rktio_file_copy_t *fc)
 /* filesystem root list                                      */
 /*************************************************************/
 
-char **rktio_filesystem_root_list(void)
+char **rktio_filesystem_root_list(rktio_t *rktio)
 /* returns a NULL-terminated array of strings */
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -1645,7 +1651,7 @@ char **rktio_filesystem_root_list(void)
 /* expand user tilde & system paths                          */
 /*************************************************************/
 
-char *rktio_expand_user_tilde(char *filename) {
+char *rktio_expand_user_tilde(rktio_t *rktio, char *filename) {
 #ifdef RKTIO_SYSTEM_WINDOWS
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
   return NULL;
@@ -1737,7 +1743,7 @@ static char *append_paths(char *a, char *b, int free_a, int free_b)
   return s;
 }
 
-char *rktio_system_path(int which)
+char *rktio_system_path(rktio_t *rktio, int which)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   if (which == RKTIO_PATH_SYS_DIR) {
@@ -1748,20 +1754,20 @@ char *rktio_system_path(int which)
     char *p;
     
     if ((p = getenv("TMPDIR"))) {
-      if (rktio_directory_exists(p))
+      if (rktio_directory_exists(rktio, p))
 	return strdup(p);
     }
 
-    if (rktio_directory_exists("/var/tmp"))
+    if (rktio_directory_exists(rktio, "/var/tmp"))
       return strdup("/var/tmp");
 
-    if (rktio_directory_exists("/usr/tmp"))
+    if (rktio_directory_exists(rktio, "/usr/tmp"))
       return strdup("/usr/tmp");
 
-    if (rktio_directory_exists("/tmp"))
+    if (rktio_directory_exists(rktio, "/tmp"))
       return strdup("/tmp");
 
-    return rktio_get_current_directory();
+    return rktio_get_current_directory(rktio);
   }
   
   {
@@ -1797,7 +1803,7 @@ char *rktio_system_path(int which)
     if (alt_home)
       home = append_paths(alt_home, home_str + 2, 0, 0);
     else {
-      home = rktio_expand_user_tilde(home_str);
+      home = rktio_expand_user_tilde(rktio, home_str);
       
       if (!home) {
         /* Something went wrong with the user lookup. Just drop "~'. */

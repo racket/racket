@@ -3,6 +3,18 @@
 
 #include "rktio_config.h"
 
+/* A rktio_t value represents an instance of the Racket I/O system.
+   Every rktio_...() function takes it as the first argument, except
+   for rktio_init(), rktio_signal_received_at(), and rktio_free(). */
+typedef struct rktio_t rktio_t;
+
+rktio_t *rktio_init(void);
+void rktio_destroy(rktio_t *);
+
+/* Normally equivalent to free(), but ensures the same malloc()/free()
+   that rktio function use: */
+void rktio_free(void *p);
+
 /*************************************************/
 /* Reading and writing files                     */
 
@@ -16,23 +28,23 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_MUST_EXIST  (1<<5)
 #define RKTIO_OPEN_CAN_EXIST   (1<<6)
 
-rktio_fd_t *rktio_system_fd(intptr_t system_fd, int modes);
-intptr_t rktio_fd_system_fd(rktio_fd_t *rfd);
+rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
+intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 
-rktio_fd_t *rktio_open(char *src, int modes);
-int rktio_close(rktio_fd_t *fd);
+rktio_fd_t *rktio_open(rktio_t *rktio, char *src, int modes);
+int rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 
 #define RKTIO_READ_EOF   (-1)
 #define RKTIO_READ_ERROR (-2)
 #define RKTIO_WRITE_ERROR (-2)
 #define RKTIO_POLL_ERROR (-2)
 
-intptr_t rktio_read(rktio_fd_t *fd, char *buffer, intptr_t len);
-intptr_t rktio_write(rktio_fd_t *fd, char *buffer, intptr_t len);
+intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
+intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
 
-int rktio_poll_read_ready(rktio_fd_t *rfd);
-int rktio_poll_write_ready(rktio_fd_t *rfd);
-int rktio_poll_write_flushed(rktio_fd_t *rfd);
+int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd);
 
 /*************************************************/
 /* File-descriptor sets                          */
@@ -42,26 +54,26 @@ typedef struct rktio_poll_set_t rktio_poll_set_t;
 #define RKTIO_POLL_READ   RKTIO_OPEN_READ
 #define RKTIO_POLL_WRITE  RKTIO_OPEN_WRITE
 
-void rktio_poll_add(rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes);
+void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes);
 
 /*************************************************/
 /* Files, directories, and links                 */
 
-int rktio_file_exists(char *filename);
-int rktio_directory_exists(char *dirname);
-int rktio_link_exists(char *filename);
-int rktio_is_regular_file(char *filename);
+int rktio_file_exists(rktio_t *rktio, char *filename);
+int rktio_directory_exists(rktio_t *rktio, char *dirname);
+int rktio_link_exists(rktio_t *rktio, char *filename);
+int rktio_is_regular_file(rktio_t *rktio, char *filename);
 
-int rktio_delete_file(char *fn, int enable_write_on_fail);
-int rktio_rename_file(char *dest, char *src, int exists_ok);
+int rktio_delete_file(rktio_t *rktio, char *fn, int enable_write_on_fail);
+int rktio_rename_file(rktio_t *rktio, char *dest, char *src, int exists_ok);
 
-char *rktio_get_current_directory();
-int rktio_set_current_directory(char *expanded);
-int rktio_make_directory(char *filename);
-int rktio_delete_directory(char *filename, char *current_directory, int enable_write_on_fail);
+char *rktio_get_current_directory(rktio_t *rktio);
+int rktio_set_current_directory(rktio_t *rktio, char *expanded);
+int rktio_make_directory(rktio_t *rktio, char *filename);
+int rktio_delete_directory(rktio_t *rktio, char *filename, char *current_directory, int enable_write_on_fail);
 
-char *rktio_readlink(char *fullfilename);
-int rktio_make_link(char *src, char *dest, int dest_is_directory);
+char *rktio_readlink(rktio_t *rktio, char *fullfilename);
+int rktio_make_link(rktio_t *rktio, char *src, char *dest, int dest_is_directory);
 
 /*************************************************/
 /* File attributes                               */
@@ -76,43 +88,44 @@ typedef struct {
   uintptr_t a, b, c;
 } rktio_identity_t;
 
-rktio_size_t *rktio_file_size(char *filename);
+rktio_size_t *rktio_file_size(rktio_t *rktio, char *filename);
 
-rktio_timestamp_t *rktio_get_file_modify_seconds(char *file);
-int rktio_set_file_modify_seconds(char *file, rktio_timestamp_t secs);
+rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, char *file);
+int rktio_set_file_modify_seconds(rktio_t *rktio, char *file, rktio_timestamp_t secs);
 
-rktio_identity_t *rktio_get_fd_identity(intptr_t fd, char *path);
+rktio_identity_t *rktio_fd_identity(rktio_t *rktio, rktio_fd_t *fd);
+rktio_identity_t *rktio_path_identity(rktio_t *rktio, char *path, int follow_links);
 
 /*************************************************/
 /* Permissions                                   */
 
 /* Must match OS bits: */
-#define RKTIO_PERMISSION_READ  0x1
+#define RKTIO_PERMISSION_READ  0x4
 #define RKTIO_PERMISSION_WRITE 0x2
-#define RKTIO_PERMISSION_EXEC  0x4
+#define RKTIO_PERMISSION_EXEC  0x1
 
-int rktio_get_file_or_directory_permissions(char *filename, int all_bits);
-int rktio_set_file_or_directory_permissions(char *filename, int new_bits);
+int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int all_bits);
+int rktio_set_file_or_directory_permissions(rktio_t *rktio, char *filename, int new_bits);
 
 /*************************************************/
 /* Directory listing                             */
 
 typedef struct rktio_directory_list_t rktio_directory_list_t;
 
-rktio_directory_list_t *rktio_directory_list_start(char *filename, int is_drive);
-char *rktio_directory_list_step(rktio_directory_list_t *dl);
+rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename, int is_drive);
+char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl);
 
-char **rktio_filesystem_root_list();
+char **rktio_filesystem_root_list(rktio_t *rktio);
 
 /*************************************************/
 /* File copying                                  */
 
 typedef struct rktio_file_copy_t rktio_file_copy_t;
 
-rktio_file_copy_t *rktio_copy_file_start(char *dest, char *src, int exists_ok);
-int rktio_copy_file_is_done(rktio_file_copy_t *fc);
-int rktio_copy_file_step(rktio_file_copy_t *fc);
-void rktio_copy_file_stop(rktio_file_copy_t *fc);
+rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, char *dest, char *src, int exists_ok);
+int rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
+int rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
+void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc);
 
 /*************************************************/
 /* System paths                                  */
@@ -130,8 +143,17 @@ enum {
   RKTIO_PATH_INIT_FILE
 };
 
-char *rktio_system_path(int which);
-char *rktio_expand_user_tilde(char *filename);
+char *rktio_system_path(rktio_t *rktio, int which);
+char *rktio_expand_user_tilde(rktio_t *rktio, char *filename);
+
+/*************************************************/
+/* Sleep and signals                             */
+
+typedef struct rktio_signal_handle_t rktio_signal_handle_t;
+
+rktio_signal_handle_t *rktio_get_signal_handle(rktio_t *rktio);
+void rktio_signal_received_at(rktio_signal_handle_t *h);
+void rktio_signal_received(rktio_t *rktio);
 
 /*************************************************/
 /* Errors                                        */
@@ -155,13 +177,14 @@ enum {
   RKTIO_ERROR_NOT_A_DIRECTORY,
   RKTIO_ERROR_NO_TILDE,
   RKTIO_ERROR_ILL_FORMED_USER,
-  RKTIO_ERROR_UNKNOWN_USER
+  RKTIO_ERROR_UNKNOWN_USER,
+  RKTIO_ERROR_INIT_FAILED
 };
 
-int rktio_get_last_error(void);
-int rktio_get_last_error_kind(void);
+int rktio_get_last_error(rktio_t *rktio);
+int rktio_get_last_error_kind(rktio_t *rktio);
 
-char *rktio_get_error_string(int kind, int errid);
+char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);
 
 /*************************************************/
 

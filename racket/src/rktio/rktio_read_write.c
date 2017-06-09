@@ -12,12 +12,6 @@
 # include <windows.h>
 #endif
 
-#if defined(USE_FCNTL_O_NONBLOCK)
-# define RKTIO_NONBLOCKING O_NONBLOCK
-#else
-# define RKTIO_NONBLOCKING FNDELAY
-#endif
-
 #ifndef RKTIO_BINARY
 # define RKTIO_BINARY 0
 #endif
@@ -97,7 +91,7 @@ static void init_read_fd(rktio_fd_t *rfd)
 #endif
 }
 
-rktio_fd_t *rktio_system_fd(intptr_t system_fd, int modes)
+rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 {
   rktio_fd_t *rfd;
 
@@ -128,7 +122,7 @@ rktio_fd_t *rktio_system_fd(intptr_t system_fd, int modes)
   return rfd;
 }
 
-intptr_t rktio_fd_system_fd(rktio_fd_t *rfd)
+intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return rfd->fd;
 }
@@ -137,7 +131,7 @@ intptr_t rktio_fd_system_fd(rktio_fd_t *rfd)
 /* opening a file fd                                         */
 /*************************************************************/
 
-static rktio_fd_t *open_read(char *filename)
+static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int fd;
@@ -212,7 +206,7 @@ static rktio_fd_t *open_read(char *filename)
 #endif
 }
 
-static rktio_fd_t *open_write(char *filename, int modes)
+static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int fd;
@@ -369,19 +363,19 @@ static rktio_fd_t *open_write(char *filename, int modes)
 #endif
 }
 
-rktio_fd_t *rktio_open(char *filename, int modes)
+rktio_fd_t *rktio_open(rktio_t *rktio, char *filename, int modes)
 {
   if (modes & RKTIO_OPEN_WRITE)
-    return open_write(filename, modes);
+    return open_write(rktio, filename, modes);
   else
-    return open_read(filename);
+    return open_read(rktio, filename);
 }
 
 /*************************************************************/
 /* closing                                                   */
 /*************************************************************/
 
-int rktio_close(rktio_fd_t *rfd)
+int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int cr;
@@ -483,7 +477,7 @@ static int try_get_fd_char(int fd, int *ready)
 }
 #endif
 
-int rktio_poll_read_ready(rktio_fd_t *rfd)
+int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 {
   if (rfd->regfile)
     return 1;
@@ -573,7 +567,7 @@ int rktio_poll_read_ready(rktio_fd_t *rfd)
 #endif
 }
 
-int poll_write_ready_or_flushed(rktio_fd_t *rfd, int check_flushed)
+int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flushed)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   if (check_flushed)
@@ -645,17 +639,17 @@ int poll_write_ready_or_flushed(rktio_fd_t *rfd, int check_flushed)
 #endif
 }
 
-int rktio_poll_write_ready(rktio_fd_t *rfd)
+int rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return poll_write_ready_or_flushed(rfd, 0);
+  return poll_write_ready_or_flushed(rktio, rfd, 0);
 }
 
-int rktio_poll_write_flushed(rktio_fd_t *rfd)
+int rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return poll_write_ready_or_flushed(rfd, 1);
+  return poll_write_ready_or_flushed(rktio, rfd, 1);
 }
 
-void rktio_poll_add(rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes)
+void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   rktio_poll_set_t *fds2;
@@ -708,7 +702,7 @@ void rktio_poll_add(rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes)
 /* reading                                                   */
 /*************************************************************/
 
-intptr_t rktio_read(rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   intptr_t bc;
@@ -875,10 +869,10 @@ static void WindowsFDICleanup(Win_FD_Input_Thread *th)
 /* writing                                                   */
 /*************************************************************/
 
-intptr_t rktio_write(rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
 #ifdef RKTIO_SYSTEM_UNIX
-  int flags;
+  int flags, errsaved;
   intptr_t amt;
   
   flags = fcntl(rfd->fd, F_GETFL, 0);
@@ -898,15 +892,20 @@ intptr_t rktio_write(rktio_fd_t *rfd, char *buffer, intptr_t len)
     amt = amt >> 1;
   } while ((len == -1) && (errno == EAGAIN) && (amt > 0));
 
-  if (len == -1)
+  if (len == -1) {
+    errsaved = errno;
     get_posix_error();
+  }
   
   if (!(flags & RKTIO_NONBLOCKING))
     fcntl(rfd->fd, F_SETFL, flags);
 
-  if (len == -1)
-    return RKTIO_WRITE_ERROR;
-  else
+  if (len == -1) {
+    if (errsaved == EAGAIN)
+      return 0;
+    else
+      return RKTIO_WRITE_ERROR;
+  } else
     return len;
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
