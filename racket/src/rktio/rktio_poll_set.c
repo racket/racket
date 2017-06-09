@@ -7,9 +7,6 @@
 # include <errno.h>
 # include <math.h>
 #endif
-#ifdef RKTIO_SYSTEM_WINDOWS
-# include <windows.h>
-#endif
 #include <stdlib.h>
 
 /* Generalize fd arrays (FD_SET, etc) with a runtime-determined size,
@@ -70,6 +67,11 @@ rktio_poll_set_t *rktio_alloc_fdset_array(int count)
   data->pfd = pfd;
 
   return data;
+}
+
+void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
+{
+  FIXME;
 }
 
 rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
@@ -185,7 +187,7 @@ static int cmp_fd(const void *_a, const void *_b)
   return a->fd - b->fd;
 }
 
-rktio_poll_set_t *rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
+void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
 {
   struct rktio_fd_set_data_t *data = fds->data;
   struct rktio_fd_set_data_t *src_data = src_fds->data;
@@ -198,16 +200,14 @@ rktio_poll_set_t *rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *s
   c = data->count;
   sc = src_data->count;
 
-  if (!c)
-    return src_fds;
   if (!sc)
-    return fds;
+    return;
 
   qsort(data->pfd, c, sizeof(struct pollfd), cmp_fd);
   qsort(src_data->pfd, sc, sizeof(struct pollfd), cmp_fd);
 
   nc = c + sc;
-  pfds = (struct pollfd *)rktio_malloc_atomic(sizeof(struct pollfd) * (nc + PFD_EXTRA_SPACE));
+  pfds = malloc(sizeof(struct pollfd) * (nc + PFD_EXTRA_SPACE));
   j = 0;
   for (i = 0, si = 0; (i < c) && (si < sc); ) {
     if (data->pfd[i].fd == src_data->pfd[si].fd) {
@@ -235,12 +235,15 @@ rktio_poll_set_t *rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *s
     pfds[j].events = src_data->pfd[si].events;
   }
 
-  if (nc > RKTIO_INT_VAL(data->size)) {
+  if (nc > data->size) {
+    free(data->pfd);
     data->pfd = pfds;
-    data->size = rktio_make_integer(nc);
-  } else
+    data->size = nc;
+  } else {
     memcpy(data->pfd, pfds, j * sizeof(struct pollfd));
-  data->count = rktio_make_integer(j);
+    free(pfds);
+  }
+  data->count = j;
 
   return fds;
 }
@@ -268,6 +271,16 @@ void rktio_clean_fd_set(rktio_poll_set_t *fds)
 int rktio_get_fd_limit(rktio_poll_set_t *fds)
 {
   return 0;
+}
+
+int rktio_get_poll_count(rktio_poll_set_t *fds)
+{
+  return fds->data->count;
+}
+
+int rktio_get_poll_fd_array(rktio_poll_set_t *fds)
+{
+  return fds->data->pfd;
 }
 
 #elif defined(USE_DYNAMIC_FDSET_SIZE)
@@ -302,6 +315,11 @@ rktio_poll_set_t *rktio_alloc_fdset_array(int count)
   }
 
   return malloc(count * (dynamic_fd_size + sizeof(intptr_t)));
+}
+
+void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
+{
+  free(fds);
 }
 
 rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
@@ -355,6 +373,11 @@ rktio_poll_set_t *rktio_alloc_fdset_array(int count)
     fdarray = NULL;
 
   return fdarray;
+}
+
+void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
+{
+  FIXME;
 }
 
 static void reset_wait_array(rktio_poll_set_t *efd)
@@ -455,14 +478,13 @@ int rktio_fdisset(rktio_poll_set_t *fd, int n)
   return 0;
 }
 
-rktio_poll_set_t *rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
+void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
 {
   int i;
   for (i = src_fd->added; i--; ) {
     if (stv_fd->sockets[i] != INVALID_SOCKET)
       rktio_fdset(fds, src_fd->sockets[i]);
   }
-  return fds;
 }
 
 void rktio_clean_fd_set(rktio_poll_set_t *fds)
@@ -474,7 +496,7 @@ int rktio_get_fd_limit(rktio_poll_set_t *fds)
   return 0;
 }
 
-void rktio_fdset_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost)
+void rktio_poll_set_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost)
 {
   rktio_poll_set_t *efd = fds;
   OS_SEMAPHORE_TYPE *hs;
@@ -504,12 +526,12 @@ void rktio_fdset_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost)
   efd->num_handles++;
 }
 
-void rktio_add_fd_nosleep(rktio_poll_set_t *fds)
+void rktio_poll_set_add_nosleep(rktio_poll_set_t *fds)
 {
   fds->no_sleep = 1;
 }
 
-void rktio_fdset_add_eventmask(rktio_poll_set_t *fds, int mask)
+void rktio_poll_set_eventmask(rktio_poll_set_t *fds, int mask)
 {
   fds->wait_event_mask |= mask;
 }
@@ -688,6 +710,11 @@ rktio_poll_set_t *rktio_alloc_fdset_array(int count)
   return malloc(count * sizeof(fd_set));
 }
 
+void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
+{
+  free(fds);
+}
+
 rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
 {
   return fdarray;
@@ -724,7 +751,7 @@ int rktio_fdisset(rktio_poll_set_t *fd, int n)
   return FD_ISSET(n, &(fd)->data);
 }
 
-rktio_poll_set_t *rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
+void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
 {
   int i, j;
   unsigned char *p, *sp;
@@ -746,7 +773,6 @@ rktio_poll_set_t *rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *s
       *p |= *sp;
     }
   }
-  return fds;
 }
 
 void rktio_clean_fd_set(rktio_poll_set_t *fds)
@@ -919,8 +945,18 @@ void rkio_notify_sleep_progress(void)
 
 /* FIXME: don't forget SIGCHILD_DOESNT_INTERRUPT_SELECT handling in Racket */
 
-void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds)
+void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt)
 {
+  if (fds && lt) {
+#if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
+    int fd = rktio_ltps_get_fd(lt);
+    RKTIO_FD_SET(fd, fds);
+    RKTIO_FD_SET(fd, RKTIO_GET_FDSET(fds, 2));
+#else
+    rktio_merge_fd_sets(fds, rktio_ltps_get_fd_set(lt)); 
+#endif
+  }
+
   if (!fds) {
     /* Nothing to block on - just sleep for some amount of time. */
 #ifdef RKTIO_SYSTEM_UNIX
@@ -1052,7 +1088,7 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds)
     
     {
       intptr_t result;
-      HANDLE *array, just_two_array[2], break_sema;
+      HANDLE *array, just_two_array[2];
       int count, rcount, *rps;
 
       if (fds->no_sleep)
@@ -1068,8 +1104,7 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds)
       /* add break semaphore: */
       if (!count)
 	array = just_two_array;
-      break_sema = (HANDLE)scheme_break_semaphore;
-      array[count++] = break_sema;
+      array[count++] = rktio->break_semaphore;
 
       /* Extensions may handle events.
 	 If the event queue is empty (as reported by GetQueueStatus),

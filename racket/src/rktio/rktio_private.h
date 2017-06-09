@@ -31,6 +31,7 @@ struct rktio_t {
   struct group_member_cache_entry_t *group_member_cache;
   int external_event_fd;
   int put_external_event_fd;
+  int long_term_poll_set_fd;
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   int windows_nt_or_later;
@@ -93,9 +94,18 @@ struct rktio_poll_set_t { fd_set data; };
 
 #endif
 
-rktio_poll_set_t *rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds);
+rktio_poll_set_t *rktio_alloc_fdset_array(int count);
+void rktio_free_fdset_array(rktio_poll_set_t *fds, int count);
+
+void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds);
 void rktio_clean_fd_set(rktio_poll_set_t *fds);
 int rktio_get_fd_limit(rktio_poll_set_t *fds);
+
+#if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
+int rktio_ltps_get_fd(rktio_ltps_t *lt);
+#else
+rktio_poll_set_t *rktio_ltps_get_fd_set(rktio_ltps_t *lt); 
+#endif
 
 /************************************************************/
 /* Misc                                                     */

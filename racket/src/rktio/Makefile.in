@@ -9,6 +9,7 @@ RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h rktio_config.h
 OBJS = rktio_filesystem.o \
        rktio_read_write.o \
        rktio_poll_set.o \
+       rktio_ltps.o \
        rktio_error.o \
        rktio_main.o
 
@@ -28,6 +29,9 @@ rktio_read_write.o: $(srcdir)/rktio_read_write.c $(RKTIO_HEADERS)
 
 rktio_poll_set.o: $(srcdir)/rktio_poll_set.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_poll_set.o -c $(srcdir)/rktio_poll_set.c
+
+rktio_ltps.o: $(srcdir)/rktio_ltps.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_ltps.o -c $(srcdir)/rktio_ltps.c
 
 rktio_error.o: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_error.o -c $(srcdir)/rktio_error.c

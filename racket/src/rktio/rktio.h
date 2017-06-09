@@ -47,14 +47,47 @@ int rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd);
 
 /*************************************************/
-/* File-descriptor sets                          */
+/* File-descriptor sets for polling              */
 
 typedef struct rktio_poll_set_t rktio_poll_set_t;
 
 #define RKTIO_POLL_READ   RKTIO_OPEN_READ
 #define RKTIO_POLL_WRITE  RKTIO_OPEN_WRITE
 
+rktio_poll_set_t *rktio_make_poll_set();
 void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes);
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+void rktio_poll_set_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost);
+void rktio_poll_set_add_eventmask(rktio_poll_set_t *fds, int mask);
+void rktio_poll_set_add_nosleep(rktio_poll_set_t *fds);
+#endif
+
+typedef struct rktio_ltps_t rktio_ltps_t;
+typedef struct rktio_ltps_handle_t rktio_ltps_handle_t;
+
+enum {
+  RKTIO_LTPS_CREATE_READ = 1,
+  RKTIO_LTPS_CREATE_WRITE,
+  RKTIO_LTPS_CHECK_READ,
+  RKTIO_LTPS_CHECK_WRITE,
+  RKTIO_LTPS_REMOVE,
+  RKTIO_LTPS_CREATE_VNODE,
+  RKTIO_LTPS_CHECK_VNODE,
+  RKTIO_LTPS_REMOVE_VNODE
+};
+
+rktio_ltps_t *rktio_open_ltps(rktio_t *rktio);
+int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt);
+rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t *rfd, int mode);
+
+int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt);
+int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt);
+
+void rktio_ltps_handle_set_data(rktio_ltps_t *lt, rktio_ltps_handle_t *s, void *data);
+void *rktio_ltps_handle_get_data(rktio_ltps_t *lt, rktio_ltps_handle_t *s);
+
+void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt);
 
 /*************************************************/
 /* Files, directories, and links                 */
@@ -178,7 +211,8 @@ enum {
   RKTIO_ERROR_NO_TILDE,
   RKTIO_ERROR_ILL_FORMED_USER,
   RKTIO_ERROR_UNKNOWN_USER,
-  RKTIO_ERROR_INIT_FAILED
+  RKTIO_ERROR_INIT_FAILED,
+  RKTIO_ERROR_LTPS_NOT_FOUND,
 };
 
 int rktio_get_last_error(rktio_t *rktio);
