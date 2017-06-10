@@ -31,6 +31,9 @@ typedef struct rktio_fd_t rktio_fd_t;
 rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
 intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 
+int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
+
 rktio_fd_t *rktio_open(rktio_t *rktio, char *src, int modes);
 int rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 
@@ -63,6 +66,13 @@ void rktio_poll_set_add_eventmask(rktio_poll_set_t *fds, int mask);
 void rktio_poll_set_add_nosleep(rktio_poll_set_t *fds);
 #endif
 
+/*************************************************/
+/* Long-term poll sets                           */
+
+/* "Long-term" means that the poll set will be used frequently with
+   incremental updates, which means that it's worthwhile to use an OS
+   facililty (epoll, kqueue, etc.) to speed up polling. */
+
 typedef struct rktio_ltps_t rktio_ltps_t;
 typedef struct rktio_ltps_handle_t rktio_ltps_handle_t;
 
@@ -79,13 +89,13 @@ enum {
 
 rktio_ltps_t *rktio_open_ltps(rktio_t *rktio);
 int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt);
+
 rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t *rfd, int mode);
-
-int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt);
-int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt);
-
 void rktio_ltps_handle_set_data(rktio_ltps_t *lt, rktio_ltps_handle_t *s, void *data);
 void *rktio_ltps_handle_get_data(rktio_ltps_t *lt, rktio_ltps_handle_t *s);
+
+int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt);
+rktio_ltps_handle_t *rktio_ltps_get_signaled_handle(rktio_t *rktio, rktio_ltps_t *lt);
 
 void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt);
 
@@ -213,6 +223,7 @@ enum {
   RKTIO_ERROR_UNKNOWN_USER,
   RKTIO_ERROR_INIT_FAILED,
   RKTIO_ERROR_LTPS_NOT_FOUND,
+  RKTIO_ERROR_LTPS_REMOVED, /* indicates success, instead of failure */
 };
 
 int rktio_get_last_error(rktio_t *rktio);

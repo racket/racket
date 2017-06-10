@@ -45,6 +45,124 @@ static void do_check_expected_racket_error(rktio_t *rktio, int err, int what, in
 #define check_expected_error(e) do_check_expected_error(rktio, e, __LINE__)
 #define check_expected_racket_error(e, what) do_check_expected_racket_error(rktio, e, what, __LINE__)
 
+static rktio_ltps_t *try_check_ltps(rktio_t *rktio,
+                                    rktio_fd_t *fd, /* read mode */
+                                    rktio_fd_t *fd2, /* write mode */
+                                    rktio_ltps_handle_t **_h1, 
+                                    rktio_ltps_handle_t **_h2)
+{
+  rktio_ltps_t *lt;
+  rktio_ltps_handle_t *h1, *h2, *hx, *hy;
+
+  lt = rktio_open_ltps(rktio);
+
+  /* Add read handle for fd1 */
+  h1 = rktio_ltps_add(rktio, lt, fd, RKTIO_LTPS_CHECK_READ);
+  if (!h1
+      && (rktio_get_last_error_kind(rktio) == RKTIO_ERROR_KIND_RACKET)
+      && (rktio_get_last_error(rktio) == RKTIO_ERROR_UNSUPPORTED)) {
+    check_valid(rktio_ltps_close(rktio, lt));
+    return NULL;
+  }
+  check_expected_racket_error(!h1, RKTIO_ERROR_LTPS_NOT_FOUND);
+  h1 = rktio_ltps_add(rktio, lt, fd, RKTIO_LTPS_CREATE_READ);
+  check_valid(!!h1);
+  hx = rktio_ltps_add(rktio, lt, fd, RKTIO_LTPS_CREATE_READ);
+  check_valid(hx == h1);
+  hx = rktio_ltps_add(rktio, lt, fd, RKTIO_LTPS_CHECK_WRITE);
+  check_expected_racket_error(!hx, RKTIO_ERROR_LTPS_NOT_FOUND);
+
+  /* Add write handle for fd2 */
+  h2 = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CHECK_READ);
+  check_expected_racket_error(!h2, RKTIO_ERROR_LTPS_NOT_FOUND);
+  h2 = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CHECK_WRITE);
+  check_expected_racket_error(!h2, RKTIO_ERROR_LTPS_NOT_FOUND);
+  h2 = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CREATE_WRITE);
+  check_valid(!!h2);
+  hx = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CREATE_READ);
+  check_valid(!!hx);
+
+  /* Removing `fd2` should signal the handles `h2` and `hx` */
+  hy = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_REMOVE);
+  check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_REMOVED);
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_valid((hy == h2) || (hy == hx));
+  free(hy);
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_valid((hy == h2) || (hy == hx));
+  free(hy);
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_NOT_FOUND);
+  /* Add write handle for fd2 again: */
+  h2 = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CREATE_WRITE);
+  check_valid(!!h2);
+
+  *_h1 = h1;
+  *_h2 = h2;
+
+  return lt;
+}
+
+void check_ltps_write_ready(rktio_t *rktio, rktio_ltps_t *lt, rktio_ltps_handle_t *h2)
+{
+  rktio_ltps_handle_t *hy;
+
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_NOT_FOUND);
+
+  check_valid(rktio_ltps_poll(rktio, lt));
+  
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_valid(hy == h2);
+  rktio_free(hy);
+  
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_NOT_FOUND);
+}
+
+void check_ltps_read_ready(rktio_t *rktio, rktio_ltps_t *lt, rktio_ltps_handle_t *h1)
+{
+  rktio_ltps_handle_t *hy;
+
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_NOT_FOUND);
+  
+  check_valid(rktio_ltps_poll(rktio, lt));
+  
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_valid(hy == h1);
+  rktio_free(hy);
+  
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_NOT_FOUND);
+}
+
+void check_ltps_read_and_write_ready(rktio_t *rktio, rktio_ltps_t *lt, rktio_ltps_handle_t *h1, rktio_ltps_handle_t *h2)
+{
+  rktio_ltps_handle_t *hy;
+
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_NOT_FOUND);
+
+  check_valid(rktio_ltps_poll(rktio, lt));
+  
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  if (hy == h1) {
+    rktio_free(hy);
+    hy = rktio_ltps_get_signaled_handle(rktio, lt);
+    check_valid(hy == h2);
+  } else {
+    check_valid(hy == h2);
+    rktio_free(hy);
+    hy = rktio_ltps_get_signaled_handle(rktio, lt);
+    check_valid(hy == h1);
+  }
+  rktio_free(hy);
+
+  hy = rktio_ltps_get_signaled_handle(rktio, lt);
+  check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_NOT_FOUND);
+}
+
 static void check_hello_content(rktio_t *rktio, char *fn)
 {
   rktio_fd_t *fd;
@@ -73,7 +191,9 @@ int main()
   rktio_directory_list_t *ls;
   rktio_file_copy_t *cp;
   rktio_timestamp_t *ts1, *ts1a;
-
+  rktio_ltps_t *lt;
+  rktio_ltps_handle_t *h1, *h2;
+  
   rktio = rktio_init();
 
   /* Basic file I/O */
@@ -191,8 +311,22 @@ int main()
   }
   check_valid(saw_file);
 
-  /* Pipes and non-blocking operations */
-  
+  /* We expect `lt` to work on regular files everywhere except Windows: */
+#if !defined(RKTIO_SYSTEM_WINDOWS) && !defined(HAVE_KQUEUE_SYSCALL)
+  fd = rktio_open(rktio, "test1", RKTIO_OPEN_READ);
+  check_valid(!!fd);
+  fd2 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
+  check_valid(!!fd2);
+  lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
+  check_valid(!!lt);
+  check_ltps_read_and_write_ready(rktio, lt, h1, h2);
+  check_valid(rktio_ltps_close(rktio, lt));
+  check_valid(rktio_close(rktio, fd));
+  check_valid(rktio_close(rktio, fd2));
+#endif
+
+  /* Pipes, non-blocking operations, and more long-term poll sets */
+
   fd = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_READ);
   check_valid(!!fd);
   check_valid(!rktio_poll_read_ready(rktio, fd));
@@ -200,19 +334,39 @@ int main()
   check_valid(!!fd2);
   check_valid(!rktio_poll_read_ready(rktio, fd));
 
+  lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
+  /* We expect `lt` to work everywhere exception Windows and with kqueue: */
+#if !defined(RKTIO_SYSTEM_WINDOWS) && !defined(HAVE_KQUEUE_SYSCALL)
+  check_valid(!!lt);
+#endif
+
+  /* fd2 can write, fd cannot yet read */
+  check_valid(!rktio_poll_read_ready(rktio, fd));
+  if (lt)
+    check_ltps_write_ready(rktio, lt, h2);
+
+  /* Round-trip data through pipe: */
   amt = rktio_write(rktio, fd2, "hello", 5);
   check_valid(amt == 5);
+  
   check_valid(rktio_poll_read_ready(rktio, fd));
+  if (lt) {
+    check_ltps_read_ready(rktio, lt, h1);
+    check_valid(rktio_ltps_close(rktio, lt));
+  }
+  
   amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
   check_valid(amt == 5);
   check_valid(!strncmp(buffer, "hello", 5));
   check_valid(!rktio_poll_read_ready(rktio, fd));
 
+  /* Close pipe ends: */
   check_valid(rktio_close(rktio, fd2));
   amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
   check_valid(amt == RKTIO_READ_EOF);
   check_valid(rktio_close(rktio, fd));
 
+  /* Open pipe ends again: */
   fd2 = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
   check_valid(!!fd2);
   /* should eventually block: */

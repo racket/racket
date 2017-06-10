@@ -11,6 +11,9 @@
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <windows.h>
 #endif
+#ifdef HAVE_POLL_SYSCALL
+# include <poll.h>
+#endif
 
 #ifndef RKTIO_BINARY
 # define RKTIO_BINARY 0
@@ -125,6 +128,16 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return rfd->fd;
+}
+
+int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return rfd->regfile;
+}
+
+int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return 0;
 }
 
 /*************************************************************/
@@ -575,7 +588,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
   else {
     int sr;
 # ifdef HAVE_POLL_SYSCALL
-    GC_CAN_IGNORE struct pollfd pfd[1];
+    struct pollfd pfd[1];
     pfd[0].fd = rfd->fd;
     pfd[0].events = POLLOUT;
     do {

@@ -3,6 +3,18 @@
 #ifdef RKTIO_SYSTEM_UNIX
 # include <errno.h>
 #endif
+#if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
+# include <stdio.h>
+#endif
+#ifdef HAVE_KQUEUE_SYSCALL
+# include <unistd.h>
+# include <sys/types.h>
+# include <sys/event.h>
+# include <sys/time.h>
+#endif
+#ifdef HAVE_POLL_SYSCALL
+# include <poll.h>
+#endif
 #include <stdlib.h>
 
 struct rktio_ltps_t {
@@ -11,7 +23,11 @@ struct rktio_ltps_t {
 #else
   rktio_poll_set_t *fd_set;
 #endif
+  /* List of pending signaled handles: */
   struct rktio_ltps_handle_t *signaled;
+  /* Hash table mapping fds to handles */
+  struct ltps_bucket_t *buckets;
+  intptr_t size, count;
 };
 
 struct rktio_ltps_handle_t {
@@ -24,9 +40,12 @@ typedef struct rktio_ltps_handle_pair_t {
   rktio_ltps_handle_t *write_handle;
 } rktio_ltps_handle_pair_t;
 
-static rktio_ltps_handle_pair_t *ltps_hash_get(rktio_ltps_t *lt, int fd);
-static void ltps_hash_set(rktio_ltps_t *lt, int fd, rktio_ltps_handle_pair_t *v);
+static rktio_ltps_handle_pair_t *ltps_hash_get(rktio_ltps_t *lt, intptr_t fd);
+static void ltps_hash_set(rktio_ltps_t *lt, intptr_t fd, rktio_ltps_handle_pair_t *v);
+static void ltps_hash_remove(rktio_ltps_t *lt, intptr_t fd);
 static int ltps_is_hash_empty(rktio_ltps_t *lt);
+static void ltps_hash_init(rktio_ltps_t *lt);
+static void ltps_hash_free(rktio_ltps_t *lt);
 
 /************************************************************/
 
@@ -78,6 +97,8 @@ rktio_ltps_t *rktio_open_ltps(rktio_t *rktio)
 
   lt->signaled = NULL;
 
+  ltps_hash_init(lt);
+
   return lt;
 }
 
@@ -96,6 +117,13 @@ rktio_poll_set_t *rktio_ltps_get_fd_set(rktio_ltps_t *lt)
 
 int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
 {
+  rktio_ltps_handle_t *s;
+
+  while ((s = rktio_ltps_get_signaled_handle(rktio, lt)))
+    free(s);
+
+  ltps_hash_free(lt);
+
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
   if (lt->fd >= 0) {
     intptr_t rc;
@@ -107,6 +135,7 @@ int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
 #else
   rktio_free_fdset_array(lt->fd_set, 3);
 #endif
+  
   return 1;
 }
 
@@ -116,6 +145,8 @@ rktio_ltps_handle_t *rktio_ltps_get_signaled_handle(rktio_t *rktio, rktio_ltps_t
   s = lt->signaled;
   if (s)
     lt->signaled = s->next;
+  else
+    set_racket_error(RKTIO_ERROR_LTPS_NOT_FOUND);
   return s;
 }
 
@@ -123,7 +154,7 @@ rktio_ltps_handle_t *rktio_ltps_get_signaled_handle(rktio_t *rktio, rktio_ltps_t
 static void log_kqueue_error(const char *action, int kr)
 {
   if (kr < 0) {
-    fprintf(stderr, "%d error at %s: %E",
+    fprintf(stderr, "%s error at %s: %d",
 #ifdef HAVE_KQUEUE_SYSCALL
             "kqueue",
 #else
@@ -149,15 +180,15 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
 # endif
   rktio_ltps_handle_pair_t *v;
   rktio_ltps_handle_t *s;
-  int fd = rktio_fd_system_fd(rktio, rfd);
+  intptr_t fd = rktio_fd_system_fd(rktio, rfd);
 
 # ifdef HAVE_KQUEUE_SYSCALL
-  if (!is_socket) {
+  if (!rktio_fd_is_socket(rktio, rfd)) {
     /* kqueue() might not work on devices, such as ttys; also, while
        Mac OS X kqueue() claims to work on FIFOs, there are problems:
        watching for reads on a FIFO sometimes disables watching for
        writes on the same FIFO with a different file descriptor */
-    if (!rktio_fd_regular_file(rktio, rfd, 1)) {
+    if (!rktio_fd_is_regular_file(rktio, rfd)) {
       set_racket_error(RKTIO_ERROR_UNSUPPORTED);
       return NULL;
     }
@@ -165,7 +196,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
   if (lt->fd < 0) {
     lt->fd = kqueue();
     if (lt->fd < 0) {
-      set_posix_error();
+      get_posix_error();
       log_kqueue_error("create", lt->fd);
       return NULL;
     }
@@ -175,7 +206,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
   if (lt->fd < 0) {
     lt->fd = epoll_create(5);
     if (lt->fd < 0) {
-      set_posix_error();
+      get_posix_error();
       log_kqueue_error("create", lt->fd);      
       return NULL;
     }
@@ -208,7 +239,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
     if (s) ltps_signal_handle(lt, s);
     s = v->write_handle;
     if (s) ltps_signal_handle(lt, s);
-    ltps_hash_set(lt, fd, NULL);
+    ltps_hash_remove(lt, fd);
     free(v);
     s = NULL;
 # ifdef HAVE_KQUEUE_SYSCALL
@@ -220,11 +251,11 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
         EV_SET(&kev[pos], fd, EVFILT_VNODE, EV_DELETE, 0, 0, NULL);
         pos++;
       } else {
-        if (RKTIO_TRUEP(RKTIO_VEC_ELS(v)[0])) {
+        if (v->read_handle) {
           EV_SET(&kev[pos], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
           pos++;
         }
-        if (RKTIO_TRUEP(RKTIO_VEC_ELS(v)[1])) {
+        if (v->write_handle) {
           EV_SET(&kev[pos], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
           pos++;
         }
@@ -245,6 +276,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
     RKTIO_FD_CLR(fd, w);
     RKTIO_FD_CLR(fd, e);
 # endif
+    set_racket_error(RKTIO_ERROR_LTPS_REMOVED); /* success, not failure */
   } else if ((mode == RKTIO_LTPS_CHECK_READ)
              || (mode == RKTIO_LTPS_CREATE_READ)
              || (mode == RKTIO_LTPS_CHECK_VNODE)
@@ -257,7 +289,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
         v->read_handle = s;
 # ifdef HAVE_KQUEUE_SYSCALL
         {
-          GC_CAN_IGNORE struct kevent kev;
+          struct kevent kev;
           struct timespec timeout = {0, 0};
           int kr;
           if (mode == RKTIO_LTPS_CREATE_READ)
@@ -274,7 +306,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
         }
 # elif defined(HAVE_EPOLL_SYSCALL)
 	{
-	  GC_CAN_IGNORE struct epoll_event ev;
+	  struct epoll_event ev;
 	  int already = !RKTIO_FALSEP(RKTIO_VEC_ELS(v)[1]), kr;
 	  memset(&ev, 0, sizeof(ev));
 	  ev.data.fd = fd;
@@ -299,7 +331,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
         v->write_handle = s;
 # ifdef HAVE_KQUEUE_SYSCALL
         {
-          GC_CAN_IGNORE struct kevent kev;
+          struct kevent kev;
           struct timespec timeout = {0, 0};
           int kr;
           EV_SET(&kev, fd, EVFILT_WRITE, EV_ADD | EV_ONESHOT, 0, 0, NULL);
@@ -311,7 +343,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
 
 # elif defined(HAVE_EPOLL_SYSCALL)
 	{
-	  GC_CAN_IGNORE struct epoll_event ev;
+	  struct epoll_event ev;
 	  int already = !RKTIO_FALSEP(RKTIO_VEC_ELS(v)[0]), kr;
 	  memset(&ev, 0, sizeof(ev));
 	  ev.data.fd = fd;
@@ -341,7 +373,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
   rktio_ltps_handle_t *s;
   rktio_ltps_handle_pair_t *v;
   int key;
-  GC_CAN_IGNORE struct kevent kev;
+  struct kevent kev;
   struct timespec timeout = {0, 0};
   int kr, hit = 0;
 
@@ -374,7 +406,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
           }
         }
         if (!v->read_handle && !v->write_handle) {
-          ltps_hash_set(lt, key, NULL);
+          ltps_hash_remove(lt, key);
           free(v);
         }
       } else {
@@ -390,7 +422,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
   rktio_ltps_handle_pair_t *v;
   int key;
   int kr, hit = 0;
-  GC_CAN_IGNORE struct epoll_event ev;
+  struct epoll_event ev;
   memset(&ev, 0, sizeof(ev));
 
   if (lt->fd < 0)
@@ -424,7 +456,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
           }
 	}
         if (!v->read_handle && !v->write_handle) {
-          ltps_hash_set(lt, key, NULL);
+          ltps_hash_remove(lt, key);
           free(v);
           kr = epoll_ctl(lt->fd, EPOLL_CTL_DEL, ev.data.fd, NULL);
           log_kqueue_error("remove*", kr);
@@ -454,7 +486,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
     return 0;
 
   rktio_clean_fd_set(lt->fd_set);
-  c = rkt_io_poll_count(lt->fd_set);
+  c = rktio_get_poll_count(lt->fd_set);
   pfd = rktio_get_poll_fd_array(lt->fd_set);
 
   do {
@@ -486,7 +518,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
             pfd[i].events -= (pfd[i].events & POLLOUT);
           }
           if (!v->read_handle && !v->write_handle) {
-            rktio_hash_set(rktio_semaphore_fd_mapping, key, NULL);
+            ltps_hash_remove(lt, key);
             free(v);
           }
         }
@@ -501,7 +533,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
   int i, actual_limit, r, w, e, sr, hit = 0;
   rktio_ltps_handle_t *s;
   rktio_ltps_handle_pair_t *v;
-  int key;
+  intptr_t key;
 
   DECL_FDSET(set, 3);
   rktio_poll_set_t *set1, *set2;
@@ -555,7 +587,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
           }
           if (!v->read_handle && !v->write_handle) {
             RKTIO_FD_CLR(i, RKTIO_GET_FDSET(lt->fd_set, 2));
-            ltps_hash_set(lt, key, NULL);
+            ltps_hash_remove(lt, key);
             free(v);
           }
         }
@@ -569,16 +601,133 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
 
 /************************************************************/
 
-static rktio_ltps_handle_pair_t *ltps_hash_get(rktio_ltps_t *lt, int fd)
+typedef struct ltps_bucket_t {
+  /* v is non-NULL => bucket is filled */
+  /* v is NULL and fd is -1 => was removed */
+  intptr_t fd;
+  rktio_ltps_handle_pair_t *v;
+} ltps_bucket_t;
+
+static void ltps_rehash(rktio_ltps_t *lt, intptr_t new_size)
 {
-  return NULL;
+  if (new_size >= 16) {
+    ltps_bucket_t *old_buckets = lt->buckets;
+    intptr_t old_size = lt->size, i;
+
+    lt->size = new_size;
+    lt->buckets = calloc(new_size, sizeof(ltps_bucket_t));
+    lt->count = 0;
+
+    for (i = old_size; --i; ) {
+      if (lt->buckets[i].v)
+        ltps_hash_set(lt, lt->buckets[i].fd, lt->buckets[i].v);
+    }
+
+    free(old_buckets);
+  }
 }
 
-static void ltps_hash_set(rktio_ltps_t *lt, int fd, rktio_ltps_handle_pair_t *v)
+static rktio_ltps_handle_pair_t *ltps_hash_get(rktio_ltps_t *lt, intptr_t fd)
 {
+  if (lt->buckets) {
+    intptr_t mask = (lt->size - 1);
+    intptr_t hc = fd & mask;
+    intptr_t d = ((fd >> 3) & mask) | 0x1;
+
+    while (1) {
+      if (lt->buckets[hc].fd == fd)
+        return lt->buckets[hc].v;
+      else if (lt->buckets[hc].v
+          || (lt->buckets[hc].fd == -1)) {
+        /* keep looking */
+        hc = (hc + d) & mask;
+      } else
+        return NULL;
+    }
+  } else
+    return NULL;
+}
+
+static void ltps_hash_remove(rktio_ltps_t *lt, intptr_t fd)
+{
+  if (lt->buckets) {
+    intptr_t mask = (lt->size - 1);
+    intptr_t hc = fd & mask;
+    intptr_t d = ((fd >> 3) & mask) | 0x1;
+    
+    while (1) {
+      if (lt->buckets[hc].fd == fd) {
+        lt->buckets[hc].fd = -1;
+        lt->buckets[hc].v = NULL;
+        --lt->count;
+        if (4 * lt->count <= lt->size)
+          ltps_rehash(lt, lt->size >> 1);
+      } else if (lt->buckets[hc].v
+                 || (lt->buckets[hc].fd == -1)) {
+        /* keep looking */
+        hc = (hc + d) & mask;
+      } else
+        break;
+    }
+  }
+}
+
+static void ltps_hash_set(rktio_ltps_t *lt, intptr_t fd, rktio_ltps_handle_pair_t *v)
+{
+  if (!lt->buckets) {
+    lt->size = 16;
+    lt->buckets = calloc(lt->size, sizeof(ltps_bucket_t));
+  }
+  
+  {
+    intptr_t mask = (lt->size - 1);
+    intptr_t hc = fd & mask;
+    intptr_t d = ((fd >> 3) & mask) | 0x1;
+    
+    while (1) {
+      if (lt->buckets[hc].v) {
+        if (lt->buckets[hc].fd == -1) {
+          /* use bucket whos content ws previouslt removed */
+          break;
+        } else {
+          /* keep looking for a spot */
+          hc = (hc + d) & mask;
+        }
+      } else
+        break;
+    }
+    
+    lt->buckets[hc].fd = fd;
+    lt->buckets[hc].v = v;
+    lt->count++;
+
+    if (2 * lt->count >= lt->size)
+      ltps_rehash(lt, lt->size << 1);
+  }
 }
 
 static int ltps_is_hash_empty(rktio_ltps_t *lt)
 {
-  return 1;
+  return (lt->count == 0);
+}
+
+static void ltps_hash_init(rktio_ltps_t *lt)
+{
+  lt->buckets = NULL;
+  lt->size = 0;
+  lt->count = 0;
+}
+
+static void ltps_hash_free(rktio_ltps_t *lt)
+{
+  if (lt->buckets) {
+    intptr_t i;
+
+    for (i = lt->size; --i; ) {
+      if (lt->buckets[i].v)
+        free(lt->buckets[i].v);
+    }
+    
+    free(lt->buckets);
+  }
 }

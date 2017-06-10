@@ -7,6 +7,10 @@
 # include <errno.h>
 # include <math.h>
 #endif
+#ifdef HAVE_POLL_SYSCALL
+# include <poll.h>
+#endif
+#include <string.h>
 #include <stdlib.h>
 
 /* Generalize fd arrays (FD_SET, etc) with a runtime-determined size,
@@ -66,17 +70,22 @@ rktio_poll_set_t *rktio_alloc_fdset_array(int count)
   pfd = malloc(sizeof(struct pollfd) * (32 + PFD_EXTRA_SPACE));
   data->pfd = pfd;
 
-  return data;
+  return r;
 }
 
 void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
 {
-  FIXME;
+  struct rktio_fd_set_data_t *data = fds->data;
+  free(fds->w);
+  free(fds->e);
+  free(fds);
+  free(data->pfd);
+  free(data);
 }
 
 rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
 {
-  ((struct rktio_fd_set *)fdarray)->data->count = 0;
+  fdarray->data->count = 0;
   return fdarray;
 }
 
@@ -163,7 +172,7 @@ void rktio_fdset(rktio_poll_set_t *fd, int n)
 
 int rktio_fdisset(rktio_poll_set_t *fd, int n)
 {
-  struct rktio_fd_set_data_t *data = data->data;
+  struct rktio_fd_set_data_t *data = fd->data;
   intptr_t flag = fd->flags;
   intptr_t pos;
 
@@ -244,8 +253,6 @@ void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
     free(pfds);
   }
   data->count = j;
-
-  return fds;
 }
 
 void rktio_clean_fd_set(rktio_poll_set_t *fds)
@@ -278,7 +285,7 @@ int rktio_get_poll_count(rktio_poll_set_t *fds)
   return fds->data->count;
 }
 
-int rktio_get_poll_fd_array(rktio_poll_set_t *fds)
+struct pollfd *rktio_get_poll_fd_array(rktio_poll_set_t *fds)
 {
   return fds->data->pfd;
 }
@@ -881,7 +888,7 @@ void rktio_wait_until_signal_received(rktio_t *rktio)
 #ifdef RKTIO_SYSTEM_UNIX
   int r;
 # ifdef HAVE_POLL_SYSCALL
-  GC_CAN_IGNORE struct pollfd pfd[1];
+  struct pollfd pfd[1];
   pfd[0].fd = rktio->external_event_fd;
   pfd[0].events = POLLIN;
   do {
@@ -969,9 +976,9 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
       if (timeout < 0) 
         timeout = 0;
     }
-    if (external_event_fd) {
-      GC_CAN_IGNORE struct pollfd pfd[1];
-      pfd[0].fd = external_event_fd;
+    if (rktio->external_event_fd) {
+      struct pollfd pfd[1];
+      pfd[0].fd = rktio->external_event_fd;
       pfd[0].events = POLLIN;
       poll(pfd, 1, timeout);
     } else {
@@ -1023,22 +1030,22 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
     /******* poll() variant *******/
     
     {
-      struct mz_fd_set_data_t *data = fds->data;
+      struct rktio_fd_set_data_t *data = fds->data;
       intptr_t count = data->count;
       int timeout;
 
-      if (v <= 0.0)
+      if (nsecs <= 0.0)
         timeout = -1;
-      else if (v > 100000)
+      else if (nsecs > 100000)
         timeout = 100000000;
       else {
-        timeout = (int)(v * 1000.0);
+        timeout = (int)(nsecs * 1000.0);
         if (timeout < 0) 
           timeout = 0;
       }
       
-      if (external_event_fd) {
-        data->pfd[count].fd = external_event_fd;
+      if (rktio->external_event_fd) {
+        data->pfd[count].fd = rktio->external_event_fd;
         data->pfd[count].events = POLLIN;
         count++;
       }

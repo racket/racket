@@ -39,7 +39,7 @@ struct rktio_t {
 #endif
 #ifdef USE_FAR_RKTIO_FDCALLS
   /* A single fdset that can be reused for immediate actions: */
-  struct rktio_poll_set_t *rktio_global_fd_set;
+  struct rktio_poll_set_t *rktio_global_poll_set;
 #endif
 };
 
@@ -53,6 +53,13 @@ void rktio_alloc_global_poll_set(rktio_t *rktio);
 int rktio_initialize_signal(rktio_t *rktio);
 
 #ifdef USE_FAR_RKTIO_FDCALLS
+
+rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos);
+void rktio_fdzero(rktio_poll_set_t *fd);
+void rktio_fdset(rktio_poll_set_t *fd, int n);
+void rktio_fdclr(rktio_poll_set_t *fd, int n);
+int rktio_fdisset(rktio_poll_set_t *fd, int n);
+  
 # define DECL_FDSET(n, c) fd_set *n
 # define INIT_DECL_FDSET(r, w, e) { \
    r = RKTIO_GET_FDSET(rktio->rktio_global_poll_set, 0 ); \
@@ -107,6 +114,11 @@ int rktio_ltps_get_fd(rktio_ltps_t *lt);
 rktio_poll_set_t *rktio_ltps_get_fd_set(rktio_ltps_t *lt); 
 #endif
 
+#if defined(HAVE_POLL_SYSCALL)
+int rktio_get_poll_count(rktio_poll_set_t *fds);
+struct pollfd *rktio_get_poll_fd_array(rktio_poll_set_t *fds);
+#endif
+  
 /************************************************************/
 /* Misc                                                     */
 /************************************************************/

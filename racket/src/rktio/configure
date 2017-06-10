@@ -3064,6 +3064,66 @@ fi
 ############## platform tests ################
 
 case "$host_os" in
+  solaris2*)
+    try_poll_syscall="no" # poll() has performance problems on Solaris?
+    use_flag_pthread="no"
+    use_flag_posix_pthread="yes"
+    ;;
+  aix*)
+    ;;
+  *freebsd*)
+    enable_pthread_by_default=yes
+    try_kqueue_syscall=yes
+    ;;
+  openbsd*)
+    enable_pthread_by_default=yes
+    try_kqueue_syscall=yes
+    ;;
+  bitrig*)
+    enable_pthread_by_default=yes
+    try_kqueue_syscall=yes
+    ;;
+  dragonfly*)
+    enable_pthread_by_default=yes
+    try_kqueue_syscall=yes
+    ;;
+  netbsd*)
+    try_kqueue_syscall=yes
+    ;;
+  irix*)
+    ;;
+  linux*)
+    try_poll_syscall=yes
+    try_epoll_syscall=yes
+    try_inotify_syscall=yes
+    ;;
+  osf1*)
+    ;;
+  hpux*)
+    ;;
+  *mingw*)
+    use_flag_pthread=no
+    skip_iconv_check=yes
+    ;;
+  cygwin*)
+    ;;
+  beos*)
+    ;;
+  darwin*)
+    PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
+    try_kqueue_syscall=yes
+
+    # Although select() generally works as well as poll() on OS X,
+    # getdtablesize() appears not to be constant within a process,
+    # and that breaks static allocation of fd_sets
+    try_poll_syscall=yes
+
+    # -pthread is not needed and triggers a warning
+    use_flag_pthread=no
+    ;;
+  nto-qnx*)
+    use_flag_pthread=no
+    ;;
   *)
     ;;
 esac
