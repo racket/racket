@@ -507,8 +507,8 @@ int main()
   }
   check_valid(saw_file);
 
-  /* We expect `lt` to work on regular files everywhere except Windows: */
-#if !defined(RKTIO_SYSTEM_WINDOWS) && !defined(HAVE_KQUEUE_SYSCALL)
+  /* We expect `lt` to work on regular files except on Windows and epoll: */
+#if !defined(RKTIO_SYSTEM_WINDOWS) && !defined(HAVE_EPOLL_SYSCALL)
   fd = rktio_open(rktio, "test1", RKTIO_OPEN_READ);
   check_valid(fd);
   fd2 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);

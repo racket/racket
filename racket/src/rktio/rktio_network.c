@@ -1405,7 +1405,7 @@ void rktio_listen_stop(rktio_t *rktio, rktio_listener_t *l)
   free(l);
 }
 
-int rktio_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener)
+static int do_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener, int report_which)
 {
   int sr, i;
 
@@ -1415,10 +1415,13 @@ int rktio_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener)
   } while ((sr == -1) && (errno == EINTR));
 
   if (sr > 0) {
-    for (i = listener->count; i--; ) {
-      if (listener->pfd[i].revents)
-        return i + 1;
-    }
+    if (report_which) {
+      for (i = listener->count; i--; ) {
+        if (listener->pfd[i].revents)
+          return i + 1;
+      }
+    } else
+      return RKTIO_POLL_READY;
   }
 
   if (sr == -1) {
@@ -1452,12 +1455,15 @@ int rktio_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener)
   } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
 
   if (sr > 0) {
-    for (i = 0; i < listener->count; i++) {
-      s = listener->s[i];
-      if (RKTIO_SOCK_FD_ISSET(s, readfds)
-	  || RKTIO_SOCK_FD_ISSET(s, exnfds))
-	return i + 1;
-    }
+    if (report_which) {
+      for (i = 0; i < listener->count; i++) {
+        s = listener->s[i];
+        if (RKTIO_SOCK_FD_ISSET(s, readfds)
+            || RKTIO_SOCK_FD_ISSET(s, exnfds))
+          return i + 1;
+      }
+    } else
+      return RKTIO_POLL_READY;
   }
 
   if (sr == -1) {
@@ -1466,6 +1472,11 @@ int rktio_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener)
   } else
     return 0;
 #endif
+}
+
+int rktio_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener)
+{
+  return do_poll_accept_ready(rktio, listener, 0);
 }
 
 void rktio_poll_add_receive(rktio_t *rktio, rktio_listener_t *listener, rktio_poll_set_t *fds)
@@ -1490,7 +1501,7 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
   unsigned int l;
   char tcp_accept_addr[RKTIO_SOCK_NAME_MAX_LEN];
 
-  ready_pos = rktio_poll_accept_ready(rktio, listener);
+  ready_pos = do_poll_accept_ready(rktio, listener, 1);
   if (!ready_pos) {
     set_racket_error(RKTIO_ERROR_ACCEPT_NOT_READY);
     return NULL;

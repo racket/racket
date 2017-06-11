@@ -3,6 +3,8 @@ srcdir = @srcdir@
 
 CC = @CC@
 CFLAGS = @CFLAGS@ @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
 
 RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h rktio_config.h
 
@@ -20,7 +22,7 @@ demo: rktio_demo
 	./rktio_demo
 
 rktio_demo: $(OBJS) demo.o demo_fifo
-	$(CC) -o rktio_demo $(CFLAGS) $(LDFLAGS) demo.o $(OBJS)
+	$(CC) -o rktio_demo $(CFLAGS) $(LDFLAGS) demo.o $(OBJS) $(LIBS)
 
 demo_fifo:
 	mkfifo demo_fifo
@@ -48,3 +50,6 @@ rktio_main.o: $(srcdir)/rktio_main.c $(RKTIO_HEADERS)
 
 demo.o: $(srcdir)/demo.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o demo.o -c $(srcdir)/demo.c
+
+clean:
+	rm -f $(OBJS) rktio_demo

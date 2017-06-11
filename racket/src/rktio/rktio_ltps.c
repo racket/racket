@@ -15,7 +15,11 @@
 #ifdef HAVE_POLL_SYSCALL
 # include <poll.h>
 #endif
+#ifdef HAVE_EPOLL_SYSCALL
+# include <sys/epoll.h>
+#endif
 #include <stdlib.h>
+#include <string.h>
 
 struct rktio_ltps_t {
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
@@ -154,7 +158,7 @@ rktio_ltps_handle_t *rktio_ltps_get_signaled_handle(rktio_t *rktio, rktio_ltps_t
 static void log_kqueue_error(const char *action, int kr)
 {
   if (kr < 0) {
-    fprintf(stderr, "%s error at %s: %d",
+    fprintf(stderr, "%s error at %s: %d\n",
 #ifdef HAVE_KQUEUE_SYSCALL
             "kqueue",
 #else
@@ -307,7 +311,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
 # elif defined(HAVE_EPOLL_SYSCALL)
 	{
 	  struct epoll_event ev;
-	  int already = !RKTIO_FALSEP(RKTIO_VEC_ELS(v)[1]), kr;
+	  int already = !!v->write_handle, kr;
 	  memset(&ev, 0, sizeof(ev));
 	  ev.data.fd = fd;
 	  ev.events = EPOLLIN | (already ? EPOLLOUT : 0);
@@ -344,7 +348,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
 # elif defined(HAVE_EPOLL_SYSCALL)
 	{
 	  struct epoll_event ev;
-	  int already = !RKTIO_FALSEP(RKTIO_VEC_ELS(v)[0]), kr;
+	  int already = !!v->read_handle, kr;
 	  memset(&ev, 0, sizeof(ev));
 	  ev.data.fd = fd;
 	  ev.events = EPOLLOUT | (already ? EPOLLIN : 0);

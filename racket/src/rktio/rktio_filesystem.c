@@ -11,7 +11,6 @@
 # include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
-#include <uuid/uuid.h>
 #include <dirent.h>
 #endif
 
@@ -28,6 +27,10 @@
 # define BIG_OFF_T_IZE(n) n ## 64
 #else
 # define BIG_OFF_T_IZE(n) n
+#endif
+
+#if defined(__linux__)
+# define DIRENT_NO_NAMLEN
 #endif
 
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(NO_UNIX_USERS)

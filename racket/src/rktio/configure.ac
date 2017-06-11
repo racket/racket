@@ -14,6 +14,7 @@ AC_CANONICAL_SYSTEM
 
 AC_PROG_CC
 
+AC_CHECK_LIB(m, fmod)
 AC_CHECK_LIB(dl, dlopen)
 
 ############## platform tests ################
