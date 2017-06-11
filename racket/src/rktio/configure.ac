@@ -59,6 +59,11 @@ case "$host_os" in
   *mingw*)
     use_flag_pthread=no
     skip_iconv_check=yes
+
+    AC_CHECK_LIB(winpthread, pthread_create, has_winpthread=yes, has_winpthread=no)
+    if test "${has_winpthread}" = "yes" ; then
+      LIBS="${LIBS} -Wl,-Bstatic -lwinpthread"
+    fi
     ;;    
   cygwin*)
     ;;
@@ -66,6 +71,7 @@ case "$host_os" in
     ;;
   darwin*)
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"
+    enable_pthread_by_default=yes
     try_kqueue_syscall=yes
 
     # Although select() generally works as well as poll() on OS X,
@@ -243,6 +249,25 @@ LFS_CFLAGS=`getconf LFS_CFLAGS 2> /dev/null`
 if test "${LFS_CFLAGS}" != "" && test "${LFS_CFLAGS}" != "undefined"; then
   echo "Large-file support: ${LFS_CFLAGS}"
   CFLAGS="${CFLAGS} ${LFS_CFLAGS}"  
+fi
+
+############### pthread ###################
+
+if test "${enable_pthread}" = "" ; then
+  if test "${enable_pthread_by_default}" = "yes" ; then
+    enable_pthread=yes
+  fi
+fi
+
+if test "${enable_pthread}" = "yes" ; then
+  if test "${use_flag_pthread}" = "yes" ; then
+    PREFLAGS="$PREFLAGS -pthread"
+    LDFLAGS="$LDFLAGS -pthread"
+  fi
+  if test "${use_flag_posix_pthread}" = "yes" ; then
+    PREFLAGS="$PREFLAGS -D_POSIX_PTHREAD_SEMANTICS -D_REENTRANT"
+  fi
+  AC_DEFINE(RKTIO_USE_PTHREADS, 1, [Pthread enabled])
 fi
 
 ############## final output ################

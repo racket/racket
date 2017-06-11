@@ -92,7 +92,7 @@ rktio_ltps_t *rktio_open_ltps(rktio_t *rktio)
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
   lt->fd = -1;
 #else
-  lt->fd_set = rktio_alloc_fdset_array(3);
+  lt->fd_set = rktio_make_poll_set(rktio);
 #endif
 
   lt->signaled = NULL;
@@ -133,7 +133,7 @@ int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
   }
   free(lt);
 #else
-  rktio_free_fdset_array(lt->fd_set, 3);
+  rktio_poll_set_close(rktio, lt->fd_set);
 #endif
   
   return 1;

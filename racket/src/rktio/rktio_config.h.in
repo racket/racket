@@ -14,8 +14,14 @@ typedef long intptr_t;
 typedef unsigned long uintptr_t;
 #endif
 
+/* Whether pthread is available */
+#undef RKTIO_USE_PTHREADS
+
 /* When poll(), epoll(), kqueue(), etc. is available: */
 #undef HAVE_POLL_SYSCALL
 #undef HAVE_EPOLL_SYSCALL
 #undef HAVE_INOTIFY_SYSCALL
 #undef HAVE_KQUEUE_SYSCALL
+
+/* Whether getaddrinfo() is available: */
+#undef HAVE_GETADDRINFO

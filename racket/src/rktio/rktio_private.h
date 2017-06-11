@@ -5,9 +5,15 @@
 # define RKTIO_SYSTEM_UNIX
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__) && !defined(OS_X)
+# define OS_X
+#endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <windows.h>
+#endif
+#ifdef RKTIO_USE_PTHREADS
+# include <pthread.h>
 #endif
 
 #if RKTIO_SYSTEM_WINDOWS
@@ -47,14 +53,14 @@ struct rktio_t {
 
 #if defined(RKTIO_SYSTEM_WINDOWS) || defined(RKTIO_USE_PTHREADS)
   int ghbn_started, ghbn_run;
-  struct rktio_addr_lookup_t *ghbn_requests;
+  struct rktio_addrinfo_lookup_t *ghbn_requests;
 # ifdef RKTIO_USE_PTHREADS
-  HANDLE ghbn_th;
+  pthread_t ghbn_th;
   pthread_mutex_t ghbn_lock;
   pthread_cond_t ghbn_start;
 # endif
 # ifdef RKTIO_SYSTEM_WINDOWS
-  pthread_t ghbn_th;
+  HANDLE ghbn_th;
   HANDLE ghbn_lock;
   HANDLE ghbn_start;
 # endif

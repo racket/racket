@@ -16,8 +16,11 @@ OBJS = rktio_filesystem.o \
 
 all: $(OBJS)
 
-demo: $(OBJS) main.o demo_fifo
-	$(CC) -o demo $(CFLAGS) $(LDFLAGS) main.o $(OBJS)
+demo: rktio_demo
+	./rktio_demo
+
+rktio_demo: $(OBJS) demo.o demo_fifo
+	$(CC) -o rktio_demo $(CFLAGS) $(LDFLAGS) demo.o $(OBJS)
 
 demo_fifo:
 	mkfifo demo_fifo
@@ -43,5 +46,5 @@ rktio_error.o: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
 rktio_main.o: $(srcdir)/rktio_main.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_main.o -c $(srcdir)/rktio_main.c
 
-main.o: $(srcdir)/main.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o main.o -c $(srcdir)/main.c
+demo.o: $(srcdir)/demo.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o demo.o -c $(srcdir)/demo.c

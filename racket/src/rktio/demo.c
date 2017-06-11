@@ -274,6 +274,49 @@ static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd
   check_valid(rktio_close(rktio, fd2));
 }
 
+void check_many_lookup(rktio_t *rktio)
+{
+# define LOOKUPS_N 10
+  int i, j;
+  rktio_addrinfo_lookup_t *lookup[LOOKUPS_N];
+  rktio_addrinfo_t *addr;
+  rktio_poll_set_t *ps;
+
+  for (i = 0; i < LOOKUPS_N; i++) {
+    if (i & 1)
+      lookup[i] = rktio_start_addrinfo_lookup(rktio, "localhost", 50+i, -1, 0, 1);
+    else
+      lookup[i] = rktio_start_addrinfo_lookup(rktio, "racket-lang.org", 50+i, -1, 0, 1);
+    check_valid(lookup[i]);
+  }
+
+  for (j = 0; j < LOOKUPS_N; j++) {
+    ps = rktio_make_poll_set(rktio);
+    check_valid(ps);
+
+    for (i = 0; i < LOOKUPS_N; i++) {
+      if (lookup[i])
+        rktio_poll_add_addrinfo_lookup(rktio, lookup[i], ps);
+    }
+
+    rktio_sleep(rktio, 0, ps, NULL);
+    rktio_poll_set_close(rktio, ps);
+
+    for (i = 0; i < LOOKUPS_N; i++) {
+      if (lookup[i] && (rktio_poll_addrinfo_lookup_ready(rktio, lookup[i]) == RKTIO_POLL_READY)) {
+        if ((i % 3) == 2)
+          rktio_addrinfo_lookup_stop(rktio, lookup[i]);
+        else {
+          addr = rktio_addrinfo_lookup_get(rktio, lookup[i]);
+          check_valid(addr);
+          rktio_free_addrinfo(rktio, addr);
+        }
+        lookup[i] = NULL;
+        break;
+      }
+    }
+  }
+}
 
 rktio_addrinfo_t *lookup_loop(rktio_t *rktio,
                               const char *hostname, int portno,
@@ -288,7 +331,7 @@ rktio_addrinfo_t *lookup_loop(rktio_t *rktio,
 
   lookup = rktio_start_addrinfo_lookup(rktio, hostname, portno, family, passive, tcp);
   check_valid(lookup);
-  
+
   rktio_poll_add_addrinfo_lookup(rktio, lookup, ps);
   rktio_sleep(rktio, 0, ps, NULL);
   rktio_poll_set_close(rktio, ps);
@@ -493,8 +536,10 @@ int main()
   {
     rktio_addrinfo_t *addr;
     rktio_listener_t *lnr;
+
+    check_many_lookup(rktio);
     
-    addr = lookup_loop(rktio, "localhost", 4536, -1, 1, 1);
+    addr = lookup_loop(rktio, NULL, 4536, -1, 1, 1);
 
     lnr = rktio_listen(rktio, addr, 5, 1);
     check_valid(lnr);

@@ -41,6 +41,21 @@ typedef struct sockaddr_in rktio_unspec_address;
 #define REGISTER_SOCKET(s) /**/
 #define UNREGISTER_SOCKET(s) /**/
 
+# if defined(__linux__) || defined(OS_X)
+/* RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT uses IPV6_V6ONLY for IPv6
+   listeners when the same listener has an IPv4 address, which means
+   that the IpV6 listener accepts only IPv6 connections. This is used
+   with Linux, for example, because a port cannot have both an IPv4
+   and IPv6 listener if the IPv6 one doesn't use IPV6_V6ONLY. (The
+   two listeners might be for different interfaces, in which case
+   IPV6_V6ONLY is not necessary, but we must err on the side of being
+   too restrictive. If IPV6_V6ONLY is not #defined or if setting the
+   option doesn't work, then the IPv6 addresses are silently ignored
+   when creating the listener (but only where there is at least once
+   IPv4 address). */
+#  define RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
+# endif
+
 #endif
 
 #ifdef CANT_SET_SOCKET_BUFSIZE
@@ -147,10 +162,6 @@ struct rktio_udp_t {
 /* Host address lookup, including asynchronous-lookup support             */
 /*========================================================================*/
 
-#if defined(OS_X) || defined(USE_PTHREAD_THREAD_TIMER)
-# define PTHREADS_OK_FOR_GHBN
-#endif
-
 # ifdef PROTOENT_IS_INT
 #  define PROTO_P_PROTO PROTOENT_IS_INT
 # else
@@ -168,7 +179,11 @@ static struct protoent *proto;
 #define RKTIO_SOCK_SVC_NAME_MAX_LEN 32
 
 #if defined(HAVE_GETADDRINFO) || defined(__MINGW32__)
-# define rktio_addrinfo_t addrinfo
+struct rktio_addrinfo_t {
+  struct addrinfo ai;
+};
+# define RKTIO_AS_ADDRINFO(x) (&(x)->ai)
+# define RKTIO_AS_ADDRINFO_PTR(xp) ((struct addrinfo **)(xp))
 #else
 struct rktio_addrinfo_t {
   int ai_flags;
@@ -179,6 +194,8 @@ struct rktio_addrinfo_t {
   struct sockaddr *ai_addr;
   struct rktio_addrinfo_t *ai_next;
 };
+# define RKTIO_AS_ADDRINFO(x) x
+# define RKTIO_AS_ADDRINFO_PTR(x) x
 #endif
 
 #if defined(__MINGW32__) && !defined(HAVE_GETADDRINFO)
@@ -192,7 +209,7 @@ struct rktio_addrinfo_t {
 
 #ifdef HAVE_GETADDRINFO
 # define rktio_AI_PASSIVE AI_PASSIVE 
-# define do_getaddrinfo getaddrinfo
+# define do_getaddrinfo(n, s, h, res) getaddrinfo(n, s, RKTIO_AS_ADDRINFO(h), RKTIO_AS_ADDRINFO_PTR(res))
 # define do_freeaddrinfo freeaddrinfo
 # define do_gai_strerror gai_strerror
 #else
@@ -284,11 +301,13 @@ static void free_lookup(rktio_addrinfo_lookup_t *lookup)
 {
 #if defined(RKTIO_SYSTEM_WINDOWS) || defined(RKTIO_USE_PTHREADS)
   if (lookup->result)
-    do_freeaddrinfo(lookup->result);
+    do_freeaddrinfo(RKTIO_AS_ADDRINFO(lookup->result));
 #endif
-  
-  free(lookup->name);
-  free(lookup->svc);
+
+  if (lookup->name)
+    free(lookup->name);
+  if (lookup->svc)
+    free(lookup->svc);
   free(lookup->hints);
   free(lookup);
 }
@@ -315,7 +334,7 @@ static void init_lookup(rktio_addrinfo_lookup_t *lookup)
 
 #define GHBN_WAIT        1
 #define GHBN_DONE        2
-#define GHBN_ADBANDONED  3
+#define GHBN_ABANDONED   3
 
 # ifdef RKTIO_SYSTEM_WINDOWS
 
@@ -350,27 +369,27 @@ static void ghbn_wait_exit(rktio_t *rktio)
 
 static void ghbn_lock(rktio_t *rktio)
 {
-  pthread_mutex_lock(rktio->ghbn_lock);
+  pthread_mutex_lock(&rktio->ghbn_lock);
 }
 
 static void ghbn_unlock(rktio_t *rktio)
 {
-  pthread_mutex_lock(rktio->ghbn_unlock);
+  pthread_mutex_unlock(&rktio->ghbn_lock);
 }
 
 static void ghbn_wait(rktio_t *rktio)
 {
-  pthread_cond_wait(rktio->ghbn_start, rktio->ghbn_lock);
+  pthread_cond_wait(&rktio->ghbn_start, &rktio->ghbn_lock);
 }
 
 static void ghbn_signal(rktio_t *rktio)
 {
-  pthread_cond_signal(rktio->ghbn_start);
+  pthread_cond_signal(&rktio->ghbn_start);
 }
 
 static void ghbn_wait_exit(rktio_t *rktio)
 {
-  pthread_join(rktio->th, NULL);
+  pthread_join(rktio->ghbn_th, NULL);
 }
 
 # endif
@@ -386,17 +405,14 @@ static intptr_t getaddrinfo_in_thread(void *_data)
   while (rktio->ghbn_run) {
     lookup = rktio->ghbn_requests;
     if (lookup) {
-      rktio->ghbn->requests = lookup->next;
+      rktio->ghbn_requests = lookup->next;
       ghbn_unlock(rktio);
 
       /* Handle one lookup request: */
-      err = do_getaddrinfo(lookup->name,
-                           lookup->svc,
-                           lookup->hints,
-                           &result);
-      request->err = err;
+      err = do_getaddrinfo(lookup->name, lookup->svc, lookup->hints, &result);
+      lookup->err = err;
       if (!err)
-        request->result = result;
+        lookup->result = result;
 
       ghbn_lock(rktio);
 
@@ -406,13 +422,13 @@ static intptr_t getaddrinfo_in_thread(void *_data)
       {
         long v = 1;
         do {
-          cr = write(lookup->done_fd[1], &v, sizeof(v));
-        } while ((cr == -1) && (errno == EINTR));
+          err = write(lookup->done_fd[1], &v, sizeof(v));
+        } while ((err == -1) && (errno == EINTR));
         reliably_close(lookup->done_fd[1]);
       }
 # endif
 
-      if (lookup->state == GHBN_ADBANDONED) {
+      if (lookup->mode == GHBN_ABANDONED) {
 # ifdef RKTIO_SYSTEM_WINDOWS
         CloseHandle(data->ready_sema);
 # else
@@ -472,7 +488,7 @@ static int ghbn_init(rktio_t *rktio)
     get_posix_error();
     return 0;
   }
-  if (pthread_create(&rktio->th, NULL, 
+  if (pthread_create(&rktio->ghbn_th, NULL, 
                      (RKTIO_LPTHREAD_START_ROUTINE)getaddrinfo_in_thread,
                      rktio)) {
     return 0;
@@ -495,6 +511,8 @@ void rktio_free_ghbn(rktio_t *rktio)
 
 static rktio_addrinfo_lookup_t *start_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup)
 {
+  lookup->mode = GHBN_WAIT;
+  
   if (!rktio->ghbn_started) {
     rktio->ghbn_run = 1;
     if (!ghbn_init(rktio))
@@ -503,40 +521,41 @@ static rktio_addrinfo_lookup_t *start_lookup(rktio_t *rktio, rktio_addrinfo_look
   }
 
 # ifdef RKTIO_SYSTEM_WINDOWS
-    {
-      HANDLE ready_sema;
-      unsigned int id;
-      intptr_t th;
+  {
+    HANDLE ready_sema;
+    unsigned int id;
+    intptr_t th;
       
-      lookup->done_sema = CreateSemaphore(NULL, 0, 1, NULL);
-      if (!lookup->done_sema) {
-        get_windows_error();
-        free_lookup(lookup);
-        return NULL;
-      }
-    }
-# else
-    if (pipe(lookup->done_fd)) {
-      get_posix_error();
+    lookup->done_sema = CreateSemaphore(NULL, 0, 1, NULL);
+    if (!lookup->done_sema) {
+      get_windows_error();
       free_lookup(lookup);
       return NULL;
-    } else {
-      fcntl(lookup->done_fd[0], F_SETFL, RKTIO_NONBLOCKING);
     }
+  }
+# else
+  if (pipe(lookup->done_fd)) {
+    get_posix_error();
+    free_lookup(lookup);
+    return NULL;
+  } else {
+    fcntl(lookup->done_fd[0], F_SETFL, RKTIO_NONBLOCKING);
+  }
 # endif
 
-    ghbn_lock(rktio);
-    lookup->next = rktio->ghbn_requests;
-    ghbn_requests = lookup;
-    ghbn_signal(rktio);
-    ghbn_unlock(rktio);
+  ghbn_lock(rktio);
+  lookup->next = rktio->ghbn_requests;
+  rktio->ghbn_requests = lookup;
+  ghbn_signal(rktio);
+  ghbn_unlock(rktio);
 
-    return lookup;
-  }
+  return lookup;
 }
 
 int rktio_poll_addrinfo_lookup_ready(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup)
 {
+  int done = 0;
+  
   ghbn_lock(rktio);
 
   if (lookup->mode == GHBN_DONE) {
@@ -545,10 +564,10 @@ int rktio_poll_addrinfo_lookup_ready(rktio_t *rktio, rktio_addrinfo_lookup_t *lo
   }
 
 # ifdef RKTIO_SYSTEM_WINDOWS
-  if (WaitForSingleObject(lookup->done_sema, 0) == WAIT_OBJECT_0)
+  if (WaitForSingleObject(lookup->done_sema, 0) == WAIT_OBJECT_0) {
     CloseHandle(lookup->done_sema);
-  else
-    return 0;
+    done = 1;
+  }
 # else
   {
     long v;
@@ -558,19 +577,20 @@ int rktio_poll_addrinfo_lookup_ready(rktio_t *rktio, rktio_addrinfo_lookup_t *lo
     } while ((cr == -1) && (errno == EINTR));
     if (cr > 0) {
       reliably_close(lookup->done_fd[0]);
-    } else
-      return 0;
+      done = 1;
+    }
   }
 # endif
 
-  lookup->mode = GHBN_DONE;
+  if (done)
+    lookup->mode = GHBN_DONE;
 
   ghbn_unlock(rktio);
 
-  return RKTIO_POLL_READY;
+  return (done ? RKTIO_POLL_READY : 0);
 }
 
-void rktio_poll_add_addr_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup, rktio_poll_set_t *fds)
+void rktio_poll_add_addrinfo_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup, rktio_poll_set_t *fds)
 {
   ghbn_lock(rktio);
   
@@ -586,12 +606,12 @@ void rktio_poll_add_addr_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup,
   rktio_poll_set_add_handle(lookup->done_sema, fds, 1);
 # else
   {
-    void *fds2;
+    rktio_poll_set_t *fds2;
     
     fds2 = RKTIO_GET_FDSET(fds, 2);
     
-    RKTIO_FD_SET(lookup->done_fd[0], (fd_set *)fds);
-    RKTIO_FD_SET(lookup->done_fd[0], (fd_set *)fds2);
+    RKTIO_FD_SET(lookup->done_fd[0], fds);
+    RKTIO_FD_SET(lookup->done_fd[0], fds2);
   }
 # endif
 }
@@ -600,7 +620,7 @@ void rktio_addrinfo_lookup_stop(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup)
 {
   ghbn_lock(rktio);
   if (lookup->mode != GHBN_DONE) {
-    lookup->mode == GHBN_ABANDONED;
+    lookup->mode = GHBN_ABANDONED;
     ghbn_unlock(rktio);
   } else {
     ghbn_unlock(rktio);
@@ -666,7 +686,10 @@ rktio_addrinfo_t *rktio_addrinfo_lookup_get(rktio_t *rktio, rktio_addrinfo_looku
   
   free_lookup(lookup);
 
-  return result;
+  if (err)
+    return NULL;
+  else
+    return result;
 }
 
 #endif
@@ -698,25 +721,25 @@ rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
 
   hints = malloc(sizeof(rktio_addrinfo_t));
   memset(hints, 0, sizeof(struct rktio_addrinfo_t));
-  hints->ai_family = ((family < 0) ? PF_UNSPEC : family);
+  RKTIO_AS_ADDRINFO(hints)->ai_family = ((family < 0) ? PF_UNSPEC : family);
   if (passive) {
-    hints->ai_flags |= rktio_AI_PASSIVE;
+    RKTIO_AS_ADDRINFO(hints)->ai_flags |= rktio_AI_PASSIVE;
   }
   if (tcp) {
-    hints->ai_socktype = SOCK_STREAM;
+    RKTIO_AS_ADDRINFO(hints)->ai_socktype = SOCK_STREAM;
 # ifndef PROTOENT_IS_INT
     if (!proto) {
       proto = getprotobyname("tcp");
     }
 # endif
-    hints->ai_protocol= PROTO_P_PROTO;
+    RKTIO_AS_ADDRINFO(hints)->ai_protocol= PROTO_P_PROTO;
   } else {
-    hints->ai_socktype = SOCK_DGRAM;
+    RKTIO_AS_ADDRINFO(hints)->ai_socktype = SOCK_DGRAM;
   }
 
   lookup = malloc(sizeof(rktio_addrinfo_lookup_t));
-  lookup->name = strdup(hostname);
-  lookup->svc = strdup(service);
+  lookup->name = (hostname ? strdup(hostname) : NULL);
+  lookup->svc = (service ? strdup(service) : NULL);
   lookup->hints = hints;
   init_lookup(lookup);
  
@@ -725,7 +748,7 @@ rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
 
 void rktio_free_addrinfo(rktio_t *rktio, rktio_addrinfo_t *a)
 {
-  do_freeaddrinfo(a);
+  do_freeaddrinfo(RKTIO_AS_ADDRINFO(a));
 }
 
 const char *rktio_gai_strerror(int errnum)
@@ -1042,11 +1065,13 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
   rktio_socket_t s;
   
   addr = conn->addr;
-  s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+  s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
+             RKTIO_AS_ADDRINFO(addr)->ai_socktype,
+             RKTIO_AS_ADDRINFO(addr)->ai_protocol);
   if (s != INVALID_SOCKET) {
     int status, inprogress;
     if (!conn->src
-        || !bind(s, conn->src->ai_addr, conn->src->ai_addrlen)) {
+        || !bind(s, RKTIO_AS_ADDRINFO(conn->src)->ai_addr, RKTIO_AS_ADDRINFO(conn->src)->ai_addrlen)) {
 #ifdef RKTIO_SYSTEM_WINDOWS
       unsigned long ioarg = 1;
       ioctlsocket(s, FIONBIO, &ioarg);
@@ -1055,7 +1080,7 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
       fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
       RKTIO_WHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #endif
-      status = connect(s, addr->ai_addr, addr->ai_addrlen);
+      status = connect(s, RKTIO_AS_ADDRINFO(addr)->ai_addr, RKTIO_AS_ADDRINFO(addr)->ai_addrlen);
 #ifdef RKTIO_SYSTEM_UNIX
       if (status)
         status = errno;
@@ -1128,9 +1153,9 @@ rktio_fd_t *rktio_connect_finish(rktio_t *rktio, rktio_connect_t *conn)
 
     if (errid) {
       rktio_close(rktio, rfd);
-      if (conn->addr->ai_next) {
+      if (RKTIO_AS_ADDRINFO(conn->addr)->ai_next) {
         /* try the next one */
-        conn->addr = conn->addr->ai_next;
+        conn->addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(conn->addr)->ai_next;
         if (try_connect(rktio, conn)) {
           set_racket_error(RKTIO_ERROR_CONNECT_TRYING_NEXT);
           return NULL;
@@ -1189,16 +1214,16 @@ rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlo
     int any_v4 = 0, any_v6 = 0;
 #endif
 
-    for (addr = src; addr; addr = addr->ai_next) {
+    for (addr = src; addr; addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next) {
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-      if (addr->ai_family == RKTIO_PF_INET)
+      if (RKTIO_AS_ADDRINFO(addr)->ai_family == RKTIO_PF_INET)
 	any_v4 = 1;
-      else if (addr->ai_family == PF_INET6)
+      else if (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6)
 	any_v6 = 1;
 #endif
       count++;
     }
-		
+
     {
       rktio_socket_t s;
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
@@ -1212,34 +1237,36 @@ rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlo
 
       for (addr = src; addr; ) {
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-	if ((v6_loop && (addr->ai_family != PF_INET6))
-	    || (skip_v6 && (addr->ai_family == PF_INET6))) {
-	  addr = addr->ai_next;
+	if ((v6_loop && (RKTIO_AS_ADDRINFO(addr)->ai_family != PF_INET6))
+	    || (skip_v6 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6))) {
+	  addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
 	  if (v6_loop && !addr) {
 	    v6_loop = 0;
 	    skip_v6 = 1;
-	    addr = tcp_listen_addr;
+	    addr = src;
 	  }
 	  continue;
 	}
 #endif
 
-	s = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+	s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
+                   RKTIO_AS_ADDRINFO(addr)->ai_socktype,
+                   RKTIO_AS_ADDRINFO(addr)->ai_protocol);
         if (s != INVALID_SOCKET)
           get_socket_error();
 
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
 	if (s == INVALID_SOCKET) {
 	  /* Maybe it failed because IPv6 is not available: */
-	  if ((addr->ai_family == PF_INET6) && (errno == EAFNOSUPPORT)) {
+	  if ((RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6) && (errno == EAFNOSUPPORT)) {
 	    if (any_v4 && !pos) {
 	      /* Let client known that maybe we can make it work with just IPv4. */
-	      set_racket_option(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
+	      set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
 	    }
 	  }
 	}
 	if (s != INVALID_SOCKET) {
-	  if (any_v4 && (addr->ai_family == PF_INET6)) {
+	  if (any_v4 && (RKTIO_AS_ADDRINFO(addr)->ai_family == PF_INET6)) {
 	    int ok;
 # ifdef IPV6_V6ONLY
 	    int on = 1;
@@ -1250,7 +1277,7 @@ rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlo
 	    if (ok) {
 	      if (!pos) {
 		/* IPV6_V6ONLY doesn't work */
-                set_racket_option(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
+                set_racket_error(RKTIO_ERROR_TRY_AGAIN_WITH_IPV4);
                 s = INVALID_SOCKET;
 	      } else {
                 get_socket_error();
@@ -1275,11 +1302,11 @@ rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlo
 	  }
       
           if (first_was_zero) {
-            ((struct sockaddr_in *)addr->ai_addr)->sin_port = no_port;
+            ((struct sockaddr_in *)RKTIO_AS_ADDRINFO(addr)->ai_addr)->sin_port = no_port;
           }
-	  if (!bind(s, addr->ai_addr, addr->ai_addrlen)) {
+	  if (!bind(s, RKTIO_AS_ADDRINFO(addr)->ai_addr, RKTIO_AS_ADDRINFO(addr)->ai_addrlen)) {
             if (first_time) {
-              if (((struct sockaddr_in *)addr->ai_addr)->sin_port == 0) {
+              if (((struct sockaddr_in *)RKTIO_AS_ADDRINFO(addr)->ai_addr)->sin_port == 0) {
                 no_port = get_no_portno(rktio, s);
                 first_was_zero = 1;
 		if (no_port < 0) {
@@ -1327,7 +1354,7 @@ rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlo
           break;
         }
 
-	addr = addr->ai_next;
+	addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next;
 
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
 	if (!addr && v6_loop) {

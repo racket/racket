@@ -733,7 +733,10 @@ void rktio_collapse_win_fd(rktio_poll_set_t *fds)
 
 static rktio_poll_set_t *alloc_fdset_arrays()
 {
+  void *p;
   p = malloc((3 * sizeof(fd_set)) + sizeof(int));
+  *(int *)((char *)p + (3 * sizeof(fd_set))) = 0;
+  return p;
 }
 
 static void free_fdset_arrays(rktio_poll_set_t *fds)
@@ -869,7 +872,13 @@ void rktio_free_global_poll_set(rktio_t *rktio) {
 
 rktio_poll_set_t *rktio_make_poll_set(rktio_t *rktio)
 {
-  return alloc_fdset_arrays();
+  rktio_poll_set_t *fds = alloc_fdset_arrays();
+
+  RKTIO_FD_ZERO(fds);
+  RKTIO_FD_ZERO(RKTIO_GET_FDSET(fds, 1));
+  RKTIO_FD_ZERO(RKTIO_GET_FDSET(fds, 2));
+
+  return fds;
 }
 
 void rktio_poll_set_close(rktio_t *rktio, rktio_poll_set_t *fds)

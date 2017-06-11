@@ -796,7 +796,7 @@ struct mz_addrinfo *scheme_get_host_address(const char *address, int id, int *er
 
   ok = MZ_GETADDRINFO(address, service, &hints, &r);
   *err = ok;
-  
+
   if (!ok)
     return r;
   else
