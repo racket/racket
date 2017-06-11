@@ -824,12 +824,20 @@ int rktio_get_fd_limit(rktio_poll_set_t *fds)
   int actual_limit;
 
 # ifdef STORED_ACTUAL_FDSET_LIMIT
-  actual_limit = FDSET_LIMIT(rd);
-  if (FDSET_LIMIT(wr) > actual_limit)
-    actual_limit = FDSET_LIMIT(wr);
-  if (FDSET_LIMIT(ex) > actual_limit)
-    actual_limit = FDSET_LIMIT(ex);
-  actual_limit++;
+  {
+    fd_set *rd, *wr, *ex;
+
+    rd = RKTIO_FDS(fds);
+    wr = RKTIO_FDS(RKTIO_GET_FDSET(fds, 1));
+    ex = RKTIO_FDS(RKTIO_GET_FDSET(fds, 2));
+
+    actual_limit = FDSET_LIMIT(rd);
+    if (FDSET_LIMIT(wr) > actual_limit)
+      actual_limit = FDSET_LIMIT(wr);
+    if (FDSET_LIMIT(ex) > actual_limit)
+      actual_limit = FDSET_LIMIT(ex);
+    actual_limit++;
+  }
 # elif defined (USE_ULIMIT)
   actual_limit = ulimit(4, 0);
 #elif defined(FIXED_FD_LIMIT)

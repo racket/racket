@@ -16,6 +16,13 @@
 # include <pthread.h>
 #endif
 
+#if defined(__linux__) || defined(OS_X) || defined(__NetBSD__) \
+    || defined(__NetBSD__) || defined(__OpenBSD__) \
+    || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) \
+    || defined(__DragonFly__) || defined(__QNX__)
+# define USE_DYNAMIC_FDSET_SIZE
+#endif
+
 #if RKTIO_SYSTEM_WINDOWS
 # define USE_FAR_RKTIO_FDCALLS
 #endif
@@ -85,7 +92,7 @@ void rktio_fdset(rktio_poll_set_t *fd, int n);
 void rktio_fdclr(rktio_poll_set_t *fd, int n);
 int rktio_fdisset(rktio_poll_set_t *fd, int n);
   
-# define DECL_FDSET(n, c) fd_set *n
+# define DECL_FDSET(n, c) rktio_poll_set_t *n
 # define INIT_DECL_FDSET(r, w, e) { \
    r = RKTIO_GET_FDSET(rktio->rktio_global_poll_set, 0 ); \
    w = RKTIO_GET_FDSET(rktio->rktio_global_poll_set, 1 ); \
@@ -102,7 +109,7 @@ int rktio_fdisset(rktio_poll_set_t *fd, int n);
 # define RKTIO_FD_ISSET(n, p) rktio_fdisset(p, n)
 
 # if !defined(HAVE_POLL_SYSCALL) && !defined(RKTIO_SYSTEM_WINDOWS)
-#  define RKTIO_FDS(p) ((fd_set *)fds)
+#  define RKTIO_FDS(p) ((fd_set *)p)
 # endif
 
 #else
