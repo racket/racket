@@ -41,7 +41,7 @@ static void do_check_expected_racket_error(rktio_t *rktio, int err, int what, in
   }
 }
 
-#define check_valid(e) do_check_valid(rktio, e, __LINE__)
+#define check_valid(e) do_check_valid(rktio, ((e)?1:0), __LINE__)
 #define check_expected_error(e) do_check_expected_error(rktio, e, __LINE__)
 #define check_expected_racket_error(e, what) do_check_expected_racket_error(rktio, e, what, __LINE__)
 
@@ -66,7 +66,7 @@ static rktio_ltps_t *try_check_ltps(rktio_t *rktio,
   }
   check_expected_racket_error(!h1, RKTIO_ERROR_LTPS_NOT_FOUND);
   h1 = rktio_ltps_add(rktio, lt, fd, RKTIO_LTPS_CREATE_READ);
-  check_valid(!!h1);
+  check_valid(h1);
   hx = rktio_ltps_add(rktio, lt, fd, RKTIO_LTPS_CREATE_READ);
   check_valid(hx == h1);
   hx = rktio_ltps_add(rktio, lt, fd, RKTIO_LTPS_CHECK_WRITE);
@@ -78,9 +78,9 @@ static rktio_ltps_t *try_check_ltps(rktio_t *rktio,
   h2 = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CHECK_WRITE);
   check_expected_racket_error(!h2, RKTIO_ERROR_LTPS_NOT_FOUND);
   h2 = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CREATE_WRITE);
-  check_valid(!!h2);
+  check_valid(h2);
   hx = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CREATE_READ);
-  check_valid(!!hx);
+  check_valid(hx);
 
   /* Removing `fd2` should signal the handles `h2` and `hx` */
   hy = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_REMOVE);
@@ -95,7 +95,7 @@ static rktio_ltps_t *try_check_ltps(rktio_t *rktio,
   check_expected_racket_error(!hy, RKTIO_ERROR_LTPS_NOT_FOUND);
   /* Add write handle for fd2 again: */
   h2 = rktio_ltps_add(rktio, lt, fd2, RKTIO_LTPS_CREATE_WRITE);
-  check_valid(!!h2);
+  check_valid(h2);
 
   *_h1 = h1;
   *_h2 = h2;
@@ -170,14 +170,167 @@ static void check_hello_content(rktio_t *rktio, char *fn)
   char buffer[256], *s;
   
   fd = rktio_open(rktio, fn, RKTIO_OPEN_READ);
-  check_valid(!!fd);
-  check_valid(rktio_poll_read_ready(rktio, fd) != RKTIO_POLL_ERROR);
+  check_valid(fd);
+  check_valid(rktio_poll_read_ready(rktio, fd) == RKTIO_POLL_READY);
   amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
   check_valid(amt == 5);
   check_valid(!strncmp(buffer, "hello", 5));
   amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
   check_valid(amt == RKTIO_READ_EOF);
   check_valid(rktio_close(rktio, fd));
+}
+
+static void wait_read(rktio_t *rktio, rktio_fd_t *fd)
+{
+  rktio_poll_set_t *ps;
+  ps = rktio_make_poll_set(rktio);
+  check_valid(ps);
+  rktio_poll_add(rktio, fd, ps, RKTIO_POLL_READ);
+  rktio_sleep(rktio, 0, ps, NULL);
+  rktio_poll_set_close(rktio, ps);
+}
+
+static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd2)
+{
+  rktio_ltps_t *lt;
+  rktio_ltps_handle_t *h1, *h2;
+  intptr_t amt, i;
+  char buffer[256];
+  int immediate_available = (!rktio_fd_is_socket(rktio, fd) && !rktio_fd_is_socket(rktio, fd2));
+
+  lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
+  /* We expect `lt` to work everywhere exception Windows and with kqueue on non-sockets: */
+#if !defined(RKTIO_SYSTEM_WINDOWS)
+# if !defined(HAVE_KQUEUE_SYSCALL)
+  check_valid(lt);
+# else
+  if (rktio_fd_is_socket(rktio, fd) && rktio_fd_is_socket(rktio, fd2))
+    check_valid(lt);
+# endif
+#endif
+
+  /* fd2 can write, fd cannot yet read */
+  check_valid(!rktio_poll_read_ready(rktio, fd));
+  if (lt)
+    check_ltps_write_ready(rktio, lt, h2);
+
+  /* Round-trip data through pipe: */
+  amt = rktio_write(rktio, fd2, "hello", 5);
+  check_valid(amt == 5);
+
+  if (!immediate_available) {
+    /* Wait for read to be ready; should not block for long */
+    wait_read(rktio, fd);
+  }
+  
+  check_valid(rktio_poll_read_ready(rktio, fd) == RKTIO_POLL_READY);
+  if (lt) {
+    check_ltps_read_ready(rktio, lt, h1);
+    check_valid(rktio_ltps_close(rktio, lt));
+  }
+  
+  amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
+  check_valid(amt == 5);
+  check_valid(!strncmp(buffer, "hello", 5));
+  check_valid(!rktio_poll_read_ready(rktio, fd));
+
+  /* Close pipe ends: */
+  check_valid(rktio_close(rktio, fd2));
+
+  if (!immediate_available) {
+    /* Wait for EOF to be ready; should not block for long */
+    wait_read(rktio, fd);
+  }
+  
+  amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
+  check_valid(amt == RKTIO_READ_EOF);
+  check_valid(rktio_close(rktio, fd));
+
+  /* Open pipe ends again: */
+  fd2 = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
+  check_valid(fd2);
+  /* should eventually block: */
+  for (i = 0; i < 100000; i++) {
+    amt = rktio_write(rktio, fd2, "hello", 5);
+    check_valid(amt != RKTIO_WRITE_ERROR);
+    if (!amt)
+      break;
+  }
+  check_valid(i < 100000);
+  
+  fd = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_READ);
+  check_valid(fd);
+  /* should eventually block: */
+  for (i = 0; i < 100000; i++) {
+    amt = rktio_read(rktio, fd2, buffer, sizeof(buffer));
+    check_valid(amt != RKTIO_READ_ERROR);
+    check_valid(amt != RKTIO_READ_EOF);
+    if (!amt)
+      break;
+  }
+  check_valid(i < 100000);
+  
+  check_valid(rktio_close(rktio, fd));
+  check_valid(rktio_close(rktio, fd2));
+}
+
+
+rktio_addrinfo_t *lookup_loop(rktio_t *rktio,
+                              const char *hostname, int portno,
+                              int family, int passive, int tcp)
+{
+  rktio_addrinfo_lookup_t *lookup;
+  rktio_addrinfo_t *addr;
+  rktio_poll_set_t *ps;
+  
+  ps = rktio_make_poll_set(rktio);
+  check_valid(ps);
+
+  lookup = rktio_start_addrinfo_lookup(rktio, hostname, portno, family, passive, tcp);
+  check_valid(lookup);
+  
+  rktio_poll_add_addrinfo_lookup(rktio, lookup, ps);
+  rktio_sleep(rktio, 0, ps, NULL);
+  rktio_poll_set_close(rktio, ps);
+  check_valid(rktio_poll_addrinfo_lookup_ready(rktio, lookup) == RKTIO_POLL_READY);
+
+  addr = rktio_addrinfo_lookup_get(rktio, lookup);
+  check_valid(addr);
+
+  return addr;
+}
+
+static rktio_fd_t *connect_loop(rktio_t *rktio, rktio_addrinfo_t *addr, rktio_addrinfo_t *local_addr)
+{
+  rktio_connect_t *conn;
+  rktio_poll_set_t *ps;
+  rktio_fd_t *fd;
+
+  conn = rktio_start_connect(rktio, addr, local_addr);
+  check_valid(conn);
+
+  while (1) {
+    ps = rktio_make_poll_set(rktio);
+    check_valid(ps);
+    
+    rktio_poll_add_connect(rktio, conn, ps);
+    rktio_sleep(rktio, 0, ps, NULL);
+    rktio_poll_set_close(rktio, ps);
+    check_valid(rktio_poll_connect_ready(rktio, conn) == RKTIO_POLL_READY);
+
+    fd = rktio_connect_finish(rktio, conn);
+    if (!fd) {
+      if ((rktio_get_last_error_kind(rktio) == RKTIO_ERROR_KIND_RACKET)
+          && (rktio_get_last_error(rktio) == RKTIO_ERROR_CONNECT_TRYING_NEXT)) {
+        /* loop to try again */
+      } else {
+        check_valid(fd);
+      }
+    } else
+      break;
+  }
+
+  return fd;
 }
 
 int main()
@@ -187,7 +340,7 @@ int main()
   rktio_fd_t *fd, *fd2;
   intptr_t amt, i, saw_file;
   int perms;
-  char buffer[256], *s, *pwd;
+  char *s, *pwd;
   rktio_directory_list_t *ls;
   rktio_file_copy_t *cp;
   rktio_timestamp_t *ts1, *ts1a;
@@ -199,7 +352,7 @@ int main()
   /* Basic file I/O */
 
   fd = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
-  check_valid(!!fd);
+  check_valid(fd);
   check_valid(rktio_poll_write_ready(rktio, fd) != RKTIO_POLL_ERROR);
   amt = rktio_write(rktio, fd, "hello", 5);
   check_valid(amt == 5);
@@ -210,7 +363,7 @@ int main()
   check_valid(rktio_is_regular_file(rktio, "test1"));
 
   s = rktio_get_current_directory(rktio);
-  check_valid(!!s);
+  check_valid(s);
   check_valid(rktio_directory_exists(rktio, s));
   check_valid(!rktio_file_exists(rktio, s));
   check_valid(!rktio_is_regular_file(rktio, s));
@@ -219,7 +372,7 @@ int main()
   pwd = s;
 
   sz = rktio_file_size(rktio, "test1");
-  check_valid(!!sz);
+  check_valid(sz);
   check_valid(sz->lo == 5);
   check_valid(sz->hi == 0);
   free(sz);
@@ -259,7 +412,7 @@ int main()
   rktio_set_file_or_directory_permissions(rktio, "test1", perms);
 
   cp = rktio_copy_file_start(rktio, "test1a", "test1", 0);
-  check_valid(!!cp);
+  check_valid(cp);
   while (!rktio_copy_file_is_done(rktio, cp)) {
     check_valid(rktio_copy_file_step(rktio, cp));
   }
@@ -282,7 +435,7 @@ int main()
   check_expected_racket_error(!cp, RKTIO_ERROR_EXISTS);
 
   cp = rktio_copy_file_start(rktio, "test1a", "test1", 1);
-  check_valid(!!cp);
+  check_valid(cp);
   rktio_copy_file_stop(rktio, cp);
 
   check_valid(rktio_rename_file(rktio, "test1b", "test1a", 0));
@@ -299,11 +452,11 @@ int main()
   /* Listing directory content */
 
   ls = rktio_directory_list_start(rktio, pwd, 0);
-  check_valid(!!ls);
+  check_valid(ls);
   saw_file = 0;
   while (1) {
     s = rktio_directory_list_step(rktio, ls);
-    check_valid(!!s);
+    check_valid(s);
     if (!*s) break;
     if (!strcmp(s, "test1"))
       saw_file = 1;
@@ -314,11 +467,11 @@ int main()
   /* We expect `lt` to work on regular files everywhere except Windows: */
 #if !defined(RKTIO_SYSTEM_WINDOWS) && !defined(HAVE_KQUEUE_SYSCALL)
   fd = rktio_open(rktio, "test1", RKTIO_OPEN_READ);
-  check_valid(!!fd);
+  check_valid(fd);
   fd2 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
-  check_valid(!!fd2);
+  check_valid(fd2);
   lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
-  check_valid(!!lt);
+  check_valid(lt);
   check_ltps_read_and_write_ready(rktio, lt, h1, h2);
   check_valid(rktio_ltps_close(rktio, lt));
   check_valid(rktio_close(rktio, fd));
@@ -328,70 +481,41 @@ int main()
   /* Pipes, non-blocking operations, and more long-term poll sets */
 
   fd = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_READ);
-  check_valid(!!fd);
+  check_valid(fd);
   check_valid(!rktio_poll_read_ready(rktio, fd));
   fd2 = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
-  check_valid(!!fd2);
+  check_valid(fd2);
   check_valid(!rktio_poll_read_ready(rktio, fd));
 
-  lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
-  /* We expect `lt` to work everywhere exception Windows and with kqueue: */
-#if !defined(RKTIO_SYSTEM_WINDOWS) && !defined(HAVE_KQUEUE_SYSCALL)
-  check_valid(!!lt);
-#endif
+  check_read_write_pair(rktio, fd, fd2);
 
-  /* fd2 can write, fd cannot yet read */
-  check_valid(!rktio_poll_read_ready(rktio, fd));
-  if (lt)
-    check_ltps_write_ready(rktio, lt, h2);
+  /* Networking */
+  {
+    rktio_addrinfo_t *addr;
+    rktio_listener_t *lnr;
+    
+    addr = lookup_loop(rktio, "localhost", 4536, -1, 1, 1);
 
-  /* Round-trip data through pipe: */
-  amt = rktio_write(rktio, fd2, "hello", 5);
-  check_valid(amt == 5);
-  
-  check_valid(rktio_poll_read_ready(rktio, fd));
-  if (lt) {
-    check_ltps_read_ready(rktio, lt, h1);
-    check_valid(rktio_ltps_close(rktio, lt));
+    lnr = rktio_listen(rktio, addr, 5, 1);
+    check_valid(lnr);
+    rktio_free_addrinfo(rktio, addr);
+
+    check_valid(!rktio_poll_accept_ready(rktio, lnr));
+
+    addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 1);
+    fd = connect_loop(rktio, addr, NULL);
+    rktio_free_addrinfo(rktio, addr);
+
+    check_valid(rktio_poll_accept_ready(rktio, lnr) == RKTIO_POLL_READY);
+
+    fd2 = rktio_accept(rktio, lnr);
+    check_valid(fd2);
+    check_valid(!rktio_poll_accept_ready(rktio, lnr));
+
+    check_read_write_pair(rktio, fd, fd2);
+    
+    rktio_listen_stop(rktio, lnr);
   }
-  
-  amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
-  check_valid(amt == 5);
-  check_valid(!strncmp(buffer, "hello", 5));
-  check_valid(!rktio_poll_read_ready(rktio, fd));
-
-  /* Close pipe ends: */
-  check_valid(rktio_close(rktio, fd2));
-  amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
-  check_valid(amt == RKTIO_READ_EOF);
-  check_valid(rktio_close(rktio, fd));
-
-  /* Open pipe ends again: */
-  fd2 = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
-  check_valid(!!fd2);
-  /* should eventually block: */
-  for (i = 0; i < 100000; i++) {
-    amt = rktio_write(rktio, fd2, "hello", 5);
-    check_valid(amt != RKTIO_WRITE_ERROR);
-    if (!amt)
-      break;
-  }
-  check_valid(i < 100000);
-  
-  fd = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_READ);
-  check_valid(!!fd);
-  /* should eventually block: */
-  for (i = 0; i < 100000; i++) {
-    amt = rktio_read(rktio, fd2, buffer, sizeof(buffer));
-    check_valid(amt != RKTIO_READ_ERROR);
-    check_valid(amt != RKTIO_READ_EOF);
-    if (!amt)
-      break;
-  }
-  check_valid(i < 100000);
-  
-  check_valid(rktio_close(rktio, fd));
-  check_valid(rktio_close(rktio, fd2));
   
   return 0;
 }

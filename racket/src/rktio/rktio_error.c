@@ -36,11 +36,13 @@ int rktio_get_last_error_kind(rktio_t *rktio)
   return rktio->errkind;
 }
 
-char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
+const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
 {
-  char *s = NULL;
+  const char *s = NULL;
   if (kind == RKTIO_ERROR_KIND_POSIX)
     s = strerror(errid);
+  else if (kind == RKTIO_ERROR_KIND_GAI)
+    s = rktio_gai_strerror(errid);
   if (s) return s;
   return "???";
 }

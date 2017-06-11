@@ -20,13 +20,14 @@
 # define USE_FAR_RKTIO_FDCALLS
 #endif
 
-/************************************************************/
-/* Globals, as gathered into `rktio_t`                      */
-/************************************************************/
+/*========================================================================*/
+/* Globals, as gathered into `rktio_t`                                    */
+/*========================================================================*/
 
 struct rktio_t {
   intptr_t errid;
   int errkind;
+
 #ifdef RKTIO_SYSTEM_UNIX
   struct group_member_cache_entry_t *group_member_cache;
   int external_event_fd;
@@ -36,20 +37,38 @@ struct rktio_t {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int windows_nt_or_later;
   HANDLE break_semaphore;
+  int wsr_size = 0;
+  struct rktio_socket_t *wsr_array;
 #endif
 #ifdef USE_FAR_RKTIO_FDCALLS
   /* A single fdset that can be reused for immediate actions: */
   struct rktio_poll_set_t *rktio_global_poll_set;
 #endif
+
+#if defined(RKTIO_SYSTEM_WINDOWS) || defined(RKTIO_USE_PTHREADS)
+  int ghbn_started, ghbn_run;
+  struct rktio_addr_lookup_t *ghbn_requests;
+# ifdef RKTIO_USE_PTHREADS
+  HANDLE ghbn_th;
+  pthread_mutex_t ghbn_lock;
+  pthread_cond_t ghbn_start;
+# endif
+# ifdef RKTIO_SYSTEM_WINDOWS
+  pthread_t ghbn_th;
+  HANDLE ghbn_lock;
+  HANDLE ghbn_start;
+# endif
+#endif
 };
 
-/************************************************************/
-/* Poll sets                                                */
-/************************************************************/
+/*========================================================================*/
+/* Poll sets                                                              */
+/*========================================================================*/
 
 typedef struct rktio_poll_set_t rktio_poll_set_t;
 
 void rktio_alloc_global_poll_set(rktio_t *rktio);
+void rktio_free_global_poll_set(rktio_t *rktio);
 int rktio_initialize_signal(rktio_t *rktio);
 
 #ifdef USE_FAR_RKTIO_FDCALLS
@@ -101,9 +120,6 @@ struct rktio_poll_set_t { fd_set data; };
 
 #endif
 
-rktio_poll_set_t *rktio_alloc_fdset_array(int count);
-void rktio_free_fdset_array(rktio_poll_set_t *fds, int count);
-
 void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds);
 void rktio_clean_fd_set(rktio_poll_set_t *fds);
 int rktio_get_fd_limit(rktio_poll_set_t *fds);
@@ -118,10 +134,26 @@ rktio_poll_set_t *rktio_ltps_get_fd_set(rktio_ltps_t *lt);
 int rktio_get_poll_count(rktio_poll_set_t *fds);
 struct pollfd *rktio_get_poll_fd_array(rktio_poll_set_t *fds);
 #endif
+
+/*========================================================================*/
+/* Network                                                                */
+/*========================================================================*/
+
+int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd);
+
+int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd);
+
+intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len);
+intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len);
   
-/************************************************************/
-/* Misc                                                     */
-/************************************************************/
+void rktio_free_ghbn(rktio_t *rktio);
+
+const char *rktio_gai_strerror(int errnum);
+  
+/*========================================================================*/
+/* Misc                                                                   */
+/*========================================================================*/
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 # define MSC_IZE(n) _ ## n

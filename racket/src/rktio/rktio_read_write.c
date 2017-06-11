@@ -31,7 +31,10 @@ struct rktio_fd_t {
 #endif
   
 #ifdef RKTIO_SYSTEM_WINDOWS
-  HANDLE fd;
+  union {
+    HANDLE fd;
+    int sock; /* when `modes & RKTIO_OPEN_SOCKET` */
+  };
   Win_FD_Input_Thread *th; /* input mode */
   Win_FD_Output_Thread *oth; /* output mode */
 #endif
@@ -99,8 +102,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   rktio_fd_t *rfd;
 
   rfd = malloc(sizeof(rktio_fd_t));
-  rfd->modes = modes;
-  
+  rfd->modes = modes;  
 
 #ifdef RKTIO_SYSTEM_UNIX
   rfd->fd = system_fd;
@@ -115,7 +117,10 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rfd->fd = (HANDLE)system_fd;
+  if (modes & RKTIO_OPEN_SOCKET)
+    rfd->s = system_fd;
+  else
+    rfd->fd = (HANDLE)system_fd;
   rfd->regfile = (GetFileType(rfd->fd) == FILE_TYPE_DISK);
 #endif
   
@@ -127,7 +132,15 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 
 intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
 {
+#ifdef RKTIO_SYSTEM_UNIX
   return rfd->fd;
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (rfd->modes & RKTIO_OPEN_SOCKET)
+    return rfd->sock;
+  else
+    return (intptr_t)rfd->fd;
+#endif
 }
 
 int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd)
@@ -137,7 +150,7 @@ int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd)
 
 int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return 0;
+  return (rfd->modes & RKTIO_OPEN_SOCKET);
 }
 
 /*************************************************************/
@@ -394,7 +407,8 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
   int cr;
   
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
-  release_lockf(rfd->fd);
+  if (!(rfd->modes & RKTIO_OPEN_SOCKET))
+    release_lockf(rfd->fd);
 # endif
 
   do {
@@ -402,6 +416,9 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
   } while ((cr == -1) && (errno == EINTR));
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
+  if (rfd->modes & RKTIO_OPEN_SOCKET)
+    return rktio_socket_close(rktio, rfd);
+  
   if (rfd->th) {
     CSI_proc csi;
 
@@ -493,7 +510,7 @@ static int try_get_fd_char(int fd, int *ready)
 int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 {
   if (rfd->regfile)
-    return 1;
+    return RKTIO_POLL_READY;
 
 #ifdef RKTIO_SYSTEM_UNIX
   {
@@ -501,7 +518,7 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 
 # ifdef SOME_FDS_ARE_NOT_SELECTABLE
     if (rfd->bufcount)
-      return 1;
+      return RKTIO_POLL_READY;
 # endif
 
 # ifdef HAVE_POLL_SYSCALL
@@ -531,7 +548,7 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 
 # ifdef SOME_FDS_ARE_NOT_SELECTABLE
     /* Try a non-blocking read: */
-    if (!r && !rfd->textmode) {
+    if (!r && !(rfd->modes & RKTIO_OPEN_SOCKET) && !rfd->textmode) {
       int c, ready;
 
       c = try_get_fd_char(rfd->fd, &ready);
@@ -550,13 +567,16 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
   }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
+  if (rfd->modes & RKTIO_OPEN_SOCKET)
+    return rktio_socket_poll_read_ready(rktio, rfd->sock);
+  
   if (!rfd->th) {
     /* No thread -- so wait works. This case isn't actually used
        right now, because wait doesn't seem to work reliably for
        anything that we can recognize other than regfiles, which are
        handled above. */
     if (WaitForSingleObject(rfd->fd, 0) == WAIT_OBJECT_0)
-      return 1;
+      return RKTIO_POLL_READY;
   } else {
     /* Has the reader thread pulled in data? */
     if (rfd->th->checking) {
@@ -564,10 +584,10 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
          data-is-ready sema: */
       if (WaitForSingleObject(rfd->th->ready_sema, 0) == WAIT_OBJECT_0) {
         rfd->th->checking = 0;
-        return 1;
+        return RKTIO_POLL_READY;
       }
     } else if (rfd->th->avail || rfd->th->err || rfd->th->eof)
-      return 1; /* other thread found data */
+      return RKTIO_POLL_READY; /* other thread found data */
     else {
       /* Doesn't have anything, and it's not even looking. Tell it
          to look: */
@@ -584,7 +604,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 {
 #ifdef RKTIO_SYSTEM_UNIX
   if (check_flushed)
-    return 1;
+    return RKTIO_POLL_READY;
   else {
     int sr;
 # ifdef HAVE_POLL_SYSCALL
@@ -610,8 +630,8 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
     do {
       /* Mac OS X 10.8 and 10.9: select() seems to claim that a pipe
          is always ready for output. To work around that problem,
-         kqueue() support is enabled for pipes, so we shouldn't get
-         here much for pipes. */
+         kqueue() support might be used for pipes, but that has different
+         problems. The poll() code above should be used, instead. */
       sr = select(rfd->fd + 1, NULL, RKTIO_FDS(writefds), RKTIO_FDS(exnfds), &time);
     } while ((sr == -1) && (errno == EINTR));
 # endif
@@ -624,6 +644,9 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
   }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
+  if (rfd->modes & RKTIO_OPEN_SOCKET)
+    return rktio_socket_poll_write_ready(rktio, rfd->sock);
+  
   if (rfd->oth) {
     /* Pipe output that can block... */
     int retval;
@@ -648,7 +671,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 
     return retval;
   } else
-    return 1; /* non-blocking output, such as a console, or haven't written yet */
+    return RKTIO_POLL_READY; /* non-blocking output, such as a console, or haven't written yet */
 #endif
 }
 
@@ -678,35 +701,50 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
   RKTIO_FD_SET(rfd->fd, fds2);
 #endif  
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (modes & RKTIO_POLL_READ) {
-    if (rfd->th) {
-      /* See fd_byte_ready */
-      if (!rfd->th->checking) {
-        if (rfd->th->avail || rfd->th->err || rfd->th->eof) {
-          /* Data is ready. We shouldn't be trying to sleep, so force an
-             immediate wake-up: */
-          rktio_fdset_add_nosleep(fds);
-        } else {
-          rfd->th->checking = 1;
-          ReleaseSemaphore(rfd->th->checking_sema, 1, NULL);
-          rktio_fdset_add_handle(rfd->th->ready_sema, fds, 1);
-        }
-      } else
-        rktio_fdset_add_handle(rfd->th->ready_sema, fds, 1);
-    } else if (rfd->regfile) {
-      /* regular files never block */
-      rktio_fdset_add_nosleep(fds);
-    } else {
-      /* This case is not currently used. See fd_byte_ready. */
-      rktio_fdset_add_handle(rfd->fd, fds, 0);
-    }
-  }
+  if (rfd->modes & RKTIO_OPEN_SOCKET) {
+    /* RKTIO_FD_SET(), etc., for Windows expects sockets */
+    rktio_poll_set_t *fds2;
 
-  if (modes & RKTIO_POLL_WRITE) {
-    if (rfp->oth && !fd_write_ready(port))
-      rktio_fdset_add_handle(rfp->oth->ready_sema, fds, 1);
-    else
-      rktio_fdset_nosleep(fds);
+    if (modes & RKTIO_POLL_READ) {
+      RKTIO_FD_SET(rfd->sock, fds);
+    }
+    if (modes & RKTIO_POLL_WRITE) {
+      fds2 = RKTIO_GET_FDSET(fds, 1);
+      RKTIO_FD_SET(rfd->sock, fds2);
+    }
+    fds2 = RKTIO_GET_FDSET(fds, 2);
+    RKTIO_FD_SET(rfd->sock, fds2);
+  } else {
+    if (modes & RKTIO_POLL_READ) {
+      if (rfd->th) {
+        /* See fd_byte_ready */
+        if (!rfd->th->checking) {
+          if (rfd->th->avail || rfd->th->err || rfd->th->eof) {
+            /* Data is ready. We shouldn't be trying to sleep, so force an
+               immediate wake-up: */
+            rktio_fdset_add_nosleep(fds);
+          } else {
+            rfd->th->checking = 1;
+            ReleaseSemaphore(rfd->th->checking_sema, 1, NULL);
+            rktio_fdset_add_handle(rfd->th->ready_sema, fds, 1);
+          }
+        } else
+          rktio_fdset_add_handle(rfd->th->ready_sema, fds, 1);
+      } else if (rfd->regfile) {
+        /* regular files never block */
+        rktio_fdset_add_nosleep(fds);
+      } else {
+        /* This case is not currently used. See fd_byte_ready. */
+        rktio_fdset_add_handle(rfd->fd, fds, 0);
+      }
+    }
+
+    if (modes & RKTIO_POLL_WRITE) {
+      if (rfp->oth && !fd_write_ready(port))
+        rktio_fdset_add_handle(rfp->oth->ready_sema, fds, 1);
+      else
+        rktio_fdset_nosleep(fds);
+    }
   }
 #endif
 }
@@ -719,7 +757,10 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   intptr_t bc;
-  
+
+  if (rfd->modes & RKTIO_OPEN_SOCKET)
+    return rktio_socket_read(rktio, rfd, buffer, len);
+
   if (rfd->regfile) {
     /* Reading regular file never blocks */
     do {
@@ -765,6 +806,9 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
   }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
+  if (rfd->modes & RKTIO_OPEN_SOCKET)
+    return rktio_socket_read(rktio, rfd, buffer, len);
+  
   if (!rfd->th) {
     /* We can read directly. This must be a regular file, where
        reading never blocks. */
@@ -887,6 +931,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
 #ifdef RKTIO_SYSTEM_UNIX
   int flags, errsaved;
   intptr_t amt;
+
+  if (rfd->modes & RKTIO_OPEN_SOCKET)
+    return rktio_socket_write(rktio, rfd, buffer, len);
   
   flags = fcntl(rfd->fd, F_GETFL, 0);
   if (!(flags & RKTIO_NONBLOCKING))
@@ -923,7 +970,10 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   DWORD winwrote;
-  
+
+  if (rfd->modes & RKTIO_OPEN_SOCKET)
+    return rktio_socket_write(rktio, rfd, buffer, len);
+
   if (rfd->regfile) {
     /* Regular files never block, so this code looks like the Unix
        code.  We've cheated in the make_fd proc and called

@@ -13,19 +13,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-/* Generalize fd arrays (FD_SET, etc) with a runtime-determined size,
-   special hooks for Windows "descriptors" like even queues and
-   semaphores, etc. */
-
-void rktio_alloc_global_poll_set(rktio_t *rktio) {
-#ifdef USE_FAR_RKTIO_FDCALLS
-  rktio->rktio_global_poll_set = rktio_alloc_fdset_array(3);
-#endif
-}
-
-/************************************************************/
-/* Poll variant                                             */
-/************************************************************/
+/*========================================================================*/
+/* Poll variant                                                           */
+/*========================================================================*/
 
 #ifdef HAVE_POLL_SYSCALL
 
@@ -41,9 +31,10 @@ struct rktio_poll_set_t {
 struct rktio_fd_set_data_t {
   struct pollfd *pfd;
   intptr_t size, count;
+  int skip_sleep;
 };
 
-rktio_poll_set_t *rktio_alloc_fdset_array(int count)
+static rktio_poll_set_t *alloc_fdset_arrays()
 {
   struct rktio_fd_set_data_t *data;
   rktio_poll_set_t *r, *w, *e;
@@ -66,6 +57,7 @@ rktio_poll_set_t *rktio_alloc_fdset_array(int count)
 
   data->size = 32;
   data->count = 0;
+  data->skip_sleep = 0;
 
   pfd = malloc(sizeof(struct pollfd) * (32 + PFD_EXTRA_SPACE));
   data->pfd = pfd;
@@ -73,7 +65,7 @@ rktio_poll_set_t *rktio_alloc_fdset_array(int count)
   return r;
 }
 
-void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
+static void free_fdset_arrays(rktio_poll_set_t *fds)
 {
   struct rktio_fd_set_data_t *data = fds->data;
   free(fds->w);
@@ -81,12 +73,6 @@ void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
   free(fds);
   free(data->pfd);
   free(data);
-}
-
-rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
-{
-  fdarray->data->count = 0;
-  return fdarray;
 }
 
 rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
@@ -290,11 +276,21 @@ struct pollfd *rktio_get_poll_fd_array(rktio_poll_set_t *fds)
   return fds->data->pfd;
 }
 
+void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds)
+{
+  fds->data->skip_sleep = 1;
+}
+
+static int fdset_has_nosleep(rktio_poll_set_t *fds)
+{
+  return fds->data->skip_sleep;
+}
+
 #elif defined(USE_DYNAMIC_FDSET_SIZE)
 
-/************************************************************/
-/* Variant with run-time determined fd_set length           */
-/************************************************************/
+/*========================================================================*/
+/* Variant with run-time determined fd_set length                         */
+/*========================================================================*/
 
 struct rktio_poll_set_t {
   fd_set data;
@@ -306,8 +302,10 @@ static int dynamic_fd_size;
 # define STORED_ACTUAL_FDSET_LIMIT
 # define FDSET_LIMIT(fd) (*(int *)((char *)fd + dynamic_fd_size))
 
-rktio_poll_set_t *rktio_alloc_fdset_array(int count)
+static rktio_poll_set_t *alloc_fdset_arrays()
 {
+  void *p;
+  
   if (!dynamic_fd_size) {
 # ifdef USE_ULIMIT
     dynamic_fd_size = ulimit(4, 0);
@@ -321,17 +319,20 @@ rktio_poll_set_t *rktio_alloc_fdset_array(int count)
       dynamic_fd_size += sizeof(void*) - (dynamic_fd_size % sizeof(void*));
   }
 
-  return malloc(count * (dynamic_fd_size + sizeof(intptr_t)));
+  /* Allocate an array with 1 extra intptr_t in each set to hold a
+     "max" fd counter, and 1 extra intger used to record "no
+     sleeping" */
+  
+  p = malloc((3 * (dynamic_fd_size + sizeof(intptr_t))) + sizeof(int));
+
+  *(int *)((char *)p + (3 * (dynamic_fd_size + sizeof(intptr_t)))) = 0;
+  
+  return p;
 }
 
-void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
+static void free_fdset_arrays(rktio_poll_set_t *fds)
 {
   free(fds);
-}
-
-rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
-{
-  return fdarray;
 }
 
 rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
@@ -341,14 +342,27 @@ rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
 
 void rktio_fdzero(rktio_poll_set_t *fd)
 {
-  memset(fd, 0, dynamic_fd_size + sizeof(intptr_t));
+  memset(fd, 0, dynamic_fd_size + sizeof(intptr_t) + sizeof(int));
 }
+
+void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds)
+{
+  *(int *)((char *)fds + (3 * (dynamic_fd_size + sizeof(intptr_t)))) = 1;
+}
+
+static int fdset_has_nosleep(rktio_poll_set_t *fds)
+{
+  return *(int *)((char *)fds + (3 * (dynamic_fd_size + sizeof(intptr_t))));
+}
+
+/* Continues below: */
+#define USE_PLAIN_FDS_SET_OPS
 
 #elif defined (RKTIO_SYSTEM_WINDOWS)
 
-/************************************************************/
-/* Windows variant                                          */
-/************************************************************/
+/*========================================================================*/
+/* Windows variant                                                        */
+/*========================================================================*/
 
 typedef struct {
   SOCKET *sockets;
@@ -370,36 +384,7 @@ typedef struct {
   intptr_t combined_len;
 } rktio_poll_set_t;
 
-rktio_poll_set_t *rktio_alloc_fdset_array(int count)
-{
-  rktio_poll_set_t *fdarray;
-  if (count) {
-    fdarray = calloc(count, sizeof(rktio_poll_set_t));
-    rktio_init_fdset_array(fdarray, count);
-  } else
-    fdarray = NULL;
-
-  return fdarray;
-}
-
-void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
-{
-  FIXME;
-}
-
-static void reset_wait_array(rktio_poll_set_t *efd)
-{
-  /* Allocate an array that may be big enough to hold all events
-     when we eventually call WaitForMultipleObjects. One of the three
-     arrays will be big enough. */
-  int sz = (3 * (efd->alloc + efd->alloc_handles)) + 2;
-  HANDLE *wa;
-  if (efd->wait_array) free(efd->wait_array);
-  wa = calloc(sz, sizeof(HANDLE));
-  efd->wait_array = wa;
-}
-
-rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
+static void init_fdset_array(rktio_poll_set_t *fdarray, int count)
 {
   if (count) {
     int i;
@@ -433,6 +418,35 @@ rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
   }
 }
 
+static rktio_poll_set_t *alloc_fdset_arrays()
+{
+  rktio_poll_set_t *fdarray;
+  if (count) {
+    fdarray = calloc(3, sizeof(rktio_poll_set_t));
+    init_fdset_array(fdarray, 3);
+  } else
+    fdarray = NULL;
+
+  return fdarray;
+}
+
+static void free_fdset_arrays(rktio_poll_set_t *fds)
+{
+  FIXME;
+}
+
+static void reset_wait_array(rktio_poll_set_t *efd)
+{
+  /* Allocate an array that may be big enough to hold all events
+     when we eventually call WaitForMultipleObjects. One of the three
+     arrays will be big enough. */
+  int sz = (3 * (efd->alloc + efd->alloc_handles)) + 2;
+  HANDLE *wa;
+  if (efd->wait_array) free(efd->wait_array);
+  wa = calloc(sz, sizeof(HANDLE));
+  efd->wait_array = wa;
+}
+
 rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
 {
   return fdarray + pos;
@@ -440,7 +454,7 @@ rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
 
 void rktio_fdzero(rktio_poll_set_t *fd)
 {
-  rktio_init_fdset_array(fd, 1);
+  init_fdset_array(fd, 1);
 }
 
 void rktio_fdclr(rktio_poll_set_t *fd, int n)
@@ -533,9 +547,14 @@ void rktio_poll_set_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost)
   efd->num_handles++;
 }
 
-void rktio_poll_set_add_nosleep(rktio_poll_set_t *fds)
+void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds)
 {
   fds->no_sleep = 1;
+}
+
+static int fdset_has_nosleep(rktio_poll_set_t *fds)
+{
+  return fds->no_sleep;
 }
 
 void rktio_poll_set_eventmask(rktio_poll_set_t *fds, int mask)
@@ -708,23 +727,18 @@ void rktio_collapse_win_fd(rktio_poll_set_t *fds)
 
 #else
 
-/************************************************************/
-/* Plain fd_set variant                                     */
-/************************************************************/
+/*========================================================================*/
+/* Plain fd_set variant                                                   */
+/*========================================================================*/
 
-rktio_poll_set_t *rktio_alloc_fdset_array(int count)
+static rktio_poll_set_t *alloc_fdset_arrays()
 {
-  return malloc(count * sizeof(fd_set));
+  p = malloc((3 * sizeof(fd_set)) + sizeof(int));
 }
 
-void rktio_free_fdset_array(rktio_poll_set_t *fds, int count)
+static void free_fdset_arrays(rktio_poll_set_t *fds)
 {
   free(fds);
-}
-
-rktio_poll_set_t *rktio_init_fdset_array(rktio_poll_set_t *fdarray, int count)
-{
-  return fdarray;
 }
 
 rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
@@ -736,6 +750,22 @@ void rktio_fdzero(rktio_poll_set_t *fd)
 {
   FD_ZERO(&(fd)->data);
 }
+
+void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds)
+{
+  *(int *)((char *)fds + (3 * sizeof(fd_set))) = 1;
+}
+
+static int fdset_has_nosleep(rktio_poll_set_t *fds)
+{
+  return *(int *)((char *)fds + (3 * sizeof(fd_set)));
+}
+
+#define USE_PLAIN_FDS_SET_OPS
+
+#endif
+
+#ifdef USE_PLAIN_FDS_SET_OPS
 
 void rktio_fdclr(rktio_poll_set_t *fd, int n)
 {
@@ -810,9 +840,46 @@ int rktio_get_fd_limit(rktio_poll_set_t *fds)
 
 #endif
 
-/************************************************************/
-/* Sleeping as a generalized select()                       */
-/************************************************************/
+/*========================================================================*/
+/* Shared internal poll set                                               */
+/*========================================================================*/
+
+/* Generalize fd arrays (FD_SET, etc) with a runtime-determined size,
+   special hooks for Windows "descriptors" like even queues and
+   semaphores, etc. */
+
+void rktio_alloc_global_poll_set(rktio_t *rktio) {
+#ifdef USE_FAR_RKTIO_FDCALLS
+  rktio->rktio_global_poll_set = alloc_fdset_arrays();
+#endif
+}
+
+void rktio_free_global_poll_set(rktio_t *rktio) {
+#ifdef USE_FAR_RKTIO_FDCALLS
+  free_fdset_arrays(rktio->rktio_global_poll_set);
+#endif  
+}
+
+/*========================================================================*/
+/* Create a poll set                                                      */
+/*========================================================================*/
+
+/* Internally, poll sets are used with macros like DECL_FDSET(), but this
+   is the API for external use. */
+
+rktio_poll_set_t *rktio_make_poll_set(rktio_t *rktio)
+{
+  return alloc_fdset_arrays();
+}
+
+void rktio_poll_set_close(rktio_t *rktio, rktio_poll_set_t *fds)
+{
+  free_fdset_arrays(fds);
+}
+
+/*========================================================================*/
+/* Sleeping as a generalized select()                                     */
+/*========================================================================*/
 
 int rktio_initialize_signal(rktio_t *rktio)
 {
@@ -954,6 +1021,9 @@ void rkio_notify_sleep_progress(void)
 
 void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt)
 {
+  if (fds && fdset_has_nosleep(fds))
+    return;
+
   if (fds && lt) {
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
     int fd = rktio_ltps_get_fd(lt);
@@ -1097,9 +1167,6 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
       intptr_t result;
       HANDLE *array, just_two_array[2];
       int count, rcount, *rps;
-
-      if (fds->no_sleep)
-	return;
 
       scheme_collapse_win_fd(fds); /* merges */
 

@@ -47,7 +47,7 @@ static int ltps_is_hash_empty(rktio_ltps_t *lt);
 static void ltps_hash_init(rktio_ltps_t *lt);
 static void ltps_hash_free(rktio_ltps_t *lt);
 
-/************************************************************/
+/*========================================================================*/
 
 rktio_ltps_handle_pair_t *make_ltps_handle_pair()
 {
@@ -82,7 +82,7 @@ void *rktio_ltps_handle_get_data(rktio_ltps_t *lt, rktio_ltps_handle_t *s)
   return s->data;
 }
 
-/************************************************************/
+/*========================================================================*/
 
 rktio_ltps_t *rktio_open_ltps(rktio_t *rktio)
 {
@@ -240,7 +240,6 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
     s = v->write_handle;
     if (s) ltps_signal_handle(lt, s);
     ltps_hash_remove(lt, fd);
-    free(v);
     s = NULL;
 # ifdef HAVE_KQUEUE_SYSCALL
     {
@@ -276,6 +275,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
     RKTIO_FD_CLR(fd, w);
     RKTIO_FD_CLR(fd, e);
 # endif
+    free(v);
     set_racket_error(RKTIO_ERROR_LTPS_REMOVED); /* success, not failure */
   } else if ((mode == RKTIO_LTPS_CHECK_READ)
              || (mode == RKTIO_LTPS_CREATE_READ)
@@ -599,7 +599,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
 #endif
 }
 
-/************************************************************/
+/*========================================================================*/
 
 typedef struct ltps_bucket_t {
   /* v is non-NULL => bucket is filled */

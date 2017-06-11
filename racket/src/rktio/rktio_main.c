@@ -21,6 +21,8 @@ rktio_t *rktio_init(void)
 
 void rktio_destroy(rktio_t *rktio)
 {
+  rktio_free_ghbn(rktio);
+  rktio_free_global_poll_set(rktio);
   free(rktio);
 }
 

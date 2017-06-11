@@ -27,6 +27,7 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_REPLACE     (1<<4)
 #define RKTIO_OPEN_MUST_EXIST  (1<<5)
 #define RKTIO_OPEN_CAN_EXIST   (1<<6)
+#define RKTIO_OPEN_SOCKET      (1<<7)
 
 rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
 intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
@@ -41,6 +42,7 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 #define RKTIO_READ_ERROR (-2)
 #define RKTIO_WRITE_ERROR (-2)
 #define RKTIO_POLL_ERROR (-2)
+#define RKTIO_POLL_READY 1
 
 intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
 intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
@@ -50,6 +52,44 @@ int rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd);
 
 /*************************************************/
+/* Network                                       */
+
+typedef struct rktio_addrinfo_lookup_t rktio_addrinfo_lookup_t;
+typedef struct rktio_addrinfo_t rktio_addrinfo_t;
+
+int rktio_get_ipv4_family(rktio_t *rktio);
+
+rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
+                                                     const char *hostname, int portno,
+                                                     int family, int passive, int tcp);
+int rktio_poll_addrinfo_lookup_ready(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup);
+rktio_addrinfo_t *rktio_addrinfo_lookup_get(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup);
+void rktio_addrinfo_lookup_stop(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup);
+
+void rktio_free_addrinfo(rktio_t *rktio, struct rktio_addrinfo_t *a);
+
+typedef struct rktio_listener_t rktio_listener_t;
+typedef struct rktio_connect_t rktio_connect_t;
+
+#define RKTIO_SHUTDOWN_READ   RKTIO_OPEN_READ
+#define RKTIO_SHUTDOWN_WRITE  RKTIO_OPEN_WRITE
+
+rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *local, int backlog, int reuse);
+void rktio_listen_stop(rktio_t *rktio, rktio_listener_t *l);
+int rktio_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener);
+rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener);
+
+/* Addreses must not be freed until the connection is complete or stopped: */
+rktio_connect_t *rktio_start_connect(rktio_t *rktio, rktio_addrinfo_t *remote, rktio_addrinfo_t *local);
+/* A `RKTIO_ERROR_CONNECT_TRYING_NEXT` error effectively means "try again",
+   and the connection object is still valid: */
+rktio_fd_t *rktio_connect_finish(rktio_t *rktio, rktio_connect_t *conn);
+void rktio_connect_stop(rktio_t *rktio, rktio_connect_t *conn);
+int rktio_poll_connect_ready(rktio_t *rktio, rktio_connect_t *conn);
+
+int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode);
+
+/*************************************************/
 /* File-descriptor sets for polling              */
 
 typedef struct rktio_poll_set_t rktio_poll_set_t;
@@ -57,13 +97,19 @@ typedef struct rktio_poll_set_t rktio_poll_set_t;
 #define RKTIO_POLL_READ   RKTIO_OPEN_READ
 #define RKTIO_POLL_WRITE  RKTIO_OPEN_WRITE
 
-rktio_poll_set_t *rktio_make_poll_set();
+rktio_poll_set_t *rktio_make_poll_set(rktio_t *rktio);
+void rktio_poll_set_close(rktio_t *rktio, rktio_poll_set_t *fds);
+
 void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int modes);
+void rktio_poll_add_receive(rktio_t *rktio, rktio_listener_t *listener, rktio_poll_set_t *fds);
+void rktio_poll_add_connect(rktio_t *rktio, rktio_connect_t *conn, rktio_poll_set_t *fds);
+void rktio_poll_add_addrinfo_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup, rktio_poll_set_t *fds);
+
+void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds);
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 void rktio_poll_set_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost);
 void rktio_poll_set_add_eventmask(rktio_poll_set_t *fds, int mask);
-void rktio_poll_set_add_nosleep(rktio_poll_set_t *fds);
 #endif
 
 /*************************************************/
@@ -205,7 +251,7 @@ void rktio_signal_received(rktio_t *rktio);
 enum {
   RKTIO_ERROR_KIND_POSIX,
   RKTIO_ERROR_KIND_WINDOWS,
-  RKTIO_ERROR_KIND_GAI,
+  RKTIO_ERROR_KIND_GAI, /* => error sub-code available */
   RKTIO_ERROR_KIND_RACKET
 };
 
@@ -224,12 +270,22 @@ enum {
   RKTIO_ERROR_INIT_FAILED,
   RKTIO_ERROR_LTPS_NOT_FOUND,
   RKTIO_ERROR_LTPS_REMOVED, /* indicates success, instead of failure */
+  RKTIO_ERROR_CONNECT_TRYING_NEXT, /* indicates that failure is not (yet) premanent */
+  RKTIO_ERROR_ACCEPT_NOT_READY,
+  RKTIO_ERROR_HOST_AND_PORT_BOTH_UNSPECIFIED,
+  RKTIO_ERROR_TRY_AGAIN_WITH_IPV4,
+};
+
+/* GAI error sub-codes */
+enum {
+  RKTIO_ERROR_REMOTE_HOST_NOT_FOUND,
+  RKTIO_ERROR_LOCAL_HOST_NOT_FOUND,
 };
 
 int rktio_get_last_error(rktio_t *rktio);
 int rktio_get_last_error_kind(rktio_t *rktio);
 
-char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);
+const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);
 
 /*************************************************/
 
