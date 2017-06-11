@@ -153,6 +153,8 @@ struct pollfd *rktio_get_poll_fd_array(rktio_poll_set_t *fds);
 /*========================================================================*/
 
 int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd);
+void rktio_socket_forget(rktio_t *rktio, rktio_fd_t *rfd);
+rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd);
 
 int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd);

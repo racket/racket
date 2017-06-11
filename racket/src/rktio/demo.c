@@ -557,6 +557,39 @@ int main()
     check_valid(fd2);
     check_valid(!rktio_poll_accept_ready(rktio, lnr));
 
+    {
+      /* Dup'ing and closing old should work as well as using directly */
+      rktio_fd_t *fdx;
+      
+      fdx = rktio_dup(rktio, fd);
+      check_valid(fdx);
+      check_valid(rktio_close(rktio, fd));
+      fd = fdx;
+      
+      fdx = rktio_dup(rktio, fd2);
+      check_valid(fdx);
+      check_valid(rktio_close(rktio, fd2));
+      fd2 = fdx;
+    }
+
+    {
+      char **strs;
+      
+      strs = rktio_socket_address(rktio, fd2);
+      check_valid(strs);
+      printf("client: %s %s\n", strs[0], strs[1]);
+      free(strs[0]);
+      free(strs[1]);
+      free(strs);
+      
+      strs = rktio_socket_peer_address(rktio, fd2);
+      check_valid(strs);
+      printf("server: %s %s\n", strs[0], strs[1]);
+      free(strs[0]);
+      free(strs[1]);
+      free(strs);
+    }
+
     check_read_write_pair(rktio, fd, fd2);
     
     rktio_listen_stop(rktio, lnr);

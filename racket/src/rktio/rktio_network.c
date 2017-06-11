@@ -191,7 +191,7 @@ struct rktio_addrinfo_t {
   int ai_socktype;
   int ai_protocol;
   size_t  ai_addrlen;
-  struct sockaddr *ai_addr;
+  struct sockaddr *ai_addr; 
   struct rktio_addrinfo_t *ai_next;
 };
 # define RKTIO_AS_ADDRINFO(x) x
@@ -884,8 +884,20 @@ int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd)
 #ifdef RKTIO_SYSTEM_WINDOWS
   UNREGISTER_SOCKET(rfd->sock);
   closesocket(rfd->sock);
+  free(rfd);
 
   return 1;
+#endif
+}
+
+void rktio_socket_forget(rktio_t *rktio, rktio_fd_t *rfd)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  rktio_forget(rktio, rfd);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  UNREGISTER_SOCKET(rfd->sock);
+  closesocket(rfd->sock);
 #endif
 }
 
@@ -967,6 +979,30 @@ static void init_socket(rktio_socket_t s)
     unsigned long ioarg = 1;
     ioctlsocket(s, FIONBIO, &ioarg);
   }
+#endif
+}
+
+rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  return rktio_dup(rktio, rfd);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  intptr_t nsocket;
+  intptr_t rc;
+  WSAPROTOCOL_INFO protocolInfo;
+  rc = WSADuplicateSocket(rfd->sock, GetCurrentProcessId(), &protocolInfo);
+  if (rc) {
+    get_socket_error();
+    return NULL;
+  }
+  nsocket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
+  if (nsocket == INVALID_SOCKET) {
+    get_socket_error();
+    return NULL;
+  }
+  REGISTER_SOCKET(nsocket);
+  return rktio_system_fd(nsocket, rfd->modes);
 #endif
 }
 
@@ -1530,179 +1566,70 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
   }
 }
 
-#if 0
-
-static void mz_getnameinfo(void *sa, int salen, 
-                           char *host, int hostlen,
-                           char *serv, int servlen)
+static char **get_numeric_strings(rktio_t *rktio, void *sa, unsigned int salen)
 {
+  char **r;
 #ifdef HAVE_GETADDRINFO
-  getnameinfo(sa, salen, host, hostlen, serv, servlen,
-	      NI_NUMERICHOST | NI_NUMERICSERV);
+  char host[NI_MAXHOST], serv[NI_MAXSERV];
+  int err;
+  
+  err = getnameinfo(sa, salen, host, sizeof(host), serv, sizeof(serv),
+                    NI_NUMERICHOST | NI_NUMERICSERV);
 #else
-  if (host) {
+  char host[128], serv[32];
+  {
     unsigned char *b;
     b = (unsigned char *)&((struct sockaddr_in *)sa)->sin_addr;
     sprintf(host, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
   }
-  if (serv) {
+  {
     int id;
     id = ntohs(((struct sockaddr_in *)sa)->sin_port);
     sprintf(serv, "%d", id);
   }
+  err = 0;
 #endif
+  
+  if (!err) {
+    r = malloc(sizeof(char*) * 2);
+    r[0] = strdup(host);
+    r[1] = strdup(serv);
+    return r;
+  } else {
+    set_gai_error(err);
+    return NULL;
+  }
 }
 
-char **rktio_get_addresses()
+char **rktio_socket_address(rktio_t *rktio, rktio_fd_t *rfd)
 {
+  char name[RKTIO_SOCK_NAME_MAX_LEN];
+  unsigned int name_len;
+  
+  name_len = sizeof(name);
+  if (getsockname(rktio_fd_system_fd(rktio, rfd), (struct sockaddr *)name, &name_len)) {
+    get_socket_error();
+    return NULL;
+  }
+
+  return get_numeric_strings(rktio, name, name_len);
 }
 
-static int extract_svc_value(char *svc_buf)
+char **rktio_socket_peer_address(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  int id = 0, j;
-  for (j = 0; svc_buf[j]; j++) {
-    id = (id * 10) + (svc_buf[j] - '0');
+  char name[RKTIO_SOCK_NAME_MAX_LEN];
+  unsigned int name_len;
+  
+  name_len = sizeof(name);
+  if (getpeername(rktio_fd_system_fd(rktio, rfd), (struct sockaddr *)name, &name_len)) {
+    get_socket_error();
+    return NULL;
   }
-  return id;
+
+  return get_numeric_strings(rktio, name, name_len);
 }
 
-#define SCHEME_LISTEN_PORTP(p) SAME_TYPE(SCHEME_TYPE(p), scheme_listener_type)
-#define SCHEME_UDP_PORTP(p) SAME_TYPE(SCHEME_TYPE(p), scheme_udp_type)
-
-static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
-{
-#ifdef USE_TCP
-  rktio_socket_t socket = 0;
-  Scheme_Tcp *tcp = NULL;
-  int closed = 0;
-  Scheme_Object *result[4];
-  int with_ports = 0;
-  int listener = 0;
-  int udp = 0;
-
-  if (SCHEME_OUTPUT_PORTP(argv[0])) {
-    Scheme_Output_Port *op;
-    op = scheme_output_port_record(argv[0]);
-    if (op->sub_type == scheme_tcp_output_port_type)
-      tcp = op->port_data;
-    closed = op->closed;
-  } else if (SCHEME_INPUT_PORTP(argv[0])) {
-    Scheme_Input_Port *ip;
-    ip = scheme_input_port_record(argv[0]);
-    if (ip->sub_type == scheme_tcp_input_port_type)
-      tcp = ip->port_data;
-    closed = ip->closed;
-  }
-
-  if (argc > 1)
-    with_ports = SCHEME_TRUEP(argv[1]);
-
-  if (tcp) {
-    socket = tcp->tcp;
-  }
-  else {
-    if (SCHEME_LISTEN_PORTP(argv[0])) {
-      listener = 1;
-      socket = ((listener_t *)argv[0])->s[0];
-    } else if (SCHEME_UDP_PORTP(argv[0])) {
-      udp = 1;
-      socket = ((Scheme_UDP *)argv[0])->s;
-    } else {
-      scheme_wrong_contract("tcp-addresses", "tcp-port?", 0, argc, argv);
-    }
-  }
-
-  if (closed)
-    scheme_raise_exn(MZEXN_FAIL_NETWORK,
-		     "tcp-addresses: port is closed");
-
-  {
-    unsigned int l;
-    char here[RKTIO_SOCK_NAME_MAX_LEN], there[RKTIO_SOCK_NAME_MAX_LEN];
-    char host_buf[RKTIO_SOCK_HOST_NAME_MAX_LEN];
-    char svc_buf[RKTIO_SOCK_SVC_NAME_MAX_LEN];
-    unsigned int here_len;
-    unsigned int there_len = 0;
-    int peerrc = 0;
-
-    l = sizeof(here);
-    if (getsockname(socket, (struct sockaddr *)here, &l)) {
-      scheme_raise_exn(MZEXN_FAIL_NETWORK,
-		       "tcp-addresses: could not get local address\n"
-                       "  system error: %E",
-		       SOCK_ERRNO());
-    }
-    here_len = l;
-
-    if (!listener) {
-      l = sizeof(there);
-      peerrc = getpeername(socket, (struct sockaddr *)there, &l);
-      if (peerrc && !udp) {
-        scheme_raise_exn(MZEXN_FAIL_NETWORK, 
-                         "tcp-addresses: could not get peer address\n"
-                         "  system error: %E", 
-                         SOCK_ERRNO());
-      }
-      there_len = l;
-    }
-
-    scheme_getnameinfo((struct sockaddr *)here, here_len, 
-		       host_buf, sizeof(host_buf),
-                       (with_ports ? svc_buf : NULL), 
-                       (with_ports ? sizeof(svc_buf) : 0));
-    result[0] = scheme_make_utf8_string(host_buf);
-    if (with_ports) {
-      l = extract_svc_value(svc_buf);
-      result[1] = scheme_make_integer(l);
-    }
-
-    if (listener || (udp && peerrc)) {
-      result[with_ports ? 2 : 1] = scheme_make_utf8_string("0.0.0.0");
-      result[3] = scheme_make_integer(0);
-    }
-    else {
-      scheme_getnameinfo((struct sockaddr *)there, there_len, 
-          host_buf, sizeof(host_buf),
-          (with_ports ? svc_buf : NULL), 
-          (with_ports ? sizeof(svc_buf) : 0));
-      result[with_ports ? 2 : 1] = scheme_make_utf8_string(host_buf);
-      if (with_ports) {
-        l = extract_svc_value(svc_buf);
-        result[3] = scheme_make_integer(l);
-      }
-    }
-  }
-
-  return scheme_values(with_ports ? 4 : 2, result);
-#else
-  /* First arg can't possibly be right! */
-  scheme_wrong_contract("tcp-addresses", "tcp-port?", 0, argc, argv);
-#endif
-}
-
-intptr_t scheme_dup_socket(intptr_t fd) {
-#ifdef USE_TCP
-# ifdef RKTIO_SYSTEM_WINDOWS
-  intptr_t nsocket;
-  intptr_t rc;
-  WSAPROTOCOL_INFO protocolInfo;
-  rc = WSADuplicateSocket(fd, GetCurrentProcessId(), &protocolInfo);
-  if (rc)
-    return rc;
-  nsocket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
-  REGISTER_SOCKET(nsocket);
-  return nsocket;
-# else
-  intptr_t nfd;
-  do {
-    nfd = dup(fd);
-  } while (nfd == -1 && errno == EINTR);
-  return nfd;
-# endif
-#else
-  return -1;
-#endif
-}
+#if 0
 
 /*========================================================================*/
 /* UDP                                                                    */

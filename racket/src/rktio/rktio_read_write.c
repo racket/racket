@@ -83,7 +83,7 @@ static void init_read_fd(rktio_fd_t *rfd)
     th->checking = 0;
     
     sm = CreateSemaphore(NULL, 0, 1, NULL);
-    th->checking_sema = sm;
+v    th->checking_sema = sm;
     sm = CreateSemaphore(NULL, 0, 1, NULL);
     th->ready_sema = sm;
     sm = CreateSemaphore(NULL, 1, 1, NULL);
@@ -151,6 +151,41 @@ int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd)
 int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return (rfd->modes & RKTIO_OPEN_SOCKET);
+}
+
+rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd) {
+#ifdef RKTIO_SYSTEM_UNIX
+  intptr_t nfd;
+
+  do {
+    nfd = dup(rfd->fd);
+  } while (nfd == -1 && errno == EINTR);
+
+  if (nfd == -1) {
+    get_posix_error();
+    return NULL;
+  } else
+    return rktio_system_fd(rktio, nfd, rfd->modes);
+#endif
+#ifdef WINDOWS_FILE_HANDLES
+  if (rfd->modes & RKTIO_OPEN_SOCKET) {
+    return rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
+  } else {
+    HANDLE  newhandle;
+    BOOL rc;
+
+    rc = DuplicateHandle(GetCurrentProcess(), rfd->fd,
+                         GetCurrentProcess(), &newhandle,
+                         0, FALSE, DUPLICATE_SAME_ACCESS);
+
+    if (rc == FALSE) {
+      get_windows_error();
+      return NULL;
+    } else {
+      return rktio_system_fd(rktio, (intptr_t)newhandle, rfd->modes);
+    }
+  }
+#endif
 }
 
 /*************************************************************/
@@ -473,6 +508,17 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
   free(rfd);
   
   return 1;
+}
+
+void rktio_forget(rktio_t *rktio, rktio_fd_t *rfd)
+{
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (rfd->modes & RKTIO_OPEN_SOCKET) {
+    rktio_socket_forget(rktio, rfd);
+    return;
+  }
+#endif
+  free(rfd);
 }
 
 /*************************************************************/

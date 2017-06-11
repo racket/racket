@@ -38,6 +38,9 @@ int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
 rktio_fd_t *rktio_open(rktio_t *rktio, char *src, int modes);
 int rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 
+rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd);
+void rktio_forget(rktio_t *rktio, rktio_fd_t *fd);
+
 #define RKTIO_READ_EOF   (-1)
 #define RKTIO_READ_ERROR (-2)
 #define RKTIO_WRITE_ERROR (-2)
@@ -89,8 +92,14 @@ int rktio_poll_connect_ready(rktio_t *rktio, rktio_connect_t *conn);
 
 int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode);
 
+char **rktio_socket_address(rktio_t *rktio, rktio_fd_t *rfd);
+char **rktio_socket_peer_address(rktio_t *rktio, rktio_fd_t *rfd);
+
 /*************************************************/
 /* File-descriptor sets for polling              */
+
+/* A poll set is intended for a single use or few uses, as opposed to
+   "long-term" poll sets. */
 
 typedef struct rktio_poll_set_t rktio_poll_set_t;
 
