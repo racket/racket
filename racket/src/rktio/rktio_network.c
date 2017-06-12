@@ -1589,6 +1589,7 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
     RKTIO_WHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #  endif
 
+    init_socket(s);
     REGISTER_SOCKET(s);
     
     return rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE); 
@@ -1601,9 +1602,9 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
 static char **get_numeric_strings(rktio_t *rktio, void *sa, unsigned int salen)
 {
   char **r;
+  int err;
 #ifdef HAVE_GETADDRINFO
   char host[NI_MAXHOST], serv[NI_MAXSERV];
-  int err;
   
   err = getnameinfo(sa, salen, host, sizeof(host), serv, sizeof(serv),
                     NI_NUMERICHOST | NI_NUMERICSERV);

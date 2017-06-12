@@ -30,6 +30,7 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_SOCKET      (1<<7)
 #define RKTIO_OPEN_UDP         (1<<8)
 
+/* A socket registered this way should be non-blocking: */
 rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
 intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 
@@ -168,7 +169,7 @@ void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp);
 #define RKTIO_PROCESS_ERROR (-2)
 #define RKTIO_PROCESS_DONE  1
 
-int rktio_poll_subprocess_done(rktio_t *rktio, rktio_process_t *sp);
+int rktio_poll_process_done(rktio_t *rktio, rktio_process_t *sp);
 
 typedef struct rktio_status_t {
   int running;

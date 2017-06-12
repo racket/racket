@@ -773,7 +773,7 @@ static void collect_process_time(rktio_t *rktio, DWORD w, rktio_process_t *sp)
 /* Process status functions                                               */
 /*========================================================================*/
 
-int rktio_poll_subprocess_done(rktio_t *rktio, rktio_process_t *sp)
+int rktio_poll_process_done(rktio_t *rktio, rktio_process_t *sp)
 {
 #if defined(RKTIO_SYSTEM_UNIX)
 # if defined(CENTRALIZED_SIGCHILD)
@@ -824,7 +824,7 @@ int rktio_poll_subprocess_done(rktio_t *rktio, rktio_process_t *sp)
 
 void rktio_poll_add_process(rktio_t *rktio, rktio_process_t *sp, rktio_poll_set_t *fds)
 {
-  if (rktio_poll_subprocess_done(rktio, sp)) {
+  if (rktio_poll_process_done(rktio, sp)) {
     rktio_poll_set_add_nosleep(rktio, fds);
     return;
   }
@@ -1320,7 +1320,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     if (!exact_cmdline) {
       /* protect spaces, etc. in the arguments: */
       new_argv = malloc(sizeof(char *) * argc);
-      for (i = 0; i < argv; i++) {
+      for (i = 0; i < argc; i++) {
 	new_argv[i] = cmdline_protect(argv[i]);
       }
       argv = new_argv;
@@ -1337,7 +1337,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
                              env, current_directory);
 
     if (!exact_cmdline) {
-      for (i = 0; i < argv; i++) {
+      for (i = 0; i < argc; i++) {
         free(argv[i]);
       }
       free(argv);
@@ -1492,9 +1492,17 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       /* Exec new process */
 
       {
-	int err;
+	int err, i;
+        char **new_argv;
 
-	err = MSC_IZE(execve)(command, argv, (char **)env);
+        /* add a NULL terminator */
+        new_argv = malloc(sizeof(char *) * (argc + 1));
+        for (i = 0; i < argc; i++) {
+          new_argv[i] = argv[i];
+        }
+        new_argv[i] = NULL;
+
+	err = MSC_IZE(execve)(command, new_argv, (char **)env);
         if (err)
           err = errno;
         

@@ -380,6 +380,22 @@ rktio_addrinfo_t *lookup_loop(rktio_t *rktio,
   return addr;
 }
 
+static void pause_for_process(rktio_t *rktio, rktio_process_t *process)
+{
+  int done;
+  
+  do {
+    rktio_poll_set_t *ps;
+    ps = rktio_make_poll_set(rktio);
+    check_valid(ps);
+    rktio_poll_add_process(rktio, process, ps);
+    rktio_sleep(rktio, 0, ps, NULL);
+    rktio_poll_set_close(rktio, ps);
+    done = rktio_poll_process_done(rktio, process);
+    check_valid(done != RKTIO_PROCESS_ERROR);
+  } while (!done);
+}
+
 static rktio_fd_t *connect_loop(rktio_t *rktio, rktio_addrinfo_t *addr, rktio_addrinfo_t *local_addr)
 {
   rktio_connect_t *conn;
@@ -692,7 +708,6 @@ int main()
     addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 0);
     check_valid(addr);
 
-    printf("udp\n");
     check_fill_write(rktio, fd2, addr, AMOUNT_FOR_UDP);
     check_drain_read(rktio, fd, AMOUNT_FOR_UDP+1);
 
@@ -707,10 +722,10 @@ int main()
   {
     rktio_status_t *status;
     rktio_process_result_t *result;
-    char *argv[2] = { "/bin/cat", NULL };
+    char *argv[1] = { "/bin/cat" };
     rktio_envvars_t *envvars = NULL;
     rktio_fd_t *err_fd = rktio_system_fd(rktio, 2, RKTIO_OPEN_WRITE);
-    int done;
+    int i;
     
     result = rktio_process(rktio, "/bin/cat", 1, argv,
                            NULL, NULL, err_fd,
@@ -718,34 +733,75 @@ int main()
                            0,
                            NULL);
     check_valid(result);
+    check_valid(!result->stderr_fd);
 
     status = rktio_process_status(rktio, result->process);
     check_valid(status);
     check_valid(status->running);
-    check_valid(!result->stderr_fd);
     free(status);
 
-    check_valid(!rktio_poll_subprocess_done(rktio, result->process));
+    check_valid(!rktio_poll_process_done(rktio, result->process));
 
     check_read_write_pair(rktio, result->stdout_fd, result->stdin_fd, 0);
 
-    check_valid(rktio_poll_subprocess_done(rktio, result->process) != RKTIO_PROCESS_ERROR);
+    check_valid(rktio_poll_process_done(rktio, result->process) != RKTIO_PROCESS_ERROR);
 
-    do {
-      rktio_poll_set_t *ps;
-      ps = rktio_make_poll_set(rktio);
-      check_valid(ps);
-      rktio_poll_add_process(rktio, result->process, ps);
-      rktio_sleep(rktio, 0, ps, NULL);
-      rktio_poll_set_close(rktio, ps);
-      done = rktio_poll_subprocess_done(rktio, result->process);
-      check_valid(done != RKTIO_PROCESS_ERROR);
-    } while (!done);
+    pause_for_process(rktio, result->process);
+
+    status = rktio_process_status(rktio, result->process);
+    check_valid(status);
+    check_valid(!status->running);
+    check_valid(!status->result);
+    free(status);
 
     rktio_process_forget(rktio, result->process);
     free(result);
 
     check_valid(rktio_close(rktio, err_fd));
+
+    /* Run and then break or kill "/bin/cat" */
+    for (i = 0; i < 2; i++) {
+      result = rktio_process(rktio, "/bin/cat", 1, argv,
+                             NULL, NULL, err_fd,
+                             rktio_get_current_directory(rktio), envvars,
+                             0,
+                             NULL);
+      check_valid(result);
+      
+      check_valid(!rktio_poll_process_done(rktio, result->process));
+      rktio_sleep(rktio, 0.05, NULL, NULL);
+      check_valid(!rktio_poll_process_done(rktio, result->process));
+
+      switch (i) {
+      case 0:
+        check_valid(rktio_process_interrupt(rktio, result->process));
+        break;
+      case 1:
+        check_valid(rktio_process_kill(rktio, result->process));
+        break;
+      }
+
+      pause_for_process(rktio, result->process);
+
+      status = rktio_process_status(rktio, result->process);
+      check_valid(status);
+      check_valid(!status->running);
+      check_valid(status->result);
+      free(status);
+
+      {
+        char buffer[1];
+        intptr_t amt;
+        amt = rktio_read(rktio, result->stdout_fd, buffer, sizeof(buffer));
+        check_valid(amt == RKTIO_READ_EOF);
+      }
+  
+      check_valid(rktio_close(rktio, result->stdin_fd));
+      check_valid(rktio_close(rktio, result->stdout_fd));
+    
+      rktio_process_forget(rktio, result->process);
+      free(result);
+    }
   }
   
   return 0;
