@@ -82,6 +82,10 @@ struct rktio_t {
 #ifdef RKTIO_SYSTEM_WINDOWS
   uintptr_t process_children_msecs;
 #endif
+
+#ifdef HAVE_INOTIFY_SYSCALL
+  struct rin_inotify_state_t *inotify_server;
+#endif
 };
 
 /*========================================================================*/
@@ -214,4 +218,14 @@ void rktio_get_windows_error(rktio_t *rktio);
 # define RKTIO_NONBLOCKING FNDELAY
 #endif
 
+#ifndef RKTIO_BINARY
+# define RKTIO_BINARY 0
+#endif
+
+#ifdef RKTIO_SYSTEM_UNIX
+void rktio_reliably_close(intptr_t s);
+#endif
+
 void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
+
+void rktio_stop_fs_change(rktio_t *rktio);

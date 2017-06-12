@@ -196,6 +196,15 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
 /* closing                                                   */
 /*************************************************************/
 
+#ifdef RKTIO_SYSTEM_UNIX
+void rktio_reliably_close(intptr_t s) {
+  int cr;
+  do { 
+    cr = close(s);
+  } while ((cr == -1) && (errno == EINTR));
+}
+#endif
+
 int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
@@ -206,9 +215,7 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
     release_lockf(rfd->fd);
 # endif
 
-  do {
-    cr = close(rfd->fd);
-  } while ((cr == -1) && (errno == EINTR));
+  rktio_reliably_close(rfd->fd);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)

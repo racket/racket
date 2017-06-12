@@ -882,6 +882,43 @@ int main(int argc, char **argv)
     rktio_forget(rktio, err_fd);
   }
 
+  /* Filesystem-change events */
+
+  if (rktio_fs_change_properties(rktio) & RKTIO_FS_CHANGE_SUPPORTED) {
+    char *path = "test1";
+    rktio_fs_change_t *fc;
+    rktio_poll_set_t *ps;
+
+    if (verbose)
+      printf("fs change\n");
+
+    fc = rktio_fs_change(rktio, path);
+    check_valid(fc);
+
+    check_valid(!rktio_poll_fs_change_ready(rktio, fc));
+
+    ps = rktio_make_poll_set(rktio);
+    check_valid(ps);
+    rktio_poll_add_fs_change(rktio, fc, ps);
+
+    rktio_sleep(rktio, 0.1, ps, NULL);
+    /* FIXME: check that at least 0.1 seconds have passed */
+
+    fd2 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
+    check_valid(fd2);
+    amt = rktio_write(rktio, fd2, "hola", 4);
+    check_valid(amt == 4);
+    
+    rktio_sleep(rktio, 0, ps, NULL);
+    check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);
+    check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);
+
+    check_valid(rktio_close(rktio, fd2));
+    rktio_poll_set_close(rktio, ps);
+    
+    rktio_fs_change_forget(rktio, fc);
+  }
+
   if (verbose)
     printf("done\n");
 

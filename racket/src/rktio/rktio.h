@@ -201,6 +201,22 @@ rktio_status_t *rktio_process_status(rktio_t *rktio, rktio_process_t *sp);
 void rktio_block_child_signals(rktio_t*rktio, int block);
 
 /*************************************************/
+/* Filesystem-change events                      */
+
+#define RKTIO_FS_CHANGE_SUPPORTED   (1 << 0)
+#define RKTIO_FS_CHANGE_SCALABLE    (1 << 1)
+#define RKTIO_FS_CHANGE_LOW_LATENCY (1 << 2)
+#define RKTIO_FS_CHANGE_FILE_LEVEL  (1 << 3)
+
+int rktio_fs_change_properties(rktio_t *rktio);
+
+typedef struct rktio_fs_change_t rktio_fs_change_t;
+
+rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, char *path);
+void rktio_fs_change_forget(rktio_t *rktio, rktio_fs_change_t *fc);
+int rktio_poll_fs_change_ready(rktio_t *rktio, rktio_fs_change_t *fc);
+
+/*************************************************/
 /* File-descriptor sets for polling              */
 
 /* A poll set is intended for a single use or few uses, as opposed to
@@ -219,6 +235,7 @@ void rktio_poll_add_receive(rktio_t *rktio, rktio_listener_t *listener, rktio_po
 void rktio_poll_add_connect(rktio_t *rktio, rktio_connect_t *conn, rktio_poll_set_t *fds);
 void rktio_poll_add_addrinfo_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup, rktio_poll_set_t *fds);
 void rktio_poll_add_process(rktio_t *rktio, rktio_process_t *sp, rktio_poll_set_t *fds);
+void rktio_poll_add_fs_change(rktio_t *rktio, rktio_fs_change_t *fc, rktio_poll_set_t *fds);
 
 void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds);
 
@@ -243,6 +260,7 @@ enum {
   RKTIO_LTPS_CHECK_READ,
   RKTIO_LTPS_CHECK_WRITE,
   RKTIO_LTPS_REMOVE,
+  /* Internal, for filesystem-change events with kqueue: */
   RKTIO_LTPS_CREATE_VNODE,
   RKTIO_LTPS_CHECK_VNODE,
   RKTIO_LTPS_REMOVE_VNODE

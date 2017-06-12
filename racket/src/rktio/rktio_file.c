@@ -12,10 +12,6 @@
 # include <windows.h>
 #endif
 
-#ifndef RKTIO_BINARY
-# define RKTIO_BINARY 0
-#endif
-
 /*************************************************************/
 /* opening a file fd                                         */
 /*************************************************************/

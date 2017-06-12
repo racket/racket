@@ -1221,13 +1221,6 @@ static void CloseFileHandleForSubprocess(intptr_t *hs, int pos)
 #ifdef RKTIO_SYSTEM_UNIX
 # define RKTIO_COPY_FOR_SUBPROCESS(array, pos) /* empty */
 # define RKTIO_CLOSE_SUBPROCESS_COPY(array, pos) /* empty */
-
-static void reliably_close(intptr_t s) {
-  int cr;
-  do { 
-    cr = close(s);
-  } while ((cr == -1) && (errno == EINTR));
-}
 #endif
 
 /*========================================================================*/
@@ -1430,21 +1423,21 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     case -1:
       /* Close all created descriptors */
       if (!stdin_fd) {
-	reliably_close(to_subprocess[0]);
-	reliably_close(to_subprocess[1]);
+	rktio_reliably_close(to_subprocess[0]);
+	rktio_reliably_close(to_subprocess[1]);
       } else {
 	RKTIO_CLOSE_SUBPROCESS_COPY(to_subprocess, 0);
       }
       if (!stdout_fd) {
-	reliably_close(from_subprocess[0]);
-	reliably_close(from_subprocess[1]);
+	rktio_reliably_close(from_subprocess[0]);
+	rktio_reliably_close(from_subprocess[1]);
       } else {
 	RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, 1);
       }
       if (!stderr_fd) {
         if (!stderr_is_stdout) {
-          reliably_close(err_subprocess[0]);
-          reliably_close(err_subprocess[1]);
+          rktio_reliably_close(err_subprocess[0]);
+          rktio_reliably_close(err_subprocess[1]);
         }
       } else {
 	RKTIO_CLOSE_SUBPROCESS_COPY(err_subprocess, 1);
@@ -1467,17 +1460,17 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 
 	/* Close unwanted descriptors */
 	if (!stdin_fd) {
-	  reliably_close(to_subprocess[0]);
-	  reliably_close(to_subprocess[1]);
+	  rktio_reliably_close(to_subprocess[0]);
+	  rktio_reliably_close(to_subprocess[1]);
 	}
 	if (!stdout_fd) {
-	  reliably_close(from_subprocess[0]);
-	  reliably_close(from_subprocess[1]);
+	  rktio_reliably_close(from_subprocess[0]);
+	  rktio_reliably_close(from_subprocess[1]);
 	}
 	if (!stderr_fd) {
           if (!stderr_is_stdout) {
-            reliably_close(err_subprocess[0]);
-            reliably_close(err_subprocess[1]);
+            rktio_reliably_close(err_subprocess[0]);
+            rktio_reliably_close(err_subprocess[1]);
           }
 	}
 
@@ -1531,18 +1524,18 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   free(env);
 
   if (!stdin_fd) {
-    reliably_close(to_subprocess[0]);
+    rktio_reliably_close(to_subprocess[0]);
   } else {
     RKTIO_CLOSE_SUBPROCESS_COPY(to_subprocess, 0);
   }
   if (!stdout_fd) {
-    reliably_close(from_subprocess[1]);
+    rktio_reliably_close(from_subprocess[1]);
   } else {
     RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, 1);
   }
   if (!stderr_fd) {
     if (!stderr_is_stdout)
-      reliably_close(err_subprocess[1]);
+      rktio_reliably_close(err_subprocess[1]);
   } else {
     RKTIO_CLOSE_SUBPROCESS_COPY(err_subprocess, 1);
   }

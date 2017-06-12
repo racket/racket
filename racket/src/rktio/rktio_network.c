@@ -26,15 +26,8 @@
 typedef intptr_t rktio_socket_t;
 # define INVALID_SOCKET (-1)
 
-static void reliably_close(intptr_t s) {
-  int cr;
-  do { 
-    cr = close(s);
-  } while ((cr == -1) && (errno == EINTR));
-}
-
 static void closesocket(rktio_socket_t s) {
-  reliably_close(s);
+  rktio_reliably_close(s);
 }
 
 typedef struct sockaddr_in rktio_unspec_address;
@@ -430,7 +423,7 @@ static intptr_t getaddrinfo_in_thread(void *_data)
         do {
           err = write(lookup->done_fd[1], &v, sizeof(v));
         } while ((err == -1) && (errno == EINTR));
-        reliably_close(lookup->done_fd[1]);
+        rktio_reliably_close(lookup->done_fd[1]);
       }
 # endif
 
@@ -438,7 +431,7 @@ static intptr_t getaddrinfo_in_thread(void *_data)
 # ifdef RKTIO_SYSTEM_WINDOWS
         CloseHandle(data->ready_sema);
 # else
-        reliably_close(lookup->done_fd[0]);
+        rktio_reliably_close(lookup->done_fd[0]);
 # endif
         free_lookup(lookup);
       }
@@ -582,7 +575,7 @@ int rktio_poll_addrinfo_lookup_ready(rktio_t *rktio, rktio_addrinfo_lookup_t *lo
       cr = read(lookup->done_fd[0], &v, sizeof(long));
     } while ((cr == -1) && (errno == EINTR));
     if (cr > 0) {
-      reliably_close(lookup->done_fd[0]);
+      rktio_reliably_close(lookup->done_fd[0]);
       done = 1;
     }
   }
@@ -633,7 +626,7 @@ void rktio_addrinfo_lookup_stop(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup)
 # ifdef RKTIO_SYSTEM_WINDOWS
     CloseHandle(lookup->done_sema);
 # else
-    reliably_close(lookup->done_fd[0]);
+    rktio_reliably_close(lookup->done_fd[0]);
 # endif
     free_lookup(lookup);
   }
