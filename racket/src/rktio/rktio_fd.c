@@ -15,10 +15,6 @@
 # include <poll.h>
 #endif
 
-#ifndef RKTIO_BINARY
-# define RKTIO_BINARY 0
-#endif
-
 struct rktio_fd_t {
   int modes;
 
@@ -38,8 +34,6 @@ struct rktio_fd_t {
   Win_FD_Input_Thread *th; /* input mode */
   Win_FD_Output_Thread *oth; /* output mode */
 #endif
-
-  int regfile;
 };
 
 /*************************************************************/
@@ -54,7 +48,7 @@ static void init_read_fd(rktio_fd_t *rfd)
 # endif
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (!rfd->regfile) {
+  if (!rktio_fd_is_regular_file(rktio, rfd)) {
     /* To get non-blocking I/O for anything that can block, we create
        a separate reader thread.
 
@@ -106,13 +100,14 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 
 #ifdef RKTIO_SYSTEM_UNIX
   rfd->fd = system_fd;
-  {
+  if (!(modes & (RKTIO_OPEN_REGFILE | RKTIO_OPEN_NOT_REGFILE | RKTIO_OPEN_SOCKET))) {
     struct stat buf;
     int cr;
     do {
       cr = fstat(rfd->fd, &buf);
     } while ((cr == -1) && (errno == EINTR));
-    rfd->regfile = S_ISREG(buf.st_mode);
+    if (S_ISREG(buf.st_mode))
+      rfd->modes |= RKTIO_OPEN_REGFILE;
   }
 #endif
 
@@ -121,7 +116,10 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
     rfd->s = system_fd;
   else
     rfd->fd = (HANDLE)system_fd;
-  rfd->regfile = (GetFileType(rfd->fd) == FILE_TYPE_DISK);
+  if (!(modes & (RKTIO_OPEN_REGFILE | RKTIO_OPEN_NOT_REGFILE | RKTIO_OPEN_SOCKET))) {
+    if ((GetFileType(rfd->fd) == FILE_TYPE_DISK))
+      rfd->modes |= RKTIO_OPEN_REGFILE;
+  }
 #endif
   
   if (modes & RKTIO_OPEN_READ)
@@ -145,20 +143,21 @@ intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
 
 int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return rfd->regfile;
+  return ((rfd->modes & RKTIO_OPEN_REGFILE) ? 1 : 0);
 }
 
 int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return (rfd->modes & RKTIO_OPEN_SOCKET);
+  return ((rfd->modes & RKTIO_OPEN_SOCKET) ? 1 : 0);
 }
 
 int rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  return (rfd->modes & RKTIO_OPEN_UDP);
+  return ((rfd->modes & RKTIO_OPEN_UDP) ? 1 : 0);
 }
 
-rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd) {
+rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
+{
 #ifdef RKTIO_SYSTEM_UNIX
   intptr_t nfd;
 
@@ -191,250 +190,6 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd) {
     }
   }
 #endif
-}
-
-/*************************************************************/
-/* opening a file fd                                         */
-/*************************************************************/
-
-static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
-{
-#ifdef RKTIO_SYSTEM_UNIX
-  int fd;
-  struct stat buf;
-  rktio_fd_t *rfd;
-
-  do {
-    fd = open(filename, O_RDONLY | RKTIO_NONBLOCKING | RKTIO_BINARY);
-  } while ((fd == -1) && (errno == EINTR));
-
-  if (fd == -1) {
-    get_posix_error();
-    return NULL;
-  } else {
-    int cr;
-
-    do {
-      cr = fstat(fd, &buf);
-    } while ((cr == -1) && (errno == EINTR));
-
-    if (cr) {
-      get_posix_error();
-      do {
-	cr = close(fd);
-      } while ((cr == -1) && (errno == EINTR));
-      return NULL;
-    }
-
-    if (S_ISDIR(buf.st_mode)) {
-      do {
-	cr = close(fd);
-      } while ((cr == -1) && (errno == EINTR));
-      set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
-      return NULL;
-    } else {
-      rfd = malloc(sizeof(rktio_fd_t));
-      rfd->modes = RKTIO_OPEN_READ;
-      rfd->fd = fd;
-      rfd->regfile = S_ISREG(buf.st_mode);
-
-      init_read_fd(rfd);
-
-      return rfd;
-    }
-  }
-#endif
-#ifdef RKTIO_SYSTEM_WINDOWS
-  HANDLE fd;
-  rktio_fd_t *rfd;
-  
-  fd = CreateFileW(WIDE_PATH(filename),
-		   GENERIC_READ,
-		   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-		   NULL,
-		   OPEN_EXISTING,
-		   0,
-		   NULL);
-
-  if (fd == INVALID_HANDLE_VALUE) {
-    get_windows_error();
-    return NULL;
-  }
-
-  rfd = malloc(sizeof(rktio_fd_t));
-  rfd->modes = RKTIO_OPEN_READ;
-  rfd->fd = fd;
-  rfd->regfile = (GetFileType(fd) == FILE_TYPE_DISK);
-
-  init_read_fd(rfd);
-  
-  return rfd;
-#endif
-}
-
-static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
-{
-#ifdef RKTIO_SYSTEM_UNIX
-  int fd;
-  int flags;
-  struct stat buf;
-  int cr;
-  rktio_fd_t *rfd;
-
-  flags = (((modes & RKTIO_OPEN_READ) ? O_RDWR : O_WRONLY)
-           | ((modes & RKTIO_OPEN_MUST_EXIST ? 0 : O_CREAT)));
-
-  if (modes & RKTIO_OPEN_APPEND)
-    flags |= O_APPEND;
-  else if (modes & RKTIO_OPEN_TRUNCATE)
-    flags |= O_TRUNC;
-  else if (!(modes & RKTIO_OPEN_CAN_EXIST))
-    flags |= O_EXCL;
-
-  do {
-    fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY, 0666);
-  } while ((fd == -1) && (errno == EINTR));
-
-  if (errno == ENXIO) {
-    /* FIFO with no reader? Try opening in RW mode: */
-    flags -= O_WRONLY;
-    flags |= O_RDWR;
-    do {
-      fd = open(filename, flags | RKTIO_NONBLOCKING | RKTIO_BINARY, 0666);
-    } while ((fd == -1) && (errno == EINTR));
-  }
-
-  if (fd == -1) {
-    if (errno == EISDIR) {
-      set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
-      return NULL;
-    } else if (errno == EEXIST) {
-      if (!(modes & RKTIO_OPEN_REPLACE)) {
-        set_racket_error(RKTIO_ERROR_EXISTS);
-        return NULL;
-      } else {
-	do {
-	  cr = unlink(filename);
-	} while ((cr == -1) && (errno == EINTR));
-
-	if (cr) {
-          get_posix_error();
-          return NULL;
-        }
-        
-	do {
-	  fd = open(filename, flags | RKTIO_BINARY, 0666);
-	} while ((fd == -1) && (errno == EINTR));
-      }
-    }
-
-    if (fd == -1) {
-      get_posix_error();
-      return NULL;
-    }
-  }
-
-  do {
-    cr = fstat(fd, &buf);
-  } while ((cr == -1) && (errno == EINTR));
-
-  if (cr) {
-    get_posix_error();
-    do {
-      cr = close(fd);
-    } while ((cr == -1) && (errno == EINTR));
-    return NULL;
-  }
-
-  rfd = malloc(sizeof(rktio_fd_t));
-  rfd->modes = modes;
-  rfd->fd = fd;
-  rfd->regfile = S_ISREG(buf.st_mode);
-  return rfd;
-#endif
-#ifdef RKTIO_SYSTEM_WINDOWS
-  HANDLE fd;
-  int hmode, regfile;
-  BY_HANDLE_FILE_INFORMATION info;
-  rktio_fd_t *rfd;
-
-  if (modes & RKTIO_OPEN_MUST_EXIST) {
-    if (modes & RKTIO_OPEN_TRUNNCATE)
-      hmode = TRUNCATE_EXISTING;
-    else
-      hmode = OPEN_EXISTING;
-  } else if (modes & RKTIO_OPEN_CAN_EXIST)
-    hmode = OPEN_ALWAYS;
-  else
-    hmode = CREATE_NEW;
-
-  fd = CreateFileW(WIDE_PATH_temp(filename),
-		   GENERIC_WRITE | ((modes & RKTIO_OPEN_READ) ? GENERIC_READ : 0),
-		   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-		   NULL,
-		   hmode,
-		   FILE_FLAG_BACKUP_SEMANTICS, /* lets us detect directories in NT */
-		   NULL);
-
-  if (fd == INVALID_HANDLE_VALUE) {
-    int errv;
-    errv = GetLastError();
-    if ((errv == ERROR_ACCESS_DENIED) && (existsok < -1)) {
-      /* Delete and try again... */
-      if (DeleteFileW(WIDE_PATH_temp(filename))) {
-	fd = CreateFileW(WIDE_PATH_temp(filename),
-                         GENERIC_WRITE | ((modes & RKTIO_OPEN_READ) ? GENERIC_READ : 0),
-                         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                         NULL,
-                         hmode,
-                         0,
-                         NULL);
-	if (fd == INVALID_HANDLE_VALUE) {
-	  get_windows_error();
-          return NULL;
-        }
-      } else {
-        get_windows_error();
-        return NULL;
-      }
-    } else if (errv == ERROR_FILE_EXISTS) {
-      set_racket_error(RKTIO_ERROR_EXISTS);
-      return NULL;
-    }
-
-    if (fd == INVALID_HANDLE_VALUE) {
-      get_windows_error();
-      return NULL;
-    }
-  }
-
-  if (GetFileInformationByHandle(fd, &info)) {
-    if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-      CloseHandle(fd);
-      set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
-      return NULL;
-    }
-  }
-
-  rfd = malloc(sizeof(rktio_fd_t));
-  rfd->modes = modes;
-  rfd->fd = fd;
-  rfd->regfile = (GetFileType(fd) == FILE_TYPE_DISK);
-
-  if (rfd->regfile && (modes & RKTIO_OPEN_APPEND)) {
-    SetFilePointer(fd, 0, NULL, FILE_END);
-  }
-
-  return rfd;
-#endif
-}
-
-rktio_fd_t *rktio_open(rktio_t *rktio, char *filename, int modes)
-{
-  if (modes & RKTIO_OPEN_WRITE)
-    return open_write(rktio, filename, modes);
-  else
-    return open_read(rktio, filename);
 }
 
 /*************************************************************/
@@ -560,7 +315,7 @@ static int try_get_fd_char(int fd, int *ready)
 
 int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  if (rfd->regfile)
+  if (rktio_fd_is_regular_file(rktio, rfd))
     return RKTIO_POLL_READY;
 
 #ifdef RKTIO_SYSTEM_UNIX
@@ -781,7 +536,7 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
           }
         } else
           rktio_fdset_add_handle(rfd->th->ready_sema, fds, 1);
-      } else if (rfd->regfile) {
+      } else if (rktio_fd_is_regular_file(rktio, rfd)) {
         /* regular files never block */
         rktio_fdset_add_nosleep(fds);
       } else {
@@ -812,7 +567,7 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_read(rktio, rfd, buffer, len);
 
-  if (rfd->regfile) {
+  if (rktio_fd_is_regular_file(rktio, rfd)) {
     /* Reading regular file never blocks */
     do {
       bc = read(rfd->fd, buffer, len);
@@ -1025,7 +780,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_write(rktio, rfd, buffer, len);
 
-  if (rfd->regfile) {
+  if (rktio_fd_is_regular_file(rktio, rfd)) {
     /* Regular files never block, so this code looks like the Unix
        code.  We've cheated in the make_fd proc and called
        consoles regular files, because they cannot block, either. */

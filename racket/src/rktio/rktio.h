@@ -29,6 +29,11 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_CAN_EXIST   (1<<6)
 #define RKTIO_OPEN_SOCKET      (1<<7)
 #define RKTIO_OPEN_UDP         (1<<8)
+#define RKTIO_OPEN_REGFILE     (1<<10)
+#define RKTIO_OPEN_NOT_REGFILE (1<<11)
+
+/* If neither RKTIO_OPEN_REGILE nor RKTIO_OPEN_NOT_REGILE
+   are specified, then the value is inferred */
 
 /* A socket registered this way should be non-blocking: */
 rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
