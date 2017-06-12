@@ -10,9 +10,23 @@ AC_CONFIG_HEADERS([rktio_config.h])
 AC_CONFIG_AUX_DIR(../lt)
 AC_CANONICAL_SYSTEM
 
+AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
+
 ###### Autoconfigure #######
 
 AC_PROG_CC
+
+AC_PROG_RANLIB
+if test "$AR" = '' ; then 
+  AR="${ac_tool_prefix}ar"
+  AC_CHECK_PROG(platform_ar_found, $AR, yes, no)
+  if test "$platform_ar_found" = 'no' ; then
+    AR="ar"
+  fi
+fi
+if test "$ARFLAGS" = '' ; then 
+  ARFLAGS=ruv
+fi
 
 AC_CHECK_LIB(m, fmod)
 AC_CHECK_LIB(dl, dlopen)
@@ -271,11 +285,67 @@ if test "${enable_pthread}" = "yes" ; then
   AC_DEFINE(RKTIO_USE_PTHREADS, 1, [Pthread enabled])
 fi
 
+############## libtool ################
+
+if test "${enable_shared}" = "yes" ; then
+  echo "Configuring libtool"
+
+  if test ! -d "../lt" ; then
+    mkdir "../lt"
+  fi
+  abssrcdir=`(cd ${srcdir}; pwd)`
+
+  if test "${LIBTOOLPROG}" = "" ; then  
+    (cd ../lt; sh ${abssrcdir}/../lt/configure --enable-shared --disable-static)
+    LIBTOOLPROG=`pwd`/../lt/libtool
+  fi
+
+  if test "${need_gcc_static_libgcc}" = "yes" ; then
+    need_gcc_static_libgcc=""
+    if test "$CC" = "gcc" ; then 
+      gcc_vers_three=`${CC} -v 2>&1 | grep "version 3[.]"`
+      if test "$gcc_vers_three" = "" ; then
+        need_gcc_static_libgcc=""
+      else
+        need_gcc_static_libgcc=" -XCClinker -static-libgcc"
+      fi
+    fi
+  fi
+
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} \$(ARLIBFLAGS) -o"
+  STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
+  ARFLAGS=""
+  RANLIB=":"
+  RKTLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}"
+  CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
+  LIBSFX=la
+  LTO="lo"
+  LTA="la"
+  STRIP_LIB_DEBUG=":"
+else
+  LIBSFX=a
+  ICP=cp
+  ICP_LIB=cp
+  LTO="o"
+  LTA="a"
+  RKTLINKER='$(CC)'
+  STATIC_AR="$AR"
+fi
+
 ############## final output ################
 
 AC_SUBST(CC)
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
+AC_SUBST(RKTLINKER)
+AC_SUBST(AR)
+AC_SUBST(ARFLAGS)
+AC_SUBST(RANLIB)
+AC_SUBST(STATIC_AR)
+
+AC_SUBST(LIBSFX)
+AC_SUBST(LTO)
+AC_SUBST(LTA)
 
 makefiles="Makefile"
 

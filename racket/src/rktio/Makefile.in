@@ -5,67 +5,75 @@ CC = @CC@
 CFLAGS = @CFLAGS@ @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
+RKTLINKER = @RKTLINKER@
+
+NICEAR = $(srcdir)/../utils/nicear
+AR = @AR@
+ARFLAGS = @ARFLAGS@
+RANLIB = @RANLIB@
 
 RKTIO_HEADERS = $(srcdir)/rktio.h $(srcdir)/rktio_private.h rktio_config.h
 
-OBJS = rktio_fs.o \
-       rktio_fd.o \
-       rktio_file.o \
-       rktio_poll_set.o \
-       rktio_ltps.o \
-       rktio_network.o \
-       rktio_process.o \
-       rktio_envvars.o \
-       rktio_fs_change.o \
-       rktio_error.o \
-       rktio_main.o
+OBJS = rktio_fs.@LTO@ \
+       rktio_fd.@LTO@ \
+       rktio_file.@LTO@ \
+       rktio_poll_set.@LTO@ \
+       rktio_ltps.@LTO@ \
+       rktio_network.@LTO@ \
+       rktio_process.@LTO@ \
+       rktio_envvars.@LTO@ \
+       rktio_fs_change.@LTO@ \
+       rktio_error.@LTO@ \
+       rktio_main.@LTO@
 
-all: $(OBJS)
+librktio.@LIBSFX@: $(OBJS)
+	$(NICEAR) $(AR) $(ARFLAGS) librktio.@LIBSFX@ $(OBJS)
+	$(RANLIB) librktio.@LIBSFX@
 
 demo: rktio_demo
 	./rktio_demo
 
-rktio_demo: $(OBJS) demo.o demo_fifo
-	$(CC) -o rktio_demo $(CFLAGS) $(LDFLAGS) demo.o $(OBJS) $(LIBS)
+rktio_demo: librktio.@LIBSFX@ demo.@LTO@ demo_fifo
+	$(RKTLINKER) -o rktio_demo $(CFLAGS) $(LDFLAGS) demo.@LTO@ librktio.@LIBSFX@ $(LIBS)
 
 demo_fifo:
 	mkfifo demo_fifo
 
-rktio_fs.o: $(srcdir)/rktio_fs.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_fs.o -c $(srcdir)/rktio_fs.c
+rktio_fs.@LTO@: $(srcdir)/rktio_fs.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_fs.@LTO@ -c $(srcdir)/rktio_fs.c
 
-rktio_fd.o: $(srcdir)/rktio_fd.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_fd.o -c $(srcdir)/rktio_fd.c
+rktio_fd.@LTO@: $(srcdir)/rktio_fd.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_fd.@LTO@ -c $(srcdir)/rktio_fd.c
 
-rktio_file.o: $(srcdir)/rktio_file.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_file.o -c $(srcdir)/rktio_file.c
+rktio_file.@LTO@: $(srcdir)/rktio_file.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_file.@LTO@ -c $(srcdir)/rktio_file.c
 
-rktio_poll_set.o: $(srcdir)/rktio_poll_set.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_poll_set.o -c $(srcdir)/rktio_poll_set.c
+rktio_poll_set.@LTO@: $(srcdir)/rktio_poll_set.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_poll_set.@LTO@ -c $(srcdir)/rktio_poll_set.c
 
-rktio_ltps.o: $(srcdir)/rktio_ltps.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_ltps.o -c $(srcdir)/rktio_ltps.c
+rktio_ltps.@LTO@: $(srcdir)/rktio_ltps.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_ltps.@LTO@ -c $(srcdir)/rktio_ltps.c
 
-rktio_network.o: $(srcdir)/rktio_network.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_network.o -c $(srcdir)/rktio_network.c
+rktio_network.@LTO@: $(srcdir)/rktio_network.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_network.@LTO@ -c $(srcdir)/rktio_network.c
 
-rktio_process.o: $(srcdir)/rktio_process.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_process.o -c $(srcdir)/rktio_process.c
+rktio_process.@LTO@: $(srcdir)/rktio_process.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_process.@LTO@ -c $(srcdir)/rktio_process.c
 
-rktio_envvars.o: $(srcdir)/rktio_envvars.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_envvars.o -c $(srcdir)/rktio_envvars.c
+rktio_envvars.@LTO@: $(srcdir)/rktio_envvars.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_envvars.@LTO@ -c $(srcdir)/rktio_envvars.c
 
-rktio_fs_change.o: $(srcdir)/rktio_fs_change.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_fs_change.o -c $(srcdir)/rktio_fs_change.c
+rktio_fs_change.@LTO@: $(srcdir)/rktio_fs_change.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_fs_change.@LTO@ -c $(srcdir)/rktio_fs_change.c
 
-rktio_error.o: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_error.o -c $(srcdir)/rktio_error.c
+rktio_error.@LTO@: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_error.@LTO@ -c $(srcdir)/rktio_error.c
 
-rktio_main.o: $(srcdir)/rktio_main.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_main.o -c $(srcdir)/rktio_main.c
+rktio_main.@LTO@: $(srcdir)/rktio_main.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_main.@LTO@ -c $(srcdir)/rktio_main.c
 
-demo.o: $(srcdir)/demo.c $(RKTIO_HEADERS)
-	$(CC) $(CFLAGS) -I$(srcdir) -I. -o demo.o -c $(srcdir)/demo.c
+demo.@LTO@: $(srcdir)/demo.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o demo.@LTO@ -c $(srcdir)/demo.c
 
 clean:
-	rm -f $(OBJS) rktio_demo
+	rm -f $(OBJS) librktio.@LIBSFX@ rktio_demo demo_fifo

@@ -621,9 +621,18 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+LTA
+LTO
+LIBSFX
+STATIC_AR
+ARFLAGS
+AR
+RKTLINKER
 EGREP
 GREP
 CPP
+platform_ar_found
+RANLIB
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -684,6 +693,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_shared
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1301,6 +1311,12 @@ fi
 if test -n "$ac_init_help"; then
 
   cat <<\_ACEOF
+
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-shared         create shared libraries (ok, but not recommended)
 
 Some influential environment variables:
   CC          C compiler command
@@ -2222,6 +2238,12 @@ test -n "$target_alias" &&
   program_prefix=${target_alias}-
 
 
+# Check whether --enable-shared was given.
+if test "${enable_shared+set}" = set; then :
+  enableval=$enable_shared;
+fi
+
+
 ###### Autoconfigure #######
 
 ac_ext=c
@@ -3013,6 +3035,146 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+
+if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}ranlib", so it can be a program name with args.
+set dummy ${ac_tool_prefix}ranlib; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_RANLIB+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$RANLIB"; then
+  ac_cv_prog_RANLIB="$RANLIB" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_RANLIB="${ac_tool_prefix}ranlib"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+RANLIB=$ac_cv_prog_RANLIB
+if test -n "$RANLIB"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $RANLIB" >&5
+$as_echo "$RANLIB" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_RANLIB"; then
+  ac_ct_RANLIB=$RANLIB
+  # Extract the first word of "ranlib", so it can be a program name with args.
+set dummy ranlib; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_RANLIB+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_RANLIB"; then
+  ac_cv_prog_ac_ct_RANLIB="$ac_ct_RANLIB" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_RANLIB="ranlib"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_RANLIB=$ac_cv_prog_ac_ct_RANLIB
+if test -n "$ac_ct_RANLIB"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_RANLIB" >&5
+$as_echo "$ac_ct_RANLIB" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_RANLIB" = x; then
+    RANLIB=":"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    RANLIB=$ac_ct_RANLIB
+  fi
+else
+  RANLIB="$ac_cv_prog_RANLIB"
+fi
+
+if test "$AR" = '' ; then
+  AR="${ac_tool_prefix}ar"
+  # Extract the first word of "$AR", so it can be a program name with args.
+set dummy $AR; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_platform_ar_found+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$platform_ar_found"; then
+  ac_cv_prog_platform_ar_found="$platform_ar_found" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_platform_ar_found="yes"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_platform_ar_found" && ac_cv_prog_platform_ar_found="no"
+fi
+fi
+platform_ar_found=$ac_cv_prog_platform_ar_found
+if test -n "$platform_ar_found"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $platform_ar_found" >&5
+$as_echo "$platform_ar_found" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  if test "$platform_ar_found" = 'no' ; then
+    AR="ar"
+  fi
+fi
+if test "$ARFLAGS" = '' ; then
+  ARFLAGS=ruv
+fi
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for fmod in -lm" >&5
@@ -3999,7 +4161,63 @@ $as_echo "#define RKTIO_USE_PTHREADS 1" >>confdefs.h
 
 fi
 
+############## libtool ################
+
+if test "${enable_shared}" = "yes" ; then
+  echo "Configuring libtool"
+
+  if test ! -d "../lt" ; then
+    mkdir "../lt"
+  fi
+  abssrcdir=`(cd ${srcdir}; pwd)`
+
+  if test "${LIBTOOLPROG}" = "" ; then
+    (cd ../lt; sh ${abssrcdir}/../lt/configure --enable-shared --disable-static)
+    LIBTOOLPROG=`pwd`/../lt/libtool
+  fi
+
+  if test "${need_gcc_static_libgcc}" = "yes" ; then
+    need_gcc_static_libgcc=""
+    if test "$CC" = "gcc" ; then
+      gcc_vers_three=`${CC} -v 2>&1 | grep "version 3."`
+      if test "$gcc_vers_three" = "" ; then
+        need_gcc_static_libgcc=""
+      else
+        need_gcc_static_libgcc=" -XCClinker -static-libgcc"
+      fi
+    fi
+  fi
+
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
+  STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
+  ARFLAGS=""
+  RANLIB=":"
+  RKTLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc} -rpath ${abslibdir}"
+  CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
+  LIBSFX=la
+  LTO="lo"
+  LTA="la"
+  STRIP_LIB_DEBUG=":"
+else
+  LIBSFX=a
+  ICP=cp
+  ICP_LIB=cp
+  LTO="o"
+  LTA="a"
+  RKTLINKER='$(CC)'
+  STATIC_AR="$AR"
+fi
+
 ############## final output ################
+
+
+
+
+
+
+
+
+
 
 
 

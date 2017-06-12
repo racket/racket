@@ -1920,7 +1920,7 @@ makefiles="Makefile
 
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then
-  ac_configure_args="$ac_configure_args --enable-shared"
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-shared"
 fi
 
 FOREIGNTARGET=
