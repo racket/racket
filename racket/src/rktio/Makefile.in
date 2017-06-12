@@ -13,6 +13,8 @@ OBJS = rktio_filesystem.o \
        rktio_poll_set.o \
        rktio_ltps.o \
        rktio_network.o \
+       rktio_process.o \
+       rktio_envvars.o \
        rktio_error.o \
        rktio_main.o
 
@@ -41,6 +43,12 @@ rktio_ltps.o: $(srcdir)/rktio_ltps.c $(RKTIO_HEADERS)
 
 rktio_network.o: $(srcdir)/rktio_network.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_network.o -c $(srcdir)/rktio_network.c
+
+rktio_process.o: $(srcdir)/rktio_process.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_process.o -c $(srcdir)/rktio_process.c
+
+rktio_envvars.o: $(srcdir)/rktio_envvars.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_envvars.o -c $(srcdir)/rktio_envvars.c
 
 rktio_error.o: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_error.o -c $(srcdir)/rktio_error.c

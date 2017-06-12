@@ -5,6 +5,8 @@
 
 static void do_check_valid(rktio_t *rktio, int ok, int where)
 {
+  /* Beware that a reported error is nonsense if the failure
+     was an unexpected result insteda of an error result. */
   if (!ok) {
     printf("error at %d: %d@%d = %s\n",
            where,
@@ -190,13 +192,12 @@ static void wait_read(rktio_t *rktio, rktio_fd_t *fd)
   rktio_poll_set_close(rktio, ps);
 }
 
-static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd2)
+static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd2, int immediate_available)
 {
   rktio_ltps_t *lt;
   rktio_ltps_handle_t *h1, *h2;
   intptr_t amt, i;
   char buffer[256];
-  int immediate_available = (!rktio_fd_is_socket(rktio, fd) && !rktio_fd_is_socket(rktio, fd2));
 
   lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
   /* We expect `lt` to work everywhere exception Windows and with kqueue on non-sockets: */
@@ -566,7 +567,7 @@ int main()
   check_valid(fd2);
   check_valid(!rktio_poll_read_ready(rktio, fd));
 
-  check_read_write_pair(rktio, fd, fd2);
+  check_read_write_pair(rktio, fd, fd2, 1);
 
   /* Open pipe ends again: */
   fd2 = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
@@ -637,7 +638,7 @@ int main()
       free(strs);
     }
 
-    check_read_write_pair(rktio, fd, fd2);
+    check_read_write_pair(rktio, fd, fd2, 0);
 
     fd = connect_loop(rktio, addr, NULL);
     rktio_free_addrinfo(rktio, addr);
@@ -675,7 +676,7 @@ int main()
     check_valid(addr);
     check_valid(rktio_udp_connect(rktio, fd2, addr));
 
-    check_read_write_pair(rktio, fd, fd2);
+    check_read_write_pair(rktio, fd, fd2, 0);
 
     /* Again, this time to fill & drain: */
 
@@ -700,6 +701,51 @@ int main()
 
     check_valid(rktio_close(rktio, fd));
     check_valid(rktio_close(rktio, fd2));
+  }
+
+  /* Processes */
+  {
+    rktio_status_t *status;
+    rktio_process_result_t *result;
+    char *argv[2] = { "/bin/cat", NULL };
+    rktio_envvars_t *envvars = NULL;
+    rktio_fd_t *err_fd = rktio_system_fd(rktio, 2, RKTIO_OPEN_WRITE);
+    int done;
+    
+    result = rktio_process(rktio, "/bin/cat", 1, argv,
+                           NULL, NULL, err_fd,
+                           rktio_get_current_directory(rktio), envvars,
+                           0,
+                           NULL);
+    check_valid(result);
+
+    status = rktio_process_status(rktio, result->process);
+    check_valid(status);
+    check_valid(status->running);
+    check_valid(!result->stderr_fd);
+    free(status);
+
+    check_valid(!rktio_poll_subprocess_done(rktio, result->process));
+
+    check_read_write_pair(rktio, result->stdout_fd, result->stdin_fd, 0);
+
+    check_valid(rktio_poll_subprocess_done(rktio, result->process) != RKTIO_PROCESS_ERROR);
+
+    do {
+      rktio_poll_set_t *ps;
+      ps = rktio_make_poll_set(rktio);
+      check_valid(ps);
+      rktio_poll_add_process(rktio, result->process, ps);
+      rktio_sleep(rktio, 0, ps, NULL);
+      rktio_poll_set_close(rktio, ps);
+      done = rktio_poll_subprocess_done(rktio, result->process);
+      check_valid(done != RKTIO_PROCESS_ERROR);
+    } while (!done);
+
+    rktio_process_forget(rktio, result->process);
+    free(result);
+
+    check_valid(rktio_close(rktio, err_fd));
   }
   
   return 0;

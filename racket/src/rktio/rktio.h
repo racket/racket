@@ -48,7 +48,6 @@ void rktio_forget(rktio_t *rktio, rktio_fd_t *fd);
 #define RKTIO_WRITE_ERROR (-2)
 #define RKTIO_POLL_ERROR (-2)
 #define RKTIO_POLL_READY 1
-#define RKTIO_PROP_ERROR (-2)
 
 intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
 intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
@@ -110,6 +109,8 @@ typedef struct rktio_length_and_addrinfo_t {
 
 rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len);
 
+#define RKTIO_PROP_ERROR (-2)
+
 /* The following accessors return RKTIO_PROP_ERROR on failure */
 int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_udp_set_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd, int on);
@@ -134,6 +135,51 @@ int rktio_udp_change_multicast_group(rktio_t *rktio, rktio_fd_t *rfd,
                                      int action);
 
 /*************************************************/
+/* Environment variables                         */
+
+typedef struct rktio_envvars_t rktio_envvars_t;
+
+/*************************************************/
+/* Processes                                     */
+
+typedef struct rktio_process_t rktio_process_t;
+
+#define RKTIO_PROCESS_NEW_GROUP                 (1<<0)
+#define RKTIO_PROCESS_STDOUT_AS_STDERR          (1<<1)
+#define RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE     (1<<2)
+#define RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION (1<<3)
+
+typedef struct rktio_process_result_t {
+  rktio_process_t *process;
+  rktio_fd_t *stdin_fd, *stdout_fd, *stderr_fd;
+} rktio_process_result_t;
+
+rktio_process_result_t *rktio_process(rktio_t *rktio,
+                                      const char *command, int argc, char **argv,
+                                      rktio_fd_t *stdout_fd, rktio_fd_t *stdin_fd, rktio_fd_t *stderr_fd,
+                                      const char *current_directory, rktio_envvars_t *envvars,
+                                      int flags,
+                                      void (*unix_child_process_callback)());
+
+int rktio_process_kill(rktio_t *rktio, rktio_process_t *sp);
+int rktio_process_interrupt(rktio_t *rktio, rktio_process_t *sp);
+void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp);
+
+#define RKTIO_PROCESS_ERROR (-2)
+#define RKTIO_PROCESS_DONE  1
+
+int rktio_poll_subprocess_done(rktio_t *rktio, rktio_process_t *sp);
+
+typedef struct rktio_status_t {
+  int running;
+  int result;
+} rktio_status_t;
+
+rktio_status_t *rktio_process_status(rktio_t *rktio, rktio_process_t *sp);
+
+void rktio_block_child_signals(rktio_t*rktio, int block);
+
+/*************************************************/
 /* File-descriptor sets for polling              */
 
 /* A poll set is intended for a single use or few uses, as opposed to
@@ -151,12 +197,13 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
 void rktio_poll_add_receive(rktio_t *rktio, rktio_listener_t *listener, rktio_poll_set_t *fds);
 void rktio_poll_add_connect(rktio_t *rktio, rktio_connect_t *conn, rktio_poll_set_t *fds);
 void rktio_poll_add_addrinfo_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup, rktio_poll_set_t *fds);
+void rktio_poll_add_process(rktio_t *rktio, rktio_process_t *sp, rktio_poll_set_t *fds);
 
 void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds);
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-void rktio_poll_set_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost);
-void rktio_poll_set_add_eventmask(rktio_poll_set_t *fds, int mask);
+void rktio_poll_set_add_handle(rktio_t *rktio, HANDLE h, rktio_poll_set_t *fds, int repost);
+void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t *fds, int mask);
 #endif
 
 /*************************************************/
@@ -204,7 +251,7 @@ int rktio_delete_file(rktio_t *rktio, char *fn, int enable_write_on_fail);
 int rktio_rename_file(rktio_t *rktio, char *dest, char *src, int exists_ok);
 
 char *rktio_get_current_directory(rktio_t *rktio);
-int rktio_set_current_directory(rktio_t *rktio, char *expanded);
+int rktio_set_current_directory(rktio_t *rktio, const char *path);
 int rktio_make_directory(rktio_t *rktio, char *filename);
 int rktio_delete_directory(rktio_t *rktio, char *filename, char *current_directory, int enable_write_on_fail);
 

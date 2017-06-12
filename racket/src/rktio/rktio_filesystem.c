@@ -630,12 +630,12 @@ char *rktio_get_current_directory(rktio_t *rktio)
 #endif
 }
 
-int rktio_set_current_directory(rktio_t *rktio, char *expanded)
+int rktio_set_current_directory(rktio_t *rktio, const char *path)
 {
   int err;
 
   while (1) {
-    err = MSC_W_IZE(chdir)(MSC_WIDE_PATH_temp(expanded));
+    err = MSC_W_IZE(chdir)(MSC_WIDE_PATH_temp(path));
     if (!err || (errno != EINTR))
       break;
   }
@@ -914,7 +914,7 @@ int rktio_delete_directory(rktio_t *rktio, char *filename, char *current_directo
 # ifdef RKTIO_SYSTEM_WINDOWS
     else if ((errno == EACCES) && !tried_cwd) {
       /* Maybe we're using the target directory. Try a real setcwd. */
-      (void)rktio_set_current_directory(current_directory);
+      (void)rktio_set_current_directory(rktio, current_directory);
       tried_cwd = 1;
     } else if ((errno == EACCES) && !tried_perm && enable_write_on_fail) {
       /* Maybe the directory doesn't have write permission. */

@@ -15,12 +15,18 @@ rktio_t *rktio_init(void)
     rktio_destroy(rktio);
     return NULL;
   }
-    
+  
+  if (!rktio_process_init(rktio)) {
+    rktio_destroy(rktio);
+    return NULL;
+  }
+
   return rktio;
 }
 
 void rktio_destroy(rktio_t *rktio)
 {
+  rktio_process_deinit(rktio);
   rktio_free_ghbn(rktio);
   rktio_free_global_poll_set(rktio);
   free(rktio);

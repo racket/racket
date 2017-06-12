@@ -72,6 +72,16 @@ struct rktio_t {
   HANDLE ghbn_start;
 # endif
 #endif
+
+#if defined(RKTIO_SYSTEM_UNIX) && !defined(RKTIO_USE_PTHREADS)
+  struct System_Child *system_children;
+  int need_to_check_children;
+  int in_sigchld_chain;
+  struct rktio_t *next; /* chaining for SIGCHLD handling */
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  uintptr_t process_children_msecs;
+#endif
 };
 
 /*========================================================================*/
@@ -165,6 +175,13 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
 void rktio_free_ghbn(rktio_t *rktio);
 
 const char *rktio_gai_strerror(int errnum);
+
+/*========================================================================*/
+/* Processes                                                              */
+/*========================================================================*/
+
+int rktio_process_init(rktio_t *rktio);
+void rktio_process_deinit(rktio_t *rktio);
   
 /*========================================================================*/
 /* Misc                                                                   */
@@ -196,3 +213,5 @@ void rktio_get_windows_error(rktio_t *rktio);
 #else
 # define RKTIO_NONBLOCKING FNDELAY
 #endif
+
+void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
