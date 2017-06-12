@@ -723,13 +723,13 @@ int main()
     rktio_status_t *status;
     rktio_process_result_t *result;
     char *argv[1] = { "/bin/cat" };
-    rktio_envvars_t *envvars = NULL;
+    rktio_envvars_t *envvars = rktio_envvars(rktio);
     rktio_fd_t *err_fd = rktio_system_fd(rktio, 2, RKTIO_OPEN_WRITE);
     int i;
     
-    result = rktio_process(rktio, "/bin/cat", 1, argv,
+    result = rktio_process(rktio, argv[0], 1, argv,
                            NULL, NULL, err_fd,
-                           rktio_get_current_directory(rktio), envvars,
+                           pwd, envvars,
                            0,
                            NULL);
     check_valid(result);
@@ -757,13 +757,11 @@ int main()
     rktio_process_forget(rktio, result->process);
     free(result);
 
-    check_valid(rktio_close(rktio, err_fd));
-
-    /* Run and then break or kill "/bin/cat" */
+    /* Run and then break or kill `cat` */
     for (i = 0; i < 2; i++) {
-      result = rktio_process(rktio, "/bin/cat", 1, argv,
+      result = rktio_process(rktio, argv[0], 1, argv,
                              NULL, NULL, err_fd,
-                             rktio_get_current_directory(rktio), envvars,
+                             pwd, envvars,
                              0,
                              NULL);
       check_valid(result);
@@ -802,7 +800,49 @@ int main()
       rktio_process_forget(rktio, result->process);
       free(result);
     }
+
+    {
+      char *argv[2] = { "/usr/bin/printenv", "RKTIO_EXAMPLE" };
+
+      check_valid(!rktio_envvars_get(rktio, envvars, "RKTIO_EXAMPLE"));
+      rktio_envvars_set(rktio, envvars, "RKTIO_EXAMPLE", "howdy");
+      s = rktio_envvars_get(rktio, envvars, "RKTIO_EXAMPLE");
+      check_valid(s);
+      check_valid(!strcmp(s, "howdy"));
+      free(s);
+      
+      result = rktio_process(rktio, argv[0], 2, argv,
+                             NULL, NULL, err_fd,
+                             pwd, envvars,
+                             0,
+                             NULL);
+      check_valid(result);
+
+      /* Assume that a pipe can buffer the minimal output from `printenv`: */
+      pause_for_process(rktio, result->process);
+      wait_read(rktio, result->stdout_fd);
+
+      {
+        char buffer[32];
+        intptr_t amt;
+        amt = rktio_read(rktio, result->stdout_fd, buffer, sizeof(buffer));
+        check_valid(amt == 6);
+        check_valid(!strncmp(buffer, "howdy\n", 6));
+      }      
+
+      check_valid(rktio_close(rktio, result->stdin_fd));
+      check_valid(rktio_close(rktio, result->stdout_fd));
+
+      rktio_process_forget(rktio, result->process);
+      free(result);
+    }
+    
+    rktio_ennvars_free(rktio, envvars);
+
+    rktio_forget(rktio, err_fd);
   }
+
+  free(pwd);
   
   return 0;
 }

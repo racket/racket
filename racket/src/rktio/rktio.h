@@ -145,6 +145,21 @@ int rktio_udp_change_multicast_group(rktio_t *rktio, rktio_fd_t *rfd,
 
 typedef struct rktio_envvars_t rktio_envvars_t;
 
+char *rktio_getenv(rktio_t *rktio, char *name);
+int rktio_setenv(rktio_t *rktio, const char *name, const char *val);
+
+rktio_envvars_t *rktio_envvars(rktio_t *rktio);
+rktio_envvars_t *rktio_empty_envvars(rktio_t *rktio);
+rktio_envvars_t *rktio_envvars_copy(rktio_t *rktio, rktio_envvars_t *envvars);
+void rktio_ennvars_free(rktio_t *rktio, rktio_envvars_t *envvars);
+
+char *rktio_envvars_get(rktio_t *rktio, rktio_envvars_t *envvars, char *name);
+void rktio_envvars_set(rktio_t *rktio, rktio_envvars_t *envvars, char *name, char *value);
+
+intptr_t rktio_envvars_count(rktio_t *rktio, rktio_envvars_t *envvars);
+char *rktio_envvars_name_ref(rktio_t *rktio, rktio_envvars_t *envvars, intptr_t i);
+char *rktio_envvars_value_ref(rktio_t *rktio, rktio_envvars_t *envvars, intptr_t i);
+
 /*************************************************/
 /* Processes                                     */
 
