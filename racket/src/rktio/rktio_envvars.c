@@ -211,6 +211,13 @@ rktio_envvars_t *rktio_envvars_copy(rktio_t *rktio, rktio_envvars_t *envvars)
 
 void rktio_ennvars_free(rktio_t *rktio, rktio_envvars_t *envvars)
 {
+  int i;
+
+  for (i = 0; i < envvars->count; i++) {
+    free(envvars->names[i]);
+    free(envvars->vals[i]);
+  }
+  
   free(envvars->names);
   free(envvars->vals);
   free(envvars);
@@ -292,8 +299,8 @@ void rktio_envvars_set(rktio_t *rktio, rktio_envvars_t *envvars, char *name, cha
   if (envvars->count == envvars->size)
     envvars_resize(envvars, envvars->size * 2);
 
-  envvars->names[envvars->count] = name;
-  envvars->vals[envvars->count] = value;
+  envvars->names[envvars->count] = strdup(name);
+  envvars->vals[envvars->count] = strdup(value);
   envvars->count++;
 }
 

@@ -1469,6 +1469,10 @@ void rktio_listen_stop(rktio_t *rktio, rktio_listener_t *l)
     UNREGISTER_SOCKET(s);
     closesocket(s);
   }
+
+#ifdef HAVE_POLL_SYSCALL
+  free(l->pfd);
+#endif
   
   free(l);
 }

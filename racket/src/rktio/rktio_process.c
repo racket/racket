@@ -1000,6 +1000,7 @@ void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp)
     unused_pid[1] = unused_pids;
     rktio->need_to_check_children = 1;
   }
+  free(sp->handle);
 # endif
 #endif
 

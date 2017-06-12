@@ -380,7 +380,7 @@ rktio_addrinfo_t *lookup_loop(rktio_t *rktio,
   return addr;
 }
 
-static void pause_for_process(rktio_t *rktio, rktio_process_t *process)
+static void pause_for_process(rktio_t *rktio, rktio_process_t *process, int dont_rely_on_sigchild)
 {
   int done;
   
@@ -389,7 +389,13 @@ static void pause_for_process(rktio_t *rktio, rktio_process_t *process)
     ps = rktio_make_poll_set(rktio);
     check_valid(ps);
     rktio_poll_add_process(rktio, process, ps);
-    rktio_sleep(rktio, 0, ps, NULL);
+    if (dont_rely_on_sigchild) {
+      do {
+        rktio_sleep(rktio, 0.1, ps, NULL);
+      } while (!rktio_poll_process_done(rktio, process));
+    } else {
+      rktio_sleep(rktio, 0, ps, NULL);
+    }
     rktio_poll_set_close(rktio, ps);
     done = rktio_poll_process_done(rktio, process);
     check_valid(done != RKTIO_PROCESS_ERROR);
@@ -429,7 +435,7 @@ static rktio_fd_t *connect_loop(rktio_t *rktio, rktio_addrinfo_t *addr, rktio_ad
   return fd;
 }
 
-int main()
+int main(int argc, char **argv)
 {
   rktio_t *rktio;
   rktio_size_t *sz;
@@ -442,6 +448,19 @@ int main()
   rktio_timestamp_t *ts1, *ts1a;
   rktio_ltps_t *lt;
   rktio_ltps_handle_t *h1, *h2;
+  int verbose = 0, dont_rely_on_sigchild = 0;
+
+  for (i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-v"))
+      verbose = 1;
+    else if (!strcmp(argv[i], "--sleep-blocks-sigchld")) {
+      /* Seems useful for Valgrind on MacOS */
+      dont_rely_on_sigchild = 1;
+    } else {
+      printf(" unrecognized flag %s\n", argv[i]);
+      return 1;
+    }
+  }
   
   rktio = rktio_init();
 
@@ -557,6 +576,7 @@ int main()
     if (!strcmp(s, "test1"))
       saw_file = 1;
     check_valid(strcmp(s, "test1b"));
+    free(s);
   }
   check_valid(saw_file);
 
@@ -598,6 +618,10 @@ int main()
   check_valid(rktio_close(rktio, fd2));
 
   /* Networking */
+
+  if (verbose)
+    printf("tcp\n");
+
   {
     rktio_addrinfo_t *addr;
     rktio_listener_t *lnr;
@@ -671,6 +695,10 @@ int main()
   }
 
   /* UDP */
+
+  if (verbose)
+    printf("udp\n");
+  
   {
     rktio_addrinfo_t *intf_addr, *addr;
 
@@ -691,6 +719,7 @@ int main()
     addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 0);
     check_valid(addr);
     check_valid(rktio_udp_connect(rktio, fd2, addr));
+    rktio_free_addrinfo(rktio, addr);
 
     check_read_write_pair(rktio, fd, fd2, 0);
 
@@ -719,6 +748,10 @@ int main()
   }
 
   /* Processes */
+
+  if (verbose)
+    printf("processes\n");
+
   {
     rktio_status_t *status;
     rktio_process_result_t *result;
@@ -746,7 +779,7 @@ int main()
 
     check_valid(rktio_poll_process_done(rktio, result->process) != RKTIO_PROCESS_ERROR);
 
-    pause_for_process(rktio, result->process);
+    pause_for_process(rktio, result->process, dont_rely_on_sigchild);
 
     status = rktio_process_status(rktio, result->process);
     check_valid(status);
@@ -772,14 +805,18 @@ int main()
 
       switch (i) {
       case 0:
+        if (verbose)
+          printf(" interrupt\n");
         check_valid(rktio_process_interrupt(rktio, result->process));
         break;
       case 1:
+        if (verbose)
+          printf(" kill\n");
         check_valid(rktio_process_kill(rktio, result->process));
         break;
       }
 
-      pause_for_process(rktio, result->process);
+      pause_for_process(rktio, result->process, dont_rely_on_sigchild);
 
       status = rktio_process_status(rktio, result->process);
       check_valid(status);
@@ -804,6 +841,9 @@ int main()
     {
       char *argv[2] = { "/usr/bin/printenv", "RKTIO_EXAMPLE" };
 
+      if (verbose)
+        printf(" envvars\n");
+
       check_valid(!rktio_envvars_get(rktio, envvars, "RKTIO_EXAMPLE"));
       rktio_envvars_set(rktio, envvars, "RKTIO_EXAMPLE", "howdy");
       s = rktio_envvars_get(rktio, envvars, "RKTIO_EXAMPLE");
@@ -819,7 +859,7 @@ int main()
       check_valid(result);
 
       /* Assume that a pipe can buffer the minimal output from `printenv`: */
-      pause_for_process(rktio, result->process);
+      pause_for_process(rktio, result->process, dont_rely_on_sigchild);
       wait_read(rktio, result->stdout_fd);
 
       {
@@ -842,7 +882,11 @@ int main()
     rktio_forget(rktio, err_fd);
   }
 
+  if (verbose)
+    printf("done\n");
+
   free(pwd);
+  rktio_destroy(rktio);
   
   return 0;
 }
