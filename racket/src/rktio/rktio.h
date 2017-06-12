@@ -28,12 +28,14 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_MUST_EXIST  (1<<5)
 #define RKTIO_OPEN_CAN_EXIST   (1<<6)
 #define RKTIO_OPEN_SOCKET      (1<<7)
+#define RKTIO_OPEN_UDP         (1<<8)
 
 rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
 intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 
 int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd);
 
 rktio_fd_t *rktio_open(rktio_t *rktio, char *src, int modes);
 int rktio_close(rktio_t *rktio, rktio_fd_t *fd);
@@ -46,6 +48,7 @@ void rktio_forget(rktio_t *rktio, rktio_fd_t *fd);
 #define RKTIO_WRITE_ERROR (-2)
 #define RKTIO_POLL_ERROR (-2)
 #define RKTIO_POLL_READY 1
+#define RKTIO_PROP_ERROR (-2)
 
 intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
 intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
@@ -92,8 +95,43 @@ int rktio_poll_connect_ready(rktio_t *rktio, rktio_connect_t *conn);
 
 int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode);
 
+rktio_fd_t *rktio_udp_open(rktio_t *rktio, rktio_addrinfo_t *addr);
+int rktio_udp_disconnect(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_udp_bind(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr);
+int rktio_udp_connect(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr);
+
+intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr,
+                          char *buffer, intptr_t len);
+
+typedef struct rktio_length_and_addrinfo_t {
+  intptr_t len;
+  rktio_addrinfo_t *addr;
+} rktio_length_and_addrinfo_t;
+
+rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len);
+
+/* The following accessors return RKTIO_PROP_ERROR on failure */
+int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_udp_set_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd, int on);
+int rktio_udp_get_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_udp_set_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val);
+
+
 char **rktio_socket_address(rktio_t *rktio, rktio_fd_t *rfd);
 char **rktio_socket_peer_address(rktio_t *rktio, rktio_fd_t *rfd);
+
+char *rktio_udp_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_udp_set_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr);
+
+enum {
+  RKTIO_ADD_MEMBERSHIP,
+  RKTIO_DROP_MEMBERSHIP
+};
+
+int rktio_udp_change_multicast_group(rktio_t *rktio, rktio_fd_t *rfd,
+                                     rktio_addrinfo_t *group_addr,
+                                     rktio_addrinfo_t *intf_addr,
+                                     int action);
 
 /*************************************************/
 /* File-descriptor sets for polling              */
@@ -282,7 +320,9 @@ enum {
   RKTIO_ERROR_CONNECT_TRYING_NEXT, /* indicates that failure is not (yet) premanent */
   RKTIO_ERROR_ACCEPT_NOT_READY,
   RKTIO_ERROR_HOST_AND_PORT_BOTH_UNSPECIFIED,
-  RKTIO_ERROR_TRY_AGAIN_WITH_IPV4,
+  RKTIO_ERROR_INFO_TRY_AGAIN, /* for UDP */
+  RKTIO_ERROR_TRY_AGAIN, /* for UDP */
+  RKTIO_ERROR_TRY_AGAIN_WITH_IPV4, /* for TCP listen */
 };
 
 /* GAI error sub-codes */

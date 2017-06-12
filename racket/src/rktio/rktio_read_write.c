@@ -83,7 +83,7 @@ static void init_read_fd(rktio_fd_t *rfd)
     th->checking = 0;
     
     sm = CreateSemaphore(NULL, 0, 1, NULL);
-v    th->checking_sema = sm;
+    th->checking_sema = sm;
     sm = CreateSemaphore(NULL, 0, 1, NULL);
     th->ready_sema = sm;
     sm = CreateSemaphore(NULL, 1, 1, NULL);
@@ -151,6 +151,11 @@ int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd)
 int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return (rfd->modes & RKTIO_OPEN_SOCKET);
+}
+
+int rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return (rfd->modes & RKTIO_OPEN_UDP);
 }
 
 rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd) {
