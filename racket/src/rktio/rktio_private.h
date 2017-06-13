@@ -23,7 +23,7 @@
 # define USE_DYNAMIC_FDSET_SIZE
 #endif
 
-#if RKTIO_SYSTEM_WINDOWS
+#ifdef RKTIO_SYSTEM_WINDOWS
 # define USE_FAR_RKTIO_FDCALLS
 #endif
 #ifdef USE_DYNAMIC_FDSET_SIZE
@@ -50,7 +50,7 @@ struct rktio_t {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int windows_nt_or_later;
   HANDLE break_semaphore;
-  int wsr_size = 0;
+  int wsr_size;
   struct rktio_socket_t *wsr_array;
 #endif
 #ifdef USE_FAR_RKTIO_FDCALLS
@@ -85,6 +85,11 @@ struct rktio_t {
 
 #ifdef HAVE_INOTIFY_SYSCALL
   struct rin_inotify_state_t *inotify_server;
+#endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+  intptr_t wide_buffer_size;
+  wchar_t *wide_buffer;
 #endif
 };
 
@@ -188,7 +193,7 @@ int rktio_process_init(rktio_t *rktio);
 void rktio_process_deinit(rktio_t *rktio);
   
 /*========================================================================*/
-/* Misc                                                                   */
+/* Strings                                                                */
 /*========================================================================*/
 
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -200,6 +205,23 @@ void rktio_process_deinit(rktio_t *rktio);
 # define MSC_W_IZE(n) MSC_IZE(n)
 # define MSC_WIDE_PATH_temp(n) n
 #endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+
+wchar_t *rktio_convert_to_wchar(rktio_t *rktio, const char *s, int do_copy);
+char *rktio_convert_from_wchar(const wchar_t *ws, int free_given);
+
+# define WIDE_PATH_temp(s) rktio_convert_to_wchar(rktio, s, 0)
+# define WIDE_PATH_copy(s) rktio_convert_to_wchar(rktio, s, 1)
+
+# define NARROW_PATH_copy(ws) rktio_convert_from_wchar(ws, 0)
+# define NARROW_PATH_copy_then_free(ws) rktio_convert_from_wchar(ws, 1)
+
+#endif
+  
+/*========================================================================*/
+/* Misc                                                                   */
+/*========================================================================*/
 
 void rktio_get_posix_error(rktio_t *rktio);
 #define get_posix_error() rktio_get_posix_error(rktio)

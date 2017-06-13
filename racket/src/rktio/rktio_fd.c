@@ -15,6 +15,10 @@
 # include <poll.h>
 #endif
 
+/*========================================================================*/
+/* fd struct                                                              */
+/*========================================================================*/
+
 struct rktio_fd_t {
   int modes;
 
@@ -31,16 +35,64 @@ struct rktio_fd_t {
     HANDLE fd;
     int sock; /* when `modes & RKTIO_OPEN_SOCKET` */
   };
-  Win_FD_Input_Thread *th; /* input mode */
-  Win_FD_Output_Thread *oth; /* output mode */
+  struct Win_FD_Input_Thread *th; /* input mode */
+  struct Win_FD_Output_Thread *oth; /* output mode */
+  char *buffer;
 #endif
 };
 
-/*************************************************************/
-/* creating an fd                                            */
-/*************************************************************/
+/*========================================================================*/
+/* Windows I/O helper structs                                             */
+/*========================================================================*/
 
-static void init_read_fd(rktio_fd_t *rfd)
+#ifdef RKTIO_SYSTEM_WINDOWS
+
+typedef struct Win_FD_Input_Thread {
+  /* This is malloced for use in a Win32 thread */
+  HANDLE fd;
+  volatile int avail, err, checking;
+  int *refcount;
+  HANDLE eof;
+  unsigned char *buffer;
+  HANDLE checking_sema, ready_sema, you_clean_up_sema;
+  HANDLE thread;
+} Win_FD_Input_Thread;
+
+typedef struct Win_FD_Output_Thread {
+  /* This is malloced for use in a Win32 thread */
+  HANDLE fd;
+  int nonblocking;  /* non-zero => an NT pipe where non-blocking WriteFile
+		       works. We still use a thread to detect when the
+		       write has ben flushed, which in turn is needed to
+		       know whether future writes will immediately succeed. */
+  volatile flushed, needflush; /* Used for non-blocking, only. The flushed
+				  flag communicates from the flush-testing thread
+				  to the main thread. For efficiency, we request
+				  flush checking only when needed (instead of
+				  after every write); needflush indicates that
+				  a flush check is currently needed, but hasn't
+				  been started. */
+  volatile int done, err_no;
+  volatile unsigned int buflen, bufstart, bufend; /* used for blocking, only */
+  unsigned char *buffer; /* used for blocking, only */
+  int *refcount;
+  HANDLE lock_sema, work_sema, ready_sema, you_clean_up_sema;
+  /* lock_sema protects the fields, work_sema starts the flush or
+     flush-checking thread to work, ready_sema indicates that a flush
+     finished, and you_clean_up_sema is essentially a reference
+     count */
+  HANDLE thread;
+} Win_FD_Output_Thread;
+
+# define RKTIO_FD_BUFFSIZE 4096
+
+#endif
+
+/*========================================================================*/
+/* creating an fd                                                         */
+/*========================================================================*/
+
+static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
 # ifdef SOME_FDS_ARE_NOT_SELECTABLE
@@ -60,17 +112,18 @@ static void init_read_fd(rktio_fd_t *rfd)
     Win_FD_Input_Thread *th;
     DWORD id;
     HANDLE h;
-    OS_SEMAPHORE_TYPE sm;
+    HANDLE sm;
+    char *bfr;
 
     th = malloc(sizeof(Win_FD_Input_Thread));
     rfd->th = th;
 
     /* Replace buffer with a malloced one: */
-    bfr = malloc(MZPORT_FD_BUFFSIZE);
-    fip->buffer = bfr;
+    bfr = malloc(RKTIO_FD_BUFFSIZE);
+    rfd->buffer = bfr;
     th->buffer = bfr;
 
-    th->fd = (HANDLE)fd;
+    th->fd = rfd->fd;
     th->avail = 0;
     th->err = 0;
     th->eof = NULL;
@@ -123,7 +176,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 #endif
   
   if (modes & RKTIO_OPEN_READ)
-    init_read_fd(rfd);
+    init_read_fd(rktio, rfd);
   
   return rfd;
 }
@@ -192,9 +245,9 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-/*************************************************************/
-/* closing                                                   */
-/*************************************************************/
+/*========================================================================*/
+/* closing                                                                */
+/*========================================================================*/
 
 #ifdef RKTIO_SYSTEM_UNIX
 void rktio_reliably_close(intptr_t s) {
@@ -288,9 +341,9 @@ void rktio_forget(rktio_t *rktio, rktio_fd_t *rfd)
   free(rfd);
 }
 
-/*************************************************************/
-/* polling                                                   */
-/*************************************************************/
+/*========================================================================*/
+/* polling                                                                */
+/*========================================================================*/
 
 #ifdef SOME_FDS_ARE_NOT_SELECTABLE
 static int try_get_fd_char(int fd, int *ready)
@@ -477,7 +530,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
     } else
       retval = (oth->err_no || (check_flushed
                                 ? !oth->buflen
-                                : (oth->buflen < MZPORT_FD_BUFFSIZE)));
+                                : (oth->buflen < RKTIO_FD_BUFFSIZE)));
     if (!retval && !check_flushed)
       WaitForSingleObject(oth->ready_sema, 0); /* clear any leftover state */
     ReleaseSemaphore(oth->lock_sema, 1, NULL);
@@ -562,9 +615,9 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
 #endif
 }
 
-/*************************************************************/
-/* reading                                                   */
-/*************************************************************/
+/*========================================================================*/
+/* reading                                                                */
+/*========================================================================*/
 
 intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
@@ -671,7 +724,7 @@ static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
 
   if (GetFileType((HANDLE)th->fd) == FILE_TYPE_PIPE) {
     /* Reading from a pipe will return early when data is available. */
-    toget = MZPORT_FD_BUFFSIZE;
+    toget = RKTIO_FD_BUFFSIZE;
   } else {
     /* Non-pipe: get one char at a time: */
     toget = 1;
@@ -735,9 +788,9 @@ static void WindowsFDICleanup(Win_FD_Input_Thread *th)
 
 #endif
 
-/*************************************************************/
-/* writing                                                   */
-/*************************************************************/
+/*========================================================================*/
+/* writing                                                                */
+/*========================================================================*/
 
 intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
@@ -914,7 +967,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
         HANDLE h;
         DWORD id;
         unsigned char *bfr;
-        OS_SEMAPHORE_TYPE sm;
+        HANDLE sm;
 
         oth = malloc(sizeof(Win_FD_Output_Thread));
         rfd->oth = oth;
@@ -922,7 +975,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
         oth->nonblocking = nonblocking;
 
         if (!nonblocking) {
-          bfr = malloc(MZPORT_FD_BUFFSIZE);
+          bfr = malloc(RKTIO_FD_BUFFSIZE);
           oth->buffer = bfr;
           oth->flushed = 0;
           oth->needflush = 0;
@@ -975,7 +1028,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
       if (oth->err_no) {
         errsaved = oth->err_no;
         ok = 0;
-      } else if (oth->buflen == MZPORT_FD_BUFFSIZE) {
+      } else if (oth->buflen == RKTIO_FD_BUFFSIZE) {
         WaitForSingleObject(oth->ready_sema, 0); /* clear any leftover state */
         ok = 1;
       } else {
@@ -993,7 +1046,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
 
         if (oth->bufstart <= oth->bufend) {
           was_pre = 1;
-          topp = MZPORT_FD_BUFFSIZE;
+          topp = RKTIO_FD_BUFFSIZE;
         } else {
           was_pre = 0;
           topp = oth->bufstart;
@@ -1008,7 +1061,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
         out_len = winwrote;
 
         oth->bufend += winwrote;
-        if (oth->bufend == MZPORT_FD_BUFFSIZE)
+        if (oth->bufend == RKTIO_FD_BUFFSIZE)
           oth->bufend = 0;
 
         if (was_pre) {
@@ -1045,4 +1098,57 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
     return RKTIO_WRITE_ERROR;
   }
 #endif
+}
+
+/*========================================================================*/
+/* refcounts for Windows fd threads                                       */
+/*========================================================================*/
+
+#if defined(WINDOWS_FILE_HANDLES) || defined(MZ_USE_PLACES)
+# define MZ_LOCK_REFCOUNTS
+static mzrt_mutex *refcount_mutex;
+#endif
+
+static int *malloc_refcount(int val, int free_on_zero)
+{
+  int *rc;
+
+#ifdef MZ_LOCK_REFCOUNTS
+  if (!refcount_mutex)
+    mzrt_mutex_create(&refcount_mutex);
+#endif
+
+  rc = (int *)malloc(2 * sizeof(int));
+  *rc = val;
+  rc[1] = free_on_zero;
+
+  return rc;
+}
+
+static int adj_refcount(int *refcount, int amt)
+  XFORM_SKIP_PROC
+{
+  int rc;
+
+  if (!refcount)
+    return 0;
+
+#ifdef MZ_LOCK_REFCOUNTS
+  mzrt_mutex_lock(refcount_mutex);
+#endif
+  if (amt > 0) {
+    /* don't increment up from 0 */
+    if (*refcount)
+      *refcount += amt;
+  } else
+    *refcount += amt;
+  rc = *refcount;
+#ifdef MZ_LOCK_REFCOUNTS
+  mzrt_mutex_unlock(refcount_mutex);
+#endif
+
+  if (!rc && refcount[1])
+    free(refcount);
+
+  return rc;
 }
