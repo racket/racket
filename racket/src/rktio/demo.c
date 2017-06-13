@@ -169,7 +169,7 @@ static void check_hello_content(rktio_t *rktio, char *fn)
 {
   rktio_fd_t *fd;
   intptr_t amt;
-  char buffer[256], *s;
+  char buffer[256];
   
   fd = rktio_open(rktio, fn, RKTIO_OPEN_READ);
   check_valid(fd);
@@ -196,7 +196,7 @@ static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd
 {
   rktio_ltps_t *lt;
   rktio_ltps_handle_t *h1, *h2;
-  intptr_t amt, i;
+  intptr_t amt;
   char buffer[256];
 
   lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
@@ -446,8 +446,6 @@ int main(int argc, char **argv)
   rktio_directory_list_t *ls;
   rktio_file_copy_t *cp;
   rktio_timestamp_t *ts1, *ts1a;
-  rktio_ltps_t *lt;
-  rktio_ltps_handle_t *h1, *h2;
   int verbose = 0, dont_rely_on_sigchild = 0;
 
   for (i = 1; i < argc; i++) {
@@ -588,16 +586,21 @@ int main(int argc, char **argv)
 
   /* We expect `lt` to work on regular files except on Windows and epoll: */
 #if !defined(RKTIO_SYSTEM_WINDOWS) && !defined(HAVE_EPOLL_SYSCALL)
-  fd = rktio_open(rktio, "test1", RKTIO_OPEN_READ);
-  check_valid(fd);
-  fd2 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
-  check_valid(fd2);
-  lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
-  check_valid(lt);
-  check_ltps_read_and_write_ready(rktio, lt, h1, h2);
-  check_valid(rktio_ltps_close(rktio, lt));
-  check_valid(rktio_close(rktio, fd));
-  check_valid(rktio_close(rktio, fd2));
+  {
+    rktio_ltps_handle_t *h1, *h2;
+    rktio_ltps_t *lt;
+
+    fd = rktio_open(rktio, "test1", RKTIO_OPEN_READ);
+    check_valid(fd);
+    fd2 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
+    check_valid(fd2);
+    lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
+    check_valid(lt);
+    check_ltps_read_and_write_ready(rktio, lt, h1, h2);
+    check_valid(rktio_ltps_close(rktio, lt));
+    check_valid(rktio_close(rktio, fd));
+    check_valid(rktio_close(rktio, fd2));
+  }
 #endif
 
   /* Pipes, non-blocking operations, and more long-term poll sets */

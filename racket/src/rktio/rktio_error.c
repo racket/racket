@@ -24,6 +24,12 @@ void rktio_get_windows_error(rktio_t *rktio)
   rktio->errid = GetLastError();
   rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
 }
+
+void rktio_set_windows_error(rktio_t *rktio, int errid)
+{
+  rktio->errid = errid;
+  rktio->errkind = RKTIO_ERROR_KIND_WINDOWS;
+}
 #endif
 
 int rktio_get_last_error(rktio_t *rktio)

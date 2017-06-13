@@ -227,6 +227,8 @@ void rktio_set_racket_error(rktio_t *rktio, int errid);
 #ifdef RKTIO_SYSTEM_WINDOWS
 void rktio_get_windows_error(rktio_t *rktio);
 # define get_windows_error() rktio_get_windows_error(rktio)
+void rktio_set_windows_error(rktio_t *rktio, int errid);
+# define set_windows_error(errid) rktio_set_windows_error(rktio, errid)
 #endif
 
 #if defined(USE_FCNTL_O_NONBLOCK)
@@ -243,10 +245,14 @@ void rktio_get_windows_error(rktio_t *rktio);
 void rktio_reliably_close(intptr_t s);
 #endif
 
+int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd);
+
 void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
 
 void rktio_stop_fs_change(rktio_t *rktio);
 
-#ifdef RKTIO_SYSTEM_UNIX
-void rktio_useless_wide();
+#ifdef RKTIO_SYSTEM_WINDOWS
+int rktio_winsock_init(rktio_t *rktio);
+void rktio_winsock_done(rktio_t *rktio);
 #endif
+void rktio_init_wide(rktio_t *rktio);

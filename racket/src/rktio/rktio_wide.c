@@ -4,8 +4,7 @@
 /* For converting byte strings to and from "wide" strings on Windows. */
 
 #ifdef RKTIO_SYSTEM_UNIX
-/* To avoid complaints about an empty object file */
-void rktio_useless_wide() { }
+void rktio_init_wide(rktio_t *rktio) { }
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -13,6 +12,17 @@ void rktio_useless_wide() { }
 #include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
+
+void rktio_init_wide(rktio_t *rktio)
+{
+  OSVERSIONINFO info;
+  info.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+  GetVersionEx(&info);
+  if (info.dwPlatformId == VER_PLATFORM_WIN32_NT)
+    rktio->windows_nt_or_later = 1;
+  else
+    rktio->windows_nt_or_later = 0;
+}
 
 /* A UTF-8 to UTF-16 conversion, but accepts an extended variant of
    UTF-16 that accommodates unpaired surrogates, so that all 16-byte
@@ -300,7 +310,8 @@ wchar_t *rktio_convert_to_wchar(rktio_t *rktio, const char *s, int do_copy)
     rktio->wide_buffer_size = RKTIO_MAX_IDEAL_BUFFER_SIZE;
     ws = malloc(sizeof(wchar_t) * RKTIO_MAX_IDEAL_BUFFER_SIZE);
     rktio->wide_buffer = ws;
-  }
+  } else
+    ws = rktio->wide_buffer;
 
   (void)utf8ish_to_utf16ish((unsigned char *)s, l, (unsigned short*)ws, '\t');
 
@@ -316,9 +327,9 @@ char *rktio_convert_from_wchar(const wchar_t *ws, int free_given)
 
   len = utf16ish_to_utf8ish((unsigned short *)ws, l, NULL);
 
-  s = (char *)scheme_malloc_atomic(len);
+  s = malloc(len);
 
-  len = utf16ish_to_utf8ish((unsigned short *)ws, l, s);
+  len = utf16ish_to_utf8ish((unsigned short *)ws, l, (unsigned char *)s);
 
   if (free_given)
     free((void *)ws);

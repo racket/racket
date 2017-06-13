@@ -393,7 +393,7 @@ static void init_fdset_array(rktio_poll_set_t *fdarray, int count)
       int reset = 0;
       fd = rktio_get_fdset(fdarray, i);
       fd->added = 0;
-      if (RKTIO_INT_VAL(fd->alloc) > (2 * RKTIO_INT_VAL(fd->last_alloc))) {
+      if (fd->alloc > (2 * fd->last_alloc)) {
 	fd->alloc = 0;
         if (fd->sockets) free(fd->sockets);
 	fd->sockets = NULL;
@@ -401,7 +401,7 @@ static void init_fdset_array(rktio_poll_set_t *fdarray, int count)
       }
       fd->last_alloc = 0;
       fd->num_handles = 0;
-      if (RKTIO_INT_VAL(fd->alloc_handles) > (2 * RKTIO_INT_VAL(fd->last_alloc_handles))) {
+      if (fd->alloc_handles > (2 * fd->last_alloc_handles)) {
 	fd->alloc_handles = 0;
         if (fd->handles) free(fd->handles);
         if (fd->repost_sema) free(fd->repost_sema);
@@ -488,7 +488,7 @@ void rktio_fdset(rktio_poll_set_t *fd, int n)
     int na;
     na = next_size(fd->alloc);
     naya = malloc(na * sizeof(SOCKET));
-    memcpy(naya, fd->sockets, RKTIO_INT_VAL(fd->alloc) * sizeof(SOCKET));
+    memcpy(naya, fd->sockets, fd->alloc * sizeof(SOCKET));
     if (fd->sockets) free(fd->sockets);
     fd->sockets = naya;
     fd->alloc = na;
@@ -630,7 +630,7 @@ void rktio_collapse_win_fd(rktio_poll_set_t *fds)
     rfd->combined_wait_array = NULL;
   } else {
     /* merge */
-    if (rfd->alloc < RKTIO_INT_VAL(wfd->alloc)) {
+    if (rfd->alloc < wfd->alloc) {
       if (wfd->alloc < efd->alloc)
 	wa = efd->wait_array;
       else
@@ -924,8 +924,13 @@ int rktio_initialize_signal(rktio_t *rktio)
   }
 #endif
 
-#ifdef WIN32_FD_HANDLES
-  break_semaphore = (void*)CreateSemaphore(NULL, 0, 1, NULL);
+#ifdef RKTIO_SYSTEM_WINDOWS
+  rktio->break_semaphore = (void*)CreateSemaphore(NULL, 0, 1, NULL);
+  if (rktio->break_semaphore == INVALID_HANDLE_VALUE) {
+    get_windows_error();
+    return 0;
+  } else
+    return 1;
 #endif
 }
 
@@ -1111,11 +1116,15 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
     }
 # endif
 #else
-# ifndef NO_SLEEP
-#  ifndef NO_USLEEP
-   usleep((unsigned)(nsecs * 1000));
-#   else
-   sleep(nsecs);
+# ifdef RKTIO_SYSTEM_WINDOWS
+    Sleep((DWORD)(nsecs * 1000));
+# else
+#  ifndef NO_SLEEP
+#   ifndef NO_USLEEP
+    usleep((unsigned)(nsecs * 1000));
+#    else
+    sleep(nsecs);
+#   endif
 #  endif
 # endif
 #endif
@@ -1195,7 +1204,7 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
       HANDLE *array, just_two_array[2];
       int count, rcount, *rps;
 
-      scheme_collapse_win_fd(fds); /* merges */
+      rktio_collapse_win_fd(fds); /* merges */
 
       rcount = fds->num_handles;
       count = fds->combined_len;
@@ -1260,7 +1269,7 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 	result = MsgWaitForMultipleObjects(count, array, FALSE, msec, fds->wait_event_mask);
       }
       clean_up_wait(rktio, result, array, rps, rcount);
-      scheme_collapse_win_fd(fds); /* cleans up */
+      rktio_collapse_win_fd(fds); /* cleans up */
 
       return;
     }

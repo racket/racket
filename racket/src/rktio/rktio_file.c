@@ -158,7 +158,7 @@ static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE fd;
-  int hmode, regfile;
+  int hmode;
   BY_HANDLE_FILE_INFORMATION info;
   rktio_fd_t *rfd;
 

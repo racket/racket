@@ -21,7 +21,14 @@ rktio_t *rktio_init(void)
     return NULL;
   }
 
-  rktio_useless_wide();
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (!rktio_winsock_init(rktio)) {
+    rktio_destroy(rktio);
+    return NULL;
+  }
+#endif
+  
+  rktio_init_wide(rktio);
 
   return rktio;
 }
@@ -32,6 +39,9 @@ void rktio_destroy(rktio_t *rktio)
   rktio_free_ghbn(rktio);
   rktio_free_global_poll_set(rktio);
   rktio_stop_fs_change(rktio);
+#ifdef RKTIO_SYSTEM_WINDOWS
+  rktio_winsock_done(rktio);
+#endif
   free(rktio);
 }
 
@@ -41,4 +51,3 @@ void rktio_free(void *p)
 {
   free(p);
 }
-

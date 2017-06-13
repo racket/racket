@@ -95,7 +95,7 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
   if (rc)
     return 1;
   
-  set_windows_error();
+  get_windows_error();
   return 0;
 #endif
 }
@@ -341,8 +341,8 @@ void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars)
   wchar_t *r, *s;
 
 for (i = 0; i < envvars->count; i++) {
-    len += wc_strlen(WIDE_PATH_temp(envvars->names[i]));
-    len += wc_strlen(WIDE_PATH_temp(envvars->vals[i]));
+    len += wcslen(WIDE_PATH_temp(envvars->names[i]));
+    len += wcslen(WIDE_PATH_temp(envvars->vals[i]));
     len += 2;
   }
 
@@ -352,12 +352,12 @@ for (i = 0; i < envvars->count; i++) {
 
   for (i = 0; i < envvars->count; i++) {
     s = WIDE_PATH_temp(envvars->names[i]);
-    slen = wc_strlen(s);
+    slen = wcslen(s);
     memcpy(r + len, s, slen * sizeof(wchar_t));
     len += slen;
     r[len++] = '=';
     s = WIDE_PATH_temp(envvars->vals[i]);
-    slen = wc_strlen(s);
+    slen = wcslen(s);
     memcpy(r + len, s, slen * sizeof(wchar_t));
     len += slen;
     r[len++] = 0;

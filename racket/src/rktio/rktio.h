@@ -42,6 +42,7 @@ intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd);
 
 int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
 

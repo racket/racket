@@ -948,7 +948,6 @@ static int do_subprocess_kill(rktio_t *rktio, rktio_process_t *sp, int as_kill)
 #if defined(RKTIO_SYSTEM_WINDOWS)  
   if (as_kill || sp->is_group) {
     DWORD w;
-    int errid;
 
     if (!sp->handle)
       return 1;
@@ -1137,9 +1136,9 @@ static intptr_t do_spawnv(rktio_t *rktio,
 
   /* If none of the stdio handles are consoles, specifically
      create the subprocess without a console: */
-  if (!is_fd_terminal((intptr_t)startup.hStdInput)
-      && !is_fd_terminal((intptr_t)startup.hStdOutput)
-      && !is_fd_terminal((intptr_t)startup.hStdError))
+  if (!rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdInput)
+      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdOutput)
+      && !rktio_system_fd_is_terminal(rktio, (intptr_t)startup.hStdError))
     cr_flag = CREATE_NO_WINDOW;
   else
     cr_flag = 0;
@@ -1218,12 +1217,16 @@ static void CloseFileHandleForSubprocess(intptr_t *hs, int pos)
 
 #define RKTIO_COPY_FOR_SUBPROCESS(array, pos) CopyFileHandleForSubprocess(array, pos)
 #define RKTIO_CLOSE_SUBPROCESS_COPY(array, pos) CloseFileHandleForSubprocess(array, pos)
+#define RKTIO_CLOSE(fd) CloseHandle((HANDLE)fd)
 
 #endif /* RKTIO_SYSTEM_WINDOWS */
 
 #ifdef RKTIO_SYSTEM_UNIX
+
 # define RKTIO_COPY_FOR_SUBPROCESS(array, pos) /* empty */
 # define RKTIO_CLOSE_SUBPROCESS_COPY(array, pos) /* empty */
+# define RKTIO_CLOSE(fd) rktio_reliably_close(fd)
+
 #endif
 
 /*========================================================================*/
@@ -1239,7 +1242,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 {
   rktio_process_result_t *result;
   intptr_t to_subprocess[2], from_subprocess[2], err_subprocess[2];
-  int pid, errid;
+  int pid;
 #if defined(RKTIO_SYSTEM_UNIX)
 # if !defined(CENTRALIZED_SIGCHILD)
   System_Child *sc;
@@ -1324,8 +1327,10 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       argv = new_argv;
     }
 
+    pid = 0;
+
     spawn_status = do_spawnv(rktio,
-                             command, (const char * const *)new_argv,
+                             command, (const char * const *)argv,
 			     windows_exact_cmdline,
 			     to_subprocess[0],
 			     from_subprocess[1],
@@ -1452,6 +1457,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     case 0: /* child */
 
       {
+        int errid;
+        
 	/* Copy pipe descriptors to stdin and stdout */
 	do {
 	  errid = MSC_IZE(dup2)(to_subprocess[0], 0);
@@ -1528,22 +1535,21 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 
   free(env);
 
-  if (!stdin_fd) {
-    rktio_reliably_close(to_subprocess[0]);
-  } else {
+  if (!stdin_fd)
+    RKTIO_CLOSE(to_subprocess[0]);
+  else
     RKTIO_CLOSE_SUBPROCESS_COPY(to_subprocess, 0);
-  }
-  if (!stdout_fd) {
-    rktio_reliably_close(from_subprocess[1]);
-  } else {
+  
+  if (!stdout_fd) 
+    RKTIO_CLOSE(from_subprocess[1]);
+  else
     RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, 1);
-  }
+  
   if (!stderr_fd) {
     if (!stderr_is_stdout)
-      rktio_reliably_close(err_subprocess[1]);
-  } else {
+      RKTIO_CLOSE(err_subprocess[1]);
+  } else
     RKTIO_CLOSE_SUBPROCESS_COPY(err_subprocess, 1);
-  }
 
   /*--------------------------------------*/
   /*  Create new file-descriptor objects  */

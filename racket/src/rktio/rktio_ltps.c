@@ -44,14 +44,15 @@ typedef struct rktio_ltps_handle_pair_t {
   rktio_ltps_handle_t *write_handle;
 } rktio_ltps_handle_pair_t;
 
+#ifdef RKTIO_SYSTEM_UNIX
 static rktio_ltps_handle_pair_t *ltps_hash_get(rktio_ltps_t *lt, intptr_t fd);
 static void ltps_hash_set(rktio_ltps_t *lt, intptr_t fd, rktio_ltps_handle_pair_t *v);
 static void ltps_hash_remove(rktio_ltps_t *lt, intptr_t fd);
 static void ltps_hash_init(rktio_ltps_t *lt);
 static void ltps_hash_free(rktio_ltps_t *lt);
-
 #if !defined(HAVE_KQUEUE_SYSCALL) && !defined(HAVE_EPOLL_SYSCALL)
 static int ltps_is_hash_empty(rktio_ltps_t *lt);
+#endif
 #endif
 
 /*========================================================================*/
@@ -104,8 +105,10 @@ rktio_ltps_t *rktio_open_ltps(rktio_t *rktio)
 
   lt->signaled = NULL;
 
+#ifdef RKTIO_SYSTEM_UNIX
   ltps_hash_init(lt);
-
+#endif
+  
   return lt;
 }
 
@@ -129,7 +132,9 @@ int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
   while ((s = rktio_ltps_get_signaled_handle(rktio, lt)))
     free(s);
 
+#ifdef RKTIO_SYSTEM_UNIX
   ltps_hash_free(lt);
+#endif
 
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
   if (lt->fd >= 0) {
@@ -609,6 +614,8 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
 
 /*========================================================================*/
 
+#ifdef RKTIO_SYSTEM_UNIX
+
 typedef struct ltps_bucket_t {
   /* v is non-NULL => bucket is filled */
   /* v is NULL and fd is -1 => was removed */
@@ -740,4 +747,6 @@ static int ltps_is_hash_empty(rktio_ltps_t *lt)
 {
   return (lt->count == 0);
 }
+#endif
+
 #endif

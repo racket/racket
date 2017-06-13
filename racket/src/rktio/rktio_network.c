@@ -24,6 +24,8 @@
 # define RKTIO_AFNOSUPPORT EAFNOSUPPORT
 
 typedef intptr_t rktio_socket_t;
+typedef unsigned int rktio_sockopt_len_t;
+
 # define INVALID_SOCKET (-1)
 
 static void closesocket(rktio_socket_t s) {
@@ -92,6 +94,7 @@ struct SOCKADDR_IN {
 # define RKTIO_AFNOSUPPORT WSAEAFNOSUPPORT
 
 typedef SOCKET rktio_socket_t;
+typedef int rktio_sockopt_len_t;
 
 typedef struct SOCKADDR_IN rktio_unspec_address;
 # define REGISTER_SOCKET(s) winsock_remember(s)
@@ -521,10 +524,6 @@ static rktio_addrinfo_lookup_t *start_lookup(rktio_t *rktio, rktio_addrinfo_look
 
 # ifdef RKTIO_SYSTEM_WINDOWS
   {
-    HANDLE ready_sema;
-    unsigned int id;
-    intptr_t th;
-      
     lookup->done_sema = CreateSemaphore(NULL, 0, 1, NULL);
     if (!lookup->done_sema) {
       get_windows_error();
@@ -761,15 +760,9 @@ const char *rktio_gai_strerror(int errnum)
 #ifdef RKTIO_SYSTEM_WINDOWS
 
 static HANDLE winsock_sema;
+static int winsock_started = 0;
 static int wsr_size = 0;
 static rktio_socket_t *wsr_array;
-
-void rktio_winsock_init()
-{
-  if (!winsock_sema) {
-    winsock_sema = CreateSemaphore(NULL, 1, 1, NULL);
-  }
-}
 
 static void winsock_remember(rktio_socket_t s)
 {
@@ -804,18 +797,14 @@ static void winsock_remember(rktio_socket_t s)
     wsr_size = new_size;
   }  
 
-# ifdef RKTIO_USE_PLACES
   ReleaseSemaphore(winsock_sema, 1, NULL);
-# endif
 }
 
 static void winsock_forget(rktio_socket_t s)
 {
   int i;
 
-# ifdef RKTIO_USE_PLACES
   WaitForSingleObject(winsock_sema, INFINITE);
-# endif
 
   for (i = 0; i < wsr_size; i++) {
     if (wsr_array[i] == s) {
@@ -824,50 +813,56 @@ static void winsock_forget(rktio_socket_t s)
     }
   }
 
-# ifdef RKTIO_USE_PLACES
   ReleaseSemaphore(winsock_sema, 1, NULL);
-# endif
 }
 
-static int winsock_done(void)
+int rktio_winsock_init(rktio_t *rktio)
+{
+  if (!winsock_sema) {
+    winsock_sema = CreateSemaphore(NULL, 1, 1, NULL);
+  }
+
+  WaitForSingleObject(winsock_sema, INFINITE);
+
+  if (!winsock_started) {
+    WSADATA data;
+    if (!WSAStartup(MAKEWORD(1, 1), &data)) {
+      winsock_started = 1;
+    } else {
+      get_windows_error();
+      ReleaseSemaphore(winsock_sema, 1, NULL);
+      return 0;
+    }
+  } else
+    winsock_started++;
+  
+  ReleaseSemaphore(winsock_sema, 1, NULL);
+
+  return 1;
+}
+
+void rktio_winsock_done(rktio_t *rktio)
 {
   int i;
 
-  /* only called in the original place */
-
-  for (i = 0; i < wsr_size; i++) {
-    if (wsr_array[i]) {
-      closesocket(wsr_array[i]);
-      wsr_array[i] = (rktio_socket_t)NULL;
-    }
-  }
-
-  return WSACleanup();
-}
-
-static void TCP_INIT(char *name)
-{
-  static int started = 0;
-  
   WaitForSingleObject(winsock_sema, INFINITE);
 
-  if (!started) {
-    WSADATA data;
-    if (!WSAStartup(MAKEWORD(1, 1), &data)) {
-      started = 1;
-#ifdef __BORLANDC__
-      atexit((void(*)())winsock_done);
-#else      
-      _onexit(winsock_done);
-#endif
+  if (!--winsock_started) {
+    for (i = 0; i < wsr_size; i++) {
+      if (wsr_array[i]) {
+        closesocket(wsr_array[i]);
+        wsr_array[i] = (rktio_socket_t)NULL;
+      }
     }
+
+    wsr_size = 0;
+    wsr_array = NULL;
+
+    WSACleanup();
   }
-  
+
   ReleaseSemaphore(winsock_sema, 1, NULL);
 }
-#else
-/* Not Windows */
-# define TCP_INIT(x) /* nothing */
 #endif
 
 /*========================================================================*/
@@ -1197,7 +1192,7 @@ rktio_fd_t *rktio_connect_finish(rktio_t *rktio, rktio_connect_t *conn)
   if (conn->inprogress) {
     /* Check whether connect succeeded, or get error: */
     int errid;
-    unsigned int so_len = sizeof(errid);
+    rktio_sockopt_len_t so_len = sizeof(errid);
     rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
     if (getsockopt(s, SOL_SOCKET, SO_ERROR, (void *)&errid, &so_len) != 0) {
       errid = SOCK_ERRNO();
@@ -1435,7 +1430,7 @@ static int get_no_portno(rktio_t *rktio, rktio_socket_t socket)
 {
   char here[RKTIO_SOCK_NAME_MAX_LEN];
   struct sockaddr_in *addr_in;
-  unsigned int l = sizeof(here);
+  rktio_sockopt_len_t l = sizeof(here);
   unsigned short no_port;
 
   if (getsockname(socket, (struct sockaddr *)here, &l)) {
@@ -1561,7 +1556,7 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
   int
     ready_pos;
   rktio_socket_t s, ls;
-  unsigned int l;
+  rktio_sockopt_len_t l;
   char tcp_accept_addr[RKTIO_SOCK_NAME_MAX_LEN];
 
   ready_pos = do_poll_accept_ready(rktio, listener, 1);
@@ -1632,7 +1627,7 @@ static char **get_numeric_strings(rktio_t *rktio, void *sa, unsigned int salen)
 char **rktio_socket_address(rktio_t *rktio, rktio_fd_t *rfd)
 {
   char name[RKTIO_SOCK_NAME_MAX_LEN];
-  unsigned int name_len;
+  rktio_sockopt_len_t name_len;
   
   name_len = sizeof(name);
   if (getsockname(rktio_fd_system_fd(rktio, rfd), (struct sockaddr *)name, &name_len)) {
@@ -1646,7 +1641,7 @@ char **rktio_socket_address(rktio_t *rktio, rktio_fd_t *rfd)
 char **rktio_socket_peer_address(rktio_t *rktio, rktio_fd_t *rfd)
 {
   char name[RKTIO_SOCK_NAME_MAX_LEN];
-  unsigned int name_len;
+  rktio_sockopt_len_t name_len;
   
   name_len = sizeof(name);
   if (getpeername(rktio_fd_system_fd(rktio, rfd), (struct sockaddr *)name, &name_len)) {
@@ -1779,7 +1774,7 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
   rktio_length_and_addrinfo_t *r;
   int rn, errid;
   char src_addr[RKTIO_SOCK_NAME_MAX_LEN];
-  unsigned int asize = sizeof(src_addr);
+  rktio_sockopt_len_t asize = sizeof(src_addr);
   
   while (1) {
     if (!len) {
@@ -1830,7 +1825,7 @@ int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd)
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   u_char loop;
-  unsigned int loop_len = sizeof(loop);
+  rktio_sockopt_len_t loop_len = sizeof(loop);
   int status;
   
   status = getsockopt(s, IPPROTO_IP, IP_MULTICAST_LOOP, (void *)&loop, &loop_len);
@@ -1846,7 +1841,7 @@ int rktio_udp_set_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd, int on)
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   u_char loop = (on ? 1 : 0);
-  unsigned int loop_len = sizeof(loop);
+  rktio_sockopt_len_t loop_len = sizeof(loop);
   int status;
   
   status = setsockopt(s, IPPROTO_IP, IP_MULTICAST_LOOP, (void *)&loop, loop_len);
@@ -1862,7 +1857,7 @@ int rktio_udp_get_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd)
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   u_char ttl;
-  unsigned int ttl_len = sizeof(ttl);
+  rktio_sockopt_len_t ttl_len = sizeof(ttl);
   int status;
   
   status = getsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL, (void *)&ttl, &ttl_len);
@@ -1878,7 +1873,7 @@ int rktio_udp_set_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val)
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   u_char ttl = ttl_val;
-  unsigned int ttl_len = sizeof(ttl);
+  rktio_sockopt_len_t ttl_len = sizeof(ttl);
   int status;
   
   status = setsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL, (void *)&ttl, ttl_len);
@@ -1894,7 +1889,7 @@ char *rktio_udp_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd)
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd); 
   struct in_addr intf;
-  unsigned int intf_len = sizeof(intf);
+  rktio_sockopt_len_t intf_len = sizeof(intf);
   int status;
   
   status = getsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, (void *)&intf, &intf_len);
@@ -1913,7 +1908,7 @@ int rktio_udp_set_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd, rktio_add
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd); 
   struct in_addr intf;
-  unsigned int intf_len = sizeof(intf);
+  rktio_sockopt_len_t intf_len = sizeof(intf);
   int status;
 
   if (!intf_addr) {
@@ -1937,7 +1932,7 @@ int rktio_udp_change_multicast_group(rktio_t *rktio, rktio_fd_t *rfd,
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   struct ip_mreq mreq;
-  unsigned int mreq_len = sizeof(mreq);
+  rktio_sockopt_len_t mreq_len = sizeof(mreq);
   int status;
   int optname;
 

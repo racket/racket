@@ -127,7 +127,7 @@ rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, char *path)
                                       | FILE_NOTIFY_CHANGE_LAST_WRITE
                                       | FILE_NOTIFY_CHANGE_ATTRIBUTES));
     if (h == INVALID_HANDLE_VALUE)
-      set_windows_error();
+      get_windows_error();
     else {
       fd = (intptr_t)h;
       ok = 1;

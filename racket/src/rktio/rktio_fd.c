@@ -234,6 +234,28 @@ int rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd)
   return ((rfd->modes & RKTIO_OPEN_UDP) ? 1 : 0);
 }
 
+int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  return isatty(fd);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (GetFileType((HANDLE)fd) == FILE_TYPE_CHAR) {
+    DWORD mode;
+    if (GetConsoleMode((HANDLE)fd, &mode))
+      return 1;
+    else
+      return 0;
+  } else
+    return 0;
+#endif
+}
+
+int rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return rktio_system_fd_is_terminal(rktio, (intptr_t)rfd->fd);
+}
+
 rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
@@ -249,9 +271,9 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
   } else
     return rktio_system_fd(rktio, nfd, rfd->modes);
 #endif
-#ifdef WINDOWS_FILE_HANDLES
+#ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET) {
-    return rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
+    return rktio_socket_dup(rktio, rfd);
   } else {
     HANDLE  newhandle;
     BOOL rc;
@@ -632,7 +654,7 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
       if (rfd->oth && !rktio_poll_write_ready(rktio, rfd))
         rktio_poll_set_add_handle(rktio, (intptr_t)rfd->oth->ready_sema, fds, 1);
       else
-        rktio_poll_set_nosleep(rktio, fds);
+        rktio_poll_set_add_nosleep(rktio, fds);
     }
   }
 #endif
@@ -701,7 +723,7 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
   if (!rfd->th) {
     /* We can read directly. This must be a regular file, where
        reading never blocks. */
-    DWORD rgot, delta;
+    DWORD rgot; 
     
     if (!ReadFile((HANDLE)rfd->fd, buffer, len, &rgot, NULL)) {
       get_windows_error();
@@ -713,7 +735,7 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
     else
       return rgot;
   } else {
-    if (!rktio_poll_read(rfd))
+    if (!rktio_poll_read_ready(rktio, rfd))
       return 0;
     
     /* If we get this far, there's definitely data available.
@@ -796,13 +818,11 @@ static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
 
 static void WindowsFDICleanup(Win_FD_Input_Thread *th)
 {
-  int rc;
-
   CloseHandle(th->checking_sema);
   CloseHandle(th->ready_sema);
   CloseHandle(th->you_clean_up_sema);
 
-  if (!rc) CloseHandle(th->fd);
+  CloseHandle(th->fd);
 
   free(th->buffer);
   free(th);
@@ -908,7 +928,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
       if (!rfd->oth) {
         /* The FILE_TYPE_PIPE test is currently redundant, I think,
            but better safe than sorry. */
-        nonblocking = (rktio_windows_nt_or_later()
+        nonblocking = (rktio->windows_nt_or_later
                        && (GetFileType((HANDLE)rfd->fd) == FILE_TYPE_PIPE));
       } else
         nonblocking = 1; /* must be, or we would not have gotten here */
@@ -965,7 +985,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
                 || (!ok && (errsaved == ERROR_NOT_ENOUGH_MEMORY))) {
               towrite = towrite >> 1;
               if (!towrite) {
-                set_windows_error();
+                get_windows_error();
                 return RKTIO_WRITE_ERROR;
               }
             } else
@@ -1107,10 +1127,13 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
         ok = 1;
       }
       ReleaseSemaphore(oth->lock_sema, 1, NULL);
-    } else if (out_len > 0) {
-      /* We've already written, which implies that no flush is
-         in progress. We'll need a flush check in the future. */
-      rfd->oth->needflush = 1;
+    } else {
+      if (out_len > 0) {
+        /* We've already written, which implies that no flush is
+           in progress. We'll need a flush check in the future. */
+        rfd->oth->needflush = 1;
+      }
+      ok = 1;
     }
 
     if (ok)
@@ -1189,13 +1212,11 @@ static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 
 static void WindowsFDOCleanup(Win_FD_Output_Thread *oth)
 {
-  int rc;
-
   CloseHandle(oth->lock_sema);
   CloseHandle(oth->work_sema);
   CloseHandle(oth->you_clean_up_sema);
   
-  if (!rc) CloseHandle(oth->fd);
+  CloseHandle(oth->fd);
 
   if (oth->buffer)
     free(oth->buffer);
