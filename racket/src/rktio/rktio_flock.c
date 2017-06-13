@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(RKTIO_SYSTEM_UNIX) && !defined(USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
+#if defined(RKTIO_SYSTEM_UNIX) && !defined(RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
 # define USE_FLOCK_FOR_FILE_LOCKS
 #endif
 
@@ -12,7 +12,7 @@
 #include <sys/file.h>
 #endif
 
-#if defined(USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
+#if defined(RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
 #include <unistd.h>
 #include <fcntl.h>
 typedef struct pair_t { int car, cdr; } pair_t;
@@ -39,7 +39,7 @@ int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl)
     get_posix_error();
     return RKTIO_LOCK_ERROR;
   }
-# elif defined(USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
+# elif defined(RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
   /* An lockf() is cancelled if *any* file descriptor to the same file
      is closed within the same process. We avoid that problem by forking
      a new process whose only job is to use lockf(). */
@@ -194,7 +194,7 @@ int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl)
 #endif
 }
 
-#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+#ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 void rktio_release_lockf(rktio_t *rktio, int fd)
 {
   if (rktio->locked_fd_process_map) {
@@ -227,7 +227,7 @@ int rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd)
   } while ((ok == -1) && (errno == EINTR));
   ok = !ok;
   if (!ok) get_posix_error();
-# elif defined(USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
+# elif defined(RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
   rktio_release_lockf(rktio, fd);
   ok = 1;
 # else

@@ -24,6 +24,7 @@ OBJS = rktio_fs.@LTO@ \
        rktio_envvars.@LTO@ \
        rktio_fs_change.@LTO@ \
        rktio_flock.@LTO@ \
+       rktio_time.@LTO@ \
        rktio_error.@LTO@ \
        rktio_hash.@LTO@ \
        rktio_wide.@LTO@ \
@@ -71,6 +72,9 @@ rktio_fs_change.@LTO@: $(srcdir)/rktio_fs_change.c $(RKTIO_HEADERS)
 
 rktio_flock.@LTO@: $(srcdir)/rktio_flock.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_flock.@LTO@ -c $(srcdir)/rktio_flock.c
+
+rktio_time.@LTO@: $(srcdir)/rktio_time.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_time.@LTO@ -c $(srcdir)/rktio_time.c
 
 rktio_error.@LTO@: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_error.@LTO@ -c $(srcdir)/rktio_error.c

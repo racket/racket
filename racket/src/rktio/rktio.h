@@ -4,8 +4,7 @@
 #include "rktio_config.h"
 
 /* A rktio_t value represents an instance of the Racket I/O system.
-   Every rktio_...() function takes it as the first argument, except
-   for rktio_init(), rktio_signal_received_at(), and rktio_free(). */
+   Almost every rktio_...() function takes it as the first argument. */
 typedef struct rktio_t rktio_t;
 
 rktio_t *rktio_init(void);
@@ -387,6 +386,28 @@ void rktio_signal_received_at(rktio_signal_handle_t *h);
 void rktio_signal_received(rktio_t *rktio);
 
 /*************************************************/
+/* Time and date                                 */
+
+typedef struct rktio_date_t {
+  int nanosecond, second, minute, hour, day, month;
+  intptr_t year;
+  int day_of_week;
+  int day_of_year;
+  int is_dst;
+  int zone_offset;
+  char *zone_name; /* can be NULL */
+} rktio_date_t;
+
+intptr_t rktio_get_milliseconds(void);
+double rktio_get_inexact_milliseconds(void);
+
+intptr_t rktio_get_process_milliseconds(rktio_t *rktio);
+intptr_t scheme_get_process_children_milliseconds(rktio_t *rktio);
+
+intptr_t rktio_get_seconds(rktio_t *rktio);
+rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, intptr_t seconds, intptr_t nanoseconds, int get_gmt);
+
+/*************************************************/
 /* Errors                                        */
 
 /* Kinds of error values: */
@@ -418,6 +439,7 @@ enum {
   RKTIO_ERROR_INFO_TRY_AGAIN, /* for UDP */
   RKTIO_ERROR_TRY_AGAIN, /* for UDP */
   RKTIO_ERROR_TRY_AGAIN_WITH_IPV4, /* for TCP listen */
+  RKTIO_ERROR_TIME_OUT_OF_RANGE,
 };
 
 /* GAI error sub-codes */

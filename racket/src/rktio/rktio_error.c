@@ -45,9 +45,11 @@ int rktio_get_last_error_kind(rktio_t *rktio)
 const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
 {
   const char *s = NULL;
-  if (kind == RKTIO_ERROR_KIND_POSIX)
+  if (kind == RKTIO_ERROR_KIND_POSIX) {
+#ifndef NO_STRERROR_AVAILABLE
     s = strerror(errid);
-  else if (kind == RKTIO_ERROR_KIND_GAI)
+#endif
+  } else if (kind == RKTIO_ERROR_KIND_GAI)
     s = rktio_gai_strerror(errid);
   if (s) return s;
   return "???";

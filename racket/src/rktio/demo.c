@@ -435,6 +435,20 @@ static rktio_fd_t *connect_loop(rktio_t *rktio, rktio_addrinfo_t *addr, rktio_ad
   return fd;
 }
 
+static char *month_name(rktio_t *rktio, int month)
+{
+  static char *months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "NOV", "DEC"};
+  check_valid((month >= 1) && (month <= 12));
+  return months[month-1];
+}
+
+static char *week_day_name(rktio_t *rktio, int dow)
+{
+  static char *days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+  check_valid((dow >= 0) && (dow <= 6));
+  return days[dow-1];
+}
+
 int main(int argc, char **argv)
 {
   rktio_t *rktio;
@@ -897,6 +911,7 @@ int main(int argc, char **argv)
     char *path = "test1";
     rktio_fs_change_t *fc;
     rktio_poll_set_t *ps;
+    double start;
 
     if (verbose)
       printf("fs change\n");
@@ -910,9 +925,10 @@ int main(int argc, char **argv)
     check_valid(ps);
     rktio_poll_add_fs_change(rktio, fc, ps);
 
+    start = rktio_get_inexact_milliseconds();
     rktio_sleep(rktio, 0.1, ps, NULL);
     rktio_poll_set_close(rktio, ps);
-    /* FIXME: check that at least 0.1 seconds have passed */
+    check_valid(rktio_get_inexact_milliseconds() - start > 0.1);
 
     ps = rktio_make_poll_set(rktio);
     check_valid(ps);
@@ -1003,6 +1019,35 @@ int main(int argc, char **argv)
     }
 
     rktio_close(rktio, fd);
+  }
+
+  if (verbose)
+    printf("time and date\n");
+  
+  {
+    intptr_t now;
+    rktio_date_t *today;
+    int gmt;
+    
+    now = rktio_get_seconds(rktio);
+
+    for (gmt = 0; gmt <= 1; gmt++) {
+      today = rktio_seconds_to_date(rktio, now, 5000, gmt);
+      check_valid(today);
+
+      printf("%2.2d:%2.2d:%2.2d %s(%+d/%+d%s) on %s %d-%s-%ld [day %d of year]\n",
+             today->hour, today->minute, today->second,
+             today->zone_name ? today->zone_name : "",
+             today->zone_offset, today->zone_offset / (60 * 60),
+             (today->is_dst ? ";DST" : ""),
+             week_day_name(rktio, today->day_of_week),
+             today->day, month_name(rktio, today->month), today->year,
+             today->day_of_year);
+      
+      if (today->zone_name)
+        free(today->zone_name);
+      free(today);
+    }
   }
 
   if (verbose)

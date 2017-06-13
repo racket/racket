@@ -2,6 +2,8 @@
 # define OS_X
 #endif
 
+#include "rktio_platform.h"
+
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <winsock2.h>
 # include <windows.h>
@@ -84,7 +86,7 @@ struct rktio_t {
   wchar_t *wide_buffer;
 #endif
 
-#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+#ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
   struct rktio_hash_t *locked_fd_process_map;
 #endif
 };
@@ -250,10 +252,10 @@ void rktio_set_windows_error(rktio_t *rktio, int errid);
 # define set_windows_error(errid) rktio_set_windows_error(rktio, errid)
 #endif
 
-#if defined(USE_FCNTL_O_NONBLOCK)
-# define RKTIO_NONBLOCKING O_NONBLOCK
-#else
+#if defined(USE_FNDELAY_O_NONBLOCK)
 # define RKTIO_NONBLOCKING FNDELAY
+#else
+# define RKTIO_NONBLOCKING O_NONBLOCK
 #endif
 
 #ifndef RKTIO_BINARY
@@ -277,6 +279,19 @@ void rktio_winsock_done(rktio_t *rktio);
 #endif
 void rktio_init_wide(rktio_t *rktio);
 
-#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+#ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 void rktio_release_lockf(rktio_t *rktio, int fd);
+#endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+# ifdef _MSC_VER
+typedef _int64 rktio_int64_t;
+typedef unsigned _int64 rktio_uint64_t;
+# else
+typedef __int64 rktio_int64_t;
+typedef unsigned __int64 rktio_uint64_t;
+# endif
+#else
+typedef long long rktio_int64_t;
+typedef unsigned long long rktio_uint64_t;
 #endif

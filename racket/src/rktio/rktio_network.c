@@ -36,27 +36,6 @@ typedef struct sockaddr_in rktio_unspec_address;
 #define REGISTER_SOCKET(s) /**/
 #define UNREGISTER_SOCKET(s) /**/
 
-# if defined(__linux__) || defined(OS_X)
-/* RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT uses IPV6_V6ONLY for IPv6
-   listeners when the same listener has an IPv4 address, which means
-   that the IpV6 listener accepts only IPv6 connections. This is used
-   with Linux, for example, because a port cannot have both an IPv4
-   and IPv6 listener if the IPv6 one doesn't use IPV6_V6ONLY. (The
-   two listeners might be for different interfaces, in which case
-   IPV6_V6ONLY is not necessary, but we must err on the side of being
-   too restrictive. If IPV6_V6ONLY is not #defined or if setting the
-   option doesn't work, then the IPv6 addresses are silently ignored
-   when creating the listener (but only where there is at least once
-   IPv4 address). */
-#  define RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-# endif
-
-#if defined(sun)
-/* USE_NULL_TO_DISCONNECT_UDP calls connect() with NULL instead of
-   an AF_UNSPEC address to disconnect a UDP socket. */
-# define USE_NULL_TO_DISCONNECT_UDP
-#endif
-
 #endif
 
 #ifdef CANT_SET_SOCKET_BUFSIZE

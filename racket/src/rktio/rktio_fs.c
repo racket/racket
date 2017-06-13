@@ -33,10 +33,6 @@
 # define BIG_OFF_T_IZE(n) n
 #endif
 
-#if defined(__linux__)
-# define DIRENT_NO_NAMLEN
-#endif
-
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(NO_UNIX_USERS)
 static int have_user_ids = 0;
 static uid_t uid;

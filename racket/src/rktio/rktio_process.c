@@ -752,10 +752,10 @@ static void collect_process_time(rktio_t *rktio, DWORD w, rktio_process_t *sp)
   if ((w != STILL_ACTIVE) && !sp->got_time) {
     FILETIME cr, ex, kr, us;
     if (GetProcessTimes(sp->handle, &cr, &ex, &kr, &us)) {
-      __int64 v;
+      rktio_int64_t v;
       uintptr_t msecs;
-      v = ((((__int64)kr.dwHighDateTime << 32) + kr.dwLowDateTime)
-	   + (((__int64)us.dwHighDateTime << 32) + us.dwLowDateTime));
+      v = ((((rktio_int64_t)kr.dwHighDateTime << 32) + kr.dwLowDateTime)
+	   + (((rktio_int64_t)us.dwHighDateTime << 32) + us.dwLowDateTime));
       msecs = (uintptr_t)(v / 10000);
       
       rktio->process_children_msecs += msecs;
