@@ -625,6 +625,7 @@ Scheme_Env *scheme_place_instance_init(void *stack_base, struct NewGC *parent_gc
   int *signal_fd;
   GC_construct_child_gc(parent_gc, memory_limit);
 # endif
+  scheme_rktio = rktio_init();
   env = place_instance_init(stack_base, 0);
 # if defined(MZ_PRECISE_GC)
   signal_fd = scheme_get_signal_handle();

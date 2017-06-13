@@ -36,6 +36,27 @@ typedef BOOL (WINAPI*SystemTimeToTzSpecificLocalTimeExProc_t)(void *lpTimeZoneIn
 static SystemTimeToTzSpecificLocalTimeExProc_t SystemTimeToTzSpecificLocalTimeExProc;
 #endif
 
+
+void rktio_init_time(rktio_t *rktio)
+{
+#ifdef RKTIO_SYSTEM_WINDOWS
+  static int time_inited = 0;
+  if (!time_inited) {
+    HMODULE hm;
+    hm = LoadLibrary("kernel32.dll");
+
+    GetTimeZoneInformationForYearProc
+      = (GetTimeZoneInformationForYearProc_t)GetProcAddress(hm, "GetTimeZoneInformationForYear");
+    SystemTimeToTzSpecificLocalTimeExProc
+      = (SystemTimeToTzSpecificLocalTimeExProc_t)GetProcAddress(hm, "SystemTimeToTzSpecificLocalTimeEx");
+
+    FreeLibrary(hm);
+
+    time_inited = 1;
+  }
+#endif
+}
+
 /*========================================================================*/
 /* Time                                                                   */
 /*========================================================================*/
@@ -124,7 +145,7 @@ intptr_t rktio_get_process_milliseconds(rktio_t *rktio)
 #endif
 }
 
-intptr_t scheme_get_process_children_milliseconds(rktio_t *rktio)
+intptr_t rktio_get_process_children_milliseconds(rktio_t *rktio)
 {
 #ifdef USER_TIME_IS_CLOCK
   return 0;

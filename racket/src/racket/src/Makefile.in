@@ -11,7 +11,8 @@ MZSRC = $(srcdir)
 
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
-ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
+RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
+ALL_CFLAGS = $(CFLAGS) -I$(builddir)/.. -I$(srcdir)/../include  $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@
 
 OBJS =  salloc.@LTO@ \
 	bignum.@LTO@ \
@@ -303,7 +304,9 @@ SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 
 COMMON_HEADERS = $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
                  $(srcdir)/../include/schthread.h $(srcdir)/mzrt.h $(srcdir)/mzrt_cas.inc \
-                 $(srcdir)/longdouble/longdouble.h $(srcdir)/../utils/schiptr.h
+                 $(srcdir)/longdouble/longdouble.h $(srcdir)/../utils/schiptr.h \
+                 $(srcdir)/../../rktio/rktio.h $(srcdir)/../../rktio/rktio_platform.h \
+                 ../../rktio/rktio_config.h
 JIT_HEADERS = $(srcdir)/jit.h $(srcdir)/jitfpu.h $(srcdir)/stypes.h \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
         $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \

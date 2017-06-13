@@ -28,6 +28,7 @@ rktio_t *rktio_init(void)
   }
 #endif
   
+  rktio_init_time(rktio);
   rktio_init_wide(rktio);
 
   return rktio;

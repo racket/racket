@@ -273,6 +273,8 @@ void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
 
 void rktio_stop_fs_change(rktio_t *rktio);
 
+void rktio_init_time(rktio_t *rktio);
+
 #ifdef RKTIO_SYSTEM_WINDOWS
 int rktio_winsock_init(rktio_t *rktio);
 void rktio_winsock_done(rktio_t *rktio);

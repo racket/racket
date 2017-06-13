@@ -86,6 +86,7 @@ normal-bin:
 common:
 	$(MAKE) g-c
 	$(MAKE) @FOREIGNTARGET@
+	$(MAKE) rktio
 
 cgc:
 	$(MAKE) cgc-core
@@ -151,6 +152,9 @@ foreign-stuff:
 foreign-stub:
 	cd $(FOREIGN_DIR); $(MAKE) stub
 
+rktio:
+	cd ../rktio; $(MAKE)
+
 mzlibrary:
 	cd src; $(MAKE) all 
 	$(MAKE) libracket.@LIBSFX@
@@ -179,8 +183,10 @@ FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
 FOREIGN_NOT_USED_LIB = $(FOREIGN_OBJ)
 FOREIGN_NOT_USED_OBJSLIB = $(FOREIGN_OBJ)
 
-libracket.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB)
-	$(NICEAR) $(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBRACKET_DEP@
+LIBRKTIO = ../rktio/librktio.@LTA@
+
+libracket.@LIBSFX@: src/*.@LTO@ $(@FOREIGN_IF_USED@_LIB) @LIBRKTIO_FOR_DLL@
+	$(NICEAR) $(AR) $(ARFLAGS) libracket.@LIBSFX@ src/*.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBRKTIO_FOR_DLL@ @LIBRACKET_DEP@
 	$(RANLIB) libracket.@LIBSFX@
 
 # Irix sproc, only
@@ -189,8 +195,8 @@ sproc.@LTO@: @GCDIR@/sproc.@LTO@
 
 # Unix ----------------------------------------
 
-racket@CGC@@NOT_OSX@@NOT_MINGW@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ $(SPECIALIZINGOBJECTS)
-	@MZLINKER@ -o racket@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LDFLAGS@ @LIBS@
+racket@CGC@@NOT_OSX@@NOT_MINGW@: libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@ @LIBRKTIO_FOR_LIB@ $(SPECIALIZINGOBJECTS)
+	@MZLINKER@ -o racket@CGC@ main.@LTO@ $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LIBRKTIO_FOR_LIB@ @LDFLAGS@ @LIBS@
 
 mzcom@CGC@@NOT_MINGW@:
 	$(NOOP)
@@ -199,9 +205,9 @@ mzcom@CGC@@NOT_MINGW@:
 
 MZFW = Racket.framework/Versions/$(FWVERSION)/Racket
 
-$(MZFW): libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS)
+$(MZFW): libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(SPECIALIZINGOBJECTS) $(LIBRKTIO)
 	mkdir -p  Racket.framework/Versions/$(FWVERSION)
-	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -framework CoreFoundation -dynamiclib -all_load $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ @LIBS@
+	@MZLINKER@ -o $(MZFW) @LDFLAGS@ -framework CoreFoundation -dynamiclib -all_load $(SPECIALIZINGOBJECTS) libracket.@LIBSFX@ libmzgc.@LIBSFX@ $(LIBRKTIO) @LIBS@
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)/Racket Racket.framework/Racket
 
@@ -218,9 +224,9 @@ lib/libmzgcxxxxxxx.dll: libmzgc.@LIBSFX@
 mzsj86g.o: $(srcdir)/src/mzsj86g.S
 	$(CC) -c -o mzsj86g.o $(srcdir)/src/mzsj86g.S
 
-lib/libracketxxxxxxx.dll: lib/libmzgcxxxxxxx.dll libracket.@LIBSFX@ mzsj86g.o
+lib/libracketxxxxxxx.dll: lib/libmzgcxxxxxxx.dll libracket.@LIBSFX@ mzsj86g.o $(LIBRKTIO)
 	mkdir -p lib
-	@MZLINKER@ -shared -o lib/libracketxxxxxxx.dll mzsj86g.o -Wl,--output-def -Wl,libracket.def -Wl,--whole-archive libracket.@LIBSFX@ -Wl,--no-whole-archive @LDFLAGS@ -lshell32 -luser32 -lws2_32 lib/libmzgcxxxxxxx.dll -static-libgcc @LIBS@
+	@MZLINKER@ -shared -o lib/libracketxxxxxxx.dll mzsj86g.o -Wl,--output-def -Wl,libracket.def -Wl,--whole-archive libracket.@LIBSFX@ -Wl,--no-whole-archive $(LIBRKTIO) @LDFLAGS@ -lshell32 -luser32 -lws2_32 lib/libmzgcxxxxxxx.dll -static-libgcc @LIBS@
 
 libracket.dll.a: lib/libracketxxxxxxx.dll
 	@DLLTOOL@ --def libracket.def -D libracketxxxxxxx.dll --output-exp libracketxxxxxxx.exp --output-lib libracketxxxxxxx.lib --output-delaylib libracket.dll.a

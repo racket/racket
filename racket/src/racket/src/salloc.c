@@ -31,6 +31,7 @@
 #include "schpriv.h"
 #include <string.h>
 #include "schgc.h"
+#include "schrktio.h"
 
 #ifdef DOS_FAR_POINTERS
 # include <alloc.h>
@@ -53,6 +54,8 @@
 #ifdef MZ_JIT_USE_WINDOWS_VIRTUAL_ALLOC
 # include <windows.h>
 #endif
+
+THREAD_LOCAL_DECL(rktio_t *scheme_rktio);
 
 THREAD_LOCAL_DECL(uintptr_t scheme_os_thread_id);
 
@@ -203,6 +206,8 @@ static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, vo
 #endif
 
   scheme_set_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
+  
+  scheme_rktio = rktio_init();
 
   return_code = _main(data);
 

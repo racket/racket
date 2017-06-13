@@ -25,7 +25,8 @@ RANLIB = @RANLIB@
 
 CFLAGS = @CFLAGS@ @COMPFLAGS@ @PROFFLAGS@
 CPPFLAGS = @PREFLAGS@
-ALL_CPPFLAGS = -I$(builddir)/.. -I$(srcdir)/../include $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
+RKTIO_INC = -I$(srcdir)/../../rktio -I../../rktio
+ALL_CPPFLAGS = -I$(builddir)/.. -I$(srcdir)/../include $(RKTIO_INC) $(CPPFLAGS) @OPTIONS@ @GC2OPTIONS@ @MZOPTIONS@ 
 ALL_CFLAGS = $(CFLAGS) $(ALL_CPPFLAGS)
 LIBS = @LIBS@
 
@@ -498,18 +499,20 @@ FOREIGN_USED_OBJSLIB = $(FOREIGN_OBJSLIB)
 FOREIGN_NOT_USED_LIB = $(FOREIGN_OBJ)
 FOREIGN_NOT_USED_OBJSLIB = 
 
+LIBRKTIO = ../../rktio/librktio.@LTA@
+
 EXTRA_GMP_DEP_FILE = ../src/@EXTRA_GMP_OBJ@
 EXTRA_GMP = @EXTRA_GMP_DEP@
 
-EXTRA_OBJS_T = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB)
-EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
+EXTRA_OBJS_T = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB) @LIBRKTIO_FOR_DLL@
+EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBRKTIO_FOR_DLL@
 
-../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
-	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
+../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@ @LIBRKTIO_FOR_DLL@
+	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@ @LIBRKTIO_FOR_DLL@
 	$(RANLIB) ../libracket3m.@LIBSFX@
 
-../racket@MMM@@NOT_OSX@@NOT_MINGW@: main.@LTO@ ../libracket3m.@LIBSFX@
-	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+../racket@MMM@@NOT_OSX@@NOT_MINGW@: main.@LTO@ ../libracket3m.@LIBSFX@ @LIBRKTIO_FOR_LIB@
+	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ @LIBRKTIO_FOR_LIB@ @LDFLAGS@ $(LIBS)
 
 # The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
 #  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative
@@ -517,9 +520,9 @@ EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB)
 
 MZFWMMM = Racket.framework/Versions/$(FWVERSION)_3m/Racket
 
-$(MZFWMMM): ../libracket3m.@LIBSFX@
+$(MZFWMMM): ../libracket3m.@LIBSFX@ $(LIBRKTIO)
 	mkdir -p "Racket.framework/Versions/$(FWVERSION)_3m"
-	@MZLINKER@ -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load ../libracket3m.@LIBSFX@ @LDFLAGS@ $(LIBS)
+	@MZLINKER@ -o $(MZFWMMM) -framework CoreFoundation -dynamiclib -all_load ../libracket3m.@LIBSFX@ $(LIBRKTIO) @LDFLAGS@ $(LIBS)
 	rm -f Racket.framework/Racket
 	ln -s Versions/$(FWVERSION)_3m/Racket Racket.framework/Racket	
 
@@ -529,9 +532,9 @@ $(MZFWMMM): ../libracket3m.@LIBSFX@
 	cp "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../Racket.framework/Versions/$(FWVERSION)_3m/Racket"
 	/usr/bin/install_name_tool -change "Racket.framework/Versions/$(FWVERSION)_3m/Racket" "@executable_path/Racket.framework/Versions/$(FWVERSION)_3m/Racket" "../racket@MMM@"
 
-../lib/libracket3mxxxxxxx.dll: ../libracket3m.@LIBSFX@ ../mzsj86g.o
+../lib/libracket3mxxxxxxx.dll: ../libracket3m.@LIBSFX@ ../mzsj86g.o $(LIBRKTIO)
 	mkdir -p ../lib
-	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive  @LDFLAGS@ -lshell32 -luser32 -lws2_32 -static-libgcc @LIBS@
+	@MZLINKER@ -shared -o ../lib/libracket3mxxxxxxx.dll ../mzsj86g.o -Wl,--output-def -Wl,libracket3m.def -Wl,--whole-archive ../libracket3m.@LIBSFX@ -Wl,--no-whole-archive $(LIBRKTIO) @LDFLAGS@ -lshell32 -luser32 -lws2_32 -static-libgcc @LIBS@
 
 libracket3m.dll.a: ../lib/libracket3mxxxxxxx.dll
 	@DLLTOOL@ --def libracket3m.def -D libracket3mxxxxxxx.dll --output-exp libracket3mxxxxxxx.exp --output-lib libracket3mxxxxxxx.lib --output-delaylib libracket3m.dll.a

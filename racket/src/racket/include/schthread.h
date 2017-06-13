@@ -144,6 +144,7 @@ typedef struct Thread_Local_Variables {
   uintptr_t force_gc_for_place_accounting_;
   uintptr_t scheme_os_thread_id_;
   int scheme_starting_up_;
+  struct rktio_t *scheme_rktio_;
   void *bignum_cache_[BIGNUM_CACHE_SIZE];
   int cache_count_;
   struct Scheme_Hash_Table *toplevels_ht_;
@@ -550,6 +551,7 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define force_gc_for_place_accounting XOA (scheme_get_thread_local_variables()->force_gc_for_place_accounting_)
 #define scheme_os_thread_id XOA (scheme_get_thread_local_variables()->scheme_os_thread_id_)
 #define scheme_starting_up XOA (scheme_get_thread_local_variables()->scheme_starting_up_)
+#define scheme_rktio XOA (scheme_get_thread_local_variables()->scheme_rktio_)
 #define bignum_cache XOA (scheme_get_thread_local_variables()->bignum_cache_)
 #define cache_count XOA (scheme_get_thread_local_variables()->cache_count_)
 #define toplevels_ht XOA (scheme_get_thread_local_variables()->toplevels_ht_)

@@ -215,6 +215,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 
 #define REGISTER_SO(x) MZ_REGISTER_STATIC(x)
 
+THREAD_LOCAL_DECL(extern struct rktio_t *rktio);
 THREAD_LOCAL_DECL(extern int scheme_current_place_id);
 THREAD_LOCAL_DECL(extern intptr_t scheme_total_gc_time);
 THREAD_LOCAL_DECL(extern int scheme_cont_capture_count);

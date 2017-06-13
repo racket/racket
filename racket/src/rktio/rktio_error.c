@@ -54,3 +54,10 @@ const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
   if (s) return s;
   return "???";
 }
+
+const char *rktio_get_last_error_string(rktio_t *rktio)
+{
+  return rktio_get_error_string(rktio,
+                                rktio_get_last_error_kind(rktio),
+                                rktio_get_last_error(rktio));
+}
