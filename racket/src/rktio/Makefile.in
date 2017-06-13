@@ -27,15 +27,15 @@ OBJS = rktio_fs.@LTO@ \
        rktio_wide.@LTO@ \
        rktio_main.@LTO@
 
-librktio.@LIBSFX@: $(OBJS)
-	$(NICEAR) $(AR) $(ARFLAGS) librktio.@LIBSFX@ $(OBJS)
-	$(RANLIB) librktio.@LIBSFX@
+librktio.@LTA@: $(OBJS)
+	$(NICEAR) $(AR) $(ARFLAGS) librktio.@LTA@ $(OBJS)
+	$(RANLIB) librktio.@LTA@
 
 demo: rktio_demo
-	./rktio_demo
+	./rktio_demo $(ARGS)
 
-rktio_demo: librktio.@LIBSFX@ demo.@LTO@ demo_fifo
-	$(RKTLINKER) -o rktio_demo $(CFLAGS) $(LDFLAGS) demo.@LTO@ librktio.@LIBSFX@ $(LIBS)
+rktio_demo: librktio.@LTA@ demo.@LTO@ demo_fifo
+	$(RKTLINKER) -o rktio_demo $(CFLAGS) $(LDFLAGS) demo.@LTO@ librktio.@LTA@ $(LIBS)
 
 demo_fifo:
 	mkfifo demo_fifo
@@ -80,4 +80,4 @@ demo.@LTO@: $(srcdir)/demo.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o demo.@LTO@ -c $(srcdir)/demo.c
 
 clean:
-	rm -f $(OBJS) librktio.@LIBSFX@ rktio_demo demo_fifo
+	rm -f $(OBJS) librktio.@LTA@ rktio_demo demo_fifo

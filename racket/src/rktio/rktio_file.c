@@ -61,7 +61,7 @@ static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE fd;
   
-  fd = CreateFileW(WIDE_PATH(filename),
+  fd = CreateFileW(WIDE_PATH_temp(filename),
 		   GENERIC_READ,
 		   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		   NULL,
@@ -163,7 +163,7 @@ static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
   rktio_fd_t *rfd;
 
   if (modes & RKTIO_OPEN_MUST_EXIST) {
-    if (modes & RKTIO_OPEN_TRUNNCATE)
+    if (modes & RKTIO_OPEN_TRUNCATE)
       hmode = TRUNCATE_EXISTING;
     else
       hmode = OPEN_EXISTING;
@@ -183,7 +183,7 @@ static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
   if (fd == INVALID_HANDLE_VALUE) {
     int errv;
     errv = GetLastError();
-    if ((errv == ERROR_ACCESS_DENIED) && (existsok < -1)) {
+    if ((errv == ERROR_ACCESS_DENIED) && (modes & RKTIO_OPEN_REPLACE)) {
       /* Delete and try again... */
       if (DeleteFileW(WIDE_PATH_temp(filename))) {
 	fd = CreateFileW(WIDE_PATH_temp(filename),
@@ -220,7 +220,7 @@ static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
     }
   }
 
-  rfd = rktio_system_fd(rktio, fd, modes);
+  rfd = rktio_system_fd(rktio, (intptr_t)fd, modes);
 
   if ((modes & RKTIO_OPEN_APPEND) && rktio_fd_is_regular_file(rktio, rfd)) {
     SetFilePointer(fd, 0, NULL, FILE_END);

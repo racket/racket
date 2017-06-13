@@ -25,3 +25,6 @@ typedef unsigned long uintptr_t;
 
 /* Whether getaddrinfo() is available: */
 #undef HAVE_GETADDRINFO
+
+/* In case you want to avoid dynamic sizing of `fd_set` arrays: */
+#undef RKTIO_STATIC_FDSET_SIZE

@@ -456,8 +456,14 @@ int main(int argc, char **argv)
     else if (!strcmp(argv[i], "--sleep-blocks-sigchld")) {
       /* Seems useful for Valgrind on MacOS */
       dont_rely_on_sigchild = 1;
+    } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+      printf("Recognized flags:\n");
+      printf(" -v : verbose\n");
+      printf(" --sleep-blocks-sigchld : Valgrind workaround\n");
+      printf(" -h, --help : this help\n");
+      return 0;
     } else {
-      printf(" unrecognized flag %s\n", argv[i]);
+      printf(" unrecognized flag: %s\n", argv[i]);
       return 1;
     }
   }
@@ -877,7 +883,7 @@ int main(int argc, char **argv)
       free(result);
     }
     
-    rktio_ennvars_free(rktio, envvars);
+    rktio_envvars_free(rktio, envvars);
 
     rktio_forget(rktio, err_fd);
   }
@@ -902,13 +908,18 @@ int main(int argc, char **argv)
     rktio_poll_add_fs_change(rktio, fc, ps);
 
     rktio_sleep(rktio, 0.1, ps, NULL);
+    rktio_poll_set_close(rktio, ps);
     /* FIXME: check that at least 0.1 seconds have passed */
+
+    ps = rktio_make_poll_set(rktio);
+    check_valid(ps);
+    rktio_poll_add_fs_change(rktio, fc, ps);
 
     fd2 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
     check_valid(fd2);
     amt = rktio_write(rktio, fd2, "hola", 4);
     check_valid(amt == 4);
-    
+
     rktio_sleep(rktio, 0, ps, NULL);
     check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);
     check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);

@@ -10,16 +10,14 @@
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
+# include <winsock2.h>
 # include <windows.h>
 #endif
 #ifdef RKTIO_USE_PTHREADS
 # include <pthread.h>
 #endif
 
-#if defined(__linux__) || defined(OS_X) || defined(__NetBSD__) \
-    || defined(__NetBSD__) || defined(__OpenBSD__) \
-    || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) \
-    || defined(__DragonFly__) || defined(__QNX__)
+#if defined(RKTIO_SYSTEM_UNIX) && !defined(RKTIO_STATIC_FDSET_SIZE)
 # define USE_DYNAMIC_FDSET_SIZE
 #endif
 
@@ -81,6 +79,7 @@ struct rktio_t {
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   uintptr_t process_children_msecs;
+  HANDLE process_job_object;
 #endif
 
 #ifdef HAVE_INOTIFY_SYSCALL
@@ -134,7 +133,10 @@ int rktio_fdisset(rktio_poll_set_t *fd, int n);
 #else
 
 #include <sys/select.h>
-struct rktio_poll_set_t { fd_set data; };
+struct rktio_poll_set_t { fd_set data; int nosleep; };
+
+/* Need "far" call to fdzero to deal with `nosleep`: */
+void rktio_fdzero(rktio_poll_set_t *fd);
 
 # define DECL_FDSET(n, c) rktio_poll_set_t n[c]
 # define INIT_DECL_FDSET(r, w, e) /* empty */
@@ -145,7 +147,7 @@ struct rktio_poll_set_t { fd_set data; };
 # define RKTIO_FDS(p) (&(p)->data)
 
 # define RKTIO_GET_FDSET(p, n) ((p)+(n))
-# define RKTIO_FD_ZERO(p) FD_ZERO(RKTIO_FDS(p))
+# define RKTIO_FD_ZERO(p) rktio_fdzero(p)
 # define RKTIO_FD_SET(n, p) FD_SET(n, RKTIO_FDS(p))
 # define RKTIO_FD_CLR(n, p) FD_CLR(n, RKTIO_FDS(p))
 # define RKTIO_FD_ISSET(n, p) FD_ISSET(n, RKTIO_FDS(p))
@@ -251,3 +253,7 @@ void rktio_reliably_close(intptr_t s);
 void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
 
 void rktio_stop_fs_change(rktio_t *rktio);
+
+#ifdef RKTIO_SYSTEM_UNIX
+void rktio_useless_wide();
+#endif

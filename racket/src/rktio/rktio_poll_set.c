@@ -323,9 +323,7 @@ static rktio_poll_set_t *alloc_fdset_arrays()
      "max" fd counter, and 1 extra intger used to record "no
      sleeping" */
   
-  p = malloc((3 * (dynamic_fd_size + sizeof(intptr_t))) + sizeof(int));
-
-  *(int *)((char *)p + (3 * (dynamic_fd_size + sizeof(intptr_t)))) = 0;
+  p = malloc(3 * (dynamic_fd_size + sizeof(intptr_t) + sizeof(int)));
   
   return p;
 }
@@ -337,7 +335,7 @@ static void free_fdset_arrays(rktio_poll_set_t *fds)
 
 rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
 {
-  return (rktio_poll_set_t *)(((char *)fdarray) + (pos * (dynamic_fd_size + sizeof(intptr_t))));
+  return (rktio_poll_set_t *)(((char *)fdarray) + (pos * (dynamic_fd_size + sizeof(intptr_t) + sizeof(int))));
 }
 
 void rktio_fdzero(rktio_poll_set_t *fd)
@@ -347,12 +345,12 @@ void rktio_fdzero(rktio_poll_set_t *fd)
 
 void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds)
 {
-  *(int *)((char *)fds + (3 * (dynamic_fd_size + sizeof(intptr_t)))) = 1;
+  *(int *)((char *)fds + dynamic_fd_size + sizeof(intptr_t)) = 1;
 }
 
 static int fdset_has_nosleep(rktio_poll_set_t *fds)
 {
-  return *(int *)((char *)fds + (3 * (dynamic_fd_size + sizeof(intptr_t))));
+  return *(int *)((char *)fds + dynamic_fd_size + sizeof(intptr_t));
 }
 
 /* Continues below: */
@@ -364,13 +362,13 @@ static int fdset_has_nosleep(rktio_poll_set_t *fds)
 /* Windows variant                                                        */
 /*========================================================================*/
 
-typedef struct {
+struct  rktio_poll_set_t {
   SOCKET *sockets;
 
   intptr_t added, alloc, last_alloc;
 
   intptr_t num_handles, alloc_handles, last_alloc_handles;
-  OS_SEMAPHORE_TYPE *handles;
+  HANDLE *handles;
 
   int *repost_sema;
 
@@ -382,7 +380,9 @@ typedef struct {
 
   HANDLE *combined_wait_array;
   intptr_t combined_len;
-} rktio_poll_set_t;
+};
+
+static void reset_wait_array(rktio_poll_set_t *efd);
 
 static void init_fdset_array(rktio_poll_set_t *fdarray, int count)
 {
@@ -421,18 +421,26 @@ static void init_fdset_array(rktio_poll_set_t *fdarray, int count)
 static rktio_poll_set_t *alloc_fdset_arrays()
 {
   rktio_poll_set_t *fdarray;
-  if (count) {
-    fdarray = calloc(3, sizeof(rktio_poll_set_t));
-    init_fdset_array(fdarray, 3);
-  } else
-    fdarray = NULL;
+
+  fdarray = calloc(3, sizeof(rktio_poll_set_t));
+  init_fdset_array(fdarray, 3);
 
   return fdarray;
 }
 
 static void free_fdset_arrays(rktio_poll_set_t *fds)
 {
-  FIXME;
+  int i;
+  
+  for (i = 0; i < 3; i++) {
+    if (fds[i].handles)
+      free(fds[i].handles);
+    if (fds[i].repost_sema)
+      free(fds[i].repost_sema);
+    if (fds[i].wait_array)
+      free(fds[i].wait_array);
+  }
+  free(fds);
 }
 
 static void reset_wait_array(rktio_poll_set_t *efd)
@@ -473,7 +481,7 @@ void rktio_fdset(rktio_poll_set_t *fd, int n)
   if (fd->added >= fd->last_alloc) {
     int na;
     na = next_size(fd->last_alloc);
-    efd->last_alloc = na;
+    fd->last_alloc = na;
   }
   if (fd->added >= fd->alloc) {
     SOCKET *naya;
@@ -502,9 +510,9 @@ int rktio_fdisset(rktio_poll_set_t *fd, int n)
 void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
 {
   int i;
-  for (i = src_fd->added; i--; ) {
-    if (stv_fd->sockets[i] != INVALID_SOCKET)
-      rktio_fdset(fds, src_fd->sockets[i]);
+  for (i = src_fds->added; i--; ) {
+    if (src_fds->sockets[i] != INVALID_SOCKET)
+      rktio_fdset(fds, src_fds->sockets[i]);
   }
 }
 
@@ -520,7 +528,7 @@ int rktio_get_fd_limit(rktio_poll_set_t *fds)
 void rktio_poll_set_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost)
 {
   rktio_poll_set_t *efd = fds;
-  OS_SEMAPHORE_TYPE *hs;
+  HANDLE *hs;
   int i, new_i, *rps;
 
   if (efd->num_handles == efd->last_alloc_handles) {
@@ -733,10 +741,7 @@ void rktio_collapse_win_fd(rktio_poll_set_t *fds)
 
 static rktio_poll_set_t *alloc_fdset_arrays()
 {
-  void *p;
-  p = malloc((3 * sizeof(fd_set)) + sizeof(int));
-  *(int *)((char *)p + (3 * sizeof(fd_set))) = 0;
-  return p;
+  return malloc(3 * sizeof(rktio_poll_set_t));
 }
 
 static void free_fdset_arrays(rktio_poll_set_t *fds)
@@ -752,16 +757,17 @@ rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
 void rktio_fdzero(rktio_poll_set_t *fd)
 {
   FD_ZERO(&(fd)->data);
+  fd->nosleep = 0;
 }
 
 void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds)
 {
-  *(int *)((char *)fds + (3 * sizeof(fd_set))) = 1;
+  fds->nosleep = 1;
 }
 
 static int fdset_has_nosleep(rktio_poll_set_t *fds)
 {
-  return *(int *)((char *)fds + (3 * sizeof(fd_set)));
+  return fds->nosleep;
 }
 
 #define USE_PLAIN_FDS_SET_OPS
@@ -813,6 +819,8 @@ void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
       *p |= *sp;
     }
   }
+  if (fdset_has_nosleep(src_fds))
+    rktio_poll_set_add_nosleep(NULL, fds);
 }
 
 void rktio_clean_fd_set(rktio_poll_set_t *fds)
@@ -1000,9 +1008,10 @@ void rktio_wait_until_signal_received(rktio_t *rktio)
 
 /****************** Windows cleanup  *****************/
 
-#if RKTIO_SYSTEM_WINDOWS
+#ifdef RKTIO_SYSTEM_WINDOWS
 
-static void clean_up_wait(intptr_t result, OS_SEMAPHORE_TYPE *array,
+static void clean_up_wait(rktio_t *rktio,
+                          intptr_t result, HANDLE *array,
 			  int *rps, int count)
 {
   if ((result >= (intptr_t)WAIT_OBJECT_0) && (result < (intptr_t)WAIT_OBJECT_0 + count)) {
@@ -1012,7 +1021,7 @@ static void clean_up_wait(intptr_t result, OS_SEMAPHORE_TYPE *array,
   }
 
   /* Clear out break semaphore */  
-  WaitForSingleObject((HANDLE)scheme_break_semaphore, 0);
+  WaitForSingleObject(rktio->break_semaphore, 0);
 }
 
 static int made_progress;
@@ -1214,8 +1223,7 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 	 spin and eat CPU cycles. The back-off is reset whenever a thread makes
 	 progress. */
 
-      if (SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask)
-	  && GetQueueStatus(SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask))) {
+      if (fds->wait_event_mask && GetQueueStatus(fds->wait_event_mask)) {
 	if (!made_progress) {
 	  /* Ok, we've gone around at least once. */
 	  if (max_sleep_time < 0x20000000)
@@ -1248,10 +1256,9 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 	    msec = INFINITE;
 	}
 
-	result = MsgWaitForMultipleObjects(count, array, FALSE, msec,
-					   SCHEME_INT_VAL(((win_extended_fd_set *)fds)->wait_event_mask));
+	result = MsgWaitForMultipleObjects(count, array, FALSE, msec, fds->wait_event_mask);
       }
-      clean_up_wait(result, array, rps, rcount);
+      clean_up_wait(rktio, result, array, rps, rcount);
       scheme_collapse_win_fd(fds); /* cleans up */
 
       return;

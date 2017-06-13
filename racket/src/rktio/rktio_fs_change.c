@@ -121,7 +121,7 @@ rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, char *path)
   {
     HANDLE h;
     
-    h = FindFirstChangeNotificationW(WIDE_PATH_tmp(try_path), FALSE,
+    h = FindFirstChangeNotificationW(WIDE_PATH_temp(path), FALSE,
                                      (FILE_NOTIFY_CHANGE_FILE_NAME
                                       | FILE_NOTIFY_CHANGE_DIR_NAME
                                       | FILE_NOTIFY_CHANGE_SIZE

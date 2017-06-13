@@ -37,7 +37,8 @@ struct rktio_fd_t {
   };
   struct Win_FD_Input_Thread *th; /* input mode */
   struct Win_FD_Output_Thread *oth; /* output mode */
-  char *buffer;
+  int unblocked; /* whether non-blocking mode is installed */
+  char *buffer; /* shared with reading thread */
 #endif
 };
 
@@ -85,6 +86,31 @@ typedef struct Win_FD_Output_Thread {
 } Win_FD_Output_Thread;
 
 # define RKTIO_FD_BUFFSIZE 4096
+
+static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th);
+static void WindowsFDICleanup(Win_FD_Input_Thread *th);
+
+static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth);
+static void WindowsFDOCleanup(Win_FD_Output_Thread *oth);
+
+typedef BOOL (WINAPI* CSI_proc)(HANDLE);
+
+static CSI_proc get_csi(void)
+{
+  static int tried_csi = 0;
+  static CSI_proc csi;
+  
+  if (!tried_csi) {
+    HMODULE hm;
+    hm = LoadLibrary("kernel32.dll");
+    if (hm)
+      csi = (CSI_proc)GetProcAddress(hm, "CancelSynchronousIo");
+    else
+      csi = NULL;
+    tried_csi = 1;
+  }
+  return csi;
+}
 
 #endif
 
@@ -135,7 +161,6 @@ static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
     th->ready_sema = sm;
     sm = CreateSemaphore(NULL, 1, 1, NULL);
     th->you_clean_up_sema = sm;
-    th->refcount = refcount;
 
     h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDReader, th, 0, &id);
 
@@ -166,7 +191,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (modes & RKTIO_OPEN_SOCKET)
-    rfd->s = system_fd;
+    rfd->sock = system_fd;
   else
     rfd->fd = (HANDLE)system_fd;
   if (!(modes & (RKTIO_OPEN_REGFILE | RKTIO_OPEN_NOT_REGFILE | RKTIO_OPEN_SOCKET))) {
@@ -320,7 +345,7 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
       WindowsFDOCleanup(rfd->oth);
     } /* otherwise, thread is responsible for clean-up */
   }
-  if (!rfp->th && !rfp->oth) {
+  if (!rfd->th && !rfd->oth) {
     CloseHandle(rfd->fd);
   }
 #endif
@@ -434,7 +459,7 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_poll_read_ready(rktio, rfd->sock);
+    return rktio_socket_poll_read_ready(rktio, rfd);
   
   if (!rfd->th) {
     /* No thread -- so wait works. This case isn't actually used
@@ -511,7 +536,7 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_poll_write_ready(rktio, rfd->sock);
+    return rktio_socket_poll_write_ready(rktio, rfd);
   
   if (rfd->oth) {
     /* Pipe output that can block... */
@@ -606,10 +631,10 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
     }
 
     if (modes & RKTIO_POLL_WRITE) {
-      if (rfp->oth && !fd_write_ready(port))
-        rktio_fdset_add_handle(rfp->oth->ready_sema, fds, 1);
+      if (rfd->oth && !rktio_poll_write_ready(rktio, rfd))
+        rktio_poll_set_add_handle(rfd->oth->ready_sema, fds, 1);
       else
-        rktio_fdset_nosleep(fds);
+        rktio_poll_set_nosleep(fds);
     }
   }
 #endif
@@ -707,7 +732,7 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
     } else {
       intptr_t bc = rfd->th->avail;
       rfd->th->avail = 0;
-      FIXME read the data;
+      memcpy(buffer, rfd->buffer, bc);
       return bc;
     }
   }
@@ -779,7 +804,6 @@ static void WindowsFDICleanup(Win_FD_Input_Thread *th)
   CloseHandle(th->ready_sema);
   CloseHandle(th->you_clean_up_sema);
 
-  rc = adj_refcount(th->refcount, -1);
   if (!rc) CloseHandle(th->fd);
 
   free(th->buffer);
@@ -849,13 +873,14 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
        is ERROR_NOT_ENOUGH_MEMORY (as opposed to a partial write). */
     int ok;
     intptr_t towrite = len;
+    int err;
     
     while (1) {
       ok = WriteFile((HANDLE)rfd->fd, buffer, towrite, &winwrote, NULL);
       if (!ok)
-        errsaved = GetLastError();
+        err = GetLastError();
 	    
-      if (!ok && (errsaved == ERROR_NOT_ENOUGH_MEMORY)) {
+      if (!ok && (err == ERROR_NOT_ENOUGH_MEMORY)) {
         towrite = towrite >> 1;
         if (!towrite)
           break;
@@ -1000,7 +1025,6 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
         oth->ready_sema = sm;
         sm = CreateSemaphore(NULL, 1, 1, NULL);
         oth->you_clean_up_sema = sm;
-        oth->refcount = rfd->refcount;
             
         h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDWriter, oth, 0, &id);
 
@@ -1100,55 +1124,84 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
 #endif
 }
 
-/*========================================================================*/
-/* refcounts for Windows fd threads                                       */
-/*========================================================================*/
+#ifdef RKTIO_SYSTEM_WINDOWS
 
-#if defined(WINDOWS_FILE_HANDLES) || defined(MZ_USE_PLACES)
-# define MZ_LOCK_REFCOUNTS
-static mzrt_mutex *refcount_mutex;
-#endif
-
-static int *malloc_refcount(int val, int free_on_zero)
+static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 {
-  int *rc;
+  DWORD towrite, wrote, start;
+  int ok, more_work = 0, err_no;
 
-#ifdef MZ_LOCK_REFCOUNTS
-  if (!refcount_mutex)
-    mzrt_mutex_create(&refcount_mutex);
-#endif
+  if (oth->nonblocking) {
+    /* Non-blocking mode (Win NT pipes). Just flush. */
+    while (!oth->done) {
+      WaitForSingleObject(oth->work_sema, INFINITE);
 
-  rc = (int *)malloc(2 * sizeof(int));
-  *rc = val;
-  rc[1] = free_on_zero;
+      FlushFileBuffers(oth->fd);
 
-  return rc;
+      WaitForSingleObject(oth->lock_sema, INFINITE);
+      oth->flushed = 1;
+      ReleaseSemaphore(oth->ready_sema, 1, NULL);
+      ReleaseSemaphore(oth->lock_sema, 1, NULL);
+    }
+  } else {
+    /* Blocking mode. We do the writing work.  This case is for
+       Win 95/98/Me anonymous pipes and character devices (such 
+       as LPT1). */
+    while (!oth->err_no) {
+      if (!more_work)
+	WaitForSingleObject(oth->work_sema, INFINITE);
+
+      if (oth->done)
+	break;
+
+      WaitForSingleObject(oth->lock_sema, INFINITE);
+      towrite = oth->buflen;
+      if (towrite > (RKTIO_FD_BUFFSIZE - oth->bufstart))
+	towrite = RKTIO_FD_BUFFSIZE - oth->bufstart;
+      start = oth->bufstart;
+      ReleaseSemaphore(oth->lock_sema, 1, NULL);
+
+      ok = WriteFile(oth->fd, oth->buffer + start, towrite, &wrote, NULL);
+      if (!ok)
+	err_no = GetLastError();
+      else
+	err_no = 0;
+
+      WaitForSingleObject(oth->lock_sema, INFINITE);
+      if (!ok)
+	oth->err_no = err_no;
+      else {
+	oth->bufstart += wrote;
+	oth->buflen -= wrote;
+	if (oth->bufstart == RKTIO_FD_BUFFSIZE)
+	  oth->bufstart = 0;
+	more_work = oth->buflen > 0;
+      }
+      if ((oth->buflen < RKTIO_FD_BUFFSIZE) || oth->err_no)
+	ReleaseSemaphore(oth->ready_sema, 1, NULL);
+      ReleaseSemaphore(oth->lock_sema, 1, NULL);
+    }
+  }
+  if (WaitForSingleObject(oth->you_clean_up_sema, 0) != WAIT_OBJECT_0) {
+    WindowsFDOCleanup(oth);
+  } /* otherwise, main thread is responsible for clean-up */
+
+  return 0;
 }
 
-static int adj_refcount(int *refcount, int amt)
-  XFORM_SKIP_PROC
+static void WindowsFDOCleanup(Win_FD_Output_Thread *oth)
 {
   int rc;
 
-  if (!refcount)
-    return 0;
+  CloseHandle(oth->lock_sema);
+  CloseHandle(oth->work_sema);
+  CloseHandle(oth->you_clean_up_sema);
+  
+  if (!rc) CloseHandle(oth->fd);
 
-#ifdef MZ_LOCK_REFCOUNTS
-  mzrt_mutex_lock(refcount_mutex);
-#endif
-  if (amt > 0) {
-    /* don't increment up from 0 */
-    if (*refcount)
-      *refcount += amt;
-  } else
-    *refcount += amt;
-  rc = *refcount;
-#ifdef MZ_LOCK_REFCOUNTS
-  mzrt_mutex_unlock(refcount_mutex);
-#endif
-
-  if (!rc && refcount[1])
-    free(refcount);
-
-  return rc;
+  if (oth->buffer)
+    free(oth->buffer);
+  free(oth);
 }
+
+#endif

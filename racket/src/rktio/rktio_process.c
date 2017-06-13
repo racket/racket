@@ -520,8 +520,8 @@ static void do_group_signal_fds()
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 # ifndef USE_CYGWIN_PIPES
-#  define _EXTRA_PIPE_ARGS
-static int MyPipe(intptr_t *ph, int near_index)
+#  define _EXTRA_PIPE_ARGS , rktio
+static int MyPipe(intptr_t *ph, int near_index, rktio_t *rktio)
 {
   HANDLE r, w;
   SECURITY_ATTRIBUTES saAttr;
@@ -756,10 +756,10 @@ static void collect_process_time(rktio_t *rktio, DWORD w, rktio_process_t *sp)
   if ((w != STILL_ACTIVE) && !sp->got_time) {
     FILETIME cr, ex, kr, us;
     if (GetProcessTimes(sp->handle, &cr, &ex, &kr, &us)) {
-      _int64 v;
+      __int64 v;
       uintptr_t msecs;
-      v = ((((_int64)kr.dwHighDateTime << 32) + kr.dwLowDateTime)
-	   + (((_int65)us.dwHighDateTime << 32) + us.dwLowDateTime));
+      v = ((((__int64)kr.dwHighDateTime << 32) + kr.dwLowDateTime)
+	   + (((__int64)us.dwHighDateTime << 32) + us.dwLowDateTime));
       msecs = (uintptr_t)(v / 10000);
       
       rktio->process_children_msecs += msecs;
@@ -830,8 +830,7 @@ void rktio_poll_add_process(rktio_t *rktio, rktio_process_t *sp, rktio_poll_set_
   }
   
 #ifdef RKTIO_SYSTEM_WINDOWS
-  HANDLE sci = sp->handle;
-  rktio_poll_set_add_handle(rktio, handle, fds, 0);
+  rktio_poll_set_add_handle(rktio, sp->handle, fds, 0);
 #endif
 }
 
@@ -1005,7 +1004,7 @@ void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp)
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-  CloseHandle(subproc->handle);
+  CloseHandle(sp->handle);
 #endif
 
   free(sp);
@@ -1023,10 +1022,10 @@ int rktio_process_init(rktio_t *rktio)
 void rktio_process_deinit(rktio_t *rktio)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (process_job_object) {
-    TerminateJobObject((HANDLE)process_job_object, 1);
-    CloseHandle((HANDLE)process_job_object);
-    process_job_object = NULL;
+  if (rktio->process_job_object) {
+    TerminateJobObject(rktio->process_job_object, 1);
+    CloseHandle(rktio->process_job_object);
+    rktio->process_job_object = NULL;
   }
 #endif
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(CENTRALIZED_SIGCHILD)
@@ -1096,15 +1095,16 @@ static char *cmdline_protect(char *s)
   return strdup(s);
 }
 
-static intptr_t do_spawnv(char *command, const char * const *argv,
+static intptr_t do_spawnv(rktio_t *rktio,
+                          const char *command, const char * const *argv,
 			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
 			  int new_process_group, int chain_termination_here_to_child,
-                          void *env, char *wd)
+                          void *env, const char *wd)
 {
   int i, l, len = 0, use_jo;
   intptr_t cr_flag;
   char *cmdline;
-  wchar_t *cmdline_w;
+  wchar_t *cmdline_w, *wd_w;
   STARTUPINFOW startup;
   PROCESS_INFORMATION info;
 
@@ -1151,14 +1151,14 @@ static intptr_t do_spawnv(char *command, const char * const *argv,
   if (use_jo) {
     /* Use a job object to ensure that the new process will be terminated
        if this process ends for any reason (including a crash) */
-    if (!process_job_object) {
-      GC_CAN_IGNORE JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
+    if (!rktio->process_job_object) {
+      JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
 
-      process_job_object = (void*)CreateJobObject(NULL, NULL);
+      rktio->process_job_object = CreateJobObject(NULL, NULL);
 
       memset(&jeli, 0, sizeof(jeli));
       jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
-      SetInformationJobObject((HANDLE)process_job_object,
+      SetInformationJobObject(rktio->process_job_object,
 			      JobObjectExtendedLimitInformation,
 			      &jeli,
 			      sizeof(jeli));
@@ -1169,19 +1169,22 @@ static intptr_t do_spawnv(char *command, const char * const *argv,
   cmdline_w = WIDE_PATH_copy(cmdline);
   if (!exact_cmdline)
     free(cmdline);
+  wd_w = WIDE_PATH_copy(wd);
 
   if (CreateProcessW(WIDE_PATH_temp(command), cmdline_w, 
 		     NULL, NULL, 1 /*inherit*/,
-		     cr_flag, env, WIDE_PATH_COPY(wd),
+		     cr_flag, env, wd_w,
 		     &startup, &info)) {
     if (use_jo)
-      AssignProcessToJobObject((HANDLE)process_job_object, info.hProcess);
+      AssignProcessToJobObject(rktio->process_job_object, info.hProcess);
     CloseHandle(info.hThread);
     *pid = info.dwProcessId;
     free(cmdline_w);
+    free(wd_w);
     return (intptr_t)info.hProcess;
   } else {
     free(cmdline_w);
+    free(wd_w);
     return -1;
   }
 }
@@ -1242,10 +1245,10 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   System_Child *sc;
 # endif
   int fork_errno = 0;
-  void *env;
 #else
   void *sc = 0;
 #endif
+  void *env;
   rktio_process_t *subproc;
 #if defined(RKTIO_SYSTEM_WINDOWS)
   intptr_t spawn_status;
@@ -1295,7 +1298,6 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   }
 
   env = rktio_envvars_to_block(rktio, envvars);
-  
 
 #if defined(RKTIO_SYSTEM_WINDOWS)
 
@@ -1311,7 +1313,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   {
     char **new_argv;
 
-    if (!exact_cmdline) {
+    if (!windows_exact_cmdline) {
       /* protect spaces, etc. in the arguments: */
       new_argv = malloc(sizeof(char *) * argc);
       for (i = 0; i < argc; i++) {
@@ -1320,8 +1322,9 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
       argv = new_argv;
     }
 
-    spawn_status = do_spawnv(command, (const char * const *)new_argv,
-			     exact_cmdline,
+    spawn_status = do_spawnv(rktio,
+                             command, (const char * const *)new_argv,
+			     windows_exact_cmdline,
 			     to_subprocess[0],
 			     from_subprocess[1],
 			     err_subprocess[1],
@@ -1330,7 +1333,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
                              windows_chain_termination_to_child,
                              env, current_directory);
 
-    if (!exact_cmdline) {
+    if (!windows_exact_cmdline) {
       for (i = 0; i < argc; i++) {
         free(argv[i]);
       }
@@ -1576,6 +1579,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   return result;
 }
 
+#ifdef RKTIO_SYSTEM_UNIX
 static void close_fds_after_fork(int skip1, int skip2, int skip3)
 {
   int i;
@@ -1596,4 +1600,4 @@ static void close_fds_after_fork(int skip1, int skip2, int skip3)
     }
   }
 }
-
+#endif

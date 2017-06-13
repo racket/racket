@@ -21,6 +21,8 @@ rktio_t *rktio_init(void)
     return NULL;
   }
 
+  rktio_useless_wide();
+
   return rktio;
 }
 

@@ -43,6 +43,8 @@ int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd);
 
+int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
+
 rktio_fd_t *rktio_open(rktio_t *rktio, char *src, int modes);
 int rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 
@@ -151,7 +153,7 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val);
 rktio_envvars_t *rktio_envvars(rktio_t *rktio);
 rktio_envvars_t *rktio_empty_envvars(rktio_t *rktio);
 rktio_envvars_t *rktio_envvars_copy(rktio_t *rktio, rktio_envvars_t *envvars);
-void rktio_ennvars_free(rktio_t *rktio, rktio_envvars_t *envvars);
+void rktio_envvars_free(rktio_t *rktio, rktio_envvars_t *envvars);
 
 char *rktio_envvars_get(rktio_t *rktio, rktio_envvars_t *envvars, char *name);
 void rktio_envvars_set(rktio_t *rktio, rktio_envvars_t *envvars, char *name, char *value);
@@ -219,8 +221,8 @@ int rktio_poll_fs_change_ready(rktio_t *rktio, rktio_fs_change_t *fc);
 /*************************************************/
 /* File-descriptor sets for polling              */
 
-/* A poll set is intended for a single use or few uses, as opposed to
-   "long-term" poll sets. */
+/* A poll set works for a single use via rktio_sleep(), as opposed to
+   "long-term" poll sets that can be used multiple times. */
 
 typedef struct rktio_poll_set_t rktio_poll_set_t;
 

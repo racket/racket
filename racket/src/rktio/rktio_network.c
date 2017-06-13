@@ -15,7 +15,7 @@
 # include <fcntl.h>
 # include <errno.h>
 # define TCP_SOCKSENDBUF_SIZE 32768
-# define NOT_WINSOCK(x) x
+# define NOT_WINSOCK(x) (x)
 # define SOCK_ERRNO() errno
 # define WAS_EAGAIN(e) ((e == EWOULDBLOCK) || (e == EAGAIN) || (e == EINPROGRESS) || (e == EALREADY))
 # define WAS_ECONNREFUSED(e) (e == ECONNREFUSED)
@@ -133,7 +133,7 @@ struct rktio_udp_t {
 };
 
 
-#if RKTIO_SYSTEM_WINDOWS
+#ifdef RKTIO_SYSTEM_WINDOWS
 # define DECL_SOCK_FDSET(n) fd_set n[1]
 # define INIT_DECL_SOCK_FDSET(r, w, e) /* empty */
 # define INIT_DECL_SOCK_RD_FDSET(r) /* empty */
@@ -344,7 +344,7 @@ static void ghbn_lock(rktio_t *rktio)
 
 static void ghbn_unlock(rktio_t *rktio)
 {
-  ReleaseSemaphore(data->ghbn_lock, 1, NULL);
+  ReleaseSemaphore(rktio->ghbn_lock, 1, NULL);
 }
 
 static void ghbn_wait(rktio_t *rktio)
@@ -356,12 +356,12 @@ static void ghbn_wait(rktio_t *rktio)
 
 static void ghbn_signal(rktio_t *rktio)
 {
-  ReleaseSemaphore(data->ghbn_ready, 1, NULL);
+  ReleaseSemaphore(rktio->ghbn_start, 1, NULL);
 }
 
 static void ghbn_wait_exit(rktio_t *rktio)
 {
-  WaitForSingleObject(rktio->th, INFINITE);
+  WaitForSingleObject(rktio->ghbn_th, INFINITE);
 }
 
 # else
@@ -416,7 +416,7 @@ static intptr_t getaddrinfo_in_thread(void *_data)
       ghbn_lock(rktio);
 
 # ifdef RKTIO_SYSTEM_WINDOWS
-      ReleaseSemaphore(data->ready_sema, 1, NULL);  
+      ReleaseSemaphore(lookup->done_sema, 1, NULL);  
 # else
       {
         long v = 1;
@@ -429,7 +429,7 @@ static intptr_t getaddrinfo_in_thread(void *_data)
 
       if (lookup->mode == GHBN_ABANDONED) {
 # ifdef RKTIO_SYSTEM_WINDOWS
-        CloseHandle(data->ready_sema);
+        CloseHandle(lookup->done_sema);
 # else
         rktio_reliably_close(lookup->done_fd[0]);
 # endif
@@ -464,10 +464,10 @@ static int ghbn_init(rktio_t *rktio)
     get_windows_error();
     return 0;
   }
-  rktio->th = (HANDLE)_beginthreadex(NULL, 5000, 
-                                     win_getaddrinfo_in_thread,
-                                     rktio, 0, &id);
-  if (rktio->th == INVALID_HANDLE) {
+  rktio->ghbn_th = (HANDLE)_beginthreadex(NULL, 5000, 
+                                          win_getaddrinfo_in_thread,
+                                          rktio, 0, NULL);
+  if (rktio->ghbn_th == INVALID_HANDLE_VALUE) {
     get_posix_error();
     return 0;
   }
@@ -881,8 +881,9 @@ int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd)
   return rktio_close(rktio, rfd);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  UNREGISTER_SOCKET(rfd->sock);
-  closesocket(rfd->sock);
+  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  UNREGISTER_SOCKET(s);
+  closesocket(s);
   free(rfd);
 
   return 1;
@@ -895,8 +896,9 @@ void rktio_socket_forget(rktio_t *rktio, rktio_fd_t *rfd)
   rktio_forget(rktio, rfd);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  UNREGISTER_SOCKET(rfd->sock);
-  closesocket(rfd->sock);
+  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  UNREGISTER_SOCKET(s);
+  closesocket(s);
 #endif
 }
 
@@ -955,7 +957,7 @@ int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
     RKTIO_SOCK_FD_ZERO(exnfds);
     RKTIO_SOCK_FD_SET(s, exnfds);
     
-    sr = select(s + 1, readfdsfds, NULL, exnfds, &time);
+    sr = select(s + 1, readfds, NULL, exnfds, &time);
     
     if (sr == -1) {
       get_socket_error();
@@ -987,10 +989,11 @@ rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
   return rktio_dup(rktio, rfd);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  intptr_t nsocket;
+  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t nsocket;
   intptr_t rc;
   WSAPROTOCOL_INFO protocolInfo;
-  rc = WSADuplicateSocket(rfd->sock, GetCurrentProcessId(), &protocolInfo);
+  rc = WSADuplicateSocket(s, GetCurrentProcessId(), &protocolInfo);
   if (rc) {
     get_socket_error();
     return NULL;
@@ -1001,7 +1004,7 @@ rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
     return NULL;
   }
   REGISTER_SOCKET(nsocket);
-  return rktio_system_fd(nsocket, rfd->modes);
+  return rktio_system_fd(rktio, nsocket, rktio_fd_modes(rktio, rfd));
 #endif
 }
 
@@ -1012,7 +1015,7 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
   
   do {
     rn = recv(s, buffer, len, 0);
-  } while ((rn == -1) && (NOT_WINSOCK(errno) == EINTR));
+  } while ((rn == -1) && NOT_WINSOCK(errno == EINTR));
 
   if (rn > 0)
     return rn;
@@ -1054,7 +1057,7 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, i
         do {
           sent = sendto(s, buffer, len, 0,
                         RKTIO_AS_ADDRINFO(addr)->ai_addr, RKTIO_AS_ADDRINFO(addr)->ai_addrlen);
-        } while ((sent == -1) && (NOT_WINSOCK(errno) == EINTR));
+        } while ((sent == -1) && NOT_WINSOCK(errno == EINTR));
         if (sent >= 0)
           break;
         errid = SOCK_ERRNO();
@@ -1064,7 +1067,7 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, i
     } else {
       do {
         sent = send(s, buffer, len, 0);
-      } while ((sent == -1) && (NOT_WINSOCK(errno) == EINTR));
+      } while ((sent == -1) && NOT_WINSOCK(errno == EINTR));
 
       if (sent == -1)
         errid = SOCK_ERRNO();
@@ -1206,7 +1209,7 @@ rktio_fd_t *rktio_connect_finish(rktio_t *rktio, rktio_connect_t *conn)
     if (!rktio->windows_nt_or_later && !errid) {
       /* getsockopt() seems not to work in Windows 95, so use the
          result from select(), which seems to reliably detect an error condition */
-      if (rktio_poll_connect_ready() == RKTIO_POLL_ERROR) {
+      if (rktio_poll_connect_ready(rktio, conn) == RKTIO_POLL_ERROR) {
         errid = WSAECONNREFUSED; /* guess! */
       }
     }
@@ -1517,7 +1520,7 @@ static int do_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener, int 
   
   do {
     sr = select(mx + 1, RKTIO_SOCK_FDS(readfds), NULL, RKTIO_SOCK_FDS(exnfds), &time);
-  } while ((sr == -1) && (NOT_WINSOCK(errno) == EINTR));
+  } while ((sr == -1) && NOT_WINSOCK(errno == EINTR));
 
   if (sr > 0) {
     if (report_which) {
@@ -1578,7 +1581,7 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
 
   do {
     s = accept(ls, (struct sockaddr *)tcp_accept_addr, &l);
-  } while ((s == -1) && (NOT_WINSOCK(errno) == EINTR));
+  } while ((s == -1) && NOT_WINSOCK(errno == EINTR));
 
   if (s != INVALID_SOCKET) {    
 # ifdef RKTIO_SYSTEM_UNIX
@@ -1805,7 +1808,7 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
         /* => data truncated on Windows, which counts as success on Unix */
         rn = len;
         break;
-      } else if (NOT_WINSOCK(errno) == EINTR) {
+      } else if (NOT_WINSOCK(errno == EINTR)) {
         /* try again */
       } else if (WAS_EAGAIN(errno)) {
         /* no data available */

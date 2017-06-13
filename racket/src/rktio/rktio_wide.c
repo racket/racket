@@ -3,6 +3,11 @@
 
 /* For converting byte strings to and from "wide" strings on Windows. */
 
+#ifdef RKTIO_SYSTEM_UNIX
+/* To avoid complaints about an empty object file */
+void rktio_useless_wide() { }
+#endif
+
 #ifdef RKTIO_SYSTEM_WINDOWS
 
 #include <inttypes.h>

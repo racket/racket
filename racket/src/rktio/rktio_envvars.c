@@ -80,14 +80,14 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   int rc;
-  char *val_w;
+  wchar_t *val_w;
 
   if (val)
     val_w = WIDE_PATH_copy(val);
   else
     val_w = NULL;
   
-  rc = SetEnvironmentVariableW(WIDE_PATH_temp(var), val_w);
+  rc = SetEnvironmentVariableW(WIDE_PATH_temp(name), val_w);
 
   if (val_w)
     free(val_w);
@@ -123,7 +123,7 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
       i++;
     }
     
-    ennvars = malloc(sizeof(rktio_envvars_t));
+    envvars = malloc(sizeof(rktio_envvars_t));
     envvars->size = count;
     envvars->count = count;
     envvars->names = malloc(count * sizeof(char *));
@@ -209,7 +209,7 @@ rktio_envvars_t *rktio_envvars_copy(rktio_t *rktio, rktio_envvars_t *envvars)
   return new_envvars;
 }
 
-void rktio_ennvars_free(rktio_t *rktio, rktio_envvars_t *envvars)
+void rktio_envvars_free(rktio_t *rktio, rktio_envvars_t *envvars)
 {
   int i;
 
@@ -353,12 +353,12 @@ for (i = 0; i < envvars->count; i++) {
   for (i = 0; i < envvars->count; i++) {
     s = WIDE_PATH_temp(envvars->names[i]);
     slen = wc_strlen(s);
-    memcpy(r XFORM_OK_PLUS len, s, slen * sizeof(wchar_t));
+    memcpy(r + len, s, slen * sizeof(wchar_t));
     len += slen;
     r[len++] = '=';
-    s = WIDE_PATH(envvars->vals[i]);
+    s = WIDE_PATH_temp(envvars->vals[i]);
     slen = wc_strlen(s);
-    memcpy(r XFORM_OK_PLUS len, s, slen * sizeof(wchar_t));
+    memcpy(r + len, s, slen * sizeof(wchar_t));
     len += slen;
     r[len++] = 0;
   }
