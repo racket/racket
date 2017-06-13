@@ -65,6 +65,12 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd);
 
+#define RKTIO_LOCK_ERROR (-2)
+#define RKTIO_LOCK_ACQUIRED 1
+
+int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl);
+int rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd);
+
 /*************************************************/
 /* Network                                       */
 

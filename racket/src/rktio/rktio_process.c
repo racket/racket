@@ -15,10 +15,6 @@
 #define CENTRALIZED_SIGCHILD
 #endif
 
-#ifdef RKTIO_SYSTEM_UNIX
-static void close_fds_after_fork(int skip1, int skip2, int skip3);
-#endif
-
 /*========================================================================*/
 /* Process data structure                                                 */
 /*========================================================================*/
@@ -1486,7 +1482,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
           }
 	}
 
-        close_fds_after_fork(0, 1, 2);
+        rktio_close_fds_after_fork(0, 1, 2);
       }
 
       /* Set real CWD: */
@@ -1588,7 +1584,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 }
 
 #ifdef RKTIO_SYSTEM_UNIX
-static void close_fds_after_fork(int skip1, int skip2, int skip3)
+void rktio_close_fds_after_fork(int skip1, int skip2, int skip3)
 {
   int i;
 

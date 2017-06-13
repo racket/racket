@@ -35,3 +35,6 @@ typedef unsigned long uintptr_t;
 
 /* In case you want to avoid dynamic sizing of `fd_set` arrays: */
 #undef RKTIO_STATIC_FDSET_SIZE
+
+/* In case you want to use fcntl for file locks */
+#undef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS

@@ -310,7 +310,7 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
 #ifdef RKTIO_SYSTEM_UNIX
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
   if (!(rfd->modes & RKTIO_OPEN_SOCKET))
-    release_lockf(rfd->fd);
+    rktio_release_lockf(rktio, rfd->fd);
 # endif
 
   rktio_reliably_close(rfd->fd);

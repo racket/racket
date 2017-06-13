@@ -83,6 +83,10 @@ struct rktio_t {
   intptr_t wide_buffer_size;
   wchar_t *wide_buffer;
 #endif
+
+#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+  struct rktio_hash_t *locked_fd_process_map;
+#endif
 };
 
 /*========================================================================*/
@@ -213,7 +217,22 @@ char *rktio_convert_from_wchar(const wchar_t *ws, int free_given);
 # define NARROW_PATH_copy_then_free(ws) rktio_convert_from_wchar(ws, 1)
 
 #endif
-  
+
+/*========================================================================*/
+/* Hash table                                                             */
+/*========================================================================*/
+
+/* Maps keys that aren't -1 to non-NULL values */
+
+typedef struct rktio_hash_t rktio_hash_t;
+
+rktio_hash_t *rktio_hash_new(void);
+void rktio_hash_free(rktio_hash_t *ht, int free_values);
+int rktio_hash_is_empty(rktio_hash_t *ht);
+void *rktio_hash_get(rktio_hash_t *ht, intptr_t key);
+void rktio_hash_remove(rktio_hash_t *ht, intptr_t key);
+void rktio_hash_set(rktio_hash_t *ht, intptr_t key, void *v);
+
 /*========================================================================*/
 /* Misc                                                                   */
 /*========================================================================*/
@@ -243,6 +262,7 @@ void rktio_set_windows_error(rktio_t *rktio, int errid);
 
 #ifdef RKTIO_SYSTEM_UNIX
 void rktio_reliably_close(intptr_t s);
+void rktio_close_fds_after_fork(int skip1, int skip2, int skip3);
 #endif
 
 int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd);
@@ -256,3 +276,7 @@ int rktio_winsock_init(rktio_t *rktio);
 void rktio_winsock_done(rktio_t *rktio);
 #endif
 void rktio_init_wide(rktio_t *rktio);
+
+#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
+void rktio_release_lockf(rktio_t *rktio, int fd);
+#endif

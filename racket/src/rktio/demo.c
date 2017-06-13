@@ -934,6 +934,78 @@ int main(int argc, char **argv)
   }
 
   if (verbose)
+    printf("file lock\n");
+  
+  {
+    int r;
+    rktio_fd_t *fd3, *fd4;
+    
+    fd = rktio_open(rktio, "test1", RKTIO_OPEN_READ);
+    check_valid(fd);
+    r = rktio_file_lock_try(rktio, fd, 0);
+    if (r == RKTIO_LOCK_ACQUIRED) {
+      if (verbose)
+        printf(" ... supported\n");
+
+      check_valid(rktio_file_unlock(rktio, fd));
+
+      fd2 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
+      check_valid(fd2);
+      fd3 = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
+      check_valid(fd3);
+      fd4 = rktio_open(rktio, "test1", RKTIO_OPEN_READ);
+      check_valid(fd4);
+
+      check_valid(rktio_file_lock_try(rktio, fd, 0) == RKTIO_LOCK_ACQUIRED);
+      
+      /* Redundant lock acquire: */
+      check_valid(rktio_file_lock_try(rktio, fd, 0) == RKTIO_LOCK_ACQUIRED);
+#if defined(RKTIO_SYSTEM_WINDOWS)
+      /* Balance unlocks (Windows only) */
+      check_valid(rktio_file_unlock(rktio, fd2));
+#endif
+
+      /* Ok to take another non-exclusive lock: */
+      check_valid(rktio_file_lock_try(rktio, fd4, 0) == RKTIO_LOCK_ACQUIRED);
+      check_valid(rktio_file_unlock(rktio, fd4));
+
+      /* Can't take exlcusive lock right now: */
+      check_valid(!rktio_file_lock_try(rktio, fd2, 1));
+
+      check_valid(rktio_file_unlock(rktio, fd));
+
+      /* Can take exlcusive lock now: */
+      check_valid(rktio_file_lock_try(rktio, fd2, 1) == RKTIO_LOCK_ACQUIRED);
+
+#if !defined(RKTIO_SYSTEM_WINDOWS)
+      /* Redundant lock acquire (non-Windows) */
+      check_valid(rktio_file_lock_try(rktio, fd2, 1) == RKTIO_LOCK_ACQUIRED);
+#endif
+      
+      /* Can't take any lock now: */
+      check_valid(!rktio_file_lock_try(rktio, fd, 0));
+      check_valid(!rktio_file_lock_try(rktio, fd3, 1));
+
+      check_valid(rktio_file_unlock(rktio, fd2));
+
+      /* Shared lock ok again: */
+      check_valid(rktio_file_lock_try(rktio, fd, 0) == RKTIO_LOCK_ACQUIRED);
+
+      check_valid(rktio_file_unlock(rktio, fd));
+
+      rktio_close(rktio, fd2);
+      rktio_close(rktio, fd3);
+      rktio_close(rktio, fd4);
+    } else if ((r != RKTIO_LOCK_ERROR)
+               || (rktio_get_last_error_kind(rktio) != RKTIO_ERROR_KIND_RACKET)
+               || (rktio_get_last_error(rktio) != RKTIO_ERROR_UNSUPPORTED)) {
+      check_valid(r == RKTIO_LOCK_ACQUIRED);
+    }
+
+    rktio_close(rktio, fd);
+  }
+
+  if (verbose)
     printf("done\n");
 
   free(pwd);

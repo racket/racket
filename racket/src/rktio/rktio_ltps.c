@@ -21,6 +21,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef RKTIO_SYSTEM_UNIX
+# define LTPS_USE_HASH_TABLE
+#endif
+
 struct rktio_ltps_t {
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
   int fd;
@@ -29,9 +33,10 @@ struct rktio_ltps_t {
 #endif
   /* List of pending signaled handles: */
   struct rktio_ltps_handle_t *signaled;
+#ifdef LTPS_USE_HASH_TABLE
   /* Hash table mapping fds to handles */
-  struct ltps_bucket_t *buckets;
-  intptr_t size, count;
+  rktio_hash_t *fd_handles;
+#endif
 };
 
 struct rktio_ltps_handle_t {
@@ -44,15 +49,12 @@ typedef struct rktio_ltps_handle_pair_t {
   rktio_ltps_handle_t *write_handle;
 } rktio_ltps_handle_pair_t;
 
-#ifdef RKTIO_SYSTEM_UNIX
+#ifdef LTPS_USE_HASH_TABLE
 static rktio_ltps_handle_pair_t *ltps_hash_get(rktio_ltps_t *lt, intptr_t fd);
 static void ltps_hash_set(rktio_ltps_t *lt, intptr_t fd, rktio_ltps_handle_pair_t *v);
 static void ltps_hash_remove(rktio_ltps_t *lt, intptr_t fd);
 static void ltps_hash_init(rktio_ltps_t *lt);
 static void ltps_hash_free(rktio_ltps_t *lt);
-#if !defined(HAVE_KQUEUE_SYSCALL) && !defined(HAVE_EPOLL_SYSCALL)
-static int ltps_is_hash_empty(rktio_ltps_t *lt);
-#endif
 #endif
 
 /*========================================================================*/
@@ -105,7 +107,7 @@ rktio_ltps_t *rktio_open_ltps(rktio_t *rktio)
 
   lt->signaled = NULL;
 
-#ifdef RKTIO_SYSTEM_UNIX
+#ifdef LTPS_USE_HASH_TABLE
   ltps_hash_init(lt);
 #endif
   
@@ -132,7 +134,7 @@ int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
   while ((s = rktio_ltps_get_signaled_handle(rktio, lt)))
     free(s);
 
-#ifdef RKTIO_SYSTEM_UNIX
+#ifdef LTPS_USE_HASH_TABLE
   ltps_hash_free(lt);
 #endif
 
@@ -495,7 +497,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
   int key;
   int sr, hit = 0;
 
-  if (ltps_is_hash_empty(lt))
+  if (rktio_hash_is_empty(lt->handle_map))
     return 0;
 
   rktio_clean_fd_set(lt->fd_set);
@@ -560,7 +562,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
   RKTIO_FD_ZERO(set1);
   RKTIO_FD_ZERO(set2);
 
-  if (ltps_is_hash_empty(lt))
+  if (rktio_hash_is_empty(lt->handle_map))
     return 0;
 
   rktio_merge_fd_sets(fds, lt->fd_set);
@@ -616,137 +618,29 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
 
 #ifdef RKTIO_SYSTEM_UNIX
 
-typedef struct ltps_bucket_t {
-  /* v is non-NULL => bucket is filled */
-  /* v is NULL and fd is -1 => was removed */
-  intptr_t fd;
-  rktio_ltps_handle_pair_t *v;
-} ltps_bucket_t;
-
-static void ltps_rehash(rktio_ltps_t *lt, intptr_t new_size)
-{
-  if (new_size >= 16) {
-    ltps_bucket_t *old_buckets = lt->buckets;
-    intptr_t old_size = lt->size, i;
-
-    lt->size = new_size;
-    lt->buckets = calloc(new_size, sizeof(ltps_bucket_t));
-    lt->count = 0;
-
-    for (i = old_size; --i; ) {
-      if (lt->buckets[i].v)
-        ltps_hash_set(lt, lt->buckets[i].fd, lt->buckets[i].v);
-    }
-
-    free(old_buckets);
-  }
-}
-
 static rktio_ltps_handle_pair_t *ltps_hash_get(rktio_ltps_t *lt, intptr_t fd)
 {
-  if (lt->buckets) {
-    intptr_t mask = (lt->size - 1);
-    intptr_t hc = fd & mask;
-    intptr_t d = ((fd >> 3) & mask) | 0x1;
-
-    while (1) {
-      if (lt->buckets[hc].fd == fd)
-        return lt->buckets[hc].v;
-      else if (lt->buckets[hc].v
-          || (lt->buckets[hc].fd == -1)) {
-        /* keep looking */
-        hc = (hc + d) & mask;
-      } else
-        return NULL;
-    }
-  } else
-    return NULL;
-}
-
-static void ltps_hash_remove(rktio_ltps_t *lt, intptr_t fd)
-{
-  if (lt->buckets) {
-    intptr_t mask = (lt->size - 1);
-    intptr_t hc = fd & mask;
-    intptr_t d = ((fd >> 3) & mask) | 0x1;
-    
-    while (1) {
-      if (lt->buckets[hc].fd == fd) {
-        lt->buckets[hc].fd = -1;
-        lt->buckets[hc].v = NULL;
-        --lt->count;
-        if (4 * lt->count <= lt->size)
-          ltps_rehash(lt, lt->size >> 1);
-      } else if (lt->buckets[hc].v
-                 || (lt->buckets[hc].fd == -1)) {
-        /* keep looking */
-        hc = (hc + d) & mask;
-      } else
-        break;
-    }
-  }
+  return (rktio_ltps_handle_pair_t *)rktio_hash_get(lt->fd_handles, fd);
 }
 
 static void ltps_hash_set(rktio_ltps_t *lt, intptr_t fd, rktio_ltps_handle_pair_t *v)
 {
-  if (!lt->buckets) {
-    lt->size = 16;
-    lt->buckets = calloc(lt->size, sizeof(ltps_bucket_t));
-  }
-  
-  {
-    intptr_t mask = (lt->size - 1);
-    intptr_t hc = fd & mask;
-    intptr_t d = ((fd >> 3) & mask) | 0x1;
-    
-    while (1) {
-      if (lt->buckets[hc].v) {
-        if (lt->buckets[hc].fd == -1) {
-          /* use bucket whos content ws previouslt removed */
-          break;
-        } else {
-          /* keep looking for a spot */
-          hc = (hc + d) & mask;
-        }
-      } else
-        break;
-    }
-    
-    lt->buckets[hc].fd = fd;
-    lt->buckets[hc].v = v;
-    lt->count++;
+  rktio_hash_set(lt->fd_handles, fd, v);
+}
 
-    if (2 * lt->count >= lt->size)
-      ltps_rehash(lt, lt->size << 1);
-  }
+static void ltps_hash_remove(rktio_ltps_t *lt, intptr_t fd)
+{
+  rktio_hash_remove(lt->fd_handles, fd);
 }
 
 static void ltps_hash_init(rktio_ltps_t *lt)
 {
-  lt->buckets = NULL;
-  lt->size = 0;
-  lt->count = 0;
+  lt->fd_handles = rktio_hash_new();
 }
 
 static void ltps_hash_free(rktio_ltps_t *lt)
 {
-  if (lt->buckets) {
-    intptr_t i;
-
-    for (i = lt->size; --i; ) {
-      if (lt->buckets[i].v)
-        free(lt->buckets[i].v);
-    }
-    
-    free(lt->buckets);
-  }
+  rktio_hash_free(lt->fd_handles, 1);
 }
-
-#if !defined(HAVE_KQUEUE_SYSCALL) && !defined(HAVE_EPOLL_SYSCALL)
-static int ltps_is_hash_empty(rktio_ltps_t *lt)
-{
-  return (lt->count == 0);
-}
-#endif
 
 #endif
