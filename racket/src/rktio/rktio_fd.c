@@ -66,13 +66,13 @@ typedef struct Win_FD_Output_Thread {
 		       works. We still use a thread to detect when the
 		       write has ben flushed, which in turn is needed to
 		       know whether future writes will immediately succeed. */
-  volatile flushed, needflush; /* Used for non-blocking, only. The flushed
-				  flag communicates from the flush-testing thread
-				  to the main thread. For efficiency, we request
-				  flush checking only when needed (instead of
-				  after every write); needflush indicates that
-				  a flush check is currently needed, but hasn't
-				  been started. */
+  volatile int flushed, needflush; /* Used for non-blocking, only. The flushed
+                                      flag communicates from the flush-testing thread
+                                      to the main thread. For efficiency, we request
+                                      flush checking only when needed (instead of
+                                      after every write); needflush indicates that
+                                      a flush check is currently needed, but hasn't
+                                      been started. */
   volatile int done, err_no;
   volatile unsigned int buflen, bufstart, bufend; /* used for blocking, only */
   unsigned char *buffer; /* used for blocking, only */
@@ -147,7 +147,7 @@ static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
     /* Replace buffer with a malloced one: */
     bfr = malloc(RKTIO_FD_BUFFSIZE);
     rfd->buffer = bfr;
-    th->buffer = bfr;
+    th->buffer = (unsigned char *)bfr;
 
     th->fd = rfd->fd;
     th->avail = 0;
@@ -286,8 +286,6 @@ void rktio_reliably_close(intptr_t s) {
 int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
-  int cr;
-  
 # ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
   if (!(rfd->modes & RKTIO_OPEN_SOCKET))
     release_lockf(rfd->fd);
@@ -613,28 +611,28 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
           if (rfd->th->avail || rfd->th->err || rfd->th->eof) {
             /* Data is ready. We shouldn't be trying to sleep, so force an
                immediate wake-up: */
-            rktio_fdset_add_nosleep(fds);
+            rktio_poll_set_add_nosleep(rktio, fds);
           } else {
             rfd->th->checking = 1;
             ReleaseSemaphore(rfd->th->checking_sema, 1, NULL);
-            rktio_fdset_add_handle(rfd->th->ready_sema, fds, 1);
+            rktio_poll_set_add_handle(rktio, (intptr_t)rfd->th->ready_sema, fds, 1);
           }
         } else
-          rktio_fdset_add_handle(rfd->th->ready_sema, fds, 1);
+          rktio_poll_set_add_handle(rktio, (intptr_t)rfd->th->ready_sema, fds, 1);
       } else if (rktio_fd_is_regular_file(rktio, rfd)) {
         /* regular files never block */
-        rktio_fdset_add_nosleep(fds);
+        rktio_poll_set_add_nosleep(rktio, fds);
       } else {
         /* This case is not currently used. See fd_byte_ready. */
-        rktio_fdset_add_handle(rfd->fd, fds, 0);
+        rktio_poll_set_add_handle(rktio, (intptr_t)rfd->fd, fds, 0);
       }
     }
 
     if (modes & RKTIO_POLL_WRITE) {
       if (rfd->oth && !rktio_poll_write_ready(rktio, rfd))
-        rktio_poll_set_add_handle(rfd->oth->ready_sema, fds, 1);
+        rktio_poll_set_add_handle(rktio, (intptr_t)rfd->oth->ready_sema, fds, 1);
       else
-        rktio_poll_set_nosleep(fds);
+        rktio_poll_set_nosleep(rktio, fds);
     }
   }
 #endif

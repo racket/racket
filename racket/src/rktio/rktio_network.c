@@ -602,7 +602,7 @@ void rktio_poll_add_addrinfo_lookup(rktio_t *rktio, rktio_addrinfo_lookup_t *loo
   ghbn_unlock(rktio);
 
 # ifdef RKTIO_SYSTEM_WINDOWS
-  rktio_poll_set_add_handle(lookup->done_sema, fds, 1);
+  rktio_poll_set_add_handle(rktio, (intptr_t)lookup->done_sema, fds, 1);
 # else
   {
     rktio_poll_set_t *fds2;
@@ -704,7 +704,6 @@ rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
 {
   rktio_addrinfo_lookup_t *lookup;
   char buf[32], *service;
-  int err;
   struct rktio_addrinfo_t *hints;
 
   if (portno >= 0) {
@@ -1109,7 +1108,6 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn);
 rktio_connect_t *rktio_start_connect(rktio_t *rktio, rktio_addrinfo_t *dest, rktio_addrinfo_t *src)
 {
   rktio_connect_t *conn;
-  int errid;
 
 #ifdef USE_TCP
   TCP_INIT("tcp-connect");
@@ -1266,13 +1264,9 @@ static int get_no_portno(rktio_t *rktio, rktio_socket_t socket);
 
 rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlog, int reuse)
 {
-#ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
-  int no_ipv6 = 0;
-#endif
-    
   {
     rktio_addrinfo_t *addr;
-    int err, count = 0, pos = 0, i;
+    int count = 0, pos = 0;
     rktio_listener_t *l = NULL;
 #ifdef RKTIO_TCP_LISTEN_IPV6_ONLY_SOCKOPT
     int any_v4 = 0, any_v6 = 0;
@@ -1564,7 +1558,8 @@ void rktio_poll_add_receive(rktio_t *rktio, rktio_listener_t *listener, rktio_po
 
 rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
 {
-  int was_closed = 0, errid, ready_pos;
+  int
+    ready_pos;
   rktio_socket_t s, ls;
   unsigned int l;
   char tcp_accept_addr[RKTIO_SOCK_NAME_MAX_LEN];
@@ -1958,6 +1953,8 @@ int rktio_udp_change_multicast_group(rktio_t *rktio, rktio_fd_t *rfd,
     optname = IP_ADD_MEMBERSHIP;
   else if (action == RKTIO_DROP_MEMBERSHIP)
     optname = IP_DROP_MEMBERSHIP;
+  else
+    optname = 0;
 
   status = setsockopt(s, IPPROTO_IP, optname, (void *) &mreq, mreq_len);
   

@@ -242,7 +242,7 @@ void rktio_poll_add_fs_change(rktio_t *rktio, rktio_fs_change_t *fc, rktio_poll_
 void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds);
 
 #ifdef RKTIO_SYSTEM_WINDOWS
-void rktio_poll_set_add_handle(rktio_t *rktio, HANDLE h, rktio_poll_set_t *fds, int repost);
+void rktio_poll_set_add_handle(rktio_t *rktio, intptr_t h, rktio_poll_set_t *fds, int repost);
 void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t *fds, int mask);
 #endif
 

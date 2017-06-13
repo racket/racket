@@ -47,9 +47,12 @@ typedef struct rktio_ltps_handle_pair_t {
 static rktio_ltps_handle_pair_t *ltps_hash_get(rktio_ltps_t *lt, intptr_t fd);
 static void ltps_hash_set(rktio_ltps_t *lt, intptr_t fd, rktio_ltps_handle_pair_t *v);
 static void ltps_hash_remove(rktio_ltps_t *lt, intptr_t fd);
-static int ltps_is_hash_empty(rktio_ltps_t *lt);
 static void ltps_hash_init(rktio_ltps_t *lt);
 static void ltps_hash_free(rktio_ltps_t *lt);
+
+#if !defined(HAVE_KQUEUE_SYSCALL) && !defined(HAVE_EPOLL_SYSCALL)
+static int ltps_is_hash_empty(rktio_ltps_t *lt);
+#endif
 
 /*========================================================================*/
 
@@ -363,7 +366,8 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
       } else
         s = NULL;
     }
-  }
+  } else
+    s = NULL;
 
   return s;
 #endif
@@ -710,11 +714,6 @@ static void ltps_hash_set(rktio_ltps_t *lt, intptr_t fd, rktio_ltps_handle_pair_
   }
 }
 
-static int ltps_is_hash_empty(rktio_ltps_t *lt)
-{
-  return (lt->count == 0);
-}
-
 static void ltps_hash_init(rktio_ltps_t *lt)
 {
   lt->buckets = NULL;
@@ -735,3 +734,10 @@ static void ltps_hash_free(rktio_ltps_t *lt)
     free(lt->buckets);
   }
 }
+
+#if !defined(HAVE_KQUEUE_SYSCALL) && !defined(HAVE_EPOLL_SYSCALL)
+static int ltps_is_hash_empty(rktio_ltps_t *lt)
+{
+  return (lt->count == 0);
+}
+#endif

@@ -3036,6 +3036,11 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+# If using gcc, we want all warnings:
+if test "$CC" = "gcc" ; then
+  CFLAGS="$CFLAGS -Wall"
+fi
+
 if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}ranlib", so it can be a program name with args.
 set dummy ${ac_tool_prefix}ranlib; ac_word=$2
@@ -4188,11 +4193,11 @@ if test "${enable_shared}" = "yes" ; then
     fi
   fi
 
-  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} \$(ARLIBFLAGS) -o"
   STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
   ARFLAGS=""
   RANLIB=":"
-  RKTLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc} -rpath ${abslibdir}"
+  RKTLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}"
   CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
   LIBSFX=la
   LTO="lo"

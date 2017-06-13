@@ -69,7 +69,6 @@ rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, char *path)
 {
   int ok = 0;
 #ifndef NO_FILESYSTEM_CHANGE_EVTS
-  int errid = 0;
 # if defined(HAVE_KQUEUE_SYSCALL)
   rktio_ltps_t *lt;
   rktio_ltps_handle_t *lth;
@@ -219,7 +218,7 @@ void rktio_poll_add_fs_change(rktio_t *rktio, rktio_fs_change_t *fc, rktio_poll_
 
 #if defined(NO_FILESYSTEM_CHANGE_EVTS)
 #elif defined(RKTIO_SYSTEM_WINDOWS)
-  rktio_poll_set_add_handle(rktio, (HANDLE)fc->fd, fds, 0);
+  rktio_poll_set_add_handle(rktio, fc->fd, fds, 0);
 #elif defined(HAVE_INOTIFY_SYSCALL)
   int fd;
   fd = do_inotify_fd(rktio);

@@ -312,7 +312,7 @@ char *rktio_convert_from_wchar(const wchar_t *ws, int free_given)
   intptr_t len, l;
   char *s;
 
-  l = wc_slen(ws) + 1; /* add nul terminator */
+  l = wcslen(ws) + 1; /* add nul terminator */
 
   len = utf16ish_to_utf8ish((unsigned short *)ws, l, NULL);
 

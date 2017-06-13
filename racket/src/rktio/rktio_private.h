@@ -1,10 +1,3 @@
-#if ((defined(_MSC_VER) || defined(__MINGW32__))                        \
-     && (defined(__WIN32__) || defined(WIN32) || defined(_WIN32)))
-# define RKTIO_SYSTEM_WINDOWS
-#else
-# define RKTIO_SYSTEM_UNIX
-#endif
-
 #if defined(__APPLE__) && defined(__MACH__) && !defined(OS_X)
 # define OS_X
 #endif

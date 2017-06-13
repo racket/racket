@@ -830,7 +830,7 @@ void rktio_poll_add_process(rktio_t *rktio, rktio_process_t *sp, rktio_poll_set_
   }
   
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio_poll_set_add_handle(rktio, sp->handle, fds, 0);
+  rktio_poll_set_add_handle(rktio, (intptr_t)sp->handle, fds, 0);
 #endif
 }
 
@@ -1239,12 +1239,11 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 {
   rktio_process_result_t *result;
   intptr_t to_subprocess[2], from_subprocess[2], err_subprocess[2];
-  int i, pid, errid;
+  int pid, errid;
 #if defined(RKTIO_SYSTEM_UNIX)
 # if !defined(CENTRALIZED_SIGCHILD)
   System_Child *sc;
 # endif
-  int fork_errno = 0;
 #else
   void *sc = 0;
 #endif
@@ -1255,9 +1254,12 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #endif
   int new_process_group = (flags & RKTIO_PROCESS_NEW_GROUP);
   int stderr_is_stdout = (flags & RKTIO_PROCESS_STDOUT_AS_STDERR);
+#if defined(RKTIO_SYSTEM_WINDOWS)
   int windows_exact_cmdline = (flags & RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE);
   int windows_chain_termination_to_child = (flags & RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION);
-
+  int i;
+#endif
+  
   /* avoid compiler warnings: */
   to_subprocess[0] = -1;
   to_subprocess[1] = -1;

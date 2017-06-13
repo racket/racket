@@ -16,6 +16,11 @@ AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, b
 
 AC_PROG_CC
 
+# If using gcc, we want all warnings:
+if test "$CC" = "gcc" ; then 
+  CFLAGS="$CFLAGS -Wall"
+fi
+
 AC_PROG_RANLIB
 if test "$AR" = '' ; then 
   AR="${ac_tool_prefix}ar"

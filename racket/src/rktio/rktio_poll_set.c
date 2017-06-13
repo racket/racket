@@ -525,8 +525,9 @@ int rktio_get_fd_limit(rktio_poll_set_t *fds)
   return 0;
 }
 
-void rktio_poll_set_add_handle(HANDLE h, rktio_poll_set_t *fds, int repost)
+void rktio_poll_set_add_handle(rktio_t *rktio, intptr_t _h, rktio_poll_set_t *fds, int repost)
 {
+  HANDLE h = (HANDLE)_h;
   rktio_poll_set_t *efd = fds;
   HANDLE *hs;
   int i, new_i, *rps;

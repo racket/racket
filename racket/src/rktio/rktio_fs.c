@@ -9,12 +9,13 @@
 #include <stdlib.h>
 #ifdef RKTIO_SYSTEM_UNIX
 # include <fcntl.h>
-#include <pwd.h>
-#include <grp.h>
-#include <dirent.h>
+# include <pwd.h>
+# include <grp.h>
+# include <dirent.h>
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <shlobj.h>
+# include <direct.h>
 #endif
 
 #ifdef RKTIO_SYSTEM_UNIX
@@ -107,6 +108,10 @@ static void init_procs()
 # define GET_FF_ATTRIBS(fd) (fd.dwFileAttributes)
 # define GET_FF_MODDATE(fd) convert_date(&fd.ftLastWriteTime)
 # define GET_FF_NAME(fd) fd.cFileName
+
+# define MKDIR_NO_MODE_FLAG
+
+#define is_drive_letter(c) (((unsigned char)c < 128) && isalpha((unsigned char)c))
 
 static time_t convert_date(const FILETIME *ft)
 {
@@ -418,7 +423,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
           if (dest) free(dest);
           dest_len = len + 1;
           dest = malloc(dest_len);
-          len = GetFinalPathNameByHandleProcW(h, dest, dest_len, rktioFILE_NAME_NORMALIZED);
+          len = GetFinalPathNameByHandleProc(h, dest, dest_len, rktioFILE_NAME_NORMALIZED);
         } while (len > dest_len);
 
         if (!len) {
@@ -756,9 +761,8 @@ static int enable_write_permission(rktio_t *rktio, const char *fn)
 
 int rktio_delete_file(rktio_t *rktio, char *fn, int enable_write_on_fail)
 {
-  int errid;
-
 #ifdef RKTIO_SYSTEM_WINDOWS
+  int errid;
   if (DeleteFileW(WIDE_PATH_temp(fn)))
     return 1;
   errid = GetLastError();
@@ -803,7 +807,6 @@ int rktio_rename_file(rktio_t *rktio, char *dest, char *src, int exists_ok)
     /* Then we have the great misfortune of running in Windows 9x. If
        exists_ok, then do something no less stupid than the OS
        itself: */
-    int errid;
     if (exists_ok)
       MSC_W_IZE(unlink)(MSC_WIDE_PATH_temp(dest));
     if (MoveFileW(src_w, WIDE_PATH_temp(dest))) {
@@ -878,7 +881,6 @@ int rktio_make_directory(rktio_t *rktio, char *filename)
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
   return 0;
 #else
-  int exists_already = 0;
   int len, copied = 0;
 
   /* Make sure path doesn't have trailing separator: */
@@ -1226,7 +1228,6 @@ int rktio_set_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
 #  endif  
 #  ifdef RKTIO_SYSTEM_WINDOWS
   {
-    int len = strlen(filename);
     int ALWAYS_SET_BITS = ((RKTIO_UNC_READ | RKTIO_UNC_EXEC)
                            | ((RKTIO_UNC_READ | RKTIO_UNC_EXEC) << 3)
                            | ((RKTIO_UNC_READ | RKTIO_UNC_EXEC) << 6));
@@ -1314,7 +1315,6 @@ rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filenam
  retry:
 
   {
-    char *nf;
     int is_ssq = 0, is_unc = 0, d, nd;
     len = strlen(filename);
     pattern = malloc(len + 14);
@@ -1347,7 +1347,7 @@ rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filenam
 	nd = 0;
       }
     }
-    memcpy(pattern + d, nf + nd, len - nd);
+    memcpy(pattern + d, filename + nd, len - nd);
     len += (d - nd);
     if (len && !IS_A_DOS_SEP(pattern[len - 1]))
       pattern[len++] = '\\';      
@@ -1410,7 +1410,6 @@ rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filenam
 {
   rktio_directory_list_t *dl;
   DIR *dir;
-  int nlen;
 
   dir = opendir(filename ? filename : ".");
   if (!dir) {
@@ -1633,7 +1632,7 @@ char **rktio_filesystem_root_list(rktio_t *rktio)
       if (GetDiskFreeSpace(s + ds, &a, &b, &c, &d)) {
         if ((ss_count + 1) == ss_len) {
           new_ss = malloc(sizeof(char*) * ss_len * 2);
-          mempcy(ss, new_ss, ss_count * sizeof(char*));
+          memcpy(ss, new_ss, ss_count * sizeof(char*));
           ss = new_ss;
           ss_len *= 2;
         }
@@ -1793,7 +1792,7 @@ char *rktio_system_path(rktio_t *rktio, int which)
   
   {
     /* Everything else is in ~: */
-    char *home_str, *ex_home, *alt_home, *home;
+    char *home_str, *alt_home, *home;
 
     if ((which == RKTIO_PATH_PREF_DIR) 
 	|| (which == RKTIO_PATH_PREF_FILE)
@@ -1905,7 +1904,7 @@ char *rktio_system_path(rktio_t *rktio, int which)
       }
 
       if (SHGetSpecialFolderLocation(NULL, which_folder, &items) == S_OK) {
-	int ok;
+        int ok;
 	IMalloc *mi;
 	wchar_t *buf;
 
@@ -1916,7 +1915,8 @@ char *rktio_system_path(rktio_t *rktio, int which)
 	mi->lpVtbl->Free(mi, items);
 	mi->lpVtbl->Release(mi);
 
-        home = NARROW_PATH_copy_then_free(buf);
+        if (ok)
+          home = NARROW_PATH_copy_then_free(buf);
       }
     }
 
@@ -1961,7 +1961,7 @@ char *rktio_system_path(rktio_t *rktio, int which)
 	
 	  s = name;
 	
-	  i = wc_strlen(s) - 1;
+	  i = wcslen(s) - 1;
 	
 	  while (i && (s[i] != '\\')) {
 	    --i;
