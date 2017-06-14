@@ -4942,9 +4942,8 @@ static Scheme_Object *file_identity(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
 {
-  rktio_size_t *sz;
+  rktio_filesize_t *sz;
   char *filename;
-  mzlonglong len = 0;
 
   if (!SCHEME_PATH_STRINGP(argv[0]))
     scheme_wrong_contract("file-size", "path-string?", 0, argc, argv);
@@ -4956,9 +4955,9 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
 
   sz = rktio_file_size(scheme_rktio, filename);
   if (sz) {
-    len = ((mzlonglong)sz->hi << 32) + (mzlonglong)sz->lo;
+    mzlonglong szv = *sz;
     free(sz);
-    return scheme_make_integer_value_from_long_long(len);
+    return scheme_make_integer_value_from_long_long(szv);
   }
 
   scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,

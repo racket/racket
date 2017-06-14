@@ -289,16 +289,3 @@ void rktio_init_wide(rktio_t *rktio);
 #ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 void rktio_release_lockf(rktio_t *rktio, int fd);
 #endif
-
-#ifdef RKTIO_SYSTEM_WINDOWS
-# ifdef _MSC_VER
-typedef _int64 rktio_int64_t;
-typedef unsigned _int64 rktio_uint64_t;
-# else
-typedef __int64 rktio_int64_t;
-typedef unsigned __int64 rktio_uint64_t;
-# endif
-#else
-typedef long long rktio_int64_t;
-typedef unsigned long long rktio_uint64_t;
-#endif

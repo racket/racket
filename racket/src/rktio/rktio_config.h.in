@@ -21,6 +21,19 @@ typedef long intptr_t;
 typedef unsigned long uintptr_t;
 #endif
 
+#ifdef RKTIO_SYSTEM_WINDOWS
+# ifdef _MSC_VER
+typedef _int64 rktio_int64_t;
+typedef unsigned _int64 rktio_uint64_t;
+# else
+typedef __int64 rktio_int64_t;
+typedef unsigned __int64 rktio_uint64_t;
+# endif
+#else
+typedef long long rktio_int64_t;
+typedef unsigned long long rktio_uint64_t;
+#endif
+
 /* Whether pthread is available */
 #undef RKTIO_USE_PTHREADS
 

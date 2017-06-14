@@ -175,7 +175,7 @@ intptr_t rktio_get_process_children_milliseconds(rktio_t *rktio)
 #endif
 }
 
-intptr_t rktio_get_seconds(rktio_t *rktio)
+rktio_timestamp_t rktio_get_seconds(rktio_t *rktio)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   return (intptr_t)(get_hectonanoseconds_as_longlong() / (rktio_int64_t)10000000);
@@ -314,9 +314,8 @@ static int VALID_TIME_RANGE(intptr_t lnow)
 
 #endif
 
-rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, intptr_t seconds, intptr_t nanoseconds, int get_gmt)
+rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, int nanoseconds, int get_gmt)
 {
-  intptr_t lnow;
   int hour, min, sec, month, day, wday, yday, dst;
   intptr_t year;
   long tzoffset;
@@ -331,17 +330,15 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, intptr_t seconds, intptr_t n
   char *tzn;
   rktio_date_t *result;
 
-  lnow = seconds;
-
-  if ((((intptr_t)(now = (CHECK_TIME_T)lnow)) == lnow)
-      && VALID_TIME_RANGE(lnow)) {
+  if ((((intptr_t)(now = (CHECK_TIME_T)seconds)) == seconds)
+      && VALID_TIME_RANGE(seconds)) {
     int success;
 
 #ifdef RKTIO_SYSTEM_WINDOWS
     {
       rktio_uint64_t tmpC;
-      tmpC = ((rktio_uint64_t)lnow * 10000000);
-      if ((rktio_int64_t)tmpC / 10000000 != lnow) {
+      tmpC = ((rktio_uint64_t)seconds * 10000000);
+      if ((rktio_int64_t)tmpC / 10000000 != seconds) {
 	/* overflow */
 	success = 0;
       } else {

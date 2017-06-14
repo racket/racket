@@ -337,7 +337,7 @@ static char *UNC_readlink(rktio_t *rktio, const char *fn)
 }
 
 static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir, int *islink, 
-		    rktio_timestamp_t **date, rktio_size_t *filesize,
+		    rktio_timestamp_t **date, rktio_filesize_t *filesize,
 		    const char **resolved_path, int set_flags)
 /* dirname must be absolute */
 {
@@ -495,8 +495,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
         *isdir = (GET_FF_ATTRIBS(fad) & FF_A_DIR);
       }
       if (filesize) {
-        filesize->lo = fad.nFileSizeLow;
-        filesize->hi = fad.nFileSizeHigh;
+        *filesize = ((rktio_filesize_t)fad.nFileSizeHigh << 32) + fad.nFileSizeLow;
       }
     }
     free(copy);
@@ -1275,9 +1274,9 @@ int rktio_set_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
 # endif
 }
 
-rktio_size_t *rktio_file_size(rktio_t *rktio, char *filename)
+rktio_filesize_t *rktio_file_size(rktio_t *rktio, char *filename)
 {
-  rktio_size_t *sz = NULL;
+  rktio_filesize_t *sz = NULL;
 #ifdef RKTIO_SYSTEM_WINDOWS
  {
    rktio_size_t sz_v;
@@ -1306,12 +1305,8 @@ rktio_size_t *rktio_file_size(rktio_t *rktio, char *filename)
       return NULL;
     }
 
-    sz = malloc(sizeof(rktio_size_t));
-    sz->lo = ((unsigned)buf.st_size & 0xFFFFFFFF);
-    if (sizeof(buf.st_size) > 4)
-      sz->hi = (buf.st_size >> 32);
-    else
-      sz->hi = 0;
+    sz = malloc(sizeof(rktio_filesize_t));
+    *sz = buf.st_size;
 
     return sz;
   }

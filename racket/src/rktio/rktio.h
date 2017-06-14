@@ -341,13 +341,10 @@ RKTIO_EXTERN rktio_ok_t rktio_make_link(rktio_t *rktio, char *src, char *dest,
 /*************************************************/
 /* File attributes                               */
 
-typedef struct {
-  unsigned lo, hi;
-} rktio_size_t;
-
+typedef rktio_int64_t rktio_filesize_t;
 typedef intptr_t rktio_timestamp_t;
 
-RKTIO_EXTERN rktio_size_t *rktio_file_size(rktio_t *rktio, char *filename);
+RKTIO_EXTERN rktio_filesize_t *rktio_file_size(rktio_t *rktio, char *filename);
 
 RKTIO_EXTERN rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, char *file);
 RKTIO_EXTERN rktio_ok_t rktio_set_file_modify_seconds(rktio_t *rktio, char *file, rktio_timestamp_t secs);
@@ -463,8 +460,8 @@ RKTIO_EXTERN double rktio_get_inexact_milliseconds(void);
 RKTIO_EXTERN intptr_t rktio_get_process_milliseconds(rktio_t *rktio);
 RKTIO_EXTERN intptr_t rktio_get_process_children_milliseconds(rktio_t *rktio);
 
-RKTIO_EXTERN intptr_t rktio_get_seconds(rktio_t *rktio);
-RKTIO_EXTERN rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, intptr_t seconds, intptr_t nanoseconds, int get_gmt);
+RKTIO_EXTERN rktio_timestamp_t rktio_get_seconds(rktio_t *rktio);
+RKTIO_EXTERN rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, int nanoseconds, int get_gmt);
 
 /*************************************************/
 /* Errors                                        */
