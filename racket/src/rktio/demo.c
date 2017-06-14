@@ -8,7 +8,7 @@ static void do_check_valid(rktio_t *rktio, int ok, int where)
   /* Beware that a reported error is nonsense if the failure
      was an unexpected result insteda of an error result. */
   if (!ok) {
-    printf("error at %d: %d@%d = %s\n",
+    printf(">> ERROR at %d: %d@%d = %s\n",
            where,
            rktio_get_last_error(rktio),
            rktio_get_last_error_kind(rktio),
@@ -21,7 +21,7 @@ static void do_check_valid(rktio_t *rktio, int ok, int where)
 static void do_check_expected_error(rktio_t *rktio, int err, int where)
 {
   if (!err) {
-    printf("error expected at %d\n",
+    printf(">> ERROR expected at %d\n",
            where);
   }
 }
@@ -29,11 +29,11 @@ static void do_check_expected_error(rktio_t *rktio, int err, int where)
 static void do_check_expected_racket_error(rktio_t *rktio, int err, int what, int where)
 {
   if (!err) {
-    printf("error expected at %d\n",
+    printf(">> ERROR expected at %d\n",
            where);
   } else if ((what != rktio_get_last_error(rktio))
              || (RKTIO_ERROR_KIND_RACKET != rktio_get_last_error_kind(rktio))) {
-    printf("wrong error at %d: %d@%d = %s\n",
+    printf(">> WRONG ERROR at %d: %d@%d = %s\n",
            where,
            rktio_get_last_error(rktio),
            rktio_get_last_error_kind(rktio),
@@ -534,8 +534,8 @@ int main(int argc, char **argv)
   ts1 = rktio_get_file_modify_seconds(rktio, "test1");
   perms = rktio_get_file_or_directory_permissions(rktio, "test1", 0);
   check_valid(perms != -1);
-  check_valid(perms & (RKTIO_PERMISSION_READ << 6));
-  check_valid(perms & (RKTIO_PERMISSION_WRITE << 6));
+  check_valid(perms & RKTIO_PERMISSION_READ);
+  check_valid(perms & RKTIO_PERMISSION_WRITE);
   perms = rktio_get_file_or_directory_permissions(rktio, "test1", 1);
   check_valid(perms != -1);
   check_valid(perms & (RKTIO_PERMISSION_READ << 6));
@@ -584,7 +584,7 @@ int main(int argc, char **argv)
 
   /* Listing directory content */
 
-  ls = rktio_directory_list_start(rktio, pwd, 0);
+  ls = rktio_directory_list_start(rktio, pwd);
   check_valid(ls);
   saw_file = 0;
   while (1) {

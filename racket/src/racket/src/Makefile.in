@@ -304,9 +304,11 @@ SCONFIG = $(srcdir)/../sconfig.h $(srcdir)/../uconfig.h ../mzconfig.h
 
 COMMON_HEADERS = $(srcdir)/schpriv.h $(srcdir)/schexn.h $(SCONFIG) $(srcdir)/../include/scheme.h \
                  $(srcdir)/../include/schthread.h $(srcdir)/mzrt.h $(srcdir)/mzrt_cas.inc \
-                 $(srcdir)/longdouble/longdouble.h $(srcdir)/../utils/schiptr.h \
+                 $(srcdir)/longdouble/longdouble.h $(srcdir)/../utils/schiptr.h
+RKTIO_HEADERS =  $(srcdir)/schrktio.h \
                  $(srcdir)/../../rktio/rktio.h $(srcdir)/../../rktio/rktio_platform.h \
                  ../../rktio/rktio_config.h
+
 JIT_HEADERS = $(srcdir)/jit.h $(srcdir)/jitfpu.h $(srcdir)/stypes.h \
         $(srcdir)/lightning/i386/core.h $(srcdir)/lightning/i386/core-common.h \
         $(srcdir)/lightning/i386/asm.h $(srcdir)/lightning/i386/asm-common.h \
@@ -324,7 +326,7 @@ JIT_HEADERS = $(srcdir)/jit.h $(srcdir)/jitfpu.h $(srcdir)/stypes.h \
         $(srcdir)/lightning/arm/fp-vfp.h $(srcdir)/lightning/arm/fp-swf.h \
         $(srcdir)/future.h $(srcdir)/jit_ts.c $(srcdir)/jit_ts_protos.h
 
-salloc.@LTO@: $(COMMON_HEADERS) \
+salloc.@LTO@: $(COMMON_HEADERS) $(RKTIOHEADERS) \
             $(srcdir)/../gc/gc.h $(srcdir)/mzmark_salloc.inc
 bignum.@LTO@: $(COMMON_HEADERS) \
           $(srcdir)/stypes.h    
@@ -349,13 +351,13 @@ error.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h  
 eval.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_eval.inc \
-          $(srcdir)/schmach.h $(srcdir)/mzstkchk.h $(srcdir)/schrunst.h \
-				$(srcdir)/future.h
-file.@LTO@: $(COMMON_HEADERS) \
+        $(srcdir)/schmach.h $(srcdir)/mzstkchk.h $(srcdir)/schrunst.h \
+        $(srcdir)/future.h
+file.@LTO@: $(COMMON_HEADERS) $(RKTIOHEADERS) \
         $(srcdir)/stypes.h
-fun.@LTO@: $(COMMON_HEADERS) \
+fun.@LTO@: $(COMMON_HEADERS) $(RKTIOHEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_fun.inc $(srcdir)/schmap.inc \
-				$(srcdir)/future.h
+        $(srcdir)/future.h
 future.@LTO@: $(COMMON_HEADERS) $(srcdir)/future.h $(SCONFIG) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_future.inc \
         $(srcdir)/jit_ts_future_glue.c $(srcdir)/jit_ts_runtime_glue.c $(srcdir)/jit_ts_protos.h

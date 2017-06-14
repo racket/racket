@@ -24,6 +24,7 @@
 */
 
 #include "schpriv.h"
+#include "schrktio.h"
 #include <ctype.h>
 #ifdef DOS_FILE_SYSTEM
 # include <windows.h>
@@ -281,6 +282,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
   %- = skip int
 
   %L = line number as intptr_t, -1 means no line
+  %R = get error numebr and string from rktio
   %e = error number for strerror()
   %E = error number for platform-specific error string
   %Z = potential platform-specific error number; additional char*
@@ -480,6 +482,44 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    }
 	  }
 	  break;
+        case 'R':
+          {
+            intptr_t errid;
+            intptr_t errkind;
+            const char *es;
+            intptr_t elen;
+            errkind = rktio_get_last_error(scheme_rktio);
+            errid = rktio_get_last_error(scheme_rktio);
+            es = rktio_get_error_string(scheme_rktio, errkind, errid);
+            sprintf(buf, "; errno=%" PRIdPTR "", errid);
+            elen = strlen(es);
+            tlen = strlen(buf);
+            t = (const char *)scheme_malloc_atomic(tlen+elen+1);
+            memcpy((char *)t, es, elen);
+            memcpy((char *)t+elen, buf, tlen+1);
+            tlen += elen;
+            if (_errno_val) {
+              Scheme_Object *err_kind;
+              switch (errkind) {
+              case RKTIO_ERROR_KIND_WINDOWS:
+                err_kind = windows_symbol;
+                break;
+              case RKTIO_ERROR_KIND_POSIX:
+                err_kind = posix_symbol;
+                break;
+              case RKTIO_ERROR_KIND_GAI:
+                err_kind = gai_symbol;
+                break;
+              default:
+                err_kind = NULL;
+              }
+              if (err_kind) {
+                err_kind = scheme_make_pair(scheme_make_integer_value(errid), err_kind);
+                *_errno_val = err_kind;
+              }
+            }
+          }
+          break;
 	case 'e':
         case 'm':
 	case 'E':
@@ -668,6 +708,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	  }
 	}
 
+
 	while (tlen && i < maxlen) {
 	  s[i++] = *t;
 	  t = t XFORM_OK_PLUS 1;
@@ -703,6 +744,12 @@ static intptr_t scheme_sprintf(char *s, intptr_t maxlen, const char *msg, ...)
   HIDE_FROM_XFORM(va_end(args));
 
   return len;
+}
+
+int scheme_last_error_is_racket(int errid)
+{
+  return ((rktio_get_last_error_kind(scheme_rktio) == RKTIO_ERROR_KIND_RACKET)
+          && (rktio_get_last_error(scheme_rktio) == errid));
 }
 
 #define ESCAPING_NONCM_PRIM(name, func, a1, a2, env) \

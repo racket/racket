@@ -33,6 +33,9 @@
 struct rktio_t {
   intptr_t errid;
   int errkind;
+#ifdef RKTIO_SYSTEM_WINDOWS
+  char *last_err_str;
+#endif
 
 #ifdef RKTIO_SYSTEM_UNIX
   struct group_member_cache_entry_t *group_member_cache;
@@ -251,6 +254,8 @@ void rktio_get_windows_error(rktio_t *rktio);
 void rktio_set_windows_error(rktio_t *rktio, int errid);
 # define set_windows_error(errid) rktio_set_windows_error(rktio, errid)
 #endif
+
+void rktio_error_clean(rktio_t *rktio);
 
 #if defined(USE_FNDELAY_O_NONBLOCK)
 # define RKTIO_NONBLOCKING FNDELAY

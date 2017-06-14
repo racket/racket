@@ -4067,6 +4067,8 @@ Scheme_Object *scheme_prune_bindings_table(Scheme_Object *bindings, Scheme_Objec
 
 #define NOT_SUPPORTED_STR "unsupported on this platform"
 
+int scheme_last_error_is_racket(int errid);
+
 void scheme_read_err(Scheme_Object *port,
 		     Scheme_Object *stxsrc,
 		     intptr_t line, intptr_t column, intptr_t pos, intptr_t span,

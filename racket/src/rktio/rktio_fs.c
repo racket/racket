@@ -659,6 +659,7 @@ int rktio_set_current_directory(rktio_t *rktio, const char *path)
 static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, char *path, int follow_links)
 {
   uintptr_t devi = 0, inoi = 0, inoi2 = 0;
+  uintptr_t devi_bits = 0, inoi_bits = 0, inoi2_bits = 0;
 
 #ifdef FILES_HAVE_FDS
   int errid = 0;
@@ -684,6 +685,8 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, char *path
     /* Warning: we assume that dev_t and ino_t fit in a pointer-sized integer. */
     devi = (uintptr_t)buf.st_dev;
     inoi = (uintptr_t)buf.st_ino;
+    devi_bits = sizeof(buf.st_dev) << 3;
+    inoi_bits = sizeof(buf.st_ino) << 3;
   }
 #endif
 #ifdef WINDOWS_FILE_HANDLES
@@ -721,6 +724,10 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, char *path
   devi = info.dwVolumeSerialNumber;
   inoi = info.nFileIndexLow;
   inoi2 = info.nFileIndexHigh;
+
+  devi_bits = 32;
+  inoi_bits = 32;
+  inoi2_bits = 32;
 #endif
 
   {
@@ -729,8 +736,11 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, char *path
     id = malloc(sizeof(rktio_identity_t));
     
     id->a = devi;
+    id->a_bits = devi_bits;
     id->b = inoi;
+    id->b_bits = inoi_bits;
     id->c = inoi2;
+    id->c_bits = inoi2_bits;
 
     return id;
   }
@@ -837,6 +847,7 @@ int rktio_rename_file(rktio_t *rktio, char *dest, char *src, int exists_ok)
 }
 
 char *rktio_readlink(rktio_t *rktio, char *fullfilename)
+/* fullfilename must not have a trailing separator */
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int is_link;
@@ -855,7 +866,10 @@ char *rktio_readlink(rktio_t *rktio, char *fullfilename)
     len = readlink(fullfilename, buffer, buf_len);
     if (len == -1) {
       if (errno != EINTR) {
-        get_posix_error();
+        if (errno == EINVAL)
+          set_racket_error(RKTIO_ERROR_NOT_A_LINK);
+        else
+          get_posix_error();
         return NULL;
       }
     } else if (len == buf_len) {
@@ -988,7 +1002,7 @@ rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, char *file)
   return NULL;
 #else
   struct MSC_IZE(stat) buf;
-  
+
   while (1) {
     if (!MSC_W_IZE(stat)(MSC_WIDE_PATH_temp(file), &buf)){
       rktio_timestamp_t *ts = malloc(sizeof(rktio_timestamp_t));
@@ -1072,7 +1086,7 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
 {
 # ifdef NO_STAT_PROC
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
-  return -1;
+  return RKTIO_PERMISSION_ERROR;
 # else
 #  ifdef RKTIO_SYSTEM_UNIX
   /* General strategy for permissions (to deal with setuid)
@@ -1097,7 +1111,7 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
 
     if (ok && (errno != EACCES)) {
       get_posix_error();
-      return -1;
+      return RKTIO_PERMISSION_ERROR;
     } else {
       do {
 	ok = access(filename, W_OK);
@@ -1110,7 +1124,7 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
          since the read test succeeded.) */
       if (ok && (errno != EACCES) && (errno != EPERM) && (errno != EROFS)) {
 	get_posix_error();
-        return -1;
+        return RKTIO_PERMISSION_ERROR;
       } else {
 	do {
 	  ok = access(filename, X_OK);
@@ -1122,11 +1136,11 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
            not executable. */
 	if (ok && (errno != EACCES) && (errno != EPERM)) {
 	  get_posix_error();
-          return -1;
+          return RKTIO_PERMISSION_ERROR;
 	} else {
-          return ((read ? S_IRUSR : 0)
-                  | (write ? S_IWUSR : 0)
-                  | (execute ? S_IXUSR : 0));
+          return ((read ? RKTIO_PERMISSION_READ : 0)
+                  | (write ? RKTIO_PERMISSION_WRITE : 0)
+                  | (execute ? RKTIO_PERMISSION_EXEC : 0));
 	}
       }
     }
@@ -1143,7 +1157,7 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
 
     if (cr) {
       get_posix_error();
-      return -1;
+      return RKTIO_PERMISSION_ERROR;
     } else {
       if (all_bits) {
         int bits = buf.st_mode;
@@ -1178,9 +1192,9 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
         execute = !!(buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH));
 #   endif
 
-        return ((read ? S_IRUSR : 0)
-                | (write ? S_IWUSR : 0)
-                | (execute ? S_IXUSR : 0));
+        return ((read ? RKTIO_PERMISSION_READ : 0)
+                | (write ? RKTIO_PERMISSION_WRITE : 0)
+                | (execute ? RKTIO_PERMISSION_EXEC : 0));
       }
     }
   }
@@ -1195,7 +1209,7 @@ int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int 
       else
         return flags;
     } else {
-      return -1;
+      return RKTIO_PERMISSION_ERROR;
     }
   }
 #  endif
@@ -1299,7 +1313,7 @@ struct rktio_directory_list_t {
   FF_TYPE info;
 };
 
-rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename, int is_drive)
+rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename)
 /* path must be normalized */
 {
   char *pattern;
@@ -1389,11 +1403,15 @@ char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl)
     }
   }
 
-  FIND_CLOSE(dl->hfile);
-
-  free(dl);
+  rktio_directory_list_stop(rktio, dl);
 
   return "";
+}
+
+void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list_t *dl)
+{
+  FIND_CLOSE(dl->hfile);
+  free(dl);
 }
 
 # elif !defined(NO_READDIR)
@@ -1402,7 +1420,7 @@ struct rktio_directory_list_t {
   DIR *dir;
 };
 
-rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename, int is_drive)
+rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename)
 {
   rktio_directory_list_t *dl;
   DIR *dir;
@@ -1445,15 +1463,20 @@ char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl)
     return strndup(e->d_name, nlen);
   }
 
-  closedir(dl->dir);
-  free(dl);
+  rktio_directory_list_stop(rktio, dl);
 
   return "";
 }
 
+void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list_t *dl)
+{
+  closedir(dl->dir);
+  free(dl);
+}
+
 #else
 
-rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename, int is_drive)
+rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename)
 {
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
   return NULL;
@@ -1463,6 +1486,10 @@ char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl)
 {
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
   return NULL;
+}
+
+void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list_t *dl)
+{
 }
 
 #endif

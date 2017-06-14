@@ -11,12 +11,22 @@
    Almost every rktio_...() function takes it as the first argument. */
 typedef struct rktio_t rktio_t;
 
+/* Call rktio_init() before anything else. The first call to
+   rktio_init() must return before any additional calls (in other
+   threads), but there's no ordering requirement after that. */
 RKTIO_EXTERN rktio_t *rktio_init(void);
+
+/* Call rktio_destroy() as the last thing. Everything else must be
+   explicitly deallocated/closed/forgotten before calling
+   rktio_destroy(). */
 RKTIO_EXTERN void rktio_destroy(rktio_t *);
 
 /* Normally equivalent to free(), but ensures the same malloc()/free()
    that rktio function use: */
 RKTIO_EXTERN void rktio_free(void *p);
+
+typedef int rktio_ok_t;
+typedef int rktio_tri_t;
 
 /*************************************************/
 /* Reading and writing files                     */
@@ -50,7 +60,7 @@ RKTIO_EXTERN int rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
 
 RKTIO_EXTERN rktio_fd_t *rktio_open(rktio_t *rktio, char *src, int modes);
-RKTIO_EXTERN int rktio_close(rktio_t *rktio, rktio_fd_t *fd);
+RKTIO_EXTERN rktio_ok_t rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 
 RKTIO_EXTERN rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN void rktio_forget(rktio_t *rktio, rktio_fd_t *fd);
@@ -58,21 +68,26 @@ RKTIO_EXTERN void rktio_forget(rktio_t *rktio, rktio_fd_t *fd);
 #define RKTIO_READ_EOF   (-1)
 #define RKTIO_READ_ERROR (-2)
 #define RKTIO_WRITE_ERROR (-2)
-#define RKTIO_POLL_ERROR (-2)
-#define RKTIO_POLL_READY 1
 
+/* The read and write functions return the number of bytes read/write
+   in non-blocking mode, possibly 0. A read can produce `RKTIO_READ_EOF`
+   for end-of-file or `RKTIO_READ_ERROR` for an error. Similarly, write
+   can produce `RKTIO_WRITE_ERROR`. */
 RKTIO_EXTERN intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
 RKTIO_EXTERN intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len);
 
-RKTIO_EXTERN int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd);
-RKTIO_EXTERN int rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
-RKTIO_EXTERN int rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd);
+#define RKTIO_POLL_ERROR (-2)
+#define RKTIO_POLL_READY 1
+
+RKTIO_EXTERN rktio_tri_t rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN rktio_tri_t rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN rktio_tri_t rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd);
 
 #define RKTIO_LOCK_ERROR (-2)
 #define RKTIO_LOCK_ACQUIRED 1
 
-RKTIO_EXTERN int rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl);
-RKTIO_EXTERN int rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN rktio_tri_t rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl);
+RKTIO_EXTERN rktio_tri_t rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd);
 
 /*************************************************/
 /* Network                                       */
@@ -297,16 +312,31 @@ RKTIO_EXTERN int rktio_directory_exists(rktio_t *rktio, char *dirname);
 RKTIO_EXTERN int rktio_link_exists(rktio_t *rktio, char *filename);
 RKTIO_EXTERN int rktio_is_regular_file(rktio_t *rktio, char *filename);
 
-RKTIO_EXTERN int rktio_delete_file(rktio_t *rktio, char *fn, int enable_write_on_fail);
-RKTIO_EXTERN int rktio_rename_file(rktio_t *rktio, char *dest, char *src, int exists_ok);
+RKTIO_EXTERN rktio_ok_t rktio_delete_file(rktio_t *rktio, char *fn, int enable_write_on_fail);
+
+/* Can report `RKTIO_ERROR_EXISTS`: */
+RKTIO_EXTERN rktio_ok_t rktio_rename_file(rktio_t *rktio, char *dest, char *src, int exists_ok);
 
 RKTIO_EXTERN char *rktio_get_current_directory(rktio_t *rktio);
-RKTIO_EXTERN int rktio_set_current_directory(rktio_t *rktio, const char *path);
-RKTIO_EXTERN int rktio_make_directory(rktio_t *rktio, char *filename);
-RKTIO_EXTERN int rktio_delete_directory(rktio_t *rktio, char *filename, char *current_directory, int enable_write_on_fail);
+RKTIO_EXTERN rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path);
 
+/* Can report `RKTIO_ERROR_EXISTS`: */
+RKTIO_EXTERN rktio_ok_t rktio_make_directory(rktio_t *rktio, char *filename);
+
+/* The `current_directory` argument is used on Windows to avoid being
+   in `filename` (instead) as a directory while trying to delete it.
+   The `enable_write_on_fail` argument also applied to Windows. */
+RKTIO_EXTERN rktio_ok_t rktio_delete_directory(rktio_t *rktio, char *filename, char *current_directory,
+                                               int enable_write_on_fail);
+
+/* Argument should not have a trailing separator. Can report
+   `RKTIO_ERROR_NOT_A_LINK`. */
 RKTIO_EXTERN char *rktio_readlink(rktio_t *rktio, char *fullfilename);
-RKTIO_EXTERN int rktio_make_link(rktio_t *rktio, char *src, char *dest, int dest_is_directory);
+
+/* The `dest_is_directory` argument is used only
+   on Windows. Can report `RKTIO_ERROR_EXISTS`. */
+RKTIO_EXTERN rktio_ok_t rktio_make_link(rktio_t *rktio, char *src, char *dest,
+                                        int dest_is_directory);
 
 /*************************************************/
 /* File attributes                               */
@@ -317,14 +347,15 @@ typedef struct {
 
 typedef intptr_t rktio_timestamp_t;
 
-typedef struct {
-  uintptr_t a, b, c;
-} rktio_identity_t;
-
 RKTIO_EXTERN rktio_size_t *rktio_file_size(rktio_t *rktio, char *filename);
 
 RKTIO_EXTERN rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, char *file);
-RKTIO_EXTERN int rktio_set_file_modify_seconds(rktio_t *rktio, char *file, rktio_timestamp_t secs);
+RKTIO_EXTERN rktio_ok_t rktio_set_file_modify_seconds(rktio_t *rktio, char *file, rktio_timestamp_t secs);
+
+typedef struct {
+  uintptr_t a, b, c;
+  int a_bits, b_bits, c_bits; /* size of each in bits */
+} rktio_identity_t;
 
 RKTIO_EXTERN rktio_identity_t *rktio_fd_identity(rktio_t *rktio, rktio_fd_t *fd);
 RKTIO_EXTERN rktio_identity_t *rktio_path_identity(rktio_t *rktio, char *path, int follow_links);
@@ -332,22 +363,41 @@ RKTIO_EXTERN rktio_identity_t *rktio_path_identity(rktio_t *rktio, char *path, i
 /*************************************************/
 /* Permissions                                   */
 
-/* Must match OS bits: */
+/* Should match OS bits: */
 #define RKTIO_PERMISSION_READ  0x4
 #define RKTIO_PERMISSION_WRITE 0x2
 #define RKTIO_PERMISSION_EXEC  0x1
 
+#define RKTIO_PERMISSION_ERROR (-1)
+
+/* Result is `RKTIO_PERMISSION_ERROR` for error, otherwise a combination of
+   bits. If not `all_bits`, then use constants above. */
 RKTIO_EXTERN int rktio_get_file_or_directory_permissions(rktio_t *rktio, char *filename, int all_bits);
-RKTIO_EXTERN int rktio_set_file_or_directory_permissions(rktio_t *rktio, char *filename, int new_bits);
+
+/* The `new_bits` format corresponds to `all_bits` for getting permissions.
+   Can report `RKTIO_ERROR_BAD_PERMISSION` for bits that make no sense. */
+RKTIO_EXTERN rktio_ok_t rktio_set_file_or_directory_permissions(rktio_t *rktio, char *filename, int new_bits);
 
 /*************************************************/
 /* Directory listing                             */
 
 typedef struct rktio_directory_list_t rktio_directory_list_t;
 
-RKTIO_EXTERN rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename, int is_drive);
+/* On Windows, the given `filename` must be normalized and not have
+   `.` or `..`: */
+RKTIO_EXTERN rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, char *filename);
+
+/* Returns an unallocated "" and deallocates `dl` when the iteration
+   is complete. A NULL result would mean an error without deallocating
+   `dl`, but that doesn't currently happen. */
 RKTIO_EXTERN char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl);
 
+/* Interrupt a directory list in progress, not needed after
+   rktio_directory_list_step() returns "": */
+RKTIO_EXTERN void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list_t *dl);
+
+/* Returns a NULL-terminated array. Free each string. Currently never
+   errors. */
 RKTIO_EXTERN char **rktio_filesystem_root_list(rktio_t *rktio);
 
 /*************************************************/
@@ -355,9 +405,11 @@ RKTIO_EXTERN char **rktio_filesystem_root_list(rktio_t *rktio);
 
 typedef struct rktio_file_copy_t rktio_file_copy_t;
 
+/* Can report `RKTIO_ERROR_EXISTS`: */
 RKTIO_EXTERN rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, char *dest, char *src, int exists_ok);
+
 RKTIO_EXTERN int rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
-RKTIO_EXTERN int rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
+RKTIO_EXTERN rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
 RKTIO_EXTERN void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc);
 
 /*************************************************/
@@ -377,6 +429,10 @@ enum {
 };
 
 RKTIO_EXTERN char *rktio_system_path(rktio_t *rktio, int which);
+
+/* Path must start with tilde, otherwise `RKTIO_ERROR_NO_TILDE`.
+   Other possible errors are `RKTIO_ERROR_ILL_FORMED_USER` and
+   `RKTIO_ERROR_UNKNOWN_USER`. */
 RKTIO_EXTERN char *rktio_expand_user_tilde(rktio_t *rktio, char *filename);
 
 /*************************************************/
@@ -423,7 +479,7 @@ enum {
 
 /* Error IDs of kind RKTIO_ERROR_KIND_RACKET */
 enum {
-  RKTIO_ERROR_UNSUPPORTED,
+  RKTIO_ERROR_UNSUPPORTED = 1,
   RKTIO_ERROR_EXISTS,
   RKTIO_ERROR_LINK_FAILED,
   RKTIO_ERROR_NOT_A_LINK,
@@ -455,7 +511,8 @@ RKTIO_EXTERN int rktio_get_last_error(rktio_t *rktio);
 RKTIO_EXTERN int rktio_get_last_error_kind(rktio_t *rktio);
 
 /* The returned strings for `rktio_...error_string()` should not be
-   deallocated. */
+   deallocated, but it only lasts reliably until the next call to
+  either of the functions. */
 RKTIO_EXTERN const char *rktio_get_last_error_string(rktio_t *rktio);
 RKTIO_EXTERN const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);
 
