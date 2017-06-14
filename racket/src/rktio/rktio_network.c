@@ -192,7 +192,11 @@ struct rktio_addrinfo_t {
 # define rktio_AI_PASSIVE AI_PASSIVE 
 # define do_getaddrinfo(n, s, h, res) getaddrinfo(n, s, RKTIO_AS_ADDRINFO(h), RKTIO_AS_ADDRINFO_PTR(res))
 # define do_freeaddrinfo freeaddrinfo
-# define do_gai_strerror gai_strerror
+# ifdef RKTIO_SYSTEM_WINDOWS
+#  define do_gai_strerror gai_strerrorA
+# else
+#  define do_gai_strerror gai_strerror
+# endif
 #else
 # define rktio_AI_PASSIVE 0
 static int do_getaddrinfo(const char *nodename, const char *servname,
@@ -714,8 +718,8 @@ rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
   }
 
   lookup = malloc(sizeof(rktio_addrinfo_lookup_t));
-  lookup->name = (hostname ? strdup(hostname) : NULL);
-  lookup->svc = (service ? strdup(service) : NULL);
+  lookup->name = (hostname ? MSC_IZE(strdup)(hostname) : NULL);
+  lookup->svc = (service ? MSC_IZE(strdup)(service) : NULL);
   lookup->hints = hints;
   init_lookup(lookup);
  
@@ -1594,8 +1598,8 @@ static char **get_numeric_strings(rktio_t *rktio, void *sa, unsigned int salen)
   
   if (!err) {
     r = malloc(sizeof(char*) * 2);
-    r[0] = strdup(host);
-    r[1] = strdup(serv);
+    r[0] = MSC_IZE(strdup)(host);
+    r[1] = MSC_IZE(strdup)(serv);
     return r;
   } else {
     set_gai_error(err);
@@ -1879,7 +1883,7 @@ char *rktio_udp_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd)
     char host_buf[RKTIO_SOCK_HOST_NAME_MAX_LEN];
     unsigned char *b = (unsigned char *) &intf; /* yes, this is in network order */
     sprintf(host_buf, "%d.%d.%d.%d", b[0], b[1], b[2], b[3]);
-    return strdup(host_buf);
+    return MSC_IZE(strdup)(host_buf);
   }
 }
 

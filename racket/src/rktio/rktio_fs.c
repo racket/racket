@@ -3,11 +3,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
-#include <utime.h>
 #include <sys/stat.h>
 #include <stdlib.h>
 #ifdef RKTIO_SYSTEM_UNIX
+# include <unistd.h>
+# include <utime.h>
 # include <fcntl.h>
 # include <pwd.h>
 # include <grp.h>
@@ -16,6 +16,25 @@
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <shlobj.h>
 # include <direct.h>
+# include <sys/stat.h>
+# include <sys/utime.h>
+# include <io.h>
+#endif
+
+#if defined(S_IFDIR) && !defined(S_ISDIR)
+# define S_ISDIR(m) ((m) & S_IFDIR)
+#endif
+#if defined(S_IFREG) && !defined(S_ISREG)
+# define S_ISREG(m) ((m) & S_IFREG)
+#endif
+#if defined(S_IFLNK) && !defined(S_ISLNK)
+# define S_ISLNK(m) ((m) & S_IFLNK)
+#endif
+#if defined(_S_IFDIR) && !defined(S_ISDIR)
+# define S_ISDIR(m) ((m) & _S_IFDIR)
+#endif
+#if defined(_S_IFREG) && !defined(S_ISREG)
+# define S_ISREG(m) ((m) & _S_IFREG)
 #endif
 
 #ifdef RKTIO_SYSTEM_UNIX
@@ -76,7 +95,7 @@ static void init_procs()
 
     procs_inited = 1;
     
-    hm = LoadLibrary("kernel32.dll");
+    hm = LoadLibraryW(L"kernel32.dll");
 
     CreateSymbolicLinkProc = (CreateSymbolicLinkProc_t)GetProcAddress(hm, "CreateSymbolicLinkW");
     DeviceIoControlProc = (DeviceIoControlProc_t)GetProcAddress(hm, "DeviceIoControl");
@@ -469,17 +488,15 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
         time_t mdt;
         mdt = GET_FF_MODDATE(fad);
         dt = malloc(sizeof(rktio_timestamp_t));
-        *dt = mdt;
+        *dt = (rktio_timestamp_t)mdt;
         *date = dt;
       }
       if (isdir) {
         *isdir = (GET_FF_ATTRIBS(fad) & FF_A_DIR);
       }
       if (filesize) {
-        rktio_size_t *fsz;
-        fsz = malloc(sizeof(rktio_size_t));
-        fsz->lo = fad.nFileSizeLow;
-        fsz->hi = fad.nFileSizeHigh;
+        filesize->lo = fad.nFileSizeLow;
+        filesize->hi = fad.nFileSizeHigh;
       }
     }
     free(copy);
@@ -897,7 +914,7 @@ int rktio_make_directory(rktio_t *rktio, char *filename)
   len = strlen(filename);
   while (len && IS_A_SEP(filename[len - 1])) {
     if (!copied) {
-      filename = strdup(filename);
+      filename = MSC_IZE(strdup)(filename);
       copied = 1;
     }
     filename[--len] = 0;
@@ -1636,12 +1653,12 @@ char **rktio_filesystem_root_list(rktio_t *rktio)
     UINT oldmode;
     char **ss, **new_ss;
 
-    len = GetLogicalDriveStrings(DRIVE_BUF_SIZE, drives);
+    len = GetLogicalDriveStringsA(DRIVE_BUF_SIZE, drives);
     if (len <= DRIVE_BUF_SIZE)
       s = drives;
     else {
       s = malloc(len + 1);
-      GetLogicalDriveStrings(len + 1, s);
+      GetLogicalDriveStringsA(len + 1, s);
     }
 
     ss_len = 8;
@@ -1652,7 +1669,7 @@ char **rktio_filesystem_root_list(rktio_t *rktio)
     while (s[ds]) {
       DWORD a, b, c, d;
       /* GetDiskFreeSpace effectively checks whether we can read the disk: */
-      if (GetDiskFreeSpace(s + ds, &a, &b, &c, &d)) {
+      if (GetDiskFreeSpaceA(s + ds, &a, &b, &c, &d)) {
         if ((ss_count + 1) == ss_len) {
           new_ss = malloc(sizeof(char*) * ss_len * 2);
           memcpy(ss, new_ss, ss_count * sizeof(char*));
@@ -1660,7 +1677,7 @@ char **rktio_filesystem_root_list(rktio_t *rktio)
           ss_len *= 2;
         }
 
-        ss[ss_count++] = strdup(s + ds);
+        ss[ss_count++] = MSC_IZE(strdup)(s + ds);
       }
       ds += strlen(s + ds) + 1;
     }

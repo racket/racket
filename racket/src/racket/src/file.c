@@ -515,19 +515,6 @@ void scheme_init_file(Scheme_Env *env)
 						       "use-compiled-file-check",
 						       MZCONFIG_USE_COMPILED_FILE_CHECK),
 			     env);
-
-#ifdef DOS_FILE_SYSTEM
-  {
-    HMODULE hm;
-    hm = LoadLibrary("kernel32.dll");
-
-    CreateSymbolicLinkProc = (CreateSymbolicLinkProc_t)GetProcAddress(hm, "CreateSymbolicLinkW");
-    DeviceIoControlProc = (DeviceIoControlProc_t)GetProcAddress(hm, "DeviceIoControl");
-
-    FreeLibrary(hm);
-  }
-#endif
-
 }
 
 void scheme_init_file_places()
@@ -1038,7 +1025,7 @@ char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn)
     if (noexn) {
       /* We need to invent some complete path. */
 #ifdef DOS_FILE_SYSTEM
-      s = strdup("C:\\");
+      s = MSC_IZE(strdup)("C:\\");
 #else
       s = strdup("/");
 #endif
@@ -4765,7 +4752,10 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
 
 
 #if defined(DOS_FILE_SYSTEM)
-  dest_is_dir = do_path_to_directory_path(src, 0, -1, argv[1], 1, SCHEME_WINDOWS_PATH_KIND);
+  if (do_path_to_directory_path(src, 0, -1, argv[1], 1, SCHEME_WINDOWS_PATH_KIND))
+	dest_is_dir = 1;
+  else
+	dest_is_dir = 0;
 #else
   dest_is_dir = 0;
 #endif

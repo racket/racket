@@ -89,32 +89,31 @@ const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
 #ifdef RKTIO_SYSTEM_WINDOWS
   else if (kind == RKTIO_ERROR_KIND_WINDOWS) {
     wchar_t mbuf[256];
-    int len;
-    if ((type != 'e') && !es) {
-      if ((len = FormatMessageW((FORMAT_MESSAGE_FROM_SYSTEM
-                                 | FORMAT_MESSAGE_IGNORE_INSERTS), 
-                                NULL,
-                                en, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                                mbuf, 255, NULL))) {
-        if (len == 255)
-          mbuf[254] = 0;
+    int len, i;
+    if ((len = FormatMessageW((FORMAT_MESSAGE_FROM_SYSTEM
+                               | FORMAT_MESSAGE_IGNORE_INSERTS), 
+                              NULL,
+                              errid, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                              mbuf, 255, NULL))) {
+      char *es;
+      if (len == 255)
+        mbuf[254] = 0;
+      else
+        mbuf[len] = 0;
+      es = NARROW_PATH_copy(mbuf);
+      /* Remove newlines: */
+      for (i = strlen(s) - 1; i > 0; i--) {
+        if (isspace(es[i]))
+          es[i] = 0;
         else
-          mbuf[len] = 0;
-        es = NARROW_PATH_copy(mbuf);
-        /* Remove newlines: */
-        for (i = strlen(es) - 1; i > 0; i--) {
-          if (isspace(es[i]))
-            es[i] = 0;
-          else
-            break;
-        }
-
-        if (rktio->last_err_str)
-          free(rktio->last_err_str);
-        rktio->last_err_str = es;
-        
-        return es;
+          break;
       }
+      
+      if (rktio->last_err_str)
+        free(rktio->last_err_str);
+      rktio->last_err_str = es;
+      
+      return es;
     }
   }
 #endif
@@ -132,7 +131,7 @@ const char *rktio_get_last_error_string(rktio_t *rktio)
 void rktio_error_clean(rktio_t *rktio)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (rktio->last_error_str)
+  if (rktio->last_err_str)
     free(rktio->last_err_str);
 #endif
 }

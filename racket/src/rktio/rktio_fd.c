@@ -102,7 +102,7 @@ static CSI_proc get_csi(void)
   
   if (!tried_csi) {
     HMODULE hm;
-    hm = LoadLibrary("kernel32.dll");
+    hm = LoadLibraryW(L"kernel32.dll");
     if (hm)
       csi = (CSI_proc)GetProcAddress(hm, "CancelSynchronousIo");
     else
@@ -232,6 +232,11 @@ int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd)
 int rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return ((rfd->modes & RKTIO_OPEN_UDP) ? 1 : 0);
+}
+
+int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return rfd->modes;
 }
 
 int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd)
@@ -1095,7 +1100,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
         }
 
         winwrote = topp - oth->bufend;
-        if (winwrote > len)
+        if ((intptr_t)winwrote > len)
           winwrote = len;
 
         memcpy(oth->buffer + oth->bufend, buffer, winwrote);
@@ -1107,10 +1112,10 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
           oth->bufend = 0;
 
         if (was_pre) {
-          if (winwrote < len) {
+          if ((intptr_t)winwrote < len) {
             /* Try continuing with a wrap-around: */
             winwrote = oth->bufstart - oth->bufend;
-            if (winwrote > len - out_len)
+            if ((intptr_t)winwrote > len - out_len)
               winwrote = len - out_len;
 
             memcpy(oth->buffer + oth->bufend, buffer + out_len, winwrote);

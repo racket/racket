@@ -1039,7 +1039,7 @@ static char *cmdline_protect(char *s)
   int ds;
   int has_space = 0, has_quote = 0, was_slash = 0;
 
-  if (!*s) return strdup("\"\""); /* quote an empty argument */
+  if (!*s) return MSC_IZE(strdup)("\"\""); /* quote an empty argument */
 
   for (ds = 0; s[ds]; ds++) {
     if (isspace(s[ds]) || (s[ds] == '\'')) {
@@ -1087,7 +1087,7 @@ static char *cmdline_protect(char *s)
     return naya;
   }
 
-  return strdup(s);
+  return MSC_IZE(strdup)(s);
 }
 
 static intptr_t do_spawnv(rktio_t *rktio,

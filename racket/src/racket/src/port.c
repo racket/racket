@@ -9199,6 +9199,8 @@ static void collect_process_time(DWORD w, Scheme_Subprocess *sp)
 	   + (((mzlonglong)us.dwHighDateTime << 32) + us.dwLowDateTime));
       msecs = (uintptr_t)(v / 10000);
 
+      /* Will get replaced... */
+#if 0
 #if defined(MZ_USE_PLACES)
       {
         int set = 0;
@@ -9209,6 +9211,7 @@ static void collect_process_time(DWORD w, Scheme_Subprocess *sp)
       }
 #else
       scheme_process_children_msecs += msecs;
+#endif
 #endif
     }
     sp->got_time = 1;

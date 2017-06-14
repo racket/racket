@@ -9,7 +9,6 @@ void rktio_init_wide(rktio_t *rktio) { }
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 
-#include <inttypes.h>
 #include <string.h>
 #include <stdlib.h>
 

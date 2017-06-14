@@ -571,7 +571,7 @@ void rktio_poll_set_eventmask(rktio_poll_set_t *fds, int mask)
   fds->wait_event_mask |= mask;
 }
 
-void WSAEventSelect_plus_check(SOCKET s, WSAEVENT e, long mask)
+static void WSAEventSelect_plus_check(SOCKET s, WSAEVENT e, long mask)
 {
   fd_set rd[1], wr[1], ex[1];
   struct timeval t = {0, 0};

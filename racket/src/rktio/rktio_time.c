@@ -43,7 +43,7 @@ void rktio_init_time(rktio_t *rktio)
   static int time_inited = 0;
   if (!time_inited) {
     HMODULE hm;
-    hm = LoadLibrary("kernel32.dll");
+    hm = LoadLibraryW(L"kernel32.dll");
 
     GetTimeZoneInformationForYearProc
       = (GetTimeZoneInformationForYearProc_t)GetProcAddress(hm, "GetTimeZoneInformationForYear");
@@ -492,7 +492,7 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, intptr_t seconds, intptr_t n
       result->is_dst = (dst ? 1 : 0);
       result->zone_offset = tzoffset;
       if (tzn)
-        result->zone_name = strdup(tzn);
+        result->zone_name = MSC_IZE(strdup)(tzn);
       else
         result->zone_name = NULL;
 

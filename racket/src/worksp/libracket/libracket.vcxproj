@@ -61,7 +61,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;..\..\racket\include;..\..\racket\src;..\libffi;..\..\foreign\libffi\src\x86;..\..\foreign\libffi\include;..\..\rktio;..\librktio</AdditionalIncludeDirectories>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader></PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
@@ -238,6 +238,10 @@
   <ItemGroup>
     <ProjectReference Include="..\libffi\libffi.vcxproj">
       <Project>{7db29f1e-06fd-4e39-97ff-1c7922f6901a}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\librktio\librktio.vcxproj">
+      <Project>{abc29f1e-06fd-4e39-97ff-1c7922f6901a}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
     <ProjectReference Include="..\libmzgc\libmzgc.vcxproj">

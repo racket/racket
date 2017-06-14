@@ -25,7 +25,7 @@ char *rktio_getenv(rktio_t *rktio, char *name)
   char *s;
   s = getenv(name);
   if (s)
-    return strdup(s);
+    return MSC_IZE(strdup)(s);
   else
     return NULL;
 #endif
@@ -116,6 +116,7 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
     }
 
     count = 0;
+    i = 0;
     while (e[i]) {
       count++;
       for (i = 0; e[i]; ) {
@@ -137,8 +138,8 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
       for (j = 0; p[j] && p[j] != '='; j++) {
       }
       p[j] = 0;
-      envvars->names[count] = strdup(p);
-      envvars->vals[count] = strdup(p+j+1);
+      envvars->names[count] = MSC_IZE(strdup)(p);
+      envvars->vals[count] = MSC_IZE(strdup)(p+j+1);
       free(p);
       i++;
     }
@@ -168,8 +169,8 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
       p = ea[i];
       for (j = 0; p[j] && p[j] != '='; j++) {
       }
-      envvars->names[i] = strndup(p, j);
-      envvars->vals[i] = strdup(p+j+1);
+      envvars->names[i] = MSC_IZE(strndup)(p, j);
+      envvars->vals[i] = MSC_IZE(strdup)(p+j+1);
     }
 
     return envvars;
@@ -202,8 +203,8 @@ rktio_envvars_t *rktio_envvars_copy(rktio_t *rktio, rktio_envvars_t *envvars)
   new_envvars->vals = malloc(envvars->count * sizeof(char *));
 
   for (i = 0; i < envvars->count; i++) {
-    new_envvars->names[i] = strdup(envvars->names[i]);
-    new_envvars->vals[i] = strdup(envvars->vals[i]);
+    new_envvars->names[i] = MSC_IZE(strdup)(envvars->names[i]);
+    new_envvars->vals[i] = MSC_IZE(strdup)(envvars->vals[i]);
   }
 
   return new_envvars;
@@ -248,12 +249,12 @@ intptr_t rktio_envvars_count(rktio_t *rktio, rktio_envvars_t *envvars)
 
 char *rktio_envvars_name_ref(rktio_t *rktio, rktio_envvars_t *envvars, intptr_t i)
 {
-  return strdup(envvars->names[i]);
+  return MSC_IZE(strdup)(envvars->names[i]);
 }
 
 char *rktio_envvars_value_ref(rktio_t *rktio, rktio_envvars_t *envvars, intptr_t i)
 {
-  return strdup(envvars->vals[i]);
+  return MSC_IZE(strdup)(envvars->vals[i]);
 }
 
 char *rktio_envvars_get(rktio_t *rktio, rktio_envvars_t *envvars, char *name)
@@ -262,7 +263,7 @@ char *rktio_envvars_get(rktio_t *rktio, rktio_envvars_t *envvars, char *name)
 
   for (i = 0; i < envvars->count; i++) {
     if (!strcmp(envvars->names[i], name))
-      return strdup(envvars->vals[i]);
+      return MSC_IZE(strdup)(envvars->vals[i]);
   }
 
   return NULL;
@@ -276,7 +277,7 @@ void rktio_envvars_set(rktio_t *rktio, rktio_envvars_t *envvars, char *name, cha
     if (!strcmp(envvars->names[i], name)) {
       if (value) {
         free(envvars->vals[i]);
-        envvars->vals[i] = strdup(value);
+        envvars->vals[i] = MSC_IZE(strdup)(value);
       } else {
         free(envvars->names[i]);
         free(envvars->vals[i]);
@@ -299,8 +300,8 @@ void rktio_envvars_set(rktio_t *rktio, rktio_envvars_t *envvars, char *name, cha
   if (envvars->count == envvars->size)
     envvars_resize(envvars, envvars->size * 2);
 
-  envvars->names[envvars->count] = strdup(name);
-  envvars->vals[envvars->count] = strdup(value);
+  envvars->names[envvars->count] = MSC_IZE(strdup)(name);
+  envvars->vals[envvars->count] = MSC_IZE(strdup)(value);
   envvars->count++;
 }
 
