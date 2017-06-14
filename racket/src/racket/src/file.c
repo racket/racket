@@ -2041,6 +2041,8 @@ Scheme_Object *scheme_get_fd_identity(Scheme_Object *port, intptr_t fd, char *pa
   args[1] = scheme_make_integer(ident->c_bits + ident->b_bits);
   a = scheme_bitwise_shift(2, args);
 
+  free(ident);
+
   return scheme_bin_plus(scheme_bin_plus(a, b), c);
 }
 
@@ -3423,7 +3425,7 @@ static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
                      filename_for_error(argv[0]));
   }
 
-  return NULL;
+  return scheme_void;
 }
 
 static Scheme_Object *rename_file(int argc, Scheme_Object **argv)
@@ -3661,7 +3663,7 @@ static Scheme_Object *do_resolve_path(int argc, Scheme_Object *argv[], int guard
 
     if (content) {
       Scheme_Object *r;
-      r = scheme_make_sized_path(content, len, 1);
+      r = scheme_make_sized_path(content, -1, 1);
       free(content);
       return r;
     }
@@ -4913,6 +4915,7 @@ static Scheme_Object *file_or_dir_permissions(int argc, Scheme_Object *argv[])
           l = scheme_make_pair(write_symbol, l);
         if (r & RKTIO_PERMISSION_EXEC)
           l = scheme_make_pair(execute_symbol, l);
+        return l;
       }
     }
   } else {
@@ -5368,7 +5371,7 @@ find_system_path(int argc, Scheme_Object **argv)
 
     s = rktio_system_path(scheme_rktio, which);
 
-    p = scheme_make_sized_offset_path(s, 1, -1, 1);
+    p = scheme_make_sized_offset_path(s, 0, -1, 1);
     
     if (!scheme_is_complete_path(SCHEME_PATH_VAL(p), SCHEME_PATH_LEN(p), SCHEME_PLATFORM_PATH_KIND)) {
       p = scheme_path_to_complete_path(p, original_pwd);

@@ -661,7 +661,7 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, char *path
   uintptr_t devi = 0, inoi = 0, inoi2 = 0;
   uintptr_t devi_bits = 0, inoi_bits = 0, inoi2_bits = 0;
 
-#ifdef FILES_HAVE_FDS
+#ifdef RKTIO_SYSTEM_UNIX
   int errid = 0;
   struct MSC_IZE(stat) buf;
 
@@ -689,7 +689,7 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, char *path
     inoi_bits = sizeof(buf.st_ino) << 3;
   }
 #endif
-#ifdef WINDOWS_FILE_HANDLES
+#ifdef RKTIO_SYSTEM_WINDOWS
   BY_HANDLE_FILE_INFORMATION info;
   HANDLE fdh;
 
@@ -1767,7 +1767,7 @@ static char *append_paths(char *a, char *b, int free_a, int free_b)
   int sep_len = 0;
   char *s;
 
-  if (!IS_A_SEP(a[alen]))
+  if (alen && !IS_A_SEP(a[alen-1]))
     sep_len = 1;
 
   s = malloc(alen + sep_len + blen + 1);
@@ -1776,7 +1776,7 @@ static char *append_paths(char *a, char *b, int free_a, int free_b)
   if (sep_len)
     s[alen] = A_PATH_SEP;
   memcpy(s+alen+sep_len, b, blen);
-  s[alen + blen] = 0;
+  s[alen + sep_len + blen] = 0;
 
   if (free_a) free(a);
   if (free_b) free(b);
