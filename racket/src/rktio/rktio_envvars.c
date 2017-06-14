@@ -19,15 +19,40 @@ extern char **environ;
 # define GET_ENVIRON_ARRAY environ
 #endif
 
-char *rktio_getenv(rktio_t *rktio, char *name)
+
+int rktio_is_ok_envvar_name(rktio_t *rktio, const char *s)
+{
+  int i = strlen(s);
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (!s[0]) return 0;
+#endif  
+  while (i--) {
+    if (s[i] == '=')
+      return 0;
+  }
+  return 1;
+}
+
+int rktio_are_envvar_names_case_insensitive(rktio_t *rktio)
+{
+#ifdef RKTIO_SYSTEM_WINDOWS
+  return 1;
+#else
+  return 0;
+#endif
+}
+
+char *rktio_getenv(rktio_t *rktio, const char *name)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   char *s;
   s = getenv(name);
   if (s)
     return MSC_IZE(strdup)(s);
-  else
+  else {
+    set_racket_error(RKTIO_ERROR_NO_SUCH_ENVVAR);
     return NULL;
+  }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   intptr_t value_size;
@@ -44,6 +69,7 @@ char *rktio_getenv(rktio_t *rktio, char *name)
     free(value_w);
     return value;
   }
+  set_racket_error(RKTIO_ERROR_NO_SUCH_ENVVAR);
   return NULL;
 #endif
 }
@@ -52,24 +78,12 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   if (val) {
-    char *buffer;
-    intptr_t total_length, r, varlen, vallen;
-    
-    varlen = strlen(name);
-    vallen = strlen(val);
-    total_length = varlen + vallen + 2;
-    
-    buffer = malloc(total_length);
-    
-    memcpy(buffer, name, varlen);
-    buffer[varlen] = '=';
-    memcpy(buffer + varlen + 1, val, vallen + 1);
+    int r;
 
-    r = putenv(buffer);
+    r = setenv(name, val, 1);
+    
     if (r)
       get_posix_error();
-
-    free(buffer);
 
     return (r ? 0 : 1);
   } else {
@@ -238,6 +252,7 @@ static void envvars_resize(rktio_envvars_t *envvars, intptr_t new_size)
   free(envvars->names);
   free(envvars->vals);
   
+  envvars->size = new_size;
   envvars->names = new_names;
   envvars->vals = new_vals;
 }

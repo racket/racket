@@ -169,19 +169,39 @@ RKTIO_EXTERN int rktio_udp_change_multicast_group(rktio_t *rktio, rktio_fd_t *rf
 /*************************************************/
 /* Environment variables                         */
 
+/* Check whether a string is valid as a new (e.g., no "=") */
+RKTIO_EXTERN int rktio_is_ok_envvar_name(rktio_t *rktio, const char *name);
+
+/* Checks whether environment variables are case-folded by the OS.
+   That doesn't mean that clients need to case-fold names, but clients
+   may want to immitate the OS. */
+RKTIO_EXTERN int rktio_are_envvar_names_case_insensitive(rktio_t *rktio);
+
+/* Gets an environment variable value, or reports
+   `RKTIO_ERROR_NO_SUCH_ENVVAR` when returning NULL; the result must
+   be freed. */
+RKTIO_EXTERN char *rktio_getenv(rktio_t *rktio, const char *name);
+
+/* Set an environment variable's value, where a NULL value for `val`
+   unsets it. */
+RKTIO_EXTERN rktio_ok_t rktio_setenv(rktio_t *rktio, const char *name, const char *val);
+
 typedef struct rktio_envvars_t rktio_envvars_t;
 
-RKTIO_EXTERN char *rktio_getenv(rktio_t *rktio, char *name);
-RKTIO_EXTERN int rktio_setenv(rktio_t *rktio, const char *name, const char *val);
-
+/* Extracts all environment variables into a record */
 RKTIO_EXTERN rktio_envvars_t *rktio_envvars(rktio_t *rktio);
+/* Create an empty environment-variables record: */
 RKTIO_EXTERN rktio_envvars_t *rktio_empty_envvars(rktio_t *rktio);
+/* Clones an environment-variable record: */
 RKTIO_EXTERN rktio_envvars_t *rktio_envvars_copy(rktio_t *rktio, rktio_envvars_t *envvars);
+/* Deallocates an environment-variables record: */
 RKTIO_EXTERN void rktio_envvars_free(rktio_t *rktio, rktio_envvars_t *envvars);
 
+/* Access/update environment-variables record by name: */
 RKTIO_EXTERN char *rktio_envvars_get(rktio_t *rktio, rktio_envvars_t *envvars, char *name);
 RKTIO_EXTERN void rktio_envvars_set(rktio_t *rktio, rktio_envvars_t *envvars, char *name, char *value);
 
+/* Access/update environment-variables record by index: */
 RKTIO_EXTERN intptr_t rktio_envvars_count(rktio_t *rktio, rktio_envvars_t *envvars);
 RKTIO_EXTERN char *rktio_envvars_name_ref(rktio_t *rktio, rktio_envvars_t *envvars, intptr_t i);
 RKTIO_EXTERN char *rktio_envvars_value_ref(rktio_t *rktio, rktio_envvars_t *envvars, intptr_t i);
@@ -496,6 +516,7 @@ enum {
   RKTIO_ERROR_TRY_AGAIN, /* for UDP */
   RKTIO_ERROR_TRY_AGAIN_WITH_IPV4, /* for TCP listen */
   RKTIO_ERROR_TIME_OUT_OF_RANGE,
+  RKTIO_ERROR_NO_SUCH_ENVVAR,
 };
 
 /* GAI error sub-codes */

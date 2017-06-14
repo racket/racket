@@ -547,7 +547,7 @@ scheme_calloc (size_t num, size_t size)
   memset(space, 0, (num*size));
 #endif
 
-  return (space);
+  return space;
 }
 
 char *
@@ -558,7 +558,7 @@ scheme_strdup(const char *str)
 
   len = strlen(str) + 1;
   naya = (char *)scheme_malloc_atomic (len * sizeof (char));
-  memcpy (naya, str, len);
+  memcpy(naya, str, len);
 
   return naya;
 }
@@ -571,7 +571,22 @@ scheme_strdup_eternal(const char *str)
 
   len = strlen(str) + 1;
   naya = (char *)scheme_malloc_eternal(len * sizeof (char));
-  memcpy (naya, str, len);
+  memcpy(naya, str, len);
+
+  return naya;
+}
+
+char *
+scheme_strdup_and_free(const char *str)
+{
+  char *naya;
+  intptr_t len;
+
+  len = strlen(str) + 1;
+  naya = (char *)scheme_malloc_atomic (len * sizeof (char));
+  memcpy(naya, str, len);
+
+  free((void *)str);
 
   return naya;
 }

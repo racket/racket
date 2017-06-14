@@ -422,7 +422,7 @@ setjmpup.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h   $(srcdir)/schmach.h
 sfs.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_sfs.inc
-string.@LTO@: $(COMMON_HEADERS) \
+string.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
          $(srcdir)/stypes.h    $(srcdir)/schvers.h $(srcdir)/mzmark_string.inc $(srcdir)/strops.inc \
          $(srcdir)/schustr.inc $(srcdir)/systype.inc
 struct.@LTO@: $(COMMON_HEADERS) \

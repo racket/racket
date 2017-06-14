@@ -1043,9 +1043,7 @@ char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn)
     *actlen = slen+1;
 
   if (buflen < slen) {
-    buf = scheme_strdup(s);
-    free(s);
-    return buf;
+    return scheme_strdup_and_free(s);
   } else {
     memcpy(buf, s, slen+1);
     free(s);
@@ -1720,10 +1718,7 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
                          errorin, filename);
       }
 
-      filename = scheme_strdup(new_filename);
-      free(new_filename);
-  
-      filename = new_filename;
+      filename = scheme_strdup_and_free(new_filename);
       ilen = strlen(filename);
     }
 #endif

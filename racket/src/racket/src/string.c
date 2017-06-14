@@ -25,6 +25,7 @@
 
 #include "schpriv.h"
 #include "schvers.h"
+#include "schrktio.h"
 #include <string.h>
 #include <ctype.h>
 #ifdef NO_ERRNO_GLOBAL
@@ -384,8 +385,6 @@ ROSYM static Scheme_Object *platform_3m_path, *platform_cgc_path;
 READ_ONLY static Scheme_Object *zero_length_char_string;
 READ_ONLY static Scheme_Object *zero_length_byte_string;
 
-SHARED_OK static Scheme_Hash_Table *putenv_str_table;
-
 SHARED_OK static char *embedding_banner;
 SHARED_OK static Scheme_Object *vers_str;
 SHARED_OK static Scheme_Object *banner_str;
@@ -468,8 +467,6 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(platform_cgc_path);
   platform_cgc_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX);
   platform_3m_path = scheme_make_path(SCHEME_PLATFORM_LIBRARY_SUBPATH SPLS_SUFFIX MZ3M_SUBDIR);
-
-  REGISTER_SO(putenv_str_table);
 
   REGISTER_SO(embedding_banner);
   REGISTER_SO(vers_str);
@@ -2211,16 +2208,6 @@ int scheme_any_string_has_null(Scheme_Object *o)
 /* Environment Variables                                               */
 /***********************************************************************/
 
-#if defined(OS_X) && !TARGET_OS_IPHONE
-# include <crt_externs.h>
-# define GET_ENVIRON_ARRAY *_NSGetEnviron()
-#endif
-
-#if !defined(DOS_FILE_SYSTEM) && !defined(GET_ENVIRON_ARRAY)
-extern char **environ;
-# define GET_ENVIRON_ARRAY environ
-#endif
-
 #define SCHEME_ENVVARS_TABLE(ev) ((Scheme_Hash_Tree *)SCHEME_PTR_VAL(ev))
 
 Scheme_Object *scheme_make_environment_variables(Scheme_Hash_Tree *ht)
@@ -2253,138 +2240,56 @@ static Scheme_Object *current_environment_variables(int argc, Scheme_Object *arg
   return v;
 }
 
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-static char* clone_str_with_gc(const char* buffer) {
-  int length;
-  char *newbuffer;
-  length = strlen(buffer);
-  newbuffer = scheme_malloc_atomic(length+1);
-  memcpy(newbuffer, buffer, length+1);
-  return newbuffer;
-}
-#endif
-
-static void create_putenv_str_table_if_needed() {
-  if (!putenv_str_table) {
-    putenv_str_table = scheme_make_hash_table(SCHEME_hash_string);
-  }
-}
-
-#ifndef DOS_FILE_SYSTEM
-static void putenv_str_table_put_name(const char *name, char *value) {
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  void *original_gc;
-  const char *name_copy;
-  original_gc = GC_switch_to_master_gc();
-  scheme_start_atomic();
-
-  name_copy = clone_str_with_gc(name);
-  create_putenv_str_table_if_needed();
-  scheme_hash_set(putenv_str_table, (Scheme_Object *)name_copy, (Scheme_Object *)value);
-
-  scheme_end_atomic_no_swap();
-  GC_switch_back_from_master(original_gc);
-#else
-  create_putenv_str_table_if_needed();
-  scheme_hash_set(putenv_str_table, (Scheme_Object *)name, (Scheme_Object *)value);
-#endif
-}
-#endif
-
-#if defined(MZ_PRECISE_GC)
-static Scheme_Object *putenv_str_table_get(const char *name) {
-#if defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC)
-  void *original_gc;
-  Scheme_Object *value; 
-  original_gc = GC_switch_to_master_gc();
-  scheme_start_atomic();
-
-  create_putenv_str_table_if_needed();
-  value = scheme_hash_get(putenv_str_table, (Scheme_Object *)name);
-
-  scheme_end_atomic_no_swap();
-  GC_switch_back_from_master(original_gc);
-  return value;
-#else
-  create_putenv_str_table_if_needed();
-  return scheme_hash_get(putenv_str_table, (Scheme_Object *)name);
-#endif
-}
-#endif
-
-
 static int sch_bool_getenv(const char* name);
 
-void
-scheme_init_getenv(void)
+void scheme_init_getenv(void)
 {
   if (sch_bool_getenv("PLTNOMZJIT")) {
       scheme_set_startup_use_jit(0);
   }
 }
 
-#ifdef DOS_FILE_SYSTEM
-# include <windows.h>
-static char *dos_win_getenv(const char *name) {
-  int value_size;
-  value_size = GetEnvironmentVariableW(WIDE_PATH(name), NULL, 0);
-  if (value_size) {
-    wchar_t *value;
-    int got;
-    value = scheme_malloc_atomic(sizeof(wchar_t) * value_size);
-    got = GetEnvironmentVariableW(WIDE_PATH(name), value, value_size);
-    if (got < value_size)
-      value[got] = 0;
-    return NARROW_PATH(value);
-  }
-  return NULL;
-}
-#endif
-
 static int sch_bool_getenv(const char* name)
 {
-  int rc = 0;
-
-#ifdef DOS_FILE_SYSTEM
-  if (GetEnvironmentVariable(name, NULL, 0)) rc = 1;
-#else
-  if (getenv(name)) rc = 1;
-#endif
-
-  return rc;
+  if (rktio_getenv(scheme_rktio, name))
+    return 1;
+  else
+    return 0;
 }
 
 int byte_string_ok_name(Scheme_Object *o)
 {
   const char *s = SCHEME_BYTE_STR_VAL(o);
   int i = SCHEME_BYTE_STRTAG_VAL(o);
-#ifdef DOS_FILE_SYSTEM
-  if (!i) return 0;
-#endif  
+
   while (i--) {
-    if (!s[i] || s[i] == '=')
+    if (!s[i])
       return 0;
   }
+
+  return rktio_is_ok_envvar_name(scheme_rktio, s);
+    
   return 1;
 }
 
 static Scheme_Object *normalize_env_case(Scheme_Object *bs)
 {
-#ifdef DOS_FILE_SYSTEM
-  bs = scheme_byte_string_to_char_string(bs);
-  bs = string_locale_downcase(1, &bs);
-  bs = scheme_char_string_to_byte_string(bs);
-#endif
+  if (rktio_are_envvar_names_case_insensitive(scheme_rktio)) {
+    bs = scheme_byte_string_to_char_string(bs);
+    bs = string_locale_downcase(1, &bs);
+    bs = scheme_char_string_to_byte_string(bs);
+  }
   return bs;
 }
 
 char *scheme_getenv(char *name)
 {
-#ifdef DOS_FILE_SYSTEM
-  return dos_win_getenv(name);
-#else
-  return getenv(name);
-#endif
+  char *s;
+  s = rktio_getenv(scheme_rktio, name);
+  if (s)
+    return scheme_strdup_and_free(s);
+  else
+    return NULL;
 }
 
 static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
@@ -2408,9 +2313,14 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
   if (!ht) {
     name = SCHEME_BYTE_STR_VAL(bs);
 
-    value = scheme_getenv(name);
+    value = rktio_getenv(scheme_rktio, name);
+    if (value) {
+      val = scheme_make_byte_string(value);
+      free(value);
+    } else
+    val = scheme_false;
 
-    return value ? scheme_make_byte_string(value) : scheme_false;
+    return val;
   } else {
     bs = normalize_env_case(bs);
     val = scheme_hash_tree_get(ht, bs);
@@ -2418,69 +2328,12 @@ static Scheme_Object *sch_getenv(int argc, Scheme_Object *argv[])
   }
 }
 
-#ifndef DOS_FILE_SYSTEM
-static int sch_unix_putenv(const char *var, const char *val, const intptr_t varlen, const intptr_t vallen) {
-  char *buffer;
-  intptr_t total_length, r;
-  total_length = varlen + vallen + 2;
-
-  if (val) {
-#ifdef MZ_PRECISE_GC
-    /* Can't put movable string into environ array */
-    buffer = malloc(total_length);
-#else
-    buffer = (char *)scheme_malloc_atomic(total_length);
-#endif
-
-    memcpy(buffer, var, varlen);
-    buffer[varlen] = '=';
-    memcpy(buffer + varlen + 1, val, vallen + 1);
-  } else {
-    buffer = NULL;
-  }
-
-  if (buffer)
-    r = putenv(buffer);
-  else {
-    /* on some platforms, unsetenv() returns void */
-    unsetenv(var);
-    r = 0;
-  }
-
-  if (!r) {
-#ifdef MZ_PRECISE_GC
-    char *oldbuffer;
-
-    /* Will free old, if in table: */
-    oldbuffer = (char *)putenv_str_table_get(var);
-#endif
-
-    /* If precise GC, the buffer needs to be remembered so it can be freed;
-       otherwise, the buffer needs to be referenced so it doesn't get GCed */
-    putenv_str_table_put_name(var, buffer);
-
-#ifdef MZ_PRECISE_GC
-    if (oldbuffer)
-      free(oldbuffer);
-#endif
-  } else {
-#ifdef MZ_PRECISE_GC
-    if (buffer)
-      free(buffer);
-#endif
-  }
-
-  return r;
-}
-#endif
-
 static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
 {
   Scheme_Object *varbs, *valbs, *ev;
   Scheme_Hash_Tree *ht;
   char *var;
   char *val;
-  int rc = 0, errid = 0;
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_environment_variables_type))
     scheme_wrong_contract("environment-variables-set!", "environment-variables?", 0, argc, argv);
@@ -2524,23 +2377,13 @@ static Scheme_Object *sch_putenv(int argc, Scheme_Object *argv[])
       val = SCHEME_BYTE_STR_VAL(valbs);
     }
 
-#ifdef DOS_FILE_SYSTEM
-    rc = !SetEnvironmentVariable(var, val);
-    if (rc)
-      errid = GetLastError();
-#else
-    rc = sch_unix_putenv(var, val, SCHEME_BYTE_STRLEN_VAL(varbs), (val ? SCHEME_BYTE_STRLEN_VAL(valbs) : 0));
-    errid = errno;
-#endif
-
-    if (rc) {
+    if (!rktio_setenv(scheme_rktio, var, val)) {
       if (argc > 3)
         return _scheme_tail_apply(argv[3], 0, NULL);
       else {
         scheme_raise_exn(MZEXN_FAIL,
                          "environment-variables-set!: change failed\n"
-                         "  system error: %e",
-                         errid);
+                         "  system error: %E");
       }
     }
 
@@ -2562,52 +2405,20 @@ static Scheme_Object *env_copy(int argc, Scheme_Object *argv[])
   /* copy system environment variables into a hash table: */
   ht = scheme_make_hash_tree(SCHEME_hashtr_equal);
 
-#ifdef DOS_FILE_SYSTEM
   {
-    char *p;
-    GC_CAN_IGNORE wchar_t *e;
-    int i, start, j;
+    intptr_t i;
+    rktio_envvars_t *envvars;
     Scheme_Object *var, *val;
 
-    e = GetEnvironmentStringsW();
-
-    for (i = 0; e[i]; ) {
-      start = i;
-      while (e[i]) { i++; }
-      p = NARROW_PATH(e XFORM_OK_PLUS start);
-      for (j = 0; p[j] && p[j] != '='; j++) {
-      }
-      if (j && p[j]) {
-        var = scheme_make_immutable_sized_byte_string(p, j, 1);
-        val = scheme_make_immutable_sized_byte_string(p XFORM_OK_PLUS j + 1, -1, 1);
-        var = normalize_env_case(var);
-        ht = scheme_hash_tree_set(ht, var, val);
-      }
-      i++;
+    envvars = rktio_envvars(scheme_rktio);
+    for (i = rktio_envvars_count(scheme_rktio, envvars); i--; ) {
+      var = scheme_make_immutable_sized_byte_string(rktio_envvars_name_ref(scheme_rktio, envvars, i), -1, 1);
+      val = scheme_make_immutable_sized_byte_string(rktio_envvars_value_ref(scheme_rktio, envvars, i), -1, 1);
+      ht = scheme_hash_tree_set(ht, var, val);
     }
 
-    FreeEnvironmentStringsW(e);
+    rktio_envvars_free(scheme_rktio, envvars);
   }
-#else
-  {
-    int i, j;
-    char **ea, *p;
-    Scheme_Object *var, *val;
-
-    ea = GET_ENVIRON_ARRAY;
-
-    for (i = 0; ea[i]; i++) {
-      p = ea[i];
-      for (j = 0; p[j] && p[j] != '='; j++) {
-      }
-      if (p[j]) {
-        var = scheme_make_immutable_sized_byte_string(p, j, 1);
-        val = scheme_make_immutable_sized_byte_string(p XFORM_OK_PLUS j + 1, -1, 1);
-        ht = scheme_hash_tree_set(ht, var, val);
-      }
-    }
-  }
-#endif
 
   return scheme_make_environment_variables(ht);
 }
@@ -2674,99 +2485,52 @@ static Scheme_Object *sch_getenv_names(int argc, Scheme_Object *argv[])
   return r;
 }
 
-#ifdef DOS_FILE_SYSTEM
-static int wc_strlen(const wchar_t *ws)
-{
-  int l;
-  for (l =0; ws[l]; l++) { }
-  return l;
-}
-#endif
+/* Temporarily use internal function: */
+extern void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
 
+/* This will go away when we use rktio processes: */
 void *scheme_environment_variables_to_block(Scheme_Object *ev, int *_need_free)
 {
+  
   Scheme_Hash_Tree *ht;
   Scheme_Object *key, *val;
-  
-  ht = SCHEME_ENVVARS_TABLE(ev);
-  if (!ht) {
-    *_need_free = 0;
-#ifdef DOS_FILE_SYSTEM
-    return NULL;
-#else
-    return GET_ENVIRON_ARRAY;
-#endif
-  }
+  void *p;
 
   *_need_free = 1;
 
-#ifdef DOS_FILE_SYSTEM
-  {
-    mzlonglong i;
-    int len = 0, slen;
-    GC_CAN_IGNORE wchar_t *r, *s;
+  ht = SCHEME_ENVVARS_TABLE(ev);
+  if (!ht) {
+    rktio_envvars_t *envvars;
+    envvars = rktio_envvars(scheme_rktio);
 
-    for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
-      scheme_hash_tree_index(ht, i, &key, &val);
-      len += wc_strlen(WIDE_PATH(SCHEME_BYTE_STR_VAL(key)));
-      len += wc_strlen(WIDE_PATH(SCHEME_BYTE_STR_VAL(val)));
-      len += 2;
-    }
+    p = rktio_envvars_to_block(scheme_rktio, envvars);
+    
+    rktio_envvars_free(scheme_rktio, envvars);
 
-    r = (wchar_t *)malloc((len + 1) * sizeof(wchar_t));
-
-    len = 0;
-
-    for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
-      scheme_hash_tree_index(ht, i, &key, &val);
-      s = WIDE_PATH(SCHEME_BYTE_STR_VAL(key));
-      slen = wc_strlen(s);
-      memcpy(r XFORM_OK_PLUS len, s, slen * sizeof(wchar_t));
-      len += slen;
-      r[len++] = '=';
-      s = WIDE_PATH(SCHEME_BYTE_STR_VAL(val));
-      slen = wc_strlen(s);
-      memcpy(r XFORM_OK_PLUS len, s, slen * sizeof(wchar_t));
-      len += slen;
-      r[len++] = 0;
-    }
-    r[len] = 0;
-
-    return r;
+    return p;
   }
-#else
+
   {
-    GC_CAN_IGNORE char **r, *s;
+    rktio_envvars_t *envvars;
     mzlonglong i;
-    intptr_t len = 0, slen, c;
 
+    envvars = rktio_empty_envvars(scheme_rktio);
+    
     for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
       scheme_hash_tree_index(ht, i, &key, &val);
-      len += SCHEME_BYTE_STRLEN_VAL(key);
-      len += SCHEME_BYTE_STRLEN_VAL(val);
-      len += 2;
+
+      rktio_envvars_set(scheme_rktio,
+                        envvars,
+                        SCHEME_BYTE_STR_VAL(key),
+                        SCHEME_BYTE_STR_VAL(val));
     }
 
-    r = (char **)malloc((ht->count+1) * sizeof(char*) + len);
-    s = (char *)(r + (ht->count+1));
-    c = 0;
-    for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
-      scheme_hash_tree_index(ht, i, &key, &val);
-      r[c++] = s;
-      slen = SCHEME_BYTE_STRLEN_VAL(key);
-      memcpy(s, SCHEME_BYTE_STR_VAL(key), slen);
-      s[slen] = '=';
-      s = s XFORM_OK_PLUS (slen + 1);
-      slen = SCHEME_BYTE_STRLEN_VAL(val);
-      memcpy(s, SCHEME_BYTE_STR_VAL(val), slen);
-      s[slen] = 0;
-      s = s XFORM_OK_PLUS (slen + 1);
-    }
-    r[c] = NULL;
+    p = rktio_envvars_to_block(scheme_rktio, envvars);
 
-    return r;
+    rktio_envvars_free(scheme_rktio, envvars);
+
+    return p;
   }
-#endif
 }
 
 /***********************************************************************/

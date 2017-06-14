@@ -4568,6 +4568,7 @@ int scheme_regexp_match_p(Scheme_Object *regexp, Scheme_Object *target);
 Scheme_Object *scheme_gensym(Scheme_Object *base);
 Scheme_Object *scheme_symbol_to_string(Scheme_Object *sym);
 
+char *scheme_strdup_and_free(const char *str);
 
 Scheme_Object *scheme_maybe_build_path(Scheme_Object *base, Scheme_Object *elem);
 

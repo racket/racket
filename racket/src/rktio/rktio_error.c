@@ -32,6 +32,7 @@ err_str_t err_strs[]  = {
   { RKTIO_ERROR_TRY_AGAIN, "no UDP message available" },
   { RKTIO_ERROR_TRY_AGAIN_WITH_IPV4, "listen failed, but try again with just IPv4 addresses" },
   { RKTIO_ERROR_TIME_OUT_OF_RANGE, "time value out-of-range for date conversion" },
+  { RKTIO_ERROR_NO_SUCH_ENVVAR, "no value as an environment variable" },
   { 0, NULL }
 };
 
