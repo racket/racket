@@ -1031,50 +1031,38 @@ static Scheme_Object *string_to_path_element(int argc, Scheme_Object **argv)
 char *scheme_os_getcwd(char *buf, int buflen, int *actlen, int noexn)
 {
   char *s;
+  int slen;
 
   s = rktio_get_current_directory(scheme_rktio);
-
-  if (s) {
-    int slen = strlen(s);
-
-    if (actlen)
-      *actlen = slen;
-
-    if (buflen < slen) {
-      buf = scheme_strdup(s);
-      free(s);
-      return buf;
-    } else {
-      memcpy(buf, s, slen+1);
-      free(s);
-      return buf;
-    }
-  } else {
+  if (!s) {
     if (noexn) {
-      char *r;
-      
       /* We need to invent some complete path. */
 #ifdef DOS_FILE_SYSTEM
-      r = "C:\\";
+      s = strdup("C:\\");
 #else
-      r = "/";
-#endif        
-      if (actlen)
-        *actlen = strlen(r);
-      
-      if (buf) {
-        strcpy(buf, r);
-        return buf;
-      } else {
-        return r;
-      }
+      s = strdup("/");
+#endif
+    } else {
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                       "current-directory: unknown failure\n"
+                       "  system error: %R");
+      return NULL;
     }
+  }
 
-    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, 
-                     "current-directory: unknown failure\n"
-                     "  system error: %R");
+  slen = strlen(s);
 
-    return NULL;
+  if (actlen)
+    *actlen = slen+1;
+
+  if (buflen < slen) {
+    buf = scheme_strdup(s);
+    free(s);
+    return buf;
+  } else {
+    memcpy(buf, s, slen+1);
+    free(s);
+    return buf;
   }
 }
 
