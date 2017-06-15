@@ -189,7 +189,7 @@ static void wait_read(rktio_t *rktio, rktio_fd_t *fd)
   check_valid(ps);
   rktio_poll_add(rktio, fd, ps, RKTIO_POLL_READ);
   rktio_sleep(rktio, 0, ps, NULL);
-  rktio_poll_set_close(rktio, ps);
+  rktio_poll_set_forget(rktio, ps);
 }
 
 static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd2, int immediate_available)
@@ -337,7 +337,7 @@ void check_many_lookup(rktio_t *rktio)
     }
 
     rktio_sleep(rktio, 0, ps, NULL);
-    rktio_poll_set_close(rktio, ps);
+    rktio_poll_set_forget(rktio, ps);
 
     for (i = 0; i < LOOKUPS_N; i++) {
       if (lookup[i] && (rktio_poll_addrinfo_lookup_ready(rktio, lookup[i]) == RKTIO_POLL_READY)) {
@@ -346,7 +346,7 @@ void check_many_lookup(rktio_t *rktio)
         else {
           addr = rktio_addrinfo_lookup_get(rktio, lookup[i]);
           check_valid(addr);
-          rktio_free_addrinfo(rktio, addr);
+          rktio_addrinfo_free(rktio, addr);
         }
         lookup[i] = NULL;
         break;
@@ -371,7 +371,7 @@ rktio_addrinfo_t *lookup_loop(rktio_t *rktio,
 
   rktio_poll_add_addrinfo_lookup(rktio, lookup, ps);
   rktio_sleep(rktio, 0, ps, NULL);
-  rktio_poll_set_close(rktio, ps);
+  rktio_poll_set_forget(rktio, ps);
   check_valid(rktio_poll_addrinfo_lookup_ready(rktio, lookup) == RKTIO_POLL_READY);
 
   addr = rktio_addrinfo_lookup_get(rktio, lookup);
@@ -396,7 +396,7 @@ static void pause_for_process(rktio_t *rktio, rktio_process_t *process, int dont
     } else {
       rktio_sleep(rktio, 0, ps, NULL);
     }
-    rktio_poll_set_close(rktio, ps);
+    rktio_poll_set_forget(rktio, ps);
     done = rktio_poll_process_done(rktio, process);
     check_valid(done != RKTIO_PROCESS_ERROR);
   } while (!done);
@@ -417,7 +417,7 @@ static rktio_fd_t *connect_loop(rktio_t *rktio, rktio_addrinfo_t *addr, rktio_ad
     
     rktio_poll_add_connect(rktio, conn, ps);
     rktio_sleep(rktio, 0, ps, NULL);
-    rktio_poll_set_close(rktio, ps);
+    rktio_poll_set_forget(rktio, ps);
     check_valid(rktio_poll_connect_ready(rktio, conn) == RKTIO_POLL_READY);
 
     fd = rktio_connect_finish(rktio, conn);
@@ -452,7 +452,7 @@ static char *week_day_name(rktio_t *rktio, int dow)
 int main(int argc, char **argv)
 {
   rktio_t *rktio;
-  rktio_size_t *sz;
+  rktio_filesize_t *sz;
   rktio_fd_t *fd, *fd2;
   intptr_t amt, i, saw_file;
   int perms;
@@ -506,8 +506,7 @@ int main(int argc, char **argv)
 
   sz = rktio_file_size(rktio, "test1");
   check_valid(sz);
-  check_valid(sz->lo == 5);
-  check_valid(sz->hi == 0);
+  check_valid(*sz == 5);
   free(sz);
 
   fd = rktio_open(rktio, "test2", RKTIO_OPEN_WRITE | RKTIO_OPEN_MUST_EXIST);
@@ -655,7 +654,7 @@ int main(int argc, char **argv)
 
     lnr = rktio_listen(rktio, addr, 5, 1);
     check_valid(lnr);
-    rktio_free_addrinfo(rktio, addr);
+    rktio_addrinfo_free(rktio, addr);
 
     check_valid(!rktio_poll_accept_ready(rktio, lnr));
 
@@ -704,7 +703,7 @@ int main(int argc, char **argv)
     check_read_write_pair(rktio, fd, fd2, 0);
 
     fd = connect_loop(rktio, addr, NULL);
-    rktio_free_addrinfo(rktio, addr);
+    rktio_addrinfo_free(rktio, addr);
     
     fd2 = rktio_accept(rktio, lnr);
 
@@ -734,7 +733,7 @@ int main(int argc, char **argv)
     addr = lookup_loop(rktio, NULL, 4536, -1, 1, 0);
     check_valid(addr);
     check_valid(rktio_udp_bind(rktio, fd, addr));
-    rktio_free_addrinfo(rktio, addr);
+    rktio_addrinfo_free(rktio, addr);
 
     fd2 = rktio_udp_open(rktio, intf_addr);
     check_valid(fd2);
@@ -742,7 +741,7 @@ int main(int argc, char **argv)
     addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 0);
     check_valid(addr);
     check_valid(rktio_udp_connect(rktio, fd2, addr));
-    rktio_free_addrinfo(rktio, addr);
+    rktio_addrinfo_free(rktio, addr);
 
     check_read_write_pair(rktio, fd, fd2, 0);
 
@@ -755,7 +754,7 @@ int main(int argc, char **argv)
     addr = lookup_loop(rktio, NULL, 4536, -1, 1, 0);
     check_valid(addr);
     check_valid(rktio_udp_bind(rktio, fd, addr));
-    rktio_free_addrinfo(rktio, addr);
+    rktio_addrinfo_free(rktio, addr);
 
     addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 0);
     check_valid(addr);
@@ -763,8 +762,8 @@ int main(int argc, char **argv)
     check_fill_write(rktio, fd2, addr, AMOUNT_FOR_UDP);
     check_drain_read(rktio, fd, AMOUNT_FOR_UDP+1);
 
-    rktio_free_addrinfo(rktio, addr);
-    rktio_free_addrinfo(rktio, intf_addr);
+    rktio_addrinfo_free(rktio, addr);
+    rktio_addrinfo_free(rktio, intf_addr);
 
     check_valid(rktio_close(rktio, fd));
     check_valid(rktio_close(rktio, fd2));
@@ -927,7 +926,7 @@ int main(int argc, char **argv)
 
     start = rktio_get_inexact_milliseconds();
     rktio_sleep(rktio, 0.1, ps, NULL);
-    rktio_poll_set_close(rktio, ps);
+    rktio_poll_set_forget(rktio, ps);
     check_valid(rktio_get_inexact_milliseconds() - start > 0.1);
 
     ps = rktio_make_poll_set(rktio);
@@ -944,7 +943,7 @@ int main(int argc, char **argv)
     check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);
 
     check_valid(rktio_close(rktio, fd2));
-    rktio_poll_set_close(rktio, ps);
+    rktio_poll_set_forget(rktio, ps);
     
     rktio_fs_change_forget(rktio, fc);
   }

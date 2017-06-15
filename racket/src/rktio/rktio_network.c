@@ -726,7 +726,7 @@ rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio,
   return start_lookup(rktio, lookup);
 }
 
-void rktio_free_addrinfo(rktio_t *rktio, rktio_addrinfo_t *a)
+void rktio_addrinfo_free(rktio_t *rktio, rktio_addrinfo_t *a)
 {
   do_freeaddrinfo(RKTIO_AS_ADDRINFO(a));
 }
@@ -852,6 +852,38 @@ void rktio_winsock_done(rktio_t *rktio)
 /* TCP sockets                                                            */
 /*========================================================================*/
 
+void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+
+#ifdef RKTIO_SYSTEM_UNIX
+  fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  {
+    unsigned long ioarg = 1;
+    ioctlsocket(s, FIONBIO, &ioarg);
+  }
+#endif
+
+  if (rktio_fd_is_udp(rktio, rfd)) {
+#ifdef RKTIO_SYSTEM_UNIX
+# ifdef SO_BROADCAST
+    {
+      int bc = 1;
+      setsockopt(s, SOL_SOCKET, SO_BROADCAST, &bc, sizeof(bc));
+    }
+# endif
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+    {
+      BOOL bc = 1;
+      setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)(&bc), sizeof(BOOL));
+    }
+#endif
+  }
+}
+
 int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
@@ -867,15 +899,19 @@ int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-void rktio_socket_forget(rktio_t *rktio, rktio_fd_t *rfd)
+void rktio_socket_own(rktio_t *rktio, rktio_fd_t *rfd)
 {
-#ifdef RKTIO_SYSTEM_UNIX
-  rktio_forget(rktio, rfd);
+#ifdef RKTIO_SYSTEM_WINDOWS
+  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  REGISTER_SOCKET(s);
 #endif
+}
+
+void rktio_socket_forget_owned(rktio_t *rktio, rktio_fd_t *rfd)
+{
 #ifdef RKTIO_SYSTEM_WINDOWS
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   UNREGISTER_SOCKET(s);
-  closesocket(s);
 #endif
 }
 
@@ -947,19 +983,6 @@ int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
-static void init_socket(rktio_socket_t s)
-{
-#ifdef RKTIO_SYSTEM_UNIX
-  fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
-#endif
-#ifdef RKTIO_SYSTEM_WINDOWS
-  {
-    unsigned long ioarg = 1;
-    ioctlsocket(s, FIONBIO, &ioarg);
-  }
-#endif
-}
-
 rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
@@ -980,8 +1003,7 @@ rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
     get_socket_error();
     return NULL;
   }
-  REGISTER_SOCKET(nsocket);
-  return rktio_system_fd(rktio, nsocket, rktio_fd_modes(rktio, rfd));
+  return rktio_system_fd(rktio, nsocket, rktio_fd_modes(rktio, rfd) | RKTIO_OPEN_OWN);
 #endif
 }
 
@@ -1137,9 +1159,7 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
       errno = status;
 #endif
 
-      REGISTER_SOCKET(s);
- 
-      conn->trying_fd = rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE);
+      conn->trying_fd = rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_OWN);
       conn->inprogress = inprogress;
 
       return conn;
@@ -1211,8 +1231,6 @@ rktio_fd_t *rktio_connect_finish(rktio_t *rktio, rktio_connect_t *conn)
       }
     }
   }
-
-  init_socket(rktio_fd_system_fd(rktio, rfd));
 
   conn_free(conn);
 
@@ -1519,7 +1537,7 @@ int rktio_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener)
   return do_poll_accept_ready(rktio, listener, 0);
 }
 
-void rktio_poll_add_receive(rktio_t *rktio, rktio_listener_t *listener, rktio_poll_set_t *fds)
+void rktio_poll_add_accept(rktio_t *rktio, rktio_listener_t *listener, rktio_poll_set_t *fds)
 {
   int i;
   rktio_socket_t s;
@@ -1562,10 +1580,7 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
     RKTIO_WHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #  endif
 
-    init_socket(s);
-    REGISTER_SOCKET(s);
-    
-    return rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE); 
+    return rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_OWN); 
   } else {
     get_socket_error();
     return NULL;
@@ -1628,6 +1643,20 @@ char **rktio_socket_peer_address(rktio_t *rktio, rktio_fd_t *rfd)
   
   name_len = sizeof(name);
   if (getpeername(rktio_fd_system_fd(rktio, rfd), (struct sockaddr *)name, &name_len)) {
+    get_socket_error();
+    return NULL;
+  }
+
+  return get_numeric_strings(rktio, name, name_len);
+}
+
+char **rktio_listener_address(rktio_t *rktio, rktio_listener_t *lnr)
+{
+  char name[RKTIO_SOCK_NAME_MAX_LEN];
+  rktio_sockopt_len_t name_len;
+  
+  name_len = sizeof(name);
+  if (getsockname(lnr->s[0], (struct sockaddr *)name, &name_len)) {
     get_socket_error();
     return NULL;
   }

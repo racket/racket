@@ -1739,6 +1739,7 @@ mark_input_fd {
   gcMARK2(fd->buffer, gc);
   gcMARK2(fd->refcount, gc);
   gcMARK2(fd->flush_handle, gc);
+  gcMARK2(fd->widths, gc);
 
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));
@@ -1794,7 +1795,6 @@ mark_read_write_evt {
 mark_filesystem_change_evt {
  mark:
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)p;
-  gcMARK2(fc->sema, gc);
   gcMARK2(fc->mref, gc);
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_Filesystem_Change_Evt));

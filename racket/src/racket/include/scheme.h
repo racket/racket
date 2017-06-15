@@ -2141,34 +2141,11 @@ extern Scheme_Extension_Table *scheme_extension_table;
 /*                           file descriptors                             */
 /*========================================================================*/
 
-#if defined(DETECT_WIN32_CONSOLE_STDIN) || defined(WINDOWS_PROCESSES)
-# ifndef NO_STDIO_THREADS
-#  define USE_FAR_MZ_FDCALLS
-# endif
-#endif
-#ifdef USE_DYNAMIC_FDSET_SIZE
-# define USE_FAR_MZ_FDCALLS
-#endif
-#ifdef USE_BEOS_PORT_THREADS
-# define USE_FAR_MZ_FDCALLS
-#endif
-#ifdef HAVE_POLL_SYSCALL
-# define USE_FAR_MZ_FDCALLS
-#endif
-
-#ifdef USE_FAR_MZ_FDCALLS
 # define MZ_GET_FDSET(p, n) scheme_get_fdset(p, n)
 # define MZ_FD_ZERO(p) scheme_fdzero(p)
 # define MZ_FD_SET(n, p) scheme_fdset(p, n)
 # define MZ_FD_CLR(n, p) scheme_fdclr(p, n)
 # define MZ_FD_ISSET(n, p) scheme_fdisset(p, n)
-#else
-# define MZ_GET_FDSET(p, n) ((void *)(((fd_set *)p) XFORM_OK_PLUS n))
-# define MZ_FD_ZERO(p) XFORM_HIDE_EXPR(FD_ZERO((fd_set *)(p)))
-# define MZ_FD_SET(n, p) FD_SET(n, (fd_set *)(p))
-# define MZ_FD_CLR(n, p) FD_CLR(n, (fd_set *)(p))
-# define MZ_FD_ISSET(n, p) FD_ISSET(n, (fd_set *)(p))
-#endif
 
 /* For scheme_fd_to_semaphore(): */
 #define MZFD_CREATE_READ  1
@@ -2176,9 +2153,6 @@ extern Scheme_Extension_Table *scheme_extension_table;
 #define MZFD_CHECK_READ   3
 #define MZFD_CHECK_WRITE  4
 #define MZFD_REMOVE       5
-#define MZFD_CREATE_VNODE 6
-#define MZFD_CHECK_VNODE  7
-#define MZFD_REMOVE_VNODE 8
 
 /*========================================================================*/
 

@@ -13,12 +13,15 @@ typedef struct err_str_t {
 
 err_str_t err_strs[]  = { 
   { RKTIO_ERROR_UNSUPPORTED, "unsupported" },
-  { RKTIO_ERROR_EXISTS, "file or directory already exists"},
+  { RKTIO_ERROR_DOES_NOT_EXIST, "no such file or directory" },
+  { RKTIO_ERROR_EXISTS, "file or directory already exists" },
   { RKTIO_ERROR_LINK_FAILED, "link creation failed" },
   { RKTIO_ERROR_NOT_A_LINK, "not a link" },
   { RKTIO_ERROR_BAD_PERMISSION, "unsupported permission value" },
   { RKTIO_ERROR_IS_A_DIRECTORY, "path refers to a directory" },
   { RKTIO_ERROR_NOT_A_DIRECTORY, "path does not refer to a directory" },
+  { RKTIO_ERROR_UNSUPPORTED_TEXT_MODE, "cannot use text mode on a non-file device" },
+  { RKTIO_ERROR_CANNOT_FILE_POSITION, "cannot get/set position/size on device" },
   { RKTIO_ERROR_NO_TILDE, "path does not start with a tilde" },
   { RKTIO_ERROR_ILL_FORMED_USER, "ill-formed username in path" },
   { RKTIO_ERROR_UNKNOWN_USER, "unknown username in path" },

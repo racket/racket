@@ -10,7 +10,6 @@ struct rktio_hash_t {
 typedef struct bucket_t {
   /* v is non-NULL => bucket is filled */
   /* v is NULL and fd is -1 => was removed */
-  int used;
   intptr_t key;
   void *v;
 } bucket_t;
@@ -39,6 +38,19 @@ void rktio_hash_free(rktio_hash_t *ht, int free_values)
 int rktio_hash_is_empty(rktio_hash_t *ht)
 {
   return (ht->count == 0);
+}
+
+intptr_t rktio_hash_size(rktio_hash_t *ht)
+{
+  return ht->size;
+}
+
+intptr_t rktio_hash_get_key(rktio_hash_t *ht, intptr_t i)
+{
+  if (ht->buckets[i].v)
+    return ht->buckets[i].key;
+  else
+    return -1;
 }
 
 static void do_rehash(rktio_hash_t *ht, intptr_t new_size)
@@ -81,7 +93,7 @@ void *rktio_hash_get(rktio_hash_t *ht, intptr_t key)
     return NULL;
 }
 
-void rktio_hash_remove(rktio_hash_t *ht, intptr_t key)
+void rktio_hash_remove(rktio_hash_t *ht, intptr_t key, int dont_rehash)
 {
   if (ht->buckets) {
     intptr_t mask = (ht->size - 1);
@@ -93,8 +105,10 @@ void rktio_hash_remove(rktio_hash_t *ht, intptr_t key)
         ht->buckets[hc].key = -1;
         ht->buckets[hc].v = NULL;
         --ht->count;
-        if (4 * ht->count <= ht->size)
-          do_rehash(ht, ht->size >> 1);
+        if (!dont_rehash) {
+          if (4 * ht->count <= ht->size)
+            do_rehash(ht, ht->size >> 1);
+        }
       } else if (ht->buckets[hc].v
                  || (ht->buckets[hc].key == -1)) {
         /* keep looking */

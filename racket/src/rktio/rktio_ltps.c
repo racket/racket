@@ -82,12 +82,12 @@ void ltps_signal_handle(rktio_ltps_t *lt, rktio_ltps_handle_t *s)
   lt->signaled = s;
 }
 
-void rktio_ltps_handle_set_data(rktio_ltps_t *lt, rktio_ltps_handle_t *s, void *data)
+void rktio_ltps_handle_set_data(rktio_t *rktio, rktio_ltps_handle_t *s, void *data)
 {
   s->data = data;
 }
 
-void *rktio_ltps_handle_get_data(rktio_ltps_t *lt, rktio_ltps_handle_t *s)
+void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *s)
 {
   return s->data;
 }
@@ -131,6 +131,8 @@ int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
 {
   rktio_ltps_handle_t *s;
 
+  rktio_ltps_remove_all(rktio, lt);
+
   while ((s = rktio_ltps_get_signaled_handle(rktio, lt)))
     free(s);
 
@@ -167,19 +169,17 @@ rktio_ltps_handle_t *rktio_ltps_get_signaled_handle(rktio_t *rktio, rktio_ltps_t
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
 static void log_kqueue_error(const char *action, int kr)
 {
+#if 0
   if (kr < 0) {
-    fprintf(stderr, "%s error at %s: %d\n",
-#ifdef HAVE_KQUEUE_SYSCALL
-            "kqueue",
-#else
-            "epoll",
-#endif
+    fprintf(stderr, "ltps error at %s: %d\n",
             action, errno);
   }
+#endif
 }
 
 static void log_kqueue_fd(int fd, int flags)
 {
+  /* ... "expected event %d %d" ... */
 }
 #endif
 
@@ -254,6 +254,7 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
     s = v->write_handle;
     if (s) ltps_signal_handle(lt, s);
     ltps_hash_remove(lt, fd);
+    /* `v` is freed below */
     s = NULL;
 # ifdef HAVE_KQUEUE_SYSCALL
     {
@@ -630,7 +631,7 @@ static void ltps_hash_set(rktio_ltps_t *lt, intptr_t fd, rktio_ltps_handle_pair_
 
 static void ltps_hash_remove(rktio_ltps_t *lt, intptr_t fd)
 {
-  rktio_hash_remove(lt->fd_handles, fd);
+  rktio_hash_remove(lt->fd_handles, fd, 0);
 }
 
 static void ltps_hash_init(rktio_ltps_t *lt)
@@ -644,3 +645,29 @@ static void ltps_hash_free(rktio_ltps_t *lt)
 }
 
 #endif
+
+void rktio_ltps_remove_all(rktio_t *rktio, rktio_ltps_t *lt)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  intptr_t sz, i;
+  
+  sz = rktio_hash_size(lt->fd_handles);
+  for (i = 0; i < sz; i++) {
+    intptr_t fd;
+    fd = rktio_hash_get_key(lt->fd_handles, i);
+    if (fd != -1) {
+      rktio_ltps_handle_pair_t *v;
+      rktio_ltps_handle_t *s;
+      v = ltps_hash_get(lt, fd);
+      if (v) {
+        s = v->read_handle;
+        if (s) ltps_signal_handle(lt, s);
+        s = v->write_handle;
+        if (s) ltps_signal_handle(lt, s);
+        rktio_hash_remove(lt->fd_handles, fd, 1);
+        free(v);
+      }
+    }
+  }
+#endif
+}

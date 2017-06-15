@@ -12,9 +12,9 @@
 # include <windows.h>
 #endif
 
-/*************************************************************/
-/* opening a file fd                                         */
-/*************************************************************/
+/*========================================================================*/
+/* Opening a file                                                         */
+/*========================================================================*/
 
 static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
 {
@@ -27,7 +27,10 @@ static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
   } while ((fd == -1) && (errno == EINTR));
 
   if (fd == -1) {
-    get_posix_error();
+    if (errno == ENOENT) {
+      set_racket_error(RKTIO_ERROR_DOES_NOT_EXIST);
+    } else
+      get_posix_error();
     return NULL;
   } else {
     int cr;
@@ -60,6 +63,7 @@ static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE fd;
+  rktio_fd_t *rfd;
   
   fd = CreateFileW(WIDE_PATH_temp(filename),
 		   GENERIC_READ,
@@ -70,11 +74,24 @@ static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
 		   NULL);
 
   if (fd == INVALID_HANDLE_VALUE) {
-    get_windows_error();
+    if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+      set_racket_error(RKTIO_ERROR_DOES_NOT_EXIST);
+    } else
+      get_windows_error();
     return NULL;
   }
 
-  return rktio_system_fd(rktio, (intptr_t)fd, RKTIO_OPEN_READ);
+  rfd = rktio_system_fd(rktio, (intptr_t)fd, RKTIO_OPEN_READ);
+
+  if (modes & RKTIO_MODE_TEXT) {
+    if (!rktio_fd_is_regular_file(rfd)) {
+      rktio_fd_forget(rfd);
+      set_racket_error(RKTIO_ERROR_UNSUPPORTED_TEXT_MODE);
+      return NULL;
+    }
+  }
+
+  return rfd;
 #endif
 }
 
@@ -222,6 +239,14 @@ static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
 
   rfd = rktio_system_fd(rktio, (intptr_t)fd, modes);
 
+  if (modes & RKTIO_MODE_TEXT) {
+    if (!rktio_fd_is_regular_file(rfd)) {
+      rktio_fd_forget(rfd);
+      set_racket_error(RKTIO_ERROR_UNSUPPORTED_TEXT_MODE);
+      return NULL;
+    }
+  }
+
   if ((modes & RKTIO_OPEN_APPEND) && rktio_fd_is_regular_file(rktio, rfd)) {
     SetFilePointer(fd, 0, NULL, FILE_END);
   }
@@ -238,3 +263,131 @@ rktio_fd_t *rktio_open(rktio_t *rktio, char *filename, int modes)
     return open_read(rktio, filename);
 }
 
+/*========================================================================*/
+/* File positions                                                         */
+/*========================================================================*/
+
+#ifdef WINDOWS_FILE_HANDLES
+static int win_seekable(intptr_t fd)
+{
+  /* SetFilePointer() requires " a file stored on a seeking device".
+     I'm not sure how to test that, so we approximate as "regular
+     file". */
+  return GetFileType((HANDLE)fd) == FILE_TYPE_DISK;
+}
+#endif
+
+rktio_ok_t rktio_set_file_position(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t pos, int whence)
+{
+  intptr_t fd = rktio_fd_system_fd(rktio, rfd);
+  
+#ifdef RKTIO_SYSTEM_UNIX
+  if (whence == RKTIO_POSITION_FROM_START)
+    whence = SEEK_SET;
+  else
+    whence = SEEK_END;
+  if (BIG_OFF_T_IZE(lseek)(fd, pos, whence) < 0) {
+    get_posix_error();
+    return 0;
+  }
+  return 1;
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (win_seekable(fd)) {
+    DWORD r;
+    LONG lo_w, hi_w;
+    lo_w = (LONG)(pos & 0xFFFFFFFF);
+    hi_w = (LONG)(pos >> 32);
+    r = SetFilePointer((HANDLE)fd, lo_w, &hi_w,
+                       ((whence == RKTIO_POSITION_FROM_START) ? FILE_BEGIN : FILE_END));
+    if ((r == INVALID_SET_FILE_POINTER)
+        && GetLastError() != NO_ERROR) {
+      get_windows_error();
+      return 0;
+    } else
+      return 1;
+  } else {
+    set_racket_error(RKTIO_ERROR_CANNOT_SET_FILE_POSITION);
+    return 0;
+  }
+#endif
+}
+
+rktio_filesize_t *rktio_get_file_position(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  intptr_t fd = rktio_fd_system_fd(rktio, rfd);
+  rktio_filesize_t pll, *r;
+
+#ifdef RKTIO_SYSTEM_UNIX
+  pll = BIG_OFF_T_IZE(lseek)(fd, 0, 1);
+  if (pll < 0) {
+    get_posix_error();
+    return NULL;
+  }
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (win_seekable(fd)) {
+    DWORD lo_w, hi_w;
+    hi_w = 0;
+    lo_w = SetFilePointer((HANDLE)fd, 0, &hi_w, FILE_CURRENT);
+    if ((lo_w == INVALID_SET_FILE_POINTER)
+        && GetLastError() != NO_ERROR) {
+      get_windows_error();
+      return NULL;
+    } else
+      pll = ((mzlonglong)hi_w << 32) | lo_w;
+  } else {
+    set_racket_error(RKTIO_ERROR_CANNOT_SET_FILE_POSITION);
+    return NULL;
+  }
+#endif
+
+  r = malloc(sizeof(rktio_filesize_t));
+  *r = pll;
+  return r;
+}
+
+rktio_ok_t rktio_set_file_size(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t sz)
+{
+  intptr_t fd = rktio_fd_system_fd(rktio, rfd);
+
+#ifdef RKTIO_SYSTEM_UNIX
+  if (!BIG_OFF_T_IZE(ftruncate)(fd, sz))
+    return 1;
+  get_posix_error();
+  return 0;
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (win_seekable(fd)) {
+    DWORD r;
+    LONG lo_w, hi_w, old_lo_w, old_hi_w;
+    old_hi_w = 0;
+    old_lo_w = SetFilePointer((HANDLE)fd, 0, &old_hi_w, FILE_CURRENT);
+    if ((old_lo_w == INVALID_SET_FILE_POINTER)
+        && GetLastError() != NO_ERROR) {
+      get_windows_error();
+      return 0;
+    } else {
+      lo_w = (LONG)(sz & 0xFFFFFFFF);
+      hi_w = (LONG)(sz >> 32);
+      r = SetFilePointer((HANDLE)fd, lo_w, &hi_w, FILE_BEGIN);
+      if ((r == INVALID_SET_FILE_POINTER)
+	  && GetLastError() != NO_ERROR) {
+        get_windows_error();
+        return 0;
+      } else {
+	if (SetEndOfFile((HANDLE)fd)) {
+	  /* we assume that this works: */
+	  (void)SetFilePointer((HANDLE)fd, lo_w, &hi_w, FILE_BEGIN);
+	  return 1;
+	}
+        get_windows_error();
+        return 0;
+      }
+    }
+  } else {
+    set_racket_error(RKTIO_ERROR_CANNOT_SET_FILE_POSITION);
+    return 0;
+  }
+#endif
+}

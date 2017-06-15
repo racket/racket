@@ -554,7 +554,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_regexp_places();
   scheme_init_sema_places();
   scheme_init_gmp_places();
-  scheme_init_kqueue();
+  scheme_init_fd_semaphores();
   scheme_alloc_global_fdset();
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign_places();
@@ -629,8 +629,10 @@ Scheme_Env *scheme_place_instance_init(void *stack_base, struct NewGC *parent_gc
   scheme_rktio = rktio_init();
   env = place_instance_init(stack_base, 0);
 # if defined(MZ_PRECISE_GC)
-  signal_fd = scheme_get_signal_handle();
-  GC_set_put_external_event_fd(signal_fd);
+  if (scheme_rktio) {
+    signal_fd = scheme_get_signal_handle();
+    GC_set_put_external_event_fd(signal_fd);
+  }
 # endif
   scheme_set_can_break(1);
   return env; 
@@ -665,6 +667,8 @@ void scheme_place_instance_destroy(int force)
   scheme_release_process_job_object();
 #endif
 
+  scheme_release_fd_semaphores();
+  
   scheme_release_file_descriptor();
 
   scheme_end_futures_per_place();
@@ -677,8 +681,8 @@ void scheme_place_instance_destroy(int force)
 #endif
   scheme_free_all_code();
   scheme_free_ghbn_data();
-  scheme_release_kqueue();
-  scheme_release_inotify();
+  scheme_free_global_fdset();
+  rktio_destroy(scheme_rktio);
 }
 
 static void make_kernel_env(void)

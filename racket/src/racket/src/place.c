@@ -1055,7 +1055,7 @@ void scheme_wait_resume()
 {
   mzrt_mutex_unlock(child_wait_lock);
 }
-
+b
 void scheme_starting_child()
 {
   mzrt_mutex_lock(child_wait_lock);
@@ -2785,7 +2785,8 @@ static void *place_start_proc_after_stack(void *data_arg, void *stack_base) {
     if (!scheme_setjmp(new_error_buf)) {
       Scheme_Object *dynamic_require;
 
-      scheme_check_place_port_ok();
+      if (!scheme_rktio)
+        scheme_signal_error("place: I/O manager initialization failed");
 
       dynamic_require = scheme_builtin_value("dynamic-require");
       place_main = scheme_apply(dynamic_require, 2, a);

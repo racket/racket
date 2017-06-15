@@ -39,6 +39,7 @@ struct rktio_fd_t {
   struct Win_FD_Output_Thread *oth; /* output mode */
   int unblocked; /* whether non-blocking mode is installed */
   char *buffer; /* shared with reading thread */
+  int pending_cr; /* for text-mode input, may be dropped by a following lf */
 #endif
 };
 
@@ -112,6 +113,10 @@ static CSI_proc get_csi(void)
   return csi;
 }
 
+static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, intptr_t got);
+static char *rktio_adjust_output_text(char *buffer, intptr_t *towrite);
+static intptr_t rktio_recount_output_text(char *orig_buffer, char *buffer, intptr_t wrote);
+
 #endif
 
 /*========================================================================*/
@@ -173,7 +178,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 {
   rktio_fd_t *rfd;
 
-  rfd = malloc(sizeof(rktio_fd_t));
+  rfd = calloc(1, sizeof(rktio_fd_t));
   rfd->modes = modes;  
 
 #ifdef RKTIO_SYSTEM_UNIX
@@ -202,6 +207,12 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   
   if (modes & RKTIO_OPEN_READ)
     init_read_fd(rktio, rfd);
+
+  if ((modes & RKTIO_OPEN_SOCKET) && (modes & RKTIO_OPEN_INIT))
+    rktio_socket_init(rktio, rfd);
+  
+  if ((modes & RKTIO_OPEN_SOCKET) && (modes & RKTIO_OPEN_OWN))
+    rktio_socket_own(rktio, rfd);
   
   return rfd;
 }
@@ -216,6 +227,30 @@ intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
     return rfd->sock;
   else
     return (intptr_t)rfd->fd;
+#endif
+}
+
+rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which)
+{
+  int mode = ((which == RKTIO_STDIN)
+              ? RKTIO_OPEN_READ
+              : RKTIO_OPEN_WRITE);
+#ifdef RKTIO_SYSTEM_UNIX
+  return rktio_system_fd(rktio, which, mode);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+  switch (which) {
+  case RKTIO_STDIN:
+    which = STD_INPUT_HANDLE;
+    break;
+  case RKTIO_STDOUT:
+    which = STD_OUTPUT_HANDLE;
+    break;
+  case RKTIO_STDERR:
+    which = STD_ERROR_HANDLE;
+    break;
+  }
+  return rktio_system_fd(rktio, (intptr_t)GetStdHandle(which), mode);
 #endif
 }
 
@@ -259,6 +294,15 @@ int rktio_system_fd_is_terminal(rktio_t *rktio, intptr_t fd)
 int rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return rktio_system_fd_is_terminal(rktio, (intptr_t)rfd->fd);
+}
+
+int rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t *rfd)
+{
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (rfd->modes & RKTIO_OPEN_TEXT)
+    return 1;
+#endif
+  return 0;
 }
 
 rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
@@ -382,12 +426,6 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
 
 void rktio_forget(rktio_t *rktio, rktio_fd_t *rfd)
 {
-#ifdef RKTIO_SYSTEM_WINDOWS
-  if (rfd->modes & RKTIO_OPEN_SOCKET) {
-    rktio_socket_forget(rktio, rfd);
-    return;
-  }
-#endif
   free(rfd);
 }
 
@@ -661,6 +699,13 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
       else
         rktio_poll_set_add_nosleep(rktio, fds);
     }
+
+    if (modes & RKTIO_POLL_FLUSH) {
+      if (rfd->oth && !rktio_poll_flush_ready(rktio, rfd))
+        rktio_poll_set_add_handle(rktio, (intptr_t)rfd->oth->ready_sema, fds, 1);
+      else
+        rktio_poll_set_add_nosleep(rktio, fds);
+    }
   }
 #endif
 }
@@ -676,6 +721,14 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_read(rktio, rfd, buffer, len);
+
+# ifdef SOME_FDS_ARE_NOT_SELECTABLE
+  if (rfd->bufcount && len) {
+    buffer[0] = rfd->buffer[0];
+    rfd->bufcount = 0;
+    return 1;
+  }
+# endif
 
   if (rktio_fd_is_regular_file(rktio, rfd)) {
     /* Reading regular file never blocks */
@@ -728,7 +781,12 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
   if (!rfd->th) {
     /* We can read directly. This must be a regular file, where
        reading never blocks. */
-    DWORD rgot; 
+    DWORD rgot;
+
+    if (rfd->pending_cr && len) {
+      /* just in case we need to add the cr */
+      len--;
+    }
     
     if (!ReadFile((HANDLE)rfd->fd, buffer, len, &rgot, NULL)) {
       get_windows_error();
@@ -737,6 +795,8 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
     
     if (!rgot)
       return RKTIO_READ_EOF;
+    else if (rfd->modes & RKTIO_OPEN_TEXT)
+      return rktio_adjust_input_text(rfd, buffer, rgot);
     else
       return rgot;
   } else {
@@ -764,7 +824,46 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 #endif
 }
 
+RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+# ifdef SOME_FDS_ARE_NOT_SELECTABLE
+  return rfd->bufcount;
+# else
+  return 0;
+# endif
+#endif
 #ifdef RKTIO_SYSTEM_WINDOWS
+  return (fd-?pending_cr : 1 : 0);
+#endif
+}
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+
+static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, intptr_t got)
+{
+  int i, j;
+  
+  if (rfd->pending_cr) {
+    MSC_IZE(memmove)(buffer+1, buffer, got);
+    buffer[0] = '\r';
+    rfd->pending_cr = 0;
+    got++;
+  }
+  if (got && (buffer[got-1] == '\r')) {
+    rfd->pending_cr = 1;
+    --got;
+  }
+  
+  for (i = 0, j = 0; i < got-1; i++) {
+    if ((buffer[i] == '\r') && (buffer[i+1] == '\n'))
+      buffer[j++] = '\n';
+    else
+      buffer[j++] = buffer[i++];
+  }
+
+  return j;
+}
 
 static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
 {
@@ -887,16 +986,20 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_write(rktio, rfd, buffer, len);
 
-  if (rktio_fd_is_regular_file(rktio, rfd)) {
+  if (rktio_fd_is_regular_file(rktio, rfd)
+      || rktio_fd_is_terminal(rktio, rfd)) {
     /* Regular files never block, so this code looks like the Unix
-       code.  We've cheated in the make_fd proc and called
-       consoles regular files, because they cannot block, either. */
+       code.   */
 
     /* If we try to write too much at once, the result
        is ERROR_NOT_ENOUGH_MEMORY (as opposed to a partial write). */
     int ok;
     intptr_t towrite = len;
+    char *orig_buffer = buffer;
     int err;
+
+    if (rfd->modes & RKTIO_OPEN_TEXT)
+      buffer = rktio_adjust_output_text(buffer, &towrite);
     
     while (1) {
       ok = WriteFile((HANDLE)rfd->fd, buffer, towrite, &winwrote, NULL);
@@ -905,6 +1008,11 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
 	    
       if (!ok && (err == ERROR_NOT_ENOUGH_MEMORY)) {
         towrite = towrite >> 1;
+        if (towrite && (buffer != orig_buffer)) {
+          /* don't write half of a CRLF: */
+          if ((buffer[towrite-1] == '\r') && (buffer[towrite-1] == '\n'))
+            --towrite;
+        }
         if (!towrite)
           break;
       } else
@@ -914,6 +1022,11 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
     if (!ok) {
       get_windows_error();
       return RKTIO_WRITE_ERROR;
+    }
+
+    if (buffer != orig_buffer) {
+      /* Convert converted count back to original count: */
+      winwrote = rktio_recount_output_text(orig_buffer, buffer, winwrote);
     }
 
     return winwrote;
@@ -1151,6 +1264,54 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len
 }
 
 #ifdef RKTIO_SYSTEM_WINDOWS
+
+static char *rktio_adjust_output_text(char *buffer, intptr_t *towrite)
+{
+  intptr_t len = *towrite, i, j, newlines = 0;
+  char *new_buffer;
+
+  /* Limit work done here to avoid O(N^2) work if a client tried
+     repeatedly to write a O(N)-sized buffer and only part goes out
+     each time. */
+  if (len > 4096)
+    len = 4096;
+
+  for (i = 0; i < len; i++) {
+    if (buffer[i] == '\n')
+      newlines++;
+  }
+
+  if (!newlines)
+    return buffer;
+
+  new_buffer = malloc(len + newlines);
+  *towrite = len + newlines;
+
+  for (i = 0, j = 0; i < len; i++) {
+    if (buffer[i] == '\n') {
+      new_buffer[j++] = '\r';
+      new_buffer[j++] = '\n';
+    } else
+      new_buffer[j++] = buffer[i];
+  }
+
+  return new_buffer;
+}
+
+static intptr_t rktio_recount_output_text(char *orig_buffer, char *buffer, intptr_t wrote)
+{
+  intptr_t i = 0, j = 0;
+
+  while (j < wrote) {
+    if (buffer[i] == '\n')
+      j += 2;
+    or
+      j++;
+    i++;
+  }
+
+  return i;
+}
 
 static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 {

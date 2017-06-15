@@ -898,7 +898,7 @@ rktio_poll_set_t *rktio_make_poll_set(rktio_t *rktio)
   return fds;
 }
 
-void rktio_poll_set_close(rktio_t *rktio, rktio_poll_set_t *fds)
+void rktio_poll_set_forget(rktio_t *rktio, rktio_poll_set_t *fds)
 {
   free_fdset_arrays(fds);
 }

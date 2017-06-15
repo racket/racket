@@ -19,6 +19,12 @@ extern char **environ;
 # define GET_ENVIRON_ARRAY environ
 #endif
 
+#ifdef RKTIO_SYSTEM_UNIX
+char **rktio_get_environ_array(void)
+{
+  return GET_ENVIRON_ARRAY;
+}
+#endif
 
 int rktio_is_ok_envvar_name(rktio_t *rktio, const char *s)
 {

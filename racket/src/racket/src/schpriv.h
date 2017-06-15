@@ -436,6 +436,7 @@ void scheme_register_network_evts();
 void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
 void scheme_free_ghbn_data(void);
+void scheme_free_global_fdset(void);
 
 XFORM_NONGCING int scheme_is_multithreaded(int now);
 
@@ -4351,7 +4352,7 @@ void scheme_flush_if_output_fds(Scheme_Object *o);
 Scheme_Object *scheme_file_stream_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
-                                         int internal, char **err, int *eerrno, int for_module);
+                                         int internal, int for_module);
 Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 
                                           int internal, char **err, int *eerrno);
 Scheme_Object *scheme_file_position(int argc, Scheme_Object *argv[]);
@@ -4365,9 +4366,7 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv);
 void scheme_reserve_file_descriptor(void);
 void scheme_release_file_descriptor(void);
 
-void scheme_init_kqueue(void);
-void scheme_release_kqueue(void);
-void scheme_release_inotify(void);
+int scheme_get_port_rktio_file_descriptor(Scheme_Object *p, struct rktio_fd_t *_fd);
 
 void scheme_fs_change_properties(int *_supported, int *_scalable, int *_low_latency, int *_file_level);
 
@@ -4428,8 +4427,13 @@ intptr_t scheme_redirect_get_or_peek_bytes(Scheme_Input_Port *orig_port,
 Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int report_errs);
 void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data);
 
-int scheme_fd_regular_file(intptr_t fd, int dir_ok);
+void scheme_init_fd_semaphores(void);
+void scheme_release_fd_semaphores(void);
+
 void scheme_check_fd_semaphores(void);
+Scheme_Object *scheme_rktio_fd_to_semaphore(struct rktio_fd_t *fd, int mode);
+
+rktio_envvars_t *scheme_environment_variables_to_envvars(Scheme_Object *ev);
 
 /*========================================================================*/
 /*                         memory debugging                               */
@@ -4743,7 +4747,6 @@ Scheme_Object *scheme_make_place_object();
 void scheme_place_instance_destroy(int force);
 void scheme_kill_green_thread_timer();
 void scheme_place_check_for_interruption();
-void scheme_check_place_port_ok();
 void scheme_place_set_memory_use(intptr_t amt);
 void scheme_place_check_memory_use();
 void scheme_clear_place_ifs_stack();

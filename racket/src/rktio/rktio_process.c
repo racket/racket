@@ -1225,6 +1225,16 @@ static void CloseFileHandleForSubprocess(intptr_t *hs, int pos)
 
 #endif
 
+int rktio_process_allowed_flags(rktio_t *rktio)
+{
+  int flags = (RKTIO_PROCESS_NEW_GROUP
+               | RKTIO_PROCESS_STDOUT_AS_STDERR);
+#ifdef RKTIO_SYSTEM_WINDOWS
+  flags |= (RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE
+            | RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION)
+#endif
+}
+
 /*========================================================================*/
 /* Main process-creation function                                         */
 /*========================================================================*/
@@ -1298,7 +1308,10 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     return NULL;
   }
 
-  env = rktio_envvars_to_block(rktio, envvars);
+  if (envvars)
+    env = rktio_envvars_to_block(rktio, envvars);
+  else
+    env = NULL;
 
 #if defined(RKTIO_SYSTEM_WINDOWS)
 
@@ -1504,11 +1517,15 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
         }
         new_argv[i] = NULL;
 
+        if (!env)
+          env = rktio_get_environ_array();
+        
 	err = MSC_IZE(execve)(command, new_argv, (char **)env);
         if (err)
           err = errno;
-        
-        free(env);
+
+        if (envvars)
+          free(env);
 
 	/* If we get here it failed; give up */
 
@@ -1581,6 +1598,11 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   result->process = subproc;
 
   return result;
+}
+
+int rktio_process_pid(rktio_t *rktio, rktio_process_t *sp)
+{
+  return sp->pid;
 }
 
 #ifdef RKTIO_SYSTEM_UNIX

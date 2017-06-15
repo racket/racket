@@ -215,7 +215,7 @@ void rktio_release_lockf(rktio_t *rktio, int fd)
 }
 #endif
 
-int rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd)
+rktio_ok_t rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd)
 {
   intptr_t fd = rktio_fd_system_fd(rktio, rfd);
   int ok;
@@ -240,5 +240,6 @@ int rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd)
   if (!ok)
     get_windows_error();
 #endif
+
   return ok;
 }

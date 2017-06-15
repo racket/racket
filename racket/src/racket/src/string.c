@@ -2485,52 +2485,27 @@ static Scheme_Object *sch_getenv_names(int argc, Scheme_Object *argv[])
   return r;
 }
 
-/* Temporarily use internal function: */
-extern void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars);
-
-/* This will go away when we use rktio processes: */
-void *scheme_environment_variables_to_block(Scheme_Object *ev, int *_need_free)
+rktio_envvars_t *scheme_environment_variables_to_envvars(Scheme_Object *ev)
 {
+  Scheme_Hash_Tree *ht = SCHEME_ENVVARS_TABLE(ev);
+  rktio_envvars_t *envvars;
+  mzlonglong i;
+
+  if (!ht)
+    return NULL;
+
+  envvars = rktio_empty_envvars(scheme_rktio);
   
-  Scheme_Hash_Tree *ht;
-  Scheme_Object *key, *val;
-  void *p;
-
-  *_need_free = 1;
-
-  ht = SCHEME_ENVVARS_TABLE(ev);
-  if (!ht) {
-    rktio_envvars_t *envvars;
-    envvars = rktio_envvars(scheme_rktio);
-
-    p = rktio_envvars_to_block(scheme_rktio, envvars);
+  for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
+    scheme_hash_tree_index(ht, i, &key, &val);
     
-    rktio_envvars_free(scheme_rktio, envvars);
-
-    return p;
+    rktio_envvars_set(scheme_rktio,
+                      envvars,
+                      SCHEME_BYTE_STR_VAL(key),
+                      SCHEME_BYTE_STR_VAL(val));
   }
-
-  {
-    rktio_envvars_t *envvars;
-    mzlonglong i;
-
-    envvars = rktio_empty_envvars(scheme_rktio);
-    
-    for (i = scheme_hash_tree_next(ht, -1); i != -1; i = scheme_hash_tree_next(ht, i)) {
-      scheme_hash_tree_index(ht, i, &key, &val);
-
-      rktio_envvars_set(scheme_rktio,
-                        envvars,
-                        SCHEME_BYTE_STR_VAL(key),
-                        SCHEME_BYTE_STR_VAL(val));
-    }
-
-    p = rktio_envvars_to_block(scheme_rktio, envvars);
-
-    rktio_envvars_free(scheme_rktio, envvars);
-
-    return p;
-  }
+  
+  return envvars;
 }
 
 /***********************************************************************/

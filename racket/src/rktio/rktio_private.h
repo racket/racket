@@ -175,8 +175,11 @@ struct pollfd *rktio_get_poll_fd_array(rktio_poll_set_t *fds);
 /* Network                                                                */
 /*========================================================================*/
 
+void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd);
+
 int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd);
-void rktio_socket_forget(rktio_t *rktio, rktio_fd_t *rfd);
+void rktio_socket_own(rktio_t *rktio, rktio_fd_t *rfd);
+void rktio_socket_forget_owned(rktio_t *rktio, rktio_fd_t *rfd);
 rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd);
 
 int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
@@ -235,8 +238,11 @@ rktio_hash_t *rktio_hash_new(void);
 void rktio_hash_free(rktio_hash_t *ht, int free_values);
 int rktio_hash_is_empty(rktio_hash_t *ht);
 void *rktio_hash_get(rktio_hash_t *ht, intptr_t key);
-void rktio_hash_remove(rktio_hash_t *ht, intptr_t key);
+void rktio_hash_remove(rktio_hash_t *ht, intptr_t key, int dont_rehash);
 void rktio_hash_set(rktio_hash_t *ht, intptr_t key, void *v);
+
+intptr_t rktio_hash_size(rktio_hash_t *ht);
+intptr_t rktio_hash_get_key(rktio_hash_t *ht, intptr_t i);
 
 /*========================================================================*/
 /* Misc                                                                   */
@@ -288,4 +294,14 @@ void rktio_init_wide(rktio_t *rktio);
 
 #ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 void rktio_release_lockf(rktio_t *rktio, int fd);
+#endif
+
+#ifdef RKTIO_SYSTEM_UNIX
+char **rktio_get_environ_array(void);
+#endif
+
+#ifdef USE_TRANSITIONAL_64_FILE_OPS
+# define BIG_OFF_T_IZE(n) n ## 64
+#else
+# define BIG_OFF_T_IZE(n) n
 #endif

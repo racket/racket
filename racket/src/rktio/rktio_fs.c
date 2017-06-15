@@ -46,12 +46,6 @@
 #endif
 #define IS_A_SEP(c) ((c) == A_PATH_SEP)
 
-#ifdef USE_TRANSITIONAL_64_FILE_OPS
-# define BIG_OFF_T_IZE(n) n ## 64
-#else
-# define BIG_OFF_T_IZE(n) n
-#endif
-
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(NO_UNIX_USERS)
 static int have_user_ids = 0;
 static uid_t uid;
