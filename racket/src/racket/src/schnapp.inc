@@ -60,8 +60,7 @@ Scheme_Object *PRIM_APPLY_NAME(Scheme_Object *rator,
     t = _SCHEME_TYPE(rator);
 
     if ((t == scheme_proc_chaperone_type)
-        && SCHEME_VECTORP(((Scheme_Chaperone *)rator)->redirects)
-        && (SCHEME_VEC_SIZE(((Scheme_Chaperone *)rator)->redirects) & 0x1)
+        && SCHEME_REDIRECTS_PROCEDUREP((((Scheme_Chaperone *)rator)->redirects))
         && (SCHEME_CHAPERONE_FLAGS((Scheme_Chaperone *)rator) == SCHEME_PROC_CHAPERONE_CALL_DIRECT)) {
       if (SCHEME_FALSEP(SCHEME_VEC_ELS(((Scheme_Chaperone *)rator)->redirects)[1])
           || SCHEME_INT_VAL(SCHEME_VEC_ELS(((Scheme_Chaperone *)rator)->redirects)[1]) == argc) {

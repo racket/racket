@@ -499,7 +499,7 @@ Scheme_Object *scheme_chaperone_vector_ref2(Scheme_Object *o, int i, Scheme_Obje
 
     orig = scheme_chaperone_vector_ref2(px->prev, i, outermost);
 
-    if (SCHEME_VECTORP(px->redirects)) {
+    if (SCHEME_REDIRECTS_PROP_ONLY_VECTORP(px->redirects)) {
       /* chaperone was on property accessors */
       /* or vector chaperone is property only */
       return orig;
@@ -580,7 +580,7 @@ void scheme_chaperone_vector_set(Scheme_Object *o, int i, Scheme_Object *v)
 
       o = px->prev;
 
-      if (!SCHEME_VECTORP(red)) {
+      if (!SCHEME_REDIRECTS_PROP_ONLY_VECTORP(red)) {
 	/* not a property only chaperone */
 	red = SCHEME_CDR(px->redirects);
 

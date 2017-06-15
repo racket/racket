@@ -223,6 +223,65 @@
     (define-values (a b c) (vector->values b2))
     (test '(1 2 3) list a b c)))
 
+(define unsafe-chaperone-vector-name "unsafe-chaperone-vector")
+(define unsafe-impersonate-vector-name "unsafe-impersonate-vector")
+(define chaperone-vector*-name "chaperone-vector*")
+(define impersonate-vector*-name "impersonate-vector*")
+(define chaperone-vector-name "chaperone-vector")
+(define impersonate-vector-name "impersonate-vector")
+
+
+;; properties and chaperones
+(as-chaperone-or-impersonator
+ ([chaperone-vector impersonate-vector]
+  [chaperone-vector* impersonate-vector*]
+  [unsafe-chaperone-vector unsafe-impersonate-vector])
+ (let ()
+
+   (define-values (p1 has1 get1) (make-impersonator-property 'p1))
+   (define-values (p2 has2 get2) (make-impersonator-property 'p2))
+
+   (define v (vector 1 2 3))
+   (define u (vector 7 8 9))
+   (define red (lambda (v i x) x))
+   (define red* (lambda (c v i x) x))
+
+   (define v1 (chaperone-vector  v #f #f))
+   (define v2 (chaperone-vector* v #f #f))
+   (define v3 (unsafe-chaperone-vector v u))
+   (define v4 (chaperone-vector  v #f #f p2 5))
+   (define v5 (chaperone-vector* v #f #f p2 5))
+   (define v6 (unsafe-chaperone-vector v u  p2 5))
+   (define v7 (chaperone-vector  v red red))
+   (define v8 (chaperone-vector* v red* red*))
+   (define v9 (chaperone-vector  v red red p2 5))
+   (define v10 (chaperone-vector* v red* red* p2 5))
+
+   (test 5 get2 v4)
+   (test 5 get2 v5)
+   (test 5 get2 v6)
+   (test 5 get2 v9)
+   (test 5 get2 v10)
+
+   (define handler
+     (lambda (exn)
+       (test #t
+             regexp-match?
+             "p1-accessor: contract violation"
+             (exn-message exn))))
+
+   (err/rt-test (get1 v1) handler)
+   (err/rt-test (get1 v2) handler)
+   (err/rt-test (get1 v3) handler)
+   (err/rt-test (get1 v4) handler)
+   (err/rt-test (get1 v5) handler)
+   (err/rt-test (get1 v6) handler)
+   (err/rt-test (get1 v7) handler)
+   (err/rt-test (get1 v8) handler)
+   (err/rt-test (get1 v9) handler)
+   (err/rt-test (get1 v10) handler)))
+
+
 ;; check property-only chaperones
 (as-chaperone-or-impersonator
  ([chaperone-vector impersonate-vector chaperone-vector* impersonate-vector*]
@@ -685,9 +744,6 @@
  (vector-set! c2 1 17)
  (test '(set p1-prop p2-prop) unbox b)
  (test 17 vector-ref c2 1))
-
-(define unsafe-chaperone-vector-name "unsafe-chaperone-vector")
-(define unsafe-impersonate-vector-name "unsafe-impersonate-vector")
 
 (as-chaperone-or-impersonator
  ([chaperone-vector impersonate-vector]
