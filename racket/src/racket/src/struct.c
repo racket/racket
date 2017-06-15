@@ -1183,6 +1183,7 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
       }
 
       if (!SCHEME_VECTORP(px->redirects)
+	  || !SCHEME_VEC_SIZE(px->redirects) /* property-only vector chaperone */
           || (SCHEME_VEC_SIZE(px->redirects) & 1)
           || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0]))
         arg = px->prev;
