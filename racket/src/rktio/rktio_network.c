@@ -1051,7 +1051,7 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, i
 
   while (1) {
     if (addr) {
-      /* Use first address that isn't a bad address: */
+      /* Use first address that dosn't result in a bad-address error: */
       for (; addr; addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next) {
         do {
           sent = sendto(s, buffer, len, 0,
@@ -1668,7 +1668,7 @@ char **rktio_listener_address(rktio_t *rktio, rktio_listener_t *lnr)
 /* UDP                                                                    */
 /*========================================================================*/
 
-rktio_fd_t *rktio_udp_open(rktio_t *rktio, rktio_addrinfo_t *addr)
+rktio_fd_t *rktio_udp_open(rktio_t *rktio, rktio_addrinfo_t *addr, int family)
 {
   rktio_socket_t s;
   
@@ -1676,9 +1676,8 @@ rktio_fd_t *rktio_udp_open(rktio_t *rktio, rktio_addrinfo_t *addr)
     s = socket(RKTIO_AS_ADDRINFO(addr)->ai_family,
                RKTIO_AS_ADDRINFO(addr)->ai_socktype,
                RKTIO_AS_ADDRINFO(addr)->ai_protocol);
-
   else
-    s = socket(RKTIO_PF_INET, SOCK_DGRAM, 0);
+    s = socket(family, SOCK_DGRAM, 0);
 
   if (s == INVALID_SOCKET) {
     get_socket_error();
@@ -1741,10 +1740,18 @@ int rktio_udp_disconnect(rktio_t *rktio, rktio_fd_t *rfd)
   return 1;
 }
 
-int rktio_udp_bind(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr)
+int rktio_udp_bind(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, rktio_bool_t reuse)
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   int err;
+
+  if (reuse) {
+    int one = 1;
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (void *) &one, sizeof(one))) {
+      get_socket_error();
+      return 0;
+    }
+  }
 
   /* bind using first address that works: */
   for (; addr; addr = (rktio_addrinfo_t *)RKTIO_AS_ADDRINFO(addr)->ai_next) {
@@ -1826,9 +1833,7 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
 
   r = malloc(sizeof(rktio_length_and_addrinfo_t));
   r->len = rn;
-
-  r->addr = malloc(asize);
-  memcpy(r->addr, src_addr, asize);
+  r->address = get_numeric_strings(rktio, src_addr, asize);
 
   return r;
 }

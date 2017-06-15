@@ -242,7 +242,9 @@ static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd
              && (rktio_get_last_error(rktio) == RKTIO_ERROR_INFO_TRY_AGAIN));
     check_valid(r);
     amt = r->len;
-    free(r->addr);
+    free(r->address[0]);
+    free(r->address[1]);
+    free(r->address);
     free(r);
   } else
     amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
@@ -727,15 +729,15 @@ int main(int argc, char **argv)
     intf_addr = lookup_loop(rktio, "localhost", 0, -1, 1, 0);
     check_valid(intf_addr);
     
-    fd = rktio_udp_open(rktio, intf_addr);
+    fd = rktio_udp_open(rktio, intf_addr, RKTIO_FAMILY_ANY);
     check_valid(fd);
     
     addr = lookup_loop(rktio, NULL, 4536, -1, 1, 0);
     check_valid(addr);
-    check_valid(rktio_udp_bind(rktio, fd, addr));
+    check_valid(rktio_udp_bind(rktio, fd, addr, 1));
     rktio_addrinfo_free(rktio, addr);
 
-    fd2 = rktio_udp_open(rktio, intf_addr);
+    fd2 = rktio_udp_open(rktio, intf_addr, RKTIO_FAMILY_ANY);
     check_valid(fd2);
 
     addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 0);
@@ -747,13 +749,13 @@ int main(int argc, char **argv)
 
     /* Again, this time to fill & drain: */
 
-    fd = rktio_udp_open(rktio, intf_addr);
+    fd = rktio_udp_open(rktio, intf_addr, RKTIO_FAMILY_ANY);
 
-    fd2 = rktio_udp_open(rktio, intf_addr);
+    fd2 = rktio_udp_open(rktio, intf_addr, RKTIO_FAMILY_ANY);
     check_valid(fd2);
     addr = lookup_loop(rktio, NULL, 4536, -1, 1, 0);
     check_valid(addr);
-    check_valid(rktio_udp_bind(rktio, fd, addr));
+    check_valid(rktio_udp_bind(rktio, fd, addr, 1));
     rktio_addrinfo_free(rktio, addr);
 
     addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 0);

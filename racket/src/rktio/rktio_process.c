@@ -1231,8 +1231,9 @@ int rktio_process_allowed_flags(rktio_t *rktio)
                | RKTIO_PROCESS_STDOUT_AS_STDERR);
 #ifdef RKTIO_SYSTEM_WINDOWS
   flags |= (RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE
-            | RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION)
+            | RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION);
 #endif
+  return flags;
 }
 
 /*========================================================================*/
