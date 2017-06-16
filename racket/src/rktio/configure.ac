@@ -68,6 +68,7 @@ case "$host_os" in
   irix*)
     ;;
   linux*)
+    enable_pthread_by_default=yes
     try_poll_syscall=yes
     try_epoll_syscall=yes
     try_inotify_syscall=yes
@@ -77,6 +78,7 @@ case "$host_os" in
   hpux*)
     ;;
   *mingw*)
+    enable_pthread_by_default=yes
     use_flag_pthread=no
     skip_iconv_check=yes
 
@@ -86,8 +88,6 @@ case "$host_os" in
     fi
     ;;    
   cygwin*)
-    ;;
-  beos*)
     ;;
   darwin*)
     PREFLAGS="$PREFLAGS -DOS_X -D_DARWIN_UNLIMITED_SELECT"

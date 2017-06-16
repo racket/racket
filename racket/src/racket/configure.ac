@@ -825,10 +825,6 @@ case "$host_os" in
     fi
     EXE_SUFFIX=".exe"
     ;;
-  beos*)
-    enable_cgcdefault="yes"
-    enable_sgc=yes
-    ;;
   darwin*)
 
     if test "${enable_sdk}" != "" ; then 
