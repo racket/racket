@@ -81,6 +81,22 @@ void rktio_set_last_error(rktio_t *rktio, int kind, int errid)
   rktio->errid = errid;
 }
 
+void rktio_remap_last_error(rktio_t *rktio)
+{
+  if (rktio->errkind == RKTIO_ERROR_KIND_RACKET) {
+    switch (rktio->errid) {
+    case RKTIO_ERROR_DOES_NOT_EXIST:
+#ifdef RKTIO_SYSTEM_UNIX
+      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_POSIX, ENOENT);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_WINDOWS, ERROR_FILE_NOT_FOUND);
+#endif
+      break;
+    }
+  }
+}
+
 const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
 {
   const char *s = NULL;

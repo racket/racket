@@ -153,7 +153,7 @@ RKTIO_EXTERN int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
 
 RKTIO_EXTERN rktio_fd_t *rktio_open(rktio_t *rktio, const char *src, int modes);
 /* Can report `RKTIO_ERROR_DOES_NOT_EXIST` in place of system error,
-   and can report `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE` on Windows:=. */
+   and can report `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE` on Windows. */
 
 RKTIO_EXTERN rktio_ok_t rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 /* Can report `RKTIO_ERROR_EXISTS` in place of system error,
@@ -702,7 +702,7 @@ RKTIO_EXTERN void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list
 /* Interrupt a directory list in progress, not needed after
    rktio_directory_list_step() returns "": */
 
-RKTIO_EXTERN char **rktio_filesystem_root_list(rktio_t *rktio);
+RKTIO_EXTERN char **rktio_filesystem_roots(rktio_t *rktio);
 /* Returns a NULL-terminated array. Free each string. Currently never
    errors. */
 
@@ -821,6 +821,11 @@ enum {
 
 RKTIO_EXTERN void rktio_set_last_error(rktio_t *rktio, int kind, int errid);
 /* In case you need to save and restore error information. */
+
+RKTIO_EXTERN void rktio_remap_last_error(rktio_t *rktio);
+/* In a few cases, rktio substitutes a `RKTIO_ERROR_KIND_RACKET` error
+   for an OS-supplied error. This function can sometimes undo the
+   substitition, modifying the current error and kind. */
 
 RKTIO_EXTERN const char *rktio_get_last_error_string(rktio_t *rktio);
 RKTIO_EXTERN const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);

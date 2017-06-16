@@ -3916,6 +3916,8 @@ static int check_fd_semaphores()
   if (!scheme_semaphore_fd_set)
     return 0;
 
+  rktio_ltps_poll(scheme_rktio, scheme_semaphore_fd_set);
+  
   while (1) {
     h = rktio_ltps_get_signaled_handle(scheme_rktio, scheme_semaphore_fd_set);
     if (h) {

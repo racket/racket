@@ -97,7 +97,7 @@ static int mark_input_fd_MARK(void *p, struct NewGC *gc) {
   Scheme_FD *fd = (Scheme_FD *)p;
 
   gcMARK2(fd->buffer, gc);
-  gcMARK2(fd->refcount, gc);
+  /* fd->refcount is malloc()ed */
   gcMARK2(fd->flush_handle, gc);
   gcMARK2(fd->bufwidths, gc);
 
@@ -115,7 +115,7 @@ static int mark_input_fd_FIXUP(void *p, struct NewGC *gc) {
   Scheme_FD *fd = (Scheme_FD *)p;
 
   gcFIXUP2(fd->buffer, gc);
-  gcFIXUP2(fd->refcount, gc);
+  /* fd->refcount is malloc()ed */
   gcFIXUP2(fd->flush_handle, gc);
   gcFIXUP2(fd->bufwidths, gc);
 

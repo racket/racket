@@ -40,6 +40,7 @@ typedef struct {
 typedef struct Scheme_Tcp_Buf {
   MZTAG_IF_REQUIRED
   short refcount;
+  short forget_on_close;
   char *buffer, *out_buffer;
   short bufpos, bufmax;
   short hiteof, bufmode;
@@ -462,7 +463,10 @@ static void tcp_close_input(Scheme_Input_Port *port)
 
   (void)scheme_rktio_fd_to_semaphore(data->tcp, MZFD_REMOVE);
 
-  rktio_close(scheme_rktio, data->tcp);
+  if (data->b.forget_on_close)
+    rktio_forget(scheme_rktio, data->tcp);
+  else
+    rktio_close(scheme_rktio, data->tcp);
 }
 
 static int
@@ -635,7 +639,10 @@ static void tcp_close_output(Scheme_Output_Port *port)
 
   (void)scheme_rktio_fd_to_semaphore(data->tcp, MZFD_REMOVE);
 
-  rktio_close(scheme_rktio, data->tcp);
+  if (data->b.forget_on_close)
+    rktio_forget(scheme_rktio, data->tcp);
+  else
+    rktio_close(scheme_rktio, data->tcp);
 }
 
 static int
@@ -741,6 +748,7 @@ static Connect_Progress_Data *make_connect_progress_data()
   pd->connect = NULL;
   pd->dest_addr = NULL;
   pd->src_addr = NULL;
+  pd->trying_s = NULL;
   pd->s = NULL;
 
   return pd;
@@ -1583,7 +1591,9 @@ void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
 
   rfd = rktio_system_fd(scheme_rktio, s, RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_SOCKET | RKTIO_OPEN_OWN);
 
-  tcp = make_tcp_port_data(rfd, takeover ? 2 : 3);
+  tcp = make_tcp_port_data(rfd, 2);
+  if (!takeover)
+    tcp->b.forget_on_close = 1;
 
   v = make_tcp_input_port(tcp, name, NULL);
   *_inp = v;

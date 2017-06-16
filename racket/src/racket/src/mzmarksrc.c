@@ -1736,7 +1736,7 @@ mark_input_fd {
   Scheme_FD *fd = (Scheme_FD *)p;
 
   gcMARK2(fd->buffer, gc);
-  gcMARK2(fd->refcount, gc);
+  /* fd->refcount is malloc()ed */
   gcMARK2(fd->flush_handle, gc);
   gcMARK2(fd->bufwidths, gc);
 

@@ -9,6 +9,10 @@ struct rktio_envvars_t {
   char **vals;
 };
 
+#ifdef OS_X
+# define SETENV_DROPS_LEADING_EQUAL_SIGN
+#endif
+
 #if defined(OS_X) && !TARGET_OS_IPHONE
 # include <crt_externs.h>
 # define GET_ENVIRON_ARRAY *_NSGetEnviron()
@@ -85,8 +89,24 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
 #ifdef RKTIO_SYSTEM_UNIX
   if (val) {
     int r;
+#ifdef SETENV_DROPS_LEADING_EQUAL_SIGN
+    char *tmp = NULL;
+    
+    if (val[0] == '=') {
+      intptr_t len = strlen(val);
+      tmp = malloc(len + 2);
+      memcpy(tmp + 1, val, len + 1);
+      tmp[0] = '=';
+      val = tmp;
+    }
+#endif
 
     r = setenv(name, val, 1);
+
+#ifdef SETENV_DROPS_LEADING_EQUAL_SIGN
+    if (tmp)
+      free(tmp);
+#endif
     
     if (r)
       get_posix_error();

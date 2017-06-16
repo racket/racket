@@ -4740,11 +4740,10 @@ fd_close_input(Scheme_Input_Port *port)
   fip = (Scheme_FD *)port->port_data;
 
   rc = adj_refcount(fip->refcount, -1);
-  if (!rc) {
+  if (!rc)
     rktio_close(scheme_rktio, fip->fd);
-  } else {
+  else
     rktio_forget(scheme_rktio, fip->fd);
-  }
 }
 
 static void
@@ -5327,6 +5326,7 @@ make_fd_output_port(rktio_fd_t *fd, Scheme_Object *name, int and_read, int flush
     Scheme_Object *a[2];
     rc = malloc_refcount(1, 1);
     fop->refcount = rc;
+    fd = rktio_system_fd(scheme_rktio, rktio_fd_system_fd(scheme_rktio, fd), rktio_fd_modes(scheme_rktio, fd));
     a[1] = the_port;
     a[0] = make_fd_input_port(fd, name, rc, 0);
     return scheme_values(2, a);

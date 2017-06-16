@@ -4634,9 +4634,9 @@ static Scheme_Object *filesystem_root_list(int argc, Scheme_Object *argv[])
   
   scheme_security_check_file("filesystem-root-list", NULL, SCHEME_GUARD_FILE_EXISTS);
 
-  roots = rktio_filesystem_root_list(scheme_rktio);
+  roots = rktio_filesystem_roots(scheme_rktio);
   for (i = 0; roots[i]; i++) {
-    v = scheme_make_pair(scheme_make_sized_offset_path(roots[i], strlen(roots[i]), -1, 1), scheme_null);
+    v = scheme_make_pair(scheme_make_sized_offset_path(roots[i], 0, -1, 1), scheme_null);
     if (last)
       SCHEME_CDR(last) = v;
     else

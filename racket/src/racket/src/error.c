@@ -4514,6 +4514,8 @@ scheme_raise_exn(int id, ...)
   Scheme_Object *eargs[MZEXN_MAXARGS], *errno_val = NULL;
   char *buffer;
 
+  rktio_remap_last_error(scheme_rktio);
+
   /* Precise GC: Don't allocate before getting hidden args off stack */
   HIDE_FROM_XFORM(va_start(args, id));
 

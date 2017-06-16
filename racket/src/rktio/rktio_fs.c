@@ -1630,7 +1630,7 @@ void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc)
 /* filesystem root list                                                   */
 /*========================================================================*/
 
-char **rktio_filesystem_root_list(rktio_t *rktio)
+char **rktio_filesystem_roots(rktio_t *rktio)
 /* returns a NULL-terminated array of strings */
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -1682,8 +1682,8 @@ char **rktio_filesystem_root_list(rktio_t *rktio)
   char **ss;
   
   ss = malloc(sizeof(char*) * 2);
-  ss[1] = strdup("/");
-  ss[0] = NULL;
+  ss[0] = strdup("/");
+  ss[1] = NULL;
 
   return ss;
 #endif
