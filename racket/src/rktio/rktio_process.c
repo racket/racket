@@ -433,6 +433,12 @@ void centralized_ended_child()
   pthread_mutex_unlock(&child_wait_lock);
 }
 
+void rktio_reap_processes(rktio_t *rktio)
+{
+  /* Not needed, since the worker thread is already reaping
+     processes. */
+}
+
 /* ---------------------------------------------------------------------- */
 
 /* When a place has a process-group that it may be waiting on, the we
@@ -508,88 +514,6 @@ static void do_group_signal_fds()
 
 #endif
 
-/*========================================================================*/
-/* Pipes for stdout, stdin, and stderr                                    */
-/*========================================================================*/
-
-/* Unix, and Windows support --- all mixed together */
-
-#ifdef RKTIO_SYSTEM_WINDOWS
-# ifndef USE_CYGWIN_PIPES
-#  define _EXTRA_PIPE_ARGS , rktio
-static int MyPipe(intptr_t *ph, int near_index, rktio_t *rktio)
-{
-  HANDLE r, w;
-  SECURITY_ATTRIBUTES saAttr;
-
-  /* Set the bInheritHandle flag so pipe handles are inherited. */
-  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
-  saAttr.bInheritHandle = TRUE;
-  saAttr.lpSecurityDescriptor = NULL;
-
-  if (CreatePipe(&r, &w, &saAttr, 0)) {
-    HANDLE a[2], naya;
-
-    a[0] = r;
-    a[1] = w;
-
-    if (near_index != -1) {
-      /* Change the near end to make it non-inheritable, then
-         close the inheritable one: */
-      if (!DuplicateHandle(GetCurrentProcess(), a[near_index],
-                           GetCurrentProcess(), &naya, 0,
-                           0, /* not inherited */
-                           DUPLICATE_SAME_ACCESS)) {
-        get_windows_error();
-        CloseHandle(a[0]);
-        CloseHandle(a[1]);
-        return 1;
-      } else {
-        CloseHandle(a[near_index]);
-        a[near_index] = naya;
-      }
-    }
-
-    ph[0] = (intptr_t)a[0];
-    ph[1] = (intptr_t)a[1];
-
-    return 0;
-  } else
-    return 1;
-}
-#  define PIPE_FUNC MyPipe
-#  define PIPE_HANDLE_t intptr_t
-#  define GET_PIPE_ERROR() get_windows_error()
-# else
-#  include <Process.h>
-#  include <fcntl.h>
-#  define PIPE_FUNC(pa, nearh) MSC_IZE(pipe)(pa)
-#  define PIPE_HANDLE_t int
-#  define _EXTRA_PIPE_ARGS , 256, _O_BINARY
-#  define GET_PIPE_ERROR() /* nothing */
-# endif
-#else
-# define _EXTRA_PIPE_ARGS
-# define PIPE_FUNC(pa, nearh) MSC_IZE(pipe)(pa)
-# define PIPE_HANDLE_t int
-# define GET_PIPE_ERROR() get_posix_error()
-#endif
-
-static int make_os_pipe(rktio_t *rktio, intptr_t *a, int nearh)
-/* If nearh != -1, then the handle at the index
-   other than nearh is made inheritable so that
-   a subprocess can use it. */
-{
-  PIPE_HANDLE_t la[2];
-
-  if (PIPE_FUNC(la, nearh _EXTRA_PIPE_ARGS)) {
-    GET_PIPE_ERROR();
-    return 1;
-  }
-  a[0] = la[0];
-  a[1] = la[1];
-  return 0;
-}
 
 /*========================================================================*/
 /* Unix signal handling (without pthreads)                                */
@@ -647,6 +571,7 @@ static void init_sigchld(rktio_t *rktio)
   }
 
   if (!rktio->in_sigchld_chain) {
+    /* Signals are blocked by the caller of init_sigchild */
     rktio->in_sigchld_chain = 1;
     rktio->next = all_rktios;
     all_rktios = rktio;
@@ -734,6 +659,14 @@ static void check_child_done(rktio_t *rktio, pid_t pid)
         }
       }
     } while ((result > 0) || is_unused);
+  }
+}
+
+void rktio_reap_processes(rktio_t *rktio)
+{
+  if (rktio->need_to_check_children) {
+    rktio->need_to_check_children = 0;
+    check_child_done(0);
   }
 }
 
@@ -1244,8 +1177,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
                                       const char *command, int argc, char **argv,
                                       rktio_fd_t *stdout_fd, rktio_fd_t *stdin_fd, rktio_fd_t *stderr_fd,
                                       const char *current_directory, rktio_envvars_t *envvars,
-                                      int flags,
-                                      void (*unix_child_process_callback)())
+                                      int flags)
 {
   rktio_process_result_t *result;
   intptr_t to_subprocess[2], from_subprocess[2], err_subprocess[2];
@@ -1285,15 +1217,15 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   if (stdout_fd) {
     from_subprocess[1] = rktio_fd_system_fd(rktio, stdout_fd);
     RKTIO_COPY_FOR_SUBPROCESS(from_subprocess, 1);
-  } else if (make_os_pipe(rktio, from_subprocess, 1)) {
+  } else if (rktio_make_os_pipe(rktio, from_subprocess, RKTIO_NO_INHERIT_INPUT)) {
     return NULL;
   }
 
   if (stdin_fd) {
     to_subprocess[0] = rktio_fd_system_fd(rktio, stdin_fd);
     RKTIO_COPY_FOR_SUBPROCESS(to_subprocess, 0);
-  } else if (make_os_pipe(rktio, to_subprocess, 1)) {
-    if (stdout_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, 1); }
+  } else if (rktio_make_os_pipe(rktio, to_subprocess, 1)) {
+    if (stdout_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, RKTIO_NO_INHERIT_OUTPUT); }
     return NULL;
   }
 
@@ -1303,7 +1235,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   } else if (stderr_is_stdout) {
     err_subprocess[0] = from_subprocess[0];
     err_subprocess[1] = from_subprocess[1];
-  } else if (make_os_pipe(rktio, err_subprocess, 1)) {
+  } else if (rktio_make_os_pipe(rktio, err_subprocess, RKTIO_NO_INHERIT_INPUT)) {
     if (stdout_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, 1); }
     if (stdin_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(to_subprocess, 0); }
     return NULL;
@@ -1372,13 +1304,14 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #if defined(CENTRALIZED_SIGCHILD)
     centralized_starting_child();
 #else
-    init_sigchld(rktio);
-
     sc = malloc(sizeof(System_Child));
     sc->id = 0;
     sc->done = 0;
 
     block_child_signals(rktio, 1);
+
+    /* Relies on signals blocked: */
+    init_sigchld(rktio);
 #endif
 
 #if defined(__QNX__)
@@ -1418,9 +1351,6 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
 #endif
     } else if (!pid) {
       /* This is the new child process */
-      if (unix_child_process_callback)
-        unix_child_process_callback();
-      
       if (new_process_group)
         /* see also setpgid above */
         setpgid(getpid(), getpid()); /* setpgid(0, 0) would work on some platforms */

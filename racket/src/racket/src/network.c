@@ -1551,6 +1551,29 @@ int scheme_get_port_socket(Scheme_Object *p, intptr_t *_s)
     return 0;
 }
 
+rktio_fd_t *scheme_get_port_rktio_socket(Scheme_Object *p)
+{
+  if (SCHEME_OUTPUT_PORTP(p)) {
+    Scheme_Output_Port *op;
+    op = scheme_output_port_record(p);
+    if (op->sub_type == scheme_tcp_output_port_type) {
+      if (!op->closed) {
+	return ((Scheme_Tcp *)op->port_data)->tcp;
+      }
+    }
+  } else if (SCHEME_INPUT_PORTP(p)) {
+    Scheme_Input_Port *ip;
+    ip = scheme_input_port_record(p);
+    if (ip->sub_type == scheme_tcp_input_port_type) {
+      if (!ip->closed) {
+	return ((Scheme_Tcp *)ip->port_data)->tcp;
+      }
+    }
+  }
+
+  return NULL;
+}
+
 void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
                             Scheme_Object **_inp, Scheme_Object **_outp)
 {
@@ -1585,6 +1608,18 @@ void scheme_socket_to_input_port(intptr_t s, Scheme_Object *name, int takeover,
   *_inp = v;
 }
 
+void scheme_rktio_socket_to_input_port(rktio_fd_t *fd, Scheme_Object *name, int takeover,
+                                       Scheme_Object **_inp)
+{
+  Scheme_Tcp *tcp;
+  Scheme_Object *v;
+
+  tcp = make_tcp_port_data(fd, takeover ? 1 : 2);
+
+  v = make_tcp_input_port_symbol_name(tcp, name, NULL);
+  *_inp = v;
+}
+
 void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover,
                                   Scheme_Object **_outp)
 {
@@ -1596,6 +1631,18 @@ void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover,
                                          | RKTIO_OPEN_INIT
                                          | (takeover ? RKTIO_OPEN_OWN : 0)));
   
+  tcp = make_tcp_port_data(fd, takeover ? 1 : 2);
+
+  v = make_tcp_output_port_symbol_name(tcp, name, NULL);
+  *_outp = v;
+}
+
+void scheme_rktio_socket_to_output_port(rktio_fd_t *fd, Scheme_Object *name, int takeover,
+                                        Scheme_Object **_outp)
+{
+  Scheme_Tcp *tcp;
+  Scheme_Object *v;
+
   tcp = make_tcp_port_data(fd, takeover ? 1 : 2);
 
   v = make_tcp_output_port_symbol_name(tcp, name, NULL);

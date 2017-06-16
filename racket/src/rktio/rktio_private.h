@@ -71,7 +71,7 @@ struct rktio_t {
 
 #if defined(RKTIO_SYSTEM_UNIX) && !defined(RKTIO_USE_PTHREADS)
   struct System_Child *system_children;
-  int need_to_check_children;
+  volatile int need_to_check_children;
   int in_sigchld_chain;
   struct rktio_t *next; /* chaining for SIGCHLD handling */
 #endif
@@ -177,7 +177,7 @@ struct pollfd *rktio_get_poll_fd_array(rktio_poll_set_t *fds);
 
 void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd);
 
-int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd);
+int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error);
 void rktio_socket_own(rktio_t *rktio, rktio_fd_t *rfd);
 void rktio_socket_forget_owned(rktio_t *rktio, rktio_fd_t *rfd);
 rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd);
@@ -274,6 +274,7 @@ void rktio_error_clean(rktio_t *rktio);
 #endif
 
 #ifdef RKTIO_SYSTEM_UNIX
+int rktio_reliably_close_err(intptr_t s);
 void rktio_reliably_close(intptr_t s);
 void rktio_close_fds_after_fork(int skip1, int skip2, int skip3);
 #endif
@@ -295,6 +296,8 @@ void rktio_init_wide(rktio_t *rktio);
 #ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
 void rktio_release_lockf(rktio_t *rktio, int fd);
 #endif
+
+int rktio_make_os_pipe(rktio_t *rktio, intptr_t *a, int flags);
 
 #ifdef RKTIO_SYSTEM_UNIX
 char **rktio_get_environ_array(void);

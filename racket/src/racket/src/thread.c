@@ -4021,7 +4021,9 @@ static int check_sleep(int need_activity, int sleep_now)
   p2 = scheme_first_thread;
   while (p2) {
     if (p2->ran_some) {
-      scheme_notify_sleep_progress();
+#ifdef RKTIO_SYSTEM_WINDOWS
+      rkio_reset_sleep_backoff(scheme_rktio);
+#endif
       p2->ran_some = 0;
     }
     p2 = p2->next;
@@ -4711,10 +4713,8 @@ void scheme_thread_block(float sleep_time)
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();
 
-#if defined(UNIX_PROCESSES) && !defined(MZ_PLACES_WAITPID)
   /* Reap zombie processes: */
-  scheme_check_child_done();
-#endif
+  rktio_reap_processes(scheme_rktio);
 
   shrink_cust_box_array();
 

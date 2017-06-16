@@ -56,7 +56,7 @@ static rktio_ltps_t *try_check_ltps(rktio_t *rktio,
   rktio_ltps_t *lt;
   rktio_ltps_handle_t *h1, *h2, *hx, *hy;
 
-  lt = rktio_open_ltps(rktio);
+  lt = rktio_ltps_open(rktio);
 
   /* Add read handle for fd1 */
   h1 = rktio_ltps_add(rktio, lt, fd, RKTIO_LTPS_CHECK_READ);
@@ -787,8 +787,7 @@ int main(int argc, char **argv)
     result = rktio_process(rktio, argv[0], 1, argv,
                            NULL, NULL, err_fd,
                            pwd, envvars,
-                           0,
-                           NULL);
+                           0);
     check_valid(result);
     check_valid(!result->stderr_fd);
 
@@ -819,8 +818,7 @@ int main(int argc, char **argv)
       result = rktio_process(rktio, argv[0], 1, argv,
                              NULL, NULL, err_fd,
                              pwd, envvars,
-                             0,
-                             NULL);
+                             0);
       check_valid(result);
       
       check_valid(!rktio_poll_process_done(rktio, result->process));
@@ -878,8 +876,7 @@ int main(int argc, char **argv)
       result = rktio_process(rktio, argv[0], 2, argv,
                              NULL, NULL, err_fd,
                              pwd, envvars,
-                             0,
-                             NULL);
+                             0);
       check_valid(result);
 
       /* Assume that a pipe can buffer the minimal output from `printenv`: */

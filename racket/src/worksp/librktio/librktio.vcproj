@@ -135,6 +135,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\rktio\rktio_pipe.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\rktio\rktio_process.c"
 				>
 			</File>

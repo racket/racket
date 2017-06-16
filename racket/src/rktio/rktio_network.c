@@ -28,8 +28,8 @@ typedef unsigned int rktio_sockopt_len_t;
 
 # define INVALID_SOCKET (-1)
 
-static void closesocket(rktio_socket_t s) {
-  rktio_reliably_close(s);
+static int closesocket(rktio_socket_t s) {
+  return rktio_reliably_close_err(s);
 }
 
 typedef struct sockaddr_in rktio_unspec_address;
@@ -884,18 +884,26 @@ void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd)
   }
 }
 
-int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd)
+int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
 {
 #ifdef RKTIO_SYSTEM_UNIX
-  return rktio_close(rktio, rfd);
+  if (set_error)
+    return rktio_close(rktio, rfd);
+  else {
+    rktio_close_noerr(rktio, rfd);
+    return 1;
+  }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  int err;
   UNREGISTER_SOCKET(s);
-  closesocket(s);
+  err = closesocket(s);
+  if (!err)
+    get_socket_error();
   free(rfd);
 
-  return 1;
+  return !err;
 #endif
 }
 

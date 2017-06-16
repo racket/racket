@@ -161,8 +161,7 @@ static void fs_change_release(rktio_t *rktio, rktio_fs_change_t *fc)
 # elif defined(HAVE_INOTIFY_SYSCALL)
   do_inotify_remove(rktio, fc->fd);
 # elif defined(HAVE_KQUEUE_SYSCALL)
-  rktio_ltps_close(rktio, fc->lt);
-  free(fc->lth);
+  rktio_ltps_close(rktio, fc->lt); /* frees lth */
   rktio_reliably_close(fc->fd);
 #endif
 

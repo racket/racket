@@ -488,7 +488,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
             intptr_t errkind;
             const char *es;
             intptr_t elen;
-            errkind = rktio_get_last_error(scheme_rktio);
+            errkind = rktio_get_last_error_kind(scheme_rktio);
             errid = rktio_get_last_error(scheme_rktio);
             es = rktio_get_error_string(scheme_rktio, errkind, errid);
             sprintf(buf, "; errno=%" PRIdPTR "", errid);
@@ -2096,6 +2096,14 @@ void scheme_system_error(const char *name, const char *what, int errid)
                    "%s: %s failed\n"
                    "  system error: %e", 
                    name, what, errid);
+}
+
+void scheme_rktio_error(const char *name, const char *what)
+{
+  scheme_raise_exn(MZEXN_FAIL, 
+                   "%s: %s failed\n"
+                   "  system error: %R", 
+                   name, what);
 }
 
 #define MZERR_MAX_SRC_LEN 100

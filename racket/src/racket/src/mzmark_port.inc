@@ -84,7 +84,6 @@ static int mark_output_file_FIXUP(void *p, struct NewGC *gc) {
 #define mark_output_file_IS_CONST_SIZE 1
 
 
-#ifdef MZ_FDS
 static int mark_input_fd_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
   gcBYTES_TO_WORDS(sizeof(Scheme_FD));
@@ -100,7 +99,7 @@ static int mark_input_fd_MARK(void *p, struct NewGC *gc) {
   gcMARK2(fd->buffer, gc);
   gcMARK2(fd->refcount, gc);
   gcMARK2(fd->flush_handle, gc);
-  gcMARK2(fd->widths, gc);
+  gcMARK2(fd->bufwidths, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -118,7 +117,7 @@ static int mark_input_fd_FIXUP(void *p, struct NewGC *gc) {
   gcFIXUP2(fd->buffer, gc);
   gcFIXUP2(fd->refcount, gc);
   gcFIXUP2(fd->flush_handle, gc);
-  gcFIXUP2(fd->widths, gc);
+  gcFIXUP2(fd->bufwidths, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -132,97 +131,6 @@ static int mark_input_fd_FIXUP(void *p, struct NewGC *gc) {
 #define mark_input_fd_IS_ATOMIC 0
 #define mark_input_fd_IS_CONST_SIZE 1
 
-#endif
-
-#if defined(UNIX_PROCESSES) && !(defined(MZ_USE_PLACES) && defined(MZ_PRECISE_GC))
-static int mark_system_child_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(System_Child));
-#else
-  return 0;
-#endif
-}
-
-static int mark_system_child_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  System_Child *sc = (System_Child *)p;
-
-  gcMARK2(sc->next, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(System_Child));
-# endif
-#endif
-}
-
-static int mark_system_child_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  System_Child *sc = (System_Child *)p;
-
-  gcFIXUP2(sc->next, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(System_Child));
-# endif
-#endif
-}
-
-#define mark_system_child_IS_ATOMIC 0
-#define mark_system_child_IS_CONST_SIZE 1
-
-#endif
-
-#ifdef USE_OSKIT_CONSOLE
-static int mark_oskit_console_input_SIZE(void *p, struct NewGC *gc) {
-#ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
-  gcBYTES_TO_WORDS(sizeof(osk_console_input));
-#else
-  return 0;
-#endif
-}
-
-static int mark_oskit_console_input_MARK(void *p, struct NewGC *gc) {
-#ifndef GC_NO_MARK_PROCEDURE_NEEDED
-  osk_console_input *c = (osk_console_input *)p;
-    
-  gcMARK2(c->buffer, gc);
-  gcMARK2(c->next, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(osk_console_input));
-# endif
-#endif
-}
-
-static int mark_oskit_console_input_FIXUP(void *p, struct NewGC *gc) {
-#ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-  osk_console_input *c = (osk_console_input *)p;
-    
-  gcFIXUP2(c->buffer, gc);
-  gcFIXUP2(c->next, gc);
-
-# ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
-  return 0;
-# else
-  return
-  gcBYTES_TO_WORDS(sizeof(osk_console_input));
-# endif
-#endif
-}
-
-#define mark_oskit_console_input_IS_ATOMIC 0
-#define mark_oskit_console_input_IS_CONST_SIZE 1
-
-#endif
 
 static int mark_subprocess_SIZE(void *p, struct NewGC *gc) {
 #ifndef GC_NO_SIZE_NEEDED_FROM_PROCS
@@ -234,11 +142,8 @@ static int mark_subprocess_SIZE(void *p, struct NewGC *gc) {
 
 static int mark_subprocess_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
-#ifndef WINDOWS_PROCESSES
   Scheme_Subprocess *sp = (Scheme_Subprocess *)p;
-  gcMARK2(sp->handle, gc);
   gcMARK2(sp->mref, gc);
-#endif
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -250,11 +155,8 @@ static int mark_subprocess_MARK(void *p, struct NewGC *gc) {
 
 static int mark_subprocess_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
-#ifndef WINDOWS_PROCESSES
   Scheme_Subprocess *sp = (Scheme_Subprocess *)p;
-  gcFIXUP2(sp->handle, gc);
   gcFIXUP2(sp->mref, gc);
-#endif
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
 # else
@@ -321,7 +223,6 @@ static int mark_filesystem_change_evt_SIZE(void *p, struct NewGC *gc) {
 static int mark_filesystem_change_evt_MARK(void *p, struct NewGC *gc) {
 #ifndef GC_NO_MARK_PROCEDURE_NEEDED
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)p;
-  gcMARK2(fc->sema, gc);
   gcMARK2(fc->mref, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -335,7 +236,6 @@ static int mark_filesystem_change_evt_MARK(void *p, struct NewGC *gc) {
 static int mark_filesystem_change_evt_FIXUP(void *p, struct NewGC *gc) {
 #ifndef GC_NO_FIXUP_PROCEDURE_NEEDED
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)p;
-  gcFIXUP2(fc->sema, gc);
   gcFIXUP2(fc->mref, gc);
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;

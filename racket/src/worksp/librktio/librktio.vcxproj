@@ -122,6 +122,7 @@
     <ClCompile Include="..\..\rktio\rktio_poll_set.c" />
     <ClCompile Include="..\..\rktio\rktio_ltps.c" />
     <ClCompile Include="..\..\rktio\rktio_network.c" />
+    <ClCompile Include="..\..\rktio\rktio_pipe.c" />
     <ClCompile Include="..\..\rktio\rktio_process.c" />
     <ClCompile Include="..\..\rktio\rktio_envvars.c" />
     <ClCompile Include="..\..\rktio\rktio_fs_change.c" />

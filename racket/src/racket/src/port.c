@@ -144,8 +144,6 @@ int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *
     fds = (Scheme_FD *) ((Scheme_Output_Port *)p)->port_data;
     so->name = ((Scheme_Output_Port *)p)->name;
   }
-  so->regfile = rktio_fd_is_regular_file(scheme_rktio, fds->fd);
-  so->textmode = rktio_fd_is_text_converted(scheme_rktio, fds->fd);
   so->flush_mode = fds->flush;
   return 1;
 }
@@ -233,7 +231,7 @@ static Scheme_Object *current_subproc_cust_mode (int, Scheme_Object *[]);
 static Scheme_Object *subproc_group_on (int, Scheme_Object *[]);
 static void register_subprocess_wait();
 
-static void unix_turn_off_timer(void);
+static void block_timer_signals(int block);
 
 typedef struct Scheme_Read_Write_Evt {
   Scheme_Object so;
@@ -3610,7 +3608,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                            int internal)
 {
   int e_set = 0, m_set = 0, i;
-  int existsok = 0, must_exist = 0;
+  int existsok = 0;
   char *filename;
   char mode[4];
   int typepos;
@@ -3631,24 +3629,22 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 
     if (SAME_OBJ(argv[i], append_symbol)) {
       mode[0] = 'a';
-      existsok = -1;
+      existsok = RKTIO_OPEN_APPEND;
       e_set++;
     } else if (SAME_OBJ(argv[i], replace_symbol)) {
-      existsok = 1;
+      existsok = RKTIO_OPEN_REPLACE;
       e_set++;
     } else if (SAME_OBJ(argv[i], truncate_symbol)) {
-      existsok = -1;
+      existsok = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_CAN_EXIST;
       e_set++;
     } else if (SAME_OBJ(argv[i], must_truncate_symbol)) {
-      existsok = -1;
-      must_exist = 1;
+      existsok = RKTIO_OPEN_MUST_EXIST | RKTIO_OPEN_TRUNCATE;
       e_set++;
     } else if (SAME_OBJ(argv[i], truncate_replace_symbol)) {
-      existsok = -2;
+      existsok = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_REPLACE | RKTIO_OPEN_CAN_EXIST;
       e_set++;
     } else if (SAME_OBJ(argv[i], update_symbol)) {
-      existsok = 2;
-      must_exist = 1;
+      existsok = RKTIO_OPEN_MUST_EXIST;
       if (typepos == 1) {
 	mode[2] = mode[1];
 	typepos = 2;
@@ -3657,7 +3653,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       mode[1] = '+';
       e_set++;
     } else if (SAME_OBJ(argv[i], can_update_symbol)) {
-      existsok = 3;
+      existsok = RKTIO_OPEN_CAN_EXIST;
       if (typepos == 1) {
 	mode[2] = mode[1];
 	typepos = 2;
@@ -3703,7 +3699,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                                            (internal
                                             ? 0
                                             : (SCHEME_GUARD_FILE_WRITE
-                                               | ((existsok && ((existsok == 1) || (existsok == -2)))
+                                               | ((existsok & RKTIO_OPEN_REPLACE)
                                                   ? SCHEME_GUARD_FILE_DELETE
                                                   : 0)
                                                /* append mode: */
@@ -3711,13 +3707,17 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                                                   ? SCHEME_GUARD_FILE_READ
                                                   : 0)
                                                /* update mode: */
-                                               | ((existsok > 1)
+                                               | ((existsok & (RKTIO_OPEN_CAN_EXIST | RKTIO_OPEN_MUST_EXIST)
+                                                   && !(existsok & (RKTIO_OPEN_REPLACE
+                                                                    | RKTIO_OPEN_TRUNCATE
+                                                                    | RKTIO_OPEN_APPEND)))
                                                   ? SCHEME_GUARD_FILE_READ
                                                   : 0))));
 
   scheme_custodian_check_available(NULL, name, "file-stream");
 
   fd = rktio_open(scheme_rktio, filename, (RKTIO_OPEN_WRITE
+                                           | existsok
                                            | (and_read ? RKTIO_OPEN_READ : 0)
                                            | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)));
 
@@ -4318,7 +4318,7 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 					   NULL,
 					   SCHEME_GUARD_FILE_EXISTS);
   rfc = rktio_fs_change(scheme_rktio, filename);
-  
+
   if (!rfc) {
     if (scheme_last_error_is_racket(RKTIO_ERROR_UNSUPPORTED)) {
       scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
@@ -4362,7 +4362,7 @@ void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data)
 static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo)
 {
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
-  
+
   if (!fc->rfc)
     return 1;
 
@@ -4375,7 +4375,7 @@ static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info 
 static void filesystem_change_evt_need_wakeup(Scheme_Object *evt, void *fds)
 {
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
-
+    
   if (fc->rfc)
     rktio_poll_add_fs_change(scheme_rktio, fc->rfc, fds);
 }
@@ -4638,12 +4638,12 @@ static intptr_t fd_get_string_slow(Scheme_Input_Port *port,
     } else {
       bc = rktio_read(scheme_rktio, fip->fd, target + target_offset, target_size);
     }
-    
+
     if (bc == 0)
       none_avail = 1;
     else if (bc == RKTIO_READ_EOF)
       bc = 0; /* EOF */
-    else
+    else if (bc == RKTIO_READ_ERROR)
       bc = -1; /* error */
     
     if (!none_avail) {
@@ -4840,6 +4840,12 @@ scheme_make_fd_input_port(int fd, Scheme_Object *name, int regfile, int textmode
                             : RKTIO_OPEN_NOT_REGFILE)
                          | (textmode ? RKTIO_OPEN_TEXT : 0)));
   
+  return make_fd_input_port(rfd, name, NULL, 0);
+}
+
+Scheme_Object *
+scheme_make_rktio_fd_input_port(rktio_fd_t *rfd, Scheme_Object *name)
+{
   return make_fd_input_port(rfd, name, NULL, 0);
 }
 
@@ -5355,6 +5361,12 @@ scheme_make_fd_output_port(int fd, Scheme_Object *name, int regfile, int textmod
                          | (read_too ? RKTIO_OPEN_READ : 0)
                          | (textmode ? RKTIO_OPEN_TEXT : 0)));
   
+  return make_fd_output_port(rfd, name, read_too, -1, NULL);
+}
+
+Scheme_Object *
+scheme_make_rktio_fd_output_port(rktio_fd_t *rfd, Scheme_Object *name, int read_too)
+{
   return make_fd_output_port(rfd, name, read_too, -1, NULL);
 }
 
@@ -6023,12 +6035,15 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
   envvars = scheme_environment_variables_to_envvars(scheme_get_param(config, MZCONFIG_CURRENT_ENV_VARS));
 
+  block_timer_signals(1);
+  
   result = rktio_process(scheme_rktio,
                          command, argc, argv,
                          stdout_fd, stdin_fd, stderr_fd,
                          SCHEME_PATH_VAL(current_dir), envvars,
-                         flags,
-                         unix_turn_off_timer);
+                         flags);
+
+  block_timer_signals(0);
 
   if (envvars)
     rktio_envvars_free(scheme_rktio, envvars);
@@ -6050,7 +6065,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
     if (result->stdin_fd)
       out = make_fd_output_port(result->stdin_fd, scheme_intern_symbol("subprocess-stdin"), 0, -1, NULL);
     if (result->stderr_fd)
-      err = (err ? err : make_fd_input_port(result->stderr_fd, scheme_intern_symbol("subprocess-stderr"), NULL, 0));
+      err = make_fd_input_port(result->stderr_fd, scheme_intern_symbol("subprocess-stderr"), NULL, 0);
     
     /*--------------------------------------*/
     /*          Return result info          */
@@ -6488,36 +6503,47 @@ static void kickoff_itimer(intptr_t usec)
   setitimer(ITIMER_PROF, &t, &old);
 }
 
-static void unix_turn_off_timer(void)
-  XFORM_SKIP_PROC
+static void block_timer_signals(int block)
 {
-  /* Turn off the timer. */
+  static intptr_t saved_usec;
   struct itimerval t, old;
   sigset_t sigs;
-  
-  t.it_value.tv_sec = 0;
-  t.it_value.tv_usec = 0;
-  t.it_interval.tv_sec = 0;
-  t.it_interval.tv_usec = 0;
-  
-  setitimer(ITIMER_PROF, &t, &old);
-  
-  /* Clear already-queued PROF signal, if any: */
+
+  if (block) {
+    t.it_value.tv_sec = 0;
+    t.it_value.tv_usec = 0;
+    t.it_interval.tv_sec = 0;
+    t.it_interval.tv_usec = 0;
+    
+    setitimer(ITIMER_PROF, &t, &old);
+
+    saved_usec = old.it_value.tv_usec;
+  } else {
+    kickoff_itimer(saved_usec);
+  }
+
   sigemptyset(&sigs);
-  while (!sigpending(&sigs)) {
-    if (sigismember(&sigs, SIGPROF)) {
-      sigprocmask(SIG_SETMASK, NULL, &sigs);
-      sigdelset(&sigs, SIGPROF);
-      sigsuspend(&sigs);
-      sigemptyset(&sigs);
-    } else
-      break;
+  sigaddset(&sigs, ITIMER_PROF);
+  sigprocmask(block ? SIG_BLOCK : SIG_UNBLOCK, &sigs, NULL);
+
+  if (block) {
+    /* Clear already-queued PROF signal, if any: */
+    sigemptyset(&sigs);
+    while (!sigpending(&sigs)) {
+      if (sigismember(&sigs, SIGPROF)) {
+        sigprocmask(SIG_SETMASK, NULL, &sigs);
+        sigdelset(&sigs, SIGPROF);
+        sigsuspend(&sigs);
+        sigemptyset(&sigs);
+      } else
+        break;
+    }
   }
 }
 
 #else
 
-static void unix_turn_off_timer(void) { }
+static void block_timer_signals(int block) { }
 
 #endif
 

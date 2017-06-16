@@ -1,6 +1,63 @@
 #ifndef __RKTIO_H__
 #define __RKTIO_H__
 
+/*
+
+Allocation conventions:
+
+ - Unless otherwise specified, returned data must be deallocated ---
+   using a type-specific deallocation function if provided or
+   rktio_free() otherwise. The rktio_free() function is the same as
+   free().
+
+ - There's no reference counting. Unless otherwise specified, if
+   object A is created given object B, then a client must keep object
+   B alive as long as object A exists.
+
+ - String arguments are copied by `rktio_...` functions if the strings
+   must be retained. Unless otherwise specified, creating an object A
+   with string S doesn't require that S stay live as long as A exists.
+   String results are generally allocated and must be freed by the
+   client.
+
+Return type conventions:
+
+ - A return type `rktio_ok_t` (alias for `int`) means that 1 is
+   returned for succes and 0 for error. Use
+   rktio_get_last_error_kind() and rktio_get_last_error() for more
+   information about a 0 result.
+
+ - A return type `rktio_tri_t` (alias for `int`) means that 0 is
+   returned for an expected failuree, some `RKTIO_...` (alias for 1)
+   is returned for success, and `RKTIO_...ERROR` (alias for -2) is
+   returned for some error. Use rktio_get_last_error_kind() and
+   rktio_get_last_error() for more information about a
+   `RKTIO_...ERROR` result.
+
+ - A return type `rktio_bool_t` means that the result is a simple 0 or
+   1, and no error is possible.
+
+ - For a pointer return type, unless otherwise specified, a NULL
+   result means an error. Use rktio_get_last_error_kind() and
+   rktio_get_last_error() for more information about the error.
+
+ - If a function returns `void`, you can rely on it to not change the
+   error reported by rktio_get_last_error_kind() and
+   rktio_get_last_error().
+
+Thread conventions:
+
+ - A given `rktio_t` can be used from only one thread at a time.
+   Otherwise, as long as the initial call to rktio_init() returns
+   before a second call, there are no threading requirements.
+
+Signals:
+
+ - SIGCHLD may be enabled, blocked, and/or handled by the `rktio`
+   library.
+
+*/
+     
 #include "rktio_config.h"
 
 #ifndef RKTIO_EXTERN
@@ -23,7 +80,7 @@ RKTIO_EXTERN void rktio_destroy(rktio_t *);
 
 RKTIO_EXTERN void rktio_free(void *p);
 /* Normally equivalent to free(), but ensures the same malloc()/free()
-   that rktio function use: */
+   that rktio function use. */
 
 typedef int rktio_ok_t;
 /* A result of this type is 0 for failure (in which case an error is
@@ -40,6 +97,9 @@ typedef int rktio_bool_t;
 /* Reading and writing files                     */
 
 typedef struct rktio_fd_t rktio_fd_t;
+/* Although a `rktio_fd_t` instance is manipulated with respect to
+   some `rktio_t`, it's not attached to the `rktio_t`. The `rktio_fd_t`
+   can be manipulated with a different `rktio_t`. */
 
 /* Mode flags shared in part by `rktio_open` and `rktio_system_fd`. */
 
@@ -63,9 +123,13 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_NOT_REGFILE (1<<11)
 /* If neither RKTIO_OPEN_REGILE nor RKTIO_OPEN_NOT_REGILE
    are specified, then the value is inferred by `rtkio_system_fd`. */
-#define RKTIO_OPEN_INIT        (1 << 12)
+#define RKTIO_OPEN_DIR         (1<<12)
+#define RKTIO_OPEN_NOT_DIR     (1<<13)
+/* Inferred when neither is specified and when `RKTIO_OPEN_[NOT_]REGFILE`
+   is also inferred. */
+#define RKTIO_OPEN_INIT        (1<<14)
 /* Make `rtkio_system_fd` set a socket as nonblocking, etc. */
-#define RKTIO_OPEN_OWN         (1 << 13)
+#define RKTIO_OPEN_OWN         (1<<15)
 /* Make `rtkio_system_fd` record a socket for reliable clean up on pre-NT Windows. */
 
 RKTIO_EXTERN rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
@@ -77,6 +141,7 @@ RKTIO_EXTERN intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 /* Extracts a native file descriptor or socket. */
 
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN rktio_bool_t rktio_fd_is_directory(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd);
@@ -95,6 +160,12 @@ RKTIO_EXTERN rktio_ok_t rktio_close(rktio_t *rktio, rktio_fd_t *fd);
    and can report `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE` on Windows.
    See also `rktio_write` and `rktio_poll_write_flushed. */
 
+RKTIO_EXTERN void rktio_close_noerr(rktio_t *rktio, rktio_fd_t *fd);
+/* The same as `rktio_close`, but without reporting errors. There's
+   often nothing good to do if a close fails, epsecially if the close
+   is in the service of handling another failure where you don't want
+   the error code replaced. */
+
 RKTIO_EXTERN rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd);
 /* Copies a file descriptor, where each must be closed or forgotten
    independenty. */
@@ -105,8 +176,8 @@ RKTIO_EXTERN void rktio_forget(rktio_t *rktio, rktio_fd_t *fd);
    `RKTIO_OPEN_OWN`. */
 
 RKTIO_EXTERN rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which);
-/* Gets stdin/stdout/stderr.
-   `which` values: */
+/* Gets stdin/stdout/stderr. */
+/* `which` values: */
 #define RKTIO_STDIN  0
 #define RKTIO_STDOUT 1
 #define RKTIO_STDERR 2
@@ -185,6 +256,18 @@ rktio_filesize_t *rktio_get_file_position(rktio_t *rktio, rktio_fd_t *rfd);
 
 rktio_ok_t rktio_set_file_size(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t sz);
 /* Can report `RKTIO_ERROR_CANNOT_SET_FILE_POSITION` on Windows. */
+
+/*************************************************/
+/* Pipes                                         */
+
+rktio_fd_t **rktio_make_pipe(rktio_t *rktio, int flags);
+/* Makes a pair of file descriptors for a pipe. The first one
+   is the read end, and the second is the write end. The `flags`
+   can declare the intended sharing of the file descriptors
+   with a child process, and it useful mainly on Windows. */
+/* For `flags`: */
+#define RKTIO_NO_INHERIT_INPUT  (1<<0)
+#define RKTIO_NO_INHERIT_OUTPUT (1<<1)
 
 /*************************************************/
 /* Network                                       */
@@ -370,8 +453,7 @@ RKTIO_EXTERN rktio_process_result_t *rktio_process(rktio_t *rktio,
                                                    const char *command, int argc, char **argv,
                                                    rktio_fd_t *stdout_fd, rktio_fd_t *stdin_fd, rktio_fd_t *stderr_fd,
                                                    const char *current_directory, rktio_envvars_t *envvars,
-                                                   int flags,
-                                                   void (*unix_child_process_callback)());
+                                                   int flags);
 /* `flags` flags: */
 #define RKTIO_PROCESS_NEW_GROUP                 (1<<0)
 #define RKTIO_PROCESS_STDOUT_AS_STDERR          (1<<1)
@@ -407,8 +489,9 @@ typedef struct rktio_status_t {
 RKTIO_EXTERN rktio_status_t *rktio_process_status(rktio_t *rktio, rktio_process_t *sp);
 /* The `result` value is only value if `running` is 0. */
 
-RKTIO_EXTERN void rktio_block_child_signals(rktio_t*rktio, int block);
-
+RKTIO_EXTERN void rktio_reap_processes(rktio_t *rktio);
+/* If you start processes, calling this periodically may ensure that
+   resources are released sooner rather than later. */
 
 /*************************************************/
 /* Filesystem-change events                      */
@@ -462,12 +545,19 @@ RKTIO_EXTERN void rktio_poll_add_fs_change(rktio_t *rktio, rktio_fs_change_t *fc
 RKTIO_EXTERN void rktio_poll_set_add_nosleep(rktio_t *rktio, rktio_poll_set_t *fds);
 /* Causes a sleep given `fds` to return immediately. */
 
-#ifdef RKTIO_SYSTEM_WINDOWS
 RKTIO_EXTERN void rktio_poll_set_add_handle(rktio_t *rktio, intptr_t h, rktio_poll_set_t *fds, int repost);
 RKTIO_EXTERN void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t *fds, int mask);
 /* When sleeping on Windows, extra handles or eventmasks can be added
-   to trigger a wake up */
-#endif
+   to trigger a wake up. The functions do nothing  on other platforms. */
+
+RKTIO_EXTERN void rkio_reset_sleep_backoff(rktio_t *rktio);
+/* Call this function when using rktio_poll_set_add_eventmask() and
+   when matching events are not always consumed from the queue between
+   sleeps. To accomodate messages that are not consumed, the poll set
+   will actually only sleep a short while at first, and then back off
+   exponentially. Call this function when your program does useful
+   work (instead of spinning on sleep) to reset the backoff
+   counter. */
 
 /*************************************************/
 /* Long-term poll sets                           */
@@ -664,10 +754,6 @@ RKTIO_EXTERN void rktio_signal_received(rktio_t *rktio);
 RKTIO_EXTERN void rktio_wait_until_signal_received(rktio_t *rktio);
 RKTIO_EXTERN void rktio_flush_signals_received(rktio_t *rktio);
 
-#ifdef RKTIO_SYSTEM_UNIX
-RKTIO_EXTERN int rktio_signal_handle_to_fd();
-#endif
-
 /*************************************************/
 /* Time and date                                 */
 
@@ -732,6 +818,9 @@ enum {
   RKTIO_ERROR_TIME_OUT_OF_RANGE,
   RKTIO_ERROR_NO_SUCH_ENVVAR,
 };
+
+RKTIO_EXTERN void rktio_set_last_error(rktio_t *rktio, int kind, int errid);
+/* In case you need to save and restore error information. */
 
 RKTIO_EXTERN const char *rktio_get_last_error_string(rktio_t *rktio);
 RKTIO_EXTERN const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);

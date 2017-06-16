@@ -26,7 +26,7 @@ err_str_t err_strs[]  = {
   { RKTIO_ERROR_ILL_FORMED_USER, "ill-formed username in path" },
   { RKTIO_ERROR_UNKNOWN_USER, "unknown username in path" },
   { RKTIO_ERROR_INIT_FAILED, "initialization failed" },
-  { RKTIO_ERROR_LTPS_NOT_FOUND, "not handle found" },
+  { RKTIO_ERROR_LTPS_NOT_FOUND, "handle not found" },
   { RKTIO_ERROR_LTPS_REMOVED, "handles successfully removed" },
   { RKTIO_ERROR_CONNECT_TRYING_NEXT, "connection failed, but can try again" },
   { RKTIO_ERROR_ACCEPT_NOT_READY, "no connection ready to accept" }, 
@@ -73,6 +73,12 @@ int rktio_get_last_error(rktio_t *rktio)
 int rktio_get_last_error_kind(rktio_t *rktio)
 {
   return rktio->errkind;
+}
+
+void rktio_set_last_error(rktio_t *rktio, int kind, int errid)
+{
+  rktio->errkind = kind;
+  rktio->errid = errid;
 }
 
 const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)

@@ -435,7 +435,6 @@ void scheme_register_network_evts();
 
 void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
-void scheme_free_ghbn_data(void);
 void scheme_free_global_fdset(void);
 
 XFORM_NONGCING int scheme_is_multithreaded(int now);
@@ -4106,7 +4105,7 @@ void scheme_wrong_rator(Scheme_Object *rator, int argc, Scheme_Object **argv);
 
 void scheme_wrong_chaperoned(const char *who, const char *what, Scheme_Object *orig, Scheme_Object *naya);
 
-void scheme_system_error(const char *name, const char *what, int errid);
+void scheme_rktio_error(const char *name, const char *what);
 
 void scheme_non_fixnum_result(const char *name, Scheme_Object *o);
 
@@ -4311,6 +4310,8 @@ extern char *scheme_convert_from_wchar(const wchar_t *ws);
 
 THREAD_LOCAL_DECL(extern int scheme_active_but_sleeping);
 
+struct rktio_fd_t;
+
 typedef struct Scheme_Indexed_String {
   MZTAG_IF_REQUIRED
   char *string;
@@ -4366,8 +4367,15 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv);
 void scheme_reserve_file_descriptor(void);
 void scheme_release_file_descriptor(void);
 
-struct rktio_fd_t;
 int scheme_get_port_rktio_file_descriptor(Scheme_Object *p, struct rktio_fd_t **_fd);
+Scheme_Object *scheme_make_rktio_fd_input_port(struct rktio_fd_t *rfd, Scheme_Object *name);
+Scheme_Object *scheme_make_rktio_fd_output_port(struct rktio_fd_t *rfd, Scheme_Object *name, int read_too);
+
+struct rktio_fd_t *scheme_get_port_rktio_socket(Scheme_Object *p);
+void scheme_rktio_socket_to_input_port(struct rktio_fd_t *fd, Scheme_Object *name, int takeover,
+                                       Scheme_Object **_inp);
+void scheme_rktio_socket_to_output_port(struct rktio_fd_t *fd, Scheme_Object *name, int takeover,
+                                        Scheme_Object **_outp);
 
 void scheme_fs_change_properties(int *_supported, int *_scalable, int *_low_latency, int *_file_level);
 
@@ -4626,19 +4634,6 @@ typedef struct Scheme_Symbol_Parts {
 
 void scheme_spawn_master_place();
 # endif
-# ifdef UNIX_PROCESSES
-# define MZ_PLACES_WAITPID
-void scheme_places_block_child_signal();
-void scheme_places_unblock_child_signal();
-void scheme_places_start_child_signal_handler();
-int scheme_get_child_status(int pid, int is_group, int can_check_group, int *status);
-int scheme_places_register_child(int pid, int is_group, void *signal_fd, int *status);
-void scheme_wait_suspend();
-void scheme_wait_resume();
-void scheme_done_with_process_id(int pid, int is_group);
-void scheme_starting_child();
-void scheme_ended_child();
-# endif
 #endif
 
 typedef struct Scheme_Place_Async_Channel {
@@ -4711,20 +4706,18 @@ typedef struct Scheme_Place_Object {
   uintptr_t *parent_need_gc; /* ptr to a variable in parent to force a GC (triggering accounting) */
 } Scheme_Place_Object;
 
-typedef struct Scheme_Serialized_File_FD{
+typedef struct Scheme_Serialized_File_FD {
   Scheme_Object so;
   Scheme_Object *name;
-  intptr_t fd;
+  struct rktio_fd_t *fd;
   intptr_t type;
-  char regfile;
-  char textmode;
   char flush_mode;
 } Scheme_Serialized_File_FD;
 
-typedef struct Scheme_Serialized_Socket_FD{
+typedef struct Scheme_Serialized_Socket_FD {
   Scheme_Object so;
   Scheme_Object *name;
-  intptr_t fd;
+  struct rktio_fd_t *fd;
   intptr_t type;
 } Scheme_Serialized_Socket_FD;
 

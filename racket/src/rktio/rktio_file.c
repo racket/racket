@@ -229,15 +229,13 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
     }
   }
 
-  if (GetFileInformationByHandle(fd, &info)) {
-    if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-      CloseHandle(fd);
-      set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
-      return NULL;
-    }
-  }
+  rfd = rktio_system_fd(rktio, (intptr_t)fd, modes | RKTIO_OPEN_NOT_DIR);
 
-  rfd = rktio_system_fd(rktio, (intptr_t)fd, modes);
+  if (rktio_fd_is_directory(rktio, rfd)) {
+    rktio_close(rktio, rfd);
+    set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
+    return NULL;
+  }
 
   if (modes & RKTIO_MODE_TEXT) {
     if (!rktio_fd_is_regular_file(rfd)) {

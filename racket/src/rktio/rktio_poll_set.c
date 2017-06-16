@@ -860,6 +860,12 @@ int rktio_get_fd_limit(rktio_poll_set_t *fds)
 
 #endif
 
+#ifndef RKTIO_SYSTEM_WINDOWS
+void rktio_poll_set_add_handle(rktio_t *rktio, intptr_t h, rktio_poll_set_t *fds, int repost) { }
+void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t *fds, int mask) { }
+void rkio_reset_sleep_backoff(rktio_t *rktio) { }
+#endif
+
 /*========================================================================*/
 /* Shared internal poll set                                               */
 /*========================================================================*/
@@ -1033,15 +1039,9 @@ static void clean_up_wait(rktio_t *rktio,
 static int made_progress;
 static DWORD max_sleep_time;
 
-void rkio_notify_sleep_progress(void)
+void rkio_reset_sleep_backoff(rktio_t *rktio)
 {
   made_progress = 1;
-}
-
-#else
-
-void rkio_notify_sleep_progress(void)
-{
 }
 
 #endif

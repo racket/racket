@@ -126,7 +126,6 @@ rktio_poll_set_t *rktio_ltps_get_fd_set(rktio_ltps_t *lt)
 }
 #endif
 
-
 int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
 {
   rktio_ltps_handle_t *s;
@@ -202,7 +201,8 @@ rktio_ltps_handle_t *rktio_ltps_add(rktio_t *rktio, rktio_ltps_t *lt, rktio_fd_t
        Mac OS X kqueue() claims to work on FIFOs, there are problems:
        watching for reads on a FIFO sometimes disables watching for
        writes on the same FIFO with a different file descriptor */
-    if (!rktio_fd_is_regular_file(rktio, rfd)) {
+    if (!rktio_fd_is_regular_file(rktio, rfd)
+        && !rktio_fd_is_directory(rktio, rfd)) {
       set_racket_error(RKTIO_ERROR_UNSUPPORTED);
       return NULL;
     }

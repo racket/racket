@@ -302,10 +302,6 @@ Scheme_Env *scheme_engine_instance_init()
   scheme_init_compenv_symbol();
   scheme_init_param_symbol();
 
-#if defined(MZ_PLACES_WAITPID)
-  scheme_places_start_child_signal_handler();
-#endif
-
 #if defined(MZ_PRECISE_GC) && defined(MZ_USE_PLACES)
   GC_switch_out_master_gc();
 
@@ -680,7 +676,6 @@ void scheme_place_instance_destroy(int force)
   GC_destruct_child_gc();
 #endif
   scheme_free_all_code();
-  scheme_free_ghbn_data();
   scheme_free_global_fdset();
   rktio_destroy(scheme_rktio);
 }

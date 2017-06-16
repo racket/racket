@@ -116,12 +116,6 @@ extern MZGC_DLLIMPORT void GC_init();
 
 void scheme_set_stack_base(void *base, int no_auto_statics) XFORM_SKIP_PROC
 {
-#if defined(MZ_PLACES_WAITPID)
-  /* Early, to maximize the chance that no threads have been
-     created that might later receive SIGCHLD */
-  scheme_places_block_child_signal();
-#endif
-
 #ifdef MZ_PRECISE_GC
   GC_init_type_tags(_scheme_last_type_, 
                     scheme_pair_type, scheme_mutable_pair_type, scheme_weak_box_type, 

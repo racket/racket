@@ -17,9 +17,6 @@ static int mark_listener_MARK(void *p, struct NewGC *gc) {
 
 
   gcMARK2(l->mref, gc);
-# ifdef HAVE_POLL_SYSCALL
-  gcMARK2(l->pfd, gc);
-# endif
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -36,9 +33,6 @@ static int mark_listener_FIXUP(void *p, struct NewGC *gc) {
 
 
   gcFIXUP2(l->mref, gc);
-# ifdef HAVE_POLL_SYSCALL
-  gcFIXUP2(l->pfd, gc);
-# endif
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -156,8 +150,6 @@ static int mark_udp_evt_MARK(void *p, struct NewGC *gc) {
 
   gcMARK2(uw->udp, gc);
   gcMARK2(uw->str, gc);
-  gcMARK2(uw->dest_addrs, gc);
-  gcMARK2(uw->dest_addr_lens, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;
@@ -174,8 +166,6 @@ static int mark_udp_evt_FIXUP(void *p, struct NewGC *gc) {
 
   gcFIXUP2(uw->udp, gc);
   gcFIXUP2(uw->str, gc);
-  gcFIXUP2(uw->dest_addrs, gc);
-  gcFIXUP2(uw->dest_addr_lens, gc);
 
 # ifdef GC_NO_SIZE_NEEDED_FROM_PROCS
   return 0;

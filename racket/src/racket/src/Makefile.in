@@ -396,7 +396,7 @@ numstr.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h  $(srcdir)/random.inc $(srcdir)/newrandom.inc
 optimize.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_optimize.inc
-place.@LTO@: $(COMMON_HEADERS) \
+place.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_place.inc
 port.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
         $(srcdir)/stypes.h $(srcdir)/mzmark_port.inc

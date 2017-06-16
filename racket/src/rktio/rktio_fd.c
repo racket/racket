@@ -113,7 +113,7 @@ static CSI_proc get_csi(void)
   return csi;
 }
 
-static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, intptr_t got);
+static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_cnoverted, intptr_t got);
 static char *rktio_adjust_output_text(char *buffer, intptr_t *towrite);
 static intptr_t rktio_recount_output_text(char *orig_buffer, char *buffer, intptr_t wrote);
 
@@ -189,8 +189,11 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
     do {
       cr = fstat(rfd->fd, &buf);
     } while ((cr == -1) && (errno == EINTR));
-    if (S_ISREG(buf.st_mode))
+   if (S_ISREG(buf.st_mode))
       rfd->modes |= RKTIO_OPEN_REGFILE;
+   if (!(modes & (RKTIO_OPEN_DIR | RKTIO_OPEN_NOT_DIR)))
+     if (S_ISDIR(buf.st_mode))
+       rfd->modes |= RKTIO_OPEN_DIR;
   }
 #endif
 
@@ -202,6 +205,13 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   if (!(modes & (RKTIO_OPEN_REGFILE | RKTIO_OPEN_NOT_REGFILE | RKTIO_OPEN_SOCKET))) {
     if ((GetFileType(rfd->fd) == FILE_TYPE_DISK))
       rfd->modes |= RKTIO_OPEN_REGFILE;
+    if (!(modes & (RKTIO_OPEN_DIR | RKTIO_OPEN_NOT_DIR))) {
+      if (GetFileInformationByHandle(fd, &info)) {
+        if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+          rfd->modes |= RKTIO_OPEN_DIR;
+        }
+      }
+    }
   }
 #endif
   
@@ -236,7 +246,7 @@ rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which)
               ? RKTIO_OPEN_READ
               : RKTIO_OPEN_WRITE);
 #ifdef RKTIO_SYSTEM_UNIX
-  return rktio_system_fd(rktio, which, mode);
+  return rktio_system_fd(rktio, which, mode | RKTIO_OPEN_NOT_DIR);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   switch (which) {
@@ -250,13 +260,18 @@ rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which)
     which = STD_ERROR_HANDLE;
     break;
   }
-  return rktio_system_fd(rktio, (intptr_t)GetStdHandle(which), mode);
+  return rktio_system_fd(rktio, (intptr_t)GetStdHandle(which), mode | RKTIO_OPEN_NOT_DIR);
 #endif
 }
 
 int rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd)
 {
   return ((rfd->modes & RKTIO_OPEN_REGFILE) ? 1 : 0);
+}
+
+int rktio_fd_is_directory(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return ((rfd->modes & RKTIO_OPEN_DIR) ? 1 : 0);
 }
 
 int rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd)
@@ -346,23 +361,39 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
 /*========================================================================*/
 
 #ifdef RKTIO_SYSTEM_UNIX
-void rktio_reliably_close(intptr_t s) {
+int rktio_reliably_close_err(intptr_t s) {
   int cr;
   do { 
     cr = close(s);
   } while ((cr == -1) && (errno == EINTR));
+  return cr;
+}
+
+void rktio_reliably_close(intptr_t s)
+{
+  (void)rktio_reliably_close_err(s);
 }
 #endif
 
-int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
+static rktio_ok_t do_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
 {
+  int ok;
+  
 #ifdef RKTIO_SYSTEM_UNIX
+  int cr;
+  
 # ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
   if (!(rfd->modes & RKTIO_OPEN_SOCKET))
     rktio_release_lockf(rktio, rfd->fd);
 # endif
 
-  rktio_reliably_close(rfd->fd);
+  cr = rktio_reliably_close_err(rfd->fd);
+
+  if (cr && set_error) {
+    get_posix_error();   
+    ok = 0;
+  } else
+    ok = 1;
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
@@ -414,14 +445,31 @@ int rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
       WindowsFDOCleanup(rfd->oth);
     } /* otherwise, thread is responsible for clean-up */
   }
+
+  ok = 1;
   if (!rfd->th && !rfd->oth) {
-    CloseHandle(rfd->fd);
+    if (!CloseHandle(rfd->fd)) {
+      ok = 0;
+      get_windows_error();
+    }
   }
+  
 #endif
 
-  free(rfd);
+  if (ok)
+    free(rfd);
   
-  return 1;
+  return ok;
+}
+
+rktio_ok_t rktio_close(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return do_close(rktio, rfd, 1);
+}
+
+void rktio_close_noerr(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  (void)do_close(rktio, rfd, 0);
 }
 
 void rktio_forget(rktio_t *rktio, rktio_fd_t *rfd)
@@ -714,7 +762,8 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
 /* reading                                                                */
 /*========================================================================*/
 
-intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len,
+                              char *is_converted)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   intptr_t bc;
@@ -796,7 +845,7 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
     if (!rgot)
       return RKTIO_READ_EOF;
     else if (rfd->modes & RKTIO_OPEN_TEXT)
-      return rktio_adjust_input_text(rfd, buffer, rgot);
+      return rktio_adjust_input_text(rfd, buffer, is_converted, rgot);
     else
       return rgot;
   } else {
@@ -824,6 +873,11 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 #endif
 }
 
+intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+{
+  return rktio_read_converted(rktio, rfd, buffer, len, NULL);
+}
+
 RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
@@ -840,10 +894,10 @@ RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 
-static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, intptr_t got)
+static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_converted, intptr_t got)
 {
   int i, j;
-  
+
   if (rfd->pending_cr) {
     MSC_IZE(memmove)(buffer+1, buffer, got);
     buffer[0] = '\r';
@@ -856,10 +910,13 @@ static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, intptr_t 
   }
   
   for (i = 0, j = 0; i < got-1; i++) {
-    if ((buffer[i] == '\r') && (buffer[i+1] == '\n'))
+    if ((buffer[i] == '\r') && (buffer[i+1] == '\n')) {
+      if (is_converted) is_converted[j] = 1;
       buffer[j++] = '\n';
-    else
+    } else {
+      if (is_converted) is_converted[j] = 0;
       buffer[j++] = buffer[i++];
+    }
   }
 
   return j;
