@@ -205,7 +205,7 @@ void rktio_release_lockf(rktio_t *rktio, int fd)
 
       fd2 = pr->car;
       pid = pr->cdr;
-      rktio_hash_remove(rktio->locked_fd_process_map, fd);
+      rktio_hash_remove(rktio->locked_fd_process_map, fd, 0);
       free(pr);
 
       rktio_reliably_close(fd2); /* makes the fork()ed process exit */

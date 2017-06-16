@@ -150,7 +150,7 @@ int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
   }
   free(lt);
 #else
-  rktio_poll_set_close(rktio, lt->fd_set);
+  rktio_poll_set_forget(rktio, lt->fd_set);
 #endif
   
   return 1;
@@ -500,7 +500,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
   int key;
   int sr, hit = 0;
 
-  if (rktio_hash_is_empty(lt->handle_map))
+  if (rktio_hash_is_empty(lt->fd_handles))
     return 0;
 
   rktio_clean_fd_set(lt->fd_set);
@@ -565,7 +565,7 @@ int rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt)
   RKTIO_FD_ZERO(set1);
   RKTIO_FD_ZERO(set2);
 
-  if (rktio_hash_is_empty(lt->handle_map))
+  if (rktio_hash_is_empty(lt->fd_handles))
     return 0;
 
   rktio_merge_fd_sets(fds, lt->fd_set);
