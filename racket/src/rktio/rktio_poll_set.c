@@ -967,7 +967,7 @@ void rktio_signal_received_at(rktio_signal_handle_t *h)
 #endif
 }
 
-static void clear_signal(rktio_t *rktio)
+void rktio_flush_signals_received(rktio_t *rktio)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   /* Clear external event flag */
@@ -1008,8 +1008,8 @@ void rktio_wait_until_signal_received(rktio_t *rktio)
 #ifdef RKTIO_SYSTEM_WINDOWS  
   WaitForSingleObject(rktio->break_semaphore, INFINITE);
 #endif
-  
-  clear_signal(rktio);
+
+  rktio_flush_signals_received(rktio);
 }
 
 /****************** Windows cleanup  *****************/
@@ -1276,5 +1276,5 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 #endif
   }
 
-  clear_signal(rktio);
+  rktio_flush_signals_received(rktio);
 }

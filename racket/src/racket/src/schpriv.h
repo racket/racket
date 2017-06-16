@@ -4354,7 +4354,7 @@ Scheme_Object *scheme_terminal_port_p(int, Scheme_Object *[]);
 Scheme_Object *scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[], 
                                          int internal, int for_module);
 Scheme_Object *scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv[], int and_read, 
-                                          int internal, char **err, int *eerrno);
+                                          int internal);
 Scheme_Object *scheme_file_position(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_position_star(int argc, Scheme_Object *argv[]);
 Scheme_Object *scheme_file_truncate(int argc, Scheme_Object *argv[]);
@@ -4366,7 +4366,8 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv);
 void scheme_reserve_file_descriptor(void);
 void scheme_release_file_descriptor(void);
 
-int scheme_get_port_rktio_file_descriptor(Scheme_Object *p, struct rktio_fd_t *_fd);
+struct rktio_fd_t;
+int scheme_get_port_rktio_file_descriptor(Scheme_Object *p, struct rktio_fd_t **_fd);
 
 void scheme_fs_change_properties(int *_supported, int *_scalable, int *_low_latency, int *_file_level);
 
@@ -4433,7 +4434,8 @@ void scheme_release_fd_semaphores(void);
 void scheme_check_fd_semaphores(void);
 Scheme_Object *scheme_rktio_fd_to_semaphore(struct rktio_fd_t *fd, int mode);
 
-rktio_envvars_t *scheme_environment_variables_to_envvars(Scheme_Object *ev);
+struct rktio_envvars_t;
+struct rktio_envvars_t *scheme_environment_variables_to_envvars(Scheme_Object *ev);
 
 /*========================================================================*/
 /*                         memory debugging                               */

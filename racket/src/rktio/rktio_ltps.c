@@ -94,7 +94,7 @@ void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *s)
 
 /*========================================================================*/
 
-rktio_ltps_t *rktio_open_ltps(rktio_t *rktio)
+rktio_ltps_t *rktio_ltps_open(rktio_t *rktio)
 {
   rktio_ltps_t *lt;
 

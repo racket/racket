@@ -6154,7 +6154,7 @@ Scheme_Object *scheme_load_delayed_code(int _which, Scheme_Load_Delay *_delay_in
     scheme_release_file_descriptor();
 
     a[0] = delay_info->path;
-    port = scheme_do_open_input_file("on-demand-loader", 0, 1, a, 1, NULL, NULL, 0);
+    port = scheme_do_open_input_file("on-demand-loader", 0, 1, a, 1, 0);
 
     savebuf = scheme_current_thread->error_buf;
     scheme_current_thread->error_buf = &newbuf;

@@ -307,7 +307,7 @@ typedef struct Thread_Local_Variables {
   int special_is_ok_;
   int scheme_force_port_closed_;
   int fd_reserved_;
-  int the_fd_;
+  struct rktio_fd_t *the_fd_;
   int scheme_num_read_syntax_objects_;
   struct Scheme_Load_Delay *clear_bytes_chain_;
   const char *failure_msg_for_read_;

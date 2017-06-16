@@ -278,7 +278,7 @@ char *rktio_envvars_value_ref(rktio_t *rktio, rktio_envvars_t *envvars, intptr_t
   return MSC_IZE(strdup)(envvars->vals[i]);
 }
 
-char *rktio_envvars_get(rktio_t *rktio, rktio_envvars_t *envvars, char *name)
+char *rktio_envvars_get(rktio_t *rktio, rktio_envvars_t *envvars, const char *name)
 {
   intptr_t i;
 
@@ -290,7 +290,7 @@ char *rktio_envvars_get(rktio_t *rktio, rktio_envvars_t *envvars, char *name)
   return NULL;
 }
 
-void rktio_envvars_set(rktio_t *rktio, rktio_envvars_t *envvars, char *name, char *value)
+void rktio_envvars_set(rktio_t *rktio, rktio_envvars_t *envvars, const char *name, const char *value)
 {
   intptr_t i, j;
 

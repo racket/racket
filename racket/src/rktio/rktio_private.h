@@ -185,7 +185,7 @@ rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd);
 int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd);
 
-intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len);
+intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len);
 intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len);
   
 void rktio_free_ghbn(rktio_t *rktio);

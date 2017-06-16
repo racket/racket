@@ -29,9 +29,6 @@
 #include "schrktio.h"
 #include <ctype.h>
 
-#ifndef NO_TCP_SUPPORT
-#ifdef USE_TCP
-
 #define TCP_BUFFER_SIZE 4096
 
 typedef struct {
@@ -179,7 +176,11 @@ void scheme_init_network(Scheme_Env *env)
   scheme_finish_primitive_module(netenv);
 }
 
-static int check_fd_sema(rktio_fd_t s, int mode, Scheme_Schedule_Info *sinfo, Scheme_Object *orig)
+static int check_fd_sema(rktio_fd_t *s, int mode, Scheme_Schedule_Info *sinfo, Scheme_Object *orig)
+/* Tries to convert a file descriptor to a semaphore, and redirects
+   the sync to the semaphore if that works, which avoids a poll spin
+   on the file descriptor. The result is 0 if the shortcut determines
+   that the file descriptor is not ready. */
 {
   Scheme_Object *sema;
 
@@ -215,7 +216,6 @@ static int check_fd_sema(rktio_fd_t s, int mode, Scheme_Schedule_Info *sinfo, Sc
 static int tcp_check_accept(Scheme_Object *_listener, Scheme_Schedule_Info *sinfo)
 {
   listener_t *listener = (listener_t *)_listener;
-  int sr, i;
 
   if (!sinfo || !sinfo->is_poll) {
     /* If listeners supported semaphores, we could have a check here
@@ -229,14 +229,8 @@ static int tcp_check_accept(Scheme_Object *_listener, Scheme_Schedule_Info *sinf
   if (rktio_poll_accept_ready(scheme_rktio, listener->lnr))
     return 1;
 
-  if (sinfo && !sinfo->no_redirect) {
-    Scheme_Object *evt;
-    evt = listener_to_evt(listener);
-    if (evt)
-      scheme_set_sync_target(sinfo, evt, _listener, NULL, 0, 1, NULL);
-  } else {
-    /* CREATE_LISTEN_SEMA: This is where we'd create a semaphore for the listener, if that were possible */
-  }
+  /* CREATE_LISTEN_SEMA: This is where we'd create a semaphore for the
+     listener, if that were possible */
 
   return 0;
 }
@@ -291,7 +285,7 @@ static int tcp_check_write(Scheme_Object *port, Scheme_Schedule_Info *sinfo)
 
 static void tcp_write_needs_wakeup(Scheme_Object *port, void *fds)
 {
-  rktio_fd_t s = ((Scheme_Tcp *)((Scheme_Output_Port *)port)->port_data)->tcp;
+  rktio_fd_t *s = ((Scheme_Tcp *)((Scheme_Output_Port *)port)->port_data)->tcp;
   
   rktio_poll_add(scheme_rktio, s, fds, RKTIO_POLL_WRITE);
 }
@@ -353,7 +347,6 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
 			   int nonblock,
 			   Scheme_Object *unless)
 {
-  int errid;
   int read_amt;
   Scheme_Tcp *data;
   Scheme_Object *sema;
@@ -395,7 +388,7 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
 
     {
       int rn;
-      rn = rktio_read(scheme_rktio, data->tcp, data->b.buffer, read_amt, 0);
+      rn = rktio_read(scheme_rktio, data->tcp, data->b.buffer, read_amt);
       data->b.bufmax = rn; /* could be count, error, or EOF */
     }
     
@@ -408,7 +401,7 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
         return 0;
 
       /* block until data is (probably) available */
-      sema = scheme_rktio_fd_to_semaphore(data->tcp, MZFD_CREATE_READ, 1);
+      sema = scheme_rktio_fd_to_semaphore(data->tcp, MZFD_CREATE_READ);
       if (sema)
         scheme_wait_sema(sema, nonblock ? -1 : 0);
       else
@@ -428,8 +421,7 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
     data->b.bufmax = 0;
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "tcp-read: error reading\n"
-                     "  system error: %R",
-		     errid);
+                     "  system error: %R");
     return 0;
   } else if (data->b.bufmax == RKTIO_READ_ERROR) {
     data->b.bufmax = 0;
@@ -468,9 +460,9 @@ static void tcp_close_input(Scheme_Input_Port *port)
   if (--data->b.refcount)
     return;
 
-  (void)scheme_rktio_fd_to_semaphore(data->tcp, MZFD_REMOVE, 1);
+  (void)scheme_rktio_fd_to_semaphore(data->tcp, MZFD_REMOVE);
 
-  rktio_close(data->tcp);
+  rktio_close(scheme_rktio, data->tcp);
 }
 
 static int
@@ -499,7 +491,7 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
      can be flushed immediately, never ever blocking. */
 
   Scheme_Tcp *data;
-  int errid, would_block = 0;
+  int would_block = 0;
   intptr_t sent;
 
   data = (Scheme_Tcp *)port->port_data;
@@ -525,7 +517,7 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
     /* Block for writing: */
     {
       Scheme_Object *sema;
-      sema = scheme_rktio_fd_to_semaphore(data->tcp, MZFD_CREATE_WRITE, 1);
+      sema = scheme_rktio_fd_to_semaphore(data->tcp, MZFD_CREATE_WRITE);
       if (sema)
         scheme_wait_sema(sema, enable_break ? -1 : 0);
       else
@@ -641,9 +633,9 @@ static void tcp_close_output(Scheme_Output_Port *port)
   if (--data->b.refcount)
     return;
 
-  (void)scheme_rktio_fd_to_semaphore(data->tcp, MZFD_REMOVE, 1);
+  (void)scheme_rktio_fd_to_semaphore(data->tcp, MZFD_REMOVE);
 
-  rktio_close(data->tcp);
+  rktio_close(scheme_rktio, data->tcp);
 }
 
 static int
@@ -732,20 +724,23 @@ make_tcp_output_port(void *data, const char *name, Scheme_Object *cust)
 
 /* Various things to free if we ever give up on a connect: */
 typedef struct Connect_Progress_Data {
-  rktio_lookup_t *lookup;
+  rktio_addrinfo_lookup_t *lookup;
   rktio_connect_t *connect;
   rktio_addrinfo_t *dest_addr;
   rktio_addrinfo_t *src_addr;
+  rktio_fd_t *trying_s;
   rktio_fd_t *s;
 } Connect_Progress_Data;
 
-static Connect_Progress_Data *make_conect_progress_data()
+static Connect_Progress_Data *make_connect_progress_data()
 {
   Connect_Progress_Data *pd;
   
-  MALLOC_ONE_ATOMIC(Connect_Progress_Data);
+  pd = MALLOC_ONE_ATOMIC(Connect_Progress_Data);
   pd->lookup = NULL;
+  pd->connect = NULL;
   pd->dest_addr = NULL;
+  pd->src_addr = NULL;
   pd->s = NULL;
 
   return pd;
@@ -758,7 +753,7 @@ static void connect_cleanup(Connect_Progress_Data *pd)
     pd->lookup = NULL;
   }
   if (pd->connect) {
-    rktio_connect_stop(rktio, pd->connect);
+    rktio_connect_stop(scheme_rktio, pd->connect);
     pd->connect = NULL;
   }
   if (pd->dest_addr) {
@@ -769,9 +764,13 @@ static void connect_cleanup(Connect_Progress_Data *pd)
     rktio_addrinfo_free(scheme_rktio, pd->src_addr);
     pd->src_addr = NULL;
   }
+  if (pd->trying_s) {
+    (void)scheme_rktio_fd_to_semaphore(pd->trying_s, MZFD_REMOVE);
+    pd->trying_s = NULL;
+  }
   if (pd->s) {
-    (void)scheme_rktio_fd_to_semaphore(s, MZFD_REMOVE, 1);
-    rktio_close(s);
+    (void)scheme_rktio_fd_to_semaphore(pd->s, MZFD_REMOVE);
+    rktio_close(scheme_rktio, pd->s);
     pd->s = NULL;
   }
 }
@@ -784,14 +783,15 @@ static int check_lookup(Connect_Progress_Data *pd, Scheme_Schedule_Info *sinfo)
   return 0;
 }
 
-static void lookup_needs_wakeup(Connect_Progress_Data *pd, void *fds)
+static void lookup_needs_wakeup(Scheme_Object *_pd, void *fds)
 {
+  Connect_Progress_Data *pd = (Connect_Progress_Data *)_pd;
   rktio_poll_add_addrinfo_lookup(scheme_rktio, pd->lookup, fds);
 }
 
 static void wait_until_lookup(Connect_Progress_Data *pd)
 {
-  while (!rktio_poll_addrinfo_lookup_ready(scheme_rktio, lookup)) {
+  while (!rktio_poll_addrinfo_lookup_ready(scheme_rktio, pd->lookup)) {
     BEGIN_ESCAPEABLE(connect_cleanup, pd);
     scheme_block_until((Scheme_Ready_Fun)check_lookup, 
                        lookup_needs_wakeup, 
@@ -804,7 +804,7 @@ static void wait_until_lookup(Connect_Progress_Data *pd)
 static rktio_addrinfo_t *do_resolve_address(const char *who, char *address, int id, int family, int show_id_on_error)
 {
   Connect_Progress_Data *pd;
-  rktio_lookup_t *loopkup;
+  rktio_addrinfo_lookup_t *lookup;
   rktio_addrinfo_t *addr;
     
   pd = make_connect_progress_data();    
@@ -855,7 +855,7 @@ const char *scheme_hostname_error(int err)
 /*                         TCP Racket interface                           */
 /*========================================================================*/
 
-static void connect_failed(Connect_Progress_Data *pd, const char *why, char *address, int id)
+static void connect_failed(Connect_Progress_Data *pd, const char *why, const char *address, int id)
 {
   if (pd) connect_cleanup(pd);
 
@@ -871,37 +871,42 @@ static void connect_failed(Connect_Progress_Data *pd, const char *why, char *add
 
 static int tcp_check_connect(Connect_Progress_Data *pd, Scheme_Schedule_Info *sinfo)
 {
-    
-  rktio_fd_t *s = (rktio_fd_t *)connector_p;
-
+  if (!pd->trying_s) {
+    rktio_fd_t *s;
+    s = rktio_connect_trying(scheme_rktio, pd->connect);
+    pd->trying_s = s;
+  }
+  
   if (!sinfo || !sinfo->is_poll) {
-    if (!check_fd_sema(s, MZFD_CHECK_WRITE, sinfo, NULL))
-      return 0;
+    if (pd->trying_s)
+      if (!check_fd_sema(pd->trying_s, MZFD_CHECK_WRITE, sinfo, NULL))
+        return 0;
   }
 
-  if (rktio_poll_connect_ready(scheme->rktio, s))
+  if (rktio_poll_connect_ready(scheme_rktio, pd->connect))
     return 1;
 
-  check_fd_sema(s, MZFD_CREATE_WRITE, sinfo, NULL);
+  if (pd->trying_s)
+    check_fd_sema(pd->trying_s, MZFD_CREATE_WRITE, sinfo, NULL);
 
   return 0;
 }
 
-static void tcp_connect_needs_wakeup(Scheme_Object *connector_p, void *fds)
+static void tcp_connect_needs_wakeup(Scheme_Object *_pd, void *fds)
 {
-  rktio_fd_t *s = (rktio_fd_t *)connector_p;
-  rktio_poll_add_connect(scheme_rktio, s, fds);
+  Connect_Progress_Data *pd = (Connect_Progress_Data *)_pd;
+  rktio_poll_add_connect(scheme_rktio, pd->connect, fds);
 }
 
 static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 {
   Connect_Progress_Data *pd;
-  char *address = "", *src_address, *errmsg = NULL;
+  char *address = "", *src_address;
   unsigned short id, src_id;
   int no_local_spec;
   Scheme_Object *bs, *src_bs;
-  rktio_addrinfo_t *tcp_address_dest, *tcp_address_src;
-  rktio_lookup_t *lookup;
+  rktio_addrinfo_t *tcp_connect_dest, *tcp_connect_src;
+  rktio_addrinfo_lookup_t *lookup;
   rktio_connect_t *connect;
   rktio_fd_t *s;
 
@@ -948,7 +953,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
 
   pd = make_connect_progress_data();
   
-  lookup = rktio_start_addrinfo_lookup(scheme_rktio, address, id, RKTIO_FAMILTY_ANY, 0, 1);
+  lookup = rktio_start_addrinfo_lookup(scheme_rktio, address, id, RKTIO_FAMILY_ANY, 0, 1);
   if (!lookup)
     connect_failed(pd, "host not found", address, id);
   
@@ -963,7 +968,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
   pd->dest_addr = tcp_connect_dest;
   
   if (!no_local_spec) {
-    lookup = rktio_start_addrinfo_lookup(scheme_rktio, src_address, src_id, RKTIO_FAMILTY_ANY, 1, 1);
+    lookup = rktio_start_addrinfo_lookup(scheme_rktio, src_address, src_id, RKTIO_FAMILY_ANY, 1, 1);
     if (!lookup)
       connect_failed(pd, "local host not found", src_address, src_id);
 
@@ -971,22 +976,15 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
     wait_until_lookup(pd);
     pd->lookup = NULL;
     
-    tcp_connect_dest = rktio_addrinfo_lookup_get(scheme_rktio, lookup);
-    if (!tcp_connect_dest)
-      connect_failed(pd, "local host not found", src_address, src_id);
-
-    pd->lookup = lookup;
-    wait_until_lookup(pd);
-    pd->lookup = NULL;
-
     tcp_connect_src = rktio_addrinfo_lookup_get(scheme_rktio, lookup);
     if (!tcp_connect_src)
       connect_failed(pd, "local host not found", src_address, src_id);
-  }
+  } else
+    tcp_connect_src = NULL;
 
   pd->src_addr = tcp_connect_src;
 
-  connect = rktio_start_connect(racket_rktio, tcp_connect_dest, tcp_connect_src);
+  connect = rktio_start_connect(scheme_rktio, tcp_connect_dest, tcp_connect_src);
   if (!connect)
     connect_failed(pd, NULL, address, id);
 
@@ -1002,7 +1000,10 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
       END_ESCAPEABLE();  
     }
 
-    s = rktio_connect_finish(rktio_rktio, connect);
+    if (pd->trying_s)
+      (void)scheme_rktio_fd_to_semaphore(pd->trying_s, MZFD_REMOVE);
+
+    s = rktio_connect_finish(scheme_rktio, connect);
     
     if (!s && scheme_last_error_is_racket(RKTIO_ERROR_CONNECT_TRYING_NEXT)) {
       /* try again */
@@ -1013,7 +1014,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
   pd->connect = NULL;
 
   if (!s)
-    connect_failed(s, NULL, address, id);    
+    connect_failed(pd, NULL, address, id);    
 
   connect_cleanup(pd);
 
@@ -1022,7 +1023,7 @@ static Scheme_Object *tcp_connect(int argc, Scheme_Object *argv[])
     Scheme_Tcp *tcp;
     
     if (tcp_connect_src)
-      rktio_addrinfo_free(tcp_connect_src);
+      rktio_addrinfo_free(scheme_rktio, tcp_connect_src);
     
     tcp = make_tcp_port_data(s, 2);
     
@@ -1039,7 +1040,7 @@ tcp_connect_break(int argc, Scheme_Object *argv[])
   return scheme_call_enable_break(tcp_connect, argc, argv);
 }
 
-static void listen_failed(Connect_Progress_Data *pd, const char *why, char *address, int id)
+static void listen_failed(Connect_Progress_Data *pd, const char *why, const char *address, int id)
 {
   if (pd) connect_cleanup(pd);
 
@@ -1060,11 +1061,11 @@ static Scheme_Object *
 tcp_listen(int argc, Scheme_Object *argv[])
 {
   unsigned short id;
-  int backlog, errid;
+  int backlog;
   int reuse = 0, no_ipv6 = 0;
   const char *address;
   Connect_Progress_Data *pd;
-  rktio_lookup_t *lookup;
+  rktio_addrinfo_lookup_t *lookup;
   rktio_addrinfo_t *tcp_src;
   rktio_listener_t *lnr;
   listener_t *l;
@@ -1098,7 +1099,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
   } else
     address = NULL;
 
-  scheme_security_check_network("tcp-listen", address, origid, 0);
+  scheme_security_check_network("tcp-listen", address, id, 0);
   scheme_custodian_check_available(NULL, "tcp-listen", "network");
 
   pd = make_connect_progress_data();    
@@ -1109,7 +1110,7 @@ tcp_listen(int argc, Scheme_Object *argv[])
     if (no_ipv6)
       family = rktio_get_ipv4_family(scheme_rktio);
     else
-      family = RKTIO_FAMILTY_ANY;
+      family = RKTIO_FAMILY_ANY;
     
     lookup = rktio_start_addrinfo_lookup(scheme_rktio, address, id, family, 1, 1);
     if (!lookup)
@@ -1121,10 +1122,10 @@ tcp_listen(int argc, Scheme_Object *argv[])
 
     tcp_src = rktio_addrinfo_lookup_get(scheme_rktio, lookup);
     if (!tcp_src)
-      connect_failed(pd, "address-resolution error", address, id);
+      listen_failed(pd, "address-resolution error", address, id);
 
     pd->src_addr = tcp_src;
-    lnr = rktio_listen(rktio, tcp_src, backlog, reuse);
+    lnr = rktio_listen(scheme_rktio, tcp_src, backlog, reuse);
 
     pd->src_addr = NULL;
     rktio_addrinfo_free(scheme_rktio, tcp_src);
@@ -1166,8 +1167,6 @@ tcp_stop(int argc, Scheme_Object *argv[])
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_listener_type))
     scheme_wrong_contract("tcp-close", "tcp-listener?", 0, argc, argv);
 
-  TCP_INIT("tcp-close");
-
   was_closed = stop_listener(argv[0]);
 
   if (was_closed) {
@@ -1187,8 +1186,6 @@ tcp_accept_ready(int argc, Scheme_Object *argv[])
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_listener_type))
     scheme_wrong_contract("tcp-accept-ready?", "tcp-listener?", 0, argc, argv);
 
-  TCP_INIT("tcp-accept-ready?");
-
   if (LISTENER_WAS_CLOSED(argv[0])) {
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
 		     "tcp-accept-ready?: listener is closed");
@@ -1205,11 +1202,9 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
 /* If _fail_reason is not NULL, never raise an exception. */
 {
 #ifdef USE_TCP
-  int was_closed = 0, errid, ready_pos;
+  int was_closed = 0, ready_pos;
   Scheme_Object *listener;
   rktio_fd_t *s;
-  unsigned int l;
-  GC_CAN_IGNORE char tcp_accept_addr[MZ_SOCK_NAME_MAX_LEN];
 
   if (!SAME_TYPE(SCHEME_TYPE(argv[0]), scheme_listener_type))
     scheme_wrong_contract("tcp-accept", "tcp-listener?", 0, argc, argv);
@@ -1221,15 +1216,10 @@ do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail
   if (!was_closed) {
     ready_pos = tcp_check_accept(listener, NULL);
     if (!ready_pos) {
-      Scheme_Object *evt;
-      evt = listener_to_evt((listener_t *)listener);
-      if (evt)
-        scheme_sync(1, &evt);
-      else
-        scheme_block_until((Scheme_Ready_Fun)tcp_check_accept, 
-                           tcp_accept_needs_wakeup, 
-                           listener, 
-                           0.0);
+      scheme_block_until((Scheme_Ready_Fun)tcp_check_accept, 
+                         tcp_accept_needs_wakeup, 
+                         listener, 
+                         0.0);
       ready_pos = tcp_check_accept(listener, NULL);
     }
     was_closed = LISTENER_WAS_CLOSED(listener);
@@ -1292,13 +1282,9 @@ tcp_accept_break(int argc, Scheme_Object *argv[])
 
 void scheme_register_network_evts()
 {
-#ifdef USE_TCP
   scheme_add_evt(scheme_listener_type, (Scheme_Ready_Fun)tcp_check_accept, tcp_accept_needs_wakeup, NULL, 0);
   scheme_add_evt(scheme_tcp_accept_evt_type, (Scheme_Ready_Fun)tcp_check_accept_evt, tcp_accept_evt_needs_wakeup, NULL, 0);
-# ifdef UDP_IS_SUPPORTED
   scheme_add_evt(scheme_udp_evt_type, (Scheme_Ready_Fun)udp_evt_check_ready, udp_evt_needs_wakeup, NULL, 0);
-# endif
-#endif
 }
 
 static Scheme_Object *tcp_listener_p(int argc, Scheme_Object *argv[])
@@ -1322,13 +1308,14 @@ static int extract_svc_value(char *svc_buf)
 
 static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
 {
-#ifdef USE_TCP
   rktio_fd_t *socket = NULL;
   rktio_listener_t *lnr = NULL;
   Scheme_Tcp *tcp = NULL;
   int closed = 0, require_peer = 0;
   Scheme_Object *result[4];
   int with_ports = 0;
+  intptr_t l;
+  char **local_names, **peer_names;
 
   if (SCHEME_OUTPUT_PORTP(argv[0])) {
     Scheme_Output_Port *op;
@@ -1355,14 +1342,12 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
     require_peer = 1;
   } else {
     if (SCHEME_LISTEN_PORTP(argv[0])) {
-      listener = 1;
       if (LISTENER_WAS_CLOSED(argv[0])) {
         scheme_raise_exn(MZEXN_FAIL_NETWORK,
                          "tcp-addresses: listener is closed");
       } else
         lnr = ((listener_t *)argv[0])->lnr;
     } else if (SCHEME_UDP_PORTP(argv[0])) {
-      udp = 1;
       socket = ((Scheme_UDP *)argv[0])->s;
       if (!socket)
         scheme_raise_exn(MZEXN_FAIL_NETWORK,
@@ -1373,9 +1358,9 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
   }
 
   if (socket)
-    local_names = rktio_socket_address(socket);
+    local_names = rktio_socket_address(scheme_rktio, socket);
   else
-    local_names = rktio_listener_address(lnr);
+    local_names = rktio_listener_address(scheme_rktio, lnr);
 
   if (!local_names)
     scheme_raise_exn(MZEXN_FAIL_NETWORK, 
@@ -1383,7 +1368,7 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
                      "  system error: %R");
 
   if (socket)
-    peer_names = rktio_socket_address(socket);
+    peer_names = rktio_socket_address(scheme_rktio, socket);
   else
     peer_names = NULL;
 
@@ -1406,9 +1391,9 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
     result[with_ports ? 2 : 1] = scheme_make_utf8_string("0.0.0.0");
     result[3] = scheme_make_integer(0);
   } else {
-    result[with_ports ? 2 : 1] = scheme_make_utf8_string(host_buf);
+    result[with_ports ? 2 : 1] = scheme_make_utf8_string(peer_names[0]);
     if (with_ports) {
-      l = extract_svc_value(svc_buf);
+      l = extract_svc_value(peer_names[1]);
       result[3] = scheme_make_integer(l);
     }
   }
@@ -1419,7 +1404,7 @@ static Scheme_Object *tcp_addresses(int argc, Scheme_Object *argv[])
   if (peer_names) {
     free(peer_names[0]);
     free(peer_names[1]);
-    free(perr_names);
+    free(peer_names);
   }
   
   return scheme_values(with_ports ? 4 : 2, result);
@@ -1559,7 +1544,7 @@ int scheme_get_port_socket(Scheme_Object *p, intptr_t *_s)
 
   if (s_ok) {
     intptr_t sv;
-    sv = rktio_fd_system_fd(s);
+    sv = rktio_fd_system_fd(scheme_rktio, s);
     *_s = sv;
     return 1;
   } else
@@ -1573,7 +1558,7 @@ void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
   Scheme_Object *v;
   rktio_fd_t *rfd;
 
-  rfd = rktio_open(s, RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_SOCKET | RKTIO_OPEN_OWN);
+  rfd = rktio_system_fd(scheme_rktio, s, RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_SOCKET | RKTIO_OPEN_OWN);
 
   tcp = make_tcp_port_data(rfd, takeover ? 2 : 3);
 
@@ -1586,74 +1571,59 @@ void scheme_socket_to_ports(intptr_t s, const char *name, int takeover,
 void scheme_socket_to_input_port(intptr_t s, Scheme_Object *name, int takeover,
                                  Scheme_Object **_inp)
 {
-#ifdef USE_TCP
   Scheme_Tcp *tcp;
   Scheme_Object *v;
+  rktio_fd_t *fd;
 
-  tcp = make_tcp_port_data(s, takeover ? 1 : 2);
+  fd = rktio_system_fd(scheme_rktio, s, (RKTIO_OPEN_READ | RKTIO_OPEN_SOCKET
+                                         | RKTIO_OPEN_INIT
+                                         | (takeover ? RKTIO_OPEN_OWN : 0)));
+
+  tcp = make_tcp_port_data(fd, takeover ? 1 : 2);
 
   v = make_tcp_input_port_symbol_name(tcp, name, NULL);
   *_inp = v;
-  
-  if (takeover) {
-    REGISTER_SOCKET(s);
-  }
-#else
-  *_inp = NULL;
-#endif
 }
 
 void scheme_socket_to_output_port(intptr_t s, Scheme_Object *name, int takeover,
                                   Scheme_Object **_outp)
 {
-#ifdef USE_TCP
   Scheme_Tcp *tcp;
   Scheme_Object *v;
-
-  tcp = make_tcp_port_data(s, takeover ? 1 : 2);
+  rktio_fd_t *fd;
+  
+  fd = rktio_system_fd(scheme_rktio, s, (RKTIO_OPEN_WRITE | RKTIO_OPEN_SOCKET
+                                         | RKTIO_OPEN_INIT
+                                         | (takeover ? RKTIO_OPEN_OWN : 0)));
+  
+  tcp = make_tcp_port_data(fd, takeover ? 1 : 2);
 
   v = make_tcp_output_port_symbol_name(tcp, name, NULL);
   *_outp = v;
-  
-  if (takeover) {
-    REGISTER_SOCKET(s);
-  }
-#else
-  *_outp = NULL;
-#endif
 }
 
 intptr_t scheme_dup_socket(intptr_t fd) {
-#ifdef USE_TCP
-# ifdef USE_WINSOCK_TCP
-  intptr_t nsocket;
-  intptr_t rc;
-  WSAPROTOCOL_INFO protocolInfo;
-  rc = WSADuplicateSocket(fd, GetCurrentProcessId(), &protocolInfo);
-  if (rc)
-    return rc;
-  nsocket = WSASocket(FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, FROM_PROTOCOL_INFO, &protocolInfo, 0, WSA_FLAG_OVERLAPPED);
-  REGISTER_SOCKET(nsocket);
-  return nsocket;
-# else
-  intptr_t nfd;
-  do {
-    nfd = dup(fd);
-  } while (nfd == -1 && errno == EINTR);
-  return nfd;
-# endif
-#else
-  return -1;
-#endif
+  rktio_fd_t *rfd, *rfd2;
+  intptr_t s;
+
+  rfd = rktio_system_fd(scheme_rktio, fd, (RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_SOCKET));
+  rfd2 = rktio_dup(scheme_rktio, rfd);
+
+  s = rktio_fd_system_fd(scheme_rktio, rfd2);
+
+  rktio_forget(scheme_rktio, rfd);
+  rktio_forget(scheme_rktio, rfd2);
+
+  return s;
 }
 
 void scheme_close_socket_fd(intptr_t fd) 
 {
-#ifdef USE_TCP
-  UNREGISTER_SOCKET(fd);
-  closesocket(fd);
-  (void)scheme_fd_to_semaphore(fd, MZFD_REMOVE, 1);
-#endif
+  rktio_fd_t *rfd;
+  
+  rfd = rktio_system_fd(scheme_rktio, fd, RKTIO_OPEN_SOCKET | RKTIO_OPEN_OWN);
+  (void)scheme_rktio_fd_to_semaphore(rfd, MZFD_REMOVE);
+  rktio_close(scheme_rktio, rfd);
 }
 
 /*========================================================================*/
@@ -1671,8 +1641,14 @@ typedef struct Scheme_UDP_Evt {
   rktio_addrinfo_t *dest_addr;
 } Scheme_UDP_Evt;
 
+static void free_dest_addr(void *udp_evt, void *ignored)
+{
+  Scheme_UDP_Evt *evt = (Scheme_UDP_Evt *)udp_evt;
+  rktio_addrinfo_free(scheme_rktio, evt->dest_addr);
+}
+
 static int udp_default_family() {
-  return rktio_get_ipv4_family();
+  return rktio_get_ipv4_family(scheme_rktio);
 }
 
 static int udp_close_it(Scheme_Object *_udp)
@@ -1680,8 +1656,8 @@ static int udp_close_it(Scheme_Object *_udp)
   Scheme_UDP *udp = (Scheme_UDP *)_udp;
 
   if (udp->s) {
-    (void)scheme_fd_to_semaphore(udp->s, MZFD_REMOVE, 1);
-    rktio_close(udp->s);
+    (void)scheme_rktio_fd_to_semaphore(udp->s, MZFD_REMOVE);
+    rktio_close(scheme_rktio, udp->s);
     udp->s = NULL;
 
     scheme_remove_managed(udp->mref, (Scheme_Object *)udp);
@@ -1700,8 +1676,6 @@ static Scheme_Object *make_udp(int argc, Scheme_Object *argv[])
   unsigned short id;
   rktio_addrinfo_t *addr;
 
-  TCP_INIT("udp-open-socket");
-
   if ((argc > 0) && !SCHEME_FALSEP(argv[0]) && !SCHEME_CHAR_STRINGP(argv[0]))
     scheme_wrong_contract("udp-open-socket", "(or/c string? #f)", 0, argc, argv);
   if ((argc > 1) && !SCHEME_FALSEP(argv[1]) && !CHECK_PORT_ID(argv[1]))
@@ -1718,7 +1692,7 @@ static Scheme_Object *make_udp(int argc, Scheme_Object *argv[])
   else
     id = 0;
 
-  scheme_security_check_network("udp-open-socket", address, origid, 0);
+  scheme_security_check_network("udp-open-socket", address, id, 0);
   scheme_custodian_check_available(NULL, "udp-open-socket", "network");
 
   if (address || id) {
@@ -1727,7 +1701,7 @@ static Scheme_Object *make_udp(int argc, Scheme_Object *argv[])
     if (!id)
       id = 1025;
 
-    addr = do_resolve_address("upd-open-socket", address, id, RKTIO_FAMILTY_ANY, show_id_on_error);
+    addr = do_resolve_address("upd-open-socket", address, id, RKTIO_FAMILY_ANY, show_id_on_error);
   } else
     addr = NULL;
 
@@ -1866,7 +1840,7 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
       return scheme_void;
     }
 
-    addr = do_resolve_address(name, address, port, RKTIO_FAMILTY_ANY, 1);
+    addr = do_resolve_address(name, address, port, RKTIO_FAMILY_ANY, 1);
 
     if (!do_bind) {
       /* CONNECT CASE */
@@ -1927,7 +1901,7 @@ static int udp_check_send(Scheme_Object *_udp, Scheme_Schedule_Info *sinfo)
 {
   Scheme_UDP *udp = (Scheme_UDP *)_udp;
 
-  if (udp->s == INVALID_SOCKET)
+  if (!udp->s)
     return 1;
 
   if (!sinfo || !sinfo->is_poll) {
@@ -1957,9 +1931,9 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
   intptr_t x;
 
   while (1) {
-    if (udp->s!) {
+    if (!udp->s) {
       /* socket was closed, maybe while we slept */
-      if (free_addr) rktio_addrinfo_free(dest_addr);
+      if (free_addr) rktio_addrinfo_free(scheme_rktio, dest_addr);
       if (can_error)
         scheme_raise_exn(MZEXN_FAIL_NETWORK,
                          "%s: udp socket is closed\n"
@@ -1970,7 +1944,7 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
     if ((!dest_addr && !udp->connected)
 	|| (dest_addr && udp->connected)) {
       /* socket is unconnected, maybe disconnected while we slept */
-      if (free_addr) rktio_addrinfo_free(dest_addr);
+      if (free_addr) rktio_addrinfo_free(scheme_rktio, dest_addr);
       if (can_error)
         scheme_raise_exn(MZEXN_FAIL_NETWORK,
                          "%s: udp socket is%s connected\n"
@@ -1983,19 +1957,16 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
 
     udp->bound = 1; /* in case it's not bound already, send[to] binds it */
 
-    x = rktio_udp_sendto(scheme_rktio, udp->s, addr,
+    x = rktio_udp_sendto(scheme_rktio, udp->s, dest_addr,
                          bstr XFORM_OK_PLUS start, end - start);
     
     if (x == RKTIO_WRITE_ERROR) {
-      if (ignore_addr_failure && scheme_last_error_is_racket(RKTIO_ERROR_ADDRESS_FAILURE)) {
-        return NULL;
-      } else
-        break;
+      break;
     } else if (!x) {
       if (can_block) {
         /* Block and eventually try again. */
         Scheme_Object *sema;
-        sema = scheme_fd_to_semaphore(udp->s, MZFD_CREATE_WRITE, 1);
+        sema = scheme_rktio_fd_to_semaphore(udp->s, MZFD_CREATE_WRITE);
         if (sema)
           scheme_wait_sema(sema, 0);
         else
@@ -2003,11 +1974,13 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
                              udp_send_needs_wakeup, 
                              (Scheme_Object *)udp, 
                              0);
-      } else
+      } else {
+        if (free_addr) rktio_addrinfo_free(scheme_rktio, dest_addr);
         return scheme_false;
+      }
     } else if (x != (end - start)) {
       /* this isn't supposed to happen: */
-      if (free_addr) rktio_addrinfo_free(dest_addr);
+      if (free_addr) rktio_addrinfo_free(scheme_rktio, dest_addr);
       if (can_error)
         scheme_raise_exn(MZEXN_FAIL_NETWORK,
                          "%s: didn't send enough (%d != %d)", 
@@ -2017,11 +1990,12 @@ static Scheme_Object *do_udp_send_it(const char *name, Scheme_UDP *udp,
     } else
       break;
   }
-    
+
+  if (free_addr) rktio_addrinfo_free(scheme_rktio, dest_addr);
+
   if (x != RKTIO_WRITE_ERROR) {
     return (can_block ? scheme_void : scheme_true);
   } else {
-    if (free_addr) rktio_addrinfo_free(dest_addr);
     if (can_error)
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
                        "%s: send failed\n"
@@ -2037,9 +2011,9 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
   Scheme_UDP *udp;
   char *address = "";
   intptr_t start, end;
-  int delta, err;
+  int delta;
   unsigned short id;
-  rktio_addr_info *dest_addr;
+  rktio_addrinfo_t *dest_addr;
 
   udp = (Scheme_UDP *)argv[0];
 
@@ -2070,14 +2044,13 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
 
     scheme_security_check_network(name, address, id, 1);
 
-    dest_addr = do_resolve_address(name, address, id, RKTIO_FAMILTY_ANY, 1);
+    dest_addr = do_resolve_address(name, address, id, RKTIO_FAMILY_ANY, 1);
   } else {
     dest_addr = NULL;
   }
     
   
   if (fill_evt) {
-    char *s;
     fill_evt->str = SCHEME_BYTE_STR_VAL(argv[3+delta]);
     fill_evt->offset = start;
     fill_evt->len = end - start;
@@ -2151,10 +2124,7 @@ static void udp_recv_needs_wakeup(Scheme_Object *_udp, void *fds)
 static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t start, intptr_t end, 
 		       int can_block, int can_error, Scheme_Object **v)
 {
-  intptr_t x;
-  int errid = 0;
-  char src_addr[MZ_SOCK_NAME_MAX_LEN];
-  unsigned int asize = sizeof(src_addr);
+  rktio_length_and_addrinfo_t *result;
 
   if (!udp->bound) {
     if (can_error)
@@ -2167,8 +2137,6 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
   }
 
   while (1) {
-    rktio_length_and_addrinfo_t *result;
-
     if (!udp->s) {
       /* socket was closed, maybe while we slept */
       if (can_error)
@@ -2179,7 +2147,7 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
       return -1;
     }
 
-    result = rktio_udp_recvfrom(scheme_rktio, udp->s, buf, end - start);
+    result = rktio_udp_recvfrom(scheme_rktio, udp->s, bstr XFORM_OK_PLUS start, end - start);
     
     if (!result) {
       if (scheme_last_error_is_racket(RKTIO_ERROR_TRY_AGAIN)
@@ -2193,7 +2161,7 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
         /* Block and eventually try again. */
         {
           Scheme_Object *sema;
-          sema = scheme_fd_to_semaphore(udp->s, MZFD_CREATE_READ, 1);
+          sema = scheme_rktio_fd_to_semaphore(udp->s, MZFD_CREATE_READ);
           if (sema)
             scheme_wait_sema(sema, 0);
           else
@@ -2213,12 +2181,14 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
     } else {
       /* Data received */
       char prev_buf[64];
+      int id;
 
       v[0] = scheme_make_integer(result->len);
     
       if (udp->previous_from_addr) {
         /* See if we can use this cached string */
         mzchar *s;
+        int j;
         s = SCHEME_CHAR_STR_VAL(udp->previous_from_addr);
         for (j = 0; s[j]; j++) {
           prev_buf[j] = (char)s[j];
@@ -2238,6 +2208,11 @@ static int do_udp_recv(const char *name, Scheme_UDP *udp, char *bstr, intptr_t s
       id = extract_svc_value(result->address[1]);
       
       v[2] = scheme_make_integer(id);
+
+      free(result->address[0]);
+      free(result->address[1]);
+      free(result->address);
+      free(result);
 
       return 1;
     }
@@ -2267,8 +2242,8 @@ static Scheme_Object *udp_recv(const char *name, int argc, Scheme_Object *argv[]
     fill_evt->len = end - start;
     return scheme_void;
   } else {
-    do_udp_recv(name, udp, SCHEME_BYTE_STR_VAL(argv[1]), start, end, can_block, v, 1);
-    
+    do_udp_recv(name, udp, SCHEME_BYTE_STR_VAL(argv[1]), start, end, can_block, 1, v);
+
     return scheme_values(3,v);
   }
 }
@@ -2355,7 +2330,7 @@ static int udp_evt_check_ready(Scheme_Object *_uw, Scheme_Schedule_Info *sinfo)
       
       r = do_udp_recv("udp-receive!-evt", uw->udp, 
 		      uw->str, uw->offset, uw->offset + uw->len, 
-		      0, v, !sinfo->false_pos_ok);
+		      0, !sinfo->false_positive_ok, v);
       if (r) {
         if (r != -1)
           scheme_set_sync_target(sinfo, scheme_build_list(3, v), NULL, NULL, 0, 0, NULL);
@@ -2371,7 +2346,7 @@ static int udp_evt_check_ready(Scheme_Object *_uw, Scheme_Schedule_Info *sinfo)
       r = do_udp_send_it("udp-send-evt", uw->udp, 
                          uw->str, uw->offset, uw->offset + uw->len, 
                          uw->dest_addr, 0,
-                         0, !sinfo->false_pos_ok);
+                         0, !sinfo->false_positive_ok);
       if (!r || SCHEME_TRUEP(r)) {
 	scheme_set_sync_target(sinfo, scheme_void, NULL, NULL, 0, 0, NULL);
 	return 1;
@@ -2399,7 +2374,7 @@ static void udp_check_open(char const *name, int argc, Scheme_Object *argv[])
   if (!SCHEME_UDPP(argv[0]))
     scheme_wrong_contract(name, "udp?", 0, argc, argv);
 
-  if (udp->s == INVALID_SOCKET) {
+  if (!udp->s) {
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
                      "%s: udp socket was already closed\n"
                      "  socket: %V",
@@ -2504,7 +2479,8 @@ static Scheme_Object *
 udp_multicast_set_interface(int argc, Scheme_Object *argv[])
 {
   Scheme_UDP *udp = (Scheme_UDP *)argv[0];
-  rktio_addr_info_t *addr;
+  rktio_addrinfo_t *addr;
+  Scheme_Object *bs;
   int r;
   
   if (!SCHEME_UDPP(argv[0]))
@@ -2517,10 +2493,15 @@ udp_multicast_set_interface(int argc, Scheme_Object *argv[])
 
   udp_check_open("udp-multicast-set-interface!", argc, argv);
 
-  addr = do_resolve_address("udp-multicast-set-interface!", SCHEME_BYTE_STR_VAL(bs), -1, udp_default_family(), 0);
+  if (SCHEME_CHAR_STRINGP(argv[1])) {
+    bs = scheme_char_string_to_byte_string(argv[1]);
+    addr = do_resolve_address("udp-multicast-set-interface!", SCHEME_BYTE_STR_VAL(bs), -1, udp_default_family(), 0);
+  } else
+    addr = NULL;
 
-  r = rktio_udp_set_multicast_interface(scheme_rktio, scheme_rktio, addr);
-  rktio_addrinfo_free(addr);
+  r = rktio_udp_set_multicast_interface(scheme_rktio, udp->s, addr);
+
+  if (addr) rktio_addrinfo_free(scheme_rktio, addr);
 
   if (!r)
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
@@ -2528,7 +2509,6 @@ udp_multicast_set_interface(int argc, Scheme_Object *argv[])
                      "  system error: %R");
 
   return scheme_void;
-}
 }
 
 static Scheme_Object *
@@ -2539,6 +2519,8 @@ do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *
   Scheme_Object *bs;
   rktio_addrinfo_t *multi_addr, *intf_addr;
   char *address;
+  rktio_addrinfo_lookup_t *lookup;
+  int r;
 
   pd = make_connect_progress_data();
 
@@ -2566,10 +2548,10 @@ do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *
 
   pd->dest_addr = multi_addr;
 
-  if (SCHEME_FALSEP(intfaddrname)) {
+  if (SCHEME_FALSEP(ifaddrname)) {
     intf_addr = NULL;
   } else {
-    bs = scheme_char_string_to_byte_string(intfaddrname);
+    bs = scheme_char_string_to_byte_string(ifaddrname);
     address = SCHEME_BYTE_STR_VAL(bs);
 
     lookup = rktio_start_addrinfo_lookup(scheme_rktio, address, -1, udp_default_family(), 0, 0);
@@ -2583,7 +2565,7 @@ do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *
       intf_addr = NULL;
 
     if (!intf_addr) {
-      rktio_addrinfo_free(multi_addr);
+      rktio_addrinfo_free(scheme_rktio, multi_addr);
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
                        "%s: can't resolve interface address\n"
                        "  address: %s\n"
@@ -2598,8 +2580,8 @@ do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *
                                        intf_addr,
                                        optname);
 
-  rktio_addrinfo_free(multi_addr);
-  if (intf_addr) rktio_addrinfo_free(intf_addr);
+  rktio_addrinfo_free(scheme_rktio, multi_addr);
+  if (intf_addr) rktio_addrinfo_free(scheme_rktio, intf_addr);
   
 
   if (!r) 
@@ -2678,5 +2660,3 @@ static void register_traversers(void)
 END_XFORM_SKIP;
 
 #endif
-
-#endif /* !NO_TCP_SUPPORT */

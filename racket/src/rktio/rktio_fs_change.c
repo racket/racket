@@ -65,7 +65,7 @@ int rktio_fs_change_properties(rktio_t *rktio)
   return flags;
 }
 
-rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, char *path)
+rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, const char *path)
 {
   int ok = 0;
 #ifndef NO_FILESYSTEM_CHANGE_EVTS
@@ -93,7 +93,7 @@ rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, char *path)
   else {
     rktio_fd_t *rfd;
     rfd = rktio_system_fd(rktio, fd, 0);
-    lt = rktio_open_ltps(rktio);
+    lt = rktio_ltps_open(rktio);
     if (lt)
       lth = rktio_ltps_add(rktio, lt, rfd, RKTIO_LTPS_CREATE_VNODE);
     if (!lt || !lth) {

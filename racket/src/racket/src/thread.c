@@ -3814,9 +3814,11 @@ static Scheme_Object *call_as_nested_thread(int argc, Scheme_Object *argv[])
 /*                     thread scheduling and termination                  */
 /*========================================================================*/
 
+static int check_fd_semaphores();
+
 void scheme_init_fd_semaphores(void)
 {
-  scheme_semaphore_fd_set = rktio_open_ltps(scheme_rktio);
+  scheme_semaphore_fd_set = rktio_ltps_open(scheme_rktio);
 }
 
 void scheme_release_fd_semaphores(void)
@@ -3824,7 +3826,7 @@ void scheme_release_fd_semaphores(void)
   if (scheme_semaphore_fd_set) {
     rktio_ltps_remove_all(scheme_rktio, scheme_semaphore_fd_set);
     (void)check_fd_semaphores();
-    rktio_ltps_close(scheme_semaphore_fd_set);
+    rktio_ltps_close(scheme_rktio, scheme_semaphore_fd_set);
   }
 }
 
@@ -3837,32 +3839,32 @@ static void log_fd_semaphore_error()
 	       "error for long-term poll set: %R");
   }
 }
-#endif
 
 Scheme_Object *scheme_fd_to_semaphore(intptr_t fd, int mode, int is_socket)
 {
   rktio_fd_t *rfd;
+  Scheme_Object *sema;
   
-  if (!scheme_semaphore_fd_mapping)
+  if (!scheme_semaphore_fd_set)
     return NULL;
 
-  rfd = rktio_system_fd(fd, (RKTIO_OPEN_READ
-                             | RKTIO_OPEN_WRITE
-                             | (is_socket ? RKTIO_OPEN_SOCKET : 0)));
+  rfd = rktio_system_fd(scheme_rktio, fd, (RKTIO_OPEN_READ
+                                           | RKTIO_OPEN_WRITE
+                                           | (is_socket ? RKTIO_OPEN_SOCKET : 0)));
 
   sema = scheme_rktio_fd_to_semaphore(rfd, mode);
 
-  rktio_forget(rfd);
+  rktio_forget(scheme_rktio, rfd);
 
   return sema;
 }
 
 Scheme_Object *scheme_rktio_fd_to_semaphore(rktio_fd_t *fd, int mode)
 {
-  rktio_handle_t *h;
+  rktio_ltps_handle_t *h;
   void **ib;
 
-  if (!scheme_semaphore_fd_mapping)
+  if (!scheme_semaphore_fd_set)
     return NULL;
 
   switch(mode) {
@@ -3883,7 +3885,7 @@ Scheme_Object *scheme_rktio_fd_to_semaphore(rktio_fd_t *fd, int mode)
     break;
   }
 
-  h = rktio_ltps_add(scheme_rktio, scheme_semaphore_fd_mapping, fd, mode);
+  h = rktio_ltps_add(scheme_rktio, scheme_semaphore_fd_set, fd, mode);
 
   if (!h) {
     if (scheme_last_error_is_racket(RKTIO_ERROR_LTPS_REMOVED)
@@ -3898,16 +3900,18 @@ Scheme_Object *scheme_rktio_fd_to_semaphore(rktio_fd_t *fd, int mode)
   ib = rktio_ltps_handle_get_data(scheme_rktio, h);
   if (!ib) {
     ib = scheme_malloc_immobile_box(scheme_make_sema(0));
-    rktio_ltps_handle_set_data(scheme_rktio, ib);
+    rktio_ltps_handle_set_data(scheme_rktio, h, ib);
   }
 
-  return *(Scheme_Object **)p;
+  return *(Scheme_Object **)ib;
 }
 
 static int check_fd_semaphores()
 {
   rktio_ltps_handle_t *h;
   int did = 0;
+  void *p;
+  Scheme_Object *sema;
 
   if (!scheme_semaphore_fd_set)
     return 0;
@@ -3915,7 +3919,6 @@ static int check_fd_semaphores()
   while (1) {
     h = rktio_ltps_get_signaled_handle(scheme_rktio, scheme_semaphore_fd_set);
     if (h) {
-      void *p;
       p = rktio_ltps_handle_get_data(scheme_rktio, h);
       free(h);
 
@@ -3997,10 +4000,6 @@ static int check_sleep(int need_activity, int sleep_now)
 {
   Scheme_Thread *p, *p2;
   int end_with_act;
-#if defined(USING_FDS)
-  DECL_FDSET(set, 3);
-  fd_set *set1, *set2;
-#endif
   void *fds;
 
   if (scheme_no_stack_overflow)
@@ -4099,12 +4098,12 @@ static int check_sleep(int need_activity, int sleep_now)
     }
   
     if (needs_sleep_cancelled) {
-      rktio_poll_set_close(scheme_rktio, fds);
+      rktio_poll_set_forget(scheme_rktio, fds);
       return 0;
     }
 
     if (post_system_idle()) {
-      rktio_poll_set_close(scheme_rktio, fds);
+      rktio_poll_set_forget(scheme_rktio, fds);
       return 0;
     }
  
@@ -9045,9 +9044,6 @@ static void get_ready_for_GC()
 #ifdef WINDOWS_PROCESSES
   scheme_suspend_remembered_threads();
 #endif
-#if defined(UNIX_PROCESSES) && !defined(MZ_PLACES_WAITPID)
-  scheme_block_child_signals(1);
-#endif
 
   {
     GC_CAN_IGNORE void *data;
@@ -9081,9 +9077,6 @@ static void done_with_GC()
 #endif
 #ifdef WINDOWS_PROCESSES
   scheme_resume_remembered_threads();
-#endif
-#if defined(UNIX_PROCESSES) && !defined(MZ_PLACES_WAITPID)
-  scheme_block_child_signals(0);
 #endif
 
   end_this_gc_time = scheme_get_process_milliseconds();

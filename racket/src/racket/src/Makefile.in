@@ -381,10 +381,10 @@ list.@LTO@: $(COMMON_HEADERS) \
 marshal.@LTO@: $(COMMON_HEADERS) \
         $(srcdir)/stypes.h
 module.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/stypes.h $(srcdir)/schfd.h
+        $(srcdir)/stypes.h
 mzrt.@LTO@: $(COMMON_HEADERS)
-network.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_network.inc
+network.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
+        $(srcdir)/stypes.h $(srcdir)/mzmark_network.inc
 numarith.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/nummacs.h
 number.@LTO@: $(COMMON_HEADERS) \
@@ -397,17 +397,16 @@ numstr.@LTO@: $(COMMON_HEADERS) \
 optimize.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_optimize.inc
 place.@LTO@: $(COMMON_HEADERS) \
-        $(srcdir)/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_place.inc
+        $(srcdir)/stypes.h $(srcdir)/mzmark_place.inc
 port.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
-        $(srcdir)/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_port.inc \
-        $(srcdir)/inotify.inc
+        $(srcdir)/stypes.h $(srcdir)/mzmark_port.inc
 portfun.@LTO@: $(COMMON_HEADERS) $(srcdir)/schvers.h \
-        $(srcdir)/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark_portfun.inc
+        $(srcdir)/stypes.h $(srcdir)/mzmark_portfun.inc
 print.@LTO@: $(COMMON_HEADERS) $(srcdir)/stypes.h $(srcdir)/schcpt.h \
           $(srcdir)/schvers.h $(SCONFIG) $(srcdir)/mzmark_print.inc \
           $(srcdir)/print_vector.inc 
-thread.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/stypes.h  $(srcdir)/schfd.h $(srcdir)/mzmark_thread.inc
+thread.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
+         $(srcdir)/stypes.h $(srcdir)/mzmark_thread.inc
 rational.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h    
 read.@LTO@: $(COMMON_HEADERS) \
@@ -428,7 +427,7 @@ string.@LTO@: $(COMMON_HEADERS) $(RKTIO_HEADERS) \
 struct.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h $(srcdir)/mzmark_struct.inc
 syntax.@LTO@: $(COMMON_HEADERS) \
-         $(srcdir)/stypes.h $(srcdir)/schfd.h $(srcdir)/mzmark_syntax.inc
+         $(srcdir)/stypes.h $(srcdir)/mzmark_syntax.inc
 symbol.@LTO@: $(COMMON_HEADERS) \
          $(srcdir)/stypes.h   
 sema.@LTO@: $(COMMON_HEADERS) \

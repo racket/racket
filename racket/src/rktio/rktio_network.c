@@ -915,6 +915,18 @@ void rktio_socket_forget_owned(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 }
 
+int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode)
+{
+  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  
+  if (!shutdown(s, ((mode == RKTIO_SHUTDOWN_READ) ? SHUT_RD : SHUT_RDWR))) {
+    get_socket_error();
+    return 0;
+  }
+  
+  return 1;
+}
+
 int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
@@ -1031,7 +1043,7 @@ intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr
   }
 }
 
-static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len,
+static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len,
                                 /* for UDP sendto: */
                                 rktio_addrinfo_t *addr)
 {
@@ -1087,7 +1099,7 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, i
   }
 }
 
-intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
 {
   return do_socket_write(rktio, rfd, buffer, len, NULL);
 }
@@ -1242,6 +1254,11 @@ void rktio_connect_stop(rktio_t *rktio, rktio_connect_t *conn)
   rktio_close(rktio, conn->trying_fd);
 
   conn_free(conn);
+}
+
+rktio_fd_t *rktio_connect_trying(rktio_t *rktio, rktio_connect_t *conn)
+{
+  return conn->trying_fd;
 }
 
 /*========================================================================*/
@@ -1782,7 +1799,7 @@ int rktio_udp_connect(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr)
   return 0;
 }
 
-intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, char *buffer, intptr_t len)
+intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, const char *buffer, intptr_t len)
 {
   return do_socket_write(rktio, rfd, buffer, len, addr);
 }

@@ -2490,6 +2490,7 @@ rktio_envvars_t *scheme_environment_variables_to_envvars(Scheme_Object *ev)
   Scheme_Hash_Tree *ht = SCHEME_ENVVARS_TABLE(ev);
   rktio_envvars_t *envvars;
   mzlonglong i;
+  Scheme_Object *key, *val;
 
   if (!ht)
     return NULL;

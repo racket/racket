@@ -938,7 +938,7 @@ static void WindowsFDICleanup(Win_FD_Input_Thread *th)
 /* writing                                                                */
 /*========================================================================*/
 
-intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
+intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t len)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int flags, errsaved;

@@ -16,7 +16,7 @@
 /* Opening a file                                                         */
 /*========================================================================*/
 
-static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
+static rktio_fd_t *open_read(rktio_t *rktio, const char *filename)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int fd;
@@ -95,7 +95,7 @@ static rktio_fd_t *open_read(rktio_t *rktio, char *filename)
 #endif
 }
 
-static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
+static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int fd;
@@ -255,7 +255,7 @@ static rktio_fd_t *open_write(rktio_t *rktio, char *filename, int modes)
 #endif
 }
 
-rktio_fd_t *rktio_open(rktio_t *rktio, char *filename, int modes)
+rktio_fd_t *rktio_open(rktio_t *rktio, const char *filename, int modes)
 {
   if (modes & RKTIO_OPEN_WRITE)
     return open_write(rktio, filename, modes);
