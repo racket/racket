@@ -178,15 +178,6 @@ void os_platform_init() {
     setrlimit(RLIMIT_STACK, &rl);
   }
 #endif
-#ifdef UNIX_LIMIT_FDSET_SIZE
-  struct rlimit rl;
-
-  getrlimit(RLIMIT_NOFILE, &rl);
-  if (rl.rlim_cur > FD_SETSIZE) {
-    rl.rlim_cur = FD_SETSIZE;
-    setrlimit(RLIMIT_NOFILE, &rl);
-  }
-#endif
 }
 
 Scheme_Env *scheme_restart_instance() {
@@ -570,9 +561,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
 
 /* BEGIN PRIMITIVE MODULES */
   scheme_init_linklet(env);
-#ifndef NO_TCP_SUPPORT
   scheme_init_network(env);
-#endif
   scheme_init_paramz(env);
   scheme_init_expand_observe(env);
   scheme_init_place(env);

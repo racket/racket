@@ -162,12 +162,6 @@
 #ifdef WINDOWS_FIND_STACK_BOUNDS
 #include <windows.h>
 #endif
-#ifdef BEOS_FIND_STACK_BOUNDS
-# include <be/kernel/OS.h>
-#endif
-#ifdef OSKIT_FIXED_STACK_BOUNDS
-# include <oskit/machine/base_stack.h>
-#endif
 #include "schmach.h"
 #ifdef MACOS_STACK_LIMIT
 #include <Memory.h>
@@ -699,18 +693,6 @@ void scheme_init_stack_check()
       SysGetStackInfo(Ptr &s, &e);
       scheme_stack_boundary = (uintptr_t)e + STACK_SAFETY_MARGIN;
     }
-# endif
-
-# ifdef BEOS_FIND_STACK_BOUNDS
-    {
-      thread_info info;
-      get_thread_info(find_thread(NULL), &info);
-      scheme_stack_boundary = (uintptr_t)info.stack_base + STACK_SAFETY_MARGIN;
-    }
-# endif
-
-# ifdef OSKIT_FIXED_STACK_BOUNDS
-    scheme_stack_boundary = (uintptr_t)base_stack_start + STACK_SAFETY_MARGIN;
 # endif
 
 # ifdef UNIX_FIND_STACK_BOUNDS

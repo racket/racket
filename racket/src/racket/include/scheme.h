@@ -49,14 +49,12 @@
 #ifdef MZ_PRECISE_GC
 # define MUST_REGISTER_GLOBALS
 # define MZTAG_REQUIRED
-# undef UNIX_IMAGE_DUMPS
 /* In case SGC is used to build PRECISE_GC: */
 # undef USE_SENORA_GC
 #endif
 
 #ifdef USE_SENORA_GC
 # define MUST_REGISTER_GLOBALS
-# undef UNIX_IMAGE_DUMPS
 #endif
 
 #ifdef USE_SINGLE_FLOATS
@@ -212,12 +210,6 @@ typedef jmpbuf jmp_buf[1];
 #endif
 
 #define GC_MIGHT_USE_REGISTERED_STATICS
-
-#ifdef MACINTOSH_EVENTS
-/* We avoid #including the Carbon headers because we only
-   need a few abstract struct types: */
-typedef struct FSSpec mzFSSpec;
-#endif
 
 #ifndef MZ_DONT_USE_JIT
 # if defined(MZ_USE_JIT_PPC) || defined(MZ_USE_JIT_I386) || defined(MZ_USE_JIT_X86_64) || defined(MZ_USE_JIT_ARM)
@@ -1955,9 +1947,6 @@ MZ_EXTERN void (*scheme_set_external_stack_val)(void *);
 MZ_EXTERN void (*scheme_suspend_main_thread)(void);
 int scheme_set_in_main_thread(void);
 void scheme_restore_nonmain_thread(void);
-#endif
-#ifdef MAC_FILE_SYSTEM
-extern long scheme_creator_id;
 #endif
 
 typedef Scheme_Object *(*Scheme_Stdio_Maker_Proc)(void);

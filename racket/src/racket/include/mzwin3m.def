@@ -80,6 +80,7 @@ EXPORTS
  scheme_add_flush
  scheme_remove_flush
  scheme_add_atexit_closer
+ scheme_atexit
  scheme_add_evt
  scheme_add_evt_through_sema
  scheme_is_evt

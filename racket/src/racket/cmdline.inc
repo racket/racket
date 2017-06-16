@@ -881,7 +881,6 @@ static Scheme_Object *adjust_collects_path(Scheme_Object *collects_path, int *_s
 
 static Scheme_Object *adjust_config_path(Scheme_Object *config_path)
 {
-# ifdef GETENV_FUNCTION
   if (!config_path) {
     char *s;
     s = getenv("PLTCONFIGDIR");
@@ -890,7 +889,6 @@ static Scheme_Object *adjust_config_path(Scheme_Object *config_path)
       if (s) config_path = scheme_make_path(s);
     }
   }
-# endif
 
   if (!config_path)
     config_path = scheme_make_path(scheme_configdir XFORM_OK_PLUS _configdir_offset);
@@ -941,9 +939,7 @@ static int run_from_cmd_line(int argc, char *_argv[],
   Scheme_Object *config_path = NULL;
   Scheme_Object *host_collects_path = NULL, *host_config_path = NULL;
   char *compiled_paths = NULL;
-#ifndef NO_FILE_SYSTEM_UTILS
   Scheme_Object *collects_paths_l, *collects_paths_r;
-#endif
 #ifndef DONT_PARSE_COMMAND_LINE
   char **evals_and_loads, *real_switch = NULL, specific_switch[2];
   int *eval_kind, num_enl;
@@ -1585,23 +1581,11 @@ static int run_from_cmd_line(int argc, char *_argv[],
 	)
 #endif
       PRINTF("%s", BANNER);
-#ifdef RACKET_CMD_LINE  
-# ifdef DOS_FILE_SYSTEM
-#  if !defined(FILES_HAVE_FDS)
-#   if !defined(WINDOWS_FILE_HANDLES)
-    PRINTF("Warning: read-eval-print-loop or read on a stream port may block threads.\n");
-#   endif
-#  endif
-# endif
-#endif
 
-#if defined(USE_FD_PORTS) || defined(WINDOWS_FILE_HANDLES)
    CMDLINE_FFLUSH(stdout);
-#endif
   }
 #endif /* DONT_PARSE_COMMAND_LINE */
 
-#ifdef GETENV_FUNCTION
   if (!syslog_level) {
     char *s;
     s = getenv("PLTSYSLOG");
@@ -1653,11 +1637,9 @@ static int run_from_cmd_line(int argc, char *_argv[],
       }
     }
   }
-#endif
 
   scheme_set_logging_spec(syslog_level, stderr_level);
 
-#ifndef NO_FILE_SYSTEM_UTILS
   collects_path = adjust_collects_path(collects_path, &skip_coll_dirs);
   scheme_set_collects_path(collects_path);
 
@@ -1694,7 +1676,6 @@ static int run_from_cmd_line(int argc, char *_argv[],
     }
     collects_paths_l = reverse_path_list(collects_paths_l, 0);
   }
-#endif
 
   sch_argv = create_cmdline_args_vector(argc, argv);
   scheme_set_command_line_arguments(sch_argv);
@@ -1711,18 +1692,12 @@ static int run_from_cmd_line(int argc, char *_argv[],
   if (no_compiled)
     scheme_set_compiled_file_paths(scheme_make_null());
 
-#ifndef NO_FILE_SYSTEM_UTILS
   /* Setup compiled-file search path: */
-# ifdef GETENV_FUNCTION
   if (!compiled_paths) {
     compiled_paths = getenv("PLTCOMPILEDROOTS");
   }
-# endif
-#endif /* NO_FILE_SYSTEM_UTILS */
 
-#ifndef NO_FILE_SYSTEM_UTILS
   /* Setup path for "addon" directory: */
-# ifdef GETENV_FUNCTION
   if (!addon_dir) {
     char *s;
     s = getenv("PLTADDONDIR");
@@ -1731,22 +1706,18 @@ static int run_from_cmd_line(int argc, char *_argv[],
       if (s) addon_dir = scheme_make_path(s);
     }
   }
-# endif
   if (addon_dir) {
     addon_dir = scheme_path_to_complete_path(addon_dir, NULL);
     scheme_set_addon_dir(addon_dir);
   }
-#endif /* NO_FILE_SYSTEM_UTILS */
 
   /* Creates the main kernel environment */
   global_env = mk_basic_env();
 
-#ifndef NO_FILE_SYSTEM_UTILS
   if (!skip_coll_dirs)
     scheme_init_collection_paths_post(global_env, collects_paths_l, collects_paths_r);
   if (compiled_paths)
     scheme_init_compiled_roots(global_env, compiled_paths);
-#endif
 
   scheme_seal_parameters();
 

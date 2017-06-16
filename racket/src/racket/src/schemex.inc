@@ -86,7 +86,7 @@
   scheme_extension_table->scheme_add_flush = scheme_add_flush;
   scheme_extension_table->scheme_remove_flush = scheme_remove_flush;
   scheme_extension_table->scheme_add_atexit_closer = scheme_add_atexit_closer;
-  scheme_extension_table->scheme_atexit = scheme_atexit
+  scheme_extension_table->scheme_atexit = scheme_atexit;
   scheme_extension_table->scheme_add_evt = scheme_add_evt;
   scheme_extension_table->scheme_add_evt_through_sema = scheme_add_evt_through_sema;
   scheme_extension_table->scheme_is_evt = scheme_is_evt;
@@ -581,10 +581,6 @@
   scheme_extension_table->scheme_make_sized_offset_path = scheme_make_sized_offset_path;
   scheme_extension_table->scheme_make_sized_offset_kind_path = scheme_make_sized_offset_kind_path;
   scheme_extension_table->scheme_make_path_without_copying = scheme_make_path_without_copying;
-#ifdef MACINTOSH_EVENTS
-  scheme_extension_table->scheme_mac_spec_to_path = scheme_mac_spec_to_path;
-  scheme_extension_table->scheme_mac_path_to_spec = scheme_mac_path_to_spec;
-#endif
   scheme_extension_table->scheme_alloc_fdset_array = scheme_alloc_fdset_array;
   scheme_extension_table->scheme_init_fdset_array = scheme_init_fdset_array;
   scheme_extension_table->scheme_get_fdset = scheme_get_fdset;

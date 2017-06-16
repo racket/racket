@@ -304,9 +304,9 @@
     be able to go from no-char-ready to char-ready while Racket is
     sleeping. */
 
- /* USE_TRANSITIONAL_64_FILE_OPS uses fseeko64, lseek64, stat64, etc.
-    for file operations involving sizes (that can require 64-bit
-    arithmetic). The `configure` script normally finds this one. */
+ /* USE_TRANSITIONAL_64_FILE_OPS uses lseek64, stat64, etc. for file
+    operations involving sizes (that can require 64-bit
+    arithmetic). */
 
  /* USE_ULIMIT uses ulimit instead of getdtablesize. */
 

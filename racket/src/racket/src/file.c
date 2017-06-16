@@ -103,7 +103,6 @@ static Scheme_Object *file_exists(int argc, Scheme_Object **argv);
 static Scheme_Object *directory_exists(int argc, Scheme_Object **argv);
 static Scheme_Object *link_exists(int argc, Scheme_Object **argv);
 
-#ifndef NO_FILE_SYSTEM_UTILS
 static Scheme_Object *build_path_kind(int argc, Scheme_Object **argv);
 static Scheme_Object *delete_file(int argc, Scheme_Object **argv);
 static Scheme_Object *rename_file(int argc, Scheme_Object **argv);
@@ -136,12 +135,9 @@ static Scheme_Object *use_user_paths(int, Scheme_Object *[]);
 static Scheme_Object *use_link_paths(int, Scheme_Object *[]);
 static Scheme_Object *use_compiled_file_check(int, Scheme_Object *[]);
 static Scheme_Object *find_system_path(int argc, Scheme_Object **argv);
-#endif
 
-#ifdef DIR_FUNCTION
 static Scheme_Object *current_directory(int argc, Scheme_Object *argv[]);
 static Scheme_Object *current_user_directory(int argc, Scheme_Object *argv[]);
-#endif
 static Scheme_Object *current_force_delete_perms(int argc, Scheme_Object *argv[]);
 
 static int has_null(const char *s, intptr_t l);
@@ -157,7 +153,6 @@ static Scheme_Object *do_path_to_directory_path(char *s, intptr_t offset, intptr
 READ_ONLY static Scheme_Object *up_symbol;
 READ_ONLY static Scheme_Object *relative_symbol;
 READ_ONLY static Scheme_Object *same_symbol;
-#ifndef NO_FILE_SYSTEM_UTILS
 READ_ONLY static Scheme_Object *read_symbol, *write_symbol, *execute_symbol;
 
 READ_ONLY static Scheme_Object *temp_dir_symbol, *home_dir_symbol, *pref_dir_symbol;
@@ -175,7 +170,6 @@ SHARED_OK static Scheme_Object *host_collects_path, *host_config_path;
 THREAD_LOCAL_DECL(static Scheme_Object *original_pwd);
 SHARED_OK static Scheme_Object *addon_dir;
 
-#endif
 READ_ONLY static Scheme_Object *windows_symbol, *unix_symbol;
 
 void scheme_init_file(Scheme_Env *env)
@@ -185,7 +179,6 @@ void scheme_init_file(Scheme_Env *env)
   REGISTER_SO(up_symbol);
   REGISTER_SO(relative_symbol);
   REGISTER_SO(same_symbol);
-#ifndef NO_FILE_SYSTEM_UTILS
   REGISTER_SO(read_symbol);
   REGISTER_SO(write_symbol);
   REGISTER_SO(execute_symbol);
@@ -207,7 +200,7 @@ void scheme_init_file(Scheme_Env *env)
   REGISTER_SO(host_config_dir_symbol);
   REGISTER_SO(orig_dir_symbol);
   REGISTER_SO(addon_dir_symbol);
-#endif
+
   REGISTER_SO(windows_symbol);
   REGISTER_SO(unix_symbol);
 
@@ -215,7 +208,6 @@ void scheme_init_file(Scheme_Env *env)
   relative_symbol = scheme_intern_symbol("relative");
   same_symbol = scheme_intern_symbol("same");
   
-#ifndef NO_FILE_SYSTEM_UTILS
   read_symbol = scheme_intern_symbol("read");
   write_symbol = scheme_intern_symbol("write");
   execute_symbol = scheme_intern_symbol("execute");
@@ -237,7 +229,6 @@ void scheme_init_file(Scheme_Env *env)
   host_config_dir_symbol = scheme_intern_symbol("host-config-dir");
   orig_dir_symbol = scheme_intern_symbol("orig-dir");
   addon_dir_symbol = scheme_intern_symbol("addon-dir");
-#endif
 
   windows_symbol = scheme_intern_symbol("windows");
   unix_symbol = scheme_intern_symbol("unix");
@@ -318,7 +309,6 @@ void scheme_init_file(Scheme_Env *env)
 						      "link-exists?", 
 						      1, 1), 
 			     env);
-#ifndef NO_FILE_SYSTEM_UTILS
   scheme_add_global_constant("delete-file", 
 			     scheme_make_prim_w_arity(delete_file, 
 						      "delete-file", 
@@ -458,9 +448,6 @@ void scheme_init_file(Scheme_Env *env)
 						      1, 1), 
 			     env);
 
-#endif
-
-#ifdef DIR_FUNCTION
   scheme_add_global_constant("current-directory",
 			     scheme_register_parameter(current_directory,
 						       "current-directory", 
@@ -471,14 +458,12 @@ void scheme_init_file(Scheme_Env *env)
 						       "current-directory-for-user", 
 						       MZCONFIG_CURRENT_USER_DIRECTORY),
 			     env);
-#endif
   scheme_add_global_constant("current-force-delete-permissions",
 			     scheme_register_parameter(current_force_delete_perms,
 						       "current-force-delete-permissions",
 						       MZCONFIG_FORCE_DELETE_PERMS),
 			     env);
 
-#ifndef NO_FILE_SYSTEM_UTILS
   scheme_add_global_constant("current-library-collection-paths",
 			     scheme_register_parameter(current_library_collection_paths,
 						       "current-library-collection-paths",
@@ -489,7 +474,6 @@ void scheme_init_file(Scheme_Env *env)
 						       "current-library-collection-links",
 						       MZCONFIG_COLLECTION_LINKS),
 			     env);
-#endif
   scheme_add_global_constant("use-compiled-file-paths",
 			     scheme_register_parameter(use_compiled_kind,
 						       "use-compiled-file-paths",
@@ -519,9 +503,7 @@ void scheme_init_file(Scheme_Env *env)
 
 void scheme_init_file_places()
 {
-#ifndef NO_FILE_SYSTEM_UTILS
   REGISTER_SO(original_pwd);
-#endif
 }
 
 /**********************************************************************/
@@ -3089,7 +3071,6 @@ Scheme_Object *scheme_split_path(const char *path, int len, Scheme_Object **base
   return do_split_path_once(path, len, base_out, id_out, NULL, kind);
 }
 
-#ifndef NO_FILE_SYSTEM_UTILS
 static Scheme_Object *_split_path(const char *who, int argc, Scheme_Object **argv, int multi)
 {
   char *s;
@@ -3152,7 +3133,6 @@ static Scheme_Object *explode_path(int argc, Scheme_Object **argv)
 {
   return _split_path("explode-path", argc, argv, 1);
 }
-#endif
 
 int scheme_is_relative_path(const char *s, intptr_t len, int kind)
 {
@@ -3353,8 +3333,6 @@ Scheme_Object *scheme_path_to_complete_path(Scheme_Object *path, Scheme_Object *
   return path_to_complete_path(relto_path ? 2 : 1, a);
 }
 
-#ifndef NO_FILE_SYSTEM_UTILS
-
 static char *filename_for_error(Scheme_Object *p)
 {
   return do_expand_filename(p, NULL, 0,
@@ -3364,7 +3342,6 @@ static char *filename_for_error(Scheme_Object *p)
 			    0, SCHEME_PLATFORM_PATH_KIND,
                             0);
 }
-
 
 static int can_enable_write_permission()
 {
@@ -4964,10 +4941,6 @@ static Scheme_Object *file_size(int argc, Scheme_Object *argv[])
   return NULL;
 }
 
-#endif
-
-#ifdef DIR_FUNCTION
-
 static Scheme_Object *cwd_check(int argc, Scheme_Object **argv)
 {
   if (!SCHEME_PATH_STRINGP(argv[0])) {
@@ -4979,9 +4952,7 @@ static Scheme_Object *cwd_check(int argc, Scheme_Object **argv)
     expanded = scheme_expand_string_filename(argv[0], "current-directory", NULL, SCHEME_GUARD_FILE_EXISTS);
     ed = scheme_make_sized_path(expanded, strlen(expanded), 1);
 
-# ifndef NO_FILE_SYSTEM_UTILS
     ed = do_simplify_path(ed, scheme_null, 0, 1, 0, SCHEME_PLATFORM_PATH_KIND, 1);
-# endif
 
     ed = scheme_path_to_directory_path(ed);
 
@@ -5012,8 +4983,6 @@ static Scheme_Object *current_user_directory(int argc, Scheme_Object **argv)
                               -1, cwd_check, 
                               "path-string?", 1);
 }
-
-#endif
 
 static Scheme_Object *current_force_delete_perms(int argc, Scheme_Object *argv[])
 {
@@ -5148,8 +5117,6 @@ static Scheme_Object *collpaths_gen_p(int argc, Scheme_Object **argv, int rel_ok
   }
 }
 
-#ifndef NO_FILE_SYSTEM_UTILS
-
 static Scheme_Object *collpaths_p(int argc, Scheme_Object **argv)
 {
   return collpaths_gen_p(argc, argv, 0, 1, 0, 0);
@@ -5187,8 +5154,6 @@ static Scheme_Object *current_library_collection_links(int argc, Scheme_Object *
                               /**/                 " (listof (and/c path-string? complete-path?)))))", 
                               1);
 }
-
-#endif
 
 static Scheme_Object *compiled_kind_p(int argc, Scheme_Object **argv)
 {
@@ -5261,8 +5226,6 @@ static Scheme_Object *use_compiled_file_check(int argc, Scheme_Object *argv[])
 }
 
 /********************************************************************************/
-
-#ifndef NO_FILE_SYSTEM_UTILS
 
 Scheme_Object *scheme_get_run_cmd(void)
 {
@@ -5355,32 +5318,26 @@ find_system_path(int argc, Scheme_Object **argv)
   }
 }
 
-#endif
-
 /* should only called from main */
 Scheme_Object *scheme_set_exec_cmd(char *s)
 {
-#ifndef NO_FILE_SYSTEM_UTILS
   if (!exec_cmd) {
     REGISTER_SO(exec_cmd);
     exec_cmd = scheme_make_path(s);
   }
 
   return exec_cmd;
-#endif
 }
 
 /* should only called from main */
 Scheme_Object *scheme_set_run_cmd(char *s)
 {
-#ifndef NO_FILE_SYSTEM_UTILS
   if (!run_cmd) {
     REGISTER_SO(run_cmd);
     run_cmd = scheme_make_path(s);
   }
 
   return run_cmd;
-#endif
 }
 
 char *scheme_get_exec_path(void)

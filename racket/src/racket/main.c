@@ -61,17 +61,12 @@ XFORM_GC_VARIABLE_STACK_THROUGH_DIRECT_FUNCTION;
 START_XFORM_SUSPEND;
 #endif
 
-#ifdef FILES_HAVE_FDS
-# include <sys/types.h>
-# include <sys/time.h>
-# ifdef SELECT_INCLUDE
-#  include <sys/select.h>
-# endif
-#endif
+#include <sys/types.h>
+#include <sys/time.h>
 #ifndef NO_USER_BREAK_HANDLER
 # include <signal.h>
 #endif
-#ifdef UNISTD_INCLUDE
+#ifdef OS_X
 # include <unistd.h>
 #endif
 
@@ -188,14 +183,10 @@ extern Scheme_Object *scheme_initialize(Scheme_Env *env);
 # define INITIAL_NAMESPACE_MODULE "racket/init"
 #endif
 
-#ifdef EXPAND_FILENAME_TILDE
-# define INIT_FILENAME UNIX_INIT_FILENAME
+#ifdef DOS_FILE_SYSTEM
+# define INIT_FILENAME WINDOWS_INIT_FILENAME
 #else
-# ifdef DOS_FILE_SYSTEM
-#  define INIT_FILENAME WINDOWS_INIT_FILENAME
-# else
-#  define INIT_FILENAME MACOS9_INIT_FILENAME
-# endif
+# define INIT_FILENAME UNIX_INIT_FILENAME
 #endif
 
 #define CMDLINE_FFLUSH fflush
@@ -226,12 +217,6 @@ void set_os_process_name(char *sprog)
 /*========================================================================*/
 
 #include "cmdline.inc"
-
-/*========================================================================*/
-/*                             OSKit glue                                 */
-/*========================================================================*/
-
-#include "oskglue.inc"
 
 /*========================================================================*/
 /*                           ctl-C handler                                */
@@ -424,10 +409,6 @@ static int main_after_stack(void *data)
 
   argc = ((Main_Args *)data)->argc;
   MAIN_argv = ((Main_Args *)data)->argv;
-
-#if defined(OSKIT) && !defined(OSKIT_TEST) && !KNIT
-  oskit_prepare(&argc, &argv);
-#endif
 
 #ifdef WINDOWS_UNICODE_MAIN
   {

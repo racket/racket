@@ -458,7 +458,6 @@ void scheme_init_exn_config(void);
 #endif
 #ifdef WINDOWS_PROCESSES
 void scheme_init_thread_memory(void);
-void scheme_release_process_job_object(void);
 #endif
 void scheme_init_module_resolver(void);
 
@@ -768,15 +767,6 @@ void scheme_set_cpointer_tag(Scheme_Object *ptr, Scheme_Object *val);
 
 void scheme_kickoff_green_thread_time_slice_timer(intptr_t usec);
 
-#ifdef UNIX_PROCESSES
-void scheme_block_child_signals(int block);
-void scheme_check_child_done(void);
-int scheme_extract_child_status(int status);
-#endif
-#ifdef WINDOWS_GET_PROCESS_TIMES
-extern volatile uintptr_t scheme_process_children_msecs;
-#endif
-
 void scheme_prepare_this_thread_for_GC(Scheme_Thread *t);
 
 Scheme_Object **scheme_alloc_runstack(intptr_t len);
@@ -785,10 +775,6 @@ void scheme_check_runstack_edge(Scheme_Object **rs);
 
 void scheme_alloc_list_stack(Scheme_Thread *p);
 void scheme_clean_list_stack(Scheme_Thread *p);
-
-#ifdef WIN32_THREADS
-void *scheme_win32_get_break_semaphore(void *th);
-#endif
 
 Scheme_Object *scheme_get_thread_dead(Scheme_Thread *p);
 Scheme_Object *scheme_get_thread_suspend(Scheme_Thread *p);
@@ -2107,7 +2093,6 @@ typedef struct Scheme_Overflow {
 
 #if defined(UNIX_FIND_STACK_BOUNDS) || defined(WINDOWS_FIND_STACK_BOUNDS) \
     || defined(MACOS_FIND_STACK_BOUNDS) || defined(ASSUME_FIXED_STACK_SIZE) \
-    || defined(BEOS_FIND_STACK_BOUNDS) || defined(OSKIT_FIXED_STACK_BOUNDS) \
     || defined(PALM_FIND_STACK_BOUNDS) || defined(PTHREAD_STACKSEG_FIND_STACK_BOUNDS)
 # define USE_STACK_BOUNDARY_VAR
 THREAD_LOCAL_DECL(extern uintptr_t scheme_stack_boundary);
@@ -2649,15 +2634,9 @@ Scheme_Object *scheme_floor(int argc, Scheme_Object *argv[]);
 
 Scheme_Object *scheme_bytes_to_integer(char *str, int slen, int sgned, int rshft, int mask);
 
-#ifdef TIME_TYPE_IS_UNSIGNED
-# define scheme_make_integer_value_from_time(t) scheme_make_integer_value_from_unsigned((uintptr_t)t)
-# define scheme_get_time_val(o, v) scheme_get_unsigned_int_val(o, v)
-# define UNBUNDLE_TIME_TYPE uintptr_t
-#else
-# define scheme_make_integer_value_from_time(t) scheme_make_integer_value((intptr_t)t)
-# define scheme_get_time_val(o, v) scheme_get_int_val(o, v)
-# define UNBUNDLE_TIME_TYPE intptr_t
-#endif
+#define scheme_make_integer_value_from_time(t) scheme_make_integer_value((intptr_t)t)
+#define scheme_get_time_val(o, v) scheme_get_int_val(o, v)
+#define UNBUNDLE_TIME_TYPE intptr_t
 
 /***** Random number generator *****/
 
@@ -4237,22 +4216,11 @@ char *scheme_normal_path_seps(char *s, int *_len, int delta);
 
 int scheme_is_regular_file(char *filename);
 
-#ifdef MAC_FILE_SYSTEM
-void scheme_file_create_hook(char *filename);
-#endif
-
 void scheme_do_format(const char *procname, Scheme_Object *port,
 		      const mzchar *format, int flen,
 		      int fpos, int offset, int argc, Scheme_Object **argv);
 
 Scheme_Object *scheme_load_with_clrd(int argc, Scheme_Object *argv[], char *who, int handler_param);
-
-#ifdef MAC_CLASSIC_PROCESS_CONTROL
-int scheme_mac_start_app(char *name, int find_path, Scheme_Object *s);
-#endif
-#ifdef MACINTOSH_EVENTS
-int scheme_mac_send_event(char *name, int argc, Scheme_Object **argv, Scheme_Object **result, int *err, char **stage);
-#endif
 
 Scheme_Object *scheme_default_load_extension(int argc, Scheme_Object **argv);
 
@@ -4298,15 +4266,6 @@ extern char *scheme_convert_from_wchar(const wchar_t *ws);
 /*                               ports                                    */
 /*========================================================================*/
 
-#ifdef NO_TCP_SUPPORT
-# undef USE_UNIX_SOCKETS_TCP
-# undef USE_WINSOCK_TCP
-#endif
-
-#if defined(USE_UNIX_SOCKETS_TCP) || defined(USE_WINSOCK_TCP)
-# define USE_TCP
-#endif
-
 THREAD_LOCAL_DECL(extern int scheme_active_but_sleeping);
 
 struct rktio_fd_t;
@@ -4340,10 +4299,8 @@ extern Scheme_Object *scheme_user_output_port_type;
 extern Scheme_Object *scheme_pipe_read_port_type;
 extern Scheme_Object *scheme_pipe_write_port_type;
 extern Scheme_Object *scheme_null_output_port_type;
-#ifdef USE_TCP
 extern Scheme_Object *scheme_tcp_input_port_type;
 extern Scheme_Object *scheme_tcp_output_port_type;
-#endif
 
 THREAD_LOCAL_DECL(extern int scheme_force_port_closed);
 
@@ -4410,12 +4367,6 @@ intptr_t scheme_port_closed_p (Scheme_Object *port);
 #define CURRENT_INPUT_PORT(config) scheme_get_param(config, MZCONFIG_INPUT_PORT)
 #define CURRENT_OUTPUT_PORT(config) scheme_get_param(config, MZCONFIG_OUTPUT_PORT)
 #define CHECK_PORT_CLOSED(who, kind, port, closed) if (closed) scheme_raise_exn(MZEXN_FAIL, "%s: " kind " port is closed", who);
-
-#if defined(USE_FCNTL_O_NONBLOCK)
-# define MZ_NONBLOCKING O_NONBLOCK
-#else
-# define MZ_NONBLOCKING FNDELAY
-#endif
 
 #define MAX_UTF8_CHAR_BYTES 6
 

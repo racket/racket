@@ -48,22 +48,9 @@
 #ifdef USE_STACKAVAIL
 # include <malloc.h>
 #endif
-#ifdef UNISTD_INCLUDE
-# include <unistd.h>
-#endif
 
 #ifndef SIGNMZTHREAD
 # define SIGMZTHREAD SIGUSR2
-#endif
-
-#if defined(FILES_HAVE_FDS) \
-     || defined(USE_BEOS_PORT_THREADS) \
-     || (defined(USE_WINSOCK_TCP) && defined(USE_TCP)) \
-     || (defined(WINDOWS_PROCESSES) || defined(WINDOWS_FILE_HANDLES))
-# define USING_FDS
-# if (!defined(USE_WINSOCK_TCP) || !defined(USE_TCP)) && !defined(FILES_HAVE_FDS)
-#  include <sys/types.h>
-# endif
 #endif
 
 #define DEFAULT_INIT_STACK_SIZE 1000
@@ -4753,10 +4740,6 @@ void scheme_thread_block(float sleep_time)
   }
   
  swap_or_sleep:
-
-#ifdef USE_OSKIT_CONSOLE
-  scheme_check_keyboard_input();
-#endif
 
   /* Check scheduled_kills early and often. */
   check_scheduled_kills();

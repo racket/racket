@@ -195,9 +195,6 @@ typedef struct Thread_Local_Variables {
   struct Scheme_Object *scheme_orig_stderr_port_;
   struct Scheme_Object *scheme_orig_stdin_port_;
   struct rktio_ltps_t *scheme_semaphore_fd_set_;
-#ifdef USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
-  struct Scheme_Hash_Table *locked_fd_process_map_;
-#endif
   struct Scheme_Custodian *new_port_cust_;
   char *read_string_byte_buffer_;
   struct ITimer_Data *itimerdata_;
@@ -592,7 +589,6 @@ XFORM_GC_VARIABLE_STACK_THROUGH_THREAD_LOCAL;
 #define scheme_orig_stderr_port XOA (scheme_get_thread_local_variables()->scheme_orig_stderr_port_)
 #define scheme_orig_stdin_port XOA (scheme_get_thread_local_variables()->scheme_orig_stdin_port_)
 #define scheme_semaphore_fd_set XOA (scheme_get_thread_local_variables()->scheme_semaphore_fd_set_)
-#define locked_fd_process_map XOA (scheme_get_thread_local_variables()->locked_fd_process_map_)
 #define new_port_cust XOA (scheme_get_thread_local_variables()->new_port_cust_)
 #define read_string_byte_buffer XOA (scheme_get_thread_local_variables()->read_string_byte_buffer_)
 #define itimerdata XOA (scheme_get_thread_local_variables()->itimerdata_)

@@ -5688,63 +5688,6 @@ mzchar *scheme_utf16_to_ucs4(const unsigned short *text, intptr_t start, intptr_
 /*                     machine type details                           */
 /**********************************************************************/
 
-/**************************** MacOS ***********************************/
-
-#if defined(MACINTOSH_EVENTS) && !defined(OS_X)
-# include <Gestalt.h>
-extern intptr_t scheme_this_ip(void);
-static void machine_details(char *s)
-{
-   OSErr err;
-   intptr_t lng;
-   char sysvers[30];
-   char machine_name[256];
-
-   err = Gestalt(gestaltSystemVersion, &lng);
-   if (err != noErr) {
-     strcpy(sysvers, "<unknown system>");
-   } else {
-     int i;
-     sprintf(sysvers, "%X.%X",
-	     (lng >> 8) & 0xff,
-	     lng & 0xff);
-     /* remove trailing zeros, put dot before something else */
-     i = strlen(sysvers);
-     if (i > 1) {
-       if (sysvers[i-1] != '.') {
-	 if (sysvers[i-1] == '0') {
-	   sysvers[i-1] = 0;
-	   i--;
-	 } else {
-	   sysvers[i] = sysvers[i-1];
-	   sysvers[i-1] = '.';
-	   i++;
-	   sysvers[i] = 0;
-	 }
-       }
-     }
-   }
-
-   err = Gestalt(gestaltMachineType, &lng);
-   if (err != noErr) {
-     strcpy(machine_name, "<unknown machine>");
-   } else {
-   	 Str255 machine_name_pascal;
-
-   	 GetIndString(machine_name_pascal, kMachineNameStrID, lng);
-	 CopyPascalStringToC(machine_name_pascal, machine_name);
-   }
-
-   lng = scheme_this_ip();
-
-   sprintf(s, "%s %s %d.%d.%d.%d", sysvers, machine_name,
-	   ((unsigned char *)&lng)[0],
-	   ((unsigned char *)&lng)[1],
-	   ((unsigned char *)&lng)[2],
-	   ((unsigned char *)&lng)[3]);
-}
-#endif
-
 /*************************** Windows **********************************/
 
 #ifdef DOS_FILE_SYSTEM
@@ -5785,18 +5728,9 @@ void machine_details(char *buff)
 }
 #endif
 
-/***************************** OSKit **********************************/
-
-#ifdef USE_OSKIT_CONSOLE
-void machine_details(char *buff)
-{
-  strcpy(buff, "OSKit");
-}
-#endif
-
 /***************************** Unix ***********************************/
 
-#if (!defined(MACINTOSH_EVENTS) || defined(OS_X)) && !defined(DOS_FILE_SYSTEM) && !defined(USE_OSKIT_CONSOLE)
+#if !defined(DOS_FILE_SYSTEM)
 READ_ONLY static char *uname_locations[] = { "/bin/uname",
 				   "/usr/bin/uname",
 				   /* The above should cover everything, but

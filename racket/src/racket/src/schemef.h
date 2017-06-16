@@ -975,11 +975,6 @@ MZ_EXTERN Scheme_Object *scheme_make_sized_offset_path(char *chars, intptr_t d, 
 MZ_EXTERN Scheme_Object *scheme_make_sized_offset_kind_path(char *chars, intptr_t d, intptr_t len, int copy, int kind);
 MZ_EXTERN Scheme_Object *scheme_make_path_without_copying(char *chars);
 
-#ifdef MACINTOSH_EVENTS
-MZ_EXTERN char *scheme_mac_spec_to_path(mzFSSpec *spec);
-MZ_EXTERN int scheme_mac_path_to_spec(const char *filename, mzFSSpec *spec);
-#endif
-
 MZ_EXTERN void *scheme_alloc_fdset_array(int count, int permanent);
 MZ_EXTERN void *scheme_init_fdset_array(void *fdarray, int count);
 MZ_EXTERN void *scheme_get_fdset(void *fdarray, int pos);

@@ -165,6 +165,7 @@ int scheme_get_serialized_fd_flags(Scheme_Object* p, Scheme_Serialized_File_FD *
 /******************** Globals and Prototypes ********************/
 
 /* globals */
+
 READ_ONLY Scheme_Object scheme_eof[1];
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdout_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stderr_port);
@@ -182,10 +183,10 @@ void scheme_set_binary_mode_stdio(int v) { scheme_binary_mode_stdio =  v; }
 THREAD_LOCAL_DECL(static int special_is_ok);
 
 /* locals */
-#ifdef USE_FD_PORTS
+
 THREAD_LOCAL_DECL(static int fd_reserved);
 THREAD_LOCAL_DECL(static int the_fd);
-#endif
+
 READ_ONLY static Scheme_Object *fd_input_port_type;
 READ_ONLY static Scheme_Object *file_input_port_type;
 READ_ONLY Scheme_Object *scheme_string_input_port_type;
@@ -208,10 +209,8 @@ SHARED_OK static int flush_err;
 
 THREAD_LOCAL_DECL(static Scheme_Custodian *new_port_cust); /* back-door argument */
 
-#if defined(FILES_HAVE_FDS)
 THREAD_LOCAL_DECL(static int external_event_fd);
 THREAD_LOCAL_DECL(static int put_external_event_fd);
-#endif
 
 static void register_port_wait();
 
@@ -280,8 +279,6 @@ ROSYM static Scheme_Object *exact_symbol;
 THREAD_LOCAL_DECL(static char *read_string_byte_buffer);
 
 #define fail_err_symbol scheme_false
-
-#include "schwinfd.h"
 
 typedef struct Scheme_Filesystem_Change_Evt {
   Scheme_Object so;

@@ -1217,7 +1217,6 @@ static Scheme_Object *
 do_tcp_accept(int argc, Scheme_Object *argv[], Scheme_Object *cust, char **_fail_reason)
 /* If _fail_reason is not NULL, never raise an exception. */
 {
-#ifdef USE_TCP
   int was_closed = 0, ready_pos;
   Scheme_Object *listener;
   rktio_fd_t *s;
@@ -2654,8 +2653,6 @@ do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *
   
   return scheme_void;
 }
-
-#endif
 
 static Scheme_Object *
 udp_multicast_join_or_leave_group(char const *name, int optname, int argc, Scheme_Object *argv[])

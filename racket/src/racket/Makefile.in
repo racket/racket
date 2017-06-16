@@ -111,11 +111,6 @@ both:
 	$(MAKE) cgc-core
 	$(MAKE) 3m
 
-oskit: 
-	$(MAKE) common
-	$(MAKE) mzlibrary
-	$(MAKE) racket.multiboot
-
 racketlib: 
 	$(MAKE) g-c 
 	$(MAKE) @FOREIGNTARGET@
@@ -254,18 +249,6 @@ mzcom@CGC@@MINGW@: libracket.dll.a libmzgc.dll.a mzcom.@LTO@ mzobj.@LTO@ com_glu
 comres.o : $(srcdir)/../worksp/mzcom/mzcom.rc $(srcdir)/../mzcom/prebuilt/MzCOM.tlb
 	@WINDRES@ -I $(srcdir)/../mzcom -I $(srcdir)/../mzcom/prebuilt -i $(srcdir)/../worksp/mzcom/mzcom.rc -o comres.o
 
-# OSKit ----------------------------------------
-
-racket.multiboot : libracket.@LIBSFX@ libmzgc.@LIBSFX@ main.@LTO@
-	$(LD) -Ttext 100000 $(LDFLAGS) @OSKHOME@/lib/oskit/multiboot.@LTO@ \
-		-o racket.multiboot main.@LTO@ -L. -lracket -lgc \
-                -L@OSKHOME@/lib -loskit_kern -loskit_clientos @EXTRA_OSK_LIBS@ \
-                -loskit_freebsd_c -loskit_c -loskit_lmm \
-                -loskit_freebsd_m -loskit_memfs -loskit_fsnamespace  \
-                -loskit_dev -loskit_com \
-                -loskit_kern -loskit_freebsd_c -loskit_c \
-		@OSKHOME@/lib/oskit/crtn.@LTO@
-
 # ----------------------------------------
 
 DEF_COLLECTS_DIR = -DINITIAL_COLLECTS_DIRECTORY='"'"`cd $(srcdir)/../../collects; @PWD@`"'"'
@@ -274,7 +257,7 @@ DEF_C_DIRS = $(DEF_COLLECTS_DIR) $(DEF_CONFIG_DIR)
 
 MAIN_HEADER_DEPS = $(srcdir)/include/scheme.h $(srcdir)/include/schthread.h $(srcdir)/sconfig.h \
                    $(srcdir)/src/stypes.h $(srcdir)/cmdline.inc $(srcdir)/parse_cmdl.inc \
-	           $(srcdir)/oskglue.inc $(srcdir)/delayed.inc $(srcdir)/parse_cmdl.inc
+	           $(srcdir)/delayed.inc $(srcdir)/parse_cmdl.inc
 
 main.@LTO@: $(srcdir)/main.c $(MAIN_HEADER_DEPS)
 	$(CC) -I$(builddir) -I$(srcdir)/include $(CFLAGS) $(CPPFLAGS) @OPTIONS@ @MZOPTIONS@ $(DEF_C_DIRS) -c $(srcdir)/main.c -o main.@LTO@

@@ -30,10 +30,6 @@ SHARED_OK static const char *embedded_load;
 
 #ifdef MZ_USE_PLACES
 
-#ifdef UNIX_PROCESSES
-# include <unistd.h>
-#endif
-
 #include "schmach.h"
 
 READ_ONLY static Scheme_Object *scheme_def_place_exit_proc;

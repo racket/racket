@@ -123,7 +123,7 @@ int (*scheme_flush_managed)(Scheme_Plumber *p, int catch_errors);
 Scheme_Object *(*scheme_add_flush)(Scheme_Plumber *p, Scheme_Object *proc_or_port, int weak_flush);
 void (*scheme_remove_flush)(Scheme_Object *h);
 void (*scheme_add_atexit_closer)(Scheme_Exit_Closer_Func f);
-int (*scheme_atexit)(void (*func)());
+int (*scheme_atexit)(void (*func)(void));
 void (*scheme_add_evt)(Scheme_Type type,
 				   Scheme_Ready_Fun ready,
 				   Scheme_Needs_Wakeup_Fun wakeup,
@@ -807,10 +807,6 @@ Scheme_Object *(*scheme_make_sized_path)(char *chars, intptr_t len, int copy);
 Scheme_Object *(*scheme_make_sized_offset_path)(char *chars, intptr_t d, intptr_t len, int copy);
 Scheme_Object *(*scheme_make_sized_offset_kind_path)(char *chars, intptr_t d, intptr_t len, int copy, int kind);
 Scheme_Object *(*scheme_make_path_without_copying)(char *chars);
-#ifdef MACINTOSH_EVENTS
-char *(*scheme_mac_spec_to_path)(mzFSSpec *spec);
-int (*scheme_mac_path_to_spec)(const char *filename, mzFSSpec *spec);
-#endif
 void *(*scheme_alloc_fdset_array)(int count, int permanent);
 void *(*scheme_init_fdset_array)(void *fdarray, int count);
 void *(*scheme_get_fdset)(void *fdarray, int pos);
