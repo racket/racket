@@ -625,7 +625,7 @@
   (let ([t (thread
 	    (lambda ()
 	      (sync s-t)))]
-  [portnum (listen-port l)] ; so parallel tests work ok
+        [portnum (listen-port l)] ; so parallel tests work ok
 	[orig-thread (current-thread)])
     (let-values ([(r w) (make-pipe)])
       
@@ -728,6 +728,7 @@
 		(loop))))
 
 	  (close-output-port sw)
+	  (test cr sync cr)
 	  (test cr sync s t l sr cr)
 	  (test cr sync s t l sr cr)
 

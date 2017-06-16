@@ -317,7 +317,7 @@
 		((b) (make-bytes 8 0)))
     (test (void) udp-multicast-set-interface! s2 "localhost")
     (test (void) udp-send-to s2 "233.252.0.0" lp #"hi")
-    (sleep 0.05)
+    (sleep 0.05) ; (sync (udp-receive-ready-evt s))
     (let-values (((packet-length ra1 rp1) (udp-receive!* s b)))
       (test 2 values packet-length)
       (test #"hi\0\0\0\0\0\0" values b))
@@ -334,8 +334,7 @@
   (test (void) udp-close s)
   ;; It's closed
   (err/rt-test (udp-multicast-loopback? s) exn:fail:network?)
-  (err/rt-test (udp-multicast-set-loopback! s #t) exn:fail:network?)
-  )
+  (err/rt-test (udp-multicast-set-loopback! s #t) exn:fail:network?))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

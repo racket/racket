@@ -87,7 +87,7 @@ rktio_fd_t **rktio_make_pipe(rktio_t *rktio, int flags)
   intptr_t a[2];
   rktio_fd_t **rfds;
   
-  if (!rktio_make_os_pipe(rktio, a, flags))
+  if (rktio_make_os_pipe(rktio, a, flags))
     return NULL;
 
   rfds = malloc(sizeof(rktio_fd_t*) * 2);

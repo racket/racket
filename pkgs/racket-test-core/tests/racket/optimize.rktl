@@ -4975,8 +4975,12 @@
   (set! s? f) ; break the JIT's optimistic assumption
   
   (define (go)
+    (define init-size
+      (let ([vec (make-vector 6)])
+        (vector-set-performance-stats! vec (current-thread))
+        (vector-ref vec 3)))
     (define size (f 500000)) ; make sure that this still leads to a tail loop
-    (size . < . 80000)))
+    ((- size init-size) . < . 20000)))
 
 (test #t (dynamic-require ''check-tail-call-by-jit-for-struct-predicate 'go))
 

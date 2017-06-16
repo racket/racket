@@ -1818,7 +1818,6 @@ END print;
 
 START network;
 
-#ifdef USE_TCP
 mark_listener {
   listener_t *l = (listener_t *)p;
 
@@ -1841,7 +1840,6 @@ mark_tcp {
   gcBYTES_TO_WORDS(sizeof(Scheme_Tcp));
 }
 
-# ifdef UDP_IS_SUPPORTED
 mark_udp {
  mark:
   Scheme_UDP *udp = (Scheme_UDP *)p;
@@ -1863,8 +1861,6 @@ mark_udp_evt {
  size:
   gcBYTES_TO_WORDS(sizeof(Scheme_UDP_Evt));
 }
-# endif
-#endif
 
 END network;
 

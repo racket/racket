@@ -484,14 +484,6 @@ void scheme_set_stdio_makers(Scheme_Stdio_Maker_Proc in,
 /*                                fd arrays                               */
 /*========================================================================*/
 
-void scheme_alloc_global_fdset() {
-  scheme_semaphore_fd_set = rktio_ltps_open(scheme_rktio);
-}
-
-void scheme_free_global_fdset(void) {
-  rktio_ltps_close(scheme_rktio, scheme_semaphore_fd_set);
-}
-
 void scheme_add_fd_handle(void *h, void *fds, int repost)
 {
 #if defined(WIN32_FD_HANDLES)
@@ -3596,7 +3588,7 @@ scheme_do_open_input_file(char *name, int offset, int argc, Scheme_Object *argv[
                                            | (text_mode ? RKTIO_OPEN_TEXT : 0)));
 
   if (!fd) {
-    filename_exn(name, "cannot open input file", filename, RKTIO_ERROR_DOES_NOT_EXIST);
+    filename_exn(name, "cannot open input file", filename, (for_module ? RKTIO_ERROR_DOES_NOT_EXIST : 0));
     return NULL;
   }
   
@@ -4355,8 +4347,10 @@ void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data)
 {
   Scheme_Filesystem_Change_Evt *fc = (Scheme_Filesystem_Change_Evt *)evt;
 
-  rktio_fs_change_forget(scheme_rktio, fc->rfc);
-  fc->rfc = NULL;
+  if (fc->rfc) {
+    rktio_fs_change_forget(scheme_rktio, fc->rfc);
+    fc->rfc = NULL;
+  }
 }
 
 static int filesystem_change_evt_ready(Scheme_Object *evt, Scheme_Schedule_Info *sinfo)
@@ -5881,7 +5875,7 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   rktio_fd_t *stdout_fd = NULL;
   rktio_fd_t *stdin_fd = NULL;
   rktio_fd_t *stderr_fd = NULL;
-  int need_forget_out = 0, need_forget_in = 0, need_forget_err = 0, new_process_group = 0;
+  int need_forget_out = 0, need_forget_in = 0, need_forget_err = 0;
   rktio_envvars_t *envvars;
   rktio_process_result_t *result;
   Scheme_Config *config;
@@ -6023,9 +6017,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
   config = scheme_current_config();
   
   cust_mode = scheme_get_param(config, MZCONFIG_SUBPROC_GROUP_ENABLED);
-  new_process_group = SCHEME_TRUEP(cust_mode);
-  cust_mode = scheme_get_param(config, MZCONFIG_SUBPROC_CUSTODIAN_MODE);
+  if (SCHEME_TRUEP(cust_mode))
+    flags |= RKTIO_PROCESS_NEW_GROUP;
 
+  cust_mode = scheme_get_param(config, MZCONFIG_SUBPROC_CUSTODIAN_MODE);
   if (SCHEME_SYMBOLP(cust_mode)
       && !strcmp(SCHEME_SYM_VAL(cust_mode), "kill")
       && (rktio_process_allowed_flags(scheme_rktio) & RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION))

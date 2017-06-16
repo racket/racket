@@ -551,7 +551,6 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_sema_places();
   scheme_init_gmp_places();
   scheme_init_fd_semaphores();
-  scheme_alloc_global_fdset();
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign_places();
 #endif
@@ -676,7 +675,6 @@ void scheme_place_instance_destroy(int force)
   GC_destruct_child_gc();
 #endif
   scheme_free_all_code();
-  scheme_free_global_fdset();
   rktio_destroy(scheme_rktio);
 }
 

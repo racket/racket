@@ -785,7 +785,15 @@ If @var{read_too} is non-zero, the function produces multiple values
 Creates Racket input and output ports for a TCP socket @var{s}. The
  @var{name} argument supplies the name for the ports. If @var{close}
  is non-zero, then the ports assume responsibility for closing the
- socket. The resulting ports are written to @var{inp} and @var{outp}.}
+ socket. The resulting ports are written to @var{inp} and @var{outp}.
+
+Whether @var{close} is zero or not, closing the resulting ports
+ unregisters the file descriptor with @cpp{scheme_fd_to_semaphore}.
+ So, passing zero for @var{close} and also using the file descriptor
+ with other ports or with @cpp{scheme_fd_to_semaphore} will not work right.
+
+@history["6.9.0.6" @elem{Changed ports to always unregister with @cpp{scheme_fd_to_semaphore},
+                         since it's not safe to skip that step.}]}
 
 
 @function[(Scheme_Object* scheme_fd_to_semaphore

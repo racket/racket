@@ -927,7 +927,7 @@ int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode)
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   
-  if (!shutdown(s, ((mode == RKTIO_SHUTDOWN_READ) ? SHUT_RD : SHUT_RDWR))) {
+  if (shutdown(s, ((mode == RKTIO_SHUTDOWN_READ) ? SHUT_RD : SHUT_WR))) {
     get_socket_error();
     return 0;
   }
@@ -1129,10 +1129,6 @@ rktio_connect_t *rktio_start_connect(rktio_t *rktio, rktio_addrinfo_t *dest, rkt
 {
   rktio_connect_t *conn;
 
-#ifdef USE_TCP
-  TCP_INIT("tcp-connect");
-#endif
-
   conn = malloc(sizeof(rktio_connect_t));
   conn->dest = dest;
   conn->src = src;
@@ -1162,7 +1158,9 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
       fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
       RKTIO_WHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #endif
+
       status = connect(s, RKTIO_AS_ADDRINFO(addr)->ai_addr, RKTIO_AS_ADDRINFO(addr)->ai_addrlen);
+
 #ifdef RKTIO_SYSTEM_UNIX
       if (status)
         status = errno;
@@ -1192,15 +1190,18 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
 
 int rktio_poll_connect_ready(rktio_t *rktio, rktio_connect_t *conn)
 {
-  if (!conn->inprogress) {
+  if (conn->inprogress)
     return rktio_socket_poll_write_ready(rktio, conn->trying_fd);
-  } else
+  else
     return RKTIO_POLL_READY;
 }
 
 void rktio_poll_add_connect(rktio_t *rktio, rktio_connect_t *conn, rktio_poll_set_t *fds)
 {
-  rktio_poll_add(rktio, conn->trying_fd, fds, RKTIO_POLL_WRITE);
+  if (conn->inprogress)
+    rktio_poll_add(rktio, conn->trying_fd, fds, RKTIO_POLL_WRITE);
+  else
+    rktio_poll_set_add_nosleep(rktio, fds);
 }
 
 static void conn_free(rktio_connect_t *conn)
@@ -1709,24 +1710,7 @@ rktio_fd_t *rktio_udp_open(rktio_t *rktio, rktio_addrinfo_t *addr, int family)
     return NULL;
   }
 
-#ifdef RKTIO_SYSTEM_WINDOWS
-  {
-    unsigned long ioarg = 1;
-    BOOL bc = 1;
-    ioctlsocket(s, FIONBIO, &ioarg);
-    setsockopt(s, SOL_SOCKET, SO_BROADCAST, (char *)(&bc), sizeof(BOOL));
-  }
-#else
-  fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
-# ifdef SO_BROADCAST
-  {
-    int bc = 1;
-    setsockopt(s, SOL_SOCKET, SO_BROADCAST, &bc, sizeof(bc));
-  }
-# endif
-#endif
-
-  return rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_UDP);
+  return rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_UDP | RKTIO_OPEN_INIT);
 }
 
 #ifdef UDP_DISCONNECT_EADRNOTAVAIL_OK
@@ -1935,6 +1919,7 @@ char *rktio_udp_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd)
   int status;
   
   status = getsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, (void *)&intf, &intf_len);
+
   if (status) {
     get_socket_error();
     return NULL;
@@ -1960,6 +1945,7 @@ int rktio_udp_set_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd, rktio_add
   }
 
   status = setsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, (void *)&intf, intf_len);
+
   if (status) {
     get_socket_error();
     return 0;
@@ -1988,10 +1974,8 @@ int rktio_udp_change_multicast_group(rktio_t *rktio, rktio_fd_t *rfd,
 
   if (action == RKTIO_ADD_MEMBERSHIP)
     optname = IP_ADD_MEMBERSHIP;
-  else if (action == RKTIO_DROP_MEMBERSHIP)
-    optname = IP_DROP_MEMBERSHIP;
   else
-    optname = 0;
+    optname = IP_DROP_MEMBERSHIP;
 
   status = setsockopt(s, IPPROTO_IP, optname, (void *) &mreq, mreq_len);
   

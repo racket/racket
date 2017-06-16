@@ -73,6 +73,7 @@ rktio_ltps_handle_t *make_ltps_handle()
   rktio_ltps_handle_t *s;
   s = malloc(sizeof(rktio_ltps_handle_t));
   s->data = NULL;
+  s->next = NULL;
   return s;
 }
 

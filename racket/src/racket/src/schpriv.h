@@ -435,7 +435,6 @@ void scheme_register_network_evts();
 
 void scheme_free_dynamic_extensions(void);
 void scheme_free_all_code(void);
-void scheme_free_global_fdset(void);
 
 XFORM_NONGCING int scheme_is_multithreaded(int now);
 
@@ -4405,7 +4404,6 @@ int scheme_is_user_port(Scheme_Object *port);
 int scheme_byte_ready_or_user_port_ready(Scheme_Object *p, Scheme_Schedule_Info *sinfo);
 
 int scheme_pipe_char_count(Scheme_Object *p);
-void scheme_alloc_global_fdset();
 Scheme_Object *scheme_port_name(Scheme_Object *p);
 intptr_t scheme_port_closed_p (Scheme_Object *port);
 

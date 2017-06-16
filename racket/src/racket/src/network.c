@@ -188,6 +188,14 @@ static int check_fd_sema(rktio_fd_t *s, int mode, Scheme_Schedule_Info *sinfo, S
   sema = scheme_rktio_fd_to_semaphore(s, mode);
   
   if (sema) {
+    /* It would make sense to force a poll via
+       scheme_check_fd_semaphores() here, although we'd only want to
+       to that once per scheduler cycle. That would more reliably poll
+       at the OS level, since we otherwise wait on the scheduler to
+       check semaphores. It's not clear that the OS supports more
+       precise reasoning about readiness, though, and Racket has
+       traditonally not done that, so we're still skipping
+       it. */
     if (!scheme_wait_sema(sema, 1)) {
       if (sinfo && !sinfo->no_redirect)
         scheme_set_sync_target(sinfo, sema, orig, NULL, 0, 0, NULL);
@@ -392,7 +400,7 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
       rn = rktio_read(scheme_rktio, data->tcp, data->b.buffer, read_amt);
       data->b.bufmax = rn; /* could be count, error, or EOF */
     }
-    
+
     if (data->b.bufmax) {
       /* got data, error, or EOF */
       break;
@@ -424,7 +432,7 @@ static intptr_t tcp_get_string(Scheme_Input_Port *port,
 		     "tcp-read: error reading\n"
                      "  system error: %R");
     return 0;
-  } else if (data->b.bufmax == RKTIO_READ_ERROR) {
+  } else if (data->b.bufmax == RKTIO_READ_EOF) {
     data->b.bufmax = 0;
     data->b.hiteof = 1;
     return EOF;
@@ -809,7 +817,7 @@ static void wait_until_lookup(Connect_Progress_Data *pd)
   }
 }
 
-static rktio_addrinfo_t *do_resolve_address(const char *who, char *address, int id, int family, int show_id_on_error)
+static rktio_addrinfo_t *do_resolve_address(const char *who, char *address, int id, int family, int passive, int show_id_on_error)
 {
   Connect_Progress_Data *pd;
   rktio_addrinfo_lookup_t *lookup;
@@ -817,7 +825,7 @@ static rktio_addrinfo_t *do_resolve_address(const char *who, char *address, int 
     
   pd = make_connect_progress_data();    
     
-  lookup = rktio_start_addrinfo_lookup(scheme_rktio, address, id, family, 0, 0);
+  lookup = rktio_start_addrinfo_lookup(scheme_rktio, address, id, family, passive, 0);
   if (!lookup) {
     addr = NULL;
   } else {
@@ -1758,7 +1766,7 @@ static Scheme_Object *make_udp(int argc, Scheme_Object *argv[])
     if (!id)
       id = 1025;
 
-    addr = do_resolve_address("upd-open-socket", address, id, RKTIO_FAMILY_ANY, show_id_on_error);
+    addr = do_resolve_address("upd-open-socket", address, id, RKTIO_FAMILY_ANY, 0, show_id_on_error);
   } else
     addr = NULL;
 
@@ -1894,10 +1902,11 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
                          "  system error: %R",
                          name);
       }
+      udp->connected = 0;
       return scheme_void;
     }
 
-    addr = do_resolve_address(name, address, port, RKTIO_FAMILY_ANY, 1);
+    addr = do_resolve_address(name, address, port, RKTIO_FAMILY_ANY, do_bind, 1);
 
     if (!do_bind) {
       /* CONNECT CASE */
@@ -1918,6 +1927,8 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
 
         return NULL;
       }
+
+      udp->connected = 1;
     } else {
       /* BIND CASE */
       int ok;
@@ -1938,6 +1949,8 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
                          port);
         return NULL;
       }
+
+      udp->bound = 1;
     }
   }
 
@@ -2101,7 +2114,7 @@ static Scheme_Object *udp_send_it(const char *name, int argc, Scheme_Object *arg
 
     scheme_security_check_network(name, address, id, 1);
 
-    dest_addr = do_resolve_address(name, address, id, RKTIO_FAMILY_ANY, 1);
+    dest_addr = do_resolve_address(name, address, id, RKTIO_FAMILY_ANY, 0, 1);
   } else {
     dest_addr = NULL;
   }
@@ -2322,23 +2335,17 @@ static Scheme_Object *udp_receive_enable_break(int argc, Scheme_Object *argv[])
 
 static Scheme_Object *make_udp_evt(const char *name, int argc, Scheme_Object **argv, int for_read)
 {
-#ifdef UDP_IS_SUPPORTED
   Scheme_UDP_Evt *uw;
-#endif
 
   if (!SCHEME_UDPP(argv[0]))
     scheme_wrong_contract(name, "udp?", 0, argc, argv);
 
-#ifdef UDP_IS_SUPPORTED
   uw = MALLOC_ONE_TAGGED(Scheme_UDP_Evt);
   uw->so.type = scheme_udp_evt_type;
   uw->udp = (Scheme_UDP *)argv[0];
   uw->for_read = for_read;
 
   return (Scheme_Object *)uw;
-#else
-  return scheme_void;
-#endif
 }
 
 static Scheme_Object *udp_read_ready_evt(int argc, Scheme_Object *argv[])
@@ -2552,7 +2559,7 @@ udp_multicast_set_interface(int argc, Scheme_Object *argv[])
 
   if (SCHEME_CHAR_STRINGP(argv[1])) {
     bs = scheme_char_string_to_byte_string(argv[1]);
-    addr = do_resolve_address("udp-multicast-set-interface!", SCHEME_BYTE_STR_VAL(bs), -1, udp_default_family(), 0);
+    addr = do_resolve_address("udp-multicast-set-interface!", SCHEME_BYTE_STR_VAL(bs), -1, udp_default_family(), 0, 0);
   } else
     addr = NULL;
 
@@ -2581,7 +2588,6 @@ do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *
 
   pd = make_connect_progress_data();
 
-  
   bs = scheme_char_string_to_byte_string(multiaddrname);
   address = SCHEME_BYTE_STR_VAL(bs);
 
@@ -2639,7 +2645,6 @@ do_udp_multicast_join_or_leave_group(char const *name, int optname, Scheme_UDP *
 
   rktio_addrinfo_free(scheme_rktio, multi_addr);
   if (intf_addr) rktio_addrinfo_free(scheme_rktio, intf_addr);
-  
 
   if (!r) 
     scheme_raise_exn(MZEXN_FAIL_NETWORK,
@@ -2704,14 +2709,10 @@ START_XFORM_SKIP;
 
 static void register_traversers(void)
 {
-#ifdef USE_TCP
   GC_REG_TRAV(scheme_listener_type, mark_listener);
   GC_REG_TRAV(scheme_rt_tcp, mark_tcp);
-# ifdef UDP_IS_SUPPORTED
   GC_REG_TRAV(scheme_udp_type, mark_udp);
   GC_REG_TRAV(scheme_udp_evt_type, mark_udp_evt);
-# endif
-#endif
 }
 
 END_XFORM_SKIP;
