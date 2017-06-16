@@ -8,6 +8,7 @@
 #endif
 #if defined(HAVE_INOTIFY_SYSCALL)
 # include <poll.h>
+# include <unistd.h>
 # include <sys/inotify.h>
 #endif
 
@@ -24,7 +25,7 @@
 static void do_inotify_init(rktio_t *rktio);
 static int do_inotify_ready(rktio_t *rktio);
 static int do_inotify_errid(rktio_t *rktio);
-static int do_inotify_add(rktio_t *rktio, char *filename);
+static int do_inotify_add(rktio_t *rktio, const char *filename);
 static void do_inotify_remove(rktio_t *rktio, int p2);
 static int do_inotify_poll(rktio_t *rktio, int p2);
 static void do_inotify_stop(rktio_t *rktio);
@@ -421,7 +422,7 @@ static int do_inotify_errid(rktio_t *rktio)
 
 /* Other functions are called only if do_inotify_ready() returns 1. */
 
-static int do_inotify_add(rktio_t *rktio, char *filename)
+static int do_inotify_add(rktio_t *rktio, const char *filename)
 {
   rin_inotify_state_t *s = rktio->inotify_server;
   int wd;

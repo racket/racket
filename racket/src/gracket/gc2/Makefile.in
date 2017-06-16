@@ -92,10 +92,10 @@ GRACKETLINKER = @MZLINKER@
 
 GRACKETLIBS_a = $(LDLIBS)
 GRACKETLIBS_la =
-GRACKETMZOBJS_a = $(MZOBJS)
+GRACKETMZOBJS_a = $(MZOBJS) ../../rktio/librktio.@LTA@
 GRACKETMZOBJS_la =
 
-../gracket@MMM@@NOT_OSX@@NOT_MINGW@: grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@
+../gracket@MMM@@NOT_OSX@@NOT_MINGW@: grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@ @LIBRKTIO_FOR_LIB@
 	$(GRACKETLINKER) $(GRACKETLDFLAGS) -o ../gracket@MMM@ grmain.@LTO@ ../../racket/libracket3m.@LIBSFX@ $(GRACKETMZOBJS_@LIBSFX@) $(GRACKETLIBS_@LIBSFX@)
 
 ../gracket@MMM@@MINGW@: grmain.@LTO@ ../../racket/gc2/libracket3m.dll.a ../gres.o

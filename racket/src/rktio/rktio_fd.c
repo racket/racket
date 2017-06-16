@@ -1024,7 +1024,8 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
   if (len == -1) {
     errsaved = errno;
     get_posix_error();
-  }
+  } else
+    errsaved = 0;
   
   if (!(flags & RKTIO_NONBLOCKING))
     fcntl(rfd->fd, F_SETFL, flags);

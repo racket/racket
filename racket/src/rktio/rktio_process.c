@@ -666,7 +666,7 @@ void rktio_reap_processes(rktio_t *rktio)
 {
   if (rktio->need_to_check_children) {
     rktio->need_to_check_children = 0;
-    check_child_done(0);
+    check_child_done(rktio, 0);
   }
 }
 

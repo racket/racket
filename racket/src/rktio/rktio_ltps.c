@@ -13,6 +13,7 @@
 # include <sys/time.h>
 #endif
 #ifdef HAVE_POLL_SYSCALL
+# include <unistd.h>
 # include <poll.h>
 #endif
 #ifdef HAVE_EPOLL_SYSCALL

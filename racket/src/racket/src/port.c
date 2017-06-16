@@ -33,6 +33,9 @@
 #include "schmach.h"
 #include "schrktio.h"
 #include <errno.h>
+#ifndef DONT_IGNORE_PIPE_SIGNAL
+# include <signal.h>
+#endif
 
 #define mzAssert(x) /* if (!(x)) abort() */
 
@@ -3723,7 +3726,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
     } else {
 #if 0
       /* Add a way to get this information from rktio_open()? */
-      if (???)
+      if (....)
         scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
 			 "%s: error deleting file\n"
                          "  path: %q\n"
@@ -6036,6 +6039,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
                          flags);
 
   block_timer_signals(0);
+
+  if (need_forget_in) rktio_forget(scheme_rktio, stdin_fd);
+  if (need_forget_out) rktio_forget(scheme_rktio, stdout_fd);
+  if (need_forget_err) rktio_forget(scheme_rktio, stderr_fd);
 
   if (envvars)
     rktio_envvars_free(scheme_rktio, envvars);

@@ -503,7 +503,6 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
      can be flushed immediately, never ever blocking. */
 
   Scheme_Tcp *data;
-  int would_block = 0;
   intptr_t sent;
 
   data = (Scheme_Tcp *)port->port_data;
@@ -547,7 +546,6 @@ static intptr_t tcp_do_write_string(Scheme_Output_Port *port,
     }
 
     /* Ok - try again! */
-    would_block = 0;
     goto top;
   }
 

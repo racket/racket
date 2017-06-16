@@ -923,6 +923,7 @@
                __acrt_iob_func ; VC 14.0 (2015)
                |GetStdHandle| |__CFStringMakeConstantString|
                _vswprintf_c
+	       malloc strdup
                
                scheme_make_small_bignum scheme_make_small_rational scheme_make_small_complex))
         (define non-functions-table

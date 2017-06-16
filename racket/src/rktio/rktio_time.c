@@ -449,7 +449,7 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
         }
 # endif
 # ifdef USE_TIMEZONE_VAR_W_DLS
-        tzoffset = -(MSCBOR_IZE(timezone) - (dst ? 3600 : 0));
+        tzoffset = -(MSC_IZE(timezone) - (dst ? 3600 : 0));
 # endif
 # ifdef USE_TIMEZONE_AND_ALTZONE_VAR
         if (dst)
