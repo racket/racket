@@ -393,7 +393,8 @@ documentation for "config search paths" for more information.
 ========================================================================
 
 At a minimum, to port Racket to a new platform, edit "racket/sconfig.h"
-to provide a platform-specific compilation information.
+and "rktio/rktio_platform.h" to provide a platform-specific compilation
+information.
 
 ========================================================================
  Additional Compilation Notes

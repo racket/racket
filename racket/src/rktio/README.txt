@@ -9,7 +9,9 @@ The library is meant to be
  * always non-blocking;
 
  * independent of global state, so that it works with or without
-   threads; and
+   threads;
+
+ * require no C preprocessor conditionals in client code; and
 
  * easily callable though a FFI.
 

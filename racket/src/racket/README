@@ -16,7 +16,7 @@ Some general guidelines for modying this code:
 
  * If a globally visible function is meant for exporting to embedding
    applications, extensions, or through the FFI, put the prototype in
-   "src/schemef.h" (and re-generated files with `make exports`).
+   "src/schemef.h" (and re-generate files with `make exports`).
    Functions available only to embedding applications can go in
    "scheme.h". Otherwise, put global function prototypes in
    "schpriv.h".
