@@ -15,6 +15,8 @@
 #ifdef HAVE_POLL_SYSCALL
 # include <unistd.h>
 # include <poll.h>
+#elif defined(RKTIO_SYSTEM_UNIX)
+# include <sys/select.h>
 #endif
 #ifdef HAVE_EPOLL_SYSCALL
 # include <sys/epoll.h>

@@ -91,6 +91,7 @@ rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos)
 void rktio_fdzero(rktio_poll_set_t *fd)
 {
   fd->data->count = 0;
+  fd->data->skip_sleep = 0;
 }
 
 static int find_fd_pos(struct rktio_fd_set_data_t *data, int n)
@@ -191,6 +192,9 @@ void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
 
   rktio_clean_fd_set(fds);
   rktio_clean_fd_set(src_fds);
+
+  if (src_data->skip_sleep)
+    data->skip_sleep = 1;
 
   c = data->count;
   sc = src_data->count;
@@ -322,7 +326,7 @@ static rktio_poll_set_t *alloc_fdset_arrays()
   /* Allocate an array with 1 extra intptr_t in each set to hold a
      "max" fd counter, and 1 extra intger used to record "no
      sleeping" */
-  
+
   p = malloc(3 * (dynamic_fd_size + sizeof(intptr_t) + sizeof(int)));
   
   return p;
@@ -810,8 +814,9 @@ void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
       i = FDSET_LIMIT(sp);
       FDSET_LIMIT(p) = i;
     }
-# endif
-# if defined(USE_DYNAMIC_FDSET_SIZE)
+    /* `i` is max fd, so add 1 to get count, then convert to bytes (rounding up) */
+    i = (i + 1 + 7) >> 3;
+# elif defined(USE_DYNAMIC_FDSET_SIZE)
     i = dynamic_fd_size;
 # else
     i = sizeof(fd_set);

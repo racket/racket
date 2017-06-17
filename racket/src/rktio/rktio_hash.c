@@ -33,6 +33,8 @@ void rktio_hash_free(rktio_hash_t *ht, int free_values)
     
     free(ht->buckets);
   }
+
+  free(ht);
 }
 
 int rktio_hash_is_empty(rktio_hash_t *ht)
@@ -63,9 +65,9 @@ static void do_rehash(rktio_hash_t *ht, intptr_t new_size)
     ht->buckets = calloc(new_size, sizeof(bucket_t));
     ht->count = 0;
 
-    for (i = old_size; --i; ) {
-      if (ht->buckets[i].v)
-        rktio_hash_set(ht, ht->buckets[i].key, ht->buckets[i].v);
+    for (i = old_size; i--; ) {
+      if (old_buckets[i].v)
+        rktio_hash_set(ht, old_buckets[i].key, old_buckets[i].v);
     }
 
     free(old_buckets);
@@ -77,6 +79,7 @@ void *rktio_hash_get(rktio_hash_t *ht, intptr_t key)
   if (ht->buckets) {
     intptr_t mask = (ht->size - 1);
     intptr_t hc = key & mask;
+    intptr_t init_hc = hc;
     intptr_t d = ((key >> 3) & mask) | 0x1;
 
     while (1) {
@@ -86,6 +89,10 @@ void *rktio_hash_get(rktio_hash_t *ht, intptr_t key)
                || (ht->buckets[hc].key == -1)) {
         /* keep looking */
         hc = (hc + d) & mask;
+        if (hc == init_hc) {
+          /* didn't find in a table that has only full and vacated slots */
+          return NULL;
+        }
       } else
         return NULL;
     }
@@ -98,6 +105,7 @@ void rktio_hash_remove(rktio_hash_t *ht, intptr_t key, int dont_rehash)
   if (ht->buckets) {
     intptr_t mask = (ht->size - 1);
     intptr_t hc = key & mask;
+    intptr_t init_hc = hc;
     intptr_t d = ((key >> 3) & mask) | 0x1;
     
     while (1) {
@@ -109,10 +117,15 @@ void rktio_hash_remove(rktio_hash_t *ht, intptr_t key, int dont_rehash)
           if (4 * ht->count <= ht->size)
             do_rehash(ht, ht->size >> 1);
         }
+        return;
       } else if (ht->buckets[hc].v
                  || (ht->buckets[hc].key == -1)) {
         /* keep looking */
         hc = (hc + d) & mask;
+        if (hc == init_hc) {
+          /* didn't find in a table that has only full and vacated slots */
+          return;
+        }
       } else
         break;
     }
@@ -125,27 +138,39 @@ void rktio_hash_set(rktio_hash_t *ht, intptr_t key, void *v)
     ht->size = 16;
     ht->buckets = calloc(ht->size, sizeof(bucket_t));
   }
-  
+
   {
     intptr_t mask = (ht->size - 1);
     intptr_t hc = key & mask;
+    intptr_t init_hc = hc,use_hc = -1;
     intptr_t d = ((key >> 3) & mask) | 0x1;
     
     while (1) {
       if (ht->buckets[hc].v) {
-        if (ht->buckets[hc].key == -1) {
-          /* use bucket whose content ws previously removed */
-          break;
+        if (ht->buckets[hc].key == key) {
+          ht->buckets[hc].v = v;
+          return;
         } else {
+          if (ht->buckets[hc].key == -1) {
+            /* use bucket whose content was previously removed, but only
+               if we don't find it later */
+            if (use_hc < 0) use_hc = hc;
+          }
           /* keep looking for a spot */
           hc = (hc + d) & mask;
+          if (hc == init_hc) {
+            /* didn't find in a table that has only full and vacated slots */
+            break;
+          }
         }
-      } else
+      } else {
+        if (use_hc < 0) use_hc = hc;
         break;
+      }
     }
     
-    ht->buckets[hc].key = key;
-    ht->buckets[hc].v = v;
+    ht->buckets[use_hc].key = key;
+    ht->buckets[use_hc].v = v;
     ht->count++;
 
     if (2 * ht->count >= ht->size)

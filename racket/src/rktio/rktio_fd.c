@@ -378,10 +378,10 @@ void rktio_reliably_close(intptr_t s)
 static rktio_ok_t do_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
 {
   int ok;
-  
+
 #ifdef RKTIO_SYSTEM_UNIX
   int cr;
-  
+
 # ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
   if (!(rfd->modes & RKTIO_OPEN_SOCKET))
     rktio_release_lockf(rktio, rfd->fd);
