@@ -62,7 +62,9 @@ START_XFORM_SUSPEND;
 #endif
 
 #include <sys/types.h>
-#include <sys/time.h>
+#ifndef DOS_FILE_SYSTEM
+# include <sys/time.h>
+#endif
 #ifndef NO_USER_BREAK_HANDLER
 # include <signal.h>
 #endif

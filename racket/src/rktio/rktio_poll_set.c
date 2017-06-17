@@ -94,7 +94,7 @@ void rktio_fdzero(rktio_poll_set_t *fd)
   fd->data->skip_sleep = 0;
 }
 
-static int find_fd_pos(struct rktio_fd_set_data_t *data, int n)
+static int find_fd_pos(struct rktio_fd_set_data_t *data, intptr_t n)
 {
   intptr_t count = data->count;
   intptr_t i;
@@ -111,7 +111,7 @@ static int find_fd_pos(struct rktio_fd_set_data_t *data, int n)
   return -1;
 }
 
-void rktio_fdclr(rktio_poll_set_t *fd, int n)
+void rktio_fdclr(rktio_poll_set_t *fd, intptr_t n)
 {
   struct rktio_fd_set_data_t *data = fd->data;
   intptr_t flag = fd->flags;
@@ -125,7 +125,7 @@ void rktio_fdclr(rktio_poll_set_t *fd, int n)
   }
 }
 
-void rktio_fdset(rktio_poll_set_t *fd, int n)
+void rktio_fdset(rktio_poll_set_t *fd, intptr_t n)
 {
   struct rktio_fd_set_data_t *data = fd->data;
   intptr_t flag = fd->flags;
@@ -157,7 +157,7 @@ void rktio_fdset(rktio_poll_set_t *fd, int n)
   data->count = count;
 }
 
-int rktio_fdisset(rktio_poll_set_t *fd, int n)
+int rktio_fdisset(rktio_poll_set_t *fd, intptr_t n)
 {
   struct rktio_fd_set_data_t *data = fd->data;
   intptr_t flag = fd->flags;
@@ -469,27 +469,27 @@ void rktio_fdzero(rktio_poll_set_t *fd)
   init_fdset_array(fd, 1);
 }
 
-void rktio_fdclr(rktio_poll_set_t *fd, int n)
+void rktio_fdclr(rktio_poll_set_t *fd, intptr_t n)
 {
-  int i;
+  intptr_t i;
   for (i = fd->added; i--; ) {
     if (fd->sockets[i] == n)
       fd->sockets[i] = INVALID_SOCKET;
   }
 }
 
-static int next_size(int v) { return (v ? (2 * v) : 10); }
+static intptr_t next_size(intptr_t v) { return (v ? (2 * v) : 10); }
 
-void rktio_fdset(rktio_poll_set_t *fd, int n)
+void rktio_fdset(rktio_poll_set_t *fd, intptr_t n)
 {
   if (fd->added >= fd->last_alloc) {
-    int na;
+    intptr_t na;
     na = next_size(fd->last_alloc);
     fd->last_alloc = na;
   }
   if (fd->added >= fd->alloc) {
     SOCKET *naya;
-    int na;
+    intptr_t na;
     na = next_size(fd->alloc);
     naya = malloc(na * sizeof(SOCKET));
     memcpy(naya, fd->sockets, fd->alloc * sizeof(SOCKET));
@@ -498,14 +498,14 @@ void rktio_fdset(rktio_poll_set_t *fd, int n)
     fd->alloc = na;
     reset_wait_array(fd);
   }
-  fd->sockets[fd->added++] = n;
+  fd->sockets[fd->added++] = (SOCKET)n;
 }
 
-int rktio_fdisset(rktio_poll_set_t *fd, int n)
+int rktio_fdisset(rktio_poll_set_t *fd, intptr_t n)
 {
-  int i;
+  intptr_t i;
   for (i = fd->added; i--; ) {
-    if (fd->sockets[i] == n)
+    if (fd->sockets[i] == (SOCKET)n)
       return 1;
   }
   return 0;
@@ -513,10 +513,10 @@ int rktio_fdisset(rktio_poll_set_t *fd, int n)
 
 void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
 {
-  int i;
+  intptr_t i;
   for (i = src_fds->added; i--; ) {
     if (src_fds->sockets[i] != INVALID_SOCKET)
-      rktio_fdset(fds, src_fds->sockets[i]);
+      rktio_fdset(fds, (intptr_t)src_fds->sockets[i]);
   }
 }
 
@@ -534,7 +534,8 @@ void rktio_poll_set_add_handle(rktio_t *rktio, intptr_t _h, rktio_poll_set_t *fd
   HANDLE h = (HANDLE)_h;
   rktio_poll_set_t *efd = fds;
   HANDLE *hs;
-  int i, new_i, *rps;
+  intptr_t i, new_i;
+  int *rps;
 
   if (efd->num_handles == efd->last_alloc_handles) {
     i = next_size(efd->last_alloc_handles);
@@ -606,7 +607,7 @@ void rktio_collapse_win_fd(rktio_poll_set_t *fds)
 {
   rktio_poll_set_t *rfd, *wfd, *efd;
   HANDLE *wa, e;
-  int i, p = 0, mask, j;
+  intptr_t i, p = 0, mask, j;
   SOCKET s;
 
   rfd = fds;
@@ -781,12 +782,12 @@ static int fdset_has_nosleep(rktio_poll_set_t *fds)
 
 #ifdef USE_PLAIN_FDS_SET_OPS
 
-void rktio_fdclr(rktio_poll_set_t *fd, int n)
+void rktio_fdclr(rktio_poll_set_t *fd, intptr_t n)
 {
   FD_CLR(n, &(fd)->data);
 }
 
-void rktio_fdset(rktio_poll_set_t *fd, int n)
+void rktio_fdset(rktio_poll_set_t *fd, intptr_t n)
 {
 # ifdef STORED_ACTUAL_FDSET_LIMIT
   int mx;
@@ -797,7 +798,7 @@ void rktio_fdset(rktio_poll_set_t *fd, int n)
   FD_SET(n, &(fd)->data);
 }
 
-int rktio_fdisset(rktio_poll_set_t *fd, int n)
+int rktio_fdisset(rktio_poll_set_t *fd, intptr_t n)
 {
   return FD_ISSET(n, &(fd)->data);
 }
@@ -1207,7 +1208,8 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
     {
       intptr_t result;
       HANDLE *array, just_two_array[2];
-      int count, rcount, *rps;
+      intptr_t count, rcount;
+      int *rps;
 
       rktio_collapse_win_fd(fds); /* merges */
 

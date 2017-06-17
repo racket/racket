@@ -184,13 +184,23 @@ static void check_hello_content(rktio_t *rktio, char *fn)
 
 static void wait_read(rktio_t *rktio, rktio_fd_t *fd)
 {
-  rktio_poll_set_t *ps;
-  ps = rktio_make_poll_set(rktio);
-  check_valid(ps);
-  rktio_poll_add(rktio, fd, ps, RKTIO_POLL_READ);
-  rktio_sleep(rktio, 0, ps, NULL);
-  rktio_poll_set_forget(rktio, ps);
+  while (rktio_poll_read_ready(rktio, fd) == RKTIO_POLL_NOT_READY) {
+    rktio_poll_set_t *ps;
+    ps = rktio_make_poll_set(rktio);
+    check_valid(ps);
+    rktio_poll_add(rktio, fd, ps, RKTIO_POLL_READ);
+    rktio_sleep(rktio, 0, ps, NULL);
+    rktio_poll_set_forget(rktio, ps);
+  }
 }
+
+/* On Unix, we expect writing to a pipe to make the bytes
+   immediately available. On Windows, we expect a delay. */
+#ifdef RKTIO_SYSTEM_UNIX
+# define PIPE_IMMEDIATELY_READY 1
+#else
+# define PIPE_IMMEDIATELY_READY 0
+#endif
 
 static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd2, int immediate_available)
 {
@@ -217,16 +227,16 @@ static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd
 
   /* Round-trip data through pipe: */
   if (rktio_fd_is_udp(rktio, fd2)) {
-    amt = rktio_udp_sendto(rktio, fd2, NULL, "hello", 5);
+    amt = rktio_udp_sendto(rktio, fd2, NULL, "hola\n", 5);
   } else
-    amt = rktio_write(rktio, fd2, "hello", 5);
+    amt = rktio_write(rktio, fd2, "hola\n", 5);
   check_valid(amt == 5);
-
+  
   if (!immediate_available) {
     /* Wait for read to be ready; should not block for long */
     wait_read(rktio, fd);
   }
-  
+
   check_valid(rktio_poll_read_ready(rktio, fd) == RKTIO_POLL_READY);
   if (lt) {
     check_ltps_read_ready(rktio, lt, h1);
@@ -249,7 +259,7 @@ static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd
   } else
     amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
   check_valid(amt == 5);
-  check_valid(!strncmp(buffer, "hello", 5));
+  check_valid(!strncmp(buffer, "hola\n", 5));
   check_valid(!rktio_poll_read_ready(rktio, fd));
 
   /* Close pipe ends: */
@@ -271,10 +281,11 @@ static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd
 #define AMOUNT_TO_WRITE_AND_BLOCK 1000000
 #define AMOUNT_FOR_UDP 1000
 
-static void check_fill_write(rktio_t *rktio, rktio_fd_t *fd2, rktio_addrinfo_t *dest_addr, intptr_t limit)
+static void check_fill_write(rktio_t *rktio, rktio_fd_t *fd2, rktio_addrinfo_t *dest_addr, intptr_t limit, int verbose)
 {
   intptr_t i, amt;
-
+  int r;
+  
   if (!limit)
     limit = AMOUNT_TO_WRITE_AND_BLOCK;
   
@@ -287,13 +298,43 @@ static void check_fill_write(rktio_t *rktio, rktio_fd_t *fd2, rktio_addrinfo_t *
     check_valid(amt != RKTIO_WRITE_ERROR);
     if (!amt)
       break;
+    if (amt == RKTIO_WRITE_ERROR)
+      break;
   }
   check_valid(i > 0);
   if (!rktio_fd_is_udp(rktio, fd2))
     check_valid(i < limit);
+  if (verbose)
+    printf(" write full after %ld\n", (long)i);
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+  if (rktio_fd_is_socket(rktio, fd2)) {
+    check_valid(rktio_poll_write_flushed(rktio, fd2) == RKTIO_POLL_READY);
+  } else {
+    /* pipe needs reader to count as flushed */
+    check_valid(rktio_poll_write_flushed(rktio, fd2) == RKTIO_POLL_NOT_READY);
+    {
+      /* Make sure that flushing doesn't claim to finish even if
+	 we sleep for a while, because flushing on Windows means
+	 data is received by the other end. */
+      rktio_poll_set_t *ps;
+      double start;
+      ps = rktio_make_poll_set(rktio);
+      check_valid(ps);
+      rktio_poll_add(rktio, fd2, ps, RKTIO_POLL_FLUSH);
+      start = rktio_get_inexact_milliseconds();
+      rktio_sleep(rktio, 0.1, ps, NULL);
+      check_valid(rktio_get_inexact_milliseconds() - start > 0.1);
+      rktio_poll_set_forget(rktio, ps);
+      check_valid(rktio_poll_write_flushed(rktio, fd2) == RKTIO_POLL_NOT_READY);
+    }
+  }
+#else
+  check_valid(rktio_poll_write_flushed(rktio, fd2) == RKTIO_POLL_READY);
+#endif
 }
 
-static void check_drain_read(rktio_t *rktio, rktio_fd_t *fd2, intptr_t limit)
+static void check_drain_read(rktio_t *rktio, rktio_fd_t *fd2, intptr_t limit, int verbose)
 {
   intptr_t i, amt;
   char buffer[256];
@@ -311,6 +352,8 @@ static void check_drain_read(rktio_t *rktio, rktio_fd_t *fd2, intptr_t limit)
   }
   check_valid(i > 0);
   check_valid(i < limit);
+  if (verbose)
+    printf(" read empty after %ld\n", (long)i);
 }
 
 void check_many_lookup(rktio_t *rktio)
@@ -329,7 +372,7 @@ void check_many_lookup(rktio_t *rktio)
     check_valid(lookup[i]);
   }
 
-  for (j = 0; j < LOOKUPS_N; j++) {
+  for (j = 0; j < LOOKUPS_N; ) {
     ps = rktio_make_poll_set(rktio);
     check_valid(ps);
 
@@ -343,6 +386,7 @@ void check_many_lookup(rktio_t *rktio)
 
     for (i = 0; i < LOOKUPS_N; i++) {
       if (lookup[i] && (rktio_poll_addrinfo_lookup_ready(rktio, lookup[i]) == RKTIO_POLL_READY)) {
+	j++;
         if ((i % 3) == 2)
           rktio_addrinfo_lookup_stop(rktio, lookup[i]);
         else {
@@ -351,7 +395,6 @@ void check_many_lookup(rktio_t *rktio)
           rktio_addrinfo_free(rktio, addr);
         }
         lookup[i] = NULL;
-        break;
       }
     }
   }
@@ -363,17 +406,20 @@ rktio_addrinfo_t *lookup_loop(rktio_t *rktio,
 {
   rktio_addrinfo_lookup_t *lookup;
   rktio_addrinfo_t *addr;
-  rktio_poll_set_t *ps;
-  
-  ps = rktio_make_poll_set(rktio);
-  check_valid(ps);
 
   lookup = rktio_start_addrinfo_lookup(rktio, hostname, portno, family, passive, tcp);
   check_valid(lookup);
 
-  rktio_poll_add_addrinfo_lookup(rktio, lookup, ps);
-  rktio_sleep(rktio, 0, ps, NULL);
-  rktio_poll_set_forget(rktio, ps);
+  while (rktio_poll_addrinfo_lookup_ready(rktio, lookup) == RKTIO_POLL_NOT_READY) {
+    rktio_poll_set_t *ps;
+    ps = rktio_make_poll_set(rktio);
+    check_valid(ps);
+
+    rktio_poll_add_addrinfo_lookup(rktio, lookup, ps);
+    rktio_sleep(rktio, 0, ps, NULL);
+    rktio_poll_set_forget(rktio, ps);
+  }
+  
   check_valid(rktio_poll_addrinfo_lookup_ready(rktio, lookup) == RKTIO_POLL_READY);
 
   addr = rktio_addrinfo_lookup_get(rktio, lookup);
@@ -408,12 +454,12 @@ static rktio_fd_t *connect_loop(rktio_t *rktio, rktio_addrinfo_t *addr, rktio_ad
 {
   rktio_connect_t *conn;
   rktio_poll_set_t *ps;
-  rktio_fd_t *fd;
+  rktio_fd_t *fd = NULL;
 
   conn = rktio_start_connect(rktio, addr, local_addr);
   check_valid(conn);
 
-  while (1) {
+  while (!fd) {
     ps = rktio_make_poll_set(rktio);
     check_valid(ps);
     
@@ -428,10 +474,10 @@ static rktio_fd_t *connect_loop(rktio_t *rktio, rktio_addrinfo_t *addr, rktio_ad
           && (rktio_get_last_error(rktio) == RKTIO_ERROR_CONNECT_TRYING_NEXT)) {
         /* loop to try again */
       } else {
+	/* report other error: */
         check_valid(fd);
       }
-    } else
-      break;
+    }
   }
 
   return fd;
@@ -541,9 +587,17 @@ int main(int argc, char **argv)
   check_valid(perms != -1);
   check_valid(perms & (RKTIO_PERMISSION_READ << 6));
   check_valid(perms & (RKTIO_PERMISSION_WRITE << 6));
-  check_valid(rktio_set_file_or_directory_permissions(rktio, "test1", perms & (0x7 << 6)));
-  check_valid((perms & (0x7 << 6)) == rktio_get_file_or_directory_permissions(rktio, "test1", 1));
-  rktio_set_file_or_directory_permissions(rktio, "test1", perms);
+  {
+    int ok;
+    ok = rktio_set_file_or_directory_permissions(rktio, "test1", perms & (0x7 << 6));
+    if (ok
+	|| (RKTIO_ERROR_KIND_RACKET != rktio_get_last_error_kind(rktio))
+	|| (RKTIO_ERROR_BAD_PERMISSION != rktio_get_last_error(rktio))) {
+      check_valid(ok);
+      check_valid((perms & (0x7 << 6)) == rktio_get_file_or_directory_permissions(rktio, "test1", 1));
+      rktio_set_file_or_directory_permissions(rktio, "test1", perms);
+    }
+  }
 
   cp = rktio_copy_file_start(rktio, "test1a", "test1", 0);
   check_valid(cp);
@@ -638,7 +692,7 @@ int main(int argc, char **argv)
 
     free(pipe_fds);
   
-    check_read_write_pair(rktio, fd, fd2, 1);
+    check_read_write_pair(rktio, fd, fd2, PIPE_IMMEDIATELY_READY);
 
     /* Open pipe ends again: */
     pipe_fds = rktio_make_pipe(rktio, 0);
@@ -647,9 +701,12 @@ int main(int argc, char **argv)
     fd2 = pipe_fds[1];
     free(pipe_fds);
   
-    check_fill_write(rktio, fd2, NULL, 0);
-    check_drain_read(rktio, fd, 0);
-    
+    check_fill_write(rktio, fd2, NULL, 0, verbose);
+    if (!PIPE_IMMEDIATELY_READY)
+      wait_read(rktio, fd);
+    check_drain_read(rktio, fd, 0, verbose);
+    check_valid(rktio_poll_write_flushed(rktio, fd2) == RKTIO_POLL_READY);
+
     check_valid(rktio_close(rktio, fd));
     check_valid(rktio_close(rktio, fd2));
   }
@@ -664,7 +721,7 @@ int main(int argc, char **argv)
     rktio_listener_t *lnr;
 
     check_many_lookup(rktio);
-    
+
     addr = lookup_loop(rktio, NULL, 4536, -1, 1, 1);
 
     lnr = rktio_listen(rktio, addr, 5, 1);
@@ -722,8 +779,10 @@ int main(int argc, char **argv)
     
     fd2 = rktio_accept(rktio, lnr);
 
-    check_fill_write(rktio, fd2, NULL, 0);
-    check_drain_read(rktio, fd, 0);
+    printf(" fill\n");
+    check_fill_write(rktio, fd2, NULL, 0, verbose);
+    printf(" drain\n");
+    check_drain_read(rktio, fd, 0, verbose);
 
     check_valid(rktio_close(rktio, fd));
     check_valid(rktio_close(rktio, fd2));
@@ -774,8 +833,8 @@ int main(int argc, char **argv)
     addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 0);
     check_valid(addr);
 
-    check_fill_write(rktio, fd2, addr, AMOUNT_FOR_UDP);
-    check_drain_read(rktio, fd, AMOUNT_FOR_UDP+1);
+    check_fill_write(rktio, fd2, addr, AMOUNT_FOR_UDP, verbose);
+    check_drain_read(rktio, fd, AMOUNT_FOR_UDP+1, verbose);
 
     rktio_addrinfo_free(rktio, addr);
     rktio_addrinfo_free(rktio, intf_addr);
@@ -792,12 +851,18 @@ int main(int argc, char **argv)
   {
     rktio_status_t *status;
     rktio_process_result_t *result;
+#ifdef RKTIO_SYSTEM_UNIX
     char *argv[1] = { "/bin/cat" };
+    int argc = 1;
+#else
+    char *argv[3] = { "c:\\windows\\system32\\bash.exe", "-c", "cat" };
+    int argc = 3;
+#endif
     rktio_envvars_t *envvars = rktio_envvars(rktio);
-    rktio_fd_t *err_fd = rktio_system_fd(rktio, 2, RKTIO_OPEN_WRITE);
+    rktio_fd_t *err_fd = rktio_std_fd(rktio, RKTIO_STDERR);
     int i;
-    
-    result = rktio_process(rktio, argv[0], 1, argv,
+
+    result = rktio_process(rktio, argv[0], argc, argv,
                            NULL, NULL, err_fd,
                            pwd, envvars,
                            0);
@@ -826,8 +891,14 @@ int main(int argc, char **argv)
     rktio_process_forget(rktio, result->process);
     free(result);
 
+#ifdef RKTIO_SYSTEM_UNIX
+# define CAN_INTERRUPT_NON_GROUP 1
+#else
+# define CAN_INTERRUPT_NON_GROUP 0
+#endif
+
     /* Run and then break or kill `cat` */
-    for (i = 0; i < 2; i++) {
+    for (i = (CAN_INTERRUPT_NON_GROUP ? 0 : 1); i < 2; i++) {
       result = rktio_process(rktio, argv[0], 1, argv,
                              NULL, NULL, err_fd,
                              pwd, envvars,
@@ -852,7 +923,7 @@ int main(int argc, char **argv)
       }
 
       pause_for_process(rktio, result->process, dont_rely_on_sigchild);
-
+      
       status = rktio_process_status(rktio, result->process);
       check_valid(status);
       check_valid(!status->running);
@@ -862,8 +933,9 @@ int main(int argc, char **argv)
       {
         char buffer[1];
         intptr_t amt;
+	wait_read(rktio, result->stdout_fd);
         amt = rktio_read(rktio, result->stdout_fd, buffer, sizeof(buffer));
-        check_valid(amt == RKTIO_READ_EOF);
+	check_valid(amt == RKTIO_READ_EOF);
       }
   
       check_valid(rktio_close(rktio, result->stdin_fd));
@@ -874,8 +946,18 @@ int main(int argc, char **argv)
     }
 
     {
+#ifdef RKTIO_SYSTEM_UNIX
       char *argv[2] = { "/usr/bin/printenv", "RKTIO_EXAMPLE" };
-
+      int argc = 2;
+      int flags = 0;
+      int expect_crlf = 0;
+#else
+      char *argv[2] = { "c:\\windows\\system32\\cmd.exe", "/c echo %RKTIO_EXAMPLE%" };
+      int argc = 2;
+      int flags = RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE;
+      int expect_crlf = 1;
+#endif
+      
       if (verbose)
         printf(" envvars\n");
 
@@ -886,10 +968,10 @@ int main(int argc, char **argv)
       check_valid(!strcmp(s, "howdy"));
       free(s);
       
-      result = rktio_process(rktio, argv[0], 2, argv,
+      result = rktio_process(rktio, argv[0], argc, argv,
                              NULL, NULL, err_fd,
                              pwd, envvars,
-                             0);
+                             flags);
       check_valid(result);
 
       /* Assume that a pipe can buffer the minimal output from `printenv`: */
@@ -900,8 +982,13 @@ int main(int argc, char **argv)
         char buffer[32];
         intptr_t amt;
         amt = rktio_read(rktio, result->stdout_fd, buffer, sizeof(buffer));
-        check_valid(amt == 6);
-        check_valid(!strncmp(buffer, "howdy\n", 6));
+	if (expect_crlf) {
+	  check_valid(amt == 7);
+	  check_valid(!strncmp(buffer, "howdy\r\n", 7));
+	} else {
+	  check_valid(amt == 6);
+	  check_valid(!strncmp(buffer, "howdy\n", 6));
+	}
       }      
 
       check_valid(rktio_close(rktio, result->stdin_fd));
@@ -919,7 +1006,11 @@ int main(int argc, char **argv)
   /* Filesystem-change events */
 
   if (rktio_fs_change_properties(rktio) & RKTIO_FS_CHANGE_SUPPORTED) {
-    char *path = "test1";
+#ifdef RKTIO_SYSTEM_UNIX
+    char *path = strdup("test1");
+#else
+    char *path = rktio_get_current_directory(rktio);
+#endif
     rktio_fs_change_t *fc;
     rktio_poll_set_t *ps;
     rktio_ltps_t *lt;
@@ -956,7 +1047,19 @@ int main(int argc, char **argv)
     amt = rktio_write(rktio, fd2, "hola", 4);
     check_valid(amt == 4);
 
+    printf("wait...\n");
     rktio_sleep(rktio, 0, ps, NULL);
+    printf("done\n");
+    
+    while (rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_NOT_READY) {
+      /* sleep woke up early - not what we want, but allowed by the spec */
+      rktio_poll_set_forget(rktio, ps);
+      ps = rktio_make_poll_set(rktio);
+      check_valid(ps);
+      rktio_poll_add_fs_change(rktio, fc, ps);
+      rktio_sleep(rktio, 0, ps, NULL);
+    }
+    
     check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);
     check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);
 
@@ -967,6 +1070,8 @@ int main(int argc, char **argv)
 
     if (lt)
       rktio_ltps_close(rktio, lt);
+
+    free(path);
   }
 
   if (verbose)
@@ -1061,7 +1166,7 @@ int main(int argc, char **argv)
              today->zone_offset, today->zone_offset / (60 * 60),
              (today->is_dst ? ";DST" : ""),
              week_day_name(rktio, today->day_of_week),
-             today->day, month_name(rktio, today->month), today->year,
+             today->day, month_name(rktio, today->month), (long)today->year,
              today->day_of_year);
       
       if (today->zone_name)

@@ -1028,12 +1028,13 @@ static char *cmdline_protect(char *s)
 }
 
 static intptr_t do_spawnv(rktio_t *rktio,
-                          const char *command, const char * const *argv,
+                          const char *command, int argc, const char * const *argv,
 			  int exact_cmdline, intptr_t sin, intptr_t sout, intptr_t serr, int *pid,
 			  int new_process_group, int chain_termination_here_to_child,
                           void *env, const char *wd)
 {
-  int i, l, len = 0, use_jo;
+  intptr_t i, l, len = 0;
+  int use_jo;
   intptr_t cr_flag;
   char *cmdline;
   wchar_t *cmdline_w, *wd_w;
@@ -1043,14 +1044,14 @@ static intptr_t do_spawnv(rktio_t *rktio,
   if (exact_cmdline) {
     cmdline = (char *)argv[1];
   } else {
-    for (i = 0; argv[i]; i++) {
+    for (i = 0; i < argc; i++) {
       len += strlen(argv[i]) + 1;
     }
 
     cmdline = malloc(len);
 
     len = 0;
-    for (i = 0; argv[i]; i++) {
+    for (i = 0; i < argc; i++) {
       l = strlen(argv[i]);
       memcpy(cmdline + len, argv[i], l);
       cmdline[len + l] = ' ';
@@ -1205,7 +1206,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   int windows_chain_termination_to_child = (flags & RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION);
   int i;
 #endif
-  
+
   /* avoid compiler warnings: */
   to_subprocess[0] = -1;
   to_subprocess[1] = -1;
@@ -1228,8 +1229,8 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
   if (stdin_fd) {
     to_subprocess[0] = rktio_fd_system_fd(rktio, stdin_fd);
     RKTIO_COPY_FOR_SUBPROCESS(to_subprocess, 0);
-  } else if (rktio_make_os_pipe(rktio, to_subprocess, 1)) {
-    if (stdout_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, RKTIO_NO_INHERIT_OUTPUT); }
+  } else if (rktio_make_os_pipe(rktio, to_subprocess, RKTIO_NO_INHERIT_OUTPUT)) {
+    if (stdout_fd) { RKTIO_CLOSE_SUBPROCESS_COPY(from_subprocess, 1); }
     return NULL;
   }
 
@@ -1276,7 +1277,7 @@ rktio_process_result_t *rktio_process(rktio_t *rktio,
     pid = 0;
 
     spawn_status = do_spawnv(rktio,
-                             command, (const char * const *)argv,
+                             command, argc, (const char * const *)argv,
 			     windows_exact_cmdline,
 			     to_subprocess[0],
 			     from_subprocess[1],

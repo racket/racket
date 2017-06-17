@@ -200,8 +200,6 @@ static int do_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, vo
 #endif
 
   scheme_set_stack_base(PROMPT_STACK(stack_start), no_auto_statics);
-  
-  scheme_rktio = rktio_init();
 
   return_code = _main(data);
 
@@ -320,6 +318,7 @@ int scheme_main_stack_setup(int no_auto_statics, Scheme_Nested_Main _main, void 
 {
   scheme_setup_thread_local_key_if_needed();
   scheme_init_os_thread();
+  scheme_rktio = rktio_init();
 #ifdef MZ_USE_MZRT
   scheme_init_glib_log_queue();
 #endif

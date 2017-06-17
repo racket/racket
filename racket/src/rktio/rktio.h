@@ -158,7 +158,7 @@ RKTIO_EXTERN rktio_fd_t *rktio_open(rktio_t *rktio, const char *src, int modes);
 RKTIO_EXTERN rktio_ok_t rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 /* Can report `RKTIO_ERROR_EXISTS` in place of system error,
    and can report `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE` on Windows.
-   See also `rktio_write` and `rktio_poll_write_flushed. */
+   See also `rktio_write` and `rktio_poll_write_flushed`. */
 
 RKTIO_EXTERN void rktio_close_noerr(rktio_t *rktio, rktio_fd_t *fd);
 /* The same as `rktio_close`, but without reporting errors. There's
@@ -197,9 +197,9 @@ RKTIO_EXTERN intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, const char *bu
    mode. Alternatively, the result can be `RKTIO_WRITE_ERROR` for an
    error. Although rktio_write() is intended to write only bytes that
    can be fully delivered to the OS, there may be OS limitations that
-   require buffering (e.g., on Windows). Use
-   rktio_poll_write_flushed() to make sure it's completely flushed
-   before closing. */
+   require buffering (e.g., on Windows). Use `rktio_poll_write_flushed`
+   to make sure the data is received by the destination before closing
+   `fd`. */
 
 #define RKTIO_WRITE_ERROR (-2)
 
@@ -222,7 +222,10 @@ RKTIO_EXTERN rktio_tri_t rktio_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #define RKTIO_POLL_ERROR (-2)
 
 RKTIO_EXTERN rktio_tri_t rktio_poll_write_flushed(rktio_t *rktio, rktio_fd_t *rfd);
-/* See `rktio_write` above. */
+/* See `rktio_write` above. Currently, the result is `RKTIO_POLL_NO_READY`
+   only on Windows, and only for a pipe or similar non-regular file.
+   A pipe counts as "flushed" when the other end has received the data
+   (because the sent data doesn't persist beyond closing the pipe). */
 
 RKTIO_EXTERN rktio_tri_t rktio_file_lock_try(rktio_t *rktio, rktio_fd_t *rfd, int excl);
 RKTIO_EXTERN rktio_ok_t rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd);
@@ -634,8 +637,9 @@ enum {
 };
 
 RKTIO_EXTERN void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt);
-/* Waits up to `nsecs` seconds (or forever if `nsecs` is 0) or until
-   something registered with `fds` or `lt` is ready. */
+/* Waits up to `nsecs` seconds (or forever if `nsecs` is 0), until
+   something registered with `fds` or `lt` is ready, or until there's
+   some other activity that sometimes causes an early wakeup. */
 
 /*************************************************/
 /* Files, directories, and links                 */

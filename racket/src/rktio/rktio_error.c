@@ -115,7 +115,7 @@ const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
 #ifdef RKTIO_SYSTEM_WINDOWS
   else if (kind == RKTIO_ERROR_KIND_WINDOWS) {
     wchar_t mbuf[256];
-    int len, i;
+    intptr_t len, i;
     if ((len = FormatMessageW((FORMAT_MESSAGE_FROM_SYSTEM
                                | FORMAT_MESSAGE_IGNORE_INSERTS), 
                               NULL,
@@ -128,7 +128,7 @@ const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid)
         mbuf[len] = 0;
       es = NARROW_PATH_copy(mbuf);
       /* Remove newlines: */
-      for (i = strlen(s) - 1; i > 0; i--) {
+      for (i = strlen(es) - 1; i > 0; i--) {
         if (isspace(es[i]))
           es[i] = 0;
         else

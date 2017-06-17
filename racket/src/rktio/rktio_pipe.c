@@ -26,7 +26,7 @@ static int MyPipe(intptr_t *ph, int flags, rktio_t *rktio)
     a[1] = w;
 
     for (near_index = 0; near_index < 2; near_index++) {
-      if (flags & (near_index ? RKTIO_NO_INHERIT_INPUT : RKTIO_NO_INHERIT_OUTPUT)) {
+      if (flags & (!near_index ? RKTIO_NO_INHERIT_INPUT : RKTIO_NO_INHERIT_OUTPUT)) {
         /* Change the near end to make it non-inheritable, then
            close the inheritable one: */
         if (!DuplicateHandle(GetCurrentProcess(), a[near_index],

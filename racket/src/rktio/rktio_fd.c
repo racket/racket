@@ -34,7 +34,7 @@ struct rktio_fd_t {
 #ifdef RKTIO_SYSTEM_WINDOWS
   union {
     HANDLE fd;
-    int sock; /* when `modes & RKTIO_OPEN_SOCKET` */
+    SOCKET sock; /* when `modes & RKTIO_OPEN_SOCKET` */
   };
   struct Win_FD_Input_Thread *th; /* input mode */
   struct Win_FD_Output_Thread *oth; /* output mode */
@@ -53,11 +53,11 @@ struct rktio_fd_t {
 typedef struct Win_FD_Input_Thread {
   /* This is malloced for use in a Win32 thread */
   HANDLE fd;
-  volatile int avail, err, checking;
+  int avail, offset, err, checking, you_clean_up;
   int *refcount;
   HANDLE eof;
   unsigned char *buffer;
-  HANDLE checking_sema, ready_sema, you_clean_up_sema;
+  HANDLE lock_sema, checking_sema, ready_sema;
   HANDLE thread;
 } Win_FD_Input_Thread;
 
@@ -68,32 +68,38 @@ typedef struct Win_FD_Output_Thread {
 		       works. We still use a thread to detect when the
 		       write has ben flushed, which in turn is needed to
 		       know whether future writes will immediately succeed. */
-  volatile int flushed, needflush; /* Used for non-blocking, only. The flushed
+  int flushed, needflush; /* Used for non-blocking, only. The flushed
                                       flag communicates from the flush-testing thread
                                       to the main thread. For efficiency, we request
                                       flush checking only when needed (instead of
                                       after every write); needflush indicates that
                                       a flush check is currently needed, but hasn't
                                       been started. */
-  volatile int done, err_no;
-  volatile unsigned int buflen, bufstart, bufend; /* used for blocking, only */
+  int done, err_no, you_clean_up;
+  unsigned int buflen, bufstart, bufend; /* used for blocking, only */
   unsigned char *buffer; /* used for blocking, only */
   int *refcount;
-  HANDLE lock_sema, work_sema, ready_sema, you_clean_up_sema;
-  /* lock_sema protects the fields, work_sema starts the flush or
-     flush-checking thread to work, ready_sema indicates that a flush
-     finished, and you_clean_up_sema is essentially a reference
-     count */
+  HANDLE lock_sema, work_sema, ready_sema;
   HANDLE thread;
 } Win_FD_Output_Thread;
 
 # define RKTIO_FD_BUFFSIZE 4096
 
+static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd);
+static void deinit_read_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close);
+static void deinit_write_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close);
+
+static void deinit_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
+{
+  deinit_read_fd(rktio, rfd, full_close);
+  deinit_write_fd(rktio, rfd, full_close);
+}
+
 static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th);
-static void WindowsFDICleanup(Win_FD_Input_Thread *th);
+static void WindowsFDICleanup(Win_FD_Input_Thread *th, int close_mode);
 
 static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth);
-static void WindowsFDOCleanup(Win_FD_Output_Thread *oth);
+static void WindowsFDOCleanup(Win_FD_Output_Thread *oth, int close_mode);
 
 typedef BOOL (WINAPI* CSI_proc)(HANDLE);
 
@@ -124,57 +130,6 @@ static intptr_t rktio_recount_output_text(const char *orig_buffer, const char *b
 /* creating an fd                                                         */
 /*========================================================================*/
 
-static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
-{
-#ifdef RKTIO_SYSTEM_UNIX
-# ifdef SOME_FDS_ARE_NOT_SELECTABLE
-  rfd->bufcount = 0;
-# endif
-#endif
-#ifdef RKTIO_SYSTEM_WINDOWS
-  if (!rktio_fd_is_regular_file(rktio, rfd)) {
-    /* To get non-blocking I/O for anything that can block, we create
-       a separate reader thread.
-
-       Yes, Windows NT pipes support non-blocking reads, but there
-       doesn't seem to be any way to use WaitForSingleObject to sleep
-       until characters are ready. PeekNamedPipe can be used for
-       polling, but not sleeping. */
-
-    Win_FD_Input_Thread *th;
-    DWORD id;
-    HANDLE h;
-    HANDLE sm;
-    char *bfr;
-
-    th = malloc(sizeof(Win_FD_Input_Thread));
-    rfd->th = th;
-
-    /* Replace buffer with a malloced one: */
-    bfr = malloc(RKTIO_FD_BUFFSIZE);
-    rfd->buffer = bfr;
-    th->buffer = (unsigned char *)bfr;
-
-    th->fd = rfd->fd;
-    th->avail = 0;
-    th->err = 0;
-    th->eof = NULL;
-    th->checking = 0;
-    
-    sm = CreateSemaphore(NULL, 0, 1, NULL);
-    th->checking_sema = sm;
-    sm = CreateSemaphore(NULL, 0, 1, NULL);
-    th->ready_sema = sm;
-    sm = CreateSemaphore(NULL, 1, 1, NULL);
-    th->you_clean_up_sema = sm;
-
-    h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDReader, th, 0, &id);
-
-    th->thread = h;
-  }
-#endif
-}
-
 rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 {
   rktio_fd_t *rfd;
@@ -200,7 +155,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
 
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (modes & RKTIO_OPEN_SOCKET)
-    rfd->sock = system_fd;
+    rfd->sock = (SOCKET)system_fd;
   else
     rfd->fd = (HANDLE)system_fd;
   if (!(modes & (RKTIO_OPEN_REGFILE | RKTIO_OPEN_NOT_REGFILE | RKTIO_OPEN_SOCKET))) {
@@ -217,9 +172,6 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   }
 #endif
   
-  if (modes & RKTIO_OPEN_READ)
-    init_read_fd(rktio, rfd);
-
   if ((modes & RKTIO_OPEN_SOCKET) && (modes & RKTIO_OPEN_INIT))
     rktio_socket_init(rktio, rfd);
   
@@ -236,7 +188,7 @@ intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rfd->sock;
+    return (intptr_t)rfd->sock;
   else
     return (intptr_t)rfd->fd;
 #endif
@@ -262,7 +214,9 @@ rktio_fd_t *rktio_std_fd(rktio_t *rktio, int which)
     which = STD_ERROR_HANDLE;
     break;
   }
-  return rktio_system_fd(rktio, (intptr_t)GetStdHandle(which), mode | RKTIO_OPEN_NOT_DIR);
+  return rktio_system_fd(rktio,
+			 (intptr_t)GetStdHandle(which),
+			 mode | RKTIO_OPEN_NOT_DIR);
 #endif
 }
 
@@ -400,53 +354,8 @@ static rktio_ok_t do_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_close(rktio, rfd, set_error);
-  
-  if (rfd->th) {
-    CSI_proc csi;
 
-    /* -1 for checking means "shut down" */
-    rfd->th->checking = -1;
-    ReleaseSemaphore(rfd->th->checking_sema, 1, NULL);
-
-    if (rfd->th->eof && (rfd->th->eof != INVALID_HANDLE_VALUE)) {
-      ReleaseSemaphore(rfd->th->eof, 1, NULL);
-      rfd->th->eof = NULL;
-    }
-
-    csi = get_csi();
-    if (csi) {
-      /* Helps thread wake up. Otherwise, it's possible for the
-         thread to stay stuck trying to read, in which case the
-         file handle (probably a pipe) doesn't get closed. */
-      csi(rfd->th->thread);
-    }
-
-    /* Try to get out of cleaning up the records (since they can't be
-       cleaned until the thread is also done: */
-    if (WaitForSingleObject(rfd->th->you_clean_up_sema, 0) != WAIT_OBJECT_0) {
-      /* The other thread exited and left us with clean-up: */
-      WindowsFDICleanup(rfd->th);
-    } /* otherwise, thread is responsible for clean-up */
-  }
-  if (rfd->oth) {
-    CSI_proc csi;
-
-    csi = get_csi();
-
-    if (csi) {
-      /* See also call to csi in fd_close_input */
-      csi(rfd->oth->thread);
-    }
-    CloseHandle(rfd->oth->thread);
-    rfd->oth->done = 1;
-    ReleaseSemaphore(rfd->oth->work_sema, 1, NULL);
-
-    /* Try to leave clean-up to the other thread: */
-    if (WaitForSingleObject(rfd->oth->you_clean_up_sema, 0) != WAIT_OBJECT_0) {
-      /* Other thread is already done, so we're stuck with clean-up: */
-      WindowsFDOCleanup(rfd->oth);
-    } /* otherwise, thread is responsible for clean-up */
-  }
+  deinit_fd(rktio, rfd, 1);
 
   ok = 1;
   if (!rfd->th && !rfd->oth) {
@@ -476,6 +385,9 @@ void rktio_close_noerr(rktio_t *rktio, rktio_fd_t *rfd)
 
 void rktio_forget(rktio_t *rktio, rktio_fd_t *rfd)
 {
+#ifdef RKTIO_WINDOWS_SYSTEM
+  deinit_fd(rktio, rfd, 1);
+#endif
   free(rfd);
 }
 
@@ -572,7 +484,9 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_poll_read_ready(rktio, rfd);
-  
+
+  init_read_fd(rktio, rfd);
+
   if (!rfd->th) {
     /* No thread -- so wait works. This case isn't actually used
        right now, because wait doesn't seem to work reliably for
@@ -582,21 +496,21 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
       return RKTIO_POLL_READY;
   } else {
     /* Has the reader thread pulled in data? */
+    WaitForSingleObject(rfd->th->lock_sema, INFINITE);
     if (rfd->th->checking) {
-      /* The thread is still trying, last we knew. Check the
-         data-is-ready sema: */
-      if (WaitForSingleObject(rfd->th->ready_sema, 0) == WAIT_OBJECT_0) {
-        rfd->th->checking = 0;
-        return RKTIO_POLL_READY;
-      }
-    } else if (rfd->th->avail || rfd->th->err || rfd->th->eof)
+      /* The thread is still trying.
+	 Clean up any signals that we may have ignored before. */
+      WaitForSingleObject(rfd->th->ready_sema, 0);
+    } else if (rfd->th->avail || rfd->th->err || rfd->th->eof) {
+      ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
       return RKTIO_POLL_READY; /* other thread found data */
-    else {
+    } else {
       /* Doesn't have anything, and it's not even looking. Tell it
          to look: */
       rfd->th->checking = 1;
       ReleaseSemaphore(rfd->th->checking_sema, 1, NULL);
     }
+    ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
   }
 
   return 0;
@@ -647,11 +561,14 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
   }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  if (rfd->modes & RKTIO_OPEN_SOCKET)
+  if (rfd->modes & RKTIO_OPEN_SOCKET) {
+    if (check_flushed)
+      return RKTIO_POLL_READY;
     return rktio_socket_poll_write_ready(rktio, rfd);
+  }
   
   if (rfd->oth) {
-    /* Pipe output that can block... */
+    /* Pipe output that can block or needs a background flush */
     int retval;
     Win_FD_Output_Thread *oth = rfd->oth;
 
@@ -664,15 +581,27 @@ int poll_write_ready_or_flushed(rktio_t *rktio, rktio_fd_t *rfd, int check_flush
 	retval = 0;
       } else
 	retval = oth->flushed;
-    } else
-      retval = (oth->err_no || (check_flushed
-                                ? !oth->buflen
-                                : (oth->buflen < RKTIO_FD_BUFFSIZE)));
-    if (!retval && !check_flushed)
-      WaitForSingleObject(oth->ready_sema, 0); /* clear any leftover state */
+      if (!retval) {
+	/* While we hold the lock, clear any leftover notifications */
+	WaitForSingleObject(oth->ready_sema, 0);
+      }
+    } else {
+      /* Using separate writing thread for Windows 95 */
+      if (oth->err_no) {
+	/* Delay error report until next write */
+	retval = 1;
+      } else
+	retval = (check_flushed
+		  ? !oth->buflen
+		  : (oth->buflen < RKTIO_FD_BUFFSIZE));
+      if (!retval && !check_flushed) {
+	/* clear any leftover notifications */
+	WaitForSingleObject(oth->ready_sema, 0);
+      }
+    }
     ReleaseSemaphore(oth->lock_sema, 1, NULL);
 
-    return retval;
+    return (retval ? RKTIO_POLL_READY : 0);
   } else
     return RKTIO_POLL_READY; /* non-blocking output, such as a console, or haven't written yet */
 #endif
@@ -709,30 +638,38 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
     rktio_poll_set_t *fds2;
 
     if (modes & RKTIO_POLL_READ) {
-      RKTIO_FD_SET(rfd->sock, fds);
+      RKTIO_FD_SET((intptr_t)rfd->sock, fds);
     }
     if (modes & RKTIO_POLL_WRITE) {
       fds2 = RKTIO_GET_FDSET(fds, 1);
-      RKTIO_FD_SET(rfd->sock, fds2);
+      RKTIO_FD_SET((intptr_t)rfd->sock, fds2);
     }
     fds2 = RKTIO_GET_FDSET(fds, 2);
-    RKTIO_FD_SET(rfd->sock, fds2);
+    RKTIO_FD_SET((intptr_t)rfd->sock, fds2);
   } else {
     if (modes & RKTIO_POLL_READ) {
+      init_read_fd(rktio, rfd);
       if (rfd->th) {
-        /* See fd_byte_ready */
+	WaitForSingleObject(rfd->th->lock_sema, INFINITE);
         if (!rfd->th->checking) {
           if (rfd->th->avail || rfd->th->err || rfd->th->eof) {
             /* Data is ready. We shouldn't be trying to sleep, so force an
                immediate wake-up: */
+	    ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
             rktio_poll_set_add_nosleep(rktio, fds);
           } else {
+	    /* Ask the reader thread to start checking for data */
             rfd->th->checking = 1;
             ReleaseSemaphore(rfd->th->checking_sema, 1, NULL);
+	    /* clear any notifications that we may have ignored before */
+	    WaitForSingleObject(rfd->th->ready_sema, 0);
+	    ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
             rktio_poll_set_add_handle(rktio, (intptr_t)rfd->th->ready_sema, fds, 1);
           }
-        } else
+        } else {
+	  ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
           rktio_poll_set_add_handle(rktio, (intptr_t)rfd->th->ready_sema, fds, 1);
+	}
       } else if (rktio_fd_is_regular_file(rktio, rfd)) {
         /* regular files never block */
         rktio_poll_set_add_nosleep(rktio, fds);
@@ -827,7 +764,9 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
     return rktio_socket_read(rktio, rfd, buffer, len);
-  
+
+  init_read_fd(rktio, rfd);
+
   if (!rfd->th) {
     /* We can read directly. This must be a regular file, where
        reading never blocks. */
@@ -853,21 +792,28 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
     if (!rktio_poll_read_ready(rktio, rfd))
       return 0;
     
-    /* If we get this far, there's definitely data available.
+    /* If we get this far, there should be data available.
        Extract data made available by the reader thread. */
+    WaitForSingleObject(rfd->th->lock_sema, INFINITE);
     if (rfd->th->eof) {
       if (rfd->th->eof != INVALID_HANDLE_VALUE) {
         ReleaseSemaphore(rfd->th->eof, 1, NULL);
         rfd->th->eof = NULL;
       }
+      ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
       return RKTIO_READ_EOF;
     } else if (rfd->th->err) {
+      ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
       set_windows_error(rfd->th->err);
       return RKTIO_READ_ERROR;
     } else {
       intptr_t bc = rfd->th->avail;
-      rfd->th->avail = 0;
-      memcpy(buffer, rfd->buffer, bc);
+      if (bc > len)
+	bc = len;
+      rfd->th->avail -= bc;
+      memcpy(buffer, rfd->buffer + rfd->th->offset, bc);
+      rfd->th->offset += bc;
+      ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
       return bc;
     }
   }
@@ -923,6 +869,88 @@ static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_
   return j;
 }
 
+
+static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  if (!rktio_fd_is_regular_file(rktio, rfd) && !rfd->th) {
+    /* To get non-blocking I/O for anything that can block, we create
+       a separate reader thread.
+
+       Yes, Windows NT pipes support non-blocking reads, but there
+       doesn't seem to be any way to use WaitForSingleObject to sleep
+       until characters are ready. PeekNamedPipe can be used for
+       polling, but not sleeping. */
+
+    Win_FD_Input_Thread *th;
+    DWORD id;
+    HANDLE h;
+    HANDLE sm;
+    char *bfr;
+
+    th = calloc(1, sizeof(Win_FD_Input_Thread));
+    rfd->th = th;
+
+    bfr = malloc(RKTIO_FD_BUFFSIZE);
+    th->buffer = (unsigned char *)bfr;
+    rfd->buffer = bfr;
+
+    th->fd = rfd->fd;
+    th->avail = 0;
+    th->offset = 0;
+    th->err = 0;
+    th->eof = NULL;
+    th->checking = 0;
+    
+    sm = CreateSemaphore(NULL, 1, 1, NULL);
+    th->lock_sema = sm;
+    sm = CreateSemaphore(NULL, 0, 1, NULL);
+    th->checking_sema = sm;
+    sm = CreateSemaphore(NULL, 0, 1, NULL);
+    th->ready_sema = sm;
+
+    h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDReader, th, 0, &id);
+
+    th->thread = h;
+  }
+}
+
+static void deinit_read_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
+{
+  if (rfd->th) {
+    CSI_proc csi;
+
+    WaitForSingleObject(rfd->th->lock_sema, INFINITE);
+    
+    /* -1 for checking means "shut down" */
+    rfd->th->checking = -1;
+    ReleaseSemaphore(rfd->th->checking_sema, 1, NULL);
+
+    if (rfd->th->eof && (rfd->th->eof != INVALID_HANDLE_VALUE)) {
+      ReleaseSemaphore(rfd->th->eof, 1, NULL);
+      rfd->th->eof = NULL;
+    }
+
+    csi = get_csi();
+    if (csi) {
+      /* Helps thread wake up. Otherwise, it's possible for the
+         thread to stay stuck trying to read, in which case the
+         file handle (probably a pipe) doesn't get closed. */
+      csi(rfd->th->thread);
+    }
+
+    /* Try to get out of cleaning up the records (since they can't be
+       cleaned until the thread is also done: */
+    if (rfd->th->you_clean_up) {
+      /* The other thread exited and left us with clean-up: */
+      WindowsFDICleanup(rfd->th, (full_close ? 1 : -1));
+    } else {
+      /* otherwise, thread is responsible for clean-up */
+      rfd->th->you_clean_up = (full_close ? 1 : -1);
+      ReleaseSemaphore(rfd->th->lock_sema, 1, NULL);
+    }
+  }
+}
+
 static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
 {
   DWORD toget, got;
@@ -941,50 +969,75 @@ static long WINAPI WindowsFDReader(Win_FD_Input_Thread *th)
     /* Wait until we're supposed to look for input: */
     WaitForSingleObject(th->checking_sema, INFINITE);
 
+    WaitForSingleObject(th->lock_sema, INFINITE);
     if (th->checking < 0)
       break;
 
-    if (ReadFile(th->fd, th->buffer, toget, &got, NULL)) {
-      th->avail = got;
-      if (!got) {
-	/* We interpret a send of 0 bytes as a mid-stream EOF. */
-	eof_wait = CreateSemaphore(NULL, 0, 1, NULL);
-	th->eof = eof_wait;
-      }
+    if (th->avail) {
+      /* Spurious wake-up? */
+      ReleaseSemaphore(th->lock_sema, 1, NULL);
     } else {
-      int err;
-      err = GetLastError();
-      if (err == ERROR_BROKEN_PIPE) {
-	th->eof = INVALID_HANDLE_VALUE;
-	perma_eof = 1;
-      } else
-	th->err = err;
-    }
+      ReleaseSemaphore(th->lock_sema, 1, NULL);
+      if (ReadFile(th->fd, th->buffer, toget, &got, NULL)) {
+	WaitForSingleObject(th->lock_sema, INFINITE);
+	th->avail = got;
+	th->offset = 0;
+	if (!got) {
+	  /* We interpret a send of 0 bytes as a mid-stream EOF. */
+	  eof_wait = CreateSemaphore(NULL, 0, 1, NULL);
+	  th->eof = eof_wait;
+	}
+	/* lock is still held... */
+      } else {
+	int err;
+	err = GetLastError();
+	WaitForSingleObject(th->lock_sema, INFINITE);
+	if (err == ERROR_BROKEN_PIPE) {
+	  th->eof = INVALID_HANDLE_VALUE;
+	  perma_eof = 1;
+	} else
+	  th->err = err;
+	/* lock is still held... */
+      }
 
-    /* Notify main program that we found something: */
-    ReleaseSemaphore(th->ready_sema, 1, NULL);
+      th->checking = 0;
 
-    if (eof_wait) {
-      WaitForSingleObject(eof_wait, INFINITE);
-      eof_wait = NULL;
+      /* Notify main program that we found something: */
+      ReleaseSemaphore(th->ready_sema, 1, NULL);
+
+      if (!perma_eof && !th->err) {
+	ReleaseSemaphore(th->lock_sema, 1, NULL);
+      
+	if (eof_wait) {
+	  WaitForSingleObject(eof_wait, INFINITE);
+	  CloseHandle(eof_wait);
+	  eof_wait = NULL;
+	}
+      }
     }
   }
+  /* lock is still held on `break` out of loop */
 
   /* We have to clean up if the main program has abandoned us: */
-  if (WaitForSingleObject(th->you_clean_up_sema, 0) != WAIT_OBJECT_0) {
-    WindowsFDICleanup(th);
-  } /* otherwise, main program is responsible for clean-up */
+  if (th->you_clean_up) {
+    WindowsFDICleanup(th, th->you_clean_up);
+  } else {
+    /* otherwise, main program is responsible for clean-up */
+    th->you_clean_up = 1;
+    ReleaseSemaphore(th->lock_sema, 1, NULL);
+  }
 
   return 0;
 }
 
-static void WindowsFDICleanup(Win_FD_Input_Thread *th)
+static void WindowsFDICleanup(Win_FD_Input_Thread *th, int close_mode)
 {
+  CloseHandle(th->lock_sema);
   CloseHandle(th->checking_sema);
   CloseHandle(th->ready_sema);
-  CloseHandle(th->you_clean_up_sema);
 
-  CloseHandle(th->fd);
+  if (close_mode != -1)
+    CloseHandle(th->fd);
 
   free(th->buffer);
   free(th);
@@ -1097,7 +1150,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
        flushed). */
     intptr_t out_len = 0;
     int ok, errsaved;
-    
+
     if (!rfd->oth || rfd->oth->nonblocking) {
       int nonblocking;
 
@@ -1110,7 +1163,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
                        && (GetFileType((HANDLE)rfd->fd) == FILE_TYPE_PIPE));
       } else
         nonblocking = 1; /* must be, or we would not have gotten here */
-
+    
       if (nonblocking) {
         /* Unless we're still trying to flush old data, write to the
            pipe and have the other thread start flushing it. */
@@ -1163,8 +1216,8 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
                 || (!ok && (errsaved == ERROR_NOT_ENOUGH_MEMORY))) {
               towrite = towrite >> 1;
               if (!towrite) {
-                get_windows_error();
-                return RKTIO_WRITE_ERROR;
+		/* leave ok as 1 and winwrote as 0 */
+		break;
               }
             } else
               break;
@@ -1177,32 +1230,42 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
         if (ok)
           out_len = winwrote;
+      } else {
+	/* Claim success for now to make `rfd->oth` get created,
+	   and continuae non-blocking handling after that. */
+	ok = 1;
+	out_len = 1;
       }
       /* and create the writer thread... */
 
-      if (!rfd->oth) {
+      if (ok && (out_len > 0) && !rfd->oth) {
         /* We create a thread even for pipes that can be put in
            non-blocking mode, because that seems to be the only
-           way to get evt behavior. */
+           way to get evt behavior of knowing that a write will
+	   succeed because the previous content is flushed. */
         Win_FD_Output_Thread *oth;
         HANDLE h;
         DWORD id;
         unsigned char *bfr;
         HANDLE sm;
 
-        oth = malloc(sizeof(Win_FD_Output_Thread));
+        oth = calloc(1, sizeof(Win_FD_Output_Thread));
         rfd->oth = oth;
 
         oth->nonblocking = nonblocking;
 
         if (!nonblocking) {
+	  /* Create the buffer to communicate with the writing thread. */
           bfr = malloc(RKTIO_FD_BUFFSIZE);
           oth->buffer = bfr;
           oth->flushed = 0;
           oth->needflush = 0;
         } else {
+	  /* No buffer needed */
           oth->buffer = NULL;
-          oth->flushed = 1;
+	  /* Some data was written, so it's not yet flushed,
+	     and we need a flush. */
+          oth->flushed = 0;
           oth->needflush = 1;
         }
 
@@ -1219,9 +1282,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
         oth->work_sema = sm;
         sm = CreateSemaphore(NULL, 1, 1, NULL);
         oth->ready_sema = sm;
-        sm = CreateSemaphore(NULL, 1, 1, NULL);
-        oth->you_clean_up_sema = sm;
-            
+
         h = CreateThread(NULL, 4096, (LPTHREAD_START_ROUTINE)WindowsFDWriter, oth, 0, &id);
 
         oth->thread = h;
@@ -1231,7 +1292,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     /* We have a thread, if only to watch when the flush is
        done... */
     
-    if (!rfd->oth->nonblocking) {
+    if (rfd->oth && !rfd->oth->nonblocking) {
       /* This case is for Win 95/98/Me anonymous pipes and
          character devices.  We haven't written anything yet! We
          write to a buffer read by the other thread, and return --
@@ -1242,6 +1303,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
          handle, same "device"), the port writes can get out of
          order. We try to avoid the problem by sleeping. */
 
+      /* At this point, `out_len` is set ot 1, and we
+	 need to set it to a  value. */
+
       Win_FD_Output_Thread *oth = rfd->oth;
 
       WaitForSingleObject(oth->lock_sema, INFINITE);
@@ -1249,7 +1313,8 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
         errsaved = oth->err_no;
         ok = 0;
       } else if (oth->buflen == RKTIO_FD_BUFFSIZE) {
-        WaitForSingleObject(oth->ready_sema, 0); /* clear any leftover state */
+	/* clear any leftover notifications */
+        WaitForSingleObject(oth->ready_sema, 0);
         ok = 1;
       } else {
         intptr_t topp;
@@ -1305,13 +1370,6 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
         ok = 1;
       }
       ReleaseSemaphore(oth->lock_sema, 1, NULL);
-    } else {
-      if (out_len > 0) {
-        /* We've already written, which implies that no flush is
-           in progress. We'll need a flush check in the future. */
-        rfd->oth->needflush = 1;
-      }
-      ok = 1;
     }
 
     if (ok)
@@ -1373,23 +1431,54 @@ static intptr_t rktio_recount_output_text(const char *orig_buffer, const char *b
   return i;
 }
 
+static void deinit_write_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
+{
+  if (rfd->oth) {
+    CSI_proc csi;
+
+    WaitForSingleObject(rfd->oth->lock_sema, INFINITE);
+
+    csi = get_csi();
+
+    if (csi) {
+      /* See also call above */
+      csi(rfd->oth->thread);
+    }
+    CloseHandle(rfd->oth->thread);
+    rfd->oth->done = 1;
+    ReleaseSemaphore(rfd->oth->work_sema, 1, NULL);
+
+    /* Try to leave clean-up to the other thread: */
+    if (rfd->oth->you_clean_up) {
+      /* Other thread is already done, so we're stuck with clean-up: */
+      WindowsFDOCleanup(rfd->oth, (full_close ? 1 : -1));
+    } else {
+      /* otherwise, thread is responsible for clean-up */
+      rfd->oth->you_clean_up = (full_close ? 1 : -1);
+      ReleaseSemaphore(rfd->oth->lock_sema, 1, NULL);
+    }
+  }
+}
+
 static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 {
   DWORD towrite, wrote, start;
   int ok, more_work = 0, err_no;
 
   if (oth->nonblocking) {
-    /* Non-blocking mode (Win NT pipes). Just flush. */
+    /* Non-blocking mode (Win NT pipes). Just handle flush requests. */
+    WaitForSingleObject(oth->lock_sema, INFINITE);
     while (!oth->done) {
+      ReleaseSemaphore(oth->lock_sema, 1, NULL);
       WaitForSingleObject(oth->work_sema, INFINITE);
 
       FlushFileBuffers(oth->fd);
-
+      
       WaitForSingleObject(oth->lock_sema, INFINITE);
       oth->flushed = 1;
       ReleaseSemaphore(oth->ready_sema, 1, NULL);
-      ReleaseSemaphore(oth->lock_sema, 1, NULL);
     }
+    /* lock held on loop exit */
   } else {
     /* Blocking mode. We do the writing work.  This case is for
        Win 95/98/Me anonymous pipes and character devices (such 
@@ -1398,14 +1487,15 @@ static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
       if (!more_work)
 	WaitForSingleObject(oth->work_sema, INFINITE);
 
+      WaitForSingleObject(oth->lock_sema, INFINITE);
       if (oth->done)
 	break;
 
-      WaitForSingleObject(oth->lock_sema, INFINITE);
       towrite = oth->buflen;
       if (towrite > (RKTIO_FD_BUFFSIZE - oth->bufstart))
 	towrite = RKTIO_FD_BUFFSIZE - oth->bufstart;
       start = oth->bufstart;
+      
       ReleaseSemaphore(oth->lock_sema, 1, NULL);
 
       ok = WriteFile(oth->fd, oth->buffer + start, towrite, &wrote, NULL);
@@ -1428,21 +1518,27 @@ static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 	ReleaseSemaphore(oth->ready_sema, 1, NULL);
       ReleaseSemaphore(oth->lock_sema, 1, NULL);
     }
+    /* lock is still held on `break` out of loop */
   }
-  if (WaitForSingleObject(oth->you_clean_up_sema, 0) != WAIT_OBJECT_0) {
-    WindowsFDOCleanup(oth);
-  } /* otherwise, main thread is responsible for clean-up */
+  
+  if (oth->you_clean_up) {
+    WindowsFDOCleanup(oth, oth->you_clean_up);
+  } else {
+    /* otherwise, main thread is responsible for clean-up */
+    oth->you_clean_up = 1;
+    ReleaseSemaphore(oth->lock_sema, 1, NULL);
+  }
 
   return 0;
 }
 
-static void WindowsFDOCleanup(Win_FD_Output_Thread *oth)
+static void WindowsFDOCleanup(Win_FD_Output_Thread *oth, int close_mode)
 {
   CloseHandle(oth->lock_sema);
   CloseHandle(oth->work_sema);
-  CloseHandle(oth->you_clean_up_sema);
-  
-  CloseHandle(oth->fd);
+
+  if (close_mode != -1)
+    CloseHandle(oth->fd);
 
   if (oth->buffer)
     free(oth->buffer);

@@ -26,6 +26,8 @@
 #define RKTIO_SHUT_RD SHUT_RD
 #define RKTIO_SHUT_WR SHUT_WR
 
+#define RKTIO_SOCKS(s) s
+
 typedef intptr_t rktio_socket_t;
 typedef unsigned int rktio_sockopt_len_t;
 
@@ -80,6 +82,9 @@ struct SOCKADDR_IN {
 
 typedef SOCKET rktio_socket_t;
 typedef int rktio_sockopt_len_t;
+
+/* Avoid warnings, since select() first argument is ignored: */
+#define RKTIO_SOCKS(s) 0
 
 typedef struct SOCKADDR_IN rktio_unspec_address;
 # define REGISTER_SOCKET(s) winsock_remember(s)
@@ -858,9 +863,14 @@ void rktio_winsock_done(rktio_t *rktio)
 /* TCP sockets                                                            */
 /*========================================================================*/
 
+rktio_socket_t rktio_fd_socket(rktio_t *rktio, rktio_fd_t *rfd)
+{
+  return (rktio_socket_t)rktio_fd_system_fd(rktio, rfd);
+}
+
 void rktio_socket_init(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
 
 #ifdef RKTIO_SYSTEM_UNIX
   fcntl(s, F_SETFL, RKTIO_NONBLOCKING);
@@ -901,7 +911,7 @@ int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
   }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int err;
   UNREGISTER_SOCKET(s);
   err = closesocket(s);
@@ -916,7 +926,7 @@ int rktio_socket_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
 void rktio_socket_own(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   REGISTER_SOCKET(s);
 #endif
 }
@@ -924,14 +934,14 @@ void rktio_socket_own(rktio_t *rktio, rktio_fd_t *rfd)
 void rktio_socket_forget_owned(rktio_t *rktio, rktio_fd_t *rfd)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   UNREGISTER_SOCKET(s);
 #endif
 }
 
 int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   
   if (shutdown(s, ((mode == RKTIO_SHUTDOWN_READ) ? RKTIO_SHUT_RD : RKTIO_SHUT_WR))) {
     get_socket_error();
@@ -948,7 +958,7 @@ int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   {
-    rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+    rktio_socket_t s = rktio_fd_socket(rktio, rfd);
     DECL_SOCK_FDSET(writefds);
     DECL_SOCK_FDSET(exnfds);
     struct timeval time = {0, 0};
@@ -962,7 +972,7 @@ int rktio_socket_poll_write_ready(rktio_t *rktio, rktio_fd_t *rfd)
     RKTIO_SOCK_FD_ZERO(exnfds);
     RKTIO_SOCK_FD_SET(s, exnfds);
     
-    sr = select(s + 1, NULL, writefds, exnfds, &time);
+    sr = select(RKTIO_SOCKS(s + 1), NULL, writefds, exnfds, &time);
 
     if (sr == -1) {
       get_socket_error();
@@ -982,7 +992,7 @@ int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   {
-    rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+    rktio_socket_t s = rktio_fd_socket(rktio, rfd);
     DECL_SOCK_FDSET(readfds);
     DECL_SOCK_FDSET(exnfds);
     struct timeval time = {0, 0};
@@ -996,7 +1006,7 @@ int rktio_socket_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
     RKTIO_SOCK_FD_ZERO(exnfds);
     RKTIO_SOCK_FD_SET(s, exnfds);
     
-    sr = select(s + 1, readfds, NULL, exnfds, &time);
+    sr = select(RKTIO_SOCKS(s + 1), readfds, NULL, exnfds, &time);
     
     if (sr == -1) {
       get_socket_error();
@@ -1015,7 +1025,7 @@ rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
   return rktio_dup(rktio, rfd);
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   rktio_socket_t nsocket;
   intptr_t rc;
   WSAPROTOCOL_INFO protocolInfo;
@@ -1035,7 +1045,7 @@ rktio_fd_t *rktio_socket_dup(rktio_t *rktio, rktio_fd_t *rfd)
 
 intptr_t rktio_socket_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int rn;
   
   do {
@@ -1061,7 +1071,7 @@ static intptr_t do_socket_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buf
                                 /* for UDP sendto: */
                                 rktio_addrinfo_t *addr)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   intptr_t sent;
   int errid = 0;
 
@@ -1183,7 +1193,9 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
       errno = status;
 #endif
 
-      conn->trying_fd = rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_OWN);
+      conn->trying_fd = rktio_system_fd(rktio,
+					(intptr_t)s,
+					RKTIO_OPEN_SOCKET | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_OWN);
       conn->inprogress = inprogress;
 
       return conn;
@@ -1223,7 +1235,7 @@ rktio_fd_t *rktio_connect_finish(rktio_t *rktio, rktio_connect_t *conn)
     /* Check whether connect succeeded, or get error: */
     int errid;
     rktio_sockopt_len_t so_len = sizeof(errid);
-    rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+    rktio_socket_t s = rktio_fd_socket(rktio, rfd);
     if (getsockopt(s, SOL_SOCKET, SO_ERROR, (void *)&errid, &so_len) != 0) {
       errid = SOCK_ERRNO();
     } else
@@ -1541,7 +1553,7 @@ static int do_poll_accept_ready(rktio_t *rktio, rktio_listener_t *listener, int 
   }
   
   do {
-    sr = select(mx + 1, RKTIO_SOCK_FDS(readfds), NULL, RKTIO_SOCK_FDS(exnfds), &time);
+    sr = select(RKTIO_SOCKS(mx + 1), RKTIO_SOCK_FDS(readfds), NULL, RKTIO_SOCK_FDS(exnfds), &time);
   } while ((sr == -1) && NOT_WINSOCK(errno == EINTR));
 
   if (sr > 0) {
@@ -1579,8 +1591,8 @@ void rktio_poll_add_accept(rktio_t *rktio, rktio_listener_t *listener, rktio_pol
   
   for (i = 0; i < listener->count; i++) {
     s = listener->s[i];
-    RKTIO_FD_SET(s, fds);
-    RKTIO_FD_SET(s, fds2);
+    RKTIO_FD_SET((intptr_t)s, fds);
+    RKTIO_FD_SET((intptr_t)s, fds2);
   }
 }
 
@@ -1660,7 +1672,7 @@ char **rktio_socket_address(rktio_t *rktio, rktio_fd_t *rfd)
   rktio_sockopt_len_t name_len;
   
   name_len = sizeof(name);
-  if (getsockname(rktio_fd_system_fd(rktio, rfd), (struct sockaddr *)name, &name_len)) {
+  if (getsockname(rktio_fd_socket(rktio, rfd), (struct sockaddr *)name, &name_len)) {
     get_socket_error();
     return NULL;
   }
@@ -1674,7 +1686,7 @@ char **rktio_socket_peer_address(rktio_t *rktio, rktio_fd_t *rfd)
   rktio_sockopt_len_t name_len;
   
   name_len = sizeof(name);
-  if (getpeername(rktio_fd_system_fd(rktio, rfd), (struct sockaddr *)name, &name_len)) {
+  if (getpeername(rktio_fd_socket(rktio, rfd), (struct sockaddr *)name, &name_len)) {
     get_socket_error();
     return NULL;
   }
@@ -1727,7 +1739,7 @@ rktio_fd_t *rktio_udp_open(rktio_t *rktio, rktio_addrinfo_t *addr, int family)
 
 int rktio_udp_disconnect(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int err;
 
 #ifdef USE_NULL_TO_DISCONNECT_UDP
@@ -1757,7 +1769,7 @@ int rktio_udp_disconnect(rktio_t *rktio, rktio_fd_t *rfd)
 
 int rktio_udp_bind(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, rktio_bool_t reuse)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int err;
 
   if (reuse) {
@@ -1782,7 +1794,7 @@ int rktio_udp_bind(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr, rkti
 
 int rktio_udp_connect(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *addr)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   int err;
 
   /* connect using first address that works: */
@@ -1804,7 +1816,7 @@ intptr_t rktio_udp_sendto(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *add
 
 rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   rktio_length_and_addrinfo_t *r;
   int rn, errid;
   char src_addr[RKTIO_SOCK_NAME_MAX_LEN];
@@ -1855,7 +1867,7 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
 
 int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   u_char loop;
   rktio_sockopt_len_t loop_len = sizeof(loop);
   int status;
@@ -1871,7 +1883,7 @@ int rktio_udp_get_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd)
 
 int rktio_udp_set_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd, int on)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   u_char loop = (on ? 1 : 0);
   rktio_sockopt_len_t loop_len = sizeof(loop);
   int status;
@@ -1887,7 +1899,7 @@ int rktio_udp_set_multicast_loopback(rktio_t *rktio, rktio_fd_t *rfd, int on)
 
 int rktio_udp_get_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   u_char ttl;
   rktio_sockopt_len_t ttl_len = sizeof(ttl);
   int status;
@@ -1903,7 +1915,7 @@ int rktio_udp_get_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd)
 
 int rktio_udp_set_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   u_char ttl = ttl_val;
   rktio_sockopt_len_t ttl_len = sizeof(ttl);
   int status;
@@ -1919,7 +1931,7 @@ int rktio_udp_set_multicast_ttl(rktio_t *rktio, rktio_fd_t *rfd, int ttl_val)
 
 char *rktio_udp_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd); 
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd); 
   struct in_addr intf;
   rktio_sockopt_len_t intf_len = sizeof(intf);
   int status;
@@ -1939,7 +1951,7 @@ char *rktio_udp_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd)
 
 int rktio_udp_set_multicast_interface(rktio_t *rktio, rktio_fd_t *rfd, rktio_addrinfo_t *intf_addr)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd); 
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd); 
   struct in_addr intf;
   rktio_sockopt_len_t intf_len = sizeof(intf);
   int status;
@@ -1964,7 +1976,7 @@ int rktio_udp_change_multicast_group(rktio_t *rktio, rktio_fd_t *rfd,
                                      rktio_addrinfo_t *intf_addr,
                                      int action)
 {
-  rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
+  rktio_socket_t s = rktio_fd_socket(rktio, rfd);
   struct ip_mreq mreq;
   rktio_sockopt_len_t mreq_len = sizeof(mreq);
   int status;

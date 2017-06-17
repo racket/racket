@@ -31,7 +31,7 @@
 /*========================================================================*/
 
 struct rktio_t {
-  intptr_t errid;
+  int errid;
   int errkind;
 #ifdef RKTIO_SYSTEM_WINDOWS
   char *last_err_str;
@@ -108,9 +108,9 @@ int rktio_initialize_signal(rktio_t *rktio);
 
 rktio_poll_set_t *rktio_get_fdset(rktio_poll_set_t *fdarray, int pos);
 void rktio_fdzero(rktio_poll_set_t *fd);
-void rktio_fdset(rktio_poll_set_t *fd, int n);
-void rktio_fdclr(rktio_poll_set_t *fd, int n);
-int rktio_fdisset(rktio_poll_set_t *fd, int n);
+void rktio_fdset(rktio_poll_set_t *fd, intptr_t n);
+void rktio_fdclr(rktio_poll_set_t *fd, intptr_t n);
+int rktio_fdisset(rktio_poll_set_t *fd, intptr_t n);
   
 # define DECL_FDSET(n, c) rktio_poll_set_t *n
 # define INIT_DECL_FDSET(r, w, e) { \

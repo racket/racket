@@ -669,7 +669,7 @@ int rktio_set_current_directory(rktio_t *rktio, const char *path)
 static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char *path, int follow_links)
 {
   uintptr_t devi = 0, inoi = 0, inoi2 = 0;
-  uintptr_t devi_bits = 0, inoi_bits = 0, inoi2_bits = 0;
+  int devi_bits = 0, inoi_bits = 0, inoi2_bits = 0;
 
 #ifdef RKTIO_SYSTEM_UNIX
   int errid = 0;
@@ -830,6 +830,9 @@ int rktio_rename_file(rktio_t *rktio, const char *dest, const char *src, int exi
       return 1;
     }
     get_windows_error();
+  } else if (errid == ERROR_ALREADY_EXISTS) {
+    set_racket_error(RKTIO_ERROR_EXISTS);
+    return 0;    
   } else
     get_windows_error();
   

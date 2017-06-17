@@ -81,7 +81,7 @@ static rktio_fd_t *open_read(rktio_t *rktio, const char *filename, int modes)
     return NULL;
   }
 
-  rfd = rktio_system_fd(rktio, (intptr_t)fd, RKTIO_OPEN_READ);
+  rfd = rktio_system_fd(rktio, (intptr_t)fd, RKTIO_OPEN_READ | RKTIO_OPEN_NOT_DIR);
 
   if (modes & RKTIO_OPEN_TEXT) {
     if (!rktio_fd_is_regular_file(rktio, rfd)) {
@@ -228,7 +228,7 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
     }
   }
 
-  rfd = rktio_system_fd(rktio, (intptr_t)fd, modes | RKTIO_OPEN_NOT_DIR);
+  rfd = rktio_system_fd(rktio, (intptr_t)fd, modes);
 
   if (rktio_fd_is_directory(rktio, rfd)) {
     rktio_close(rktio, rfd);
@@ -244,8 +244,12 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
     }
   }
 
-  if ((modes & RKTIO_OPEN_APPEND) && rktio_fd_is_regular_file(rktio, rfd)) {
-    SetFilePointer(fd, 0, NULL, FILE_END);
+  if ((modes & (RKTIO_OPEN_APPEND |RKTIO_OPEN_TRUNCATE))
+      && rktio_fd_is_regular_file(rktio, rfd)) {
+    if (modes & RKTIO_OPEN_APPEND)
+      SetFilePointer(fd, 0, NULL, FILE_END);
+    else
+      SetEndOfFile(fd);
   }
 
   return rfd;

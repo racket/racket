@@ -32,7 +32,7 @@ char **rktio_get_environ_array(void)
 
 int rktio_is_ok_envvar_name(rktio_t *rktio, const char *s)
 {
-  int i = strlen(s);
+  intptr_t i = strlen(s);
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (!s[0]) return 0;
 #endif  
@@ -159,8 +159,7 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
     i = 0;
     while (e[i]) {
       count++;
-      for (i = 0; e[i]; ) {
-      }
+      while (e[i]) i++;
       i++;
     }
     
@@ -171,7 +170,8 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
     envvars->vals = malloc(count * sizeof(char *));
 
     count = 0;
-    for (i = 0; e[i]; ) {
+    i = 0;
+    while (e[i]) {
       start = i;
       while (e[i]) { i++; }
       p = NARROW_PATH_copy(e + start);
@@ -182,6 +182,7 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
       envvars->vals[count] = MSC_IZE(strdup)(p+j+1);
       free(p);
       i++;
+      count++;
     }
 
     FreeEnvironmentStringsW(e);
@@ -382,7 +383,7 @@ void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars)
   intptr_t len = 0, slen;
   wchar_t *r, *s;
 
-for (i = 0; i < envvars->count; i++) {
+  for (i = 0; i < envvars->count; i++) {
     len += wcslen(WIDE_PATH_temp(envvars->names[i]));
     len += wcslen(WIDE_PATH_temp(envvars->vals[i]));
     len += 2;
