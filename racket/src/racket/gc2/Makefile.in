@@ -500,19 +500,28 @@ FOREIGN_NOT_USED_LIB = $(FOREIGN_OBJ)
 FOREIGN_NOT_USED_OBJSLIB = 
 
 LIBRKTIO = ../../rktio/librktio.@LTA@
+LIBRKTIO_FOR_DLL_la = $(LIBRKTIO)
+LIBRKTIO_FOR_DLL_a = 
+LIBRKTIO_FOR_LIB_la =
+LIBRKTIO_FOR_LIB_a = $(LIBRKTIO)
+LIBRKTIO_UP_FOR_LIB_la =
+LIBRKTIO_UP_FOR_LIB_a = gc2/$(LIBRKTIO)
+LIBRKTIO_FOR_DLL = $(LIBRKTIO_FOR_DLL_@LIBSFX@)
+LIBRKTIO_FOR_LIB = $(LIBRKTIO_FOR_LIB_@LIBSFX@)
+LIBRKTIO_UP_FOR_LIB = $(LIBRKTIO_UP_FOR_LIB_@LIBSFX@)
 
 EXTRA_GMP_DEP_FILE = ../src/@EXTRA_GMP_OBJ@
 EXTRA_GMP = @EXTRA_GMP_DEP@
 
-EXTRA_OBJS_T = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB) @LIBRKTIO_FOR_DLL@
-EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) @LIBRKTIO_FOR_DLL@
+EXTRA_OBJS_T = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_LIB) $(LIBRKTIO_FOR_DLL)
+EXTRA_OBJS_L = $(EXTRA_GMP) ../src/unwind.@LTO@ $(@FOREIGN_IF_USED@_OBJSLIB) $(LIBRKTIO_FOR_DLL)
 
-../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@ @LIBRKTIO_FOR_DLL@
-	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@ @LIBRKTIO_FOR_DLL@
+../libracket3m.@LIBSFX@: $(OBJS) $(EXTRA_OBJS_T) gc2.@LTO@
+	$(NICEAR) $(AR) $(ARFLAGS) ../libracket3m.@LIBSFX@ $(OBJS) $(EXTRA_OBJS_L) gc2.@LTO@
 	$(RANLIB) ../libracket3m.@LIBSFX@
 
-../racket@MMM@@NOT_OSX@@NOT_MINGW@: main.@LTO@ ../libracket3m.@LIBSFX@ @LIBRKTIO_FOR_LIB@
-	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ gc2/@LIBRKTIO_FOR_LIB@ @LDFLAGS@ $(LIBS)
+../racket@MMM@@NOT_OSX@@NOT_MINGW@: main.@LTO@ ../libracket3m.@LIBSFX@ $(LIBRKTIO_FOR_LIB)
+	cd ..; @MZLINKER@ -o racket@MMM@ @PROFFLAGS@ gc2/main.@LTO@ libracket3m.@LIBSFX@ $(LIBRKTIO_UP_FOR_LIB) @LDFLAGS@ $(LIBS)
 
 # The above "cd .." prevents a problem with libtool's generated script in --enable-shared mode,
 #  at least for Mac OS X. Beware of changing LIBS or LDFLAGS to inclucde something with a relative
