@@ -620,26 +620,39 @@ int main(int argc, char **argv)
 
   /* Pipes, non-blocking operations, and more long-term poll sets */
 
-  fd = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_READ);
-  check_valid(fd);
-  check_valid(!rktio_poll_read_ready(rktio, fd));
-  fd2 = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
-  check_valid(fd2);
-  check_valid(!rktio_poll_read_ready(rktio, fd));
+  if (verbose)
+    printf("pipe\n");
 
-  check_read_write_pair(rktio, fd, fd2, 1);
-
-  /* Open pipe ends again: */
-  fd2 = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
-  check_valid(fd2);
-  check_fill_write(rktio, fd2, NULL, 0);
-
-  fd = rktio_open(rktio, "demo_fifo", RKTIO_OPEN_READ);
-  check_valid(fd);
-  check_drain_read(rktio, fd2, 0);
+  {
+    rktio_fd_t **pipe_fds;
     
-  check_valid(rktio_close(rktio, fd));
-  check_valid(rktio_close(rktio, fd2));
+    pipe_fds = rktio_make_pipe(rktio, 0);
+    check_valid(pipe_fds);
+
+    fd = pipe_fds[0];
+    check_valid(fd);
+    check_valid(!rktio_poll_read_ready(rktio, fd));
+    fd2 = pipe_fds[1];
+    check_valid(fd2);
+    check_valid(!rktio_poll_read_ready(rktio, fd));
+
+    free(pipe_fds);
+  
+    check_read_write_pair(rktio, fd, fd2, 1);
+
+    /* Open pipe ends again: */
+    pipe_fds = rktio_make_pipe(rktio, 0);
+    check_valid(pipe_fds);
+    fd = pipe_fds[0];
+    fd2 = pipe_fds[1];
+    free(pipe_fds);
+  
+    check_fill_write(rktio, fd2, NULL, 0);
+    check_drain_read(rktio, fd, 0);
+    
+    check_valid(rktio_close(rktio, fd));
+    check_valid(rktio_close(rktio, fd2));
+  }
 
   /* Networking */
 

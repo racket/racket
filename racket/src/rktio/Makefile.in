@@ -38,11 +38,8 @@ librktio.@LTA@: $(OBJS)
 demo: rktio_demo
 	./rktio_demo $(ARGS)
 
-rktio_demo: librktio.@LTA@ demo.@LTO@ demo_fifo
+rktio_demo: librktio.@LTA@ demo.@LTO@
 	$(RKTLINKER) -o rktio_demo $(CFLAGS) $(LDFLAGS) demo.@LTO@ librktio.@LTA@ $(LIBS)
-
-demo_fifo:
-	mkfifo demo_fifo
 
 rktio_fs.@LTO@: $(srcdir)/rktio_fs.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_fs.@LTO@ -c $(srcdir)/rktio_fs.c
