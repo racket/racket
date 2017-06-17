@@ -504,7 +504,7 @@ static int try_get_fd_char(int fd, int *ready)
   } else {
     *ready = 1;
     if (!c)
-      return EOF;
+      return RKTIO_READ_EOF;
     else
       return buf[0];
   }
@@ -552,13 +552,12 @@ int rktio_poll_read_ready(rktio_t *rktio, rktio_fd_t *rfd)
 
 # ifdef SOME_FDS_ARE_NOT_SELECTABLE
     /* Try a non-blocking read: */
-    if (!r && !(rfd->modes & RKTIO_OPEN_SOCKET) && !rfd->textmode) {
+    if (!r && !(rfd->modes & RKTIO_OPEN_SOCKET)) {
       int c, ready;
 
       c = try_get_fd_char(rfd->fd, &ready);
       if (ready) {
-        if (c != EOF) {
-          rfd->buffpos = 0;
+        if (c != RKTIO_READ_EOF) {
           rfd->buffer[0] = (unsigned char)c;
           rfd->bufcount = 1;
         }
@@ -884,7 +883,7 @@ RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
 # ifdef SOME_FDS_ARE_NOT_SELECTABLE
-  return rfd->bufcount;
+  return fd->bufcount;
 # else
   return 0;
 # endif
