@@ -215,7 +215,7 @@ Scheme_Object *scheme_dump_gc_stats(int c, Scheme_Object *p[]);
 
 #define REGISTER_SO(x) MZ_REGISTER_STATIC(x)
 
-THREAD_LOCAL_DECL(extern struct rktio_t *rktio);
+THREAD_LOCAL_DECL(extern struct rktio_t *scheme_rktio);
 THREAD_LOCAL_DECL(extern int scheme_current_place_id);
 THREAD_LOCAL_DECL(extern intptr_t scheme_total_gc_time);
 THREAD_LOCAL_DECL(extern int scheme_cont_capture_count);
@@ -4335,7 +4335,7 @@ void scheme_rktio_socket_to_output_port(struct rktio_fd_t *fd, Scheme_Object *na
 
 void scheme_fs_change_properties(int *_supported, int *_scalable, int *_low_latency, int *_file_level);
 
-THREAD_LOCAL_DECL(extern struct mz_fd_set *scheme_semaphore_fd_set);
+THREAD_LOCAL_DECL(extern struct rktio_ltps_t *scheme_semaphore_fd_set);
 THREAD_LOCAL_DECL(extern Scheme_Hash_Table *scheme_semaphore_fd_mapping);
 
 intptr_t scheme_get_byte_string_or_ch_put(const char *who,

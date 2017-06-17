@@ -174,8 +174,6 @@ THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdout_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stderr_port);
 THREAD_LOCAL_DECL(Scheme_Object *scheme_orig_stdin_port);
 
-THREAD_LOCAL_DECL(struct mz_fd_set *scheme_semaphore_fd_set);
-
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdin)(void) = NULL;
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stdout)(void) = NULL;
 HOOK_SHARED_OK Scheme_Object *(*scheme_make_stderr)(void) = NULL;
@@ -188,7 +186,7 @@ THREAD_LOCAL_DECL(static int special_is_ok);
 /* locals */
 
 THREAD_LOCAL_DECL(static int fd_reserved);
-THREAD_LOCAL_DECL(static int the_fd);
+THREAD_LOCAL_DECL(static rktio_fd_t *the_fd);
 
 READ_ONLY static Scheme_Object *fd_input_port_type;
 READ_ONLY static Scheme_Object *file_input_port_type;
@@ -211,9 +209,6 @@ SHARED_OK static int flush_out;
 SHARED_OK static int flush_err;
 
 THREAD_LOCAL_DECL(static Scheme_Custodian *new_port_cust); /* back-door argument */
-
-THREAD_LOCAL_DECL(static int external_event_fd);
-THREAD_LOCAL_DECL(static int put_external_event_fd);
 
 static void register_port_wait();
 
