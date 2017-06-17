@@ -10,6 +10,7 @@
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
 # include <windows.h>
+# include <string.h>
 #endif
 #ifdef HAVE_POLL_SYSCALL
 # include <poll.h>
@@ -114,8 +115,8 @@ static CSI_proc get_csi(void)
 }
 
 static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_cnoverted, intptr_t got);
-static char *rktio_adjust_output_text(char *buffer, intptr_t *towrite);
-static intptr_t rktio_recount_output_text(char *orig_buffer, char *buffer, intptr_t wrote);
+static const char *rktio_adjust_output_text(const char *buffer, intptr_t *towrite);
+static intptr_t rktio_recount_output_text(const char *orig_buffer, const char *buffer, intptr_t wrote);
 
 #endif
 
@@ -206,7 +207,8 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
     if ((GetFileType(rfd->fd) == FILE_TYPE_DISK))
       rfd->modes |= RKTIO_OPEN_REGFILE;
     if (!(modes & (RKTIO_OPEN_DIR | RKTIO_OPEN_NOT_DIR))) {
-      if (GetFileInformationByHandle(fd, &info)) {
+      BY_HANDLE_FILE_INFORMATION info;
+      if (GetFileInformationByHandle(rfd->fd, &info)) {
         if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
           rfd->modes |= RKTIO_OPEN_DIR;
         }
@@ -397,7 +399,7 @@ static rktio_ok_t do_close(rktio_t *rktio, rktio_fd_t *rfd, int set_error)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET)
-    return rktio_socket_close(rktio, rfd);
+    return rktio_socket_close(rktio, rfd, set_error);
   
   if (rfd->th) {
     CSI_proc csi;
@@ -749,7 +751,7 @@ void rktio_poll_add(rktio_t *rktio, rktio_fd_t *rfd, rktio_poll_set_t *fds, int 
     }
 
     if (modes & RKTIO_POLL_FLUSH) {
-      if (rfd->oth && !rktio_poll_flush_ready(rktio, rfd))
+      if (rfd->oth && !rktio_poll_write_flushed(rktio, rfd))
         rktio_poll_set_add_handle(rktio, (intptr_t)rfd->oth->ready_sema, fds, 1);
       else
         rktio_poll_set_add_nosleep(rktio, fds);
@@ -888,7 +890,7 @@ RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
 # endif
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  return (fd-?pending_cr : 1 : 0);
+  return (fd->pending_cr ? 1 : 0);
 #endif
 }
 
@@ -899,7 +901,7 @@ static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_
   int i, j;
 
   if (rfd->pending_cr) {
-    MSC_IZE(memmove)(buffer+1, buffer, got);
+    memmove(buffer+1, buffer, got);
     buffer[0] = '\r';
     rfd->pending_cr = 0;
     got++;
@@ -1053,7 +1055,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
        is ERROR_NOT_ENOUGH_MEMORY (as opposed to a partial write). */
     int ok;
     intptr_t towrite = len;
-    char *orig_buffer = buffer;
+    const char *orig_buffer = buffer;
     int err;
 
     if (rfd->modes & RKTIO_OPEN_TEXT)
@@ -1085,6 +1087,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     if (buffer != orig_buffer) {
       /* Convert converted count back to original count: */
       winwrote = rktio_recount_output_text(orig_buffer, buffer, winwrote);
+      free((char *)buffer);
     }
 
     return winwrote;
@@ -1323,7 +1326,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 
-static char *rktio_adjust_output_text(char *buffer, intptr_t *towrite)
+static const char *rktio_adjust_output_text(const char *buffer, intptr_t *towrite)
 {
   intptr_t len = *towrite, i, j, newlines = 0;
   char *new_buffer;
@@ -1356,14 +1359,14 @@ static char *rktio_adjust_output_text(char *buffer, intptr_t *towrite)
   return new_buffer;
 }
 
-static intptr_t rktio_recount_output_text(char *orig_buffer, char *buffer, intptr_t wrote)
+static intptr_t rktio_recount_output_text(const char *orig_buffer, const char *buffer, intptr_t wrote)
 {
   intptr_t i = 0, j = 0;
 
   while (j < wrote) {
     if (buffer[i] == '\n')
       j += 2;
-    or
+    else
       j++;
     i++;
   }

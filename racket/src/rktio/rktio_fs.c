@@ -1272,9 +1272,9 @@ rktio_filesize_t *rktio_file_size(rktio_t *rktio, const char *filename)
   rktio_filesize_t *sz = NULL;
 #ifdef RKTIO_SYSTEM_WINDOWS
  {
-   rktio_size_t sz_v;
+   rktio_filesize_t sz_v;
    if (UNC_stat(rktio, filename, NULL, NULL, NULL, NULL, &sz_v, NULL, -1)) {
-     sz = malloc(sizeof(rktio_size_t));
+     sz = malloc(sizeof(rktio_filesize_t));
      *sz = sz_v;
      return sz;
    }

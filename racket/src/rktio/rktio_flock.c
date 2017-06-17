@@ -235,7 +235,7 @@ rktio_ok_t rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd)
   set_racket_error(RKTIO_ERROR_UNSUPPORTED);
 # endif
 #endif
-#ifdef WINDOWS_FILE_HANDLES
+#ifdef RKTIO_SYSTEM_WINDOWS
   ok = UnlockFile((HANDLE)fd, 0, 0, LOCK_ALL_FILE_LO, LOCK_ALL_FILE_HI);
   if (!ok)
     get_windows_error();

@@ -6195,19 +6195,7 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
        and the problem was intermittent (e.g., worked for opening a URL
        with IE as the default browser, but failed with Netscape). */
     if (ShellExecuteW(se.hwnd, se.lpVerb, se.lpFile, se.lpParameters, se.lpDirectory, se.nShow)) {
-      if (se.hProcess) {
-	Scheme_Subprocess *subproc;
-
-	subproc = MALLOC_ONE_TAGGED(Scheme_Subprocess);
-
-	subproc->so.type = scheme_subprocess_type;
-	subproc->handle = (void *)se.hProcess;
-	subproc->pid = 0;
-	scheme_add_finalizer(subproc, close_subprocess_handle, NULL);
-
-	return (Scheme_Object *)subproc;
-      } else
-	return scheme_false;
+      return scheme_false;
     } else {
       scheme_signal_error("shell-execute: execute failed\n"
                           "  command: %V\n"
@@ -6292,8 +6280,8 @@ typedef struct ITimer_Data {
   int done;
   HANDLE itimer;
   intptr_t delay;
-  OS_SEMAPHORE_TYPE semaphore;
-  OS_SEMAPHORE_TYPE done_semaphore;
+  HANDLE semaphore;
+  HANDLE done_semaphore;
   int volatile *fuel_counter_ptr;
   uintptr_t volatile *jit_stack_boundary_ptr;
 } ITimer_Data;

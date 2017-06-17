@@ -23,6 +23,9 @@
 # define WAS_WSAEMSGSIZE(e) 0
 # define RKTIO_AFNOSUPPORT EAFNOSUPPORT
 
+#define RKTIO_SHUT_RD SHUT_RD
+#define RKTIO_SHUT_WR SHUT_WR
+
 typedef intptr_t rktio_socket_t;
 typedef unsigned int rktio_sockopt_len_t;
 
@@ -71,6 +74,9 @@ struct SOCKADDR_IN {
 # define WAS_ECONNREFUSED(e) (e == WSAECONNREFUSED)
 # define WAS_EBADADDRESS(e) 0
 # define RKTIO_AFNOSUPPORT WSAEAFNOSUPPORT
+
+#define RKTIO_SHUT_RD SD_RECEIVE
+#define RKTIO_SHUT_WR SD_SEND
 
 typedef SOCKET rktio_socket_t;
 typedef int rktio_sockopt_len_t;
@@ -927,7 +933,7 @@ int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode)
 {
   rktio_socket_t s = rktio_fd_system_fd(rktio, rfd);
   
-  if (shutdown(s, ((mode == RKTIO_SHUTDOWN_READ) ? SHUT_RD : SHUT_WR))) {
+  if (shutdown(s, ((mode == RKTIO_SHUTDOWN_READ) ? RKTIO_SHUT_RD : RKTIO_SHUT_WR))) {
     get_socket_error();
     return 0;
   }

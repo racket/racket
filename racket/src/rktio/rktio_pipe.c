@@ -20,6 +20,7 @@ static int MyPipe(intptr_t *ph, int flags, rktio_t *rktio)
 
   if (CreatePipe(&r, &w, &saAttr, 0)) {
     HANDLE a[2], naya;
+    int near_index;
 
     a[0] = r;
     a[1] = w;
@@ -73,7 +74,7 @@ int rktio_make_os_pipe(rktio_t *rktio, intptr_t *a, int flags)
 {
   PIPE_HANDLE_t la[2];
 
-  if (PIPE_FUNC(la, nearh _EXTRA_PIPE_ARGS)) {
+  if (PIPE_FUNC(la, flags _EXTRA_PIPE_ARGS)) {
     GET_PIPE_ERROR();
     return 1;
   }

@@ -16,7 +16,7 @@
 /* Opening a file                                                         */
 /*========================================================================*/
 
-static rktio_fd_t *open_read(rktio_t *rktio, const char *filename)
+static rktio_fd_t *open_read(rktio_t *rktio, const char *filename, int modes)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   int fd;
@@ -83,9 +83,9 @@ static rktio_fd_t *open_read(rktio_t *rktio, const char *filename)
 
   rfd = rktio_system_fd(rktio, (intptr_t)fd, RKTIO_OPEN_READ);
 
-  if (modes & RKTIO_MODE_TEXT) {
-    if (!rktio_fd_is_regular_file(rfd)) {
-      rktio_fd_forget(rfd);
+  if (modes & RKTIO_OPEN_TEXT) {
+    if (!rktio_fd_is_regular_file(rktio, rfd)) {
+      rktio_forget(rktio, rfd);
       set_racket_error(RKTIO_ERROR_UNSUPPORTED_TEXT_MODE);
       return NULL;
     }
@@ -176,7 +176,6 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE fd;
   int hmode;
-  BY_HANDLE_FILE_INFORMATION info;
   rktio_fd_t *rfd;
 
   if (modes & RKTIO_OPEN_MUST_EXIST) {
@@ -237,9 +236,9 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
     return NULL;
   }
 
-  if (modes & RKTIO_MODE_TEXT) {
-    if (!rktio_fd_is_regular_file(rfd)) {
-      rktio_fd_forget(rfd);
+  if (modes & RKTIO_OPEN_TEXT) {
+    if (!rktio_fd_is_regular_file(rktio, rfd)) {
+      rktio_forget(rktio, rfd);
       set_racket_error(RKTIO_ERROR_UNSUPPORTED_TEXT_MODE);
       return NULL;
     }
@@ -258,17 +257,17 @@ rktio_fd_t *rktio_open(rktio_t *rktio, const char *filename, int modes)
   if (modes & RKTIO_OPEN_WRITE)
     return open_write(rktio, filename, modes);
   else
-    return open_read(rktio, filename);
+    return open_read(rktio, filename, modes);
 }
 
 /*========================================================================*/
 /* File positions                                                         */
 /*========================================================================*/
 
-#ifdef WINDOWS_FILE_HANDLES
+#ifdef RKTIO_SYSTEM_WINDOWS
 static int win_seekable(intptr_t fd)
 {
-  /* SetFilePointer() requires " a file stored on a seeking device".
+  /* SetFilePointer() requires "a file stored on a seeking device".
      I'm not sure how to test that, so we approximate as "regular
      file". */
   return GetFileType((HANDLE)fd) == FILE_TYPE_DISK;
@@ -305,7 +304,7 @@ rktio_ok_t rktio_set_file_position(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesi
     } else
       return 1;
   } else {
-    set_racket_error(RKTIO_ERROR_CANNOT_SET_FILE_POSITION);
+    set_racket_error(RKTIO_ERROR_CANNOT_FILE_POSITION);
     return 0;
   }
 #endif
@@ -325,7 +324,8 @@ rktio_filesize_t *rktio_get_file_position(rktio_t *rktio, rktio_fd_t *rfd)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (win_seekable(fd)) {
-    DWORD lo_w, hi_w;
+    DWORD lo_w;
+    LONG hi_w;
     hi_w = 0;
     lo_w = SetFilePointer((HANDLE)fd, 0, &hi_w, FILE_CURRENT);
     if ((lo_w == INVALID_SET_FILE_POINTER)
@@ -333,9 +333,9 @@ rktio_filesize_t *rktio_get_file_position(rktio_t *rktio, rktio_fd_t *rfd)
       get_windows_error();
       return NULL;
     } else
-      pll = ((mzlonglong)hi_w << 32) | lo_w;
+      pll = ((rktio_int64_t)hi_w << 32) | lo_w;
   } else {
-    set_racket_error(RKTIO_ERROR_CANNOT_SET_FILE_POSITION);
+    set_racket_error(RKTIO_ERROR_CANNOT_FILE_POSITION);
     return NULL;
   }
 #endif
@@ -384,7 +384,7 @@ rktio_ok_t rktio_set_file_size(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t
       }
     }
   } else {
-    set_racket_error(RKTIO_ERROR_CANNOT_SET_FILE_POSITION);
+    set_racket_error(RKTIO_ERROR_CANNOT_FILE_POSITION);
     return 0;
   }
 #endif

@@ -78,14 +78,7 @@ case "$host_os" in
   hpux*)
     ;;
   *mingw*)
-    enable_pthread_by_default=yes
-    use_flag_pthread=no
     skip_iconv_check=yes
-
-    AC_CHECK_LIB(winpthread, pthread_create, has_winpthread=yes, has_winpthread=no)
-    if test "${has_winpthread}" = "yes" ; then
-      LIBS="${LIBS} -Wl,-Bstatic -lwinpthread"
-    fi
     ;;    
   cygwin*)
     ;;

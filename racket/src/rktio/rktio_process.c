@@ -672,6 +672,10 @@ void rktio_reap_processes(rktio_t *rktio)
 
 #endif
 
+#ifdef RKTIO_SYSTEM_WINDOWS
+void rktio_reap_processes(rktio_t *rktio) { }
+#endif
+
 /*========================================================================*/
 /* Windows process times                                                  */
 /*========================================================================*/

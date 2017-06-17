@@ -241,7 +241,7 @@ RKTIO_EXTERN rktio_ok_t rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd);
 typedef rktio_int64_t rktio_filesize_t;
 
 rktio_ok_t rktio_set_file_position(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t pos, int whence);
-/* Can report `RKTIO_ERROR_CANNOT_SET_FILE_POSITION` on Windows. */
+/* Can report `RKTIO_ERROR_CANNOT_FILE_POSITION` on Windows. */
 /* For `whence`: */
 enum {
   RKTIO_POSITION_FROM_START,
@@ -251,11 +251,11 @@ enum {
 rktio_filesize_t *rktio_get_file_position(rktio_t *rktio, rktio_fd_t *rfd);
 /* Returns the file position, not taking into account rare input
    buffering (see `rktio_read`). On Windows, can report
-   `RKTIO_ERROR_CANNOT_SET_FILE_POSITION`, which doesn't have a
+   `RKTIO_ERROR_CANNOT_FILE_POSITION`, which doesn't have a
    corresponding Windows error code. */
 
 rktio_ok_t rktio_set_file_size(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t sz);
-/* Can report `RKTIO_ERROR_CANNOT_SET_FILE_POSITION` on Windows. */
+/* Can report `RKTIO_ERROR_CANNOT_FILE_POSITION` on Windows. */
 
 /*************************************************/
 /* Pipes                                         */
