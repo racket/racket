@@ -534,6 +534,7 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_error_escape_proc(NULL);
   scheme_init_print_buffers_places();
   scheme_init_thread_places();
+  scheme_init_fd_semaphores();
   scheme_init_string_places();
   scheme_init_logger();
   scheme_init_eval_places();
@@ -541,7 +542,6 @@ static Scheme_Env *place_instance_init(void *stack_base, int initial_main_os_thr
   scheme_init_regexp_places();
   scheme_init_sema_places();
   scheme_init_gmp_places();
-  scheme_init_fd_semaphores();
 #ifndef DONT_USE_FOREIGN
   scheme_init_foreign_places();
 #endif
@@ -646,10 +646,6 @@ void scheme_place_instance_destroy(int force)
     scheme_run_atexit_closers_on_all(force_more_closed);
   else
     scheme_run_atexit_closers_on_all(force_more_closed_after);
-
-#ifdef WINDOWS_PROCESSES
-  scheme_release_process_job_object();
-#endif
 
   scheme_release_fd_semaphores();
   

@@ -792,8 +792,10 @@ Whether @var{close} is zero or not, closing the resulting ports
  So, passing zero for @var{close} and also using the file descriptor
  with other ports or with @cpp{scheme_fd_to_semaphore} will not work right.
 
-@history["6.9.0.6" @elem{Changed ports to always unregister with @cpp{scheme_fd_to_semaphore},
-                         since it's not safe to skip that step.}]}
+@history[#:changed "6.9.0.6" @elem{Changed ports to always unregister
+                                   with @cpp{scheme_fd_to_semaphore},
+                                   since it's not safe to skip that
+                                   step.}]}
 
 
 @function[(Scheme_Object* scheme_fd_to_semaphore

@@ -502,10 +502,20 @@ RKTIO_EXTERN int rktio_fs_change_properties(rktio_t *rktio);
 #define RKTIO_FS_CHANGE_SCALABLE    (1 << 1)
 #define RKTIO_FS_CHANGE_LOW_LATENCY (1 << 2)
 #define RKTIO_FS_CHANGE_FILE_LEVEL  (1 << 3)
+#define RKTIO_FS_CHANGE_NEED_LTPS   (1 << 4)
 
 typedef struct rktio_fs_change_t rktio_fs_change_t;
+struct rktio_ltps_t; /* forward reference */
 
-RKTIO_EXTERN rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, const char *path);
+RKTIO_EXTERN rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, const char *path,
+                                                struct rktio_ltps_t *ltps);
+/* Creates a filesystem-change tracker that reports changes in `path`
+   after creation of the tracker. The properties repotred by
+   `rktio_fs_change_properties` report various aspects of how the
+   tracket behaves. In particular, the `ltps` argument can be NULL
+   unless the `RKTIO_FS_CHANGE_NEED_LTPS` property is reported; if
+   `lt` is provided, then the tracker must be canceled or discovered
+   ready before `ltps` is closed. */
 
 RKTIO_EXTERN void rktio_fs_change_forget(rktio_t *rktio, rktio_fs_change_t *fc);
 
@@ -598,8 +608,8 @@ enum {
   RKTIO_LTPS_REMOVE_VNODE
 };
 
-RKTIO_EXTERN void rktio_ltps_handle_set_data(rktio_t *rktio, rktio_ltps_handle_t *s, void *data);
-RKTIO_EXTERN void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *s);
+RKTIO_EXTERN void rktio_ltps_handle_set_data(rktio_t *rktio, rktio_ltps_handle_t *h, void *data);
+RKTIO_EXTERN void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *h);
 
 void rktio_ltps_remove_all(rktio_t *rktio, rktio_ltps_t *lt);
 /* Removes all additions, signaling all handles. */
@@ -609,6 +619,19 @@ RKTIO_EXTERN rktio_ok_t rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt);
 
 RKTIO_EXTERN rktio_ltps_handle_t *rktio_ltps_get_signaled_handle(rktio_t *rktio, rktio_ltps_t *lt);
 /* Free the returned handle when you're done with it. */
+
+RKTIO_EXTERN void rktio_ltps_handle_set_auto(rktio_t *rktio, rktio_ltps_handle_t *lth, int auto_mode);
+/* An alternative to receiving the handle via `rktio_ltps_get_signaled_handle`;
+   have signaling automatically either zero the handle content (so the
+   client can detect signaling) or free the handle (bcause the client
+   is no longer watching it). If `auto_mode` is `RKTIO_LTPS_HANDLE_NONE`,
+   automatic handling is disabled for the handle. */
+/* `auto_mode` values: */
+enum {
+  RKTIO_LTPS_HANDLE_NONE,
+  RKTIO_LTPS_HANDLE_ZERO,
+  RKTIO_LTPS_HANDLE_FREE
+};
 
 RKTIO_EXTERN void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_t *lt);
 /* Waits up to `nsecs` seconds (or forever if `nsecs` is 0) or until

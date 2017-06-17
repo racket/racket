@@ -52,7 +52,9 @@ int rktio_fs_change_properties(rktio_t *rktio)
 #ifdef NO_FILESYSTEM_CHANGE_EVTS
 #else
   flags |= RKTIO_FS_CHANGE_SUPPORTED;
-# if !defined(HAVE_KQUEUE_SYSCALL)
+# if defined(HAVE_KQUEUE_SYSCALL)
+  flags |= RKTIO_FS_CHANGE_NEED_LTPS;
+# else
   flags |= RKTIO_FS_CHANGE_SCALABLE;
 # endif
 # if !defined(HAVE_INOTIFY_SYSCALL)
@@ -66,12 +68,11 @@ int rktio_fs_change_properties(rktio_t *rktio)
   return flags;
 }
 
-rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, const char *path)
+rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, const char *path, rktio_ltps_t *lt)
 {
   int ok = 0;
 #ifndef NO_FILESYSTEM_CHANGE_EVTS
 # if defined(HAVE_KQUEUE_SYSCALL)
-  rktio_ltps_t *lt;
   rktio_ltps_handle_t *lth;
 # endif
 #endif
@@ -86,24 +87,30 @@ rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, const char *path)
 #elif defined(FILESYSTEM_NEVER_CHANGES)
   ok = 1;
 #elif defined(HAVE_KQUEUE_SYSCALL)
-  do {
-    fd = open(path, RKTIO_BINARY, 0666);
-  } while ((fd == -1) && (errno == EINTR));
-  if (fd == -1)
-    get_posix_error();
-  else {
-    rktio_fd_t *rfd;
-    rfd = rktio_system_fd(rktio, fd, 0);
-    lt = rktio_ltps_open(rktio);
-    if (lt)
+  if (!lt) {
+    set_racket_error(RKTIO_ERROR_UNSUPPORTED);
+    ok = 0;
+  } else {
+    do {
+      fd = open(path, RKTIO_BINARY, 0666);
+    } while ((fd == -1) && (errno == EINTR));
+    if (fd == -1)
+      get_posix_error();
+    else {
+      rktio_fd_t *rfd;
+      rfd = rktio_system_fd(rktio, fd, 0);
       lth = rktio_ltps_add(rktio, lt, rfd, RKTIO_LTPS_CREATE_VNODE);
-    if (!lt || !lth) {
-      if (lt)
-        rktio_ltps_close(rktio, lt);
-      rktio_reliably_close(fd);
-    } else
-      ok = 1;
-    rktio_forget(rktio, rfd);
+      if (!lth) {
+        rktio_reliably_close(fd);
+      } else {
+        /* Put any pointer in the handle, and set it to auto-handle mode
+           to clear the pointer if it gets signalled. */
+        rktio_ltps_handle_set_data(rktio, lth, lth);
+        rktio_ltps_handle_set_auto(rktio, lth, RKTIO_LTPS_HANDLE_ZERO);
+        ok = 1;
+      }
+      rktio_forget(rktio, rfd);
+    }
   }
 #elif defined(HAVE_INOTIFY_SYSCALL)
   do_inotify_init(rktio);
@@ -162,8 +169,18 @@ static void fs_change_release(rktio_t *rktio, rktio_fs_change_t *fc)
 # elif defined(HAVE_INOTIFY_SYSCALL)
   do_inotify_remove(rktio, fc->fd);
 # elif defined(HAVE_KQUEUE_SYSCALL)
-  rktio_ltps_close(rktio, fc->lt); /* frees lth */
-  rktio_reliably_close(fc->fd);
+  if (rktio_ltps_handle_get_data(rktio, fc->lth)) {
+    /* Not zeroed, so never signaled. Change the auto behavior
+       to free the handle, and deregsiter the file descriptor. */
+    rktio_fd_t *rfd;
+    rktio_ltps_handle_set_auto(rktio, fc->lth, RKTIO_LTPS_HANDLE_FREE);
+    rfd = rktio_system_fd(rktio, fc->fd, 0);
+    (void)rktio_ltps_add(rktio, fc->lt, rfd, RKTIO_LTPS_REMOVE_VNODE);
+    rktio_close(rktio, rfd);
+  } else {
+    /* Was signaled, so we need to free it. */
+    free(fc->lth);
+  }
 #endif
 
   fc->done = 1;
@@ -200,9 +217,11 @@ int rktio_poll_fs_change_ready(rktio_t *rktio, rktio_fs_change_t *fc)
   return 0;
 #elif defined(HAVE_KQUEUE_SYSCALL)
   if (!fc->done) {
-    if (rktio_ltps_poll(rktio, fc->lt))
-      if (rktio_ltps_get_signaled_handle(rktio, fc->lt) == fc->lth)
-        fs_change_release(rktio, fc);
+    (void)rktio_ltps_poll(rktio, fc->lt);
+    if (!rktio_ltps_handle_get_data(rktio, fc->lth)) {
+      /* NULL value means that it was signaled; can free, etc. */
+      fs_change_release(rktio, fc);
+    }
   }
 
   return (fc->done ? RKTIO_POLL_READY : 0);

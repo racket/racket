@@ -389,7 +389,7 @@ SHARED_OK static char *embedding_banner;
 SHARED_OK static Scheme_Object *vers_str;
 SHARED_OK static Scheme_Object *banner_str;
 
-SHARED_OK static Scheme_Object *fs_change_props;
+THREAD_LOCAL_DECL(static Scheme_Object *fs_change_props);
 
 READ_ONLY static Scheme_Object *complete_symbol, *continues_symbol, *aborts_symbol, *error_symbol;
 
@@ -471,31 +471,6 @@ scheme_init_string (Scheme_Env *env)
   REGISTER_SO(embedding_banner);
   REGISTER_SO(vers_str);
   REGISTER_SO(banner_str);
-
-  REGISTER_SO(fs_change_props);
-  {
-    int supported, scalable, low_latency, file_level;
-    Scheme_Object *s;
-    scheme_fs_change_properties(&supported, &scalable, &low_latency, &file_level);
-    fs_change_props = scheme_make_vector(4, scheme_false);
-    if (supported) {
-      s = scheme_intern_symbol("supported");
-      SCHEME_VEC_ELS(fs_change_props)[0] = s;
-    }
-    if (scalable) {
-      s = scheme_intern_symbol("scalable");
-      SCHEME_VEC_ELS(fs_change_props)[1] = s;
-    }
-    if (low_latency) {
-      s = scheme_intern_symbol("low-latency");
-      SCHEME_VEC_ELS(fs_change_props)[2] = s;
-    }
-    if (file_level) {
-      s = scheme_intern_symbol("file-level");
-      SCHEME_VEC_ELS(fs_change_props)[3] = s;
-    }
-    SCHEME_SET_IMMUTABLE(fs_change_props);
-  }
 
   vers_str = scheme_make_utf8_string(scheme_version());
   SCHEME_SET_CHAR_STRING_IMMUTABLE(vers_str);
@@ -1014,6 +989,31 @@ scheme_init_string (Scheme_Env *env)
 void scheme_init_string_places(void) {
   REGISTER_SO(current_locale_name_ptr);
   current_locale_name_ptr = (void *)xes_char_string;
+
+  REGISTER_SO(fs_change_props);
+  {
+    int supported, scalable, low_latency, file_level;
+    Scheme_Object *s;
+    scheme_fs_change_properties(&supported, &scalable, &low_latency, &file_level);
+    fs_change_props = scheme_make_vector(4, scheme_false);
+    if (supported) {
+      s = scheme_intern_symbol("supported");
+      SCHEME_VEC_ELS(fs_change_props)[0] = s;
+    }
+    if (scalable) {
+      s = scheme_intern_symbol("scalable");
+      SCHEME_VEC_ELS(fs_change_props)[1] = s;
+    }
+    if (low_latency) {
+      s = scheme_intern_symbol("low-latency");
+      SCHEME_VEC_ELS(fs_change_props)[2] = s;
+    }
+    if (file_level) {
+      s = scheme_intern_symbol("file-level");
+      SCHEME_VEC_ELS(fs_change_props)[3] = s;
+    }
+    SCHEME_SET_IMMUTABLE(fs_change_props);
+  }
 }
 
 /**********************************************************************/

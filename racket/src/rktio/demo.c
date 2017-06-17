@@ -909,12 +909,18 @@ int main(int argc, char **argv)
     char *path = "test1";
     rktio_fs_change_t *fc;
     rktio_poll_set_t *ps;
+    rktio_ltps_t *lt;
     double start;
 
     if (verbose)
       printf("fs change\n");
 
-    fc = rktio_fs_change(rktio, path);
+    if (rktio_fs_change_properties(rktio) & RKTIO_FS_CHANGE_NEED_LTPS)
+      lt = rktio_ltps_open(rktio);
+    else
+      lt = NULL;
+
+    fc = rktio_fs_change(rktio, path, lt);
     check_valid(fc);
 
     check_valid(!rktio_poll_fs_change_ready(rktio, fc));
@@ -945,6 +951,9 @@ int main(int argc, char **argv)
     rktio_poll_set_forget(rktio, ps);
     
     rktio_fs_change_forget(rktio, fc);
+
+    if (lt)
+      rktio_ltps_close(rktio, lt);
   }
 
   if (verbose)

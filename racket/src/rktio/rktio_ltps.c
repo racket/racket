@@ -43,6 +43,7 @@ struct rktio_ltps_t {
 };
 
 struct rktio_ltps_handle_t {
+  int auto_mode;
   void *data; /* arbitrary data from client */
   struct rktio_ltps_handle_t *next; /* in signaled chain */
 };
@@ -75,6 +76,7 @@ rktio_ltps_handle_t *make_ltps_handle()
 {
   rktio_ltps_handle_t *s;
   s = malloc(sizeof(rktio_ltps_handle_t));
+  s->auto_mode = RKTIO_LTPS_HANDLE_NONE;
   s->data = NULL;
   s->next = NULL;
   return s;
@@ -82,8 +84,18 @@ rktio_ltps_handle_t *make_ltps_handle()
 
 void ltps_signal_handle(rktio_ltps_t *lt, rktio_ltps_handle_t *s)
 {
-  s->next = lt->signaled;
-  lt->signaled = s;
+  switch (s->auto_mode) {
+  case RKTIO_LTPS_HANDLE_NONE:
+    s->next = lt->signaled;
+    lt->signaled = s;
+    break;
+  case RKTIO_LTPS_HANDLE_ZERO:
+    s->data = NULL;
+    break;
+  case RKTIO_LTPS_HANDLE_FREE:
+    free(s);
+    break;
+  }
 }
 
 void rktio_ltps_handle_set_data(rktio_t *rktio, rktio_ltps_handle_t *s, void *data)
@@ -94,6 +106,11 @@ void rktio_ltps_handle_set_data(rktio_t *rktio, rktio_ltps_handle_t *s, void *da
 void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *s)
 {
   return s->data;
+}
+
+void rktio_ltps_handle_set_auto(rktio_t *rktio, rktio_ltps_handle_t *s, int auto_mode)
+{
+  s->auto_mode = auto_mode;
 }
 
 /*========================================================================*/
@@ -144,12 +161,8 @@ int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
 #endif
 
 #if defined(HAVE_KQUEUE_SYSCALL) || defined(HAVE_EPOLL_SYSCALL)
-  if (lt->fd >= 0) {
-    intptr_t rc;
-    do {
-      rc = close(lt->fd);
-    } while ((rc == -1) && (errno == EINTR));
-  }
+  if (lt->fd >= 0)
+    rktio_reliably_close(lt->fd);
   free(lt);
 #else
   rktio_poll_set_forget(rktio, lt->fd_set);

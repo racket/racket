@@ -4300,6 +4300,11 @@ Scheme_Object *scheme_file_unlock(int argc, Scheme_Object **argv)
 /*                        filesystem change events                        */
 /*========================================================================*/
 
+static void filesystem_change_evt_fnl(void *fc, void *data)
+{
+  scheme_filesystem_change_evt_cancel((Scheme_Object *)fc, NULL);
+}
+
 Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int signal_errs)
 {
   char *filename;
@@ -4309,7 +4314,7 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 					   "filesystem-change-evt",
 					   NULL,
 					   SCHEME_GUARD_FILE_EXISTS);
-  rfc = rktio_fs_change(scheme_rktio, filename);
+  rfc = rktio_fs_change(scheme_rktio, filename, scheme_semaphore_fd_set);
 
   if (!rfc) {
     if (scheme_last_error_is_racket(RKTIO_ERROR_UNSUPPORTED)) {
@@ -4339,6 +4344,8 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
     mref = scheme_add_managed(NULL, (Scheme_Object *)fc, scheme_filesystem_change_evt_cancel, NULL, 1);
     fc->mref = mref;
 
+    scheme_add_finalizer(fc, filesystem_change_evt_fnl, NULL);
+
     return (Scheme_Object *)fc;
   }
 }
@@ -4350,6 +4357,11 @@ void scheme_filesystem_change_evt_cancel(Scheme_Object *evt, void *ignored_data)
   if (fc->rfc) {
     rktio_fs_change_forget(scheme_rktio, fc->rfc);
     fc->rfc = NULL;
+  }
+
+  if (fc->mref) {
+    scheme_remove_managed(fc->mref, (Scheme_Object *)fc);
+    fc->mref = NULL;
   }
 }
 
@@ -4379,6 +4391,9 @@ void scheme_fs_change_properties(int *_supported, int *_scalable, int *_low_late
   int props;
 
   props = rktio_fs_change_properties(scheme_rktio);
+  if ((props & RKTIO_FS_CHANGE_NEED_LTPS) && !scheme_semaphore_fd_set)
+    props = 0;
+  
   *_supported = ((props & RKTIO_FS_CHANGE_SUPPORTED) ? 1 : 0);
   *_scalable = ((props & RKTIO_FS_CHANGE_SCALABLE) ? 1 : 0);
   *_low_latency = ((props & RKTIO_FS_CHANGE_LOW_LATENCY) ? 1 : 0);
