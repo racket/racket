@@ -1893,13 +1893,15 @@ static Scheme_Object *udp_bind_or_connect(const char *name, int argc, Scheme_Obj
 
     if (SCHEME_FALSEP(argv[1]) && SCHEME_FALSEP(argv[2])) {
       /* DISCONNECT */
-      if (!rktio_udp_disconnect(scheme_rktio, udp->s)) {
-        scheme_raise_exn(MZEXN_FAIL_NETWORK, 
-                         "%s: can't disconnect\n"
-                         "  system error: %R",
-                         name);
+      if (udp->connected) {
+        if (!rktio_udp_disconnect(scheme_rktio, udp->s)) {
+          scheme_raise_exn(MZEXN_FAIL_NETWORK,
+                           "%s: can't disconnect\n"
+                           "  system error: %R",
+                           name);
+        }
+        udp->connected = 0;
       }
-      udp->connected = 0;
       return scheme_void;
     }
 
