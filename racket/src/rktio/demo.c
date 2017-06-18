@@ -482,6 +482,28 @@ static rktio_fd_t *connect_loop(rktio_t *rktio, rktio_addrinfo_t *addr, rktio_ad
   return fd;
 }
 
+static rktio_fd_t *accept_loop(rktio_t *rktio, rktio_listener_t *lnr)
+{
+  rktio_fd_t *fd2;
+  rktio_poll_set_t *ps;
+  
+  while (rktio_poll_accept_ready(rktio, lnr) == RKTIO_POLL_NOT_READY) {
+    ps = rktio_make_poll_set(rktio);
+    check_valid(ps);
+    
+    rktio_poll_add_accept(rktio, lnr, ps);
+    rktio_sleep(rktio, 0, ps, NULL);
+    rktio_poll_set_forget(rktio, ps);
+  }
+
+  check_valid(rktio_poll_accept_ready(rktio, lnr) == RKTIO_POLL_READY);
+  
+  fd2 = rktio_accept(rktio, lnr);
+  check_valid(fd2);
+
+  return fd2;
+}
+
 static char *month_name(rktio_t *rktio, int month)
 {
   static char *months[] = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "NOV", "DEC"};
@@ -507,11 +529,13 @@ int main(int argc, char **argv)
   rktio_directory_list_t *ls;
   rktio_file_copy_t *cp;
   rktio_timestamp_t *ts1, *ts1a;
-  int verbose = 0, dont_rely_on_sigchild = 0;
+  int verbose = 0, dont_rely_on_sigchild = 0, stress = 0;
 
   for (i = 1; i < argc; i++) {
     if (!strcmp(argv[i], "-v"))
       verbose = 1;
+    else if (!strcmp(argv[i], "--stress"))
+      stress = 1;
     else if (!strcmp(argv[i], "--sleep-blocks-sigchld")) {
       /* Seems useful for Valgrind on MacOS */
       dont_rely_on_sigchild = 1;
@@ -676,9 +700,12 @@ int main(int argc, char **argv)
   if (verbose)
     printf("pipe\n");
 
-  {
+  for (i = 0; i < (stress ? 100 : 1); i++) {
     rktio_fd_t **pipe_fds;
-    
+
+    if (stress && verbose)
+      printf(" iter %d\n", i);
+
     pipe_fds = rktio_make_pipe(rktio, 0);
     check_valid(pipe_fds);
 
@@ -704,6 +731,15 @@ int main(int argc, char **argv)
     if (!PIPE_IMMEDIATELY_READY)
       wait_read(rktio, fd);
     check_drain_read(rktio, fd, 0, verbose);
+
+    while (rktio_poll_write_flushed(rktio, fd2) == RKTIO_POLL_NOT_READY) {
+      rktio_poll_set_t *ps;
+      ps = rktio_make_poll_set(rktio);
+      check_valid(ps);
+      rktio_poll_add(rktio, fd, ps, RKTIO_POLL_FLUSH);
+      rktio_sleep(rktio, 0, ps, NULL);
+      rktio_poll_set_forget(rktio, ps);
+    }
     check_valid(rktio_poll_write_flushed(rktio, fd2) == RKTIO_POLL_READY);
 
     check_valid(rktio_close(rktio, fd));
@@ -715,9 +751,12 @@ int main(int argc, char **argv)
   if (verbose)
     printf("tcp\n");
 
-  {
+  for (i = 0; i < (stress ? 100 : 1); i++) {
     rktio_addrinfo_t *addr;
     rktio_listener_t *lnr;
+
+    if (stress && verbose)
+      printf(" iter %d\n", i);
 
     check_many_lookup(rktio);
 
@@ -732,10 +771,7 @@ int main(int argc, char **argv)
     addr = lookup_loop(rktio, "localhost", 4536, -1, 0, 1);
     fd = connect_loop(rktio, addr, NULL);
 
-    check_valid(rktio_poll_accept_ready(rktio, lnr) == RKTIO_POLL_READY);
-
-    fd2 = rktio_accept(rktio, lnr);
-    check_valid(fd2);
+    fd2 = accept_loop(rktio, lnr);
     check_valid(!rktio_poll_accept_ready(rktio, lnr));
 
     {
@@ -776,7 +812,7 @@ int main(int argc, char **argv)
     fd = connect_loop(rktio, addr, NULL);
     rktio_addrinfo_free(rktio, addr);
     
-    fd2 = rktio_accept(rktio, lnr);
+    fd2 = accept_loop(rktio, lnr);
 
     if (verbose)
       printf(" fill\n");

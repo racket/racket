@@ -518,6 +518,8 @@ void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
     if (src_fds->sockets[i] != INVALID_SOCKET)
       rktio_fdset(fds, (intptr_t)src_fds->sockets[i]);
   }
+  if (src_fds->no_sleep)
+    fds->no_sleep = 1;
 }
 
 void rktio_clean_fd_set(rktio_poll_set_t *fds)

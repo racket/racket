@@ -1313,8 +1313,6 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
         errsaved = oth->err_no;
         ok = 0;
       } else if (oth->buflen == RKTIO_FD_BUFFSIZE) {
-	/* clear any leftover notifications */
-        WaitForSingleObject(oth->ready_sema, 0);
         ok = 1;
       } else {
         intptr_t topp;

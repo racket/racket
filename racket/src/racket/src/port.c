@@ -4309,7 +4309,22 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
 					   "filesystem-change-evt",
 					   NULL,
 					   SCHEME_GUARD_FILE_EXISTS);
+  
   rfc = rktio_fs_change(scheme_rktio, filename, scheme_semaphore_fd_set);
+
+  if (!rfc
+      && !(rktio_fs_change_properties(scheme_rktio) & RKTIO_FS_CHANGE_FILE_LEVEL)
+      && scheme_file_exists(filename)) {
+    Scheme_Object *base, *name;
+    int is_dir;
+    char *try_filename;
+    name = scheme_split_path(filename, strlen(filename), &base, &is_dir, SCHEME_PLATFORM_PATH_KIND);
+    try_filename = scheme_expand_string_filename(base,
+						 "filesystem-change-evt",
+						 NULL,
+						 SCHEME_GUARD_FILE_EXISTS);
+    rfc = rktio_fs_change(scheme_rktio, try_filename, scheme_semaphore_fd_set);
+  }
 
   if (!rfc) {
     if (scheme_last_error_is_racket(RKTIO_ERROR_UNSUPPORTED)) {

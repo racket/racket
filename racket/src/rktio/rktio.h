@@ -515,7 +515,7 @@ RKTIO_EXTERN rktio_fs_change_t *rktio_fs_change(rktio_t *rktio, const char *path
 /* Creates a filesystem-change tracker that reports changes in `path`
    after creation of the tracker. The properties repotred by
    `rktio_fs_change_properties` report various aspects of how the
-   tracket behaves. In particular, the `ltps` argument can be NULL
+   tracker behaves. In particular, the `ltps` argument can be NULL
    unless the `RKTIO_FS_CHANGE_NEED_LTPS` property is reported; if
    `lt` is provided, then the tracker must be canceled or discovered
    ready before `ltps` is closed. */

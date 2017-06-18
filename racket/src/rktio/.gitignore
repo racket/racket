@@ -1,4 +1,5 @@
 # When building and running the demo with MSVC:
 /demo.exe
 /demo.obj
+/demo.pdb
 /test1
