@@ -135,7 +135,7 @@ rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes)
   rktio_fd_t *rfd;
 
   rfd = calloc(1, sizeof(rktio_fd_t));
-  rfd->modes = modes;  
+  rfd->modes = (modes - (modes & RKTIO_OPEN_INIT));
 
 #ifdef RKTIO_SYSTEM_UNIX
   rfd->fd = system_fd;
@@ -288,8 +288,13 @@ rktio_fd_t *rktio_dup(rktio_t *rktio, rktio_fd_t *rfd)
   if (nfd == -1) {
     get_posix_error();
     return NULL;
-  } else
-    return rktio_system_fd(rktio, nfd, rfd->modes);
+  } else {
+    /* Set the `RKTIO_OPEN_INIT` flag, because dup()ing a file
+       descriptor does not keep all of its properties on some
+       platforms (e.g., the non-blocking property on sockets on
+       Linux). */
+    return rktio_system_fd(rktio, nfd, rfd->modes | RKTIO_OPEN_INIT);
+  }
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   if (rfd->modes & RKTIO_OPEN_SOCKET) {

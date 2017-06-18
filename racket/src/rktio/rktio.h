@@ -151,7 +151,9 @@ RKTIO_EXTERN rktio_bool_t rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t 
    RKTIO_OPEN_TEXT flag has an effect only on Windows. */
 
 RKTIO_EXTERN int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
-/* Returns all of the recorded mode flags. */
+/* Returns all of the recorded mode flags, including those provided to
+   `rktio_system_fd` and those that are inferred. The
+   `RKTIO_OPEN_INIT` flag is not recorded, however. */
 
 RKTIO_EXTERN rktio_fd_t *rktio_open(rktio_t *rktio, const char *src, int modes);
 /* Can report `RKTIO_ERROR_DOES_NOT_EXIST` in place of a system error
