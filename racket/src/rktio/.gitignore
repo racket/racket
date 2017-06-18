@@ -1,0 +1,4 @@
+# When building and running the demo with MSVC:
+/demo.exe
+/demo.obj
+/test1

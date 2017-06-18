@@ -494,7 +494,7 @@ static char *week_day_name(rktio_t *rktio, int dow)
 {
   static char *days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
   check_valid((dow >= 0) && (dow <= 6));
-  return days[dow-1];
+  return days[dow];
 }
 
 int main(int argc, char **argv)
@@ -779,9 +779,11 @@ int main(int argc, char **argv)
     
     fd2 = rktio_accept(rktio, lnr);
 
-    printf(" fill\n");
+    if (verbose)
+      printf(" fill\n");
     check_fill_write(rktio, fd2, NULL, 0, verbose);
-    printf(" drain\n");
+    if (verbose)
+      printf(" drain\n");
     check_drain_read(rktio, fd, 0, verbose);
 
     check_valid(rktio_close(rktio, fd));
@@ -1047,9 +1049,9 @@ int main(int argc, char **argv)
     amt = rktio_write(rktio, fd2, "hola", 4);
     check_valid(amt == 4);
 
-    printf("wait...\n");
+    rktio_close(rktio, fd2);
+
     rktio_sleep(rktio, 0, ps, NULL);
-    printf("done\n");
     
     while (rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_NOT_READY) {
       /* sleep woke up early - not what we want, but allowed by the spec */
@@ -1063,7 +1065,6 @@ int main(int argc, char **argv)
     check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);
     check_valid(rktio_poll_fs_change_ready(rktio, fc) == RKTIO_POLL_READY);
 
-    check_valid(rktio_close(rktio, fd2));
     rktio_poll_set_forget(rktio, ps);
     
     rktio_fs_change_forget(rktio, fc);
@@ -1103,7 +1104,7 @@ int main(int argc, char **argv)
       check_valid(rktio_file_lock_try(rktio, fd, 0) == RKTIO_LOCK_ACQUIRED);
 #if defined(RKTIO_SYSTEM_WINDOWS)
       /* Balance unlocks (Windows only) */
-      check_valid(rktio_file_unlock(rktio, fd2));
+      check_valid(rktio_file_unlock(rktio, fd));
 #endif
 
       /* Ok to take another non-exclusive lock: */

@@ -392,7 +392,7 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
       dst = 0;
       if (get_gmt) {
 	tzoffset = 0;
-	tzn = "UTC";
+	tzn = MSC_IZE(strdup)("UTC");
       } else {
 	TIME_ZONE_INFORMATION tz;
 	if (GetTimeZoneInformationForYearProc)
@@ -418,6 +418,7 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
 	  tzn = NARROW_PATH_copy(tz.StandardName);
 	}
       }
+# define TZN_STRDUP(s) s
 #else
       hour = localTime->tm_hour;
       min = localTime->tm_min;
@@ -470,6 +471,7 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
       } else
         tzn = "UTC";
 
+# define TZN_STRDUP(s) strdup
 #endif
 
       if (!tzn)
@@ -489,7 +491,7 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
       result->is_dst = (dst ? 1 : 0);
       result->zone_offset = tzoffset;
       if (tzn)
-        result->zone_name = MSC_IZE(strdup)(tzn);
+        result->zone_name = TZN_STRDUP(tzn);
       else
         result->zone_name = NULL;
 
