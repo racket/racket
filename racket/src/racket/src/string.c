@@ -2414,6 +2414,7 @@ static Scheme_Object *env_copy(int argc, Scheme_Object *argv[])
     for (i = rktio_envvars_count(scheme_rktio, envvars); i--; ) {
       var = scheme_make_immutable_sized_byte_string(rktio_envvars_name_ref(scheme_rktio, envvars, i), -1, 1);
       val = scheme_make_immutable_sized_byte_string(rktio_envvars_value_ref(scheme_rktio, envvars, i), -1, 1);
+      var = normalize_env_case(var);
       ht = scheme_hash_tree_set(ht, var, val);
     }
 
