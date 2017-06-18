@@ -538,21 +538,21 @@ Scheme_Object *scheme_place(int argc, Scheme_Object *args[]) {
     Scheme_Object *a[4];
     Scheme_Object *tmpport;
     a[0] = (Scheme_Object *) place;
-    if (rw[1] >= 0) {
+    if (rw[1]) {
       tmpport = scheme_make_rktio_fd_output_port(rw[1], scheme_intern_symbol("place-in"), 0);
       a[1] = tmpport;
     }
     else
       a[1] = scheme_false;
 
-    if (rw[2] >= 0) {
+    if (rw[2]) {
       tmpport = scheme_make_rktio_fd_input_port(rw[2],  scheme_intern_symbol("place-out"));
       a[2] = tmpport;
     }
     else
       a[2] = scheme_false;
 
-    if (rw[4] >= 0) {
+    if (rw[4]) {
       tmpport = scheme_make_rktio_fd_input_port(rw[4],  scheme_intern_symbol("place-err"));
       a[3] = tmpport;
     }

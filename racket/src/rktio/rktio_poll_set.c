@@ -952,7 +952,7 @@ rktio_signal_handle_t *rktio_get_signal_handle(rktio_t *rktio)
   return (rktio_signal_handle_t *)&rktio->put_external_event_fd;
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  return (rktio_signal_handle_t *)rktio->break_semaphore;
+  return (rktio_signal_handle_t *)&rktio->break_semaphore;
 #endif
 }
 
