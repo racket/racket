@@ -40,7 +40,8 @@ struct rktio_fd_t {
   struct Win_FD_Output_Thread *oth; /* output mode */
   int unblocked; /* whether non-blocking mode is installed */
   char *buffer; /* shared with reading thread */
-  int pending_cr; /* for text-mode input, may be dropped by a following lf */
+  int has_pending_byte; /* for text-mode input, may be dropped by a following lf */
+  int pending_byte; /* for text-mode input, either a CR waiting to decode, or byte that didn't fit */
 #endif
 };
 
@@ -120,9 +121,12 @@ static CSI_proc get_csi(void)
   return csi;
 }
 
-static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_cnoverted, intptr_t got);
-static const char *rktio_adjust_output_text(const char *buffer, intptr_t *towrite);
-static intptr_t rktio_recount_output_text(const char *orig_buffer, const char *buffer, intptr_t wrote);
+static intptr_t adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_converted,
+				  intptr_t got, intptr_t offset);
+static intptr_t adjust_input_text_for_pending_cr(rktio_fd_t *rfd, char *buffer, char *is_converted,
+						 intptr_t got);
+static const char *adjust_output_text(const char *buffer, intptr_t *towrite);
+static intptr_t recount_output_text(const char *orig_buffer, const char *buffer, intptr_t wrote);
 
 #endif
 
@@ -775,31 +779,41 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
   if (!rfd->th) {
     /* We can read directly. This must be a regular file, where
        reading never blocks. */
-    DWORD rgot;
+    DWORD rgot, offset = 0;
 
-    if (rfd->pending_cr && len) {
-      /* just in case we need to add the cr */
-      len--;
+    if (rfd->has_pending_byte) {
+      if (!len)
+	return 0;
+      buffer[0] = rfd->pending_byte;
+      if (len == 1) {
+	if (rfd->pending_byte == '\r') {
+	  /* We have to read one more byte and then decode,
+	     shifting the new byte into pending position
+	     if it's not '\n' */
+	} else {
+	  if (is_converted) is_converted[0] = 0;
+	  rfd->has_pending_byte = 0;
+	  return 1;
+	}
+      } else {
+	/* read after first byte installed into the buffer */
+	offset = 1;
+      }
     }
     
-    if (!ReadFile((HANDLE)rfd->fd, buffer, len, &rgot, NULL)) {
+    if (!ReadFile((HANDLE)rfd->fd, buffer + offset, len - offset, &rgot, NULL)) {
       get_windows_error();
       return RKTIO_READ_ERROR;
     }
+    rgot += offset;
     
-    if (!rgot) {
-      if (rfd->pending_cr) {
-	if (len) {
-	  buffer[0] = '\r';
-	  rfd->pending_cr = 0;
-	  if (is_converted) is_converted[0] = 0;
-	  return 1;
-	} else
-	  return 0;
-      } else
-	return RKTIO_READ_EOF;
-    } else if (rfd->modes & RKTIO_OPEN_TEXT)
-      return rktio_adjust_input_text(rfd, buffer, is_converted, rgot);
+    if (rfd->has_pending_byte) {
+      /* We had a buffer of size 1 and a pending '\r'... */
+      return adjust_input_text_for_pending_cr(rfd, buffer, is_converted, rgot);
+    } else if (!rgot)
+      return RKTIO_READ_EOF;
+    else if (rfd->modes & RKTIO_OPEN_TEXT)
+      return adjust_input_text(rfd, buffer, is_converted, rgot, offset);
     else
       return rgot;
   } else {
@@ -849,24 +863,21 @@ RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
 # endif
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
-  return (fd->pending_cr ? 1 : 0);
+  return (fd->has_pending_byte ? 1 : 0);
 #endif
 }
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 
-static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_converted, intptr_t got)
+static intptr_t adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_converted,
+				  intptr_t got, intptr_t offset)
 {
   int i, j;
 
-  if (rfd->pending_cr) {
-    memmove(buffer+1, buffer, got);
-    buffer[0] = '\r';
-    rfd->pending_cr = 0;
-    got++;
-  }
-  if (got && (buffer[got-1] == '\r')) {
-    rfd->pending_cr = 1;
+  if (got && (buffer[got-1] == '\r') && !offset) {
+    /* Save '\r' that might be followed by '\n' */
+    rfd->pending_byte = '\r';
+    rfd->has_pending_byte = 1;
     --got;
   }
   
@@ -888,6 +899,31 @@ static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_
   return j;
 }
 
+static intptr_t adjust_input_text_for_pending_cr(rktio_fd_t *rfd, char *buffer, char *is_converted,
+						 intptr_t got)
+{
+  if (!got) {
+    /* There are no more bytes to decode. Report the final '\r' by itself */
+    buffer[0] = '\r';
+    rfd->has_pending_byte = 0;
+    if (is_converted) is_converted[0] = 0;
+    return 1;
+  } else {
+    /* Combine the one new byte with a preceding '\r' */
+    if (buffer[0] == '\n') {
+      /* Decode */
+      rfd->has_pending_byte = 0;
+      if (is_converted) is_converted[0] = 1;
+      return 1;
+    } else {
+      /* Save the new byte as pending while returning a '\r' by itself */
+      rfd->pending_byte = buffer[0];
+      buffer[0] = '\r';
+      if (is_converted) is_converted[0] = 0;
+      return 1;
+    }
+  }
+}
 
 static void init_read_fd(rktio_t *rktio, rktio_fd_t *rfd)
 {
@@ -1130,7 +1166,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
     int err;
 
     if (rfd->modes & RKTIO_OPEN_TEXT)
-      buffer = rktio_adjust_output_text(buffer, &towrite);
+      buffer = adjust_output_text(buffer, &towrite);
     
     while (1) {
       ok = WriteFile((HANDLE)rfd->fd, buffer, towrite, &winwrote, NULL);
@@ -1152,12 +1188,14 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
     if (!ok) {
       get_windows_error();
+      if (buffer != orig_buffer)
+	free((char *)buffer);
       return RKTIO_WRITE_ERROR;
     }
 
     if (buffer != orig_buffer) {
       /* Convert converted count back to original count: */
-      winwrote = rktio_recount_output_text(orig_buffer, buffer, winwrote);
+      winwrote = recount_output_text(orig_buffer, buffer, winwrote);
       free((char *)buffer);
     }
 
@@ -1363,7 +1401,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
 #ifdef RKTIO_SYSTEM_WINDOWS
 
-static const char *rktio_adjust_output_text(const char *buffer, intptr_t *towrite)
+static const char *adjust_output_text(const char *buffer, intptr_t *towrite)
 {
   intptr_t len = *towrite, i, j, newlines = 0;
   char *new_buffer;
@@ -1396,12 +1434,12 @@ static const char *rktio_adjust_output_text(const char *buffer, intptr_t *towrit
   return new_buffer;
 }
 
-static intptr_t rktio_recount_output_text(const char *orig_buffer, const char *buffer, intptr_t wrote)
+static intptr_t recount_output_text(const char *orig_buffer, const char *buffer, intptr_t wrote)
 {
   intptr_t i = 0, j = 0;
 
   while (j < wrote) {
-    if (buffer[i] == '\n')
+    if (orig_buffer[i] == '\n')
       j += 2;
     else
       j++;
