@@ -7,8 +7,8 @@ Allocation conventions:
 
  - Unless otherwise specified, returned data must be deallocated ---
    using a type-specific deallocation function if provided or
-   rktio_free() otherwise. The rktio_free() function is the same as
-   free().
+   `rktio_free` otherwise. The `rktio_free` function is the same as
+   `free`.
 
  - There's no reference counting. Unless otherwise specified, if
    object A is created given object B, then a client must keep object
@@ -24,37 +24,45 @@ Return type conventions:
 
  - A return type `rktio_ok_t` (alias for `int`) means that 1 is
    returned for succes and 0 for error. Use
-   rktio_get_last_error_kind() and rktio_get_last_error() for more
+   `rktio_get_last_error_kind` and `rktio_get_last_error` for more
    information about a 0 result.
 
  - A return type `rktio_tri_t` (alias for `int`) means that 0 is
    returned for an expected failuree, some `RKTIO_...` (alias for 1)
    is returned for success, and `RKTIO_...ERROR` (alias for -2) is
-   returned for some error. Use rktio_get_last_error_kind() and
-   rktio_get_last_error() for more information about a
+   returned for some error. Use `rktio_get_last_error_kind` and
+   `rktio_get_last_error` for more information about a
    `RKTIO_...ERROR` result.
 
  - A return type `rktio_bool_t` means that the result is a simple 0 or
    1, and no error is possible.
 
  - For a pointer return type, unless otherwise specified, a NULL
-   result means an error. Use rktio_get_last_error_kind() and
-   rktio_get_last_error() for more information about the error.
+   result means an error. Use `rktio_get_last_error_kind` and
+   `rktio_get_last_error` for more information about the error.
 
  - If a function returns `void`, you can rely on it to not change the
-   error reported by rktio_get_last_error_kind() and
-   rktio_get_last_error().
+   error reported by `rktio_get_last_error_kind` and
+   `rktio_get_last_error`.
 
-Thread conventions:
+Thread and signal conventions:
 
  - A given `rktio_t` can be used from only one thread at a time.
-   Otherwise, as long as the initial call to rktio_init() returns
-   before a second call, there are no threading requirements.
+   Otherwise, as long as the initial call to `rktio_init` returns
+   before a second call, different `rktio_t` values can be used freely
+   from different threads.
 
-Signals:
+ - If a function doesn't take a `rktio_t` argument, then it can be
+   called concurrently with anything else. Notably,
+   `rktio_signal_received_at` does not take a `rktio_t`.
 
  - SIGCHLD may be enabled, blocked, and/or handled by the `rktio`
    library.
+
+ - On systems where signal handling is thread-specific, as on Linux,
+   then `rktio_init` should be called before any additional threads,
+   so that a suitable inheritable siganl disposition can be
+   configured.
 
 */
      
@@ -66,20 +74,20 @@ Signals:
 
 typedef struct rktio_t rktio_t;
 /* A rktio_t value represents an instance of the Racket I/O system.
-   Almost every rktio_...() function takes it as the first argument. */
+   Almost every `rktio_...` function takes it as the first argument. */
 
 RKTIO_EXTERN rktio_t *rktio_init(void);
-/* Call rktio_init() before anything else. The first call to
-   rktio_init() must return before any additional calls (in other
+/* Call `rktio_init` before anything else. The first call to
+   `rktio_init` must return before any additional calls (in other
    threads), but there's no ordering requirement after that. */
 
 RKTIO_EXTERN void rktio_destroy(rktio_t *);
-/* Call rktio_destroy() as the last thing. Everything else must be
+/* Call `rktio_destroy` as the last thing. Everything else must be
    explicitly deallocated/closed/forgotten before calling
-   rktio_destroy(). */
+   `rktio_destroy`. */
 
 RKTIO_EXTERN void rktio_free(void *p);
-/* Normally equivalent to free(), but ensures the same malloc()/free()
+/* Normally equivalent to `free`, but ensures the same `malloc`/`free`
    that rktio function use. */
 
 typedef int rktio_ok_t;
@@ -203,7 +211,7 @@ RKTIO_EXTERN intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *fd, char *buffer, i
 RKTIO_EXTERN intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, const char *buffer, intptr_t len);
 /* Returns the number of bytes written, possibly 0, in non-blocking
    mode. Alternatively, the result can be `RKTIO_WRITE_ERROR` for an
-   error. Although rktio_write() is intended to write only bytes that
+   error. Although `rktio_write` is intended to write only bytes that
    can be fully delivered to the OS, there may be OS limitations that
    require buffering (e.g., on Windows). Use `rktio_poll_write_flushed`
    to make sure the data is received by the destination before closing
@@ -213,7 +221,7 @@ RKTIO_EXTERN intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, const char *bu
 
 RKTIO_EXTERN intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len,
                                            char *is_converted);
-/* Like rktio_read(), but also reports whether each character was
+/* Like `rktio_read`, but also reports whether each character was
    originally two characters that were converted to a single newline for
    text mode. */
 
@@ -536,7 +544,7 @@ RKTIO_EXTERN rktio_tri_t rktio_poll_fs_change_ready(rktio_t *rktio, rktio_fs_cha
 /*************************************************/
 /* File-descriptor sets for polling              */
 
-/* A poll set works for a single use via rktio_sleep(), as opposed to
+/* A poll set works for a single use via `rktio_sleep`, as opposed to
    "long-term" poll sets that can be used multiple times. The
    `rktio_sleep` function accepts one of each and combines them. */
 
@@ -572,7 +580,7 @@ RKTIO_EXTERN void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t 
    to trigger a wake up. The functions do nothing  on other platforms. */
 
 RKTIO_EXTERN void rkio_reset_sleep_backoff(rktio_t *rktio);
-/* Call this function when using rktio_poll_set_add_eventmask() and
+/* Call this function when using `rktio_poll_set_add_eventmask` and
    when matching events are not always consumed from the queue between
    sleeps. To accomodate messages that are not consumed, the poll set
    will actually only sleep a short while at first, and then back off
@@ -735,7 +743,7 @@ RKTIO_EXTERN char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_lis
 
 RKTIO_EXTERN void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list_t *dl);
 /* Interrupt a directory list in progress, not needed after
-   rktio_directory_list_step() returns "": */
+   `rktio_directory_list_step` returns "": */
 
 RKTIO_EXTERN char **rktio_filesystem_roots(rktio_t *rktio);
 /* Returns a NULL-terminated array. Free each string. Currently never
@@ -795,13 +803,28 @@ RKTIO_EXTERN char *rktio_expand_user_tilde(rktio_t *rktio, const char *filename)
 /* Sleep and signals                             */
 
 typedef struct rktio_signal_handle_t rktio_signal_handle_t;
+/* A `rktio_signal_handle_t` is a value specific to a `rktio_t` that
+   causes any `rktio_sleep` for that `rktio_t` to return (or causes
+   the next `rktio_sleep` to return if one is not in progress. */
 
 RKTIO_EXTERN rktio_signal_handle_t *rktio_get_signal_handle(rktio_t *rktio);
+/* Gets the handle for the given `rktio_t`. */
+
 RKTIO_EXTERN void rktio_signal_received_at(rktio_signal_handle_t *h);
+/* Signals the given handle. This function can be called from any
+   thread or from signal handlers. */
+
 RKTIO_EXTERN void rktio_signal_received(rktio_t *rktio);
+/* A shorthand for `rktio_signal_received_at` composed with
+   `rktio_get_signal_handle`. */
 
 RKTIO_EXTERN void rktio_wait_until_signal_received(rktio_t *rktio);
+/* The same as `rktio_sleep` with no timeout, no poll set, and no
+   long-term poll set. */
+
 RKTIO_EXTERN void rktio_flush_signals_received(rktio_t *rktio);
+/* Clears any pending signal so that it doesn't interrupt the next
+   `rktio_sleep`. */
 
 /*************************************************/
 /* Time and date                                 */
@@ -879,7 +902,7 @@ RKTIO_EXTERN void rktio_remap_last_error(rktio_t *rktio);
 
 RKTIO_EXTERN const char *rktio_get_last_error_string(rktio_t *rktio);
 RKTIO_EXTERN const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);
-/* The returned strings for `rktio_...error_string()` should not be
+/* The returned strings for `rktio_...error_string` should not be
    deallocated, but it only lasts reliably until the next call to
   either of the functions. */
 

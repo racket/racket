@@ -76,6 +76,7 @@ typedef struct Child_Status {
 static Child_Status *child_statuses = NULL;
 static pthread_mutex_t child_status_lock;
 static pthread_mutex_t child_wait_lock; /* ordered before status lock */
+static int status_lock_initialized;
 
 static int started_thread, pending_children;
 
@@ -369,6 +370,14 @@ static void got_sigchld()
      in a thread does the work. */
 }
 
+static void block_sigchld()
+{
+  sigset_t set;
+  sigemptyset(&set);
+  sigaddset(&set, SIGCHLD);
+  sigprocmask(SIG_BLOCK, &set, NULL);
+}
+
 void centralized_block_child_signal()
 {
   /* SIGCHLD is always blocked, since it's managed via sigwait() */
@@ -380,8 +389,11 @@ void centralized_unblock_child_signal()
 
 void centralized_start_child_signal_handler()
 {
-  pthread_mutex_init(&child_status_lock, NULL);
-  pthread_mutex_init(&child_wait_lock, NULL);
+  if (!status_lock_initialized) {
+    pthread_mutex_init(&child_status_lock, NULL);
+    pthread_mutex_init(&child_wait_lock, NULL);
+    status_lock_initialized = 1;
+  }
 }
 
 void centralized_wait_suspend()
@@ -399,21 +411,18 @@ void centralized_starting_child()
   pthread_mutex_lock(&child_wait_lock);
 
   if (!started_thread) {
-    sigset_t set;
     pthread_t signal_thread;
 
     /* Mac OS X seems to need a handler installed for SIGCHLD to be
        delivered, since the default is to drop the signal. Also, this
        handler serves as a back-up alert if some thread is created that
-     does not block SIGCHLD.
-     Solaris, meanwhile, seems to unmask SIGCHLD as a result of
-     setting a handler, so do this before masking the signal. */
+       does not block SIGCHLD.
+       Solaris, meanwhile, seems to unmask SIGCHLD as a result of
+       setting a handler, so do this before masking the signal. */
     signal(SIGCHLD, got_sigchld);
     
-    /* Block SIGCLHD, because the worker thread will use sigwait() */
-    sigemptyset(&set);
-    sigaddset(&set, SIGCHLD);
-    sigprocmask(SIG_BLOCK, &set, NULL);
+    /* Block SIGCLHD (again), because the worker thread will use sigwait(). */
+    block_sigchld();
       
     (void)pthread_create(&signal_thread, NULL, thread_signal_worker, NULL);
 
@@ -945,6 +954,10 @@ void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp)
 int rktio_process_init(rktio_t *rktio)
 {
 #if defined(CENTRALIZED_SIGCHILD)
+  /* Block SIGCHLD as earyl as possible, because it's a per-thread
+     setting on Linux, and we want SIGCHLD blocked everywhere. */
+  block_sigchld();
+
   centralized_start_child_signal_handler();
 #endif
 

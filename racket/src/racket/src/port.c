@@ -4320,10 +4320,10 @@ Scheme_Object *scheme_filesystem_change_evt(Scheme_Object *path, int flags, int 
   if (!rfc
       && !(rktio_fs_change_properties(scheme_rktio) & RKTIO_FS_CHANGE_FILE_LEVEL)
       && scheme_file_exists(filename)) {
-    Scheme_Object *base, *name;
+    Scheme_Object *base;
     int is_dir;
     char *try_filename;
-    name = scheme_split_path(filename, strlen(filename), &base, &is_dir, SCHEME_PLATFORM_PATH_KIND);
+    (void)scheme_split_path(filename, strlen(filename), &base, &is_dir, SCHEME_PLATFORM_PATH_KIND);
     try_filename = scheme_expand_string_filename(base,
 						 "filesystem-change-evt",
 						 NULL,
