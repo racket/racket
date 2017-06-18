@@ -3472,6 +3472,18 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
         ok = 1;
       }
     }
+
+    if (ok) {
+      if (!rktio_copy_file_finish_permissions(scheme_rktio, cf)) {
+        rktio_copy_file_stop(scheme_rktio, cf);
+        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                         "copy-file: cannot set destination's permissions\n"
+                         "  source path: %q\n"
+                         "  destination path: %q",
+                         filename_for_error(argv[0]),
+                         filename_for_error(argv[1]));
+      }
+    }
     rktio_copy_file_stop(scheme_rktio, cf);
     if (ok)
       return scheme_void;

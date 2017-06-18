@@ -745,11 +745,25 @@ typedef struct rktio_file_copy_t rktio_file_copy_t;
 
 RKTIO_EXTERN rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const char *src,
                                                       rktio_bool_t exists_ok);
-/* Can report `RKTIO_ERROR_EXISTS`. */
+/* Starts a file copy. Depending on the OS, this step may perform the
+   whole copy, or it may just get started. Can report
+   `RKTIO_ERROR_EXISTS`. */
 
-RKTIO_EXTERN int rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
+RKTIO_EXTERN rktio_bool_t rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
 RKTIO_EXTERN rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
+/* As long as the copy isn't done, call `rktio_copy_file_step` to make
+   a little progress. Use `rktio_copy_file_finish_permissions` (optionally)
+   and then `rktio_copy_file_stop` when done. */
+
+RKTIO_EXTERN rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t *fc);
+/* Depending on the OS, copies permissions from the source to the
+   destination. This step can be performed at any time between the
+   start and stop. Reports success if this step isn't needed (e.g.,
+   where a copy fully completes when it is started). */
+
 RKTIO_EXTERN void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc);
+/* Deallocates the copy process, interrupting it if the copy is not
+   complete. */
 
 /*************************************************/
 /* System paths                                  */

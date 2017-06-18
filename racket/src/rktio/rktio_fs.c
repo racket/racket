@@ -1509,6 +1509,9 @@ void rktio_directory_list_stop(rktio_t *rktio, rktio_directory_list_t *dl)
 struct rktio_file_copy_t {
   int done;
   rktio_fd_t *src_fd, *dest_fd;
+#ifdef RKTIO_SYSTEM_UNIX
+  intptr_t mode;
+#endif
 };
 
 rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const char *src, int exists_ok)
@@ -1552,6 +1555,7 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
       fc->done = 0;
       fc->src_fd = src_fd;
       fc->dest_fd = dest_fd;
+      fc->mode = buf.st_mode;
 
       return fc;
     }
@@ -1583,12 +1587,12 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
 #endif
 }
 
-int rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc)
+rktio_bool_t rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc)
 {
   return fc->done;
 }
 
-int rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc)
+rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc)
 {
 #ifdef RKTIO_SYSTEM_UNIX
   char buffer[4096];
@@ -1618,6 +1622,23 @@ int rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc)
 #ifdef RKTIO_SYSTEM_WINDOWS
   return 1;
 #endif
+}
+
+rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t *fc)
+{
+#ifdef RKTIO_SYSTEM_UNIX
+  int err;
+  
+  do {
+    err = fchmod(rktio_fd_system_fd(rktio, fc->dest_fd), fc->mode);
+  } while ((err == -1) && (errno != EINTR));
+
+  if (err) {
+    get_posix_error();
+    return 0;
+  }
+#endif
+  return 1;
 }
 
 void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc)
