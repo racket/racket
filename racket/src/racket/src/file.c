@@ -3343,7 +3343,7 @@ static char *filename_for_error(Scheme_Object *p)
                             0);
 }
 
-static int can_enable_write_permission()
+int scheme_can_enable_write_permission(void)
 {
 #ifdef DOS_FILE_SYSTEM
   if (SCHEME_TRUEP(scheme_get_param(scheme_current_config(), MZCONFIG_FORCE_DELETE_PERMS)))
@@ -3364,7 +3364,7 @@ static Scheme_Object *delete_file(int argc, Scheme_Object **argv)
                                      NULL,
                                      SCHEME_GUARD_FILE_DELETE);
 
-  if (!rktio_delete_file(scheme_rktio, fn, can_enable_write_permission())) {
+  if (!rktio_delete_file(scheme_rktio, fn, scheme_can_enable_write_permission())) {
     scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, 
                      "delete-file: cannot delete file\n"
                      "  path: %q\n"
@@ -4683,7 +4683,7 @@ static Scheme_Object *delete_directory(int argc, Scheme_Object *argv[])
 #endif
   
   if (!rktio_delete_directory(scheme_rktio, filename, current_directory,
-                              can_enable_write_permission())) {
+                              scheme_can_enable_write_permission())) {
     scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
                      "delete-directory: cannot delete directory\n"
                      "  path: %q\n"

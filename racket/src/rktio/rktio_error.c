@@ -93,6 +93,22 @@ void rktio_remap_last_error(rktio_t *rktio)
       rktio_set_last_error(rktio, RKTIO_ERROR_KIND_WINDOWS, ERROR_FILE_NOT_FOUND);
 #endif
       break;
+    case RKTIO_ERROR_EXISTS:
+#ifdef RKTIO_SYSTEM_UNIX
+      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_POSIX, EEXIST);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_WINDOWS, RKTIO_ERROR_EXISTS);
+#endif
+      break;
+    case RKTIO_ERROR_ACCESS_DENIED:
+#ifdef RKTIO_SYSTEM_UNIX
+      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_POSIX, EACCES);
+#endif
+#ifdef RKTIO_SYSTEM_WINDOWS
+      rktio_set_last_error(rktio, RKTIO_ERROR_KIND_WINDOWS, ERROR_ACCESS_DENIED);
+#endif
+      break;
     }
   }
 }

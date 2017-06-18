@@ -131,23 +131,11 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
       set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
       return NULL;
     } else if (errno == EEXIST) {
-      if (!(modes & RKTIO_OPEN_REPLACE)) {
-        set_racket_error(RKTIO_ERROR_EXISTS);
-        return NULL;
-      } else {
-	do {
-	  cr = unlink(filename);
-	} while ((cr == -1) && (errno == EINTR));
-
-	if (cr) {
-          get_posix_error();
-          return NULL;
-        }
-        
-	do {
-	  fd = open(filename, flags | RKTIO_BINARY, 0666);
-	} while ((fd == -1) && (errno == EINTR));
-      }
+      set_racket_error(RKTIO_ERROR_EXISTS);
+      return NULL;
+    } else if (errno == EACCES) {
+      set_racket_error(RKTIO_ERROR_ACCESS_DENIED);
+      return NULL;
     }
 
     if (fd == -1) {
@@ -197,32 +185,14 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
 		   NULL);
 
   if (fd == INVALID_HANDLE_VALUE) {
-    int errv;
-    errv = GetLastError();
-    if ((errv == ERROR_ACCESS_DENIED) && (modes & RKTIO_OPEN_REPLACE)) {
-      /* Delete and try again... */
-      if (DeleteFileW(WIDE_PATH_temp(filename))) {
-	fd = CreateFileW(WIDE_PATH_temp(filename),
-                         GENERIC_WRITE | ((modes & RKTIO_OPEN_READ) ? GENERIC_READ : 0),
-                         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                         NULL,
-                         hmode,
-                         0,
-                         NULL);
-	if (fd == INVALID_HANDLE_VALUE) {
-	  get_windows_error();
-          return NULL;
-        }
-      } else {
-        get_windows_error();
-        return NULL;
-      }
+    int errv = GetLastError();
+    if (errv == ERROR_ACCESS_DENIED) {
+      set_racket_error(RKTIO_ERROR_ACCESS_DENIED);
+      return NULL;
     } else if (errv == ERROR_FILE_EXISTS) {
       set_racket_error(RKTIO_ERROR_EXISTS);
       return NULL;
-    }
-
-    if (fd == INVALID_HANDLE_VALUE) {
+    } else {
       get_windows_error();
       return NULL;
     }

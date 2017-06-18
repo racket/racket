@@ -112,24 +112,23 @@ typedef struct rktio_fd_t rktio_fd_t;
 /* Used for `rktio_open` with `RKTIO_OPEN_WRITE`: */
 #define RKTIO_OPEN_TRUNCATE    (1<<3)
 #define RKTIO_OPEN_APPEND      (1<<4)
-#define RKTIO_OPEN_REPLACE     (1<<5)
-#define RKTIO_OPEN_MUST_EXIST  (1<<6)
-#define RKTIO_OPEN_CAN_EXIST   (1<<7)
+#define RKTIO_OPEN_MUST_EXIST  (1<<5)
+#define RKTIO_OPEN_CAN_EXIST   (1<<6)
 
 /* Used for `rktio_system_fd`: */
-#define RKTIO_OPEN_SOCKET      (1<<8)
-#define RKTIO_OPEN_UDP         (1<<9)
-#define RKTIO_OPEN_REGFILE     (1<<10)
-#define RKTIO_OPEN_NOT_REGFILE (1<<11)
+#define RKTIO_OPEN_SOCKET      (1<<7)
+#define RKTIO_OPEN_UDP         (1<<8)
+#define RKTIO_OPEN_REGFILE     (1<<9)
+#define RKTIO_OPEN_NOT_REGFILE (1<<10)
 /* If neither RKTIO_OPEN_REGILE nor RKTIO_OPEN_NOT_REGILE
    are specified, then the value is inferred by `rtkio_system_fd`. */
-#define RKTIO_OPEN_DIR         (1<<12)
-#define RKTIO_OPEN_NOT_DIR     (1<<13)
+#define RKTIO_OPEN_DIR         (1<<11)
+#define RKTIO_OPEN_NOT_DIR     (1<<12)
 /* Inferred when neither is specified and when `RKTIO_OPEN_[NOT_]REGFILE`
    is also inferred. */
-#define RKTIO_OPEN_INIT        (1<<14)
+#define RKTIO_OPEN_INIT        (1<<13)
 /* Make `rtkio_system_fd` set a socket as nonblocking, etc. */
-#define RKTIO_OPEN_OWN         (1<<15)
+#define RKTIO_OPEN_OWN         (1<<14)
 /* Make `rtkio_system_fd` record a socket for reliable clean up on pre-NT Windows. */
 
 RKTIO_EXTERN rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int modes);
@@ -152,8 +151,11 @@ RKTIO_EXTERN int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
 /* Returns all of the recorded mode flags. */
 
 RKTIO_EXTERN rktio_fd_t *rktio_open(rktio_t *rktio, const char *src, int modes);
-/* Can report `RKTIO_ERROR_DOES_NOT_EXIST` in place of system error,
-   and can report `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE` on Windows. */
+/* Can report `RKTIO_ERROR_DOES_NOT_EXIST` in place of a system error
+   in read mode, and can report `RKTIO_ERROR_IS_A_DIRECTORY`,
+   `RKTIO_ERROR_EXISTS`, or `RKTIO_ERROR_ACCESS_DENIED` in place of a
+   system error in write mode. On Windows, can report
+   `RKTIO_ERROR_UNSUPPORTED_TEXT_MODE`. */
 
 RKTIO_EXTERN rktio_ok_t rktio_close(rktio_t *rktio, rktio_fd_t *fd);
 /* Can report `RKTIO_ERROR_EXISTS` in place of system error,
@@ -823,6 +825,7 @@ enum {
   RKTIO_ERROR_UNSUPPORTED = 1,
   RKTIO_ERROR_DOES_NOT_EXIST,
   RKTIO_ERROR_EXISTS,
+  RKTIO_ERROR_ACCESS_DENIED,
   RKTIO_ERROR_LINK_FAILED,
   RKTIO_ERROR_NOT_A_LINK,
   RKTIO_ERROR_BAD_PERMISSION,

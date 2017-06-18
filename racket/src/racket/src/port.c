@@ -3595,7 +3595,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                            int internal)
 {
   int e_set = 0, m_set = 0, i;
-  int existsok = 0;
+  int open_flags = 0, try_replace = 0;
   char *filename;
   char mode[4];
   int typepos;
@@ -3616,22 +3616,23 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
 
     if (SAME_OBJ(argv[i], append_symbol)) {
       mode[0] = 'a';
-      existsok = RKTIO_OPEN_APPEND;
+      open_flags = RKTIO_OPEN_APPEND;
       e_set++;
     } else if (SAME_OBJ(argv[i], replace_symbol)) {
-      existsok = RKTIO_OPEN_REPLACE;
+      try_replace = 1;
       e_set++;
     } else if (SAME_OBJ(argv[i], truncate_symbol)) {
-      existsok = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_CAN_EXIST;
+      open_flags = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_CAN_EXIST;
       e_set++;
     } else if (SAME_OBJ(argv[i], must_truncate_symbol)) {
-      existsok = RKTIO_OPEN_MUST_EXIST | RKTIO_OPEN_TRUNCATE;
+      open_flags = RKTIO_OPEN_MUST_EXIST | RKTIO_OPEN_TRUNCATE;
       e_set++;
     } else if (SAME_OBJ(argv[i], truncate_replace_symbol)) {
-      existsok = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_REPLACE | RKTIO_OPEN_CAN_EXIST;
+      open_flags = RKTIO_OPEN_TRUNCATE | RKTIO_OPEN_CAN_EXIST;
+      try_replace = 1;
       e_set++;
     } else if (SAME_OBJ(argv[i], update_symbol)) {
-      existsok = RKTIO_OPEN_MUST_EXIST;
+      open_flags = RKTIO_OPEN_MUST_EXIST;
       if (typepos == 1) {
 	mode[2] = mode[1];
 	typepos = 2;
@@ -3640,7 +3641,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
       mode[1] = '+';
       e_set++;
     } else if (SAME_OBJ(argv[i], can_update_symbol)) {
-      existsok = RKTIO_OPEN_CAN_EXIST;
+      open_flags = RKTIO_OPEN_CAN_EXIST;
       if (typepos == 1) {
 	mode[2] = mode[1];
 	typepos = 2;
@@ -3686,7 +3687,7 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                                            (internal
                                             ? 0
                                             : (SCHEME_GUARD_FILE_WRITE
-                                               | ((existsok & RKTIO_OPEN_REPLACE)
+                                               | (try_replace
                                                   ? SCHEME_GUARD_FILE_DELETE
                                                   : 0)
                                                /* append mode: */
@@ -3694,19 +3695,38 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                                                   ? SCHEME_GUARD_FILE_READ
                                                   : 0)
                                                /* update mode: */
-                                               | ((existsok & (RKTIO_OPEN_CAN_EXIST | RKTIO_OPEN_MUST_EXIST)
-                                                   && !(existsok & (RKTIO_OPEN_REPLACE
-                                                                    | RKTIO_OPEN_TRUNCATE
-                                                                    | RKTIO_OPEN_APPEND)))
+                                               | ((open_flags & (RKTIO_OPEN_CAN_EXIST | RKTIO_OPEN_MUST_EXIST)
+                                                   && !(open_flags & (RKTIO_OPEN_TRUNCATE
+                                                                      | RKTIO_OPEN_APPEND))
+                                                   && !try_replace)
                                                   ? SCHEME_GUARD_FILE_READ
                                                   : 0))));
 
   scheme_custodian_check_available(NULL, name, "file-stream");
 
-  fd = rktio_open(scheme_rktio, filename, (RKTIO_OPEN_WRITE
-                                           | existsok
-                                           | (and_read ? RKTIO_OPEN_READ : 0)
-                                           | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)));
+  while (1) {
+    fd = rktio_open(scheme_rktio, filename, (RKTIO_OPEN_WRITE
+                                             | open_flags
+                                             | (and_read ? RKTIO_OPEN_READ : 0)
+                                             | ((mode[1] == 't') ? RKTIO_OPEN_TEXT : 0)));
+    
+    if (!fd
+        && try_replace
+        && (scheme_last_error_is_racket(RKTIO_ERROR_EXISTS)
+            || (scheme_last_error_is_racket(RKTIO_ERROR_ACCESS_DENIED)
+                && rktio_file_exists(scheme_rktio, filename)))) {
+      /* In replace mode, delete file and try again */
+      if (!rktio_delete_file(scheme_rktio, filename, scheme_can_enable_write_permission())) {
+        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                         "%s: error deleting file\n"
+                         "  path: %q\n"
+                         "  system error: %R",
+                         name, filename);
+      }
+      try_replace = 0;
+    } else
+      break;
+  }
 
   if (!fd) {
     if (scheme_last_error_is_racket(RKTIO_ERROR_EXISTS)) {
@@ -3718,19 +3738,12 @@ scheme_do_open_output_file(char *name, int offset, int argc, Scheme_Object *argv
                        "%s: path is a directory\n"
                        "  path: %q",
                        name, filename);
-    } else {
-#if 0
-      /* Add a way to get this information from rktio_open()? */
-      if (....)
-        scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-			 "%s: error deleting file\n"
+    } else
+      scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                         "%s: cannot open output file\n"
                          "  path: %q\n"
                          "  system error: %R",
-			 name, filename);
-
-#endif
-      filename_exn(name, "cannot open output file", filename, 0);
-    }
+                         name, filename);
   }
     
   return make_fd_output_port(fd, scheme_make_path(filename), and_read, -1, NULL);

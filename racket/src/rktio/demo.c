@@ -704,7 +704,7 @@ int main(int argc, char **argv)
     rktio_fd_t **pipe_fds;
 
     if (stress && verbose)
-      printf(" iter %d\n", i);
+      printf(" iter %d\n", (int)i);
 
     pipe_fds = rktio_make_pipe(rktio, 0);
     check_valid(pipe_fds);
@@ -756,7 +756,7 @@ int main(int argc, char **argv)
     rktio_listener_t *lnr;
 
     if (stress && verbose)
-      printf(" iter %d\n", i);
+      printf(" iter %d\n", (int)i);
 
     check_many_lookup(rktio);
 
