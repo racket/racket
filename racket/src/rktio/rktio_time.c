@@ -471,7 +471,7 @@ rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, i
       } else
         tzn = "UTC";
 
-# define TZN_STRDUP(s) strdup
+# define TZN_STRDUP(s) strdup(s)
 #endif
 
       if (!tzn)

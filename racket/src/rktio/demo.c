@@ -284,7 +284,6 @@ static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd
 static void check_fill_write(rktio_t *rktio, rktio_fd_t *fd2, rktio_addrinfo_t *dest_addr, intptr_t limit, int verbose)
 {
   intptr_t i, amt;
-  int r;
   
   if (!limit)
     limit = AMOUNT_TO_WRITE_AND_BLOCK;
