@@ -172,7 +172,7 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
       hmode = TRUNCATE_EXISTING;
     else
       hmode = OPEN_EXISTING;
-  } else if (modes & RKTIO_OPEN_CAN_EXIST)
+  } else if (modes & (RKTIO_OPEN_CAN_EXIST | RKTIO_OPEN_APPEND))
     hmode = OPEN_ALWAYS;
   else
     hmode = CREATE_NEW;

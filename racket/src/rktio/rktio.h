@@ -114,6 +114,7 @@ typedef struct rktio_fd_t rktio_fd_t;
 #define RKTIO_OPEN_APPEND      (1<<4)
 #define RKTIO_OPEN_MUST_EXIST  (1<<5)
 #define RKTIO_OPEN_CAN_EXIST   (1<<6)
+/* `RKTIO_OPEN_APPEND` implies `RKTIO_OPEN_CAN_EXIST` */
 
 /* Used for `rktio_system_fd`: */
 #define RKTIO_OPEN_SOCKET      (1<<7)
