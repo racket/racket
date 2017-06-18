@@ -254,10 +254,6 @@ static void default_sleep(float v, void *fds);
 static void register_traversers(void);
 #endif
 
-#if defined(WIN32_FD_HANDLES)
-THREAD_LOCAL_DECL(void *scheme_break_semaphore;)
-#endif
-
 static Scheme_Object *make_fd_input_port(rktio_fd_t *fd, Scheme_Object *name, int *refcount, int internal);
 static Scheme_Object *make_fd_output_port(rktio_fd_t *fd, Scheme_Object *name, int read_too, int flush_mode, int *refcount);
 
@@ -481,9 +477,7 @@ void scheme_set_stdio_makers(Scheme_Stdio_Maker_Proc in,
 
 void scheme_add_fd_handle(void *h, void *fds, int repost)
 {
-#if defined(WIN32_FD_HANDLES)
   rktio_poll_set_add_handle(scheme_rktio, (intptr_t)h, fds, repost);
-#endif
 }
 
 void scheme_add_fd_nosleep(void *fds)
@@ -493,9 +487,7 @@ void scheme_add_fd_nosleep(void *fds)
 
 void scheme_add_fd_eventmask(void *fds, int mask)
 {
-#if defined(WIN32_FD_HANDLES)
-  rktio_poll_set_add_eventmask(scheme_rktio, mask, fds);
-#endif
+  rktio_poll_set_add_eventmask(scheme_rktio, fds, mask);
 }
 
 /*========================================================================*/

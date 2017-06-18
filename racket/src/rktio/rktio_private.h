@@ -48,6 +48,8 @@ struct rktio_t {
   HANDLE break_semaphore;
   int wsr_size;
   struct rktio_socket_t *wsr_array;
+  int made_progress;
+  DWORD max_sleep_time;
 #endif
 #ifdef USE_FAR_RKTIO_FDCALLS
   /* A single fdset that can be reused for immediate actions: */

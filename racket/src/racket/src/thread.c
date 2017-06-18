@@ -4010,9 +4010,7 @@ static int check_sleep(int need_activity, int sleep_now)
   p2 = scheme_first_thread;
   while (p2) {
     if (p2->ran_some) {
-#ifdef RKTIO_SYSTEM_WINDOWS
       rkio_reset_sleep_backoff(scheme_rktio);
-#endif
       p2->ran_some = 0;
     }
     p2 = p2->next;

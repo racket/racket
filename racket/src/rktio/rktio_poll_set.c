@@ -511,15 +511,24 @@ int rktio_fdisset(rktio_poll_set_t *fd, intptr_t n)
   return 0;
 }
 
-void rktio_merge_fd_sets(rktio_poll_set_t *fds, rktio_poll_set_t *src_fds)
+void rktio_merge_fd_sets(rktio_poll_set_t *all_fds, rktio_poll_set_t *src_all_fds)
 {
+  int j;
   intptr_t i;
-  for (i = src_fds->added; i--; ) {
-    if (src_fds->sockets[i] != INVALID_SOCKET)
-      rktio_fdset(fds, (intptr_t)src_fds->sockets[i]);
+
+  for (j = 0; j < 3; j++) {
+    rktio_poll_set_t *fds;
+    rktio_poll_set_t *src_fds;
+    fds = rktio_get_fdset(all_fds, j);
+    src_fds = rktio_get_fdset(src_all_fds, j);
+    for (i = src_fds->added; i--; ) {
+      if (src_fds->sockets[i] != INVALID_SOCKET)
+	rktio_fdset(fds, (intptr_t)src_fds->sockets[i]);
+    }
+    if (src_fds->no_sleep)
+      fds->no_sleep = 1;
+    fds->wait_event_mask |= src_fds->wait_event_mask;
   }
-  if (src_fds->no_sleep)
-    fds->no_sleep = 1;
 }
 
 void rktio_clean_fd_set(rktio_poll_set_t *fds)
@@ -573,7 +582,7 @@ static int fdset_has_nosleep(rktio_poll_set_t *fds)
   return fds->no_sleep;
 }
 
-void rktio_poll_set_eventmask(rktio_poll_set_t *fds, int mask)
+void rktio_poll_set_add_eventmask(rktio_t *rktio, rktio_poll_set_t *fds, int mask)
 {
   fds->wait_event_mask |= mask;
 }
@@ -1044,12 +1053,9 @@ static void clean_up_wait(rktio_t *rktio,
   WaitForSingleObject(rktio->break_semaphore, 0);
 }
 
-static int made_progress;
-static DWORD max_sleep_time;
-
 void rkio_reset_sleep_backoff(rktio_t *rktio)
 {
-  made_progress = 1;
+  rktio->made_progress = 1;
 }
 
 #endif
@@ -1243,19 +1249,20 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 	 progress. */
 
       if (fds->wait_event_mask && GetQueueStatus(fds->wait_event_mask)) {
-	if (!made_progress) {
+	if (!rktio->made_progress) {
 	  /* Ok, we've gone around at least once. */
-	  if (max_sleep_time < 0x20000000)
-	    max_sleep_time *= 2;
+	  if (rktio->max_sleep_time < 0x20000000) {
+	    rktio->max_sleep_time *= 2;
+	  }
 	} else {
 	  /* Starting back-off mode */
-	  made_progress = 0;
-	  max_sleep_time = 5;
+	  rktio->made_progress = 0;
+	  rktio->max_sleep_time = 5;
 	}
       } else {
 	/* Disable back-off mode */
-	made_progress = 1;
-	max_sleep_time = 0;
+	rktio->made_progress = 1;
+	rktio->max_sleep_time = 0;
       }
 
       /* Wait for HANDLE-based input: */
@@ -1266,11 +1273,11 @@ void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds, rktio_ltps_
 	    msec = 100000000;
 	  else
 	    msec = (DWORD)(nsecs * 1000);
-	  if (max_sleep_time && (msec > max_sleep_time))
-	    msec = max_sleep_time;
+	  if (rktio->max_sleep_time && (msec > rktio->max_sleep_time))
+	    msec = rktio->max_sleep_time;
 	} else {
-	  if (max_sleep_time)
-	    msec = max_sleep_time;
+	  if (rktio->max_sleep_time)
+	    msec = rktio->max_sleep_time;
 	  else
 	    msec = INFINITE;
 	}
