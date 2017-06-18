@@ -207,7 +207,12 @@ then @exnraise[exn:fail:filesystem:errno].
 (define out (open-output-file some-file))
 (write "hello world" out)
 (close-output-port out)
-]}
+]
+
+@history[#:changed "6.9.0.6" @elem{On Unix and Mac OS, make @racket['truncate/replace]
+                                   replace on a permission error. On Windows, make
+                                   @racket['replace] always replace instead truncating
+                                   like @racket['truncate/replace].}]}
 
 @defproc[(open-input-output-file [path path-string?]
                            [#:mode mode-flag (or/c 'binary 'text) 'binary]
