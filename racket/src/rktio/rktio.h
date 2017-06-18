@@ -144,8 +144,11 @@ RKTIO_EXTERN rktio_bool_t rktio_fd_is_directory(rktio_t *rktio, rktio_fd_t *rfd)
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_socket(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_udp(rktio_t *rktio, rktio_fd_t *rfd);
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_terminal(rktio_t *rktio, rktio_fd_t *rfd);
-RKTIO_EXTERN rktio_bool_t rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t *rfd);
 /* The functions mostly report values of recorded mode flags. */
+
+RKTIO_EXTERN rktio_bool_t rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t *rfd);
+/* Reports whether RKTIO_OPEN_TEXT was use and has an effect. The
+   RKTIO_OPEN_TEXT flag has an effect only on Windows. */
 
 RKTIO_EXTERN int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
 /* Returns all of the recorded mode flags. */
@@ -208,7 +211,7 @@ RKTIO_EXTERN intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *fd, const char *bu
 RKTIO_EXTERN intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *fd, char *buffer, intptr_t len,
                                            char *is_converted);
 /* Like rktio_read(), but also reports whether each character was
-   original two characters that were converted to a single newline for
+   originally two characters that were converted to a single newline for
    text mode. */
 
 RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd);

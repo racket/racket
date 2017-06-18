@@ -81,7 +81,8 @@ static rktio_fd_t *open_read(rktio_t *rktio, const char *filename, int modes)
     return NULL;
   }
 
-  rfd = rktio_system_fd(rktio, (intptr_t)fd, RKTIO_OPEN_READ | RKTIO_OPEN_NOT_DIR);
+  rfd = rktio_system_fd(rktio, (intptr_t)fd, (RKTIO_OPEN_READ | RKTIO_OPEN_NOT_DIR
+					      | (modes & RKTIO_OPEN_TEXT)));
 
   if (modes & RKTIO_OPEN_TEXT) {
     if (!rktio_fd_is_regular_file(rktio, rfd)) {

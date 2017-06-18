@@ -555,7 +555,7 @@ int main(int argc, char **argv)
 
   /* Basic file I/O */
 
-  fd = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST);
+  fd = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST | RKTIO_OPEN_TRUNCATE);
   check_valid(fd);
   check_valid(rktio_poll_write_ready(rktio, fd) != RKTIO_POLL_ERROR);
   amt = rktio_write(rktio, fd, "hello", 5);
@@ -587,6 +587,59 @@ int main(int argc, char **argv)
   check_expected_racket_error(!fd, RKTIO_ERROR_EXISTS);
 
   check_hello_content(rktio, "test1");
+
+  /* Check text mode */
+
+  {
+    fd = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST | RKTIO_OPEN_TEXT);
+    check_valid(fd);
+#if defined(RKTIO_SYSTEM_WINDOWS)
+    check_valid(rktio_fd_is_text_converted(rktio, fd));
+#else
+    check_valid(!rktio_fd_is_text_converted(rktio, fd));
+#endif
+    
+    if (rktio_fd_is_text_converted(rktio, fd)) {
+      rktio_filesize_t *sz;
+      char buffer[32], converted[32];
+      intptr_t amt, more;
+      
+      check_valid(rktio_set_file_size(rktio, fd, 0));
+      check_valid(rktio_write(rktio, fd, "hello\nthere\r", 12) == 12);
+      check_valid(rktio_close(rktio, fd));
+      
+      sz = rktio_file_size(rktio, "test1");
+      check_valid(sz);
+      check_valid(*sz == 13);
+      free(sz);
+
+      fd = rktio_open(rktio, "test1", RKTIO_OPEN_READ);
+      amt = rktio_read(rktio, fd, buffer, sizeof(buffer));
+      check_valid(amt == 13);
+      check_valid(!strncmp("hello\r\nthere\r", buffer, 13));
+
+      fd = rktio_open(rktio, "test1", RKTIO_OPEN_READ | RKTIO_OPEN_TEXT);
+      check_valid(rktio_fd_is_text_converted(rktio, fd));
+      amt = rktio_read_converted(rktio, fd, buffer, sizeof(buffer), converted);
+      check_valid((amt != RKTIO_READ_ERROR) && (amt != RKTIO_READ_EOF));
+      /* trailing '\r' make be delayed */
+      more = rktio_read_converted(rktio, fd, buffer+amt, sizeof(buffer)-amt, converted+amt);
+      check_valid(more != RKTIO_READ_ERROR);
+      if (more != RKTIO_READ_EOF)
+	amt += more;
+      check_valid(amt == 12);
+      check_valid(!strncmp("hello\nthere\r", buffer, 12));
+      for (i = 0; i < amt; i++) {
+	check_valid(converted[i] == (i == 5));
+      }
+	    
+      fd = rktio_open(rktio, "test1", RKTIO_OPEN_WRITE | RKTIO_OPEN_CAN_EXIST | RKTIO_OPEN_TEXT | RKTIO_OPEN_TRUNCATE);
+      check_valid(rktio_write(rktio, fd, "hello", 5) == 5);
+      check_valid(rktio_close(rktio, fd));
+    } else {
+      check_valid(rktio_close(rktio, fd));
+    }
+  }
 
   /* Copying, renaming, and deleting files */
 

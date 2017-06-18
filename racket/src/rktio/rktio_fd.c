@@ -782,9 +782,18 @@ intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, int
       return RKTIO_READ_ERROR;
     }
     
-    if (!rgot)
-      return RKTIO_READ_EOF;
-    else if (rfd->modes & RKTIO_OPEN_TEXT)
+    if (!rgot) {
+      if (rfd->pending_cr) {
+	if (len) {
+	  buffer[0] = '\r';
+	  rfd->pending_cr = 0;
+	  if (is_converted) is_converted[0] = 0;
+	  return 1;
+	} else
+	  return 0;
+      } else
+	return RKTIO_READ_EOF;
+    } else if (rfd->modes & RKTIO_OPEN_TEXT)
       return rktio_adjust_input_text(rfd, buffer, is_converted, rgot);
     else
       return rgot;
@@ -860,10 +869,15 @@ static intptr_t rktio_adjust_input_text(rktio_fd_t *rfd, char *buffer, char *is_
     if ((buffer[i] == '\r') && (buffer[i+1] == '\n')) {
       if (is_converted) is_converted[j] = 1;
       buffer[j++] = '\n';
+      i++;
     } else {
       if (is_converted) is_converted[j] = 0;
-      buffer[j++] = buffer[i++];
+      buffer[j++] = buffer[i];
     }
+  }
+  if (i < got) {
+    if (is_converted) is_converted[j] = 0;
+    buffer[j++] = buffer[i];
   }
 
   return j;
