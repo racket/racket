@@ -69,14 +69,14 @@ typedef struct Win_FD_Output_Thread {
 		       write has ben flushed, which in turn is needed to
 		       know whether future writes will immediately succeed. */
   int flushed, needflush; /* Used for non-blocking, only. The flushed
-                                      flag communicates from the flush-testing thread
-                                      to the main thread. For efficiency, we request
-                                      flush checking only when needed (instead of
-                                      after every write); needflush indicates that
-                                      a flush check is currently needed, but hasn't
-                                      been started. */
+			     flag communicates from the flush-testing thread
+			     to the main thread. For efficiency, we request
+			     flush checking only when needed (instead of
+			     after every write); needflush indicates that
+			     a flush check is currently needed, but hasn't
+			     been started. */
   int done, err_no, you_clean_up;
-  unsigned int buflen, bufstart, bufend; /* used for blocking, only */
+  unsigned int buflen; /* used for blocking, only */
   unsigned char *buffer; /* used for blocking, only */
   int *refcount;
   HANDLE lock_sema, work_sema, ready_sema;
@@ -1270,8 +1270,6 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
         }
 
         oth->buflen = 0;
-        oth->bufstart = 0;
-        oth->bufend = 0;
 
         oth->fd = (HANDLE)rfd->fd;
         oth->err_no = 0;
@@ -1313,53 +1311,18 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
         errsaved = oth->err_no;
         ok = 0;
       } else if (oth->buflen == RKTIO_FD_BUFFSIZE) {
+	/* buffer is full, so can't write */
+	out_len = 0;
         ok = 1;
       } else {
-        intptr_t topp;
-        int was_pre;
-
-        if (!oth->buflen) {
-          /* Avoid fragmenting in circular buffer: */
-          oth->bufstart = 0;
-          oth->bufend = 0;
-        }
-
-        /* Write to top part of circular buffer, then bottom part
-           if anything's left. */
-
-        if (oth->bufstart <= oth->bufend) {
-          was_pre = 1;
-          topp = RKTIO_FD_BUFFSIZE;
-        } else {
-          was_pre = 0;
-          topp = oth->bufstart;
-        }
-
-        winwrote = topp - oth->bufend;
+        winwrote = RKTIO_FD_BUFFSIZE - oth->buflen;
         if ((intptr_t)winwrote > len)
           winwrote = len;
 
-        memcpy(oth->buffer + oth->bufend, buffer, winwrote);
+        memcpy(oth->buffer + oth->buflen, buffer, winwrote);
         oth->buflen += winwrote;
         out_len = winwrote;
 
-        oth->bufend += winwrote;
-        if (oth->bufend == RKTIO_FD_BUFFSIZE)
-          oth->bufend = 0;
-
-        if (was_pre) {
-          if ((intptr_t)winwrote < len) {
-            /* Try continuing with a wrap-around: */
-            winwrote = oth->bufstart - oth->bufend;
-            if ((intptr_t)winwrote > len - out_len)
-              winwrote = len - out_len;
-
-            memcpy(oth->buffer + oth->bufend, buffer + out_len, winwrote);
-            oth->buflen += winwrote;
-            oth->bufend += winwrote;
-            out_len += winwrote;
-          }
-        }
         /* Let the other thread know that it should start trying
            to write, if it isn't already: */
         ReleaseSemaphore(oth->work_sema, 1, NULL);
@@ -1486,17 +1449,15 @@ static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 	WaitForSingleObject(oth->work_sema, INFINITE);
 
       WaitForSingleObject(oth->lock_sema, INFINITE);
+
       if (oth->done)
 	break;
 
       towrite = oth->buflen;
-      if (towrite > (RKTIO_FD_BUFFSIZE - oth->bufstart))
-	towrite = RKTIO_FD_BUFFSIZE - oth->bufstart;
-      start = oth->bufstart;
       
       ReleaseSemaphore(oth->lock_sema, 1, NULL);
 
-      ok = WriteFile(oth->fd, oth->buffer + start, towrite, &wrote, NULL);
+      ok = WriteFile(oth->fd, oth->buffer, towrite, &wrote, NULL);
       if (!ok)
 	err_no = GetLastError();
       else
@@ -1506,10 +1467,9 @@ static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
       if (!ok)
 	oth->err_no = err_no;
       else {
-	oth->bufstart += wrote;
 	oth->buflen -= wrote;
-	if (oth->bufstart == RKTIO_FD_BUFFSIZE)
-	  oth->bufstart = 0;
+	if (oth->buflen)
+	  memmove(oth->buffer, oth->buffer + wrote, oth->buflen);
 	more_work = oth->buflen > 0;
       }
       if ((oth->buflen < RKTIO_FD_BUFFSIZE) || oth->err_no)
