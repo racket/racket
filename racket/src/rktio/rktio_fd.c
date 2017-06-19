@@ -1483,7 +1483,7 @@ static void deinit_write_fd(rktio_t *rktio, rktio_fd_t *rfd, int full_close)
 
 static long WINAPI WindowsFDWriter(Win_FD_Output_Thread *oth)
 {
-  DWORD towrite, wrote, start;
+  DWORD towrite, wrote;
   int ok, more_work = 0, err_no;
 
   if (oth->nonblocking) {

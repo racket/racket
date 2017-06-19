@@ -21,7 +21,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)\..\libffi\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\libffi\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="..\libffi\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			CharacterSet="1"
@@ -61,7 +61,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)\..\libffi\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\libffi\$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="..\libffi\$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="4"
 			CharacterSet="1"
