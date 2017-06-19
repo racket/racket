@@ -159,6 +159,7 @@ mzlibrary:
 no-cgc-needed:
 	cd src; $(MAKE) plain-objs
 	$(MAKE) @FOREIGNTARGET@
+	$(MAKE) rktio
 	$(MAKE) main.@LTO@
 	$(MAKE) mingw-other
 	cd dynsrc; $(MAKE) ../starter@EXE_SUFFIX@
