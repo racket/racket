@@ -1008,7 +1008,7 @@
   "Runs submodule <name>\n    (defaults to running just the `test' submodule)"
   (let ([n (string->symbol name)])
     (set! submodules (cons n submodules)))]
- [("++args") arg
+ [("++arg") arg
   "Adds <arg> to `current-command-line-arguments`"
   (set! extra-command-line-args (cons arg extra-command-line-args))]
  #:once-any
