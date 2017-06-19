@@ -163,17 +163,13 @@ The @exec{raco test} command accepts several flags:
        successes and failures, the table reports test and failure
        counts based on the log.}
 
+ @item{@DPFlag{arg} @nonterm{argument}
+  Forwards @nonterm{argument} to the invoked test module, so that the
+  invoked module sees @nonterm{argument} in its
+  @racket[current-command-line-arguments]. These arguments are combined
+  with any arguments specified in @filepath{info.rkt} by
+  @racket[test-command-line-arguments].}
 ]
-
-Optionally, after all flags and argument paths, the user may specify
-additional command-line arguments to be forwarded to the invoked test
-module. This is done by placing a trailing @tt{-}@tt{-} on the command line,
-followed by any additional command line arguments. For example, if
-@exec{raco test} is called from the command line as
-@exec{raco test module.rkt -- more args}, then the test module
-@filepath{module.rkt} will be invoked with the command-line arguments
-@exec{more args}. These arguments are combined with any arguments
-specified in @filepath{info.rkt} by @racket[test-command-line-arguments].
 
 @history[#:changed "1.1" @elem{Added @DFlag{heartbeat}.}
          #:changed "1.4" @elem{Changed recognition of module suffixes to use @racket[get-module-suffixes],
