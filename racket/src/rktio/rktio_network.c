@@ -1238,12 +1238,13 @@ rktio_fd_t *rktio_connect_finish(rktio_t *rktio, rktio_connect_t *conn)
   if (conn->inprogress) {
     /* Check whether connect succeeded, or get error: */
     int errid;
-    rktio_sockopt_len_t so_len = sizeof(errid);
+    unsigned status;
+    rktio_sockopt_len_t so_len = sizeof(status);
     rktio_socket_t s = rktio_fd_socket(rktio, rfd);
-    if (getsockopt(s, SOL_SOCKET, SO_ERROR, (void *)&errid, &so_len) != 0) {
+    if (getsockopt(s, SOL_SOCKET, SO_ERROR, (void *)&status, &so_len) != 0) {
       errid = SOCK_ERRNO();
     } else
-      errid = 0;
+      errid = status;
 #ifdef RKTIO_SYSTEM_WINDOWS
     if (!rktio->windows_nt_or_later && !errid) {
       /* getsockopt() seems not to work in Windows 95, so use the
