@@ -164,11 +164,11 @@ The @exec{raco test} command accepts several flags:
        counts based on the log.}
 
  @item{@DPFlag{arg} @nonterm{argument}
-  Forwards @nonterm{argument} to the invoked test module, so that the
-  invoked module sees @nonterm{argument} in its
-  @racket[current-command-line-arguments]. These arguments are combined
-  with any arguments specified in @filepath{info.rkt} by
-  @racket[test-command-line-arguments].}
+       --- Forwards @nonterm{argument} to the invoked test module,
+       so that the invoked module sees @nonterm{argument} in its
+       @racket[current-command-line-arguments]. These arguments are
+       combined with any arguments specified in @filepath{info.rkt}
+       by @racket[test-command-line-arguments].}
 ]
 
 @history[#:changed "1.1" @elem{Added @DFlag{heartbeat}.}
