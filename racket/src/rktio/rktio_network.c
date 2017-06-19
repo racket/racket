@@ -90,6 +90,11 @@ typedef struct SOCKADDR_IN rktio_unspec_address;
 # define REGISTER_SOCKET(s) winsock_remember(s)
 # define UNREGISTER_SOCKET(s) winsock_forget(s)
 
+# ifdef errno
+#  undef errno
+# endif
+# define errno [do not use errno with winsock]
+
 #endif
 
 static void do_get_socket_error(rktio_t *rktio) {
@@ -1190,7 +1195,6 @@ static rktio_connect_t *try_connect(rktio_t *rktio, rktio_connect_t *conn)
         status = WSAGetLastError();
         
       inprogress = (status == WSAEWOULDBLOCK);
-      errno = status;
 #endif
 
       conn->trying_fd = rktio_system_fd(rktio,
@@ -1844,9 +1848,9 @@ rktio_length_and_addrinfo_t *rktio_udp_recvfrom(rktio_t *rktio, rktio_fd_t *rfd,
         /* => data truncated on Windows, which counts as success on Unix */
         rn = len;
         break;
-      } else if (NOT_WINSOCK(errno == EINTR)) {
+      } else if (NOT_WINSOCK(errid == EINTR)) {
         /* try again */
-      } else if (WAS_EAGAIN(errno)) {
+      } else if (WAS_EAGAIN(errid)) {
         /* no data available */
         set_racket_error(RKTIO_ERROR_TRY_AGAIN);
         return NULL;
