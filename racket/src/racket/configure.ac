@@ -330,6 +330,7 @@ show_explicitly_enabled "${enable_extflonum}" "Extflonums"
 show_explicitly_disabled "${enable_extflonum}" "Extflonums"
 
 show_explicitly_enabled "${enable_pthread}" "pthreads"
+show_explicitly_disabled "${enable_pthread}" "pthreads"
 show_explicitly_enabled "${enable_ffipoll}" "ffipoll"
 show_explicitly_enabled "${enable_oskit}" "OSKit"
 show_explicitly_enabled "${enable_smalloskit}" "OSKit small mode"
@@ -472,6 +473,7 @@ enable_strip_by_default=yes
 
 use_flag_pthread=yes
 use_flag_posix_pthread=no
+mzrt_needs_pthread=yes
 skip_iconv_check=no
 check_page_size=yes
 try_no_nullability_completeness=no
@@ -780,6 +782,7 @@ case "$host_os" in
     ;;
   *mingw*)
     enable_parallel_by_default=yes
+    mzrt_needs_pthread=no
     use_flag_pthread=no
     MZOPTIONS="$MZOPTIONS -fno-omit-frame-pointer" # to make JIT backtraces work
     MINGW=""
@@ -918,7 +921,6 @@ case "$host_os" in
       NOT_OSX=".other"
       MZINSTALLTARGET=osx-install
       DYN_CFLAGS=""
-      enable_pthread=no
       if test "${enable_libfw}" = "yes" ; then
         FRAMEWORK_INSTALL_DIR=/Library/Frameworks
         FRAMEWORK_REL_INSTALL=no
@@ -1369,7 +1371,13 @@ fi
 ############### OS threads ###################
 
 if test "${enable_mzrt}" = "yes" ; then
-  enable_pthread=yes
+  if test "${mzrt_needs_pthread}" = "yes" ; then
+    if test "${enable_pthread}" = "no" ; then
+      echo configure: cannot disable pthreads with places/futures enabled
+      exit 1
+    fi
+    enable_pthread=yes
+  fi
 fi
 
 ############### pthread ###################
@@ -1808,6 +1816,13 @@ makefiles="Makefile
 # Make sure the --enable-shared default is propagated:
 if test "${enable_shared}" = "yes" ; then
   SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-shared"
+fi
+
+# Make sure the --enable-pthread result is propagated:
+if test "${enable_pthread}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
 fi
 
 FOREIGNTARGET=

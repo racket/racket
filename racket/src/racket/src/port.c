@@ -36,6 +36,9 @@
 #ifndef DONT_IGNORE_PIPE_SIGNAL
 # include <signal.h>
 #endif
+#ifdef USE_ITIMER
+# include <sys/time.h>
+#endif
 
 #define mzAssert(x) /* if (!(x)) abort() */
 
