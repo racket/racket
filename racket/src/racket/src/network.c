@@ -833,7 +833,7 @@ static rktio_addrinfo_t *do_resolve_address(const char *who, char *address, int 
       
     addr = rktio_addrinfo_lookup_get(scheme_rktio, lookup);
   }
-    
+
   if (!addr) {
     if (show_id_on_error) {
       scheme_raise_exn(MZEXN_FAIL_NETWORK,
@@ -874,7 +874,7 @@ static void connect_failed(Connect_Progress_Data *pd, const char *why, const cha
   if (pd) connect_cleanup(pd);
 
   scheme_raise_exn(MZEXN_FAIL_NETWORK,
-                   "tcp-connect: connection failed%s%s"
+                   "tcp-connect: connection failed%s%s\n"
                    "  address: %s\n"
                    "  port number: %d\n"
                    "  system error: %R",
