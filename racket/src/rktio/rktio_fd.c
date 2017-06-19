@@ -1229,7 +1229,7 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
 
         if (rfd->oth) {
           if (rfd->oth->needflush) {
-            /* Not flushed, but we haven't promised not to block: */
+	    /* Not flushed, but we haven't promised to make progress: */
             flushed = 1;
           } else {
             WaitForSingleObject(rfd->oth->lock_sema, INFINITE);
@@ -1284,6 +1284,9 @@ intptr_t rktio_write(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr
           ok = 1;
           winwrote = 0;
         }
+
+	if (ok && winwrote && rfd->oth)
+	  rfd->oth->needflush = 1;
 
         if (ok)
           out_len = winwrote;
