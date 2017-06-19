@@ -583,11 +583,7 @@
           ;; make sure "info.rkt" information is loaded:
           (check-info p))
         (define norm-p (normalize-info-path p))
-        (define more-cmd
-          (match (vector->list (current-command-line-arguments))
-            [(list _ ... "--" more ...) more]
-            [else empty]))
-        (define args (append (get-cmdline norm-p) more-cmd))
+        (define args (get-cmdline norm-p))
         (define timeout (get-timeout norm-p))
         (define ignore-stderr (get-ignore-stderr norm-p))
         (define lock-name (get-lock-name norm-p))
@@ -1070,9 +1066,7 @@
   "Print a summary table"
   (set! table? #t)]
  #:args file-or-directory
- (begin (define file-or-dir-args
-          (takef file-or-directory (lambda (f) (not (equal? f "--")))))
-        (unless (= 1 (length file-or-dir-args))
+ (begin (unless (= 1 (length file-or-directory))
           (set! single-file? #f))
         (when (and (eq? configure-runtime 'default)
                    (or (and (not single-file?)
@@ -1086,7 +1080,7 @@
                           (test-top f
                                     #:check-suffix? check-top-suffix?
                                     #:sema s))
-                        file-or-dir-args
+                        file-or-directory
                         #:sema (make-semaphore)))
         (when table?
           (display-summary sum))
