@@ -9,6 +9,7 @@
          racket/place
          racket/future
          racket/file
+         racket/string
          compiler/find-exe
          raco/command-name
          racket/system
@@ -1011,6 +1012,10 @@
  [("++arg") arg
   "Adds <arg> to `current-command-line-arguments`"
   (set! extra-command-line-args (cons arg extra-command-line-args))]
+  [("++args") args
+  "Adds <args> (whitespace-separated values) to `current-command-line-arguments`"
+  (set! extra-command-line-args
+        (append (reverse (string-split args)) extra-command-line-args))]
  #:once-any
  [("--run-if-absent" "-r")
   "Require module if submodule is absent (on by default)"

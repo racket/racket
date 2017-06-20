@@ -26,7 +26,8 @@
 (for ([mod '("--direct" "--place" "--process")])
   (try mod "racket.rkt" "'(1 2)")
   (try mod "scheme.rkt" "(1 2)")
-  (try mod "args.rkt" "1" "-q" "++arg" "1"))
+  (try mod "args.rkt" "1" "-q" "++arg" "1")
+  (try mod "args.rkt" "1" "-q" "-s" "multi-test" "++args" "1 2"))
 
 
 
