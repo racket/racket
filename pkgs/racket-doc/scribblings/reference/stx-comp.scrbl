@@ -117,9 +117,7 @@ or four (if @racket[top-level-symbol?] is true) kinds of values, depending on th
 @itemize[ 
 
       @item{The result is @indexed-racket['lexical] if @racket[id-stx]
-      has a @tech{local binding}. If @racket['lexical] is produced for
-      any @racket[phase-level] value, then it is produced for all
-      @racket[phase-level] values.}
+      has a @tech{local binding}.}
 
       @item{The result is a list of seven items when @racket[id-stx]
       has a @tech{module binding}: @racket[(list _source-mod _source-id
