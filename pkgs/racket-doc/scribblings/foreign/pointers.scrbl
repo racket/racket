@@ -296,7 +296,11 @@ Uses the operating system's @cpp{free} function for
 library allocated and we should free.  Note that this is useful as
 part of a finalizer (see below) procedure hook (e.g., on the Racket
 pointer object, freeing the memory when the pointer object is
-collected, but beware of aliasing).}
+collected, but beware of aliasing).
+
+Memory allocated with @racket[malloc] and modes other than
+@racket['raw] must not be @racket[free]d, since those modes allocate
+memory that is managed by the garbage collector.}
 
 
 @defproc[(end-stubborn-change [cptr cpointer?]) void?]{
