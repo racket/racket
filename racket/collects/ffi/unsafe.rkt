@@ -107,18 +107,26 @@
 ;; ----------------------------------------------------------------------------
 ;; Getting and setting library objects
 
-(define lib-suffix (bytes->string/latin-1 (subbytes (system-type 'so-suffix) 1)))
-(define lib-suffix-re (regexp (string-append "\\." lib-suffix "$")))
-(define suffix-before-version? (and (not (equal? lib-suffix "dylib"))
-                                    (not (equal? lib-suffix "dll"))))
-(define version-sep (if (equal? lib-suffix "dll") "-" "."))
-
 (provide (protect-out (rename-out [get-ffi-lib ffi-lib]))
          ffi-lib? ffi-lib-name)
 (define (get-ffi-lib name [version/s ""]
+                     #:lib-suffix [maybe-lib-suffix #f]
 		     #:fail [fail #f]
 		     #:get-lib-dirs [get-lib-dirs get-lib-search-dirs]
                      #:global? [global? (eq? (system-type 'so-mode) 'global)])
+  (define lib-suffix
+    (cond [(string? maybe-lib-suffix)
+           maybe-lib-suffix]
+          [(bytes? maybe-lib-suffix)
+           (bytes->string/latin-1 maybe-lib-suffix)]
+          [(not maybe-lib-suffix)
+           (bytes->string/latin-1 (subbytes (system-type 'so-suffix) 1))]
+          [else
+           (raise-argument-error 'ffi-lib "(or/c string? bytes? #f)" maybe-lib-suffix)]))
+  (define lib-suffix-re (regexp (string-append "\\." lib-suffix "$")))
+  (define suffix-before-version? (and (not (equal? lib-suffix "dylib"))
+                                      (not (equal? lib-suffix "dll"))))
+  (define version-sep (if (equal? lib-suffix "dll") "-" "."))
   (cond
    [(not name) (ffi-lib name)] ; #f => NULL => open this executable
    [(not (or (string? name) (path? name)))
