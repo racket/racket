@@ -1381,11 +1381,6 @@
   (define-syntax-rule (inner-recur/fold (fold-var ...) (let () expr ...) next-k)
     (let-values ([(fold-var ...) (let () expr ...)])
       next-k))
-
-  (define-syntax-rule (inner-recur/list (fold-var ...) (let () expr ...) next-k)
-    (let-values ([(fold-var ... elem) (let () expr ...)])
-      (let-values ([(fold-var ... result) next-k])
-        (values* fold-var ... (cons elem result)))))
   
   (define-syntax (push-under-break stx)
     (syntax-case stx ()
@@ -1554,16 +1549,6 @@
       [(_ orig-stx ([fold-var finid-init] ...) . rest)
        (for/foldX/derived/final [orig-stx #t] ([fold-var finid-init] ...) (values* fold-var ...) . rest)]))
 
-  (define-syntax for/list/derived
-    (syntax-rules ()
-      [(_ orig-stx () . rest)
-       (for/foldX/derived [orig-stx inner-recur/list #f #f ()] () null null #f . rest)]))
-
-  (define-syntax for*/list/derived
-    (syntax-rules ()
-      [(_ orig-stx () . rest)
-       (for/foldX/derived [orig-stx inner-recur/list #t #f ()] () null null #f . rest)]))
-
   ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;  derived `for' syntax
 
@@ -1660,8 +1645,11 @@
     (lambda (x) x)
     (lambda (x) `(,#'begin ,x ,#'(values))))
 
-  (define-syntax-via-derived for/list for/list/derived () (lambda (x) x) (lambda (x) x) (lambda (x) x))
-  (define-syntax-via-derived for*/list for*/list/derived () (lambda (x) x) (lambda (x) x) (lambda (x) x))
+  (define-for-variants (for/list for*/list)
+    ([fold-var null])
+    (lambda (x) `(,#'alt-reverse ,x))
+    (lambda (x) x)
+    (lambda (x) `(,#'cons ,x ,#'fold-var)))
 
   (define (grow-vector vec)
     (define n (vector-length vec))

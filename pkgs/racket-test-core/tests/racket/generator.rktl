@@ -159,6 +159,28 @@
         'gen-2
         (for/list ([(x y) (in-gen-2)])
           (cons x y))))
+
+;; Make sure that `for/list` doesn't tigger quadtradic-time behavior
+;; from `in-producer`, based on test constructed by @kalbr
+(let ()
+  (define (make-real-generator N)
+    (generator
+     ()
+     (for ([i (in-range N)])
+       (yield i))))
+
+  (define (time-it N)
+    (let ([start (current-process-milliseconds)])
+      (let ([len (length (for/list ([x (in-producer (make-real-generator N) void?)])
+                           x))])
+        (if (zero? len)
+            (error "that's not right")
+            (- (current-process-milliseconds) start)))))
+
+  (let loop ([tries 3])
+    (when ((time-it 40000) . > . (* 3 (time-it 20000)))
+      (if (zero? tries)
+          (error "doubling an `in-producer` sequence seems to take more than twice as long")
+        (loop (sub1 tries))))))
   
 (report-errs)
-
