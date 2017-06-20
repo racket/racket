@@ -1468,8 +1468,10 @@ rktio_listener_t *rktio_listen(rktio_t *rktio, rktio_addrinfo_t *src, int backlo
 #endif
       }
 
-      l->count = pos;
-      rktio_listen_stop(rktio, l);
+      if (l) {
+        l->count = pos;
+        rktio_listen_stop(rktio, l);
+      }
 
       return NULL;
     }
