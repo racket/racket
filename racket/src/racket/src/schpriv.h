@@ -1184,6 +1184,15 @@ so we can safely reuse the bit.
 #define SCHEME_P_CHAPERONEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_proc_chaperone_type))
 #define SCHEME_NP_CHAPERONEP(obj) (SAME_TYPE(SCHEME_TYPE(obj), scheme_chaperone_type))
 
+/* Does the shape of the redirects field match the pattern for particular chaperone types */
+#define SCHEME_REDIRECTS_PROCEDUREP(red) (SCHEME_VECTORP(red) \
+					  && (SCHEME_VEC_SIZE(red) & 1))
+#define SCHEME_REDIRECTS_STRUCTP(red) (SCHEME_VECTORP(red)		\
+				       && SCHEME_VEC_SIZE(red)		\
+				       && !(SCHEME_VEC_SIZE(red) & 1))
+#define SCHEME_REDIRECTS_PROP_ONLY_VECTORP(red) (SCHEME_VECTORP(red)	\
+						 && !(SCHEME_VEC_SIZE(red)))
+
 #define SCHEME_CHAPERONE_VECTORP(obj) (SCHEME_VECTORP(obj) \
                                    || (SCHEME_NP_CHAPERONEP(obj) && SCHEME_VECTORP(SCHEME_CHAPERONE_VAL(obj))))
 #define SCHEME_CHAPERONE_BOXP(obj) (SCHEME_BOXP(obj) \

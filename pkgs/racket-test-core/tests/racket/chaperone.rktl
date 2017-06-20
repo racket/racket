@@ -267,7 +267,7 @@
      (lambda (exn)
        (test #t
              regexp-match?
-             "p1-accesor: contract violation"
+             "p1-accessor: contract violation"
              (exn-message exn))))
 
    (err/rt-test (get1 v1) handler)

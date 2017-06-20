@@ -1182,10 +1182,8 @@ static Scheme_Object *do_chaperone_prop_accessor(const char *who, Scheme_Object 
           return v;
       }
 
-      if (!SCHEME_VECTORP(px->redirects)
-	  || !SCHEME_VEC_SIZE(px->redirects) /* property-only vector chaperone */
-          || (SCHEME_VEC_SIZE(px->redirects) & 1)
-          || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0]))
+      if (!SCHEME_REDIRECTS_STRUCTP(px->redirects)
+	  || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[0]))
         arg = px->prev;
       else {
         ht = (Scheme_Hash_Tree *)SCHEME_VEC_ELS(px->redirects)[0];
@@ -2254,8 +2252,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
       Scheme_Chaperone *px = (Scheme_Chaperone *)o;
       Scheme_Object *a[2], *red, *orig;
 
-      if (SCHEME_VECTORP(px->redirects)
-          && !(SCHEME_VEC_SIZE(px->redirects) & 1)
+      if (SCHEME_REDIRECTS_STRUCTP(px->redirects)
           && SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
         /* chaperone on every field: check that result is not undefined */
         o = px->prev;
@@ -2270,8 +2267,7 @@ static Scheme_Object *chaperone_struct_ref(const char *who, Scheme_Object *prim,
         }
 
         return orig;
-      } else if (!SCHEME_VECTORP(px->redirects)
-          || (SCHEME_VEC_SIZE(px->redirects) & 1)
+      } else if (!SCHEME_REDIRECTS_STRUCTP(px->redirects)
           || SCHEME_FALSEP(SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + i])) {
         o = px->prev;
       } else {
@@ -2386,8 +2382,7 @@ static void chaperone_struct_set(const char *who, Scheme_Object *prim,
       int half;
 
       o = px->prev;
-      if (SCHEME_VECTORP(px->redirects)
-          && !(SCHEME_VEC_SIZE(px->redirects) & 1)
+      if (SCHEME_REDIRECTS_STRUCTP(px->redirects)
           && !SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
         half = (SCHEME_VEC_SIZE(px->redirects) - PRE_REDIRECTS) >> 1;
         red = SCHEME_VEC_ELS(px->redirects)[PRE_REDIRECTS + half + i];
@@ -2426,8 +2421,7 @@ static void chaperone_struct_set(const char *who, Scheme_Object *prim,
             return;
           }
         } 
-      } else if (SCHEME_VECTORP(px->redirects)
-                 && !(SCHEME_VEC_SIZE(px->redirects) & 1)
+      } else if (SCHEME_REDIRECTS_STRUCTP(px->redirects)
                  && SAME_OBJ(SCHEME_VEC_ELS(px->redirects)[1], scheme_undefined)) {
         /* chaperone on every field: check that current value is not undefined
            --- unless check is disabled by a mark (bit it's faster to check
@@ -2997,8 +2991,7 @@ static Scheme_Object *struct_info_chaperone(Scheme_Object *o, Scheme_Object *si,
 
   while (SCHEME_CHAPERONEP(o)) {
     px = (Scheme_Chaperone *)o;
-    if (SCHEME_VECTORP(px->redirects)
-        && !(SCHEME_VEC_SIZE(px->redirects) & 1)) {
+    if (SCHEME_REDIRECTS_STRUCTP(px->redirects)) {
       proc = SCHEME_VEC_ELS(px->redirects)[1];
       if (SCHEME_TRUEP(proc) && !SAME_OBJ(proc, scheme_undefined)) {
         if (SCHEME_CHAPERONE_FLAGS(px) & SCHEME_CHAPERONE_IS_IMPERSONATOR)
