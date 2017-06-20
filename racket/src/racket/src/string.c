@@ -5266,6 +5266,17 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
       failmode = -1;
       i = end - 1; /* to ensure that failmode is returned */
     } else if (permissive) {
+# ifdef WINDOWS_UNICODE_SUPPORT
+      if (pending_surrogate) {
+        /* Unpaired surrogate before permissive replacements */
+        if (utf16 && (j < dend)) {
+          if (us)
+            ((unsigned short *)us)[j] = pending_surrogate;
+          j++;
+        }
+        pending_surrogate = 0;
+      }
+#endif
       for (i = oki; i < end; i++) {
 	if (j < dend) {
 	  if (us) {
@@ -5286,8 +5297,18 @@ static intptr_t utf8_decode_x(const unsigned char *s, intptr_t start, intptr_t e
   }
 
 # ifdef WINDOWS_UNICODE_SUPPORT
-  if (pending_surrogate)
-    oki -= 3;
+  if (pending_surrogate) {
+    if (!might_continue) {
+      /* Accept unpaired surrogate at end of input */
+      if (j < dend) {
+        if (us)
+          ((unsigned short *)us)[j] = pending_surrogate;
+        j++;
+      }
+    } else {
+      oki -= 3;
+    }
+  }
 #endif
 
   if (ipos)

@@ -1961,5 +1961,50 @@
     (write-char #\A)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check that unpaired surrogates are handled right in
+;; Windows paths
+
+(when (eq? 'windows (system-type))
+  (let-values ([(surrogate-hi surrogate-lo)
+                (let ()
+                  (define c0 (bytes-open-converter "platform-UTF-8" "platform-UTF-16"))
+                  (let-values ([(bstr a b) (bytes-convert c0 (string->bytes/utf-8 "\U10AABB"))])
+                    (define c8 (bytes-open-converter "platform-UTF-16" "platform-UTF-8"))
+                    (let-values ([(bstr a b) (bytes-convert c8
+                                                            (bytes-append
+                                                             #".\0"
+                                                             (subbytes bstr 0 2)
+                                                             #".\0"
+                                                             (subbytes bstr 2 4)
+                                                             #".\0"))])
+                      (values (subbytes bstr 1 4) (subbytes bstr 5 8)))))])
+    (let ([dir (make-temporary-file "weird~a" 'directory)]
+          [fns (map bytes->path
+                    ;; Each of these byte strings represents a strange
+                    ;; filename where one or more of the 16-byte elements
+                    ;; at at the `wchar_t*` level is an unpaired surrogate.
+                    ;; NTFS filesystems will allow that, though.
+                    (list (bytes-append #"a" surrogate-hi #"z")
+                          (bytes-append #"a" surrogate-lo #"z")
+                          (bytes-append #"a" surrogate-lo surrogate-hi #"z")
+                          (bytes-append #"a" surrogate-hi)
+                          (bytes-append #"a" surrogate-lo)
+                          (bytes-append #"a" surrogate-lo surrogate-hi)))])
+      ;; If one of the paths works, we expect them all to work:
+      (when (with-handlers ([exn:fail:filesystem? (lambda (x) #f)])
+              (let ([p (build-path dir (car fns))])
+                (call-with-output-file p void)
+                (delete-file p)))
+        (for ([fn (in-list fns)])
+          (define p (build-path dir fn))
+          (call-with-output-file p (lambda (o) (write-bytes (path->bytes fn) o))))
+        (for ([fn (in-list fns)])
+          (define p (build-path dir fn))
+          (call-with-input-file* p (lambda (i) (test (path->bytes fn) read-bytes 100 i))))
+        ;; Make sure names are converted correctly back from `directory-list`:
+        (test (sort fns path<?) sort (directory-list dir) path<?))
+      (delete-directory/files dir))))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (report-errs)
