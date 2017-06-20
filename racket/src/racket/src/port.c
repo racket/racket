@@ -478,18 +478,72 @@ void scheme_set_stdio_makers(Scheme_Stdio_Maker_Proc in,
 /*                                fd arrays                               */
 /*========================================================================*/
 
+/* This compatibility layer assumes that poll sets are allocated at
+   8-byte boundaries, so bites 2 and 3 can be used to indicate the
+   write and exception offsets. */
+
+#define EXTRACT_FD_OFFSET(p) ((((uintptr_t)p)&0x6) >> 1)
+#define EXTRACT_FD_BASE(p) ((void *)(((uintptr_t)p)&~(uintptr_t)0x6))
+
+void *scheme_alloc_fdset_array(int count, int permanent)
+{
+  return rktio_make_poll_set(scheme_rktio);
+}
+
+void *scheme_get_fdset(void *fdarray, int pos)
+{
+  return (void *)(((uintptr_t)fdarray) | (2 * pos));
+}
+
+void scheme_fdzero(void *fds)
+{  
+  scheme_signal_error("scheme_fdzero is not supported");
+}
+
+void scheme_fdset(void *fds, int pos)
+{
+  int offset = EXTRACT_FD_OFFSET(fds);
+  fds = EXTRACT_FD_BASE(fds);
+
+  if (offset != 2) {
+    rktio_fd_t *rfd;
+    rfd = rktio_system_fd(scheme_rktio, pos, RKTIO_OPEN_SOCKET);
+    rktio_poll_add(scheme_rktio, rfd, fds, (offset ? RKTIO_OPEN_WRITE : RKTIO_OPEN_READ));
+    rktio_forget(scheme_rktio, rfd);
+  }
+}
+
+void scheme_fdclr(void *fds, int pos)
+{
+  scheme_signal_error("scheme_fdclr is not supported");
+}
+
+int scheme_fdisset(void *fds, int pos)
+{
+  scheme_signal_error("scheme_fdisset is not supported");
+  return 0;
+}
+
+void scheme_collapse_win_fd(void *fds)
+{
+  scheme_signal_error("scheme_collapse_win_fd is not supported");
+}
+
 void scheme_add_fd_handle(void *h, void *fds, int repost)
 {
+  fds = EXTRACT_FD_BASE(fds);
   rktio_poll_set_add_handle(scheme_rktio, (intptr_t)h, fds, repost);
 }
 
 void scheme_add_fd_nosleep(void *fds)
 {
+  fds = EXTRACT_FD_BASE(fds);
   rktio_poll_set_add_nosleep(scheme_rktio, fds);
 }
 
 void scheme_add_fd_eventmask(void *fds, int mask)
 {
+  fds = EXTRACT_FD_BASE(fds);
   rktio_poll_set_add_eventmask(scheme_rktio, fds, mask);
 }
 
