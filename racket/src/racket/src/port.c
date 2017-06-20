@@ -6578,12 +6578,17 @@ static void kickoff_itimer(intptr_t usec)
 }
 
 static void block_timer_signals(int block)
+/* Doesn't actually block the signal, because we don't want
+   a new subprocess to start with the signal blocked,
+   but turns off the timer and makes sure that no signal
+   is pending. */
 {
   static intptr_t saved_usec;
-  struct itimerval t, old;
-  sigset_t sigs;
 
   if (block) {
+    struct itimerval t, old;
+    sigset_t sigs;
+
     t.it_value.tv_sec = 0;
     t.it_value.tv_usec = 0;
     t.it_interval.tv_sec = 0;
@@ -6592,16 +6597,9 @@ static void block_timer_signals(int block)
     setitimer(ITIMER_PROF, &t, &old);
 
     saved_usec = old.it_value.tv_usec;
-  } else {
-    kickoff_itimer(saved_usec);
-  }
 
-  sigemptyset(&sigs);
-  sigaddset(&sigs, ITIMER_PROF);
-  sigprocmask(block ? SIG_BLOCK : SIG_UNBLOCK, &sigs, NULL);
-
-  if (block) {
-    /* Clear already-queued PROF signal, if any: */
+    /* Clear already-queued PROF signal, if any
+       --- unlikely, but possible */
     sigemptyset(&sigs);
     while (!sigpending(&sigs)) {
       if (sigismember(&sigs, SIGPROF)) {
@@ -6612,6 +6610,8 @@ static void block_timer_signals(int block)
       } else
         break;
     }
+  } else {
+    kickoff_itimer(saved_usec);
   }
 }
 
