@@ -60,8 +60,8 @@
 
 ;; -- Stmt --
 
-(define (copy-buffer buffer)
-  (let* ([buffer (string->bytes/utf-8 (string-trim buffer))]
+(define (trim-and-copy-buffer buffer)
+  (let* ([buffer (string->bytes/utf-8 (string-trim #:left? #f buffer))]
          [n (bytes-length buffer)]
          [rawcopy (malloc (add1 n) 'atomic-interior)]
          [copy (make-sized-byte-string rawcopy n)])
@@ -76,7 +76,7 @@
 (define-sqlite sqlite3_prepare
   (_fun (db sql) ::
         (db : _sqlite3_database)
-        (sql-buffer : _bytes = (copy-buffer sql))
+        (sql-buffer : _bytes = (trim-and-copy-buffer sql))
         ((bytes-length sql-buffer) : _int)
         (statement : (_ptr o _sqlite3_statement/null))
         (tail : (_ptr o _gcpointer)) ;; points into sql-buffer (atomic-interior)
@@ -87,7 +87,7 @@
 (define-sqlite sqlite3_prepare_v2
   (_fun (db sql) ::
         (db : _sqlite3_database)
-        (sql-buffer : _bytes = (copy-buffer sql))
+        (sql-buffer : _bytes = (trim-and-copy-buffer sql))
         ((bytes-length sql-buffer) : _int)
         ;; bad prepare statements set statement to NULL, with no error reported
         (statement : (_ptr o _sqlite3_statement/null))
