@@ -4696,7 +4696,7 @@ static Scheme_Object *convert_one(const char *who, int opos, int argc, Scheme_Ob
     scheme_get_substring_indices(who, argv[1], argc, argv, 2, 3, &istart, &ifinish);
   } else {
     istart = 0;
-    ifinish = 4; /* This is really a guess about how much space we need for a shift terminator */
+    ifinish = 0;
   }
 
   if (argc > opos) {

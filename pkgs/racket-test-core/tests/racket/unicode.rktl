@@ -996,6 +996,17 @@
       (let-values ([(s2 n2 status2) (bytes-convert c2 s)])
         (bytes->string/utf-8 s2)))))
 
+;; Check that `bytes-convert-end` does nothing for UTF-8 and UTF-16 conversion:
+(let ([c (bytes-open-converter "platform-UTF-16" "platform-UTF-8")])
+  (test-values '(#"" complete)
+               (lambda () (bytes-convert-end c))))
+(let ([c (bytes-open-converter "platform-UTF-8" "platform-UTF-16")])
+  (test-values '(#"" complete)
+               (lambda () (bytes-convert-end c))))
+(let ([c (bytes-open-converter "UTF-8-permissive" "UTF-8")])
+  (test-values '(#"" complete)
+               (lambda () (bytes-convert-end c))))
+
 (when (eq? (system-type) 'windows)
   (let ([c (bytes-open-converter "platform-UTF-8-permissive" "platform-UTF-16")])
     ;; Check that we use all 6 bytes of #"\355\240\200\355\260\200" or none
