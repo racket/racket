@@ -1629,7 +1629,8 @@ rktio_fd_t *rktio_accept(rktio_t *rktio, rktio_listener_t *listener)
     RKTIO_WHEN_SET_SOCKBUF_SIZE(setsockopt(s, SOL_SOCKET, SO_SNDBUF, (char *)&size, sizeof(int)));
 #  endif
 
-    return rktio_system_fd(rktio, s, RKTIO_OPEN_SOCKET | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE | RKTIO_OPEN_OWN); 
+    return rktio_system_fd(rktio, s, (RKTIO_OPEN_SOCKET | RKTIO_OPEN_INIT | RKTIO_OPEN_OWN
+				      | RKTIO_OPEN_READ | RKTIO_OPEN_WRITE)); 
   } else {
     get_socket_error();
     return NULL;
