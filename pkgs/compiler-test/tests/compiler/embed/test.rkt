@@ -390,6 +390,14 @@
 	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me28.rkt")))
     (try-exe (mk-dest mred?) "28\n" mred?)
 
+    ;; raco exe on a `require`d module with `place` --- test supplied by Chris Vig
+    (system+ raco
+             "exe"
+	     "-o" (path->string (mk-dest mred?))
+	     (if mred? "--gui" "--")
+	     (path->string (build-path (collection-path "tests" "compiler" "embed") "embed-me30.rkt")))
+    (try-exe (mk-dest mred?) "Hello from a place!\n" mred?)
+
     ;; raco exe --launcher
     (system+ raco
              "exe"

@@ -570,8 +570,7 @@
                                          code
                                          (module-compiled-name code (last (module-compiled-name code))))]
                        [extract-submods (lambda (l)
-                                          (if (or (null? use-submods)
-                                                  use-source?)
+                                          (if use-source?
                                               null
                                               (for/list ([m (in-list l)]
                                                          #:when (or (member (last (module-compiled-name m)) use-submods)
