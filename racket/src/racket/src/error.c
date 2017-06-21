@@ -34,10 +34,6 @@
 #else
 # include <errno.h>
 #endif
-#ifdef USE_C_SYSLOG
-# include <syslog.h>
-# include <stdarg.h>
-#endif
 
 #define mzVA_ARG(x, y) HIDE_FROM_XFORM(va_arg(x, y))
 #define TMP_CMARK_VALUE scheme_parameterization_key
@@ -3820,16 +3816,6 @@ Scheme_Object *extract_all_levels(Scheme_Logger *logger)
   return result;
 }
 
-#ifdef USE_WINDOWS_EVENT_LOG
-static int event_procs_ready;
-typedef HANDLE (WINAPI *mzRegisterEventSourceProc)(LPCTSTR lpUNCServerName, LPCTSTR lpSourceName);
-typedef BOOL (WINAPI *mzReportEventProc)(HANDLE hEventLog, WORD wType, WORD wCategory, DWORD dwEventID,
-						                 PSID lpUserSid, WORD wNumStrings, DWORD dwDataSize, LPCTSTR* lpStrings,
-							             LPVOID lpRawData);
-static mzRegisterEventSourceProc mzRegisterEventSource;
-static mzReportEventProc mzReportEvent;
-#endif
-
 static Scheme_Object *make_log_message(int level, Scheme_Object *name, int prefix_msg,
                                        char *buffer, intptr_t len, Scheme_Object *data) {
   Scheme_Object *msg;
@@ -3892,97 +3878,32 @@ void scheme_log_name_pfx_message(Scheme_Logger *logger, int level, Scheme_Object
 
   while (logger) {
     if (extract_spec_level(logger->syslog_level, name) >= level) {
-#ifdef USE_C_SYSLOG
       int pri;
+      Scheme_Object *cmd;
       switch (level) {
       case SCHEME_LOG_FATAL:
-        pri = LOG_CRIT;
+        pri = RKTIO_LOG_FATAL;
         break;
       case SCHEME_LOG_ERROR:
-        pri = LOG_ERR;
+        pri = RKTIO_LOG_ERROR;
         break;
       case SCHEME_LOG_WARNING:
-        pri = LOG_WARNING;
+        pri = RKTIO_LOG_WARNING;
         break;
       case SCHEME_LOG_INFO:
-        pri = LOG_INFO;
+        pri = RKTIO_LOG_INFO;
         break;
       case SCHEME_LOG_DEBUG:
       default:
-        pri = LOG_DEBUG;
+        pri = RKTIO_LOG_DEBUG;
         break;
       }
-      if (name)
-        syslog(pri, "%s: %s", SCHEME_SYM_VAL(name), buffer);
-      else
-        syslog(pri, "%s", buffer);
-#endif
-#ifdef USE_WINDOWS_EVENT_LOG
-      if (!event_procs_ready) {
-        HMODULE hm;
-        hm = LoadLibrary("advapi32.dll");
-        if (hm) {
-          mzRegisterEventSource = (mzRegisterEventSourceProc)GetProcAddress(hm, "RegisterEventSourceA");
-          mzReportEvent = (mzReportEventProc)GetProcAddress(hm, "ReportEventA");
-        }
-        event_procs_ready = 1;
-      }
-      if (mzRegisterEventSource) {
-        static HANDLE hEventLog;
-        WORD ty;
-        unsigned long sev;
-        LPCTSTR a[1];
-
-        if (!hEventLog) {
-          Scheme_Object *cmd;
-          cmd = scheme_get_run_cmd();
-          hEventLog = mzRegisterEventSource(NULL, SCHEME_PATH_VAL(cmd));
-        }
-
-        switch (level) {
-        case SCHEME_LOG_FATAL:
-          ty = EVENTLOG_ERROR_TYPE;
-          sev = 3;
-          break;
-        case SCHEME_LOG_ERROR:
-          ty = EVENTLOG_ERROR_TYPE;
-          sev = 3;
-          break;
-        case SCHEME_LOG_WARNING:
-          ty = EVENTLOG_WARNING_TYPE;
-          sev = 2;
-          break;
-        case SCHEME_LOG_INFO:
-          ty = EVENTLOG_INFORMATION_TYPE;
-          sev = 1;
-          break;
-        case SCHEME_LOG_DEBUG:
-        default:
-          ty = EVENTLOG_AUDIT_SUCCESS;
-          sev = 0;
-          break;
-        }
-        if (name) {
-          char *naya;
-          intptr_t slen;
-          slen = SCHEME_SYM_LEN(name);
-          naya = (char *)scheme_malloc_atomic(slen + 2 + len + 1);
-          memcpy(naya, SCHEME_SYM_VAL(name), slen);
-          memcpy(naya + slen, ": ", 2);
-          memcpy(naya + slen + 2, buffer, len);
-          naya[slen + 2 + len] = 0;
-          buffer = naya;
-          len += slen + 2;
-        }
-        a[0] = buffer;
-        mzReportEvent(hEventLog, ty, 1 /* category */,
-                      (sev << 30) | 2 /* message */,
-                      NULL, 
-                      1, 0,
-                      a, NULL);
-      }
-#endif
+      cmd = scheme_get_run_cmd();
+      rktio_syslog(scheme_rktio, pri,
+                   (name ? SCHEME_SYM_VAL(name) : NULL),
+                   buffer, SCHEME_PATH_VAL(cmd));
     }
+
     if (extract_spec_level(logger->stderr_level, name) >= level) {
       if (name) {
         intptr_t slen;

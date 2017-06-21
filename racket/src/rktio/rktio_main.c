@@ -31,11 +31,14 @@ rktio_t *rktio_init(void)
   rktio_init_time(rktio);
   rktio_init_wide(rktio);
 
+  rktio_syslog_init(rktio);
+
   return rktio;
 }
 
 void rktio_destroy(rktio_t *rktio)
 {
+  rktio_syslog_clean(rktio);
   rktio_error_clean(rktio);
   rktio_process_deinit(rktio);
   rktio_free_ghbn(rktio);

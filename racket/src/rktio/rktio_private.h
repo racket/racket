@@ -91,6 +91,10 @@ struct rktio_t {
   wchar_t *wide_buffer;
 #endif
 
+#ifdef RKTIO_SYSTEM_WINDOWS
+  HANDLE hEventLog;
+#endif
+
 #ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
   struct rktio_hash_t *locked_fd_process_map;
 #endif
@@ -310,6 +314,9 @@ int rktio_make_os_pipe(rktio_t *rktio, intptr_t *a, int flags);
 #ifdef RKTIO_SYSTEM_UNIX
 char **rktio_get_environ_array(void);
 #endif
+
+void rktio_syslog_init(rktio_t* rktio);
+void rktio_syslog_clean(rktio_t* rktio);
 
 #ifdef USE_TRANSITIONAL_64_FILE_OPS
 # define BIG_OFF_T_IZE(n) n ## 64

@@ -163,6 +163,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\rktio\rktio_syslog.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\rktio\rktio_error.c"
 				>
 			</File>

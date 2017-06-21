@@ -1,5 +1,6 @@
 #include "rktio.h"
 #include "rktio_private.h"
+#include <string.h>
 
 /* For converting byte strings to and from "wide" strings on Windows. */
 

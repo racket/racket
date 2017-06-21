@@ -886,6 +886,25 @@ char *rktio_wide_path_to_path(rktio_t *rktio, const void *wp);
    function can fail and report `RKTIO_ERROR_INVALID_PATH`. */
 
 /*************************************************/
+/* Logging                                       */
+
+rktio_ok_t rktio_syslog(rktio_t *rktio, int level, const char *name, const char *msg,
+                        const char *exec_name);
+/* Adds a message to the system log. The `name` argument can be NULL,
+   and it is added to the front of the message with a separating ": "
+   if non_NULL. The `exec_name` is the current executable name; it's
+   currently, used only on Windows, and the value may matter only the
+   first time that `rktio_syslog` is called. */
+/* `level` values: */
+enum {
+  RKTIO_LOG_FATAL = 1,
+  RKTIO_LOG_ERROR,
+  RKTIO_LOG_WARNING,
+  RKTIO_LOG_INFO,
+  RKTIO_LOG_DEBUG
+};
+
+/*************************************************/
 /* Errors                                        */
 
 RKTIO_EXTERN int rktio_get_last_error_kind(rktio_t *rktio);
