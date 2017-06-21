@@ -126,7 +126,7 @@ converted to @racket[#t] before being returned by
 @defproc[(immutable? [v any/c]) boolean?]{
 
 Returns @racket[#t] if @racket[v] is an immutable @tech{string},
-@tech{byte string}, @tech{vector}, @tech{hash table}, or box,
+@tech{byte string}, @tech{vector}, @tech{hash table}, or @tech{box},
 @racket[#f] otherwise.
 
 Note that @racket[immutable?] is not a general predicate for
