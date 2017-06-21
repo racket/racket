@@ -28,6 +28,7 @@ OBJS = rktio_fs.@LTO@ \
        rktio_shellex.@LTO@ \
        rktio_time.@LTO@ \
        rktio_syslog.@LTO@ \
+       rktio_convert.@LTO@ \
        rktio_error.@LTO@ \
        rktio_hash.@LTO@ \
        rktio_wide.@LTO@ \
@@ -84,6 +85,9 @@ rktio_time.@LTO@: $(srcdir)/rktio_time.c $(RKTIO_HEADERS)
 
 rktio_syslog.@LTO@: $(srcdir)/rktio_syslog.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_syslog.@LTO@ -c $(srcdir)/rktio_syslog.c
+
+rktio_convert.@LTO@: $(srcdir)/rktio_convert.c $(RKTIO_HEADERS)
+	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_convert.@LTO@ -c $(srcdir)/rktio_convert.c
 
 rktio_error.@LTO@: $(srcdir)/rktio_error.c $(RKTIO_HEADERS)
 	$(CC) $(CFLAGS) -I$(srcdir) -I. -o rktio_error.@LTO@ -c $(srcdir)/rktio_error.c

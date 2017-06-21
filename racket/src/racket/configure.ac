@@ -1068,14 +1068,8 @@ if test "$using_gnu_cpp" = "yes" ; then
 fi
 AC_MSG_RESULT($using_gnu_cpp) 
 
-AC_MSG_CHECKING([for nl_langinfo (CODESET)])
-AC_TRY_LINK([#include <langinfo.h>],
-	[char *codeset = nl_langinfo (CODESET);],
-   AC_DEFINE(HAVE_CODESET,1,[Have nl_langinfo (CODESET)])
-   have_codeset=yes,
-   have_codeset=no)
-AC_MSG_RESULT($have_codeset)
-
+# Although rktio takes care of iconv, we need to know whether
+# to link to it
 iconv_lib_flag=""
 if test "${skip_iconv_check}" = "no" ; then
  if test "${enable_iconv}" = "yes" ; then
@@ -1113,27 +1107,7 @@ if test "${skip_iconv_check}" = "no" ; then
  AC_MSG_CHECKING($msg)
  iconv_usage_result="$enable_iconv$iconv_lib_flag"
  AC_MSG_RESULT($iconv_usage_result)
- if test "${enable_iconv}" = "no" ; then
-  MZOPTIONS="$MZOPTIONS -DMZ_NO_ICONV"  
- fi
 fi
-
-[ msg="for mbsrtowcs" ]
-AC_MSG_CHECKING($msg)
-AC_LINK_IFELSE([AC_LANG_SOURCE([
-   #include <wchar.h>
-   #include <strings.h>
-   int main() {
-     mbstate_t state;
-     char *src = "X";
-     bzero(&state, sizeof(mbstate_t));
-     mbsrtowcs(0, &src, 0, &state);
-     return 0;
-   }])], mbsrtowcs=yes, mbsrtowcs=no)
-if test "$mbsrtowcs" = "no" ; then
-  MZOPTIONS="$MZOPTIONS -DNO_MBTOWC_FUNCTIONS"
-fi
-AC_MSG_RESULT($mbsrtowcs)
 
 if test "${check_for_mprotect}" = "yes" ; then
   [ msg="for mmap and mprotect" ]
@@ -1823,6 +1797,13 @@ if test "${enable_pthread}" = "yes" ; then
   SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
 else
   SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
+fi
+
+# Make sure the --enable-iconv result is propagated:
+if test "${enable_iconv}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-iconv"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-iconv"
 fi
 
 FOREIGNTARGET=

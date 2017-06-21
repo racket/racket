@@ -11,6 +11,12 @@ AC_CONFIG_AUX_DIR(../lt)
 AC_CANONICAL_SYSTEM
 
 AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
+AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
+AC_ARG_ENABLE(iconv,   [  --enable-iconv          use iconv (usually auto-enabled)])
+
+if test "${enable_iconv}" = "" ; then
+  enable_iconv=yes
+fi
 
 ###### Autoconfigure #######
 
@@ -156,9 +162,19 @@ if test "${skip_iconv_check}" = "no" ; then
  AC_MSG_CHECKING($msg)
  iconv_usage_result="$enable_iconv$iconv_lib_flag"
  AC_MSG_RESULT($iconv_usage_result)
- if test "${enable_iconv}" = "no" ; then
-  CFLAGS="$CFLAGS -DRKTIO_NO_ICONV"  
- fi
+fi
+if test "${enable_iconv}" = "no" ; then
+  AC_DEFINE(RKTIO_NO_ICON,1,[Do not use iconv])
+fi
+
+if test "${enable_iconv}" = "yes" ; then
+  AC_MSG_CHECKING([for nl_langinfo (CODESET)])
+  AC_TRY_LINK([#include <langinfo.h>],
+              [char *codeset = nl_langinfo (CODESET);],
+              AC_DEFINE(RKTIO_HAVE_CODESET,1,[Have nl_langinfo (CODESET)])
+               have_codeset=yes,
+              have_codeset=no)
+  AC_MSG_RESULT($have_codeset)
 fi
 
 [ msg="for mbsrtowcs" ]

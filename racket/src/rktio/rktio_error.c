@@ -1,8 +1,5 @@
 #include "rktio.h"
 #include "rktio_private.h"
-#ifdef RKTIO_SYSTEM_WINDOWS
-# include <windows.h>
-#endif
 #include <errno.h>
 #include <string.h>
 
@@ -38,6 +35,10 @@ err_str_t err_strs[]  = {
   { RKTIO_ERROR_TIME_OUT_OF_RANGE, "time value out-of-range for date conversion" },
   { RKTIO_ERROR_NO_SUCH_ENVVAR, "no value as an environment variable" },
   { RKTIO_ERROR_SHELL_EXECUTE_FAILED, "ShellExecute failed" },
+  { RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE, "encoding conversion needs more output space" },
+  { RKTIO_ERROR_CONVERT_BAD_SEQUENCE, "ill-formed input encountered in encoding conversion" },
+  { RKTIO_ERROR_CONVERT_PREMATURE_END, "input encoding ended prematurely" },
+  { RKTIO_ERROR_CONVERT_OTHER, "encoding conversion encountered an error" },
   { 0, NULL }
 };
 

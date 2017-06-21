@@ -1533,7 +1533,7 @@ char *rktio_directory_list_step(rktio_t *rktio, rktio_directory_list_t *dl)
       continue;
 # endif
 
-    return strndup(e->d_name, nlen);
+    return rktio_strndup(e->d_name, nlen);
   }
 
   rktio_directory_list_stop(rktio, dl);

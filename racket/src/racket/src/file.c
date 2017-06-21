@@ -5392,29 +5392,23 @@ void scheme_set_addon_dir(Scheme_Object *p)
 
 #ifdef DOS_FILE_SYSTEM
 
-static wchar_t *dlldir;
-
-wchar_t *scheme_get_dll_path(wchar_t *s)
-{
-  if (dlldir) {
-    int len1, len2;
-    wchar_t *p;
-    len1 = wc_strlen(dlldir);
-    len2 = wc_strlen(s);
-    p = (wchar_t *)scheme_malloc_atomic((len1 + len2 + 2) * sizeof(wchar_t));
-    memcpy(p, dlldir, len1 * sizeof(wchar_t));
-    if (p[len1 - 1] != '\\') {
-      p[len1++] = '\\';
-    }
-    memcpy(p + len1, s, (len2 + 1) * sizeof(wchar_t));
-    return p;
-  } else
-    return s;
-}
-
 void scheme_set_dll_path(wchar_t *p)
 {
-  dlldir = p;
+  rktio_set_dll_path(p);
+}
+
+wchar_t *scheme_get_dll_path(wchar_t *p)
+{
+  wchar_t *r, *r2;
+  intptr_t len;
+  r = rktio_get_dll_path(p);
+  if (!r)
+    return p;
+  len = wcslen(r) + 1;
+  r2 = scheme_malloc_atomic(sizeof(wchar_t) * len);
+  memcpy(r2, r, sizeof(wchar_t) * len);
+  free(r);
+  return r2;
 }
 
 #endif

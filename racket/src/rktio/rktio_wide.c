@@ -1,5 +1,6 @@
 #include "rktio.h"
 #include "rktio_private.h"
+#include <stdlib.h>
 #include <string.h>
 
 /* For converting byte strings to and from "wide" strings on Windows. */
@@ -7,14 +8,16 @@
 #ifdef RKTIO_SYSTEM_UNIX
 void rktio_init_wide(rktio_t *rktio) { }
 
-void *rktio_path_to_wide_path(rktio_t *rktio, const char *p)
+rktio_char16_t *rktio_path_to_wide_path(rktio_t *rktio, const char *p)
 {
-  return strdup(p);
+  set_racket_error(RKTIO_ERROR_UNSUPPORTED);
+  return NULL;
 }
 
-char *rktio_wide_path_to_path(rktio_t *rktio, const void *wp)
+char *rktio_wide_path_to_path(rktio_t *rktio, const rktio_char16_t *wp)
 {
-  return strdup((char *)wp);
+  set_racket_error(RKTIO_ERROR_UNSUPPORTED);
+  return NULL;
 }
 
 #endif
@@ -320,14 +323,26 @@ char *rktio_convert_from_wchar(const wchar_t *ws, int free_given)
   return s;
 }
 
-void *rktio_path_to_wide_path(rktio_t *rktio, const char *p)
+rktio_char16_t *rktio_path_to_wide_path(rktio_t *rktio, const char *p)
 {
   return WIDE_PATH_copy(p);
 }
 
-char *rktio_wide_path_to_path(rktio_t *rktio, const void *wp)
+char *rktio_wide_path_to_path(rktio_t *rktio, const rktio_char16_t *wp)
 {
   return NARROW_PATH_copy(wp);
 }
 
 #endif
+
+/*============================================================*/
+
+/* The same as strndup(), but sometimes strndup() is missing */
+char *rktio_strndup(char *s, intptr_t len)
+{
+  char *s2;
+  s2 = malloc(len + 1);
+  memcpy(s2, s, len);
+  s2[len] = 0;
+  return s2;
+}

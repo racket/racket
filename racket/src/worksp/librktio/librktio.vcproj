@@ -167,6 +167,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\rktio\rktio_convert.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\rktio\rktio_error.c"
 				>
 			</File>

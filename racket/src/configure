@@ -5103,32 +5103,8 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $using_gnu_cpp" >&5
 $as_echo "$using_gnu_cpp" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for nl_langinfo (CODESET)" >&5
-$as_echo_n "checking for nl_langinfo (CODESET)... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <langinfo.h>
-int
-main ()
-{
-char *codeset = nl_langinfo (CODESET);
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-
-$as_echo "#define HAVE_CODESET 1" >>confdefs.h
-
-   have_codeset=yes
-else
-  have_codeset=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_codeset" >&5
-$as_echo "$have_codeset" >&6; }
-
+# Although rktio takes care of iconv, we need to know whether
+# to link to it
 iconv_lib_flag=""
 if test "${skip_iconv_check}" = "no" ; then
  if test "${enable_iconv}" = "yes" ; then
@@ -5463,39 +5439,7 @@ $as_echo_n "checking $msg... " >&6; }
  iconv_usage_result="$enable_iconv$iconv_lib_flag"
  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iconv_usage_result" >&5
 $as_echo "$iconv_usage_result" >&6; }
- if test "${enable_iconv}" = "no" ; then
-  MZOPTIONS="$MZOPTIONS -DMZ_NO_ICONV"
- fi
 fi
-
- msg="for mbsrtowcs"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking $msg" >&5
-$as_echo_n "checking $msg... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-   #include <wchar.h>
-   #include <strings.h>
-   int main() {
-     mbstate_t state;
-     char *src = "X";
-     bzero(&state, sizeof(mbstate_t));
-     mbsrtowcs(0, &src, 0, &state);
-     return 0;
-   }
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  mbsrtowcs=yes
-else
-  mbsrtowcs=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-if test "$mbsrtowcs" = "no" ; then
-  MZOPTIONS="$MZOPTIONS -DNO_MBTOWC_FUNCTIONS"
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $mbsrtowcs" >&5
-$as_echo "$mbsrtowcs" >&6; }
 
 if test "${check_for_mprotect}" = "yes" ; then
    msg="for mmap and mprotect"
@@ -6890,6 +6834,13 @@ if test "${enable_pthread}" = "yes" ; then
   SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-pthread"
 else
   SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-pthread"
+fi
+
+# Make sure the --enable-iconv result is propagated:
+if test "${enable_iconv}" = "yes" ; then
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --enable-iconv"
+else
+  SUB_CONFIGURE_EXTRAS="$SUB_CONFIGURE_EXTRAS --disable-iconv"
 fi
 
 FOREIGNTARGET=

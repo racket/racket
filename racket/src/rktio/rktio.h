@@ -72,6 +72,9 @@ Thread and signal conventions:
 # define RKTIO_EXTERN extern
 #endif
 
+/*************************************************/
+/* Initialization and general datatypes          */
+
 typedef struct rktio_t rktio_t;
 /* A rktio_t value represents an instance of the Racket I/O system.
    Almost every `rktio_...` function takes it as the first argument. */
@@ -100,6 +103,24 @@ typedef int rktio_tri_t;
 
 typedef int rktio_bool_t;
 /* 0 or 1. */
+
+typedef unsigned short rktio_char16_t;
+/* A UTF-16 code unit. A `rktio_char16_t *` is meant to be the same as
+   `wchar_t *` on Windows. */
+
+/*************************************************/
+/* DLL paths                                     */
+
+RKTIO_EXTERN void rktio_set_dll_path(rktio_char16_t *p);
+/* Sets a path to search for loading DLLs, such as `iconv` on Windows.
+   This function departs from all the usual conventions: the given
+   path is in wide-character format, it's not copied, and it's not
+   specific to a `rktio_t` instance. */
+
+RKTIO_EXTERN rktio_char16_t *rktio_get_dll_path(rktio_char16_t *p);
+/* Combines a path prevously registered with `rktio_set_dll_path` with
+   the given filename. The result is allocated (as should be
+   deallocated) as usual. */
 
 /*************************************************/
 /* Reading and writing files                     */
@@ -878,11 +899,10 @@ rktio_ok_t rktio_shell_execute(rktio_t *rktio,
 /*************************************************/
 /* Path conversion                               */
 
-void *rktio_path_to_wide_path(rktio_t *rktio, const char *p);
-char *rktio_wide_path_to_path(rktio_t *rktio, const void *wp);
+rktio_char16_t *rktio_path_to_wide_path(rktio_t *rktio, const char *p);
+char *rktio_wide_path_to_path(rktio_t *rktio, const rktio_char16_t *wp);
 /* Convert to/from the OS's native path representation. These
-   functions are useful only on Windows, where each `void *`
-   is actually a `wchar_t*`. The `rktio_path_to_wide_path`
+   functions are useful only on Windows. The `rktio_path_to_wide_path`
    function can fail and report `RKTIO_ERROR_INVALID_PATH`. */
 
 /*************************************************/
@@ -903,6 +923,91 @@ enum {
   RKTIO_LOG_INFO,
   RKTIO_LOG_DEBUG
 };
+
+/*************************************************/
+/* Encoding conversion                           */
+
+int rktio_convert_properties(rktio_t *rktio);
+/* Returns a combination of the following flags. */
+
+#define RKTIO_CONVERTER_SUPPORTED   (1 << 0)
+#define RKTIO_CONVERT_STRCOLL_UTF16 (1 << 1)
+#define RKTIO_CONVERT_RECASE_UTF16  (1 << 2)
+
+typedef struct rktio_converter_t rktio_converter_t;
+
+rktio_converter_t *rktio_converter_open(rktio_t *rktio, const char *to_enc, const char *from_enc);
+/* Creates an encoding converter. */
+
+void rktio_converter_close(rktio_t *rktio, rktio_converter_t *cvt);
+/* Destroys an encoding converter. */
+
+intptr_t rktio_convert(rktio_t *rktio,
+                       rktio_converter_t *cvt,
+                       char **in, intptr_t *in_left,
+                       char **out, intptr_t *out_left);
+/* Converts some bytes, following the icon protocol: each consumed by
+   increments `*in` and decrements `*in_left`, and each produced by
+   increments `*out` and decrements `*out_left`. In case of an error,
+   the result is `RKTIO_CONVERT_ERROR` and the last error is set to
+   one of `RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE`,
+   `RKTIO_ERROR_CONVERT_BAD_SEQUENCE`, or `RKTIO_ERROR_CONVERT_OTHER`
+   --- but an error indicates something within `in` or `out`,
+   and some bytes may have been successfully converted even if an
+   error is reported. */
+
+#define RKTIO_CONVERT_ERROR (-1)
+
+char *rktio_locale_recase(rktio_t *rktio,
+                          rktio_bool_t to_up,
+                          char *in);
+/* Upcases (of `to_up`) or downcases (if `!to_up`) the content of `in`
+   using the current locale's encoding and case conversion. */
+
+rktio_char16_t *rktio_recase_utf16(rktio_t *rktio,
+                                   rktio_bool_t to_up, rktio_char16_t *s1,
+                                   intptr_t len, intptr_t *olen);
+/* Converts the case of a string encoded in UTF-16 for the system's
+   default locale if the OS provided direct support for it. The
+   `RKTIO_CONVERT_RECASE_UTF16 property from
+   `rktio_convert_properties` reports whether this functon will work.
+   Takes and optionally returns a length (`olen` can be NULL), but the
+   UTF-16 sequence is expected to have no nuls. */
+
+int rktio_locale_strcoll(rktio_t *rktio, char *s1, char *s2);
+/* Returns -1 if `s1` is less than `s2` by the current locale's
+   comparison, positive is `s1` is greater, and 0 if the strings
+   are equal. */
+
+int rktio_strcoll_utf16(rktio_t *rktio,
+                        rktio_char16_t *s1, intptr_t l1,
+                        rktio_char16_t *s2, intptr_t l2,
+                        rktio_bool_t cvt_case);
+/* Compares two strings encoded in UTF-16 for the system's default
+   locale if the OS provided direct support for it. The
+   `RKTIO_CONVERT_STRCOLL_UTF16 property from
+   `rktio_convert_properties` reports whether this functon will work.
+   Takes lengths, but the UTF-16 sequences are expected to have
+   no include nuls. */
+
+char *rktio_locale_encoding(rktio_t *rktio);
+/* Returns the name of the current locale's encoding. */
+
+void rktio_set_locale(rktio_t *rktio, char *name);
+/* Sets the current locale, which affects string comparisons and
+   conversions. It can also affect the C library's character-property
+   predicates and number printing/parsing. The empty string
+   corresponds to the OS's native locale. */
+
+char *rktio_push_c_numeric_locale(rktio_t *rktio);
+void rktio_pop_c_numeric_locale(rktio_t *rktio, char *prev);
+/* Use this pair of funtions to temporarily switch the locale to the C
+   locale for number parsing and printing. The result of the first
+   function is deallocated when passed to second function. */
+
+char *rktio_system_language_country(rktio_t *rktio);
+/* Returns the current system's language in country in a 5-character
+   format such as "en_US". */
 
 /*************************************************/
 /* Errors                                        */
@@ -948,6 +1053,10 @@ enum {
   RKTIO_ERROR_TIME_OUT_OF_RANGE,
   RKTIO_ERROR_NO_SUCH_ENVVAR,
   RKTIO_ERROR_SHELL_EXECUTE_FAILED,
+  RKTIO_ERROR_CONVERT_NOT_ENOUGH_SPACE,
+  RKTIO_ERROR_CONVERT_BAD_SEQUENCE,
+  RKTIO_ERROR_CONVERT_PREMATURE_END,
+  RKTIO_ERROR_CONVERT_OTHER,
 };
 
 RKTIO_EXTERN void rktio_set_last_error(rktio_t *rktio, int kind, int errid);

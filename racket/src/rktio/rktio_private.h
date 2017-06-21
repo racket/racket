@@ -91,12 +91,12 @@ struct rktio_t {
   wchar_t *wide_buffer;
 #endif
 
-#ifdef RKTIO_SYSTEM_WINDOWS
-  HANDLE hEventLog;
-#endif
-
 #ifdef RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS
   struct rktio_hash_t *locked_fd_process_map;
+#endif
+
+#ifdef RKTIO_SYSTEM_WINDOWS
+  HANDLE hEventLog;
 #endif
 };
 
@@ -323,3 +323,5 @@ void rktio_syslog_clean(rktio_t* rktio);
 #else
 # define BIG_OFF_T_IZE(n) n
 #endif
+
+char *rktio_strndup(char *s, intptr_t len);

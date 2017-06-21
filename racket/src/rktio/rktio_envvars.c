@@ -217,7 +217,7 @@ rktio_envvars_t *rktio_envvars(rktio_t *rktio)
       p = ea[i];
       for (j = 0; p[j] && p[j] != '='; j++) {
       }
-      envvars->names[i] = MSC_IZE(strndup)(p, j);
+      envvars->names[i] = rktio_strndup(p, j);
       envvars->vals[i] = MSC_IZE(strdup)(p+j+1);
     }
 

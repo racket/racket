@@ -51,7 +51,7 @@ void rktio_destroy(rktio_t *rktio)
 }
 
 /* Useful on Windows to make sure everyone is using the same malloc()
-   and fre(): */
+   and free(): */
 void rktio_free(void *p)
 {
   free(p);

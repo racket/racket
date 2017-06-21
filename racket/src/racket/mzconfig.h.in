@@ -44,9 +44,6 @@ typedef unsigned long uintptr_t;
 /* Direction of stack growth: 1 = up, -1 = down, 0 = unknown. */
 #undef STACK_DIRECTION
 
-/* Whether nl_langinfo works. */
-#undef HAVE_CODESET
-
 /* Whether __attribute__ ((noinline)) works. */
 #undef MZ_USE_NOINLINE
 

@@ -694,6 +694,8 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_shared
+enable_pthread
+enable_iconv
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1317,6 +1319,8 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-shared         create shared libraries (ok, but not recommended)
+  --enable-pthread        link with pthreads (usually auto-enabled if needed)
+  --enable-iconv          use iconv (usually auto-enabled)
 
 Some influential environment variables:
   CC          C compiler command
@@ -2243,6 +2247,20 @@ if test "${enable_shared+set}" = set; then :
   enableval=$enable_shared;
 fi
 
+# Check whether --enable-pthread was given.
+if test "${enable_pthread+set}" = set; then :
+  enableval=$enable_pthread;
+fi
+
+# Check whether --enable-iconv was given.
+if test "${enable_iconv+set}" = set; then :
+  enableval=$enable_iconv;
+fi
+
+
+if test "${enable_iconv}" = "" ; then
+  enable_iconv=yes
+fi
 
 ###### Autoconfigure #######
 
@@ -3921,9 +3939,39 @@ $as_echo_n "checking $msg... " >&6; }
  iconv_usage_result="$enable_iconv$iconv_lib_flag"
  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $iconv_usage_result" >&5
 $as_echo "$iconv_usage_result" >&6; }
- if test "${enable_iconv}" = "no" ; then
-  CFLAGS="$CFLAGS -DRKTIO_NO_ICONV"
- fi
+fi
+if test "${enable_iconv}" = "no" ; then
+
+$as_echo "#define RKTIO_NO_ICON 1" >>confdefs.h
+
+fi
+
+if test "${enable_iconv}" = "yes" ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for nl_langinfo (CODESET)" >&5
+$as_echo_n "checking for nl_langinfo (CODESET)... " >&6; }
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <langinfo.h>
+int
+main ()
+{
+char *codeset = nl_langinfo (CODESET);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+
+$as_echo "#define RKTIO_HAVE_CODESET 1" >>confdefs.h
+
+               have_codeset=yes
+else
+  have_codeset=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $have_codeset" >&5
+$as_echo "$have_codeset" >&6; }
 fi
 
  msg="for mbsrtowcs"
