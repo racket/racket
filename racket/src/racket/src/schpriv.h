@@ -4241,25 +4241,7 @@ Scheme_Object *scheme_extract_relative_to(Scheme_Object *obj, Scheme_Object *dir
 Scheme_Object *scheme_find_links_path(int argc, Scheme_Object *argv[]);
 
 #ifdef DOS_FILE_SYSTEM
-# define WIDE_PATH(s) scheme_convert_to_wchar(s, 0)
-# define WIDE_PATH_COPY(s) scheme_convert_to_wchar(s, 1)
-# define NARROW_PATH(s) scheme_convert_from_wchar(s)
-extern wchar_t *scheme_convert_to_wchar(const char *s, int do_copy);
-extern char *scheme_convert_from_wchar(const wchar_t *ws);
-#else
-# define WIDE_PATH(s) s
-# define WIDE_PATH_COPY(s) s
-# define NARROW_PATH(s) s
-#endif
-
-#if defined(DOS_FILE_SYSTEM) && !defined(__CYGWIN32__)
-# define MSC_W_IZE(n) _w ## n
-# define MSC_WIDE_PATH(s) WIDE_PATH(s)
-# define MSC_WIDE_PATH_COPY(s) WIDE_PATH_COPY(s)
-#else
-# define MSC_W_IZE(n) MSC_IZE(n)
-# define MSC_WIDE_PATH(s) s
-# define MSC_WIDE_PATH_COPY(s) s
+wchar_t *scheme_path_to_wide_path(const char *who, const char *p);
 #endif
 
 /*========================================================================*/

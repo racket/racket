@@ -5,6 +5,17 @@
 
 #ifdef RKTIO_SYSTEM_UNIX
 void rktio_init_wide(rktio_t *rktio) { }
+
+void *rktio_path_to_wide_path(rktio_t *rktio, const char *p)
+{
+  return strdup(p);
+}
+
+char *rktio_wide_path_to_path(rktio_t *rktio, const void *wp)
+{
+  return strdup((char *)wp);
+}
+
 #endif
 
 #ifdef RKTIO_SYSTEM_WINDOWS
@@ -306,6 +317,16 @@ char *rktio_convert_from_wchar(const wchar_t *ws, int free_given)
     free((void *)ws);
 
   return s;
+}
+
+void *rktio_path_to_wide_path(rktio_t *rktio, const char *p)
+{
+  return WIDE_PATH_copy(p);
+}
+
+char *rktio_wide_path_to_path(rktio_t *rktio, const void *wp)
+{
+  return NARROW_PATH_copy(wp);
 }
 
 #endif

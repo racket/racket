@@ -233,8 +233,11 @@ THREAD_LOCAL_DECL(static Scheme_Hash_Table *opened_libs);
         /* openning the executable is marked by a NULL handle */
         handle = NULL;
         null_ok = 1;
-      } else
-        handle = LoadLibraryW(WIDE_PATH(name));
+      } else {
+        wchar_t *wp;
+        wp = scheme_path_to_wide_path(MYNAME, name);
+        handle = LoadLibraryW(wp);
+      }
     }{
       @@IFDEF{__ANDROID__}{if (!name) handle = RTLD_DEFAULT; else}
       @@IFDEF{__CYGWIN32__}{if (!name) { handle = RTLD_DEFAULT; null_ok = 1; } else}

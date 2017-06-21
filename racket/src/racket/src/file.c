@@ -1049,61 +1049,37 @@ int scheme_os_setcwd(char *expanded, int noexn)
 }
 
 #ifdef DOS_FILE_SYSTEM
-#define WC_BUFFER_SIZE 1024
-THREAD_LOCAL_DECL(static void *file_path_wc_buffer);
 
-static int wc_strlen(const wchar_t *ws)
+static intptr_t wc_strlen(const wchar_t *ws)
 {
-  int l;
+  intptr_t l;
   for (l =0; ws[l]; l++) { }
   return l;
 }
 
-wchar_t *scheme_convert_to_wchar(const char *s, int do_copy)
-     /* This function uses '\t' in place of invalid UTF-8 encoding
-	bytes, because '\t' is not a legal filename under Windows. */
+wchar_t *scheme_path_to_wide_path(const char *who, const char *p)
 {
-  intptr_t len, l;
-  wchar_t *ws;
+  wchar_t *wp, *gc_wp;
+  intptr_t len;
+  
+  wp = rktio_path_to_wide_path(scheme_rktio, p);
+  if (wp) {
+    len = wc_strlen(wp);
+    gc_wp = scheme_malloc_atomic((len + 1) * sizeof(wchar_t));
+    memcpy(gc_wp, wp, (len + 1) * sizeof(wchar_t));
+    free(wp);
+    return gc_wp;
+  }
+  if (who)
+    scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
+                     "%s: could not read file\n"
+                     "  path: %q\n"
+                     "  system error: %R",
+                     p);
 
-  l = strlen(s);
-  len = scheme_utf8_decode(s, 0, l,
-			   NULL, 0, -1,
-			   NULL, 1/*UTF-16*/, '\t');
-
-  if (!do_copy && (len < (WC_BUFFER_SIZE-1))) {
-    if (!file_path_wc_buffer) {
-      REGISTER_SO(file_path_wc_buffer);
-      file_path_wc_buffer = scheme_malloc_atomic(sizeof(wchar_t) * WC_BUFFER_SIZE);
-    }
-    ws = (wchar_t *)file_path_wc_buffer;
-  } else
-    ws = (wchar_t *)scheme_malloc_atomic(sizeof(wchar_t) * (len + 1));
-  scheme_utf8_decode(s, 0, l,
-		     (unsigned int *)ws, 0, -1,
-		     NULL, 1/*UTF-16*/, '\t');
-  ws[len] = 0;
-  return ws;
-}
-
-char *scheme_convert_from_wchar(const wchar_t *ws)
-{
-  intptr_t len, l;
-  char *s;
-
-  l = wc_strlen(ws);
-  len = scheme_utf8_encode((unsigned int *)ws, 0, l,
-			   NULL, 0,
-			   1/*UTF-16*/);
-  s = (char *)scheme_malloc_atomic(len + 1);
-  scheme_utf8_encode((unsigned int *)ws, 0, l,
-		     s, 0,
-		     1/*UTF-16*/);
-  s[len] = 0;
-  return s;
+  return NULL;
 }
 #endif
-
 
 Scheme_Object *scheme_get_file_directory(const char *filename)
 {

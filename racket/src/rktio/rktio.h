@@ -872,8 +872,18 @@ rktio_ok_t rktio_shell_execute(rktio_t *rktio,
 			       const char *arg,
 			       const char *dir,
 			       int show_mode);
-/* Support only on Windows to run `ShellExecute`. The `dir` argument
+/* Supported only on Windows to run `ShellExecute`. The `dir` argument
    needs to have normalized path separators. */
+
+/*************************************************/
+/* Path conversion                               */
+
+void *rktio_path_to_wide_path(rktio_t *rktio, const char *p);
+char *rktio_wide_path_to_path(rktio_t *rktio, const void *wp);
+/* Convert to/from the OS's native path representation. These
+   functions are useful only on Windows, where each `void *`
+   is actually a `wchar_t*`. The `rktio_path_to_wide_path`
+   function can fail and report `RKTIO_ERROR_INVALID_PATH`. */
 
 /*************************************************/
 /* Errors                                        */

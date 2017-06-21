@@ -255,7 +255,7 @@ clean:
 SRC_MAKEFILES = $(srcdir)/Makefile.in $(srcdir)/racket/Makefile.in \
                 $(srcdir)/racket/src/Makefile.in $(srcdir)/gracket/Makefile.in \
                 $(srcdir)/racket/gc2/Makefile.in $(srcdir)/gracket/gc2/Makefile.in \
-                $(srcdir)/racket/dynsrc/Makefile.in
+                $(srcdir)/rktio/Makefile.in $(srcdir)/racket/dynsrc/Makefile.in
 
 reconfigure:
 	$(MAKE) Makefile

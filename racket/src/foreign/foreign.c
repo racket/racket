@@ -263,8 +263,11 @@ static Scheme_Object *foreign_ffi_lib(int argc, Scheme_Object *argv[])
       /* openning the executable is marked by a NULL handle */
       handle = NULL;
       null_ok = 1;
-    } else
-      handle = LoadLibraryW(WIDE_PATH(name));
+    } else {
+      wchar_t *wp;
+      wp = scheme_path_to_wide_path(MYNAME, name);
+      handle = LoadLibraryW(wp);
+    }
 #   else /* WINDOWS_DYNAMIC_LOAD undefined */
 #   ifdef __ANDROID__
     if (!name) handle = RTLD_DEFAULT; else

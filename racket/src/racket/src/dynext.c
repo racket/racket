@@ -299,16 +299,18 @@ static Scheme_Object *do_load_extension(const char *filename,
     HINSTANCE dl;
     Setup_Procedure f;
     char *vers;
-  
-    dl = LoadLibraryW(WIDE_PATH(filename));
+    wchar_t *wp;
+
+    wp = scheme_path_to_wide_path(NULL, filename);
+    dl = LoadLibraryW(wp);
     if (!dl) {
       long err;
       err = GetLastError();
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
-		       "load-extension: could not load file\n"
+                       "load-extension: could not load file\n"
                        "  path: %q\n"
                        "  system error: %E",
-		       filename, err);
+                       filename, err);
     }
     
     handle = (void *)dl;
