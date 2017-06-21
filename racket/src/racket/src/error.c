@@ -486,13 +486,27 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
           {
             intptr_t errid;
             intptr_t errkind;
-            const char *es;
+            const char *es, *errkind_str;
             intptr_t elen;
             errkind = rktio_get_last_error_kind(scheme_rktio);
             errid = rktio_get_last_error(scheme_rktio);
+            switch (errkind) {
+            case RKTIO_ERROR_KIND_WINDOWS:
+              errkind_str = "errid";
+              break;
+            case RKTIO_ERROR_KIND_POSIX:
+              errkind_str = "errno";
+              break;
+            case RKTIO_ERROR_KIND_GAI:
+              errkind_str = "gai_err";
+              break;
+            default:
+              errkind_str = "rktio_err";
+              break;
+            }
             es = rktio_get_error_string(scheme_rktio, errkind, errid);
-            sprintf(buf, "; errno=%" PRIdPTR "", errid);
-            elen = strlen(es);
+            sprintf(buf, "; %s=%" PRIdPTR "", errkind_str, errid);
+            if (es) elen = strlen(es); else elen = 0;
             tlen = strlen(buf);
             t = (const char *)scheme_malloc_atomic(tlen+elen+1);
             memcpy((char *)t, es, elen);
@@ -529,6 +543,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	  {
 	    int en, he, none = 0;
 	    char *es;
+            const char *errkind_str;
             Scheme_Object *err_kind = NULL;
             
 	    if (type == 'm') {
@@ -555,6 +570,7 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 	    if (he) {
 	      es = (char *)scheme_hostname_error(en);
               err_kind = gai_symbol;
+              errkind_str = "gai_err";
             }
 
 	    if ((en || es) && !none) {
@@ -585,17 +601,19 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
 		      break;
 		  }
                   err_kind = windows_symbol;
+                  errkind_str = "win_err";
 		}
 	      }
 # endif
 	      if (!es) {
 		es = strerror(en);
                 err_kind = posix_symbol;
+                errkind_str = "errno";
               }
 #endif
 	      tlen = strlen(es) + 24;
 	      t = (const char *)scheme_malloc_atomic(tlen);
-	      sprintf((char *)t, "%s; errno=%d", es, en);
+	      sprintf((char *)t, "%s; %s=%d", es, errkind_str, en);
 	      tlen = strlen(t);
               if (_errno_val) {
                 err_kind = scheme_make_pair(scheme_make_integer_value(en), err_kind);
