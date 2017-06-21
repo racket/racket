@@ -226,6 +226,12 @@ char *rktio_convert_from_wchar(const wchar_t *ws, int free_given);
 # define NARROW_PATH_copy(ws) rktio_convert_from_wchar(ws, 0)
 # define NARROW_PATH_copy_then_free(ws) rktio_convert_from_wchar(ws, 1)
 
+typedef wchar_t WIDE_PATH_t;
+
+#else
+
+typedef char WIDE_PATH_t;
+
 #endif
 
 /*========================================================================*/

@@ -26,7 +26,7 @@ void rktio_init_wide(rktio_t *rktio)
 /* A UTF-8 to UTF-16 conversion, but accepts an extended variant of
    UTF-16 that accommodates unpaired surrogates, so that all 16-byte
    sequences are accessible. */
-static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsigned short *us, int replacement)
+static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsigned short *us)
 {
   intptr_t i, j, oki;
   int state;
@@ -48,14 +48,9 @@ static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsign
     if (sc < 0x80) {
       if (state) {
         /* In a sequence, but didn't continue */
-        state = 0;
-        nextbits = 0;
-        v = replacement;
-        i = oki;
-        j += init_doki;
-      } else {
-        v = sc;
+        return -1;
       }
+      v = sc;
     } else if ((sc & 0xC0) == 0x80) {
       /* Continues a sequence ... */
       if (state) {
@@ -72,28 +67,19 @@ static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsign
           /* We finished. One last check: */
           if (v > 0x10FFFF) {
             /* illegal code units */
-            v = replacement;
-            j += init_doki;
-            i = oki;
+            return -1;
           }
         } else {
           /* ... but we're missing required bits. */
-          state = 0;
-          nextbits = 0;
-          v = replacement;
-          j += init_doki;
-          i = oki;
+          return -1;
         }
       } else {
         /* ... but we're not in one */
-        v = replacement;
+        return -1;
       }
     } else if (state) {
       /* bad: already in a sequence */
-      state = 0;
-      v = replacement;
-      i = oki;
-      j += init_doki;
+      return -1;
     } else {
       if ((sc & 0xE0) == 0xC0) {
         if (sc & 0x1E) {
@@ -122,7 +108,7 @@ static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsign
         /* Else will be larger than 0x10FFFF, so fail */
       }
       /* Too small, or 0xFF or 0xFe, or start of a 5- or 6-byte sequence */
-      v = replacement;
+      return -1;
     }
 
     /* If we get here, we're supposed to output v */
@@ -149,18 +135,7 @@ static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsign
       if ((v >= 0xD800) && (v <= 0xDFFF)) {
         if (pending_surrogate && ((v & 0xDC00) == 0xDC00)) {
           /* This would look like a surrogate pair... */
-          /* We need to fill in 6 replacement substitutions,
-             one for each input byte. If we can't put all 6,
-             then don't use any input. */
-          int p;
-          if (us) {
-            for (p = 0; p < 5; p++) {
-              us[j+p] = replacement;
-            }
-          }
-          j += 5;
-          v = replacement;
-          pending_surrogate = 0;
+          return -1;
         } else {
           if (pending_surrogate) {
             if (us)
@@ -199,13 +174,8 @@ static intptr_t utf8ish_to_utf16ish(const unsigned char *s, intptr_t end, unsign
     j++;
   }
 
-  if (state) {
-    for (i = oki; i < end; i++) {
-      if (us)
-        us[j] = replacement;
-      j++;
-    }
-  }
+  if (state)
+    return -1;
 
   return j;
 }
@@ -286,15 +256,17 @@ static intptr_t utf16ish_to_utf8ish(const unsigned short *us, intptr_t end, unsi
 #define RKTIO_MAX_IDEAL_BUFFER_SIZE 4096
 
 wchar_t *rktio_convert_to_wchar(rktio_t *rktio, const char *s, int do_copy)
-/* This function uses '\t' in place of invalid UTF-8 encoding
-   bytes, because '\t' is not a legal filename under Windows. */
 {
   intptr_t len, l;
   wchar_t *ws;
 
   l = strlen(s)+1; /* add nul terminator */
 
-  len = utf8ish_to_utf16ish((unsigned char *)s, l, NULL, '\t');
+  len = utf8ish_to_utf16ish((unsigned char *)s, l, NULL);
+  if (len < 0) {
+    set_racket_error(RKTIO_ERROR_INVALID_PATH);
+    return NULL;
+  }
   
   if (do_copy)
     ws = malloc(sizeof(wchar_t) * len);
@@ -312,7 +284,7 @@ wchar_t *rktio_convert_to_wchar(rktio_t *rktio, const char *s, int do_copy)
   } else
     ws = rktio->wide_buffer;
 
-  (void)utf8ish_to_utf16ish((unsigned char *)s, l, (unsigned short*)ws, '\t');
+  (void)utf8ish_to_utf16ish((unsigned char *)s, l, (unsigned short*)ws);
 
   return ws;
 }

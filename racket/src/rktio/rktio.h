@@ -866,6 +866,7 @@ RKTIO_EXTERN int rktio_get_last_error(rktio_t *rktio);
 /* Error IDs of kind RKTIO_ERROR_KIND_RACKET */
 enum {
   RKTIO_ERROR_UNSUPPORTED = 1,
+  RKTIO_ERROR_INVALID_PATH, /* Windows path-decoding failure */
   RKTIO_ERROR_DOES_NOT_EXIST,
   RKTIO_ERROR_EXISTS,
   RKTIO_ERROR_ACCESS_DENIED,

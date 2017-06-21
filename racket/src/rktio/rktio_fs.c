@@ -232,12 +232,19 @@ static char *UNC_readlink(rktio_t *rktio, const char *fn)
   mz_REPARSE_DATA_BUFFER *rp;
   int len, off;
   wchar_t *lk;
+  const wchar_t *wp;
 
   init_procs();
 
   if (!DeviceIoControlProc) return NULL;
 
-  h = CreateFileW(WIDE_PATH_temp(fn), FILE_READ_ATTRIBUTES,
+  wp = WIDE_PATH_temp(fn);
+  if (!wp) {
+    /* Treat invalid path as non-existent path */
+    return MSC_IZE(strdup)(fn);
+  }
+
+  h = CreateFileW(wp, FILE_READ_ATTRIBUTES,
 		  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
 		  OPEN_EXISTING,
 		  FILE_FLAG_BACKUP_SEMANTICS | mzFILE_FLAG_OPEN_REPARSE_POINT,
@@ -342,6 +349,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
   char *copy;
   WIN32_FILE_ATTRIBUTE_DATA fad;
   int len, must_be_dir = 0;
+  const wchar_t *wp;
 
   if (resolved_path)
     *resolved_path = NULL;
@@ -400,7 +408,14 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
     copy[4] = 0;
   }
 
-  if (!GetFileAttributesExW(WIDE_PATH_temp(copy), GetFileExInfoStandard, &fad)) {
+  wp = WIDE_PATH_temp(copy);
+  if (!wp) {
+    /* Treat invalid path as non-existent */
+    free(copy);
+    return 0;
+  }
+
+  if (!GetFileAttributesExW(wp, GetFileExInfoStandard, &fad)) {
     get_windows_error();
     free(copy);
     return 0;
@@ -562,9 +577,13 @@ int rktio_is_regular_file(rktio_t *rktio, const char *filename)
   return 0;
 # else
   struct MSC_IZE(stat) buf;
+  const WIDE_PATH_t *wp;
+
+  wp = MSC_WIDE_PATH_temp(filename);
+  if (!wp) return 0;
 
   while (1) {
-    if (!MSC_W_IZE(stat)(MSC_WIDE_PATH_temp(filename), &buf))
+    if (!MSC_W_IZE(stat)(wp, &buf))
       break;
     else if (errno != EINTR)
       return 0;
@@ -651,12 +670,16 @@ char *rktio_get_current_directory(rktio_t *rktio)
 #endif
 }
 
-int rktio_set_current_directory(rktio_t *rktio, const char *path)
+rktio_ok_t rktio_set_current_directory(rktio_t *rktio, const char *path)
 {
   int err;
+  const WIDE_PATH_t *wp;
+
+  wp = MSC_WIDE_PATH_temp(path);
+  if (!wp) return 0;
 
   while (1) {
-    err = MSC_W_IZE(chdir)(MSC_WIDE_PATH_temp(path));
+    err = MSC_W_IZE(chdir)(wp);
     if (!err || (errno != EINTR))
       break;
   }
@@ -706,7 +729,10 @@ static rktio_identity_t *get_identity(rktio_t *rktio, rktio_fd_t *fd, const char
   init_procs();
 
   if (path) {
-    fdh = CreateFileW(WIDE_PATH_temp(path),
+    const wchar_t *wp;
+    wp = WIDE_PATH_temp(path);
+    if (!wp) return 0;
+    fdh = CreateFileW(wp,
                       0, /* not even read access => just get info */
                       FILE_SHARE_READ | FILE_SHARE_WRITE,
                       NULL,
@@ -779,8 +805,14 @@ int rktio_delete_file(rktio_t *rktio, const char *fn, int enable_write_on_fail)
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int errid;
-  if (DeleteFileW(WIDE_PATH_temp(fn)))
+  const wchar_t *wp;
+
+  wp = WIDE_PATH_temp(fn);
+  if (!wp) return 0;
+
+  if (DeleteFileW(wp))
     return 1;
+
   errid = GetLastError();
   if ((errid == ERROR_ACCESS_DENIED) && enable_write_on_fail) {
     /* Maybe it's just that the file has no write permission. Provide a more
@@ -810,13 +842,20 @@ int rktio_rename_file(rktio_t *rktio, const char *dest, const char *src, int exi
 {
 #ifdef RKTIO_SYSTEM_WINDOWS
   int errid;
-  wchar_t *src_w = WIDE_PATH_copy(src);
-  
-  if (MoveFileExW(src_w, WIDE_PATH_temp(dest), (exists_ok ? MOVEFILE_REPLACE_EXISTING : 0))) {
+  wchar_t *src_w;
+  const wchar_t *dest_w;
+
+  src_w = WIDE_PATH_copy(src);
+  if (!src_w) return 0;
+
+  dest_w = WIDE_PATH_temp(dest);
+  if (!dest_w) return 0;
+
+  if (MoveFileExW(src_w, dest_w, (exists_ok ? MOVEFILE_REPLACE_EXISTING : 0))) {
     free(src_w);
     return 1;
   }
-  
+
   errid = GetLastError();
 
   if (errid == ERROR_CALL_NOT_IMPLEMENTED) {
@@ -906,6 +945,7 @@ int rktio_make_directory(rktio_t *rktio, const char *filename)
 #else
   int len;
   char *copied = NULL;
+  const WIDE_PATH_t *wp;
 
   /* Make sure path doesn't have trailing separator: */
   len = strlen(filename);
@@ -916,7 +956,9 @@ int rktio_make_directory(rktio_t *rktio, const char *filename)
   }
 
   while (1) {
-    if (!MSC_W_IZE(mkdir)(MSC_WIDE_PATH_temp(filename)
+    wp = MSC_WIDE_PATH_temp(filename);
+    if (!wp) return 0;
+    if (!MSC_W_IZE(mkdir)(wp
 # ifndef MKDIR_NO_MODE_FLAG
 			  , 0777
 # endif
@@ -942,9 +984,12 @@ int rktio_delete_directory(rktio_t *rktio, const char *filename, const char *cur
 #ifdef RKTIO_SYSTEM_WINDOWS
   int tried_cwd = 0, tried_perm = 0;
 #endif
+  const WIDE_PATH_t *wp;
   
   while (1) {
-    if (!MSC_W_IZE(rmdir)(MSC_WIDE_PATH_temp(filename)))
+    wp = MSC_WIDE_PATH_temp(filename);
+    if (!wp) return 0;
+    if (!MSC_W_IZE(rmdir)(wp))
       return 1;
 # ifdef RKTIO_SYSTEM_WINDOWS
     else if ((errno == EACCES) && !tried_cwd) {
@@ -975,14 +1020,21 @@ int rktio_make_link(rktio_t *rktio, const char *src, const char *dest, int dest_
     
   if (CreateSymbolicLinkProc) {
     int flags;
-    wchar_t *src_w = WIDE_PATH_copy(src);
+    wchar_t *src_w;
+    wchar_t *dest_w;
 
     if (dest_is_directory)
       flags = 0x1; /* directory */
     else
       flags = 0; /* file */
 
-    if (CreateSymbolicLinkProc(src_w, WIDE_PATH_temp(dest), flags)) {
+    src_w = WIDE_PATH_copy(src);
+    if (!src_w) return 0;
+
+    dest_w = WIDE_PATH_temp(dest);
+    if (!dest_w) return 0;
+
+    if (CreateSymbolicLinkProc(src_w, dest_w, flags)) {
       free(src_w);
       return 1;
     }
@@ -1034,9 +1086,12 @@ int rktio_set_file_modify_seconds(rktio_t *rktio, const char *file, rktio_timest
 {
   while (1) {
     struct MSC_IZE(utimbuf) ut;
+    const WIDE_PATH_t *wp;
     ut.actime = secs;
     ut.modtime = secs;
-    if (!MSC_W_IZE(utime)(MSC_WIDE_PATH_temp(file), &ut))
+    wp = MSC_WIDE_PATH_temp(file);
+    if (!wp) return 0;
+    if (!MSC_W_IZE(utime)(wp, &ut))
       return 1;
     if (errno != EINTR)
       break;
@@ -1329,6 +1384,7 @@ rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, const char *f
   FF_HANDLE_TYPE hfile;
   FF_TYPE info;
   rktio_directory_list_t *dl;
+  const wchar_t *wp;
 
  retry:
 
@@ -1372,7 +1428,10 @@ rktio_directory_list_t *rktio_directory_list_start(rktio_t *rktio, const char *f
     memcpy(pattern + len, "*.*", 4);
   }
 
-  hfile = FIND_FIRST(WIDE_PATH_temp(pattern), &info);
+  wp = WIDE_PATH_temp(pattern);
+  if (!wp) return NULL;
+
+  hfile = FIND_FIRST(wp, &info);
   if (FIND_FAILED(hfile)) {
     int err_val;
     err_val = GetLastError();
@@ -1563,9 +1622,15 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   int err_val = 0;
-  wchar_t *src_w = WIDE_PATH_copy(src);
+  wchar_t *src_w;
+  const wchar_t *dest_w;
 
-  if (CopyFileW(src_w, WIDE_PATH_temp(dest), !exists_ok)) {
+  src_w = WIDE_PATH_copy(src);
+  if (!src_w) return NULL;
+  dest_w = WIDE_PATH_temp(dest);
+  if (!dest_w) return NULL;
+
+  if (CopyFileW(src_w, dest_w, !exists_ok)) {
     rktio_file_copy_t *fc;
     free(src_w);
     /* Return a pointer to indicate success: */

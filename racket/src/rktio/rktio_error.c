@@ -13,6 +13,7 @@ typedef struct err_str_t {
 
 err_str_t err_strs[]  = { 
   { RKTIO_ERROR_UNSUPPORTED, "unsupported" },
+  { RKTIO_ERROR_INVALID_PATH, "invalid path encoding" },
   { RKTIO_ERROR_DOES_NOT_EXIST, "no such file or directory" },
   { RKTIO_ERROR_EXISTS, "file or directory already exists" },
   { RKTIO_ERROR_LINK_FAILED, "link creation failed" },

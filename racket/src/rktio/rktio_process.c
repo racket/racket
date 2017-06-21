@@ -954,8 +954,8 @@ void rktio_process_forget(rktio_t *rktio, rktio_process_t *sp)
 int rktio_process_init(rktio_t *rktio)
 {
 #if defined(CENTRALIZED_SIGCHILD)
-  /* Block SIGCHLD as earyl as possible, because it's a per-thread
-     setting on Linux, and we want SIGCHLD blocked everywhere. */
+  /* Block SIGCHLD as early as possible, because
+     it's a per-thread setting on Linux, and we want SIGCHLD blocked everywhere. */
   block_sigchld();
 
   centralized_start_child_signal_handler();
@@ -1050,7 +1050,7 @@ static intptr_t do_spawnv(rktio_t *rktio,
   int use_jo;
   intptr_t cr_flag;
   char *cmdline;
-  wchar_t *cmdline_w, *wd_w;
+  wchar_t *cmdline_w, *wd_w, *command_w;
   STARTUPINFOW startup;
   PROCESS_INFORMATION info;
 
@@ -1116,11 +1116,15 @@ static intptr_t do_spawnv(rktio_t *rktio,
   if (!exact_cmdline)
     free(cmdline);
   wd_w = WIDE_PATH_copy(wd);
+  command_w = WIDE_PATH_temp(command);
 
-  if (CreateProcessW(WIDE_PATH_temp(command), cmdline_w, 
-		     NULL, NULL, 1 /*inherit*/,
-		     cr_flag, env, wd_w,
-		     &startup, &info)) {
+  if (cmdline_w
+      && wd_w
+      && command_w
+      && CreateProcessW(command_w, cmdline_w, 
+                        NULL, NULL, 1 /*inherit*/,
+                        cr_flag, env, wd_w,
+                        &startup, &info)) {
     if (use_jo)
       AssignProcessToJobObject(rktio->process_job_object, info.hProcess);
     CloseHandle(info.hThread);
@@ -1129,8 +1133,8 @@ static intptr_t do_spawnv(rktio_t *rktio,
     free(wd_w);
     return (intptr_t)info.hProcess;
   } else {
-    free(cmdline_w);
-    free(wd_w);
+    if (cmdline_w) free(cmdline_w);
+    if (wd_w) free(wd_w);
     return -1;
   }
 }

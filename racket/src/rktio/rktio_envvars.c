@@ -66,7 +66,10 @@ char *rktio_getenv(rktio_t *rktio, const char *name)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   intptr_t value_size;
-  value_size = GetEnvironmentVariableW(WIDE_PATH_temp(name), NULL, 0);
+  wchar_t *wp;
+  wp = WIDE_PATH_temp(name);
+  if (!wp) return NULL;
+  value_size = GetEnvironmentVariableW(wp, NULL, 0);
   if (value_size) {
     wchar_t *value_w;
     char *value;
@@ -120,14 +123,18 @@ int rktio_setenv(rktio_t *rktio, const char *name, const char *val)
 #endif
 #ifdef RKTIO_SYSTEM_WINDOWS
   int rc;
-  wchar_t *val_w;
+  wchar_t *val_w, *name_w;
 
-  if (val)
-    val_w = WIDE_PATH_copy(val);
-  else
-    val_w = NULL;
+  name_w = WIDE_PATH_temp(name);
+  if (!name_w) return 0;
   
-  rc = SetEnvironmentVariableW(WIDE_PATH_temp(name), val_w);
+  if (val) {
+    val_w = WIDE_PATH_copy(val);
+    if (!val_w) return 0;
+  } else
+    val_w = NULL;
+
+  rc = SetEnvironmentVariableW(name_w, val_w);
 
   if (val_w)
     free(val_w);
@@ -384,9 +391,14 @@ void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars)
   wchar_t *r, *s;
 
   for (i = 0; i < envvars->count; i++) {
-    len += wcslen(WIDE_PATH_temp(envvars->names[i]));
-    len += wcslen(WIDE_PATH_temp(envvars->vals[i]));
-    len += 2;
+    s = WIDE_PATH_temp(envvars->names[i]);
+    if (s) {
+      len += wcslen(s);
+      s = WIDE_PATH_temp(envvars->vals[i]);
+      if (s)
+        len += wcslen(s);
+      len += 2;
+    }
   }
 
   r = (wchar_t *)malloc((len + 1) * sizeof(wchar_t));
@@ -395,15 +407,18 @@ void *rktio_envvars_to_block(rktio_t *rktio, rktio_envvars_t *envvars)
 
   for (i = 0; i < envvars->count; i++) {
     s = WIDE_PATH_temp(envvars->names[i]);
-    slen = wcslen(s);
-    memcpy(r + len, s, slen * sizeof(wchar_t));
-    len += slen;
-    r[len++] = '=';
-    s = WIDE_PATH_temp(envvars->vals[i]);
-    slen = wcslen(s);
-    memcpy(r + len, s, slen * sizeof(wchar_t));
-    len += slen;
-    r[len++] = 0;
+    if (s) {
+      slen = wcslen(s);
+      memcpy(r + len, s, slen * sizeof(wchar_t));
+      len += slen;
+      r[len++] = '=';
+      s = WIDE_PATH_temp(envvars->vals[i]);
+      if (!s) s = L"";
+      slen = wcslen(s);
+      memcpy(r + len, s, slen * sizeof(wchar_t));
+      len += slen;
+      r[len++] = 0;
+    }
   }
   r[len] = 0;
 

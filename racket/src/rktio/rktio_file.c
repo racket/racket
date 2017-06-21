@@ -64,8 +64,13 @@ static rktio_fd_t *open_read(rktio_t *rktio, const char *filename, int modes)
 #ifdef RKTIO_SYSTEM_WINDOWS
   HANDLE fd;
   rktio_fd_t *rfd;
+  wchar_t *wp;
+
+  wp = WIDE_PATH_temp(filename);
+  if (!wp)
+    return NULL;
   
-  fd = CreateFileW(WIDE_PATH_temp(filename),
+  fd = CreateFileW(wp,
 		   GENERIC_READ,
 		   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		   NULL,
@@ -166,6 +171,7 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
   HANDLE fd;
   int hmode;
   rktio_fd_t *rfd;
+  wchar_t *wp;
 
   if (modes & RKTIO_OPEN_MUST_EXIST) {
     if (modes & RKTIO_OPEN_TRUNCATE)
@@ -177,7 +183,10 @@ static rktio_fd_t *open_write(rktio_t *rktio, const char *filename, int modes)
   else
     hmode = CREATE_NEW;
 
-  fd = CreateFileW(WIDE_PATH_temp(filename),
+  wp = WIDE_PATH_temp(filename);
+  if (!wp) return NULL;
+
+  fd = CreateFileW(wp,
 		   GENERIC_WRITE | ((modes & RKTIO_OPEN_READ) ? GENERIC_READ : 0),
 		   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		   NULL,
