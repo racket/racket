@@ -4723,7 +4723,7 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
   if (!rktio_make_link(scheme_rktio, src, SCHEME_PATH_VAL(dest), dest_is_dir)) {
     if (scheme_last_error_is_racket(RKTIO_ERROR_EXISTS)) {
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM_EXISTS,
-                       "make-file-or-directory-link: cannot make directory;\n"
+                       "make-file-or-directory-link: cannot make link;\n"
                        " the path already exists\n"
                        "  path: %q",
                        filename_for_error(argv[0]));
@@ -4731,11 +4731,12 @@ static Scheme_Object *make_link(int argc, Scheme_Object *argv[])
       scheme_raise_exn(MZEXN_FAIL_FILESYSTEM,
                        "make-file-or-directory-link: cannot make link\n"
                        "  path: %q\n"
-                       "  system error: %R");
+                       "  system error: %R",
+                       filename_for_error(argv[0]));
     }
   }
 
-  return NULL;
+  return scheme_void;
 }
 
 static Scheme_Object *file_modify_seconds(int argc, Scheme_Object **argv)

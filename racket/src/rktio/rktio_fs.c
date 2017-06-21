@@ -1038,7 +1038,10 @@ int rktio_make_link(rktio_t *rktio, const char *src, const char *dest, int dest_
       free(src_w);
       return 1;
     }
-    get_windows_error();
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+      set_racket_error(RKTIO_ERROR_EXISTS);
+    else
+      get_windows_error();
     free(src_w);
   } else
     set_racket_error(RKTIO_ERROR_UNSUPPORTED);
@@ -1051,7 +1054,10 @@ int rktio_make_link(rktio_t *rktio, const char *src, const char *dest, int dest_
     else if (errno != EINTR)
       break;
   }
-  get_posix_error();
+  if (errno == EEXIST)
+    set_racket_error(RKTIO_ERROR_EXISTS);
+  else
+    get_posix_error();
   return 0;
 #endif
 }
