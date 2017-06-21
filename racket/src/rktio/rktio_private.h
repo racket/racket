@@ -33,6 +33,7 @@
 struct rktio_t {
   int errid;
   int errkind;
+  int errstep;
 #ifdef RKTIO_SYSTEM_WINDOWS
   char *last_err_str;
 #endif

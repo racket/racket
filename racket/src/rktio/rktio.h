@@ -779,23 +779,37 @@ RKTIO_EXTERN rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char
                                                       rktio_bool_t exists_ok);
 /* Starts a file copy. Depending on the OS, this step may perform the
    whole copy, or it may just get started. Can report
-   `RKTIO_ERROR_EXISTS`. */
+   `RKTIO_ERROR_EXISTS`, and sets an error step as listed further below. */
 
 RKTIO_EXTERN rktio_bool_t rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
 RKTIO_EXTERN rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
 /* As long as the copy isn't done, call `rktio_copy_file_step` to make
-   a little progress. Use `rktio_copy_file_finish_permissions` (optionally)
-   and then `rktio_copy_file_stop` when done. */
+   a little progress. Use `rktio_copy_file_finish_permissions`
+   (optionally) and then `rktio_copy_file_stop` when done. An error
+   sets an error step as listed further below. */
 
 RKTIO_EXTERN rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t *fc);
 /* Depending on the OS, copies permissions from the source to the
    destination. This step can be performed at any time between the
    start and stop. Reports success if this step isn't needed (e.g.,
-   where a copy fully completes when it is started). */
+   where a copy fully completes when it is started). On error, the
+   step is set to `RKTIO_COPY_STEP_WRITE_DEST_METADATA`. */
 
 RKTIO_EXTERN void rktio_copy_file_stop(rktio_t *rktio, rktio_file_copy_t *fc);
 /* Deallocates the copy process, interrupting it if the copy is not
    complete. */
+
+/* Step values for errors from `rktio_copy_file_start` and
+   `rktio_copy_file_step`: */
+enum {
+  RKTIO_COPY_STEP_UNKNOWN,
+  RKTIO_COPY_STEP_OPEN_SRC,
+  RKTIO_COPY_STEP_OPEN_DEST,
+  RKTIO_COPY_STEP_READ_SRC_DATA,
+  RKTIO_COPY_STEP_WRITE_DEST_DATA,
+  RKTIO_COPY_STEP_READ_SRC_METADATA,
+  RKTIO_COPY_STEP_WRITE_DEST_METADATA
+};
 
 /*************************************************/
 /* System paths                                  */
@@ -1059,7 +1073,12 @@ enum {
   RKTIO_ERROR_CONVERT_OTHER,
 };
 
+RKTIO_EXTERN int rktio_get_last_error_step(rktio_t *rktio);
+/* Some operations report further information about the step that
+   failed. The meaning of a step number is operation-specific. */
+
 RKTIO_EXTERN void rktio_set_last_error(rktio_t *rktio, int kind, int errid);
+RKTIO_EXTERN void rktio_set_last_error_step(rktio_t *rktio, int step);
 /* In case you need to save and restore error information. */
 
 RKTIO_EXTERN void rktio_remap_last_error(rktio_t *rktio);

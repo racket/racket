@@ -1589,8 +1589,10 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
     rktio_fd_t *src_fd, *dest_fd;
 
     src_fd = rktio_open(rktio, src, RKTIO_OPEN_READ);
-    if (!src_fd)
+    if (!src_fd) {
+      rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_SRC);
       return NULL;
+    }
 
     do {
       ok = fstat(rktio_fd_system_fd(rktio, src_fd), &buf);
@@ -1601,6 +1603,7 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
         get_posix_error();
       else
         set_racket_error(RKTIO_ERROR_IS_A_DIRECTORY);
+      rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_READ_SRC_METADATA);
       rktio_close(rktio, src_fd);
       return NULL;
     }
@@ -1609,6 +1612,7 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
                                        | (exists_ok ? RKTIO_OPEN_TRUNCATE : 0)));
     if (!dest_fd) {
       rktio_close(rktio, src_fd);
+      rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_DEST);
       return NULL;
     }
 
@@ -1632,9 +1636,15 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
   const wchar_t *dest_w;
 
   src_w = WIDE_PATH_copy(src);
-  if (!src_w) return NULL;
+  if (!src_w) {
+    rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_SRC);
+    return NULL;
+  }
   dest_w = WIDE_PATH_temp(dest);
-  if (!dest_w) return NULL;
+  if (!dest_w) {
+    rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_OPEN_DEST);
+    return NULL;
+  }
 
   if (CopyFileW(src_w, dest_w, !exists_ok)) {
     rktio_file_copy_t *fc;
@@ -1651,6 +1661,7 @@ rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const
     set_racket_error(RKTIO_ERROR_EXISTS);
   else
     get_windows_error();
+  rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_UNKNOWN);
 
   free(src_w);
 
@@ -1677,14 +1688,17 @@ rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc)
     fc->done = 1;
     return 1;
   } else if (len == RKTIO_READ_ERROR) {
+    rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_READ_SRC_DATA);
     return 0;
   } else {
     intptr_t done = 0, amt;
     
     while (done < len) {
       amt = rktio_write(rktio, fc->dest_fd, buffer + done, len - done);
-      if (amt < 0)
+      if (amt < 0) {
+        rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_WRITE_DEST_DATA);
         return 0;
+      }
       done += amt;
     }
     return 1;
@@ -1706,6 +1720,7 @@ rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t 
 
   if (err) {
     get_posix_error();
+    rktio_set_last_error_step(rktio, RKTIO_COPY_STEP_WRITE_DEST_METADATA);
     return 0;
   }
 #endif

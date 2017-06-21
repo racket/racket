@@ -3477,11 +3477,37 @@ static Scheme_Object *copy_file(int argc, Scheme_Object **argv)
                      filename_for_error(argv[0]),
                      filename_for_error(argv[1]));
   } else {
+    const char *how;
+
+    switch (rktio_get_last_error_step(scheme_rktio)) {
+    case RKTIO_COPY_STEP_OPEN_SRC:
+      how = "cannot open source file";
+      break;
+    case RKTIO_COPY_STEP_OPEN_DEST:
+      how = "cannot open destination file";
+      break;
+    case RKTIO_COPY_STEP_READ_SRC_DATA:
+      how = "error reading source file";
+      break;
+    case RKTIO_COPY_STEP_WRITE_DEST_DATA:
+      how = "error writing destination file";
+      break;
+    case RKTIO_COPY_STEP_READ_SRC_METADATA:
+      how = "error reading source-file metadata";
+      break;
+    case RKTIO_COPY_STEP_WRITE_DEST_METADATA:
+      how = "error writing destination-file metadata";
+      break;
+    default:
+      how = "copy failed";
+    }
+
     scheme_raise_exn(MZEXN_FAIL_FILESYSTEM, 
-                     "copy-file: copy failed\n"
+                     "copy-file: %s\n"
                      "  source path: %q\n"
                      "  destination path: %q\n"
                      "  system error: %R",
+                     how,
                      filename_for_error(argv[0]),
                      filename_for_error(argv[1]));
   }

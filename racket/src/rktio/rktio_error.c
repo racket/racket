@@ -78,10 +78,20 @@ int rktio_get_last_error_kind(rktio_t *rktio)
   return rktio->errkind;
 }
 
+int rktio_get_last_error_step(rktio_t *rktio)
+{
+  return rktio->errstep;
+}
+
 void rktio_set_last_error(rktio_t *rktio, int kind, int errid)
 {
   rktio->errkind = kind;
   rktio->errid = errid;
+}
+
+void rktio_set_last_error_step(rktio_t *rktio, int new_errstep)
+{
+  rktio->errstep = new_errstep;
 }
 
 void rktio_remap_last_error(rktio_t *rktio)
