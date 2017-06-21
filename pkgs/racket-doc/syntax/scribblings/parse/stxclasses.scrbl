@@ -456,14 +456,14 @@ binds the following nested attributes: @racket[y.a] at depth 2,
 depth 1.
 
 An attribute's ellipsis nesting depth is @emph{not} a guarantee that
-it is syntax-valued. In particular, @racket[~or] and
+it is syntax-valued. In particular, @racket[~or*] and
 @racket[~optional] patterns may result in attributes with fewer than
 expected levels of list nesting, and @racket[#:attr] and
 @racket[~bind] can be used to bind attributes to arbitrary values.
 
 @examples[#:eval the-eval
 (syntax-parse #'(a b 3)
-  [(~or (x:id ...) _)
+  [(~or* (x:id ...) _)
    (attribute x)])
 ]
 

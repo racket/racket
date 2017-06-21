@@ -139,7 +139,7 @@ Like @racket[~reflect] but for reified splicing syntax classes.
 
 (define (partition/r stx r n)
   (syntax-parse stx
-    [((~or (~reflect yes (r n)) no) ...)
+    [((~alt (~reflect yes (r n)) no) ...)
      #'((yes ...) (no ...))]))
 
 (partition/r #'(1 2 3 4 5) r-nat> 3)
@@ -201,8 +201,8 @@ reusable encapsulations of @|EHpatterns|.
 Defines @racket[name] as an ellipsis-head alternative set. Using
 @racket[name] (via @racket[~eh-var]) in an ellipsis-head pattern is
 equivalent to including each of the alternatives in the pattern via
-@ref[~or eh], except that the attributes bound by the alternatives are
-prefixed with the name given to @racket[~eh-var].
+@racket[~alt], except that the attributes bound by the alternatives
+are prefixed with the name given to @racket[~eh-var].
 
 Unlike syntax classes, ellipsis-head alternative sets must be defined
 before they are referenced.
@@ -231,8 +231,8 @@ their attributes with @racket[name].
 
 (define (parse/more-options stx)
   (syntax-parse stx
-    [(_ (~or (~eh-var s options)
-             (~seq #:c c1:expr c2:expr))
+    [(_ (~alt (~eh-var s options)
+              (~seq #:c c1:expr c2:expr))
         ...)
      #'(s.a (s.b ...) ((c1 c2) ...))]))
 (parse/more-options #'(m #:a 1 #:b 2 #:c 3 4 #:c 5 6))
@@ -361,7 +361,7 @@ template. Can only occur in head position in a template.
 
 @examples[#:eval the-eval
 (syntax-parse #'(m #:a 1 #:b 2 3 4 #:e 5)
-  [(_ (~or pos:expr (~seq kw:keyword kwarg:expr)) ...)
+  [(_ (~alt pos:expr (~seq kw:keyword kwarg:expr)) ...)
    (template (m2 (?@ kw kwarg) ... pos ...))])
 ]
 

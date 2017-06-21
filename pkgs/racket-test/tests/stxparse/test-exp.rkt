@@ -22,7 +22,7 @@
 
   (define r-nat> (reify-syntax-class nat>))
 
-  (tok (1 2 -3 -4 5) ((~or (~reflect yes (r-nat> 1) #:attributes (diff)) no) ...)
+  (tok (1 2 -3 -4 5) ((~alt (~reflect yes (r-nat> 1) #:attributes (diff)) no) ...)
        (and (s= (yes ...) '(2 5))
             (s= (yes.diff ...) '(1 4))
             (s= (no ...) '(1 -3 -4))))
@@ -32,7 +32,7 @@
 
   (define r-nat>1 (reified-syntax-class-curry r-nat> 1))
 
-  (tok (1 2 -3 -4 5) ((~or (~reflect yes (r-nat>1) #:attributes (diff)) no) ...)
+  (tok (1 2 -3 -4 5) ((~alt (~reflect yes (r-nat>1) #:attributes (diff)) no) ...)
        (and (s= (yes ...) '(2 5))
             (s= (yes.diff ...) '(1 4))
             (s= (no ...) '(1 -3 -4))))

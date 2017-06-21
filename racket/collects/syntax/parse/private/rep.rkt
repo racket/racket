@@ -106,6 +106,8 @@
         (quote-syntax ~literal)
         (quote-syntax ~and)
         (quote-syntax ~or)
+        (quote-syntax ~or*)
+        (quote-syntax ~alt)
         (quote-syntax ~not)
         (quote-syntax ~seq)
         (quote-syntax ~rep)
@@ -456,7 +458,7 @@
            (wrong-syntax stx "action pattern not allowed here")]))
   (define not-shadowed? (make-not-shadowed? decls))
   (check-pattern
-  (syntax-case* stx (~var ~literal ~datum ~and ~or ~not ~rest ~describe
+  (syntax-case* stx (~var ~literal ~datum ~and ~or ~or* ~alt ~not ~rest ~describe
                      ~seq ~optional ~! ~bind ~fail ~parse ~do
                      ~post ~peek ~peek-not ~delimit-cut ~commit ~reflect
                      ~splicing-reflect)
@@ -514,6 +516,11 @@
     [(~or . rest)
      (disappeared! stx)
      (parse-pat:or stx decls allow-head?)]
+    [(~or* . rest)
+     (disappeared! stx)
+     (parse-pat:or stx decls allow-head?)]
+    [(~alt . rest)
+     (wrong-syntax stx "ellipsis-head pattern allowed only before ellipsis")]
     [(~not . rest)
      (disappeared! stx)
      (parse-pat:not stx decls)]
@@ -622,8 +629,11 @@
 (define (parse*-ellipsis-head-pattern stx decls allow-or?
                                       #:context [ctx (current-syntax-context)])
   (define (recur stx) (parse*-ellipsis-head-pattern stx decls allow-or? #:context ctx))
+  (define (recur-cdr-list stx)
+    (unless (stx-list? stx) (wrong-syntax stx "expected sequence of patterns"))
+    (apply append (map recur (cdr (stx->list stx)))))
   (define not-shadowed? (make-not-shadowed? decls))
-  (syntax-case* stx (~eh-var ~or ~between ~optional ~once)
+  (syntax-case* stx (~eh-var ~or ~alt ~between ~optional ~once)
                 (make-not-shadowed-id=? decls)
     [id
      (and (identifier? #'id)
@@ -653,14 +663,11 @@
                  (replace-eh-alternative-attrs
                   alt (iattrs->sattrs iattrs))))))]
     [(~or . _)
-     allow-or?
-     (begin
-       (disappeared! stx)
-       (unless (stx-list? stx)
-         (wrong-syntax stx "expected sequence of patterns"))
-       (apply append
-              (for/list ([sub (in-list (cdr (stx->list stx)))])
-                (parse*-ellipsis-head-pattern sub decls allow-or?))))]
+     (disappeared! stx)
+     (recur-cdr-list stx)]
+    [(~alt . _)
+     (disappeared! stx)
+     (recur-cdr-list stx)]
     [(~optional . _)
      (disappeared! stx)
      (list (parse*-ehpat/optional stx decls))]

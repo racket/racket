@@ -32,8 +32,8 @@
 (define/with-syntax (nn ...) #'(1 2 3))
 (define/with-syntax ((yy ...) ...) #'((1 2 3) (4 5 6) (7 8 9)))
 
-(define/syntax-parse (~or oo:nat _:id) #'x)
-(define/syntax-parse ((~describe "x" (~or pp:nat _:id)) ...) #'(a 1 b 2 3))
+(define/syntax-parse (~or* oo:nat _:id) #'x)
+(define/syntax-parse ((~or* pp:nat _:id) ...) #'(a 1 b 2 3))
 
 ;; ----------------------------------------
 
@@ -333,7 +333,7 @@
        (template (?? '(a (?? b 0)) 0))])
     ''(a 0))
 
-(define/syntax-parse ((~and (~or i:id n:nat)) ...) '(a b 1 2 3 4))
+(define/syntax-parse ((~or* i:id n:nat) ...) '(a b 1 2 3 4))
 
 ;; note: i,n both 6 elts long
 (tc (template ((?? i X) ...))

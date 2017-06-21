@@ -127,6 +127,18 @@
        #rx"^syntax-parse: "
        #rx"head pattern not allowed here")
 
+(tcerr "parse-pat:dots: alt, not list"
+       (syntax-parser
+        [((~alt . x) ...) 'ok])
+       #rx"^syntax-parser: "
+       #rx"expected sequence of patterns")
+
+(tcerr "parse-pat:dots: alt, empty"
+       (syntax-parser
+        [((~alt) ...) 'ok])
+       #rx"^syntax-parser: "
+       #rx"expected at least one pattern")
+
 (tcerr "parse-pat:dots: or, not list"
        (syntax-parser
         [((~or . x) ...) 'ok])

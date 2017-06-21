@@ -19,7 +19,7 @@ match.
 Optional keyword arguments are supported via @tech{head
 patterns}. Unlike normal patterns, which match one term, head patterns
 can match a variable number of subterms in a list. Some important
-head-pattern forms are @racket[~seq], @racket[~or], and
+head-pattern forms are @racket[~seq], @racket[~or*], and
 @racket[~optional].
 
 Here's one way to do it:
@@ -27,7 +27,7 @@ Here's one way to do it:
 @interaction[#:eval the-eval
 (define-syntax (mycond stx)
   (syntax-parse stx
-    [(mycond (~or (~seq #:error-on-fallthrough who:expr) (~seq))
+    [(mycond (~or* (~seq #:error-on-fallthrough who:expr) (~seq))
              clause ...)
      (with-syntax ([error? (if (attribute who) #'#t #'#f)]
                    [who (or (attribute who) #'#f)])
@@ -57,7 +57,7 @@ attribute.
         [(odd? 4) 'red])
 ]
 
-There's a simpler way of writing the @racket[~or] pattern above:
+There's a simpler way of writing the @racket[~or*] pattern above:
 @racketblock[
 (~optional (~seq #:error-on-fallthrough who:expr))
 ]

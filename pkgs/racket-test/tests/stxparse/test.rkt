@@ -202,20 +202,20 @@
 ;; and scoping
 (tok 1 (~and a (~fail #:unless (equal? (syntax->datum #'a) 1))))
 
-;; or patterns
-(tok 1 (~or 1 2 3)
+;; or* patterns
+(tok 1 (~or* 1 2 3)
      'ok)
-(tok 3 (~or 1 2 3)
+(tok 3 (~or* 1 2 3)
      'ok)
-(tok (1) (~or (a) (a b) (a b c))
+(tok (1) (~or* (a) (a b) (a b c))
      (and (bound (a 0 #t) (b 0 #f) (c 0 #f)) (s= a 1) (a= b #f) (a= c #f)))
-(tok (1 2 3) (~or (a) (a b) (a b c))
+(tok (1 2 3) (~or* (a) (a b) (a b c))
      (and (bound (a 0 #t) (b 0 #f) (c 0 #f)) (s= a 1) (s= b 2) (s= c 3)))
-(tok 1 (~or 5 _)
+(tok 1 (~or* 5 _)
      'ok)
-(tok #t (~or #t #f)
+(tok #t (~or* #t #f)
      'ok)
-(tok #t (~or (~and #t x) (~and #f x))
+(tok #t (~or* (~and #t x) (~and #f x))
      (and (bound (x 0 #t))))
 
 ;; describe
@@ -236,7 +236,7 @@
      (and (bound (x 0) (x.a 0) (a 0)) (s= x '(1 2)) (s= x.a 1) (s= a 1)))
 
 ;; delimit-cut
-(tok (1 (2 3)) (1 (~or (~delimit-cut (2 ~! 4)) (2 3))))
+(tok (1 (2 3)) (1 (~or* (~delimit-cut (2 ~! 4)) (2 3))))
 (tok (1 2 3) (1 2 3)
      'ok
      #:pre [(~delimit-cut (1 2 ~! 4))] #:post [])
@@ -248,7 +248,7 @@
 
 (tok (define-values (a b c) 1) d:def
      'ok)
-(terx (define-values (a 2) 3) (~or d:def e:expr)
+(terx (define-values (a 2) 3) (~or* d:def e:expr)
       #rx"expected identifier")
 (terx* (define-values (a 2) 3) [d:def e:expr]
        #rx"expected identifier")
@@ -256,10 +256,10 @@
 ;; commit
 (define-syntax-class xyseq
   #:commit
-  (pattern ((~or x y) ...)))
+  (pattern ((~alt x y) ...)))
 
 (tok (1 2 3 4 5 6 7 8)
-     (~and ((~or s.x s.y) ...)
+     (~and ((~alt s.x s.y) ...)
            (~fail #:unless (= (apply + (syntax->datum #'(s.x ...)))
                               (apply + (syntax->datum #'(s.y ...))))
                   "nope"))
@@ -271,7 +271,7 @@
                    "nope"))
       #rx"nope")
 (terx (1 2 3 4 5 6 7 8)
-      (~and (~commit ((~or s.x s.y) ...))
+      (~and (~commit ((~alt s.x s.y) ...))
             (~fail #:unless (= (apply + (syntax->datum #'(s.x ...)))
                                (apply + (syntax->datum #'(s.y ...))))
                    "nope"))
@@ -284,12 +284,12 @@
 (tok (1 2 3) (1 (~seq 2) 3))
 (tok (1 2 3) ((~seq) 1 2 3))
 
-;; or
-(tok (1 2 3) ((~or (~seq 1 2) 1) 3))
-(tok (1 2 3) ((~or 1 (~seq 1 2)) 3))
-(tok (1 2 3) ((~or (~seq 1) (~seq 1 2)) 3))
-(tok (1 2 3) ((~or (~seq 1) (~seq)) 1 2 3))
-(tok (1 2 3) ((~or (~seq 1) (~seq)) 1 2 3 (~or (~seq 4) (~seq))))
+;; or*
+(tok (1 2 3) ((~or* (~seq 1 2) 1) 3))
+(tok (1 2 3) ((~or* 1 (~seq 1 2)) 3))
+(tok (1 2 3) ((~or* (~seq 1) (~seq 1 2)) 3))
+(tok (1 2 3) ((~or* (~seq 1) (~seq)) 1 2 3))
+(tok (1 2 3) ((~or* (~seq 1) (~seq)) 1 2 3 (~or (~seq 4) (~seq))))
 
 ;; describe
 (tok (1 2 3) ((~describe "one-two" (~seq 1 2)) 3))
@@ -314,7 +314,7 @@
 ;; bind patterns
 (tok 1 (~and x (~bind [y #'x]))
      (s= y '1))
-(tok 1 (~or x:id (~bind [x #'default]))
+(tok 1 (~or* x:id (~bind [x #'default]))
      (s= x 'default))
 
 ;; fail patterns
@@ -330,7 +330,7 @@
 (terx 1 (~fail "grr")
       #rx"grr")
 
-(tok (1 2 3) (x:nat y:nat (~parse (~or 2 3) (+ (syntax-e #'x) (syntax-e #'y))) z:nat))
+(tok (1 2 3) (x:nat y:nat (~parse (~or* 2 3) (+ (syntax-e #'x) (syntax-e #'y))) z:nat))
 (terx (1 2 3) (x:nat y:nat (~parse 4 (+ (syntax-e #'x) (syntax-e #'y))) z:nat)
       "expected the literal 4")
 (terx (1 2 3) (x:nat y:nat (~parse (2 4) #'(x y)))
@@ -667,8 +667,8 @@
          (syntax-case stx ()
            [(separated sep pat)
             (with-syntax ([ooo '...])
-              #'((~seq pat (~or (~peek-not _)
-                                (~seq sep (~peek _))))
+              #'((~seq pat (~or* (~peek-not _)
+                                 (~seq sep (~peek _))))
                  ooo))]))))
     
     (define-splicing-syntax-class bindings
@@ -694,8 +694,8 @@
          (syntax-case stx ()
            [(sep-comma pat)
             (with-syntax ([ooo '...])
-              #'((~seq (~or (~and pat (~not ((~datum unquote) _))) ((~datum unquote) pat))
-                       (~or (~peek-not _) (~peek ((~datum unquote) _))))
+              #'((~seq (~or* (~and pat (~not ((~datum unquote) _))) ((~datum unquote) pat))
+                       (~or* (~peek-not _) (~peek ((~datum unquote) _))))
                  ooo))]))))
 
     (define-splicing-syntax-class bindings2
@@ -727,7 +727,7 @@
             #'(~once (~seq (~and kw name) pat ...)
                      #:name (format "the ~a keyword" 'kw)))]))))
   (check-equal? (syntax-parse #'(m #:a #:b 1 #:a)
-                  [(_ (~or #:a (~oncekw #:b b)) ...)
+                  [(_ (~alt #:a (~oncekw #:b b)) ...)
                    (syntax->datum #'(b-kw b))])
                 '(#:b 1)))
 
@@ -780,7 +780,7 @@
 
 ;; nullable but bounded EH pattern ok (thanks Alex Knauth) (7/2016)
 (tok (1 2 3) ((~once (~seq)) ... n:nat ...) 'ok)
-(tok (1 2 3) ((~once (~or (~seq a:id) (~seq))) ... x y z) 'ok)
+(tok (1 2 3) ((~once (~or* (~seq a:id) (~seq))) ... x y z) 'ok)
 
 (struct s-3d () #:transparent)
 (test-case "3D syntax checks"

@@ -36,18 +36,18 @@ Given those auxiliary syntax classes, here is a first approximation of
 the main pattern, including the struct options:
 @racketblock[
 (struct name:id super:maybe-super (field:field ...)
-  (~or (~seq #:mutable)
-       (~seq #:super super-expr:expr)
-       (~seq #:inspector inspector:expr)
-       (~seq #:auto-value auto:expr)
-       (~seq #:guard guard:expr)
-       (~seq #:property prop:expr prop-val:expr)
-       (~seq #:transparent)
-       (~seq #:prefab)
-       (~seq #:constructor-name constructor-name:id)
-       (~seq #:extra-constructor-name extra-constructor-name:id)
-       (~seq #:omit-define-syntaxes)
-       (~seq #:omit-define-values))
+  (~alt (~seq #:mutable)
+        (~seq #:super super-expr:expr)
+        (~seq #:inspector inspector:expr)
+        (~seq #:auto-value auto:expr)
+        (~seq #:guard guard:expr)
+        (~seq #:property prop:expr prop-val:expr)
+        (~seq #:transparent)
+        (~seq #:prefab)
+        (~seq #:constructor-name constructor-name:id)
+        (~seq #:extra-constructor-name extra-constructor-name:id)
+        (~seq #:omit-define-syntaxes)
+        (~seq #:omit-define-values))
   ...)
 ]
 The fact that @racket[expr] does not match keywords helps in the case
@@ -71,20 +71,20 @@ a pattern variable to the keyword itself, as in this sub-pattern:
 The second problem can be solved using @emph{repetition constraints}:
 @racketblock[
 (struct name:id super:maybe-super (field:field ...)
-  (~or (~optional (~seq (~and #:mutable mutable-kw)))
-       (~optional (~seq #:super super-expr:expr))
-       (~optional (~seq #:inspector inspector:expr))
-       (~optional (~seq #:auto-value auto:expr))
-       (~optional (~seq #:guard guard:expr))
-       (~seq #:property prop:expr prop-val:expr)
-       (~optional (~seq (~and #:transparent transparent-kw)))
-       (~optional (~seq (~and #:prefab prefab-kw)))
-       (~optional (~seq #:constructor-name constructor-name:id))
-       (~optional
+  (~alt (~optional (~seq (~and #:mutable mutable-kw)))
+        (~optional (~seq #:super super-expr:expr))
+        (~optional (~seq #:inspector inspector:expr))
+        (~optional (~seq #:auto-value auto:expr))
+        (~optional (~seq #:guard guard:expr))
+        (~seq #:property prop:expr prop-val:expr)
+        (~optional (~seq (~and #:transparent transparent-kw)))
+        (~optional (~seq (~and #:prefab prefab-kw)))
+        (~optional (~seq #:constructor-name constructor-name:id))
+        (~optional
          (~seq #:extra-constructor-name extra-constructor-name:id))
-       (~optional
+        (~optional
          (~seq (~and #:omit-define-syntaxes omit-def-stxs-kw)))
-       (~optional (~seq (~and #:omit-define-values omit-def-vals-kw))))
+        (~optional (~seq (~and #:omit-define-values omit-def-vals-kw))))
   ...)
 ]
 The @racket[~optional] repetition constraint indicates that an
@@ -101,29 +101,29 @@ mutually exclusive, such as @racket[#:inspector],
 
 @racketblock[
 (struct name:id super:maybe-super (field:field ...)
-  (~or (~optional
-         (~or (~seq #:inspector inspector:expr)
-              (~seq (~and #:transparent transparent-kw))
-              (~seq (~and #:prefab prefab-kw)))
+  (~alt (~optional
+         (~or* (~seq #:inspector inspector:expr)
+               (~seq (~and #:transparent transparent-kw))
+               (~seq (~and #:prefab prefab-kw)))
          #:name "#:inspector, #:transparent, or #:prefab option")
-       (~optional (~seq (~and #:mutable mutable-kw))
-                  #:name "#:mutable option")
-       (~optional (~seq #:super super-expr:expr)
-                  #:name "#:super option")
-       (~optional (~seq #:auto-value auto:expr)
-                  #:name "#:auto-value option")
-       (~optional (~seq #:guard guard:expr)
-                  #:name "#:guard option")
-       (~seq #:property prop:expr prop-val:expr)
-       (~optional (~seq #:constructor-name constructor-name:id)
-                  #:name "#:constructor-name option")
-       (~optional
-         (~seq #:extra-constructor-name extra-constructor-name:id)
-         #:name "#:extra-constructor-name option")
-       (~optional (~seq (~and #:omit-define-syntaxes omit-def-stxs-kw))
-                  #:name "#:omit-define-syntaxes option")
-       (~optional (~seq (~and #:omit-define-values omit-def-vals-kw))
-                  #:name "#:omit-define-values option"))
+        (~optional (~seq (~and #:mutable mutable-kw))
+                   #:name "#:mutable option")
+        (~optional (~seq #:super super-expr:expr)
+                   #:name "#:super option")
+        (~optional (~seq #:auto-value auto:expr)
+                   #:name "#:auto-value option")
+        (~optional (~seq #:guard guard:expr)
+                   #:name "#:guard option")
+        (~seq #:property prop:expr prop-val:expr)
+        (~optional (~seq #:constructor-name constructor-name:id)
+                   #:name "#:constructor-name option")
+        (~optional
+          (~seq #:extra-constructor-name extra-constructor-name:id)
+          #:name "#:extra-constructor-name option")
+        (~optional (~seq (~and #:omit-define-syntaxes omit-def-stxs-kw))
+                   #:name "#:omit-define-syntaxes option")
+        (~optional (~seq (~and #:omit-define-values omit-def-vals-kw))
+                   #:name "#:omit-define-values option"))
   ...)
 ]
 Here we have grouped the three incompatible options together under a

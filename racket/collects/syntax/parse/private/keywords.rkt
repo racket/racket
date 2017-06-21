@@ -38,3 +38,6 @@
 (define-keyword ~eh-var)
 (define-keyword ~peek)
 (define-keyword ~peek-not)
+
+(define-keyword ~or*)
+(define-keyword ~alt)

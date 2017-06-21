@@ -32,7 +32,7 @@ When a special form in this manual refers to @svar[syntax-pattern]
 (eg, the description of the @racket[syntax-parse] special form), it
 means specifically @tech{@Spattern}.
 
-@racketgrammar*[#:literals (_ ~var ~literal ~or ~and ~not ~rest ~datum
+@racketgrammar*[#:literals (_ ~var ~literal ~or ~alt ~or* ~and ~not ~rest ~datum
                             ~describe ~seq ~optional ~rep ~once ~between
                             ~! ~bind ~fail ~parse ~peek ~peek-not ~do ~post)
                 [S-pattern
@@ -51,7 +51,7 @@ means specifically @tech{@Spattern}.
                  (EH-pattern #,ellipses . S-pattern)
                  (H-pattern @#,dotsplus . S-pattern)
                  (@#,ref[~and s] proper-S/A-pattern ...+)
-                 (@#,ref[~or s] S-pattern ...+)
+                 (@#,ref[~or* s] S-pattern ...+)
                  (~not S-pattern)
                  #((unsyntax @svar[pattern-part]) ...)
                  #s(prefab-struct-key (unsyntax @svar[pattern-part]) ...)
@@ -76,7 +76,7 @@ means specifically @tech{@Spattern}.
                                  maybe-role)
                  (~seq . L-pattern)
                  (@#,ref[~and h] proper-H/A-pattern ...+)
-                 (@#,ref[~or h] H-pattern ...+)
+                 (@#,ref[~or* h] H-pattern ...+)
                  (@#,ref[~optional h] H-pattern maybe-optional-option)
                  (@#,ref[~describe h] maybe-opaque maybe-role expr H-pattern)
                  (@#,ref[~commit h] H-pattern)
@@ -86,7 +86,7 @@ means specifically @tech{@Spattern}.
                  (~peek-not H-pattern)
                  proper-S-pattern]
                 [EH-pattern
-                 (@#,ref[~or eh] EH-pattern ...)
+                 (~alt EH-pattern ...)
                  (~once H-pattern once-option ...)
                  (@#,ref[~optional eh] H-pattern optional-option ...)
                  (~between H min-number max-number between-option)
@@ -123,15 +123,28 @@ One of @ref[~and s], @ref[~and h], or @ref[~and a]:
 ]
 }
 
+@defidform[~or*]{
+
+One of @ref[~or* s] or @ref[~or* h]:
+@itemize[
+@item{@ref[~or* h] if any of the disjuncts is a @tech{proper @Hpattern}}
+@item{@ref[~or* s] otherwise}
+]
+}
+
 @defidform[~or]{
 
-One of @ref[~or s], @ref[~or h], or @ref[~or eh]:
+Behaves like @ref[~or* s], @ref[~or* h], or @racket[~alt]:
 @itemize[
-@item{@ref[~or eh] if the pattern occurs directly before ellipses
-  (@ellipses) or immediately within another @ref[~or eh] pattern}
-@item{@ref[~or h] if any of the disjuncts is a @tech{proper @Hpattern}}
-@item{@ref[~or s] otherwise}
+@item{like @racket[~alt] if the pattern occurs directly before ellipses
+  (@ellipses) or immediately within another @racket[~alt] pattern}
+@item{like @ref[~or* h] if any of the disjuncts is a @tech{proper @Hpattern}}
+@item{like @ref[~or* s] otherwise}
 ]
+
+The context-sensitive interpretation of @racket[~or] is a design
+mistake and a common source of confusion. Use @racket[~alt] and
+@racket[~or*] instead.
 }
 
 @defidform[~describe]{
@@ -175,8 +188,7 @@ One of @ref[~post s], @ref[~post h], or @ref[~post a]:
 
 One of @ref[~optional h] or @ref[~optional eh]:
 @itemize[
-@item{@ref[~optional eh] if it is an immediate disjunct of a @ref[~or
-eh] pattern}
+@item{@ref[~optional eh] if it is an immediate disjunct of an @racket[~alt] pattern}
 @item{@ref[~optional h] otherwise}
 ]
 }
@@ -494,7 +506,7 @@ purpose, but @racket[~and] can be lighter weight.
 ]
 }
 
-@specsubform[(@#,def[~or s] S-pattern ...)]{
+@specsubform[(@#,def[~or* s] S-pattern ...)]{
 
 Matches any term that matches one of the included patterns. The
 alternatives are tried in order.
@@ -507,11 +519,11 @@ to have a value if the whole pattern matches.
 
 @examples[#:eval the-eval
 (syntax-parse #'a
-  [(~or x:id y:nat) (values (attribute x) (attribute y))])
+  [(~or* x:id y:nat) (values (attribute x) (attribute y))])
 (syntax-parse #'(a 1)
-  [(~or (x:id y:nat) (x:id)) (values #'x (attribute y))])
+  [(~or* (x:id y:nat) (x:id)) (values #'x (attribute y))])
 (syntax-parse #'(b)
-  [(~or (x:id y:nat) (x:id)) (values #'x (attribute y))])
+  [(~or* (x:id y:nat) (x:id)) (values #'x (attribute y))])
 ]
 }
 
@@ -746,17 +758,17 @@ example with the second @racket[~seq] omitted:
 ]
 }
 
-@specsubform[(@#,def[~or h] H-pattern ...)]{
+@specsubform[(@#,def[~or* h] H-pattern ...)]{
 
-Like the @Spattern version, @ref[~or s], but matches a sequence of
+Like the @Spattern version, @ref[~or* s], but matches a sequence of
 terms instead.
 
 @examples[#:eval the-eval
 (syntax-parse #'(m #:foo 2 a b c)
-  [(_ (~or (~seq #:foo x) (~seq)) y:id ...)
+  [(_ (~or* (~seq #:foo x) (~seq)) y:id ...)
    (attribute x)])
 (syntax-parse #'(m a b c)
-  [(_ (~or (~seq #:foo x) (~seq)) y:id ...)
+  [(_ (~or* (~seq #:foo x) (~seq)) y:id ...)
    (attribute x)])
 ]
 }
@@ -846,7 +858,7 @@ outside of the @racket[~peek-not]-pattern.
   (pattern (~seq x (~peek-not _))))
 
 (syntax-parse #'(a b c)
-  [((~or f:final other) ...)
+  [((~alt f:final other) ...)
    (printf "finals are ~s\n" (syntax->datum #'(f.x ...)))
    (printf "others are ~s\n" (syntax->datum #'(other ...)))])
 ]
@@ -868,14 +880,14 @@ that describes some number of terms, like a @tech{@Hpattern}, but also
 places constraints on the number of times it occurs in a
 repetition. They are useful for matching, for example, keyword
 arguments where the keywords may come in any order. Multiple
-alternatives are grouped together via @ref[~or eh].
+alternatives are grouped together via @racket[~alt].
 
 @examples[#:eval the-eval
 (define parser1
   (syntax-parser
-   [((~or (~once (~seq #:a x) #:name "#:a keyword")
-          (~optional (~seq #:b y) #:name "#:b keyword")
-          (~seq #:c z)) ...)
+   [((~alt (~once (~seq #:a x) #:name "#:a keyword")
+           (~optional (~seq #:b y) #:name "#:b keyword")
+           (~seq #:c z)) ...)
     'ok]))
 (parser1 #'(#:a 1))
 (parser1 #'(#:b 2 #:c 3 #:c 25 #:a 'hi))
@@ -889,7 +901,7 @@ arguments. The ``pieces'' can occur in any order.
 
 Here are the variants of @elem{@EHpattern}:
 
-@specsubform[(@#,def[~or eh] EH-pattern ...)]{
+@specsubform[(@#,defhere[~alt] EH-pattern ...)]{
 
 Matches if any of the inner @racket[EH-pattern] alternatives match.
 }
