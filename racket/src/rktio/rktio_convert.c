@@ -344,31 +344,31 @@ char *rktio_system_language_country(rktio_t *rktio)
   /* Windows */
   LCID l;
   int llen, clen;
-  char *lang, *country, *s;
+  wchar_t *lang, *country, *s;
   l = GetUserDefaultLCID();
 
-  llen = GetLocaleInfo(l, LOCALE_SENGLANGUAGE, NULL, 0);
-  lang = malloc(llen);
+  llen = GetLocaleInfoW(l, LOCALE_SENGLANGUAGE, NULL, 0);
+  lang = malloc(llen * sizeof(wchar_t));
   GetLocaleInfo(l, LOCALE_SENGLANGUAGE, lang, llen);
   if (llen)
     llen -= 1; /* drop nul terminator */
 
-  clen = GetLocaleInfo(l, LOCALE_SENGCOUNTRY, NULL, 0);
-  country = malloc(clen);
-  GetLocaleInfo(l, LOCALE_SENGCOUNTRY, country, clen);
+  clen = GetLocaleInfoW(l, LOCALE_SENGCOUNTRY, NULL, 0);
+  country = malloc(clen * sizeof(wchar_t));
+  GetLocaleInfoW(l, LOCALE_SENGCOUNTRY, country, clen);
   if (clen)
     clen -= 1; /* drop nul terminator */
 
-  s = malloc(clen + llen + 2);
-  memcpy(s, lang, llen);
-  memcpy(s + 1 + llen, country, clen);
+  s = malloc((clen + llen + 2) * sizeof(wchar_t));
+  memcpy(s, lang, llen * sizeof(wchar_t));
+  memcpy(s + 1 + llen, country, clen * sizeof(wchar_t));
   s[llen] = '_';
   s[clen + llen + 1] = 0;
 
   free(lang);
   free(country);
   
-  return s;
+  return NARROW_PATH_copy_then_free(s);
 #else
   /* Unix */
   char *s;

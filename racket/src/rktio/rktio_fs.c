@@ -365,7 +365,7 @@ static int UNC_stat(rktio_t *rktio, const char *dirname, int *flags, int *isdir,
 
   len = strlen(dirname);
 
-  copy = malloc(len+1);
+  copy = malloc(len+3); /* leave room to add `\.` */
   memcpy(copy, dirname, len+1);
 
   if (!rktio->windows_nt_or_later
