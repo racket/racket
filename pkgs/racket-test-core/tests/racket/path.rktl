@@ -461,6 +461,10 @@
 (arity-test expand-user-path 1 1)
 (arity-test resolve-path 1 1)
 
+(when (eq? 'unix (system-path-convention-type))
+  (test #t complete-path? (expand-user-path "~/something"))
+  (test #t complete-path? (expand-user-path (string->path "~/something"))))
+
 (map
  (lambda (f)
    (err/rt-test (f (string #\a #\nul #\b)) exn:fail:contract?))

@@ -1678,6 +1678,8 @@ static char *do_expand_filename(Scheme_Object *o, char* filename, int ilen, cons
 
       filename = scheme_strdup_and_free(new_filename);
       ilen = strlen(filename);
+      if (expanded)
+        *expanded = 1;
     }
 #endif
 
