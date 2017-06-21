@@ -849,6 +849,33 @@ RKTIO_EXTERN rktio_timestamp_t rktio_get_seconds(rktio_t *rktio);
 RKTIO_EXTERN rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, int nanoseconds, int get_gmt);
 
 /*************************************************/
+/* Windows ShellExecute                          */
+
+enum {
+  RKTIO_SW_HIDE,
+  RKTIO_SW_MAXIMIZE,
+  RKTIO_SW_MINIMIZE,
+  RKTIO_SW_RESTORE,
+  RKTIO_SW_SHOW,
+  RKTIO_SW_SHOWDEFAULT,
+  RKTIO_SW_SHOWMAXIMIZED,
+  RKTIO_SW_SHOWMINIMIZED,
+  RKTIO_SW_SHOWMINNOACTIVE,
+  RKTIO_SW_SHOWNA,
+  RKTIO_SW_SHOWNOACTIVATE,
+  RKTIO_SW_SHOWNORMAL
+};
+
+rktio_ok_t rktio_shell_execute(rktio_t *rktio,
+			       const char *verb,
+			       const char *target,
+			       const char *arg,
+			       const char *dir,
+			       int show_mode);
+/* Support only on Windows to run `ShellExecute`. The `dir` argument
+   needs to have normalized path separators. */
+
+/*************************************************/
 /* Errors                                        */
 
 RKTIO_EXTERN int rktio_get_last_error_kind(rktio_t *rktio);
@@ -891,6 +918,7 @@ enum {
   RKTIO_ERROR_TRY_AGAIN_WITH_IPV4, /* for TCP listen */
   RKTIO_ERROR_TIME_OUT_OF_RANGE,
   RKTIO_ERROR_NO_SUCH_ENVVAR,
+  RKTIO_ERROR_SHELL_EXECUTE_FAILED,
 };
 
 RKTIO_EXTERN void rktio_set_last_error(rktio_t *rktio, int kind, int errid);

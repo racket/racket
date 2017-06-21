@@ -296,7 +296,7 @@ Scheme_Config *scheme_init_error_escape_proc(Scheme_Config *config)
 */
 
 static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list args, char **_s,
-                             Scheme_Object **_errno_val)
+                             Scheme_Object **_errno_val, int *_unsupported)
 /* NULL for s means allocate the buffer here (and return in (_s), but this function 
    doesn't allocate before extracting arguments from the stack. */
 {
@@ -532,6 +532,10 @@ static intptr_t sch_vsprintf(char *s, intptr_t maxlen, const char *msg, va_list 
                 *_errno_val = err_kind;
               }
             }
+	    if (_unsupported
+		&& (errid == RKTIO_ERROR_UNSUPPORTED)
+		&& (errkind == RKTIO_ERROR_KIND_RACKET))
+	      *_unsupported = 1;
           }
           break;
 	case 'e':
@@ -758,7 +762,7 @@ static intptr_t scheme_sprintf(char *s, intptr_t maxlen, const char *msg, ...)
   GC_CAN_IGNORE va_list args;
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(s, maxlen, msg, args, NULL, NULL);
+  len = sch_vsprintf(s, maxlen, msg, args, NULL, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   return len;
@@ -1074,7 +1078,7 @@ scheme_signal_error (const char *msg, ...)
   intptr_t len;
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL);
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   if (scheme_current_thread->current_local_env) {
@@ -1106,7 +1110,7 @@ void scheme_warning(char *msg, ...)
   intptr_t len;
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL);
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   buffer[len++] = '\n';
@@ -1130,7 +1134,7 @@ void scheme_log(Scheme_Logger *logger, int level, int flags,
   }
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL);
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   buffer[len] = 0;
@@ -1153,7 +1157,7 @@ void scheme_log_w_data(Scheme_Logger *logger, int level, int flags,
   }
 
   HIDE_FROM_XFORM(va_start(args, msg));
-  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL);
+  len = sch_vsprintf(NULL, 0, msg, args, &buffer, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   buffer[len] = 0;
@@ -2227,7 +2231,7 @@ void scheme_read_err(Scheme_Object *port,
   Scheme_Object *loc;
 
   HIDE_FROM_XFORM(va_start(args, detail));
-  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
+  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   ls = "";
@@ -2323,7 +2327,7 @@ Scheme_Object *scheme_numr_err(Scheme_Object *complain,
   intptr_t slen;
 
   HIDE_FROM_XFORM(va_start(args, detail));
-  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
+  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   if (SCHEME_FALSEP(complain))
@@ -2519,7 +2523,7 @@ void scheme_wrong_syntax(const char *where,
     GC_CAN_IGNORE va_list args;
 
     HIDE_FROM_XFORM(va_start(args, detail));
-    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
+    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL, NULL);
     HIDE_FROM_XFORM(va_end(args));
   }
 
@@ -2536,7 +2540,7 @@ void scheme_unbound_syntax(const char *where,
   GC_CAN_IGNORE va_list args;
 
   HIDE_FROM_XFORM(va_start(args, detail));
-  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
+  slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL, NULL);
   HIDE_FROM_XFORM(va_end(args));
 
   do_wrong_syntax(where, detail_form, form, s, slen, scheme_null, MZEXN_FAIL_SYNTAX_UNBOUND);
@@ -2558,7 +2562,7 @@ void scheme_wrong_syntax_with_more_sources(const char *where,
     GC_CAN_IGNORE va_list args;
 
     HIDE_FROM_XFORM(va_start(args, detail));
-    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
+    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL, NULL);
     HIDE_FROM_XFORM(va_end(args));
   }
 
@@ -2603,7 +2607,7 @@ void scheme_wrong_return_arity(const char *where,
     GC_CAN_IGNORE va_list args;
 
     HIDE_FROM_XFORM(va_start(args, detail));
-    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL);
+    slen = sch_vsprintf(NULL, 0, detail, args, &s, NULL, NULL);
     HIDE_FROM_XFORM(va_end(args));
   }
 
@@ -2662,7 +2666,7 @@ void scheme_raise_out_of_memory(const char *where, const char *msg, ...)
     GC_CAN_IGNORE va_list args;
 
     HIDE_FROM_XFORM(va_start(args, msg));
-    slen = sch_vsprintf(NULL, 0, msg, args, &s, NULL);
+    slen = sch_vsprintf(NULL, 0, msg, args, &s, NULL, NULL);
     HIDE_FROM_XFORM(va_end(args));
   }
 
@@ -4528,7 +4532,7 @@ scheme_raise_exn(int id, ...)
   GC_CAN_IGNORE va_list args;
   intptr_t alen;
   char *msg;
-  int i, c;
+  int i, c, unsupported = 0;
   Scheme_Object *eargs[MZEXN_MAXARGS], *errno_val = NULL;
   char *buffer;
 
@@ -4548,7 +4552,7 @@ scheme_raise_exn(int id, ...)
 
   msg = mzVA_ARG(args, char*);
 
-  alen = sch_vsprintf(NULL, 0, msg, args, &buffer, &errno_val);
+  alen = sch_vsprintf(NULL, 0, msg, args, &buffer, &errno_val, &unsupported);
   HIDE_FROM_XFORM(va_end(args));
 
 #ifndef NO_SCHEME_EXNS
@@ -4564,6 +4568,9 @@ scheme_raise_exn(int id, ...)
       eargs[2] = errno_val;
       c++;
     }
+  } else if (unsupported) {
+    if (id == MZEXN_FAIL)
+      id = MZEXN_FAIL_UNSUPPORTED;
   }
 
   do_raise(scheme_make_struct_instance(exn_table[id].type,

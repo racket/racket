@@ -6188,13 +6188,10 @@ static Scheme_Object *subprocess(int c, Scheme_Object *args[])
 
 static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
 {
-#ifdef WINDOWS_PROCESSES
   char *dir;
   int show = 0;
-# define mzseSHOW(s, x) s = x
-#else
-# define mzseSHOW(s, x) /* empty */
-#endif
+  int nplen;
+  Scheme_Object *sv, *sf, *sp;
 
   if (!SCHEME_FALSEP(argv[0]) && !SCHEME_CHAR_STRINGP(argv[0]))
     scheme_wrong_contract("shell-execute", "(or/c string? #f)", 0, c, argv);
@@ -6209,7 +6206,7 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
 # define mzseCMP(id, str)			       \
     if (SAME_OBJ(scheme_intern_symbol(str), argv[4])   \
         || SAME_OBJ(scheme_intern_symbol(# id), argv[4])) { \
-      mzseSHOW(show, id); show_set = 1; }
+      show = RKTIO_ ## id; show_set = 1; }
     mzseCMP(SW_HIDE, "sw_hide");
     mzseCMP(SW_MAXIMIZE, "sw_maximize");
     mzseCMP(SW_MINIMIZE, "sw_minimize");
@@ -6227,61 +6224,35 @@ static Scheme_Object *sch_shell_execute(int c, Scheme_Object *argv[])
       scheme_wrong_type("shell-execute", "show-mode symbol", 4, c, argv);
   }
 
-#ifdef WINDOWS_PROCESSES
-  dir = 
-#endif
-    scheme_expand_string_filename(argv[3],
-                                  "shell-execute", NULL,
-                                  SCHEME_GUARD_FILE_EXISTS);
-#ifdef WINDOWS_PROCESSES
-  {
-    SHELLEXECUTEINFOW se;
-    int nplen;
-    Scheme_Object *sv, *sf, *sp;
+  dir = scheme_expand_string_filename(argv[3],
+				      "shell-execute", NULL,
+				      SCHEME_GUARD_FILE_EXISTS);
 
-    nplen = strlen(dir);
-    dir = scheme_normal_path_seps(dir, &nplen, 0);
+  nplen = strlen(dir);
+  dir = scheme_normal_path_seps(dir, &nplen, 0);
+    
+  if (SCHEME_FALSEP(argv[0]))
+    sv = NULL;
+  else
+    sv = scheme_char_string_to_byte_string(argv[0]);
+  sf = scheme_char_string_to_byte_string(argv[1]);
+  sp = scheme_char_string_to_byte_string(argv[2]);
 
-    if (SCHEME_FALSEP(argv[0]))
-      sv = scheme_false;
-    else
-      sv = scheme_char_string_to_byte_string(argv[0]);
-    sf = scheme_char_string_to_byte_string(argv[1]);
-    sp = scheme_char_string_to_byte_string(argv[2]);
-
-    memset(&se, 0, sizeof(se));
-    se.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_DDEWAIT;
-    se.cbSize = sizeof(se);
-    if (SCHEME_FALSEP(sv))
-      se.lpVerb = NULL;
-    else {
-      se.lpVerb = WIDE_PATH_COPY(SCHEME_BYTE_STR_VAL(sv));
-    }
-    se.lpFile = WIDE_PATH_COPY(SCHEME_BYTE_STR_VAL(sf));
-    se.lpParameters = WIDE_PATH_COPY(SCHEME_BYTE_STR_VAL(sp));
-    se.lpDirectory = WIDE_PATH_COPY(dir);
-    se.nShow = show;
-    se.hwnd = NULL;
-
-    /* Used to use ShellExecuteEx(&se) here. Not sure why it doesn't work,
-       and the problem was intermittent (e.g., worked for opening a URL
-       with IE as the default browser, but failed with Netscape). */
-    if (ShellExecuteW(se.hwnd, se.lpVerb, se.lpFile, se.lpParameters, se.lpDirectory, se.nShow)) {
-      return scheme_false;
-    } else {
-      scheme_signal_error("shell-execute: execute failed\n"
-                          "  command: %V\n"
-                          "  system error: %E",
-			  argv[1],
-			  GetLastError());
-      return NULL;
-    }
+  if (rktio_shell_execute(scheme_rktio,
+			  sv ? SCHEME_BYTE_STR_VAL(sv) : NULL,
+			  SCHEME_BYTE_STR_VAL(sf),
+			  SCHEME_BYTE_STR_VAL(sp),
+			  dir,
+			  show))
+    return scheme_false;
+  else {
+    scheme_raise_exn(MZEXN_FAIL,
+		     "shell-execute: execute failed\n"
+		     "  command: %V\n"
+		     "  system error: %R",
+		     argv[1]);
+    return NULL;
   }
-#else
-  scheme_raise_exn(MZEXN_FAIL_UNSUPPORTED,
-		   "shell-execute: " NOT_SUPPORTED_STR);
-  return NULL;
-#endif
 }
 
 /*========================================================================*/

@@ -127,6 +127,7 @@
     <ClCompile Include="..\..\rktio\rktio_envvars.c" />
     <ClCompile Include="..\..\rktio\rktio_fs_change.c" />
     <ClCompile Include="..\..\rktio\rktio_flock.c" />
+    <ClCompile Include="..\..\rktio\rktio_shellex.c" />
     <ClCompile Include="..\..\rktio\rktio_time.c" />
     <ClCompile Include="..\..\rktio\rktio_error.c" />
     <ClCompile Include="..\..\rktio\rktio_hash.c" />

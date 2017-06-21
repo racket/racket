@@ -155,6 +155,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\rktio\rktio_shellex.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\rktio\rktio_time.c"
 				>
 			</File>
