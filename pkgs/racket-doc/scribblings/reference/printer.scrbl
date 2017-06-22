@@ -199,7 +199,10 @@ or @litchar["#,@"], respectively. After the reader syntax, the second
 element of the list is printed. When the list is a tail of an
 enclosing list, the tail is printed after a @litchar{.} in the
 enclosing list (after which the reader abbreviations work), instead of
-including the tail as two elements of the enclosing list.
+including the tail as two elements of the enclosing list. If the
+reader syntax @litchar{,} or @litchar{#,} is followed by a symbol
+that prints with a leading @litchar["@"], then the printer adds an
+extra space before the @litchar["@"].
 
 The printed form of a pair is the same in both @racket[write] and
 @racket[display] modes, except as the printed form of the pair's
@@ -250,6 +253,10 @@ For the purposes of printing enclosing datatypes, an empty list is
 always @tech{quotable}, a pair is @tech{quotable} when its
 @racket[car] and @racket[cdr] are @tech{quotable}, and a mutable list
 is never @tech{quotable}.
+
+@history[#:changed "6.9.0.6" @elem{Added a space when printing @litchar{,}
+                                   or @litchar{#,} followed by a symbol
+                                   that prints with a leading @litchar["@"].}]
 
 @section[#:tag "print-string"]{Printing Strings}
 

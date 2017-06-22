@@ -3908,6 +3908,25 @@ print_pair(Scheme_Object *pair, int notdisplay, int compact,
         && !first_unquoted 
         && is_special_reader_form(pp, notdisplay, pair)) {
       print_special_reader_form(SCHEME_CAR(pair), pp, notdisplay);
+      /* Corner case: if we just printed "#," or ",", make sure we don't
+         next print a symbol that starts "@". For example, ","
+         followed by the symbol whose string is "@d" should not print
+         as ",@d". */
+      if ((SAME_OBJ(SCHEME_CAR(pair), unquote_symbol)
+           || SAME_OBJ(SCHEME_CAR(pair), unsyntax_symbol))
+          && (SCHEME_SYMBOLP(SCHEME_CADR(pair))
+              && (SCHEME_SYM_VAL(SCHEME_CADR(pair))[0] == '@'))) {
+        /* Double-check that `@` will be the next character: */
+        const char *sv;
+        sv = scheme_symbol_name_and_size(SCHEME_CADR(pair), NULL, 
+                                         ((pp->can_read_pipe_quote 
+                                          ? SCHEME_SNF_PIPE_QUOTE
+                                           : SCHEME_SNF_NO_PIPE_QUOTE)));
+        if (sv[0] == '@') {
+          /* Avoid ambiguity: */
+          print_utf8_string(pp, " ", 0, 1);
+        }
+      }
       (void)print(SCHEME_CADR(pair), notdisplay, compact, ht, mt, pp);
       return;
     } else if ((notdisplay == 3) && !first_unquoted) {
