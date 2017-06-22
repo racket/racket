@@ -221,7 +221,7 @@ connections, so @racket[tcp-abandon-port] is equivalent to
 @racket[close-input-port] on input @tech{TCP ports}.}
 
 
-@defproc[(tcp-addresses [tcp-port (or/c tcp-port? tcp-listener?)]
+@defproc[(tcp-addresses [tcp-port (or/c tcp-port? tcp-listener? udp-socket?)]
                         [port-numbers? any/c #f]) 
          (or/c (values string? string?)
                (values string? port-number?
@@ -229,14 +229,14 @@ connections, so @racket[tcp-abandon-port] is equivalent to
 
 Returns two strings when @racket[port-numbers?] is @racket[#f] (the
 default). The first string is the Internet address for the local
-machine as viewed by the given @tech{TCP port}'s connection or for the
-TCP listener. (For most machines, the answer corresponds to the
-current machine's only Internet address, but when a machine serves
-multiple addresses, the result is connection-specific or
-listener-specific.) If a listener is given and it has no specific
+machine as viewed by the given @tech{TCP port}'s connection, for the
+TCP listener, or the UDP socket. (When a machine serves
+multiple addresses, as it usually does if you count the loopback
+device, the result is connection-specific or
+listener-specific.) If a listener or UDP socket is given and it has no specific
 host, the first string result is @racket["0.0.0.0"]. The second string
 is the Internet address for the other end of the connection, or always
-@racket["0.0.0.0"] for a listener.
+@racket["0.0.0.0"] for a listener or unconnected UDP socket.
 
 If @racket[port-numbers?] is true, then four results are returned: a
 string for the local machine's address, an exact integer between
@@ -245,7 +245,8 @@ string for the remote machine's address, and an exact integer between
 @racket[1] and @racket[65535] for the remote machine's port number or
 @racket[0] for a listener.
 
-If the given port has been closed, the @exnraise[exn:fail:network].}
+If the given port, listener, or socket has been closed, the
+@exnraise[exn:fail:network].}
 
 
 @defproc[(tcp-port? [v any/c]) boolean?]{
