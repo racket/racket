@@ -5613,19 +5613,20 @@ static Scheme_Object *make_prefab_key(Scheme_Struct_Type *type)
   return key;
 }
 
-static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutables, int *_min_cnt)
+static char *mutability_data_to_immutability_data(int icnt, int ucnt, Scheme_Object *mutables, int *_min_cnt)
 /* If `_min_cnt` is not NULL, then mutability positions can determine a minimum
    argument count that is bigger than `icnt`. */
 {
   char *immutable_array = NULL, *a2;
 
   if (_min_cnt)
-    *_min_cnt = icnt;
+    *_min_cnt = icnt + ucnt;
   
   if ((icnt > 0) || _min_cnt) {
-    int sz = (icnt ? icnt : 1);
-    immutable_array = (char *)scheme_malloc_atomic(icnt);
+    int sz = icnt + ucnt + 1;
+    immutable_array = (char *)scheme_malloc_atomic(icnt + ucnt);
     memset(immutable_array, 1, icnt);
+    memset(immutable_array XFORM_OK_PLUS icnt, 0, ucnt);
 
     if (mutables) {
       int i;
@@ -5644,8 +5645,8 @@ static char *mutability_data_to_immutability_data(int icnt, Scheme_Object *mutab
                 && !_min_cnt))
           return NULL;
         a_val = SCHEME_INT_VAL(a);
-        if (_min_cnt && (a_val >= *_min_cnt)) {
-          *_min_cnt = a_val+1;
+        if (_min_cnt && ((a_val+ucnt) >= *_min_cnt)) {
+          *_min_cnt = a_val+ucnt+1;
         }
         if (a_val >= sz) {
           a2 = (char *)scheme_malloc_atomic(a_val * 2);
@@ -5749,9 +5750,10 @@ Scheme_Struct_Type *scheme_lookup_prefab_type(Scheme_Object *key, int min_field_
       return NULL;
     name = a;
 
-    if ((icnt + ucnt) || (mutables && SCHEME_VEC_SIZE(mutables))) {
+    if (icnt || (mutables && SCHEME_VEC_SIZE(mutables))) {
       int min_cnt;
-      immutable_array = mutability_data_to_immutability_data(icnt + ucnt,
+      immutable_array = mutability_data_to_immutability_data(icnt,
+                                                             ucnt,
                                                              mutables,
                                                              inferred_size ? &min_cnt : NULL);
       if (!immutable_array)

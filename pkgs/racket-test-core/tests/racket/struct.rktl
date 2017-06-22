@@ -1199,5 +1199,23 @@
                  'ok)))
 
 ;; ----------------------------------------
+;; Check that constructing a prefab type via its key before via
+;; `make-struct-type` gets the mutability of auto fields right.
+
+(let ([s (string->symbol (format "s~a" (current-milliseconds)))])
+  (define v (read (open-input-string (format "#s((~a (2 #f)) 1 2)" s))))
+  (define-values (struct: make- ? -ref -set!)
+    (make-struct-type s #f 0 2 #f null 'prefab))
+  (-set! v 0 'ok)
+  (test 'ok -ref v 0))
+
+(let ([s (string->symbol (format "s~a" (current-milliseconds)))])
+  (define v (read (open-input-string (format "#s((~a (2 #f)) 'x 'y 'z 1 2)" s))))
+  (define-values (struct: make- ? -ref -set!)
+    (make-struct-type s #f 3 2 #f null 'prefab #f '(0 1 2)))
+  (-set! v 3 'ok)
+  (test 'ok -ref v 3))
+
+;; ----------------------------------------
 
 (report-errs)
