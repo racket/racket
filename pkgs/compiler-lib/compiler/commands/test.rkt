@@ -1006,14 +1006,14 @@
     (set! default-mode 'process))]
  #:multi
  [("--submodule" "-s") name
-  "Runs submodule <name>\n    (defaults to running just the `test' submodule)"
+  "Runs submodule <name>\n    (defaults to running just the `test` submodule)"
   (let ([n (string->symbol name)])
     (set! submodules (cons n submodules)))]
  [("++arg") arg
-  "Adds <arg> to `current-command-line-arguments`"
+  "Adds <arg> to the end of `current-command-line-arguments`"
   (set! extra-command-line-args (cons arg extra-command-line-args))]
-  [("++args") args
-  "Adds <args> (whitespace-separated values) to `current-command-line-arguments`"
+ [("++args") args
+  "Adds each whitespace-delimited in <args> like ++arg"
   (set! extra-command-line-args
         (append (reverse (string-split args)) extra-command-line-args))]
  #:once-any
@@ -1061,12 +1061,12 @@
   (set! check-stderr? #t)]
  #:multi
  [("++ignore-stderr") pattern
-  "Ignore standard error output if it matches #px\"<pattern>\""
+  "Ignore stderr output that matches #px\"<pattern>\""
   (set! ignore-stderr-patterns
         (cons (pregexp pattern) ignore-stderr-patterns))]
  #:once-each
  [("--quiet" "-q")
-  "Suppress `raco test: ...' message"
+  "Suppress `raco test: ...` message"
   (set! quiet? #t)]
  [("--heartbeat")
   "Periodically report that a test is still running"
