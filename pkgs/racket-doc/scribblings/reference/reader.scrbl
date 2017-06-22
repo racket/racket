@@ -113,13 +113,13 @@ on the next character or characters in the input stream as follows:
   @dispatch[@litchar{#[}]{starts a @tech{vector}; see @secref["parse-vector"]}
   @dispatch[@litchar["#{"]]{starts a @tech{vector}; see @secref["parse-vector"]}
 
-  @dispatch[@litchar{#fl(}]{starts a @tech{flvector}; see @secref["parse-vector"]}
-  @dispatch[@litchar{#fl[}]{starts a @tech{flvector}; see @secref["parse-vector"]}
-  @dispatch[@litchar["#fl{"]]{starts a @tech{flvector}; see @secref["parse-vector"]}
+  @dispatch[@ci0litchar{#fl(}]{starts a @tech{flvector}; see @secref["parse-vector"]}
+  @dispatch[@ci0litchar{#fl[}]{starts a @tech{flvector}; see @secref["parse-vector"]}
+  @dispatch[@ci0litchar["#fl{"]]{starts a @tech{flvector}; see @secref["parse-vector"]}
 
-  @dispatch[@litchar{#fx(}]{starts a @tech{fxvector}; see @secref["parse-vector"]}
-  @dispatch[@litchar{#fx[}]{starts a @tech{fxvector}; see @secref["parse-vector"]}
-  @dispatch[@litchar["#fx{"]]{starts a @tech{fxvector}; see @secref["parse-vector"]}
+  @dispatch[@ci0litchar{#fx(}]{starts a @tech{fxvector}; see @secref["parse-vector"]}
+  @dispatch[@ci0litchar{#fx[}]{starts a @tech{fxvector}; see @secref["parse-vector"]}
+  @dispatch[@ci0litchar["#fx{"]]{starts a @tech{fxvector}; see @secref["parse-vector"]}
 
   @dispatch[@litchar{#s(}]{starts a @tech{structure} literal; see @secref["parse-structure"]}
   @dispatch[@litchar{#s[}]{starts a @tech{structure} literal; see @secref["parse-structure"]}
@@ -170,9 +170,17 @@ on the next character or characters in the input stream as follows:
   @dispatch[@elem{@litchar{#fl}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a flvector; see @secref["parse-vector"]}
   @dispatch[@elem{@litchar{#fl}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a flvector; see @secref["parse-vector"]}
 
+  @dispatch[@elem{@litchar{#Fl}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a flvector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#Fl}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a flvector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#Fl}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a flvector; see @secref["parse-vector"]}
+
   @dispatch[@elem{@litchar{#fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a fxvector; see @secref["parse-vector"]}
   @dispatch[@elem{@litchar{#fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a fxvector; see @secref["parse-vector"]}
   @dispatch[@elem{@litchar{#fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a fxvector; see @secref["parse-vector"]}
+
+  @dispatch[@elem{@litchar{#Fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{(}}]{starts a fxvector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#Fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar{[}}]{starts a fxvector; see @secref["parse-vector"]}
+  @dispatch[@elem{@litchar{#Fx}@kleeneplus{@nonterm{digit@sub{10}}}@litchar["{"]}]{starts a fxvector; see @secref["parse-vector"]}
 
   @dispatch[@graph-defn[]]{binds a graph tag; see @secref["parse-graph"]}
   @dispatch[@graph-ref[]]{uses a graph tag; see @secref["parse-graph"]}
@@ -784,7 +792,8 @@ one of the following forms:
 
  @item{@litchar{#\}@nonterm{c}: the character @nonterm{c}, as long
        as @litchar{#\}@nonterm{c} and the characters following it
-       do not match any of the previous cases, and as long as the
+       do not match any of the previous cases, and as long as
+       @nonterm{c} or the
        character after @nonterm{c} is not
        @racketlink[char-alphabetic?]{alphabetic}.}
 
@@ -941,7 +950,7 @@ If the @racket[read-accept-reader] or @racket[read-accept-lang]
 @tech{parameter} is set to @racket[#f], then if the reader encounters
 @litchar{#lang} or equivalent @litchar{#!}, the @exnraise[exn:fail:read].
 
-@section[#:tag "parse-cdot"]{Reading with C-style infix dot notation}
+@section[#:tag "parse-cdot"]{Reading with C-style Infix-Dot Notation}
 
 When the @racket[read-cdot] @tech{parameter} is set to @racket[#t],
 then a variety of changes occur in the reader.

@@ -15,7 +15,8 @@
            dispatch-table
            dispatch
            metavar
-           cilitchar)
+           cilitchar
+           ci0litchar)
 
   (define (as-flow i) (make-flow (list (if (block? i)
                                            i
@@ -135,16 +136,20 @@
   (define (metavar . s)
     (make-element 'italic (decode-content s)))
 
-  (define (cilitchar s)
+  (define (cilitchar s #:just-first? [just-first? #f])
     (let ([ss (map list->string
                    (let loop ([l (string->list s)])
                      (if (null? l)
                          (list null)
                          (let ([r (loop (cdr l))])
                            (if (char-alphabetic? (car l))
-                               (append
-                                (map (lambda (i) (cons (char-downcase (car l)) i)) r)
-                                (map (lambda (i) (cons (char-upcase (car l)) i)) r))
+                               (if just-first?
+                                   (list
+                                    (cons (char-downcase (car l)) (cdr l))
+                                    (cons (char-upcase (car l)) (cdr l)))
+                                   (append
+                                    (map (lambda (i) (cons (char-downcase (car l)) i)) r)
+                                    (map (lambda (i) (cons (char-upcase (car l)) i)) r)))
                                (map (lambda (i) (cons (car l) i)) r))))))])
       (case (length ss) 
         [(1) (litchar (car ss))]
@@ -157,5 +162,8 @@
                              (list " or " (litchar (car ss)))
                              (list* (litchar (car ss))
                                     ", "
-                                    (loop (cdr ss))))))]))))
+                                    (loop (cdr ss))))))])))
+
+  (define (ci0litchar s)
+    (cilitchar s #:just-first? #t)))
 
