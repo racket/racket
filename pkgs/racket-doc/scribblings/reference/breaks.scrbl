@@ -123,12 +123,12 @@ enabled while evaluating the @racket[body]s in sequence. The result
 of the @racket[parameterize-break] expression is the result of the last
 @racket[expr].
 
-Like @racket[parameterize] (see @secref["parameters"]), a fresh
-@tech{thread cell} (see @secref["threadcells"]) is allocated to
+As with @racket[parameterize], a fresh @tech{thread cell} is allocated to
 hold the break-enabled state of the continuation, and calls to
 @racket[break-enabled] within the continuation access or modify the
-new cell. Unlike parameters, the break setting is not inherited by new
-threads.}
+new cell. Unlike a parameter, a mutation to the break setting via
+@racket[break-enabled] is not inherited by new threads (i.e., the
+thread cell is not @tech{preserved}).}
  
 @defproc[(current-break-parameterization) break-parameterization?]{
 Analogous to @racket[(current-parameterization)] (see
