@@ -130,9 +130,11 @@ flags:
   addition to specified collections.}
 
  @item{@DFlag{tidy} --- remove metadata cache information and
-  documentation for non-existent collections or documentation (to
-  clean up after removal), even when setup actions are otherwise
-  confined to specified collections.}
+  documentation for non-existent collections or documentation to
+  clean up after removal, even when setup actions are otherwise
+  confined to specified collections. Although tidying is not confined
+  to specified collections, it can be constrained with @DFlag{avoid-main}
+  or @DFlag{no-user}.}
 
 ]}
 @item{Constraining to specific tasks:
