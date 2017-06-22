@@ -434,7 +434,8 @@
                                         (set-member? implies name))
                                     (not (hash-ref simultaneous-installs name #f))
                                     (let ([updater
-                                           (packages-to-update download-printf current-scope-db 
+                                           (packages-to-update download-printf current-scope-db
+                                                               #:all-db all-db
                                                                #:must-update? #f
                                                                #:deps? do-update-deps?
                                                                #:implies? update-implies?
@@ -546,8 +547,8 @@
             ;; Try updates:
             (define update-pkgs (map car update-deps))
             (define (make-pre-succeed)
-              (define db current-scope-db)
-              (let ([to-update (let ([updater (packages-to-update download-printf db
+              (let ([to-update (let ([updater (packages-to-update download-printf current-scope-db
+                                                                  #:all-db all-db
                                                                   #:deps? update-deps? 
                                                                   #:implies? update-implies?
                                                                   #:update-cache update-cache
@@ -1010,6 +1011,7 @@
 ;; it maps a package name to a checksum, and a box of the package
 ;; name to #t (to avoid multiple update attempts).
 (define ((packages-to-update download-printf db
+                             #:all-db all-db
                              #:must-update? [must-update? #t]
                              #:deps? deps?
                              #:implies? implies?
@@ -1135,7 +1137,7 @@
           (define missing-deps
             (for/list ([dep (in-list deps)]
                        #:unless (equal? dep "racket")
-                       #:unless (package-info dep #:db db #f))
+                       #:unless (package-info dep #:db all-db #f))
               dep))
           (cond
            [(pair? missing-deps)
@@ -1262,6 +1264,7 @@
   (define download-printf (if quiet? void printf/flush))
   (define metadata-ns (make-metadata-namespace))
   (define db (read-pkg-db))
+  (define all-db (merge-pkg-dbs))
   (define all-mode? (and all? (empty? in-pkgs)))
   (define pkgs (cond
                 [all-mode? (hash-keys db)]
@@ -1278,6 +1281,7 @@
    prefetch-group
    (lambda ()
      (define to-updat* (let ([updater (packages-to-update download-printf db
+                                                          #:all-db all-db
                                                           #:must-update? (and (not all-mode?)
                                                                               (not update-deps?))
                                                           #:deps? (or update-deps? 

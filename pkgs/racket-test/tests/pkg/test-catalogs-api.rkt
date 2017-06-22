@@ -43,4 +43,4 @@
 
   (define-values (cksum2 mods2 deps2) 
     (get-pkg-content (pkg-desc "pkg-test2" 'name #f #f #f)))
-  (check-equal? deps2 '("pkg-test1")))
+  (check-equal? (sort deps2 string<?) '("base" "pkg-test1")))
