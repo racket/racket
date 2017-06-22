@@ -9,6 +9,7 @@
          racket/place
          racket/future
          racket/file
+         racket/string
          compiler/find-exe
          raco/command-name
          racket/system
@@ -35,6 +36,7 @@
 (define empty-input? #f)
 (define heartbeat-secs #f)
 (define ignore-stderr-patterns null)
+(define extra-command-line-args null)
 
 (define jobs 0) ; 0 mean "default"
 (define task-sema (make-semaphore 1))
@@ -91,9 +93,9 @@
   (provide go)
   (define (go pch)
     (define l (place-channel-get pch))
+    (define args (cadddr (cdr l)))
     ;; Run the test:
-    (parameterize ([current-command-line-arguments (list->vector
-                                                    (cadddr (cdr l)))]
+    (parameterize ([current-command-line-arguments (list->vector args)]
                    [current-directory (cadddr l)])
       (when (cadr l) (dynamic-require (cadr l) (caddr l)))
       (dynamic-require (car l) (caddr l))
@@ -583,7 +585,7 @@
           ;; make sure "info.rkt" information is loaded:
           (check-info p))
         (define norm-p (normalize-info-path p))
-        (define args (get-cmdline norm-p))
+        (define args (append (get-cmdline norm-p) (reverse extra-command-line-args)))
         (define timeout (get-timeout norm-p))
         (define ignore-stderr (get-ignore-stderr norm-p))
         (define lock-name (get-lock-name norm-p))
@@ -1007,6 +1009,13 @@
   "Runs submodule <name>\n    (defaults to running just the `test' submodule)"
   (let ([n (string->symbol name)])
     (set! submodules (cons n submodules)))]
+ [("++arg") arg
+  "Adds <arg> to `current-command-line-arguments`"
+  (set! extra-command-line-args (cons arg extra-command-line-args))]
+  [("++args") args
+  "Adds <args> (whitespace-separated values) to `current-command-line-arguments`"
+  (set! extra-command-line-args
+        (append (reverse (string-split args)) extra-command-line-args))]
  #:once-any
  [("--run-if-absent" "-r")
   "Require module if submodule is absent (on by default)"
