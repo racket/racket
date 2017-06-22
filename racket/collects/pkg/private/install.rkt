@@ -311,10 +311,19 @@
                             "in different scopes "
                             "")
                         pkg conflicting-pkg (pretty-module-path mp))
-             (pkg-error (~a "package conflicts with existing installed module\n"
+             (pkg-error (~a "package conflicts with existing installed module;\n"
+                            " the existing installed module is not part of a package\n"
                             "  package: ~a\n"
-                            "  module path: ~s")
-                        pkg (pretty-module-path mp))))]
+                            "  module path: ~s\n"
+                            "  potentially relevant paths:~a")
+                        pkg
+                        (pretty-module-path mp)
+                        (format-list
+                         (for/list ([p (in-list (append
+                                                 (current-library-collection-paths)
+                                                 (current-library-collection-links)))]
+                                    #:when (path? p))
+                           p)))))]
       [(and
         (not force?)
         (for/or ([ai (in-set additional-installs)])
