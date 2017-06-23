@@ -10,13 +10,21 @@ AC_CONFIG_HEADERS([rktio_config.h])
 AC_CONFIG_AUX_DIR(../lt)
 AC_CANONICAL_SYSTEM
 
-AC_ARG_ENABLE(shared,  [  --enable-shared         create shared libraries (ok, but not recommended)])
-AC_ARG_ENABLE(pthread, [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
-AC_ARG_ENABLE(iconv,   [  --enable-iconv          use iconv (usually auto-enabled)])
+AC_ARG_ENABLE(shared,     [  --enable-shared         create shared libraries (ok, but not recommended)])
+AC_ARG_ENABLE(standalone, [  --enable-standalone     create a standalone shared library])
+AC_ARG_ENABLE(pthread,    [  --enable-pthread        link with pthreads (usually auto-enabled if needed)])
+AC_ARG_ENABLE(iconv,      [  --enable-iconv          use iconv (usually auto-enabled)])
 
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
 fi
+
+skip_iconv_check=no
+
+# For standalone builds:
+rktio_version=1.0
+HIDE_STANDALONE=hide_standalone_
+HIDE_NOT_STANDALONE=
 
 ###### Autoconfigure #######
 
@@ -100,6 +108,14 @@ case "$host_os" in
 
     # -pthread is not needed and triggers a warning
     use_flag_pthread=no
+
+    # Use custom non-libtool build for a shared object
+    if test "${enable_standalone}" = "yes" ; then
+       if test "${enable_shared}" = "" ; then
+         enable_shared=no
+         make_darwin_dylib=yes
+       fi
+    fi
     ;;
   nto-qnx*)
     use_flag_pthread=no
@@ -301,8 +317,19 @@ fi
 
 ############## libtool ################
 
+if test "${enable_standalone}" = "yes" ; then
+   HIDE_STANDALONE=""
+   HIDE_NOT_STANDALONE=hide_not_standalone_
+   if test "${enable_shared}" = "" ; then
+     enable_shared=yes
+   fi
+fi
+
 if test "${enable_shared}" = "yes" ; then
   echo "Configuring libtool"
+
+  # Assuming an absolute "${libdir}":
+  abslibdir="${libdir}"
 
   if test ! -d "../lt" ; then
     mkdir "../lt"
@@ -326,24 +353,35 @@ if test "${enable_shared}" = "yes" ; then
     fi
   fi
 
-  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} \$(ARLIBFLAGS) -o"
+  # Use only for standalone builds:
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${rktio_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
+  # Used for a librktio convenience library:
   STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
   ARFLAGS=""
   RANLIB=":"
+  
   RKTLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}"
   CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
-  LIBSFX=la
   LTO="lo"
   LTA="la"
   STRIP_LIB_DEBUG=":"
+  LIBSFX=la
+  ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
 else
-  LIBSFX=a
   ICP=cp
-  ICP_LIB=cp
   LTO="o"
   LTA="a"
   RKTLINKER='$(CC)'
   STATIC_AR="$AR"
+  LIBSFX=so
+  ICP_LIB=cp
+  if test "${make_darwin_dylib}" = "yes" ; then
+     LIBSFX="dylib"
+     AR='$(RKTLINKER) --shared -o'
+     ARFLAGS=""
+     LIBS="${LIBS} -framework CoreFoundation"
+     ICP_LIB=cp
+  fi
 fi
 
 ############## final output ################
@@ -351,15 +389,20 @@ fi
 AC_SUBST(CC)
 AC_SUBST(CFLAGS)
 AC_SUBST(LDFLAGS)
+AC_SUBST(LIBS)
 AC_SUBST(RKTLINKER)
 AC_SUBST(AR)
 AC_SUBST(ARFLAGS)
 AC_SUBST(RANLIB)
 AC_SUBST(STATIC_AR)
+AC_SUBST(ICP_LIB)
 
 AC_SUBST(LIBSFX)
 AC_SUBST(LTO)
 AC_SUBST(LTA)
+
+AC_SUBST(HIDE_NOT_STANDALONE)
+AC_SUBST(HIDE_STANDALONE)
 
 makefiles="Makefile"
 

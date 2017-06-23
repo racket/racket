@@ -1,5 +1,5 @@
 #ifndef __RKTIO_H__
-#define __RKTIO_H__
+#define __RKTIO_H__ 1
 
 /*
 
@@ -45,6 +45,16 @@ Return type conventions:
    error reported by `rktio_get_last_error_kind` and
    `rktio_get_last_error`.
 
+ - A function annotated with `RKTIO_EXTERN_NOERR` always succeeds, so
+   it never sets the error reported by `rktio_get_last_error_kind` and
+   `rktio_get_last_error`. If a function returns `void` or
+   `rktio_bool_t`, then `RKTIO_EXTERN` is implicitly
+   `RKTIO_EXTERN_NOERR`.
+
+ - A function annotated with `RKTIO_EXTERN_STEP` sets the value
+   to be reported by `rktio_get_last_error_step` when it returns a
+   value that indicates an error.
+
 Thread and signal conventions:
 
  - A given `rktio_t` can be used from only one thread at a time.
@@ -72,6 +82,9 @@ Thread and signal conventions:
 # define RKTIO_EXTERN extern
 #endif
 
+#define RKTIO_EXTERN_NOERR RKTIO_EXTERN
+#define RKTIO_EXTERN_STEP  RKTIO_EXTERN
+
 /*************************************************/
 /* Initialization and general datatypes          */
 
@@ -84,7 +97,7 @@ RKTIO_EXTERN rktio_t *rktio_init(void);
    `rktio_init` must return before any additional calls (in other
    threads), but there's no ordering requirement after that. */
 
-RKTIO_EXTERN void rktio_destroy(rktio_t *);
+RKTIO_EXTERN void rktio_destroy(rktio_t *rktio);
 /* Call `rktio_destroy` as the last thing. Everything else must be
    explicitly deallocated/closed/forgotten before calling
    `rktio_destroy`. */
@@ -166,7 +179,7 @@ RKTIO_EXTERN rktio_fd_t *rktio_system_fd(rktio_t *rktio, intptr_t system_fd, int
    should include include `RKTIO_OPEN_SOCKET` and be non-blocking or
    use `RKTIO_OPEN_INIT`. */
 
-RKTIO_EXTERN intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_NOERR intptr_t rktio_fd_system_fd(rktio_t *rktio, rktio_fd_t *rfd);
 /* Extracts a native file descriptor or socket. */
 
 RKTIO_EXTERN rktio_bool_t rktio_fd_is_regular_file(rktio_t *rktio, rktio_fd_t *rfd);
@@ -180,7 +193,7 @@ RKTIO_EXTERN rktio_bool_t rktio_fd_is_text_converted(rktio_t *rktio, rktio_fd_t 
 /* Reports whether RKTIO_OPEN_TEXT was use and has an effect. The
    RKTIO_OPEN_TEXT flag has an effect only on Windows. */
 
-RKTIO_EXTERN int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN_NOERR int rktio_fd_modes(rktio_t *rktio, rktio_fd_t *rfd);
 /* Returns all of the recorded mode flags, including those provided to
    `rktio_system_fd` and those that are inferred. The
    `RKTIO_OPEN_INIT` flag is not recorded, however. */
@@ -246,8 +259,8 @@ RKTIO_EXTERN intptr_t rktio_read_converted(rktio_t *rktio, rktio_fd_t *fd, char 
    originally two characters that were converted to a single newline for
    text mode. */
 
-RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd);
-/* Reports the number of bytes that are buffered kfrom the file descriptor.
+RKTIO_EXTERN_NOERR intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd);
+/* Reports the number of bytes that are buffered from the file descriptor.
    The result is normally zero, but text-mode conversion and the rare
    uncooperative corner of an OS can make the result 1 byte. */
 
@@ -280,7 +293,7 @@ RKTIO_EXTERN rktio_ok_t rktio_file_unlock(rktio_t *rktio, rktio_fd_t *rfd);
 
 typedef rktio_int64_t rktio_filesize_t;
 
-rktio_ok_t rktio_set_file_position(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t pos, int whence);
+RKTIO_EXTERN rktio_ok_t rktio_set_file_position(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t pos, int whence);
 /* Can report `RKTIO_ERROR_CANNOT_FILE_POSITION` on Windows. */
 /* For `whence`: */
 enum {
@@ -288,23 +301,23 @@ enum {
   RKTIO_POSITION_FROM_END
 };
 
-rktio_filesize_t *rktio_get_file_position(rktio_t *rktio, rktio_fd_t *rfd);
+RKTIO_EXTERN rktio_filesize_t *rktio_get_file_position(rktio_t *rktio, rktio_fd_t *rfd);
 /* Returns the file position, not taking into account rare input
    buffering (see `rktio_read`). On Windows, can report
    `RKTIO_ERROR_CANNOT_FILE_POSITION`, which doesn't have a
    corresponding Windows error code. */
 
-rktio_ok_t rktio_set_file_size(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t sz);
+RKTIO_EXTERN rktio_ok_t rktio_set_file_size(rktio_t *rktio, rktio_fd_t *rfd, rktio_filesize_t sz);
 /* Can report `RKTIO_ERROR_CANNOT_FILE_POSITION` on Windows. */
 
 /*************************************************/
 /* Pipes                                         */
 
-rktio_fd_t **rktio_make_pipe(rktio_t *rktio, int flags);
+RKTIO_EXTERN rktio_fd_t **rktio_make_pipe(rktio_t *rktio, int flags);
 /* Makes a pair of file descriptors for a pipe. The first one
    is the read end, and the second is the write end. The `flags`
    can declare the intended sharing of the file descriptors
-   with a child process, and it useful mainly on Windows. */
+   with a child process, and is useful only on Windows. */
 /* For `flags`: */
 #define RKTIO_NO_INHERIT_INPUT  (1<<0)
 #define RKTIO_NO_INHERIT_OUTPUT (1<<1)
@@ -320,7 +333,7 @@ RKTIO_EXTERN rktio_addrinfo_lookup_t *rktio_start_addrinfo_lookup(rktio_t *rktio
                                                                   int family, rktio_bool_t passive, rktio_bool_t tcp);
 /* The `family` argument should be one of the following: */
 #define RKTIO_FAMILY_ANY (-1)
-RKTIO_EXTERN int rktio_get_ipv4_family(rktio_t *rktio);
+RKTIO_EXTERN_NOERR int rktio_get_ipv4_family(rktio_t *rktio);
 
 RKTIO_EXTERN rktio_tri_t rktio_poll_addrinfo_lookup_ready(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup);
 /* Check whether an address is available for a lookup request. */
@@ -331,7 +344,7 @@ RKTIO_EXTERN rktio_addrinfo_t *rktio_addrinfo_lookup_get(rktio_t *rktio, rktio_a
 RKTIO_EXTERN void rktio_addrinfo_lookup_stop(rktio_t *rktio, rktio_addrinfo_lookup_t *lookup);
 /* Abandons a lookup whose result (or error) is not yet received. */
 
-RKTIO_EXTERN void rktio_addrinfo_free(rktio_t *rktio, struct rktio_addrinfo_t *a);
+RKTIO_EXTERN void rktio_addrinfo_free(rktio_t *rktio, rktio_addrinfo_t *a);
 /* Frees the result of a lookup. */
 
 typedef struct rktio_listener_t rktio_listener_t;
@@ -375,7 +388,7 @@ RKTIO_EXTERN rktio_fd_t *rktio_connect_trying(rktio_t *rktio, rktio_connect_t *c
    poll set, unregister it before trying to finish or stop the
    connection). */
 
-RKTIO_EXTERN int rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode);
+RKTIO_EXTERN rktio_ok_t rktio_socket_shutdown(rktio_t *rktio, rktio_fd_t *rfd, int mode);
 /* Useful for TCP to report an EOF to the other end. Does not close the socket,
    but may make it ineligible for forther use.
    `mode` values: */
@@ -486,7 +499,9 @@ typedef struct rktio_process_t rktio_process_t;
 
 typedef struct rktio_process_result_t {
   rktio_process_t *process;
-  rktio_fd_t *stdin_fd, *stdout_fd, *stderr_fd;
+  rktio_fd_t *stdin_fd;
+  rktio_fd_t *stdout_fd;
+  rktio_fd_t *stderr_fd;
 } rktio_process_result_t;
 
 RKTIO_EXTERN rktio_process_result_t *rktio_process(rktio_t *rktio,
@@ -500,12 +515,14 @@ RKTIO_EXTERN rktio_process_result_t *rktio_process(rktio_t *rktio,
 #define RKTIO_PROCESS_WINDOWS_EXACT_CMDLINE     (1<<2)
 #define RKTIO_PROCESS_WINDOWS_CHAIN_TERMINATION (1<<3)
 
-RKTIO_EXTERN int rktio_process_allowed_flags(rktio_t *rktio);
+RKTIO_EXTERN_NOERR int rktio_process_allowed_flags(rktio_t *rktio);
 /* Reports the flags that are accepted by `rktio_process` on the
    current OS. */
 
-RKTIO_EXTERN int rktio_process_pid(rktio_t *rktio, rktio_process_t *sp);
-/* Always succeeds, whether or not the process is still running. */
+RKTIO_EXTERN_NOERR int rktio_process_pid(rktio_t *rktio, rktio_process_t *sp);
+/* Always succeeds, whether or not the process is still running, so
+   the result is generally not meaningful if the process is not
+   running. */
 
 RKTIO_EXTERN rktio_ok_t rktio_process_kill(rktio_t *rktio, rktio_process_t *sp);
 RKTIO_EXTERN rktio_ok_t rktio_process_interrupt(rktio_t *rktio, rktio_process_t *sp);
@@ -536,7 +553,7 @@ RKTIO_EXTERN void rktio_reap_processes(rktio_t *rktio);
 /*************************************************/
 /* Filesystem-change events                      */
 
-RKTIO_EXTERN int rktio_fs_change_properties(rktio_t *rktio);
+RKTIO_EXTERN_NOERR int rktio_fs_change_properties(rktio_t *rktio);
 /* Reports properties of the filesystem-change event implementation: */
 #define RKTIO_FS_CHANGE_SUPPORTED   (1 << 0)
 #define RKTIO_FS_CHANGE_SCALABLE    (1 << 1)
@@ -621,7 +638,7 @@ typedef struct rktio_ltps_handle_t rktio_ltps_handle_t;
 
 RKTIO_EXTERN rktio_ltps_t *rktio_ltps_open(rktio_t *rktio);
 
-RKTIO_EXTERN int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt);
+RKTIO_EXTERN void rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt);
 /* Closing will signal all remianing handles and free all signaled
    handles, but use `rktio_ltps_remove_all` and
    `rktio_ltps_get_signaled_handle` is you need to clean up any
@@ -649,9 +666,9 @@ enum {
 };
 
 RKTIO_EXTERN void rktio_ltps_handle_set_data(rktio_t *rktio, rktio_ltps_handle_t *h, void *data);
-RKTIO_EXTERN void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *h);
+RKTIO_EXTERN_NOERR void *rktio_ltps_handle_get_data(rktio_t *rktio, rktio_ltps_handle_t *h);
 
-void rktio_ltps_remove_all(rktio_t *rktio, rktio_ltps_t *lt);
+RKTIO_EXTERN void rktio_ltps_remove_all(rktio_t *rktio, rktio_ltps_t *lt);
 /* Removes all additions, signaling all handles. */
 
 RKTIO_EXTERN rktio_ok_t rktio_ltps_poll(rktio_t *rktio, rktio_ltps_t *lt);
@@ -681,10 +698,10 @@ RKTIO_EXTERN void rktio_sleep(rktio_t *rktio, float nsecs, rktio_poll_set_t *fds
 /*************************************************/
 /* Files, directories, and links                 */
 
-RKTIO_EXTERN int rktio_file_exists(rktio_t *rktio, const char *filename);
-RKTIO_EXTERN int rktio_directory_exists(rktio_t *rktio, const char *dirname);
-RKTIO_EXTERN int rktio_link_exists(rktio_t *rktio, const char *filename);
-RKTIO_EXTERN int rktio_is_regular_file(rktio_t *rktio, const char *filename);
+RKTIO_EXTERN rktio_bool_t rktio_file_exists(rktio_t *rktio, const char *filename);
+RKTIO_EXTERN rktio_bool_t rktio_directory_exists(rktio_t *rktio, const char *dirname);
+RKTIO_EXTERN rktio_bool_t rktio_link_exists(rktio_t *rktio, const char *filename);
+RKTIO_EXTERN rktio_bool_t rktio_is_regular_file(rktio_t *rktio, const char *filename);
 
 RKTIO_EXTERN rktio_ok_t rktio_delete_file(rktio_t *rktio, const char *fn, int enable_write_on_fail);
 
@@ -722,7 +739,7 @@ RKTIO_EXTERN rktio_filesize_t *rktio_file_size(rktio_t *rktio, const char *filen
 RKTIO_EXTERN rktio_timestamp_t *rktio_get_file_modify_seconds(rktio_t *rktio, const char *file);
 RKTIO_EXTERN rktio_ok_t rktio_set_file_modify_seconds(rktio_t *rktio, const char *file, rktio_timestamp_t secs);
 
-typedef struct {
+typedef struct rktio_identity_t {
   uintptr_t a, b, c;
   int a_bits, b_bits, c_bits; /* size of each in bits */
 } rktio_identity_t;
@@ -775,20 +792,20 @@ RKTIO_EXTERN char **rktio_filesystem_roots(rktio_t *rktio);
 
 typedef struct rktio_file_copy_t rktio_file_copy_t;
 
-RKTIO_EXTERN rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const char *src,
-                                                      rktio_bool_t exists_ok);
+RKTIO_EXTERN_STEP rktio_file_copy_t *rktio_copy_file_start(rktio_t *rktio, const char *dest, const char *src,
+                                                           rktio_bool_t exists_ok);
 /* Starts a file copy. Depending on the OS, this step may perform the
    whole copy, or it may just get started. Can report
    `RKTIO_ERROR_EXISTS`, and sets an error step as listed further below. */
 
 RKTIO_EXTERN rktio_bool_t rktio_copy_file_is_done(rktio_t *rktio, rktio_file_copy_t *fc);
-RKTIO_EXTERN rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
+RKTIO_EXTERN_STEP rktio_ok_t rktio_copy_file_step(rktio_t *rktio, rktio_file_copy_t *fc);
 /* As long as the copy isn't done, call `rktio_copy_file_step` to make
    a little progress. Use `rktio_copy_file_finish_permissions`
    (optionally) and then `rktio_copy_file_stop` when done. An error
    sets an error step as listed further below. */
 
-RKTIO_EXTERN rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t *fc);
+RKTIO_EXTERN_STEP rktio_ok_t rktio_copy_file_finish_permissions(rktio_t *rktio, rktio_file_copy_t *fc);
 /* Depending on the OS, copies permissions from the source to the
    destination. This step can be performed at any time between the
    start and stop. Reports success if this step isn't needed (e.g.,
@@ -842,7 +859,7 @@ typedef struct rktio_signal_handle_t rktio_signal_handle_t;
    causes any `rktio_sleep` for that `rktio_t` to return (or causes
    the next `rktio_sleep` to return if one is not in progress. */
 
-RKTIO_EXTERN rktio_signal_handle_t *rktio_get_signal_handle(rktio_t *rktio);
+RKTIO_EXTERN_NOERR rktio_signal_handle_t *rktio_get_signal_handle(rktio_t *rktio);
 /* Gets the handle for the given `rktio_t`. */
 
 RKTIO_EXTERN void rktio_signal_received_at(rktio_signal_handle_t *h);
@@ -874,13 +891,13 @@ typedef struct rktio_date_t {
   char *zone_name; /* can be NULL; otherwise, free it */
 } rktio_date_t;
 
-RKTIO_EXTERN intptr_t rktio_get_milliseconds(void);
-RKTIO_EXTERN double rktio_get_inexact_milliseconds(void);
+RKTIO_EXTERN_NOERR intptr_t rktio_get_milliseconds(void);
+RKTIO_EXTERN_NOERR double rktio_get_inexact_milliseconds(void);
 
-RKTIO_EXTERN intptr_t rktio_get_process_milliseconds(rktio_t *rktio);
-RKTIO_EXTERN intptr_t rktio_get_process_children_milliseconds(rktio_t *rktio);
+RKTIO_EXTERN_NOERR intptr_t rktio_get_process_milliseconds(rktio_t *rktio);
+RKTIO_EXTERN_NOERR intptr_t rktio_get_process_children_milliseconds(rktio_t *rktio);
 
-RKTIO_EXTERN rktio_timestamp_t rktio_get_seconds(rktio_t *rktio);
+RKTIO_EXTERN_NOERR rktio_timestamp_t rktio_get_seconds(rktio_t *rktio);
 RKTIO_EXTERN rktio_date_t *rktio_seconds_to_date(rktio_t *rktio, rktio_timestamp_t seconds, int nanoseconds, int get_gmt);
 
 /*************************************************/
@@ -901,20 +918,20 @@ enum {
   RKTIO_SW_SHOWNORMAL
 };
 
-rktio_ok_t rktio_shell_execute(rktio_t *rktio,
-			       const char *verb,
-			       const char *target,
-			       const char *arg,
-			       const char *dir,
-			       int show_mode);
+RKTIO_EXTERN rktio_ok_t rktio_shell_execute(rktio_t *rktio,
+                                            const char *verb,
+                                            const char *target,
+                                            const char *arg,
+                                            const char *dir,
+                                            int show_mode);
 /* Supported only on Windows to run `ShellExecute`. The `dir` argument
    needs to have normalized path separators. */
 
 /*************************************************/
 /* Path conversion                               */
 
-rktio_char16_t *rktio_path_to_wide_path(rktio_t *rktio, const char *p);
-char *rktio_wide_path_to_path(rktio_t *rktio, const rktio_char16_t *wp);
+RKTIO_EXTERN rktio_char16_t *rktio_path_to_wide_path(rktio_t *rktio, const char *p);
+RKTIO_EXTERN_NOERR char *rktio_wide_path_to_path(rktio_t *rktio, const rktio_char16_t *wp);
 /* Convert to/from the OS's native path representation. These
    functions are useful only on Windows. The `rktio_path_to_wide_path`
    function can fail and report `RKTIO_ERROR_INVALID_PATH`. */
@@ -922,8 +939,8 @@ char *rktio_wide_path_to_path(rktio_t *rktio, const rktio_char16_t *wp);
 /*************************************************/
 /* Logging                                       */
 
-rktio_ok_t rktio_syslog(rktio_t *rktio, int level, const char *name, const char *msg,
-                        const char *exec_name);
+RKTIO_EXTERN rktio_ok_t rktio_syslog(rktio_t *rktio, int level, const char *name, const char *msg,
+                                     const char *exec_name);
 /* Adds a message to the system log. The `name` argument can be NULL,
    and it is added to the front of the message with a separating ": "
    if non_NULL. The `exec_name` is the current executable name; it's
@@ -941,7 +958,7 @@ enum {
 /*************************************************/
 /* Encoding conversion                           */
 
-int rktio_convert_properties(rktio_t *rktio);
+RKTIO_EXTERN_NOERR int rktio_convert_properties(rktio_t *rktio);
 /* Returns a combination of the following flags. */
 
 #define RKTIO_CONVERTER_SUPPORTED   (1 << 0)
@@ -950,16 +967,16 @@ int rktio_convert_properties(rktio_t *rktio);
 
 typedef struct rktio_converter_t rktio_converter_t;
 
-rktio_converter_t *rktio_converter_open(rktio_t *rktio, const char *to_enc, const char *from_enc);
+RKTIO_EXTERN rktio_converter_t *rktio_converter_open(rktio_t *rktio, const char *to_enc, const char *from_enc);
 /* Creates an encoding converter. */
 
-void rktio_converter_close(rktio_t *rktio, rktio_converter_t *cvt);
+RKTIO_EXTERN void rktio_converter_close(rktio_t *rktio, rktio_converter_t *cvt);
 /* Destroys an encoding converter. */
 
-intptr_t rktio_convert(rktio_t *rktio,
-                       rktio_converter_t *cvt,
-                       char **in, intptr_t *in_left,
-                       char **out, intptr_t *out_left);
+RKTIO_EXTERN intptr_t rktio_convert(rktio_t *rktio,
+                                    rktio_converter_t *cvt,
+                                    char **in, intptr_t *in_left,
+                                    char **out, intptr_t *out_left);
 /* Converts some bytes, following the icon protocol: each consumed by
    increments `*in` and decrements `*in_left`, and each produced by
    increments `*out` and decrements `*out_left`. In case of an error,
@@ -972,15 +989,15 @@ intptr_t rktio_convert(rktio_t *rktio,
 
 #define RKTIO_CONVERT_ERROR (-1)
 
-char *rktio_locale_recase(rktio_t *rktio,
-                          rktio_bool_t to_up,
-                          char *in);
+RKTIO_EXTERN char *rktio_locale_recase(rktio_t *rktio,
+                                       rktio_bool_t to_up,
+                                       char *in);
 /* Upcases (of `to_up`) or downcases (if `!to_up`) the content of `in`
    using the current locale's encoding and case conversion. */
 
-rktio_char16_t *rktio_recase_utf16(rktio_t *rktio,
-                                   rktio_bool_t to_up, rktio_char16_t *s1,
-                                   intptr_t len, intptr_t *olen);
+RKTIO_EXTERN rktio_char16_t *rktio_recase_utf16(rktio_t *rktio,
+                                                rktio_bool_t to_up, rktio_char16_t *s1,
+                                                intptr_t len, intptr_t *olen);
 /* Converts the case of a string encoded in UTF-16 for the system's
    default locale if the OS provided direct support for it. The
    `RKTIO_CONVERT_RECASE_UTF16 property from
@@ -988,15 +1005,15 @@ rktio_char16_t *rktio_recase_utf16(rktio_t *rktio,
    Takes and optionally returns a length (`olen` can be NULL), but the
    UTF-16 sequence is expected to have no nuls. */
 
-int rktio_locale_strcoll(rktio_t *rktio, char *s1, char *s2);
+RKTIO_EXTERN int rktio_locale_strcoll(rktio_t *rktio, char *s1, char *s2);
 /* Returns -1 if `s1` is less than `s2` by the current locale's
    comparison, positive is `s1` is greater, and 0 if the strings
    are equal. */
 
-int rktio_strcoll_utf16(rktio_t *rktio,
-                        rktio_char16_t *s1, intptr_t l1,
-                        rktio_char16_t *s2, intptr_t l2,
-                        rktio_bool_t cvt_case);
+RKTIO_EXTERN int rktio_strcoll_utf16(rktio_t *rktio,
+                                     rktio_char16_t *s1, intptr_t l1,
+                                     rktio_char16_t *s2, intptr_t l2,
+                                     rktio_bool_t cvt_case);
 /* Compares two strings encoded in UTF-16 for the system's default
    locale if the OS provided direct support for it. The
    `RKTIO_CONVERT_STRCOLL_UTF16 property from
@@ -1004,29 +1021,29 @@ int rktio_strcoll_utf16(rktio_t *rktio,
    Takes lengths, but the UTF-16 sequences are expected to have
    no include nuls. */
 
-char *rktio_locale_encoding(rktio_t *rktio);
+RKTIO_EXTERN char *rktio_locale_encoding(rktio_t *rktio);
 /* Returns the name of the current locale's encoding. */
 
-void rktio_set_locale(rktio_t *rktio, char *name);
+RKTIO_EXTERN void rktio_set_locale(rktio_t *rktio, char *name);
 /* Sets the current locale, which affects string comparisons and
    conversions. It can also affect the C library's character-property
    predicates and number printing/parsing. The empty string
    corresponds to the OS's native locale. */
 
-char *rktio_push_c_numeric_locale(rktio_t *rktio);
-void rktio_pop_c_numeric_locale(rktio_t *rktio, char *prev);
+RKTIO_EXTERN_NOERR char *rktio_push_c_numeric_locale(rktio_t *rktio);
+RKTIO_EXTERN void rktio_pop_c_numeric_locale(rktio_t *rktio, char *prev);
 /* Use this pair of funtions to temporarily switch the locale to the C
    locale for number parsing and printing. The result of the first
    function is deallocated when passed to second function. */
 
-char *rktio_system_language_country(rktio_t *rktio);
+RKTIO_EXTERN char *rktio_system_language_country(rktio_t *rktio);
 /* Returns the current system's language in country in a 5-character
    format such as "en_US". */
 
 /*************************************************/
 /* Errors                                        */
 
-RKTIO_EXTERN int rktio_get_last_error_kind(rktio_t *rktio);
+RKTIO_EXTERN_NOERR int rktio_get_last_error_kind(rktio_t *rktio);
 
 /* Kinds of error values: */
 enum {
@@ -1036,7 +1053,7 @@ enum {
   RKTIO_ERROR_KIND_RACKET
 };
 
-RKTIO_EXTERN int rktio_get_last_error(rktio_t *rktio);
+RKTIO_EXTERN_NOERR int rktio_get_last_error(rktio_t *rktio);
 
 /* Error IDs of kind RKTIO_ERROR_KIND_RACKET */
 enum {
@@ -1073,7 +1090,7 @@ enum {
   RKTIO_ERROR_CONVERT_OTHER,
 };
 
-RKTIO_EXTERN int rktio_get_last_error_step(rktio_t *rktio);
+RKTIO_EXTERN_NOERR int rktio_get_last_error_step(rktio_t *rktio);
 /* Some operations report further information about the step that
    failed. The meaning of a step number is operation-specific. */
 
@@ -1086,8 +1103,8 @@ RKTIO_EXTERN void rktio_remap_last_error(rktio_t *rktio);
    for an OS-supplied error. This function can sometimes undo the
    substitition, modifying the current error and kind. */
 
-RKTIO_EXTERN const char *rktio_get_last_error_string(rktio_t *rktio);
-RKTIO_EXTERN const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);
+RKTIO_EXTERN_NOERR const char *rktio_get_last_error_string(rktio_t *rktio);
+RKTIO_EXTERN_NOERR const char *rktio_get_error_string(rktio_t *rktio, int kind, int errid);
 /* The returned strings for `rktio_...error_string` should not be
    deallocated, but it only lasts reliably until the next call to
   either of the functions. */

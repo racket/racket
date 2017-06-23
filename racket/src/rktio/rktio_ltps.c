@@ -147,7 +147,7 @@ rktio_poll_set_t *rktio_ltps_get_fd_set(rktio_ltps_t *lt)
 }
 #endif
 
-int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
+void rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
 {
   rktio_ltps_handle_t *s;
 
@@ -167,8 +167,6 @@ int rktio_ltps_close(rktio_t *rktio, rktio_ltps_t *lt)
 #else
   rktio_poll_set_forget(rktio, lt->fd_set);
 #endif
-  
-  return 1;
 }
 
 rktio_ltps_handle_t *rktio_ltps_get_signaled_handle(rktio_t *rktio, rktio_ltps_t *lt)

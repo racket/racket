@@ -63,7 +63,7 @@ static rktio_ltps_t *try_check_ltps(rktio_t *rktio,
   if (!h1
       && (rktio_get_last_error_kind(rktio) == RKTIO_ERROR_KIND_RACKET)
       && (rktio_get_last_error(rktio) == RKTIO_ERROR_UNSUPPORTED)) {
-    check_valid(rktio_ltps_close(rktio, lt));
+    rktio_ltps_close(rktio, lt);
     return NULL;
   }
   check_expected_racket_error(!h1, RKTIO_ERROR_LTPS_NOT_FOUND);
@@ -240,7 +240,7 @@ static void check_read_write_pair(rktio_t *rktio, rktio_fd_t *fd, rktio_fd_t *fd
   check_valid(rktio_poll_read_ready(rktio, fd) == RKTIO_POLL_READY);
   if (lt) {
     check_ltps_read_ready(rktio, lt, h1);
-    check_valid(rktio_ltps_close(rktio, lt));
+    rktio_ltps_close(rktio, lt);
   }
 
   if (rktio_fd_is_udp(rktio, fd)) {
@@ -742,7 +742,7 @@ int main(int argc, char **argv)
     lt = try_check_ltps(rktio, fd, fd2, &h1, &h2);
     check_valid(lt);
     check_ltps_read_and_write_ready(rktio, lt, h1, h2);
-    check_valid(rktio_ltps_close(rktio, lt));
+    rktio_ltps_close(rktio, lt);
     check_valid(rktio_close(rktio, fd));
     check_valid(rktio_close(rktio, fd2));
   }

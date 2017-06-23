@@ -621,9 +621,12 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+HIDE_STANDALONE
+HIDE_NOT_STANDALONE
 LTA
 LTO
 LIBSFX
+ICP_LIB
 STATIC_AR
 ARFLAGS
 AR
@@ -694,6 +697,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_shared
+enable_standalone
 enable_pthread
 enable_iconv
 '
@@ -1319,6 +1323,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-shared         create shared libraries (ok, but not recommended)
+  --enable-standalone     create a standalone shared library
   --enable-pthread        link with pthreads (usually auto-enabled if needed)
   --enable-iconv          use iconv (usually auto-enabled)
 
@@ -2247,6 +2252,11 @@ if test "${enable_shared+set}" = set; then :
   enableval=$enable_shared;
 fi
 
+# Check whether --enable-standalone was given.
+if test "${enable_standalone+set}" = set; then :
+  enableval=$enable_standalone;
+fi
+
 # Check whether --enable-pthread was given.
 if test "${enable_pthread+set}" = set; then :
   enableval=$enable_pthread;
@@ -2261,6 +2271,13 @@ fi
 if test "${enable_iconv}" = "" ; then
   enable_iconv=yes
 fi
+
+skip_iconv_check=no
+
+# For standalone builds:
+rktio_version=1.0
+HIDE_STANDALONE=hide_standalone_
+HIDE_NOT_STANDALONE=
 
 ###### Autoconfigure #######
 
@@ -3349,6 +3366,14 @@ case "$host_os" in
 
     # -pthread is not needed and triggers a warning
     use_flag_pthread=no
+
+    # Use custom non-libtool build for a shared object
+    if test "${enable_standalone}" = "yes" ; then
+       if test "${enable_shared}" = "" ; then
+         enable_shared=no
+         make_darwin_dylib=yes
+       fi
+    fi
     ;;
   nto-qnx*)
     use_flag_pthread=no
@@ -4168,8 +4193,19 @@ fi
 
 ############## libtool ################
 
+if test "${enable_standalone}" = "yes" ; then
+   HIDE_STANDALONE=""
+   HIDE_NOT_STANDALONE=hide_not_standalone_
+   if test "${enable_shared}" = "" ; then
+     enable_shared=yes
+   fi
+fi
+
 if test "${enable_shared}" = "yes" ; then
   echo "Configuring libtool"
+
+  # Assuming an absolute "${libdir}":
+  abslibdir="${libdir}"
 
   if test ! -d "../lt" ; then
     mkdir "../lt"
@@ -4193,27 +4229,43 @@ if test "${enable_shared}" = "yes" ; then
     fi
   fi
 
-  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${plt_lib_version} \$(ARLIBFLAGS) -o"
+  # Use only for standalone builds:
+  AR="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}${ar_libtool_no_undefined} -release ${rktio_version} -rpath ${abslibdir} \$(ARLIBFLAGS) -o"
+  # Used for a librktio convenience library:
   STATIC_AR="${LIBTOOLPROG} --mode=link --tag=CC $CC -o"
   ARFLAGS=""
   RANLIB=":"
+
   RKTLINKER="${LIBTOOLPROG} --mode=link --tag=CC $CC${need_gcc_static_libgcc}"
   CC="${LIBTOOLPROG} --mode=compile --tag=CC $CC"
-  LIBSFX=la
   LTO="lo"
   LTA="la"
   STRIP_LIB_DEBUG=":"
+  LIBSFX=la
+  ICP_LIB="${LIBTOOLPROG} --mode=install install -s"
 else
-  LIBSFX=a
   ICP=cp
-  ICP_LIB=cp
   LTO="o"
   LTA="a"
   RKTLINKER='$(CC)'
   STATIC_AR="$AR"
+  LIBSFX=so
+  ICP_LIB=cp
+  if test "${make_darwin_dylib}" = "yes" ; then
+     LIBSFX="dylib"
+     AR='$(RKTLINKER) --shared -o'
+     ARFLAGS=""
+     LIBS="${LIBS} -framework CoreFoundation"
+     ICP_LIB=cp
+  fi
 fi
 
 ############## final output ################
+
+
+
+
+
 
 
 
