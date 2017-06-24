@@ -105,8 +105,6 @@ struct rktio_t {
 /* Poll sets                                                              */
 /*========================================================================*/
 
-typedef struct rktio_poll_set_t rktio_poll_set_t;
-
 void rktio_alloc_global_poll_set(rktio_t *rktio);
 void rktio_free_global_poll_set(rktio_t *rktio);
 int rktio_initialize_signal(rktio_t *rktio);

@@ -2,8 +2,6 @@
 
 #if defined(sun)
 
-# include "uconfig.h"
-
 # define USE_EXPLICT_FP_FORM_CHECK
 
 # include <errno.h>
