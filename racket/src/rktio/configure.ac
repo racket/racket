@@ -180,7 +180,7 @@ if test "${skip_iconv_check}" = "no" ; then
  AC_MSG_RESULT($iconv_usage_result)
 fi
 if test "${enable_iconv}" = "no" ; then
-  AC_DEFINE(RKTIO_NO_ICON,1,[Do not use iconv])
+  AC_DEFINE(RKTIO_NO_ICONV,1,[Do not use iconv])
 fi
 
 if test "${enable_iconv}" = "yes" ; then
@@ -403,6 +403,8 @@ AC_SUBST(LTA)
 
 AC_SUBST(HIDE_NOT_STANDALONE)
 AC_SUBST(HIDE_STANDALONE)
+
+AC_SUBST(RKTIO_NO_ICONV)
 
 makefiles="Makefile"
 

@@ -621,6 +621,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+RKTIO_NO_ICONV
 HIDE_STANDALONE
 HIDE_NOT_STANDALONE
 LTA
@@ -3967,7 +3968,7 @@ $as_echo "$iconv_usage_result" >&6; }
 fi
 if test "${enable_iconv}" = "no" ; then
 
-$as_echo "#define RKTIO_NO_ICON 1" >>confdefs.h
+$as_echo "#define RKTIO_NO_ICONV 1" >>confdefs.h
 
 fi
 
@@ -4261,6 +4262,8 @@ else
 fi
 
 ############## final output ################
+
+
 
 
 
