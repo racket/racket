@@ -1,9 +1,31 @@
 #lang racket/base
 (require racket/cmdline
          racket/pretty
+         racket/list
+         racket/match
          parser-tools/lex
          (prefix-in : parser-tools/lex-sre)
          parser-tools/yacc)
+
+;; Parse "rktio.h" to produce a seqeuence
+;;  (define-constant <id> <const>) ...
+;;  <type-def> ...
+;;  <func-def> ...
+;;
+;; where
+;;  <type-def> = (define-type <id> <id>)
+;;             | (define-struct-type <id> ([<type> <name>] ...))
+;;
+;;  <func-def> = (define-function <type> <id> ([<type> <arg-name>] ...))
+;;                 => never fails
+;;             | (define-function/errno <err-v> <type> <id> ([<type> <arg-name>] ...))
+;;                 => fails when result equals <err-v>
+;;             | (define-function/errno+step <err-v> <type> <id> ([<type> <arg-name>] ...))
+;;                 => fails when result equals <err-v>, keep step
+;;
+;;  <type> = <prim-type>
+;;         | (ref <type>) ; opaque, needs to be deallocated somehow
+;;         | (* <type>)   ; transparent argument, can be represented by a byte string
 
 (define output-file #f)
 
@@ -22,7 +44,7 @@
 (define-empty-tokens delim-tokens
   (EOF WHITESPACE
        OPEN CLOSE COPEN CCLOSE SEMI COMMA STAR LSHIFT EQUAL
-       __RKTIO_H__ EXTERN EXTERN/NOERR EXTERN/STEP
+       __RKTIO_H__ EXTERN EXTERN/NOERR EXTERN/STEP EXTERN/ERR
        DEFINE TYPEDEF ENUM STRUCT VOID UNSIGNED SHORT INT CONST))
 
 (define lex
@@ -50,6 +72,7 @@
    ["RKTIO_EXTERN" 'EXTERN]
    ["RKTIO_EXTERN_NOERR" 'EXTERN/NOERR]
    ["RKTIO_EXTERN_STEP" 'EXTERN/STEP]
+   ["RKTIO_EXTERN_ERR" 'EXTERN/ERR]
    [(:seq (:or #\_ (:/ #\A #\Z #\a #\z))
           (:* (:or #\_ (:/ #\A #\Z #\a #\z #\0 #\9))))
     (token-ID (string->symbol lexeme))]
@@ -77,11 +100,12 @@
    (grammar
     (<prog> [() null]
             [(<decl> <prog>) (cons $1 $2)])
-    (<decl> [(DEFINE ID <expr>) `(define ,$2 ,$3)]
+    (<decl> [(DEFINE ID <expr>) `(define-constant ,$2 ,$3)]
             [(DEFINE __RKTIO_H__ <expr>) #f]
             [(DEFINE EXTERN ID) #f]
             [(DEFINE EXTERN/NOERR EXTERN) #f]
             [(DEFINE EXTERN/STEP EXTERN) #f]
+            [(DEFINE EXTERN/ERR OPEN ID CLOSE EXTERN) #f]
             [(STRUCT ID SEMI) #f]
             [(TYPEDEF <type> <id> SEMI)
              (if (eq? $2 $3)
@@ -92,12 +116,14 @@
                  `(define-struct-type ,$2 ,$4)
                  (error 'parse "typedef struct names don't match at ~s" $5))]
             [(<extern> <return-type> <id> OPEN <params> SEMI)
-             (let ([r-type (shift-stars $3 $2)])
-               `(,(adjust-errno $1 r-type) ,r-type ,(unstar $3) ,$5))]
+             (let ([r-type (shift-stars $3 $2)]
+                   [id (unstar $3)])
+               `(,@(adjust-errno $1 r-type id) ,r-type ,id ,$5))]
             [(ENUM COPEN <enumeration> SEMI) `(begin . ,(enum-definitions $3))])
     (<extern> [(EXTERN) 'define-function/errno]
               [(EXTERN/STEP) 'define-function/errno+step]
-              [(EXTERN/NOERR) 'define-function])
+              [(EXTERN/NOERR) 'define-function]
+              [(EXTERN/ERR OPEN ID CLOSE) `(define-function/errno ,$3)])
     (<params> [(VOID CLOSE) null]
               [(<paramlist>) $1])
     (<paramlist> [(<type> <id> CLOSE) `((,(shift-stars $2 $1) ,(unstar $2)))]
@@ -130,11 +156,15 @@
             [(STRUCT ID) $2])
     (<return-type> [(<type>) $1]))))
 
-(define (adjust-errno def-kind r)
+(define (adjust-errno def-kind r id)
   (cond
-    [(eq? r 'rktio_bool_t) 'define-function]
-    [(eq? r 'void) 'define-function]
-    [else def-kind]))
+    [(eq? id 'rktio_init) '(define-function)] ; init is special, because we can't get an error
+    [(eq? r 'rktio_bool_t) '(define-function)]
+    [(eq? r 'void) '(define-function)]
+    [(pair? def-kind) def-kind]
+    [(pair? r) '(define-function/errno NULL)]
+    [(eq? r 'rktio_ok_t) '(define-function/errno #f)]
+    [else (list def-kind)]))
 
 (define (shift-stars from to)
   (if (and (pair? from)
@@ -155,16 +185,16 @@
       [(pair? (car l))
        (let ([i (cadar l)])
          (cons
-          `(define ,(caar l) ,i)
+          `(define-constant ,(caar l) ,i)
           (loop (cdr l) (add1 i))))]
       [else
        (cons
-        `(define ,(car l) ,i)
+        `(define-constant ,(car l) ,i)
         (loop (cdr l) (add1 i)))])))
 
 ;; ----------------------------------------
 
-(define content
+(define unsorted-unflattened-content
   (call-with-input-file input-file
     (lambda (i)
       (port-count-lines! i)
@@ -175,14 +205,84 @@
                      [(eq? (position-token-token v) 'WHITESPACE) (loop)]
                      [else v]))))))))
 
+(define unsorted-content
+  (for*/list ([l (in-list unsorted-unflattened-content)]
+              [e (in-list (if (and (pair? l)
+                                   (eq? 'begin (car l)))
+                              (cdr l)
+                              (list l)))])
+    e)) 
+
+(define (constant-defn? e)
+  (and (pair? e)
+       (eq? (car e) 'define-constant)))
+
+(define (type-defn? e)
+  (and (pair? e)
+       (or (eq? (car e) 'define-type)
+           (eq? (car e) 'define-struct-type))))
+
+(define constant-content
+  (filter constant-defn? unsorted-content))
+
+(define type-content
+  (filter type-defn? unsorted-content))
+
+(define defined-types
+  (let ([ht (for/hash ([e (in-list type-content)])
+              (values (cadr e) #t))])
+    (for/fold ([ht ht]) ([t (in-list '(char int unsigned-short
+                                            intptr_t rktio_int64_t))])
+      (hash-set ht t #t))))
+
+;; A pointer to a defined type in an argument position
+;; is transparent, and it make sense to pass a byte
+;; string directly (possibly to be filled in).
+;; A pointer to an undefined type is opaque, and a pointer
+;; to a defined type is "opaque" in a result position in
+;; the sense that it should be explicitly dereferenced and
+;; explicitly freed.
+(define (update-type t #:as-argument? [as-argument? #f])
+  (cond
+    [(and (pair? t) (eq? (car t) '*))
+     (let ([s (update-type (cadr t))])
+       (if (and as-argument?
+                (or (pair? s)
+                    (hash-ref defined-types s #f)))
+           `(* ,s)
+           `(ref ,s)))]
+    [else t]))
+
+(define (update-bind a #:as-argument? [as-argument? #f])
+  `(,(update-type (car a) #:as-argument? as-argument?) ,(cadr a)))
+
+(define (update-types e)
+  (match e
+    [`(,def ,ret ,name ,args)
+     `(,def ,(update-type ret) ,name
+        ,(map (lambda (a) (update-bind a #:as-argument? #t)) args))]
+    [else e]))
+
+(define (update-type-types e)
+  (match e
+    [`(define-struct-type ,name ,fields)
+     `(define-struct-type ,name ,(map update-bind fields))]
+    [else e]))
+
+(define content
+  (append
+   constant-content
+   (map update-type-types type-content)
+   (map update-types
+        (filter (lambda (e) (not (or (constant-defn? e) (type-defn? e))))
+                unsorted-content))))
+
 (define (show-content)
+  (printf "(begin\n")
   (for ([e (in-list content)]
         #:when e)
-    (if (and (pair? e)
-             (eq? 'begin (car e)))
-        (for ([e (in-list (cdr e))])
-          (pretty-write e))
-        (pretty-write e))))
+    (pretty-write e))
+  (printf ")\n"))
 
 (if output-file
     (with-output-to-file output-file

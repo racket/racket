@@ -853,6 +853,16 @@ intptr_t rktio_read(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t len)
   return rktio_read_converted(rktio, rfd, buffer, len, NULL);
 }
 
+intptr_t rktio_read_in(rktio_t *rktio, rktio_fd_t *rfd, char *buffer, intptr_t start, intptr_t end)
+{
+  return rktio_read_converted(rktio, rfd, buffer+start, end-start, NULL);
+}
+
+intptr_t rktio_write_in(rktio_t *rktio, rktio_fd_t *rfd, const char *buffer, intptr_t start, intptr_t end)
+{
+  return rktio_write(rktio, rfd, buffer+start, end-start);
+}
+
 RKTIO_EXTERN intptr_t rktio_buffered_byte_count(rktio_t *rktio, rktio_fd_t *fd)
 {
 #ifdef RKTIO_SYSTEM_UNIX
