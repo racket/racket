@@ -54,6 +54,8 @@ AC_CHECK_LIB(dl, dlopen)
 
 case "$host_os" in
   solaris2*)
+    # Need these libs so that `getaddrinfo` is found:
+    LIBS="$LIBS -lsocket -lnsl -lintl"
     try_poll_syscall="no" # poll() has performance problems on Solaris?
     use_flag_pthread="no"
     use_flag_posix_pthread="yes"

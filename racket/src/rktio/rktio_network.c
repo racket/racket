@@ -203,7 +203,7 @@ struct rktio_addrinfo_t {
 #endif
 
 /*****************************************************************/
-/* Fallback using gethostbyname where getddrinfo isn't avaulable */
+/* Fallback using gethostbyname where getddrinfo isn't available */
 
 #ifdef HAVE_GETADDRINFO
 # define rktio_AI_PASSIVE AI_PASSIVE 
