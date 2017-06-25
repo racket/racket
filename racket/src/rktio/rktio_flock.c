@@ -15,6 +15,7 @@
 #if defined(RKTIO_USE_FCNTL_AND_FORK_FOR_FILE_LOCKS)
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 typedef struct pair_t { int car, cdr; } pair_t;
 #endif
 

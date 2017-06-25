@@ -6,6 +6,9 @@
 # include <fcntl.h>
 # include <errno.h>
 # include <math.h>
+# ifdef USE_ULIMIT
+#  include <ulimit.h>
+# endif
 #endif
 #ifdef HAVE_POLL_SYSCALL
 # include <poll.h>

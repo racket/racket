@@ -9,6 +9,9 @@
 # include <sys/wait.h>
 # include <errno.h>
 # include <unistd.h>
+# ifdef USE_ULIMIT
+#  include <ulimit.h>
+# endif
 #endif
 
 #if defined(RKTIO_SYSTEM_UNIX) && defined(RKTIO_USE_PTHREADS)

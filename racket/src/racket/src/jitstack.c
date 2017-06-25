@@ -743,7 +743,7 @@ void* scheme_jit_find_code_end(void *p) { return NULL; }
 
 void scheme_thread_start_child(Scheme_Thread *child, Scheme_Object *child_thunk)
 {
-  return scheme_do_thread_start_child(child, child_thunk);
+  scheme_do_thread_start_child(child, child_thunk);
 }
 
 #endif
