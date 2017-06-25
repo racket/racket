@@ -119,7 +119,7 @@ racket
 (cond
   [(empty? l) #false]
   [else
-   (define f (fir l))
+   (define f (first l))
    (define r (rest l))
    (if (discounted? f)
        (rate f)
@@ -131,7 +131,7 @@ racket
 
 (if (empty? l)
     #false
-    (let ([f (fir l)]
+    (let ([f (first l)]
 	  [r (rest l)])
       (if (discounted? f)
           (rate f)
