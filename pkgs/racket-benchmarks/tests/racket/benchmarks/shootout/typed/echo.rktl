@@ -7,8 +7,9 @@
 
 (: server ( -> Void))
 (define (server)
+  (define l (tcp-listen PORT 5 #t))
   (thread client)
-  (let-values ([(in out) (tcp-accept (tcp-listen PORT 5 #t))]
+  (let-values ([(in out) (tcp-accept l)]
                [(buffer) (make-string (string-length DATA))])
     (file-stream-buffer-mode out 'none)
     (let: loop : Void ([i : (U Integer EOF) (read-string! buffer in)]
