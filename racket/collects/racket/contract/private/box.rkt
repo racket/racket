@@ -221,7 +221,7 @@
   (define ctc-r
     (if flat?
         (coerce-flat-contract 'box/c elem-r)
-        (coerce-contract 'box/c elem-w)))
+        (coerce-contract 'box/c elem-r)))
   (cond
     [(or flat?
          (and (equal? immutable #t)

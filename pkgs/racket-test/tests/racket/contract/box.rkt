@@ -58,6 +58,75 @@
   (test/pos-blame
    'box/c8
    '(contract ((values box/c) any/c) #f 'pos 'neg))
+
+  (test/pos-blame
+   'box/c9
+   '(unbox (contract (box/c real? (>/c 0)) (box -1) 'pos 'neg)))
+
+  (test/neg-blame
+   'box/c10
+   '(set-box! (contract (box/c (>/c 0) real?) (box -1) 'pos 'neg) -2))
+
+  (test/pos-blame
+   'box/c11
+   '(unbox (contract (box/c integer?) (box 1.1) 'pos 'neg)))
+
+  (test/neg-blame
+   'box/c12
+   '(set-box! (contract (box/c integer?) (box 1) 'pos 'neg) 1.5))
+
+  ;; contract-stronger? tests
+  (contract-eval '(require (only-in racket/contract/combinator contract-stronger?)))
+
+  (test/spec-passed/result
+   'box/c-stronger1
+   '(contract-stronger? (box/c integer?) (box/c integer?))
+   #t)
+
+  (test/spec-passed/result
+   'box/c-stronger2
+   '(contract-stronger? (box/c (>/c 0)) (box/c real?))
+   #f)
+
+  (test/spec-passed/result
+   'box/c-stronger3
+   '(contract-stronger? (box/c real?) (box/c (>/c 0)))
+   #f)
+
+  (test/spec-passed/result
+   'box/c-stronger4
+   '(contract-stronger? (box/c integer? any/c) (box/c integer? any/c))
+   #t)
+
+  (test/spec-passed/result
+   'box/c-stronger5
+   '(contract-stronger? (box/c any/c integer?) (box/c any/c integer?))
+   #t)
+
+  (test/spec-passed/result
+   'box/c-stronger6
+   '(contract-stronger? (box/c real? any/c) (box/c (>/c 0) any/c))
+   #t)
+
+  (test/spec-passed/result
+   'box/c-stronger7
+   '(contract-stronger? (box/c any/c real?) (box/c any/c (>/c 0)))
+   #f)
+
+  (test/spec-passed/result
+   'box/c-stronger8
+   '(contract-stronger? (box/c (>/c 0) any/c) (box/c real? any/c))
+   #f)
+
+  (test/spec-passed/result
+   'box/c-stronger9
+   '(contract-stronger? (box/c any/c (>/c 0)) (box/c any/c real?))
+   #t)
+
+  (test/spec-passed/result
+   'box/c-stronger10
+   '(contract-stronger? (box/c real? (>/c 0)) (box/c (>/c 0) real?))
+   #t)
   
   (test/neg-blame
    'box/c-with-cons/c-inside
@@ -69,7 +138,15 @@
       ((car (unbox f)) 3)))
 
   (test/neg-blame
-   'box/c-with-cons/c-inside
+   'box/c-with-cons/c-inside-r
+   '(let ([f
+           (contract (box/c any/c (cons/c (-> boolean? boolean?) '()))
+                     (box (list values))
+                     'pos
+                     'neg)])
+      ((car (unbox f)) 3)))
+
+  (test/no-error
    '(let ([f
            (contract (box/c (cons/c (-> boolean? boolean?) '()) any/c)
                      (box (list values))
