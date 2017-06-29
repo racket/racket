@@ -696,7 +696,7 @@ no extension, @racket[#f] is returned.}
                              [path (or/c path-string?  path-for-some-system?)]
                              [#:more-than-root? more-than-root? any/c #f]
                              [#:normalize-case? normalize-case? any/c #t])
-         path-for-some-system?]{
+         (or/c path-for-some-system? path-string?)]{
 
 Finds a relative pathname with respect to @racket[base] that names the
 same file or directory as @racket[path]. Both @racket[base] and
@@ -707,7 +707,9 @@ common with @racket[base], @racket[path] is returned.
 If @racket[more-than-root?] is true, if @racket[base] and
 @racket[path] share only a Unix root in common, and if neither
 @racket[base] nor @racket[path] is just a root path, then
-@racket[path] is returned.
+@racket[path] is returned. The case when @racket[path] is returned
+and is a string is the only case when @racket[find-relative-path]
+returns a string result.
 
 If @racket[normalize-case?] is true (the default), then pairs of path
 elements to be compared are first converted via
