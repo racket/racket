@@ -20,11 +20,13 @@
   (unsafe-custodian-register custodian obj proc at-exit? weak?))
 
 (define (unregister-custodian-shutdown obj mref)
-  (unsafe-custodian-unregister obj mref))
+  (when mref
+    (unsafe-custodian-unregister obj mref)))
 
 (define (register-finalizer-and-custodian-shutdown value callback
                                                    [custodian (current-custodian)]
-                                                   #:at-exit? [at-exit? #f])
+                                                   #:at-exit? [at-exit? #f]
+                                                   #:custodian-unavailable [custodian-unavailable (lambda (r) (r))])
   (define done? #f)
   (define (do-callback obj) ; called in atomic mode
     (unless done?
@@ -32,9 +34,14 @@
       (callback obj)))
   (define registration
     (register-custodian-shutdown value do-callback custodian #:at-exit? at-exit?))
-  (register-finalizer value
-    (lambda (obj)
-      (call-as-atomic
-       (lambda ()
-         (unregister-custodian-shutdown obj registration)
-         (do-callback obj))))))
+  (define (do-finalizer)
+    (register-finalizer
+     value
+     (lambda (obj)
+       (call-as-atomic
+        (lambda ()
+          (unregister-custodian-shutdown obj registration)
+          (do-callback obj))))))
+  (if registration
+      (do-finalizer)
+      (custodian-unavailable do-finalizer)))

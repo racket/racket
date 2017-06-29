@@ -60,3 +60,20 @@
 (for ([i 10])
   (unless (go)
     (error "shutdown failed")))
+
+;; ----------------------------------------
+;; Check that already-shutdown custodians are handled
+
+(when (register-custodian-shutdown 88 void c)
+  (error "should have been #f due to shutdown"))
+(unless (eq? 'cb
+             (register-finalizer-and-custodian-shutdown
+              88 void c
+              #:custodian-unavailable (lambda (proc)
+                                        (unless (and (procedure? proc)
+                                                     (procedure-arity-includes? proc 0))
+                                          (error "should have received a thunk"))
+                                        'cb)))
+  (error "custodian-shutdown callback wasn't called"))
+
+(unregister-custodian-shutdown 'anything #f)

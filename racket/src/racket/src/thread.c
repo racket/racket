@@ -1378,6 +1378,9 @@ static Scheme_Object *unsafe_custodian_register(int argc, Scheme_Object *argv[])
   if (!SCHEME_PROCP(callback))
     scheme_wrong_contract("unsafe-custodian-register", "procedure?", 2, argc, argv);
 
+  if (!scheme_custodian_is_available(custodian))
+    return scheme_false;
+
   if (at_exit)
     mr = scheme_add_managed_close_on_exit(custodian, v, call_registered_callback, callback);
   else

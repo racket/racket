@@ -17,7 +17,9 @@ registering shutdown callbacks with custodians.}
 
 Registers @racket[callback] to be applied (in atomic mode and an
 unspecified Racket thread) to @racket[v] when @racket[custodian] is
-shutdown. The result is a pointer that can be supplied to
+shutdown. If @racket[custodian] is already shut down, the result is
+@racket[#f] and @racket[v] is not registered. Otherwise, the result is
+a pointer that can be supplied to
 @racket[unregister-custodian-shutdown] to remove the registration.
 
 If @racket[at-exit?] is true, then @racket[callback] is applied when
@@ -43,25 +45,34 @@ be no longer registered to the custodian, while the finalizer for
 
 
 @defproc[(unregister-custodian-shutdown [v any/c]
-                                        [registration _cpointer])
+                                        [registration cpointer?])
          void?]{
 
 Cancels a custodian-shutdown registration, where @racket[registration]
 is a previous result from @racket[register-custodian-shutdown] applied
-to @racket[v].}
+to @racket[v]. If @racket[registration] is @racket[#f], then no action
+is taken.}
 
 @defproc[(register-finalizer-and-custodian-shutdown
                  [v any/c]
                  [callback (any/c . -> . any)]
                  [custodian custodian? (current-custodian)]
                  [#:at-exit? at-exit? any/c #f]
-                 [#:weak? weak? any/c #f])
-         void?]{
+                 [#:weak? weak? any/c #f]
+                 [#:custodian-unavailable unavailable-callback ((-> void?) -> any) (lambda (reg-fnl) (reg-fnl))])
+         any]{
 
 Registers @racket[callback] to be applied (in atomic mode) to
 @racket[v] when @racket[custodian] is shutdown or when @racket[v] is
 about to be collected by the garbage collector, whichever happens
 first. The @racket[callback] is only applied to @racket[v] once.
+
+If @racket[custodian] is already shut down, then
+@racket[unavailable-callback] is applied in tail position to a
+function that registers a finalizer. By default, a finalizer is
+registered anyway, but usually a better choice is to report an error.
+If @racket[custodian] is not already shut down, then the result
+from @racket[register-finalizer-and-custodian-shutdown] is @|void-const|.
 
 @history[#:added "6.1.1.6"]}
 
