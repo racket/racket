@@ -819,7 +819,7 @@ procedures.
     arguments to the port's @racket[get-write-evt]. Some port
     implementors, however, may choose not to provide
     @racket[get-write-evt] (perhaps because writes cannot be
-    made atomic), or may implement @racket[write-proc] to
+    made atomic), or may implement @racket[write-out] to
     enable a fast path for non-blocking writes or to
     enable buffering.
 
