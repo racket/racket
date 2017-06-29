@@ -24,8 +24,8 @@
 ;;                 => fails when result equals <err-v>, keep step
 ;;
 ;;  <type> = <prim-type>
-;;         | (ref <type>) ; opaque, needs to be deallocated somehow
-;;         | (* <type>)   ; transparent argument, can be represented by a byte string
+;;         | (ref <type>)  ; opaque, needs to be deallocated somehow
+;;         | (*ref <type>) ; transparent argument, can be represented by a byte string
 
 (define output-file #f)
 
@@ -138,7 +138,7 @@
                (append (map (lambda (id) `(,(shift-stars id $1) ,(unstar id))) $2)
                        $3)])
     (<id> [(ID) $1]
-          [(STAR <id>) `(* ,$2)])
+          [(STAR <id>) `(*ref ,$2)])
     (<ids> [(<id> SEMI) (list $1)]
            [(<id> COMMA <ids>) (cons $1 $3)])
     (<expr> [(ID) $1]
@@ -162,19 +162,20 @@
     [(eq? r 'rktio_bool_t) '(define-function)]
     [(eq? r 'void) '(define-function)]
     [(pair? def-kind) def-kind]
-    [(pair? r) '(define-function/errno NULL)]
-    [(eq? r 'rktio_ok_t) '(define-function/errno #f)]
+    [(eq? def-kind 'define-function) (list def-kind)]
+    [(pair? r) `(,def-kind NULL)]
+    [(eq? r 'rktio_ok_t) `(,def-kind #f)]
     [else (list def-kind)]))
 
 (define (shift-stars from to)
   (if (and (pair? from)
-           (eq? '* (car from)))
-      `(* ,(shift-stars (cadr from) to))
+           (eq? '*ref (car from)))
+      `(*ref ,(shift-stars (cadr from) to))
       to))
 
 (define (unstar from)
   (if (and (pair? from)
-           (eq? '* (car from)))
+           (eq? '*ref (car from)))
       (unstar (cadr from))
       from))
 
@@ -244,12 +245,12 @@
 ;; explicitly freed.
 (define (update-type t #:as-argument? [as-argument? #f])
   (cond
-    [(and (pair? t) (eq? (car t) '*))
+    [(and (pair? t) (eq? (car t) '*ref))
      (let ([s (update-type (cadr t))])
        (if (and as-argument?
                 (or (pair? s)
                     (hash-ref defined-types s #f)))
-           `(* ,s)
+           `(*ref ,s)
            `(ref ,s)))]
     [else t]))
 
@@ -260,6 +261,9 @@
   (match e
     [`(,def ,ret ,name ,args)
      `(,def ,(update-type ret) ,name
+        ,(map (lambda (a) (update-bind a #:as-argument? #t)) args))]
+    [`(,def ,err-val ,ret ,name ,args)
+     `(,def ,err-val ,(update-type ret) ,name
         ,(map (lambda (a) (update-bind a #:as-argument? #t)) args))]
     [else e]))
 

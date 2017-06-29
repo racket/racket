@@ -728,7 +728,7 @@ RKTIO_EXTERN rktio_bool_t rktio_is_regular_file(rktio_t *rktio, const char *file
 
 RKTIO_EXTERN rktio_ok_t rktio_delete_file(rktio_t *rktio, const char *fn, rktio_bool_t enable_write_on_fail);
 
-RKTIO_EXTERN rktio_ok_t rktio_rename_file(rktio_t *rktio, const char *dest, const char *src, int exists_ok);
+RKTIO_EXTERN rktio_ok_t rktio_rename_file(rktio_t *rktio, const char *dest, const char *src, rktio_bool_t exists_ok);
 /* Can report `RKTIO_ERROR_EXISTS`. */
 
 RKTIO_EXTERN char *rktio_get_current_directory(rktio_t *rktio);
@@ -738,7 +738,7 @@ RKTIO_EXTERN rktio_ok_t rktio_make_directory(rktio_t *rktio, const char *filenam
 /* Can report `RKTIO_ERROR_EXISTS`. */
 
 RKTIO_EXTERN rktio_ok_t rktio_delete_directory(rktio_t *rktio, const char *filename, const char *current_directory,
-                                               int enable_write_on_fail);
+                                               rktio_bool_t enable_write_on_fail);
 /* The `current_directory` argument is used on Windows to avoid being
    in `filename` (instead) as a directory while trying to delete it.
    The `enable_write_on_fail` argument also applied to Windows. */
@@ -748,7 +748,7 @@ RKTIO_EXTERN char *rktio_readlink(rktio_t *rktio, const char *fullfilename);
    `RKTIO_ERROR_NOT_A_LINK`. */
 
 RKTIO_EXTERN rktio_ok_t rktio_make_link(rktio_t *rktio, const char *src, const char *dest,
-                                        int dest_is_directory);
+                                        rktio_bool_t dest_is_directory);
 /* The `dest_is_directory` argument is used only
    on Windows. Can report `RKTIO_ERROR_EXISTS`. */
 
@@ -768,7 +768,7 @@ typedef struct rktio_identity_t {
 } rktio_identity_t;
 
 RKTIO_EXTERN rktio_identity_t *rktio_fd_identity(rktio_t *rktio, rktio_fd_t *fd);
-RKTIO_EXTERN rktio_identity_t *rktio_path_identity(rktio_t *rktio, const char *path, int follow_links);
+RKTIO_EXTERN rktio_identity_t *rktio_path_identity(rktio_t *rktio, const char *path, rktio_bool_t follow_links);
 
 /*************************************************/
 /* Permissions                                   */
@@ -781,7 +781,7 @@ RKTIO_EXTERN rktio_identity_t *rktio_path_identity(rktio_t *rktio, const char *p
 #define RKTIO_PERMISSION_ERROR (-1)
 
 RKTIO_EXTERN_ERR(RKTIO_PERMISSION_ERROR)
-int rktio_get_file_or_directory_permissions(rktio_t *rktio, const char *filename, int all_bits);
+int rktio_get_file_or_directory_permissions(rktio_t *rktio, const char *filename, rktio_bool_t all_bits);
 /* Result is `RKTIO_PERMISSION_ERROR` for error, otherwise a combination of
    bits. If not `all_bits`, then use constants above. */
 
