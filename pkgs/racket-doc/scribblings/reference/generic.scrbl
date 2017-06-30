@@ -260,7 +260,7 @@ of the corresponding @racket[method-id]s, and replaces the method
 implementation with the result.
 
 A @racket[props-expr] can provide properties to attach to the
-impersonator. The result of @racket[props-expr] bust be an list with
+impersonator. The result of @racket[props-expr] must be a list with
 an even number of elements, where the first element of the list is an
 impersonator property, the second element is its value, and so on.
 
