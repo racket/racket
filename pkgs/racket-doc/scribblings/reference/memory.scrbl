@@ -128,7 +128,7 @@ of the wills is readied or executed.  However, wills for distinct
 unreachable values are readied at the same time, regardless of whether
 the values are reachable from each other.
 
-A will executor's register is held non-weakly until after the
+A will executor's registrant is held non-weakly until after the
 corresponding will procedure is executed. Thus, if the content value
 of a weak box (see @secref["weakbox"]) is registered with a will
 executor, the weak box's content is not changed to @racket[#f] until
