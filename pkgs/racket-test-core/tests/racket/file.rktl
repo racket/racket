@@ -1489,9 +1489,8 @@
 
 (let ([do-once
        (lambda (evt? localhost)
-	 (let* (
-	  [l (tcp-listen 0 5 #t)]
-    [pn (listen-port l)])
+	 (let* ([l (tcp-listen 0 5 #t)]
+                [pn (listen-port l)])
 	   (let-values ([(r1 w1) (tcp-connect localhost pn)]
 			[(r2 w2) (if evt?
 				     (apply values (sync (tcp-accept-evt l)))
@@ -1513,8 +1512,12 @@
   (do-once #f "localhost")
   (do-once #t "localhost")
   (with-handlers ([exn:fail:network:errno? (lambda (e)
-                                             ;; catch EAFNOSUPPORT Address family not supported by protocol
-                                             (unless (regexp-match? #rx"Address family not supported by protocol" (exn-message e))
+                                             ;; catch forms of non-suport for IPv6:
+                                             ;;       EAFNOSUPPORT "Address family not supported by protocol"
+                                             ;;    or getaddrinfo failure "no address associated with name"
+                                             (unless (regexp-match?
+                                                      #rx"family not supported by protocol|no address associated with name"
+                                                      (exn-message e))
                                                (raise e)))])
     (do-once #f "::1")
     (do-once #t "::1")))
