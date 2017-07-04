@@ -466,7 +466,7 @@ If the @racket[eager] argument is @racket[#t], then immutable vectors are
 checked eagerly when @racket[c] is a @tech{flat contract}. If the
 @racket[eager] argument is a number @racket[n], then immutable vectors are checked
 eagerly when @racket[c] is a @tech{flat contract} and the length of the vector
-is less than or equal to @racket[n].}.
+is less than or equal to @racket[n].}
 
 When a higher-order @racket[vectorof] contract is applied to a vector, the result
 is not @racket[eq?] to the input.  The result will be a copy for immutable vectors
