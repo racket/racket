@@ -1,6 +1,6 @@
 #lang scribble/manual
 
-@(require (for-label racket/base json))
+@(require (for-label racket/base racket/contract json))
 
 @(define website @link["http://json.org"]{JSON web site})
 @(define rfc @link["http://www.ietf.org/rfc/rfc4627.txt"]{JSON RFC})
@@ -33,9 +33,9 @@ the @rfc for more information about JSON.
     @item{the value of @racket[jsnull], @racket['null] by default}
     @item{@racket[boolean?]}
     @item{@racket[string?]}
-    @item{@racket[(or exact-integer? inexact-real?)]}
+    @item{@racket[(or/c exact-integer? inexact-real?)]}
     @item{@racket[(listof jsexpr?)]}
-    @item{@racket[(hasheqof symbol? jsexpr?)]}]
+    @item{@racket[(and/c hash-eq? (hash/c symbol? jsexpr?))]}]
 
 @examples[#:eval ev
   (jsexpr? 'null)
