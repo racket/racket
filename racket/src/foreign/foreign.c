@@ -3226,27 +3226,6 @@ static Scheme_Object *foreign_make_sized_byte_string(int argc, Scheme_Object *ar
 }
 #undef MYNAME
 
-/* *** Calling Racket code while the GC is working leads to subtle bugs, so
-   *** this is implemented now in Racket using will executors. */
-
-/* internal: apply Scheme finalizer */
-void do_scm_finalizer(void *p, void *finalizer)
-{
-  Scheme_Object *f = (Scheme_Object*)finalizer;
-  if (!SCHEME_FALSEP(f)) _scheme_apply(f, 1, (Scheme_Object**)(void*)(&p));
-}
-void do_ptr_finalizer(void *p, void *finalizer)
-{
-  Scheme_Object *f = (Scheme_Object*)finalizer;
-  Scheme_Object *ptr;
-  if (p == NULL) return;
-  ptr = scheme_make_cptr(p,NULL);
-  if (!SCHEME_FALSEP(f)) _scheme_apply(f, 1, (Scheme_Object**)(&ptr));
-  /* don't leave dangling references! */
-  SCHEME_CPTR_VAL(ptr) = NULL;
-  ptr = NULL;
-}
-
 /*****************************************************************************/
 /* FFI named locks */
 
