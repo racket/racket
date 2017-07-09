@@ -1,7 +1,8 @@
 #lang scribble/manual
 @(require scribble/eval
           scribble/decode
-          (for-label racket/base 
+          (for-label racket/base
+                     racket/contract
                      syntax/srcloc
                      syntax/location
                      setup/path-to-relative))
@@ -138,7 +139,7 @@ than simply @racket[#f].
 @deftogether[(
 @defproc[(source-location-source [loc source-location?]) any/c]
 @defproc[(source-location-line [loc source-location?])
-         (or/c orexact-positive-integer? #f)]
+         (or/c exact-positive-integer? #f)]
 @defproc[(source-location-column [loc source-location?])
          (or/c exact-nonnegative-integer? #f)]
 @defproc[(source-location-position [loc source-location?])
