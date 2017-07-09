@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require scribble/manual
+@(require "common.rkt"
           scribble/extract
           (for-label file/gif))
 

@@ -165,7 +165,7 @@ If @racket[entry] is not in @racket[zipdir], an
          #:changed "6.0.1.12" @elem{Added the @racket[#:utc-timestamps?] argument.}]}
 
 
-@defproc[(call-with-unzip-entry [in path-string? input-port]
+@defproc[(call-with-unzip-entry [in (or/c path-string? input-port?)]
                                 [entry path-string?]
                                 [proc (-> path-string? any)])
          any]{
