@@ -2188,20 +2188,23 @@ that the result of the function is a subclass of the input.}
 @defproc[(is-a?/c [type (or/c class? interface?)]) flat-contract?]{
 
 Accepts a class or interface and returns a flat contract that
-recognizes objects that instantiate the class/interface.}
+recognizes objects that instantiate the class/interface.
 
+See @racket[is-a?].}
 
 @defproc[(implementation?/c [interface interface?]) flat-contract?]{
 
 Returns a flat contract that recognizes classes that implement
-@racket[interface].}
+@racket[interface].
 
+See @racket[implementation?].}
 
 @defproc[(subclass?/c [class class?]) flat-contract?]{
 
 Returns a flat contract that recognizes classes that
-are subclasses of @racket[class].}
+are subclasses of @racket[class].
 
+See @racket[subclass?].}
 
 @; ------------------------------------------------------------------------
 
