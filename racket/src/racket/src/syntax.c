@@ -2196,6 +2196,7 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
                          shifts,
                          add_taint, false_insp);
       v = scheme_box(result);
+      SCHEME_SET_BOX_IMMUTABLE(v);
     } else if (SCHEME_VECTORP(v)) {
       Scheme_Object *v2;
       int size = SCHEME_VEC_SIZE(v), i;
@@ -2209,6 +2210,8 @@ static Scheme_Object *raw_stx_content(Scheme_Object *o)
                            add_taint, false_insp);
       	SCHEME_VEC_ELS(v2)[i] = result;
       }
+
+      SCHEME_SET_VECTOR_IMMUTABLE(v2);
       
       v = v2;
     } else if (SCHEME_HASHTRP(v)) {

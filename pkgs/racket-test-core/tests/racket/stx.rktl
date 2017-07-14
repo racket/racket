@@ -229,6 +229,12 @@
 (test 'y syntax-property stx-with-property 'x)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Check immutability
+
+(test #t immutable? (syntax-e #'#(1 2)))
+(test #t immutable? (syntax-e #'#&1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Plain s, se derived from part of s
 
 (define s (syntax-property (quote-syntax (mcr 5)) 'testing 10))
