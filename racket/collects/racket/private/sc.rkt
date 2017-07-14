@@ -1136,7 +1136,7 @@
               [(and (syntax? p)
                     (prefab-struct-key (syntax-e p)))
                (loop (cdr (vector->list (struct->vector (syntax-e p)))) use-ellipsis? depth found)]
-              [else #f])))
+              [else found])))
 
   (-define (no-ellipses? stx)
            (cond

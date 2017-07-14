@@ -743,6 +743,16 @@
 (syntax-test #'(datum-case '(1 "x" -> y) (->) [(a b -> c) (define q 1)])
              #rx"macro.rktl:.*no expression after a sequence of internal definitions")
 
+(let ()
+  (define-syntax-rule (check-error clause)
+    (err/rt-test
+     (datum-case '((1 2) (3)) () clause)
+     (lambda (exn)
+       (and (regexp-match? #rx"incompatible ellipsis match counts for template"
+                           (exn-message exn))))))
+  (check-error [((a ...) (b ...)) (datum ((a b) ...))])
+  (check-error [((a ...) (b ...)) (datum ((a 0 b) ...))])
+  (check-error [((a ...) (b ...)) (datum (((a) (b)) ...))]))
 
 ;; ----------------------------------------
 ;; Check `#%variable-reference' expansion to make sure
