@@ -664,7 +664,7 @@ static int common1b(mz_jit_state *jitter, void *_data)
       mz_prolog(JIT_R2);
       JIT_UPDATE_THREAD_RSPTR();
       jit_prepare(2);
-      if (j) {
+      if (!j) {
         jit_pusharg_p(JIT_R1);
         jit_pusharg_p(JIT_R0);
       } else {
