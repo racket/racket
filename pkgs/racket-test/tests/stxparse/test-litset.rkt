@@ -53,19 +53,18 @@
 ;; ----
 
 
-(tcerr "litset, #:at"
-       (let ()
-         (define-literal-set lits #:phase 0
-           (define lambda))
-         (define-syntax-rule (getvar var stx)
-           (syntax-parse stx #:literal-sets ([lits #:at here])
-             [(lambda var _) #'var]))
-         ;; check that introduced lambda is a literal:
-         (check-exn exn:fail? (lambda () (getvar x #'(a b c))))
-         (check-equal? (syntax->datum (getvar x #'(lambda b c)))
-                       '(b))
-         ;; check that passed lambda is not a literal, but a pattern variable:
-         (check-equal? (syntax->datum (getvar lambda #'(lambda b c))))))
+(test-case "litset, #:at"
+  (let ()
+    (define-literal-set lits #:phase 0
+      (define lambda))
+    (define-syntax-rule (getvar var stx)
+      (syntax-parse stx #:literal-sets ([lits #:at here])
+        [(lambda var _) #'var]))
+    ;; check that introduced lambda is a literal:
+    (check-exn exn:fail? (lambda () (getvar x #'(a b c))))
+    (check-equal? (syntax->datum (getvar x #'(lambda b c))) 'b)
+    ;; check that passed lambda is not a literal, but a pattern variable:
+    (check-equal? (syntax->datum (getvar lambda #'(lambda b c))) 'b)))
 
 ;; Litset extension
 
