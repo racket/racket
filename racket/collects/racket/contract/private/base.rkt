@@ -193,8 +193,13 @@
        (unless (list-contract? forced-ctc)
          (raise-argument-error 'recursive-contract "list-contract?" forced-ctc)))
      (set-recursive-contract-ctc! ctc forced-ctc)
-     (set-recursive-contract-name! ctc (append `(recursive-contract ,(contract-name forced-ctc))
-                                               (cddr old-name)))
+     (when (and (pair? old-name) (pair? (cdr old-name)))
+       ;; this guard will be #f when we are forcing this contract
+       ;; in a nested which (which can make the `cddr` below fail)
+       ;; in this case, there should be a pending `force-recursive-contract`
+       ;; that will do the actual updating of the name to the right thing
+       (set-recursive-contract-name! ctc (append `(recursive-contract ,(contract-name forced-ctc))
+                                                 (cddr old-name))))
      forced-ctc]
     [else current]))
 
