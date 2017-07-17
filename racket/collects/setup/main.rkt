@@ -75,8 +75,10 @@
 
   (define-values (print-bootstrapping)
     (lambda (why)
-      (fprintf (current-output-port) "~a: bootstrapping from source...\n  (~a)\n"
-               short-name why)))
+      (fprintf (current-output-port)
+               "~a: bootstrapping from source...\n ~a\n"
+               short-name
+               why)))
 
   (define-values (main-collects-relative->path)
     (let ([main-collects #f])
@@ -89,6 +91,8 @@
                    (map bytes->path (cdr p)))
             p))))
 
+  (define-values (original-compiled-file-paths) (use-compiled-file-paths))
+
   (if (or (on? "--clean")
           (on? "-c")
 	  (on? "--no-zo")
@@ -98,7 +102,7 @@
       (when (or (on? "--clean")
                 (on? "-c"))
 	(use-compiled-file-paths null)
-	(print-bootstrapping "command-line --clean or -c"))
+	(print-bootstrapping "triggered by command-line `--clean` or `-c`"))
   
       ;; Load the cm instance to be installed while loading Setup PLT.
       ;; This has to be dynamic, so we get a chance to turn off compiled
@@ -161,14 +165,14 @@
 						     ;; Not a .zo! Don't use .zo files at all...
 						     (escape (lambda ()
 							       ;; Try again without .zo
-							       (loop (format "loading non-.zo: ~a" path))))))))]
+							       (loop (format "triggered by use of non-\".zo\" file\n  path: ~a" path))))))))]
 					[current-load-extension 
 					 (if skip-zo/reason
 					     (current-load-extension)
 					     (lambda (path modname)
 					       (escape (lambda ()
 							 ;; Try again without .zo
-							 (loop "loading an extension")))))])
+							 (loop "triggered by loading an extension")))))])
 		           ;; Other things could go wrong, such as a version mismatch.
 		           ;; If something goes wrong, of course, give up on .zo files.
                            (parameterize ([uncaught-exception-handler
@@ -179,7 +183,7 @@
                                                   (lambda () (raise exn)))
                                                  (escape
                                                   (lambda () (loop (if (exn:fail? exn)
-                                                                       (regexp-replace* #rx"\n" (exn-message exn) "\n  ")
+                                                                       (exn-message exn)
                                                                        (format "uncaught exn: ~s" exn)))))))])
 			     ;; Here's the main dynamic load of "cm.rkt":
 			     (let ([mk
@@ -195,4 +199,4 @@
 
   ;; This has to be dynamic, so we get a chance to turn off
   ;;  .zo use and turn on the compilation manager.
-  (dynamic-require 'setup/setup-go #f))
+  ((dynamic-require 'setup/setup-go 'go) original-compiled-file-paths))

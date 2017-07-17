@@ -5,6 +5,7 @@
 (provide call-with-flag-params
          set-flag-params
 	 setup-program-name
+         setup-compiled-file-paths
 	 specific-collections
 	 specific-packages
 	 specific-planet-dirs
@@ -46,6 +47,11 @@
            => (lambda (x) ((cdr name+param) (cadr x)))])))
 
 (define setup-program-name (make-parameter "raco setup"))
+
+;; If non-`#f`, tells operations like `--clean` to use a particular
+;; compile-file path, even though `use-compiled-file-paths` may have
+;; been set to null to avoid loading bytecode:
+(define setup-compiled-file-paths (make-parameter #f))
 
 (define-flag-param parallel-workers (min (processor-count) 
 					 (if (fixnum? (arithmetic-shift 1 40))

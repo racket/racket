@@ -5,6 +5,7 @@
 
   (define-signature setup-option^
     (setup-program-name
+     setup-compiled-file-paths
      verbose
      make-verbose
      compiler-verbose

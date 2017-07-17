@@ -143,7 +143,10 @@ flags:
  @item{@DFlag{clean} or @Flag{c} --- delete existing @filepath{.zo}
    files, thus ensuring a clean build from the source files. The exact
    set of deleted files can be controlled by @filepath{info.rkt}; see
-   @elemref["clean"]{@racket[clean]} for more information.}
+   @elemref["clean"]{@racket[clean]} for more information. Unless
+   @DFlag{no-info-domain} or @Flag{d} is also specified, the @filepath{info.rkt}
+   cache is cleared. Unless @DFlag{no-docs} or @Flag{D} is also
+   specified, the documentation-index database is reset.}
 
  @item{@DFlag{fast-clean} or @Flag{c} --- like @DFlag{clean}, but
    without forcing a bootstrap of @exec{raco setup} from source (which
@@ -1030,7 +1033,14 @@ form.}
     The prefix used when printing status messages.
     @defaults[@racket["raco setup"]]
   }
-  
+
+@defparam[setup-compiled-file-paths paths (or/c #f (listof (and/c path? relative-path?)))]{
+ If not @racket[#f], supplies a value like the one for @racket[use-compiled-file-paths]
+ to control operations such as cleaning, where @racket[use-compiled-file-paths]
+ may have been set to @racket[null] to avoid loading bytecode.
+
+ @history[#:added "1.7"]}
+
 @defboolparam[verbose on?]{
   If on, prints messages from @exec{make} to @envvar{stderr}.
   @defaults[@racket[#f]]}
