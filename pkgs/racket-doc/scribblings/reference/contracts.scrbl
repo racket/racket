@@ -3111,13 +3111,15 @@ name @racket[sexp-name] when signaling a contract violation.}
            (recursive-contract contract-expr type recursive-contract-option ...)]
           #:grammar ([recursive-contract-option
                       #:list-contract?
-                      #:extra-delay])]{
+                      #:extra-delay]
+                     [type
+                      #:impersonator
+                      #:chaperone
+                      #:flat])]{
 
 Delays the evaluation of its argument until the contract is checked,
-making recursive contracts possible.  If @racket[type] is given, it
-describes the expected type of contract and must be one of the keywords
-@racket[#:impersonator], @racket[#:chaperone], or @racket[#:flat].  If
-@racket[type] is not given, an impersonator contract is created.
+making recursive contracts possible.
+If @racket[type] is not given, an impersonator contract is created.
 
 If the @racket[recursive-contract-option]
 @racket[#:list-contract?] is given, then the result is a
