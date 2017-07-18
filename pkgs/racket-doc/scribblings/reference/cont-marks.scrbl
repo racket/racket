@@ -148,10 +148,22 @@ called in tail position with respect to the
 
 This function could be implemented with a combination of
 @racket[with-continuation-mark], @racket[current-continuation-marks],
-and @racket[continuation-mark-set->list], but
+and @racket[continuation-mark-set->list*], as shown below, but
 @racket[call-with-immediate-continuation-mark] is implemented more
 efficiently; it inspects only the first frame of the current
-continuation.}
+continuation.
+
+@racketblock[
+(code:comment "Equivalent, but inefficient:")
+(define (call-with-immediate-continuation-mark key-v proc [default-v #f])
+  (define private-key (gensym))
+  (with-continuation-mark
+   private-key #t
+   (let ([vecs (continuation-mark-set->list* (current-continuation-marks)
+                                             (list key-v private-key)
+                                             default-v)])
+     (proc (vector-ref (car vecs) 0)))))
+]}
 
 @defproc[(continuation-mark-key? [v any/c]) boolean?]{
 Returns @racket[#t] if @racket[v] is a mark key created by
