@@ -1,5 +1,5 @@
 #lang scribble/doc
-@(require "mz.rkt")
+@(require "mz.rkt" scribble/example)
 
 @title[#:tag "pathutils" #:style 'toc]{Paths}
 
@@ -387,7 +387,12 @@ see @secref["windowspaths"] for more information.
          path-for-some-system?]{
 
 @techlink{Cleanse}s @racket[path] (as described at the beginning of
-this chapter) without consulting the filesystem.}
+this chapter) without consulting the filesystem.
+
+@examples[#:eval (make-base-eval)
+  (let ([p (build-path/convention-type 'unix "foo//bar")])
+    (cleanse-path p))
+]}
 
 
 @defproc[(expand-user-path [path path-string?]) path?]{
@@ -420,7 +425,7 @@ When @racket[path] is simplified and @racket[use-filesystem?] is true
 relative, it is resolved with respect to the current directory.
 On @|AllUnix|, up-directory indicators are removed taking into account soft links (so
 that the resulting path refers to the same directory as before);
-on Windows, up-directory indicators are removed by by deleting a
+on Windows, up-directory indicators are removed by deleting a
 preceding @tech{path element}.
 
 When @racket[use-filesystem?] is @racket[#f], up-directory indicators
@@ -444,7 +449,12 @@ still involve a cycle of links if the cycle did not inhibit the
 simplification).
 
 See @secref["unixpaths"] and @secref["windowspaths"] for more
-information on simplifying paths.}
+information on simplifying paths.
+
+@examples[#:eval (make-base-eval)
+  (let ([p (build-path/convention-type 'unix "foo//bar/baz/..")])
+    (simplify-path p #f))
+]}
  
 
 @defproc[(normal-case-path [path (or/c path-string? path-for-some-system?)])
@@ -746,7 +756,11 @@ directory (i.e., the comparison may produce false negatives).
 
 An error is signaled by @racket[normalize-path] if the input
 path contains an embedded path for a non-existent directory,
-or if an infinite cycle of soft links is detected.}
+or if an infinite cycle of soft links is detected.
+
+@examples[#:eval (make-base-eval '(require racket/path))
+  (equal? (current-directory) (normalize-path "."))
+]}
 
 
 @defproc[(path-element? [path any/c]) boolean?]{
